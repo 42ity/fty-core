@@ -173,7 +173,7 @@ TEST_CASE("real_measurements: select_last_measurements", "[db][select][lastmeasu
 
 }
 
-TEST_CASE("helper functions: convert_asset_to_monitor", "[db][convert_to_monitor]")
+TEST_CASE("helper functions: convert_asset_to_monitor_old", "[db][convert_to_monitor]")
 {
     tntdb::Connection conn;
     REQUIRE_NOTHROW (conn = tntdb::connectCached (url));
@@ -186,7 +186,7 @@ TEST_CASE("helper functions: convert_asset_to_monitor", "[db][convert_to_monitor
     );
     REQUIRE_NOTHROW (val = st.selectValue ());
     REQUIRE_NOTHROW (val.get (id_asset));
-    REQUIRE_THROWS_AS(convert_asset_to_monitor (url.c_str(), id_asset), bios::NotFound );
+    REQUIRE_THROWS_AS(convert_asset_to_monitor_old (url.c_str(), id_asset), bios::NotFound );
 
     st = conn.prepareCached(
        "select id_asset_element from t_bios_asset_element where name = 'ROW1'"
@@ -208,7 +208,7 @@ TEST_CASE("helper functions: convert_asset_to_monitor", "[db][convert_to_monitor
     REQUIRE_NOTHROW (val = st.selectValue ());
     REQUIRE_NOTHROW (val.get (id_monitor));
 
-    REQUIRE ( convert_asset_to_monitor (url.c_str(), id_asset) == id_monitor);
+    REQUIRE ( convert_asset_to_monitor_old (url.c_str(), id_asset) == id_monitor);
 }
 
 TEST_CASE("helper functions: convert_monitor_to_asset", "[db][convert_to_asset]")

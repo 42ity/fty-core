@@ -21,17 +21,17 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // Then for every succesfull delete statement
 // 0 would be return as rowid
 
+#include "assetr.h"
+
 #include <exception>
 #include <assert.h>
 
 #include <tntdb/row.h>
 #include <tntdb/result.h>
 #include <tntdb/error.h>
-#include <tntdb/transaction.h>
 
 #include "log.h"
 #include "defs.h"
-#include "assetr.h"
 
 
 namespace persist{
@@ -99,6 +99,7 @@ db_reply <db_web_basic_element_t>
         ret.errtype       = DB_ERR;
         ret.errsubtype    = DB_ERROR_NOTFOUND;
         ret.msg           = "element with spesified id was not found";
+        log_info ("end: %s", ret.msg);
         return ret;
     }
     catch (const std::exception &e) {
@@ -360,7 +361,8 @@ reply_t
     log_debug (" element_id = %" PRIi32, element_id);
 
     reply_t rep;
-    
+    // TODO
+    // if element is DC, then dc_id = element_id ( not implemented yet) 
     try{
         // Find last parent
         tntdb::Statement st = conn.prepareCached(
@@ -579,13 +581,6 @@ select_v_web_asset_power_link_src_byId(
     }
 }
 
-//TODO: maximum groups and maximum power sources
-/*
- * *
-<Malanka> select max(grp_count) from ( select count(*) grp_count from t_bios_asset_group_relation group by id_asset_element) elmnt_grp;
-<Malanka> select max(power_src_count) from ( select count(*) power_src_count from t_bios_asset_link group by id_asset_device_dest) pwr;
-*/
-
 int
 max_number_of_asset_groups(
         tntdb::Connection& conn)
@@ -728,6 +723,40 @@ db_reply_t
         ret.msg        = e.what();
         LOG_END_ABNORMAL (e);
         return ret;
+    }
+}
+
+int
+    convert_asset_to_monitor(
+        tntdb::Connection &conn,
+        a_elmnt_id_t       asset_element_id,
+        m_dvc_id_t        &monitor_element_id)
+{
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT "
+            "   v.id_discovered_device "
+            " FROM "
+            "   v_bios_monitor_asset_relation v "
+            " WHERE "
+            "   v.id_asset_element = :id "
+        );
+
+        tntdb::Value value = st.set("id", asset_element_id).
+                                selectValue();
+
+        value.get(monitor_element_id);
+        LOG_END;
+        return 0;
+    }
+    catch (const tntdb::NotFound &e){
+        // apropriate asset element was not found
+        log_info("end: counterpart for %" PRIu32 " notfound", asset_element_id);
+        return 1;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return -1;
     }
 }
 

@@ -22,6 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "log.h"
 #include "measurements.h"
+#include "alerts.h"
 
 namespace persist {
 
@@ -416,9 +417,7 @@ db_reply_t
         return reply_delete2;
     }
 
-
     { // need to delete all measurements
-        
         // select all topic_id for the element
         std::set <a_elmnt_id_t> out{};
         row_cb_f foo = \
@@ -438,7 +437,7 @@ db_reply_t
             ret.status = 0;
             ret.errtype = rv;
             ret.errsubtype = rv;
-            log_error ("some error during topics selecting");
+            log_error ("error during topics selecting");
             return ret;
         }
         // delete all measurements for topic and topic itself
@@ -454,7 +453,7 @@ db_reply_t
                 ret.status = 0;
                 ret.errtype = rv;
                 ret.errsubtype = rv;
-                log_error ("some error during measurements deleting");
+                log_error ("error during measurements deleting");
                 return ret;
             }
             rv = delete_measurement_topic(conn, topic_id, affected_rows1);
@@ -464,13 +463,42 @@ db_reply_t
                 ret.status = 0;
                 ret.errtype = rv;
                 ret.errsubtype = rv;
-                log_error ("some error during topic deleting");
+                log_error ("error during topic deleting");
                 return ret;
             }
         }
     }
-    // delete alerts
-    // delete discovered device
+    // need delete devices from alerts, but alerts will stay in the system
+    m_dvc_id_t monitor_element_id = 0;
+    {
+        // find monitor counterpart
+        int rv = convert_asset_to_monitor(conn, element_id, monitor_element_id);
+        if ( ( rv != 0 ) && ( rv != 1 ) )
+        {
+            db_reply_t ret = db_reply_new();
+            ret.status = 0;
+            ret.errtype = rv;
+            ret.errsubtype = rv;
+            log_error ("error during converting asset to monitor");
+            return ret;
+        }
+        // delete from alert devices
+        if ( rv != 1 )
+        {
+            m_alrtdvc_id_t affected_rows = 0;
+            rv = delete_device_from_alert_device_all
+                (conn, monitor_element_id, affected_rows);
+            if ( rv != 0 )
+            {
+                db_reply_t ret = db_reply_new();
+                ret.status = 0;
+                ret.errtype = rv;
+                ret.errsubtype = rv;
+                log_error ("error during alert device deleting");
+                return ret;
+            }
+        }
+    }
 
     auto reply_delete3 = delete_monitor_asset_relation_by_a
                                                 (conn, element_id);
@@ -480,7 +508,21 @@ db_reply_t
         log_info ("end: error occured during removing ma relation");
         return reply_delete3;
     }
-
+    m_dvc_id_t affected_rows1 = 0;
+    if ( monitor_element_id != 0 )
+    {
+        // if it was in counterpart
+        int rv = delete_disc_device(conn, monitor_element_id, affected_rows1);
+        if ( rv != 0 )
+        {
+            db_reply_t ret = db_reply_new();
+            ret.status = 0;
+            ret.errtype = rv;
+            ret.errsubtype = rv;
+            log_error ("error during monitor device deleting");
+            return ret;
+        }
+    }
     auto reply_delete4 = delete_asset_element (conn, element_id);
     if ( reply_delete4.status == 0 )
     {
@@ -541,8 +583,6 @@ db_reply_t
     LOG_START;
     tntdb::Transaction trans(conn);
 
-    // delete m_a_relation ????
-
     auto reply_delete1 = delete_asset_ext_attributes (conn, element_id);
     if ( reply_delete1.status == 0 )
     {
@@ -559,13 +599,95 @@ db_reply_t
         return reply_delete2;
     }
 
-    // links ????
     auto reply_delete3 = delete_asset_links_all (conn, element_id);
     if ( reply_delete3.status == 0 )
     {
         trans.rollback();
         log_info ("end: error occured during removing links");
         return reply_delete3;
+    }
+
+    { // need to delete all measurements
+        // select all topic_id for the element
+        std::set <a_elmnt_id_t> out{};
+        row_cb_f foo = \
+                       [&out](const tntdb::Row& r)
+                       {
+                           a_elmnt_id_t id = 0;
+                           r["id"].get(id);
+                           out.insert(id);
+                       };
+
+
+        int rv = select_for_element_topics_all(
+                conn, element_id, foo);
+        if ( rv != 0 )
+        {
+            db_reply_t ret = db_reply_new();
+            ret.status = 0;
+            ret.errtype = rv;
+            ret.errsubtype = rv;
+            log_error ("error during topics selecting");
+            return ret;
+        }
+        // delete all measurements for topic and topic itself
+        m_msrmnt_id_t affected_rows = 0;
+        m_msrmnt_tp_id_t affected_rows1 = 0;
+        for ( auto topic_id : out )
+        {
+            log_debug ("  topic_id = %" PRIu32 , topic_id);
+            rv = delete_measurements(conn, topic_id, affected_rows);
+            if ( rv != 0 )
+            {
+                db_reply_t ret = db_reply_new();
+                ret.status = 0;
+                ret.errtype = rv;
+                ret.errsubtype = rv;
+                log_error ("error during measurements deleting");
+                return ret;
+            }
+            rv = delete_measurement_topic(conn, topic_id, affected_rows1);
+            if ( rv != 0 )
+            {
+                db_reply_t ret = db_reply_new();
+                ret.status = 0;
+                ret.errtype = rv;
+                ret.errsubtype = rv;
+                log_error ("error during topic deleting");
+                return ret;
+            }
+        }
+    }
+    // need delete devices from alerts, but alerts will stay in the system
+    m_dvc_id_t monitor_element_id = 0;
+    {
+        // find monitor counterpart
+        int rv = convert_asset_to_monitor(conn, element_id, monitor_element_id);
+        if ( ( rv != 0 ) && ( rv != 1 ) )
+        {
+            db_reply_t ret = db_reply_new();
+            ret.status = 0;
+            ret.errtype = rv;
+            ret.errsubtype = rv;
+            log_error ("error during converting asset to monitor");
+            return ret;
+        }
+        // delete from alert devices
+        if ( rv != 1 )
+        {
+            m_alrtdvc_id_t affected_rows = 0;
+            rv = delete_device_from_alert_device_all
+                (conn, monitor_element_id, affected_rows);
+            if ( rv != 0 )
+            {
+                db_reply_t ret = db_reply_new();
+                ret.status = 0;
+                ret.errtype = rv;
+                ret.errsubtype = rv;
+                log_error ("error during alert device deleting");
+                return ret;
+            }
+        }
     }
 
     auto reply_delete5 = delete_monitor_asset_relation_by_a

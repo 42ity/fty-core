@@ -810,7 +810,7 @@ zmsg_t* _get_last_measurements(const char* url, common_msg_t* getmsg)
 
     m_dvc_id_t device_id_monitor = 0;
     try{
-        device_id_monitor = convert_asset_to_monitor(url, device_id);
+        device_id_monitor = convert_asset_to_monitor_old(url, device_id);
     }
     catch (const bios::MonitorCounterpartNotFound &e){
         log_info ("end: monitor counterpart notfoun");

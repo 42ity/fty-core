@@ -512,10 +512,41 @@ db_reply_t
 }
 
 //=============================================================================
+int
+    delete_device_from_alert_device_all
+        (tntdb::Connection &conn,
+         m_dvc_id_t         device_id,
+         m_alrtdvc_id_t   &affected_rows)
+{
+    LOG_START;
+    log_debug ("  device_id = %" PRIu32, device_id);
+
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " DELETE FROM"
+            "   t_bios_alert_device"
+            " WHERE"
+            "   device_id = :id"
+        );
+
+        affected_rows = st.set("id", device_id).
+                           execute();
+        log_debug ("[t_bios_alert_device]: was deleted %"
+                                        PRIu32 " rows", affected_rows);
+        LOG_END;
+        return 0;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
+}
+
+//=============================================================================
 // TODO this function has a logic and represents one operation.
 // Consider removing conn parametr and moving the function somewhere
 db_reply_t
-    insert_new_alert 
+    insert_new_alert
         (tntdb::Connection  &conn,
          const char         *rule_name,
          a_elmnt_pr_t        priority,
@@ -526,22 +557,22 @@ db_reply_t
          std::vector<std::string> device_names)
 {
     LOG_START;
- 
+
     tntdb::Transaction trans(conn);
 
     // Assumption: devices are in the same DC, so
     // we can take a random one
-    
+
     // find a DC alert belongs to
     a_elmnt_id_t dc_id = 0;
     if ( !device_names.empty() )
     {
-        db_reply <db_a_elmnt_t> rep = select_asset_element_by_name 
+        db_reply <db_a_elmnt_t> rep = select_asset_element_by_name
             (conn, device_names.at(0).c_str());
         if ( rep.status != 1 )
         {
             trans.rollback();
-            log_info ("end: alert was not inserted (fail in determining DC");
+            log_info ("end: alert was not inserted (fail in selecting devices");
             db_reply_t ret;
             ret.msg = rep.msg;
             ret.errtype = rep.errtype;
@@ -549,17 +580,15 @@ db_reply_t
             ret.status = rep.status;
             return ret;
         }
-        else
+        // some element was found
+        reply_t r = select_dc_of_asset_element (conn, rep.item.id, dc_id);
+        if ( r.rv != 0 )
         {
-            reply_t r = select_dc_of_asset_element (conn, rep.item.id, dc_id);
-            if ( r.rv != 0 )
-            {
-                db_reply_t ret;
-                ret.status = 0;
-                ret.errsubtype = r.rv;
-                log_debug ("problems with selecting DC");
-                return ret;
-            }
+            db_reply_t ret;
+            ret.status = 0;
+            ret.errsubtype = r.rv;
+            log_debug ("problems with selecting DC");
+            return ret;
         }
     }
 
@@ -928,6 +957,48 @@ db_reply_t
     ret = update_alert_notification_byId(conn, notification, alert.item.id);
     LOG_END;
     return ret;
+}
+
+int
+    select_alert_by_element_all(
+        tntdb::Connection &conn,
+        a_elmnt_id_t       element_id,
+        std::function<void(
+                const tntdb::Row&
+                )>& cb)
+{
+    LOG_START;
+    try {
+        tntdb::Statement st = conn.prepareCached(
+                " SELECT "
+                "   va.id, va.rule_name, va.priority, va.state, "
+                "   va.description, va.notification, "
+                "   va.date_from, va.date_till "
+                " FROM "
+                "   v_bios_alert va "
+                " INNER JOIN "
+                "   v_bios_alert_device vad "
+                " ON "
+                "   ( va.id = vad.alert_id ) "
+                " INNER JOIN "
+                "   v_bios_monitor_asset_relation vmar "
+                " ON "
+                "   ( vad.device_id = vmar.id_discovered_device AND "
+                "     vmar.id_asset_element = :element ) "
+        );
+        tntdb::Result res = st.set("element", element_id).
+                               select();
+
+        for (const auto& r: res) {
+            cb(r);
+        }
+        LOG_END;
+        return 0;
+    }
+    catch(const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
 }
 
 } // namespace persist

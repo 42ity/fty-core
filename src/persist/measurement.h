@@ -28,7 +28,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <tntdb/connect.h>
 #include <vector>
 
-#include "defs.h"
 #include "dbhelpers.h"
 #include "topic_cache.h"
 
