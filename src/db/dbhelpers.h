@@ -86,7 +86,7 @@ inline db_reply<T> db_reply_new(T& item) {
         .errsubtype = 0,
         .rowid = 0,
         .affected_rows = 0,
-        .msg = NULL,
+        .msg = "",
         .addinfo = NULL,
         .item = item};
 }
