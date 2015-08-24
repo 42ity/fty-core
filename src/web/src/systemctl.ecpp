@@ -49,7 +49,7 @@ static const char *list[] =
 // BIOS services
     "bios-reset-button", "bios-ssh-last-resort", "tntnet@bios", "bios-agent-alert-smtp", "bios-agent-alert", "bios-agent-autoconfig",
     "bios-agent-cm", "bios-agent-dbstore", "bios-agent-inventory", "bios-agent-nut", "bios-agent-th", "bios-agent-tpower", "bios-db-init",
-    "bios-server-agent"
+    "bios-server-agent",
 // NUT services
     "nut-driver", "nut-monitor", "nut-server", 
     NULL
