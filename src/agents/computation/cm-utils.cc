@@ -360,7 +360,7 @@ request_sampled(
             ymsg_set_status (message_out, false);
             message_str.assign ("Element id '").append (std::to_string (element_id)).append ("' does not exist.");
             ymsg_set_errmsg (message_out, message_str.c_str ());
-            return_value = 0;
+            return_value = 2;
             break;
         }
         case 2:
@@ -369,7 +369,7 @@ request_sampled(
             ymsg_set_status (message_out, false);
             message_str.assign ("Topic '").append (topic).append ("' does not exist for element id '").append (std::to_string (element_id)).append ("'");
             ymsg_set_errmsg (message_out, message_str.c_str ());
-            return_value = 0;
+            return_value = 1;
             break;
         }
         case -1:
@@ -379,7 +379,7 @@ request_sampled(
                     element_id, topic, start_timestamp, end_timestamp);
             ymsg_set_status (message_out, false);
             ymsg_set_errmsg (message_out, "Internal error: Extracting data from database failed.");
-            return_value = 0;
+            return_value = -2;
             break;
         }
     }

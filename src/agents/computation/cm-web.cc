@@ -126,9 +126,28 @@ process
                           "<Timestamp of last stored average, end_timestamp + nut_repeat_interval> which is "
                           "<%" PRId64", %" PRId64">.",
                           last_average_ts, start_ts, start_sampled_ts, end_ts + AGENT_NUT_REPEAT_INTERVAL_SEC);
-                if (!request_sampled (conn, element_id, source, start_sampled_ts,
-                                      end_ts + AGENT_NUT_REPEAT_INTERVAL_SEC, samples, unit, *message_out)) {
-                    log_warning ("request_sampled () failed!");
+                int rv = request_sampled (conn, element_id, source, start_sampled_ts,
+                                      end_ts + AGENT_NUT_REPEAT_INTERVAL_SEC, samples, unit, *message_out);
+                if ( rv == 1 )
+                {
+                    // if there is no measurements -> nothing to compute ->status = ok
+                    ymsg_set_status (*message_out, true);
+                    // no error messages in this case
+                    ymsg_set_errmsg (*message_out, "");
+                    // TODO JSON DOESNT HAVE  THIS FORMAT
+                    json_out.replace (json_out.find ("##UNITS##"), strlen ("##UNITS##"), "");
+                    json_out.replace (json_out.find ("##DATA##"), strlen ("##DATA##"), "");
+                    log_debug ("json that goes to output:\n%s", json_out.c_str ());
+                    zchunk_t *chunk = zchunk_new (json_out.c_str(), json_out.size());
+                    assert (chunk);
+                    ymsg_set_response (*message_out, &chunk);
+
+                    log_info ("nothing to compute");
+                    return;
+                }
+                if ( rv != 0 )
+                {
+                    log_info ("request_sampled () failed!");
                     return;
                 }
             }
