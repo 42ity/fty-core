@@ -157,7 +157,7 @@
     if (rv != 0) {
 </%cpp>
         {
-            "msg" : "bios_web_average_request_encode() failed."
+            "msg" : "bios_web_average_send_to() failed."
         }
 <%cpp>
         bios_agent_destroy (&agent);
@@ -165,7 +165,6 @@
     }
 
     msg = bios_agent_recv (agent);
-    _scoped_char *json = NULL;
     if (msg == NULL) {
 </%cpp>
         {
@@ -191,6 +190,7 @@
         return HTTP_INTERNAL_SERVER_ERROR;
     }
 
+    _scoped_char *json = NULL;
     rv = bios_web_average_reply_extract (msg, &json);
     ymsg_destroy (&msg);
     if (rv != 0) {
