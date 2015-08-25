@@ -591,7 +591,7 @@ TEST_CASE("t_bios_alert INSERT Fail #7","[db][CRUD][insert][alert][crud_test.sql
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.errtype == DB_ERR );
     REQUIRE ( reply_insert.errsubtype == DB_ERROR_BADINPUT );
-    REQUIRE ( reply_insert.msg.empty() );
+    REQUIRE ( reply_insert.msg == "rule name is invalid" );
 
     log_close();
 }
