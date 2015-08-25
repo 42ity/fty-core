@@ -16,10 +16,13 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
+#include <string>
 #include <stdexcept>
+#include <map>
 #include <tntdb/connect.h>
 
-#include "bios_agent.h"
+#include "cm-web.h"
+
 #include "agents.h"
 #include "defs.h"
 #include "log.h"
@@ -29,7 +32,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "utils_ymsg++.h"
 #include "db/measurements.h"
 #include "cm-utils.h"
-#include "cm-web.h"
 #include "cleanup.h"
 #include "utils++.h"
 #include "dbpath.h"

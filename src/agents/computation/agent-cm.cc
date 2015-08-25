@@ -30,6 +30,7 @@
 #include <string>
 #include <sstream>
 #include <functional>
+#include <map>
 
 #include <czmq.h>
 
