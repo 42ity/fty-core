@@ -22,7 +22,7 @@
  * \author Karol Hrdina <KarolHrdina@Eaton.com>
  * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \author Jim Klimov <EvgenyKlimov@Eaton.com>
- * \brief Not yet documented file
+ * \brief  Implementation of REST API call average/min/max
  */
  #><%pre>
 #include <iostream>
@@ -40,6 +40,7 @@
 #include "bios_agent.h"
 #include "agents.h"
 #include "ymsg.h"
+#include "log.h"
 #include "str_defs.h"
 #include "utils_ymsg.h"
 #include "cleanup.h"
@@ -57,7 +58,7 @@
 
     int64_t st;
     int64_t end;
-    uint64_t eid;
+    uint32_t eid;
     std::string strmsg;
     try {
         // check both start_ts and end_ts
@@ -97,12 +98,16 @@
         if (element_id.empty()) {
             throw std::invalid_argument ("Mandatory argument 'element_id' not specified.");
         }
-        eid = std::stoull (element_id);
+        size_t pos = 0;
+        eid = std::stoul (element_id, &pos);
+        if ( pos != 0 ) {
+            throw std::invalid_argument ("Parameter 'element_id' is malformed.");
+        }
     }
     catch (const std::logic_error& e) { // invalid_argument, length_error, out_of_range
 </%cpp>
         {
-            "msg" : "<$ e.what () $>"
+            "msg" : "<$$ e.what () $>"
         }
 <%cpp>
         return HTTP_BAD_REQUEST;
@@ -110,7 +115,7 @@
     catch (const std::exception& e) {
 </%cpp>
         {
-            "msg" : "<$ e.what () $>"
+            "msg" : "<$$ e.what () $>"
         }
 <%cpp>
         return HTTP_INTERNAL_SERVER_ERROR;
@@ -145,7 +150,7 @@
 <%cpp>
         bios_agent_destroy (&agent);
         return HTTP_INTERNAL_SERVER_ERROR;
-    
+
     }
 
     int rv = bios_agent_sendto (agent, BIOS_AGENT_NAME_COMPUTATION, "metric/computed/average", &msg);
@@ -174,11 +179,11 @@
     if (!ymsg_is_ok (msg)) {
         if (ymsg_errmsg (msg))
             strmsg.assign (ymsg_errmsg (msg));
-        else    
+        else
             strmsg.assign ("Error requesting average data.");
 </%cpp>
         {
-            "msg" : "<$ strmsg $>"
+            "msg" : "<$$ strmsg $>"
         }
 <%cpp>
         ymsg_destroy (&msg);
