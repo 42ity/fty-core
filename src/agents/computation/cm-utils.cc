@@ -329,9 +329,16 @@ request_averages(
 }
 
 int
-request_sampled
-(tntdb::Connection& conn, int64_t element_id, const char *topic, int64_t start_timestamp, int64_t end_timestamp,
-  std::map<int64_t, double>& samples, std::string& unit, ymsg_t *message_out) {
+request_sampled(
+    tntdb::Connection &conn,
+    int64_t            element_id,
+    const char        *topic,
+    int64_t            start_timestamp,
+    int64_t            end_timestamp,
+    std::map<int64_t, double> &samples,
+    std::string       &unit,
+    ymsg_t            *message_out)
+{
     assert (topic);
     assert (message_out);
 
