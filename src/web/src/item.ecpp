@@ -39,11 +39,11 @@ static std::string
         const std::string &msg,
         int                code)
 {
-    std::string s = "{\n\t\"errors\": [\n\t\t\"message\" : \"";
+    std::string s = "{\n\t\"errors\": [\n\t  {\n\t\t\"message\" : \"";
     s+=msg;
     s+="\",\n\t\t\"code\" : ";
     s+=std::to_string(code);
-    s+="\n\t]\n}";
+    s+="\n\t  }\n\t]\n}";
     return s;
 }
 </%pre>
@@ -156,7 +156,7 @@ asset_manager asset_mgr;
             (tmp.item.basic.type_id != asset_mgr.type_to_byte(typeNameArg) ) )
         {
 </%cpp>
-<$$ create_error_json("Asset not found", 57) $>
+<$$ create_error_json("Specified asset type in url doesn't match actual asset type in db", 63) $>
 <%cpp>
             return HTTP_NOT_FOUND;
         }
