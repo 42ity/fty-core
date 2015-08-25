@@ -34,7 +34,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "csv.h"
 #include "log.h"
 #include "assetcrud.h"
-#include "asset_types.h"
 #include "dbpath.h"
 #include "cleanup.h"
 #include "db/asset_general.h"
@@ -178,7 +177,7 @@ int
  * \param cm - already parsed csv file
  * \param row_i - number of row to process
  */
-static db_a_elmnt_t
+static std::pair<db_a_elmnt_t, asset_type::asset_operation>
     process_row
         (tntdb::Connection &conn,
          CsvMap cm,
@@ -202,6 +201,7 @@ static db_a_elmnt_t
     // because id is definitely not an external attribute
     auto id_str = unused_columns.count("id") ? cm.get(row_i, "id") : "";
     unused_columns.erase("id");
+    asset_type::asset_operation operation = asset_type::asset_operation::INSERT;
     a_elmnt_id_t id = 0;
     if ( !id_str.empty() )
     {
@@ -209,6 +209,7 @@ static db_a_elmnt_t
         if ( ids.count(id) == 1 )
             throw std::invalid_argument("Second time during the import you are trying to update the element with id "+ id_str);
         ids.insert(id);
+        operation = asset_type::asset_operation::UPDATE;
     }
 
     auto name = cm.get(row_i, "name");
@@ -596,7 +597,7 @@ static db_a_elmnt_t
     m.asset_tag = asset_tag;
 
     LOG_END;
-    return m;
+    return std::make_pair(m, operation) ;
 }
 
 
@@ -631,7 +632,7 @@ mandatory_missing
 void
     load_asset_csv
         (std::istream& input,
-         std::vector <db_a_elmnt_t> &okRows,
+         std::vector <std::pair<db_a_elmnt_t,asset_type::asset_operation>> &okRows,
          std::map <int, std::string> &failRows)
 {
     LOG_START;
@@ -641,7 +642,7 @@ void
     char delimiter = findDelimiter(input);
     if (delimiter == '\x0') {
         std::string msg{"Cannot detect the delimiter, use comma (,) semicolon (;) or tabulator"};
-        log_error("%s\n", msg.c_str());
+        log_error("%s", msg.c_str());
         LOG_END;
         throw std::invalid_argument(msg.c_str());
     }

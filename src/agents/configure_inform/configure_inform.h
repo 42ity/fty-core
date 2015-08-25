@@ -27,16 +27,22 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <vector>
 
 #include "dbhelpers.h"
+#include "asset_types.h"
 #include "log.h"
 
 void
     send_configure (
-        std::vector<db_a_elmnt_t> rows,
-        uint8_t action_type,
+        const std::vector <std::pair
+            <db_a_elmnt_t, asset_type::asset_operation>> &rows,
         const std::string &agent_name);
 
 void
     send_configure (
-        db_a_elmnt_t row,
-        uint8_t action_type,
+        const db_a_elmnt_t row,
+        asset_type::asset_operation action_type,
+        const std::string &agent_name);
+
+void
+    send_configure (
+        const std::pair<db_a_elmnt_t, asset_type::asset_operation> row,
         const std::string &agent_name);

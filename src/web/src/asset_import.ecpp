@@ -74,7 +74,7 @@ if (it == mp.end()) {
 try {
     shared::convert_file(it->getBodyBegin(), it->getBodyEnd(), path_p);
     std::ifstream inp{path_p};
-    std::vector<db_a_elmnt_t> okRows{};
+    std::vector <std::pair<db_a_elmnt_t,asset_type::asset_operation>> okRows{};
     std::map<int,std::string> failRows{};
     persist::load_asset_csv(inp, okRows, failRows);
     inp.close();
@@ -89,7 +89,7 @@ try {
     //                user will never know what was actually imported or not
     // TODO get rid of hardcoded constants
     std::string agent_name("TEMP_CONFIGURE_INFORM_AGENT");
-    send_configure (okRows, asset_type::asset_operation::INSERT, agent_name);
+    send_configure (okRows, agent_name);
 </%cpp>
 {
     "imported_lines" : <$$ okRows.size() $>,
