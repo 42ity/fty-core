@@ -100,7 +100,7 @@
         }
         size_t pos = 0;
         eid = std::stoul (element_id, &pos);
-        if ( pos != 0 ) {
+        if ( pos != element_id.size() ) {
             throw std::invalid_argument ("Parameter 'element_id' is malformed.");
         }
     }
