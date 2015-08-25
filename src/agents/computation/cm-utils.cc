@@ -267,9 +267,19 @@ check_completeness
 }
 
 int
-request_averages
-(tntdb::Connection& conn, int64_t element_id, const char *source, const char *type, const char *step, int64_t start_timestamp, int64_t end_timestamp,
- std::map<int64_t, double>& averages, std::string& unit, int64_t& last_average_timestamp, ymsg_t *message_out) {
+request_averages(
+    tntdb::Connection &conn,
+    int64_t            element_id,
+    const char        *source,
+    const char        *type,
+    const char        *step,
+    int64_t            start_timestamp,
+    int64_t            end_timestamp,
+    std::map<int64_t, double> &averages,
+    std::string       &unit,
+    int64_t           &last_average_timestamp,
+    ymsg_t            *message_out)
+{
     assert (source);
     assert (type);
     assert (step);
@@ -319,9 +329,16 @@ request_averages
 }
 
 int
-request_sampled
-(tntdb::Connection& conn, int64_t element_id, const char *topic, int64_t start_timestamp, int64_t end_timestamp,
-  std::map<int64_t, double>& samples, std::string& unit, ymsg_t *message_out) {
+request_sampled(
+    tntdb::Connection &conn,
+    int64_t            element_id,
+    const char        *topic,
+    int64_t            start_timestamp,
+    int64_t            end_timestamp,
+    std::map<int64_t, double> &samples,
+    std::string       &unit,
+    ymsg_t            *message_out)
+{
     assert (topic);
     assert (message_out);
 
@@ -343,7 +360,7 @@ request_sampled
             ymsg_set_status (message_out, false);
             message_str.assign ("Element id '").append (std::to_string (element_id)).append ("' does not exist.");
             ymsg_set_errmsg (message_out, message_str.c_str ());
-            return_value = 0;
+            return_value = 2;
             break;
         }
         case 2:
@@ -352,7 +369,7 @@ request_sampled
             ymsg_set_status (message_out, false);
             message_str.assign ("Topic '").append (topic).append ("' does not exist for element id '").append (std::to_string (element_id)).append ("'");
             ymsg_set_errmsg (message_out, message_str.c_str ());
-            return_value = 0;
+            return_value = 1;
             break;
         }
         case -1:
@@ -362,7 +379,7 @@ request_sampled
                     element_id, topic, start_timestamp, end_timestamp);
             ymsg_set_status (message_out, false);
             ymsg_set_errmsg (message_out, "Internal error: Extracting data from database failed.");
-            return_value = 0;
+            return_value = -2;
             break;
         }
     }

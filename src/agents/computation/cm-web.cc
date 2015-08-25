@@ -16,10 +16,13 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
+#include <string>
 #include <stdexcept>
+#include <map>
 #include <tntdb/connect.h>
 
-#include "bios_agent.h"
+#include "cm-web.h"
+
 #include "agents.h"
 #include "defs.h"
 #include "log.h"
@@ -29,7 +32,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "utils_ymsg++.h"
 #include "db/measurements.h"
 #include "cm-utils.h"
-#include "cm-web.h"
 #include "cleanup.h"
 #include "utils++.h"
 #include "dbpath.h"
@@ -51,7 +53,7 @@ process
 
     try {
         tntdb::Connection conn = tntdb::connectCached (url);
-        if (!conn || !conn.ping ()) {
+        if ( !conn.ping ()) {
             throw std::runtime_error ("tntdb::connectCached () failed.");
         }
 
@@ -71,16 +73,6 @@ process
             ymsg_set_status (*message_out, false);
             ymsg_set_errmsg (*message_out, "Requested average 'type' or 'step' not supported.");
             return;
-        }
-
-        // Resolve device name from element id        
-        std::string device_name;
-        {
-            auto ret = persist::select_device_name_from_element_id (conn, element_id, device_name);
-            if (ret.rv != 0)
-                log_error ("Could not resolve device name from element id: '%" PRId64"'. Therefore it is not possible to publish computed values on stream.", element_id);
-            else
-                log_info ("Device name resolved from element id: '%" PRId64"' is '%s'.", element_id, device_name.c_str ());
         }
         
         // First, try to request the averages
@@ -134,9 +126,28 @@ process
                           "<Timestamp of last stored average, end_timestamp + nut_repeat_interval> which is "
                           "<%" PRId64", %" PRId64">.",
                           last_average_ts, start_ts, start_sampled_ts, end_ts + AGENT_NUT_REPEAT_INTERVAL_SEC);
-                if (!request_sampled (conn, element_id, source, start_sampled_ts,
-                                      end_ts + AGENT_NUT_REPEAT_INTERVAL_SEC, samples, unit, *message_out)) {
-                    log_warning ("request_sampled () failed!");
+                int rv = request_sampled (conn, element_id, source, start_sampled_ts,
+                                      end_ts + AGENT_NUT_REPEAT_INTERVAL_SEC, samples, unit, *message_out);
+                if ( rv == 1 )
+                {
+                    // if there is no measurements -> nothing to compute ->status = ok
+                    ymsg_set_status (*message_out, true);
+                    // no error messages in this case
+                    ymsg_set_errmsg (*message_out, "");
+                    // TODO JSON DOESNT HAVE  THIS FORMAT
+                    json_out.replace (json_out.find ("##UNITS##"), strlen ("##UNITS##"), "");
+                    json_out.replace (json_out.find ("##DATA##"), strlen ("##DATA##"), "");
+                    log_debug ("json that goes to output:\n%s", json_out.c_str ());
+                    zchunk_t *chunk = zchunk_new (json_out.c_str(), json_out.size());
+                    assert (chunk);
+                    ymsg_set_response (*message_out, &chunk);
+
+                    log_info ("nothing to compute");
+                    return;
+                }
+                if ( rv != 0 )
+                {
+                    log_info ("request_sampled () failed!");
                     return;
                 }
             }
@@ -207,6 +218,17 @@ process
 
                 log_debug ("Starting computation from sampled data. first_ts: %" PRId64"\tsecond_ts: %" PRId64"\tend_ts:%" PRId64,
                            first_ts, second_ts, end_ts);
+                
+                // Resolve device name from element id        
+                std::string device_name;
+                {
+                    auto ret = persist::select_device_name_from_element_id (conn, element_id, device_name);
+                    if (ret.rv != 0)
+                        log_error ("Could not resolve device name from element id: '%" PRId64"'. Therefore it is not possible to publish computed values on stream.", element_id);
+                    else
+                        log_info ("Device name resolved from element id: '%" PRId64"' is '%s'.", element_id, device_name.c_str ());
+                }
+
                 while (second_ts <= end_ts) {
                     std::string item = BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL;
                     log_debug ("Calling calculate (start = '%" PRId64"', end = '%" PRId64"', type = '%s')", first_ts, second_ts, type);
