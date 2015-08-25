@@ -23,7 +23,7 @@
  * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \author Karol Hrdina <KarolHrdina@Eaton.com>
  * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
- * \brief Not yet documented file
+ * \brief Implementation of CRUD operation on any asset
  */
  #><%pre>
 #include <czmq.h>
