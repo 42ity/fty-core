@@ -26,7 +26,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include <iostream>
 #include <vector>
+#include <string>
 #include <map>
+#include "asset_types.h"
 
 #include "dbhelpers.h"
 namespace persist {
@@ -73,7 +75,7 @@ bool
 void
     load_asset_csv
         (std::istream& input,
-         std::vector <db_a_elmnt_t> &okRows,
+         std::vector <std::pair<db_a_elmnt_t,asset_type::asset_operation>> &okRows,
          std::map <int, std::string> &failRows);
 
 /** \brief export csv file and write result to output stream

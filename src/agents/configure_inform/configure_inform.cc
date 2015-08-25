@@ -27,8 +27,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 void
     send_configure (
-        std::vector<db_a_elmnt_t> rows,
-        uint8_t action_type,
+        const std::vector <std::pair<db_a_elmnt_t,asset_type::asset_operation>> &rows,
         const std::string &agent_name)
 {
     bios_agent_t *agent = bios_agent_new (MLM_ENDPOINT, agent_name.c_str ());
@@ -38,15 +37,15 @@ void
     bios_agent_set_producer (agent, bios_get_stream_main());
     for ( auto &oneRow : rows )
     {
-        ymsg_t *msg = bios_asset_encode (oneRow.name.c_str(), oneRow.type_id,
-		oneRow.subtype_id, oneRow.parent_id, oneRow.status.c_str(),
-		oneRow.priority, action_type);
+        ymsg_t *msg = bios_asset_encode (oneRow.first.name.c_str(), oneRow.first.type_id,
+		oneRow.first.subtype_id, oneRow.first.parent_id, oneRow.first.status.c_str(),
+		oneRow.first.priority, oneRow.second);
         if ( msg == NULL )
         {
             bios_agent_destroy (&agent);
             throw std::runtime_error("bios_asset_encode () failed.");
         }
-        const std::string topic = "configure@" + oneRow.name;
+        const std::string topic = "configure@" + oneRow.first.name;
         int rv = bios_agent_send (agent, topic.c_str(), &msg);
         if ( rv != 0 )
         {
@@ -60,8 +59,16 @@ void
 void
     send_configure (
         db_a_elmnt_t row,
-        uint8_t action_type,
+        asset_type::asset_operation action_type,
         const std::string &agent_name)
 {
-    send_configure(std::vector<db_a_elmnt_t>{row},action_type, agent_name);
+    send_configure(std::vector<std::pair<db_a_elmnt_t,asset_type::asset_operation>>{std::make_pair(row, action_type)}, agent_name);
+}
+
+void
+    send_configure (
+        const std::pair<db_a_elmnt_t, asset_type::asset_operation> row,
+        const std::string &agent_name)
+{
+    send_configure(std::vector<std::pair<db_a_elmnt_t,asset_type::asset_operation>>{row}, agent_name);
 }
