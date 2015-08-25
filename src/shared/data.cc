@@ -278,7 +278,7 @@ db_reply <db_web_element_t>
             log_warning (ret.msg.c_str());
             return ret;
         }
-        log_debug ("    and there were no errors");
+        log_debug ("    1/4 no errors");
         ret.item.basic = basic_ret.item;
 
         auto ext_ret = persist::select_ext_attributes(conn, real_id);
@@ -293,7 +293,7 @@ db_reply <db_web_element_t>
             log_warning (ret.msg.c_str());
             return ret;
         }
-        log_debug ("    and there were no errors");
+        log_debug ("    2/4 no errors");
         ret.item.ext = ext_ret.item;
 
         auto group_ret = persist::select_asset_element_groups(conn, real_id);
@@ -308,7 +308,7 @@ db_reply <db_web_element_t>
             log_warning (ret.msg.c_str());
             return ret;
         }
-        log_debug ("    and there were no errors");
+        log_debug ("    3/4 no errors");
         ret.item.groups = group_ret.item;
 
         if ( ret.item.basic.type_id == asset_type::DEVICE )
@@ -325,7 +325,7 @@ db_reply <db_web_element_t>
                 log_warning (ret.msg.c_str());
                 return ret;
             }
-            log_debug ("    and there were no errors");
+            log_debug ("    4/4 no errors");
             ret.item.powers = powers.item;
         }
 
