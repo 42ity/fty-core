@@ -267,9 +267,19 @@ check_completeness
 }
 
 int
-request_averages
-(tntdb::Connection& conn, int64_t element_id, const char *source, const char *type, const char *step, int64_t start_timestamp, int64_t end_timestamp,
- std::map<int64_t, double>& averages, std::string& unit, int64_t& last_average_timestamp, ymsg_t *message_out) {
+request_averages(
+    tntdb::Connection &conn,
+    int64_t            element_id,
+    const char        *source,
+    const char        *type,
+    const char        *step,
+    int64_t            start_timestamp,
+    int64_t            end_timestamp,
+    std::map<int64_t, double> &averages,
+    std::string       &unit,
+    int64_t           &last_average_timestamp,
+    ymsg_t            *message_out)
+{
     assert (source);
     assert (type);
     assert (step);
