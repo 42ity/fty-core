@@ -62,6 +62,7 @@ class NUTConfigurator : public Configurator {
     bool canSnmp( const std::vector<std::string> &texts);
     bool canXml( const std::vector<std::string> &texts);
     std::vector<std::string>::const_iterator getBestSnmpMib( const std::vector<std::string> &configs);
+    void systemctl( const std::string &operation, const std::string &service );
 };
 
 class ConfigFactory {

@@ -106,6 +106,23 @@ std::vector<std::string>::const_iterator NUTConfigurator::selectBest(const std::
     }
 };
 
+void NUTConfigurator::systemctl( const std::string &operation, const std::string &service )
+{
+    std::vector<std::string> _argv = {"systemctl", operation, service };
+    shared::SubProcess systemd( _argv );
+    if( systemd.run() ) {
+        int result = systemd.wait();
+        log_info("systemctl %s %s result: %i (%s)",
+                 operation.c_str(),
+                 service.c_str(),
+                 result,
+                 (result == 0 ? "ok" : "failed"));
+    } else {
+        log_error("can't run systemctl %s %s command",
+                  operation.c_str(),
+                  service.c_str() );
+    }
+}
 
 void NUTConfigurator::updateNUTConfig() {
     std::ofstream cfgFile;
@@ -125,18 +142,6 @@ void NUTConfigurator::updateNUTConfig() {
         device.close();
     }
     cfgFile.close();
-    
-    std::vector<std::string> services = {"nut-driver","nut-server"};
-    for( auto &service : services ) {
-        std::vector<std::string> _argv = {"systemctl", "restart", service };
-        shared::SubProcess systemd( _argv );
-        if( systemd.run() ) {
-            int restart = systemd.wait();
-            log_debug("%s restart result: %i (%s)", service.c_str(), restart, (restart == 0 ? "ok" : "failed"));
-        } else {
-            log_debug("can't run systemctl command");
-        }
-    }
 }
 
 bool NUTConfigurator::configure( const std::string &name, const AutoConfigurationInfo info ) {
@@ -170,6 +175,9 @@ bool NUTConfigurator::configure( const std::string &name, const AutoConfiguratio
             cfgFile << *it;
             cfgFile.close();
             updateNUTConfig();
+            systemctl("enable",  std::string("nut-driver@") + name);
+            systemctl("restart", std::string("nut-driver@") + name);
+            systemctl("restart", "nut-server");
             return true;
         }
     case asset_operation::DELETE:
@@ -181,6 +189,9 @@ bool NUTConfigurator::configure( const std::string &name, const AutoConfiguratio
                 + name;
             remove( fileName.c_str() );
             updateNUTConfig();
+            systemctl("stop",    std::string("nut-driver@") + name);
+            systemctl("disable", std::string("nut-driver@") + name);
+            systemctl("restart", "nut-server");
             return true;
         }
     default:
