@@ -51,7 +51,7 @@ process
 
     try {
         tntdb::Connection conn = tntdb::connectCached (url);
-        if (!conn || !conn.ping ()) {
+        if ( !conn.ping ()) {
             throw std::runtime_error ("tntdb::connectCached () failed.");
         }
 
@@ -71,16 +71,6 @@ process
             ymsg_set_status (*message_out, false);
             ymsg_set_errmsg (*message_out, "Requested average 'type' or 'step' not supported.");
             return;
-        }
-
-        // Resolve device name from element id        
-        std::string device_name;
-        {
-            auto ret = persist::select_device_name_from_element_id (conn, element_id, device_name);
-            if (ret.rv != 0)
-                log_error ("Could not resolve device name from element id: '%" PRId64"'. Therefore it is not possible to publish computed values on stream.", element_id);
-            else
-                log_info ("Device name resolved from element id: '%" PRId64"' is '%s'.", element_id, device_name.c_str ());
         }
         
         // First, try to request the averages
@@ -207,6 +197,17 @@ process
 
                 log_debug ("Starting computation from sampled data. first_ts: %" PRId64"\tsecond_ts: %" PRId64"\tend_ts:%" PRId64,
                            first_ts, second_ts, end_ts);
+                
+                // Resolve device name from element id        
+                std::string device_name;
+                {
+                    auto ret = persist::select_device_name_from_element_id (conn, element_id, device_name);
+                    if (ret.rv != 0)
+                        log_error ("Could not resolve device name from element id: '%" PRId64"'. Therefore it is not possible to publish computed values on stream.", element_id);
+                    else
+                        log_info ("Device name resolved from element id: '%" PRId64"' is '%s'.", element_id, device_name.c_str ());
+                }
+
                 while (second_ts <= end_ts) {
                     std::string item = BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL;
                     log_debug ("Calling calculate (start = '%" PRId64"', end = '%" PRId64"', type = '%s')", first_ts, second_ts, type);
