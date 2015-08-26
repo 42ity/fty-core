@@ -75,4 +75,9 @@ class ui_props_manager {
         std::string agent_name(void);
 };
 
+std::string
+    create_error_json(
+        const std::string &msg,
+        int                code);
+
 #endif // SRC_SHARED_DATA_H
