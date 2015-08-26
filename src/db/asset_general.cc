@@ -401,7 +401,7 @@ db_reply_t
     tntdb::Transaction trans(conn);
 
     auto reply_delete1 = delete_asset_ext_attributes (conn, element_id);
-    if ( reply_delete1.affected_rows == 0 )
+    if ( reply_delete1.status == 0 )
     {
         trans.rollback();
         log_info ("end: error occured during deleting ext attributes");

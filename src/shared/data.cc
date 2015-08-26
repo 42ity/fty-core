@@ -267,7 +267,7 @@ db_reply <db_web_element_t>
         log_debug ("connection was successful");
 
         auto basic_ret = persist::select_asset_element_web_byId(conn, real_id);
-        log_debug ("basic select is done");
+        log_debug ("1/4 basic select is done");
 
         if ( basic_ret.status == 0 )
         {
@@ -278,11 +278,11 @@ db_reply <db_web_element_t>
             log_warning (ret.msg.c_str());
             return ret;
         }
-        log_debug (" and there were no errors");
+        log_debug ("    1/4 no errors");
         ret.item.basic = basic_ret.item;
 
         auto ext_ret = persist::select_ext_attributes(conn, real_id);
-        log_debug ("ext select is done");
+        log_debug ("2/4 ext select is done");
 
         if ( ext_ret.status == 0 )
         {
@@ -293,11 +293,11 @@ db_reply <db_web_element_t>
             log_warning (ret.msg.c_str());
             return ret;
         }
-        log_debug (" and there were no errors");
+        log_debug ("    2/4 no errors");
         ret.item.ext = ext_ret.item;
 
         auto group_ret = persist::select_asset_element_groups(conn, real_id);
-        log_debug ("groups select is done");
+        log_debug ("3/4 groups select is done, but next one is only for devices");
 
         if ( group_ret.status == 0 )
         {
@@ -308,13 +308,13 @@ db_reply <db_web_element_t>
             log_warning (ret.msg.c_str());
             return ret;
         }
-        log_debug (" and there were no errors");
+        log_debug ("    3/4 no errors");
         ret.item.groups = group_ret.item;
 
         if ( ret.item.basic.type_id == asset_type::DEVICE )
         {
             auto powers = persist::select_asset_device_links_to (conn, real_id, INPUT_POWER_CHAIN);
-            log_debug ("powers select is done");
+            log_debug ("4/4 powers select is done");
 
             if ( powers.status == 0 )
             {
@@ -325,7 +325,7 @@ db_reply <db_web_element_t>
                 log_warning (ret.msg.c_str());
                 return ret;
             }
-            log_debug (" and there were no errors");
+            log_debug ("    4/4 no errors");
             ret.item.powers = powers.item;
         }
 
