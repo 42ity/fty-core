@@ -144,6 +144,13 @@ install_package_set_biosdeps() {
     fi
 }
 
+restore_ssh_service() {
+    systemctl stop ssh.socket
+    systemctl mask ssh.socket
+    systemctl unmask ssh.service
+    systemctl start ssh.service
+}
+
 update_system() {
     update_pkg_keys
     update_pkg_metadata
@@ -154,6 +161,7 @@ update_system() {
     install_package_set_dev
     install_package_set_biosdeps
     limit_packages_forceremove
+    restore_ssh_service
 }
 
 export DEBIAN_FRONTEND=noninteractive
