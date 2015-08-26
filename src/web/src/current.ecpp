@@ -46,26 +46,43 @@
 <%thread scope="global">
 measures_manager mes_mgr;
 </%thread>
+
 <%args>
 std::string dev;
 </%args>
+
 <%cpp>
-    // Check URL validity
-    std::vector<std::string> devices;
-    cxxtools::split(",", dev, std::back_inserter(devices));
-    if(devices.empty()) {
+{
+    // check if method is allowed
+    if ( !request.isMethodGET() )
+    {
 </%cpp>
-{ "error":"bad_input" }
+<$$ create_error_json("Not implemented", 100) $>
+<%cpp>
+        return HTTP_NOT_IMPLEMENTED;
+    }
+
+    // Check URL validity
+    std::vector<std::string> asset_ids;
+    cxxtools::split(",", dev, std::back_inserter(asset_ids));
+    if ( asset_ids.empty() )
+    {
+</%cpp>
+<$$ create_error_json("Invalid url (missing id parameter)", 56) $>
 <%cpp>
         return HTTP_BAD_REQUEST;
     }
+
     std::vector<std::string> measure;
-    for(auto i : devices) {
-        errno = 0;
-        uint32_t id = strtol(i.c_str(), NULL, 10);
-        if(errno != 0) {
+    for ( auto asset_id : asset_ids) {
+        size_t pos = 0;
+        a_elmnt_id_t id = std::stoul (asset_id, &pos);
+        if ( pos != asset_id.size() )
+        {
+            // if at least one id is malformed then all request
+            // would be rejected
 </%cpp>
-{ "error":"bad_input" }
+<$$ create_error_json("One id in the list is malformed", 200) $>
 <%cpp>
             return HTTP_BAD_REQUEST;
         }
@@ -168,3 +185,4 @@ std::string dev;
 %   }
    ]
 }
+%}
