@@ -461,3 +461,17 @@ db_reply_t
         return ret;
     }
 }
+
+
+std::string
+    create_error_json(
+        const std::string &msg,
+        int                code)
+{
+    std::string s = "{\n\t\"errors\": [\n\t  {\n\t\t\"message\" : \"";
+    s+=msg;
+    s+="\",\n\t\t\"code\" : ";
+    s+=std::to_string(code);
+    s+="\n\t  }\n\t]\n}";
+    return s;
+}
