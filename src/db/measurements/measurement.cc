@@ -31,7 +31,6 @@
 #include "log.h"
 #include "cleanup.h"
 #include "utils.h"
-#include "dbtypes.h"
 #include "defs.h"
 
 #include "measurement.h"
