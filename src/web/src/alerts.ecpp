@@ -78,7 +78,7 @@
         "description" : "<$$ i.description $>",
         "state" : "<$$ alert_state_to_str(static_cast<alert_state_t>(i.alert_state)) $>",
         "last_state_ts" : null
-    }<$ cnt != db_reply.item.size() ? ',' : ' ' $>
+    }<$$ cnt != db_reply.item.size() ? ',' : ' ' $>
 %}
   ]
 }
