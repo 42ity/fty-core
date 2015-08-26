@@ -21,20 +21,19 @@
  * \file asset_import.ecpp
  * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
  * \author Alena Chernikava <AlenaChernikava@Eaton.com>
- * \brief Not yet documented file
+ * \brief  REST API call for import assets from csv file
  */
  #><%pre>
 #include <string>
 #include <stdexcept>
 #include <cxxtools/jsondeserializer.h>
 #include <fstream>
-
+#include <sys/syscall.h>
 #include <cstring>
 
 #include "log.h"
 #include "db/inout.h"
 #include "bios-magic.h"
-#include "asset_types.h"
 #include "configure_inform.h"
 
 </%pre>
@@ -74,7 +73,7 @@ if (it == mp.end()) {
 try {
     shared::convert_file(it->getBodyBegin(), it->getBodyEnd(), path_p);
     std::ifstream inp{path_p};
-    std::vector<db_a_elmnt_t> okRows{};
+    std::vector <std::pair<db_a_elmnt_t,asset_type::asset_operation>> okRows{};
     std::map<int,std::string> failRows{};
     persist::load_asset_csv(inp, okRows, failRows);
     inp.close();
@@ -87,9 +86,14 @@ try {
     // ATTENTION:  1. sending messages is "hidden functionality" from user
     //             2. if any error would occur during the sending message,
     //                user will never know what was actually imported or not
-    // TODO get rid of hardcoded constants
+    // in theory 
+    // this code can be executed in multiple threads -> agent's name should
+    // be unique at the every moment
     std::string agent_name("TEMP_CONFIGURE_INFORM_AGENT");
-    send_configure (okRows, asset_type::asset_operation::INSERT, agent_name);
+    agent_name.append (std::to_string ( static_cast<int> (getpid ()) ))
+              .append (".")
+              .append (std::to_string ( syscall(SYS_gettid) ));
+    send_configure (okRows, agent_name);
 </%cpp>
 {
     "imported_lines" : <$$ okRows.size() $>,
@@ -100,7 +104,7 @@ try {
     {
         cnt++;
 </%cpp>
-            [ <$$ oneRow.first$>, "<$$ oneRow.second.c_str()$>"]<$ cnt != failRows.size() ? ',' : ' ' $>
+            [ <$$ oneRow.first$>, "<$$ oneRow.second.c_str()$>"]<$$ cnt != failRows.size() ? ',' : ' ' $>
 %   }
     ]
 }

@@ -23,17 +23,31 @@
  * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \author Karol Hrdina <KarolHrdina@Eaton.com>
  * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
- * \brief Not yet documented file
+ * \brief Implementation of CRUD operation on any asset
  */
  #><%pre>
 #include <czmq.h>
+#include <sys/syscall.h>
 
 #include "log.h"
 #include "data.h"
 #include "configure_inform.h"
 #include "asset_types.h"
 
+static std::string
+    create_error_json(
+        const std::string &msg,
+        int                code)
+{
+    std::string s = "{\n\t\"errors\": [\n\t  {\n\t\t\"message\" : \"";
+    s+=msg;
+    s+="\",\n\t\t\"code\" : ";
+    s+=std::to_string(code);
+    s+="\n\t  }\n\t]\n}";
+    return s;
+}
 </%pre>
+
 <%thread scope="global">
 asset_manager asset_mgr;
 </%thread>
@@ -43,10 +57,19 @@ asset_manager asset_mgr;
     // Check URL validity
     std::string typeNameArg = request.getArg("type");
     std::string id = request.getArg("id");
-    std::string method = request.getMethod(); // for delete there is no isMethodDELETE
+    std::string method = request.getMethod();
+
+    if ( method == "PUT" || request.isMethodPOST() )
+    {
+</%cpp>
+<$$ create_error_json("Not implemented", 100) $>
+<%cpp>
+        return HTTP_NOT_IMPLEMENTED;
+    }
+
     if ( id.empty() ) {
 </%cpp>
-        { "error":"invalid_url" }
+<$$ create_error_json("Invalid url (missing id parameter)", 56) $>
 <%cpp>
         return HTTP_BAD_REQUEST;
     }
@@ -57,26 +80,33 @@ asset_manager asset_mgr;
         auto ret = asset_mgr.delete_item(id, row);
         if ( ret.status == 0 )
         {
-</%cpp>
-{   "errors": [
-        {
-            "message" : "<$$ ret.msg$>",
-            "code" : 57
-        }
-    ]
-}
-<%cpp>
             if ( ret.errsubtype == DB_ERROR_NOTFOUND )
+            {
+</%cpp>
+<$$ create_error_json("Asset doesn't exist", 57) $>
+<%cpp>
                 return HTTP_NOT_FOUND;
+            }
             else
+            {
+</%cpp>
+<$$ create_error_json("Delete is not possible as asset has elements inside", 58) $>
+<%cpp>
                 return HTTP_INTERNAL_SERVER_ERROR;
+            }
         }
         // here we are -> delete was successful
         // ATTENTION:  1. sending messages is "hidden functionality" from user
         //             2. if any error would occur during the sending message,
-        //                user will never know what was actually imported or not
-        // TODO: add a randomization of the name
+        //                user will never know if element was actually deleted
+        //                or not
+
+        // this code can be executed in multiple threads -> agent's name should
+        // be unique at the every moment
         std::string agent_name("TEMP_CONFIGURE_INFORM_AGENT");
+        agent_name.append (std::to_string ( static_cast<int> (getpid ()) ))
+                  .append (".")
+                  .append (std::to_string ( syscall(SYS_gettid) ));
         try{
             send_configure (row, asset_type::asset_operation::DELETE, agent_name);
 </%cpp>
@@ -85,14 +115,9 @@ asset_manager asset_mgr;
             return HTTP_OK;
         }
         catch (const std::runtime_error &e) {
+            log_error (e.what());
 </%cpp>
-{   "errors": [
-        {
-            "message" : "<$$ e.what()$>",
-            "code" : 57
-        }
-    ]
-}
+<$$ create_error_json("Delete was successful, but some error during configuration occurred, may be it is needed to restart some services", 59) $>
 <%cpp>
             return HTTP_INTERNAL_SERVER_ERROR;
         }
@@ -107,22 +132,22 @@ asset_manager asset_mgr;
             {
                 case DB_ERROR_NOTFOUND:
 </%cpp>
-                { "error":"item_not_found" }
+<$$ create_error_json("Asset doesn't exist", 57) $>
 <%cpp>
                     return HTTP_NOT_FOUND;
                 case DB_ERROR_BADINPUT:
 </%cpp>
-                { "error":"bad_input" }
+<$$ create_error_json("Wrong input", 60) $>
 <%cpp>
-                    return HTTP_BAD_REQUEST;
+                    return HTTP_NOT_FOUND;
                 case DB_ERROR_INTERNAL:
 </%cpp>
-                { "error":"internal_error" }
+<$$ create_error_json("Internal error", 61) $>
 <%cpp>
                     return HTTP_INTERNAL_SERVER_ERROR;
                 default:
 </%cpp>
-                { "error":"unknown error" }
+<$$ create_error_json("Unknown error", 62) $>
 <%cpp>
                     return HTTP_INTERNAL_SERVER_ERROR;
             }
@@ -131,11 +156,10 @@ asset_manager asset_mgr;
             (tmp.item.basic.type_id != asset_mgr.type_to_byte(typeNameArg) ) )
         {
 </%cpp>
-                { "error":"item_not_found" }
+<$$ create_error_json("Specified asset type in url doesn't match actual asset type in db", 63) $>
 <%cpp>
             return HTTP_NOT_FOUND;
         }
-
     // Prepare the reply
 </%cpp>
 {

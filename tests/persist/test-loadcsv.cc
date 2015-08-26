@@ -26,15 +26,16 @@
  * \brief Not yet documented file
  */
 #include <catch.hpp>
+#include <fstream>
 #include <cxxtools/csvdeserializer.h>
 #include <tntdb/result.h>
 #include <tntdb/statement.h>
+
 #include "csv.h"
 #include "log.h"
 #include "db/inout.h"
 #include "assetcrud.h"
 #include "dbpath.h"
-#include <fstream>
 
 using namespace persist;
 
@@ -73,7 +74,7 @@ TEST_CASE("CSV multiple field names", "[csv]") {
     std::string tsv = base_path + ".tsv";
     std::string ssv = base_path + ".ssv";
     std::string usv = base_path + ".usv";
-    std::vector <db_a_elmnt_t> okRows;
+    std::vector <std::pair<db_a_elmnt_t,asset_type::asset_operation>> okRows;
     std::map <int, std::string> failRows;
 
     static std::string exp = to_utf8(cxxtools::String(L"Lab DC(тест)"));
@@ -100,7 +101,7 @@ TEST_CASE("CSV bug 661 - segfault with quote in name", "[csv]") {
 
     std::string base_path{__FILE__};
     std::string csv = base_path + ".661.csv";
-    std::vector <db_a_elmnt_t> okRows;
+    std::vector <std::pair<db_a_elmnt_t,asset_type::asset_operation>> okRows;
     std::map <int, std::string> failRows;
 
     std::fstream csv_buf{csv};
@@ -111,7 +112,7 @@ TEST_CASE("CSV bug 661 - segfault on csv without mandatory columns", "[csv]") {
 
     std::string base_path{__FILE__};
     std::string csv = base_path + ".661.2.csv";
-    std::vector <db_a_elmnt_t> okRows;
+    std::vector <std::pair<db_a_elmnt_t,asset_type::asset_operation>> okRows;
     std::map <int, std::string> failRows;
 
     std::fstream csv_buf{csv};
@@ -122,7 +123,7 @@ TEST_CASE("CSV bug 661 - segfault ...", "[csv]") {
 
     std::string base_path{__FILE__};
     std::string csv = base_path + ".group3.csv";
-    std::vector <db_a_elmnt_t> okRows;
+    std::vector <std::pair<db_a_elmnt_t,asset_type::asset_operation>> okRows;
     std::map <int, std::string> failRows;
 
     std::fstream csv_buf{csv};

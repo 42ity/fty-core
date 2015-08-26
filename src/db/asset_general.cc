@@ -401,7 +401,7 @@ db_reply_t
     tntdb::Transaction trans(conn);
 
     auto reply_delete1 = delete_asset_ext_attributes (conn, element_id);
-    if ( reply_delete1.affected_rows == 0 )
+    if ( reply_delete1.status == 0 )
     {
         trans.rollback();
         log_info ("end: error occured during deleting ext attributes");
@@ -697,6 +697,21 @@ db_reply_t
         trans.rollback();
         log_info ("end: error occured during removing ma relation");
         return reply_delete5;
+    }
+    if ( monitor_element_id != 0 )
+    {
+        // if it was in counterpart
+        m_dvc_id_t affected_rows1 = 0;
+        int rv = delete_disc_device(conn, monitor_element_id, affected_rows1);
+        if ( rv != 0 )
+        {
+            db_reply_t ret = db_reply_new();
+            ret.status = 0;
+            ret.errtype = rv;
+            ret.errsubtype = rv;
+            log_error ("error during monitor device deleting");
+            return ret;
+        }
     }
 
     auto reply_delete6 = delete_asset_element (conn, element_id);

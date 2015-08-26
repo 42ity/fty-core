@@ -30,6 +30,7 @@
 #include <string>
 #include <sstream>
 #include <functional>
+#include <map>
 
 #include <czmq.h>
 
@@ -49,8 +50,6 @@
 
 #include "preproc.h"
 
-#define DEFAULT_LOG_LEVEL LOG_INFO
-
 namespace cm = computation;
 
 int main (UNUSED_PARAM int argc, UNUSED_PARAM char **argv) {
@@ -63,12 +62,12 @@ int main (UNUSED_PARAM int argc, UNUSED_PARAM char **argv) {
 
     _scoped_bios_agent_t *agent = bios_agent_new (MLM_ENDPOINT, BIOS_AGENT_NAME_COMPUTATION);
     if (agent == NULL) {
-        log_critical ("bios_agent_new (endpoint = \"%s\", name = \"%s\") failed.", bios_get_stream_main (), BIOS_AGENT_NAME_COMPUTATION);
+        log_critical ("bios_agent_new (endpoint = \"%s\", name = \"%s\") failed.", MLM_ENDPOINT, BIOS_AGENT_NAME_COMPUTATION);
         return EXIT_FAILURE;
     }
 
     int rv = bios_agent_set_producer (agent, bios_get_stream_main ());    
-    if (rv < 0) {
+    if (rv != 0) {
         log_critical ("bios_agent_set_producer (stream = '%s') failed.", bios_get_stream_main ());
         bios_agent_destroy (&agent);       
         return EXIT_FAILURE;
