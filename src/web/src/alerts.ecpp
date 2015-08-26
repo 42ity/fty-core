@@ -27,16 +27,15 @@
  */
  #><%pre>
 #include <string>
-#include <vector>
 #include <tntdb/connection.h>
 
 #include "db/alerts.h"
 #include "utils.h"
 #include "dbpath.h"
-#include "data.h"
 
 </%pre>
 <%cpp>
+{
     //TODO: checking of arguments, atm /alerts == /alerts/all == /alerts/foo/bar/baz
 
     tntdb::Connection conn = tntdb::connectCached(url);
@@ -83,3 +82,4 @@
 %}
   ]
 }
+%}
