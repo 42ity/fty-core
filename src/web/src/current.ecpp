@@ -74,7 +74,9 @@ std::string dev;
     }
 
     std::vector<std::string> measure;
-    for ( auto asset_id : asset_ids) {
+    for ( auto asset_id : asset_ids)
+    {
+        // convert id from string to number
         size_t pos = 0;
         a_elmnt_id_t id = std::stoul (asset_id, &pos);
         if ( pos != asset_id.size() )
