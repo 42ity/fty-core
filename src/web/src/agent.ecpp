@@ -25,13 +25,10 @@
  */
  #><%pre>
 #include <string>
-#include <vector>
 #include <stdexcept>
 #include <cstdlib>
-#include <ctime>
 
 #include "bios_agent++.h"
-#include "ymsg.h"
 #include "str_defs.h"
 
 </%pre>
