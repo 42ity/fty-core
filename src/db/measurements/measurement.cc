@@ -742,5 +742,44 @@ int
     }
 }
 
+int
+    select_current_measurement_by_element(
+        tntdb::Connection &conn,
+        a_elmnt_id_t asset_id,
+        std::function<void(
+                const tntdb::Row&
+                )>& cb)
+{
+    LOG_START;
+    
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT "
+            "   v.value, v.scale, v.topic "
+            " FROM "
+            "   v_web_measurement_last_10m v "
+            " INNER JOIN "
+            "   t_bios_monitor_asset_relation t "
+            " ON ( v.device_id = t.id_discovered_device AND "
+            "        t.id_asset_element = :elementid ) "
+        );
+    
+        tntdb::Result result = st.set("elementid", asset_id).
+                                  select();
+        log_debug ("[v_web_measurement_last_10m]: was %u rows selected", result.size());
+
+        for ( const auto &row: result )
+        {          
+            cb(row);
+        }
+        LOG_END;
+        return 0;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
+}
+
 } // namespace persist
 
