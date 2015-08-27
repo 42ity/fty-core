@@ -351,7 +351,7 @@ request_sampled(
         case 0:
         {
             log_info ("Success.");
-            return_value = 1;
+            return_value = 0;
             break;
         }
         case 1:
