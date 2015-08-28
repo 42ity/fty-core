@@ -21,7 +21,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 #include "assetcr.h"
 
-#include <tntdb/connect.h>
 #include <tntdb/row.h>
 #include <tntdb/result.h>
 #include <tntdb/error.h>
@@ -29,7 +28,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "log.h"
 #include "defs.h"
-#include "monitor.h"
 #include "asset_types.h"
 
 namespace persist {
