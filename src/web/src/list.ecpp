@@ -26,39 +26,13 @@
  #><%pre>
 #include "data.h"
 #include "assetcrud.h"
-
-std::string
-    json_key_value(
-        const std::string &key,
-        const std::string &value)
-{
-    // make a string like this
-    // "key":"value"
-    std::string s = "\"" + key;
-    s += "\":\"";
-    s += value;
-    s += "\"";
-    return s;
-}
-
-template <class T>
-std::string
-   json_key_value(
-        const std::string &key,
-        const T &value)
-{
-    // make a string like this
-    // "key":value
-    std::string s = "\"" + key;
-    s += "\":";
-    s += std::to_string(value);
-    return s;
-}
-
+#include "web_utils.h"
 </%pre>
+
 <%thread scope="global">
 asset_manager asset_mgr;
 </%thread>
+
 <%cpp>
 {
     // check if method is allowed
@@ -81,13 +55,13 @@ asset_manager asset_mgr;
     }
 
     std::string json = "{\"" + request.getArg("type");
-    json +=  "\":[";
+    json +=  "s\":[";
     for ( auto &oneAsset : allAssetsShort.item )
     {
         json += "{";
-        json += json_key_value("id", oneAsset.first);
+        json += json_key_value_s("id", std::to_string(oneAsset.first));
         json += ",";
-        json += json_key_value("name", oneAsset.second);
+        json += json_key_value_s("name", oneAsset.second);
         json += "},";
     }
     json.back() = ']';
