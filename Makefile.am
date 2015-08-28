@@ -387,6 +387,14 @@ libpriv_db_la_SOURCES = \
 			src/db/alerts.h \
 			tools/dbpath.cc
 
+noinst_LTLIBRARIES += 		libpriv-enums.la
+
+libpriv_enums_la_SOURCES = \
+			src/shared/asset_types.cc \
+			src/shared/asset_types.h \
+			src/shared/dbtypes.h
+
+
 # "configure"-generated source with connection string needed for any programs
 # that use the database (linked into libpriv-db)
 BUILT_SOURCES +=	tools/dbpath.cc
@@ -1344,7 +1352,7 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/uptime.cpp src/web/src/iface.cpp       \
                       src/web/src/license.cpp src/web/src/asset_export.cpp \
                       src/web/src/admin_passwd.cpp src/web/src/systemctl.cpp \
-		      src/web/src/augtool.cpp
+		      		  src/web/src/augtool.cpp
 
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/location_helpers.cc                    \
@@ -1384,7 +1392,8 @@ bios_web_la_LIBADD = \
 			libpriv-db-measurements.la \
 			libpriv-magic.la \
 			libpriv-configure-inform.la \
-			libpriv-utils-plusplus.la
+			libpriv-utils-plusplus.la \
+			libpriv-enums.la
 
 dist_noinst_HEADERS += \
 			src/shared/data.h \
