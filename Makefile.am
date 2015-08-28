@@ -1354,11 +1354,14 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/admin_passwd.cpp src/web/src/systemctl.cpp \
 		      		  src/web/src/augtool.cpp
 
-bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
-                      src/web/src/location_helpers.cc                    \
-                      src/web/src/sasl.cc          \
-                      src/web/src/tokens.cc src/shared/data.cc           \
-                      src/shared/upsstatus.cc src/web/src/dci_impl.h
+bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)      \
+                      src/web/src/location_helpers.cc   \
+                      src/web/src/sasl.cc               \
+                      src/shared/web_utils.cc           \
+                      src/web/src/tokens.cc             \
+					  src/shared/data.cc                \
+                      src/shared/upsstatus.cc           \
+					  src/web/src/dci_impl.h
 
 # Ensure these files are auto-made before others
 BUILT_SOURCES +=	$(BUILT_SOURCES_bios_web_la)
