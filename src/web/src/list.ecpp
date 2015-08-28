@@ -26,43 +26,72 @@
  #><%pre>
 #include "data.h"
 #include "assetcrud.h"
+
+std::string
+    json_key_value(
+        const std::string &key,
+        const std::string &value)
+{
+    // make a string like this
+    // "key":"value"
+    std::string s = "\"" + key;
+    s += "\":\"";
+    s += value;
+    s += "\"";
+    return s;
+}
+
+template <class T>
+std::string
+   json_key_value(
+        const std::string &key,
+        const T &value)
+{
+    // make a string like this
+    // "key":value
+    std::string s = "\"" + key;
+    s += "\":";
+    s += std::to_string(value);
+    return s;
+}
+
 </%pre>
 <%thread scope="global">
 asset_manager asset_mgr;
 </%thread>
 <%cpp>
-    // Check URL validity
-    std::string id;
-
-    // Get data
-   auto allDcsShort = asset_mgr.get_items1 (request.getArg("type"));
-
-    // Error handling
-    if ( allDcsShort.status == 0 )
+{
+    // check if method is allowed
+    if ( !request.isMethodGET() )
     {
 </%cpp>
-{
-    "error":"item_not_found"
-}
+<$$ create_error_json("Not allowed", 300) $>
+<%cpp>
+        return HTTP_METHOD_NOT_ALLOWED;
+    }
+
+    // Get data
+    auto allAssetsShort = asset_mgr.get_items1 (request.getArg("type"), request.getArg("subtype"));
+    if ( allAssetsShort.status == 0 )
+    {
+</%cpp>
+<$$ create_error_json("Assets were not found", 301) $>
 <%cpp>
         return HTTP_NOT_FOUND;
     }
 
-    // Prepare the reply
-</%cpp>
-{
-    "<$ request.getArg("type") $>s": [
-<%cpp>
-    size_t count = allDcsShort.item.size();
-    size_t i = 0;
-    for ( auto &oneDc : allDcsShort.item )
+    std::string json = "{\"" + request.getArg("type");
+    json +=  "\":[";
+    for ( auto &oneAsset : allAssetsShort.item )
     {
-        i++;
+        json += "{";
+        json += json_key_value("id", oneAsset.first);
+        json += ",";
+        json += json_key_value("name", oneAsset.second);
+        json += "},";
+    }
+    json.back() = ']';
+    json += "}";
 </%cpp>
-        {
-            "id" : "<$$ oneDc.first $>",
-            "name":"<$$ oneDc.second $>"
-        } <? i != count ? "," ?>
-%   }
-    ]
-}
+<$$ json $>
+%}

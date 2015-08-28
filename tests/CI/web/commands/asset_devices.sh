@@ -26,3 +26,8 @@
 test_it
 api_get_json /asset/devices >&5
 print_result $?
+
+
+test_it
+api_get_json /asset/devices?subtype="ups" >&5
+print_result $?

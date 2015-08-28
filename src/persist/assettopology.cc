@@ -215,7 +215,7 @@ zmsg_t* select_group_elements(
 {
     assert ( element_id );  // id of the group should be specified
     assert ( element_type_id ); // type_id of the group
-    assert ( ( filtertype >= asset_type::GROUP ) && ( filtertype <= 7 ) ); 
+    assert ( ( filtertype >= persist::asset_type::GROUP ) && ( filtertype <= 7 ) ); 
     // it can be only 1,2,3,4,5,6.7. 7 means - take all
 
     log_info ("start");
@@ -284,8 +284,8 @@ zmsg_t* select_group_elements(
             // all elements ( filtertype == 7) or if this element has 
             // exactly the type of the filter (filtertype == id_type)
             // or we are interested in groups details 
-            // ( filtertype == asset_type::GROUP )
-            if ( ( filtertype == 7 ) || ( filtertype == asset_type::GROUP )
+            // ( filtertype == persist::asset_type::GROUP )
+            if ( ( filtertype == 7 ) || ( filtertype == persist::asset_type::GROUP )
                     || ( filtertype == id_type ) )
             {
                 // dcs, rooms, rows, racks, devices, groups are NULL
@@ -299,15 +299,15 @@ zmsg_t* select_group_elements(
                 log_debug ("created msg el for i = %d", i);
 
                 // put elements into the bins by its asset_element_type_id
-                if ( id_type == asset_type::DATACENTER )
+                if ( id_type == persist::asset_type::DATACENTER )
                     rv = zmsg_addmsg (dcss, &el);
-                else if ( id_type == asset_type::ROOM )
+                else if ( id_type == persist::asset_type::ROOM )
                     rv = zmsg_addmsg (roomss, &el);
-                else if ( id_type == asset_type::ROW )
+                else if ( id_type == persist::asset_type::ROW )
                     rv = zmsg_addmsg (rowss, &el);
-                else if ( id_type == asset_type::RACK )
+                else if ( id_type == persist::asset_type::RACK )
                     rv = zmsg_addmsg (rackss, &el);
-                else if ( id_type == asset_type::DEVICE )
+                else if ( id_type == persist::asset_type::DEVICE )
                     rv = zmsg_addmsg (devicess, &el);
                 assert ( rv != -1 );
                 assert ( el == NULL );                 
@@ -355,7 +355,7 @@ zframe_t* select_childs(
     a_elmnt_tp_id_t     filtertype)
 {
     assert ( child_type_id );   // is required
-    assert ( ( filtertype >= asset_type::GROUP ) && ( filtertype <= 7 ) ); 
+    assert ( ( filtertype >= persist::asset_type::GROUP ) && ( filtertype <= 7 ) ); 
     // it can be only 1,2,3,4,5,6.7. 7 means - take all
 
     log_info ("start select_childs");
@@ -372,7 +372,7 @@ zframe_t* select_childs(
         {
             // for the groups other select is needed
             // because type of the group should be selected
-            if ( child_type_id == asset_type::GROUP )
+            if ( child_type_id == persist::asset_type::GROUP )
             {
                 st = conn.prepareCached(
                     " SELECT"
@@ -409,7 +409,7 @@ zframe_t* select_childs(
         {
             // for the groups, other select is needed
             // because type of the group should be selected
-            if ( child_type_id == asset_type::GROUP )
+            if ( child_type_id == persist::asset_type::GROUP )
             {
                 st = conn.prepareCached(
                     " SELECT"
@@ -478,7 +478,7 @@ zframe_t* select_childs(
             // it is recursive search, and we didn't achive max 
             // recursion depth
             if (    ( is_recursive ) && 
-                    ( child_type_id != asset_type::DEVICE ) && 
+                    ( child_type_id != persist::asset_type::DEVICE ) && 
                     ( current_depth <= MAX_RECURSION_DEPTH ) )
             {
                 // There is no need to select datacenters, because 
@@ -487,67 +487,67 @@ zframe_t* select_childs(
                 
                 // Select rooms only for datacenters
                 // and TODO filter
-                if (    ( child_type_id == asset_type::DATACENTER ) && 
+                if (    ( child_type_id == persist::asset_type::DATACENTER ) && 
                         ( 3 <= filtertype ) )
                 {
                     log_info ("start select_rooms");
                     rooms = select_childs (url, id, child_type_id, 
-                                asset_type::ROOM, is_recursive, 
+                                persist::asset_type::ROOM, is_recursive, 
                                 current_depth + 1, filtertype);
                     log_info ("end select_rooms");
                 }
 
                 // Select rows only for datacenters and rooms
                 // and TODO filter
-                if ( (  ( child_type_id == asset_type::DATACENTER ) ||
-                        ( child_type_id == asset_type::ROOM ) )     && 
+                if ( (  ( child_type_id == persist::asset_type::DATACENTER ) ||
+                        ( child_type_id == persist::asset_type::ROOM ) )     && 
                      ( 4 <= filtertype ) )
                 {
                     log_info ("start select_rows");
                     rows  = select_childs (url, id, child_type_id,
-                                asset_type::ROW, is_recursive, 
+                                persist::asset_type::ROW, is_recursive, 
                                 current_depth + 1, filtertype);
                     log_info ("end select_rows");
                 }
                 
                 // Select racks only for datacenters, rooms, rows
                 // and TODO filter
-                if ( (  ( child_type_id == asset_type::DATACENTER)  ||
-                        ( child_type_id == asset_type::ROOM )       ||
-                        ( child_type_id == asset_type::ROW ) )     && 
+                if ( (  ( child_type_id == persist::asset_type::DATACENTER)  ||
+                        ( child_type_id == persist::asset_type::ROOM )       ||
+                        ( child_type_id == persist::asset_type::ROW ) )     && 
                      ( 5 <= filtertype ) )
                 {
                     log_info ("start select_racks");
                     racks   = select_childs (url, id, child_type_id, 
-                                asset_type::RACK, is_recursive, 
+                                persist::asset_type::RACK, is_recursive, 
                                 current_depth + 1, filtertype);
                     log_info ("end select_racks");
                 }
                 
                 // Select devices only for datacenters, rooms, rows, racks
                 // and TODO filter
-                if ( (  ( child_type_id == asset_type::DATACENTER)  ||
-                        ( child_type_id == asset_type::ROOM )       ||
-                        ( child_type_id == asset_type::ROW )        ||
-                        ( child_type_id == asset_type::RACK ) )     &&
+                if ( (  ( child_type_id == persist::asset_type::DATACENTER)  ||
+                        ( child_type_id == persist::asset_type::ROOM )       ||
+                        ( child_type_id == persist::asset_type::ROW )        ||
+                        ( child_type_id == persist::asset_type::RACK ) )     &&
                      ( 6 <= filtertype ) )
                 {
                     log_info ("start select_devices");
                     devices = select_childs (url, id, child_type_id,
-                                asset_type::DEVICE, is_recursive, 
+                                persist::asset_type::DEVICE, is_recursive, 
                                 current_depth + 1, filtertype);
                     log_info ("end select_devices");
                 }
                 
                 // TODO filter
                 // if it is a group, then do a special processing
-                if (    ( child_type_id == asset_type::GROUP) && 
-                        (   ( asset_type::GROUP == filtertype ) || 
+                if (    ( child_type_id == persist::asset_type::GROUP) && 
+                        (   ( persist::asset_type::GROUP == filtertype ) || 
                             ( filtertype == 7 ) 
                         ) )
                 {
                     log_info ("start select elements of the grp");
-                    grp = select_group_elements (url, id, asset_type::GROUP, 
+                    grp = select_group_elements (url, id, persist::asset_type::GROUP, 
                                 name.c_str(), dtype_name.c_str(), filtertype);
                     log_info ("end select elements of the grp");
                 }
@@ -569,7 +569,7 @@ zframe_t* select_childs(
             {
                 
                 _scoped_zmsg_t* el;
-                if (    ( child_type_id == asset_type::GROUP ) && 
+                if (    ( child_type_id == persist::asset_type::GROUP ) && 
                         ( is_recursive ) )
                     el = zmsg_dup (grp);   // because of the special group processing
                 else 
@@ -669,7 +669,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
                                                         e.what(), NULL);
         }
 
-        if ( type_id == asset_type::GROUP ) 
+        if ( type_id == persist::asset_type::GROUP ) 
         {
             try{
                 tntdb::Connection conn = tntdb::connectCached(url);
@@ -717,13 +717,13 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
     // Select rooms
     // only for datacenters according filter
     // TODO filter
-    if ( ( ( type_id == asset_type::DATACENTER ) || 
+    if ( ( ( type_id == persist::asset_type::DATACENTER ) || 
            ( element_id == 0 ) ) &&
          ( 3 <= filter_type ) )
         
     {
         log_info ("start select_rooms");
-        rooms = select_childs (url, element_id, type_id, asset_type::ROOM,
+        rooms = select_childs (url, element_id, type_id, persist::asset_type::ROOM,
                         is_recursive, 1, filter_type);
         if ( rooms == NULL )
         {
@@ -737,13 +737,13 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
     // Select rows
     // only for rooms, datacenters, unlockated
     // TODO filter
-    if ( ( ( type_id == asset_type::DATACENTER )  ||
-           ( type_id == asset_type::ROOM )       || 
+    if ( ( ( type_id == persist::asset_type::DATACENTER )  ||
+           ( type_id == persist::asset_type::ROOM )       || 
            ( element_id == 0 ) ) &&
          ( 4 <= filter_type ) )
     {
         log_info ("start select_rows");
-        rows = select_childs (url, element_id, type_id, asset_type::ROW,
+        rows = select_childs (url, element_id, type_id, persist::asset_type::ROW,
                         is_recursive, 1, filter_type);
         if ( rows == NULL )
         {
@@ -758,14 +758,14 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
     // Select racks
     // only for rooms, datacenters, rows, unlockated
     // TODO filter
-    if ( ( ( type_id == asset_type::DATACENTER)  ||
-           ( type_id == asset_type::ROOM )       ||
-           ( type_id == asset_type::ROW )        || 
+    if ( ( ( type_id == persist::asset_type::DATACENTER)  ||
+           ( type_id == persist::asset_type::ROOM )       ||
+           ( type_id == persist::asset_type::ROW )        || 
            ( element_id == 0 ) ) &&
          ( 5 <= filter_type ) )
     {
         log_info ("start select_racks");
-        racks = select_childs (url, element_id, type_id, asset_type::RACK,
+        racks = select_childs (url, element_id, type_id, persist::asset_type::RACK,
                         is_recursive, 1, filter_type);
         if ( racks == NULL )
         {
@@ -781,15 +781,15 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
     // Select devices
     // only for rooms, datacenters, rows, racks, unlockated
     // TODO filter
-    if ( ( ( type_id == asset_type::DATACENTER)  ||
-           ( type_id == asset_type::ROOM )       ||
-           ( type_id == asset_type::ROW )        ||
-           ( type_id == asset_type::RACK )     ||
+    if ( ( ( type_id == persist::asset_type::DATACENTER)  ||
+           ( type_id == persist::asset_type::ROOM )       ||
+           ( type_id == persist::asset_type::ROW )        ||
+           ( type_id == persist::asset_type::RACK )     ||
            ( element_id == 0 )  ) &&
          ( 6 <= filter_type ) )
     {
         log_info ("start select_devices");
-        devices = select_childs (url, element_id, type_id, asset_type::DEVICE,
+        devices = select_childs (url, element_id, type_id, persist::asset_type::DEVICE,
                         is_recursive, 1, filter_type);
         if ( devices == NULL )
         {
@@ -808,13 +808,13 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
     //      - only for datacenter (if selecting all childs  or only groups).
     //      - unlockated.
     // TODO filter
-    if  ( ( ( type_id == asset_type::DATACENTER ) && 
-            ( ( filter_type == asset_type::GROUP ) || 
+    if  ( ( ( type_id == persist::asset_type::DATACENTER ) && 
+            ( ( filter_type == persist::asset_type::GROUP ) || 
               ( filter_type == 7 ) ) ) ||
           ( element_id == 0 ) )
     {
         log_info ("start select_grps");
-        grps = select_childs (url, element_id, type_id, asset_type::GROUP,
+        grps = select_childs (url, element_id, type_id, persist::asset_type::GROUP,
                         is_recursive, 1, filter_type);
         if ( grps == NULL )
         {
@@ -832,7 +832,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
     
     zmsg_t* el = NULL; 
     log_info ("creating return element");
-    if ( type_id == asset_type::GROUP )
+    if ( type_id == persist::asset_type::GROUP )
     {
         el = select_group_elements (url, element_id, type_id, name.c_str(), 
                                     dtype_name.c_str(), filter_type);
@@ -989,7 +989,7 @@ zmsg_t* select_parents (const char* url, a_elmnt_id_t element_id,
         
         // for the groups, other select is needed
         // because type of the group should be selected
-        if ( element_type_id != asset_type::GROUP )
+        if ( element_type_id != persist::asset_type::GROUP )
         {
             st = conn.prepareCached(
                   " SELECT"
@@ -1749,7 +1749,7 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
         // can return more than one row
         log_debug ("element id %u", element_id);
         tntdb::Result result = st.set("dcid", element_id).
-                                  set("devicetype", asset_type::DEVICE).
+                                  set("devicetype", persist::asset_type::DEVICE).
                                   select();
         log_debug("rows selected %u", result.size());
 

@@ -295,10 +295,12 @@ db_reply <std::vector <a_elmnt_id_t> >
 db_reply <std::map <uint32_t, std::string> >
     select_short_elements
         (tntdb::Connection &conn,
-         a_elmnt_tp_id_t type_id)
+         a_elmnt_tp_id_t type_id,
+         a_elmnt_stp_id_t subtype_id)
 {
     LOG_START;
-    log_debug ("type_id = %" PRIi16, type_id);
+    log_debug ("  type_id = %" PRIi16, type_id);
+    log_debug ("  subtype_id = %" PRIi16, subtype_id);
 
     std::map <uint32_t, std::string> item{};
     db_reply <std::map <uint32_t, std::string> > ret = db_reply_new(item);
@@ -306,14 +308,17 @@ db_reply <std::map <uint32_t, std::string> >
     try{
         // Can return more than one row.
         tntdb::Statement st = conn.prepareCached(
-            " SELECT"
-            "   v.name, v.id"
-            " FROM"
-            "   v_bios_asset_element v"
-            " WHERE v.id_type = :typeid"
+            " SELECT "
+            "   v.name, v.id "
+            " FROM "
+            "   v_bios_asset_element v "
+            " WHERE "
+            "   v.id_type = :typeid AND "
+            "   v.id_subtype = :subtypeid "
         );
 
         tntdb::Result result = st.set("typeid", type_id).
+                                  set("subtypeid", subtype_id).
                                   select();
 
         // Go through the selected elements

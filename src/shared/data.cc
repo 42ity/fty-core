@@ -49,43 +49,6 @@
 
 typedef std::string (*MapValuesTransformation)(std::string);
 
-byte asset_manager::type_to_byte(std::string type) {
-    std::transform(type.begin(), type.end(), type.begin(), ::tolower);
-    byte ret = asset_type::UNKNOWN;
-    if(type == "datacenter") {
-        ret = asset_type::DATACENTER;
-    } else if(type == "room") {
-        ret = asset_type::ROOM;
-    } else if(type == "row") {
-        ret = asset_type::ROW;
-    } else if(type == "rack") {
-        ret = asset_type::RACK;
-    } else if(type == "group") {
-        ret = asset_type::GROUP;
-    } else if(type == "device") {
-        ret = asset_type::DEVICE;
-    }
-    return ret;
-}
-
-std::string asset_manager::byte_to_type(byte type) {
-    switch(type) {
-        case asset_type::DATACENTER:
-            return "datacenter";
-        case asset_type::ROOM:
-            return "room";
-        case asset_type::ROW:
-            return "row";
-        case asset_type::RACK:
-            return "rack";
-        case asset_type::GROUP:
-            return "group";
-        case asset_type::DEVICE:
-            return "device";
-        default:
-            return "unknown";
-    }
-}
 
 static std::string s_scale(const std::string& val, int8_t scale) {
 // TODO: Refactor away multiple calls to val.size(),
@@ -311,7 +274,7 @@ db_reply <db_web_element_t>
         log_debug ("    3/4 no errors");
         ret.item.groups = group_ret.item;
 
-        if ( ret.item.basic.type_id == asset_type::DEVICE )
+        if ( ret.item.basic.type_id == persist::asset_type::DEVICE )
         {
             auto powers = persist::select_asset_device_links_to (conn, real_id, INPUT_POWER_CHAIN);
             log_debug ("4/4 powers select is done");
@@ -343,17 +306,27 @@ db_reply <db_web_element_t>
 }
 
 db_reply <std::map <uint32_t, std::string> >
-   asset_manager::get_items1
-        (const std::string &typeName)
+    asset_manager::get_items1(
+        const std::string &typeName,
+        const std::string &subtypeName)
 {
     db_reply <std::map <uint32_t, std::string> > ret;
 
-    byte type_id = asset_manager::type_to_byte(typeName);
-    if ( type_id == (byte)asset_type::UNKNOWN ) {
+    a_elmnt_tp_id_t type_id = persist::type_to_typeid(typeName);
+    if ( type_id == persist::asset_type::TUNKNOWN ) {
         ret.status        = 0;
         ret.errtype       = DB_ERR;
         ret.errsubtype    = DB_ERROR_INTERNAL;
-        ret.msg           = "Unsupported type of the elemtns";
+        ret.msg           = "Unsupported type of the elemnts";
+        log_error (ret.msg.c_str());
+        return ret;
+    }
+    a_elmnt_stp_id_t subtype_id = persist::subtype_to_subtypeid(subtypeName);
+    if ( subtype_id == persist::asset_subtype::SUNKNOWN ) {
+        ret.status        = 0;
+        ret.errtype       = DB_ERR;
+        ret.errsubtype    = DB_ERROR_INTERNAL;
+        ret.msg           = "Unsupported subtype of the elemnts";
         log_error (ret.msg.c_str());
         return ret;
     }
@@ -361,7 +334,7 @@ db_reply <std::map <uint32_t, std::string> >
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
         log_debug ("connection was successful");
-        ret = persist::select_short_elements(conn, type_id);
+        ret = persist::select_short_elements(conn, type_id, subtype_id);
         LOG_END;
         return ret;
     }
@@ -422,20 +395,20 @@ db_reply_t
         element_info.name = basic_info.item.name;
 
         switch ( basic_info.item.type_id ) {
-            case asset_type::DATACENTER:
-            case asset_type::ROW:
-            case asset_type::ROOM:
-            case asset_type::RACK:
+            case persist::asset_type::DATACENTER:
+            case persist::asset_type::ROW:
+            case persist::asset_type::ROOM:
+            case persist::asset_type::RACK:
             {
                 ret = persist::delete_dc_room_row_rack(conn, real_id);
                 break;
             }
-            case asset_type::GROUP:
+            case persist::asset_type::GROUP:
             {
                 ret = persist::delete_group(conn, real_id);
                 break;
             }
-            case asset_type::DEVICE:
+            case persist::asset_type::DEVICE:
             {
                 ret = persist::delete_device(conn, real_id);
                 break;

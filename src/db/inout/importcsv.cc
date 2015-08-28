@@ -137,7 +137,7 @@ int
         (conn, parent_id);
     if ( parent.status == 0 )
         return 2;
-    if ( parent.item.type_id != asset_type::RACK )
+    if ( parent.item.type_id != persist::asset_type::RACK )
         return 1;
     db_reply <std::vector<device_info_t>> devices =
         select_asset_device_by_container
@@ -177,7 +177,7 @@ int
  * \param cm - already parsed csv file
  * \param row_i - number of row to process
  */
-static std::pair<db_a_elmnt_t, asset_type::asset_operation>
+static std::pair<db_a_elmnt_t, persist::asset_operation>
     process_row
         (tntdb::Connection &conn,
          CsvMap cm,
@@ -201,7 +201,7 @@ static std::pair<db_a_elmnt_t, asset_type::asset_operation>
     // because id is definitely not an external attribute
     auto id_str = unused_columns.count("id") ? cm.get(row_i, "id") : "";
     unused_columns.erase("id");
-    asset_type::asset_operation operation = asset_type::asset_operation::INSERT;
+    persist::asset_operation operation = persist::asset_operation::INSERT;
     a_elmnt_id_t id = 0;
     if ( !id_str.empty() )
     {
@@ -209,7 +209,7 @@ static std::pair<db_a_elmnt_t, asset_type::asset_operation>
         if ( ids.count(id) == 1 )
             throw std::invalid_argument("Second time during the import you are trying to update the element with id "+ id_str);
         ids.insert(id);
-        operation = asset_type::asset_operation::UPDATE;
+        operation = persist::asset_operation::UPDATE;
     }
 
     auto name = cm.get(row_i, "name");
@@ -632,7 +632,7 @@ mandatory_missing
 void
     load_asset_csv
         (std::istream& input,
-         std::vector <std::pair<db_a_elmnt_t,asset_type::asset_operation>> &okRows,
+         std::vector <std::pair<db_a_elmnt_t,persist::asset_operation>> &okRows,
          std::map <int, std::string> &failRows)
 {
     LOG_START;

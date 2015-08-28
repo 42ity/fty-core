@@ -33,16 +33,16 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 void
     send_configure (
         const std::vector <std::pair
-            <db_a_elmnt_t, asset_type::asset_operation>> &rows,
+            <db_a_elmnt_t, persist::asset_operation>> &rows,
         const std::string &agent_name);
 
 void
     send_configure (
         const db_a_elmnt_t row,
-        asset_type::asset_operation action_type,
+        persist::asset_operation action_type,
         const std::string &agent_name);
 
 void
     send_configure (
-        const std::pair<db_a_elmnt_t, asset_type::asset_operation> row,
+        const std::pair<db_a_elmnt_t, persist::asset_operation> row,
         const std::string &agent_name);
