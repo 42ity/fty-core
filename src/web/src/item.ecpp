@@ -33,6 +33,7 @@
 #include "data.h"
 #include "configure_inform.h"
 #include "asset_types.h"
+#include "defs.h"
 
 </%pre>
 

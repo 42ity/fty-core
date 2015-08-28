@@ -23,6 +23,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "log.h"
 #include "measurements.h"
 #include "alerts.h"
+#include "asset_types.h"
+#include "defs.h"
 
 namespace persist {
 
