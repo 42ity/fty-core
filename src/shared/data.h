@@ -45,7 +45,9 @@ class asset_manager {
     public:
         // new functionality
         db_reply <db_web_element_t>  get_item1(const std::string &id);
-        db_reply <std::map <uint32_t, std::string> > get_items1(const std::string &typeName);
+        db_reply <std::map <uint32_t, std::string> > get_items1(
+            const std::string &typeName,
+            const std::string &subtypeName);
 
         // to support old style
         db_reply <db_web_element_t>  get_item1(const std::string &id, const std::string &type);
@@ -54,10 +56,6 @@ class asset_manager {
             delete_item(
                 const std::string &id,
                 db_a_elmnt_t &element_info);
-
-
-        static byte type_to_byte(std::string type);
-        static std::string byte_to_type(byte type);
 };
 
 class measures_manager {
@@ -74,10 +72,5 @@ class ui_props_manager {
     private:
         std::string agent_name(void);
 };
-
-std::string
-    create_error_json(
-        const std::string &msg,
-        int                code);
 
 #endif // SRC_SHARED_DATA_H

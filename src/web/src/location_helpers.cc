@@ -75,7 +75,7 @@ int asset_location_r(asset_msg_t** asset_msg, std::string& json) {
     json += "{"; 
     json += "\"name\" : \"" + name + "\", ";
     json += "\"id\" : \"" + std::to_string(element_id) + "\"";
-    if (type_id == asset_type::DEVICE || type_id == asset_type::GROUP) { 
+    if (type_id == persist::asset_type::DEVICE || type_id == persist::asset_type::GROUP) { 
         json += ", \"type\" : \"" + std::string(asset_msg_type_name(*asset_msg)) + "\"";
     }
 
@@ -180,20 +180,20 @@ int asset (const std::string& from) {
         return -1;
     }
     cut = cut.substr(0, pos);
-
-    int ret = asset_type::UNKNOWN;
+// TODO USE FUNCTIONS
+    int ret = persist::asset_type::TUNKNOWN;
     if (cut == "datacenter") {
-        ret = asset_type::DATACENTER;
+        ret = persist::asset_type::DATACENTER;
     } else if (cut == "room") {
-        ret = asset_type::ROOM;
+        ret = persist::asset_type::ROOM;
     } else if (cut == "row") {
-        ret = asset_type::ROW;
+        ret = persist::asset_type::ROW;
     } else if (cut == "rack") {
-        ret = asset_type::RACK;
+        ret = persist::asset_type::RACK;
     } else if (cut == "group") {
-        ret = asset_type::GROUP;
+        ret = persist::asset_type::GROUP;
     } else if (cut == "device") {
-        ret = asset_type::DEVICE;
+        ret = persist::asset_type::DEVICE;
     }
     return ret;
 }

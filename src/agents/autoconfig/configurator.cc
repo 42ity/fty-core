@@ -39,7 +39,7 @@ static const char * NUTConfigEpduPattern = "[[:blank:]](mibs[[:blank:]]+=[[:blan
                                            "desc[[:blank:]]+=[[:blank:]]+\"[^\"]+ epdu [^\"]+\")";
 static const char * NUTConfigCanSnmpPattern = "[[:blank:]]driver[[:blank:]]+=[[:blank:]]+\"snmp-ups\"";
 
-using namespace asset_type;
+using namespace persist;
 
 std::vector<std::string>::const_iterator NUTConfigurator::stringMatch(const std::vector<std::string> &texts, const char *pattern) {
     log_debug("regex: %s", pattern );

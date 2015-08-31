@@ -38,36 +38,7 @@
 #include "db/measurements.h"
 #include "log.h"
 #include "dbpath.h" // temporary
-
-// need this one, as cannot pass std::to_string (const std::string &)
-std::string
-    json_key_value(
-        const std::string &key,
-        const std::string &value)
-{
-    // make a string like this
-    // "key":"value"
-    std::string s = "\"" + key;
-    s += "\":\"";
-    s += value;
-    s += "\"";
-    return s;
-}
-
-template <class T>
-std::string
-   json_key_value(
-        const std::string &key,
-        const T &value)
-{
-    // make a string like this
-    // "key":value
-    std::string s = "\"" + key;
-    s += "\":";
-    s += std::to_string(value);
-    return s;
-}
-
+#include "web_utils.h"
 </%pre>
 
 <%args>
@@ -194,19 +165,19 @@ std::string dev;
         // we are here -> everything is ok, need just to form
         // this is a small JSON for just ONE asset
         std::string json = "{";
-        json += json_key_value("id", asset_id);
+        json += json_key_value_s("id", asset_id);
         json += ",";
-        json += json_key_value("name", ret.item.name);
+        json += json_key_value_s("name", ret.item.name);
         json += ",";
         for ( const auto &one_measurement : measurements )
         {
             if( one_measurement.first == "status.ups" )
             {
-                json +=  json_key_value(one_measurement.first, shared::upsstatus_to_string(one_measurement.second));
+                json +=  json_key_value_s(one_measurement.first, shared::upsstatus_to_string(one_measurement.second));
             }
             else
             {
-                json +=  json_key_value(one_measurement.first, one_measurement.second);
+                json +=  json_key_value_d(one_measurement.first, one_measurement.second);
             }
             json += ",";
         }

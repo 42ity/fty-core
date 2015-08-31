@@ -34,6 +34,7 @@
 #include "configure_inform.h"
 #include "asset_types.h"
 #include "defs.h"
+#include "web_utils.h"
 
 </%pre>
 
@@ -97,7 +98,7 @@ asset_manager asset_mgr;
                   .append (".")
                   .append (std::to_string ( syscall(SYS_gettid) ));
         try{
-            send_configure (row, asset_type::asset_operation::DELETE, agent_name);
+            send_configure (row, persist::asset_operation::DELETE, agent_name);
 </%cpp>
         {}
 <%cpp>
@@ -142,7 +143,7 @@ asset_manager asset_mgr;
             }
         }
         if ( !typeNameArg.empty() &&
-            (tmp.item.basic.type_id != asset_mgr.type_to_byte(typeNameArg) ) )
+            (tmp.item.basic.type_id != persist::type_to_typeid(typeNameArg) ) )
         {
 </%cpp>
 <$$ create_error_json("Specified asset type in url doesn't match actual asset type in db", 63) $>
@@ -170,7 +171,7 @@ asset_manager asset_mgr;
         {
 </%cpp>
     , "location_uri":"<$$ "/api/v1/asset/" +
-                   asset_mgr.byte_to_type(tmp.item.basic.parent_type_id) + "/" +
+                   persist::typeid_to_type(tmp.item.basic.parent_type_id) + "/" +
                    std::to_string (tmp.item.basic.parent_id) $>"
 %       }
     , "groups": [
@@ -192,7 +193,7 @@ asset_manager asset_mgr;
     ]
 <%cpp>
         // Device is special element with more attributes
-        if ( tmp.item.basic.type_id == asset_type::DEVICE )
+        if ( tmp.item.basic.type_id == persist::asset_type::DEVICE )
         {
 </%cpp>
     , "type": "<$$ tmp.item.basic.subtype_name $>"
@@ -266,7 +267,7 @@ asset_manager asset_mgr;
 <%cpp>
         }
 
-        if ( tmp.item.basic.type_id == asset_type::GROUP )
+        if ( tmp.item.basic.type_id == persist::asset_type::GROUP )
         {
             auto it = tmp.item.ext.find("type");
             if ( it != tmp.item.ext.end() )

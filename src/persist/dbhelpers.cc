@@ -89,7 +89,7 @@ m_dvc_id_t convert_asset_to_monitor_old(const char* url,
         log_warning("end: abnormal with '%s'", e.what());
         throw bios::InternalDBError(e.what());
     }
-    if ( element_type_id != asset_type::DEVICE )
+    if ( element_type_id != persist::asset_type::DEVICE )
     {
         log_info("end: specified element is not a device");
         throw bios::ElementIsNotDevice();
@@ -161,12 +161,12 @@ a_elmnt_id_t convert_monitor_to_asset(const char* url,
 bool is_ok_element_type (a_elmnt_tp_id_t element_type_id)
 {
     switch(element_type_id) {
-        case asset_type::DATACENTER:
-        case asset_type::ROOM:
-        case asset_type::ROW:
-        case asset_type::RACK:
-        case asset_type::GROUP:
-        case asset_type::DEVICE:
+        case persist::asset_type::DATACENTER:
+        case persist::asset_type::ROOM:
+        case persist::asset_type::ROW:
+        case persist::asset_type::RACK:
+        case persist::asset_type::GROUP:
+        case persist::asset_type::DEVICE:
             return true;
         default:
             return false;

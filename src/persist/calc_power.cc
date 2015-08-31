@@ -325,7 +325,7 @@ db_reply <std::map<std::string, std::vector<std::string> > >
     select_devices_total_power_dcs
         (tntdb::Connection  &conn)
 {
-    return select_devices_total_power_container (conn, asset_type::DATACENTER);
+    return select_devices_total_power_container (conn, persist::asset_type::DATACENTER);
 }
 
 
@@ -333,5 +333,5 @@ db_reply <std::map<std::string, std::vector<std::string> > >
     select_devices_total_power_racks
         (tntdb::Connection  &conn)
 {
-    return select_devices_total_power_container (conn, asset_type::RACK);
+    return select_devices_total_power_container (conn, persist::asset_type::RACK);
 }
