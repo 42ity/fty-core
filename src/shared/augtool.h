@@ -24,7 +24,8 @@
  * \brief Not yet documented file
  */
 #include <string>
+#include <functional>
 
 // Helper function to parse output of augtool
-std::string augtool_out(const std::string in, bool key_value = true, std::string sep = "");
+std::string augtool_out(const std::string in, bool key_value = true, std::string sep = "", std::function<bool(std::string)> filter = [](const std::string) -> bool { return false; } );
 
