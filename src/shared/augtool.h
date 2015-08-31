@@ -18,6 +18,10 @@
  *
  */
 
+#ifndef SRC_SHARED_AUGTOOL_H
+//! Guard
+#define SRC_SHARED_AUGTOOL_H
+
 /*!
  * \file augtool.h
  * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
@@ -26,6 +30,21 @@
 #include <string>
 #include <functional>
 
-// Helper function to parse output of augtool
-std::string augtool_out(const std::string in, bool key_value = true, std::string sep = "", std::function<bool(std::string)> filter = [](const std::string) -> bool { return false; } );
+/**
+ * \brief Helper function to parse output of augtool
+ *
+ * If there is more than two lines, omits first and the last one. Returns all
+ * values concatenated using settings in optional parameters.
+ *
+ * @param key_value if true each line is expected in form 'key = value' and only value is outputed
+ * @param sep used to separate individual values
+ * @param filter values for which it returns true are omitted
+ *
+ */
+std::string augtool_out(const std::string in,
+                        bool key_value = true,
+                        std::string sep = "",
+                        std::function<bool(std::string)> filter = 
+                            [](const std::string) -> bool { return false; } );
 
+#endif // SRC_SHARED_AUGTOOL_H
