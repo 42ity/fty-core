@@ -28,26 +28,89 @@
 
 #include <string>
 
+/*
+ * \brief Creates a string in the form "key":"value"
+ *        without any {,} (just pair key value). As
+ *        value is string it should be in quotes.
+ *
+ * \param key   - a key
+ * \param value - a string value
+ *
+ * \return "key":"value"
+ */
 std::string
     json_key_value_s(
         const std::string &key,
         const std::string &value);
 
+/*
+ * \brief Creates a string in the form "key":value
+ *        without any {,} (just pair key value). As
+ *        value is not a string it should not be in quotes.
+ *
+ * \param key   - a key
+ * \param value - an unsigned value
+ *
+ * \return "key":value
+ */
 std::string
    json_key_value_u(
         const std::string &key,
         const uint64_t    &value);
 
+/*
+ * \brief Creates a string in the form "key":value
+ *        without any {,} (just pair key value). As
+ *        value is not a string it should not be in quotes.
+ *
+ * \param key   - a key
+ * \param value - an integer value
+ *
+ * \return "key":value
+ */
 std::string
    json_key_value_i(
         const std::string &key,
         const int64_t     &value);
 
+/*
+ * \brief Creates a string in the form "key":value
+ *        without any {,} (just pair key value). As
+ *        value is not a string it should not be in quotes.
+ *
+ * Pricisios: 6 numbers after point always (even zeros)
+ *
+ * \param key   - a key
+ * \param value - a double value
+ *
+ * \return "key":value
+ */
 std::string
    json_key_value_d(
         const std::string &key,
         const double      &value);
 
+/*
+ * \brief Creates a string that containes JSON error message
+ *        with only one error.
+ *
+ *
+ *  Returned string has the following structure:
+ *
+ *  {
+ *      errors: [
+ *          {
+ *              "message": "@msg",
+ *              "code": @code
+ *          }
+ *      ]
+ *  }
+ *
+ * \param msg   - a message that should be displayed to the user
+ * \param code  - a code for an error
+ *
+ * \return JSON string
+ */
 std::string
     create_error_json(
         const std::string &msg,
