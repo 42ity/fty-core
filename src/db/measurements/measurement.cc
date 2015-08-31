@@ -57,8 +57,8 @@ select_measurements (
     log_debug ("Interval: %s%" PRId64", %" PRId64"%s Element id: %" PRIu64" Topic: %s",
                left_interval_closed ? "<" : "(", start_timestamp, end_timestamp,
                right_interval_closed ? ">" : ")", element_id, topic);
-    
-    try {        
+
+    try {
         // Find out if element_id exists
         {
             tntdb::Statement statement = conn.prepareCached ("SELECT * FROM t_bios_asset_element WHERE id_asset_element = :id");
@@ -70,7 +70,7 @@ select_measurements (
             }
             log_debug ("element id: %" PRIu64" exists", element_id);
         }
-        // Element_id exists, find out if there is an entry in t_bios_measurement_topic         
+        // Element_id exists, find out if there is an entry in t_bios_measurement_topic
         uint64_t topic_id = 0;
         {
             std::string query_topic (topic);
@@ -92,7 +92,7 @@ select_measurements (
             result.getRow (0).getValue (1).get (unit);
             log_debug ("topic id: %" PRIu64" unit: %s", topic_id, unit.c_str ());
         }
-        // Get measurements  
+        // Get measurements
         {
             std::string query (
             " SELECT topic, value, scale, timestamp "
@@ -108,13 +108,13 @@ select_measurements (
 
             log_debug("Running query: '%s'", query.c_str ());
             tntdb::Statement statement = conn.prepareCached (query);
-            statement.set ("id", element_id).set ("topic_id", topic_id).set ("time_st", start_timestamp).set ("time_end", end_timestamp);
+            statement.set ("topic_id", topic_id).set ("time_st", start_timestamp).set ("time_end", end_timestamp);
 
             tntdb::Result result = statement.select ();
 
             for (auto &row: result) {
                 double comp_value = row[1].getInt32 () * std::pow (10, row[2].getInt32());
-                measurements.emplace (std::make_pair (row[3].getInt64(), comp_value));                 
+                measurements.emplace (std::make_pair (row[3].getInt64(), comp_value));
             }
         }
     }
@@ -126,7 +126,7 @@ select_measurements (
     catch (...) {
         log_error("Unknown exception caught!");
         ret.rv = -1;
-        return ret;    
+        return ret;
     }
     ret.rv = 0;
     return ret;
