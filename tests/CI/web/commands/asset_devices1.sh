@@ -19,10 +19,9 @@
 
 
 #! \file asset_devices.sh
-#  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
-#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \author Alena Chernikava <AlenaChernikava@Eaton.com>
 #  \brief Not yet documented file
 
 test_it
-api_get_json /asset/devices >&5
+api_get_json /asset/devices?subtype=ups >&5
 print_result $?
