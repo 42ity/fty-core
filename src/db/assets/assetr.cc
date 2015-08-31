@@ -305,17 +305,29 @@ db_reply <std::map <uint32_t, std::string> >
     std::map <uint32_t, std::string> item{};
     db_reply <std::map <uint32_t, std::string> > ret = db_reply_new(item);
 
+    std::string query;
+    if ( subtype_id == 0 )
+    {
+        query = " SELECT "
+                "   v.name, v.id "
+                " FROM "
+                "   v_bios_asset_element v "
+                " WHERE "
+                "   v.id_type = :typeid ";
+    }
+    else
+    {
+        query = " SELECT "
+                "   v.name, v.id "
+                " FROM "
+                "   v_bios_asset_element v "
+                " WHERE "
+                "   v.id_type = :typeid AND "
+                "   v.id_subtype = :subtypeid ";
+    }
     try{
         // Can return more than one row.
-        tntdb::Statement st = conn.prepareCached(
-            " SELECT "
-            "   v.name, v.id "
-            " FROM "
-            "   v_bios_asset_element v "
-            " WHERE "
-            "   v.id_type = :typeid AND "
-            "   v.id_subtype = :subtypeid "
-        );
+        tntdb::Statement st = conn.prepareCached(query);
 
         tntdb::Result result = st.set("typeid", type_id).
                                   set("subtypeid", subtype_id).

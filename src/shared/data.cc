@@ -310,6 +310,10 @@ db_reply <std::map <uint32_t, std::string> >
         const std::string &typeName,
         const std::string &subtypeName)
 {
+    LOG_START;
+    log_debug ("subtypename = '%s', typename = '%s'", subtypeName.c_str(),
+                    typeName.c_str());
+    a_elmnt_stp_id_t subtype_id = 0;
     db_reply <std::map <uint32_t, std::string> > ret;
 
     a_elmnt_tp_id_t type_id = persist::type_to_typeid(typeName);
@@ -321,19 +325,14 @@ db_reply <std::map <uint32_t, std::string> >
         log_error (ret.msg.c_str());
         return ret;
     }
-    a_elmnt_stp_id_t subtype_id = persist::subtype_to_subtypeid(subtypeName);
-    if ( subtype_id == persist::asset_subtype::SUNKNOWN ) {
-        ret.status        = 0;
-        ret.errtype       = DB_ERR;
-        ret.errsubtype    = DB_ERROR_INTERNAL;
-        ret.msg           = "Unsupported subtype of the elemnts";
-        log_error (ret.msg.c_str());
-        return ret;
+    if ( ( typeName == "device" ) && ( !subtypeName.empty() ) )
+    {
+        subtype_id = persist::subtype_to_subtypeid(subtypeName);
     }
+    log_debug ("subtypeid = %" PRIi16 " typeid = %" PRIi16, subtype_id, type_id);
 
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
-        log_debug ("connection was successful");
         ret = persist::select_short_elements(conn, type_id, subtype_id);
         LOG_END;
         return ret;
