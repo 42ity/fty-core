@@ -119,7 +119,6 @@ std::string feed_by;
         a_elmnt_id_t element_id = 0;
         try {
             element_id = std::stoul (to);
-        log_debug("11to='%s'", to.c_str());
         } catch (std::out_of_range& e) {
 </%cpp>
 <$$ create_error_json("Variable 'to' contains number that falls out of the allowed range.", 405) $>
