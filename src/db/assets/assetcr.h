@@ -24,12 +24,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef SRC_DB_ASSETS_ASSETCR_H_
 #define SRC_DB_ASSETS_ASSETCR_H_
 
-#include "dbtypes.h"
-#include "defs.h"
-#include "dbhelpers.h"
 #include <tntdb/connect.h>
-#include "asset_types.h"
-#include "calc_power.h"
+
+#include "dbtypes.h"
+#include "dbhelpers.h"
 
 #include "db/assetdef.h"
 namespace persist {

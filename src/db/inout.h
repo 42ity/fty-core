@@ -75,7 +75,7 @@ bool
 void
     load_asset_csv
         (std::istream& input,
-         std::vector <std::pair<db_a_elmnt_t,asset_type::asset_operation>> &okRows,
+         std::vector <std::pair<db_a_elmnt_t,persist::asset_operation>> &okRows,
          std::map <int, std::string> &failRows);
 
 /** \brief export csv file and write result to output stream

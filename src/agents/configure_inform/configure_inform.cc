@@ -27,7 +27,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 void
     send_configure (
-        const std::vector <std::pair<db_a_elmnt_t,asset_type::asset_operation>> &rows,
+        const std::vector <std::pair<db_a_elmnt_t,persist::asset_operation>> &rows,
         const std::string &agent_name)
 {
     bios_agent_t *agent = bios_agent_new (MLM_ENDPOINT, agent_name.c_str ());
@@ -59,16 +59,16 @@ void
 void
     send_configure (
         db_a_elmnt_t row,
-        asset_type::asset_operation action_type,
+        persist::asset_operation action_type,
         const std::string &agent_name)
 {
-    send_configure(std::vector<std::pair<db_a_elmnt_t,asset_type::asset_operation>>{std::make_pair(row, action_type)}, agent_name);
+    send_configure(std::vector<std::pair<db_a_elmnt_t,persist::asset_operation>>{std::make_pair(row, action_type)}, agent_name);
 }
 
 void
     send_configure (
-        const std::pair<db_a_elmnt_t, asset_type::asset_operation> row,
+        const std::pair<db_a_elmnt_t, persist::asset_operation> row,
         const std::string &agent_name)
 {
-    send_configure(std::vector<std::pair<db_a_elmnt_t,asset_type::asset_operation>>{row}, agent_name);
+    send_configure(std::vector<std::pair<db_a_elmnt_t,persist::asset_operation>>{row}, agent_name);
 }

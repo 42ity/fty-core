@@ -105,7 +105,8 @@ db_reply <std::vector <a_elmnt_id_t> >
 db_reply <std::map <uint32_t, std::string> >
     select_short_elements
         (tntdb::Connection &conn,
-         a_elmnt_tp_id_t type_id);
+         a_elmnt_tp_id_t type_id,
+         a_elmnt_stp_id_t subtype_id);
 
 reply_t
     select_dc_of_asset_element

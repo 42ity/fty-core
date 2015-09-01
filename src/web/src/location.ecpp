@@ -211,33 +211,34 @@ std::string filter;
                     std::string type_name = asset_msg_type_name (asset_msg);
                     stack.push (make_tuple(element_id, type_id, contains, name, type_name));
                     // I deliberately didn't want to use asset manager (unknown / ""; suffix s)
+                    // TODO use special function
                     switch (type_id) {                        
-                        case asset_type::DATACENTER:
+                        case persist::asset_type::DATACENTER:
                         {
                             contains = "datacenters";
                             break;
                         }
-                        case asset_type::ROOM:
+                        case persist::asset_type::ROOM:
                         {
                             contains = "rooms";
                             break;
                         }
-                        case asset_type::ROW:
+                        case persist::asset_type::ROW:
                         {
                             contains = "rows";
                             break;
                         }
-                        case asset_type::RACK:
+                        case persist::asset_type::RACK:
                         {
                             contains = "racks";
                             break;
                         }
-                        case asset_type::GROUP:
+                        case persist::asset_type::GROUP:
                         {
                             contains = "groups";
                             break;
                         }
-                        case asset_type::DEVICE:
+                        case persist::asset_type::DEVICE:
                         {
                             contains = "devices";
                             break;
@@ -397,15 +398,15 @@ std::string filter;
             filter_type = 7;
         } else {
             if (filter == "rooms") {
-                filter_type = asset_type::ROOM;
+                filter_type = persist::asset_type::ROOM;
             } else if (filter == "rows") {
-                filter_type = asset_type::ROW;
+                filter_type = persist::asset_type::ROW;
             } else if (filter == "racks") {
-                filter_type = asset_type::RACK;
+                filter_type = persist::asset_type::RACK;
             } else if (filter == "devices") {
-                filter_type = asset_type::DEVICE;
+                filter_type = persist::asset_type::DEVICE;
             } else if (filter == "groups") {
-                filter_type = asset_type::GROUP;
+                filter_type = persist::asset_type::GROUP;
             } else {
                 // Note: datacenter is not a valid filter parameter according to rfc-11 4.1.13
 </%cpp>

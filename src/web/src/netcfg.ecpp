@@ -75,7 +75,7 @@ if(rex_ncfg.match(request.getUrl())) {
     std::string in;
     command = "match /files/etc/network/interfaces/iface[*]\n";
     write(augtool.getStdin(), command.c_str(), command.length());
-    in = augtool_out(wait_read_all(augtool.getStdout()), true, "\", \"");
+    in = augtool_out(wait_read_all(augtool.getStdout()), true, "\", \"", [](const std::string iface) -> bool { return iface == "lo"; });
     if(in.empty()) {
 </%cpp>
 { "error": "No configurable interfaces found" }

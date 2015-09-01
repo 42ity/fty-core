@@ -203,7 +203,7 @@ TEST_CASE("asset element INSERT/DELETE #3","[db][CRUD][insert][delete][asset_ele
     REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
     
     a_elmnt_id_t     parent_id       = 1;  // it is written in crud_test.sql file
-    a_elmnt_tp_id_t  element_type_id = asset_type::ROOM;
+    a_elmnt_tp_id_t  element_type_id = persist::asset_type::ROOM;
     const char      *element_name    = "Room_insert_test";
     const char *status = "active";
     a_elmnt_pr_t priority   = 4;
@@ -226,7 +226,7 @@ TEST_CASE("asset element INSERT/DELETE #3","[db][CRUD][insert][delete][asset_ele
     REQUIRE (item.status == status);
     REQUIRE (item.priority == priority);
     REQUIRE (item.bc == bc);
-    REQUIRE (item.type_id == asset_type::ROOM);
+    REQUIRE (item.type_id == persist::asset_type::ROOM);
     REQUIRE (item.type_name == "room");
     REQUIRE (item.parent_id == parent_id);
     REQUIRE (item.parent_type_id == 2);     // in crud_test.sql
@@ -370,7 +370,7 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
     REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
 
     const char      *name = "DC_TEST";
-    a_elmnt_tp_id_t  element_type_id = asset_type::DATACENTER;
+    a_elmnt_tp_id_t  element_type_id = persist::asset_type::DATACENTER;
     a_elmnt_id_t     parent_id = 0;                     // unlockated
     _scoped_zhash_t         *ext_attributes = zhash_new();
     zhash_autofree (ext_attributes);
@@ -518,7 +518,7 @@ TEST_CASE("room unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlocka
     REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
 
     const char      *name = "ROOM_TEST";
-    a_elmnt_tp_id_t  element_type_id = asset_type::ROOM;
+    a_elmnt_tp_id_t  element_type_id = persist::asset_type::ROOM;
     a_elmnt_id_t     parent_id = 0;                     // unlockated
     _scoped_zhash_t         *ext_attributes = zhash_new();
     zhash_autofree (ext_attributes);
@@ -595,7 +595,7 @@ TEST_CASE("row unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockat
     REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
 
     const char      *name = "ROW_TEST";
-    a_elmnt_tp_id_t  element_type_id = asset_type::ROW;
+    a_elmnt_tp_id_t  element_type_id = persist::asset_type::ROW;
     a_elmnt_id_t     parent_id = 0;                     // unlockated
     _scoped_zhash_t         *ext_attributes = zhash_new();
     zhash_autofree (ext_attributes);
@@ -673,7 +673,7 @@ TEST_CASE("rack unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlock
     REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
 
     const char      *name = "RACK_TEST";
-    a_elmnt_tp_id_t  element_type_id = asset_type::RACK;
+    a_elmnt_tp_id_t  element_type_id = persist::asset_type::RACK;
     a_elmnt_id_t     parent_id = 0;                     // unlockated
     _scoped_zhash_t         *ext_attributes = zhash_new();
     zhash_autofree (ext_attributes);
@@ -846,7 +846,7 @@ TEST_CASE("group unlockated INSERT/DELETE #11","[db][CRUD][insert][delete][unloc
     REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
 
     const char      *name = "GROUP_TEST";
-    a_elmnt_tp_id_t  element_type_id = asset_type::GROUP;
+    a_elmnt_tp_id_t  element_type_id = persist::asset_type::GROUP;
     a_elmnt_id_t     parent_id = 0;                     // unlockated
     _scoped_zhash_t         *ext_attributes = zhash_new();
     zhash_autofree (ext_attributes);
@@ -924,7 +924,7 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
     REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
 
     const char      *name = "DEVICE_TEST";
-    a_elmnt_tp_id_t  element_type_id = asset_type::DEVICE;
+    a_elmnt_tp_id_t  element_type_id = persist::asset_type::DEVICE;
     a_elmnt_id_t     parent_id = 0;                     // unlockated
     _scoped_zhash_t         *ext_attributes = zhash_new();
     zhash_autofree (ext_attributes);

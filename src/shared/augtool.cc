@@ -25,10 +25,13 @@
  */
 #include <vector>
 #include <string>
+#include <functional>
 #include <cxxtools/split.h>
 
+#include "augtool.h"
+
 // Helper function to parse output of augtool
-std::string augtool_out(const std::string in, bool key_value = true, std::string sep = "") {
+std::string augtool_out(const std::string in, bool key_value, std::string sep, std::function<bool(const std::string)> filter) {
     std::vector<std::string> spl;
     bool not_first = false;
     std::string out;
@@ -46,10 +49,14 @@ std::string augtool_out(const std::string in, bool key_value = true, std::string
                 continue;
             if(not_first)
                 out += sep;
+            if(filter(i))
+                continue;
             out += i;
         } else {
             if(not_first)
                 out += sep;
+            if(filter(i.substr(pos+2)))
+                continue;
             out += i.substr(pos+2);
         }
         not_first = true;
