@@ -18,27 +18,10 @@
 #
 
 
-#! \file current.sh
-#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
-#  \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+#! \file asset_devices.sh
+#  \author Alena Chernikava <AlenaChernikava@Eaton.com>
 #  \brief Not yet documented file
 
-test_it dev=6
-api_get_json '/metric/current?dev=6' >&5
+test_it
+api_get_json /asset/devices?subtype=ups >&5
 print_result $?
-
-test_it dev=7
-api_get_json '/metric/current?dev=7' >&5
-print_result $?
-
-test_it dev=3
-curlfail_push_expect_404
-api_get_json '/metric/current?dev=5555553' >&5
-print_result $?
-curlfail_pop
-
-test_it default
-curlfail_push_expect_400
-api_get_json '/metric/current' >&5
-print_result $?
-curlfail_pop
