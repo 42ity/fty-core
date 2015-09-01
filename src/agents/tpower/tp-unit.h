@@ -81,7 +81,6 @@ class TPUnit {
  protected:
     //! \brief measurement status
     std::map < std::string, bool > _changed;
-    //bool _changed = false;
 
     //! \brief measurement timestamp
     std::map < std::string, time_t> _timestamp;

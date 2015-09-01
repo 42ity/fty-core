@@ -51,18 +51,18 @@ class TotalPowerAgent : public BIOSAgent {
     //! \brief list of racks
     std::map< std::string, TPUnit > _racks;
     //! \brief topic interesting for racks
-    cxxtools::Regex _rackRegex = cxxtools::Regex("^measurement\\.realpower\\.default", REG_EXTENDED );
+    const cxxtools::Regex _rackRegex = cxxtools::Regex("^measurement\\.realpower\\.default", REG_EXTENDED );
     //! \brief list of interested units
-    std::vector<std::string> _rackQuantities = { "realpower.default" };
+    const std::vector<std::string> _rackQuantities = { "realpower.default" };
     //! \brief list of racks, affected by powerdevice
     std::map< std::string, std::string> _affectedRacks;
 
     //! \brief list of datacenters
     std::map< std::string, TPUnit > _DCs;
     //! \brief topic interesting for DCs
-    cxxtools::Regex _dcRegex = cxxtools::Regex("^measurement\\.realpower\\.(default|input\\.L[1-3])", REG_EXTENDED );
+    const cxxtools::Regex _dcRegex = cxxtools::Regex("^measurement\\.realpower\\.(default|input\\.L[1-3])", REG_EXTENDED );
     //! \brief list of interested units
-    std::vector<std::string> _dcQuantities = {
+    const std::vector<std::string> _dcQuantities = {
         "realpower.default",
         "realpower.input.L1",
         "realpower.input.L2",
