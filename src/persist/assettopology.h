@@ -456,6 +456,9 @@ size_t my_size(zframe_t* frame);
 // ===============================================================
 
 zmsg_t* 
-    process_assettopology (const char *database_url, asset_msg_t **message_p);
+    process_assettopology(
+        const char *database_url,
+        asset_msg_t **message_p,
+        a_elmnt_id_t feed_by_id = 0);
 
 #endif // SRC_PERSIST_ASSETTOPOLOGY_H_

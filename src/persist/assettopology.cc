@@ -45,8 +45,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MAX_RECURSION_DEPTH 6
 #define INPUT_POWER_CHAIN 1
 
+// too complex to add new parametr it to the message
+// and messages are going to be deleted, so add it as normal parameter.
 zmsg_t *process_assettopology (const char *database_url,
-                        asset_msg_t **message_p) {
+                        asset_msg_t **message_p, a_elmnt_id_t feed_by_id) {
     log_open ();
 
     assert (message_p);
