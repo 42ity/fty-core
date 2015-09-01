@@ -40,87 +40,100 @@
 #include "asset_msg.h"
 #include "asset_types.h"
 #include "assettopology.h"
+#include "web_utils.h"
 </%pre>
+
 <%args>
 std::string from;
 std::string to;
 std::string recursive;
 std::string filter;
+std::string feed_by;
 </%args>
-<%cpp>    
+
+<%cpp>
     log_open ();
-    // GET requests only
-    if (request.isMethodGET() == false) {
+    LOG_START;
+    log_debug("from='%s'", from.c_str());
+    log_debug("to='%s'", to.c_str());
+    log_debug("recursive='%s'", recursive.c_str());
+    log_debug("filter='%s'", filter.c_str());
+    log_debug("feed_by='%s'", feed_by.c_str());
+    if ( !request.isMethodGET() )
+    {
+</%cpp>
+<$$ create_error_json("Not implemented", 100) $>
+<%cpp>
+        return HTTP_NOT_IMPLEMENTED;
+    }
+
+    // Check url validity
+    // 1. Exactly one variable has to be specified: 'from' or 'to'
+    if (!from.empty() && !to.empty())
+    {
+</%cpp>
+<$$ create_error_json("You can specify 'from' OR 'to' variable, but not both.", 400) $>
+<%cpp>
+        return HTTP_BAD_REQUEST;
+    }
+    // 2. At least one parametr should be specified
+    if (from.empty() && to.empty())
+    {
+</%cpp>
+<$$ create_error_json("You have to specify one of the following variables: 'from=<element_id|none>', 'to=<element_id>'", 401) $>
+<%cpp>
         return HTTP_BAD_REQUEST;
     }
 
-    // Exactly one variable has to be specified: 'from' or 'to'
-    if (!from.empty() && !to.empty()) {
-</%cpp>
-        {
-            "error" :   "bad_input",
-            "msg"   :   "You can specify 'from' OR 'to' variable, but not both."
-        }
-<%cpp>
-        return HTTP_BAD_REQUEST;
-    }
-    if (from.empty() && to.empty()) {
-</%cpp>
-        {
-            "error" :   "bad_input",
-            "msg"   :   "You have to specify one of the following variables: 'from=<element_id|none>', 'to=<element_id>'."
-        }
-<%cpp>
-        return HTTP_BAD_REQUEST;
-    }
+    if (!to.empty())
+    {
+        // we are supposet to process "location_to"
 
-    if (!to.empty()) {
-        // Check recursive
-        if (!recursive.empty()) {
+        // Check other parameters. TODO return as a list of errors, not just one
+        // 1. 'Recursive' parameter cannot be specified with 'to'
+        if (!recursive.empty())
+        {
 </%cpp>
-            {
-                "error" :   "bad_input",
-                "msg"   :   "Variable 'recursive' can not be specified along with 'to'."
-            }
+<$$ create_error_json("Variable 'recursive' can not be specified along with 'to'.", 402) $>
 <%cpp>
             return HTTP_BAD_REQUEST;
         }
-        // Check filter
-        if (!filter.empty()) {
+        // 2. 'Filter' parameter cannot be specified with 'to'
+        if (!filter.empty())
+        {
 </%cpp>
-            {
-                "error" :   "bad_input",
-                "msg"   :   "Variable 'filter' can not be specified along with 'to'."
-            }
+<$$ create_error_json("Variable 'filter' can not be specified along with 'to'.", 403) $>
 <%cpp>
             return HTTP_BAD_REQUEST;
         }
+        // 3. 'feed_by' parameter cannot be specified with 'to'
+        if (!feed_by.empty())
+        {
+</%cpp>
+<$$ create_error_json("Variable 'feed_by' can not be specified along with 'to'.", 404) $>
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+
         // Try to convert string to number
-        int element_id = -1;
+        a_elmnt_id_t element_id = 0;
         try {
-            element_id = std::stoi (to);
+            element_id = std::stoul (to);
         } catch (std::out_of_range& e) {
 </%cpp>
-            {
-                "error" :   "bad_input",
-                "msg"   :   "Variable 'to' contains number that falls out of the allowed range."
-            }
+<$$ create_error_json("Variable 'to' contains number that falls out of the allowed range.", 405) $>
 <%cpp>
             return HTTP_BAD_REQUEST;
         } catch (std::invalid_argument& e) {
 </%cpp>
-            {
-                "error" :   "bad_input",
-                "msg"   :   "Please specify an integer value for variable 'to'."
-            }
-<%cpp>       
+<$$ create_error_json("Please specify an integer value for variable 'to'.", 406) $>
+<%cpp>
+</%cpp>
             return HTTP_BAD_REQUEST;
         } catch (std::exception& e) {
+            LOG_END_ABNORMAL (e);
 </%cpp>
-            {
-                "error" :   "bad_input",
-                "msg"   :   "Error while converting <$ to $> to integer value: <$ e.what() $>."
-            }
+<$$ create_error_json("Error while converting " + to + " to integer value", 407) $>
 <%cpp>
             return HTTP_BAD_REQUEST;
         }
@@ -128,7 +141,7 @@ std::string filter;
         _scoped_asset_msg_t *input_msg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
         assert (input_msg);
         asset_msg_set_element_id (input_msg, element_id);
-        
+
         _scoped_zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg);
         if (return_msg == NULL) {
 </%cpp>
@@ -140,7 +153,7 @@ std::string filter;
             return HTTP_INTERNAL_SERVER_ERROR;
         }
         assert (input_msg == NULL); // This is not testing czmq. It tests whether our code correctly nullifies a reference
-    
+
         if (is_common_msg (return_msg)) {
             _scoped_common_msg_t *common_msg = common_msg_decode (&return_msg);
             if (common_msg == NULL) {
@@ -153,7 +166,7 @@ std::string filter;
                     "msg"   :   "common_msg_decode() failed."
                 }
 <%cpp>
-                return HTTP_INTERNAL_SERVER_ERROR;               
+                return HTTP_INTERNAL_SERVER_ERROR;
             }
 
             if (common_msg_id (common_msg) == COMMON_MSG_FAIL) {
@@ -180,7 +193,7 @@ std::string filter;
                 "msg"   :   "Unexpected common_msg received. Message ID = <$ common_msg_id (common_msg) $>"
             }
 <%cpp>
-                return HTTP_INTERNAL_SERVER_ERROR; 
+                return HTTP_INTERNAL_SERVER_ERROR;
             }
         }
         else if (is_asset_msg (return_msg)) {
@@ -195,13 +208,13 @@ std::string filter;
                     "msg"   :   "asset_msg_decode() failed."
                 }
 <%cpp>
-                return HTTP_INTERNAL_SERVER_ERROR;               
+                return HTTP_INTERNAL_SERVER_ERROR;
             }
 
             // <element_id, type, contains, name, type_name>
-            std::stack<std::tuple <int, int, std::string, std::string, std::string>> stack; 
+            std::stack<std::tuple <int, int, std::string, std::string, std::string>> stack;
             std::string contains;
-        
+
             if (asset_msg_id (asset_msg) == ASSET_MSG_RETURN_LOCATION_TO) {
                 bool go = true;
                 do {
@@ -212,7 +225,7 @@ std::string filter;
                     stack.push (make_tuple(element_id, type_id, contains, name, type_name));
                     // I deliberately didn't want to use asset manager (unknown / ""; suffix s)
                     // TODO use special function
-                    switch (type_id) {                        
+                    switch (type_id) {
                         case persist::asset_type::DATACENTER:
                         {
                             contains = "datacenters";
@@ -251,12 +264,12 @@ std::string filter;
                                 "msg"   :   "Unknown asset_element_type ID received: '<$ type_id $>'."
                             }
 <%cpp>
-                            return HTTP_INTERNAL_SERVER_ERROR; 
+                            return HTTP_INTERNAL_SERVER_ERROR;
                         }
-                    }                 
+                    }
 
                     if (zmsg_size (asset_msg_msg (asset_msg)) != 0) {
-                        _scoped_zmsg_t *inner = asset_msg_get_msg (asset_msg); 
+                        _scoped_zmsg_t *inner = asset_msg_get_msg (asset_msg);
                         asset_msg_destroy (&asset_msg);
                         asset_msg = asset_msg_decode (&inner);
 
@@ -270,7 +283,7 @@ std::string filter;
                                 "msg"   :   "asset_msg_decode() failed."
                             }
 <%cpp>
-                            return HTTP_INTERNAL_SERVER_ERROR;               
+                            return HTTP_INTERNAL_SERVER_ERROR;
                         }
 
                         go = true;
@@ -347,16 +360,16 @@ std::string filter;
                     }
 
                 }
-                for (int i = counter; i > 0; i--) {                    
+                for (int i = counter; i > 0; i--) {
                     indent--;
                     for (int j = 0; j < indent; j++) {
                         json.append ("\t");
                     }
-                    json.append ("}]}\n"); 
+                    json.append ("}]}\n");
                 }
                 json.append ("}");
 </%cpp>
-    <$$ json $>                
+    <$$ json $>
 <%cpp>
             }
             else {
@@ -366,13 +379,13 @@ std::string filter;
                 "msg"   :   "Unexpected asset_msg received. Message ID = <$ asset_msg_id (asset_msg) $>"
             }
 <%cpp>
-                return HTTP_INTERNAL_SERVER_ERROR; 
+                return HTTP_INTERNAL_SERVER_ERROR;
             }
         }
         else {
             log_error ("TODO Unknown protocol");
-            return HTTP_INTERNAL_SERVER_ERROR; 
-        }    
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
     }
     else if (!from.empty()) {
         std::transform (recursive.begin(), recursive.end(), recursive.begin(), ::tolower);
@@ -381,7 +394,7 @@ std::string filter;
         // recursive
         int is_recursive = 0;
         if (recursive == "yes") {
-            is_recursive = 1;        
+            is_recursive = 1;
         } else if (!recursive.empty() && recursive != "no") {
 </%cpp>
             {
@@ -389,7 +402,7 @@ std::string filter;
                 "msg"   :   "Invalid 'recursive' value. Please use 'yes' or 'no'."
             }
 <%cpp>
-            return HTTP_BAD_REQUEST;           
+            return HTTP_BAD_REQUEST;
         }
 
         // filter_type
@@ -435,13 +448,13 @@ std::string filter;
             }
 <%cpp>
             return HTTP_BAD_REQUEST;
-        } catch (std::invalid_argument& e) {       
+        } catch (std::invalid_argument& e) {
 </%cpp>
             {
                 "error" :   "bad_input",
                 "msg"   :   "Please specify an integer value for variable 'from'."
             }
-<%cpp>       
+<%cpp>
             return HTTP_BAD_REQUEST;
         } catch (std::exception& e) {
 </%cpp>
@@ -462,7 +475,7 @@ std::string filter;
         asset_msg_set_filter_type (input_msg, (byte) filter_type);
 
         asset_msg_print(input_msg);
-        
+
         _scoped_zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg);
         if (return_msg == NULL) {
 </%cpp>
@@ -487,7 +500,7 @@ std::string filter;
                     "msg"   :   "common_msg_decode() failed."
                 }
 <%cpp>
-                return HTTP_INTERNAL_SERVER_ERROR;               
+                return HTTP_INTERNAL_SERVER_ERROR;
             }
 
             if (common_msg_id (common_msg) == COMMON_MSG_FAIL) {
@@ -506,7 +519,7 @@ std::string filter;
                 default:
                     return HTTP_INTERNAL_SERVER_ERROR;
             }
- 
+
             }
             else {
 </%cpp>
@@ -515,7 +528,7 @@ std::string filter;
                 "msg"   :   "Unexpected common_msg received. Message ID = <$ common_msg_id (common_msg) $>"
             }
 <%cpp>
-                return HTTP_INTERNAL_SERVER_ERROR; 
+                return HTTP_INTERNAL_SERVER_ERROR;
             }
         }
         else if (is_asset_msg (return_msg)) {
@@ -530,7 +543,7 @@ std::string filter;
                     "msg"   :   "asset_msg_decode() failed."
                 }
 <%cpp>
-                return HTTP_INTERNAL_SERVER_ERROR;               
+                return HTTP_INTERNAL_SERVER_ERROR;
             }
 
             if (asset_msg_id (asset_msg) == ASSET_MSG_RETURN_LOCATION_FROM) {
@@ -538,7 +551,7 @@ std::string filter;
 
                 if(asset_location_r(&asset_msg, json) == HTTP_OK) {
 </%cpp>
-    <$$ json $>
+<$$ json $>
 <%cpp>
                 } else {
 </%cpp>
@@ -547,8 +560,7 @@ std::string filter;
                 "msg"   :   "Unexpected error occured during location reply parsing"
             }
 <%cpp>
-                return HTTP_INTERNAL_SERVER_ERROR; 
- 
+                return HTTP_INTERNAL_SERVER_ERROR;
                 }
             }
             else {
@@ -558,15 +570,14 @@ std::string filter;
                 "msg"   :   "Unexpected asset_msg received. Message ID = <$ asset_msg_id (asset_msg) $>"
             }
 <%cpp>
-                return HTTP_INTERNAL_SERVER_ERROR; 
-            }  
-
+                return HTTP_INTERNAL_SERVER_ERROR;
+            }
         }
         else {
             log_error ("TODO Unknown protocol");
-            return HTTP_INTERNAL_SERVER_ERROR; 
+            return HTTP_INTERNAL_SERVER_ERROR;
         }
-    }   
+    }
     else {
         // should never reach here
 </%cpp>
