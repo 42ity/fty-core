@@ -29,6 +29,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <map>
 #include <vector>
 #include <string>
+#include <cxxtools/regex.h>
 
 #include "tp-unit.h"
 
@@ -49,19 +50,41 @@ class TotalPowerAgent : public BIOSAgent {
  private:
     //! \brief list of racks
     std::map< std::string, TPUnit > _racks;
-    //! \brief list of datacenters
-    std::map< std::string, TPUnit > _DCs;
+    //! \brief topic interesting for racks
+    const cxxtools::Regex _rackRegex = cxxtools::Regex("^measurement\\.realpower\\.default", REG_EXTENDED );
+    //! \brief list of interested units
+    const std::vector<std::string> _rackQuantities = { "realpower.default" };
     //! \brief list of racks, affected by powerdevice
     std::map< std::string, std::string> _affectedRacks;
+
+    //! \brief list of datacenters
+    std::map< std::string, TPUnit > _DCs;
+    //! \brief topic interesting for DCs
+    const cxxtools::Regex _dcRegex = cxxtools::Regex("^measurement\\.realpower\\.(default|input\\.L[1-3])", REG_EXTENDED );
+    //! \brief list of interested units
+    const std::vector<std::string> _dcQuantities = {
+        "realpower.default",
+        "realpower.input.L1",
+        "realpower.input.L2",
+        "realpower.input.L3",
+        /* TODO: following quantities are not in nut mapping yet, so it doesn't make sense have it here 
+        "realpower.output.L1",
+        "realpower.output.L2",
+        "realpower.output.L3",
+        */
+    };
     //! \brief list of DCs, affected by powerdevice
     std::map< std::string, std::string> _affectedDCs;
+
     //! \brief timestamp, when we should re-read configuration
     time_t _reconfigPending = 0;
 
     //! \brief read configuration from database
     bool configuration();
+
     //! \brief send measurement message if needed
-    void sendMeasurement(std::map< std::string, TPUnit > &elements);
+    void sendMeasurement(std::map< std::string, TPUnit > &elements, const std::vector<std::string> &quantities );
+
     //! \brief powerdevice to DC or rack and put it also in _affected* map
     void addDeviceToMap(
         std::map< std::string, TPUnit > &elements,

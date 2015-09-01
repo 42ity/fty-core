@@ -31,77 +31,102 @@
 #include "agents.h"
 #include "log.h"
 
-Measurement TPUnit::realpower() const{
+
+Measurement TPUnit::summarize(const std::string &quantity) const{
     Measurement result;
     result.units("W");
     for( auto &it : _powerdevices ) {
-        result += it.second;
+        auto itMeasurements = it.second.find(quantity);
+        if( itMeasurements != it.second.end() ) {
+            result += itMeasurements->second;
+        }
     }
     return result;
 }
 
-bool TPUnit::realpowerIsUnknown() const
+bool TPUnit::quantityIsUnknown(const std::string &quantity) const
 {
     time_t now = std::time(NULL);
     for( auto &it : _powerdevices ) {
-        if( now - it.second.time() > TPOWER_MEASUREMENT_REPEAT_AFTER * 2 ) return true;
+        auto itMeasurements = it.second.find(quantity);
+        if( itMeasurements == it.second.end() ) return true;
+        if( now - itMeasurements->second.time() > TPOWER_MEASUREMENT_REPEAT_AFTER * 2 ) return true;
     }
     return false;
 }
 
-std::vector<std::string> TPUnit::devicesInUnknownState() const
+std::vector<std::string> TPUnit::devicesInUnknownState(const std::string &quantity) const
 {
     std::vector<std::string> result;
     time_t now = std::time(NULL);
     for( auto &it : _powerdevices ) {
-        if( now - it.second.time() > TPOWER_MEASUREMENT_REPEAT_AFTER * 2 ) result.push_back( it.first );
+        auto itMeasurements = it.second.find(quantity);
+        if(
+            itMeasurements == it.second.end()  ||
+            ( now - itMeasurements->second.time() > TPOWER_MEASUREMENT_REPEAT_AFTER * 2 )
+        ) result.push_back( it.first );
     }
     return result;
 }
 
 void TPUnit::addPowerDevice(const std::string &device)
 {
-    _powerdevices[device] = Measurement();
+    _powerdevices[device] = {};
 }
 
 void TPUnit::setMeasurement(const Measurement &M)
 {
     if( _powerdevices.find( M.deviceName() ) != _powerdevices.end() ) {
-        if( _powerdevices[M.deviceName()] != M ) changed(true);
-        _powerdevices[M.deviceName()] = M;
+        if( _powerdevices[M.deviceName()][M.source()] != M ) changed( M.source(), true );
+        _powerdevices[M.deviceName()][M.source()] = M;
     }
 }
 
-void TPUnit::changed(bool newStatus) {
-    if( _changed != newStatus ) {
-        _changed = newStatus;
-        _timestamp = time(NULL);
+bool TPUnit::changed(const std::string &quantity) const {
+    auto it = _changed.find(quantity);
+    if( it == _changed.end() ) return false;
+    return it->second;
+}
+
+void TPUnit::changed(const std::string &quantity, bool newStatus) {
+    if( changed( quantity ) != newStatus ) {
+        _changed[quantity] = newStatus;
+        _timestamp[quantity] = time(NULL);
     }
 }
 
-void TPUnit::advertised() {
-    _changed = false;
-    _timestamp = time(NULL);
+void TPUnit::advertised(const std::string &quantity) {
+    changed( quantity, false );
+    _timestamp[quantity] = time(NULL);
 }
 
-time_t TPUnit::timeToAdvertisement() const {
-    if( ( _timestamp == 0 ) || realpowerIsUnknown() ) return TPOWER_MEASUREMENT_REPEAT_AFTER;
-    time_t dt = time(NULL) - _timestamp;
+time_t TPUnit::timestamp( const std::string &quantity ) const {
+    auto it = _timestamp.find(quantity);
+    if( it == _timestamp.end() ) return 0;
+    return it->second;
+}
+
+time_t TPUnit::timeToAdvertisement( const std::string &quantity ) const {
+    if(
+        ( timestamp(quantity) == 0 ) ||
+        quantityIsUnknown(quantity)
+    ) return TPOWER_MEASUREMENT_REPEAT_AFTER;
+    time_t dt = time(NULL) - timestamp( quantity );
     if( dt > TPOWER_MEASUREMENT_REPEAT_AFTER ) return 0;
     return TPOWER_MEASUREMENT_REPEAT_AFTER - dt;
 }
 
-bool TPUnit::advertise() const{
-    if( realpowerIsUnknown() ) return false;
-    return ( _changed || ( time(NULL) - _timestamp > TPOWER_MEASUREMENT_REPEAT_AFTER ) );
+bool TPUnit::advertise( const std::string &quantity ) const{
+    if( quantityIsUnknown(quantity) ) return false;
+    return ( changed(quantity) || ( time(NULL) - timestamp(quantity) > TPOWER_MEASUREMENT_REPEAT_AFTER ) );
 }
 
-ymsg_t * TPUnit::measurementMessage() {
+ymsg_t * TPUnit::measurementMessage( const std::string &quantity ) {
     try {
-        Measurement M = realpower();
+        Measurement M = summarize(quantity);
         ymsg_t *message = bios_measurement_encode(
             _name.c_str(),
-            "realpower.default",
+            quantity.c_str(),
             M.units().c_str(),
             M.value(),
             M.scale(),
