@@ -36,7 +36,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 class TPUnit {
  public:
     //\! \brief calculate total realpower
-    Measurement realpower() const;
+    Measurement summarize(const std::string & source) const;
     
     //\! \brief get set unit name
     std::string name() const { return _name; };
@@ -44,12 +44,13 @@ class TPUnit {
     void name(const char *name) { _name =  name ? name : ""; };
     
     //\! \brief returns true if at least one measurement of all included powerdevices is unknown  
-    bool realpowerIsUnknown() const;
+    bool quantityIsUnknown( const std::string &quantity ) const;
     //\! \brief returns true if totalpower can be calculated.
-    bool realpowerIsKnown() const { return ! realpowerIsUnknown(); }
-
+    bool quantityIsKnown( const std::string &quantity ) const {
+        return ! quantityIsUnknown(quantity);
+    }
     //\! \brief returns list of devices in unknown state
-    std::vector<std::string> devicesInUnknownState() const;
+    std::vector<std::string> devicesInUnknownState(const std::string &quantity) const;
 
     //\! \brief add powerdevice to unit 
     void addPowerDevice(const std::string &device);
@@ -58,31 +59,42 @@ class TPUnit {
     void setMeasurement(const Measurement &M);
     
     //! \brief returns true if measurement is changend and we should advertised
-    bool changed() const { return _changed; }
+    bool changed(const std::string &quantity) const;
 
     //! \brief set/clear changed status
-    void changed(bool newStatus);
+    void changed(const std::string &quantity, bool newStatus);
 
     //! \brief returns true if measurement should be send (changed is true or we did not send it for long time)
-    bool advertise() const;
+    bool advertise( const std::string &quantity ) const;
 
     //! \brief set timestamp of the last publishing moment
-    void advertised();
+    void advertised( const std::string &quantity );
 
     //! \brief time to next advertisement [s]
-    time_t timeToAdvertisement() const;
+    time_t timeToAdvertisement( const std::string &quantity ) const;
 
     //! \brief create ymsg meeasurement message
-    ymsg_t *measurementMessage();
+    ymsg_t *measurementMessage( const std::string &quantity );
+
+    //! \brief return timestamp for quantity change
+    time_t timestamp( const std::string &quantity ) const;
  protected:
     //! \brief measurement status
-    bool _changed = false;
+    std::map < std::string, bool > _changed;
+    //bool _changed = false;
 
     //! \brief measurement timestamp
-    time_t _timestamp;
+    std::map < std::string, time_t> _timestamp;
 
-    //! \brief list of measurements for included devices
-    std::map< std::string, Measurement > _powerdevices;
+    /*! \brief list of measurements for included devices
+     *
+     *     map---device1---map---realpower.default---Measurement
+     *      |               +----realpover.input.L1--Measurement
+     *      |               +----realpover.input.L2--Measurement
+     *      |               +----realpover.input.L3--Measurement
+     *      +----device2-...
+     */
+    std::map< std::string, std::map<std::string,Measurement> > _powerdevices;
 
     //! \brief unit name
     std::string _name;
