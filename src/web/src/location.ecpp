@@ -87,12 +87,14 @@ std::string feed_by;
 
     if (!to.empty())
     {
+        log_debug("1to='%s'", to.c_str());
         // we are supposet to process "location_to"
 
         // Check other parameters. TODO return as a list of errors, not just one
         // 1. 'Recursive' parameter cannot be specified with 'to'
         if (!recursive.empty())
         {
+        log_debug("11to='%s'", to.c_str());
 </%cpp>
 <$$ create_error_json("Variable 'recursive' can not be specified along with 'to'.", 402) $>
 <%cpp>
@@ -101,6 +103,7 @@ std::string feed_by;
         // 2. 'Filter' parameter cannot be specified with 'to'
         if (!filter.empty())
         {
+        log_debug("111to='%s'", to.c_str());
 </%cpp>
 <$$ create_error_json("Variable 'filter' can not be specified along with 'to'.", 403) $>
 <%cpp>
@@ -109,31 +112,37 @@ std::string feed_by;
         // 3. 'feed_by' parameter cannot be specified with 'to'
         if (!feed_by.empty())
         {
+        log_debug("1111to='%s'", to.c_str());
 </%cpp>
 <$$ create_error_json("Variable 'feed_by' can not be specified along with 'to'.", 404) $>
 <%cpp>
             return HTTP_BAD_REQUEST;
         }
 
+        log_debug("2to='%s'", to.c_str());
         // Try to convert string to number
         a_elmnt_id_t element_id = 0;
         try {
+        log_debug("1to='%s'", to.c_str());
             element_id = std::stoul (to);
+        log_debug("11to='%s'", to.c_str());
         } catch (std::out_of_range& e) {
+        log_debug("12to='%s'", to.c_str());
 </%cpp>
 <$$ create_error_json("Variable 'to' contains number that falls out of the allowed range.", 405) $>
 <%cpp>
             return HTTP_BAD_REQUEST;
         } catch (std::invalid_argument& e) {
+        log_debug("13to='%s'", to.c_str());
 </%cpp>
 <$$ create_error_json("Please specify an integer value for variable 'to'.", 406) $>
 <%cpp>
-</%cpp>
             return HTTP_BAD_REQUEST;
         } catch (std::exception& e) {
+        log_debug("14to='%s'", to.c_str());
             LOG_END_ABNORMAL (e);
 </%cpp>
-<$$ create_error_json("Error while converting " + to + " to integer value", 407) $>
+<$$ create_error_json("Error while converting 'to' to integer value", 407) $>
 <%cpp>
             return HTTP_BAD_REQUEST;
         }
