@@ -122,10 +122,12 @@ void NUTAgent::advertiseInventory() {
     }
     for( auto &device : _deviceList ) {
         std::string topic = "inventory@" + device.second.name();
+        std::string log;
         zhash_t *inventory = zhash_new();
         for( auto &item : device.second.inventory( !advertise ) ) {
             if( item.first != "status.ups" ) { 
                 zhash_insert( inventory, item.first.c_str(), (void *)item.second.c_str() );
+                log += item.first + " = \"" + item.second + "\"; ";
                 device.second.setChanged(item.first,false);
             }
         }
@@ -135,6 +137,7 @@ void NUTAgent::advertiseInventory() {
                 &inventory,
                 "inventory" );
             if( message ) {
+                log_debug( "new inventory message %s: %s", topic.c_str(), log.c_str() );
                 bios_agent_send( _bios_agent, topic.c_str(), &message );
                 ymsg_destroy( &message );
             }
