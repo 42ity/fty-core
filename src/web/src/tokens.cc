@@ -35,18 +35,32 @@
 
 #include "tokens.h"
 
-tokens *tokens::get_instance(bool recreate) {
+//! Max time key is alive
+#define MAX_LIVE 24*3600
+//! Maximum tokens per key
+#define MAX_USE 256
+
+void tokens::regen_keys() {
+    while(!keys.empty() && keys.front().valid_until < time(NULL))
+        keys.pop_front();
+    if(keys.empty() || keys.back().used > MAX_USE ||
+                       keys.back().valid_until < time(NULL) - MAX_LIVE) {
+        cipher new_cipher;
+        randombytes_buf(new_cipher.nonce, sizeof(new_cipher.nonce));
+        randombytes_buf(new_cipher.key, sizeof(new_cipher.key));
+        new_cipher.valid_until = time(NULL);
+        new_cipher.valid_until += 2*MAX_LIVE;
+        new_cipher.used = 0;
+        keys.push_back(new_cipher);
+    }
+}
+
+tokens *tokens::get_instance() {
     static tokens *inst = NULL;
     static std::mutex mtx;
     mtx.lock();
-    if (recreate && inst!=NULL) {
-        delete inst;
-        inst=NULL;
-    }
-    if (!inst) {
+    if(!inst) {
         inst = new tokens;
-        randombytes_buf(inst->nonce, sizeof nonce);
-        randombytes_buf(inst->key, sizeof key);
     }
     mtx.unlock();
     return inst;
@@ -55,16 +69,14 @@ tokens *tokens::get_instance(bool recreate) {
 std::string tokens::gen_token(int& valid, const char* user, bool do_round) {
     unsigned char ciphertext[CIPHERTEXT_LEN];
     char buff[MESSAGE_LEN + 1];
-    long int tme = (time(NULL) + valid);
+    long int tme = ((long int)time(NULL) + std::min((long int)valid, (long int)MAX_LIVE));
+    static int number = random() % MAX_USE;
+    int my_number;
     long int uid = -1;
     if (do_round) {
         tme /= ROUND;
         tme *= ROUND;
         valid = (tme - time(NULL));
-    }
-
-    for (int i = 0; i < MESSAGE_LEN; i++) {
-        buff[i] = 0x20;
     }
 
     if(user != NULL) {
@@ -77,17 +89,40 @@ std::string tokens::gen_token(int& valid, const char* user, bool do_round) {
         pwnam_lock.unlock();
     }
 
-    snprintf(buff, MESSAGE_LEN, "%ld %ld", tme, uid);
-    buff[strlen(buff)] = 0x20;
-    buff[MESSAGE_LEN] = 0;
+    static std::mutex mtx;
+    mtx.lock();
+    regen_keys();
+    cipher tmp = keys.back();
+    keys.back().used++;
+    my_number = number;
+    number = (number + 1) % MAX_USE;
+    mtx.unlock();
 
-    crypto_secretbox_easy(ciphertext, (unsigned char *)buff, MESSAGE_LEN, nonce, key);
+    snprintf(buff, MESSAGE_LEN, "%ld %ld %d", tme, uid, my_number);
 
-    return cxxtools::Base64Codec::encode((char *)ciphertext, CIPHERTEXT_LEN);
+    crypto_secretbox_easy(ciphertext, (unsigned char *)buff, strlen(buff),
+                          tmp.nonce, tmp.key);
+    ciphertext[crypto_secretbox_MACBYTES + strlen(buff)] = 0;
+    std::string ret = cxxtools::Base64Codec::encode((char *)ciphertext,
+                                    crypto_secretbox_MACBYTES + strlen(buff));
+    for(auto &i: ret) {
+        if(i == '+')
+            i = '_';
+        if(i == '/')
+            i = '-';
+    }
+    return ret;
 }
 
-void tokens::decode_token(char *buff, const std::string token) {
+void tokens::decode_token(char *buff, std::string token) {
     std::string data;
+
+    for(auto &i: token) {
+        if(i == '_')
+            i = '+';
+        if(i == '-')
+            i = '/';
+    }
 
     try {
         data = cxxtools::Base64Codec::decode(token);
@@ -95,19 +130,43 @@ void tokens::decode_token(char *buff, const std::string token) {
         data = "";
     }
 
-    if ((crypto_secretbox_open_easy((unsigned char *)buff,
-                                    (const unsigned char *)data.c_str(),
-                                    data.length(), nonce, key) != 0) ||
-        (data.empty())) {
-        for (int i = 0; i <= MESSAGE_LEN; i++) {
-            buff[i] = 0;
+    for(auto i: keys) {
+        if(crypto_secretbox_open_easy((unsigned char *)buff,
+                                        (const unsigned char *)data.c_str(),
+                                        data.length(), i.nonce, i.key) == 0) {
+            return;
         }
     }
+    for(int i = 0; i <= MESSAGE_LEN; i++)
+        buff[i] = 0;
+}
+
+void tokens::clean_revoked() {
+    std::multimap<long int, std::string>::iterator it;
+    while(!revoked_queue.empty() &&
+          (it = revoked_queue.begin())->first < time(NULL)) {
+        revoked.erase(it->second);
+        revoked_queue.erase(it);
+    }
+}
+
+void tokens::revoke(const std::string token) {
+    char buff[MESSAGE_LEN + 1];
+    long int tme = 0;
+    decode_token(buff, token);
+    sscanf(buff, "%ld", &tme);
+    if(tme <= time(NULL))
+        return;
+    revoked.insert(token);
+    revoked_queue.insert(std::make_pair(tme, token));
 }
 
 bool tokens::verify_token(const std::string token, long int* uid) {
     char buff[MESSAGE_LEN + 1];
     long int tme = 0;
+    clean_revoked();
+    if(revoked.find(token) != revoked.end())
+        return false;
     decode_token(buff, token);
     if(uid != NULL) {
         sscanf(buff, "%ld %ld", &tme, uid);

@@ -31,6 +31,12 @@
     <mapping>
       <target>auth@bios_web</target>
       <url>^/api/v1/oauth2/token$</url>
+      <method>GET</method>
+    </mapping>
+    <mapping>
+      <target>auth@bios_web</target>
+      <url>^/api/v1/oauth2/revoke$</url>
+      <method>(POST|PUT)</method>
     </mapping>
     <!-- Set (int)access_auth_level variable if the request is authenticated -->
     <mapping>
