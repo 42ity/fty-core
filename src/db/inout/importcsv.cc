@@ -115,7 +115,6 @@ static bool
     cxxtools::Regex regex("[0-9][0-9]?[uU]?$");
     if ( !regex.match(s) )
     {
-        log_debug ("WRONG_U_SIZE+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
         return false;
     }
     else
