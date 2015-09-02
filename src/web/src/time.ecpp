@@ -52,12 +52,18 @@ SubProcess augtool(exe, SubProcess::STDOUT_PIPE | SubProcess::STDIN_PIPE);
 		std::string ntp;
 		try {
 			deserializer.deserialize(si);
+		} catch (const std::exception& e) {
+</%cpp>
+{ "error": "<$ e.what() $>" }
+<%cpp>
+	        return HTTP_BAD_REQUEST;
+		}
+		try {
 			si.getMember("time") >>= time;
 		} catch (const std::exception& e) {
 			time = "";
 		}
 		try {
-			deserializer.deserialize(si);
 			si.getMember("ntp") >>= ntp;
 		} catch (const std::exception& e) {
 			ntp = "";
@@ -76,7 +82,7 @@ SubProcess augtool(exe, SubProcess::STDOUT_PIPE | SubProcess::STDIN_PIPE);
 		    if((!t_rex.match(time) ||
 	            system((std::string("sudo date -s ") + time).c_str()) != 0)) {
 </%cpp>
-{ "error":"invalid_format" }
+{ "error":"Invalid time format" }
 <%cpp>
 		        return HTTP_BAD_REQUEST;
 			}
@@ -84,7 +90,7 @@ SubProcess augtool(exe, SubProcess::STDOUT_PIPE | SubProcess::STDIN_PIPE);
 	    if(!ntp.empty()) {
 		    if(!n_rex.match(ntp)) {
 </%cpp>
-{ "error":"invalid_format" }
+{ "error":"Invalid ntp format" }
 <%cpp>
 		    	return HTTP_BAD_REQUEST;
 			} else {
