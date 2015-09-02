@@ -50,6 +50,12 @@
       <method>(POST|PUT|DELETE)</method>
     </mapping>
 
+    <!-- admin/config -->
+    <mapping>
+        <target>config@bios_web</target>
+        <url>^/api/v1/admin/config.*$</url>
+    </mapping>
+
     <!-- admin/systemctl GET -->
     <mapping>
         <target>systemctl@bios_web</target>
