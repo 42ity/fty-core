@@ -95,7 +95,7 @@ zmsg_t *process_assettopology (const char *database_url,
             }
             case ASSET_MSG_GET_LOCATION_FROM:
             {
-                return_msg =  get_return_topology_from (database_url, message);
+                return_msg =  get_return_topology_from (database_url, message, feed_by_id);
                 assert (return_msg);
                 break;
             }
@@ -354,7 +354,7 @@ zframe_t* select_childs(
     const char*     url             , a_elmnt_id_t element_id,
     a_elmnt_tp_id_t element_type_id , a_elmnt_tp_id_t child_type_id,
     bool            is_recursive    , uint32_t current_depth,
-    a_elmnt_tp_id_t     filtertype)
+    a_elmnt_tp_id_t     filtertype  , a_elmnt_id_t feed_by_id)
 {
     assert ( child_type_id );   // is required
     assert ( ( filtertype >= persist::asset_type::GROUP ) && ( filtertype <= 7 ) ); 
@@ -365,6 +365,7 @@ zframe_t* select_childs(
     log_debug ("element_id = %" PRIu32, element_id);
     log_debug ("element_type_id = %" PRIu16, element_type_id);
     log_debug ("child_type_id = %" PRIu16, child_type_id);
+    log_debug ("feed_by_id = %" PRIu32, feed_by_id);
 
     try{
         tntdb::Connection conn = tntdb::connectCached(url); 
@@ -495,7 +496,7 @@ zframe_t* select_childs(
                     log_info ("start select_rooms");
                     rooms = select_childs (url, id, child_type_id, 
                                 persist::asset_type::ROOM, is_recursive, 
-                                current_depth + 1, filtertype);
+                                current_depth + 1, filtertype, feed_by_id);
                     log_info ("end select_rooms");
                 }
 
@@ -508,7 +509,7 @@ zframe_t* select_childs(
                     log_info ("start select_rows");
                     rows  = select_childs (url, id, child_type_id,
                                 persist::asset_type::ROW, is_recursive, 
-                                current_depth + 1, filtertype);
+                                current_depth + 1, filtertype, feed_by_id);
                     log_info ("end select_rows");
                 }
                 
@@ -522,7 +523,7 @@ zframe_t* select_childs(
                     log_info ("start select_racks");
                     racks   = select_childs (url, id, child_type_id, 
                                 persist::asset_type::RACK, is_recursive, 
-                                current_depth + 1, filtertype);
+                                current_depth + 1, filtertype, feed_by_id);
                     log_info ("end select_racks");
                 }
                 
@@ -537,7 +538,7 @@ zframe_t* select_childs(
                     log_info ("start select_devices");
                     devices = select_childs (url, id, child_type_id,
                                 persist::asset_type::DEVICE, is_recursive, 
-                                current_depth + 1, filtertype);
+                                current_depth + 1, filtertype, feed_by_id);
                     log_info ("end select_devices");
                 }
                 
@@ -555,21 +556,45 @@ zframe_t* select_childs(
                 }
             }
             // all sub elements selected
-
+            
+            // We found a device. Need to check, if it is feeded by feed_by_id
+            bool want_it = true;
+            if ( ( child_type_id == persist::asset_type::DEVICE ) &&
+                 ( feed_by_id != 0 )
+               )
+            {
+                // error handling is almost ignored, as it would 
+                // be legacy stuff soon and asset_msg is legacy
+                want_it = false;
+                a_lnk_tp_id_t  linktype   = INPUT_POWER_CHAIN;
+                std::pair < std::set < device_info_t >, std::set < powerlink_info_t > >  power_topology =
+                    select_power_topology_to (url, id, linktype, true);
+                for ( const auto &one_device : power_topology.first )
+                {
+                    if ( device_info_id (one_device) == feed_by_id )
+                    {
+                        want_it = true;
+                        break;
+                    }
+                }
+            }
+            log_debug ("want_id = %s", want_it ? "yes":"no");
             // add this asset_element to return result
             // if   selecting ALL or
             //      for this element where selected sub elements or
             //      the type of the element is a filter type
-            if ( !( ( filtertype < 7 ) &&
-                    ( ( my_size(dcs) == 0 ) && ( my_size(rooms) == 0 ) 
-                        && ( my_size(rows) == 0 ) && ( my_size(racks) == 0 ) 
-                        && ( my_size(devices) == 0 )  
-                    ) &&
-                    ( child_type_id != filtertype ) 
-                  )
-               )
+            if ( want_it &&
+                 ( 
+                    !( ( filtertype < 7 ) &&
+                        ( ( my_size(dcs) == 0 ) && ( my_size(rooms) == 0 ) 
+                            && ( my_size(rows) == 0 ) && ( my_size(racks) == 0 ) 
+                            && ( my_size(devices) == 0 )  
+                        ) &&
+                        ( child_type_id != filtertype ) 
+                    )
+                 )
+                )
             {
-                
                 _scoped_zmsg_t* el;
                 if (    ( child_type_id == persist::asset_type::GROUP ) && 
                         ( is_recursive ) )
@@ -603,7 +628,7 @@ zframe_t* select_childs(
     }
 }
 
-zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
+zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg, a_elmnt_id_t feed_by_id)
 {
     assert ( getmsg );
     assert ( url );
@@ -726,7 +751,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
     {
         log_info ("start select_rooms");
         rooms = select_childs (url, element_id, type_id, persist::asset_type::ROOM,
-                        is_recursive, 1, filter_type);
+                        is_recursive, 1, filter_type, feed_by_id);
         if ( rooms == NULL )
         {
             zframe_destroy (&dcs);
@@ -746,7 +771,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
     {
         log_info ("start select_rows");
         rows = select_childs (url, element_id, type_id, persist::asset_type::ROW,
-                        is_recursive, 1, filter_type);
+                        is_recursive, 1, filter_type, feed_by_id);
         if ( rows == NULL )
         {
             zframe_destroy (&dcs);
@@ -768,7 +793,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
     {
         log_info ("start select_racks");
         racks = select_childs (url, element_id, type_id, persist::asset_type::RACK,
-                        is_recursive, 1, filter_type);
+                        is_recursive, 1, filter_type, feed_by_id);
         if ( racks == NULL )
         {
             zframe_destroy (&dcs);
@@ -792,7 +817,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
     {
         log_info ("start select_devices");
         devices = select_childs (url, element_id, type_id, persist::asset_type::DEVICE,
-                        is_recursive, 1, filter_type);
+                        is_recursive, 1, filter_type, feed_by_id);
         if ( devices == NULL )
         {
             zframe_destroy (&dcs);
@@ -817,7 +842,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
     {
         log_info ("start select_grps");
         grps = select_childs (url, element_id, type_id, persist::asset_type::GROUP,
-                        is_recursive, 1, filter_type);
+                        is_recursive, 1, filter_type, feed_by_id);
         if ( grps == NULL )
         {
             zframe_destroy (&dcs);

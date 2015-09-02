@@ -52,11 +52,17 @@ with this program; if not, write to the Free Software Foundation, Inc.,
  * \param url - the connection to database.
  * \param msg - the message of the type ASSET_MSG_GET_LOCATION_FROM 
  *                  we would like to process.
+ * \param feed_by - an id of the asset element that must apear in the power chain
+ *                  for every returned device as a power source
  *
  * \return zmsg_t - an encoded COMMON_MSG_FAIL or
  *                       ASSET_MSG_RETURN_LOCATION_FROM message.
  */
-zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg);
+zmsg_t*
+    get_return_topology_from(
+        const char* url,
+        asset_msg_t* getmsg,
+        a_elmnt_id_t feed_by_id = 0);
 
 
 /**
@@ -316,7 +322,7 @@ zframe_t* select_childs(
     const char*     url             , a_elmnt_id_t element_id,
     a_elmnt_tp_id_t element_type_id , a_elmnt_tp_id_t child_type_id,
     bool            is_recursive    , uint32_t current_depth,
-    a_elmnt_tp_id_t     filtertype);
+    a_elmnt_tp_id_t     filtertype  , a_elmnt_id_t feed_by_id);
 
 
 /*

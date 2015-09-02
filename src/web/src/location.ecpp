@@ -396,10 +396,7 @@ std::string feed_by;
             is_recursive = 1;
         } else if (!recursive.empty() && recursive != "no") {
 </%cpp>
-            {
-                "error" :   "bad_input",
-                "msg"   :   "Invalid 'recursive' value. Please use 'yes' or 'no'."
-            }
+<$$ create_error_json("Invalid 'recursive' value. Please use 'yes' or 'no'.", 408) $>
 <%cpp>
             return HTTP_BAD_REQUEST;
         }
@@ -408,62 +405,78 @@ std::string feed_by;
         int filter_type = 0;
         if (filter.empty()) {
             filter_type = 7;
+        } else if (filter == "rooms") {
+            filter_type = persist::asset_type::ROOM;
+        } else if (filter == "rows") {
+            filter_type = persist::asset_type::ROW;
+        } else if (filter == "racks") {
+            filter_type = persist::asset_type::RACK;
+        } else if (filter == "devices") {
+            filter_type = persist::asset_type::DEVICE;
+        } else if (filter == "groups") {
+            filter_type = persist::asset_type::GROUP;
         } else {
-            if (filter == "rooms") {
-                filter_type = persist::asset_type::ROOM;
-            } else if (filter == "rows") {
-                filter_type = persist::asset_type::ROW;
-            } else if (filter == "racks") {
-                filter_type = persist::asset_type::RACK;
-            } else if (filter == "devices") {
-                filter_type = persist::asset_type::DEVICE;
-            } else if (filter == "groups") {
-                filter_type = persist::asset_type::GROUP;
-            } else {
-                // Note: datacenter is not a valid filter parameter according to rfc-11 4.1.13
+            // Note: datacenter is not a valid filter parameter according to rfc-11 4.1.13
 </%cpp>
-                    {
-                        "error" :   "bad input",
-                        "msg"   :   "Unrecognized or invalid filter value."
-                    }
+<$$ create_error_json("Invalid 'filter' value. Try 'rooms','rows','racks','groups',devices'", 409) $>
 <%cpp>
-                    return HTTP_BAD_REQUEST;
-            }
+            return HTTP_BAD_REQUEST;
         }
 
         // element_id
-        int element_id = -1;
-        if (from == "none") {
-            element_id = 0;
+        a_elmnt_id_t element_id = 0;
+        if ( from != "none") {
+            try {
+                element_id = std::stoul (from);
+            } catch (std::out_of_range& e) {
+</%cpp>
+<$$ create_error_json("Variable 'from' contains number that falls out of the allowed range.", 405) $>
+<%cpp>
+                return HTTP_BAD_REQUEST;
+            } catch (std::invalid_argument& e) {
+</%cpp>
+<$$ create_error_json("Please specify an integer value for variable 'from'.", 406) $>
+<%cpp>
+                return HTTP_BAD_REQUEST;
+            } catch (std::exception& e) {
+                LOG_END_ABNORMAL (e);
+</%cpp>
+<$$ create_error_json("Error while converting 'from' to integer value", 407) $>
+<%cpp>
+                return HTTP_BAD_REQUEST;
+            }
         }
-        else {
+
+        // feed_by
+        a_elmnt_id_t feed_by_id = 0;
         try {
-            element_id = std::stoi (from);
+            if ( !feed_by.empty() )
+            {
+                if ( filter_type != persist::asset_type::DEVICE )
+                {
+</%cpp>
+<$$ create_error_json("With variable 'feed_by' can be specified only 'filter=devices'", 408) $>
+<%cpp>
+                    return HTTP_BAD_REQUEST;
+                }
+                feed_by_id = std::stoul (feed_by);
+            }
         } catch (std::out_of_range& e) {
 </%cpp>
-            {
-                "error" :   "bad_input",
-                "msg"   :   "Variable 'from' contains number that falls out of the allowed range."
-            }
+<$$ create_error_json("Variable 'feed_by' contains number that falls out of the allowed range.", 405) $>
 <%cpp>
             return HTTP_BAD_REQUEST;
         } catch (std::invalid_argument& e) {
 </%cpp>
-            {
-                "error" :   "bad_input",
-                "msg"   :   "Please specify an integer value for variable 'from'."
-            }
+<$$ create_error_json("Please specify an integer value for variable 'feed_by'.", 406) $>
 <%cpp>
             return HTTP_BAD_REQUEST;
         } catch (std::exception& e) {
+             LOG_END_ABNORMAL (e);
 </%cpp>
-            {
-                "error" :   "bad_input",
-                "msg"   :   "Error while converting <$ from $> to integer value: <$ e.what() $>."
-            }
+<$$ create_error_json("Error while converting 'feed_by' to integer value", 407) $>
 <%cpp>
             return HTTP_BAD_REQUEST;
-        }
         }
 
         // Call persistence layer
@@ -475,7 +488,7 @@ std::string feed_by;
 
         asset_msg_print(input_msg);
 
-        _scoped_zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg);
+        _scoped_zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg, feed_by_id);
         if (return_msg == NULL) {
 </%cpp>
             {
