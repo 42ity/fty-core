@@ -26,7 +26,7 @@ _test_auth() {
 
 _gettoken_auth_sh() {
     _test_auth "$BIOS_USER" "$BIOS_PASSWD" | \
-        sed -n 's|.*"access_token"[[:blank:]]*:[[:blank:]]*"\([^"]*\)".*|\1|p'
+        sed -n 's|.*"access_token"[[:blank:]]*:[[:blank:]]*"\([^"]*\)".*|\1|p' | tail -n 1
 }
 
 test_it "good_login"
@@ -47,6 +47,20 @@ test_it "wrong_password"
 _test_auth "$BIOS_USER" "not$BIOS_PASSWD" >/dev/null
 print_result $?
 curlfail_pop
+
+test_it "token_revoke"
+TOKEN="`_gettoken_auth_sh`"
+CURL --insecure --header "Authorization: Bearer $TOKEN" -d "foobar" \
+        -v --progress-bar "$BASE_URL/admin/license" 3> /dev/null 2> /dev/null >/dev/null
+CURL --insecure --header "Authorization: Bearer $TOKEN" -d "token=$TOKEN"  \
+        -v --progress-bar "$BASE_URL/oauth2/revoke" 3> /dev/null 2> /dev/null | $JSONSH -N >&5
+curlfail_push_expect_401
+CURL --insecure --header "Authorization: Bearer $TOKEN" -d "foobar" \
+        -v --progress-bar "$BASE_URL/admin/license" 3> /dev/null 2> /dev/null | $JSONSH -N >&5
+curlfail_pop
+print_result 0
+TOKEN="`_gettoken_auth_sh`"
+
 
 # NOTE: There are no RESTable tests for SASL_SERVICE, because it is a system
 # pre-setting verified by ci-test-restapi.sh and test_web.sh and friends:
@@ -99,5 +113,4 @@ curlfail_pop
 test_it "good_password_oldIsBack"
 _test_auth "$BIOS_USER" "$BIOS_PASSWD" >/dev/null
 print_result $?
-
 
