@@ -52,6 +52,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
  * \param url - the connection to database.
  * \param msg - the message of the type ASSET_MSG_GET_LOCATION_FROM 
  *                  we would like to process.
+ * \param feed_by - an id of the asset element that must apear in the power chain
+ *                  for every returned device as a power source
  *
  * \return zmsg_t - an encoded COMMON_MSG_FAIL or
  *                       ASSET_MSG_RETURN_LOCATION_FROM message.
