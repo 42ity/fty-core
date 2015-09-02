@@ -328,7 +328,7 @@ set @last_rack := @last_asset_element;
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("model", "RESSPU4210KB 600mm x 1000mm - 42U Rack", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("free_space", "27",      @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer", "Cooper",   @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("u_size",      "27U",     @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("u_size",      "27",     @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("asset_tag",       "EATON123456",     @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("serial_no",       "21545212HGFV2",     @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_name",    "John Smith", @last_asset_element);
