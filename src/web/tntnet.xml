@@ -50,6 +50,7 @@
       <method>(POST|PUT|DELETE)</method>
     </mapping>
 
+
     <!-- admin/systemctl GET -->
     <mapping>
         <target>systemctl@bios_web</target>
@@ -220,6 +221,12 @@
       <target>average@bios_web</target>
       <method>GET</method>
       <url>^/api/v1/metric/computed/average.*$</url>
+    </mapping>
+
+    <!-- admin/config -->
+    <mapping>
+        <target>config@bios_web</target>
+        <url>^/api/v1/admin/config.*$</url>
     </mapping>
 
     <!-- Alerts -->

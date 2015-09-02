@@ -1,0 +1,200 @@
+<#
+ #
+ # Copyright (C) 2015 Eaton
+ #
+ # This program is free software; you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+ # the Free Software Foundation; either version 2 of the License, or
+ # (at your option) any later version.
+ #
+ # This program is distributed in the hope that it will be useful,
+ # but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+ #
+ # You should have received a copy of the GNU General Public License along
+ # with this program; if not, write to the Free Software Foundation, Inc.,
+ # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ #
+ #><#
+/*!
+ * \file config.ecpp
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \brief Not yet documented file
+ */
+ #><%pre>
+#include <string>
+#include <stdexcept>
+#include <cstdlib>
+#include <fstream>
+#include <cxxtools/split.h>
+#include <cxxtools/properties.h>
+#include <cxxtools/propertiesdeserializer.h>
+#include <cxxtools/jsondeserializer.h>
+#include <cxxtools/serializationinfo.h>
+
+#include "utils.h"
+#include "bios_agent.h"
+#include "agents.h"
+#include "ymsg.h"
+#include "str_defs.h"
+#include "utils_ymsg.h"
+#include "cleanup.h"
+
+#define PROPERTIES_FILE "/tmp/configuration.properties"
+#define MSG_METHOD_NOT_ALLOWED "Following HTTP methods are supported for 'admin/config': GET, POST."
+
+</%pre>
+
+<%args>
+    std::string key;
+</%args>
+
+<%cpp>
+    // DISCLAIMER!!! PLEASE READ!!!
+    // 
+    // Current status:
+    // There is no backend (agent) available nor design "consideration" ready for configuration settings management at the moment.
+    // Therefore this version will use cxxtools properties so that the rest api call can be really actually tested.
+    //
+    // Plan for next PR:
+    // Replace cxxtools properties with something more suited for real-world deployment, probably zconfig or such...
+
+    // Dummy implementation ahead
+
+    cxxtools::SerializationInfo si;
+    try {
+        std::ifstream finput (PROPERTIES_FILE);
+        if (finput.is_open () && finput.good ()) {
+            cxxtools::PropertiesDeserializer deserializer (finput);
+            deserializer.deserialize (si);            
+        }
+    }
+    catch (const std::exception& e) {
+</%cpp>
+{
+    "errors": [
+        {
+            "code" : 00,
+            "message" : "Error deserializing file '<$ PROPERTIES_FILE $>': <$$ e.what () $>"
+        }
+    ]
+}
+<%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    ///////////////////
+    ///     GET     ///
+    if (request.isMethodGET ()) {
+        std::string value;
+        if (si.getMember (key, value)) {
+</%cpp>
+{
+    "config": {
+        "key" : "<$$ key $>",
+        "value" : "<$$ value $>"
+    }
+}
+<%cpp>                      
+            return HTTP_OK;
+        }
+</%cpp>
+{
+    "errors": [
+        {
+            "code" : 00,
+            "message" : "Key '<$$ key $>' not found. It is not stored in configuration settings.",
+            "hint" : "You must first store a value for a configuration setting using POST request before being able to read it using GET request."
+        }
+    ]
+}
+<%cpp>
+        return HTTP_NOT_FOUND;
+    } // end of GET
+
+    ////////////////////
+    ///     POST      //
+    if (request.isMethodPOST ()) {
+        std::string rd_key, rd_value;
+        try {
+            std::stringstream input (request.getBody (), std::ios_base::in);
+            cxxtools::JsonDeserializer deserializer (input);
+            cxxtools::SerializationInfo request_doc;
+            deserializer.deserialize (request_doc);
+            if (request_doc.category () != cxxtools::SerializationInfo::Object) {        
+                throw cxxtools::SerializationError ("Root of json request document must be an object with property 'config'.");
+            }
+            request_doc.getMember("config").getMember("key") >>= rd_key;
+            request_doc.getMember("config").getMember("value") >>= rd_value;
+        }
+        catch (const std::exception& e) {
+</%cpp>
+{
+    "errors": [
+        {
+            "code" : 00,
+            "message" : "Error deserializing POST request document: <$$ e.what () $>"
+        }
+    ]
+}
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+
+        try { 
+            si.addValue (rd_key, rd_value);
+            std::ofstream foutput (PROPERTIES_FILE);
+            if (!foutput.is_open () || !foutput.good()) {
+</%cpp>
+{
+    "errors": [
+        {
+            "code" : 00,
+            "message" : "Error writing file '<$ PROPERTIES_FILE $>'."
+        }
+    ]
+}
+<%cpp>
+                return HTTP_INTERNAL_SERVER_ERROR;
+            }
+
+            for (auto it = si.begin (); it != si.end (); ++it) {
+                std::string name = it->name (); 
+                std::string name_value;
+                it->getValue (name_value);
+                foutput << name  << " = " << name_value  << "\n";
+            }
+            foutput.flush ();
+            foutput.close ();
+        }
+        catch (const std::exception& e) {
+</%cpp>
+{
+    "errors": [
+        {
+            "code" : 00,
+            "message" : "Exception caught: <$$ e.what () $>"
+        }
+    ]
+}
+<%cpp>
+            return HTTP_INTERNAL_SERVER_ERROR;          
+        }
+        return HTTP_OK;
+    } // end of POST
+
+</%cpp>
+{
+    "errors": [
+        {
+            "code" : 00,
+            "message" : "<$$ MSG_METHOD_NOT_ALLOWED $>"
+        }
+    ]
+}
+<%cpp>
+    return HTTP_METHOD_NOT_ALLOWED;
+</%cpp>
+
+
