@@ -151,7 +151,9 @@ static const std::vector<std::string> inventoryNUT {
     "ups.serial",
     "battery.date",
     "battery.type",
-    "outlet.count"        
+    "outlet.count",
+    "input.phases",
+    "output.phases"
 };
 
 static const std::vector<std::string> inventoryBIOS {
@@ -168,7 +170,9 @@ static const std::vector<std::string> inventoryBIOS {
     "ups.serial",
     "battery.date",
     "battery.type",
-    "outlet.count"        
+    "outlet.count",
+    "phases.input",
+    "phases.output"
 };
 
 NUTDevice::NUTDevice(): _name("") {  
@@ -338,7 +342,6 @@ void NUTDevice::updateInventory(const std::string& varName, std::vector<std::str
 }
 
 void NUTDevice::update(std::map<std::string,std::vector<std::string>> vars, bool forceUpdate ) {
-    // log_debug("force update: %i\n",forceUpdate);
     assert( physicsNUT.size() == physicsBIOS.size() );
     assert( inventoryNUT.size() == inventoryBIOS.size() );
     for(size_t i = 0; i < physicsNUT.size(); ++i) {
@@ -370,6 +373,11 @@ void NUTDevice::update(std::map<std::string,std::vector<std::string>> vars, bool
                 }
             }
         }
+    }
+    if( vars.size() ) {
+        // we have something => device is responding. We will create phases info if missing
+        if( vars.find("input.phases") == vars.end() ) vars["input.phases"] = { "1" };
+        if( vars.find("output.phases") == vars.end() ) vars["output.phases"] = { "1" };
     }
     for(size_t i = 0; i < inventoryNUT.size(); ++i) {
         if( vars.count(inventoryNUT[i]) ) {
