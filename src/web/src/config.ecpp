@@ -1,4 +1,28 @@
-<%pre>
+<#
+ #
+ # Copyright (C) 2015 Eaton
+ #
+ # This program is free software; you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+ # the Free Software Foundation; either version 2 of the License, or
+ # (at your option) any later version.
+ #
+ # This program is distributed in the hope that it will be useful,
+ # but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+ #
+ # You should have received a copy of the GNU General Public License along
+ # with this program; if not, write to the Free Software Foundation, Inc.,
+ # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ #
+ #><#
+/*!
+ * \file config.ecpp
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \brief Not yet documented file
+ */
+ #><%pre>
 #include <string>
 #include <stdexcept>
 #include <cstdlib>
@@ -52,7 +76,7 @@
     "errors": [
         {
             "code" : 00,
-            "message" : "Error deserializing file '<$ PROPERTIES_FILE $>': <$ e.what () $>"
+            "message" : "Error deserializing file '<$ PROPERTIES_FILE $>': <$$ e.what () $>"
         }
     ]
 }
@@ -68,8 +92,8 @@
 </%cpp>
 {
     "config": {
-        "key" : "<$ key $>",
-        "value" : "<$ value $>"
+        "key" : "<$$ key $>",
+        "value" : "<$$ value $>"
     }
 }
 <%cpp>                      
@@ -80,7 +104,7 @@
     "errors": [
         {
             "code" : 00,
-            "message" : "Key '<$ key $>' not found. It is not stored in configuration settings.",
+            "message" : "Key '<$$ key $>' not found. It is not stored in configuration settings.",
             "hint" : "You must first store a value for a configuration setting using POST request before being able to read it using GET request."
         }
     ]
@@ -110,15 +134,15 @@
     "errors": [
         {
             "code" : 00,
-            "message" : "Error deserializing POST request document: <$ e.what () $>"
+            "message" : "Error deserializing POST request document: <$$ e.what () $>"
         }
     ]
 }
 <%cpp>
-            return HTTP_INTERNAL_SERVER_ERROR;
+            return HTTP_BAD_REQUEST;
         }
 
-        try {            
+        try { 
             si.addValue (rd_key, rd_value);
             std::ofstream foutput (PROPERTIES_FILE);
             if (!foutput.is_open () || !foutput.good()) {
@@ -150,7 +174,7 @@
     "errors": [
         {
             "code" : 00,
-            "message" : "Cycling SI: <$ e.what () $>"
+            "message" : "Exception caught: <$$ e.what () $>"
         }
     ]
 }
