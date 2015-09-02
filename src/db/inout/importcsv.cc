@@ -109,8 +109,28 @@ static bool
 }
 
 static bool
+    check_u_size
+        (std::string &s)
+{
+    cxxtools::Regex regex("[0-9][0-9]?[uU]?$");
+    if ( !regex.match(s) )
+    {
+        return false;
+    }
+    else
+    {
+        // need to drop the "U"
+        if ( ! (::isdigit(s.back())) )
+        {
+            s.pop_back();
+        }
+        return true;
+    }
+}
+
+static bool
     match_ext_attr
-        (std::string value, std::string key)
+        (std::string &value, const std::string &key)
 {
     if ( key == "location_u_pos" )
     {
@@ -119,6 +139,10 @@ static bool
     if ( key == "location_w_pos" )
     {
         return check_location_w_pos(value);
+    }
+    if ( key == "u_size" )
+    {
+        return check_u_size(value);
     }
     return ( !value.empty() );
 }
@@ -471,7 +495,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     for ( auto &key: unused_columns )
     {
         // try is not needed, because here are keys that are definitely there
-        auto value = cm.get(row_i, key);
+        std::string value = cm.get(row_i, key);
 
         if ( match_ext_attr (value, key) )
         {
