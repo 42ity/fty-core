@@ -334,15 +334,25 @@ select_measurement_last_web_byTopic (
                                    selectRow();
 
         log_debug("[%s]: were selected %" PRIu32 " rows," \
-                  " topic %s '%s', selecting maxtime", 
+                  " topic %s '%s', selecting maxtime",
                   view.c_str(), 1, fuzzy ? " LIKE " : " = ", topic.c_str());
         row[0].get(max_time);
         log_debug ( "maxtime = %" PRIi64 , max_time);
+        if ( max_time == 0 )
+        {
+            // aggregation function return every time at least one row
+            // but value can be null, if null -> maxtime would stay 0
+            ret.rv = 1;
+            log_debug ("maxtime was not found (there is no "\
+                   "measurement records) with topic %s '%s'",
+                   fuzzy ? " LIKE " : " = ", topic.c_str());
+            return ret;
+        }
     }
     catch (const tntdb::NotFound &e) {
         ret.rv = 1;
         log_debug ("maxtime was not found (there is no "\
-                   "measurement records) with topic %s '%s'", 
+                   "measurement records) with topic %s '%s'",
                    fuzzy ? " LIKE " : " = ", topic.c_str());
         return ret;
     }
