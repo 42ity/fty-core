@@ -494,8 +494,6 @@ simple_post_code() {
     return 0
 }
 
-### Flag for _api_get_token_certainPlus()
-LOGIN_RESET="no"
 _api_get_token() {
     _RES_=0
     if [ -z "$_TOKEN_" -o x"$LOGIN_RESET" = xyes ]; then
@@ -511,62 +509,6 @@ _api_get_token() {
     fi
     echo "$_TOKEN_"
     return $_RES_
-}
-
-_api_get_token_certainPlus() {
-    _PLUS="$1"
-    if [ "$_PLUS" != with -a "$_PLUS" != without ]; then
-	echo "CI-WEBLIB-ERROR: _api_get_token_certainPlus():" \
-            "unknown certainty was requested: '$_PLUS'" >&2
-	return 1
-    fi
-
-    _TO="$_TOKEN_"
-    C=0
-    while : ; do
-	_T="`LOGIN_RESET=yes _api_get_token`"
-	_RES_=$?
-	if [ $_RES_ != 0 ]; then
-	    echo "CI-WEBLIB-ERROR: _api_get_token_certainPlus():" \
-                "got error from _api_get_token(): $_RES_'" >&2
-	    return $_RES_
-	fi
-	if [ -z "$_T" ]; then
-	    echo "CI-WEBLIB-ERROR: _api_get_token_certainPlus():" \
-                "got empty token value from _api_get_token()'" >&2
-	    return 2
-	fi
-	case "$_T" in
-	    *\+*)	[ "$_PLUS" = with ] && break ;;
-	    *)		[ "$_PLUS" = without ] && break ;;
-	esac
-
-	echo "CI-WEBLIB-WARN: _api_get_token_certainPlus():" \
-            "Got unsuitable token '$_T' (wanted $_PLUS a plus)" >&2
-
-	if [ x"$_TO" = x"$_T" ]; then
-	    C="`expr $C + 1`"
-	else C=0; fi
-
-	if [ "$C" -gt 5 ]; then
-	    echo "CI-WEBLIB-ERROR: _api_get_token_certainPlus():" \
-                "Got the same token too many times in a row, aborting loop" >&2
-	    echo "$_T"
-	    return 3
-	fi
-	sleep 1
-	_TO="$_T"
-    done
-    _TOKEN_="$_T"
-    echo "$_T"
-}
-
-_api_get_token_withplus() {
-    _api_get_token_certainPlus with
-}
-
-_api_get_token_withoutplus() {
-    _api_get_token_certainPlus without
 }
 
 api_auth_post() {
