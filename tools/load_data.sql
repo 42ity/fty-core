@@ -431,7 +431,7 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, asset_tag) values ("MAIN-LAB", @asset_element_device, @asset_device_main, @last_datacenter, "myasset29");
 set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "MAIN 240V", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("phase",       "2",         @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("phases.output",       "3",         @last_asset_element);
 
 /* GROUP1-LAB */
 insert into t_bios_asset_element (name , id_type, id_parent, asset_tag) values ("GROUP1-LAB", @asset_element_group, @last_datacenter, "myasset30");
