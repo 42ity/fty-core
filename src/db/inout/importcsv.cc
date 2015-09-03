@@ -31,7 +31,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "db/inout.h"
 
-#include "csv.h"
 #include "log.h"
 #include "assetcrud.h"
 #include "dbpath.h"
@@ -652,7 +651,6 @@ mandatory_missing
     return "";
 }
 
-
 void
     load_asset_csv
         (std::istream& input,
@@ -676,6 +674,17 @@ void
     deserializer.deserialize(data);
     CsvMap cm{data};
     cm.deserialize();
+
+    return load_asset_csv(cm, okRows, failRows);
+}
+
+void
+    load_asset_csv
+        (const CsvMap& cm,
+         std::vector <std::pair<db_a_elmnt_t,persist::asset_operation>> &okRows,
+         std::map <int, std::string> &failRows)
+{
+    LOG_START;
 
     auto m = mandatory_missing(cm);
     if ( m != "" )
