@@ -601,6 +601,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             {
                 throw std::invalid_argument("insertion was unsuccessful");
             }
+            m.id = ret.rowid;
         }
         else
         {
@@ -612,6 +613,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             {
                 throw std::invalid_argument("insertion was unsuccessful");
             }
+            m.id = ret.rowid;
         }
     }
     m.name = name;

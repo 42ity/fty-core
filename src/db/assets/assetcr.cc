@@ -748,7 +748,10 @@ db_reply_t
         ret.rowid = conn.lastInsertId();
         log_debug ("[t_bios_asset_element]: was inserted %"
                                         PRIu64 " rows", ret.affected_rows);
-        ret.status = 1;
+        if ( ret.affected_rows == 0 )
+            ret.status = 0;
+        else
+            ret.status = 1;
         LOG_END;
         return ret;
     }
