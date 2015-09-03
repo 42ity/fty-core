@@ -26,6 +26,7 @@
  */
 #include <catch.hpp>
 #include <cxxtools/csvdeserializer.h>
+#include <cxxtools/jsondeserializer.h>
 
 #include <iomanip>
 #include <sstream>
@@ -225,5 +226,25 @@ TEST_CASE("CSV from_json", "[csv][si]")
 
     const char* JSON = "{\"name\":\"dc_name_test\",\"type\":\"datacenter\",\"subtype\":\"\",\"location\":\"\",\"status\":\"active\",\"business_critical\":\"yes\",\"priority\":\"P1\",\"ext\":{\"asset_tag\":\"A123B123\",\"address\":\"ASDF\"}}";
 
+    std::stringstream json_s{JSON};
 
+    cxxtools::SerializationInfo si;
+    cxxtools::JsonDeserializer jsd{json_s};
+    jsd.deserialize(si);
+
+    CsvMap map = CsvMap_from_serialization_info(si);
+
+    REQUIRE(map.cols() == 9);
+    REQUIRE(map.rows() == 2);
+
+    std::vector<std::vector<std::string>> EXP = {
+        {"name", "type", "subtype", "location", "status", "business_critical", "priority", "asset_tag", "address"},
+        {"dc_name_test", "datacenter", "", "", "active", "yes", "P1", "A123B123", "ASDF"}
+    };
+
+    int i = 0;
+    for (const auto& title : EXP[0]) {
+        REQUIRE(map.hasTitle(title));
+        REQUIRE(map.get(1, title) == EXP[1][i++]);
+    }
 }

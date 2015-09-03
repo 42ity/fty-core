@@ -187,9 +187,6 @@ s_read_si(
         const cxxtools::SerializationInfo& si,
         std::vector <std::vector<cxxtools::String> >& data)
 {
-    if (si.typeName() != "Object")
-        throw std::invalid_argument("Can't deserialize non object data, got " + si.typeName() );
-
     if (data.size() != 2)
         throw std::invalid_argument("Expected two items in array, got " + std::to_string(data.size()));
 
