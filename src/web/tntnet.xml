@@ -32,11 +32,6 @@
       <target>auth@bios_web</target>
       <url>^/api/v1/oauth2/token$</url>
     </mapping>
-    <mapping>
-      <target>auth@bios_web</target>
-      <url>^/api/v1/oauth2/revoke$</url>
-      <method>(POST|PUT)</method>
-    </mapping>
     <!-- Set (int)access_auth_level variable if the request is authenticated -->
     <mapping>
       <target>auth-verify@bios_web</target>
@@ -53,6 +48,13 @@
     <mapping>
       <target>auth-require@bios_web</target>
       <method>(POST|PUT|DELETE)</method>
+    </mapping>
+
+    <!-- Token revocation -->
+    <mapping>
+      <target>auth@bios_web</target>
+      <url>^/api/v1/oauth2/revoke$</url>
+      <method>(POST|PUT)</method>
     </mapping>
 
 
