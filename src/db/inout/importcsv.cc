@@ -204,7 +204,7 @@ int
 static std::pair<db_a_elmnt_t, persist::asset_operation>
     process_row
         (tntdb::Connection &conn,
-         CsvMap cm,
+         const CsvMap &cm,
          size_t row_i,
          const std::map<std::string,int> TYPES,
          const std::map<std::string,int> SUBTYPES,
@@ -636,7 +636,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
  */
 static std::string
 mandatory_missing
-        (CsvMap cm)
+        (const CsvMap &cm)
 {
     static std::vector<std::string> MANDATORY = {
         "name", "type", "sub_type", "location", "status",
