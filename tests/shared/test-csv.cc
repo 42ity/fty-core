@@ -223,11 +223,7 @@ TEST_CASE("CSV from_serialization_info bad i", "[csv][si]")
 TEST_CASE("CSV from_json", "[csv][si]")
 {
 
-    cxxtools::SerializationInfo si;
-    {"name":"dc_name_test","type":"datacenter","subtype":"","location":"","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"A123B123","address":"ASDF"}}'
+    const char* JSON = "{\"name\":\"dc_name_test\",\"type\":\"datacenter\",\"subtype\":\"\",\"location\":\"\",\"status\":\"active\",\"business_critical\":\"yes\",\"priority\":\"P1\",\"ext\":{\"asset_tag\":\"A123B123\",\"address\":\"ASDF\"}}";
 
-    si.setTypeName("Array");
-
-    REQUIRE_THROWS_AS(CsvMap_from_serialization_info(si), std::invalid_argument);
 
 }
