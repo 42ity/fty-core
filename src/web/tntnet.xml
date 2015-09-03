@@ -31,7 +31,6 @@
     <mapping>
       <target>auth@bios_web</target>
       <url>^/api/v1/oauth2/token$</url>
-      <method>GET</method>
     </mapping>
     <mapping>
       <target>auth@bios_web</target>

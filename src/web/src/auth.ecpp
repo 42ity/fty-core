@@ -28,6 +28,7 @@
 #include "tokens.h"
 #include <string>
 #include <iostream>
+#include <cxxtools/regex.h>
 #include <tnt/httpmessage.h>
 #include <tnt/httpheader.h>
 #include <cxxtools/query_params.h>
@@ -60,7 +61,8 @@ if ( ! request.isSsl() ) {
     std::cerr << " Completing the request anyway for DEBUG build...\n";
 }
 
-  if(request.isMethodPOST()) {
+  static cxxtools::Regex rex_rev("^.*/revoke$");
+  if(request.isMethodPOST() && rex_rev.match(request.getUrl())) {
     cxxtools::QueryParams body_args(request.getBody());
 	std::string token = body_args.param("token", "");
 	if(token.empty()) {
