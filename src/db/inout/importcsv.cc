@@ -31,7 +31,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "db/inout.h"
 
-#include "csv.h"
 #include "log.h"
 #include "assetcrud.h"
 #include "dbpath.h"
@@ -204,7 +203,7 @@ int
 static std::pair<db_a_elmnt_t, persist::asset_operation>
     process_row
         (tntdb::Connection &conn,
-         CsvMap cm,
+         const CsvMap &cm,
          size_t row_i,
          const std::map<std::string,int> TYPES,
          const std::map<std::string,int> SUBTYPES,
@@ -636,7 +635,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
  */
 static std::string
 mandatory_missing
-        (CsvMap cm)
+        (const CsvMap &cm)
 {
     static std::vector<std::string> MANDATORY = {
         "name", "type", "sub_type", "location", "status",
@@ -651,7 +650,6 @@ mandatory_missing
 
     return "";
 }
-
 
 void
     load_asset_csv
@@ -676,6 +674,17 @@ void
     deserializer.deserialize(data);
     CsvMap cm{data};
     cm.deserialize();
+
+    return load_asset_csv(cm, okRows, failRows);
+}
+
+void
+    load_asset_csv
+        (const CsvMap& cm,
+         std::vector <std::pair<db_a_elmnt_t,persist::asset_operation>> &okRows,
+         std::map <int, std::string> &failRows)
+{
+    LOG_START;
 
     auto m = mandatory_missing(cm);
     if ( m != "" )
