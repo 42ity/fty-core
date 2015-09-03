@@ -182,5 +182,53 @@ CsvMap_from_istream(
     return cm;
 }
 
+static void
+s_read_si(
+        const cxxtools::SerializationInfo& si,
+        std::vector <std::vector<cxxtools::String> >& data)
+{
+    if (si.typeName() != "Object")
+        throw std::invalid_argument("Can't deserialize non object data, got " + si.typeName() );
+
+    if (data.size() != 2)
+        throw std::invalid_argument("Expected two items in array, got " + std::to_string(data.size()));
+
+    bool has_ext;
+
+    for (auto it = si.begin();
+                    it != si.end(); ++it) {
+        const cxxtools::String name = cxxtools::convert<cxxtools::String>(it->name());
+
+        if (name == "ext") {
+            has_ext = true;
+            continue;
+        }
+
+        cxxtools::String value;
+        it->getValue(value);
+        data[0].push_back(name);
+        data[1].push_back(value);
+    }
+
+    if (!has_ext)
+        return;
+
+    const cxxtools::SerializationInfo* ext_si_p = si.findMember("ext");
+    if (!ext_si_p)
+        return;
+    s_read_si(*ext_si_p, data);
+}
+
+CsvMap
+CsvMap_from_serialization_info(
+        const cxxtools::SerializationInfo& si)
+{
+    std::vector <std::vector<cxxtools::String> > data = {{}, {}};
+    s_read_si(si, data);
+    CsvMap cm{data};
+    cm.deserialize();
+    return cm;
+}
+
 
 } //namespace shared
