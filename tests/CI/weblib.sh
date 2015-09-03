@@ -486,9 +486,8 @@ simple_post_code() {
 LOGIN_RESET="no"
 _api_get_token() {
     _RES_=0
-    if [ -z "$_TOKEN_" -o x"$LOGIN_RESET" = xyes ]; then
+    if [ -z "$_TOKEN_" ]; then
 	AUTH_URL="/oauth2/token?username=${BIOS_USER}&password=${BIOS_PASSWD}&grant_type=password"
-	[ x"$LOGIN_RESET" = xyes ] && AUTH_URL="${AUTH_URL}&grant_reset=true&grant_reset_inst=true"
         [ x"$WEBLIB_CURLFAIL_GETTOKEN" = xprotected ] && \
             curlfail_push_expect_noerrors
 	_TOKEN_RAW_="`set +x; api_get "$AUTH_URL"`" || _RES_=$?
