@@ -35,7 +35,10 @@
 #include "asset_types.h"
 #include "defs.h"
 #include "web_utils.h"
-
+#include "csv.h"
+#include "inout.h"
+#include <cxxtools/jsondeserializer.h>
+#include <cxxtools/serializationinfo.h>
 </%pre>
 
 <%thread scope="global">
@@ -44,12 +47,13 @@ asset_manager asset_mgr;
 
 <%cpp>
 {
+    // ACE: TODO devide this one file into smaller ones, as parts are independent
     // Check URL validity
     std::string typeNameArg = request.getArg("type");
     std::string id = request.getArg("id");
     std::string method = request.getMethod();
 
-    if ( method == "PUT" || request.isMethodPOST() )
+    if ( method == "PUT" )
     {
 </%cpp>
 <$$ create_error_json("Not implemented", 100) $>
@@ -57,15 +61,19 @@ asset_manager asset_mgr;
         return HTTP_NOT_IMPLEMENTED;
     }
 
-    if ( id.empty() ) {
-</%cpp>
-<$$ create_error_json("Invalid url (missing id parameter)", 56) $>
-<%cpp>
-        return HTTP_BAD_REQUEST;
-    }
+    // ========================================================================
+    //                          DELETE
+    // ========================================================================
+
 
     if ( method == "DELETE" )
     {
+        if ( id.empty() ) {
+</%cpp>
+<$$ create_error_json("Invalid url (missing id parameter)", 56) $>
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
         db_a_elmnt_t row;
         auto ret = asset_mgr.delete_item(id, row);
         if ( ret.status == 0 )
@@ -113,8 +121,65 @@ asset_manager asset_mgr;
         }
     }
 
+    // ========================================================================
+    //                          POST
+    // ========================================================================
+    if ( request.isMethodPOST() )
+    {
+        // Read json, transform to csv, use existing functionality
+
+        log_debug ("HERE");
+        cxxtools::SerializationInfo si;
+        // read json a deserialize it
+        try {
+            std::stringstream input (request.getBody (), std::ios_base::in);
+            cxxtools::JsonDeserializer deserializer (input);
+            deserializer.deserialize (si);
+            log_debug ("HERE1");
+            shared::CsvMap cm = shared::CsvMap_from_serialization_info(si);
+            log_debug ("HERE2");
+            // actual insert
+            std::vector <std::pair<db_a_elmnt_t,persist::asset_operation>> okRows{};
+            std::map <int, std::string> failRows{};
+            persist::load_asset_csv (cm, okRows, failRows);
+
+            log_debug ("HERE4");
+            // process results
+            if ( !failRows.empty() )
+            {
+</%cpp>
+<$$ create_error_json(failRows.begin()->second, 70) $>
+<%cpp>
+                return HTTP_INTERNAL_SERVER_ERROR;
+            }
+            else
+            {
+</%cpp>
+{<$$ json_key_value_s("id", std::to_string(okRows.begin()->first.id)) $>}
+<%cpp>
+                return HTTP_OK;
+            }
+        }
+        catch (const std::exception& e) {
+            LOG_END_ABNORMAL(e);
+</%cpp>
+<$$ create_error_json("Error deserializing POST request document", 00) $>
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+    }
+    // ========================================================================
+    //                          GET
+    // ========================================================================
     if ( request.isMethodGET() )
     {
+        if ( id.empty() ) {
+</%cpp>
+<$$ create_error_json("Invalid url (missing id parameter)", 56) $>
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+
         auto tmp = asset_mgr.get_item1(id);
         if ( tmp.status == 0 )
         {

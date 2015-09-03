@@ -152,7 +152,7 @@
          -->
     <mapping>
       <target>item@bios_web</target>
-        <url>^/api/v1/asset/(datacenter|room|row|rack|group|device)?/?(.*)$</url>
+        <url>^/api/v1/asset/?(datacenter|room|row|rack|group|device)?/?(.*)$</url>
       <args>
         <id>$2</id>
         <type>$1</type>

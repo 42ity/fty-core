@@ -238,7 +238,7 @@ db_reply_t
     auto reply_insert1 = insert_into_asset_element
                         (conn, element_name, element_type_id, parent_id,
                          status, priority, bc, 0, asset_tag.c_str());
-    if ( reply_insert1.affected_rows == 0 )
+    if ( reply_insert1.status == 0 )
     {
         trans.rollback();
         log_error ("end: element was not inserted");
@@ -316,7 +316,7 @@ db_reply_t
     auto reply_insert1 = insert_into_asset_element
                         (conn, element_name, asset_type::DEVICE, parent_id,
                         status, priority, bc, asset_device_type_id, asset_tag.c_str());
-    if ( reply_insert1.affected_rows == 0 )
+    if ( reply_insert1.status == 0 )
     {
         trans.rollback();
         log_info ("end: device was not inserted (fail in element)");
@@ -325,7 +325,7 @@ db_reply_t
     auto element_id = reply_insert1.rowid;
 
     auto reply_insert2 = insert_into_asset_ext_attributes
-                        (conn, extattributes, element_id,false);
+                        (conn, extattributes, element_id, false);
     if ( reply_insert2.status == 0 )
     {
         trans.rollback();
