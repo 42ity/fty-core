@@ -111,7 +111,7 @@ static bool
     check_u_size
         (std::string &s)
 {
-    cxxtools::Regex regex("[0-9][0-9]?[uU]?$");
+    static cxxtools::Regex regex("^[0-9]{1,2}[uU]?$");
     if ( !regex.match(s) )
     {
         return false;
@@ -122,6 +122,10 @@ static bool
         if ( ! (::isdigit(s.back())) )
         {
             s.pop_back();
+        }
+        // remove trailing 0
+        if (s.size() == 2 && s[0] == '0') {
+            s.erase(s.begin());
         }
         return true;
     }
