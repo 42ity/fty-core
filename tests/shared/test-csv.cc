@@ -210,17 +210,6 @@ TEST_CASE("CSV from_serialization_info", "[csv][si]")
 
 }
 
-TEST_CASE("CSV from_serialization_info bad i", "[csv][si]")
-{
-
-    cxxtools::SerializationInfo si;
-
-    si.setTypeName("Array");
-
-    REQUIRE_THROWS_AS(CsvMap_from_serialization_info(si), std::invalid_argument);
-
-}
-
 TEST_CASE("CSV from_json", "[csv][si]")
 {
 
