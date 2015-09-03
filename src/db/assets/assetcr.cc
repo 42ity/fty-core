@@ -982,8 +982,11 @@ db_reply_t
     try{
         tntdb::Statement st = conn.prepareCached(
             " INSERT INTO"
-            "   v_bios_discovered_device (name, id_device_type)"
+            "   t_bios_discovered_device (name, id_device_type)"
             " VALUES (:name, :iddevicetype)"
+            " ON DUPLICATE KEY"
+            "   UPDATE"
+            "       id_discovered_device = LAST_INSERT_ID(id_discovered_device)"
         );
 
         // Insert one row or nothing
