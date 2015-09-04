@@ -213,7 +213,7 @@ TEST_CASE("CSV from_serialization_info", "[csv][si]")
 TEST_CASE("CSV from_json", "[csv][si]")
 {
 
-    const char* JSON = "{\"name\":\"dc_name_test\",\"type\":\"datacenter\",\"subtype\":\"\",\"location\":\"\",\"status\":\"active\",\"business_critical\":\"yes\",\"priority\":\"P1\",\"ext\":{\"asset_tag\":\"A123B123\",\"address\":\"ASDF\"}}";
+    const char* JSON = "{\"name\":\"dc_name_test\",\"type\":\"datacenter\",\"sub_type\":\"\",\"location\":\"\",\"status\":\"active\",\"business_critical\":\"yes\",\"priority\":\"P1\",\"ext\":{\"asset_tag\":\"A123B123\",\"address\":\"ASDF\"}}";
 
     std::stringstream json_s{JSON};
 
