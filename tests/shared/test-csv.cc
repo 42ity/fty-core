@@ -213,7 +213,7 @@ TEST_CASE("CSV from_serialization_info", "[csv][si]")
 TEST_CASE("CSV from_json", "[csv][si]")
 {
 
-    const char* JSON = "{\"name\":\"dc_name_test\",\"type\":\"datacenter\",\"subtype\":\"\",\"location\":\"\",\"status\":\"active\",\"business_critical\":\"yes\",\"priority\":\"P1\",\"ext\":{\"asset_tag\":\"A123B123\",\"address\":\"ASDF\"}}";
+    const char* JSON = "{\"name\":\"dc_name_test\",\"type\":\"datacenter\",\"sub_type\":\"\",\"location\":\"\",\"status\":\"active\",\"business_critical\":\"yes\",\"priority\":\"P1\",\"ext\":{\"asset_tag\":\"A123B123\",\"address\":\"ASDF\"}}";
 
     std::stringstream json_s{JSON};
 
@@ -227,7 +227,7 @@ TEST_CASE("CSV from_json", "[csv][si]")
     REQUIRE(map.rows() == 2);
 
     std::vector<std::vector<std::string>> EXP = {
-        {"name", "type", "subtype", "location", "status", "business_critical", "priority", "asset_tag", "address"},
+        {"name", "type", "sub_type", "location", "status", "business_critical", "priority", "asset_tag", "address"},
         {"dc_name_test", "datacenter", "", "", "active", "yes", "P1", "A123B123", "ASDF"}
     };
 
