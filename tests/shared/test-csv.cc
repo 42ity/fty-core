@@ -227,7 +227,7 @@ TEST_CASE("CSV from_json", "[csv][si]")
     REQUIRE(map.rows() == 2);
 
     std::vector<std::vector<std::string>> EXP = {
-        {"name", "type", "subtype", "location", "status", "business_critical", "priority", "asset_tag", "address"},
+        {"name", "type", "sub_type", "location", "status", "business_critical", "priority", "asset_tag", "address"},
         {"dc_name_test", "datacenter", "", "", "active", "yes", "P1", "A123B123", "ASDF"}
     };
 
