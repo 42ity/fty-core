@@ -58,10 +58,6 @@ while [ $# -gt 0 ]; do
             BIOS_USER="$2"
             shift
             ;;
-        -f|--force)
-            SKIP_SANITY="yes"
-            shift
-            ;;
         -p|--passwd|--bios-passwd)
             BIOS_PASSWD="$2"
             shift
@@ -70,7 +66,8 @@ while [ $# -gt 0 ]; do
             SASL_SERVICE="$2"
             shift
             ;;
-        -q|--quick) SKIP_SANITY=yes ;;
+        # TODO: remove -q as it is misleading as -q is usually quite
+        -q|--quick|-f|--force) SKIP_SANITY=yes ;;
         *)  # fall through - these are lists of tests to do
             break
             ;;

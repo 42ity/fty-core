@@ -365,10 +365,6 @@ done
 dpkg --get-selections
 dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n
 
-# Get rid of static qemu binaries needed for crossinstallation
-# TODO: Integrate this better into build-recipe-preinstallimage/init_buildsystem
-rm -f /usr/bin/qemu*
-
 # Prepare the ccache (for development image type)
 case "$IMGTYPE" in
     devel)
@@ -391,5 +387,9 @@ esac
 # Timestamp the end of OS image generation
 LANG=C date -u > /usr/share/bios-web/image-version.txt || \
     echo "WARNING: Could not record OBS image-building timestamp"
+
+# Get rid of static qemu binaries needed for crossinstallation
+# TODO: Integrate this better into build-recipe-preinstallimage/init_buildsystem
+rm -f /usr/bin/qemu*
 
 echo "INFO: successfully reached the end of script: $0 $@"
