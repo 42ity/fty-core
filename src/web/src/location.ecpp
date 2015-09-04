@@ -464,6 +464,13 @@ std::string feed_by;
 <%cpp>
                     return HTTP_BAD_REQUEST;
                 }
+                if ( from == "none" )
+                {
+</%cpp>
+<$$ create_error_json("With variable 'feed_by' variable 'from' can not be 'none'", 401) $>
+<%cpp>
+                    return HTTP_BAD_REQUEST;
+                }
                 feed_by_id = std::stoul (feed_by);
                 // TODO not very good solution, but fast
                 auto tmp = asset_mgr.get_item1(feed_by);
