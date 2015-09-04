@@ -39,6 +39,7 @@ std::string grant_type="";
 std::string username="";
 std::string password="";
 std::string client_id="";
+std::string token="";
 </%args>
 <%cpp>
 #ifndef VALID_FOR
@@ -46,6 +47,18 @@ std::string client_id="";
 #endif //VALID_FOR
 
 int valid = VALID_FOR;
+
+// Just in case someone put urlencoded stuff in body
+cxxtools::QueryParams body_args(request.getBody());
+std::string tmp;
+#define FILL(PROP)   tmp =  body_args.param("PROP", ""); \
+                     if(PROP.empty()) \
+					   PROP = tmp;
+FILL(token)
+FILL(username)
+FILL(password)
+FILL(client_id)
+FILL(token)
 
 if ( ! request.isSsl() ) {
     std::cerr << "WARNING: non-SSL Auth Request was received!";
@@ -63,8 +76,6 @@ if ( ! request.isSsl() ) {
 
   static cxxtools::Regex rex_rev("^.*/revoke$");
   if(request.isMethodPOST() && rex_rev.match(request.getUrl())) {
-    cxxtools::QueryParams body_args(request.getBody());
-	std::string token = body_args.param("token", "");
 	if(token.empty()) {
 </%cpp>
 { "error": "No token provided" }
