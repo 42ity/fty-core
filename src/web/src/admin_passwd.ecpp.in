@@ -142,3 +142,4 @@ s_passwd(
     return HTTP_BAD_REQUEST;
     }
 </%cpp>
+{ "passwd" : "<$$ "password for '" + user + "' changed" $>" }
