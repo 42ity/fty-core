@@ -150,7 +150,7 @@ int asset_location_r(asset_msg_t** asset_msg, std::string& json) {
     else
     {
         if (type_id != persist::asset_type::DEVICE )
-            json += ", \"contains\":[]}";
+            json += ", \"contains\":[]";
     }
     json += "}"; // json closing curly bracket
     return HTTP_OK;
