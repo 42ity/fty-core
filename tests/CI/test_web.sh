@@ -58,6 +58,10 @@ while [ $# -gt 0 ]; do
             BIOS_USER="$2"
             shift
             ;;
+        -f|--force)
+            SKIP_SANITY="yes"
+            shift
+            ;;
         -p|--passwd|--bios-passwd)
             BIOS_PASSWD="$2"
             shift
@@ -87,40 +91,40 @@ NEED_BUILDSUBDIR=no determineDirs_default || true
 
 PATH="$PATH:/sbin:/usr/sbin"
 
-# fixture ini
-if ! pidof saslauthd > /dev/null; then
-    CODE=1 die "saslauthd is not running, please start it first!"
-fi
-
-if ! pidof malamute > /dev/null; then
-    logmsg_error "malamute is not running (locally), you may need to start it first!"
-fi
-
-if ! pidof mysqld > /dev/null ; then
-    logmsg_error "mysqld is not running (locally), you may need to start it first!"
-fi
-
-# Check the user account in system
-# We expect SASL uses Linux PAM, therefore getent will tell us all we need
-if ! getent passwd "$BIOS_USER" > /dev/null; then
-    CODE=2 die "User $BIOS_USER is not known to system administrative database" \
-        "To add it locally, run: " \
-        "    sudo /usr/sbin/useradd --comment 'BIOS REST API testing user' --groups nobody,sasl --no-create-home --no-user-group $BIOS_USER" \
-        "and don't forget the password '$BIOS_PASSWD'"
-fi
-
-SASLTEST="`which testsaslauthd`"
-[ -x "$SASLTEST" ] || SASLTEST="/usr/sbin/testsaslauthd"
-[ -x "$SASLTEST" ] || SASLTEST="/sbin/testsaslauthd"
-
-$SASLTEST -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" > /dev/null || \
-    CODE=3 die "SASL autentication for user '$BIOS_USER' has failed." \
-        "Check the existence of /etc/pam.d/bios (and maybe /etc/sasl2/bios.conf for some OS distributions)"
-
 if [ "$SKIP_SANITY" = yes ]; then
     # This is hit e.g. when a wget-based "curl emulator" is used for requests
     logmsg_info "$0: REST API sanity checks skipped due to SKIP_SANITY=$SKIP_SANITY"
 else
+    # fixture ini
+    if ! pidof saslauthd > /dev/null; then
+        CODE=1 die "saslauthd is not running, please start it first!"
+    fi
+
+    if ! pidof malamute > /dev/null; then
+        logmsg_error "malamute is not running (locally), you may need to start it first!"
+    fi
+
+    if ! pidof mysqld > /dev/null ; then
+        logmsg_error "mysqld is not running (locally), you may need to start it first!"
+    fi
+
+    # Check the user account in system
+    # We expect SASL uses Linux PAM, therefore getent will tell us all we need
+    if ! getent passwd "$BIOS_USER" > /dev/null; then
+        CODE=2 die "User $BIOS_USER is not known to system administrative database" \
+            "To add it locally, run: " \
+            "    sudo /usr/sbin/useradd --comment 'BIOS REST API testing user' --groups nobody,sasl --no-create-home --no-user-group $BIOS_USER" \
+            "and don't forget the password '$BIOS_PASSWD'"
+    fi
+
+    SASLTEST="`which testsaslauthd`"
+    [ -x "$SASLTEST" ] || SASLTEST="/usr/sbin/testsaslauthd"
+    [ -x "$SASLTEST" ] || SASLTEST="/sbin/testsaslauthd"
+
+    $SASLTEST -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" > /dev/null || \
+        CODE=3 die "SASL autentication for user '$BIOS_USER' has failed." \
+            "Check the existence of /etc/pam.d/bios (and maybe /etc/sasl2/bios.conf for some OS distributions)"
+
     logmsg_info "Testing webserver ability to serve the REST API"
     if [ -n "`api_get "/oauth2/token" 2>&1 | grep 'HTTP/.* 500'`" ]; then
         logmsg_error "api_get() returned an error:"
