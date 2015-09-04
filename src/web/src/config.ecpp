@@ -24,32 +24,58 @@
  */
  #><%pre>
 #include <string>
-#include <stdexcept>
+#include <exception>
 #include <cstdlib>
 #include <fstream>
-#include <cxxtools/split.h>
 #include <cxxtools/properties.h>
 #include <cxxtools/propertiesdeserializer.h>
 #include <cxxtools/jsondeserializer.h>
 #include <cxxtools/serializationinfo.h>
+#include <cxxtools/regex.h>
 
-#include "utils.h"
-#include "bios_agent.h"
-#include "agents.h"
-#include "ymsg.h"
-#include "str_defs.h"
-#include "utils_ymsg.h"
-#include "cleanup.h"
-
-#define PROPERTIES_FILE "/tmp/configuration.properties"
+#define PROPERTIES_FILE "/etc/default/bios"
 #define MSG_METHOD_NOT_ALLOWED "Following HTTP methods are supported for 'admin/config': GET, POST."
 
-</%pre>
+void replace_all (std::string& string, const char* subject, const char* replacement) {
+    if (!replacement || !subject || strlen (subject) == 0)
+        return;
+    std::string::size_type find = string.find (subject, 0),
+                subject_len = strlen (subject), replacement_len = strlen (replacement);
+    while (find != std::string::npos) {
+        string.replace (find, subject_len, replacement);
+        find = string.find (subject, find + replacement_len);
+    }
+}
 
+void transform_for_json (std::string& string) {    
+    // <quote> The parser strips leading and trailing whitespace from the strings of assignments, unless you use double quotes ("). </quote>
+    // We need to strip leading and trailing double quote character (") when both of them are present.
+    if (string.at(0) == '"' && string.at(string.size () - 1) == '"') {
+        string.erase (0, 1);
+        string.erase (string.size () - 1, 1);
+    }
+
+    // <quote>A line ending with a backslash will be concatenated with the following one, allowing multiline variable definitions.</quote>
+    // We need to revert this replacing each 2 consecutive characters '\' and '\n' in text with a single character '\n'
+    replace_all (string, "\\\n", "\n");
+}
+
+void transform_for_conf (std::string& string) {
+    // This is not perfect but for the moment it's ok
+    replace_all (string, "\"", "");
+    // <quote>A line ending with a backslash will be concatenated with the following one, allowing multiline variable definitions</quote>
+    replace_all (string, "\n", "\\\n"); 
+    // <quote>The parser strips leading and trailing whitespace from the values of assignments, unless you use double quotes (").</quote>
+    if (string.at (0) == ' ' || string.at (0) == '\t' ||
+        string.at (string.size () - 1) == ' ' || string.at (string.size () - 1) == '\t') {
+        string.insert (0, "\"");
+        string.insert (string.size () - 1, "\"");
+    }
+}
+</%pre>
 <%args>
     std::string key;
 </%args>
-
 <%cpp>
     // DISCLAIMER!!! PLEASE READ!!!
     // 
@@ -60,7 +86,7 @@
     // Plan for next PR:
     // Replace cxxtools properties with something more suited for real-world deployment, probably zconfig or such...
 
-    // Dummy implementation ahead
+    // Dummy implementation ahead using EnvironmentFile= section of http://www.freedesktop.org/software/systemd/man/systemd.exec.html
 
     cxxtools::SerializationInfo si;
     try {
@@ -76,7 +102,7 @@
     "errors": [
         {
             "code" : 00,
-            "message" : "Error deserializing file '<$ PROPERTIES_FILE $>': <$$ e.what () $>"
+            "message" : "Error deserializing file '<$ PROPERTIES_FILE $>': <$ e.what () $>"
         }
     ]
 }
@@ -89,11 +115,12 @@
     if (request.isMethodGET ()) {
         std::string value;
         if (si.getMember (key, value)) {
+            transform_for_json (value);
 </%cpp>
 {
     "config": {
-        "key" : "<$$ key $>",
-        "value" : "<$$ value $>"
+        "key" : "<$ key $>",
+        "value" : "<$ value $>"
     }
 }
 <%cpp>                      
@@ -104,7 +131,7 @@
     "errors": [
         {
             "code" : 00,
-            "message" : "Key '<$$ key $>' not found. It is not stored in configuration settings.",
+            "message" : "Key '<$ key $>' not found. It is not stored in configuration settings.",
             "hint" : "You must first store a value for a configuration setting using POST request before being able to read it using GET request."
         }
     ]
@@ -134,7 +161,7 @@
     "errors": [
         {
             "code" : 00,
-            "message" : "Error deserializing POST request document: <$$ e.what () $>"
+            "message" : "Error deserializing POST request document: <$ e.what () $>"
         }
     ]
 }
@@ -142,8 +169,30 @@
             return HTTP_BAD_REQUEST;
         }
 
-        try { 
-            si.addValue (rd_key, rd_value);
+        // There are some restrictions regarding key format
+        static cxxtools::Regex key_format("^[.-_a-zA-Z0-9]+$");
+        if (!key_format.match (rd_key)) {
+</%cpp>
+{
+    "errors": [
+        {
+            "code" : 00,
+            "message" : "Key '<$$ rd_key $>' has bad format. "
+        }
+    ]
+}
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+
+        try {
+            auto p_si = si.findMember (rd_key);
+            if (!p_si) {
+                si.addValue (rd_key, rd_value);
+            }
+            else {
+                p_si->setValue (rd_value);
+            }
             std::ofstream foutput (PROPERTIES_FILE);
             if (!foutput.is_open () || !foutput.good()) {
 </%cpp>
@@ -163,7 +212,8 @@
                 std::string name = it->name (); 
                 std::string name_value;
                 it->getValue (name_value);
-                foutput << name  << " = " << name_value  << "\n";
+                transform_for_conf (name_value);
+                foutput << name  << "=" << name_value  << "\n";
             }
             foutput.flush ();
             foutput.close ();
@@ -174,7 +224,7 @@
     "errors": [
         {
             "code" : 00,
-            "message" : "Exception caught: <$$ e.what () $>"
+            "message" : "Exception caught: <$ e.what () $>"
         }
     ]
 }
@@ -183,7 +233,6 @@
         }
         return HTTP_OK;
     } // end of POST
-
 </%cpp>
 {
     "errors": [
