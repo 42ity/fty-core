@@ -127,23 +127,28 @@ asset_manager asset_mgr;
     if ( request.isMethodPOST() )
     {
         // Read json, transform to csv, use existing functionality
-
-        log_debug ("HERE");
         cxxtools::SerializationInfo si;
         // read json a deserialize it
         try {
             std::stringstream input (request.getBody (), std::ios_base::in);
             cxxtools::JsonDeserializer deserializer (input);
             deserializer.deserialize (si);
-            log_debug ("HERE1");
+
+        }
+        catch (const std::exception& e) {
+            LOG_END_ABNORMAL(e);
+</%cpp>
+<$$ create_error_json("Error deserializing POST request document", 00) $>
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+
+        try{
             shared::CsvMap cm = shared::CsvMap_from_serialization_info(si);
-            log_debug ("HERE2");
             // actual insert
             std::vector <std::pair<db_a_elmnt_t,persist::asset_operation>> okRows{};
             std::map <int, std::string> failRows{};
             persist::load_asset_csv (cm, okRows, failRows);
-
-            log_debug ("HERE4");
             // process results
             if ( !failRows.empty() )
             {
@@ -162,11 +167,13 @@ asset_manager asset_mgr;
         }
         catch (const std::exception& e) {
             LOG_END_ABNORMAL(e);
+            // the function returns already user friendly messages
 </%cpp>
-<$$ create_error_json("Error deserializing POST request document", 00) $>
+<$$ create_error_json(e.what(), 00) $>
 <%cpp>
             return HTTP_BAD_REQUEST;
         }
+
     }
     // ========================================================================
     //                          GET
