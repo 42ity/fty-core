@@ -18,7 +18,7 @@
 #   with this program; if not, write to the Free Software Foundation, Inc.,
 #   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-#! \file    restapi-request.sh
+#! \file    preinstallimage-bios.sh
 #  \brief   Script to generate the expected directory structure and configuration files
 #  \author  Michal Hrusecky <MichalHrusecky@Eaton.com>
 #  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
@@ -385,12 +385,11 @@ esac
 
 # Prepate the source-code details excerpt, if available
 [ -s "/usr/share/bios/.git_details" ] && \
-    /bin/grep ESCAPE "/usr/share/bios/.git_details" > /usr/share/bios-web/git_details.txt || \
+    grep ESCAPE "/usr/share/bios/.git_details" > /usr/share/bios-web/git_details.txt || \
     echo "WARNING: Do not have /usr/share/bios/.git_details"
 
 # Timestamp the end of OS image generation
-[ -x /bin/date ] && \
-    LANG=C /bin/date -u > /usr/share/bios-web/image-version.txt || \
+LANG=C date -u > /usr/share/bios-web/image-version.txt || \
     echo "WARNING: Could not record OBS image-building timestamp"
 
 echo "INFO: successfully reached the end of script: $0 $@"
