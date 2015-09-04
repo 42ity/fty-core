@@ -146,7 +146,9 @@ int asset_location_r(asset_msg_t** asset_msg, std::string& json) {
             json += "]";
     }
     if(!first_contains)
+    {
         json += "}"; // level-1 "contains"
+    }
     else
     {
         if (type_id != persist::asset_type::DEVICE )
