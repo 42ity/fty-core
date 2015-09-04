@@ -76,7 +76,7 @@ int asset_location_r(asset_msg_t** asset_msg, std::string& json) {
     json += "\"name\" : \"" + name + "\", ";
     json += "\"id\" : \"" + std::to_string(element_id) + "\"";
     if (type_id == persist::asset_type::DEVICE || type_id == persist::asset_type::GROUP) { 
-        json += ", \"type\" : \"" + std::string(asset_msg_type_name(*asset_msg)) + "\"";
+        json += ", \"type\" : \"" + type_name + "\"";
     }
 
     std::list<zframe_t *> frames;
@@ -148,7 +148,10 @@ int asset_location_r(asset_msg_t** asset_msg, std::string& json) {
     if(!first_contains)
         json += "}"; // level-1 "contains"
     else
-        json += ", \"contains\":[]}";
+    {
+        if (type_id != persist::asset_type::DEVICE )
+            json += ", \"contains\":[]}";
+    }
     json += "}"; // json closing curly bracket
     return HTTP_OK;
 
