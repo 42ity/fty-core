@@ -65,11 +65,12 @@ void transform_for_conf (std::string& string) {
     replace_all (string, "\"", "");
     // <quote>A line ending with a backslash will be concatenated with the following one, allowing multiline variable definitions</quote>
     replace_all (string, "\n", "\\\n"); 
-    // <quote>The parser strips leading and trailing whitespace from the values of assignments, unless you use double quotes (").</quote>
-    if (string.at (0) == ' ' || string.at (0) == '\t' ||
-        string.at (string.size () - 1) == ' ' || string.at (string.size () - 1) == '\t') {
+    // 1. empty string must be enclosed in "" 
+    // 2. <quote>The parser strips leading and trailing whitespace from the values of assignments, unless you use double quotes (").</quote>
+    if (string.empty () ||
+        (string.at (0) == ' ' || string.at (0) == '\t' || string.at (string.size () - 1) == ' ' || string.at (string.size () - 1) == '\t')) {
         string.insert (0, "\"");
-        string.insert (string.size () - 1, "\"");
+        string.push_back ('"');
     }
 }
 </%pre>
