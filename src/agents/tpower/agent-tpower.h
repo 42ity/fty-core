@@ -67,11 +67,9 @@ class TotalPowerAgent : public BIOSAgent {
         "realpower.input.L1",
         "realpower.input.L2",
         "realpower.input.L3",
-        /* TODO: following quantities are not in nut mapping yet, so it doesn't make sense have it here 
         "realpower.output.L1",
         "realpower.output.L2",
         "realpower.output.L3",
-        */
     };
     //! \brief list of DCs, affected by powerdevice
     std::map< std::string, std::string> _affectedDCs;
