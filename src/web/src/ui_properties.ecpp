@@ -87,6 +87,9 @@ ui_props_manager mgr;
 <%cpp>
             return HTTP_INTERNAL_SERVER_ERROR;
         }
+</%cpp>
+{"ui_properties": "ui properties changed"}
+<%cpp>
     }
     else {
 </%cpp>
@@ -97,4 +100,3 @@ ui_props_manager mgr;
         return HTTP_METHOD_NOT_ALLOWED;
     }
 </%cpp>
-{"ui_properties": "ui properties changed"}
