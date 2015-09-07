@@ -21,13 +21,15 @@
  * \file ui_properties.ecpp
  * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
  * \author Alena Chernikava <AlenaChernikava@Eaton.com>
- * \brief Not yet documented file
+ * \brief GET/PUT for REST API call /usr/properties
  */
  #><%pre>
 #include <string>
+#include <sstream>
 #include <cxxtools/jsondeserializer.h>
 
 #include "data.h"
+#include "log.h"
 </%pre>
 <%thread scope="global">
 ui_props_manager mgr;
@@ -47,6 +49,10 @@ ui_props_manager mgr;
 <%cpp>
             return HTTP_INTERNAL_SERVER_ERROR;
         }
+        //mitigate the situation DB content is empty - most of the json parsers don't deal well with empty strings
+        if (res.empty()) {
+            res = "{}";
+        }
 </%cpp>
 <$$ res $>
 <%cpp>
@@ -57,8 +63,8 @@ ui_props_manager mgr;
         std::stringstream input(request.getBody(), std::ios_base::in);
         cxxtools::SerializationInfo si;
         cxxtools::JsonDeserializer deserializer(input);
+        log_debug("ui/properties: '''%s'''", input.str().c_str());
 
-//FIXME: this does not work
         try {
             deserializer.deserialize(si);
         } catch (const std::exception& e) {

@@ -204,7 +204,18 @@ unsigned int process_post (const std::string& operation, const std::string& body
         if (! service_name_valid (service_name.c_str ())) {
             throw cxxtools::SerializationError ("TODO service_name empty or invalid"); // TODO change error message
         }
-        //
+
+        // networking is different animal, threat differently
+        if (service_name == "networking") {
+            if (operation != "restart" && operation != "show") {
+                message.assign("'networking' service supports 'restart' and 'show' commands only");
+                return HTTP_BAD_REQUEST;
+            }
+            // restart is done using special script
+            if (operation == "restart")
+                service_name = "bios-networking";
+        }
+
         shared::Argv proc_cmd {"sudo", "systemctl", operation, service_name};
 
         std::string proc_out, proc_err;
@@ -214,16 +225,9 @@ unsigned int process_post (const std::string& operation, const std::string& body
             return HTTP_INTERNAL_SERVER_ERROR;
         }
 
-        //XXX: on debian one must restart two services in order to achieve the change ...
-        if (operation == "restart" && service_name == "networking") {
-            shared::Argv proc_cmd2 {"sudo", "systemctl", operation, "ifplugd"};
-            proc_rv = shared::output (proc_cmd2, proc_out, proc_err);
-            if (proc_rv != 0) {
-                message.assign ("TODO executing systemctl failed: ").append (proc_err); // TODO change error message
-                return HTTP_INTERNAL_SERVER_ERROR;
-            }
-        }
-
+        // but we want to pretend we have used networking service ...
+        if (service_name == "bios-networking")
+            service_name = "networking";
         shared::Argv proc_cmd2 {"sudo", "systemctl", "show", service_name};
 
         proc_rv = shared::output (proc_cmd2, proc_out, proc_err);
