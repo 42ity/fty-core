@@ -207,7 +207,7 @@ unsigned int process_post (const std::string& operation, const std::string& body
 
         // networking is different animal, threat differently
         if (service_name == "networking") {
-            if (operation != "restart" || operation != "show") {
+            if (operation != "restart" && operation != "show") {
                 message.assign("'networking' service supports 'restart' and 'show' commands only");
                 return HTTP_BAD_REQUEST;
             }
