@@ -75,7 +75,7 @@ ui_props_manager mgr;
   "content" : "<$$ request.getBody() $>"
 }
 <%cpp>
-        return HTTP_BAD_REQUEST;
+            return HTTP_BAD_REQUEST;
         }
         std::string errmsg = "";
         int rv = mgr.put(request.getBody(), errmsg);
@@ -97,3 +97,4 @@ ui_props_manager mgr;
         return HTTP_METHOD_NOT_ALLOWED;
     }
 </%cpp>
+{"ui_properties": "ui properties changed"}
