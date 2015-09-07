@@ -1,0 +1,6 @@
+[Unit]
+Description = Async restart of networking
+
+[Service]
+Type=simple
+ExecStart=@libexecdir@/bios/bios-networking
