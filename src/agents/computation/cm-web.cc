@@ -195,7 +195,7 @@ process
             if (rv == 0) {
                 log_info ("returned averages NOT complete. New start: '%" PRId64"'", new_start);
                 start_sampled_ts = average_extend_left_margin (new_start, step);
-                if (!request_sampled (conn, element_id, source, start_sampled_ts, end_ts + AGENT_NUT_REPEAT_INTERVAL_SEC,
+                if (request_sampled (conn, element_id, source, start_sampled_ts, end_ts + AGENT_NUT_REPEAT_INTERVAL_SEC,
                                       samples, unit, *message_out)) {
                     return;
                 }
