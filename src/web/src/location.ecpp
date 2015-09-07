@@ -35,6 +35,7 @@
 #include "log.h"
 #include "defs.h"
 #include "dbpath.h"
+#include "data.h"
 #include "common_msg.h"
 #include "location_helpers.h"
 #include "asset_msg.h"
@@ -42,6 +43,10 @@
 #include "assettopology.h"
 #include "web_utils.h"
 </%pre>
+
+<%thread scope="global">
+asset_manager asset_mgr;
+</%thread>
 
 <%args>
 std::string from;
@@ -459,7 +464,49 @@ std::string feed_by;
 <%cpp>
                     return HTTP_BAD_REQUEST;
                 }
+                if ( from == "none" )
+                {
+</%cpp>
+<$$ create_error_json("With variable 'feed_by' variable 'from' can not be 'none'", 401) $>
+<%cpp>
+                    return HTTP_BAD_REQUEST;
+                }
                 feed_by_id = std::stoul (feed_by);
+                // TODO not very good solution, but fast
+                auto tmp = asset_mgr.get_item1(feed_by);
+                if ( tmp.status == 0 )
+                {
+                    switch ( tmp.errsubtype )
+                    {
+                        case DB_ERROR_NOTFOUND:
+</%cpp>
+<$$ create_error_json("Asset specified in 'feed_by' doesn't exist", 57) $>
+<%cpp>
+                                return HTTP_NOT_FOUND;
+                        case DB_ERROR_BADINPUT:
+</%cpp>
+<$$ create_error_json("Wrong input", 60) $>
+<%cpp>
+                                return HTTP_NOT_FOUND;
+                        case DB_ERROR_INTERNAL:
+</%cpp>
+<$$ create_error_json("Internal error", 61) $>
+<%cpp>
+                                return HTTP_INTERNAL_SERVER_ERROR;
+                        default:
+</%cpp>
+<$$ create_error_json("Unknown error", 62) $>
+<%cpp>
+                                return HTTP_INTERNAL_SERVER_ERROR;
+                    }
+                }
+                if ( tmp.item.basic.type_id != persist::asset_type::DEVICE )
+                {
+</%cpp>
+<$$ create_error_json("Asset element specified in 'feed_by' parameter is not a device", 410) $>
+<%cpp>
+                        return HTTP_BAD_REQUEST;
+                }
             }
         } catch (std::out_of_range& e) {
 </%cpp>

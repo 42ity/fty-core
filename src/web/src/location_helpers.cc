@@ -76,7 +76,7 @@ int asset_location_r(asset_msg_t** asset_msg, std::string& json) {
     json += "\"name\" : \"" + name + "\", ";
     json += "\"id\" : \"" + std::to_string(element_id) + "\"";
     if (type_id == persist::asset_type::DEVICE || type_id == persist::asset_type::GROUP) { 
-        json += ", \"type\" : \"" + std::string(asset_msg_type_name(*asset_msg)) + "\"";
+        json += ", \"type\" : \"" + type_name + "\"";
     }
 
     std::list<zframe_t *> frames;
@@ -110,10 +110,10 @@ int asset_location_r(asset_msg_t** asset_msg, std::string& json) {
             continue;
         byte *buffer = zframe_data(it_f);
         if(buffer == NULL)
-            goto err_cleanup;               
+            goto err_cleanup;
         zmsg = zmsg_decode(buffer, zframe_size(it_f));
         if(zmsg == NULL || !zmsg_is (zmsg))
-            goto err_cleanup;               
+            goto err_cleanup;
         zframe_destroy(&it_f);
 
         _scoped_zmsg_t *pop = NULL;
@@ -137,7 +137,7 @@ int asset_location_r(asset_msg_t** asset_msg, std::string& json) {
                 first = false;
             }
             if(asset_location_r(&item, json) != HTTP_OK)
-                goto err_cleanup;               
+                goto err_cleanup;
             asset_msg_destroy(&item);
         }
         zmsg_destroy(&zmsg);
@@ -146,7 +146,14 @@ int asset_location_r(asset_msg_t** asset_msg, std::string& json) {
             json += "]";
     }
     if(!first_contains)
+    {
         json += "}"; // level-1 "contains"
+    }
+    else
+    {
+        if (type_id != persist::asset_type::DEVICE )
+            json += ", \"contains\":[]";
+    }
     json += "}"; // json closing curly bracket
     return HTTP_OK;
 
