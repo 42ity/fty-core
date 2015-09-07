@@ -1327,7 +1327,8 @@ outage_LDADD = \
 
 outage_LDFLAGS =	-ltntdb
 
-client_SCRIPTS +=	tools/bios-passwd
+client_SCRIPTS +=	tools/bios-passwd \
+					tools/bios-networking
 
 ###################################################################
 # Web Library (tntnet dynamic module for $BIOS REST API)
@@ -1498,7 +1499,8 @@ SYSTEMD_UNITS += bios-agent-nut.service \
                         bios-agent-autoconfig.service bios-agent-th.service \
                         bios-db-init.service bios-reset-button.service \
                         ifplug-dhcp-autoconf.service \
-						bios-ssh-last-resort.service
+						bios-ssh-last-resort.service \
+						bios-networking.service
 
 # These unit files are compiled, but are not enabled via BIOS presets
 SYSTEMD_UNITS_TIMERIMPL += \
