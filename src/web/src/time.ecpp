@@ -100,6 +100,7 @@ SubProcess augtool(exe, SubProcess::STDOUT_PIPE | SubProcess::STDIN_PIPE);
 				command = "save\n";
     			write(augtool.getStdin(), command.c_str(), command.length());
     			nil = wait_read_all(augtool.getStdout());
+				system("sudo systemctl restart ntp");
 			}
 	    }
     }
