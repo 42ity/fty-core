@@ -67,7 +67,7 @@ static const std::vector<std::string> physicsNUT {
     "input.L1.realpower",
     "input.L2.realpower",
     "input.L3.realpower",
-    "output.realpower",
+    "input.realpower", // FIXME after demo: using input, as output doesn't work correctly
     "output.L1.realpower",
     "output.L2.realpower",
     "output.L3.realpower",
