@@ -254,7 +254,8 @@ libbiosapi_la_LDFLAGS = \
 		$(AM_LDFLAGS) \
 		-fPIC -shared \
 		${LIBZMQ_LIBS} ${LIBCZMQ_LIBS} ${LIBMLM_LIBS} \
-		-version-info $(LIBBIOSAPI_CURRENT):$(LIBBIOSAPI_REVISION):$(LIBBIOSAPI_AGE)
+		-version-info $(LIBBIOSAPI_CURRENT):$(LIBBIOSAPI_REVISION):$(LIBBIOSAPI_AGE) \
+		-Wl,--no-undefined
 
 if HAVE_LD_VERSION_SCRIPT
 libbiosapi_la_LDFLAGS += \
@@ -1385,6 +1386,7 @@ bios_web_la_CPPFLAGS =	$(AM_CPPFLAGS) \
 
 bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 			${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
+			-Wl,--no-undefined \
 			-module -lm -ltntdb -ltntnet -lcidr -lmagic -lbiosapi
 
 bios_web_la_LIBADD = \
@@ -2012,7 +2014,7 @@ cibin_programs: $(cibin_programs_list)
 
 # Run compile/link tests defined in this Makefile
 # Note that check-gitignore should be the last target
-check-local: check-dlls web-link-test test-sdk \
+check-local: web-link-test test-sdk \
         check-gitignore
 
 # If git repo details are not available, or git program does not exist,
@@ -2030,59 +2032,6 @@ check-gitignore: all-buildproducts
 	    echo "SKIP: $@ (no git)"; exit 0 ; \
 	  fi )
 
-# Makes sense only for -shared builds
-check-dlls: check-dll-libs check-dll-progs
-
-CHECK_DLL_PROGS_TGT =
-CHECK_DLL_LIBS_TGT =
-
-define depend-check-dll-prog =
-check-dll-binfile-$(1): $(1)
-	@P="$$<"; \
-	[ -x "$(abs_top_builddir)/$$(<F)" ] && P="$(abs_top_builddir)/$$(<F)" ; \
-	[ -x "$(abs_top_builddir)/.libs/$$(<F)" ] && P="$(abs_top_builddir)/.libs/$$(<F)" ; \
-	[ -x "$(abs_top_builddir)/.libs/lt-$$(<F)" ] && P="$(abs_top_builddir)/.libs/lt-$$(<F)" ; \
-	PA=""; [ -n "$(2)" ] && PA="-l $(2)" ; \
-	echo "     DL_TRACE_EXE    $$$$P    $$$$PA"; \
-	$(abs_top_srcdir)/tools/ldd-tracer.sh $$$$PA -lp "$(abs_top_builddir)/.libs" "$$$$P" > /dev/null && \
-	echo "PASS: dynamic-link tracing EXE '$$$$P' OK : found no undefined symbols" || \
-	( RES=$$$$?; echo "FAIL: dynamic-link tracing EXE '$$$$P' failed ($$$$RES)"; exit $$$$RES )
-
-$(eval CHECK_DLL_PROGS_TGT +=	check-dll-binfile-$(1) )
-endef
-
-define depend-check-dll-lib =
-check-dll-libfile-$(1): $(1)
-	@P="$$(addprefix $(abs_top_builddir)/.libs/,$$(patsubst %.la,%.so,$$(<F)))"; \
-	PA=""; [ -n "$(2)" ] && PA="-l $(2)" ; \
-	echo "     DL_TRACE_LIB    $$$$P    $$$$PA"; \
-	$(abs_top_srcdir)/tools/ldd-tracer.sh $$$$PA -lp "$(abs_top_builddir)/.libs" "$$$$P" > /dev/null && \
-	echo "PASS: dynamic-link tracing LIB '$$$$P' OK : found no undefined symbols" || \
-	( RES=$$$$?; echo "FAIL: dynamic-link tracing LIB '$$$$P' failed ($$$$RES)"; exit $$$$RES )
-
-$(eval CHECK_DLL_LIBS_TGT +=	check-dll-libfile-$(1) )
-endef
-
-# Define the rulesets for specific targets dynamically
-$(foreach p,$(bin_PROGRAMS) $(check_PROGRAMS) $(client_PROGRAMS), $(eval $(call depend-check-dll-prog,$(p))))
-
-# TODO: Later consider building from pkglib_LTLIBRARIES or lib_LTLIBRARIES
-# if we get many of these...
-$(eval $(call depend-check-dll-lib,libbiosapi.la))
-$(eval $(call depend-check-dll-lib,bios_web.la,/usr/bin/tntnet))
-
-# Umbrella targets
-check-dll-progs: $(CHECK_DLL_PROGS_TGT)
-
-check-dll-libs: $(CHECK_DLL_LIBS_TGT)
-
-# Simplify tests for certain target names (e.g. our few libraries)
-# and their historical targets per below dependencies in e.g. SDK
-check-dll-libbiosapi: check-dll-libfile-libbiosapi.la
-
-check-dll-bios_web: check-dll-libfile-bios_web.la
-
-
 #----------------------------------------------------------------------
 #                        SDK - currently it is the public API library
 #----------------------------------------------------------------------
@@ -2093,7 +2042,7 @@ sdk-link-test: sdk test-libbiosapiut
 
 sdk-tests: sdk sdk-link-test
 
-test-sdk: sdk sdk-tests check-dll-libbiosapi
+test-sdk: sdk sdk-tests
 	cd $(abs_top_builddir) && ./test-libbiosapiut
 
 #----------------------------------------------------------------------
