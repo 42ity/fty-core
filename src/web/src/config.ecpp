@@ -102,7 +102,7 @@ void transform_for_conf (std::string& string) {
 {
     "errors": [
         {
-            "code" : 00,
+            "code" : 0,
             "message" : "Error deserializing file '<$ PROPERTIES_FILE $>': <$ e.what () $>"
         }
     ]
@@ -131,7 +131,7 @@ void transform_for_conf (std::string& string) {
 {
     "errors": [
         {
-            "code" : 00,
+            "code" : 0,
             "message" : "Key '<$ key $>' not found. It is not stored in configuration settings.",
             "hint" : "You must first store a value for a configuration setting using POST request before being able to read it using GET request."
         }
@@ -161,7 +161,7 @@ void transform_for_conf (std::string& string) {
 {
     "errors": [
         {
-            "code" : 00,
+            "code" : 0,
             "message" : "Error deserializing POST request document: <$ e.what () $>"
         }
     ]
@@ -177,7 +177,7 @@ void transform_for_conf (std::string& string) {
 {
     "errors": [
         {
-            "code" : 00,
+            "code" : 0,
             "message" : "Key '<$$ rd_key $>' has bad format. "
         }
     ]
@@ -200,7 +200,7 @@ void transform_for_conf (std::string& string) {
 {
     "errors": [
         {
-            "code" : 00,
+            "code" : 0,
             "message" : "Error writing file '<$ PROPERTIES_FILE $>'."
         }
     ]
@@ -224,7 +224,7 @@ void transform_for_conf (std::string& string) {
 {
     "errors": [
         {
-            "code" : 00,
+            "code" : 0,
             "message" : "Exception caught: <$ e.what () $>"
         }
     ]
@@ -238,7 +238,7 @@ void transform_for_conf (std::string& string) {
 {
     "errors": [
         {
-            "code" : 00,
+            "code" : 0,
             "message" : "<$$ MSG_METHOD_NOT_ALLOWED $>"
         }
     ]
