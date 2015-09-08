@@ -21,30 +21,23 @@
 #! \file   ui_properties.sh
 #  \author Michal Vyskocil <MichalVyskocil@Eaton.com>
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \author Alena Chernikava <AlenaChernikava@Eaton.com>
 #  \author Gerald Guillaume <GeraldGuillaume@Eaton.com>
-#  \brief Not yet documented file
+#  \brief  test a  GET and PUT method for REST API call
+#           /api/v1/ui/properties
 
-#TEST for /ui/properties GET/PUT
-
-curlfail_push "warn" ""
 test_it "GET_ui_properties_1"
-api_get /ui/properties | grep -q '{"key1" : "value1", "key2" : "value2"'
-TESTLIB_QUICKFAIL=no print_result $?
-curlfail_pop
+api_get_json /ui/properties >&5
+print_result $?
 
 test_it "PUT_ui_properties_1"
-api_auth_put /ui/properties '{"key1" : "value1", "key2" : "value42"}'
+api_auth_put /ui/properties '{"key1" : "value1", "key2" : "value42"}' >/dev/null
 print_result $?
 
 test_it "GET_ui_properties_2"
-api_get /ui/properties | grep -q '{"key1" : "value1", "key2" : "value42"'
+api_get_json /ui/properties >&5
 print_result $?
 
 test_it "PUT_ui_properties_2"
-api_auth_put /ui/properties '{"key1" : "value1", "key2" : "value2"}'
+api_auth_put /ui/properties '{"key1" : "value1", "key2" : "value2"}' >/dev/null
 print_result $?
-
-#TODO: can't validate JSON via cxxtools
-#test_it "PUT_invalid_JSON"
-#api_auth_put /usr/properties
-#print_result $?
