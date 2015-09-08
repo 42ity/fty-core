@@ -151,6 +151,8 @@ tools/db-init
 !tools/db-init.in
 tools/bios-passwd
 !tools/bios-passwd.in
+tools/bios-networking
+!tools/bios-networking.in
 
 tools/42-bios-systemd.preset
 !tools/bios-db-init.service.in
