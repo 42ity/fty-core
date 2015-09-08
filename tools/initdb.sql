@@ -41,7 +41,7 @@ CREATE TABLE t_bios_measurement (
 
     INDEX(topic_id),
     INDEX(timestamp),
-    INDEX(timestamp, topic_id),
+    UNIQUE INDEX `UI_t_bios_measurement` (`timestamp`, `topic_id`  ASC)
 
     FOREIGN KEY(topic_id)
         REFERENCES t_bios_measurement_topic(id)
