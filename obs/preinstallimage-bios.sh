@@ -83,9 +83,9 @@ alias la='ls -la'
 EOF
 
 # BIOS configuration file
-touch /etc/defaults/bios
-chown bios /etc/defaults/bios
-chmod a+r /etc/defaults/bios
+touch /etc/default/bios
+chown bios /etc/default/bios
+chmod a+r /etc/default/bios
 
 # Setup u-Boot
 echo '/dev/mtd3 0x00000 0x40000 0x40000' > /etc/fw_env.config
