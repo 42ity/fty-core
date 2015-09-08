@@ -82,7 +82,7 @@ SubProcess augtool(exe, SubProcess::STDOUT_PIPE | SubProcess::STDIN_PIPE);
 		    if((!t_rex.match(time) ||
 	            system((std::string("sudo date -s ") + time).c_str()) != 0)) {
 </%cpp>
-{ "error":"Invalid time format" }
+{ "error":"Can't set requested time '<$ time $>', maybe invalid format or not enough permission?" }
 <%cpp>
 		        return HTTP_BAD_REQUEST;
 			}
