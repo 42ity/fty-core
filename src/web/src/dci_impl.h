@@ -44,7 +44,7 @@ static const std::map<const std::string, const std::string> PARAM_TO_SRC = {
     {"max_power_last_week", "<zero>"},
     {"max_power_last_month", "<zero>"},
 
-    {"trend_power_last_day", R"(realpower.default\_arithmetic\_mean\_24h/realpower.default)"},
+    {"trend_power_last_day", "realpower.default_arithmetic_mean_24h/realpower.default"},
     {"trend_power_last_week", "<zero>"},
     {"trend_power_last_month", "<zero>"},
 
