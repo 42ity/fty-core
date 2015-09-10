@@ -25,7 +25,7 @@
  */
 
 #include <tntdb/connection.h>
-#include <cxxtools/trim.h>
+#include <cxxtools/regex.h>
 
 #include "asset_computed_impl.h"
 #include "shared/dbtypes.h"
@@ -40,13 +40,15 @@
 /*!
  * \brief trim string and convert it to int
  *
- * \param usize can be given in patterns like this: "26", "26U", "u26", " 26  u "
+ * \param usize must be number, otherwise returns 0
  */
 int usize_to_int(const std::string &usize) {
-    if( usize.empty() ) return 0;
 
-    std::string trim = cxxtools::trim(usize, std::string("Uu \t\n\r") );
-    uint32_t size = string_to_uint32( trim.c_str() );
+    static const cxxtools::Regex re{"^[0-9]+$"};
+
+    if( usize.empty() || ! re.match(usize)) return 0;
+
+    uint32_t size = string_to_uint32( usize.c_str() );
     if( size == UINT32_MAX ) size = 0;
     return size;
 }
@@ -60,7 +62,7 @@ int free_u_size( const std::string &element, std::string &jsonResult)
         a_elmnt_id_t elementId =  string_to_uint32( element.c_str() );
         //TODO: if UINT32_MAX
         auto rack = persist::select_asset_element_web_byId( conn, elementId );
-   
+
         if( rack.status && ( rack.item.type_id == persist::asset_type::RACK ) ){
             auto ext = persist::select_ext_attributes( conn, elementId );
             auto us = ext.item.find("u_size");
@@ -71,9 +73,9 @@ int free_u_size( const std::string &element, std::string &jsonResult)
             }
             freeusize = usize_to_int( us->second.first );
             log_debug( "rack size is %i", freeusize );
-           
+
             // get devices inside the rack
-            auto devices = select_asset_device_by_container(conn, elementId);
+            auto devices = persist::select_asset_device_by_container(conn, elementId);
             if( ! devices.status ) {
                 jsonResult = create_error_json( "Error reading rack content", 104 );
                 return 1;
