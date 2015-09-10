@@ -235,7 +235,7 @@ TEST_CASE("asset element INSERT/DELETE #3","[db][CRUD][insert][delete][asset_ele
     // must handle duplicate insert without insert
     reply_insert = persist::insert_into_asset_element (conn, element_name, element_type_id,
             parent_id, status, priority, bc, 10, UGLY_ASSET_TAG);
-    REQUIRE ( reply_insert.status == 1 );
+    REQUIRE ( reply_insert.status == 0 );
     REQUIRE ( reply_insert.affected_rows == 0 );
 
     // first delete
@@ -462,7 +462,7 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
     reply_insert = persist::insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
             ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
-    REQUIRE ( reply_insert.status == 1 );
+    REQUIRE ( reply_insert.status == 0 );
 
     // first delete
     auto reply_delete = persist::delete_dc_room_row_rack (conn, rowid);
@@ -566,7 +566,7 @@ TEST_CASE("room unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlocka
     reply_insert = persist::insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
             ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
-    REQUIRE ( reply_insert.status == 1 );
+    REQUIRE ( reply_insert.status == 0 );
 
     // first delete
     auto reply_delete = persist::delete_dc_room_row_rack (conn, rowid);
@@ -644,7 +644,7 @@ TEST_CASE("row unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockat
     reply_insert = persist::insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
             ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
-    REQUIRE ( reply_insert.status == 1 );
+    REQUIRE ( reply_insert.status == 0 );
 
     // first delete
     auto reply_delete = persist::delete_dc_room_row_rack (conn, rowid);
@@ -778,7 +778,7 @@ TEST_CASE("rack unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlock
             parent_id, ext_attributes, status, priority, bc, groups,
             UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
-    REQUIRE ( reply_insert.status == 1 );
+    REQUIRE ( reply_insert.status == 0 );
 
     // first delete
     auto reply_delete = persist::delete_dc_room_row_rack (conn, rowid);
@@ -895,7 +895,7 @@ TEST_CASE("group unlockated INSERT/DELETE #11","[db][CRUD][insert][delete][unloc
     reply_insert = persist::insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
             ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
-    REQUIRE ( reply_insert.status == 1 );
+    REQUIRE ( reply_insert.status == 0 );
 
     // first delete
     auto reply_delete = persist::delete_dc_room_row_rack (conn, rowid);
@@ -1033,7 +1033,7 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
                             asset_device_type, status, priority, bc,
                             UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
-    REQUIRE ( reply_insert.status == 1 );
+    REQUIRE ( reply_insert.status == 0 );
 
     // first delete
     auto reply_delete = persist::delete_device (conn, rowid);

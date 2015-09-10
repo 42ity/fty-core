@@ -51,7 +51,7 @@ enum asset_subtype {
     EPDU,
     PDU,
     SERVER,
-    MAIN,
+    FEED,
     STS,
     SWITCH,
     STORAGE,
