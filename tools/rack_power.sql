@@ -15,7 +15,7 @@ SELECT @ae_device := id_asset_element_type FROM t_bios_asset_element_type WHERE 
 SELECT @device_ups := id_asset_device_type FROM t_bios_asset_device_type WHERE name = 'ups';
 SELECT @device_epdu := id_asset_device_type FROM t_bios_asset_device_type WHERE name = 'epdu';
 SELECT @device_pdu := id_asset_device_type FROM t_bios_asset_device_type WHERE name = 'pdu';
-SELECT @device_main := id_asset_device_type FROM t_bios_asset_device_type WHERE name = 'main';
+SELECT @device_feed := id_asset_device_type FROM t_bios_asset_device_type WHERE name = 'feed';
 SELECT @device_server := id_asset_device_type FROM t_bios_asset_device_type WHERE name = 'server';
 SELECT @device_genset := id_asset_device_type FROM t_bios_asset_device_type WHERE name = 'genset';
 
@@ -23,7 +23,7 @@ SELECT @device_genset := id_asset_device_type FROM t_bios_asset_device_type WHER
 
 SELECT @dvc_ups := id_device_type FROM t_bios_device_type WHERE name = 'ups';
 SELECT @dvc_epdu := id_device_type FROM t_bios_device_type WHERE name = 'epdu';
-SELECT @dvc_main := id_device_type FROM t_bios_device_type WHERE name = 'main';
+SELECT @dvc_feed := id_device_type FROM t_bios_device_type WHERE name = 'feed';
 SELECT @dvc_server := id_device_type FROM t_bios_device_type WHERE name = 'server';
 SELECT @dvc_genset := id_device_type FROM t_bios_device_type WHERE name = 'genset';
 
@@ -272,8 +272,8 @@ INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_des
 INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8116, "RACK103", @ae_rack, NULL);
 
 /* DEVICES*/
-/* main103_1 */
-INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent, id_subtype) VALUES (8117, "main103_1", @ae_device, NULL, @device_main); 
+/* feed103_1 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent, id_subtype) VALUES (8117, "feed103_1", @ae_device, NULL, @device_feed); 
 
 /* ups103_1 */
 INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent, id_subtype) VALUES (8118, "ups103_1", @ae_device, 8116, @device_ups); 
@@ -330,8 +330,8 @@ INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_des
 INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8126, "RACK104", @ae_rack, NULL);
 
 /* DEVICES*/
-/* main104_1 */
-INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent, id_subtype) VALUES (8127, "main104_1", @ae_device, NULL, @device_main); 
+/* feed104_1 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent, id_subtype) VALUES (8127, "feed104_1", @ae_device, NULL, @device_feed); 
 
 /* pdu104_1 */
 INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent, id_subtype) VALUES (8128, "pdu104_1", @ae_device, 8126, @device_pdu); 
@@ -374,8 +374,8 @@ INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_des
 INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8134, "RACK105", @ae_rack, NULL);
 
 /* DEVICES*/
-/* main105_1 */
-INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent, id_subtype) VALUES (8135, "main105_1", @ae_device, NULL, @device_main); 
+/* feed105_1 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent, id_subtype) VALUES (8135, "feed105_1", @ae_device, NULL, @device_feed); 
 
 /* pdu105_1 */
 INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent, id_subtype) VALUES (8136, "pdu105_1", @ae_device, NULL, @device_pdu); 
@@ -415,8 +415,8 @@ INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_des
 INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8141, "RACK106", @ae_rack, NULL);
 
 /* DEVICES*/
-/* main106_1 */
-INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent, id_subtype) VALUES (8142, "main106_1", @ae_device, NULL, @device_main); 
+/* feed106_1 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent, id_subtype) VALUES (8142, "feed106_1", @ae_device, NULL, @device_feed); 
 
 /* pdu106_1 */
 INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent, id_subtype) VALUES (8143, "pdu106_1", @ae_device, NULL, @device_pdu); 
@@ -461,8 +461,8 @@ INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VA
 INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8150, "RACK108", @ae_rack, NULL);
 
 /* DEVICES*/
-/* main107_1 */
-INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent, id_subtype) VALUES (8151, "main107_1", @ae_device, NULL, @device_main); 
+/* feed107_1 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent, id_subtype) VALUES (8151, "feed107_1", @ae_device, NULL, @device_feed); 
 
 /* epdu107_1 */
 INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent, id_subtype) VALUES (8152, "epdu107_1", @ae_device, 8149, @device_epdu); 
