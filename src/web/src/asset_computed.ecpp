@@ -36,19 +36,21 @@
 <%cpp>
     std::string operation = request.getArg("operation");
     std::string element = request.getArg("element");
+    std::string output;
+    int result;
 
-    if( operation != "freeusize" ) {
+    if( operation == "freeusize" ) {
+        result = free_u_size( element, output );
+    }
+    else if (operation == "rack.outlets.avaliable") {
+        result = rack_outlets_available( element, output );
+    }
+    else {
 </%cpp>
-<$$ create_error_json("Invalid operation", 102) $>
+<$$ create_error_json("Invalid operation '" + operation + "'", 102) $>
 <%cpp>
         return HTTP_BAD_REQUEST;
     }
-    
-    std::string output;
-    int result = free_u_size( element, output );
-</%cpp>
-<$$ output $>
-<%cpp>
+    reply.out() << output;
     return ( result == 0 ? HTTP_OK : HTTP_BAD_REQUEST );
 </%cpp>
-
