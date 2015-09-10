@@ -26,6 +26,8 @@
 
 #include <tntdb/connection.h>
 #include <cxxtools/regex.h>
+#include <cxxtools/serializationinfo.h>
+#include <cxxtools/jsonserializer.h>
 
 #include "asset_computed_impl.h"
 #include "shared/dbtypes.h"
@@ -96,3 +98,92 @@ int free_u_size( const std::string &element, std::string &jsonResult)
     }
 }
 
+// MERGE TO WEB_UTILS
+class Foo {
+
+    public:
+        constexpr static const char* NAME = "rack.outlets.available";
+
+        Foo (unsigned id, const std::map<std::string, int>& results):
+            id{id},
+            results{results}
+        {}
+
+        unsigned id;
+        std::map<std::string, int> results;
+
+
+};
+
+void operator<<= (cxxtools::SerializationInfo& si, const Foo& object)
+{
+  si.setTypeName("Object");
+  si.addValue("id", object.id);
+
+  cxxtools::SerializationInfo &si2 = si.addMember(Foo::NAME);
+  si2.setTypeName("Object");
+
+  for (const auto& it : object.results) {
+    if (it.second >= 0)
+        si2.addValue(it.first, it.second);
+    else {
+        auto &si3 = si2.addMember(it.first);
+        si3.setNull();
+    }
+  }
+}
+
+template <typename T>
+static std::string toString(const T& type)
+{
+    std::ostringstream os;
+    cxxtools::JsonSerializer s;
+    s.beautify(true);
+    s.begin(os);
+    s.serialize(type);
+    s.finish();
+    return os.str();
+}
+
+int
+rack_outlets_available(
+        const std::string &element, std::string &json_result)
+{
+    a_elmnt_id_t elementId =  string_to_uint32( element.c_str() );
+    std::map<std::string, int> res;
+    int sum = 0;
+    bool tainted = false;
+
+    std::function<void(const tntdb::Row &row)> cb = \
+        [&sum, &tainted, &res](const tntdb::Row &row)
+        {
+            std::string device_type_name = "";
+            row[3].get(device_type_name);
+            if (device_type_name != "epdu")
+                return;
+
+            a_elmnt_id_t device_asset_id = 0;
+            row[1].get(device_asset_id);
+            res[std::to_string(device_asset_id)] = 10;
+
+            // if no outlet.count && tainted = true;
+            sum += 10;
+        };
+
+    try{
+        tntdb::Connection conn;
+        conn = tntdb::connectCached(url);
+
+        persist::select_asset_device_by_container(
+                conn, elementId, cb);
+
+    } catch (std::exception &e) {
+        json_result = create_error_json(e.what(), 105);
+        return -1;
+    }
+    res["sum"] = !tainted ? sum : -1;
+
+    Foo f{elementId, res};
+    json_result = toString(f);
+    return 0;
+}
