@@ -30,8 +30,12 @@
 
 #include "augtool.h"
 
-// Helper function to parse output of augtool
-std::string augtool_out(const std::string in, bool key_value, std::string sep, std::function<bool(const std::string)> filter) {
+using namespace shared;
+
+std::string augtool::get_cmd_out(std::string cmd, bool key_value,
+                                 std::string sep,
+                                 std::function<bool(std::string)> filter) {
+    std::string in = get_cmd_out_raw(cmd);
     std::vector<std::string> spl;
     bool not_first = false;
     std::string out;
@@ -62,5 +66,57 @@ std::string augtool_out(const std::string in, bool key_value, std::string sep, s
         not_first = true;
     }
     return out;
+}
+
+
+std::string augtool::get_cmd_out_raw(std::string command) {
+    std::string ret;
+    bool err = false;
+    mux.lock();
+    if(command.empty() || command.back() != '\n')
+        command += "\n";
+    if(write(prc->getStdin(), command.c_str(), command.length()) < 1)
+        err = true;
+    ret = wait_read_all(prc->getStdout());
+    mux.unlock();
+    return err ? "" : ret;
+}
+
+void augtool::run_cmd(std::string cmd) {
+    get_cmd_out_raw(cmd);
+}
+
+void augtool::clear() {
+    static std::mutex clear_mux;
+    clear_mux.lock();
+    run_cmd("");
+    run_cmd("load");
+    clear_mux.unlock();
+}
+
+augtool* augtool::get_instance() {
+    static augtool inst;
+    static std::mutex in_mux;
+    std::string nil;
+
+    // Initialization of augtool subprocess if needed
+    in_mux.lock();
+    if(inst.prc == NULL) {
+        Argv exe = { "sudo", "augtool", "-e" };
+        inst.prc = new shared::SubProcess(exe,
+                          SubProcess::STDOUT_PIPE | SubProcess::STDIN_PIPE);
+    }
+    if(!inst.prc->isRunning()) {
+        inst.prc->run();
+        nil = inst.get_cmd_out_raw("help");
+        if(!inst.prc->isRunning() || nil.find("match") == nil.npos) {
+            delete inst.prc;
+            inst.prc = NULL;
+            return NULL;
+        }
+    }
+    in_mux.unlock();
+    inst.clear();
+    return &inst;
 }
 

@@ -28,23 +28,45 @@
  * \brief Not yet documented file
  */
 #include <string>
+#include <mutex>
 #include <functional>
 
-/**
- * \brief Helper function to parse output of augtool
- *
- * If there is more than two lines, omits first and the last one. Returns all
- * values concatenated using settings in optional parameters.
- *
- * @param key_value if true each line is expected in form 'key = value' and only value is outputed
- * @param sep used to separate individual values
- * @param filter values for which it returns true are omitted
- *
- */
-std::string augtool_out(const std::string in,
-                        bool key_value = true,
-                        std::string sep = "",
-                        std::function<bool(std::string)> filter = 
-                            [](const std::string) -> bool { return false; } );
+#include "subprocess.h"
+
+//! Simple class abstraction over augtool
+class augtool {
+protected:
+    //! Shared mutex
+    std::mutex mux;
+    //! Subprocess itself
+    shared::SubProcess *prc;
+    //! Ensures we are in reasonably clean state
+    void clear();
+public:
+    //! Singleton get_instance method
+    static augtool* get_instance();
+    //! Runs command without returning anything
+    void run_cmd(std::string cmd);
+    /**
+     * \brief Method returning parsed output of augtool
+     *
+     * If there is more than two lines, omits first and the last one. Returns all
+     * values concatenated using settings in optional parameters.
+     *
+     * @param cmd what to execute
+     * @param key_value if true each line is expected in form 'key = value' and only value is outputed
+     * @param sep used to separate individual values
+     * @param filter values for which it returns true are omitted
+     *
+     */
+    std::string get_cmd_out(std::string cmd, bool key_value = true,
+                            std::string sep = "",
+                            std::function<bool(std::string)> filter = 
+                            [](const std::string) -> bool { return false; });
+    //! Return string directly as returned from augtool
+    std::string get_cmd_out_raw(std::string cmd);
+    //! Saves current state
+    void save() { run_cmd("save"); }
+};
 
 #endif // SRC_SHARED_AUGTOOL_H

@@ -38,30 +38,21 @@
 
 using namespace shared;
 
-
 </%pre>
-<%thread scope="global">
-// TODO: Figure out how to make it work without -e
-Argv exe = { "sudo", "augtool", "-e" };
-SubProcess augtool(exe, SubProcess::STDOUT_PIPE | SubProcess::STDIN_PIPE);
-</%thread>
 <%cpp>
+augtool* augeas = augtool::get_instance();
 std::string command;
 std::string nil;
 
 // Make sure we have data that works
-command = "ls /augeas/files/etc/network/interfaces/error\n";
-write(augtool.getStdin(), command.c_str(), command.length());
-nil = augtool_out(wait_read_all(augtool.getStdout()));
+nil = augeas->get_cmd_out("ls /augeas/files/etc/network/interfaces/error");
 if(!nil.empty()) {
 </%cpp>
 { "error": "Syntax error in /etc/network/interfaces config file" }
 <%cpp>
     return HTTP_INTERNAL_SERVER_ERROR;
 }
-command = "ls /augeas/files/etc/resolv.conf/error\n";
-write(augtool.getStdin(), command.c_str(), command.length());
-nil = augtool_out(wait_read_all(augtool.getStdout()));
+nil = augeas->get_cmd_out("ls /augeas/files/etc/resolv.conf/error");
 if(!nil.empty()) {
 </%cpp>
 { "error": "Syntax error in /etc/resolv.conf config file" }
@@ -73,9 +64,12 @@ if(!nil.empty()) {
 static cxxtools::Regex rex_ncfg("^.*/netcfgs$");
 if(rex_ncfg.match(request.getUrl())) {
     std::string in;
-    command = "match /files/etc/network/interfaces/iface[*]\n";
-    write(augtool.getStdin(), command.c_str(), command.length());
-    in = augtool_out(wait_read_all(augtool.getStdout()), true, "\", \"", [](const std::string iface) -> bool { return iface == "lo"; });
+    in = augeas->get_cmd_out("match /files/etc/network/interfaces/iface[*]",
+							 true, "\", \"",
+							 [](const std::string iface) -> bool {
+							 	return iface == "lo";
+							 }
+							);
     if(in.empty()) {
 </%cpp>
 { "error": "No configurable interfaces found" }
@@ -99,10 +93,9 @@ if(!rex_anum.match(iface)) {
 }
 
 // Where is the tree reflecting the interface?
-std::string address;
-command = "match /files/etc/network/interfaces/iface[*] " + iface + "\n";
-write(augtool.getStdin(), command.c_str(), command.length());
-address = augtool_out(wait_read_all(augtool.getStdout()), false);
+std::string address = augeas->get_cmd_out(
+                      "match /files/etc/network/interfaces/iface[*] " + iface,
+					  false);
 if(address.empty()) {
 </%cpp>
 { "error": "No configuration for interface <$ iface $> found" }
@@ -111,9 +104,7 @@ if(address.empty()) {
 }
 
 #define AUG_GET(NAME, VAL) \
-    command = "get " + address + "/" NAME "\n"; \
-    write(augtool.getStdin(), command.c_str(), command.length()); \
-    VAL = augtool_out(wait_read_all(augtool.getStdout()));
+    VAL = augeas->get_cmd_out("get " + address + "/" NAME);
 
 std::string method;
 AUG_GET("method", method);
@@ -153,9 +144,7 @@ if(request.getMethod() == "PUT") {
                                        " expected.\" }"); \
             return HTTP_BAD_REQUEST; \
         } \
-        command = "set " + address + "/" NAME " " + val + "\n"; \
-        write(augtool.getStdin(), command.c_str(), command.length()); \
-        nil = wait_read_all(augtool.getStdout()); \
+        augeas->run_cmd("set " + address + "/" NAME " " + val); \
         handled = true; \
     }
 
@@ -169,11 +158,9 @@ if(request.getMethod() == "PUT") {
         AUG_SET("gateway", (CIDRAddress(val).valid()     && method == "static"));
 
         if(method != "static") {
-            command = "rm " + address + "/address\n"
-                      "rm " + address + "/netmask\n"
-                      "rm " + address + "/gateway\n";
-            write(augtool.getStdin(), command.c_str(), command.length()); \
-            nil = wait_read_all(augtool.getStdout()); \
+            augeas->run_cmd("rm " + address + "/address");
+            augeas->run_cmd("rm " + address + "/netmask");
+            augeas->run_cmd("rm " + address + "/gateway");;
         }
 
         //DNS is array, handle differently
@@ -184,8 +171,7 @@ if(request.getMethod() == "PUT") {
 <%cpp>
                 return HTTP_BAD_REQUEST;
             }
-            command = "rm /files/etc/resolv.conf/nameserver\n";
-            write(augtool.getStdin(), command.c_str(), command.length());
+            augeas->run_cmd("rm /files/etc/resolv.conf/nameserver");
             for(auto i : it) {
                 i.getValue(val);
                 if(!CIDRAddress(val).valid()) {
@@ -194,11 +180,8 @@ if(request.getMethod() == "PUT") {
 <%cpp>
                     return HTTP_BAD_REQUEST;
                 }
-                command = "set /files/etc/resolv.conf/nameserver[0] " + val + "\n";
-                printf("%s\n", command.c_str());
-                write(augtool.getStdin(), command.c_str(), command.length());
+                augeas->run_cmd("set /files/etc/resolv.conf/nameserver[0] " + val);
             }
-            nil = wait_read_all(augtool.getStdout());
             handled = true;
         }
         if(!handled) {
@@ -210,26 +193,17 @@ if(request.getMethod() == "PUT") {
     }
 
     // Commit everything
-    command = "save\n";
-    write(augtool.getStdin(), command.c_str(), command.length());
-    nil = wait_read_all(augtool.getStdout());
-    command = "load\n";
-    write(augtool.getStdin(), command.c_str(), command.length());
-    nil = wait_read_all(augtool.getStdout());
+	augeas->save();
 
     // Make sure we have data that works
-    command = "ls /augeas/files/etc/network/interfaces/error\n";
-    write(augtool.getStdin(), command.c_str(), command.length());
-    nil = augtool_out(wait_read_all(augtool.getStdout()));
+	nil = augeas->get_cmd_out("ls /augeas/files/etc/network/interfaces/error");
     if(!nil.empty()) {
 </%cpp>
 { "error": "Syntax error in /etc/network/interfaces config file" }
 <%cpp>
         return HTTP_INTERNAL_SERVER_ERROR;
     }
-    command = "ls /augeas/files/etc/resolv.conf/error\n";
-    write(augtool.getStdin(), command.c_str(), command.length());
-    nil = augtool_out(wait_read_all(augtool.getStdout()));
+	nil = augeas->get_cmd_out("ls /augeas/files/etc/resolv.conf/error");
     if(!nil.empty()) {
 </%cpp>
 { "error": "Syntax error in /etc/resolv.conf config file" }
@@ -244,9 +218,7 @@ AUG_GET("method", method);
 AUG_GET("address", ip);
 AUG_GET("netmask", netmask);
 AUG_GET("gateway", gateway);
-command = "match /files/etc/resolv.conf/nameserver\n";
-write(augtool.getStdin(), command.c_str(), command.length()); \
-dns = augtool_out(wait_read_all(augtool.getStdout()), true, "\", \"");
+dns = augeas->get_cmd_out("match /files/etc/resolv.conf/nameserver", true, "\", \"");
 
 </%cpp>
 { "<$ iface $>":
