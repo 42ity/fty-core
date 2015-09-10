@@ -27,6 +27,7 @@
 #include <exception>
 #include <cstdlib>
 #include <fstream>
+#include <mutex>
 #include <cxxtools/properties.h>
 #include <cxxtools/propertiesdeserializer.h>
 #include <cxxtools/jsondeserializer.h>
@@ -77,6 +78,9 @@ void transform_for_conf (std::string& string) {
 <%args>
     std::string key;
 </%args>
+<%application scope="page">
+    std::mutex config_mux;
+</%application>
 <%cpp>
     // DISCLAIMER!!! PLEASE READ!!!
     // 
@@ -91,6 +95,7 @@ void transform_for_conf (std::string& string) {
 
     cxxtools::SerializationInfo si;
     try {
+        std::lock_guard<config_mux> lock;
         std::ifstream finput (PROPERTIES_FILE);
         if (finput.is_open () && finput.good ()) {
             cxxtools::PropertiesDeserializer deserializer (finput);
@@ -194,6 +199,7 @@ void transform_for_conf (std::string& string) {
             else {
                 p_si->setValue (rd_value);
             }
+        	std::lock_guard<config_mux> lock;
             std::ofstream foutput (PROPERTIES_FILE);
             if (!foutput.is_open () || !foutput.good()) {
 </%cpp>
