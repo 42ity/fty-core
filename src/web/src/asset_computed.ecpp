@@ -1,0 +1,61 @@
+<#
+ #
+ # Copyright (C) 2015 Eaton
+ #
+ # This program is free software; you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+ # the Free Software Foundation; either version 2 of the License, or
+ # (at your option) any later version.
+ #
+ # This program is distributed in the hope that it will be useful,
+ # but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+ #
+ # You should have received a copy of the GNU General Public License along
+ # with this program; if not, write to the Free Software Foundation, Inc.,
+ # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ #
+ #><#
+/*!
+ * \file asset_computed.ecpp
+ * \author Tomas Halman <TomasHalman@Eaton.com>
+ * \brief Not yet documented file
+ */
+ #><%pre>
+
+#include <tntdb/connection.h>
+#include <cxxtools/split.h>
+#include "web_utils.h"
+#include "log.h"
+#include "asset_computed_impl.h"
+
+//TODO: use map<string,funcptr> ?
+
+</%pre>
+<%cpp>
+    if( ! request.isMethodGET() ) {
+</%cpp>
+<$$ create_error_json("Invalid method", 101) $>
+<%cpp>
+        return HTTP_BAD_REQUEST;
+    }
+    
+    std::string operation = request.getArg("operation");
+    std::string element = request.getArg("element");
+
+    if( operation != "freeusize" ) {
+</%cpp>
+<$$ create_error_json("Invalid operation", 102) $>
+<%cpp>
+        return HTTP_BAD_REQUEST;
+    }
+    
+    std::string output;
+    int result = free_u_size( element, output );
+</%cpp>
+<$$ output $>
+<%cpp>
+    return ( result == 0 ? HTTP_OK : HTTP_BAD_REQUEST );
+</%cpp>
+

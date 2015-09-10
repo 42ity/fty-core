@@ -130,6 +130,14 @@
         <subtype>$2</subtype>
       </args>
     </mapping>
+    <mapping>
+      <target>asset_computed@bios_web</target>
+      <url>^/api/v1/asset/computed/([^/]+)/(.+)$</url>
+      <args>
+        <operation>$1</operation>
+        <element>$2</element>
+      </args>
+    </mapping>
 
     <!-- Asset import -->
     <mapping>
