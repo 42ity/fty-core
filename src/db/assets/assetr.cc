@@ -785,7 +785,7 @@ int
          )
 {
     LOG_START;
-    log_debug ("container element_id = %" PRIi32, element_id);
+    log_debug ("container element_id = %" PRIu32, element_id);
 
     try {
         // Can return more than one row.
