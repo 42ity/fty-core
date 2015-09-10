@@ -74,7 +74,7 @@ EOF
 
 # Workplace for the webserver and graph daemons
 mkdir -p /var/lib/bios
-chown -R bios:bios /var/lib/bios
+chown -R bios /var/lib/bios
 
 # A few helper aliases
 cat > /etc/profile.d/bios_aliases.sh << EOF
@@ -359,7 +359,7 @@ case "$SPACERM" in
         install -m 0755 /usr/share/bios/scripts/resolveip.sh /usr/bin/resolveip
         ;;
 esac
-for i in /usr/share/mysql/* /usr/share/locale /usr/share/bios/{docker,examples,develop,obs}; do
+for i in /usr/share/mysql/* /usr/share/locale /usr/share/bios/{docker,develop,obs}; do
    [ -f "$i" ] || \
    [ "$i" = /usr/share/mysql/charsets ] || \
    [ "$i" = /usr/share/mysql/english ] || \
