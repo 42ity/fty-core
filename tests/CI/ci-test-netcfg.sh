@@ -256,12 +256,13 @@ perl -pi -e 's/^#.*\n$//g' "${TMP_DIR}/${IFACES_FILE_INITIAL}"
 declare -a tmp_arr
 declare -a tmp_arr2
 while IFS='' read -r line || [[ -n "$line" ]]; do
-    [[ $line =~ ^[[:space:]]*iface[[:space:]]+([[:alnum:]]+)[[:space:]]+ ]]
-    ifacename="${BASH_REMATCH[1]}"
-    if [[ $line =~ loopback ]]; then
-        tmp_arr2+=( "${ifacename}" )
-    else
-        tmp_arr+=( "${ifacename}" )
+    if [[ $line =~ ^[[:space:]]*iface[[:space:]]+([[:alnum:]]+)[[:space:]]+ ]]; then
+        ifacename="${BASH_REMATCH[1]}"
+        if [[ $line =~ loopback ]]; then
+            tmp_arr2+=( "${ifacename}" )
+        else
+            tmp_arr+=( "${ifacename}" )
+        fi
     fi
 done < "${TMP_DIR}/${IFACES_FILE_INITIAL}"
 declare -ar INITIAL_IFACE_NAMES=("${tmp_arr[@]}")
