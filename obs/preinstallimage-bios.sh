@@ -72,6 +72,10 @@ nosoup4u
 nosoup4u
 EOF
 
+# Rules for passwords
+RULES="`sed -n 's|.*pam_cracklib.so||p' /etc/pam.d/bios`"
+sed -i "s|\\(.*pam_cracklib.so\\).*|\1$RULES|" /etc/pam.d/common-password
+
 # Workplace for the webserver and graph daemons
 mkdir -p /var/lib/bios
 chown -R bios /var/lib/bios
