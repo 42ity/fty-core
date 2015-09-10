@@ -89,8 +89,8 @@ a_elmnt_stp_id_t
         return asset_subtype::SERVER;
     } else if(st == "pdu") {
         return asset_subtype::PDU;
-    } else if(st == "main") {
-        return asset_subtype::MAIN;
+    } else if(st == "feed") {
+        return asset_subtype::FEED;
     } else if(st == "sts") {
         return asset_subtype::STS;
     } else if(st == "switch") {
@@ -118,8 +118,8 @@ std::string
             return "storage";
         case asset_subtype::STS:
             return "sts";
-        case asset_subtype::MAIN:
-            return "main";
+        case asset_subtype::FEED:
+            return "feed";
         case asset_subtype::EPDU:
             return "epdu";
         case asset_subtype::PDU:

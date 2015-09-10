@@ -6,8 +6,8 @@ SELECT @asset_device_ups := id_asset_device_type
     FROM t_bios_asset_device_type WHERE name = 'ups';
 SELECT @asset_device_epdu := id_asset_device_type
     FROM t_bios_asset_device_type WHERE name = 'epdu';
-SELECT @asset_device_main := id_asset_device_type
-    FROM t_bios_asset_device_type WHERE name = 'main';
+SELECT @asset_device_feed := id_asset_device_type
+    FROM t_bios_asset_device_type WHERE name = 'feed';
 
 /* t_bios_asset_element_type */
 SELECT @asset_element_datacenter := id_asset_element_type
@@ -31,9 +31,9 @@ SET @last_datacenter := @last_asset_element;
 INSERT INTO t_bios_asset_element (name , id_type, id_subtype, id_parent)
 VALUES ('UPS1-DC1', @asset_element_device, @asset_device_ups, @last_datacenter);
 
-/* DC1 main */
+/* DC1 feed */
 INSERT INTO t_bios_asset_element (name , id_type, id_subtype, id_parent)
-VALUES ('main-DC1', @asset_element_device, @asset_device_main, @last_datacenter);
+VALUES ('feed-DC1', @asset_element_device, @asset_device_feed, @last_datacenter);
 
 /* RACK1 */
 INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent)
@@ -56,14 +56,14 @@ VALUES ('EPDU1-RACK2', @asset_element_device, @asset_device_epdu, @last_rack);
 
 /* Asset links */
 
-/* link (main-DC1, UPS1-DC1, 'power chain') */
+/* link (feed-DC1, UPS1-DC1, 'power chain') */
 INSERT INTO t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type)
 VALUES
 (
     (SELECT id_asset_element
      FROM t_bios_asset_element
-     WHERE name = 'main-DC1'),
+     WHERE name = 'feed-DC1'),
     (SELECT id_asset_element
      FROM t_bios_asset_element
      WHERE name = 'UPS1-DC1'),
@@ -98,9 +98,9 @@ VALUES
     @asset_link_powerchain
 );
 
-/* main  unlockated*/
+/* feed  unlockated*/
 INSERT INTO t_bios_asset_element (name , id_type, id_subtype, id_parent)
-VALUES ("main-unlockated", @asset_element_device, @asset_device_main, NULL);
+VALUES ("feed-unlockated", @asset_element_device, @asset_device_feed, NULL);
 
 /* DC2 */
 INSERT INTO t_bios_asset_element (name , id_type, id_parent)
@@ -119,14 +119,14 @@ VALUES ("EPDU2-DC2", @asset_element_device, @asset_device_epdu, @last_datacenter
 
 /* Asset links */
 
-/* link (main-unlockated, UPS3-DC2, 'power chain') */
+/* link (feed-unlockated, UPS3-DC2, 'power chain') */
 INSERT INTO t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type)
 VALUES
 (
     (SELECT id_asset_element
      FROM t_bios_asset_element
-     WHERE name = 'main-unlockated'),
+     WHERE name = 'feed-unlockated'),
     (SELECT id_asset_element
      FROM t_bios_asset_element
      WHERE name = 'UPS3-DC2'),

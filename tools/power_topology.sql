@@ -5,7 +5,7 @@ insert into t_bios_asset_element ( id_asset_element , name   , id_type , id_subt
 insert into t_bios_asset_element ( id_asset_element , name   , id_type , id_subtype, id_parent ) values (5001, "ePDUA",   6 , 2, NULL);
 insert into t_bios_asset_element ( id_asset_element , name   , id_type , id_subtype, id_parent ) values (5002, "ePDUB",   6 , 2, NULL);
 insert into t_bios_asset_element ( id_asset_element , name   , id_type , id_subtype, id_parent ) values (5003, "Upps1",   6 , 1, NULL);
-insert into t_bios_asset_element ( id_asset_element , name   , id_type , id_subtype, id_parent ) values (5004, "main2",   6 , 4, NULL);
+insert into t_bios_asset_element ( id_asset_element , name   , id_type , id_subtype, id_parent ) values (5004, "feed2",   6 , 4, NULL);
 insert into t_bios_asset_element ( id_asset_element , name   , id_type , id_subtype, id_parent ) values (5005, "GenSetA", 6 , 5, NULL);
 
 insert into t_bios_asset_link (id_link , id_asset_device_src , src_out , id_asset_device_dest , dest_in , id_asset_link_type ) values (NULL, 5001 , 2,5000 , 1, 1);
@@ -31,7 +31,7 @@ INSERT INTO t_bios_asset_device_type (name) VALUES ("sink");
 SELECT @id_ups := id_asset_device_type FROM t_bios_asset_device_type WHERE name = 'ups';
 SELECT @id_sink := id_asset_device_type FROM t_bios_asset_device_type WHERE name = 'sink';
 SELECT @id_epdu := id_asset_device_type FROM t_bios_asset_device_type WHERE name = 'epdu';
-SELECT @id_main := id_asset_device_type FROM t_bios_asset_device_type WHERE name = 'main';
+SELECT @id_feed := id_asset_device_type FROM t_bios_asset_device_type WHERE name = 'feed';
 SELECT @id_server := id_asset_device_type FROM t_bios_asset_device_type WHERE name = 'server';
 
 SELECT @id_device := id_asset_element_type FROM t_bios_asset_element_type WHERE name ='device';
@@ -304,7 +304,7 @@ INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_subtype, 
 
 INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_subtype, id_parent) VALUES (5086, "SRV2-05", @ae_device, @id_server, 5080);
 
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_subtype, id_parent) VALUES (5087, "MAIN-05", @ae_device, @id_main, 5078);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_subtype, id_parent) VALUES (5087, "MAIN-05", @ae_device, @id_feed, 5078);
 
 /* GROUPS */
 INSERT INTO t_bios_asset_element ( id_asset_element, name , id_type, id_parent) VALUES (5088, "GROUP1-05", @ae_group, 5078);
