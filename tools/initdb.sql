@@ -646,7 +646,7 @@ INSERT INTO t_bios_asset_device_type (name) VALUES ("genset");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("epdu");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("pdu");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("server");
-INSERT INTO t_bios_asset_device_type (name) VALUES ("main");
+INSERT INTO t_bios_asset_device_type (name) VALUES ("feed");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("sts");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("switch");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("storage");
