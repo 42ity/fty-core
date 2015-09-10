@@ -24,6 +24,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "asset_types.h"
 #include "assetcrud.h"
 
+#include "db/assets.h"
+
 bool is_epdu (const device_info_t &device)
 {
     if ( std::get<3>(device) == DEVICE_TYPE_EPDU )
@@ -214,7 +216,7 @@ static db_reply <std::map<std::string, std::vector<std::string> > >
     for ( auto &container : allContainers.item )
     {
         // select all devices in the container
-        auto container_devices_set = select_asset_device_by_container
+        auto container_devices_set = persist::select_asset_device_by_container
                                                         (conn, container.id);
 
         // here would be placed names of devices to summ up
