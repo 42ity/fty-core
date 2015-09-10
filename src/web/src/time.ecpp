@@ -82,10 +82,12 @@ SubProcess augtool(exe, SubProcess::STDOUT_PIPE | SubProcess::STDIN_PIPE);
 		    if((!t_rex.match(time) ||
 	            system((std::string("sudo date -s ") + time).c_str()) != 0)) {
 </%cpp>
-{ "error":"Invalid time format" }
+{ "error":"Can't set requested time '<$ time $>', maybe invalid format or not enough permission?" }
 <%cpp>
 		        return HTTP_BAD_REQUEST;
 			}
+			system("sudo systemctl stop ntp");
+			system("sudo systemctl disable ntp");
 	    }
 	    if(!ntp.empty()) {
 		    if(!n_rex.match(ntp)) {
@@ -101,6 +103,7 @@ SubProcess augtool(exe, SubProcess::STDOUT_PIPE | SubProcess::STDIN_PIPE);
     			write(augtool.getStdin(), command.c_str(), command.length());
     			nil = wait_read_all(augtool.getStdout());
 				system("sudo systemctl restart ntp");
+				system("sudo systemctl enable ntp");
 			}
 	    }
     }
