@@ -86,6 +86,8 @@ SubProcess augtool(exe, SubProcess::STDOUT_PIPE | SubProcess::STDIN_PIPE);
 <%cpp>
 		        return HTTP_BAD_REQUEST;
 			}
+			system("sudo systemctl stop ntp");
+			system("sudo systemctl disable ntp");
 	    }
 	    if(!ntp.empty()) {
 		    if(!n_rex.match(ntp)) {
@@ -101,6 +103,7 @@ SubProcess augtool(exe, SubProcess::STDOUT_PIPE | SubProcess::STDIN_PIPE);
     			write(augtool.getStdin(), command.c_str(), command.length());
     			nil = wait_read_all(augtool.getStdout());
 				system("sudo systemctl restart ntp");
+				system("sudo systemctl enable ntp");
 			}
 	    }
     }

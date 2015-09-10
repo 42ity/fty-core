@@ -135,6 +135,7 @@ int
     catch (const std::exception &e) {
         FREE0 (data);
         LOG_END_ABNORMAL(e);
+        result = "Unexpected problems with database";
         return 1;
     }
 }
