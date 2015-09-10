@@ -95,13 +95,12 @@ void transform_for_conf (std::string& string) {
 
     cxxtools::SerializationInfo si;
     try {
-        config_mux.lock();
+        std::lock_guard<config_mux> lock;
         std::ifstream finput (PROPERTIES_FILE);
         if (finput.is_open () && finput.good ()) {
             cxxtools::PropertiesDeserializer deserializer (finput);
             deserializer.deserialize (si);            
         }
-        config_mux.unlock();
     }
     catch (const std::exception& e) {
 </%cpp>
@@ -114,7 +113,6 @@ void transform_for_conf (std::string& string) {
     ]
 }
 <%cpp>
-        config_mux.unlock();
         return HTTP_INTERNAL_SERVER_ERROR;
     }
 
@@ -201,7 +199,7 @@ void transform_for_conf (std::string& string) {
             else {
                 p_si->setValue (rd_value);
             }
-            config_mux.lock();
+        	std::lock_guard<config_mux> lock;
             std::ofstream foutput (PROPERTIES_FILE);
             if (!foutput.is_open () || !foutput.good()) {
 </%cpp>
@@ -214,7 +212,6 @@ void transform_for_conf (std::string& string) {
     ]
 }
 <%cpp>
-                config_mux.unlock();
                 return HTTP_INTERNAL_SERVER_ERROR;
             }
 
@@ -227,7 +224,6 @@ void transform_for_conf (std::string& string) {
             }
             foutput.flush ();
             foutput.close ();
-            config_mux.unlock();
         }
         catch (const std::exception& e) {
 </%cpp>
@@ -240,7 +236,6 @@ void transform_for_conf (std::string& string) {
     ]
 }
 <%cpp>
-            config_mux.unlock();
             return HTTP_INTERNAL_SERVER_ERROR;
         }
 </%cpp>
