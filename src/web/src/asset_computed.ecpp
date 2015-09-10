@@ -34,13 +34,6 @@
 
 </%pre>
 <%cpp>
-    if( ! request.isMethodGET() ) {
-</%cpp>
-<$$ create_error_json("Invalid method", 101) $>
-<%cpp>
-        return HTTP_BAD_REQUEST;
-    }
-    
     std::string operation = request.getArg("operation");
     std::string element = request.getArg("element");
 
