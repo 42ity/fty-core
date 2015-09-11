@@ -32,6 +32,6 @@ int free_u_size( const std::string &element, std::string &jsonResult);
 
 int
 rack_outlets_available(
-        const std::string &element, std::string &json_result);
+        uint32_t elementId, std::map<std::string, int> &res);
 
 #endif // SRC_WEB_SRC_ASSET_COMPUTED_IMPL_H
