@@ -60,7 +60,7 @@ class TotalPowerAgent : public BIOSAgent {
     //! \brief list of datacenters
     std::map< std::string, TPUnit > _DCs;
     //! \brief topic interesting for DCs
-    const cxxtools::Regex _dcRegex = cxxtools::Regex("^measurement\\.realpower\\.(default|input\\.L[1-3])", REG_EXTENDED );
+    const cxxtools::Regex _dcRegex = cxxtools::Regex("^measurement\\.realpower\\.(default|input\\.L[1-3]|output\\.L[1-3])", REG_EXTENDED );
     //! \brief list of interested units
     const std::vector<std::string> _dcQuantities = {
         "realpower.default",

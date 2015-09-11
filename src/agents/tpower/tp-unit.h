@@ -85,6 +85,9 @@ class TPUnit {
     //! \brief measurement timestamp
     std::map < std::string, time_t> _timestamp;
 
+    //! \brief measurement advertisement timestamp
+    std::map < std::string, time_t> _advertisedtimestamp;
+
     /*! \brief list of measurements for included devices
      *
      *     map---device1---map---realpower.default---Measurement

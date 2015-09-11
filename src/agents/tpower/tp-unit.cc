@@ -92,12 +92,16 @@ void TPUnit::changed(const std::string &quantity, bool newStatus) {
     if( changed( quantity ) != newStatus ) {
         _changed[quantity] = newStatus;
         _timestamp[quantity] = time(NULL);
+        if( _advertisedtimestamp.find(quantity) == _advertisedtimestamp.end() ) {
+            _advertisedtimestamp[quantity] = 0;
+        }
     }
 }
 
 void TPUnit::advertised(const std::string &quantity) {
     changed( quantity, false );
     _timestamp[quantity] = time(NULL);
+    _advertisedtimestamp[quantity] = time(NULL);
 }
 
 time_t TPUnit::timestamp( const std::string &quantity ) const {
@@ -118,6 +122,8 @@ time_t TPUnit::timeToAdvertisement( const std::string &quantity ) const {
 
 bool TPUnit::advertise( const std::string &quantity ) const{
     if( quantityIsUnknown(quantity) ) return false;
+    const auto it = _advertisedtimestamp.find(quantity);
+    if( ( it != _advertisedtimestamp.end() ) && ( it->second == time(NULL) ) ) return false;
     return ( changed(quantity) || ( time(NULL) - timestamp(quantity) > TPOWER_MEASUREMENT_REPEAT_AFTER ) );
 }
 
