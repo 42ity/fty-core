@@ -102,7 +102,7 @@ augtool* augtool::get_instance() {
     // Initialization of augtool subprocess if needed
     in_mux.lock();
     if(inst.prc == NULL) {
-        Argv exe = { "sudo", "augtool", "-e" };
+        Argv exe = { "sudo", "augtool", "-S", "-I/usr/share/bios/lenses", "-e" };
         inst.prc = new shared::SubProcess(exe,
                           SubProcess::STDOUT_PIPE | SubProcess::STDIN_PIPE);
     }

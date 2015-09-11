@@ -91,6 +91,10 @@ touch /etc/default/bios
 chown bios /etc/default/bios
 chmod a+r /etc/default/bios
 
+# Setup BIOS lenses
+mkdir -p /usr/share/bios/lenses
+ln -sr /usr/share/augeas/lenses/dist/{build.aug,ethers.aug,interfaces.aug,ntp.aug,ntpd.aug,pam.aug,resolv.aug,rx.aug,sep.aug,util.aug} /usr/share/bios/lenses
+
 # Setup u-Boot
 echo '/dev/mtd3 0x00000 0x40000 0x40000' > /etc/fw_env.config
 
