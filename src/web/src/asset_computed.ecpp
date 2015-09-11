@@ -38,7 +38,7 @@
 typedef std::function<int(uint32_t, std::string&)> string_f;
 typedef std::function<int(uint32_t, std::map<std::string, int>&)> map_f;
 
-static const std::map<std::string, string_f> map_string = { {"freeusize", free_u_size}, };
+static const std::map<std::string, string_f> map_string = {{"freeusize", free_u_size}, };
 static const std::map<std::string, map_f> map_map = {{"rack.outlets.available", rack_outlets_available}, };
 
 static bool is_operation_valid(const std::string& operation)
