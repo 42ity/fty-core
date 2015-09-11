@@ -101,8 +101,8 @@ int free_u_size( a_elmnt_id_t elementId, std::string &jsonResult)
             return HTTP_BAD_REQUEST;
         }
 
-        // substract sum( device size )
-        freeusize -= get_devices_usize( conn, devices.item );
+        // substract sum( device size ) if there are some
+        freeusize -= devices.item.empty() ? 0 : get_devices_usize( conn, devices.item );
         jsonResult = "{ \"id\":" + std::to_string(elementId) + ", \"freeusize\":" + std::to_string(freeusize) + " }" ;
         return HTTP_OK;
     } catch(std::exception &e) {

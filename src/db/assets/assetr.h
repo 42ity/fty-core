@@ -251,7 +251,8 @@ db_reply <std::vector<device_info_t>>
  * \brief read particular asset ext property of device[s]
  * \param db connection
  * \param asset ext attribute name like "u_size"
- * \param list of elemnts ( only elementId is important in device_info_t tuple.
+ * \param list of elements ( only elementId is important in device_info_t tuple).
+ *        if the list is empty, all elements with requested tag are returned.
  * \param callback to be called with every selected row.
  *        Row has id_asset_ext_attribute, keytag, value, id_asset_element
  *        and read_only columns

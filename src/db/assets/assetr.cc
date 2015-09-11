@@ -864,7 +864,6 @@ int select_asset_ext_attribute_by_keytag(
     std::function< void( const tntdb::Row& ) > &cb)
 {
     LOG_START;
-    if( elements.empty() ) return 1;
     try{
         std::string inlist;
         for( const auto &it : elements ) {
@@ -876,8 +875,8 @@ int select_asset_ext_attribute_by_keytag(
             "   id_asset_ext_attribute, keytag, value, id_asset_element, read_only "
             " FROM"
             "   v_bios_asset_ext_attributes"
-            " WHERE keytag = :keytag"
-            " AND id_asset_element in (" + inlist.substr(1) + ")"
+            " WHERE keytag = :keytag" +
+            ( elements.empty() ? "" : " AND id_asset_element (" + inlist.substr(1) + ")" )
         );
         tntdb::Result rows = st.set("keytag", keytag ).select();
         for( const auto &row: rows ) cb( row );
