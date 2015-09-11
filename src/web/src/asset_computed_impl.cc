@@ -101,32 +101,52 @@ int free_u_size( uint32_t elementId, std::string &jsonResult)
     }
 }
 
+static int32_t
+s_select_outlet_count(
+        tntdb::Connection &conn,
+        a_elmnt_id_t id)
+{
+    static const char* KEY = "outlet.count";
+
+    std::map <std::string, std::pair<std::string, bool> > res;
+    int ret = persist::select_ext_attributes(conn, id, res);
+
+    if (ret != 0 || res.count(KEY) == 0)
+        return UINT32_MAX;
+
+    return string_to_int32(res.at(KEY).first.c_str());
+}
+
 int
 rack_outlets_available(
         uint32_t elementId, std::map<std::string, int> &res)
 {
-    a_elmnt_id_t device_asset_id = 0;
-    int sum = 0;
+    int sum = -1;
     bool tainted = false;
+    tntdb::Connection conn;
 
     std::function<void(const tntdb::Row &row)> cb = \
-        [&device_asset_id, &sum, &tainted, &res](const tntdb::Row &row)
+        [&conn, &sum, &tainted, &res](const tntdb::Row &row)
         {
             std::string device_type_name = "";
             row[3].get(device_type_name);
-            if (device_type_name != "epdu")
+            if (device_type_name != "epdu" && device_type_name != "pdu")
                 return;
 
+            a_elmnt_id_t device_asset_id = 0;
             row[1].get(device_asset_id);
-            res[std::to_string(device_asset_id)] = 10;
-            std::cout << "res[" << device_asset_id << "] = 10;" << std::endl;
 
-            // if no outlet.count && tainted = true;
-            sum += 10;
+            uint32_t foo = s_select_outlet_count(conn, device_asset_id);
+            int outlet_count = foo != UINT32_MAX ? foo : -1;
+
+            if (outlet_count == -1)
+                tainted = true;
+            else
+                sum += outlet_count;
+            res[std::to_string(device_asset_id)] = outlet_count;
         };
 
     try{
-        tntdb::Connection conn;
         conn = tntdb::connectCached(url);
 
         persist::select_asset_device_by_container(
@@ -141,7 +161,10 @@ rack_outlets_available(
         //json_result = create_error_json("No data", 105);
         return HTTP_BAD_REQUEST;
     }
-    res["sum"] = !tainted ? sum : -1;
+    if (tainted || sum == -1)
+        res["sum"] = -1;
+    else
+        res["sum"] = sum + 1;   //to workaround first -1
 
     return HTTP_OK;
 }
