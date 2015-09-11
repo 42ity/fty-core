@@ -72,6 +72,10 @@ nosoup4u
 nosoup4u
 EOF
 
+# Rules for passwords
+RULES="`sed -n 's|.*pam_cracklib.so||p' /etc/pam.d/bios`"
+sed -i "s|\\(.*pam_cracklib.so\\).*|\1$RULES|" /etc/pam.d/common-password
+
 # Workplace for the webserver and graph daemons
 mkdir -p /var/lib/bios
 chown -R bios /var/lib/bios
@@ -86,6 +90,10 @@ EOF
 touch /etc/default/bios
 chown bios /etc/default/bios
 chmod a+r /etc/default/bios
+
+# Setup BIOS lenses
+mkdir -p /usr/share/bios/lenses
+ln -sr /usr/share/augeas/lenses/dist/{build.aug,ethers.aug,interfaces.aug,ntp.aug,ntpd.aug,pam.aug,resolv.aug,rx.aug,sep.aug,util.aug} /usr/share/bios/lenses
 
 # Setup u-Boot
 echo '/dev/mtd3 0x00000 0x40000 0x40000' > /etc/fw_env.config

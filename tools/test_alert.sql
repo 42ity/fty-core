@@ -9,16 +9,16 @@ select @asset_element_rack := id_asset_element_type from t_bios_asset_element_ty
 select @asset_element_device := id_asset_element_type from t_bios_asset_element_type where name ='device';
 
 /* t_bios_asset_device_type */
-select @asset_device_ups := id_asset_device_type from t_bios_asset_device_type where name = 'ups'; 
+select @asset_device_ups := id_asset_device_type from t_bios_asset_device_type where name = 'ups';
 select @asset_device_epdu := id_asset_device_type from t_bios_asset_device_type where name = 'epdu';
 select @asset_device_server := id_asset_device_type from t_bios_asset_device_type where name = 'server';
-select @asset_device_main := id_asset_device_type from t_bios_asset_device_type where name = 'main';
+select @asset_device_feed := id_asset_device_type from t_bios_asset_device_type where name = 'feed';
 
 
 /* ALERT_LAB */
 insert into t_bios_asset_element (name , id_type, id_parent,status,priority,business_crit) values ("ALERT_LAB", @asset_element_datacenter,  NULL,"active",1,1);
 select @last_asset_element:=id_asset_element from t_bios_asset_element where name="ALERT_LAB";
-set @last_datacenter := @last_asset_element; 
+set @last_datacenter := @last_asset_element;
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description",    "EEIC Roztoky DC", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("company",    "EATON", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("site",       "EEIC", @last_asset_element);
