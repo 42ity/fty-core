@@ -11,7 +11,7 @@ select @asset_element_device := id_asset_element_type from t_bios_asset_element_
 select @asset_device_ups := id_asset_device_type from t_bios_asset_device_type where name = 'ups'; 
 select @asset_device_epdu := id_asset_device_type from t_bios_asset_device_type where name = 'epdu';
 select @asset_device_server := id_asset_device_type from t_bios_asset_device_type where name = 'server';
-select @asset_device_main := id_asset_device_type from t_bios_asset_device_type where name = 'main';
+select @asset_device_feed := id_asset_device_type from t_bios_asset_device_type where name = 'feed';
 
 /* t_bios_asset_link_type; */
 select @asset_link_powerchain := id_asset_link_type from t_bios_asset_link_type where name = 'power chain';
@@ -109,20 +109,20 @@ insert into t_bios_asset_element (name , id_type, id_subtype, id_parent) values 
 set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description",        "BIOS Rack Controller",  @last_asset_element);
 
-/* outage.MAIN */
-insert into t_bios_asset_element (name , id_type, id_subtype, id_parent) values ("outage.MAIN", @asset_element_device, @asset_device_main, @last_datacenter);
+/* outage.feed */
+insert into t_bios_asset_element (name , id_type, id_subtype, id_parent) values ("outage.feed", @asset_element_device, @asset_device_feed, @last_datacenter);
 set @last_asset_element = LAST_INSERT_ID();
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "MAIN 240V", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "feed 240V", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("phase",       "1",         @last_asset_element);
 
 /* Asset links */
 
-/* link (outage.MAIN, outage.UPS1, 'power chain') */
+/* link (outage.feed, outage.UPS1, 'power chain') */
 insert into t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type)
 values
 (
-    (select id_asset_element from t_bios_asset_element where name = 'outage.MAIN'),
+    (select id_asset_element from t_bios_asset_element where name = 'outage.feed'),
     (select id_asset_element from t_bios_asset_element where name = 'outage.UPS1'),
     @asset_link_powerchain
 );
