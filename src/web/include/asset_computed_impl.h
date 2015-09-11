@@ -28,7 +28,7 @@
 
 #include <string>
 
-int free_u_size( const std::string &element, std::string &jsonResult);
+int free_u_size( uint32_t elementId, std::string &jsonResult);
 
 int
 rack_outlets_available(

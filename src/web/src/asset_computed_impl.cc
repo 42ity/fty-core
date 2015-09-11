@@ -60,14 +60,12 @@ int usize_to_int(const std::string &usize) {
     return size;
 }
 
-int free_u_size( const std::string &element, std::string &jsonResult)
+int free_u_size( uint32_t elementId, std::string &jsonResult)
 {
     int freeusize = 0;
     tntdb::Connection conn;
     try{
         conn = tntdb::connectCached(url);
-        a_elmnt_id_t elementId =  string_to_uint32( element.c_str() );
-        //TODO: if UINT32_MAX
         auto rack = persist::select_asset_element_web_byId( conn, elementId );
 
         if( rack.status && ( rack.item.type_id == persist::asset_type::RACK ) ){
@@ -76,7 +74,7 @@ int free_u_size( const std::string &element, std::string &jsonResult)
             if( us == ext.item.end() ) {
                 // not size
                 jsonResult = create_error_json( "Rack doesn't have u_size specified", 103 );
-                return 1;
+                return HTTP_BAD_REQUEST;
             }
             freeusize = usize_to_int( us->second.first );
             log_debug( "rack size is %i", freeusize );
@@ -85,21 +83,21 @@ int free_u_size( const std::string &element, std::string &jsonResult)
             auto devices = persist::select_asset_device_by_container(conn, elementId);
             if( ! devices.status ) {
                 jsonResult = create_error_json( "Error reading rack content", 104 );
-                return 1;
+                return HTTP_BAD_REQUEST;
             }
             /*
               select usize for elements
             */
-            jsonResult = std::string("{ \"id\":") + element + ", \"freeusize\":" + std::to_string(freeusize) + " }" ;
-            return 0;
+            jsonResult = std::string("{ \"id\":") + std::to_string(elementId) + ", \"freeusize\":" + std::to_string(freeusize) + " }" ;
+            return HTTP_OK;
         } else {
             // this is not rack
             jsonResult = create_error_json( "Specified asset element is not rack", 105 );
-            return 2;
+            return HTTP_BAD_REQUEST;
         }
     } catch(std::exception &e) {
         jsonResult = create_error_json( e.what(), 105 );
-        return 1;
+        return HTTP_INTERNAL_SERVER_ERROR;
     }
 }
 
