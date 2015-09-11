@@ -864,7 +864,7 @@ int select_asset_ext_attribute_by_keytag(
     std::function< void( const tntdb::Row& ) > &cb)
 {
     LOG_START;
-    if( ! elements.size() ) return 1;
+    if( elements.empty() ) return 1;
     try{
         std::string inlist;
         for( const auto &it : elements ) {
