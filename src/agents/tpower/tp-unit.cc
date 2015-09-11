@@ -91,7 +91,7 @@ bool TPUnit::changed(const std::string &quantity) const {
 void TPUnit::changed(const std::string &quantity, bool newStatus) {
     if( changed( quantity ) != newStatus ) {
         _changed[quantity] = newStatus;
-        _timestamp[quantity] = time(NULL);
+        _changetimestamp[quantity] = time(NULL);
         if( _advertisedtimestamp.find(quantity) == _advertisedtimestamp.end() ) {
             _advertisedtimestamp[quantity] = 0;
         }
@@ -100,13 +100,13 @@ void TPUnit::changed(const std::string &quantity, bool newStatus) {
 
 void TPUnit::advertised(const std::string &quantity) {
     changed( quantity, false );
-    _timestamp[quantity] = time(NULL);
+    _changetimestamp[quantity] = time(NULL);
     _advertisedtimestamp[quantity] = time(NULL);
 }
 
 time_t TPUnit::timestamp( const std::string &quantity ) const {
-    auto it = _timestamp.find(quantity);
-    if( it == _timestamp.end() ) return 0;
+    auto it = _changetimestamp.find(quantity);
+    if( it == _changetimestamp.end() ) return 0;
     return it->second;
 }
 

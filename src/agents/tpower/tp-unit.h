@@ -82,8 +82,8 @@ class TPUnit {
     //! \brief measurement status
     std::map < std::string, bool > _changed;
 
-    //! \brief measurement timestamp
-    std::map < std::string, time_t> _timestamp;
+    //! \brief measurement change timestamp
+    std::map < std::string, time_t> _changetimestamp;
 
     //! \brief measurement advertisement timestamp
     std::map < std::string, time_t> _advertisedtimestamp;
