@@ -35,9 +35,8 @@
 #include "db/inout.h"
 #include "bios-magic.h"
 #include "configure_inform.h"
-
+#include "web_utils.h"
 </%pre>
-
 <%cpp>
 if (request.getMethod() != "POST") {
     return HTTP_METHOD_NOT_ALLOWED;
@@ -48,30 +47,53 @@ if (request.getMethod() != "POST") {
 // don't forget internal processing is in UCS-32, therefore the
 // real memory requirements are ~640kB
 if (request.getContentSize() > 128*1024) {
-    </%cpp>
-    {
-        "error" : "Content size too big, maximum size is 128 kB"
-    }
-    <%cpp>
-        return HTTP_BAD_REQUEST;
+</%cpp>
+<$$ create_error_json ("Content size too big, maximum size is 128 kB", 601)$>
+<%cpp>
+    return HTTP_BAD_REQUEST;
 }
 
 // http://www.tntnet.org/howto/upload-howto.html
 const tnt::Multipart& mp = request.getMultipart();
 tnt::Multipart::const_iterator it = mp.find("assets");
 if (it == mp.end()) {
-    </%cpp>
-    {
-        "error" : "file 'assets' not found!"
-    }
-    <%cpp>
-        return HTTP_BAD_REQUEST;
+</%cpp>
+<$$ create_error_json ("file 'assets' not found", 602)$>
+<%cpp>
+    return HTTP_BAD_REQUEST;
 }
-    std::string path_p;
-    int http_code = HTTP_OK;
-    const char* msg = NULL;
+
+std::string path_p;
+int http_code = HTTP_OK;
+int code = 603;
+const char* msg = NULL;
 try {
     shared::convert_file(it->getBodyBegin(), it->getBodyEnd(), path_p);
+}
+catch (const std::logic_error &e) {
+    http_code = HTTP_BAD_REQUEST;
+    msg = e.what();
+}
+catch (const std::runtime_error &e) {
+    http_code = HTTP_BAD_REQUEST;
+    msg = e.what();
+}
+catch (const std::exception &e) {
+    http_code = HTTP_INTERNAL_SERVER_ERROR;
+    code = 604;
+    msg = e.what();
+}
+if ( http_code != HTTP_OK )
+{
+    // then some errors during the convertion file occured
+    if (!path_p.empty())
+        ::unlink(path_p.c_str());
+</%cpp>
+<$$ create_error_json (msg, code)$>
+<%cpp>
+    return http_code;
+}
+try{
     std::ifstream inp{path_p};
     std::vector <std::pair<db_a_elmnt_t,persist::asset_operation>> okRows{};
     std::map<int,std::string> failRows{};
@@ -86,7 +108,7 @@ try {
     // ATTENTION:  1. sending messages is "hidden functionality" from user
     //             2. if any error would occur during the sending message,
     //                user will never know what was actually imported or not
-    // in theory 
+    // in theory
     // this code can be executed in multiple threads -> agent's name should
     // be unique at the every moment
     std::string agent_name("TEMP_CONFIGURE_INFORM_AGENT");
@@ -124,7 +146,7 @@ if (!path_p.empty())
 if (http_code == HTTP_OK)
     return HTTP_OK;
 </%cpp>
-{
-    "error" : "<$$ msg $>"
-}
-% return http_code;
+<$$ create_error_json (msg,8)$>
+<%cpp>
+return http_code;
+</%cpp>
