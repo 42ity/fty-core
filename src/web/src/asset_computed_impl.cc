@@ -24,8 +24,15 @@
  * \brief Not yet documented file
  */
 
+#include <string>
+#include <map>
+#include <sstream>
+
+#include <tnt/http.h>
 #include <tntdb/connection.h>
 #include <cxxtools/regex.h>
+#include <cxxtools/char.h>
+#include <cxxtools/jsonformatter.h>
 
 #include "asset_computed_impl.h"
 #include "shared/dbtypes.h"
@@ -53,14 +60,12 @@ int usize_to_int(const std::string &usize) {
     return size;
 }
 
-int free_u_size( const std::string &element, std::string &jsonResult)
+int free_u_size( uint32_t elementId, std::string &jsonResult)
 {
     int freeusize = 0;
     tntdb::Connection conn;
     try{
         conn = tntdb::connectCached(url);
-        a_elmnt_id_t elementId =  string_to_uint32( element.c_str() );
-        //TODO: if UINT32_MAX
         auto rack = persist::select_asset_element_web_byId( conn, elementId );
 
         if( rack.status && ( rack.item.type_id == persist::asset_type::RACK ) ){
@@ -69,7 +74,7 @@ int free_u_size( const std::string &element, std::string &jsonResult)
             if( us == ext.item.end() ) {
                 // not size
                 jsonResult = create_error_json( "Rack doesn't have u_size specified", 103 );
-                return 1;
+                return HTTP_BAD_REQUEST;
             }
             freeusize = usize_to_int( us->second.first );
             log_debug( "rack size is %i", freeusize );
@@ -78,21 +83,65 @@ int free_u_size( const std::string &element, std::string &jsonResult)
             auto devices = persist::select_asset_device_by_container(conn, elementId);
             if( ! devices.status ) {
                 jsonResult = create_error_json( "Error reading rack content", 104 );
-                return 1;
+                return HTTP_BAD_REQUEST;
             }
             /*
               select usize for elements
             */
-            jsonResult = std::string("{ \"id\":") + element + ", \"freeusize\":" + std::to_string(freeusize) + " }" ;
-            return 0;
+            jsonResult = std::string("{ \"id\":") + std::to_string(elementId) + ", \"freeusize\":" + std::to_string(freeusize) + " }" ;
+            return HTTP_OK;
         } else {
             // this is not rack
             jsonResult = create_error_json( "Specified asset element is not rack", 105 );
-            return 2;
+            return HTTP_BAD_REQUEST;
         }
     } catch(std::exception &e) {
         jsonResult = create_error_json( e.what(), 105 );
-        return 1;
+        return HTTP_INTERNAL_SERVER_ERROR;
     }
 }
 
+int
+rack_outlets_available(
+        uint32_t elementId, std::map<std::string, int> &res)
+{
+    a_elmnt_id_t device_asset_id = 0;
+    int sum = 0;
+    bool tainted = false;
+
+    std::function<void(const tntdb::Row &row)> cb = \
+        [&device_asset_id, &sum, &tainted, &res](const tntdb::Row &row)
+        {
+            std::string device_type_name = "";
+            row[3].get(device_type_name);
+            if (device_type_name != "epdu")
+                return;
+
+            row[1].get(device_asset_id);
+            res[std::to_string(device_asset_id)] = 10;
+            std::cout << "res[" << device_asset_id << "] = 10;" << std::endl;
+
+            // if no outlet.count && tainted = true;
+            sum += 10;
+        };
+
+    try{
+        tntdb::Connection conn;
+        conn = tntdb::connectCached(url);
+
+        persist::select_asset_device_by_container(
+                conn, elementId, cb);
+
+    } catch (std::exception &e) {
+        //json_result = create_error_json(e.what(), 105);
+        return HTTP_BAD_REQUEST;
+    }
+
+    if (res.empty()) {
+        //json_result = create_error_json("No data", 105);
+        return HTTP_BAD_REQUEST;
+    }
+    res["sum"] = !tainted ? sum : -1;
+
+    return HTTP_OK;
+}
