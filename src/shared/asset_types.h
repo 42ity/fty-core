@@ -82,6 +82,11 @@ std::string
     subtypeid_to_subtype
         (a_elmnt_tp_id_t subtype_id);
 
+bool
+is_epdu(int x);
+bool
+is_pdu(int x);
+
 };
 
 #endif //SRC_SHARED_ASSET_TYPES_H

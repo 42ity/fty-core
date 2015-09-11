@@ -135,4 +135,14 @@ std::string
     }
 }
 
+bool
+is_epdu(int x) {
+    return x == asset_subtype::EPDU;
+}
+
+bool
+is_pdu(int x) {
+    return x == asset_subtype::PDU;
+}
+
 }; // namesace end

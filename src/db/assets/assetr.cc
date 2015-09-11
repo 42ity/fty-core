@@ -660,15 +660,19 @@ count_of_link_src(
         a_elmnt_id_t id)
 {
     LOG_START;
+    static const int id_asset_link_type = 1;
     try{
         tntdb::Statement st = conn.prepareCached(
             " SELECT COUNT( * ) "
             " FROM v_bios_asset_link "
             " WHERE id_asset_device_src = :id AND"
-            "       id_asset_link_type = 1 "
+            "       id_asset_link_type = :lt "
         );
 
-        tntdb::Row row = st.set("id", id).selectRow();
+        tntdb::Row row = st.\
+            set("id", id).\
+            set("lt", id_asset_link_type).\
+            selectRow();
 
         int r = 0;
         row[0].get(r);
@@ -819,7 +823,7 @@ int
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
             "   v.name,"
-            "   v.id_asset_element, v.id_asset_device_type, v.type_name"
+            "   v.id_asset_element as asset_id, v.id_asset_device_type as subtype, v.type_name"
             " FROM"
             "   v_bios_asset_element_super_parent v"
             " WHERE :containerid in (v.id_parent1, v.id_parent2, v.id_parent3, v.id_parent4)"

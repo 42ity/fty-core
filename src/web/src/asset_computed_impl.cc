@@ -101,7 +101,7 @@ int free_u_size( uint32_t elementId, std::string &jsonResult)
     }
 }
 
-static int32_t
+static uint32_t
 s_select_outlet_count(
         tntdb::Connection &conn,
         a_elmnt_id_t id)
@@ -114,7 +114,7 @@ s_select_outlet_count(
     if (ret != 0 || res.count(KEY) == 0)
         return UINT32_MAX;
 
-    return string_to_int32(res.at(KEY).first.c_str());
+    return string_to_uint32(res.at(KEY).first.c_str());
 }
 
 static bool
@@ -140,13 +140,13 @@ rack_outlets_available(
     std::function<void(const tntdb::Row &row)> cb = \
         [&conn, &sum, &tainted, &res](const tntdb::Row &row)
         {
-            std::string device_type_name = "";
-            row[3].get(device_type_name);
-            if (device_type_name != "epdu" && device_type_name != "pdu")
+            a_elmnt_id_t device_subtype = 0;
+            row["subtype"].get(device_subtype);
+            if (!persist::is_epdu(device_subtype) && !persist::is_pdu(device_subtype))
                 return;
 
             a_elmnt_id_t device_asset_id = 0;
-            row[1].get(device_asset_id);
+            row["asset_id"].get(device_asset_id);
 
             uint32_t foo = s_select_outlet_count(conn, device_asset_id);
             int outlet_count = foo != UINT32_MAX ? foo : -1;

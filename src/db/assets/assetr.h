@@ -205,7 +205,7 @@ int
 max_number_of_power_links(
         tntdb::Connection& conn);
 
-/** \brief select count how many time gived 'id' is source device in v_bios_asset_link
+/** \brief how many times is gived id as id_asset_device_src in v_bios_asset_link
  *
  *  \param[in] conn is tntdb connection
  *  \param[in] id is the asset id of the device
