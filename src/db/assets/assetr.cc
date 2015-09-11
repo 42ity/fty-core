@@ -884,11 +884,6 @@ int select_asset_ext_attribute_by_keytag(
         LOG_END;
         return 0;
     }
-    catch (const tntdb::NotFound &e) {
-        std::string err = e.what();
-        log_info ("end: %s", err.c_str() );
-        return 1;
-    }
     catch (const std::exception &e) {
         LOG_END_ABNORMAL(e);
         return 1;
