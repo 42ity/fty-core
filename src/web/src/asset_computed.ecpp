@@ -78,7 +78,7 @@ static bool is_operation_valid(const std::string& operation)
         http_code = rack_outlets_available( elementId, res );
 </%cpp>
 {
-    "id"  :  elementId,
+    "id"  :  <$ elementId $>,
     "<$operation$>" : {
 %       size_t i=1;
 %       for (const auto & it : res) {
