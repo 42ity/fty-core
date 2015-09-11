@@ -117,6 +117,15 @@ s_select_outlet_count(
     return string_to_int32(res.at(KEY).first.c_str());
 }
 
+static bool
+s_is_rack(
+        tntdb::Connection &conn,
+        a_elmnt_id_t id)
+{
+    auto res = persist::select_asset_element_web_byId(conn, id);
+    return res.status == 1 && res.item.type_name == "rack";
+}
+
 int
 rack_outlets_available(
         uint32_t elementId,
@@ -157,10 +166,14 @@ rack_outlets_available(
 
     try{
         conn = tntdb::connectCached(url);
+        if (!s_is_rack(conn, elementId)) {
+            errmsg = "Asset element with id '" + std::to_string(elementId) + "' does not exist or is not rack";
+            errcode = 105;
+            return HTTP_BAD_REQUEST;
+        }
 
         persist::select_asset_device_by_container(
                 conn, elementId, cb);
-        //TODO: review that elementId belongs to rack!
 
     } catch (std::exception &e) {
         errmsg = e.what();
