@@ -234,5 +234,17 @@ int
         a_elmnt_id_t       asset_element_id,
         m_dvc_id_t        &monitor_element_id);
 
+/** \brief TODO
+ */
+int
+    select_asset_device_by_container
+        (tntdb::Connection &conn,
+         a_elmnt_id_t element_id,
+         std::function<void(const tntdb::Row&)>& cb);
+
+db_reply <std::vector<device_info_t>>
+    select_asset_device_by_container
+        (tntdb::Connection &conn,
+         a_elmnt_id_t element_id);
 } //namespace end
 #endif // SRC_DB_ASSETS_ASSETR_H

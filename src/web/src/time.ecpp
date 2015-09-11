@@ -28,19 +28,13 @@
 #include <cxxtools/regex.h>
 #include <cxxtools/jsondeserializer.h>
 
-#include "subprocess.h"
 #include "augtool.h"
 
-using namespace shared;
 </%pre>
-<%thread scope="global">
-// TODO: Figure out how to make it work without -e
-Argv exe = { "sudo", "augtool", "-e" };
-SubProcess augtool(exe, SubProcess::STDOUT_PIPE | SubProcess::STDIN_PIPE);
-</%thread>
 <%cpp>
     std::string command;
     std::string nil;
+	augtool* augeas = augtool::get_instance();
 
     if(!request.isMethodGET()) {
 </%cpp>
@@ -96,12 +90,8 @@ SubProcess augtool(exe, SubProcess::STDOUT_PIPE | SubProcess::STDIN_PIPE);
 <%cpp>
 		    	return HTTP_BAD_REQUEST;
 			} else {
-				command = "set /files/etc/ntp.conf/server[1] " + ntp + "\n";
-    			write(augtool.getStdin(), command.c_str(), command.length());
-    			nil = wait_read_all(augtool.getStdout());
-				command = "save\n";
-    			write(augtool.getStdin(), command.c_str(), command.length());
-    			nil = wait_read_all(augtool.getStdout());
+				augeas->run_cmd("set /files/etc/ntp.conf/server[1] " + ntp);
+				augeas->save();
 				system("sudo systemctl restart ntp");
 				system("sudo systemctl enable ntp");
 			}
@@ -113,9 +103,7 @@ SubProcess augtool(exe, SubProcess::STDOUT_PIPE | SubProcess::STDIN_PIPE);
     gmtime_r(&tme, &tm_s);
     char buff[32];
     strftime(buff, 32, "%FT%TZ", &tm_s);
-	command = "get /files/etc/ntp.conf/server[1]\n";
-    write(augtool.getStdin(), command.c_str(), command.length());
-    std::string ntp = augtool_out(wait_read_all(augtool.getStdout()));
+    std::string ntp = augeas->get_cmd_out("get /files/etc/ntp.conf/server[1]");
 </%cpp>
 { "time" : "<$ buff $>",
   "ntp"  : "<$ ntp $>" }

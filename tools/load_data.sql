@@ -3,10 +3,10 @@ use box_utf8;
 /* Constants */
 
 /* t_bios_asset_device_type */
-select @asset_device_ups := id_asset_device_type from t_bios_asset_device_type where name = 'ups'; 
+select @asset_device_ups := id_asset_device_type from t_bios_asset_device_type where name = 'ups';
 select @asset_device_epdu := id_asset_device_type from t_bios_asset_device_type where name = 'epdu';
 select @asset_device_server := id_asset_device_type from t_bios_asset_device_type where name = 'server';
-select @asset_device_main := id_asset_device_type from t_bios_asset_device_type where name = 'main';
+select @asset_device_feed := id_asset_device_type from t_bios_asset_device_type where name = 'feed';
 
 /* t_bios_device_type */
 select @device_unclassified := id_device_type from t_bios_device_type where name = 'not_classified';
@@ -95,9 +95,9 @@ insert into t_bios_asset_element
     (name, id_type, id_subtype, id_parent, asset_tag)
 values
 (
-    "main",
+    "feed",
     @asset_element_device,
-    @asset_device_main,
+    @asset_device_feed,
     (select id from (select id_asset_element as id from t_bios_asset_element where name = 'DC1') as subquery)
 , "myasset8");
 insert into t_bios_asset_element (name, id_type, id_parent, asset_tag)values ("group1",  @asset_element_group,     NULL, "myasset9");
@@ -184,13 +184,13 @@ values
     (select id_asset_element from t_bios_asset_element where name = 'DC1'),
     (select id_asset_element from t_bios_asset_element where name = 'ups')
 );
-/* t_bios_asset_group_relation ('DC1', 'main') */
+/* t_bios_asset_group_relation ('DC1', 'feed') */
 insert into t_bios_asset_group_relation
     (id_asset_group, id_asset_element)
 values
 (
     (select id_asset_element from t_bios_asset_element where name = 'DC1'),
-    (select id_asset_element from t_bios_asset_element where name = 'main')
+    (select id_asset_element from t_bios_asset_element where name = 'feed')
 );
 
 insert into t_bios_asset_link
@@ -198,8 +198,8 @@ insert into t_bios_asset_link
 values
 (
     (select id_asset_element from t_bios_asset_element where
-        name = 'main' and
-        id_subtype = @asset_device_main), /* 4 */
+        name = 'feed' and
+        id_subtype = @asset_device_feed), /* 4 */
     (select id_asset_element from t_bios_asset_element where
         name = 'ups' and
         id_subtype = @asset_device_ups), /* 3 */
@@ -383,7 +383,7 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_name",   "Hercule Poirot", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_email",  "hercule@poirot.com", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",  "+32-2-555-42-42", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_w_pos", "left",@last_asset_element); 
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_w_pos", "left",@last_asset_element);
 
 /* ePDU2-LAB */
 insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, asset_tag) values ("ePDU2-LAB", @asset_element_device, @asset_device_epdu, @last_rack, "myasset25");
@@ -427,10 +427,10 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("creator", "Vaporware", @last_asset_element);
 
 
-/* MAIN-LAB */
-insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, asset_tag) values ("MAIN-LAB", @asset_element_device, @asset_device_main, @last_datacenter, "myasset29");
+/* FEED-LAB */
+insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, asset_tag) values ("FEED-LAB", @asset_element_device, @asset_device_feed, @last_datacenter, "myasset29");
 set @last_asset_element = LAST_INSERT_ID();
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "MAIN 240V", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "FEED 240V", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("phases.output",       "3",         @last_asset_element);
 
 /* GROUP1-LAB */
@@ -445,7 +445,7 @@ insert into t_bios_asset_group_relation
 values
 (
     (select id_asset_element from `t_bios_asset_element` where name = 'GROUP1-LAB'),
-    (select id_asset_element from `t_bios_asset_element` where name = 'MAIN-LAB')
+    (select id_asset_element from `t_bios_asset_element` where name = 'FEED-LAB')
 );
 
 /* SRV3-LAB */
@@ -494,21 +494,21 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 
 /* Asset links */
 
-/* link (MAIN-LAB, UPS1-LAB, 'power chain') */
+/* link (FEED-LAB, UPS1-LAB, 'power chain') */
 insert into t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type)
 values 
 (
-    (select id_asset_element from t_bios_asset_element where name = 'MAIN-LAB'),
+    (select id_asset_element from t_bios_asset_element where name = 'FEED-LAB'),
     (select id_asset_element from t_bios_asset_element where name = 'UPS1-LAB'),
     @asset_link_powerchain
 );
-/* link (MAIN-LAB, UPS2-LAB, 'power chain') */
+/* link (FEED-LAB, UPS2-LAB, 'power chain') */
 insert into t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type)
 values 
 (
-    (select id_asset_element from t_bios_asset_element where name = 'MAIN-LAB'),
+    (select id_asset_element from t_bios_asset_element where name = 'FEED-LAB'),
     (select id_asset_element from t_bios_asset_element where name = 'UPS2-LAB'),
     @asset_link_powerchain
 );
