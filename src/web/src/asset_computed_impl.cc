@@ -119,7 +119,10 @@ s_select_outlet_count(
 
 int
 rack_outlets_available(
-        uint32_t elementId, std::map<std::string, int> &res)
+        uint32_t elementId,
+        std::map<std::string, int> &res,
+        std::string &errmsg,
+        int &errcode)
 {
     int sum = -1;
     bool tainted = false;
@@ -139,7 +142,13 @@ rack_outlets_available(
             uint32_t foo = s_select_outlet_count(conn, device_asset_id);
             int outlet_count = foo != UINT32_MAX ? foo : -1;
 
-            if (outlet_count == -1)
+            int outlet_used = persist::count_of_link_src(conn, device_asset_id);
+            if (outlet_used == -1)
+                outlet_count = -1;
+            else
+                outlet_count -= outlet_used;
+
+            if (outlet_count < 0)
                 tainted = true;
             else
                 sum += outlet_count;
@@ -151,20 +160,18 @@ rack_outlets_available(
 
         persist::select_asset_device_by_container(
                 conn, elementId, cb);
+        //TODO: review that elementId belongs to rack!
 
     } catch (std::exception &e) {
-        //json_result = create_error_json(e.what(), 105);
+        errmsg = e.what();
+        errcode = 105;
         return HTTP_BAD_REQUEST;
     }
 
-    if (res.empty()) {
-        //json_result = create_error_json("No data", 105);
-        return HTTP_BAD_REQUEST;
-    }
     if (tainted || sum == -1)
         res["sum"] = -1;
     else
-        res["sum"] = sum + 1;   //to workaround first -1
+        res["sum"] = sum + 1;   //sum is initialized to -1
 
     return HTTP_OK;
 }

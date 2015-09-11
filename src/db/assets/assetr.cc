@@ -655,6 +655,33 @@ max_number_of_power_links(
 }
 
 int
+count_of_link_src(
+        tntdb::Connection& conn,
+        a_elmnt_id_t id)
+{
+    LOG_START;
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT COUNT( * ) "
+            " FROM v_bios_asset_link "
+            " WHERE id_asset_device_src = :id AND"
+            "       id_asset_link_type = 1 "
+        );
+
+        tntdb::Row row = st.set("id", id).selectRow();
+
+        int r = 0;
+        row[0].get(r);
+        LOG_END;
+        return r;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
+}
+
+int
 unique_keytag(
         tntdb::Connection &conn,
         const std::string &keytag,
