@@ -246,5 +246,23 @@ db_reply <std::vector<device_info_t>>
     select_asset_device_by_container
         (tntdb::Connection &conn,
          a_elmnt_id_t element_id);
+
+/**
+ * \brief read particular asset ext property of device[s]
+ * \param db connection
+ * \param asset ext attribute name like "u_size"
+ * \param list of elemnts ( only elementId is important in device_info_t tuple.
+ * \param callback to be called with every selected row.
+ *        Row has id_asset_ext_attribute, keytag, value, id_asset_element
+ *        and read_only columns
+ * \return 0 on success
+ */
+int
+    select_asset_ext_attribute_by_keytag(
+        tntdb::Connection &conn,
+        const std::string &keytag,
+        const std::vector<device_info_t> &elements,
+        std::function< void( const tntdb::Row& ) > &cb);
+ 
 } //namespace end
 #endif // SRC_DB_ASSETS_ASSETR_H
