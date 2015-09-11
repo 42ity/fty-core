@@ -876,7 +876,7 @@ int select_asset_ext_attribute_by_keytag(
             " FROM"
             "   v_bios_asset_ext_attributes"
             " WHERE keytag = :keytag" +
-            ( elements.empty() ? "" : " AND id_asset_element (" + inlist.substr(1) + ")" )
+            ( elements.empty() ? "" : " AND id_asset_element in (" + inlist.substr(1) + ")" )
         );
         tntdb::Result rows = st.set("keytag", keytag ).select();
         for( const auto &row: rows ) cb( row );
