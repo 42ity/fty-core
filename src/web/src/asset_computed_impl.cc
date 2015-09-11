@@ -27,7 +27,6 @@
 #include <exception>
 #include <tntdb/connection.h>
 #include <cxxtools/trim.h>
-//#include <tntdb/row.h>
 #include <tntdb/result.h>
 #include <tntdb/error.h>
 
@@ -118,21 +117,18 @@ int free_u_size( const std::string &element, std::string &jsonResult)
             jsonResult = create_error_json( "Invalid element Id " + element , 103 );
             return 1;
         }
-        auto rack = persist::select_asset_element_web_byId( conn, elementId );
-   
+        auto rack = persist::select_asset_element_web_byId( conn, elementId );        
         if( ( ! rack.status ) || ( rack.item.type_id != persist::asset_type::RACK ) ) {
             // this is not rack
             jsonResult = create_error_json( "Specified asset element is not rack", 105 );
             return 2;
         }
-        auto ext = persist::select_ext_attributes( conn, elementId );
-        auto us = ext.item.find("u_size");
-        if( us == ext.item.end() ) {
-            // not size
+        std::vector<device_info_t> rackv = { std::make_tuple( elementId, "", "", 0 ) };
+        freeusize = sum_device_usize(conn,rackv);
+        if( ! freeusize ) {
             jsonResult = create_error_json( "Rack doesn't have u_size specified", 103 );
             return 1;
         }
-        freeusize = usize_to_int( us->second.first );
         log_debug( "rack size is %i", freeusize );
             
         // get devices inside the rack
@@ -142,9 +138,6 @@ int free_u_size( const std::string &element, std::string &jsonResult)
             return 1;
         }
         freeusize -= sum_device_usize( conn, devices.item );
-        /*
-          select usize for elements
-        */
         jsonResult = std::string("{ \"id\":") + element + ", \"freeusize\":" + std::to_string(freeusize) + " }" ;
         return 0;
     } catch(std::exception &e) {
