@@ -35,8 +35,8 @@
 #        as fatal...
 
 # Default settings
-DEF_USER_PASS="@PASSWORD@"
-DEF_USER_PASS_HASH='$6$F5TqxQBgnjXt$O0ZJbFbGg9aeT9m21OL9YanudVeaMygUVCOt7lzVM.wV7yAHa0u1sfcklGydt9A5gHmGYN0b/Byff3fCJkXBh1'
+DEF_USER_PASS="admin"
+DEF_USER_PASS_HASH='$6$uhrwSjVBa33$1h2cGPecZQfJdSd4MbC4KSv1vsp1eSqpJ5O/FqVLPWQysX732Icn6yz8/l72cQJZcFp9OnUnmEBqgr072.hY21'
 
 MKPASSWD="/usr/bin/mkpasswd"
 OPENSSL="/usr/bin/openssl"
@@ -52,7 +52,7 @@ export LANG LC_ALL
 # to possibly easily generate more accounts in a loop, later...
 # Also note that (currently) specific numeric ID's are not enforced.
 [ x"$GROUP_NAME" = x ] &&	GROUP_NAME="bios"
-[ x"$USER_NAME" = x ] &&	USER_NAME="bios"
+[ x"$USER_NAME" = x ] &&	USER_NAME="admin"
 [ x"$USER_GECOS" = x ] && 	USER_GECOS="User for BIOS processes"
 [ x"$USER_SHELL" = x ] && 	USER_SHELL="/bin/sh"
 [ x"$USER_HOME" = x ] &&	USER_HOME="/home/$USER_NAME"

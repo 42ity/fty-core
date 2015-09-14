@@ -25,20 +25,6 @@
 #           which can be sourced to interactive shell
 #           You can 'export TESTWEB_QUICKFAIL=yes' to abort on first failure
 
-# ***********************************************
-echo "INFO-WEBLIB: Initial  BASE_URL = '$BASE_URL'"
-
-[ -z "${SUT_HOST-}" ] && SUT_HOST="127.0.0.1"
-[ -z "${SUT_WEB_PORT-}" ] && SUT_WEB_PORT="8000"
-[ -z "${BIOS_USER-}" ] && BIOS_USER="bios"
-[ -z "${BIOS_PASSWD-}" ] && BIOS_PASSWD="@PASSWORD@"
-[ -z "${SASL_SERVICE-}" ] && SASL_SERVICE="bios"
-[ -z "${BASE_URL-}" ] && BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
-#[ -z "${BASE_URL-}" ] && BASE_URL="http://127.0.0.1:8000/api/v1"
-#[ -z "${BASE_URL-}" ] && BASE_URL="http://root@debian.roz.lab.etn.com:8007/api/v1"
-
-echo "INFO-WEBLIB: Will use BASE_URL = '$BASE_URL'"
-
 # Should the test suite abort if "curl" errors out?
 [ -z "${WEBLIB_CURLFAIL-}" ] && WEBLIB_CURLFAIL=yes
 
@@ -80,6 +66,8 @@ echo "INFO-WEBLIB: Will use BASE_URL = '$BASE_URL'"
         SCRIPTDIR="$(cd "`dirname "$0"`" && pwd)" || \
         SCRIPTDIR="`pwd`/`dirname "$0"`" || \
         SCRIPTDIR="`dirname "$0"`"
+
+. "${SCRIPTDIR}"/scriptlib.sh
 
 if [ -z "${CHECKOUTDIR-}" ]; then
     case "$SCRIPTDIR" in

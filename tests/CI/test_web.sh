@@ -82,10 +82,6 @@ NEED_BUILDSUBDIR=no determineDirs_default || true
 . "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
 #cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
-[ -n "$BIOS_USER"   ] || BIOS_USER="bios"
-[ -n "$BIOS_PASSWD" ] || BIOS_PASSWD="@PASSWORD@"
-[ -n "$SASL_SERVICE" ] || SASL_SERVICE="bios"
-
 PATH="$PATH:/sbin:/usr/sbin"
 
 if [ "$SKIP_SANITY" = yes ]; then
