@@ -107,24 +107,17 @@ insert_into_measurement_again:
             log_debug("[t_bios_measurement_topic]: inserted topic %s, #%" PRIu32 " rows ", topic, n);
         }
 
-        uint64_t topic_id = 0, measurements_count = 0;
-        st = conn.prepareCached("select id from t_bios_measurement_topic where topic = :topic and units = :units");
-        tntdb::Result result = st.set ("topic", topic).set ("units", units).select ();
-        if (result.size () != 1) {
-            throw std::logic_error ("Topic should be present."); // TODO: construct a better message
-        }
-        result.getRow (0).getValue (0).get (topic_id);
-        st = conn.prepareCached("select COUNT(*) from t_bios_measurement where timestamp = :timestamp and topic_id = :topic_id");
-        result = st.set ("timestamp", time).set ("topic_id", topic_id).select ();
-        result.getRow (0).getValue (0).get (measurements_count);
-        if (measurements_count == 0) {
-            st =  conn.prepareCached("insert into t_bios_measurement (timestamp, value, scale, topic_id) VALUE (:timestamp, :value, :scale, :topic_id)");
-            ret.affected_rows = st.set ("timestamp", time). set ("value", value).set ("scale", scale).set ("topic_id", topic_id).execute ();
-        }
-        else {
-            st = conn.prepareCached("update t_bios_measurement set value = :value, scale = :scale where timestamp = :time");
-            ret.affected_rows = st.set ("timestamp", time). set ("value", value).set ("scale", scale).execute ();
-        }
+        st = conn.prepareCached (
+                "INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) "
+                "SELECT :time, :value, :scale, id FROM t_bios_measurement_topic "
+                "WHERE topic=:topic AND units=:units "
+                "ON DUPLICATE KEY UPDATE value = :value, scale = :scale");
+        ret.affected_rows = st.set("time",  time)
+                              .set("value", value)
+                              .set("scale", scale)
+                              .set("units", units)
+                              .set("topic", topic)
+                              .execute();
 
         log_debug("[t_bios_measurement]: inserted %" PRIu64 " rows "\
                    "value:%" PRIi32 " * 10^%" PRIi16 " %s "\
