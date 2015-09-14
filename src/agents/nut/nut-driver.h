@@ -247,6 +247,8 @@ class NUTDevice {
     int _threshold = 5;
     //! \brief Transformation of our integer (x100) back
     std::string itof(const long int) const;
+    //! \brief NUT values transformation function
+    void NUTValuesTransformation( std::map< std::string,std::vector<std::string> > &vars );
 };
 
 /**
@@ -301,6 +303,7 @@ class NUTDeviceList {
 
     //! \brief update status of NUT devices
     void updateDeviceStatus( bool forceUpdate = false );
+
 };
 
 } // namespace drivers::nut
