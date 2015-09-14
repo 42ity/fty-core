@@ -39,6 +39,7 @@
 #include "inout.h"
 #include <cxxtools/jsondeserializer.h>
 #include <cxxtools/serializationinfo.h>
+#include "asset_computed_impl.h"
 </%pre>
 
 <%thread scope="global">
@@ -381,6 +382,22 @@ asset_manager asset_mgr;
         }
 </%cpp>
     ]
+    , "computed" : {
+%       if (persist::is_rack(tmp.item.basic.type_id)) {
+%           int freeusize = free_u_size(tmp.item.basic.id);
+            "freeusize" : <$ freeusize >= 0 ? std::to_string(freeusize) : "null" $>,
+            "outlet.available" : {
+%           std::map<std::string, int> res;
+%           rack_outlets_available(tmp.item.basic.id, res);
+%           size_t i=1;
+%           for (const auto &it : res) {
+%               std::string val = it.second >= 0 ? std::to_string(it.second) : "null";
+%               std::string comma = i == res.size() ? "" : ","; i++;
+                "<$ it.first $>" : <$ val $><$ comma $>
+%           } // for it : res
+            }
+%       }   // rack
+    }
 }
-%   }
-%}
+%   }   // if request.isMethod("GET")
+%}      // arbitrary scope

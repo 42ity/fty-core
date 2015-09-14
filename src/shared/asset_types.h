@@ -84,9 +84,12 @@ std::string
 
 bool
 is_epdu(int x);
+
 bool
 is_pdu(int x);
 
-};
+bool
+is_rack(int x);
 
+}; //namespace persist
 #endif //SRC_SHARED_ASSET_TYPES_H
