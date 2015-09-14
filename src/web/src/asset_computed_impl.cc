@@ -139,12 +139,12 @@ rack_outlets_available(
         std::map<std::string, int> &res)
 {
     int sum = -1;
-    bool tained = false;
+    bool tainted = false;
     tntdb::Connection conn;
     res["sum"] = sum;
 
     std::function<void(const tntdb::Row &row)> cb = \
-        [&conn, &tained, &sum, &res](const tntdb::Row &row)
+        [&conn, &sum, &tainted, &res](const tntdb::Row &row)
         {
             a_elmnt_id_t device_subtype = 0;
             row["subtype"].get(device_subtype);
@@ -166,7 +166,7 @@ rack_outlets_available(
             if (outlet_count > 0)
                 sum += outlet_count;
             else
-                tained = true;
+                tainted = true;
             res[std::to_string(device_asset_id)] = outlet_count;
         };
 
@@ -180,7 +180,7 @@ rack_outlets_available(
         return;
     }
 
-    if (!tained)
+    if (!tainted)
         res["sum"] = sum +1;   //sum is initialized to -1
     return;
 }
