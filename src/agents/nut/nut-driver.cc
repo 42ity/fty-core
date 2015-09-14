@@ -480,9 +480,6 @@ void NUTDevice::NUTValuesTransformation( std::map< std::string,std::vector<std::
     }
 };
 
-
-
-
 NUTDevice::~NUTDevice() {
 
 }
