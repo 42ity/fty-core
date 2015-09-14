@@ -114,7 +114,13 @@ s_select_outlet_count(
     if (ret != 0 || res.count(KEY) == 0)
         return UINT32_MAX;
 
-    return string_to_uint32(res.at(KEY).first.c_str());
+    std::string foo = res.at(KEY).first.c_str();
+    auto dot_i = foo.find('.');
+    if (dot_i != std::string::npos) {
+        foo.erase(dot_i, foo.size() - dot_i);
+    }
+
+    return string_to_uint32(foo.c_str());
 }
 
 static bool
