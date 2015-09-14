@@ -72,10 +72,6 @@ nosoup4u
 nosoup4u
 EOF
 
-# Rules for passwords
-RULES="`sed -n 's|.*pam_cracklib.so||p' /etc/pam.d/bios`"
-sed -i "s|\\(.*pam_cracklib.so\\).*|\1$RULES|" /etc/pam.d/common-password
-
 # Workplace for the webserver and graph daemons
 mkdir -p /var/lib/bios
 chown -R bios /var/lib/bios
@@ -197,6 +193,8 @@ done
 # Setup bios security
 mkdir -p /etc/pam.d
 cp /usr/share/bios/examples/config/pam.d/* /etc/pam.d
+RULES="`sed -n 's|.*pam_cracklib.so||p' /etc/pam.d/bios`"
+sed -i "s|\\(.*pam_cracklib.so\\).*|\1$RULES|" /etc/pam.d/common-password
 
 mkdir -p /etc/sudoers.d
 cp /usr/share/bios/examples/config/sudoers.d/bios_00_base /etc/sudoers.d

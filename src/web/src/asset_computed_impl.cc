@@ -111,47 +111,96 @@ int free_u_size( a_elmnt_id_t elementId, std::string &jsonResult)
     }
 }
 
+static uint32_t
+s_select_outlet_count(
+        tntdb::Connection &conn,
+        a_elmnt_id_t id)
+{
+    static const char* KEY = "outlet.count";
+
+    std::map <std::string, std::pair<std::string, bool> > res;
+    int ret = persist::select_ext_attributes(conn, id, res);
+
+    if (ret != 0 || res.count(KEY) == 0)
+        return UINT32_MAX;
+
+    std::string foo = res.at(KEY).first.c_str();
+    auto dot_i = foo.find('.');
+    if (dot_i != std::string::npos) {
+        foo.erase(dot_i, foo.size() - dot_i);
+    }
+
+    return string_to_uint32(foo.c_str());
+}
+
+static bool
+s_is_rack(
+        tntdb::Connection &conn,
+        a_elmnt_id_t id)
+{
+    auto res = persist::select_asset_element_web_byId(conn, id);
+    return res.status == 1 && res.item.type_name == "rack";
+}
+
 int
 rack_outlets_available(
-        uint32_t elementId, std::map<std::string, int> &res)
+        uint32_t elementId,
+        std::map<std::string, int> &res,
+        std::string &errmsg,
+        int &errcode)
 {
-    a_elmnt_id_t device_asset_id = 0;
-    int sum = 0;
+    int sum = -1;
     bool tainted = false;
+    tntdb::Connection conn;
 
     std::function<void(const tntdb::Row &row)> cb = \
-        [&device_asset_id, &sum, &tainted, &res](const tntdb::Row &row)
+        [&conn, &sum, &tainted, &res](const tntdb::Row &row)
         {
-            std::string device_type_name = "";
-            row[3].get(device_type_name);
-            if (device_type_name != "epdu")
+            a_elmnt_id_t device_subtype = 0;
+            row["subtype"].get(device_subtype);
+            if (!persist::is_epdu(device_subtype) && !persist::is_pdu(device_subtype))
                 return;
 
-            row[1].get(device_asset_id);
-            res[std::to_string(device_asset_id)] = 10;
-            std::cout << "res[" << device_asset_id << "] = 10;" << std::endl;
+            a_elmnt_id_t device_asset_id = 0;
+            row["asset_id"].get(device_asset_id);
 
-            // if no outlet.count && tainted = true;
-            sum += 10;
+            uint32_t foo = s_select_outlet_count(conn, device_asset_id);
+            int outlet_count = foo != UINT32_MAX ? foo : -1;
+
+            int outlet_used = persist::count_of_link_src(conn, device_asset_id);
+            if (outlet_used == -1)
+                outlet_count = -1;
+            else
+                outlet_count -= outlet_used;
+
+            if (outlet_count < 0)
+                tainted = true;
+            else
+                sum += outlet_count;
+            res[std::to_string(device_asset_id)] = outlet_count;
         };
 
     try{
-        tntdb::Connection conn;
         conn = tntdb::connectCached(url);
+        if (!s_is_rack(conn, elementId)) {
+            errmsg = "Asset element with id '" + std::to_string(elementId) + "' does not exist or is not rack";
+            errcode = 105;
+            return HTTP_BAD_REQUEST;
+        }
 
         persist::select_asset_device_by_container(
                 conn, elementId, cb);
 
     } catch (std::exception &e) {
-        //json_result = create_error_json(e.what(), 105);
+        errmsg = e.what();
+        errcode = 105;
         return HTTP_BAD_REQUEST;
     }
 
-    if (res.empty()) {
-        //json_result = create_error_json("No data", 105);
-        return HTTP_BAD_REQUEST;
-    }
-    res["sum"] = !tainted ? sum : -1;
+    if (tainted || sum == -1)
+        res["sum"] = -1;
+    else
+        res["sum"] = sum + 1;   //sum is initialized to -1
 
     return HTTP_OK;
 }

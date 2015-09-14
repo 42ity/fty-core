@@ -36,7 +36,7 @@
 int main(int argc, char *argv []) {
     // Basic settings
     if((argc != 4) && (argc != 5)) {
-        printf ("syntax: generate-measurement hostname source topic units value [ ipc://...|tcp://... ]\n");
+        printf ("syntax: generate-measurement hostname source units value [ ipc://...|tcp://... ]\n");
         return 0;
     }
 
