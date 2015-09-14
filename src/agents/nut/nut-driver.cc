@@ -46,142 +46,85 @@ namespace nut
  */
 
 /* TODO: mapping should be in configuration */
-static const std::vector<std::string> physicsNUT {
-    "ups.temperature",
-    "ups.load",
-    "ups.realpower",
-    "input.frequency",
-    "input.load", // not found in nut drivers, including input.L?.load ??
-    "input.L1.load",
-    "input.L2.load",
-    "input.L3.load",
-    "input.voltage",
-    "input.L1.voltage", // as far NUT doesn't support DMTF format, multi-phase is not yet full supported, so NUT publishes voltage in a simple way
-    "input.L2.voltage", // as far NUT doesn't support DMTF format, multi-phase is not yet full supported, so NUT publishes voltage in a simple way
-    "input.L3.voltage", // as far NUT doesn't support DMTF format, multi-phase is not yet full supported, so NUT publishes voltage in a simple way
-    "input.current",
-    "input.L1.current",
-    "input.L2.current",
-    "input.L3.current",
-    "input.realpower",
-    "input.L1.realpower",
-    "input.L2.realpower",
-    "input.L3.realpower",
-    "input.realpower", // FIXME after demo: using input, as output doesn't work correctly
-    "output.L1.realpower",
-    "output.L2.realpower",
-    "output.L3.realpower",
-    "input.power",
-    "input.L1.power", // not in snmp drivers ??
-    "input.L2.power",
-    "input.L3.power",
+static const std::vector< std::pair<std::string,std::string> > physicsMapping {
+    { "ups.temperature",  "temperature.default" },
+    { "ups.load",         "load.default" },
+    { "ups.realpower",    "realpower.default" },
 
-    "output.voltage",
-    "output.current",
-    "output.L1-N.voltage",
-    "output.L1.realpower",
-    "output.L1.current",
-    "output.L2-N.voltage",
-    "output.L2.realpower",
-    "output.L2.current",
-    "output.L3-N.voltage",
-    "output.L3.realpower",
-    "output.L3.current",
-    "battery.charge",
-    "battery.runtime",
-    "outlet.realpower",
-    "outlet.#.current",
-    "outlet.#.voltage",
-    "outlet.#.realpower"   
+    { "input.frequency",  "frequency.input" },
+
+    { "input.load",       "load.input.L1" }, // not found in nut drivers, including input.L?.load ??    
+    { "input.L1.load",    "load.input.L1" },
+    { "input.L2.load",    "load.input.L2" },
+    { "input.L3.load",    "load.input.L3" },
+
+    { "input.voltage",    "voltage.input.L1-N" },
+    // as far NUT doesn't support DMTF format, multi-phase is not yet full supported, so NUT publishes voltage in a simple way
+    { "input.L1.voltage", "voltage.input.L1-N" },
+    // as far NUT doesn't support DMTF format, multi-phase is not yet full supported, so NUT publishes voltage in a simple way
+    { "input.L2.voltage", "voltage.input.L2-N" },
+    // as far NUT doesn't support DMTF format, multi-phase is not yet full supported, so NUT publishes voltage in a simple way
+    { "input.L3.voltage", "voltage.input.L3-N" },
+
+    { "input.current",    "current.input.L1" },
+    { "input.L1.current", "current.input.L1" },
+    { "input.L2.current", "current.input.L2" },
+    { "input.L3.current", "current.input.L3" },
+
+    { "input.realpower",     "realpower.default" },
+    { "input.L1.realpower",  "realpower.input.L1" },
+    { "input.L2.realpower",  "realpower.input.L2" },
+    { "input.L3.realpower",  "realpower.input.L3" },
+    { "input.realpower",     "realpower.output.L1" }, // FIXME after demo: using input, as output doesn't work correctly
+    { "output.L1.realpower", "realpower.output.L1" },
+    { "output.L2.realpower", "realpower.output.L2" },
+    { "output.L3.realpower", "realpower.output.L3" },
+
+    { "input.power",     "power.default" },
+    { "input.L1.power",  "power.input.L1" }, // not in snmp drivers ??
+    { "input.L2.power",  "power.input.L2" },
+    { "input.L3.power",  "power.input.L3" },
+
+    { "output.voltage",  "voltage.output.L1-N" },
+    { "output.current",  "current.output.L1" },
+    { "output.L1-N.voltage", "voltage.output.L1-N" },
+
+    { "output.L1.realpower",   "realpower.output.L1" },
+    { "output.L1.current",     "current.output.L1" },
+    { "output.L2-N.voltage",   "voltage.output.L2-N" },
+    { "output.L2.realpower",   "realpower.output.L2" },
+    { "output.L2.current",     "current.output.L2" },
+    { "output.L3-N.voltage",   "voltage.output.L3-N" },
+    { "output.L3.realpower",   "realpower.output.L3" },
+    { "output.L3.current",     "current.output.L3" },
+    { "battery.charge",        "charge.battery" },
+    { "battery.runtime",       "runtime.battery" },
+    { "outlet.realpower",      "realpower.default" },
+    { "outlet.#.current",      "current.outlet.#" },
+    { "outlet.#.voltage",      "voltage.outlet.#" },
+    { "outlet.#.realpower",    "realpower.outlet.#" },
+    { "ups.realpower.nominal", "realpower.nominal" },
 };
 
-static const std::vector<std::string> physicsBIOS {
-    "temperature.default",
-    "load.default",
-    "realpower.default",
-
-    "frequency.input",
-    "load.input.L1",
-    "load.input.L1",
-    "load.input.L2",
-    "load.input.L3",
-    "voltage.input.L1-N",
-    "voltage.input.L1-N",
-    "voltage.input.L2-N",
-    "voltage.input.L3-N",
-    "current.input.L1",
-    "current.input.L1",
-    "current.input.L2",
-    "current.input.L3",
-    "realpower.default",
-    "realpower.input.L1",
-    "realpower.input.L2",
-    "realpower.input.L3",
-    "realpower.output.L1",
-    "realpower.output.L1",
-    "realpower.output.L2",
-    "realpower.output.L3",
-    "power.default",
-    "power.input.L1",
-    "power.input.L2",
-    "power.input.L3",
-
-    "voltage.output.L1-N",
-    "current.output.L1",
-    "voltage.output.L1-N",
-    "realpower.output.L1",
-    "current.output.L1",
-    "voltage.output.L2-N",
-    "realpower.output.L2",
-    "current.output.L2",
-    "voltage.output.L3-N",
-    "realpower.output.L3",
-    "current.output.L3",
-    "charge.battery",
-    "runtime.battery",
-    "realpower.default",
-    "current.outlet.#",
-    "voltage.outlet.#",
-    "realpower.outlet.#"
+static const std::vector< std::pair< std::string, std::string > > inventoryMapping {
+    { "device.model",       "model" },
+    { "device.mfr",         "manufacturer" },
+    { "device.serial",      "serial_no" },
+    { "device.type",        "device.type" },
+    { "device.description", "device.description" },
+    { "device.contact",     "device.contact" },
+    { "device.location",    "device.location" },
+    { "device.part",        "device.part" },
+    { "ups.status",         "status.ups" },
+    { "ups.alarm",          "ups.alarm" },
+    { "ups.serial",         "ups.serial" },
+    { "battery.date",       "battery.date" },
+    { "battery.type",       "battery.type" },
+    { "outlet.count",       "outlet.count" },
+    { "input.phases",       "phases.input" },
+    { "output.phases",      "phases.output" },
 };
 
-static const std::vector<std::string> inventoryNUT {
-    "device.model",
-    "device.mfr",
-    "device.serial",
-    "device.type",
-    "device.description",
-    "device.contact",
-    "device.location",
-    "device.part",
-    "ups.status",
-    "ups.alarm",
-    "ups.serial",
-    "battery.date",
-    "battery.type",
-    "outlet.count",
-    "input.phases",
-    "output.phases"
-};
-
-static const std::vector<std::string> inventoryBIOS {
-    "model",
-    "manufacturer",
-    "serial_no",
-    "device.type",
-    "device.description",
-    "device.contact",
-    "device.location",
-    "device.part",
-    "status.ups",
-    "ups.alarm",
-    "ups.serial",
-    "battery.date",
-    "battery.type",
-    "outlet.count",
-    "phases.input",
-    "phases.output"
-};
 
 NUTDevice::NUTDevice(): _name("") {  
 }
@@ -349,25 +292,30 @@ void NUTDevice::updateInventory(const std::string& varName, std::vector<std::str
     }
 }
 
-void NUTDevice::update(std::map<std::string,std::vector<std::string>> vars, bool forceUpdate ) {
-    assert( physicsNUT.size() == physicsBIOS.size() );
-    assert( inventoryNUT.size() == inventoryBIOS.size() );
-    for(size_t i = 0; i < physicsNUT.size(); ++i) {
-        if( vars.count(physicsNUT[i]) ) {
+void NUTDevice::update( std::map< std::string,std::vector<std::string> > vars, bool forceUpdate ) {
+
+    if( vars.empty() ) return;
+    
+    // use transformation table first
+    NUTValuesTransformation( vars );
+
+    // walk trough physics
+    for(size_t i = 0; i < physicsMapping.size(); ++i) {
+        if( vars.find(physicsMapping[i].first) != vars.end() ) {
             // variable found in received data
-            std::vector<std::string> values = vars[physicsNUT[i]];
-            updatePhysics( physicsBIOS[i], values, (forceUpdate ? 0 : NUT_USE_DEFAULT_THRESHOLD) );
+            std::vector<std::string> values = vars[physicsMapping[i].first];
+            updatePhysics( physicsMapping[i].second, values, (forceUpdate ? 0 : NUT_USE_DEFAULT_THRESHOLD) );
         } else {
             // iterating numbered items in physics
             // like outlet.1.voltage, outlet.2.voltage, ...
-            int x = physicsNUT[i].find(".#."); // is always in the middle: outlet.1.realpower
-            int y = physicsBIOS[i].find(".#"); // can be at the end: outlet.voltage.#
+            int x = physicsMapping[i].first.find(".#."); // is always in the middle: outlet.1.realpower
+            int y = physicsMapping[i].second.find(".#"); // can be at the end: outlet.voltage.#
             if( x > 0 && y > 0 ) {
                 // this is something like outlet.#.realpower
-                std::string nutprefix = physicsNUT[i].substr(0,x+1);
-                std::string nutsuffix = physicsNUT[i].substr(x+2);
-                std::string biosprefix = physicsBIOS[i].substr(0,y+1);
-                std::string biossuffix = physicsBIOS[i].substr(y+2);
+                std::string nutprefix = physicsMapping[i].first.substr(0,x+1);
+                std::string nutsuffix = physicsMapping[i].first.substr(x+2);
+                std::string biosprefix = physicsMapping[i].second.substr(0,y+1);
+                std::string biossuffix = physicsMapping[i].second.substr(y+2);
                 std::string nutname,biosname;
                 int i = 1;
                 while(true) {
@@ -382,16 +330,13 @@ void NUTDevice::update(std::map<std::string,std::vector<std::string>> vars, bool
             }
         }
     }
-    if( vars.size() ) {
-        // we have something => device is responding. We will create phases info if missing
-        if( vars.find("input.phases") == vars.end() ) vars["input.phases"] = { "1" };
-        if( vars.find("output.phases") == vars.end() ) vars["output.phases"] = { "1" };
-    }
-    for(size_t i = 0; i < inventoryNUT.size(); ++i) {
-        if( vars.count(inventoryNUT[i]) ) {
+
+    // walk trough inventory
+    for(size_t i = 0; i < inventoryMapping.size(); ++i) {
+        if( vars.find(inventoryMapping[i].first) != vars.end() ) {
             // variable found in received data
-            std::vector<std::string> values = vars[inventoryNUT[i]];
-            updateInventory( inventoryBIOS[i], values );
+            std::vector<std::string> values = vars[inventoryMapping[i].first];
+            updateInventory( inventoryMapping[i].second, values );
         }
     }
     commitChanges();
@@ -512,6 +457,31 @@ std::string NUTDevice::property(const char *name) const {
 std::string NUTDevice::property(const std::string& name) const {
     return property(name.c_str());
 }
+
+
+void NUTDevice::NUTValuesTransformation( std::map< std::string,std::vector<std::string> > &vars ) {
+    if( vars.empty() ) return ;
+
+    // number of input phases
+    if( vars.find( "input.phases" ) == vars.end() ) {
+        vars["input.phases"] = { "1" };
+    }
+
+    // number of output phases
+    if( vars.find( "output.phases" ) == vars.end() ) {
+        vars["output.phases"] = { "1" };
+    }
+    {
+        // pdu replace with epdu
+        auto it = vars.find("device.type");
+        if( it != vars.end() ) {
+            if( ! it->second.empty() && it->second[0] == "pdu" ) it->second[0] = "epdu";
+        }
+    }
+};
+
+
+
 
 NUTDevice::~NUTDevice() {
 
