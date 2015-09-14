@@ -28,6 +28,7 @@
  */
 #include <inttypes.h>
 #include <tntdb.h>
+#include <stdexcept>
 
 #include "log.h"
 #include "measurement.h"
@@ -106,22 +107,16 @@ insert_into_measurement_again:
             log_debug("[t_bios_measurement_topic]: inserted topic %s, #%" PRIu32 " rows ", topic, n);
         }
 
-        st = conn.prepareCached(
-                " INSERT INTO"
-                "   t_bios_measurement"
-                "       (timestamp, value, scale, topic_id)"
-                " SELECT"
-                "   :time, :value, :scale, id"
-                " FROM"
-                "   t_bios_measurement_topic"
-                " WHERE topic=:topic AND"
-                "       units=:units"
-        );
-        ret.affected_rows = st.set("topic", topic)
-                              .set("time",  time)
+        st = conn.prepareCached (
+                "INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) "
+                "SELECT :time, :value, :scale, id FROM t_bios_measurement_topic "
+                "WHERE topic=:topic AND units=:units "
+                "ON DUPLICATE KEY UPDATE value = :value, scale = :scale");
+        ret.affected_rows = st.set("time",  time)
                               .set("value", value)
                               .set("scale", scale)
                               .set("units", units)
+                              .set("topic", topic)
                               .execute();
 
         log_debug("[t_bios_measurement]: inserted %" PRIu64 " rows "\
