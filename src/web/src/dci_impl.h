@@ -36,11 +36,11 @@ static const std::map<const std::string, const std::string> PARAM_TO_SRC = {
     {"avg_power_last_week", "<zero>"},
     {"avg_power_last_month", "<zero>"},
 
-    {"min_power_last_day", "<zero>"},
+    {"min_power_last_day", "realpower.default_arithmetic_min_24h"},
     {"min_power_last_week", "<zero>"},
     {"min_power_last_month", "<zero>"},
 
-    {"max_power_last_day", "<zero>"},
+    {"max_power_last_day", "realpower.default_arithmetic_max_24h"},
     {"max_power_last_week", "<zero>"},
     {"max_power_last_month", "<zero>"},
 
@@ -53,11 +53,11 @@ static const std::map<const std::string, const std::string> PARAM_TO_SRC = {
     {"avg_temperature_last_week", "<zero>"},
     {"avg_temperature_last_month", "<zero>"},
 
-    {"min_temperature_last_day", "<zero>"},
+    {"min_temperature_last_day", R"(temperature.TH%\_arithmetic\_min\_24h%)"},
     {"min_temperature_last_week", "<zero>"},
     {"min_temperature_last_month", "<zero>"},
 
-    {"max_temperature_last_day", "<zero>"},
+    {"max_temperature_last_day", R"(temperature.TH%\_arithmetic\_max\_24h%)"},
     {"max_temperature_last_week", "<zero>"},
     {"max_temperature_last_month", "<zero>"},
 
@@ -70,11 +70,11 @@ static const std::map<const std::string, const std::string> PARAM_TO_SRC = {
     {"avg_humidity_last_week", "<zero>"},
     {"avg_humidity_last_month", "<zero>"},
 
-    {"min_humidity_last_day", "<zero>"},
+    {"min_humidity_last_day", R"(humidity.TH%\_arithmetic\_min\_24h%)"},
     {"min_humidity_last_week", "<zero>"},
     {"min_humidity_last_month", "<zero>"},
 
-    {"max_humidity_last_day", "<zero>"},
+    {"max_humidity_last_day", R"(humidity.TH%\_arithmetic\_max\_24h%)"},
     {"max_humidity_last_week", "<zero>"},
     {"max_humidity_last_month", "<zero>"},
 
