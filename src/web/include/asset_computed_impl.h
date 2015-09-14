@@ -27,14 +27,14 @@
 #define SRC_WEB_SRC_ASSET_COMPUTED_IMPL_H
 
 #include <string>
+#include <functional>
+#include <map>
 
-int free_u_size( uint32_t elementId, std::string &jsonResult);
+int free_u_size( uint32_t elementId);
 
-int
+void
 rack_outlets_available(
         uint32_t elementId,
-        std::map<std::string, int> &res,
-        std::string &errmsg,
-        int &errcode);
+        std::map<std::string, int> &res);
 
 #endif // SRC_WEB_SRC_ASSET_COMPUTED_IMPL_H

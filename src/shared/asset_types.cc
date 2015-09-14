@@ -145,4 +145,9 @@ is_pdu(int x) {
     return x == asset_subtype::PDU;
 }
 
+bool
+is_rack(int x) {
+    return x == asset_type::RACK;
+}
+
 }; // namesace end

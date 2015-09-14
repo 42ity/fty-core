@@ -51,7 +51,8 @@
 #include "web_utils.h"
 #include "log.h"
 
-int get_devices_usize(
+static int
+s_get_devices_usize(
     tntdb::Connection &conn,
     const std::vector<device_info_t> &elements )
 {
@@ -68,46 +69,36 @@ int get_devices_usize(
     return size;
 }
 
-int free_u_size( a_elmnt_id_t elementId, std::string &jsonResult)
+/* TODO: function reports only success or -1 indicating some error, which will be expressed
+ *       as a null value in JSON output. For more fine grained error reporting, the
+ *       item.ecpp must be reworked substantially.*/
+int free_u_size( a_elmnt_id_t elementId)
 {
     try{
         tntdb::Connection conn;
         conn = tntdb::connectCached(url);
-        if( elementId == UINT32_MAX ) {
-            jsonResult = create_error_json( "Invalid element Id " + std::to_string(elementId) , 103 );
-            return HTTP_BAD_REQUEST;
-        }
-
-        // check if element is rack
-        auto rack = persist::select_asset_element_web_byId( conn, elementId );        
-        if( ( ! rack.status ) || ( rack.item.type_id != persist::asset_type::RACK ) ) {
-            jsonResult = create_error_json( "Specified asset element is not rack", 105 );
-            return HTTP_BAD_REQUEST;
-        }
 
         // get the rack u_size
         std::vector<device_info_t> rackv = { std::make_tuple( elementId, "", "", 0 ) };
-        int freeusize = get_devices_usize(conn,rackv);
+        int freeusize = s_get_devices_usize(conn,rackv);
         if( ! freeusize ) {
-            jsonResult = create_error_json( "Rack doesn't have u_size specified", 103 );
-            return HTTP_BAD_REQUEST;
+            return -1;
         }
         log_debug( "rack size is %i", freeusize );
-            
+
         // get devices inside the rack
         auto devices = persist::select_asset_device_by_container(conn, elementId);
+
         if( ! devices.status ) {
-            jsonResult = create_error_json( "Error reading rack content", 104 );
-            return HTTP_BAD_REQUEST;
+            return -1;
         }
 
         // substract sum( device size ) if there are some
-        freeusize -= devices.item.empty() ? 0 : get_devices_usize( conn, devices.item );
-        jsonResult = "{ \"id\":" + std::to_string(elementId) + ", \"freeusize\":" + std::to_string(freeusize) + " }" ;
-        return HTTP_OK;
-    } catch(std::exception &e) {
-        jsonResult = create_error_json( e.what(), 105 );
-        return HTTP_BAD_REQUEST;
+        freeusize -= devices.item.empty() ? 0 : s_get_devices_usize( conn, devices.item );
+        return freeusize;
+    }
+    catch (const std::exception& ex) {
+        return -1;
     }
 }
 
@@ -142,16 +133,15 @@ s_is_rack(
     return res.status == 1 && res.item.type_name == "rack";
 }
 
-int
+void
 rack_outlets_available(
         uint32_t elementId,
-        std::map<std::string, int> &res,
-        std::string &errmsg,
-        int &errcode)
+        std::map<std::string, int> &res)
 {
     int sum = -1;
     bool tainted = false;
     tntdb::Connection conn;
+    res["sum"] = sum;
 
     std::function<void(const tntdb::Row &row)> cb = \
         [&conn, &sum, &tainted, &res](const tntdb::Row &row)
@@ -173,35 +163,25 @@ rack_outlets_available(
             else
                 outlet_count -= outlet_used;
 
-            if (outlet_count < 0)
-                tainted = true;
-            else
+            if (outlet_count > 0)
                 sum += outlet_count;
+            else
+                tainted = true;
             res[std::to_string(device_asset_id)] = outlet_count;
         };
 
-    try{
+    try {
         conn = tntdb::connectCached(url);
-        if (!s_is_rack(conn, elementId)) {
-            errmsg = "Asset element with id '" + std::to_string(elementId) + "' does not exist or is not rack";
-            errcode = 105;
-            return HTTP_BAD_REQUEST;
-        }
-
         persist::select_asset_device_by_container(
                 conn, elementId, cb);
 
     } catch (std::exception &e) {
-        errmsg = e.what();
-        errcode = 105;
-        return HTTP_BAD_REQUEST;
+        log_error(e.what());
+        return;
     }
 
-    if (tainted || sum == -1)
-        res["sum"] = -1;
-    else
-        res["sum"] = sum + 1;   //sum is initialized to -1
-
-    return HTTP_OK;
+    if (!tainted)
+        res["sum"] = sum +1;   //sum is initialized to -1
+    return;
 }
 
