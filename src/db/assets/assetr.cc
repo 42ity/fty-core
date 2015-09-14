@@ -665,7 +665,7 @@ count_of_link_src(
         tntdb::Statement st = conn.prepareCached(
             " SELECT COUNT( * ) "
             " FROM v_bios_asset_link "
-            " WHERE id_asset_device_src = :id AND"
+            " WHERE id_asset_element_src = :id AND"
             "       id_asset_link_type = :lt "
         );
 
