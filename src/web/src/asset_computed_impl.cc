@@ -24,6 +24,13 @@
  * \brief Not yet documented file
  */
 
+/*
+#include <exception>
+#include <tntdb/connection.h>
+#include <cxxtools/trim.h>
+#include <tntdb/result.h>
+#include <tntdb/error.h>
+*/
 #include <string>
 #include <map>
 #include <sstream>
@@ -44,60 +51,63 @@
 #include "web_utils.h"
 #include "log.h"
 
-/*!
- * \brief trim string and convert it to int
- *
- * \param usize must be number, otherwise returns 0
- */
-int usize_to_int(const std::string &usize) {
+int get_devices_usize(
+    tntdb::Connection &conn,
+    const std::vector<device_info_t> &elements )
+{
+    int size = 0;
 
-    static const cxxtools::Regex re{"^[0-9]+$"};
+    std::function< void( const tntdb::Row& ) > sumarize = [&size]( const tntdb::Row& row ) {
+        uint32_t tmp = string_to_uint32( row.getString("value").c_str() );
+        if( tmp != UINT32_MAX ) {
+            size += tmp;
+        }
+    };
 
-    if( usize.empty() || ! re.match(usize)) return 0;
-
-    uint32_t size = string_to_uint32( usize.c_str() );
-    if( size == UINT32_MAX ) size = 0;
+    persist::select_asset_ext_attribute_by_keytag( conn, "u_size", elements, sumarize );
     return size;
 }
 
-int free_u_size( uint32_t elementId, std::string &jsonResult)
+int free_u_size( a_elmnt_id_t elementId, std::string &jsonResult)
 {
-    int freeusize = 0;
-    tntdb::Connection conn;
     try{
+        tntdb::Connection conn;
         conn = tntdb::connectCached(url);
-        auto rack = persist::select_asset_element_web_byId( conn, elementId );
+        if( elementId == UINT32_MAX ) {
+            jsonResult = create_error_json( "Invalid element Id " + std::to_string(elementId) , 103 );
+            return HTTP_BAD_REQUEST;
+        }
 
-        if( rack.status && ( rack.item.type_id == persist::asset_type::RACK ) ){
-            auto ext = persist::select_ext_attributes( conn, elementId );
-            auto us = ext.item.find("u_size");
-            if( us == ext.item.end() ) {
-                // not size
-                jsonResult = create_error_json( "Rack doesn't have u_size specified", 103 );
-                return HTTP_BAD_REQUEST;
-            }
-            freeusize = usize_to_int( us->second.first );
-            log_debug( "rack size is %i", freeusize );
-
-            // get devices inside the rack
-            auto devices = persist::select_asset_device_by_container(conn, elementId);
-            if( ! devices.status ) {
-                jsonResult = create_error_json( "Error reading rack content", 104 );
-                return HTTP_BAD_REQUEST;
-            }
-            /*
-              select usize for elements
-            */
-            jsonResult = std::string("{ \"id\":") + std::to_string(elementId) + ", \"freeusize\":" + std::to_string(freeusize) + " }" ;
-            return HTTP_OK;
-        } else {
-            // this is not rack
+        // check if element is rack
+        auto rack = persist::select_asset_element_web_byId( conn, elementId );        
+        if( ( ! rack.status ) || ( rack.item.type_id != persist::asset_type::RACK ) ) {
             jsonResult = create_error_json( "Specified asset element is not rack", 105 );
             return HTTP_BAD_REQUEST;
         }
+
+        // get the rack u_size
+        std::vector<device_info_t> rackv = { std::make_tuple( elementId, "", "", 0 ) };
+        int freeusize = get_devices_usize(conn,rackv);
+        if( ! freeusize ) {
+            jsonResult = create_error_json( "Rack doesn't have u_size specified", 103 );
+            return HTTP_BAD_REQUEST;
+        }
+        log_debug( "rack size is %i", freeusize );
+            
+        // get devices inside the rack
+        auto devices = persist::select_asset_device_by_container(conn, elementId);
+        if( ! devices.status ) {
+            jsonResult = create_error_json( "Error reading rack content", 104 );
+            return HTTP_BAD_REQUEST;
+        }
+
+        // substract sum( device size ) if there are some
+        freeusize -= devices.item.empty() ? 0 : get_devices_usize( conn, devices.item );
+        jsonResult = "{ \"id\":" + std::to_string(elementId) + ", \"freeusize\":" + std::to_string(freeusize) + " }" ;
+        return HTTP_OK;
     } catch(std::exception &e) {
         jsonResult = create_error_json( e.what(), 105 );
-        return HTTP_INTERNAL_SERVER_ERROR;
+        return HTTP_BAD_REQUEST;
     }
 }
 
@@ -145,3 +155,4 @@ rack_outlets_available(
 
     return HTTP_OK;
 }
+

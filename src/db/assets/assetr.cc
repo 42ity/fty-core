@@ -857,4 +857,36 @@ db_reply <std::vector<device_info_t>>
     return ret;
 }
 
+int select_asset_ext_attribute_by_keytag(
+    tntdb::Connection &conn,
+    const std::string &keytag,
+    const std::vector<device_info_t> &elements,
+    std::function< void( const tntdb::Row& ) > &cb)
+{
+    LOG_START;
+    try{
+        std::string inlist;
+        for( const auto &it : elements ) {
+            inlist += ",";
+            inlist += std::to_string( device_info_id(it) );
+        }
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT"
+            "   id_asset_ext_attribute, keytag, value, id_asset_element, read_only "
+            " FROM"
+            "   v_bios_asset_ext_attributes"
+            " WHERE keytag = :keytag" +
+            ( elements.empty() ? "" : " AND id_asset_element in (" + inlist.substr(1) + ")" )
+        );
+        tntdb::Result rows = st.set("keytag", keytag ).select();
+        for( const auto &row: rows ) cb( row );
+        LOG_END;
+        return 0;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return 1;
+    }
+}
+
 } // namespace end
