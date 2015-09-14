@@ -58,8 +58,8 @@ _SCRIPT_ARGC="$#"
 export DBUSER DATABASE
 
 ### REST API (and possibly non-privileged SSH) user credentials
-[ -z "${BIOS_USER-}" ] && BIOS_USER="bios"
-[ -z "${BIOS_PASSWD-}" ] && BIOS_PASSWD="nosoup4u"
+[ -z "${BIOS_USER-}" ] && BIOS_USER="admin"
+[ -z "${BIOS_PASSWD-}" ] && BIOS_PASSWD="admin"
 [ -z "${SASL_SERVICE-}" ] && SASL_SERVICE="bios"
 export BIOS_USER BIOS_PASSWD SASL_SERVICE
 
@@ -69,7 +69,8 @@ export BIOS_USER BIOS_PASSWD SASL_SERVICE
 [ -z "${SUT_HOST-}" ] && SUT_HOST=""       # Hostname or IP address
 [ -z "${SUT_SSH_PORT-}" ] && SUT_SSH_PORT=""       # SSH (maybe via NAT)
 [ -z "${SUT_WEB_PORT-}" ] && SUT_WEB_PORT=""       # TNTNET (maybe via NAT)
-export SUT_IS_REMOTE SUT_USER SUT_HOST SUT_SSH_PORT SUT_WEB_PORT
+[ -z "${BASE_URL-}" ] && BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+export SUT_IS_REMOTE SUT_USER SUT_HOST SUT_SSH_PORT SUT_WEB_PORT BASE_URL
 
 ### Should the test suite break upon first failed test?
 [ x"${CITEST_QUICKFAIL-}" != xyes ] && CITEST_QUICKFAIL=no
