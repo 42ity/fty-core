@@ -43,7 +43,8 @@
 </%pre>
 
 <%thread scope="global">
-asset_manager asset_mgr;
+asset_manager     asset_mgr;
+measures_manager  measures_mgr;
 </%thread>
 
 <%cpp>
@@ -385,7 +386,12 @@ asset_manager asset_mgr;
     , "computed" : {
 %       if (persist::is_rack(tmp.item.basic.type_id)) {
 %           int freeusize = free_u_size(tmp.item.basic.id);
+%           m_msrmnt_value_t value = 0;
+%           m_msrmnt_scale_t scale = 0;
+%           int rv = measures_mgr.get_last_10minute_measurement
+%               ("realpower.nominal", tmp.item.basic.name, value, scale);
             "freeusize" : <$ freeusize >= 0 ? std::to_string(freeusize) : "null" $>,
+            "realpower.nominal" : <$ rv == 0 ? std::to_string(value * std::pow (10, scale)) : "null" $>,
             "outlet.available" : {
 %           std::map<std::string, int> res;
 %           rack_outlets_available(tmp.item.basic.id, res);
