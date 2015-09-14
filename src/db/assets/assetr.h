@@ -205,6 +205,17 @@ int
 max_number_of_power_links(
         tntdb::Connection& conn);
 
+/** \brief how many times is gived id as id_asset_device_src in v_bios_asset_link
+ *
+ *  \param[in] conn is tntdb connection
+ *  \param[in] id is the asset id of the device
+ *
+ *  \return -1 in case of error otherwise number of used outlets
+ */
+int
+count_of_link_src(
+        tntdb::Connection& conn,
+        a_elmnt_id_t id);
 
 /** \brief check if the pair (key, value) is unique
  *

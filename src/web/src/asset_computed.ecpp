@@ -36,7 +36,7 @@
 #include "asset_computed_impl.h"
 
 typedef std::function<int(uint32_t, std::string&)> string_f;
-typedef std::function<int(uint32_t, std::map<std::string, int>&)> map_f;
+typedef std::function<int(uint32_t, std::map<std::string, int>&, std::string&, int&)> map_f;
 
 static const std::map<std::string, string_f> map_string = {{"freeusize", free_u_size}, };
 static const std::map<std::string, map_f> map_map = {{"rack.outlets.available", rack_outlets_available}, };
@@ -74,11 +74,14 @@ static bool is_operation_valid(const std::string& operation)
         reply.out() << output;
     }
     else if (map_map.count(operation) == 1) {
+        std::string errmsg;
+        int errcode;
         std::map<std::string, int> res;
-        http_code = rack_outlets_available( elementId, res );
+        http_code = rack_outlets_available( elementId, res, errmsg, errcode);
+        if (http_code == HTTP_OK) {
 </%cpp>
 {
-    "id"  :  elementId,
+    "id"  :  <$ elementId $>,
     "<$operation$>" : {
 %       size_t i=1;
 %       for (const auto & it : res) {
@@ -89,6 +92,10 @@ static bool is_operation_valid(const std::string& operation)
     }
 }
 <%cpp>
+        }
+        else {
+            reply.out() << create_error_json(errmsg, errcode);
+        }
     }
     return http_code;
 </%cpp>
