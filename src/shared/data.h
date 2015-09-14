@@ -63,6 +63,12 @@ class measures_manager {
         std::string map_names(std::string name);
         std::string map_values(std::string name, std::string value);
         std::string apply_scale(const std::string &val, const std::string &scale);
+        int
+            get_last_10minute_measurement(
+                const std::string &source,
+                const std::string &device_name,
+                m_msrmnt_value_t  &value,
+                m_msrmnt_scale_t  &scale);
 };
 
 class ui_props_manager {
