@@ -159,6 +159,12 @@ CMPJSON_PY="`pwd`/cmpjson.py"
 [ -z "$CMP" ] && CMP="$CMPJSON_SH"
 [ -s "$CMP" ] || CODE=5 die "Can not use comparator '$CMP'"
 
+[ -z "${JSONSH-}" ] && \
+    for F in "$CHECKOUTDIR/tools/JSON.sh" "$SCRIPTDIR/JSON.sh"; do
+        [ -x "$F" -a -s "$F" ] && JSONSH="$F" && break
+    done
+[ -s "$JSONSH" ] || CODE=7 die "Can not find JSON.sh"
+
 cd web/commands || CODE=6 die "Can not change to `pwd`/web/commands"
 
 summarizeResults() {
@@ -266,10 +272,25 @@ for i in $POSITIVE; do
             ### each line of RESULT matches the same-numbered line of EXPECT
             test_it "compare_expectation_`basename "$CMP"`"
             "$CMP" "$EXPECTED_RESULT" "$REALLIFE_RESULT"
-            RES=$?
-        fi
-        if [ $RES -ne 0 ]; then
-            diff -Naru "$EXPECTED_RESULT" "$REALLIFE_RESULT"
+            RES_CMP=$?
+            RES_JSONV=0
+            while IFS='' read -r line || [[ -n "$line" ]]; do
+                echo "$line" | "$JSONSH"
+                RES_JSONV=$?
+                if [[ RES_JSONV -ne 0 ]]; then
+                    break
+                fi
+            done < "$REALLIFE_RESULT"
+
+            if [[ $RES_CMP -eq 0 && $RES_JSONV -eq 0 ]]; then
+                RES=$RES_CMP
+            elif [[ $RES_CMP -ne 0 ]]; then
+                RES=$RES_CMP
+                diff -Naru "$EXPECTED_RESULT" "$REALLIFE_RESULT"
+            elif [[ $RES_JSONV -ne 0 ]]; then
+                RES=$RES_JSONV
+               echo "INVALID JSON!" 
+            fi
         fi
         print_result $RES
     else
