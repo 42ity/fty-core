@@ -66,15 +66,15 @@ nosoup4u
 nosoup4u
 EOF
 
-useradd -m bios -G sasl -s /bin/bash
-passwd bios <<EOF
-nosoup4u
-nosoup4u
+useradd -m admin -G sasl -s /bin/bash
+passwd admin <<EOF
+admin
+admin
 EOF
 
 # Workplace for the webserver and graph daemons
 mkdir -p /var/lib/bios
-chown -R bios /var/lib/bios
+chown -R admin /var/lib/bios
 
 # A few helper aliases
 cat > /etc/profile.d/bios_aliases.sh << EOF
@@ -84,7 +84,7 @@ EOF
 
 # BIOS configuration file
 touch /etc/default/bios
-chown bios /etc/default/bios
+chown admin /etc/default/bios
 chmod a+r /etc/default/bios
 
 # Setup BIOS lenses
@@ -252,7 +252,7 @@ rm -f /etc/init.d/tntnet
 # Enable REST API via tntnet
 cp /usr/share/bios/examples/tntnet.xml.* /etc/tntnet/bios.xml
 mkdir -p /usr/share/core-0.1/web/static
-sed -i 's|<!--.*<user>.*|<user>bios</user>|' /etc/tntnet/bios.xml
+sed -i 's|<!--.*<user>.*|<user>admin</user>|' /etc/tntnet/bios.xml
 sed -i 's|\(.*\)<port>.*|\1<port>80</port>|' /etc/tntnet/bios.xml
 sed -i 's|<!--.*<group>.*|<group>sasl</group>|' /etc/tntnet/bios.xml
 sed -i 's|.*<daemon>.*|<daemon>0</daemon>|' /etc/tntnet/bios.xml
@@ -382,10 +382,10 @@ case "$IMGTYPE" in
         [ -x /usr/sbin/update-ccache-symlinks ] && \
 		/usr/sbin/update-ccache-symlinks || true
         # If this image ends up on an RC3, avoid polluting NAND with ccache
-        mkdir -p /home/bios/.ccache
-        chown -R bios:bios /home/bios/.ccache
+        mkdir -p /home/admin/.ccache
+        chown -R admin /home/admin/.ccache
         rm -rf /root/.ccache
-        ln -s /home/bios/.ccache /root/.ccache
+        ln -s /home/admin/.ccache /root/.ccache
         echo "export PATH=\"/usr/lib/ccache:/usr/lib64/ccache:\$PATH\"" > /etc/profile.d/ccache.sh
         ;;
 esac
