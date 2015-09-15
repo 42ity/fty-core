@@ -727,7 +727,7 @@ void
         }
         catch ( const std::invalid_argument &e)
         {
-            failRows.insert(std::make_pair(row_i, e.what()));
+            failRows.insert(std::make_pair(row_i + 1, e.what()));
             log_error ("row %zu not imported: %s", row_i, e.what());
         }
     }
