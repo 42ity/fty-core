@@ -292,9 +292,6 @@ for i in $POSITIVE; do
                echo "INVALID JSON!" 
             fi
         fi
-#        if [ $RES -ne 0 ]; then
-#            diff -Naru "$EXPECTED_RESULT" "$REALLIFE_RESULT"
-#        fi
         print_result $RES
     else
         # This might do nothing, if the test file already ended with a print_result
