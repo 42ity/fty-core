@@ -99,14 +99,14 @@ mkdir -p /etc/network
 
 cat > /etc/network/interfaces <<EOF
 auto lo
-allow-hotplug eth0 eth1 eth2
+allow-hotplug eth0 LAN1 LAN2 LAN3
 iface lo inet loopback
-iface eth0 inet dhcp
-iface eth1 inet static
+iface `file -b /bin/bash | sed -e 's|.*x86-64.*|eth0|' -e 's|.*ARM.*|LAN1|'` inet dhcp
+iface LAN2 inet static
     address 192.168.1.10
     netmask 255.255.255.0
     gateway 192.168.1.1
-iface eth2 inet static
+iface LAN3 inet static
     address 192.168.2.10
     netmask 255.255.255.0
     gateway 192.168.2.1
@@ -121,7 +121,7 @@ cat > /etc/hosts <<EOF
 127.0.0.1 localhost bios
 EOF
 
-DEFAULT_IFPLUGD_INTERFACES="eth0 eth1 eth2"
+DEFAULT_IFPLUGD_INTERFACES="eth0 LAN1 LAN2 LAN3"
 mkdir -p /etc/default
 [ -s "/etc/default/networking" ] && \
     sed -e 's,^[ \t\#]*\(EXCLUDE_INTERFACES=\)$,\1"'"$DEFAULT_IFPLUGD_INTERFACES"'",' -i /etc/default/networking \
