@@ -27,6 +27,9 @@
 #include <sstream>
 #include <cxxtools/regex.h>
 #include <cxxtools/jsondeserializer.h>
+#include <cxxtools/jsonformatter.h>
+#include <cxxtools/convert.h>
+#include <ostream>
 
 #include "augtool.h"
 
@@ -104,6 +107,21 @@
     char buff[32];
     strftime(buff, 32, "%FT%TZ", &tm_s);
     std::string ntp = augeas->get_cmd_out("get /files/etc/ntp.conf/server[1]");
-</%cpp>
+
+    std::basic_ostringstream<cxxtools::Char> oss;
+    cxxtools::JsonFormatter jsf(oss);
+    jsf.beautify(true);
+
+    jsf.beginObject("", "");
+
+    jsf.addValueStdString ("time", "", buff);
+    jsf.addValueStdString ("ntp", "", ntp);
+
+    jsf.finishObject();
+    jsf.finish();
+/*
 { "time" : "<$ buff $>",
   "ntp"  : "<$ ntp $>" }
+*/
+</%cpp>
+<$$ cxxtools::convert<std::string>(oss.str()) $>
