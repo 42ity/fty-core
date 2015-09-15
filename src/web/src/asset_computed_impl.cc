@@ -163,7 +163,7 @@ rack_outlets_available(
             else
                 outlet_count -= outlet_used;
 
-            if (outlet_count > 0)
+            if (outlet_count >= 0)
                 sum += outlet_count;
             else
                 tainted = true;
