@@ -55,7 +55,7 @@ class TotalPowerAgent : public BIOSAgent {
     //! \brief list of interested units
     const std::vector<std::string> _rackQuantities = {
         "realpower.default",
-        "realpower.nominal",        
+        "realpower.nominal",
     };
     //! \brief list of racks, affected by powerdevice
     std::map< std::string, std::string> _affectedRacks;
