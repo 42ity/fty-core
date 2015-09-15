@@ -29,12 +29,6 @@
 #   flock - http://stackoverflow.com/questions/169964/how-to-prevent-a-script-from-running-simultaneously
 #   netcfg PUT tests - license issue
 
-[ -z "$BIOS_USER" ] && BIOS_USER="bios"
-[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
-[ -z "$SASL_SERVICE" ] && SASL_SERVICE="bios"
-[ -z "$SUT_HOST" ] && SUT_HOST="127.0.0.1"
-[ -z "$SUT_WEB_PORT" ] && SUT_WEB_PORT="8000"
-
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "FATAL: $0: Could not include script library" >&2; exit 1; }
