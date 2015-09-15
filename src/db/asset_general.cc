@@ -229,9 +229,7 @@ db_reply_t
      const std::string &asset_tag)
 {
     LOG_START;
-//    log_debug ("  element_name = '%s'", element_name);
-//    log_debug ("  element_type_id = %" PRIu32, element_type_id);
-//    log_debug ("  parent_id = %" PRIu32, parent_id);
+    log_debug ("  element_name = '%s'", element_name);
 
     tntdb::Transaction trans(conn);
 
@@ -308,8 +306,6 @@ db_reply_t
 {
     LOG_START;
     log_debug ("  element_name = '%s'", element_name);
-    log_debug ("  parent_id = %" PRIu32, parent_id);
-    log_debug ("  asset_device_type_id = %" PRIu32, asset_device_type_id);
 
     tntdb::Transaction trans(conn);
 
@@ -637,7 +633,6 @@ db_reply_t
         m_msrmnt_tp_id_t affected_rows1 = 0;
         for ( auto topic_id : out )
         {
-            log_debug ("  topic_id = %" PRIu32 , topic_id);
             rv = delete_measurements(conn, topic_id, affected_rows);
             if ( rv != 0 )
             {
