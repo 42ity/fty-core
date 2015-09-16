@@ -97,11 +97,6 @@ fi
 BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 SUT_IS_REMOTE=yes
 
-    # *** if used set BIOS_USER and BIOS_PASSWD for tests where it is used:
-[ -z "$BIOS_USER" ] && BIOS_USER="bios"
-[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
-[ -z "$SASL_SERVICE" ] && SASL_SERVICE="bios"
-
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
@@ -148,7 +143,7 @@ grep -q '"imported_lines" : '"$NUM_EXPECTED" $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.
     die "ERROR : 'Test of the number of imported lines			FAILED  (not $NUM_EXPECTED)'"
 echo "Test of the number of imported lines			PASSED"
 
-for NUM in 8 9 10 15 17 19 20 21 22 23 24 26 27 28 ; do
+for NUM in 9 10 11 16 18 20 21 22 23 24 25 27 28 29 ; do
     grep -q "\[ $NUM," $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log || \
         die "ERROR : 'Test of the line   $NUM 				FAILED'"
     echo "Test of the line  $NUM  					PASSED"

@@ -118,10 +118,6 @@ echo "CHECKOUTDIR =     $CHECKOUTDIR"
 echo "BUILDSUBDIR =     $BUILDSUBDIR"
 
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
-    # *** if used set BIOS_USER and BIOS_PASSWD for tests where it is used:
-[ -z "$BIOS_USER" ] && BIOS_USER="bios"
-[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
-[ -z "$SASL_SERVICE" ] && SASL_SERVICE="bios"
 
 # ***** GLOBAL VARIABLES *****
     # *** config dir for the nut dummy driver parameters allocated in config files
