@@ -21,12 +21,6 @@
 #  \author  Karol Hrdina <KarolHrdina@Eaton.com>
 #  \version 1.3
 
-[ -z "$BIOS_USER" ] && BIOS_USER="bios"
-[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
-[ -z "$SASL_SERVICE" ] && SASL_SERVICE="bios"
-[ -z "$SUT_HOST" ] && SUT_HOST="127.0.0.1"
-[ -z "$SUT_WEB_PORT" ] && SUT_WEB_PORT="8000"
-
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "FATAL: $0: Could not include script library" >&2; exit 1; }
@@ -36,7 +30,6 @@ WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT="ignore" # we do this in-script
 WEBLIB_QUICKFAIL=no
 WEBLIB_CURLFAIL=no
 export WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT WEBLIB_QUICKFAIL WEBLIB_CURLFAIL
-export BASE_URL="http://${SUT_HOST}:${SUT_WEB_PORT}/api/v1"
 
 # Include our standard web routines for CI scripts
 . "`dirname $0`"/weblib.sh || \

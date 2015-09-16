@@ -31,9 +31,6 @@ NEED_TESTLIB=no
 logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to run the requests"
 
 # Defaults; note that SUT_WEB_PORT is guessed below based on ultimate SUT_HOST
-[ -z "$BIOS_USER" ] && BIOS_USER="bios"
-[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
-[ -z "$SASL_SERVICE" ] && SASL_SERVICE="bios"
 [ -z "$SUT_HOST" ] && SUT_HOST="127.0.0.1"
 
 [ -z "$WEBLIB_FUNC" ] && WEBLIB_FUNC="api_auth_get_content"
