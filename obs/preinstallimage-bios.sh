@@ -66,15 +66,15 @@ nosoup4u
 nosoup4u
 EOF
 
-useradd -m bios -G sasl -s /bin/bash
-passwd bios <<EOF
-nosoup4u
-nosoup4u
+useradd -m admin -G sasl -s /bin/bash
+passwd admin <<EOF
+admin
+admin
 EOF
 
 # Workplace for the webserver and graph daemons
 mkdir -p /var/lib/bios
-chown -R bios /var/lib/bios
+chown -R admin /var/lib/bios
 
 # A few helper aliases
 cat > /etc/profile.d/bios_aliases.sh << EOF
@@ -84,7 +84,7 @@ EOF
 
 # BIOS configuration file
 touch /etc/default/bios
-chown bios /etc/default/bios
+chown admin /etc/default/bios
 chmod a+r /etc/default/bios
 
 # Setup BIOS lenses
@@ -103,14 +103,14 @@ mkdir -p /etc/network
 
 cat > /etc/network/interfaces <<EOF
 auto lo
-allow-hotplug eth0 eth1 eth2
+allow-hotplug eth0 LAN1 LAN2 LAN3
 iface lo inet loopback
-iface eth0 inet dhcp
-iface eth1 inet static
+iface `file -b /bin/bash | sed -e 's|.*x86-64.*|eth0|' -e 's|.*ARM.*|LAN1|'` inet dhcp
+iface LAN2 inet static
     address 192.168.1.10
     netmask 255.255.255.0
     gateway 192.168.1.1
-iface eth2 inet static
+iface LAN3 inet static
     address 192.168.2.10
     netmask 255.255.255.0
     gateway 192.168.2.1
@@ -125,7 +125,7 @@ cat > /etc/hosts <<EOF
 127.0.0.1 localhost bios
 EOF
 
-DEFAULT_IFPLUGD_INTERFACES="eth0 eth1 eth2"
+DEFAULT_IFPLUGD_INTERFACES="eth0 LAN1 LAN2 LAN3"
 mkdir -p /etc/default
 [ -s "/etc/default/networking" ] && \
     sed -e 's,^[ \t\#]*\(EXCLUDE_INTERFACES=\)$,\1"'"$DEFAULT_IFPLUGD_INTERFACES"'",' -i /etc/default/networking \
@@ -252,7 +252,7 @@ rm -f /etc/init.d/tntnet
 # Enable REST API via tntnet
 cp /usr/share/bios/examples/tntnet.xml.* /etc/tntnet/bios.xml
 mkdir -p /usr/share/core-0.1/web/static
-sed -i 's|<!--.*<user>.*|<user>bios</user>|' /etc/tntnet/bios.xml
+sed -i 's|<!--.*<user>.*|<user>admin</user>|' /etc/tntnet/bios.xml
 sed -i 's|\(.*\)<port>.*|\1<port>80</port>|' /etc/tntnet/bios.xml
 sed -i 's|<!--.*<group>.*|<group>sasl</group>|' /etc/tntnet/bios.xml
 sed -i 's|.*<daemon>.*|<daemon>0</daemon>|' /etc/tntnet/bios.xml
@@ -436,10 +436,10 @@ case "$IMGTYPE" in
         [ -x /usr/sbin/update-ccache-symlinks ] && \
 		/usr/sbin/update-ccache-symlinks || true
         # If this image ends up on an RC3, avoid polluting NAND with ccache
-        mkdir -p /home/bios/.ccache
-        chown -R bios:bios /home/bios/.ccache
+        mkdir -p /home/admin/.ccache
+        chown -R admin /home/admin/.ccache
         rm -rf /root/.ccache
-        ln -s /home/bios/.ccache /root/.ccache
+        ln -s /home/admin/.ccache /root/.ccache
         echo "export PATH=\"/usr/lib/ccache:/usr/lib64/ccache:\$PATH\"" > /etc/profile.d/ccache.sh
         ;;
 esac
