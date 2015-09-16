@@ -305,7 +305,6 @@ simple_get_json_code "${REST_NETCFGS}" tmp HTTP_CODE || die "'api_get_json ${RES
 echo "$tmp" > "${TMP_DIR}/${JSON_RECEIVED_FILE}"
 bash "${CHECKOUTDIR}/tests/CI/cmpjson.sh" -f "${TMP_DIR}/${JSON_EXPECTED_FILE}" "${TMP_DIR}/${JSON_RECEIVED_FILE}" || \
     die "Test case '$TEST_CASE' failed. Expected and returned json do not match."
-[[ $HTTP_CODE -eq 200 ]] || die "Test case '$TEST_CASE' failed. Expected HTTP return code: 200, received: $HTTP_CODE."
 # Repeated requests
 for i in "1 2 3 4 5"; do 
     simple_get_json_code "${REST_NETCFGS}" tmp HTTP_CODE || die "'api_get_json ${REST_NETCFGS}' failed."
@@ -338,9 +337,7 @@ for i in "${INITIAL_IFACE_NAMES[@]}"; do
     perl -pi -e "s/\"${i}\"\s*,//g" "${TMP_DIR}/${JSON_EXPECTED_FILE}"
     perl -pi -e "s/\[\s*\"${i}\"\s*\]/[]/g" "${TMP_DIR}/${JSON_EXPECTED_FILE}"
 
-    diff -s "${IFACES_PATH}/${IFACES_FILE}" "${TMP_DIR}/${IFACES_FILE_LOOPBACK}"
-#    if [[ -s "${IFACES_PATH}/${IFACES_FILE}" ]]; then    
-    if [[ $? -ne 0 ]]; then    
+    if ! diff -Naru "${IFACES_PATH}/${IFACES_FILE}" "${TMP_DIR}/${IFACES_FILE_LOOPBACK}"; then    
         bash "${CHECKOUTDIR}/tests/CI/cmpjson.sh" -f "${TMP_DIR}/${JSON_EXPECTED_FILE}" "${TMP_DIR}/${JSON_RECEIVED_FILE}" || \
             die "Test case '$TEST_CASE' failed. Expected and returned json do not match."
         [ $HTTP_CODE -eq 200  ] || die "Test case '$TEST_CASE' failed. Expected HTTP return code: 200, received: $HTTP_CODE."
