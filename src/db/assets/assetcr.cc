@@ -408,7 +408,7 @@ db_reply_t
             "           WHERE"
             "               v3.id_asset_device_src = v1.id_asset_element AND"
             "               v3.id_asset_device_dest = v2.id_asset_element AND"
-            "               ( ((v3.src_out = :out) AND (v3.dest_in = :in)) OR ( v3.src_out is NULL) OR (v3.dest_in is NULL) ) AND"
+            "               ( ((v3.src_out = :out) AND (v3.dest_in = :in)) ) AND"
             "               v3.id_asset_device_dest = v2.id_asset_element"
             "    )"
         );
