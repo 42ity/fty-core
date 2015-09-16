@@ -66,9 +66,9 @@ export BIOS_USER BIOS_PASSWD SASL_SERVICE
 ### Variables for remote testing - avoid "variable not defined" errors
 [ -z "${SUT_IS_REMOTE-}" ] && SUT_IS_REMOTE="auto" # auto|yes|no
 [ -z "${SUT_USER-}" ] && SUT_USER="root"   # Username on remote SUT
-[ -z "${SUT_HOST-}" ] && SUT_HOST=""       # Hostname or IP address
-[ -z "${SUT_SSH_PORT-}" ] && SUT_SSH_PORT=""       # SSH (maybe via NAT)
-[ -z "${SUT_WEB_PORT-}" ] && SUT_WEB_PORT=""       # TNTNET (maybe via NAT)
+[ -z "${SUT_HOST-}" ] && SUT_HOST="127.0.0.1"       # Hostname or IP address
+[ -z "${SUT_SSH_PORT-}" ] && SUT_SSH_PORT="22"       # SSH (maybe via NAT)
+[ -z "${SUT_WEB_PORT-}" ] && SUT_WEB_PORT="8000"       # TNTNET (maybe via NAT)
 [ -z "${BASE_URL-}" ] && BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 export SUT_IS_REMOTE SUT_USER SUT_HOST SUT_SSH_PORT SUT_WEB_PORT BASE_URL
 
