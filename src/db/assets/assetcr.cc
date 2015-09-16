@@ -75,11 +75,6 @@ static db_reply_t
 {
     LOG_START;
 
-    log_debug ("value = '%s'", value);
-    log_debug ("keytag = '%s'", keytag);
-    log_debug ("asset_element_id = %" PRIu32, asset_element_id);
-    log_debug ("read_only = %d", read_only);
-
     a_ext_attr_id_t newid = 0;
     a_ext_attr_id_t n     = 0; // number of rows affected
 
@@ -113,7 +108,6 @@ static db_reply_t
         log_error ("end: ignore insert, unexeptable keytag '%s'", keytag);
         return ret;
     }
-    log_debug ("input parameters are correct");
 
     try {
 
@@ -233,7 +227,6 @@ db_reply_t
         // value is zero.
         return ret;
     }
-    log_debug ("input parameters are correct");
 
     char *value = (char *) zhash_first (attributes);   // first value
 
@@ -302,7 +295,6 @@ db_reply_t
         log_error ("end: %s, %s","ignore insert", ret.msg.c_str());
         return ret;
     }
-    log_debug ("input parameters are correct");
 
     try{
         tntdb::Statement st = conn.prepareCached(
@@ -358,11 +350,6 @@ db_reply_t
          const a_lnk_dest_in_t dest_in)
 {
     LOG_START;
-    log_debug ("  asset_element_src_id = %" PRIu32, asset_element_src_id);
-    log_debug ("  asset_element_dest_id = %" PRIu32, asset_element_dest_id);
-    log_debug ("  link_type_id = %" PRIu32, link_type_id);
-    log_debug ("  src_out = '%s'", src_out);
-    log_debug ("  dest_in = '%s'", dest_in);
 
     db_reply_t ret = db_reply_new();
 
@@ -421,7 +408,7 @@ db_reply_t
             "           WHERE"
             "               v3.id_asset_device_src = v1.id_asset_element AND"
             "               v3.id_asset_device_dest = v2.id_asset_element AND"
-            "               ( ((v3.src_out = :out) AND (v3.dest_in = :in)) OR ( v3.src_out is NULL) OR (v3.dest_in is NULL) ) AND"
+            "               ( ((v3.src_out = :out) AND (v3.dest_in = :in)) ) AND"
             "               v3.id_asset_device_dest = v2.id_asset_element"
             "    )"
         );
@@ -630,13 +617,6 @@ db_reply_t
 {
     LOG_START;
     log_debug ("  element_name = '%s'", element_name);
-    log_debug ("  element_type_id = %" PRIu32, element_type_id);
-    log_debug ("  parent_id = %" PRIu32, parent_id);
-    log_debug ("  status = '%s'", status);
-    log_debug ("  priority = %" PRIu16, priority);
-    log_debug ("  bc = %" PRIu16, bc);
-    log_debug ("  subtype_id = %" PRIu16, subtype_id);
-    log_debug ("  asset_tag = %s", asset_tag);
     if ( subtype_id == 0 ) // use default
         subtype_id = 10;  // ATTENTION; need to be alligned with initdb
 
@@ -996,7 +976,7 @@ db_reply_t
         ret.affected_rows = st.set("name", device_name).
                                set("iddevicetype", device_type_id).
                                execute();
-        log_debug ("[t_bios_discovered_device]: was inserted %" 
+        log_debug ("[t_bios_discovered_device]: was inserted %"
                                         PRIu64 " rows", ret.affected_rows);
         ret.rowid = conn.lastInsertId();
         ret.status = 1;

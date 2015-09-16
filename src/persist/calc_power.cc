@@ -93,7 +93,7 @@ static std::set<a_elmnt_id_t>
  */
 static void
     update_border_devices
-        (const std::map <a_elmnt_id_t, device_info_t> &dc_devices,
+        (const std::map <a_elmnt_id_t, device_info_t> &container_devices,
          const std::set <std::pair<a_elmnt_id_t, a_elmnt_id_t> > &links,
          std::set <device_info_t> &border_devices)
 {
@@ -105,15 +105,16 @@ static void
         auto adevice_dests = find_dests (links, std::get<0>(border_device));
         for ( auto &adevice: adevice_dests )
         {
-            auto it = dc_devices.find(adevice);
-            if ( it != dc_devices.end() )
-                new_border_devices.insert(dc_devices.find(adevice)->second);
+            auto it = container_devices.find(adevice);
+            if ( it != container_devices.cend() )
+                new_border_devices.insert(it->second);
             else
             {
-                log_critical ("database is in inconsistent state");
-                log_critical ("device(as element) %" PRIu32 " is not in dc",
-                                                std::get<0>(border_device));
-                assert(false);
+                log_critical ("DB can be in inconsistant state or some device "
+                        "has power source in the other container");
+                log_critical ("device(as element) %" PRIu32 " is not in container",
+                                                adevice);
+                // do nothing in this case
             }
         }
     }

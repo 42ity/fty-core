@@ -45,7 +45,6 @@ int
     get_priority
         (const std::string& s)
 {
-    log_debug ("priority string = %s", s.c_str());
     if ( s.size() > 2 )
         return 5;
     for (int i = 0; i != 2; i++) {
@@ -60,7 +59,6 @@ bool
     get_business_critical(
             const std::string& s)
 {
-    log_debug ("s = '%s'", s.c_str());
     std::string s1 = s;
     std::transform(s1.cbegin(), s1.cend(), s1.begin(), ::tolower);
     if ( s1 == "yes" )
@@ -550,7 +548,6 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
                 throw std::invalid_argument
                     ("location_w_pos should be set. Possible variants 'left'/'right'");
             }
-            log_debug ("key = %s value = %s was ignored", key.c_str(), value.c_str());
         }
     }
     // if the row represents group, the subtype represents a type

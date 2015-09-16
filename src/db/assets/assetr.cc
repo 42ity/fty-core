@@ -66,29 +66,17 @@ db_reply <db_web_basic_element_t>
         log_debug("[v_web_element]: were selected %" PRIu32 " rows", 1);
 
         row[0].get(ret.item.id);
-        log_debug ("id = %" PRIi32, ret.item.id);
         row[1].get(ret.item.name);
-        log_debug ("name = '%s'", ret.item.name.c_str());
         row[2].get(ret.item.type_id);
-        log_debug ("type_id = %" PRIi16, ret.item.type_id);
         row[3].get(ret.item.type_name);
-        log_debug ("type_name = '%s'", ret.item.type_name.c_str());
         row[4].get(ret.item.subtype_id);
-        log_debug ("subtype_id = %" PRIi16, ret.item.subtype_id);
         row[5].get(ret.item.subtype_name);
-        log_debug ("subtype_name = '%s'", ret.item.subtype_name.c_str());
         row[6].get(ret.item.parent_id);
-        log_debug ("parent_id = %" PRIi32, ret.item.parent_id);
         row[7].get(ret.item.parent_type_id);
-        log_debug ("parent_type_id = %" PRIi32, ret.item.parent_type_id);
         row[8].get(ret.item.bc);
-        log_debug ("bc = %" PRIi16, ret.item.bc);
         row[9].get(ret.item.status);
-        log_debug ("status = '%s'", ret.item.status.c_str());
         row[10].get(ret.item.priority);
-        log_debug ("priority = %" PRIi16, ret.item.priority);
         row[11].get(ret.item.asset_tag);
-        log_debug ("asset_tag = %s", ret.item.asset_tag.c_str());
 
         ret.status = 1;
         LOG_END;
@@ -143,15 +131,10 @@ db_reply <std::map <std::string, std::pair<std::string, bool> >>
         {
             std::string keytag = "";
             row[0].get(keytag);
-            log_debug ("keytag = '%s'", keytag.c_str());
             std::string value = "";
             row[1].get(value);
-            log_debug ("value = '%s'", value.c_str());
-
             int read_only = 0;
             row[2].get(read_only);
-            log_debug ("read_only = '%c'", read_only?'r':'w');
-
             ret.item.insert (std::pair<std::string,std::pair<std::string, bool> >
                     (keytag, std::pair<std::string, bool>
                                                     (value,read_only?true:false)));

@@ -121,6 +121,12 @@ s_select_outlet_count(
         foo.erase(dot_i, foo.size() - dot_i);
     }
 
+    // validation: too big values in DB are weird
+    // we're not going to have epdu with more 10K+ outlets
+    // in the near future - if so, then fix this code
+    if (foo.size() > 5)
+        return UINT32_MAX;
+
     return string_to_uint32(foo.c_str());
 }
 
@@ -163,7 +169,7 @@ rack_outlets_available(
             else
                 outlet_count -= outlet_used;
 
-            if (outlet_count > 0)
+            if (outlet_count >= 0)
                 sum += outlet_count;
             else
                 tainted = true;

@@ -141,7 +141,7 @@ if(request.getMethod() == "PUT") {
         if(! CHECK ) { \
             reply.out() << std::string("{ \"error\": \"Wrong value for '" NAME \
                                        "' setting or setting '" NAME "' not " \
-                                       " expected.\" }"); \
+                                       " expected for method ") + method + ".\" }"; \
             return HTTP_BAD_REQUEST; \
         } \
         augeas->run_cmd("set " + address + "/" NAME " " + val); \
@@ -153,6 +153,7 @@ if(request.getMethod() == "PUT") {
         bool handled = false;
         static cxxtools::Regex rex_mtd("^(dhcp|static|none|manual)$");
         AUG_SET("method",  rex_mtd.match(method));
+        AUG_GET("method",  method);
         AUG_SET("address", (CIDRAddress(val).valid()     && method == "static"));
         AUG_SET("netmask", (CIDRAddress(val).isNetmask() && method == "static"));
         AUG_SET("gateway", (CIDRAddress(val).valid()     && method == "static"));
