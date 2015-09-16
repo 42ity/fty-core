@@ -357,6 +357,60 @@ install -m 0755 /usr/share/bios/scripts/ifupdown-force /etc/ifplugd/action.d/ifu
 install -m 0755 /usr/share/bios/scripts/udhcpc-override.sh /usr/local/sbin/udhcpc
 echo '[ -s /usr/share/bios/scripts/udhcpc-ntp.sh ] && . /usr/share/bios/scripts/udhcpc-ntp.sh' >> /etc/udhcpc/default.script
 
+#########################################################################
+# install iptables filtering
+
+## startup script
+cat >/etc/network/if-pre-up.d/iptables-up <<[eof]
+#!/bin/sh
+test -r /etc/default/iptables && iptables-restore < /etc/default/iptables
+test -r /etc/default/ip6tables && ip6tables-restore < /etc/default/ip6tables
+[eof]
+chmod 755 /etc/network/if-pre-up.d/iptables-up
+
+## ipv4 default table
+cat > /etc/default/iptables <<[eof]
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+-A INPUT -i lo -j ACCEPT
+-A INPUT -d 127.0.0.0/8 ! -i lo -j REJECT --reject-with icmp-port-unreachable
+-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 80 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 443 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 4222 -j ACCEPT
+-A INPUT -p icmp -j ACCEPT
+-A INPUT -j REJECT --reject-with icmp-port-unreachable
+-A FORWARD -j REJECT --reject-with icmp-port-unreachable
+-A OUTPUT -j ACCEPT
+COMMIT
+[eof]
+
+## ipv6 default table
+cat > /etc/default/ip6tables <<[eof]
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+-A INPUT -i lo -j ACCEPT
+-A INPUT -d ::1/128 ! -i lo -j REJECT --reject-with icmp6-port-unreachable
+-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 80 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 443 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 4222 -j ACCEPT
+-A INPUT -p icmp -j ACCEPT
+-A INPUT -j REJECT --reject-with icmp6-port-unreachable
+-A FORWARD -j REJECT --reject-with icmp6-port-unreachable
+-A OUTPUT -j ACCEPT
+COMMIT
+[eof]
+
+# install iptables filtering end
+#########################################################################
+
 # More space saving
 SPACERM="rm -rf"
 $SPACERM /usr/share/nmap/nmap-os-db /usr/bin/{aria_read_log,aria_dump_log,aria_ftdump,replace,resolveip,myisamlog,myisam_ftdump}
