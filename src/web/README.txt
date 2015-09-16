@@ -20,7 +20,7 @@ locally at expected location. The `configure` script accepts the option
 or '/var/run/sasl2/mux' to set it up accordinally.
 
 On Debian 8 the SASL and PAM are pre-integrated, you only need to make
-sure that the 'bios' user (with the currently hardcoded password 'nosoup4u')
+sure that the 'admin' user (with the currently hardcoded password 'admin')
 has been created in the OS and added to the 'sasl' group. The project 
 delivers a script `init-os-accounts.sh` made to set this all up for you.
 
@@ -60,7 +60,7 @@ for common PAM:
 
 Verify SASL connectivity with:
 ----
-:; /usr/sbin/testsaslauthd -u bios -p nosoup4u -s bios
+:; /usr/sbin/testsaslauthd -u admin -p admin -s bios
 ----
 
 Then you know you have correct credentials set in `test_web.sh`.

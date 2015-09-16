@@ -23,11 +23,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 namespace persist {
 
-// ATTENTION: in theory there could exist more than one link 
+// ATTENTION: in theory there could exist more than one link
 // between two devices
 db_reply_t
     delete_asset_link
-        (tntdb::Connection &conn, 
+        (tntdb::Connection &conn,
          a_elmnt_id_t asset_element_id_src,
          a_elmnt_id_t asset_element_id_dest)
 {
@@ -141,7 +141,7 @@ db_reply_t
 //=============================================================================
 db_reply_t
     delete_asset_links_to
-        (tntdb::Connection &conn, 
+        (tntdb::Connection &conn,
          a_elmnt_id_t asset_device_id)
 {
     LOG_START;
@@ -190,7 +190,7 @@ db_reply_t
 //=============================================================================
 db_reply_t
     delete_asset_links_from
-        (tntdb::Connection &conn, 
+        (tntdb::Connection &conn,
          a_elmnt_id_t asset_device_id)
 {
     LOG_START;
@@ -217,7 +217,7 @@ db_reply_t
             " WHERE"
             "   id_asset_device_src = :src"
         );
-    
+
         ret.affected_rows = st.set("src", asset_device_id).
                                execute();
         log_debug ("[t_bios_asset_link]: was deleted %"
@@ -239,7 +239,7 @@ db_reply_t
 //=============================================================================
 db_reply_t
     delete_asset_group_links
-        (tntdb::Connection &conn, 
+        (tntdb::Connection &conn,
          a_elmnt_id_t asset_group_id)
 {
     LOG_START;
@@ -266,7 +266,7 @@ db_reply_t
             " WHERE"
             "   id_asset_group = :grp"
         );
-    
+
         ret.affected_rows = st.set("grp", asset_group_id).
                                execute();
         log_debug ("[t_bios_asset_group_relation]: was deleted %"
@@ -288,13 +288,11 @@ db_reply_t
 //=============================================================================
 db_reply_t
     delete_asset_ext_attribute
-        (tntdb::Connection &conn, 
+        (tntdb::Connection &conn,
          const char   *keytag,
          a_elmnt_id_t  asset_element_id)
 {
     LOG_START;
-    log_debug ("keytag = '%s'", keytag);
-    log_debug ("asset_element_id = %" PRIu32, asset_element_id);
 
     db_reply_t ret = db_reply_new();
 
@@ -362,12 +360,12 @@ db_reply_t
 //=============================================================================
 db_reply_t
     delete_asset_ext_attributes
-        (tntdb::Connection &conn, 
+        (tntdb::Connection &conn,
          a_elmnt_id_t asset_element_id)
 {
     LOG_START;
     log_debug ("asset_element_id = %" PRIu32, asset_element_id);
-   
+
     db_reply_t ret = db_reply_new();
 
     // input parameters control
@@ -381,7 +379,7 @@ db_reply_t
         return ret;
     }
     log_debug ("input parameters are correct");
- 
+
     try{
         tntdb::Statement st = conn.prepareCached(
             " DELETE FROM"
@@ -389,7 +387,7 @@ db_reply_t
             " WHERE"
             "   id_asset_element = :element"
         );
-    
+
         ret.affected_rows = st.set("element", asset_element_id).
                                execute();
         log_debug("[t_bios_asset_ext_attributes]: was deleted %"
@@ -397,7 +395,7 @@ db_reply_t
         ret.status = 1;
         LOG_END;
         return ret;
-    } 
+    }
     catch (const std::exception &e) {
         ret.status     = 0;
         ret.errtype    = DB_ERR;
@@ -411,12 +409,12 @@ db_reply_t
 //=============================================================================
 db_reply_t
     delete_asset_element
-        (tntdb::Connection &conn, 
+        (tntdb::Connection &conn,
          a_elmnt_id_t asset_element_id)
 {
     LOG_START;
     log_debug ("asset_element_id = %" PRIu32, asset_element_id);
-      
+
     db_reply_t ret = db_reply_new();
 
     // input parameters control
@@ -438,7 +436,7 @@ db_reply_t
             " WHERE"
             "   id_asset_element = :element"
         );
-    
+
         ret.affected_rows  = st.set("element", asset_element_id).
                                 execute();
         log_debug("[t_bios_asset_element]: was deleted %"
@@ -472,12 +470,12 @@ db_reply_t
 //=============================================================================
 db_reply_t
     delete_asset_element_from_asset_groups
-        (tntdb::Connection &conn, 
+        (tntdb::Connection &conn,
          a_elmnt_id_t asset_element_id)
 {
     LOG_START;
     log_debug ("asset_element_id = %" PRIu32, asset_element_id);
-   
+
     db_reply_t ret = db_reply_new();
 
     // input parameters control
@@ -499,7 +497,7 @@ db_reply_t
             " WHERE"
             "   id_asset_element = :element"
         );
-    
+
         ret.affected_rows = st.set("element", asset_element_id).
                                execute();
         log_debug("[t_bios_asset_group_relation]: was deleted %"
@@ -507,7 +505,7 @@ db_reply_t
         ret.status = 1;
         LOG_END;
         return ret;
-    } 
+    }
     catch (const std::exception &e) {
         ret.status     = 0;
         ret.errtype    = DB_ERR;
@@ -521,14 +519,14 @@ db_reply_t
 //=============================================================================
 db_reply_t
     delete_asset_element_from_asset_group
-        (tntdb::Connection &conn, 
+        (tntdb::Connection &conn,
          a_elmnt_id_t asset_group_id,
          a_elmnt_id_t asset_element_id)
 {
     LOG_START;
     log_debug ("  asset_group_id = %" PRIu32, asset_group_id);
     log_debug ("  asset_element_id = %" PRIu32, asset_element_id);
-       
+
     db_reply_t ret = db_reply_new();
 
     // input parameters control
@@ -551,7 +549,7 @@ db_reply_t
         return ret;
     }
     log_debug ("input parameters are correct");
- 
+
     try{
         tntdb::Statement st = conn.prepareCached(
             " DELETE FROM"
@@ -560,7 +558,7 @@ db_reply_t
             "   id_asset_group = :grp AND"
             "   id_asset_element = :element"
         );
-    
+
         ret.affected_rows = st.set("grp", asset_group_id).
                                set("element", asset_element_id).
                                execute();
@@ -581,7 +579,7 @@ db_reply_t
             log_error ("end: %s", ret.msg.c_str());
             return ret;
         }
-    } 
+    }
     catch (const std::exception &e) {
         ret.status     = 0;
         ret.errtype    = DB_ERR;
@@ -594,12 +592,12 @@ db_reply_t
 //=============================================================================
 db_reply_t
     delete_monitor_asset_relation
-        (tntdb::Connection &conn, 
+        (tntdb::Connection &conn,
          ma_rltn_id_t id)
 {
     LOG_START;
     log_debug ("  id = %" PRIu32, id);
-   
+
     db_reply_t ret = db_reply_new();
 
     // input parameters control
@@ -621,7 +619,7 @@ db_reply_t
             " WHERE"
             "   id_ma_relation = :id"
         );
-    
+
         ret.affected_rows = st.set("id", id).
                                execute();
         log_debug("[t_bios_monitor_asset_relation]: was deleted %"
@@ -629,7 +627,7 @@ db_reply_t
         ret.status = 1;
         LOG_END;
         return ret;
-    } 
+    }
     catch (const std::exception &e) {
         ret.status     = 0;
         ret.errtype    = DB_ERR;
@@ -642,12 +640,12 @@ db_reply_t
 
 db_reply_t
     delete_monitor_asset_relation_by_a
-        (tntdb::Connection &conn, 
+        (tntdb::Connection &conn,
          a_elmnt_id_t id)
 {
     LOG_START;
     log_debug ("  id = %" PRIu32, id);
-   
+
     db_reply_t ret = db_reply_new();
 
     // input parameters control
@@ -669,7 +667,7 @@ db_reply_t
             " WHERE"
             "   id_asset_element = :id"
         );
-    
+
         ret.affected_rows = st.set("id", id).
                                execute();
         log_debug("[t_bios_monitor_asset_relation]: was deleted %"
@@ -677,7 +675,7 @@ db_reply_t
         ret.status = 1;
         LOG_END;
         return ret;
-    } 
+    }
     catch (const std::exception &e) {
         ret.status     = 0;
         ret.errtype    = DB_ERR;
