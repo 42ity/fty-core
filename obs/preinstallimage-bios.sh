@@ -195,7 +195,7 @@ done
 mkdir -p /etc/pam.d
 cp /usr/share/bios/examples/config/pam.d/* /etc/pam.d
 RULES="`sed -n 's|.*pam_cracklib.so||p' /etc/pam.d/bios`"
-sed -i "s|\\(.*pam_cracklib.so\\).*|\1$RULES|" /etc/pam.d/common-password
+[ "$IMGTYPE" = devel ] || sed -i "s|\\(.*pam_cracklib.so\\).*|\1$RULES|" /etc/pam.d/common-password
 
 mkdir -p /etc/sudoers.d
 cp /usr/share/bios/examples/config/sudoers.d/bios_00_base /etc/sudoers.d
