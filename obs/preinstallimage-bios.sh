@@ -66,7 +66,8 @@ passwd <<EOF
 @PASSWORD@
 EOF
 
-useradd -m admin -G sasl -s /bin/bash
+groupadd bios
+useradd -m admin -G sasl -N -g bios -s /bin/bash
 passwd admin <<EOF
 admin
 admin
