@@ -29,12 +29,6 @@ cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the REST API webserver"
 
-[ -z "$BIOS_USER" ] && BIOS_USER="bios"
-[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="nosoup4u"
-[ -z "$SASL_SERVICE" ] && SASL_SERVICE="bios"
-[ -z "$SUT_HOST" ] && SUT_HOST="127.0.0.1"
-[ -z "$SUT_WEB_PORT" ] && SUT_WEB_PORT="8000"
-
 # Set up weblib test engine preference defaults for automated CI tests
 [ -z "$WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT" ] && \
     WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT="fatal"
