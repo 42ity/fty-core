@@ -34,11 +34,6 @@
     # *** tests/CI directory (on MS) contains weblib.sh (api_get_content and CURL functions needed) ***
     # *** tests/CI/web directory containing results, commands and log subdirectories with the proper content 
 
-# ***** USE BIOS_USER AND BIOS_PASSWD *****
-[ -z "$BIOS_USER" ] && BIOS_USER="bios"
-[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="nosoup4u"
-[ -z "$SASL_SERVICE" ] && SASL_SERVICE="bios"
-
 usage(){
     echo "Usage: $(basename $0) [options...] [test_name...]"
     echo "options:"
@@ -105,8 +100,6 @@ fi
 # unconditionally calculated values
 BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 SUT_IS_REMOTE=yes
-
-
 
 # ***** SET CHECKOUTDIR *****
 # Include our standard routines for CI scripts
