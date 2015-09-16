@@ -106,13 +106,13 @@ static void
         for ( auto &adevice: adevice_dests )
         {
             auto it = dc_devices.find(adevice);
-            if ( it != dc_devices.end() )
-                new_border_devices.insert(dc_devices.find(adevice)->second);
+            if ( it != dc_devices.cend() )
+                new_border_devices.insert(it->second);
             else
             {
                 log_critical ("database is in inconsistent state");
                 log_critical ("device(as element) %" PRIu32 " is not in dc",
-                                                std::get<0>(border_device));
+                                                adevice);
                 assert(false);
             }
         }
