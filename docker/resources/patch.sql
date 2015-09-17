@@ -10,7 +10,7 @@ SET d=day;
 labelday: WHILE d >= 0 DO
   SET h = 24;
   label24h: WHILE h > 0 DO
-    INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (DATE_ADD(CURRENT_DATE, INTERVAL -(d*24+h) HOUR) , 1000*d+10*h, -2, topic);
+    INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP(DATE_ADD(CURRENT_DATE, INTERVAL -(d*24+h) HOUR)) , 1000*d+10*h, -2, topic);
     SET h = h - 1;
   END WHILE label24h;
   SET d = d - 1;
