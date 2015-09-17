@@ -32,6 +32,10 @@
 #include <nutclient.h>
 #include <iostream>
 #include <algorithm>
+#include <exception>
+
+#include "log.h"
+#include "defs.h"
 
 using namespace std;
 
@@ -295,7 +299,7 @@ void NUTDevice::updateInventory(const std::string& varName, std::vector<std::str
 void NUTDevice::update( std::map< std::string,std::vector<std::string> > vars, bool forceUpdate ) {
 
     if( vars.empty() ) return;
-    
+    _lastUpdate = time(NULL);
     // use transformation table first
     NUTValuesTransformation( vars );
 
@@ -480,6 +484,14 @@ void NUTDevice::NUTValuesTransformation( std::map< std::string,std::vector<std::
     }
 };
 
+void NUTDevice::clear() {
+    if( ! _inventory.empty() || ! _physics.empty() ) {
+        _inventory.clear();
+        _physics.clear();
+        log_error("Dropping all measurement/inventory data for %s", _name.c_str() );
+    }
+}
+
 NUTDevice::~NUTDevice() {
 
 }
@@ -513,12 +525,18 @@ void NUTDeviceList::updateDeviceList() {
 }
 
 void NUTDeviceList::updateDeviceStatus( bool forceUpdate ) {
-    try {
-        for(auto &device : _devices ) {
+    for(auto &device : _devices ) {
+        try {
             nutclient::Device nutDevice = nutClient.getDevice(device.first);
             device.second.update( nutDevice.getVariableValues(), forceUpdate );
+        } catch ( std::exception &e ) {
+            log_error("Communication problem with %s (%s)", device.first.c_str(), e.what() );
+            if( time(NULL) - device.second.lastUpdate() > NUT_MEASUREMENT_REPEAT_AFTER/2 ) {
+                // we are not communicating for a while. Let's drop the values.
+                device.second.clear();
+            }
         }
-    } catch (...) {}
+    }
 }
 
 bool NUTDeviceList::connect() {
