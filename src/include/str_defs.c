@@ -69,7 +69,7 @@ const char* BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL =
     "\t\t\"timestamp\": ##TIMESTAMP##\n"
     "\t}";
 
-const char* STRFTIME_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ";    
+const char* STRFTIME_DATETIME_FORMAT = "%FT%TZ";    
 
 const char* EV_BIOS_LOG_LEVEL = "BIOS_LOG_LEVEL";
 const char* EV_LICENSE_DIR = "LICENSE_DIR";
