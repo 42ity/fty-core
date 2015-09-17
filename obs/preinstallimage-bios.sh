@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 #   Copyright (c) 2014-2015 Eaton
 #
@@ -241,6 +241,10 @@ Requires=bios-db-init.service
 
 [Service]
 Type=simple
+EnvironmentFile=-/etc/default/bios
+EnvironmentFile=-/etc/sysconfig/bios
+EnvironmentFile=-/etc/default/bios__%n.conf
+EnvironmentFile=-/etc/sysconfig/bios__%n.conf
 PrivateTmp=true
 ExecStartPre=/usr/share/bios/scripts/ssl-create.sh
 ExecStart=/usr/bin/tntnet -c /etc/tntnet/%i.xml
@@ -263,6 +267,12 @@ systemctl enable tntnet@bios
 # Disable logind
 systemctl disable systemd-logind
 find / -name systemd-logind.service -delete
+
+# Disable expensive debug logging by default on non-devel images
+[ "$IMGTYPE" = devel ] || {
+    mkdir -p /etc/default/
+    echo "BIOS_LOG_LEVEL=LOG_INFO" > /etc/default/bios
+}
 
 # Setup some busybox commands
 for i in vi tftp wget; do
