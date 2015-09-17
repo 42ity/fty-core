@@ -322,7 +322,7 @@ db_reply_t
 
     int reply_insert2 = insert_into_asset_ext_attributes
                         (conn, element_id, extattributes, false);
-    if ( reply_insert2 == -1 )
+    if ( reply_insert2 != 0 )
     {
         trans.rollback();
         log_error ("end: device was not inserted (fail in ext_attributes)");
