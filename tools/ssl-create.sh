@@ -17,7 +17,7 @@ if [ \! -r /etc/tntnet/bios.pem ]  || [ $FROM -gt `date +%s` ] || \
     if [ -r /etc/tntnet/bios.pem ] && [ -z "`grep "$SIG" /etc/tntnet/bios.pem 2> /dev/null`" ]; then
         exit 0
     fi
-    openssl req -x509 -newkey rsa:2048 -keyout /tmp/key.pem -out /tmp/cert.pem -days 465 -nodes -subj "/CN=`hostname`"
+    openssl req -x509 -newkey rsa:2048 -keyout /tmp/key.pem -out /tmp/cert.pem -days 365 -nodes -subj "/CN=`hostname`"
     echo "$SIG" | \
     cat - /tmp/key.pem /tmp/cert.pem > /etc/tntnet/bios.pem
     rm /tmp/key.pem /tmp/cert.pem
