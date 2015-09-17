@@ -317,14 +317,14 @@ int
                 attributes);
         size_t i = st.execute();
         log_debug("%zu attributes written", i);
+        LOG_END;
+        return 0;
     }
     catch (const std::exception& e) {
         LOG_END_ABNORMAL(e);
         return -1;
     }
 
-    LOG_END;
-    return 0;
 }
 
 
