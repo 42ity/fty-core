@@ -6,6 +6,11 @@
   -->
 <tntnet>
   <mappings>
+    <!-- Everything SSL only -->
+    <mapping>
+      <target>ssl-redirect@bios_web</target>
+    </mapping>
+
     <!-- Serve static files -->
     <mapping>
       <target>static@tntnet</target>
@@ -252,12 +257,12 @@
       <port>8000</port>
     </listener>
   <!-- a certificate enables ssl -->
-  <!--
+  <!-- ssl start
     <listener>
       <port>8443</port>
-      <certificate>tntnet.pem</certificate>
+      <certificate>bios.pem</certificate>
     </listener>
-    -->
+   ssl end -->
   </listeners>
 
   <logging>
