@@ -1489,7 +1489,7 @@ EXTRA_DIST +=		$(top_srcdir)/tests/CI
 
 # This will be removed from the OS image by the preinstallimage-bios.sh script
 obsdir		=  $(datadir)/@PACKAGE@/obs
-obs_SCRIPTS	=  preinstallimage-bios.sh
+obs_SCRIPTS	=  obs/preinstallimage-bios.sh
 
 EXTRA_DIST	+= $(obs_SCRIPTS)
 
