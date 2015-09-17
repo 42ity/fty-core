@@ -6,6 +6,11 @@
   -->
 <tntnet>
   <mappings>
+    <!-- Everything SSL only -->
+    <mapping>
+      <target>ssl-redirect@bios_web</target>
+    </mapping>
+
     <!-- Serve static files -->
     <mapping>
       <target>static@tntnet</target>

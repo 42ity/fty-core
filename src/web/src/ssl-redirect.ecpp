@@ -1,0 +1,6 @@
+<%cpp>
+char * no_ssl = getenv("NO_SSL");
+if(request.isSsl() || (no_ssl != NULL && (strcmp(no_ssl, "1")==0)))
+	return DECLINED;
+reply.redirect(std::string("https://") + request.getHost() + request.getQuery());
+</%cpp>
