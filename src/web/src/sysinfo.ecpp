@@ -24,6 +24,7 @@
  * \brief Not yet documented file
  */
  #><%pre>
+#include <stdexcept>
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -309,6 +310,13 @@ int8_t access_auth_level;
             // We assume the second line is license acceptance unix time
             std::getline (finput, installation_date);
             std::getline (finput, installation_date);
+            int64_t i64 = std::stoll (installation_date);
+            // TODO: we should probably check for time_t max/min, but hey!... ;)
+            char chtmp[64]; 
+            if (calendar_to_datetime ((time_t) i64, chtmp, 64) == -1) {
+                throw std::runtime_error ("calendar_to_datetime () failed.");
+            }
+            installation_date.assign (chtmp);
         }
         else {
             installation_date = "License not accepted yet"; 

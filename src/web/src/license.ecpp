@@ -39,8 +39,10 @@
 #include <mutex>
 
 #include "config.h"
+#include "utils.h"
+#include "cleanup.h"
 
-#define RETURN free(current_license); free(accepted_license); return
+#define RETURN return
 
 </%pre>
 <%request scope="global">
@@ -49,15 +51,8 @@ long int uid = 0;
 <%cpp>
 // Basic operations
 
-/* NOTE: This must be kept in sync with admin_passwd.ecpp(.in) */
-char *current_license = getenv("LICENSE_DIR");
-char *accepted_license = getenv("DATADIR");
-if(current_license == NULL)
-   current_license = "/usr/share/bios/license";
-if(accepted_license == NULL)
-   accepted_license = "/var/lib/bios";
-asprintf(&current_license, "%s/current", current_license);
-asprintf(&accepted_license, "%s/license", accepted_license);
+_scoped_char *current_license = current_license_file ();
+_scoped_char *accepted_license = accepted_license_file ();
 static cxxtools::Regex rex_lic("^.*/license$");
 if(rex_lic.match(request.getUrl())) {
 	if(request.isMethodGET()) {

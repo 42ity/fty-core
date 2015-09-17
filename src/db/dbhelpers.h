@@ -376,4 +376,34 @@ bool is_ok_priority (a_elmnt_pr_t priority);
  */
 bool is_ok_alert_state (UNUSED_PARAM m_alrt_state_t state);
 
+/**
+ * \brief Generate the placeholder name
+ *
+ * \param[in] i - index of a column
+ * \param[in] j - index of a row
+ *
+ * \return name of placeholder
+ *
+ * sql_plac(2, 3) -> "item2_3";
+ */
+std::string
+sql_plac(
+        size_t i,
+        size_t j);
+
+/**
+ * \brief Generate the SQL string for multivalue insert
+ *
+ * multi_insert_string("INSERT INTO t_bios_foo", 2, 3) ->
+ * 'INSERT INTO t_bios_foo (foo, bar)
+ * VALUES(:item0_0, :item0_1),
+ * (:item1_0, :item1_1),
+ * (:item2_0, :item2_1)'
+*/
+std::string
+multi_insert_string(
+        const std::string& sql_header,
+        size_t tuple_len,
+        size_t items_len);
+
 #endif // SRC_DB_DBHELPERS_H_
