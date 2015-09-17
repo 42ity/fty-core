@@ -244,13 +244,21 @@ db_reply_t
     }
     auto element_id = reply_insert1.rowid;
 
-    auto reply_insert2 = insert_into_asset_ext_attributes
-                         (conn, extattributes, element_id, false);
-    if ( reply_insert2.status == 0 )
+    if ( extattributes != NULL )
     {
-        trans.rollback();
-        log_error ("end: element was not inserted (fail in ext_attributes)");
-        return reply_insert2;
+        int reply_insert2 = insert_into_asset_ext_attributes
+            (conn, element_id, extattributes, false);
+        if ( reply_insert2 != 0 )
+        {
+            trans.rollback();
+            log_error ("end: device was not inserted (fail in ext_attributes)");
+            db_reply_t ret;
+            ret.status     = 0;
+            ret.errtype    = DB_ERR;
+            ret.errsubtype = DB_ERROR_BADINPUT;
+            ret.msg        = "end: device was not inserted (fail in ext_attributes)";
+            return ret;
+        }
     }
 
     auto reply_insert3 = insert_element_into_groups (conn, groups, element_id);
@@ -320,18 +328,21 @@ db_reply_t
     }
     auto element_id = reply_insert1.rowid;
 
-    int reply_insert2 = insert_into_asset_ext_attributes
-                        (conn, element_id, extattributes, false);
-    if ( reply_insert2 != 0 )
+    if ( extattributes != NULL )
     {
-        trans.rollback();
-        log_error ("end: device was not inserted (fail in ext_attributes)");
-        db_reply_t ret;
-        ret.status     = 0;
-        ret.errtype    = DB_ERR;
-        ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "end: device was not inserted (fail in ext_attributes)";
-        return ret;
+        int reply_insert2 = insert_into_asset_ext_attributes
+            (conn, element_id, extattributes, false);
+        if ( reply_insert2 != 0 )
+        {
+            trans.rollback();
+            log_error ("end: device was not inserted (fail in ext_attributes)");
+            db_reply_t ret;
+            ret.status     = 0;
+            ret.errtype    = DB_ERR;
+            ret.errsubtype = DB_ERROR_BADINPUT;
+            ret.msg        = "end: device was not inserted (fail in ext_attributes)";
+            return ret;
+        }
     }
 
     auto reply_insert3 = insert_element_into_groups (conn, groups, element_id);
