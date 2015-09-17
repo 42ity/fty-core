@@ -336,6 +336,7 @@ int8_t access_auth_level;
                 if (it2->first.compare ("address") == 0) {
                     location = it2->second.first;
                     do_break = true;
+                    break;
                 }
             }
             if (do_break)
