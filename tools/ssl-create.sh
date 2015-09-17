@@ -22,5 +22,4 @@ if [ \! -r /etc/tntnet/bios.pem ]  || [ $FROM -gt `date +%s` ] || \
     cat - /tmp/key.pem /tmp/cert.pem > /etc/tntnet/bios.pem
     rm /tmp/key.pem /tmp/cert.pem
     chown admin /etc/tntnet/bios.pem
-    systemctl restart tntnet@bios
 fi
