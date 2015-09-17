@@ -261,6 +261,71 @@ db_reply_t
     return ret;
 }
 
+// generate the proper tntdb::Statement for multi value insert for extended attributes
+static tntdb::Statement
+    s_multi_insert_statement(
+        tntdb::Connection& conn,
+        a_elmnt_id_t element_id,
+        bool read_only,
+        zhash_t* attributes)
+{
+    static const std::string sql_header = "INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only)";
+
+    auto sql = multi_insert_string(
+            sql_header,
+            4,
+            zhash_size(attributes));
+
+    log_debug("sql: '%s'", sql.c_str());
+    auto st = conn.prepare(sql);
+
+    char *value = (char *) zhash_first (attributes);   // first value
+    size_t i = 0;
+    while ( value != NULL )
+        {
+            char *key = (char *) zhash_cursor (attributes);   // key of this value
+            st.set(sql_plac(i, 0), key);
+            st.set(sql_plac(i, 1), value);
+            st.set(sql_plac(i, 2), element_id);
+            st.set(sql_plac(i, 3), read_only);
+            value     = (char *) zhash_next (attributes);   // next value
+            i++;
+        }
+
+    return st;
+}
+
+int
+    insert_into_asset_ext_attributes
+        (tntdb::Connection &conn,
+         a_elmnt_id_t element_id,
+         zhash_t* attributes,
+         bool read_only)
+{
+    LOG_START;
+
+    if (!attributes)
+        return -1;
+    if ( zhash_size (attributes) == 0 )
+        return 0;
+
+    try {
+        auto st = s_multi_insert_statement(
+                conn,
+                element_id,
+                read_only,
+                attributes);
+        size_t i = st.execute();
+        log_debug("%zu attributes written", i);
+        LOG_END;
+        return 0;
+    }
+    catch (const std::exception& e) {
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
+
+}
 
 
 //=============================================================================

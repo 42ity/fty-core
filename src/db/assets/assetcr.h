@@ -48,6 +48,21 @@ db_reply_t
          a_elmnt_id_t  asset_element_id,
          bool          read_only);
 
+/**
+ *  \brief Multi value insert for extended attributes
+ *
+ *  \param[in]  conn - database connection
+ *  \param[in]  element_id - asset element id
+ *  \param[in]  attributes - zhash_t of attributes
+ *  \param[in]  read_only - set if attribute is read only or not
+ */
+int
+    insert_into_asset_ext_attributes
+        (tntdb::Connection &conn,
+         a_elmnt_id_t element_id,
+         zhash_t* attributes,
+         bool read_only);
+
 
 db_reply_t
     insert_asset_element_into_asset_group
