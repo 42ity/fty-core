@@ -142,7 +142,7 @@ EOF
 # Setup APT package sources
 mkdir -p /etc/apt/sources.list.d
 cat > /etc/apt/sources.list.d/debian.list <<EOF
-deb http://ftp.debian.org/debian testing main contrib non-free
+deb http://ftp.debian.org/debian jessie main contrib non-free
 deb http://ftp.debian.org/debian jessie-updates main contrib non-free
 deb http://security.debian.org   jessie/updates main contrib non-free
 deb http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0 /
