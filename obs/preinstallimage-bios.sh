@@ -233,7 +233,7 @@ systemctl enable malamute
 systemctl preset-all
 
 # Fix tntnet unit
-cat > /usr/lib/systemd/system/tntnet@.service <<EOF
+cat > /etc/systemd/system/tntnet@.service <<EOF
 [Unit]
 Description=Tntnet web server using /etc/tntnet/%I.xml
 After=network.target bios-db-init.service
