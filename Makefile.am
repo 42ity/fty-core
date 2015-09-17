@@ -76,6 +76,7 @@ CLEANFILES +=	$(GENERATEDSCRIPTS) $(GENERATEDDATA)
 # How to run tntnet from Makefile
 RUN_TNTNET = export LICENSE_DIR="$(abs_top_srcdir)/tests/fixtures/license"; \
 	     export DATADIR_BASE="$(abs_top_builddir)/var"; \
+	     export NO_SSL="1"; \
 	     export DATADIR="$$DATADIR_BASE/bios"; \
 	     [ "x${KEEP_LICENSE}" = "xyes" ] || rm -rf "$$DATADIR_BASE"; id; \
 	     mkdir -p "$$DATADIR" && ls -la "$$DATADIR" && \
@@ -1342,7 +1343,7 @@ BUILT_SOURCES_bios_web_la = \
                       src/include/git_details_override.h                 \
                       src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
                       src/web/src/auth-require.cpp                       \
-                      src/web/src/agent.cpp                              \
+                      src/web/src/agent.cpp src/web/src/ssl-redirect.cpp \
                       src/web/src/power.cpp src/web/src/item.cpp         \
                       src/web/src/json.cpp  src/web/src/list.cpp         \
                       src/web/src/time.cpp  src/web/src/sysinfo.cpp      \
