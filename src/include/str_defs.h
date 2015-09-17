@@ -51,6 +51,8 @@ extern const char* BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL;
 
 // evironment variables
 extern const char* EV_BIOS_LOG_LEVEL;
+extern const char* EV_LICENSE_DIR; // directory holding license file
+extern const char* EV_DATA_DIR; // directory holding data (?)
 
 #endif // SRC_INCLUDE_STR_DEFS_H__
 
