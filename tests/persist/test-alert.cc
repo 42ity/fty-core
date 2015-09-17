@@ -480,7 +480,7 @@ TEST_CASE("t_bios_alert_device INSERT/DELETE #5","[db][CRUD][insert][alert][dele
 }
 
 
-TEST_CASE("insert_alert_new #6","[db][CRUD][insert][delete][alert][crud_test.sql]")
+TEST_CASE("insert_alert_new #6","[db][CRUD][insert][delete][alert][crud_test.sql][777]")
 {
     log_open ();
 
@@ -501,12 +501,12 @@ TEST_CASE("insert_alert_new #6","[db][CRUD][insert][delete][alert][crud_test.sql
 
     std::vector <link_t> links{};
     std::set <a_elmnt_id_t> groups{};
-    
+
     auto reply_insert_element1 = persist::insert_device
        (conn, links, groups, element_name1, parent_id,
         NULL, asset_device_type_id, asset_device_type_name,
         status, priority_el, bc, UGLY_ASSET_TAG2);
-
+    REQUIRE ( reply_insert_element1.status == 1 );
     uint64_t rowid_element1 = reply_insert_element1.rowid;
     CAPTURE ( rowid_element1 );
 
@@ -516,6 +516,7 @@ TEST_CASE("insert_alert_new #6","[db][CRUD][insert][delete][alert][crud_test.sql
        (conn, links, groups, element_name2, parent_id,
         NULL, asset_device_type_id, asset_device_type_name,
         status, priority_el, bc, UGLY_ASSET_TAG2);
+    REQUIRE ( reply_insert_element2.status == 1 );
     uint64_t rowid_element2 = reply_insert_element2.rowid;
     CAPTURE ( rowid_element2 );
 

@@ -17,10 +17,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 /*! \file   assetr.h
-    \brief  Basic select-functions for assets
+    \brief  Basic select functions for assets
     \author Alena Chernikava <AlenaChernikava@Eaton.com>
     \author Michal Vyskocil <MichalVyskocil@Eaton.com>
 */
+
 #ifndef SRC_DB_ASSETS_ASSETR_H
 #define SRC_DB_ASSETS_ASSETR_H
 
@@ -72,8 +73,6 @@ struct db_web_element_t{
 
 
 namespace persist{
-
-
 
 db_reply <db_web_basic_element_t>
     select_asset_element_web_byId
@@ -245,16 +244,26 @@ int
         a_elmnt_id_t       asset_element_id,
         m_dvc_id_t        &monitor_element_id);
 
-/** \brief TODO
+/**
+ * \brief select all assets inside the asset-container (all 4 level down)
+ *
+ * \param conn[in]       - db connection
+ * \param element_id[in] - id of the asset-container
+ * \param cb[in]         - callback to be called with every selected row.
+ *
+ *  Every selected row has the following columns:
+ *      name, asset_id, subtype_id, subtype_name, type_id
+ *
+ * \return 0 on success
  */
 int
-    select_asset_device_by_container
+    select_assets_by_container
         (tntdb::Connection &conn,
          a_elmnt_id_t element_id,
          std::function<void(const tntdb::Row&)>& cb);
 
 db_reply <std::vector<device_info_t>>
-    select_asset_device_by_container
+    select_assets_by_container
         (tntdb::Connection &conn,
          a_elmnt_id_t element_id);
 
@@ -275,6 +284,6 @@ int
         const std::string &keytag,
         const std::vector<device_info_t> &elements,
         std::function< void( const tntdb::Row& ) > &cb);
- 
+
 } //namespace end
 #endif // SRC_DB_ASSETS_ASSETR_H
