@@ -78,6 +78,92 @@ TEST_CASE ("utils::math::utils::math::dtos","[utils::math::dtos][utilities]")
     CHECK ( result == "-1.44" );
 }
 
+TEST_CASE ("utils::json::escape","[utils::math::dtos][json][escape]")
+{
+    std::string x;
+
+    x = utils::json::escape ("'jednoduche ' uvozovky'");
+    CHECK ( x.compare ("'jednoduche ' uvozovky'") == 0);
+
+    x = utils::json::escape ("dvojite \" stred");
+    CHECK ( x.compare (R"(dvojite \" stred)") == 0);
+
+    x = utils::json::escape ("dvojite \\\" stred");
+    CHECK ( x.compare (R"(dvojite \" stred)") == 0);
+
+    x = utils::json::escape ("dvojite \\\\\" stred");
+    CHECK ( x.compare (R"(dvojite \\\" stred)") == 0);
+
+    x = utils::json::escape ("dvojite \\\\\\\" stred");
+    CHECK ( x.compare (R"(dvojite \\\" stred)") == 0);
+
+    x = utils::json::escape ("dvojite \\\\\\\\\" uvozovky");
+    CHECK ( x.compare (R"(dvojite \\\\\" uvozovky)") == 0);
+
+    x = utils::json::escape ("dvojite \"\" stred");
+    CHECK ( x.compare (R"(dvojite \"\" stred)") == 0);
+
+    x = utils::json::escape ("dvojite \"\"\" stred");
+    CHECK ( x.compare (R"(dvojite \"\"\" stred)") == 0);
+
+    x = utils::json::escape ("dvojite \"\\\"\" stred");
+    CHECK ( x.compare (R"(dvojite \"\"\" stred)") == 0);    
+
+    x = utils::json::escape ("dvojite \"\"\\\" stred");
+    CHECK ( x.compare (R"(dvojite \"\"\" stred)") == 0);
+
+    x = utils::json::escape ("dvojite \\\"\\\"\\\" uvozovky");
+    CHECK ( x.compare (R"(dvojite \"\"\" uvozovky)") == 0);
+
+    x = utils::json::escape ("dvojite \\\\\"\\\\\"\\\\\" uvozovky");
+    CHECK ( x.compare (R"(dvojite \\\"\\\"\\\" uvozovky)") == 0);
+
+    x = utils::json::escape ("dvojite \uA66A uvozovky");
+    CHECK ( x.compare ("dvojite \uA66A uvozovky") == 0);
+
+    x = utils::json::escape ("dvojite \"\uA66A uvozovky");
+    CHECK ( x.compare ("dvojite \\\"\uA66A uvozovky") == 0);
+
+    x = utils::json::escape ("dvojite \\uA66A uvozovky");
+    CHECK ( x.compare (R"(dvojite \uA66A uvozovky)") == 0);
+
+    x = utils::json::escape ("dvojite \\\uA66A uvozovky");
+    CHECK ( x.compare ("dvojite \\\\\uA66A uvozovky") == 0);
+
+    x = utils::json::escape ("dvojite \\\\uA66A uvozovky");
+    CHECK ( x.compare ("dvojite \\\\uA66A uvozovky") == 0);
+
+    x = utils::json::escape ("dvojite \\\\\uA66A uvozovky");
+    CHECK ( x.compare ("dvojite \\\\\uA66A uvozovky") == 0);
+
+    x = utils::json::escape ("dvojite \\\\\\uA66A uvozovky");
+    CHECK ( x.compare ("dvojite \\\\\\uA66A uvozovky") == 0);
+
+    x = utils::json::escape ("dvojite \\\\\\\uA66A uvozovky");
+    CHECK ( x.compare ("dvojite \\\\\\\\\uA66A uvozovky") == 0);
+
+    x =  utils::json::escape ("dvojite \uA66A\" uvozovky");
+    CHECK ( x.compare ("dvojite \uA66A\\\" uvozovky") == 0);
+
+    x = utils::json::escape ("dvojite \\b \\\\b \\\\\\b \\\\\\\\b \\\\\\\\\\b uvozovky");
+    CHECK ( x.compare (R"(dvojite \b \\b \\\b \\\\b \\\\\b uvozovky)") == 0);
+
+    x = utils::json::escape ("dvojite \\t \\\t \\\\t \\\\\t \\\\\\t uvozovky");
+    CHECK ( x.compare ("dvojite \\t \\\\\t \\\\t \\\\\t \\\\\\t uvozovky") == 0);
+
+    x = utils::json::escape ("dvojite \\f \\\f \\\\f \\\\\f \\\\\\f uvozovky");
+    CHECK ( x.compare ("dvojite \\f \\\\\f \\\\f \\\\\f \\\\\\f uvozovky") == 0);
+
+    x = utils::json::escape ("dvojite \\n \\\n \\\\n \\\\\n \\\\\\n uvozovky");
+    CHECK ( x.compare ("dvojite \\n \\\\\n \\\\n \\\\\n \\\\\\n uvozovky") == 0);
+
+    x = utils::json::escape ("dvojite \\r \\\r \\\\r \\\\\r \\\\\\r uvozovky");
+    CHECK ( x.compare ("dvojite \\r \\\\\r \\\\r \\\\\r \\\\\\r uvozovky") == 0);
+
+    x = utils::json::escape ("dvojite \\ \\\\ \\\\\\ \\\\\\\\ uvozovky");
+    CHECK ( x.compare ("dvojite \\\\ \\\\ \\\\\\\\ \\\\\\\\ uvozovky") == 0);
+}
+
 TEST_CASE ("escape", "[utilities]")
 {
 

@@ -27,7 +27,6 @@
 #include <sstream>
 #include <cxxtools/regex.h>
 #include <cxxtools/jsondeserializer.h>
-
 #include "augtool.h"
 
 </%pre>
