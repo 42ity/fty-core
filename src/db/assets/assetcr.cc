@@ -269,7 +269,7 @@ static tntdb::Statement
         bool read_only,
         zhash_t* attributes)
 {
-    static const std::string& sql_header = "INSERT INTO t_bios_asset_element (keytag, value, id_asset_element, read_only)";
+    static const std::string sql_header = "INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only)";
 
     auto sql = multi_insert_string(
             sql_header,
