@@ -418,6 +418,14 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_email",    "athos@mousquetaires.defense.gouv.fr", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",    "+33 (0)4 42 42 42 42", @last_asset_element);
 
+/* KAROL-LAB */
+
+insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, asset_tag) values ("KAROL-LAB", @asset_element_device, @asset_device_server, @last_rack, "myasset28");
+set @last_asset_element = LAST_INSERT_ID();
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description","Server for Karols average testing data", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("creator", "Vaporware", @last_asset_element);
+
+
 /* FEED-LAB */
 insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,business_crit,asset_tag) values ("FEED-LAB", @asset_element_device, @asset_device_feed, @last_datacenter,"active",1,1, "myasset29");
 set @last_asset_element = LAST_INSERT_ID();
@@ -430,24 +438,7 @@ set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "input power chain", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("type",        "input_power",       @last_asset_element);
 
-/* UPS3PH-LAB */
-insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,business_crit,asset_tag) values ("UPS3PH-LAB", @asset_element_device, @asset_device_ups, @last_datacenter, "active",1,1,"_myasset22");
-set @last_asset_element := LAST_INSERT_ID();
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "PXGX UPS + EATON Parallel BladeUPS", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("installation_date", "2014-11-12", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("end_warranty_date", "2018-31-12", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("warranty_expiration_date", "2020-31-12", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("battery_installation_date", "2014-11-12", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("battery_warranty_expiration_date", "2019-11-12", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("battery_maintenance_date", "2016-11-12", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("u_size",  "40",        @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "0",       @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer", "EATON", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("ip.1", "10.130.36.13", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("full_hostname.1", "10.130.36.13", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_name",    "Stephane", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_email",    "stephane@the-pink-panter.movie", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",    "+33 (0)4 42 42 42 42", @last_asset_element);
+
 
 
 /* Create a group */
@@ -459,13 +450,6 @@ values
     (select id_asset_element from `t_bios_asset_element` where name = 'FEED-LAB')
 );
 
-insert into t_bios_asset_group_relation
-    (id_asset_group, id_asset_element)
-values
-(
-    (select id_asset_element from `t_bios_asset_element` where name = 'GROUP1-LAB'),
-    (select id_asset_element from `t_bios_asset_element` where name = 'UPS3PH-LAB')
-);
 
 /* SRV3-LAB */
 insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,business_crit,asset_tag) values ("SRV3-LAB",  @asset_element_device, @asset_device_server, @last_rack, "active",1,1,"myasset50");
@@ -511,6 +495,32 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_email",    "nemo@nautilus.defense.gouv.fr", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",    "+33 (0)4 42 42 42 42", @last_asset_element);
 
+/* UPS3PH-LAB */
+insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,business_crit,asset_tag) values ("UPS3PH-LAB", @asset_element_device, @asset_device_ups, @last_datacenter, "active",1,1,"_myasset22");
+set @last_asset_element := LAST_INSERT_ID();
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "PXGX UPS + EATON Parallel BladeUPS", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("installation_date", "2014-11-12", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("end_warranty_date", "2018-31-12", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("warranty_expiration_date", "2020-31-12", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("battery_installation_date", "2014-11-12", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("battery_warranty_expiration_date", "2019-11-12", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("battery_maintenance_date", "2016-11-12", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("u_size",  "40",        @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "0",       @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer", "EATON", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("ip.1", "10.130.36.13", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("full_hostname.1", "10.130.36.13", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_name",    "Stephane", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_email",    "stephane@the-pink-panter.movie", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",    "+33 (0)4 42 42 42 42", @last_asset_element);
+
+insert into t_bios_asset_group_relation
+    (id_asset_group, id_asset_element)
+values
+(
+    (select id_asset_element from `t_bios_asset_element` where name = 'GROUP1-LAB'),
+    (select id_asset_element from `t_bios_asset_element` where name = 'UPS3PH-LAB')
+);
 /* Asset links */
 
 /* link (FEED-LAB, UPS3PH-LAB, 'power chain') */
@@ -695,13 +705,6 @@ values
     "5",
     "2"
 );
-
-/* KAROL-LAB */
-
-insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, asset_tag) values ("KAROL-LAB", @asset_element_device, @asset_device_server, @last_rack, "myasset28");
-set @last_asset_element = LAST_INSERT_ID();
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description","Server for Karols average testing data", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("creator", "Vaporware", @last_asset_element);
 
 
 INSERT INTO t_bios_agent_info (info,agent_name) values ('{"key1" : "value1", "key2" : "value2", "indicators_gauges" : { "power":{ "gauge_min" : 0, "gauge_max" : 50, "threshold_1" : 30, "threshold_2" : 40, "constant_tendency_threshold" : 1 }, "temperature":{ "gauge_min" : 10, "gauge_max" : 60, "threshold_1" : 36, "threshold_2" : 48, "constant_tendency_threshold" : 1 }, "humidity":{ "gauge_min" : 0, "gauge_max" : 100, "threshold_1" : 60, "threshold_2" : 80, "constant_tendency_threshold" : 1 }, "compute":{ "gauge_min" : 0, "gauge_max" : 100, "threshold_1" : 60, "threshold_2" : 80, "constant_tendency_threshold" : 1 }, "network":{ "gauge_min" : 0, "gauge_max" : 100, "threshold_1" : 60, "threshold_2" : 80, "constant_tendency_threshold" : 1 }, "storage":{ "gauge_min" : 0, "gauge_max" : 100, "threshold_1" : 60, "threshold_2" : 80, "constant_tendency_threshold" : 1 }, "space":{ "gauge_min" : 0, "gauge_max" : 420, "threshold_1" : 252, "threshold_2" : 336, "constant_tendency_threshold" : 1 } }, "rack_gauge_power": { "gauge_min": 0, "gauge_max": 5, "threshold_1": 3, "threshold_2": 4 }, "ups_gauge_power": { "gauge_min": 0, "gauge_max": 50, "threshold_1": 30, "threshold_2": 40 } } ' , "UI_PROPERTIES" );
