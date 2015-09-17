@@ -40,8 +40,8 @@
 #include "utils++.h"
 #include "asset_types.h"
 #include "dbpath.h"
-
 #include "assets.h"
+#include "cleanup.h"
 
 #ifdef DEBUG
 #include <exception>
@@ -298,7 +298,7 @@ int8_t access_auth_level;
 
     // installation date
     std::string installation_date = "N/A";
-    char *accepted_license = accepted_license_file ();
+    _scoped_char *accepted_license = accepted_license_file ();
     if (!accepted_license) {
         cmderr_total << "Error retrieving accepted license file location. accepted_license_file () failed.\n";
     }
