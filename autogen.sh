@@ -53,8 +53,8 @@ fi
 if [ ! -d ./config ]; then
     mkdir -p ./config
     if [ $? -ne 0 ]; then
-	echo "autogen.sh: error: could not create directory: ./config." 1>&2
-	exit 1
+        echo "autogen.sh: error: could not create directory: ./config." 1>&2
+        exit 1
     fi
 fi
 
@@ -75,54 +75,54 @@ SHOULD_MKBUILDDEPS=no
 
 if [ x"$FORCE_AUTORECONF" != xyes ]; then
     if [ ! -s "./configure" ]; then
-	echo "autogen.sh: info: configure does not exist."
-	SHOULD_AUTORECONF=yes
+        echo "autogen.sh: info: configure does not exist."
+        SHOULD_AUTORECONF=yes
     else
-	_OUT="`find . -maxdepth 1 -type f -name configure -newer configure.ac`"
-	if [ $? != 0 -o x"$_OUT" != x"./configure" ]; then
-	    echo "autogen.sh: info: configure is older than configure.ac."
-	    SHOULD_AUTORECONF=yes
-	fi
+        _OUT="`find . -maxdepth 1 -type f -name configure -newer configure.ac`"
+        if [ $? != 0 -o x"$_OUT" != x"./configure" ]; then
+            echo "autogen.sh: info: configure is older than configure.ac."
+            SHOULD_AUTORECONF=yes
+        fi
 
-	if [ x"$SHOULD_AUTORECONF" = xno -o x"$FORCE_AUTORECONF" = xno ]; then
-	    _OUT="`find ./m4/ -type f -name '*.m4' -newer configure`"
-	    if [ $? != 0 -o x"$_OUT" != x ]; then
-		echo "autogen.sh: info: configure is older than some ./m4/*.m4 files:"
-		echo "$_OUT"
-		SHOULD_AUTORECONF=yes
-	    fi
-	fi
+        if [ x"$SHOULD_AUTORECONF" = xno -o x"$FORCE_AUTORECONF" = xno ]; then
+            _OUT="`find ./m4/ -type f -name '*.m4' -newer configure`"
+            if [ $? != 0 -o x"$_OUT" != x ]; then
+                echo "autogen.sh: info: configure is older than some ./m4/*.m4 files:"
+                echo "$_OUT"
+                SHOULD_AUTORECONF=yes
+            fi
+        fi
     fi
 
     [ x"$SHOULD_AUTORECONF" = xno -o x"$FORCE_AUTORECONF" = xno ] && \
     for M_am in `find . -name Makefile.am`; do
-	DIR="`dirname ${M_am}`"
-	if [ ! -s "$DIR/Makefile.in" ]; then
-	    echo "autogen.sh: info: Missing $DIR/Makefile.in"
-	    SHOULD_AUTORECONF=yes
-	else
-	    _OUT="`cd "$DIR" && find . -maxdepth 1 -type f -name Makefile.in -newer Makefile.am`"
-	    if [ $? != 0 -o x"$_OUT" != x"./Makefile.in" ]; then
-		echo "autogen.sh: info: $DIR/Makefile.in is older than $DIR/Makefile.am."
-		SHOULD_AUTORECONF=yes
-	    fi
-	fi
+        DIR="`dirname ${M_am}`"
+        if [ ! -s "$DIR/Makefile.in" ]; then
+            echo "autogen.sh: info: Missing $DIR/Makefile.in"
+            SHOULD_AUTORECONF=yes
+        else
+            _OUT="`cd "$DIR" && find . -maxdepth 1 -type f -name Makefile.in -newer Makefile.am`"
+            if [ $? != 0 -o x"$_OUT" != x"./Makefile.in" ]; then
+                echo "autogen.sh: info: $DIR/Makefile.in is older than $DIR/Makefile.am."
+                SHOULD_AUTORECONF=yes
+            fi
+        fi
     done
 fi
 
 case x"$FORCE_AUTORECONF" in
     xauto)
-	if [ x"$SHOULD_AUTORECONF" = xyes ]; then
-	    FORCE_AUTORECONF=yes
-	else
-	    echo "autogen.sh: info: no prerequisite changes detected for the configure script or Makefiles."
-	fi
-	;;
+        if [ x"$SHOULD_AUTORECONF" = xyes ]; then
+            FORCE_AUTORECONF=yes
+        else
+            echo "autogen.sh: info: no prerequisite changes detected for the configure script or Makefiles."
+        fi
+        ;;
     xno)
-	if [ x"$SHOULD_AUTORECONF" = xyes ]; then
-	    echo "autogen.sh: info: not rebuilding the configure script due to explicit request, but prerequisite changes were detected for the configure script or Makefiles." >&2
-	fi # else = don't want and don't have to rebuild configure, noop
-	;;
+        if [ x"$SHOULD_AUTORECONF" = xyes ]; then
+            echo "autogen.sh: info: not rebuilding the configure script due to explicit request, but prerequisite changes were detected for the configure script or Makefiles." >&2
+        fi # else = don't want and don't have to rebuild configure, noop
+        ;;
 esac
 
 if [ x"$FORCE_AUTORECONF" = xyes ]; then
@@ -130,8 +130,8 @@ if [ x"$FORCE_AUTORECONF" = xyes ]; then
     autoreconf --install --force --verbose -I config
     RES=$?
     if [ $RES -ne 0 ]; then
-	echo "autogen.sh: error: autoreconf exited with status $RES" 1>&2
-	exit 1
+        echo "autogen.sh: error: autoreconf exited with status $RES" 1>&2
+        exit 1
     fi
 fi
 
@@ -143,6 +143,7 @@ if [ ! -s "./configure" -o ! -x "./configure" ]; then
 fi
 
 MKBD_DSC="`dirname $0`/obs/core.dsc"
+MKBD_CTL="`dirname $0`/obs/debian.control"
 MKBD_DEB_PATTERN='*-build-deps_*_all.deb'
 MKBD_DEB="`ls -1 $MKBD_DEB_PATTERN 2>/dev/null | egrep 'bios|core' | head -1`" || \
     MKBD_DEB=""
@@ -152,30 +153,36 @@ if which mk-build-deps >/dev/null && which apt-get > /dev/null && [ -s "$MKBD_DS
     # mk-build-deps and debian packaging are at all supported
     if [ x"$FORCE_MKBUILDDEPS" != xyes ]; then
         if [ ! -s "$MKBD_DEB" ]; then
-	    echo "autogen.sh: info: $MKBD_DEB does not exist."
-	    SHOULD_MKBUILDDEPS=yes
+            echo "autogen.sh: info: $MKBD_DEB does not exist."
+            SHOULD_MKBUILDDEPS=yes
         else
-	    _OUT="`find . -maxdepth 1 -type f -name "$MKBD_DEB_PATTERN" \! -newer "$MKBD_DSC"`"
-	    if [ $? != 0 -o x"$_OUT" != x"" ]; then
-	        echo "autogen.sh: info: $MKBD_DEB is older than $MKBD_DSC."
-	        SHOULD_MKBUILDDEPS=yes
+            _OUT="`find . -maxdepth 1 -type f -name "$MKBD_DEB_PATTERN" \! -newer "$MKBD_DSC"`"
+            if [ $? != 0 -o x"$_OUT" != x"" ]; then
+                echo "autogen.sh: info: $MKBD_DEB is older than $MKBD_DSC."
+                SHOULD_MKBUILDDEPS=yes
+            else
+                _OUT="`find . -maxdepth 1 -type f -name "$MKBD_DEB_PATTERN" \! -newer "$MKBD_CTL"`"
+                if [ $? != 0 -o x"$_OUT" != x"" ]; then
+                    echo "autogen.sh: info: $MKBD_DEB is older than $MKBD_CTL."
+                    SHOULD_MKBUILDDEPS=yes
+                fi
             fi
-	fi
+        fi
     fi
 
     case x"$FORCE_MKBUILDDEPS" in
     xauto)
-	if [ x"$SHOULD_MKBUILDDEPS" = xyes ]; then
-	    FORCE_MKBUILDDEPS=yesauto
-	else
-	    echo "autogen.sh: info: no prerequisite package requirement changes detected."
-	fi
-	;;
+        if [ x"$SHOULD_MKBUILDDEPS" = xyes ]; then
+            FORCE_MKBUILDDEPS=yesauto
+        else
+            echo "autogen.sh: info: no prerequisite package requirement changes detected."
+        fi
+        ;;
     xno)
-	if [ x"$SHOULD_MKBUILDDEPS" = xyes ]; then
-	    echo "autogen.sh: info: not verifying and perhaps installing prerequisite packages, even though the system may be obsolete." >&2
-	fi # else = don't want and don't have to verify pkgs, noop
-	;;
+        if [ x"$SHOULD_MKBUILDDEPS" = xyes ]; then
+            echo "autogen.sh: info: not verifying and perhaps installing prerequisite packages, even though the system may be obsolete." >&2
+        fi # else = don't want and don't have to verify pkgs, noop
+        ;;
     esac
 
     if [ x"$FORCE_MKBUILDDEPS" = xyes -o x"$FORCE_MKBUILDDEPS" = xyesauto ]; then
