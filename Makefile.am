@@ -1430,7 +1430,7 @@ tntnet.xml.example: src/web/tntnet.xml
 	       -e 's|<port>8000</port>|<port>80</port>|' \
 	       -e 's|<port>8443</port>|<port>443</port>|' \
 	       -e 's|<!-- ssl start.*|<!-- ssl start -->|' \
-	       -e 's|^\([[:blank:]]*\)[^[:blank:]]ssl end -->|<!-- ssl end -->|' \
+	       -e 's|^\([[:blank:]]*\)ssl end -->|\1<!-- ssl end -->|' \
 	       -e 's|<!--\ <daemon>0</daemon>\ -->|<daemon>1</daemon>|' $< > $@ || \
 	rm -f $@
 
