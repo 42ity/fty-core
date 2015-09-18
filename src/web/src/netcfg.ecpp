@@ -84,7 +84,7 @@ if(rex_ncfg.match(request.getUrl())) {
 
 // We are discussing interface configuration, are we asked about real interface?
 std::string iface = request.getArg("iface");
-static cxxtools::Regex rex_anum("^[a-z0-9]+$");
+static cxxtools::Regex rex_anum("^[a-z0-9A-Z]+$");
 if(!rex_anum.match(iface)) {
 </%cpp>
 { "error": "Wrong interface name" }
