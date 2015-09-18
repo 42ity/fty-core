@@ -24,6 +24,7 @@
  */
 #><%pre>
 #include <string>
+#include <algorithm>
 
 #include <cxxtools/serializationinfo.h>
 #include <cxxtools/jsondeserializer.h>
@@ -104,6 +105,7 @@ s_passwd(
     int r = s_passwd(user, old_passwd, new_passwd, err);
     if (r != 0) {
         std::string msg = "@libexecdir@/@PACKAGE@/bios-passwd: changing passwd for user '" + user + "' failed with code " + std::to_string(r);
+        std::replace(err.begin(), err.end(), '\n', ' ');
 </%cpp>
 {
     "errors" : [
