@@ -223,6 +223,12 @@ void NUTDevice::setDefaultThreshold(int threshold) {
 void NUTDevice::updatePhysics(const std::string& varName, const float newValue, int threshold) {
     long int newValueInt = round(newValue * 100.0);
     if( threshold == NUT_USE_DEFAULT_THRESHOLD ) threshold = this->getThreshold(varName);
+    if( newValueInt > INT32_MAX  || newValueInt < INT32_MIN ) {
+        // value is out of range (like gigawats), the measurement is invalid
+        log_error("%s value exceeded the range on %s", varName.c_str(), _name.c_str() );
+        _physics.erase( varName );
+        return;
+    }
     if( _physics.count( varName ) == 0 ) {
         // this is new value
         struct NUTPhysicalValue pvalue;
@@ -248,11 +254,6 @@ void NUTDevice::updatePhysics(const std::string& varName, const float newValue, 
             pvalue.candidate = newValueInt;
             _physics[ varName ] = pvalue;
         }
-    }
-    if( newValueInt > INT32_MAX  || newValueInt < INT32_MIN ) {
-        // value is out of range (like gigawats), the measurement is invalid
-        log_error("%s value exceeded the range on %s", varName.c_str(), _name.c_str() );
-        _physics.erase( varName );
     }
 }
 
