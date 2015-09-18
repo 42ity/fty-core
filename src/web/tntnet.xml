@@ -260,7 +260,7 @@
   <!-- ssl start
     <listener>
       <port>8443</port>
-      <certificate>bios.pem</certificate>
+      <certificate>/etc/tntnet/bios.pem</certificate>
     </listener>
    ssl end -->
   </listeners>
