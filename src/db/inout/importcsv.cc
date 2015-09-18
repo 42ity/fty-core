@@ -165,7 +165,7 @@ int
     if ( parent.item.type_id != persist::asset_type::RACK )
         return 1;
     db_reply <std::vector<device_info_t>> devices =
-        select_asset_device_by_container
+        select_assets_by_container
          (conn, parent_id);
     pdu_epdu_count = 0;
     element_id = 0;

@@ -87,7 +87,7 @@ int free_u_size( a_elmnt_id_t elementId)
         log_debug( "rack size is %i", freeusize );
 
         // get devices inside the rack
-        auto devices = persist::select_asset_device_by_container(conn, elementId);
+        auto devices = persist::select_assets_by_container(conn, elementId);
 
         if( ! devices.status ) {
             return -1;
@@ -153,7 +153,7 @@ rack_outlets_available(
         [&conn, &sum, &tainted, &res](const tntdb::Row &row)
         {
             a_elmnt_id_t device_subtype = 0;
-            row["subtype"].get(device_subtype);
+            row["subtype_id"].get(device_subtype);
             if (!persist::is_epdu(device_subtype) && !persist::is_pdu(device_subtype))
                 return;
 
@@ -178,7 +178,7 @@ rack_outlets_available(
 
     try {
         conn = tntdb::connectCached(url);
-        persist::select_asset_device_by_container(
+        persist::select_assets_by_container(
                 conn, elementId, cb);
 
     } catch (std::exception &e) {

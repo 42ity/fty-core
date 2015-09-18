@@ -217,13 +217,40 @@ static db_reply <std::map<std::string, std::vector<std::string> > >
     for ( auto &container : allContainers.item )
     {
         // select all devices in the container
-        auto container_devices_set = persist::select_asset_device_by_container
-                                                        (conn, container.id);
+        std::map <a_elmnt_id_t, device_info_t> container_devices{};
+        std::function<void(const tntdb::Row&)> func = \
+            [&container_devices](const tntdb::Row& row)
+            {
+                a_elmnt_tp_id_t type_id = 0;
+                row["type_id"].get(type_id);
+                
+                if ( type_id == persist::asset_type::DEVICE )
+                {
+                    std::string device_name = "";
+                    row["name"].get(device_name);
+
+                    a_elmnt_id_t asset_id = 0;
+                    row["asset_id"].get(asset_id);
+
+                    a_elmnt_stp_id_t device_type_id = 0;
+                    row["subtype_id"].get(device_type_id);
+
+                    std::string device_type_name = "";
+                    row["subtype_name"].get(device_type_name);
+
+                    container_devices.emplace (asset_id,
+                        std::make_tuple(asset_id, device_name,
+                                        device_type_name, device_type_id));
+                }
+            };
+
+
+        auto rv = persist::select_assets_by_container
+                                (conn, container.id, func);
 
         // here would be placed names of devices to summ up
         std::vector<std::string> result(0);
-
-        if ( container_devices_set.status == 0 )
+        if ( rv != 0 )
         {
             log_warning ("'%s': problems appeared in selecting devices",
                                                     container.name.c_str());
@@ -232,22 +259,13 @@ static db_reply <std::map<std::string, std::vector<std::string> > >
                                                     (container.name, result));
             continue;
         }
-        if ( container_devices_set.item.empty() )
+        if ( container_devices.empty() )
         {
             log_warning ("'%s': has no devices", container.name.c_str());
             // so return an empty set of power devices
             ret.item.insert(std::pair< std::string, std::vector<std::string> >
                                                     (container.name, result));
             continue;
-        }
-
-        // create a map, for better use
-        std::map <a_elmnt_id_t, device_info_t> container_devices{};
-        for ( auto &container_dev: container_devices_set.item )
-        {
-            a_elmnt_id_t tmp = std::get<0>(container_dev);
-            container_devices.insert(std::pair<a_elmnt_id_t, device_info_t>
-                                                        (tmp, container_dev));
         }
 
         auto links = select_links_by_container (conn, container.id);

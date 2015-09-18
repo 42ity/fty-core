@@ -16,8 +16,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-/*! \file   assetd.h
-    \brief  Basic delete functions for assets
+/*! \file   assetcr.h
+    \brief  Basic create functions for assets
     \author Alena Chernikava <AlenaChernikava@eaton.com>
 */
 
@@ -30,6 +30,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "dbhelpers.h"
 
 #include "db/assetdef.h"
+
 namespace persist {
 
 db_reply_t
