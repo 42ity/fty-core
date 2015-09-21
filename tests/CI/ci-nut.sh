@@ -105,8 +105,48 @@ create_ups_dev_file() {
         > $FILE
 }
 
+list_nut_devices() {
+    awk '/^\[.+\]/{ print substr($0,2,index($0,"]") - 2); }' < $CFGDIR/ups.conf 
+}
+
+have_nut_target() {
+    local STATE=`systemctl show nut-driver.target | grep -E ^LoadState= | cut -d= -f2`
+    if [ "$STATE" = "not-found" ] ; then
+        echo 0
+    else
+        echo 1
+    fi
+}
+
+stop_nut() {
+    if [ "$(have_nut_target)" = 1 ] ; then
+        systemctl stop nut-server
+        systemctl stop "nut-driver@*"
+        systemctl disable "nut-driver@*"
+    else
+        systemctl stop nut-server.service
+        systemctl stop nut-driver.service
+    fi
+    sleep 3
+}
+
+start_nut() {
+    local ups
+    if [ "$(have_nut_target)" = 1 ] ; then
+        for ups in $(list_nut_devices) ; do
+            systemctl enable "nut-driver@$ups"
+            systemctl start "nut-driver@$ups"
+        done
+        systemctl start nut-server.service
+    else
+        systemctl start nut-server.service
+        systemctl start nut-driver.service
+    fi
+    sleep 3
+}
 
 create_nut_config() {
+    stop_nut
     echo "creating nut config"
     echo "MODE=standalone" > $CFGDIR/nut.conf 
 
@@ -134,14 +174,9 @@ create_nut_config() {
 
     chown nut:root $CFGDIR/*.dev
     echo "restart NUT server"
-    systemctl stop nut-server
-    systemctl stop nut-driver
-    sleep 3
-    systemctl start nut-driver
-    sleep 3
-    systemctl start nut-server
+    start_nut
     echo "waiting for a while"
-    sleep 15
+    sleep 10
 }
 
 expected_db_value() {

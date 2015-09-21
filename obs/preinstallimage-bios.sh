@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 #   Copyright (c) 2014-2015 Eaton
 #
@@ -18,7 +18,7 @@
 #   with this program; if not, write to the Free Software Foundation, Inc.,
 #   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-#! \file    restapi-request.sh
+#! \file    preinstallimage-bios.sh
 #  \brief   Script to generate the expected directory structure and configuration files
 #  \author  Michal Hrusecky <MichalHrusecky@Eaton.com>
 #  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
@@ -66,21 +66,31 @@ nosoup4u
 nosoup4u
 EOF
 
-useradd -m bios -G sasl -s /bin/bash
-passwd bios <<EOF
-nosoup4u
-nosoup4u
+groupadd bios
+useradd -m admin -G sasl -N -g bios -s /bin/bash
+passwd admin <<EOF
+admin
+admin
 EOF
 
 # Workplace for the webserver and graph daemons
 mkdir -p /var/lib/bios
-chown -R bios:bios /var/lib/bios
+chown -R admin /var/lib/bios
 
 # A few helper aliases
 cat > /etc/profile.d/bios_aliases.sh << EOF
 alias dbb='mysql -u root box_utf8 -t'
 alias la='ls -la'
 EOF
+
+# BIOS configuration file
+touch /etc/default/bios
+chown admin /etc/default/bios
+chmod a+r /etc/default/bios
+
+# Setup BIOS lenses
+mkdir -p /usr/share/bios/lenses
+ln -sr /usr/share/augeas/lenses/dist/{build.aug,ethers.aug,interfaces.aug,ntp.aug,ntpd.aug,pam.aug,resolv.aug,rx.aug,sep.aug,util.aug} /usr/share/bios/lenses
 
 # Setup u-Boot
 echo '/dev/mtd3 0x00000 0x40000 0x40000' > /etc/fw_env.config
@@ -94,14 +104,14 @@ mkdir -p /etc/network
 
 cat > /etc/network/interfaces <<EOF
 auto lo
-allow-hotplug eth0 eth1 eth2
+allow-hotplug eth0 LAN1 LAN2 LAN3
 iface lo inet loopback
-iface eth0 inet dhcp
-iface eth1 inet static
+iface `file -b /bin/bash | sed -e 's|.*x86-64.*|eth0|' -e 's|.*ARM.*|LAN1|'` inet dhcp
+iface LAN2 inet static
     address 192.168.1.10
     netmask 255.255.255.0
     gateway 192.168.1.1
-iface eth2 inet static
+iface LAN3 inet static
     address 192.168.2.10
     netmask 255.255.255.0
     gateway 192.168.2.1
@@ -116,7 +126,7 @@ cat > /etc/hosts <<EOF
 127.0.0.1 localhost bios
 EOF
 
-DEFAULT_IFPLUGD_INTERFACES="eth0 eth1 eth2"
+DEFAULT_IFPLUGD_INTERFACES="eth0 LAN1 LAN2 LAN3"
 mkdir -p /etc/default
 [ -s "/etc/default/networking" ] && \
     sed -e 's,^[ \t\#]*\(EXCLUDE_INTERFACES=\)$,\1"'"$DEFAULT_IFPLUGD_INTERFACES"'",' -i /etc/default/networking \
@@ -132,7 +142,7 @@ EOF
 # Setup APT package sources
 mkdir -p /etc/apt/sources.list.d
 cat > /etc/apt/sources.list.d/debian.list <<EOF
-deb http://ftp.debian.org/debian testing main contrib non-free
+deb http://ftp.debian.org/debian jessie main contrib non-free
 deb http://ftp.debian.org/debian jessie-updates main contrib non-free
 deb http://security.debian.org   jessie/updates main contrib non-free
 deb http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0 /
@@ -184,6 +194,8 @@ done
 # Setup bios security
 mkdir -p /etc/pam.d
 cp /usr/share/bios/examples/config/pam.d/* /etc/pam.d
+RULES="`sed -n 's|.*pam_cracklib.so||p' /etc/pam.d/bios`"
+[ "$IMGTYPE" = devel ] || sed -i "s|\\(.*pam_cracklib.so\\).*|\1$RULES|" /etc/pam.d/common-password
 
 mkdir -p /etc/sudoers.d
 cp /usr/share/bios/examples/config/sudoers.d/bios_00_base /etc/sudoers.d
@@ -221,7 +233,7 @@ systemctl enable malamute
 systemctl preset-all
 
 # Fix tntnet unit
-cat > /usr/lib/systemd/system/tntnet@.service <<EOF
+cat > /etc/systemd/system/tntnet@.service <<EOF
 [Unit]
 Description=Tntnet web server using /etc/tntnet/%I.xml
 After=network.target bios-db-init.service
@@ -229,7 +241,12 @@ Requires=bios-db-init.service
 
 [Service]
 Type=simple
+EnvironmentFile=-/etc/default/bios
+EnvironmentFile=-/etc/sysconfig/bios
+EnvironmentFile=-/etc/default/bios__%n.conf
+EnvironmentFile=-/etc/sysconfig/bios__%n.conf
 PrivateTmp=true
+ExecStartPre=/usr/share/bios/scripts/ssl-create.sh
 ExecStart=/usr/bin/tntnet -c /etc/tntnet/%i.xml
 Restart=on-failure
 
@@ -241,8 +258,7 @@ rm -f /etc/init.d/tntnet
 # Enable REST API via tntnet
 cp /usr/share/bios/examples/tntnet.xml.* /etc/tntnet/bios.xml
 mkdir -p /usr/share/core-0.1/web/static
-sed -i 's|<!--.*<user>.*|<user>bios</user>|' /etc/tntnet/bios.xml
-sed -i 's|\(.*\)<port>.*|\1<port>80</port>|' /etc/tntnet/bios.xml
+sed -i 's|<!--.*<user>.*|<user>admin</user>|' /etc/tntnet/bios.xml
 sed -i 's|<!--.*<group>.*|<group>sasl</group>|' /etc/tntnet/bios.xml
 sed -i 's|.*<daemon>.*|<daemon>0</daemon>|' /etc/tntnet/bios.xml
 sed -i 's|\(.*\)<dir>.*|\1<dir>/usr/share/bios-web/</dir>|' /etc/tntnet/bios.xml
@@ -251,6 +267,12 @@ systemctl enable tntnet@bios
 # Disable logind
 systemctl disable systemd-logind
 find / -name systemd-logind.service -delete
+
+# Disable expensive debug logging by default on non-devel images
+[ "$IMGTYPE" = devel ] || {
+    mkdir -p /etc/default/
+    echo "BIOS_LOG_LEVEL=LOG_INFO" > /etc/default/bios
+}
 
 # Setup some busybox commands
 for i in vi tftp wget; do
@@ -340,11 +362,68 @@ chmod a+rx /etc/zabbix/scripts/queryDisks.sh
 echo 'export LANG="C"' > /etc/profile.d/lang.sh
 for V in LANG LANGUAGE LC_ALL ; do echo "$V="'"C"'; done > /etc/default/locale
 
+# logout from /bin/bash after 600s/10m of inactivity
+echo 'export TMOUT=600' > /etc/profile.d/tmout.sh
+
 # Help ifup and ifplugd do the right job
 install -m 0755 /usr/share/bios/scripts/ethtool-static-nolink /etc/network/if-pre-up.d
 install -m 0755 /usr/share/bios/scripts/ifupdown-force /etc/ifplugd/action.d/ifupdown-force
 install -m 0755 /usr/share/bios/scripts/udhcpc-override.sh /usr/local/sbin/udhcpc
 echo '[ -s /usr/share/bios/scripts/udhcpc-ntp.sh ] && . /usr/share/bios/scripts/udhcpc-ntp.sh' >> /etc/udhcpc/default.script
+
+#########################################################################
+# install iptables filtering
+
+## startup script
+cat >/etc/network/if-pre-up.d/iptables-up <<[eof]
+#!/bin/sh
+test -r /etc/default/iptables && iptables-restore < /etc/default/iptables
+test -r /etc/default/ip6tables && ip6tables-restore < /etc/default/ip6tables
+[eof]
+chmod 755 /etc/network/if-pre-up.d/iptables-up
+
+## ipv4 default table
+cat > /etc/default/iptables <<[eof]
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+-A INPUT -i lo -j ACCEPT
+-A INPUT -d 127.0.0.0/8 ! -i lo -j REJECT --reject-with icmp-port-unreachable
+-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 80 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 443 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 4222 -j ACCEPT
+-A INPUT -p icmp -j ACCEPT
+-A INPUT -j REJECT --reject-with icmp-port-unreachable
+-A FORWARD -j REJECT --reject-with icmp-port-unreachable
+-A OUTPUT -j ACCEPT
+COMMIT
+[eof]
+
+## ipv6 default table
+cat > /etc/default/ip6tables <<[eof]
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+-A INPUT -i lo -j ACCEPT
+-A INPUT -d ::1/128 ! -i lo -j REJECT --reject-with icmp6-port-unreachable
+-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 80 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 443 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 4222 -j ACCEPT
+-A INPUT -p icmp -j ACCEPT
+-A INPUT -j REJECT --reject-with icmp6-port-unreachable
+-A FORWARD -j REJECT --reject-with icmp6-port-unreachable
+-A OUTPUT -j ACCEPT
+COMMIT
+[eof]
+
+# install iptables filtering end
+#########################################################################
 
 # More space saving
 SPACERM="rm -rf"
@@ -354,7 +433,7 @@ case "$SPACERM" in
         install -m 0755 /usr/share/bios/scripts/resolveip.sh /usr/bin/resolveip
         ;;
 esac
-for i in /usr/share/mysql/* /usr/share/locale /usr/share/bios/{docker,examples,develop,obs}; do
+for i in /usr/share/mysql/* /usr/share/locale /usr/share/bios/{docker,develop,obs}; do
    [ -f "$i" ] || \
    [ "$i" = /usr/share/mysql/charsets ] || \
    [ "$i" = /usr/share/mysql/english ] || \
@@ -365,32 +444,31 @@ done
 dpkg --get-selections
 dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n
 
-# Get rid of static qemu binaries needed for crossinstallation
-# TODO: Integrate this better into build-recipe-preinstallimage/init_buildsystem
-rm -f /usr/bin/qemu*
-
 # Prepare the ccache (for development image type)
 case "$IMGTYPE" in
     devel)
         [ -x /usr/sbin/update-ccache-symlinks ] && \
 		/usr/sbin/update-ccache-symlinks || true
         # If this image ends up on an RC3, avoid polluting NAND with ccache
-        mkdir -p /home/bios/.ccache
-        chown -R bios:bios /home/bios/.ccache
+        mkdir -p /home/admin/.ccache
+        chown -R admin /home/admin/.ccache
         rm -rf /root/.ccache
-        ln -s /home/bios/.ccache /root/.ccache
+        ln -s /home/admin/.ccache /root/.ccache
         echo "export PATH=\"/usr/lib/ccache:/usr/lib64/ccache:\$PATH\"" > /etc/profile.d/ccache.sh
         ;;
 esac
 
 # Prepate the source-code details excerpt, if available
 [ -s "/usr/share/bios/.git_details" ] && \
-    /bin/grep ESCAPE "/usr/share/bios/.git_details" > /usr/share/bios-web/git_details.txt || \
+    grep ESCAPE "/usr/share/bios/.git_details" > /usr/share/bios-web/git_details.txt || \
     echo "WARNING: Do not have /usr/share/bios/.git_details"
 
 # Timestamp the end of OS image generation
-[ -x /bin/date ] && \
-    LANG=C /bin/date -u > /usr/share/bios-web/image-version.txt || \
+LANG=C date -u > /usr/share/bios-web/image-version.txt || \
     echo "WARNING: Could not record OBS image-building timestamp"
+
+# Get rid of static qemu binaries needed for crossinstallation
+# TODO: Integrate this better into build-recipe-preinstallimage/init_buildsystem
+rm -f /usr/bin/qemu*
 
 echo "INFO: successfully reached the end of script: $0 $@"
