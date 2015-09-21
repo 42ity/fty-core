@@ -66,7 +66,8 @@ while [ $# -gt 0 ]; do
             SASL_SERVICE="$2"
             shift
             ;;
-        -q|--quick) SKIP_SANITY=yes ;;
+        # TODO: remove -q as it is misleading as -q is usually quite
+        -q|--quick|-f|--force) SKIP_SANITY=yes ;;
         *)  # fall through - these are lists of tests to do
             break
             ;;
@@ -81,46 +82,42 @@ NEED_BUILDSUBDIR=no determineDirs_default || true
 . "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
 #cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
-[ -n "$BIOS_USER"   ] || BIOS_USER="bios"
-[ -n "$BIOS_PASSWD" ] || BIOS_PASSWD="nosoup4u"
-[ -n "$SASL_SERVICE" ] || SASL_SERVICE="bios"
-
 PATH="$PATH:/sbin:/usr/sbin"
-
-# fixture ini
-if ! pidof saslauthd > /dev/null; then
-    CODE=1 die "saslauthd is not running, please start it first!"
-fi
-
-if ! pidof malamute > /dev/null; then
-    logmsg_error "malamute is not running (locally), you may need to start it first!"
-fi
-
-if ! pidof mysqld > /dev/null ; then
-    logmsg_error "mysqld is not running (locally), you may need to start it first!"
-fi
-
-# Check the user account in system
-# We expect SASL uses Linux PAM, therefore getent will tell us all we need
-if ! getent passwd "$BIOS_USER" > /dev/null; then
-    CODE=2 die "User $BIOS_USER is not known to system administrative database" \
-        "To add it locally, run: " \
-        "    sudo /usr/sbin/useradd --comment 'BIOS REST API testing user' --groups nobody,sasl --no-create-home --no-user-group $BIOS_USER" \
-        "and don't forget the password '$BIOS_PASSWD'"
-fi
-
-SASLTEST="`which testsaslauthd`"
-[ -x "$SASLTEST" ] || SASLTEST="/usr/sbin/testsaslauthd"
-[ -x "$SASLTEST" ] || SASLTEST="/sbin/testsaslauthd"
-
-$SASLTEST -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" > /dev/null || \
-    CODE=3 die "SASL autentication for user '$BIOS_USER' has failed." \
-        "Check the existence of /etc/pam.d/bios (and maybe /etc/sasl2/bios.conf for some OS distributions)"
 
 if [ "$SKIP_SANITY" = yes ]; then
     # This is hit e.g. when a wget-based "curl emulator" is used for requests
     logmsg_info "$0: REST API sanity checks skipped due to SKIP_SANITY=$SKIP_SANITY"
 else
+    # fixture ini
+    if ! pidof saslauthd > /dev/null; then
+        CODE=1 die "saslauthd is not running, please start it first!"
+    fi
+
+    if ! pidof malamute > /dev/null; then
+        logmsg_error "malamute is not running (locally), you may need to start it first!"
+    fi
+
+    if ! pidof mysqld > /dev/null ; then
+        logmsg_error "mysqld is not running (locally), you may need to start it first!"
+    fi
+
+    # Check the user account in system
+    # We expect SASL uses Linux PAM, therefore getent will tell us all we need
+    if ! getent passwd "$BIOS_USER" > /dev/null; then
+        CODE=2 die "User $BIOS_USER is not known to system administrative database" \
+            "To add it locally, run: " \
+            "    sudo /usr/sbin/useradd --comment 'BIOS REST API testing user' --groups nobody,sasl --no-create-home --no-user-group $BIOS_USER" \
+            "and don't forget the password '$BIOS_PASSWD'"
+    fi
+
+    SASLTEST="`which testsaslauthd`"
+    [ -x "$SASLTEST" ] || SASLTEST="/usr/sbin/testsaslauthd"
+    [ -x "$SASLTEST" ] || SASLTEST="/sbin/testsaslauthd"
+
+    $SASLTEST -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" > /dev/null || \
+        CODE=3 die "SASL autentication for user '$BIOS_USER' has failed." \
+            "Check the existence of /etc/pam.d/bios (and maybe /etc/sasl2/bios.conf for some OS distributions)"
+
     logmsg_info "Testing webserver ability to serve the REST API"
     if [ -n "`api_get "/oauth2/token" 2>&1 | grep 'HTTP/.* 500'`" ]; then
         logmsg_error "api_get() returned an error:"
@@ -157,6 +154,12 @@ CMPJSON_PY="`pwd`/cmpjson.py"
 #[ -z "$CMP" ] && CMP="`pwd`/cmpjson.py"
 [ -z "$CMP" ] && CMP="$CMPJSON_SH"
 [ -s "$CMP" ] || CODE=5 die "Can not use comparator '$CMP'"
+
+[ -z "${JSONSH-}" ] && \
+    for F in "$CHECKOUTDIR/tools/JSON.sh" "$SCRIPTDIR/JSON.sh"; do
+        [ -x "$F" -a -s "$F" ] && JSONSH="$F" && break
+    done
+[ -s "$JSONSH" ] || CODE=7 die "Can not find JSON.sh"
 
 cd web/commands || CODE=6 die "Can not change to `pwd`/web/commands"
 
@@ -265,10 +268,25 @@ for i in $POSITIVE; do
             ### each line of RESULT matches the same-numbered line of EXPECT
             test_it "compare_expectation_`basename "$CMP"`"
             "$CMP" "$EXPECTED_RESULT" "$REALLIFE_RESULT"
-            RES=$?
-        fi
-        if [ $RES -ne 0 ]; then
-            diff -Naru "$EXPECTED_RESULT" "$REALLIFE_RESULT"
+            RES_CMP=$?
+            RES_JSONV=0
+            while IFS='' read -r line || [[ -n "$line" ]]; do
+                echo "$line" | "$JSONSH"
+                RES_JSONV=$?
+                if [[ RES_JSONV -ne 0 ]]; then
+                    break
+                fi
+            done < "$REALLIFE_RESULT"
+
+            if [[ $RES_CMP -eq 0 && $RES_JSONV -eq 0 ]]; then
+                RES=$RES_CMP
+            elif [[ $RES_CMP -ne 0 ]]; then
+                RES=$RES_CMP
+                diff -Naru "$EXPECTED_RESULT" "$REALLIFE_RESULT"
+            elif [[ $RES_JSONV -ne 0 ]]; then
+                RES=$RES_JSONV
+               echo "INVALID JSON!" 
+            fi
         fi
         print_result $RES
     else
