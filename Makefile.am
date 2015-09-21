@@ -1329,7 +1329,9 @@ outage_LDADD = \
 
 outage_LDFLAGS =	-ltntdb
 
-client_SCRIPTS +=	tools/bios-passwd \
+bios_passwd_SCRIPTS =	tools/bios-passwd
+
+client_SCRIPTS +=	$(bios_passwd_SCRIPTS) \
 			tools/bios-networking
 
 ###################################################################
@@ -1442,7 +1444,10 @@ dist_noinst_DATA +=	tntnet.xml $(top_srcdir)/src/web/tntnet.xml
 CLEANFILES +=		tntnet.xml tntnet.xml.example tests/CI/tntnet.xml
 
 # Make sure needed files are up-to-date to test web-server for $BIOS REST API
-web-test-deps: tntnet.xml bios_web.la web-link-test agent-dbstore tools/bios-passwd
+# TODO: the "bios_passwd_SCRIPTS" recipe installs the script into
+# "@libexecdir@/@PACKAGE@/bios-passwd" because this is hardcoded in
+# admin_passwd.ecpp.in - not very nice regarding in-tree devtesting.
+web-test-deps: tntnet.xml bios_web.la web-link-test agent-dbstore install-bios_passwdSCRIPTS
 
 ### Execute the test web-server for $BIOS REST API
 # LD_PRELOAD=/path/to/libasan.so is needed for fair play with external libs,
