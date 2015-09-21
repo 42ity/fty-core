@@ -109,7 +109,7 @@ update_pkg_keys() {
 }
 
 update_pkg_metadata() {
-    echo "INFO: Refreshing packaging listst and metadata..."
+    echo "INFO: Refreshing packaging lists and metadata..."
     apt-get clean all
     apt-get update || { echo "Wipe metadata and retry"; rm -rf /var/lib/apt/lists/*; apt-get update; }
     dpkg --configure -a
