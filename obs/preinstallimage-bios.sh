@@ -362,6 +362,9 @@ chmod a+rx /etc/zabbix/scripts/queryDisks.sh
 echo 'export LANG="C"' > /etc/profile.d/lang.sh
 for V in LANG LANGUAGE LC_ALL ; do echo "$V="'"C"'; done > /etc/default/locale
 
+# logout from /bin/bash after 600s/10m of inactivity
+echo 'export TMOUT=600' > /etc/profile.d/tmout.sh
+
 # Help ifup and ifplugd do the right job
 install -m 0755 /usr/share/bios/scripts/ethtool-static-nolink /etc/network/if-pre-up.d
 install -m 0755 /usr/share/bios/scripts/ifupdown-force /etc/ifplugd/action.d/ifupdown-force
