@@ -1,6 +1,6 @@
 /*
 Copyright (C) 2014 Eaton
- 
+
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or
@@ -292,7 +292,7 @@ db_reply <db_a_elmnt_t>
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "name is not valid";
-        log_error ("end: %s", ret.msg);
+        log_error ("end: %s", ret.msg.c_str());
         return ret;
     }
 
@@ -307,7 +307,7 @@ db_reply <db_a_elmnt_t>
 
         tntdb::Row row = st.set("name", element_name).
                             selectRow();
-        
+
         row[0].get(ret.item.name);
         assert ( !ret.item.name.empty() );  // database is corrupted
 
@@ -317,11 +317,11 @@ db_reply <db_a_elmnt_t>
         row[4].get(ret.item.bc);
         row[5].get(ret.item.id);
         row[6].get(ret.item.type_id);
-        
+
         ret.status = 1;
         LOG_END;
         return ret;
-    } 
+    }
     catch (const tntdb::NotFound &e) {
         ret.status        = 0;
         ret.errtype       = DB_ERR;
@@ -337,7 +337,7 @@ db_reply <db_a_elmnt_t>
         ret.msg           = e.what();
         LOG_END_ABNORMAL(e);
         return ret;
-    } 
+    }
 }
 
 db_reply <std::vector<db_a_elmnt_t>>
@@ -349,7 +349,7 @@ db_reply <std::vector<db_a_elmnt_t>>
 
     std::vector<db_a_elmnt_t> item{};
     db_reply <std::vector<db_a_elmnt_t>> ret = db_reply_new(item);
-    
+
     try{
         // Can return more than one row.
         tntdb::Statement st = conn.prepareCached(
@@ -359,7 +359,7 @@ db_reply <std::vector<db_a_elmnt_t>>
             "   v_bios_asset_element v"
             " WHERE v.id_type = :typeid"
         );
-    
+
         tntdb::Result result = st.set("typeid", type_id).
                                   select();
         log_debug("[v_bios_asset_element]: were selected %" PRIu32 " rows",
@@ -369,7 +369,7 @@ db_reply <std::vector<db_a_elmnt_t>>
         for ( auto &row: result )
         {
             db_a_elmnt_t m{0,"","",0,5,0,0,0,""};
-            
+
             row[0].get(m.name);
             assert ( !m.name.empty() );  // database is corrupted
 
@@ -468,69 +468,4 @@ db_reply <std::set <std::pair<a_elmnt_id_t ,a_elmnt_id_t>>>
         LOG_END_ABNORMAL(e);
         return ret;
     }
-}
-
-// TODO redo into struct instead of tuple
-db_reply <std::vector<device_info_t>>
-    select_asset_device_by_container
-        (tntdb::Connection &conn,
-         a_elmnt_id_t element_id)
-{
-    LOG_START;
-    log_debug ("container element_id = %" PRIi32, element_id);
-
-    std::vector<device_info_t> item{};
-    db_reply <std::vector<device_info_t>> ret = db_reply_new(item);
-    
-    try{
-        // Can return more than one row.
-        tntdb::Statement st = conn.prepareCached(
-            " SELECT"
-            "   v.name,"
-            "   v.id_asset_element, v.id_asset_device_type, v.type_name"
-            " FROM"
-            "   v_bios_asset_element_super_parent v"
-            " WHERE :containerid in (v.id_parent1, v.id_parent2, v.id_parent3, v.id_parent4)"
-        );
-    
-        tntdb::Result result = st.set("containerid", element_id).
-                                  select();
-        log_debug("[t_bios_asset_element]: were selected %" PRIu32 " rows",
-                                                            result.size());
-
-        // Go through the selected elements
-        for ( auto &row: result )
-        {
-            std::string device_name = "";
-            row[0].get(device_name);
-            assert ( !device_name.empty() );
-            
-            a_elmnt_id_t device_asset_id = 0;
-            row[1].get(device_asset_id);
-            assert ( device_asset_id );
-
-            a_dvc_tp_id_t device_type_id = 0;
-            row[2].get(device_type_id);
-            assert ( device_type_id );
-
-            std::string device_type_name = "";
-            row[3].get(device_type_name);
-            assert ( !device_type_name.empty() );
-
-            ret.item.push_back(std::make_tuple(device_asset_id, device_name, 
-                                device_type_name, device_type_id));
-        }
-        ret.status = 1;
-        LOG_END;
-        return ret;
-    }
-    catch (const std::exception &e) {
-        ret.status        = 0;
-        ret.errtype       = DB_ERR;
-        ret.errsubtype    = DB_ERROR_INTERNAL;
-        ret.msg           = e.what();
-        ret.item.clear();
-        LOG_END_ABNORMAL(e);
-        return ret;
-    } 
 }

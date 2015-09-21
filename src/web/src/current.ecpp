@@ -25,146 +25,173 @@
  * \author Tomas Halman <TomasHalman@Eaton.com>
  * \author Karol Hrdina <KarolHrdina@Eaton.com>
  * \author Jim Klimov <EvgenyKlimov@Eaton.com>
- * \brief Not yet documented file
+ * \brief Implementation of REST API .../metric/current
  */
  #><%pre>
-#include <czmq.h>
 #include <cxxtools/split.h>
-#include <errno.h>
 #include <stdlib.h>
 #include <vector>
 #include <string>
 
-#include "persistencelogic.h"
-#include "common_msg.h"
-#include "monitor.h"
-#include "data.h"
 #include "upsstatus.h"
-#include "cleanup.h"
-
+#include "data.h"
+#include "db/measurements.h"
+#include "log.h"
+#include "dbpath.h" // temporary
+#include "web_utils.h"
 </%pre>
-<%thread scope="global">
-measures_manager mes_mgr;
-</%thread>
+
 <%args>
 std::string dev;
 </%args>
+
 <%cpp>
-    // Check URL validity
-    std::vector<std::string> devices;
-    cxxtools::split(",", dev, std::back_inserter(devices));
-    if(devices.empty()) {
+{
+    // check if method is allowed
+    if ( !request.isMethodGET() )
+    {
 </%cpp>
-{ "error":"bad_input" }
+<$$ create_error_json("Not implemented", 100) $>
+<%cpp>
+        return HTTP_NOT_IMPLEMENTED;
+    }
+
+    // Check URL validity
+    if ( dev.empty() )
+    {
+</%cpp>
+<$$ create_error_json("Invalid url (missing id parameter)", 56) $>
 <%cpp>
         return HTTP_BAD_REQUEST;
     }
-    std::vector<std::string> measure;
-    for(auto i : devices) {
-        errno = 0;
-        uint32_t id = strtol(i.c_str(), NULL, 10);
-        if(errno != 0) {
+    std::vector<std::string> asset_ids;
+    cxxtools::split(",", dev, std::back_inserter(asset_ids));
+
+    // Go through all passed ids
+    std::string big_json{};
+    for ( auto asset_id : asset_ids)
+    {
+        // convert id from string to number
+        a_elmnt_id_t id = 0;
+        try{
+            size_t pos = 0;
+            id = std::stoul (asset_id, &pos);
+            if ( pos != asset_id.size() )
+            {
+                // if at least one id is malformed then all request
+                // would be rejected
 </%cpp>
-{ "error":"bad_input" }
+<$$ create_error_json("One id in the list is malformed", 200) $>
+<%cpp>
+                return HTTP_BAD_REQUEST;
+            }
+        }
+        catch ( const std::exception &e) {
+            log_error(e.what());
+</%cpp>
+<$$ create_error_json("One id in the list is malformed", 200) $>
 <%cpp>
             return HTTP_BAD_REQUEST;
         }
-        _scoped_zmsg_t *req = common_msg_encode_get_last_measurements(id);
-        _scoped_zmsg_t *rep = get_last_measurements(&req);
-        if(!is_common_msg(rep)){
+        // Temporary add connection here
+        tntdb::Connection conn = tntdb::connectCached(url);
+
+        // check if the element really exists, read its name
+        auto ret = persist::select_asset_element_web_byId (conn, id);
+        if ( ret.status == 0 )
+        {
 </%cpp>
-{ "error":"internal_error" }
+<$$ create_error_json("One of ids doesn't exist", 202) $>
 <%cpp>
-            return HTTP_INTERNAL_SERVER_ERROR;
+            return HTTP_NOT_FOUND;
         }
-        _scoped_common_msg_t *dta = common_msg_decode(&rep);
-        if(dta == NULL) {
-</%cpp>
-{ "error":"internal_error - decode fail" }
-<%cpp>
-            return HTTP_INTERNAL_SERVER_ERROR;
-        }
-        if(common_msg_id(dta) != COMMON_MSG_RETURN_LAST_MEASUREMENTS) {
 
-            std::string error;
-            std::string msg;
-            unsigned code;
+        // definition of the function, that would process the
+        // returned array of measurements
+        std::map <std::string, double> measurements{};
+        row_cb_f foo = \
+                        [&measurements](const tntdb::Row& r)
+                        {
+                            std::string topic = "";
+                            r["topic"].get(topic);
 
-            common_msg_to_rest_error(dta, error, msg, &code);
-
-            if(common_msg_id(dta) == COMMON_MSG_FAIL) {
-</%cpp>
-{ "error":"<$ error $>",
-  "type":"<$ (unsigned) common_msg_errtype(dta) $>",
-  "errno":"<$ common_msg_errorno(dta) $>",
-  "msg":"<$ msg $>" }
-<%cpp>
-            } else {
-</%cpp>
-{ "error":"<$ error $>",
-  "msg":"<$ msg $>" }
-<%cpp>
-            }
-            common_msg_destroy(&dta);
-            return code;
-        } else {
-            std::string json;
-            if(!measure.empty())
-                json = ", ";
-            else
-                json = "  ";
-            json += "{ \"id\":";
-            json += "\"" + std::to_string ( common_msg_device_id (dta) )+ "\"";
-            json += ", \"name\": \"" + std::string(common_msg_device_name(dta)) + "\"";
-
-            zlist_t *list = common_msg_measurements(dta);
-
-            for (void *it = zlist_first(list); it != nullptr; it = zlist_next(list)) {
-               std::vector<std::string> measurements;
-
-               cxxtools::split(":", std::string((char*)it),
-                                    std::back_inserter(measurements));
-
-               if ( measurements.size() != 3 )
-               {
-</%cpp>
-{ "error": "internal_error - malformed result (measurement)" }
-<%cpp>
-                    return HTTP_INTERNAL_SERVER_ERROR;
-               }
-               std::string name = measurements[2];
-               std::vector<std::string> topic_parts;
-               cxxtools::split("@", name,
+                            // real topic consists of two parts,
+                            // but need to return only first
+                            std::vector <std::string> topic_parts{};
+                            cxxtools::split("@", topic,
                                     std::back_inserter(topic_parts));
-               if ( topic_parts.size() != 2 )
-               {
+                            if ( topic_parts.size() == 2 )
+                            {
+                                m_msrmnt_value_t value = 0;
+                                r["value"].get(value);
+
+                                m_msrmnt_scale_t scale = 0;
+                                r["scale"].get(scale);
+                                measurements.emplace
+                                (
+                                    topic_parts[0],
+                                    value * std::pow (10, scale)
+                                );
+                                // TODO what if emplace return an error
+                                /* std::tie (i, inserted) = samples.emplace
+                                if (inserted) {
+                                    log_info ("emplace () ok.");
+                                }
+                                else {
+                                    // This should not happen since we are certain that item being emplaced is not there
+                                    log_warning ("emplace () failed!");
+                                }
+                                */
+
+                            }
+                            else
+                            {
+                                // Don't know what is it, ignore it
+                                log_warning (" topic = '%s' is malformed",
+                                               topic.c_str());
+                           }
+                        };
+        // selects measurements
+        int rv = persist::select_current_measurement_by_element
+                    (conn, id, foo);
+        if ( rv != 0 )
+        {
 </%cpp>
-{ "error": "internal_error - malformed result (topic)" }
+<$$ create_error_json("Some problem during selecting measurements", 201) $>
 <%cpp>
-                    return HTTP_INTERNAL_SERVER_ERROR;
-               }
-               std::string value;
-               if( topic_parts[0] == "status.ups" ) {
-                   value = "\"" + shared::upsstatus_to_string(measurements[0]) + "\"";
-               } else {
-                   value = mes_mgr.map_values(
-                       topic_parts[0],
-                       mes_mgr.apply_scale(
-                           measurements[0],
-                           measurements[1]));
-               }
-               json += ", \"" + topic_parts[0] +
-                   "\": " + value;
-            }
-            json += " }";
-            measure.push_back(json);
+            return HTTP_INTERNAL_SERVER_ERROR;
         }
+
+        // we are here -> everything is ok, need just to form
+        // this is a small JSON for just ONE asset
+        std::string json = "{";
+        json += json_key_value_s("id", asset_id);
+        json += ",";
+        json += json_key_value_s("name", ret.item.name);
+        json += ",";
+        for ( const auto &one_measurement : measurements )
+        {
+            if( one_measurement.first == "status.ups" )
+            {
+                json +=  json_key_value_s(one_measurement.first, shared::upsstatus_to_string(one_measurement.second));
+            }
+            else
+            {
+                json +=  json_key_value_d(one_measurement.first, one_measurement.second);
+            }
+            json += ",";
+        }
+        // replace last "," by "}"
+        json.back() = '}';
+        big_json += json;
+        big_json += ",";
     }
+    // remove last ","
+    big_json.pop_back();
 </%cpp>
 {
    "current":[
-%   for(auto i: measure) {
-    <$$ i $>
-%   }
+    <$$ big_json $>
    ]
 }
+%}

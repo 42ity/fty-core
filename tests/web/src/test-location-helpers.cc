@@ -142,22 +142,22 @@ TEST_CASE (
 
     SECTION ("asset() valid input") {
         std::string uri = "api/v1/asset/room/5";
-        REQUIRE (asset (uri) == asset_type::ROOM);
+        REQUIRE (asset (uri) == persist::asset_type::ROOM);
 
         uri = "api/v1/asset/datacenter/1234";
-        REQUIRE (asset (uri) == asset_type::DATACENTER);
+        REQUIRE (asset (uri) == persist::asset_type::DATACENTER);
 
         uri = "api/v1/asset/row/1234";
-        REQUIRE (asset (uri) == asset_type::ROW);
+        REQUIRE (asset (uri) == persist::asset_type::ROW);
 
         uri = "api/v1/asset/rack/1234";
-        REQUIRE (asset (uri) == asset_type::RACK);
+        REQUIRE (asset (uri) == persist::asset_type::RACK);
 
         uri = "api/v1/asset/group/1234";
-        REQUIRE (asset (uri) == asset_type::GROUP);
+        REQUIRE (asset (uri) == persist::asset_type::GROUP);
 
         uri = "api/v1/asset/device/1234";
-        REQUIRE (asset (uri) == asset_type::DEVICE);
+        REQUIRE (asset (uri) == persist::asset_type::DEVICE);
     } // SECTION ("asset () valid input")
 
     SECTION ("asset() invalid input") {

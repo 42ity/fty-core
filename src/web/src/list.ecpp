@@ -25,44 +25,51 @@
  */
  #><%pre>
 #include "data.h"
+#include "log.h"
 #include "assetcrud.h"
+#include "web_utils.h"
 </%pre>
+<%args>
+std::string subtype;
+</%args>
 <%thread scope="global">
 asset_manager asset_mgr;
 </%thread>
+
 <%cpp>
-    // Check URL validity
-    std::string id;
-
-    // Get data
-   auto allDcsShort = asset_mgr.get_items1 (request.getArg("type"));
-
-    // Error handling
-    if ( allDcsShort.status == 0 )
+{
+    // check if method is allowed
+    if ( !request.isMethodGET() )
     {
 </%cpp>
-{
-    "error":"item_not_found"
-}
+<$$ create_error_json("Not allowed", 300) $>
+<%cpp>
+        return HTTP_METHOD_NOT_ALLOWED;
+    }
+    log_debug (" type = '%s'", request.getArg("type").c_str());
+    log_debug (" subtype = '%s'", subtype.c_str());
+    // Get data
+    auto allAssetsShort = asset_mgr.get_items1 (request.getArg("type"), subtype);
+    if ( allAssetsShort.status == 0 )
+    {
+</%cpp>
+<$$ create_error_json("Assets were not found", 301) $>
 <%cpp>
         return HTTP_NOT_FOUND;
     }
 
-    // Prepare the reply
-</%cpp>
-{
-    "<$ request.getArg("type") $>s": [
-<%cpp>
-    size_t count = allDcsShort.item.size();
-    size_t i = 0;
-    for ( auto &oneDc : allDcsShort.item )
+    std::string json = "{\"" + request.getArg("type");
+    json +=  "s\":[";
+    for ( auto &oneAsset : allAssetsShort.item )
     {
-        i++;
+        json += "{";
+        json += json_key_value_s("id", std::to_string(oneAsset.first));
+        json += ",";
+        json += json_key_value_s("name", oneAsset.second);
+        json += "},";
+    }
+    json.back() = ']';
+    json += "}";
 </%cpp>
-        {
-            "id" : "<$$ oneDc.first $>",
-            "name":"<$$ oneDc.second $>"
-        } <? i != count ? "," ?>
-%   }
-    ]
-}
+<$$ json $>
+%}

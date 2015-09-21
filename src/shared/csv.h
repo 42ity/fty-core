@@ -162,5 +162,28 @@ CsvMap
 CsvMap_from_istream(
         std::istream& in);
 
+/**
+ *  \brief read the data from serialization info
+ *
+ * In short, it can converts this
+ * { "name" : "DC-1", "type" : "datacenter", "ext" : {"ext1name" : "ext1value" }}
+ *
+ * into that
+ *
+ * std::vector<std::vector<cxxtools::String>> {
+ *  {"name", "type", "ext1name"},
+ *  {"DC-1", "datacenter", "ext1value"}
+ * }
+ *
+ *  \param[in] input serialization info
+ *  \return CsvMap instance
+ *
+ *  \throws invalid_argument if typeName of si is not Object, or it does not contain strings
+ *          ... or various other exceptions ;-)
+ */
+CsvMap
+CsvMap_from_serialization_info(
+        const cxxtools::SerializationInfo& si);
+
 } //namespace shared
 #endif // SRC_SHARED_CSV_H

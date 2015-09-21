@@ -35,7 +35,7 @@ int convert_asset_to_monitor_safe(const char* url,
         return -5;
     try
     {
-        *device_id = convert_asset_to_monitor(url, asset_element_id);
+        *device_id = convert_asset_to_monitor_old(url, asset_element_id);
         return 0;
     }
     catch (const bios::NotFound &e){
@@ -53,7 +53,7 @@ int convert_asset_to_monitor_safe(const char* url,
 }
 
 
-m_dvc_id_t convert_asset_to_monitor(const char* url, 
+m_dvc_id_t convert_asset_to_monitor_old(const char* url, 
                 a_elmnt_id_t asset_element_id)
 {
     assert ( asset_element_id );
@@ -89,7 +89,7 @@ m_dvc_id_t convert_asset_to_monitor(const char* url,
         log_warning("end: abnormal with '%s'", e.what());
         throw bios::InternalDBError(e.what());
     }
-    if ( element_type_id != asset_type::DEVICE )
+    if ( element_type_id != persist::asset_type::DEVICE )
     {
         log_info("end: specified element is not a device");
         throw bios::ElementIsNotDevice();
@@ -161,12 +161,12 @@ a_elmnt_id_t convert_monitor_to_asset(const char* url,
 bool is_ok_element_type (a_elmnt_tp_id_t element_type_id)
 {
     switch(element_type_id) {
-        case asset_type::DATACENTER:
-        case asset_type::ROOM:
-        case asset_type::ROW:
-        case asset_type::RACK:
-        case asset_type::GROUP:
-        case asset_type::DEVICE:
+        case persist::asset_type::DATACENTER:
+        case persist::asset_type::ROOM:
+        case persist::asset_type::ROW:
+        case persist::asset_type::RACK:
+        case persist::asset_type::GROUP:
+        case persist::asset_type::DEVICE:
             return true;
         default:
             return false;
@@ -279,3 +279,38 @@ bool is_ok_alert_state (UNUSED_PARAM m_alrt_state_t state)
     // TODO
     return true;
 }
+
+std::string
+sql_plac(
+        size_t i,
+        size_t j)
+{
+    return "item" + std::to_string(i) + "_" + std::to_string(j);
+}
+
+std::string
+multi_insert_string(
+        const std::string& sql_header,
+        size_t tuple_len,
+        size_t items_len)
+{
+    std::stringstream s{};
+
+    s << sql_header;
+    s << "\nVALUES";
+    for (size_t i = 0; i != items_len; i++) {
+        s << "(";
+        for (size_t j = 0; j != tuple_len; j++) {
+            s << ":" << sql_plac(i, j);
+            if (j < tuple_len -1)
+                s << ", ";
+        }
+        if (i < items_len -1)
+            s << "),\n";
+        else
+            s << ")\n";
+    }
+
+    return s.str();
+}
+

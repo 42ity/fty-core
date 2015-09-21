@@ -119,7 +119,7 @@ void TotalPowerAgent::onStart( )
 
 void TotalPowerAgent::onSend( ymsg_t **message ) {
     std::string topic = subject();
-
+    log_debug("received message with topic \"%s\"", topic.c_str() );
     if( topic.compare(0,9,"configure") == 0 ) {
         // something is beeing reconfigured, let things to settle down
         if( _reconfigPending == 0 ) log_info("Reconfiguration scheduled");
@@ -128,53 +128,64 @@ void TotalPowerAgent::onSend( ymsg_t **message ) {
         // measurement received
         Measurement M = *message;
 
-        auto affected_it = _affectedRacks.find( M.deviceName() );
-        if( affected_it != _affectedRacks.end() ) {
-            // this device affects some total rack
-            auto rack_it = _racks.find( affected_it->second );
-            if( rack_it != _racks.end() ) {
-                // affected rack found
-                rack_it->second.setMeasurement(M);
-                sendMeasurement( _racks );
+        if( _rackRegex.match(topic) ) {
+            auto affected_it = _affectedRacks.find( M.deviceName() );
+            if( affected_it != _affectedRacks.end() ) {
+                // this device affects some total rack
+                log_debug("measurement is interesting for rack %s", affected_it->second.c_str() );
+                auto rack_it = _racks.find( affected_it->second );
+                if( rack_it != _racks.end() ) {
+                    // affected rack found
+                    rack_it->second.setMeasurement(M);
+                    sendMeasurement( _racks, _rackQuantities );
+                }
             }
         }
-        affected_it = _affectedDCs.find( M.deviceName() );
-        if( affected_it != _affectedDCs.end() ) {
-            // this device affects some total DC
-            auto dc_it = _DCs.find( affected_it->second );
-            if( dc_it != _DCs.end() ) {
-                // affected dc found
-                dc_it->second.setMeasurement(M);
-                sendMeasurement( _DCs );
+        if( _dcRegex.match(topic) ) {
+            auto affected_it = _affectedDCs.find( M.deviceName() );
+            if( affected_it != _affectedDCs.end() ) {
+                // this device affects some total DC
+                log_debug("measurement is interesting for DC %s", affected_it->second.c_str() );
+                auto dc_it = _DCs.find( affected_it->second );
+                if( dc_it != _DCs.end() ) {
+                    // affected dc found
+                    dc_it->second.setMeasurement(M);
+                    sendMeasurement( _DCs, _dcQuantities );
+                }
             }
         }
     }
     _timeout = getPollInterval();
 }
 
-void  TotalPowerAgent::sendMeasurement(std::map< std::string, TPUnit > &elements) {
+void  TotalPowerAgent::sendMeasurement(std::map< std::string, TPUnit > &elements, const std::vector<std::string> &quantities ) {
     for( auto &element : elements ) {
-        if( element.second.advertise() ) {
-            _scoped_ymsg_t *message = element.second.measurementMessage();
-            if( message ) {
-                std::string topic = "measurement.realpower.default@" + element.second.name();
-                Measurement M = element.second.realpower();
-                log_debug("Sending total power topic: %s value: %" PRIi32 "*10^%" PRIi32,
-                          topic.c_str(),
-                          M.value(),
-                          M.scale());
-                send( topic.c_str(), &message );
-                element.second.advertised();
-            }
-        } else {
-            // log something from time to time if device power is unknown
-            auto devices = element.second.devicesInUnknownState();
-            if( ! devices.empty() ) {
-                std::string devicesText;
-                for( auto &it: devices ) {
-                    devicesText += it + " ";
+        for( auto &q : quantities ) {
+            if( element.second.advertise(q) ) {
+                _scoped_ymsg_t *message = element.second.measurementMessage(q);
+                if( message ) {
+                    std::string topic = "measurement." + q + "@" + element.second.name();
+                    Measurement M = element.second.summarize(q);
+                    log_debug("Sending total power topic: %s value: %" PRIi32 "*10^%" PRIi32,
+                              topic.c_str(),
+                              M.value(),
+                              M.scale());
+                    send( topic.c_str(), &message );
+                    element.second.advertised(q);
                 }
-                log_error("Devices preventing total power calculation for %s are: %s", element.first.c_str(), devicesText.c_str() );
+            } else {
+                // log something from time to time if device calculation is unknown
+                auto devices = element.second.devicesInUnknownState(q);
+                if( ! devices.empty() ) {
+                    std::string devicesText;
+                    for( auto &it: devices ) {
+                        devicesText += it + " ";
+                    }
+                    log_info("Devices preventing total %s calculation for %s are: %s",
+                             q.c_str(),
+                             element.first.c_str(),
+                             devicesText.c_str() );
+                }
             }
         }
     }
@@ -183,12 +194,16 @@ void  TotalPowerAgent::sendMeasurement(std::map< std::string, TPUnit > &elements
 time_t TotalPowerAgent::getPollInterval() {
     time_t T = TPOWER_MEASUREMENT_REPEAT_AFTER;
     for( auto &rack_it : _racks ) {
-        time_t Tx = rack_it.second.timeToAdvertisement();
-        if( Tx > 0 && Tx < T ) T = Tx;
+        for( auto &q : _rackQuantities ) {
+            time_t Tx = rack_it.second.timeToAdvertisement(q);
+            if( Tx > 0 && Tx < T ) T = Tx;
+        }
     }
     for( auto &dc_it : _racks ) {
-        time_t Tx = dc_it.second.timeToAdvertisement();
-        if( Tx > 0 && Tx < T ) T = Tx;
+        for( auto &q : _dcQuantities ) {
+            time_t Tx = dc_it.second.timeToAdvertisement(q);
+            if( Tx > 0 && Tx < T ) T = Tx;
+        }
     }
     if( _reconfigPending ) {
         time_t Tx = _reconfigPending - time(NULL) + 1;
@@ -200,8 +215,8 @@ time_t TotalPowerAgent::getPollInterval() {
 
 
 void TotalPowerAgent::onPoll() {
-    sendMeasurement( _racks );
-    sendMeasurement( _DCs );
+    sendMeasurement( _racks, _rackQuantities );
+    sendMeasurement( _DCs, _dcQuantities );
     if( _reconfigPending && ( _reconfigPending <= time(NULL) ) ) configuration();
     _timeout = getPollInterval();
 }
@@ -212,7 +227,7 @@ int main( UNUSED_PARAM int argc, UNUSED_PARAM char *argv[] ) {
     log_open();
     log_info ("tpower agent started");
     TotalPowerAgent agent("TPOWER");
-    if( agent.connect(MLM_ENDPOINT, bios_get_stream_main(), "^(measurement\\.realpower\\.default|configure)@") ) {
+    if( agent.connect(MLM_ENDPOINT, bios_get_stream_main(), "^(measurement\\.realpower\\..+@|configure@)") ) {
         result = agent.run();
     }
     log_info ("tpower agent exited with code %i\n", result);

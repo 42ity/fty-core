@@ -51,8 +51,8 @@ TEST_CASE("Power topology group #1","[db][topology][power][group][power_topology
 
     // the expected devices
     std::set<std::tuple<int,std::string,std::string>> sdevices;
-    sdevices.insert (std::make_tuple(5087, "MAIN-05", "main")); // id,  device_name, device_type_name
-    
+    sdevices.insert (std::make_tuple(5087, "MAIN-05", "feed")); // id,  device_name, device_type_name
+
     _scoped_zmsg_t* retTopology = get_return_power_topology_group (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
@@ -60,7 +60,7 @@ TEST_CASE("Power topology group #1","[db][topology][power][group][power_topology
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
 //    print_frame_devices (asset_msg_devices (cretTopology));
-    
+
     // check powers
     _scoped_zlist_t* powers = asset_msg_get_powers (cretTopology);
     REQUIRE ( zlist_size(powers) == 0 );
@@ -70,7 +70,7 @@ TEST_CASE("Power topology group #1","[db][topology][power][group][power_topology
     zframe_t* frame = asset_msg_devices (cretTopology);
     byte* buffer = zframe_data (frame);
     assert ( buffer );
-    
+
     _scoped_zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
     assert ( zmsg );
     assert ( zmsg_is (zmsg) );
@@ -78,11 +78,11 @@ TEST_CASE("Power topology group #1","[db][topology][power][group][power_topology
     _scoped_zmsg_t* pop = NULL;
     int n = sdevices.size();
     for (int i = 1 ; i <= n ; i ++ )
-    {   
+    {
         pop = zmsg_popmsg (zmsg);
         INFO(n);
         REQUIRE ( pop != NULL );
-    
+
         _scoped_asset_msg_t* item = asset_msg_decode (&pop); // pop is freed
         assert ( item );
 //    asset_msg_print (item);
@@ -90,15 +90,15 @@ TEST_CASE("Power topology group #1","[db][topology][power][group][power_topology
                                                     asset_msg_name (item),
                                                     asset_msg_type_name (item) ));
         REQUIRE ( it != sdevices.end() );
-        sdevices.erase (it); 
+        sdevices.erase (it);
         asset_msg_destroy (&item);
     }
-    
+
     // there is no more devices
     pop = zmsg_popmsg (zmsg);
     REQUIRE ( pop == NULL );
     REQUIRE ( sdevices.empty() );
-    
+
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
     log_close();

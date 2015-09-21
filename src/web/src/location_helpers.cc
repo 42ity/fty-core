@@ -75,8 +75,8 @@ int asset_location_r(asset_msg_t** asset_msg, std::string& json) {
     json += "{"; 
     json += "\"name\" : \"" + name + "\", ";
     json += "\"id\" : \"" + std::to_string(element_id) + "\"";
-    if (type_id == asset_type::DEVICE || type_id == asset_type::GROUP) { 
-        json += ", \"type\" : \"" + std::string(asset_msg_type_name(*asset_msg)) + "\"";
+    if (type_id == persist::asset_type::DEVICE || type_id == persist::asset_type::GROUP) { 
+        json += ", \"type\" : \"" + type_name + "\"";
     }
 
     std::list<zframe_t *> frames;
@@ -110,10 +110,10 @@ int asset_location_r(asset_msg_t** asset_msg, std::string& json) {
             continue;
         byte *buffer = zframe_data(it_f);
         if(buffer == NULL)
-            goto err_cleanup;               
+            goto err_cleanup;
         zmsg = zmsg_decode(buffer, zframe_size(it_f));
         if(zmsg == NULL || !zmsg_is (zmsg))
-            goto err_cleanup;               
+            goto err_cleanup;
         zframe_destroy(&it_f);
 
         _scoped_zmsg_t *pop = NULL;
@@ -137,7 +137,7 @@ int asset_location_r(asset_msg_t** asset_msg, std::string& json) {
                 first = false;
             }
             if(asset_location_r(&item, json) != HTTP_OK)
-                goto err_cleanup;               
+                goto err_cleanup;
             asset_msg_destroy(&item);
         }
         zmsg_destroy(&zmsg);
@@ -146,7 +146,14 @@ int asset_location_r(asset_msg_t** asset_msg, std::string& json) {
             json += "]";
     }
     if(!first_contains)
+    {
         json += "}"; // level-1 "contains"
+    }
+    else
+    {
+        if (type_id != persist::asset_type::DEVICE )
+            json += ", \"contains\":[]";
+    }
     json += "}"; // json closing curly bracket
     return HTTP_OK;
 
@@ -180,20 +187,20 @@ int asset (const std::string& from) {
         return -1;
     }
     cut = cut.substr(0, pos);
-
-    int ret = asset_type::UNKNOWN;
+// TODO USE FUNCTIONS
+    int ret = persist::asset_type::TUNKNOWN;
     if (cut == "datacenter") {
-        ret = asset_type::DATACENTER;
+        ret = persist::asset_type::DATACENTER;
     } else if (cut == "room") {
-        ret = asset_type::ROOM;
+        ret = persist::asset_type::ROOM;
     } else if (cut == "row") {
-        ret = asset_type::ROW;
+        ret = persist::asset_type::ROW;
     } else if (cut == "rack") {
-        ret = asset_type::RACK;
+        ret = persist::asset_type::RACK;
     } else if (cut == "group") {
-        ret = asset_type::GROUP;
+        ret = persist::asset_type::GROUP;
     } else if (cut == "device") {
-        ret = asset_type::DEVICE;
+        ret = persist::asset_type::DEVICE;
     }
     return ret;
 }

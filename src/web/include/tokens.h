@@ -35,23 +35,35 @@
 
 #include <string>
 #include <sodium.h>
+#include <set>
+#include <map>
+#include <deque>
 
 //! Maximum length of the message stored in the token
-#define MESSAGE_LEN 16
+#define MESSAGE_LEN 32
 //! Round timestamps to this many seconds
 #define ROUND 60
 //! Length of the ciphertext
 #define CIPHERTEXT_LEN (crypto_secretbox_MACBYTES + MESSAGE_LEN)
 
+struct cipher {
+    long int valid_until;
+    int used;
+    unsigned char nonce[crypto_secretbox_NONCEBYTES];
+    unsigned char key[crypto_secretbox_KEYBYTES];
+};
+
 //! Class to generate and verify tokens
 class tokens {
 private:
-    unsigned char nonce[crypto_secretbox_NONCEBYTES];
-    unsigned char key[crypto_secretbox_KEYBYTES];
+    std::deque<cipher> keys;
+    std::set<std::string> revoked;
+    std::multimap<long int, std::string> revoked_queue;
+    void clean_revoked();
     void regen_keys();
 public:
     //! Singleton get_instance method
-    static tokens* get_instance(bool recreate = false);
+    static tokens* get_instance();
     /**
      * \brief Generates new token
      *
@@ -63,6 +75,8 @@ public:
      * \brief Verifies whether supplied token is valid
      */
     bool verify_token(const std::string token, long int* uid = NULL);
+    //! Invalidates selected token
+    void revoke(const std::string token);
     /**
      * \brief Decodes token, useful for debugging
      */

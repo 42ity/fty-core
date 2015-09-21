@@ -16,22 +16,21 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-/*! \file   assetd.h
-    \brief  Basic delete functions for assets
+/*! \file   assetcr.h
+    \brief  Basic create functions for assets
     \author Alena Chernikava <AlenaChernikava@eaton.com>
 */
 
 #ifndef SRC_DB_ASSETS_ASSETCR_H_
 #define SRC_DB_ASSETS_ASSETCR_H_
 
-#include "dbtypes.h"
-#include "defs.h"
-#include "dbhelpers.h"
 #include <tntdb/connect.h>
-#include "asset_types.h"
-#include "calc_power.h"
+
+#include "dbtypes.h"
+#include "dbhelpers.h"
 
 #include "db/assetdef.h"
+
 namespace persist {
 
 db_reply_t
@@ -49,6 +48,21 @@ db_reply_t
          zhash_t      *attributes,
          a_elmnt_id_t  asset_element_id,
          bool          read_only);
+
+/**
+ *  \brief Multi value insert for extended attributes
+ *
+ *  \param[in]  conn - database connection
+ *  \param[in]  element_id - asset element id
+ *  \param[in]  attributes - zhash_t of attributes
+ *  \param[in]  read_only - set if attribute is read only or not
+ */
+int
+    insert_into_asset_ext_attributes
+        (tntdb::Connection &conn,
+         a_elmnt_id_t element_id,
+         zhash_t* attributes,
+         bool read_only);
 
 
 db_reply_t

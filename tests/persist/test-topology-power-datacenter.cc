@@ -52,7 +52,7 @@ TEST_CASE("Power topology datacenter #1","[db][topology][power][datacenter][powe
 
     // the expected devices
     std::set<std::tuple<int,std::string,std::string>> sdevices;
-    sdevices.insert (std::make_tuple(5087, "MAIN-05", "main")); // id,  device_name, device_type_name
+    sdevices.insert (std::make_tuple(5087, "MAIN-05", "feed")); // id,  device_name, device_type_name
     sdevices.insert (std::make_tuple(5081, "UPS1-05", "ups"));
     sdevices.insert (std::make_tuple(5082, "UPS2-05", "ups"));
     sdevices.insert (std::make_tuple(5083, "ePDU1-05", "epdu"));

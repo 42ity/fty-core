@@ -30,7 +30,6 @@
 #include "db/inout.h"
 #include "utils.h"
 </%pre>
-
 <%request scope="global">
 int8_t access_auth_level;
 </%request>

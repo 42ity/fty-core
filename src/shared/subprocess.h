@@ -139,6 +139,13 @@ class SubProcess {
         //          negative is a number of a signal which terminates process
         int wait(bool no_hangup=false);
 
+        //! \brief wait on process for defined timeout [s]
+        //
+        //  @param timeout[s] wait for process
+        //  @return positive return value of a process
+        //          negative is a number of a signal which terminates process
+        int wait(unsigned int timeout);
+        
         //! \brief no hanging variant of /see wait
         int poll() {  return wait(true); }
 
@@ -350,11 +357,12 @@ int call(const Argv& args);
 // @param args list of command line arguments
 // @param o reference to variable will contain stdout
 // @param e reference to variable will contain stderr
+// @param timeout of the process (0 = no timeout, wait forever)
 // @return see \SubProcess.wait for meaning
 //
 // \warning use only for commands producing less than default pipe capacity (65536 on Linux).
 //          Otherwise this call would be blocked indefinitelly.
-int output(const Argv& args, std::string& o, std::string& e);
+ int output(const Argv& args, std::string& o, std::string& e, unsigned int timeout = 0);
 
 // \brief Run command with arguments and input on stdin and return its output as a string.
 //
@@ -362,6 +370,7 @@ int output(const Argv& args, std::string& o, std::string& e);
 // @param o reference to variable will contain stdout
 // @param e reference to variable will contain stderr
 // @param i const reference to variable will contain stdin
+// @param timeout of the process (0 = no timeout, wait forever)
 // @return see \SubProcess.wait for meaning
 //
 // \warning use only for commands producing less than default pipe capacity (65536 on Linux).
@@ -371,7 +380,8 @@ output(
     const Argv& args,
     std::string& o,
     std::string& e,
-    const std::string& i);
+    const std::string& i,
+    unsigned int timeout = 0);
 
 } //namespace shared
 

@@ -31,10 +31,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "db/inout.h"
 
-#include "csv.h"
 #include "log.h"
 #include "assetcrud.h"
-#include "asset_types.h"
 #include "dbpath.h"
 #include "cleanup.h"
 #include "db/asset_general.h"
@@ -47,7 +45,6 @@ int
     get_priority
         (const std::string& s)
 {
-    log_debug ("priority string = %s", s.c_str());
     if ( s.size() > 2 )
         return 5;
     for (int i = 0; i != 2; i++) {
@@ -62,7 +59,6 @@ bool
     get_business_critical(
             const std::string& s)
 {
-    log_debug ("s = '%s'", s.c_str());
     std::string s1 = s;
     std::transform(s1.cbegin(), s1.cend(), s1.begin(), ::tolower);
     if ( s1 == "yes" )
@@ -110,8 +106,32 @@ static bool
 }
 
 static bool
+    check_u_size
+        (std::string &s)
+{
+    static cxxtools::Regex regex("^[0-9]{1,2}[uU]?$");
+    if ( !regex.match(s) )
+    {
+        return false;
+    }
+    else
+    {
+        // need to drop the "U"
+        if ( ! (::isdigit(s.back())) )
+        {
+            s.pop_back();
+        }
+        // remove trailing 0
+        if (s.size() == 2 && s[0] == '0') {
+            s.erase(s.begin());
+        }
+        return true;
+    }
+}
+
+static bool
     match_ext_attr
-        (std::string value, std::string key)
+        (std::string &value, const std::string &key)
 {
     if ( key == "location_u_pos" )
     {
@@ -120,6 +140,10 @@ static bool
     if ( key == "location_w_pos" )
     {
         return check_location_w_pos(value);
+    }
+    if ( key == "u_size" )
+    {
+        return check_u_size(value);
     }
     return ( !value.empty() );
 }
@@ -138,10 +162,10 @@ int
         (conn, parent_id);
     if ( parent.status == 0 )
         return 2;
-    if ( parent.item.type_id != asset_type::RACK )
+    if ( parent.item.type_id != persist::asset_type::RACK )
         return 1;
     db_reply <std::vector<device_info_t>> devices =
-        select_asset_device_by_container
+        select_assets_by_container
          (conn, parent_id);
     pdu_epdu_count = 0;
     element_id = 0;
@@ -178,10 +202,10 @@ int
  * \param cm - already parsed csv file
  * \param row_i - number of row to process
  */
-static db_a_elmnt_t
+static std::pair<db_a_elmnt_t, persist::asset_operation>
     process_row
         (tntdb::Connection &conn,
-         CsvMap cm,
+         const CsvMap &cm,
          size_t row_i,
          const std::map<std::string,int> TYPES,
          const std::map<std::string,int> SUBTYPES,
@@ -202,6 +226,7 @@ static db_a_elmnt_t
     // because id is definitely not an external attribute
     auto id_str = unused_columns.count("id") ? cm.get(row_i, "id") : "";
     unused_columns.erase("id");
+    persist::asset_operation operation = persist::asset_operation::INSERT;
     a_elmnt_id_t id = 0;
     if ( !id_str.empty() )
     {
@@ -209,6 +234,7 @@ static db_a_elmnt_t
         if ( ids.count(id) == 1 )
             throw std::invalid_argument("Second time during the import you are trying to update the element with id "+ id_str);
         ids.insert(id);
+        operation = persist::asset_operation::UPDATE;
     }
 
     auto name = cm.get(row_i, "name");
@@ -316,6 +342,10 @@ static db_a_elmnt_t
     bool in_rack = true;
     if ( ( subtype == "epdu" ) || ( subtype == "pdu" ) )
     {
+        if ( unused_columns.count("location_w_pos") == 0 )
+            throw std::invalid_argument
+                                ("Need to specify attribute location_w_pos "
+                                 "for epdu/pdu");
         // find a number of pdu/epdu in the rack
         int ret = get_pdu_epdu_info_location_w_pos (conn, parent_id, pdu_epdu_count, last_position, last_position_element_id);
         if ( ret == 1 )
@@ -466,7 +496,7 @@ static db_a_elmnt_t
     for ( auto &key: unused_columns )
     {
         // try is not needed, because here are keys that are definitely there
-        auto value = cm.get(row_i, key);
+        std::string value = cm.get(row_i, key);
 
         if ( match_ext_attr (value, key) )
         {
@@ -518,7 +548,6 @@ static db_a_elmnt_t
                 throw std::invalid_argument
                     ("location_w_pos should be set. Possible variants 'left'/'right'");
             }
-            log_debug ("key = %s value = %s was ignored", key.c_str(), value.c_str());
         }
     }
     // if the row represents group, the subtype represents a type
@@ -569,6 +598,7 @@ static db_a_elmnt_t
             {
                 throw std::invalid_argument("insertion was unsuccessful");
             }
+            m.id = ret.rowid;
         }
         else
         {
@@ -580,6 +610,7 @@ static db_a_elmnt_t
             {
                 throw std::invalid_argument("insertion was unsuccessful");
             }
+            m.id = ret.rowid;
         }
     }
     m.name = name;
@@ -592,7 +623,7 @@ static db_a_elmnt_t
     m.asset_tag = asset_tag;
 
     LOG_END;
-    return m;
+    return std::make_pair(m, operation) ;
 }
 
 
@@ -607,7 +638,7 @@ static db_a_elmnt_t
  */
 static std::string
 mandatory_missing
-        (CsvMap cm)
+        (const CsvMap &cm)
 {
     static std::vector<std::string> MANDATORY = {
         "name", "type", "sub_type", "location", "status",
@@ -623,11 +654,10 @@ mandatory_missing
     return "";
 }
 
-
 void
     load_asset_csv
         (std::istream& input,
-         std::vector <db_a_elmnt_t> &okRows,
+         std::vector <std::pair<db_a_elmnt_t,persist::asset_operation>> &okRows,
          std::map <int, std::string> &failRows)
 {
     LOG_START;
@@ -637,7 +667,7 @@ void
     char delimiter = findDelimiter(input);
     if (delimiter == '\x0') {
         std::string msg{"Cannot detect the delimiter, use comma (,) semicolon (;) or tabulator"};
-        log_error("%s\n", msg.c_str());
+        log_error("%s", msg.c_str());
         LOG_END;
         throw std::invalid_argument(msg.c_str());
     }
@@ -647,6 +677,17 @@ void
     deserializer.deserialize(data);
     CsvMap cm{data};
     cm.deserialize();
+
+    return load_asset_csv(cm, okRows, failRows);
+}
+
+void
+    load_asset_csv
+        (const CsvMap& cm,
+         std::vector <std::pair<db_a_elmnt_t,persist::asset_operation>> &okRows,
+         std::map <int, std::string> &failRows)
+{
+    LOG_START;
 
     auto m = mandatory_missing(cm);
     if ( m != "" )
@@ -683,7 +724,7 @@ void
         }
         catch ( const std::invalid_argument &e)
         {
-            failRows.insert(std::make_pair(row_i, e.what()));
+            failRows.insert(std::make_pair(row_i + 1, e.what()));
             log_error ("row %zu not imported: %s", row_i, e.what());
         }
     }

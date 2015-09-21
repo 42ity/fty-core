@@ -22,6 +22,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "log.h"
 #include "measurements.h"
+#include "alerts.h"
+#include "asset_types.h"
+#include "defs.h"
 
 namespace persist {
 
@@ -226,16 +229,14 @@ db_reply_t
      const std::string &asset_tag)
 {
     LOG_START;
-//    log_debug ("  element_name = '%s'", element_name);
-//    log_debug ("  element_type_id = %" PRIu32, element_type_id);
-//    log_debug ("  parent_id = %" PRIu32, parent_id);
+    log_debug ("  element_name = '%s'", element_name);
 
     tntdb::Transaction trans(conn);
 
     auto reply_insert1 = insert_into_asset_element
                         (conn, element_name, element_type_id, parent_id,
                          status, priority, bc, 0, asset_tag.c_str());
-    if ( reply_insert1.affected_rows == 0 )
+    if ( reply_insert1.status == 0 )
     {
         trans.rollback();
         log_error ("end: element was not inserted");
@@ -243,13 +244,21 @@ db_reply_t
     }
     auto element_id = reply_insert1.rowid;
 
-    auto reply_insert2 = insert_into_asset_ext_attributes
-                         (conn, extattributes, element_id, false);
-    if ( reply_insert2.status == 0 )
+    if ( extattributes != NULL )
     {
-        trans.rollback();
-        log_error ("end: element was not inserted (fail in ext_attributes)");
-        return reply_insert2;
+        int reply_insert2 = insert_into_asset_ext_attributes
+            (conn, element_id, extattributes, false);
+        if ( reply_insert2 != 0 )
+        {
+            trans.rollback();
+            log_error ("end: device was not inserted (fail in ext_attributes)");
+            db_reply_t ret;
+            ret.status     = 0;
+            ret.errtype    = DB_ERR;
+            ret.errsubtype = DB_ERROR_BADINPUT;
+            ret.msg        = "end: device was not inserted (fail in ext_attributes)";
+            return ret;
+        }
     }
 
     auto reply_insert3 = insert_element_into_groups (conn, groups, element_id);
@@ -305,15 +314,13 @@ db_reply_t
 {
     LOG_START;
     log_debug ("  element_name = '%s'", element_name);
-    log_debug ("  parent_id = %" PRIu32, parent_id);
-    log_debug ("  asset_device_type_id = %" PRIu32, asset_device_type_id);
 
     tntdb::Transaction trans(conn);
 
     auto reply_insert1 = insert_into_asset_element
                         (conn, element_name, asset_type::DEVICE, parent_id,
                         status, priority, bc, asset_device_type_id, asset_tag.c_str());
-    if ( reply_insert1.affected_rows == 0 )
+    if ( reply_insert1.status == 0 )
     {
         trans.rollback();
         log_info ("end: device was not inserted (fail in element)");
@@ -321,13 +328,21 @@ db_reply_t
     }
     auto element_id = reply_insert1.rowid;
 
-    auto reply_insert2 = insert_into_asset_ext_attributes
-                        (conn, extattributes, element_id,false);
-    if ( reply_insert2.status == 0 )
+    if ( extattributes != NULL )
     {
-        trans.rollback();
-        log_error ("end: device was not inserted (fail in ext_attributes)");
-        return reply_insert2;
+        int reply_insert2 = insert_into_asset_ext_attributes
+            (conn, element_id, extattributes, false);
+        if ( reply_insert2 != 0 )
+        {
+            trans.rollback();
+            log_error ("end: device was not inserted (fail in ext_attributes)");
+            db_reply_t ret;
+            ret.status     = 0;
+            ret.errtype    = DB_ERR;
+            ret.errsubtype = DB_ERROR_BADINPUT;
+            ret.msg        = "end: device was not inserted (fail in ext_attributes)";
+            return ret;
+        }
     }
 
     auto reply_insert3 = insert_element_into_groups (conn, groups, element_id);
@@ -400,7 +415,7 @@ db_reply_t
     tntdb::Transaction trans(conn);
 
     auto reply_delete1 = delete_asset_ext_attributes (conn, element_id);
-    if ( reply_delete1.affected_rows == 0 )
+    if ( reply_delete1.status == 0 )
     {
         trans.rollback();
         log_info ("end: error occured during deleting ext attributes");
@@ -416,9 +431,7 @@ db_reply_t
         return reply_delete2;
     }
 
-
     { // need to delete all measurements
-        
         // select all topic_id for the element
         std::set <a_elmnt_id_t> out{};
         row_cb_f foo = \
@@ -438,7 +451,7 @@ db_reply_t
             ret.status = 0;
             ret.errtype = rv;
             ret.errsubtype = rv;
-            log_error ("some error during topics selecting");
+            log_error ("error during topics selecting");
             return ret;
         }
         // delete all measurements for topic and topic itself
@@ -454,7 +467,7 @@ db_reply_t
                 ret.status = 0;
                 ret.errtype = rv;
                 ret.errsubtype = rv;
-                log_error ("some error during measurements deleting");
+                log_error ("error during measurements deleting");
                 return ret;
             }
             rv = delete_measurement_topic(conn, topic_id, affected_rows1);
@@ -464,13 +477,42 @@ db_reply_t
                 ret.status = 0;
                 ret.errtype = rv;
                 ret.errsubtype = rv;
-                log_error ("some error during topic deleting");
+                log_error ("error during topic deleting");
                 return ret;
             }
         }
     }
-    // delete alerts
-    // delete discovered device
+    // need delete devices from alerts, but alerts will stay in the system
+    m_dvc_id_t monitor_element_id = 0;
+    {
+        // find monitor counterpart
+        int rv = convert_asset_to_monitor(conn, element_id, monitor_element_id);
+        if ( ( rv != 0 ) && ( rv != 1 ) )
+        {
+            db_reply_t ret = db_reply_new();
+            ret.status = 0;
+            ret.errtype = rv;
+            ret.errsubtype = rv;
+            log_error ("error during converting asset to monitor");
+            return ret;
+        }
+        // delete from alert devices
+        if ( rv != 1 )
+        {
+            m_alrtdvc_id_t affected_rows = 0;
+            rv = delete_device_from_alert_device_all
+                (conn, monitor_element_id, affected_rows);
+            if ( rv != 0 )
+            {
+                db_reply_t ret = db_reply_new();
+                ret.status = 0;
+                ret.errtype = rv;
+                ret.errsubtype = rv;
+                log_error ("error during alert device deleting");
+                return ret;
+            }
+        }
+    }
 
     auto reply_delete3 = delete_monitor_asset_relation_by_a
                                                 (conn, element_id);
@@ -480,7 +522,21 @@ db_reply_t
         log_info ("end: error occured during removing ma relation");
         return reply_delete3;
     }
-
+    m_dvc_id_t affected_rows1 = 0;
+    if ( monitor_element_id != 0 )
+    {
+        // if it was in counterpart
+        int rv = delete_disc_device(conn, monitor_element_id, affected_rows1);
+        if ( rv != 0 )
+        {
+            db_reply_t ret = db_reply_new();
+            ret.status = 0;
+            ret.errtype = rv;
+            ret.errsubtype = rv;
+            log_error ("error during monitor device deleting");
+            return ret;
+        }
+    }
     auto reply_delete4 = delete_asset_element (conn, element_id);
     if ( reply_delete4.status == 0 )
     {
@@ -541,8 +597,6 @@ db_reply_t
     LOG_START;
     tntdb::Transaction trans(conn);
 
-    // delete m_a_relation ????
-
     auto reply_delete1 = delete_asset_ext_attributes (conn, element_id);
     if ( reply_delete1.status == 0 )
     {
@@ -551,7 +605,7 @@ db_reply_t
         return reply_delete1;
     }
 
-    auto reply_delete2 = delete_asset_group_links (conn, element_id);
+    auto reply_delete2 = delete_asset_element_from_asset_groups (conn, element_id);
     if ( reply_delete2.status == 0 )
     {
         trans.rollback();
@@ -559,13 +613,94 @@ db_reply_t
         return reply_delete2;
     }
 
-    // links ????
     auto reply_delete3 = delete_asset_links_all (conn, element_id);
     if ( reply_delete3.status == 0 )
     {
         trans.rollback();
         log_info ("end: error occured during removing links");
         return reply_delete3;
+    }
+
+    { // need to delete all measurements
+        // select all topic_id for the element
+        std::set <a_elmnt_id_t> out{};
+        row_cb_f foo = \
+                       [&out](const tntdb::Row& r)
+                       {
+                           a_elmnt_id_t id = 0;
+                           r["id"].get(id);
+                           out.insert(id);
+                       };
+
+
+        int rv = select_for_element_topics_all(
+                conn, element_id, foo);
+        if ( rv != 0 )
+        {
+            db_reply_t ret = db_reply_new();
+            ret.status = 0;
+            ret.errtype = rv;
+            ret.errsubtype = rv;
+            log_error ("error during topics selecting");
+            return ret;
+        }
+        // delete all measurements for topic and topic itself
+        m_msrmnt_id_t affected_rows = 0;
+        m_msrmnt_tp_id_t affected_rows1 = 0;
+        for ( auto topic_id : out )
+        {
+            rv = delete_measurements(conn, topic_id, affected_rows);
+            if ( rv != 0 )
+            {
+                db_reply_t ret = db_reply_new();
+                ret.status = 0;
+                ret.errtype = rv;
+                ret.errsubtype = rv;
+                log_error ("error during measurements deleting");
+                return ret;
+            }
+            rv = delete_measurement_topic(conn, topic_id, affected_rows1);
+            if ( rv != 0 )
+            {
+                db_reply_t ret = db_reply_new();
+                ret.status = 0;
+                ret.errtype = rv;
+                ret.errsubtype = rv;
+                log_error ("error during topic deleting");
+                return ret;
+            }
+        }
+    }
+    // need delete devices from alerts, but alerts will stay in the system
+    m_dvc_id_t monitor_element_id = 0;
+    {
+        // find monitor counterpart
+        int rv = convert_asset_to_monitor(conn, element_id, monitor_element_id);
+        if ( ( rv != 0 ) && ( rv != 1 ) )
+        {
+            db_reply_t ret = db_reply_new();
+            ret.status = 0;
+            ret.errtype = rv;
+            ret.errsubtype = rv;
+            log_error ("error during converting asset to monitor");
+            return ret;
+        }
+        // delete from alert devices
+        if ( rv != 1 )
+        {
+            m_alrtdvc_id_t affected_rows = 0;
+            rv = delete_device_from_alert_device_all
+                (conn, monitor_element_id, affected_rows);
+            if ( rv != 0 )
+            {
+                db_reply_t ret = db_reply_new();
+                ret.status = 0;
+                ret.errtype = rv;
+                ret.errsubtype = rv;
+                log_error ("error during alert device deleting");
+                return ret;
+            }
+        }
     }
 
     auto reply_delete5 = delete_monitor_asset_relation_by_a
@@ -575,6 +710,21 @@ db_reply_t
         trans.rollback();
         log_info ("end: error occured during removing ma relation");
         return reply_delete5;
+    }
+    if ( monitor_element_id != 0 )
+    {
+        // if it was in counterpart
+        m_dvc_id_t affected_rows1 = 0;
+        int rv = delete_disc_device(conn, monitor_element_id, affected_rows1);
+        if ( rv != 0 )
+        {
+            db_reply_t ret = db_reply_new();
+            ret.status = 0;
+            ret.errtype = rv;
+            ret.errsubtype = rv;
+            log_error ("error during monitor device deleting");
+            return ret;
+        }
     }
 
     auto reply_delete6 = delete_asset_element (conn, element_id);

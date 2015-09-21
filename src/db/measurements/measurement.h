@@ -133,11 +133,46 @@ db_reply_t
 
 int
     select_for_element_topics_all(
-            tntdb::Connection& conn,
-            a_elmnt_id_t element_id,
-            std::function<void(
-                const tntdb::Row&
-                )>& cb);
+        tntdb::Connection &conn,
+        a_elmnt_id_t       element_id,
+        row_cb_f          &cb);
+
+
+int
+    insert_into_measurement_topic
+        (tntdb::Connection &conn,
+         m_dvc_id_t         monitor_element_id,
+         const std::string &topic,
+         const std::string &inits,
+         m_msrmnt_tpc_id_t &rowid);
+
+
+int
+    insert_into_measurement_pure(
+        tntdb::Connection &conn,
+        m_msrmnt_value_t   value,
+        m_msrmnt_scale_t   scale,
+        m_msrmnt_tpc_id_t  topic_id,
+        int64_t            time,
+        m_msrmnt_id_t     &rowid);
+
+
+int
+    select_measurements_by_topic_id (
+        tntdb::Connection &conn,
+        m_msrmnt_tpc_id_t  topic_id,
+        int64_t            start_timestamp,
+        int64_t            end_timestamp,
+        bool               left_interval_closed,
+        bool               right_interval_closed,
+        row_cb_f          &cb);
+
+
+int
+    select_current_measurement_by_element(
+        tntdb::Connection &conn,
+        a_elmnt_id_t       asset_id,
+        row_cb_f          &cb);
 
 } // namespace persist
 

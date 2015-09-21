@@ -152,7 +152,7 @@ if (iface.empty ()) {
 {
     "errors" : [
         {
-            "code" : 00,
+            "code" : 0,
             "message" : "Interface name required: 'admin/iface/<interface_name>'.",
             "hint" : "Perform GET 'admin/ifaces' to see a list of valid interface names."
         }
@@ -167,7 +167,7 @@ if(dta.mac.empty()) {
 {
     "errors" : [
         {
-            "code" : 00,
+            "code" : 0,
             "message" : "Interface '<$ iface $>' does not exist.",
             "hint" : "Perform GET 'admin/ifaces' to see a list of valid interface names."
         }
@@ -182,7 +182,7 @@ if (dta.ip.size () != dta.netmask.size ()) {
 {
     "errors" : [
         {
-            "code" : 00,
+            "code" : 0,
             "message" : "Number of ip addresses '<$ dta.ip.size () $>' do not match number of netmasks '<$ dta.netmask.size () $>'."
         }
     ]
@@ -246,7 +246,7 @@ try {
 {
     "errors" : [
         {
-            "code" : 00,
+            "code" : 0,
             "message" : "Unknown exception caught: '<$ e.what () $>'."
         }
     ]

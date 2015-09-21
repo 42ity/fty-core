@@ -21,9 +21,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
     \author Alena Chernikava <AlenaChernikava@Eaton.com>
 */
 
-#ifndef SRC_PERSIST_DBHELPERS_H_
-#define SRC_PERSIST_DBHELPERS_H_
+#ifndef SRC_DB_DBHELPERS_H_
+#define SRC_DB_DBHELPERS_H_
 #include <functional>
+#include <string>
 #include <tntdb/row.h>
 #include <czmq.h>
 #include <vector>
@@ -58,7 +59,7 @@ struct db_reply{
     int errsubtype;
     uint64_t rowid;  // insert/update
     uint64_t affected_rows; // for update/insert/delete
-    const char *msg;
+    std::string msg;
     zhash_t *addinfo;
     T item;
 };
@@ -72,7 +73,7 @@ inline db_reply_t db_reply_new() {
         .errsubtype = 0,
         .rowid = 0,
         .affected_rows = 0,
-        .msg = NULL,
+        .msg = "",
         .addinfo = NULL,
         .item = 0};
 }
@@ -85,7 +86,7 @@ inline db_reply<T> db_reply_new(T& item) {
         .errsubtype = 0,
         .rowid = 0,
         .affected_rows = 0,
-        .msg = NULL,
+        .msg = "",
         .addinfo = NULL,
         .item = item};
 }
@@ -197,11 +198,11 @@ typedef std::tuple< a_elmnt_id_t, std::string, a_elmnt_id_t, std::string > power
  * \return device_discovered_id - of the device connected with the 
  *                                asset_element.
  */
-m_dvc_id_t convert_asset_to_monitor(const char* url, 
+m_dvc_id_t convert_asset_to_monitor_old(const char* url, 
                 a_elmnt_id_t asset_element_id);
 
 // the same as previos. but c-style error handling
-int convert_asset_to_monitor_safe(const char* url, 
+int convert_asset_to_monitor_safe_old(const char* url, 
                 a_elmnt_id_t asset_element_id, m_dvc_id_t *device_id);
 
 
@@ -375,4 +376,34 @@ bool is_ok_priority (a_elmnt_pr_t priority);
  */
 bool is_ok_alert_state (UNUSED_PARAM m_alrt_state_t state);
 
-#endif // SRC_PERSIST_DBHELPERS_H_
+/**
+ * \brief Generate the placeholder name
+ *
+ * \param[in] i - index of a column
+ * \param[in] j - index of a row
+ *
+ * \return name of placeholder
+ *
+ * sql_plac(2, 3) -> "item2_3";
+ */
+std::string
+sql_plac(
+        size_t i,
+        size_t j);
+
+/**
+ * \brief Generate the SQL string for multivalue insert
+ *
+ * multi_insert_string("INSERT INTO t_bios_foo", 2, 3) ->
+ * 'INSERT INTO t_bios_foo (foo, bar)
+ * VALUES(:item0_0, :item0_1),
+ * (:item1_0, :item1_1),
+ * (:item2_0, :item2_1)'
+*/
+std::string
+multi_insert_string(
+        const std::string& sql_header,
+        size_t tuple_len,
+        size_t items_len);
+
+#endif // SRC_DB_DBHELPERS_H_

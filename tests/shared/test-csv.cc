@@ -22,10 +22,11 @@
  * \file test-csv.cc
  * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
  * \author Alena Chernikava <AlenaChernikava@Eaton.com>
- * \brief Not yet documented file
+ * \brief Tests for CSV module
  */
 #include <catch.hpp>
 #include <cxxtools/csvdeserializer.h>
+#include <cxxtools/jsondeserializer.h>
 
 #include <iomanip>
 #include <sstream>
@@ -175,4 +176,64 @@ TEST_CASE("CSV findDelimiter", "[csv]")
     REQUIRE(buf.str().size() == 15);
     }
 
+}
+
+TEST_CASE("CSV from_serialization_info", "[csv][si]")
+{
+
+    cxxtools::SerializationInfo si;
+
+    si.setTypeName("Object");
+    si.addMember("name") <<= "DC-1";
+    si.addMember("type") <<= "datacenter";
+
+    cxxtools::SerializationInfo& esi = si.addMember("ext");
+
+    esi.setTypeName("Object");
+    esi.addMember("ext1") <<= "ext1";
+    esi.addMember("ext2") <<= "ext2";
+
+    CsvMap map = CsvMap_from_serialization_info(si);
+    REQUIRE(map.cols() == 4);
+    REQUIRE(map.rows() == 2);
+
+    std::vector<std::vector<std::string>> EXP = {
+        {"name", "type", "ext1", "ext2"},
+        {"DC-1", "datacenter", "ext1", "ext2"}
+    };
+
+    int i = 0;
+    for (const auto& title : EXP[0]) {
+        REQUIRE(map.hasTitle(title));
+        REQUIRE(map.get(1, title) == EXP[1][i++]);
+    }
+
+}
+
+TEST_CASE("CSV from_json", "[csv][si]")
+{
+
+    const char* JSON = "{\"name\":\"dc_name_test\",\"type\":\"datacenter\",\"sub_type\":\"\",\"location\":\"\",\"status\":\"active\",\"business_critical\":\"yes\",\"priority\":\"P1\",\"ext\":{\"asset_tag\":\"A123B123\",\"address\":\"ASDF\"}}";
+
+    std::stringstream json_s{JSON};
+
+    cxxtools::SerializationInfo si;
+    cxxtools::JsonDeserializer jsd{json_s};
+    jsd.deserialize(si);
+
+    CsvMap map = CsvMap_from_serialization_info(si);
+
+    REQUIRE(map.cols() == 9);
+    REQUIRE(map.rows() == 2);
+
+    std::vector<std::vector<std::string>> EXP = {
+        {"name", "type", "sub_type", "location", "status", "business_critical", "priority", "asset_tag", "address"},
+        {"dc_name_test", "datacenter", "", "", "active", "yes", "P1", "A123B123", "ASDF"}
+    };
+
+    int i = 0;
+    for (const auto& title : EXP[0]) {
+        REQUIRE(map.hasTitle(title));
+        REQUIRE(map.get(1, title) == EXP[1][i++]);
+    }
 }

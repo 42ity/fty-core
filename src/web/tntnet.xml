@@ -6,6 +6,11 @@
   -->
 <tntnet>
   <mappings>
+    <!-- Everything SSL only -->
+    <mapping>
+      <target>ssl-redirect@bios_web</target>
+    </mapping>
+
     <!-- Serve static files -->
     <mapping>
       <target>static@tntnet</target>
@@ -49,6 +54,14 @@
       <target>auth-require@bios_web</target>
       <method>(POST|PUT|DELETE)</method>
     </mapping>
+
+    <!-- Token revocation -->
+    <mapping>
+      <target>auth@bios_web</target>
+      <url>^/api/v1/oauth2/revoke$</url>
+      <method>(POST|PUT)</method>
+    </mapping>
+
 
     <!-- admin/systemctl GET -->
     <mapping>
@@ -116,9 +129,10 @@
     <!-- Asset management -->
     <mapping>
       <target>list@bios_web</target>
-      <url>^/api/v1/asset/(datacenter|room|row|rack|group|device)s$</url>
+      <url>^/api/v1/asset/(datacenter|room|row|rack|group|device)s.*$</url>
       <args>
         <type>$1</type>
+        <subtype>$2</subtype>
       </args>
     </mapping>
 
@@ -143,7 +157,7 @@
          -->
     <mapping>
       <target>item@bios_web</target>
-        <url>^/api/v1/asset/(datacenter|room|row|rack|group|device)?/?(.*)$</url>
+        <url>^/api/v1/asset/?(datacenter|room|row|rack|group|device)?/?(.*)$</url>
       <args>
         <id>$2</id>
         <type>$1</type>
@@ -221,6 +235,12 @@
       <url>^/api/v1/metric/computed/average.*$</url>
     </mapping>
 
+    <!-- admin/config -->
+    <mapping>
+        <target>config@bios_web</target>
+        <url>^/api/v1/admin/config.*$</url>
+    </mapping>
+
     <!-- Alerts -->
     <mapping>
       <target>alerts@bios_web</target>
@@ -237,12 +257,12 @@
       <port>8000</port>
     </listener>
   <!-- a certificate enables ssl -->
-  <!--
+  <!-- ssl start
     <listener>
       <port>8443</port>
-      <certificate>tntnet.pem</certificate>
+      <certificate>/etc/tntnet/bios.pem</certificate>
     </listener>
-    -->
+   ssl end -->
   </listeners>
 
   <logging>

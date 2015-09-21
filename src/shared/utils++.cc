@@ -34,6 +34,73 @@ void dtos (double number, std::streamsize precision, std::string& result) {
 
 } // namespace utils::math
 
+namespace json {
+
+std::string escape (const char *string) {
+    if (!string)
+        return "(null_ptr)";
+
+    std::string after;
+    std::string::size_type length = strlen (string);
+    after.reserve (length * 2);
+
+    bool is_escaped = false;
+
+    for (std::string::size_type i = 0; i < length; ++i) {
+        char c = string[i];
+        switch (c) {
+            case '"':
+                {
+                    if (is_escaped) {
+                        is_escaped = false;
+                    }
+                    after.append("\\\"");
+                    break;
+                }
+            case '\\':
+                {
+                    if (is_escaped) {
+                        after.append ("\\\\");
+                        is_escaped = false;
+                    }
+                    else {
+                        is_escaped = true;
+                    }
+                    break;
+                }
+            case 'b':
+            case 'f':
+            case 'n':
+            case 'r':
+            case 't':
+            case 'u':
+                {
+                    if (is_escaped) {
+                        after.append ("\\");
+                        is_escaped = false;
+                    }
+                    after += c;
+                    break;
+                }
+            default:
+                {
+                    if (is_escaped) {
+                        after.append ("\\\\");
+                        is_escaped = false;
+                    }
+                    after += c;
+                }
+        }
+    }
+    return after;
+}
+
+std::string escape (const std::string& before) {
+    return escape (before.c_str ());
+}
+
+} // namespace utils::json
+
 std::string escape (const std::string& in, const std::string& escape_chars) {
 
     std::stringstream s;
