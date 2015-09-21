@@ -42,24 +42,37 @@ TS_NOW="`TZ=UTC date -u +%s`"
 LOCAL_HOSTNAME="`hostname -A | sort | head -1`"
 BIOS_USER="admin"
 
-if [ -s "${PEM_FINAL_CERT}" ]; then
+CERT_LOADABLE=no
+if [ -f "${PEM_FINAL_CERT}" ] ; then
+    # The command below can report errors if the file is empty or unreadable
+    # so we do not test '-r' nor '-s' above explicitly.
     SSL_OUT="`openssl x509 -noout -dates -subject < "${PEM_FINAL_CERT}"`" && \
-    { FROM="`echo "$SSL_OUT" | sed -n 's|notBefore=||p'`" && \
-        [ -n "$FROM" ] && FROM="`TZ=UTC date -u -d "$FROM" +%s`"
-      TILL="`echo "$SSL_OUT" | sed -n 's|notAfter=||p'`" && \
-        [ -n "$TILL" ] && TILL="`TZ=UTC date -u -d "$TILL" +%s`" && \
-        [ "$TILL" -gt "$WARN_EXPIRE" ] && TILL="`expr $TILL - $WARN_EXPIRE`"
-      CN="`echo "$SSL_OUT" | sed -n 's|subject= /CN=||p'`" ; }
+    [ -n "$SSL_OUT" ] && CERT_LOADABLE=yes
 fi
 
-if [ ! -r "${PEM_FINAL_CERT}" ] || [ -z "$FROM" ] || [ -z "$TILL" ] || \
+if [ "$CERT_LOADABLE" = yes ]; then
+    FROM="`echo "$SSL_OUT" | sed -n 's|notBefore=||p'`" && \
+        [ -n "$FROM" ] && FROM="`TZ=UTC date -u -d "$FROM" +%s`" || \
+        FROM=""
+    TILL="`echo "$SSL_OUT" | sed -n 's|notAfter=||p'`" && \
+        [ -n "$TILL" ] && TILL="`TZ=UTC date -u -d "$TILL" +%s`" && \
+        [ "$TILL" -gt "$WARN_EXPIRE" ] && TILL="`expr $TILL - $WARN_EXPIRE`" || \
+        TILL=""
+    CN="`echo "$SSL_OUT" | sed -n 's|subject= /CN=||p'`" || \
+        CN=""
+fi
+
+if [ ! -r "${PEM_FINAL_CERT}" ] || [ ! -s "${PEM_FINAL_CERT}" ] || \
+   [ -z "$FROM" ] || [ -z "$TILL" ] || \
    [ "$FROM" -gt "${TS_NOW}" ] || [ "$TILL" -lt "${TS_NOW}" ] || \
    [ "$CN" != "${LOCAL_HOSTNAME}" ] \
 ; then
     # Not to overwrite CA-issued certificate
     if [ -s "${PEM_FINAL_CERT}" ] && [ -z "`grep "$SIG" "${PEM_FINAL_CERT}" 2>/dev/null`" ]; then
         chown "${BIOS_USER}" "${PEM_FINAL_CERT}"        # Just in case
-        exit 0
+        [ "$CERT_LOADABLE" = yes ]      # Error out if the cert file is invalid
+                                        # (reported to stderr by openssl above)
+        exit $?
     fi
 
     # Generate self-signed cert with a new key and other data
@@ -68,6 +81,7 @@ if [ ! -r "${PEM_FINAL_CERT}" ] || [ -z "$FROM" ] || [ -z "$TILL" ] || \
         -days 365 -nodes -subj "/CN=${LOCAL_HOSTNAME}" \
     || exit $?
 
+    rm -f "${PEM_FINAL_CERT}"
     echo "$SIG" | \
         cat - "${PEM_TMP_KEY}" "${PEM_TMP_CERT}" > "${PEM_FINAL_CERT}" \
     || exit $?
