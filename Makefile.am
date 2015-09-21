@@ -617,6 +617,8 @@ test_utils_plusplus_CPPFLAGS = \
 			$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/
 
+test_utils_plusplus_LDFLAGS =	${CXXTOOLS_LIBS} ${LIBCZMQ_LIBS}
+
 check_PROGRAMS += 	test-utils
 
 test_utils_SOURCES = 	src/shared/utils.h \
