@@ -35,8 +35,11 @@ PEM_FINAL_CERT="/etc/tntnet/bios.pem"
 PEM_TMP_KEY="/tmp/key.pem"
 PEM_TMP_CERT="/tmp/cert.pem"
 
+# Warn about expiration this much in advance, e.g. 45 days
+WARN_EXPIRE="`expr 45 * 24 * 3600`"
+
 TS_NOW="`TZ=UTC date -u +%s`"
-LOCAL_HOSTNAME="`hostname`"
+LOCAL_HOSTNAME="`hostname -A | sort | head -1`"
 BIOS_USER="admin"
 
 if [ -s "${PEM_FINAL_CERT}" ]; then
@@ -44,7 +47,8 @@ if [ -s "${PEM_FINAL_CERT}" ]; then
     { FROM="`echo "$SSL_OUT" | sed -n 's|notBefore=||p'`" && \
         [ -n "$FROM" ] && FROM="`TZ=UTC date -u -d "$FROM" +%s`"
       TILL="`echo "$SSL_OUT" | sed -n 's|notAfter=||p'`" && \
-        [ -n "$TILL" ] && TILL="`TZ=UTC date -u -d "$TILL" +%s`"
+        [ -n "$TILL" ] && TILL="`TZ=UTC date -u -d "$TILL" +%s`" && \
+        [ "$TILL" -gt "$WARN_EXPIRE" ] && TILL="`expr $TILL - $WARN_EXPIRE`"
       CN="`echo "$SSL_OUT" | sed -n 's|subject= /CN=||p'`" ; }
 fi
 
