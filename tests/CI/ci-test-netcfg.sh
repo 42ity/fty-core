@@ -29,12 +29,6 @@
 #   flock - http://stackoverflow.com/questions/169964/how-to-prevent-a-script-from-running-simultaneously
 #   netcfg PUT tests - license issue
 
-[ -z "$BIOS_USER" ] && BIOS_USER="bios"
-[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
-[ -z "$SASL_SERVICE" ] && SASL_SERVICE="bios"
-[ -z "$SUT_HOST" ] && SUT_HOST="127.0.0.1"
-[ -z "$SUT_WEB_PORT" ] && SUT_WEB_PORT="8000"
-
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "FATAL: $0: Could not include script library" >&2; exit 1; }
@@ -66,6 +60,7 @@ declare -r REST_NETCFG="/admin/netcfg"
 declare -r IFACES_PATH="/etc/network"
 declare -r IFACES_FILE="interfaces"
 declare -r IFACES_FILE_INITIAL="${IFACES_FILE}_initial"
+declare -r IFACES_FILE_LOOPBACK="${IFACES_FILE_INITIAL}_loopback"
 
 declare -r RESOLV_PATH="/etc"
 declare -r RESOLV_FILE="resolv.conf"
@@ -253,16 +248,38 @@ perl -pi -e 's/^#.*\n$//g' "${TMP_DIR}/${IFACES_FILE_INITIAL}"
 
 # 3.1 Parse out into array iface names of the initial /etc/network/interfaces
 declare -a tmp_arr
+declare -a tmp_arr2
 while IFS='' read -r line || [[ -n "$line" ]]; do
     if [[ $line =~ ^[[:space:]]*iface[[:space:]]+([[:alnum:]]+)[[:space:]]+ ]]; then
-        tmp_arr+=( "${BASH_REMATCH[1]}" )
+        ifacename="${BASH_REMATCH[1]}"
+        if [[ $line =~ loopback ]]; then
+            tmp_arr2+=( "${ifacename}" )
+        else
+            tmp_arr+=( "${ifacename}" )
+        fi
     fi
 done < "${TMP_DIR}/${IFACES_FILE_INITIAL}"
 declare -ar INITIAL_IFACE_NAMES=("${tmp_arr[@]}")
+declare -ar LOOPBACK_IFACE_NAMES=("${tmp_arr2[@]}")
+
 echo "Initial iface names: ${INITIAL_IFACE_NAMES[@]}"
+echo "Loopback iface names: ${LOOPBACK_IFACE_NAMES[@]}"
+
 if [ ${#INITIAL_IFACE_NAMES[@]} -lt 1 ]; then
     die "No interfaces available"
 fi
+
+# store a version of initial interfaces file that has only loopback interfaces
+cp "${TMP_DIR}/${IFACES_FILE_INITIAL}" "${TMP_DIR}/${IFACES_FILE_LOOPBACK}"
+for i in "${INITIAL_IFACE_NAMES[@]}"; do
+    # remove interface ${i}
+    perl -pi -e "s/auto(.+?)${i}(.*?)\n/auto\1\2\n/gs" "${TMP_DIR}/${IFACES_FILE_LOOPBACK}"
+    perl -pi -e "s/allow-hotplug(.+?)${i}(.*?)\n/allow-hotplug\1\2\n/gs" "${TMP_DIR}/${IFACES_FILE_LOOPBACK}"
+    perl -pi -e "BEGIN{undef $/;} s/iface(\s+)${i}.*?(iface|\Z)/\2/gs" "${TMP_DIR}/${IFACES_FILE_LOOPBACK}"
+    perl -pi -e "s/allow-hotplug\s*\n*$//gs" "${TMP_DIR}/${IFACES_FILE_LOOPBACK}"
+    perl -pi -e "s/^auto\s*\n*$//gs" "${TMP_DIR}/${IFACES_FILE_LOOPBACK}"
+    perl -pi -e "s/^[\s\n]*\Z//gs" "${TMP_DIR}/${IFACES_FILE_LOOPBACK}"
+done
 
 # TEST CASES
 
@@ -286,14 +303,13 @@ echo "$tmp" > "${TMP_DIR}/${JSON_EXPECTED_FILE}"
 HTTP_CODE=
 simple_get_json_code "${REST_NETCFGS}" tmp HTTP_CODE || die "'api_get_json ${REST_NETCFGS}' failed."
 echo "$tmp" > "${TMP_DIR}/${JSON_RECEIVED_FILE}"
-bash "${CHECKOUTDIR}/tests/CI/cmpjson.sh" -f "${TMP_DIR}/${JSON_RECEIVED_FILE}" "${TMP_DIR}/${JSON_EXPECTED_FILE}" || \
+bash "${CHECKOUTDIR}/tests/CI/cmpjson.sh" -f "${TMP_DIR}/${JSON_EXPECTED_FILE}" "${TMP_DIR}/${JSON_RECEIVED_FILE}" || \
     die "Test case '$TEST_CASE' failed. Expected and returned json do not match."
-[[ $HTTP_CODE -eq 200 ]] || die "Test case '$TEST_CASE' failed. Expected HTTP return code: 200, received: $HTTP_CODE."
 # Repeated requests
 for i in "1 2 3 4 5"; do 
     simple_get_json_code "${REST_NETCFGS}" tmp HTTP_CODE || die "'api_get_json ${REST_NETCFGS}' failed."
     echo "$tmp" > "${TMP_DIR}/${JSON_RECEIVED_FILE}"
-    bash "${CHECKOUTDIR}/tests/CI/cmpjson.sh" -f "${TMP_DIR}/${JSON_RECEIVED_FILE}" "${TMP_DIR}/${JSON_EXPECTED_FILE}" || \
+    bash "${CHECKOUTDIR}/tests/CI/cmpjson.sh" -f "${TMP_DIR}/${JSON_EXPECTED_FILE}" "${TMP_DIR}/${JSON_RECEIVED_FILE}" || \
         die "Test case '$TEST_CASE' failed. Expected and returned json do not match."
     [[ $HTTP_CODE -eq 200 ]] || die "Test case '$TEST_CASE' failed. Expected HTTP return code: 200, received: $HTTP_CODE."
 done
@@ -320,12 +336,13 @@ for i in "${INITIAL_IFACE_NAMES[@]}"; do
     perl -pi -e "s/,\s*\"${i}\"//g" "${TMP_DIR}/${JSON_EXPECTED_FILE}"
     perl -pi -e "s/\"${i}\"\s*,//g" "${TMP_DIR}/${JSON_EXPECTED_FILE}"
     perl -pi -e "s/\[\s*\"${i}\"\s*\]/[]/g" "${TMP_DIR}/${JSON_EXPECTED_FILE}"
-    if [[ -s "${IFACES_PATH}/${IFACES_FILE}" ]]; then    
-        bash "${CHECKOUTDIR}/tests/CI/cmpjson.sh" -f "${TMP_DIR}/${JSON_RECEIVED_FILE}" "${TMP_DIR}/${JSON_EXPECTED_FILE}" || \
+
+    if ! diff -Naru "${IFACES_PATH}/${IFACES_FILE}" "${TMP_DIR}/${IFACES_FILE_LOOPBACK}"; then    
+        bash "${CHECKOUTDIR}/tests/CI/cmpjson.sh" -f "${TMP_DIR}/${JSON_EXPECTED_FILE}" "${TMP_DIR}/${JSON_RECEIVED_FILE}" || \
             die "Test case '$TEST_CASE' failed. Expected and returned json do not match."
         [ $HTTP_CODE -eq 200  ] || die "Test case '$TEST_CASE' failed. Expected HTTP return code: 200, received: $HTTP_CODE."
     else
-        # if /tmp/tmp.XXXX/interfaces empty then 404 expected
+        # if /etc/network/interfaces contains only loopback interface names then 404 expected
         [ $HTTP_CODE -eq 404  ] || die "Test case '$TEST_CASE' failed. Expected HTTP return code: 404, received: $HTTP_CODE."
     fi
 done
@@ -399,7 +416,7 @@ for i in "${INITIAL_IFACE_NAMES[@]}"; do
   
     simple_get_json_code "${REST_NETCFG}/${i}" tmp HTTP_CODE || die "'api_get_json ${REST_NETCFGS}' failed."
     echo "$tmp" > "${TMP_DIR}/${JSON_RECEIVED_FILE}"
-    bash "${CHECKOUTDIR}/tests/CI/cmpjson.sh" -f "${TMP_DIR}/${JSON_RECEIVED_FILE}" "${TMP_DIR}/${JSON_EXPECTED_FILE}" || \
+    bash "${CHECKOUTDIR}/tests/CI/cmpjson.sh" -f "${TMP_DIR}/${JSON_EXPECTED_FILE}" "${TMP_DIR}/${JSON_RECEIVED_FILE}" || \
         die "Test case '$TEST_CASE' failed. Expected and returned json do not match."
     HTTP_EXPECTED=200
     [[ $HTTP_CODE -eq $HTTP_EXPECTED ]] || die "Test case '$TEST_CASE' failed. Expected HTTP return code: $HTTP_EXPECTED, received: $HTTP_CODE."

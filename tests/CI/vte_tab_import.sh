@@ -97,11 +97,6 @@ fi
 BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 SUT_IS_REMOTE=yes
 
-    # *** if used set BIOS_USER and BIOS_PASSWD for tests where it is used:
-[ -z "$BIOS_USER" ] && BIOS_USER="bios"
-[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
-[ -z "$SASL_SERVICE" ] && SASL_SERVICE="bios"
-
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
@@ -148,14 +143,16 @@ grep -q '"imported_lines" : '"$NUM_EXPECTED" $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.
     die "ERROR : 'Test of the number of imported lines			FAILED  (not $NUM_EXPECTED)'"
 echo "Test of the number of imported lines			PASSED"
 
-for NUM in 8 9 10 15 17 19 20 21 22 23 24 26 27 28 ; do
+for NUM in 9 10 11 16 18 20 21 22 23 24 25 27 28 29 ; do
     grep -q "\[ $NUM," $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log || \
         die "ERROR : 'Test of the line   $NUM 				FAILED'"
     echo "Test of the line  $NUM  					PASSED"
 done
-ELEMENT="\(1,'DC-LAB1',2,10,NULL,'active',1,1,'EATON12310'\),\(2,'ROOM-01',3,10,1,'active',2,0,'EATON12311'\),\(3,'ANNEX-01',3,10,1,'active',3,1,'EATON12312'\),\(4,'CAGE-01',1,10,2,'active',4,1,'EATON12313'\),\(5,'ROW-01',4,10,2,'active',5,1,'EATON12314'\),\(6,'ROW-02',4,10,2,'active',5,1,'EATON12315'\),\(7,'RACK-01',5,10,5,'active',5,1,'EATON12345'\),\(9,'CUSTOMER_02',1,10,1,'nonactive',2,1,'EATON12318'\),\(10,'MAIN_LAB',6,6,1,'nonactive',3,1,'EATON12319'\),\(11,'GENSET_01',6,2,3,'spare',5,1,'EATON12347'\),\(12,'GENSET_03',6,4,3,'nonactive',5,1,'EATON12349'\),\(13,'ATS_01',6,7,2,'active',5,1,'EATON12341'\),\(16,'SRV2_LAB',6,5,7,'active',5,1,'EATON12344'\)"
+#ELEMENT="\(1,'DC-LAB1',2,10,NULL,'active',1,1,'EATON12310'\),\(2,'ROOM-01',3,10,1,'active',2,0,'EATON12311'\),\(3,'ANNEX-01',3,10,1,'active',3,1,'EATON12312'\),\(4,'CAGE-01',1,10,2,'active',4,1,'EATON12313'\),\(5,'ROW-01',4,10,2,'active',5,1,'EATON12314'\),\(6,'ROW-02',4,10,2,'active',5,1,'EATON12315'\),\(7,'RACK-01',5,10,5,'active',5,1,'EATON12345'\),\(9,'CUSTOMER_02',1,10,1,'nonactive',2,1,'EATON12318'\),\(10,'MAIN_LAB',6,6,1,'nonactive',3,1,'EATON12319'\),\(11,'GENSET_01',6,2,3,'spare',5,1,'EATON12347'\),\(12,'GENSET_03',6,4,3,'nonactive',5,1,'EATON12349'\),\(13,'ATS_01',6,7,2,'active',5,1,'EATON12341'\),\(16,'SRV2_LAB',6,5,7,'active',5,1,'EATON12344'\)"
 
 #ELEMENT="\(1,'DC-LAB1',2,10,NULL,'active',1,1,'EATON12310'\),\(2,'ROOM-01',3,10,1,'active',2,0,'EATON12311'\),\(3,'ANNEX-01',3,10,1,'active',3,1,'EATON12312'\),\(4,'CAGE-01',1,10,2,'active',4,1,'EATON12313'\),\(5,'ROW-01',4,10,2,'active',5,1,'EATON12314'\),\(6,'ROW-02',4,10,2,'active',5,1,'EATON12315'\),\(7,'RACK-01',5,10,5,'active',5,1,'EATON12345'\),\(8,'GROUP1-LAB',1,10,1,'nonactive',1,1,'EATON12316'\),\(9,'CUSTOMER_02',1,10,1,'nonactive',2,1,'EATON12318'\),\(10,'MAIN_LAB',6,6,1,'nonactive',3,1,'EATON12319'\),\(11,'MAIN3P_LAB',6,6,1,'nonactive',4,0,'EATON12320'\),\(12,'GENSET_01',6,2,3,'spare',5,1,'EATON12347'\),\(13,'GENSET_03',6,4,3,'nonactive',5,1,'EATON12349'\),\(14,'ATS_01',6,7,2,'active',5,1,'EATON12341'\),\(16,'ePDU3-LAB',6,3,7,'active',5,1,' 3xC19'\),\(17,'SRV2_LAB',6,5,7,'active',5,1,'EATON12344'\)"
+
+ELEMENT="\(1,'DC-LAB1',2,10,NULL,'active',1,1,'EATON12310'\),\(2,'ROOM-01',3,10,1,'active',2,0,'EATON12311'\),\(3,'ANNEX-01',3,10,1,'active',3,1,'EATON12312'\),\(4,'CAGE-01',1,10,2,'active',4,1,'EATON12313'\),\(5,'ROW-01',4,10,2,'active',5,1,'EATON12314'\),\(6,'ROW-02',4,10,2,'active',5,1,'EATON12315'\),\(7,'RACK-01',5,10,5,'active',5,1,'EATON12345'\),\(9,'CUSTOMER_02',1,10,1,'active',2,1,'EATON12318'\),\(10,'MAIN_LAB',6,6,1,'nonactive',3,1,'EATON12319'\),\(11,'GENSET_01',6,2,3,'spare',5,1,'EATON12347'\),\(12,'GENSET_03',6,4,3,'spare',5,1,'EATON12349'\),\(13,'ATS_01',6,7,2,'active',5,1,'EATON12341'\),\(16,'SRV2_LAB',6,5,7,'active',5,1,'EATON12344'\)"
 
 I=$(sut_run 'mysqldump -u root box_utf8 t_bios_asset_element|awk "/INSERT/ && /ROOM-01/" | egrep "'"$ELEMENT"'"|wc -l' 2>/dev/null)
 [ "$I" = 1 ] || die "ERROR : 'Test of the table t_bios_asset_element FAILED'"
@@ -173,7 +170,7 @@ I=$(sut_run 'mysqldump -u root box_utf8 t_bios_asset_ext_attributes|grep INSERT 
 [ "$I" = 1 ] || die "ERROR : 'Test of the table t_bios_asset_ext_attributes FAILED'"
 echo 'Test of the table t_bios_asset_ext_attributes		PASSED' | tee -a $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log
 
-ELEMENT="\(3,'epdu'\),\(2,'genset'\),\(6,'main'\),\(10,'N_A'\),\(4,'pdu'\),\(5,'server'\),\(9,'storage'\),\(7,'sts'\),\(8,'switch'\),\(1,'ups'\)"
+ELEMENT="\(3,'epdu'\),\(2,'genset'\),\(6,'feed'\),\(10,'N_A'\),\(4,'pdu'\),\(5,'server'\),\(9,'storage'\),\(7,'sts'\),\(8,'switch'\),\(1,'ups'\)"
 I=$(sut_run 'mysqldump -u root box_utf8 t_bios_asset_device_type|grep INSERT | egrep "'"$ELEMENT"'"|wc -l' 2>/dev/null)
 [ "$I" = 1 ] || die "ERROR : 'Test of the table t_bios_asset_device_type FAILED'"
 echo 'Test of the table t_bios_asset_device_type		PASSED' | tee -a $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log
