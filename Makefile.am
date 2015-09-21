@@ -1334,6 +1334,8 @@ bios_passwd_SCRIPTS =	tools/bios-passwd
 client_SCRIPTS +=	$(bios_passwd_SCRIPTS) \
 			tools/bios-networking
 
+bios_passwddir =	$(clientdir)
+
 ###################################################################
 # Web Library (tntnet dynamic module for $BIOS REST API)
 ###################################################################
