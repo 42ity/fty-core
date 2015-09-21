@@ -1244,7 +1244,7 @@ agent_cm_SOURCES = \
 			src/agents/computation/cm-utils.cc
 
 agent_cm_LDADD = \
-            libpriv-db.la \
+			libpriv-db.la \
 			libpriv-log.la \
 			libbiosapi.la \
 			libpriv-utils-ymsg.la \
@@ -1330,7 +1330,7 @@ outage_LDADD = \
 outage_LDFLAGS =	-ltntdb
 
 client_SCRIPTS +=	tools/bios-passwd \
-					tools/bios-networking
+			tools/bios-networking
 
 ###################################################################
 # Web Library (tntnet dynamic module for $BIOS REST API)
@@ -1442,7 +1442,7 @@ dist_noinst_DATA +=	tntnet.xml $(top_srcdir)/src/web/tntnet.xml
 CLEANFILES +=		tntnet.xml tntnet.xml.example tests/CI/tntnet.xml
 
 # Make sure needed files are up-to-date to test web-server for $BIOS REST API
-web-test-deps: tntnet.xml bios_web.la web-link-test
+web-test-deps: tntnet.xml bios_web.la web-link-test agent-dbstore tools/bios-passwd
 
 ### Execute the test web-server for $BIOS REST API
 # LD_PRELOAD=/path/to/libasan.so is needed for fair play with external libs,
