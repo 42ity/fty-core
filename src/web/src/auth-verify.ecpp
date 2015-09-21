@@ -26,6 +26,7 @@
  #><%pre>
 #include "tokens.h"
 #include "auth_levels.h"
+#include "rights.h"
 #include <tnt/httpmessage.h>
 #include <tnt/httpheader.h>
 
@@ -41,64 +42,34 @@
 std::string access_token="";
 </%args>
 <%request scope="global">
-int8_t access_auth_level;
+int8_t access_auth_level = -1;
 long int uid = 0;
+long int gid = -1;
 </%request>
 <%cpp>
-access_auth_level=AUTH_LEVEL_ANONYMOUS;
-#ifdef DEBUG
-std::string access_auth_level_passedBy = "none";
-#endif // DEBUG
-
-/* Fix back the "pluses" that could be changed into "spaces" by query
- * parameter parser. Tokens in headers should be correct anyhow. */
-std::replace( access_token.begin(), access_token.end(), ' ', '+' );
-
 if(request.hasHeader(tnt::httpheader::authorization)) {
 	/* Auth header overrides GET/POST parameters even if header is wrong */
 	access_token = request.getHeader(tnt::httpheader::authorization);
 
 	if(access_token.compare(0,7,"Bearer ")) {
 		access_token = "";
-#ifdef DEBUG
-                access_auth_level_passedBy = "auth_header_notBearer";
-#endif // DEBUG
 	} else {
 		access_token = access_token.substr(7);
-#ifdef DEBUG
-                if(access_token.empty()) {
-                    access_auth_level_passedBy = "auth_header_empty";
-                } else {
-                    access_auth_level_passedBy = "auth_header_value";
-                }
-#endif // DEBUG
 	}
 
-	if(access_token.empty()) {
-		/* Token header was presented but empty */
-		access_auth_level=AUTH_LEVEL_ERROR_EMPTY;
-	}
-#ifdef DEBUG
-} else {
-    /* TODO? Differentiate absent access_token attribute from present and empty.
-     * TODO? Differentiate GET and POST sources? Prefer some specific one? */
-    if(!access_token.empty()) {
-        access_auth_level_passedBy = "query_params_value";
-    }
-#endif // DEBUG
 }
 
 /* We can get the token from header, or from GET or POST request args */
 if(!access_token.empty()) {
-
-	/* Per RFC-11, we currently implement one access level,
-	    that of a power-user == 2 */
-	access_auth_level=AUTH_LEVEL_POWERUSER;
-
-	if(!tokens::get_instance()->verify_token(access_token, &uid)) {
-//			"error":"invalid_token"
-//			return HTTP_UNAUTHORIZED;
-		access_auth_level=AUTH_LEVEL_ERROR_INVALID;
+	if(tokens::get_instance()->verify_token(access_token, &uid, &gid)) {
+		access_auth_level=gid - 8000;
+	} else {
+</%cpp>
+{
+    "error":"invalid_token"
+}
+<%cpp>
+		return HTTP_UNAUTHORIZED;
 	}
 }
 
@@ -106,13 +77,30 @@ if(!access_token.empty()) {
 	reply.setHeader( (std::string)"X-Auth-Token-Presented: ",
                 "\"" + access_token + "\"" );
 
-        reply.setHeader( (std::string)"X-Auth-Token-PassedBy: ",
-                "\"" + access_auth_level_passedBy + "\"" );
-
 	std::ostringstream os;
 	os << "access_auth_level=\"" << (int)access_auth_level << "\"";
 	reply.setHeader( (std::string)"X-Auth-Verify: ", os.str() );
 #endif // DEBUG
+
+std::string test_url = request.isMethodGET() ? "R" : "W";
+test_url += request.getQuery();
+
+auto it = rights_management.upper_bound(test_url);
+if(!rights_management.empty() && it != rights_management.begin()) {
+	it--;
+	if(test_url.find(it->first) != std::string::npos) {
+		if(it->second <= access_auth_level) {
+			return DECLINED;
+		} else {
+</%cpp>
+{
+    "error":"Insufficient rights"
+}
+<%cpp>
+			return HTTP_UNAUTHORIZED;
+		}
+	}
+}
 
 /* Go on to next module in tntnet.xml */
 return DECLINED;
