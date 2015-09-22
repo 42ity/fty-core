@@ -90,8 +90,8 @@ chmod a+r /etc/default/bios
 
 # Setup BIOS lenses
 mkdir -p /usr/share/bios/lenses
-ln -sr ../../augeas/lenses/dist/{build,ethers,interfaces,ntp,ntpd,pam,resolv,rx,sep,util,shellvars}.aug \
-    /usr/share/bios/lenses
+( cd /usr/share/bios/lenses && \
+  ln -sr ../../augeas/lenses/dist/{build,ethers,interfaces,ntp,ntpd,pam,resolv,rx,sep,util,shellvars}.aug ./ )    
 
 # Setup u-Boot
 echo '/dev/mtd3 0x00000 0x40000 0x40000' > /etc/fw_env.config
