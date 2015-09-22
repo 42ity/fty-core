@@ -97,11 +97,6 @@ fi
 BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 SUT_IS_REMOTE=yes
 
-    # *** if used set BIOS_USER and BIOS_PASSWD for tests where it is used:
-[ -z "$BIOS_USER" ] && BIOS_USER="bios"
-[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
-[ -z "$SASL_SERVICE" ] && SASL_SERVICE="bios"
-
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }

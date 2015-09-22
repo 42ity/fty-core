@@ -8,10 +8,10 @@ select @asset_element_rack := id_asset_element_type from t_bios_asset_element_ty
 select @asset_element_device := id_asset_element_type from t_bios_asset_element_type where name ='device';
 
 /* t_bios_asset_device_type */
-select @asset_device_ups := id_asset_device_type from t_bios_asset_device_type where name = 'ups'; 
+select @asset_device_ups := id_asset_device_type from t_bios_asset_device_type where name = 'ups';
 select @asset_device_epdu := id_asset_device_type from t_bios_asset_device_type where name = 'epdu';
 select @asset_device_server := id_asset_device_type from t_bios_asset_device_type where name = 'server';
-select @asset_device_main := id_asset_device_type from t_bios_asset_device_type where name = 'main';
+select @asset_device_feed := id_asset_device_type from t_bios_asset_device_type where name = 'feed';
 
 /* t_bios_asset_link_type; */
 select @asset_link_powerchain := id_asset_link_type from t_bios_asset_link_type where name = 'power chain';
@@ -54,9 +54,8 @@ insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent,st
 set @last_asset_element := LAST_INSERT_ID();
 set @last_rack := @last_asset_element;
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("model", "RESSPU4210KB 600mm x 1000mm - 42U Rack", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("free_space", "27",      @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer", "Cooper",   @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("u_size",      "27U",     @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("u_size",      "27",     @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("asset_tag",       "EATON123457",     @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("serial_no",       "21545212HGFV2",     @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_name",    "Michal Hrušecký", @last_asset_element);
@@ -96,6 +95,7 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_email",  "michalhrusecky@eaton.com", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",  "240211151532", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_w_pos", "right",@last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("outlet.count",   "16.00",@last_asset_element);
 
 /* ROZ.ePDU04 */
 insert into t_bios_asset_element (name , id_type, id_subtype, id_parent,status,priority,business_crit, asset_tag) values ("ROZ.ePDU04", @asset_element_device, @asset_device_epdu, @last_rack,"active",1,1,"ROZ6");
@@ -109,6 +109,7 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_email",  "captain@ssenterprise.mil", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",  "555-4242", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_w_pos", "left",@last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("outlet.count",   "16.00",@last_asset_element);
 
 /* GRASSHOPPER */
 insert into t_bios_asset_element (name , id_type, id_subtype, id_parent,status,priority,business_crit, asset_tag) values ("GRASSHOPPER",  @asset_element_device, @asset_device_server, @last_rack,"active",1,1,"ROZ7");
@@ -182,14 +183,14 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_email",    "geraldguillaume@eaton.com", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",    "+33 (0)4 42 42 42 42", @last_asset_element);
 
-/* ROZ.MAIN */
-insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, asset_tag) values ("ROZ.MAIN", @asset_element_device, @asset_device_main, @last_datacenter,"ROZ13");
+/* ROZ.FEED */
+insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, asset_tag) values ("ROZ.FEED", @asset_element_device, @asset_device_feed, @last_datacenter,"ROZ13");
 set @last_asset_element = LAST_INSERT_ID();
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "MAIN 240V", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "FEED 240V", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("phase",       "1",         @last_asset_element);
 
-/* ROZ.GROUP.MAIN */
-insert into t_bios_asset_element (name , id_type, id_parent, asset_tag) values ("ROZ.GROUP.MAIN", @asset_element_group, @last_datacenter,"ROZ14");
+/* ROZ.GROUP.FEED */
+insert into t_bios_asset_element (name , id_type, id_parent, asset_tag) values ("ROZ.GROUP.FEED", @asset_element_group, @last_datacenter,"ROZ14");
 set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "input power chain", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("type",        "input_power",       @last_asset_element);
@@ -199,18 +200,18 @@ insert into t_bios_asset_group_relation
     (id_asset_group, id_asset_element)
 values
 (
-    (select id_asset_element from `t_bios_asset_element` where name = 'ROZ.GROUP.MAIN'),
-    (select id_asset_element from `t_bios_asset_element` where name = 'ROZ.MAIN')
+    (select id_asset_element from `t_bios_asset_element` where name = 'ROZ.GROUP.FEED'),
+    (select id_asset_element from `t_bios_asset_element` where name = 'ROZ.FEED')
 );
 
 /* Asset links */
 
-/* link (ROZ.MAIN, ROZ.UPS1, 'power chain') */
+/* link (ROZ.FEED, ROZ.UPS1, 'power chain') */
 insert into t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type)
 values
 (
-    (select id_asset_element from t_bios_asset_element where name = 'ROZ.MAIN'),
+    (select id_asset_element from t_bios_asset_element where name = 'ROZ.FEED'),
     (select id_asset_element from t_bios_asset_element where name = 'ROZ.UPS1'),
     @asset_link_powerchain
 );
@@ -393,4 +394,3 @@ INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element
     (SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'ROZ.ePDU04'),
     (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'ROZ.ePDU04')
 );
-
