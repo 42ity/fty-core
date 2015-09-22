@@ -95,6 +95,7 @@ for(
         "start_bios",
         "test_db_tests",
         "test_restapi",
+        "test_netcfg",
         "test_NUT",
         "test_rackpower",
         "test_libbiosapi",

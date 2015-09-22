@@ -570,9 +570,15 @@ fi
 logmsg_info "Bind-mount kernel modules from the host OS"
 mkdir -p "../rootfs/$VM/lib/modules"
 mount -o rbind "/lib/modules" "../rootfs/$VM/lib/modules"
-mkdir -p "../rootfs/$VM/root/.ccache"
-mount -o rbind "/root/.ccache" "../rootfs/$VM/root/.ccache"
 mount -o remount,ro,rbind "../rootfs/$VM/lib/modules"
+
+logmsg_info "Bind-mount ccache directory from the host OS"
+umount -fl "../rootfs/$VM/root/.ccache" 2> /dev/null > /dev/null
+# The devel-image can make this a symlink to user homedir, so kill it:
+[ -h "../rootfs/$VM/root/.ccache" ] && rm -rf "../rootfs/$VM/root/.ccache"
+mkdir -p "../rootfs/$VM/root/.ccache"
+[ -d "/root/.ccache" ] || mkdir -p "/root/.ccache"
+mount -o rbind "/root/.ccache" "../rootfs/$VM/root/.ccache"
 
 logmsg_info "Setup virtual hostname"
 echo "$VM" > "../rootfs/$VM/etc/hostname"
