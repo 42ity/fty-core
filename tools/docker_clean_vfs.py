@@ -1,16 +1,41 @@
 #!/usr/bin/env python
 """
+Copyright (C) 2014 Adam Ever-Hadani
+
+Note (Arnaud Quette): here is the answer of the author on the license
+clarification request
+	Glad you found it useful, by all means use away. If u scroll down
+	that thread ull see I posted it as a public gist as well which I
+	would assume implies some default open source license. Otherwise
+	consider this a release from any copyright claims :)
+
+For now at least, we will use APLv2, to be coherent with Docker:
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
 From https://github.com/docker/docker/issues/6354#issuecomment-60817733
-All credit goes to https://github.com/adamhadani
 
-Check all existing Docker containers for their mapped paths, and then purge any
-zombie directories in docker's volumes directory which don't correspond to an
-existing container.
+ \file    docker_clean_vfs.py
+ \brief   Check and purge all existing Docker containers for zombie directories
+ \author  Adam Ever-Hadani <https://github.com/adamhadani>
+ \details Check all existing Docker containers for their mapped paths, and
+          then purge any zombie directories in docker's volumes directory
+          which don't correspond to an existing container.
 
 """
 
 """
-FAQ (adding by eaton)
+FAQ (added by Eaton)
 when using this script ? 
 when realize that Docker is still taking a big chunk of your HD
 

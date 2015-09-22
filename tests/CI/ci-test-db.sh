@@ -32,10 +32,9 @@
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
-NEED_BUILDSUBDIR=yes determineDirs_default || true
-cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
+NEED_BUILDSUBDIR=no NEED_CHECKOUTDIR=yes determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
-logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the database tests"
+logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to build the database tests"
 
 set -u
 set -e
@@ -75,6 +74,11 @@ trap_exit() {
 settraps "trap_exit"
 
 echo "-------- ensure bins to test are up to date -------"
+[ -n "$BUILDSUBDIR" ] && [ -x "$BUILDSUBDIR/config.status" ] || \
+    ./autogen.sh --install-dir / --configure-flags \
+        "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
+    ${AUTOGEN_ACTION_CONFIG}
+
 ./autogen.sh --optseqmake --nodistclean ${AUTOGEN_ACTION_MAKE} \
     test-db2 test-db-alert \
     test-db-asset-crud test-dbtopology test-outage test-totalpower \
@@ -83,7 +87,9 @@ sleep 1
 
 # From here on we use the build directory since libtool-generated
 # scripts which wrap our build products may want that
+NEED_BUILDSUBDIR=yes determineDirs_default || true
 cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
+logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the database tests"
 
 echo "------------- empty the db before tests ----------"
 ${CHECKOUTDIR}/tests/CI/ci-empty-db.sh || \

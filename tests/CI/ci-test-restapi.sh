@@ -25,15 +25,9 @@
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 NEED_BUILDSUBDIR=no determineDirs_default || true
-cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
+cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR' (it may be empty but should exist)"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
-logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the REST API webserver"
-
-[ -z "$BIOS_USER" ] && BIOS_USER="bios"
-[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="nosoup4u"
-[ -z "$SASL_SERVICE" ] && SASL_SERVICE="bios"
-[ -z "$SUT_HOST" ] && SUT_HOST="127.0.0.1"
-[ -z "$SUT_WEB_PORT" ] && SUT_WEB_PORT="8000"
+logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to build, and BUILDSUBDIR='$BUILDSUBDIR' to run the REST API webserver"
 
 # Set up weblib test engine preference defaults for automated CI tests
 [ -z "$WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT" ] && \
@@ -203,7 +197,7 @@ kill_daemons() {
         "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
         ${AUTOGEN_ACTION_CONFIG} || exit
   fi
-  ./autogen.sh ${AUTOGEN_ACTION_MAKE} V=0 web-test-deps agent-dbstore || exit
+  ./autogen.sh ${AUTOGEN_ACTION_MAKE} V=0 web-test-deps || exit
 
   logmsg_info "Spawning the web-server in the background..."
   ./autogen.sh --noparmake ${AUTOGEN_ACTION_MAKE} web-test &

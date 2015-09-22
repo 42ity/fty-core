@@ -25,20 +25,6 @@
 #           which can be sourced to interactive shell
 #           You can 'export TESTWEB_QUICKFAIL=yes' to abort on first failure
 
-# ***********************************************
-echo "INFO-WEBLIB: Initial  BASE_URL = '$BASE_URL'"
-
-[ -z "${SUT_HOST-}" ] && SUT_HOST="127.0.0.1"
-[ -z "${SUT_WEB_PORT-}" ] && SUT_WEB_PORT="8000"
-[ -z "${BIOS_USER-}" ] && BIOS_USER="bios"
-[ -z "${BIOS_PASSWD-}" ] && BIOS_PASSWD="nosoup4u"
-[ -z "${SASL_SERVICE-}" ] && SASL_SERVICE="bios"
-[ -z "${BASE_URL-}" ] && BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
-#[ -z "${BASE_URL-}" ] && BASE_URL="http://127.0.0.1:8000/api/v1"
-#[ -z "${BASE_URL-}" ] && BASE_URL="http://root@debian.roz.lab.etn.com:8007/api/v1"
-
-echo "INFO-WEBLIB: Will use BASE_URL = '$BASE_URL'"
-
 # Should the test suite abort if "curl" errors out?
 [ -z "${WEBLIB_CURLFAIL-}" ] && WEBLIB_CURLFAIL=yes
 
@@ -80,6 +66,8 @@ echo "INFO-WEBLIB: Will use BASE_URL = '$BASE_URL'"
         SCRIPTDIR="$(cd "`dirname "$0"`" && pwd)" || \
         SCRIPTDIR="`pwd`/`dirname "$0"`" || \
         SCRIPTDIR="`dirname "$0"`"
+
+. "${SCRIPTDIR}"/scriptlib.sh
 
 if [ -z "${CHECKOUTDIR-}" ]; then
     case "$SCRIPTDIR" in
@@ -415,13 +403,17 @@ simple_get_json_code() {
     if [ $? -ne 0 ]; then
         return 1
     fi
-    local __code=$( echo "$__out" | grep -E '<\s+HTTP' | sed -r -e "s/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/" )
-    __out=$( echo "$__out" | grep -vE '^([<>*]|\{\s\[[0-9]+).*' | $JSONSH -N )
+    local __code="`echo "$__out" | grep -E '<\s+HTTP' | sed -r -e 's/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/'`"
+    __out="`echo "$__out" | grep -vE '^([<>*]|\{ *\[data not shown\]|\{\s\[[0-9]+).*'`"
+    __out="`echo "$__out" | $JSONSH -N`"
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
 
     local __resultcode=$3
     local __resultout=$2
-    eval $__resultcode="'$__code'"
-    eval $__resultout="'$__out'"
+    eval $__resultcode='"$__code"'
+    eval $__resultout='"$__out"'
     return 0
 }
 
@@ -447,12 +439,16 @@ simple_get_json_code_sed() {
     if [ $? -ne 0 ]; then
         return 1
     fi
-    local __code=$( echo "$__out" | grep -E '<\s+HTTP' | sed -r -e "s/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/" )
-    __out=$( echo "$__out" | grep -vE '^([<>*]|\{\s\[[0-9]+).*' | tr \\n \  | sed -e 's|[[:blank:]]\+||g' -e 's|$|\n|' )
+    local __code="`echo "$__out" | grep -E '<\s+HTTP' | sed -r -e 's/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/'`"
+    __out="`echo "$__out" | grep -vE '^([<>*]|\{ *\[data not shown\]|\{\s\[[0-9]+).*' | tr \\n \  | sed -e 's|[[:blank:]]\+||g' -e 's|$|\n|'`"
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+
     local __resultcode=$3
     local __resultout=$2
-    eval $__resultcode="'$__code'"
-    eval $__resultout="'$__out'"
+    eval $__resultcode='"$__code"'
+    eval $__resultout='"$__out"'
     return 0
 }
 
@@ -472,23 +468,24 @@ simple_post_code() {
     if [ $? -ne 0 ]; then
         return 1
     fi
-    local __code=$( echo "$__out" | grep -E '<\s+HTTP' | sed -r -e "s/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/" )
-    __out=$( echo "$__out" | grep -vE '^([<>*]|\{\s\[[0-9]+).*' | $JSONSH -N )
+    local __code="`echo "$__out" | grep -E '<\s+HTTP' | sed -r -e 's/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/'`"
+    __out="`echo "$__out" | grep -vE '^([<>*]|\{ *\[data not shown\]|\{\s\[[0-9]+).*'`"
+    __out="`echo "$__out" | $JSONSH -N`"
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
 
     local __resultcode=$4
     local __resultout=$3
-    eval $__resultcode="'$__code'"
-    eval $__resultout="'$__out'"
+    eval $__resultcode='"$__code"'
+    eval $__resultout='"$__out"'
     return 0
 }
 
-### Flag for _api_get_token_certainPlus()
-LOGIN_RESET="no"
 _api_get_token() {
     _RES_=0
-    if [ -z "$_TOKEN_" -o x"$LOGIN_RESET" = xyes ]; then
+    if [ -z "$_TOKEN_" ]; then
 	AUTH_URL="/oauth2/token?username=${BIOS_USER}&password=${BIOS_PASSWD}&grant_type=password"
-	[ x"$LOGIN_RESET" = xyes ] && AUTH_URL="${AUTH_URL}&grant_reset=true&grant_reset_inst=true"
         [ x"$WEBLIB_CURLFAIL_GETTOKEN" = xprotected ] && \
             curlfail_push_expect_noerrors
 	_TOKEN_RAW_="`set +x; api_get "$AUTH_URL"`" || _RES_=$?
@@ -499,62 +496,6 @@ _api_get_token() {
     fi
     echo "$_TOKEN_"
     return $_RES_
-}
-
-_api_get_token_certainPlus() {
-    _PLUS="$1"
-    if [ "$_PLUS" != with -a "$_PLUS" != without ]; then
-	echo "CI-WEBLIB-ERROR: _api_get_token_certainPlus():" \
-            "unknown certainty was requested: '$_PLUS'" >&2
-	return 1
-    fi
-
-    _TO="$_TOKEN_"
-    C=0
-    while : ; do
-	_T="`LOGIN_RESET=yes _api_get_token`"
-	_RES_=$?
-	if [ $_RES_ != 0 ]; then
-	    echo "CI-WEBLIB-ERROR: _api_get_token_certainPlus():" \
-                "got error from _api_get_token(): $_RES_'" >&2
-	    return $_RES_
-	fi
-	if [ -z "$_T" ]; then
-	    echo "CI-WEBLIB-ERROR: _api_get_token_certainPlus():" \
-                "got empty token value from _api_get_token()'" >&2
-	    return 2
-	fi
-	case "$_T" in
-	    *\+*)	[ "$_PLUS" = with ] && break ;;
-	    *)		[ "$_PLUS" = without ] && break ;;
-	esac
-
-	echo "CI-WEBLIB-WARN: _api_get_token_certainPlus():" \
-            "Got unsuitable token '$_T' (wanted $_PLUS a plus)" >&2
-
-	if [ x"$_TO" = x"$_T" ]; then
-	    C="`expr $C + 1`"
-	else C=0; fi
-
-	if [ "$C" -gt 5 ]; then
-	    echo "CI-WEBLIB-ERROR: _api_get_token_certainPlus():" \
-                "Got the same token too many times in a row, aborting loop" >&2
-	    echo "$_T"
-	    return 3
-	fi
-	sleep 1
-	_TO="$_T"
-    done
-    _TOKEN_="$_T"
-    echo "$_T"
-}
-
-_api_get_token_withplus() {
-    _api_get_token_certainPlus with
-}
-
-_api_get_token_withoutplus() {
-    _api_get_token_certainPlus without
 }
 
 api_auth_post() {
@@ -580,15 +521,18 @@ simple_auth_post_code () {
     if [ $? -ne 0 ]; then
         return 1
     fi
-    local __code=$( echo "$__out" | grep -E '<\s+HTTP' | sed -r -e "s/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/" )
-    __out=$( echo "$__out" | grep -vE '^([<>*]|\{\s\[[0-9]+).*' | $JSONSH -N )
+    local __code="`echo "$__out" | grep -E '<\s+HTTP' | sed -r -e 's/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/'`"
+    __out="`echo "$__out" | grep -vE '^([<>*]|\{ *\[data not shown\]|\{\s\[[0-9]+).*'`"
+    __out="`echo "$__out" | $JSONSH -N`"
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
 
     local __resultcode=$4
     local __resultout=$3
-    eval $__resultcode="'$__code'"
-    eval $__resultout="'$__out'"
+    eval $__resultcode='"$__code"'
+    eval $__resultout='"$__out"'
     return 0
-
 }
 
 # POST the file to the server with Content-Type multipart/form-data according
@@ -673,13 +617,17 @@ simple_auth_put () {
     if [ $? -ne 0 ]; then
         return 1
     fi
-    local __code=$( echo "$__out" | grep -E '<\s+HTTP' | sed -r -e "s/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/" )
-    __out=$( echo "$__out" | grep -vE '^([<>*]|\{\s\[[0-9]+).*' | $JSONSH -N )
+    local __code="`echo "$__out" | grep -E '<\s+HTTP' | sed -r -e 's/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/'`"
+    __out="`echo "$__out" | grep -vE '^([<>*]|\{ *\[data not shown\]|\{\s\[[0-9]+).*'`"
+    __out="`echo "$__out" | $JSONSH -N`"
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
 
     local __resultcode=$4
     local __resultout=$3
-    eval $__resultcode="'$__code'"
-    eval $__resultout="'$__out'"
+    eval $__resultcode='"$__code"'
+    eval $__resultout='"$__out"'
     return 0
 }
 
@@ -697,13 +645,14 @@ simple_auth_get_code() {
     if [ $? -ne 0 ]; then
         return 1
     fi
-    local __code=$( echo "$__out" | grep -E '<\s+HTTP' | sed -r -e "s/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/" )
-    __out=$( echo "$__out" | grep -vE '^([<>*]|\{\s\[[0-9]+).*' | $JSONSH -N )
+    local __code="`echo "$__out" | grep -E '<\s+HTTP' | sed -r -e 's/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/'`"
+    __out="`echo "$__out" | grep -vE '^([<>*]|\{ *\[data not shown\]|\{\s\[[0-9]+).*'`"
+    __out="`echo "$__out" | $JSONSH -N`"
 
     local __resultcode=$3
     local __resultout=$2
-    eval $__resultcode="'$__code'"
-    eval $__resultout="'$__out'"
+    eval $__resultcode='"$__code"'
+    eval $__resultout='"$__out"'
     return 0
 }
 
