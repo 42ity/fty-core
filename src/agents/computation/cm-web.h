@@ -24,8 +24,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef SRC_AGENTS_COMPUTATION_CM_WEB_H__
 #define SRC_AGENTS_COMPUTATION_CM_WEB_H__
 
-#include <map>
-#include <string>
 
 #include "ymsg.h"
 #include "bios_agent.h"

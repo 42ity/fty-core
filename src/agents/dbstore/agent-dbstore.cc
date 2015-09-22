@@ -61,7 +61,7 @@ int main (int argc, char *argv []) {
         printf ("syntax: agent-dbstore [ <endpoint> | <endpoint> <mysql:db=bios;user=bios;password=test> ]\n");
         return 1;
     }
-    const char *addr = (argc == 1) ? "ipc://@/malamute" : argv[1];
+    const char *addr = (argc == 1) ? MLM_ENDPOINT : argv[1];
     if (argc > 2) {
         url = argv[2];
     }

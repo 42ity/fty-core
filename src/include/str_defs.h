@@ -31,8 +31,9 @@ extern const char* MLM_ENDPOINT;
 
 // names of malamute clients (== bios agents)
 extern const char* BIOS_AGENT_NAME_COMPUTATION;
-extern const char* BIOS_AGENT_PREFIX_REST; // each client created inside tntnet is suffixed by it's pid (getpid ()).
+extern const char* BIOS_AGENT_PREFIX_REST; // each client created inside tntnet is suffixed with the following string: "<pid>.<tid>"
 extern const char* BIOS_AGENT_NAME_DB_MEASUREMENT;
+extern const char* BIOS_AGENT_NAME_DB_INVENTORY;
 
 #define AVG_STEPS_SIZE 5
 extern const char* AVG_STEPS[AVG_STEPS_SIZE];
@@ -50,6 +51,8 @@ extern const char* BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL;
 
 // evironment variables
 extern const char* EV_BIOS_LOG_LEVEL;
+extern const char* EV_LICENSE_DIR; // directory holding license file
+extern const char* EV_DATA_DIR; // directory holding data (?)
 
 #endif // SRC_INCLUDE_STR_DEFS_H__
 

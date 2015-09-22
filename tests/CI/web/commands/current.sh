@@ -33,7 +33,7 @@ print_result $?
 
 test_it dev=3
 curlfail_push_expect_404
-api_get_json '/metric/current?dev=3' >&5
+api_get_json '/metric/current?dev=5555553' >&5
 print_result $?
 curlfail_pop
 

@@ -40,6 +40,21 @@ void dtos (double number, std::streamsize precision, std::string& result);
 
 } // namespace utils::math
 
+namespace json {
+
+/*!
+ \brief Escape string for json output
+ \return Escaped json on success, "(null_ptr)" string on null argument
+*/
+std::string escape (const char *string);
+
+/*!
+ \brief Convenient wrapper for escape"("const char *string")"
+*/
+std::string escape (const std::string& before);
+
+} // namespace utils::json
+
 /*!
  * \brief universal escaping function
  *

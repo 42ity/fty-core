@@ -28,74 +28,28 @@
  * \author Jim Klimov <EvgenyKlimov@Eaton.com>
  * \brief Not yet documented file
  */
-#include <zmq.h>
-#include <czmq.h>
 #include <tnt/http.h>
 #include <algorithm>
-#include <string>
 #include <map>
 #include <limits.h>
 
+#include "data.h"
+
 #include "log.h"
 #include "asset_types.h"
-#include "common_msg.h"
 #include "dbpath.h"
 #include "monitor.h"
 #include "upsstatus.h"
-#include "persistencelogic.h"
 #include "defs.h"
 
-#include "cleanup.h"
-#include "defs.h"
-#include "data.h"
-#include "asset_types.h"
-#include "common_msg.h"
-#include "dbpath.h"
-#include "monitor.h"
-#include "upsstatus.h"
+#include "asset_general.h"
 #include "utils.h"
+#include "measurements.h"
 
 #include "db/agentstate.h"
 
 typedef std::string (*MapValuesTransformation)(std::string);
 
-byte asset_manager::type_to_byte(std::string type) {
-    std::transform(type.begin(), type.end(), type.begin(), ::tolower);
-    byte ret = asset_type::UNKNOWN;
-    if(type == "datacenter") {
-        ret = asset_type::DATACENTER;
-    } else if(type == "room") {
-        ret = asset_type::ROOM;
-    } else if(type == "row") {
-        ret = asset_type::ROW;
-    } else if(type == "rack") {
-        ret = asset_type::RACK;
-    } else if(type == "group") {
-        ret = asset_type::GROUP;
-    } else if(type == "device") {
-        ret = asset_type::DEVICE;
-    }
-    return ret;
-}
-
-std::string asset_manager::byte_to_type(byte type) {
-    switch(type) {
-        case asset_type::DATACENTER:
-            return "datacenter";
-        case asset_type::ROOM:
-            return "room";
-        case asset_type::ROW:
-            return "row";
-        case asset_type::RACK:
-            return "rack";
-        case asset_type::GROUP:
-            return "group";
-        case asset_type::DEVICE:
-            return "device";
-        default:
-            return "unknown";
-    }
-}
 
 static std::string s_scale(const std::string& val, int8_t scale) {
 // TODO: Refactor away multiple calls to val.size(),
@@ -158,6 +112,25 @@ std::string measures_manager::map_values(std::string name, std::string value) {
 }
 
 int
+    measures_manager::get_last_10minute_measurement(
+        const std::string &source,
+        const std::string &device_name,
+        m_msrmnt_value_t  &value,
+        m_msrmnt_scale_t  &scale)
+{
+    std::string topic = source + "@" + device_name;
+    try{
+        tntdb::Connection conn = tntdb::connectCached(url);
+        reply_t ret = persist::select_measurement_last_web_byTopic (conn, topic, value, scale);
+        return ret.rv;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
+}
+
+int
     ui_props_manager::get
         (std::string& result)
 {
@@ -182,6 +155,7 @@ int
     catch (const std::exception &e) {
         FREE0 (data);
         LOG_END_ABNORMAL(e);
+        result = "Unexpected problems with database";
         return 1;
     }
 }
@@ -267,7 +241,7 @@ db_reply <db_web_element_t>
         ret.errtype       = DB_ERR;
         ret.errsubtype    = DB_ERROR_INTERNAL;
         ret.msg           = "cannot convert an id";
-        log_warning (ret.msg);
+        log_warning (ret.msg.c_str());
         return ret;
     }
     log_debug ("id converted successfully");
@@ -277,65 +251,65 @@ db_reply <db_web_element_t>
         log_debug ("connection was successful");
 
         auto basic_ret = persist::select_asset_element_web_byId(conn, real_id);
-        log_debug ("basic select is done");
+        log_debug ("1/4 basic select is done");
 
         if ( basic_ret.status == 0 )
         {
             ret.status        = basic_ret.status;
-            ret.errtype       = basic_ret.errtype; 
+            ret.errtype       = basic_ret.errtype;
             ret.errsubtype    = basic_ret.errsubtype;
             ret.msg           = basic_ret.msg;
-            log_warning (ret.msg);
+            log_warning (ret.msg.c_str());
             return ret;
         }
-        log_debug (" and there were no errors");
+        log_debug ("    1/4 no errors");
         ret.item.basic = basic_ret.item;
-        
+
         auto ext_ret = persist::select_ext_attributes(conn, real_id);
-        log_debug ("ext select is done");
+        log_debug ("2/4 ext select is done");
 
         if ( ext_ret.status == 0 )
         {
             ret.status        = ext_ret.status;
-            ret.errtype       = ext_ret.errtype; 
+            ret.errtype       = ext_ret.errtype;
             ret.errsubtype    = ext_ret.errsubtype;
             ret.msg           = ext_ret.msg;
-            log_warning (ret.msg);
+            log_warning (ret.msg.c_str());
             return ret;
         }
-        log_debug (" and there were no errors");
+        log_debug ("    2/4 no errors");
         ret.item.ext = ext_ret.item;
 
         auto group_ret = persist::select_asset_element_groups(conn, real_id);
-        log_debug ("groups select is done");
+        log_debug ("3/4 groups select is done, but next one is only for devices");
 
         if ( group_ret.status == 0 )
         {
             ret.status        = group_ret.status;
-            ret.errtype       = group_ret.errtype; 
+            ret.errtype       = group_ret.errtype;
             ret.errsubtype    = group_ret.errsubtype;
             ret.msg           = group_ret.msg;
-            log_warning (ret.msg);
+            log_warning (ret.msg.c_str());
             return ret;
         }
-        log_debug (" and there were no errors");
+        log_debug ("    3/4 no errors");
         ret.item.groups = group_ret.item;
 
-        if ( ret.item.basic.type_id == asset_type::DEVICE )
+        if ( ret.item.basic.type_id == persist::asset_type::DEVICE )
         {
             auto powers = persist::select_asset_device_links_to (conn, real_id, INPUT_POWER_CHAIN);
-            log_debug ("powers select is done");
+            log_debug ("4/4 powers select is done");
 
             if ( powers.status == 0 )
             {
                 ret.status        = powers.status;
-                ret.errtype       = powers.errtype; 
+                ret.errtype       = powers.errtype;
                 ret.errsubtype    = powers.errsubtype;
                 ret.msg           = powers.msg;
-                log_warning (ret.msg);
+                log_warning (ret.msg.c_str());
                 return ret;
             }
-            log_debug (" and there were no errors");
+            log_debug ("    4/4 no errors");
             ret.item.powers = powers.item;
         }
 
@@ -349,29 +323,38 @@ db_reply <db_web_element_t>
         ret.msg           = e.what();
         LOG_END_ABNORMAL(e);
         return ret;
-    } 
+    }
 }
 
 db_reply <std::map <uint32_t, std::string> >
-   asset_manager::get_items1
-        (const std::string &typeName)
+    asset_manager::get_items1(
+        const std::string &typeName,
+        const std::string &subtypeName)
 {
+    LOG_START;
+    log_debug ("subtypename = '%s', typename = '%s'", subtypeName.c_str(),
+                    typeName.c_str());
+    a_elmnt_stp_id_t subtype_id = 0;
     db_reply <std::map <uint32_t, std::string> > ret;
-    
-    byte type_id = asset_manager::type_to_byte(typeName);
-    if ( type_id == (byte)asset_type::UNKNOWN ) {
+
+    a_elmnt_tp_id_t type_id = persist::type_to_typeid(typeName);
+    if ( type_id == persist::asset_type::TUNKNOWN ) {
         ret.status        = 0;
         ret.errtype       = DB_ERR;
         ret.errsubtype    = DB_ERROR_INTERNAL;
-        ret.msg           = "Unsupported type of the elemtns";
-        log_error (ret.msg);
+        ret.msg           = "Unsupported type of the elemnts";
+        log_error (ret.msg.c_str());
         return ret;
     }
+    if ( ( typeName == "device" ) && ( !subtypeName.empty() ) )
+    {
+        subtype_id = persist::subtype_to_subtypeid(subtypeName);
+    }
+    log_debug ("subtypeid = %" PRIi16 " typeid = %" PRIi16, subtype_id, type_id);
 
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
-        log_debug ("connection was successful");
-        ret = persist::select_short_elements(conn, type_id);
+        ret = persist::select_short_elements(conn, type_id, subtype_id);
         LOG_END;
         return ret;
     }
@@ -382,5 +365,92 @@ db_reply <std::map <uint32_t, std::string> >
         ret.msg           = e.what();
         LOG_END_ABNORMAL(e);
         return ret;
-    } 
+    }
+}
+
+
+db_reply_t
+    asset_manager::delete_item(
+        const std::string &id,
+        db_a_elmnt_t &element_info)
+{
+    db_reply_t ret = db_reply_new();
+
+    // TODO add better converter
+    uint32_t real_id = atoi(id.c_str());
+    if ( real_id == 0 )
+    {
+        ret.status        = 0;
+        ret.errtype       = DB_ERR;
+        ret.errsubtype    = DB_ERROR_NOTFOUND;
+        ret.msg           = "cannot convert an id";
+        log_warning (ret.msg.c_str());
+        return ret;
+    }
+    log_debug ("id converted successfully");
+
+    // As different types should be deleted in differenct way ->
+    // find out the type of the element.
+    // Even if in old-style the type is already placed in URL,
+    // we will ignore it and discover it by ourselves
+
+    try{
+        tntdb::Connection conn = tntdb::connectCached(url);
+
+        db_reply <db_web_basic_element_t> basic_info =
+            persist::select_asset_element_web_byId(conn, real_id);
+
+        if ( basic_info.status == 0 )
+        {
+            ret.status        = 0;
+            ret.errtype       = basic_info.errsubtype;
+            ret.errsubtype    = DB_ERROR_NOTFOUND;
+            ret.msg           = "problem with selecting basic info";
+            log_warning (ret.msg.c_str());
+            return ret;
+        }
+        // here we are only if everything was ok
+        element_info.type_id = basic_info.item.type_id;
+        element_info.subtype_id = basic_info.item.subtype_id;
+        element_info.name = basic_info.item.name;
+
+        switch ( basic_info.item.type_id ) {
+            case persist::asset_type::DATACENTER:
+            case persist::asset_type::ROW:
+            case persist::asset_type::ROOM:
+            case persist::asset_type::RACK:
+            {
+                ret = persist::delete_dc_room_row_rack(conn, real_id);
+                break;
+            }
+            case persist::asset_type::GROUP:
+            {
+                ret = persist::delete_group(conn, real_id);
+                break;
+            }
+            case persist::asset_type::DEVICE:
+            {
+                ret = persist::delete_device(conn, real_id);
+                break;
+            }
+            default:
+            {
+                ret.status        = 0;
+                ret.errtype       = basic_info.errsubtype;
+                ret.errsubtype    = DB_ERROR_INTERNAL;
+                ret.msg           = "unknown type";
+                log_warning (ret.msg.c_str());
+            }
+        }
+        LOG_END;
+        return ret;
+    }
+    catch (const std::exception &e) {
+        ret.status        = 0;
+        ret.errtype       = DB_ERR;
+        ret.errsubtype    = DB_ERROR_INTERNAL;
+        ret.msg           = e.what();
+        LOG_END_ABNORMAL(e);
+        return ret;
+    }
 }

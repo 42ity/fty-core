@@ -25,8 +25,11 @@
  * \brief Not yet documented file
  */
 #include <catch.hpp>
-
+#include <string>
+#include <cxxtools/serializationinfo.h>
+#include <cxxtools/jsondeserializer.h>
 #include <limits.h>
+
 #include "utils++.h"
 
 TEST_CASE ("utils::math::utils::math::dtos","[utils::math::dtos][utilities]")
@@ -76,6 +79,165 @@ TEST_CASE ("utils::math::utils::math::dtos","[utils::math::dtos][utilities]")
 
     CHECK_NOTHROW ( utils::math::dtos (-1.4449, 2, result) );
     CHECK ( result == "-1.44" );
+}
+
+TEST_CASE ("utils::json::escape","[utils::math::dtos][json][escape]")
+{
+
+    // utils::json::escape (<first>) should equal <second>
+    std::vector <std::pair <std::string, std::string>> tests {
+        {"'jednoduche ' uvozovky'",                                     "'jednoduche ' uvozovky'"},
+        {"'jednoduche '' uvozovky'",                                    "'jednoduche '' uvozovky'"},
+        {"dvojite \" uvozovky",                                         R"(dvojite \" uvozovky)"},
+        {"dvojite \\\" uvozovky",                                       R"(dvojite \\\" uvozovky)"},
+        {"dvojite \\\\\" uvozovky",                                     R"(dvojite \\\\\" uvozovky)"},
+        {"dvojite \\\\\\\" uvozovky",                                   R"(dvojite \\\\\\\" uvozovky)"},
+        {"dvojite \\\\\\\\\" uvozovky",                                 R"(dvojite \\\\\\\\\" uvozovky)"},
+        {"'",                                                           R"(')"},
+        {"\"",                                                          R"(\")"},
+        {"'\"",                                                         R"('\")"},
+        {"\"\"",                                                        R"(\"\")"},
+        {"\"\"\"",                                                      R"(\"\"\")"},
+        {"\\\"\"\"",                                                    R"(\\\"\"\")"},
+        {"\"\\\"\"",                                                    R"(\"\\\"\")"},
+        {"\"\"\\\"",                                                    R"(\"\"\\\")"},
+        {"\\\"\\\"\\\"",                                                R"(\\\"\\\"\\\")"},
+        {"\" dvojite \\\\\" uvozovky \"",                               R"(\" dvojite \\\\\" uvozovky \")"},
+        {"dvojite \"\\\"\" uvozovky",                                   R"(dvojite \"\\\"\" uvozovky)"},
+        {"dvojite \\\\\"\\\\\"\\\\\" uvozovky",                         R"(dvojite \\\\\"\\\\\"\\\\\" uvozovky)"},
+
+        {"\b",                                                          R"(\b)"},
+        {"\\b",                                                         R"(\\b)"},
+        {"\\\b",                                                        R"(\\\b)"},
+        {"\\\\b",                                                       R"(\\\\b)"},
+        {"\\\\\b",                                                      R"(\\\\\b)"},
+        {"\\\\\\b",                                                     R"(\\\\\\b)"},
+        {"\\\\\\\b",                                                    R"(\\\\\\\b)"},
+        {"\\\\\\\\b",                                                   R"(\\\\\\\\b)"},
+        {"\\\\\\\\\b",                                                  R"(\\\\\\\\\b)"},
+        
+        {"\f",                                                          R"(\f)"},
+        {"\\f",                                                         R"(\\f)"},
+        {"\\\f",                                                        R"(\\\f)"},
+        {"\\\\f",                                                       R"(\\\\f)"},
+        {"\\\\\f",                                                      R"(\\\\\f)"},
+        {"\\\\\\f",                                                     R"(\\\\\\f)"},
+        {"\\\\\\\f",                                                    R"(\\\\\\\f)"},
+        {"\\\\\\\\f",                                                   R"(\\\\\\\\f)"},
+        {"\\\\\\\\\f",                                                  R"(\\\\\\\\\f)"},
+
+        {"\n",                                                          R"(\n)"},
+        {"\\n",                                                         R"(\\n)"},
+        {"\\\n",                                                        R"(\\\n)"},
+        {"\\\\n",                                                       R"(\\\\n)"},
+        {"\\\\\n",                                                      R"(\\\\\n)"},
+        {"\\\\\\n",                                                     R"(\\\\\\n)"},
+        {"\\\\\\\n",                                                    R"(\\\\\\\n)"},
+        {"\\\\\\\\n",                                                   R"(\\\\\\\\n)"},
+        {"\\\\\\\\\n",                                                  R"(\\\\\\\\\n)"},
+
+        {"\r",                                                          R"(\r)"},
+        {"\\r",                                                         R"(\\r)"},
+        {"\\\r",                                                        R"(\\\r)"},
+        {"\\\\r",                                                       R"(\\\\r)"},
+        {"\\\\\r",                                                      R"(\\\\\r)"},
+        {"\\\\\\r",                                                     R"(\\\\\\r)"},
+        {"\\\\\\\r",                                                    R"(\\\\\\\r)"},
+        {"\\\\\\\\r",                                                   R"(\\\\\\\\r)"},
+        {"\\\\\\\\\r",                                                  R"(\\\\\\\\\r)"},
+
+        {"\t",                                                          R"(\t)"},
+        {"\\t",                                                         R"(\\t)"},
+        {"\\\t",                                                        R"(\\\t)"},
+        {"\\\\t",                                                       R"(\\\\t)"},
+        {"\\\\\t",                                                      R"(\\\\\t)"},
+        {"\\\\\\t",                                                     R"(\\\\\\t)"},
+        {"\\\\\\\t",                                                    R"(\\\\\\\t)"},
+        {"\\\\\\\\t",                                                   R"(\\\\\\\\t)"},
+        {"\\\\\\\\\t",                                                  R"(\\\\\\\\\t)"},
+
+        {"\\",                                                          R"(\\)"},
+        {"\\\\",                                                        R"(\\\\)"},
+        {"\\\\\\",                                                      R"(\\\\\\)"},
+        {"\\\\\\\\",                                                    R"(\\\\\\\\)"},
+        {"\\\\\\\\\\",                                                  R"(\\\\\\\\\\)"},
+
+        {"\uA66A",                                                      R"(\u00ea\u0099\u00aa)"},
+        {"Ꙫ",                                                           R"(\u00ea\u0099\u00aa)"},
+        {"\uA66A Ꙫ",                                                    R"(\u00ea\u0099\u00aa \u00ea\u0099\u00aa)"},
+        {"\\uA66A",                                                     R"(\\uA66A)"},
+        {"\\Ꙫ",                                                         R"(\\\u00ea\u0099\u00aa)"},
+        {"\u040A Њ",                                                    R"(\u00d0\u008a \u00d0\u008a)"},
+        {"\u0002\u0005\u0018\u001B",                                    R"(\u0002\u0005\u0018\u001b)"},
+
+        {"\\\uA66A",                                                    R"(\\\u00ea\u0099\u00aa)"},
+        {"\\\\uA66A",                                                   R"(\\\\uA66A)"},
+        {"\\\\\uA66A",                                                  R"(\\\\\u00ea\u0099\u00aa)"},
+        {"\\\\\\uA66A",                                                 R"(\\\\\\uA66A)"},
+        {"\\\\\\\uA66A",                                                R"(\\\\\\\u00ea\u0099\u00aa)"},
+
+        {"\\\\Ꙫ",                                                       R"(\\\\\u00ea\u0099\u00aa)"},
+        {"\\\\\\Ꙫ",                                                     R"(\\\\\\\u00ea\u0099\u00aa)"},
+        {"\\\\\\\\Ꙫ",                                                   R"(\\\\\\\\\u00ea\u0099\u00aa)"},
+        {"\\\\\\\\\\Ꙫ",                                                 R"(\\\\\\\\\\\u00ea\u0099\u00aa)"},
+
+        {"first second \n third\n\n \\n \\\\\n fourth",                 R"(first second \n third\n\n \\n \\\\\n fourth)"},
+        {"first second \n third\n\"\n \\n \\\\\"\f\\\t\\u\u0007\\\n fourth", R"(first second \n third\n\"\n \\n \\\\\"\f\\\t\\u\u0007\\\n fourth)"},
+    };
+
+    // a valid json { key : utils::json::escape (<string> } is constructed,
+    // fed into cxxtools::JsonDeserializer (), read back and compared 
+    std::vector <std::string> tests_reading{
+        {"newline in \n text \n\"\n times two"},
+        {"x\tx"},
+        {"x\\tx"},
+        {"x\\\tx"},
+        {"x\\\\tx"},
+        {"x\\\\\tx"},
+        {"x\\\\\\tx"},
+        {"x\\\\\\\tx"},
+        {"x\\Ꙫ\uA66A\n \\nx"},
+        {"sdf\ndfg\n\\\n\\\\\n\b\tasd \b f\\bdfg"},
+        {"first second \n third\n\"\n \\n \\\\\"\f\\\t\\u\u0007\\\n fourth"}
+    };
+
+    SECTION ("Manual comparison.") {
+        std::string escaped;
+        for (auto const& item : tests) {
+            escaped = utils::json::escape (item.first);
+            CAPTURE (escaped);
+            CHECK ( escaped.compare (item.second) == 0);
+        }
+    }
+
+    SECTION ("Validate whether the escaped string is a valid json using cxxtools::JsonDeserializer.") {
+        for (auto const& item : tests) {
+            std::string json;
+            std::string escaped = utils::json::escape (item.first);
+
+            json.assign("{ \"string\" : ").append ("\"").append (escaped).append ("\" }");
+
+            std::stringstream input (json, std::ios_base::in);
+            cxxtools::JsonDeserializer deserializer (input);
+            cxxtools::SerializationInfo si;
+            CHECK_NOTHROW (deserializer.deserialize (si));
+        }
+    }
+
+    SECTION ("Construct json, read back, compare.") {
+        for (auto const& it : tests_reading) {
+            std::string json;
+            json.assign("{ \"read\" : ").append ("\"").append (utils::json::escape (it)).append ("\" }");
+
+            std::stringstream input (json, std::ios_base::in);
+            cxxtools::JsonDeserializer deserializer (input);
+            cxxtools::SerializationInfo si;
+            CHECK_NOTHROW (deserializer.deserialize (si));
+            std::string read;
+            si.getMember ("read") >>= read;
+            CHECK ( read.compare (it) == 0 );
+        }   
+    }
 }
 
 TEST_CASE ("escape", "[utilities]")

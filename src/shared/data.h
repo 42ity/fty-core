@@ -31,8 +31,6 @@
 #include <czmq.h>
 #include <string>
 
-#include "defs.h"
-#include "asset_types.h"
 #include "dbhelpers.h"
 #include "common_msg.h"
 #include "db/assets.h"
@@ -47,13 +45,17 @@ class asset_manager {
     public:
         // new functionality
         db_reply <db_web_element_t>  get_item1(const std::string &id);
-        db_reply <std::map <uint32_t, std::string> > get_items1(const std::string &typeName);
-        
+        db_reply <std::map <uint32_t, std::string> > get_items1(
+            const std::string &typeName,
+            const std::string &subtypeName);
+
         // to support old style
         db_reply <db_web_element_t>  get_item1(const std::string &id, const std::string &type);
 
-        static byte type_to_byte(std::string type);
-        static std::string byte_to_type(byte type);
+        db_reply_t
+            delete_item(
+                const std::string &id,
+                db_a_elmnt_t &element_info);
 };
 
 class measures_manager {
@@ -61,6 +63,12 @@ class measures_manager {
         std::string map_names(std::string name);
         std::string map_values(std::string name, std::string value);
         std::string apply_scale(const std::string &val, const std::string &scale);
+        int
+            get_last_10minute_measurement(
+                const std::string &source,
+                const std::string &device_name,
+                m_msrmnt_value_t  &value,
+                m_msrmnt_scale_t  &scale);
 };
 
 class ui_props_manager {

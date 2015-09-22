@@ -26,8 +26,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <czmq.h>
 
 
-#include "common_msg.h"
-
 #include "defs.h"
 #include "bios_agent.h"
 #include "preproc.h"

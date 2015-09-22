@@ -27,26 +27,23 @@
 #include <string>
 #include <ctime>
 #include "bios_agent.h"
-#include "common_msg.h"
 #include "defs.h"
 #include "log.h"
 #include "dbpath.h"
 #include "persistencelogic.h"
 #include "cleanup.h"
 
-// it is a persistence agent, so it has a right to comunicate with DB directly
-
 /**
  * \brief main inventory actor loop.
  *
- * It waits for a message from measurements stream with subject "inventory.*"
+ * Listens on 'main' stream for subject (regex) "^inventory@.+"
  */
 int main (int argc, char *argv[])
 {
     // ASSUMPTION:
     //  this agent is already registred in DB
     log_open();
-    log_info ("persistence.inventory started");
+    log_info ("%s started.", BIOS_AGENT_NAME_DB_INVENTORY);
     
     // Basic settings
     if ( argc > 3 )
@@ -55,17 +52,16 @@ int main (int argc, char *argv[])
                 "bios;user=bios;password=test> ]\n");
         return 1;
     }
-    // TODO read address of malamute from configuration file
-    const char *addr = (argc == 1) ? "ipc://@/malamute" : argv[1];
+    const char *addr = (argc == 1) ? MLM_ENDPOINT : argv[1];
     if ( argc > 2 )
     {
         url = argv[2];
     }
 
     // Create an agent
-    _scoped_bios_agent_t *agent = bios_agent_new(addr, "persistenceinventory");
+    _scoped_bios_agent_t *agent = bios_agent_new (addr, BIOS_AGENT_NAME_DB_INVENTORY);
     if ( !agent ) {
-        log_error ("db-inventory: error bios_agent_new");
+        log_error ("bios_agent_new() failed.");
         return 1;
     }
     // listen on inventory messages
@@ -101,7 +97,7 @@ int main (int argc, char *argv[])
     }
 
     bios_agent_destroy (&agent);
-    log_info ("persistence.inventory ended");
+    log_info ("%s finished.", BIOS_AGENT_NAME_DB_INVENTORY);
     log_close();
-    return 0; // TODO getrid of constants
+    return EXIT_SUCCESS;
 }

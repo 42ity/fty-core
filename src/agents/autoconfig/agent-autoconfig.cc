@@ -31,7 +31,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define AUTOCONFIG "AUTOCONFIG"
 
-using namespace asset_type;
 using namespace persist;
 
 // cxxtool serialization operators

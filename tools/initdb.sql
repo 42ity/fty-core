@@ -41,7 +41,7 @@ CREATE TABLE t_bios_measurement (
 
     INDEX(topic_id),
     INDEX(timestamp),
-    INDEX(timestamp, topic_id),
+    UNIQUE INDEX `UI_t_bios_measurement` (`timestamp`, `topic_id`  ASC),
 
     FOREIGN KEY(topic_id)
         REFERENCES t_bios_measurement_topic(id)
@@ -64,9 +64,11 @@ CREATE TABLE t_bios_discovered_device(
     id_device_type          TINYINT UNSIGNED  NOT NULL,
 
     PRIMARY KEY(id_discovered_device),
-    
+
     INDEX(id_device_type),
-    
+
+    UNIQUE INDEX `UI_t_bios_discovered_device_name` (`name` ASC),
+
     FOREIGN KEY(id_device_type)
 	REFERENCES t_bios_device_type(id_device_type)
         ON DELETE RESTRICT
@@ -494,29 +496,29 @@ CREATE VIEW v_bios_asset_element AS
 
 create view v_bios_monitor_asset_relation as select * from t_bios_monitor_asset_relation;
 
-CREATE VIEW v_bios_asset_element_super_parent AS 
-SELECT v1.id_asset_element, 
-       v1.name , 
-       v5.name AS type_name,
-       v5.id_asset_device_type,
+CREATE VIEW v_bios_asset_element_super_parent AS
+SELECT v1.id_asset_element,
        v1.id_parent AS id_parent1,
        v2.id_parent AS id_parent2,
        v3.id_parent AS id_parent3,
        v4.id_parent AS id_parent4,
-       v1.status, 
+       v1.name ,
+       v5.name AS type_name,
+       v5.id_asset_device_type,
+       v1.status,
        v1.asset_tag,
-       v1.priority, 
+       v1.priority,
        v1.business_crit,
        v1.id_type
-FROM t_bios_asset_element v1 
-     LEFT JOIN t_bios_asset_element v2 
-        ON (v1.id_parent = v2.id_asset_element) 
-     LEFT JOIN t_bios_asset_element v3 
-        ON (v2.id_parent = v3.id_asset_element) 
-     LEFT JOIN t_bios_asset_element v4 
-        ON (v3.id_parent=v4.id_asset_element) 
-     INNER JOIN v_bios_asset_device v5 
-        ON (v5.id_asset_element = v1.id_asset_element);
+FROM t_bios_asset_element v1
+     LEFT JOIN t_bios_asset_element v2
+        ON (v1.id_parent = v2.id_asset_element)
+     LEFT JOIN t_bios_asset_element v3
+        ON (v2.id_parent = v3.id_asset_element)
+     LEFT JOIN t_bios_asset_element v4
+        ON (v3.id_parent=v4.id_asset_element)
+     INNER JOIN t_bios_asset_device_type v5
+        ON (v5.id_asset_device_type = v1.id_subtype);
 
 CREATE VIEW v_bios_measurement AS
 SELECT t1.id,
@@ -644,7 +646,7 @@ INSERT INTO t_bios_asset_device_type (name) VALUES ("genset");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("epdu");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("pdu");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("server");
-INSERT INTO t_bios_asset_device_type (name) VALUES ("main");
+INSERT INTO t_bios_asset_device_type (name) VALUES ("feed");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("sts");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("switch");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("storage");

@@ -101,7 +101,7 @@ TEST_CASE("Location topology from #3","[db][topology][location][location_topolog
     // id, id_type, name, device_type_name
     edge_lf expected;
 
-    expected.insert (std::make_tuple(7016, id_device, "main_LOC_1"  , "main"  , start_id, id_dc, start_name, "N_A"));
+    expected.insert (std::make_tuple(7016, id_device, "feed_LOC_1"  , "feed"  , start_id, id_dc, start_name, "N_A"));
     expected.insert (std::make_tuple(7017, id_device, "genset_LOC_1", "genset", start_id, id_dc, start_name, "N_A"));
     expected.insert (std::make_tuple(7018, id_device, "ups_LOC_1"   , "ups"   , start_id, id_dc, start_name, "N_A"));
     expected.insert (std::make_tuple(7019, id_device, "srv_LOC_40"  , "server", start_id, id_dc, start_name, "N_A"));
@@ -205,7 +205,7 @@ TEST_CASE("Location topology from #4","[db][topology][location][location_topolog
     // id, id_type, name, device_type_name
     edge_lf expected;
  
-    expected.insert (std::make_tuple(7016, id_device, "main_LOC_1"  , "main"  , start_id, id_dc  , start_name    , "N_A"));
+    expected.insert (std::make_tuple(7016, id_device, "feed_LOC_1"  , "feed"  , start_id, id_dc  , start_name    , "N_A"));
     expected.insert (std::make_tuple(7017, id_device, "genset_LOC_1", "genset", start_id, id_dc  , start_name    , "N_A"));
     expected.insert (std::make_tuple(7018, id_device, "ups_LOC_1"   , "ups"   , start_id, id_dc  , start_name    , "N_A"));
     expected.insert (std::make_tuple(7019, id_device, "srv_LOC_40"  , "server", start_id, id_dc  , start_name    , "N_A"));
@@ -237,7 +237,7 @@ TEST_CASE("Location topology from #4","[db][topology][location][location_topolog
 
     // as a recursive, than tfor every group should be written one layer of the elements
 
-    expected.insert (std::make_tuple(7016, id_device, "main_LOC_1"  , "main"  , 7025, id_group, "inputpowergroup DC_LOC_01"  , "happynewyear"));
+    expected.insert (std::make_tuple(7016, id_device, "feed_LOC_1"  , "feed"  , 7025, id_group, "inputpowergroup DC_LOC_01"  , "happynewyear"));
     expected.insert (std::make_tuple(7017, id_device, "genset_LOC_1", "genset", 7025, id_group, "inputpowergroup DC_LOC_01"  , "happynewyear"));
     expected.insert (std::make_tuple(7018, id_device, "ups_LOC_1"   , "ups"   , 7025, id_group, "inputpowergroup DC_LOC_01"  , "happynewyear"));
 
@@ -1083,7 +1083,7 @@ TEST_CASE("Location topology from #11","[db][topology][location][location_topolo
     // id, id_type, name, device_type_name
     edge_lf expected;
    
-    expected.insert (std::make_tuple(7016, id_device, "main_LOC_1"  , "main"  , start_id, id_dc  , start_name    , "N_A"));
+    expected.insert (std::make_tuple(7016, id_device, "feed_LOC_1"  , "feed"  , start_id, id_dc  , start_name    , "N_A"));
     expected.insert (std::make_tuple(7017, id_device, "genset_LOC_1", "genset", start_id, id_dc  , start_name    , "N_A"));
     expected.insert (std::make_tuple(7018, id_device, "ups_LOC_1"   , "ups"   , start_id, id_dc  , start_name    , "N_A"));
     expected.insert (std::make_tuple(7019, id_device, "srv_LOC_40"  , "server", start_id, id_dc  , start_name    , "N_A"));
@@ -1178,7 +1178,7 @@ TEST_CASE("Location topology from #12","[db][topology][location][location_topolo
     // id, id_type, name, device_type_name
     edge_lf expected;
    
-    expected.insert (std::make_tuple(7016, id_device, "main_LOC_1"  , "main"  , start_id, id_dc  , start_name    , "N_A"));
+    expected.insert (std::make_tuple(7016, id_device, "feed_LOC_1"  , "feed"  , start_id, id_dc  , start_name    , "N_A"));
     expected.insert (std::make_tuple(7017, id_device, "genset_LOC_1", "genset", start_id, id_dc  , start_name    , "N_A"));
     expected.insert (std::make_tuple(7018, id_device, "ups_LOC_1"   , "ups"   , start_id, id_dc  , start_name    , "N_A"));
     expected.insert (std::make_tuple(7019, id_device, "srv_LOC_40"  , "server", start_id, id_dc  , start_name    , "N_A"));
@@ -2366,7 +2366,7 @@ TEST_CASE("Location topology from #26","[db][topology][location][location_topolo
     edge_lf expected;
    
     expected.insert (std::make_tuple(7025, id_group, "inputpowergroup DC_LOC_01","happynewyear", start_id, id_dc, start_name    , "N_A"));
-    expected.insert (std::make_tuple(7016, id_device, "main_LOC_1","main",7025, id_group, "inputpowergroup DC_LOC_01","happynewyear"));
+    expected.insert (std::make_tuple(7016, id_device, "feed_LOC_1","feed",7025, id_group, "inputpowergroup DC_LOC_01","happynewyear"));
     expected.insert (std::make_tuple(7017, id_device, "genset_LOC_1","genset",7025, id_group, "inputpowergroup DC_LOC_01","happynewyear"));
     expected.insert (std::make_tuple(7018, id_device, "ups_LOC_1","ups",7025, id_group, "inputpowergroup DC_LOC_01","happynewyear"));
  
@@ -2462,7 +2462,7 @@ TEST_CASE("Location topology from #27","[db][topology][location][location_topolo
     // id, id_type, name, device_type_name
     edge_lf expected;
    
-    expected.insert (std::make_tuple(7016, id_device, "main_LOC_1","main",7025, id_group, "inputpowergroup DC_LOC_01","happynewyear"));
+    expected.insert (std::make_tuple(7016, id_device, "feed_LOC_1","feed",7025, id_group, "inputpowergroup DC_LOC_01","happynewyear"));
     expected.insert (std::make_tuple(7017, id_device, "genset_LOC_1","genset",7025, id_group, "inputpowergroup DC_LOC_01","happynewyear"));
     expected.insert (std::make_tuple(7018, id_device, "ups_LOC_1","ups",7025, id_group, "inputpowergroup DC_LOC_01","happynewyear"));
  

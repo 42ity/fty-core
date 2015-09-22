@@ -33,6 +33,7 @@ const char* MLM_ENDPOINT = "ipc://@/malamute";
 const char *BIOS_AGENT_NAME_COMPUTATION = "agent-cm";
 const char *BIOS_AGENT_PREFIX_REST = "rest.";
 const char *BIOS_AGENT_NAME_DB_MEASUREMENT = "persistence.measurement";
+const char *BIOS_AGENT_NAME_DB_INVENTORY = "persistence.inventory";
 
 const char *AVG_STEPS[AVG_STEPS_SIZE] = {
     "15m",
@@ -68,7 +69,8 @@ const char* BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL =
     "\t\t\"timestamp\": ##TIMESTAMP##\n"
     "\t}";
 
-const char* STRFTIME_DATETIME_FORMAT = "%Y%m%d%H%M%SZ";    
+const char* STRFTIME_DATETIME_FORMAT = "%FT%TZ";    
 
 const char* EV_BIOS_LOG_LEVEL = "BIOS_LOG_LEVEL";
-
+const char* EV_LICENSE_DIR = "LICENSE_DIR";
+const char* EV_DATA_DIR = "DATADIR";

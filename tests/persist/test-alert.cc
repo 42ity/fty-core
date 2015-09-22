@@ -35,7 +35,6 @@
 #include "db/assets.h"
 #include "db/asset_general.h"
 #include "assetcrud.h"
-#include "monitor.h"
 
 #define UGLY_ASSET_TAG2 "12345678"
 
@@ -312,9 +311,9 @@ TEST_CASE("t_bios_alert_device INSERT/DELETE #4","[db][CRUD][insert][delete][ale
 
     //insert device discovered
     m_dvc_tp_id_t device_type_id = 1;
-    //common_msg_t* 
-    auto o_reply_insert_device = insert_disc_device(url.c_str(), device_type_id, element_name);
-    uint64_t rowid_device = common_msg_rowid (o_reply_insert_device);
+    auto o_reply_insert_device = persist::insert_into_monitor_device(conn, device_type_id, element_name);
+    REQUIRE (o_reply_insert_device.status == 1 );
+    uint64_t rowid_device = o_reply_insert_device.rowid;
 
     //insert monitor_asset relation
     auto reply_insert_ma = persist::insert_into_monitor_asset_relation (conn, rowid_device, rowid_element);
@@ -407,9 +406,9 @@ TEST_CASE("t_bios_alert_device INSERT/DELETE #5","[db][CRUD][insert][alert][dele
 
     //insert device discovered
     m_dvc_tp_id_t device_type_id = 1;
-    //common_msg_t* 
-    auto o_reply_insert_device1 = insert_disc_device(url.c_str(), device_type_id, element_name1);
-    uint64_t rowid_device1 = common_msg_rowid (o_reply_insert_device1);
+    db_reply_t rr = persist::insert_into_monitor_device (conn, device_type_id, element_name1);
+    REQUIRE ( rr.status == 1 );
+    uint64_t rowid_device1 = rr.rowid;
     CAPTURE ( rowid_device1 );
 
     //insert monitor_asset relation
@@ -425,8 +424,9 @@ TEST_CASE("t_bios_alert_device INSERT/DELETE #5","[db][CRUD][insert][alert][dele
     CAPTURE ( rowid_element2 );
 
     //insert device discovered
-    auto o_reply_insert_device2 = insert_disc_device(url.c_str(), device_type_id, element_name2);
-    uint64_t rowid_device2 = common_msg_rowid (o_reply_insert_device2);
+    auto rr2 = persist::insert_into_monitor_device (conn, device_type_id, element_name2);
+    REQUIRE ( rr2.status == 1 );
+    uint64_t rowid_device2 = rr2.rowid;
     CAPTURE ( rowid_device2 );
 
     //insert monitor_asset relation
@@ -480,7 +480,7 @@ TEST_CASE("t_bios_alert_device INSERT/DELETE #5","[db][CRUD][insert][alert][dele
 }
 
 
-TEST_CASE("insert_alert_new #6","[db][CRUD][insert][delete][alert][crud_test.sql]")
+TEST_CASE("insert_alert_new #6","[db][CRUD][insert][delete][alert][crud_test.sql][777]")
 {
     log_open ();
 
@@ -501,12 +501,12 @@ TEST_CASE("insert_alert_new #6","[db][CRUD][insert][delete][alert][crud_test.sql
 
     std::vector <link_t> links{};
     std::set <a_elmnt_id_t> groups{};
-    
+
     auto reply_insert_element1 = persist::insert_device
        (conn, links, groups, element_name1, parent_id,
         NULL, asset_device_type_id, asset_device_type_name,
         status, priority_el, bc, UGLY_ASSET_TAG2);
-
+    REQUIRE ( reply_insert_element1.status == 1 );
     uint64_t rowid_element1 = reply_insert_element1.rowid;
     CAPTURE ( rowid_element1 );
 
@@ -516,6 +516,7 @@ TEST_CASE("insert_alert_new #6","[db][CRUD][insert][delete][alert][crud_test.sql
        (conn, links, groups, element_name2, parent_id,
         NULL, asset_device_type_id, asset_device_type_name,
         status, priority_el, bc, UGLY_ASSET_TAG2);
+    REQUIRE ( reply_insert_element2.status == 1 );
     uint64_t rowid_element2 = reply_insert_element2.rowid;
     CAPTURE ( rowid_element2 );
 
@@ -591,7 +592,7 @@ TEST_CASE("t_bios_alert INSERT Fail #7","[db][CRUD][insert][alert][crud_test.sql
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.errtype == DB_ERR );
     REQUIRE ( reply_insert.errsubtype == DB_ERROR_BADINPUT );
-    REQUIRE ( strlen(reply_insert.msg) != 0 );
+    REQUIRE ( reply_insert.msg == "rule name is invalid" );
 
     log_close();
 }

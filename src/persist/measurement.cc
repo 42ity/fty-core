@@ -28,10 +28,12 @@
  */
 #include <inttypes.h>
 #include <tntdb.h>
+#include <stdexcept>
 
 #include "log.h"
 #include "measurement.h"
 #include "dbpath.h"
+#include "defs.h"
 
 namespace persist {
 
@@ -55,26 +57,26 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "NULL value of units is not allowed";
-        log_error("end: %s", ret.msg);
+        log_error("end: %s", ret.msg.c_str());
         return ret;
     }
-    
+
     if ( !topic ) {
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "NULL value of topic is not allowed";
-        log_error("end: %s", ret.msg);
+        log_error("end: %s", ret.msg.c_str());
         return ret;
     }
-    
+
     // ATTENTION: now name is taken from t_bios_discovered_device
     if ( !device_name ) {
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "NULL value of device name is not allowed";
-        log_error("end: %s", ret.msg);
+        log_error("end: %s", ret.msg.c_str());
         return ret;
     }
 
@@ -105,22 +107,16 @@ insert_into_measurement_again:
             log_debug("[t_bios_measurement_topic]: inserted topic %s, #%" PRIu32 " rows ", topic, n);
         }
 
-        st = conn.prepareCached(
-                " INSERT INTO"
-                "   t_bios_measurement"
-                "       (timestamp, value, scale, topic_id)"
-                " SELECT"
-                "   :time, :value, :scale, id"
-                " FROM"
-                "   t_bios_measurement_topic"
-                " WHERE topic=:topic AND"
-                "       units=:units"
-        );
-        ret.affected_rows = st.set("topic", topic)
-                              .set("time",  time)
+        st = conn.prepareCached (
+                "INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) "
+                "SELECT :time, :value, :scale, id FROM t_bios_measurement_topic "
+                "WHERE topic=:topic AND units=:units "
+                "ON DUPLICATE KEY UPDATE value = :value, scale = :scale");
+        ret.affected_rows = st.set("time",  time)
                               .set("value", value)
                               .set("scale", scale)
                               .set("units", units)
+                              .set("topic", topic)
                               .execute();
 
         log_debug("[t_bios_measurement]: inserted %" PRIu64 " rows "\

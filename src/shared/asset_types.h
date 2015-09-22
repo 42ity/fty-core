@@ -28,10 +28,14 @@
 #ifndef SRC_SHARED_ASSET_TYPES_H
 #define SRC_SHARED_ASSET_TYPES_H
 
-namespace asset_type {
+#include <string>
+
+#include "dbtypes.h"
+
+namespace persist {
 
 enum asset_type {
-    UNKNOWN     = 0,
+    TUNKNOWN     = 0,
     GROUP       = 1,
     DATACENTER  = 2,
     ROOM        = 3,
@@ -41,12 +45,13 @@ enum asset_type {
 };
 
 enum asset_subtype {
+    SUNKNOWN = 0,
     UPS = 1,
     GENSET,
     EPDU,
     PDU,
     SERVER,
-    MAIN,
+    FEED,
     STS,
     SWITCH,
     STORAGE,
@@ -61,6 +66,30 @@ enum asset_operation {
     RETIRE
 };
 
-};
+a_elmnt_tp_id_t
+    type_to_typeid
+        (const std::string &type);
 
+std::string
+    typeid_to_type
+        (a_elmnt_tp_id_t type_id);
+
+a_elmnt_stp_id_t
+    subtype_to_subtypeid
+        (const std::string &subtype);
+
+std::string
+    subtypeid_to_subtype
+        (a_elmnt_tp_id_t subtype_id);
+
+bool
+is_epdu(int x);
+
+bool
+is_pdu(int x);
+
+bool
+is_rack(int x);
+
+}; //namespace persist
 #endif //SRC_SHARED_ASSET_TYPES_H

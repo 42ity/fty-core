@@ -1,6 +1,6 @@
 /*
 Copyright (C) 2015 Eaton
- 
+
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or
@@ -23,6 +23,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "asset_types.h"
 #include "assetcrud.h"
+
+#include "db/assets.h"
 
 bool is_epdu (const device_info_t &device)
 {
@@ -91,7 +93,7 @@ static std::set<a_elmnt_id_t>
  */
 static void
     update_border_devices
-        (const std::map <a_elmnt_id_t, device_info_t> &dc_devices,
+        (const std::map <a_elmnt_id_t, device_info_t> &container_devices,
          const std::set <std::pair<a_elmnt_id_t, a_elmnt_id_t> > &links,
          std::set <device_info_t> &border_devices)
 {
@@ -103,15 +105,16 @@ static void
         auto adevice_dests = find_dests (links, std::get<0>(border_device));
         for ( auto &adevice: adevice_dests )
         {
-            auto it = dc_devices.find(adevice);
-            if ( it != dc_devices.end() )
-                new_border_devices.insert(dc_devices.find(adevice)->second);
+            auto it = container_devices.find(adevice);
+            if ( it != container_devices.cend() )
+                new_border_devices.insert(it->second);
             else
             {
-                log_critical ("database is in inconsistent state");
-                log_critical ("device(as element) %" PRIu32 " is not in dc",
-                                                std::get<0>(border_device));
-                assert(false);
+                log_critical ("DB can be in inconsistant state or some device "
+                        "has power source in the other container");
+                log_critical ("device(as element) %" PRIu32 " is not in container",
+                                                adevice);
+                // do nothing in this case
             }
         }
     }
@@ -206,7 +209,7 @@ static db_reply <std::map<std::string, std::vector<std::string> > >
         ret.msg        = "there is no containers of requested type";
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_NOTFOUND;
-        log_warning (ret.msg);
+        log_warning (ret.msg.c_str());
         return ret;
     }
 
@@ -214,13 +217,40 @@ static db_reply <std::map<std::string, std::vector<std::string> > >
     for ( auto &container : allContainers.item )
     {
         // select all devices in the container
-        auto container_devices_set = select_asset_device_by_container
-                                                        (conn, container.id);
+        std::map <a_elmnt_id_t, device_info_t> container_devices{};
+        std::function<void(const tntdb::Row&)> func = \
+            [&container_devices](const tntdb::Row& row)
+            {
+                a_elmnt_tp_id_t type_id = 0;
+                row["type_id"].get(type_id);
+                
+                if ( type_id == persist::asset_type::DEVICE )
+                {
+                    std::string device_name = "";
+                    row["name"].get(device_name);
+
+                    a_elmnt_id_t asset_id = 0;
+                    row["asset_id"].get(asset_id);
+
+                    a_elmnt_stp_id_t device_type_id = 0;
+                    row["subtype_id"].get(device_type_id);
+
+                    std::string device_type_name = "";
+                    row["subtype_name"].get(device_type_name);
+
+                    container_devices.emplace (asset_id,
+                        std::make_tuple(asset_id, device_name,
+                                        device_type_name, device_type_id));
+                }
+            };
+
+
+        auto rv = persist::select_assets_by_container
+                                (conn, container.id, func);
 
         // here would be placed names of devices to summ up
         std::vector<std::string> result(0);
-        
-        if ( container_devices_set.status == 0 )
+        if ( rv != 0 )
         {
             log_warning ("'%s': problems appeared in selecting devices",
                                                     container.name.c_str());
@@ -229,22 +259,13 @@ static db_reply <std::map<std::string, std::vector<std::string> > >
                                                     (container.name, result));
             continue;
         }
-        if ( container_devices_set.item.empty() )
+        if ( container_devices.empty() )
         {
             log_warning ("'%s': has no devices", container.name.c_str());
             // so return an empty set of power devices
             ret.item.insert(std::pair< std::string, std::vector<std::string> >
                                                     (container.name, result));
             continue;
-        }
-
-        // create a map, for better use
-        std::map <a_elmnt_id_t, device_info_t> container_devices{};
-        for ( auto &container_dev: container_devices_set.item )
-        {
-            a_elmnt_id_t tmp = std::get<0>(container_dev);
-            container_devices.insert(std::pair<a_elmnt_id_t, device_info_t>
-                                                        (tmp, container_dev));
         }
 
         auto links = select_links_by_container (conn, container.id);
@@ -325,7 +346,7 @@ db_reply <std::map<std::string, std::vector<std::string> > >
     select_devices_total_power_dcs
         (tntdb::Connection  &conn)
 {
-    return select_devices_total_power_container (conn, asset_type::DATACENTER);
+    return select_devices_total_power_container (conn, persist::asset_type::DATACENTER);
 }
 
 
@@ -333,5 +354,5 @@ db_reply <std::map<std::string, std::vector<std::string> > >
     select_devices_total_power_racks
         (tntdb::Connection  &conn)
 {
-    return select_devices_total_power_container (conn, asset_type::RACK);
+    return select_devices_total_power_container (conn, persist::asset_type::RACK);
 }

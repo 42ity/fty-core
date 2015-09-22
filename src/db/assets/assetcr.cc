@@ -21,7 +21,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 #include "assetcr.h"
 
-#include <tntdb/connect.h>
 #include <tntdb/row.h>
 #include <tntdb/result.h>
 #include <tntdb/error.h>
@@ -29,7 +28,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "log.h"
 #include "defs.h"
-#include "monitor.h"
 #include "asset_types.h"
 
 namespace persist {
@@ -77,11 +75,6 @@ static db_reply_t
 {
     LOG_START;
 
-    log_debug ("value = '%s'", value);
-    log_debug ("keytag = '%s'", keytag);
-    log_debug ("asset_element_id = %" PRIu32, asset_element_id);
-    log_debug ("read_only = %d", read_only);
-
     a_ext_attr_id_t newid = 0;
     a_ext_attr_id_t n     = 0; // number of rows affected
 
@@ -115,7 +108,6 @@ static db_reply_t
         log_error ("end: ignore insert, unexeptable keytag '%s'", keytag);
         return ret;
     }
-    log_debug ("input parameters are correct");
 
     try {
 
@@ -235,7 +227,6 @@ db_reply_t
         // value is zero.
         return ret;
     }
-    log_debug ("input parameters are correct");
 
     char *value = (char *) zhash_first (attributes);   // first value
 
@@ -270,6 +261,71 @@ db_reply_t
     return ret;
 }
 
+// generate the proper tntdb::Statement for multi value insert for extended attributes
+static tntdb::Statement
+    s_multi_insert_statement(
+        tntdb::Connection& conn,
+        a_elmnt_id_t element_id,
+        bool read_only,
+        zhash_t* attributes)
+{
+    static const std::string sql_header = "INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only)";
+
+    auto sql = multi_insert_string(
+            sql_header,
+            4,
+            zhash_size(attributes));
+
+    log_debug("sql: '%s'", sql.c_str());
+    auto st = conn.prepare(sql);
+
+    char *value = (char *) zhash_first (attributes);   // first value
+    size_t i = 0;
+    while ( value != NULL )
+        {
+            char *key = (char *) zhash_cursor (attributes);   // key of this value
+            st.set(sql_plac(i, 0), key);
+            st.set(sql_plac(i, 1), value);
+            st.set(sql_plac(i, 2), element_id);
+            st.set(sql_plac(i, 3), read_only);
+            value     = (char *) zhash_next (attributes);   // next value
+            i++;
+        }
+
+    return st;
+}
+
+int
+    insert_into_asset_ext_attributes
+        (tntdb::Connection &conn,
+         a_elmnt_id_t element_id,
+         zhash_t* attributes,
+         bool read_only)
+{
+    LOG_START;
+
+    if (!attributes)
+        return -1;
+    if ( zhash_size (attributes) == 0 )
+        return 0;
+
+    try {
+        auto st = s_multi_insert_statement(
+                conn,
+                element_id,
+                read_only,
+                attributes);
+        size_t i = st.execute();
+        log_debug("%zu attributes written", i);
+        LOG_END;
+        return 0;
+    }
+    catch (const std::exception& e) {
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
+
+}
 
 
 //=============================================================================
@@ -292,7 +348,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of asset_element_id is not allowed";
-        log_error ("end: %s, %s", "ignore insert", ret.msg);
+        log_error ("end: %s, %s", "ignore insert", ret.msg.c_str());
         return ret;
     }
     if ( group_id == 0 )
@@ -301,10 +357,9 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of group_id is not allowed";
-        log_error ("end: %s, %s","ignore insert", ret.msg);
+        log_error ("end: %s, %s","ignore insert", ret.msg.c_str());
         return ret;
     }
-    log_debug ("input parameters are correct");
 
     try{
         tntdb::Statement st = conn.prepareCached(
@@ -360,11 +415,6 @@ db_reply_t
          const a_lnk_dest_in_t dest_in)
 {
     LOG_START;
-    log_debug ("  asset_element_src_id = %" PRIu32, asset_element_src_id);
-    log_debug ("  asset_element_dest_id = %" PRIu32, asset_element_dest_id);
-    log_debug ("  link_type_id = %" PRIu32, link_type_id);
-    log_debug ("  src_out = '%s'", src_out);
-    log_debug ("  dest_in = '%s'", dest_in);
 
     db_reply_t ret = db_reply_new();
 
@@ -375,7 +425,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "destination device is not specified";
-        log_error ("end: %s, %s", "ignore insert", ret.msg);
+        log_error ("end: %s, %s", "ignore insert", ret.msg.c_str());
         return ret;
     }
     if ( asset_element_src_id == 0 )
@@ -384,7 +434,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "source device is not specified";
-        log_error ("end: %s, %s","ignore insert", ret.msg);
+        log_error ("end: %s, %s","ignore insert", ret.msg.c_str());
         return ret;
     }
     if ( !is_ok_link_type (link_type_id) )
@@ -393,7 +443,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "wrong link type";
-        log_error ("end: %s, %s","ignore insert", ret.msg);
+        log_error ("end: %s, %s","ignore insert", ret.msg.c_str());
         return ret;
     }
     // src_out and dest_in can take any value from available range
@@ -423,7 +473,7 @@ db_reply_t
             "           WHERE"
             "               v3.id_asset_device_src = v1.id_asset_element AND"
             "               v3.id_asset_device_dest = v2.id_asset_element AND"
-            "               ( ((v3.src_out = :out) AND (v3.dest_in = :in)) OR ( v3.src_out is NULL) OR (v3.dest_in is NULL) ) AND"
+            "               ( ((v3.src_out = :out) AND (v3.dest_in = :in)) ) AND"
             "               v3.id_asset_device_dest = v2.id_asset_element"
             "    )"
         );
@@ -632,13 +682,6 @@ db_reply_t
 {
     LOG_START;
     log_debug ("  element_name = '%s'", element_name);
-    log_debug ("  element_type_id = %" PRIu32, element_type_id);
-    log_debug ("  parent_id = %" PRIu32, parent_id);
-    log_debug ("  status = '%s'", status);
-    log_debug ("  priority = %" PRIu16, priority);
-    log_debug ("  bc = %" PRIu16, bc);
-    log_debug ("  subtype_id = %" PRIu16, subtype_id);
-    log_debug ("  asset_tag = %s", asset_tag);
     if ( subtype_id == 0 ) // use default
         subtype_id = 10;  // ATTENTION; need to be alligned with initdb
 
@@ -651,7 +694,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "name is not valid";
-        log_error ("end: %s, %s", "ignore insert", ret.msg);
+        log_error ("end: %s, %s", "ignore insert", ret.msg.c_str());
         return ret;
     }
     if ( !is_ok_element_type (element_type_id) )
@@ -660,7 +703,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of element_type_id is not allowed";
-        log_error ("end: %s, %s", "ignore insert", ret.msg);
+        log_error ("end: %s, %s", "ignore insert", ret.msg.c_str());
         return ret;
     }
     // ASSUMPTION: all datacenters are unlockated elements
@@ -671,7 +714,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "Datacenters should be unlockated elements";
-        log_error ("end: %s, %s", "ignore insert", ret.msg);
+        log_error ("end: %s, %s", "ignore insert", ret.msg.c_str());
         return ret;
     }
     // TODO:should we add more checks here???
@@ -750,7 +793,10 @@ db_reply_t
         ret.rowid = conn.lastInsertId();
         log_debug ("[t_bios_asset_element]: was inserted %"
                                         PRIu64 " rows", ret.affected_rows);
-        ret.status = 1;
+        if ( ret.affected_rows == 0 )
+            ret.status = 0;
+        else
+            ret.status = 1;
         LOG_END;
         return ret;
     }
@@ -806,7 +852,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "not all links were inserted";
-        log_error ("end: %s", ret.msg);
+        log_error ("end: %s", ret.msg.c_str());
         return ret;
     }
 }
@@ -846,7 +892,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of asset_element_id is not allowed";
-        log_error ("end: %s, %s", "ignore insert", ret.msg);
+        log_error ("end: %s, %s", "ignore insert", ret.msg.c_str());
         return ret;
     }
     if ( groups.empty() )
@@ -883,7 +929,7 @@ db_reply_t
             ret.errtype    = DB_ERR;
             ret.errsubtype = DB_ERROR_BADINPUT;
             ret.msg        = "not all links were inserted";
-            log_error ("end: %s", ret.msg);
+            log_error ("end: %s", ret.msg.c_str());
         }
         return ret;
     }
@@ -918,7 +964,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of element_id is not allowed";
-        log_error ("end: %s, %s", "ignore insert", ret.msg);
+        log_error ("end: %s, %s", "ignore insert", ret.msg.c_str());
         return ret;
     }
     if ( monitor_id == 0 )
@@ -927,7 +973,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of monitor_id is not allowed";
-        log_error ("end: %s, %s", "ignore insert", ret.msg);
+        log_error ("end: %s, %s", "ignore insert", ret.msg.c_str());
         return ret;
     }
     log_debug ("input parameters are correct");
@@ -977,22 +1023,25 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "device name length is not in range [1, MAX_NAME_LENGTH]";
-        log_warning (ret.msg);
+        log_warning (ret.msg.c_str());
         return ret;
     }
 
     try{
         tntdb::Statement st = conn.prepareCached(
             " INSERT INTO"
-            "   v_bios_discovered_device (name, id_device_type)"
+            "   t_bios_discovered_device (name, id_device_type)"
             " VALUES (:name, :iddevicetype)"
+            " ON DUPLICATE KEY"
+            "   UPDATE"
+            "       id_discovered_device = LAST_INSERT_ID(id_discovered_device)"
         );
 
         // Insert one row or nothing
         ret.affected_rows = st.set("name", device_name).
                                set("iddevicetype", device_type_id).
                                execute();
-        log_debug ("[t_bios_discovered_device]: was inserted %" 
+        log_debug ("[t_bios_discovered_device]: was inserted %"
                                         PRIu64 " rows", ret.affected_rows);
         ret.rowid = conn.lastInsertId();
         ret.status = 1;

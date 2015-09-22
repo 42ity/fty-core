@@ -366,3 +366,23 @@ fail:
 
     return ret;
 }
+
+char *current_license_file (void) {
+    char *current_license = NULL;
+    char *env = getenv (EV_LICENSE_DIR);
+
+    if (asprintf (&current_license, "%s/current", env ? env : "/usr/share/bios/license") == -1) {
+        return NULL;
+    }
+    return current_license;
+}
+
+char *accepted_license_file (void) {
+    char *accepted_license = NULL;
+    char *env = getenv (EV_DATA_DIR);
+
+    if (asprintf (&accepted_license, "%s/license", env ? env : "/var/lib/bios" ) == -1) {
+        return NULL;
+    }
+    return accepted_license;
+}

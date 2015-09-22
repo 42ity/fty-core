@@ -28,8 +28,10 @@
 #include "tokens.h"
 #include <string>
 #include <iostream>
+#include <cxxtools/regex.h>
 #include <tnt/httpmessage.h>
 #include <tnt/httpheader.h>
+#include <cxxtools/query_params.h>
 #include <stdio.h>
 </%pre>
 <%args>
@@ -37,8 +39,7 @@ std::string grant_type="";
 std::string username="";
 std::string password="";
 std::string client_id="";
-std::string grant_reset="";
-std::string grant_reset_inst="";
+std::string token="";
 </%args>
 <%cpp>
 #ifndef VALID_FOR
@@ -47,49 +48,45 @@ std::string grant_reset_inst="";
 
 int valid = VALID_FOR;
 
-if ( ! request.isSsl() ) {
-    std::cerr << "WARNING: non-SSL Auth Request was received!";
-#ifndef DEBUG
+// Just in case someone put urlencoded stuff in body
+cxxtools::QueryParams body_args(request.getBody());
+std::string tmp;
+#define FILL(PROP)   tmp =  body_args.param("PROP", ""); \
+                     if(PROP.empty()) \
+					   PROP = tmp;
+FILL(token)
+FILL(username)
+FILL(password)
+FILL(client_id)
+FILL(token)
+
+  static cxxtools::Regex rex_rev("^.*/revoke$");
+  if(request.isMethodPOST() && rex_rev.match(request.getUrl())) {
+	if(token.empty()) {
 </%cpp>
-{
-    "error":"non_ssl_auth"
-}
+{ "error": "No token provided" }
 <%cpp>
-    std::cerr << "\n";
-    return HTTP_UNAUTHORIZED;
-#endif // DEBUG
-    std::cerr << " Completing the request anyway for DEBUG build...\n";
-}
+      return HTTP_BAD_REQUEST;
+    } else {
+	  tokens::get_instance()->revoke(token);
 </%cpp>
-% if(grant_type != "password") {
+{ "success": "Everything went well" }
+<%cpp>
+      return HTTP_OK;
+    }
+  }
+
+  if(grant_type != "password") {
+</%cpp>
 {
     "error":"unsupported_grant_type"
 }
-% } else {
 <%cpp>
+  } else {
     if(authenticate(username.c_str(), password.c_str())) {
-    std::string aToken = "";
-    if(grant_reset == "true") {
-	// Token is based on a fresh timestamp (one-second precision)
-	if (grant_reset_inst == "true") {
-#ifdef DEBUG
-		aToken = tokens::get_instance(true)->gen_token(valid, username.c_str(), false);
-#else
-		std::cerr << "WARNING: Asked to reset instance of token "
-			<< "generator, but this is disabled in non-DEBUG "
-			<< "builds - resetting only the password\n";
-#endif
-	}
-	if (aToken == "" ) {
-		aToken = tokens::get_instance(true)->gen_token(valid, username.c_str(), false);
-	}
-    } else {
-	// Token is based on a timestamp rounded to ROUND(=60) seconds
-	aToken = tokens::get_instance()->gen_token(valid, username.c_str(), true);
-    }
 </%cpp>
 {
-    "access_token":"<$$ aToken $>",
+    "access_token":"<$$ tokens::get_instance()->gen_token(valid, username.c_str()) $>",
     "token_type":"bearer",
     "expires_in":<$ valid $>
 }

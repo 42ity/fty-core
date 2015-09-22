@@ -151,6 +151,8 @@ tools/db-init
 !tools/db-init.in
 tools/bios-passwd
 !tools/bios-passwd.in
+tools/bios-networking
+!tools/bios-networking.in
 
 tools/42-bios-systemd.preset
 !tools/bios-db-init.service.in
@@ -198,6 +200,7 @@ src/web/src/asset_import.cpp
 src/web/src/agent.cpp
 src/web/src/alerts.cpp
 src/web/src/average.cpp
+src/web/src/config.cpp
 src/web/src/item.cpp
 src/web/src/json.cpp
 src/web/src/list.cpp
@@ -214,6 +217,7 @@ src/web/src/location.cpp
 src/web/src/power.cpp
 src/web/src/rack_total.cpp
 src/web/src/sysinfo.cpp
+src/web/src/ssl-redirect.cpp
 src/web/src/ui_properties.cpp
 src/web/src/alerts.cpp
 src/web/src/uptime.cpp

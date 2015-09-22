@@ -26,7 +26,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include <iostream>
 #include <vector>
+#include <string>
 #include <map>
+
+#include "asset_types.h"
+#include "csv.h"
 
 #include "dbhelpers.h"
 namespace persist {
@@ -73,7 +77,22 @@ bool
 void
     load_asset_csv
         (std::istream& input,
-         std::vector <db_a_elmnt_t> &okRows,
+         std::vector <std::pair<db_a_elmnt_t,persist::asset_operation>> &okRows,
+         std::map <int, std::string> &failRows);
+
+/*
+ * \brief Processes a csv map
+ *
+ * Resuls are written in DB and into log.
+ *
+ * \param cm[in]     - an input csv map
+ * \param okRows[out]   - a list of short information about inserted rows
+ * \param failRows[out] - a list of rejected rows with the message
+ */
+void
+    load_asset_csv
+        (const shared::CsvMap& cm,
+         std::vector <std::pair<db_a_elmnt_t,persist::asset_operation>> &okRows,
          std::map <int, std::string> &failRows);
 
 /** \brief export csv file and write result to output stream

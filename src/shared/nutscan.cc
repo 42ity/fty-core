@@ -118,7 +118,7 @@ s_run_nut_scaner(
 {
     std::string o;
     std::string e;
-    int ret = shared::output(args, o, e);
+    int ret = shared::output(args, o, e, 10);
 
     if (ret != 0)
         return -1;
