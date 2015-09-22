@@ -1448,10 +1448,14 @@ dist_noinst_DATA +=	tntnet.xml $(top_srcdir)/src/web/tntnet.xml
 CLEANFILES +=		tntnet.xml tntnet.xml.example tests/CI/tntnet.xml
 
 # Make sure needed files are up-to-date to test web-server for $BIOS REST API
-# TODO: the "bios_passwd_SCRIPTS" recipe installs the script into
-# "@libexecdir@/@PACKAGE@/bios-passwd" because this is hardcoded in
+web-test-deps: tntnet.xml bios_web.la web-link-test agent-dbstore
+
+# TODO (BIOS-1262): the "bios_passwd_SCRIPTS" recipe installs the script
+# into "@libexecdir@/@PACKAGE@/bios-passwd" because this is hardcoded in
 # admin_passwd.ecpp.in - not very nice regarding in-tree devtesting.
-web-test-deps: tntnet.xml bios_web.la web-link-test agent-dbstore install-bios_passwdSCRIPTS
+# This is an optional target - without this script working (including the
+# sudoers setup), the REST API tests involving password changes will fail.
+web-test-deps-inst: install-bios_passwdSCRIPTS
 
 ### Execute the test web-server for $BIOS REST API
 # LD_PRELOAD=/path/to/libasan.so is needed for fair play with external libs,
