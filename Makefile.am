@@ -1565,7 +1565,7 @@ systemd-daemons: $(addprefix tools/,$(SYSTEMD_UNITS))
 systemd-timers:  $(addprefix tools/,$(SYSTEMD_UNITS_TIMERIMPL))
 	if [ x"$(abs_top_builddir)/" = x"$(abs_top_srcdir)/" ] ; then true; else \
 	for F in $(addprefix $(abs_top_srcdir)/tools/,$(SYSTEMD_TIMERS)) ; do \
-	    $(call copy-file,"$$F",$(abs_top_builddir)/tools/) || exit $$?; \
+	    $(call copy-file,$$F,$(abs_top_builddir)/tools/) || exit $$?; \
 	done; fi
 systemd-presets: $(addprefix tools/,$(SYSTEMD_PRESETS))
 
