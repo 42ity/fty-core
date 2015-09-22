@@ -90,7 +90,7 @@ chmod a+r /etc/default/bios
 
 # Setup BIOS lenses
 mkdir -p /usr/share/bios/lenses
-ln -sr ../../augeas/lenses/dist/{build.aug,ethers.aug,interfaces.aug,ntp.aug,ntpd.aug,pam.aug,resolv.aug,rx.aug,sep.aug,util.aug} \
+ln -sr ../../augeas/lenses/dist/{build,ethers,interfaces,ntp,ntpd,pam,resolv,rx,sep,util,shellvars}.aug \
     /usr/share/bios/lenses
 
 # Setup u-Boot
