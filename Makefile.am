@@ -205,7 +205,7 @@ autopathedit = ${SED} \
 	-e 's|@libdir[@]|$(libdir)|g'
 
 define process-in-file =
-	echo "  SED      $(1) => $(2)"; rm -f $(2); mkdir -p "`dirname "$(2)"`"; $(autopathedit) < "$(1)" > "$(2)"
+	echo "  SED      $(1) => $(2)"; rm -f $(2); mkdir -p "`dirname "$(2)"`"; $(autopathedit) < "$(1)" > "$(2)" || exit $$?
 endef
 
 # Catch-all undetailed recipes for .in files to be converted into sources
@@ -1346,31 +1346,34 @@ pkglib_LTLIBRARIES +=	bios_web.la
 # Many but not all of CPP files with bios_web.la are generated from ECPP files
 # List them explicitly as separate sets, so that generated files can be cleaned
 BUILT_SOURCES_bios_web_la = \
-                      src/include/git_details_override.h                 \
-                      src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
-                      src/web/src/auth-require.cpp                       \
+                      src/include/git_details_override.h                     \
+                      src/web/src/auth.cpp  src/web/src/auth-verify.cpp      \
+                      src/web/src/auth-require.cpp                           \
                       src/web/src/agent.cpp src/web/src/ssl-redirect.cpp \
-                      src/web/src/power.cpp src/web/src/item.cpp         \
-                      src/web/src/json.cpp  src/web/src/list.cpp         \
-                      src/web/src/time.cpp  src/web/src/sysinfo.cpp      \
-                      src/web/src/current.cpp src/web/src/ui_properties.cpp \
-                      src/web/src/rack_total.cpp src/web/src/location.cpp \
-                      src/web/src/datacenter_indicators.cpp              \
-                      src/web/src/average.cpp src/web/src/asset_import.cpp \
-                      src/web/src/alerts.cpp src/web/src/netcfg.cpp      \
-                      src/web/src/uptime.cpp src/web/src/iface.cpp       \
-                      src/web/src/license.cpp src/web/src/asset_export.cpp \
+                      src/web/src/power.cpp src/web/src/item.cpp             \
+                      src/web/src/json.cpp  src/web/src/list.cpp             \
+                      src/web/src/time.cpp  src/web/src/sysinfo.cpp          \
+                      src/web/src/current.cpp src/web/src/ui_properties.cpp  \
+                      src/web/src/rack_total.cpp src/web/src/location.cpp    \
+                      src/web/src/datacenter_indicators.cpp                  \
+                      src/web/src/average.cpp src/web/src/asset_import.cpp   \
+                      src/web/src/alerts.cpp src/web/src/netcfg.cpp          \
+                      src/web/src/uptime.cpp src/web/src/iface.cpp           \
+                      src/web/src/license.cpp src/web/src/asset_export.cpp   \
                       src/web/src/admin_passwd.cpp src/web/src/systemctl.cpp \
                       src/web/src/config.cpp
 
-bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)      \
+# Track real-git and nodist (generated) sources SEPARATELY
+nodist_bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)
+
+bios_web_la_SOURCES = \
                       src/web/src/location_helpers.cc   \
                       src/web/src/sasl.cc               \
                       src/shared/web_utils.cc           \
                       src/web/src/tokens.cc             \
                       src/shared/data.cc                \
                       src/shared/upsstatus.cc           \
-                      src/web/src/dci_impl.h \
+                      src/web/src/dci_impl.h            \
                       src/web/src/asset_computed_impl.cc
 
 # Ensure these files are auto-made before others
@@ -1569,7 +1572,7 @@ systemd-daemons: $(addprefix tools/,$(SYSTEMD_UNITS))
 systemd-timers:  $(addprefix tools/,$(SYSTEMD_UNITS_TIMERIMPL))
 	if [ x"$(abs_top_builddir)/" = x"$(abs_top_srcdir)/" ] ; then true; else \
 	for F in $(addprefix $(abs_top_srcdir)/tools/,$(SYSTEMD_TIMERS)) ; do \
-	    $(call copy-file,"$$F",$(abs_top_builddir)/tools/) || exit $$?; \
+	    $(call copy-file,$$F,$(abs_top_builddir)/tools/) || exit $$?; \
 	done; fi
 systemd-presets: $(addprefix tools/,$(SYSTEMD_PRESETS))
 
