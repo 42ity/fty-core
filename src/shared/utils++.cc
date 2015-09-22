@@ -44,52 +44,62 @@ std::string escape (const char *string) {
     std::string::size_type length = strlen (string);
     after.reserve (length * 2);
 
-    bool is_escaped = false;
+/*
+    Quote from http://www.json.org/
+    -------------------------------
+    Char
+    any-Unicode-character-except-"-or-\-or-control-character:
+        \"
+        \\
+        \/
+        \b
+        \f
+        \n
+        \r
+        \t
+        \u four-hex-digits 
+    ------------------------------
+*/
 
     for (std::string::size_type i = 0; i < length; ++i) {
         char c = string[i];
-        switch (c) {
-            case '"':
-                {
-                    if (is_escaped) {
-                        is_escaped = false;
-                    }
-                    after.append("\\\"");
-                    break;
-                }
-            case '\\':
-                {
-                    if (is_escaped) {
-                        after.append ("\\\\");
-                        is_escaped = false;
-                    }
-                    else {
-                        is_escaped = true;
-                    }
-                    break;
-                }
-            case 'b':
-            case 'f':
-            case 'n':
-            case 'r':
-            case 't':
-            case 'u':
-                {
-                    if (is_escaped) {
-                        after.append ("\\");
-                        is_escaped = false;
-                    }
-                    after += c;
-                    break;
-                }
-            default:
-                {
-                    if (is_escaped) {
-                        after.append ("\\\\");
-                        is_escaped = false;
-                    }
-                    after += c;
-                }
+        if (c == '"') {
+            after.append ("\\\"");
+        }
+        else if (c =='\b') {
+            after.append ("\\b");
+        }
+        else if (c =='\f') {
+            after.append ("\\f");
+        }
+        else if (c == '\n') {
+            after.append ("\\n");
+        }
+        else if (c == '\r') {
+            after.append ("\\r");
+        }
+        else if (c == '\t') {
+            after.append ("\\t");
+        }
+        else if (c == '\\') {
+            after.append ("\\\\");
+        }
+        else if (static_cast<unsigned char>(c) >= 0x80 || static_cast<unsigned char>(c) < 0x20) {
+            // Code below this comment is taken from
+            //      https://github.com/maekitalo/cxxtools
+            //      JsonFormatter::stringOut(const std::string& str) {}
+            //      Author: Tommi Mäkitalo (tommi@tntnet.org)
+            after.append("\\u");
+            static const char hex[] = "0123456789abcdef";
+            uint32_t v = static_cast<unsigned char>(c);
+
+            for (uint32_t s = 16; s > 0; s -= 4)
+            {
+                after += hex[(v >> (s - 4)) & 0xf];
+            }
+        }
+        else {
+            after += c;
         }
     }
     return after;
