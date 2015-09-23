@@ -487,7 +487,7 @@ db_reply_t
     {
         // find monitor counterpart
         int rv = convert_asset_to_monitor(conn, element_id, monitor_element_id);
-        if ( ( rv != 0 ) && ( rv != 1 ) )
+        if ( rv != 0 )
         {
             db_reply_t ret = db_reply_new();
             ret.status = 0;
@@ -497,7 +497,7 @@ db_reply_t
             return ret;
         }
         // delete from alert devices
-        if ( rv != 1 )
+        if ( monitor_element_id != 0 )
         {
             m_alrtdvc_id_t affected_rows = 0;
             rv = delete_device_from_alert_device_all
@@ -676,7 +676,7 @@ db_reply_t
     {
         // find monitor counterpart
         int rv = convert_asset_to_monitor(conn, element_id, monitor_element_id);
-        if ( ( rv != 0 ) && ( rv != 1 ) )
+        if ( rv != 0 )
         {
             db_reply_t ret = db_reply_new();
             ret.status = 0;
@@ -686,7 +686,7 @@ db_reply_t
             return ret;
         }
         // delete from alert devices
-        if ( rv != 1 )
+        if ( monitor_element_id != 0 )
         {
             m_alrtdvc_id_t affected_rows = 0;
             rv = delete_device_from_alert_device_all

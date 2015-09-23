@@ -781,9 +781,9 @@ int
         return 0;
     }
     catch (const tntdb::NotFound &e){
-        // apropriate asset element was not found
         log_info("end: counterpart for %" PRIu32 " notfound", asset_element_id);
-        return 1;
+        monitor_element_id = 0;
+        return 0;
     }
     catch (const std::exception &e) {
         LOG_END_ABNORMAL(e);
@@ -861,7 +861,7 @@ int select_asset_ext_attribute_by_keytag(
     }
     catch (const std::exception &e) {
         LOG_END_ABNORMAL(e);
-        return 1;
+        return -1;
     }
 }
 
