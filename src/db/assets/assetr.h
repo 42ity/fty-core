@@ -262,16 +262,12 @@ int
          a_elmnt_id_t element_id,
          std::function<void(const tntdb::Row&)>& cb);
 
-db_reply <std::vector<device_info_t>>
-    select_assets_by_container
-        (tntdb::Connection &conn,
-         a_elmnt_id_t element_id);
 
 /**
  * \brief read particular asset ext property of device[s]
  * \param db connection
  * \param asset ext attribute name like "u_size"
- * \param list of elements ( only elementId is important in device_info_t tuple).
+ * \param list of element_id-s
  *        if the list is empty, all elements with requested tag are returned.
  * \param callback to be called with every selected row.
  *        Row has id_asset_ext_attribute, keytag, value, id_asset_element
@@ -282,7 +278,7 @@ int
     select_asset_ext_attribute_by_keytag(
         tntdb::Connection &conn,
         const std::string &keytag,
-        const std::vector<device_info_t> &elements,
+        const std::set<a_elmnt_id_t> &element_ids,
         std::function< void( const tntdb::Row& ) > &cb);
 
 } //namespace end
