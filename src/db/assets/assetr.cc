@@ -861,7 +861,7 @@ int select_asset_ext_attribute_by_keytag(
     }
     catch (const std::exception &e) {
         LOG_END_ABNORMAL(e);
-        return 1;
+        return -1;
     }
 }
 
