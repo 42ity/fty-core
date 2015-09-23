@@ -198,6 +198,8 @@ kill_daemons() {
         ${AUTOGEN_ACTION_CONFIG} || exit
   fi
   ./autogen.sh ${AUTOGEN_ACTION_MAKE} V=0 web-test-deps || exit
+  ./autogen.sh ${AUTOGEN_ACTION_MAKE} V=0 web-test-deps-inst || \
+    logmsg_warn "BIOS-1262: Could not install required scripts, password-related REST API tests will likely fail"
 
   logmsg_info "Spawning the web-server in the background..."
   ./autogen.sh --noparmake ${AUTOGEN_ACTION_MAKE} web-test &
