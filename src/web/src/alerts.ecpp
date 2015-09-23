@@ -37,7 +37,6 @@
 </%pre>
 <%cpp>
 {
-    http_die("Internal Server Error: %s", "Need to prove the PoC");
     //TODO: checking of arguments, atm /alerts == /alerts/all == /alerts/foo/bar/baz
 
     tntdb::Connection conn = tntdb::connectCached(url);

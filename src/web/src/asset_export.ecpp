@@ -35,7 +35,6 @@
 int8_t access_auth_level;
 </%request>
 <%cpp>
-    http_die("internal-error");
 if (access_auth_level <= AUTH_LEVEL_ANONYMOUS) {
 </%cpp>
     {"error" : "not atuhorized"}
