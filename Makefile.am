@@ -2258,12 +2258,3 @@ $(abs_top_builddir)/src/include/git_details_override.h: $(abs_top_builddir)/.git
 	@[ -s "$@" ] || { echo "WARNING: Overriding absent '$@' with empty file to satisfy 'make'"; \
 	  touch -r "$<" "$@"; } || true
 	@sync || true
-
-##########################################################################
-### The following targets should enforce sequentially processed builds ###
-##########################################################################
-
-.NOTPARALLEL:
-
-MAKEFLAGS := -j 1
-
