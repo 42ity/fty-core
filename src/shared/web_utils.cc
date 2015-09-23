@@ -23,6 +23,9 @@
  */
 
 #include "web_utils.h"
+#include "utils++.h"
+
+using namespace utils::json;
 
 std::string
     json_key_value_s(
@@ -31,9 +34,9 @@ std::string
 {
     // make a string like this
     // "key":"value"
-    std::string s = "\"" + key;
+    std::string s = "\"" + escape(key);
     s += "\":\"";
-    s += value;
+    s += escape(value);
     s += "\"";
     return s;
 };
@@ -45,7 +48,7 @@ std::string
 {
     // make a string like this
     // "key":value
-    std::string s = "\"" + key;
+    std::string s = "\"" + escape(key);
     s += "\":";
     s += std::to_string(value);
     return s;
@@ -58,7 +61,7 @@ std::string
 {
     // make a string like this
     // "key":value
-    std::string s = "\"" + key;
+    std::string s = "\"" + escape(key);
     s += "\":";
     s += std::to_string(value);
     return s;
@@ -71,7 +74,7 @@ std::string
 {
     // make a string like this
     // "key":value
-    std::string s = "\"" + key;
+    std::string s = "\"" + escape(key);
     s += "\":";
     s += std::to_string(value);
     return s;
@@ -83,9 +86,9 @@ std::string
         int                code)
 {
     std::string s = "{\n\t\"errors\": [\n\t  {\n\t\t\"message\" : \"";
-    s+=msg;
+    s+=escape(msg);
     s+="\",\n\t\t\"code\" : ";
-    s+=std::to_string(code);
+    s+=escape(std::to_string(code));
     s+="\n\t  }\n\t]\n}";
     return s;
 }
