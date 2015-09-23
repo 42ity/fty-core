@@ -1331,12 +1331,9 @@ outage_LDADD = \
 
 outage_LDFLAGS =	-ltntdb
 
-bios_passwd_SCRIPTS =	tools/bios-passwd
-
-client_SCRIPTS +=	$(bios_passwd_SCRIPTS) \
+client_SCRIPTS +=	tools/bios-passwd \
 			tools/bios-networking
 
-bios_passwddir =	$(clientdir)
 
 ###################################################################
 # Web Library (tntnet dynamic module for $BIOS REST API)
@@ -1453,12 +1450,17 @@ CLEANFILES +=		tntnet.xml tntnet.xml.example tests/CI/tntnet.xml
 # Make sure needed files are up-to-date to test web-server for $BIOS REST API
 web-test-deps: tntnet.xml bios_web.la web-link-test agent-dbstore
 
-# TODO (BIOS-1262): the "bios_passwd_SCRIPTS" recipe installs the script
+# TODO (BIOS-1262): the "install-ci_helperSCRIPTS" recipe installs one script
 # into "@libexecdir@/@PACKAGE@/bios-passwd" because this is hardcoded in
 # admin_passwd.ecpp.in - not very nice regarding in-tree devtesting.
+# Another script is "@libexecdir@/@PACKAGE@/db-init" as required by the
+# bios-db-init.service definition (installed into OS root /lib in CI builds).
 # This is an optional target - without this script working (including the
 # sudoers setup), the REST API tests involving password changes will fail.
-web-test-deps-inst: install-bios_passwdSCRIPTS
+ci_helper_SCRIPTS =	tools/bios-passwd tools/db-init
+ci_helperdir =	        $(clientdir)
+
+web-test-deps-inst: install-ci_helperSCRIPTS
 
 ### Execute the test web-server for $BIOS REST API
 # LD_PRELOAD=/path/to/libasan.so is needed for fair play with external libs,
