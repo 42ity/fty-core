@@ -54,7 +54,7 @@
 static int
 s_get_devices_usize(
     tntdb::Connection &conn,
-    const std::vector<device_info_t> &elements )
+    std::set<a_elmnt_id_t> &elements )
 {
     int size = 0;
 
@@ -79,22 +79,29 @@ int free_u_size( a_elmnt_id_t elementId)
         conn = tntdb::connectCached(url);
 
         // get the rack u_size
-        std::vector<device_info_t> rackv = { std::make_tuple( elementId, "", "", 0 ) };
-        int freeusize = s_get_devices_usize(conn,rackv);
+        std::set<a_elmnt_id_t> rack_id{elementId};
+        int freeusize = s_get_devices_usize(conn, rack_id);
         if( ! freeusize ) {
             return -1;
         }
         log_debug( "rack size is %i", freeusize );
 
-        // get devices inside the rack
-        auto devices = persist::select_assets_by_container(conn, elementId);
+        // get id of the devices inside the rack
+        std::set<a_elmnt_id_t> element_ids{};
+        std::function<void(const tntdb::Row&)> func = \
+            [&element_ids](const tntdb::Row& row)
+            {
+                    a_elmnt_id_t asset_id = 0;
+                    row["asset_id"].get(asset_id);
+                    element_ids.insert (asset_id);
+            };
 
-        if( ! devices.status ) {
+        auto rv = persist::select_assets_by_container(conn, elementId, func);
+        if ( !rv ) {
             return -1;
         }
-
         // substract sum( device size ) if there are some
-        freeusize -= devices.item.empty() ? 0 : s_get_devices_usize( conn, devices.item );
+        freeusize -= element_ids.empty() ? 0 : s_get_devices_usize( conn, element_ids);
         return freeusize;
     }
     catch (const std::exception& ex) {
