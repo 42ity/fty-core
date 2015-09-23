@@ -247,9 +247,9 @@ int
 /**
  * \brief select all assets inside the asset-container (all 4 level down)
  *
- * \param conn[in]       - db connection
- * \param element_id[in] - id of the asset-container
- * \param cb[in]         - callback to be called with every selected row.
+ * \param[in] conn       - db connection
+ * \param[in] element_id - id of the asset-container
+ * \param[in] cb         - callback to be called with every selected row.
  *
  *  Every selected row has the following columns:
  *      name, asset_id, subtype_id, subtype_name, type_id
@@ -265,13 +265,17 @@ int
 
 /**
  * \brief read particular asset ext property of device[s]
- * \param db connection
- * \param asset ext attribute name like "u_size"
- * \param list of element_id-s
- *        if the list is empty, all elements with requested tag are returned.
- * \param callback to be called with every selected row.
- *        Row has id_asset_ext_attribute, keytag, value, id_asset_element
- *        and read_only columns
+ *
+ * \param[in] conn        - db connection
+ * \param[in] keytag      - asset ext attribute name like "u_size"
+ * \param[in] element_ids - list of element_id-s
+ *                          if the list is empty, all elements with
+ *                          requested tag are returned.
+ * \param[in] cb          - callback to be called with every selected row.
+ *
+ *  Every selected row has the following columns:
+ *      id_asset_ext_attribute, keytag, value, id_asset_element, read_only
+ *
  * \return 0 on success
  */
 int
