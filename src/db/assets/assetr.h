@@ -238,11 +238,25 @@ db_reply_t
         (tntdb::Connection &conn,
          const char *device_type_name);
 
+
+/**
+ * \brief convert asset id to monitor id
+ *
+ * \param[in]  conn               - db connection
+ * \param[in]  asset_element_id   - id of the asset element in asset part
+ * \param[out] monitor_element_id - id of the asset element in monitor part
+ *
+ * monitor_element_id is 0 if counterpart wasn't found or element
+ * doesn't exists
+ *
+ * \return  0 on success (even if counterpart was not found)
+ */
 int
     convert_asset_to_monitor(
         tntdb::Connection &conn,
         a_elmnt_id_t       asset_element_id,
         m_dvc_id_t        &monitor_element_id);
+
 
 /**
  * \brief select all assets inside the asset-container (all 4 level down)
@@ -254,7 +268,7 @@ int
  *  Every selected row has the following columns:
  *      name, asset_id, subtype_id, subtype_name, type_id
  *
- * \return 0 on success
+ * \return 0 on success (even if nothing was found)
  */
 int
     select_assets_by_container
@@ -276,7 +290,7 @@ int
  *  Every selected row has the following columns:
  *      id_asset_ext_attribute, keytag, value, id_asset_element, read_only
  *
- * \return 0 on success
+ * \return 0 on success (even if nothing was found)
  */
 int
     select_asset_ext_attribute_by_keytag(
