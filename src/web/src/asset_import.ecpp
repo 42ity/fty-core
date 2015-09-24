@@ -35,7 +35,7 @@
 #include "db/inout.h"
 #include "bios-magic.h"
 #include "configure_inform.h"
-#include "web_utils.h"
+#include "utils_web.h"
 </%pre>
 <%cpp>
 if (request.getMethod() != "POST") {

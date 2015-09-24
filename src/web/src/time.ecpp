@@ -29,7 +29,7 @@
 #include <cxxtools/jsondeserializer.h>
 #include "augtool.h"
 #include "utils.h"
-#include "utils++.h"
+#include "utils_web.h"
 
 </%pre>
 <%cpp>

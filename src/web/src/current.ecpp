@@ -38,7 +38,7 @@
 #include "db/measurements.h"
 #include "log.h"
 #include "dbpath.h" // temporary
-#include "web_utils.h"
+#include "utils_web.h"
 </%pre>
 
 <%args>
@@ -165,19 +165,19 @@ std::string dev;
         // we are here -> everything is ok, need just to form
         // this is a small JSON for just ONE asset
         std::string json = "{";
-        json += json_key_value_s("id", asset_id);
+        json += utils::json::jsonify ("id", asset_id);
         json += ",";
-        json += json_key_value_s("name", ret.item.name);
+        json += utils::json::jsonify ("name", ret.item.name);
         json += ",";
         for ( const auto &one_measurement : measurements )
         {
             if( one_measurement.first == "status.ups" )
             {
-                json +=  json_key_value_s(one_measurement.first, shared::upsstatus_to_string(one_measurement.second));
+                json += utils::json::jsonify (one_measurement.first, shared::upsstatus_to_string(one_measurement.second));
             }
             else
             {
-                json +=  json_key_value_d(one_measurement.first, one_measurement.second);
+                json += utils::json::jsonify (one_measurement.first, one_measurement.second);
             }
             json += ",";
         }

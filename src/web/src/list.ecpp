@@ -27,7 +27,7 @@
 #include "data.h"
 #include "log.h"
 #include "assetcrud.h"
-#include "web_utils.h"
+#include "utils_web.h"
 </%pre>
 <%args>
 std::string subtype;
@@ -63,9 +63,9 @@ asset_manager asset_mgr;
     for ( auto &oneAsset : allAssetsShort.item )
     {
         json += "{";
-        json += json_key_value_s("id", std::to_string(oneAsset.first));
+        json += utils::json::jsonify ("id", std::to_string(oneAsset.first));
         json += ",";
-        json += json_key_value_s("name", oneAsset.second);
+        json +=  utils::json::jsonify ("name", oneAsset.second);
         json += "},";
     }
     json.back() = ']';
