@@ -272,7 +272,7 @@ TEST_CASE ("escape", "[utilities]")
     CHECK(out == inp);
 }
 
-TEST_CASE ("utils::json::make","[utils::json::make][json][escape]")
+TEST_CASE ("utils::json::jsonify","[utils::json::make][json][escape]")
 {
     // 
     int var_int = -1;
@@ -299,74 +299,74 @@ TEST_CASE ("utils::json::make","[utils::json::make][json][escape]")
     std::string x; // temporary result placeholder
     
     SECTION ("single parameter ('inttype') invocation") {
-        x = utils::json::make (var_int);
+        x = utils::json::jsonify (var_int);
         CHECK ( x.compare (std::to_string (var_int)) == 0);
 
-        x = utils::json::make (var_long_int);
+        x = utils::json::jsonify (var_long_int);
         CHECK ( x.compare (std::to_string (var_long_int)) == 0);
 
-        x = utils::json::make (var_long_long_int);
+        x = utils::json::jsonify (var_long_long_int);
         CHECK ( x.compare (std::to_string (var_long_long_int)) == 0);
 
-        x = utils::json::make (var_short);
+        x = utils::json::jsonify (var_short);
         CHECK ( x.compare (std::to_string (var_short)) == 0);
 
-        x = utils::json::make (var_int32_t);
+        x = utils::json::jsonify (var_int32_t);
         CHECK ( x.compare (std::to_string (var_int32_t)) == 0);
 
-        x = utils::json::make (var_int64_t);
+        x = utils::json::jsonify (var_int64_t);
         CHECK ( x.compare (std::to_string (var_int64_t)) == 0);
 
-        x = utils::json::make (var_byte);
+        x = utils::json::jsonify (var_byte);
         CHECK ( x.compare (std::to_string (var_byte)) == 0);
 
-        x = utils::json::make (var_unsigned_int);
+        x = utils::json::jsonify (var_unsigned_int);
         CHECK ( x.compare (std::to_string (var_unsigned_int)) == 0);
 
-        x = utils::json::make (var_unsigned_long_int);
+        x = utils::json::jsonify (var_unsigned_long_int);
         CHECK ( x.compare (std::to_string (var_unsigned_long_int)) == 0);
 
-        x = utils::json::make (var_unsigned_long_long_int);
+        x = utils::json::jsonify (var_unsigned_long_long_int);
         CHECK ( x.compare (std::to_string (var_unsigned_long_long_int)) == 0);
 
-        x = utils::json::make (var_unsigned_short);
+        x = utils::json::jsonify (var_unsigned_short);
         CHECK ( x.compare (std::to_string (var_unsigned_short)) == 0);
 
-        x = utils::json::make (var_uint32_t);
+        x = utils::json::jsonify (var_uint32_t);
         CHECK ( x.compare (std::to_string (var_uint32_t)) == 0);
 
-        x = utils::json::make (var_uint64_t);
+        x = utils::json::jsonify (var_uint64_t);
         CHECK ( x.compare (std::to_string (var_uint64_t)) == 0);
 
     }
 
     SECTION ("single parameter ('string') invocation") {
 
-        x = utils::json::make (const_char);
+        x = utils::json::jsonify (const_char);
         CHECK ( x.compare (R"("*const char with a '\"' quote and newline \n '\\\"'")") == 0);
 
-        x = utils::json::make (str);
+        x = utils::json::jsonify (str);
         CHECK ( x.compare (R"("*const char with a '\"' quote and newline \n '\\\"'")") == 0);
 
-        x = utils::json::make (str_ref);
+        x = utils::json::jsonify (str_ref);
 
-        x = utils::json::make (*str_ptr);
+        x = utils::json::jsonify (*str_ptr);
         CHECK ( x.compare (R"("*const char with a '\"' quote and newline \n '\\\"'")") == 0);
 
     }
 
     SECTION ("pairs") {
-        x = utils::json::make (*str_ptr, var_int64_t);
+        x = utils::json::jsonify (*str_ptr, var_int64_t);
         CHECK ( x.compare (std::string(R"("*const char with a '\"' quote and newline \n '\\\"'" : )") + std::to_string (var_int64_t)) == 0);
 
         
-        x = utils::json::make ("hey\"!\n", str_ref);
+        x = utils::json::jsonify ("hey\"!\n", str_ref);
         CHECK ( x.compare (R"("hey\"!\n" : "*const char with a '\"' quote and newline \n '\\\"'")") == 0);
 
-        x = utils::json::make (-6, -7);
+        x = utils::json::jsonify (-6, -7);
         CHECK ( x.compare (R"("-6" : -7)") == 0 ); 
 
-        x = utils::json::make (var_uint64_t, str);
+        x = utils::json::jsonify (var_uint64_t, str);
         CHECK ( x.compare (std::string ("\"") + std::to_string (var_uint64_t) + "\" : " + R"("*const char with a '\"' quote and newline \n '\\\"'")") == 0 ); 
     }
 }

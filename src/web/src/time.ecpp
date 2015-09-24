@@ -110,6 +110,6 @@
     std::string ntp = augeas->get_cmd_out("get /files/etc/ntp.conf/server[1]");
 </%cpp>
 {
-    <$$ utils::json::make ("time", buff) $>,
-    <$$ utils::json::make ("ntp", ntp) $>
+    <$$ utils::json::jsonify ("time", buff) $>,
+    <$$ utils::json::jsonify ("ntp", ntp) $>
 }

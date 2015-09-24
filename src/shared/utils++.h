@@ -55,7 +55,7 @@ std::string escape (const std::string& before);
 
 template <typename T
         , typename = typename std::enable_if<std::is_arithmetic<T>::value>::type>
-std::string make (T t) {
+std::string jsonify (T t) {
     try {
         return escape (std::to_string (t));
     } catch (...) {
@@ -64,12 +64,12 @@ std::string make (T t) {
 }
 
 // TODO: doxy
-//  basically, these are property "makers"; you supply any json-ifiable type pair and it creates a valid, properly escaped property (key:value) pair out of it.
+//  basically, these are property "jsonifyrs"; you supply any json-ifiable type pair and it creates a valid, properly escaped property (key:value) pair out of it.
 // single arg version escapes and quotes were necessary (i.e. except int types...)
 
 template <typename T
         , typename = typename std::enable_if<std::is_convertible<T, std::string>::value>::type>
-std::string make (const T& t) {
+std::string jsonify (const T& t) {
     try {
         return std::string ("\"").append (escape (t)).append ("\"");
     } catch (...) {
@@ -81,30 +81,30 @@ template <typename S
         , typename = typename std::enable_if<std::is_convertible<S, std::string>::value>::type
         , typename T
         , typename = typename std::enable_if<std::is_convertible<T, std::string>::value>::type>
-std::string make (const S& key, const T& value) {
-    return std::string (make (key)).append (" : ").append (make (value));
+std::string jsonify (const S& key, const T& value) {
+    return std::string (jsonify (key)).append (" : ").append (jsonify (value));
 }
 
 template <typename S
         , typename = typename std::enable_if<std::is_convertible<S, std::string>::value>::type
         , typename T
         , typename = typename std::enable_if<std::is_arithmetic<T>::value>::type>
-std::string make (const S& key, T value) {
-    return std::string (make (key)).append (" : ").append (make (value));
+std::string jsonify (const S& key, T value) {
+    return std::string (jsonify (key)).append (" : ").append (jsonify (value));
 }
 
 template <typename S
         , typename = typename std::enable_if<std::is_convertible<S, std::string>::value>::type
         , typename T
         , typename = typename std::enable_if<std::is_arithmetic<T>::value>::type>
-std::string make (T key, const S& value) {
-    return std::string ("\"").append (make (key)).append ("\" : ").append (make (value));
+std::string jsonify (T key, const S& value) {
+    return std::string ("\"").append (jsonify (key)).append ("\" : ").append (jsonify (value));
 }
 
 template <typename T
         , typename = typename std::enable_if<std::is_arithmetic<T>::value>::type>
-std::string make (T key, T value) {
-    return std::string ("\"").append (make (key)).append ("\" : ").append (make (value));
+std::string jsonify (T key, T value) {
+    return std::string ("\"").append (jsonify (key)).append ("\" : ").append (jsonify (value));
 }
 
 } // namespace utils::json
