@@ -70,14 +70,13 @@ agent_name.append (std::to_string ( static_cast<int> (getpid ()) ))
 try{
     send_configure (row, persist::asset_operation::DELETE, agent_name);
 </%cpp>
-{"asset" : "asset with id '" + id + "' was deleted"}
+{}
 <%cpp>
     return HTTP_OK;
 }
 catch (const std::runtime_error &e) {
     log_error (e.what());
-    std::string msg = "Error during configuration of bios-agent-nut occured, consider restarting it: ";
-    msg += e.what();
+    std::string msg = "Error during configuration sending of asset change notification. Consult system log.";
     http_die("internal-error", msg.c_str());
 }
 </%cpp>
