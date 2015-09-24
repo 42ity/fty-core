@@ -56,7 +56,7 @@ static constexpr const _WSErrors _errors = { {
     {.key = "element-not-found",        .http_code = HTTP_NOT_FOUND,                .err_code = 44,     .message = "Element '%s' not found."},
     {.key = "method-not-allowed",       .http_code = HTTP_METHOD_NOT_ALLOWED,       .err_code = 45,     .message = "Http method '%s' not allowed."},
     {.key = "request-param-required",   .http_code = HTTP_BAD_REQUEST,              .err_code = 46,     .message = "Parameter '%s' is required." },
-    {.key = "request-param-bad",        .http_code = HTTP_BAD_REQUEST,              .err_code = 47,     .message = "Value '%s' of parameter '%s' is bad. %s" },
+    {.key = "request-param-bad",        .http_code = HTTP_BAD_REQUEST,              .err_code = 47,     .message = "Parameter '%s' has bad value. Received '%s'. Expected %s" },
     {.key = "bad-request-document",     .http_code = HTTP_BAD_REQUEST,              .err_code = 48,     .message = "Request document has invalid syntax. %s" },
     } };
 
