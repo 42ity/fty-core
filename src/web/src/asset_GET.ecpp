@@ -26,19 +26,11 @@
  * \brief Implementation of GET operation on any asset
  */
  #><%pre>
-#include <czmq.h>
-#include <sys/syscall.h>
 
-#include "log.h"
 #include "data.h"
-#include "configure_inform.h"
 #include "asset_types.h"
 #include "defs.h"
 #include "web_utils.h"
-#include "csv.h"
-#include "inout.h"
-#include <cxxtools/jsondeserializer.h>
-#include <cxxtools/serializationinfo.h>
 #include "asset_computed_impl.h"
 </%pre>
 
