@@ -51,14 +51,17 @@ static constexpr size_t _WSErrorsCOUNT = 8;
 typedef std::array<_WSError, _WSErrorsCOUNT> _WSErrors;
 
 static constexpr const _WSErrors _errors = { {
-    {.key = "internal-error",           .http_code = HTTP_INTERNAL_SERVER_ERROR, .err_code = 42, .message = "Internal Server Error: %s" },
-    {.key = "not-authorized",           .http_code = HTTP_UNAUTHORIZED,          .err_code = 43, .message = "Not authorized"},
-    {.key = "element-not-found",        .http_code = HTTP_NOT_FOUND,             .err_code = 44, .message = "Element %s not found"},
-    {.key = "not-allowed-method",       .http_code = HTTP_METHOD_NOT_ALLOWED,    .err_code = 45, .message = "Method %s is not allowed"},
-    {.key = "not-implemented-method",   .http_code = HTTP_NOT_IMPLEMENTED,       .err_code = 46, .message = "Method %s is not implemented"},
-    {.key = "param-required",           .http_code = HTTP_BAD_REQUEST,           .err_code = 47, .message = "Parameter %s is required" },
-    {.key = "param-bad-value",          .http_code = HTTP_BAD_REQUEST,           .err_code = 48, .message = "Parameter %s has wrong value, got %s, expected %s" },
-    {.key = "syntax-error",             .http_code = HTTP_BAD_REQUEST,           .err_code = 49, .message = "Request document has invalid syntax" },
+    {.key = "internal-error",           .http_code = HTTP_INTERNAL_SERVER_ERROR, .err_code = 42, .message = "Internal Server Error. %s" },
+    {.key = "not-authorized",           .http_code = HTTP_UNAUTHORIZED,          .err_code = 43, .message = "You are not authorized. Please use '/oauth2/token?username=<user_name>&password=<password>&grant_type=password' GET request to authorize."},
+    {.key = "element-not-found",        .http_code = HTTP_NOT_FOUND,             .err_code = 44, .message = "Element '%s' not found."},
+    {.key = "bad-http-method",          .http_code = HTTP_METHOD_NOT_ALLOWED,    .err_code = 45, .message = "Http method '%s' not allowed. Please use any of the following http method(s) for '%s' rest api call: %s."},
+    {.key = "request-param-required",   .http_code = HTTP_BAD_REQUEST,  .err_code = 46,  .message = "Parameter '%s' is required." },
+    {.key = "request-param-bad",        .http_code = HTTP_BAD_REQUEST,  .err_code = 47,  .message = "Value '%s' of parameter '%s' is bad. %s" },
+    {.key = "bad-request-document",     .http_code = HTTP_BAD_REQUEST,  .err_code = 48,  .message = "Request document has invalid syntax. %s" },
+    // "bussiness logic" codes
+    {.key = "timestamp-start-gt-end",   .http_code = HTTP_BAD_REQUEST,  .err_code = 100, .message = "Start timestamp '%s' is greater than end timestamp '%s'." },
+    {.key = "bad-cvs-import",           .http_code = HTTP_BAD_REQUEST,  .err_code = 101, .message = "Error while importing csv file '%s'. %s" },
+    {.key = "delete-cascading",         .http_code = HTTP_BAD_REQUEST,  .err_code = 102, .message = "Error deleting element id '%s'. Please delete elements contained within first."},
     } };
 
 template <size_t N>
