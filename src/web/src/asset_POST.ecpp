@@ -1,0 +1,103 @@
+<#
+ #
+ # Copyright (C) 2015 Eaton
+ #
+ # This program is free software; you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+ # the Free Software Foundation; either version 2 of the License, or
+ # (at your option) any later version.
+ #
+ # This program is distributed in the hope that it will be useful,
+ # but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+ #
+ # You should have received a copy of the GNU General Public License along
+ # with this program; if not, write to the Free Software Foundation, Inc.,
+ # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ #
+ #><#
+/*!
+ * \file asset_POST.ecpp
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \brief Implementation of POST operation on any asset
+ */
+ #><%pre>
+#include <czmq.h>
+#include <sys/syscall.h>
+
+#include "log.h"
+#include "data.h"
+#include "configure_inform.h"
+#include "asset_types.h"
+#include "defs.h"
+#include "web_utils.h"
+#include "csv.h"
+#include "inout.h"
+#include <cxxtools/jsondeserializer.h>
+#include <cxxtools/serializationinfo.h>
+#include "asset_computed_impl.h"
+</%pre>
+
+<%thread scope="global">
+asset_manager     asset_mgr;
+measures_manager  measures_mgr;
+</%thread>
+
+<%cpp>
+    // Read json, transform to csv, use existing functionality
+    cxxtools::SerializationInfo si;
+    // read json a deserialize it
+    try {
+        std::stringstream input (request.getBody (), std::ios_base::in);
+        cxxtools::JsonDeserializer deserializer (input);
+        deserializer.deserialize (si);
+
+    }
+    catch (const std::exception& e) {
+        LOG_END_ABNORMAL(e);
+</%cpp>
+<$$ create_error_json("Error deserializing POST request document", 00) $>
+<%cpp>
+        return HTTP_BAD_REQUEST;
+    }
+
+    try{
+        shared::CsvMap cm = shared::CsvMap_from_serialization_info(si);
+        // actual insert
+        std::vector <std::pair<db_a_elmnt_t,persist::asset_operation>> okRows{};
+        std::map <int, std::string> failRows{};
+        persist::load_asset_csv (cm, okRows, failRows);
+        // process results
+        if ( !failRows.empty() )
+        {
+</%cpp>
+<$$ create_error_json(failRows.begin()->second, 70) $>
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+        else
+        {
+</%cpp>
+{<$$ json_key_value_s("id", std::to_string(okRows.begin()->first.id)) $>}
+<%cpp>
+            return HTTP_OK;
+        }
+    }
+    catch (const std::logic_error& e) {
+        LOG_END_ABNORMAL(e);
+        // the function returns already user friendly messages
+</%cpp>
+<$$ create_error_json(e.what(), 00) $>
+<%cpp>
+        return HTTP_BAD_REQUEST;
+    }
+    catch (const std::exception& e) {
+        LOG_END_ABNORMAL(e);
+        // the function returns already user friendly messages
+</%cpp>
+<$$ create_error_json("Internal error while processing request", 00) $>
+<%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+</%cpp>

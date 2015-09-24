@@ -1,0 +1,269 @@
+<#
+ #
+ # Copyright (C) 2015 Eaton
+ #
+ # This program is free software; you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+ # the Free Software Foundation; either version 2 of the License, or
+ # (at your option) any later version.
+ #
+ # This program is distributed in the hope that it will be useful,
+ # but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+ #
+ # You should have received a copy of the GNU General Public License along
+ # with this program; if not, write to the Free Software Foundation, Inc.,
+ # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ #
+ #><#
+/*!
+ * \file asset_GET.ecpp
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \brief Implementation of GET operation on any asset
+ */
+ #><%pre>
+#include <czmq.h>
+#include <sys/syscall.h>
+
+#include "log.h"
+#include "data.h"
+#include "configure_inform.h"
+#include "asset_types.h"
+#include "defs.h"
+#include "web_utils.h"
+#include "csv.h"
+#include "inout.h"
+#include <cxxtools/jsondeserializer.h>
+#include <cxxtools/serializationinfo.h>
+#include "asset_computed_impl.h"
+</%pre>
+
+<%thread scope="global">
+asset_manager     asset_mgr;
+measures_manager  measures_mgr;
+</%thread>
+
+<%cpp>
+// Check URL validity
+std::string typeNameArg = request.getArg("type");
+std::string id = request.getArg("id");
+
+if ( id.empty() ) {
+</%cpp>
+<$$ create_error_json("Invalid url (missing id parameter)", 56) $>
+<%cpp>
+    return HTTP_BAD_REQUEST;
+}
+
+auto tmp = asset_mgr.get_item1(id);
+if ( tmp.status == 0 )
+{
+    switch ( tmp.errsubtype )
+    {
+        case DB_ERROR_NOTFOUND:
+</%cpp>
+<$$ create_error_json("Asset doesn't exist", 57) $>
+<%cpp>
+            return HTTP_NOT_FOUND;
+        case DB_ERROR_BADINPUT:
+</%cpp>
+<$$ create_error_json("Wrong input", 60) $>
+<%cpp>
+            return HTTP_NOT_FOUND;
+        case DB_ERROR_INTERNAL:
+</%cpp>
+<$$ create_error_json("Internal error", 61) $>
+<%cpp>
+            return HTTP_INTERNAL_SERVER_ERROR;
+        default:
+</%cpp>
+<$$ create_error_json("Unknown error", 62) $>
+<%cpp>
+            return HTTP_INTERNAL_SERVER_ERROR;
+    }
+}
+if ( !typeNameArg.empty() &&
+    (tmp.item.basic.type_id != persist::type_to_typeid(typeNameArg) ) )
+{
+</%cpp>
+<$$ create_error_json("Specified asset type in url doesn't match actual asset type in db", 63) $>
+<%cpp>
+    return HTTP_NOT_FOUND;
+}
+// Prepare the reply
+</%cpp>
+{
+"id": "<$$ tmp.item.basic.id $>"
+, "name": "<$$ tmp.item.basic.name $>"
+, "status": "<$$ tmp.item.basic.status $>"
+%       if ( tmp.item.basic.bc == 0 )
+%       {
+, "business_critical": "no"
+%       }
+%       else
+%       {
+, "business_critical": "yes"
+%       }
+, "priority": "P<$$ tmp.item.basic.priority $>"
+<%cpp>
+// if element is located, then show the location
+if ( tmp.item.basic.parent_id != 0 )
+{
+</%cpp>
+, "location_uri":"<$$ "/api/v1/asset/" +
+           persist::typeid_to_type(tmp.item.basic.parent_type_id) + "/" +
+           std::to_string (tmp.item.basic.parent_id) $>"
+%       }
+, "groups": [
+<%cpp>
+// every element (except groups) can be placed in some group
+if ( !tmp.item.groups.empty() )
+{
+    uint32_t group_count = tmp.item.groups.size();
+    uint32_t i = 1;
+    for ( auto &oneGroup : tmp.item.groups )
+    {
+</%cpp>
+"/api/v1/asset/group/<$$ oneGroup $>"<? i != group_count ? "," ?>
+<%cpp>
+        i++;
+    }
+}
+</%cpp>
+]
+<%cpp>
+// Device is special element with more attributes
+if ( tmp.item.basic.type_id == persist::asset_type::DEVICE )
+{
+</%cpp>
+, "type": "<$$ tmp.item.basic.subtype_name $>"
+<%cpp>
+    // from csv import ip.1, ip.2 ... can appear, but for now deal with one
+    auto it = tmp.item.ext.find("ip.1");
+    if ( it != tmp.item.ext.end() )
+    {
+</%cpp>
+, "ip":"<$$ it->second.first $>"
+<%cpp>
+        tmp.item.ext.erase(it);
+    }
+
+    it = tmp.item.ext.find("hostname.1");
+    if ( it != tmp.item.ext.end() )
+    {
+</%cpp>
+, "hostname":"<$$ it->second.first $>"
+<%cpp>
+        tmp.item.ext.erase(it);
+    }
+
+    it = tmp.item.ext.find("fdqn.1");
+    if ( it != tmp.item.ext.end() )
+    {
+</%cpp>
+, "fdqn":"<$$ it->second.first $>"
+<%cpp>
+        tmp.item.ext.erase(it);
+    }
+
+    it = tmp.item.ext.find("mac.1");
+    if ( it != tmp.item.ext.end() )
+    {
+</%cpp>
+, "mac":"<$$ it->second.first $>"
+<%cpp>
+        tmp.item.ext.erase(it);
+    }
+</%cpp>
+, "powers": [
+<%cpp>
+    if ( !tmp.item.powers.empty() )
+    {
+        uint32_t power_count = tmp.item.powers.size();
+        uint32_t i = 1;
+        for ( auto &oneLink : tmp.item.powers )
+        {
+</%cpp>
+{"src_uri":"/api/v1/asset/device/<$$ oneLink.src_id $>"
+<%cpp>
+            if ( !oneLink.src_socket.empty() )
+            {
+</%cpp>
+,"src_socket":"<$$ oneLink.src_socket $>"
+<%cpp>
+            }
+            if ( !oneLink.dest_socket.empty() )
+            {
+</%cpp>
+,"dest_socket":"<$$ oneLink.dest_socket $>"
+%                   }
+}<? i != power_count ? "," ?>
+<%cpp>
+            i++;
+        }
+    }
+</%cpp>
+]
+<%cpp>
+}
+
+if ( tmp.item.basic.type_id == persist::asset_type::GROUP )
+{
+    auto it = tmp.item.ext.find("type");
+    if ( it != tmp.item.ext.end() )
+    {
+</%cpp>
+, "type":"<$$ it->second.first $>"
+<%cpp>
+        tmp.item.ext.erase(it);
+    }
+}
+</%cpp>
+, "ext" : [
+%       // ACE: to be consistent with RFC-11 this was put here
+{"asset_tag": "<$$ tmp.item.basic.asset_tag $>", "read_only": true }
+<%cpp>
+if ( !tmp.item.ext.empty() )
+{
+    // this , is in JSON!!!!
+</%cpp>
+,
+<%cpp>
+    uint32_t ext_count = tmp.item.ext.size();
+    uint32_t i = 1;
+    for ( auto &oneExt : tmp.item.ext )
+    {
+</%cpp>
+{"<$$ oneExt.first $>":"<$$ oneExt.second.first $>","read_only": <$$ oneExt.second.second? "true":"false" $> }<? i != ext_count ? "," ?>
+<%cpp>
+        i++;
+    }
+}
+</%cpp>
+]
+, "computed" : {
+%       if (persist::is_rack(tmp.item.basic.type_id)) {
+%           int freeusize = free_u_size(tmp.item.basic.id);
+%           m_msrmnt_value_t value = 0;
+%           m_msrmnt_scale_t scale = 0;
+%           int rv = measures_mgr.get_last_10minute_measurement
+%               ("realpower.nominal", tmp.item.basic.name, value, scale);
+    "freeusize" : <$ freeusize >= 0 ? std::to_string(freeusize) : "null" $>,
+    "realpower.nominal" : <$ rv == 0 ? std::to_string(value * std::pow (10, scale)) : "null" $>,
+    "outlet.available" : {
+%           std::map<std::string, int> res;
+%           rack_outlets_available(tmp.item.basic.id, res);
+%           size_t i=1;
+%           for (const auto &it : res) {
+%               std::string val = it.second >= 0 ? std::to_string(it.second) : "null";
+%               std::string comma = i == res.size() ? "" : ","; i++;
+        "<$ it.first $>" : <$ val $><$ comma $>
+%           } // for it : res
+    }
+%       }   // rack
+}
+}
