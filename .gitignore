@@ -191,6 +191,8 @@ tools/biostimer-outage.service
 tools/ifplug-dhcp-autoconf.service
 !tools/bios-ssh-last-resort.service.in
 tools/bios-ssh-last-resort.service
+!tools/bios-networking.service.in
+tools/bios-networking.service
 
 src/web/src/auth-verify.cpp
 src/web/src/auth-require.cpp
