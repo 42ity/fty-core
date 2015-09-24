@@ -46,13 +46,19 @@ typedef struct _wserror {
 } _WSError;
 
 // size of _errors array, keep this up to date unless code won't build
-static constexpr size_t _WSErrorsCOUNT = 1;
+static constexpr size_t _WSErrorsCOUNT = 8;
 
 // typedef for array of errors
 typedef std::array<_WSError, _WSErrorsCOUNT> _WSErrors;
 
 static constexpr const _WSErrors _errors = { {
-    {.key = "internal-error", .http_code = 500, .err_code = 4242, .message = "Internal Server Error: %s" },
+    {.key = "internal-error",           .http_code = HTTP_INTERNAL_SERVER_ERROR,    .err_code = 42,     .message = "Internal Server Error. %s" },
+    {.key = "not-authorized",           .http_code = HTTP_UNAUTHORIZED,             .err_code = 43,     .message = "You are not authorized. Please use '/oauth2/token?username=<user_name>&password=<password>&grant_type=password' GET request to authorize."},
+    {.key = "element-not-found",        .http_code = HTTP_NOT_FOUND,                .err_code = 44,     .message = "Element '%s' not found."},
+    {.key = "method-not-allowed",       .http_code = HTTP_METHOD_NOT_ALLOWED,       .err_code = 45,     .message = "Http method '%s' not allowed."},
+    {.key = "request-param-required",   .http_code = HTTP_BAD_REQUEST,              .err_code = 46,     .message = "Parameter '%s' is required." },
+    {.key = "request-param-bad",        .http_code = HTTP_BAD_REQUEST,              .err_code = 47,     .message = "Parameter '%s' has bad value. Received '%s'. Expected %s" },
+    {.key = "bad-request-document",     .http_code = HTTP_BAD_REQUEST,              .err_code = 48,     .message = "Request document has invalid syntax. %s" },
     } };
 
 template <size_t N>
@@ -60,7 +66,7 @@ constexpr ssize_t
 _die_idx(const char* key)
 {
     static_assert(std::tuple_size<_WSErrors>::value > N, "_die_idx asked for too big N");
-    return (_errors.at(N).key == key || _errors.at(N).message == key) ? N: _die_idx<N-1>(_errors, key);
+    return (_errors.at(N).key == key || _errors.at(N).message == key) ? N: _die_idx<N-1>(key);
 }
 
 template <>

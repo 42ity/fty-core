@@ -432,7 +432,7 @@ select_measurement_last_web_byTopic (
 int
     delete_measurements(
         tntdb::Connection &conn,
-        m_msrmnt_tp_id_t   topic_id,
+        m_msrmnt_tpc_id_t   topic_id,
         m_msrmnt_id_t     &affected_rows
         )
 {
@@ -464,8 +464,8 @@ int
 int
     delete_measurement_topic(
         tntdb::Connection &conn,
-        m_msrmnt_tp_id_t   topic_id,
-        m_msrmnt_tp_id_t  &affected_rows
+        m_msrmnt_tpc_id_t   topic_id,
+        m_msrmnt_tpc_id_t  &affected_rows
         )
 {
     LOG_START;

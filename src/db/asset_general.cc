@@ -456,7 +456,7 @@ db_reply_t
         }
         // delete all measurements for topic and topic itself
         m_msrmnt_id_t affected_rows = 0;
-        m_msrmnt_tp_id_t affected_rows1 = 0;
+        m_msrmnt_tpc_id_t affected_rows1 = 0;
         for ( auto topic_id : out )
         {
             log_debug ("  topic_id = %" PRIu32 , topic_id);
@@ -646,7 +646,7 @@ db_reply_t
         }
         // delete all measurements for topic and topic itself
         m_msrmnt_id_t affected_rows = 0;
-        m_msrmnt_tp_id_t affected_rows1 = 0;
+        m_msrmnt_tpc_id_t affected_rows1 = 0;
         for ( auto topic_id : out )
         {
             rv = delete_measurements(conn, topic_id, affected_rows);
