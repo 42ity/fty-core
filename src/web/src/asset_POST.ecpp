@@ -31,7 +31,7 @@
 #include "configure_inform.h"
 #include "asset_types.h"
 #include "defs.h"
-#include "web_utils.h"
+#include "utils_web.h"
 #include "csv.h"
 #include "inout.h"
 #include <cxxtools/jsondeserializer.h>
@@ -79,7 +79,7 @@ measures_manager  measures_mgr;
         else
         {
 </%cpp>
-{<$$ json_key_value_s("id", std::to_string(okRows.begin()->first.id)) $>}
+{<$$ utils::json::jsonify ("id", std::to_string(okRows.begin()->first.id)) $>}
 <%cpp>
             return HTTP_OK;
         }
