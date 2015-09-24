@@ -41,8 +41,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MAX_VALUE_LENGTH        255
 // t_bios_asset_device.mac
 #define MAX_MAC_LENGTH          17
-// t_bios_asset_device.ip    and t_bios_discovered_ip.ip
-#define MAX_IP_LENGTH           45
 // t_bios_asset_device.hostname
 #define MAX_HOSTNAME_LENGTH     25
 // t_bios_asset_device.fullhostname
@@ -309,17 +307,6 @@ bool is_ok_hostname (const char *hostname);
  *         false - fullhostname is not correct
  */
 bool is_ok_fullhostname (const char *fullhostname);
-
-
-/**
- * \brief Checks if the ip is correct
- *
- * \param ip - ip to check
- *
- * \return true  - ok
- *         false - ip is not correct
- */
-bool is_ok_ip (const char *ip);
 
 
 /**
