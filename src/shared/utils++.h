@@ -53,6 +53,60 @@ std::string escape (const char *string);
 */
 std::string escape (const std::string& before);
 
+template <typename T
+        , typename = typename std::enable_if<std::is_arithmetic<T>::value>::type>
+std::string make (T t) {
+    try {
+        return escape (std::to_string (t));
+    } catch (...) {
+        return "";
+    }
+}
+
+// TODO: doxy
+//  basically, these are property "makers"; you supply any json-ifiable type pair and it creates a valid, properly escaped property (key:value) pair out of it.
+// single arg version escapes and quotes were necessary (i.e. except int types...)
+
+template <typename T
+        , typename = typename std::enable_if<std::is_convertible<T, std::string>::value>::type>
+std::string make (const T& t) {
+    try {
+        return std::string ("\"").append (escape (t)).append ("\"");
+    } catch (...) {
+        return "";
+    }
+}
+
+template <typename S
+        , typename = typename std::enable_if<std::is_convertible<S, std::string>::value>::type
+        , typename T
+        , typename = typename std::enable_if<std::is_convertible<T, std::string>::value>::type>
+std::string make (const S& key, const T& value) {
+    return std::string (make (key)).append (" : ").append (make (value));
+}
+
+template <typename S
+        , typename = typename std::enable_if<std::is_convertible<S, std::string>::value>::type
+        , typename T
+        , typename = typename std::enable_if<std::is_arithmetic<T>::value>::type>
+std::string make (const S& key, T value) {
+    return std::string (make (key)).append (" : ").append (make (value));
+}
+
+template <typename S
+        , typename = typename std::enable_if<std::is_convertible<S, std::string>::value>::type
+        , typename T
+        , typename = typename std::enable_if<std::is_arithmetic<T>::value>::type>
+std::string make (T key, const S& value) {
+    return std::string ("\"").append (make (key)).append ("\" : ").append (make (value));
+}
+
+template <typename T
+        , typename = typename std::enable_if<std::is_arithmetic<T>::value>::type>
+std::string make (T key, T value) {
+    return std::string ("\"").append (make (key)).append ("\" : ").append (make (value));
+}
+
 } // namespace utils::json
 
 /*!

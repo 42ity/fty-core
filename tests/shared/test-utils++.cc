@@ -271,3 +271,102 @@ TEST_CASE ("escape", "[utilities]")
     std::string out = utils::escape(inp, "\\");
     CHECK(out == inp);
 }
+
+TEST_CASE ("utils::json::make","[utils::json::make][json][escape]")
+{
+    // 
+    int var_int = -1;
+    long int var_long_int = -2;
+    long long int var_long_long_int = -3;
+    short var_short = 4;
+    int32_t var_int32_t = 6;
+    int64_t var_int64_t = 7;
+    byte var_byte = 8;
+
+    unsigned int var_unsigned_int = 10;
+    unsigned long int var_unsigned_long_int = 20;
+    unsigned long long int var_unsigned_long_long_int = 30;
+    unsigned short var_unsigned_short = 40;
+    uint32_t var_uint32_t = 50;
+    uint64_t var_uint64_t = 60;
+
+    //
+    const char *const_char = "*const char with a '\"' quote and newline \n '\\\"'";
+    std::string str = const_char;
+    std::string& str_ref = str;
+    std::string* str_ptr = &str;
+
+    std::string x; // temporary result placeholder
+    
+    SECTION ("single parameter ('inttype') invocation") {
+        x = utils::json::make (var_int);
+        CHECK ( x.compare (std::to_string (var_int)) == 0);
+
+        x = utils::json::make (var_long_int);
+        CHECK ( x.compare (std::to_string (var_long_int)) == 0);
+
+        x = utils::json::make (var_long_long_int);
+        CHECK ( x.compare (std::to_string (var_long_long_int)) == 0);
+
+        x = utils::json::make (var_short);
+        CHECK ( x.compare (std::to_string (var_short)) == 0);
+
+        x = utils::json::make (var_int32_t);
+        CHECK ( x.compare (std::to_string (var_int32_t)) == 0);
+
+        x = utils::json::make (var_int64_t);
+        CHECK ( x.compare (std::to_string (var_int64_t)) == 0);
+
+        x = utils::json::make (var_byte);
+        CHECK ( x.compare (std::to_string (var_byte)) == 0);
+
+        x = utils::json::make (var_unsigned_int);
+        CHECK ( x.compare (std::to_string (var_unsigned_int)) == 0);
+
+        x = utils::json::make (var_unsigned_long_int);
+        CHECK ( x.compare (std::to_string (var_unsigned_long_int)) == 0);
+
+        x = utils::json::make (var_unsigned_long_long_int);
+        CHECK ( x.compare (std::to_string (var_unsigned_long_long_int)) == 0);
+
+        x = utils::json::make (var_unsigned_short);
+        CHECK ( x.compare (std::to_string (var_unsigned_short)) == 0);
+
+        x = utils::json::make (var_uint32_t);
+        CHECK ( x.compare (std::to_string (var_uint32_t)) == 0);
+
+        x = utils::json::make (var_uint64_t);
+        CHECK ( x.compare (std::to_string (var_uint64_t)) == 0);
+
+    }
+
+    SECTION ("single parameter ('string') invocation") {
+
+        x = utils::json::make (const_char);
+        CHECK ( x.compare (R"("*const char with a '\"' quote and newline \n '\\\"'")") == 0);
+
+        x = utils::json::make (str);
+        CHECK ( x.compare (R"("*const char with a '\"' quote and newline \n '\\\"'")") == 0);
+
+        x = utils::json::make (str_ref);
+
+        x = utils::json::make (*str_ptr);
+        CHECK ( x.compare (R"("*const char with a '\"' quote and newline \n '\\\"'")") == 0);
+
+    }
+
+    SECTION ("pairs") {
+        x = utils::json::make (*str_ptr, var_int64_t);
+        CHECK ( x.compare (std::string(R"("*const char with a '\"' quote and newline \n '\\\"'" : )") + std::to_string (var_int64_t)) == 0);
+
+        
+        x = utils::json::make ("hey\"!\n", str_ref);
+        CHECK ( x.compare (R"("hey\"!\n" : "*const char with a '\"' quote and newline \n '\\\"'")") == 0);
+
+        x = utils::json::make (-6, -7);
+        CHECK ( x.compare (R"("-6" : -7)") == 0 ); 
+
+        x = utils::json::make (var_uint64_t, str);
+        CHECK ( x.compare (std::string ("\"") + std::to_string (var_uint64_t) + "\" : " + R"("*const char with a '\"' quote and newline \n '\\\"'")") == 0 ); 
+    }
+}
