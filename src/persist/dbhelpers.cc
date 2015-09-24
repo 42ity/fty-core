@@ -229,16 +229,6 @@ bool is_ok_fullhostname (const char *fullhostname)
         return false;
 }
 
-bool is_ok_ip (const char *ip)
-{
-    // TODO: Do we need to add more complex restrictions?
-    auto length = strlen(ip);
-    if ( ( length > 0 ) && ( length <= MAX_IP_LENGTH ) )
-        return true;
-    else
-        return false;
-}
-
 bool is_ok_mac (const char *mac)
 {
     // TODO: Do we need to add more complex restrictions?

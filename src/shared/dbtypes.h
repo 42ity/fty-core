@@ -113,33 +113,15 @@ typedef uint16_t m_dvc_id_t;
 // uint16_t
 typedef uint16_t  m_dvc_tp_id_t;
 
-// ----- table:  t_bios_client ------------------------
-// ----- column: id_client ----------------------------
-// TODO tntdb can't manage uint8_t, so for now there is
-// uint16_t
-typedef uint16_t  m_clnt_id_t;
-
-// ----- table:  t_bios_client_info -------------------
-// ----- column: id_client_info -----------------------
-typedef uint64_t m_clnt_info_id_t;
-
-// ----- table:  t_bios_measurements ------------------
-// ----- column: id_measurements ----------------------
+// ----- table:  t_bios_measurement -------------------
+// ----- column: id_measurement -----------------------
 typedef uint64_t m_msrmnt_id_t;
 
-// ----- table:  t_bios_measurements ------------------
+// ----- table:  t_bios_measurement -------------------
 // ----- column: value --------------------------------
 typedef  int32_t m_msrmnt_value_t;
 
-// ----- table:  t_bios_measurement_type --------------
-// ----- column: id -----------------------------------
-typedef uint16_t m_msrmnt_tp_id_t;
-
-// ----- table:  t_bios_measurement_subtype -----------
-// ----- column: id -----------------------------------
-typedef uint16_t m_msrmnt_sbtp_id_t;
-
-// ----- table:  t_bios_measurement_subtype -----------
+// ----- table:  t_bios_measurement -------------------
 // ----- column: scale --------------------------------
 // TODO tntdb can't manage uint8_t, so for now there is
 // uint16_t
@@ -150,9 +132,5 @@ typedef int16_t  m_msrmnt_scale_t;
 // TODO tntdb can't manage uint8_t, so for now there is
 // uint16_t
 typedef uint16_t  m_msrmnt_tpc_id_t;
-
-// ----- table:  t_bios_discovered_ip -----------------
-// ----- column: id_ip --------------------------------
-typedef uint32_t m_ip_id_t;
 
 #endif // SRC_PERSIST_DVTYPES_H_
