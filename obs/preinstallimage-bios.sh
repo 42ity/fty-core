@@ -95,7 +95,8 @@ chmod a+r /etc/default/bios
 
 # Setup BIOS lenses
 mkdir -p /usr/share/bios/lenses
-ln -sr /usr/share/augeas/lenses/dist/{build.aug,ethers.aug,interfaces.aug,ntp.aug,ntpd.aug,pam.aug,resolv.aug,rx.aug,sep.aug,util.aug} /usr/share/bios/lenses
+ln -sr /usr/share/augeas/lenses/dist/{build,ethers,interfaces,ntp,ntpd,pam,resolv,rx,sep,util,shellvars}.aug \
+    /usr/share/bios/lenses
 
 # Setup u-Boot
 echo '/dev/mtd3 0x00000 0x40000 0x40000' > /etc/fw_env.config
@@ -246,6 +247,10 @@ Requires=bios-db-init.service
 
 [Service]
 Type=simple
+EnvironmentFile=-/etc/default/bios
+EnvironmentFile=-/etc/sysconfig/bios
+EnvironmentFile=-/etc/default/bios__%n.conf
+EnvironmentFile=-/etc/sysconfig/bios__%n.conf
 PrivateTmp=true
 ExecStartPre=/usr/share/bios/scripts/ssl-create.sh
 ExecStart=/usr/bin/tntnet -c /etc/tntnet/%i.xml
@@ -269,13 +274,19 @@ systemctl enable tntnet@bios
 systemctl disable systemd-logind
 find / -name systemd-logind.service -delete
 
+# Disable expensive debug logging by default on non-devel images
+[ "$IMGTYPE" = devel ] || {
+    mkdir -p /etc/default/
+    echo "BIOS_LOG_LEVEL=LOG_INFO" > /etc/default/bios
+}
+
 # Setup some busybox commands
 for i in vi tftp wget; do
    ln -s busybox /bin/$i
 done
 
 # Simplify ntp.conf
-augtool << EOF
+augtool -S -I/usr/share/bios/lenses << EOF
 rm /files/etc/ntp.conf/server
 set /files/etc/ntp.conf/server[1] pool.ntp.org
 save
@@ -357,6 +368,9 @@ chmod a+rx /etc/zabbix/scripts/queryDisks.sh
 echo 'export LANG="C"' > /etc/profile.d/lang.sh
 for V in LANG LANGUAGE LC_ALL ; do echo "$V="'"C"'; done > /etc/default/locale
 
+# logout from /bin/bash after 600s/10m of inactivity
+echo 'export TMOUT=600' > /etc/profile.d/tmout.sh
+
 # Help ifup and ifplugd do the right job
 install -m 0755 /usr/share/bios/scripts/ethtool-static-nolink /etc/network/if-pre-up.d
 install -m 0755 /usr/share/bios/scripts/ifupdown-force /etc/ifplugd/action.d/ifupdown-force
@@ -407,7 +421,7 @@ cat > /etc/default/ip6tables <<[eof]
 -A INPUT -p tcp -m tcp --dport 443 -j ACCEPT
 -A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
 -A INPUT -p tcp -m tcp --dport 4222 -j ACCEPT
--A INPUT -p icmp -j ACCEPT
+-A INPUT -p icmpv6 -j ACCEPT
 -A INPUT -j REJECT --reject-with icmp6-port-unreachable
 -A FORWARD -j REJECT --reject-with icmp6-port-unreachable
 -A OUTPUT -j ACCEPT

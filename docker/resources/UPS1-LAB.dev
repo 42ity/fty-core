@@ -63,6 +63,7 @@ input.bypass.voltage: 244
 input.current: 0
 input.frequency: 50
 input.frequency.nominal: 50
+input.phases: 3
 input.L1-N.voltage: 245
 input.L1.current: 0.0
 input.L2-N.voltage: 246
@@ -74,6 +75,7 @@ outlet.1.delay.shutdown: 120
 outlet.2.delay.shutdown: 120
 outlet.desc: Master
 outlet.switchable: no
+output.phases: 1
 output.current: 0
 output.frequency: 0
 output.frequency.nominal: 50
