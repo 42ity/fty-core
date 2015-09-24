@@ -27,8 +27,8 @@
 #include <sstream>
 #include <cxxtools/regex.h>
 #include <cxxtools/jsondeserializer.h>
-
 #include "augtool.h"
+#include "utils.h"
 
 </%pre>
 <%cpp>
@@ -98,11 +98,14 @@
 	    }
     }
 
-    time_t tme = time(NULL);
-    struct tm tm_s;
-    gmtime_r(&tme, &tm_s);
     char buff[32];
-    strftime(buff, 32, "%FT%TZ", &tm_s);
+    if (calendar_to_datetime (time (NULL), buff, 32) == -1) {
+        // did not bother with error template, as this will be shortly revamped project-wide
+</%cpp>
+        { "error":"Error retrieving time" }
+<%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;        
+    }
     std::string ntp = augeas->get_cmd_out("get /files/etc/ntp.conf/server[1]");
 </%cpp>
 { "time" : "<$ buff $>",

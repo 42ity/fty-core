@@ -32,6 +32,10 @@
 #include <nutclient.h>
 #include <iostream>
 #include <algorithm>
+#include <exception>
+
+#include "log.h"
+#include "defs.h"
 
 using namespace std;
 
@@ -217,8 +221,14 @@ void NUTDevice::setDefaultThreshold(int threshold) {
 }
 
 void NUTDevice::updatePhysics(const std::string& varName, const float newValue, int threshold) {
-    long int newValueInt = round(newValue * 100);
+    long int newValueInt = round(newValue * 100.0);
     if( threshold == NUT_USE_DEFAULT_THRESHOLD ) threshold = this->getThreshold(varName);
+    if( newValueInt > INT32_MAX  || newValueInt < INT32_MIN ) {
+        // value is out of range (like gigawats), the measurement is invalid
+        log_error("%s value exceeded the range on %s", varName.c_str(), _name.c_str() );
+        _physics.erase( varName );
+        return;
+    }
     if( _physics.count( varName ) == 0 ) {
         // this is new value
         struct NUTPhysicalValue pvalue;
@@ -295,7 +305,7 @@ void NUTDevice::updateInventory(const std::string& varName, std::vector<std::str
 void NUTDevice::update( std::map< std::string,std::vector<std::string> > vars, bool forceUpdate ) {
 
     if( vars.empty() ) return;
-    
+    _lastUpdate = time(NULL);
     // use transformation table first
     NUTValuesTransformation( vars );
 
@@ -480,6 +490,14 @@ void NUTDevice::NUTValuesTransformation( std::map< std::string,std::vector<std::
     }
 };
 
+void NUTDevice::clear() {
+    if( ! _inventory.empty() || ! _physics.empty() ) {
+        _inventory.clear();
+        _physics.clear();
+        log_error("Dropping all measurement/inventory data for %s", _name.c_str() );
+    }
+}
+
 NUTDevice::~NUTDevice() {
 
 }
@@ -513,12 +531,18 @@ void NUTDeviceList::updateDeviceList() {
 }
 
 void NUTDeviceList::updateDeviceStatus( bool forceUpdate ) {
-    try {
-        for(auto &device : _devices ) {
+    for(auto &device : _devices ) {
+        try {
             nutclient::Device nutDevice = nutClient.getDevice(device.first);
             device.second.update( nutDevice.getVariableValues(), forceUpdate );
+        } catch ( std::exception &e ) {
+            log_error("Communication problem with %s (%s)", device.first.c_str(), e.what() );
+            if( time(NULL) - device.second.lastUpdate() > NUT_MEASUREMENT_REPEAT_AFTER/2 ) {
+                // we are not communicating for a while. Let's drop the values.
+                device.second.clear();
+            }
         }
-    } catch (...) {}
+    }
 }
 
 bool NUTDeviceList::connect() {

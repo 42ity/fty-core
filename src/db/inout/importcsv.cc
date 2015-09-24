@@ -164,25 +164,38 @@ int
         return 2;
     if ( parent.item.type_id != persist::asset_type::RACK )
         return 1;
-    db_reply <std::vector<device_info_t>> devices =
-        select_asset_device_by_container
-         (conn, parent_id);
+
+    std::map<a_elmnt_id_t, a_elmnt_stp_id_t> devices{};
+    std::function<void(const tntdb::Row&)> func = \
+            [&devices](const tntdb::Row& row)
+            {
+                a_elmnt_id_t asset_id = 0;
+                row["asset_id"].get(asset_id);
+
+                a_elmnt_stp_id_t subtype_id = 0;
+                row["subtype_id"].get(subtype_id);
+
+                devices.emplace (asset_id, subtype_id);
+            };
+
+    auto rv = select_assets_by_container (conn, parent_id, func);
+    if ( !rv )
+        return 3;
     pdu_epdu_count = 0;
     element_id = 0;
-    if ( devices.status == 0 )
-        return 3;
-    for ( auto &adevice : devices.item )
+    for (const auto &adevice : devices )
     {
-        if ( ( std::get<2>(adevice) == "pdu" ) || ( std::get<2>(adevice) == "epdu" ) )
+        if ( ( adevice.second == persist::asset_subtype::PDU ) ||
+             ( adevice.second == persist::asset_subtype::EPDU ) )
         {
             pdu_epdu_count++;
             db_reply <std::map <std::string, std::pair<std::string, bool> >>
-                ext_attributes = persist::select_ext_attributes (conn, std::get<0>(adevice));
+                ext_attributes = persist::select_ext_attributes (conn, adevice.first);
             auto it = ext_attributes.item.find("location_w_pos");
             if ( it != ext_attributes.item.cend() )
             {
                 last_position = it->second.first;
-                element_id = std::get<0>(adevice);
+                element_id = adevice.first;
             }
             else
             {

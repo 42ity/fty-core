@@ -781,9 +781,9 @@ int
         return 0;
     }
     catch (const tntdb::NotFound &e){
-        // apropriate asset element was not found
         log_info("end: counterpart for %" PRIu32 " notfound", asset_element_id);
-        return 1;
+        monitor_element_id = 0;
+        return 0;
     }
     catch (const std::exception &e) {
         LOG_END_ABNORMAL(e);
@@ -792,7 +792,7 @@ int
 }
 
 int
-    select_asset_device_by_container
+    select_assets_by_container
         (tntdb::Connection &conn,
          a_elmnt_id_t element_id,
          std::function<void(const tntdb::Row&)>& cb
@@ -804,93 +804,55 @@ int
     try {
         // Can return more than one row.
         tntdb::Statement st = conn.prepareCached(
-            " SELECT"
-            "   v.name,"
-            "   v.id_asset_element as asset_id, v.id_asset_device_type as subtype, v.type_name"
-            " FROM"
-            "   v_bios_asset_element_super_parent v"
-            " WHERE :containerid in (v.id_parent1, v.id_parent2, v.id_parent3, v.id_parent4)"
+            " SELECT "
+            "   v.name, "
+            "   v.id_asset_element as asset_id, "
+            "   v.id_asset_device_type as subtype_id, "
+            "   v.type_name as subtype_name, "
+            "   v.id_type as type_id "
+            " FROM "
+            "   v_bios_asset_element_super_parent v "
+            " WHERE "
+            "   :containerid in (v.id_parent1, v.id_parent2, v.id_parent3, v.id_parent4)"
         );
 
         tntdb::Result result = st.set("containerid", element_id).
                                   select();
-        log_debug("[t_bios_asset_element]: were selected %" PRIu32 " rows",
+        log_debug("[v_bios_asset_element_super_parent]: were selected %" PRIu32 " rows",
                                                             result.size());
         for ( auto &row: result ) {
             cb(row);
         }
+        LOG_END;
+        return 0;
     }
     catch (const std::exception& e) {
         LOG_END_ABNORMAL(e);
         return -1;
     }
-    return 0;
-}
-
-db_reply <std::vector<device_info_t>>
-    select_asset_device_by_container
-        (tntdb::Connection &conn,
-         a_elmnt_id_t element_id)
-{
-    LOG_START;
-    std::vector<device_info_t> item{};
-    db_reply <std::vector<device_info_t>> ret = db_reply_new(item);
-
-    std::function<void(const tntdb::Row&)> func = \
-        [&ret](const tntdb::Row& row)
-        {
-            std::string device_name = "";
-            row[0].get(device_name);
-
-            a_elmnt_id_t device_asset_id = 0;
-            row[1].get(device_asset_id);
-
-            a_dvc_tp_id_t device_type_id = 0;
-            row[2].get(device_type_id);
-
-            std::string device_type_name = "";
-            row[3].get(device_type_name);
-
-            ret.item.push_back(std::make_tuple(device_asset_id, device_name, 
-                                device_type_name, device_type_id));
-        };
-
-    try {
-        select_asset_device_by_container(conn, element_id, func);
-    }
-    catch (const std::exception &e) {
-        ret.status        = 0;
-        ret.errtype       = DB_ERR;
-        ret.errsubtype    = DB_ERROR_INTERNAL;
-        ret.msg           = e.what();
-        ret.item.clear();
-        LOG_END_ABNORMAL(e);
-    }
-    ret.status = 1;
-    LOG_END;
-    return ret;
 }
 
 int select_asset_ext_attribute_by_keytag(
     tntdb::Connection &conn,
     const std::string &keytag,
-    const std::vector<device_info_t> &elements,
+    const std::set<a_elmnt_id_t> &element_ids,
     std::function< void( const tntdb::Row& ) > &cb)
 {
     LOG_START;
     try{
         std::string inlist;
-        for( const auto &it : elements ) {
+        for( const auto &id : element_ids ) {
             inlist += ",";
-            inlist += std::to_string( device_info_id(it) );
+            inlist += std::to_string(id);
         }
         tntdb::Statement st = conn.prepareCached(
-            " SELECT"
-            "   id_asset_ext_attribute, keytag, value, id_asset_element, read_only "
-            " FROM"
-            "   v_bios_asset_ext_attributes"
+            " SELECT "
+            "   id_asset_ext_attribute, keytag, value, "
+            "   id_asset_element, read_only "
+            " FROM "
+            "   v_bios_asset_ext_attributes "
             " WHERE keytag = :keytag" +
-            ( elements.empty() ? "" : " AND id_asset_element in (" + inlist.substr(1) + ")" )
+            ( element_ids.empty() ? "" : " AND id_asset_element in (" + inlist.substr(1) + ")" )
         );
         tntdb::Result rows = st.set("keytag", keytag ).select();
         for( const auto &row: rows ) cb( row );
@@ -899,7 +861,7 @@ int select_asset_ext_attribute_by_keytag(
     }
     catch (const std::exception &e) {
         LOG_END_ABNORMAL(e);
-        return 1;
+        return -1;
     }
 }
 

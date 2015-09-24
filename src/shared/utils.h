@@ -198,6 +198,19 @@ get_mac(
         const char* ethname,
         char* buf,
         size_t len);
+
+/*!
+ \brief Get location of current license file. Caller must free the returned string.
+ \return Newly allocated string or NULL
+*/
+char *current_license_file (void);
+
+/*!
+ \brief Get location of accepted license file. Caller must free the returned string.
+ \return Newly allocated string or NULL
+*/
+char *accepted_license_file (void);
+
 #ifdef __cplusplus
 }
 #endif

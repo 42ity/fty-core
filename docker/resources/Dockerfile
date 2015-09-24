@@ -80,6 +80,7 @@ ADD ./usr/local/share/bios/docker/resources/UPS1-LAB.dev /etc/nut/UPS1-LAB.dev
 ADD ./usr/local/share/bios/docker/resources/UPS2-LAB.dev /etc/nut/UPS2-LAB.dev
 ADD ./usr/local/share/bios/docker/resources/ePDU1-LAB.dev /etc/nut/ePDU1-LAB.dev
 ADD ./usr/local/share/bios/docker/resources/ePDU2-LAB.dev /etc/nut/ePDU2-LAB.dev
+ADD ./usr/local/share/bios/docker/resources/UPS3PH-LAB.dev /etc/nut/UPS3PH-LAB.dev
 ADD ./usr/local/share/bios/docker/resources/ROZ.UPS1.dev /etc/nut/ROZ.UPS1.dev
 ADD ./usr/local/share/bios/docker/resources/ROZ.ePDU04.dev /etc/nut/ROZ.ePDU04.dev
 ADD ./usr/local/share/bios/docker/resources/ROZ.ePDU05.dev /etc/nut/ROZ.ePDU05.dev

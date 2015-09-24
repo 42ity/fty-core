@@ -191,6 +191,16 @@ class NUTDevice {
      * map. Numeric values are converted to strings using itof() method.
      */
     std::map<std::string,std::string> properties() const;
+
+    /**
+     * \brief Forgot all physics and inventory data
+     */
+    void clear();
+    
+    /**
+     * \brief Return the timestamp of last succesfull update (i. e. response from device)
+     */
+    time_t lastUpdate() { return _lastUpdate; }
     ~NUTDevice();
  private:
 
@@ -249,6 +259,8 @@ class NUTDevice {
     std::string itof(const long int) const;
     //! \brief NUT values transformation function
     void NUTValuesTransformation( std::map< std::string,std::vector<std::string> > &vars );
+    //! \brief last succesfull communication timestamp
+    time_t _lastUpdate = 0;
 };
 
 /**

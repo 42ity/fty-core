@@ -229,16 +229,6 @@ bool is_ok_fullhostname (const char *fullhostname)
         return false;
 }
 
-bool is_ok_ip (const char *ip)
-{
-    // TODO: Do we need to add more complex restrictions?
-    auto length = strlen(ip);
-    if ( ( length > 0 ) && ( length <= MAX_IP_LENGTH ) )
-        return true;
-    else
-        return false;
-}
-
 bool is_ok_mac (const char *mac)
 {
     // TODO: Do we need to add more complex restrictions?
@@ -279,3 +269,38 @@ bool is_ok_alert_state (UNUSED_PARAM m_alrt_state_t state)
     // TODO
     return true;
 }
+
+std::string
+sql_plac(
+        size_t i,
+        size_t j)
+{
+    return "item" + std::to_string(i) + "_" + std::to_string(j);
+}
+
+std::string
+multi_insert_string(
+        const std::string& sql_header,
+        size_t tuple_len,
+        size_t items_len)
+{
+    std::stringstream s{};
+
+    s << sql_header;
+    s << "\nVALUES";
+    for (size_t i = 0; i != items_len; i++) {
+        s << "(";
+        for (size_t j = 0; j != tuple_len; j++) {
+            s << ":" << sql_plac(i, j);
+            if (j < tuple_len -1)
+                s << ", ";
+        }
+        if (i < items_len -1)
+            s << "),\n";
+        else
+            s << ")\n";
+    }
+
+    return s.str();
+}
+

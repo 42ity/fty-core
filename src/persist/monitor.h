@@ -188,10 +188,6 @@ common_msg_t* update_device_type(const char* url,
                                  m_dvc_tp_id_t device_type_id, 
                                  common_msg_t** device_type);
 
-db_reply_t
-    select_monitor_device_type_id
-        (tntdb::Connection &conn, 
-         const char *device_type_name);
 
 // ===============================================================
 // DEVICE
@@ -206,29 +202,6 @@ db_reply_t
 // ===============================================================
 // MEASUREMENT
 // ===============================================================
-
-
-/**
- * \brief Inserts into the table t_bios_client_measurements a new row.
- *
- * In case of success it generates COMMON_MSG_OK message. 
- * In case of failure returns COMMON_MSG_FAIL message.
- *
- * \param url        - connection url to database.
- * \param client_id  - id of the client that gathered measure.
- * \param device_id  - id of the device that was measured.
- * \param type_id    - id of the measure type.
- * \param subtype_id - id of the measure subtype.
- * \param value      - value of measurement.
- *
- * \return - a COMMON_MSG_FAIL or COMMON_MSG_DB_OK message.
- */
-common_msg_t* insert_measurement(const char         *url, 
-                                 m_clnt_id_t        client_id, 
-                                 m_dvc_id_t         device_id, 
-                                 m_msrmnt_tp_id_t   type_id, 
-                                 m_msrmnt_sbtp_id_t subtype_id, 
-                                 m_msrmnt_value_t   value);
 
 
 /**

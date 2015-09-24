@@ -244,13 +244,21 @@ db_reply_t
     }
     auto element_id = reply_insert1.rowid;
 
-    auto reply_insert2 = insert_into_asset_ext_attributes
-                         (conn, extattributes, element_id, false);
-    if ( reply_insert2.status == 0 )
+    if ( extattributes != NULL )
     {
-        trans.rollback();
-        log_error ("end: element was not inserted (fail in ext_attributes)");
-        return reply_insert2;
+        int reply_insert2 = insert_into_asset_ext_attributes
+            (conn, element_id, extattributes, false);
+        if ( reply_insert2 != 0 )
+        {
+            trans.rollback();
+            log_error ("end: device was not inserted (fail in ext_attributes)");
+            db_reply_t ret;
+            ret.status     = 0;
+            ret.errtype    = DB_ERR;
+            ret.errsubtype = DB_ERROR_BADINPUT;
+            ret.msg        = "end: device was not inserted (fail in ext_attributes)";
+            return ret;
+        }
     }
 
     auto reply_insert3 = insert_element_into_groups (conn, groups, element_id);
@@ -320,13 +328,21 @@ db_reply_t
     }
     auto element_id = reply_insert1.rowid;
 
-    auto reply_insert2 = insert_into_asset_ext_attributes
-                        (conn, extattributes, element_id, false);
-    if ( reply_insert2.status == 0 )
+    if ( extattributes != NULL )
     {
-        trans.rollback();
-        log_error ("end: device was not inserted (fail in ext_attributes)");
-        return reply_insert2;
+        int reply_insert2 = insert_into_asset_ext_attributes
+            (conn, element_id, extattributes, false);
+        if ( reply_insert2 != 0 )
+        {
+            trans.rollback();
+            log_error ("end: device was not inserted (fail in ext_attributes)");
+            db_reply_t ret;
+            ret.status     = 0;
+            ret.errtype    = DB_ERR;
+            ret.errsubtype = DB_ERROR_BADINPUT;
+            ret.msg        = "end: device was not inserted (fail in ext_attributes)";
+            return ret;
+        }
     }
 
     auto reply_insert3 = insert_element_into_groups (conn, groups, element_id);
@@ -440,7 +456,7 @@ db_reply_t
         }
         // delete all measurements for topic and topic itself
         m_msrmnt_id_t affected_rows = 0;
-        m_msrmnt_tp_id_t affected_rows1 = 0;
+        m_msrmnt_tpc_id_t affected_rows1 = 0;
         for ( auto topic_id : out )
         {
             log_debug ("  topic_id = %" PRIu32 , topic_id);
@@ -471,7 +487,7 @@ db_reply_t
     {
         // find monitor counterpart
         int rv = convert_asset_to_monitor(conn, element_id, monitor_element_id);
-        if ( ( rv != 0 ) && ( rv != 1 ) )
+        if ( rv != 0 )
         {
             db_reply_t ret = db_reply_new();
             ret.status = 0;
@@ -481,7 +497,7 @@ db_reply_t
             return ret;
         }
         // delete from alert devices
-        if ( rv != 1 )
+        if ( monitor_element_id != 0 )
         {
             m_alrtdvc_id_t affected_rows = 0;
             rv = delete_device_from_alert_device_all
@@ -630,7 +646,7 @@ db_reply_t
         }
         // delete all measurements for topic and topic itself
         m_msrmnt_id_t affected_rows = 0;
-        m_msrmnt_tp_id_t affected_rows1 = 0;
+        m_msrmnt_tpc_id_t affected_rows1 = 0;
         for ( auto topic_id : out )
         {
             rv = delete_measurements(conn, topic_id, affected_rows);
@@ -660,7 +676,7 @@ db_reply_t
     {
         // find monitor counterpart
         int rv = convert_asset_to_monitor(conn, element_id, monitor_element_id);
-        if ( ( rv != 0 ) && ( rv != 1 ) )
+        if ( rv != 0 )
         {
             db_reply_t ret = db_reply_new();
             ret.status = 0;
@@ -670,7 +686,7 @@ db_reply_t
             return ret;
         }
         // delete from alert devices
-        if ( rv != 1 )
+        if ( monitor_element_id != 0 )
         {
             m_alrtdvc_id_t affected_rows = 0;
             rv = delete_device_from_alert_device_all

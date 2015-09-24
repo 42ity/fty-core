@@ -59,11 +59,6 @@ std::string feed_by;
 <%cpp>
     log_open ();
     LOG_START;
-    log_debug("from='%s'", from.c_str());
-    log_debug("to='%s'", to.c_str());
-    log_debug("recursive='%s'", recursive.c_str());
-    log_debug("filter='%s'", filter.c_str());
-    log_debug("feed_by='%s'", feed_by.c_str());
     if ( !request.isMethodGET() )
     {
 </%cpp>

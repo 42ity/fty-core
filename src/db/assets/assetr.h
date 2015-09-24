@@ -17,10 +17,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 /*! \file   assetr.h
-    \brief  Basic select-functions for assets
+    \brief  Basic select functions for assets
     \author Alena Chernikava <AlenaChernikava@Eaton.com>
     \author Michal Vyskocil <MichalVyskocil@Eaton.com>
 */
+
 #ifndef SRC_DB_ASSETS_ASSETR_H
 #define SRC_DB_ASSETS_ASSETR_H
 
@@ -72,8 +73,6 @@ struct db_web_element_t{
 
 
 namespace persist{
-
-
 
 db_reply <db_web_basic_element_t>
     select_asset_element_web_byId
@@ -239,42 +238,66 @@ db_reply_t
         (tntdb::Connection &conn,
          const char *device_type_name);
 
+
+/**
+ * \brief convert asset id to monitor id
+ *
+ * \param[in]  conn               - db connection
+ * \param[in]  asset_element_id   - id of the asset element in asset part
+ * \param[out] monitor_element_id - id of the asset element in monitor part
+ *
+ * monitor_element_id is 0 if counterpart wasn't found or element
+ * doesn't exists
+ *
+ * \return  0 on success (even if counterpart was not found)
+ */
 int
     convert_asset_to_monitor(
         tntdb::Connection &conn,
         a_elmnt_id_t       asset_element_id,
         m_dvc_id_t        &monitor_element_id);
 
-/** \brief TODO
+
+/**
+ * \brief select all assets inside the asset-container (all 4 level down)
+ *
+ * \param[in] conn       - db connection
+ * \param[in] element_id - id of the asset-container
+ * \param[in] cb         - callback to be called with every selected row.
+ *
+ *  Every selected row has the following columns:
+ *      name, asset_id, subtype_id, subtype_name, type_id
+ *
+ * \return 0 on success (even if nothing was found)
  */
 int
-    select_asset_device_by_container
+    select_assets_by_container
         (tntdb::Connection &conn,
          a_elmnt_id_t element_id,
          std::function<void(const tntdb::Row&)>& cb);
 
-db_reply <std::vector<device_info_t>>
-    select_asset_device_by_container
-        (tntdb::Connection &conn,
-         a_elmnt_id_t element_id);
 
 /**
  * \brief read particular asset ext property of device[s]
- * \param db connection
- * \param asset ext attribute name like "u_size"
- * \param list of elements ( only elementId is important in device_info_t tuple).
- *        if the list is empty, all elements with requested tag are returned.
- * \param callback to be called with every selected row.
- *        Row has id_asset_ext_attribute, keytag, value, id_asset_element
- *        and read_only columns
- * \return 0 on success
+ *
+ * \param[in] conn        - db connection
+ * \param[in] keytag      - asset ext attribute name like "u_size"
+ * \param[in] element_ids - list of element_id-s
+ *                          if the list is empty, all elements with
+ *                          requested tag are returned.
+ * \param[in] cb          - callback to be called with every selected row.
+ *
+ *  Every selected row has the following columns:
+ *      id_asset_ext_attribute, keytag, value, id_asset_element, read_only
+ *
+ * \return 0 on success (even if nothing was found)
  */
 int
     select_asset_ext_attribute_by_keytag(
         tntdb::Connection &conn,
         const std::string &keytag,
-        const std::vector<device_info_t> &elements,
+        const std::set<a_elmnt_id_t> &element_ids,
         std::function< void( const tntdb::Row& ) > &cb);
- 
+
 } //namespace end
 #endif // SRC_DB_ASSETS_ASSETR_H

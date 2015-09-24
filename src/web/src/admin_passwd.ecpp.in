@@ -32,6 +32,7 @@
 #include "cidr.h"
 #include "sasl.h"
 #include "filesystem.h"
+#include "utils++.h"
 
 #define SSH_NOT_TO_BE_RUN "/etc/ssh/sshd_not_to_be_run"
 using namespace shared;
@@ -111,7 +112,7 @@ s_passwd(
             "message" : "<$$ msg $>",
             "code" : 42
 %#ifdef DEBUG
-            ,"debug" : "<$$ err $>"
+            ,"debug" : "<$$ utils::json::escape (err) $>"
 %#endif
         }
     ]

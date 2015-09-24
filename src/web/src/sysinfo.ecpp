@@ -24,14 +24,25 @@
  * \brief Not yet documented file
  */
  #><%pre>
+#include <stdexcept>
 #include <iostream>
 #include <sstream>
+#include <fstream>
+#include <tntdb/connect.h>
+
 #include <cxxtools/regex.h>
 #include <cxxtools/jsondeserializer.h>
+#include <sys/utsname.h>
+
 #include "auth_levels.h"
 #include "subprocess.h"
-#include <sys/utsname.h>
 #include "config.h"
+#include "utils.h"
+#include "utils++.h"
+#include "asset_types.h"
+#include "dbpath.h"
+#include "assets.h"
+#include "cleanup.h"
 
 #ifdef DEBUG
 #include <exception>
@@ -285,8 +296,69 @@ int8_t access_auth_level;
 <%cpp>
           } // ret == 0
       } // if (access_auth_level>=AUTH_LEVEL_USER)
+
+    // installation date
+    std::string installation_date = "N/A";
+    _scoped_char *accepted_license = accepted_license_file ();
+    if (!accepted_license) {
+        cmderr_total << "Error retrieving accepted license file location. accepted_license_file () failed.\n";
+    }
+    else
+    try {
+        std::ifstream finput (accepted_license);
+        if (finput.is_open () && finput.good ()) {
+            // We assume the second line is license acceptance unix time
+            std::getline (finput, installation_date);
+            std::getline (finput, installation_date);
+            int64_t i64 = std::stoll (installation_date);
+            // TODO: we should probably check for time_t max/min, but hey!... ;)
+            char chtmp[64]; 
+            if (calendar_to_datetime ((time_t) i64, chtmp, 64) == -1) {
+                throw std::runtime_error ("calendar_to_datetime () failed.");
+            }
+            installation_date.assign (chtmp);
+        }
+        else {
+            installation_date = "License not accepted yet"; 
+            cmderr_total << "Accepted license file does not exist!\n";
+        }        
+    } catch (const std::exception& e) {
+        cmderr_total << "Exception caught: " << e.what () << std::endl;
+    }
+
+    // location
+    std::string location = "N/A";
+    bool do_break = false;
+    try {
+        tntdb::Connection conn = tntdb::connectCached(url);
+        db_reply <std::map <uint32_t, std::string>>
+        elements = persist::select_short_elements (conn, persist::asset_type::DATACENTER, persist::asset_subtype::N_A);
+        for (std::map<uint32_t, std::string>::const_iterator it = elements.item.cbegin(); it != elements.item.cend(); ++it) {
+            // it->first is element_id
+            std::map <std::string, std::pair<std::string, bool>> ext;
+            int rv = persist::select_ext_attributes (conn, it->first, ext); 
+            if (rv == -1) {
+                continue;
+            }
+            for (std::map <std::string, std::pair<std::string, bool>>::const_iterator it2 = ext.cbegin(); it2 != ext.cend (); ++it2) {
+                if (it2->first.compare ("address") == 0) {
+                    location = it2->second.first;
+                    do_break = true;
+                    break;
+                }
+            }
+            if (do_break)
+                break;
+        }
+
+    } catch (const std::exception& e) {
+        cmderr_total << "Exception caught: " << e.what () << std::endl;
+    }
+
 </%cpp>
   }
+  , "installation-date": "<$$ utils::json::escape (installation_date) $>"
+  , "location": "<$$ utils::json::escape (location) $>"
 <%cpp>
 #ifdef DEBUG
 </%cpp>
