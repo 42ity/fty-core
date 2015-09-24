@@ -152,12 +152,28 @@
               asset API, like /asset/import!!!
          -->
     <mapping>
-      <target>item@bios_web</target>
-        <url>^/api/v1/asset/?(datacenter|room|row|rack|group|device)?/?(.*)$</url>
+      <target>asset_GET@bios_web</target>
+      <url>^/api/v1/asset/?(datacenter|room|row|rack|group|device)?/?(.*)$</url>
+      <method>GET</method>
       <args>
         <id>$2</id>
         <type>$1</type>
       </args>
+    </mapping>
+    
+    <mapping>
+      <target>asset_DELETE@bios_web</target>
+      <url>^/api/v1/asset/(.*)$</url>
+      <method>DELETE</method>
+      <args>
+        <id>$1</id>
+      </args>
+    </mapping>
+    
+    <mapping>
+      <target>asset_POST@bios_web</target>
+      <url>^/api/v1/asset$</url>
+      <method>POST</method>
     </mapping>
 
     <!-- UI/properties -->
@@ -211,7 +227,7 @@
       <target>datacenter_indicators@bios_web</target>
       <url>^/api/v1/metric/computed/datacenter_indicators.*$</url>
     </mapping>
-    
+
     <!-- uptime -->
     <mapping>
       <target>uptime@bios_web</target>
