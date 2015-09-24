@@ -1,0 +1,100 @@
+<#
+ #
+ # Copyright (C) 2015 Eaton
+ #
+ # This program is free software; you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+ # the Free Software Foundation; either version 2 of the License, or
+ # (at your option) any later version.
+ #
+ # This program is distributed in the hope that it will be useful,
+ # but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+ #
+ # You should have received a copy of the GNU General Public License along
+ # with this program; if not, write to the Free Software Foundation, Inc.,
+ # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ #
+ #><#
+/*!
+ * \file asset_DELETE.ecpp
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \brief Implementation of DELETE operation on any asset
+ */
+ #><%pre>
+#include <czmq.h>
+#include <sys/syscall.h>
+
+#include "log.h"
+#include "data.h"
+#include "configure_inform.h"
+#include "asset_types.h"
+#include "defs.h"
+#include "web_utils.h"
+#include "csv.h"
+#include "inout.h"
+#include <cxxtools/jsondeserializer.h>
+#include <cxxtools/serializationinfo.h>
+#include "asset_computed_impl.h"
+</%pre>
+
+<%thread scope="global">
+asset_manager     asset_mgr;
+measures_manager  measures_mgr;
+</%thread>
+
+<%cpp>
+std::string id = request.getArg("id");
+if ( id.empty() ) {
+</%cpp>
+<$$ create_error_json("Invalid url (missing id parameter)", 56) $>
+<%cpp>
+    return HTTP_BAD_REQUEST;
+}
+db_a_elmnt_t row;
+auto ret = asset_mgr.delete_item(id, row);
+if ( ret.status == 0 )
+{
+    if ( ret.errsubtype == DB_ERROR_NOTFOUND )
+    {
+</%cpp>
+<$$ create_error_json("Asset doesn't exist", 57) $>
+<%cpp>
+        return HTTP_NOT_FOUND;
+    }
+    else
+    {
+</%cpp>
+<$$ create_error_json("Delete is not possible as asset has elements inside", 58) $>
+<%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+}
+// here we are -> delete was successful
+// ATTENTION:  1. sending messages is "hidden functionality" from user
+//             2. if any error would occur during the sending message,
+//                user will never know if element was actually deleted
+//                or not
+
+// this code can be executed in multiple threads -> agent's name should
+// be unique at the every moment
+std::string agent_name("TEMP_CONFIGURE_INFORM_AGENT");
+agent_name.append (std::to_string ( static_cast<int> (getpid ()) ))
+          .append (".")
+          .append (std::to_string ( syscall(SYS_gettid) ));
+try{
+    send_configure (row, persist::asset_operation::DELETE, agent_name);
+</%cpp>
+{}
+<%cpp>
+    return HTTP_OK;
+}
+catch (const std::runtime_error &e) {
+    log_error (e.what());
+</%cpp>
+<$$ create_error_json("Delete was successful, but some error during configuration occurred, may be it is needed to restart some services", 59) $>
+<%cpp>
+    return HTTP_INTERNAL_SERVER_ERROR;
+}
+</%cpp>
