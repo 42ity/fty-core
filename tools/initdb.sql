@@ -10,7 +10,6 @@ CREATE TABLE IF NOT EXISTS t_empty (id TINYINT);
 INSERT INTO t_empty values (1);
 
 DROP TABLE if exists t_bios_monitor_asset_relation;
-drop table if exists t_bios_discovered_ip;
 drop table if exists t_bios_measurement;
 drop table if exists t_bios_measurement_topic;
 drop table if exists t_bios_discovered_device;
@@ -87,8 +86,6 @@ CREATE TABLE t_bios_alert(
 
     PRIMARY KEY(id),
 
-    INDEX(id),
-
     INDEX(rule_name)
 );
 
@@ -111,21 +108,6 @@ CREATE TABLE t_bios_alert_device(
         REFERENCES t_bios_discovered_device(id_discovered_device)
         ON DELETE RESTRICT
 );
-
-CREATE TABLE t_bios_discovered_ip(
-    id_ip                   INT UNSIGNED        NOT NULL  AUTO_INCREMENT,
-    id_discovered_device    SMALLINT UNSIGNED,
-    timestamp               BIGINT              NOT NULL,
-    ip                      char(45)            NOT NULL,
-    PRIMARY KEY(id_ip),
-
-    INDEX(id_discovered_device),
-
-    FOREIGN KEY (id_discovered_device)
-        REFERENCES t_bios_discovered_device(id_discovered_device)
-        ON DELETE RESTRICT
-);
-
 
 CREATE TABLE t_bios_agent_info(
     id          SMALLINT UNSIGNED   NOT NULL AUTO_INCREMENT,
@@ -210,7 +192,7 @@ CREATE TABLE t_bios_asset_group_relation (
 
   INDEX FK_ASSETGROUPRELATION_ELEMENT_idx (id_asset_element ASC),
   INDEX FK_ASSETGROUPRELATION_GROUP_idx   (id_asset_group   ASC),
-  
+
   UNIQUE INDEX `UI_t_bios_asset_group_relation` (`id_asset_group`, `id_asset_element` ASC),
 
   CONSTRAINT FK_ASSETGROUPRELATION_ELEMENT
@@ -228,7 +210,7 @@ CREATE TABLE t_bios_asset_group_relation (
 CREATE TABLE t_bios_asset_link_type(
   id_asset_link_type   TINYINT UNSIGNED   NOT NULL AUTO_INCREMENT,
   name                 VARCHAR(50)        NOT NULL,
-  
+
   PRIMARY KEY (id_asset_link_type),
   UNIQUE INDEX `UI_t_bios_asset_link_type_name` (`name` ASC)
 
@@ -241,14 +223,14 @@ CREATE TABLE t_bios_asset_link (
   id_asset_device_dest  INT UNSIGNED        NOT NULL,
   dest_in               CHAR(4),
   id_asset_link_type    TINYINT UNSIGNED    NOT NULL,
-  
+
   PRIMARY KEY (id_link),
-  
+
   INDEX FK_ASSETLINK_SRC_idx  (id_asset_device_src    ASC),
   INDEX FK_ASSETLINK_DEST_idx (id_asset_device_dest   ASC),
   INDEX FK_ASSETLINK_TYPE_idx (id_asset_link_type     ASC),
-  
-  CONSTRAINT FK_ASSETLINK_SRC 
+
+  CONSTRAINT FK_ASSETLINK_SRC
     FOREIGN KEY (id_asset_device_src)
     REFERENCES t_bios_asset_element(id_asset_element)
     ON DELETE RESTRICT,
@@ -262,7 +244,7 @@ CREATE TABLE t_bios_asset_link (
     FOREIGN KEY (id_asset_link_type)
     REFERENCES t_bios_asset_link_type(id_asset_link_type)
     ON DELETE RESTRICT
-    
+
 );
 
 CREATE TABLE t_bios_asset_ext_attributes(
@@ -271,12 +253,12 @@ CREATE TABLE t_bios_asset_ext_attributes(
   value                     VARCHAR(255) NOT NULL,
   id_asset_element          INT UNSIGNED NOT NULL,
   read_only                 TINYINT      NOT NULL DEFAULT 0,
-  
+
   PRIMARY KEY (id_asset_ext_attribute),
-  
+
   INDEX FK_ASSETEXTATTR_ELEMENT_idx (id_asset_element ASC),
   UNIQUE INDEX `UI_t_bios_asset_ext_attributes` (`keytag`, `id_asset_element` ASC),
-  
+
   CONSTRAINT FK_ASSETEXTATTR_ELEMENT
     FOREIGN KEY (id_asset_element)
     REFERENCES t_bios_asset_element (id_asset_element)
@@ -289,7 +271,7 @@ CREATE TABLE t_bios_monitor_asset_relation(
     id_asset_element      INT UNSIGNED      NOT NULL,
 
     PRIMARY KEY(id_ma_relation),
-    
+
     INDEX(id_discovered_device),
     INDEX(id_asset_element),
 
@@ -305,7 +287,6 @@ CREATE TABLE t_bios_monitor_asset_relation(
 
 drop view if exists v_bios_device_type;
 drop view if exists v_bios_discovered_device;
-drop view if exists v_bios_discovered_ip;
 
 create view v_bios_device_type as select id_device_type id, name from t_bios_device_type;
 
@@ -316,11 +297,6 @@ CREATE VIEW v_bios_agent_info AS
     SELECT id, info, agent_name
     FROM t_bios_agent_info;
 
-create view v_bios_discovered_ip as select id_ip id, id_discovered_device, ip, timestamp from t_bios_discovered_ip;
-
-drop view if exists v_bios_ip_last;
-
-create view v_bios_ip_last as select max(timestamp) datum, id_discovered_device,  ip,id from v_bios_discovered_ip group by ip;
 
 DROP view if exists v_bios_asset_device;
 DROP view if exists v_bios_asset_device_type;
@@ -496,29 +472,29 @@ CREATE VIEW v_bios_asset_element AS
 
 create view v_bios_monitor_asset_relation as select * from t_bios_monitor_asset_relation;
 
-CREATE VIEW v_bios_asset_element_super_parent AS 
-SELECT v1.id_asset_element, 
-       v1.name , 
-       v5.name AS type_name,
-       v5.id_asset_device_type,
+CREATE VIEW v_bios_asset_element_super_parent AS
+SELECT v1.id_asset_element,
        v1.id_parent AS id_parent1,
        v2.id_parent AS id_parent2,
        v3.id_parent AS id_parent3,
        v4.id_parent AS id_parent4,
-       v1.status, 
+       v1.name ,
+       v5.name AS type_name,
+       v5.id_asset_device_type,
+       v1.status,
        v1.asset_tag,
-       v1.priority, 
+       v1.priority,
        v1.business_crit,
        v1.id_type
-FROM t_bios_asset_element v1 
-     LEFT JOIN t_bios_asset_element v2 
-        ON (v1.id_parent = v2.id_asset_element) 
-     LEFT JOIN t_bios_asset_element v3 
-        ON (v2.id_parent = v3.id_asset_element) 
-     LEFT JOIN t_bios_asset_element v4 
-        ON (v3.id_parent=v4.id_asset_element) 
-     INNER JOIN v_bios_asset_device v5 
-        ON (v5.id_asset_element = v1.id_asset_element);
+FROM t_bios_asset_element v1
+     LEFT JOIN t_bios_asset_element v2
+        ON (v1.id_parent = v2.id_asset_element)
+     LEFT JOIN t_bios_asset_element v3
+        ON (v2.id_parent = v3.id_asset_element)
+     LEFT JOIN t_bios_asset_element v4
+        ON (v3.id_parent=v4.id_asset_element)
+     INNER JOIN t_bios_asset_device_type v5
+        ON (v5.id_asset_device_type = v1.id_subtype);
 
 CREATE VIEW v_bios_measurement AS
 SELECT t1.id,
@@ -573,7 +549,7 @@ SELECT  v.id,
         v.value,
         v.scale
 FROM       v_web_measurement_10m v
-INNER JOIN v_web_measurement_lastdate_10m grp 
+INNER JOIN v_web_measurement_lastdate_10m grp
      ON ( v.timestamp = grp.maxdate  AND
         v.topic_id = grp.topic_id );
 
@@ -605,7 +581,7 @@ SELECT  v.id,
         v.value,
         v.scale
 FROM       v_web_measurement_24h v
-INNER JOIN v_web_measurement_lastdate_24h grp 
+INNER JOIN v_web_measurement_lastdate_24h grp
      ON ( v.timestamp = grp.maxdate  AND
         v.topic_id = grp.topic_id );
 
@@ -654,10 +630,3 @@ INSERT INTO t_bios_asset_device_type (id_asset_device_type, name) VALUES (10, "N
 
 /* t_bios_asset_link_type */
 INSERT INTO t_bios_asset_link_type (name) VALUES ("power chain");
-
-/* ui/properties are somewhat special */
-/* TODO REMOVE IT
-SELECT @client_ui_properties := id_client FROM t_bios_client WHERE name = 'ui_properties';
-
-INSERT INTO t_bios_client_info (id_client, id_discovered_device, timestamp, ext) VALUES (@client_ui_properties, @dummy_device, UNIX_TIMESTAMP(), "{}");
-*/
