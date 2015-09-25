@@ -30,6 +30,8 @@
 // this file exists only to have syntax highlighting correct
 // to be included in datacenter_indicators.ecpp
 
+// ATTENTION!!! for trends:
+//  first one should be average, second one is raw measurement
 static const std::map<const std::string, const std::string> PARAM_TO_SRC = {
     {"power", "realpower.default"},
     {"avg_power_last_day", "realpower.default_arithmetic_mean_24h"},
@@ -83,67 +85,61 @@ static const std::map<const std::string, const std::string> PARAM_TO_SRC = {
     {"trend_humidity_last_month", "<zero>"}
 };
 
-float
-get_dc_percentage(
-    tntdb::Connection& conn,
-    const std::string& src,
-    a_elmnt_id_t id,
-    std::map<const std::string, double> &key_value)
+
+double
+    get_dc_raw(
+        tntdb::Connection& conn,
+        const std::string& src,
+        a_elmnt_id_t id,
+        std::map<const std::string, double> &cache)
 {
-    m_msrmnt_value_t value;
-    m_msrmnt_scale_t scale;
+    int step = 0;
+    if ( src.find("24h") != std::string::npos )
+        step = 24*60*60;
+    else if ( src.find("15m") != std::string::npos )
+        step = 60*15;
 
-    auto it = key_value.find(src);
-    double val = 0.0f;
-    if ( it == key_value.cend() )
+    double value = 0;
+    if ( step != 0 )
     {
-        int minutes_back = 10;
-        if ( src.find("24h") != std::string::npos )
-            minutes_back = 24*60;
+        // here we are, if we are looking for some aggregated data
+        bool fuzzy = false;
+        // determine, if we need to use like or not
+        if ( src.find('%') != std::string::npos )
+            fuzzy = true;
 
-        reply_t reply = persist::select_measurement_last_web_byTopicLike(conn, src, value, scale, minutes_back);
-        if ( reply.rv == 0 )
-            val = value * pow (10, scale);
-        key_value.insert(std::make_pair(src, val));
+        int rv = persist::select_last_aggregated_by_element_by_src_by_step(conn, id, src, step, value, fuzzy);
+        if ( rv != 0 )
+        {
+            log_debug ("not computed, take 0");
+        }
     }
     else
-        val = it->second;
-    return val;
-}
-
-float
-get_dc_measurement(
-    tntdb::Connection& conn,
-    const std::string& src,
-    a_elmnt_id_t id,
-    std::map<const std::string, double> &key_value,
-    int minutes_back)
-{
-    m_msrmnt_value_t value;
-    m_msrmnt_scale_t scale;
-
-    auto it = key_value.find(src);
-    double val = 0.0f;
-    if ( it == key_value.cend() )
     {
-        reply_t reply = persist::select_measurement_last_web_byElementId(conn, src, id, value, scale, minutes_back);
-        if (reply.rv == 0)
-            val = value * pow(10,scale);
-        key_value.insert(std::make_pair(src, val));
+        // not an aggregate -> current -> 10 minutes back
+        m_msrmnt_value_t val = 0;
+        m_msrmnt_scale_t scale = 0;
+        reply_t reply = persist::select_measurement_last_web_byElementId (conn, src, id, val, scale, 10);
+        if ( reply.rv != 0 )
+        {
+            log_debug ("not computed, take 0");
+        }
+        else
+        {
+            value = val * pow(10, scale);
+        }
     }
-    else
-        val = it->second;
-    return val;
+    cache.insert(std::make_pair(src, value));
+    return value;
 }
 
 
-
-float
+double
 get_dc_trend(
     tntdb::Connection& conn,
     const std::string& src,
     a_elmnt_id_t id,
-    std::map<const std::string, double> &key_value)
+    std::map<const std::string, double> &cache)
 {
     if (src == "<zero>")
         return 0.0f;
@@ -154,86 +150,60 @@ get_dc_trend(
 
     double value_actual = 0.0f;
     double value_average = 0.0f;
-    auto it = key_value.find(items.at(1));
-    if ( it == key_value.cend() )
+    auto it = cache.find(items.at(1));
+    if ( it != cache.cend() )
     {
-        // not in cache
-        if ( items.at(1).find('%') != std::string::npos)
-        {
-            value_actual = get_dc_percentage(conn, items.at(1), id, key_value);
-        }
-        else
-        {
-            int minutes_back = 10;
-            if ( items.at(1).find("24h") != std::string::npos )
-                minutes_back = 24*60;
-            value_actual = get_dc_measurement(conn, items.at(1), id, key_value, minutes_back);
-        }
-        key_value.insert(std::make_pair(src, value_actual));
-    }
-    else
-    {
-        // found in cache
         value_actual = it->second;
     }
-
-    it = key_value.find(items.at(0));
-    if ( it == key_value.cend() )
+    else
     {
-        // not in cache
-        if ( items.at(0).find('%') != std::string::npos)
-        {
-            value_average = get_dc_percentage(conn, items.at(0), id, key_value);
-        }
-        else
-        {
-            int minutes_back = 10;
-            if ( items.at(0).find("24h") != std::string::npos )
-                minutes_back = 24*60;
-            value_average = get_dc_measurement(conn, items.at(0), id, key_value, minutes_back);
-        }
-        key_value.insert(std::make_pair(src, value_average));
+        value_actual = get_dc_raw (conn, items.at(1), id, cache);
+        cache.insert(std::make_pair(src, value_actual));
+    }
+
+    it = cache.find(items.at(0));
+    if ( it != cache.cend() )
+    {
+        value_average = it->second;
     }
     else
     {
-        // found in cache
-        value_average = it->second;
+        value_average = get_dc_raw(conn, items.at(0), id, cache);
+        cache.insert(std::make_pair(src, value_average));
     }
 
     double val = 0.0f;
     if ( value_average != 0 )
         val = round( (value_actual - value_average ) / ( value_average ) * 1000.0f ) / 10.0f ;
-    key_value.insert(std::make_pair(src, val));
+    cache.insert(std::make_pair(src, val));
     return val;
 }
 
 
-float
+double
 get_dc_indicator(
     tntdb::Connection& conn,
     const std::string& key,
     a_elmnt_id_t id,
-    std::map<const std::string, double> &key_value)
+    std::map<const std::string, double> &cache)
 {
-    const std::string& src = PARAM_TO_SRC.at(key); //XXX: operator[] does not work here!
+    // Assumption: key is ok.
+    const std::string src = PARAM_TO_SRC.at(key); //XXX: operator[] does not work here!
+
+    auto it = cache.find(src);
+    if ( it != cache.cend() )
+        return it->second;
 
     if (src == "<zero>")
     {
-        key_value.insert(std::make_pair(key, 0.0f));
+        cache.insert(std::make_pair(key, 0.0f));
         return 0.0f;
     }
 
-    std::cout << "key: " << key << "src: " << src << std::endl;
     if (key.substr(0,5) == "trend") {
-        return get_dc_trend(conn, src, id, key_value);
+        return get_dc_trend(conn, src, id, cache);
     }
-    if (src.find('%') != std::string::npos) {
-        return get_dc_percentage(conn, src, id, key_value);
-    }
-    if (src.find("24h") != std::string::npos) {
-        return get_dc_measurement(conn, src, id, key_value, 24*60);
-    }
-    return get_dc_measurement(conn, src, id, key_value, 10);
+    return get_dc_raw(conn, src, id, cache);
 }
 
 static bool

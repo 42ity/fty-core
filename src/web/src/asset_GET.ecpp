@@ -30,7 +30,7 @@
 #include "data.h"
 #include "asset_types.h"
 #include "defs.h"
-#include "web_utils.h"
+#include "utils_web.h"
 #include "asset_computed_impl.h"
 </%pre>
 
@@ -45,10 +45,7 @@ std::string typeNameArg = request.getArg("type");
 std::string id = request.getArg("id");
 
 if ( id.empty() ) {
-</%cpp>
-<$$ create_error_json("Invalid url (missing id parameter)", 56) $>
-<%cpp>
-    return HTTP_BAD_REQUEST;
+    http_die("request-param-required", "id");
 }
 
 auto tmp = asset_mgr.get_item1(id);
@@ -57,34 +54,19 @@ if ( tmp.status == 0 )
     switch ( tmp.errsubtype )
     {
         case DB_ERROR_NOTFOUND:
-</%cpp>
-<$$ create_error_json("Asset doesn't exist", 57) $>
-<%cpp>
-            return HTTP_NOT_FOUND;
+            http_die("element-not-found", id.c_str());
         case DB_ERROR_BADINPUT:
-</%cpp>
-<$$ create_error_json("Wrong input", 60) $>
-<%cpp>
-            return HTTP_NOT_FOUND;
+            http_die("request-param-bad", "id", "", "id of asset");
         case DB_ERROR_INTERNAL:
-</%cpp>
-<$$ create_error_json("Internal error", 61) $>
-<%cpp>
-            return HTTP_INTERNAL_SERVER_ERROR;
+            http_die("internal-error", "Internal database error");
         default:
-</%cpp>
-<$$ create_error_json("Unknown error", 62) $>
-<%cpp>
-            return HTTP_INTERNAL_SERVER_ERROR;
+            http_die("internal-error");
     }
 }
 if ( !typeNameArg.empty() &&
     (tmp.item.basic.type_id != persist::type_to_typeid(typeNameArg) ) )
 {
-</%cpp>
-<$$ create_error_json("Specified asset type in url doesn't match actual asset type in db", 63) $>
-<%cpp>
-    return HTTP_NOT_FOUND;
+    http_die("request-param-bad", "type", typeNameArg.c_str(), tmp.item.basic.type_name.c_str());
 }
 // Prepare the reply
 </%cpp>

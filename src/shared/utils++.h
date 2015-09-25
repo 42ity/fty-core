@@ -40,21 +40,6 @@ void dtos (double number, std::streamsize precision, std::string& result);
 
 } // namespace utils::math
 
-namespace json {
-
-/*!
- \brief Escape string for json output
- \return Escaped json on success, "(null_ptr)" string on null argument
-*/
-std::string escape (const char *string);
-
-/*!
- \brief Convenient wrapper for escape"("const char *string")"
-*/
-std::string escape (const std::string& before);
-
-} // namespace utils::json
-
 /*!
  * \brief universal escaping function
  *
@@ -89,6 +74,19 @@ sql_escape(
  */
 std::map<std::string,std::string>
 zhash_to_map(zhash_t *hash);
+
+/**
+ * \brief cxxtools::join like function working on std::map
+ *
+ *  \param[in] m - the std::map
+ *  \param[in] separator - the separator
+ *
+ * \todo - templates??
+ */
+std::string
+    join_keys(
+        const std::map<std::string, int>& m,
+        const std::string& separator);
 
 } // namespace utils
 

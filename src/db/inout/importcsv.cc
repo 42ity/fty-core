@@ -28,6 +28,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include <tntdb/connect.h>
 #include <cxxtools/regex.h>
+#include <cxxtools/join.h>
 
 #include "db/inout.h"
 
@@ -37,6 +38,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "cleanup.h"
 #include "db/asset_general.h"
 #include "db/assets.h"
+#include "db/inout.h"
+#include "utils++.h"
 
 using namespace shared;
 
@@ -245,7 +248,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     {
         id = atoi(id_str.c_str());
         if ( ids.count(id) == 1 )
-            throw std::invalid_argument("Second time during the import you are trying to update the element with id "+ id_str);
+            throw persist::bad_request_document("Second time during the import you are trying to update the element with id "+ id_str);
         ids.insert(id);
         operation = persist::asset_operation::UPDATE;
     }
@@ -253,22 +256,21 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     auto name = cm.get(row_i, "name");
     log_debug ("name = '%s'", name.c_str());
     if ( !is_ok_name(name.c_str()) )
-        throw std::invalid_argument("name is not valid");
+        throw persist::request_bad_param("name", name, "unique and non empty");
     unused_columns.erase("name");
 
     auto type = cm.get_strip(row_i, "type");
     log_debug ("type = '%s'", type.c_str());
     if ( TYPES.find(type) == TYPES.end() )
-        throw std::invalid_argument("Type '" + type + "' is not allowed");
+        throw persist::request_bad_param("type", type, utils::join_keys(TYPES, ", "));
     auto type_id = TYPES.find(type)->second;
     unused_columns.erase("type");
 
     auto status = cm.get_strip(row_i, "status");
     log_debug ("status = '%s'", status.c_str());
     if ( STATUSES.find(status) == STATUSES.end() )
-    {
-        throw std::invalid_argument("Status '" + status + "' is not allowed");
-    }
+        throw persist::request_bad_param("status", status,
+            cxxtools::join(STATUSES.cbegin(), STATUSES.cend(), ", "));
     unused_columns.erase("status");
 
     bool bs_critical = get_business_critical(cm.get_strip(row_i, "business_critical"));
@@ -278,11 +280,11 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     auto asset_tag = cm.get(row_i, "asset_tag");
     log_debug ("asset_tag = '%s'", asset_tag.c_str());
     if ( asset_tag.empty() )
-        throw std::invalid_argument("asset_tag is required");
+        throw persist::request_bad_param("asset_tag", "<empty>", "<unique string from 6 to 10 characters>");
     if ( asset_tag.length() < 6 )
-        throw std::invalid_argument("asset_tag should have at least 6 characters");
+        throw persist::request_bad_param("asset_tag", "<to short>", "<unique string from 6 to 10 characters>");
     if ( asset_tag.length() > 10 )
-        throw std::invalid_argument("asset_tag should have max 10 characters");
+        throw persist::request_bad_param("asset_tag", "<to long>", "<unique string from 6 to 10 characters>");
     unused_columns.erase("asset_tag");
 
     int priority = get_priority(cm.get_strip(row_i, "priority"));
@@ -298,10 +300,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
         if ( ret.status == 1 )
             parent_id = ret.item.id;
         else
-        {
-            throw std::invalid_argument( "Location '" + location
-                            + "' is not present in DB");
-        }
+            throw persist::request_bad_param("location", location, "<existing asset name>");
     }
     unused_columns.erase("location");
 
@@ -309,17 +308,15 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     log_debug ("subtype = '%s'", subtype.c_str());
     if ( ( type == "device" ) &&
          ( SUBTYPES.find(subtype) == SUBTYPES.end() ) )
-    {
-        throw std::invalid_argument
-                                ("Subtype '" + subtype + "' is not allowed");
-    }
+        throw persist::request_bad_param("subtype", subtype, utils::join_keys(SUBTYPES, ", "));
+
     if ( ( !subtype.empty() ) && ( type != "device" ) && ( type != "group") )
     {
         log_warning ("'%s' - subtype is ignored", subtype.c_str());
     }
+
     if ( ( subtype.empty() ) && ( type == "group" ) )
-        throw std::invalid_argument
-                                ("Subtype is mandatory for the group");
+        throw persist::request_param_required("subtype (for type group)");
 
     auto subtype_id = SUBTYPES.find(subtype)->second;
     unused_columns.erase("sub_type");
@@ -331,20 +328,16 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
         db_reply <db_web_basic_element_t> element_in_db = select_asset_element_web_byId
                                                         (conn, id);
         if ( element_in_db.status == 0 )
-            throw std::invalid_argument
-                                ("Element with id '" + id_str + "' is not found in DB");
+            throw persist::element_not_found(id_str);
         else
         {
             if ( element_in_db.item.name != name )
-                throw std::invalid_argument
-                                ("For now it is forbidden to rename assets");
+                throw persist::action_forbidden("Renaming of asset");
             if ( element_in_db.item.type_id != type_id )
-                throw std::invalid_argument
-                                ("It is forbidden to change asset's type");
+                throw persist::action_forbidden("Changing of asset type");
             if ( ( element_in_db.item.subtype_id != subtype_id ) &&
                  ( element_in_db.item.subtype_name != "N_A" ) )
-                throw std::invalid_argument
-                                ("It is forbidden to change asset's subtype");
+                throw persist::action_forbidden("Changing of asset subtype");
         }
     }
 
@@ -356,9 +349,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     if ( ( subtype == "epdu" ) || ( subtype == "pdu" ) )
     {
         if ( unused_columns.count("location_w_pos") == 0 )
-            throw std::invalid_argument
-                                ("Need to specify attribute location_w_pos "
-                                 "for epdu/pdu");
+            throw persist::request_param_required("location_w_pos (for epdu/pdu)");
         // find a number of pdu/epdu in the rack
         int ret = get_pdu_epdu_info_location_w_pos (conn, parent_id, pdu_epdu_count, last_position, last_position_element_id);
         if ( ret == 1 )
@@ -371,11 +362,10 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             {
                 log_error ( "ret = %d", ret);
                 throw std::invalid_argument
-                    ("some problem with db, see log for more details");
+                    ("Unspecified problem with database, see log for more details");
             }
             if ( ( pdu_epdu_count > 1 ) && ( id_str.empty() ) )
-                throw std::invalid_argument
-                    ("more than 2 PDU is not supported");
+                throw persist::action_forbidden("Having more than 2 pdu/epdu");
         }
     }
     // BIOS-991 --end
@@ -413,8 +403,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             else
             {
                 log_error ("group '%s' is not present in DB, rejected", group.c_str());
-                throw std::invalid_argument
-                    ("The group " + group + " is not present in DB");
+                throw persist::element_not_found(group);
             }
         }
     }
@@ -454,8 +443,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             {
                 log_warning ("power source '%s' is not present in DB, rejected",
                     link_source.c_str());
-                throw std::invalid_argument
-                    ("The power source " + link_source + " is not present in DB");
+                throw persist::element_not_found(link_source);
             }
         }
 
@@ -467,6 +455,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             // take value
             auto link_source1 = cm.get(row_i, link_col_name1);
             // TODO: bad idea, char = byte
+            // FIXME: THIS IS MEMORY LEAK!!!
             one_link.src_out = new char [4];
             strcpy ( one_link.src_out, link_source1.substr (0,4).c_str());
         }
@@ -482,6 +471,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             unused_columns.erase(link_col_name2); // remove from unused
             auto link_source2 = cm.get(row_i, link_col_name2);// take value
             // TODO: bad idea, char = byte
+            // FIXME: THIS IS MEMORY LEAK!!!
             one_link.dest_in = new char [4];
             strcpy ( one_link.dest_in, link_source2.substr (0,4).c_str());
         }
@@ -531,8 +521,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
                     default:
                             {
                                 if ( id_str.empty() )
-                                    throw std::invalid_argument
-                                        ("this should never happen: position of pdu/epdu");
+                                    throw persist::action_forbidden("Position of pdu/epdu other than left or right");
                                 else
                                     zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
                             }
@@ -547,8 +536,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
                     zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
                 else
                 {
-                    std::string errmsg = "serial_no '" + value + "' is already used";
-                    throw std::invalid_argument(errmsg);
+                    throw persist::request_bad_param("serial_no", value, "<unique string>");
                 }
                 continue;
             }
@@ -558,8 +546,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
         {
             if ( ( ( subtype == "pdu" ) || ( subtype == "epdu" ) ) && ( key == "location_w_pos" ) )
             {
-                throw std::invalid_argument
-                    ("location_w_pos should be set. Possible variants 'left'/'right'");
+                throw persist::request_bad_param("location_w_pos", "<empty>", "left, right");
             }
         }
     }
@@ -584,6 +571,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
                  extattributes, status.c_str(), priority, bc, groups, asset_tag, errmsg);
             if ( ( ret ) || ( !errmsg.empty() ) )
             {
+                //TODO: redo the update_dc_room_row_rack_group
                 throw std::invalid_argument(errmsg);
             }
         }
@@ -594,6 +582,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
                  extattributes, status.c_str(), priority, bc, groups, links, asset_tag, errmsg);
             if ( ( ret ) || ( !errmsg.empty() ) )
             {
+                //TODO: redo the update_dc_room_row_rack_group
                 throw std::invalid_argument(errmsg);
             }
         }
@@ -609,6 +598,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
                  extattributes, status.c_str(), priority, bc, groups, asset_tag);
             if ( ret.status != 1 )
             {
+                //TODO: redo the insert_dc_room_row_rack_group
                 throw std::invalid_argument("insertion was unsuccessful");
             }
             m.id = ret.rowid;
@@ -621,6 +611,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
                     priority, bc, asset_tag);
             if ( ret.status != 1 )
             {
+                //TODO: redo the insert_device
                 throw std::invalid_argument("insertion was unsuccessful");
             }
             m.id = ret.rowid;
@@ -649,15 +640,15 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
  *
  * \return emtpy string if everything is ok, otherwise the name of missing row
  */
+//MVY: moved out to support friendly error messages below
+static std::vector<std::string> MANDATORY = {
+    "name", "type", "sub_type", "location", "status",
+    "business_critical", "priority", "asset_tag"
+};
 static std::string
 mandatory_missing
         (const CsvMap &cm)
 {
-    static std::vector<std::string> MANDATORY = {
-        "name", "type", "sub_type", "location", "status",
-        "business_critical", "priority", "asset_tag"
-    };
-
     auto all_fields = cm.getTitles();
     for (const auto& s : MANDATORY) {
         if (all_fields.count(s) == 0)
@@ -682,7 +673,7 @@ void
         std::string msg{"Cannot detect the delimiter, use comma (,) semicolon (;) or tabulator"};
         log_error("%s", msg.c_str());
         LOG_END;
-        throw std::invalid_argument(msg.c_str());
+        throw persist::bad_request_document(msg.c_str());
     }
     log_debug("Using delimiter '%c'", delimiter);
     deserializer.delimiter(delimiter);
@@ -708,7 +699,8 @@ void
         std::string msg{"column '" + m + "' is missing, import is aborted"};
         log_error("%s", msg.c_str());
         LOG_END;
-        throw std::invalid_argument(msg.c_str());
+        throw persist::request_bad_param("<mandatory column name>", m,
+            "all of those " + cxxtools::join(MANDATORY.cbegin(), MANDATORY.cend(), ", "));
     }
 
     tntdb::Connection conn;
