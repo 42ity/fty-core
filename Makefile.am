@@ -281,15 +281,19 @@ dist_noinst_HEADERS +=		$(libbiosapi_la_HEADERS_noinst)
 # Some of our code is arranged into private libraries used during
 # build, but not published or distributed outside the build-tree.
 
+noinst_LTLIBRARIES += 		libpriv-utils-web.la
+
+libpriv_utils_web_la_SOURCES = \
+				src/shared/utils_web.h \
+				src/shared/utils_web.cc
+
 noinst_LTLIBRARIES += 		libpriv-utils-plusplus.la
 
 libpriv_utils_plusplus_la_SOURCES = \
 				src/shared/utils++.cc \
 				src/shared/utils++.h \
 				src/shared/filesystem.h \
-				src/shared/filesystem.cc \
-				src/shared/augtool.h \
-				src/shared/augtool.cc
+				src/shared/filesystem.cc
 
 noinst_LTLIBRARIES += 		libpriv-utils-ymsg.la
 
@@ -337,7 +341,10 @@ noinst_LTLIBRARIES += \
 				libpriv-subprocess.la
 
 libpriv_subprocess_la_SOURCES = src/shared/subprocess.h \
-				src/shared/subprocess.cc
+				src/shared/subprocess.cc \
+				src/shared/augtool.h \
+				src/shared/augtool.cc
+
 
 libpriv_subprocess_la_LIBADD = ${CXXTOOLS_LIBS}
 
@@ -603,6 +610,23 @@ src/web/src/sysinfo.cpp: src/include/git_details_override.h
 #                        Unit tests
 #----------------------------------------------------------------------
 
+check_PROGRAMS +=	test-utils-web	
+
+test_utils_web_SOURCES = \
+			src/shared/utils_web.h \
+			tests/shared/test-utils-web.cc
+
+test_utils_web_LDADD = \
+			libpriv-utils-web.la \
+			libpriv-test-run.la
+
+test_utils_web_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/
+
+test_utils_web_LDFLAGS =	${CXXTOOLS_LIBS}
+
+###
 check_PROGRAMS +=	test-utils-plusplus	
 
 test_utils_plusplus_SOURCES = \
@@ -617,7 +641,7 @@ test_utils_plusplus_CPPFLAGS = \
 			$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/
 
-test_utils_plusplus_LDFLAGS =	${CXXTOOLS_LIBS} ${LIBCZMQ_LIBS}
+test_utils_plusplus_LDFLAGS =	${LIBCZMQ_LIBS}
 
 check_PROGRAMS += 	test-utils
 
@@ -1372,7 +1396,6 @@ nodist_bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)
 bios_web_la_SOURCES = \
                       src/web/src/location_helpers.cc   \
                       src/web/src/sasl.cc               \
-                      src/shared/web_utils.cc           \
                       src/web/src/tokens.cc             \
                       src/shared/data.cc                \
                       src/shared/upsstatus.cc           \
@@ -1412,6 +1435,7 @@ bios_web_la_LIBADD = \
 			libpriv-db-measurements.la \
 			libpriv-magic.la \
 			libpriv-configure-inform.la \
+			libpriv-utils-web.la \
 			libpriv-utils-plusplus.la \
 			libpriv-enums.la
 
