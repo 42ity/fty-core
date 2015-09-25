@@ -29,7 +29,7 @@
 #include "auth_levels.h"
 #include "db/inout.h"
 #include "utils.h"
-#include "web_utils.h"
+#include "utils_web.h"
 </%pre>
 <%request scope="global">
 int8_t access_auth_level;

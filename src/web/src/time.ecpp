@@ -29,6 +29,7 @@
 #include <cxxtools/jsondeserializer.h>
 #include "augtool.h"
 #include "utils.h"
+#include "utils_web.h"
 
 </%pre>
 <%cpp>
@@ -108,5 +109,7 @@
     }
     std::string ntp = augeas->get_cmd_out("get /files/etc/ntp.conf/server[1]");
 </%cpp>
-{ "time" : "<$ buff $>",
-  "ntp"  : "<$ ntp $>" }
+{
+    <$$ utils::json::jsonify ("time", buff) $>,
+    <$$ utils::json::jsonify ("ntp", ntp) $>
+}

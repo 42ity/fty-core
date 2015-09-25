@@ -19,16 +19,18 @@
  */
 
 /*!
- * \file   web_utils.h
+ * \file   utils_web.h
  * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
  * \brief  some helpers for web
  */
 #ifndef SRC_SHARED_WEB_UTILS_H_
 #define SRC_SHARED_WEB_UTILS_H_
 
 #include <string>
-#include <string>
+#include <vector>
+#include <utility>
 #include <array>
 #include <stdarg.h>
 
@@ -124,98 +126,88 @@ _die_vasprintf(
         static_assert(key_idx != -1, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
         char *message; \
         _die_vasprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__ ); \
-        reply.out() << create_error_json(message, _errors.at(key_idx).err_code); \
+        reply.out() << utils::json::create_error_json(message, _errors.at(key_idx).err_code); \
         free(message); \
         return _errors.at(key_idx).http_code;\
     } \
     while(0)
 
-/*
- * \brief Creates a string in the form "key":"value"
- *        without any {,} (just pair key value). As
- *        value is string it should be in quotes.
- *
- * \param key   - a key
- * \param value - a string value
- *
- * \return "key":"value"
- */
-std::string
-    json_key_value_s(
-        const std::string &key,
-        const std::string &value);
 
-/*
- * \brief Creates a string in the form "key":value
- *        without any {,} (just pair key value). As
- *        value is not a string it should not be in quotes.
- *
- * \param key   - a key
- * \param value - an unsigned value
- *
- * \return "key":value
- */
-std::string
-   json_key_value_u(
-        const std::string &key,
-        const uint64_t    &value);
+namespace utils {
+namespace json {
 
-/*
- * \brief Creates a string in the form "key":value
- *        without any {,} (just pair key value). As
- *        value is not a string it should not be in quotes.
- *
- * \param key   - a key
- * \param value - an integer value
- *
- * \return "key":value
- */
-std::string
-   json_key_value_i(
-        const std::string &key,
-        const int64_t     &value);
+/*!
+ \brief Escape string for json output
+ \return Escaped json on success, "(null_ptr)" string on null argument
+*/
+std::string escape (const char *string);
 
-/*
- * \brief Creates a string in the form "key":value
- *        without any {,} (just pair key value). As
- *        value is not a string it should not be in quotes.
- *
- * Pricisios: 6 numbers after point always (even zeros)
- *
- * \param key   - a key
- * \param value - a double value
- *
- * \return "key":value
- */
-std::string
-   json_key_value_d(
-        const std::string &key,
-        const double      &value);
+/*!
+ \brief Convenient wrapper for escape"("const char *string")"
+*/
+std::string escape (const std::string& before);
 
-/*
- * \brief Creates a string that containes JSON error message
- *        with only one error.
- *
- *
- *  Returned string has the following structure:
- *
- *  {
- *      errors: [
- *          {
- *              "message": "@msg",
- *              "code": @code
- *          }
- *      ]
- *  }
- *
- * \param msg   - a message that should be displayed to the user
- * \param code  - a code for an error
- *
- * \return JSON string
- */
+template <typename T
+        , typename = typename std::enable_if<std::is_arithmetic<T>::value>::type>
+std::string jsonify (T t) {
+    try {
+        return escape (std::to_string (t));
+    } catch (...) {
+        return "";
+    }
+}
+
+// TODO: doxy
+// basically, these are property "jsonifyrs"; you supply any json-ifiable type pair and it creates a valid, properly escaped property (key:value) pair out of it.
+// single arg version escapes and quotes were necessary (i.e. except int types...)
+
+template <typename T
+        , typename = typename std::enable_if<std::is_convertible<T, std::string>::value>::type>
+std::string jsonify (const T& t) {
+    try {
+        return std::string ("\"").append (escape (t)).append ("\"");
+    } catch (...) {
+        return "";
+    }
+}
+
+template <typename S
+        , typename = typename std::enable_if<std::is_convertible<S, std::string>::value>::type
+        , typename T
+        , typename = typename std::enable_if<std::is_convertible<T, std::string>::value>::type>
+std::string jsonify (const S& key, const T& value) {
+    return std::string (jsonify (key)).append (" : ").append (jsonify (value));
+}
+
+template <typename S
+        , typename = typename std::enable_if<std::is_convertible<S, std::string>::value>::type
+        , typename T
+        , typename = typename std::enable_if<std::is_arithmetic<T>::value>::type>
+std::string jsonify (const S& key, T value) {
+    return std::string (jsonify (key)).append (" : ").append (jsonify (value));
+}
+
+template <typename S
+        , typename = typename std::enable_if<std::is_convertible<S, std::string>::value>::type
+        , typename T
+        , typename = typename std::enable_if<std::is_arithmetic<T>::value>::type>
+std::string jsonify (T key, const S& value) {
+    return std::string ("\"").append (jsonify (key)).append ("\" : ").append (jsonify (value));
+}
+
+template <typename T
+        , typename = typename std::enable_if<std::is_arithmetic<T>::value>::type>
+std::string jsonify (T key, T value) {
+    return std::string ("\"").append (jsonify (key)).append ("\" : ").append (jsonify (value));
+}
+
 std::string
-    create_error_json(
-        const std::string &msg,
-        int                code);
+create_error_json (const std::string& message, uint32_t code);
+
+std::string
+create_error_json (std::vector <std::pair<uint32_t, std::string>> messages);
+
+} // namespace utils::json
+} // namespace utils
 
 #endif // SRC_SHARED_WEB_UTILS_H_

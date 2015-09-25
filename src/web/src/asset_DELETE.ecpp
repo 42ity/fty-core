@@ -29,7 +29,13 @@
 #include "configure_inform.h"
 #include "asset_types.h"
 #include "defs.h"
-#include "web_utils.h"
+//#include "utils_web.h"
+//#include "csv.h"
+//#include "inout.h"
+//#include <cxxtools/jsondeserializer.h>
+//#include <cxxtools/serializationinfo.h>
+//#include "asset_computed_impl.h"
+#include "utils_web.h"
 </%pre>
 
 <%thread scope="global">

@@ -32,7 +32,7 @@
 #include "db/alerts.h"
 #include "utils.h"
 #include "dbpath.h"
-#include "web_utils.h"
+#include "utils_web.h"
 
 </%pre>
 <%cpp>
