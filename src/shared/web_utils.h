@@ -58,7 +58,8 @@ static constexpr const _WSErrors _errors = { {
     {.key = "request-param-required",   .http_code = HTTP_BAD_REQUEST,              .err_code = 46,     .message = "Parameter '%s' is required." },
     {.key = "request-param-bad",        .http_code = HTTP_BAD_REQUEST,              .err_code = 47,     .message = "Parameter '%s' has bad value. Received '%s'. Expected %s" },
     {.key = "bad-request-document",     .http_code = HTTP_BAD_REQUEST,              .err_code = 48,     .message = "Request document has invalid syntax. %s" },
-    {.key = "data-conflict",            .http_code = HTTP_CONFLICT,              .err_code = 50, .message = "Element '%s' cannot be processed because of conflict. %s"}
+    {.key = "data-conflict",            .http_code = HTTP_CONFLICT,                 .err_code = 50,     .message = "Element '%s' cannot be processed because of conflict. %s"},
+    {.key = "action-forbidden",         .http_code = HTTP_BAD_REQUEST,              .err_code = 51,     .message = "%s is forbidden"},
     } };
 
 template <size_t N>
@@ -216,4 +217,5 @@ std::string
     create_error_json(
         const std::string &msg,
         int                code);
+
 #endif // SRC_SHARED_WEB_UTILS_H_

@@ -789,6 +789,7 @@ test_loadcsv_LDADD = \
 			libpriv-cidr.la \
 			libpriv-proto.la \
 			libpriv-csv.la \
+			libpriv-utils-plusplus.la \
 			libpriv-test-run.la
 
 test_loadcsv_CPPFLAGS = \
@@ -1138,6 +1139,7 @@ bios_csv_LDADD = \
 						 libpriv-db.la \
 						 libpriv-proto.la \
 						 libpriv-log.la \
+						 libpriv-utils-plusplus.la \
 						 libpriv-csv.la
 bios_csv_LDFLAGS = \
 						 ${CXXTOOLS_LIBS} -ltntdb

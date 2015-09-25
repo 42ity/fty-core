@@ -71,13 +71,25 @@
             return HTTP_OK;
         }
     }
-    catch (const std::logic_error& e) {
+    catch (const persist::bad_request_document& e) {
         LOG_END_ABNORMAL(e);
-        // FIXME FIXME FIXME - the load_asset_csv must be updated to report errors in structured way!
-        // TODO  TODO  TODO
+        http_die("bad-request-document", e.what());
+    }
+    catch (const persist::request_param_required& e) {
+        LOG_END_ABNORMAL(e);
         http_die("request-param-required", e.what());
-        // FIXME FIXME FIXME - the load_asset_csv must be updated to report errors in structured way!
-        // TODO  TODO  TODO
+    }
+    catch (const persist::element_not_found& e) {
+        LOG_END_ABNORMAL(e);
+        http_die("element-not-found", e.what());
+    }
+    catch (const persist::action_forbidden& e) {
+        LOG_END_ABNORMAL(e);
+        http_die("action-forbidden", e.what());
+    }
+    catch (const persist::request_bad_param& e) {
+        LOG_END_ABNORMAL(e);
+        http_die("request-param-bad", e.name.c_str(), e.got.c_str(), e.expected.c_str());
     }
     catch (const std::exception& e) {
         LOG_END_ABNORMAL(e);
