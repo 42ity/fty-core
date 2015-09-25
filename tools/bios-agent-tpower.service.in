@@ -2,7 +2,7 @@
 Description=Total power agent for BIOS project
 After=malamute.service bios-db-init.service
 Requires=malamute.service bios-db-init.service
-# We only need the database during agenn-tpower startup to read
+# We only need the database during agent-tpower startup to read
 # our service configs, and don't care if it is restarted later
 
 [Service]

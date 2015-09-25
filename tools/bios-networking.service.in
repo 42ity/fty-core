@@ -1,5 +1,5 @@
 [Unit]
-Description = Async restart of networking
+Description=Async restart of networking
 
 [Service]
 Type=simple
