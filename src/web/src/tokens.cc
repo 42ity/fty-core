@@ -174,7 +174,7 @@ bool tokens::verify_token(const std::string token, long int* uid, long int* gid)
         if(gid != NULL) {
             sscanf(buff, "%ld %ld %ld", &tme, uid, gid);
         } else {
-            sscanf(buff, "%ld %ld %ld", &tme, uid);
+            sscanf(buff, "%ld %ld", &tme, uid);
         }
     } else {
         sscanf(buff, "%ld", &tme);
