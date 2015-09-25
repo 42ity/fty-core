@@ -266,6 +266,125 @@ select_device_name_from_element_id (
     return ret;
 }
 
+
+int
+    select_last_aggregated_by_element_by_src_by_step(
+        tntdb::Connection &conn,
+        a_elmnt_id_t       element_id,
+        const std::string &src,
+        int32_t            step,   // in seconds
+        double            &value,
+        bool               fuzzy
+    )
+{
+    LOG_START;
+
+    std::string name;
+    auto rep = select_device_name_from_element_id(conn, element_id, name);
+    if (rep.rv != 0)
+    {
+        log_error ("requested asset id = %" PRIu32 "doesn't exist", element_id);
+        return 1;
+    }
+
+    return select_last_aggregated_by_topic_by_step(conn, src + "@" + name, step, value, fuzzy);
+}
+
+int
+    select_last_aggregated_by_topic_by_step(
+        tntdb::Connection &conn,
+        const std::string &topic,
+        int32_t            step,   // in seconds
+        double            &value,
+        bool               fuzzy
+    )
+{
+    try{
+        // convert topic like to topic_id
+        std::string query =
+            " SELECT topic_id "
+            " FROM "
+            "    t_bios_measurement_topic "
+            " WHERE "
+            "   topic ";
+        query += ( fuzzy ? " LIKE " : " = " );
+        query += " :topic ";
+
+        tntdb::Statement st = conn.prepareCached(query);
+
+        tntdb::Row row = st.set("topic", topic).
+                            selectRow();
+
+        m_msrmnt_tpc_id_t topic_id = 0;
+        row["topic_id"].get(topic_id);
+        return  select_last_aggregated_by_step(conn, topic_id, step, value);
+    }
+    catch ( const tntdb::NotFound &e ){
+        return 1;
+    }
+    catch ( const std::exception &e ){
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
+}
+
+
+int
+    select_last_aggregated_by_step(
+        tntdb::Connection &conn,
+        m_msrmnt_tpc_id_t  topic_id,
+        int32_t            step,   // in seconds
+        double            &value
+    )
+{
+    // get current date
+    time_t sec = time (NULL);
+    // get last step time
+    int64_t timestamp = ( sec / step ) * step ; // midnight (60*60*24) ) * (60*60*24);
+    return select_measurement_by_time_topic(conn, topic_id, timestamp, value);
+}
+
+int
+    select_measurement_by_time_topic(
+        tntdb::Connection &conn,
+        m_msrmnt_tpc_id_t  topic_id,
+        int64_t            timestamp,
+        double            &value
+    )
+{
+    value = 0;
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT value, scale "
+            " FROM "
+            "    t_bios_measurement "
+            " WHERE "
+            "   topic_id = :topic_id AND "
+            "   timestamp = :time "
+        );
+
+        tntdb::Row row = st.set("topic_id", topic_id).
+                            set("time", timestamp).
+                            selectRow();
+
+        m_msrmnt_value_t val = 0;
+        row["value"].get(val);
+        m_msrmnt_scale_t scale = 0;
+        row["scale"].get(scale);
+
+        value = val * pow(10, scale);
+        return 0;
+    }
+    catch ( const tntdb::NotFound &e ) {
+        return 1;
+    }
+    catch ( const std::exception &e ) {
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
+}
+
+
 reply_t
 select_measurement_last_web_byElementId (
         tntdb::Connection &conn,
