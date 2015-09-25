@@ -31,12 +31,23 @@
 #include "agents.h"
 #include "log.h"
 
+/**
+ * \brief mapping table for missing values replacements
+ *
+ * This table says simply "if we don't have measurement for realpower.input.L1, we can
+ * use realpower.output.L1 instead".
+ */
+const std::map<std::string,std::string> TPUnit::_emergencyReplacements = {
+    { "realpower.input.L1", "realpower.output.L1" },
+    { "realpower.input.L2", "realpower.output.L2" },
+    { "realpower.input.L3", "realpower.output.L3" },
+};
 
 Measurement TPUnit::summarize(const std::string &quantity) const{
     Measurement result;
     result.units("W");
     for( auto &it : _powerdevices ) {
-        auto itMeasurements = it.second.find(quantity);
+        auto itMeasurements = getMeasurementIter( it.second, quantity );
         if( itMeasurements != it.second.end() ) {
             result += itMeasurements->second;
         }
@@ -44,11 +55,37 @@ Measurement TPUnit::summarize(const std::string &quantity) const{
     return result;
 }
 
+std::map<std::string,Measurement>::const_iterator TPUnit::getMeasurementIter(
+    const std::map<std::string,Measurement> &measurements,
+    const std::string &quantity
+) const
+{
+    const auto result = measurements.find(quantity);
+    if( result != measurements.end() ) {
+        // we have it
+        return result;
+    }
+    const auto &replacement = _emergencyReplacements.find(quantity);
+    if( replacement == _emergencyReplacements.end() ) {
+        // there is no replacement for this value, return measurements.end()
+        return result;
+    }
+    // find the replacement value if any
+    log_debug("%s is unknown, trying %s instead", quantity.c_str(), replacement->second.c_str() );
+    const auto result_replace = measurements.find( replacement->second );
+    if( result_replace == measurements.end() ) {
+        log_debug("replacement value of %s is unknown too", replacement->second.c_str() );
+    } else {
+        log_debug("replacement value of %s found", replacement->second.c_str() );
+    }
+    return result_replace;
+}
+
 bool TPUnit::quantityIsUnknown(const std::string &quantity) const
 {
     time_t now = std::time(NULL);
-    for( auto &it : _powerdevices ) {
-        auto itMeasurements = it.second.find(quantity);
+    for( const auto &it : _powerdevices ) {
+        const auto itMeasurements = getMeasurementIter( it.second, quantity );
         if( itMeasurements == it.second.end() ) return true;
         if( now - itMeasurements->second.time() > TPOWER_MEASUREMENT_REPEAT_AFTER * 2 ) return true;
     }
@@ -60,7 +97,7 @@ std::vector<std::string> TPUnit::devicesInUnknownState(const std::string &quanti
     std::vector<std::string> result;
     time_t now = std::time(NULL);
     for( auto &it : _powerdevices ) {
-        auto itMeasurements = it.second.find(quantity);
+        auto itMeasurements = getMeasurementIter( it.second, quantity );
         if(
             itMeasurements == it.second.end()  ||
             ( now - itMeasurements->second.time() > TPOWER_MEASUREMENT_REPEAT_AFTER * 2 )
