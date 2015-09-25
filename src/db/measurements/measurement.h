@@ -174,6 +174,40 @@ int
         a_elmnt_id_t       asset_id,
         row_cb_f          &cb);
 
+int
+    select_last_aggregated_by_element_by_src_by_step(
+        tntdb::Connection &conn,
+        a_elmnt_id_t       element_id,
+        const std::string &src,
+        int32_t            step,   // in seconds
+        double            &value,
+        bool               fuzzy
+    );
+
+int
+    select_last_aggregated_by_topic_by_step(
+        tntdb::Connection &conn,
+        const std::string &topic,
+        int32_t            step,   // in seconds
+        double            &value,
+        bool               fuzzy
+    );
+
+int
+    select_last_aggregated_by_step(
+        tntdb::Connection &conn,
+        m_msrmnt_tpc_id_t  topic_id,
+        int32_t            step,   // in seconds
+        double            &value
+    );
+
+int
+    select_measurement_by_time_topic(
+        tntdb::Connection &conn,
+        m_msrmnt_tpc_id_t  topic_id,
+        int64_t            timestamp,
+        double            &value
+    );
 } // namespace persist
 
 #endif // SRC_DB_MEASUREMENTS_MEASUREMENT_H__

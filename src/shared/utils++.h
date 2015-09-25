@@ -75,6 +75,19 @@ sql_escape(
 std::map<std::string,std::string>
 zhash_to_map(zhash_t *hash);
 
+/**
+ * \brief cxxtools::join like function working on std::map
+ *
+ *  \param[in] m - the std::map
+ *  \param[in] separator - the separator
+ *
+ * \todo - templates??
+ */
+std::string
+    join_keys(
+        const std::map<std::string, int>& m,
+        const std::string& separator);
+
 } // namespace utils
 
 #endif // SRC_SHARED_UTILS_PLUSPLUS_H__
