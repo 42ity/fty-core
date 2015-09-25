@@ -26,6 +26,7 @@
 #include <catch.hpp>
 #include <czmq.h>
 #include <string>
+#include <cstdlib>
 #include <cxxtools/serializationinfo.h>
 #include <cxxtools/jsondeserializer.h>
 #include <limits.h>
@@ -288,4 +289,38 @@ TEST_CASE ("utils::json::jsonify","[utils::json::make][json][escape]")
         x = utils::json::jsonify (var_uint64_t, str);
         CHECK ( x.compare (std::string ("\"") + std::to_string (var_uint64_t) + "\" : " + R"("*const char with a '\"' quote and newline \n '\\\"'")") == 0 ); 
     }
+}
+
+//"{\n\t\"errors\": [\n\t\t{\n\t\t\t\"message\": \"One and two \\nthree and \\\"four\\\".\",\n\t\t\t\"code\": 55\n\t\t}\n\t]\n}\n"
+
+
+TEST_CASE ("utils::json::create_error_json","[utils::json::create_error_json][json][escape]")
+{
+    std::string x, in = "One and two \nthree and \"four\".";
+    std::string res = "{\n\t\"errors\": [\n\t\t{\n\t\t\t\"message\": \"One and two \\nthree and \\\"four\\\".\",\n\t\t\t\"code\": 55\n\t\t}\n\t]\n}\n";
+
+
+    x = utils::json::create_error_json (in.c_str (), 55);
+    CHECK ( x.compare (
+"{\n\t\"errors\": [\n\t\t{\n\t\t\t\"message\": \"One and two \\nthree and \\\"four\\\".\",\n\t\t\t\"code\": 55\n\t\t}\n\t]\n}\n"
+) == 0);
+        
+    x = utils::json::create_error_json (in, 56);
+    CHECK ( x.compare (
+"{\n\t\"errors\": [\n\t\t{\n\t\t\t\"message\": \"One and two \\nthree and \\\"four\\\".\",\n\t\t\t\"code\": 56\n\t\t}\n\t]\n}\n"
+) == 0);
+
+    std::vector <std::pair<uint32_t, std::string>> v;
+    v.push_back (std::make_pair (1, "On\ne"));
+    v.push_back (std::make_pair (10, "Tw\"o"));
+   
+    x = utils::json::create_error_json (v);
+    CAPTURE (x); 
+    CHECK ( x.compare (
+"{\n\t\"errors\": [\n\t\t{\n\t\t\t\"message\": \"On\\ne\",\n\t\t\t\"code\": 1\n\t\t},\n\t\t{\n\t\t\t\"message\": \"Tw\\\"o\",\n\t\t\t\"code\": 10\n\t\t}\n\t]\n}\n"
+) == 0);
+
+/*    
+    CHECK ( x.compare (R"()") == 0);
+*/
 }

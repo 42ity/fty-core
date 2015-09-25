@@ -18,20 +18,11 @@
  *
  */
 #include <cstring>
-#include "utils_web.h"
+#include <ostream>
+#include <cxxtools/jsonformatter.h>
+#include <cxxtools/convert.h>
 
-std::string
-    create_error_json(
-        const std::string &msg,
-        int                code)
-{
-    std::string s = "{\n\t\"errors\": [\n\t  {\n\t\t\"message\" : \"";
-    s+=utils::json::escape(msg);
-    s+="\",\n\t\t\"code\" : ";
-    s+=utils::json::escape(std::to_string(code));
-    s+="\n\t  }\n\t]\n}";
-    return s;
-}
+#include "utils_web.h"
 
 namespace utils {
 
@@ -110,7 +101,46 @@ std::string escape (const std::string& before) {
     return escape (before.c_str ());
 }
 
+std::string
+create_error_json (const std::string& message, uint32_t code) {
+    std::basic_ostringstream<cxxtools::Char> oss;
+    cxxtools::JsonFormatter jsf (oss);
+    jsf.beautify (true);
+
+    jsf.beginObject ("", "");
+    jsf.beginArray ("errors", "");
+    jsf.beginObject ("", "");
+    jsf.addValueStdString ("message", "", message);
+    jsf.addValueUnsigned ("code", "", code);
+    jsf.finishObject ();
+    jsf.finishArray ();
+
+    jsf.finishObject ();
+    jsf.finish ();
+    return cxxtools::convert<std::string> (oss.str ());
 }
 
+std::string
+create_error_json (std::vector <std::pair<uint32_t, std::string>> messages) {
+    std::basic_ostringstream<cxxtools::Char> oss;
+    cxxtools::JsonFormatter jsf (oss);
+    jsf.beautify (true);
+
+    jsf.beginObject ("", "");
+    jsf.beginArray ("errors", "");
+    for (auto const& item : messages) {
+        jsf.beginObject ("", "");
+        jsf.addValueStdString ("message", "", item.second);
+        jsf.addValueUnsigned ("code", "", item.first);
+        jsf.finishObject ();
+    }
+    jsf.finishArray ();
+
+    jsf.finishObject ();
+    jsf.finish ();
+    return cxxtools::convert<std::string> (oss.str ());
+}
+
+} // namespace utils::json
 } // namespace utils
 

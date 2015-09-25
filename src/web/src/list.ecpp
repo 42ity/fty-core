@@ -42,7 +42,7 @@ asset_manager asset_mgr;
     if ( !request.isMethodGET() )
     {
 </%cpp>
-<$$ create_error_json("Not allowed", 300) $>
+<$$ utils::json::create_error_json("Not allowed", 300) $>
 <%cpp>
         return HTTP_METHOD_NOT_ALLOWED;
     }
@@ -53,7 +53,7 @@ asset_manager asset_mgr;
     if ( allAssetsShort.status == 0 )
     {
 </%cpp>
-<$$ create_error_json("Assets were not found", 301) $>
+<$$ utils::json::create_error_json("Assets were not found", 301) $>
 <%cpp>
         return HTTP_NOT_FOUND;
     }

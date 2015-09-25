@@ -48,7 +48,7 @@ if (request.getMethod() != "POST") {
 // real memory requirements are ~640kB
 if (request.getContentSize() > 128*1024) {
 </%cpp>
-<$$ create_error_json ("Content size too big, maximum size is 128 kB", 601)$>
+<$$ utils::json::create_error_json ("Content size too big, maximum size is 128 kB", 601)$>
 <%cpp>
     return HTTP_BAD_REQUEST;
 }
@@ -58,7 +58,7 @@ const tnt::Multipart& mp = request.getMultipart();
 tnt::Multipart::const_iterator it = mp.find("assets");
 if (it == mp.end()) {
 </%cpp>
-<$$ create_error_json ("file 'assets' not found", 602)$>
+<$$ utils::json::create_error_json ("file 'assets' not found", 602)$>
 <%cpp>
     return HTTP_BAD_REQUEST;
 }
@@ -89,7 +89,7 @@ if ( http_code != HTTP_OK )
     if (!path_p.empty())
         ::unlink(path_p.c_str());
 </%cpp>
-<$$ create_error_json (msg, code)$>
+<$$ utils::json::create_error_json (msg, code)$>
 <%cpp>
     return http_code;
 }
@@ -146,7 +146,7 @@ if (!path_p.empty())
 if (http_code == HTTP_OK)
     return HTTP_OK;
 </%cpp>
-<$$ create_error_json (msg,8)$>
+<$$ utils::json::create_error_json (msg,8)$>
 <%cpp>
 return http_code;
 </%cpp>

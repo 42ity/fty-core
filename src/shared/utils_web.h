@@ -29,7 +29,8 @@
 #define SRC_SHARED_WEB_UTILS_H_
 
 #include <string>
-#include <string>
+#include <vector>
+#include <utility>
 #include <array>
 #include <stdarg.h>
 
@@ -46,7 +47,7 @@ typedef struct _wserror {
 } _WSError;
 
 // size of _errors array, keep this up to date unless code won't build
-static constexpr size_t _WSErrorsCOUNT = 8;
+static constexpr size_t _WSErrorsCOUNT = 9;
 
 // typedef for array of errors
 typedef std::array<_WSError, _WSErrorsCOUNT> _WSErrors;
@@ -59,6 +60,7 @@ static constexpr const _WSErrors _errors = { {
     {.key = "request-param-required",   .http_code = HTTP_BAD_REQUEST,              .err_code = 46,     .message = "Parameter '%s' is required." },
     {.key = "request-param-bad",        .http_code = HTTP_BAD_REQUEST,              .err_code = 47,     .message = "Parameter '%s' has bad value. Received '%s'. Expected %s" },
     {.key = "bad-request-document",     .http_code = HTTP_BAD_REQUEST,              .err_code = 48,     .message = "Request document has invalid syntax. %s" },
+    {.key = "data-conflict",            .http_code = HTTP_CONFLICT,              .err_code = 50, .message = "Element '%s' cannot be processed because of conflict. %s"}
     } };
 
 template <size_t N>
@@ -123,37 +125,12 @@ _die_vasprintf(
         static_assert(key_idx != -1, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
         char *message; \
         _die_vasprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__ ); \
-        reply.out() << create_error_json(message, _errors.at(key_idx).err_code); \
+        reply.out() << utils::json::create_error_json(message, _errors.at(key_idx).err_code); \
         free(message); \
         return _errors.at(key_idx).http_code;\
     } \
     while(0)
 
-/*
- * \brief Creates a string that containes JSON error message
- *        with only one error.
- *
- *
- *  Returned string has the following structure:
- *
- *  {
- *      errors: [
- *          {
- *              "message": "@msg",
- *              "code": @code
- *          }
- *      ]
- *  }
- *
- * \param msg   - a message that should be displayed to the user
- * \param code  - a code for an error
- *
- * \return JSON string
- */
-std::string
-    create_error_json(
-        const std::string &msg,
-        int                code);
 
 namespace utils {
 namespace json {
@@ -222,6 +199,12 @@ template <typename T
 std::string jsonify (T key, T value) {
     return std::string ("\"").append (jsonify (key)).append ("\" : ").append (jsonify (value));
 }
+
+std::string
+create_error_json (const std::string& message, uint32_t code);
+
+std::string
+create_error_json (std::vector <std::pair<uint32_t, std::string>> messages);
 
 } // namespace utils::json
 } // namespace utils
