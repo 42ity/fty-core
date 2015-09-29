@@ -39,7 +39,7 @@ Cmnd_Alias APT		= /usr/bin/apt-get update,/usr/bin/apt-get upgrade
 Cmnd_Alias BIOS_PROGS	= DATE,AUGTOOL,BIOS_PASSWD,SSH_RM,SSH_RESTART,SYSTEMCTL
 
 # Who is allowed to elevate?
-User_Alias BIOS_USERS	= admin,%bios
+User_Alias BIOS_USERS	= admin,%bios-admin,%bios-infra
 # With whose privileges can this be executed?
 Runas_Alias BIOS_RUNAS	= root
 
