@@ -22,7 +22,6 @@
 #  \author Michal Vyskocil <MichalVyskocil@Eaton.com>
 #  \brief Not yet documented file
 
-test_it
+test_it "Get the list of the active alerts present in the t_bios_alert table"
 api_get_json /alerts >&5
 print_result $?
-

@@ -23,8 +23,10 @@
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \brief Not yet documented file
 
+# remove the licence file, if exists, license not accepted in result
 sut_run "rm -f /var/lib/bios/license $CHECKOUTDIR/var/bios/license" || true
 
+# test that the license is not accepted
 test_it "license_status_not_ok"
 api_get_json '/admin/license/status' >&5
 print_result $?
@@ -35,11 +37,16 @@ print_result $?
 
 test_it "license_status_ok"
 api_get_json '/admin/license/status' | sed 's|\(accepted_at":"\)[0-9]*"|\1XXX"|' >&5
-RET=$?
-print_result $RET
+print_result $?
 
-# don't spread this fail to other REST API tests
-if [ $RET -ne 0 ]; then
-    sut_run "/usr/bin/printf '%s\n%s\n%s\n' '1.0' '1443508145' 'admin' > /var/lib/bios/license" || true
-    sut_run "/usr/bin/printf '%s\n%s\n%s\n' '1.0' '1443508145' 'admin' > $CHECKOUTDIR/var/bios/license" || true
+test_it "license_text"
+echo api_get '/admin/license'
+TEXT=`api_get '/admin/license' | grep GNU | wc -l`
+echo TEXT = $TEXT
+if [ $TEXT -gt 0 ]; then
+   echo '{"text":"yes"}'
+else
+   echo '{"text":"no"}'
 fi
+[ $TEXT -gt 0 ]
+print_result $?
