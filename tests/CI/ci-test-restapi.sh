@@ -270,7 +270,7 @@ if [ $# = 0 ]; then
     test_web_process || exit
     # default test routine
     if [ "$RESULT" -eq 0 ]; then
-    test_web_default -topology -admin_network -admin_networks -license
+    test_web_default -topology -admin_network -admin_networks
     RESULT=$?
     fi
     test_web_process || exit
