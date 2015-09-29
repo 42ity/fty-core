@@ -219,6 +219,7 @@
     <mapping>
       <target>current@bios_web</target>
       <url>^/api/v1/metric/current.*$</url>
+      <method>GET</method>
     </mapping>
 
     <!-- rack consumption -->
