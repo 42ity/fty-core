@@ -103,42 +103,12 @@ std::string escape (const std::string& before) {
 
 std::string
 create_error_json (const std::string& message, uint32_t code) {
-    std::basic_ostringstream<cxxtools::Char> oss;
-    cxxtools::JsonFormatter jsf (oss);
-    jsf.beautify (true);
-
-    jsf.beginObject ("", "");
-    jsf.beginArray ("errors", "");
-    jsf.beginObject ("", "");
-    jsf.addValueStdString ("message", "", message);
-    jsf.addValueUnsigned ("code", "", code);
-    jsf.finishObject ();
-    jsf.finishArray ();
-
-    jsf.finishObject ();
-    jsf.finish ();
-    return cxxtools::convert<std::string> (oss.str ());
-}
-
-std::string
-create_error_json (std::vector <std::pair<uint32_t, std::string>> messages) {
-    std::basic_ostringstream<cxxtools::Char> oss;
-    cxxtools::JsonFormatter jsf (oss);
-    jsf.beautify (true);
-
-    jsf.beginObject ("", "");
-    jsf.beginArray ("errors", "");
-    for (auto const& item : messages) {
-        jsf.beginObject ("", "");
-        jsf.addValueStdString ("message", "", item.second);
-        jsf.addValueUnsigned ("code", "", item.first);
-        jsf.finishObject ();
-    }
-    jsf.finishArray ();
-
-    jsf.finishObject ();
-    jsf.finish ();
-    return cxxtools::convert<std::string> (oss.str ());
+    std::string s = "{\n\t\"errors\": [\n\t  {\n\t\t\"message\" : \"";
+    s+=utils::json::escape(message);
+    s+="\",\n\t\t\"code\" : ";
+    s+=utils::json::escape(std::to_string(code));
+    s+="\n\t  }\n\t]\n}";
+    return s;
 }
 
 } // namespace utils::json

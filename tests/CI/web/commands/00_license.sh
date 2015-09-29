@@ -35,4 +35,11 @@ print_result $?
 
 test_it "license_status_ok"
 api_get_json '/admin/license/status' | sed 's|\(accepted_at":"\)[0-9]*"|\1XXX"|' >&5
-print_result $?
+RET=$?
+print_result $RET
+
+# don't spread this fail to other REST API tests
+if [ $RET -ne 0 ]; then
+    sut_run "/usr/bin/printf '%s\n%s\n%s\n' '1.0' '1443508145' 'admin' > /var/lib/bios/license" || true
+    sut_run "/usr/bin/printf '%s\n%s\n%s\n' '1.0' '1443508145' 'admin' > $CHECKOUTDIR/var/bios/license" || true
+fi
