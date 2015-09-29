@@ -31,10 +31,8 @@ test_it dev=7
 api_get_json '/metric/current?dev=7' >&5
 print_result $?
 
-test_it dev=3
-curlfail_push_expect_404
+test_it dev=5555553
 api_get_json '/metric/current?dev=5555553' >&5
-print_result $?
 curlfail_pop
 
 test_it default
