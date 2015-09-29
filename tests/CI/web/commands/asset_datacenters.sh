@@ -23,6 +23,7 @@
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \brief Not yet documented file
 
-test_it
+test_it "Get the list of datacenters"
+# Three datacenters MUST be present in current database
 api_get_json /asset/datacenters >&5
 print_result $?
