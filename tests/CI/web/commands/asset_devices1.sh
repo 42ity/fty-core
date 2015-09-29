@@ -22,6 +22,6 @@
 #  \author Alena Chernikava <AlenaChernikava@Eaton.com>
 #  \brief Not yet documented file
 
-test_it
+test_it "Get all devices with subtype ups"
 api_get_json /asset/devices?subtype=ups >&5
 print_result $?
