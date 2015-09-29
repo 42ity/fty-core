@@ -66,8 +66,13 @@ nosoup4u
 nosoup4u
 EOF
 
-groupadd bios
-useradd -m admin -G sasl -N -g bios -s /bin/bash
+groupadd -g 8003 bios-admin
+groupadd -g 8002 bios-poweruser
+groupadd -g 8001 bios-user
+groupadd -g 8000 bios-guest
+groupadd bios-infra
+useradd -m bios -N -g bios-infra -s /bin/bash
+useradd -m admin -G sasl -N -g bios-admin -s /bin/bash
 passwd admin <<EOF
 admin
 admin
