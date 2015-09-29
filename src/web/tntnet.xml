@@ -177,7 +177,7 @@
     
     <mapping>
       <target>asset_POST@bios_web</target>
-      <url>^/api/v1/asset$</url>
+      <url>^/api/v1/asset/?$</url>
       <method>POST</method>
     </mapping>
 
