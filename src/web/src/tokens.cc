@@ -86,6 +86,7 @@ std::string tokens::gen_token(int& valid, const char* user, bool do_round) {
     static int number = random() % MAX_USE;
     int my_number;
     long int uid = -1;
+    long int gid = -1;
     if (do_round) {
         tme /= ROUND;
         tme *= ROUND;
@@ -98,6 +99,7 @@ std::string tokens::gen_token(int& valid, const char* user, bool do_round) {
         struct passwd *pwd = getpwnam(user);
         if(pwd != NULL) {
             uid = pwd->pw_uid;
+            gid = pwd->pw_gid;
         }
         pwnam_lock.unlock();
     }
@@ -111,7 +113,7 @@ std::string tokens::gen_token(int& valid, const char* user, bool do_round) {
     number = (number + 1) % MAX_USE;
     mtx.unlock();
 
-    snprintf(buff, MESSAGE_LEN, "%ld %ld %d", tme, uid, my_number);
+    snprintf(buff, MESSAGE_LEN, "%ld %ld %ld %d", tme, uid, gid, my_number);
 
     crypto_secretbox_easy(ciphertext, (unsigned char *)buff, strlen(buff),
                           tmp.nonce, tmp.key);
@@ -174,7 +176,7 @@ void tokens::revoke(const std::string token) {
     revoked_queue.insert(std::make_pair(tme, token));
 }
 
-bool tokens::verify_token(const std::string token, long int* uid) {
+bool tokens::verify_token(const std::string token, long int* uid, long int* gid) {
     char buff[MESSAGE_LEN + 1];
     long int tme = 0;
     clean_revoked();
@@ -182,7 +184,11 @@ bool tokens::verify_token(const std::string token, long int* uid) {
         return false;
     decode_token(buff, token);
     if(uid != NULL) {
-        sscanf(buff, "%ld %ld", &tme, uid);
+        if(gid != NULL) {
+            sscanf(buff, "%ld %ld %ld", &tme, uid, gid);
+        } else {
+            sscanf(buff, "%ld %ld", &tme, uid);
+        }
     } else {
         sscanf(buff, "%ld", &tme);
     }
