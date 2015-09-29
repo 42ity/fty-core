@@ -74,7 +74,7 @@ public:
     /**
      * \brief Verifies whether supplied token is valid
      */
-    bool verify_token(const std::string token, long int* uid = NULL);
+    bool verify_token(const std::string token, long int* uid = NULL, long int* gid = NULL);
     //! Invalidates selected token
     void revoke(const std::string token);
     /**

@@ -47,25 +47,16 @@ std::string dev;
 
 <%cpp>
 {
-    // check if method is allowed
-    if ( !request.isMethodGET() )
-    {
-</%cpp>
-<$$ utils::json::create_error_json("Not implemented", 100) $>
-<%cpp>
-        return HTTP_NOT_IMPLEMENTED;
+    if (dev.empty()) {
+        http_die("request-param-required", "<list-of-ids>");
     }
 
-    // Check URL validity
-    if ( dev.empty() )
-    {
-</%cpp>
-<$$ utils::json::create_error_json("Invalid url (missing id parameter)", 56) $>
-<%cpp>
-        return HTTP_BAD_REQUEST;
-    }
     std::vector<std::string> asset_ids;
     cxxtools::split(",", dev, std::back_inserter(asset_ids));
+
+    if (asset_ids.empty()) {
+        http_die("request-param-required", "<list-of-ids>");
+    }
 
     // Go through all passed ids
     std::string big_json{};
@@ -78,20 +69,13 @@ std::string dev;
             id = std::stoul (asset_id, &pos);
             if ( pos != asset_id.size() )
             {
-                // if at least one id is malformed then all request
-                // would be rejected
-</%cpp>
-<$$ utils::json::create_error_json("One id in the list is malformed", 200) $>
-<%cpp>
-                return HTTP_BAD_REQUEST;
+                log_warning("non-numeric id '%s', skipping", asset_id.c_str());
+                continue;
             }
         }
         catch ( const std::exception &e) {
-            log_error(e.what());
-</%cpp>
-<$$ utils::json::create_error_json("One id in the list is malformed", 200) $>
-<%cpp>
-            return HTTP_BAD_REQUEST;
+            log_warning("non-numeric id '%s', skipping. E: '%s'", asset_id.c_str(), e.what());
+            continue;
         }
         // Temporary add connection here
         tntdb::Connection conn = tntdb::connectCached(url);
@@ -100,10 +84,8 @@ std::string dev;
         auto ret = persist::select_asset_element_web_byId (conn, id);
         if ( ret.status == 0 )
         {
-</%cpp>
-<$$ utils::json::create_error_json("One of ids doesn't exist", 202) $>
-<%cpp>
-            return HTTP_NOT_FOUND;
+            log_warning("Element id '%s' is not in DB, skipping", asset_id.c_str());
+            continue;
         }
 
         // definition of the function, that would process the
@@ -187,7 +169,8 @@ std::string dev;
         big_json += ",";
     }
     // remove last ","
-    big_json.pop_back();
+    if (!big_json.empty())
+        big_json.pop_back();
 </%cpp>
 {
    "current":[

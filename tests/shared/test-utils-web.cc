@@ -304,7 +304,7 @@ TEST_CASE ("utils::json::create_error_json","[utils::json::create_error_json][js
     CHECK ( x.compare (
 "{\n\t\"errors\": [\n\t\t{\n\t\t\t\"message\": \"One and two \\nthree and \\\"four\\\".\",\n\t\t\t\"code\": 55\n\t\t}\n\t]\n}\n"
 ) == 0);
-        
+
     x = utils::json::create_error_json (in, 56);
     CHECK ( x.compare (
 "{\n\t\"errors\": [\n\t\t{\n\t\t\t\"message\": \"One and two \\nthree and \\\"four\\\".\",\n\t\t\t\"code\": 56\n\t\t}\n\t]\n}\n"
@@ -313,12 +313,6 @@ TEST_CASE ("utils::json::create_error_json","[utils::json::create_error_json][js
     std::vector <std::pair<uint32_t, std::string>> v;
     v.push_back (std::make_pair (1, "On\ne"));
     v.push_back (std::make_pair (10, "Tw\"o"));
-   
-    x = utils::json::create_error_json (v);
-    CAPTURE (x); 
-    CHECK ( x.compare (
-"{\n\t\"errors\": [\n\t\t{\n\t\t\t\"message\": \"On\\ne\",\n\t\t\t\"code\": 1\n\t\t},\n\t\t{\n\t\t\t\"message\": \"Tw\\\"o\",\n\t\t\t\"code\": 10\n\t\t}\n\t]\n}\n"
-) == 0);
 
     v.clear ();
     v.push_back (std::make_pair (47, "Received value 'abc'."));
@@ -328,7 +322,5 @@ TEST_CASE ("utils::json::create_error_json","[utils::json::create_error_json][js
     CAPTURE (x); 
     CHECK ( x.compare (
 "{\n\t\"errors\": [\n\t\t{\n\t\t\t\"message\": \"Received value 'abc'.\",\n\t\t\t\"code\": 47\n\t\t},\n\t\t{\n\t\t\t\"message\": \"Received value 'def'.\",\n\t\t\t\"code\": 47\n\t\t},\n\t\t{\n\t\t\t\"message\": \"Received value 'ghi'.\",\n\t\t\t\"code\": 47\n\t\t}\n\t]\n}\n") == 0 );
-/*    
-    CHECK ( x.compare (R"()") == 0);
-*/
+
 }

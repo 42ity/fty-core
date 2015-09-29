@@ -111,21 +111,16 @@ std::string escape (const std::string& before) {
 
 std::string
 create_error_json (const std::string& message, uint32_t code) {
-    std::string result =
+    return std::string (
 "{\n"
 "\t\"errors\": [\n"
 "\t\t{\n"
-"\t\t\t\"message\": ";
-    result.append (jsonify (message)).append (
-",\n"
-"\t\t\t\"code\": ");
-    result.append (jsonify (code)).append (
-"\n"
+"\t\t\t\"message\": ").append (jsonify (message)).append (",\n"
+"\t\t\t\"code\": ").append (jsonify (code)).append ("\n"
 "\t\t}\n"
 "\t]\n"
 "}\n"
 );
-    return result;
 }
 
 std::string

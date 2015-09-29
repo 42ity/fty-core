@@ -37,7 +37,9 @@
       <target>auth@bios_web</target>
       <url>^/api/v1/oauth2/token$</url>
     </mapping>
-    <!-- Set (int)access_auth_level variable if the request is authenticated -->
+    <!-- Set (int)access_auth_level variable if the request is authenticated
+         and validate rights are sufficient.
+      -->
     <mapping>
       <target>auth-verify@bios_web</target>
     </mapping>
@@ -47,12 +49,6 @@
     <mapping>
       <target>sysinfo@bios_web</target>
       <url>^/api/v1/admin/sysinfo$</url>
-    </mapping>
-
-    <!-- And from now on all modifying requests have to be authenticated -->
-    <mapping>
-      <target>auth-require@bios_web</target>
-      <method>(POST|PUT|DELETE)</method>
     </mapping>
 
     <!-- Token revocation -->
@@ -219,6 +215,7 @@
     <mapping>
       <target>current@bios_web</target>
       <url>^/api/v1/metric/current.*$</url>
+      <method>GET</method>
     </mapping>
 
     <!-- rack consumption -->
