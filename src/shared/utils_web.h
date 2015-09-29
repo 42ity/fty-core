@@ -204,9 +204,6 @@ std::string jsonify (T key, T value) {
 std::string
 create_error_json (const std::string& message, uint32_t code);
 
-std::string
-create_error_json (std::vector <std::pair<uint32_t, std::string>> messages);
-
 } // namespace utils::json
 } // namespace utils
 
