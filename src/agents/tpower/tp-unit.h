@@ -91,15 +91,24 @@ class TPUnit {
     /*! \brief list of measurements for included devices
      *
      *     map---device1---map---realpower.default---Measurement
-     *      |               +----realpover.input.L1--Measurement
-     *      |               +----realpover.input.L2--Measurement
-     *      |               +----realpover.input.L3--Measurement
+     *      |               +----realpower.input.L1--Measurement
+     *      |               +----realpower.input.L2--Measurement
+     *      |               +----realpower.input.L3--Measurement
      *      +----device2-...
      */
     std::map< std::string, std::map<std::string,Measurement> > _powerdevices;
 
     //! \brief unit name
     std::string _name;
+
+    //! \brief replace not present measurement with another
+    static const std::map<std::string,std::string> _emergencyReplacements;
+
+    std::map<std::string,Measurement>::const_iterator getMeasurementIter(
+        const std::map<std::string,Measurement> &measurements,
+        const std::string &quantity
+    ) const;
+ 
 };
 
 #endif // SRC_AGENTS_TPOWER_TP_UNIT_H__
