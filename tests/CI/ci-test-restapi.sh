@@ -193,16 +193,17 @@ kill_daemons() {
 
   if [ ! -x "${BUILDSUBDIR}/config.status" ]; then
     logmsg_warn "Did not detect ${BUILDSUBDIR}/config.status, so will try to configure the project first, now..."
-    ./autogen.sh --nodistclean --configure-flags \
-        "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
-        ${AUTOGEN_ACTION_CONFIG} || exit
+    #./autogen.sh --nodistclean --configure-flags \
+    #    "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
+    #    ${AUTOGEN_ACTION_CONFIG} || exit
   fi
-  ./autogen.sh ${AUTOGEN_ACTION_MAKE} V=0 web-test-deps || exit
-  ./autogen.sh ${AUTOGEN_ACTION_MAKE} V=0 web-test-deps-inst || \
-    logmsg_warn "BIOS-1262: Could not install required scripts, password-related REST API tests will likely fail"
+  #./autogen.sh ${AUTOGEN_ACTION_MAKE} V=0 web-test-deps || exit
+  #./autogen.sh ${AUTOGEN_ACTION_MAKE} V=0 web-test-deps-inst || \
+  #  logmsg_warn "BIOS-1262: Could not install required scripts, password-related REST API tests will likely fail"
 
   logmsg_info "Spawning the web-server in the background..."
-  ./autogen.sh --noparmake ${AUTOGEN_ACTION_MAKE} web-test &
+  #./autogen.sh --noparmake ${AUTOGEN_ACTION_MAKE} web-test &
+  make -C ${BUILDSUBDIR} web-test &
   MAKEPID=$!
 
   # TODO: this requirement should later become the REST AGENT
