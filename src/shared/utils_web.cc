@@ -101,44 +101,68 @@ std::string escape (const std::string& before) {
     return escape (before.c_str ());
 }
 
+
+// Note: At the time of re-writing from defect cxxtools::JsonFormatter I decided
+// to go with the simplest solution for create_error_json functions (after all,
+// our error template is not that complex). Shall some person find this ugly
+// and repulsive enough, there is a working cxxtools::JsonSerialize solution
+// ready at the following link:
+// http://stash.mbt.lab.etn.com/projects/BIOS/repos/core/pull-requests/1094/diff#src/web/src/error.cc
+
 std::string
 create_error_json (const std::string& message, uint32_t code) {
-    std::basic_ostringstream<cxxtools::Char> oss;
-    cxxtools::JsonFormatter jsf (oss);
-    jsf.beautify (true);
-
-    jsf.beginObject ("", "");
-    jsf.beginArray ("errors", "");
-    jsf.beginObject ("", "");
-    jsf.addValueStdString ("message", "", message);
-    jsf.addValueUnsigned ("code", "", code);
-    jsf.finishObject ();
-    jsf.finishArray ();
-
-    jsf.finishObject ();
-    jsf.finish ();
-    return cxxtools::convert<std::string> (oss.str ());
+    std::string result =
+"{\n"
+"\t\"errors\": [\n"
+"\t\t{\n"
+"\t\t\t\"message\": ";
+    result.append (jsonify (message)).append (
+",\n"
+"\t\t\t\"code\": ");
+    result.append (jsonify (code)).append (
+"\n"
+"\t\t}\n"
+"\t]\n"
+"}\n"
+);
+    return result;
 }
 
 std::string
 create_error_json (std::vector <std::pair<uint32_t, std::string>> messages) {
-    std::basic_ostringstream<cxxtools::Char> oss;
-    cxxtools::JsonFormatter jsf (oss);
-    jsf.beautify (true);
+    std::string result =
+"{\n"
+"\t\"errors\": [\n";
 
-    jsf.beginObject ("", "");
-    jsf.beginArray ("errors", "");
-    for (auto const& item : messages) {
-        jsf.beginObject ("", "");
-        jsf.addValueStdString ("message", "", item.second);
-        jsf.addValueUnsigned ("code", "", item.first);
-        jsf.finishObject ();
+    std::vector <std::pair<uint32_t, std::string>>::const_iterator it;
+    for (it = messages.cbegin (); it != --messages.cend (); ++it) {
+        result.append (
+"\t\t{\n"
+"\t\t\t\"message\": "                
+        );
+        result.append (jsonify (it->second)).append (
+",\n"
+"\t\t\t\"code\": "
+        );
+        result.append (jsonify (it->first)).append (
+"\n"
+"\t\t},\n"
+        );
     }
-    jsf.finishArray ();
-
-    jsf.finishObject ();
-    jsf.finish ();
-    return cxxtools::convert<std::string> (oss.str ());
+    result.append (
+"\t\t{\n"
+"\t\t\t\"message\": "
+    );
+    result.append (jsonify (it->second)).append (
+",\n"
+"\t\t\t\"code\": ");
+    result.append (jsonify (it->first)).append (
+"\n"
+"\t\t}\n"
+"\t]\n"
+"}\n"
+);
+    return result;
 }
 
 } // namespace utils::json

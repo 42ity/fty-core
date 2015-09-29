@@ -224,6 +224,7 @@
     <!-- rack consumption -->
     <mapping>
       <target>rack_total@bios_web</target>
+      <method>GET</method>
       <url>^/api/v1/metric/computed/rack_total.*$</url>
     </mapping>
 

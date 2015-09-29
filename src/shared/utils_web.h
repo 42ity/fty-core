@@ -58,7 +58,7 @@ static constexpr const _WSErrors _errors = { {
     {.key = "element-not-found",        .http_code = HTTP_NOT_FOUND,                .err_code = 44,     .message = "Element '%s' not found."},
     {.key = "method-not-allowed",       .http_code = HTTP_METHOD_NOT_ALLOWED,       .err_code = 45,     .message = "Http method '%s' not allowed."},
     {.key = "request-param-required",   .http_code = HTTP_BAD_REQUEST,              .err_code = 46,     .message = "Parameter '%s' is required." },
-    {.key = "request-param-bad",        .http_code = HTTP_BAD_REQUEST,              .err_code = 47,     .message = "Parameter '%s' has bad value. Received '%s'. Expected %s" },
+    {.key = "request-param-bad",        .http_code = HTTP_BAD_REQUEST,              .err_code = 47,     .message = "Parameter '%s' has bad value. Received %s. Expected %s" },
     {.key = "bad-request-document",     .http_code = HTTP_BAD_REQUEST,              .err_code = 48,     .message = "Request document has invalid syntax. %s" },
     {.key = "data-conflict",            .http_code = HTTP_CONFLICT,                 .err_code = 50,     .message = "Element '%s' cannot be processed because of conflict. %s"},
     {.key = "action-forbidden",         .http_code = HTTP_BAD_REQUEST,              .err_code = 51,     .message = "%s is forbidden"},
@@ -131,6 +131,18 @@ _die_vasprintf(
         return _errors.at(key_idx).http_code;\
     } \
     while(0)
+
+#define http_err_get(key, MSG_FORMAT, CODE, HTTP_RET) \
+{ \
+    static_assert (std::is_same <decltype (MSG_FORMAT), std::string>::value , "MSG_FORMAT argument in macro http_err_get must be a std:string!"); \
+    static_assert (std::is_same <decltype (CODE), uint32_t>::value , "CODE argument in macro http_err_get must be a uint32_t!"); \
+    static_assert (std::is_same <decltype (HTTP_RET), uint32_t>::value , "HTTP_RET argument in macro http_err_get must be a uint32_t!"); \
+    constexpr ssize_t key_idx = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
+    static_assert(key_idx != -1, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
+    (MSG_FORMAT).assign (_errors.at(key_idx).message); \
+    (CODE) = _errors.at(key_idx).err_code; \
+    (HTTP_RET) = _errors.at(key_idx).http_code; \
+} 
 
 
 namespace utils {
