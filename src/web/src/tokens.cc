@@ -40,15 +40,28 @@
 //! Maximum tokens per key
 #define MAX_USE 256
 
+static time_t mono_time(time_t *o_time) {
+#if defined(_POSIX_TIMERS) && defined(_POSIX_MONOTONIC_CLOCK)
+  struct timespec monoTime;
+
+  if(clock_gettime(CLOCK_MONOTONIC, &monoTime) == 0) {
+    if(o_time != NULL)
+      *o_time = monoTime.tv_sec;
+    return monoTime.tv_sec;
+  } else
+#endif
+    return time(o_time);
+}
+
 void tokens::regen_keys() {
-    while(!keys.empty() && keys.front().valid_until < time(NULL))
+    while(!keys.empty() && keys.front().valid_until < mono_time(NULL))
         keys.pop_front();
     if(keys.empty() || keys.back().used > MAX_USE ||
-                       keys.back().valid_until < time(NULL) - MAX_LIVE) {
+                       keys.back().valid_until < mono_time(NULL) - MAX_LIVE) {
         cipher new_cipher;
         randombytes_buf(new_cipher.nonce, sizeof(new_cipher.nonce));
         randombytes_buf(new_cipher.key, sizeof(new_cipher.key));
-        new_cipher.valid_until = time(NULL);
+        new_cipher.valid_until = mono_time(NULL);
         new_cipher.valid_until += 2*MAX_LIVE;
         new_cipher.used = 0;
         keys.push_back(new_cipher);
@@ -69,14 +82,14 @@ tokens *tokens::get_instance() {
 std::string tokens::gen_token(int& valid, const char* user, bool do_round) {
     unsigned char ciphertext[CIPHERTEXT_LEN];
     char buff[MESSAGE_LEN + 1];
-    long int tme = ((long int)time(NULL) + std::min((long int)valid, (long int)MAX_LIVE));
+    long int tme = ((long int)mono_time(NULL) + std::min((long int)valid, (long int)MAX_LIVE));
     static int number = random() % MAX_USE;
     int my_number;
     long int uid = -1;
     if (do_round) {
         tme /= ROUND;
         tme *= ROUND;
-        valid = (tme - time(NULL));
+        valid = (tme - mono_time(NULL));
     }
 
     if(user != NULL) {
@@ -144,7 +157,7 @@ void tokens::decode_token(char *buff, std::string token) {
 void tokens::clean_revoked() {
     std::multimap<long int, std::string>::iterator it;
     while(!revoked_queue.empty() &&
-          (it = revoked_queue.begin())->first < time(NULL)) {
+          (it = revoked_queue.begin())->first < mono_time(NULL)) {
         revoked.erase(it->second);
         revoked_queue.erase(it);
     }
@@ -155,7 +168,7 @@ void tokens::revoke(const std::string token) {
     long int tme = 0;
     decode_token(buff, token);
     sscanf(buff, "%ld", &tme);
-    if(tme <= time(NULL))
+    if(tme <= mono_time(NULL))
         return;
     revoked.insert(token);
     revoked_queue.insert(std::make_pair(tme, token));
@@ -173,5 +186,5 @@ bool tokens::verify_token(const std::string token, long int* uid) {
     } else {
         sscanf(buff, "%ld", &tme);
     }
-    return tme > time(NULL);
+    return tme > mono_time(NULL);
 }
