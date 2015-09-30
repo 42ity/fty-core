@@ -200,7 +200,12 @@
     </mapping>
     -->
     <mapping>
-      <target>location@bios_web</target>
+      <target>topology_location_from@bios_web</target>
+      <url>^/api/v1/topology/location.*$</url>
+    </mapping>
+
+    <mapping>
+      <target>topology_location_to@bios_web</target>
       <url>^/api/v1/topology/location.*$</url>
     </mapping>
 

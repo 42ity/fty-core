@@ -1,0 +1,338 @@
+<#
+ #
+ # Copyright (C) 2015 Eaton
+ #
+ # This program is free software; you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+ # the Free Software Foundation; either version 2 of the License, or
+ # (at your option) any later version.
+ #
+ # This program is distributed in the hope that it will be useful,
+ # but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+ #
+ # You should have received a copy of the GNU General Public License along
+ # with this program; if not, write to the Free Software Foundation, Inc.,
+ # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ #
+ #><#
+/*!
+ * \file topology_location_from.ecpp
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \brief Not yet documented file
+ */
+ #><%pre>
+#include "cleanup.h"
+#include <cstdlib>
+#include <string>
+#include <algorithm>
+#include <exception>
+#include <stack>
+#include <czmq.h>
+#include "log.h"
+#include "defs.h"
+#include "dbpath.h"
+#include "data.h"
+#include "common_msg.h"
+#include "location_helpers.h"
+#include "asset_msg.h"
+#include "asset_types.h"
+#include "assettopology.h"
+#include "utils_web.h"
+</%pre>
+
+<%thread scope="global">
+asset_manager asset_mgr;
+</%thread>
+
+<%args>
+std::string from;
+std::string to;
+std::string recursive;
+std::string filter;
+std::string feed_by;
+</%args>
+
+<%cpp>
+    log_open ();
+    LOG_START;
+    if ( !request.isMethodGET() )
+    {
+</%cpp>
+<$$  utils::json::create_error_json("Not implemented", 100) $>
+<%cpp>
+        return HTTP_NOT_IMPLEMENTED;
+    }
+
+    // Check url validity
+    // 1. Exactly one variable has to be specified: 'from' or 'to'
+    if (!from.empty() && !to.empty())
+    {
+</%cpp>
+<$$  utils::json::create_error_json("You can specify 'from' OR 'to' variable, but not both.", 400) $>
+<%cpp>
+        return HTTP_BAD_REQUEST;
+    }
+    // 2. At least one parametr should be specified
+    if (from.empty() && to.empty())
+    {
+</%cpp>
+<$$  utils::json::create_error_json("You have to specify one of the following variables: 'from=<element_id|none>', 'to=<element_id>'", 401) $>
+<%cpp>
+        return HTTP_BAD_REQUEST;
+    }
+
+    if (!from.empty()) {
+        std::transform (recursive.begin(), recursive.end(), recursive.begin(), ::tolower);
+        std::transform (filter.begin(), filter.end(), filter.begin(), ::tolower);
+
+        // recursive
+        int is_recursive = 0;
+        if (recursive == "yes") {
+            is_recursive = 1;
+        } else if (!recursive.empty() && recursive != "no") {
+</%cpp>
+<$$  utils::json::create_error_json("Invalid 'recursive' value. Please use 'yes' or 'no'.", 408) $>
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+
+        // filter_type
+        int filter_type = 0;
+        if (filter.empty()) {
+            filter_type = 7;
+        } else if (filter == "rooms") {
+            filter_type = persist::asset_type::ROOM;
+        } else if (filter == "rows") {
+            filter_type = persist::asset_type::ROW;
+        } else if (filter == "racks") {
+            filter_type = persist::asset_type::RACK;
+        } else if (filter == "devices") {
+            filter_type = persist::asset_type::DEVICE;
+        } else if (filter == "groups") {
+            filter_type = persist::asset_type::GROUP;
+        } else {
+            // Note: datacenter is not a valid filter parameter according to rfc-11 4.1.13
+</%cpp>
+<$$  utils::json::create_error_json("Invalid 'filter' value. Try 'rooms','rows','racks','groups',devices'", 409) $>
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+
+        // element_id
+        a_elmnt_id_t element_id = 0;
+        if ( from != "none") {
+            try {
+                element_id = std::stoul (from);
+            } catch (std::out_of_range& e) {
+</%cpp>
+<$$  utils::json::create_error_json("Variable 'from' contains number that falls out of the allowed range.", 405) $>
+<%cpp>
+                return HTTP_BAD_REQUEST;
+            } catch (std::invalid_argument& e) {
+</%cpp>
+<$$  utils::json::create_error_json("Please specify an integer value for variable 'from'.", 406) $>
+<%cpp>
+                return HTTP_BAD_REQUEST;
+            } catch (std::exception& e) {
+                LOG_END_ABNORMAL (e);
+</%cpp>
+<$$  utils::json::create_error_json("Error while converting 'from' to integer value", 407) $>
+<%cpp>
+                return HTTP_BAD_REQUEST;
+            }
+        }
+
+        // feed_by
+        a_elmnt_id_t feed_by_id = 0;
+        try {
+            if ( !feed_by.empty() )
+            {
+                if ( filter_type != persist::asset_type::DEVICE )
+                {
+</%cpp>
+<$$  utils::json::create_error_json("With variable 'feed_by' can be specified only 'filter=devices'", 408) $>
+<%cpp>
+                    return HTTP_BAD_REQUEST;
+                }
+                if ( from == "none" )
+                {
+</%cpp>
+<$$  utils::json::create_error_json("With variable 'feed_by' variable 'from' can not be 'none'", 401) $>
+<%cpp>
+                    return HTTP_BAD_REQUEST;
+                }
+                feed_by_id = std::stoul (feed_by);
+                // TODO not very good solution, but fast
+                auto tmp = asset_mgr.get_item1(feed_by);
+                if ( tmp.status == 0 )
+                {
+                    switch ( tmp.errsubtype )
+                    {
+                        case DB_ERROR_NOTFOUND:
+</%cpp>
+<$$  utils::json::create_error_json("Asset specified in 'feed_by' doesn't exist", 57) $>
+<%cpp>
+                                return HTTP_NOT_FOUND;
+                        case DB_ERROR_BADINPUT:
+</%cpp>
+<$$  utils::json::create_error_json("Wrong input", 60) $>
+<%cpp>
+                                return HTTP_NOT_FOUND;
+                        case DB_ERROR_INTERNAL:
+</%cpp>
+<$$  utils::json::create_error_json("Internal error", 61) $>
+<%cpp>
+                                return HTTP_INTERNAL_SERVER_ERROR;
+                        default:
+</%cpp>
+<$$  utils::json::create_error_json("Unknown error", 62) $>
+<%cpp>
+                                return HTTP_INTERNAL_SERVER_ERROR;
+                    }
+                }
+                if ( tmp.item.basic.type_id != persist::asset_type::DEVICE )
+                {
+</%cpp>
+<$$  utils::json::create_error_json("Asset element specified in 'feed_by' parameter is not a device", 410) $>
+<%cpp>
+                        return HTTP_BAD_REQUEST;
+                }
+            }
+        } catch (std::out_of_range& e) {
+</%cpp>
+<$$  utils::json::create_error_json("Variable 'feed_by' contains number that falls out of the allowed range.", 405) $>
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        } catch (std::invalid_argument& e) {
+</%cpp>
+<$$  utils::json::create_error_json("Please specify an integer value for variable 'feed_by'.", 406) $>
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        } catch (std::exception& e) {
+             LOG_END_ABNORMAL (e);
+</%cpp>
+<$$  utils::json::create_error_json("Error while converting 'feed_by' to integer value", 407) $>
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+
+        // Call persistence layer
+        _scoped_asset_msg_t *input_msg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+        assert (input_msg);
+        asset_msg_set_element_id (input_msg, (uint32_t) element_id);
+        asset_msg_set_recursive (input_msg, (byte) is_recursive);
+        asset_msg_set_filter_type (input_msg, (byte) filter_type);
+
+        asset_msg_print(input_msg);
+
+        _scoped_zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg, feed_by_id);
+        if (return_msg == NULL) {
+</%cpp>
+            {
+                "error" :   "internal_error",
+                "msg"   :   "Function process_assettopology() returned a null pointer."
+            }
+<%cpp>
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
+        assert (input_msg == NULL);
+
+        if (is_common_msg (return_msg)) {
+            _scoped_common_msg_t *common_msg = common_msg_decode (&return_msg);
+            if (common_msg == NULL) {
+                if (return_msg != NULL) {
+                    zmsg_destroy (&return_msg);
+                }
+</%cpp>
+                {
+                    "error" :   "internal_error",
+                    "msg"   :   "common_msg_decode() failed."
+                }
+<%cpp>
+                return HTTP_INTERNAL_SERVER_ERROR;
+            }
+
+            if (common_msg_id (common_msg) == COMMON_MSG_FAIL) {
+</%cpp>
+                    {
+                        "msg"   :   "<$ common_msg_errmsg (common_msg) $>",
+                        "errtype"   :  "<$ static_cast<int> (common_msg_errtype (common_msg)) $>",
+                        "errorno"   :   "<$ static_cast<int> (common_msg_errorno (common_msg)) $>"
+                    }
+<%cpp>
+            switch(common_msg_errorno(common_msg)) {
+                case(DB_ERROR_BADINPUT):
+                    return HTTP_BAD_REQUEST;
+                case(DB_ERROR_NOTFOUND):
+                    return HTTP_NOT_FOUND;
+                default:
+                    return HTTP_INTERNAL_SERVER_ERROR;
+            }
+
+            }
+            else {
+</%cpp>
+            {
+                "error" :   "internal_error",
+                "msg"   :   "Unexpected common_msg received. Message ID = <$ common_msg_id (common_msg) $>"
+            }
+<%cpp>
+                return HTTP_INTERNAL_SERVER_ERROR;
+            }
+        }
+        else if (is_asset_msg (return_msg)) {
+            _scoped_asset_msg_t *asset_msg = asset_msg_decode (&return_msg);
+            if (asset_msg == NULL) {
+                if (return_msg != NULL) {
+                    zmsg_destroy (&return_msg);
+                }
+</%cpp>
+                {
+                    "error" :   "internal_error",
+                    "msg"   :   "asset_msg_decode() failed."
+                }
+<%cpp>
+                return HTTP_INTERNAL_SERVER_ERROR;
+            }
+
+            if (asset_msg_id (asset_msg) == ASSET_MSG_RETURN_LOCATION_FROM) {
+                std::string json;
+
+                if(asset_location_r(&asset_msg, json) == HTTP_OK) {
+</%cpp>
+<$$ json $>
+<%cpp>
+                } else {
+</%cpp>
+            {
+                "error" :   "internal_error",
+                "msg"   :   "Unexpected error occured during location reply parsing"
+            }
+<%cpp>
+                return HTTP_INTERNAL_SERVER_ERROR;
+                }
+            }
+            else {
+</%cpp>
+            {
+                "error" :   "internal_error",
+                "msg"   :   "Unexpected asset_msg received. Message ID = <$ asset_msg_id (asset_msg) $>"
+            }
+<%cpp>
+                return HTTP_INTERNAL_SERVER_ERROR;
+            }
+        }
+        else {
+            log_error ("TODO Unknown protocol");
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
+    }
+    else
+    {
+        return DECLINED;
+    }
+</%cpp>
