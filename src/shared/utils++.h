@@ -76,17 +76,26 @@ std::map<std::string,std::string>
 zhash_to_map(zhash_t *hash);
 
 /**
- * \brief cxxtools::join like function working on std::map
+ * \brief Join keys of std::map using given separator
+ *
+ * Applicable only to maps that have key (i.e. first templated parameter) convertible to std::string or basic arithmetic type
  *
  *  \param[in] m - the std::map
  *  \param[in] separator - the separator
  *
- * \todo - templates??
  */
-std::string
-    join_keys(
-        const std::map<std::string, int>& m,
-        const std::string& separator);
+template <typename K, typename V>
+std::string join_keys_map (const std::map<K,V>& t, const std::string& separator) {
+    static_assert (std::is_convertible <K, std::string>::value || std::is_arithmetic<K>::value, "Must be convertible to string or arithmetic type.");
+    std::ostringstream tmp;
+    auto it = t.cbegin ();
+    for (; it != --t.cend (); ++it) {
+        tmp << it->first << separator;
+    }
+    tmp << it->first;
+    std::string result = tmp.str ();
+    return result;
+}
 
 } // namespace utils
 

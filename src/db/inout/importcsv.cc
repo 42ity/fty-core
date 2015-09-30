@@ -262,7 +262,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     auto type = cm.get_strip(row_i, "type");
     log_debug ("type = '%s'", type.c_str());
     if ( TYPES.find(type) == TYPES.end() )
-        throw persist::request_bad_param("type", type, utils::join_keys(TYPES, ", "));
+        throw persist::request_bad_param("type", type, utils::join_keys_map(TYPES, ", "));
     auto type_id = TYPES.find(type)->second;
     unused_columns.erase("type");
 
@@ -308,7 +308,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     log_debug ("subtype = '%s'", subtype.c_str());
     if ( ( type == "device" ) &&
          ( SUBTYPES.find(subtype) == SUBTYPES.end() ) )
-        throw persist::request_bad_param("subtype", subtype, utils::join_keys(SUBTYPES, ", "));
+        throw persist::request_bad_param("subtype", subtype, utils::join_keys_map(SUBTYPES, ", "));
 
     if ( ( !subtype.empty() ) && ( type != "device" ) && ( type != "group") )
     {

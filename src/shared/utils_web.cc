@@ -101,14 +101,63 @@ std::string escape (const std::string& before) {
     return escape (before.c_str ());
 }
 
+
+// Note: At the time of re-writing from defect cxxtools::JsonFormatter I decided
+// to go with the simplest solution for create_error_json functions (after all,
+// our error template is not that complex). Shall some person find this ugly
+// and repulsive enough, there is a working cxxtools::JsonSerialize solution
+// ready at the following link:
+// http://stash.mbt.lab.etn.com/projects/BIOS/repos/core/pull-requests/1094/diff#src/web/src/error.cc
+
 std::string
 create_error_json (const std::string& message, uint32_t code) {
-    std::string s = "{\n\t\"errors\": [\n\t  {\n\t\t\"message\" : \"";
-    s+=utils::json::escape(message);
-    s+="\",\n\t\t\"code\" : ";
-    s+=utils::json::escape(std::to_string(code));
-    s+="\n\t  }\n\t]\n}";
-    return s;
+    return std::string (
+"{\n"
+"\t\"errors\": [\n"
+"\t\t{\n"
+"\t\t\t\"message\": ").append (jsonify (message)).append (",\n"
+"\t\t\t\"code\": ").append (jsonify (code)).append ("\n"
+"\t\t}\n"
+"\t]\n"
+"}\n"
+);
+}
+
+std::string
+create_error_json (std::vector <std::pair<uint32_t, std::string>> messages) {
+    std::string result =
+"{\n"
+"\t\"errors\": [\n";
+
+    std::vector <std::pair<uint32_t, std::string>>::const_iterator it;
+    for (it = messages.cbegin (); it != --messages.cend (); ++it) {
+        result.append (
+"\t\t{\n"
+"\t\t\t\"message\": "                
+        );
+        result.append (jsonify (it->second)).append (
+",\n"
+"\t\t\t\"code\": "
+        );
+        result.append (jsonify (it->first)).append (
+"\n"
+"\t\t},\n"
+        );
+    }
+    result.append (
+"\t\t{\n"
+"\t\t\t\"message\": "
+    );
+    result.append (jsonify (it->second)).append (
+",\n"
+"\t\t\t\"code\": ");
+    result.append (jsonify (it->first)).append (
+"\n"
+"\t\t}\n"
+"\t]\n"
+"}\n"
+);
+    return result;
 }
 
 } // namespace utils::json

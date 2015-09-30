@@ -113,4 +113,36 @@ TEST_CASE ("escape", "[utilities]")
     CHECK(out == inp);
 }
 
+TEST_CASE ("join_keys_map", "[utilities]")
+{
+    std::map <std::string, std::string> map1;
+    std::map <int, std::string> map2;
+    std::map <float, std::string> map3;
+    std::map <uint32_t, std::string> map4;
 
+    map1.emplace (std::make_pair ("a", "neco a"));
+    map1.emplace (std::make_pair ("b", "neco b"));
+    map1.emplace (std::make_pair ("c", "neco c"));
+
+    map2.emplace (std::make_pair (1, "neco a"));
+    map2.emplace (std::make_pair (-2, "neco b"));
+    map2.emplace (std::make_pair (3, "neco c"));
+    map2.emplace (std::make_pair (-10, "neco d"));
+
+    map3.emplace (std::make_pair (1, "neco a"));
+    map3.emplace (std::make_pair (2.2, "neco b"));
+    map3.emplace (std::make_pair (3.33, "neco c"));
+
+    map4.emplace (std::make_pair (1, "neco a"));
+    map4.emplace (std::make_pair (2, "neco b"));
+    map4.emplace (std::make_pair (3, "neco c"));
+
+
+
+    CHECK (utils::join_keys_map (map1, ",").compare ("a,b,c") == 0);
+    CHECK (utils::join_keys_map (map1, ", ").compare ("a, b, c") == 0);
+    CHECK (utils::join_keys_map (map2, ";").compare ("-10;-2;1;3") == 0);
+    CHECK (utils::join_keys_map (map3, ".").compare ("1.2.2.3.33") == 0);
+    CHECK (utils::join_keys_map (map4, " ").compare ("1 2 3") == 0);
+
+}

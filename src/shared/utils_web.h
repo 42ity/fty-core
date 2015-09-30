@@ -58,7 +58,7 @@ static constexpr const _WSErrors _errors = { {
     {.key = "element-not-found",        .http_code = HTTP_NOT_FOUND,                .err_code = 44,     .message = "Element '%s' not found."},
     {.key = "method-not-allowed",       .http_code = HTTP_METHOD_NOT_ALLOWED,       .err_code = 45,     .message = "Http method '%s' not allowed."},
     {.key = "request-param-required",   .http_code = HTTP_BAD_REQUEST,              .err_code = 46,     .message = "Parameter '%s' is required." },
-    {.key = "request-param-bad",        .http_code = HTTP_BAD_REQUEST,              .err_code = 47,     .message = "Parameter '%s' has bad value. Received '%s'. Expected %s" },
+    {.key = "request-param-bad",        .http_code = HTTP_BAD_REQUEST,              .err_code = 47,     .message = "Parameter '%s' has bad value. Received %s. Expected %s" },
     {.key = "bad-request-document",     .http_code = HTTP_BAD_REQUEST,              .err_code = 48,     .message = "Request document has invalid syntax. %s" },
     {.key = "data-conflict",            .http_code = HTTP_CONFLICT,                 .err_code = 50,     .message = "Element '%s' cannot be processed because of conflict. %s"},
     {.key = "action-forbidden",         .http_code = HTTP_BAD_REQUEST,              .err_code = 51,     .message = "%s is forbidden"},
@@ -132,6 +132,31 @@ _die_vasprintf(
     } \
     while(0)
 
+typedef struct _http_errors_t {
+    uint32_t http_code; 
+    std::vector <std::pair <uint32_t, std::string>> errors;
+} http_errors_t;
+
+#define http_add_error(errors, key, ...) \
+do { \
+    static_assert (std::is_same <decltype (errors), http_errors_t>::value, "'errors' argument in macro http_add_error must be a http_errors_t."); \
+    constexpr ssize_t key_idx = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
+    static_assert(key_idx != -1, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
+    (errors).http_code = _errors.at (key_idx).http_code; \
+    char *message; \
+    _die_vasprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__ ); \
+    (errors).errors.push_back (std::make_pair (_errors.at (key_idx).err_code, message)); \
+    free (message); \
+} \
+while (0)
+
+#define http_die_error(errors) \
+do { \
+    static_assert (std::is_same <decltype (errors), http_errors_t>::value, "'errors' argument in macro http_add_error must be a http_errors_t."); \
+    reply.out() << utils::json::create_error_json ((errors).errors); \
+    return (errors).http_code; \
+} \
+while (0)
 
 namespace utils {
 namespace json {
@@ -203,6 +228,9 @@ std::string jsonify (T key, T value) {
 
 std::string
 create_error_json (const std::string& message, uint32_t code);
+
+std::string
+create_error_json (std::vector <std::pair<uint32_t, std::string>> messages);
 
 } // namespace utils::json
 } // namespace utils

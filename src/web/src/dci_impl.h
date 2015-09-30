@@ -27,12 +27,14 @@
 #ifndef SRC_WEB_SRC_DCI_IMPL_H
 #define SRC_WEB_SRC_DCI_IMPL_H
 
+#include "utils++.h"
+
 // this file exists only to have syntax highlighting correct
 // to be included in datacenter_indicators.ecpp
 
 // ATTENTION!!! for trends:
 //  first one should be average, second one is raw measurement
-static const std::map<const std::string, const std::string> PARAM_TO_SRC = {
+static const std::map<std::string, const std::string> PARAM_TO_SRC = {
     {"power", "realpower.default"},
     {"avg_power_last_day", "realpower.default_arithmetic_mean_24h"},
     {"avg_power_last_week", "<zero>"},
@@ -210,6 +212,11 @@ static bool
 s_is_valid_param(const std::string& p)
 {
     return PARAM_TO_SRC.count(p) != 0;
+}
+
+std::string 
+s_get_valid_param () {
+    return utils::join_keys_map (PARAM_TO_SRC, ", ");
 }
 
 
