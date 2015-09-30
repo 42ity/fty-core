@@ -39,6 +39,7 @@
 #include "cleanup.h"
 #include "db/measurements.h"
 #include "utils_web.h"
+#include "log.h"
 
 #include "src/web/src/dci_impl.h"
 </%pre>
@@ -151,10 +152,12 @@ asset_manager asset_mgr;
     json << "\t]\n}\n";
     }
     catch (const tntdb::Error& e) {
-        http_die ("internal-error", std::string ("Error while connecting to database: ").append (e.what ()).c_str ());
+        log_error ("%s", e.what ());
+        http_die ("internal-error", "Database related error.");
     }
     catch (const std::exception& e) {
-        http_die ("internal-error", e.what ());
+        log_error ("%s", e.what ());
+        http_die ("internal-error");
     }
 </%cpp>
 <$$ json.str() $>

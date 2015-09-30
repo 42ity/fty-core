@@ -42,6 +42,7 @@
 #include "utils.h"
 #include "utils++.h"
 #include "utils_web.h"
+#include "log.h"
 
 static const std::map<std::string, const std::string> PARAM_TO_SRC = {
     {"total_power", "realpower.default"},
@@ -189,10 +190,12 @@ asset_manager asset_mgr;
     json << "\t]\n}\n";
     }
     catch (const tntdb::Error& e) {
-        http_die ("internal-error", std::string ("Error while connecting to database: ").append (e.what ()).c_str ());
+        log_error ("%s", e.what ());
+        http_die ("internal-error", "Database related error.");
     }
     catch (const std::exception& e) {
-        http_die ("internal-error", e.what ());
+        log_error ("%s", e.what ());
+        http_die ("internal-error", "Exception caught.");
     }
 </%cpp>
 <$$ json.str() $>
