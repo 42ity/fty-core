@@ -74,17 +74,15 @@ FILL(token)
     }
   }
 
-  if(grant_type != "password") {
-      http_die("request-param-bad", "grant_type", grant_type.c_str(), "password");
-  } else {
-    if(authenticate(username.c_str(), password.c_str())) {
+if (grant_type != "password")
+    http_die("request-param-bad", "grant_type", grant_type.c_str(), "password");
+
+if(!authenticate(username.c_str(), password.c_str()))
+    http_die("not-authorized");
+
 </%cpp>
 {
     "access_token":"<$$ tokens::get_instance()->gen_token(valid, username.c_str()) $>",
-    "token_type":"bearer",
-    "expires_in":<$ valid $>
+        "token_type":"bearer",
+        "expires_in":<$ valid $>
 }
-% } else {
-    http_die("not-authorized");
-% }
-% }
