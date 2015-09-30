@@ -46,7 +46,10 @@ static std::string
 s_reason(
         const std::string& err)
 {
-    static const cxxtools::Regex rgx{"^BAD PASSWORD:.*"};
+    static const char* BAD_PASSWORD = "BAD PASSWORD: ";
+    static const size_t SKIP_IDX = strlen(BAD_PASSWORD);
+    static const cxxtools::Regex rgx{std::string("^") + BAD_PASSWORD + ".*"};
+
     std::stringstream s;
     s << err;
     std::string line;
@@ -54,8 +57,7 @@ s_reason(
 
     while(std::getline(s, line)) {
         if (rgx.match(line))
-            //14 is strlen("BAD PASSWORD: ")
-            out.push_back(line.substr(14, line.size()));
+            out.push_back(line.substr(SKIP_IDX, line.size()));
     }
 
     std::stringstream ret;
