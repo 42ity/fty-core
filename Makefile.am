@@ -1369,21 +1369,23 @@ pkglib_LTLIBRARIES +=	bios_web.la
 # Many but not all of CPP files with bios_web.la are generated from ECPP files
 # List them explicitly as separate sets, so that generated files can be cleaned
 BUILT_SOURCES_bios_web_la = \
-                      src/include/git_details_override.h                     \
-                      src/web/src/auth.cpp  src/web/src/auth-verify.cpp      \
-                      src/web/src/agent.cpp src/web/src/ssl-redirect.cpp     \
-                      src/web/src/power.cpp src/web/src/asset_GET.cpp        \
+                      src/include/git_details_override.h                      \
+                      src/web/src/auth.cpp  src/web/src/auth-verify.cpp       \
+                      src/web/src/agent.cpp src/web/src/ssl-redirect.cpp      \
+                      src/web/src/power.cpp src/web/src/asset_GET.cpp         \
                       src/web/src/asset_DELETE.cpp src/web/src/asset_POST.cpp \
-                      src/web/src/json.cpp  src/web/src/list.cpp             \
-                      src/web/src/time.cpp  src/web/src/sysinfo.cpp          \
-                      src/web/src/current.cpp src/web/src/ui_properties.cpp  \
-                      src/web/src/rack_total.cpp src/web/src/location.cpp    \
-                      src/web/src/datacenter_indicators.cpp                  \
-                      src/web/src/average.cpp src/web/src/asset_import.cpp   \
-                      src/web/src/alerts.cpp src/web/src/netcfg.cpp          \
-                      src/web/src/uptime.cpp src/web/src/iface.cpp           \
-                      src/web/src/license.cpp src/web/src/asset_export.cpp   \
-                      src/web/src/admin_passwd.cpp src/web/src/systemctl.cpp \
+                      src/web/src/json.cpp  src/web/src/list.cpp              \
+                      src/web/src/time.cpp  src/web/src/sysinfo.cpp           \
+                      src/web/src/current.cpp src/web/src/ui_properties.cpp   \
+                      src/web/src/rack_total.cpp 							  \
+					  src/web/src/topology_location_from.cpp                  \
+					  src/web/src/topology_location_to.cpp				      \
+                      src/web/src/datacenter_indicators.cpp                   \
+                      src/web/src/average.cpp src/web/src/asset_import.cpp    \
+                      src/web/src/alerts.cpp src/web/src/netcfg.cpp           \
+                      src/web/src/uptime.cpp src/web/src/iface.cpp            \
+                      src/web/src/license.cpp src/web/src/asset_export.cpp    \
+                      src/web/src/admin_passwd.cpp src/web/src/systemctl.cpp  \
                       src/web/src/config.cpp
 
 # Track real-git and nodist (generated) sources SEPARATELY
