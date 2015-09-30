@@ -122,7 +122,6 @@ asset_manager asset_mgr;
     // check that racks exists
     auto allRacksShort = asset_mgr.get_items1("rack", "");
     if ( allRacksShort.status == 0 ) {
-        // TODO (ACE): Please fill in a more meaningfull reason if possible 
         http_die ("internal-error", "Error while retrieving information about racks."); 
     }
 
