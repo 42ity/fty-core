@@ -125,22 +125,22 @@ if(rex_st.match(request.getUrl())) {
 % }
 }
 <%cpp>
-    if(buff_a != NULL) free(buff_a);
-    if(user != NULL) free(user);
+    FREE0(buff_a);
+    FREE0(user);
 	RETURN HTTP_OK;
 }
 if(buff_a == NULL || strcmp(buff_a, buff_r) != 0) {
   if(buff_a == NULL) {
     http_die("action-forbidden", "REST API call", "Please accept license first.");
   } else {
-    if(buff_a != NULL) free(buff_a);
-    if(user != NULL) free(user);
+    FREE0(buff_a);
+    FREE0(user);
     std::string msg = std::string{"License version changed (new is "} + buff_r + ", accepted is " + buff_a + "). Please accept new license first";
     http_die("action-forbidden", "REST API call", msg.c_str());
   }
 } else {
-    if(buff_a != NULL) free(buff_a);
-    if(user != NULL) free(user);
+    FREE0(buff_a);
+    FREE0(user);
 	RETURN DECLINED;
 }
 </%cpp>
