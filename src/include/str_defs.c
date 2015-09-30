@@ -49,7 +49,7 @@ const char *AVG_TYPES[AVG_TYPES_SIZE] = {
     "max"
 };
 
-const char* DATETIME_FORMAT = "%4d%2d%2d%2d%2d%2d%c";
+const char* DATETIME_FORMAT = "%4d-%2d-%2dT%2d:%2d:%2d%c";
 
 const char* BIOS_WEB_AVERAGE_REPLY_JSON_TMPL =
     "{\n"

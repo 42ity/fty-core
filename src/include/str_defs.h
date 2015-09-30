@@ -41,7 +41,7 @@ extern const char* AVG_STEPS[AVG_STEPS_SIZE];
 extern const char* AVG_TYPES[AVG_TYPES_SIZE];
 
 extern const char* DATETIME_FORMAT;
-#define DATETIME_FORMAT_LENGTH 15
+#define DATETIME_FORMAT_LENGTH 20
 
 extern const char* STRFTIME_DATETIME_FORMAT;
 
