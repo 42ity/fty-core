@@ -64,7 +64,7 @@ FILL(token)
   static cxxtools::Regex rex_rev("^.*/revoke$");
   if(request.isMethodPOST() && rex_rev.match(request.getUrl())) {
 	if(token.empty()) {
-        http_die("request-param-required", "token (for revoke)");
+        http_die("request-param-required", "token to revoke");
     } else {
 	  tokens::get_instance()->revoke(token);
 </%cpp>
@@ -85,6 +85,6 @@ if (!grant_type.empty()) {
 </%cpp>
 {
     "access_token":"<$$ tokens::get_instance()->gen_token(valid, username.c_str()) $>",
-        "token_type":"bearer",
-        "expires_in":<$ valid $>
+    "token_type":"bearer",
+    "expires_in":<$ valid $>
 }
