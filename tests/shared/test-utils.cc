@@ -110,28 +110,44 @@ TEST_CASE ("datetime_to_calendar", "[utils][time]") {
     SECTION ("bad arguments") {
         CHECK ( datetime_to_calendar (NULL) == -1 );
         CHECK ( datetime_to_calendar ("") == -1 );
-        CHECK ( datetime_to_calendar ("20150419181523") == -1 ); // missing utc timezone specifier
-        CHECK ( datetime_to_calendar ("20150419181523z") == -1 ); // wrong small case
-        CHECK ( datetime_to_calendar ("2015041918152Z") == -1 ); // one number short
+
+        CHECK ( datetime_to_calendar ("2015-04-19T18:15:23") == -1 ); // missing utc timezone specifier
+        CHECK ( datetime_to_calendar ("2015-04-19T18:15:23z") == -1 ); // wrong small case
+        CHECK ( datetime_to_calendar ("2015-04-19T18:15:2Z") == -1 ); // one number short
+        CHECK ( datetime_to_calendar ("2015-04-19T18:5:23Z") == -1 ); // one number short
+        CHECK ( datetime_to_calendar ("2015-4-19T18:05:23Z") == -1 ); // one number short
+        CHECK ( datetime_to_calendar ("2015-01-1918:15:23Z") == -1 ); // missing T
+
+        CHECK ( datetime_to_calendar ("2015-0119T18:15:23Z") == -1 ); // missing hyphen
+        CHECK ( datetime_to_calendar ("2015-0-119T18:15:23Z") == -1 ); // misplaced hyphen
+        CHECK ( datetime_to_calendar ("2015-011-9T18:15:23Z") == -1 ); // misplaced hyphen
+        CHECK ( datetime_to_calendar ("201-501-19T18:15:23Z") == -1 ); // misplaced hyphen
+        CHECK ( datetime_to_calendar ("201-01-19T1815:23Z") == -1 ); 
+        CHECK ( datetime_to_calendar ("2015-01-19T18:1523Z") == -1 ); 
+        CHECK ( datetime_to_calendar ("2015-01-19T181:15:23Z") == -1 ); 
+        CHECK ( datetime_to_calendar ("2015-01-19T18:15:3Z") == -1 ); 
+
+        CHECK ( datetime_to_calendar ("20150419181523Z") == -1 ); // old format
+
     }
     SECTION ("correct execution") {
-        CHECK ( datetime_to_calendar ("20150301100532Z") == 1425204332 );
-        CHECK ( datetime_to_calendar ("20150304235959Z") == 1425513599 );
-        CHECK ( datetime_to_calendar ("19991231235959Z") == 946684799 );
-        CHECK ( datetime_to_calendar ("20000101000000Z") == 946684800 );
-        CHECK ( datetime_to_calendar ("20000131235959Z") == 949363199 );
-        CHECK ( datetime_to_calendar ("20000201000000Z") == 949363200 );
-        CHECK ( datetime_to_calendar ("20000229235959Z") == 951868799 );
-        CHECK ( datetime_to_calendar ("20000301000000Z") == 951868800 );
-        CHECK ( datetime_to_calendar ("20000526135504Z") == 959349304 );
-        CHECK ( datetime_to_calendar ("20000430235959Z") == 957139199 );
-        CHECK ( datetime_to_calendar ("20000501000000Z") == 957139200 );
-        CHECK ( datetime_to_calendar ("20001231235959Z") == 978307199 );
-        CHECK ( datetime_to_calendar ("20010101000000Z") == 978307200 );
-        CHECK ( datetime_to_calendar ("20010731235959Z") == 996623999 );
-        CHECK ( datetime_to_calendar ("20010801000000Z") == 996624000 );
-        CHECK ( datetime_to_calendar ("20010930235959Z") == 1001894399 );
-        CHECK ( datetime_to_calendar ("20011001000000Z") == 1001894400 );
+        CHECK ( datetime_to_calendar ("2015-03-01T10:05:32Z") == 1425204332 );
+        CHECK ( datetime_to_calendar ("2015-03-04T23:59:59Z") == 1425513599 );
+        CHECK ( datetime_to_calendar ("1999-12-31T23:59:59Z") == 946684799 );
+        CHECK ( datetime_to_calendar ("2000-01-01T00:00:00Z") == 946684800 );
+        CHECK ( datetime_to_calendar ("2000-01-31T23:59:59Z") == 949363199 );
+        CHECK ( datetime_to_calendar ("2000-02-01T00:00:00Z") == 949363200 );
+        CHECK ( datetime_to_calendar ("2000-02-29T23:59:59Z") == 951868799 );
+        CHECK ( datetime_to_calendar ("2000-03-01T00:00:00Z") == 951868800 );
+        CHECK ( datetime_to_calendar ("2000-05-26T13:55:04Z") == 959349304 );
+        CHECK ( datetime_to_calendar ("2000-04-30T23:59:59Z") == 957139199 );
+        CHECK ( datetime_to_calendar ("2000-05-01T00:00:00Z") == 957139200 );
+        CHECK ( datetime_to_calendar ("2000-12-31T23:59:59Z") == 978307199 );
+        CHECK ( datetime_to_calendar ("2001-01-01T00:00:00Z") == 978307200 );
+        CHECK ( datetime_to_calendar ("2001-07-31T23:59:59Z") == 996623999 );
+        CHECK ( datetime_to_calendar ("2001-08-01T00:00:00Z") == 996624000 );
+        CHECK ( datetime_to_calendar ("2001-09-30T23:59:59Z") == 1001894399 );
+        CHECK ( datetime_to_calendar ("2001-10-01T00:00:00Z") == 1001894400 );
     }
 }
 

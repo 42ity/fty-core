@@ -81,12 +81,6 @@ int64_t average_first_since (int64_t timestamp, const char *step);
 
 /*!
  \brief transform rfc-11 defined datetime format to calendar time (unix timestamp).
-
-  For $BIOS project rest api rfc-11 defines one common format for datetimes. It is "derived" from iso8601 in the following sense:
-  all hyphen (-) colon (:) characters are removed and 'Z' character is always appended to the end that represents UTC timezone.
-  Since the standard understands the two following dates to be equal "19991231235959Z" == "20000101000000Z" we can not use
-  strptime() function as it fails on hh:mm:ss 24:00:00. Another needed workaround is the fact that mktime() uses local time zone.
-
  \return unix timestamp or -1 on failure
 */
 int64_t datetime_to_calendar (const char *datetime);
