@@ -113,14 +113,14 @@ s_passwd(
     else if (user == "root")
         http_die("request-param-bad", "user", user.c_str(), "<user name other than 'root'>");
     else if (!authenticate(user.c_str(), old_passwd.c_str()))
-        http_die("request-param-bad", "(user|old_passwd)", "<invalid user or password>", "<valid user or password>");
+        http_die("request-param-bad", "(user|old_passwd)", "<invalid user or password>", "<valid user and password>");
 
     std::string reason;
     std::string received;
     int r = s_passwd(user, old_passwd, new_passwd, reason);
     if (r != 0) {
         if (!reason.empty())
-            received = "password with problems: " + utils::json::escape(reason);
+            received = "password with problems: " + reason;
         else
             received = "bios-passwd returned error code " + std::to_string(r);
 
