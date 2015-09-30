@@ -111,6 +111,13 @@ create_error_json (const std::string& message, uint32_t code) {
     return s;
 }
 
+std::string jsonify (double t)
+{
+    if (isnan(t))
+        return "null";
+    return std::string ("\"").append (std::to_string (t)).append ("\"");
+}
+
 } // namespace utils::json
 } // namespace utils
 
