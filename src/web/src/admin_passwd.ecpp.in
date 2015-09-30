@@ -24,9 +24,13 @@
  */
 #><%pre>
 #include <string>
+#include <sstream>
+#include <vector>
 
 #include <cxxtools/serializationinfo.h>
 #include <cxxtools/jsondeserializer.h>
+#include <cxxtools/regex.h>
+#include <cxxtools/join.h>
 
 #include "subprocess.h"
 #include "cidr.h"
@@ -37,18 +41,46 @@
 #define SSH_NOT_TO_BE_RUN "/etc/ssh/sshd_not_to_be_run"
 using namespace shared;
 
+// extract lines beginning with 'BAD PASSWORD: ' from stderr
+static std::string
+s_reason(
+        const std::string& err)
+{
+    static const cxxtools::Regex rgx{"^BAD PASSWORD:.*"};
+    std::stringstream s;
+    s << err;
+    std::string line;
+    std::vector<std::string> out;
+
+    while(std::getline(s, line)) {
+        if (rgx.match(line))
+            //14 is strlen("BAD PASSWORD: ")
+            out.push_back(line.substr(14, line.size()));
+    }
+
+    std::stringstream ret;
+    cxxtools::join(out.begin(), out.end(), ", ", ret);
+    return ret.str();
+}
+
 static int
 s_passwd(
     const std::string& user,
     const std::string& old_passwd,
     const std::string& new_passwd,
-    std::string& err)
+    std::string& reason)
 {
     Argv args{"/usr/bin/sudo", "@libexecdir@/@PACKAGE@/bios-passwd"};
     std::string out;
 
     std::string inp = user + "\n" + old_passwd + "\n" + new_passwd + "\n";
-    return output(args, out, err, inp);
+    std::string err;
+    int ret = output(args, out, err, inp);
+    reason = s_reason(err);
+    // expect script prints to stdout
+    if (reason.empty())
+        reason = s_reason(out);
+    return ret;
 }
 
 </%pre>
@@ -83,12 +115,20 @@ s_passwd(
     else if (!authenticate(user.c_str(), old_passwd.c_str()))
         http_die("request-param-bad", "(user|old_passwd)", "<invalid user or password>", "<valid user or password>");
 
-    std::string err;
-    int r = s_passwd(user, old_passwd, new_passwd, err);
+    std::string reason;
+    std::string received;
+    int r = s_passwd(user, old_passwd, new_passwd, reason);
     if (r != 0) {
-        //this stretches semantics of request-param-bad!
-        //TODO: maybe 'grep' for BAD-PASSWORD
-        http_die("request-param-bad", "new_passwd", utils::json::escape(err).c_str(), "<valid password>");
+        if (!reason.empty())
+            received = "password with problems: " + utils::json::escape(reason);
+        else
+            received = "bios-passwd returned error code " + std::to_string(r);
+
+        //this stretches semantics of request-param-bad!!!
+        http_die("request-param-bad",
+                 "new_passwd",
+                 received.c_str(),
+                 "<valid password>");
     }
 
     /* Verify the new password and so flush the SASLAUTHD cache that trusts the old one still */
