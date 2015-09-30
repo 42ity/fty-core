@@ -98,8 +98,9 @@ if(rex_lic.match(request.getUrl())) {
 	}
     http_die("method-not-allowed", request.getMethod().c_str());
 }
-char *buff_a = NULL;
-char *user = NULL;
+
+_scoped_char *buff_a = NULL;
+_scoped_char *user = NULL;
 char buff_r[512];
 memset(buff_r, 0, sizeof(buff_r));
 uint64_t tme;
@@ -129,16 +130,14 @@ if(rex_st.match(request.getUrl())) {
 	RETURN HTTP_OK;
 }
 if(buff_a == NULL || strcmp(buff_a, buff_r) != 0) {
-</%cpp>
-% if(buff_a == NULL) {
-{ "error" : "License version not accepted yet, please accept it first." }
-% } else {
-{ "error" : "License accepted in version <$ buff_a $>, but current version is <$ buff_r $>. Please reaccept it." }
-% }
-<%cpp>
+  if(buff_a == NULL) {
+    http_die("action-forbidden", "REST API call", "Please accept license first.");
+  } else {
     if(buff_a != NULL) free(buff_a);
     if(user != NULL) free(user);
-	http_die("not-authorized");
+    std::string msg = std::string{"License version changed (new is "} + buff_r + ", accepted is " + buff_a + "). Please accept new license first";
+    http_die("action-forbidden", "REST API call", msg.c_str());
+  }
 } else {
     if(buff_a != NULL) free(buff_a);
     if(user != NULL) free(user);
