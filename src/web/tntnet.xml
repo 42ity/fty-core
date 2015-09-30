@@ -229,6 +229,7 @@
     <mapping>
       <target>datacenter_indicators@bios_web</target>
       <url>^/api/v1/metric/computed/datacenter_indicators.*$</url>
+      <method>GET</method>
     </mapping>
 
     <!-- uptime -->

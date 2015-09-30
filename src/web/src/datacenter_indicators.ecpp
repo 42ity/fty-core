@@ -28,6 +28,8 @@
  #><%pre>
 #include <czmq.h>
 #include <cxxtools/split.h>
+#include <cxxtools/regex.h>
+#include <tntdb/error.h>
 #include <stdexcept>
 
 #include "assetcrud.h"
@@ -36,6 +38,7 @@
 #include "dbpath.h"
 #include "cleanup.h"
 #include "db/measurements.h"
+#include "utils_web.h"
 
 #include "src/web/src/dci_impl.h"
 </%pre>
@@ -47,68 +50,89 @@ std::string arg2;
 asset_manager asset_mgr;
 </%thread>
 <%cpp>
-    // Check URL validity
-    if( arg1 == "" || arg2 == "" ) {
-</%cpp>
-{ "error":"bad_input", "msg":"missing argument" }
-<%cpp>
-        return HTTP_BAD_REQUEST;
+    // Input arguments checks
+
+    // arg1, arg2 are both mandatory
+    if (arg1.empty ()) {
+        http_die ("request-param-required", "arg1");
     }
+
+    if (arg2.empty ()) {
+        http_die ("request-param-required", "arg2");
+    }
+
+    http_errors_t errors;
+
+    // arg1 is a single value OR a comma-separated list of element identifiers
     std::vector<std::string> DCs;
     std::vector<std::string> DCNames;
-    std::vector<std::string> requestedParams;
     cxxtools::split(",", arg1, std::back_inserter(DCs));
 
     // check that DC exists
-    auto allDcsShort= asset_mgr.get_items1("datacenter", "");
-    if ( allDcsShort.status == 0 )
-    {
-        // TODO better error handling by types
-</%cpp>
-{ "error":"internal error", "msg":"while reading information about dcs"}
-<%cpp>
-        return HTTP_INTERNAL_SERVER_ERROR;
-    }
-    for ( size_t i = 0; i < DCs.size() ; i++ )
-    {
-        // TODO add better converter
-        uint32_t real_id = atoi(DCs[i].c_str());
-        if ( real_id == 0 )
-        {
-</%cpp>
-{ "error":"bad_input", "msg":"invalid dc id <$$ DCs[i]$> (can not convert)"}
-<%cpp>
-            return HTTP_BAD_REQUEST;
-        }
-
-        auto it = allDcsShort.item.find(real_id);
-        if ( it != allDcsShort.item.end() )
-        {
-            DCNames.push_back(it->second);
-        }
-        else
-        {
-</%cpp>
-{ "error":"bad_input", "msg":"invalid dc id <$$ DCs[i]$> (doesn't exist)"}
-<%cpp>
-            return HTTP_BAD_REQUEST;
-        }
+    auto allDcsShort = asset_mgr.get_items1("datacenter", "");
+    if (allDcsShort.status == 0) {
+        // TODO (ACE): Please fill in a more meaningfull reason if possible 
+        http_die ("internal-error", "Error while retrieving information about datacenters.");
     }
 
+    for (auto const& item : DCs) {
+        try {
+            // id_asset_element is defined as 'INT UNSIGNED' in tools/initdb.sql
+            static cxxtools::Regex regex_element ("^[1-9][0-9]*$");
+            if (!regex_element.match (item)) {
+                throw std::invalid_argument ("");
+            }
+            unsigned long real_id_l = std::stoul (item);
+            if (real_id_l == 0 || real_id_l > UINT_MAX) {
+                throw std::out_of_range ("");
+            }
+            uint32_t real_id = static_cast<uint32_t> (real_id_l);
+
+            auto it = allDcsShort.item.find (real_id);
+            if (it == allDcsShort.item.end()) {
+                throw std::runtime_error("");
+            }
+            DCNames.push_back (it->second);
+        }
+        catch (const std::out_of_range& e) {
+            http_add_error (errors, "request-param-bad", "arg1",
+                std::string ("value '").append (item).append ("'").append (" is out of range").c_str (),
+                std::string ("value in range 1 to ").append (std::to_string (UINT_MAX)).append (".").c_str ());
+        }
+        catch (const std::invalid_argument& e) {
+            http_add_error (errors, "request-param-bad", "arg1",
+                std::string ("value '").append (item).append ("'").append (" is not an element identifier").c_str (),
+                std::string ("an unsigned integer in range 1 to ").append (std::to_string (UINT_MAX)).append (".").c_str ());
+        }
+        catch (const std::runtime_error& e) {
+            http_add_error (errors, "request-param-bad", "arg1",
+                std::string ("datacenter id value '").append (item).append ("'").append (" does NOT exist").c_str (),
+                "existing datacenter identifier.");
+        }
+    }
+    if (!errors.errors.empty ()) {
+        http_die_error (errors);
+    }
+
+    // arg2 is a single value OR a comma-separated list formed from a list of permissible values (PARAM_TO_SRC)
+    std::vector<std::string> requestedParams;
     cxxtools::split(",", arg2, std::back_inserter(requestedParams));
-    for(std::string &param: requestedParams) {
-        if ( !s_is_valid_param(param) ) {
-</%cpp>
-{"error":"bad_input", "msg":"invalid parameter" }
-<%cpp>
-            return HTTP_BAD_REQUEST;
+
+    for (const std::string& param: requestedParams) {
+        if (!s_is_valid_param (param) ) {
+            http_add_error (errors, "request-param-bad", "arg2",
+                std::string ("value '").append (param).append ("'").c_str (),
+                std::string ("one of the following values: [").append (s_get_valid_param ()).append ("].").c_str ());
         }
+    }
+    if (!errors.errors.empty ()) {
+        http_die_error (errors);
     }
 
     std::map<const std::string, double> SRC_TO_VALUE{};
 
     std::stringstream json;
-try {
+    try {
     // TODO this can throw exceptions!!
     tntdb::Connection conn = tntdb::connectCached (url);
     json << "{\n\t\"datacenter_indicators\": [\n";
@@ -126,18 +150,12 @@ try {
         json << "\t\t}" << (  D < DCs.size() -1 ? ",\n" : "\n" );
     }
     json << "\t]\n}\n";
-} catch ( const std::invalid_argument& e ) {
-</%cpp>
-    { "error" : "<$$ e.what()$>" }
-<%cpp>
-      return HTTP_BAD_REQUEST;
-}
-catch ( const std::exception& e ) {
-</%cpp>
-    <h1>internal server error</h1>
-    <$ e.what() $>
-<%cpp>
-      return HTTP_INTERNAL_SERVER_ERROR;
-}
+    }
+    catch (const tntdb::Error& e) {
+        http_die ("internal-error", std::string ("Error while connecting to database: ").append (e.what ()).c_str ());
+    }
+    catch (const std::exception& e) {
+        http_die ("internal-error", e.what ());
+    }
 </%cpp>
 <$$ json.str() $>

@@ -40,9 +40,10 @@
 #include "db/measurements.h"
 #include "cleanup.h"
 #include "utils.h"
+#include "utils++.h"
 #include "utils_web.h"
 
-static const std::map<const std::string, const std::string> PARAM_TO_SRC = {
+static const std::map<std::string, const std::string> PARAM_TO_SRC = {
     {"total_power", "realpower.default"},
     {"avg_power_last_day", "realpower.default_arithmetic_mean_24h"},
     {"avg_power_last_week", "<zero>"},
@@ -76,20 +77,6 @@ s_is_valid_param(const std::string& p)
     return PARAM_TO_SRC.count(p) != 0;
 }
 
-std::string 
-arg2_values () {
-    std::string res;
-    std::map<const std::string, const std::string>::const_iterator it;
-    for (it = PARAM_TO_SRC.cbegin (); 
-         it != --PARAM_TO_SRC.cend ();
-         ++it) {
-        res.append (it->first).append (", ");
-    }
-    res.append (it->first);
-    return res;
-}
-
-
 </%pre>
 <%args>
 std::string arg1;
@@ -110,10 +97,7 @@ asset_manager asset_mgr;
         http_die ("request-param-required", "arg2");
     }
 
-    std::string message_format; // format string for error message
-    uint32_t error_code = 0, http_code = 0; // error code, http return code
-    http_err_get ("request-param-bad", message_format, error_code, http_code)
-    std::vector <std::pair<uint32_t, std::string>> errors;
+    http_errors_t errors;
 
     // arg2 is a single value OR a comma-separated list formed from a list of permissible values (PARAM_TO_SRC)
     std::vector <std::string> requestedParams;
@@ -121,18 +105,13 @@ asset_manager asset_mgr;
 
     for (const std::string& param: requestedParams) {
         if (!s_is_valid_param (param)) {
-            _scoped_char *tmp_str;
-            asprintf (&tmp_str, message_format.c_str (),
-                      "arg2",
-                      std::string ("value '").append (param).append ("'").c_str (),
-                      std::string ("one of the following values: [").append (arg2_values ()).append ("].").c_str ());
-            errors.push_back (std::make_pair (error_code, tmp_str));
-            FREE0 (tmp_str)
+            http_add_error (errors, "request-param-bad", "arg2",
+                std::string ("value '").append (param).append ("'").c_str (),
+                std::string ("one of the following values: [").append (utils::join_keys_map (PARAM_TO_SRC, ", ")).append ("].").c_str ());
         }
     }    
-    if (!errors.empty ()) {
-        reply.out () << utils::json::create_error_json (errors);
-        return http_code;
+    if (!errors.errors.empty ()) {
+        http_die_error (errors);
     }
 
     // arg1 is a single value OR a comma-separated list of element identifiers
@@ -164,40 +143,26 @@ asset_manager asset_mgr;
             if (it == allRacksShort.item.end()) {
                 throw std::runtime_error("");
             }
-
-            rackNames.push_back(it->second);
+            rackNames.push_back (it->second);
         }
         catch (const std::out_of_range& e) {
-            _scoped_char *tmp_str;
-            asprintf (&tmp_str, message_format.c_str (),
-                      "arg1",
-                      std::string ("value '").append (item).append ("'").append (" is out of range").c_str (),
-                      std::string ("value in range 1 to ").append (std::to_string (UINT_MAX)).append (".").c_str ());
-            errors.push_back (std::make_pair (error_code, tmp_str));
-            FREE0 (tmp_str)
+            http_add_error (errors, "request-param-bad", "arg1",
+                std::string ("value '").append (item).append ("'").append (" is out of range").c_str (),
+                std::string ("value in range 1 to ").append (std::to_string (UINT_MAX)).append (".").c_str ());
         } 
         catch (const std::invalid_argument& e) {
-            _scoped_char *tmp_str;
-            asprintf (&tmp_str, message_format.c_str (),
-                      "arg1",
-                      std::string ("value '").append (item).append ("'").append (" is not an element identifier").c_str (),
-                      std::string ("an unsigned integer in range 1 to ").append (std::to_string (UINT_MAX)).append (".").c_str ());
-            errors.push_back (std::make_pair (error_code, tmp_str));
-            FREE0 (tmp_str)
+            http_add_error (errors, "request-param-bad", "arg1",
+                std::string ("value '").append (item).append ("'").append (" is not an element identifier").c_str (),
+                std::string ("an unsigned integer in range 1 to ").append (std::to_string (UINT_MAX)).append (".").c_str ());
         }
         catch (const std::runtime_error& e) {
-            _scoped_char *tmp_str;
-            asprintf (&tmp_str, message_format.c_str (),
-                      "arg1",
-                      std::string ("rack id value '").append (item).append ("'").append (" does NOT exist").c_str (),
-                      "existing rack identifier.");
-            errors.push_back (std::make_pair (error_code, tmp_str));
-            FREE0 (tmp_str)
+            http_add_error (errors, "request-param-bad", "arg1",
+                std::string ("rack id value '").append (item).append ("'").append (" does NOT exist").c_str (),
+                "existing rack identifier.");
         }
     }
-    if (!errors.empty ()) {
-        reply.out () << utils::json::create_error_json (errors);
-        return http_code;
+    if (!errors.errors.empty ()) {
+        http_die_error (errors);
     }
 
     std::stringstream json;

@@ -132,18 +132,31 @@ _die_vasprintf(
     } \
     while(0)
 
-#define http_err_get(key, MSG_FORMAT, CODE, HTTP_RET) \
-{ \
-    static_assert (std::is_same <decltype (MSG_FORMAT), std::string>::value , "MSG_FORMAT argument in macro http_err_get must be a std:string!"); \
-    static_assert (std::is_same <decltype (CODE), uint32_t>::value , "CODE argument in macro http_err_get must be a uint32_t!"); \
-    static_assert (std::is_same <decltype (HTTP_RET), uint32_t>::value , "HTTP_RET argument in macro http_err_get must be a uint32_t!"); \
+typedef struct _http_errors_t {
+    uint32_t http_code; 
+    std::vector <std::pair <uint32_t, std::string>> errors;
+} http_errors_t;
+
+#define http_add_error(errors, key, ...) \
+do { \
+    static_assert (std::is_same <decltype (errors), http_errors_t>::value, "'errors' argument in macro http_add_error must be a http_errors_t."); \
     constexpr ssize_t key_idx = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
     static_assert(key_idx != -1, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
-    (MSG_FORMAT).assign (_errors.at(key_idx).message); \
-    (CODE) = _errors.at(key_idx).err_code; \
-    (HTTP_RET) = _errors.at(key_idx).http_code; \
-} 
+    (errors).http_code = _errors.at (key_idx).http_code; \
+    char *message; \
+    _die_vasprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__ ); \
+    (errors).errors.push_back (std::make_pair (_errors.at (key_idx).err_code, message)); \
+    free (message); \
+} \
+while (0)
 
+#define http_die_error(errors) \
+do { \
+    static_assert (std::is_same <decltype (errors), http_errors_t>::value, "'errors' argument in macro http_add_error must be a http_errors_t."); \
+    reply.out() << utils::json::create_error_json ((errors).errors); \
+    return (errors).http_code; \
+} \
+while (0)
 
 namespace utils {
 namespace json {
