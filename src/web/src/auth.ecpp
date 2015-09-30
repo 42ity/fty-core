@@ -26,6 +26,7 @@
  #><%pre>
 #include "sasl.h"
 #include "tokens.h"
+#include "utils_web.h"
 #include <string>
 #include <iostream>
 #include <cxxtools/regex.h>
@@ -63,10 +64,7 @@ FILL(token)
   static cxxtools::Regex rex_rev("^.*/revoke$");
   if(request.isMethodPOST() && rex_rev.match(request.getUrl())) {
 	if(token.empty()) {
-</%cpp>
-{ "error": "No token provided" }
-<%cpp>
-      return HTTP_BAD_REQUEST;
+        http_die("request-param-required", "token (for revoke)");
     } else {
 	  tokens::get_instance()->revoke(token);
 </%cpp>
@@ -77,11 +75,7 @@ FILL(token)
   }
 
   if(grant_type != "password") {
-</%cpp>
-{
-    "error":"unsupported_grant_type"
-}
-<%cpp>
+      http_die("request-param-bad", "grant_type", grant_type.c_str(), "password");
   } else {
     if(authenticate(username.c_str(), password.c_str())) {
 </%cpp>
@@ -91,9 +85,6 @@ FILL(token)
     "expires_in":<$ valid $>
 }
 % } else {
-{
-    "error":"invalid_grant"
-}
-% return HTTP_UNAUTHORIZED;
+    http_die("not-authorized");
 % }
 % }
