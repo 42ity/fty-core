@@ -50,26 +50,24 @@
 
     try{
         shared::CsvMap cm = shared::CsvMap_from_serialization_info(si);
-        // actual insert
-        std::vector <std::pair<db_a_elmnt_t,persist::asset_operation>> okRows{};
-        std::map <int, std::string> failRows{};
-        persist::load_asset_csv (cm, okRows, failRows);
+
+        // POST /asset is currently used to insert new datacenter from wizard
+        // all you need when implementing POST for other types is to support structured error handling
+        // in underlying functions like update_device
+        if (!cm.hasTitle("type"))
+            http_die("request-param-required", "type");
+        if (cm.get(1, "type") != "datacenter")
+            http_die("request-param-bad", "type", cm.get(1, "type").c_str(), "datacenter");
+        if (cm.hasTitle("id"))
+            http_die("action-forbidden", "Update of datacenter", "Not yet supported.");
+
+        // actual insert - throws exceptions
+        int id = persist::process_one_asset (cm);
         // process results
-        if ( !failRows.empty() )
-        {
-            // FIXME FIXME FIXME - the load_asset_csv must be updated to report errors in structured way!
-            // TODO  TODO  TODO
-            http_die("request-param-required", failRows.begin()->second.c_str());
-            // FIXME FIXME FIXME - the load_asset_csv must be updated to report errors in structured way!
-            // TODO  TODO  TODO
-        }
-        else
-        {
 </%cpp>
-{<$$ utils::json::jsonify ("id", std::to_string(okRows.begin()->first.id)) $>}
+{<$$ utils::json::jsonify ("id", id) $>}
 <%cpp>
             return HTTP_OK;
-        }
     }
     catch (const persist::bad_request_document& e) {
         LOG_END_ABNORMAL(e);

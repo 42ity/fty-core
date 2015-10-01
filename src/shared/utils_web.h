@@ -134,8 +134,21 @@ _die_vasprintf(
     } \
     while(0)
 
+#define http_get_error(str, code, key, ...) \
+do { \
+    static_assert (std::is_same <decltype (str), std::string>::value, "'str' argument in macro http_get_error must be a std::string."); \
+    constexpr ssize_t key_idx = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
+    static_assert(key_idx != -1, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
+    char *message; \
+    _die_vasprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__ ); \
+    str = message; \
+    code = _errors.at (key_idx).err_code; \
+    free (message); \
+} \
+while (0)
+
 typedef struct _http_errors_t {
-    uint32_t http_code; 
+    uint32_t http_code;
     std::vector <std::pair <uint32_t, std::string>> errors;
 } http_errors_t;
 

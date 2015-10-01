@@ -61,6 +61,10 @@ struct action_forbidden : std::invalid_argument {
 };
 
 struct request_bad_param : std::invalid_argument {
+    explicit request_bad_param(const std::string& msg):
+        std::invalid_argument(msg)
+    {}
+
     explicit request_bad_param(
             const std::string& name,
             const std::string& got,
@@ -72,6 +76,7 @@ struct request_bad_param : std::invalid_argument {
     {
         std::stringstream s;
         // copy&paste from _errors
+        // TODO: merge with utils_web.h
         s << "Parameter '" << name << "' has bad value. Received '" << got << "'. Expected '"<< expected << "'";
         _what = s.str();
     };
@@ -117,6 +122,19 @@ get_priority(
 bool
     get_business_critical(
             const std::string& bs_critical);
+
+/*
+ * \brief process one asset
+ *
+ * \param[in] cm is instance of CsvMap (you see this nice evolution, right)
+ * \return id of inserted/updated asset
+ *
+ * \throws execeptions on errors
+ *
+ */
+int
+    process_one_asset
+        (const shared::CsvMap& cm);
 /*
  * \brief Processes a csv file
  *

@@ -55,7 +55,7 @@ struct db_reply{
     int status; // ok/fail
     int errtype;
     int errsubtype;
-    uint64_t rowid;  // insert/update
+    uint64_t rowid;  // insert/update or http error code if status == 0
     uint64_t affected_rows; // for update/insert/delete
     std::string msg;
     zhash_t *addinfo;

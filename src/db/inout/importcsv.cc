@@ -600,6 +600,17 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             {
                 //TODO: redo the insert_dc_room_row_rack_group
                 throw std::invalid_argument("insertion was unsuccessful");
+                //TODO: the mapping of error codes to exceptions should be handled in a better was!!!
+                //      maybe move the persist:: exceptions to utils_web.h and
+                //      include it into _errors array
+                switch (ret.rowid)
+                {
+                    case 47:
+                        throw persist::request_bad_param(ret.msg);
+                        break;
+                    default:
+                        throw std::invalid_argument(ret.msg);
+                }
             }
             m.id = ret.rowid;
         }
@@ -683,6 +694,44 @@ void
     cm.deserialize();
 
     return load_asset_csv(cm, okRows, failRows);
+}
+
+int
+    process_one_asset
+        (const CsvMap& cm)
+{
+    LOG_START;
+
+    auto m = mandatory_missing(cm);
+    if ( m != "" )
+    {
+        std::string msg{"column '" + m + "' is missing, import is aborted"};
+        log_error("%s", msg.c_str());
+        LOG_END;
+        throw persist::request_bad_param("<mandatory column name>", m,
+            "all of those " + cxxtools::join(MANDATORY.cbegin(), MANDATORY.cend(), ", "));
+    }
+
+    tntdb::Connection conn;
+    try{
+        conn = tntdb::connectCached(url);
+    }
+    catch(...)
+    {
+        std::string msg{"no connection to database"};
+        log_error("%s", msg.c_str());
+        LOG_END;
+        throw std::runtime_error(msg.c_str());
+    }
+
+    auto TYPES = read_element_types (conn);
+
+    auto SUBTYPES = read_device_types (conn);
+
+    std::set<a_elmnt_id_t> ids{};
+    auto ret = process_row(conn, cm, 1, TYPES, SUBTYPES, ids);
+    LOG_END;
+    return ret.first.id;
 }
 
 void

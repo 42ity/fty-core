@@ -29,6 +29,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "log.h"
 #include "defs.h"
 #include "asset_types.h"
+#include "utils_web.h"
 
 namespace persist {
 
@@ -693,7 +694,7 @@ db_reply_t
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "name is not valid";
+        http_get_error(ret.msg, ret.rowid, "request-param-bad", "name", element_name, "<valid and unique asset name>");
         log_error ("end: %s, %s", "ignore insert", ret.msg.c_str());
         return ret;
     }
@@ -703,6 +704,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of element_type_id is not allowed";
+        http_get_error(ret.msg, ret.rowid, "request-param-bad", "element_type_id", element_type_id, "<valid element type id>");
         log_error ("end: %s, %s", "ignore insert", ret.msg.c_str());
         return ret;
     }
@@ -713,8 +715,7 @@ db_reply_t
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "Datacenters should be unlockated elements";
-        log_error ("end: %s, %s", "ignore insert", ret.msg.c_str());
+        http_get_error(ret.msg, ret.rowid, "request-param-bad", "location", parent_id, "<nothing for type datacenter>");
         return ret;
     }
     // TODO:should we add more checks here???
@@ -793,8 +794,10 @@ db_reply_t
         ret.rowid = conn.lastInsertId();
         log_debug ("[t_bios_asset_element]: was inserted %"
                                         PRIu64 " rows", ret.affected_rows);
-        if ( ret.affected_rows == 0 )
+        if ( ret.affected_rows == 0 ) {
             ret.status = 0;
+            http_get_error(ret.msg, ret.rowid, "internal-error", "Unspecified issue with database while inserting element.");
+        }
         else
             ret.status = 1;
         LOG_END;
@@ -804,7 +807,7 @@ db_reply_t
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_INTERNAL;
-        ret.msg        = e.what();
+        http_get_error(ret.msg, ret.rowid, "internal-error", "Unspecified issue with database.");
         LOG_END_ABNORMAL(e);
         return ret;
     }
