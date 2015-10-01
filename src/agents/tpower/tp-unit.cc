@@ -25,6 +25,7 @@
  * \brief Not yet documented file
  */
 #include <ctime>
+#include <exception>
 
 #include "tp-unit.h"
 #include "agent-tpower.h"
@@ -43,21 +44,94 @@ const std::map<std::string,std::string> TPUnit::_emergencyReplacements = {
     { "realpower.input.L3", "realpower.output.L3" },
 };
 
-Measurement TPUnit::summarize(const std::string &quantity) const{
+enum TPowerMethod {
+    tpower_realpower_default = 1,
+};
+
+const std::map<std::string,int> TPUnit::_calculations = {
+    { "realpower.default", tpower_realpower_default },
+};
+
+std::map<std::string,Measurement>::const_iterator TPUnit::get( const std::string &quantity) const {
+    if( quantityIsUnknown( quantity ) ) return _lastValue.cend();
+    return _lastValue.find(quantity);
+}
+
+void TPUnit::set(const std::string &quantity, Measurement measurement)
+{
+    auto itSums = _lastValue.find(quantity);
+    if( itSums == _lastValue.end() || (itSums->second != measurement) ) {
+        _lastValue[quantity] = measurement;
+        _changed[quantity] = true;
+        _changetimestamp[quantity] = time(NULL);
+    }
+    _updatetimestamp[quantity] = time(NULL);
+}
+
+Measurement TPUnit::simpleSummarize(const std::string &quantity) const {
     Measurement result;
     result.units("W");
-    for( auto &it : _powerdevices ) {
-        auto itMeasurements = getMeasurementIter( it.second, quantity );
-        if( itMeasurements != it.second.end() ) {
+    for( const auto it : _powerdevices ) {
+        auto itMeasurements = getMeasurementIter( it.second, quantity, it.first );
+        if( itMeasurements == it.second.end() ) {
+            throw std::runtime_error("value can't be calculated");
+        } else {
             result += itMeasurements->second;
         }
     }
     return result;
 }
 
+Measurement TPUnit::realpowerDefault(const std::string &quantity) const {
+    Measurement result;
+    result.units("W");
+    for( const auto it : _powerdevices ) {
+        auto itMeasurements = getMeasurementIter( it.second, quantity, it.first );
+        if( itMeasurements == it.second.end() ) {
+            // realpower.default not present, try to sum the phases
+            for( int phase = 1 ; phase <= 3 ; ++phase ) {
+                auto itItem = getMeasurementIter( it.second, "realpower.input.L" + std::to_string( phase ), it.first );
+                if( itItem == it.second.end() ) {
+                    throw std::runtime_error("value can't be calculated");
+                }
+                result += itItem->second;
+            }       
+        } else {
+            result += itMeasurements->second;
+        }
+    }
+    return result;
+}
+
+void TPUnit::calculate(const std::vector<std::string> &quantities) {
+    dropOldMeasurements();
+    for( const auto it : quantities ) {
+        calculate( it );
+    }
+}
+
+void TPUnit::calculate(const std::string &quantity) {
+    try {
+        Measurement result;
+        int calc = 0;
+        const auto how = _calculations.find(quantity);
+        if( how != _calculations.cend() ) calc = how->second;
+        switch( calc ) {
+        case tpower_realpower_default:
+            result = realpowerDefault( quantity );
+            break;
+        default:
+            result = simpleSummarize( quantity );
+            break;
+        }
+        set( quantity, result );
+    } catch (...) { }
+}
+
 std::map<std::string,Measurement>::const_iterator TPUnit::getMeasurementIter(
     const std::map<std::string,Measurement> &measurements,
-    const std::string &quantity
+    const std::string &quantity,
+    const std::string &deviceName
 ) const
 {
     const auto result = measurements.find(quantity);
@@ -66,28 +140,48 @@ std::map<std::string,Measurement>::const_iterator TPUnit::getMeasurementIter(
         return result;
     }
     const auto &replacement = _emergencyReplacements.find(quantity);
-    if( replacement == _emergencyReplacements.end() ) {
+    if( replacement == _emergencyReplacements.cend() ) {
         // there is no replacement for this value, return measurements.end()
         return result;
     }
     // find the replacement value if any
-    log_debug("%s is unknown, trying %s instead", quantity.c_str(), replacement->second.c_str() );
     const auto result_replace = measurements.find( replacement->second );
     if( result_replace == measurements.end() ) {
-        log_debug("replacement value of %s is unknown too", replacement->second.c_str() );
+        log_info("device %s, value of %s is unknown",
+                 deviceName.c_str(),
+                 replacement->second.c_str() );
     } else {
-        log_debug("replacement value of %s found", replacement->second.c_str() );
+        log_debug("device %s, using replacement value %s instead of %s",
+                  deviceName.c_str(),
+                  replacement->second.c_str(),
+                  quantity.c_str() );
     }
     return result_replace;
 }
 
-bool TPUnit::quantityIsUnknown(const std::string &quantity) const
+void TPUnit::dropOldMeasurements()
 {
     time_t now = std::time(NULL);
-    for( const auto &it : _powerdevices ) {
-        const auto itMeasurements = getMeasurementIter( it.second, quantity );
-        if( itMeasurements == it.second.end() ) return true;
-        if( now - itMeasurements->second.time() > TPOWER_MEASUREMENT_REPEAT_AFTER * 2 ) return true;
+    for( auto device : _powerdevices ) {
+        auto measurement = device.second.begin();
+        while( measurement != device.second.end() ) {
+            if ( now - measurement->second.time() > TPOWER_MEASUREMENT_REPEAT_AFTER * 2 ) {
+                measurement = device.second.erase(measurement);
+            } else {
+                ++measurement;
+            }
+        }
+    }
+}
+
+bool TPUnit::quantityIsUnknown(const std::string &quantity) const
+{
+    if( _lastValue.find(quantity) == _lastValue.cend() ) {
+        return true;
+    }
+    auto const ts = _updatetimestamp.find( quantity );
+    if( ts != _updatetimestamp.cend() && std::time(NULL) - ts->second > TPOWER_MEASUREMENT_REPEAT_AFTER * 2 ) {
+        return true;
     }
     return false;
 }
@@ -95,13 +189,16 @@ bool TPUnit::quantityIsUnknown(const std::string &quantity) const
 std::vector<std::string> TPUnit::devicesInUnknownState(const std::string &quantity) const
 {
     std::vector<std::string> result;
+
+    if( quantityIsKnown( quantity ) ) return result;
+
     time_t now = std::time(NULL);
-    for( auto &it : _powerdevices ) {
-        auto itMeasurements = getMeasurementIter( it.second, quantity );
+    for( auto device : _powerdevices ) {
+        auto measurement = getMeasurementIter( device.second, quantity, device.first );
         if(
-            itMeasurements == it.second.end()  ||
-            ( now - itMeasurements->second.time() > TPOWER_MEASUREMENT_REPEAT_AFTER * 2 )
-        ) result.push_back( it.first );
+            measurement == device.second.end()  ||
+            ( now - measurement->second.time() > TPOWER_MEASUREMENT_REPEAT_AFTER * 2 )
+        ) result.push_back( device.first );
     }
     return result;
 }
@@ -114,7 +211,6 @@ void TPUnit::addPowerDevice(const std::string &device)
 void TPUnit::setMeasurement(const Measurement &M)
 {
     if( _powerdevices.find( M.deviceName() ) != _powerdevices.end() ) {
-        if( _powerdevices[M.deviceName()][M.source()] != M ) changed( M.source(), true );
         _powerdevices[M.deviceName()][M.source()] = M;
     }
 }
@@ -166,17 +262,19 @@ bool TPUnit::advertise( const std::string &quantity ) const{
 
 ymsg_t * TPUnit::measurementMessage( const std::string &quantity ) {
     try {
-        Measurement M = summarize(quantity);
-        ymsg_t *message = bios_measurement_encode(
-            _name.c_str(),
-            quantity.c_str(),
-            M.units().c_str(),
-            M.value(),
-            M.scale(),
-            0
-        );
-        return message;
+        const auto M = get(quantity);
+        if( M != _lastValue.cend() ) {
+                ymsg_t *message = bios_measurement_encode(
+                    _name.c_str(),
+                    quantity.c_str(),
+                    M->second.units().c_str(),
+                    M->second.value(),
+                    M->second.scale(),
+                    0
+                    );
+                return message;
+        }
     } catch(...) {
-        return NULL;
     }    
+    return NULL;
 }

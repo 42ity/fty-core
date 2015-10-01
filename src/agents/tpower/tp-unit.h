@@ -28,6 +28,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <string>
 #include <vector>
 #include <ctime>
+#include <functional>
 
 #include "alert-measurement.h"
 #include "ymsg.h"
@@ -35,9 +36,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 //! \brief class representing total power calculation unit (rack or DC)
 class TPUnit {
  public:
+
     //\! \brief calculate total realpower
-    Measurement summarize(const std::string & source) const;
-    
+    void calculate(const std::vector<std::string> &quantities);
+
+    std::map<std::string,Measurement>::const_iterator get( const std::string &quantity) const;
+    void set(const std::string &quantity, Measurement measurement);
     //\! \brief get set unit name
     std::string name() const { return _name; };
     void name(const std::string &name) { _name = name; };
@@ -79,6 +83,9 @@ class TPUnit {
     //! \brief return timestamp for quantity change
     time_t timestamp( const std::string &quantity ) const;
  protected:
+    //! \brief last measurement value - topic -> Measurement
+    std::map < std::string, Measurement > _lastValue;
+
     //! \brief measurement status
     std::map < std::string, bool > _changed;
 
@@ -88,6 +95,9 @@ class TPUnit {
     //! \brief measurement advertisement timestamp
     std::map < std::string, time_t> _advertisedtimestamp;
 
+    //! \brief measurement update timestamp
+    std::map < std::string, time_t> _updatetimestamp;
+    
     /*! \brief list of measurements for included devices
      *
      *     map---device1---map---realpower.default---Measurement
@@ -104,11 +114,20 @@ class TPUnit {
     //! \brief replace not present measurement with another
     static const std::map<std::string,std::string> _emergencyReplacements;
 
+    //! \brief replace not present measurement with some algorithm
+    static const std::map<std::string,int> _calculations;
+
     std::map<std::string,Measurement>::const_iterator getMeasurementIter(
         const std::map<std::string,Measurement> &measurements,
-        const std::string &quantity
+        const std::string &quantity,
+        const std::string &deviceName
     ) const;
- 
+    
+    //\! \brief calculate total realpower
+    void calculate(const std::string &quantity);
+    void dropOldMeasurements();
+    Measurement simpleSummarize(const std::string &quantity) const;
+    Measurement realpowerDefault(const std::string &quantity) const;
 };
 
 #endif // SRC_AGENTS_TPOWER_TP_UNIT_H__

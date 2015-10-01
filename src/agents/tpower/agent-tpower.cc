@@ -160,19 +160,22 @@ void TotalPowerAgent::onSend( ymsg_t **message ) {
 
 void  TotalPowerAgent::sendMeasurement(std::map< std::string, TPUnit > &elements, const std::vector<std::string> &quantities ) {
     for( auto &element : elements ) {
+        element.second.calculate( quantities );
         for( auto &q : quantities ) {
             if( element.second.advertise(q) ) {
-                _scoped_ymsg_t *message = element.second.measurementMessage(q);
-                if( message ) {
-                    std::string topic = "measurement." + q + "@" + element.second.name();
-                    Measurement M = element.second.summarize(q);
-                    log_debug("Sending total power topic: %s value: %" PRIi32 "*10^%" PRIi32,
-                              topic.c_str(),
-                              M.value(),
-                              M.scale());
-                    send( topic.c_str(), &message );
-                    element.second.advertised(q);
-                }
+                try {
+                    _scoped_ymsg_t *message = element.second.measurementMessage(q);
+                    if( message ) {
+                        std::string topic = "measurement." + q + "@" + element.second.name();
+                        const auto M = element.second.get(q);
+                        log_debug("Sending total power topic: %s value: %" PRIi32 "*10^%" PRIi32,
+                                  topic.c_str(),
+                                  M->second.value(),
+                                  M->second.scale());
+                        send( topic.c_str(), &message );
+                        element.second.advertised(q);
+                    }
+                } catch(...) { };
             } else {
                 // log something from time to time if device calculation is unknown
                 auto devices = element.second.devicesInUnknownState(q);
