@@ -226,6 +226,7 @@
     <!-- rack consumption -->
     <mapping>
       <target>rack_total@bios_web</target>
+      <method>GET</method>
       <url>^/api/v1/metric/computed/rack_total.*$</url>
     </mapping>
 
@@ -233,6 +234,7 @@
     <mapping>
       <target>datacenter_indicators@bios_web</target>
       <url>^/api/v1/metric/computed/datacenter_indicators.*$</url>
+      <method>GET</method>
     </mapping>
 
     <!-- uptime -->

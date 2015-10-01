@@ -150,4 +150,9 @@ is_rack(int x) {
     return x == asset_type::RACK;
 }
 
+bool
+is_ups(int x) {
+    return x == asset_subtype::UPS;
+}
+
 }; // namesace end
