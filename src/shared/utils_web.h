@@ -47,7 +47,7 @@ typedef struct _wserror {
     const char* message;    ///! Message explaining the error, can contain printf like formatting chars
 } _WSError;
 
-// size of _errors array, keep this up to date unless code won't build
+// size of _errors array, keep this up to date otherwise code won't build
 static constexpr size_t _WSErrorsCOUNT = 10;
 
 // typedef for array of errors
