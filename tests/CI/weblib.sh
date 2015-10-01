@@ -357,7 +357,8 @@ CURL() {
     fi >&3
 
     if [ $RES_CURL != 0 -a x"$WEBLIB_CURLFAIL" = xyes ]; then
-        kill -SIGUSR1 $_PID_TESTER_WEBLIB $$ >/dev/null 2>&1
+	echo "CI-WEBLIB-ERROR-CURL: Killing the test: kill -SIGUSR1 $_PID_TESTER_WEBLIB $$" >&3
+        kill -n 10 $_PID_TESTER_WEBLIB $$ >&3 2>&3 #>/dev/null 2>&1
         # exit $RES_CURL
     fi
 
@@ -510,6 +511,11 @@ api_auth_post() {
     TOKEN="`_api_get_token`"
     CURL --insecure --header "Authorization: Bearer $TOKEN" -d "$data" \
         -v --progress-bar "$BASE_URL$url" "$@" 3>&2 2>&1
+}
+
+api_auth_post_json() {
+   api_auth_post "$@" > /dev/null && \
+	echo "$OUT_CURL" | $JSONSH -N
 }
 
 simple_auth_post_code () {
