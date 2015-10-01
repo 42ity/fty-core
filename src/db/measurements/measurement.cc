@@ -302,7 +302,7 @@ int
     try{
         // convert topic like to topic_id
         std::string query =
-            " SELECT topic_id "
+            " SELECT id "
             " FROM "
             "    t_bios_measurement_topic "
             " WHERE "
@@ -316,7 +316,7 @@ int
                             selectRow();
 
         m_msrmnt_tpc_id_t topic_id = 0;
-        row["topic_id"].get(topic_id);
+        row["id"].get(topic_id);
         return  select_last_aggregated_by_step(conn, topic_id, step, value);
     }
     catch ( const tntdb::NotFound &e ){
