@@ -13,7 +13,7 @@ EnvironmentFile=-/etc/default/bios
 EnvironmentFile=-/etc/sysconfig/bios
 EnvironmentFile=-/etc/default/bios__%n.conf
 EnvironmentFile=-/etc/sysconfig/bios__%n.conf
-ExecStart=@libexecdir@/bios/db-init
+ExecStart=@libexecdir@/@PACKAGE@/db-init
 
 [Install]
 WantedBy=multi-user.target
