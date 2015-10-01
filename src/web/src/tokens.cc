@@ -26,6 +26,7 @@
  */
 #include <stdio.h>
 #include <time.h>
+#include <unistd.h>
 #include <exception>
 #include <mutex>
 #include <cxxtools/base64codec.h>
