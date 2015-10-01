@@ -160,6 +160,13 @@ create_error_json (std::vector <std::pair<uint32_t, std::string>> messages) {
     return result;
 }
 
+std::string jsonify (double t)
+{
+    if (isnan(t))
+        return "null";
+    return std::string ("\"").append (std::to_string (t)).append ("\"");
+}
+
 } // namespace utils::json
 } // namespace utils
 

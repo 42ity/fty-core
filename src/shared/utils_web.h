@@ -33,6 +33,7 @@
 #include <utility>
 #include <array>
 #include <stdarg.h>
+#include <cmath>
 
 #include <tnt/http.h>
 
@@ -171,6 +172,8 @@ std::string escape (const char *string);
  \brief Convenient wrapper for escape"("const char *string")"
 */
 std::string escape (const std::string& before);
+
+std::string jsonify (double t);
 
 template <typename T
         , typename = typename std::enable_if<std::is_arithmetic<T>::value>::type>
