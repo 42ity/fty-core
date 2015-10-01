@@ -18,13 +18,13 @@
  #
  #><#
 /*!
- * \file power.ecpp
+ * \file topology_power.ecpp
  * \author Karol Hrdina <KarolHrdina@Eaton.com>
  * \author Jim Klimov <EvgenyKlimov@Eaton.com>
  * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
- * \brief Not yet documented file
+ * \brief implementation for power topology
  */
  #><%pre>
 #include "cleanup.h"
@@ -43,6 +43,8 @@
 #include "asset_msg.h"
 #include "asset_types.h"
 #include "assettopology.h"
+#include "utils_web.h"
+#include "log.h"
 </%pre>
 <%args>
 std::string from;
@@ -51,221 +53,76 @@ std::string filter_dc;
 std::string filter_group;
 </%args>
 <%cpp>
-    // GET requests only
-    if (request.isMethodGET() == false) {
-        return HTTP_BAD_REQUEST;
-    }
-
+{
+    std::string id;
     if (from.empty() && to.empty() && filter_dc.empty() && filter_group.empty()) {
-</%cpp>
-        {
-            "error" :   "bad_input",
-            "msg"   :   "You have to specify one of the following variables: 'filter_dc=<dc_id>' or 'filter_group=<group_id>' or 'to=<device_id>' or 'from=<device_id>'."
-        }
-<%cpp>
-        return HTTP_BAD_REQUEST;
+        http_die("request-param-required", "from/to/filter_dc/filter_group");
     }
 
     _scoped_asset_msg_t *input_msg = NULL;
 ////////////////////////
 //      FROM
-//
+////////////////////////
     if (!from.empty()) {
         if (!to.empty() || !filter_dc.empty() || !filter_group.empty()) {
-</%cpp>
-            {
-                "error" :   "bad_input",
-                "msg"   :   "You can specify only one variable."
-            }
-<%cpp>
-            return HTTP_BAD_REQUEST;
+            http_die("parameter-conflict", "Only one parameter can be specified at once: 'from' or 'to' or 'filter_dc' or 'filter_group'");
         }
-        // Try to convert string to number 
-        int element_id = -1; 
-        try { 
-            element_id = std::stoi (from); 
-        } catch (std::out_of_range& e) { 
-</%cpp>
-            { 
-                "error" :   "bad_input", 
-                "msg"   :   "Variable 'from' contains number that falls out of the allowed range." 
-            } 
-<%cpp>
-            return HTTP_BAD_REQUEST; 
-        } catch (std::invalid_argument& e) { 
-</%cpp>
-            { 
-                "error" :   "bad_input", 
-                "msg"   :   "Please specify an integer value for variable 'from'." 
-            } 
-<%cpp>
-            return HTTP_BAD_REQUEST; 
-        } catch (std::exception& e) { 
-</%cpp>
-            { 
-                "error" :   "bad_input", 
-                "msg"   :   "Error while converting <$ from $> to integer value: <$ e.what() $>." 
-            } 
-<%cpp>
-            return HTTP_BAD_REQUEST;
-        } 
-        // Call persistence layer
         input_msg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
         assert (input_msg);
-        asset_msg_set_element_id (input_msg,  element_id);
-
-    } // from block
+        id = from;
+    }
 
 //////////////////
 //      TO
-//
+//////////////////
      if (!to.empty()) {
-        if (!from.empty() || !filter_dc.empty() || !filter_group.empty()) {
-</%cpp>
-            {
-                "error" :   "bad_input",
-                "msg"   :   "You can specify only one variable."
-            }
-<%cpp>
-            return HTTP_BAD_REQUEST;
+        if ( !filter_dc.empty() || !filter_group.empty() || !from.empty() ) {
+            http_die("parameter-conflict", "Only one parameter can be specified at once: 'from' or 'to' or 'filter_dc' or 'filter_group'");
         }
-        // Try to convert string to number 
-        int element_id = -1; 
-        try { 
-            element_id = std::stoi (to); 
-        } catch (std::out_of_range& e) { 
-</%cpp>
-            { 
-                "error" :   "bad_input", 
-                "msg"   :   "Variable 'to' contains number that falls out of the allowed range." 
-            } 
-<%cpp>
-            return HTTP_BAD_REQUEST; 
-        } catch (std::invalid_argument& e) { 
-</%cpp>
-            { 
-                "error" :   "bad_input", 
-                "msg"   :   "Please specify an integer value for variable 'from'." 
-            } 
-<%cpp>
-            return HTTP_BAD_REQUEST; 
-        } catch (std::exception& e) { 
-</%cpp>
-            { 
-                "error" :   "bad_input", 
-                "msg"   :   "Error while converting <$ from $> to integer value: <$ e.what() $>." 
-            } 
-<%cpp>
-            return HTTP_BAD_REQUEST;
-        }
-    // Call persistence layer
-    input_msg = asset_msg_new (ASSET_MSG_GET_POWER_TO);
-    assert (input_msg);
-    asset_msg_set_element_id (input_msg, element_id);
-
-
-    } // to block   
+        input_msg = asset_msg_new (ASSET_MSG_GET_POWER_TO);
+        assert (input_msg);
+        id = to;
+    }
 
 //////////////////////
 //      FILTER_DC
-//
+//////////////////////
     if (!filter_dc.empty()) {
-        if (!to.empty() || !from.empty() || !filter_group.empty()) {
-</%cpp>
-            {
-                "error" :   "bad_input",
-                "msg"   :   "You can specify only one variable."
-            }
-<%cpp>
-            return HTTP_BAD_REQUEST;
+        if (!filter_group.empty() || !to.empty() || !from.empty()) {
+            http_die("parameter-conflict", "Only one parameter can be specified at once: 'from' or 'to' or 'filter_dc' or 'filter_group'");
         }
-        // Try to convert string to number 
-        int element_id = -1; 
-        try { 
-            element_id = std::stoi (filter_dc); 
-        } catch (std::out_of_range& e) { 
-</%cpp>
-            { 
-                "error" :   "bad_input", 
-                "msg"   :   "Variable 'filter_dc' contains number that falls out of the allowed range." 
-            } 
-<%cpp>
-            return HTTP_BAD_REQUEST; 
-        } catch (std::invalid_argument& e) { 
-</%cpp>
-            { 
-                "error" :   "bad_input", 
-                "msg"   :   "Please specify an integer value for variable 'filter_dc'." 
-            } 
-<%cpp>
-            return HTTP_BAD_REQUEST; 
-        } catch (std::exception& e) { 
-</%cpp>
-            { 
-                "error" :   "bad_input", 
-                "msg"   :   "Error while converting <$ filter_dc $> to integer value: <$ e.what() $>." 
-            } 
-<%cpp>
-            return HTTP_BAD_REQUEST;
-        }
-        // Call persistence layer
         input_msg = asset_msg_new (ASSET_MSG_GET_POWER_DATACENTER);
         assert (input_msg);
-        asset_msg_set_element_id (input_msg, element_id);
-
-    } // filter_dc block
+        id = filter_dc;
+    }
 
 //////////////////////
 //      FILTER_GROUP
-//
+//////////////////////
     if (!filter_group.empty()) {
         if (!to.empty() || !from.empty() || !filter_dc.empty()) {
-</%cpp>
-            {
-                "error" :   "bad_input",
-                "msg"   :   "You can specify only one variable."
-            }
-<%cpp>
-            return HTTP_BAD_REQUEST;
+            http_die("parameter-conflict", "Only one parameter can be specified at once: 'from' or 'to' or 'filter_dc' or 'filter_group'");
         }
-        // Try to convert string to number 
-        int element_id = -1; 
-        try { 
-            element_id = std::stoi (filter_group); 
-        } catch (std::out_of_range& e) { 
-</%cpp>
-            { 
-                "error" :   "bad_input", 
-                "msg"   :   "Variable 'filter_group' contains number that falls out of the allowed range." 
-            } 
-<%cpp>
-            return HTTP_BAD_REQUEST; 
-        } catch (std::invalid_argument& e) { 
-</%cpp>
-            { 
-                "error" :   "bad_input", 
-                "msg"   :   "Please specify an integer value for variable 'filter_group'." 
-            } 
-<%cpp>
-            return HTTP_BAD_REQUEST; 
-        } catch (std::exception& e) { 
-</%cpp>
-            { 
-                "error" :   "bad_input", 
-                "msg"   :   "Error while converting <$ filter_group $> to integer value: <$ e.what() $>." 
-            } 
-<%cpp>
-            return HTTP_BAD_REQUEST;
-        }
-
-        // Call persistence layer
         input_msg = asset_msg_new (ASSET_MSG_GET_POWER_GROUP);
         assert (input_msg);
-        asset_msg_set_element_id (input_msg, element_id);
+        id = filter_group;
+    }
 
-    } // filter_group block
+    // convert string to number
+    a_elmnt_id_t element_id = 0;
+    try {
+        element_id = std::stoul (id);
+    } catch (std::out_of_range& e) {
+        http_die("request-param-bad", "from", from.c_str(), "be UINT32");
+    } catch (std::invalid_argument& e) {
+        http_die("request-param-bad", "from", from.c_str(), "be integer value");
+    } catch (std::exception& e) {
+        LOG_END_ABNORMAL (e);
+        http_die("request-param-bad", "from", from.c_str(), "be integer value'");
+    }
 
-
+    // Call persistence layer
+    asset_msg_set_element_id (input_msg,  element_id);
     _scoped_zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg);
     if (return_msg == NULL) {
 </%cpp>
@@ -340,7 +197,7 @@ std::string filter_group;
             _scoped_zlist_t *powers = asset_msg_get_powers (asset_msg);
             _scoped_zframe_t *devices = asset_msg_get_devices (asset_msg);
             asset_msg_destroy (&asset_msg);
-    
+
             std::string json = "{";
             if (devices) {
                 byte *buffer = zframe_data (devices);
@@ -365,7 +222,7 @@ std::string filter_group;
                     if (!is_asset_msg (pop)) {
                         zmsg_destroy (&zmsg);
                         // TODO internal error
-                        return HTTP_INTERNAL_SERVER_ERROR; 
+                        return HTTP_INTERNAL_SERVER_ERROR;
                     }
                     _scoped_asset_msg_t *item = asset_msg_decode (&pop); // _scoped_zmsg_t is freed
                     if (item == NULL) {
@@ -393,7 +250,7 @@ std::string filter_group;
                     asset_msg_destroy (&item);
                 }
                 zmsg_destroy (&zmsg);
-            
+
                 json.append ("] ");
             }
 
@@ -403,7 +260,6 @@ std::string filter_group;
                 }
                 json.append ("\"powerchains\" : [");
 
-                //
                 const char *item = (const char*) zlist_first (powers);
                 bool first = true;
                 while (item != NULL) {
@@ -415,7 +271,7 @@ std::string filter_group;
                     json.append ("{");
                     std::vector<std::string> tokens;
                     std::istringstream f(item);
-                    std::string tmp;    
+                    std::string tmp;
                     // "src_socket:src_id:dst_socket:dst_id"
                     while (getline(f, tmp, ':')) {
                         tokens.push_back(tmp);
@@ -435,12 +291,12 @@ std::string filter_group;
                 json.append ("] ");
             }
 
-            json.append ("}");            
+            json.append ("}");
 </%cpp>
     <$$ json $>
 <%cpp>
         }
-        else {            
+        else {
 </%cpp>
             {
                 "error" :   "internal_error",
@@ -459,6 +315,5 @@ std::string filter_group;
 <%cpp>
         return HTTP_INTERNAL_SERVER_ERROR;
     }
-
-
+}
 </%cpp>
