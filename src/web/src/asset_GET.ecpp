@@ -56,7 +56,7 @@ if ( tmp.status == 0 )
         case DB_ERROR_NOTFOUND:
             http_die("element-not-found", id.c_str());
         case DB_ERROR_BADINPUT:
-            http_die("request-param-bad", "id", "", "id of asset");
+            http_die("request-param-bad", "id", id.c_str(), "id of asset");
         case DB_ERROR_INTERNAL:
             http_die("internal-error", "Internal database error");
         default:
