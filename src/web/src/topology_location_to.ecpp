@@ -42,9 +42,6 @@
 #include "utils_web.h"
 #include "cleanup.h"
 </%pre>
-<%thread scope="global">
-asset_manager asset_mgr;
-</%thread>
 <%args>
 std::string to;
 std::string recursive;
