@@ -89,7 +89,7 @@ inline db_reply<T> db_reply_new(T& item) {
         .item = item};
 }
 
-/** 
+/**
  * \brief helper structure for results of v_bios_measurement
  */
 struct db_msrmnt_t {
