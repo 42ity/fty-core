@@ -37,11 +37,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 class TPUnit {
  public:
 
-    //\! \brief calculate total realpower
+    //\! \brief calculate total value for all interesting quantities
     void calculate(const std::vector<std::string> &quantities);
 
-    std::map<std::string,Measurement>::const_iterator get( const std::string &quantity) const;
+    //\! \brief get value of particular quantity. Method throws an exception if quantity is unknown.
+    Measurement get( const std::string &quantity) const;
+
+    //\! \brief set value of particular quantity.
     void set(const std::string &quantity, Measurement measurement);
+
     //\! \brief get set unit name
     std::string name() const { return _name; };
     void name(const std::string &name) { _name = name; };
@@ -53,6 +57,7 @@ class TPUnit {
     bool quantityIsKnown( const std::string &quantity ) const {
         return ! quantityIsUnknown(quantity);
     }
+
     //\! \brief returns list of devices in unknown state
     std::vector<std::string> devicesInUnknownState(const std::string &quantity) const;
 
@@ -95,9 +100,6 @@ class TPUnit {
     //! \brief measurement advertisement timestamp
     std::map < std::string, time_t> _advertisedtimestamp;
 
-    //! \brief measurement update timestamp
-    std::map < std::string, time_t> _updatetimestamp;
-    
     /*! \brief list of measurements for included devices
      *
      *     map---device1---map---realpower.default---Measurement
@@ -123,10 +125,13 @@ class TPUnit {
         const std::string &deviceName
     ) const;
     
-    //\! \brief calculate total realpower
+    //\! \brief calculate total value for one quantity
     void calculate(const std::string &quantity);
+    //\! \brief discard obsolete measurements
     void dropOldMeasurements();
+    //\! \brief calculate simple sum over devices considering the replacement table  
     Measurement simpleSummarize(const std::string &quantity) const;
+    //\! \brief calculate realpower sum over devices
     Measurement realpowerDefault(const std::string &quantity) const;
 };
 

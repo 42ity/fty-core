@@ -52,20 +52,21 @@ const std::map<std::string,int> TPUnit::_calculations = {
     { "realpower.default", tpower_realpower_default },
 };
 
-std::map<std::string,Measurement>::const_iterator TPUnit::get( const std::string &quantity) const {
-    if( quantityIsUnknown( quantity ) ) return _lastValue.cend();
-    return _lastValue.find(quantity);
+Measurement TPUnit::get( const std::string &quantity) const {
+    const auto result = _lastValue.find( quantity );
+    if( result == _lastValue.cend() ) throw std::runtime_error("Unknown quantity");
+    return result->second;
 }
 
 void TPUnit::set(const std::string &quantity, Measurement measurement)
 {
     auto itSums = _lastValue.find(quantity);
     if( itSums == _lastValue.end() || (itSums->second != measurement) ) {
+        measurement.setTime();
         _lastValue[quantity] = measurement;
         _changed[quantity] = true;
         _changetimestamp[quantity] = time(NULL);
     }
-    _updatetimestamp[quantity] = time(NULL);
 }
 
 Measurement TPUnit::simpleSummarize(const std::string &quantity) const {
@@ -162,28 +163,31 @@ std::map<std::string,Measurement>::const_iterator TPUnit::getMeasurementIter(
 void TPUnit::dropOldMeasurements()
 {
     time_t now = std::time(NULL);
-    for( auto device : _powerdevices ) {
+    for( auto & device : _powerdevices ) {
         auto measurement = device.second.begin();
         while( measurement != device.second.end() ) {
             if ( now - measurement->second.time() > TPOWER_MEASUREMENT_REPEAT_AFTER * 2 ) {
+                log_debug("erasing %s on %s, measurement is too old", measurement->first.c_str(), device.first.c_str() );
                 measurement = device.second.erase(measurement);
             } else {
                 ++measurement;
             }
         }
     }
+    auto quantity = _lastValue.begin();
+    while( quantity != _lastValue.end() ) {
+        if ( now - quantity->second.time() > TPOWER_MEASUREMENT_REPEAT_AFTER * 2) {
+            log_debug("erasing sum %s on %s, measurement is too old", quantity->first.c_str(), _name.c_str() );
+            quantity = _lastValue.erase(quantity);
+        } else {
+            ++quantity;
+        }
+    }
 }
 
 bool TPUnit::quantityIsUnknown(const std::string &quantity) const
 {
-    if( _lastValue.find(quantity) == _lastValue.cend() ) {
-        return true;
-    }
-    auto const ts = _updatetimestamp.find( quantity );
-    if( ts != _updatetimestamp.cend() && std::time(NULL) - ts->second > TPOWER_MEASUREMENT_REPEAT_AFTER * 2 ) {
-        return true;
-    }
-    return false;
+    return  _lastValue.find(quantity) == _lastValue.cend();
 }
 
 std::vector<std::string> TPUnit::devicesInUnknownState(const std::string &quantity) const
@@ -262,18 +266,15 @@ bool TPUnit::advertise( const std::string &quantity ) const{
 
 ymsg_t * TPUnit::measurementMessage( const std::string &quantity ) {
     try {
-        const auto M = get(quantity);
-        if( M != _lastValue.cend() ) {
-                ymsg_t *message = bios_measurement_encode(
-                    _name.c_str(),
-                    quantity.c_str(),
-                    M->second.units().c_str(),
-                    M->second.value(),
-                    M->second.scale(),
-                    0
-                    );
-                return message;
-        }
+        Measurement M = get(quantity);
+        ymsg_t *message = bios_measurement_encode(
+            _name.c_str(),
+            quantity.c_str(),
+            M.units().c_str(),
+            M.value(),
+            M.scale(),
+            0);
+        return message;
     } catch(...) {
     }    
     return NULL;

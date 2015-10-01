@@ -167,11 +167,11 @@ void  TotalPowerAgent::sendMeasurement(std::map< std::string, TPUnit > &elements
                     _scoped_ymsg_t *message = element.second.measurementMessage(q);
                     if( message ) {
                         std::string topic = "measurement." + q + "@" + element.second.name();
-                        const auto M = element.second.get(q);
+                        Measurement M = element.second.get(q);
                         log_debug("Sending total power topic: %s value: %" PRIi32 "*10^%" PRIi32,
                                   topic.c_str(),
-                                  M->second.value(),
-                                  M->second.scale());
+                                  M.value(),
+                                  M.scale());
                         send( topic.c_str(), &message );
                         element.second.advertised(q);
                     }
