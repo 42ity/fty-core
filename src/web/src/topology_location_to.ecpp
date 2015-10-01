@@ -55,36 +55,23 @@ std::string feed_by;
     if ( to.empty() )
     {
         // At least one parametr should be specified
-</%cpp>
-<$$  utils::json::create_error_json("You have to specify one of the following variables: 'from=<element_id|none>', 'to=<element_id>'", 401) $>
-<%cpp>
-        return HTTP_BAD_REQUEST;
+        http_die("request-param-required", "from/to");
     }
 
-   // Check other parameters. TODO return as a list of errors, not just one
-   // 1. 'Recursive' parameter cannot be specified with 'to'
+    // 1. 'Recursive' parameter cannot be specified with 'to'
     if (!recursive.empty())
     {
-</%cpp>
-<$$  utils::json::create_error_json("Variable 'recursive' can not be specified along with 'to'.", 402) $>
-<%cpp>
-        return HTTP_BAD_REQUEST;
+        http_die("parameter-conflict", "Parameter 'recursive' can not be specified with parameter 'to'.");
     }
     // 2. 'Filter' parameter cannot be specified with 'to'
     if (!filter.empty())
     {
-</%cpp>
-<$$  utils::json::create_error_json("Variable 'filter' can not be specified along with 'to'.", 403) $>
-<%cpp>
-        return HTTP_BAD_REQUEST;
+        http_die("parameter-conflict", "Parameter 'filter' can not be specified with parameter 'to'.");
     }
     // 3. 'feed_by' parameter cannot be specified with 'to'
     if (!feed_by.empty())
     {
-</%cpp>
-<$$  utils::json::create_error_json("Variable 'feed_by' can not be specified along with 'to'.", 404) $>
-<%cpp>
-        return HTTP_BAD_REQUEST;
+        http_die("parameter-conflict", "Parameter 'feed-by' can not be specified with parameter 'to'.");
     }
 
     // Try to convert string to number
@@ -92,21 +79,12 @@ std::string feed_by;
     try {
         element_id = std::stoul (to);
     } catch (std::out_of_range& e) {
-</%cpp>
-<$$  utils::json::create_error_json("Variable 'to' contains number that falls out of the allowed range.", 405) $>
-<%cpp>
-        return HTTP_BAD_REQUEST;
+        http_die("request-param-bad", "to", to.c_str(), "be UINT32");
     } catch (std::invalid_argument& e) {
-</%cpp>
-<$$  utils::json::create_error_json("Please specify an integer value for variable 'to'.", 406) $>
-<%cpp>
-        return HTTP_BAD_REQUEST;
+        http_die("request-param-bad", "to", to.c_str(), "be integer value");
     } catch (std::exception& e) {
         LOG_END_ABNORMAL (e);
-</%cpp>
-<$$  utils::json::create_error_json("Error while converting 'to' to integer value", 407) $>
-<%cpp>
-        return HTTP_BAD_REQUEST;
+        http_die("internal-error", "error in converting 'to' to integer");
     }
     // Call persistence layer
     _scoped_asset_msg_t *input_msg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
@@ -115,13 +93,9 @@ std::string feed_by;
 
     _scoped_zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg);
     if (return_msg == NULL) {
-</%cpp>
-{
-    "error" :   "internal_error",
-    "msg"   :   "Function process_assettopology() returned a null pointer."
-}
-<%cpp>
-        return HTTP_INTERNAL_SERVER_ERROR;
+        log_error ("Function process_assettopology() returned a null pointer");
+        LOG_END;
+        http_die("internal-error");
     }
     assert (input_msg == NULL); // This is not testing czmq. It tests whether our code correctly nullifies a reference
 
@@ -131,40 +105,27 @@ std::string feed_by;
             if (return_msg != NULL) {
                 zmsg_destroy (&return_msg);
             }
-</%cpp>
-{
-    "error" :   "internal_error",
-    "msg"   :   "common_msg_decode() failed."
-}
-<%cpp>
-            return HTTP_INTERNAL_SERVER_ERROR;
+            log_error ("common_msg_decode() failed");
+            LOG_END;
+            http_die("internal-error");
         }
 
         if (common_msg_id (common_msg) == COMMON_MSG_FAIL) {
-</%cpp>
-{
-    "msg"   :   "<$ common_msg_errmsg (common_msg) $>",
-    "errtype"   :  "<$ static_cast<int> (common_msg_errtype (common_msg)) $>",
-    "errorno"   :   "<$ static_cast<int> (common_msg_errorno (common_msg)) $>"
-}
-<%cpp>
+            log_error ("common_msg is COMMON_MSG_FAIL");
+            LOG_END;
             switch(common_msg_errorno(common_msg)) {
                 case(DB_ERROR_BADINPUT):
-                    return HTTP_BAD_REQUEST;
+                    http_die("request-param-bad", "to", to.c_str(), "integer value");
                 case(DB_ERROR_NOTFOUND):
-                    return HTTP_NOT_FOUND;
+                    http_die("element-not-found", to.c_str());
                 default:
-                    return HTTP_INTERNAL_SERVER_ERROR;
+                    http_die("internal-error");
             }
         }
         else {
-</%cpp>
-{
-"error" :   "internal_error",
-"msg"   :   "Unexpected common_msg received. Message ID = <$ common_msg_id (common_msg) $>"
-}
-<%cpp>
-            return HTTP_INTERNAL_SERVER_ERROR;
+            log_error ("Unexpected common_msg received. ID = %" PRIu32 , common_msg_id (common_msg));
+            LOG_END;
+            http_die("internal-error", "");
         }
     }
     else if (is_asset_msg (return_msg)) {
@@ -173,13 +134,9 @@ std::string feed_by;
             if (return_msg != NULL) {
                 zmsg_destroy (&return_msg);
             }
-</%cpp>
-{
-    "error" :   "internal_error",
-    "msg"   :   "asset_msg_decode() failed."
-}
-<%cpp>
-            return HTTP_INTERNAL_SERVER_ERROR;
+            log_error ("asset_msg_decode() failed");
+            LOG_END;
+            http_die("internal-error");
         }
 
         // <element_id, type, contains, name, type_name>
@@ -229,13 +186,9 @@ std::string feed_by;
                     }
                     default:
                     {
-</%cpp>
-{
-    "error" :   "internal_error",
-    "msg"   :   "Unknown asset_element_type ID received: '<$ type_id $>'."
-}
-<%cpp>
-                        return HTTP_INTERNAL_SERVER_ERROR;
+                        log_error ("Unexpected asset type received in the response");
+                        LOG_END;
+                        http_die("internal-error");
                     }
                 }
 
@@ -248,13 +201,9 @@ std::string feed_by;
                         if (inner != NULL) {
                             zmsg_destroy (&inner);
                         }
-</%cpp>
-                        {
-                            "error" :   "internal_error",
-                            "msg"   :   "asset_msg_decode() failed."
-                        }
-<%cpp>
-                        return HTTP_INTERNAL_SERVER_ERROR;
+                        log_error ("asset_msg_decode() failed");
+                        LOG_END;
+                        http_die("internal-error");
                     }
 
                     go = true;
@@ -344,18 +293,16 @@ std::string feed_by;
 <%cpp>
         }
         else {
-</%cpp>
-{
-    "error" :   "internal_error",
-    "msg"   :   "Unexpected asset_msg received. Message ID = <$ asset_msg_id (asset_msg) $>"
-}
-<%cpp>
-            return HTTP_INTERNAL_SERVER_ERROR;
+            log_error ("Unexpected asset_msg received. ID = %" PRIu32 , asset_msg_id (asset_msg));
+            LOG_END;
+            http_die("internal-error");
         }
     }
     else {
-        log_error ("TODO Unknown protocol");
-        return HTTP_INTERNAL_SERVER_ERROR;
+        log_error ("Unknown protocol");
+        LOG_END;
+        http_die("internal-error");
+
     }
 }
 </%cpp>
