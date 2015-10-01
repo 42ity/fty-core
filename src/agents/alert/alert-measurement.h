@@ -25,6 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SRC_AGENTS_ALERT_ALERT_MEASUREMENT_H__
 
 #include <string>
+#include <ctime>
 
 #include "ymsg.h"
 
@@ -62,6 +63,8 @@ class Measurement {
     int32_t value() const { return _value; };
     int32_t scale() const { return _scale; };
     int64_t time() const { return _time; };
+    void setTime() { _time = std::time(NULL); };
+    void setTime(time_t time ) { _time = time; };
     void print() const;
     Measurement& operator=( const ymsg_t *message ) { set( message ); return *this; }
     Measurement& operator+=( const Measurement &rhs );
