@@ -12,7 +12,7 @@ EnvironmentFile=-/etc/default/bios__%n.conf
 # - BIOS_LOG_LEVEL=warning set a quieter bios log level
 #
 EnvironmentFile=-/etc/sysconfig/bios__%n.conf
-ExecStart=@libexecdir@/bios/agent-cm
+ExecStart=@libexecdir@/@PACKAGE@/agent-cm
 
 [Install]
 WantedBy=multi-user.target
