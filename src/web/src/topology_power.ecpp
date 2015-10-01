@@ -24,27 +24,21 @@
  * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
- * \brief implementation for power topology
+ * \brief  process power topology requests
  */
  #><%pre>
-#include "cleanup.h"
-#include <cstdlib>
 #include <string>
-#include <algorithm>
-#include <exception>
-#include <stack>
 #include <sstream>
-#include <iostream>
 #include <vector>
 #include <czmq.h>
+
 #include "defs.h"
 #include "dbpath.h"
-#include "common_msg.h"
-#include "asset_msg.h"
 #include "asset_types.h"
 #include "assettopology.h"
 #include "utils_web.h"
 #include "log.h"
+#include "cleanup.h"
 </%pre>
 <%args>
 std::string from;
@@ -121,19 +115,14 @@ std::string filter_group;
         http_die("request-param-bad", "from", from.c_str(), "be integer value'");
     }
 
-    // Call persistence layer
+   // Call persistence layer
     asset_msg_set_element_id (input_msg,  element_id);
     _scoped_zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg);
     if (return_msg == NULL) {
-</%cpp>
-        {
-            "error" :   "internal_error",
-            "msg"   :   "Function process_assettopology() returned a null pointer."
-        }
-<%cpp>
-        return HTTP_INTERNAL_SERVER_ERROR;
+        log_error ("Function process_assettopology() returned a null pointer");
+        LOG_END;
+        http_die("internal-error");
     }
-    assert (input_msg == NULL);
 
     if (is_common_msg (return_msg)) {
         _scoped_common_msg_t *common_msg = common_msg_decode (&return_msg);
@@ -141,40 +130,28 @@ std::string filter_group;
             if (return_msg != NULL) {
                 zmsg_destroy (&return_msg);
             }
-</%cpp>
-            {
-                "error" :   "internal_error",
-                "msg"   :   "common_msg_decode() failed."
-            }
-<%cpp>
-            return HTTP_INTERNAL_SERVER_ERROR;
+            log_error ("common_msg_decode() failed");
+            LOG_END;
+            http_die("internal-error");
         }
 
         if (common_msg_id (common_msg) == COMMON_MSG_FAIL) {
-</%cpp>
-        {
-            "msg"   :   "<$ common_msg_errmsg (common_msg) $>",
-            "errtype"   :  "<$ static_cast<int> (common_msg_errtype (common_msg)) $>",
-            "errorno"   :   "<$ static_cast<int> (common_msg_errorno (common_msg)) $>"
-        }
-<%cpp>
+            log_error ("common_msg is COMMON_MSG_FAIL");
+            LOG_END;
             switch(common_msg_errorno(common_msg)) {
                 case(DB_ERROR_BADINPUT):
-                    return HTTP_BAD_REQUEST;
+                    // FIXME PARAMETERS NAME and value
+                    http_die("request-param-bad", "from", from.c_str(), "integer value");
                 case(DB_ERROR_NOTFOUND):
-                    return HTTP_NOT_FOUND;
+                    http_die("element-not-found", id.c_str());
                 default:
-                    return HTTP_INTERNAL_SERVER_ERROR;
+                    http_die("internal-error", "");
             }
         }
         else {
-</%cpp>
-        {
-            "error" :   "internal_error",
-            "msg"   :   "Unexpected common_msg received. Message ID = <$ common_msg_id (common_msg) $>"
-        }
-<%cpp>
-                return HTTP_INTERNAL_SERVER_ERROR;
+            log_error ("Unexpected common_msg received. ID = %" PRIu32 , common_msg_id (common_msg));
+            LOG_END;
+            http_die("internal-error", "");
         }
     }
     else if (is_asset_msg (return_msg)) {
@@ -184,13 +161,9 @@ std::string filter_group;
             if (return_msg != NULL) {
                 zmsg_destroy (&return_msg);
             }
-</%cpp>
-            {
-                "error" :   "internal_error",
-                "msg"   :   "asset_msg_decode() failed."
-            }
-<%cpp>
-            return HTTP_INTERNAL_SERVER_ERROR;
+            log_error ("asset_msg_decode() failed");
+            LOG_END;
+            http_die("internal-error");
         }
 
         if (asset_msg_id (asset_msg) == ASSET_MSG_RETURN_POWER) {
@@ -205,13 +178,9 @@ std::string filter_group;
                 _scoped_zmsg_t *zmsg = zmsg_decode ( buffer, zframe_size (devices));
                 if (zmsg == NULL || !zmsg_is (zmsg)) {
                     zframe_destroy (&devices);
-</%cpp>
-                    {
-                        "error" :   "internal_error",
-                        "msg"   :   "zmsg_decode() failed."
-                    }
-<%cpp>
-                    return HTTP_INTERNAL_SERVER_ERROR;
+                    log_error ("zmsg_decode() failed");
+                    LOG_END;
+                    http_die("internal-error");
                 }
                 zframe_destroy (&devices);
 
@@ -221,21 +190,18 @@ std::string filter_group;
                 while ((pop = zmsg_popmsg (zmsg)) != NULL) { // caller owns zmgs_t
                     if (!is_asset_msg (pop)) {
                         zmsg_destroy (&zmsg);
-                        // TODO internal error
-                        return HTTP_INTERNAL_SERVER_ERROR;
+                        log_error ("malformed internal structure of returned message");
+                        LOG_END;
+                        http_die("internal-error");
                     }
                     _scoped_asset_msg_t *item = asset_msg_decode (&pop); // _scoped_zmsg_t is freed
                     if (item == NULL) {
                         if (pop != NULL) {
                             zmsg_destroy (&pop);
                         }
-</%cpp>
-                        {
-                            "error" :   "internal_error",
-                            "msg"   :   "asset_msg_decode() failed."
-                        }
-<%cpp>
-                        return HTTP_INTERNAL_SERVER_ERROR;
+                        log_error ("asset_smg_decode() failed for internal messages");
+                        LOG_END;
+                        http_die("internal-error");
                     }
 
                     if (first == false) {
@@ -250,7 +216,6 @@ std::string filter_group;
                     asset_msg_destroy (&item);
                 }
                 zmsg_destroy (&zmsg);
-
                 json.append ("] ");
             }
 
@@ -287,33 +252,23 @@ std::string filter_group;
                     json.append ("}");
                     item = (const char*) zlist_next (powers);
                 }
-
                 json.append ("] ");
             }
-
             json.append ("}");
 </%cpp>
-    <$$ json $>
+<$$ json $>
 <%cpp>
         }
         else {
-</%cpp>
-            {
-                "error" :   "internal_error",
-                "msg"   :   "Unexpected asset_msg received. Message ID = <$ asset_msg_id (asset_msg) $>"
-            }
-<%cpp>
-            return HTTP_INTERNAL_SERVER_ERROR;
+            log_error ("Unexpected asset_msg received. ID = %" PRIu32 , asset_msg_id (asset_msg));
+            LOG_END;
+            http_die("internal-error", "");
         }
     }
     else {
-</%cpp>
-            {
-                "error" :   "internal_error",
-                "msg"   :   "Uknown protocol!"
-            }
-<%cpp>
-        return HTTP_INTERNAL_SERVER_ERROR;
+        log_error ("Unknown protocol");
+        LOG_END;
+        http_die("internal-error", "");
     }
 }
 </%cpp>
