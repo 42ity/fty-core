@@ -10,7 +10,7 @@ EnvironmentFile=-/etc/default/bios
 EnvironmentFile=-/etc/sysconfig/bios
 EnvironmentFile=-/etc/default/bios__%n.conf
 EnvironmentFile=-/etc/sysconfig/bios__%n.conf
-ExecStart=@libexecdir@/bios/outage
+ExecStart=@libexecdir@/@PACKAGE@/outage
 
 [Install]
 WantedBy=multi-user.target
