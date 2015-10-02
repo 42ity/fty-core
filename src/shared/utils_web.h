@@ -158,7 +158,7 @@ do { \
     int64_t _idx = idx; \
     if (_idx < 0) _idx = _idx * -1; \
     if (_idx >= (int64_t)_WSErrorsCOUNT) _idx = 1; \
-    utils::json::create_error_json(msg, _errors.at(_idx).err_code);\
+    reply.out() << utils::json::create_error_json(msg, _errors.at(_idx).err_code);\
     return _errors.at(_idx).http_code;\
 } \
 while (0)
@@ -206,12 +206,10 @@ struct BiosError : std::invalid_argument {
             size_t idx,
             const std::string& message):
         std::invalid_argument(message),
-        idx(idx),
-        message(message)
+        idx(idx)
     { }
 
     size_t idx;
-    std::string message;
 };
 
 /*
