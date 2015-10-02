@@ -34,6 +34,7 @@
 #include <array>
 #include <stdarg.h>
 #include <cmath>
+#include <climits>
 
 #include <tnt/http.h>
 
@@ -59,8 +60,10 @@ typedef std::array<_WSError, _WSErrorsCOUNT> _WSErrors;
 // The .messages are supposed to be called with FEWER formatting arguments than defined.
 // To avoid issues with going to unallocated memory, the _die_asprintf is called with
 // **5** additional empty strings, which fill sefgaults for other formatting specifiers.
+
+#define HTTP_TEAPOT 418 //see RFC2324
 static constexpr const _WSErrors _errors = { {
-    {.key = "success",                  .http_code = HTTP_OK,                       .err_code = 0,      .message = "<TO-BE-DEFINED>" },
+    {.key = "undefined",                .http_code = HTTP_TEAPOT,                   .err_code = INT_MIN,.message = "I'm a teapot!" },
     {.key = "internal-error",           .http_code = HTTP_INTERNAL_SERVER_ERROR,    .err_code = 42,     .message = "Internal Server Error. %s" },
     {.key = "not-authorized",           .http_code = HTTP_UNAUTHORIZED,             .err_code = 43,     .message = "You are not authorized. Please use '/oauth2/token?username=<user_name>&password=<password>&grant_type=password' GET request to authorize."},
     {.key = "element-not-found",        .http_code = HTTP_NOT_FOUND,                .err_code = 44,     .message = "Element '%s' not found."},
@@ -72,6 +75,7 @@ static constexpr const _WSErrors _errors = { {
     {.key = "action-forbidden",         .http_code = HTTP_FORBIDDEN,                .err_code = 51,     .message = "%s is forbidden. %s"},
     {.key = "parameter-conflict",       .http_code = HTTP_BAD_REQUEST,              .err_code = 52,     .message = "Request cannot be processed because of conflict in parameters. %s"}
     } };
+#undef HTTP_TEAPOT
 
 template <size_t N>
 constexpr ssize_t
@@ -83,10 +87,10 @@ _die_idx(const char* key)
 
 template <>
 constexpr ssize_t
-_die_idx<0>(const char* key)
+_die_idx<1>(const char* key)
 {
-    static_assert(std::tuple_size<_WSErrors>::value > 0 , "_die_idx asked for too big N");
-    return (_errors.at(0).key == key || _errors.at(0).message == key) ? 0: -1;
+    static_assert(std::tuple_size<_WSErrors>::value > 1 , "_die_idx asked for too big N");
+    return (_errors.at(1).key == key || _errors.at(1).message == key) ? 1: 0;
 }
 
 static int
@@ -131,8 +135,8 @@ _die_asprintf(
 
 #define http_die(key, ...) \
     do { \
-        constexpr ssize_t key_idx = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
-        static_assert(key_idx != -1, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
+        constexpr size_t key_idx = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
+        static_assert(key_idx != 0, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
         char *message; \
         _die_asprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__, "", "", "", "", "" ); \
         reply.out() << utils::json::create_error_json(message, _errors.at(key_idx).err_code); \
@@ -171,8 +175,8 @@ typedef struct _http_errors_t {
 #define http_add_error(errors, key, ...) \
 do { \
     static_assert (std::is_same <decltype (errors), http_errors_t>::value, "'errors' argument in macro http_add_error must be a http_errors_t."); \
-    constexpr ssize_t key_idx = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
-    static_assert(key_idx != -1, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
+    constexpr size_t key_idx = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
+    static_assert(key_idx == 0, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
     (errors).http_code = _errors.at (key_idx).http_code; \
     char *message; \
     _die_asprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__, "", "", "", "", "" ); \
@@ -255,8 +259,8 @@ struct BiosError : std::invalid_argument {
 #define bios_error_idx(idx, str, key, ...) \
 do { \
     static_assert (std::is_same <decltype (str), std::string>::value, "'str' argument in macro bios_error_idx must be a std::string."); \
-    constexpr ssize_t key_idx = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
-    static_assert(key_idx != -1, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
+    constexpr size_t key_idx = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
+    static_assert(key_idx != 0, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
     char *message; \
     _die_asprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__, "", "", "", "", "" ); \
     str = message; \
@@ -278,8 +282,8 @@ while (0)
 
 #define bios_throw(key, ...) \
     do { \
-        constexpr ssize_t key_idx = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
-        static_assert(key_idx != -1, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
+        constexpr size_t key_idx = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
+        static_assert(key_idx != 0, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
         char *message; \
         _die_asprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__, "", "", "", "", "" ); \
         std::string str{message}; \
