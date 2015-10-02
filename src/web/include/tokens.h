@@ -23,9 +23,6 @@
  * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \author Jim Klimov <EvgenyKlimov@Eaton.com>
- * \brief Not yet documented file
- */
-/**
  * \brief Header file for token manipulation class
  *
  */
