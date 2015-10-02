@@ -37,6 +37,7 @@
 #include <sys/syscall.h>
 
 #include "utils.h"
+#include "utils++.h"
 #include "bios_agent.h"
 #include "agents.h"
 #include "ymsg.h"
@@ -44,6 +45,7 @@
 #include "str_defs.h"
 #include "utils_ymsg.h"
 #include "cleanup.h"
+#include "utils_web.h"
 
 </%pre>
 <%args>
@@ -55,151 +57,116 @@
     std::string element_id;
 </%args>
 <%cpp>
+    // Input arguments checking
 
-    int64_t st;
-    int64_t end;
-    uint32_t eid;
-    std::string strmsg;
-    try {
-        // check both start_ts and end_ts
-        st = datetime_to_calendar (start_ts.c_str ());
-        if (st == -1) {
-            throw std::invalid_argument ("Format for start_ts is 'YYYYMMDDhhmmssZ' where Z stands for UTC time zone.");
-        }
-        end = datetime_to_calendar (end_ts.c_str ());
-        if (end == -1) {
-            throw std::invalid_argument ("Format for end_ts is 'YYYYMMDDhhmmssZ' where Z stands for UTC time zone.");
-        }
-        // check that start_ts < end_ts
-        if (end <= st) {
-            throw std::invalid_argument ("start_ts must be <= end_ts");
-        }
-
-        // type is optional, default type is arithmetic average
-        if (type.empty ()) {
-            type.assign (AVG_TYPES[0]);
-        }
-        else if (!is_average_type_supported (type.c_str ())) {
-            strmsg.assign ("Average type ").append (type).append (" not recognized.");
-            throw std::invalid_argument (strmsg);
-        }
-
-        if (step.empty ()) {
-            throw std::invalid_argument ("Field 'step' is empty.");
-        }
-        if (!is_average_step_supported (step.c_str ())) {
-            strmsg.assign ("Average step ").append (step).append (" not supported.");
-            throw std::invalid_argument (strmsg);
-        }
-
-        if (source.empty()) {
-            throw std::invalid_argument ("Key 'sources' is empty.");
-        }
-        if (element_id.empty()) {
-            throw std::invalid_argument ("Mandatory argument 'element_id' not specified.");
-        }
-        size_t pos = 0;
-        eid = std::stoul (element_id, &pos);
-        if ( pos != element_id.size() ) {
-            throw std::invalid_argument ("Parameter 'element_id' is malformed.");
-        }
+    // check both start_ts and end_ts
+    if (start_ts.empty ()) {
+        http_die ("request-param-required", "start_ts");
     }
-    catch (const std::logic_error& e) { // invalid_argument, length_error, out_of_range
-</%cpp>
-        {
-            "msg" : "<$$ e.what () $>"
-        }
-<%cpp>
-        return HTTP_BAD_REQUEST;
+    int64_t st = datetime_to_calendar (start_ts.c_str ());
+    if (st == -1) {
+        http_die ("request-param-bad", "start_ts", std::string ("'").append (start_ts).append ("'").c_str (), "format 'YYYYMMDDhhmmssZ");
+    }
+    if (end_ts.empty ()) {
+        http_die ("request-param-required", "end_ts");
+    }
+    int64_t end = datetime_to_calendar (end_ts.c_str ());
+    if (end == -1) {
+        http_die ("request-param-bad", "end_ts", std::string ("'").append (end_ts).append ("'").c_str (), "format 'YYYYMMDDThhmmssZ");
+    }
+   
+    // check that start_ts < end_ts
+    if (end <= st) {
+        http_die ("start-gt-end-timestamp", start_ts.c_str(), end_ts.c_str ());
+    }
+
+    // type is optional, default type is arithmetic average
+    if (type.empty ()) {
+        type.assign (AVG_TYPES[0]);
+    }
+    else if (!is_average_type_supported (type.c_str ())) {
+        http_die ("request-param-bad", "type",
+            std::string ("'").append (type).append ("'").c_str (),
+            std::string ("one of the following values: [").append (utils::join (AVG_TYPES, AVG_TYPES_SIZE, ", ")).append("].").c_str ());
+    }
+
+    // step 
+    if (step.empty ()) {
+        http_die ("request-param-required", "step");
+    } 
+    if (!is_average_step_supported (step.c_str ())) {
+        http_die ("request-param-bad", "step",
+            std::string ("'").append (step).append ("'").c_str (),
+            std::string ("one of the following values: [").append (utils::join (AVG_STEPS, AVG_STEPS_SIZE, ", ")).append("].").c_str ());
+    }
+
+    // source
+    if (source.empty()) {
+        http_die ("request-param-required", "source");
+    }
+
+    // element_id
+    if (element_id.empty()) {
+        http_die ("request-param-required", "element_id");
+    }
+
+    uint32_t eid;
+    try {
+        eid = utils::string_to_element_id (element_id);
+    }
+    catch (const std::invalid_argument& e) {
+        http_die ("request-param-bad", "element_id",
+            std::string ("value '").append (element_id).append ("'").append (" is not an element identifier").c_str (),
+            std::string ("an unsigned integer in range 1 to ").append (std::to_string (UINT_MAX)).append (".").c_str ());
+    }
+    catch (const std::out_of_range& e) {
+        http_die ("request-param-bad", "element_id",
+            std::string ("value '").append (element_id).append ("'").append (" is out of range").c_str (),
+            std::string ("value in range 1 to ").append (std::to_string (UINT_MAX)).append (".").c_str ());
     }
     catch (const std::exception& e) {
-</%cpp>
-        {
-            "msg" : "<$$ e.what () $>"
-        }
-<%cpp>
-        return HTTP_INTERNAL_SERVER_ERROR;
-    }
-    catch (...) {
-</%cpp>
-        {
-            "msg" : "Unknown internal error."
-        }
-<%cpp>
-        return HTTP_INTERNAL_SERVER_ERROR;
+        log_error ("std::exception caught: %s", e.what ());
+        http_die ("internal-error");
     }
 
     std::string agent_name (BIOS_AGENT_PREFIX_REST);
     agent_name.append (std::to_string (static_cast<int> (getpid ()))).append (".").append (std::to_string ( syscall(SYS_gettid) ));
+
     _scoped_bios_agent_t *agent = bios_agent_new (MLM_ENDPOINT, agent_name.c_str ());
     if (agent == NULL) {
-</%cpp>
-        {
-            "msg" : "bios_agent_new () failed."
-        }
-<%cpp>
-        return HTTP_INTERNAL_SERVER_ERROR;
+        http_die ("internal-error", "bios_agent_new () failed.");
     }
 
     _scoped_ymsg_t *msg = bios_web_average_request_encode (st, end, type.c_str(), step.c_str(), eid, source.c_str ());
     if (msg == NULL) {
-</%cpp>
-        {
-            "msg" : "bios_web_average_request_encode() failed."
-        }
-<%cpp>
         bios_agent_destroy (&agent);
-        return HTTP_INTERNAL_SERVER_ERROR;
-
+        http_die ("internal-error", "bios_web_average_request_encode() failed.");
     }
 
     int rv = bios_agent_sendto (agent, BIOS_AGENT_NAME_COMPUTATION, "metric/computed/average", &msg);
     if (rv != 0) {
-</%cpp>
-        {
-            "msg" : "bios_web_average_send_to() failed."
-        }
-<%cpp>
         bios_agent_destroy (&agent);
-        return HTTP_INTERNAL_SERVER_ERROR;
+        http_die ("internal-error", "bios_web_average_send_to() failed.");
     }
 
     msg = bios_agent_recv (agent);
     if (msg == NULL) {
-</%cpp>
-        {
-            "msg" : "Computation module didn't reply."
-        }
-<%cpp>
         bios_agent_destroy (&agent);
-        return HTTP_INTERNAL_SERVER_ERROR;
+        http_die ("internal-error", "Computation module didn't reply.");
     }
 
     if (!ymsg_is_ok (msg)) {
-        if (ymsg_errmsg (msg))
-            strmsg.assign (ymsg_errmsg (msg));
-        else
-            strmsg.assign ("Error requesting average data.");
-</%cpp>
-        {
-            "msg" : "<$$ strmsg $>"
-        }
-<%cpp>
         ymsg_destroy (&msg);
         bios_agent_destroy (&agent);
-        return HTTP_INTERNAL_SERVER_ERROR;
+        http_die ("internal-error", ymsg_errmsg (msg) ? ymsg_errmsg (msg) : "Error requesting average data." );
     }
 
     _scoped_char *json = NULL;
     rv = bios_web_average_reply_extract (msg, &json);
     ymsg_destroy (&msg);
     if (rv != 0) {
-</%cpp>
-        {
-            "msg" : "Got incorect reply from computation module."
-        }
-<%cpp>
         bios_agent_destroy (&agent);
+        http_die ("internal-error", "Reply from computation module incorrect.");
         return HTTP_INTERNAL_SERVER_ERROR;
     }
     bios_agent_destroy (&agent);
