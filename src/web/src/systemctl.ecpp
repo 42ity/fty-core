@@ -35,6 +35,7 @@
 
 #include "auth_levels.h"
 #include "subprocess.h"
+#include "utils_web.h"
 
 #define LoadState       "LoadState"     // loaded/
 #define ActiveState     "ActiveState"   // active/
@@ -172,7 +173,7 @@ unsigned int process_get (const std::string& operation, const std::string& servi
     return 0; 
 }
 
-unsigned int process_post (const std::string& operation, const std::string& body, std::string& message, uint64_t& code) {
+inline unsigned int process_post (const std::string& operation, const std::string& body, std::string& message, uint64_t& code) {
     code = 0;
     message.clear ();
     if (operation.compare ("start") != 0 &&         
@@ -274,18 +275,7 @@ int8_t access_auth_level;
 <%cpp>
 // min. level 2 required
 if (access_auth_level < AUTH_LEVEL_POWERUSER) {
-</%cpp>
-{
-    "errors": [
-        {
-            "code" : 0,
-            "message" : "Not authorized!",
-            "hint" : "Please use '/oauth2/token?username=<user_name>&password=<password>&grant_type=password' GET request to authorize."
-        }
-    ]
-}
-<%cpp>     
-    return HTTP_UNAUTHORIZED;
+    http_die("not-authorized");
 }
 
 
@@ -308,9 +298,7 @@ else if (request.getMethod() == "POST") {
     http_rc = process_post (operation, request.getBody(), message, error_code);
 }
 else {
-    error_code = 00;
-    message = "Following HTTP methods are supported for 'admin/systemctl/<operation>': GET, POST.";
-    http_rc = HTTP_METHOD_NOT_ALLOWED;
+    http_die("method-not-allowed", request.getMethod().c_str() );
 }
 
 if (http_rc == 200) {
