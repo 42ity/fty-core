@@ -49,7 +49,7 @@ typedef struct _wserror {
 } _WSError;
 
 // size of _errors array, keep this up to date otherwise code won't build
-static constexpr size_t _WSErrorsCOUNT = 11;
+static constexpr size_t _WSErrorsCOUNT = 12;
 
 // typedef for array of errors
 typedef std::array<_WSError, _WSErrorsCOUNT> _WSErrors;

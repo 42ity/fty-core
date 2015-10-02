@@ -28,7 +28,6 @@
  #><%pre>
 #include <czmq.h>
 #include <cxxtools/split.h>
-#include <cxxtools/regex.h>
 #include <tntdb/error.h>
 #include <exception>
 #include <limits.h>
@@ -123,34 +122,24 @@ asset_manager asset_mgr;
 
     for (auto const& item : racks) {
         // id_asset_element is defined as 'INT UNSIGNED' in tools/initdb.sql
-        static cxxtools::Regex regex_element ("^[1-9][0-9]*$");
-        if (!regex_element.match (item)) {
-            http_die ("request-param-bad", "arg1",
+        uint32_t real_id = 0;
+        try {
+            real_id = utils::string_to_element_id (item);
+        }
+        catch (const std::invalid_argument& e) {
+            http_die ("request-param-bad", "element_id",
                 std::string ("value '").append (item).append ("'").append (" is not an element identifier").c_str (),
                 std::string ("an unsigned integer in range 1 to ").append (std::to_string (UINT_MAX)).append (".").c_str ());
-        }
-
-        unsigned long real_id_l = 0;
-        try { 
-            real_id_l = std::stoul (item);
         }
         catch (const std::out_of_range& e) {
-            http_die ("request-param-bad", "arg1",
-                std::string ("value '").append (item).append ("'").append (" is out of range").c_str (),
-                std::string ("value in range 1 to ").append (std::to_string (UINT_MAX)).append (".").c_str ());
-        } 
-        catch (const std::invalid_argument& e) {
-            http_die ("request-param-bad", "arg1",
-                std::string ("value '").append (item).append ("'").append (" is not an element identifier").c_str (),
-                std::string ("an unsigned integer in range 1 to ").append (std::to_string (UINT_MAX)).append (".").c_str ());
-        }
-
-        if (real_id_l == 0 || real_id_l > UINT_MAX) {
-            http_die ("request-param-bad", "arg1",
+            http_die ("request-param-bad", "element_id",
                 std::string ("value '").append (item).append ("'").append (" is out of range").c_str (),
                 std::string ("value in range 1 to ").append (std::to_string (UINT_MAX)).append (".").c_str ());
         }
-        uint32_t real_id = static_cast<uint32_t> (real_id_l);
+        catch (const std::exception& e) {
+            log_error ("std::exception caught: %s", e.what ());
+            http_die ("internal-error");
+        }
 
         auto it = allRacksShort.item.find(real_id);
         if (it == allRacksShort.item.end()) {
