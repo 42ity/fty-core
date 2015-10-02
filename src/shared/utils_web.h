@@ -84,13 +84,13 @@ _die_idx<0>(const char* key)
 }
 
 static int
-_die_vasprintf(
+_die_asprintf(
         char **buf,
         const char* format,
         ...) __attribute__ ((format (printf, 2, 3))) __attribute__ ((__unused__));
 
 static int
-_die_vasprintf(
+_die_asprintf(
         char **buf,
         const char* format,
         ...)
@@ -128,7 +128,7 @@ _die_vasprintf(
         constexpr ssize_t key_idx = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
         static_assert(key_idx != -1, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
         char *message; \
-        _die_vasprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__ ); \
+        _die_asprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__ ); \
         reply.out() << utils::json::create_error_json(message, _errors.at(key_idx).err_code); \
         free(message); \
         return _errors.at(key_idx).http_code;\
@@ -169,7 +169,7 @@ do { \
     static_assert(key_idx != -1, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
     (errors).http_code = _errors.at (key_idx).http_code; \
     char *message; \
-    _die_vasprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__ ); \
+    _die_asprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__ ); \
     (errors).errors.push_back (std::make_pair (_errors.at (key_idx).err_code, message)); \
     free (message); \
 } \
@@ -254,7 +254,7 @@ do { \
     constexpr ssize_t key_idx = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
     static_assert(key_idx != -1, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
     char *message; \
-    _die_vasprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__ ); \
+    _die_asprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__ ); \
     str = message; \
     idx = key_idx; \
     free (message); \
