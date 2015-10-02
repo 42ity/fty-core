@@ -49,6 +49,7 @@ std::string filter_group;
 <%cpp>
 {
     std::string id;
+    std::string parameter_name;
     if (from.empty() && to.empty() && filter_dc.empty() && filter_group.empty()) {
         http_die("request-param-required", "from/to/filter_dc/filter_group");
     }
@@ -64,6 +65,7 @@ std::string filter_group;
         input_msg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
         assert (input_msg);
         id = from;
+        parameter_name = "from";
     }
 
 //////////////////
@@ -76,6 +78,7 @@ std::string filter_group;
         input_msg = asset_msg_new (ASSET_MSG_GET_POWER_TO);
         assert (input_msg);
         id = to;
+        parameter_name = "to";
     }
 
 //////////////////////
@@ -88,6 +91,7 @@ std::string filter_group;
         input_msg = asset_msg_new (ASSET_MSG_GET_POWER_DATACENTER);
         assert (input_msg);
         id = filter_dc;
+        parameter_name = "filter_dc";
     }
 
 //////////////////////
@@ -100,6 +104,7 @@ std::string filter_group;
         input_msg = asset_msg_new (ASSET_MSG_GET_POWER_GROUP);
         assert (input_msg);
         id = filter_group;
+        parameter_name = "filter_group";
     }
 
     // convert string to number
@@ -107,12 +112,12 @@ std::string filter_group;
     try {
         element_id = std::stoul (id);
     } catch (std::out_of_range& e) {
-        http_die("request-param-bad", "from", from.c_str(), "be UINT32");
+        http_die("request-param-bad", parameter_name.c_str(), id.c_str(), "be UINT32");
     } catch (std::invalid_argument& e) {
-        http_die("request-param-bad", "from", from.c_str(), "be integer value");
+        http_die("request-param-bad", parameter_name.c_str(), id.c_str(), "be integer value");
     } catch (std::exception& e) {
         LOG_END_ABNORMAL (e);
-        http_die("request-param-bad", "from", from.c_str(), "be integer value'");
+        http_die("request-param-bad", parameter_name.c_str(), id.c_str(), "be integer value'");
     }
 
    // Call persistence layer
@@ -140,8 +145,8 @@ std::string filter_group;
             LOG_END;
             switch(common_msg_errorno(common_msg)) {
                 case(DB_ERROR_BADINPUT):
-                    // FIXME PARAMETERS NAME and value
-                    http_die("request-param-bad", "from", from.c_str(), "integer value");
+                    log_error ("This should never happen");
+                    http_die("request-param-bad", parameter_name.c_str(), id.c_str(), "integer value");
                 case(DB_ERROR_NOTFOUND):
                     http_die("element-not-found", id.c_str());
                 default:
