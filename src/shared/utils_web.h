@@ -271,18 +271,21 @@ while (0)
  * \param[in] key - the .key or .message from static list of errors
  * \param[in] ... - format arguments for .message template
  *
- * Similar to http_die, just throws BiosError upwards, where it can be easily
- * 'consumed' by http_die_idx macro.
+ * Similar to http_die, just throws BiosError, where it can be easily 'consumed'
+ * by http_die_idx macro.
  *
  */
 
 #define bios_throw(key, ...) \
     do { \
-        size_t idx; \
-        std::string message; \
-        bios_error_idx(idx, message, key, ##__VA_ARGS__); \
-        log_warning("throw BiosError{%zu, \"%s\"}", idx, message.c_str());\
-        throw BiosError{idx, message}; \
+        constexpr ssize_t key_idx = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
+        static_assert(key_idx != -1, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
+        char *message; \
+        _die_asprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__, "", "", "", "", "" ); \
+        std::string str{message}; \
+        free(message); \
+        log_warning("throw BiosError{%zu, \"%s\"}", key_idx, str.c_str());\
+        throw BiosError{key_idx, str}; \
     } while (0);
 
 namespace utils {
