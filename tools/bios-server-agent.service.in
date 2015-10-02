@@ -5,6 +5,7 @@ Requires=malamute.service
 
 [Service]
 Type=simple
+User=nobody
 EnvironmentFile=-/etc/default/bios
 EnvironmentFile=-/etc/sysconfig/bios
 EnvironmentFile=-/etc/default/bios__%n.conf
