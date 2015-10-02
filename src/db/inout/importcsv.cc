@@ -183,7 +183,7 @@ int
             };
 
     auto rv = select_assets_by_container (conn, parent_id, func);
-    if ( !rv )
+    if ( rv != 0 )
         return 3;
     pdu_epdu_count = 0;
     element_id = 0;
@@ -261,7 +261,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     auto name = cm.get(row_i, "name");
     log_debug ("name = '%s'", name.c_str());
     if ( !is_ok_name(name.c_str()) ) {
-        bios_throw("request-param-bad", "name", name.c_str(), "<unique and non empty value>");
+        bios_throw("request-param-bad", "name", name.empty() ? "<empty>" : name.c_str(), "<unique and non empty value>");
     }
     unused_columns.erase("name");
 
