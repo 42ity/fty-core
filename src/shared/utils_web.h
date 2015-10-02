@@ -136,55 +136,6 @@ _die_vasprintf(
     while(0)
 
 
-/*
- * \brief get the index to error message and formatted error message
- *
- * \param[out] idx - variable name to store index
- * \param[out] str - variable name to store formatted error message
- * \param[in]  key - the .key or .message from static list of errors
- * \param[in]  ... - format arguments for .message template
- *
- * It is supposed for DB functions to return errors easily expressed in REST API
- * int db_foo_bar(conn, id, std::string &err) {
- *
- *   if (!failed)
- *     return 0;
- *
- *   int idx;
- *   http_get_error(idx, err);
- *   return -idx;
- * }
- *
- * db_reply_t db_ham_spam(conn, id) {
- *
- *   if (!failed)
- *     return ret;
- *
- *   http_get_error(ret.rowid, ret.msg, "internal-error");
- *   return ret;
- * }
- *
- * // in REST API
- * int r = db_foo_bar(...);
- * if (r == 0)
- *   return HTTP_OK;
- *
- * http_die_idx(idx, message);
- *
- */
-#define http_get_error(idx, str, key, ...) \
-do { \
-    static_assert (std::is_same <decltype (str), std::string>::value, "'str' argument in macro http_get_error must be a std::string."); \
-    constexpr ssize_t key_idx = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
-    static_assert(key_idx != -1, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
-    char *message; \
-    _die_vasprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__ ); \
-    str = message; \
-    idx = key_idx; \
-    free (message); \
-} \
-while (0)
-
 /**
  *  \brief http die based on _error index number
  *
@@ -256,6 +207,60 @@ struct BiosError : std::invalid_argument {
     size_t idx;
     std::string message;
 };
+
+/*
+ * \brief get the index to error message and formatted error message
+ *
+ * \param[out] idx - variable name to store index
+ * \param[out] str - variable name to store formatted error message
+ * \param[in]  key - the .key or .message from static list of errors
+ * \param[in]  ... - format arguments for .message template
+ *
+ * It is supposed for DB functions to return errors easily expressed in REST API
+ *
+ * // new low level DB API:
+ * int db_foo_bar(conn, id, std::string &err) {
+ *   ...
+ *   if (!failed)
+ *     return 0;
+ *   ...
+ *   int idx;
+ *   bios_error_idx(idx, err, "internal-error");
+ *   return -idx;
+ * }
+ *
+ * // old low level DB API:
+ * db_reply_t db_ham_spam(conn, id) {
+ *   ...
+ *   if (!failed)
+ *     return ret;
+ *   ...
+ *   bios_error_idx(ret.rowid, ret.msg, "internal-error");
+ *   return ret;
+ * }
+ *
+ * // in REST API
+ * int r = db_foo_bar(...);
+ * if (r == 0)
+ *   return HTTP_OK;
+ *
+ * http_die_idx(idx, message);
+ *
+ */
+
+#define bios_error_idx(idx, str, key, ...) \
+do { \
+    static_assert (std::is_same <decltype (str), std::string>::value, "'str' argument in macro bios_error_idx must be a std::string."); \
+    constexpr ssize_t key_idx = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
+    static_assert(key_idx != -1, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
+    char *message; \
+    _die_vasprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__ ); \
+    str = message; \
+    idx = key_idx; \
+    free (message); \
+} \
+while (0)
+
 /**
  * \brief throw specified bios error
  *
@@ -270,7 +275,7 @@ struct BiosError : std::invalid_argument {
     do { \
         size_t idx; \
         std::string message; \
-        http_get_error(idx, message, key, ##__VA_ARGS__); \
+        bios_error_idx(idx, message, key, ##__VA_ARGS__); \
         throw BiosError{idx, message}; \
     } while (0);
 
