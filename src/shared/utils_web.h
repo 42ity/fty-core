@@ -53,6 +53,12 @@ static constexpr size_t _WSErrorsCOUNT = 11;
 // typedef for array of errors
 typedef std::array<_WSError, _WSErrorsCOUNT> _WSErrors;
 
+// WARNING!!! - don't use anything else than %s as format parameter for .message
+//
+// TL;DR;
+// The .messages are supposed to be called with FEWER formatting arguments than defined.
+// To avoid issues with going to unallocated memory, the _die_asprintf is called with
+// **5** additional empty strings, which fill sefgaults for other formatting specifiers.
 static constexpr const _WSErrors _errors = { {
     {.key = "success",                  .http_code = HTTP_OK,                       .err_code = 0,      .message = "<TO-BE-DEFINED>" },
     {.key = "internal-error",           .http_code = HTTP_INTERNAL_SERVER_ERROR,    .err_code = 42,     .message = "Internal Server Error. %s" },
@@ -128,7 +134,7 @@ _die_asprintf(
         constexpr ssize_t key_idx = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
         static_assert(key_idx != -1, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
         char *message; \
-        _die_asprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__ ); \
+        _die_asprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__, "", "", "", "", "" ); \
         reply.out() << utils::json::create_error_json(message, _errors.at(key_idx).err_code); \
         free(message); \
         return _errors.at(key_idx).http_code;\
@@ -169,7 +175,7 @@ do { \
     static_assert(key_idx != -1, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
     (errors).http_code = _errors.at (key_idx).http_code; \
     char *message; \
-    _die_asprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__ ); \
+    _die_asprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__, "", "", "", "", "" ); \
     (errors).errors.push_back (std::make_pair (_errors.at (key_idx).err_code, message)); \
     free (message); \
 } \
@@ -254,7 +260,7 @@ do { \
     constexpr ssize_t key_idx = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
     static_assert(key_idx != -1, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
     char *message; \
-    _die_asprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__ ); \
+    _die_asprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__, "", "", "", "", "" ); \
     str = message; \
     idx = key_idx; \
     free (message); \
