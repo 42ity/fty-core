@@ -97,6 +97,20 @@ std::string join_keys_map (const std::map<K,V>& t, const std::string& separator)
     return result;
 }
 
+/*!
+ \brief Concatenate items of array of c strings using given separator
+
+ NULL encountered sooner than length items terminates the concatenation.
+ \return Concatenated string or empty on error
+*/ 
+std::string join (const char **str_arr, uint32_t length, const char *separator);
+
+/*!
+ \brief Version of join(const char **str_arr, uint32_t length, const char *separator)" that works until NULL terminating item is encountered
+ \note Use this version only for arrays that are NULL terminated!
+*/
+std::string join (const char **str_arr, const char *separator);
+
 } // namespace utils
 
 #endif // SRC_SHARED_UTILS_PLUSPLUS_H__

@@ -146,3 +146,57 @@ TEST_CASE ("join_keys_map", "[utilities]")
     CHECK (utils::join_keys_map (map4, " ").compare ("1 2 3") == 0);
 
 }
+
+TEST_CASE ("join", "[utilities]") {
+    const char *arr1[3] = { "mean", "min", "max" };
+    uint32_t arr1_len = 3;
+
+    const char *arr2[5] = { "mean", "min", "", "something", NULL };
+    uint32_t arr2_len = 4;
+
+    const char *arr3[4] = { "mean", "min", NULL, "max" };
+    uint32_t arr3_len = 4;
+
+    const char *arr4[4] = { NULL, "mean", "min", "max" };
+    uint32_t arr4_len = 4;
+
+    const char **arr5 = NULL;
+    const char **arr6 = { NULL };
+    const char **arr_empty = {};  
+     
+
+    SECTION ("version with length specified") {
+        CHECK ( utils::join (arr1, arr1_len, ",").compare ("mean,min,max") == 0 );
+        CAPTURE (utils::join (arr1, arr1_len, ","));
+        CHECK ( utils::join (arr1, arr1_len, ", ").compare ("mean, min, max") == 0 );
+
+        CHECK ( utils::join (arr2, arr2_len, ";").compare ("mean;min;;something") == 0 );
+        CHECK ( utils::join (arr2, arr2_len, " , ").compare ("mean , min ,  , something") == 0 );
+
+        CHECK ( utils::join (arr3, arr3_len, ",").compare ("mean,min") == 0 );
+        CHECK ( utils::join (arr4, arr4_len, ",").empty () );
+
+        CHECK ( utils::join (arr1, arr1_len - 1, ",").compare ("mean,min") == 0 );
+        CHECK ( utils::join (arr2, arr2_len - 2, ";").compare ("mean;min") == 0 );
+    }
+
+    SECTION ("version without length specified") {
+        CHECK ( utils::join (arr2, ",").compare ("mean,min,,something") == 0 );
+        CHECK ( utils::join (arr2, ", ").compare ("mean, min, , something") == 0 );
+        CHECK ( utils::join (arr3, ",").compare ("mean,min") == 0 );
+    }
+    SECTION ("bad invocation") {
+        CHECK ( utils::join (arr1, arr1_len, NULL).empty () );
+        CHECK ( utils::join (arr1, NULL).empty () );
+
+        CHECK ( utils::join (NULL, ",").empty () );
+        CHECK ( utils::join (NULL, 5, ",").empty () );
+        CHECK ( utils::join (arr5, ",").empty () );
+        CHECK ( utils::join (arr5, 5, ",").empty () );
+        CHECK ( utils::join (arr6, ",").empty () );
+        CHECK ( utils::join (arr6, 5, ",").empty () );
+        CHECK ( utils::join (arr_empty, ",").empty () );
+        CHECK ( utils::join (arr_empty, 5, ",").empty () );
+        CHECK ( utils::join (arr4, arr4_len, NULL).empty () );
+    }
+}
