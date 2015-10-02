@@ -155,9 +155,9 @@ _die_asprintf(
  */
 #define http_die_idx(idx, msg) \
 do { \
-    auto _idx = idx; \
+    int64_t _idx = idx; \
     if (_idx < 0) _idx = _idx * -1; \
-    if (_idx >= _WSErrorsCOUNT) _idx = 1; \
+    if (_idx >= (int64_t)_WSErrorsCOUNT) _idx = 1; \
     utils::json::create_error_json(msg, _errors.at(_idx).err_code);\
     return _errors.at(_idx).http_code;\
 } \
@@ -277,11 +277,13 @@ while (0)
  * 'consumed' by http_die_idx macro.
  *
  */
+
 #define bios_throw(key, ...) \
     do { \
         size_t idx; \
         std::string message; \
         bios_error_idx(idx, message, key, ##__VA_ARGS__); \
+        log_warning("throw BiosError{%zu, \"%s\"}", idx, message.c_str());\
         throw BiosError{idx, message}; \
     } while (0);
 
