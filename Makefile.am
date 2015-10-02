@@ -77,6 +77,7 @@ CLEANFILES +=	$(GENERATEDSCRIPTS) $(GENERATEDDATA)
 RUN_TNTNET = export LICENSE_DIR="$(abs_top_srcdir)/tests/fixtures/license"; \
 	     export DATADIR_BASE="$(abs_top_builddir)/var"; \
 	     export NO_SSL="1"; \
+		 export BIOS_LOG_LEVEL=LOG_DEBUG; \
 	     export DATADIR="$$DATADIR_BASE/bios"; \
 	     [ "x${KEEP_LICENSE}" = "xyes" ] || rm -rf "$$DATADIR_BASE"; id; \
 	     mkdir -p "$$DATADIR" && ls -la "$$DATADIR" && \
