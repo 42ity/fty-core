@@ -279,15 +279,25 @@ int
 {
     LOG_START;
 
-    std::string name;
-    auto rep = select_device_name_from_element_id(conn, element_id, name);
-    if (rep.rv != 0)
+    std::string topic;
+    // this should be here, as temperature and humidity for DC are not the
+    // measurements for DC, but for controller!!!!
+    // XXX: this should removed, when with logic everything would be ok
+    if ( !fuzzy )
     {
-        log_error ("requested asset id = %" PRIu32 "doesn't exist", element_id);
-        return 1;
+        std::string name;
+        auto rep = select_device_name_from_element_id(conn, element_id, name);
+        if (rep.rv != 0)
+        {
+            log_error ("requested asset id = %" PRIu32 "doesn't exist", element_id);
+            return 1;
+        }
+        topic = src + "@" + name;
     }
-
-    return select_last_aggregated_by_topic_by_step(conn, src + "@" + name, step, value, fuzzy);
+    else
+        topic = src;
+    log_debug ("topic = %s", topic.c_str());
+    return select_last_aggregated_by_topic_by_step(conn, topic, step, value, fuzzy);
 }
 
 int
@@ -320,6 +330,7 @@ int
         return  select_last_aggregated_by_step(conn, topic_id, step, value);
     }
     catch ( const tntdb::NotFound &e ){
+        log_warning ("topic '%s' wasn't found, fuzzy = %s", topic.c_str(), fuzzy ? "true":"false");
         return 1;
     }
     catch ( const std::exception &e ){
@@ -373,9 +384,11 @@ int
         row["scale"].get(scale);
 
         value = val * pow(10, scale);
+        log_info ("found value = %f", value); 
         return 0;
     }
     catch ( const tntdb::NotFound &e ) {
+        log_warning ("not found topic_id = %" PRIu16 ", timestamp = %" PRIi64, topic_id, timestamp); 
         return 1;
     }
     catch ( const std::exception &e ) {

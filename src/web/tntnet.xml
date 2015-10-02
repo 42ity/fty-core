@@ -193,28 +193,24 @@
     <!-- API itself -->
 
     <!-- topology/location -->
-    <!-- TODO: If location grows, move input validation into separate file, e.g. topology_inputcheck
-    <mapping>
-      <target>topology_inputcheck@bios_web</target>
-      <url>^/api/v1/topology/.*$</url>
-    </mapping>
-    -->
     <mapping>
       <target>topology_location_from@bios_web</target>
       <url>^/api/v1/topology/location.*$</url>
+      <method>GET</method>
     </mapping>
 
     <mapping>
       <target>topology_location_to@bios_web</target>
       <url>^/api/v1/topology/location.*$</url>
+      <method>GET</method>
     </mapping>
 
     <!-- topology/power -->
     <mapping>
-      <target>power@bios_web</target>
+      <target>topology_power@bios_web</target>
       <url>^/api/v1/topology/power.*$</url>
+      <method>GET</method>
     </mapping>
-
 
     <!-- Current meassurements -->
     <mapping>
