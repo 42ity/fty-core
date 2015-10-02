@@ -240,6 +240,10 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     // then they should be treated as external attributes
     auto unused_columns = cm.getTitles();
 
+    if (unused_columns.empty()) {
+        bios_throw("bad-request-document", "Cannot import empty document.");
+    }
+
     // because id is definitely not an external attribute
     auto id_str = unused_columns.count("id") ? cm.get(row_i, "id") : "";
     unused_columns.erase("id");

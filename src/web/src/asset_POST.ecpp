@@ -53,6 +53,9 @@
 
         // POST /asset is currently used to insert new datacenter from wizard
         // all you need when implementing POST for other types is to support structured error handling
+        // emppty document
+        if (cm.cols() == 0 || cm.rows() == 0)
+            http_die("bad-request-document", "Cannot import empty document.");
         // in underlying functions like update_device
         if (!cm.hasTitle("type"))
             http_die("request-param-required", "type");
