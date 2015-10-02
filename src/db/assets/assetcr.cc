@@ -796,7 +796,7 @@ db_reply_t
                                         PRIu64 " rows", ret.affected_rows);
         if ( ret.affected_rows == 0 ) {
             ret.status = 0;
-            http_get_error(ret.rowid, ret.msg, "internal-error", "Unspecified issue with database while inserting element.");
+            http_get_error(ret.rowid, ret.msg, "internal-error", "Unspecified issue with database.");
         }
         else
             ret.status = 1;
