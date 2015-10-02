@@ -48,12 +48,19 @@ typedef struct _wserror {
 } _WSError;
 
 // size of _errors array, keep this up to date otherwise code won't build
-static constexpr size_t _WSErrorsCOUNT = 10;
+static constexpr size_t _WSErrorsCOUNT = 11;
 
 // typedef for array of errors
 typedef std::array<_WSError, _WSErrorsCOUNT> _WSErrors;
 
+// WARNING!!! - don't use anything else than %s as format parameter for .message
+//
+// TL;DR;
+// The .messages are supposed to be called with FEWER formatting arguments than defined.
+// To avoid issues with going to unallocated memory, the _die_asprintf is called with
+// **5** additional empty strings, which fill sefgaults for other formatting specifiers.
 static constexpr const _WSErrors _errors = { {
+    {.key = "success",                  .http_code = HTTP_OK,                       .err_code = 0,      .message = "<TO-BE-DEFINED>" },
     {.key = "internal-error",           .http_code = HTTP_INTERNAL_SERVER_ERROR,    .err_code = 42,     .message = "Internal Server Error. %s" },
     {.key = "not-authorized",           .http_code = HTTP_UNAUTHORIZED,             .err_code = 43,     .message = "You are not authorized. Please use '/oauth2/token?username=<user_name>&password=<password>&grant_type=password' GET request to authorize."},
     {.key = "element-not-found",        .http_code = HTTP_NOT_FOUND,                .err_code = 44,     .message = "Element '%s' not found."},
@@ -83,13 +90,13 @@ _die_idx<0>(const char* key)
 }
 
 static int
-_die_vasprintf(
+_die_asprintf(
         char **buf,
         const char* format,
         ...) __attribute__ ((format (printf, 2, 3))) __attribute__ ((__unused__));
 
 static int
-_die_vasprintf(
+_die_asprintf(
         char **buf,
         const char* format,
         ...)
@@ -127,15 +134,37 @@ _die_vasprintf(
         constexpr ssize_t key_idx = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
         static_assert(key_idx != -1, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
         char *message; \
-        _die_vasprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__ ); \
+        _die_asprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__, "", "", "", "", "" ); \
         reply.out() << utils::json::create_error_json(message, _errors.at(key_idx).err_code); \
         free(message); \
         return _errors.at(key_idx).http_code;\
     } \
     while(0)
 
+
+/**
+ *  \brief http die based on _error index number
+ *
+ *  \param[in] idx - index to _error array
+ *  \param[msg] msg - message to be printed
+ *
+ * idx is normalized before is used - absolute value is used for indexing, so 1
+ * equals to -1. If it's bigger than size of array, it's changed to 1.
+ *
+ * XXX: should not we change it to http_die_be to use instance of BiosError directly?
+ */
+#define http_die_idx(idx, msg) \
+do { \
+    int64_t _idx = idx; \
+    if (_idx < 0) _idx = _idx * -1; \
+    if (_idx >= (int64_t)_WSErrorsCOUNT) _idx = 1; \
+    reply.out() << utils::json::create_error_json(msg, _errors.at(_idx).err_code);\
+    return _errors.at(_idx).http_code;\
+} \
+while (0)
+
 typedef struct _http_errors_t {
-    uint32_t http_code; 
+    uint32_t http_code;
     std::vector <std::pair <uint32_t, std::string>> errors;
 } http_errors_t;
 
@@ -146,7 +175,7 @@ do { \
     static_assert(key_idx != -1, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
     (errors).http_code = _errors.at (key_idx).http_code; \
     char *message; \
-    _die_vasprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__ ); \
+    _die_asprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__, "", "", "", "", "" ); \
     (errors).errors.push_back (std::make_pair (_errors.at (key_idx).err_code, message)); \
     free (message); \
 } \
@@ -159,6 +188,102 @@ do { \
     return (errors).http_code; \
 } \
 while (0)
+
+/**
+ * \brief general bios error
+ *
+ * \param[in] idx - index to _errors array
+ * \param[in] message - error message to be printed
+ *
+ * This exception is not supposed to be created manually as it's easy to
+ * misstype it. The bios_throw macro below is supposed to be used.
+ *
+ * Only one good case is to throw an error from low level function, euther via
+ * return + message string or via db_reply_t or reply_t types.
+ */
+struct BiosError : std::invalid_argument {
+    explicit BiosError (
+            size_t idx,
+            const std::string& message):
+        std::invalid_argument(message),
+        idx(idx)
+    { }
+
+    size_t idx;
+};
+
+/*
+ * \brief get the index to error message and formatted error message
+ *
+ * \param[out] idx - variable name to store index
+ * \param[out] str - variable name to store formatted error message
+ * \param[in]  key - the .key or .message from static list of errors
+ * \param[in]  ... - format arguments for .message template
+ *
+ * It is supposed for DB functions to return errors easily expressed in REST API
+ *
+ * // new low level DB API:
+ * int db_foo_bar(conn, id, std::string &err) {
+ *   ...
+ *   if (!failed)
+ *     return 0;
+ *   ...
+ *   int idx;
+ *   bios_error_idx(idx, err, "internal-error");
+ *   return -idx;
+ * }
+ *
+ * // old low level DB API:
+ * db_reply_t db_ham_spam(conn, id) {
+ *   ...
+ *   if (!failed)
+ *     return ret;
+ *   ...
+ *   bios_error_idx(ret.rowid, ret.msg, "internal-error");
+ *   return ret;
+ * }
+ *
+ * // in REST API
+ * int r = db_foo_bar(...);
+ * if (r == 0)
+ *   return HTTP_OK;
+ *
+ * http_die_idx(idx, message);
+ *
+ */
+
+#define bios_error_idx(idx, str, key, ...) \
+do { \
+    static_assert (std::is_same <decltype (str), std::string>::value, "'str' argument in macro bios_error_idx must be a std::string."); \
+    constexpr ssize_t key_idx = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
+    static_assert(key_idx != -1, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
+    char *message; \
+    _die_asprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__, "", "", "", "", "" ); \
+    str = message; \
+    idx = key_idx; \
+    free (message); \
+} \
+while (0)
+
+/**
+ * \brief throw specified bios error
+ *
+ * \param[in] key - the .key or .message from static list of errors
+ * \param[in] ... - format arguments for .message template
+ *
+ * Similar to http_die, just throws BiosError upwards, where it can be easily
+ * 'consumed' by http_die_idx macro.
+ *
+ */
+
+#define bios_throw(key, ...) \
+    do { \
+        size_t idx; \
+        std::string message; \
+        bios_error_idx(idx, message, key, ##__VA_ARGS__); \
+        log_warning("throw BiosError{%zu, \"%s\"}", idx, message.c_str());\
+        throw BiosError{idx, message}; \
+    } while (0);
 
 namespace utils {
 namespace json {

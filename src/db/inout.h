@@ -36,57 +36,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "dbhelpers.h"
 namespace persist {
 
-struct bad_request_document : std::invalid_argument {
-    explicit bad_request_document(const std::string& msg):
-        std::invalid_argument(msg)
-    {}
-};
-
-struct request_param_required : std::invalid_argument {
-    explicit request_param_required(const std::string& msg):
-        std::invalid_argument(msg)
-    {}
-};
-
-struct element_not_found : std::invalid_argument {
-    explicit element_not_found(const std::string& msg):
-        std::invalid_argument(msg)
-    {}
-};
-
-struct action_forbidden : std::invalid_argument {
-    explicit action_forbidden(const std::string& msg):
-        std::invalid_argument(msg)
-    {}
-};
-
-struct request_bad_param : std::invalid_argument {
-    explicit request_bad_param(
-            const std::string& name,
-            const std::string& got,
-            const std::string& expected):
-        std::invalid_argument("bad parameter"),
-        name(name),
-        got(got),
-        expected(expected)
-    {
-        std::stringstream s;
-        // copy&paste from _errors
-        s << "Parameter '" << name << "' has bad value. Received '" << got << "'. Expected '"<< expected << "'";
-        _what = s.str();
-    };
-
-    std::string name;
-    std::string got;
-    std::string expected;
-    std::string _what;
-
-    virtual const char* what() const throw()
-    {
-        return _what.c_str();
-    }
-};
-
 /*
  * \brief Converts the string priority to number
  *
@@ -117,6 +66,19 @@ get_priority(
 bool
     get_business_critical(
             const std::string& bs_critical);
+
+/*
+ * \brief process one asset
+ *
+ * \param[in] cm is instance of CsvMap (you see this nice evolution, right)
+ * \return id of inserted/updated asset
+ *
+ * \throws execeptions on errors
+ *
+ */
+int
+    process_one_asset
+        (const shared::CsvMap& cm);
 /*
  * \brief Processes a csv file
  *
