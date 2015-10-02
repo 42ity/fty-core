@@ -180,7 +180,7 @@ std::string jsonify (double t)
 {
     if (isnan(t))
         return "null";
-    return std::string ("\"").append (std::to_string (t)).append ("\"");
+    return std::to_string (t);
 }
 
 } // namespace utils::json
