@@ -73,8 +73,7 @@ static constexpr const _WSErrors _errors = { {
     {.key = "bad-request-document",     .http_code = HTTP_BAD_REQUEST,              .err_code = 48,     .message = "Request document has invalid syntax. %s" },
     {.key = "data-conflict",            .http_code = HTTP_CONFLICT,                 .err_code = 50,     .message = "Element '%s' cannot be processed because of conflict. %s"},
     {.key = "action-forbidden",         .http_code = HTTP_FORBIDDEN,                .err_code = 51,     .message = "%s is forbidden. %s"},
-    {.key = "parameter-conflict",       .http_code = HTTP_BAD_REQUEST,              .err_code = 52,     .message = "Request cannot be processed because of conflict in parameters. %s"},
-    {.key = "start-gt-end-timestamp",   .http_code = HTTP_BAD_REQUEST,              .err_code = 101,    .message = "Start timestamp '%s' is greater than '%s' end timestamp."}
+    {.key = "parameter-conflict",       .http_code = HTTP_BAD_REQUEST,              .err_code = 52,     .message = "Request cannot be processed because of conflict in parameters. %s"}
     } };
 #undef HTTP_TEAPOT
 

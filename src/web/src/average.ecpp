@@ -77,7 +77,8 @@
    
     // check that start_ts < end_ts
     if (end <= st) {
-        http_die ("start-gt-end-timestamp", start_ts.c_str(), end_ts.c_str ());
+        http_die ("parameter-conflict",
+            std::string ("Start timestamp '").append (start_ts).append ("' is greater than end timestamp '").append (end_ts).append ("'.").c_str ());
     }
 
     // type is optional, default type is arithmetic average
