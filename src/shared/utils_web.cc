@@ -19,12 +19,28 @@
  */
 #include <cstring>
 #include <ostream>
+#include <limits>
 #include <cxxtools/jsonformatter.h>
 #include <cxxtools/convert.h>
 
 #include "utils_web.h"
 
 namespace utils {
+
+uint32_t
+string_to_element_id (const std::string& string) {
+
+    size_t pos = 0;
+    unsigned long long u = std::stoull (string, &pos);
+    if (pos != string.size ()) {
+        throw std::invalid_argument ("string_to_element_id");
+    }
+    if (u == 0 || u >  std::numeric_limits<uint32_t>::max()) {
+        throw std::out_of_range ("string_to_element_id");
+    }
+    uint32_t element_id = static_cast<uint32_t> (u);
+    return element_id;
+}
 
 namespace json {    
 

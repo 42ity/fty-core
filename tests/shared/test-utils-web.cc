@@ -324,3 +324,44 @@ TEST_CASE ("utils::json::create_error_json","[utils::json::create_error_json][js
 "{\n\t\"errors\": [\n\t\t{\n\t\t\t\"message\": \"Received value 'abc'.\",\n\t\t\t\"code\": 47\n\t\t},\n\t\t{\n\t\t\t\"message\": \"Received value 'def'.\",\n\t\t\t\"code\": 47\n\t\t},\n\t\t{\n\t\t\t\"message\": \"Received value 'ghi'.\",\n\t\t\t\"code\": 47\n\t\t}\n\t]\n}\n") == 0 );
 
 }
+
+TEST_CASE ("utils::string_to_element_id", "[utils]") {
+    uint32_t r = 0;
+
+    SECTION ("valid input") {
+        CHECK_NOTHROW( r = utils::string_to_element_id ("12") );
+        CHECK ( r == 12 );
+        CHECK_NOTHROW( r = utils::string_to_element_id ("123") );
+        CHECK ( r == 123 );
+        CHECK_NOTHROW( r = utils::string_to_element_id ("321") );
+        CHECK ( r == 321 );
+        CHECK_NOTHROW( r = utils::string_to_element_id ("10000") );
+        CHECK ( r == 10000 );
+        CHECK_NOTHROW( r = utils::string_to_element_id ("131275768") );
+        CHECK ( r == 131275768 );
+
+        CHECK_NOTHROW ( r = utils::string_to_element_id ("1")  );
+        CHECK ( r == 1 );
+        CHECK_NOTHROW ( r = utils::string_to_element_id ("4294967295")  );
+        CHECK ( r == 4294967295 );
+    }
+    SECTION ("bad input - std::out_of_range") {
+        CHECK_THROWS_AS( utils::string_to_element_id ("0"), std::out_of_range );
+        CHECK_THROWS_AS( utils::string_to_element_id ("-1"), std::out_of_range );
+        CHECK_THROWS_AS( utils::string_to_element_id ("4294967296"), std::out_of_range );
+        CHECK_THROWS_AS( utils::string_to_element_id ("-433838485"), std::out_of_range );
+        CHECK_THROWS_AS( utils::string_to_element_id ("13412342949672"), std::out_of_range );
+        CHECK_THROWS_AS( utils::string_to_element_id ("-4387435873868"), std::out_of_range );
+        CHECK_THROWS_AS( utils::string_to_element_id ("111111111111111111111111111111111111111111111111111111111111111111111111111111111"), std::out_of_range );
+        CHECK_THROWS_AS( utils::string_to_element_id ("-222222222222222222222222222222222222222222222222222222222222222222222222222222222222"), std::out_of_range );
+    }
+    SECTION ("bad input - std::invalid_argument") {
+        CHECK_THROWS_AS( utils::string_to_element_id (""), std::invalid_argument );
+        CHECK_THROWS_AS( utils::string_to_element_id ("-"), std::invalid_argument );
+        CHECK_THROWS_AS( utils::string_to_element_id ("x"), std::invalid_argument );
+        CHECK_THROWS_AS( utils::string_to_element_id ("12s3"), std::invalid_argument );
+        CHECK_THROWS_AS( utils::string_to_element_id ("s333"), std::invalid_argument );
+        CHECK_THROWS_AS( utils::string_to_element_id ("asf;dguh;8y;34yt83y[Y['8\u6AA6sg "), std::invalid_argument );
+    }
+}
+
