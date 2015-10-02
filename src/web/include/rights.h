@@ -19,7 +19,7 @@
  */
 
 /*!
- * \file tokens.h
+ * \file rights.h
  * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \brief Rights management structure
  *
