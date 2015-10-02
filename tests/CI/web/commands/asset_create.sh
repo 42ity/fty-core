@@ -38,7 +38,7 @@ PARSED_REPLY=`echo ${OUT_CURL} | $JSONSH -x id`
 echo "${PARSED_REPLY}" | cut -d '"' -f 4 | grep -q -E '^[0-9]+$'
 print_result $?
 
-curlfail_push_expect_400
+curlfail_push_expect_409
 test_it "asset_create_dup" >/dev/null
 api_auth_post /asset '{"name":"dc_name_test","type":"datacenter","sub_type":"","location":"","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"A123B123","address":"ASDF"}}' >/dev/null
 print_result $?

@@ -65,12 +65,12 @@
         int id = persist::process_one_asset (cm);
         // process results
 </%cpp>
-{<$$ utils::json::jsonify ("id", id) $>}
+{<$$ utils::json::jsonify ("id", std::to_string(id)) $>}
 <%cpp>
             return HTTP_OK;
     }
     catch (const BiosError& e) {
-        http_die_idx(e.idx, e.message);
+        http_die_idx(e.idx, e.what());
     }
     catch (const std::exception& e) {
         LOG_END_ABNORMAL(e);

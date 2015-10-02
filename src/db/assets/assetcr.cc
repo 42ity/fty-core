@@ -796,7 +796,8 @@ db_reply_t
                                         PRIu64 " rows", ret.affected_rows);
         if ( ret.affected_rows == 0 ) {
             ret.status = 0;
-            bios_error_idx(ret.rowid, ret.msg, "internal-error", "Unspecified issue with database.");
+            //TODO: rework to bad param
+            bios_error_idx(ret.rowid, ret.msg, "data-conflict", "element_name", "Most likely duplicate entry.");
         }
         else
             ret.status = 1;
