@@ -129,7 +129,6 @@ unsigned int process_get (
         message.append (
 "\t]\n"
 "}");
-        /* return HTTP_OK; */
         reply.out() << message;
         return HTTP_OK;
     }
@@ -172,12 +171,6 @@ unsigned int process_get (
     //      BAD: empty / unknown    // 
     //////////////////////////////////
     http_die("request-param-required", "operation");
-        /*
-    message.assign (
-"<operation> is empty or unknown in 'admin/systemctl/<operation>'. "
-"Supported operations for GET requests: 'list', 'status/<service_name>'");
-    return 0;
-        */
 }
 
 unsigned int process_post (
