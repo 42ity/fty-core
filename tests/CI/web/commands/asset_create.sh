@@ -109,7 +109,6 @@ echo "********* 7. Create_DC_with_the_duplicite_ip1 ****************************
 echo "***************************************************************************************************"
 test_it "Create_DC_with_the_duplicite_ip1"
 curlfail_push_expect_noerrors
-#curlfail_push_expect_4xx5xx
 api_auth_post_json '/asset' '{"name":"dc_name_test_7","type":"datacenter","sub_type":"","location":"","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST0007","address":"ASDF","serial_no":"ABCD0007","ip.1":"10.229.5.11"}}' >&5
 print_result $?
 curlfail_pop
@@ -125,7 +124,7 @@ curlfail_pop
 echo "********* 9. Delete_DC2_with_child_element. *******************************************************"
 echo "***************************************************************************************************"
 test_it "Delete_DC2_with_child_element."
-curlfail_push_expect_4xx5xx
+curlfail_push_expect_409
 api_auth_delete /asset/10 > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
 print_result $?
 curlfail_pop
