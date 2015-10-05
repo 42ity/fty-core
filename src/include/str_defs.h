@@ -35,7 +35,7 @@ extern const char* BIOS_AGENT_PREFIX_REST; // each client created inside tntnet 
 extern const char* BIOS_AGENT_NAME_DB_MEASUREMENT;
 extern const char* BIOS_AGENT_NAME_DB_INVENTORY;
 
-#define AVG_STEPS_SIZE 5
+#define AVG_STEPS_SIZE 7
 extern const char* AVG_STEPS[AVG_STEPS_SIZE];
 #define AVG_TYPES_SIZE 3
 extern const char* AVG_TYPES[AVG_TYPES_SIZE];

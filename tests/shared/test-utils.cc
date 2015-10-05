@@ -40,8 +40,8 @@ TEST_CASE("str_eq","[utils][streq]"){
     CHECK_FALSE(str_eq("yyy","yy"));
     CHECK_FALSE(str_eq("YY","yy"));
     CHECK_FALSE(str_eq("\0",NULL));
-    CHECK(str_eq("","\0")); 
-} 
+    CHECK(str_eq("","\0"));
+}
 
 
 TEST_CASE("str_bool","[str_bool][utils]") {
@@ -65,7 +65,6 @@ TEST_CASE ("average_step_seconds", "[average_step_seconds][utils][average]") {
         CHECK ( average_step_seconds ("15d") == -1 );
 
         CHECK ( average_step_seconds ("30h") == -1 );
-        CHECK ( average_step_seconds ("30d") == -1 );
 
         CHECK ( average_step_seconds ("1m") == -1 );
         CHECK ( average_step_seconds ("24m") == -1 );
@@ -80,6 +79,8 @@ TEST_CASE ("average_step_seconds", "[average_step_seconds][utils][average]") {
         CHECK ( average_step_seconds ("30m") == 1800 );
         CHECK ( average_step_seconds ("1h") == 3600 );
         CHECK ( average_step_seconds ("24h") == 86400 );
+        CHECK ( average_step_seconds ("7d") == 7*24*60*60 );
+        CHECK ( average_step_seconds ("30d") == 30*24*60*60 );
     }
 }
 
@@ -100,7 +101,7 @@ TEST_CASE ("average_extend_left_margin", "[utils][average][time]") {
         CHECK ( average_extend_left_margin (1426266000, "8h") == 1426262100 ); // 2015-03-13 17:00:00
     }
     SECTION ("15m") {
-        CHECK ( average_extend_left_margin (951865200, "15m") == 951864000 ); // 2000-02-29 23:00:00 
+        CHECK ( average_extend_left_margin (951865200, "15m") == 951864000 ); // 2000-02-29 23:00:00
         CHECK ( average_extend_left_margin (951865380, "15m") == 951864900 ); // 2000-02-29 23:03:00 overlap
         CHECK ( average_extend_left_margin (951869063, "15m") == 951868500 ); // 2000-03-01 00:04:23 overlap
     }
@@ -152,7 +153,7 @@ TEST_CASE ("average_first_since", "[utils][average][time]") {
         CHECK ( average_first_since (1407801599, "8h") == 1407801600 );  // 2014-08-12 00:00:00
         CHECK ( average_first_since (1407801599, "15m") == 1407801600 );
         CHECK ( average_first_since (1407801599, "30m") == 1407801600 );
-        CHECK ( average_first_since (1407801599, "1h") == 1407801600 );  
+        CHECK ( average_first_since (1407801599, "1h") == 1407801600 );
 
         // 1430180776 == 00:26:16 2015-04-28 UTC                       expected
         CHECK ( average_first_since (1430180776, "8h") == 1430208000 ); // 2015-04-28 08:00:00
@@ -246,7 +247,6 @@ TEST_CASE("bsi32_rescale","[utils][bs_rescale]"){
     ret = bsi32_rescale(INT32_MIN / 10, 0, -2, &value);
     CHECK(!ret);
     CHECK(value == -42000); //<<< just the previous value
-    
 }
 
 TEST_CASE("bsi32_add","[utils][bs_add]"){
@@ -315,5 +315,4 @@ TEST_CASE("get_mac", "[utils][get_mac]") {
             CHECK(strlen(buf) == 0);
 
     }
-    
 }
