@@ -1168,6 +1168,7 @@ dshell_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/include
 
 client_SCRIPTS +=	tools/systemctl
+EXTRA_DIST +=		tools/systemctl
 
 cibin_programs += bios-csv
 bios_csv_SOURCES = tests/db/bios-csv.cc
