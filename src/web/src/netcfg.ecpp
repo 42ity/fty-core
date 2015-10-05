@@ -35,6 +35,7 @@
 #include "subprocess.h"
 #include "augtool.h"
 #include "cidr.h"
+#include "utils_web.h"
 
 using namespace shared;
 
@@ -47,17 +48,11 @@ std::string nil;
 // Make sure we have data that works
 nil = augeas->get_cmd_out("ls /augeas/files/etc/network/interfaces/error");
 if(!nil.empty()) {
-</%cpp>
-{ "error": "Syntax error in /etc/network/interfaces config file" }
-<%cpp>
-    return HTTP_INTERNAL_SERVER_ERROR;
+    http_die ("internal-error", "Syntax error in /etc/network/interfaces config file");
 }
 nil = augeas->get_cmd_out("ls /augeas/files/etc/resolv.conf/error");
 if(!nil.empty()) {
-</%cpp>
-{ "error": "Syntax error in /etc/resolv.conf config file" }
-<%cpp>
-    return HTTP_INTERNAL_SERVER_ERROR;
+    http_die ("internal-error", "Syntax error in /etc/resolv.conf config file");
 }
 
 // Are we asked to just list possible configurations?
@@ -71,11 +66,15 @@ if(rex_ncfg.match(request.getUrl())) {
 							 }
 							);
     if(in.empty()) {
+        http_die ("internal-error", "No configurable interfaces found");
+/*
 </%cpp>
 { "error": "No configurable interfaces found" }
 <%cpp>
         return HTTP_NOT_FOUND;
+*/
     }
+
 </%cpp>
 { "netcfgs": [ "<$$ in $>" ] }
 <%cpp>
@@ -86,10 +85,7 @@ if(rex_ncfg.match(request.getUrl())) {
 std::string iface = request.getArg("iface");
 static cxxtools::Regex rex_anum("^[a-z0-9A-Z]+$");
 if(!rex_anum.match(iface)) {
-</%cpp>
-{ "error": "Wrong interface name" }
-<%cpp>
-    return HTTP_BAD_REQUEST;
+    http_die ("request-param-bad", "iface", std::string ("'").append (iface).append ("'").c_str (), "Valid interface name"); // TODO better message
 }
 
 // Where is the tree reflecting the interface?
@@ -97,10 +93,8 @@ std::string address = augeas->get_cmd_out(
                       "match /files/etc/network/interfaces/iface[*] " + iface,
 					  false);
 if(address.empty()) {
-</%cpp>
-{ "error": "No configuration for interface <$ iface $> found" }
-<%cpp>
-    return HTTP_NOT_FOUND;
+    // Not perfect, but bad enough to create another message?
+    http_die ("element-not-found", iface.c_str ());
 }
 
 #define AUG_GET(NAME, VAL) \
@@ -119,18 +113,13 @@ if(request.getMethod() == "PUT") {
     try {
         deserializer.deserialize(si);
     } catch(const std::exception& e) {
-</%cpp>
-{ "error": "Wrong json on input - <$ e.what() $>" }
-<%cpp>
-        return HTTP_BAD_REQUEST;
+        http_die ("bad-request-document",  std::string("Expecting valid json document: ").append (e.what ()).c_str ());
     }
+
     try {
         rsi = si.getMember(iface);
     } catch(const std::exception& e) {
-</%cpp>
-{ "error": "No configuration for interface <$ iface $> provided" }
-<%cpp>
-        return HTTP_BAD_REQUEST;
+        http_die ("bad-request-document", std::string ("No configuration for interface '").append (iface).append ("'provided.").c_str ());
     }
 
 
@@ -139,10 +128,7 @@ if(request.getMethod() == "PUT") {
     if(it.name() == NAME) { \
         it.getValue(val); \
         if(! CHECK ) { \
-            reply.out() << std::string("{ \"error\": \"Wrong value for '" NAME \
-                                       "' setting or setting '" NAME "' not " \
-                                       " expected for method ") + method + ".\" }"; \
-            return HTTP_BAD_REQUEST; \
+            http_die ("parameter-conflict", std::string ("Wrong value for '").append (NAME).append ("' setting or setting not expected for method ").append (method).append (".").c_str ()); \
         } \
         augeas->run_cmd("set " + address + "/" NAME " " + val); \
         handled = true; \
@@ -167,29 +153,26 @@ if(request.getMethod() == "PUT") {
         //DNS is array, handle differently
         if(it.name() == "nameservers") {
             if(it.category() != cxxtools::SerializationInfo::Category::Array) {
-</%cpp>
-{ "error": "Wrong value for DNS setting - array expected" }
-<%cpp>
-                return HTTP_BAD_REQUEST;
+                http_die ("bad-request-document", "Wrong value for DNS setting - array expected");
             }
             augeas->run_cmd("rm /files/etc/resolv.conf/nameserver");
             for(auto i : it) {
                 i.getValue(val);
                 if(!CIDRAddress(val).valid()) {
-</%cpp>
-{ "error": "Wrong value for DNS setting - array of IPs expected" }
-<%cpp>
-                    return HTTP_BAD_REQUEST;
+                    http_die ("bad-request-document", "Wrong value for DNS setting - array of IPs expected" );
                 }
                 augeas->run_cmd("set /files/etc/resolv.conf/nameserver[0] " + val);
             }
             handled = true;
         }
         if(!handled) {
+            http_die ("bad-request-document", std::string ("Invalid option '").append (it.name ()).append ("'").c_str ());
+/*
 </%cpp>
 { "error": "Invalid option '<$ it.name() $>'" }
 <%cpp>
             return HTTP_BAD_REQUEST;
+*/
         }
     }
 
@@ -199,17 +182,23 @@ if(request.getMethod() == "PUT") {
     // Make sure we have data that works
 	nil = augeas->get_cmd_out("ls /augeas/files/etc/network/interfaces/error");
     if(!nil.empty()) {
+        http_die ("internal-error", "Syntax error in /etc/network/interfaces config file");
+/*
 </%cpp>
 { "error": "Syntax error in /etc/network/interfaces config file" }
 <%cpp>
         return HTTP_INTERNAL_SERVER_ERROR;
+*/
     }
 	nil = augeas->get_cmd_out("ls /augeas/files/etc/resolv.conf/error");
     if(!nil.empty()) {
+        http_die ("internal-error", "Syntax error in /etc/resolv.conf config file");
+/*
 </%cpp>
 { "error": "Syntax error in /etc/resolv.conf config file" }
 <%cpp>
         return HTTP_INTERNAL_SERVER_ERROR;
+*/
     }
 
 }

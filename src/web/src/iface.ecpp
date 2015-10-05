@@ -45,6 +45,9 @@
 #include <sstream>
 #include <cxxtools/regex.h>
 
+#include "log.h"
+#include "utils_web.h"
+
 struct iface {
    std::vector<std::string> ip;
    std::vector<std::string> netmask;
@@ -148,6 +151,8 @@ if(rex.match(request.getUrl())) {
 
 std::string iface = request.getArg("iface");
 if (iface.empty ()) {
+    http_die ("request-param-required", "iface");
+/*
     </%cpp>
 {
     "errors" : [
@@ -160,9 +165,14 @@ if (iface.empty ()) {
 }
     <%cpp>
     return HTTP_BAD_REQUEST;
+*/
 }
 auto dta = get_iface(iface);
 if(dta.mac.empty()) {
+    http_die ("request-param-bad", "iface_name",
+        std::string ("value that does not exist '").append (iface).append ("'").c_str (),
+        "one of valid interface names that can be obtained using GET 'admin/ifaces'.");
+/*
     </%cpp>
 {
     "errors" : [
@@ -175,9 +185,14 @@ if(dta.mac.empty()) {
 }
     <%cpp>
     return HTTP_BAD_REQUEST;
+*/
 }
 
 if (dta.ip.size () != dta.netmask.size ()) {
+    http_die ("internal-error", 
+        std::string ("Number of ip addresses '").append (std::to_string (dta.ip.size ())).append ("' do not match number of netmasks '").
+        append (std::to_string (dta.netmask.size ())).append ("'.").c_str ());
+/*
     </%cpp>
 {
     "errors" : [
@@ -189,6 +204,7 @@ if (dta.ip.size () != dta.netmask.size ()) {
 }
     <%cpp>
     return HTTP_INTERNAL_SERVER_ERROR;
+*/
 }
 
 bool first = true;
@@ -242,6 +258,9 @@ try {
         throw std::runtime_error ("Could not match default gateway from `ip route show`.");
     }
 } catch (const std::exception& e) {
+    log_error ("Exception caught: %s", e.what ());
+    http_die ("internal-error", "Exception caught." );
+/*
     </%cpp>
 {
     "errors" : [
@@ -253,6 +272,7 @@ try {
 }
     <%cpp>
     return HTTP_INTERNAL_SERVER_ERROR;
+*/
 }
 
 // Print out the result
