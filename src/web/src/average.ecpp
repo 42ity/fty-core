@@ -46,6 +46,7 @@
 #include "utils_ymsg.h"
 #include "cleanup.h"
 #include "utils_web.h"
+#include "helpers.h"
 
 </%pre>
 <%args>
@@ -107,27 +108,11 @@
     }
 
     // element_id
-    if (element_id.empty()) {
-        http_die ("request-param-required", "element_id");
-    }
+    http_errors_t errors;
+    uint32_t eid = 0;
 
-    uint32_t eid;
-    try {
-        eid = utils::string_to_element_id (element_id);
-    }
-    catch (const std::invalid_argument& e) {
-        http_die ("request-param-bad", "element_id",
-            std::string ("value '").append (element_id).append ("'").append (" is not an element identifier").c_str (),
-            std::string ("an unsigned integer in range 1 to ").append (std::to_string (UINT_MAX)).append (".").c_str ());
-    }
-    catch (const std::out_of_range& e) {
-        http_die ("request-param-bad", "element_id",
-            std::string ("value '").append (element_id).append ("'").append (" is out of range").c_str (),
-            std::string ("value in range 1 to ").append (std::to_string (UINT_MAX)).append (".").c_str ());
-    }
-    catch (const std::exception& e) {
-        log_error ("std::exception caught: %s", e.what ());
-        http_die ("internal-error");
+    if (!check_element_identifier ("element_id", element_id, eid, errors)) {
+        http_die_error (errors);
     }
 
     std::string agent_name (BIOS_AGENT_PREFIX_REST);
