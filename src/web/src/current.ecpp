@@ -94,7 +94,7 @@ std::string dev;
         // returned array of measurements
         std::map <std::string, double> measurements{};
         row_cb_f foo = \
-                        [&measurements, &asset](const tntdb::Row& r)
+                        [&measurements](const tntdb::Row& r)
                         {
                             std::string topic = "";
                             r["topic"].get(topic);
@@ -134,33 +134,34 @@ std::string dev;
                                 log_warning (" topic = '%s' is malformed",
                                                topic.c_str());
                            }
-                            // add mandatory keys if not in DB
-                           if (persist::is_rack(asset.item.type_id)) {
-                               for (const auto& key : {"realpower.default", "realpower.output.L1"}) {
-                                   if (measurements.count(key) != 0)
-                                       continue;
-                                   measurements.emplace(key, NAN);
-                               }
-                           } else if (persist::is_ups(asset.item.subtype_id)) {
-                               for (const auto& key : {"status.ups", "load.default", "realpower.default", "voltage.output.L1-N", "realpower.output.L1", "current.output.L1", "charge.battery", "runtime.battery"}) {
-                                   if (measurements.count(key) != 0)
-                                       continue;
-                                   measurements.emplace(key, NAN);
-                               }
-                           }
-                           else if (persist::is_pdu(asset.item.subtype_id) ||
-                                      persist::is_epdu(asset.item.subtype_id)) {
-                               for (const auto& key : {"frequency.input", "load.input.L1", "voltage.output.L1-N", "current.input.L1", "realpower.default", "realpower.input.L1", "power.default", "power.input.L1"}) {
-                                   if (measurements.count(key) != 0)
-                                       continue;
-                                   measurements.emplace(key, NAN);
-                               }
-                           }
-
                         };
         // selects measurements
         int rv = persist::select_current_measurement_by_element
                     (conn, id, foo);
+
+        // add mandatory keys if not in DB
+        if (persist::is_rack(asset.item.type_id)) {
+            for (const auto& key : {"realpower.default", "realpower.output.L1"}) {
+                if (measurements.count(key) != 0)
+                    continue;
+                measurements.emplace(key, NAN);
+            }
+        } else if (persist::is_ups(asset.item.subtype_id)) {
+            for (const auto& key : {"status.ups", "load.default", "realpower.default", "voltage.output.L1-N", "realpower.output.L1", "current.output.L1", "charge.battery", "runtime.battery"}) {
+                if (measurements.count(key) != 0)
+                    continue;
+                measurements.emplace(key, NAN);
+            }
+        }
+        else if (persist::is_pdu(asset.item.subtype_id) ||
+                persist::is_epdu(asset.item.subtype_id)) {
+            for (const auto& key : {"frequency.input", "load.input.L1", "voltage.output.L1-N", "current.input.L1", "realpower.default", "realpower.input.L1", "power.default", "power.input.L1"}) {
+                if (measurements.count(key) != 0)
+                    continue;
+                measurements.emplace(key, NAN);
+            }
+        }
+
         if ( rv != 0 )
         {
 </%cpp>
