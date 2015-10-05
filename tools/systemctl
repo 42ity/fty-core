@@ -1,0 +1,26 @@
+#!/bin/sh
+SYSTEMCTL_COMMANDS="show start stop restart enable disable status"
+SYSTEMCTL_UNITS="networking mysql ntp saslauthd malamute                \
+                 bios-reset-button tntnet@bios bios-agent-alert-smtp    \
+                 bios-agent-alert bios-agent-autoconfig bios-agent-cm   \
+                 bios-agent-dbstore bios-agent-inventory bios-agent-nut \
+                 bios-agent-th bios-agent-tpower bios-db-init           \
+                 bios-server-agent                                      \
+                 nut-monitor nut-server nut-driver@[^[:blank:]]*"
+
+SYSTEMCTL="/bin/systemctl"
+
+if [ "x$1" = "xlist-units" ]; then
+    exec $SYSTEMCTL "list-units"
+fi
+for unit in ${SYSTEMCTL_UNITS}; do
+    for cmd in ${SYSTEMCTL_COMMANDS}; do
+        if [ "x$cmd" = "x$1" ] && ( \
+           expr match "x$2" "^x$unit\$" > /dev/null || \
+           expr match "x$2" "^x$unit\\.service\$" > /dev/null ); then
+            exec $SYSTEMCTL $cmd "$2"
+        fi
+    done
+done
+echo "Action not allowed"
+exit 1
