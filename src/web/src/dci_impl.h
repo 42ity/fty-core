@@ -121,7 +121,14 @@ double
         // not an aggregate -> current -> 10 minutes back
         m_msrmnt_value_t val = 0;
         m_msrmnt_scale_t scale = 0;
-        reply_t reply = persist::select_measurement_last_web_byElementId (conn, src, id, val, scale, 10);
+        // TODO selecting temperature from sensor from the box and pretending that
+        // it is a temperature for DC here is not good idea.
+        // Need to hide this logic into "internal_measurement" and select measurements only for datacenter
+        reply_t reply;
+        if ( src.find('%') == std::string::npos )
+            reply = persist::select_measurement_last_web_byElementId (conn, src, id, val, scale, 10);
+        else
+            reply = persist::select_measurement_last_web_byTopicLike (conn, src, val, scale, 10);
         if ( reply.rv != 0 )
         {
             log_debug ("not computed, take 0");
