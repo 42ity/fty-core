@@ -610,6 +610,23 @@ src/web/src/sysinfo.cpp: src/include/git_details_override.h
 #                        Unit tests
 #----------------------------------------------------------------------
 
+###
+check_PROGRAMS += test-web-helpers
+
+test_web_helpers_SOURCES = 	tests/web/src/test-helpers.cc \
+							src/web/src/helpers.cc
+
+test_web_helpers_LDADD =    libpriv-test-run.la \
+				            libpriv-log.la \
+				            libpriv-utils-web.la
+
+test_web_helpers_CPPFLAGS =	$(AM_CPPFLAGS) \
+							-I$(abs_top_srcdir)/tests/include/ \
+							-I$(abs_top_srcdir)/src/web/include
+
+test_web_helpers_LDFLAGS =	-ltntnet ${CXXTOOLS_LIBS} $(LIBCZMQ_LIBS)
+
+###
 check_PROGRAMS +=	test-utils-web	
 
 test_utils_web_SOURCES = \
@@ -1002,7 +1019,6 @@ test_web_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/web/include
 
 #test_web_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS)
-
 
 cibin_programs +=	bios-email
 
@@ -1399,7 +1415,8 @@ bios_web_la_SOURCES = \
                       src/shared/data.cc                \
                       src/shared/upsstatus.cc           \
                       src/web/src/dci_impl.h            \
-                      src/web/src/asset_computed_impl.cc
+                      src/web/src/asset_computed_impl.cc \
+                      src/web/src/helpers.cc
 
 # Ensure these files are auto-made before others
 BUILT_SOURCES +=	$(BUILT_SOURCES_bios_web_la)
@@ -1441,6 +1458,7 @@ bios_web_la_LIBADD = \
 dist_noinst_HEADERS += \
 			src/shared/data.h \
 			src/web/include/sasl.h \
+			src/web/include/helpers.h \
 			src/web/include/tokens.h \
 			src/persist/assetcrud.h \
 			tools/dbpath.h
