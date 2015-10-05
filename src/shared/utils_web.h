@@ -174,9 +174,9 @@ typedef struct _http_errors_t {
 
 #define http_add_error(errors, key, ...) \
 do { \
-    static_assert (std::is_same <decltype (errors), http_errors_t>::value, "'errors' argument in macro http_add_error must be a http_errors_t."); \
+    static_assert (std::is_same <decltype (errors), http_errors_t&>::value, "'errors' argument in macro http_add_error must be a http_errors_t."); \
     constexpr size_t key_idx = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
-    static_assert(key_idx == 0, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
+    static_assert(key_idx != 0, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
     (errors).http_code = _errors.at (key_idx).http_code; \
     char *message; \
     _die_asprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__, "", "", "", "", "" ); \
