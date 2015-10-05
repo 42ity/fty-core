@@ -275,10 +275,14 @@ systemctl disable systemd-logind
 find / -name systemd-logind.service -delete
 
 # Disable expensive debug logging by default on non-devel images
-[ "$IMGTYPE" = devel ] || {
-    mkdir -p /etc/default/
+mkdir -p /etc/default/
+if [ "$IMGTYPE" = devel ] ; then
+    echo "BIOS_LOG_LEVEL=LOG_DEBUG" > /etc/default/bios
+else
     echo "BIOS_LOG_LEVEL=LOG_INFO" > /etc/default/bios
-}
+fi
+# set path to our libexec directory
+echo "PATH=/usr/libexec/bios:/bin:/usr/bin:/sbin:/usr/sbin" >>/etc/default/bios
 
 # Setup some busybox commands
 for i in vi tftp wget; do
