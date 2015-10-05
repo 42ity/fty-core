@@ -40,7 +40,9 @@ const char *AVG_STEPS[AVG_STEPS_SIZE] = {
     "30m",
     "1h",
     "8h",
-    "24h"
+    "24h",
+    "7d",
+    "30d"
 };
 
 const char *AVG_TYPES[AVG_TYPES_SIZE] = {
@@ -69,7 +71,7 @@ const char* BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL =
     "\t\t\"timestamp\": ##TIMESTAMP##\n"
     "\t}";
 
-const char* STRFTIME_DATETIME_FORMAT = "%FT%TZ";    
+const char* STRFTIME_DATETIME_FORMAT = "%FT%TZ";
 
 const char* EV_BIOS_LOG_LEVEL = "BIOS_LOG_LEVEL";
 const char* EV_LICENSE_DIR = "LICENSE_DIR";
