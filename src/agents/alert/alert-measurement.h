@@ -65,6 +65,11 @@ class Measurement {
     int64_t time() const { return _time; };
     void setTime() { _time = std::time(NULL); };
     void setTime(time_t time ) { _time = time; };
+    void setDeviceName(const std::string &deviceName ) { _device_name = deviceName; };
+    void setSource(const std::string &source) { _source = source; };
+    void setUnits(const std::string &units) { _units = units; };
+    void setScale(int32_t scale) { _scale = scale; };
+    void setValue(int32_t value) { _value = value; };
     void print() const;
     Measurement& operator=( const ymsg_t *message ) { set( message ); return *this; }
     Measurement& operator+=( const Measurement &rhs );
