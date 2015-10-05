@@ -99,9 +99,11 @@ test-log
 test-subprocess
 test-utils
 test-utils-plusplus
+test-utils-web
 test-dbtopology
 test-totalpower
 test-web
+test-web-helpers
 test-libbiosapiut
 test-db-asset-crud
 test-autoconfig
@@ -153,6 +155,8 @@ tools/bios-passwd
 !tools/bios-passwd.in
 tools/bios-networking
 !tools/bios-networking.in
+tools/bios-nutconfig
+!tools/bios-nutconfig.in
 
 tools/42-bios-systemd.preset
 !tools/bios-db-init.service.in
