@@ -1167,6 +1167,8 @@ dshell_LDADD = \
 dshell_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/include
 
+client_SCRIPTS +=	tools/systemctl
+
 cibin_programs += bios-csv
 bios_csv_SOURCES = tests/db/bios-csv.cc
 bios_csv_CPPFLAGS = \
