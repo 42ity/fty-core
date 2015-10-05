@@ -1,6 +1,6 @@
 /*
 Copyright (C) 2014 Eaton
- 
+
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or
@@ -20,7 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
     \brief  Object representing one measurement
     \author Tomas Halman <TomasHalman@Eaton.com>
 */
- 
+
 #ifndef SRC_AGENTS_ALERT_ALERT_MEASUREMENT_H__
 #define SRC_AGENTS_ALERT_ALERT_MEASUREMENT_H__
 
@@ -52,7 +52,7 @@ class Measurement {
  public:
     Measurement( const ymsg_t *message );
     Measurement();
-    
+
     void set( const ymsg_t *message );
     void clear( );
     std::string topic() const;
@@ -69,7 +69,6 @@ class Measurement {
     Measurement& operator=( const ymsg_t *message ) { set( message ); return *this; }
     Measurement& operator+=( const Measurement &rhs );
  protected:
-    std::string _topic;
     std::string _device_name;
     std::string _source;
     std::string _units;
