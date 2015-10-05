@@ -152,59 +152,18 @@ if(rex.match(request.getUrl())) {
 std::string iface = request.getArg("iface");
 if (iface.empty ()) {
     http_die ("request-param-required", "iface");
-/*
-    </%cpp>
-{
-    "errors" : [
-        {
-            "code" : 0,
-            "message" : "Interface name required: 'admin/iface/<interface_name>'.",
-            "hint" : "Perform GET 'admin/ifaces' to see a list of valid interface names."
-        }
-    ]
-}
-    <%cpp>
-    return HTTP_BAD_REQUEST;
-*/
 }
 auto dta = get_iface(iface);
 if(dta.mac.empty()) {
     http_die ("request-param-bad", "iface_name",
         std::string ("value that does not exist '").append (iface).append ("'").c_str (),
         "one of valid interface names that can be obtained using GET 'admin/ifaces'.");
-/*
-    </%cpp>
-{
-    "errors" : [
-        {
-            "code" : 0,
-            "message" : "Interface '<$ iface $>' does not exist.",
-            "hint" : "Perform GET 'admin/ifaces' to see a list of valid interface names."
-        }
-    ]
-}
-    <%cpp>
-    return HTTP_BAD_REQUEST;
-*/
 }
 
 if (dta.ip.size () != dta.netmask.size ()) {
     http_die ("internal-error", 
         std::string ("Number of ip addresses '").append (std::to_string (dta.ip.size ())).append ("' do not match number of netmasks '").
         append (std::to_string (dta.netmask.size ())).append ("'.").c_str ());
-/*
-    </%cpp>
-{
-    "errors" : [
-        {
-            "code" : 0,
-            "message" : "Number of ip addresses '<$ dta.ip.size () $>' do not match number of netmasks '<$ dta.netmask.size () $>'."
-        }
-    ]
-}
-    <%cpp>
-    return HTTP_INTERNAL_SERVER_ERROR;
-*/
 }
 
 bool first = true;
@@ -260,19 +219,6 @@ try {
 } catch (const std::exception& e) {
     log_error ("Exception caught: %s", e.what ());
     http_die ("internal-error", "Exception caught." );
-/*
-    </%cpp>
-{
-    "errors" : [
-        {
-            "code" : 0,
-            "message" : "Unknown exception caught: '<$ e.what () $>'."
-        }
-    ]
-}
-    <%cpp>
-    return HTTP_INTERNAL_SERVER_ERROR;
-*/
 }
 
 // Print out the result
