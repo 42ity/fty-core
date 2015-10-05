@@ -1,1 +1,1 @@
-{"errors":[{"code" : 00,"message" : "Interface 'foobar' does not exist.","hint" : "Perform GET 'admin/ifaces' to see a list of valid interface names."}]}
+{"errors":[{"message":"Parameter 'iface_name' has bad value. Received value that does not exist 'foobar'. Expected one of valid interface names that can be obtained using GET 'admin/ifaces'.","code":47}]}
