@@ -135,11 +135,11 @@ if ( tmp.item.basic.type_id == persist::asset_type::DEVICE )
         tmp.item.ext.erase(it);
     }
 
-    it = tmp.item.ext.find("fdqn.1");
+    it = tmp.item.ext.find("fqdn.1");
     if ( it != tmp.item.ext.end() )
     {
 </%cpp>
-, "fdqn":"<$$ it->second.first $>"
+, "fqdn":"<$$ it->second.first $>"
 <%cpp>
         tmp.item.ext.erase(it);
     }
