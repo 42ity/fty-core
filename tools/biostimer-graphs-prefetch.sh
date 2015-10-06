@@ -37,7 +37,7 @@ TYPE_MIN=min
 TYPE_MAX=max
 
 TYPES_SUPPORTED="$TYPE_AVG $TYPE_MIN $TYPE_MAX"
-STEPS_SUPPORTED="15m 30m 1h 8h 24h 7d 30d"
+STEPS_SUPPORTED="15m 30m 1h 8h 24h"
 
 [ -z "$TYPES" ] && TYPES="$TYPES_SUPPORTED"
 [ -z "$STEPS" ] && STEPS="$STEPS_SUPPORTED"
@@ -479,15 +479,14 @@ generate_getrestapi_strings_temphum() {
     local NUM_STRINGS
     NUM_STRINGS=0
 
-    
     stype="$TYPES_SUPPORTED"
-    sstep="24h 7d 30d"
+    sstep="24h"
     hostname=$(hostname | tr [:lower:] [:upper:])
     i=$(do_select "SELECT id_asset_element FROM t_bios_asset_element WHERE name = '${hostname}'")
     if [ $? = 0 ] && [ -n "$i" ] ; then
         for source in "temperature.TH" "humidity.TH"; do
              for thi in $(seq 1 4); do
-                for t in $stype; do             
+                for t in $stype; do
                     for sx in $sstep; do
                 s=${source}${thi}
                 echo "$FETCHER '$BASE_URL/metric/computed/average?start_ts=${START_TIMESTAMP}&end_ts=${END_TIMESTAMP}&type=${t}&step=${sx}&element_id=${i}&source=$s'"
