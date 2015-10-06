@@ -272,7 +272,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     auto type = cm.get_strip(row_i, "type");
     log_debug ("type = '%s'", type.c_str());
     if ( TYPES.find(type) == TYPES.end() ) {
-        bios_throw("request-param-bad", "type", type.c_str(), utils::join_keys_map(TYPES, ", ").c_str());
+        bios_throw("request-param-bad", "type", type.empty() ? "<empty>" : type.c_str(), utils::join_keys_map(TYPES, ", ").c_str());
     }
     auto type_id = TYPES.find(type)->second;
     unused_columns.erase("type");
@@ -280,7 +280,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     auto status = cm.get_strip(row_i, "status");
     log_debug ("status = '%s'", status.c_str());
     if ( STATUSES.find(status) == STATUSES.end() ) {
-        bios_throw ("request-param-bad", "status", status.c_str(),
+        bios_throw ("request-param-bad", "status", status.empty() ? "<empty>" : status.c_str(),
             cxxtools::join(STATUSES.cbegin(), STATUSES.cend(), ", ").c_str());
     }
     unused_columns.erase("status");
@@ -323,8 +323,8 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     auto subtype = cm.get_strip(row_i, "sub_type");
     log_debug ("subtype = '%s'", subtype.c_str());
     if ( ( type == "device" ) &&
-         ( SUBTYPES.find(subtype) == SUBTYPES.end() ) ) {
-        bios_throw("request-param-bad", "subtype", subtype.c_str(), utils::join_keys_map(SUBTYPES, ", ").c_str());
+         ( SUBTYPES.find(subtype) == SUBTYPES.cend() ) ) {
+        bios_throw("request-param-bad", "subtype", subtype.empty() ? "<empty>" : subtype.c_str(), utils::join_keys_map(SUBTYPES, ", ").c_str());
     }
 
     if ( ( !subtype.empty() ) && ( type != "device" ) && ( type != "group") )
@@ -346,7 +346,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
         db_reply <db_web_basic_element_t> element_in_db = select_asset_element_web_byId
                                                         (conn, id);
         if ( element_in_db.status == 0 ) {
-            bios_throw("element-not-found", "id_str");
+            bios_throw("element-not-found", id_str.c_str());
         }
         else
         {
@@ -697,7 +697,7 @@ void
         std::string msg{"Cannot detect the delimiter, use comma (,) semicolon (;) or tabulator"};
         log_error("%s", msg.c_str());
         LOG_END;
-        bios_throw("bad-request-document", "msg.c_str()");
+        bios_throw("bad-request-document", msg.c_str());
     }
     log_debug("Using delimiter '%c'", delimiter);
     deserializer.delimiter(delimiter);
@@ -721,10 +721,7 @@ int
         std::string msg{"column '" + m + "' is missing, import is aborted"};
         log_error("%s", msg.c_str());
         LOG_END;
-        bios_throw("request-param-bad",
-                "<mandatory column name>",
-                (std::string("'missing ") + m + "'").c_str(),
-                (std::string("all of those: ") + (cxxtools::join(MANDATORY.cbegin(), MANDATORY.cend(), ", "))).c_str());
+        bios_throw("request-param-required", m.c_str());
     }
 
     tntdb::Connection conn;

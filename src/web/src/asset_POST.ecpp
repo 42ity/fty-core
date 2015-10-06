@@ -59,7 +59,7 @@
         if (!cm.hasTitle("type"))
             http_die("request-param-required", "type");
         if (cm.get(1, "type") != "datacenter")
-            http_die("request-param-bad", "type", cm.get(1, "type").c_str(), "datacenter");
+            http_die("request-param-bad", "type", cm.get(1, "type").empty() ? "<empty>" : cm.get(1, "type").c_str(), "datacenter");
         if (cm.hasTitle("id"))
             http_die("action-forbidden", "Update of datacenter", "Not yet supported.");
 
