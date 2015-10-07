@@ -29,6 +29,7 @@
 #include "rights.h"
 #include <tnt/httpmessage.h>
 #include <tnt/httpheader.h>
+#include "utils_web.h"
 
 #ifdef DEBUG
 #include <iostream>
@@ -92,7 +93,7 @@ if(!rights_management.empty() && it != rights_management.begin()) {
 		if(it->second <= access_auth_level) {
 			return DECLINED;
 		} else {
-			http_die("not-authorized")
+			http_die("not-authorized");
 		}
 	}
 }
