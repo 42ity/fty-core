@@ -1,3 +1,0 @@
-#include "dbpath.h"
-
-std::string url = "@myDBpath@";
