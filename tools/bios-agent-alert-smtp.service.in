@@ -5,7 +5,7 @@ Requires=malamute.service
 
 [Service]
 Type=simple
-User=bios
+User=nobody
 #
 # notification environment variables are
 # - BIOS_EMAIL_FROM email address of the sender [bios@eaton.com]

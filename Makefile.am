@@ -1167,8 +1167,8 @@ dshell_LDADD = \
 dshell_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/include
 
-client_SCRIPTS +=	tools/systemctl
-EXTRA_DIST +=		tools/systemctl
+client_SCRIPTS +=	tools/systemctl tools/testpass.sh
+EXTRA_DIST +=		tools/systemctl tools/testpass.sh
 
 cibin_programs += bios-csv
 bios_csv_SOURCES = tests/db/bios-csv.cc
@@ -1543,8 +1543,7 @@ endif
 EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
 			$(top_srcdir)/tools/dbinit.h \
 			$(top_srcdir)/tools/dbpath.h \
-			$(top_srcdir)/tools/dbpath.cc.in \
-			$(top_builddir)/tools/dbpath.cc \
+			$(top_srcdir)/tools/dbpath.cc \
 			$(top_srcdir)/include/*.h \
 			$(top_srcdir)/src/msg/*.xml \
 			$(top_srcdir)/src/include/*.h \
