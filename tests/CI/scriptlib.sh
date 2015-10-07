@@ -380,7 +380,7 @@ do_select() {
     ### semicolons does not matter for such non-interactive mysql client use.
     logmsg_info "$CI_DEBUGLEVEL_SELECT" \
         "do_select(): $1 ;" >&2
-    if [ -z "$DBPASSWD" ]; then
+    if [ -z "${DBPASSWD-}" ]; then
     echo "$1" | sut_run "mysql -u ${DBUSER} -D ${DATABASE} -N -s"
     else
     echo "$1" | sut_run "mysql -u ${DBUSER} -p\"${DBPASSWD}\" -D ${DATABASE} -N -s"
