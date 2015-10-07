@@ -276,11 +276,6 @@ int8_t access_auth_level;
 </%request>
 
 <%cpp>
-// min. level 2 required
-if (access_auth_level < AUTH_LEVEL_POWERUSER) {
-    http_die("not-authorized");
-}
-
 
 std::string operation = request.getArg("operation");
 std::string service_name = request.getArg("service_name");

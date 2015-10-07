@@ -92,12 +92,7 @@ if(!rights_management.empty() && it != rights_management.begin()) {
 		if(it->second <= access_auth_level) {
 			return DECLINED;
 		} else {
-</%cpp>
-{
-    "error":"Insufficient rights"
-}
-<%cpp>
-			return HTTP_UNAUTHORIZED;
+			http_die("not-authorized")
 		}
 	}
 }
