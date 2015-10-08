@@ -39,6 +39,7 @@
 #include "utils_web.h"
 #include "log.h"
 #include "cleanup.h"
+#include "helpers.h"
 </%pre>
 <%args>
 std::string from;
@@ -108,16 +109,11 @@ std::string filter_group;
     }
 
     // convert string to number
+    http_errors_t errors;
     a_elmnt_id_t element_id = 0;
-    try {
-        element_id = std::stoul (id);
-    } catch (std::out_of_range& e) {
-        http_die("request-param-bad", parameter_name.c_str(), id.c_str(), "be UINT32");
-    } catch (std::invalid_argument& e) {
-        http_die("request-param-bad", parameter_name.c_str(), id.c_str(), "be integer value");
-    } catch (std::exception& e) {
-        LOG_END_ABNORMAL (e);
-        http_die("request-param-bad", parameter_name.c_str(), id.c_str(), "be integer value'");
+
+    if (!check_element_identifier (parameter_name.c_str (), id, element_id, errors)) {
+        http_die_error (errors);
     }
 
    // Call persistence layer
