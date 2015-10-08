@@ -215,17 +215,21 @@ int
 /*
  * \brief Processes a single row from csv file
  *
- * \param conn - a connection to DB
- * \param cm - already parsed csv file
- * \param row_i - number of row to process
+ * \param[in] conn     - a connection to DB
+ * \param[in] cm       - already parsed csv file
+ * \param[in] row_i    - number of row to process
+ * \param[in] TYPES    - list of available types
+ * \param[in] SUBTYPES - list of available subtypes
+ * \param[in][out] ids - list of already seen asset ids
+ *
  */
 static std::pair<db_a_elmnt_t, persist::asset_operation>
     process_row
         (tntdb::Connection &conn,
          const CsvMap &cm,
          size_t row_i,
-         const std::map<std::string,int> TYPES,
-         const std::map<std::string,int> SUBTYPES,
+         const std::map<std::string,int> &TYPES,
+         const std::map<std::string,int> &SUBTYPES,
          std::set<a_elmnt_id_t> &ids
          )
 {
@@ -291,14 +295,11 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
 
     auto asset_tag = cm.get(row_i, "asset_tag");
     log_debug ("asset_tag = '%s'", asset_tag.c_str());
-    if ( asset_tag.empty() ) {
-        bios_throw("request-param-bad", "asset_tag", "<empty>", "<unique string from 6 to 10 characters>");
+    if ( ( !asset_tag.empty() ) && ( asset_tag.length() < 6 ) ){
+        bios_throw("request-param-bad", "asset_tag", "<to short>", "<unique string from 6 to 50 characters>");
     }
-    if ( asset_tag.length() < 6 ) {
-        bios_throw("request-param-bad", "asset_tag", "<to short>", "<unique string from 6 to 10 characters>");
-    }
-    if ( asset_tag.length() > 10 ) {
-        bios_throw("request-param-bad", "asset_tag", "<to long>", "<unique string from 6 to 10 characters>");
+    if ( ( !asset_tag.empty() ) && ( asset_tag.length() > 50 ) ){
+        bios_throw("request-param-bad", "asset_tag", "<to long>", "<unique string from 6 to 50 characters>");
     }
     unused_columns.erase("asset_tag");
 
