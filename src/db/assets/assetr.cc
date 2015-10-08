@@ -326,16 +326,6 @@ db_reply <std::map <uint32_t, std::string> >
 
             ret.item.insert(std::pair<uint32_t, std::string>(id, name));
         }
-
-        if ( ret.item.size() == 0 )  // elements were not found
-        {
-            ret.status        = 0;
-            ret.errtype       = DB_ERR;
-            ret.errsubtype    = DB_ERROR_INTERNAL;
-            ret.msg           = "elements were not found";
-            log_warning (ret.msg.c_str());
-            return ret;
-        }
         ret.status = 1;
         LOG_END;
         return ret;
