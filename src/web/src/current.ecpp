@@ -41,6 +41,7 @@
 #include "dbpath.h" // temporary
 #include "utils_web.h"
 #include "asset_types.h"
+#include "helpers.h"
 </%pre>
 
 <%args>
@@ -65,20 +66,14 @@ std::string dev;
     for ( auto asset_id : asset_ids)
     {
         // convert id from string to number
+        http_errors_t errors;
         a_elmnt_id_t id = 0;
-        try{
-            size_t pos = 0;
-            id = std::stoul (asset_id, &pos);
-            if ( pos != asset_id.size() )
-            {
-                log_warning("non-numeric id '%s', skipping", asset_id.c_str());
-                continue;
-            }
-        }
-        catch ( const std::exception &e) {
-            log_warning("non-numeric id '%s', skipping. E: '%s'", asset_id.c_str(), e.what());
+
+        if (!check_element_identifier ("N/A", asset_id, id, errors)) {
+            log_warning("non-numeric id '%s', skipping", asset_id.c_str());
             continue;
         }
+
         // Temporary add connection here
         tntdb::Connection conn = tntdb::connectCached(url);
 
