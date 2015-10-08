@@ -1396,7 +1396,7 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/topology_power.cpp                          \
 					  src/web/src/asset_GET.cpp                               \
                       src/web/src/asset_DELETE.cpp src/web/src/asset_POST.cpp \
-                      src/web/src/json.cpp  src/web/src/list.cpp              \
+                      src/web/src/json.cpp  src/web/src/asset_list.cpp        \
                       src/web/src/time.cpp  src/web/src/sysinfo.cpp           \
                       src/web/src/current.cpp src/web/src/ui_properties.cpp   \
                       src/web/src/rack_total.cpp 							  \
