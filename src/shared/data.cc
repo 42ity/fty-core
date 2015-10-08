@@ -34,6 +34,7 @@
 #include <limits.h>
 
 #include "data.h"
+#include "utils_web.h"
 
 #include "log.h"
 #include "asset_types.h"
@@ -357,6 +358,7 @@ db_reply <std::map <uint32_t, std::string> >
         ret.errsubtype    = DB_ERROR_INTERNAL;
         ret.msg           = "Unsupported type of the elemnts";
         log_error (ret.msg.c_str());
+        bios_error_idx(ret.rowid, ret.msg, "request-param-bad", "type", typeName.c_str(), "datacenters,rooms,ros,racks,devices");
         return ret;
     }
     if ( ( typeName == "device" ) && ( !subtypeName.empty() ) )
@@ -372,11 +374,12 @@ db_reply <std::map <uint32_t, std::string> >
         return ret;
     }
     catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
         ret.status        = 0;
         ret.errtype       = DB_ERR;
         ret.errsubtype    = DB_ERROR_INTERNAL;
         ret.msg           = e.what();
-        LOG_END_ABNORMAL(e);
+        bios_error_idx(ret.rowid, ret.msg, "internal-error");
         return ret;
     }
 }
