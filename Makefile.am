@@ -404,12 +404,6 @@ libpriv_enums_la_SOURCES = \
 			src/shared/asset_types.h \
 			src/shared/dbtypes.h
 
-
-# "configure"-generated source with connection string needed for any programs
-# that use the database (linked into libpriv-db)
-BUILT_SOURCES +=	tools/dbpath.cc
-DISTCLEANFILES +=	tools/dbpath.cc
-
 libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
 			-I$(abs_top_srcdir)/src/ \
@@ -1543,7 +1537,6 @@ endif
 EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
 			$(top_srcdir)/tools/dbinit.h \
 			$(top_srcdir)/tools/dbpath.h \
-			$(top_srcdir)/tools/dbpath.cc \
 			$(top_srcdir)/include/*.h \
 			$(top_srcdir)/src/msg/*.xml \
 			$(top_srcdir)/src/include/*.h \
