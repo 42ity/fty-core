@@ -264,6 +264,8 @@ for i in $POSITIVE; do
             test_it "compare_expectation_custom"
             ../results/"$NAME".cmp "$EXPECTED_RESULT" "$REALLIFE_RESULT"
             RES=$?
+            [ $RES -ne 0 ] && \
+                diff -Naru "$EXPECTED_RESULT" "$REALLIFE_RESULT"
         else
             ### Use the default comparation script which makes sure that
             ### each line of RESULT matches the same-numbered line of EXPECT
@@ -272,9 +274,10 @@ for i in $POSITIVE; do
             RES_CMP=$?
             RES_JSONV=0
             while IFS='' read -r line || [[ -n "$line" ]]; do
-                echo "$line" | "$JSONSH"
+                OUT_JSONV="`echo "$line" | "$JSONSH" 2>&1`"
                 RES_JSONV=$?
                 if [[ RES_JSONV -ne 0 ]]; then
+                    echo "$OUT_JSONV"
                     break
                 fi
             done < "$REALLIFE_RESULT"
@@ -286,7 +289,7 @@ for i in $POSITIVE; do
                 diff -Naru "$EXPECTED_RESULT" "$REALLIFE_RESULT"
             elif [[ $RES_JSONV -ne 0 ]]; then
                 RES=$RES_JSONV
-               echo "INVALID JSON!" 
+                logmsg_error "INVALID JSON!" 
             fi
         fi
         print_result $RES
