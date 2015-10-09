@@ -361,8 +361,8 @@ TEST_CASE="Netcfgs_Read_003"
 echo -e "=====\t\tTEST_CASE: $TEST_CASE\t\t====="
 
 simple_get_json_code "${REST_NETCFGS}/advdwsqwe234?=345" tmp HTTP_CODE || die "'api_get_json ${REST_NETCFGS}' failed."
-HTTP_EXPECTED=404
-[ $HTTP_CODE -eq 404 -o $HTTP_CODE -eq 401 ] || die "Test case '$TEST_CASE' failed. Expected HTTP return code: 404 or 401, received: $HTTP_CODE."
+HTTP_EXPECTED=403
+[ $HTTP_CODE -eq 403 -o $HTTP_CODE -eq 401 ] || die "Test case '$TEST_CASE' failed. Expected HTTP return code: 403 or 401, received: $HTTP_CODE."
 
 #######################
 ### Netcfg_Read_001 ###
