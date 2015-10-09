@@ -253,16 +253,27 @@ curlfail_push_expect_401() {
     curlfail_push "expect" 'HTTP/[^ ]+ 401'
 }
 
+curlfail_push_expect_403() {
+    ### Preconfigured push that resets current values to specifically
+    ### expect an HTTP-403 Forbidden (and fail for other results)
+    curlfail_push "expect" 'HTTP/[^ ]+ 403'
+}
+
 curlfail_push_expect_404() {
     ### Preconfigured push that resets current values to specifically
     ### expect an HTTP-404 not found (and fail for other results)
     curlfail_push "expect" 'HTTP/[^ ]+ 404'
 }
-
-curlfail_push_expect_409() {
+curlfail_push_expect_405() {
     ### Preconfigured push that resets current values to specifically
-    ### expect an HTTP-409 conflict (and fail for other results)
-    curlfail_push "expect" 'HTTP/[^ ]+ 409'
+    ### expect an HTTP-405 not found (and fail for other results)
+    curlfail_push "expect" 'HTTP/[^ ]+ 405'
+}
+
+curlfail_push_expect_407() {
+    ### Preconfigured push that resets current values to specifically
+    ### expect an HTTP-407 not found (and fail for other results)
+    curlfail_push "expect" 'HTTP/[^ ]+ 407'
 }
 
 curlfail_push_expect_500() {
