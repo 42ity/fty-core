@@ -56,6 +56,7 @@ api_auth_post_json '/asset' '{"name":"dc_name_test_0","type":"datacenter","sub_t
 print_result $?
 curlfail_pop
 
+if false;then
 echo "********* 5. Create_DC_with_the_duplicite_asset_tag ***********************************************"
 echo "***************************************************************************************************"
 test_it "Create_DC_with_the_duplicite_asset_tag"
@@ -65,6 +66,7 @@ api_auth_post_json '/asset' '{"name":"dc_name_test_1","type":"datacenter","sub_t
 loaddb_file "$CHECKOUTDIR/tools/initdb_ci_patch.sql"
 print_result $?
 curlfail_pop
+fi
 
 echo "********* 6. Create_DC_with_the_duplicite_serial_no ***********************************************"
 echo "***************************************************************************************************"
