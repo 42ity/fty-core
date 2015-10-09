@@ -5,11 +5,13 @@ Requires=malamute.service bios-db-init.service
 
 [Service]
 Type=simple
+User=nobody
 EnvironmentFile=-/etc/default/bios
 EnvironmentFile=-/etc/sysconfig/bios
 EnvironmentFile=-/etc/default/bios__%n.conf
 EnvironmentFile=-/etc/sysconfig/bios__%n.conf
-ExecStart=@libexecdir@/bios/agent-dbstore
+EnvironmentFile=-/etc/default/bios-db-rw
+ExecStart=@libexecdir@/@PACKAGE@/agent-dbstore
 
 [Install]
 WantedBy=multi-user.target
