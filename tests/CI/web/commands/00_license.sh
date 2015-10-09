@@ -120,4 +120,3 @@ echo "**************************************************************************
 test_it "license_acceptance"
 api_auth_post_content '/admin/license' "foobar" >&5
 print_result $?
-
