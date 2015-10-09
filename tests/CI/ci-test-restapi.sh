@@ -261,6 +261,18 @@ test_web_topo_l() {
     test_web "$@"
 }
 
+asset_create() {
+    echo "---------- reset db: asset : create ---------"
+    for data in "$DB_BASE" "$DB_ASSET_DEFAULT" "$DB_DATA"; do
+       if [ "$data" = $DB_ASSET_DEFAULT ]; then
+          loaddb_file "/home/rvrajik/bin/$data" || return $?
+       else
+          loaddb_file "$DB_LOADDIR/$data" || return $?
+       fi
+    done
+    test_web "$@"
+}
+
 # do the test
 set +e
 if [ $# = 0 ]; then
@@ -293,6 +305,9 @@ else
                 RESULT=$? ;;
             topology_power*)
                 test_web_topo_p "$1"
+                RESULT=$? ;;
+            asset_create*)
+                asset_create $1
                 RESULT=$? ;;
             *)        test_web_default "$1"
                 RESULT=$? ;;
