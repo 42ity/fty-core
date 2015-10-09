@@ -115,7 +115,7 @@ curlfail_pop
 echo "********* 12. Create_DC_with_too_long_asset_tag ***************************************************"
 echo "***************************************************************************************************"
 test_it "Create_DC_with_too_long_asset_tag"
-curlfail_push_expect_400
+curlfail_push_expect_500
 api_auth_post_json '/asset' '{"name":"dc_name_test_2","type":"datacenter","sub_type":"","location":"","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST5678901","address":"ASDF"}}' >&5
 print_result $?
 curlfail_pop

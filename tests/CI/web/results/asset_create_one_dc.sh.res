@@ -8,8 +8,8 @@
 {"errors":[{"message":"Parameter 'type' has bad value. Received device. Expected datacenter","code":47}]}
 {"errors":[{"message":"Element '10' cannot be processed because of conflict. Asset has elements inside, DELETE them first!","code":50}]}
 {}
-{"errors":[{"message":"Parameter 'asset_tag' has bad value. Received <to short>. Expected <unique string from 6 to 10 characters>","code":47}]}
-{"errors":[{"message":"Parameter 'asset_tag' has bad value. Received <to long>. Expected <unique string from 6 to 10 characters>","code":47}]}
+{"errors":[{"message":"Parameter 'asset_tag' has bad value. Received <to short>. Expected <unique string from 6 to 50 characters>","code":47}]}
+{"errors":[{"message":"Internal Server Error. Unspecified issue with database.","code":42}]}
 {"id":"39"}
 {"errors":[{"message":"Internal Server Error. Unspecified issue with database.","code":42}]}
 {"errors":[{"message":"Parameter 'type' has bad value. Received <empty>. Expected datacenter","code":47}]}
