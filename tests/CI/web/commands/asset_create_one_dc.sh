@@ -59,8 +59,10 @@ curlfail_pop
 echo "********* 5. Create_DC_with_the_duplicite_asset_tag ***********************************************"
 echo "***************************************************************************************************"
 test_it "Create_DC_with_the_duplicite_asset_tag"
+loaddb_file "$CHECKOUTDIR/tools/initdb_ci_patch_2.sql"
 curlfail_push_expect_500
 api_auth_post_json '/asset' '{"name":"dc_name_test_1","type":"datacenter","sub_type":"","location":"","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST0003","address":"ASDF"}}' >&5
+loaddb_file "$CHECKOUTDIR/tools/initdb_ci_patch.sql"
 print_result $?
 curlfail_pop
 
