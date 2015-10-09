@@ -68,7 +68,7 @@ echo "********* 6. Create_DC_with_the_duplicite_serial_no **********************
 echo "***************************************************************************************************"
 test_it "Create_DC_with_the_duplicite_serial_no"
 curlfail_push_expect_400
-api_auth_post_json '/asset' '{"name":"dc_name_test_1","type":"datacenter","sub_type":"","location":"","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST0006","address":"ASDF","serial_no":"ABCD0003"}}' >&5
+api_auth_post_json '/asset' '{"name":"dc_name_test_6","type":"datacenter","sub_type":"","location":"","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST0006","address":"ASDF","serial_no":"ABCD0003"}}' >&5
 print_result $?
 curlfail_pop
 
@@ -108,7 +108,7 @@ echo "********* 11. Create_DC_with_too_short_asset_tag *************************
 echo "***************************************************************************************************"
 test_it "Create_DC_with_too_short_asset_tag"
 curlfail_push_expect_400
-api_auth_post_json '/asset' '{"name":"dc_name_test_1","type":"datacenter","sub_type":"","location":"","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST1","address":"ASDF"}}' >&5
+api_auth_post_json '/asset' '{"name":"dc_name_test_11","type":"datacenter","sub_type":"","location":"","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST1","address":"ASDF"}}' >&5
 print_result $?
 curlfail_pop
 
@@ -172,7 +172,7 @@ echo "********* 19. Item_status_is_missing *************************************
 echo "***************************************************************************************************"
 test_it "Item_status_is_missing"
 curlfail_push_expect_400
-api_auth_post_json '/asset' '{"name":"dc_name_test_18","type":"datacenter","sub_type":"","location":"","business_critical":"yes","priority":"P16","ex":{"asset_tag":"TEST0019","address":"ASDF"}}' >&5
+api_auth_post_json '/asset' '{"name":"dc_name_test_19","type":"datacenter","sub_type":"","location":"","business_critical":"yes","priority":"P16","ex":{"asset_tag":"TEST0019","address":"ASDF"}}' >&5
 print_result $?
 curlfail_pop
 
