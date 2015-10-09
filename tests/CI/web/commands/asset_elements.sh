@@ -35,10 +35,10 @@ DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
 DB_LOADDIR=$BUILDSUBDIR/tools
 loaddb_file "$DB_LOADDIR/$DB_BASE"
 
-curlfail_push_expect_404
+#curlfail_push_expect_404
 api_get_json /asset/datacenters >&5
 print_result $?
-curlfail_pop
+#curlfail_pop
 
 for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
     loaddb_file "$DB_LOADDIR/$data" || return $?
@@ -94,10 +94,10 @@ DB_LOADDIR=$BUILDSUBDIR/tools
 loaddb_file "$DB_LOADDIR/$DB_BASE"
 
 test_it "no_rows_present"
-curlfail_push_expect_404
+#curlfail_push_expect_404
 api_get_json /asset/rows >&5
 print_result $?
-curlfail_pop
+#curlfail_pop
 
 #fill DB again
 DB_BASE="initdb.sql"
@@ -128,10 +128,10 @@ DB_LOADDIR=$BUILDSUBDIR/tools
 loaddb_file "$DB_LOADDIR/$DB_BASE"
 
 test_it "no_racks_present"
-curlfail_push_expect_404
+#curlfail_push_expect_404
 api_get_json /asset/racks >&5
 print_result $?
-curlfail_pop
+#curlfail_pop
 
 #fill DB again
 DB_BASE="initdb.sql"
