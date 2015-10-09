@@ -107,12 +107,12 @@ curlfail_pop
 echo "********* 10. cannot save the license *************************************************************"
 echo "***************************************************************************************************"
 test_it "cannot save the license"
-#curlfail_push_expect_500
+curlfail_push_expect_500
 rm -f /var/lib/bios/license $CHECKOUTDIR/var/bios/license
 rm -rf $CHECKOUTDIR/var/bios;touch $CHECKOUTDIR/var/bios
 api_auth_post_content '/admin/license' "foobar" > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
 print_result $?
-#curlfail_pop
+curlfail_pop
 rm -f $CHECKOUTDIR/var/bios;mkdir $CHECKOUTDIR/var/bios
 
 echo "********* 11. license_acceptance ******************************************************************"
