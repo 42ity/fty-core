@@ -44,4 +44,5 @@ std::map<std::string, int> rights_management = {
 { "W", 2 },
 { "W/api/v1/admin", 3 },
 { "R/api/v1/admin/systemctl", 2 },
+{ "R/api/v1/asset/export", 2 },
 };
