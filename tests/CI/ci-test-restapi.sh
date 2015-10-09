@@ -47,7 +47,7 @@ DB_DATA_TESTREST="load_data_test_restapi.sql"
 DB_TOPOP="power_topology.sql"
 DB_TOPOL="location_topology.sql"
 DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-DB_ASSET_DEFAULT="initdb_ci_patch_2.sql
+DB_ASSET_DEFAULT="initdb_ci_patch_2.sql"
 
 PATH=/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH
 export PATH
