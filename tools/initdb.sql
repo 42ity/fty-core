@@ -154,10 +154,10 @@ CREATE TABLE t_bios_asset_element (
   id_type           TINYINT UNSIGNED    NOT NULL,
   id_subtype        TINYINT UNSIGNED    NOT NULL DEFAULT 10,
   id_parent         INT UNSIGNED,
-  status            char(9)             NOT NULL DEFAULT "nonactive",
+  status            VARCHAR(9)          NOT NULL DEFAULT "nonactive",
   priority          TINYINT             NOT NULL DEFAULT 5,
   business_crit     TINYINT             NOT NULL DEFAULT 0,
-  asset_tag         CHAR(10)            NOT NULL,
+  asset_tag         VARCHAR(50),
 
   PRIMARY KEY (id_asset_element),
 
