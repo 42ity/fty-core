@@ -5,11 +5,12 @@ Requires=malamute.service
 
 [Service]
 Type=simple
+User=bios
 EnvironmentFile=-/etc/default/bios
 EnvironmentFile=-/etc/sysconfig/bios
 EnvironmentFile=-/etc/default/bios__%n.conf
 EnvironmentFile=-/etc/sysconfig/bios__%n.conf
-ExecStart=@libexecdir@/bios/agent-nut
+ExecStart=@libexecdir@/@PACKAGE@/agent-nut
 
 [Install]
 WantedBy=multi-user.target
