@@ -293,11 +293,8 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     unused_columns.erase("business_critical");
     int bc = bs_critical ? 1 : 0;
 
-    auto asset_tag = cm.get(row_i, "asset_tag");
+    auto asset_tag =  unused_columns.count("asset_tag") ? cm.get(row_i, "asset_tag") : "";
     log_debug ("asset_tag = '%s'", asset_tag.c_str());
-    if ( ( !asset_tag.empty() ) && ( asset_tag.length() < 6 ) ){
-        bios_throw("request-param-bad", "asset_tag", "<to short>", "<unique string from 6 to 50 characters>");
-    }
     if ( ( !asset_tag.empty() ) && ( asset_tag.length() > 50 ) ){
         bios_throw("request-param-bad", "asset_tag", "<to long>", "<unique string from 6 to 50 characters>");
     }
@@ -668,7 +665,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
 //MVY: moved out to support friendly error messages below
 static std::vector<std::string> MANDATORY = {
     "name", "type", "sub_type", "location", "status",
-    "business_critical", "priority", "asset_tag"
+    "business_critical", "priority"
 };
 static std::string
 mandatory_missing
@@ -731,10 +728,10 @@ int
     }
     catch(...)
     {
-        std::string msg{"no connection to database"};
+        std::string msg{"No connection to database"};
         log_error("%s", msg.c_str());
         LOG_END;
-        throw std::runtime_error(msg.c_str());
+        bios_throw("internal-error", msg.c_str());
     }
 
     auto TYPES = read_element_types (conn);
@@ -771,10 +768,10 @@ void
     }
     catch(...)
     {
-        std::string msg{"no connection to database"};
+        std::string msg{"No connection to database"};
         log_error("%s", msg.c_str());
         LOG_END;
-        throw std::runtime_error(msg.c_str());
+        bios_throw("internal-error", msg.c_str());
     }
 
     auto TYPES = read_element_types (conn);

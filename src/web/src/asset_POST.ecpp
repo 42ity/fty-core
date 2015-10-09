@@ -51,6 +51,7 @@
         shared::CsvMap cm = shared::CsvMap_from_serialization_info(si);
 
         // POST /asset is currently used to insert new datacenter from wizard
+        //      and devices for EMC4J. Inserting devices is rectricted only for existing use case
         // all you need when implementing POST for other types is to support structured error handling
         // empty document
         if (cm.cols() == 0 || cm.rows() == 0)
@@ -58,10 +59,16 @@
         // in underlying functions like update_device
         if (!cm.hasTitle("type"))
             http_die("request-param-required", "type");
-        if (cm.get(1, "type") != "datacenter")
-            http_die("request-param-bad", "type", cm.get(1, "type").empty() ? "<empty>" : cm.get(1, "type").c_str(), "datacenter");
+        if ( ( cm.get(1, "type") != "datacenter" ) && ( cm.get(1, "type") != "device" ) )
+            http_die("request-param-bad", "type", cm.get(1, "type").empty() ? "<empty>" : cm.get(1, "type").c_str(), "datacenter or device");
+        // currently we do not need to support creating these elements
+        if ( cm.hasTitle("powers") )
+            bios_throw("bad-request-document", "key 'powers' is not supported");
+        if ( cm.hasTitle("groups") )
+            bios_throw("bad-request-document", "key 'groups' is not supported");
+
         if (cm.hasTitle("id"))
-            http_die("action-forbidden", "Update of datacenter", "Not yet supported.");
+            http_die("action-forbidden", "Update operation on asset is not supported", "Not yet supported.");
 
         // actual insert - throws exceptions
         int id = persist::process_one_asset (cm);
