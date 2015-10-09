@@ -266,15 +266,16 @@ curlfail_push_expect_404() {
 }
 curlfail_push_expect_405() {
     ### Preconfigured push that resets current values to specifically
-    ### expect an HTTP-405 not found (and fail for other results)
+    ### expect an HTTP-405 Request method not expected (and fail for other results)
     curlfail_push "expect" 'HTTP/[^ ]+ 405'
 }
 
-curlfail_push_expect_407() {
+curlfail_push_expect_409() {
     ### Preconfigured push that resets current values to specifically
-    ### expect an HTTP-407 not found (and fail for other results)
-    curlfail_push "expect" 'HTTP/[^ ]+ 407'
+    ### expect an HTTP-409 conflict (and fail for other results)
+    curlfail_push "expect" 'HTTP/[^ ]+ 409'
 }
+
 
 curlfail_push_expect_500() {
     ### Preconfigured push that resets current values to specifically
