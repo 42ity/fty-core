@@ -66,8 +66,13 @@ nosoup4u
 nosoup4u
 EOF
 
-groupadd bios
-useradd -m admin -G sasl -N -g bios -s /bin/bash
+groupadd -g 8003 bios-admin
+groupadd -g 8002 bios-poweruser
+groupadd -g 8001 bios-user
+groupadd -g 8000 bios-guest
+groupadd bios-infra
+useradd -m bios -N -g bios-infra -G dialout -s /bin/bash
+useradd -m admin -G sasl -N -g bios-admin -s /bin/bash
 passwd admin <<EOF
 admin
 admin
@@ -75,7 +80,7 @@ EOF
 
 # Workplace for the webserver and graph daemons
 mkdir -p /var/lib/bios
-chown -R admin /var/lib/bios
+chown -R www-data /var/lib/bios
 
 # A few helper aliases
 cat > /etc/profile.d/bios_aliases.sh << EOF
@@ -85,7 +90,7 @@ EOF
 
 # BIOS configuration file
 touch /etc/default/bios
-chown admin /etc/default/bios
+chown www-data /etc/default/bios
 chmod a+r /etc/default/bios
 
 # Setup BIOS lenses
@@ -259,7 +264,7 @@ rm -f /etc/init.d/tntnet
 # Enable REST API via tntnet
 cp /usr/share/bios/examples/tntnet.xml.* /etc/tntnet/bios.xml
 mkdir -p /usr/share/core-0.1/web/static
-sed -i 's|<!--.*<user>.*|<user>admin</user>|' /etc/tntnet/bios.xml
+sed -i 's|<!--.*<user>.*|<user>www-data</user>|' /etc/tntnet/bios.xml
 sed -i 's|<!--.*<group>.*|<group>sasl</group>|' /etc/tntnet/bios.xml
 sed -i 's|.*<daemon>.*|<daemon>0</daemon>|' /etc/tntnet/bios.xml
 sed -i 's|\(.*\)<dir>.*|\1<dir>/usr/share/bios-web/</dir>|' /etc/tntnet/bios.xml
@@ -270,10 +275,14 @@ systemctl disable systemd-logind
 find / -name systemd-logind.service -delete
 
 # Disable expensive debug logging by default on non-devel images
-[ "$IMGTYPE" = devel ] || {
-    mkdir -p /etc/default/
+mkdir -p /etc/default/
+if [ "$IMGTYPE" = devel ] ; then
+    echo "BIOS_LOG_LEVEL=LOG_DEBUG" > /etc/default/bios
+else
     echo "BIOS_LOG_LEVEL=LOG_INFO" > /etc/default/bios
-}
+fi
+# set path to our libexec directory
+echo "PATH=/usr/libexec/bios:/bin:/usr/bin:/sbin:/usr/sbin" >>/etc/default/bios
 
 # Setup some busybox commands
 for i in vi tftp wget; do

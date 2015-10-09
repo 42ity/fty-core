@@ -27,22 +27,24 @@
 #ifndef SRC_WEB_SRC_DCI_IMPL_H
 #define SRC_WEB_SRC_DCI_IMPL_H
 
+#include "utils++.h"
+
 // this file exists only to have syntax highlighting correct
 // to be included in datacenter_indicators.ecpp
 
 // ATTENTION!!! for trends:
 //  first one should be average, second one is raw measurement
-static const std::map<const std::string, const std::string> PARAM_TO_SRC = {
+static const std::map<std::string, const std::string> PARAM_TO_SRC = {
     {"power", "realpower.default"},
     {"avg_power_last_day", "realpower.default_arithmetic_mean_24h"},
     {"avg_power_last_week", "<zero>"},
     {"avg_power_last_month", "<zero>"},
 
-    {"min_power_last_day", "realpower.default_arithmetic_min_24h"},
+    {"min_power_last_day", "realpower.default_min_24h"},
     {"min_power_last_week", "<zero>"},
     {"min_power_last_month", "<zero>"},
 
-    {"max_power_last_day", "realpower.default_arithmetic_max_24h"},
+    {"max_power_last_day", "realpower.default_max_24h"},
     {"max_power_last_week", "<zero>"},
     {"max_power_last_month", "<zero>"},
 
@@ -55,11 +57,11 @@ static const std::map<const std::string, const std::string> PARAM_TO_SRC = {
     {"avg_temperature_last_week", "<zero>"},
     {"avg_temperature_last_month", "<zero>"},
 
-    {"min_temperature_last_day", R"(temperature.TH%\_arithmetic\_min\_24h%)"},
+    {"min_temperature_last_day", R"(temperature.TH%\_min\_24h%)"},
     {"min_temperature_last_week", "<zero>"},
     {"min_temperature_last_month", "<zero>"},
 
-    {"max_temperature_last_day", R"(temperature.TH%\_arithmetic\_max\_24h%)"},
+    {"max_temperature_last_day", R"(temperature.TH%\_max\_24h%)"},
     {"max_temperature_last_week", "<zero>"},
     {"max_temperature_last_month", "<zero>"},
 
@@ -72,11 +74,11 @@ static const std::map<const std::string, const std::string> PARAM_TO_SRC = {
     {"avg_humidity_last_week", "<zero>"},
     {"avg_humidity_last_month", "<zero>"},
 
-    {"min_humidity_last_day", R"(humidity.TH%\_arithmetic\_min\_24h%)"},
+    {"min_humidity_last_day", R"(humidity.TH%\_min\_24h%)"},
     {"min_humidity_last_week", "<zero>"},
     {"min_humidity_last_month", "<zero>"},
 
-    {"max_humidity_last_day", R"(humidity.TH%\_arithmetic\_max\_24h%)"},
+    {"max_humidity_last_day", R"(humidity.TH%\_max\_24h%)"},
     {"max_humidity_last_week", "<zero>"},
     {"max_humidity_last_month", "<zero>"},
 
@@ -98,7 +100,7 @@ double
         step = 24*60*60;
     else if ( src.find("15m") != std::string::npos )
         step = 60*15;
-
+    log_debug ("step = %d", step);
     double value = 0;
     if ( step != 0 )
     {
@@ -119,7 +121,14 @@ double
         // not an aggregate -> current -> 10 minutes back
         m_msrmnt_value_t val = 0;
         m_msrmnt_scale_t scale = 0;
-        reply_t reply = persist::select_measurement_last_web_byElementId (conn, src, id, val, scale, 10);
+        // TODO selecting temperature from sensor from the box and pretending that
+        // it is a temperature for DC here is not good idea.
+        // Need to hide this logic into "internal_measurement" and select measurements only for datacenter
+        reply_t reply;
+        if ( src.find('%') == std::string::npos )
+            reply = persist::select_measurement_last_web_byElementId (conn, src, id, val, scale, 10);
+        else
+            reply = persist::select_measurement_last_web_byTopicLike (conn, src, val, scale, 10);
         if ( reply.rv != 0 )
         {
             log_debug ("not computed, take 0");
@@ -210,6 +219,11 @@ static bool
 s_is_valid_param(const std::string& p)
 {
     return PARAM_TO_SRC.count(p) != 0;
+}
+
+std::string 
+s_get_valid_param () {
+    return utils::join_keys_map (PARAM_TO_SRC, ", ");
 }
 
 

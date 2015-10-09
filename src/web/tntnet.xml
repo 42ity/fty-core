@@ -37,7 +37,9 @@
       <target>auth@bios_web</target>
       <url>^/api/v1/oauth2/token$</url>
     </mapping>
-    <!-- Set (int)access_auth_level variable if the request is authenticated -->
+    <!-- Set (int)access_auth_level variable if the request is authenticated
+         and validate rights are sufficient.
+      -->
     <mapping>
       <target>auth-verify@bios_web</target>
     </mapping>
@@ -47,12 +49,6 @@
     <mapping>
       <target>sysinfo@bios_web</target>
       <url>^/api/v1/admin/sysinfo$</url>
-    </mapping>
-
-    <!-- And from now on all modifying requests have to be authenticated -->
-    <mapping>
-      <target>auth-require@bios_web</target>
-      <method>(POST|PUT|DELETE)</method>
     </mapping>
 
     <!-- Token revocation -->
@@ -129,7 +125,7 @@
 
     <!-- Asset management -->
     <mapping>
-      <target>list@bios_web</target>
+      <target>asset_list@bios_web</target>
       <url>^/api/v1/asset/(datacenter|room|row|rack|group|device)s.*$</url>
       <args>
         <type>$1</type>
@@ -197,33 +193,36 @@
     <!-- API itself -->
 
     <!-- topology/location -->
-    <!-- TODO: If location grows, move input validation into separate file, e.g. topology_inputcheck
     <mapping>
-      <target>topology_inputcheck@bios_web</target>
-      <url>^/api/v1/topology/.*$</url>
-    </mapping>
-    -->
-    <mapping>
-      <target>location@bios_web</target>
+      <target>topology_location_from@bios_web</target>
       <url>^/api/v1/topology/location.*$</url>
+      <method>GET</method>
+    </mapping>
+
+    <mapping>
+      <target>topology_location_to@bios_web</target>
+      <url>^/api/v1/topology/location.*$</url>
+      <method>GET</method>
     </mapping>
 
     <!-- topology/power -->
     <mapping>
-      <target>power@bios_web</target>
+      <target>topology_power@bios_web</target>
       <url>^/api/v1/topology/power.*$</url>
+      <method>GET</method>
     </mapping>
-
 
     <!-- Current meassurements -->
     <mapping>
       <target>current@bios_web</target>
       <url>^/api/v1/metric/current.*$</url>
+      <method>GET</method>
     </mapping>
 
     <!-- rack consumption -->
     <mapping>
       <target>rack_total@bios_web</target>
+      <method>GET</method>
       <url>^/api/v1/metric/computed/rack_total.*$</url>
     </mapping>
 
@@ -231,6 +230,7 @@
     <mapping>
       <target>datacenter_indicators@bios_web</target>
       <url>^/api/v1/metric/computed/datacenter_indicators.*$</url>
+      <method>GET</method>
     </mapping>
 
     <!-- uptime -->

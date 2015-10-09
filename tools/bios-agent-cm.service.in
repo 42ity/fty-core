@@ -5,6 +5,7 @@ Requires=malamute.service bios-db-init.service
 
 [Service]
 Type=simple
+User=nobody
 EnvironmentFile=-/etc/default/bios
 EnvironmentFile=-/etc/sysconfig/bios
 EnvironmentFile=-/etc/default/bios__%n.conf
@@ -12,7 +13,8 @@ EnvironmentFile=-/etc/default/bios__%n.conf
 # - BIOS_LOG_LEVEL=warning set a quieter bios log level
 #
 EnvironmentFile=-/etc/sysconfig/bios__%n.conf
-ExecStart=@libexecdir@/bios/agent-cm
+EnvironmentFile=-/etc/default/bios-db-ro
+ExecStart=@libexecdir@/@PACKAGE@/agent-cm
 
 [Install]
 WantedBy=multi-user.target

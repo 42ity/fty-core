@@ -259,6 +259,12 @@ curlfail_push_expect_404() {
     curlfail_push "expect" 'HTTP/[^ ]+ 404'
 }
 
+curlfail_push_expect_409() {
+    ### Preconfigured push that resets current values to specifically
+    ### expect an HTTP-409 conflict (and fail for other results)
+    curlfail_push "expect" 'HTTP/[^ ]+ 409'
+}
+
 curlfail_push_expect_500() {
     ### Preconfigured push that resets current values to specifically
     ### expect an HTTP-500 server error (and fail for other results)

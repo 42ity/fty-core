@@ -1,0 +1,238 @@
+<#
+ #
+ # Copyright (C) 2015 Eaton
+ #
+ # This program is free software; you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+ # the Free Software Foundation; either version 2 of the License, or
+ # (at your option) any later version.
+ #
+ # This program is distributed in the hope that it will be useful,
+ # but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+ #
+ # You should have received a copy of the GNU General Public License along
+ # with this program; if not, write to the Free Software Foundation, Inc.,
+ # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ #
+ #><#
+/*!
+ * \file topology_location_from.ecpp
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \brief  process location topology requests (from)
+ *  
+ * It is the first file in the chain. Here would be done the complete 
+ * parameter check. If parameters are ok, but it is not "from" but "to"
+ * request control would be delegated to the topology_location_to.ecpp.
+ */
+ #><%pre>
+#include <string>
+#include <exception>
+#include <czmq.h>
+
+#include "log.h"
+#include "defs.h"
+#include "dbpath.h"
+#include "data.h"
+#include "common_msg.h"
+#include "location_helpers.h"
+#include "asset_msg.h"
+#include "asset_types.h"
+#include "assettopology.h"
+#include "utils_web.h"
+#include "cleanup.h"
+#include "helpers.h"
+</%pre>
+<%thread scope="global">
+asset_manager asset_mgr;
+</%thread>
+<%args>
+std::string from;
+std::string to;
+std::string recursive;
+std::string filter;
+std::string feed_by;
+</%args>
+<%cpp>
+{
+    log_open ();
+
+    // Check url validity
+    // 1. Exactly one variable has to be specified: 'from' or 'to'
+    if (!from.empty() && !to.empty())
+    {
+        http_die("parameter-conflict", "Only one parameter can be specified at once: 'from' or 'to'");
+    }
+    // 2. At least one parametr should be specified
+    if (from.empty() && to.empty())
+    {
+        http_die("request-param-required", "from/to");
+    }
+    // recursive
+    int is_recursive = 0;
+    std::transform (recursive.begin(), recursive.end(), recursive.begin(), ::tolower);
+    if (recursive == "yes") {
+        is_recursive = 1;
+    } else if (!recursive.empty() && recursive != "no") {
+        http_die("request-param-bad", "recursive", recursive.c_str(), "'yes'/'no'");
+    }
+
+    // filter_type
+    std::transform (filter.begin(), filter.end(), filter.begin(), ::tolower);
+    int filter_type = 0;
+    if (filter.empty()) {
+        filter_type = 7;
+    } else if (filter == "rooms") {
+        filter_type = persist::asset_type::ROOM;
+    } else if (filter == "rows") {
+        filter_type = persist::asset_type::ROW;
+    } else if (filter == "racks") {
+        filter_type = persist::asset_type::RACK;
+    } else if (filter == "devices") {
+        filter_type = persist::asset_type::DEVICE;
+    } else if (filter == "groups") {
+        filter_type = persist::asset_type::GROUP;
+    } else {
+        // Note: datacenter is not a valid filter parameter according to rfc-11 4.1.13
+        http_die("request-param-bad","filter", filter.c_str(), "'rooms'/'rows'/'racks'/'groups'/'devices'");
+    }
+    
+    // feed_by
+    if ( !feed_by.empty() )
+    {
+        if ( filter_type != persist::asset_type::DEVICE )
+        {
+            http_die("parameter-conflict", "With variable 'feed_by' can be specified only 'filter=devices'");
+        }
+        if ( from == "none" )
+        {
+            http_die("parameter-conflict", "With variable 'feed_by' variable 'from' can not be 'none'");
+        }
+    }
+    
+    // parameters are ok
+    if ( from.empty() )
+    {
+        // pass control to to next file in the chain
+        return DECLINED;
+    }
+    
+    // element_id
+    http_errors_t errors;
+    a_elmnt_id_t element_id = 0;
+
+    if (from != "none" &&
+        !check_element_identifier ("from", from, element_id, errors)) {
+        http_die_error (errors);
+    }
+
+    a_elmnt_id_t feed_by_id = 0;
+    if (!feed_by.empty()) {
+        if (!check_element_identifier ("feed_by", feed_by, feed_by_id, errors)) {
+            http_die_error (errors);
+        }
+        auto tmp = asset_mgr.get_item1(feed_by);
+        if ( tmp.status == 0 )
+        {
+            switch ( tmp.errsubtype )
+            {
+                case DB_ERROR_NOTFOUND:
+                    http_die("element-not-found", feed_by.c_str());
+                case DB_ERROR_BADINPUT:
+                    http_die("request-param-bad", "feed_by", feed_by.c_str(), "be integer value");
+                case DB_ERROR_INTERNAL:
+                    http_die("internal-error", "error in converting 'feed_by' to integer");
+                default:
+                    http_die("internal-error", "error in converting 'feed_by' to integer");
+            }
+        }
+        if ( tmp.item.basic.type_id != persist::asset_type::DEVICE )
+        {
+            http_die("request-param-bad", "feed_by", feed_by.c_str(), "be a device");
+        }
+    }
+
+    // Call persistence layer
+    _scoped_asset_msg_t *input_msg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    assert (input_msg);
+    asset_msg_set_element_id (input_msg, (uint32_t) element_id);
+    asset_msg_set_recursive (input_msg, (byte) is_recursive);
+    asset_msg_set_filter_type (input_msg, (byte) filter_type);
+
+    _scoped_zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg, feed_by_id);
+    if (return_msg == NULL)
+    {
+        log_error ("Function process_assettopology() returned a null pointer");
+        LOG_END;
+        http_die("internal-error");
+    }
+
+    if (is_common_msg (return_msg)) {
+        _scoped_common_msg_t *common_msg = common_msg_decode (&return_msg);
+        if (common_msg == NULL) {
+            if (return_msg != NULL) {
+                zmsg_destroy (&return_msg);
+            }
+            log_error ("common_msg_decode() failed");
+            LOG_END;
+            http_die("internal-error");
+        }
+
+        if (common_msg_id (common_msg) == COMMON_MSG_FAIL) {
+            log_error ("common_msg is COMMON_MSG_FAIL");
+            LOG_END;
+            switch(common_msg_errorno(common_msg)) {
+                case(DB_ERROR_BADINPUT):
+                    http_die("request-param-bad", "from", from.c_str(), "integer value");
+                case(DB_ERROR_NOTFOUND):
+                    http_die("element-not-found", from.c_str());
+                default:
+                    http_die("internal-error", "");
+            }
+        }
+        else {
+            log_error ("Unexpected common_msg received. ID = %" PRIu32 , common_msg_id (common_msg));
+            LOG_END;
+            http_die("internal-error", "");
+        }
+    }
+    else if (is_asset_msg (return_msg)) {
+        _scoped_asset_msg_t *asset_msg = asset_msg_decode (&return_msg);
+        if (asset_msg == NULL) {
+            if (return_msg != NULL) {
+                zmsg_destroy (&return_msg);
+            }
+            log_error ("asset_msg_decode() failed");
+            LOG_END;
+            http_die("internal-error");
+        }
+
+        if (asset_msg_id (asset_msg) == ASSET_MSG_RETURN_LOCATION_FROM) {
+            std::string json;
+
+            if(asset_location_r(&asset_msg, json) == HTTP_OK) {
+</%cpp>
+<$$ json $>
+<%cpp>
+            } else {
+                log_error ("unexpected error, during the reply parsing");
+                LOG_END;
+                http_die("internal-error");
+            }
+        }
+        else {
+            log_error ("Unexpected asset_msg received. ID = %" PRIu32 , asset_msg_id (asset_msg));
+            LOG_END;
+            http_die("internal-error", "");
+        }
+    }
+    else {
+        log_error ("Unknown protocol");
+        LOG_END;
+        http_die("internal-error", "");
+    }
+}
+</%cpp>

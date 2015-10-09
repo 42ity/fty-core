@@ -40,6 +40,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "db/assets.h"
 #include "db/inout.h"
 #include "utils++.h"
+#include "utils_web.h"
 
 using namespace shared;
 
@@ -182,7 +183,7 @@ int
             };
 
     auto rv = select_assets_by_container (conn, parent_id, func);
-    if ( !rv )
+    if ( rv != 0 )
         return 3;
     pdu_epdu_count = 0;
     element_id = 0;
@@ -214,17 +215,21 @@ int
 /*
  * \brief Processes a single row from csv file
  *
- * \param conn - a connection to DB
- * \param cm - already parsed csv file
- * \param row_i - number of row to process
+ * \param[in] conn     - a connection to DB
+ * \param[in] cm       - already parsed csv file
+ * \param[in] row_i    - number of row to process
+ * \param[in] TYPES    - list of available types
+ * \param[in] SUBTYPES - list of available subtypes
+ * \param[in][out] ids - list of already seen asset ids
+ *
  */
 static std::pair<db_a_elmnt_t, persist::asset_operation>
     process_row
         (tntdb::Connection &conn,
          const CsvMap &cm,
          size_t row_i,
-         const std::map<std::string,int> TYPES,
-         const std::map<std::string,int> SUBTYPES,
+         const std::map<std::string,int> &TYPES,
+         const std::map<std::string,int> &SUBTYPES,
          std::set<a_elmnt_id_t> &ids
          )
 {
@@ -239,6 +244,10 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     // then they should be treated as external attributes
     auto unused_columns = cm.getTitles();
 
+    if (unused_columns.empty()) {
+        bios_throw("bad-request-document", "Cannot import empty document.");
+    }
+
     // because id is definitely not an external attribute
     auto id_str = unused_columns.count("id") ? cm.get(row_i, "id") : "";
     unused_columns.erase("id");
@@ -247,30 +256,37 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     if ( !id_str.empty() )
     {
         id = atoi(id_str.c_str());
-        if ( ids.count(id) == 1 )
-            throw persist::bad_request_document("Second time during the import you are trying to update the element with id "+ id_str);
+        if ( ids.count(id) == 1 ) {
+            std::string msg = "Element id '";
+            msg += id_str;
+            msg += "' found twice, aborting";
+            bios_throw("bad-request-document", msg.c_str());
+        }
         ids.insert(id);
         operation = persist::asset_operation::UPDATE;
     }
 
     auto name = cm.get(row_i, "name");
     log_debug ("name = '%s'", name.c_str());
-    if ( !is_ok_name(name.c_str()) )
-        throw persist::request_bad_param("name", name, "unique and non empty");
+    if ( !is_ok_name(name.c_str()) ) {
+        bios_throw("request-param-bad", "name", name.empty() ? "<empty>" : name.c_str(), "<unique and non empty value>");
+    }
     unused_columns.erase("name");
 
     auto type = cm.get_strip(row_i, "type");
     log_debug ("type = '%s'", type.c_str());
-    if ( TYPES.find(type) == TYPES.end() )
-        throw persist::request_bad_param("type", type, utils::join_keys(TYPES, ", "));
+    if ( TYPES.find(type) == TYPES.end() ) {
+        bios_throw("request-param-bad", "type", type.empty() ? "<empty>" : type.c_str(), utils::join_keys_map(TYPES, ", ").c_str());
+    }
     auto type_id = TYPES.find(type)->second;
     unused_columns.erase("type");
 
     auto status = cm.get_strip(row_i, "status");
     log_debug ("status = '%s'", status.c_str());
-    if ( STATUSES.find(status) == STATUSES.end() )
-        throw persist::request_bad_param("status", status,
-            cxxtools::join(STATUSES.cbegin(), STATUSES.cend(), ", "));
+    if ( STATUSES.find(status) == STATUSES.end() ) {
+        bios_throw ("request-param-bad", "status", status.empty() ? "<empty>" : status.c_str(),
+            cxxtools::join(STATUSES.cbegin(), STATUSES.cend(), ", ").c_str());
+    }
     unused_columns.erase("status");
 
     bool bs_critical = get_business_critical(cm.get_strip(row_i, "business_critical"));
@@ -279,12 +295,12 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
 
     auto asset_tag = cm.get(row_i, "asset_tag");
     log_debug ("asset_tag = '%s'", asset_tag.c_str());
-    if ( asset_tag.empty() )
-        throw persist::request_bad_param("asset_tag", "<empty>", "<unique string from 6 to 10 characters>");
-    if ( asset_tag.length() < 6 )
-        throw persist::request_bad_param("asset_tag", "<to short>", "<unique string from 6 to 10 characters>");
-    if ( asset_tag.length() > 10 )
-        throw persist::request_bad_param("asset_tag", "<to long>", "<unique string from 6 to 10 characters>");
+    if ( ( !asset_tag.empty() ) && ( asset_tag.length() < 6 ) ){
+        bios_throw("request-param-bad", "asset_tag", "<to short>", "<unique string from 6 to 50 characters>");
+    }
+    if ( ( !asset_tag.empty() ) && ( asset_tag.length() > 50 ) ){
+        bios_throw("request-param-bad", "asset_tag", "<to long>", "<unique string from 6 to 50 characters>");
+    }
     unused_columns.erase("asset_tag");
 
     int priority = get_priority(cm.get_strip(row_i, "priority"));
@@ -299,24 +315,27 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
         auto ret = select_asset_element_by_name(conn, location.c_str());
         if ( ret.status == 1 )
             parent_id = ret.item.id;
-        else
-            throw persist::request_bad_param("location", location, "<existing asset name>");
+        else {
+            bios_throw("request-param-bad", "location", location.c_str(), "<existing asset name>");
+        }
     }
     unused_columns.erase("location");
 
     auto subtype = cm.get_strip(row_i, "sub_type");
     log_debug ("subtype = '%s'", subtype.c_str());
     if ( ( type == "device" ) &&
-         ( SUBTYPES.find(subtype) == SUBTYPES.end() ) )
-        throw persist::request_bad_param("subtype", subtype, utils::join_keys(SUBTYPES, ", "));
+         ( SUBTYPES.find(subtype) == SUBTYPES.cend() ) ) {
+        bios_throw("request-param-bad", "subtype", subtype.empty() ? "<empty>" : subtype.c_str(), utils::join_keys_map(SUBTYPES, ", ").c_str());
+    }
 
     if ( ( !subtype.empty() ) && ( type != "device" ) && ( type != "group") )
     {
         log_warning ("'%s' - subtype is ignored", subtype.c_str());
     }
 
-    if ( ( subtype.empty() ) && ( type == "group" ) )
-        throw persist::request_param_required("subtype (for type group)");
+    if ( ( subtype.empty() ) && ( type == "group" ) ) {
+        bios_throw("request-param-required", "subtype (for type group)");
+    }
 
     auto subtype_id = SUBTYPES.find(subtype)->second;
     unused_columns.erase("sub_type");
@@ -327,17 +346,21 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     {
         db_reply <db_web_basic_element_t> element_in_db = select_asset_element_web_byId
                                                         (conn, id);
-        if ( element_in_db.status == 0 )
-            throw persist::element_not_found(id_str);
+        if ( element_in_db.status == 0 ) {
+            bios_throw("element-not-found", id_str.c_str());
+        }
         else
         {
-            if ( element_in_db.item.name != name )
-                throw persist::action_forbidden("Renaming of asset");
-            if ( element_in_db.item.type_id != type_id )
-                throw persist::action_forbidden("Changing of asset type");
+            if ( element_in_db.item.name != name ) {
+                bios_throw("action-forbidden", "Renaming of asset");
+            }
+            if ( element_in_db.item.type_id != type_id ) {
+                bios_throw("action-forbidden", "Changing of asset type");
+            }
             if ( ( element_in_db.item.subtype_id != subtype_id ) &&
-                 ( element_in_db.item.subtype_name != "N_A" ) )
-                throw persist::action_forbidden("Changing of asset subtype");
+                 ( element_in_db.item.subtype_name != "N_A" ) ) {
+                bios_throw("action-forbidden", "Changing of asset subtype");
+            }
         }
     }
 
@@ -348,8 +371,9 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     bool in_rack = true;
     if ( ( subtype == "epdu" ) || ( subtype == "pdu" ) )
     {
-        if ( unused_columns.count("location_w_pos") == 0 )
-            throw persist::request_param_required("location_w_pos (for epdu/pdu)");
+        if ( unused_columns.count("location_w_pos") == 0 ) {
+            bios_throw("request-param-required", "location_w_pos (for epdu/pdu)");
+        }
         // find a number of pdu/epdu in the rack
         int ret = get_pdu_epdu_info_location_w_pos (conn, parent_id, pdu_epdu_count, last_position, last_position_element_id);
         if ( ret == 1 )
@@ -364,8 +388,9 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
                 throw std::invalid_argument
                     ("Unspecified problem with database, see log for more details");
             }
-            if ( ( pdu_epdu_count > 1 ) && ( id_str.empty() ) )
-                throw persist::action_forbidden("Having more than 2 pdu/epdu");
+            if ( ( pdu_epdu_count > 1 ) && ( id_str.empty() ) ) {
+                bios_throw("action-forbidden", "Having more than 2 pdu/epdu");
+            }
         }
     }
     // BIOS-991 --end
@@ -403,7 +428,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             else
             {
                 log_error ("group '%s' is not present in DB, rejected", group.c_str());
-                throw persist::element_not_found(group);
+                bios_throw("element-not-found", group.c_str());
             }
         }
     }
@@ -443,7 +468,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             {
                 log_warning ("power source '%s' is not present in DB, rejected",
                     link_source.c_str());
-                throw persist::element_not_found(link_source);
+                bios_throw("element-not-found", link_source.c_str());
             }
         }
 
@@ -520,8 +545,9 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
                             }
                     default:
                             {
-                                if ( id_str.empty() )
-                                    throw persist::action_forbidden("Position of pdu/epdu other than left or right");
+                                if ( id_str.empty() ) {
+                                    bios_throw("request-param-required", "location_w_pos", last_position.c_str(), "(left|right)");
+                                }
                                 else
                                     zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
                             }
@@ -536,7 +562,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
                     zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
                 else
                 {
-                    throw persist::request_bad_param("serial_no", value, "<unique string>");
+                    bios_throw("request-param-bad", "serial_no", value.c_str(), "<unique string>");
                 }
                 continue;
             }
@@ -546,7 +572,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
         {
             if ( ( ( subtype == "pdu" ) || ( subtype == "epdu" ) ) && ( key == "location_w_pos" ) )
             {
-                throw persist::request_bad_param("location_w_pos", "<empty>", "left, right");
+                bios_throw("request-param-bad", "location_w_pos", "<empty>", "left, right");
             }
         }
     }
@@ -598,8 +624,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
                  extattributes, status.c_str(), priority, bc, groups, asset_tag);
             if ( ret.status != 1 )
             {
-                //TODO: redo the insert_dc_room_row_rack_group
-                throw std::invalid_argument("insertion was unsuccessful");
+                throw BiosError(ret.rowid, ret.msg);
             }
             m.id = ret.rowid;
         }
@@ -673,7 +698,7 @@ void
         std::string msg{"Cannot detect the delimiter, use comma (,) semicolon (;) or tabulator"};
         log_error("%s", msg.c_str());
         LOG_END;
-        throw persist::bad_request_document(msg.c_str());
+        bios_throw("bad-request-document", msg.c_str());
     }
     log_debug("Using delimiter '%c'", delimiter);
     deserializer.delimiter(delimiter);
@@ -683,6 +708,43 @@ void
     cm.deserialize();
 
     return load_asset_csv(cm, okRows, failRows);
+}
+
+int
+    process_one_asset
+        (const CsvMap& cm)
+{
+    LOG_START;
+
+    auto m = mandatory_missing(cm);
+    if ( m != "" )
+    {
+        std::string msg{"column '" + m + "' is missing, import is aborted"};
+        log_error("%s", msg.c_str());
+        LOG_END;
+        bios_throw("request-param-required", m.c_str());
+    }
+
+    tntdb::Connection conn;
+    try{
+        conn = tntdb::connectCached(url);
+    }
+    catch(...)
+    {
+        std::string msg{"no connection to database"};
+        log_error("%s", msg.c_str());
+        LOG_END;
+        throw std::runtime_error(msg.c_str());
+    }
+
+    auto TYPES = read_element_types (conn);
+
+    auto SUBTYPES = read_device_types (conn);
+
+    std::set<a_elmnt_id_t> ids{};
+    auto ret = process_row(conn, cm, 1, TYPES, SUBTYPES, ids);
+    LOG_END;
+    return ret.first.id;
 }
 
 void
@@ -699,8 +761,8 @@ void
         std::string msg{"column '" + m + "' is missing, import is aborted"};
         log_error("%s", msg.c_str());
         LOG_END;
-        throw persist::request_bad_param("<mandatory column name>", m,
-            "all of those " + cxxtools::join(MANDATORY.cbegin(), MANDATORY.cend(), ", "));
+        bios_throw("request-param-bad", "<mandatory column name>", std::string("missing").append(m).c_str(),
+            std::string("all of those ").append(cxxtools::join(MANDATORY.cbegin(), MANDATORY.cend(), ", ")).c_str());
     }
 
     tntdb::Connection conn;

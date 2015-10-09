@@ -1,6 +1,6 @@
 /*
 Copyright (C) 2014 Eaton
- 
+
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or
@@ -20,11 +20,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
     \brief  Object representing one measurement
     \author Tomas Halman <TomasHalman@Eaton.com>
 */
- 
+
 #ifndef SRC_AGENTS_ALERT_ALERT_MEASUREMENT_H__
 #define SRC_AGENTS_ALERT_ALERT_MEASUREMENT_H__
 
 #include <string>
+#include <ctime>
 
 #include "ymsg.h"
 
@@ -51,7 +52,7 @@ class Measurement {
  public:
     Measurement( const ymsg_t *message );
     Measurement();
-    
+
     void set( const ymsg_t *message );
     void clear( );
     std::string topic() const;
@@ -62,11 +63,17 @@ class Measurement {
     int32_t value() const { return _value; };
     int32_t scale() const { return _scale; };
     int64_t time() const { return _time; };
+    void setTime() { _time = std::time(NULL); };
+    void setTime(time_t time ) { _time = time; };
+    void setDeviceName(const std::string &deviceName ) { _device_name = deviceName; };
+    void setSource(const std::string &source) { _source = source; };
+    void setUnits(const std::string &units) { _units = units; };
+    void setScale(int32_t scale) { _scale = scale; };
+    void setValue(int32_t value) { _value = value; };
     void print() const;
     Measurement& operator=( const ymsg_t *message ) { set( message ); return *this; }
     Measurement& operator+=( const Measurement &rhs );
  protected:
-    std::string _topic;
     std::string _device_name;
     std::string _source;
     std::string _units;

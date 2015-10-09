@@ -20,20 +20,20 @@
 /*!
  * \file asset_POST.ecpp
  * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
  * \brief Implementation of POST operation on any asset
  */
  #><%pre>
-#include "data.h"
-#include "configure_inform.h"
-#include "asset_types.h"
-#include "defs.h"
-#include "utils_web.h"
-#include "csv.h"
-#include "inout.h"
+#include <sys/syscall.h>
+
 #include <cxxtools/jsondeserializer.h>
 #include <cxxtools/serializationinfo.h>
+#include "configure_inform.h"
+#include "utils_web.h"
+#include "inout.h"
 </%pre>
 <%cpp>
+{
     // Read json, transform to csv, use existing functionality
     cxxtools::SerializationInfo si;
     // read json a deserialize it
@@ -41,7 +41,6 @@
         std::stringstream input (request.getBody (), std::ios_base::in);
         cxxtools::JsonDeserializer deserializer (input);
         deserializer.deserialize (si);
-
     }
     catch (const std::exception& e) {
         LOG_END_ABNORMAL(e);
@@ -50,49 +49,62 @@
 
     try{
         shared::CsvMap cm = shared::CsvMap_from_serialization_info(si);
-        // actual insert
-        std::vector <std::pair<db_a_elmnt_t,persist::asset_operation>> okRows{};
-        std::map <int, std::string> failRows{};
-        persist::load_asset_csv (cm, okRows, failRows);
+
+        // POST /asset is currently used to insert new datacenter from wizard
+        // all you need when implementing POST for other types is to support structured error handling
+        // empty document
+        if (cm.cols() == 0 || cm.rows() == 0)
+            http_die("bad-request-document", "Cannot import empty document.");
+        // in underlying functions like update_device
+        if (!cm.hasTitle("type"))
+            http_die("request-param-required", "type");
+        if (cm.get(1, "type") != "datacenter")
+            http_die("request-param-bad", "type", cm.get(1, "type").empty() ? "<empty>" : cm.get(1, "type").c_str(), "datacenter");
+        if (cm.hasTitle("id"))
+            http_die("action-forbidden", "Update of datacenter", "Not yet supported.");
+
+        // actual insert - throws exceptions
+        int id = persist::process_one_asset (cm);
+
+        // here we are -> insert was successful
+        // ATTENTION:  1. sending messages is "hidden functionality" from user
+        //             2. if any error would occur during the sending message,
+        //                user will never know if element was actually inserted
+        //                or not
+
+        // this code can be executed in multiple threads -> agent's name should
+        // be unique at the every moment
+/*
+        // TODO insert changes the assets -> need to inform agents
+        // ACE: for now it is disabled, as it is require to redo the
+        // persist::process_one_asset function to return row.
+
+        std::string agent_name("TEMP_CONFIGURE_INFORM_AGENT");
+        agent_name.append (std::to_string ( static_cast<int> (getpid ()) ))
+                  .append (".")
+                  .append (std::to_string ( syscall(SYS_gettid) ));
+        try{
+            send_configure (row, persist::asset_operation::INSERT, agent_name);
+        }
+        catch (const std::runtime_error &e) {
+            log_error (e.what());
+            std::string msg = "Error during configuration sending of asset change notification. Consult system log.";
+            http_die("internal-error", msg.c_str());
+        }
+*/
+        // no unexpected errors was detected
         // process results
-        if ( !failRows.empty() )
-        {
-            // FIXME FIXME FIXME - the load_asset_csv must be updated to report errors in structured way!
-            // TODO  TODO  TODO
-            http_die("request-param-required", failRows.begin()->second.c_str());
-            // FIXME FIXME FIXME - the load_asset_csv must be updated to report errors in structured way!
-            // TODO  TODO  TODO
-        }
-        else
-        {
 </%cpp>
-{<$$ utils::json::jsonify ("id", std::to_string(okRows.begin()->first.id)) $>}
+{<$$ utils::json::jsonify ("id", std::to_string(id)) $>}
 <%cpp>
-            return HTTP_OK;
-        }
+        return HTTP_OK;
     }
-    catch (const persist::bad_request_document& e) {
-        LOG_END_ABNORMAL(e);
-        http_die("bad-request-document", e.what());
-    }
-    catch (const persist::request_param_required& e) {
-        LOG_END_ABNORMAL(e);
-        http_die("request-param-required", e.what());
-    }
-    catch (const persist::element_not_found& e) {
-        LOG_END_ABNORMAL(e);
-        http_die("element-not-found", e.what());
-    }
-    catch (const persist::action_forbidden& e) {
-        LOG_END_ABNORMAL(e);
-        http_die("action-forbidden", e.what());
-    }
-    catch (const persist::request_bad_param& e) {
-        LOG_END_ABNORMAL(e);
-        http_die("request-param-bad", e.name.c_str(), e.got.c_str(), e.expected.c_str());
+    catch (const BiosError& e) {
+        http_die_idx(e.idx, e.what());
     }
     catch (const std::exception& e) {
         LOG_END_ABNORMAL(e);
-        http_die("internal-error", e.what());
+        http_die("internal-error");
     }
+}
 </%cpp>

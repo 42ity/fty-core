@@ -32,18 +32,18 @@ namespace bios
     /**
      * \brief A base class for errors.
      */
-    class BiosError : public std::runtime_error
+    class BiosErrorBase : public std::runtime_error
     {
         public:
         
         // Constructor
-        explicit BiosError(const std::string& msg);
+        explicit BiosErrorBase(const std::string& msg);
     };
 
     /*
      * \brief Exception thrown when specified element is not a device.
      */
-    class ElementIsNotDevice : public BiosError
+    class ElementIsNotDevice : public BiosErrorBase
     {
         public:
         // Constructor
@@ -54,7 +54,7 @@ namespace bios
      * \brief Exception thrown when for specified device 
      *  monitor counterpart was not found.
      */
-    class MonitorCounterpartNotFound : public BiosError
+    class MonitorCounterpartNotFound : public BiosErrorBase
     {
         public:
         // Constructor
@@ -65,7 +65,7 @@ namespace bios
      * \brief Exception thrown when speified element was not
      * found in database.
      */
-    class NotFound : public BiosError
+    class NotFound : public BiosErrorBase
     {
         public:
         // Constructor
@@ -76,7 +76,7 @@ namespace bios
      * \brief Exception thrown when some unexcpected error in database
      * occured.
      */
-    class InternalDBError : public BiosError
+    class InternalDBError : public BiosErrorBase
     {
         public:
         // Constructor
@@ -87,7 +87,7 @@ namespace bios
      * \brief Exception thrown when bad input data found
      * in database.
      */
-    class BadInput : public BiosError
+    class BadInput : public BiosErrorBase
     {
         public:
         // Constructor

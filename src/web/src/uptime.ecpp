@@ -25,9 +25,13 @@
  #><%pre>
 
 #include <cxxtools/split.h>
+#include <tntdb/error.h>
 #include "data.h"
 #include "dbpath.h"
 #include "db/calculation.h"
+#include "utils_web.h"
+#include "log.h"
+#include "helpers.h"
 
 </%pre>
 
@@ -40,63 +44,36 @@ asset_manager asset_mgr;
 </%thread>
 
 <%cpp>
-    // Check URL validity
-    if ( arg1 == "" ) {
-</%cpp>
-{
-    "error":"bad_input",
-    "msg":"missing argument"
-}
-<%cpp>
-        return HTTP_BAD_REQUEST;
+    // Input arguments checks
+
+    // arg1 is mandatory
+    if (arg1.empty ()) {
+        http_die ("request-param-required", "arg1");
     }
+
     std::vector<std::string> DCs;
     std::vector<std::string> DCNames;
     cxxtools::split(",", arg1, std::back_inserter(DCs));
 
     // check that DC exists
-    auto allDcsShort= asset_mgr.get_items1("datacenter", "");
-    if ( allDcsShort.status == 0 )
-    {
-        // TODO better error handling by types
-</%cpp>
-{
-    "error":"internal error",
-    "msg":"while reading information about dcs"
-}
-<%cpp>
-        return HTTP_INTERNAL_SERVER_ERROR;
+    auto allDcsShort = asset_mgr.get_items1 ("datacenter", "");
+    if (allDcsShort.status == 0) {
+        http_die ("internal-error", "Error while retrieving information about datacenters.");
     }
-    for ( size_t i = 0; i < DCs.size() ; i++ )
-    {
-        // TODO add better converter
-        uint32_t real_id = atoi(DCs[i].c_str());
-        if ( real_id == 0 )
-        {
-</%cpp>
-{
-    "error":"bad_input",
-    "msg":"invalid dc id <$$ DCs[i]$> (can not convert)"
-}
-<%cpp>
-            return HTTP_BAD_REQUEST;
+
+    for (auto const& item : DCs) {
+        http_errors_t errors;
+        uint32_t real_id = 0;
+
+        if (!check_element_identifier ("element_id", item, real_id, errors)) {
+            http_die_error (errors);
         }
 
         auto it = allDcsShort.item.find(real_id);
-        if ( it != allDcsShort.item.end() )
-        {
-            DCNames.push_back(it->second);
+        if (it == allDcsShort.item.end()) {
+            http_die ("element-not-found", item.c_str ());
         }
-        else
-        {
-</%cpp>
-{
-    "error":"bad_input",
-    "msg":"invalid dc id <$$ DCs[i]$> (doesn't exist)"
-}
-<%cpp>
-            return HTTP_BAD_REQUEST;
-        }
+        DCNames.push_back(it->second);
     }
 
     std::stringstream json;
@@ -122,22 +99,13 @@ asset_manager asset_mgr;
         }
         json << "\t]\n}\n";
     }
-    catch ( const std::invalid_argument& e ) {
-</%cpp>
-{ 
-    "error" : "<$$ e.what()$>"
-}
-<%cpp>
-        return HTTP_BAD_REQUEST;
+    catch (const tntdb::Error& e) {
+        log_error ("%s", e.what ());
+        http_die ("internal-error", "Database related error.");
     }
-    catch ( const std::exception& e ) {
-</%cpp>
-{
-    "error" : "internal server error",
-    "msg" : <$$ e.what() $>
-}
-<%cpp>      
-        return HTTP_INTERNAL_SERVER_ERROR;   
+    catch (const std::exception& e) {
+        log_error ("%s", e.what ());
+        http_die ("internal-error");
     }
 </%cpp>
 <$$ json.str() $>

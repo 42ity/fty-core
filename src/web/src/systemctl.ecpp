@@ -35,6 +35,7 @@
 
 #include "auth_levels.h"
 #include "subprocess.h"
+#include "utils_web.h"
 
 #define LoadState       "LoadState"     // loaded/
 #define ActiveState     "ActiveState"   // active/
@@ -103,9 +104,12 @@ parse_systemctl_status
     return true;
 }
 
-unsigned int process_get (const std::string& operation, const std::string& service_name, std::string& message, uint64_t& code) {
-    code = 0;
-    message.clear ();
+unsigned int process_get (
+        tnt::HttpReply& reply,
+        const std::string& operation,
+        const std::string& service_name)
+{
+    std::string message;
 
     ////////////////
     //    LIST    //
@@ -125,6 +129,7 @@ unsigned int process_get (const std::string& operation, const std::string& servi
         message.append (
 "\t]\n"
 "}");
+        reply.out() << message;
         return HTTP_OK;
     }
     
@@ -139,13 +144,12 @@ unsigned int process_get (const std::string& operation, const std::string& servi
 
             if (proc_rv != 0) {
                 message.assign ("TODO executing `systemctl show` failed: " + std::to_string (proc_rv)); // TODO change error message
-                return HTTP_INTERNAL_SERVER_ERROR;
+                http_die("internal-error", message );
             }
 
             std::string active_state, sub_state, load_state, unit_file_state;
             if (!parse_systemctl_status (proc_out, active_state, sub_state, load_state, unit_file_state)) {
-                message.assign ("TODO Expected different format of systemctl show"); // TODO: change error message
-                return HTTP_INTERNAL_SERVER_ERROR;
+                http_die("internal-error", "TODO Expected different format of systemctl show"); // TODO: change error message
             }
 
             message.assign (
@@ -157,38 +161,37 @@ unsigned int process_get (const std::string& operation, const std::string& servi
 "\t\t\"UnitFileState\"\t:\t\"" + unit_file_state + "\"\n"
 "\t}\n"
 "}");
+            reply.out() << message;
             return HTTP_OK; 
         }
-        message.assign ("TODO Bad service name"); // TODO change error message
-        return HTTP_NOT_FOUND;
+        http_die( "element-not-found", service_name.c_str() );
     }
 
     //////////////////////////////////
     //      BAD: empty / unknown    // 
     //////////////////////////////////
-    message.assign (
-"<operation> is empty or unknown in 'admin/systemctl/<operation>'. "
-"Supported operations for GET requests: 'list', 'status/<service_name>'");
-    return 0; 
+    http_die("request-param-required", "operation");
 }
 
-unsigned int process_post (const std::string& operation, const std::string& body, std::string& message, uint64_t& code) {
-    code = 0;
-    message.clear ();
+unsigned int process_post (
+        tnt::HttpReply& reply,
+        const std::string& operation,
+        const std::string& body)
+{
+    std::string message;
     if (operation.compare ("start") != 0 &&         
         operation.compare ("stop") != 0 && 
         operation.compare ("restart") != 0 && 
         operation.compare ("enable") != 0 && 
         operation.compare ("disable") != 0) {
-        message.assign (
-"<operation> is empty or unknown in 'admin/systemctl/<operation>'. "
-"Supported operations for POST requests: 'start', 'stop', 'restart', 'enable', 'disable'.");
-        return HTTP_NOT_FOUND;
+        http_die("request-param-bad",
+                 "operation",
+                 operation.c_str(),
+                 "'start', 'stop', 'restart', 'enable' or 'disable'");
     }
 
     if (body.empty ()) {
-        message.assign ("Required format for POST request data is a JSON document: { \"service_name\" : \"<service_name>\" }");
-        return HTTP_BAD_REQUEST;       
+        http_die("bad-request-document", "{ \"service_name\" : \"<service_name>\" }");
     }
 
     try {
@@ -208,8 +211,10 @@ unsigned int process_post (const std::string& operation, const std::string& body
         // networking is different animal, threat differently
         if (service_name == "networking") {
             if (operation != "restart" && operation != "show") {
-                message.assign("'networking' service supports 'restart' and 'show' commands only");
-                return HTTP_BAD_REQUEST;
+                http_die("request-param-bad",
+                         "operation",
+                         operation.c_str(),
+                         "'show' or 'restart'");
             }
             // restart is done using special script
             if (operation == "restart")
@@ -221,8 +226,8 @@ unsigned int process_post (const std::string& operation, const std::string& body
         std::string proc_out, proc_err;
         int proc_rv = shared::output (proc_cmd, proc_out, proc_err);
         if (proc_rv != 0) {
-            message.assign ("TODO executing systemctl failed: ").append (proc_err); // TODO change error message
-            return HTTP_INTERNAL_SERVER_ERROR;
+            message.assign ("executing systemctl failed: ").append (proc_err);
+            http_die("internal-error", message );
         }
 
         // but we want to pretend we have used networking service ...
@@ -232,14 +237,15 @@ unsigned int process_post (const std::string& operation, const std::string& body
 
         proc_rv = shared::output (proc_cmd2, proc_out, proc_err);
         if (proc_rv != 0) {
-            message.assign ("TODO executing `systemctl show` failed: " + std::to_string (proc_rv)); // TODO change error message
+            message.assign ("executing `systemctl show` failed: " + std::to_string (proc_rv));
+            http_die("internal-error", message );
             return HTTP_INTERNAL_SERVER_ERROR;    
         }
 
         std::string active_state, sub_state, load_state, unit_file_state;
         if (!parse_systemctl_status (proc_out, active_state, sub_state, load_state, unit_file_state)) {
-            message.assign ("TODO Expected different format of systemctl show"); // TODO: change error message
-            return HTTP_INTERNAL_SERVER_ERROR;
+            message.assign ("cant parse systemctl show output");
+            http_die("internal-error", message );
         }
         message.assign (
 "{\n"
@@ -250,19 +256,17 @@ unsigned int process_post (const std::string& operation, const std::string& body
 "\t\t\"UnitFileState\"\t:\t\"" + unit_file_state + "\"\n"
 "\t}\n"
 "}");
-        
+        reply.out() << message;
         return HTTP_OK;
     }
     catch (const cxxtools::SerializationError& e) {
-        message.assign ("Required format for POST request data is a JSON document: { \"service_name\" : \"<service_name>\" }: ")
-               .append (e.what ());
-        return HTTP_BAD_REQUEST;
+        message.assign("Expected: { \"service_name\" : \"<service_name>\" }").append (e.what ());
+        http_die( "bad-request-document", message );
     }
     catch (const std::exception& e) {
         message.assign ("Exception caught: '").append(e.what ()).append("'.");
-        return HTTP_INTERNAL_SERVER_ERROR;
+        http_die( "internal-error", message );
     }
-    return 0;
 }
 
 </%pre>
@@ -272,22 +276,6 @@ int8_t access_auth_level;
 </%request>
 
 <%cpp>
-// min. level 2 required
-if (access_auth_level < AUTH_LEVEL_POWERUSER) {
-</%cpp>
-{
-    "errors": [
-        {
-            "code" : 0,
-            "message" : "Not authorized!",
-            "hint" : "Please use '/oauth2/token?username=<user_name>&password=<password>&grant_type=password' GET request to authorize."
-        }
-    ]
-}
-<%cpp>     
-    return HTTP_UNAUTHORIZED;
-}
-
 
 std::string operation = request.getArg("operation");
 std::string service_name = request.getArg("service_name");
@@ -296,42 +284,14 @@ std::string service_name = request.getArg("service_name");
 std::transform (operation.begin(), operation.end(), operation.begin(), ::tolower);
 std::transform (service_name.begin(), service_name.end(), service_name.begin(), ::tolower);
 
-// arguments check
-unsigned int http_rc = 0;
-uint64_t error_code = 0;
-std::string message;
-
 if (request.getMethod() == "GET") {
-    http_rc = process_get (operation, service_name, message, error_code);
+    return process_get (reply, operation, service_name);
 }
-else if (request.getMethod() == "POST") {
-    http_rc = process_post (operation, request.getBody(), message, error_code);
+if (request.getMethod() == "POST") {
+    return process_post (reply, operation, request.getBody() );
 }
-else {
-    error_code = 00;
-    message = "Following HTTP methods are supported for 'admin/systemctl/<operation>': GET, POST.";
-    http_rc = HTTP_METHOD_NOT_ALLOWED;
-}
+http_die("method-not-allowed", request.getMethod().c_str() );
 
-if (http_rc == 200) {
 </%cpp>
-<$$ message $>
-<%cpp>
-}
-else {
-</%cpp>
-{
-    "errors": [
-        {
-            "code" : <$ error_code $>,
-            "message" : "<$$ message $>"
-        }
-    ]
-}
-<%cpp>
-}
-return http_rc;
-</%cpp>
-
 
 

@@ -91,5 +91,8 @@ is_pdu(int x);
 bool
 is_rack(int x);
 
+bool
+is_ups(int x);
+
 }; //namespace persist
 #endif //SRC_SHARED_ASSET_TYPES_H

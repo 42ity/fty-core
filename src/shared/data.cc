@@ -34,6 +34,7 @@
 #include <limits.h>
 
 #include "data.h"
+#include "utils_web.h"
 
 #include "log.h"
 #include "asset_types.h"
@@ -233,17 +234,30 @@ db_reply <db_web_element_t>
 {
     db_reply <db_web_element_t> ret;
 
-    // TODO add better converter
-    uint32_t real_id = atoi(id.c_str());
-    if ( real_id == 0 )
-    {
+    unsigned long real_id_l = 0;
+    try {
+        real_id_l = std::stoul (id);
+    }
+    catch (const std::out_of_range& e) {
         ret.status        = 0;
         ret.errtype       = DB_ERR;
-        ret.errsubtype    = DB_ERROR_INTERNAL;
-        ret.msg           = "cannot convert an id";
-        log_warning (ret.msg.c_str());
+        ret.errsubtype    = DB_ERROR_BADINPUT;
         return ret;
     }
+    catch (const std::invalid_argument& e) {
+        ret.status        = 0;
+        ret.errtype       = DB_ERR;
+        ret.errsubtype    = DB_ERROR_BADINPUT;
+        return ret;
+    }
+
+    if (real_id_l == 0 || real_id_l > UINT_MAX) {
+        ret.status        = 0;
+        ret.errtype       = DB_ERR;
+        ret.errsubtype    = DB_ERROR_BADINPUT;
+        return ret;
+    }
+    uint32_t real_id = static_cast<uint32_t> (real_id_l);
     log_debug ("id converted successfully");
 
     try{
@@ -344,6 +358,7 @@ db_reply <std::map <uint32_t, std::string> >
         ret.errsubtype    = DB_ERROR_INTERNAL;
         ret.msg           = "Unsupported type of the elemnts";
         log_error (ret.msg.c_str());
+        bios_error_idx(ret.rowid, ret.msg, "request-param-bad", "type", typeName.c_str(), "datacenters,rooms,ros,racks,devices");
         return ret;
     }
     if ( ( typeName == "device" ) && ( !subtypeName.empty() ) )
@@ -359,11 +374,12 @@ db_reply <std::map <uint32_t, std::string> >
         return ret;
     }
     catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
         ret.status        = 0;
         ret.errtype       = DB_ERR;
         ret.errsubtype    = DB_ERROR_INTERNAL;
         ret.msg           = e.what();
-        LOG_END_ABNORMAL(e);
+        bios_error_idx(ret.rowid, ret.msg, "internal-error");
         return ret;
     }
 }

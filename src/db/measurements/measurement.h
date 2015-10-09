@@ -19,6 +19,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 /*! \file   measurement.h
     \brief  high level db api for measurements
     \author Karol Hrdina <KarolHrdina@Eaton.com>
+    \author Alena Chernikava <AlenaChernikava@Eaton.com>
+    \brief  functionality to manipulate with measurements
 */
 
 #ifndef SRC_DB_MEASUREMENTS_MEASUREMENT_H__
@@ -37,7 +39,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 namespace persist
 {
 
-// -1 err/failure , 0 ok, 1 element_id not found, 2 topic not found    
+// -1 err/failure , 0 ok, 1 element_id not found, 2 topic not found
 reply_t
 select_measurements (
         tntdb::Connection &conn,
@@ -193,6 +195,23 @@ int
         bool               fuzzy
     );
 
+/**
+ * \brief select one aggregated (min, max, average) measurement by topic_id
+ *        and by step
+ *
+ * Step of aggreagtion is used for computing the last timestamp, when
+ * measurement was expected to be calculated.
+ *
+ * \param[in]  conn     - db connection
+ * \param[in]  topic_id - id of the topic
+ * \param[in]  step     - step of aggregation (in seconds)
+ * \param[out] value    - returned value of measurement if it
+ *                        was found, otherwise 0.
+ *
+ * \return 0  on success if found
+ *         1  on success if not found
+ *         -1 on failure
+ */
 int
     select_last_aggregated_by_step(
         tntdb::Connection &conn,
@@ -201,6 +220,20 @@ int
         double            &value
     );
 
+
+/**
+ * \brief select one measurement by timestamp and topic_id
+ *
+ * \param[in]  conn      - db connection
+ * \param[in]  topic_id  - id of the topic
+ * \param[in]  timestamp - timestamp of the measurements (UTC unixtime)
+ * \param[out] value     - returned value of measurement if it
+ *                         was found, otherwise 0.
+ *
+ * \return 0  on success if found
+ *         1  on success if not found
+ *         -1 on failure
+ */
 int
     select_measurement_by_time_topic(
         tntdb::Connection &conn,

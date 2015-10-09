@@ -87,16 +87,32 @@ std::map<std::string,std::string> zhash_to_map(zhash_t *hash)
 }
 
 std::string
-    join_keys(
-        const std::map<std::string, int>& m,
-        const std::string& separator)
-{
-        std::stringstream s;
-        for (const auto& it: m)
-            s << it.first << separator;
-        auto st = s.str();
-        st.erase(st.size()-2, 2);
-        return st;
+join (const char **str_arr, uint32_t length, const char *separator) {
+    std::string result;
+    if (!str_arr || !*str_arr || !separator)
+        return result;
+    result.append (str_arr[0]);
+    for (uint32_t i = 1; i < length; ++i) {
+        if (!str_arr[i])
+            return result;
+        result.append (separator).append (str_arr[i]);
+    }
+    return result;
+}
+
+std::string
+join (const char **str_arr, const char *separator) {
+    std::string result;
+    if (!str_arr || !*str_arr || !separator) 
+        return result;
+    result.append (str_arr[0]);
+    uint32_t i = 1;
+    while (true) {
+        if (!str_arr[i])
+            return result;
+        result.append (separator).append (str_arr[i]);
+        ++i;
+    }
 }
 
 } // namespace utils
