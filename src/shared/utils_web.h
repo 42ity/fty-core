@@ -258,7 +258,7 @@ struct BiosError : std::invalid_argument {
 
 #define bios_error_idx(idx, str, key, ...) \
 do { \
-    static_assert (std::is_same <decltype (str), std::string>::value, "'str' argument in macro bios_error_idx must be a std::string."); \
+    static_assert (std::is_same <decltype (str), std::string>::value || std::is_same <decltype (str), std::string&>::value, "'str' argument in macro bios_error_idx must be a std::string."); \
     constexpr size_t key_idx = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
     static_assert(key_idx != 0, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
     char *message; \

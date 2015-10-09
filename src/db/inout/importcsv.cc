@@ -382,8 +382,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             if ( ret != 0 )
             {
                 log_error ( "ret = %d", ret);
-                throw std::invalid_argument
-                    ("Unspecified problem with database, see log for more details");
+                bios_throw ("internal-error", "Unspecified problem with database, see log for more details");
             }
             if ( ( pdu_epdu_count > 1 ) && ( id_str.empty() ) ) {
                 bios_throw("action-forbidden", "Having more than 2 pdu/epdu");
@@ -633,8 +632,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
                     priority, bc, asset_tag);
             if ( ret.status != 1 )
             {
-                //TODO: redo the insert_device
-                throw std::invalid_argument("insertion was unsuccessful");
+                throw BiosError(ret.rowid, ret.msg);
             }
             m.id = ret.rowid;
         }
