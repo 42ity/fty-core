@@ -45,8 +45,8 @@ usage(){
     echo "options:"
     echo "  -u|--user   username for SASL (Default: '$BIOS_USER')"
     echo "  -p|--passwd password for SASL (Default: '$BIOS_PASSWD')"
-    echo "  -h|-host NAME       REST API service host name [$SUT_HOST]"
-    echo "  -p|-port-web PORT   REST API service HTTP port (default: it depends)"
+    echo "  -host NAME       REST API service host name [$SUT_HOST]"
+    echo "  -port-web PORT   REST API service HTTP port (default: it depends)"
     echo "  -q|--quick  skip sanity checks that the server serves BIOS REST API"
     echo "  -m|--method which routine to use from weblib.sh (Default: '$WEBLIB_FUNC')"
     echo "NOTE: RELATIVE_URL is under the BASE_URL (host:port/api/v1)"
@@ -61,11 +61,11 @@ RELATIVE_URL=""
 [ -z "$SKIP_SANITY" ] && SKIP_SANITY=no
 while [ $# -gt 0 ] ; do
     case "$1" in
-        --port-web|--sut-port-web|-wp|--port|-p)
+        --port-web|--sut-port-web|-wp|--port)
             SUT_WEB_PORT="$2"
             shift
             ;;
-        --host|--machine|-sh|--sut|--sut-host|-h)
+        --host|--machine|-sh|--sut|--sut-host)
             SUT_HOST="$2"
             shift
             ;;
@@ -104,7 +104,7 @@ while [ $# -gt 0 ] ; do
 done
 
 if [ -z "$SUT_WEB_PORT" ]; then
-    SUT_is_localhost && [ -n "$CHECKOUTDIR" ] && [ -d "$CHECKOUTDIR"/tests/CI ] \
+    SUT_is_localhost \
     && SUT_WEB_PORT="8000" \
     || SUT_WEB_PORT="80"
 fi
