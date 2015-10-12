@@ -197,7 +197,14 @@ void Autoconfig::requestExtendedAttributes( const char *name )
 
 void Autoconfig::loadState()
 {
-    std::string json = load_agent_info( AUTOCONFIG );
+    std::string json = "";
+    int rv = load_agent_info( AUTOCONFIG, json );
+    if ( rv != 0 )
+    {
+        log_error( "can't load state from database");
+        return;
+    }
+
     std::istringstream in(json);
 
     try {
@@ -206,7 +213,7 @@ void Autoconfig::loadState()
         std::vector<AutoConfigurationInfo> items;
         deserializer.deserialize(_configurableDevices);
     } catch( std::exception &e ) {
-        log_error( "can't load state from database: %s", e.what() );
+        log_error( "can't parse state from database: %s", e.what() );
     }
 }
 

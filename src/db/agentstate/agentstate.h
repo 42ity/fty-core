@@ -25,36 +25,24 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef SRC_DB_AGENTSTATE_AGENTSTATE_H_
 #define SRC_DB_AGENTSTATE_AGENTSTATE_H_
 
+#include <string>
 #include <tntdb/connect.h>
 
 namespace persist {
 
-int
-    update_agent_info(
-        tntdb::Connection &conn,
-        const std::string &agent_name,
-        const void        *data,
-        size_t             size,
-        uint16_t          &affected_rows
-        );
-
-int
-    select_agent_info(
-        tntdb::Connection  &conn,
-        const std::string  &agent_name,
-        void              **data,
-        size_t             &size
-        );
-
 /**
  * \brief save agent state
- * \param database connection
- * \param agent name
- * \param data to store
+ *
+ * \param[in] conn       - a database connection
+ * \param[in] agent_name - an agent name
+ * \param[in] data       - data to be stored
  *
  * Function saves data (stored as blob in db) under unique name.
  * It can be used for saving agent state or any other data under
  * unique identifier.
+ *
+ * \return 0      - in case of success
+ *         number - in case of any error
  */
 int
     save_agent_info(
@@ -65,8 +53,9 @@ int
 
 /**
  * \brief save agent state
- * \param agent name
- * \param data to store
+ *
+ * \param[in] agent_name - an agent name
+ * \param[in] data       - data to be stored
  *
  * Function saves data (stored as blob in db) under unique name.
  * It can be used for saving agent state or any other data under
@@ -74,6 +63,9 @@ int
  *
  * Database connection is hadled inside this function. It connects,
  * saves data and disconnects.
+ *
+ * \return 0      - in case of success
+ *         number - in case of any error
  */
 int
     save_agent_info(
@@ -83,25 +75,29 @@ int
 
 /**
  * \brief load agent state
- * \param database connection
- * \param agent name
- * \return previously stored data or "" in case of error
+ *
+ * \param[in]  conn       - a database connection
+ * \param[in]  agent_name - an agent name
+ * \param[out] agent_info - data to be retrieved
  *
  * Function reads data (stored previously in db under unique name).
  * It can be used for loading agent state or any other data under
  * unique identifier.
+ *
+ * \return 0      - in case of success
+ *         number - in case of any error
  */
-std::string
+int
     load_agent_info(
-        tntdb::Connection& conn,
-        const std::string& agent_name
-    );
+        tntdb::Connection &conn,
+        const std::string &agent_name,
+        std::string       &agent_info);
 
 /**
  * \brief load agent state
- * \param database connection
- * \param agent name
- * \return previously stored data or "" in case of error
+ *
+ * \param[in]  agent_name - an agent name
+ * \param[out] agent_info - data to be retrieved
  *
  * Function reads data (stored previously in db under unique name).
  * It can be used for loading agent state or any other data under
@@ -109,11 +105,14 @@ std::string
  *
  * Database connection is hadled inside this function. It connects,
  * loads data and disconnects.
+ *
+ * \return 0      - in case of success
+ *         number - in case of any error
  */
-std::string
+int
     load_agent_info(
-        const std::string& agent_name
-    );
+        const std::string &agent_name,
+        std::string       &agent_info);
 
 } // namespace persist
 
