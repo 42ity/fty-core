@@ -71,7 +71,11 @@ export BIOS_USER BIOS_PASSWD SASL_SERVICE
 [ -z "${SUT_HOST-}" ] && SUT_HOST="127.0.0.1"       # Hostname or IP address
 [ -z "${SUT_SSH_PORT-}" ] && SUT_SSH_PORT="22"       # SSH (maybe via NAT)
 [ -z "${SUT_WEB_PORT-}" ] && SUT_WEB_PORT="8000"       # TNTNET (maybe via NAT)
+if [ "${SUT_WEB_PORT-}" -eq 443 ]; then
+[ -z "${BASE_URL-}" ] && BASE_URL="https://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+else
 [ -z "${BASE_URL-}" ] && BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+fi
 export SUT_IS_REMOTE SUT_USER SUT_HOST SUT_SSH_PORT SUT_WEB_PORT BASE_URL
 
 ### Should the test suite break upon first failed test?
