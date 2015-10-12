@@ -705,7 +705,7 @@ void
     return load_asset_csv(cm, okRows, failRows);
 }
 
-int
+std::pair<db_a_elmnt_t, persist::asset_operation>
     process_one_asset
         (const CsvMap& cm)
 {
@@ -739,7 +739,7 @@ int
     std::set<a_elmnt_id_t> ids{};
     auto ret = process_row(conn, cm, 1, TYPES, SUBTYPES, ids);
     LOG_END;
-    return ret.first.id;
+    return ret;
 }
 
 void

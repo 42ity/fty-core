@@ -71,7 +71,7 @@
             http_die("action-forbidden", "Update operation on asset is not supported", "Not yet supported.");
 
         // actual insert - throws exceptions
-        int id = persist::process_one_asset (cm);
+        auto row = persist::process_one_asset (cm);
 
         // here we are -> insert was successful
         // ATTENTION:  1. sending messages is "hidden functionality" from user
@@ -81,28 +81,22 @@
 
         // this code can be executed in multiple threads -> agent's name should
         // be unique at the every moment
-/*
-        // TODO insert changes the assets -> need to inform agents
-        // ACE: for now it is disabled, as it is require to redo the
-        // persist::process_one_asset function to return row.
-
         std::string agent_name("TEMP_CONFIGURE_INFORM_AGENT");
         agent_name.append (std::to_string ( static_cast<int> (getpid ()) ))
                   .append (".")
                   .append (std::to_string ( syscall(SYS_gettid) ));
         try{
-            send_configure (row, persist::asset_operation::INSERT, agent_name);
+            send_configure (row.first, row.second, agent_name);
         }
         catch (const std::runtime_error &e) {
             log_error (e.what());
             std::string msg = "Error during configuration sending of asset change notification. Consult system log.";
             http_die("internal-error", msg.c_str());
         }
-*/
         // no unexpected errors was detected
         // process results
 </%cpp>
-{<$$ utils::json::jsonify ("id", std::to_string(id)) $>}
+{<$$ utils::json::jsonify ("id", std::to_string(row.first.id)) $>}
 <%cpp>
         return HTTP_OK;
     }
