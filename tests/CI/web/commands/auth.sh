@@ -108,7 +108,8 @@ curlfail_pop
 # Now try setting a password that should succeed
 
 ORIG_PASSWD="$BIOS_PASSWD"
-NEW_BIOS_PASSWD="nEw2`echo "$BIOS_PASSWD" | cut -c 1-3`%`echo "$BIOS_PASSWD" | cut -c 4-`"'@'
+#NEW_BIOS_PASSWD="nEw2`echo "$BIOS_PASSWD" | cut -c 1-3`%`echo "$BIOS_PASSWD" | cut -c 4-`"'@'
+NEW_BIOS_PASSWD="xX!9`head --bytes 16 /dev/urandom | base64`"
 
 test_it "change_password"
 api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "'"$NEW_BIOS_PASSWD"'" }'
