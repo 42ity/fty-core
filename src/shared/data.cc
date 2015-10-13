@@ -131,66 +131,6 @@ int
     }
 }
 
-int
-    ui_props_manager::get
-        (std::string& result)
-{
-    void *data = NULL;
-    size_t size = 0;
-
-    try{
-        tntdb::Connection conn = tntdb::connectCached(url);
-        auto ret = persist::select_agent_info (conn, agent_name(), &data, size);
-        if ( ret )
-        {
-            result = std::string("Can't load ui/properties from database");
-            FREE0 (data);
-            return 2;
-        }
-
-        result = std::string((const char *)data, size);
-
-        FREE0 (data);
-        return 0;
-    }
-    catch (const std::exception &e) {
-        FREE0 (data);
-        LOG_END_ABNORMAL(e);
-        result = "Unexpected problems with database";
-        return 1;
-    }
-}
-
-std::string
-    ui_props_manager::agent_name()
-{
-    return "UI_PROPERTIES";
-}
-
-int
-    ui_props_manager::put(
-        const std::string &properties,
-        std::string &result
-        )
-{
- 
-    try{
-        tntdb::Connection conn = tntdb::connectCached(url);
-        uint16_t affected_rows = 0;
-        auto ret = persist::update_agent_info (conn, agent_name(), properties.c_str(), properties.size(), affected_rows);
-        if ( ret )
-        {
-            result = std::string("{\"error\" : \"Can't import ui/properties to database\"}");
-            return 2;
-        }
-        return 0;
-    }
-    catch (const std::exception &e) {
-        LOG_END_ABNORMAL(e);
-        return 1;
-    }
-}
-
 /**
  * \brief get the error string, msg string and HTTP code from common_msg
  */

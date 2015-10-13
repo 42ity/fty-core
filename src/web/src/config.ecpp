@@ -20,7 +20,8 @@
 /*!
  * \file config.ecpp
  * \author Karol Hrdina <KarolHrdina@Eaton.com>
- * \brief Not yet documented file
+ * \brief  implementation for REST api call to manipulate with
+ *         system configuration
  */
  #><%pre>
 #include <string>
@@ -33,6 +34,8 @@
 #include <cxxtools/jsondeserializer.h>
 #include <cxxtools/serializationinfo.h>
 #include <cxxtools/regex.h>
+#include "utils_web.h"
+#include "log.h"
 
 #define PROPERTIES_FILE "/etc/default/bios"
 #define MSG_METHOD_NOT_ALLOWED "Following HTTP methods are supported for 'admin/config': GET, POST."
@@ -48,7 +51,7 @@ void replace_all (std::string& string, const char* subject, const char* replacem
     }
 }
 
-void transform_for_json (std::string& string) {    
+void transform_for_json (std::string& string) {
     // <quote> The parser strips leading and trailing whitespace from the strings of assignments, unless you use double quotes ("). </quote>
     // We need to strip leading and trailing double quote character (") when both of them are present.
     if (string.at(0) == '"' && string.at(string.size () - 1) == '"') {
@@ -65,8 +68,8 @@ void transform_for_conf (std::string& string) {
     // This is not perfect but for the moment it's ok
     replace_all (string, "\"", "");
     // <quote>A line ending with a backslash will be concatenated with the following one, allowing multiline variable definitions</quote>
-    replace_all (string, "\n", "\\\n"); 
-    // 1. empty string must be enclosed in "" 
+    replace_all (string, "\n", "\\\n");
+    // 1. empty string must be enclosed in ""
     // 2. <quote>The parser strips leading and trailing whitespace from the values of assignments, unless you use double quotes (").</quote>
     if (string.empty () ||
         (string.at (0) == ' ' || string.at (0) == '\t' || string.at (string.size () - 1) == ' ' || string.at (string.size () - 1) == '\t')) {
@@ -82,8 +85,9 @@ void transform_for_conf (std::string& string) {
     std::mutex config_mux;
 </%application>
 <%cpp>
+{
     // DISCLAIMER!!! PLEASE READ!!!
-    // 
+    //
     // Current status:
     // There is no backend (agent) available nor design "consideration" ready for configuration settings management at the moment.
     // Therefore this version will use cxxtools properties so that the rest api call can be really actually tested.
@@ -99,29 +103,26 @@ void transform_for_conf (std::string& string) {
         std::ifstream finput (PROPERTIES_FILE);
         if (finput.is_open () && finput.good ()) {
             cxxtools::PropertiesDeserializer deserializer (finput);
-            deserializer.deserialize (si);            
+            deserializer.deserialize (si);
         }
     }
     catch (const std::exception& e) {
-</%cpp>
-{
-    "errors": [
-        {
-            "code" : 0,
-            "message" : "Error deserializing file '<$ PROPERTIES_FILE $>': <$ e.what () $>"
-        }
-    ]
-}
-<%cpp>
-        return HTTP_INTERNAL_SERVER_ERROR;
+        std::string errmsg = "Error deserializing file ";
+        errmsg += PROPERTIES_FILE;
+        errmsg = errmsg + " : " + e.what();
+        http_die ("internal-error", errmsg.c_str());
     }
 
     ///////////////////
     ///     GET     ///
+    ///////////////////
     if (request.isMethodGET ()) {
         std::string value;
-        if (si.getMember (key, value)) {
-            transform_for_json (value);
+        if ( !si.getMember (key, value)) {
+            http_die("element-not-found", key.c_str());
+        }
+        // key is found
+        transform_for_json (value);
 </%cpp>
 {
     "config": {
@@ -129,25 +130,13 @@ void transform_for_conf (std::string& string) {
         "value" : "<$ value $>"
     }
 }
-<%cpp>                      
-            return HTTP_OK;
-        }
-</%cpp>
-{
-    "errors": [
-        {
-            "code" : 0,
-            "message" : "Key '<$ key $>' not found. It is not stored in configuration settings.",
-            "hint" : "You must first store a value for a configuration setting using POST request before being able to read it using GET request."
-        }
-    ]
-}
 <%cpp>
-        return HTTP_NOT_FOUND;
-    } // end of GET
+        return HTTP_OK;
+    }
 
     ////////////////////
     ///     POST      //
+    ////////////////////
     if (request.isMethodPOST ()) {
         std::string rd_key, rd_value;
         try {
@@ -155,40 +144,23 @@ void transform_for_conf (std::string& string) {
             cxxtools::JsonDeserializer deserializer (input);
             cxxtools::SerializationInfo request_doc;
             deserializer.deserialize (request_doc);
-            if (request_doc.category () != cxxtools::SerializationInfo::Object) {        
-                throw cxxtools::SerializationError ("Root of json request document must be an object with property 'config'.");
+            if (request_doc.category () != cxxtools::SerializationInfo::Object) {
+                http_die("bad-request-document", "Root of json request document must be an object with property 'config'.");
             }
             request_doc.getMember("config").getMember("key") >>= rd_key;
             request_doc.getMember("config").getMember("value") >>= rd_value;
         }
         catch (const std::exception& e) {
-</%cpp>
-{
-    "errors": [
-        {
-            "code" : 0,
-            "message" : "Error deserializing POST request document: <$ e.what () $>"
-        }
-    ]
-}
-<%cpp>
-            return HTTP_BAD_REQUEST;
+            LOG_END_ABNORMAL(e);
+            http_die("bad-request-document", e.what());
         }
 
         // There are some restrictions regarding key format
-        static cxxtools::Regex key_format("^[.-_a-zA-Z0-9]+$");
+        std::string key_format_string = "^[.-_a-zA-Z0-9]+$";
+        static cxxtools::Regex key_format(key_format_string);
         if (!key_format.match (rd_key)) {
-</%cpp>
-{
-    "errors": [
-        {
-            "code" : 0,
-            "message" : "Key '<$$ rd_key $>' has bad format. "
-        }
-    ]
-}
-<%cpp>
-            return HTTP_BAD_REQUEST;
+            std::string errmsg = "key doesn't satisfy format " + key_format_string;
+            http_die ("request-param-bad", errmsg.c_str() );
         }
 
         try {
@@ -202,21 +174,13 @@ void transform_for_conf (std::string& string) {
             std::lock_guard<std::mutex> lock(config_mux);
             std::ofstream foutput (PROPERTIES_FILE);
             if (!foutput.is_open () || !foutput.good()) {
-</%cpp>
-{
-    "errors": [
-        {
-            "code" : 0,
-            "message" : "Error writing file '<$ PROPERTIES_FILE $>'."
-        }
-    ]
-}
-<%cpp>
-                return HTTP_INTERNAL_SERVER_ERROR;
+                std::string errmsg = "Error writing file ";
+                errmsg += PROPERTIES_FILE;
+                http_die ("internal-error", errmsg.c_str());
             }
 
             for (auto it = si.begin (); it != si.end (); ++it) {
-                std::string name = it->name (); 
+                std::string name = it->name ();
                 std::string name_value;
                 it->getValue (name_value);
                 transform_for_conf (name_value);
@@ -226,34 +190,17 @@ void transform_for_conf (std::string& string) {
             foutput.close ();
         }
         catch (const std::exception& e) {
-</%cpp>
-{
-    "errors": [
-        {
-            "code" : 0,
-            "message" : "Exception caught: <$ e.what () $>"
-        }
-    ]
-}
-<%cpp>
-            return HTTP_INTERNAL_SERVER_ERROR;
+            LOG_END_ABNORMAL(e);
+            http_die("internal-error");
         }
 </%cpp>
-{"message": "configuration changed"}
+{}
 <%cpp>
         return HTTP_OK;
-    } // end of POST
-</%cpp>
-{
-    "errors": [
-        {
-            "code" : 0,
-            "message" : "<$$ MSG_METHOD_NOT_ALLOWED $>"
-        }
-    ]
+    }
+    // other methods
+    http_die("method-not-allowed");
 }
-<%cpp>
-    return HTTP_METHOD_NOT_ALLOWED;
 </%cpp>
 
 

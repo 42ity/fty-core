@@ -106,22 +106,15 @@ std::string dev;
 
                                 m_msrmnt_scale_t scale = 0;
                                 r["scale"].get(scale);
-                                measurements.emplace
+                                bool inserted;
+                                std::map <std::string, double> ::iterator it;
+                                std::tie (it, inserted) = measurements.emplace
                                 (
                                     topic_parts[0],
                                     value * std::pow (10, scale)
                                 );
-                                // TODO what if emplace return an error
-                                /* std::tie (i, inserted) = samples.emplace
-                                if (inserted) {
-                                    log_info ("emplace () ok.");
-                                }
-                                else {
-                                    // This should not happen since we are certain that item being emplaced is not there
-                                    log_warning ("emplace () failed!");
-                                }
-                                */
-
+                                if ( !inserted )
+                                    log_error ("in the list of returned measurements at least two have the same measurement_source");
                             }
                             else
                             {
@@ -159,10 +152,7 @@ std::string dev;
 
         if ( rv != 0 )
         {
-</%cpp>
-<$$ utils::json::create_error_json("Some problem during selecting measurements", 201) $>
-<%cpp>
-            return HTTP_INTERNAL_SERVER_ERROR;
+            http_die("internal-error");
         }
 
         // we are here -> everything is ok, need just to form

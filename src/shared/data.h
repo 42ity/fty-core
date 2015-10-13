@@ -28,8 +28,8 @@
 #ifndef SRC_SHARED_DATA_H
 #define SRC_SHARED_DATA_H
 
-#include <czmq.h>
 #include <string>
+#include <map>
 
 #include "dbhelpers.h"
 #include "common_msg.h"
@@ -71,12 +71,5 @@ class measures_manager {
                 m_msrmnt_scale_t  &scale);
 };
 
-class ui_props_manager {
-    public:
-        int get(std::string &result);
-        int put(const std::string &properties, std::string &result);
-    private:
-        std::string agent_name(void);
-};
 
 #endif // SRC_SHARED_DATA_H
