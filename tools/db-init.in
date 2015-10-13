@@ -48,9 +48,9 @@ if [ -z "`echo "show databases;" | do_mysql | grep '^box_utf8$'`" ]; then
 	   [ -s "$INITSQL" ]; then
 		cat "$INITSQL" | do_mysql || exit 1
 		cat << EOF | do_mysql
-GRANT DELETE,INSERT,SELECT,UPDATE PRIVILEGES ON box_utf8.* TO 'bios-rw'@'localhost' IDENTIFIED BY ($BIOS_RW);
-GRANT SELECT                      PRIVILEGES ON box_utf8.* TO 'bios-ro'@'localhost' IDENTIFIED BY ($BIOS_RO);
-SET PASSWORD = $ROOT_PW;
+GRANT DELETE,INSERT,SELECT,UPDATE ON box_utf8.* TO 'bios-rw'@'localhost' IDENTIFIED BY '$BIOS_RW';
+GRANT SELECT                      ON box_utf8.* TO 'bios-ro'@'localhost' IDENTIFIED BY '$BIOS_RO';
+SET PASSWORD = PASSWORD($ROOT_PW);
 FLUSH PRIVILEGES;
 EOF
 		echo "MYSQL_ROOT_PASSWD=\"$ROOT_PW\"" > /etc/default/mysql-root-passwd
