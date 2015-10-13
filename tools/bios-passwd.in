@@ -22,6 +22,7 @@
 #  \details Helper script for REST API /admin/passwd
 #           it does expect all the information on stdin to not accidentally leak it
 #           /usr/bin/printf "%s\n%s\n%s\n" "user" "old_password" "new_password"
+#           The new password strength is verified by "testpass.sh" helper script.
 #  \todo    it acually DO NOT check the old password, because unix2_chkpwd has been
 #           designed by very paranoid ppl and I am lazy to write own binary, so the check
 #           is going to be on REST API level. But in order to maintain stable protocol, script
@@ -33,6 +34,7 @@ export PATH=
 export LC_ALL=C
 #hack for Makefile.am and make distcheck
 export PROG=@libexecdir@/@PACKAGE@/bios-passwd
+[ -z "${TESTPASS-}" ] && TESTPASS="@libexecdir@/@PACKAGE@/testpass.sh"
 
 die() {
     echo "${@}" >&2
@@ -106,4 +108,11 @@ if ! /usr/bin/getent passwd ${USER} >/dev/null; then
     die "User ${USER} not found by /usr/bin/getent passwd"
 fi
 
-do_passwd ${USER} ${OLD_PASSWD} ${NEW_PASSWD}
+if [ -x "$TESTPASS" ]; then
+    (echo "${USER}"; echo "${NEW_PASSWD}") | "$TESTPASS" || \
+        die "FAILED($?) the password strength test"
+else
+    die "Can not test password strength: TESTPASS='$TESTPASS' not executable"
+fi
+
+do_passwd "${USER}" "${OLD_PASSWD}" "${NEW_PASSWD}"
