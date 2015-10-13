@@ -68,7 +68,7 @@
             <operation>$1</operation>
             <!-- ?: non-capture group does not work, so we work around by capturing $3 instead of doing ([^/]+)(?:/(.*))?$-->
             <service_name>$3</service_name>
-        </args>        
+        </args>
     </mapping>
 
     <!-- admin/systemctl POST -->
@@ -78,7 +78,7 @@
         <url>^/api/v1/admin/systemctl/(.+?)$</url>
         <args>
             <operation>$1</operation>
-        </args>        
+        </args>
     </mapping>
 
     <!-- Network configuration -->
@@ -161,7 +161,7 @@
         <type>$1</type>
       </args>
     </mapping>
-    
+
     <mapping>
       <target>asset_DELETE@bios_web</target>
       <url>^/api/v1/asset/(.*)$</url>
@@ -170,7 +170,16 @@
         <id>$1</id>
       </args>
     </mapping>
-    
+
+    <mapping>
+      <target>asset_PUT@bios_web</target>
+      <url>^/api/v1/asset/(.*)$</url>
+      <method>PUT</method>
+      <args>
+        <id>$1</id>
+      </args>
+    </mapping>
+
     <mapping>
       <target>asset_POST@bios_web</target>
       <url>^/api/v1/asset/?$</url>

@@ -68,17 +68,17 @@ namespace shared {
             typedef std::vector<std::vector<std::string> > Data;
             typedef std::vector<std::vector<cxxtools::String> > CxxData;
 
-          /**
-           * \brief Creates new CsvMap instance with data inside
-           */
+            /**
+             * \brief Creates new CsvMap instance with data inside
+             */
             CsvMap(const Data& data) :
                 _data{data},
                 _title_to_index{}
             {};
 
-           /**
-           * \brief Creates new CsvMap instance with data inside
-           */
+            /**
+             * \brief Creates new CsvMap instance with data inside
+             */
             CsvMap(const CxxData& data);
 
             /**
@@ -175,7 +175,7 @@ CsvMap_from_istream(
  *  {"DC-1", "datacenter", "ext1value"}
  * }
  *
- *  \param[in] input serialization info
+ *  \param[in] si - input serialization info
  *  \return CsvMap instance
  *
  *  \throws invalid_argument if typeName of si is not Object, or it does not contain strings
@@ -185,5 +185,29 @@ CsvMap
 CsvMap_from_serialization_info(
         const cxxtools::SerializationInfo& si);
 
+/**
+ *  \brief read the data from serialization info and adds column "id"
+ *
+ * In short, it can converts this
+ * { "name" : "DC-1", "type" : "datacenter", "ext" : {"ext1name" : "ext1value" }}
+ *
+ * into that
+ *
+ * std::vector<std::vector<cxxtools::String>> {
+ *  {"name", "type", "ext1name", "id"},
+ *  {"DC-1", "datacenter", "ext1value", "1234"}
+ * }
+ *
+ *  \param[in] si - input serialization info
+ *  \param[in] id - value of the id
+ *
+ *  \return CsvMap instance
+ *
+ *  \throws invalid_argument if typeName of si is not Object, or it does not contain strings
+ *          ... or various other exceptions ;-)
+ */
+CsvMap
+CsvMap_from_serialization_info(
+        const cxxtools::SerializationInfo& si, const std::string &id);
 } //namespace shared
 #endif // SRC_SHARED_CSV_H
