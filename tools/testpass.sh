@@ -94,7 +94,9 @@ check_passwd_cracklib() {
     local NEW_PASSWD="$2"
     local RES=0
 
-    ( which cracklib-check ) >/dev/null 2>&1 || \
+    [ -n "${CRACKLIB_CHECK}" ] && [ -x "${CRACKLIB_CHECK}" ] || \
+        CRACKLIB_CHECK="`which cracklib-check 2>/dev/null | egrep '^/' | head -1`"
+    [ -n "${CRACKLIB_CHECK}" ] && [ -x "${CRACKLIB_CHECK}" ] || \
         { echo "Missing cracklib-check program - test skipped" >&2
           return 0; }
 
@@ -103,12 +105,12 @@ check_passwd_cracklib() {
         [ "$(/usr/bin/id -u)" = 0 ] \
     ; then      # Can 'su', so cracklib uses user info as well
         echo -e "Testing with cracklib-check program for user ${NEW_USER}... \c" >&2
-        OUT="`echo "$NEW_PASSWD" | su - -c 'cracklib-check' "${NEW_USER}"`" && \
+        OUT="`echo "$NEW_PASSWD" | su - -c "${CRACKLIB_CHECK}" "${NEW_USER}"`" && \
         echo "$OUT" | egrep ': OK$' >/dev/null || \
         RES=11
     else
         echo -e "Testing with cracklib-check program... \c" >&2
-        OUT="`echo "$NEW_PASSWD" | cracklib-check`" && \
+        OUT="`echo "$NEW_PASSWD" | ${CRACKLIB_CHECK}`" && \
         echo "$OUT" | egrep ': OK$' >/dev/null || \
         RES=11
     fi
