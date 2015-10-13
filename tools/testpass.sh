@@ -83,6 +83,12 @@ die() {
     exit 1
 }
 
+usage() {
+    echo "Usage: ( echo USER; echo NEWPASS; {echo OLDPASS;} ) | $0"
+    echo "This script verifies sufficient complexity of the NEWPASS"
+    echo "including comparisons against USER and OLDPASS (if available)"
+}
+
 check_passwd_cracklib() {
     local NEW_USER="$1"
     local NEW_PASSWD="$2"
@@ -220,13 +226,13 @@ check_passwd() {
     check_passwd_oldpasswd "$@"
 }
 
-read NEW_USER
-read NEW_PASSWD
+read NEW_USER || { usage; die "Bad input"; }
+read NEW_PASSWD || { usage; die "Bad input"; }
 read OLD_PASSWD || OLD_PASSWD=""        # Optional
 
-[[ -n "${NEW_PASSWD}" ]] || die "new password is empty"
+[ -n "${NEW_PASSWD}" ] || { usage; die "Bad input: new password is empty"; }
 
-#[[ -n "${NEW_USER}" ]] || die "new username is empty"
+#[ -n "${NEW_USER}" ] || die "new username is empty"
 #if ! /usr/bin/getent passwd ${NEW_USER} >/dev/null; then
 #    die "User ${NEW_USER} not found by /usr/bin/getent passwd"
 #fi
