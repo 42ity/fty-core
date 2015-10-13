@@ -102,12 +102,12 @@ check_passwd_cracklib() {
         /usr/bin/getent passwd ${NEW_USER} >/dev/null && \
         [ "$(/usr/bin/id -u)" = 0 ] \
     ; then      # Can 'su', so cracklib uses user info as well
-        /bin/echo -e "Testing with cracklib-check program for user ${NEW_USER}... \c" >&2
+        echo -e "Testing with cracklib-check program for user ${NEW_USER}... \c" >&2
         OUT="`echo "$NEW_PASSWD" | su - -c 'cracklib-check' "${NEW_USER}"`" && \
         echo "$OUT" | egrep ': OK$' >/dev/null || \
         RES=11
     else
-        /bin/echo -e "Testing with cracklib-check program... \c" >&2
+        echo -e "Testing with cracklib-check program... \c" >&2
         OUT="`echo "$NEW_PASSWD" | cracklib-check`" && \
         echo "$OUT" | egrep ': OK$' >/dev/null || \
         RES=11
@@ -143,7 +143,7 @@ check_passwd_complexity() {
     local COUNT_DIGIT=0
     local COUNT_OTHER=0
 
-    /bin/echo -e 'Running a complexity check... \c' >&2
+    echo -e 'Running a complexity check... \c' >&2
 
     local COUNT_TOTAL="${#NEW_PASSWD}"
     STRING="`echo "${NEW_PASSWD}" | sed 's,[^[:lower:]],,g'`" && \
@@ -187,7 +187,7 @@ check_passwd_username() {
     local NEW_USER="$1"
     local NEW_PASSWD="$2"
 
-    /bin/echo -e "Running a username check against $NEW_USER... \c" >&2
+    echo -e "Running a username check against $NEW_USER... \c" >&2
 
     local LC_PASS="`echo "$NEW_PASSWD" | tr '[:upper:]' '[:lower:]'`"
     local LC_USER="`echo "$NEW_USER" | tr '[:upper:]' '[:lower:]'`"
@@ -208,7 +208,7 @@ check_passwd_oldpasswd() {
 
     [ -z "${OLD_PASSWD}" ] && return 0
 
-    /bin/echo -e "Running a username check against old password... \c" >&2
+    echo -e "Running a username check against old password... \c" >&2
     if [ "${OLD_PASSWD}" = "${NEW_PASSWD}" ] ; then
         echo "failed" >&2
         return 14
