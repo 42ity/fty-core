@@ -152,15 +152,20 @@ else
                 print_result 0 ;;
             0|*) print_result $PASS_RECOVERED ;; # REST API failed not due to weakness
         esac
+        unset RES_TESTPASS
+
         echo "WARNING: Previously failed to restore the (expected) original password, so doing it low-level"
         test_it "restore_PASS_ORIG_GOOD_lowlevel"
         sut_run "( echo "${PASS_ORIG_GOOD}"; echo "${PASS_ORIG_GOOD}"; ) | passwd ${BIOS_USER}"
+        print_result $?
+
+        test_it "sasl_cache_cleanup_lowlevel"
+        sut_run "testsaslauthd -u '$BIOS_USER' -p '${PASS_ORIG_GOOD}' -s '$SASL_SERVICE'"
         print_result $?
     else
         print_result $PASS_RECOVERED
     fi
 fi
-unset RES_TESTPASS
 
 curlfail_push_expect_401
 test_it "wrong_password_temporaryNoLonger"
