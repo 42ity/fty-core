@@ -71,12 +71,13 @@ TOKEN="`_gettoken_auth_sh`"
 
 # First try a few weak passwords
 
-curlfail_push_expect_401
+curlfail_push_expect_400
 
 test_it "change_password_weak_HasUsername"
 api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "'"$BIOS_PASSWD@$BIOS_USER"'" }'
 print_result $?
 
+# Actually, this likely breaks in cryptlib before length checks by the script
 test_it "change_password_weak_TooShort"
 api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "1qW" }'
 print_result $?
