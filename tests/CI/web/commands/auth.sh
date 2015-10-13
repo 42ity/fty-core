@@ -69,6 +69,31 @@ TOKEN="`_gettoken_auth_sh`"
 # is referenced in PAM/SASL/SUDOERS setup of the OS to give certain privileges
 # to processes running as this user account.
 
+# First try a few weak passwords
+
+curlfail_push_expect_401
+
+test_it "change_password_weak_HasUsername"
+api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "'"$BIOS_PASSWD@$BIOS_USER"'" }'
+print_result $?
+
+test_it "change_password_weak_TooShort"
+api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "1qW" }'
+print_result $?
+
+test_it "change_password_weak_OnlyLC"
+api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "1x5g7h2w0f" }'
+print_result $?
+
+test_it "change_password_weak_TooSimple"
+api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "1234abcdef" }'
+print_result $?
+
+curlfail_pop
+
+
+# Now try setting a password that should succeed
+
 ORIG_PASSWD="$BIOS_PASSWD"
 NEW_BIOS_PASSWD="new$BIOS_PASSWD"'@'
 
