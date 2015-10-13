@@ -232,7 +232,6 @@ db_reply_t
     log_debug ("  element_name = '%s'", element_name);
 
     tntdb::Transaction trans(conn);
-
     auto reply_insert1 = insert_into_asset_element
                         (conn, element_name, element_type_id, parent_id,
                          status, priority, bc, 0, asset_tag.c_str());
@@ -243,11 +242,11 @@ db_reply_t
         return reply_insert1;
     }
     auto element_id = reply_insert1.rowid;
-
+    std::string err = "";
     if ( extattributes != NULL )
     {
         int reply_insert2 = insert_into_asset_ext_attributes
-            (conn, element_id, extattributes, false);
+            (conn, element_id, extattributes, false, err);
         if ( reply_insert2 != 0 )
         {
             trans.rollback();
@@ -256,11 +255,12 @@ db_reply_t
             ret.status     = 0;
             ret.errtype    = DB_ERR;
             ret.errsubtype = DB_ERROR_BADINPUT;
-            ret.msg        = "end: device was not inserted (fail in ext_attributes)";
+            // too complicated, to transform from one format to onother
+            ret.rowid      = -reply_insert2;
+            ret.msg        = err;
             return ret;
         }
     }
-
     auto reply_insert3 = insert_element_into_groups (conn, groups, element_id);
     if ( ( reply_insert3.status == 0 ) && ( reply_insert3.affected_rows != groups.size() ) )
     {
@@ -280,7 +280,6 @@ db_reply_t
             log_info ("end: \"device\" was not inserted (fail monitor_device)");
             return reply_insert4;
         }
-
         auto reply_insert5 = insert_into_monitor_asset_relation
             (conn, reply_insert4.rowid, reply_insert1.rowid);
         if ( reply_insert5.affected_rows == 0 )
@@ -327,11 +326,11 @@ db_reply_t
         return reply_insert1;
     }
     auto element_id = reply_insert1.rowid;
-
+    std::string err = "";
     if ( extattributes != NULL )
     {
         int reply_insert2 = insert_into_asset_ext_attributes
-            (conn, element_id, extattributes, false);
+            (conn, element_id, extattributes, false, err);
         if ( reply_insert2 != 0 )
         {
             trans.rollback();
@@ -340,7 +339,9 @@ db_reply_t
             ret.status     = 0;
             ret.errtype    = DB_ERR;
             ret.errsubtype = DB_ERROR_BADINPUT;
-            ret.msg        = "end: device was not inserted (fail in ext_attributes)";
+            // too complicated, to transform from one format to onother
+            ret.rowid      = -reply_insert2;
+            ret.msg        = err;
             return ret;
         }
     }

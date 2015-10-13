@@ -44,13 +44,14 @@
     }
     catch (const std::exception& e) {
         LOG_END_ABNORMAL(e);
-        http_die("bad-request-document");
+        http_die("bad-request-document", e.what());
     }
 
     try{
         shared::CsvMap cm = shared::CsvMap_from_serialization_info(si);
 
         // POST /asset is currently used to insert new datacenter from wizard
+        //      and devices for EMC4J. Inserting devices is rectricted only for existing use case
         // all you need when implementing POST for other types is to support structured error handling
         // empty document
         if (cm.cols() == 0 || cm.rows() == 0)
@@ -58,13 +59,19 @@
         // in underlying functions like update_device
         if (!cm.hasTitle("type"))
             http_die("request-param-required", "type");
-        if (cm.get(1, "type") != "datacenter")
-            http_die("request-param-bad", "type", cm.get(1, "type").empty() ? "<empty>" : cm.get(1, "type").c_str(), "datacenter");
+        if ( ( cm.get(1, "type") != "datacenter" ) && ( cm.get(1, "type") != "device" ) )
+            http_die("request-param-bad", "type", cm.get(1, "type").empty() ? "<empty>" : cm.get(1, "type").c_str(), "datacenter or device");
+        // currently we do not need to support creating these elements
+        if ( cm.hasTitle("powers") )
+            bios_throw("bad-request-document", "key 'powers' is not supported");
+        if ( cm.hasTitle("groups") )
+            bios_throw("bad-request-document", "key 'groups' is not supported");
+
         if (cm.hasTitle("id"))
-            http_die("action-forbidden", "Update of datacenter", "Not yet supported.");
+            http_die("action-forbidden", "Update operation on asset is not supported", "Not yet supported.");
 
         // actual insert - throws exceptions
-        int id = persist::process_one_asset (cm);
+        auto row = persist::process_one_asset (cm);
 
         // here we are -> insert was successful
         // ATTENTION:  1. sending messages is "hidden functionality" from user
@@ -74,28 +81,22 @@
 
         // this code can be executed in multiple threads -> agent's name should
         // be unique at the every moment
-/*
-        // TODO insert changes the assets -> need to inform agents
-        // ACE: for now it is disabled, as it is require to redo the
-        // persist::process_one_asset function to return row.
-
         std::string agent_name("TEMP_CONFIGURE_INFORM_AGENT");
         agent_name.append (std::to_string ( static_cast<int> (getpid ()) ))
                   .append (".")
                   .append (std::to_string ( syscall(SYS_gettid) ));
         try{
-            send_configure (row, persist::asset_operation::INSERT, agent_name);
+            send_configure (row.first, row.second, agent_name);
         }
         catch (const std::runtime_error &e) {
             log_error (e.what());
             std::string msg = "Error during configuration sending of asset change notification. Consult system log.";
             http_die("internal-error", msg.c_str());
         }
-*/
         // no unexpected errors was detected
         // process results
 </%cpp>
-{<$$ utils::json::jsonify ("id", std::to_string(id)) $>}
+{<$$ utils::json::jsonify ("id", std::to_string(row.first.id)) $>}
 <%cpp>
         return HTTP_OK;
     }

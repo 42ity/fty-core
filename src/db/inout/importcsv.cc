@@ -215,17 +215,21 @@ int
 /*
  * \brief Processes a single row from csv file
  *
- * \param conn - a connection to DB
- * \param cm - already parsed csv file
- * \param row_i - number of row to process
+ * \param[in] conn     - a connection to DB
+ * \param[in] cm       - already parsed csv file
+ * \param[in] row_i    - number of row to process
+ * \param[in] TYPES    - list of available types
+ * \param[in] SUBTYPES - list of available subtypes
+ * \param[in][out] ids - list of already seen asset ids
+ *
  */
 static std::pair<db_a_elmnt_t, persist::asset_operation>
     process_row
         (tntdb::Connection &conn,
          const CsvMap &cm,
          size_t row_i,
-         const std::map<std::string,int> TYPES,
-         const std::map<std::string,int> SUBTYPES,
+         const std::map<std::string,int> &TYPES,
+         const std::map<std::string,int> &SUBTYPES,
          std::set<a_elmnt_id_t> &ids
          )
 {
@@ -289,16 +293,10 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     unused_columns.erase("business_critical");
     int bc = bs_critical ? 1 : 0;
 
-    auto asset_tag = cm.get(row_i, "asset_tag");
+    auto asset_tag =  unused_columns.count("asset_tag") ? cm.get(row_i, "asset_tag") : "";
     log_debug ("asset_tag = '%s'", asset_tag.c_str());
-    if ( asset_tag.empty() ) {
-        bios_throw("request-param-bad", "asset_tag", "<empty>", "<unique string from 6 to 10 characters>");
-    }
-    if ( asset_tag.length() < 6 ) {
-        bios_throw("request-param-bad", "asset_tag", "<to short>", "<unique string from 6 to 10 characters>");
-    }
-    if ( asset_tag.length() > 10 ) {
-        bios_throw("request-param-bad", "asset_tag", "<to long>", "<unique string from 6 to 10 characters>");
+    if ( ( !asset_tag.empty() ) && ( asset_tag.length() > 50 ) ){
+        bios_throw("request-param-bad", "asset_tag", "<to long>", "<unique string from 6 to 50 characters>");
     }
     unused_columns.erase("asset_tag");
 
@@ -384,8 +382,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             if ( ret != 0 )
             {
                 log_error ( "ret = %d", ret);
-                throw std::invalid_argument
-                    ("Unspecified problem with database, see log for more details");
+                bios_throw ("internal-error", "Unspecified problem with database, see log for more details");
             }
             if ( ( pdu_epdu_count > 1 ) && ( id_str.empty() ) ) {
                 bios_throw("action-forbidden", "Having more than 2 pdu/epdu");
@@ -635,8 +632,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
                     priority, bc, asset_tag);
             if ( ret.status != 1 )
             {
-                //TODO: redo the insert_device
-                throw std::invalid_argument("insertion was unsuccessful");
+                throw BiosError(ret.rowid, ret.msg);
             }
             m.id = ret.rowid;
         }
@@ -667,7 +663,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
 //MVY: moved out to support friendly error messages below
 static std::vector<std::string> MANDATORY = {
     "name", "type", "sub_type", "location", "status",
-    "business_critical", "priority", "asset_tag"
+    "business_critical", "priority"
 };
 static std::string
 mandatory_missing
@@ -709,7 +705,7 @@ void
     return load_asset_csv(cm, okRows, failRows);
 }
 
-int
+std::pair<db_a_elmnt_t, persist::asset_operation>
     process_one_asset
         (const CsvMap& cm)
 {
@@ -730,10 +726,10 @@ int
     }
     catch(...)
     {
-        std::string msg{"no connection to database"};
+        std::string msg{"No connection to database"};
         log_error("%s", msg.c_str());
         LOG_END;
-        throw std::runtime_error(msg.c_str());
+        bios_throw("internal-error", msg.c_str());
     }
 
     auto TYPES = read_element_types (conn);
@@ -743,7 +739,7 @@ int
     std::set<a_elmnt_id_t> ids{};
     auto ret = process_row(conn, cm, 1, TYPES, SUBTYPES, ids);
     LOG_END;
-    return ret.first.id;
+    return ret;
 }
 
 void
@@ -770,10 +766,10 @@ void
     }
     catch(...)
     {
-        std::string msg{"no connection to database"};
+        std::string msg{"No connection to database"};
         log_error("%s", msg.c_str());
         LOG_END;
-        throw std::runtime_error(msg.c_str());
+        bios_throw("internal-error", msg.c_str());
     }
 
     auto TYPES = read_element_types (conn);

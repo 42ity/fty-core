@@ -41,6 +41,7 @@
 #include "dbpath.h" // temporary
 #include "utils_web.h"
 #include "asset_types.h"
+#include "helpers.h"
 </%pre>
 
 <%args>
@@ -65,20 +66,14 @@ std::string dev;
     for ( auto asset_id : asset_ids)
     {
         // convert id from string to number
+        http_errors_t errors;
         a_elmnt_id_t id = 0;
-        try{
-            size_t pos = 0;
-            id = std::stoul (asset_id, &pos);
-            if ( pos != asset_id.size() )
-            {
-                log_warning("non-numeric id '%s', skipping", asset_id.c_str());
-                continue;
-            }
-        }
-        catch ( const std::exception &e) {
-            log_warning("non-numeric id '%s', skipping. E: '%s'", asset_id.c_str(), e.what());
+
+        if (!check_element_identifier ("N/A", asset_id, id, errors)) {
+            log_warning("non-numeric id '%s', skipping", asset_id.c_str());
             continue;
         }
+
         // Temporary add connection here
         tntdb::Connection conn = tntdb::connectCached(url);
 
@@ -111,22 +106,15 @@ std::string dev;
 
                                 m_msrmnt_scale_t scale = 0;
                                 r["scale"].get(scale);
-                                measurements.emplace
+                                bool inserted;
+                                std::map <std::string, double> ::iterator it;
+                                std::tie (it, inserted) = measurements.emplace
                                 (
                                     topic_parts[0],
                                     value * std::pow (10, scale)
                                 );
-                                // TODO what if emplace return an error
-                                /* std::tie (i, inserted) = samples.emplace
-                                if (inserted) {
-                                    log_info ("emplace () ok.");
-                                }
-                                else {
-                                    // This should not happen since we are certain that item being emplaced is not there
-                                    log_warning ("emplace () failed!");
-                                }
-                                */
-
+                                if ( !inserted )
+                                    log_error ("in the list of returned measurements at least two have the same measurement_source");
                             }
                             else
                             {
@@ -164,10 +152,7 @@ std::string dev;
 
         if ( rv != 0 )
         {
-</%cpp>
-<$$ utils::json::create_error_json("Some problem during selecting measurements", 201) $>
-<%cpp>
-            return HTTP_INTERNAL_SERVER_ERROR;
+            http_die("internal-error");
         }
 
         // we are here -> everything is ok, need just to form

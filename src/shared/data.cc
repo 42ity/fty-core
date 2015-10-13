@@ -34,6 +34,7 @@
 #include <limits.h>
 
 #include "data.h"
+#include "utils_web.h"
 
 #include "log.h"
 #include "asset_types.h"
@@ -127,66 +128,6 @@ int
     catch (const std::exception &e) {
         LOG_END_ABNORMAL(e);
         return -1;
-    }
-}
-
-int
-    ui_props_manager::get
-        (std::string& result)
-{
-    void *data = NULL;
-    size_t size = 0;
-
-    try{
-        tntdb::Connection conn = tntdb::connectCached(url);
-        auto ret = persist::select_agent_info (conn, agent_name(), &data, size);
-        if ( ret )
-        {
-            result = std::string("Can't load ui/properties from database");
-            FREE0 (data);
-            return 2;
-        }
-
-        result = std::string((const char *)data, size);
-
-        FREE0 (data);
-        return 0;
-    }
-    catch (const std::exception &e) {
-        FREE0 (data);
-        LOG_END_ABNORMAL(e);
-        result = "Unexpected problems with database";
-        return 1;
-    }
-}
-
-std::string
-    ui_props_manager::agent_name()
-{
-    return "UI_PROPERTIES";
-}
-
-int
-    ui_props_manager::put(
-        const std::string &properties,
-        std::string &result
-        )
-{
- 
-    try{
-        tntdb::Connection conn = tntdb::connectCached(url);
-        uint16_t affected_rows = 0;
-        auto ret = persist::update_agent_info (conn, agent_name(), properties.c_str(), properties.size(), affected_rows);
-        if ( ret )
-        {
-            result = std::string("{\"error\" : \"Can't import ui/properties to database\"}");
-            return 2;
-        }
-        return 0;
-    }
-    catch (const std::exception &e) {
-        LOG_END_ABNORMAL(e);
-        return 1;
     }
 }
 
@@ -357,6 +298,7 @@ db_reply <std::map <uint32_t, std::string> >
         ret.errsubtype    = DB_ERROR_INTERNAL;
         ret.msg           = "Unsupported type of the elemnts";
         log_error (ret.msg.c_str());
+        bios_error_idx(ret.rowid, ret.msg, "request-param-bad", "type", typeName.c_str(), "datacenters,rooms,ros,racks,devices");
         return ret;
     }
     if ( ( typeName == "device" ) && ( !subtypeName.empty() ) )
@@ -372,11 +314,12 @@ db_reply <std::map <uint32_t, std::string> >
         return ret;
     }
     catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
         ret.status        = 0;
         ret.errtype       = DB_ERR;
         ret.errsubtype    = DB_ERROR_INTERNAL;
         ret.msg           = e.what();
-        LOG_END_ABNORMAL(e);
+        bios_error_idx(ret.rowid, ret.msg, "internal-error");
         return ret;
     }
 }

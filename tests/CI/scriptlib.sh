@@ -71,7 +71,11 @@ export BIOS_USER BIOS_PASSWD SASL_SERVICE
 [ -z "${SUT_HOST-}" ] && SUT_HOST="127.0.0.1"       # Hostname or IP address
 [ -z "${SUT_SSH_PORT-}" ] && SUT_SSH_PORT="22"       # SSH (maybe via NAT)
 [ -z "${SUT_WEB_PORT-}" ] && SUT_WEB_PORT="8000"       # TNTNET (maybe via NAT)
+if [ "${SUT_WEB_PORT-}" -eq 443 ]; then
+[ -z "${BASE_URL-}" ] && BASE_URL="https://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+else
 [ -z "${BASE_URL-}" ] && BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+fi
 export SUT_IS_REMOTE SUT_USER SUT_HOST SUT_SSH_PORT SUT_WEB_PORT BASE_URL
 
 ### Should the test suite break upon first failed test?
@@ -380,7 +384,7 @@ do_select() {
     ### semicolons does not matter for such non-interactive mysql client use.
     logmsg_info "$CI_DEBUGLEVEL_SELECT" \
         "do_select(): $1 ;" >&2
-    if [ -z "$DBPASSWD" ]; then
+    if [ -z "${DBPASSWD-}" ]; then
     echo "$1" | sut_run "mysql -u ${DBUSER} -D ${DATABASE} -N -s"
     else
     echo "$1" | sut_run "mysql -u ${DBUSER} -p\"${DBPASSWD}\" -D ${DATABASE} -N -s"

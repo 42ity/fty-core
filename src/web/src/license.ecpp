@@ -112,6 +112,8 @@ if(src != NULL) {
 }
 static cxxtools::Regex rex_st("^.*/license/status$");
 if(rex_st.match(request.getUrl())) {
+	if(!request.isMethodGET())
+        http_die("method-not-allowed", request.getMethod().c_str());
 </%cpp>
 {
   "accepted" : "<$ (buff_a == NULL || strcmp(buff_a, buff_r) != 0) ? "no" : "yes" $>"
