@@ -29,6 +29,12 @@ _gettoken_auth_sh() {
         sed -n 's|.*"access_token"[[:blank:]]*:[[:blank:]]*"\([^"]*\)".*|\1|p' | tail -n 1
 }
 
+if [ -n "$TESTPASS" ] && [ -x "$TESTPASS" ] ; then : ; else
+    [ -n "$CHECKOUTDIR" ] && [ -d "$CHECKOUTDIR" ] && \
+        TESTPASS="$CHECKOUTDIR/tools/testpass.sh" || \
+        TESTPASS="/usr/libexec/bios/testpass.sh"
+fi
+
 PASS_ORIG_GOOD=""
 
 test_it "good_login"
@@ -131,7 +137,30 @@ curlfail_pop
 test_it "change_password_back_goodold"
 BIOS_PASSWD="$NEW_BIOS_PASSWD" api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$NEW_BIOS_PASSWD"'", "new_passwd" : "'"$ORIG_PASSWD"'" }'
 PASS_RECOVERED=$?
-print_result $PASS_RECOVERED
+if [ "$PASS_RECOVERED" = 0 ]; then
+    print_result 0
+else
+    if [ -n "${PASS_ORIG_GOOD}" ] ; then
+        RES_TESTPASS=-1
+        if [ -x "$TESTPASS" ] ; then
+            ( echo "$BIOS_USER"; echo "${PASS_ORIG_GOOD}"; echo "$NEW_BIOS_PASSWD" ) | "$TESTPASS"
+            RES_TESTPASS=$?
+        fi
+        case "$RES_TESTPASS" in
+            1[1-5])
+                echo "WARNING: The REST API failed to restore the original password because it was weak; not considering this as an error!"
+                print_result 0 ;;
+            0|*) print_result $PASS_RECOVERED ;; # REST API failed not due to weakness
+        esac
+        echo "WARNING: Previously failed to restore the (expected) original password, so doing it low-level"
+        test_it "restore_PASS_ORIG_GOOD_lowlevel"
+        sut_run "( echo "${PASS_ORIG_GOOD}"; echo "${PASS_ORIG_GOOD}"; ) | passwd ${BIOS_USER}"
+        print_result $?
+    else
+        print_result $PASS_RECOVERED
+    fi
+fi
+unset RES_TESTPASS
 
 curlfail_push_expect_401
 test_it "wrong_password_temporaryNoLonger"
@@ -142,11 +171,4 @@ curlfail_pop
 test_it "good_password_oldIsBack"
 _test_auth "$BIOS_USER" "$BIOS_PASSWD" >/dev/null
 print_result $?
-
-if [ -n "${PASS_ORIG_GOOD}" ] && [ "$PASS_RECOVERED" != 0 ]; then
-    echo "WARNING: Previously failed to return the (expected) original password, so doing it low-level"
-    test_it "restore_PASS_ORIG_GOOD_lowlevel"
-    sut_run "( echo "${PASS_ORIG_GOOD}"; echo "${PASS_ORIG_GOOD}"; ) | passwd ${BIOS_USER}"
-    print_result $?
-fi
 
