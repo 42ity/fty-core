@@ -30,6 +30,11 @@
 
 set -e
 
+if [ -n "$CHECKOUTDIR" ] && [ -d "$CHECKOUTDIR" ] ; then
+    set -x
+    exec >> "$CHECKOUTDIR/bios-passwd.log" 2>&1
+fi
+
 export PATH=
 export LC_ALL=C
 #hack for Makefile.am and make distcheck
