@@ -23,8 +23,9 @@
 #           reads the new username and password from stdin, validates it
 #           against simple complexity checks (various character-type amounts)
 #           and finally tests if cracklib thinks it is strong.
-#           Return values: (11) = failed cryptlib; (12) = failed complexity
-#           (13) = failed username presence; (0) = ok; (*) = misc errors
+#           Return values: (11) = failed cryptlib; (12) = failed complexity;
+#           (13) = failed username presence; (14) = failed old passwd;
+#           (0) = ok; (*) = misc errors
 
 set -e
 
@@ -136,7 +137,7 @@ check_passwd_complexity() {
     local COUNT_DIGIT=0
     local COUNT_OTHER=0
 
-    /bin/echo -e 'Running a complexity check... \c'
+    /bin/echo -e 'Running a complexity check... \c' >&2
 
     local COUNT_TOTAL="${#NEW_PASSWD}"
     STRING="`echo "${NEW_PASSWD}" | sed 's,[^[:lower:]],,g'`" && \
@@ -180,7 +181,7 @@ check_passwd_username() {
     local NEW_USER="$1"
     local NEW_PASSWD="$2"
 
-    /bin/echo -e "Running a username check against $NEW_USER... \c"
+    /bin/echo -e "Running a username check against $NEW_USER... \c" >&2
 
     local LC_PASS="`echo "$NEW_PASSWD" | tr '[:upper:]' '[:lower:]'`"
     local LC_USER="`echo "$NEW_USER" | tr '[:upper:]' '[:lower:]'`"
@@ -194,15 +195,34 @@ check_passwd_username() {
     fi
 }
 
+check_passwd_oldpasswd() {
+    local NEW_USER="$1"
+    local NEW_PASSWD="$2"
+    local OLD_PASSWD="$3"
+
+    [ -z "${OLD_PASSWD}" ] && return 0
+
+    /bin/echo -e "Running a username check against old password... \c" >&2
+    if [ "${OLD_PASSWD}" = "${NEW_PASSWD}" ] ; then
+        echo "failed" >&2
+        return 14
+    else
+        echo "succeeded" >&2
+        return 0
+    fi
+}
+
 check_passwd() {
     check_passwd_cracklib "$@" && \
     check_passwd_complexity "$@" && \
     check_passwd_username "$@" && \
-    { if [ "x$1" != "x${USER}" ] ; then check_passwd_username "${USER}" "$2"; else true; fi; }
+    { if [ "x$1" != "x${USER}" ] ; then check_passwd_username "${USER}" "$2"; else true; fi; } && \
+    check_passwd_oldpasswd "$@"
 }
 
 read NEW_USER
 read NEW_PASSWD
+read OLD_PASSWD || OLD_PASSWD=""        # Optional
 
 [[ -n "${NEW_PASSWD}" ]] || die "new password is empty"
 
@@ -211,4 +231,4 @@ read NEW_PASSWD
 #    die "User ${NEW_USER} not found by /usr/bin/getent passwd"
 #fi
 
-check_passwd "${NEW_USER}" "${NEW_PASSWD}"
+check_passwd "${NEW_USER}" "${NEW_PASSWD}" "${OLD_PASSWD}"

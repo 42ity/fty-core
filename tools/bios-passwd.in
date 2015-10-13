@@ -109,7 +109,7 @@ if ! /usr/bin/getent passwd ${USER} >/dev/null; then
 fi
 
 if [ -x "$TESTPASS" ]; then
-    (echo "${USER}"; echo "${NEW_PASSWD}") | "$TESTPASS" || \
+    (echo "${USER}"; echo "${NEW_PASSWD}"; echo "${OLD_PASSWD}" ) | "$TESTPASS" || \
         { RES=$?; echo "FAILED($RES) the password strength test" >&2; exit $RES; }
 else
     die "Can not test password strength: TESTPASS='$TESTPASS' not executable"
