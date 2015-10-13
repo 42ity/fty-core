@@ -23,6 +23,8 @@
 #           reads the new username and password from stdin, validates it
 #           against simple complexity checks (various character-type amounts)
 #           and finally tests if cracklib thinks it is strong.
+#           Return values: (11) = failed cryptlib; (12) = failed complexity
+#           (13) = failed username presence; (0) = ok; (*) = misc errors
 
 set -e
 
@@ -83,7 +85,7 @@ die() {
 check_passwd_cracklib() {
     local NEW_USER="$1"
     local NEW_PASSWD="$2"
-    local RES=-1
+    local RES=0
 
     ( which cracklib-check ) >/dev/null 2>&1 || \
         { echo "Missing cracklib-check program - test skipped" >&2
@@ -95,13 +97,13 @@ check_passwd_cracklib() {
     ; then      # Can 'su', so cracklib uses user info as well
         /bin/echo -e "Testing with cracklib-check program for user ${NEW_USER}... \c" >&2
         OUT="`echo "$NEW_PASSWD" | su - -c 'cracklib-check' "${NEW_USER}"`" && \
-        echo "$OUT" | egrep ': OK$' >/dev/null
-        RES=$?
+        echo "$OUT" | egrep ': OK$' >/dev/null || \
+        RES=11
     else
         /bin/echo -e "Testing with cracklib-check program... \c" >&2
         OUT="`echo "$NEW_PASSWD" | cracklib-check`" && \
-        echo "$OUT" | egrep ': OK$' >/dev/null
-        RES=$?
+        echo "$OUT" | egrep ': OK$' >/dev/null || \
+        RES=11
     fi
 
     [ "$RES" = 0 ] && \
@@ -154,7 +156,7 @@ check_passwd_complexity() {
         [ "$COUNT_TOTAL" -lt "$CHARS_TOTAL_MIN" ] \
     ; then
         echo "failed" >&2
-        return 2
+        return 12
     fi
 
     [ "$COUNT_LOWER" -gt "$CHARS_LOWER_CREDIT" ] && SCORE_LOWER="$CHARS_LOWER_CREDIT" || SCORE_LOWER="$COUNT_LOWER"
@@ -168,7 +170,7 @@ check_passwd_complexity() {
         return 0
     else
         echo "failed by overall complexity score" >&2
-        return 2
+        return 12
     fi
 }
 
@@ -185,7 +187,7 @@ check_passwd_username() {
 
     if echo "$LC_PASS" | grep "$LC_USER" >/dev/null; then
         echo "failed" >&2
-        return 3
+        return 13
     else
         echo "succeeded" >&2
         return 0
