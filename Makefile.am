@@ -405,12 +405,6 @@ libpriv_enums_la_SOURCES = \
 			src/shared/asset_types.h \
 			src/shared/dbtypes.h
 
-
-# "configure"-generated source with connection string needed for any programs
-# that use the database (linked into libpriv-db)
-BUILT_SOURCES +=	tools/dbpath.cc
-DISTCLEANFILES +=	tools/dbpath.cc
-
 libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
 			-I$(abs_top_srcdir)/src/ \
@@ -1397,7 +1391,7 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/topology_power.cpp                          \
 					  src/web/src/asset_GET.cpp                               \
                       src/web/src/asset_DELETE.cpp src/web/src/asset_POST.cpp \
-                      src/web/src/json.cpp  src/web/src/list.cpp              \
+                      src/web/src/json.cpp  src/web/src/asset_list.cpp        \
                       src/web/src/time.cpp  src/web/src/sysinfo.cpp           \
                       src/web/src/current.cpp src/web/src/ui_properties.cpp   \
                       src/web/src/rack_total.cpp 							  \
@@ -1544,8 +1538,6 @@ endif
 EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
 			$(top_srcdir)/tools/dbinit.h \
 			$(top_srcdir)/tools/dbpath.h \
-			$(top_srcdir)/tools/dbpath.cc.in \
-			$(top_builddir)/tools/dbpath.cc \
 			$(top_srcdir)/include/*.h \
 			$(top_srcdir)/src/msg/*.xml \
 			$(top_srcdir)/src/include/*.h \
