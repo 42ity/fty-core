@@ -29,9 +29,11 @@ _gettoken_auth_sh() {
         sed -n 's|.*"access_token"[[:blank:]]*:[[:blank:]]*"\([^"]*\)".*|\1|p' | tail -n 1
 }
 
+PASS_ORIG_GOOD=""
+
 test_it "good_login"
 TOKEN="`_gettoken_auth_sh`"
-[ "$TOKEN" ]
+[ "$TOKEN" ] && PASS_ORIG_GOOD="$BIOS_PASSWD"
 print_result $?
 
 
@@ -128,7 +130,8 @@ curlfail_pop
 
 test_it "change_password_back_goodold"
 BIOS_PASSWD="$NEW_BIOS_PASSWD" api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$NEW_BIOS_PASSWD"'", "new_passwd" : "'"$ORIG_PASSWD"'" }'
-print_result $?
+PASS_RECOVERED=$?
+print_result $PASS_RECOVERED
 
 curlfail_push_expect_401
 test_it "wrong_password_temporaryNoLonger"
@@ -139,4 +142,11 @@ curlfail_pop
 test_it "good_password_oldIsBack"
 _test_auth "$BIOS_USER" "$BIOS_PASSWD" >/dev/null
 print_result $?
+
+if [ -n "${PASS_ORIG_GOOD}" ] && [ "$PASS_RECOVERED" != 0 ]; then
+    echo "WARNING: Previously failed to return the (expected) original password, so doing it low-level"
+    test_it "restore_PASS_ORIG_GOOD_lowlevel"
+    sut_run "( echo "${PASS_ORIG_GOOD}"; echo "${PASS_ORIG_GOOD}"; ) | passwd ${BIOS_USER}"
+    print_result $?
+fi
 
