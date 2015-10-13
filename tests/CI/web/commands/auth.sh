@@ -85,6 +85,10 @@ test_it "change_password_weak_HasUsername"
 api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "'"$BIOS_PASSWD@$BIOS_USER"'" }'
 print_result $?
 
+test_it "change_password_weak_HasOldPass"
+api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "'"x$BIOS_PASSWD@"'" }'
+print_result $?
+
 # Actually, this likely breaks in cryptlib before length checks by the script
 test_it "change_password_weak_TooShort"
 api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "1qW" }'

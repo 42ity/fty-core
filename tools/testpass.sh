@@ -189,6 +189,8 @@ check_passwd_username() {
     local NEW_USER="$1"
     local NEW_PASSWD="$2"
 
+    [ -z "$NEW_USER" ] && return 0
+
     echo -e "Running a username check against $NEW_USER... \c" >&2
 
     local LC_PASS="`echo "$NEW_PASSWD" | tr '[:upper:]' '[:lower:]'`"
@@ -215,6 +217,18 @@ check_passwd_oldpasswd() {
         echo "failed" >&2
         return 14
     else
+        local LC_NPASS="`echo "$NEW_PASSWD" | tr '[:upper:]' '[:lower:]'`"
+        local LC_OPASS="`echo "$OLD_PASSWD" | tr '[:upper:]' '[:lower:]'`"
+
+        if echo "$LC_NPASS" | grep "$LC_OPASS" >/dev/null || \
+           echo "$LC_OPASS" | grep "$LC_NPASS" >/dev/null \
+        ; then
+            echo "failed" >&2
+            return 14
+        else
+            echo "succeeded" >&2
+        return 0
+    fi
         echo "succeeded" >&2
         return 0
     fi
