@@ -98,9 +98,9 @@ check_passwd_cracklib() {
         { echo "Missing cracklib-check program - test skipped" >&2
           return 0; }
 
-    if [[ -n "${NEW_USER}" ]] && \
+    if [ -n "${NEW_USER}" ] && \
         /usr/bin/getent passwd ${NEW_USER} >/dev/null && \
-        [[ "$(/usr/bin/id -u)" = 0 ]] \
+        [ "$(/usr/bin/id -u)" = 0 ] \
     ; then      # Can 'su', so cracklib uses user info as well
         /bin/echo -e "Testing with cracklib-check program for user ${NEW_USER}... \c" >&2
         OUT="`echo "$NEW_PASSWD" | su - -c 'cracklib-check' "${NEW_USER}"`" && \
