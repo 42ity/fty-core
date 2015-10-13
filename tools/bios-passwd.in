@@ -31,11 +31,9 @@
 set -e
 
 if [ -n "$CHECKOUTDIR" ] && [ -d "$CHECKOUTDIR" ] ; then
+    set -x
     exec >> "$CHECKOUTDIR/bios-passwd.log" 2>&1
-else
-    exec >> "/tmp/bios-passwd.log" 2>&1
 fi
-set -x
 
 export PATH=
 export LC_ALL=C
