@@ -44,7 +44,7 @@
     }
     catch (const std::exception& e) {
         LOG_END_ABNORMAL(e);
-        http_die("bad-request-document");
+        http_die("bad-request-document", e.what());
     }
 
     try{
