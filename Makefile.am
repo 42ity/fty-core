@@ -1504,9 +1504,11 @@ web-test-deps: tntnet.xml bios_web.la web-link-test agent-dbstore
 # bios-db-init.service definition (installed into OS root /lib in CI builds).
 # This is an optional target - without this script working (including the
 # sudoers setup), the REST API tests involving password changes will fail.
-ci_helper_SCRIPTS =	tools/bios-passwd tools/db-init
+ci_helper_SCRIPTS =	tools/bios-passwd tools/db-init tools/testpass.sh
 ci_helperdir =	        $(clientdir)
 
+# TODO: the "tools/testpass.sh" should be invoked via TESTPASS envvar used
+# and exported in RUN_TNTNET - but this does not work for bios-passwd :(
 web-test-deps-inst: install-ci_helperSCRIPTS
 
 ### Execute the test web-server for $BIOS REST API
