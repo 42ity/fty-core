@@ -82,11 +82,11 @@ TOKEN="`_gettoken_auth_sh`"
 curlfail_push_expect_400
 
 test_it "change_password_weak_HasUsername"
-api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "'"$BIOS_PASSWD@$BIOS_USER"'" }'
+api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "'"xZg4$BIOS_PASSWD@$BIOS_USER"'" }'
 print_result $?
 
 test_it "change_password_weak_HasOldPass"
-api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "'"x$BIOS_PASSWD@"'" }'
+api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "'"xW6_$BIOS_PASSWD@"'" }'
 print_result $?
 
 # Actually, this likely breaks in cryptlib before length checks by the script
