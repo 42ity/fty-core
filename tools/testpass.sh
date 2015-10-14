@@ -116,7 +116,7 @@ check_passwd_cracklib() {
         [ "$(/usr/bin/id -u)" = 0 ] \
     ; then      # Can 'su', so cracklib uses user info as well
         echo -e "Testing with cracklib-check program for user ${NEW_USER}... \c" >&2
-        OUT="`echo "$NEW_PASSWD" | su - -c "${CRACKLIB_CHECK}" "${NEW_USER}"`" && \
+        OUT="`echo "$NEW_PASSWD" | su -c "${CRACKLIB_CHECK}" "${NEW_USER}"`" && \
         echo "$OUT" | egrep ': OK$' >/dev/null || \
         RES=11
     else
