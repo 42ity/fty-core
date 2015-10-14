@@ -24,7 +24,7 @@
 #  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 #  \brief Not yet documented file
 
-echo "********* 1. list_of_all_devices **********************************************************************"
+echo "********* 1. list_of_all_devices ******************************************************************"
 echo "***************************************************************************************************"
 test_it "list_of_all_devices"
 api_get_json /asset/devices >&5
@@ -66,19 +66,36 @@ test_it "list_of_devices_with_two_subtypes"
 api_get_json /asset/devices?subtype="ups","feed" >&5
 print_result $?
 
-echo "********* 8. list_of_devices_with_empty_subtype ****************************************************"
+echo "********* 8. list_of_devices_with_empty_subtype ***************************************************"
 echo "***************************************************************************************************"
 test_it "8. list_of_devices_with_empty_subtype"
 api_get_json /asset/devices?subtype= >&5
 print_result $?
 
-echo "********* 9. list_of_devices_with_missing_subtype ****************************************************"
+echo "********* 9. list_of_devices_with_missing_subtype *************************************************"
 echo "***************************************************************************************************"
 test_it "list_of_devices_with_missing_subtype"
 api_get_json /asset/devices?subtype= >&5
 print_result $?
 
-echo "********* 10. no_devices_present ***************************************************************"
+echo "********* 10. list_of_devices_with_wrong_format ***************************************************"
+echo "***************************************************************************************************"
+test_it "list_of_devices_with_missing_subtype"
+api_get_json /asset/devices?subXtype=epdu >&5
+print_result $?
+
+echo "********* 11. list_of_OK_argument_and_empty_list_as_result ***************************************"
+echo "***************************************************************************************************"
+test_it "list_of_OK_arguments_and_empty_list_as_result"
+REZ=0
+for i in switch storage genset N_A sts;do
+   api_get_json /asset/devices?subtype=$i >&5
+   REZ=$(expr $REZ + $?)
+done
+print_result $REZ
+
+
+echo "********* 12. no_devices_present ******************************************************************"
 echo "***************************************************************************************************"
 # delete all assets, no DC are present
 DB_BASE="initdb.sql"
@@ -104,9 +121,3 @@ DB_LOADDIR=$BUILDSUBDIR/tools
 for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
     loaddb_file "$DB_LOADDIR/$data" || return $?
 done
-
-echo "********* 11. list_of_devices_with_wrong_format ****************************************************"
-echo "***************************************************************************************************"
-test_it "list_of_devices_with_missing_subtype"
-api_get_json /asset/devices?subXtype=epdu >&5
-print_result $?
