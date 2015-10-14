@@ -115,18 +115,14 @@ check_passwd_cracklib() {
         RES=11
     fi
 
-    [ "$RES" = 0 ] && \
-        echo "succeeded" >&2 && \
-        return 0
-
     if [ "$RES" -gt 0 ]; then
         echo "failed ($RES)" >&2
+        echo "BAD PASSWORD: `echo "$OUT" | cut -c $((${#NEW_PASSWD}+3))-`" >&2
         return $RES
     fi
 
-    # Should not get here
-    echo "Testing with cracklib-check aborted" >&2
-    return 127
+    echo "succeeded" >&2
+    return 0
 }
 
 check_passwd_complexity() {
@@ -148,6 +144,12 @@ check_passwd_complexity() {
     echo -e 'Running a complexity check... \c' >&2
 
     local COUNT_TOTAL="${#NEW_PASSWD}"
+    if [ "$COUNT_TOTAL" -lt "$CHARS_TOTAL_MIN" ] ; then
+        echo "failed" >&2
+        echo "BAD PASSWORD: it is too short" >&2
+        return 12
+    fi
+
     STRING="`echo "${NEW_PASSWD}" | sed 's,[^[:lower:]],,g'`" && \
         COUNT_LOWER="${#STRING}"
     STRING="`echo "${NEW_PASSWD}" | sed 's,[^[:upper:]],,g'`" && \
@@ -161,10 +163,10 @@ check_passwd_complexity() {
         [ "$COUNT_LOWER" -lt "$CHARS_LOWER_MIN" ] || \
         [ "$COUNT_UPPER" -lt "$CHARS_UPPER_MIN" ] || \
         [ "$COUNT_DIGIT" -lt "$CHARS_DIGIT_MIN" ] || \
-        [ "$COUNT_OTHER" -lt "$CHARS_OTHER_MIN" ] || \
-        [ "$COUNT_TOTAL" -lt "$CHARS_TOTAL_MIN" ] \
+        [ "$COUNT_OTHER" -lt "$CHARS_OTHER_MIN" ] \
     ; then
         echo "failed" >&2
+        echo "BAD PASSWORD: not enough characters of various types" >&2
         return 12
     fi
 
@@ -174,13 +176,14 @@ check_passwd_complexity() {
     [ "$COUNT_OTHER" -gt "$CHARS_OTHER_CREDIT" ] && SCORE_OTHER="$CHARS_OTHER_CREDIT" || SCORE_OTHER="$COUNT_OTHER"
 
     SCORE_TOTAL=$(($COUNT_TOTAL+$SCORE_LOWER+$SCORE_UPPER+$SCORE_DIGIT+$SCORE_OTHER))
-    if [ "$SCORE_TOTAL" -ge "$SCORE_MIN" ] ; then
-        echo "succeeded" >&2
-        return 0
-    else
+    if [ "$SCORE_TOTAL" -lt "$SCORE_MIN" ] ; then
         echo "failed by overall complexity score" >&2
+        echo "BAD PASSWORD: overall complexity score too low" >&2
         return 12
     fi
+
+    echo "succeeded" >&2
+    return 0
 }
 
 check_passwd_username() {
@@ -189,20 +192,25 @@ check_passwd_username() {
     local NEW_USER="$1"
     local NEW_PASSWD="$2"
 
-    [ -z "$NEW_USER" ] && return 0
+    [ -z "$NEW_USER" ] && \
+        echo "Missing username - test skipped" >&2 && \
+        return 0
 
     echo -e "Running a username check against $NEW_USER... \c" >&2
 
     local LC_PASS="`echo "$NEW_PASSWD" | tr '[:upper:]' '[:lower:]'`"
     local LC_USER="`echo "$NEW_USER" | tr '[:upper:]' '[:lower:]'`"
 
-    if echo "$LC_PASS" | grep "$LC_USER" >/dev/null; then
+    if  echo "$LC_PASS" | grep "$LC_USER" >/dev/null || \
+        echo "$LC_USER" | grep "$LC_PASS" >/dev/null \
+    ; then
         echo "failed" >&2
+        echo "BAD PASSWORD: too similar to the username" >&2
         return 13
-    else
-        echo "succeeded" >&2
-        return 0
     fi
+
+    echo "succeeded" >&2
+    return 0
 }
 
 check_passwd_oldpasswd() {
@@ -210,35 +218,42 @@ check_passwd_oldpasswd() {
     local NEW_PASSWD="$2"
     local OLD_PASSWD="$3"
 
-    [ -z "${OLD_PASSWD}" ] && return 0
+    [ -z "${OLD_PASSWD}" ] && \
+        echo "Missing old password - test skipped" >&2 && \
+        return 0
 
-    echo -e "Running a username check against old password... \c" >&2
+    echo -e "Running a check against old password... \c" >&2
     if [ "${OLD_PASSWD}" = "${NEW_PASSWD}" ] ; then
         echo "failed" >&2
+        echo "BAD PASSWORD: too similar to the old password" >&2
         return 14
-    else
-        local LC_NPASS="`echo "$NEW_PASSWD" | tr '[:upper:]' '[:lower:]'`"
-        local LC_OPASS="`echo "$OLD_PASSWD" | tr '[:upper:]' '[:lower:]'`"
+    fi
 
-        if echo "$LC_NPASS" | grep "$LC_OPASS" >/dev/null || \
-           echo "$LC_OPASS" | grep "$LC_NPASS" >/dev/null \
-        ; then
-            echo "failed" >&2
-            return 14
-        else
-            echo "succeeded" >&2
-        return 0
+    local LC_NPASS="`echo "$NEW_PASSWD" | tr '[:upper:]' '[:lower:]'`"
+    local LC_OPASS="`echo "$OLD_PASSWD" | tr '[:upper:]' '[:lower:]'`"
+
+    if  echo "$LC_NPASS" | grep "$LC_OPASS" >/dev/null || \
+        echo "$LC_OPASS" | grep "$LC_NPASS" >/dev/null \
+    ; then
+        echo "failed" >&2
+        echo "BAD PASSWORD: too similar to the old password" >&2
+        return 14
     fi
-        echo "succeeded" >&2
-        return 0
-    fi
+
+    echo "succeeded" >&2
+    return 0
 }
 
 check_passwd() {
+    local NEW_USER="$1"
+    local NEW_PASSWD="$2"
+
     check_passwd_cracklib "$@" && \
     check_passwd_complexity "$@" && \
     check_passwd_username "$@" && \
-    { if [ "x$1" != "x${USER}" ] ; then check_passwd_username "${USER}" "$2"; else true; fi; } && \
+    { if [ -n "$NEW_USER" ] && [ "x$NEW_USER" != "x${USER}" ] ; then
+        check_passwd_username "${USER}" "${NEW_PASSWD}"
+      else true; fi; } && \
     check_passwd_oldpasswd "$@"
 }
 
