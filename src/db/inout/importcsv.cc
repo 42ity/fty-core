@@ -296,7 +296,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     auto asset_tag =  unused_columns.count("asset_tag") ? cm.get(row_i, "asset_tag") : "";
     log_debug ("asset_tag = '%s'", asset_tag.c_str());
     if ( ( !asset_tag.empty() ) && ( asset_tag.length() > 50 ) ){
-        bios_throw("request-param-bad", "asset_tag", "<to long>", "<unique string from 6 to 50 characters>");
+        bios_throw("request-param-bad", "asset_tag", "<to long>", "<unique string from 1 to 50 characters>");
     }
     unused_columns.erase("asset_tag");
 
