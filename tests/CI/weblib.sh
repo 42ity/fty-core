@@ -578,7 +578,7 @@ api_auth_post_file() {
     data=$2
     shift 2
     TOKEN="`_api_get_token`"
-    CURL --insecure --header "Authorization: Bearer $TOKEN" --form "$data" \
+    CURL --insecure -H "Expect:" --header "Authorization: Bearer $TOKEN" --form "$data" \
         -v --progress-bar "$BASE_URL$url" "$@" 3>&2 2>&1
 }
 
