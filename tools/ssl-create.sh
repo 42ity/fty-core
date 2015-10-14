@@ -41,6 +41,13 @@ WARN_EXPIRE="`expr 45 \* 24 \* 3600`"
 TS_NOW="`TZ=UTC date -u +%s`"
 LOCAL_HOSTNAME="`hostname -f`"
 [ "$LOCAL_HOSTNAME" \!= localhost ] || LOCAL_HOSTNAME="`hostname`"
+[ -z "$LOCAL_HOSTNAME" ] && LOCAL_HOSTNAME="`cat /etc/hostname`"
+
+if [ -z "$LOCAL_HOSTNAME" ]; then
+	echo "ERROR: can't guess hostname"
+	exit 1
+fi
+
 BIOS_USER="admin"
 
 CERT_LOADABLE=no
