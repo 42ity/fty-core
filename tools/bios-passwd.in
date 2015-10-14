@@ -108,11 +108,11 @@ if ! /usr/bin/getent passwd ${USER} >/dev/null; then
     die "User ${USER} not found by /usr/bin/getent passwd"
 fi
 
-if [ -x "$TESTPASS" ]; then
-    (echo "${USER}"; echo "${NEW_PASSWD}"; echo "${OLD_PASSWD}" ) | "$TESTPASS" || \
-        { RES=$?; echo "FAILED($RES) the password strength test" >&2; exit $RES; }
-else
+if [ ! -x "$TESTPASS" ]; then
     die "Can not test password strength: TESTPASS='$TESTPASS' not executable"
 fi
+
+printf "${USER}"'\n'"${NEW_PASSWD}"'\n'"${OLD_PASSWD}"'\n' | "$TESTPASS" || \
+    { RES=$?; echo "FAILED($RES) the password strength test" >&2; exit $RES; }
 
 do_passwd "${USER}" "${OLD_PASSWD}" "${NEW_PASSWD}"
