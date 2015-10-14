@@ -68,7 +68,7 @@
             bios_throw("bad-request-document", "key 'groups' is not supported");
 
         if (cm.hasTitle("id"))
-            http_die("action-forbidden", "Update operation on asset is not supported", "Not yet supported.");
+            http_die("bad-request-document", "key 'id' is forbidden to be used");
 
         // actual insert - throws exceptions
         auto row = persist::process_one_asset (cm);

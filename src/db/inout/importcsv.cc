@@ -349,14 +349,14 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
         else
         {
             if ( element_in_db.item.name != name ) {
-                bios_throw("action-forbidden", "Renaming of asset");
+                bios_throw("bad-request-document", "Renaming of asset is not supported");
             }
             if ( element_in_db.item.type_id != type_id ) {
-                bios_throw("action-forbidden", "Changing of asset type");
+                bios_throw("bad-request-document", "Changing of asset type is forbidden");
             }
             if ( ( element_in_db.item.subtype_id != subtype_id ) &&
                  ( element_in_db.item.subtype_name != "N_A" ) ) {
-                bios_throw("action-forbidden", "Changing of asset subtype");
+                bios_throw("bad-request-document", "Changing of asset subtype is forbidden");
             }
         }
     }
@@ -385,7 +385,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
                 bios_throw ("internal-error", "Unspecified problem with database, see log for more details");
             }
             if ( ( pdu_epdu_count > 1 ) && ( id_str.empty() ) ) {
-                bios_throw("action-forbidden", "Having more than 2 pdu/epdu");
+                bios_throw("bad-request-document", "More than than 2 pdu/epdu in the rack is not supported");
             }
         }
     }
