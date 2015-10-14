@@ -39,12 +39,14 @@ PEM_TMP_CERT="/tmp/cert.pem"
 WARN_EXPIRE="`expr 45 \* 24 \* 3600`"
 
 TS_NOW="`TZ=UTC date -u +%s`"
-LOCAL_HOSTNAME="`hostname -f`"
-[ "$LOCAL_HOSTNAME" \!= localhost ] || LOCAL_HOSTNAME="`hostname`"
+LOCAL_HOSTNAME="`hostname -f`" || LOCAL_HOSTNAME=""
+if [ -z "$LOCAL_HOSTNAME" ] || [ "$LOCAL_HOSTNAME" = localhost ] ; then
+	LOCAL_HOSTNAME="`hostname`" || LOCAL_HOSTNAME=""
+fi
 [ -z "$LOCAL_HOSTNAME" ] && LOCAL_HOSTNAME="`cat /etc/hostname`"
 
 if [ -z "$LOCAL_HOSTNAME" ]; then
-	echo "ERROR: can't guess hostname"
+	echo "ERROR: can't guess hostname" >&2
 	exit 1
 fi
 
