@@ -18,10 +18,10 @@
  #
  #><#
 /*!
- * \file asset_POST.ecpp
+ * \file asset_PUT.ecpp
  * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
- * \brief Implementation of POST operation on any asset
+ * \brief Implementation of PUT(update) operation on any asset
  */
  #><%pre>
 #include <sys/syscall.h>
@@ -31,9 +31,18 @@
 #include "configure_inform.h"
 #include "utils_web.h"
 #include "inout.h"
+#include "helpers.h"
 </%pre>
 <%cpp>
 {
+    std::string id = request.getArg("id");
+    // convert id from string to number
+    http_errors_t errors;
+    a_elmnt_id_t asset_id = 0;
+
+    if (!check_element_identifier ("id", id, asset_id, errors)) {
+        http_die_error (errors);
+    }
     // Read json, transform to csv, use existing functionality
     cxxtools::SerializationInfo si;
     // read json a deserialize it
@@ -48,32 +57,27 @@
     }
 
     try{
-        shared::CsvMap cm = shared::CsvMap_from_serialization_info(si);
+        shared::CsvMap cm = shared::CsvMap_from_serialization_info(si, id);
 
-        // POST /asset is currently used to insert new datacenter from wizard
-        //      and devices for EMC4J. Inserting devices is rectricted only for existing use case
-        // all you need when implementing POST for other types is to support structured error handling
+        // PUT /asset is currently used to update an existing device (only asset_element and ext_attributes)
+        //      for EMC4J.
         // empty document
         if (cm.cols() == 0 || cm.rows() == 0)
             http_die("bad-request-document", "Cannot import empty document.");
-        // in underlying functions like update_device
         if (!cm.hasTitle("type"))
             http_die("request-param-required", "type");
-        if ( ( cm.get(1, "type") != "datacenter" ) && ( cm.get(1, "type") != "device" ) )
-            http_die("request-param-bad", "type", cm.get(1, "type").empty() ? "<empty>" : cm.get(1, "type").c_str(), "datacenter or device");
-        // currently we do not need to support creating these elements
+        if ( cm.get(1, "type") != "device" )
+            http_die("request-param-bad", "type", cm.get(1, "type").empty() ? "<empty>" : cm.get(1, "type").c_str(), "device");
+        // currently we do not need to support updatein these elements
         if ( cm.hasTitle("powers") )
             bios_throw("bad-request-document", "key 'powers' is not supported");
         if ( cm.hasTitle("groups") )
             bios_throw("bad-request-document", "key 'groups' is not supported");
-
-        if (cm.hasTitle("id"))
-            http_die("action-forbidden", "Update operation on asset is not supported", "Not yet supported.");
-
-        // actual insert - throws exceptions
+        log_debug ("starting load");
+        // actual update - throws exceptions
         auto row = persist::process_one_asset (cm);
 
-        // here we are -> insert was successful
+        // here we are -> update was successful
         // ATTENTION:  1. sending messages is "hidden functionality" from user
         //             2. if any error would occur during the sending message,
         //                user will never know if element was actually inserted

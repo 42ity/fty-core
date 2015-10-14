@@ -301,12 +301,14 @@ int
         (tntdb::Connection &conn,
          a_elmnt_id_t element_id,
          zhash_t* attributes,
-         bool read_only)
+         bool read_only,
+         std::string &err)
 {
     LOG_START;
+    err = "";
 
     if (!attributes)
-        return -1;
+        return 0;
     if ( zhash_size (attributes) == 0 )
         return 0;
 
@@ -323,7 +325,9 @@ int
     }
     catch (const std::exception& e) {
         LOG_END_ABNORMAL(e);
-        return -1;
+        int idx;
+        bios_error_idx(idx, err, "internal-error");
+        return -idx;
     }
 
 }
@@ -797,7 +801,7 @@ db_reply_t
         if ( ret.affected_rows == 0 ) {
             ret.status = 0;
             //TODO: rework to bad param
-            bios_error_idx(ret.rowid, ret.msg, "data-conflict", "element_name", "Most likely duplicate entry.");
+            bios_error_idx(ret.rowid, ret.msg, "data-conflict", element_name, "Most likely duplicate entry.");
         }
         else
             ret.status = 1;
@@ -805,11 +809,11 @@ db_reply_t
         return ret;
     }
     catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_INTERNAL;
         bios_error_idx(ret.rowid, ret.msg, "internal-error", "Unspecified issue with database.");
-        LOG_END_ABNORMAL(e);
         return ret;
     }
 }
@@ -855,8 +859,9 @@ db_reply_t
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "not all links were inserted";
-        log_error ("end: %s", ret.msg.c_str());
+        bios_error_idx(ret.rowid, ret.msg, "internal-error", "not all links were inserted successfully");
+        log_error ("end: %s", "not all links were inserted");
+        LOG_END;
         return ret;
     }
 }
@@ -895,8 +900,8 @@ db_reply_t
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "0 value of asset_element_id is not allowed";
-        log_error ("end: %s, %s", "ignore insert", ret.msg.c_str());
+        log_error ("end: %s, %s", "ignore insert", "0 value of asset_element_id is not allowed");
+        bios_error_idx(ret.rowid, ret.msg, "request-param-bad", "id", "0", "valid id");
         return ret;
     }
     if ( groups.empty() )
@@ -934,19 +939,19 @@ db_reply_t
             ret.errsubtype = DB_ERROR_BADINPUT;
             ret.msg        = "not all links were inserted";
             log_error ("end: %s", ret.msg.c_str());
+            bios_error_idx(ret.rowid, ret.msg, "internal-error", "Cannot insert into all groups");
         }
         return ret;
     }
     catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_INTERNAL;
-        ret.msg        = e.what();
-        LOG_END_ABNORMAL(e);
+        bios_error_idx(ret.rowid, ret.msg, "internal-error", "See logs for more details");
         return ret;
     }
 }
-
 
 
 db_reply_t
@@ -967,8 +972,8 @@ db_reply_t
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "0 value of element_id is not allowed";
-        log_error ("end: %s, %s", "ignore insert", ret.msg.c_str());
+        log_error ("end: %s, %s", "ignore insert", "0 value of element_id is not allowed");
+        bios_error_idx(ret.rowid, ret.msg, "internal-error");
         return ret;
     }
     if ( monitor_id == 0 )
@@ -977,7 +982,8 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of monitor_id is not allowed";
-        log_error ("end: %s, %s", "ignore insert", ret.msg.c_str());
+        log_error ("end: %s, %s", "ignore insert", "0 value of monitor_id is not allowed");
+        bios_error_idx(ret.rowid, ret.msg, "internal-error");
         return ret;
     }
     log_debug ("input parameters are correct");
@@ -1002,11 +1008,11 @@ db_reply_t
         return ret;
     }
     catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_INTERNAL;
-        ret.msg        = e.what();
-        LOG_END_ABNORMAL(e);
+        bios_error_idx(ret.rowid, ret.msg, "internal-error");
         return ret;
     }
 }
@@ -1020,17 +1026,6 @@ db_reply_t
     LOG_START;
 
     db_reply_t ret = db_reply_new();
-
-    if ( !is_ok_name (device_name) )
-    {
-        ret.status     = 0;
-        ret.errtype    = DB_ERR;
-        ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "device name length is not in range [1, MAX_NAME_LENGTH]";
-        log_warning (ret.msg.c_str());
-        return ret;
-    }
-
     try{
         tntdb::Statement st = conn.prepareCached(
             " INSERT INTO"
@@ -1053,11 +1048,11 @@ db_reply_t
         return ret;
     }
     catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_INTERNAL;
-        ret.msg        = e.what();
-        LOG_END_ABNORMAL(e);
+        bios_error_idx(ret.rowid, ret.msg, "internal-error");
         return ret;
     }
 }

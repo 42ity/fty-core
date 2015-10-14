@@ -65,12 +65,7 @@ if(!access_token.empty()) {
 	if(tokens::get_instance()->verify_token(access_token, &uid, &gid)) {
 		access_auth_level=gid - 8000;
 	} else {
-</%cpp>
-{
-    "error":"invalid_token"
-}
-<%cpp>
-		return HTTP_UNAUTHORIZED;
+        http_die("not-authorized");
 	}
 }
 
