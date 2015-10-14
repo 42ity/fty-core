@@ -310,6 +310,8 @@ db_reply <std::map <uint32_t, std::string> >
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
         ret = persist::select_short_elements(conn, type_id, subtype_id);
+        if ( ret.status == 0 )
+            bios_error_idx(ret.rowid, ret.msg, "internal-error");
         LOG_END;
         return ret;
     }
