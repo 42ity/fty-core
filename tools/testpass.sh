@@ -23,7 +23,7 @@
 #           reads the new username and password from stdin, validates it
 #           against simple complexity checks (various character-type amounts)
 #           and finally tests if cracklib thinks it is strong.
-#           Return values: (11) = failed cryptlib; (12) = failed complexity;
+#           Return values: (11) = failed cracklib; (12) = failed complexity;
 #           (13) = failed username presence; (14) = failed old passwd;
 #           (0) = ok; (*) = misc errors
 #           Verdicts on failures are prefixed with "BAD PASSWORD: " on stderr.
