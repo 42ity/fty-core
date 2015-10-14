@@ -108,6 +108,13 @@ if ! /usr/bin/getent passwd ${USER} >/dev/null; then
     die "User ${USER} not found by /usr/bin/getent passwd"
 fi
 
+# While we have some recommended PAM settings in place, including pam_cracklib
+# integration, we'd rather have flexible control over what passwords are deemed
+# acceptable to set at least over the web-interface. The test script starts
+# with cracklib-check and proceeds to comparisons against username and old
+# password (which are features cracklib can not do, or not all of them).
+# This approach helps enforce the password requirements as they come from the
+# product owners, architects and security certification team, among others.
 if [ ! -x "$TESTPASS" ]; then
     die "Can not test password strength: TESTPASS='$TESTPASS' not executable"
 fi
