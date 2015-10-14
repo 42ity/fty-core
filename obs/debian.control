@@ -22,3 +22,17 @@ Depends:
     ${misc:Depends}
 Description: debugging symbols for BIOS core
  This package contains the debugging symbols for core.
+
+Package: core-dev
+Architecture: any
+Section: libdevel
+Depends:
+    core (= ${binary:Version}),
+    ${shlibs:Depends},
+    ${misc:Depends},
+    libmlm-dev,
+    libsodium-dev,
+    libczmq-dev,
+    libzmq4-dev
+Description: development files for BIOS core
+ This package contains the development files for core.
