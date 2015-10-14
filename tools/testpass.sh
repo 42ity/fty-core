@@ -26,6 +26,7 @@
 #           Return values: (11) = failed cryptlib; (12) = failed complexity;
 #           (13) = failed username presence; (14) = failed old passwd;
 #           (0) = ok; (*) = misc errors
+#           Verdicts on failures are prefixed with "BAD PASSWORD: " on stderr.
 
 set -e
 
@@ -87,6 +88,16 @@ usage() {
     echo "Usage: ( echo USER; echo NEWPASS; {echo OLDPASS;} ) | $0"
     echo "This script verifies sufficient complexity of the NEWPASS"
     echo "including comparisons against USER and OLDPASS (if available)"
+}
+
+diags_complexity() {
+    echo "Current complexity-requirement settings:
+        SCORE_MIN       $SCORE_MIN	CHARS_TOTAL_MIN  	$CHARS_TOTAL_MIN
+        CHARS_LOWER_MIN $CHARS_LOWER_MIN	CHARS_LOWER_CREDIT	$CHARS_LOWER_CREDIT
+        CHARS_UPPER_MIN $CHARS_UPPER_MIN	CHARS_UPPER_CREDIT	$CHARS_UPPER_CREDIT
+        CHARS_DIGIT_MIN $CHARS_DIGIT_MIN	CHARS_DIGIT_CREDIT	$CHARS_DIGIT_CREDIT
+        CHARS_OTHER_MIN $CHARS_OTHER_MIN	CHARS_OTHER_CREDIT	$CHARS_OTHER_CREDIT
+"
 }
 
 check_passwd_cracklib() {
@@ -267,5 +278,13 @@ read OLD_PASSWD || OLD_PASSWD=""        # Optional
 #if ! /usr/bin/getent passwd ${NEW_USER} >/dev/null; then
 #    die "User ${NEW_USER} not found by /usr/bin/getent passwd"
 #fi
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -d) diags_complexity ;;
+        -h) usage; exit 0;;
+    esac
+    shift
+done
 
 check_passwd "${NEW_USER}" "${NEW_PASSWD}" "${OLD_PASSWD}"
