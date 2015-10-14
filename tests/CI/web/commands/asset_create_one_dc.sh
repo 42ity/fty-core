@@ -59,7 +59,7 @@ curlfail_pop
 echo "********* 5. Create_DC_with_the_duplicite_asset_tag ***********************************************"
 echo "***************************************************************************************************"
 test_it "Create_DC_with_the_duplicite_asset_tag"
-loaddb_file "$CHECKOUTDIR/tools/initdb_ci_patch_2.sql"
+#loaddb_file "$CHECKOUTDIR/tools/initdb_ci_patch_2.sql"
 curlfail_push_expect_500
 api_auth_post_json '/asset' '{"name":"dc_name_test_1","type":"datacenter","sub_type":"","location":"","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST0003","address":"ASDF"}}' >&5
 print_result $?
@@ -117,8 +117,8 @@ curlfail_pop
 echo "********* 12. Create_DC_with_too_long_asset_tag ***************************************************"
 echo "***************************************************************************************************"
 test_it "Create_DC_with_too_long_asset_tag"
-curlfail_push_expect_500
-api_auth_post_json '/asset' '{"name":"dc_name_test_2","type":"datacenter","sub_type":"","location":"","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST5678901","address":"ASDF"}}' >&5
+curlfail_push_expect_400
+api_auth_post_json '/asset' '{"name":"dc_name_test_2","type":"datacenter","sub_type":"","location":"","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST56789012345678901234567890123456789012345678901","address":"ASDF"}}' >&5
 print_result $?
 curlfail_pop
 
