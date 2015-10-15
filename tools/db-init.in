@@ -79,8 +79,8 @@ if [ -z "`do_mysql -Ns -e 'show databases;' | egrep '^box_utf8$'`" ]; then
 
 		echo "Database for BIOS - generating user passwords..."
 
-		BIOS_RW="`head -c 12 /dev/urandom | base64`"
-		BIOS_RO="`head -c 12 /dev/urandom | base64`"
+		BIOS_RW="`head -c 12 /dev/urandom | base64 | sed 's,[\+\=\/\ \t\n],%,g'`"
+		BIOS_RO="`head -c 12 /dev/urandom | base64 | sed 's,[\+\=\/\ \t\n],%,g'`"
 
 		cat << EOF | do_mysql
 GRANT DELETE,INSERT,SELECT,UPDATE ON box_utf8.* TO 'bios-rw'@'localhost' IDENTIFIED BY '$BIOS_RW';
