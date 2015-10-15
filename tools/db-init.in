@@ -153,16 +153,20 @@ BIOS_SCHEMA_VERSION_DB_1=$(exec_sql_db "SELECT version FROM t_bios_schema_versio
 BIOS_SCHEMA_VERSION_DB_2=$(exec_sql_db "SELECT version FROM t_bios_schema_version WHERE tag='finish-import';") || \
 	BIOS_SCHEMA_VERSION_DB_2="finish-NA"
 
-if [ -n "$BIOS_SCHEMA_VERSION_DB_1" ] && [ -n "$BIOS_SCHEMA_VERSION_DB_2" ]; then
-	if [ x"$BIOS_SCHEMA_VERSION_DB_1" != x"$BIOS_SCHEMA_VERSION_DB_2" ]; then
+if [ x"$BIOS_SCHEMA_VERSION_DB_1" = x"begin-NA" ] && \
+   [ x"$BIOS_SCHEMA_VERSION_DB_2" = x"finish-NA" ] \
+; then
+	echo "Error: Schema version is not available in BIOS database" >&2
+	upgrade_database        # DB is too old or import failed VERY early
+	exit $?
+else
+	if [ x"$BIOS_SCHEMA_VERSION_DB_1" != x"$BIOS_SCHEMA_VERSION_DB_2" ] || \
+	   [ -z "$BIOS_SCHEMA_VERSION_DB_1" ] || [ -z "$BIOS_SCHEMA_VERSION_DB_2" ] \
+	; then
 		echo "Error: Schema version is not consistent in BIOS database ('$BIOS_SCHEMA_VERSION_DB_1' vs '$BIOS_SCHEMA_VERSION_DB_2')" >&2
 		upgrade_database        # DB initialization crashed mid-way
 		exit $?
 	fi
-else
-	echo "Error: Schema version is not available in BIOS database" >&2
-	upgrade_database        # DB is too old or import failed VERY early
-	exit $?
 fi
 
 # Verify that our SQL file has the same schema version as the database
