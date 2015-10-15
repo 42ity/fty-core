@@ -46,10 +46,31 @@ if [ -z "`echo "select 'working';" | do_mysql | grep working`" ]; then
 		exit 1
 	else
 		echo "Config files inconsistent: really MYSQL root password is empty (database recreated?)"
-		MYSQL_ROOT_PASSWD="--password=''"
+		MYSQL_ROOT_PASSWD='--password='
 	fi
 fi
 
+if [ ! -s "$MYCNF" ] || [ x"$MYSQL_ROOT_PASSWD" = x"--password=" ]; then
+	# ~/.my.cnf missing or empty, or password was detected as empty
+	# Note this structure allows a .my.cnf to specify password=''
+	echo "Database for BIOS - generating MySQL root password instead of corrupt/empty value..."
+	# Just in case, avoid weird chars in the password
+	ROOT_PW="`head -c 12 /dev/urandom | base64 | sed 's,[\+\=\/\ \t\n],%,g'`"
+	cat << EOF | do_mysql $MYSQL_ROOT_PASSWD
+SET PASSWORD = PASSWORD('$ROOT_PW');
+FLUSH PRIVILEGES;
+EOF
+	[ $? != 0 ] && echo "Error setting MySQL root password" >&2 && exit 1
+
+	rm -f "$MYCNF"  # Reset access rights, if unsecured earlier
+	printf '[client]\nuser=root\npassword=%s\n' "${ROOT_PW}" > "$MYCNF"
+	chmod 600 "$MYCNF"
+else
+	echo "Database for BIOS - not touching MySQL root password - previous value remains in place..."
+fi
+
+# From here on, the mysql client should rely on ~/.my.cnf
+# so no extra password params are needed
 if [ -z "`echo 'show databases;' | do_mysql | egrep '^box_utf8$'`" ]; then
 	if [ -r "$INITSQL" ] && \
 	   [ -s "$INITSQL" ]; then
@@ -71,22 +92,6 @@ EOF
 		chown bios /etc/default/bios-db-r[wo]
 		chmod 600 /etc/default/bios-db-r[wo]
 
-		if [ ! -s "$MYCNF" ] || [ x"$MYSQL_ROOT_PASSWD" = x"--password=''" ]; then
-			# ~/.my.cnf missing or empty, or password was detected as empty
-			# Note this structure allows a .my.cnf to specify password=''
-			echo "Database for BIOS - generating MySQL root password..."
-			ROOT_PW="`head -c 12 /dev/urandom | base64`"
-			cat << EOF | do_mysql $MYSQL_ROOT_PASSWD
-SET PASSWORD = PASSWORD('$ROOT_PW');
-FLUSH PRIVILEGES;
-EOF
-
-			rm -f "$MYCNF"  # Reset access rights, if unsecured earlier
-			printf '[client]\nuser=root\npassword=%s\n' "${ROOT_PW}" > "$MYCNF"
-			chmod 600 "$MYCNF"
-		else
-			echo "Database for BIOS - not touching MySQL root password - previous value remains in place..."
-		fi
 	else
 		echo "Can't read '$INITSQL' !!!"
 		exit 1
