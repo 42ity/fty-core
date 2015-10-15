@@ -2,7 +2,7 @@
 {"errors":[{"message":"Request document has invalid syntax. Cannot import empty document.","code":48}]}
 {"id":"36"}
 {"errors":[{"message":"Element 'dc_name_test_0' cannot be processed because of conflict. Most likely duplicate entry.","code":50}]}
-{"errors":[{"message":"Internal Server Error. Unspecified issue with database.","code":42}]}
+{"id":"37"}
 {"errors":[{"message":"Parameter 'serial_no' has bad value. Received ABCD0003. Expected <unique string>","code":47}]}
 {"id":"38"}
 {"errors":[{"message":"Element '10' cannot be processed because of conflict. Asset has elements inside, DELETE them first!","code":50}]}
