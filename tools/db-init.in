@@ -148,9 +148,9 @@ fi
 # e.g. to detect botched imports, need of upgrades, etc. - do it here
 
 # Verify that begin-import and finish-import version tags are the same
-BIOS_SCHEMA_VERSION_DB_1=$(exec_sql_db "SELECT version FROM t_bios_schema_version WHERE tag='begin-import';") || \
+BIOS_SCHEMA_VERSION_DB_1=$(exec_sql_db "SELECT version FROM t_bios_schema_version WHERE tag='begin-import' order by id desc limit 1;") || \
 	BIOS_SCHEMA_VERSION_DB_1="begin-NA"
-BIOS_SCHEMA_VERSION_DB_2=$(exec_sql_db "SELECT version FROM t_bios_schema_version WHERE tag='finish-import';") || \
+BIOS_SCHEMA_VERSION_DB_2=$(exec_sql_db "SELECT version FROM t_bios_schema_version WHERE tag='finish-import' order by id desc limit 1;") || \
 	BIOS_SCHEMA_VERSION_DB_2="finish-NA"
 
 if [ x"$BIOS_SCHEMA_VERSION_DB_1" = x"begin-NA" ] && \
