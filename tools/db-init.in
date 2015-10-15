@@ -22,10 +22,12 @@
 #  \author Alena Chernikava <AlenaChernikava@Eaton.com>
 #  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \details Caller may export BIOS_DB_INIT envvar set to 'initialize' or
+#           'upgrade' to trigger the corresponding function and exit.
 #
 
 prefix="@prefix@"
-
+DATABASE=box_utf8
 INITSQL="@datarootdir@/@PACKAGE@/sql/mysql/initdb.sql"
 [ -n "$HOME" ] && [ -d "$HOME" ] && \
 	MYCNF="$HOME/.my.cnf" || \
@@ -48,6 +50,10 @@ exec_sql() {
 	do_mysql -Ns -e "$@"
 }
 
+exec_sql_db() {
+	do_mysql -Ns -D "${DATABASE}" -e "$@"
+}
+
 random_password() {
 	# Generate a random ASCII string without "confusing" characters
 	head -c 12 /dev/urandom | base64 | sed 's,[\+\=\/\ \t\n],%,g'
@@ -57,17 +63,17 @@ generate_database() {
 	# Imports the BIOS database files, sets up and saves passwords
 	if [ -r "$INITSQL" ] && \
 	   [ -s "$INITSQL" ]; then
-		echo "Database for BIOS not found - importing schema..."
+		echo "Database for BIOS initialization - importing schema..."
 		do_mysql < "$INITSQL" || exit 1
 
-		echo "Database for BIOS - generating user passwords..."
+		echo "Database for BIOS initialization - generating user passwords..."
 
 		BIOS_RW="`random_password`"
 		BIOS_RO="`random_password`"
 
 		cat << EOF | do_mysql
-GRANT DELETE,INSERT,SELECT,UPDATE ON box_utf8.* TO 'bios-rw'@'localhost' IDENTIFIED BY '$BIOS_RW';
-GRANT SELECT                      ON box_utf8.* TO 'bios-ro'@'localhost' IDENTIFIED BY '$BIOS_RO';
+GRANT DELETE,INSERT,SELECT,UPDATE ON ${DATABASE}.* TO 'bios-rw'@'localhost' IDENTIFIED BY '$BIOS_RW';
+GRANT SELECT                      ON ${DATABASE}.* TO 'bios-ro'@'localhost' IDENTIFIED BY '$BIOS_RO';
 FLUSH PRIVILEGES;
 EOF
 		printf 'DB_USER="%s"\nDB_PASSWD="%s"\n' "bios-rw" "${BIOS_RW}" > /etc/default/bios-db-rw
@@ -75,7 +81,7 @@ EOF
 		chown bios /etc/default/bios-db-r[wo]
 		chmod 600 /etc/default/bios-db-r[wo]
 
-		echo "Database for BIOS - completed the schema import and password generation"
+		echo "Database for BIOS initialization - completed the schema import and password generation"
 		return 0
 	else
 		echo "Error: Can't read '$INITSQL' !!!" >&2
@@ -83,9 +89,22 @@ EOF
 	fi
 }
 
+upgrade_database() {
+	echo "Error: Database upgrade not currently implemented (TODO), but was required (see above)!" >&2
+	exit 1
+}
+
+grep_sql_version() {
+	# Prints e.g. 20151015 from stddin that contains
+	# SET @bios_db_schema_version = '20151015' ;
+	egrep -i '^[ \t]*set[ \t]+@bios_db_schema_version[ \t]*=' | head -1 | \
+	sed -e 's,^.*[ \t]*=[ \t]*\(.*\)[ \t]*;$,\1,' \
+		-e 's,^"\(.*\)"$,\1,' -e "s,^'\(.*\)'.*$,\1,"
+}
+
 if [ -z "`echo "select 'working';" | do_mysql | grep working`" ]; then
 	if [ -z "`echo "select 'working';" | do_mysql --password='' | grep working`" ]; then
-		echo "Can't connect to database"
+		echo "Error: Can't connect to database"
 		exit 1
 	else
 		echo "Config files inconsistent: really MYSQL root password is empty (database recreated?)"
@@ -112,18 +131,57 @@ else
 	echo "Database for BIOS - not touching MySQL root password - previous value remains in place..."
 fi
 
+case "${BIOS_DB_INIT-}" in
+	generate|initialize|init) generate_database; exit $? ;;
+	upgrade|update) upgrade_database; exit $? ;;
+esac
+
 # From here on, the mysql client should rely on ~/.my.cnf
 # so no extra password params are needed
-if [ -z "`exec_sql 'show databases;' | egrep '^box_utf8$'`" ]; then
+if [ -z "`exec_sql 'show databases;' | egrep '^'"${DATABASE}"'$'`" ]; then
 	generate_database
+	exit $?         # Success or failure - we exit here anyway
+fi
+
+# If there are any consistency checks to run on the database -
+# e.g. to detect botched imports, need of upgrades, etc. - do it here
+
+# Verify that begin-import and finish-import version tags are the same
+BIOS_SCHEMA_VERSION_DB_1=$(exec_sql_db "SELECT version FROM t_bios_schema_version WHERE tag='begin-import';") || \
+	BIOS_SCHEMA_VERSION_DB_1="begin-NA"
+BIOS_SCHEMA_VERSION_DB_2=$(exec_sql_db "SELECT version FROM t_bios_schema_version WHERE tag='finish-import';") || \
+	BIOS_SCHEMA_VERSION_DB_2="finish-NA"
+
+if [ -n "$BIOS_SCHEMA_VERSION_DB_1" ] && [ -n "$BIOS_SCHEMA_VERSION_DB_2" ]; then
+	if [ x"$BIOS_SCHEMA_VERSION_DB_1" != x"$BIOS_SCHEMA_VERSION_DB_2" ]; then
+		echo "Error: Schema version is not consistent in BIOS database ('$BIOS_SCHEMA_VERSION_DB_1' vs '$BIOS_SCHEMA_VERSION_DB_2')" >&2
+		upgrade_database        # DB initialization crashed mid-way
+		exit $?
+	fi
+else
+	echo "Error: Schema version is not available in BIOS database" >&2
+	upgrade_database        # DB is too old or import failed VERY early
 	exit $?
 fi
 
-# TODO: If there are any consistency checks to run on the database -
-# e.g. to detect botched imports, need of upgrades, etc. - do it here
+# Verify that our SQL file has the same schema version as the database
+if [ -r "$INITSQL" ] && [ -s "$INITSQL" ] && \
+	BIOS_SCHEMA_VERSION_SQL="`grep_sql_version < "$INITSQL"`" \
+; then
+	if [ -z "$BIOS_SCHEMA_VERSION_SQL" ]; then
+		echo "Warning: Can't find BIOS database schema version in '$INITSQL', but some BIOS database is available with version '$BIOS_SCHEMA_VERSION_DB_2'; skipping the test for need of upgrades" >&2
+	else
+		# Database version is consistent and not empty; what about SQL file version?
+		if [ x"$BIOS_SCHEMA_VERSION_DB_2" != x"$BIOS_SCHEMA_VERSION_SQL" ]; then
+			echo "Error: Schema version in BIOS database is not the same as in current SQL schema file ('$BIOS_SCHEMA_VERSION_DB_2' vs '$BIOS_SCHEMA_VERSION_SQL')" >&2
+			upgrade_database        # DB is older/different than the SQL file
+			exit $?
+		fi
+	fi
+else
+	echo "Warning: Can't read '$INITSQL' but some BIOS database is available" >&2
+	echo "Not verifying database schema version vs. initialization SQL file"
+fi
 
-
-
-
-echo "Database for BIOS - found and deemed sufficient"
+echo "Database for BIOS - found and deemed sufficient, with schema version '$BIOS_SCHEMA_VERSION_DB_2'"
 exit 0
