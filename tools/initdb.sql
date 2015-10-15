@@ -19,7 +19,8 @@ CREATE TABLE IF NOT EXISTS t_bios_schema_version(
     id               INTEGER UNSIGNED  NOT NULL AUTO_INCREMENT,
     tag              VARCHAR(16)       NOT NULL,
     timestamp        BIGINT            NOT NULL,
-    version          VARCHAR(16)       NOT NULL
+    version          VARCHAR(16)       NOT NULL,
+    PRIMARY KEY(id)
 );
 START TRANSACTION;
 INSERT INTO t_bios_schema_version (tag,timestamp,version) VALUES('begin-import', UTC_TIMESTAMP() + 0, @bios_db_schema_version);
