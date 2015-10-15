@@ -92,8 +92,15 @@ EOF
 		chown bios /etc/default/bios-db-r[wo]
 		chmod 600 /etc/default/bios-db-r[wo]
 
+		echo "Database for BIOS - completed the schema import and password generation"
 	else
 		echo "Can't read '$INITSQL' !!!"
 		exit 1
 	fi
+else
+	# TODO: If there are any consistency checks to run on the database -
+	# e.g. to detect botched imports, need of upgrades, etc. - do it here
+	echo "Database for BIOS - found and deemed sufficient"
 fi
+
+exit 0
