@@ -48,6 +48,11 @@ exec_sql() {
 	do_mysql -Ns -e "$@"
 }
 
+random_password() {
+	# Generate a random ASCII string without "confusing" characters
+	head -c 12 /dev/urandom | base64 | sed 's,[\+\=\/\ \t\n],%,g'
+}
+
 generate_database() {
 	# Imports the BIOS database files, sets up and saves passwords
 	if [ -r "$INITSQL" ] && \
@@ -57,8 +62,8 @@ generate_database() {
 
 		echo "Database for BIOS - generating user passwords..."
 
-		BIOS_RW="`head -c 12 /dev/urandom | base64 | sed 's,[\+\=\/\ \t\n],%,g'`"
-		BIOS_RO="`head -c 12 /dev/urandom | base64 | sed 's,[\+\=\/\ \t\n],%,g'`"
+		BIOS_RW="`random_password`"
+		BIOS_RO="`random_password`"
 
 		cat << EOF | do_mysql
 GRANT DELETE,INSERT,SELECT,UPDATE ON box_utf8.* TO 'bios-rw'@'localhost' IDENTIFIED BY '$BIOS_RW';
@@ -93,7 +98,7 @@ if [ ! -s "$MYCNF" ] || [ x"$MYSQL_ROOT_PASSWD" = x"--password=" ]; then
 	# Note this structure allows a .my.cnf to specify password=''
 	echo "Database for BIOS - generating MySQL root password instead of corrupt/empty value..."
 	# Just in case, avoid weird chars in the password
-	ROOT_PW="`head -c 12 /dev/urandom | base64 | sed 's,[\+\=\/\ \t\n],%,g'`"
+	ROOT_PW="`random_password`"
 	cat << EOF | do_mysql $MYSQL_ROOT_PASSWD
 SET PASSWORD = PASSWORD('$ROOT_PW');
 FLUSH PRIVILEGES;
