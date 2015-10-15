@@ -1595,7 +1595,7 @@ SYSTEMD_PRESETS +=      42-bios-systemd.preset
 ### TODO? Add the build info (git commit, timestamp) to the header comment?
 tools/42-bios-systemd.preset: Makefile
 	@( echo "### This is a generated file with a list of all BIOS services"; \
-	  for F in $(SYSTEMD_UNITS) $(SYSTEMD_TIMERS) ; do echo "enable $$F" ; done ) > $@
+	  for F in $(SYSTEMD_UNITS) $(SYSTEMD_TIMERS) ; do expr "$$F" : '.*fake.*' > /dev/null || echo "enable $$F" ; done ) > $@
 
 # The rules to actually "compile" the service definition files
 # is part of catch-all %.in recipe above
