@@ -18,66 +18,66 @@
 #
 
 
-#! \file asset_particular_device.sh
+#! \file asset_particular_rack.sh
 #  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \brief Not yet documented file
 
-echo "********* 1. device_with_id_0 *********************************************************************"
+echo "********* 1. rack_with_id_0 *********************************************************************"
 echo "***************************************************************************************************"
-test_it "device_with_id_0"
+test_it "rack_with_id_0"
 curlfail_push_expect_400
-api_get_json /asset/device/0 >&5
+api_get_json /asset/rack/0 >&5
 print_result $?
 curlfail_pop
 
-echo "********* 2. device_with_non_exist_id *************************************************************"
+echo "********* 2. rack_with_non_exist_id *************************************************************"
 echo "***************************************************************************************************"
-test_it "device_with_non_exist_id"
+test_it "rack_with_non_exist_id"
 curlfail_push_expect_404
-api_get_json /asset/device/100 >&5
+api_get_json /asset/rack/100 >&5
 print_result $?
 curlfail_pop
 
-echo "********* 3. device_with_negative_id **************************************************************"
+echo "********* 3. rack_with_negative_id **************************************************************"
 echo "***************************************************************************************************"
-test_it "device_with_negative_id"
+test_it "rack_with_negative_id"
 curlfail_push_expect_400
-api_get_json /asset/device/-1 >&5
+api_get_json /asset/rack/-1 >&5
 print_result $?
 curlfail_pop
 
-echo "********* 4. device_without_id ********************************************************************"
+echo "********* 4. rack_without_id ********************************************************************"
 echo "***************************************************************************************************"
-test_it "device_without_id"
+test_it "rack_without_id"
 curlfail_push_expect_400
-api_get_json /asset/device/ >&5 
+api_get_json /asset/rack/ >&5 
 print_result $?
 curlfail_pop
 
-echo "********* 5. device_with_wrong_id *****************************************************************"
+echo "********* 5. rack_with_wrong_id *****************************************************************"
 echo "***************************************************************************************************"
-test_it "device_with_wrong_id"
+test_it "rack_with_wrong_id"
 curlfail_push_expect_400
-api_get_json /asset/device/abcd >&5
+api_get_json /asset/rack/abcd >&5
 print_result $?
 curlfail_pop
 
-echo "********* 6. device_with_id_of_DC *****************************************************************"
+echo "********* 6. rack_with_id_of_DC *****************************************************************"
 echo "***************************************************************************************************"
-test_it "device_with_id_of_DC"
+test_it "rack_with_id_of_DC"
 curlfail_push_expect_400
-api_get_json /asset/device/1 >&5
+api_get_json /asset/rack/1 >&5
 print_result $?
 curlfail_pop
 
-echo "********* 7. device_with_id_of_device *************************************************************"
+echo "********* 7. rack_with_id_of_rack *************************************************************"
 echo "***************************************************************************************************"
-PARSED_REPLY=$(echo $(api_get_json /asset/devices) | $JSONSH -x id)
+PARSED_REPLY=$(echo $(api_get_json /asset/racks) | $JSONSH -x id)
 ID_1=$(echo "${PARSED_REPLY}" | cut -d '"' -f 6)
-ID_DEV_6=$(echo $ID_1 | cut -d ' ' -f 6)
-test_it "device_with_id_of_device"
+ID_RACK_2=$(echo $ID_1 | cut -d ' ' -f 2)
+test_it "rack_with_id_of_rack"
 curlfail_push_expect_noerrors
-api_get_json /asset/device/${ID_DEV_6} >&5
+api_get_json /asset/rack/${ID_RACK_2} >&5
 print_result $?
 curlfail_pop

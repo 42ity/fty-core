@@ -33,8 +33,11 @@ curlfail_pop
 
 echo "********* 2. request_to existing_room ***************************************************************"
 echo "***************************************************************************************************"
+PARSED_REPLY=$(echo $(api_get_json /asset/rooms) | $JSONSH -x id)
+ID_1=$(echo "${PARSED_REPLY}" | cut -d '"' -f 6)
+ID_ROOM_1=$(echo $ID_1 | cut -d ' ' -f 1)
 test_it "request_to existing_room"
-api_get_json /asset/room/2 >&5
+api_get_json /asset/room/${ID_ROOM_1} >&5
 print_result $?
 
 echo "********* 3. request_to_not_existing_id ***********************************************************"
