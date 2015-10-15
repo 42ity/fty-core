@@ -37,8 +37,13 @@ do_mysql() {
 }
 
 if [ -z "`echo "select 'working';" | do_mysql | grep working`" ]; then
-	echo "Can't connect to database"
-	exit 1
+	if [ -z "`echo "select 'working';" | MYSQL_ROOT_PASSWD='' do_mysql | grep working`" ]; then
+		echo "Can't connect to database"
+		exit 1
+	else
+		echo "Configuration files inconsistent: really MYSQL_ROOT_PASSWD is empty"
+		MYSQL_ROOT_PASSWD=''
+	fi
 fi
 BIOS_RW="`head -c 12 /dev/urandom | base64`"
 BIOS_RO="`head -c 12 /dev/urandom | base64`"
