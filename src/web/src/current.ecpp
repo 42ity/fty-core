@@ -79,10 +79,10 @@ std::string dev;
         try{
             conn = tntdb::connectCached(url);
         }
-        catch (const srd::exception &e)
+        catch (const std::exception &e)
         {
             LOG_END_ABNORMAL(e);
-            http_die("interna-error", "Cannot connect to the database");
+            http_die("internal-error", "Cannot connect to the database");
         }
 
         // check if the element really exists, read its name
