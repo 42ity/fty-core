@@ -94,7 +94,7 @@ EOF
 
 		echo "Database for BIOS - completed the schema import and password generation"
 	else
-		echo "Can't read '$INITSQL' !!!"
+		echo "Error: Can't read '$INITSQL' !!!" >&2
 		exit 1
 	fi
 else
