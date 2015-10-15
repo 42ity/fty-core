@@ -71,11 +71,11 @@ fi
 
 # From here on, the mysql client should rely on ~/.my.cnf
 # so no extra password params are needed
-if [ -z "`echo 'show databases;' | do_mysql | egrep '^box_utf8$'`" ]; then
+if [ -z "`do_mysql -Ns -e 'show databases;' | egrep '^box_utf8$'`" ]; then
 	if [ -r "$INITSQL" ] && \
 	   [ -s "$INITSQL" ]; then
 		echo "Database for BIOS not found - importing schema..."
-		cat "$INITSQL" | do_mysql || exit 1
+		do_mysql < "$INITSQL" || exit 1
 
 		echo "Database for BIOS - generating user passwords..."
 
