@@ -184,7 +184,7 @@ CREATE TABLE t_bios_asset_element (
   INDEX FK_ASSETELEMENT_ELEMENTSUBTYPE_idx (id_subtype   ASC),
   INDEX FK_ASSETELEMENT_PARENTID_idx    (id_parent ASC),
   UNIQUE INDEX `UI_t_bios_asset_element_NAME` (`name` ASC),
-  UNIQUE INDEX `UI_t_bios_asset_element_ASSET_TAG` (`asset_tag`  ASC),
+  INDEX `UI_t_bios_asset_element_ASSET_TAG` (`asset_tag`  ASC),
 
   CONSTRAINT FK_ASSETELEMENT_ELEMENTTYPE
     FOREIGN KEY (id_type)
