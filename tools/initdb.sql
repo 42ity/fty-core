@@ -1,3 +1,8 @@
+/* NOTE FOR DEVELOPERS: The schema-version must be changed (increased) whenever
+ * you change table/view structures, so upgrade/recreation can be triggered
+ * by bios-db-init service (whenever we figure out how to really upgrade;) ) */
+SET @bios_db_schema_version = '20151015' ;
+
 DROP DATABASE IF EXISTS box_utf8;
 CREATE DATABASE IF NOT EXISTS box_utf8 character set utf8 collate utf8_general_ci;
 
@@ -8,6 +13,14 @@ SET GLOBAL time_zone='+00:00';
 /* work around smart insert without duplicates*/
 CREATE TABLE IF NOT EXISTS t_empty (id TINYINT);
 INSERT INTO t_empty values (1);
+
+/* Values added in the beginning and end of SQL import to validate it succeeded */
+CREATE TABLE IF NOT EXISTS t_bios_schema_version(
+    tag              VARCHAR(16)       NOT NULL,
+    timestamp        BIGINT            NOT NULL,
+    version          VARCHAR(16)       NOT NULL
+);
+INSERT INTO t_bios_schema_version (tag,timestamp,version) VALUES('begin-import', UTC_TIMESTAMP() + 0, @bios_db_schema_version);
 
 DROP TABLE if exists t_bios_monitor_asset_relation;
 drop table if exists t_bios_measurement;
@@ -630,3 +643,6 @@ INSERT INTO t_bios_asset_device_type (id_asset_device_type, name) VALUES (10, "N
 
 /* t_bios_asset_link_type */
 INSERT INTO t_bios_asset_link_type (name) VALUES ("power chain");
+
+/* This must be the last line of the SQL file */
+INSERT INTO t_bios_schema_version (tag,timestamp,version) VALUES('finish-import', UTC_TIMESTAMP() + 0, @bios_db_schema_version);
