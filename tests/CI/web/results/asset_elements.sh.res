@@ -6,3 +6,5 @@
 {"rows":[{"id":"3","name":"ROW1"},{"id":"14","name":"ROW4"},{"id":"15","name":"ROW2"},{"id":"16","name":"ROW3"},{"id":"17","name":"ROW5"},{"id":"18","name":"ROW6"}]}
 {"racks":[]}
 {"racks":[{"id":"4","name":"RACK1"},{"id":"21","name":"RACK1-LAB"}]}
+{"groups":[]}
+{"groups":[{"id":"9","name":"group1"},{"id":"30","name":"GROUP1-LAB"}]}
