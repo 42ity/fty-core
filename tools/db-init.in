@@ -66,14 +66,13 @@ GRANT SELECT                      ON box_utf8.* TO 'bios-ro'@'localhost' IDENTIF
 SET PASSWORD = PASSWORD('$ROOT_PW');
 FLUSH PRIVILEGES;
 EOF
-		echo "MYSQL_ROOT_PASSWD=\"$ROOT_PW\"" > /etc/default/mysql-root-passwd
+		printf 'MYSQL_ROOT_PASSWD="%s"\n' "${ROOT_PW}" > /etc/default/mysql-root-passwd
 		chmod 600 /etc/default/mysql-root-passwd
-		echo "DB_USER=bios-rw" > /etc/default/bios-db-rw
-		echo "DB_PASSWD=$BIOS_RW" >> /etc/default/bios-db-rw
-		echo "DB_USER=bios-ro" > /etc/default/bios-db-ro
-		echo "DB_PASSWD=$BIOS_RO" >> /etc/default/bios-db-ro
-		chown bios /etc/default/bios-db*
-		chmod 600 /etc/default/bios-db*
+		chown 0:0 /etc/default/mysql-root-passwd
+		printf 'DB_USER="%s"\nDB_PASSWD="%s"\n' "bios-rw" "${BIOS_RW}" > /etc/default/bios-db-rw
+		printf 'DB_USER="%s"\nDB_PASSWD="%s"\n' "bios-ro" "${BIOS_RO}" > /etc/default/bios-db-ro
+		chown bios /etc/default/bios-db-r[wo]
+		chmod 600 /etc/default/bios-db-r[wo]
 	else
 		echo "Can't read '$INITSQL' !!!"
 		exit 1
