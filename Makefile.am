@@ -1373,6 +1373,7 @@ outage_LDFLAGS =	-ltntdb
 
 client_SCRIPTS +=	tools/bios-passwd \
 			tools/bios-networking \
+			tools/fake-th \
 			tools/bios-nutconfig
 
 
@@ -1566,7 +1567,7 @@ if HAVE_SYSTEMD
 
 # Here we list the actual service-definition files that should be compiled
 # Enabled as part of BIOS presets
-SYSTEMD_UNITS += bios-agent-nut.service \
+SYSTEMD_UNITS += bios-agent-nut.service bios-fake-th.service \
                         bios-agent-dbstore.service bios-server-agent.service \
                         bios-agent-inventory.service bios-agent-cm.service \
                         bios-agent-alert.service \
@@ -1594,7 +1595,7 @@ SYSTEMD_PRESETS +=      42-bios-systemd.preset
 ### TODO? Add the build info (git commit, timestamp) to the header comment?
 tools/42-bios-systemd.preset: Makefile
 	@( echo "### This is a generated file with a list of all BIOS services"; \
-	  for F in $(SYSTEMD_UNITS) $(SYSTEMD_TIMERS) ; do echo "enable $$F" ; done ) > $@
+	  for F in $(SYSTEMD_UNITS) $(SYSTEMD_TIMERS) ; do expr "$$F" : '.*fake.*' > /dev/null || echo "enable $$F" ; done ) > $@
 
 # The rules to actually "compile" the service definition files
 # is part of catch-all %.in recipe above
