@@ -150,3 +150,35 @@ test_it "list_of_all_racks"
 api_get_json /asset/racks >&5
 print_result $?
 
+echo "********* 9. no_groups_present *********************************************************************"
+echo "***************************************************************************************************"
+# delete all assets, no racks are present
+DB_BASE="initdb.sql"
+DB_DATA="load_data.sql"
+DB_DATA_TESTREST="load_data_test_restapi.sql"
+DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
+DB_LOADDIR=$BUILDSUBDIR/tools
+loaddb_file "$DB_LOADDIR/$DB_BASE"
+
+test_it "no_groups_present"
+curlfail_push_expect_noerrors
+api_get_json /asset/groups >&5
+print_result $?
+curlfail_pop
+
+#fill DB again
+DB_BASE="initdb.sql"
+DB_DATA="load_data.sql"
+DB_DATA_TESTREST="load_data_test_restapi.sql"
+DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
+DB_LOADDIR=$BUILDSUBDIR/tools
+
+for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
+    loaddb_file "$DB_LOADDIR/$data" || return $?
+done
+
+echo "********* 10. list_of_all_groups ********************************************************************"
+echo "***************************************************************************************************"
+test_it "list_of_all_groups"
+api_get_json /asset/groups >&5
+print_result $?
