@@ -29,9 +29,14 @@
 prefix="@prefix@"
 DATABASE=box_utf8
 INITSQL="@datarootdir@/@PACKAGE@/sql/mysql/initdb.sql"
-[ -n "$HOME" ] && [ -d "$HOME" ] && \
-	MYCNF="$HOME/.my.cnf" || \
-	MYCNF="/root/.my.cnf"
+
+# This is needed for systemd integration which does not have HOME set
+# The variable is needed not only for ourselves, but also for "mysql" client
+[ -n "$HOME" ] || HOME="$(getent passwd "`id -un`" | awk -F: '{print $6}')"
+[ $? = 0 ] && [ -n "$HOME" ] && [ -d "$HOME" ] || HOME="/root"
+export HOME
+MYCNF="$HOME/.my.cnf"
+
 # MySQL-root password is empty by default, otherwise is cached in $MYCNF
 # and so it is not needed to specify it explicitly either
 
