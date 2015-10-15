@@ -16,11 +16,16 @@ INSERT INTO t_empty values (1);
 
 /* Values added in the beginning and end of SQL import to validate it succeeded */
 CREATE TABLE IF NOT EXISTS t_bios_schema_version(
+    id               INTEGER UNSIGNED  NOT NULL AUTO_INCREMENT,
     tag              VARCHAR(16)       NOT NULL,
     timestamp        BIGINT            NOT NULL,
     version          VARCHAR(16)       NOT NULL
 );
+START TRANSACTION;
 INSERT INTO t_bios_schema_version (tag,timestamp,version) VALUES('begin-import', UTC_TIMESTAMP() + 0, @bios_db_schema_version);
+/* Report the value */
+SELECT * FROM t_bios_schema_version WHERE tag = 'begin-import' order by id desc limit 1;
+COMMIT;
 
 DROP TABLE if exists t_bios_monitor_asset_relation;
 drop table if exists t_bios_measurement;
@@ -645,4 +650,8 @@ INSERT INTO t_bios_asset_device_type (id_asset_device_type, name) VALUES (10, "N
 INSERT INTO t_bios_asset_link_type (name) VALUES ("power chain");
 
 /* This must be the last line of the SQL file */
+START TRANSACTION;
 INSERT INTO t_bios_schema_version (tag,timestamp,version) VALUES('finish-import', UTC_TIMESTAMP() + 0, @bios_db_schema_version);
+/* Report the value */
+SELECT * FROM t_bios_schema_version WHERE tag = 'finish-import' order by id desc limit 1;
+COMMIT;
