@@ -91,6 +91,7 @@ EOF
 
 upgrade_database() {
 	echo "Error: Database upgrade not currently implemented (TODO), but was required (see above)!" >&2
+	echo "Consider running 'BIOS_DB_INIT=init $0' to flush and reinitialize the database" >&2
 	exit 1
 }
 
@@ -132,7 +133,7 @@ else
 fi
 
 case "${BIOS_DB_INIT-}" in
-	generate|initialize|init) generate_database; exit $? ;;
+	generate|initialize|flush|init) generate_database; exit $? ;;
 	upgrade|update) upgrade_database; exit $? ;;
 esac
 
