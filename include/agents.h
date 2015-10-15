@@ -25,8 +25,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define INCLUDE_AGENTS_H__
 
 #include <czmq.h>
-#include <bios_export.h>
 
+#include "bios_export.h"
 #include "ymsg.h"
 
 #ifdef __cplusplus
