@@ -33,8 +33,11 @@ curlfail_pop
 
 echo "********* 2. request_to existing_DC ***************************************************************"
 echo "***************************************************************************************************"
+PARSED_REPLY=$(echo $(api_get_json /asset/datacenters) | $JSONSH -x id)
+ID_1=$(echo "${PARSED_REPLY}" | cut -d '"' -f 6)
+ID_DC_2=$(echo $ID_1 | cut -d ' ' -f 2)
 test_it "request_to existing_DC"
-api_get_json /asset/datacenter/10 >&5
+api_get_json /asset/datacenter/${ID_DC_2} >&5
 print_result $?
 
 
