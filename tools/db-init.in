@@ -110,7 +110,7 @@ grep_sql_version() {
 
 if [ -z "`echo "select 'working';" | do_mysql | grep working`" ]; then
 	if [ -z "`echo "select 'working';" | do_mysql --password='' | grep working`" ]; then
-		echo "Error: Can't connect to database"
+		echo "Error: Can't connect to database" >&2
 		exit 1
 	else
 		echo "Config files inconsistent: really MYSQL root password is empty (database recreated?)"
