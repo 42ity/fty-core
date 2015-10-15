@@ -1373,6 +1373,7 @@ outage_LDFLAGS =	-ltntdb
 
 client_SCRIPTS +=	tools/bios-passwd \
 			tools/bios-networking \
+			tools/fake-th \
 			tools/bios-nutconfig
 
 
@@ -1566,7 +1567,7 @@ if HAVE_SYSTEMD
 
 # Here we list the actual service-definition files that should be compiled
 # Enabled as part of BIOS presets
-SYSTEMD_UNITS += bios-agent-nut.service \
+SYSTEMD_UNITS += bios-agent-nut.service bios-fake-th.service \
                         bios-agent-dbstore.service bios-server-agent.service \
                         bios-agent-inventory.service bios-agent-cm.service \
                         bios-agent-alert.service \
