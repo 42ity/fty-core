@@ -251,6 +251,7 @@ EnvironmentFile=-/etc/default/bios
 EnvironmentFile=-/etc/sysconfig/bios
 EnvironmentFile=-/etc/default/bios__%n.conf
 EnvironmentFile=-/etc/sysconfig/bios__%n.conf
+EnvironmentFile=-/etc/default/bios-db-rw
 PrivateTmp=true
 ExecStartPre=/usr/share/bios/scripts/ssl-create.sh
 ExecStart=/usr/bin/tntnet -c /etc/tntnet/%i.xml
