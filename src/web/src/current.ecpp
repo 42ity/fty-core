@@ -75,7 +75,15 @@ std::string dev;
         }
 
         // Temporary add connection here
-        tntdb::Connection conn = tntdb::connectCached(url);
+        tntdb::Connection conn;
+        try{
+            conn = tntdb::connectCached(url);
+        }
+        catch (const srd::exception &e)
+        {
+            LOG_END_ABNORMAL(e);
+            http_die("interna-error", "Cannot connect to the database");
+        }
 
         // check if the element really exists, read its name
         auto asset = persist::select_asset_element_web_byId (conn, id);
