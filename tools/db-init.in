@@ -55,8 +55,10 @@ FLUSH PRIVILEGES;
 EOF
 		echo "MYSQL_ROOT_PASSWD=\"$ROOT_PW\"" > /etc/default/mysql-root-passwd
 		chmod 600 /etc/default/mysql-root-passwd
-		echo -e "DB_USER=bios-rw\nDB_PASSWD=$BIOS_RW" > /etc/default/bios-db-rw
-		echo -e "DB_USER=bios-ro\nDB_PASSWD=$BIOS_RO" > /etc/default/bios-db-ro
+		echo "DB_USER=bios-rw" > /etc/default/bios-db-rw
+		echo "DB_PASSWD=$BIOS_RW" >> /etc/default/bios-db-rw
+		echo "DB_USER=bios-ro" > /etc/default/bios-db-ro
+		echo "DB_PASSWD=$BIOS_RO" >> /etc/default/bios-db-ro
 		chown bios /etc/default/bios-db*
 		chmod 600 /etc/default/bios-db*
 	else
