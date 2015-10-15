@@ -151,7 +151,7 @@ while [ $# -gt 0 ]; do
             TAG="__`echo -e "$SOURCES_ALLOWED" | sed 's,[\*\?\^\$\(\)\[\]{\}\/\\]*,,g'`@`echo "$S" | sed 's, ,_,g'`"
             [ -n "$T" ] && TAG="$TAG`echo ":$T" | sed 's, ,_,g'`"
             [ -z "$LOCKFILE" ] && \
-                LOCKFILE=/var/run/biostimer-graphs-prefetch${TAG}.lock
+                LOCKFILE=/var/run/agent-cm/biostimer-graphs-prefetch${TAG}.lock
             [ -z "$TIMEFILE" ] && \
                 TIMEFILE=/var/lib/bios/agent-cm/biostimer-graphs-prefetch${TAG}.time
             unset S T A TAG
@@ -175,7 +175,7 @@ check_in_list "$STEPS" "$STEPS_SUPPORTED" || \
 # TODO: Set paths via standard autoconf prefix-vars and .in conversions
 # TODO: Run as non-root, and use paths writable by that user (bios?)
 [ -z "$LOCKFILE" ] && \
-    LOCKFILE=/var/run/biostimer-graphs-prefetch.lock
+    LOCKFILE=/var/run/agent-cm/biostimer-graphs-prefetch.lock
 [ -z "$TIMEFILE" ] && \
     TIMEFILE=/var/lib/bios/agent-cm/biostimer-graphs-prefetch.time
 
