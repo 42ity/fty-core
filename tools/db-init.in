@@ -40,6 +40,44 @@ do_mysql() {
 	mysql -u root "$@"
 }
 
+exec_sql() {
+	# NOTE: $1 must be the SQL request; any other params like
+	# passwd can follow afterwards as $2 etc.
+	# SQL commands should be separated by ';' chars, though last
+	# (or single) command may omit it
+	do_mysql -Ns -e "$@"
+}
+
+generate_database() {
+	# Imports the BIOS database files, sets up and saves passwords
+	if [ -r "$INITSQL" ] && \
+	   [ -s "$INITSQL" ]; then
+		echo "Database for BIOS not found - importing schema..."
+		do_mysql < "$INITSQL" || exit 1
+
+		echo "Database for BIOS - generating user passwords..."
+
+		BIOS_RW="`head -c 12 /dev/urandom | base64 | sed 's,[\+\=\/\ \t\n],%,g'`"
+		BIOS_RO="`head -c 12 /dev/urandom | base64 | sed 's,[\+\=\/\ \t\n],%,g'`"
+
+		cat << EOF | do_mysql
+GRANT DELETE,INSERT,SELECT,UPDATE ON box_utf8.* TO 'bios-rw'@'localhost' IDENTIFIED BY '$BIOS_RW';
+GRANT SELECT                      ON box_utf8.* TO 'bios-ro'@'localhost' IDENTIFIED BY '$BIOS_RO';
+FLUSH PRIVILEGES;
+EOF
+		printf 'DB_USER="%s"\nDB_PASSWD="%s"\n' "bios-rw" "${BIOS_RW}" > /etc/default/bios-db-rw
+		printf 'DB_USER="%s"\nDB_PASSWD="%s"\n' "bios-ro" "${BIOS_RO}" > /etc/default/bios-db-ro
+		chown bios /etc/default/bios-db-r[wo]
+		chmod 600 /etc/default/bios-db-r[wo]
+
+		echo "Database for BIOS - completed the schema import and password generation"
+		return 0
+	else
+		echo "Error: Can't read '$INITSQL' !!!" >&2
+		return 1
+	fi
+}
+
 if [ -z "`echo "select 'working';" | do_mysql | grep working`" ]; then
 	if [ -z "`echo "select 'working';" | do_mysql --password='' | grep working`" ]; then
 		echo "Can't connect to database"
@@ -71,36 +109,16 @@ fi
 
 # From here on, the mysql client should rely on ~/.my.cnf
 # so no extra password params are needed
-if [ -z "`do_mysql -Ns -e 'show databases;' | egrep '^box_utf8$'`" ]; then
-	if [ -r "$INITSQL" ] && \
-	   [ -s "$INITSQL" ]; then
-		echo "Database for BIOS not found - importing schema..."
-		do_mysql < "$INITSQL" || exit 1
-
-		echo "Database for BIOS - generating user passwords..."
-
-		BIOS_RW="`head -c 12 /dev/urandom | base64 | sed 's,[\+\=\/\ \t\n],%,g'`"
-		BIOS_RO="`head -c 12 /dev/urandom | base64 | sed 's,[\+\=\/\ \t\n],%,g'`"
-
-		cat << EOF | do_mysql
-GRANT DELETE,INSERT,SELECT,UPDATE ON box_utf8.* TO 'bios-rw'@'localhost' IDENTIFIED BY '$BIOS_RW';
-GRANT SELECT                      ON box_utf8.* TO 'bios-ro'@'localhost' IDENTIFIED BY '$BIOS_RO';
-FLUSH PRIVILEGES;
-EOF
-		printf 'DB_USER="%s"\nDB_PASSWD="%s"\n' "bios-rw" "${BIOS_RW}" > /etc/default/bios-db-rw
-		printf 'DB_USER="%s"\nDB_PASSWD="%s"\n' "bios-ro" "${BIOS_RO}" > /etc/default/bios-db-ro
-		chown bios /etc/default/bios-db-r[wo]
-		chmod 600 /etc/default/bios-db-r[wo]
-
-		echo "Database for BIOS - completed the schema import and password generation"
-	else
-		echo "Error: Can't read '$INITSQL' !!!" >&2
-		exit 1
-	fi
-else
-	# TODO: If there are any consistency checks to run on the database -
-	# e.g. to detect botched imports, need of upgrades, etc. - do it here
-	echo "Database for BIOS - found and deemed sufficient"
+if [ -z "`exec_sql 'show databases;' | egrep '^box_utf8$'`" ]; then
+	generate_database
+	exit $?
 fi
 
+# TODO: If there are any consistency checks to run on the database -
+# e.g. to detect botched imports, need of upgrades, etc. - do it here
+
+
+
+
+echo "Database for BIOS - found and deemed sufficient"
 exit 0
