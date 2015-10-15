@@ -45,13 +45,21 @@ if [ -z "`echo "select 'working';" | do_mysql | grep working`" ]; then
 		MYSQL_ROOT_PASSWD=''
 	fi
 fi
-BIOS_RW="`head -c 12 /dev/urandom | base64`"
-BIOS_RO="`head -c 12 /dev/urandom | base64`"
-ROOT_PW="`head -c 12 /dev/urandom | base64`"
-if [ -z "`echo "show databases;" | do_mysql | grep '^box_utf8$'`" ]; then
+
+if [ -z "`echo 'show databases;' | do_mysql | egrep '^box_utf8$'`" ]; then
 	if [ -r "$INITSQL" ] && \
 	   [ -s "$INITSQL" ]; then
+		echo "Database for BIOS not found - importing schema..."
 		cat "$INITSQL" | do_mysql || exit 1
+
+		echo "Database for BIOS - generating passwords..."
+
+		BIOS_RW="`head -c 12 /dev/urandom | base64`"
+		BIOS_RO="`head -c 12 /dev/urandom | base64`"
+		[ -n "$MYSQL_ROOT_PASSWD" ] && \
+			ROOT_PW="$MYSQL_ROOT_PASSWD=" || \
+			ROOT_PW="`head -c 12 /dev/urandom | base64`"
+
 		cat << EOF | do_mysql
 GRANT DELETE,INSERT,SELECT,UPDATE ON box_utf8.* TO 'bios-rw'@'localhost' IDENTIFIED BY '$BIOS_RW';
 GRANT SELECT                      ON box_utf8.* TO 'bios-ro'@'localhost' IDENTIFIED BY '$BIOS_RO';
