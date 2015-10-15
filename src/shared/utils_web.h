@@ -165,7 +165,7 @@ do { \
     int64_t _idx = idx; \
     if (_idx < 0) _idx = _idx * -1; \
     if (_idx >= (int64_t)_WSErrorsCOUNT) _idx = 0; \
-    if (_idx == 0) log_error("TEEPOT");\
+    if (_idx == 0) log_error("TEAPOT");\
     reply.out() << utils::json::create_error_json(msg, _errors.at(_idx).err_code);\
     return _errors.at(_idx).http_code;\
 } \
