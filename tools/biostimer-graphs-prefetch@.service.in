@@ -12,6 +12,8 @@ EnvironmentFile=-/etc/sysconfig/bios
 EnvironmentFile=-/etc/default/bios__%n.conf
 EnvironmentFile=-/etc/sysconfig/bios__%n.conf
 EnvironmentFile=-/etc/default/bios-db-ro
+ExecStartPre=/bin/mkdir -p /var/run/agent-cm /var/lib/bios/agent-cm
+ExecStartPre=/bin/chown -R bios /var/run/agent-cm /var/lib/bios/agent-cm
 ExecStart=@datadir@/@PACKAGE@/scripts/biostimer-graphs-prefetch.sh --STA "%I"
 
 [Install]
