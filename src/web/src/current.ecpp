@@ -81,14 +81,14 @@ std::string dev;
 <%cpp>
 {
     if (dev.empty()) {
-        http_die("request-param-required", "<list-of-ids>");
+        http_die("request-param-required", "dev");
     }
 
     std::vector<std::string> asset_ids;
     cxxtools::split(",", dev, std::back_inserter(asset_ids));
 
     if (asset_ids.empty()) {
-        http_die("request-param-required", "<list-of-ids>");
+        http_die("request-param-required", "dev");
     }
 
     // Go through all passed ids
