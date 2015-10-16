@@ -7,7 +7,12 @@
 /* Gentleman's agreement on thios arbitrary string is that it is YYYYMMDDNNNN
  * sort of timestamp + number of change within a day, so it always increases
  * and we can discern upgrades vs. downgrades at later stage in development */
-SET @bios_db_schema_version = '201510150001' ;
+/* Other schema files, e.g. for additional modules, are encouraged to copy
+ * this pattern and also add their versions and appropriate filenames when
+ * they begin and finish to initialize their schems bits. The "db-init" script
+ * will import and/or validate any *.sql file in its resource directory. */
+SET @bios_db_schema_version = '201510150002' ;
+SET @bios_db_schema_filename = 'initdb.sql' ;
 
 DROP DATABASE IF EXISTS box_utf8;
 CREATE DATABASE IF NOT EXISTS box_utf8 character set utf8 collate utf8_general_ci;
@@ -28,13 +33,14 @@ INSERT INTO t_empty values (1);
  * require to destroy the table. */
 CREATE TABLE IF NOT EXISTS t_bios_schema_version(
     id               INTEGER UNSIGNED  NOT NULL AUTO_INCREMENT,
-    tag              VARCHAR(16)       NOT NULL,
-    timestamp        BIGINT            NOT NULL,
-    version          VARCHAR(16)       NOT NULL,
+    tag              VARCHAR(16)       NOT NULL, /* 'begin-import' or 'finish-import' */
+    filename         VARCHAR(32)       NOT NULL, /* base filename.sql to support multiple SQLs with their versions */
+    timestamp        BIGINT            NOT NULL, /* timestamp of the entry, just in case */
+    version          VARCHAR(16)       NOT NULL, /* arbitrary string, e.g. YYYYMMDDNNNN */
     PRIMARY KEY(id)
 );
 START TRANSACTION;
-INSERT INTO t_bios_schema_version (tag,timestamp,version) VALUES('begin-import', UTC_TIMESTAMP() + 0, @bios_db_schema_version);
+INSERT INTO t_bios_schema_version (tag,timestamp,filename,version) VALUES('begin-import', UTC_TIMESTAMP() + 0, @bios_db_schema_filename, @bios_db_schema_version);
 /* Report the value */
 SELECT * FROM t_bios_schema_version WHERE tag = 'begin-import' order by id desc limit 1;
 COMMIT;
@@ -663,7 +669,7 @@ INSERT INTO t_bios_asset_link_type (name) VALUES ("power chain");
 
 /* This must be the last line of the SQL file */
 START TRANSACTION;
-INSERT INTO t_bios_schema_version (tag,timestamp,version) VALUES('finish-import', UTC_TIMESTAMP() + 0, @bios_db_schema_version);
+INSERT INTO t_bios_schema_version (tag,timestamp,filename,version) VALUES('finish-import', UTC_TIMESTAMP() + 0, @bios_db_schema_filename, @bios_db_schema_version);
 /* Report the value */
 SELECT * FROM t_bios_schema_version WHERE tag = 'finish-import' order by id desc limit 1;
 COMMIT;
