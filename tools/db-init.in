@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Copyright (C) 2014 Eaton
 #
@@ -28,7 +28,16 @@
 
 prefix="@prefix@"
 DATABASE=box_utf8
-INITSQL="@datarootdir@/@PACKAGE@/sql/mysql/initdb.sql"
+INITSQL_DIR="@datarootdir@/@PACKAGE@/sql/mysql"
+# This file is applied first; others (if exist in $INITSQL_DIR) will be applied
+# in alphabetic order; all files in $INITSQL_DIR will be version-tested as well
+INITSQL_FIRST="${INITSQL_DIR}/initdb.sql"
+
+# TODO: While the script currently supports both initialization of database
+# from several SQL files (first and others) and validation of schema versions
+# present in the database, it does not support automated addition of new SQL
+# files coming with e.g. additional software modules. That is, initialization
+# is currently done all at once.
 
 # This is needed for systemd integration which does not have HOME set
 # The variable is needed not only for ourselves, but also for "mysql" client
@@ -65,11 +74,12 @@ random_password() {
 }
 
 generate_database() {
+	local INITSQL=""
 	# Imports the BIOS database files, sets up and saves passwords
-	if [ -r "$INITSQL" ] && \
-	   [ -s "$INITSQL" ]; then
-		echo "Database for BIOS initialization - importing schema..."
-		do_mysql < "$INITSQL" || exit 1
+	if [ -r "$INITSQL_FIRST" ] && \
+	   [ -s "$INITSQL_FIRST" ]; then
+		echo "Database for BIOS initialization - importing base schema..."
+		do_mysql < "$INITSQL_FIRST" || return 1
 
 		echo "Database for BIOS initialization - generating user passwords..."
 
@@ -86,17 +96,38 @@ EOF
 		chown bios /etc/default/bios-db-r[wo]
 		chmod 600 /etc/default/bios-db-r[wo]
 
+		for INITSQL in $(ls -1 "${INITSQL_DIR}"/*.sql | grep -v "`basename $INITSQL_FIRST`" | sort) ; do
+			if  [ -r "$INITSQL_FIRST" ] && \
+			    [ -s "$INITSQL_FIRST" ] \
+			; then
+				echo "Database for BIOS initialization - importing extra schema `basename $INITSQL`..."
+				do_mysql < "$INITSQL" || return 1
+			else
+				echo "Error: Can't read '$INITSQL' !!!" >&2
+				return 1
+			fi
+		done
+
 		echo "Database for BIOS initialization - completed the schema import and password generation"
 		return 0
 	else
-		echo "Error: Can't read '$INITSQL' !!!" >&2
+		echo "Error: Can't read '$INITSQL_FIRST' !!!" >&2
 		return 1
 	fi
 }
 
 upgrade_database() {
-	echo "Error: Database upgrade not currently implemented (TODO), but was required (see above)!" >&2
+	# Parameters: $1 refers to full filename of new SQL schema(/data) file
+	local INITSQL="$1"
+	[ -z "$INITSQL" ] && INITSQL="$INITSQL_FIRST"
+	local INITSQL_BASENAME="`basename "$INITSQL"`"
+	[ x"$INITSQL" = x"$INITSQL_BASENAME" ] && INITSQL="$INITSQL_DIR/$INITSQL_BASENAME"
+
+	echo "Error: Database upgrade for '$INITSQL' not currently implemented (TODO), but was required (see above)!" >&2
 	echo "Consider running 'BIOS_DB_INIT=init $0' to flush and reinitialize the database" >&2
+
+	# Currently we prohibit service startup with inconsistent database,
+	# so exit at this point and force a human to take a look at it
 	exit 1
 }
 
@@ -108,35 +139,94 @@ grep_sql_version() {
 		-e 's,^"\(.*\)"$,\1,' -e "s,^'\(.*\)'.*$,\1,"
 }
 
-if [ -z "`echo "select 'working';" | do_mysql | grep working`" ]; then
-	if [ -z "`echo "select 'working';" | do_mysql --password='' | grep working`" ]; then
-		echo "Error: Can't connect to database" >&2
-		exit 1
-	else
-		echo "Config files inconsistent: really MYSQL root password is empty (database recreated?)"
-		MYSQL_ROOT_PASSWD='--password='
+ensure_root_password() {
+	if [ -z "`echo "select 'working';" | do_mysql | grep working`" ]; then
+		if [ -z "`echo "select 'working';" | do_mysql --password='' | grep working`" ]; then
+			echo "Error: Can't connect to database" >&2
+			return 1
+		else
+			echo "Config files inconsistent: really MYSQL root password is empty (database recreated?)"
+			MYSQL_ROOT_PASSWD='--password='
+		fi
 	fi
-fi
 
-if [ ! -s "$MYCNF" ] || [ x"$MYSQL_ROOT_PASSWD" = x"--password=" ]; then
-	# ~/.my.cnf missing or empty, or password was detected as empty
-	# Note this structure allows a .my.cnf to specify password=''
-	echo "Database for BIOS - generating MySQL root password instead of corrupt/empty value..."
-	# Just in case, avoid weird chars in the password
-	ROOT_PW="`random_password`"
-	cat << EOF | do_mysql $MYSQL_ROOT_PASSWD
+	if [ ! -s "$MYCNF" ] || [ x"$MYSQL_ROOT_PASSWD" = x"--password=" ]; then
+		# ~/.my.cnf missing or empty, or password was detected as empty
+		# Note this structure allows a .my.cnf to specify password=''
+		echo "Database for BIOS - generating MySQL root password instead of corrupt/empty value..."
+		# Just in case, avoid weird chars in the password
+		ROOT_PW="`random_password`"
+		cat << EOF | do_mysql $MYSQL_ROOT_PASSWD
 SET PASSWORD = PASSWORD('$ROOT_PW');
 FLUSH PRIVILEGES;
 EOF
-	[ $? != 0 ] && echo "Error setting MySQL root password" >&2 && exit 1
+		[ $? != 0 ] && echo "Error setting MySQL root password" >&2 && return 1
 
-	rm -f "$MYCNF"  # Reset access rights, if unsecured earlier
-	printf '[client]\nuser=root\npassword=%s\n' "${ROOT_PW}" > "$MYCNF"
-	chmod 600 "$MYCNF"
-else
-	echo "Database for BIOS - not touching MySQL root password - previous value remains in place..."
-fi
+		rm -f "$MYCNF"  # Reset access rights, if unsecured earlier
+		printf '[client]\nuser=root\npassword=%s\n' "${ROOT_PW}" > "$MYCNF"
+		chmod 600 "$MYCNF"
+	else
+		echo "Database for BIOS - not touching MySQL root password - previous value remains in place..."
+	fi
+	return 0
+}
 
+verify_schema_version() {
+	# For full filename path referenced by $1, checks presence and
+	# consistency of versions set by the base filename (in DB) and
+	# against the version specified in the SQL file itself
+	# If "$1" is just a short name (e.g. coming from database) and is
+	# missing in INITSQL_DIR we do not compare against in-file version.
+	local INITSQL="$1"
+	[ -z "$INITSQL" ] && INITSQL="$INITSQL_FIRST"
+	local INITSQL_BASENAME="`basename "$INITSQL"`"
+	[ x"$INITSQL" = x"$INITSQL_BASENAME" ] && INITSQL="$INITSQL_DIR/$INITSQL_BASENAME"
+
+	# Verify that begin-import and finish-import version tags are the same
+	BIOS_SCHEMA_VERSION_DB_1=$(exec_sql_db "SELECT version FROM t_bios_schema_version WHERE tag='begin-import' AND filename='$INITSQL_BASENAME' ORDER BY id DESC LIMIT 1;") || \
+		BIOS_SCHEMA_VERSION_DB_1="begin-NA"
+	BIOS_SCHEMA_VERSION_DB_2=$(exec_sql_db "SELECT version FROM t_bios_schema_version WHERE tag='finish-import' AND filename='$INITSQL_BASENAME' ORDER BY id DESC LIMIT 1;") || \
+		BIOS_SCHEMA_VERSION_DB_2="finish-NA"
+
+	if [ x"$BIOS_SCHEMA_VERSION_DB_1" = x"begin-NA" ] && \
+	   [ x"$BIOS_SCHEMA_VERSION_DB_2" = x"finish-NA" ] \
+	; then
+		echo "Error: Schema version for '$INITSQL_BASENAME' is not available in BIOS database" >&2
+		upgrade_database "$INITSQL"        # DB is too old or import failed VERY early
+		exit $?
+	else
+		if [ x"$BIOS_SCHEMA_VERSION_DB_1" != x"$BIOS_SCHEMA_VERSION_DB_2" ] || \
+		   [ -z "$BIOS_SCHEMA_VERSION_DB_1" ] || [ -z "$BIOS_SCHEMA_VERSION_DB_2" ] \
+		; then
+			echo "Error: Schema version for '$INITSQL_BASENAME' is not consistent in BIOS database ('$BIOS_SCHEMA_VERSION_DB_1' vs '$BIOS_SCHEMA_VERSION_DB_2')" >&2
+			upgrade_database "$INITSQL"        # DB initialization crashed mid-way
+			exit $?
+		fi
+	fi
+
+	# Verify that our SQL file has the same schema version as the database
+	if [ -r "$INITSQL" ] && [ -s "$INITSQL" ] && \
+		BIOS_SCHEMA_VERSION_SQL="`grep_sql_version < "$INITSQL"`" \
+	; then
+		if [ -z "$BIOS_SCHEMA_VERSION_SQL" ]; then
+			echo "Warning: Can't find BIOS database schema version in '$INITSQL', but some BIOS database is available with version '$BIOS_SCHEMA_VERSION_DB_2'; skipping the test for need of upgrades" >&2
+		else
+			# Database version is consistent and not empty; what about SQL file version?
+			if [ x"$BIOS_SCHEMA_VERSION_DB_2" != x"$BIOS_SCHEMA_VERSION_SQL" ]; then
+				echo "Error: Schema version for '$INITSQL_BASENAME' in BIOS database is not the same as in current SQL schema file ('$BIOS_SCHEMA_VERSION_DB_2' vs '$BIOS_SCHEMA_VERSION_SQL')" >&2
+				upgrade_database "$INITSQL"  # DB is older/different than the SQL file
+				exit $?
+			fi
+		fi
+	else
+		echo "Warning: Can't read '$INITSQL' but some BIOS database is available;" \
+		    "not verifying database schema version vs. initialization SQL file" >&2
+	fi
+
+	echo "Database for BIOS - schema component '$INITSQL_BASENAME' version '$BIOS_SCHEMA_VERSION_DB_2' is up-to-date"
+}
+
+ensure_root_password || exit $?
 case "${BIOS_DB_INIT-}" in
 	generate|initialize|flush|init) generate_database; exit $? ;;
 	upgrade|update) upgrade_database; exit $? ;;
@@ -151,47 +241,11 @@ fi
 
 # If there are any consistency checks to run on the database -
 # e.g. to detect botched imports, need of upgrades, etc. - do it here
+# Here we pick basenames from foth INITSQL_DIR and database, and also
+# make sure to verify INITSQL_FIRST (whether the file exists or not)
+for F in "$INITSQL_FIRST" `{ ls -1 "${INITSQL_DIR}"/*.sql | sed 's,^.*/\([^\/]*$\),\1,'; exec_sql_db 'SELECT DISTINCT filename FROM t_bios_schema_version;' ; }  | sort | uniq | grep -v "$(basename $INITSQL_FIRST)"` ; do
+	verify_schema_version "$F" || exit $?
+done
 
-# Verify that begin-import and finish-import version tags are the same
-BIOS_SCHEMA_VERSION_DB_1=$(exec_sql_db "SELECT version FROM t_bios_schema_version WHERE tag='begin-import' order by id desc limit 1;") || \
-	BIOS_SCHEMA_VERSION_DB_1="begin-NA"
-BIOS_SCHEMA_VERSION_DB_2=$(exec_sql_db "SELECT version FROM t_bios_schema_version WHERE tag='finish-import' order by id desc limit 1;") || \
-	BIOS_SCHEMA_VERSION_DB_2="finish-NA"
-
-if [ x"$BIOS_SCHEMA_VERSION_DB_1" = x"begin-NA" ] && \
-   [ x"$BIOS_SCHEMA_VERSION_DB_2" = x"finish-NA" ] \
-; then
-	echo "Error: Schema version is not available in BIOS database" >&2
-	upgrade_database        # DB is too old or import failed VERY early
-	exit $?
-else
-	if [ x"$BIOS_SCHEMA_VERSION_DB_1" != x"$BIOS_SCHEMA_VERSION_DB_2" ] || \
-	   [ -z "$BIOS_SCHEMA_VERSION_DB_1" ] || [ -z "$BIOS_SCHEMA_VERSION_DB_2" ] \
-	; then
-		echo "Error: Schema version is not consistent in BIOS database ('$BIOS_SCHEMA_VERSION_DB_1' vs '$BIOS_SCHEMA_VERSION_DB_2')" >&2
-		upgrade_database        # DB initialization crashed mid-way
-		exit $?
-	fi
-fi
-
-# Verify that our SQL file has the same schema version as the database
-if [ -r "$INITSQL" ] && [ -s "$INITSQL" ] && \
-	BIOS_SCHEMA_VERSION_SQL="`grep_sql_version < "$INITSQL"`" \
-; then
-	if [ -z "$BIOS_SCHEMA_VERSION_SQL" ]; then
-		echo "Warning: Can't find BIOS database schema version in '$INITSQL', but some BIOS database is available with version '$BIOS_SCHEMA_VERSION_DB_2'; skipping the test for need of upgrades" >&2
-	else
-		# Database version is consistent and not empty; what about SQL file version?
-		if [ x"$BIOS_SCHEMA_VERSION_DB_2" != x"$BIOS_SCHEMA_VERSION_SQL" ]; then
-			echo "Error: Schema version in BIOS database is not the same as in current SQL schema file ('$BIOS_SCHEMA_VERSION_DB_2' vs '$BIOS_SCHEMA_VERSION_SQL')" >&2
-			upgrade_database        # DB is older/different than the SQL file
-			exit $?
-		fi
-	fi
-else
-	echo "Warning: Can't read '$INITSQL' but some BIOS database is available" >&2
-	echo "Not verifying database schema version vs. initialization SQL file"
-fi
-
-echo "Database for BIOS - found and deemed sufficient, with schema version '$BIOS_SCHEMA_VERSION_DB_2'"
+echo "Database for BIOS - found and deemed sufficient"
 exit 0
