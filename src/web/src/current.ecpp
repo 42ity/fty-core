@@ -42,6 +42,36 @@
 #include "utils_web.h"
 #include "asset_types.h"
 #include "helpers.h"
+
+static std::string
+s_os2string(
+        double d) {
+    // This is a hack for gdn project - if the key is operatingStatus, the value is
+    // converted from number to string using this map
+    static std::map<int, std::string> OS2STRING {
+        {0, "Unknown"},
+            {1, "None"},
+            {2, "Servicing"},
+            {3, "Starting"},
+            {4, "Stopping"},
+            {5, "Stopped"},
+            {6, "Aborted"},
+            {7, "Dormant"},
+            {8, "Completed"},
+            {9, "Migrating"},
+            {10, "Immigrating"},
+            {11, "Emigrating"},
+            {12, "Snapshotting"},
+            {13, "In_Test"},
+            {14, "Transitioning"},
+            {15, "In_Service"}
+    };
+
+    int os = (int) d; // measurements are received as double
+    if (OS2STRING.count(os) == 0)
+        os = 0;
+    return OS2STRING.at(os);
+}
 </%pre>
 
 <%args>
@@ -175,6 +205,10 @@ std::string dev;
             if( one_measurement.first == "status.ups" )
             {
                 json += utils::json::jsonify (one_measurement.first, shared::upsstatus_to_string(one_measurement.second));
+            }
+            else if (one_measurement.first == "operatingStatus" )
+            {
+                json += utils::json::jsonify (one_measurement.first, s_os2string(one_measurement.second));
             }
             else
             {
