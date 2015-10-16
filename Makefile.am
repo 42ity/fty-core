@@ -1378,6 +1378,9 @@ client_SCRIPTS +=	tools/bios-passwd \
 
 EXTRA_DIST +=		tools/fake-th
 
+# Recipe needed to fulfill ci-rc-bios.sh logic
+fake-th: tools/fake-th
+
 
 ###################################################################
 # Web Library (tntnet dynamic module for $BIOS REST API)
