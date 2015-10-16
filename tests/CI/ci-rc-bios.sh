@@ -38,7 +38,7 @@ if [ ! -x "$BUILDSUBDIR/config.status" ]; then
 else
     echo "Found $BUILDSUBDIR/config.status, using custom-built binaries..."
     echo "Search path: $CHECKOUTDIR, $PWD"
-    export PATH="${PWD}:$BUILDSUBDIR:$CHECKOUTDIR:~/bin:~/lib:~/libexec:~/lib/bios:~/libexec/bios:$PATH"
+    export PATH="${PWD}:$BUILDSUBDIR:$BUILDSUBDIR/tools:$CHECKOUTDIR:$CHECKOUTDIR/tools:~/bin:~/lib:~/libexec:~/lib/bios:~/libexec/bios:$PATH"
 fi
 
 # Simple check for whether sudo is needed to restart saslauthd
