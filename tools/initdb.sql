@@ -1,7 +1,13 @@
-/* NOTE FOR DEVELOPERS: The schema-version must be changed (increased) whenever
- * you change table/view structures, so upgrade/recreation can be triggered
- * by bios-db-init service (whenever we figure out how to really upgrade;) ) */
-SET @bios_db_schema_version = '20151015' ;
+/* NOTE FOR DEVELOPERS: The schema-version must be changed (e.g. increased)
+ * whenever you change table/view structures, so upgrade/recreation can be
+ * triggered by bios-db-init service (whenever we figure out how to really
+ * upgrade, see BIOS-1332). CURRENT implementation of "db-init" just refuses
+ * to start the service and its dependents if the strings in database and
+ * supplied copy of this SQL file are different in any manner. */
+/* Gentleman's agreement on thios arbitrary string is that it is YYYYMMDDNNNN
+ * sort of timestamp + number of change within a day, so it always increases
+ * and we can discern upgrades vs. downgrades at later stage in development */
+SET @bios_db_schema_version = '201510150001' ;
 
 DROP DATABASE IF EXISTS box_utf8;
 CREATE DATABASE IF NOT EXISTS box_utf8 character set utf8 collate utf8_general_ci;
@@ -15,6 +21,11 @@ CREATE TABLE IF NOT EXISTS t_empty (id TINYINT);
 INSERT INTO t_empty values (1);
 
 /* Values added in the beginning and end of SQL import to validate it succeeded */
+/* Note: theoretically we should support upgrades, so this table would have
+ * several begin-finish entries with different versions and timestamps. So both
+ * in the informative SELECT below and in the "db-init" script we take care to
+ * pick only the latest entry with each tag for report or comparison, and do not
+ * require to destroy the table. */
 CREATE TABLE IF NOT EXISTS t_bios_schema_version(
     id               INTEGER UNSIGNED  NOT NULL AUTO_INCREMENT,
     tag              VARCHAR(16)       NOT NULL,
