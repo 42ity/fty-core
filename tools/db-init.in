@@ -34,7 +34,11 @@ INITSQL="@datarootdir@/@PACKAGE@/sql/mysql/initdb.sql"
 # and so it is not needed to specify it explicitly either
 
 # Flag used to set a password, empty if defaults suffice
-MYSQL_ROOT_PASSWD=''
+MYSQL_ROOT_PASSWD_FLAG=''
+
+# Legacy support
+[ -s /etc/default/mysql-root-passwd ] && . /etc/default/mysql-root-passwd
+# Can set MYSQL_ROOT_PASSWD value
 
 do_mysql() {
 	mysql -u root "$@"
@@ -42,21 +46,28 @@ do_mysql() {
 
 if [ -z "`echo "select 'working';" | do_mysql | grep working`" ]; then
 	if [ -z "`echo "select 'working';" | do_mysql --password='' | grep working`" ]; then
-		echo "Can't connect to database"
-		exit 1
+		if [ -n "$MYSQL_ROOT_PASSWD" ] && [ -n "`echo "select 'working';" | do_mysql --password="$MYSQL_ROOT_PASSWD" | grep working`" ]; then
+			rm -f "$MYCNF"  # Reset access rights, if unsecured earlier
+			printf '[client]\nuser=root\npassword=%s\n' "${MYSQL_ROOT_PASSWD}" > "$MYCNF" && \
+			rm -f /etc/default/mysql-root-passwd
+			chmod 600 "$MYCNF"
+		else
+			echo "Can't connect to database"
+			exit 1
+		fi
 	else
 		echo "Config files inconsistent: really MYSQL root password is empty (database recreated?)"
-		MYSQL_ROOT_PASSWD='--password='
+		MYSQL_ROOT_PASSWD_FLAG='--password='
 	fi
 fi
 
-if [ ! -s "$MYCNF" ] || [ x"$MYSQL_ROOT_PASSWD" = x"--password=" ]; then
+if [ ! -s "$MYCNF" ] || [ x"$MYSQL_ROOT_PASSWD_FLAG" = x"--password=" ]; then
 	# ~/.my.cnf missing or empty, or password was detected as empty
 	# Note this structure allows a .my.cnf to specify password=''
 	echo "Database for BIOS - generating MySQL root password instead of corrupt/empty value..."
 	# Just in case, avoid weird chars in the password
 	ROOT_PW="`head -c 12 /dev/urandom | base64 | sed 's,[\+\=\/\ \t\n],%,g'`"
-	cat << EOF | do_mysql $MYSQL_ROOT_PASSWD
+	cat << EOF | do_mysql $MYSQL_ROOT_PASSWD_FLAG
 SET PASSWORD = PASSWORD('$ROOT_PW');
 FLUSH PRIVILEGES;
 EOF
