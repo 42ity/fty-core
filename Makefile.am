@@ -1376,6 +1376,8 @@ client_SCRIPTS +=	tools/bios-passwd \
 			tools/fake-th \
 			tools/bios-nutconfig
 
+EXTRA_DIST +=		tools/fake-th
+
 
 ###################################################################
 # Web Library (tntnet dynamic module for $BIOS REST API)
