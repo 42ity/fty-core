@@ -18,7 +18,7 @@
 #
 
 # Trick to rename the script in "ps" output, so "pidof" can find it
-[ -z "${_SHELL_EXECED-}" ] && _SHELL_EXECED=yes exec -a "$0" /bin/bash "$0"
+[ -z "${_SHELL_EXECED-}" ] && _SHELL_EXECED=yes exec -a "$0" /bin/bash < "$0"
 
 while true; do
 generate_measurement "`hostname -f`" temperature.THF "C" "`expr 17 + $RANDOM % 15`"
