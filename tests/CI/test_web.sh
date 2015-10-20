@@ -164,13 +164,14 @@ CMPJSON_PY="`pwd`/cmpjson.py"
 cd web/commands || CODE=6 die "Can not change to `pwd`/web/commands"
 
 summarizeResults() {
+    TRAP_RES=$?
+    [ "$TRAP_RES" != 0 ] && print_result $TRAP_RES
     set +e
     logmsg_info "Testing completed, $PASS/$TOTAL tests passed for groups:"
     logmsg_info "  POSITIVE = $POSITIVE"
     logmsg_info "  NEGATIVE = $NEGATIVE"
     logmsg_info "  SKIP_NONSH_TESTS = $SKIP_NONSH_TESTS (so skipped $SKIPPED_NONSH_TESTS tests)"
-    [ -z "$FAILED" ] && exit 0
-
+    [ -z "$FAILED" ] && [ x"`expr $TOTAL - $PASS`" = x0 ] && exit 0
     logmsg_info "The following tests have failed:"
     for i in $FAILED; do
         echo " * $i"
