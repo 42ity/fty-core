@@ -64,7 +64,6 @@ print_result() {
     ### Is this a valid number? if not - it may be some comment about the error
     [ "$_ret" -ge 0 ] 2>/dev/null || \
         _ret=255
-    TOTAL="`expr $TOTAL + 1`"
     if [ "$_ret" -eq 0 ]; then
         echo " * PASSED"
         PASS="`expr $PASS + 1`"
@@ -116,6 +115,7 @@ test_it() {
     else
         echo "Running test $NAME::$TNAME :"
     fi
+    TOTAL="`expr $TOTAL + 1`"
 }
 
 ### This is what we will sig-kill if needed
