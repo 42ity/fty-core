@@ -154,7 +154,9 @@ _die_asprintf(
  *  \param[msg] msg - message to be printed
  *
  * idx is normalized before is used - absolute value is used for indexing, so 1
- * equals to -1. If it's bigger than size of array, it's changed to 1.
+ * equals to -1.
+ * If it's bigger than size of array, it's changed to 0.
+ * 0 means, that there is an error hidden somewhere.
  *
  * XXX: should not we change it to http_die_be to use instance of BiosError directly?
  */
@@ -162,7 +164,8 @@ _die_asprintf(
 do { \
     int64_t _idx = idx; \
     if (_idx < 0) _idx = _idx * -1; \
-    if (_idx >= (int64_t)_WSErrorsCOUNT) _idx = 1; \
+    if (_idx >= (int64_t)_WSErrorsCOUNT) _idx = 0; \
+    if (_idx == 0) log_error("TEAPOT");\
     reply.out() << utils::json::create_error_json(msg, _errors.at(_idx).err_code);\
     return _errors.at(_idx).http_code;\
 } \
