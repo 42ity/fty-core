@@ -137,15 +137,6 @@ s_select_outlet_count(
     return string_to_uint32(foo.c_str());
 }
 
-static bool
-s_is_rack(
-        tntdb::Connection &conn,
-        a_elmnt_id_t id)
-{
-    auto res = persist::select_asset_element_web_byId(conn, id);
-    return res.status == 1 && res.item.type_name == "rack";
-}
-
 void
 rack_outlets_available(
         uint32_t elementId,
