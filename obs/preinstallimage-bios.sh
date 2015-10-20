@@ -237,6 +237,10 @@ systemctl enable malamute
 
 # Enable BIOS services (distributed as a systemd preset file)
 systemctl preset-all
+if [ "`uname -m`" = x86_64 ]; then
+    systemctl enable bios-fake-th
+    systemctl disable bios-agent-th
+fi
 
 # Fix tntnet unit
 cat > /etc/systemd/system/tntnet@.service <<EOF
