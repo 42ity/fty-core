@@ -20,61 +20,98 @@
 #  \brief  Inits the BIOS database schema on factory-default installations
 #  \author Karol Hrdina <KarolHrdina@Eaton.com>
 #  \author Alena Chernikava <AlenaChernikava@Eaton.com>
+#  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 #
 
 prefix="@prefix@"
 
 INITSQL="@datarootdir@/@PACKAGE@/sql/mysql/initdb.sql"
+[ -n "$HOME" ] && [ -d "$HOME" ] && \
+	MYCNF="$HOME/.my.cnf" || \
+	MYCNF="/root/.my.cnf"
+# MySQL-root password is empty by default, otherwise is cached in $MYCNF
+# and so it is not needed to specify it explicitly either
 
-[ \! -r /etc/default/mysql-root-passwd ] || . /etc/default/mysql-root-passwd
+# Flag used to set a password, empty if defaults suffice
+MYSQL_ROOT_PASSWD_FLAG=''
+
+# Legacy support
+[ -s /etc/default/mysql-root-passwd ] && . /etc/default/mysql-root-passwd
+# Can set MYSQL_ROOT_PASSWD value
 
 do_mysql() {
-	if [ -z "$MYSQL_ROOT_PASSWD" ]; then
-		mysql -u root
-	else
-		mysql -u root -p"$MYSQL_ROOT_PASSWD"
-	fi
+	mysql -u root "$@"
 }
 
 if [ -z "`echo "select 'working';" | do_mysql | grep working`" ]; then
-	if [ -z "`echo "select 'working';" | MYSQL_ROOT_PASSWD='' do_mysql | grep working`" ]; then
-		echo "Can't connect to database"
-		exit 1
+	if [ -z "`echo "select 'working';" | do_mysql --password='' | grep working`" ]; then
+		if [ -n "$MYSQL_ROOT_PASSWD" ] && [ -n "`echo "select 'working';" | do_mysql --password="$MYSQL_ROOT_PASSWD" | grep working`" ]; then
+			rm -f "$MYCNF"  # Reset access rights, if unsecured earlier
+			printf '[client]\nuser=root\npassword=%s\n' "${MYSQL_ROOT_PASSWD}" > "$MYCNF" && \
+			rm -f /etc/default/mysql-root-passwd
+			chmod 600 "$MYCNF"
+		else
+			echo "Can't connect to database"
+			exit 1
+		fi
 	else
-		echo "Configuration files inconsistent: really MYSQL_ROOT_PASSWD is empty"
-		MYSQL_ROOT_PASSWD=''
+		echo "Config files inconsistent: really MYSQL root password is empty (database recreated?)"
+		MYSQL_ROOT_PASSWD_FLAG='--password='
 	fi
 fi
 
-if [ -z "`echo 'show databases;' | do_mysql | egrep '^box_utf8$'`" ]; then
+if [ ! -s "$MYCNF" ] || [ x"$MYSQL_ROOT_PASSWD_FLAG" = x"--password=" ]; then
+	# ~/.my.cnf missing or empty, or password was detected as empty
+	# Note this structure allows a .my.cnf to specify password=''
+	echo "Database for BIOS - generating MySQL root password instead of corrupt/empty value..."
+	# Just in case, avoid weird chars in the password
+	ROOT_PW="`head -c 12 /dev/urandom | base64 | sed 's,[\+\=\/\ \t\n],%,g'`"
+	cat << EOF | do_mysql $MYSQL_ROOT_PASSWD_FLAG
+SET PASSWORD = PASSWORD('$ROOT_PW');
+FLUSH PRIVILEGES;
+EOF
+	[ $? != 0 ] && echo "Error setting MySQL root password" >&2 && exit 1
+
+	rm -f "$MYCNF"  # Reset access rights, if unsecured earlier
+	printf '[client]\nuser=root\npassword=%s\n' "${ROOT_PW}" > "$MYCNF"
+	chmod 600 "$MYCNF"
+else
+	echo "Database for BIOS - not touching MySQL root password - previous value remains in place..."
+fi
+
+# From here on, the mysql client should rely on ~/.my.cnf
+# so no extra password params are needed
+if [ -z "`do_mysql -Ns -e 'show databases;' | egrep '^box_utf8$'`" ]; then
 	if [ -r "$INITSQL" ] && \
 	   [ -s "$INITSQL" ]; then
 		echo "Database for BIOS not found - importing schema..."
-		cat "$INITSQL" | do_mysql || exit 1
+		do_mysql < "$INITSQL" || exit 1
 
-		echo "Database for BIOS - generating passwords..."
+		echo "Database for BIOS - generating user passwords..."
 
-		BIOS_RW="`head -c 12 /dev/urandom | base64`"
-		BIOS_RO="`head -c 12 /dev/urandom | base64`"
-		[ -n "$MYSQL_ROOT_PASSWD" ] && \
-			ROOT_PW="$MYSQL_ROOT_PASSWD=" || \
-			ROOT_PW="`head -c 12 /dev/urandom | base64`"
+		BIOS_RW="`head -c 12 /dev/urandom | base64 | sed 's,[\+\=\/\ \t\n],%,g'`"
+		BIOS_RO="`head -c 12 /dev/urandom | base64 | sed 's,[\+\=\/\ \t\n],%,g'`"
 
 		cat << EOF | do_mysql
 GRANT DELETE,INSERT,SELECT,UPDATE ON box_utf8.* TO 'bios-rw'@'localhost' IDENTIFIED BY '$BIOS_RW';
 GRANT SELECT                      ON box_utf8.* TO 'bios-ro'@'localhost' IDENTIFIED BY '$BIOS_RO';
-SET PASSWORD = PASSWORD('$ROOT_PW');
 FLUSH PRIVILEGES;
 EOF
-		printf 'MYSQL_ROOT_PASSWD="%s"\n' "${ROOT_PW}" > /etc/default/mysql-root-passwd
-		chmod 600 /etc/default/mysql-root-passwd
-		chown 0:0 /etc/default/mysql-root-passwd
 		printf 'DB_USER="%s"\nDB_PASSWD="%s"\n' "bios-rw" "${BIOS_RW}" > /etc/default/bios-db-rw
 		printf 'DB_USER="%s"\nDB_PASSWD="%s"\n' "bios-ro" "${BIOS_RO}" > /etc/default/bios-db-ro
 		chown bios /etc/default/bios-db-r[wo]
 		chmod 600 /etc/default/bios-db-r[wo]
+
+		echo "Database for BIOS - completed the schema import and password generation"
 	else
-		echo "Can't read '$INITSQL' !!!"
+		echo "Error: Can't read '$INITSQL' !!!" >&2
 		exit 1
 	fi
+else
+	# TODO: If there are any consistency checks to run on the database -
+	# e.g. to detect botched imports, need of upgrades, etc. - do it here
+	echo "Database for BIOS - found and deemed sufficient"
 fi
+
+exit 0
