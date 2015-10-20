@@ -47,6 +47,7 @@ DB_DATA_TESTREST="load_data_test_restapi.sql"
 DB_TOPOP="power_topology.sql"
 DB_TOPOL="location_topology.sql"
 DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
+DB_ASSET_DEFAULT="initdb_ci_patch_2.sql"
 
 PATH=/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH
 export PATH
@@ -261,6 +262,14 @@ test_web_topo_l() {
     test_web "$@"
 }
 
+asset_create() {
+    echo "---------- reset db: asset : create ---------"
+    for data in "$DB_BASE" "$DB_ASSET_DEFAULT" "$DB_DATA"; do
+          loaddb_file "$DB_LOADDIR/$data" || return $?
+    done
+    test_web "$@"
+}
+
 # do the test
 set +e
 if [ $# = 0 ]; then
@@ -293,6 +302,9 @@ else
                 RESULT=$? ;;
             topology_power*)
                 test_web_topo_p "$1"
+                RESULT=$? ;;
+            asset_create*)
+                asset_create $1
                 RESULT=$? ;;
             *)        test_web_default "$1"
                 RESULT=$? ;;
