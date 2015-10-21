@@ -210,7 +210,6 @@ void Autoconfig::loadState()
     try {
         _configurableDevices.clear();
         cxxtools::JsonDeserializer deserializer(in);
-        std::vector<AutoConfigurationInfo> items;
         deserializer.deserialize(_configurableDevices);
     } catch( std::exception &e ) {
         log_error( "can't parse state from database: %s", e.what() );

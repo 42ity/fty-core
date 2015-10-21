@@ -45,7 +45,7 @@ struct AutoConfigurationInfo
 class Configurator {
  public:
     virtual ~Configurator() {};
-    virtual bool configure( const std::string &name, const AutoConfigurationInfo info );
+    virtual bool configure( const std::string &name, const AutoConfigurationInfo &info );
 };
 
 class NUTConfigurator : public Configurator {
@@ -53,7 +53,7 @@ class NUTConfigurator : public Configurator {
     virtual ~NUTConfigurator() {};
     std::vector<std::string>::const_iterator selectBest( const std::vector<std::string> &configs);
     void updateNUTConfig();
-    bool configure( const std::string &name, const AutoConfigurationInfo info );
+    bool configure( const std::string &name, const AutoConfigurationInfo &info );
  private:
     std::vector<std::string>::const_iterator stringMatch( const std::vector<std::string> &texts, const char *pattern);
     bool match( const std::vector<std::string> &texts, const char *pattern);
