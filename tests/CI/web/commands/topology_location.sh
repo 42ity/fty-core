@@ -18,9 +18,8 @@
 #
 
 
-#! \file topology_location_001.sh
-#  \author Karol Hrdina <KarolHrdina@Eaton.com>
-#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#! \file topology_location.sh
+#  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 #  \brief Not yet documented file
 
 echo "********* 1. From_top_but_not_recursive ***********************************************************"
@@ -243,8 +242,7 @@ echo "********* 28. to_ups_LOC_010 *********************************************
 echo "***************************************************************************************************"
 test_it "to_ups_LOC_010"
 curlfail_push_expect_noerrors
-api_get_json /topology/location?to=7022
- >&5
+api_get_json /topology/location?to=7022 >&5
 print_result $?
 curlfail_pop
 
@@ -252,8 +250,7 @@ echo "********* 29. to_RACK_LOC_1 **********************************************
 echo "***************************************************************************************************"
 test_it "to_RACK_LOC_1"
 curlfail_push_expect_noerrors
-api_get_json /topology/location?to=7014
- >&5
+api_get_json /topology/location?to=7014 >&5
 print_result $?
 curlfail_pop
 
@@ -261,8 +258,7 @@ echo "********* 30. to_ROOM_LOC_01 *********************************************
 echo "***************************************************************************************************"
 test_it "to_ROOM_LOC_01"
 curlfail_push_expect_noerrors
-api_get_json /topology/location?to=7002
- >&5
+api_get_json /topology/location?to=7002 >&5
 print_result $?
 curlfail_pop
 
@@ -270,9 +266,67 @@ echo "********* 31. to_inputpowergroup DC_LOC_01 *******************************
 echo "***************************************************************************************************"
 test_it "to_ROOM_LOC_01"
 curlfail_push_expect_noerrors
-api_get_json /topology/location?to=7025
- >&5
+api_get_json /topology/location?to=7025 >&5
 print_result $?
 curlfail_pop
+
+echo "********* 32. from_none ***************************************************************************"
+echo "***************************************************************************************************"
+test_it "from_none"
+curlfail_push_expect_noerrors
+api_get_json /topology/location?from=none >&5
+print_result $?
+curlfail_pop
+
+echo "********* 33. Top_feed_by_7024 ********************************************************************"
+echo "***************************************************************************************************"
+test_it "Top_feed_by_7024"
+curlfail_push_expect_noerrors
+api_get_json /topology/location?from=7000\&feed_by=7024\&filter=devices >&5
+print_result $?
+curlfail_pop
+
+echo "********* 34. From_7032_feed_by_7024 ********************************************************************"
+echo "***************************************************************************************************"
+test_it "From_7032_feed_by_7024"
+curlfail_push_expect_noerrors
+api_get_json /topology/location?from=7032\&feed_by=7024\&filter=devices >&5
+print_result $?
+curlfail_pop
+
+echo "********* 35. Top_1_recursive_feed_by_8 ********************************************************************"
+echo "***************************************************************************************************"
+test_it "Top_1_recursive_feed_by_8"
+curlfail_push_expect_noerrors
+api_get_json /topology/location?from=1\&recursive=yes\&feed_by=8\&filter=devices >&5
+print_result $?
+curlfail_pop
+
+echo "********* 36. From_5_recursive_feed_by_8 ********************************************************************"
+echo "***************************************************************************************************"
+test_it "From_5_recursive_feed_by_8"
+curlfail_push_expect_noerrors
+api_get_json /topology/location?from=5\&recursive=yes\&feed_by=8\&filter=devices >&5
+print_result $?
+curlfail_pop
+
+echo "********* 37. From_7_recursive_feed_by_8 ********************************************************************"
+echo "***************************************************************************************************"
+test_it "From_7_recursive_feed_by_8"
+curlfail_push_expect_noerrors
+api_get_json /topology/location?from=7\&recursive=yes\&feed_by=8\&filter=devices >&5
+print_result $?
+curlfail_pop
+
+
+echo "********* 38. From_1_recursive_feed_by_7 ********************************************************************"
+echo "***************************************************************************************************"
+test_it "From_1_recursive_feed_by_7"
+curlfail_push_expect_noerrors
+api_get_json /topology/location?from=1\&recursive=yes\&feed_by=7\&filter=devices >&5
+print_result $?
+curlfail_pop
+
+
 
 
