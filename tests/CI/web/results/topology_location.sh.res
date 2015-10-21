@@ -25,3 +25,14 @@
 {"name":"DC_LOC_01","id":"7000"}
 {"name":"srv_LOC_50","id":"7023","type":"server"}
 {"name":"DC_LOC_01","id":"7000","contains":{"rooms":[{"name":"ROOM_LOC_02","id":"7002","contains":{"rows":[{"name":"ROW_LOC_20","id":"7005"}]}}]}}
+{"name":"DC_LOC_01","id":"7000","contains":{"rooms":[{"name":"ROOM_LOC_01","id":"7001","contains":{"rows":[{"name":"ROW_LOC_01","id":"7004","contains":{"racks":[{"name":"RACK_LOC_010","id":"7009","contains":{"devices":[{"name":"ups_LOC_010","id":"7022","type":"ups"}]}}]}}]}}]}}
+{"name":"DC_LOC_01","id":"7000","contains":{"rooms":[{"name":"ROOM_LOC_01","id":"7001","contains":{"racks":[{"name":"RACK_LOC_1","id":"7014"}]}}]}}
+{"name":"DC_LOC_01","id":"7000","contains":{"rooms":[{"name":"ROOM_LOC_02","id":"7002"}]}}
+{"name":"DC_LOC_01","id":"7000","contains":{"groups":[{"name":"inputpowergroup DC_LOC_01","id":"7025","type":"happynewyear"}]}}
+{"name":"","id":"0","contains":{"rooms":[{"name":"ROOM4","id":"13","contains":[]},{"name":"ROOM_LOC_50","id":"7003","contains":[]}],"rows":[{"name":"ROW4","id":"14","contains":[]},{"name":"ROW_LOC_50","id":"7008","contains":[]}],"racks":[{"name":"RACK_LOC_50","id":"7015","contains":[]}],"devices":[{"name":"srv_LOC_50","id":"7023","type":"server"},{"name":"srv_LOC_51","id":"7024","type":"server"}],"groups":[{"name":"group1","id":"9","type":"power_chain","contains":[]}]}}
+{"name":"DC_LOC_01","id":"7000","contains":[]}
+{"name":"DC_LOC_04","id":"7032","contains":[]}
+{"name":"DC1","id":"1","contains":{"rooms":[{"name":"ROOM1","id":"2","contains":{"rows":[{"name":"ROW1","id":"3","contains":{"racks":[{"name":"RACK1","id":"4","contains":{"devices":[{"name":"serv1","id":"5","type":"server"}]}}]}}],"devices":[{"name":"epdu","id":"6","type":"epdu"},{"name":"ups","id":"7","type":"ups"}]}}],"devices":[{"name":"feed","id":"8","type":"feed"}]}}
+{"name":"serv1","id":"5","type":"server"}
+{"name":"ups","id":"7","type":"ups"}
+{"name":"DC1","id":"1","contains":{"rooms":[{"name":"ROOM1","id":"2","contains":{"rows":[{"name":"ROW1","id":"3","contains":{"racks":[{"name":"RACK1","id":"4","contains":{"devices":[{"name":"serv1","id":"5","type":"server"}]}}]}}],"devices":[{"name":"epdu","id":"6","type":"epdu"},{"name":"ups","id":"7","type":"ups"}]}}]}}
