@@ -1,6 +1,6 @@
 /*
 Copyright (C) 2015 Eaton
- 
+
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or
@@ -16,6 +16,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
+#include "dbhelpers.h"
+
 #include <assert.h>
 
 #include <czmq.h>
@@ -26,9 +28,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "log.h"
 #include "persist_error.h"
 #include "asset_types.h"
-#include "dbhelpers.h"
 
-int convert_asset_to_monitor_safe(const char* url, 
+int convert_asset_to_monitor_safe(const char* url,
                 a_elmnt_id_t asset_element_id, m_dvc_id_t *device_id)
 {
     if ( device_id == NULL )
@@ -53,7 +54,7 @@ int convert_asset_to_monitor_safe(const char* url,
 }
 
 
-m_dvc_id_t convert_asset_to_monitor_old(const char* url, 
+m_dvc_id_t convert_asset_to_monitor_old(const char* url,
                 a_elmnt_id_t asset_element_id)
 {
     assert ( asset_element_id );
@@ -71,7 +72,7 @@ m_dvc_id_t convert_asset_to_monitor_old(const char* url,
             "   ON (v1.id_asset_element = v.id_asset_element)"
             " WHERE v.id_asset_element = :id"
         );
-        
+
         tntdb::Row row = st.set("id", asset_element_id).
                             selectRow();
 
@@ -195,45 +196,6 @@ bool is_ok_value (const char *value)
 {
     auto length = strlen(value);
     if ( ( length > 0 ) && ( length <= MAX_VALUE_LENGTH ) )
-        return true;
-    else
-        return false;
-}
-
-bool is_ok_asset_device_type (a_dvc_tp_id_t asset_device_type_id)
-{
-    // TODO: manage device types
-    if ( asset_device_type_id > 0 )
-        return true;
-    else
-        return false;
-}
-
-bool is_ok_hostname (const char *hostname)
-{
-    // TODO: Do we need to add more complex restrictions?
-    auto length = strlen(hostname);
-    if ( ( length > 0 ) && ( length <= MAX_HOSTNAME_LENGTH ) )
-        return true;
-    else
-        return false;
-}
-
-bool is_ok_fullhostname (const char *fullhostname)
-{
-    // TODO: Do we need to add more complex restrictions?
-    auto length = strlen(fullhostname);
-    if ( ( length > 0 ) && ( length <= MAX_FULLHOSTNAME_LENGTH ) )
-        return true;
-    else
-        return false;
-}
-
-bool is_ok_mac (const char *mac)
-{
-    // TODO: Do we need to add more complex restrictions?
-    auto length = strlen(mac);
-    if ( ( length > 0 ) && ( length <= MAX_MAC_LENGTH ) )
         return true;
     else
         return false;

@@ -42,7 +42,6 @@ using namespace shared;
 </%pre>
 <%cpp>
 augtool* augeas = augtool::get_instance();
-std::string command;
 std::string nil;
 
 // Make sure we have data that works

@@ -67,7 +67,7 @@ void
 
 void
     send_configure (
-        const std::pair<db_a_elmnt_t, persist::asset_operation> row,
+        const std::pair<db_a_elmnt_t, persist::asset_operation> &row,
         const std::string &agent_name)
 {
     send_configure(std::vector<std::pair<db_a_elmnt_t,persist::asset_operation>>{row}, agent_name);
