@@ -75,7 +75,7 @@ simple_post_code '/admin/systemctl/disable' '{ "service_name" : "mysql" }' recei
 print_result $?
 
 test_it "Accept license now"
-api_auth_post /license
+api_auth_post_json '/license' "lalala" >/dev/null
 
 test_it "Authorized status"
 simple_auth_get_code "/admin/systemctl/status/mysql" received HTTP_CODE

@@ -253,10 +253,21 @@ curlfail_push_expect_401() {
     curlfail_push "expect" 'HTTP/[^ ]+ 401'
 }
 
+curlfail_push_expect_403() {
+    ### Preconfigured push that resets current values to specifically
+    ### expect an HTTP-403 Forbidden (and fail for other results)
+    curlfail_push "expect" 'HTTP/[^ ]+ 403'
+}
+
 curlfail_push_expect_404() {
     ### Preconfigured push that resets current values to specifically
     ### expect an HTTP-404 not found (and fail for other results)
     curlfail_push "expect" 'HTTP/[^ ]+ 404'
+}
+curlfail_push_expect_405() {
+    ### Preconfigured push that resets current values to specifically
+    ### expect an HTTP-405 Request method not expected (and fail for other results)
+    curlfail_push "expect" 'HTTP/[^ ]+ 405'
 }
 
 curlfail_push_expect_409() {
@@ -264,6 +275,7 @@ curlfail_push_expect_409() {
     ### expect an HTTP-409 conflict (and fail for other results)
     curlfail_push "expect" 'HTTP/[^ ]+ 409'
 }
+
 
 curlfail_push_expect_500() {
     ### Preconfigured push that resets current values to specifically
@@ -363,7 +375,8 @@ CURL() {
     fi >&3
 
     if [ $RES_CURL != 0 -a x"$WEBLIB_CURLFAIL" = xyes ]; then
-        kill -SIGUSR1 $_PID_TESTER_WEBLIB $$ >/dev/null 2>&1
+	echo "CI-WEBLIB-ERROR-CURL: Killing the test: kill -SIGUSR1 $_PID_TESTER_WEBLIB $$" >&3
+        kill -n 10 $_PID_TESTER_WEBLIB $$ >&3 2>&3 #>/dev/null 2>&1
         # exit $RES_CURL
     fi
 
@@ -498,7 +511,7 @@ _api_get_token() {
         [ x"$WEBLIB_CURLFAIL_GETTOKEN" = xprotected ] && \
             curlfail_pop
 	_TOKEN_="`echo "$_TOKEN_RAW_" | sed -n 's|.*\"access_token\"[[:blank:]]*:[[:blank:]]*\"\([^\"]*\)\".*|\1|p'`" || _RES_=$?
-	echo "CI-WEBLIB-DEBUG: _api_get_token(): got ($_RES_) new token '$_TOKEN_'" >&2
+#	echo "CI-WEBLIB-DEBUG: _api_get_token(): got ($_RES_) new token '$_TOKEN_'" >&2
     fi
     echo "$_TOKEN_"
     return $_RES_
@@ -516,6 +529,11 @@ api_auth_post() {
     TOKEN="`_api_get_token`"
     CURL --insecure --header "Authorization: Bearer $TOKEN" -d "$data" \
         -v --progress-bar "$BASE_URL$url" "$@" 3>&2 2>&1
+}
+
+api_auth_post_json() {
+   api_auth_post "$@" > /dev/null && \
+	echo "$OUT_CURL" | $JSONSH -N
 }
 
 simple_auth_post_code () {
