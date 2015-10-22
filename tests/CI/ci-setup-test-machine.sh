@@ -128,7 +128,8 @@ install_package_set_dev() {
         -q -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" \
         install \
         devscripts sudo doxygen curl git python-mysqldb \
-        cppcheck msmtp libtool cpp gcc autoconf automake m4 pkg-config equivs dh-make
+        cppcheck msmtp libtool cpp gcc autoconf automake m4 pkg-config equivs dh-make \
+	cracklib-runtime
 }
 
 install_package_set_biosdeps() {
