@@ -1,3 +1,19 @@
+/* NOTE FOR DEVELOPERS: The schema-version must be changed (e.g. increased)
+ * whenever you change table/view structures, so upgrade/recreation can be
+ * triggered by bios-db-init service (whenever we figure out how to really
+ * upgrade, see BIOS-1332). CURRENT implementation of "db-init" just refuses
+ * to start the service and its dependents if the strings in database and
+ * supplied copy of this SQL file are different in any manner. */
+/* Gentleman's agreement on thios arbitrary string is that it is YYYYMMDDNNNN
+ * sort of timestamp + number of change within a day, so it always increases
+ * and we can discern upgrades vs. downgrades at later stage in development */
+/* Other schema files, e.g. for additional modules, are encouraged to copy
+ * this pattern and also add their versions and appropriate filenames when
+ * they begin and finish to initialize their schems bits. The "db-init" script
+ * will import and/or validate any *.sql file in its resource directory. */
+SET @bios_db_schema_version = '201510150002' ;
+SET @bios_db_schema_filename = 'initdb.sql' ;
+
 DROP DATABASE IF EXISTS box_utf8;
 CREATE DATABASE IF NOT EXISTS box_utf8 character set utf8 collate utf8_general_ci;
 
@@ -8,6 +24,26 @@ SET GLOBAL time_zone='+00:00';
 /* work around smart insert without duplicates*/
 CREATE TABLE IF NOT EXISTS t_empty (id TINYINT);
 INSERT INTO t_empty values (1);
+
+/* Values added in the beginning and end of SQL import to validate it succeeded */
+/* Note: theoretically we should support upgrades, so this table would have
+ * several begin-finish entries with different versions and timestamps. So both
+ * in the informative SELECT below and in the "db-init" script we take care to
+ * pick only the latest entry with each tag for report or comparison, and do not
+ * require to destroy the table. */
+CREATE TABLE IF NOT EXISTS t_bios_schema_version(
+    id               INTEGER UNSIGNED  NOT NULL AUTO_INCREMENT,
+    tag              VARCHAR(16)       NOT NULL, /* 'begin-import' or 'finish-import' */
+    filename         VARCHAR(32)       NOT NULL, /* base filename.sql to support multiple SQLs with their versions */
+    timestamp        BIGINT            NOT NULL, /* timestamp of the entry, just in case */
+    version          VARCHAR(16)       NOT NULL, /* arbitrary string, e.g. YYYYMMDDNNNN */
+    PRIMARY KEY(id)
+);
+START TRANSACTION;
+INSERT INTO t_bios_schema_version (tag,timestamp,filename,version) VALUES('begin-import', UTC_TIMESTAMP() + 0, @bios_db_schema_filename, @bios_db_schema_version);
+/* Report the value */
+SELECT * FROM t_bios_schema_version WHERE tag = 'begin-import' order by id desc limit 1;
+COMMIT;
 
 DROP TABLE if exists t_bios_monitor_asset_relation;
 drop table if exists t_bios_measurement;
@@ -165,7 +201,7 @@ CREATE TABLE t_bios_asset_element (
   INDEX FK_ASSETELEMENT_ELEMENTSUBTYPE_idx (id_subtype   ASC),
   INDEX FK_ASSETELEMENT_PARENTID_idx    (id_parent ASC),
   UNIQUE INDEX `UI_t_bios_asset_element_NAME` (`name` ASC),
-  UNIQUE INDEX `UI_t_bios_asset_element_ASSET_TAG` (`asset_tag`  ASC),
+  INDEX `UI_t_bios_asset_element_ASSET_TAG` (`asset_tag`  ASC),
 
   CONSTRAINT FK_ASSETELEMENT_ELEMENTTYPE
     FOREIGN KEY (id_type)
@@ -630,3 +666,10 @@ INSERT INTO t_bios_asset_device_type (id_asset_device_type, name) VALUES (10, "N
 
 /* t_bios_asset_link_type */
 INSERT INTO t_bios_asset_link_type (name) VALUES ("power chain");
+
+/* This must be the last line of the SQL file */
+START TRANSACTION;
+INSERT INTO t_bios_schema_version (tag,timestamp,filename,version) VALUES('finish-import', UTC_TIMESTAMP() + 0, @bios_db_schema_filename, @bios_db_schema_version);
+/* Report the value */
+SELECT * FROM t_bios_schema_version WHERE tag = 'finish-import' order by id desc limit 1;
+COMMIT;

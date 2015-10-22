@@ -18,65 +18,66 @@
 #
 
 
-#! \file asset_one_datacenter1.sh
+#! \file asset_particular_device.sh
+#  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
-#  \author Alena Chernikava <AlenaChernikava@Eaton.com>
 #  \brief Not yet documented file
 
-echo "********* 1. read_DC_with_id_of_another_element ***************************************************"
+echo "********* 1. device_with_id_0 *********************************************************************"
 echo "***************************************************************************************************"
-test_it "read_DC_with_id_of_another_element"
+test_it "device_with_id_0"
 curlfail_push_expect_400
-api_get_json /asset/datacenter/2 >&5
+api_get_json /asset/device/0 >&5
 print_result $?
 curlfail_pop
 
-echo "********* 2. request_to existing_DC ***************************************************************"
+echo "********* 2. device_with_non_exist_id *************************************************************"
 echo "***************************************************************************************************"
-PARSED_REPLY=$(echo $(api_get_json /asset/datacenters) | $JSONSH -x id)
+test_it "device_with_non_exist_id"
+curlfail_push_expect_404
+api_get_json /asset/device/100 >&5
+print_result $?
+curlfail_pop
+
+echo "********* 3. device_with_negative_id **************************************************************"
+echo "***************************************************************************************************"
+test_it "device_with_negative_id"
+curlfail_push_expect_400
+api_get_json /asset/device/-1 >&5
+print_result $?
+curlfail_pop
+
+echo "********* 4. device_without_id ********************************************************************"
+echo "***************************************************************************************************"
+test_it "device_without_id"
+curlfail_push_expect_400
+api_get_json /asset/device/ >&5 
+print_result $?
+curlfail_pop
+
+echo "********* 5. device_with_wrong_id *****************************************************************"
+echo "***************************************************************************************************"
+test_it "device_with_wrong_id"
+curlfail_push_expect_400
+api_get_json /asset/device/abcd >&5
+print_result $?
+curlfail_pop
+
+echo "********* 6. device_with_id_of_DC *****************************************************************"
+echo "***************************************************************************************************"
+test_it "device_with_id_of_DC"
+curlfail_push_expect_400
+api_get_json /asset/device/1 >&5
+print_result $?
+curlfail_pop
+
+echo "********* 7. device_with_id_of_device *************************************************************"
+echo "***************************************************************************************************"
+PARSED_REPLY=$(echo $(api_get_json /asset/devices) | $JSONSH -x id)
 ID_1=$(echo "${PARSED_REPLY}" | cut -d '"' -f 6)
-ID_DC_2=$(echo $ID_1 | cut -d ' ' -f 2)
-test_it "request_to existing_DC"
-api_get_json /asset/datacenter/${ID_DC_2} >&5
-print_result $?
-
-
-echo "********* 3. request_to_not_existing_id ***********************************************************"
-echo "***************************************************************************************************"
-test_it "request_to_not_existing_id"
-curlfail_push_expect_404
-api_get_json /asset/datacenter/100 >&5
-print_result $?
-curlfail_pop
-
-echo "********* 4. request_to_id_0 **********************************************************************"
-echo "***************************************************************************************************"
-test_it "request_to_id_0"
-curlfail_push_expect_400
-api_get_json /asset/datacenter/0 >&5
-print_result $?
-curlfail_pop
-
-echo "********* 5. request_to_too_long_id ***************************************************************"
-echo "***************************************************************************************************"
-test_it "request_to_too_long_id"
-curlfail_push_expect_400
-api_get_json /asset/datacenter/12345678901234567890 >&5
-print_result $?
-curlfail_pop
-
-echo "********* 6. request_to_not_valid_id **************************************************************"
-echo "***************************************************************************************************"
-test_it "request_to_not_valid_id"
-curlfail_push_expect_404
-api_get_json /asset/datacenter/123456x78901234567890 >&5
-print_result $?
-curlfail_pop
-
-echo "********* 7. request_to_missing_id ****************************************************************"
-echo "***************************************************************************************************"
-test_it "request_to_missing_id"
-curlfail_push_expect_400
-api_get_json /asset/datacenter/ >&5
+ID_DEV_6=$(echo $ID_1 | cut -d ' ' -f 6)
+test_it "device_with_id_of_device"
+curlfail_push_expect_noerrors
+api_get_json /asset/device/${ID_DEV_6} >&5
 print_result $?
 curlfail_pop

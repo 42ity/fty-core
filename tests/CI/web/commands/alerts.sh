@@ -22,7 +22,8 @@
 #  \author Michal Vyskocil <MichalVyskocil@Eaton.com>
 #  \brief Not yet documented file
 
-test_it
+echo "********* 1. list_of_alerts ***********************************************************************"
+echo "***************************************************************************************************"
+test_it "list_of_alerts"
 api_get_json /alerts >&5
 print_result $?
-
