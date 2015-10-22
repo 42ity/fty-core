@@ -26,7 +26,7 @@ echo  "initializing db .."
 mysql < /usr/local/share/bios/sql/mysql/initdb.sql
 mysql < /usr/local/share/bios/examples/sql/mysql/load_data.sql
 mysql < /usr/local/share/bios/examples/sql/mysql/load_ROZLAB.sql
-mysql < /usr/local/share/bios/docker/resources/patch.sql
+mysql < /usr/local/share/bios/docker/resources/docker_patch.sql
 
 echo "Starting SASL auth .."
 service saslauthd start

@@ -38,7 +38,7 @@ if [ ! -x "$BUILDSUBDIR/config.status" ]; then
 else
     echo "Found $BUILDSUBDIR/config.status, using custom-built binaries..."
     echo "Search path: $CHECKOUTDIR, $PWD"
-    export PATH="/usr/lib/ccache:${PWD}:$BUILDSUBDIR:$CHECKOUTDIR:~/bin:~/lib:~/libexec:~/lib/bios:~/libexec/bios:$PATH"
+    export PATH="/usr/lib/ccache:${PWD}:$BUILDSUBDIR:$BUILDSUBDIR/tools:$CHECKOUTDIR:$CHECKOUTDIR/tools:~/bin:~/lib:~/libexec:~/lib/bios:~/libexec/bios:$PATH"
 fi
 
 # Simple check for whether sudo is needed to restart saslauthd
@@ -149,7 +149,23 @@ stop() {
     done
     sleep 1
     for d in $DAEMONS ; do
+       ( pidof $d lt-$d >/dev/null 2>&1 && pkill $d lt-$d 2>/dev/null ) || true
+    done
+    sleep 1
+    for d in $DAEMONS ; do
+       ( pidof $d lt-$d >/dev/null 2>&1 && kill `pidof $d lt-$d` 2>/dev/null ) || true
+    done
+    sleep 1
+    for d in $DAEMONS ; do
        ( pidof $d lt-$d >/dev/null 2>&1 && killall -KILL $d lt-$d 2>/dev/null ) || true
+    done
+    sleep 1
+    for d in $DAEMONS ; do
+       ( pidof $d lt-$d >/dev/null 2>&1 && pkill -KILL $d lt-$d 2>/dev/null ) || true
+    done
+    sleep 1
+    for d in $DAEMONS ; do
+       ( pidof $d lt-$d >/dev/null 2>&1 && kill -KILL `pidof $d lt-$d` 2>/dev/null ) || true
     done
     sleep 1
     # Test successful kills
