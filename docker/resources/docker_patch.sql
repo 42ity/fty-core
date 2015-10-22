@@ -1,4 +1,15 @@
+/* For details on schema version support see the main initdb.sql */
+SET @bios_db_schema_version = '201510150001' ;
+SET @bios_db_schema_filename = 'docker_patch.sql' ;
+
 use box_utf8
+
+/* This should be the first action in the SQL file */
+START TRANSACTION;
+INSERT INTO t_bios_schema_version (tag,timestamp,filename,version) VALUES('begin-import', UTC_TIMESTAMP() + 0, @bios_db_schema_filename, @bios_db_schema_version);
+/* Report the value */
+SELECT * FROM t_bios_schema_version WHERE tag = 'begin-import' order by id desc limit 1;
+COMMIT;
 
 DROP PROCEDURE IF EXISTS insert_measurement;
 DELIMITER $$
@@ -84,4 +95,11 @@ INSERT INTO t_bios_monitor_asset_relation (id_discovered_device, id_asset_elemen
 INSERT INTO t_bios_measurement_topic (device_id, units, topic) values (@select_device, "W","realpower.default@ROZ.ROOM01.RACK01");
 SELECT @topic_id := id FROM t_bios_measurement_topic WHERE topic = "realpower.default@ROZ.ROOM01.RACK01";
 CALL insert_measurement(@topic_id,30);
+
+/* This must be the last line of the SQL file */
+START TRANSACTION;
+INSERT INTO t_bios_schema_version (tag,timestamp,filename,version) VALUES('finish-import', UTC_TIMESTAMP() + 0, @bios_db_schema_filename, @bios_db_schema_version);
+/* Report the value */
+SELECT * FROM t_bios_schema_version WHERE tag = 'finish-import' order by id desc limit 1;
+COMMIT;
 
