@@ -34,6 +34,8 @@ logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to build, and BUILDSUBDIR='$BUILDS
 
 # ensure that what we test is built
 logmsg_info "Ensuring that we have a libbiosapi compiled..."
+PATH=/usr/lib/ccache:/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH
+export PATH
 ./autogen.sh ${AUTOGEN_ACTION_MAKE} sdk || CODE=$? die "Failed to make sdk"
 
 # Note: while we typically use the .so shared library, there can also be
