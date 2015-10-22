@@ -137,7 +137,6 @@ DB_DATA_TESTREST="load_data_test_restapi.sql"
 DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
 DB_LOADDIR=$BUILDSUBDIR/tools
 
-#for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
-for data in "$DB_BASE" "$DB_DATA" "$DB_DATA_TESTREST"; do
+for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
     loaddb_file "$DB_LOADDIR/$data" || return $?
 done
