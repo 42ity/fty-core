@@ -24,6 +24,11 @@
 #  \details This is library of functions useful for general testing,
 #           which can be sourced to interactive shell
 #           You can 'export CITEST_QUICKFAIL=yes' to abort on first failure
+#           Tests start with a `test_it "testname"` to initialize, and end
+#           with a `print_results $?` to account successes and failures.
+#           When doing TDD, you can use `print_results -$?` for tests that
+#           are expected/allowed to fail but this should not cause overall
+#           test-suite error (testing stuff known as not implemented yet).
 
 # ***********************************************
 ### Should the test suite break upon first failed test?
@@ -57,25 +62,48 @@ _TOKEN_=""
 TESTLIB_FORCEABORT=no
 _testlib_result_printed=notest
 
+# Numeric counters
+[ -z "${PASS-}" ] && PASS="0"
+[ -z "${PASS_SKIP-}" ] && PASS_SKIP="0"
+[ -z "${TOTAL-}" ] && TOTAL="0"
+# String lists of space-separated single-token test names that failed
+[ -z "${FAILED-}" ] && FAILED=""
+[ -z "${FAILED_IGNORED-}" ] && FAILED_IGNORED=""
+
 print_result() {
     [ "$_testlib_result_printed" = yes ] && return 0
     _testlib_result_printed=yes
     _ret="$1"
-    ### Is this a valid number? if not - it may be some comment about the error
-    [ "$_ret" -ge 0 ] 2>/dev/null || \
+    ### Is this a valid number (negative == failed_ignored)?
+    ### If not - it may be some text comment about the error.
+    [ "$_ret" -ge 0 -o "$_ret" -le 0 ] 2>/dev/null || \
         _ret=255
-    if [ "$_ret" -eq 0 ]; then
+    if [ "$_ret" -eq 0 ]; then  # should include "-0" too
         echo " * PASSED"
         PASS="`expr $PASS + 1`"
     else
-        [ x"$_ret" = x"$1" ] && \
-            echo " * FAILED ($_ret)" || \
-            echo " * FAILED ($_ret, $1)"
+        # Produce a single-token name for the failed test
 	if [ "$TNAME" = "$NAME" ]; then
             LASTFAILED="`echo "$NAME(${_ret})" | sed 's, ,__,g'`"
 	else
             LASTFAILED="`echo "$NAME::$TNAME(${_ret})" | sed 's, ,__,g'`"
 	fi
+
+        if [ "$_ret" -lt 0 ]; then
+            PASS_SKIP="`expr $PASS_SKIP + 1`"
+            _ret="`expr -1 \* $_ret`"
+            echo " * FAILED_IGNORED ($_ret)"
+            FAILED_IGNORED="$FAILED_IGNORED $LASTFAILED"
+            echo
+            return $_ret
+        fi
+
+        # Positive _ret, including 255 set for a failure with comment
+        # Unlike ignored negative retcodes above, this can abort the script
+        [ x"$_ret" = x"$1" ] && \
+            echo " * FAILED ($_ret)" || \
+            echo " * FAILED ($_ret, $1)"
+
         FAILED="$FAILED $LASTFAILED"
 
 	# This optional envvar can be set by the caller
