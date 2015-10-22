@@ -139,9 +139,6 @@ No="$(expr $No + 1)"
    done
 done
 
-
-#echo "********* ${No}. Related_tables_must_be_empty *********************************************************"
-#echo "***************************************************************************************************"
 DEL_RES=0
 for i in t_bios_asset_ext_attributes t_bios_asset_group_relation t_bios_asset_link t_bios_asset_ext_attributes t_bios_monitor_asset_relation ; do
     echo "********* ${No}. Related_table ${i} must be empty *********************************************************"

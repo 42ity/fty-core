@@ -101,8 +101,15 @@ echo "**************************************************************************
 test_it "list_of_OK_arguments_and_empty_list_as_result"
 REZ=0
 for i in switch storage genset N_A sts;do
-   api_get_json /asset/devices?subtype=$i >&5
-   REZ=$(expr $REZ + $?)
+   if [ "$i" != "N_A" ];then
+       api_get_json /asset/devices?subtype=$i >&5
+       REZ=$(expr $REZ + $?)
+   else
+       curlfail_push_expect_400
+       api_get_json /asset/devices?subtype=$i >&5
+       REZ=$(expr $REZ + $?)
+       curlfail_pop
+   fi
 done
 print_result $REZ
 
@@ -130,6 +137,7 @@ DB_DATA_TESTREST="load_data_test_restapi.sql"
 DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
 DB_LOADDIR=$BUILDSUBDIR/tools
 
-for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
+#for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
+for data in "$DB_BASE" "$DB_DATA" "$DB_DATA_TESTREST"; do
     loaddb_file "$DB_LOADDIR/$data" || return $?
 done
