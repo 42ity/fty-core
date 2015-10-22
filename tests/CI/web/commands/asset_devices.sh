@@ -26,39 +26,51 @@
 
 echo "********* 1. list_of_all_devices ******************************************************************"
 echo "***************************************************************************************************"
+curlfail_push_expect_noerrors
 test_it "list_of_all_devices"
 api_get_json /asset/devices >&5
 print_result $?
+curlfail_pop
 
 echo "********* 2. list_of_devices_with_subtype_ups *****************************************************"
 echo "***************************************************************************************************"
+curlfail_push_expect_noerrors
 test_it "list_of_devices_with_subtype_ups"
 api_get_json /asset/devices?subtype="ups" >&5
 print_result $?
+curlfail_pop
 
 echo "********* 3. list_of_devices_with_subtype_feed *****************************************************"
 echo "***************************************************************************************************"
+curlfail_push_expect_noerrors
 test_it "list_of_devices_with_subtype_feed"
 api_get_json /asset/devices?subtype="feed" >&5
 print_result $?
+curlfail_pop
 
 echo "********* 4. list_of_devices_with_subtype_server **************************************************"
 echo "***************************************************************************************************"
+curlfail_push_expect_noerrors
 test_it "list_of_devices_with_subtype_server"
 api_get_json /asset/devices?subtype=server >&5
 print_result $?
+curlfail_pop
 
 echo "********* 5. list_of_devices_with_subtype_epdu ****************************************************"
 echo "***************************************************************************************************"
+curlfail_push_expect_noerrors
 test_it "list_of_devices_with_subtype_epdu"
 api_get_json /asset/devices?subtype=epdu >&5
 print_result $?
+curlfail_pop
 
 echo "********* 6. list_of_devices_with_wrong_subtype_upsx **********************************************"
 echo "***************************************************************************************************"
+curlfail_push_expect_400
 test_it "list_of_devices_with_wrong_subtype_upsx"
 api_get_json /asset/devices?subtype=upsx >&5
 print_result $?
+curlfail_pop
 
 echo "********* 7. list_of_devices_with_two_subtypes ****************************************************"
 echo "***************************************************************************************************"
