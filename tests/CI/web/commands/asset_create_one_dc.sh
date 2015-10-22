@@ -20,7 +20,6 @@
 #  \author Michal Vyskocil <MichalVyskocil@Eaton.com>
 #  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 
-if false;then
 echo "********* 1. Asset_without_parameter **************************************************************"
 echo "***************************************************************************************************"
 test_it "Asset_without_parameter"
@@ -224,4 +223,3 @@ curlfail_push_expect_noerrors
 api_post '/asset' '{"name":"dc_name_test_25","type":"datacenter","sub_type":"","location":"","status":"nonactive","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST0025","address":"ASDF"}}' > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
 print_result $?
 curlfail_pop
-fi
