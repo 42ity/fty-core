@@ -195,6 +195,8 @@ tools/ifplug-dhcp-autoconf.service
 tools/bios-ssh-last-resort.service
 !tools/bios-networking.service.in
 tools/bios-networking.service
+!tools/bios-fake-th.service.in
+tools/bios-fake-th.service
 
 src/web/src/auth-verify.cpp
 src/web/src/auth-require.cpp
