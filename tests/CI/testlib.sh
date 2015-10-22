@@ -82,16 +82,21 @@ print_result() {
         echo " * PASSED"
         PASS="`expr $PASS + 1`"
     else
-        # Produce a single-token name for the failed test
+        if [ "$_ret" -lt 0 ] 2>/dev/null ; then
+            _ret="`expr -1 \* $_ret`"
+        fi
+
+        # Produce a single-token name for the failed test, including its
+        # positive return-code value
 	if [ "$TNAME" = "$NAME" ]; then
             LASTFAILED="`echo "$NAME(${_ret})" | sed 's, ,__,g'`"
 	else
             LASTFAILED="`echo "$NAME::$TNAME(${_ret})" | sed 's, ,__,g'`"
 	fi
 
-        if [ "$_ret" -lt 0 ]; then
+        if [ x-"$_ret" = x"$1" ] ; then
+            # The "$1" string was a negative number
             PASS_SKIP="`expr $PASS_SKIP + 1`"
-            _ret="`expr -1 \* $_ret`"
             echo " * FAILED_IGNORED ($_ret)"
             FAILED_IGNORED="$FAILED_IGNORED $LASTFAILED"
             echo
