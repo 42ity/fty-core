@@ -144,7 +144,7 @@ for i in t_bios_asset_ext_attributes t_bios_asset_group_relation t_bios_asset_li
     echo "********* ${No}. Related_table ${i} must be empty *********************************************************"
     echo "***************************************************************************************************"
     test_it "Table ${i} must be empty"
-    EXT_ATTR="$(mysql -u root box_utf8 <<< "select * from ${i}")";echo $EXT_ATTR >&5
+    EXT_ATTR="$(mysql -u root box_utf8 <<< "select * from ${i}")"
     if [[ "$EXT_ATTR" != "" ]];then
         DEL_RES="$(expr $DEL_RES + 1)"
     fi
