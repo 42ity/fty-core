@@ -1,4 +1,4 @@
-/* For details on schema versio support see the main initdb.sql */
+/* For details on schema version support see the main initdb.sql */
 SET @bios_db_schema_version = '201510150001' ;
 SET @bios_db_schema_filename = 'initdb_ci_patch.sql' ;
 
@@ -11,8 +11,10 @@ INSERT INTO t_bios_schema_version (tag,timestamp,filename,version) VALUES('begin
 SELECT * FROM t_bios_schema_version WHERE tag = 'begin-import' order by id desc limit 1;
 COMMIT;
 
+
 alter table t_bios_asset_element modify column asset_tag VARCHAR(50) DEFAULT "1234567890";
 drop index if exists UI_t_bios_asset_element_ASSET_TAG on t_bios_asset_element;
+
 
 /* This must be the last line of the SQL file */
 START TRANSACTION;
