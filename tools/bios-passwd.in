@@ -22,6 +22,7 @@
 #  \details Helper script for REST API /admin/passwd
 #           it does expect all the information on stdin to not accidentally leak it
 #           /usr/bin/printf "%s\n%s\n%s\n" "user" "old_password" "new_password"
+#           The new password strength is verified by "testpass.sh" helper script.
 #  \todo    it acually DO NOT check the old password, because unix2_chkpwd has been
 #           designed by very paranoid ppl and I am lazy to write own binary, so the check
 #           is going to be on REST API level. But in order to maintain stable protocol, script
@@ -33,6 +34,7 @@ export PATH=
 export LC_ALL=C
 #hack for Makefile.am and make distcheck
 export PROG=@libexecdir@/@PACKAGE@/bios-passwd
+[ -z "${TESTPASS-}" ] && TESTPASS="@libexecdir@/@PACKAGE@/testpass.sh"
 
 die() {
     echo "${@}" >&2
@@ -106,4 +108,18 @@ if ! /usr/bin/getent passwd ${USER} >/dev/null; then
     die "User ${USER} not found by /usr/bin/getent passwd"
 fi
 
-do_passwd ${USER} ${OLD_PASSWD} ${NEW_PASSWD}
+# While we have some recommended PAM settings in place, including pam_cracklib
+# integration, we'd rather have flexible control over what passwords are deemed
+# acceptable to set at least over the web-interface. The test script starts
+# with cracklib-check and proceeds to comparisons against username and old
+# password (which are features cracklib can not do, or not all of them).
+# This approach helps enforce the password requirements as they come from the
+# product owners, architects and security certification team, among others.
+if [ ! -x "$TESTPASS" ]; then
+    die "Can not test password strength: TESTPASS='$TESTPASS' not executable"
+fi
+
+printf "${USER}"'\n'"${NEW_PASSWD}"'\n'"${OLD_PASSWD}"'\n' | "$TESTPASS" || \
+    { RES=$?; echo "FAILED($RES) the password strength test" >&2; exit $RES; }
+
+do_passwd "${USER}" "${OLD_PASSWD}" "${NEW_PASSWD}"

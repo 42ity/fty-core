@@ -29,9 +29,17 @@ _gettoken_auth_sh() {
         sed -n 's|.*"access_token"[[:blank:]]*:[[:blank:]]*"\([^"]*\)".*|\1|p' | tail -n 1
 }
 
+if [ -n "$TESTPASS" ] && [ -x "$TESTPASS" ] ; then : ; else
+    [ -n "$CHECKOUTDIR" ] && [ -d "$CHECKOUTDIR" ] && \
+        TESTPASS="$CHECKOUTDIR/tools/testpass.sh" || \
+        TESTPASS="/usr/libexec/bios/testpass.sh"
+fi
+
+PASS_ORIG_GOOD=""
+
 test_it "good_login"
 TOKEN="`_gettoken_auth_sh`"
-[ "$TOKEN" ]
+[ "$TOKEN" ] && PASS_ORIG_GOOD="$BIOS_PASSWD"
 print_result $?
 
 
@@ -69,8 +77,39 @@ TOKEN="`_gettoken_auth_sh`"
 # is referenced in PAM/SASL/SUDOERS setup of the OS to give certain privileges
 # to processes running as this user account.
 
+# First try a few weak passwords
+
+curlfail_push_expect_400
+
+test_it "change_password_weak_HasUsername"
+api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "'"xZg4$BIOS_PASSWD@$BIOS_USER"'" }'
+print_result $?
+
+test_it "change_password_weak_HasOldPass"
+api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "'"xW6_$BIOS_PASSWD@"'" }'
+print_result $?
+
+# Actually, this likely breaks in cryptlib before length checks by the script
+test_it "change_password_weak_TooShort"
+api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "1qW" }'
+print_result $?
+
+test_it "change_password_weak_OnlyLC"
+api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "1x5g7h2w0f" }'
+print_result $?
+
+test_it "change_password_weak_TooSimple"
+api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "1234abcdef" }'
+print_result $?
+
+curlfail_pop
+
+
+# Now try setting a password that should succeed
+
 ORIG_PASSWD="$BIOS_PASSWD"
-NEW_BIOS_PASSWD="new$BIOS_PASSWD"'@'
+#NEW_BIOS_PASSWD="nEw2`echo "$BIOS_PASSWD" | cut -c 1-3`%`echo "$BIOS_PASSWD" | cut -c 4-`"'@'
+NEW_BIOS_PASSWD="xX!9`head --bytes 16 /dev/urandom | base64 | sed 's,[\=\+],%,g'`"
 
 test_it "change_password"
 api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "'"$NEW_BIOS_PASSWD"'" }'
@@ -102,7 +141,36 @@ curlfail_pop
 
 test_it "change_password_back_goodold"
 BIOS_PASSWD="$NEW_BIOS_PASSWD" api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$NEW_BIOS_PASSWD"'", "new_passwd" : "'"$ORIG_PASSWD"'" }'
-print_result $?
+PASS_RECOVERED=$?
+if [ "$PASS_RECOVERED" = 0 ]; then
+    print_result 0
+else
+    if [ -n "${PASS_ORIG_GOOD}" ] ; then
+        RES_TESTPASS=-1
+        if [ -x "$TESTPASS" ] ; then
+            ( echo "$BIOS_USER"; echo "${PASS_ORIG_GOOD}"; echo "$NEW_BIOS_PASSWD" ) | "$TESTPASS"
+            RES_TESTPASS=$?
+        fi
+        case "$RES_TESTPASS" in
+            1[1-5])
+                echo "WARNING: The REST API failed to restore the original password because it was weak; not considering this as an error!"
+                print_result 0 ;;
+            0|*) print_result $PASS_RECOVERED ;; # REST API failed not due to weakness
+        esac
+        unset RES_TESTPASS
+
+        echo "WARNING: Previously failed to restore the (expected) original password, so doing it low-level"
+        test_it "restore_PASS_ORIG_GOOD_lowlevel"
+        sut_run "( echo "${PASS_ORIG_GOOD}"; echo "${PASS_ORIG_GOOD}"; ) | passwd ${BIOS_USER}"
+        print_result $?
+
+        test_it "sasl_cache_cleanup_lowlevel"
+        sut_run "testsaslauthd -u '$BIOS_USER' -p '${PASS_ORIG_GOOD}' -s '$SASL_SERVICE'"
+        print_result $?
+    else
+        print_result $PASS_RECOVERED
+    fi
+fi
 
 curlfail_push_expect_401
 test_it "wrong_password_temporaryNoLonger"
