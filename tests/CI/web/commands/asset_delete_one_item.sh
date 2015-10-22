@@ -38,7 +38,7 @@ echo "********* ${No}. Delete_devices_with_non_existing_ID *********************
 echo "***************************************************************************************************"
 test_it "Delete_devices_with non-existing ID"
 curlfail_push_expect_404
-api_auth_delete /asset/10000000 > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
+echo $No >&5;api_auth_delete /asset/10000000 > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
 print_result $?
 curlfail_pop
 echo "ERROR 404. ${ent} with ID = $ITEM_ID is expected NOT be deleted."
@@ -48,7 +48,7 @@ echo "********* ${No}. Delete_devices_which_ID_is_0 ****************************
 echo "***************************************************************************************************"
 test_it "Delete_devices_which_ID_is_0"
 curlfail_push_expect_404
-api_auth_delete /asset/0 > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
+echo $No >&5;api_auth_delete /asset/0 > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
 print_result $?
 curlfail_pop
 echo "ERROR 404. ${ent} with ID = $ITEM_ID is expected NOT be deleted."
@@ -58,7 +58,7 @@ echo "********* ${No}. Delete_devices_without_id *******************************
 echo "***************************************************************************************************"
 test_it "Delete_devices_without_id"
 curlfail_push_expect_400
-api_auth_delete /asset/ > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
+echo $No >&5;api_auth_delete /asset/ > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
 print_result $?
 curlfail_pop
 echo "ERROR 400. ${ent} with ID = $ITEM_ID is expected NOT be deleted."
@@ -81,7 +81,7 @@ echo "********* ${No}. Delete_devices_which_ID_is_negative *********************
 echo "***************************************************************************************************"
 test_it "Delete_devices_which_ID_is_negative"
 curlfail_push_expect_404
-api_auth_delete /asset/-1 > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
+echo $No >&5;api_auth_delete /asset/-1 > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
 print_result $?
 curlfail_pop
 No="$(expr $No + 1)"
@@ -104,7 +104,7 @@ for ent in datacenters rooms rows racks groups devices; do
          curlfail_push_expect_409
          echo "ERROR 409. ${ent} with ID = $ITEM_ID is expected NOT be deleted."
       fi
-      api_auth_delete /asset/$ITEM_ID > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
+      echo $No >&5;api_auth_delete /asset/$ITEM_ID > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
       print_result $?
       curlfail_pop
 No="$(expr $No + 1)"
@@ -131,7 +131,7 @@ for ent in devices groups racks rows rooms datacenters; do
          curlfail_push_expect_409
          echo "ERROR 409. ${ent} with ID = $ITEM_ID is expected NOT be deleted."
       fi
-      api_auth_delete /asset/$ITEM_ID > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
+      echo $No >&5;api_auth_delete /asset/$ITEM_ID > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
       print_result $?
       curlfail_pop
 No="$(expr $No + 1)"
