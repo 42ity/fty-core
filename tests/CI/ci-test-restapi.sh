@@ -236,7 +236,7 @@ test_web() {
 loaddb_default() {
     echo "--------------- reset db: default ----------------"
     for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
-        loaddb_file "$DB_LOADDIR/$data" || return $?
+        loaddb_file "$DB_LOADDIR/$data" || exit $?
     done
     return 0
 }
@@ -249,7 +249,7 @@ test_web_default() {
 test_web_topo_p() {
     echo "----------- reset db: topology : power -----------"
     for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOP"; do
-        loaddb_file "$DB_LOADDIR/$data" || return $?
+        loaddb_file "$DB_LOADDIR/$data" || exit $?
     done
     test_web "$@"
 }
@@ -257,7 +257,7 @@ test_web_topo_p() {
 test_web_topo_l() {
     echo "---------- reset db: topology : location ---------"
     for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOL"; do
-        loaddb_file "$DB_LOADDIR/$data" || return $?
+        loaddb_file "$DB_LOADDIR/$data" || exit $?
     done
     test_web "$@"
 }
@@ -265,7 +265,7 @@ test_web_topo_l() {
 asset_create() {
     echo "---------- reset db: asset : create ---------"
     for data in "$DB_BASE" "$DB_ASSET_DEFAULT" "$DB_DATA"; do
-          loaddb_file "$DB_LOADDIR/$data" || return $?
+          loaddb_file "$DB_LOADDIR/$data" || exit $?
     done
     test_web "$@"
 }
