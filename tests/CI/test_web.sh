@@ -29,8 +29,10 @@ if [ $# -eq 0 ]; then
 fi
 
 PASS=0
+PASS_SKIP=0
 TOTAL=0
 FAILED=""
+FAILED_IGNORED=""
 
 # There is a logic below that selects only *.sh filenames as eligible for testing
 # If this value is not "yes" then any filenames which match the requested POSITIVE
@@ -165,18 +167,24 @@ cd web/commands || CODE=6 die "Can not change to `pwd`/web/commands"
 
 summarizeResults() {
     TRAP_RES=$?
-    [ "$TRAP_RES" != 0 ] && print_result $TRAP_RES
+    print_result $TRAP_RES
     set +e
-    logmsg_info "Testing completed, $PASS/$TOTAL tests passed for groups:"
-    logmsg_info "  POSITIVE = $POSITIVE"
-    logmsg_info "  NEGATIVE = $NEGATIVE"
+    logmsg_info "Testing completed, `expr $PASS - $PASS_SKIP`/$TOTAL tests passed for groups:"
+    logmsg_info "  POSITIVE (exec glob) = $POSITIVE"
+    logmsg_info "  NEGATIVE (skip glob) = $NEGATIVE"
     logmsg_info "  SKIP_NONSH_TESTS = $SKIP_NONSH_TESTS (so skipped $SKIPPED_NONSH_TESTS tests)"
-    [ -z "$FAILED" ] && [ x"`expr $TOTAL - $PASS`" = x0 ] && exit 0
+    if [ -n "$FAILED_IGNORED" ]; then
+        logmsg_info "The following $PASS_SKIP tests have failed but were ignored (TDD in progress):"
+        for i in $FAILED_IGNORED; do
+            echo " * $i"
+        done
+    fi
+    [ -z "$FAILED" ] && [ x"`expr $TOTAL - $PASS - $PASS_SKIP`" = x0 ] && exit 0
     logmsg_info "The following tests have failed:"
     for i in $FAILED; do
         echo " * $i"
     done
-    logmsg_error "`expr $TOTAL - $PASS`/$TOTAL tests FAILED"
+    logmsg_error "`expr $TOTAL - $PASS - $PASS_SKIP`/$TOTAL tests FAILED"
     exit 1
 }
 
