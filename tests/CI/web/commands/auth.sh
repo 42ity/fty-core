@@ -154,7 +154,7 @@ else
         case "$RES_TESTPASS" in
             1[1-5])
                 echo "WARNING: The REST API failed to restore the original password because it was weak; not considering this as an error!"
-                print_result "-$PASS_RECOVERED" ;;
+                print_result "-$RES_TESTPASS" ;;
             0|*) print_result $PASS_RECOVERED ;; # REST API failed not due to weakness
         esac
         unset RES_TESTPASS
