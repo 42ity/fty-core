@@ -169,7 +169,8 @@ summarizeResults() {
     TRAP_RES=$?
     print_result $TRAP_RES
     set +e
-    logmsg_info "Testing completed, `expr $PASS - $PASS_SKIP`/$TOTAL tests passed for groups:"
+    NUM_NOTFAILED="`expr $PASS + $PASS_SKIP`"
+    logmsg_info "Testing completed, $NUM_NOTFAILED/$TOTAL tests passed($PASS) or not-failed($PASS_SKIP) for test-groups:"
     logmsg_info "  POSITIVE (exec glob) = $POSITIVE"
     logmsg_info "  NEGATIVE (skip glob) = $NEGATIVE"
     logmsg_info "  SKIP_NONSH_TESTS = $SKIP_NONSH_TESTS (so skipped $SKIPPED_NONSH_TESTS tests)"
@@ -179,12 +180,15 @@ summarizeResults() {
             echo " * $i"
         done
     fi
-    [ -z "$FAILED" ] && [ x"`expr $TOTAL - $PASS - $PASS_SKIP`" = x0 ] && exit 0
-    logmsg_info "The following tests have failed:"
+    NUM_FAILED="`expr $TOTAL - $NUM_NOTFAILED`"
+    [ -z "$FAILED" ] && [ x"$NUM_FAILED" = x0 ] && exit 0
+    logmsg_info "The following "$NUM_FAILED" tests have failed:"
+    N=0 # Do a bit of double-accounting to be sure ;)
     for i in $FAILED; do
         echo " * $i"
+        N="`expr $N + 1`"
     done
-    logmsg_error "`expr $TOTAL - $PASS - $PASS_SKIP`/$TOTAL tests FAILED"
+    logmsg_error "$N/$TOTAL tests FAILED, $PASS_SKIP tests FAILED_IGNORED, $PASS tests PASSED"
     exit 1
 }
 
