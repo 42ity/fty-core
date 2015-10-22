@@ -137,7 +137,7 @@ void NUTConfigurator::updateNUTConfig() {
     }
 }
 
-bool NUTConfigurator::configure( const std::string &name, const AutoConfigurationInfo info ) {
+bool NUTConfigurator::configure( const std::string &name, const AutoConfigurationInfo &info ) {
     log_debug("NUT configurator created");
 
     switch( info.operation ) {
@@ -195,7 +195,7 @@ bool NUTConfigurator::configure( const std::string &name, const AutoConfiguratio
 
 bool Configurator::configure(
     UNUSED_PARAM const std::string &name,
-    UNUSED_PARAM const AutoConfigurationInfo info )
+    UNUSED_PARAM const AutoConfigurationInfo &info )
 {
     log_error("don't know how to configure device %s type %" PRIu32 "/%" PRIu32, name.c_str(), info.type, info.subtype );
     return true;

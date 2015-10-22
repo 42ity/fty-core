@@ -34,8 +34,6 @@
 
 </%pre>
 <%cpp>
-    std::string command;
-    std::string nil;
 	augtool* augeas = augtool::get_instance();
 
     if(!request.isMethodGET()) {
@@ -66,7 +64,6 @@
 	    static cxxtools::Regex t_rex("^[1-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]T[0-2][0-9]:[0-6][0-9]:[0-6][0-9]Z$");
 	    static cxxtools::Regex n_rex("^[0-9a-z_.-]*$");
 
-    
 	    if (time.empty() && ntp.empty()) {
             http_die ("request-param-required", "time' or 'ntp");
 		}

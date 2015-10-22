@@ -298,18 +298,33 @@ db_reply <std::map <uint32_t, std::string> >
         ret.errsubtype    = DB_ERROR_INTERNAL;
         ret.msg           = "Unsupported type of the elemnts";
         log_error (ret.msg.c_str());
+        // TODO need to have some more precise list of types, so we don't have to change anything here,
+        // if something was changed
         bios_error_idx(ret.rowid, ret.msg, "request-param-bad", "type", typeName.c_str(), "datacenters,rooms,ros,racks,devices");
         return ret;
     }
     if ( ( typeName == "device" ) && ( !subtypeName.empty() ) )
     {
         subtype_id = persist::subtype_to_subtypeid(subtypeName);
+        if ( subtype_id == persist::asset_subtype::SUNKNOWN ) {
+            ret.status        = 0;
+            ret.errtype       = DB_ERR;
+            ret.errsubtype    = DB_ERROR_INTERNAL;
+            ret.msg           = "Unsupported subtype of the elemnts";
+            log_error (ret.msg.c_str());
+            // TODO need to have some more precise list of types, so we don't have to change anything here,
+            // if something was changed
+            bios_error_idx(ret.rowid, ret.msg, "request-param-bad", "subtype", subtypeName.c_str(), "ups, epdu, pdu, genset, sts, server, feed");
+            return ret;
+        }
     }
     log_debug ("subtypeid = %" PRIi16 " typeid = %" PRIi16, subtype_id, type_id);
 
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
         ret = persist::select_short_elements(conn, type_id, subtype_id);
+        if ( ret.status == 0 )
+            bios_error_idx(ret.rowid, ret.msg, "internal-error");
         LOG_END;
         return ret;
     }
