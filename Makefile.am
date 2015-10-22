@@ -1374,7 +1374,13 @@ outage_LDFLAGS =	-ltntdb
 
 client_SCRIPTS +=	tools/bios-passwd \
 			tools/bios-networking \
+			tools/fake-th \
 			tools/bios-nutconfig
+
+EXTRA_DIST +=		tools/fake-th
+
+# Recipe needed to fulfill ci-rc-bios.sh logic
+fake-th: tools/fake-th
 
 
 ###################################################################
@@ -1389,7 +1395,7 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/auth.cpp  src/web/src/auth-verify.cpp       \
                       src/web/src/agent.cpp src/web/src/ssl-redirect.cpp      \
                       src/web/src/topology_power.cpp                          \
-					  src/web/src/asset_GET.cpp                               \
+                      src/web/src/asset_GET.cpp src/web/src/asset_PUT.cpp     \
                       src/web/src/asset_DELETE.cpp src/web/src/asset_POST.cpp \
                       src/web/src/json.cpp  src/web/src/asset_list.cpp        \
                       src/web/src/time.cpp  src/web/src/sysinfo.cpp           \
@@ -1560,6 +1566,7 @@ EXTRA_DIST	+= $(obs_SCRIPTS)
 
 # SystemD integrations files; if not enabled - variables remain empty
 SYSTEMD_UNITS =
+SYSTEMD_UNITS_NOTPRESET =
 SYSTEMD_UNITS_TIMERIMPL =
 SYSTEMD_TIMERS =
 SYSTEMD_PRESETS =
@@ -1577,8 +1584,14 @@ SYSTEMD_UNITS += bios-agent-nut.service \
                         bios-agent-autoconfig.service bios-agent-th.service \
                         bios-db-init.service bios-reset-button.service \
                         ifplug-dhcp-autoconf.service \
-						bios-ssh-last-resort.service \
-						bios-networking.service
+                        bios-ssh-last-resort.service \
+                        bios-networking.service
+
+# These units have unit files installed but are not enabled by default
+# via presets nor timers (may be enabled in OS image generation script
+# or during deployment's lifetime)
+SYSTEMD_UNITS_NOTPRESET += \
+                        bios-fake-th.service
 
 # These unit files are compiled, but are not enabled via BIOS presets
 SYSTEMD_UNITS_TIMERIMPL += \
@@ -1605,19 +1618,19 @@ tools/42-bios-systemd.preset: Makefile
 # $(systemdsystemunitdir) and $(systemdsystempresetdir) may be defined
 # externally by automake/autoconf; otherwise they are empty and should
 # effectively resolve to the top_builddir
-systemdsystemunit_generated =	$(addprefix tools/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL))
+systemdsystemunit_generated =	$(addprefix tools/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL) $(SYSTEMD_UNITS_NOTPRESET))
 systemdsystemunit_DATA =	$(systemdsystemunit_generated) $(addprefix tools/,$(SYSTEMD_TIMERS))
 systemdsystempreset_generated =	$(addprefix tools/,$(SYSTEMD_PRESETS))
 systemdsystempreset_DATA =	$(systemdsystempreset_generated)
 
 # auto-cleanup and dist targets
 CLEANFILES += $(systemdsystemunit_generated) $(systemdsystempreset_generated)
-EXTRA_DIST += $(addprefix $(top_srcdir)/tools/,$(SYSTEMD_TIMERS) $(addsuffix .in,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL)))
+EXTRA_DIST += $(addprefix $(top_srcdir)/tools/,$(SYSTEMD_TIMERS) $(addsuffix .in,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL) $(SYSTEMD_UNITS_NOTPRESET)))
 endif
 
 # Quick links to build the systemd files (if enabled)
 systemd-units: systemd-daemons systemd-timers systemd-presets
-systemd-daemons: $(addprefix tools/,$(SYSTEMD_UNITS))
+systemd-daemons: $(addprefix tools/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_NOTPRESET))
 systemd-timers:  $(addprefix tools/,$(SYSTEMD_UNITS_TIMERIMPL))
 	if [ x"$(abs_top_builddir)/" = x"$(abs_top_srcdir)/" ] ; then true; else \
 	for F in $(addprefix $(abs_top_srcdir)/tools/,$(SYSTEMD_TIMERS)) ; do \
