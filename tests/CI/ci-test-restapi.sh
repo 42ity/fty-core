@@ -49,7 +49,7 @@ DB_TOPOL="location_topology.sql"
 DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
 DB_ASSET_DEFAULT="initdb_ci_patch_2.sql"
 
-PATH=/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH
+PATH="/usr/lib/ccache:/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
 export PATH
 
 # Simple check for whether sudo is needed to restart saslauthd
