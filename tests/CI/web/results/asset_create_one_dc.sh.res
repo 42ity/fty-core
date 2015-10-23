@@ -9,7 +9,7 @@
 {}
 {"id":"39"}
 {"id":"40"}
-{"errors":[{"message":"Parameter 'asset_tag' has bad value. Received <to long>. Expected <unique string from 6 to 50 characters>","code":47}]}
+{"errors":[{"message":"Parameter 'asset_tag' has bad value. Received <to long>. Expected <unique string from 1 to 50 characters>","code":47}]}
 {"id":"41"}
 {"errors":[{"message":"Internal Server Error. Unspecified issue with database.","code":42}]}
 {"errors":[{"message":"Parameter 'type' has bad value. Received <empty>. Expected datacenter or device","code":47}]}
