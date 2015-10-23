@@ -480,27 +480,6 @@ api_delete() {
     CURL --insecure -v -d "$2" --progress-bar "$BASE_URL$1" -X "DELETE"  3>&2 2>&1
 }
 
-simple_post_code() {
-
-    local __out=
-    __out=$( curl -s --insecure -v --progress-bar -d "$2" -X POST "$BASE_URL$1" 2>&1 )
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
-    local __code="`echo "$__out" | grep -E '<\s+HTTP' | sed -r -e 's/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/'`"
-    __out="`echo "$__out" | grep -vE '^([<>*]|\{ *\[data not shown\]|\{\s\[[0-9]+).*'`"
-    __out="`echo "$__out" | $JSONSH -N`"
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
-
-    local __resultcode=$4
-    local __resultout=$3
-    eval $__resultcode='"$__code"'
-    eval $__resultout='"$__out"'
-    return 0
-}
-
 _api_get_token() {
     _RES_=0
     if [ -z "$_TOKEN_" ]; then
@@ -531,26 +510,56 @@ api_auth_post() {
         -v --progress-bar "$BASE_URL$url" "$@" 3>&2 2>&1
 }
 
+# Does an api DELETE request without authorization
+# Params:
+#	$1	Relative URL for API call
+# Result:
+#    content without HTTP headers
 api_delete_json() {
    api_delete "$@" > /dev/null && \
 	echo "$OUT_CURL" | $JSONSH -N
 }
 
+# Does an api POST request without authorization
+# Params:
+#	$1	Relative URL for API call
+#	$2	data
+# Result:
+#    content without HTTP headers
 api_post_json() {
    api_post "$@" > /dev/null && \
 	echo "$OUT_CURL" | $JSONSH -N
 }
 
+# Does an api GET request with authorization
+# Authorization is done through HTTP header --header "Authorization: Bearer $TOKEN"
+# Params:
+#	$1	Relative URL for API call
+# Result:
+#    content without HTTP headers
 api_auth_get_json() {
    api_auth_get "$@" > /dev/null && \
 	echo "$OUT_CURL" | $JSONSH -N
 }
 
+# Does an api POST request with authorization
+# Authorization is done through HTTP header --header "Authorization: Bearer $TOKEN"
+# Params:
+#	$1	Relative URL for API call
+#	$2	data
+# Result:
+#    content without HTTP headers
 api_auth_post_json() {
    api_auth_post "$@" > /dev/null && \
 	echo "$OUT_CURL" | $JSONSH -N
 }
 
+# Does an api DELETE request with authorization
+# Authorization is done through HTTP header --header "Authorization: Bearer $TOKEN"
+# Params:
+#	$1	Relative URL for API call
+# Result:
+#    content without HTTP headers
 api_auth_delete_json() {
    api_auth_delete "$@" > /dev/null && \
 	echo "$OUT_CURL" | $JSONSH -N
@@ -569,6 +578,8 @@ api_auth_delete_json() {
 #   send file 'foo' with proper mime type
 #   api_auth_post_file foo=@path/to/foo.json;type=application/json
 #   see man curl, parameter -F/--form
+# Result:
+#    HTTP headers + content
 api_auth_post_file() {
     local url data
     url=$1
@@ -577,6 +588,76 @@ api_auth_post_file() {
     TOKEN="`_api_get_token`"
     CURL --insecure -H "Expect:" --header "Authorization: Bearer $TOKEN" --form "$data" \
         -v --progress-bar "$BASE_URL$url" "$@" 3>&2 2>&1
+}
+
+# Does an api DELETE request with authorization
+# Authorization is done through HTTP header --header "Authorization: Bearer $TOKEN"
+# Params:
+#	$1	Relative URL for API call
+# Result:
+#    HTTP headers + content
+api_auth_delete() {
+    TOKEN="`_api_get_token`"
+    CURL --insecure --header "Authorization: Bearer $TOKEN" -X "DELETE" \
+        -v --progress-bar "$BASE_URL$1" 3>&2 2>&1
+}
+
+# Does an api PUT request with authorization
+# Authorization is done through HTTP header --header "Authorization: Bearer $TOKEN"
+# Params:
+#	$1	Relative URL for API call
+#	$2	data
+# Result:
+#    HTTP headers + content
+api_auth_put() {
+    TOKEN="`_api_get_token`"
+    CURL --insecure --header "Authorization: Bearer $TOKEN" -d "$2" -X "PUT" \
+        -v --progress-bar "$BASE_URL$1" 3>&2 2>&1
+}
+
+# Does an api GET request with authorization
+# Similar to api_auth_get_wToken
+# Authorization is done through HTTP header --header "Authorization: Bearer $TOKEN"
+# Params:
+#    $1  Relative URL for API call
+# Result:
+#    HTTP headers + content
+api_auth_get() {
+    TOKEN="`_api_get_token`"
+    CURL --insecure --header "Authorization: Bearer $TOKEN" \
+        -v --progress-bar "$BASE_URL$1" 3>&2 2>&1
+}
+
+# Does an api GET request with authorization
+# Similar to api_auth_get
+# Authorization is done through URL parameter access_token=$TOKEN"
+# Params:
+#    $1  Relative URL for API call
+# Result:
+#    HTTP headers + content
+api_auth_get_wToken() {
+    TOKEN="`_api_get_token`"
+    URLSEP='?'
+    case "$1" in
+        *"?"*) URLSEP='&' ;;
+    esac
+    CURL --insecure -v --progress-bar \
+        "$BASE_URL$1$URLSEP""access_token=$TOKEN" 3>&2 2>&1
+}
+
+# XXX: seems, really similar to api_auth_get_json
+api_auth_get_content() {
+    TOKEN="`_api_get_token`"
+    CURL --insecure --header "Authorization: Bearer $TOKEN" "$BASE_URL$1" 3>&2 2>/dev/null
+}
+
+api_auth_get_content_wToken() {
+    TOKEN="`_api_get_token`"
+    URLSEP='?'
+    case "$1" in
+        *"?"*) URLSEP='&' ;;
+    esac
+    CURL --insecure "$BASE_URL$1$URLSEP""access_token=$TOKEN" 3>&2 2>/dev/null
 }
 
 api_auth_post_content() {
@@ -603,117 +684,4 @@ api_auth_post_content_wToken() {
     #	$2	POST data
     TOKEN="`_api_get_token`"
     CURL --insecure -d "access_token=$TOKEN&$2" "$BASE_URL$1" 3>&2 2>/dev/null
-}
-
-api_auth_delete() {
-    TOKEN="`_api_get_token`"
-    CURL --insecure --header "Authorization: Bearer $TOKEN" -X "DELETE" \
-        -v --progress-bar "$BASE_URL$1" 3>&2 2>&1
-}
-
-api_auth_put() {
-    # Params:
-    #	$1	Relative URL for API call
-    #	$2	PUT data
-    TOKEN="`_api_get_token`"
-    CURL --insecure --header "Authorization: Bearer $TOKEN" -d "$2" -X "PUT" \
-        -v --progress-bar "$BASE_URL$1" 3>&2 2>&1
-}
-
-# Returns:
-#   1 on error
-#   0 on success
-# Arguments:
-#   $1 - rest api call
-#   $2 - input
-#   $3 - output
-#   $4 - HTTP code
-# TODO:
-#   check args
-simple_auth_put () {
-    TOKEN="`_api_get_token`"
-
-    local __out=
-    __out=$( curl -s --insecure --header "Authorization: Bearer $TOKEN" -d "$2" -X "PUT"  -v --progress-bar "$BASE_URL$1" 2>&1 )
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
-    local __code="`echo "$__out" | grep -E '<\s+HTTP' | sed -r -e 's/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/'`"
-    __out="`echo "$__out" | grep -vE '^([<>*]|\{ *\[data not shown\]|\{\s\[[0-9]+).*'`"
-    __out="`echo "$__out" | $JSONSH -N`"
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
-
-    local __resultcode=$4
-    local __resultout=$3
-    eval $__resultcode='"$__code"'
-    eval $__resultout='"$__out"'
-    return 0
-}
-
-api_auth_get() {
-    TOKEN="`_api_get_token`"
-    CURL --insecure --header "Authorization: Bearer $TOKEN" \
-        -v --progress-bar "$BASE_URL$1" 3>&2 2>&1
-}
-
-simple_auth_get_code() {
-    TOKEN="`_api_get_token`"
-
-    local __out=
-    __out=$( curl -s --insecure --header "Authorization: Bearer $TOKEN" -v --progress-bar "$BASE_URL$1" 2>&1 )
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
-    local __code="`echo "$__out" | grep -E '<\s+HTTP' | sed -r -e 's/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/'`"
-    __out="`echo "$__out" | grep -vE '^([<>*]|\{ *\[data not shown\]|\{\s\[[0-9]+).*'`"
-    __out="`echo "$__out" | $JSONSH -N`"
-
-    local __resultcode=$3
-    local __resultout=$2
-    eval $__resultcode='"$__code"'
-    eval $__resultout='"$__out"'
-    return 0
-}
-
-api_auth_get_wToken() {
-    TOKEN="`_api_get_token`"
-    URLSEP='?'
-    case "$1" in
-        *"?"*) URLSEP='&' ;;
-    esac
-    CURL --insecure -v --progress-bar \
-        "$BASE_URL$1$URLSEP""access_token=$TOKEN" 3>&2 2>&1
-}
-
-api_auth_get_content() {
-    TOKEN="`_api_get_token`"
-    CURL --insecure --header "Authorization: Bearer $TOKEN" "$BASE_URL$1" 3>&2 2>/dev/null
-}
-
-api_auth_get_content_wToken() {
-    TOKEN="`_api_get_token`"
-    URLSEP='?'
-    case "$1" in
-        *"?"*) URLSEP='&' ;;
-    esac
-    CURL --insecure "$BASE_URL$1$URLSEP""access_token=$TOKEN" 3>&2 2>/dev/null
-}
-
-api_auth_get_jsonv() {
-    TOKEN="`_api_get_token`"
-    api_auth_get_json "$@" | \
-        python -c "import sys, json; s=sys.stdin.read(); json.loads(s); print(s)"
-}
-
-api_post_json_cmp() {
-#    set -x
-    text=$(CURL --insecure -v --progress-bar -d "$2" "$BASE_URL$1" 3>&2 2>&1)
-    res=$(echo "${text}" | egrep "$3")
-    if [ -z "$res" ]; then
-        return 1
-    else
-        return 0
-    fi
 }
