@@ -45,7 +45,7 @@ print_result $?
 
 # Check not getting token
 test_it "wrong_login"
-curlfail_push_expect_401
+curlfail_push_expect_400
 #api_get "/oauth2/token?username=not$BIOS_USER&password=$BIOS_PASSWD&grant_type=password" >/dev/null
 _test_auth "not$BIOS_USER" "$BIOS_PASSWD" >/dev/null
 print_result $?
@@ -116,7 +116,7 @@ api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS
 print_result $?
 
 
-curlfail_push_expect_401
+curlfail_push_expect_400
 
 test_it "wrong_password_completely"
 _test_auth "$BIOS_USER" "not$BIOS_PASSWD" >/dev/null
@@ -172,7 +172,7 @@ else
     fi
 fi
 
-curlfail_push_expect_401
+curlfail_push_expect_400
 test_it "wrong_password_temporaryNoLonger"
 _test_auth "$BIOS_USER" "$NEW_BIOS_PASSWD" >/dev/null
 print_result $?

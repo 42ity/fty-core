@@ -46,8 +46,10 @@ namespace shared {
      *
      * \brief Simple wrapper on top of msmtp
      *
-     * This class contain some basic configuration for msmtp (host/from) + provide sendmail methods. It *DOES NOT* perform any additional transofmation like uuencode or mime. IOW garbage-in, garbage-out.
-     *
+     * This class contain some basic configuration for 
+     * msmtp (host/from) + provide sendmail methods. 
+     * It *DOES NOT* perform any additional transofmation 
+     * like uuencode or mime. IOW garbage-in, garbage-out.
      */
     class Smtp
     {
@@ -76,7 +78,7 @@ namespace shared {
             void sendmail(
                 const std::vector<std::string> &to,
                 const std::string& subject,
-                const std::string& body);
+                const std::string& body) const;
 
             /**
              * \brief send the email
@@ -91,7 +93,7 @@ namespace shared {
             void sendmail(
                     const std::string& to,
                     const std::string& subject,
-                    const std::string& body);
+                    const std::string& body) const;
 
             /**
              * \brief send the email
