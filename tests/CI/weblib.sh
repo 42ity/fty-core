@@ -536,6 +536,16 @@ api_delete_json() {
 	echo "$OUT_CURL" | $JSONSH -N
 }
 
+api_post_json() {
+   api_post "$@" > /dev/null && \
+	echo "$OUT_CURL" | $JSONSH -N
+}
+
+api_auth_get_json() {
+   api_auth_get "$@" > /dev/null && \
+	echo "$OUT_CURL" | $JSONSH -N
+}
+
 api_auth_post_json() {
    api_auth_post "$@" > /dev/null && \
 	echo "$OUT_CURL" | $JSONSH -N
@@ -712,13 +722,6 @@ api_auth_get_content_wToken() {
         *"?"*) URLSEP='&' ;;
     esac
     CURL --insecure "$BASE_URL$1$URLSEP""access_token=$TOKEN" 3>&2 2>/dev/null
-}
-
-api_auth_get_json() {
-    TOKEN="`_api_get_token`"
-    CURL --insecure -v --progress-bar --header "Authorization: Bearer $TOKEN" \
-        "$BASE_URL$1" 3>&2 2> /dev/null \
-    | tr \\n \  | sed -e 's|[[:blank:]]\+||g' -e 's|$|\n|'
 }
 
 api_auth_get_jsonv() {
