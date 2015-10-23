@@ -79,8 +79,9 @@ parse_systemctl_status
     std::vector<std::string> tokens;
     cxxtools::split("\n", in, std::back_inserter(tokens));
     for (auto&& i : tokens) {
-        if (i.empty ())
+        if (i.empty ()) {
             continue;
+        }
         std::size_t found = i.find ("=");
         if (found == std::string::npos) {
             return false;
@@ -132,9 +133,9 @@ unsigned int process_get (
         reply.out() << message;
         return HTTP_OK;
     }
-    
+
     //////////////////////
-    //      STATUS      //    
+    //      STATUS      //
     //////////////////////
     if (operation.compare ("status") == 0) {
         if (service_name_valid (service_name.c_str ())) {
@@ -162,13 +163,13 @@ unsigned int process_get (
 "\t}\n"
 "}");
             reply.out() << message;
-            return HTTP_OK; 
+            return HTTP_OK;
         }
         http_die( "element-not-found", service_name.c_str() );
     }
 
     //////////////////////////////////
-    //      BAD: empty / unknown    // 
+    //      BAD: empty / unknown    //
     //////////////////////////////////
     http_die("request-param-required", "operation");
 }
@@ -179,10 +180,10 @@ unsigned int process_post (
         const std::string& body)
 {
     std::string message;
-    if (operation.compare ("start") != 0 &&         
-        operation.compare ("stop") != 0 && 
-        operation.compare ("restart") != 0 && 
-        operation.compare ("enable") != 0 && 
+    if (operation.compare ("start") != 0 &&
+        operation.compare ("stop") != 0 &&
+        operation.compare ("restart") != 0 &&
+        operation.compare ("enable") != 0 &&
         operation.compare ("disable") != 0) {
         http_die("request-param-bad",
                  "operation",
@@ -199,7 +200,7 @@ unsigned int process_post (
         cxxtools::JsonDeserializer deserializer (input);
         cxxtools::SerializationInfo si;
         deserializer.deserialize (si);
-        if (si.category () != cxxtools::SerializationInfo::Object) {        
+        if (si.category () != cxxtools::SerializationInfo::Object) {
             throw cxxtools::SerializationError ("TODO Root object TODO"); // TODO change error message
         }
         std::string service_name;
@@ -217,8 +218,9 @@ unsigned int process_post (
                          "'show' or 'restart'");
             }
             // restart is done using special script
-            if (operation == "restart")
+            if (operation == "restart") {
                 service_name = "bios-networking";
+            }
         }
 
         shared::Argv proc_cmd {"sudo", "systemctl", operation, service_name};
@@ -231,15 +233,15 @@ unsigned int process_post (
         }
 
         // but we want to pretend we have used networking service ...
-        if (service_name == "bios-networking")
+        if (service_name == "bios-networking") {
             service_name = "networking";
+        }
         shared::Argv proc_cmd2 {"sudo", "systemctl", "show", service_name};
 
         proc_rv = shared::output (proc_cmd2, proc_out, proc_err);
         if (proc_rv != 0) {
             message.assign ("executing `systemctl show` failed: " + std::to_string (proc_rv));
             http_die("internal-error", message );
-            return HTTP_INTERNAL_SERVER_ERROR;    
         }
 
         std::string active_state, sub_state, load_state, unit_file_state;
@@ -249,7 +251,7 @@ unsigned int process_post (
         }
         message.assign (
 "{\n"
-"\t\"" + service_name + "\" : {\n" + 
+"\t\"" + service_name + "\" : {\n" +
 "\t\t\"ActiveState\"\t:\t\"" + active_state  + "\",\n"
 "\t\t\"SubState\"\t:\t\"" + sub_state + "\",\n"
 "\t\t\"LoadState\"\t:\t\"" + load_state + "\",\n"
@@ -270,11 +272,6 @@ unsigned int process_post (
 }
 
 </%pre>
-
-<%request scope="global">
-int8_t access_auth_level;
-</%request>
-
 <%cpp>
 
 std::string operation = request.getArg("operation");
