@@ -478,8 +478,13 @@ api_get_jsonv() {
 }
 
 api_post() {
-    CURL --insecure -v -d "$2" --progress-bar "$BASE_URL$1" 3>&2 2>&1
+    CURL --insecure -v -d "$2" --progress-bar "$BASE_URL$1" -X "POST"  3>&2 2>&1
 }
+
+api_delete() {
+    CURL --insecure -v -d "$2" --progress-bar "$BASE_URL$1" -X "DELETE"  3>&2 2>&1
+}
+
 simple_post_code() {
 
     local __out=
@@ -531,8 +536,18 @@ api_auth_post() {
         -v --progress-bar "$BASE_URL$url" "$@" 3>&2 2>&1
 }
 
+api_delete_json() {
+   api_delete "$@" > /dev/null && \
+	echo "$OUT_CURL" | $JSONSH -N
+}
+
 api_auth_post_json() {
    api_auth_post "$@" > /dev/null && \
+	echo "$OUT_CURL" | $JSONSH -N
+}
+
+api_auth_delete_json() {
+   api_auth_delete "$@" > /dev/null && \
 	echo "$OUT_CURL" | $JSONSH -N
 }
 
