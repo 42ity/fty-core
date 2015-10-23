@@ -436,6 +436,7 @@ simple_get_json_code() {
     return 0
 }
 
+# XXX delete it
 api_get_json_sed() {
     ### Old approach to strip any whitespace including linebreaks from JSON
     CURL --insecure -v --progress-bar "$BASE_URL$1" 3>&2 2> /dev/null \
@@ -469,12 +470,6 @@ simple_get_json_code_sed() {
     eval $__resultcode='"$__code"'
     eval $__resultout='"$__out"'
     return 0
-}
-
-api_get_jsonv() {
-    ### Sort of a JSON validity check by passing it through Python parser
-    api_get_json "$@" | \
-        python -c "import sys, json; s=sys.stdin.read(); json.loads(s); print(s)"
 }
 
 api_post() {
