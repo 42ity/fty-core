@@ -25,6 +25,7 @@
 
 OVERLAY=/mnt/nand/overlay
 DEFAULT=/etc/default/verify-fs
+IMAGES=/mnt/nand/rootfs
 
 die () {
     echo "${@}" >&2
@@ -68,9 +69,25 @@ EOF
 
 ##### MAIN #####
 
+## 0.) Check the paths
+
 [[ $(< /proc/mounts) =~ upperdir=${OVERLAY} ]] || \
     die "Can't find overlay ${OVERLAY}"
 
+[[ -d ${IMAGES} ]] || \
+    die "Can't find images ${IMAGES}"
+
+## 1.) Verify the images
+pushd "${IMAGES}"
+for ROOTFS in *.squashfs; do
+
+    /usr/bin/md5sum -c "${ROOTFS}.md5" 2>/dev/null || \
+        log "Bad integrity of ${ROOTFS}, checksum is not valid"
+
+done
+popd
+
+## 2.) Verify the overlayfs
 cat_default | while read LINE; do
     TREE=${LINE%%:*}
     EXCLUDES=${LINE#*:}
