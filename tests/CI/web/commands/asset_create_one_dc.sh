@@ -20,7 +20,6 @@
 #  \author Michal Vyskocil <MichalVyskocil@Eaton.com>
 #  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 
-
 echo "********* 1. Asset_without_parameter **************************************************************"
 echo "***************************************************************************************************"
 test_it "Asset_without_parameter"
