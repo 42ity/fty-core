@@ -436,6 +436,7 @@ simple_get_json_code() {
     return 0
 }
 
+# XXX delete it
 api_get_json_sed() {
     ### Old approach to strip any whitespace including linebreaks from JSON
     CURL --insecure -v --progress-bar "$BASE_URL$1" 3>&2 2> /dev/null \
@@ -471,15 +472,14 @@ simple_get_json_code_sed() {
     return 0
 }
 
-api_get_jsonv() {
-    ### Sort of a JSON validity check by passing it through Python parser
-    api_get_json "$@" | \
-        python -c "import sys, json; s=sys.stdin.read(); json.loads(s); print(s)"
+api_post() {
+    CURL --insecure -v -d "$2" --progress-bar "$BASE_URL$1" -X "POST"  3>&2 2>&1
 }
 
-api_post() {
-    CURL --insecure -v -d "$2" --progress-bar "$BASE_URL$1" 3>&2 2>&1
+api_delete() {
+    CURL --insecure -v -d "$2" --progress-bar "$BASE_URL$1" -X "DELETE"  3>&2 2>&1
 }
+
 simple_post_code() {
 
     local __out=
@@ -531,8 +531,28 @@ api_auth_post() {
         -v --progress-bar "$BASE_URL$url" "$@" 3>&2 2>&1
 }
 
+api_delete_json() {
+   api_delete "$@" > /dev/null && \
+	echo "$OUT_CURL" | $JSONSH -N
+}
+
+api_post_json() {
+   api_post "$@" > /dev/null && \
+	echo "$OUT_CURL" | $JSONSH -N
+}
+
+api_auth_get_json() {
+   api_auth_get "$@" > /dev/null && \
+	echo "$OUT_CURL" | $JSONSH -N
+}
+
 api_auth_post_json() {
    api_auth_post "$@" > /dev/null && \
+	echo "$OUT_CURL" | $JSONSH -N
+}
+
+api_auth_delete_json() {
+   api_auth_delete "$@" > /dev/null && \
 	echo "$OUT_CURL" | $JSONSH -N
 }
 
@@ -702,13 +722,6 @@ api_auth_get_content_wToken() {
         *"?"*) URLSEP='&' ;;
     esac
     CURL --insecure "$BASE_URL$1$URLSEP""access_token=$TOKEN" 3>&2 2>/dev/null
-}
-
-api_auth_get_json() {
-    TOKEN="`_api_get_token`"
-    CURL --insecure -v --progress-bar --header "Authorization: Bearer $TOKEN" \
-        "$BASE_URL$1" 3>&2 2> /dev/null \
-    | tr \\n \  | sed -e 's|[[:blank:]]\+||g' -e 's|$|\n|'
 }
 
 api_auth_get_jsonv() {
