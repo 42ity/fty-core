@@ -15,10 +15,15 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-#! \file   asset_create.sh
-#  \brief  CI tests for asset create and delete calls
-#  \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+#! \file   asset_create_one_dc.sh
+#  \brief  CI tests for asset create and delete DC 
 #  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
+
+echo
+echo "###################################################################################################"
+echo "********* asset_create_one_dc.sh ******************* START ****************************************"
+echo "###################################################################################################"
+echo
 
 echo "********* 1. Asset_without_parameter **************************************************************"
 echo "***************************************************************************************************"
@@ -223,3 +228,9 @@ curlfail_push_expect_noerrors
 api_post '/asset' '{"name":"dc_name_test_25","type":"datacenter","sub_type":"","location":"","status":"nonactive","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST0025","address":"ASDF"}}' > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
 print_result $?
 curlfail_pop
+
+echo
+echo "###################################################################################################"
+echo "********* asset_create_one_dc.sh ******************* END ******************************************"
+echo "###################################################################################################"
+echo
