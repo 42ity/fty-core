@@ -19,6 +19,12 @@
 #  \brief  CI tests for asset delete calls
 #  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 
+echo
+echo "###################################################################################################"
+echo "********* asset_delete_one_item.sh ***************** START ****************************************"
+echo "###################################################################################################"
+echo
+
 api_delete() {
     curl --insecure -X "DELETE" -v --progress-bar "$BASE_URL$1"
 }
@@ -151,3 +157,9 @@ for i in t_bios_asset_ext_attributes t_bios_asset_group_relation t_bios_asset_li
     print_result $DEL_RES
 No="$(expr $No + 1)"
 done
+
+echo
+echo "###################################################################################################"
+echo "********* asset_delete_one_item.sh ***************** END ******************************************"
+echo "###################################################################################################"
+echo

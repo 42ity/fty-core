@@ -16,13 +16,15 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-
-
 #! \file asset_devices.sh
-#  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
-#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 #  \brief Not yet documented file
+
+echo
+echo "###################################################################################################"
+echo "********* asset_devices.sh ************************* START ****************************************"
+echo "###################################################################################################"
+echo
 
 echo "********* 1. list_of_all_devices ******************************************************************"
 echo "***************************************************************************************************"
@@ -140,3 +142,9 @@ DB_LOADDIR=$BUILDSUBDIR/tools
 for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
     loaddb_file "$DB_LOADDIR/$data" || return $?
 done
+
+echo
+echo "###################################################################################################"
+echo "********* asset_devices.sh ************************* END ******************************************"
+echo "###################################################################################################"
+echo
