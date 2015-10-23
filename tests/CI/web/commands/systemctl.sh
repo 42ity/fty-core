@@ -115,20 +115,3 @@ api_auth_get_json "/admin/systemctl/status/mysql"
 tmp="`expected mysql`"
 "$CMPJSON_SH" -s "$OUT_CURL" "$tmp"
 print_result $?
-
-# Now that /status/<service_name> is properly tested, we'll use it for further testing
-
-# Work in progress
-#test_it "Systemctl post 1"
-#simple_auth_post_code '/admin/systemctl/stop' '{ "service_name" : "mysql" }' received HTTP_CODE
-#[ $HTTP_CODE -eq 200 ]
-#print_result $?
-#
-#test_it "Systemctl post 1 - code compare"
-#simple_auth_get_code '/admin/systemctl/status/mysql' tmp HTTP_CODE
-#[ $HTTP_CODE -eq 200 ]
-#print_result $?
-#
-#test_it "Systemctl post 1 - string compare"
-#"$CMPJSON_SH" -s "$received" "$tmp"
-#print_result $?
