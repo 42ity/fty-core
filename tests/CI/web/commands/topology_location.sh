@@ -16,11 +16,15 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-
-
 #! \file topology_location.sh
 #  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 #  \brief Not yet documented file
+
+echo
+echo "###################################################################################################"
+echo "********* topology_location.sh ********************* START ****************************************"
+echo "###################################################################################################"
+echo
 
 echo "********* 1. From_top_but_not_recursive ***********************************************************"
 echo "***************************************************************************************************"
@@ -318,7 +322,6 @@ api_get_json /topology/location?from=7\&recursive=yes\&feed_by=8\&filter=devices
 print_result $?
 curlfail_pop
 
-
 echo "********* 38. From_1_recursive_feed_by_7 ********************************************************************"
 echo "***************************************************************************************************"
 test_it "From_1_recursive_feed_by_7"
@@ -327,6 +330,8 @@ api_get_json /topology/location?from=1\&recursive=yes\&feed_by=7\&filter=devices
 print_result $?
 curlfail_pop
 
-
-
+echo "###################################################################################################"
+echo "********* topology_location.sh ********************* END ******************************************"
+echo "###################################################################################################"
+echo
 
