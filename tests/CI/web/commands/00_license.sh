@@ -16,14 +16,19 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-
-
 #! \file 00_license.sh
 #  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \brief Not yet documented file
 
 # remove the licence file, if exists, license not accepted in result
+
+echo
+echo "###################################################################################################"
+echo "********* 00_license.sh **************************** START ****************************************"
+echo "###################################################################################################"
+echo
+
 sut_run "rm -f /var/lib/bios/license $CHECKOUTDIR/var/bios/license" || true
 
 echo "********* 1. license_status_not_ok ****************************************************************"
@@ -100,7 +105,6 @@ test_it "disabled_method_delete "
 curlfail_push_expect_405
 api_auth_delete '/admin/license/status' > /dev/null && echo "$OUT_CURL" | $JSONSH -N
 echo "$OUT_CURL" | $JSONSH -N | grep -e '{"errors":\[{"message":"Http method.*not allowed.*code":45'
-#grep -e '{\"errors\":[{\"message\":\"Http method.*not allowed.\",\"code":45}]}'
 print_result $?
 curlfail_pop
 
@@ -120,3 +124,9 @@ echo "**************************************************************************
 test_it "license_acceptance"
 api_auth_post_content '/admin/license' "foobar" >&5
 print_result $?
+
+echo
+echo "###################################################################################################"
+echo "********* 00_license.sh **************************** END ******************************************"
+echo "###################################################################################################"
+echo
