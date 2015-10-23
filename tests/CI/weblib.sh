@@ -556,29 +556,6 @@ api_auth_delete_json() {
 	echo "$OUT_CURL" | $JSONSH -N
 }
 
-simple_auth_post_code () {
-    # WARNING: At the moment does not fill in $3... WIP
-    TOKEN="`_api_get_token`"
-
-    local __out=
-    __out=$( curl -s --insecure --header "Authorization: Bearer $TOKEN" -d "$2" -X "POST" -v --progress-bar "$BASE_URL$1" 2>&1 )
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
-    local __code="`echo "$__out" | grep -E '<\s+HTTP' | sed -r -e 's/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/'`"
-    __out="`echo "$__out" | grep -vE '^([<>*]|\{ *\[data not shown\]|\{\s\[[0-9]+).*'`"
-    __out="`echo "$__out" | $JSONSH -N`"
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
-
-    local __resultcode=$4
-    local __resultout=$3
-    eval $__resultcode='"$__code"'
-    eval $__resultout='"$__out"'
-    return 0
-}
-
 # POST the file to the server with Content-Type multipart/form-data according
 # to RFC 2388 - this simulates the HTML form and Submit button
 #
