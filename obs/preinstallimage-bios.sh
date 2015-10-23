@@ -240,9 +240,6 @@ systemctl preset-all
 if [ "`uname -m`" = x86_64 ]; then
     systemctl enable bios-fake-th
     systemctl disable bios-agent-th
-else
-    systemctl enable lcd-boot-display
-    systemctl enable lcd-net-display
 fi
 
 # Fix tntnet unit
