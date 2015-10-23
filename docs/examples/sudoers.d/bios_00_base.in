@@ -22,7 +22,7 @@
 ### Change date on this device:
 Cmnd_Alias DATE	            = /usr/bin/date,/bin/date
 ### TODO: Remove hardcoded path both here and in the sources
-Cmnd_Alias AUGTOOL          = /usr/bin/augtool -S -I/usr/share/bios/lenses
+Cmnd_Alias AUGTOOL          = /usr/bin/augtool -S -I/usr/share/bios/lenses -e
 Cmnd_Alias BIOS_PASSWD      = @libexecdir@/@PACKAGE@/bios-passwd
 Cmnd_Alias BIOS_NUTCONFIG   = @libexecdir@/@PACKAGE@/bios-nutconfig
 Cmnd_Alias BIOS_SYSTEMCTL   = @libexecdir@/@PACKAGE@/systemctl
