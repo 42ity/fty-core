@@ -16,13 +16,15 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-
-
-#! \file asset_racks.sh
-#  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
-#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#! \file asset_elements.sh
 #  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 #  \brief Not yet documented file
+
+echo
+echo "###################################################################################################"
+echo "********* asset_elements.sh ************************ START ****************************************"
+echo "###################################################################################################"
+echo
 
 echo "********* 1. No_datacenters_present ***************************************************************"
 echo "***************************************************************************************************"
@@ -182,3 +184,9 @@ echo "**************************************************************************
 test_it "list_of_all_groups"
 api_get_json /asset/groups >&5
 print_result $?
+
+echo
+echo "###################################################################################################"
+echo "********* asset_elements.sh ************************ END ******************************************"
+echo "###################################################################################################"
+echo
