@@ -16,12 +16,15 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-
-
-#! \file asset_one_room1.sh
-#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
-#  \author Alena Chernikava <AlenaChernikava@Eaton.com>
+#! \file asset_one_room.sh
+#  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 #  \brief Not yet documented file
+
+echo
+echo "###################################################################################################"
+echo "********* asset_one_room.sh ************************ START ****************************************"
+echo "###################################################################################################"
+echo
 
 echo "********* 1. read_room_with_id_of_another_element ***************************************************"
 echo "***************************************************************************************************"
@@ -79,3 +82,9 @@ curlfail_push_expect_400
 api_get_json /asset/room/ >&5
 print_result $?
 curlfail_pop
+
+echo
+echo "###################################################################################################"
+echo "********* asset_one_room.sh ************************ END ******************************************"
+echo "###################################################################################################"
+echo
