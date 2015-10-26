@@ -182,7 +182,7 @@ do_test_match() {
 
     case $# in
         0|1|2|3)
-            echo "CI-TESTLIB-ERROR: do_test_match(): insuficient number of arguments" >&2
+            logmsg_error "do_test_match(): insuficient number of arguments"
             return 1
             ;;
         4)
@@ -200,7 +200,7 @@ do_test_match() {
             regexp=${5}
             ;;
         *)
-            echo "CI-TESTLIB-ERROR: do_test_match(): too many arguments: $#" >&2
+            logmsg_error "do_test_match(): too many arguments: $#"
             return 1
             ;;
     esac
@@ -210,14 +210,18 @@ do_test_match() {
 
     test_it "${test_name}"
     ${api_call} ${url} "${api_args}" > "${out}"  2> "${err}"
+    RES=$?
     if ! egrep -q "${regexp}" "${out}"; then
         echo "    >>>>> DEBUG: ${out} <<<<"
         cat "${out}"
         echo "    >>>>> DEBUG: ${err} <<<<"
         cat "${err}"
         echo "    >>>>> \\DEBUG: ${test_name} <<<<"
-        return 1
+        [ "$RES" = 0 ] && RES=1
+        print_result $RES
+        return $RES
     fi
     rm -f "${err}" "${out}"
+    print_result 0
     return 0
 }
