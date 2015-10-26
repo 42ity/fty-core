@@ -111,7 +111,8 @@ cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
     # *** set TESTLIB_COUNT_* to 0 and TESTLIB_LIST_* to ""
 TESTLIB_COUNT_PASS=0
-TESTLIB_COUNT_PASS_SKIP=0
+TESTLIB_COUNT_SKIP=0
+TESTLIB_COUNT_FAIL=0
 TESTLIB_COUNT_TOTAL=0
 TESTLIB_LIST_FAILED=""
 TESTLIB_LIST_FAILED_IGNORED=""
@@ -236,10 +237,10 @@ for i in $POSITIVE; do
     done
 done
 
-echo "Testing completed, $TESTLIB_COUNT_PASS/$TESTLIB_COUNT_TOTAL tests passed and $TESTLIB_COUNT_PASS_SKIP more failed but ignored"
-[ -z "$TESTLIB_LIST_FAILED" ] && exit 0
+echo "Testing completed, $TESTLIB_COUNT_PASS/$TESTLIB_COUNT_TOTAL tests passed and $TESTLIB_COUNT_SKIP more failed but ignored"
+[ -z "$TESTLIB_LIST_FAILED" ] && [ x"$TESTLIB_COUNT_FAIL" = x0 ] && exit 0
 
-echo "Following tests failed:"
+echo "Following $TESTLIB_COUNT_FAIL tests failed:"
 for i in $TESTLIB_LIST_FAILED; do
     echo " * $i"
 done
