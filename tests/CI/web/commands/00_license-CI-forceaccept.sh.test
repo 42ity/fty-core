@@ -40,7 +40,7 @@ if api_get_json '/admin/license/status' | grep "accepted_at" >&5 ; then
     print_result $?
 else
     echo "Trying to accept the license on BIOS server '$BASE_URL'..."
-    api_auth_post_content '/admin/license' "foobar" >&5 || true
+    api_auth_post '/admin/license' "foobar" >&5 || true
 
     test_it "license_forced_status_ok"
     OUT="`api_get_json '/admin/license/status' | grep "accepted"`"
@@ -71,7 +71,7 @@ if [ "$RES" = 0 ]; then
     echo "Some info about running server version:"
 
     test_it "sysinfo_get_auth=2"
-    SYSINFOA="`api_auth_get_content '/admin/sysinfo'`"
+    SYSINFOA="`api_auth_get '/admin/sysinfo'`"
     RES=$?
     #echo "=== SYSINFOA ($RES):" >&2
     #echo "$SYSINFOA" >&2

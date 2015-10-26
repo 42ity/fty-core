@@ -607,15 +607,6 @@ api_auth_get_content_wToken() {
     CURL --insecure "$BASE_URL$1$URLSEP""access_token=$TOKEN" 3>&2 2>/dev/null
 }
 
-api_auth_post_content() {
-    # Params:
-    #	$1	Relative URL for API call
-    #	$2	POST data
-    TOKEN="`_api_get_token`"
-    CURL --insecure --header "Authorization: Bearer $TOKEN" -d "$2" \
-        "$BASE_URL$1" 3>&2 2>/dev/null
-}
-
 api_auth_post_wToken() {
     # Params:
     #	$1	Relative URL for API call
