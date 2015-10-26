@@ -109,9 +109,12 @@ NEED_BUILDSUBDIR=no determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 
-    # *** set PASS and TOTAL to 0
-PASS=0
-TOTAL=0
+    # *** set TESTLIB_COUNT_* to 0 and TESTLIB_LIST_* to ""
+TESTLIB_COUNT_PASS=0
+TESTLIB_COUNT_PASS_SKIP=0
+TESTLIB_COUNT_TOTAL=0
+TESTLIB_LIST_FAILED=""
+TESTLIB_LIST_FAILED_IGNORED=""
 
 echo '*************************************************************************************************************'
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
@@ -233,11 +236,11 @@ for i in $POSITIVE; do
     done
 done
 
-echo "Testing completed, $PASS/$TOTAL tests passed"
-[ -z "$FAILED" ] && exit 0
+echo "Testing completed, $TESTLIB_COUNT_PASS/$TESTLIB_COUNT_TOTAL tests passed and $TESTLIB_COUNT_PASS_SKIP more failed but ignored"
+[ -z "$TESTLIB_LIST_FAILED" ] && exit 0
 
 echo "Following tests failed:"
-for i in $FAILED; do
+for i in $TESTLIB_LIST_FAILED; do
     echo " * $i"
 done
 exit 1
