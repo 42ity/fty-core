@@ -70,6 +70,7 @@ _testlib_result_printed=notest
 # String lists of space-separated single-token test names that failed
 [ -z "${TESTLIB_LIST_FAILED-}" ] && TESTLIB_LIST_FAILED=""
 [ -z "${TESTLIB_LIST_FAILED_IGNORED-}" ] && TESTLIB_LIST_FAILED_IGNORED=""
+[ -z "${TESTLIB_LIST_PASSED-}" ] && TESTLIB_LIST_PASSED=""
 
 print_result() {
     [ "${_testlib_result_printed}" = yes ] && return 0
@@ -94,6 +95,7 @@ print_result() {
     if [ "$_ret" -eq 0 ]; then  # should include "-0" too
         echo " * PASSED"
         TESTLIB_COUNT_PASS="`expr $TESTLIB_COUNT_PASS + 1`"
+        TESTLIB_LIST_PASSED="$TESTLIB_LIST_PASSED $TESTLIB_LASTTESTTAG"
     else
         if [ x-"$_ret" = x"$1" ] ; then
             # The "$1" string was a negative number
