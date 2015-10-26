@@ -296,7 +296,7 @@ for i in $POSITIVE; do
             while IFS='' read -r line || [ -n "$line" ]; do
                 OUT_JSONV="`echo "$line" | "$JSONSH" 2>&1`"
                 RES_JSONV=$?
-                if [ RES_JSONV -ne 0 ]; then
+                if [ $RES_JSONV -ne 0 ]; then
                     echo "$OUT_JSONV"
                     break
                 fi
