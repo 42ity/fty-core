@@ -149,6 +149,7 @@ trap "trap_break_weblib" USR1
 STACKED_HTTPERRORS_ACTIONS=""
 STACKED_HTTPERRORS_REGEX=""
 STACKED_HTTPERRORS_COUNT=0
+
 curlfail_push() {
     ### saves current "$WEBLIB_CURLFAIL_HTTPERRORS" actions to the stack,
     ### and sets it to the value of "$1" (empty means default)
@@ -355,7 +356,7 @@ CURL() {
                 [ x"$WEBLIB_CURLFAIL_HTTPERRORS_DEBUG" = xyes -o \
                   x"$WEBLIB_CURLFAIL_HTTPERRORS_DEBUG" = xonerror ] && \
                         _PRINT_CURL_TRACE=yes
-                    _PRINT_CURL_TRACE=yes
+                _PRINT_CURL_TRACE=yes
                 RES_CURL=124
             fi
         fi
@@ -375,7 +376,7 @@ CURL() {
     fi >&3
 
     if [ $RES_CURL != 0 -a x"$WEBLIB_CURLFAIL" = xyes ]; then
-	echo "CI-WEBLIB-ERROR-CURL: Killing the test: kill -SIGUSR1 $_PID_TESTER_WEBLIB $$" >&3
+        echo "CI-WEBLIB-ERROR-CURL: Killing the test: kill -SIGUSR1 $_PID_TESTER_WEBLIB $$" >&3
         kill -n 10 $_PID_TESTER_WEBLIB $$ >&3 2>&3 #>/dev/null 2>&1
         # exit $RES_CURL
     fi
@@ -383,124 +384,69 @@ CURL() {
     return $RES_CURL
 }
 
-api_get() {
-    CURL --insecure -v --progress-bar "$BASE_URL$1" 3>&2 2>&1
-}
-
-api_get_content() {
-    CURL --insecure "$BASE_URL$1" 3>&2 2>/dev/null
-}
-
-api_get_json() {
-    ### Properly normalize JSON markup into a single string via JSON.sh
-    if [ -z "$JSONSH" -o ! -x "$JSONSH" ] ; then
-        api_get_json_sed "$@"
-        return $?
-    fi
-
-    CURL --insecure -v --progress-bar "$BASE_URL$1" 3>&2 2> /dev/null \
-    | $JSONSH -N
-}
-
-# Returns:
-#   1 on error
-#   0 on success
-# Arguments:
-#   $1 - rest api call
-#   $2 - output
-#   $3 - HTTP code
-# TODO:
-#   check args
-simple_get_json_code() {
-    if [ -z "$JSONSH" -o ! -x "$JSONSH" ] ; then
-        simple_get_json_code_sed "$@"
-        return $?
-    fi
-
-    local __out
-    __out=$( curl -s --insecure -v --progress-bar "$BASE_URL$1" 2>&1 )
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
-    local __code="`echo "$__out" | grep -E '<\s+HTTP' | sed -r -e 's/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/'`"
-    __out="`echo "$__out" | grep -vE '^([<>*]|\{ *\[data not shown\]|\{\s\[[0-9]+).*'`"
-    __out="`echo "$__out" | $JSONSH -N`"
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
-
-    local __resultcode=$3
-    local __resultout=$2
-    eval $__resultcode='"$__code"'
-    eval $__resultout='"$__out"'
-    return 0
-}
-
-# XXX delete it
-api_get_json_sed() {
-    ### Old approach to strip any whitespace including linebreaks from JSON
-    CURL --insecure -v --progress-bar "$BASE_URL$1" 3>&2 2> /dev/null \
-    | tr \\n \  | sed -e 's|[[:blank:]]\+||g' -e 's|$|\n|'
-}
-
-# Returns:
-#   1 on error
-#   0 on success
-# Arguments:
-#   $1 - rest api call
-#   $2 - output
-#   $3 - HTTP code
-# TODO:
-#   check args
-simple_get_json_code_sed() {
-    ### Old approach to strip any whitespace including linebreaks from JSON
-    local __out
-    __out=$( curl -s --insecure -v --progress-bar "$BASE_URL$1" 2>&1 )
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
-    local __code="`echo "$__out" | grep -E '<\s+HTTP' | sed -r -e 's/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/'`"
-    __out="`echo "$__out" | grep -vE '^([<>*]|\{ *\[data not shown\]|\{\s\[[0-9]+).*' | tr \\n \  | sed -e 's|[[:blank:]]\+||g' -e 's|$|\n|'`"
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
-
-    local __resultcode=$3
-    local __resultout=$2
-    eval $__resultcode='"$__code"'
-    eval $__resultout='"$__out"'
-    return 0
-}
-
-api_post() {
-    CURL --insecure -v -d "$2" --progress-bar "$BASE_URL$1" -X "POST"  3>&2 2>&1
-}
-
-api_delete() {
-    CURL --insecure -v -d "$2" --progress-bar "$BASE_URL$1" -X "DELETE"  3>&2 2>&1
-}
-
 _api_get_token() {
     _RES_=0
     if [ -z "$_TOKEN_" ]; then
-	AUTH_URL="/oauth2/token?username=${BIOS_USER}&password=${BIOS_PASSWD}&grant_type=password"
+	    AUTH_URL="/oauth2/token?username=${BIOS_USER}&password=${BIOS_PASSWD}&grant_type=password"
         [ x"$WEBLIB_CURLFAIL_GETTOKEN" = xprotected ] && \
             curlfail_push_expect_noerrors
-	_TOKEN_RAW_="`set +x; api_get "$AUTH_URL"`" || _RES_=$?
+	    _TOKEN_RAW_="`set +x; api_get "$AUTH_URL"`" || _RES_=$?
         [ x"$WEBLIB_CURLFAIL_GETTOKEN" = xprotected ] && \
             curlfail_pop
-	_TOKEN_="`echo "$_TOKEN_RAW_" | sed -n 's|.*\"access_token\"[[:blank:]]*:[[:blank:]]*\"\([^\"]*\)\".*|\1|p'`" || _RES_=$?
+	    _TOKEN_="`echo "$_TOKEN_RAW_" | sed -n 's|.*\"access_token\"[[:blank:]]*:[[:blank:]]*\"\([^\"]*\)\".*|\1|p'`" || _RES_=$?
 #	echo "CI-WEBLIB-DEBUG: _api_get_token(): got ($_RES_) new token '$_TOKEN_'" >&2
     fi
     echo "$_TOKEN_"
     return $_RES_
 }
 
+# Does an api GET request without authorization
+# Params:
+#	$1	Relative URL for API call
+# Result:
+#    content + HTTP headers
+api_get() {
+    CURL --insecure -v --progress-bar "$BASE_URL$1" 3>&2 2>&1
+}
+
+# Does an api GET request without authorization
+# Params:
+#	$1	Relative URL for API call
+# Result:
+#    content without HTTP headers
+api_get_json() {
+   api_get "$@" > /dev/null && \
+	echo "$OUT_CURL" | $JSONSH -N
+}
+
+# Does an api POST request without authorization
+# Params:
+#	$1	Relative URL for API call
+#	$2	data
+# Result:
+#    content + HTTP headers
+api_post() {
+    CURL --insecure -v -d "$2" --progress-bar "$BASE_URL$1" -X "POST"  3>&2 2>&1
+}
+
+# Does an api DELETE request without authorization
+# Params:
+#	$1	Relative URL for API call
+# Result:
+#    content + HTTP headers
+api_delete() {
+    CURL --insecure -v --progress-bar "$BASE_URL$1" -X "DELETE"  3>&2 2>&1
+}
+
+# Does an api POST request with authorization
+# Authorization is done through HTTP header --header "Authorization: Bearer $TOKEN"
+# Params:
+#	$1	Relative URL for API call
+#	$2	data
+#   $@  aditional params for curl
+# Result:
+#    content + HTTP headers
 api_auth_post() {
-    # Params:
-    #	$1	Relative URL for API call
-    #	$2	POST data
-    #   $@  aditional params for curl
     local url data
     url=$1
     data=$2
@@ -547,6 +493,7 @@ api_auth_get_json() {
 # Params:
 #	$1	Relative URL for API call
 #	$2	data
+#   $@  aditional params for curl
 # Result:
 #    content without HTTP headers
 api_auth_post_json() {
@@ -684,4 +631,72 @@ api_auth_post_content_wToken() {
     #	$2	POST data
     TOKEN="`_api_get_token`"
     CURL --insecure -d "access_token=$TOKEN&$2" "$BASE_URL$1" 3>&2 2>/dev/null
+}
+
+
+api_get_content() {
+    CURL --insecure "$BASE_URL$1" 3>&2 2>/dev/null
+}
+
+# Returns:
+#   1 on error
+#   0 on success
+# Arguments:
+#   $1 - rest api call
+#   $2 - output
+#   $3 - HTTP code
+# TODO:
+#   check args
+simple_get_json_code() {
+    if [ -z "$JSONSH" -o ! -x "$JSONSH" ] ; then
+        simple_get_json_code_sed "$@"
+        return $?
+    fi
+
+    local __out
+    __out=$( curl -s --insecure -v --progress-bar "$BASE_URL$1" 2>&1 )
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+    local __code="`echo "$__out" | grep -E '<\s+HTTP' | sed -r -e 's/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/'`"
+    __out="`echo "$__out" | grep -vE '^([<>*]|\{ *\[data not shown\]|\{\s\[[0-9]+).*'`"
+    __out="`echo "$__out" | $JSONSH -N`"
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+
+    local __resultcode=$3
+    local __resultout=$2
+    eval $__resultcode='"$__code"'
+    eval $__resultout='"$__out"'
+    return 0
+}
+
+# Returns:
+#   1 on error
+#   0 on success
+# Arguments:
+#   $1 - rest api call
+#   $2 - output
+#   $3 - HTTP code
+# TODO:
+#   check args
+simple_get_json_code_sed() {
+    ### Old approach to strip any whitespace including linebreaks from JSON
+    local __out
+    __out=$( curl -s --insecure -v --progress-bar "$BASE_URL$1" 2>&1 )
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+    local __code="`echo "$__out" | grep -E '<\s+HTTP' | sed -r -e 's/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/'`"
+    __out="`echo "$__out" | grep -vE '^([<>*]|\{ *\[data not shown\]|\{\s\[[0-9]+).*' | tr \\n \  | sed -e 's|[[:blank:]]\+||g' -e 's|$|\n|'`"
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+
+    local __resultcode=$3
+    local __resultout=$2
+    eval $__resultcode='"$__code"'
+    eval $__resultout='"$__out"'
+    return 0
 }
