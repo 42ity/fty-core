@@ -71,7 +71,7 @@ _testlib_result_printed=notest
 [ -z "${TESTLIB_LIST_FAILED_IGNORED-}" ] && TESTLIB_LIST_FAILED_IGNORED=""
 
 print_result() {
-    [ "$_testlib_result_printed" = yes ] && return 0
+    [ "${_testlib_result_printed}" = yes ] && return 0
     _testlib_result_printed=yes
     _ret="$1"
     ### Is this a valid number (negative == failed_ignored)?
