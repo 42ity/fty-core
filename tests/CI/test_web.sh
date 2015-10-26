@@ -170,7 +170,7 @@ summarizeResults() {
     print_result $TRAP_RES
     set +e
     NUM_NOTFAILED="`expr $TESTLIB_COUNT_PASS + $TESTLIB_COUNT_PASS_SKIP`"
-    logmsg_info "Testing completed, $NUM_NOTFAILED/$TESTLIB_COUNT_TOTAL tests passed($TESTLIB_COUNT_PASS) or not-failed($TESTLIB_COUNT_PASS_SKIP) for test-groups:"
+    logmsg_info "Testing completed ($TRAP_RES), $NUM_NOTFAILED/$TESTLIB_COUNT_TOTAL tests passed($TESTLIB_COUNT_PASS) or not-failed($TESTLIB_COUNT_PASS_SKIP) for test-groups:"
     logmsg_info "  POSITIVE (exec glob) = $POSITIVE"
     logmsg_info "  NEGATIVE (skip glob) = $NEGATIVE"
     logmsg_info "  SKIP_NONSH_TESTS = $SKIP_NONSH_TESTS (so skipped $SKIPPED_NONSH_TESTS tests)"
@@ -188,7 +188,7 @@ summarizeResults() {
         echo " * $i"
         N="`expr $N + 1`"
     done
-    logmsg_error "$N/$TESTLIB_COUNT_TOTAL tests TESTLIB_LIST_FAILED, $TESTLIB_COUNT_PASS_SKIP tests TESTLIB_LIST_FAILED_IGNORED, $TESTLIB_COUNT_PASS tests PASSED"
+    logmsg_error "$N/$TESTLIB_COUNT_TOTAL tests FAILED, $TESTLIB_COUNT_PASS_SKIP tests FAILED_IGNORED, $TESTLIB_COUNT_PASS tests PASSED"
     exit 1
 }
 
@@ -251,11 +251,12 @@ for i in $POSITIVE; do
     ### Default value for logging the test items
     TNAME="$NAME"
 
+    # "Poison"-protection about unused standard infrastructure aka test_it()
     _testlib_result_printed=notest
-    . ./"$NAME" 5> "$REALLIFE_RESULT"
+    . ./"$NAME" 5>"$REALLIFE_RESULT"
     RES=$?
 
-    [ "$_testlib_result_printed" = notest ] && \
+    [ "${_testlib_result_printed}" = notest ] && \
         logmsg_error "NOTE: Previous test(s) apparently did not use test_it()" \
             "to begin logging, amending that omission now by assigning filename" \
             "as the test name:" && \
@@ -285,21 +286,21 @@ for i in $POSITIVE; do
             "$CMP" "$EXPECTED_RESULT" "$REALLIFE_RESULT"
             RES_CMP=$?
             RES_JSONV=0
-            while IFS='' read -r line || [[ -n "$line" ]]; do
+            while IFS='' read -r line || [ -n "$line" ]; do
                 OUT_JSONV="`echo "$line" | "$JSONSH" 2>&1`"
                 RES_JSONV=$?
-                if [[ RES_JSONV -ne 0 ]]; then
+                if [ RES_JSONV -ne 0 ]; then
                     echo "$OUT_JSONV"
                     break
                 fi
             done < "$REALLIFE_RESULT"
 
-            if [[ $RES_CMP -eq 0 && $RES_JSONV -eq 0 ]]; then
+            if [ $RES_CMP -eq 0 ] && [ $RES_JSONV -eq 0 ]; then
                 RES=$RES_CMP
-            elif [[ $RES_CMP -ne 0 ]]; then
+            elif [ $RES_CMP -ne 0 ]; then
                 RES=$RES_CMP
                 diff -Naru "$EXPECTED_RESULT" "$REALLIFE_RESULT"
-            elif [[ $RES_JSONV -ne 0 ]]; then
+            elif [ $RES_JSONV -ne 0 ]; then
                 RES=$RES_JSONV
                 logmsg_error "INVALID JSON!" 
             fi
@@ -307,11 +308,11 @@ for i in $POSITIVE; do
         print_result $RES
     else
         # This might do nothing, if the test file already ended with a print_result
-        if [ "$_testlib_result_printed" != yes ]; then
+        if [ "${_testlib_result_printed}" != yes ]; then
         logmsg_info "No expected-results file was found for test script '$NAME'," \
             "so nothing to compare real-life output against. Note that the result" \
             "below ($RES) may refer to execution of the test script itself and" \
-            "recording the log-files of its output:"
+            "recording the log-files of its output, rather than failure of a test:"
         print_result $RES
         echo ""
         fi
