@@ -169,9 +169,7 @@ cd web/commands || CODE=6 die "Can not change to `pwd`/web/commands"
 
 summarizeResults() {
     TRAP_RES=$?
-    logmsg_info "Test-lib counts before last print_results($TRAP_RES):  $TESTLIB_COUNT_TOTAL = $TESTLIB_COUNT_PASS + $TESTLIB_COUNT_SKIP + $TESTLIB_COUNT_FAIL"
     print_result $TRAP_RES
-    logmsg_info "Test-lib counts before after print_results($TRAP_RES): $TESTLIB_COUNT_TOTAL = $TESTLIB_COUNT_PASS + $TESTLIB_COUNT_SKIP + $TESTLIB_COUNT_FAIL"
     set +e
     NUM_NOTFAILED="`expr $TESTLIB_COUNT_PASS + $TESTLIB_COUNT_SKIP`"
     logmsg_info "Testing completed ($TRAP_RES), $NUM_NOTFAILED/$TESTLIB_COUNT_TOTAL tests passed($TESTLIB_COUNT_PASS) or not-failed($TESTLIB_COUNT_SKIP) for test-groups:"
