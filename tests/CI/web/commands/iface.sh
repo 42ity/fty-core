@@ -24,7 +24,6 @@
 #  \brief Not yet documented file
 
 do_test_match "ifaces_get" api_get_json '/admin/ifaces' '.*ifaces.*lo.*'
-print_result $?
 
 test_it "iface_foobar_get"
 curlfail_push_expect_400
