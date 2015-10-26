@@ -63,12 +63,12 @@ TESTLIB_FORCEABORT=no
 _testlib_result_printed=notest
 
 # Numeric counters
-[ -z "${PASS-}" ] && PASS="0"
-[ -z "${PASS_SKIP-}" ] && PASS_SKIP="0"
-[ -z "${TOTAL-}" ] && TOTAL="0"
+[ -z "${TESTLIB_COUNT_PASS-}" ] && TESTLIB_COUNT_PASS="0"
+[ -z "${TESTLIB_COUNT_PASS_SKIP-}" ] && TESTLIB_COUNT_PASS_SKIP="0"
+[ -z "${TESTLIB_COUNT_TOTAL-}" ] && TESTLIB_COUNT_TOTAL="0"
 # String lists of space-separated single-token test names that failed
-[ -z "${FAILED-}" ] && FAILED=""
-[ -z "${FAILED_IGNORED-}" ] && FAILED_IGNORED=""
+[ -z "${TESTLIB_LIST_FAILED-}" ] && TESTLIB_LIST_FAILED=""
+[ -z "${TESTLIB_LIST_FAILED_IGNORED-}" ] && TESTLIB_LIST_FAILED_IGNORED=""
 
 print_result() {
     [ "$_testlib_result_printed" = yes ] && return 0
@@ -80,7 +80,7 @@ print_result() {
         _ret=255
     if [ "$_ret" -eq 0 ]; then  # should include "-0" too
         echo " * PASSED"
-        PASS="`expr $PASS + 1`"
+        TESTLIB_COUNT_PASS="`expr $TESTLIB_COUNT_PASS + 1`"
     else
         if [ "$_ret" -lt 0 ] 2>/dev/null ; then
             _ret="`expr -1 \* $_ret`"
@@ -96,9 +96,9 @@ print_result() {
 
         if [ x-"$_ret" = x"$1" ] ; then
             # The "$1" string was a negative number
-            PASS_SKIP="`expr $PASS_SKIP + 1`"
+            TESTLIB_COUNT_PASS_SKIP="`expr $TESTLIB_COUNT_PASS_SKIP + 1`"
             echo " * FAILED_IGNORED ($_ret)"
-            FAILED_IGNORED="$FAILED_IGNORED $LASTFAILED"
+            TESTLIB_LIST_FAILED_IGNORED="$TESTLIB_LIST_FAILED_IGNORED $LASTFAILED"
             echo
             return $_ret
         fi
@@ -109,12 +109,12 @@ print_result() {
             echo " * FAILED ($_ret)" || \
             echo " * FAILED ($_ret, $1)"
 
-        FAILED="$FAILED $LASTFAILED"
+        TESTLIB_LIST_FAILED="$TESTLIB_LIST_FAILED $LASTFAILED"
 
 	# This optional envvar can be set by the caller
 	if [ "$CITEST_QUICKFAIL" = yes ]; then
 	    echo ""
-	    echo "$PASS previous tests have succeeded"
+	    echo "$TESTLIB_COUNT_PASS previous tests have succeeded"
 	    echo "CI-TESTLIB-FATAL-ABORT[$$]: Testing aborted due to" \
 		"CITEST_QUICKFAIL=$CITEST_QUICKFAIL" \
 		"after first failure with test $LASTFAILED"
@@ -124,7 +124,7 @@ print_result() {
 	# This optional envvar can be set by CURL() and trap_*() below
 	if [ "$TESTLIB_FORCEABORT" = yes ]; then
 	    echo ""
-	    echo "$PASS previous tests have succeeded"
+	    echo "$TESTLIB_COUNT_PASS previous tests have succeeded"
 	    echo "CI-TESTLIB-FATAL-ABORT[$$]: Testing aborted due to" \
 		"TESTLIB_FORCEABORT=$TESTLIB_FORCEABORT" \
 		"after forced abortion in test $LASTFAILED"
@@ -148,7 +148,7 @@ test_it() {
     else
         echo "Running test $NAME::$TNAME :"
     fi
-    TOTAL="`expr $TOTAL + 1`"
+    TESTLIB_COUNT_TOTAL="`expr $TESTLIB_COUNT_TOTAL + 1`"
 }
 
 ### This is what we will sig-kill if needed
