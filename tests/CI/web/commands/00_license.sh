@@ -59,7 +59,7 @@ curlfail_pop
 echo "********* 5. license_acceptance *******************************************************************"
 echo "***************************************************************************************************"
 test_it "license_acceptance"
-api_auth_post_content '/admin/license' "foobar" >&5
+api_auth_post '/admin/license' "foobar" >&5
 print_result $?
 
 echo "********* 6. license_status_ok ********************************************************************"
@@ -110,7 +110,7 @@ test_it "cannot save the license"
 curlfail_push_expect_500
 rm -f /var/lib/bios/license $CHECKOUTDIR/var/bios/license
 rm -rf $CHECKOUTDIR/var/bios;touch $CHECKOUTDIR/var/bios
-api_auth_post_content '/admin/license' "foobar" > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
+api_auth_post '/admin/license' "foobar" > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
 print_result $?
 curlfail_pop
 rm -f $CHECKOUTDIR/var/bios;mkdir $CHECKOUTDIR/var/bios
@@ -118,5 +118,5 @@ rm -f $CHECKOUTDIR/var/bios;mkdir $CHECKOUTDIR/var/bios
 echo "********* 11. license_acceptance ******************************************************************"
 echo "***************************************************************************************************"
 test_it "license_acceptance"
-api_auth_post_content '/admin/license' "foobar" >&5
+api_auth_post '/admin/license' "foobar" >&5
 print_result $?
