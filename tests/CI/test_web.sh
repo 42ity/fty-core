@@ -28,11 +28,11 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-PASS=0
-PASS_SKIP=0
-TOTAL=0
-FAILED=""
-FAILED_IGNORED=""
+TESTLIB_COUNT_PASS=0
+TESTLIB_COUNT_PASS_SKIP=0
+TESTLIB_COUNT_TOTAL=0
+TESTLIB_LIST_FAILED=""
+TESTLIB_LIST_FAILED_IGNORED=""
 
 # There is a logic below that selects only *.sh filenames as eligible for testing
 # If this value is not "yes" then any filenames which match the requested POSITIVE
@@ -169,26 +169,26 @@ summarizeResults() {
     TRAP_RES=$?
     print_result $TRAP_RES
     set +e
-    NUM_NOTFAILED="`expr $PASS + $PASS_SKIP`"
-    logmsg_info "Testing completed, $NUM_NOTFAILED/$TOTAL tests passed($PASS) or not-failed($PASS_SKIP) for test-groups:"
+    NUM_NOTFAILED="`expr $TESTLIB_COUNT_PASS + $TESTLIB_COUNT_PASS_SKIP`"
+    logmsg_info "Testing completed, $NUM_NOTFAILED/$TESTLIB_COUNT_TOTAL tests passed($TESTLIB_COUNT_PASS) or not-failed($TESTLIB_COUNT_PASS_SKIP) for test-groups:"
     logmsg_info "  POSITIVE (exec glob) = $POSITIVE"
     logmsg_info "  NEGATIVE (skip glob) = $NEGATIVE"
     logmsg_info "  SKIP_NONSH_TESTS = $SKIP_NONSH_TESTS (so skipped $SKIPPED_NONSH_TESTS tests)"
-    if [ -n "$FAILED_IGNORED" ]; then
-        logmsg_info "The following $PASS_SKIP tests have failed but were ignored (TDD in progress):"
-        for i in $FAILED_IGNORED; do
+    if [ -n "$TESTLIB_LIST_FAILED_IGNORED" ]; then
+        logmsg_info "The following $TESTLIB_COUNT_PASS_SKIP tests have failed but were ignored (TDD in progress):"
+        for i in $TESTLIB_LIST_FAILED_IGNORED; do
             echo " * $i"
         done
     fi
-    NUM_FAILED="`expr $TOTAL - $NUM_NOTFAILED`"
-    [ -z "$FAILED" ] && [ x"$NUM_FAILED" = x0 ] && exit 0
+    NUM_FAILED="`expr $TESTLIB_COUNT_TOTAL - $NUM_NOTFAILED`"
+    [ -z "$TESTLIB_LIST_FAILED" ] && [ x"$NUM_FAILED" = x0 ] && exit 0
     logmsg_info "The following "$NUM_FAILED" tests have failed:"
     N=0 # Do a bit of double-accounting to be sure ;)
-    for i in $FAILED; do
+    for i in $TESTLIB_LIST_FAILED; do
         echo " * $i"
         N="`expr $N + 1`"
     done
-    logmsg_error "$N/$TOTAL tests FAILED, $PASS_SKIP tests FAILED_IGNORED, $PASS tests PASSED"
+    logmsg_error "$N/$TESTLIB_COUNT_TOTAL tests TESTLIB_LIST_FAILED, $TESTLIB_COUNT_PASS_SKIP tests TESTLIB_LIST_FAILED_IGNORED, $TESTLIB_COUNT_PASS tests PASSED"
     exit 1
 }
 
