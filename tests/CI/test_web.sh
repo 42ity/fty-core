@@ -34,6 +34,7 @@ TESTLIB_COUNT_FAIL=0
 TESTLIB_COUNT_TOTAL=0
 TESTLIB_LIST_FAILED=""
 TESTLIB_LIST_FAILED_IGNORED=""
+TESTLIB_LIST_PASSED=""
 
 # There is a logic below that selects only *.sh filenames as eligible for testing
 # If this value is not "yes" then any filenames which match the requested POSITIVE

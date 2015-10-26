@@ -116,6 +116,7 @@ TESTLIB_COUNT_FAIL=0
 TESTLIB_COUNT_TOTAL=0
 TESTLIB_LIST_FAILED=""
 TESTLIB_LIST_FAILED_IGNORED=""
+TESTLIB_LIST_PASSED=""
 
 echo '*************************************************************************************************************'
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
