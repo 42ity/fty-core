@@ -183,7 +183,7 @@ summarizeResults() {
     fi
     NUM_FAILED="`expr $TESTLIB_COUNT_TOTAL - $NUM_NOTFAILED`"
     [ -z "$TESTLIB_LIST_FAILED" ] && [ x"$TESTLIB_COUNT_FAIL" = x0 ] && [ x"$NUM_FAILED" = x0 ] && exit 0
-    logmsg_info "The following $NUM_FAILED tests have failed:"
+    logmsg_info "The following $TESTLIB_LIST_FAILED tests have failed:"
     N=0 # Do a bit of double-accounting to be sure ;)
     for i in $TESTLIB_LIST_FAILED; do
         echo " * $i"
