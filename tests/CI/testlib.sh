@@ -64,7 +64,8 @@ _testlib_result_printed=notest
 
 # Numeric counters
 [ -z "${TESTLIB_COUNT_PASS-}" ] && TESTLIB_COUNT_PASS="0"
-[ -z "${TESTLIB_COUNT_PASS_SKIP-}" ] && TESTLIB_COUNT_PASS_SKIP="0"
+[ -z "${TESTLIB_COUNT_SKIP-}" ] && TESTLIB_COUNT_SKIP="0"
+[ -z "${TESTLIB_COUNT_FAIL-}" ] && TESTLIB_COUNT_FAIL="0"
 [ -z "${TESTLIB_COUNT_TOTAL-}" ] && TESTLIB_COUNT_TOTAL="0"
 # String lists of space-separated single-token test names that failed
 [ -z "${TESTLIB_LIST_FAILED-}" ] && TESTLIB_LIST_FAILED=""
@@ -96,7 +97,7 @@ print_result() {
 
         if [ x-"$_ret" = x"$1" ] ; then
             # The "$1" string was a negative number
-            TESTLIB_COUNT_PASS_SKIP="`expr $TESTLIB_COUNT_PASS_SKIP + 1`"
+            TESTLIB_COUNT_SKIP="`expr $TESTLIB_COUNT_SKIP + 1`"
             echo " * FAILED_IGNORED ($_ret)"
             TESTLIB_LIST_FAILED_IGNORED="$TESTLIB_LIST_FAILED_IGNORED $LASTFAILED"
             echo
@@ -110,6 +111,7 @@ print_result() {
             echo " * FAILED ($_ret, $1)"
 
         TESTLIB_LIST_FAILED="$TESTLIB_LIST_FAILED $LASTFAILED"
+        TESTLIB_COUNT_FAIL="`expr $TESTLIB_COUNT_FAIL + 1`"
 
 	# This optional envvar can be set by the caller
 	if [ "$CITEST_QUICKFAIL" = yes ]; then
