@@ -79,27 +79,27 @@ print_result() {
     ### If not - it may be some text comment about the error.
     [ "$_ret" -ge 0 -o "$_ret" -le 0 ] 2>/dev/null || \
         _ret=255
+
+    # Produce a single-token name for the failed test, including its
+    # positive return-code value
+    if [ "$_ret" -lt 0 ] 2>/dev/null ; then
+        _ret="`expr -1 \* $_ret`"
+    fi
+    if [ "$TNAME" = "$NAME" ]; then
+        TESTLIB_LASTTESTTAG="`echo "$NAME(${_ret})" | sed 's, ,__,g'`"
+    else
+        TESTLIB_LASTTESTTAG="`echo "$NAME::$TNAME(${_ret})" | sed 's, ,__,g'`"
+    fi
+
     if [ "$_ret" -eq 0 ]; then  # should include "-0" too
         echo " * PASSED"
         TESTLIB_COUNT_PASS="`expr $TESTLIB_COUNT_PASS + 1`"
     else
-        if [ "$_ret" -lt 0 ] 2>/dev/null ; then
-            _ret="`expr -1 \* $_ret`"
-        fi
-
-        # Produce a single-token name for the failed test, including its
-        # positive return-code value
-	if [ "$TNAME" = "$NAME" ]; then
-            LASTFAILED="`echo "$NAME(${_ret})" | sed 's, ,__,g'`"
-	else
-            LASTFAILED="`echo "$NAME::$TNAME(${_ret})" | sed 's, ,__,g'`"
-	fi
-
         if [ x-"$_ret" = x"$1" ] ; then
             # The "$1" string was a negative number
             TESTLIB_COUNT_SKIP="`expr $TESTLIB_COUNT_SKIP + 1`"
             echo " * FAILED_IGNORED ($_ret)"
-            TESTLIB_LIST_FAILED_IGNORED="$TESTLIB_LIST_FAILED_IGNORED $LASTFAILED"
+            TESTLIB_LIST_FAILED_IGNORED="$TESTLIB_LIST_FAILED_IGNORED $TESTLIB_LASTTESTTAG"
             echo
             return $_ret
         fi
@@ -110,7 +110,7 @@ print_result() {
             echo " * FAILED ($_ret)" || \
             echo " * FAILED ($_ret, $1)"
 
-        TESTLIB_LIST_FAILED="$TESTLIB_LIST_FAILED $LASTFAILED"
+        TESTLIB_LIST_FAILED="$TESTLIB_LIST_FAILED $TESTLIB_LASTTESTTAG"
         TESTLIB_COUNT_FAIL="`expr $TESTLIB_COUNT_FAIL + 1`"
 
 	# This optional envvar can be set by the caller
@@ -119,7 +119,7 @@ print_result() {
 	    echo "$TESTLIB_COUNT_PASS previous tests have succeeded"
 	    echo "CI-TESTLIB-FATAL-ABORT[$$]: Testing aborted due to" \
 		"CITEST_QUICKFAIL=$CITEST_QUICKFAIL" \
-		"after first failure with test $LASTFAILED"
+		"after first failure with test $TESTLIB_LASTTESTTAG"
 	    exit $_ret
 	fi >&2
 
@@ -129,7 +129,7 @@ print_result() {
 	    echo "$TESTLIB_COUNT_PASS previous tests have succeeded"
 	    echo "CI-TESTLIB-FATAL-ABORT[$$]: Testing aborted due to" \
 		"TESTLIB_FORCEABORT=$TESTLIB_FORCEABORT" \
-		"after forced abortion in test $LASTFAILED"
+		"after forced abortion in test $TESTLIB_LASTTESTTAG"
 	    exit $_ret
 	fi >&2
     fi
