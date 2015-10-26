@@ -140,6 +140,10 @@ print_result() {
 }
 
 test_it() {
+    if [ x"${_testlib_result_printed}" = xnotyet ]; then
+        logmsg_warning "Starting a new test_it() while an old one was not followed by a print_result()!"
+        print_result 128
+    fi
     _testlib_result_printed=notyet
     [ -n "$TNAME" ] || TNAME="$NAME"
     if [ "$1" ]; then
