@@ -36,110 +36,82 @@ expected() {
     echo "} }"
 }
 
-# Not used right now
-read -r -d '' LIST_OUT <<'EOF-TMPL'
-{
-    "systemctl_services" : [
-        ##SERVICES##
-    ]
-}
-EOF-TMPL
-
-received=
-HTTP_CODE=
-
-test_it "Not authorized"
-simple_get_json_code "/admin/systemctl/list" received HTTP_CODE
-[ $HTTP_CODE -eq 401 ]
+test_it "Not authorized 1"
+curlfail_push_expect_401
+api_post_json "/admin/systemctl/list" >/dev/null
+curlfail_pop
 print_result $?
 
 # pick a service that is guaranteed to be there
 test_it "Not authorized 2"
-simple_get_json_code "/admin/systemctl/status/mysql" received HTTP_CODE
-[ $HTTP_CODE -eq 401 ]
+curlfail_push_expect_401
+api_post_json "/admin/systemctl/status/mysql" >/dev/null
+curlfail_pop
 print_result $?
 
 test_it "Not authorized 3"
-simple_get_json_code "/admin/systemctl/status/malamute" received HTTP_CODE
-[ $HTTP_CODE -eq 401 ]
+curlfail_push_expect_401
+api_post_json "/admin/systemctl/status/malamute" >/dev/null
+curlfail_pop
 print_result $?
 
 test_it "Not authorized 4"
-simple_post_code '/admin/systemctl/restart' '{ "service_name" : "mysql" }' received HTTP_CODE
-[ $HTTP_CODE -eq 401 ]
+curlfail_push_expect_401
+api_post_json '/admin/systemctl/restart' '{ "service_name" : "mysql" }' >/dev/null
+curlfail_pop
 print_result $?
 
 test_it "Not authorized 5"
-simple_post_code '/admin/systemctl/disable' '{ "service_name" : "mysql" }' received HTTP_CODE
-[ $HTTP_CODE -eq 401 ]
+curlfail_push_expect_401
+api_post_json '/admin/systemctl/disable' '{ "service_name" : "mysql" }' >/dev/null
+curlfail_pop
 print_result $?
 
-test_it "Accept license now"
+echo "Accept license now:"
 api_auth_post_json '/license' "lalala" >/dev/null
+echo "done"
 
 test_it "Authorized status"
-simple_auth_get_code "/admin/systemctl/status/mysql" received HTTP_CODE
+# at this point it contains result of license, so clean it up by hand
+OUT_CURL=""
+api_auth_get_json "/admin/systemctl/status/mysql"
 tmp="`expected mysql`"
-"$CMPJSON_SH" -s "$received" "$tmp"
+"$CMPJSON_SH" -s "$OUT_CURL" "$tmp"
 print_result $?
 
 #FIXME: the mysql stop tests is constantly failing, turn it off for now
 #test_it "Stop mysql"
 #sudo systemctl stop mysql
 #print_result $?
-
-test_it "Authorized status 2"
-simple_auth_get_code "/admin/systemctl/status/mysql" received HTTP_CODE
-tmp="`expected mysql`"
-"$CMPJSON_SH" -s "$received" "$tmp"
-print_result $?
-
-test_it "Enable mysql"
-sudo systemctl enable mysql
-print_result $?
-
-test_it "Authorized status 3"
-simple_auth_get_code "/admin/systemctl/status/mysql" received HTTP_CODE
-tmp="`expected mysql`"
-"$CMPJSON_SH" -s "$received" "$tmp"
-print_result $?
-
-test_it "Disable mysql"
-sudo systemctl disable mysql
-print_result $?
-
-test_it "Authorized status 4"
-simple_auth_get_code "/admin/systemctl/status/mysql" received HTTP_CODE
-tmp="`expected mysql`"
-"$CMPJSON_SH" -s "$received" "$tmp"
-print_result $?
-
-test_it "Start mysql"
-sudo systemctl start mysql
-print_result $?
-
-test_it "Authorized status 5"
-simple_auth_get_code '/admin/systemctl/status/mysql' received HTTP_CODE
-tmp="`expected mysql`"
-"$CMPJSON_SH" -s "$received" "$tmp"
-print_result $?
-
-# Now that /status/<service_name> is properly tested, we'll use it for further testing
-
-# Work in progress
-#test_it "Systemctl post 1"
-#simple_auth_post_code '/admin/systemctl/stop' '{ "service_name" : "mysql" }' received HTTP_CODE
-#[ $HTTP_CODE -eq 200 ]
-#print_result $?
-#
-#test_it "Systemctl post 1 - code compare"
-#simple_auth_get_code '/admin/systemctl/status/mysql' tmp HTTP_CODE
-#[ $HTTP_CODE -eq 200 ]
-#print_result $?
-#
-#test_it "Systemctl post 1 - string compare"
+#test_it "Authorized status 2"
+#simple_auth_get_code "/admin/systemctl/status/mysql" received HTTP_CODE
+#tmp="`expected mysql`"
 #"$CMPJSON_SH" -s "$received" "$tmp"
 #print_result $?
 
+echo "Enable mysql now:"
+sudo systemctl enable mysql
 
+test_it "Authorized status 3"
+api_auth_get_json "/admin/systemctl/status/mysql"
+tmp="`expected mysql`"
+"$CMPJSON_SH" -s "$OUT_CURL" "$tmp"
+print_result $?
 
+echo "Disable mysql now:"
+sudo systemctl disable mysql
+
+test_it "Authorized status 4"
+api_auth_get_json "/admin/systemctl/status/mysql"
+tmp="`expected mysql`"
+"$CMPJSON_SH" -s "$OUT_CURL" "$tmp"
+print_result $?
+
+echo "Start mysql now:"
+sudo systemctl start mysql
+
+test_it "Authorized status 5"
+api_auth_get_json "/admin/systemctl/status/mysql"
+tmp="`expected mysql`"
+"$CMPJSON_SH" -s "$OUT_CURL" "$tmp"
+print_result $?
