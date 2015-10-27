@@ -39,37 +39,42 @@ expected() {
 test_it "Not authorized 1"
 curlfail_push_expect_401
 api_post_json "/admin/systemctl/list" >/dev/null
+RES=$?
 curlfail_pop
-print_result $?
+print_result $RES
 
 # pick a service that is guaranteed to be there
 test_it "Not authorized 2"
 curlfail_push_expect_401
 api_post_json "/admin/systemctl/status/mysql" >/dev/null
+RES=$?
 curlfail_pop
-print_result $?
+print_result $RES
 
 test_it "Not authorized 3"
 curlfail_push_expect_401
 api_post_json "/admin/systemctl/status/malamute" >/dev/null
+RES=$?
 curlfail_pop
-print_result $?
+print_result $RES
 
 test_it "Not authorized 4"
 curlfail_push_expect_401
 api_post_json '/admin/systemctl/restart' '{ "service_name" : "mysql" }' >/dev/null
+RES=$?
 curlfail_pop
-print_result $?
+print_result $RES
 
 test_it "Not authorized 5"
 curlfail_push_expect_401
 api_post_json '/admin/systemctl/disable' '{ "service_name" : "mysql" }' >/dev/null
+RES=$?
 curlfail_pop
-print_result $?
+print_result $RES
 
-echo "Accept license now:"
+test_it "Force-Accept license now"
 api_auth_post_json '/license' "lalala" >/dev/null
-echo "done"
+print_result $?
 
 test_it "Authorized status"
 # at this point it contains result of license, so clean it up by hand
@@ -89,8 +94,9 @@ print_result $?
 #"$CMPJSON_SH" -s "$received" "$tmp"
 #print_result $?
 
-echo "Enable mysql now:"
+test_it "Force-Enable mysql now"
 sudo systemctl enable mysql
+print_result $?
 
 test_it "Authorized status 3"
 api_auth_get_json "/admin/systemctl/status/mysql"
@@ -98,8 +104,10 @@ tmp="`expected mysql`"
 "$CMPJSON_SH" -s "$OUT_CURL" "$tmp"
 print_result $?
 
-echo "Disable mysql now:"
+test_it "Force-Disable mysql now"
 sudo systemctl disable mysql
+print_result $?
+
 
 test_it "Authorized status 4"
 api_auth_get_json "/admin/systemctl/status/mysql"
@@ -107,8 +115,9 @@ tmp="`expected mysql`"
 "$CMPJSON_SH" -s "$OUT_CURL" "$tmp"
 print_result $?
 
-echo "Start mysql now:"
+test_it "Force-Start mysql now"
 sudo systemctl start mysql
+print_result $?
 
 test_it "Authorized status 5"
 api_auth_get_json "/admin/systemctl/status/mysql"
