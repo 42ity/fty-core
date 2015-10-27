@@ -21,10 +21,15 @@ int metric_send (
         return -1;
     }
 
-    char buf[21];
-    memset (buf, '\0', 21);
-    sprintf (buf, "%"PRIi64, time);
-    return mlm_client_sendx (cl, "SUBJECT", type, element_src, value, unit, buf, element_dest, NULL);
+    char *subject, *stime;
+    asprintf (&subject, "%s@%s", type, element_src);
+    asprintf (&stime, "%"PRIi64, time);
+
+    int r = mlm_client_sendx (cl, subject, type, element_src, value, unit, stime, element_dest, NULL);
+
+    zstr_free (&subject);
+    zstr_free (&stime);
+    return r;
 }
 
 int metric_encode (
@@ -44,7 +49,9 @@ int metric_encode (
     *element_src = zmsg_popstr(msg);
     *value = zmsg_popstr(msg);
     *unit = zmsg_popstr(msg);
-    *tme = atol(zmsg_popstr(msg));
+    char *stme = zmsg_popstr(msg);
+    *tme = atol(stme);
+    zstr_free (&stme);
     *element_dest = zmsg_popstr(msg);
 
     zmsg_destroy (&msg);
@@ -78,7 +85,13 @@ int main() {
     int64_t tme;
     r = metric_encode (&msg, &type, &element_src, &value, &unit, &tme, &element_dest);
 
-    assert (streq (type, "TYPE"));
+    zstr_free (&type);
+    zstr_free (&element_src);
+    zstr_free (&value);
+    zstr_free (&unit);
+    zstr_free (&element_dest);
+
+    //assert (streq (type, "TYPE"));
 
     mlm_client_destroy (&producer);
     mlm_client_destroy (&consumer);
