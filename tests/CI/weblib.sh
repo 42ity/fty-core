@@ -299,12 +299,12 @@ CURL() {
         echo "$ERR_CURL" >&2
         echo "$OUT_CURL"
     else
-        OUT_CURL=""
+#        OUT_CURL=""
         ERR_CURL=""
-#        OUT_CURL="`curl "$@"`"
-        curl "$@"
+        OUT_CURL="`curl "$@"`"
+#        curl "$@"
         RES_CURL=$?
-#        echo "$OUT_CURL"
+        echo "$OUT_CURL"
     fi
 
     _PRINT_CURL_TRACE=no
