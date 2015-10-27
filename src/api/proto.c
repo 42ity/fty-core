@@ -72,3 +72,48 @@ int metric_decode (
     return 0;
 }
 
+int alert_send (
+        mlm_client_t *cl,
+        char *rule_name,
+        char *element_name,
+        char *state,
+        char *severity
+        )
+{
+    if (!cl || !rule_name || !element_name || !state || !severity) {
+        return -1;
+    }
+
+    char *subject;
+    asprintf (&subject, "ALERT.%s@%s", severity, element_name);
+
+    int r = mlm_client_sendx (cl, subject, rule_name, element_name, state, severity, NULL);
+
+    zstr_free (&subject);
+    return r;
+
+}
+
+int alert_decode (
+        zmsg_t **msg_p,
+        char **rule_name,
+        char **element_name,
+        char **state,
+        char **severity
+        )
+{
+    if (!msg_p || !*msg_p || !rule_name || !element_name || !state || !severity ) {
+        return -1;
+    }
+
+    zmsg_t *msg = *msg_p;
+
+    *rule_name = zmsg_popstr (msg);
+    *element_name = zmsg_popstr (msg);
+    *state = zmsg_popstr (msg);
+    *severity = zmsg_popstr (msg);
+
+    zmsg_destroy (&msg);
+    return 0;
+
+}
