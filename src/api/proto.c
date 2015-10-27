@@ -32,7 +32,7 @@ int metric_send (
     return r;
 }
 
-int metric_encode (
+int metric_decode (
         zmsg_t **msg_p,       // malamute client publish the metric, caller is responsible for correct initialization
         char **type,             // type of metric
         char **element_src,      // source element
@@ -83,7 +83,7 @@ int main() {
 
     char *type, *element_src, *value, *unit, *element_dest;
     int64_t tme;
-    r = metric_encode (&msg, &type, &element_src, &value, &unit, &tme, &element_dest);
+    r = metric_decode (&msg, &type, &element_src, &value, &unit, &tme, &element_dest);
 
     zstr_free (&type);
     zstr_free (&element_src);
