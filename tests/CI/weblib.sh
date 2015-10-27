@@ -604,12 +604,16 @@ api_auth_get_wToken() {
         "$BASE_URL$1$URLSEP""access_token=$TOKEN" 3>&2 2>&1
 }
 
-# XXX: seems, really similar to api_auth_get_json
+# GETs a resource with authentication passed in headers
+# Strips stderr reports, headers, verbosity, etc. and returns raw response data
+# NOTE: Not for direct use in CI tests since REST API returns JSON which we test
 api_auth_get_content() {
     TOKEN="`_api_get_token`"
     CURL --insecure --header "Authorization: Bearer $TOKEN" "$BASE_URL$1" 3>&2 2>/dev/null
 }
 
+# GETs a resource with authentication passed in GET arguments
+# Strips stderr reports, headers, verbosity, etc. and returns raw response data
 api_auth_get_content_wToken() {
     TOKEN="`_api_get_token`"
     URLSEP='?'
@@ -619,6 +623,9 @@ api_auth_get_content_wToken() {
     CURL --insecure "$BASE_URL$1$URLSEP""access_token=$TOKEN" 3>&2 2>/dev/null
 }
 
+# POSTs to a resource with authentication passed in headers
+# Strips stderr reports, headers, verbosity, etc. and returns raw response data
+# NOTE: Not for direct use in CI tests since REST API returns JSON which we test
 api_auth_post_content() {
     # Params:
     #	$1	Relative URL for API call
@@ -628,6 +635,8 @@ api_auth_post_content() {
         "$BASE_URL$1" 3>&2 2>/dev/null
 }
 
+# POSTs to a resource with authentication passed in a POSTed form data
+# Returns stdout merged stderr reports, headers, verbosity, etc. and raw response data
 api_auth_post_wToken() {
     # Params:
     #	$1	Relative URL for API call
@@ -637,18 +646,34 @@ api_auth_post_wToken() {
         -v --progress-bar "$BASE_URL$1" 3>&2 2>&1
 }
 
+# POSTs to a resource with authentication passed in a POSTed form data
+# Strips stderr reports, headers, verbosity, etc. and returns raw response data
 api_auth_post_content_wToken() {
     # Params:
     #	$1	Relative URL for API call
     #	$2	POST data
     TOKEN="`_api_get_token`"
-    CURL --insecure -d "access_token=$TOKEN&$2" "$BASE_URL$1" 3>&2 2>/dev/null
+    CURL --insecure -d "access_token=$TOKEN&$2" \
+        "$BASE_URL$1" 3>&2 2>/dev/null
 }
 
-
+# GETs an anonymous resource without authentication
+# Strips stderr reports, headers, verbosity, etc. and returns raw response data
+# NOTE: Not for direct use in CI tests since REST API returns JSON which we test
 api_get_content() {
     CURL --insecure "$BASE_URL$1" 3>&2 2>/dev/null
 }
+
+# POSTs to an anonymous resource without authentication
+# Strips stderr reports, headers, verbosity, etc. and returns raw response data
+# NOTE: Not for direct use in CI tests since REST API returns JSON which we test
+api_post_content() {
+    # Params:
+    #	$1	Relative URL for API call
+    #	$2	POST data
+    CURL --insecure -d "$2" "$BASE_URL$1" 3>&2 2>/dev/null
+}
+
 
 # Returns:
 #   1 on error
