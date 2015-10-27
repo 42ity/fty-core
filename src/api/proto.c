@@ -87,7 +87,7 @@ int alert_send (
     }
 
     char *subject;
-    asprintf (&subject, "ALERT.%s@%s", severity, element_name);
+    asprintf (&subject, "%s/%s@%s", rule_name, severity, element_name);
 
     int r = mlm_client_sendx (cl, subject, rule_name, element_name, state, severity, NULL);
 

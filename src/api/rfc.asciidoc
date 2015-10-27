@@ -31,7 +31,7 @@ A METRIC message is a multipart message that MUST contain the following fields i
     * time [opt]    - number ( unix_timestamp in UTC timezone. If it is missing, then it is current time )
     * element_dest [opt] - string ( e.g. "datacenter_roztoky", "ups-1-lab". Supposed to be used for data about links. )
 
-METRIC message MUST be sent with the subject "METRIC.type@element_src" into the METRICS stream (see proto.h `metric_send`).
+METRIC message MUST be sent with the subject "type@element_src" into the METRICS stream (see proto.h `metric_send`).
 
 ALERTS stream
 =============
@@ -47,7 +47,7 @@ ALERT message is a multipart message that MUST contain the following fields in t
     * state        - string ( state of the alert. Possible values are ACTIVE/ACK-WIP/ACK-IGNORE/ACK-PAUSE/RESOLVED )
     * severity     - string ( severity of the alert. Possible values are INFO/WARNING/CRITICAL )
 
-ALERT message MUST be sent with the subject "ALERT.severity@element_name"
+ALERT message MUST be sent with the subject "rule_name/severity@element_name" (see proto.h `alert_send`)
 
 Protocol ALERT + METRIC_DRIVER on the METRICS stream
 ====================================================
