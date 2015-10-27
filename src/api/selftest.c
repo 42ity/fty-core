@@ -13,7 +13,7 @@ s_test_metrics (zactor_t *server)
     mlm_client_connect (consumer, endpoint, 5000, "consumer");
     mlm_client_set_consumer (consumer, "METRICS", ".*");
 
-    // Test case: send all values
+    // METRICS stream: Test case: send all values
     // send
     int r = metric_send (producer, "TYPE", "ELEMENT_SRC", "VALUE", "UNITS", -1, "ELEMENT_DEST");
     assert (r == 0);
@@ -38,7 +38,7 @@ s_test_metrics (zactor_t *server)
     zstr_free (&unit);
     zstr_free (&element_dest);
 
-    // Test case: have element_dest NULL
+    // METRICS stream: Test case: have element_dest NULL
     // send
     r = metric_send (producer, "TYPE", "ELEMENT_SRC", "VALUE", "UNITS", 42, NULL);
     assert (r == 0);
@@ -57,6 +57,41 @@ s_test_metrics (zactor_t *server)
     zstr_free (&value);
     zstr_free (&unit);
     zstr_free (&element_dest);
+
+    mlm_client_destroy (&producer);
+    mlm_client_destroy (&consumer);
+
+    producer = mlm_client_new();
+    mlm_client_connect (producer, endpoint, 5000, "producer");
+    mlm_client_set_producer (producer, "ALERTS");
+
+    consumer = mlm_client_new();
+    mlm_client_connect (consumer, endpoint, 5000, "consumer");
+    mlm_client_set_consumer (consumer, "ALERTS", ".*");
+
+
+    // ALERTS stream: Test case: send all values
+    // send
+    r = alert_send (producer, "RUNEMANE1", "ELEMENT_NAME", "RESOLVED", "INFO");
+    assert (r == 0);
+
+    // recv
+    msg = mlm_client_recv (consumer);
+    assert (msg);
+
+    char *rule_name, *element_name, *status, *severity;
+    r = alert_decode (&msg, &rule_name, &element_name, &status, &severity);
+    assert (r == 0);
+
+    assert (streq (rule_name, "RULENAME1"));
+    assert (streq (element_name, "ELEMENT_NAME"));
+    assert (streq (element_name, "RESOLVED"));
+    assert (streq (element_name, "INFO"));
+
+    zstr_free (&rule_name);
+    zstr_free (&element_name);
+    zstr_free (&status);
+    zstr_free (&severity);
 
     mlm_client_destroy (&producer);
     mlm_client_destroy (&consumer);
