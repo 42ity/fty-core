@@ -15,6 +15,7 @@ int main() {
     mlm_client_connect (consumer, endpoint, 5000, "consumer");
     mlm_client_set_consumer (consumer, "METRICS", ".*");
 
+    // Test case: send all values
     // send
     int r = metric_send (producer, "TYPE", "ELEMENT_SRC", "VALUE", "UNITS", -1, "ELEMENT_DEST");
     assert (r == 0);
@@ -30,6 +31,8 @@ int main() {
 
     assert (streq (type, "TYPE"));
     assert (streq (element_dest, "ELEMENT_DEST"));
+    assert (tme != -1);
+    assert (tme - time(NULL) < 15);
 
     zstr_free (&type);
     zstr_free (&element_src);
@@ -37,6 +40,7 @@ int main() {
     zstr_free (&unit);
     zstr_free (&element_dest);
 
+    // Test case: have element_dest NULL
     // send
     r = metric_send (producer, "TYPE", "ELEMENT_SRC", "VALUE", "UNITS", 42, NULL);
     assert (r == 0);
@@ -44,14 +48,19 @@ int main() {
     //recv
     msg = mlm_client_recv (consumer);
     assert (msg);
-    r = metric_decode (&msg, &type, &element_src, &value, &unit, &tme, &element_dest);
+    r = metric_decode (&msg, &type, &element_src, &value, &unit, &tme, NULL);
     assert (r == 0);
 
     assert (tme == 42);
     assert (element_dest == NULL);
 
+    zstr_free (&type);
+    zstr_free (&element_src);
+    zstr_free (&value);
+    zstr_free (&unit);
+    zstr_free (&element_dest);
+
     mlm_client_destroy (&producer);
     mlm_client_destroy (&consumer);
     zactor_destroy (&server);
-
 }
