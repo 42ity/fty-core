@@ -88,6 +88,13 @@ alias dbb='mysql -u root box_utf8 -t'
 alias la='ls -la'
 EOF
 
+# BIOS PATH
+cat > /etc/profile.d/bios_path.sh << EOF
+export PATH="/usr/libexec/bios:\$PATH"
+EOF
+
+chmod a+rx /etc/profile.d/*
+
 # BIOS configuration file
 touch /etc/default/bios
 chown www-data /etc/default/bios
@@ -202,6 +209,8 @@ mkdir -p /etc/pam.d
 cp /usr/share/bios/examples/config/pam.d/* /etc/pam.d
 RULES="`sed -n 's|.*pam_cracklib.so||p' /etc/pam.d/bios`"
 [ "$IMGTYPE" = devel ] || sed -i "s|\\(.*pam_cracklib.so\\).*|\1$RULES|" /etc/pam.d/common-password
+
+sed -i 's|\(secure_path="\)|\1/usr/libexec/bios:|' /etc/sudoers
 
 mkdir -p /etc/sudoers.d
 cp /usr/share/bios/examples/config/sudoers.d/bios_00_base /etc/sudoers.d
