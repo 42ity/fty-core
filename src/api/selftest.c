@@ -63,24 +63,30 @@ s_test_metrics (zactor_t *server)
 
     mlm_client_destroy (&producer);
     mlm_client_destroy (&consumer);
+}
 
-    producer = mlm_client_new();
+static void
+s_test_alerts (zactor_t *server)
+{
+    mlm_client_t *producer = mlm_client_new();
     mlm_client_connect (producer, endpoint, 5000, "producer");
     mlm_client_set_producer (producer, "ALERTS");
 
-    consumer = mlm_client_new();
+    mlm_client_t *consumer = mlm_client_new();
     mlm_client_connect (consumer, endpoint, 5000, "consumer");
     mlm_client_set_consumer (consumer, "ALERTS", ".*");
 
-
     // ALERTS stream: Test case: send all values
     // send
-    r = alert_send (producer, "RUNEMANE1", "ELEMENT_NAME", "RESOLVED", "INFO");
+    int r = alert_send (producer, "RUNEMANE1", "ELEMENT_NAME", "RESOLVED", "INFO");
     assert (r == 0);
 
     // recv
-    msg = mlm_client_recv (consumer);
+    zmsg_t *msg = mlm_client_recv (consumer);
     assert (msg);
+
+    const char* subject = mlm_client_subject (consumer);
+    assert (streq (subject, "RUNEMANE1/INFO@ELEMENT_NAME"));
 
     char *rule_name, *element_name, *status, *severity;
     r = alert_decode (&msg, &rule_name, &element_name, &status, &severity);
@@ -106,6 +112,7 @@ int main() {
     zstr_sendx (server, "BIND", endpoint, NULL);
 
     s_test_metrics(server);
+    s_test_alerts(server);
 
     zactor_destroy (&server);
 }
