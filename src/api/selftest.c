@@ -9,11 +9,11 @@ int main() {
 
     mlm_client_t *producer = mlm_client_new();
     mlm_client_connect (producer, endpoint, 5000, "producer");
-    mlm_client_set_producer (producer, "ALERTS");
+    mlm_client_set_producer (producer, "METRICS");
 
     mlm_client_t *consumer = mlm_client_new();
     mlm_client_connect (consumer, endpoint, 5000, "consumer");
-    mlm_client_set_consumer (consumer, "ALERTS", ".*");
+    mlm_client_set_consumer (consumer, "METRICS", ".*");
 
     // Test case: send all values
     // send
