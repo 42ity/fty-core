@@ -23,7 +23,7 @@
 #  \author  Karol Hrdina <KarolHrdina@Eaton.com>
 #  \details This is library of functions usefull for REST API testing,
 #           which can be sourced to interactive shell
-#           You can 'export TESTWEB_QUICKFAIL=yes' to abort on first failure
+#           You can 'export CITEST_QUICKFAIL=yes' to abort on first failure
 
 # Should the test suite abort if "curl" errors out?
 [ -z "${WEBLIB_CURLFAIL-}" ] && WEBLIB_CURLFAIL=yes
