@@ -52,7 +52,7 @@ echo "********* 4. license_acceptance_unauthorised *****************************
 echo "***************************************************************************************************"
 test_it "license_acceptance"
 curlfail_push_expect_401
-api_post '/admin/license' "foobar" > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
+api_post_json '/admin/license' "foobar" >&5
 print_result $?
 curlfail_pop
 
@@ -71,14 +71,15 @@ print_result $?
 echo "********* 7. license_text *************************************************************************"
 echo "***************************************************************************************************"
 test_it "license_text"
-TEXT=`api_get '/admin/license' | grep GNU | wc -l`
-echo TEXT = $TEXT
-if [ $TEXT -gt 0 ]; then
+### This GET should return plaintext license text "as is"
+TEXT="`api_get_content '/admin/license' | grep GNU | wc -l`"
+echo "TEXT = $TEXT (lines in license text)"
+if [ "$TEXT" -gt 0 ]; then
    echo '{"text":"yes"}'
 else
    echo '{"text":"no"}'
-fi
-[ $TEXT -gt 0 ]
+fi >&5
+[ "$TEXT" -gt 0 ]
 print_result $?
 
 echo "********* 8. missing_license_text *****************************************************************"
@@ -87,19 +88,19 @@ test_it "missing_license_text"
 curlfail_push_expect_500
 echo "BUILDSUBDIR =     $BUILDSUBDIR"
 mv $BUILDSUBDIR/COPYING $BUILDSUBDIR/org-COPYING
-#api_post '/asset' '{"name":"dc_name_test_25","type":"datacenter","sub_type":"","location":"","status":"nonactive","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST0025","address":"ASDF"}}' > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
-
-api_get '/admin/license' > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
-print_result $?
+### This GET should produce an error message in JSON about missing file
+api_get_json '/admin/license' >&5
+RES=$?
 curlfail_pop
 mv $BUILDSUBDIR/org-COPYING $BUILDSUBDIR/COPYING
+print_result $RES
 
 echo "********* 9. disabled_method_delete ***************************************************************"
 echo "***************************************************************************************************"
 test_it "disabled_method_delete "
 curlfail_push_expect_405
-api_auth_delete '/admin/license/status' > /dev/null && echo "$OUT_CURL" | $JSONSH -N
-echo "$OUT_CURL" | $JSONSH -N | grep -e '{"errors":\[{"message":"Http method.*not allowed.*code":45'
+api_auth_delete_json '/admin/license/status' | \
+    grep -e '{"errors":\[{"message":"Http method.*not allowed.*code":45'
 #grep -e '{\"errors\":[{\"message\":\"Http method.*not allowed.\",\"code":45}]}'
 print_result $?
 curlfail_pop
@@ -110,10 +111,11 @@ test_it "cannot save the license"
 curlfail_push_expect_500
 rm -f /var/lib/bios/license $CHECKOUTDIR/var/bios/license
 rm -rf $CHECKOUTDIR/var/bios;touch $CHECKOUTDIR/var/bios
-api_auth_post_json '/admin/license' "foobar" > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
-print_result $?
+api_auth_post_json '/admin/license' "foobar" >&5
+RES=$?
 curlfail_pop
 rm -f $CHECKOUTDIR/var/bios;mkdir $CHECKOUTDIR/var/bios
+print_result $RES
 
 echo "********* 11. license_acceptance ******************************************************************"
 echo "***************************************************************************************************"
