@@ -190,7 +190,7 @@ loaddb_file $CHECKOUTDIR/tmp_uptime.sql 2>&1 | tee -a $CHECKOUTDIR/vte-tab-${_SC
 sut_run 'systemctl restart biostimer-outage.service'
 
 PAR="/metric/computed/uptime?arg1=1"
-UPTIME_RESP="`api_get_content "$PAR"`" && \
+UPTIME_RESP="`api_get_json "$PAR"`" && \
 logmsg_info "SUCCESS." || \
 logmsg_error "FAILED ($?)."
 UPTIME="$(echo "$UPTIME_RESP" | grep outage | grep -v '\[' | sed 's/: /%/' | cut -d'%' -f2 | cut -d',' -f1)"
@@ -203,7 +203,7 @@ else
 fi
 
 PAR="/metric/computed/uptime?arg1=9"
-UPTIME_RESP="`api_get_content "$PAR"`" && \
+UPTIME_RESP="`api_get_json "$PAR"`" && \
 logmsg_info "SUCCESS." || \
 logmsg_error "FAILED ($?) ."
 UPTIME="$(echo "$UPTIME_RESP" | grep outage | grep -v '\[' | sed 's/: /%/' | cut -d'%' -f2 | cut -d',' -f1)"
