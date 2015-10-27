@@ -43,9 +43,8 @@ int metric_decode (
         char **element_dest
         ) {
 
-    if (!msg_p || !*msg_p || !type || !element_src || !value || !unit || !tme) {
+    if (!msg_p || !*msg_p || !type || !element_src || !value || !unit || !tme)
         return -1;
-    }
 
     zmsg_t *msg = *msg_p;
 
@@ -65,10 +64,12 @@ int metric_decode (
     errno = 0;
     zstr_free (&stme);
 
+    if (*tme == -1)
+        *tme = time (NULL);
+
     if (element_dest)
         *element_dest = zmsg_popstr(msg);
 
     zmsg_destroy (&msg);
     return 0;
 }
-
