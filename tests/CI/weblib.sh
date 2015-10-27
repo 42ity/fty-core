@@ -400,6 +400,18 @@ _api_get_token() {
     return $_RES_
 }
 
+# Common helper routine which passes $OUT_CURL to the $JSONSH parser to
+# normalize output and either succeed or report errors and dump the input.
+# Called from api_*_json functions after they populate OUT_CURL by API calls.
+_normalize_OUT_CURL_json() {
+    echo "$OUT_CURL" | $JSONSH -N
+    JSONSH_RES=$?
+    [ "$JSONSH_RES" = 0 ] && return 0
+    logmsg_debug "The '$JSONSH' JSON normalization choked on this input:" \
+        "### ===vvvvvv" "$OUT_CURL" "### ===^^^^^^"
+    return $JSONSH_RES
+}
+
 # Does an api GET request without authorization
 # Params:
 #	$1	Relative URL for API call
@@ -415,8 +427,8 @@ api_get() {
 # Result:
 #    content without HTTP headers
 api_get_json() {
-   api_get "$@" > /dev/null && \
-	echo "$OUT_CURL" | $JSONSH -N
+    api_get "$@" > /dev/null || return $?
+    _normalize_OUT_CURL_json
 }
 
 # Does an api POST request without authorization
@@ -462,8 +474,8 @@ api_auth_post() {
 # Result:
 #    content without HTTP headers
 api_delete_json() {
-   api_delete "$@" > /dev/null && \
-	echo "$OUT_CURL" | $JSONSH -N
+    api_delete "$@" > /dev/null || return $?
+    _normalize_OUT_CURL_json
 }
 
 # Does an api POST request without authorization
@@ -473,8 +485,8 @@ api_delete_json() {
 # Result:
 #    content without HTTP headers
 api_post_json() {
-   api_post "$@" > /dev/null && \
-	echo "$OUT_CURL" | $JSONSH -N
+    api_post "$@" > /dev/null || return $?
+    _normalize_OUT_CURL_json
 }
 
 # Does an api GET request with authorization
@@ -484,8 +496,8 @@ api_post_json() {
 # Result:
 #    content without HTTP headers
 api_auth_get_json() {
-   api_auth_get "$@" > /dev/null && \
-	echo "$OUT_CURL" | $JSONSH -N
+    api_auth_get "$@" > /dev/null || return $?
+    _normalize_OUT_CURL_json
 }
 
 # Does an api POST request with authorization
@@ -497,8 +509,8 @@ api_auth_get_json() {
 # Result:
 #    content without HTTP headers
 api_auth_post_json() {
-   api_auth_post "$@" > /dev/null && \
-	echo "$OUT_CURL" | $JSONSH -N
+    api_auth_post "$@" > /dev/null || return $?
+    _normalize_OUT_CURL_json
 }
 
 # Does an api DELETE request with authorization
@@ -508,8 +520,8 @@ api_auth_post_json() {
 # Result:
 #    content without HTTP headers
 api_auth_delete_json() {
-   api_auth_delete "$@" > /dev/null && \
-	echo "$OUT_CURL" | $JSONSH -N
+    api_auth_delete "$@" > /dev/null || return $?
+    _normalize_OUT_CURL_json
 }
 
 # POST the file to the server with Content-Type multipart/form-data according
