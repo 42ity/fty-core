@@ -22,6 +22,9 @@ s_test_metrics (zactor_t *server)
     zmsg_t *msg = mlm_client_recv (consumer);
     assert (msg);
 
+    const char* subject = mlm_client_subject (consumer);
+    assert (streq (subject, "TYPE@ELEMENT_SRC"));
+
     char *type, *element_src, *value, *unit, *element_dest;
     int64_t tme;
     r = metric_decode (&msg, &type, &element_src, &value, &unit, &tme, &element_dest);
