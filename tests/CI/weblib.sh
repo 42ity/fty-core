@@ -1,4 +1,4 @@
-#!/bin/sh
+# !/bin/sh
 #
 # Copyright (C) 2014 Eaton
 #
@@ -17,7 +17,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 #! \file    weblib.sh
-#  \brief   library of functions usefull for REST API testing
+#  \brief   library of functions useful for REST API testing
 #  \author  Michal Hrusecky <MichalHrusecky@Eaton.com>
 #  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \author  Karol Hrdina <KarolHrdina@Eaton.com>
@@ -67,7 +67,7 @@
         SCRIPTDIR="`pwd`/`dirname "$0"`" || \
         SCRIPTDIR="`dirname "$0"`"
 
-. "${SCRIPTDIR}"/scriptlib.sh
+. "${SCRIPTDIR}"/scriptlib.sh || exit $?
 
 if [ -z "${CHECKOUTDIR-}" ]; then
     case "$SCRIPTDIR" in
@@ -109,9 +109,9 @@ fi
 # and testlib may be not available (avoid kill $_PID_TESTER in traps below)
 [ x"${NEED_TESTLIB-}" != xno ] && \
 if [ -n "$CHECKOUTDIR" ] && [ -d "$CHECKOUTDIR/tests/CI" ]; then
-        . "$CHECKOUTDIR/tests/CI"/testlib.sh || exit
+        . "$CHECKOUTDIR/tests/CI"/testlib.sh || exit $?
 else
-        . "$SCRIPTDIR"/testlib.sh || exit
+        . "$SCRIPTDIR"/testlib.sh || exit $?
 fi
 
 ### Should the test suite break upon first failed test?
