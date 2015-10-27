@@ -1,4 +1,4 @@
-#!/bin/sh
+# !/bin/sh
 #
 # Copyright (C) 2014 Eaton
 #
@@ -17,13 +17,13 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 #! \file    weblib.sh
-#  \brief   library of functions usefull for REST API testing
+#  \brief   library of functions useful for REST API testing
 #  \author  Michal Hrusecky <MichalHrusecky@Eaton.com>
 #  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \author  Karol Hrdina <KarolHrdina@Eaton.com>
 #  \details This is library of functions usefull for REST API testing,
 #           which can be sourced to interactive shell
-#           You can 'export TESTWEB_QUICKFAIL=yes' to abort on first failure
+#           You can 'export CITEST_QUICKFAIL=yes' to abort on first failure
 
 # Should the test suite abort if "curl" errors out?
 [ -z "${WEBLIB_CURLFAIL-}" ] && WEBLIB_CURLFAIL=yes
@@ -67,7 +67,7 @@
         SCRIPTDIR="`pwd`/`dirname "$0"`" || \
         SCRIPTDIR="`dirname "$0"`"
 
-. "${SCRIPTDIR}"/scriptlib.sh
+. "${SCRIPTDIR}"/scriptlib.sh || exit $?
 
 if [ -z "${CHECKOUTDIR-}" ]; then
     case "$SCRIPTDIR" in
@@ -109,9 +109,9 @@ fi
 # and testlib may be not available (avoid kill $_PID_TESTER in traps below)
 [ x"${NEED_TESTLIB-}" != xno ] && \
 if [ -n "$CHECKOUTDIR" ] && [ -d "$CHECKOUTDIR/tests/CI" ]; then
-        . "$CHECKOUTDIR/tests/CI"/testlib.sh || exit
+        . "$CHECKOUTDIR/tests/CI"/testlib.sh || exit $?
 else
-        . "$SCRIPTDIR"/testlib.sh || exit
+        . "$SCRIPTDIR"/testlib.sh || exit $?
 fi
 
 ### Should the test suite break upon first failed test?
@@ -299,12 +299,12 @@ CURL() {
         echo "$ERR_CURL" >&2
         echo "$OUT_CURL"
     else
-        OUT_CURL=""
+#        OUT_CURL=""
         ERR_CURL=""
-#        OUT_CURL="`curl "$@"`"
-        curl "$@"
+        OUT_CURL="`curl "$@"`"
+#        curl "$@"
         RES_CURL=$?
-#        echo "$OUT_CURL"
+        echo "$OUT_CURL"
     fi
 
     _PRINT_CURL_TRACE=no
@@ -400,6 +400,18 @@ _api_get_token() {
     return $_RES_
 }
 
+# Common helper routine which passes $OUT_CURL to the $JSONSH parser to
+# normalize output and either succeed or report errors and dump the input.
+# Called from api_*_json functions after they populate OUT_CURL by API calls.
+_normalize_OUT_CURL_json() {
+    echo "$OUT_CURL" | $JSONSH -N
+    JSONSH_RES=$?
+    [ "$JSONSH_RES" = 0 ] && return 0
+    logmsg_debug "The '$JSONSH' JSON normalization choked on this input:" \
+        "### ===vvvvvv" "$OUT_CURL" "### ===^^^^^^"
+    return $JSONSH_RES
+}
+
 # Does an api GET request without authorization
 # Params:
 #	$1	Relative URL for API call
@@ -415,8 +427,8 @@ api_get() {
 # Result:
 #    content without HTTP headers
 api_get_json() {
-   api_get "$@" > /dev/null && \
-	echo "$OUT_CURL" | $JSONSH -N
+    api_get "$@" > /dev/null || return $?
+    _normalize_OUT_CURL_json
 }
 
 # Does an api POST request without authorization
@@ -462,8 +474,8 @@ api_auth_post() {
 # Result:
 #    content without HTTP headers
 api_delete_json() {
-   api_delete "$@" > /dev/null && \
-	echo "$OUT_CURL" | $JSONSH -N
+    api_delete "$@" > /dev/null || return $?
+    _normalize_OUT_CURL_json
 }
 
 # Does an api POST request without authorization
@@ -473,8 +485,8 @@ api_delete_json() {
 # Result:
 #    content without HTTP headers
 api_post_json() {
-   api_post "$@" > /dev/null && \
-	echo "$OUT_CURL" | $JSONSH -N
+    api_post "$@" > /dev/null || return $?
+    _normalize_OUT_CURL_json
 }
 
 # Does an api GET request with authorization
@@ -484,8 +496,8 @@ api_post_json() {
 # Result:
 #    content without HTTP headers
 api_auth_get_json() {
-   api_auth_get "$@" > /dev/null && \
-	echo "$OUT_CURL" | $JSONSH -N
+    api_auth_get "$@" > /dev/null || return $?
+    _normalize_OUT_CURL_json
 }
 
 # Does an api POST request with authorization
@@ -497,8 +509,8 @@ api_auth_get_json() {
 # Result:
 #    content without HTTP headers
 api_auth_post_json() {
-   api_auth_post "$@" > /dev/null && \
-	echo "$OUT_CURL" | $JSONSH -N
+    api_auth_post "$@" > /dev/null || return $?
+    _normalize_OUT_CURL_json
 }
 
 # Does an api DELETE request with authorization
@@ -508,8 +520,8 @@ api_auth_post_json() {
 # Result:
 #    content without HTTP headers
 api_auth_delete_json() {
-   api_auth_delete "$@" > /dev/null && \
-	echo "$OUT_CURL" | $JSONSH -N
+    api_auth_delete "$@" > /dev/null || return $?
+    _normalize_OUT_CURL_json
 }
 
 # POST the file to the server with Content-Type multipart/form-data according
@@ -592,12 +604,16 @@ api_auth_get_wToken() {
         "$BASE_URL$1$URLSEP""access_token=$TOKEN" 3>&2 2>&1
 }
 
-# XXX: seems, really similar to api_auth_get_json
+# GETs a resource with authentication passed in headers
+# Strips stderr reports, headers, verbosity, etc. and returns raw response data
+# NOTE: Not for direct use in CI tests since REST API returns JSON which we test
 api_auth_get_content() {
     TOKEN="`_api_get_token`"
     CURL --insecure --header "Authorization: Bearer $TOKEN" "$BASE_URL$1" 3>&2 2>/dev/null
 }
 
+# GETs a resource with authentication passed in GET arguments
+# Strips stderr reports, headers, verbosity, etc. and returns raw response data
 api_auth_get_content_wToken() {
     TOKEN="`_api_get_token`"
     URLSEP='?'
@@ -607,6 +623,20 @@ api_auth_get_content_wToken() {
     CURL --insecure "$BASE_URL$1$URLSEP""access_token=$TOKEN" 3>&2 2>/dev/null
 }
 
+# POSTs to a resource with authentication passed in headers
+# Strips stderr reports, headers, verbosity, etc. and returns raw response data
+# NOTE: Not for direct use in CI tests since REST API returns JSON which we test
+api_auth_post_content() {
+    # Params:
+    #	$1	Relative URL for API call
+    #	$2	POST data
+    TOKEN="`_api_get_token`"
+    CURL --insecure --header "Authorization: Bearer $TOKEN" -d "$2" \
+        "$BASE_URL$1" 3>&2 2>/dev/null
+}
+
+# POSTs to a resource with authentication passed in a POSTed form data
+# Returns stdout merged stderr reports, headers, verbosity, etc. and raw response data
 api_auth_post_wToken() {
     # Params:
     #	$1	Relative URL for API call
@@ -616,18 +646,34 @@ api_auth_post_wToken() {
         -v --progress-bar "$BASE_URL$1" 3>&2 2>&1
 }
 
+# POSTs to a resource with authentication passed in a POSTed form data
+# Strips stderr reports, headers, verbosity, etc. and returns raw response data
 api_auth_post_content_wToken() {
     # Params:
     #	$1	Relative URL for API call
     #	$2	POST data
     TOKEN="`_api_get_token`"
-    CURL --insecure -d "access_token=$TOKEN&$2" "$BASE_URL$1" 3>&2 2>/dev/null
+    CURL --insecure -d "access_token=$TOKEN&$2" \
+        "$BASE_URL$1" 3>&2 2>/dev/null
 }
 
-
+# GETs an anonymous resource without authentication
+# Strips stderr reports, headers, verbosity, etc. and returns raw response data
+# NOTE: Not for direct use in CI tests since REST API returns JSON which we test
 api_get_content() {
     CURL --insecure "$BASE_URL$1" 3>&2 2>/dev/null
 }
+
+# POSTs to an anonymous resource without authentication
+# Strips stderr reports, headers, verbosity, etc. and returns raw response data
+# NOTE: Not for direct use in CI tests since REST API returns JSON which we test
+api_post_content() {
+    # Params:
+    #	$1	Relative URL for API call
+    #	$2	POST data
+    CURL --insecure -d "$2" "$BASE_URL$1" 3>&2 2>/dev/null
+}
+
 
 # Returns:
 #   1 on error
