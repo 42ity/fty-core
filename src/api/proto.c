@@ -47,7 +47,11 @@ int metric_decode (
         return -1;
 
     zmsg_t *msg = *msg_p;
-
+    if ( ( zmsg_size(msg) < 5 ) || ( zmsg_size(msg) > 6 ) )
+    {
+        zmsg_destroy (&msg);
+        return -2;
+    }
     *type = zmsg_popstr (msg);
     *element_src = zmsg_popstr (msg);
     *value = zmsg_popstr (msg);
@@ -68,7 +72,14 @@ int metric_decode (
         *tme = time (NULL);
 
     if (element_dest)
+    {
+        if ( zmsg_size(msg) != 1 )
+        {
+            zmsg_destroy (&msg);
+            return -2;
+        }
         *element_dest = zmsg_popstr(msg);
+    }
 
     zmsg_destroy (&msg);
     return 0;
@@ -109,7 +120,11 @@ int alert_decode (
     }
 
     zmsg_t *msg = *msg_p;
-
+    if ( zmsg_size(msg) != 4 )
+    {
+        zmsg_destroy (&msg);
+        return -2;
+    }
     *rule_name = zmsg_popstr (msg);
     *element_name = zmsg_popstr (msg);
     *state = zmsg_popstr (msg);
