@@ -2,9 +2,9 @@
 
 
 // metric
-
 #include <malamute.h>
 
+#include <stdio.h>
 #include <string.h>
 
 int metric_send (
@@ -42,17 +42,30 @@ int metric_decode (
         char **element_dest      // (optional) destionation element or NULL
         ) {
 
-    //TODO return -1??
+    if (!msg_p || !*msg_p || !type || !element_src || !value || !unit || !tme) {
+        return -1;
+    }
+
     zmsg_t *msg = *msg_p;
 
-    *type = zmsg_popstr(msg);
-    *element_src = zmsg_popstr(msg);
-    *value = zmsg_popstr(msg);
-    *unit = zmsg_popstr(msg);
-    char *stme = zmsg_popstr(msg);
-    *tme = atol(stme);
+    *type = zmsg_popstr (msg);
+    *element_src = zmsg_popstr (msg);
+    *value = zmsg_popstr (msg);
+    *unit = zmsg_popstr (msg);
+
+    char *stme = zmsg_popstr (msg);
+    char *endptr;
+    errno = 0;
+    long int foo = strtol (stme, &endptr, 10);
+    if (errno != 0)
+        *tme = -1;
+    else
+        *tme = foo;
+    errno = 0;
     zstr_free (&stme);
-    *element_dest = zmsg_popstr(msg);
+
+    if (element_dest)
+        *element_dest = zmsg_popstr(msg);
 
     zmsg_destroy (&msg);
     return 0;
@@ -77,13 +90,17 @@ int main() {
     int r = metric_send (producer, "TYPE", "ELEMENT_SRC", "VALUE", "UNITS", -1, "ELEMENT_DEST");
     assert (r == 0);
 
-    // recceive
+    // recv
     zmsg_t *msg = mlm_client_recv (consumer);
     assert (msg);
 
     char *type, *element_src, *value, *unit, *element_dest;
     int64_t tme;
     r = metric_decode (&msg, &type, &element_src, &value, &unit, &tme, &element_dest);
+    assert (r == 0);
+
+    assert (streq (type, "TYPE"));
+    assert (streq (element_dest, "ELEMENT_DEST"));
 
     zstr_free (&type);
     zstr_free (&element_src);
@@ -91,7 +108,18 @@ int main() {
     zstr_free (&unit);
     zstr_free (&element_dest);
 
-    //assert (streq (type, "TYPE"));
+    // send
+    r = metric_send (producer, "TYPE", "ELEMENT_SRC", "VALUE", "UNITS", 42, NULL);
+    assert (r == 0);
+
+    //recv
+    msg = mlm_client_recv (consumer);
+    assert (msg);
+    r = metric_decode (&msg, &type, &element_src, &value, &unit, &tme, &element_dest);
+    assert (r == 0);
+
+    assert (tme == 42);
+    assert (element_dest == NULL);
 
     mlm_client_destroy (&producer);
     mlm_client_destroy (&consumer);
