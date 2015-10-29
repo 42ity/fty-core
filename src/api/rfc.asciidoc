@@ -44,7 +44,8 @@ ALERT message
 ALERT message is a multipart message that MUST contain the following fields in that exact order:
     * rule_name    - string ( a rule name, that trigger this alert to be generated )
     * element_name - string ( name of the element, where alert was detected. Most of the time is would be asset element name )
-    * state        - string ( state of the alert. Possible values are ACTIVE/ACK-WIP/ACK-IGNORE/ACK-PAUSE/RESOLVED )
+    * timestamp    - int    ( timestamp, when alert changed state to this one )
+    * state        - string ( state of the alert. Possible values are ACTIVE/ACK-WIP/ACK-IGNORE/ACK-PAUSE/ACK-SILENCE/RESOLVED )
     * severity     - string ( severity of the alert. Possible values are INFO/WARNING/CRITICAL )
 
 ALERT message MUST be sent with the subject "rule_name/severity@element_name" (see proto.h `alert_send`)
