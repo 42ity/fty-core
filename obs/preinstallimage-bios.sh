@@ -330,7 +330,7 @@ for i in mysql tntnet@bios malamute \
    done
 done
 
-sed -i 's|127.0.0.1|greyhound.roz.lab.etn.com|' /etc/zabbix/zabbix_agentd.conf
+sed -i 's|127.0.0.1|greyhound.roz53.lab.etn.com|' /etc/zabbix/zabbix_agentd.conf
 sed -i 's|^Hostname|#\ Hostname|' /etc/zabbix/zabbix_agentd.conf
 # Our network sucks, use longer timeouts
 sed -i 's|#\ Timeout.*|Timeout=15|' /etc/zabbix/zabbix_agentd.conf
