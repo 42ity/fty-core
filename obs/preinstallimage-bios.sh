@@ -158,13 +158,13 @@ cat > /etc/apt/sources.list.d/debian.list <<EOF
 deb http://ftp.debian.org/debian jessie main contrib non-free
 deb http://ftp.debian.org/debian jessie-updates main contrib non-free
 deb http://security.debian.org   jessie/updates main contrib non-free
-deb http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0 /
+deb http://obs.roz53.lab.etn.com:82/Pool:/master/Debian_8.0 /
 EOF
 
 mkdir -p /etc/apt/preferences.d
 cat > /etc/apt/preferences.d/bios <<EOF
 Package: *
-Pin: origin "obs.roz.lab.etn.com"
+Pin: origin "obs.roz53.lab.etn.com"
 Pin-Priority: 9999
 EOF
 
