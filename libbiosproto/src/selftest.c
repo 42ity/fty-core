@@ -78,7 +78,7 @@ s_test_alerts (zactor_t *server)
 
     // ALERTS stream: Test case: send all values
     // send
-    int r = alert_send (producer, "RULENAME1", "ELEMENT_NAME", "RESOLVED", "INFO");
+    int r = alert_send (producer, "RULENAME1", "ELEMENT_NAME", -1, "RESOLVED", "INFO");
     assert (r == 0);
 
     // recv
@@ -89,11 +89,15 @@ s_test_alerts (zactor_t *server)
     assert (streq (subject, "RULENAME1/INFO@ELEMENT_NAME"));
 
     char *rule_name, *element_name, *status, *severity;
-    r = alert_decode (&msg, &rule_name, &element_name, &status, &severity);
+    int64_t tme;
+    r = alert_decode (&msg, &rule_name, &element_name, &tme, &status, &severity);
     assert (r == 0);
 
     assert (streq (rule_name, "RULENAME1"));
     assert (streq (element_name, "ELEMENT_NAME"));
+    assert (tme != -1);
+    assert (tme - time(NULL) < 15);
+
     assert (streq (status, "RESOLVED"));
     assert (streq (severity, "INFO"));
 
