@@ -1,7 +1,7 @@
 FROM debian:jessie
 MAINTAINER gguillaume "geraldguillaume@eaton.com"
 RUN echo "Acquire::http::Proxy \"HTTP_PROXY\";" > /etc/apt/apt.conf 
-RUN echo "deb http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0 /" > /etc/apt/sources.list.d/95bios-obs-roz-deb8.list 
+RUN echo "deb http://obs.roz53.lab.etn.com:82/Pool:/master/Debian_8.0 /" > /etc/apt/sources.list.d/95bios-obs-roz-deb8.list 
 ENV http_proxy HTTP_PROXY 
 RUN apt-get update && apt-get install -y --force-yes \
   nut-server nut-client nut \

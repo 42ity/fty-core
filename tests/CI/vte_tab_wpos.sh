@@ -85,7 +85,7 @@ done
 
 # default values:
 [ -z "$SUT_USER" ] && SUT_USER="root"
-[ -z "$SUT_HOST" ] && SUT_HOST="debian.roz.lab.etn.com"
+[ -z "$SUT_HOST" ] && SUT_HOST="debian.roz53.lab.etn.com"
 # port used for ssh requests:
 [ -z "$SUT_SSH_PORT" ] && SUT_SSH_PORT="2206"
 # port used for REST API requests:
