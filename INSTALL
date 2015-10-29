@@ -119,9 +119,9 @@ The software packages pre-built for the project can be located in our OBS
 build-results repositories, including the following Linux OS releases:
 
  * http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0/
- * http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/
- * http://obs.roz.lab.etn.com:82/Pool:/master/CentOS_7.0/
- * http://obs.roz.lab.etn.com:82/Pool:/master/openSUSE_13.1/
+ * http://obs.roz53.lab.etn.com:82/Pool:/master/Debian_8.0/
+ * http://obs.roz53.lab.etn.com:82/Pool:/master/CentOS_7.0/
+ * http://obs.roz53.lab.etn.com:82/Pool:/master/openSUSE_13.1/
 
 These packages include such build and/or run-time dependencies as
 libvariant, iproute2, mariadb, zeromq and so on.
@@ -147,9 +147,9 @@ Debian 8.0 platform with APT package management should work like this
 (execute as 'root'):
 ----
 :; wget -O - \
-     http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | \
+     http://obs.roz53.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | \
      apt-key add - && \
-   echo 'deb http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0 /' > \
+   echo 'deb http://obs.roz53.lab.etn.com:82/Pool:/master/Debian_8.0 /' > \
      /etc/apt/sources.list.d/95bios-obs-roz-deb8.list
 
 :; wget -O - \
@@ -165,7 +165,7 @@ upstream OS distribution) that might be named the same:
 ----
 :; cat > /etc/apt/preferences.d/bios <<EOF
 Package: *
-Pin: origin "obs.roz.lab.etn.com"
+Pin: origin "obs.roz53.lab.etn.com"
 Pin-Priority: 9999
 
 Package: *
@@ -213,7 +213,7 @@ iproute2-dev:
   Package pin: 3.16.0-0
   Version table:
  *** 3.16.0-0 9999
-        500 http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/  Packages
+        500 http://obs.roz53.lab.etn.com:82/Pool:/master/Debian_8.0/  Packages
         500 http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0/  Packages
         100 /var/lib/dpkg/status
 
@@ -228,7 +228,7 @@ mariadb-server-10.0:
         500 http://ftp.debian.org/debian/ jessie/main amd64 Packages
         100 /var/lib/dpkg/status
      10.0.10-1 0
-        500 http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/  Packages
+        500 http://obs.roz53.lab.etn.com:82/Pool:/master/Debian_8.0/  Packages
      10.0.10-1 0
         500 http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0/  Packages
 ----
@@ -245,7 +245,7 @@ package files into some temporary storage with this script:
 ----
 #!/bin/sh
 for DIR in \
-    http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/{amd64,all}/ \
+    http://obs.roz53.lab.etn.com:82/Pool:/master/Debian_8.0/{amd64,all}/ \
 ; do
     wget -l1 -np -nd -N -c -r --remove-listing --accept=.deb "$DIR"
 done
@@ -258,7 +258,7 @@ To fetch the sources used by OBS for a local rebuild, check this out:
 #!/bin/sh
 wget -l1 -np -nd -N -c -r --remove-listing \
     --accept='.dsc,.tar.xz,.tar.gz,.tar.bz2,.tgz,.tbz,.tbz2,.txz' \
-    http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/
+    http://obs.roz53.lab.etn.com:82/Pool:/master/Debian_8.0/
 ----
 
 
@@ -314,7 +314,7 @@ The following NEW packages will be installed:
 0 upgraded, 1 newly installed, 0 to remove and 310 not upgraded.
 Need to get 9,662 B of archives.
 After this operation, 64.5 kB of additional disk space will be used.
-Get:1 http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/  iproute2-dev 3.16.0-0 [9,662 B]
+Get:1 http://obs.roz53.lab.etn.com:82/Pool:/master/Debian_8.0/  iproute2-dev 3.16.0-0 [9,662 B]
 Fetched 9,662 B in 5s (1,921 B/s)
 Selecting previously unselected package iproute2-dev.
 (Reading database ... 49826 files and directories currently installed.)
