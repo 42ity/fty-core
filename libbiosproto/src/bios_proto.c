@@ -28,7 +28,7 @@ int metric_send (
 
     char *subject, *stimestamp;
     asprintf (&subject, "%s@%s", type, element_src);
-    asprintf (&stimestamp, "%" PRIi64, timestamp);
+    asprintf (&stimestamp, "%"PRIi64, timestamp);
 
     int r = mlm_client_sendx (cl, subject, type, element_src, value, unit, stimestamp, element_dest, NULL);
 
@@ -110,7 +110,7 @@ int alert_send (
 
     char *subject, *stimestamp;
     asprintf (&subject, "%s/%s@%s", rule_name, severity, element_name);
-    asprintf (&stimestamp, "%" PRIi64, timestamp);
+    asprintf (&stimestamp, "%"PRIi64, timestamp);
 
     int r = mlm_client_sendx (cl, subject, rule_name, element_name, stimestamp, state, severity, NULL);
 

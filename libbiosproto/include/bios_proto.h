@@ -3,6 +3,11 @@
 
 #include <malamute.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 int metric_send (
         mlm_client_t *cl,       // malamute client publish the metric, caller is responsible for correct initialization
         char *type,             // type of metric
@@ -40,3 +45,8 @@ int alert_decode (
         char **state,            // state of the alert
         char **severity          // severity of the alert
         );
+
+#ifdef __cplusplus
+}
+#endif
+
