@@ -24,7 +24,8 @@
 # Defaults; note that SUT_WEB_PORT is guessed below based on ultimate SUT_HOST
 [ -z "$SUT_HOST" ] && SUT_HOST="127.0.0.1"
 
-[ -z "$WEBLIB_FUNC" ] && WEBLIB_FUNC="api_auth_get_content"
+# REST API returns JSON except one or two special cases
+[ -z "$WEBLIB_FUNC" ] && WEBLIB_FUNC="api_auth_get_json"
 
 # Set up weblib test engine preference defaults for automated CI tests
 [ -z "$WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT" ] && \

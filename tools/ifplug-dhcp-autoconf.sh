@@ -96,7 +96,7 @@ else
 fi
 
 if [ -n "$INTLIST" ]; then
-    ifplugd_on || die
+    ifplugd_on || die $?
 fi
 
 logmsg_info "Started $0 $@"

@@ -33,7 +33,7 @@ print_result $?
 
 test_it dev=5555553
 api_get_json '/metric/current?dev=5555553' >&5
-curlfail_pop
+print_result $?
 
 test_it default
 curlfail_push_expect_400
