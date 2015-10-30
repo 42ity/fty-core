@@ -40,7 +40,7 @@
     # *** BIOS image must be installed and running on SUT 
     # *** upsd.conf, upssched.conf and upsmon.conf are present on SUT in the /etc/nut dir 
     # *** tools directory containing tools/initdb.sql tools/rack_power.sql present on MS for assets
-    # *** tests/CI directory (on MS) contains weblib.sh (api_get_content and CURL functions needed) and scriptlib.sh
+    # *** tests/CI directory (on MS) contains weblib.sh (api_get_json and CURL functions needed) and scriptlib.sh
 
 TIME_START=$(date +%s)
 #export BIOS_LOG_LEVEL=LOG_DEBUG
@@ -84,7 +84,7 @@ done
 
     # *** default connection parameters values:
 [ -z "$SUT_USER" ] && SUT_USER="root"
-[ -z "$SUT_HOST" ] && SUT_HOST="debian.roz.lab.etn.com"
+[ -z "$SUT_HOST" ] && SUT_HOST="debian.roz53.lab.etn.com"
 # port used for ssh requests:
 [ -z "$SUT_SSH_PORT" ] && SUT_SSH_PORT="2206"
 # port used for REST API requests:
@@ -279,9 +279,9 @@ testcase() {
             TP="$(awk -vX=${LASTPOW[0]} -vY=${LASTPOW[1]} 'BEGIN{ print X + Y; }')"
                        # send restAPI request to find generated value of total power
             PAR="/metric/computed/rack_total?arg1=${RACK}&arg2=total_power"
-            RACK_TOTAL_POWER1_CONTENT="`api_get_content "$PAR"`" && \
-                logmsg_info "SUCCESS: api_get_content '$PAR': $RACK_TOTAL_POWER1_CONTENT" || \
-                logmsg_error "FAILED ($?): api_get_content '$PAR'" 
+            RACK_TOTAL_POWER1_CONTENT="`api_get_json "$PAR"`" && \
+                logmsg_info "SUCCESS: api_get_json '$PAR': $RACK_TOTAL_POWER1_CONTENT" || \
+                logmsg_error "FAILED ($?): api_get_json '$PAR'" 
             POWER="$(echo "$RACK_TOTAL_POWER1_CONTENT" | grep total_power | sed 's/: /%/' | cut -d'%' -f2)"
                        # synchronize format of the expected and generated values of total power
             STR1="$(printf "%f" $TP)"  # this returns "2000000.000000"

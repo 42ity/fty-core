@@ -88,6 +88,13 @@ alias dbb='mysql -u root box_utf8 -t'
 alias la='ls -la'
 EOF
 
+# BIOS PATH
+cat > /etc/profile.d/bios_path.sh << EOF
+export PATH="/usr/libexec/bios:\$PATH"
+EOF
+
+chmod a+rx /etc/profile.d/*
+
 # BIOS configuration file
 touch /etc/default/bios
 chown www-data /etc/default/bios
@@ -151,13 +158,13 @@ cat > /etc/apt/sources.list.d/debian.list <<EOF
 deb http://ftp.debian.org/debian jessie main contrib non-free
 deb http://ftp.debian.org/debian jessie-updates main contrib non-free
 deb http://security.debian.org   jessie/updates main contrib non-free
-deb http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0 /
+deb http://obs.roz53.lab.etn.com:82/Pool:/master/Debian_8.0 /
 EOF
 
 mkdir -p /etc/apt/preferences.d
 cat > /etc/apt/preferences.d/bios <<EOF
 Package: *
-Pin: origin "obs.roz.lab.etn.com"
+Pin: origin "obs.roz53.lab.etn.com"
 Pin-Priority: 9999
 EOF
 
@@ -202,6 +209,8 @@ mkdir -p /etc/pam.d
 cp /usr/share/bios/examples/config/pam.d/* /etc/pam.d
 RULES="`sed -n 's|.*pam_cracklib.so||p' /etc/pam.d/bios`"
 [ "$IMGTYPE" = devel ] || sed -i "s|\\(.*pam_cracklib.so\\).*|\1$RULES|" /etc/pam.d/common-password
+
+sed -i 's|\(secure_path="\)|\1/usr/libexec/bios:|' /etc/sudoers
 
 mkdir -p /etc/sudoers.d
 cp /usr/share/bios/examples/config/sudoers.d/bios_00_base /etc/sudoers.d
@@ -318,7 +327,7 @@ for i in mysql tntnet@bios malamute \
    done
 done
 
-sed -i 's|127.0.0.1|greyhound.roz.lab.etn.com|' /etc/zabbix/zabbix_agentd.conf
+sed -i 's|127.0.0.1|greyhound.roz53.lab.etn.com|' /etc/zabbix/zabbix_agentd.conf
 sed -i 's|^Hostname|#\ Hostname|' /etc/zabbix/zabbix_agentd.conf
 # Our network sucks, use longer timeouts
 sed -i 's|#\ Timeout.*|Timeout=15|' /etc/zabbix/zabbix_agentd.conf
