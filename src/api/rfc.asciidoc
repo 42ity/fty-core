@@ -47,6 +47,7 @@ ALERT message is a multipart message that MUST contain the following fields in t
     * timestamp    - int    ( timestamp, when alert changed state to this one )
     * state        - string ( state of the alert. Possible values are ACTIVE/ACK-WIP/ACK-IGNORE/ACK-PAUSE/ACK-SILENCE/RESOLVED )
     * severity     - string ( severity of the alert. Possible values are INFO/WARNING/CRITICAL )
+    * description  - string ( a description of the alert )
 
 ALERT message MUST be sent with the subject "rule_name/severity@element_name" (see proto.h `alert_send`)
 
@@ -73,6 +74,7 @@ There are two types of the rules:
 Every rule type is intended to solve particular problem.
 
 Every rule is represented in JSON format.
+Every rule has evaluation function, that should return specified values in ANY case.
 
 Pattern rule
 ------------
@@ -82,7 +84,7 @@ This rule has the following JSON format:
 {
   "rule_name": "common",
   "in_rex": ".*",
-  "evaluation": "if(value > 7) then return element, topic, topic .. \" too high\", value end",
+  "evaluation": "if(value > 7) then return element, topic .. \" too high\", value, \"IS"\ else return \"\", \"\", 0, \"ISNT\" end",
   "severity": "INFO"
 }
 where
@@ -97,9 +99,10 @@ Predefined entities:
     * "element" - a element of the metric that satisfies regexp expression
 
 Evaluation function returns information in the following order:
-    * topic - a topic for the alert message (string)
+    * element - element for with alert was detected
     * description - a description of the alert (string)
     * output_value - some number that characterize the alert
+    * result - a string that indicates if rule was evaluated as positive or negative "IS" or "ISNT"
 
 
 Single rule
@@ -110,8 +113,7 @@ This rule has the following JSON format:
 {
   "rule_name": "common2",
   "in": [ "temperature@AAA", "temperature2@BBB"],
-  "evaluation": "if( temperature_AAA > temperature2_BBB) then "It is too high\", value end",
-  "out": "blah blah blah",
+  "evaluation": "if( temperature_AAA > temperature2_BBB) then return "It is too high\", value, \"IS\" else return \"\",0, \"ISNT\" end",
   "severity": "CRITICAL",
   "element": "CCC"
 }
@@ -119,10 +121,10 @@ where
     * "rule_name" is a name of the rule
     * "in" is a list of required metric topics. Rule can be applied only if all input values are known.
     * "evaluation" is an evaluation function.
-    * "out" is a topic for the alert message.
     * "severity" indicates how important is the alert (see ALERT message for possible values)
     * "element" is an element alert regards to
 
 Evaluation function returns information in the following order:
     * description - descriprion of the alert (string)
     * output_value - some number that characterize the alert
+    * result - a string that indicates if rule was evaluated as positive or negative "IS" or "ISNT"
