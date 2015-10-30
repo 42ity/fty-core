@@ -1,0 +1,8 @@
+{
+  "rule_name" :"test rule",
+  "in": [ "ttt@ups1" ],
+  "evaluation": "if(ttt_ups1 > 30) then return \"descriprio_BOOM\", ttt_ups1, \"IS\" else return \"\", 0, \"ISNT\" end",
+  "out": "blah blah blah",
+  "severity" : "CRITICAL",
+  "element" : "ups1"
+}
