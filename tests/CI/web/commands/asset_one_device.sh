@@ -16,12 +16,15 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-
-
-#! \file asset_particular_device.sh
-#  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
-#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#! \file asset_one_device.sh
+#  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 #  \brief Not yet documented file
+
+echo
+echo "###################################################################################################"
+echo "********* asset_one_device.sh ********************** START ****************************************"
+echo "###################################################################################################"
+echo
 
 echo "********* 1. device_with_id_0 *********************************************************************"
 echo "***************************************************************************************************"
@@ -81,3 +84,9 @@ curlfail_push_expect_noerrors
 api_get_json /asset/device/${ID_DEV_6} >&5
 print_result $?
 curlfail_pop
+
+echo
+echo "###################################################################################################"
+echo "********* asset_one_device.sh ********************** END ******************************************"
+echo "###################################################################################################"
+echo
