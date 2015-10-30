@@ -17,7 +17,7 @@ echo "Populating custom configuration for the bios-demo VM"
 # copy resolv.conf (demo has not OBS default, but ROZ LAB one)
 #
 cp -f /etc/resolv.conf ./etc/
-echo bios-demo.roz.lab.etn.com > ./etc/hostname
+echo bios-demo.roz53.lab.etn.com > ./etc/hostname
 #
 # create NUT config
 #
@@ -28,17 +28,17 @@ maxretry = 3
 
 [ROZ.ePDU05]
 	driver = snmp-ups
-	port =  epdu05.roz.lab.etn.com
+	port =  epdu05.roz53.lab.etn.com
 	synchronous = yes
 
 [ROZ.ePDU04]
 	driver = snmp-ups
-	port = epdu04.roz.lab.etn.com
+	port = epdu04.roz53.lab.etn.com
 	synchronous = yes
 
 [ROZ.UPS1]
 	driver = netxml-ups
-	port = http://nmc03.roz.lab.etn.com
+	port = http://nmc03.roz53.lab.etn.com
 
 [UPS1-LAB]
         driver =  dummy-ups
@@ -64,17 +64,17 @@ EOF
 #
 # Dump database from bios-rc-demo
 #
-[ -n "`ssh bios@bios-rc-demo.roz.lab.etn.com echo ahoj`" ] && \
-    ssh bios@bios-rc-demo.roz.lab.etn.com mysqldump -u root box_utf8 > mysqldump
+[ -n "`ssh bios@bios-rc-demo.roz53.lab.etn.com echo ahoj`" ] && \
+    ssh bios@bios-rc-demo.roz53.lab.etn.com mysqldump -u root box_utf8 > mysqldump
 
 #
 # Populate bios-demo database from project defaults and
 # if available - override from replica of bios-rc-demo
 cat << EOF | chroot . /bin/bash
 /usr/lib/mysql/rcmysql start
-wget -O - "http://tomcat.roz.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=tools/initdb.sql;hb=HEAD" |  mysql -u root
-# wget -O - "http://tomcat.roz.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=tools/load_data.sql;hb=HEAD" | mysql -u root box_utf8
-# wget -O - "http://tomcat.roz.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=tools/load_ROZLAB.sql;hb=HEAD" | mysql -u root box_utf8
+wget -O - "http://tomcat.roz53.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=tools/initdb.sql;hb=HEAD" |  mysql -u root
+# wget -O - "http://tomcat.roz53.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=tools/load_data.sql;hb=HEAD" | mysql -u root box_utf8
+# wget -O - "http://tomcat.roz53.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=tools/load_ROZLAB.sql;hb=HEAD" | mysql -u root box_utf8
 cat /mysqldump | mysql -u root box_utf8
 rm /mysqldump
 /usr/lib/mysql/rcmysql stop

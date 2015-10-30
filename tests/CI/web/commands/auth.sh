@@ -109,7 +109,7 @@ curlfail_pop
 
 ORIG_PASSWD="$BIOS_PASSWD"
 #NEW_BIOS_PASSWD="nEw2`echo "$BIOS_PASSWD" | cut -c 1-3`%`echo "$BIOS_PASSWD" | cut -c 4-`"'@'
-NEW_BIOS_PASSWD="xX!9`head --bytes 16 /dev/urandom | base64 | sed 's,[\=\+],%,g'`"
+NEW_BIOS_PASSWD="xX!9`head --bytes 16 /dev/urandom | base64 | sed 's,[\+\=\/\ \t\n\r\%],_,g'`"
 
 test_it "change_password"
 api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "'"$NEW_BIOS_PASSWD"'" }'
@@ -148,13 +148,13 @@ else
     if [ -n "${PASS_ORIG_GOOD}" ] ; then
         RES_TESTPASS=-1
         if [ -x "$TESTPASS" ] ; then
-            ( echo "$BIOS_USER"; echo "${PASS_ORIG_GOOD}"; echo "$NEW_BIOS_PASSWD" ) | "$TESTPASS"
+            ( printf "%s\n%s\n%s\n" "${BIOS_USER}" "${PASS_ORIG_GOOD}" "${NEW_BIOS_PASSWD}" ) | "$TESTPASS"
             RES_TESTPASS=$?
         fi
         case "$RES_TESTPASS" in
             1[1-5])
                 echo "WARNING: The REST API failed to restore the original password because it was weak; not considering this as an error!"
-                print_result 0 ;;
+                print_result "-$RES_TESTPASS" ;;
             0|*) print_result $PASS_RECOVERED ;; # REST API failed not due to weakness
         esac
         unset RES_TESTPASS
