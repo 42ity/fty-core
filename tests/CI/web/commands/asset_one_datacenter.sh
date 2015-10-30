@@ -16,12 +16,14 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-
-
-#! \file asset_one_datacenter1.sh
-#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
-#  \author Alena Chernikava <AlenaChernikava@Eaton.com>
+#! \file asset_one_datacenter.sh
 #  \brief Not yet documented file
+
+echo
+echo "###################################################################################################"
+echo "********* asset_one_datacenter.sh ****************** START ****************************************"
+echo "###################################################################################################"
+echo
 
 echo "********* 1. read_DC_with_id_of_another_element ***************************************************"
 echo "***************************************************************************************************"
@@ -80,3 +82,9 @@ curlfail_push_expect_400
 api_get_json /asset/datacenter/ >&5
 print_result $?
 curlfail_pop
+
+echo
+echo "###################################################################################################"
+echo "********* asset_one_datacenter.sh ****************** END ******************************************"
+echo "###################################################################################################"
+echo
