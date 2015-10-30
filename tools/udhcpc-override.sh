@@ -65,8 +65,11 @@ if [ -n "$UDHCPC_IFACE" ] && \
         UDHCPC_OPTS="`echo "$AUGOUT" | fgrep "$AUGOUT_IFACE/udhcpc_opts"`" && \
         UDHCPC_OPTS="`echo "$UDHCPC_OPTS" | sed 's,^.*/udhcpc_opts = ,,'`" && \
         echo "INFO: Detected UDHCPC_OPTS='$UDHCPC_OPTS' for interface '$UDHCPC_IFACE'" >&2 && \
-        [ -z "$UDHCPC_OPTS" ] && UDHCPC_OPTS=" " || \
+        { [ -n "$UDHCPC_OPTS" ] || UDHCPC_OPTS=" " ; } || \
         UDHCPC_OPTS=""
+        # The braces above ensure that if the admin configured an empty
+        # line with udhcpc_opts in /etc/network/interfaces then we don't
+        # fall back to script defaults; but upon an error we should...
     fi
 fi
 
