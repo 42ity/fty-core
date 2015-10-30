@@ -24,15 +24,36 @@ extern "C" {
 #define ALERT_ACK3  4
 #define ALERT_ACK4  5
 #define ALERT_RESOLVED 6
+
+const char* get_status_string(int status)
+{
+    switch (status) {
+        case ALERT_START:
+            return "ACTIVE";
+        case ALERT_ACK1:
+            return "ACK-WIP";
+        case ALERT_ACK2:
+            return "ACK-PAUSE";
+        case ALERT_ACK3:
+            return "ACK-IGNORE";
+        case ALERT_ACK4:
+            return "ACK-SILENCE";
+        case ALERT_RESOLVED:
+            return "RESOLVED";
+    }
+    return "UNKNOWN";
+}
+
 struct Rule {
     std::vector<std::string> in;
     zrex_t *rex;
     std::string rex_str;
     std::string lua_code;
-    std::string out;
     std::string rule_name;
     std::string element;
     std::string severity;
+
+    Rule(){ rex = NULL;};
 };
 
 
@@ -50,7 +71,7 @@ struct Alert {
     };
 };
 
-std::vector<Alert> alerts;
+std::vector<Alert> alerts{};
 
 std::map<std::string, double> cache;
 
@@ -69,7 +90,6 @@ Rule read_rule(std::ifstream &f) {
     si->getMember("severity") >>= rule.severity;
     if ( si->findMember("in") ) {
         si->getMember("in") >>= rule.in;
-        si->getMember("out") >>= rule.out;
         si->getMember("element") >>= rule.element;
     }
     // can un and in_rex be both at the same file?
@@ -79,15 +99,14 @@ Rule read_rule(std::ifstream &f) {
             rule.rex = zrex_new(rule.rex_str.c_str());
         }
     }
-    si->getMember("out") >>= rule.out;
     return rule;
 };
 
-std::vector<Alert>::iterator isAlertOngoing( std::string rule_name, std::string element)
+std::vector<Alert>::iterator isAlertOngoing(const std::string &rule_name, const std::string &element)
 {
     for(std::vector<Alert>::iterator it = alerts.begin(); it != alerts.cend(); ++it)
     {
-        if ( it->rule.rule_name == rule_name && it->rule.element == element )
+        if ( ( it->rule.rule_name == rule_name ) && ( it->rule.element == element ) )
         {
             return it;
         }
@@ -96,9 +115,6 @@ std::vector<Alert>::iterator isAlertOngoing( std::string rule_name, std::string 
 };
 
 int main (int argc, char** argv) {
-    char buff[256];
-    int error;
-
     mlm_client_t *client = mlm_client_new();
     mlm_client_connect (client, "ipc://@/malamute", 1000, argv[0]);
 
@@ -131,6 +147,8 @@ int main (int argc, char** argv) {
             r_configs.push_back(rule);
         }
     }
+    printf ("normal count: %d\n", configs.size());
+    printf ("regexp count: %d\n", r_configs.size());
     mlm_client_set_producer(client, "ALERTS");
 
     while(!zsys_interrupted) {
@@ -173,71 +191,94 @@ int main (int argc, char** argv) {
         }
 
         // Handle non-regex configs
-        // co kdyz neni nalezeno?
-        for ( const auto &rule : configs.find(topic)->second) {
-            // Compute
-            lua_State *lua_context = lua_open();
-            bool haveAll = true;
-            for ( const auto &neededTopic : rule.in) {
-                auto it = cache.find(neededTopic);
-                if ( it == cache.cend() ) {
-                    printf("Do not have everything for '%s' yet\n", rule.rule_name.c_str());
-                    haveAll = false;
-                    break;
+        if ( configs.count(topic) == 1 ) {
+            for ( const auto &rule : configs.find(topic)->second) {
+                // Compute
+                lua_State *lua_context = lua_open();
+                bool haveAll = true;
+                for ( const auto &neededTopic : rule.in) {
+                    auto it = cache.find(neededTopic);
+                    if ( it == cache.cend() ) {
+                        printf("Do not have everything for '%s' yet\n", rule.rule_name.c_str());
+                        haveAll = false;
+                        break;
+                    }
+                    std::string var = neededTopic;
+                    var[var.find('@')] = '_';
+                    printf("Setting variable '%s' to %lf\n", var.c_str(), it->second);
+                    lua_pushnumber(lua_context, it->second);
+                    lua_setglobal(lua_context, var.c_str());
                 }
-                std::string var = neededTopic;
-                var[var.find('@')] = '_';
-                printf("Setting variable '%s' to %lf\n", var.c_str(), it->second);
-                lua_pushnumber(lua_context, it->second);
-                lua_setglobal(lua_context, var.c_str());
-            }
-            if ( !haveAll ) {
-                lua_close (lua_context);
-                continue;
-            }
-
-            error = luaL_loadbuffer (lua_context, rule.lua_code.c_str(), rule.lua_code.length(), "line") ||
-                       lua_pcall(lua_context, 0, 2, 0);
-
-            if ( error ) {
-                // syntax error in evaluate
-                fprintf(stderr, "%s", lua_tostring(lua_context, -1));
-                lua_pop(lua_context, 1);  /* pop error message from the stack */
-            } else if( lua_isnumber(lua_context, -1) ){
-                // the rule is TRUE, now detect if it is already up
-                auto r = isAlertOngoing(rule.rule_name, rule.element);
-                if ( r == alerts.end() ) {
-                    // first time the rule fired alert for the element
-                    fprintf(stdout, "RULE %s : ALERT IS UP (%s = %lf), %s\n", rule.rule_name.c_str(), rule.out.c_str(), lua_tonumber(lua_context, -1), lua_tostring(lua_context, -2));
-                    alerts.push_back(Alert(rule, ALERT_START, ::time(NULL), lua_tostring(lua_context, -2)));
+                if ( !haveAll ) {
+                    lua_close (lua_context);
+                    continue;
+                }
+                int error = luaL_loadbuffer (lua_context, rule.lua_code.c_str(), rule.lua_code.length(), "line") ||
+                    lua_pcall(lua_context, 0, 3, 0);
+                if ( error ) {
+                    // syntax error in evaluate
+                    printf("ACE: Syntax error: %s", lua_tostring(lua_context, -1));
+                    lua_pop(lua_context, 1);  // pop error message from the stack
                 } else {
-                    if ( r->status == ALERT_RESOLVED ) {
-                        // alert is old. This is new one
-                        r->status = ALERT_START;
-                        r->timestamp = ::time(NULL);
-                        r->description = lua_tostring(lua_context, -2);
-                        fprintf(stdout, "RULE %s : OLD ALERT starts again for element %s with description %s\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
+                    // evaluation was successful, need to read the result
+                    if ( !lua_isstring(lua_context, -1) )
+                    {
+                        printf ("unexcpected returned value\n");
+                        lua_close (lua_context);
+                        continue;
                     }
-                    else {
-                        // it is the same alert
-                        fprintf(stdout, "RULE %s : ALERT is ALREADY ongoing for element %s with description %s\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
+                    // ok, it is string. What type is it?
+                    const char *status = lua_tostring(lua_context,-1);
+                    const char *description = lua_tostring(lua_context,-3);
+                    if ( streq (status, "IS") )
+                    {
+                        // the rule is TRUE, now detect if it is already up
+                        auto r = isAlertOngoing(rule.rule_name, rule.element);
+                        if ( r == alerts.end() ) {
+                            // first time the rule fired alert for the element
+                            alerts.push_back(Alert(rule, ALERT_START, ::time(NULL), description));
+                            r = alerts.end() - 1 ;
+                            printf("RULE '%s' : ALERT started for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
+                        } else {
+                            if ( r->status == ALERT_RESOLVED ) {
+                                // alert is old. This is new one
+                                r->status = ALERT_START;
+                                r->timestamp = ::time(NULL);
+                                r->description = description;
+                                printf("RULE '%s' : OLD ALERT starts again for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
+                            }
+                            else {
+                                // it is the same alert
+                                printf("RULE '%s' : ALERT is ALREADY ongoing for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
+                            }
+                        }
+                        alert_send (client, r->rule.rule_name.c_str(), r->rule.element.c_str(), r->timestamp, get_status_string(r->status), r->rule.severity.c_str(), r->description.c_str());
+                    }
+                    else if ( streq(status,"ISNT") )
+                    {
+                        //the rule is FALSE, now detect if it is already down
+                        auto r = isAlertOngoing(rule.rule_name, rule.element);
+                        if ( r != alerts.end() ) {
+                            // Now there is no alert, but I remember, that one moment ago I saw some info about this alert
+                            if ( r->status != ALERT_RESOLVED ) {
+                                r->status = ALERT_RESOLVED;
+                                r->timestamp = ::time(NULL);
+                                r->description = description;
+                                printf("RULE '%s' : ALERT is resolved for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
+                                alert_send (client, r->rule.rule_name.c_str(), r->rule.element.c_str(), r->timestamp, get_status_string(r->status), r->rule.severity.c_str(), r->description.c_str());
+                            }
+                        }
+                    }
+                    else
+                    {
+                        printf ("unexcpected string in returned value\n");
+                        lua_close (lua_context);
+                        continue;
                     }
                 }
-            } else {
-                //the rule is FALSE, now detect if it is already down
-                auto r = isAlertOngoing(rule.rule_name, rule.element);
-                if ( r != alerts.end() ) {
-                    // Now there is no alert, but I remember, that one moment ago I saw some info about this alert
-                    if ( r->status != ALERT_RESOLVED ) {
-                        r->status = ALERT_RESOLVED;
-                        r->timestamp = ::time(NULL);
-                        fprintf(stdout, "RULE %s : ALERT is resolved for element %s\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
-                    }
-                }
+                lua_close(lua_context);
             }
-            lua_close(lua_context);
         }
-
         // Handle regex configs
         for ( const auto &rule: r_configs ) {
             if ( !zrex_matches (rule.rex, topic.c_str())) {
@@ -248,53 +289,77 @@ int main (int argc, char** argv) {
             lua_State *lua_context = lua_open();
             lua_pushnumber(lua_context, dvalue);
             lua_setglobal(lua_context, "value");
-            lua_pushstring(lua_context, topic.c_str());
-            lua_setglobal(lua_context, "topic");
             lua_pushstring(lua_context, element_src);
             lua_setglobal(lua_context, "element");
-            error = luaL_loadbuffer(lua_context, rule.lua_code.c_str(), rule.lua_code.length(), "line") ||
-                lua_pcall(lua_context, 0, 3, 0);
+            int error = luaL_loadbuffer(lua_context, rule.lua_code.c_str(), rule.lua_code.length(), "line") ||
+                lua_pcall(lua_context, 0, 4, 0);
 
-           if ( error ) {
+            if ( error ) {
                 // syntax error in evaluate
-                fprintf(stderr, "%s", lua_tostring(lua_context, -1));
-                lua_pop(lua_context, 1);  /* pop error message from the stack */
-            } else if( lua_isnumber(lua_context, -1) ){
-                // the rule is TRUE, now detect if it is already up
-                auto r = isAlertOngoing(rule.rule_name, lua_tostring(lua_context, -4)); /// !!!! this line is different from previous
-                if ( r == alerts.end() ) {
-                    // first time the rule fired alert for the element
-                    fprintf(stdout, "RULE %s : ALERT IS UP (%s = %lf), %s\n", rule.rule_name.c_str(), rule.out.c_str(), lua_tonumber(lua_context, -1), lua_tostring(lua_context, -2));
-                    alerts.push_back(Alert(rule, ALERT_START, ::time(NULL), lua_tostring(lua_context, -2)));
-                    alerts.back().rule.element = lua_tostring(lua_context, -4); // this line is missing in previos one
-                } else {
-                    if ( r->status == ALERT_RESOLVED ) {
-                        // alert is old. This is new one
-                        r->status = ALERT_START;
-                        r->timestamp = ::time(NULL);
-                        r->description = lua_tostring(lua_context, -2);
-                        fprintf(stdout, "RULE %s : OLD ALERT starts again for element %s with description %s\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
+                printf("ACE: Syntax error: %s", lua_tostring(lua_context, -1));
+                lua_pop(lua_context, 1);  // pop error message from the stack
+            }
+            else
+            {
+                // evaluation was successful, need to read the result
+                if ( !lua_isstring(lua_context, -1) )
+                {
+                    printf ("unexcpected returned value\n");
+                    lua_close (lua_context);
+                    continue;
+                }
+                // ok, it is string. What type is it?
+                const char *status = lua_tostring(lua_context,-1);
+                const char *description = lua_tostring(lua_context,-3);
+                if ( streq (status, "IS") )
+                {
+                    // the rule is TRUE, now detect if it is already up
+                    auto r = isAlertOngoing(rule.rule_name, lua_tostring(lua_context, -4)); /// !!!! this line is different from previous
+                    if ( r == alerts.end() ) {
+                        // first time the rule fired alert for the element
+                        alerts.push_back(Alert(rule, ALERT_START, ::time(NULL), description));
+                        alerts.back().rule.element = lua_tostring(lua_context, -4); // this line is missing in previos one
+                        r = alerts.end() - 1;
+                        printf("RULE '%s' : ALERT started for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
+                    } else {
+                        if ( r->status == ALERT_RESOLVED ) {
+                            // alert is old. This is new one
+                            r->status = ALERT_START;
+                            r->timestamp = ::time(NULL);
+                            r->description = strdup(description);
+                            printf("RULE '%s': OLD ALERT starts again for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
+                        }
+                        else {
+                            // it is the same alert
+                            printf("RULE '%s' : ALERT is ALREADY ongoing for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
+                        }
                     }
-                    else {
-                        // it is the same alert
-                        fprintf(stdout, "RULE %s : ALERT is ALREADY ongoing for element %s with description %s\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
+                    alert_send (client, r->rule.rule_name.c_str(), r->rule.element.c_str(), r->timestamp, get_status_string(r->status), r->rule.severity.c_str(), r->description.c_str());
+                }
+                else if ( streq(status,"ISNT") )
+                {
+                    //the rule is FALSE, now detect if it is already down
+                    auto r = isAlertOngoing(rule.rule_name, lua_tostring(lua_context, -4)); /// !!!! this line is different from previous
+                    if ( r != alerts.end() ) {
+                        // Now there is no alert, but I remember, that one moment ago I saw some info about this alert
+                        if ( r->status != ALERT_RESOLVED ) {
+                            r->status = ALERT_RESOLVED;
+                            r->timestamp = ::time(NULL);
+                            r->description = description;
+                            printf("RULE '%s' : ALERT is resolved for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
+                            alert_send (client, r->rule.rule_name.c_str(), r->rule.element.c_str(), r->timestamp, get_status_string(r->status), r->rule.severity.c_str(), r->description.c_str());
+                        }
                     }
                 }
-            } else {
-                //the rule is FALSE, now detect if it is already down
-                auto r = isAlertOngoing(rule.rule_name, rule.element);
-                if ( r != alerts.end() ) {
-                    // Now there is no alert, but I remember, that one moment ago I saw some info about this alert
-                    if ( r->status != ALERT_RESOLVED ) {
-                        r->status = ALERT_RESOLVED;
-                        r->timestamp = ::time(NULL);
-                        fprintf(stdout, "RULE %s : ALERT is resolved for element %s\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
-                    }
+                else
+                {
+                    printf ("unexcpected string in returned value\n");
+                    lua_close (lua_context);
+                    continue;
                 }
             }
             lua_close(lua_context);
         }
-
     }
     mlm_client_destroy(&client);
     return 0;
