@@ -19,6 +19,11 @@
 #  \brief  CI tests for asset delete calls
 #  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 #  \author Alena Chernikava <AlenaChernikava@Eaton.com>
+echo
+echo "###################################################################################################"
+echo "********* asset_delete_one_item.sh ***************** START ****************************************"
+echo "###################################################################################################"
+echo
 
 find_id() {
 	local __CALL=$(api_get_json /asset/$1)
@@ -154,3 +159,9 @@ for i in t_bios_asset_ext_attributes t_bios_asset_group_relation t_bios_asset_li
     print_result $DEL_RES
     No="$(expr $No + 1)"
 done
+
+echo
+echo "###################################################################################################"
+echo "********* asset_delete_one_item.sh ***************** END ******************************************"
+echo "###################################################################################################"
+echo
