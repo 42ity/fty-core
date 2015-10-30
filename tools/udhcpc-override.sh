@@ -55,7 +55,7 @@ done
 
 # Skip search if we do not have a definite interface or that keyword is missing
 if [ -n "$UDHCPC_IFACE" ] && \
-   grep udhcpc_opts /etc/network/interfaces /etc/network/interfaces.d/*.conf >/dev/null 2>&1 \
+   [ -n "`grep udhcpc_opts /etc/network/interfaces /etc/network/interfaces.d/*.conf 2>/dev/null`" ] \
 ; then
     # Run augtools once to speed up the process
     AUGOUT="`(echo 'match /files/etc/network/interfaces/iface[*]'; echo 'match /files/etc/network/interfaces/iface[*]/udhcpc_opts' ) | augtool -S -I/usr/share/bios/lenses`"
