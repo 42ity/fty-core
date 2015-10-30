@@ -10,12 +10,12 @@
 
 int metric_send (
         mlm_client_t *cl,
-        char *type,
-        char *element_src,
-        char *value,
-        char *unit,
+        const char *type,
+        const char *element_src,
+        const char *value,
+        const char *unit,
         int64_t   timestamp,
-        char *element_dest
+        const char *element_dest
         ) {
 
     if (!cl || !type || !element_src || !value || !unit) {
@@ -93,14 +93,15 @@ int metric_decode (
 
 int alert_send (
         mlm_client_t *cl,
-        char *rule_name,
-        char *element_name,
+        const char *rule_name,
+        const char *element_name,
         int64_t timestamp,
-        char *state,
-        char *severity
+        const char *state,
+        const char *severity,
+        const char *description
         )
 {
-    if (!cl || !rule_name || !element_name || !state || !severity) {
+    if (!cl || !rule_name || !element_name || !state || !severity || !description) {
         return -1;
     }
     // timestamp is positive, -1 means current timestamp
@@ -112,9 +113,10 @@ int alert_send (
     asprintf (&subject, "%s/%s@%s", rule_name, severity, element_name);
     asprintf (&stimestamp, "%"PRIi64, timestamp);
 
-    int r = mlm_client_sendx (cl, subject, rule_name, element_name, stimestamp, state, severity, NULL);
+    int r = mlm_client_sendx (cl, subject, rule_name, element_name, stimestamp, state, severity, description, NULL);
 
     zstr_free (&subject);
+    zstr_free (&stimestamp);
     return r;
 
 }
@@ -125,15 +127,16 @@ int alert_decode (
         char **element_name,
         int64_t *timestamp,
         char **state,
-        char **severity
+        char **severity,
+        char **description
         )
 {
-    if (!msg_p || !*msg_p || !rule_name || !element_name || !state || !severity || !timestamp ) {
+    if (!msg_p || !*msg_p || !rule_name || !element_name || !state || !severity || !timestamp || !description) {
         return -1;
     }
 
     zmsg_t *msg = *msg_p;
-    if ( zmsg_size(msg) != 5 ) {
+    if ( zmsg_size(msg) != 6 ) {
         zmsg_destroy (&msg);
         return -2;
     }
@@ -159,6 +162,7 @@ int alert_decode (
 
     *state = zmsg_popstr (msg);
     *severity = zmsg_popstr (msg);
+    *description = zmsg_popstr (msg);
 
     zmsg_destroy (&msg);
     return 0;
