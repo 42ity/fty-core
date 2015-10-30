@@ -191,7 +191,7 @@ logmsg_echo() {
     if [ "$1" -ge 0 ] 2>/dev/null; then
         WANT_DEBUG_LEVEL="$1"
         shift
-    else if [ x"$1" = x"" ]; then shift; fi
+    else if [ x"$1" = x"" ] && [ $# -gt 0 ]; then shift; fi
     fi
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
     echo_E "$@"
@@ -203,7 +203,7 @@ logmsg_info() {
     if [ "$1" -ge 0 ] 2>/dev/null; then
         WANT_DEBUG_LEVEL="$1"
         shift
-    else if [ x"$1" = x"" ]; then shift; fi
+    else if [ x"$1" = x"" ] && [ $# -gt 0 ]; then shift; fi
     fi
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
     echo_E "${LOGMSG_PREFIX}INFO: ${_SCRIPT_PATH}:" "$@"
@@ -215,7 +215,7 @@ logmsg_warn() {
     if [ "$1" -ge 0 ] 2>/dev/null; then
         WANT_DEBUG_LEVEL="$1"
         shift
-    else if [ x"$1" = x"" ]; then shift; fi
+    else if [ x"$1" = x"" ] && [ $# -gt 0 ]; then shift; fi
     fi
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
     echo_E "${LOGMSG_PREFIX}WARN: ${_SCRIPT_PATH}:" "$@" >&2
@@ -227,7 +227,7 @@ logmsg_error() {
     if [ "$1" -ge 0 ] 2>/dev/null; then
         WANT_DEBUG_LEVEL="$1"
         shift
-    else if [ x"$1" = x"" ]; then shift; fi
+    else if [ x"$1" = x"" ] && [ $# -gt 0 ]; then shift; fi
     fi
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
     echo_E "${LOGMSG_PREFIX}ERROR: ${_SCRIPT_PATH}:" "$@" >&2
@@ -241,7 +241,7 @@ logmsg_debug() {
     if [ "$1" -ge 0 ] 2>/dev/null; then
         WANT_DEBUG_LEVEL="$1"
         shift
-    else if [ x"$1" = x"" ]; then shift; fi
+    else if [ x"$1" = x"" ] && [ $# -gt 0 ]; then shift; fi
     fi
 
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
@@ -276,7 +276,7 @@ die() {
     if [ "$1" -ge 0 ] 2>/dev/null; then
         CODE="$1"
         shift
-    else if [ x"$1" = x"" ]; then shift; fi
+    else if [ x"$1" = x"" ] && [ $# -gt 0 ]; then shift; fi
     fi
     [ "$CODE" -ge 0 ] 2>/dev/null || CODE=1
     for LINE in "$@" ; do
