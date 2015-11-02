@@ -32,14 +32,7 @@
 #include <map>
 
 #include "dbhelpers.h"
-#include "common_msg.h"
 #include "db/assets.h"
-
-/**
- * \brief extract error, msg and HTTP error code from common_msg instance
- *
- */
-void common_msg_to_rest_error(common_msg_t* cm_msg, std::string& error, std::string& msg, unsigned* code);
 
 class asset_manager {
     public:
