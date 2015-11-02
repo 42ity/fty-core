@@ -45,6 +45,35 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MAX_RECURSION_DEPTH 6
 #define INPUT_POWER_CHAIN 1
 
+// BIOS-1333 add ext/type to asset_msg
+static void
+s_bios_1333_device_type_name (
+        const char *url,
+        a_elmnt_id_t element_id,
+        std::string& type_name)
+{
+    try{
+        tntdb::Connection conn = tntdb::connectCached(url);
+        tntdb::Statement st = conn.prepareCached(
+                " SELECT"
+                "    v.value"
+                " FROM"
+                "    t_bios_asset_ext_attributes v"
+                " WHERE v.id_asset_element = :elementid AND "
+                "       v.keytag = 'type'"
+                );
+        auto row = st.set("elementid", element_id).selectRow();
+        std::string ext_type;
+        row[0].get(ext_type);
+
+        if (ext_type == "v12n.type")
+            type_name = "virtual";
+    }
+    catch (const std::exception& e) {
+        //do nothing
+    }
+}
+
 // too complex to add new parametr it to the message
 // and messages are going to be deleted, so add it as normal parameter.
 zmsg_t *process_assettopology (const char *database_url,
@@ -162,6 +191,7 @@ zmsg_t *process_assettopology (const char *database_url,
         assert (is_common_msg (return_msg));
     }
     assert (return_msg); // safeguard non-NULL return value
+
     log_close ();
     return return_msg;
 }
@@ -866,6 +896,9 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg, a_elmnt_i
     }
     else
     {
+        //BIOS-1333
+        if (type_id == persist::asset_type::DEVICE)
+            s_bios_1333_device_type_name (url, element_id, dtype_name);
         el = asset_msg_encode_return_location_from 
                     (element_id, type_id, name.c_str(), 
                      dtype_name.c_str(), dcs, rooms, rows, 
@@ -1068,6 +1101,9 @@ zmsg_t* select_parents (const char* url, a_elmnt_id_t element_id,
         {
             _scoped_zmsg_t* parent = select_parents (url, parent_id, parent_type_id);
             if ( is_asset_msg (parent) ) {
+                //BIOS-1333
+                if (element_type_id == persist::asset_type::DEVICE)
+                    s_bios_1333_device_type_name (url, element_id, dtype_name);
                 return asset_msg_encode_return_location_to (element_id, 
                             element_type_id, name.c_str(), 
                             dtype_name.c_str(), parent);
@@ -1082,6 +1118,9 @@ zmsg_t* select_parents (const char* url, a_elmnt_id_t element_id,
         else
         {
             log_info ("but this element has no parent");
+            //BIOS-1333
+            if (element_type_id == persist::asset_type::DEVICE)
+                s_bios_1333_device_type_name (url, element_id, dtype_name);
             return asset_msg_encode_return_location_to (element_id, 
                     element_type_id, name.c_str(), dtype_name.c_str(), 
                     zmsg_new());
@@ -1256,6 +1295,9 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
         device_name = std::get<0>(additional_info);
         device_type_name = std::get<1>(additional_info);
         device_type_id = std::get<2>(additional_info);
+        //BIOS-1333
+        if (device_type_id == persist::asset_type::DEVICE)
+            s_bios_1333_device_type_name (url, element_id, device_type_name);
     }
     catch (const tntdb::NotFound &e) {
         // device with specified id was not found
@@ -1342,6 +1384,10 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
             row[5].get(device_type_dest_id);
             assert ( device_type_dest_id );
 
+            //BIOS-1333
+            if (device_type_dest_id == persist::asset_type::DEVICE)
+                s_bios_1333_device_type_name (url, id_asset_element_dest, device_type_name);
+
             log_debug ("for");
             log_debug ("asset_element_id_src = %" PRIu32, element_id);
             log_debug ("asset_element_id_dest = %" PRIu32,
@@ -1408,6 +1454,9 @@ select_power_topology_to (const char* url, a_elmnt_id_t element_id,
         device_name = std::get<0>(additional_info);
         device_type_name = std::get<1>(additional_info);
         device_type_id = std::get<2>(additional_info);
+        //BIOS-1333
+        if (device_type_id == persist::asset_type::DEVICE)
+            s_bios_1333_device_type_name (url, element_id, device_type_name);
     }
     catch (const tntdb::NotFound &e) {
         // device with specified id was not found
@@ -1497,6 +1546,10 @@ select_power_topology_to (const char* url, a_elmnt_id_t element_id,
                 a_elmnt_id_t device_type_src_id = 0;
                 row[5].get(device_type_src_id);
                 assert ( device_type_src_id );
+
+                //BIOS-1333
+                if (device_type_src_id == persist::asset_type::DEVICE)
+                    s_bios_1333_device_type_name (url, id_asset_element_src, device_type_name_src);
                 
                 log_debug ("for");
                 log_debug ("asset_element_id_dest = %" PRIu32, cur_element_id);
@@ -1726,6 +1779,10 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
             row[2].get(device_type_id);
             assert ( device_type_id );
 
+            //BIOS-1333
+            if (device_type_id == persist::asset_type::DEVICE)
+                s_bios_1333_device_type_name (url, id_asset_element, device_type_name);
+
             log_debug ("for");
             log_debug ("device_name = %s", device_name.c_str());
             log_debug ("device_type_name = %s", device_name.c_str());
@@ -1801,6 +1858,10 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
             a_dvc_tp_id_t device_type_id = 0;
             row[3].get(device_type_id);
             assert ( device_type_id );
+
+            //BIOS-1333
+            if (device_type_id == persist::asset_type::DEVICE)
+                s_bios_1333_device_type_name (url, id_asset_element, device_type_name);
 
             log_debug ("for");
             log_debug ("device_name = %s", device_name.c_str());
