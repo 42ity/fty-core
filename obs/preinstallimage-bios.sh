@@ -249,6 +249,9 @@ systemctl preset-all
 if [ "`uname -m`" = x86_64 ]; then
     systemctl enable bios-fake-th
     systemctl disable bios-agent-th
+else
+    systemctl disable bios-fake-th
+    systemctl mask bios-fake-th
 fi
 
 # Our tntnet unit
