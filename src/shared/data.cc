@@ -28,10 +28,7 @@
  * \author Jim Klimov <EvgenyKlimov@Eaton.com>
  * \brief Not yet documented file
  */
-#include <tnt/http.h>
 #include <algorithm>
-#include <map>
-#include <limits.h>
 
 #include "data.h"
 #include "utils_web.h"
@@ -128,42 +125,6 @@ int
     catch (const std::exception &e) {
         LOG_END_ABNORMAL(e);
         return -1;
-    }
-}
-
-/**
- * \brief get the error string, msg string and HTTP code from common_msg
- */
-void common_msg_to_rest_error(common_msg_t* cm_msg, std::string& error, std::string& msg, unsigned* code) {
-
-    assert(cm_msg);
-
-    if (common_msg_id(cm_msg) == COMMON_MSG_FAIL) {
-        switch (common_msg_errorno(cm_msg)) {
-            case DB_ERROR_NOTFOUND:
-                error = "not_found";
-                *code = HTTP_NOT_FOUND;
-                break;
-            case DB_ERROR_BADINPUT:
-                error = "bad_input";
-                *code = HTTP_BAD_REQUEST;
-                break;
-            case DB_ERROR_NOTIMPLEMENTED:
-                error = "not_implemented";
-                *code = HTTP_NOT_IMPLEMENTED;
-                break;
-            default:
-                error = "internal_error";
-                *code = HTTP_INTERNAL_SERVER_ERROR;
-                break;
-        }
-        const char *cmsg = common_msg_errmsg(cm_msg);
-        msg = (cmsg == NULL) ? "" : cmsg;
-    }
-    else {
-        error = "internal_error";
-        msg = "unexpected message";
-        *code = HTTP_INTERNAL_SERVER_ERROR;
     }
 }
 
