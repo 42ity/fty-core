@@ -352,23 +352,24 @@ reply_t
 
     reply_t rep;
     // TODO
-    // if element is DC, then dc_id = element_id ( not implemented yet) 
+    // if element is DC, then dc_id = element_id ( not implemented yet)
     try{
         // Find last parent
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
-            "   v.id_parent4, v.id_parent3, v.id_parent2, v.id_parent1"
+            "   v.id_parent5, v.id_parent4, v.id_parent3, v.id_parent2, v.id_parent1"
             " FROM"
             "   v_bios_asset_element_super_parent v"
             " WHERE v.id_asset_element = :id"
         );
-    
+
         tntdb::Row row = st.set("id", element_id).
                             selectRow();
         log_debug("[v_bios_asset_element_super_parent]: were selected" \
                      "%" PRIu32 " rows",  1);
-        if ( !row[0].get(dc_id) && !row[1].get(dc_id) && 
-             !row[2].get(dc_id) && !row[3].get(dc_id) )
+        if ( !row[0].get(dc_id) && !row[1].get(dc_id) &&
+             !row[2].get(dc_id) && !row[3].get(dc_id) &&
+             !row[4].get(dc_id) )
         {
             log_debug ("this element has no parent");
             dc_id = 0;
@@ -803,7 +804,7 @@ int
             " FROM "
             "   v_bios_asset_element_super_parent v "
             " WHERE "
-            "   :containerid in (v.id_parent1, v.id_parent2, v.id_parent3, v.id_parent4)"
+            "   :containerid in (v.id_parent1, v.id_parent2, v.id_parent3, v.id_parent4, v_id_parent5)"
         );
 
         tntdb::Result result = st.set("containerid", element_id).
