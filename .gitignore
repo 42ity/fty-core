@@ -245,4 +245,4 @@ tntnet.xml
 
 src/api/libbiosapi.pc
 !src/api/libbiosapi.pc.in
-
+tools/*verify-fs*
