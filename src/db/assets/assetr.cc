@@ -22,6 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // 0 would be return as rowid
 
 #include "assetr.h"
+#include "asset_types.h"
 
 #include <exception>
 #include <assert.h>
@@ -274,6 +275,22 @@ db_reply <std::vector <a_elmnt_id_t> >
     }
 }
 
+// throws tntdb::Error
+bool is_virtual_machine (tntdb::Connection& connection, a_elmnt_id_t id) {
+    tntdb::Statement st = connection.prepareCached (
+            "SELECT keytag, value "
+            "FROM t_bios_asset_ext_attributes "
+            "WHERE id_asset_element = :id");
+    tntdb::Result result = st.set("id", id).select ();
+    std::string keytag, value;
+    for (auto const& row : result) {
+        row[0].get (keytag);
+        row[1].get (value);
+        if (keytag == "v12n.type" && value == "virtualization.machine")
+            return true;
+    }
+    return false;
+}
 
 db_reply <std::map <uint32_t, std::string> >
     select_short_elements
@@ -284,7 +301,6 @@ db_reply <std::map <uint32_t, std::string> >
     LOG_START;
     log_debug ("  type_id = %" PRIi16, type_id);
     log_debug ("  subtype_id = %" PRIi16, subtype_id);
-
     std::map <uint32_t, std::string> item{};
     db_reply <std::map <uint32_t, std::string> > ret = db_reply_new(item);
 
@@ -312,19 +328,32 @@ db_reply <std::map <uint32_t, std::string> >
         // Can return more than one row.
         tntdb::Statement st = conn.prepareCached(query);
 
-        tntdb::Result result = st.set("typeid", type_id).
-                                  set("subtypeid", subtype_id).
-                                  select();
+        tntdb::Result result;
+        if (subtype_id == static_cast<a_elmnt_stp_id_t>(VIRTUAL)) {
+            result = st.set("typeid", type_id).
+                        set("subtypeid", static_cast<a_elmnt_stp_id_t>(SERVER)).
+                        select();
+        }
+        else {
+            result = st.set("typeid", type_id).
+                        set("subtypeid", subtype_id).
+                        select();
+        }
 
         // Go through the selected elements
-        for ( auto &row: result )
-        {
-            std::string name="";
+        for (auto const& row: result) {
+            std::string name;
             row[0].get(name);
             uint32_t id = 0;
             row[1].get(id);
 
-            ret.item.insert(std::pair<uint32_t, std::string>(id, name));
+            if (subtype_id == static_cast<a_elmnt_stp_id_t>(VIRTUAL)) {
+                if (is_virtual_machine (conn, id))
+                    ret.item.insert(std::pair<uint32_t, std::string>(id, name));
+            }
+            else {
+                ret.item.insert(std::pair<uint32_t, std::string>(id, name));
+            }
         }
         ret.status = 1;
         LOG_END;
