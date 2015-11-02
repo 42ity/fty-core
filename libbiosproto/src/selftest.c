@@ -78,7 +78,7 @@ s_test_alerts (zactor_t *server)
 
     // ALERTS stream: Test case: send all values
     // send
-    int r = alert_send (producer, "RULENAME1", "ELEMENT_NAME", -1, "RESOLVED", "INFO");
+    int r = alert_send (producer, "RULENAME1", "ELEMENT_NAME", -1, "RESOLVED", "INFO", "DESCRIPTION1");
     assert (r == 0);
 
     // recv
@@ -88,9 +88,9 @@ s_test_alerts (zactor_t *server)
     const char* subject = mlm_client_subject (consumer);
     assert (streq (subject, "RULENAME1/INFO@ELEMENT_NAME"));
 
-    char *rule_name, *element_name, *status, *severity;
+    char *rule_name, *element_name, *status, *severity, *description;
     int64_t tme;
-    r = alert_decode (&msg, &rule_name, &element_name, &tme, &status, &severity);
+    r = alert_decode (&msg, &rule_name, &element_name, &tme, &status, &severity, &description);
     assert (r == 0);
 
     assert (streq (rule_name, "RULENAME1"));
@@ -100,11 +100,13 @@ s_test_alerts (zactor_t *server)
 
     assert (streq (status, "RESOLVED"));
     assert (streq (severity, "INFO"));
+    assert (streq (description, "DESCRIPTION1"));
 
     zstr_free (&rule_name);
     zstr_free (&element_name);
     zstr_free (&status);
     zstr_free (&severity);
+    zstr_free (&description);
 
     mlm_client_destroy (&producer);
     mlm_client_destroy (&consumer);
