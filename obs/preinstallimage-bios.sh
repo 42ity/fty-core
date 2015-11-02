@@ -279,7 +279,7 @@ WantedBy=multi-user.target
 EOF
 cat > /usr/share/bios/scripts/xml-cat.sh << EOF
 #!/bin/sh
-cat "$1"/*.xml > "$2"
+cat "\$1"/*.xml > "\$2"
 EOF
 chmod a+rx /usr/share/bios/scripts/xml-cat.sh
 rm -f /etc/init.d/tntnet
