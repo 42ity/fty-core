@@ -32,7 +32,6 @@
 #include <map>
 
 #include "dbhelpers.h"
-#include "common_msg.h"
 #include "db/assets.h"
 
 class asset_manager {
