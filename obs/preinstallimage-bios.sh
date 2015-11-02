@@ -251,7 +251,7 @@ if [ "`uname -m`" = x86_64 ]; then
     systemctl disable bios-agent-th
 fi
 
-# Fix tntnet unit
+# Our tntnet unit
 cat > /etc/systemd/system/tntnet@.service <<EOF
 [Unit]
 Description=Tntnet web server using /etc/tntnet/%I.xml
@@ -267,21 +267,31 @@ EnvironmentFile=-/etc/sysconfig/bios__%n.conf
 EnvironmentFile=-/etc/default/bios-db-rw
 PrivateTmp=true
 ExecStartPre=/usr/share/bios/scripts/ssl-create.sh
+ExecStartPre=/usr/share/bios/scripts/xml-cat.sh /etc/tntnet/%i.d /etc/tntnet/%i.xml
 ExecStart=/usr/bin/tntnet -c /etc/tntnet/%i.xml
 Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target
 EOF
+cat > /usr/share/bios/scripts/xml-cat.sh << EOF
+#!/bin/sh
+cat "$1"/*.xml > "$2"
+EOF
+chmod a+rx /usr/share/bios/scripts/xml-cat.sh
 rm -f /etc/init.d/tntnet
 
 # Enable REST API via tntnet
+mkdir /etc/tntnet/bios.d
 cp /usr/share/bios/examples/tntnet.xml.* /etc/tntnet/bios.xml
 mkdir -p /usr/share/core-0.1/web/static
 sed -i 's|<!--.*<user>.*|<user>www-data</user>|' /etc/tntnet/bios.xml
 sed -i 's|<!--.*<group>.*|<group>sasl</group>|' /etc/tntnet/bios.xml
 sed -i 's|.*<daemon>.*|<daemon>0</daemon>|' /etc/tntnet/bios.xml
 sed -i 's|\(.*\)<dir>.*|\1<dir>/usr/share/bios-web/</dir>|' /etc/tntnet/bios.xml
+sed -n '1,/<mappings>/ p' /etc/tntnet/bios.xml  > /etc/tntnet/bios.d/00_start.xml
+sed -n '/<\/mappings>/,$ p' /etc/tntnet/bios.xml > /etc/tntnet/bios.d/99_end.xml
+sed '/<mappings>/,/<\/mappings>/!d; /mappings/ d' /etc/tntnet/bios.xml > /etc/tntnet/bios.d/20_core.xml
 systemctl enable tntnet@bios
 
 # Disable logind
