@@ -30,7 +30,7 @@ expected() {
     # print 'systemctl show' in format of REST API call to help comparing
     # $1 = systemd service name
     echo "{\"$1\": {"
-    sudo systemctl show "$1" \
+    sudo /bin/systemctl show "$1" \
         -p ActiveState -p SubState -p LoadState -p UnitFileState \
     | awk -F= 'NR>1 {print ", "}{print "\""$1"\" : \""$2"\""}'
     echo "} }"
