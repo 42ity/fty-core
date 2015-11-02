@@ -394,7 +394,7 @@ db_reply <std::vector<db_a_elmnt_t>>
         ret.item.clear();
         LOG_END_ABNORMAL(e);
         return ret;
-    } 
+    }
 }
 
 //=============================================================================
@@ -406,18 +406,18 @@ db_reply <std::set <std::pair<a_elmnt_id_t ,a_elmnt_id_t>>>
     LOG_START;
     log_debug ("  links are selected for element_id = %" PRIi32, element_id);
     a_lnk_tp_id_t linktype = INPUT_POWER_CHAIN;
-    
+
     //      all powerlinks are included into "resultpowers"
     std::set <std::pair<a_elmnt_id_t ,a_elmnt_id_t>> item{};
     db_reply <std::set<std::pair<a_elmnt_id_t ,a_elmnt_id_t>>> ret = db_reply_new(item);
 
     try{
-        // v_bios_asset_link are only devices, 
+        // v_bios_asset_link are only devices,
         // so there is no need to add more constrains
         tntdb::Statement st = conn.prepareCached(
-            " SELECT"                
+            " SELECT"
             "   v.id_asset_element_src,"
-            "   v.id_asset_element_dest"              
+            "   v.id_asset_element_dest"
             " FROM"
             "   v_bios_asset_link v,"
             "   v_bios_asset_element_super_parent v1,"
@@ -425,15 +425,15 @@ db_reply <std::set <std::pair<a_elmnt_id_t ,a_elmnt_id_t>>>
             " WHERE"
             "   v.id_asset_link_type = :linktypeid AND"
             "   v.id_asset_element_dest = v2.id_asset_element AND"
-            "   v.id_asset_element_src = v1.id_asset_element AND" 
+            "   v.id_asset_element_src = v1.id_asset_element AND"
             "   ("
             "       ( :containerid IN (v2.id_parent1, v2.id_parent2 ,v2.id_parent3,"
-            "               v2.id_parent4) ) OR"
+            "               v2.id_parent4, v2.id_parent5) ) OR"
             "       ( :containerid IN (v1.id_parent1, v1.id_parent2 ,v1.id_parent3,"
-            "               v1.id_parent4) )"
+            "               v1.id_parent4, v1.id_parent5) )"
             "   )"
         );
-        
+
         // can return more than one row
         tntdb::Result result = st.set("containerid", element_id).
                                   set("linktypeid", linktype).
@@ -448,12 +448,12 @@ db_reply <std::set <std::pair<a_elmnt_id_t ,a_elmnt_id_t>>>
             a_elmnt_id_t id_asset_element_src = 0;
             row[0].get(id_asset_element_src);
             assert ( id_asset_element_src );
-            
+
             // id_asset_element_dest, required
             a_elmnt_id_t id_asset_element_dest = 0;
             row[1].get(id_asset_element_dest);
             assert ( id_asset_element_dest );
-            
+
             ret.item.insert(std::pair<a_elmnt_id_t ,a_elmnt_id_t>(id_asset_element_src, id_asset_element_dest));
         } // end for
         ret.status = 1;

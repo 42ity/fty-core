@@ -1770,7 +1770,7 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
             " FROM"
             "   v_bios_asset_element_super_parent v"
             " WHERE :dcid IN (v.id_parent1, v.id_parent2 ,v.id_parent3,"
-            "                   v.id_parent4) AND"
+            "                   v.id_parent4, v.id_parent5) AND"
             "       id_type = :devicetype"
         );
         // can return more than one row
@@ -1840,10 +1840,10 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
             "   v.id_asset_link_type = :linktypeid AND"
             "   v.id_asset_element_dest = v2.id_asset_element AND"
             "   ( :dcid IN (v2.id_parent1, v2.id_parent2 ,v2.id_parent3,"
-            "               v2.id_parent4) ) AND"
+            "               v2.id_parent4, v2.id_parent5) ) AND"
             "   v.id_asset_element_src = v1.id_asset_element AND"
             "   ( :dcid IN (v1.id_parent1, v1.id_parent2 ,v1.id_parent3,"
-            "               v1.id_parent4) )"
+            "               v1.id_parent4, v1.id_parent5) )"
         );
         // can return more than one row
         tntdb::Result result = st.set("dcid", element_id).
