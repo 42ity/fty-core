@@ -41,12 +41,21 @@ api_auth_get_json '/asset/36' >&5
 print_result $?
 curlfail_pop
 
-echo "********* 2. Export device/virtual            *****************************************************"
+echo "********* 3. Export device/virtual            *****************************************************"
 echo "***************************************************************************************************"
 test_it "Export device/virtual"
 curlfail_push_expect_noerrors
 # HACK, the cmp_json does expect the json content in res files
 printf '{"csv":"%s"}\n' "`api_auth_get '/asset/export' | grep '36$'`" >&5
+print_result $?
+curlfail_pop
+
+echo "********* 4. Delete device/virtual            *****************************************************"
+echo "***************************************************************************************************"
+test_it "Delete device/virtual"
+curlfail_push_expect_noerrors
+# HACK, the cmp_json does expect the json content in res files
+api_auth_delete_json /asset/36 >&5
 print_result $?
 curlfail_pop
 
