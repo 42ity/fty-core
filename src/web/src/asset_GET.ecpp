@@ -113,8 +113,13 @@ if ( !tmp.item.groups.empty() )
 // Device is special element with more attributes
 if ( tmp.item.basic.type_id == persist::asset_type::DEVICE )
 {
+    // BIOS-1333
+    auto subtype = tmp.item.basic.subtype_name;
+    auto vm_type = tmp.item.ext.find ("type");
+    if (vm_type != tmp.item.ext.end() && vm_type->second.first == "v12n.type")
+        subtype = "virtual";
 </%cpp>
-, "type": "<$$ tmp.item.basic.subtype_name $>"
+, "type": "<$$ subtype $>"
 <%cpp>
     // from csv import ip.1, ip.2 ... can appear, but for now deal with one
     auto it = tmp.item.ext.find("ip.1");
