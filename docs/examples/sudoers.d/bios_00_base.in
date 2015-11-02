@@ -31,7 +31,7 @@ Cmnd_Alias BIOS_SYSTEMCTL   = @libexecdir@/@PACKAGE@/systemctl
 Cmnd_Alias BIOS_PROGS	= DATE,AUGTOOL,BIOS_PASSWD,BIOS_SYSTEMCTL,BIOS_NUTCONFIG
 
 # Who is allowed to elevate?
-User_Alias BIOS_USERS	= %bios-admin,www-data
+User_Alias BIOS_USERS	= %bios-admin,www-data,%bios-infra
 # With whose privileges can this be executed?
 Runas_Alias BIOS_RUNAS	= root
 
