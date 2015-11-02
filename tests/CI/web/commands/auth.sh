@@ -135,7 +135,7 @@ print_result $?
 
 curlfail_push_expect_400
 test_it "wrong_change_password_back_badold"
-BIOS_PASSWD="$NEW_BIOS_PASSWD" api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "bad'"$NEW_BIOS_PASSWD"'", "new_passwd" : "'"$BIOS_PASSWD"'" }' >&5
+BIOS_PASSWD="$NEW_BIOS_PASSWD" api_auth_post_json /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "bad'"$NEW_BIOS_PASSWD"'", "new_passwd" : "'"$BIOS_PASSWD"'" }' >&5
 print_result $?
 curlfail_pop
 
