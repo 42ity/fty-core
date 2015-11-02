@@ -29,7 +29,7 @@ echo "********* 1. Create device/virtual            ****************************
 echo "***************************************************************************************************"
 test_it "Create device/virtual"
 curlfail_push_expect_noerrors
-api_auth_post_json '/asset' '{"name":"dvc_virtual_test1","type":"device","sub_type":"virtual","location":"","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST0003","address":"ASDF","serial_no":"ABCD0003","ip.1":"10.229.5.11"}}' > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
+api_auth_post_json '/asset' '{"name":"dvc_virtual_test1","type":"device","sub_type":"virtual","location":"","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST0003","address":"ASDF","serial_no":"ABCD0003","ip.1":"10.229.5.11"}}' >&5
 print_result $?
 curlfail_pop
 
@@ -54,7 +54,6 @@ echo "********* 4. Delete device/virtual            ****************************
 echo "***************************************************************************************************"
 test_it "Delete device/virtual"
 curlfail_push_expect_noerrors
-# HACK, the cmp_json does expect the json content in res files
 api_auth_delete_json /asset/36 >&5
 print_result $?
 curlfail_pop
