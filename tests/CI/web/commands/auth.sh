@@ -46,12 +46,12 @@ print_result $?
 # Check not getting token
 test_it "wrong_login"
 curlfail_push_expect_400
-#api_get "/oauth2/token?username=not$BIOS_USER&password=$BIOS_PASSWD&grant_type=password" >/dev/null
 _test_auth "not$BIOS_USER" "$BIOS_PASSWD" >/dev/null
 print_result $?
+curlfail_pop
 
 test_it "wrong_password"
-#api_get "/oauth2/token?username=$BIOS_USER&password=not$BIOS_PASSWD&grant_type=password" >/dev/null
+curlfail_push_expect_400
 _test_auth "$BIOS_USER" "not$BIOS_PASSWD" >/dev/null
 print_result $?
 curlfail_pop
@@ -135,42 +135,20 @@ print_result $?
 
 curlfail_push_expect_400
 test_it "wrong_change_password_back_badold"
-BIOS_PASSWD="$NEW_BIOS_PASSWD" api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "bad'"$NEW_BIOS_PASSWD"'", "new_passwd" : "'"$BIOS_PASSWD"'" }'
+BIOS_PASSWD="$NEW_BIOS_PASSWD" api_auth_post_json /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "bad'"$NEW_BIOS_PASSWD"'", "new_passwd" : "'"$BIOS_PASSWD"'" }' >&5
 print_result $?
 curlfail_pop
 
-test_it "change_password_back_goodold"
-BIOS_PASSWD="$NEW_BIOS_PASSWD" api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$NEW_BIOS_PASSWD"'", "new_passwd" : "'"$ORIG_PASSWD"'" }'
-PASS_RECOVERED=$?
-if [ "$PASS_RECOVERED" = 0 ]; then
-    print_result 0
-else
-    if [ -n "${PASS_ORIG_GOOD}" ] ; then
-        RES_TESTPASS=-1
-        if [ -x "$TESTPASS" ] ; then
-            ( printf "%s\n%s\n%s\n" "${BIOS_USER}" "${PASS_ORIG_GOOD}" "${NEW_BIOS_PASSWD}" ) | "$TESTPASS"
-            RES_TESTPASS=$?
-        fi
-        case "$RES_TESTPASS" in
-            1[1-5])
-                echo "WARNING: The REST API failed to restore the original password because it was weak; not considering this as an error!"
-                print_result "-$RES_TESTPASS" ;;
-            0|*) print_result $PASS_RECOVERED ;; # REST API failed not due to weakness
-        esac
-        unset RES_TESTPASS
 
-        echo "WARNING: Previously failed to restore the (expected) original password, so doing it low-level"
-        test_it "restore_PASS_ORIG_GOOD_lowlevel"
-        sut_run "( echo "${PASS_ORIG_GOOD}"; echo "${PASS_ORIG_GOOD}"; ) | passwd ${BIOS_USER}"
-        print_result $?
+echo "=========== Start Restore origin password at low-level========================"
+test_it "restore_PASS_ORIG_GOOD_lowlevel"
+sut_run "( echo "${PASS_ORIG_GOOD}"; echo "${PASS_ORIG_GOOD}"; ) | passwd ${BIOS_USER}"
+print_result $?
 
-        test_it "sasl_cache_cleanup_lowlevel"
-        sut_run "testsaslauthd -u '$BIOS_USER' -p '${PASS_ORIG_GOOD}' -s '$SASL_SERVICE'"
-        print_result $?
-    else
-        print_result $PASS_RECOVERED
-    fi
-fi
+test_it "sasl_cache_cleanup_lowlevel"
+sut_run "testsaslauthd -u '$BIOS_USER' -p '${PASS_ORIG_GOOD}' -s '$SASL_SERVICE'"
+print_result $?
+echo "=========== End Restore origin password at low-level=========================="
 
 curlfail_push_expect_400
 test_it "wrong_password_temporaryNoLonger"
