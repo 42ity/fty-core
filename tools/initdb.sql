@@ -514,9 +514,10 @@ SELECT v1.id_asset_element,
        v2.id_parent AS id_parent2,
        v3.id_parent AS id_parent3,
        v4.id_parent AS id_parent4,
+       v5.id_parent AS id_parent5,
        v1.name ,
-       v5.name AS type_name,
-       v5.id_asset_device_type,
+       v6.name AS type_name,
+       v6.id_asset_device_type,
        v1.status,
        v1.asset_tag,
        v1.priority,
@@ -529,8 +530,10 @@ FROM t_bios_asset_element v1
         ON (v2.id_parent = v3.id_asset_element)
      LEFT JOIN t_bios_asset_element v4
         ON (v3.id_parent=v4.id_asset_element)
-     INNER JOIN t_bios_asset_device_type v5
-        ON (v5.id_asset_device_type = v1.id_subtype);
+     LEFT JOIN t_bios_asset_element v5
+        ON (v4.id_parent=v5.id_asset_element)
+     INNER JOIN t_bios_asset_device_type v6
+        ON (v6.id_asset_device_type = v1.id_subtype);
 
 CREATE VIEW v_bios_measurement AS
 SELECT t1.id,
