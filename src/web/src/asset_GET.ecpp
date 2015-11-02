@@ -118,6 +118,8 @@ if ( tmp.item.basic.type_id == persist::asset_type::DEVICE )
     auto vm_type = tmp.item.ext.find ("type");
     if (vm_type != tmp.item.ext.end() && vm_type->second.first == "v12n.type")
         subtype = "virtual";
+    tmp.item.ext.erase ("type");    //XXX: csv export does not allow you to get extended attributes which conflicts with main names (name, type, subtype, ...)
+                                    //     as type is now used for devices, remove it before printing
 </%cpp>
 , "type": "<$$ subtype $>"
 <%cpp>
