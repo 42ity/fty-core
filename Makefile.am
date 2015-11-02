@@ -1001,21 +1001,6 @@ test_totalpower_LDFLAGS = \
 			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
 
-###
-cibin_programs +=	test-web
-
-test_web_SOURCES = 	tests/web/src/test-location-helpers.cc \
-			src/web/src/location_helpers.cc
-
-test_web_LDADD = 	libpriv-test-run.la \
-			libpriv-log.la
-
-test_web_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/tests/include/ \
-			-I$(abs_top_srcdir)/src/web/include
-
-#test_web_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS)
-
 cibin_programs +=	bios-email
 
 bios_email_SOURCES = \
