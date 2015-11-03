@@ -416,117 +416,11 @@ bios_alert_extract(ymsg_t *self,
    return 0;
 }
 
-// action type (operation), see asset_type::asset_operation
-// 1 insert
-// 2 delete (the content of the message in this case is not specified)
-// 3 update
-// 4 get
-ymsg_t *
-bios_asset_encode( const char *devicename,
-                   uint32_t type_id,
-                   uint32_t subtype_id,
-                   uint32_t parent_id,
-                   const char* status,
-                   uint8_t priority,
-                   int8_t operation
-                   )
-{
-    if( ! devicename ) return NULL;
-    
-    ymsg_t *msg = ymsg_new(YMSG_SEND);
-    app_t *app = app_new(APP_MODULE);
-    app_set_name( app, "ASSET" );
-    app_args_set_string( app, "devicename", devicename );
-    if( type_id ) app_args_set_uint32( app, "type_id", type_id );
-    if( subtype_id ) app_args_set_uint32( app, "subtype_id", subtype_id );
-    if( parent_id ) app_args_set_uint32( app, "parent_id", parent_id );
-    if( status ) app_args_set_string( app, "status", status );
-    if( priority ) app_args_set_uint8( app, "priority", priority );
-    if( operation ) app_args_set_int8( app, "operation", operation );
-    ymsg_request_set_app( msg, &app );
-    return msg;
-}
-
-int
-bios_asset_extract(ymsg_t *message,
-                   char **devicename,
-                   uint32_t *type_id,
-                   uint32_t *subtype_id,
-                   uint32_t *parent_id,
-                   char **status,
-                   uint8_t *priority,
-                   int8_t *operation
-                   )
-{
-    if( ! message || ! devicename ) return -1;
-
-    if( devicename ) *devicename = NULL;
-    if( status ) *status = NULL;
-
-    app_t *app = NULL;
-    switch( ymsg_id( message ) ) {
-    case YMSG_REPLY:
-        if( ! ymsg_is_ok(message) ) return -1;
-        app = ymsg_response_app( message );
-        break;
-    case YMSG_SEND:
-        app = ymsg_request_app( message );
-        break;
-    }
-    if( ! app || ! streq( app_name( app ), "ASSET" ) ) { app_destroy(&app) ; return -2; }
-
-    if( devicename ) {
-        const char *p = app_args_string( app, "devicename", NULL );
-        if( p ) { *devicename = strdup(p); }
-        if( ! *devicename ) goto bios_asset_extract_err;
-    }
-    if( priority ) {
-        *priority = app_args_uint8( app, "priority" );
-        if( *priority < ALERT_PRIORITY_P1 || *priority > ALERT_PRIORITY_P5 )
-            goto bios_asset_extract_err;
-    }
-    if( operation ) {
-        *operation = app_args_uint8( app, "operation" );
-        if( *operation < 1 || *operation > 4 )
-            goto bios_asset_extract_err;
-    }
-
-    if( type_id ) {
-        *type_id = app_args_uint32( app, "type_id" );
-        if( errno ) goto bios_asset_extract_err;
-    }
-    if( subtype_id ) {
-        *subtype_id = app_args_uint32( app, "subtype_id" );
-        if( errno ) goto bios_asset_extract_err;
-    }
-
-    if( parent_id ) {
-        *parent_id = app_args_uint32( app, "parent_id" );
-        if( errno ) goto bios_asset_extract_err;
-    }
-    if( status ) {
-        const char *p = app_args_string( app, "status", NULL );
-        if( p ) *status = strdup(p);
-        if( ! *status ) goto bios_asset_extract_err;
-    }
-    app_destroy( &app );
-    return 0;
- bios_asset_extract_err:
-    FREE0( *devicename );
-    if( status ) FREE0( *status );
-    if( type_id ) *type_id = 0;
-    if( operation ) *operation = 0;
-    if( parent_id ) *parent_id = 0;
-    if( priority ) *priority = 0;
-    app_destroy( &app );
-    return -3;
-}
-
-
 static app_t *
 bios_asset_extra(const char *name,
                  zhash_t **ext_attributes,
                  uint32_t type_id,
+                 uint32_t subtype_id,
                  uint32_t parent_id,
                  const char* status,
                  uint8_t priority,
@@ -548,6 +442,8 @@ bios_asset_extra(const char *name,
 
     if ( type_id )
         app_args_set_uint32 (app, KEY_ASSET_TYPE_ID, type_id);
+    if ( subtype_id )
+        app_args_set_uint32( app, "__subtype_id", subtype_id );
     if ( parent_id )
         app_args_set_uint32 (app, KEY_ASSET_PARENT_ID, parent_id);
     if( priority )
@@ -565,6 +461,7 @@ ymsg_t *
 bios_asset_extra_encode(const char *name,
                    zhash_t **ext_attributes,
                    uint32_t type_id,
+                   uint32_t subtype_id,
                    uint32_t parent_id,
                    const char* status,
                    uint8_t priority,
@@ -572,7 +469,7 @@ bios_asset_extra_encode(const char *name,
                    int8_t operation)
 {
     app_t *app = bios_asset_extra(name, ext_attributes, type_id,
-                 parent_id, status, priority, bc, operation);
+                 subtype_id, parent_id, status, priority, bc, operation);
     if ( !app )
         return NULL;
 
@@ -590,6 +487,7 @@ ymsg_t *
 bios_asset_extra_encode_response(const char *name,
                    zhash_t **ext_attributes,
                    uint32_t type_id,
+                   uint32_t subtype_id,
                    uint32_t parent_id,
                    const char* status,
                    uint8_t priority,
@@ -597,7 +495,7 @@ bios_asset_extra_encode_response(const char *name,
                    int8_t operation)
 {
     app_t *app = bios_asset_extra(name, ext_attributes, type_id,
-                 parent_id, status, priority, bc, operation);
+                 subtype_id, parent_id, status, priority, bc, operation);
     if ( !app )
         return NULL;
 
@@ -618,6 +516,7 @@ bios_asset_extra_extract(ymsg_t *message,
                    char **name,
                    zhash_t **ext_attributes,
                    uint32_t *type_id,
+                   uint32_t *subtype_id,
                    uint32_t *parent_id,
                    char **status,
                    uint8_t *priority,
@@ -673,6 +572,12 @@ bios_asset_extra_extract(ymsg_t *message,
             *type_id = t;
         }
     }
+    if( subtype_id ) {
+        uint32_t t = app_args_uint32( app, "__subtype_id" );
+        if ( !errno ) { // the key is missing in the message
+            *subtype_id = t;
+        }
+    }
     if( parent_id ) {
         uint32_t t = app_args_uint32( app, KEY_ASSET_PARENT_ID );
         if ( !errno ) {
@@ -721,6 +626,7 @@ bios_asset_extra_extract(ymsg_t *message,
     if ( name )       FREE0( *name );
     if ( status )     FREE0( *status );
     if ( type_id )    *type_id = 0;
+    if ( subtype_id ) *subtype_id = 0;
     if ( parent_id )  *parent_id = 0;
     if ( priority )   *priority = 0;
     if ( bc )         *bc = 0;

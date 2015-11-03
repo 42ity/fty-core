@@ -646,6 +646,11 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     m.subtype_id = subtype_id;
     m.asset_tag = asset_tag;
 
+    for (void* it = zhash_first (extattributes); it != NULL;
+               it = zhash_next (extattributes)) {
+        m.ext.emplace (zhash_cursor (extattributes), (char*) it);
+    }
+
     LOG_END;
     return std::make_pair(m, operation) ;
 }

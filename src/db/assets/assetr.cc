@@ -22,6 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // 0 would be return as rowid
 
 #include "assetr.h"
+#include "asset_types.h"
 
 #include <exception>
 #include <assert.h>
@@ -274,7 +275,6 @@ db_reply <std::vector <a_elmnt_id_t> >
     }
 }
 
-
 db_reply <std::map <uint32_t, std::string> >
     select_short_elements
         (tntdb::Connection &conn,
@@ -284,7 +284,6 @@ db_reply <std::map <uint32_t, std::string> >
     LOG_START;
     log_debug ("  type_id = %" PRIi16, type_id);
     log_debug ("  subtype_id = %" PRIi16, subtype_id);
-
     std::map <uint32_t, std::string> item{};
     db_reply <std::map <uint32_t, std::string> > ret = db_reply_new(item);
 
@@ -312,18 +311,17 @@ db_reply <std::map <uint32_t, std::string> >
         // Can return more than one row.
         tntdb::Statement st = conn.prepareCached(query);
 
-        tntdb::Result result = st.set("typeid", type_id).
-                                  set("subtypeid", subtype_id).
-                                  select();
+        tntdb::Result result;
+        result = st.set("typeid", type_id).
+                    set("subtypeid", subtype_id).
+                    select();
 
         // Go through the selected elements
-        for ( auto &row: result )
-        {
-            std::string name="";
+        for (auto const& row: result) {
+            std::string name;
             row[0].get(name);
             uint32_t id = 0;
             row[1].get(id);
-
             ret.item.insert(std::pair<uint32_t, std::string>(id, name));
         }
         ret.status = 1;
@@ -352,23 +350,24 @@ reply_t
 
     reply_t rep;
     // TODO
-    // if element is DC, then dc_id = element_id ( not implemented yet) 
+    // if element is DC, then dc_id = element_id ( not implemented yet)
     try{
         // Find last parent
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
-            "   v.id_parent4, v.id_parent3, v.id_parent2, v.id_parent1"
+            "   v.id_parent5, v.id_parent4, v.id_parent3, v.id_parent2, v.id_parent1"
             " FROM"
             "   v_bios_asset_element_super_parent v"
             " WHERE v.id_asset_element = :id"
         );
-    
+
         tntdb::Row row = st.set("id", element_id).
                             selectRow();
         log_debug("[v_bios_asset_element_super_parent]: were selected" \
                      "%" PRIu32 " rows",  1);
-        if ( !row[0].get(dc_id) && !row[1].get(dc_id) && 
-             !row[2].get(dc_id) && !row[3].get(dc_id) )
+        if ( !row[0].get(dc_id) && !row[1].get(dc_id) &&
+             !row[2].get(dc_id) && !row[3].get(dc_id) &&
+             !row[4].get(dc_id) )
         {
             log_debug ("this element has no parent");
             dc_id = 0;
@@ -803,7 +802,7 @@ int
             " FROM "
             "   v_bios_asset_element_super_parent v "
             " WHERE "
-            "   :containerid in (v.id_parent1, v.id_parent2, v.id_parent3, v.id_parent4)"
+            "   :containerid in (v.id_parent1, v.id_parent2, v.id_parent3, v.id_parent4, v.id_parent5)"
         );
 
         tntdb::Result result = st.set("containerid", element_id).

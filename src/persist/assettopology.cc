@@ -477,11 +477,11 @@ zframe_t* select_childs(
             _scoped_zframe_t* devices = NULL;
             _scoped_zmsg_t*   grp     = NULL;
             
-            // Select childs only if it is not a leaf (is not a device), 
-            // it is recursive search, and we didn't achive max 
-            // recursion depth
+            // Select childs only 
+            // 2. it is recursive search, and we didn't achive max 
+            // 3. recursion depth
+            //////////////////////////
             if (    ( is_recursive ) && 
-                    ( child_type_id != persist::asset_type::DEVICE ) && 
                     ( current_depth <= MAX_RECURSION_DEPTH ) )
             {
                 // There is no need to select datacenters, because 
@@ -521,12 +521,12 @@ zframe_t* select_childs(
                      ( 5 <= filtertype ) )
                 {
                     log_info ("start select_racks");
-                    racks   = select_childs (url, id, child_type_id, 
-                                persist::asset_type::RACK, is_recursive, 
+                    racks   = select_childs (url, id, child_type_id,
+                                persist::asset_type::RACK, is_recursive,
                                 current_depth + 1, filtertype, feed_by_id);
                     log_info ("end select_racks");
                 }
-                
+
                 // Select devices only for datacenters, rooms, rows, racks
                 // and TODO filter
                 if ( (  ( child_type_id == persist::asset_type::DATACENTER)  ||
@@ -537,11 +537,24 @@ zframe_t* select_childs(
                 {
                     log_info ("start select_devices");
                     devices = select_childs (url, id, child_type_id,
-                                persist::asset_type::DEVICE, is_recursive, 
+                                persist::asset_type::DEVICE, is_recursive,
                                 current_depth + 1, filtertype, feed_by_id);
                     log_info ("end select_devices");
                 }
-                
+
+                // BIOS-1333 -> we have devices for devices also, but only once now.
+                // Select devices only for datacenters, rooms, rows, racks
+                // and TODO filter
+                if ( ( ( child_type_id == persist::asset_type::DEVICE) ) &&
+                     ( 6 <= filtertype ) )
+                {
+                    log_info ("start select_devices FOR devices BIOS-1333");
+                    devices = select_childs (url, id, child_type_id,
+                                persist::asset_type::DEVICE, is_recursive,
+                                MAX_RECURSION_DEPTH, filtertype, feed_by_id);
+                    log_info ("end select_devices FOR devices BIOS-1333");
+                }
+
                 // TODO filter
                 // if it is a group, then do a special processing
                 if (    ( child_type_id == persist::asset_type::GROUP) && 
@@ -829,6 +842,18 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg, a_elmnt_i
                                                     "devices error", NULL);
         }
         log_info ("end select_devices");
+    }
+    // BIOS-1333 -> we have devices for devices also, but only once now.
+    // Select devices only for datacenters, rooms, rows, racks
+    // and TODO filter
+    if ( ( ( type_id == persist::asset_type::DEVICE) ) &&
+            ( 6 <= filter_type ) )
+    {
+        log_info ("start select_devices FOR devices BIOS-1333");
+        devices = select_childs (url, element_id, type_id,
+                persist::asset_type::DEVICE, is_recursive,
+                MAX_RECURSION_DEPTH, filter_type, feed_by_id);
+        log_info ("end select_devices FOR devices BIOS-1333");
     }
     // Select groups
     // Groups can be selected
@@ -1770,7 +1795,7 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
             " FROM"
             "   v_bios_asset_element_super_parent v"
             " WHERE :dcid IN (v.id_parent1, v.id_parent2 ,v.id_parent3,"
-            "                   v.id_parent4) AND"
+            "                   v.id_parent4, v.id_parent5) AND"
             "       id_type = :devicetype"
         );
         // can return more than one row
@@ -1840,10 +1865,10 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
             "   v.id_asset_link_type = :linktypeid AND"
             "   v.id_asset_element_dest = v2.id_asset_element AND"
             "   ( :dcid IN (v2.id_parent1, v2.id_parent2 ,v2.id_parent3,"
-            "               v2.id_parent4) ) AND"
+            "               v2.id_parent4, v2.id_parent5) ) AND"
             "   v.id_asset_element_src = v1.id_asset_element AND"
             "   ( :dcid IN (v1.id_parent1, v1.id_parent2 ,v1.id_parent3,"
-            "               v1.id_parent4) )"
+            "               v1.id_parent4, v1.id_parent5) )"
         );
         // can return more than one row
         tntdb::Result result = st.set("dcid", element_id).

@@ -81,27 +81,41 @@ a_elmnt_stp_id_t
     std::transform(st.begin(), st.end(), st.begin(), ::tolower);
     if(st == "ups") {
         return asset_subtype::UPS;
-    } else if(st == "genset") {
+    }
+    else if(st == "genset") {
         return asset_subtype::GENSET;
-    } else if(st == "epdu") {
+    }
+    else if(st == "epdu") {
         return asset_subtype::EPDU;
-    } else if(st == "server") {
+    }
+    else if(st == "server") {
         return asset_subtype::SERVER;
-    } else if(st == "pdu") {
+    }
+    else if(st == "pdu") {
         return asset_subtype::PDU;
-    } else if(st == "feed") {
+    }
+    else if(st == "feed") {
         return asset_subtype::FEED;
-    } else if(st == "sts") {
+    }
+    else if(st == "sts") {
         return asset_subtype::STS;
-    } else if(st == "switch") {
+    }
+    else if(st == "switch") {
         return asset_subtype::SWITCH;
-    } else if(st == "storage") {
+    }
+    else if(st == "storage") {
         return asset_subtype::STORAGE;
-    } else if(st == "N_A") {
+    }
+    else if (st == "virtual") {
+        return asset_subtype::VIRTUAL;
+    }
+    else if(st == "N_A") {
         return asset_subtype::N_A;
-    } else if(st == "") {
+    }
+    else if(st == "") {
         return asset_subtype::N_A;
-    } else
+    }
+    else
         return asset_subtype::SUNKNOWN;
 }
 
@@ -128,6 +142,8 @@ std::string
             return "server";
         case asset_subtype::SWITCH:
             return "switch";
+        case asset_subtype::VIRTUAL:
+            return "virtual";
         case asset_subtype::N_A:
             return "";
         default:

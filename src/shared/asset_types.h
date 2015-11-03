@@ -55,7 +55,9 @@ enum asset_subtype {
     STS,
     SWITCH,
     STORAGE,
-    N_A = 10
+    VIRTUAL,
+    N_A = 11
+    /* ATTENTION: don't change N_A id. It is used as default value in init.sql for types, that don't have N_A */
 };
 
 enum asset_operation {

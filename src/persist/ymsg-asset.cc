@@ -44,48 +44,6 @@
 
 namespace persist {
 
-void process_get_asset(ymsg_t** out, char** out_subj,
-                       ymsg_t* in, const char* in_subj)
-{
-    if( ! in || ! out ) return;
-    *out = ymsg_new(YMSG_REPLY);
-    LOG_START;
-    *out_subj = strdup( in_subj );
-    ymsg_set_status( *out, false );
-    
-    tntdb::Connection conn;
-    try{
-        conn = tntdb::connectCached(url);
-        char *devname = NULL;
-        if( bios_asset_extract( in, &devname, NULL, NULL, NULL, NULL, NULL, NULL ) == 0 ) {
-            auto element = select_asset_element_by_name(conn, devname);
-            if( element.status ) {
-                app_t *app = app_new(APP_MODULE);
-                if( app ) {
-                    log_debug("Setting ASSET reply for %s", element.item.name.c_str() );
-                    app_set_name( app, "ASSET" );
-                    app_args_set_string( app, "devicename", element.item.name.c_str() );
-                    app_args_set_uint16( app, "type_id", element.item.type_id );
-                    app_args_set_uint32( app, "parent_id", element.item.parent_id );
-                    app_args_set_string( app, "status", element.item.status.c_str() );
-                    app_args_set_uint8( app, "priority", element.item.priority );
-                    ymsg_response_set_app( *out, &app );
-                    ymsg_set_status( *out, true );
-                    app_destroy( &app );
-                }
-            } else {
-                log_error("Setting ASSET reply for %s failed", devname );
-            }
-        }
-        FREE0(devname);
-    } catch(const std::exception &e) {
-        LOG_END_ABNORMAL(e);
-        ymsg_set_status( *out, false );
-    }
-    LOG_END;
-}
-
-
 void
     process_get_asset_extra
         (ymsg_t** out, char** out_subj,
@@ -96,8 +54,8 @@ void
     LOG_START;
     *out_subj = strdup (in_subj);
     char *name = NULL;
-    int8_t operation; 
-    int rv = bios_asset_extra_extract (in, &name, NULL, NULL, NULL, NULL, NULL, NULL, &operation);
+    int8_t operation;
+    int rv = bios_asset_extra_extract (in, &name, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &operation);
     if ( rv == 0 )
     {
         try{
@@ -107,15 +65,14 @@ void
             {
                 db_reply <std::map <std::string, std::pair<std::string, bool> >> ext_attr =
                     persist::select_ext_attributes (conn, element.item.id);
-                
                 zhash_t *ext_attributes = zhash_new();
                 zhash_autofree(ext_attributes);
                 for (auto &m : ext_attr.item )
                 {
                     zhash_insert (ext_attributes, m.first.c_str(), (char*)m.second.first.c_str());
                 }
-                *out = bios_asset_extra_encode_response (element.item.name.c_str(), 
-                    &ext_attributes, element.item.type_id,
+                *out = bios_asset_extra_encode_response (element.item.name.c_str(),
+                    &ext_attributes, element.item.type_id, element.item.subtype_id,
                     element.item.parent_id, element.item.status.c_str(),
                     element.item.priority, element.item.bc, operation);
                 ymsg_set_status (*out, true);
