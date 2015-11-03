@@ -39,8 +39,13 @@ NUTCONFIGDIR=/etc/nut
 [ -d "$NUTCONFIGDIR" ] || die "NUT configuration directory not found"
 NUTCONFIG="$NUTCONFIGDIR/ups.conf"
 
-cat /etc/@PACKAGE@/nut/devices/* > "$NUTCONFIG.tmp" || ( rm "$NUTCONFIG.tmp" >/dev/null 2>&1 ; false )
+mkdir -p /etc/@PACKAGE@/nut/devices
+chown -R bios:bios-infra /etc/@PACKAGE@
 
-mv "$NUTCONFIG.tmp" "$NUTCONFIG"
-
-exit $?
+if cat /etc/@PACKAGE@/nut/devices/* 2> /dev/null > "$NUTCONFIG.tmp"; then
+    mv "$NUTCONFIG.tmp" "$NUTCONFIG"
+    exit 0
+else
+    rm "$NUTCONFIG.tmp" >/dev/null 2>&1
+    die "No configuration found"
+fi
