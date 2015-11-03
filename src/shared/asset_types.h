@@ -55,7 +55,8 @@ enum asset_subtype {
     STS,
     SWITCH,
     STORAGE,
-    N_A = 10
+    VIRTUAL,
+    N_A = 11
 };
 
 enum asset_operation {
