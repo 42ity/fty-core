@@ -184,11 +184,12 @@ CREATE TABLE t_bios_asset_device_type(
 
 );
 
+/* ATTENTION: don't change N_A id. Here it is used*/
 CREATE TABLE t_bios_asset_element (
   id_asset_element  INT UNSIGNED        NOT NULL AUTO_INCREMENT,
   name              VARCHAR(50)         NOT NULL,
   id_type           TINYINT UNSIGNED    NOT NULL,
-  id_subtype        TINYINT UNSIGNED    NOT NULL DEFAULT 10,
+  id_subtype        TINYINT UNSIGNED    NOT NULL DEFAULT 11,
   id_parent         INT UNSIGNED,
   status            VARCHAR(9)          NOT NULL DEFAULT "nonactive",
   priority          TINYINT             NOT NULL DEFAULT 5,
@@ -514,9 +515,10 @@ SELECT v1.id_asset_element,
        v2.id_parent AS id_parent2,
        v3.id_parent AS id_parent3,
        v4.id_parent AS id_parent4,
+       v5.id_parent AS id_parent5,
        v1.name ,
-       v5.name AS type_name,
-       v5.id_asset_device_type,
+       v6.name AS type_name,
+       v6.id_asset_device_type,
        v1.status,
        v1.asset_tag,
        v1.priority,
@@ -529,8 +531,10 @@ FROM t_bios_asset_element v1
         ON (v2.id_parent = v3.id_asset_element)
      LEFT JOIN t_bios_asset_element v4
         ON (v3.id_parent=v4.id_asset_element)
-     INNER JOIN t_bios_asset_device_type v5
-        ON (v5.id_asset_device_type = v1.id_subtype);
+     LEFT JOIN t_bios_asset_element v5
+        ON (v4.id_parent=v5.id_asset_element)
+     INNER JOIN t_bios_asset_device_type v6
+        ON (v6.id_asset_device_type = v1.id_subtype);
 
 CREATE VIEW v_bios_measurement AS
 SELECT t1.id,
@@ -662,7 +666,8 @@ INSERT INTO t_bios_asset_device_type (name) VALUES ("feed");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("sts");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("switch");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("storage");
-INSERT INTO t_bios_asset_device_type (id_asset_device_type, name) VALUES (10, "N_A");
+INSERT INTO t_bios_asset_device_type (name) VALUES ("virtual");
+INSERT INTO t_bios_asset_device_type (id_asset_device_type, name) VALUES (11, "N_A");
 
 /* t_bios_asset_link_type */
 INSERT INTO t_bios_asset_link_type (name) VALUES ("power chain");
