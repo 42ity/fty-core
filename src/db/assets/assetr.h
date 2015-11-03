@@ -101,16 +101,6 @@ db_reply <std::vector <a_elmnt_id_t> >
         (tntdb::Connection &conn,
          a_elmnt_id_t element_id);
 
-/*!
- \brief Determines if asset element is a virtual machine
- \throws tntdb::Error database error
- \return true if elemend 'id' is virtual machine, false otherwise
-*/ 
-bool
-    is_virtual_machine (
-        tntdb::Connection& connection,
-        a_elmnt_id_t id); 
-
 db_reply <std::map <uint32_t, std::string> >
     select_short_elements
         (tntdb::Connection &conn,
