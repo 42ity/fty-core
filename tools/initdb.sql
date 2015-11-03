@@ -665,7 +665,8 @@ INSERT INTO t_bios_asset_device_type (name) VALUES ("feed");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("sts");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("switch");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("storage");
-INSERT INTO t_bios_asset_device_type (id_asset_device_type, name) VALUES (10, "N_A");
+INSERT INTO t_bios_asset_device_type (name) VALUES ("virtual");
+INSERT INTO t_bios_asset_device_type (id_asset_device_type, name) VALUES (11, "N_A");
 
 /* t_bios_asset_link_type */
 INSERT INTO t_bios_asset_link_type (name) VALUES ("power chain");
