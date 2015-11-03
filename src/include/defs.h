@@ -126,6 +126,7 @@ enum ipaddr_version {
 
 // asset_extra message
 #define KEY_ASSET_TYPE_ID   "__type_id"
+#define KEY_ASSET_SUBTYPE_ID   "__subtype_id"
 #define KEY_ASSET_PARENT_ID "__parent_id"
 #define KEY_ASSET_PRIORITY  "__priority"
 #define KEY_ASSET_STATUS    "__status"
