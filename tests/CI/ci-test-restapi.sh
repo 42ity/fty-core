@@ -273,7 +273,7 @@ asset_create() {
 # do the test
 set +e
 if [ $# = 0 ]; then
-    test_web_default -topology
+    test_web_default -topology_power
     RESULT=$?
     test_web_process || exit
     if [ "$RESULT" -eq 0 ]; then
@@ -281,18 +281,10 @@ if [ $# = 0 ]; then
         RESULT=$?
     fi
     test_web_process || exit
-    if [ "$RESULT" -eq 0 ]; then
-        test_web_topo_l topology_location
-        RESULT=$?
-    fi
-    test_web_process || exit
 else
     # selective test routine
     while [ $# -gt 0 ]; do
         case "$1" in
-            topology_location*)
-                test_web_topo_l "$1"
-                RESULT=$? ;;
             topology_power*)
                 test_web_topo_p "$1"
                 RESULT=$? ;;
