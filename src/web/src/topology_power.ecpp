@@ -49,13 +49,13 @@ std::string filter_group;
 </%args>
 <%cpp>
 {
-    std::string id;
-    std::string parameter_name;
     if (from.empty() && to.empty() && filter_dc.empty() && filter_group.empty()) {
         http_die("request-param-required", "from/to/filter_dc/filter_group");
     }
 
     _scoped_asset_msg_t *input_msg = NULL;
+    std::string id;
+    std::string parameter_name;
 ////////////////////////
 //      FROM
 ////////////////////////
