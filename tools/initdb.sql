@@ -184,11 +184,12 @@ CREATE TABLE t_bios_asset_device_type(
 
 );
 
+/* ATTENTION: don't change N_A id. Here it is used*/
 CREATE TABLE t_bios_asset_element (
   id_asset_element  INT UNSIGNED        NOT NULL AUTO_INCREMENT,
   name              VARCHAR(50)         NOT NULL,
   id_type           TINYINT UNSIGNED    NOT NULL,
-  id_subtype        TINYINT UNSIGNED    NOT NULL DEFAULT 10,
+  id_subtype        TINYINT UNSIGNED    NOT NULL DEFAULT 11,
   id_parent         INT UNSIGNED,
   status            VARCHAR(9)          NOT NULL DEFAULT "nonactive",
   priority          TINYINT             NOT NULL DEFAULT 5,
