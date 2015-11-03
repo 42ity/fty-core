@@ -77,14 +77,9 @@ random_password() {
 	head -c 12 /dev/urandom | base64 | sed 's,[\+\=\/\ \t\n],_,g'
 }
 
-generate_database() {
-	local INITSQL=""
-	# Imports the BIOS database files, sets up and saves passwords
-	if [ -r "$INITSQL_FIRST" ] && \
-	   [ -s "$INITSQL_FIRST" ]; then
-		echo "Database for BIOS initialization - importing base schema..."
-		do_mysql < "$INITSQL_FIRST" || return 1
-
+secure_database() {
+		test \! -f /etc/default/bios-db-rw || return 0
+		test \! -f /etc/default/bios-db-ro || return 0
 		echo "Database for BIOS initialization - generating user passwords..."
 
 		BIOS_RW="`random_password`"
@@ -99,6 +94,17 @@ EOF
 		printf 'DB_USER="%s"\nDB_PASSWD="%s"\n' "bios-ro" "${BIOS_RO}" > /etc/default/bios-db-ro
 		chown bios /etc/default/bios-db-r[wo]
 		chmod 600 /etc/default/bios-db-r[wo]
+}
+
+generate_database() {
+	local INITSQL=""
+	# Imports the BIOS database files, sets up and saves passwords
+	if [ -r "$INITSQL_FIRST" ] && \
+	   [ -s "$INITSQL_FIRST" ]; then
+		echo "Database for BIOS initialization - importing base schema..."
+		do_mysql < "$INITSQL_FIRST" || return 1
+
+		secure_database
 
 		for INITSQL in $(ls -1 "${INITSQL_DIR}"/*.sql | grep -v "`basename $INITSQL_FIRST`" | sort) ; do
 			if  [ -r "$INITSQL_FIRST" ] && \
@@ -203,8 +209,8 @@ verify_schema_version() {
 	   [ x"$BIOS_SCHEMA_VERSION_DB_2" = x"finish-NA" ] \
 	; then
 		echo "Error: Schema version for '$INITSQL_BASENAME' is not available in BIOS database" >&2
-		upgrade_database "$INITSQL"        # DB is too old or import failed VERY early
-		exit $?
+		BIOS_SCHEMA_VERSION_DB_2="201510150002" # No schema -> first version
+		secure_database
 	else
 		if [ x"$BIOS_SCHEMA_VERSION_DB_1" != x"$BIOS_SCHEMA_VERSION_DB_2" ] || \
 		   [ -z "$BIOS_SCHEMA_VERSION_DB_1" ] || [ -z "$BIOS_SCHEMA_VERSION_DB_2" ] \
