@@ -111,10 +111,6 @@ void process_mailbox_deliver(ymsg_t** out, char** out_subj, ymsg_t* in, const ch
         persist::process_alert(out, out_subj, in, in_subj);
         return;
     }
-    else if (streq(in_subj, "get_asset_element") ) {
-        persist::process_get_asset(out, out_subj, in, in_subj);
-        return;
-    }
     else if (streq(in_subj, "get_asset_extra") ) {
         persist::process_get_asset_extra (out, out_subj, in, in_subj);
         return;

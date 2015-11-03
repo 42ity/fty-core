@@ -25,6 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SRC_DB_DBHELPERS_H_
 #include <functional>
 #include <string>
+#include <map>
 #include <tntdb/row.h>
 #include <czmq.h>
 #include <vector>
@@ -115,6 +116,43 @@ struct db_a_elmnt_t {
     a_elmnt_tp_id_t  type_id;
     a_elmnt_stp_id_t subtype_id;
     std::string      asset_tag;
+    std::map <std::string, std::string> ext;
+
+    db_a_elmnt_t () :
+        id{},
+        name{},
+        status{},
+        parent_id{},
+        priority{},
+        bc{},
+        type_id{},
+        subtype_id{},
+        asset_tag{},
+        ext{}
+    {}
+
+    db_a_elmnt_t (
+        a_elmnt_id_t     id,
+        std::string      name,
+        std::string      status,
+        a_elmnt_id_t     parent_id,
+        a_elmnt_pr_t     priority,
+        a_elmnt_bc_t     bc,        // business critical
+        a_elmnt_tp_id_t  type_id,
+        a_elmnt_stp_id_t subtype_id,
+        std::string      asset_tag) :
+
+        id(id),
+        name(name),
+        status(status),
+        parent_id(parent_id),
+        priority(priority),
+        bc(bc),
+        type_id(type_id),
+        subtype_id(subtype_id),
+        asset_tag(asset_tag),
+        ext{}
+    {}
 };
 
 /** 

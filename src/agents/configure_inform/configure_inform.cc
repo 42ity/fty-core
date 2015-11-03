@@ -25,6 +25,17 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "str_defs.h"
 #include "agents.h"
 
+static zhash_t*
+s_map2zhash (const std::map<std::string, std::string>& m)
+{
+    zhash_t *ret = zhash_new ();
+    zhash_autofree (ret);
+    for (const auto& it : m) {
+        zhash_insert (ret, ::strdup (it.first.c_str()), ::strdup (it.second.c_str()));
+    }
+    return ret;
+}
+
 void
     send_configure (
         const std::vector <std::pair<db_a_elmnt_t,persist::asset_operation>> &rows,
@@ -37,9 +48,10 @@ void
     bios_agent_set_producer (agent, bios_get_stream_main());
     for ( auto &oneRow : rows )
     {
-        ymsg_t *msg = bios_asset_encode (oneRow.first.name.c_str(), oneRow.first.type_id,
+        zhash_t *ext = s_map2zhash (oneRow.first.ext);
+        ymsg_t *msg = bios_asset_extra_encode (oneRow.first.name.c_str(), &ext, oneRow.first.type_id,
 		oneRow.first.subtype_id, oneRow.first.parent_id, oneRow.first.status.c_str(),
-		oneRow.first.priority, oneRow.second);
+		oneRow.first.priority, oneRow.first.bc, oneRow.second);
         if ( msg == NULL )
         {
             bios_agent_destroy (&agent);
