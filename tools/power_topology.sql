@@ -22,8 +22,6 @@ insert into t_bios_asset_group_relation (id_asset_group_relation , id_asset_grou
 insert into t_bios_asset_group_relation (id_asset_group_relation , id_asset_group, id_asset_element) values (NULL, 4999, 5002);
 insert into t_bios_asset_group_relation (id_asset_group_relation , id_asset_group, id_asset_element) values (NULL, 4999, 5000);
 
-insert into t_bios_asset_element ( id_asset_element , name , id_type , id_parent ) values (4998, "power_inputgrp_empty", 1, NULL);
-
 /* prepared to insert */
 
 INSERT INTO t_bios_asset_device_type (name) VALUES ("sink");
@@ -256,6 +254,8 @@ INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_subtype, 
 
 INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 5075, NULL, 5074, NULL, @id_link);
 INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 5075, 5, 5074, NULL, @id_link);
+INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 5075, NULL, 5074, NULL, @id_link);
+INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 5075, 5, 5074, NULL, @id_link);
 
 /* power topology to: #11 */
 
@@ -327,3 +327,16 @@ INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_d
 INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 5083, NULL, 5086, NULL, @id_link);
 INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 5084, NULL, 5085, NULL, @id_link);
 INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 5084, NULL, 5086, NULL, @id_link);
+
+/* New group */
+insert into t_bios_asset_element ( id_asset_element , name , id_type , id_parent ) values (4998, "power_inputgrp_empty", 1, NULL);
+insert into t_bios_asset_element ( id_asset_element , name , id_type , id_parent ) values (5089, "POT", 1, NULL);
+
+/* New group relation */
+insert into t_bios_asset_group_relation (id_asset_group_relation , id_asset_group, id_asset_element) values (NULL, 5089, 5086);
+insert into t_bios_asset_group_relation (id_asset_group_relation , id_asset_group, id_asset_element) values (NULL, 5089, 5087);
+insert into t_bios_asset_group_relation (id_asset_group_relation , id_asset_group, id_asset_element) values (NULL, 5089, 5081);
+insert into t_bios_asset_group_relation (id_asset_group_relation , id_asset_group, id_asset_element) values (NULL, 5089, 5083);
+insert into t_bios_asset_group_relation (id_asset_group_relation , id_asset_group, id_asset_element) values (NULL, 5089, 5084);
+insert into t_bios_asset_group_relation (id_asset_group_relation , id_asset_group, id_asset_element) values (NULL, 5089, 5085);
+insert into t_bios_asset_group_relation (id_asset_group_relation , id_asset_group, id_asset_element) values (NULL, 5089, 5075);
