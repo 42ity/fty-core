@@ -247,9 +247,6 @@ void
                 ext_attrs.erase("type");
             }
         }
-        // BIOS-1333
-        if (type_name == "device" && ext_attrs.count("type") == 1 && ext_attrs["type"].first == "v12n.type")
-            subtype_name = "virtual";
         else {
             r["subtype_name"].get(subtype_name);
         }

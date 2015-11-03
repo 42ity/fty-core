@@ -321,10 +321,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     auto subtype = cm.get_strip(row_i, "sub_type");
     log_debug ("subtype = '%s'", subtype.c_str());
     if ( ( type == "device" ) &&
-         ( SUBTYPES.find(subtype) == SUBTYPES.cend() &&
-           // BIOS-1333
-           subtype != "virtual"
-           ) ) {
+         ( SUBTYPES.find(subtype) == SUBTYPES.cend() ) ) {
         bios_throw("request-param-bad", "subtype", subtype.empty() ? "<empty>" : subtype.c_str(), utils::join_keys_map(SUBTYPES, ", ").c_str());
     }
 
@@ -336,15 +333,6 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     if ( ( subtype.empty() ) && ( type == "group" ) ) {
         bios_throw("request-param-required", "subtype (for type group)");
     }
-
-    // BIOS-1333 begin
-    _scoped_zhash_t *extattributes = zhash_new();
-    zhash_autofree(extattributes);
-    if (subtype == "virtual") {
-        zhash_insert (extattributes, strdup("type"), (void*) "v12n.type");
-        subtype = "server";
-    }
-    // BIOS-1333 end
 
     auto subtype_id = SUBTYPES.find(subtype)->second;
     unused_columns.erase("sub_type");
@@ -527,6 +515,8 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             }
         }
     }
+    _scoped_zhash_t *extattributes = zhash_new();
+    zhash_autofree(extattributes);
     for ( auto &key: unused_columns )
     {
         // try is not needed, because here are keys that are definitely there
