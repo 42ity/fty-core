@@ -443,7 +443,7 @@ bios_asset_extra(const char *name,
     if ( type_id )
         app_args_set_uint32 (app, KEY_ASSET_TYPE_ID, type_id);
     if ( subtype_id )
-        app_args_set_uint32( app, "subtype_id", subtype_id );
+        app_args_set_uint32( app, "__subtype_id", subtype_id );
     if ( parent_id )
         app_args_set_uint32 (app, KEY_ASSET_PARENT_ID, parent_id);
     if( priority )
@@ -573,7 +573,7 @@ bios_asset_extra_extract(ymsg_t *message,
         }
     }
     if( subtype_id ) {
-        uint32_t t = app_args_uint32( app, "subtype_id" );
+        uint32_t t = app_args_uint32( app, "__subtype_id" );
         if ( !errno ) { // the key is missing in the message
             *subtype_id = t;
         }
