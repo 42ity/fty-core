@@ -69,7 +69,7 @@ INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_subtype, 
 
 INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 5025, NULL, 5024 , NULL, @id_link);
 INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 5026, NULL, 5024 , NULL, @id_link);
-INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 5024, 1, 5027 , 2, @id_link);
+INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 5024, "ABCD", 5027 , 2, @id_link);
 
 /* power topology from: #5 */
 

@@ -24,5 +24,5 @@
 #  \brief Not yet documented file
 
 test_it
-api_get_json /topology/power?from=5020 >&5
+api_get_json /topology/power?FROM=5020 >&5
 print_result $?
