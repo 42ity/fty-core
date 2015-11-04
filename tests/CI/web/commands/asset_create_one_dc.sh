@@ -247,6 +247,7 @@ echo "********* 25. Unauthorized_create_operation   ****************************
 echo "***************************************************************************************************"
 #*#*#*#*#* asset_create_one_dc.sh - subtest 25 - TODO, should not be response 200?
 #curlfail_push_expect_400
+test_it "Unauthorized_create_operation"
 curlfail_push_expect_noerrors
 api_post '/asset' '{"name":"dc_name_test_25","type":"datacenter","sub_type":"","location":"","status":"nonactive","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST0025","address":"ASDF"}}' > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
 print_result $?
