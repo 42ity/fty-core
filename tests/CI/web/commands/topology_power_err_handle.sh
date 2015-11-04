@@ -165,6 +165,7 @@ echo "********* topology_power_err_handle.sh ***********************************
 echo "********* 19. from_with_white_char_value **********************************************************"
 echo "***************************************************************************************************"
 test_it "from_with_white_char_value"
+api_get_json '/topology/power?from=%20 5' >&5
 print_result $?
 
 curlfail_pop
