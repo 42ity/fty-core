@@ -13,7 +13,7 @@ extern "C" {
 #include <cxxtools/directory.h>
 #include <malamute.h>
 #include "bios_proto.h"
-
+#include <math.h>
 
 #define ALERT_DOWN 0
 #define ALERT_UP 1
@@ -44,6 +44,37 @@ const char* get_status_string(int status)
     return "UNKNOWN";
 }
 
+class MetricInfo {
+public:
+    std::string _element_name;
+    std::string _source;
+    std::string _units;
+    double      _value;
+    int64_t     _timestamp;
+    std::string _element_destination_name;
+
+    std::string generateTopic(void) {
+        return _source + "@" + _element_name;
+    };
+
+    MetricInfo (
+        const std::string &element_name,
+        const std::string &source,
+        const std::string &units,
+        double value,
+        int64_t timestamp,
+        const std::string &destination
+        ):
+        _element_name(element_name),
+        _source(source),
+        _units(units),
+        _value(value),
+        _timestamp(timestamp),
+        _element_destination_name (destination)
+    {};
+
+};
+
 struct Rule {
     std::vector<std::string> in;
     zrex_t *rex;
@@ -73,7 +104,6 @@ struct Alert {
 
 std::vector<Alert> alerts{};
 
-std::map<std::string, double> cache;
 
 std::map<std::string, std::vector<Rule> > configs;
 
@@ -114,6 +144,85 @@ std::vector<Alert>::iterator isAlertOngoing(const std::string &rule_name, const 
     return alerts.end();
 };
 
+class MetricList {
+public:
+    MetricList(){};
+    ~MetricList(){};
+
+    void addMetric (
+        const std::string &element_name,
+        const std::string &source,
+        const std::string &units,
+        double value,
+        int64_t timestamp,
+        const std::string &destination)
+    {
+        // create Metric first
+        MetricInfo m = MetricInfo(element_name,
+                                  source,
+                                  units,
+                                  value,
+                                  timestamp,
+                                  destination);
+
+        // try to find topic
+        auto it = knownMetrics.find (m.generateTopic());
+        if ( it != knownMetrics.cend() ) {
+            // if it was found -> replace with new value
+            it->second = m;
+        }
+        else {
+            // if it wasn't found -> insert new metric
+            knownMetrics.emplace (m.generateTopic(), m);
+        }
+    };
+
+    double find (const std::string &topic)
+    {
+        auto it = knownMetrics.find(topic);
+        if ( it == knownMetrics.cend() )
+        {
+            return NAN;
+        }
+        else
+        {
+            int maxLiveTime = 5*60;
+            int64_t currentTimestamp = ::time(NULL);
+            if ( ( currentTimestamp - it->second._timestamp ) > maxLiveTime )
+            {
+                knownMetrics.erase(it);
+                return NAN;
+            }
+            else
+            {
+                return it->second._value;
+            }
+        }
+    };
+
+    void removeOldMetrics()
+    {
+        int maxLiveTime = 5*60;
+        int64_t currentTimestamp = ::time(NULL);
+
+        for ( std::map<std::string, MetricInfo>::iterator iter = knownMetrics.begin(); iter != knownMetrics.end() ; )
+        {
+            if ( ( currentTimestamp - iter->second._timestamp ) > maxLiveTime )
+            {
+                knownMetrics.erase(iter++);
+            }
+            else
+            {
+                ++iter;
+            }
+        }
+    };
+
+private:
+    std::map<std::string, MetricInfo> knownMetrics;
+};
+
+
 int main (int argc, char** argv) {
     mlm_client_t *client = mlm_client_new();
     mlm_client_connect (client, "ipc://@/malamute", 1000, argv[0]);
@@ -133,7 +242,7 @@ int main (int argc, char** argv) {
         // put a copy of configuration for every interested topic
         for ( const auto &interestedTopic : rule.in ) {
             mlm_client_set_consumer(client, "BIOS", interestedTopic.c_str());
-            printf("Registered to receive '%s'\n", interestedTopic.c_str());
+            zsys_info("Registered to receive '%s'\n", interestedTopic.c_str());
             if ( configs.find ( interestedTopic.c_str() ) == configs.cend () ) {
                 configs.emplace (interestedTopic.c_str(), std::vector<Rule>({}));
             }
@@ -143,13 +252,15 @@ int main (int argc, char** argv) {
         // Subscribe to all streams
         if ( rule.rex != NULL ) {
             mlm_client_set_consumer(client, "BIOS", rule.rex_str.c_str());
-            printf("Registered to receive '%s'\n", rule.rex_str.c_str());
+            zsys_info("Registered to receive '%s'\n", rule.rex_str.c_str());
             r_configs.push_back(rule);
         }
     }
-    printf ("normal count: %d\n", configs.size());
-    printf ("regexp count: %d\n", r_configs.size());
+    zsys_info ("normal count: %d\n", configs.size());
+    zsys_info ("regexp count: %d\n", r_configs.size());
     mlm_client_set_producer(client, "ALERTS");
+
+    MetricList cache;
 
     while(!zsys_interrupted) {
         zmsg_t *zmessage = mlm_client_recv(client);
@@ -163,32 +274,26 @@ int main (int argc, char** argv) {
         int64_t timestamp = 0;
         int r = metric_decode (&zmessage, &type, &element_src, &value, &unit, &timestamp, NULL);
         if ( r != 0 ) {
-            printf ("cannot decode metric, ignore message\n");
+            zsys_info ("cannot decode metric, ignore message\n");
             continue;
         }
         char *end;
         double dvalue = strtod (value, &end);
         if (errno == ERANGE) {
             errno = 0;
-            printf ("cannot convert to double, ignore message\n");
+            zsys_info ("cannot convert to double, ignore message\n");
             continue;
         }
         else if (end == value || *end != '\0') {
-            printf ("cannot convert to double, ignore message\n");
+            zsys_info ("cannot convert to double, ignore message\n");
             continue;
         }
 
         std::string topic = mlm_client_subject(client);
-        printf("Got message '%s' with value %s\n", topic.c_str(), value);
+        zsys_info("Got message '%s' with value %s\n", topic.c_str(), value);
 
         // Update cache with new value
-        auto it = cache.find (topic);
-        if ( it != cache.cend() ) {
-            it->second = dvalue;
-        }
-        else {
-            cache.emplace (topic, dvalue);
-        }
+        cache.addMetric (element_src, type, unit, dvalue, timestamp, "");
 
         // Handle non-regex configs
         if ( configs.count(topic) == 1 ) {
@@ -197,16 +302,16 @@ int main (int argc, char** argv) {
                 lua_State *lua_context = lua_open();
                 bool haveAll = true;
                 for ( const auto &neededTopic : rule.in) {
-                    auto it = cache.find(neededTopic);
-                    if ( it == cache.cend() ) {
-                        printf("Do not have everything for '%s' yet\n", rule.rule_name.c_str());
+                    double neededValue = cache.find(neededTopic);
+                    if ( isnan (neededValue) ) {
+                        zsys_info("Do not have everything for '%s' yet\n", rule.rule_name.c_str());
                         haveAll = false;
                         break;
                     }
                     std::string var = neededTopic;
                     var[var.find('@')] = '_';
-                    printf("Setting variable '%s' to %lf\n", var.c_str(), it->second);
-                    lua_pushnumber(lua_context, it->second);
+                    zsys_info("Setting variable '%s' to %lf\n", var.c_str(), neededValue);
+                    lua_pushnumber(lua_context, neededValue);
                     lua_setglobal(lua_context, var.c_str());
                 }
                 if ( !haveAll ) {
@@ -217,13 +322,13 @@ int main (int argc, char** argv) {
                     lua_pcall(lua_context, 0, 3, 0);
                 if ( error ) {
                     // syntax error in evaluate
-                    printf("ACE: Syntax error: %s", lua_tostring(lua_context, -1));
+                    zsys_info("ACE1: Syntax error: %s\n", lua_tostring(lua_context, -1));
                     lua_pop(lua_context, 1);  // pop error message from the stack
                 } else {
                     // evaluation was successful, need to read the result
                     if ( !lua_isstring(lua_context, -1) )
                     {
-                        printf ("unexcpected returned value\n");
+                        zsys_info ("unexcpected returned value\n");
                         lua_close (lua_context);
                         continue;
                     }
@@ -238,18 +343,18 @@ int main (int argc, char** argv) {
                             // first time the rule fired alert for the element
                             alerts.push_back(Alert(rule, ALERT_START, ::time(NULL), description));
                             r = alerts.end() - 1 ;
-                            printf("RULE '%s' : ALERT started for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
+                            zsys_info("RULE '%s' : ALERT started for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
                         } else {
                             if ( r->status == ALERT_RESOLVED ) {
                                 // alert is old. This is new one
                                 r->status = ALERT_START;
                                 r->timestamp = ::time(NULL);
                                 r->description = description;
-                                printf("RULE '%s' : OLD ALERT starts again for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
+                                zsys_info("RULE '%s' : OLD ALERT starts again for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
                             }
                             else {
                                 // it is the same alert
-                                printf("RULE '%s' : ALERT is ALREADY ongoing for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
+                                zsys_info("RULE '%s' : ALERT is ALREADY ongoing for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
                             }
                         }
                         alert_send (client, r->rule.rule_name.c_str(), r->rule.element.c_str(), r->timestamp, get_status_string(r->status), r->rule.severity.c_str(), r->description.c_str());
@@ -264,14 +369,14 @@ int main (int argc, char** argv) {
                                 r->status = ALERT_RESOLVED;
                                 r->timestamp = ::time(NULL);
                                 r->description = description;
-                                printf("RULE '%s' : ALERT is resolved for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
+                                zsys_info("RULE '%s' : ALERT is resolved for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
                                 alert_send (client, r->rule.rule_name.c_str(), r->rule.element.c_str(), r->timestamp, get_status_string(r->status), r->rule.severity.c_str(), r->description.c_str());
                             }
                         }
                     }
                     else
                     {
-                        printf ("unexcpected string in returned value\n");
+                        zsys_info ("unexcpected string in returned value\n");
                         lua_close (lua_context);
                         continue;
                     }
@@ -296,7 +401,7 @@ int main (int argc, char** argv) {
 
             if ( error ) {
                 // syntax error in evaluate
-                printf("ACE: Syntax error: %s", lua_tostring(lua_context, -1));
+                zsys_info("ACE2: Syntax error: %s\n", lua_tostring(lua_context, -1));
                 lua_pop(lua_context, 1);  // pop error message from the stack
             }
             else
@@ -304,7 +409,7 @@ int main (int argc, char** argv) {
                 // evaluation was successful, need to read the result
                 if ( !lua_isstring(lua_context, -1) )
                 {
-                    printf ("unexcpected returned value\n");
+                    zsys_info ("unexcpected returned value\n");
                     lua_close (lua_context);
                     continue;
                 }
@@ -320,18 +425,18 @@ int main (int argc, char** argv) {
                         alerts.push_back(Alert(rule, ALERT_START, ::time(NULL), description));
                         alerts.back().rule.element = lua_tostring(lua_context, -4); // this line is missing in previos one
                         r = alerts.end() - 1;
-                        printf("RULE '%s' : ALERT started for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
+                        zsys_info("RULE '%s' : ALERT started for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
                     } else {
                         if ( r->status == ALERT_RESOLVED ) {
                             // alert is old. This is new one
                             r->status = ALERT_START;
                             r->timestamp = ::time(NULL);
                             r->description = strdup(description);
-                            printf("RULE '%s': OLD ALERT starts again for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
+                            zsys_info("RULE '%s': OLD ALERT starts again for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
                         }
                         else {
                             // it is the same alert
-                            printf("RULE '%s' : ALERT is ALREADY ongoing for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
+                            zsys_info("RULE '%s' : ALERT is ALREADY ongoing for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
                         }
                     }
                     alert_send (client, r->rule.rule_name.c_str(), r->rule.element.c_str(), r->timestamp, get_status_string(r->status), r->rule.severity.c_str(), r->description.c_str());
@@ -346,14 +451,14 @@ int main (int argc, char** argv) {
                             r->status = ALERT_RESOLVED;
                             r->timestamp = ::time(NULL);
                             r->description = description;
-                            printf("RULE '%s' : ALERT is resolved for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
+                            zsys_info("RULE '%s' : ALERT is resolved for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
                             alert_send (client, r->rule.rule_name.c_str(), r->rule.element.c_str(), r->timestamp, get_status_string(r->status), r->rule.severity.c_str(), r->description.c_str());
                         }
                     }
                 }
                 else
                 {
-                    printf ("unexcpected string in returned value\n");
+                    zsys_info ("unexcpected string in returned value\n");
                     lua_close (lua_context);
                     continue;
                 }
