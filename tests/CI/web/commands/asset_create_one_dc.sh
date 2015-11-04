@@ -25,6 +25,7 @@ echo "********* asset_create_one_dc.sh ******************* START ***************
 echo "###################################################################################################"
 echo
 
+echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 1. Asset_without_parameter **************************************************************"
 echo "***************************************************************************************************"
 test_it "Asset_without_parameter"
@@ -33,6 +34,7 @@ api_auth_post_json /asset '' >&5
 print_result $?
 curlfail_pop
 
+echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 2. Asset_with_empty_parameter ***********************************************************"
 echo "***************************************************************************************************"
 test_it "Asset_with_empty_parameter."
@@ -41,6 +43,7 @@ api_auth_post_json '/asset' "{}" >&5
 print_result $?
 curlfail_pop
 
+echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 3. Create_DC_element ********************************************************************"
 echo "***************************************************************************************************"
 test_it "Create_DC_element."
@@ -52,6 +55,7 @@ ID_DC=`echo "${PARSED_REPLY}" | cut -d '"' -f 4`
 print_result $RES
 curlfail_pop
 
+echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 4. Create_DC_with_the_duplicite_asset_name **********************************************"
 echo "***************************************************************************************************"
 test_it "Create_DC_with_the_duplicite_asset_name"
@@ -60,6 +64,7 @@ api_auth_post_json '/asset' '{"name":"dc_name_test_0","type":"datacenter","sub_t
 print_result $?
 curlfail_pop
 
+echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 5. Create_DC_with_the_duplicite_asset_tag ***********************************************"
 echo "***************************************************************************************************"
 test_it "Create_DC_with_the_duplicite_asset_tag"
@@ -67,6 +72,7 @@ api_auth_post_json '/asset' '{"name":"dc_name_test_1","type":"datacenter","sub_t
 print_result $?
 loaddb_file "$CHECKOUTDIR/tools/initdb_ci_patch.sql"
 
+echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 6. Create_DC_with_the_duplicite_serial_no ***********************************************"
 echo "***************************************************************************************************"
 test_it "Create_DC_with_the_duplicite_serial_no"
@@ -75,6 +81,7 @@ api_auth_post_json '/asset' '{"name":"dc_name_test_6","type":"datacenter","sub_t
 print_result $?
 curlfail_pop
 
+echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 7. Create_DC_with_the_duplicite_ip1 ***********************************************"
 echo "***************************************************************************************************"
 test_it "Create_DC_with_the_duplicite_ip1"
@@ -83,6 +90,7 @@ api_auth_post_json '/asset' '{"name":"dc_name_test_7","type":"datacenter","sub_t
 print_result $?
 curlfail_pop
 
+echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 8. Delete_DC2_with_child_element. *******************************************************"
 echo "***************************************************************************************************"
 test_it "Delete_DC2_with_child_element."
@@ -91,6 +99,7 @@ api_auth_delete /asset/10 > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
 print_result $?
 curlfail_pop
 
+echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 9. Delete_dc_name_test_0_without_child_element. *****************************************"
 echo "***************************************************************************************************"
 test_it "Delete_dc_name_test_0_without_child_element."
@@ -99,15 +108,14 @@ api_auth_delete /asset/$ID_DC > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
 print_result $?
 curlfail_pop
 
+echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 10. Create_DC_with_too_short_asset_tag **************************************************"
 echo "***************************************************************************************************"
 test_it "Create_DC_with_too_short_asset_tag"
-#curlfail_push_expect_400
 api_auth_post_json '/asset' '{"name":"dc_name_test_10","type":"datacenter","sub_type":"","location":"","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"A","address":"ASDF"}}' >&5
 print_result $?
-#curlfail_pop
 
-
+echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 11. Create_DC_with_empty_asset_tag ******************************************************"
 echo "***************************************************************************************************"
 test_it "Create_DC_with_empty_asset_tag"
@@ -116,6 +124,7 @@ api_auth_post_json '/asset' '{"name":"dc_name_test_11","type":"datacenter","sub_
 print_result $?
 #curlfail_pop
 
+echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 12. Create_DC_with_too_long_asset_tag ***************************************************"
 echo "***************************************************************************************************"
 test_it "Create_DC_with_too_long_asset_tag"
@@ -124,6 +133,7 @@ api_auth_post_json '/asset' '{"name":"dc_name_test_2","type":"datacenter","sub_t
 print_result $?
 curlfail_pop
 
+echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 13. Create_DC_with_chinese_chars_name ***************************************************"
 echo "***************************************************************************************************"
 test_it "Create_DC_with_chinese_chars_name"
@@ -132,14 +142,17 @@ api_auth_post_json '/asset' '{"name":"中國文字的罰款","type":"datacenter"
 print_result $?
 curlfail_pop
 
+echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 14. Create_DC_with_too_long_keytag ******************************************************"
 echo "***************************************************************************************************"
+#*#*#*#*#* asset_create_one_dc.sh - subtest 14 - TODO, should not be response 500 internal error?
 test_it "Create_DC_with_too_long_keytag"
 curlfail_push_expect_500
 api_auth_post_json '/asset' '{"name":"A123456789B123456789C123456789D123456789E123456789F1","type":"datacenter","sub_type":"","location":"","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST0014","address":"ASDF"}}' >&5
 print_result $?
 curlfail_pop
 
+echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 15. Item_type_is_empty ******************************************************************"
 echo "***************************************************************************************************"
 test_it "type_is_empty"
@@ -148,6 +161,7 @@ api_auth_post_json '/asset' '{"name":"dc_name_test_15","type":"","sub_type":"","
 print_result $?
 curlfail_pop
 
+echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 16. Item_type_is_missing ****************************************************************"
 echo "***************************************************************************************************"
 test_it "item_type_is_missing"
@@ -156,6 +170,7 @@ api_auth_post_json '/asset' '{"name":"dc_name_test_16","sub_type":"","location":
 print_result $?
 curlfail_pop
 
+echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 17. Item_sub_type_is_missing ************************************************************"
 echo "***************************************************************************************************"
 test_it "Item_sub_type_is_missing"
@@ -164,6 +179,7 @@ api_auth_post_json '/asset' '{"name":"dc_name_test_17","type":"datacenter","loca
 print_result $?
 curlfail_pop
 
+echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 18. Item_location_is_missing ************************************************************"
 echo "***************************************************************************************************"
 test_it "Item_location_is_missing"
@@ -172,6 +188,7 @@ api_auth_post_json '/asset' '{"name":"dc_name_test_18","type":"datacenter","sub_
 print_result $?
 curlfail_pop
 
+echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 19. Item_status_is_missing **************************************************************"
 echo "***************************************************************************************************"
 test_it "Item_status_is_missing"
@@ -180,6 +197,7 @@ api_auth_post_json '/asset' '{"name":"dc_name_test_19","type":"datacenter","sub_
 print_result $?
 curlfail_pop
 
+echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 20. Item_business_critical_is_missing ***************************************************"
 echo "***************************************************************************************************"
 test_it "Item_business_critical_is_missing"
@@ -188,6 +206,7 @@ api_auth_post_json '/asset' '{"name":"dc_name_test_20","type":"datacenter","sub_
 print_result $?
 curlfail_pop
 
+echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 21. Item_priority_is_missing ************************************************************"
 echo "***************************************************************************************************"
 test_it "Item_priority_is_missing"
@@ -196,6 +215,7 @@ api_auth_post_json '/asset' '{"name":"dc_name_test_21","type":"datacenter","sub_
 print_result $?
 curlfail_pop
 
+echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 22. Item_asset_tag_is_missing ***********************************************************"
 echo "***************************************************************************************************"
 test_it "Item_asset_tag_is_missing"
@@ -204,6 +224,7 @@ api_auth_post_json '/asset' '{"name":"dc_name_test_22","type":"datacenter","sub_
 print_result $?
 #curlfail_pop
 
+echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 23. Item_status_is_empty ****************************************************************"
 echo "***************************************************************************************************"
 test_it "status_is_empty"
@@ -212,6 +233,7 @@ api_auth_post_json '/asset' '{"name":"dc_name_test_23","type":"datacenter","sub_
 print_result $?
 curlfail_pop
 
+echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 24. Item_business_critical_is_empty *****************************************************"
 echo "***************************************************************************************************"
 test_it "business_critical_is_empty"
@@ -220,10 +242,12 @@ api_auth_post_json '/asset' '{"name":"dc_name_test_24","type":"datacenter","sub_
 print_result $?
 curlfail_pop
 
+echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 25. Unauthorized_create_operation   *****************************************************"
 echo "***************************************************************************************************"
-test_it "Unauthorized_create_operation"
+#*#*#*#*#* asset_create_one_dc.sh - subtest 25 - TODO, should not be response 200?
 #curlfail_push_expect_400
+test_it "Unauthorized_create_operation"
 curlfail_push_expect_noerrors
 api_post '/asset' '{"name":"dc_name_test_25","type":"datacenter","sub_type":"","location":"","status":"nonactive","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST0025","address":"ASDF"}}' > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
 print_result $?
