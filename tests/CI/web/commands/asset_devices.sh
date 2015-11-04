@@ -39,6 +39,7 @@ ASSETS_NUMBER="$(mysql -u root box_utf8 <<< "select count(id) as assets_count fr
 echo $ASSETS_NUMBER
 echo "expected 35"
 
+echo "********* asset_devices.sh ************************************************************************"
 echo "********* 1. list_of_all_devices ******************************************************************"
 echo "***************************************************************************************************"
 curlfail_push_expect_noerrors
@@ -47,6 +48,7 @@ api_get_json /asset/devices >&5
 print_result $?
 curlfail_pop
 
+echo "********* asset_devices.sh ************************************************************************"
 echo "********* 2. list_of_devices_with_subtype_ups *****************************************************"
 echo "***************************************************************************************************"
 curlfail_push_expect_noerrors
@@ -55,6 +57,7 @@ api_get_json /asset/devices?subtype="ups" >&5
 print_result $?
 curlfail_pop
 
+echo "********* asset_devices.sh ************************************************************************"
 echo "********* 3. list_of_devices_with_subtype_feed *****************************************************"
 echo "***************************************************************************************************"
 curlfail_push_expect_noerrors
@@ -63,6 +66,7 @@ api_get_json /asset/devices?subtype="feed" >&5
 print_result $?
 curlfail_pop
 
+echo "********* asset_devices.sh ************************************************************************"
 echo "********* 4. list_of_devices_with_subtype_server **************************************************"
 echo "***************************************************************************************************"
 curlfail_push_expect_noerrors
@@ -71,6 +75,7 @@ api_get_json /asset/devices?subtype=server >&5
 print_result $?
 curlfail_pop
 
+echo "********* asset_devices.sh ************************************************************************"
 echo "********* 5. list_of_devices_with_subtype_epdu ****************************************************"
 echo "***************************************************************************************************"
 curlfail_push_expect_noerrors
@@ -79,6 +84,7 @@ api_get_json /asset/devices?subtype=epdu >&5
 print_result $?
 curlfail_pop
 
+echo "********* asset_devices.sh ************************************************************************"
 echo "********* 6. list_of_devices_with_wrong_subtype_upsx **********************************************"
 echo "***************************************************************************************************"
 curlfail_push_expect_400
@@ -87,30 +93,35 @@ api_get_json /asset/devices?subtype=upsx >&5
 print_result $?
 curlfail_pop
 
+echo "********* asset_devices.sh ************************************************************************"
 echo "********* 7. list_of_devices_with_two_subtypes ****************************************************"
 echo "***************************************************************************************************"
 test_it "list_of_devices_with_two_subtypes"
 api_get_json /asset/devices?subtype="ups","feed" >&5
 print_result $?
 
+echo "********* asset_devices.sh ************************************************************************"
 echo "********* 8. list_of_devices_with_empty_subtype ***************************************************"
 echo "***************************************************************************************************"
 test_it "8. list_of_devices_with_empty_subtype"
 api_get_json /asset/devices?subtype= >&5
 print_result $?
 
+echo "********* asset_devices.sh ************************************************************************"
 echo "********* 9. list_of_devices_with_missing_subtype *************************************************"
 echo "***************************************************************************************************"
 test_it "list_of_devices_with_missing_subtype"
 api_get_json /asset/devices?subtype= >&5
 print_result $?
 
+echo "********* asset_devices.sh ************************************************************************"
 echo "********* 10. list_of_devices_with_wrong_format ***************************************************"
 echo "***************************************************************************************************"
 test_it "list_of_devices_with_missing_subtype"
 api_get_json /asset/devices?subXtype=epdu >&5
 print_result $?
 
+echo "********* asset_devices.sh ************************************************************************"
 echo "********* 11. list_of_OK_argument_and_empty_list_as_result ***************************************"
 echo "***************************************************************************************************"
 test_it "list_of_OK_arguments_and_empty_list_as_result"
@@ -129,6 +140,7 @@ done
 print_result $REZ
 
 
+echo "********* asset_devices.sh ************************************************************************"
 echo "********* 12. no_devices_present ******************************************************************"
 echo "***************************************************************************************************"
 # delete all assets, no DC are present
@@ -140,10 +152,8 @@ DB_LOADDIR=$BUILDSUBDIR/tools
 loaddb_file "$DB_LOADDIR/$DB_BASE"
 
 test_it "no_devices_present"
-#curlfail_push_expect_404
 api_get_json /asset/devices >&5
 print_result $?
-#curlfail_pop
 
 #fill DB again
 DB_BASE="initdb.sql"
