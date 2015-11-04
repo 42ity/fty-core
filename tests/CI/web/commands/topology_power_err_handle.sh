@@ -159,7 +159,7 @@ print_result $?
 # end the long line of expected HTTP-400's
 
 curlfail_pop
-curlfail_push_expect_404
+curlfail_push_expect_400
 
 echo "********* topology_power_err_handle.sh ************************************************************"
 echo "********* 19. from_with_white_char_value **********************************************************"
@@ -174,7 +174,7 @@ curlfail_push_expect_400
 echo "********* topology_power_err_handle.sh ************************************************************"
 echo "********* 20. to_with_white_char_value ************************************************************"
 echo "***************************************************************************************************"
-test_it "with_white_char_value"
+test_it "to_with_white_char_value"
 api_get_json '/topology/power?to=%20 5' >&5
 print_result $?
 
