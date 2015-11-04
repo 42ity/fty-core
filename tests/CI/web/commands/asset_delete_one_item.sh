@@ -48,6 +48,8 @@ echo "expected 35"
 
 # Start
 No=1
+
+echo "********* asset_delete_one_item.sh ****************************************************************"
 echo "********* ${No}. Delete_devices_with_non_existing_ID **************************************************"
 echo "***************************************************************************************************"
 test_it "Delete_devices_with non-existing ID"
@@ -57,6 +59,7 @@ print_result $?
 curlfail_pop
 No="$(expr $No + 1)"
 
+echo "********* asset_delete_one_item.sh ****************************************************************"
 echo "********* ${No}. Delete_devices_which_ID_is_0 *********************************************************"
 echo "***************************************************************************************************"
 test_it "Delete_devices_which_ID_is_0"
@@ -66,6 +69,7 @@ print_result $?
 curlfail_pop
 No="$(expr $No + 1)"
 
+echo "********* asset_delete_one_item.sh ****************************************************************"
 echo "********* ${No}. Delete_devices_without_id ************************************************************"
 echo "***************************************************************************************************"
 test_it "Delete_devices_without_id"
@@ -78,6 +82,7 @@ No="$(expr $No + 1)"
 # XXX this doesn't work correctly
 # json in res is incorrect for now
 # expected SUCCESS for now, but it should be 404
+echo "********* asset_delete_one_item.sh ****************************************************************"
 echo "********* ${No}. Unauthorized_delete_devices **********************************************************"
 echo "***************************************************************************************************"
 test_it "Unauthorized_delete_devices"
@@ -87,6 +92,7 @@ print_result $?
 #curlfail_pop
 No="$(expr $No + 1)"
 
+echo "********* asset_delete_one_item.sh ****************************************************************"
 echo "********* ${No}. Delete_devices_which_ID_is_negative **************************************************"
 echo "***************************************************************************************************"
 test_it "Delete_devices_which_ID_is_negative"
@@ -102,6 +108,7 @@ for ent in datacenters rooms rows racks groups devices; do
    ITEM_ID="`find_id $ent $i`"
    until [ -z "$ITEM_ID" ]
    do
+      echo "********* asset_delete_one_item.sh ****************************************************************"
       echo "********* ${No}. Delete_${ent}_with_ID_=_${ITEM_ID} ******************************************************"
       echo "***************************************************************************************************"
       test_it "Delete_${ent}_with_ID_=_${ITEM_ID}"
@@ -128,7 +135,8 @@ for ent in devices groups racks rows rooms datacenters; do
    ITEM_ID=`find_id $ent $i`
    until [ -z "$ITEM_ID" ]
    do
-      echo "********* ${No}. Delete_${ent}_with_ID_=_${ITEM_ID}************************************************"
+      echo "********* asset_delete_one_item.sh ****************************************************************"
+      echo "********* ${No}. Delete_${ent}_with_ID_=_${ITEM_ID} ***********************************************"
       echo "***************************************************************************************************"
       test_it "Delete_${ent}_with_ID_=_${ITEM_ID}"
       PARENTS_ID=$(mysql -u root box_utf8 <<< "select id from v_bios_asset_element where id_parent=${ITEM_ID}")
@@ -149,7 +157,8 @@ done
 
 DEL_RES=0
 for i in t_bios_asset_ext_attributes t_bios_asset_group_relation t_bios_asset_link t_bios_asset_ext_attributes t_bios_monitor_asset_relation ; do
-    echo "********* ${No}. Related_table ${i} must be empty *********************************************************"
+    echo "********* asset_delete_one_item.sh ****************************************************************"
+    echo "********* ${No}. Related_table ${i} must be empty ****************************"
     echo "***************************************************************************************************"
     test_it "Table ${i} must be empty"
     EXT_ATTR="$(mysql -u root box_utf8 <<< "select * from ${i}")"
