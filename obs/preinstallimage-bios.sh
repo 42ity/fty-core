@@ -254,6 +254,8 @@ if [ "`uname -m`" = x86_64 ]; then
 else
     systemctl disable bios-fake-th
     systemctl mask bios-fake-th
+    systemctl enable lcd-boot-display
+    systemctl enable lcd-net-display
 fi
 
 # Our tntnet unit
