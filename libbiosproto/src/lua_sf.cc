@@ -72,70 +72,6 @@ public:
 
 };
 
-class Rule {
-public:
-    std::vector<std::string> in;
-    zrex_t *rex;
-    std::string rex_str;
-    std::string lua_code;
-    std::string rule_name;
-    std::string element;
-    std::string severity;
-
-    Rule(){ rex = NULL;};
-
-    Rule(std::ifstream &f)
-    {
-        // try catch TODO
-        cxxtools::JsonDeserializer json(f);
-        json.deserialize();
-        const cxxtools::SerializationInfo *si = json.si();
-        si->getMember("evaluation") >>= lua_code;
-        si->getMember("rule_name") >>= rule_name;
-        si->getMember("severity") >>= severity;
-        if ( si->findMember("in") ) {
-            si->getMember("in") >>= in;
-            si->getMember("element") >>= element;
-        }
-        else {
-            if ( si->findMember("in_rex") ) {
-                si->getMember("in_rex") >>= rex_str;
-                rex = zrex_new(rex_str.c_str());
-            }
-        }
-        // can in and in_rex be both at the same file?
-        // what should we do if file is broken somehow?
-    };
-};
-
-
-struct Alert {
-    Rule rule;
-    int status ; // on Off ack
-    int64_t timestamp;
-    std::string description;
-
-    Alert (const Rule &r, int s, int64_t tm, const std::string &descr){
-        rule = r;
-        status = s;
-        timestamp = tm;
-        description = descr;
-    };
-};
-
-std::vector<Alert> alerts{};
-
-std::vector<Alert>::iterator isAlertOngoing(const std::string &rule_name, const std::string &element)
-{
-    for(std::vector<Alert>::iterator it = alerts.begin(); it != alerts.cend(); ++it)
-    {
-        if ( ( it->rule.rule_name == rule_name ) && ( it->rule.element == element ) )
-        {
-            return it;
-        }
-    }
-    return alerts.end();
-};
 
 class MetricList {
 public:
@@ -170,7 +106,7 @@ public:
         }
     };
 
-    double find (const std::string &topic)
+    double findAndCheck (const std::string &topic)
     {
         auto it = knownMetrics.find(topic);
         if ( it == knownMetrics.cend() )
@@ -192,6 +128,20 @@ public:
             }
         }
     };
+
+    double find (const std::string &topic) const
+    {
+        auto it = knownMetrics.find(topic);
+        if ( it == knownMetrics.cend() )
+        {
+            return NAN;
+        }
+        else
+        {
+            return it->second._value;
+        }
+    };
+
 
     void removeOldMetrics()
     {
@@ -215,6 +165,89 @@ private:
     std::map<std::string, MetricInfo> knownMetrics;
 };
 
+class Rule {
+public:
+    std::vector<std::string> in;
+    zrex_t *rex;
+    std::string rex_str;
+    std::string lua_code;
+    std::string rule_name;
+    std::string element;
+    std::string severity;
+
+    Rule(){ rex = NULL;};
+
+    Rule(std::ifstream &f)
+    {
+        // try catch TODO
+        cxxtools::JsonDeserializer json(f);
+        json.deserialize();
+        const cxxtools::SerializationInfo *si = json.si();
+        si->getMember("evaluation") >>= lua_code;
+        si->getMember("rule_name") >>= rule_name;
+        si->getMember("severity") >>= severity;
+        if ( si->findMember("in") ) {
+            si->getMember("in") >>= in;
+            si->getMember("element") >>= element;
+        }
+        else {
+            if ( si->findMember("in_rex") ) {
+                si->getMember("in_rex") >>= rex_str;
+                rex = zrex_new(rex_str.c_str());
+            }
+        }
+        // can in and in_rex be both at the same file?
+        // what should we do if file is broken somehow?
+    };
+
+    lua_State* setContext(const MetricList &metricList) const
+    {
+        lua_State *lua_context = lua_open();
+        for ( const auto &neededTopic : in) {
+            double neededValue = metricList.find(neededTopic);
+            if ( isnan (neededValue) ) {
+                zsys_info("Do not have everything for '%s' yet\n", rule_name.c_str());
+                lua_close (lua_context);
+                return NULL;
+            }
+            std::string var = neededTopic;
+            var[var.find('@')] = '_';
+            zsys_info("Setting variable '%s' to %lf\n", var.c_str(), neededValue);
+            lua_pushnumber(lua_context, neededValue);
+            lua_setglobal(lua_context, var.c_str());
+        }
+        // we are here -> all variables were found
+        return lua_context;
+    };
+};
+
+struct Alert {
+    Rule rule;
+    int status ; // on Off ack
+    int64_t timestamp;
+    std::string description;
+
+    Alert (const Rule &r, int s, int64_t tm, const std::string &descr){
+        rule = r;
+        status = s;
+        timestamp = tm;
+        description = descr;
+    };
+};
+
+std::vector<Alert> alerts{};
+
+std::vector<Alert>::iterator isAlertOngoing(const std::string &rule_name, const std::string &element)
+{
+    for(std::vector<Alert>::iterator it = alerts.begin(); it != alerts.cend(); ++it)
+    {
+        if ( ( it->rule.rule_name == rule_name ) && ( it->rule.element == element ) )
+        {
+            return it;
+        }
+    }
+    return alerts.end();
+};
 
 class AlertConfiguration{
 public:
@@ -313,28 +346,15 @@ int main (int argc, char** argv) {
 
         // Update cache with new value
         cache.addMetric (element_src, type, unit, dvalue, timestamp, "");
+        cache.removeOldMetrics();
 
         // Handle non-regex configs
         if ( alertConfiguration._normalConfigs.count(topic) == 1 ) {
-            for ( const auto &rule : alertConfiguration._normalConfigs.find(topic)->second) {
-                // Compute
-                lua_State *lua_context = lua_open();
-                bool haveAll = true;
-                for ( const auto &neededTopic : rule.in) {
-                    double neededValue = cache.find(neededTopic);
-                    if ( isnan (neededValue) ) {
-                        zsys_info("Do not have everything for '%s' yet\n", rule.rule_name.c_str());
-                        haveAll = false;
-                        break;
-                    }
-                    std::string var = neededTopic;
-                    var[var.find('@')] = '_';
-                    zsys_info("Setting variable '%s' to %lf\n", var.c_str(), neededValue);
-                    lua_pushnumber(lua_context, neededValue);
-                    lua_setglobal(lua_context, var.c_str());
-                }
-                if ( !haveAll ) {
-                    lua_close (lua_context);
+            for ( const auto &rule : alertConfiguration._normalConfigs.find(topic)->second)
+            {
+                lua_State *lua_context = rule.setContext(cache);
+                if ( lua_context == NULL ) {
+                    // not possible to evaluate metric with current known Metrics
                     continue;
                 }
                 int error = luaL_loadbuffer (lua_context, rule.lua_code.c_str(), rule.lua_code.length(), "line") ||
