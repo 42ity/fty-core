@@ -72,7 +72,8 @@ public:
 
 };
 
-struct Rule {
+class Rule {
+public:
     std::vector<std::string> in;
     zrex_t *rex;
     std::string rex_str;
@@ -82,6 +83,29 @@ struct Rule {
     std::string severity;
 
     Rule(){ rex = NULL;};
+
+    Rule(std::ifstream &f)
+    {
+        // try catch TODO
+        cxxtools::JsonDeserializer json(f);
+        json.deserialize();
+        const cxxtools::SerializationInfo *si = json.si();
+        si->getMember("evaluation") >>= lua_code;
+        si->getMember("rule_name") >>= rule_name;
+        si->getMember("severity") >>= severity;
+        if ( si->findMember("in") ) {
+            si->getMember("in") >>= in;
+            si->getMember("element") >>= element;
+        }
+        else {
+            if ( si->findMember("in_rex") ) {
+                si->getMember("in_rex") >>= rex_str;
+                rex = zrex_new(rex_str.c_str());
+            }
+        }
+        // can in and in_rex be both at the same file?
+        // what should we do if file is broken somehow?
+    };
 };
 
 
@@ -100,29 +124,6 @@ struct Alert {
 };
 
 std::vector<Alert> alerts{};
-
-Rule read_rule(std::ifstream &f) {
-    // try catch TODO
-    Rule rule;
-    cxxtools::JsonDeserializer json(f);
-    json.deserialize();
-    const cxxtools::SerializationInfo *si = json.si();
-    si->getMember("evaluation") >>= rule.lua_code;
-    si->getMember("rule_name") >>= rule.rule_name;
-    si->getMember("severity") >>= rule.severity;
-    if ( si->findMember("in") ) {
-        si->getMember("in") >>= rule.in;
-        si->getMember("element") >>= rule.element;
-    }
-    // can un and in_rex be both at the same file?
-    else {
-        if ( si->findMember("in_rex") ) {
-            si->getMember("in_rex") >>= rule.rex_str;
-            rule.rex = zrex_new(rule.rex_str.c_str());
-        }
-    }
-    return rule;
-};
 
 std::vector<Alert>::iterator isAlertOngoing(const std::string &rule_name, const std::string &element)
 {
@@ -235,7 +236,7 @@ public:
                 continue;
             }
             std::ifstream f(fn);
-            Rule rule = read_rule (f);
+            Rule rule(f);
             rule.rule_name = fn;
 
             for ( const auto &interestedTopic : rule.in ) {
@@ -255,9 +256,7 @@ public:
         return result;
     };
 
-
-
-    std::vector <std::string> updateConfiguration(void);
+    std::vector <std::string> updateConfiguration(const Rule &rule);
 
     std::map <std::string, std::vector<Rule> > _normalConfigs;
     std::vector<Rule> _regexConfigs;
