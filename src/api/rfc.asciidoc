@@ -67,6 +67,8 @@ Protocol ALERT + GATEWAY on the ALERTS stream
 Rules for generating the alerts
 ===============================
 
+Every rule has a unique name.
+
 There are two types of the rules:
     * pattern rule
     * single rule
