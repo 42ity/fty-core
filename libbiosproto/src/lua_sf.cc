@@ -15,9 +15,6 @@ extern "C" {
 #include "bios_proto.h"
 #include <math.h>
 
-#define ALERT_DOWN 0
-#define ALERT_UP 1
-
 #define ALERT_START 1
 #define ALERT_ACK1  2
 #define ALERT_ACK2  3
@@ -94,7 +91,7 @@ struct Alert {
     int64_t timestamp;
     std::string description;
 
-    Alert (Rule r, int s, int64_t tm, std::string descr){
+    Alert (const Rule &r, int s, int64_t tm, const std::string &descr){
         rule = r;
         status = s;
         timestamp = tm;
@@ -103,11 +100,6 @@ struct Alert {
 };
 
 std::vector<Alert> alerts{};
-
-
-std::map<std::string, std::vector<Rule> > configs;
-
-std::vector<Rule> r_configs;
 
 Rule read_rule(std::ifstream &f) {
     // try catch TODO
@@ -223,42 +215,70 @@ private:
 };
 
 
+class AlertConfiguration{
+public:
+    AlertConfiguration(){};
+    ~AlertConfiguration(){};
+
+    // returns list of topics to be consumed
+    std::set <std::string> readConfiguration(void)
+    {
+        std::set <std::string> result;
+
+        cxxtools::Directory d(".");
+        for ( const auto &fn : d)
+        {
+            if ( fn.length() < 5 ) {
+                continue;
+            }
+            if ( fn.compare(fn.length() - 5, 5, ".rule") != 0 ) {
+                continue;
+            }
+            std::ifstream f(fn);
+            Rule rule = read_rule (f);
+            rule.rule_name = fn;
+
+            for ( const auto &interestedTopic : rule.in ) {
+                result.insert (interestedTopic);
+                if ( _normalConfigs.find (interestedTopic) == _normalConfigs.cend () )
+                {
+                    _normalConfigs.emplace (interestedTopic, std::vector<Rule>({}));
+                }
+                _normalConfigs.at(interestedTopic).push_back(rule);
+            }
+            if ( rule.rex != NULL )
+            {
+                result.insert (rule.rex_str);
+                _regexConfigs.push_back(rule);
+            }
+        }
+        return result;
+    };
+
+
+
+    std::vector <std::string> updateConfiguration(void);
+
+    std::map <std::string, std::vector<Rule> > _normalConfigs;
+    std::vector<Rule> _regexConfigs;
+};
+
 int main (int argc, char** argv) {
+
     mlm_client_t *client = mlm_client_new();
     mlm_client_connect (client, "ipc://@/malamute", 1000, argv[0]);
-
-    // Read configuration
-    cxxtools::Directory d(".");
-    for(auto fn : d) {
-        if (fn.length() < 5)
-            continue;
-        if (fn.compare(fn.length() - 5, 5, ".rule") !=0 )
-            continue;
-        std::ifstream f(fn);
-        Rule rule = read_rule (f);
-        rule.rule_name = fn;
-
-        // Subscribe to all streams
-        // put a copy of configuration for every interested topic
-        for ( const auto &interestedTopic : rule.in ) {
-            mlm_client_set_consumer(client, "BIOS", interestedTopic.c_str());
-            zsys_info("Registered to receive '%s'\n", interestedTopic.c_str());
-            if ( configs.find ( interestedTopic.c_str() ) == configs.cend () ) {
-                configs.emplace (interestedTopic.c_str(), std::vector<Rule>({}));
-            }
-            auto cit = configs.find( interestedTopic.c_str());
-            cit->second.push_back(rule);
-        }
-        // Subscribe to all streams
-        if ( rule.rex != NULL ) {
-            mlm_client_set_consumer(client, "BIOS", rule.rex_str.c_str());
-            zsys_info("Registered to receive '%s'\n", rule.rex_str.c_str());
-            r_configs.push_back(rule);
-        }
-    }
-    zsys_info ("normal count: %d\n", configs.size());
-    zsys_info ("regexp count: %d\n", r_configs.size());
     mlm_client_set_producer(client, "ALERTS");
+
+    AlertConfiguration alertConfiguration;
+    std::set <std::string> subjectsToConsume = alertConfiguration.readConfiguration();
+    zsys_info ("normal count: %d\n", alertConfiguration._normalConfigs.size());
+    zsys_info ("regexp count: %d\n", alertConfiguration._regexConfigs.size());
+    zsys_info ("subjectsToConsume count: %d\n", subjectsToConsume.size());
+    // Subscribe to all subjects
+    for ( const auto &interestedSubject : subjectsToConsume ) {
+        mlm_client_set_consumer(client, "BIOS", interestedSubject.c_str());
+        zsys_info("Registered to receive '%s'\n", interestedSubject.c_str());
+    }
 
     MetricList cache;
 
@@ -296,8 +316,8 @@ int main (int argc, char** argv) {
         cache.addMetric (element_src, type, unit, dvalue, timestamp, "");
 
         // Handle non-regex configs
-        if ( configs.count(topic) == 1 ) {
-            for ( const auto &rule : configs.find(topic)->second) {
+        if ( alertConfiguration._normalConfigs.count(topic) == 1 ) {
+            for ( const auto &rule : alertConfiguration._normalConfigs.find(topic)->second) {
                 // Compute
                 lua_State *lua_context = lua_open();
                 bool haveAll = true;
@@ -385,7 +405,7 @@ int main (int argc, char** argv) {
             }
         }
         // Handle regex configs
-        for ( const auto &rule: r_configs ) {
+        for ( const auto &rule: alertConfiguration._regexConfigs ) {
             if ( !zrex_matches (rule.rex, topic.c_str())) {
                 // metric doesn't satisfied the regular expression
                 continue;
