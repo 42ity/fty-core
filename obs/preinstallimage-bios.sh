@@ -289,7 +289,7 @@ chmod a+rx /usr/share/bios/scripts/xml-cat.sh
 rm -f /etc/init.d/tntnet
 
 # Enable REST API via tntnet
-mkdir /etc/tntnet/bios.d
+mkdir -p /etc/tntnet/bios.d
 cp /usr/share/bios/examples/tntnet.xml.* /etc/tntnet/bios.xml
 mkdir -p /usr/share/core-0.1/web/static
 sed -i 's|<!--.*<user>.*|<user>www-data</user>|' /etc/tntnet/bios.xml
