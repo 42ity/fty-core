@@ -54,6 +54,7 @@ public:
         return _source + "@" + _element_name;
     };
 
+    MetricInfo() {};
     MetricInfo (
         const std::string &element_name,
         const std::string &source,
@@ -142,6 +143,19 @@ public:
         }
     };
 
+    int getMetricInfo (const std::string &topic, MetricInfo &metricInfo) const
+    {
+        auto it = knownMetrics.find(topic);
+        if ( it == knownMetrics.cend() )
+        {
+            return -1;
+        }
+        else
+        {
+            metricInfo = it->second;
+            return 0;
+        }
+    };
 
     void removeOldMetrics()
     {
@@ -200,7 +214,33 @@ public:
         // what should we do if file is broken somehow?
     };
 
-    lua_State* setContext(const MetricList &metricList) const
+    lua_State* setContext (const MetricList &metricList, const std::string &lastTopic) const
+    {
+        if ( rex != NULL )
+        {
+            MetricInfo m;
+            // TODO no error handling for now
+            metricList.getMetricInfo (lastTopic, m);
+            return setContextRegex (m);
+        }
+        else
+        {
+            return setContextNormal (metricList);
+        }
+    };
+private:
+    lua_State* setContextRegex(const MetricInfo &metricInfo) const
+    {
+        lua_State *lua_context = lua_open();
+        lua_pushnumber(lua_context, metricInfo._value);
+        lua_setglobal(lua_context, "value");
+        lua_pushstring(lua_context, metricInfo._element_name.c_str());
+        lua_setglobal(lua_context, "element");
+        return lua_context;
+    };
+
+
+    lua_State* setContextNormal(const MetricList &metricList) const
     {
         lua_State *lua_context = lua_open();
         for ( const auto &neededTopic : in) {
@@ -352,7 +392,7 @@ int main (int argc, char** argv) {
         if ( alertConfiguration._normalConfigs.count(topic) == 1 ) {
             for ( const auto &rule : alertConfiguration._normalConfigs.find(topic)->second)
             {
-                lua_State *lua_context = rule.setContext(cache);
+                lua_State *lua_context = rule.setContext(cache, type);
                 if ( lua_context == NULL ) {
                     // not possible to evaluate metric with current known Metrics
                     continue;
@@ -429,12 +469,11 @@ int main (int argc, char** argv) {
                 // metric doesn't satisfied the regular expression
                 continue;
             }
-            // Compute
-            lua_State *lua_context = lua_open();
-            lua_pushnumber(lua_context, dvalue);
-            lua_setglobal(lua_context, "value");
-            lua_pushstring(lua_context, element_src);
-            lua_setglobal(lua_context, "element");
+            lua_State *lua_context = rule.setContext(cache, type);
+            if ( lua_context == NULL ) {
+                // not possible to evaluate metric with current known Metrics
+                continue;
+            }
             int error = luaL_loadbuffer(lua_context, rule.lua_code.c_str(), rule.lua_code.length(), "line") ||
                 lua_pcall(lua_context, 0, 4, 0);
 
