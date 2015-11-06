@@ -106,7 +106,7 @@ a_elmnt_stp_id_t
     else if(st == "storage") {
         return asset_subtype::STORAGE;
     }
-    else if (st == "virtual") {
+    else if (st == "vm") {
         return asset_subtype::VIRTUAL;
     }
     else if(st == "N_A") {
@@ -143,7 +143,7 @@ std::string
         case asset_subtype::SWITCH:
             return "switch";
         case asset_subtype::VIRTUAL:
-            return "virtual";
+            return "vm";
         case asset_subtype::N_A:
             return "";
         default:
