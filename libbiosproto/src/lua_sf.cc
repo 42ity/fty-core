@@ -50,10 +50,11 @@ public:
     int64_t     _timestamp;
     std::string _element_destination_name;
 
-    std::string generateTopic(void) {
+    std::string generateTopic(void) const{
         return _source + "@" + _element_name;
     };
 
+    MetricInfo() {};
     MetricInfo (
         const std::string &element_name,
         const std::string &source,
@@ -106,6 +107,20 @@ public:
         }
     };
 
+    void addMetric (const MetricInfo &m)
+    {
+        // try to find topic
+        auto it = knownMetrics.find (m.generateTopic());
+        if ( it != knownMetrics.cend() ) {
+            // if it was found -> replace with new value
+            it->second = m;
+        }
+        else {
+            // if it wasn't found -> insert new metric
+            knownMetrics.emplace (m.generateTopic(), m);
+        }
+    };
+
     double findAndCheck (const std::string &topic)
     {
         auto it = knownMetrics.find(topic);
@@ -142,6 +157,19 @@ public:
         }
     };
 
+    int getMetricInfo (const std::string &topic, MetricInfo &metricInfo) const
+    {
+        auto it = knownMetrics.find(topic);
+        if ( it == knownMetrics.cend() )
+        {
+            return -1;
+        }
+        else
+        {
+            metricInfo = it->second;
+            return 0;
+        }
+    };
 
     void removeOldMetrics()
     {
@@ -167,7 +195,7 @@ private:
 
 class Rule {
 public:
-    std::vector<std::string> in;
+    std::set<std::string> in;
     zrex_t *rex;
     std::string rex_str;
     std::string lua_code;
@@ -200,7 +228,33 @@ public:
         // what should we do if file is broken somehow?
     };
 
-    lua_State* setContext(const MetricList &metricList) const
+    lua_State* setContext (const MetricList &metricList, const std::string &lastTopic) const
+    {
+        if ( rex != NULL )
+        {
+            MetricInfo m;
+            // TODO no error handling for now
+            metricList.getMetricInfo (lastTopic, m);
+            return setContextRegex (m);
+        }
+        else
+        {
+            return setContextNormal (metricList);
+        }
+    };
+private:
+    lua_State* setContextRegex(const MetricInfo &metricInfo) const
+    {
+        lua_State *lua_context = lua_open();
+        lua_pushnumber(lua_context, metricInfo._value);
+        lua_setglobal(lua_context, "value");
+        lua_pushstring(lua_context, metricInfo._element_name.c_str());
+        lua_setglobal(lua_context, "element");
+        return lua_context;
+    };
+
+
+    lua_State* setContextNormal(const MetricList &metricList) const
     {
         lua_State *lua_context = lua_open();
         for ( const auto &neededTopic : in) {
@@ -274,11 +328,7 @@ public:
 
             for ( const auto &interestedTopic : rule.in ) {
                 result.insert (interestedTopic);
-                if ( _normalConfigs.find (interestedTopic) == _normalConfigs.cend () )
-                {
-                    _normalConfigs.emplace (interestedTopic, std::vector<Rule>({}));
-                }
-                _normalConfigs.at(interestedTopic).push_back(rule);
+                _normalConfigs.push_back (rule);
             }
             if ( rule.rex != NULL )
             {
@@ -289,10 +339,30 @@ public:
         return result;
     };
 
-    std::vector <std::string> updateConfiguration(const Rule &rule);
+    std::vector<Rule> getNormalConfigs(const std::string &topic)
+    {
+        std::vector <Rule> result{};
+        for ( const auto &rule: _normalConfigs )
+        {
+            if ( rule.in.count(topic) != 0 )
+            {
+                result.push_back(rule);
+            }
+        }
+        return result;
+    };
 
-    std::map <std::string, std::vector<Rule> > _normalConfigs;
+    std::vector <std::string> updateConfiguration(const Rule &rule);
     std::vector<Rule> _regexConfigs;
+    int normalConfigSize(void){
+        return _normalConfigs.size();
+    };
+    int regexConfigSize(void){
+        return _regexConfigs.size();
+    };
+
+private:
+    std::vector <Rule> _normalConfigs;
 };
 
 int main (int argc, char** argv) {
@@ -303,8 +373,8 @@ int main (int argc, char** argv) {
 
     AlertConfiguration alertConfiguration;
     std::set <std::string> subjectsToConsume = alertConfiguration.readConfiguration();
-    zsys_info ("normal count: %d\n", alertConfiguration._normalConfigs.size());
-    zsys_info ("regexp count: %d\n", alertConfiguration._regexConfigs.size());
+    zsys_info ("normal count: %d\n", alertConfiguration.normalConfigSize());
+    zsys_info ("regexp count: %d\n", alertConfiguration.regexConfigSize());
     zsys_info ("subjectsToConsume count: %d\n", subjectsToConsume.size());
     // Subscribe to all subjects
     for ( const auto &interestedSubject : subjectsToConsume ) {
@@ -345,83 +415,82 @@ int main (int argc, char** argv) {
         zsys_info("Got message '%s' with value %s\n", topic.c_str(), value);
 
         // Update cache with new value
-        cache.addMetric (element_src, type, unit, dvalue, timestamp, "");
+        MetricInfo m (element_src, type, unit, dvalue, timestamp, "");
+        cache.addMetric (m);
         cache.removeOldMetrics();
 
         // Handle non-regex configs
-        if ( alertConfiguration._normalConfigs.count(topic) == 1 ) {
-            for ( const auto &rule : alertConfiguration._normalConfigs.find(topic)->second)
-            {
-                lua_State *lua_context = rule.setContext(cache);
-                if ( lua_context == NULL ) {
-                    // not possible to evaluate metric with current known Metrics
+        for ( const auto &rule : alertConfiguration.getNormalConfigs(m.generateTopic()))
+        {
+            lua_State *lua_context = rule.setContext(cache, type);
+            if ( lua_context == NULL ) {
+                // not possible to evaluate metric with current known Metrics
+                continue;
+            }
+            int error = luaL_loadbuffer (lua_context, rule.lua_code.c_str(), rule.lua_code.length(), "line") ||
+                lua_pcall(lua_context, 0, 3, 0);
+            if ( error ) {
+                // syntax error in evaluate
+                zsys_info("ACE1: Syntax error: %s\n", lua_tostring(lua_context, -1));
+                lua_pop(lua_context, 1);  // pop error message from the stack
+            } else {
+                // evaluation was successful, need to read the result
+                if ( !lua_isstring(lua_context, -1) )
+                {
+                    zsys_info ("unexcpected returned value\n");
+                    lua_close (lua_context);
                     continue;
                 }
-                int error = luaL_loadbuffer (lua_context, rule.lua_code.c_str(), rule.lua_code.length(), "line") ||
-                    lua_pcall(lua_context, 0, 3, 0);
-                if ( error ) {
-                    // syntax error in evaluate
-                    zsys_info("ACE1: Syntax error: %s\n", lua_tostring(lua_context, -1));
-                    lua_pop(lua_context, 1);  // pop error message from the stack
-                } else {
-                    // evaluation was successful, need to read the result
-                    if ( !lua_isstring(lua_context, -1) )
-                    {
-                        zsys_info ("unexcpected returned value\n");
-                        lua_close (lua_context);
-                        continue;
-                    }
-                    // ok, it is string. What type is it?
-                    const char *status = lua_tostring(lua_context,-1);
-                    const char *description = lua_tostring(lua_context,-3);
-                    if ( streq (status, "IS") )
-                    {
-                        // the rule is TRUE, now detect if it is already up
-                        auto r = isAlertOngoing(rule.rule_name, rule.element);
-                        if ( r == alerts.end() ) {
-                            // first time the rule fired alert for the element
-                            alerts.push_back(Alert(rule, ALERT_START, ::time(NULL), description));
-                            r = alerts.end() - 1 ;
-                            zsys_info("RULE '%s' : ALERT started for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
-                        } else {
-                            if ( r->status == ALERT_RESOLVED ) {
-                                // alert is old. This is new one
-                                r->status = ALERT_START;
-                                r->timestamp = ::time(NULL);
-                                r->description = description;
-                                zsys_info("RULE '%s' : OLD ALERT starts again for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
-                            }
-                            else {
-                                // it is the same alert
-                                zsys_info("RULE '%s' : ALERT is ALREADY ongoing for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
-                            }
+                // ok, it is string. What type is it?
+                const char *status = lua_tostring(lua_context,-1);
+                const char *description = lua_tostring(lua_context,-3);
+                if ( streq (status, "IS") )
+                {
+                    // the rule is TRUE, now detect if it is already up
+                    auto r = isAlertOngoing(rule.rule_name, rule.element);
+                    if ( r == alerts.end() ) {
+                        // first time the rule fired alert for the element
+                        alerts.push_back(Alert(rule, ALERT_START, ::time(NULL), description));
+                        r = alerts.end() - 1 ;
+                        zsys_info("RULE '%s' : ALERT started for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
+                    } else {
+                        if ( r->status == ALERT_RESOLVED ) {
+                            // alert is old. This is new one
+                            r->status = ALERT_START;
+                            r->timestamp = ::time(NULL);
+                            r->description = description;
+                            zsys_info("RULE '%s' : OLD ALERT starts again for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
                         }
-                        alert_send (client, r->rule.rule_name.c_str(), r->rule.element.c_str(), r->timestamp, get_status_string(r->status), r->rule.severity.c_str(), r->description.c_str());
-                    }
-                    else if ( streq(status,"ISNT") )
-                    {
-                        //the rule is FALSE, now detect if it is already down
-                        auto r = isAlertOngoing(rule.rule_name, rule.element);
-                        if ( r != alerts.end() ) {
-                            // Now there is no alert, but I remember, that one moment ago I saw some info about this alert
-                            if ( r->status != ALERT_RESOLVED ) {
-                                r->status = ALERT_RESOLVED;
-                                r->timestamp = ::time(NULL);
-                                r->description = description;
-                                zsys_info("RULE '%s' : ALERT is resolved for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
-                                alert_send (client, r->rule.rule_name.c_str(), r->rule.element.c_str(), r->timestamp, get_status_string(r->status), r->rule.severity.c_str(), r->description.c_str());
-                            }
+                        else {
+                            // it is the same alert
+                            zsys_info("RULE '%s' : ALERT is ALREADY ongoing for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
                         }
                     }
-                    else
-                    {
-                        zsys_info ("unexcpected string in returned value\n");
-                        lua_close (lua_context);
-                        continue;
+                    alert_send (client, r->rule.rule_name.c_str(), r->rule.element.c_str(), r->timestamp, get_status_string(r->status), r->rule.severity.c_str(), r->description.c_str());
+                }
+                else if ( streq(status,"ISNT") )
+                {
+                    //the rule is FALSE, now detect if it is already down
+                    auto r = isAlertOngoing(rule.rule_name, rule.element);
+                    if ( r != alerts.end() ) {
+                        // Now there is no alert, but I remember, that one moment ago I saw some info about this alert
+                        if ( r->status != ALERT_RESOLVED ) {
+                            r->status = ALERT_RESOLVED;
+                            r->timestamp = ::time(NULL);
+                            r->description = description;
+                            zsys_info("RULE '%s' : ALERT is resolved for element '%s' with description '%s'\n", r->rule.rule_name.c_str(), r->rule.element.c_str(), r->description.c_str());
+                            alert_send (client, r->rule.rule_name.c_str(), r->rule.element.c_str(), r->timestamp, get_status_string(r->status), r->rule.severity.c_str(), r->description.c_str());
+                        }
                     }
                 }
-                lua_close(lua_context);
+                else
+                {
+                    zsys_info ("unexcpected string in returned value\n");
+                    lua_close (lua_context);
+                    continue;
+                }
             }
+            lua_close(lua_context);
         }
         // Handle regex configs
         for ( const auto &rule: alertConfiguration._regexConfigs ) {
@@ -429,12 +498,11 @@ int main (int argc, char** argv) {
                 // metric doesn't satisfied the regular expression
                 continue;
             }
-            // Compute
-            lua_State *lua_context = lua_open();
-            lua_pushnumber(lua_context, dvalue);
-            lua_setglobal(lua_context, "value");
-            lua_pushstring(lua_context, element_src);
-            lua_setglobal(lua_context, "element");
+            lua_State *lua_context = rule.setContext(cache, type);
+            if ( lua_context == NULL ) {
+                // not possible to evaluate metric with current known Metrics
+                continue;
+            }
             int error = luaL_loadbuffer(lua_context, rule.lua_code.c_str(), rule.lua_code.length(), "line") ||
                 lua_pcall(lua_context, 0, 4, 0);
 
