@@ -1,6 +1,0 @@
-{
-  "rule_name" :"regex rule",
-  "in_rex": "ttt@*",
-  "evaluation": "if( value > 40) then return element, \"It is more than 40\", ttt_ups1, \"IS\" else return element, \"\", 0, \"ISNT\" end",
-  "severity" : "CRITICAL"
-}
