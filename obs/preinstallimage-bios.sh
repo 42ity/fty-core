@@ -299,6 +299,10 @@ sed -i 's|\(.*\)<dir>.*|\1<dir>/usr/share/bios-web/</dir>|' /etc/tntnet/bios.xml
 sed -n '1,/<mappings>/ p' /etc/tntnet/bios.xml  > /etc/tntnet/bios.d/00_start.xml
 sed -n '/<\/mappings>/,$ p' /etc/tntnet/bios.xml > /etc/tntnet/bios.d/99_end.xml
 sed '/<mappings>/,/<\/mappings>/!d; /mappings/ d' /etc/tntnet/bios.xml > /etc/tntnet/bios.d/20_core.xml
+sed '1,/<!-- Here starts the real API -->/!d; /<!-- Here starts the real API -->/ d' /etc/tntnet/bios.d/20_core.xml > /etc/tntnet/bios.d/10_common_basics.xml
+sed '/<!-- Here starts the real API -->/,$!d; /<!-- Here starts the real API -->/ d' /etc/tntnet/bios.d/20_core.xml > /etc/tntnet/bios.d/50_main_api.xml
+rm -f /etc/tntnet/bios.d/20_core.xml
+systemctl enable tntnet@bios
 systemctl enable tntnet@bios
 
 # Disable logind
