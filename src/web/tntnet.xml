@@ -44,6 +44,8 @@
       <target>auth-verify@bios_web</target>
     </mapping>
 
+    <!-- Here starts the real API -->
+
     <!-- SysInfo mapping -->
     <!-- Implementation tests (int)access_auth_level variable to limit visibility of some data -->
     <mapping>
