@@ -4,7 +4,6 @@ Description=BIOS-Timer service that verify integrity of filesystem and reports i
 [Service]
 Type=simple
 ExecStart=@libexecdir@/@PACKAGE@/verify-fs
-RemainAfterExit=yes
 
 [Install]
 WantedBy=multi-user.target
