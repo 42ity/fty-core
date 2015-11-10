@@ -16,6 +16,7 @@ TIMESTAMP=$4
 VALUE=$5
 SCALE=$6
 
+echo "use box_utf8;" > /tmp/tmp.sql
 SLCT="select id from t_bios_measurement_topic where topic='$TOPIC'"
 TOP_ID="$(echo $SLCT | mysql -u root box_utf8 -N)"
 if [ "$TOP_ID" == "" ]; then
@@ -25,7 +26,6 @@ if [ "$TOP_ID" == "" ]; then
 else
    sqlline="set @topic_id = $TOP_ID;"
 fi
-#echo "sqlline = $sqlline"
 echo $sqlline >> /tmp/tmp.sql
 # measurement
 sqlline="INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ($TIMESTAMP, $VALUE, $SCALE, @topic_id);"
@@ -37,14 +37,26 @@ echo "use box_utf8;" > /tmp/tmp.sql
 db_initiate(){
 DB_LOADDIR="$CHECKOUTDIR/tools"
 DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
+DB_DATA="cur_data.sql"
 DB_DATA_TESTREST="load_data_test_restapi.sql"
 DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
 DB_ASSET_DEFAULT="initdb_ci_patch_2.sql"
 
-for data in "$DB_BASE" "$DB_DATA" "$DB_DATA_TESTREST"; do
+for data in "$DB_BASE" "$DB_DATA"; do
+#for data in "$DB_BASE" "$DB_DATA" "$DB_DATA_TESTREST"; do
     loaddb_file "$DB_LOADDIR/$data" || return $?
 done
+
+echo "use box_utf8;" > /tmp/tmp.sql
+sqlline="INSERT INTO t_bios_discovered_device (id_discovered_device,name,id_device_type) VALUES (NULL, 'DC-LAB', 1);"
+echo $sqlline >> /tmp/tmp.sql
+loaddb_file "/tmp/tmp.sql"
+echo "use box_utf8;" > /tmp/tmp.sql
+SEL_ID="select id_discovered_device from t_bios_discovered_device where name='DC-LAB'"
+TOP_ID="$(echo $SEL_ID | mysql -u root box_utf8 -N)"
+sqlline="INSERT INTO t_bios_monitor_asset_relation (id_ma_relation,id_discovered_device,id_asset_element) VALUES (NULL, $TOP_ID, 19);"
+echo $sqlline >> /tmp/tmp.sql
+loaddb_file "/tmp/tmp.sql"
 }
 
 db_measure(){
@@ -58,8 +70,6 @@ D2=$(expr $D1 - $STEP)
 D3=$(expr $D2 - $STEP)
 D4=$(expr $D3 - $STEP)
 D5=$(expr $D4 - $STEP)
-echo "D5 = $D5"
-echo "TIME5 = $(expr $TIME - $D1)"
 D6=$(expr $D5 - $STEP)
 D7=$(expr $D6 - $STEP)
 D8=$(expr $D7 - $STEP)
@@ -80,6 +90,95 @@ PARAMS=(units topic name timestamp value scale)
 
 #Define the measurements samples
 SAMPLES=(
+W       realpower.default@DC-LAB        DC-LAB          $(expr $TIME - $D8 + 6) $(expr 98 + $VAL)     -2
+)
+
+
+#Define the measurements samples
+SAMPLES2=(
+NULL    status.ups@UPS1-LAB     	UPS1-LAB    	$(expr $TIME - $D0)     $(expr 400 + $VAL)    -2
+%       load.default@UPS1-LAB   	UPS1-LAB        $(expr $TIME - $D0)     $(expr 435 + $VAL)    -2
+V       voltage.output.L1-N@UPS1-LAB    UPS1-LAB        $(expr $TIME - $D1)     $(expr 470 + $VAL)    -2
+V       voltage.output.L1-N@UPS1-LAB    UPS1-LAB        $(expr $TIME - $D2)     $(expr 475 + $VAL)    -2
+V       voltage.output.L1-N@UPS1-LAB    UPS1-LAB        $(expr $TIME - $D3)     $(expr 478 + $VAL)    -2
+V       voltage.output.L1-N@UPS1-LAB    UPS1-LAB        $(expr $TIME - $D4)     $(expr 473 + $VAL)    -2
+V       voltage.output.L1-N@UPS1-LAB    UPS1-LAB        $(expr $TIME - $D5)     $(expr 471 + $VAL)    -2
+W       realpower.output.L1@UPS1-LAB    UPS1-LAB        $(expr $TIME - $D6)     $(expr 505 + $VAL)    -2
+A       current.output.L1@UPS1-LAB      UPS1-LAB        $(expr $TIME - $D7)     $(expr 540 + $VAL)    -2
+%       charge.battery@UPS1-LAB 	UPS1-LAB        $(expr $TIME - $D8)     $(expr 575 + $VAL)    -2
+s       runtime.battery@UPS1-LAB        UPS1-LAB        $(expr $TIME - $D9)     $(expr 610 + $VAL)    -2
+W       realpower.default@UPS1-LAB      UPS1-LAB        $(expr $TIME - $D10)    $(expr 645 + $VAL)    -2
+V       voltage.output.L2-N@UPS1-LAB    UPS1-LAB        $(expr $TIME - $D11)    $(expr 680 + $VAL)    -2
+W       realpower.output.L2@UPS1-LAB    UPS1-LAB        $(expr $TIME - $D12)    $(expr 715 + $VAL)    -2
+A       current.output.L2@UPS1-LAB      UPS1-LAB        $(expr $TIME - $D13)    $(expr 750 + $VAL)    -2
+V       voltage.output.L3-N@UPS1-LAB    UPS1-LAB        $(expr $TIME - $D14)    $(expr 785 + $VAL)    -2
+W       realpower.output.L3@UPS1-LAB    UPS1-LAB        $(expr $TIME - $D15)    $(expr 820 + $VAL)    -2
+A       current.output.L3@UPS1-LAB      UPS1-LAB        $(expr $TIME - $D16)    $(expr 855 + $VAL)    -2
+A       current.output.L8@UPS1-LAB      UPS1-LAB        $(expr $TIME - $D17)    $(expr 890 + $VAL)    -2
+W       nonsense@UPS1-LAB       	UPS1-LAB        $(expr $TIME - $D18)    $(expr 925 + $VAL)    -2
+W       realpower.outlet.1@ePDU1-LAB    ePDU1-LAB       $(expr $TIME - $D0)     $(expr 960 + $VAL)    -2
+W       realpower.outlet.2@ePDU1-LAB    ePDU1-LAB       $(expr $TIME - $D1)     $(expr 995 + $VAL)    -2
+W       realpower.outlet.15@ePDU1-LAB   ePDU1-LAB       $(expr $TIME - $D2)     $(expr 103 + $VAL)    -2
+W       realpower.outlet.1000@ePDU1-LAB ePDU1-LAB       $(expr $TIME - $D3)     $(expr 106 + $VAL)    -2
+A       current.outlet.3@ePDU1-LAB      ePDU1-LAB       $(expr $TIME - $D4)     $(expr 100 + $VAL)    -2
+V       voltage.outlet.1@ePDU1-LAB      ePDU1-LAB       $(expr $TIME - $D5)     $(expr 135 + $VAL)    -2
+0       frequency.input@ePDU1-LAB       ePDU1-LAB       $(expr $TIME - $D6)     $(expr 170 + $VAL)    -2
+%       load.input.L1@ePDU1-LAB 	ePDU1-LAB       $(expr $TIME - $D7)     $(expr 205 + $VAL)    -2
+%       load.input.L6@ePDU1-LAB 	ePDU1-LAB       $(expr $TIME - $D8)     $(expr 240 + $VAL)    -2
+V       voltage.input.L1-N@ePDU1-LAB    ePDU1-LAB       $(expr $TIME - $D9)     $(expr 275 + $VAL)    -2
+V       voltage.input.L2-N@ePDU1-LAB    ePDU1-LAB       $(expr $TIME - $D10)    $(expr 310 + $VAL)    -2
+A       current.input.L1@ePDU1-LAB      ePDU1-LAB       $(expr $TIME - $D11)    $(expr 345 + $VAL)    -2
+A       current.input.L3@ePDU1-LAB      ePDU1-LAB       $(expr $TIME - $D12)    $(expr 380 + $VAL)    -2
+W       realpower.default@ePDU1-LAB     ePDU1-LAB       $(expr $TIME - $D13)    $(expr 415 + $VAL)    -2
+W       realpower.input.L1@ePDU1-LAB    ePDU1-LAB       $(expr $TIME - $D14)    $(expr 450 + $VAL)    -2
+W       realpower.input.L3@ePDU1-LAB    ePDU1-LAB       $(expr $TIME - $D15)    $(expr 485 + $VAL)    -2
+W       power.default@ePDU1-LAB 	ePDU1-LAB       $(expr $TIME - $D16)    $(expr 520 + $VAL)    -2
+W       power.input.L1@ePDU1-LAB        ePDU1-LAB       $(expr $TIME - $D17)    $(expr 555 + $VAL)    -2
+A       nonsense@ePDU1-LAB      	ePDU1-LAB       $(expr $TIME - $D18)    $(expr 590 + $VAL)    -2
+0       status.ups@UPS2-LAB     	UPS2-LAB        $(expr $TIME - $D19)    $(expr 625 + $VAL)    -2
+%       load.default@UPS2-LAB   	UPS2-LAB        $(expr $TIME - $D0)     $(expr 660 + $VAL)    -2
+V       voltage.output.L1-N@UPS2-LAB    UPS2-LAB        $(expr $TIME - $D1)     $(expr 695 + $VAL)    -2
+W       realpower.output.L1@UPS2-LAB    UPS2-LAB        $(expr $TIME - $D2)     $(expr 730 + $VAL)    -2
+A       current.output.L1@UPS2-LAB      UPS2-LAB        $(expr $TIME - $D3)     $(expr 765 + $VAL)    -2
+%       charge.battery@UPS2-LAB 	UPS2-LAB        $(expr $TIME - $D4)     $(expr 800 + $VAL)    -2
+s       runtime.battery@UPS2-LAB        UPS2-LAB        $(expr $TIME - $D5)     $(expr 835 + $VAL)    -2
+W       realpower.default@UPS2-LAB      UPS2-LAB        $(expr $TIME - $D6)     $(expr 870 + $VAL)    -2
+V       voltage.output.L2-N@UPS2-LAB    UPS2-LAB        $(expr $TIME - $D7)     $(expr 905 + $VAL)    -2
+W       realpower.output.L2@UPS2-LAB    UPS2-LAB        $(expr $TIME - $D8)     $(expr 940 + $VAL)    -2
+A       current.output.L2@UPS2-LAB      UPS2-LAB        $(expr $TIME - $D9)     $(expr 975 + $VAL)    -2
+V       voltage.output.L3-N@UPS2-LAB    UPS2-LAB        $(expr $TIME - $D10)    $(expr 010 + $VAL)    -2
+W       realpower.output.L3@UPS2-LAB    UPS2-LAB        $(expr $TIME - $D11)    $(expr 045 + $VAL)    -2
+A       current.output.L3@UPS2-LAB      UPS2-LAB        $(expr $TIME - $D12)    $(expr 080 + $VAL)    -2
+A       current.output.L8@UPS2-LAB      UPS2-LAB        $(expr $TIME - $D13)    $(expr 115 + $VAL)    -2
+W       nonsense@UPS2-LAB       	UPS2-LAB        $(expr $TIME - $D14)    $(expr 150 + $VAL)    -2
+W       realpower.outlet.1@ePDU2-LAB    ePDU2-LAB       $(expr $TIME - $D0)     $(expr 185 + $VAL)    -2
+W       realpower.outlet.2@ePDU2-LAB    ePDU2-LAB       $(expr $TIME - $D1)     $(expr 220 + $VAL)    -2
+W       realpower.outlet.15@ePDU2-LAB   ePDU2-LAB       $(expr $TIME - $D2)     $(expr 255 + $VAL)    -2
+W       realpower.outlet.1000@ePDU2-LAB ePDU2-LAB       $(expr $TIME - $D3)     $(expr 290 + $VAL)    -2
+A       current.outlet.3@ePDU2-LAB      ePDU2-LAB       $(expr $TIME - $D4)     $(expr 325 + $VAL)    -2
+V       voltage.outlet.1@ePDU2-LAB      ePDU2-LAB       $(expr $TIME - $D5)     $(expr 360 + $VAL)    -2
+0       frequency.input@ePDU2-LAB       ePDU2-LAB       $(expr $TIME - $D6)     $(expr 395 + $VAL)    -2
+%       load.input.L1@ePDU2-LAB 	ePDU2-LAB       $(expr $TIME - $D7)     $(expr 430 + $VAL)    -2
+%       load.input.L6@ePDU2-LAB 	ePDU2-LAB       $(expr $TIME - $D8)     $(expr 465 + $VAL)    -2
+V       voltage.input.L1-N@ePDU2-LAB    ePDU2-LAB       $(expr $TIME - $D9)     $(expr 500 + $VAL)    -2
+V       voltage.input.L2-N@ePDU2-LAB    ePDU2-LAB       $(expr $TIME - $D10)    $(expr 535 + $VAL)    -2
+A       current.input.L1@ePDU2-LAB      ePDU2-LAB       $(expr $TIME - $D11)    $(expr 570 + $VAL)    -2
+A       current.input.L3@ePDU2-LAB      ePDU2-LAB       $(expr $TIME - $D12)    $(expr 605 + $VAL)    -2
+W       realpower.default@ePDU2-LAB     ePDU2-LAB       $(expr $TIME - $D13)    $(expr 640 + $VAL)    -2
+W       realpower.input.L1@ePDU2-LAB    ePDU2-LAB       $(expr $TIME - $D14)    $(expr 675 + $VAL)    -2
+W       realpower.input.L3@ePDU2-LAB    ePDU2-LAB       $(expr $TIME - $D15)    $(expr 710 + $VAL)    -2
+W       power.default@ePDU2-LAB 	ePDU2-LAB       $(expr $TIME - $D17)    $(expr 745 + $VAL)    -2
+W       power.input.L1@ePDU2-LAB        ePDU2-LAB       $(expr $TIME - $D18)    $(expr 780 + $VAL)    -2
+A       nonsense@ePDU2-LAB      	ePDU2-LAB       $(expr $TIME - $D19)    $(expr 815 + $VAL)    -2
+V	voltage@FEED-LAB		FEED-LAB	$(expr $TIME - $D0 + 1)	$(expr 817 + $VAL)    -2
+W	realpower.default@ROOM1-LAB     ROOM1-LAB	$(expr $TIME - $D4 + 4) $(expr 989 + $VAL)    -2
+A	current.input.L1@SRV1-LAB	SRV1-LAB	$(expr $TIME - $D7 + 5) $(expr 98 + $VAL)     -2
+W	realpower.default@DC-LAB	DC-LAB		$(expr $TIME - $D8 + 6) $(expr 98 + $VAL)     -2
+)
+
+
+#Define the measurements samples
+SAMPLES1=(
 NULL    status.ups@UPS1-LAB     UPS1-LAB    $(expr $TIME - $D0)     $(expr 400 + $VAL)     -2
 %       load.default@UPS1-LAB   UPS1-LAB        $(expr $TIME - $D0)     $(expr 435 + $VAL)     -2
 V       voltage.output.L1-N@UPS1-LAB    UPS1-LAB        $(expr $TIME - $D1)     $(expr 470 + $VAL)     -2
@@ -104,138 +203,57 @@ W       realpower.outlet.1@ePDU1-LAB    ePDU1-LAB        $(expr $TIME - $D0)    
 W       realpower.outlet.2@ePDU1-LAB    ePDU1-LAB       $(expr $TIME - $D1)     $(expr 995 + $VAL)     -2
 W       realpower.outlet.15@ePDU1-LAB   ePDU1-LAB       $(expr $TIME - $D2)     $(expr 1030 + $VAL)    -2
 W       realpower.outlet.$(expr 1000 + $VAL)@ePDU1-LAB ePDU1-LAB       $(expr $TIME - $D3)     $(expr 1065 + $VAL)    -2
-A       current.outlet.3@ePDU1-LAB      ePDU1-LAB       $(expr $TIME - $D4)     $(expr 1100 + $VAL)    -2
-V       voltage.outlet.1@ePDU1-LAB      ePDU1-LAB       $(expr $TIME - $D5)     $(expr 1135 + $VAL)    -2
-0       frequency.input@ePDU1-LAB       ePDU1-LAB       $(expr $TIME - $D6)     $(expr 1170 + $VAL)    -2
-%       load.input.L1@ePDU1-LAB ePDU1-LAB       $(expr $TIME - $D7)     $(expr 1205 + $VAL)    -2
-%       load.input.L6@ePDU1-LAB ePDU1-LAB       $(expr $TIME - $D8)     $(expr 1240 + $VAL)    -2
-V       voltage.input.L1-N@ePDU1-LAB    ePDU1-LAB       $(expr $TIME - $D9)      $(expr 1275 + $VAL)    -2
-V       voltage.input.L2-N@ePDU1-LAB    ePDU1-LAB       $(expr $TIME - $D10)     $(expr 1310 + $VAL)    -2
-A       current.input.L1@ePDU1-LAB      ePDU1-LAB       $(expr $TIME - $D11)     $(expr 1345 + $VAL)    -2
-A       current.input.L3@ePDU1-LAB      ePDU1-LAB       $(expr $TIME - $D12)     $(expr 1380 + $VAL)    -2
-W       realpower.default@ePDU1-LAB     ePDU1-LAB       $(expr $TIME - $D13)     $(expr 1415 + $VAL)    -2
-W       realpower.input.L1@ePDU1-LAB    ePDU1-LAB       $(expr $TIME - $D14)     $(expr 1450 + $VAL)    -2
-W       realpower.input.L3@ePDU1-LAB    ePDU1-LAB       $(expr $TIME - $D15)     $(expr 1485 + $VAL)    -2
+A       current.outlet.3@ePDU1-LAB      ePDU1-LAB       $(expr $TIME - $D4)     $(expr 100 + $VAL)    -2
+V       voltage.outlet.1@ePDU1-LAB      ePDU1-LAB       $(expr $TIME - $D5)     $(expr 135 + $VAL)    -2
+0       frequency.input@ePDU1-LAB       ePDU1-LAB       $(expr $TIME - $D6)     $(expr 170 + $VAL)    -2
+%       load.input.L1@ePDU1-LAB ePDU1-LAB       $(expr $TIME - $D7)     $(expr 205 + $VAL)    -2
+%       load.input.L6@ePDU1-LAB ePDU1-LAB       $(expr $TIME - $D8)     $(expr 240 + $VAL)    -2
+V       voltage.input.L1-N@ePDU1-LAB    ePDU1-LAB       $(expr $TIME - $D9)      $(expr 275 + $VAL)    -2
+V       voltage.input.L2-N@ePDU1-LAB    ePDU1-LAB       $(expr $TIME - $D10)     $(expr 310 + $VAL)    -2
+A       current.input.L1@ePDU1-LAB      ePDU1-LAB       $(expr $TIME - $D11)     $(expr 345 + $VAL)    -2
+A       current.input.L3@ePDU1-LAB      ePDU1-LAB       $(expr $TIME - $D12)     $(expr 380 + $VAL)    -2
+W       realpower.default@ePDU1-LAB     ePDU1-LAB       $(expr $TIME - $D13)     $(expr 415 + $VAL)    -2
+W       realpower.input.L1@ePDU1-LAB    ePDU1-LAB       $(expr $TIME - $D14)     $(expr 450 + $VAL)    -2
+W       realpower.input.L3@ePDU1-LAB    ePDU1-LAB       $(expr $TIME - $D15)     $(expr 485 + $VAL)    -2
 W       power.default@ePDU1-LAB ePDU1-LAB       $(expr $TIME - $D16)     $(expr 1520 + $VAL)    -2
-W       power.input.L1@ePDU1-LAB        ePDU1-LAB       $(expr $TIME - $D17)      $(expr 1555 + $VAL)    -2
+W       power.input.L1@ePDU1-LAB        ePDU1-LAB       $(expr $TIME - $D17)      $(expr 555 + $VAL)    -2
 A       nonsense@ePDU1-LAB      ePDU1-LAB       $(expr $TIME - $D18)       $(expr 1590 + $VAL)    -2
 0       status.ups@UPS2-LAB     UPS2-LAB       $(expr $TIME - $D19)     $(expr 1625 + $VAL)    -2
 %       load.default@UPS2-LAB   UPS2-LAB        $(expr $TIME - $D0)     $(expr 1660 + $VAL)    -2
-V       voltage.output.L1-N@UPS2-LAB    UPS2-LAB        $(expr $TIME - $D1)     $(expr 1695 + $VAL)    -2
-W       realpower.output.L1@UPS2-LAB    UPS2-LAB        $(expr $TIME - $D2)     $(expr 1730 + $VAL)    -2
-A       current.output.L1@UPS2-LAB      UPS2-LAB        $(expr $TIME - $D3)     $(expr 1765 + $VAL)    -2
-%       charge.battery@UPS2-LAB UPS2-LAB        $(expr $TIME - $D4)     $(expr 1800 + $VAL)    -2
-s       runtime.battery@UPS2-LAB        UPS2-LAB        $(expr $TIME - $D5)     $(expr 1835 + $VAL)    -2
-W       realpower.default@UPS2-LAB      UPS2-LAB        $(expr $TIME - $D6)     $(expr 1870 + $VAL)    -2
-V       voltage.output.L2-N@UPS2-LAB    UPS2-LAB        $(expr $TIME - $D7)     $(expr 1905 + $VAL)    -2
-W       realpower.output.L2@UPS2-LAB    UPS2-LAB        $(expr $TIME - $D8)     $(expr 1940 + $VAL)    -2
-A       current.output.L2@UPS2-LAB      UPS2-LAB        $(expr $TIME - $D9)      $(expr 1975 + $VAL)    -2
-V       voltage.output.L3-N@UPS2-LAB    UPS2-LAB        $(expr $TIME - $D10)     $(expr 2010 + $VAL)    -2
-W       realpower.output.L3@UPS2-LAB    UPS2-LAB        $(expr $TIME - $D11)     $(expr 2045 + $VAL)    -2
-A       current.output.L3@UPS2-LAB      UPS2-LAB        $(expr $TIME - $D12)     $(expr 2080 + $VAL)    -2
-A       current.output.L8@UPS2-LAB      UPS2-LAB        $(expr $TIME - $D13)     $(expr 2115 + $VAL)    -2
-W       nonsense@UPS2-LAB       UPS2-LAB        $(expr $TIME - $D14)     $(expr 2150 + $VAL)    -2
-W       realpower.outlet.1@ePDU2-LAB    ePDU2-LAB        $(expr $TIME - $D0)     $(expr 2185 + $VAL)    -2
-W       realpower.outlet.2@ePDU2-LAB    ePDU2-LAB       $(expr $TIME - $D1)     $(expr 2220 + $VAL)    -2
-W       realpower.outlet.15@ePDU2-LAB   ePDU2-LAB       $(expr $TIME - $D2)     $(expr 2255 + $VAL)    -2
-W       realpower.outlet.1000@ePDU2-LAB ePDU2-LAB       $(expr $TIME - $D3)     $(expr 2290 + $VAL)    -2
-A       current.outlet.3@ePDU2-LAB      ePDU2-LAB       $(expr $TIME - $D4)     $(expr 2325 + $VAL)    -2
-V       voltage.outlet.1@ePDU2-LAB      ePDU2-LAB       $(expr $TIME - $D5)     $(expr 2360 + $VAL)    -2
-0       frequency.input@ePDU2-LAB       ePDU2-LAB       $(expr $TIME - $D6)     $(expr 2395 + $VAL)    -2
-%       load.input.L1@ePDU2-LAB ePDU2-LAB       $(expr $TIME - $D7)     $(expr 2430 + $VAL)    -2
-%       load.input.L6@ePDU2-LAB ePDU2-LAB       $(expr $TIME - $D8)     $(expr 2465 + $VAL)    -2
-V       voltage.input.L1-N@ePDU2-LAB    ePDU2-LAB       $(expr $TIME - $D9)      $(expr 2500 + $VAL)    -2
-V       voltage.input.L2-N@ePDU2-LAB    ePDU2-LAB       $(expr $TIME - $D10)     $(expr 2535 + $VAL)    -2
-A       current.input.L1@ePDU2-LAB      ePDU2-LAB       $(expr $TIME - $D11)     $(expr 2570 + $VAL)    -2
-A       current.input.L3@ePDU2-LAB      ePDU2-LAB       $(expr $TIME - $D12)     $(expr 2605 + $VAL)    -2
-W       realpower.default@ePDU2-LAB     ePDU2-LAB       $(expr $TIME - $D13)     $(expr 2640 + $VAL)    -2
-W       realpower.input.L1@ePDU2-LAB    ePDU2-LAB       $(expr $TIME - $D14)     $(expr 2675 + $VAL)    -2
-W       realpower.input.L3@ePDU2-LAB    ePDU2-LAB       $(expr $TIME - $D15)     $(expr 2710 + $VAL)    -2
-W       power.default@ePDU2-LAB ePDU2-LAB       $(expr $TIME - $D17)     $(expr 2745 + $VAL)    -2
-W       power.input.L1@ePDU2-LAB        ePDU2-LAB       $(expr $TIME - $D18)      $(expr 2780 + $VAL)    -2
-A       nonsense@ePDU2-LAB      ePDU2-LAB       $(expr $TIME - $D19)       $(expr 2815 + $VAL)    -2
+V       voltage.output.L1-N@UPS2-LAB    UPS2-LAB        $(expr $TIME - $D1)     $(expr 695 + $VAL)    -2
+W       realpower.output.L1@UPS2-LAB    UPS2-LAB        $(expr $TIME - $D2)     $(expr 730 + $VAL)    -2
+A       current.output.L1@UPS2-LAB      UPS2-LAB        $(expr $TIME - $D3)     $(expr 765 + $VAL)    -2
+%       charge.battery@UPS2-LAB UPS2-LAB        $(expr $TIME - $D4)     $(expr 800 + $VAL)    -2
+s       runtime.battery@UPS2-LAB        UPS2-LAB        $(expr $TIME - $D5)     $(expr 835 + $VAL)    -2
+W       realpower.default@UPS2-LAB      UPS2-LAB        $(expr $TIME - $D6)     $(expr 870 + $VAL)    -2
+V       voltage.output.L2-N@UPS2-LAB    UPS2-LAB        $(expr $TIME - $D7)     $(expr 905 + $VAL)    -2
+W       realpower.output.L2@UPS2-LAB    UPS2-LAB        $(expr $TIME - $D8)     $(expr 940 + $VAL)    -2
+A       current.output.L2@UPS2-LAB      UPS2-LAB        $(expr $TIME - $D9)      $(expr 975 + $VAL)    -2
+V       voltage.output.L3-N@UPS2-LAB    UPS2-LAB        $(expr $TIME - $D10)     $(expr 010 + $VAL)    -2
+W       realpower.output.L3@UPS2-LAB    UPS2-LAB        $(expr $TIME - $D11)     $(expr 045 + $VAL)    -2
+A       current.output.L3@UPS2-LAB      UPS2-LAB        $(expr $TIME - $D12)     $(expr 080 + $VAL)    -2
+A       current.output.L8@UPS2-LAB      UPS2-LAB        $(expr $TIME - $D13)     $(expr 115 + $VAL)    -2
+W       nonsense@UPS2-LAB       UPS2-LAB        $(expr $TIME - $D14)     $(expr 150 + $VAL)    -2
+W       realpower.outlet.1@ePDU2-LAB    ePDU2-LAB        $(expr $TIME - $D0)     $(expr 185 + $VAL)    -2
+W       realpower.outlet.2@ePDU2-LAB    ePDU2-LAB       $(expr $TIME - $D1)     $(expr 220 + $VAL)    -2
+W       realpower.outlet.15@ePDU2-LAB   ePDU2-LAB       $(expr $TIME - $D2)     $(expr 255 + $VAL)    -2
+W       realpower.outlet.1000@ePDU2-LAB ePDU2-LAB       $(expr $TIME - $D3)     $(expr 290 + $VAL)    -2
+A       current.outlet.3@ePDU2-LAB      ePDU2-LAB       $(expr $TIME - $D4)     $(expr 325 + $VAL)    -2
+V       voltage.outlet.1@ePDU2-LAB      ePDU2-LAB       $(expr $TIME - $D5)     $(expr 360 + $VAL)    -2
+0       frequency.input@ePDU2-LAB       ePDU2-LAB       $(expr $TIME - $D6)     $(expr 395 + $VAL)    -2
+%       load.input.L1@ePDU2-LAB ePDU2-LAB       $(expr $TIME - $D7)     $(expr 430 + $VAL)    -2
+%       load.input.L6@ePDU2-LAB ePDU2-LAB       $(expr $TIME - $D8)     $(expr 465 + $VAL)    -2
+V       voltage.input.L1-N@ePDU2-LAB    ePDU2-LAB       $(expr $TIME - $D9)      $(expr 500 + $VAL)    -2
+V       voltage.input.L2-N@ePDU2-LAB    ePDU2-LAB       $(expr $TIME - $D10)     $(expr 535 + $VAL)    -2
+A       current.input.L1@ePDU2-LAB      ePDU2-LAB       $(expr $TIME - $D11)     $(expr 570 + $VAL)    -2
+A       current.input.L3@ePDU2-LAB      ePDU2-LAB       $(expr $TIME - $D12)     $(expr 605 + $VAL)    -2
+W       realpower.default@ePDU2-LAB     ePDU2-LAB       $(expr $TIME - $D13)     $(expr 640 + $VAL)    -2
+W       realpower.input.L1@ePDU2-LAB    ePDU2-LAB       $(expr $TIME - $D14)     $(expr 675 + $VAL)    -2
+W       realpower.input.L3@ePDU2-LAB    ePDU2-LAB       $(expr $TIME - $D15)     $(expr 710 + $VAL)    -2
+W       power.default@ePDU2-LAB ePDU2-LAB       $(expr $TIME - $D17)     $(expr 745 + $VAL)    -2
+W       power.input.L1@ePDU2-LAB        ePDU2-LAB       $(expr $TIME - $D18)      $(expr 780 + $VAL)    -2
+A       nonsense@ePDU2-LAB      ePDU2-LAB       $(expr $TIME - $D19)       $(expr 815 + $VAL)    -2
 )
-
-echo ${SAMPLES[*]}
-
-#Define the measurements samples
-SAMPLES1=(
-NULL    status.ups@UPS1-LAB     UPS1-LAB    $(expr $TIME - $D0)     400     -2
-%       load.default@UPS1-LAB   UPS1-LAB        $(expr $TIME - $D0)     435     -2
-V       voltage.output.L1-N@UPS1-LAB    UPS1-LAB        $(expr $TIME - $D1)     470     -2
-V       voltage.output.L1-N@UPS1-LAB    UPS1-LAB        $(expr $TIME - $D2)     475     -2
-V       voltage.output.L1-N@UPS1-LAB    UPS1-LAB        $(expr $TIME - $D3)     478     -2
-V       voltage.output.L1-N@UPS1-LAB    UPS1-LAB        $(expr $TIME - $D4)     473     -2
-V       voltage.output.L1-N@UPS1-LAB    UPS1-LAB        $(expr $TIME - $D5)     471     -2
-W       realpower.output.L1@UPS1-LAB    UPS1-LAB        $(expr $TIME - $D6)     505     -2
-A       current.output.L1@UPS1-LAB      UPS1-LAB        $(expr $TIME - $D7)     540     -2
-%       charge.battery@UPS1-LAB UPS1-LAB        $(expr $TIME - $D8)     575     -2
-s       runtime.battery@UPS1-LAB        UPS1-LAB        $(expr $TIME - $D9)     610     -2
-W       realpower.default@UPS1-LAB      UPS1-LAB        $(expr $TIME - $D10)    645     -2
-V       voltage.output.L2-N@UPS1-LAB    UPS1-LAB        $(expr $TIME - $D11)    680     -2
-W       realpower.output.L2@UPS1-LAB    UPS1-LAB        $(expr $TIME - $D12)    715     -2
-A       current.output.L2@UPS1-LAB      UPS1-LAB        $(expr $TIME - $D13)    750     -2
-V       voltage.output.L3-N@UPS1-LAB    UPS1-LAB        $(expr $TIME - $D14)    785     -2
-W       realpower.output.L3@UPS1-LAB    UPS1-LAB        $(expr $TIME - $D15)    820     -2
-A       current.output.L3@UPS1-LAB      UPS1-LAB        $(expr $TIME - $D16)    855     -2
-A       current.output.L8@UPS1-LAB      UPS1-LAB        $(expr $TIME - $D17)    890     -2
-W       nonsense@UPS1-LAB       UPS1-LAB        $(expr $TIME - $D18)    925     -2
-W       realpower.outlet.1@ePDU1-LAB    ePDU1-LAB        $(expr $TIME - $D0)     910     -2
-W       realpower.outlet.2@ePDU1-LAB    ePDU1-LAB       $(expr $TIME - $D1)     995     -2
-W       realpower.outlet.15@ePDU1-LAB   ePDU1-LAB       $(expr $TIME - $D2)     1030    -2
-W       realpower.outlet.1000@ePDU1-LAB ePDU1-LAB       $(expr $TIME - $D3)     1065    -2
-A       current.outlet.3@ePDU1-LAB      ePDU1-LAB       $(expr $TIME - $D4)     1100    -2
-V       voltage.outlet.1@ePDU1-LAB      ePDU1-LAB       $(expr $TIME - $D5)     1135    -2
-0       frequency.input@ePDU1-LAB       ePDU1-LAB       $(expr $TIME - $D6)     1170    -2
-%       load.input.L1@ePDU1-LAB ePDU1-LAB       $(expr $TIME - $D7)     1205    -2
-%       load.input.L6@ePDU1-LAB ePDU1-LAB       $(expr $TIME - $D8)     1240    -2
-V       voltage.input.L1-N@ePDU1-LAB    ePDU1-LAB       $(expr $TIME - $D9)      1275    -2
-V       voltage.input.L2-N@ePDU1-LAB    ePDU1-LAB       $(expr $TIME - $D10)     1310    -2
-A       current.input.L1@ePDU1-LAB      ePDU1-LAB       $(expr $TIME - $D11)     1345    -2
-A       current.input.L3@ePDU1-LAB      ePDU1-LAB       $(expr $TIME - $D12)     1380    -2
-W       realpower.default@ePDU1-LAB     ePDU1-LAB       $(expr $TIME - $D13)     1415    -2
-W       realpower.input.L1@ePDU1-LAB    ePDU1-LAB       $(expr $TIME - $D14)     1450    -2
-W       realpower.input.L3@ePDU1-LAB    ePDU1-LAB       $(expr $TIME - $D15)     1485    -2
-W       power.default@ePDU1-LAB ePDU1-LAB       $(expr $TIME - $D16)     1520    -2
-W       power.input.L1@ePDU1-LAB        ePDU1-LAB       $(expr $TIME - $D17)      1555    -2
-A       nonsense@ePDU1-LAB      ePDU1-LAB       $(expr $TIME - $D18)       1590    -2
-0       status.ups@UPS2-LAB     UPS2-LAB       $(expr $TIME - $D19)     1625    -2
-%       load.default@UPS2-LAB   UPS2-LAB        $(expr $TIME - $D0)     1660    -2
-V       voltage.output.L1-N@UPS2-LAB    UPS2-LAB        $(expr $TIME - $D1)     1695    -2
-W       realpower.output.L1@UPS2-LAB    UPS2-LAB        $(expr $TIME - $D2)     1730    -2
-A       current.output.L1@UPS2-LAB      UPS2-LAB        $(expr $TIME - $D3)     1765    -2
-%       charge.battery@UPS2-LAB UPS2-LAB        $(expr $TIME - $D4)     1800    -2
-s       runtime.battery@UPS2-LAB        UPS2-LAB        $(expr $TIME - $D5)     1835    -2
-W       realpower.default@UPS2-LAB      UPS2-LAB        $(expr $TIME - $D6)     1870    -2
-V       voltage.output.L2-N@UPS2-LAB    UPS2-LAB        $(expr $TIME - $D7)     1905    -2
-W       realpower.output.L2@UPS2-LAB    UPS2-LAB        $(expr $TIME - $D8)     1940    -2
-A       current.output.L2@UPS2-LAB      UPS2-LAB        $(expr $TIME - $D9)      1975    -2
-V       voltage.output.L3-N@UPS2-LAB    UPS2-LAB        $(expr $TIME - $D10)     2010    -2
-W       realpower.output.L3@UPS2-LAB    UPS2-LAB        $(expr $TIME - $D11)     2045    -2
-A       current.output.L3@UPS2-LAB      UPS2-LAB        $(expr $TIME - $D12)     2080    -2
-A       current.output.L8@UPS2-LAB      UPS2-LAB        $(expr $TIME - $D13)     2115    -2
-W       nonsense@UPS2-LAB       UPS2-LAB        $(expr $TIME - $D14)     2150    -2
-W       realpower.outlet.1@ePDU2-LAB    ePDU2-LAB        $(expr $TIME - $D0)     2185    -2
-W       realpower.outlet.2@ePDU2-LAB    ePDU2-LAB       $(expr $TIME - $D1)     2220    -2
-W       realpower.outlet.15@ePDU2-LAB   ePDU2-LAB       $(expr $TIME - $D2)     2255    -2
-W       realpower.outlet.1000@ePDU2-LAB ePDU2-LAB       $(expr $TIME - $D3)     2290    -2
-A       current.outlet.3@ePDU2-LAB      ePDU2-LAB       $(expr $TIME - $D4)     2325    -2
-V       voltage.outlet.1@ePDU2-LAB      ePDU2-LAB       $(expr $TIME - $D5)     2360    -2
-0       frequency.input@ePDU2-LAB       ePDU2-LAB       $(expr $TIME - $D6)     2395    -2
-%       load.input.L1@ePDU2-LAB ePDU2-LAB       $(expr $TIME - $D7)     2430    -2
-%       load.input.L6@ePDU2-LAB ePDU2-LAB       $(expr $TIME - $D8)     2465    -2
-V       voltage.input.L1-N@ePDU2-LAB    ePDU2-LAB       $(expr $TIME - $D9)      2500    -2
-V       voltage.input.L2-N@ePDU2-LAB    ePDU2-LAB       $(expr $TIME - $D10)     2535    -2
-A       current.input.L1@ePDU2-LAB      ePDU2-LAB       $(expr $TIME - $D11)     2570    -2
-A       current.input.L3@ePDU2-LAB      ePDU2-LAB       $(expr $TIME - $D12)     2605    -2
-W       realpower.default@ePDU2-LAB     ePDU2-LAB       $(expr $TIME - $D13)     2640    -2
-W       realpower.input.L1@ePDU2-LAB    ePDU2-LAB       $(expr $TIME - $D14)     2675    -2
-W       realpower.input.L3@ePDU2-LAB    ePDU2-LAB       $(expr $TIME - $D15)     2710    -2
-W       power.default@ePDU2-LAB ePDU2-LAB       $(expr $TIME - $D17)     2745    -2
-W       power.input.L1@ePDU2-LAB        ePDU2-LAB       $(expr $TIME - $D18)      2780    -2
-A       nonsense@ePDU2-LAB      ePDU2-LAB       $(expr $TIME - $D19)       2815    -2
-)
-
 
 # set the counters
 NPAR=${#PARAMS[*]}
@@ -318,22 +336,34 @@ api_get_json '/metric/current?dev=24' >&5
 print_result $?
 
 echo "********* current.sh ******************************************************************************"
-echo "********* 6. UPS under 10 min params test *********************************************************"
+echo "********* 6. The last measurement is used *********************************************************"
 echo "***************************************************************************************************"
 
-test_it "UPS_under_10_min_params_test"
+test_it "The_last_measurement_is_used"
 db_initiate
-
 for i in $(seq 0 2);do
-   DELAY=$(expr 1800 - $i \* 11)
-   STEP=100
-   VAL=$(expr $i \* 20)
-#   STEP=$(expr 30 - $i \* 2)
+   DELAY=$(expr 600 - $i \* 180)
+   STEP=7
+   VAL=$(expr $i \* 2000)
    db_measure $STEP $DELAY $VAL
 done
-sleep 120
 api_get_json '/metric/current?dev=24' >&5
 print_result $?
 
+echo "********* current.sh ******************************************************************************"
+echo "********* 7. All kinds of devices *****************************************************************"
+echo "***************************************************************************************************"
 
+test_it "All_kinds_of_devices"
+db_initiate
+for i in $(seq 0 2);do
+   DELAY=$(expr 600 - $i \* 180)
+   STEP=7
+   VAL=$(expr $i \* 2000)
+   db_measure $STEP $DELAY $VAL
+done
+for j in $(seq 19 35);do
+api_get_json "/metric/current?dev=$j" >&5
+done
+print_result $?
 
