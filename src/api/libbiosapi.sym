@@ -118,6 +118,7 @@ global:
 		ymsg_get_string;
 		ymsg_get_int32;
 		ymsg_get_int64;
+        ymsg_test;
 
         bios_inventory_decode;
         bios_inventory_encode;
