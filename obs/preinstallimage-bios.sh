@@ -254,6 +254,8 @@ if [ "`uname -m`" = x86_64 ]; then
 else
     systemctl disable bios-fake-th
     systemctl mask bios-fake-th
+    systemctl enable lcd-boot-display
+    systemctl enable lcd-net-display
 fi
 
 # Our tntnet unit
@@ -287,7 +289,7 @@ chmod a+rx /usr/share/bios/scripts/xml-cat.sh
 rm -f /etc/init.d/tntnet
 
 # Enable REST API via tntnet
-mkdir /etc/tntnet/bios.d
+mkdir -p /etc/tntnet/bios.d
 cp /usr/share/bios/examples/tntnet.xml.* /etc/tntnet/bios.xml
 mkdir -p /usr/share/core-0.1/web/static
 sed -i 's|<!--.*<user>.*|<user>www-data</user>|' /etc/tntnet/bios.xml
@@ -297,6 +299,10 @@ sed -i 's|\(.*\)<dir>.*|\1<dir>/usr/share/bios-web/</dir>|' /etc/tntnet/bios.xml
 sed -n '1,/<mappings>/ p' /etc/tntnet/bios.xml  > /etc/tntnet/bios.d/00_start.xml
 sed -n '/<\/mappings>/,$ p' /etc/tntnet/bios.xml > /etc/tntnet/bios.d/99_end.xml
 sed '/<mappings>/,/<\/mappings>/!d; /mappings/ d' /etc/tntnet/bios.xml > /etc/tntnet/bios.d/20_core.xml
+sed '1,/<!-- Here starts the real API -->/!d; /<!-- Here starts the real API -->/ d' /etc/tntnet/bios.d/20_core.xml > /etc/tntnet/bios.d/10_common_basics.xml
+sed '/<!-- Here starts the real API -->/,$!d; /<!-- Here starts the real API -->/ d' /etc/tntnet/bios.d/20_core.xml > /etc/tntnet/bios.d/50_main_api.xml
+rm -f /etc/tntnet/bios.d/20_core.xml
+systemctl enable tntnet@bios
 systemctl enable tntnet@bios
 
 # Disable logind

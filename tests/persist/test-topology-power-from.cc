@@ -206,7 +206,7 @@ TEST_CASE("Power topology from #4","[db][topology][power][from][power_topology.s
     _scoped_zlist_t* powers = asset_msg_get_powers (cretTopology);
     REQUIRE ( powers );
 
-    char first1[15]  = "1:5024:2:5027";//src_socket:src_id:dst_socket:dst_id
+    char first1[17]  = "ABCD:5024:2:5027";//src_socket:src_id:dst_socket:dst_id
     char* first  = (char*) zlist_first  (powers);
     REQUIRE ( first  != NULL );
     REQUIRE ( zlist_next (powers)   == NULL );
