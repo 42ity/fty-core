@@ -72,11 +72,12 @@ Every rule has a unique name.
 There are two types of the rules:
     * pattern rule
     * single rule
+    * threshold rule
 
 Every rule type is intended to solve particular problem.
 
 Every rule is represented in JSON format.
-Every rule has evaluation function, that should return specified values in ANY case.
+PATTERN and SINGLE rules have to have an evaluation function, that should return specified values in ANY case.
 
 Pattern rule
 ------------
@@ -85,14 +86,14 @@ This is very simple rule. For evaluation it requires only one metric as input pa
 This rule has the following JSON format:
 {
   "rule_name": "common",
+  "severity": "INFO",
   "in_rex": ".*",
-  "evaluation": "if(value > 7) then return element, topic .. \" too high\", value, \"IS"\ else return \"\", \"\", 0, \"ISNT\" end",
-  "severity": "INFO"
+  "evaluation": "if(value > 7) then return element, topic .. \" too high\", value, \"IS"\ else return \"\", \"\", 0, \"ISNT\" end"
 }
 where
     * "rule_name" is a name of the rule
-    * "in_rex" is a regexp expression. Rule can be applyed to the metrics that satisfies it.
     * "evaluation" is an evaluation function. In the body of this function there are predefined entities "value" and "topic".
+    * "in_rex" is a regexp expression. Rule can be applyed to the metrics that satisfies it.
     * "severity" indicates how important is the alert (see ALERT message for possible values)
 
 Predefined entities:
@@ -114,19 +115,52 @@ This is a rule, where required input metrics are explicitly defined.
 This rule has the following JSON format:
 {
   "rule_name": "common2",
+  "severity": "CRITICAL",
   "in": [ "temperature@AAA", "temperature2@BBB"],
   "evaluation": "if( temperature_AAA > temperature2_BBB) then return "It is too high\", value, \"IS\" else return \"\",0, \"ISNT\" end",
-  "severity": "CRITICAL",
   "element": "CCC"
 }
 where
     * "rule_name" is a name of the rule
+    * "severity" indicates how important is the alert (see ALERT message for possible values)
     * "in" is a list of required metric topics. Rule can be applied only if all input values are known.
     * "evaluation" is an evaluation function.
-    * "severity" indicates how important is the alert (see ALERT message for possible values)
     * "element" is an element alert regards to
 
 Evaluation function returns information in the following order:
     * description - descriprion of the alert (string)
     * output_value - some number that characterize the alert
     * result - a string that indicates if rule was evaluated as positive or negative "IS" or "ISNT"
+
+
+Threshold rule
+------------
+This is a specific rule for thresholds.
+
+This rule has the following JSON format:
+{
+  "rule_name": "threshold1",
+  "severity": "CRITICAL",
+  "metric" : "metric_name",
+  "type" : "low"/"high",
+  "element": "CCC",
+  "value": number_may_be_double
+}
+where
+    * "rule_name" is a name of the rule
+    * "severity" indicates how important is the alert (see ALERT message for possible values)
+    * "metric" name of the metric that should analyzed
+    * "type" "low" or "high".
+    * "element" is an element alert regards to (input element and output element here are the same)
+    * "value" value of the threshold
+
+Evaluation function returns information in the following order:
+    * description - descriprion of the alert (string) "element __element_name__ is above/lower that threshold __value__"
+    * output_value - some number that characterize the alert
+    * result - a string that indicates if rule was evaluated as positive or negative "IS" or "ISNT"
+
+Evaluation function is missing in the rule, as it has the following template and should be enforced internally:
+    * for "low" :
+        "if ( metric_element < value ) then return \"Element __element_name__ is lower than __value__\", value, \"IS\" else return \"\", value, \"ISNT\" end"
+    * for "high" :
+        "if ( metric_element > value ) then return \"Element __element_name__ is higher than __value__\", value, \"IS\" else return \"\", value, \"ISNT\" end"
