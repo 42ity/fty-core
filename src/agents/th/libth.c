@@ -34,12 +34,14 @@
 #include <termios.h>
 #include <linux/serial.h>
 
-                            //adr  command  r/w
-#define STATUS_REG_W 0x06   //000   0011    0
-#define STATUS_REG_R 0x07   //000   0011    1
-#define MEASURE_TEMP 0x03   //000   0001    1
-#define MEASURE_HUMI 0x05   //000   0010    1
-#define RESET        0x1e   //000   1111    0
+#define TIOCRS232    0x5201  // OpenGear RS232 setting ioctl
+
+                             //adr  command  r/w
+#define STATUS_REG_W 0x06    //000   0011    0
+#define STATUS_REG_R 0x07    //000   0011    1
+#define MEASURE_TEMP 0x03    //000   0001    1
+#define MEASURE_HUMI 0x05    //000   0010    1
+#define RESET        0x1e    //000   1111    0
 
 
 void compensate_humidity(int H, int T, int32_t* out) {
@@ -240,9 +242,8 @@ int open_device(const char* dev) {
     if(fd < 0)
         return fd;
 
-    reset_device(fd);
-
     // Set connection parameters
+    ioctl(fd, TIOCRS232);
     struct termios termios_s;
     tcgetattr(fd, &termios_s);
     termios_s.c_iflag &= ~(IGNBRK | BRKINT | PARMRK);
@@ -251,6 +252,8 @@ int open_device(const char* dev) {
 
     //Flush all serial port buffers
     tcflush(fd, TCIOFLUSH);
+
+    reset_device(fd);
 
     return fd;
 }
