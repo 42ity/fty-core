@@ -34,7 +34,6 @@ class Autoconfig : public BIOSAgent {
 
     void onStart( );
     void onEnd( ) { cleanupState(); saveState(); };
-    void onReply( ymsg_t **message );
     void onSend( ymsg_t **message );
     void onPoll( );
  private:
