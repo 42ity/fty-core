@@ -50,6 +50,7 @@ ALERT message is a multipart message that MUST contain the following fields in t
     * state        - string ( state of the alert. Possible values are ACTIVE/ACK-WIP/ACK-IGNORE/ACK-PAUSE/ACK-SILENCE/RESOLVED )
     * severity     - string ( severity of the alert. Possible values are INFO/WARNING/CRITICAL )
     * description  - string ( a description of the alert )
+    * actions      - list of strings ( EMAIL/SMS ) ( is optional )
 
 ALERT message MUST be sent with the subject "rule_name/severity@element_name" (see proto.h `alert_send`)
 
@@ -64,6 +65,11 @@ Protocol ALERT + GATEWAY on the ALERTS stream
     * ALERT component publishes ALERT messages into the ALERTS stream after each evaluation.
     * GATEWAY component is subscribed on ALERT messages in the ALERTS stream.
       Other messages from ALERTS stream MUST be ignored by GATEWAY component.
+
+Component GATEWAY
+=================
+    * GATEWAY component does the actions that are in alert message, if they are missing does the default actions.
+    * Reacts on ALERT messages and informs users.
 
 
 Rules for generating the alerts
@@ -146,7 +152,8 @@ This rule has the following JSON format:
   "metric" : "metric_name",
   "type" : "low"/"high",
   "element": "CCC",
-  "value": number_may_be_double
+  "value": number_may_be_double,
+  "action" : ["EMAIL", "SMS"]
 }
 where
     * "rule_name" is a name of the rule
