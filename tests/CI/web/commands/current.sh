@@ -222,6 +222,7 @@ echo "********* 1. UPS mandatory parameters returned ***************************
 echo "***************************************************************************************************"
 
 test_it "UPS_mandatory_parameters_returned"
+db_initiate
 api_get_json '/metric/current?dev=22' >&5
 print_result $?
 
@@ -232,6 +233,7 @@ echo "**************************************************************************
 #*#*#*#*#* current.sh - subtest 2 - 5 parameters are missing, 2 parameters redundant
 
 test_it "ePDU_mandatory_parameters_returned"
+db_initiate
 api_get_json '/metric/current?dev=24' >&5
 print_result $?
 
@@ -242,6 +244,7 @@ echo "**************************************************************************
 #*#*#*#*#* current.sh - subtest 3 - 2 parameters are missing
 
 test_it "DC_mandatory_parameters_returned"
+db_initiate
 api_get_json '/metric/current?dev=19' >&5
 print_result $?
 
@@ -301,3 +304,49 @@ api_get_json "/metric/current?dev=$j" >&5
 done
 print_result $?
 
+echo "********* current.sh ******************************************************************************"
+echo "********* 8. Requested ID does not exist **********************************************************"
+echo "***************************************************************************************************"
+
+test_it "Requested_ID_does_not_exist"
+db_initiate
+api_get_json '/metric/current?dev=333' >&5
+print_result $?
+
+echo "********* current.sh ******************************************************************************"
+echo "********* 9. Missing ID ***************************************************************************"
+echo "***************************************************************************************************"
+
+test_it "Missing_ID"
+db_initiate
+curlfail_push_expect_400
+api_get_json '/metric/current?dev=' >&5
+print_result $?
+curlfail_pop
+
+echo "********* current.sh ******************************************************************************"
+echo "********* 10. Several IDs some missing ************************************************************"
+echo "***************************************************************************************************"
+
+test_it "Several_IDs_some_missing"
+db_initiate
+api_get_json '/metric/current?dev=abc,21,28,555,35,45' >&5
+print_result $?
+
+echo "********* current.sh ******************************************************************************"
+echo "********* 11. The format of value list error 1 ****************************************************"
+echo "***************************************************************************************************"
+
+test_it "The_format_of_value_list_error_1"
+db_initiate
+api_get_json '/metric/current?dev=abc,21,28     555,35,45' >&5
+print_result $?
+
+echo "********* current.sh ******************************************************************************"
+echo "********* 12. The format of value list error 2 ******************************************************"
+echo "***************************************************************************************************"
+
+test_it "The_format_of_value_list_error_2"
+db_initiate
+api_get_json '/metric/current?dev=abc,21,28;555,35,45' >&5
+print_result $?
