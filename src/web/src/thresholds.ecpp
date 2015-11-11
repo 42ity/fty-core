@@ -18,9 +18,9 @@
  #
  #><#
 /*!
- \file tresholds.ecpp
+ \file thresholds.ecpp
  \author Karol Hrdina <KarolHrdina@Eaton.com>
- \brief Implementation of REST API call for tresholds
+ \brief Implementation of REST API call for thresholds
 */
 #><%pre>
 #include <cxxtools/jsondeserializer.h>
@@ -46,7 +46,7 @@ if (!client) {
     http_die ("internal-error", "mlm_client_new () failed.");
 }
 
-std::string client_name ("tresholds.");
+std::string client_name ("thresholds.");
 client_name.append (std::to_string (getpid ())).append (".").append (std::to_string (syscall (SYS_gettid)));
 
 int rv = mlm_client_connect (client, MLM_ENDPOINT, 1000, client_name.c_str ());
@@ -109,10 +109,10 @@ else {
 
 }
 
-if (mlm_client_sendto (client, "alert_agent", "rfc-tresholds", NULL, 1000, &send_msg) != 0) { // TODO rewrite address to str_defs
+if (mlm_client_sendto (client, "alert_agent", "rfc-thresholds", NULL, 1000, &send_msg) != 0) { // TODO rewrite address to str_defs
 // TODO rewrite
 //        log_debug ("mlm_client_sendto (address = '%s', subject = '%s', tracker = NULL, timeout = '%d') failed.",
-//                    "alert_agent", "rfc-tresholds", 1000);
+//                    "alert_agent", "rfc-thresholds", 1000);
     zmsg_destroy (&send_msg);
     mlm_client_destroy (&client);
     http_die ("internal-error", "mlm_client_sendto () failed.");
@@ -129,7 +129,7 @@ char *part = zmsg_popstr (recv_msg);
 if (streq (part, "LIST")) {
     </%cpp>
 {
-    "tresholds" : [
+    "thresholds" : [
 %    while (part) {
         <$$ part $>
 %       free (part);
