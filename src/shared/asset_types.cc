@@ -167,6 +167,11 @@ is_rack(int x) {
 }
 
 bool
+is_dc(int x) {
+    return x == asset_type::DATACENTER;
+}
+
+bool
 is_ups(int x) {
     return x == asset_subtype::UPS;
 }
