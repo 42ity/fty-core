@@ -178,7 +178,7 @@ default_posval CI_DEBUGLEVEL_ECHO       0
 default_posval CI_DEBUGLEVEL_ERROR      1
 default_posval CI_DEBUGLEVEL_WARN       2
 default_posval CI_DEBUGLEVEL_INFO       3
-default_posval CI_DEBUGLEVEL_LOADDB     3
+default_posval CI_DEBUGLEVEL_LOADDB     5
 default_posval CI_DEBUGLEVEL_SELECT     3
 default_posval CI_DEBUGLEVEL_RUN        4
 default_posval CI_DEBUGLEVEL_DEBUG      5
