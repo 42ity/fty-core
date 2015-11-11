@@ -60,6 +60,15 @@
       <method>(POST|PUT)</method>
     </mapping>
 
+    <!-- alerts/thresholds -->
+    <mapping>
+        <target>thresholds@bios_web</target>
+        <method>(GET|POST|PUT)</method>
+        <url>^/api/v1/alerts/thresholds/?(.*)$</url>
+        <args>
+            <name>$1</name>
+        </args>       
+    </mapping>
 
     <!-- admin/systemctl GET -->
     <mapping>
