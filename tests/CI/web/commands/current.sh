@@ -1,4 +1,23 @@
-#!/bin/sh
+#
+# Copyright (c) 2015 Eaton
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+#! \file   current.sh
+#  \brief  CI tests for asset current
+#  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 
 # Add the library
 . $CHECKOUTDIR/tests/CI/scriptlib.sh || \
@@ -37,7 +56,7 @@ echo "use box_utf8;" > /tmp/tmp.sql
 db_initiate(){
 DB_LOADDIR="$CHECKOUTDIR/tools"
 DB_BASE="initdb.sql"
-DB_DATA="cur_data.sql"
+DB_DATA="current_data.sql"
 DB_DATA_TESTREST="load_data_test_restapi.sql"
 DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
 DB_ASSET_DEFAULT="initdb_ci_patch_2.sql"
