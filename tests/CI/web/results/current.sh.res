@@ -24,5 +24,5 @@
 {"current":[]}
 {"errors":[{"message":"Parameter 'dev' is required.","code":46}]}
 {"current":[{"id":"21","name":"RACK1-LAB","realpower.default":null,"realpower.output.L1":null},{"id":"28","name":"KAROL-LAB"},{"id":"35","name":"UPS3PH-LAB","charge.battery":null,"current.output.L1":null,"load.default":null,"realpower.default":null,"realpower.output.L1":null,"runtime.battery":null,"status.ups":"","voltage.output.L1-N":null}]}
-{"current":[{"id":"21","name":"RACK1-LAB","realpower.default":null,"realpower.output.L1":null},{"id":"28","name":"KAROL-LAB"}]}
+{"current":[{"id":"21","name":"RACK1-LAB","realpower.default":null,"realpower.output.L1":null},{"id":"35","name":"UPS3PH-LAB","charge.battery":null,"current.output.L1":null,"load.default":null,"realpower.default":null,"realpower.output.L1":null,"runtime.battery":null,"status.ups":"","voltage.output.L1-N":null}]}
 {"current":[{"id":"21","name":"RACK1-LAB","realpower.default":null,"realpower.output.L1":null},{"id":"35","name":"UPS3PH-LAB","charge.battery":null,"current.output.L1":null,"load.default":null,"realpower.default":null,"realpower.output.L1":null,"runtime.battery":null,"status.ups":"","voltage.output.L1-N":null}]}
