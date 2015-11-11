@@ -339,7 +339,7 @@ echo "**************************************************************************
 
 test_it "The_format_of_value_list_error_1"
 db_initiate
-api_get_json '/metric/current?dev=abc,21,28     555,35,45' >&5
+api_get_json '/metric/current?dev=abc,21,28%20%20555,35,45' >&5
 print_result $?
 
 echo "********* current.sh ******************************************************************************"
