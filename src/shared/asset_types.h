@@ -94,6 +94,9 @@ bool
 is_rack(int x);
 
 bool
+is_dc(int x);
+
+bool
 is_ups(int x);
 
 }; //namespace persist

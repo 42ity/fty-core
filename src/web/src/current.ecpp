@@ -166,7 +166,7 @@ std::string dev;
                     (conn, id, foo);
 
         // add mandatory keys if not in DB
-        if (persist::is_rack(asset.item.type_id)) {
+        if ( persist::is_rack(asset.item.type_id) || persist::is_dc(asset.item.type_id) ) {
             for (const auto& key : {"realpower.default", "realpower.output.L1"}) {
                 if (measurements.count(key) != 0)
                     continue;
@@ -181,7 +181,7 @@ std::string dev;
         }
         else if (persist::is_pdu(asset.item.subtype_id) ||
                 persist::is_epdu(asset.item.subtype_id)) {
-            for (const auto& key : {"frequency.input", "load.input.L1", "voltage.output.L1-N", "current.input.L1", "realpower.default", "realpower.input.L1", "power.default", "power.input.L1"}) {
+            for (const auto& key : {"frequency.input", "load.input.L1", "voltage.input.L1-N", "current.input.L1", "realpower.default", "realpower.input.L1", "power.default", "power.input.L1"}) {
                 if (measurements.count(key) != 0)
                     continue;
                 measurements.emplace(key, NAN);
