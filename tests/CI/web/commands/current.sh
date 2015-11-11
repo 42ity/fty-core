@@ -109,12 +109,6 @@ PARAMS=(units topic name timestamp value scale)
 
 #Define the measurements samples
 SAMPLES=(
-W       realpower.default@DC-LAB        DC-LAB          $(expr $TIME - $D8 + 6) $(expr 98 + $VAL)     -2
-)
-
-
-#Define the measurements samples
-SAMPLES2=(
 NULL    status.ups@UPS1-LAB     	UPS1-LAB    	$(expr $TIME - $D0)     $(expr 400 + $VAL)    -2
 %       load.default@UPS1-LAB   	UPS1-LAB        $(expr $TIME - $D0)     $(expr 435 + $VAL)    -2
 V       voltage.output.L1-N@UPS1-LAB    UPS1-LAB        $(expr $TIME - $D1)     $(expr 470 + $VAL)    -2
