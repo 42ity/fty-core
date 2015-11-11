@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Add the library
-. "`dirname $0`"/scriptlib.sh || \
+. $CHECKOUTDIR/tests/CI/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 
 # Add the first line of the sql file and create it
