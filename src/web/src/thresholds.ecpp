@@ -1,0 +1,154 @@
+<#
+ #
+ # Copyright (C) 2015 Eaton
+ #
+ # This program is free software; you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+ # the Free Software Foundation; either version 2 of the License, or
+ # (at your option) any later version.
+ #
+ # This program is distributed in the hope that it will be useful,
+ # but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+ #
+ # You should have received a copy of the GNU General Public License along
+ # with this program; if not, write to the Free Software Foundation, Inc.,
+ # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ #
+ #><#
+/*!
+ \file tresholds.ecpp
+ \author Karol Hrdina <KarolHrdina@Eaton.com>
+ \brief Implementation of REST API call for tresholds
+*/
+#><%pre>
+#include <cxxtools/jsondeserializer.h>
+#include <cxxtools/regex.h>
+#include <vector>
+#include <string>
+#include <malamute.h>
+#include <sys/types.h>
+#include <sys/syscall.h>
+
+#include "utils_web.h"
+#include "str_defs.h"
+
+</%pre>
+<%cpp>
+
+if (request.getMethod () != "GET" && request.getMethod () != "POST" && request.getMethod () != "PUT")
+    http_die ("internal-error", "TODO method not allowed");    // TODO: Unallowed method
+
+mlm_client_t *client = mlm_client_new ();
+if (!client) {
+    log_fatal ("mlm_client_new() failed.");
+    http_die ("internal-error", "mlm_client_new () failed.");
+}
+
+std::string client_name ("tresholds.");
+client_name.append (std::to_string (getpid ())).append (".").append (std::to_string (syscall (SYS_gettid)));
+
+int rv = mlm_client_connect (client, MLM_ENDPOINT, 1000, client_name.c_str ());
+if (rv == -1) {
+// TODO rewrite
+//    log_error ("mlm_client_connect (endpoint = '%s', timeout = '%d', address = '%s'",
+//                MLM_ENDPOINT, 1000, client_name.c_str ());
+    http_die ("internal-error", "mlm_client_connect () failed.");
+}
+
+zmsg_t *send_msg = zmsg_new ();
+if (!send_msg) {
+    log_fatal ("zmsg_new() failed.");
+    http_die ("internal-error", "zmsg_new () failed.");
+}
+
+std::string request_op;
+
+if (request.isMethodGET ()) {
+    request_op = "LIST";
+    zmsg_addstr (send_msg, request_op.c_str ());
+
+}
+else {
+    std::string name = request.getArg ("name");
+    cxxtools::SerializationInfo si;
+    try {
+        std::stringstream input (request.getBody(), std::ios_base::in); 
+        cxxtools::JsonDeserializer deserializer (input);
+        deserializer.deserialize (si);        
+    }
+    catch (const std::exception& e) {
+        // TODO: http_die
+        http_die ("internal-error", "Error deserializing request document.");
+    }
+    // json is valid
+    std::string json_name, severity, metric, type, element, value;
+    try {
+        si.getMember ("name") >>= json_name;
+        si.getMember ("severity") >>= severity;
+        si.getMember ("metric") >>= metric;
+        si.getMember ("type") >>= type;
+        si.getMember ("element") >>= element;
+        si.getMember ("value") >>= value;
+        if (name.empty () || severity.empty () || metric.empty () ||
+            type.empty () || element.empty () || value.empty ())
+            throw std::exception ();
+    }
+    catch (const std::exception& e) {
+        // TODO: http_die
+        http_die ("internal-error", "Request document not according to rfc-11.");
+    }
+    if (request.getMethod () == "PUT" && !name.empty () && name.compare (json_name) != 0) {
+        // TODO: http_die names are not equal
+        http_die ("internal-error", "Request document not according to rfc-11.");
+    }
+    request_op = "ADD";
+    zmsg_addstr (send_msg, request_op.c_str ());
+    zmsg_addstr (send_msg, request.getBody().c_str ());
+
+}
+
+if (mlm_client_sendto (client, "alert_agent", "rfc-tresholds", NULL, 1000, &send_msg) != 0) { // TODO rewrite address to str_defs
+// TODO rewrite
+//        log_debug ("mlm_client_sendto (address = '%s', subject = '%s', tracker = NULL, timeout = '%d') failed.",
+//                    "alert_agent", "rfc-tresholds", 1000);
+    zmsg_destroy (&send_msg);
+    mlm_client_destroy (&client);
+    http_die ("internal-error", "mlm_client_sendto () failed.");
+}
+// wait for reply; TODO: wait in cycle and check sender throw away potential troll senders
+zmsg_t *recv_msg = mlm_client_recv (client);
+if (!recv_msg) {
+    log_error ("mlm_client_recv () failed.");
+    mlm_client_destroy (&client);
+    http_die ("internal-error", "mlm_client_recv () failed.");
+}
+// Got it
+char *part = zmsg_popstr (recv_msg);
+if (streq (part, "LIST")) {
+    </%cpp>
+{
+    "tresholds" : [
+%    while (part) {
+        <$$ part $>
+%       free (part);
+%       part = zmsg_popstr (recv_msg);
+%    }
+    ]
+}
+    <%cpp>
+} else if (streq (part, "OK"))  {
+    </%cpp>
+    OK:  <$$ zmsg_popstr (recv_msg) $>
+    <%cpp>
+} else if (streq (part, "ERROR")) {
+    </%cpp>
+    ERROR: <$$ zmsg_popstr (recv_msg) $>
+    <%cpp>
+} else {
+    http_die ("internal-error", "Unexpected message."); // TODO http_die
+}
+return HTTP_OK;
+</%cpp>
+

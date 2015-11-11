@@ -1,0 +1,33 @@
+
+RFC-Tresholds  -  Tresholds protocol
+====================================
+Connects TRESHOLDS-USER peer to TRESHOLDS-EVALUATOR peer.
+
+The TRESHHOLDS-USER peer sends one of the following messages using MAILBOX SEND to TRESHOLDS-EVALUATOR peer:
+
+. LIST - request list of tresholds
+. ADD/json - add (create/update) new treshold
+
+where '/' indicates a multipart string message, 'json' is valid json
+document(1) and 'subject' of the message is "rfc-tresholds".
+
+The TRESHOLDS-EVALUATOR peer MUST send the appropriate message message back to TRESHOLDS-USER peer using MAILBOX SEND:
+
+. LIST/treshold_1[/treshold_2]...[/treshold_N]
+. OK/json
+. ERROR/reason
+
+where '/' indicates a multipart string message, 'josn' is valid json document(1),
+'reason' is error string and 'subject' of the message is "rfc-tresholds".
+
+
+(1)
+{
+  "name"      :  "<treshold_name>",
+  "severity"  :  "<severity>",
+  "metric"    :  "<metric_name>",
+  "type"      :  "<type>",
+  "element"   :  "<element_name>",
+  "value"     :  "<value>"
+}
+
