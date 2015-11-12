@@ -1,5 +1,5 @@
 Name:           core
-Version:        %{core_ver}
+Version:        0.1.0
 Release:        0
 License:        GPL-3.0
 Summary:        BIOS project
@@ -50,6 +50,7 @@ Development files (headers, pkgconfig, cmake) for %{name}.
 sed -i 's|libnutscan >= 2.7.2|libnutscan >= 2.7.1|' configure.ac
 
 %build
+export SUSE_ASNEEDED=0
 autoreconf -fiv
 %configure --disable-static
 make %{?_smp_mflags}
@@ -57,19 +58,33 @@ make %{?_smp_mflags}
 %install
 %make_install
 
+find %{buildroot} -name '*.a' | xargs rm -f
+find %{buildroot} -name '*.la' | xargs rm -f
+
+# to keep compatibility with core-dev.deb
+mkdir -p %{buildroot}%{_includedir}/bios/
+mv %{buildroot}%{_includedir}/* \
+   %{buildroot}%{_includedir}/bios/* || :
+
+%post -p /sbin/ldconfig
+%postun -p /sbin/ldconfig
+
 %files
 %defattr(-,root,root)
-%doc LICENSE
+%doc COPYING
 %{_bindir}/*
 %{_libdir}/*.so.*
+%{_libdir}/bios/
 %{_libexecdir}
 %{_datadir}
-%{_unitdir}/*.service
+#MVY: prevents file listed twice error - most likely libexecdir above
+# % {_unitdir}/*
 
 %files devel
 %defattr(-,root,root)
 %{_libdir}/*.so
-%{_includedir}
+%{_includedir}/bios
+%{_libdir}/pkgconfig/libbiosapi.pc
 
 %changelog
 
