@@ -1,3 +1,4 @@
+%global core_ver 0.1.1447316673~504b4d1
 Name:           core
 Version:        0.1.0
 Release:        0
@@ -52,7 +53,11 @@ sed -i 's|libnutscan >= 2.7.2|libnutscan >= 2.7.1|' configure.ac
 %build
 export SUSE_ASNEEDED=0
 autoreconf -fiv
-%configure --disable-static
+%configure \
+%if %{defined opensuse_version}
+  --with-saslauthd-mux=/var/run/sasl2/mux
+%endif
+ --disable-static
 make %{?_smp_mflags}
 
 %install
