@@ -687,8 +687,9 @@ db_reply_t
 {
     LOG_START;
     log_debug ("  element_name = '%s'", element_name);
-    if ( subtype_id == 0 ) // use default
-        subtype_id = 10;  // ATTENTION; need to be alligned with initdb
+    if ( subtype_id == 0 ) {
+        subtype_id = asset_subtype::N_A;
+    }
 
     db_reply_t ret = db_reply_new();
 
