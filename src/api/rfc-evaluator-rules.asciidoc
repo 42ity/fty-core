@@ -6,19 +6,22 @@ Connects USER peer to EVALUATOR peer.
 The USER peer sends one of the following messages using MAILBOX SEND to
 EVALUATOR peer:
 
-. LIST/type - request list of rule names
-. ADD/json - add (create/update) new rule
+1) LIST/type - request list of rule names
+2) ADD/json - add (create/update) new rule
+3) GET/name - request rule detail
 
 where '/' indicates a multipart string message, 'json' is valid json
-document(1), 'type' is one of [ ALL | THRESHOLDS | PATTERNS | RULES ] and
-'subject' of the message is "rfc-evaluator-rules".
+document(1), 'type' is one of [ all | thresholds | patterns | singles ], 'name'
+is rule name and 'subject' of the message is "rfc-evaluator-rules".
 
-The EVALUATOR peer MUST send the appropriate message message back to USER peer
+The EVALUATOR peer MUST send the appropriate message back to USER peer
 using MAILBOX SEND:
 
-. LIST/type/rule_1[/rule_2]...[/rule_N]
-. OK/json
-. ERROR/reason
+1) LIST/type/rule_1[/rule_2]...[/rule_N]
+2, 3) OK/json
+
+In case of error:
+   ERROR/reason
 
 where '/' indicates a multipart string message, 'json' is valid json document(1),
 'reason' is error string and 'subject' of the message is "rfc-evaluator-rules".
@@ -44,7 +47,8 @@ There are the three different json formats that are accepted
         "rule_name"     :   "<rule_name>",
         "severity"      :   "<severity>",
         "in_rex"        :   "<regex>",
-        "evaluation"    :   "<lua_function>"
+        "evaluation"    :   "<lua_function>",
+        "action"        :   ["<action_1", ..., "<action_N>"]
     }
 }
 
@@ -54,12 +58,13 @@ There are the three different json formats that are accepted
         "severity"      :   "<severity>",
         "in"            :   [ "<topic_1>, ..., "<topic_N>"],
         "evaluation"    :   "<lua_function>",
-        "element"       :   "<element_name>"
+        "element"       :   "<element_name>",
+        "action"        :   ["<action_1", ..., "<action_N>"] 
     }
 }
 
 where
-    * <rule_name>       unique rule name
+    * <rule_name>       unique rule name, CASE SENSITIVE
     * <severity>        one of [ INFO | WARNING | CRITICAL ] and determines the resulting alert severity
     * <lua_function>    lua function that evaluates trigger conditions
     * <topic_X>         metric topic
@@ -69,6 +74,8 @@ where
     * <regex>           regular expression
     * <value>           number (integer, floating-point)
     * <action_X>        one of [ EMAIL | SMS ] and determines the resulting alert action
+
+Rules "pattern" and "single" have property "action" as optional.
 
 The semantics is as follows:
 
@@ -82,14 +89,16 @@ the same alert with state RESOLVED.
 PATTERN:
     Value of metric, whose name matches regular expression <regex>, becomes
 input to <lua_function> that triggers alert for element that was matched by
-<regex> with state ACTIVE, severity <severity>. When the condition no longer
-holds true, trigger the same alert with state RESOVED.
+<regex> with state ACTIVE, severity <severity> and action states <action_1>,
+..., <action_N> if property "action" is specified, EMAIL action otherwise. When
+the condition no longer holds true, trigger the same alert with state RESOLVED.
 
 SINGLE:
     Value of any metric defined among <topic_1>, ..., <topic_N> becomes
 input to <lua_function> that triggers alert for element <element_name> with
-state ACTIVE, severity <severity>. When the condition no longer holds true,
-trigger the same alert with state RESOVED.
+state ACTIVE, severity <severity> and action states <action_1>, 
+..., <action_N> if property "action" is specified, EMAIL action otherwise. When
+the condition no longer holds true, trigger the same alert with state RESOVED.
 
  
 
