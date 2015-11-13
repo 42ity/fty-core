@@ -39,12 +39,10 @@ There are the three different json formats that are accepted
                               "low_warning"   : "<value>",
                               "high_warning"  : "<value>",
                               "high_critical" : "<value>" ],
-        "action"        :   [ "<action_1>", ... , "<action_N>" ],
-        "results"       :   [ "1" : { "action" : "<action>", "severity" : "<severity>" },
-                              "2" : { "action" : "<action>", "severity" : "<severity>" },
-                              "3" : { "action" : "<action>", "severity" : "<severity>" },
-                              "4" : { "action" : "<action>", "severity" : "<severity>" },
-                              "5" : { "action" : "<action>", "severity" : "<severity>" } ],
+        "results"       :   [ "low_critical" : { "action" : ["<action_1>", ..., "<action_N>"], "severity" : "<severity>", "description" : "<description>" },
+                              "low_warning" : { "action" : ["<action_1>", ..., "<action_N>"], "severity" : "<severity>", "description" : "<description>"},
+                              "high_warning" : { "action" : ["<action_1>", ..., "<action_N>"], "severity" : "<severity>", "description" : "<description>" },
+                              "high_critical" : { "action" : ["<action_1>", ..., "<action_N>"], "severity" : "<severity>", "description" : "<description>" } ],
         "evaluation"    :   "<lua_function>"
     }
 }
@@ -78,7 +76,7 @@ where
                         representing metric names
     * <element_name>    name of element
     * <value>           number (integer, floating-point)
-    * <action>          one of [ EMAIL | SMS ] and determines the resulting alert action
+    * <action_X>        one of [ EMAIL | SMS ] and determines the resulting alert action
     * <severity>        one of [ INFO | WARNING | CRITICAL ] and determines the resulting alert severity
     * <lua_function>    lua function that evaluates trigger conditions
     * <topic_X>         metric topic
