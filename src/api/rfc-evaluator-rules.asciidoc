@@ -6,7 +6,7 @@ Connects USER peer to EVALUATOR peer.
 The USER peer sends one of the following messages using MAILBOX SEND to
 EVALUATOR peer:
 
-. LIST/type - request list of rule names
+. LIST/type - request list of all rule for specified type
 . ADD/json - add (create/update) new rule
 
 where '/' indicates a multipart string message, 'json' is valid json
@@ -35,7 +35,7 @@ There are the three different json formats that are accepted
         "type"      :   "<type>",
         "element"   :   "<element_name>",
         "value"     :   "<value>",
-        "action"    :   ["<action_1", ..., "<action_N>"]
+        "action"    :   ["<action_1>", ... , "<action_N>"]
     }
 }
 
@@ -43,8 +43,8 @@ There are the three different json formats that are accepted
     "pattern" : {
         "rule_name"     :   "<rule_name>",
         "severity"      :   "<severity>",
-        "in_rex"        :   "<regex>",
-        "evaluation"    :   "<lua_function>"
+        "evaluation"    :   "<lua_function>",
+        "in_rex"        :   "<regex>"
     }
 }
 
@@ -52,8 +52,8 @@ There are the three different json formats that are accepted
     "single" : {
         "rule_name"     :   "<rule_name>",
         "severity"      :   "<severity>",
-        "in"            :   [ "<topic_1>, ..., "<topic_N>"],
         "evaluation"    :   "<lua_function>",
+        "in"            :   [ "<topic_1>", ... , "<topic_N>"],
         "element"       :   "<element_name>"
     }
 }
@@ -90,6 +90,4 @@ SINGLE:
 input to <lua_function> that triggers alert for element <element_name> with
 state ACTIVE, severity <severity>. When the condition no longer holds true,
 trigger the same alert with state RESOVED.
-
- 
 

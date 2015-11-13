@@ -2,9 +2,10 @@ This RFC describes communication protocols that are used by ALERT component
 
 Parts involved in communication
 -------------------------------
-* Component METRIC_DRIVER is any component that publishes METRIC messages into METRICS stream. In the system there CAN be many of such components.
-* Component ALERT is a component publishes ALERT messages into ALERTS stream as a result of evaluation of metric in the system. In the system there MUST be only one such component.
+* Component METRIC_GENERATOR is any component that publishes METRIC messages into METRICS stream. In the system there CAN be many of such components.
+* Component ALERT is a component that publishes ALERT messages into ALERTS stream as a result of evaluation of metrics in the system. In the system there MUST be only one such component.
 * Component GATEWAY is a component that sends information about alerts in the system to external services. In the system there CAN be many of them.
+* Component USER that communicates directly with ALERT component, to send new rules to update rules and to ask for list of rules.
 
 Component ALERT
 ---------------
@@ -14,6 +15,7 @@ Component ALERT
     * outputs:
         ** current ongoing evaluated alerts into ALERTS stream
         ** resolved alerts into ALERTS stream
+        ** list of actual rules as reply to the requests
 
 Rules are stores as files with extension ".rule". One file for one rule. Only Alert agent is supposed to manipulate with these files.
 
@@ -21,7 +23,7 @@ METRICS stream
 ==============
 Messages
 --------
-    * METRIC message ( indicates, that METRIC_DRIVER component has measured some metrics and wants to share this information with other components in the system )
+    * METRIC message ( indicates, that METRIC_GENERATOR component has measured some metrics and wants to share this information with other components in the system )
 
 METRIC message
 ~~~~~~~~~~~~~~
@@ -54,9 +56,9 @@ ALERT message is a multipart message that MUST contain the following fields in t
 
 ALERT message MUST be sent with the subject "rule_name/severity@element_name" (see proto.h `alert_send`)
 
-Protocol ALERT + METRIC_DRIVER on the METRICS stream
+Protocol ALERT + METRIC_GENERATOR on the METRICS stream
 ====================================================
-    * METRIC_DRIVER compoment publishes METRIC messages into METRICS stream as often as it is needed.
+    * METRIC_GENERATOR compoment publishes METRIC messages into METRICS stream as often as it is needed.
     * ALERT component is subscribed on METRIC messages in the METRICS stream. And starts evaluation every time new metric received.
       Other messages from METRICS stream MUST be ignored by ALERT component.
 
