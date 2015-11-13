@@ -93,24 +93,6 @@ section describing semantics.
 
 WIP Rules "pattern" and "single" have property "action" as optional.
 
-{
-    "threshold" : {
-        "rule_name"     :   "<rule_name>",
-        "metric"        :   <metric_specification>,
-        "element"       :   "<element_name>",
-        "values"        :   [ "low_critical"  : "<value>",
-                              "low_warning"   : "<value>",
-                              "high_warning"  : "<value>",
-                              "high_critical" : "<value>" ],
-        "results"       :   [ "1" : { "action" : "<action>", "severity" : "<severity>" },
-                              "2" : { "action" : "<action>", "severity" : "<severity>" },
-                              "3" : { "action" : "<action>", "severity" : "<severity>" },
-                              "4" : { "action" : "<action>", "severity" : "<severity>" },
-                              "5" : { "action" : "<action>", "severity" : "<severity>" } ],
-        "evaluation"    :   "<lua_function>"
-    }
-}
-
 
 The semantics is as follows (WIP):
 
