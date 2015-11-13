@@ -6,12 +6,12 @@ Connects USER peer to EVALUATOR peer.
 The USER peer sends one of the following messages using MAILBOX SEND to
 EVALUATOR peer:
 
-1) LIST/type - request list of rule names
+1) LIST/type - request list of rule names of specified type
 2) ADD/json - add (create/update) new rule
 3) GET/name - request rule detail
 
 where '/' indicates a multipart string message, 'json' is valid json
-document(1), 'type' is one of [ all | thresholds | patterns | singles ], 'name'
+document(1), 'type' is one of [ all | threshold | pattern | single ], 'name'
 is rule name and 'subject' of the message is "rfc-evaluator-rules".
 
 The EVALUATOR peer MUST send the appropriate message back to USER peer
@@ -32,16 +32,24 @@ There are the three different json formats that are accepted
 
 {
     "threshold" : {
-        "rule_name" :   "<rule_name>",
-        "severity"  :   "<severity>",
-        "metric"    :   "<metric_name>",
-        "type"      :   "<type>",
-        "element"   :   "<element_name>",
-        "value"     :   "<value>",
-        "action"    :   ["<action_1", ..., "<action_N>"]
+        "rule_name"     :   "<rule_name>",
+        "metric"        :   <metric_specification>,
+        "element"       :   "<element_name>",
+        "values"        :   [ "low_critical"  : "<value>",
+                              "low_warning"   : "<value>",
+                              "high_warning"  : "<value>",
+                              "high_critical" : "<value>" ],
+        "action"        :   [ "<action_1>", ... , "<action_N>" ],
+        "results"       :   [ "1" : { "action" : "<action>", "severity" : "<severity>" },
+                              "2" : { "action" : "<action>", "severity" : "<severity>" },
+                              "3" : { "action" : "<action>", "severity" : "<severity>" },
+                              "4" : { "action" : "<action>", "severity" : "<severity>" },
+                              "5" : { "action" : "<action>", "severity" : "<severity>" } ],
+        "evaluation"    :   "<lua_function>"
     }
 }
 
+WIP
 {
     "pattern" : {
         "rule_name"     :   "<rule_name>",
@@ -52,32 +60,59 @@ There are the three different json formats that are accepted
     }
 }
 
+WIP
 {
     "single" : {
         "rule_name"     :   "<rule_name>",
         "severity"      :   "<severity>",
-        "in"            :   [ "<topic_1>, ..., "<topic_N>"],
         "evaluation"    :   "<lua_function>",
         "element"       :   "<element_name>",
         "action"        :   ["<action_1", ..., "<action_N>"] 
+        "in"            :   [ "<topic_1>", ... , "<topic_N>"],
     }
 }
 
 where
     * <rule_name>       unique rule name, CASE SENSITIVE
+    * <metric_specification>       string value representing name of metric OR array of string values 
+                        representing metric names
+    * <element_name>    name of element
+    * <value>           number (integer, floating-point)
+    * <action>          one of [ EMAIL | SMS ] and determines the resulting alert action
     * <severity>        one of [ INFO | WARNING | CRITICAL ] and determines the resulting alert severity
     * <lua_function>    lua function that evaluates trigger conditions
     * <topic_X>         metric topic
-    * <element_name>    name of element
-    * <metric_name>     name of metric
-    * <type>            one of [ LOW | HIGH ]
     * <regex>           regular expression
-    * <value>           number (integer, floating-point)
-    * <action_X>        one of [ EMAIL | SMS ] and determines the resulting alert action
 
-Rules "pattern" and "single" have property "action" as optional.
+For threshold rule:
+If <metric_specification> is single string value then property "evaluation" :
+"<lua_function>" is ignored. If <metric_specification> is array then property "evaluation" :
+"<lua_function>" is expected and in case it is missing, only the first value
+from <metric_specification> is taken. For further details please consult the
+section describing semantics.
 
-The semantics is as follows:
+WIP Rules "pattern" and "single" have property "action" as optional.
+
+{
+    "threshold" : {
+        "rule_name"     :   "<rule_name>",
+        "metric"        :   <metric_specification>,
+        "element"       :   "<element_name>",
+        "values"        :   [ "low_critical"  : "<value>",
+                              "low_warning"   : "<value>",
+                              "high_warning"  : "<value>",
+                              "high_critical" : "<value>" ],
+        "results"       :   [ "1" : { "action" : "<action>", "severity" : "<severity>" },
+                              "2" : { "action" : "<action>", "severity" : "<severity>" },
+                              "3" : { "action" : "<action>", "severity" : "<severity>" },
+                              "4" : { "action" : "<action>", "severity" : "<severity>" },
+                              "5" : { "action" : "<action>", "severity" : "<severity>" } ],
+        "evaluation"    :   "<lua_function>"
+    }
+}
+
+
+The semantics is as follows (WIP):
 
 THRESHOLD:
    If value of metric <metric_name> on element <element_name> is smaller
@@ -99,6 +134,4 @@ input to <lua_function> that triggers alert for element <element_name> with
 state ACTIVE, severity <severity> and action states <action_1>, 
 ..., <action_N> if property "action" is specified, EMAIL action otherwise. When
 the condition no longer holds true, trigger the same alert with state RESOVED.
-
- 
 
