@@ -79,6 +79,8 @@ mv %{buildroot}%{_includedir}/* \
 %doc COPYING
 %{_bindir}/*
 %{_libdir}/*.so.*
+%{_libdir}/bios
+%{_libdir}/systemd
 %{_libexecdir}/bios
 %{_datadir}
 #MVY: prevents file listed twice error - most likely libexecdir above
