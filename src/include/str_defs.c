@@ -34,6 +34,7 @@ const char *BIOS_AGENT_NAME_COMPUTATION = "agent-cm";
 const char *BIOS_AGENT_PREFIX_REST = "rest.";
 const char *BIOS_AGENT_NAME_DB_MEASUREMENT = "persistence.measurement";
 const char *BIOS_AGENT_NAME_DB_INVENTORY = "persistence.inventory";
+const char* BIOS_AGENT_NAME_ALERT_AGENT = "alert_agent";
 
 const char *AVG_STEPS[AVG_STEPS_SIZE] = {
     "15m",

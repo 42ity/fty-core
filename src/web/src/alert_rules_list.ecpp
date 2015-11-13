@@ -1,0 +1,166 @@
+<#
+ #
+ # Copyright (C) 2015 Eaton
+ #
+ # This program is free software; you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+ # the Free Software Foundation; either version 2 of the License, or
+ # (at your option) any later version.
+ #
+ # This program is distributed in the hope that it will be useful,
+ # but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+ #
+ # You should have received a copy of the GNU General Public License along
+ # with this program; if not, write to the Free Software Foundation, Inc.,
+ # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ #
+ #><#
+/*!
+ \file alert_rules_list.ecpp
+ \author Karol Hrdina <KarolHrdina@Eaton.com>
+ \brief Implementation of REST API call for alerts/rules
+*/
+#><%pre>
+#include <cxxtools/jsondeserializer.h>
+#include <cxxtools/regex.h>
+#include <vector>
+#include <string>
+#include <malamute.h>
+#include <sys/types.h>
+#include <sys/syscall.h>
+
+#include "log.h"
+#include "utils_web.h"
+#include "str_defs.h"
+</%pre>
+<%args>
+std::string type;
+</%args>
+<%cpp>
+// sanity check
+if (!request.isMethodGET ())
+    http_die ("method-not-allowed", request.getMethod ().c_str ());
+
+if (type.empty ()) {
+    type = "all";
+}
+else if (type != "thresholds" && type != "singles" && type != "patterns") { // unknown parameter 'type'
+    http_die ("request-param-bad", "type", std::string ("'").append (type).append ("'").c_str (),
+              "one of the following values [ 'thresholds','singles', 'patterns' ] or empty");
+}
+
+// connect to malamute
+mlm_client_t *client = mlm_client_new ();
+if (!client) {
+    log_critical ("mlm_client_new() failed.");
+    http_die ("internal-error", "mlm_client_new () failed.");
+}
+
+std::string client_name ("alert_rules.");
+client_name.append (std::to_string (getpid ())).append (".").append (std::to_string (syscall (SYS_gettid)));
+log_debug ("malamute client name = '%s'.", client_name.c_str ());
+
+int rv = mlm_client_connect (client, MLM_ENDPOINT, 1000, client_name.c_str ());
+if (rv == -1) {
+    log_critical ("mlm_client_connect (endpoint = '%s', timeout = '%d', address = '%s') failed.",
+                    MLM_ENDPOINT, 1000, client_name.c_str ());
+    http_die ("internal-error", "mlm_client_connect () failed.");
+}
+
+// prepare rfc-evaluator-rules LIST message
+zmsg_t *send_msg = zmsg_new ();
+if (!send_msg) {
+    log_critical ("zmsg_new () failed.");
+    http_die ("internal-error", "zmsg_new () failed.");
+}
+zmsg_addstr (send_msg, "LIST");
+zmsg_addstr (send_msg, type.c_str ());
+
+// send it
+if (mlm_client_sendto (client, BIOS_AGENT_NAME_ALERT_AGENT, "rfc-evaluator-rules", NULL, 1000, &send_msg) != 0) {
+    log_debug ("mlm_client_sendto (address = '%s', subject = '%s', tracker = NULL, timeout = '%d') failed.",
+        BIOS_AGENT_NAME_ALERT_AGENT, "rfc-evaluator-rules", 1000);
+    zmsg_destroy (&send_msg);
+    mlm_client_destroy (&client);
+    http_die ("internal-error", "mlm_client_sendto () failed.");
+}
+
+zmsg_t *recv_msg = NULL;
+while (true) { 
+    recv_msg = mlm_client_recv (client);
+    if (!recv_msg) {
+        log_error ("mlm_client_recv () failed.");
+        mlm_client_destroy (&client);
+        http_die ("internal-error", "mlm_client_recv () failed.");
+    }
+    if (streq (mlm_client_sender (client), BIOS_AGENT_NAME_ALERT_AGENT))
+        break;
+    zmsg_destroy (&recv_msg);
+}
+// Got it
+if (!streq (mlm_client_subject (client), "rfc-evaluator-rules")) {
+    log_error ("Got reply with unexpected subject = '%s'. Expected subject = '%s'.",
+        mlm_client_subject (client), "rfc-evaluator-rules");
+    zmsg_destroy (&recv_msg);
+    mlm_client_destroy (&client);
+    http_die ("internal-error");
+}
+char *part = zmsg_popstr (recv_msg);
+if (streq (part, "LIST")) {
+    free (part);
+    part = zmsg_popstr (recv_msg);
+    if (type.compare (part) != 0) {
+        log_error ("%s",
+            std::string ("Got reply from '").append (mlm_client_sender (client)).
+            append ("' with a different than requested type of LIST message from rfc-evaluator-rules protocol.").c_str ());
+        free (part);
+        zmsg_destroy (&recv_msg);
+        mlm_client_destroy (&client);
+        http_die ("internal-error");
+    }
+    free (part);
+    part = zmsg_popstr (recv_msg);
+    bool first = true;
+    </%cpp>
+{
+    "<$ type $>" : [
+% while (part) {
+%   if (first) {
+        "<$ part $>" 
+%     first = false;
+%   }
+%   else {
+,       "<$ part $>" 
+%   }
+% free (part);
+% part = zmsg_popstr (recv_msg);
+% }
+    ]
+}
+    <%cpp>
+    zmsg_destroy (&recv_msg);
+    mlm_client_destroy (&client);
+    return HTTP_OK;
+}
+if (streq (part, "ERROR")) {
+    free (part);
+    part = zmsg_popstr (recv_msg);
+    if (!part) {
+        log_error ("Expected ERROR/reason. Got ERROR/(null).");
+    }
+    else {
+        log_error ("%s", part);
+        free (part);
+    }
+    zmsg_destroy (&recv_msg);
+    mlm_client_destroy (&client);
+    http_die ("internal-error");
+}
+log_error ("%s", std::string ("Message from '").append (mlm_client_sender (client)).append ("' does not conform to rfc-evaluator-rules.").c_str ());
+free (part);
+zmsg_destroy (&recv_msg);
+mlm_client_destroy (&client);
+http_die ("internal-error");
+</%cpp>

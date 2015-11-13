@@ -39,9 +39,9 @@ There are the three different json formats that are accepted
                               "low_warning"   : "<value>",
                               "high_warning"  : "<value>",
                               "high_critical" : "<value>" ],
-        "results"       :   [ "low_critical" : { "action" : ["<action_1>", ..., "<action_N>"], "severity" : "<severity>", "description" : "<description>" },
-                              "low_warning" : { "action" : ["<action_1>", ..., "<action_N>"], "severity" : "<severity>", "description" : "<description>"},
-                              "high_warning" : { "action" : ["<action_1>", ..., "<action_N>"], "severity" : "<severity>", "description" : "<description>" },
+        "results"       :   [ "low_critical"  : { "action" : ["<action_1>", ..., "<action_N>"], "severity" : "<severity>", "description" : "<description>" },
+                              "low_warning"   : { "action" : ["<action_1>", ..., "<action_N>"], "severity" : "<severity>", "description" : "<description>"},
+                              "high_warning"  : { "action" : ["<action_1>", ..., "<action_N>"], "severity" : "<severity>", "description" : "<description>" },
                               "high_critical" : { "action" : ["<action_1>", ..., "<action_N>"], "severity" : "<severity>", "description" : "<description>" } ],
         "evaluation"    :   "<lua_function>"
     }
