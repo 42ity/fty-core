@@ -18,9 +18,9 @@
  #
  #><#
 /*!
- \file thresholds.ecpp
+ \file alert_rules_detail.ecpp
  \author Karol Hrdina <KarolHrdina@Eaton.com>
- \brief Implementation of REST API call for thresholds
+ \brief Implementation of REST API call for alerts/rules/<name>
 */
 #><%pre>
 #include <cxxtools/jsondeserializer.h>
@@ -31,47 +31,48 @@
 #include <sys/types.h>
 #include <sys/syscall.h>
 
+#include "log.h"
 #include "utils_web.h"
 #include "str_defs.h"
-
 </%pre>
 <%cpp>
+// sanity check
+if (request.getMethod () != "POST" && request.getMethod () != "PUT")
+    http_die ("method-not-allowed", request.getMethod ().c_str ());
 
-if (request.getMethod () != "GET" && request.getMethod () != "POST" && request.getMethod () != "PUT")
-    http_die ("internal-error", "TODO method not allowed");    // TODO: Unallowed method
+std::string name = request.getArg ("name");
+log_debug ("requested rule name = '%s'.", name.c_str ());
 
+return HTTP_OK;
+/*
+// connect to malamute
 mlm_client_t *client = mlm_client_new ();
 if (!client) {
-    log_fatal ("mlm_client_new() failed.");
+    log_critical ("mlm_client_new() failed.");
     http_die ("internal-error", "mlm_client_new () failed.");
 }
 
-std::string client_name ("thresholds.");
+std::string client_name ("alert_rules.");
 client_name.append (std::to_string (getpid ())).append (".").append (std::to_string (syscall (SYS_gettid)));
+log_debug ("malamute client name = '%s'.", client_name.c_str ());
 
 int rv = mlm_client_connect (client, MLM_ENDPOINT, 1000, client_name.c_str ());
 if (rv == -1) {
-// TODO rewrite
-//    log_error ("mlm_client_connect (endpoint = '%s', timeout = '%d', address = '%s'",
-//                MLM_ENDPOINT, 1000, client_name.c_str ());
+    log_critical ("mlm_client_connect (endpoint = '%s', timeout = '%d', address = '%s') failed.",
+                    MLM_ENDPOINT, 1000, client_name.c_str ());
     http_die ("internal-error", "mlm_client_connect () failed.");
 }
 
+// prepare rfc-evaluator-rules GET message
 zmsg_t *send_msg = zmsg_new ();
 if (!send_msg) {
-    log_fatal ("zmsg_new() failed.");
+    log_critical ("zmsg_new () failed.");
     http_die ("internal-error", "zmsg_new () failed.");
 }
+zmsg_addstr (send_msg, "GET");
+zmsg_addstr (send_msg, name.c_str ());
 
-std::string request_op;
-
-if (request.isMethodGET ()) {
-    request_op = "LIST";
-    zmsg_addstr (send_msg, request_op.c_str ());
-
-}
 else {
-    std::string name = request.getArg ("name");
     cxxtools::SerializationInfo si;
     try {
         std::stringstream input (request.getBody(), std::ios_base::in); 
@@ -109,36 +110,10 @@ else {
 
 }
 
-if (mlm_client_sendto (client, "alert_agent", "rfc-thresholds", NULL, 1000, &send_msg) != 0) { // TODO rewrite address to str_defs
-// TODO rewrite
-//        log_debug ("mlm_client_sendto (address = '%s', subject = '%s', tracker = NULL, timeout = '%d') failed.",
-//                    "alert_agent", "rfc-thresholds", 1000);
-    zmsg_destroy (&send_msg);
-    mlm_client_destroy (&client);
-    http_die ("internal-error", "mlm_client_sendto () failed.");
-}
-// wait for reply; TODO: wait in cycle and check sender throw away potential troll senders
-zmsg_t *recv_msg = mlm_client_recv (client);
-if (!recv_msg) {
-    log_error ("mlm_client_recv () failed.");
-    mlm_client_destroy (&client);
-    http_die ("internal-error", "mlm_client_recv () failed.");
-}
+
 // Got it
 char *part = zmsg_popstr (recv_msg);
-if (streq (part, "LIST")) {
-    </%cpp>
-{
-    "thresholds" : [
-%    while (part) {
-        <$$ part $>
-%       free (part);
-%       part = zmsg_popstr (recv_msg);
-%    }
-    ]
-}
-    <%cpp>
-} else if (streq (part, "OK"))  {
+ else if (streq (part, "OK"))  {
     </%cpp>
     OK:  <$$ zmsg_popstr (recv_msg) $>
     <%cpp>
@@ -150,5 +125,5 @@ if (streq (part, "LIST")) {
     http_die ("internal-error", "Unexpected message."); // TODO http_die
 }
 return HTTP_OK;
+*/
 </%cpp>
-

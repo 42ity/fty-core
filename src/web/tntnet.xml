@@ -60,13 +60,28 @@
       <method>(POST|PUT)</method>
     </mapping>
 
-    <!-- alerts/thresholds -->
+    <!-- alerts/rules -->
     <mapping>
-        <target>thresholds@bios_web</target>
-        <method>(GET|POST|PUT)</method>
-        <url>^/api/v1/alerts/thresholds/?(.*)$</url>
+        <target>alert_rules_list@bios_web</target>
+        <method>GET</method>
+        <url>^/api/v1/alerts/rules([^/]*)$</url>
+    </mapping>
+
+    <mapping>
+        <target>alert_rules_detail@bios_web</target>
+        <method>GET</method>
+        <url>^/api/v1/alerts/rules/([^/]*)$</url>
         <args>
             <name>$1</name>
+        </args>       
+    </mapping>
+
+    <mapping>
+        <target>alert_rules@bios_web</target>
+        <method>(POST|PUT)</method>
+        <url>^/api/v1/alerts/rules(/|/([^/]+)){0,1}$</url>
+        <args>
+            <name>$2</name>
         </args>       
     </mapping>
 
