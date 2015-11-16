@@ -57,7 +57,6 @@ There are the three different json formats that are accepted
     "pattern" : {
         "rule_name"     :   "<rule_name>",
         "target"        :   "<regex>"
-        "severity"      :   "<severity>",
         "results"       :   { "action" : ["<action_1>", ..., "<action_N>"], "severity" : "<severity>", "description" : "<description>" }
         "evaluation"    :   "<lua_function>",
     }
