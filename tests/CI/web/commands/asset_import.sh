@@ -37,6 +37,7 @@ CSV_FILE_NAME=$1
 TABLE_NAME=$2
 NUM_EXPECTED=$3 # when NUM_EXPECTED=0, the import is not performed, in other case it is num of imported lines
 FILENAME_PREFIX=$4
+TEST_ID=$5
 ASSET="$CHECKOUTDIR/tools/asset_import/${CSV_FILE_NAME}"
 if [ "$NUM_EXPECTED" != 0 ];then
     if [ "$REZ" = 0 ];then
@@ -48,7 +49,7 @@ if [ "$NUM_EXPECTED" != 0 ];then
 fi
 mysqldump -u root box_utf8 ${TABLE_NAME}|grep "INSERT" > ${DUMP_DIR}/${TABLE_NAME}.dmp
 if [ "$REZ" = 0 ];then
-    diff ${DUMP_DIR}/${TABLE_NAME}.dmp ${RES_DIR}/${TABLE_NAME}.ptr|wc -l || REZ=1
+    diff ${DUMP_DIR}/${TABLE_NAME}.dmp ${RES_DIR}/${TABLE_NAME}${TEST_ID}.ptr|wc -l || REZ=1
 fi
 }
 
@@ -56,15 +57,16 @@ test_tables(){
 CSV_FILE_NAME=$1
 NUM_EXPECTED=$2 # when NUM_EXPECTED=0, the import is not performed, in other case it is num of imported lines
 FILENAME_PREFIX=$3
-csv_import "$CSV_FILE_NAME" "t_bios_asset_element" "$NUM_EXPECTED" "$FILENAME_PREFIX"
-#echo "REZ1=$REZ"
-csv_import "$CSV_FILE_NAME" "t_bios_asset_group_relation" 0 "$FILENAME_PREFIX"
-#echo "REZ2=$REZ"
-csv_import "$CSV_FILE_NAME" "t_bios_asset_ext_attributes" 0 "$FILENAME_PREFIX"
-#echo "REZ3=$REZ"
-csv_import "$CSV_FILE_NAME" "t_bios_asset_link" 0 "$FILENAME_PREFIX"
-#echo "REZ4=$REZ"
-csv_import "$CSV_FILE_NAME" "t_bios_asset_link_type" 0 "$FILENAME_PREFIX"
+TEST_ID=$4
+csv_import "$CSV_FILE_NAME" "t_bios_asset_element" "$NUM_EXPECTED" "$FILENAME_PREFIX" "$TEST_ID"
+echo "REZ1=$REZ"
+csv_import "$CSV_FILE_NAME" "t_bios_asset_group_relation" 0 "$FILENAME_PREFIX" "$TEST_ID"
+echo "REZ2=$REZ"
+csv_import "$CSV_FILE_NAME" "t_bios_asset_ext_attributes" 0 "$FILENAME_PREFIX" "$TEST_ID"
+echo "REZ3=$REZ"
+csv_import "$CSV_FILE_NAME" "t_bios_asset_link" 0 "$FILENAME_PREFIX" "$TEST_ID"
+echo "REZ4=$REZ"
+csv_import "$CSV_FILE_NAME" "t_bios_asset_link_type" 0 "$FILENAME_PREFIX" "$TEST_ID"
 }
 
 echo
@@ -195,3 +197,11 @@ test_tables "universal_asset_comma_16LE_with_BOM.csv" 48 "COMMA_8"
 #echo "REZ6=$REZ"
 print_result $REZ
 
+echo "********* asset_import_err.sh *********************************************************************"
+echo "********* Case insensitive ********************************************************************"
+echo "***************************************************************************************************"
+test_it "Case_insensitive"
+initiate_db
+REZ=0
+test_tables "universal_asset_comma_insensitive_8.csv" 48 "ERROR" "_case_insensitive"
+print_result $REZ
