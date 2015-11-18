@@ -1530,7 +1530,7 @@ endif
 #                        Extra files and sources
 #----------------------------------------------------------------------
 
-EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
+EXTRA_DIST += \
 			$(top_srcdir)/tools/dbinit.h \
 			$(top_srcdir)/tools/dbpath.h \
 			$(top_srcdir)/include/*.h \
