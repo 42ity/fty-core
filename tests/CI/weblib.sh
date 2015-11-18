@@ -277,6 +277,11 @@ curlfail_push_expect_409() {
     curlfail_push "expect" 'HTTP/[^ ]+ 409'
 }
 
+curlfail_push_expect_413() {
+    ### Preconfigured push that resets current values to specifically
+    ### expect an HTTP-413 Request Entity Too Large (and fail for other results)
+    curlfail_push "expect" 'HTTP/[^ ]+ 413'
+}
 
 curlfail_push_expect_500() {
     ### Preconfigured push that resets current values to specifically
@@ -323,7 +328,7 @@ CURL() {
 
     ERR_MATCH=""
     if [ -n "$ERR_CURL" -a x"$WEBLIB_CURLFAIL_HTTPERRORS" != xignore ]; then
-        ERR_MATCH="`( echo "$ERR_CURL"; echo "" ) | tr '\r' '\n' | egrep '^( *< |wget: server returned error: )'"$WEBLIB_HTTPERRORS_REGEX"`" 2>&3 || true
+        ERR_MATCH="`( echo "$ERR_CURL"; echo "" ) | tr '\r' '\n' | egrep '^( *< |.*#+ 100.0%< |wget: server returned error: )'"$WEBLIB_HTTPERRORS_REGEX"`" 2>&3 || true
         if [ -n "$ERR_MATCH" ]; then
             if [ x"$WEBLIB_CURLFAIL_HTTPERRORS" = xexpect ]; then
                 [ x"$WEBLIB_CURLFAIL_HTTPERRORS_DEBUG" = xyes ] && \
@@ -548,6 +553,24 @@ api_auth_post_file() {
     CURL --insecure -H "Expect:" --header "Authorization: Bearer $TOKEN" --form "$data" \
         -v --progress-bar "$BASE_URL$url" "$@" 3>&2 2>&1
 }
+
+# this version of api_auth_post_file uses the --data instead of --form switch
+api_auth_post_file_data() {
+    local url data
+    url=$1
+    data=$2
+    shift 2
+    TOKEN="`_api_get_token`"
+    CURL --insecure -H "Expect:" --header "Authorization: Bearer $TOKEN" --data "$data" \
+        -v --progress-bar "$BASE_URL$url" "$@" 3>&2 2>&1
+}
+
+
+api_auth_post_file_json() {
+    api_auth_post_file "$@" > /dev/null || return $?
+    _normalize_OUT_CURL_json
+}
+
 
 # Does an api DELETE request with authorization
 # Authorization is done through HTTP header --header "Authorization: Bearer $TOKEN"
