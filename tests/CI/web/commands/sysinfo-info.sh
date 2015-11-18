@@ -21,7 +21,8 @@
 #! \file sysinfo-info.sh
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \author Michal Vyskocil <MichalVyskocil@Eaton.com>
-#  \brief Not yet documented file
+#  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
+#  \brief test of the sysinfo restapi request
 
 ###############################################################
 [ -z "${JSONSH-}" ] && \
@@ -29,8 +30,15 @@
         [ -x "$F" -a -s "$F" ] && JSONSH="$F" && break
     done
 
-# Check getting server system info as unprivileged user
-# As of now, this should work, just in a limited manner
+echo "###################################################################################################"
+echo "********* sysinfo-info.sh ******************************* START ***********************************"
+echo "###################################################################################################"
+echo
+
+echo "********* current.sh ******************************************************************************"
+echo "********* 1. sysinfo_get_auth=0_raw ***************************************************************"
+echo "***************************************************************************************************"
+
 test_it "sysinfo_get_auth=0_raw"
 curlfail_push "warn" ""
 SYSINFOURAW="`api_get '/admin/sysinfo'`"
@@ -47,6 +55,8 @@ if [ $RES = 0 ]; then
     echo "Got HTTP-4xx error" && RES=123
 fi >&2
 print_result $RES
+
+if false;then
 
 # Check getting server system info as unprivileged user
 test_it "sysinfo_get_auth=0"
@@ -399,4 +409,5 @@ if [ -n "$CMPJSON_SH" -a -x "$CMPJSON_SH" ]; then
 #    test_it "sysinfo_post_wToken_auth=2_sameAsHeaderAuth_naive"
 #    [ x"$SYSINFOA_WT_P" = x"$SYSINFOA" ]
 #    print_result $?
+fi
 fi
