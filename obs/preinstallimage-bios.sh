@@ -482,7 +482,7 @@ for i in /usr/share/mysql/* /usr/share/locale /usr/share/bios/{docker,develop,ob
    [ -f "$i" ] || \
    [ "$i" = /usr/share/mysql/charsets ] || \
    [ "$i" = /usr/share/mysql/english ] || \
-   $SPACERM "$i"
+   $SPACERM "$i" || true
 done
 
 # Show the package list
