@@ -59,7 +59,7 @@ try {
 }
 catch (const std::exception& e) {
     log_debug ("Bad request document - invalid json: %s", e.what ());
-    http_die ("bad-request-document"); // TODO: e.what () ? some general "valid json expected..." ?
+    http_die ("bad-request-document", "Please check RFC-11 for valid rule json schema description.");
 }
 log_debug ("json 'rule_name' property = '%s'.", json_rule_name.c_str ());
 // json is valid as far as rest api is concerned
