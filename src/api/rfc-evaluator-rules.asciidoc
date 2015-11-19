@@ -34,6 +34,13 @@ document(1), 'reason' is error string, 'type' is one of [ all | threshold |
 pattern | single ] and its value MUST be the same as the value of 'type'
 received in 1) message, 'subject' of the message is "rfc-evaluator-rules".
 
+For messages 1), 2), 3) if the requested 'type', 'name' or 'old_name' does not
+exist the EVALUATOR peer MUST assign NOT_FOUND string as reason.
+
+For message 3) if 'json' is not a valid json or does not adhere to rules schema
+the EVALUATOR peer MUST assing BAD_JSON string as reason.
+
+
 
 (1)
 There are three different json formats that are accepted
