@@ -161,7 +161,8 @@ if (streq (part, "ERROR")) {
         log_error ("Rule type '%s' does not exist.", type.c_str ());
         zmsg_destroy (&recv_msg);
         mlm_client_destroy (&client);
-        http_die ("not-found", std::string ("Rule type '").append (type).append ("'").c_str ());
+        http_die ("request-param-bad", "type", std::string ("'").append (type).append ("'").c_str (),
+                  "one of the following values [ 'threshold', 'single', 'pattern', 'all' ] or empty");
     }
     log_error ("%s", part);
     std::string reason = part;
