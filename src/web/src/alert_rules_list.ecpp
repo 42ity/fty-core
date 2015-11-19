@@ -151,15 +151,26 @@ if (streq (part, "ERROR")) {
     free (part);
     part = zmsg_popstr (recv_msg);
     if (!part) {
-        log_error ("Unexpected reply from '%s'. Expected ERROR/reason, received ERROR/(null).", mlm_client_sender (client));
+        log_error ("Unexpected reply from '%s'. Expected ERROR/reason. Got ERROR/(null).", mlm_client_sender (client));
+        zmsg_destroy (&recv_msg);
+        mlm_client_destroy (&client);
+        http_die ("internal-error", "Bad message.");
     }
-    else {
-        log_error ("%s", part);
+    if (streq (part, "NOT_FOUND")) {
         free (part);
+        log_error ("Rule type '%s' does not exist.", type.c_str ());
+        zmsg_destroy (&recv_msg);
+        mlm_client_destroy (&client);
+        http_die ("not-found", std::string ("Rule type '").append (type).append ("'").c_str ());
     }
+    log_error ("%s", part);
+    std::string reason = part;
+    free (part);
     zmsg_destroy (&recv_msg);
     mlm_client_destroy (&client);
-    http_die ("internal-error", "Bad message.");
+    http_die ("internal-error", 
+        std::string ("Error while retrieving list of rules with type = '").append (type).append ("': ").
+        append (reason).append(".").c_str ());
 }
 // Message does not conform to protocol
 free (part);

@@ -156,15 +156,32 @@ if (streq (part, "ERROR")) {
     part = zmsg_popstr (recv_msg);
     if (!part) {
         log_error ("Unexpected reply from '%s'. Expected ERROR/reason. Got ERROR/(null).", mlm_client_sender (client));
+        zmsg_destroy (&recv_msg);
+        mlm_client_destroy (&client);
+        http_die ("internal-error", "Bad message.");
     }
-    else {
-        // TODO: 
-        log_error ("%s", part);
+    if (streq (part, "NOT_FOUND")) {
         free (part);
+        log_error ("Rule name '%s' does not exist.", name.c_str ());
+        zmsg_destroy (&recv_msg);
+        mlm_client_destroy (&client);
+        http_die ("not-found", std::string ("Rule name '").append (name).append ("'").c_str ());
     }
+    if (streq (part, "BAD_JSON")) {
+        free (part);
+        log_error ("Request document not valid json or does not adhere to specified schema.");
+        zmsg_destroy (&recv_msg);
+        mlm_client_destroy (&client);
+        http_die ("bad-request-document", "Please check RFC-11 for valid rule json schema description.");
+    }
+    log_error ("%s", part);
+    std::string reason = part;
+    free (part);
     zmsg_destroy (&recv_msg);
     mlm_client_destroy (&client);
-    http_die ("internal-error", "Bad message.");
+    http_die ("internal-error",
+        std::string ("Error while retrieving details of rule name = '").append (name).append ("': ").
+        append (reason).append(".").c_str ());
 }
 // Message does not conform to protocol
 free (part);
