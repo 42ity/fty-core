@@ -23,6 +23,7 @@
  \brief Implementation of REST API call for alerts/rules/<name>
 */
 #><%pre>
+#include <exception>
 #include <cxxtools/jsondeserializer.h>
 #include <cxxtools/regex.h>
 #include <vector>
@@ -41,15 +42,38 @@ if (request.getMethod () != "POST" && request.getMethod () != "PUT")
     http_die ("method-not-allowed", request.getMethod ().c_str ());
 
 std::string name = request.getArg ("name");
+
+log_debug ("method = '%s'.", request.getMethod ().c_str ());
 log_debug ("requested rule name = '%s'.", name.c_str ());
 
-return HTTP_OK;
-/*
+// Let's take a look at payload
+cxxtools::SerializationInfo si;
+std::string json_rule_name;
+try {
+    std::stringstream input (request.getBody(), std::ios_base::in); 
+    cxxtools::JsonDeserializer deserializer (input);
+    deserializer.deserialize (si);
+    si.getMember ("rule_name") >>= json_rule_name;
+    if (json_rule_name.empty ())
+        throw std::runtime_error ("property 'rule_name' has empty value");
+}
+catch (const std::exception& e) {
+    log_debug ("Bad request document - invalid json: %s", e.what ());
+    http_die ("bad-request-document"); // TODO: e.what () ? some general "valid json expected..." ?
+}
+log_debug ("json 'rule_name' property = '%s'.", json_rule_name.c_str ());
+// json is valid as far as rest api is concerned
+// input args check
+if ((request.getMethod () == "POST" && !name.empty ()) ||
+    (request.getMethod () == "PUT" && name.empty ())) {
+    return DECLINED;
+}
+
 // connect to malamute
 mlm_client_t *client = mlm_client_new ();
 if (!client) {
     log_critical ("mlm_client_new() failed.");
-    http_die ("internal-error", "mlm_client_new () failed.");
+    http_die ("internal-error", "mlm_client_new() failed.");
 }
 
 std::string client_name ("alert_rules.");
@@ -60,70 +84,93 @@ int rv = mlm_client_connect (client, MLM_ENDPOINT, 1000, client_name.c_str ());
 if (rv == -1) {
     log_critical ("mlm_client_connect (endpoint = '%s', timeout = '%d', address = '%s') failed.",
                     MLM_ENDPOINT, 1000, client_name.c_str ());
-    http_die ("internal-error", "mlm_client_connect () failed.");
+    http_die ("internal-error", "mlm_client_connect() failed.");
 }
 
-// prepare rfc-evaluator-rules GET message
+// prepare rfc-evaluator-rules ADD message
 zmsg_t *send_msg = zmsg_new ();
 if (!send_msg) {
-    log_critical ("zmsg_new () failed.");
-    http_die ("internal-error", "zmsg_new () failed.");
+    log_critical ("zmsg_new() failed.");
+    http_die ("internal-error", "zmsg_new() failed.");
 }
-zmsg_addstr (send_msg, "GET");
-zmsg_addstr (send_msg, name.c_str ());
-
-else {
-    cxxtools::SerializationInfo si;
-    try {
-        std::stringstream input (request.getBody(), std::ios_base::in); 
-        cxxtools::JsonDeserializer deserializer (input);
-        deserializer.deserialize (si);        
-    }
-    catch (const std::exception& e) {
-        // TODO: http_die
-        http_die ("internal-error", "Error deserializing request document.");
-    }
-    // json is valid
-    std::string json_name, severity, metric, type, element, value;
-    try {
-        si.getMember ("name") >>= json_name;
-        si.getMember ("severity") >>= severity;
-        si.getMember ("metric") >>= metric;
-        si.getMember ("type") >>= type;
-        si.getMember ("element") >>= element;
-        si.getMember ("value") >>= value;
-        if (name.empty () || severity.empty () || metric.empty () ||
-            type.empty () || element.empty () || value.empty ())
-            throw std::exception ();
-    }
-    catch (const std::exception& e) {
-        // TODO: http_die
-        http_die ("internal-error", "Request document not according to rfc-11.");
-    }
-    if (request.getMethod () == "PUT" && !name.empty () && name.compare (json_name) != 0) {
-        // TODO: http_die names are not equal
-        http_die ("internal-error", "Request document not according to rfc-11.");
-    }
-    request_op = "ADD";
-    zmsg_addstr (send_msg, request_op.c_str ());
-    zmsg_addstr (send_msg, request.getBody().c_str ());
-
+zmsg_addstr (send_msg, "ADD");
+zmsg_addstr (send_msg, request.getBody().c_str ());
+if (request.getMethod () == "PUT" && name.compare (json_rule_name) != 0) {
+    zmsg_addstr (send_msg, name.c_str ());
 }
 
+// send it
+if (mlm_client_sendto (client, BIOS_AGENT_NAME_ALERT_AGENT, "rfc-evaluator-rules", NULL, 1000, &send_msg) != 0) {
+    log_debug ("mlm_client_sendto (address = '%s', subject = '%s', tracker = NULL, timeout = '%d') failed.",
+        BIOS_AGENT_NAME_ALERT_AGENT, "rfc-evaluator-rules", 1000);
+    zmsg_destroy (&send_msg);
+    mlm_client_destroy (&client);
+    http_die ("internal-error", "mlm_client_sendto() failed.");
+}
+
+zmsg_t *recv_msg = NULL;
+// TODO: blocking mlm_client_recv
+while (true) {
+    recv_msg = mlm_client_recv (client);
+    if (!recv_msg) {
+        log_error ("mlm_client_recv() failed.");
+        mlm_client_destroy (&client);
+        http_die ("internal-error", "mlm_client_recv() failed.");
+    }
+    if (streq (mlm_client_sender (client), BIOS_AGENT_NAME_ALERT_AGENT))
+        break;
+    zmsg_destroy (&recv_msg);
+}
 
 // Got it
-char *part = zmsg_popstr (recv_msg);
- else if (streq (part, "OK"))  {
-    </%cpp>
-    OK:  <$$ zmsg_popstr (recv_msg) $>
-    <%cpp>
-} else if (streq (part, "ERROR")) {
-    </%cpp>
-    ERROR: <$$ zmsg_popstr (recv_msg) $>
-    <%cpp>
-} else {
-    http_die ("internal-error", "Unexpected message."); // TODO http_die
+// Check subject
+if (!streq (mlm_client_subject (client), "rfc-evaluator-rules")) {
+    log_error ("Unexpected reply from '%s'. Subject expected = '%s', received = '%s'.",
+        mlm_client_sender (client), "rfc-evaluator-rules", mlm_client_subject (client));
+    zmsg_destroy (&recv_msg);
+    mlm_client_destroy (&client);
+    http_die ("internal-error", "Bad message.");
 }
-return HTTP_OK;
-*/
+// Check command. Can be OK or ERROR
+char *part = zmsg_popstr (recv_msg);
+if (streq (part, "OK")) {
+    free (part);
+    part = zmsg_popstr (recv_msg);
+    if (!part) {
+        log_error ("Unexpected reply from '%s'. Expected OK/json. Got OK/(null).", mlm_client_sender (client));
+        zmsg_destroy (&recv_msg);
+        mlm_client_destroy (&client);
+        http_die ("internal-error", "Bad message.");
+    }
+// Note: Assumption: EVALUATOR returns valid json
+</%cpp>
+<$$ part $>
+<%cpp>
+    free (part);
+    zmsg_destroy (&recv_msg);
+    mlm_client_destroy (&client);
+    return HTTP_OK;
+}
+if (streq (part, "ERROR")) {
+    free (part);
+    part = zmsg_popstr (recv_msg);
+    if (!part) {
+        log_error ("Unexpected reply from '%s'. Expected ERROR/reason. Got ERROR/(null).", mlm_client_sender (client));
+    }
+    else {
+        // TODO: 
+        log_error ("%s", part);
+        free (part);
+    }
+    zmsg_destroy (&recv_msg);
+    mlm_client_destroy (&client);
+    http_die ("internal-error", "Bad message.");
+}
+// Message does not conform to protocol
+free (part);
+log_error ("Unexptected reply from  '%s'. Does not conform to rfc-evaluator-rules.",
+    mlm_client_sender (client));
+zmsg_destroy (&recv_msg);
+mlm_client_destroy (&client);
+http_die ("internal-error", "Bad message.");
 </%cpp>

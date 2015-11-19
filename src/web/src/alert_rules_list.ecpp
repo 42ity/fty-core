@@ -46,16 +46,16 @@ if (!request.isMethodGET ())
 if (type.empty ()) {
     type = "all";
 }
-else if (type != "thresholds" && type != "singles" && type != "patterns") { // unknown parameter 'type'
+if (type != "threshold" && type != "single" && type != "pattern" && type != "all") { // unknown parameter 'type'
     http_die ("request-param-bad", "type", std::string ("'").append (type).append ("'").c_str (),
-              "one of the following values [ 'thresholds','singles', 'patterns' ] or empty");
+              "one of the following values [ 'threshold', 'single', 'pattern', 'all' ] or empty");
 }
 
 // connect to malamute
 mlm_client_t *client = mlm_client_new ();
 if (!client) {
     log_critical ("mlm_client_new() failed.");
-    http_die ("internal-error", "mlm_client_new () failed.");
+    http_die ("internal-error", "mlm_client_new() failed.");
 }
 
 std::string client_name ("alert_rules.");
@@ -66,14 +66,14 @@ int rv = mlm_client_connect (client, MLM_ENDPOINT, 1000, client_name.c_str ());
 if (rv == -1) {
     log_critical ("mlm_client_connect (endpoint = '%s', timeout = '%d', address = '%s') failed.",
                     MLM_ENDPOINT, 1000, client_name.c_str ());
-    http_die ("internal-error", "mlm_client_connect () failed.");
+    http_die ("internal-error", "mlm_client_connect() failed.");
 }
 
 // prepare rfc-evaluator-rules LIST message
 zmsg_t *send_msg = zmsg_new ();
 if (!send_msg) {
-    log_critical ("zmsg_new () failed.");
-    http_die ("internal-error", "zmsg_new () failed.");
+    log_critical ("zmsg_new() failed.");
+    http_die ("internal-error", "zmsg_new() failed.");
 }
 zmsg_addstr (send_msg, "LIST");
 zmsg_addstr (send_msg, type.c_str ());
@@ -84,55 +84,58 @@ if (mlm_client_sendto (client, BIOS_AGENT_NAME_ALERT_AGENT, "rfc-evaluator-rules
         BIOS_AGENT_NAME_ALERT_AGENT, "rfc-evaluator-rules", 1000);
     zmsg_destroy (&send_msg);
     mlm_client_destroy (&client);
-    http_die ("internal-error", "mlm_client_sendto () failed.");
+    http_die ("internal-error", "mlm_client_sendto() failed.");
 }
 
 zmsg_t *recv_msg = NULL;
+// TODO: blocking mlm_client_recv
 while (true) { 
     recv_msg = mlm_client_recv (client);
     if (!recv_msg) {
-        log_error ("mlm_client_recv () failed.");
+        log_error ("mlm_client_recv() failed.");
         mlm_client_destroy (&client);
-        http_die ("internal-error", "mlm_client_recv () failed.");
+        http_die ("internal-error", "mlm_client_recv() failed.");
     }
     if (streq (mlm_client_sender (client), BIOS_AGENT_NAME_ALERT_AGENT))
         break;
     zmsg_destroy (&recv_msg);
 }
 // Got it
+// Check subject
 if (!streq (mlm_client_subject (client), "rfc-evaluator-rules")) {
-    log_error ("Got reply with unexpected subject = '%s'. Expected subject = '%s'.",
-        mlm_client_subject (client), "rfc-evaluator-rules");
+    log_error ("Unexpected reply from '%s'. Subject expected = '%s', received = '%s'.",
+        mlm_client_sender (client), "rfc-evaluator-rules", mlm_client_subject (client));
     zmsg_destroy (&recv_msg);
     mlm_client_destroy (&client);
-    http_die ("internal-error");
+    http_die ("internal-error", "Bad message.");
 }
+// Check command. Can be LIST or ERROR
 char *part = zmsg_popstr (recv_msg);
 if (streq (part, "LIST")) {
     free (part);
     part = zmsg_popstr (recv_msg);
+    // type received must be equal to type requested
     if (type.compare (part) != 0) {
-        log_error ("%s",
-            std::string ("Got reply from '").append (mlm_client_sender (client)).
-            append ("' with a different than requested type of LIST message from rfc-evaluator-rules protocol.").c_str ());
+        log_error ("Unexpected reply from '%s'. Type expected = '%s', received = '%s' . Protocol: rfc-evaluator-rules; message: 1) LIST.",
+            mlm_client_sender (client), type.c_str (), part);
         free (part);
         zmsg_destroy (&recv_msg);
         mlm_client_destroy (&client);
-        http_die ("internal-error");
+        http_die ("internal-error", "Bad message.");
     }
     free (part);
     part = zmsg_popstr (recv_msg);
     bool first = true;
     </%cpp>
 {
-    "<$ type $>" : [
+    <$$ utils::json::jsonify (type) $> : [
 % while (part) {
 %   if (first) {
-        "<$ part $>" 
+        <$$ utils::json::jsonify (part) $> 
 %     first = false;
 %   }
 %   else {
-,       "<$ part $>" 
+,       <$$ utils::json::jsonify (part) $>
 %   }
 % free (part);
 % part = zmsg_popstr (recv_msg);
@@ -148,7 +151,7 @@ if (streq (part, "ERROR")) {
     free (part);
     part = zmsg_popstr (recv_msg);
     if (!part) {
-        log_error ("Expected ERROR/reason. Got ERROR/(null).");
+        log_error ("Unexpected reply from '%s'. Expected ERROR/reason, received ERROR/(null).", mlm_client_sender (client));
     }
     else {
         log_error ("%s", part);
@@ -156,11 +159,13 @@ if (streq (part, "ERROR")) {
     }
     zmsg_destroy (&recv_msg);
     mlm_client_destroy (&client);
-    http_die ("internal-error");
+    http_die ("internal-error", "Bad message.");
 }
-log_error ("%s", std::string ("Message from '").append (mlm_client_sender (client)).append ("' does not conform to rfc-evaluator-rules.").c_str ());
+// Message does not conform to protocol
 free (part);
+log_error ("Unexptected reply from  '%s'. Does not conform to rfc-evaluator-rules.",
+    mlm_client_sender (client));
 zmsg_destroy (&recv_msg);
 mlm_client_destroy (&client);
-http_die ("internal-error");
+http_die ("internal-error", "Bad message.");
 </%cpp>
