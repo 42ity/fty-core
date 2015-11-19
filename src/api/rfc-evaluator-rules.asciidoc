@@ -6,13 +6,16 @@ Connects USER peer to EVALUATOR peer.
 The USER peer sends one of the following messages using MAILBOX SEND to
 EVALUATOR peer:
 
-1) LIST/type - request list of rule names of specified type
-2) ADD/json - add (create/update) new rule
-3) GET/name - request rule detail
+1) LIST/type - request list of rule names of specified 'type'
+2) GET/name - request detail of rule 'name'
+3) ADD/json[/old_name] - create new rule or update existing rule. If optional
+part 'old_name' is specified, perform additional rename of rule name
+'old_name' to name specified in json property "rule_name" : "<new_name>".
 
 where '/' indicates a multipart string message, 'json' is valid json
-document(1), 'type' is one of [ all | threshold | pattern | single ], 'name'
-is rule name and 'subject' of the message is "rfc-evaluator-rules".
+document(1), 'type' is one of [ all | threshold | pattern | single ], 'name',
+'old_name' is rule name and 'subject' of the message is
+"rfc-evaluator-rules".
 
 The EVALUATOR peer MUST send the appropriate message back to USER peer
 using MAILBOX SEND.
@@ -26,7 +29,6 @@ For messages 2) and 3) EVALUATOR peer MUST respond with one of the following mes
 b) OK/json
 c) ERROR/reason
 
-
 where '/' indicates a multipart string message, 'json' is valid json
 document(1), 'reason' is error string, 'type' is one of [ all | threshold |
 pattern | single ] and its value MUST be the same as the value of 'type'
@@ -34,7 +36,7 @@ received in 1) message, 'subject' of the message is "rfc-evaluator-rules".
 
 
 (1)
-There are the three different json formats that are accepted
+There are three different json formats that are accepted
 
 {
     "threshold" : {
@@ -62,7 +64,7 @@ There are the three different json formats that are accepted
                               { "<value_name_N>"  : "<value>" } ],
         "results"       :   [ { "<result_name_1>"  : { "action" : ["<action_1>", ..., "<action_N>"], "severity" : "<severity>", "description" : "<description>" }},
                               ...
-                              { "result_name_N" : { "action" : ["<action_1>", ..., "<action_N>"], "severity" : "<severity>", "description" : "<description>" }} ],
+                              { "<result_name_N>" : { "action" : ["<action_1>", ..., "<action_N>"], "severity" : "<severity>", "description" : "<description>" }} ],
         "evaluation"    :   "<lua_function>",
     }
 }
@@ -77,12 +79,12 @@ There are the three different json formats that are accepted
         "element"       :   "<element_name>",
         "results"       :   [ { "<result_name_1>"  : { "action" : ["<action_1>", ..., "<action_N>"], "severity" : "<severity>", "description" : "<description>" }},
                               ...
-                              { "result_name_N" : { "action" : ["<action_1>", ..., "<action_N>"], "severity" : "<severity>", "description" : "<description>" }} ],
+                              { "<result_name_N>" : { "action" : ["<action_1>", ..., "<action_N>"], "severity" : "<severity>", "description" : "<description>" }} ],
         "evaluation"    :   "<lua_function>",
     }
 }
 
-where (WIP)
+where 
     * <rule_name>       unique rule name, CASE SENSITIVE
     * <metric_specification>       string value representing name of metric OR array of string values 
                         representing metric names     
@@ -93,6 +95,8 @@ where (WIP)
     * <lua_function>    lua function that evaluates trigger conditions
     * <topic_X>         metric topic
     * <regex>           regular expression
+    * <value_name_X>    unique name (identifier) of value within given rule definition.
+    * <result_name_X>   unique name (identifier) of result within given rule definition
 
 
 For threshold rule:
