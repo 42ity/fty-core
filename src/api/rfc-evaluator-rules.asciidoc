@@ -115,27 +115,51 @@ section describing semantics.
 The semantics is as follows (WIP):
 
 THRESHOLD:
-    There are four predefined values: "low_critical", "low_warning", "high_critical", "high_warning".
-There are four predefined results: "low_critical", "low_warning", "high_critical", "high_warning".
-There are two types of threshold rules: Simple and Complex.
-    Simple one is used, if threshold should be specified for only
-one metric known for the system. Then in "target" only one topic should be specified. Rule would be
-evaluated and automatically take in account predefined values (if they were specified). Alerts
-would be generated according predefined results.
-When metric would return into normal value interval, evaluation would trigger the same alert with state RESOLVED.
-    Complex rule is used, if threshold should be evaluated for compound metric, that our system doesn't calculate
-automatically. So you still need to use predefined value names and predefined result names, but additionally
-you should specify "target" as array of topics and provide evaluation function as "evaluation".
-When metric would return into normal value interval, evaluation would trigger the same alert with state RESOLVED.
+* When <topic_specification> is one string:
+
+If value of metric specified by <topic_specification> is higher than value of
+"high_warning", "high_critical" or lower than value of "low_warning",
+"low_critical", then alert is triggered for element <element_name> with state
+ACTIVE and severity, description and action states equal to those specified in
+"results" item "high_warning" , "high_critical" or "low_warning",
+"low_critical" respectively. When value of metric specified by
+<topic_specification> returns back to normal (i.e higher than value of
+"low_warning" and lower than value of "high_warning") trigger the same alert
+with state RESOLVED.
+
+
+* When <topic_specification> is an array of strings:
+If result of <lua_function> is one of "high_warning", "high_critical",
+"low_warning", "low_critical", then alert is triggered for element
+<element_name> with state ACTIVE and severity, description and action states
+equal to those specified in "results" item "high_warning", "high_critical" or
+"low_warning", "low_critical" respectively.  If subsequently result of
+<lua_function> is "ok" then the same alert is triggered with state RESOLVED.
+
+If result of <lua_function> is anything else, the rule is ignored.
+
+In the <lua_function> values of metrics specified in <topic_specification> can
+be achieved as follows - for topic "metric@device" value of 'metric' at
+'device' is stored in lua variable "metric_device".
 
 PATTERN:
-    As "target" you should specify a regular expression <regex>. Evaluation of the rule would
-be triggered for any metric, whose topic matches this regular expression. Then this metric becomes
-input to <lua_function> that triggers alert for element that was matched by <regex>.
-When the condition no longer holds true, trigger the same alert with state RESOLVED.
+Value of metric, whose topic matches <regex>, becomes available in
+<lua_function> as variable "value".  Values of properties <value_name_1>,...,
+<value_name_N> become available in <lua_function> as variables
+"<value_name_1>", ..., "<value_name_N>".  Using these values you MUST return
+one of the following strings: "<result_name_1>", ..., "<result_name_N>" or
+"ok".
+
+If <lua_function> returns one of "<result_name_1>", ..., "<result_name_N>", then alert is
+triggered for element specified by matched topic with state ACTIVE and
+severity, description and action states equal to those specified in "result"
+item returned.
+
+If subsequently result of <lua_function> is "ok" then the same alert is
+triggered with state RESOLVED.
+
+If result of <lua_function> is anything else, the rule is ignored.
 
 SINGLE:
-    Every value of any metric defined among <topic_1>, ..., <topic_N> becomes
-input to <lua_function> that triggers alert for element <element_name>. Results comming from evaluation
-are described in "resilts". When the condition no longer holds true, trigger the same alert with state RESOVED.
+    Analogously to PATTERN rule, only target is not a regular expression but a predefined set of topics. Everything else is the same as in PATTERN rule.
 

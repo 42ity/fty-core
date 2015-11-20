@@ -127,21 +127,19 @@ if (streq (part, "LIST")) {
     part = zmsg_popstr (recv_msg);
     bool first = true;
     </%cpp>
-{
-    <$$ utils::json::jsonify (type) $> : [
+[
 % while (part) {
 %   if (first) {
-        <$$ utils::json::jsonify (part) $> 
+    <$$ part $> 
 %     first = false;
 %   }
 %   else {
-,       <$$ utils::json::jsonify (part) $>
+,   <$$ part $>
 %   }
 % free (part);
 % part = zmsg_popstr (recv_msg);
 % }
-    ]
-}
+]
     <%cpp>
     zmsg_destroy (&recv_msg);
     mlm_client_destroy (&client);
