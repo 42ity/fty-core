@@ -16,7 +16,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 #! \file   asset_import_err.sh
-#  \brief  CI tests for asset import
+#  \brief  CI tests for errors in asset import
 #  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 
 echo "***************************************************************************************************"
