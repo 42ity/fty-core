@@ -38,36 +38,21 @@
 </%pre>
 <%cpp>
 // sanity check
-if (request.getMethod () != "POST" && request.getMethod () != "PUT")
+if (request.getMethod () != "POST" && request.getMethod () != "PUT") {
     http_die ("method-not-allowed", request.getMethod ().c_str ());
+}
 
 std::string name = request.getArg ("name");
+if (request.getMethod () == "POST" && !name.empty() ) {
+    http_die ("request-param-bad", "name", name.c_str(), "<empty>");
+}
+if (request.getMethod () == "PUT" && name.empty() ) {
+    http_die ("request-param-bad", "name", "<empty>", "<non_empty_name>");
+}
 
 log_debug ("method = '%s'.", request.getMethod ().c_str ());
 log_debug ("requested rule name = '%s'.", name.c_str ());
 
-// Let's take a look at payload
-cxxtools::SerializationInfo si;
-std::string json_rule_name;
-try {
-    std::stringstream input (request.getBody(), std::ios_base::in); 
-    cxxtools::JsonDeserializer deserializer (input);
-    deserializer.deserialize (si);
-    si.getMember ("rule_name") >>= json_rule_name;
-    if (json_rule_name.empty ())
-        throw std::runtime_error ("property 'rule_name' has empty value");
-}
-catch (const std::exception& e) {
-    log_debug ("Bad request document - invalid json: %s", e.what ());
-    http_die ("bad-request-document", "Please check RFC-11 for valid rule json schema description.");
-}
-log_debug ("json 'rule_name' property = '%s'.", json_rule_name.c_str ());
-// json is valid as far as rest api is concerned
-// input args check
-if ((request.getMethod () == "POST" && !name.empty ()) ||
-    (request.getMethod () == "PUT" && name.empty ())) {
-    return DECLINED;
-}
 
 // connect to malamute
 mlm_client_t *client = mlm_client_new ();
@@ -84,6 +69,7 @@ int rv = mlm_client_connect (client, MLM_ENDPOINT, 1000, client_name.c_str ());
 if (rv == -1) {
     log_critical ("mlm_client_connect (endpoint = '%s', timeout = '%d', address = '%s') failed.",
                     MLM_ENDPOINT, 1000, client_name.c_str ());
+    mlm_client_destroy (&client);
     http_die ("internal-error", "mlm_client_connect() failed.");
 }
 
@@ -95,7 +81,7 @@ if (!send_msg) {
 }
 zmsg_addstr (send_msg, "ADD");
 zmsg_addstr (send_msg, request.getBody().c_str ());
-if (request.getMethod () == "PUT" && name.compare (json_rule_name) != 0) {
+if (request.getMethod () == "PUT") {
     zmsg_addstr (send_msg, name.c_str ());
 }
 
