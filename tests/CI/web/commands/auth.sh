@@ -19,6 +19,12 @@
 #  \brief  CI tests for password change REST API
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 
+
+echo "***************************************************************************************************"
+echo "********* Prerequisites ***************************************************************************"
+echo "***************************************************************************************************"
+init_script
+
 # Check getting token
 _test_auth() {
     api_get "/oauth2/token?username=$1&password=$2&grant_type=password"

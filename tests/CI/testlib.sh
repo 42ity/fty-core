@@ -31,6 +31,14 @@
 #           test-suite error (testing stuff known as not implemented yet).
 
 # ***********************************************
+### Database global variables
+DB_LOADDIR="$CHECKOUTDIR/tools"
+DB_BASE="initdb.sql"
+DB_DATA="load_data.sql"
+DB_DATA_TESTREST="load_data_test_restapi.sql"
+DB_TOPOP="power_topology.sql"
+DB_TOPOL="location_topology.sql"
+
 ### Should the test suite break upon first failed test?
 [ x"${CITEST_QUICKFAIL-}" != xyes ] && CITEST_QUICKFAIL=no
 
@@ -229,3 +237,52 @@ do_test_match() {
     print_result 0
     return 0
 }
+
+loaddb_default() {
+    echo "--------------- reset db: default ----------------"
+    for data in "$DB_BASE" "$DB_DATA" "$DB_DATA_TESTREST"; do
+        loaddb_file "$DB_LOADDIR/$data" || return $?
+    done
+    return 0
+}
+
+init_script(){
+# Add the libraries
+    . $CHECKOUTDIR/tests/CI/weblib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+    . $CHECKOUTDIR/tests/CI/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+    . $CHECKOUTDIR/tests/CI/testlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+    accept_license
+    loaddb_default
+}
+
+init_script_topo_loc(){
+# Add the libraries
+    . $CHECKOUTDIR/tests/CI/weblib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+    . $CHECKOUTDIR/tests/CI/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+    . $CHECKOUTDIR/tests/CI/testlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+    accept_license
+    for data in "$DB_BASE" "$DB_DATA" "$DB_TOPOL"; do
+        loaddb_file "$DB_LOADDIR/$data" || return $?
+    done
+}
+
+init_script_topo_pow(){
+# Add the libraries
+    . $CHECKOUTDIR/tests/CI/weblib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+    . $CHECKOUTDIR/tests/CI/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+    . $CHECKOUTDIR/tests/CI/testlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+    accept_license
+    for data in "$DB_BASE" "$DB_TOPOP"; do
+        loaddb_file "$DB_LOADDIR/$data" || return $?
+    done
+}
+
