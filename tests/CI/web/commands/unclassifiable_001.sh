@@ -23,6 +23,11 @@
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \brief Not yet documented file
 
+echo "***************************************************************************************************"
+echo "********* Prerequisites ***************************************************************************"
+echo "***************************************************************************************************"
+init_script
+
 test_it
 api_auth_get_json /topology/location?from=21 >&5
 print_result $?

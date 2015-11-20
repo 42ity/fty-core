@@ -23,6 +23,11 @@
 #  \author Tomas Halman <TomasHalman@Eaton.com>
 #  \brief Not yet documented file
 
+echo "***************************************************************************************************"
+echo "********* Prerequisites ***************************************************************************"
+echo "***************************************************************************************************"
+init_script
+
 test_it
 RES=0
 api_get_json /metric/computed/datacenter_indicators?arg1=10\&arg2=power | \

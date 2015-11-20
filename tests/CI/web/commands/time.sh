@@ -23,6 +23,11 @@
 #  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
 #  \brief Not yet documented file
 
+echo "***************************************************************************************************"
+echo "********* Prerequisites ***************************************************************************"
+echo "***************************************************************************************************"
+init_script
+
 [ -z "${JSONSH-}" ] && \
     for F in "$CHECKOUTDIR/tools/JSON.sh" "$SCRIPTDIR/JSON.sh"; do
         [ -x "$F" -a -s "$F" ] && JSONSH="$F" && break

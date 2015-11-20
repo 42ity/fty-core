@@ -23,6 +23,12 @@
 #  \author Karol Hrdina <KarolHrdina@Eaton.com>
 #  \brief Not yet documented file
 
+echo "***************************************************************************************************"
+echo "********* Prerequisites ***************************************************************************"
+echo "***************************************************************************************************"
+init_script
+
+
 do_test_match "ifaces_get" api_get_json '/admin/ifaces' '.*ifaces.*lo.*'
 
 test_it "iface_foobar_get"

@@ -20,6 +20,11 @@
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \brief  Request server version (for quick manual inspection)
 
+echo "***************************************************************************************************"
+echo "********* Prerequisites ***************************************************************************"
+echo "***************************************************************************************************"
+init_script
+
 ######################################################################
 # Short test to just get the authorized version / process status info
 [ -z "${JSONSH-}" ] && \

@@ -26,6 +26,11 @@
 #  \brief  test a  GET and PUT method for REST API call
 #           /api/v1/ui/properties
 
+echo "***************************************************************************************************"
+echo "********* Prerequisites ***************************************************************************"
+echo "***************************************************************************************************"
+init_script
+
 test_it "GET_ui_properties_1"
 api_get_json /ui/properties >&5
 print_result $?

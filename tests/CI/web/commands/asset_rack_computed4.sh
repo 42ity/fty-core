@@ -22,6 +22,11 @@
 #  \author Michal Vyskocil <MichalVyskocil@Eaton.com>
 #  \brief Not yet documented file
 
+echo "***************************************************************************************************"
+echo "********* Prerequisites ***************************************************************************"
+echo "***************************************************************************************************"
+init_script
+
 test_it "asset_rack_computed4"
 api_get_json /asset/4 >&5
 print_result $?
