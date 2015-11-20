@@ -23,6 +23,12 @@
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \brief Not yet documented file
 
+echo "***************************************************************************************************"
+echo "********* Prerequisites ***************************************************************************"
+echo "***************************************************************************************************"
+init_script
+
+
 curlfail_push_expect_400
 
 test_it "metric_computed_average-missing__1"
