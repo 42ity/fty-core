@@ -91,7 +91,7 @@ There are three different json formats that are accepted
     }
 }
 
-where 
+where
     * <rule_name>       unique rule name, CASE SENSITIVE
     * <topic_specification>       string value representing topic OR array of topics
     * <element_name>    name of element
@@ -102,37 +102,40 @@ where
     * <topic_X>         metric topic
     * <regex>           regular expression
     * <value_name_X>    unique name (identifier) of value within given rule definition.
-    * <result_name_X>   unique name (identifier) of result within given rule definition
+    * <result_name_X>   unique name (identifier) of result within given rule definition (any string except "ok", it is reserved)
 
 
 For threshold rule:
 If <topic_specification> is single string value then property "evaluation" :
 "<lua_function>" is ignored. If <topic_specification> is array then property "evaluation" :
-"<lua_function>" is expected and in case it is missing, only the first value
-from <topic_specification> is taken. For further details please consult the
+"<lua_function>" is mandatory. For further details please consult the
 section describing semantics.
 
 
 The semantics is as follows (WIP):
 
 THRESHOLD:
-   If value of metric <metric_name> on element <element_name> is smaller
-("type" == "low") or bigger ("type" == "high") than <value>, trigger alert for
-element <element_name> with state ACTIVE, severity <severity> and action states
-<action_1>, ..., <action_N>. When the condition no longer holds true, trigger
-the same alert with state RESOLVED.
+    There are four predefined values: "low_critical", "low_warning", "high_critical", "high_warning".
+There are four predefined results: "low_critical", "low_warning", "high_critical", "high_warning".
+There are two types of threshold rules: Simple and Complex.
+    Simple one is used, if threshold should be specified for only
+one metric known for the system. Then in "target" only one topic should be specified. Rule would be
+evaluated and automatically take in account predefined values (if they were specified). Alerts
+would be generated according predefined results.
+When metric would return into normal value interval, evaluation would trigger the same alert with state RESOLVED.
+    Complex rule is used, if threshold should be evaluated for compound metric, that our system doesn't calculate
+automatically. So you still need to use predefined value names and predefined result names, but additionally
+you should specify "target" as array of topics and provide evaluation function as "evaluation".
+When metric would return into normal value interval, evaluation would trigger the same alert with state RESOLVED.
 
 PATTERN:
-    Value of metric, whose name matches regular expression <regex>, becomes
-input to <lua_function> that triggers alert for element that was matched by
-<regex> with state ACTIVE, severity <severity> and action states <action_1>,
-..., <action_N> if property "action" is specified, EMAIL action otherwise. When
-the condition no longer holds true, trigger the same alert with state RESOLVED.
+    As "target" you should specify a regular expression <regex>. Evaluation of the rule would
+be triggered for any metric, whose topic matches this regular expression. Then this metric becomes
+input to <lua_function> that triggers alert for element that was matched by <regex>.
+When the condition no longer holds true, trigger the same alert with state RESOLVED.
 
 SINGLE:
-    Value of any metric defined among <topic_1>, ..., <topic_N> becomes
-input to <lua_function> that triggers alert for element <element_name> with
-state ACTIVE, severity <severity> and action states <action_1>, 
-..., <action_N> if property "action" is specified, EMAIL action otherwise. When
-the condition no longer holds true, trigger the same alert with state RESOVED.
+    Every value of any metric defined among <topic_1>, ..., <topic_N> becomes
+input to <lua_function> that triggers alert for element <element_name>. Results comming from evaluation
+are described in "resilts". When the condition no longer holds true, trigger the same alert with state RESOVED.
 
