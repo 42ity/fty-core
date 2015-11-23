@@ -74,7 +74,7 @@ exec_sql_db() {
 
 random_password() {
 	# Generate a random ASCII string without "confusing" characters
-	head -c 12 /dev/urandom | base64 | sed 's,[\+\=\/\ \t\n],_,g'
+	head -c 12 /dev/urandom | base64 | sed 's,[\+\=\/\ \t\n\r\%],_,g'
 }
 
 secure_database() {

@@ -43,16 +43,43 @@ if (request.getMethod () != "POST" && request.getMethod () != "PUT") {
 }
 
 std::string name = request.getArg ("name");
-if (request.getMethod () == "POST" && !name.empty() ) {
-    http_die ("request-param-bad", "name", name.c_str(), "<empty>");
-}
+// input args check
 if (request.getMethod () == "PUT" && name.empty() ) {
     http_die ("request-param-bad", "name", "<empty>", "<non_empty_name>");
+}
+if (request.getMethod () == "POST" && !name.empty ()) {
+    return DECLINED;
 }
 
 log_debug ("method = '%s'.", request.getMethod ().c_str ());
 log_debug ("requested rule name = '%s'.", name.c_str ());
 
+// Let's take a look at payload
+cxxtools::SerializationInfo si;
+std::string json_rule_name;
+try {
+    std::stringstream input (request.getBody(), std::ios_base::in); 
+    cxxtools::JsonDeserializer deserializer (input);
+    deserializer.deserialize (si);
+
+    auto root = si.findMember ("single");
+    if (!root)
+        root = si.findMember ("pattern");
+    if (!root)
+        root = si.findMember ("threshold");
+    if (!root)
+        throw std::runtime_error ("expected 'pattern' or 'single' or 'threshold'");
+    root->getMember ("rule_name") >>= json_rule_name;
+
+    if (json_rule_name.empty ())
+        throw std::runtime_error ("property 'rule_name' has empty value");
+
+}
+catch (const std::exception& e) {
+    log_debug ("Bad request document - invalid json: %s", e.what ());
+    http_die ("bad-request-document", "Please check RFC-11 for valid rule json schema description.");
+}
+log_debug ("json 'rule_name' property = '%s'.", json_rule_name.c_str ());
 
 // connect to malamute
 mlm_client_t *client = mlm_client_new ();
@@ -81,7 +108,7 @@ if (!send_msg) {
 }
 zmsg_addstr (send_msg, "ADD");
 zmsg_addstr (send_msg, request.getBody().c_str ());
-if (request.getMethod () == "PUT") {
+if (request.getMethod () == "PUT" && name.compare (json_rule_name) != 0) {
     zmsg_addstr (send_msg, name.c_str ());
 }
 
