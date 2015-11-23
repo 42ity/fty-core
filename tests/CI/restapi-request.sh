@@ -21,19 +21,11 @@
 #  \author Tomas Halman <TomasHalman@Eaton.com>
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 
-# Include our standard routines for CI scripts
-. "`dirname $0`"/scriptlib.sh || \
-    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
-NEED_BUILDSUBDIR=no determineDirs_default || true
-NEED_TESTLIB=no
-# No "cd" is required for this script to perform
-[ -n "$CHECKOUTDIR" ] && { [ -d "$CHECKOUTDIR" ] || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"; }
-logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to run the requests"
-
 # Defaults; note that SUT_WEB_PORT is guessed below based on ultimate SUT_HOST
 [ -z "$SUT_HOST" ] && SUT_HOST="127.0.0.1"
 
-[ -z "$WEBLIB_FUNC" ] && WEBLIB_FUNC="api_auth_get_content"
+# REST API returns JSON except one or two special cases
+[ -z "$WEBLIB_FUNC" ] && WEBLIB_FUNC="api_auth_get_json"
 
 # Set up weblib test engine preference defaults for automated CI tests
 [ -z "$WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT" ] && \
@@ -54,8 +46,8 @@ usage(){
     echo "options:"
     echo "  -u|--user   username for SASL (Default: '$BIOS_USER')"
     echo "  -p|--passwd password for SASL (Default: '$BIOS_PASSWD')"
-    echo "  --host NAME       REST API service host name [$SUT_HOST]"
-    echo "  --port-web PORT   REST API service HTTP port (default: it depends)"
+    echo "  -host NAME       REST API service host name [$SUT_HOST]"
+    echo "  -port-web PORT   REST API service HTTP port (default: it depends)"
     echo "  -q|--quick  skip sanity checks that the server serves BIOS REST API"
     echo "  -m|--method which routine to use from weblib.sh (Default: '$WEBLIB_FUNC')"
     echo "NOTE: RELATIVE_URL is under the BASE_URL (host:port/api/v1)"
@@ -94,7 +86,7 @@ while [ $# -gt 0 ] ; do
             WEBLIB_FUNC="$2"
             shift
             ;;
-        -q|--quick) SKIP_SANITY=yes ;;
+        -q|-f|--force|--quick) SKIP_SANITY=yes ;;
         --help|-h)
             usage
             exit 1
@@ -104,18 +96,30 @@ while [ $# -gt 0 ] ; do
             shift # if anything remains, pass it to CURL - e.g. POST data or headers
             break
             ;;
-        *)  die "Unrecognized params follow: $*" \
+        *)  echo "Unrecognized params follow: $*" \
                 "Note that the RELATIVE_URL must start with a slash"
+            exit 1
             ;;
     esac
     shift
 done
 
 if [ -z "$SUT_WEB_PORT" ]; then
-    SUT_is_localhost && [ -n "$CHECKOUTDIR" ] && [ -d "$CHECKOUTDIR"/tests/CI ] \
+    SUT_is_localhost \
     && SUT_WEB_PORT="8000" \
     || SUT_WEB_PORT="80"
 fi
+
+# Include our standard routines for CI scripts
+. "`dirname $0`"/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+
+NEED_BUILDSUBDIR=no determineDirs_default || true
+NEED_TESTLIB=no
+
+# No "cd" is required for this script to perform
+[ -n "$CHECKOUTDIR" ] && { [ -d "$CHECKOUTDIR" ] || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"; }
+logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to run the requests"
 
 # Included after CLI processing because sets autovars like BASE_URL
 . "$SCRIPTDIR/weblib.sh" || CODE=$? die "Can not include web script library"
@@ -143,32 +147,32 @@ wait_for_web() {
 }
 
 # it is up to the caller to prepare environment - tntnet, saslauthd, malamute etc.
-  if ! pidof saslauthd > /dev/null; then
-    SUT_is_localhost && \
-    logmsg_warn "saslauthd is not running (locally), you may need to start it first!"
-  fi
-
-  if ! pidof malamute > /dev/null; then
-    SUT_is_localhost && \
-    logmsg_warn "malamute is not running (locally), you may need to start it first!"
-  fi
-
-  if ! pidof mysqld > /dev/null ; then
-    SUT_is_localhost && \
-    logmsg_warn "mysqld is not running (locally), you may need to start it first!"
-  fi
-
-  logmsg_info "Waiting for web-server to begin responding..."
-  if wait_for_web ; then
-    SUT_is_localhost && \
-    logmsg_info "Web-server is responsive!"
-  else
-    die "Web-server is NOT responsive!" >&2
-  fi
-
   if [ "$SKIP_SANITY" = yes ]; then
     logmsg_info "Skipping sanity checks due to SKIP_SANITY=$SKIP_SANITY"
   else
+    if ! pidof saslauthd > /dev/null; then
+      SUT_is_localhost && \
+      logmsg_warn "saslauthd is not running (locally), you may need to start it first!"
+    fi
+
+    if ! pidof malamute > /dev/null; then
+      SUT_is_localhost && \
+      logmsg_warn "malamute is not running (locally), you may need to start it first!"
+    fi
+
+    if ! pidof mysqld > /dev/null ; then
+      SUT_is_localhost && \
+      logmsg_warn "mysqld is not running (locally), you may need to start it first!"
+    fi
+
+    logmsg_info "Waiting for web-server to begin responding..."
+    if wait_for_web ; then
+      SUT_is_localhost && \
+      logmsg_info "Web-server is responsive!"
+    else
+      die "Web-server is NOT responsive!" >&2
+    fi
+
     # Validate the fundamental BIOS webserver capabilities
     logmsg_info "Testing webserver ability to serve the REST API"
     curlfail_push_expect_404

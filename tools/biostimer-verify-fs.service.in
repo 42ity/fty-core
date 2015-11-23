@@ -1,0 +1,9 @@
+[Unit]
+Description=BIOS-Timer service that verify integrity of filesystem and reports issues to syslog
+
+[Service]
+Type=simple
+ExecStart=@libexecdir@/@PACKAGE@/verify-fs
+
+[Install]
+WantedBy=multi-user.target

@@ -53,9 +53,11 @@ _SCRIPT_ARGC="$#"
     esac
 
 ### Database credentials
+[ -z "${DB_USER-}" ] || DBUSER="${DB_USER-}"
+[ -z "${DB_PASSWD-}" ] || DBPASSWD="${DB_PASSWD}"
 [ -z "${DBUSER-}" ] && DBUSER=root
 [ -z "${DATABASE-}" ] && DATABASE=box_utf8
-export DBUSER DATABASE
+export DBUSER DATABASE DBPASSWD
 
 ### REST API (and possibly non-privileged SSH) user credentials
 [ -z "${BIOS_USER-}" ] && BIOS_USER="admin"
@@ -69,7 +71,11 @@ export BIOS_USER BIOS_PASSWD SASL_SERVICE
 [ -z "${SUT_HOST-}" ] && SUT_HOST="127.0.0.1"       # Hostname or IP address
 [ -z "${SUT_SSH_PORT-}" ] && SUT_SSH_PORT="22"       # SSH (maybe via NAT)
 [ -z "${SUT_WEB_PORT-}" ] && SUT_WEB_PORT="8000"       # TNTNET (maybe via NAT)
+if [ "${SUT_WEB_PORT-}" -eq 443 ]; then
+[ -z "${BASE_URL-}" ] && BASE_URL="https://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+else
 [ -z "${BASE_URL-}" ] && BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+fi
 export SUT_IS_REMOTE SUT_USER SUT_HOST SUT_SSH_PORT SUT_WEB_PORT BASE_URL
 
 ### Should the test suite break upon first failed test?
@@ -172,7 +178,7 @@ default_posval CI_DEBUGLEVEL_ECHO       0
 default_posval CI_DEBUGLEVEL_ERROR      1
 default_posval CI_DEBUGLEVEL_WARN       2
 default_posval CI_DEBUGLEVEL_INFO       3
-default_posval CI_DEBUGLEVEL_LOADDB     3
+default_posval CI_DEBUGLEVEL_LOADDB     5
 default_posval CI_DEBUGLEVEL_SELECT     3
 default_posval CI_DEBUGLEVEL_RUN        4
 default_posval CI_DEBUGLEVEL_DEBUG      5
@@ -185,7 +191,7 @@ logmsg_echo() {
     if [ "$1" -ge 0 ] 2>/dev/null; then
         WANT_DEBUG_LEVEL="$1"
         shift
-    else if [ x"$1" = x"" ]; then shift; fi
+    else if [ x"$1" = x"" ] && [ $# -gt 0 ]; then shift; fi
     fi
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
     echo_E "$@"
@@ -197,7 +203,7 @@ logmsg_info() {
     if [ "$1" -ge 0 ] 2>/dev/null; then
         WANT_DEBUG_LEVEL="$1"
         shift
-    else if [ x"$1" = x"" ]; then shift; fi
+    else if [ x"$1" = x"" ] && [ $# -gt 0 ]; then shift; fi
     fi
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
     echo_E "${LOGMSG_PREFIX}INFO: ${_SCRIPT_PATH}:" "$@"
@@ -209,7 +215,7 @@ logmsg_warn() {
     if [ "$1" -ge 0 ] 2>/dev/null; then
         WANT_DEBUG_LEVEL="$1"
         shift
-    else if [ x"$1" = x"" ]; then shift; fi
+    else if [ x"$1" = x"" ] && [ $# -gt 0 ]; then shift; fi
     fi
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
     echo_E "${LOGMSG_PREFIX}WARN: ${_SCRIPT_PATH}:" "$@" >&2
@@ -221,7 +227,7 @@ logmsg_error() {
     if [ "$1" -ge 0 ] 2>/dev/null; then
         WANT_DEBUG_LEVEL="$1"
         shift
-    else if [ x"$1" = x"" ]; then shift; fi
+    else if [ x"$1" = x"" ] && [ $# -gt 0 ]; then shift; fi
     fi
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
     echo_E "${LOGMSG_PREFIX}ERROR: ${_SCRIPT_PATH}:" "$@" >&2
@@ -235,7 +241,7 @@ logmsg_debug() {
     if [ "$1" -ge 0 ] 2>/dev/null; then
         WANT_DEBUG_LEVEL="$1"
         shift
-    else if [ x"$1" = x"" ]; then shift; fi
+    else if [ x"$1" = x"" ] && [ $# -gt 0 ]; then shift; fi
     fi
 
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
@@ -270,7 +276,7 @@ die() {
     if [ "$1" -ge 0 ] 2>/dev/null; then
         CODE="$1"
         shift
-    else if [ x"$1" = x"" ]; then shift; fi
+    else if [ x"$1" = x"" ] && [ $# -gt 0 ]; then shift; fi
     fi
     [ "$CODE" -ge 0 ] 2>/dev/null || CODE=1
     for LINE in "$@" ; do
@@ -378,7 +384,11 @@ do_select() {
     ### semicolons does not matter for such non-interactive mysql client use.
     logmsg_info "$CI_DEBUGLEVEL_SELECT" \
         "do_select(): $1 ;" >&2
+    if [ -z "${DBPASSWD-}" ]; then
     echo "$1" | sut_run "mysql -u ${DBUSER} -D ${DATABASE} -N -s"
+    else
+    echo "$1" | sut_run "mysql -u ${DBUSER} -p\"${DBPASSWD}\" -D ${DATABASE} -N -s"
+    fi
 #    DB_OUT="$(echo "$1" | sut_run "mysql -u ${DBUSER} ${DATABASE}")"
 #    DB_RES=$?
 #    echo "$DB_OUT" | tail -n +2

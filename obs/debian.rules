@@ -58,6 +58,15 @@ install: build
 	mkdir -p /usr/src/packages/BUILD/debian/core/var/lib/bios
 	install -D COPYING /usr/src/packages/BUILD/debian/core/usr/share/bios/license/1.0
 	ln -s 1.0 /usr/src/packages/BUILD/debian/core/usr/share/bios/license/current
+	# -dev package
+	mkdir -p /usr/src/packages/BUILD/debian/core-dev/usr/lib
+	mkdir -p /usr/src/packages/BUILD/debian/core-dev/usr/include
+	mv /usr/src/packages/BUILD/debian/core/usr/include/bios \
+		/usr/src/packages/BUILD/debian/core-dev/usr/include/
+	mv /usr/src/packages/BUILD/debian/core/usr/lib/libbiosapi.so \
+		/usr/src/packages/BUILD/debian/core-dev/usr/lib/
+	mv /usr/src/packages/BUILD/debian/core/usr/lib/pkgconfig \
+		/usr/src/packages/BUILD/debian/core-dev/usr/lib/
 	# --- end custom part for installing
 
 # Build architecture-independent files here.

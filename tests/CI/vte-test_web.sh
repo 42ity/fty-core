@@ -82,7 +82,7 @@ done
 
 # default values:
 [ -z "${SUT_USER-}" ] && SUT_USER="root"
-[ -z "${SUT_HOST-}" ] && SUT_HOST="debian.roz.lab.etn.com"
+[ -z "${SUT_HOST-}" ] && SUT_HOST="debian.roz53.lab.etn.com"
 # port used for ssh requests:
 [ -z "${SUT_SSH_PORT-}" ] && SUT_SSH_PORT="2206"
 # port used for REST API requests:
@@ -109,9 +109,14 @@ NEED_BUILDSUBDIR=no determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 
-    # *** set PASS and TOTAL to 0
-PASS=0
-TOTAL=0
+    # *** set TESTLIB_COUNT_* to 0 and TESTLIB_LIST_* to ""
+TESTLIB_COUNT_PASS=0
+TESTLIB_COUNT_SKIP=0
+TESTLIB_COUNT_FAIL=0
+TESTLIB_COUNT_TOTAL=0
+TESTLIB_LIST_FAILED=""
+TESTLIB_LIST_FAILED_IGNORED=""
+TESTLIB_LIST_PASSED=""
 
 echo '*************************************************************************************************************'
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
@@ -233,11 +238,11 @@ for i in $POSITIVE; do
     done
 done
 
-echo "Testing completed, $PASS/$TOTAL tests passed"
-[ -z "$FAILED" ] && exit 0
+echo "Testing completed, $TESTLIB_COUNT_PASS/$TESTLIB_COUNT_TOTAL tests passed and $TESTLIB_COUNT_SKIP more failed but ignored"
+[ -z "$TESTLIB_LIST_FAILED" ] && [ x"$TESTLIB_COUNT_FAIL" = x0 ] && exit 0
 
-echo "Following tests failed:"
-for i in $FAILED; do
+echo "Following $TESTLIB_COUNT_FAIL tests failed:"
+for i in $TESTLIB_LIST_FAILED; do
     echo " * $i"
 done
 exit 1

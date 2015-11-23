@@ -2,16 +2,18 @@
 Description=Total power agent for BIOS project
 After=malamute.service bios-db-init.service
 Requires=malamute.service bios-db-init.service
-# We only need the database during agenn-tpower startup to read
+# We only need the database during agent-tpower startup to read
 # our service configs, and don't care if it is restarted later
 
 [Service]
 Type=simple
+User=nobody
 EnvironmentFile=-/etc/default/bios
 EnvironmentFile=-/etc/sysconfig/bios
 EnvironmentFile=-/etc/default/bios__%n.conf
 EnvironmentFile=-/etc/sysconfig/bios__%n.conf
-ExecStart=@libexecdir@/bios/agent-tpower
+EnvironmentFile=-/etc/default/bios-db-ro
+ExecStart=@libexecdir@/@PACKAGE@/agent-tpower
 
 [Install]
 WantedBy=multi-user.target

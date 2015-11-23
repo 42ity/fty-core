@@ -1,1 +1,0 @@
-{"name":"DC_LOC_01","id":"7000","contains":{"devices":[{"name":"feed_LOC_1","id":"7016","type":"feed"},{"name":"genset_LOC_1","id":"7017","type":"genset"},{"name":"ups_LOC_1","id":"7018","type":"ups"},{"name":"srv_LOC_40","id":"7019","type":"server"}]}}

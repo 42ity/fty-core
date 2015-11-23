@@ -28,9 +28,13 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-PASS=0
-TOTAL=0
-FAILED=""
+TESTLIB_COUNT_PASS=0
+TESTLIB_COUNT_SKIP=0
+TESTLIB_COUNT_FAIL=0
+TESTLIB_COUNT_TOTAL=0
+TESTLIB_LIST_FAILED=""
+TESTLIB_LIST_FAILED_IGNORED=""
+TESTLIB_LIST_PASSED=""
 
 # There is a logic below that selects only *.sh filenames as eligible for testing
 # If this value is not "yes" then any filenames which match the requested POSITIVE
@@ -164,18 +168,34 @@ CMPJSON_PY="`pwd`/cmpjson.py"
 cd web/commands || CODE=6 die "Can not change to `pwd`/web/commands"
 
 summarizeResults() {
+    TRAP_RES=$?
+    print_result $TRAP_RES
     set +e
-    logmsg_info "Testing completed, $PASS/$TOTAL tests passed for groups:"
-    logmsg_info "  POSITIVE = $POSITIVE"
-    logmsg_info "  NEGATIVE = $NEGATIVE"
+    NUM_NOTFAILED="`expr $TESTLIB_COUNT_PASS + $TESTLIB_COUNT_SKIP`"
+    logmsg_info "Testing completed ($TRAP_RES), $NUM_NOTFAILED/$TESTLIB_COUNT_TOTAL tests passed($TESTLIB_COUNT_PASS) or not-failed($TESTLIB_COUNT_SKIP) for test-groups:"
+    logmsg_info "  POSITIVE (exec glob) = $POSITIVE"
+    logmsg_info "  NEGATIVE (skip glob) = $NEGATIVE"
     logmsg_info "  SKIP_NONSH_TESTS = $SKIP_NONSH_TESTS (so skipped $SKIPPED_NONSH_TESTS tests)"
-    [ -z "$FAILED" ] && exit 0
-
-    logmsg_info "The following tests have failed:"
-    for i in $FAILED; do
+    if [ -n "$TESTLIB_LIST_FAILED_IGNORED" ]; then
+        logmsg_info "The following $TESTLIB_COUNT_SKIP tests have failed but were ignored (TDD in progress):"
+        for i in $TESTLIB_LIST_FAILED_IGNORED; do
+            echo " * $i"
+        done
+    fi
+    NUM_FAILED="`expr $TESTLIB_COUNT_TOTAL - $NUM_NOTFAILED`"
+    [ -z "$TESTLIB_LIST_FAILED" ] && [ x"$TESTLIB_COUNT_FAIL" = x0 ] && [ x"$NUM_FAILED" = x0 ] && exit 0
+    logmsg_info "The following $TESTLIB_COUNT_FAILED tests have failed:"
+    N=0 # Do a bit of double-accounting to be sure ;)
+    for i in $TESTLIB_LIST_FAILED; do
         echo " * $i"
+        N="`expr $N + 1`"
     done
-    logmsg_error "`expr $TOTAL - $PASS`/$TOTAL tests FAILED"
+    [ x"$TESTLIB_COUNT_FAIL" = x"$NUM_FAILED" ] && \
+    [ x"$N" = x"$NUM_FAILED" ] && \
+    [ x"$TESTLIB_COUNT_FAIL" = x"$N" ] || \
+        logmsg_error "TEST-LIB accounting fault: failed-test counts mismatched: TESTLIB_COUNT_FAIL=$TESTLIB_COUNT_FAIL vs NUM_FAILED=$NUM_FAILED vs N=$N"
+    logmsg_error "$N/$TESTLIB_COUNT_TOTAL tests FAILED, $TESTLIB_COUNT_SKIP tests FAILED_IGNORED, $TESTLIB_COUNT_PASS tests PASSED"
+    unset N
     exit 1
 }
 
@@ -238,11 +258,12 @@ for i in $POSITIVE; do
     ### Default value for logging the test items
     TNAME="$NAME"
 
+    # "Poison"-protection about unused standard infrastructure aka test_it()
     _testlib_result_printed=notest
-    . ./"$NAME" 5> "$REALLIFE_RESULT"
+    . ./"$NAME" 5>"$REALLIFE_RESULT"
     RES=$?
 
-    [ "$_testlib_result_printed" = notest ] && \
+    [ "${_testlib_result_printed}" = notest ] && \
         logmsg_error "NOTE: Previous test(s) apparently did not use test_it()" \
             "to begin logging, amending that omission now by assigning filename" \
             "as the test name:" && \
@@ -263,6 +284,8 @@ for i in $POSITIVE; do
             test_it "compare_expectation_custom"
             ../results/"$NAME".cmp "$EXPECTED_RESULT" "$REALLIFE_RESULT"
             RES=$?
+            [ $RES -ne 0 ] && \
+                diff -Naru "$EXPECTED_RESULT" "$REALLIFE_RESULT"
         else
             ### Use the default comparation script which makes sure that
             ### each line of RESULT matches the same-numbered line of EXPECT
@@ -270,32 +293,33 @@ for i in $POSITIVE; do
             "$CMP" "$EXPECTED_RESULT" "$REALLIFE_RESULT"
             RES_CMP=$?
             RES_JSONV=0
-            while IFS='' read -r line || [[ -n "$line" ]]; do
-                echo "$line" | "$JSONSH"
+            while IFS='' read -r line || [ -n "$line" ]; do
+                OUT_JSONV="`echo "$line" | "$JSONSH" 2>&1`"
                 RES_JSONV=$?
-                if [[ RES_JSONV -ne 0 ]]; then
+                if [ $RES_JSONV -ne 0 ]; then
+                    echo "$OUT_JSONV"
                     break
                 fi
             done < "$REALLIFE_RESULT"
 
-            if [[ $RES_CMP -eq 0 && $RES_JSONV -eq 0 ]]; then
+            if [ $RES_CMP -eq 0 ] && [ $RES_JSONV -eq 0 ]; then
                 RES=$RES_CMP
-            elif [[ $RES_CMP -ne 0 ]]; then
+            elif [ $RES_CMP -ne 0 ]; then
                 RES=$RES_CMP
                 diff -Naru "$EXPECTED_RESULT" "$REALLIFE_RESULT"
-            elif [[ $RES_JSONV -ne 0 ]]; then
+            elif [ $RES_JSONV -ne 0 ]; then
                 RES=$RES_JSONV
-               echo "INVALID JSON!" 
+                logmsg_error "INVALID JSON!" 
             fi
         fi
         print_result $RES
     else
         # This might do nothing, if the test file already ended with a print_result
-        if [ "$_testlib_result_printed" != yes ]; then
+        if [ "${_testlib_result_printed}" != yes ]; then
         logmsg_info "No expected-results file was found for test script '$NAME'," \
             "so nothing to compare real-life output against. Note that the result" \
             "below ($RES) may refer to execution of the test script itself and" \
-            "recording the log-files of its output:"
+            "recording the log-files of its output, rather than failure of a test:"
         print_result $RES
         echo ""
         fi
