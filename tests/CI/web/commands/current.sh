@@ -54,16 +54,16 @@ echo "use box_utf8;" > /tmp/tmp.sql
 }
 
 db_initiate(){
-DB_LOADDIR="$CHECKOUTDIR/tools"
-DB_BASE="initdb.sql"
-DB_DATA="current_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-DB_ASSET_DEFAULT="initdb_ci_patch_2.sql"
+DB_LOADDIR="$CHECKOUTDIR/database/mysql"
+DB_BASE="$DB_LOADDIR/initdb.sql"
+DB_DATA="$DB_LOADDIR/current_data.sql"
+DB_DATA_TESTREST="$DB_LOADDIR/load_data_test_restapi.sql"
+DB_ASSET_TAG_NOT_UNIQUE="$DB_LOADDIR/initdb_ci_patch.sql"
+DB_ASSET_DEFAULT="$DB_LOADDIR/initdb_ci_patch_2.sql"
 
 for data in "$DB_BASE" "$DB_DATA"; do
 #for data in "$DB_BASE" "$DB_DATA" "$DB_DATA_TESTREST"; do
-    loaddb_file "$DB_LOADDIR/$data" || return $?
+    loaddb_file "$data" || return $?
 done
 
 echo "use box_utf8;" > /tmp/tmp.sql
