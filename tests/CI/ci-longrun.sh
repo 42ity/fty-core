@@ -296,7 +296,7 @@ usage() {
 }
 
 ACTION=test
-SAMPLEFILE="$SCRIPTDIR/ci-longrun.data"
+SAMPLEFILE="$SCRIPTDIR/../fixtures/ci-longrun.data"
 
 while [ "$#" -gt 0 ] ; do 
     case "$1" in
