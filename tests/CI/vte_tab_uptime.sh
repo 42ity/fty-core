@@ -27,15 +27,15 @@
 
 # ***** DESCRIPTION *****
     # *** test imports the assets from csv file with tab used like separator
-    # *** tests creates initial (near to empty assets) using tools/initdb.sql file.
-    # *** tests compares the exported tableis files with expected (only INSERT command)
+    # *** tests creates initial (near to empty assets) using database/mysql/initdb.sql file.
+    # *** tests compares the exported table's files with expected (only INSERT command)
 
 # ***** PREREQUISITES *****
     # *** SUT_SSH_PORT should be passed as parameter -sp <value>
     # *** it is currently from interval <2206;2209>
     # *** must run as root without using password 
     # *** BIOS image must be installed and running on SUT 
-    # *** tools directory containing tools/initdb.sql tools/bam_import_16_tab_008.csv present on MS 
+    # *** tools directory containing tools/initdb.sql database/mysql/bam_import_16_tab_008.csv present on MS 
     # *** tests/CI directory (on MS) contains weblib.sh and scriptlib.sh library files
 
 # ***** GLOBAL VARIABLES *****
@@ -108,6 +108,7 @@ logmsg_info "Will use BASE_URL = '$BASE_URL'"
 
 determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+DB_LOADDIR="$CHECKOUTDIR/database/mysql"
 
 logmsg_info "Ensuring that needed remote daemons are running on VTE"
 sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent bios-agent-nut bios-agent-inventory bios-agent-cm; do systemctl start $SVC ; done'
@@ -119,8 +120,8 @@ sut_run 'R=0; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server
     # *** write power rack base test data to DB on SUT
 set -o pipefail 2>/dev/null || true
 set -e
-loaddb_file ./tools/initdb.sql 2>&1 | tee $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
-loaddb_file ./tools/initdb_ci_patch.sql 2>&1 | tee -a $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
+loaddb_file "$DB_LOADDIR"/initdb.sql 2>&1 | tee $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
+loaddb_file "$DB_LOADDIR"/initdb_ci_patch.sql 2>&1 | tee -a $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
 set +e
 
 # Try to accept the BIOS license on server

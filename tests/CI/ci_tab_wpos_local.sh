@@ -40,24 +40,25 @@ BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 
 cd `dirname $0`;cd ../..;CHECKOUTDIR=`pwd`
 echo "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+DB_LOADDIR="$CHECKOUTDIR/database/mysql"
 set -u
 
 # Import empty DB
-DB1="/home/rvrajik/core/tools/initdb.sql"
+DB1="$DB_LOADDIR"/initdb.sql
 #mysql -u root < "$DB1"
 #mysql -u root < /home/rvrajik/core/tools/initdb.sql
 #mysql -u root box_utf8 <<< "select * from t_bios_asset_element_type"
 #mysql -u root box_utf8 <<< "delete from t_bios_asset_device_type"
 #mysql -u root box_utf8 <<< "delete from t_bios_asset_link_type"
 
-loaddb_file $DB1
+loaddb_file "$DB1"
 
 ASSET="$CHECKOUTDIR/tools/$1"
 # Import the tools/<testname>.csv file
 # <testname> format bam_import_16_vte_wpos<N>.csv, where <N> is tcnumber
 # bam_import_16_wpos1.csv - 2 epdu's + 1 pdu in the same rack
 # expected - [ 8, "more than 2 PDU is not supported"]
-# 
+#
 # bam_import_16_wpos2.csv - parameter is missing
 # expected
 #            [ 4, "location_w_pos should be set. Possible variants 'left'/'right'"],

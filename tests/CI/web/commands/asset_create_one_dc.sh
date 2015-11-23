@@ -25,6 +25,8 @@ echo "********* asset_create_one_dc.sh ******************* START ***************
 echo "###################################################################################################"
 echo
 
+DB_LOADDIR="$CHECKOUTDIR/database/mysql"
+
 echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 1. Asset_without_parameter **************************************************************"
 echo "***************************************************************************************************"
@@ -70,7 +72,7 @@ echo "**************************************************************************
 test_it "Create_DC_with_the_duplicite_asset_tag"
 api_auth_post_json '/asset' '{"name":"dc_name_test_1","type":"datacenter","sub_type":"","location":"","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST0003","address":"ASDF"}}' >&5
 print_result $?
-loaddb_file "$CHECKOUTDIR/tools/initdb_ci_patch.sql"
+loaddb_file "$DB_LOADDIR/initdb_ci_patch.sql"
 
 echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 6. Create_DC_with_the_duplicite_serial_no ***********************************************"

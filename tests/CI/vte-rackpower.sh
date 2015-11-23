@@ -39,7 +39,7 @@
     # *** must run as root without using password 
     # *** BIOS image must be installed and running on SUT 
     # *** upsd.conf, upssched.conf and upsmon.conf are present on SUT in the /etc/nut dir 
-    # *** tools directory containing tools/initdb.sql tools/rack_power.sql present on MS for assets
+    # *** tools directory containing tools/initdb.sql database/mysql/rack_power.sql present on MS for assets
     # *** tests/CI directory (on MS) contains weblib.sh (api_get_json and CURL functions needed) and scriptlib.sh
 
 TIME_START=$(date +%s)
@@ -116,6 +116,7 @@ cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 echo "SCRIPTDIR =       $SCRIPTDIR"
 echo "CHECKOUTDIR =     $CHECKOUTDIR"
 echo "BUILDSUBDIR =     $BUILDSUBDIR"
+DB_LOADDIR="$CHECKOUTDIR/database/mysql"
 
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
 
@@ -161,9 +162,9 @@ sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore
     # *** write power rack base test data to DB on SUT
 set -o pipefail 2>/dev/null || true
 set -e
-{ loaddb_file ./tools/initdb.sql && \
-  loaddb_file ./tools/initdb_ci_patch.sql && \
-  loaddb_file ./tools/rack_power.sql \
+{ loaddb_file "$DB_LOADDIR"/initdb.sql && \
+  loaddb_file "$DB_LOADDIR"/initdb_ci_patch.sql && \
+  loaddb_file "$DB_LOADDIR"/rack_power.sql \
 ; } 2>&1 | tee $CHECKOUTDIR/ci-rackpower-vte.log
 
 # Try to accept the BIOS license on server

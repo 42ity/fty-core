@@ -26,17 +26,18 @@ echo "********* asset_elements.sh ************************ START ***************
 echo "###################################################################################################"
 echo
 
+DB_LOADDIR="$CHECKOUTDIR/database/mysql"
+DB_BASE="$DB_LOADDIR/initdb.sql"
+DB_DATA="$DB_LOADDIR/load_data.sql"
+DB_DATA_TESTREST="$DB_LOADDIR/load_data_test_restapi.sql"
+DB_ASSET_TAG_NOT_UNIQUE="$DB_LOADDIR/initdb_ci_patch.sql"
+
 echo "********* asset_elements.sh ***********************************************************************"
 echo "********* 1. No_datacenters_present ***************************************************************"
 echo "***************************************************************************************************"
 test_it "No_datacenters_present"
 # delete all assets, no rooms are present
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-DB_LOADDIR=$BUILDSUBDIR/tools
-loaddb_file "$DB_LOADDIR/$DB_BASE"
+loaddb_file "$DB_BASE"
 
 curlfail_push_expect_noerrors
 api_get_json /asset/datacenters >&5
@@ -44,7 +45,7 @@ print_result $?
 curlfail_pop
 
 for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
-    loaddb_file "$DB_LOADDIR/$data" || return $?
+    loaddb_file "$data" || return $?
 done
 
 echo "********* asset_elements.sh ***********************************************************************"
@@ -58,12 +59,7 @@ echo "********* asset_elements.sh **********************************************
 echo "********* 3. no_rooms_present *********************************************************************"
 echo "***************************************************************************************************"
 # delete all assets, no rooms are present
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-DB_LOADDIR=$BUILDSUBDIR/tools
-loaddb_file "$DB_LOADDIR/$DB_BASE"
+loaddb_file "$DB_BASE"
 
 test_it "no_rooms_present"
 curlfail_push_expect_noerrors
@@ -72,14 +68,8 @@ print_result $?
 curlfail_pop
 
 #fill DB again
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-DB_LOADDIR=$BUILDSUBDIR/tools
-
 for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
-    loaddb_file "$DB_LOADDIR/$data" || return $?
+    loaddb_file "$data" || return $?
 done
 
 echo "********* asset_elements.sh ***********************************************************************"
@@ -93,12 +83,7 @@ echo "********* asset_elements.sh **********************************************
 echo "********* 5. no_rows_present *********************************************************************"
 echo "***************************************************************************************************"
 # delete all assets, no rows are present
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-DB_LOADDIR=$BUILDSUBDIR/tools
-loaddb_file "$DB_LOADDIR/$DB_BASE"
+loaddb_file "$DB_BASE"
 
 test_it "no_rows_present"
 curlfail_push_expect_noerrors
@@ -107,14 +92,8 @@ print_result $?
 curlfail_pop
 
 #fill DB again
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-DB_LOADDIR=$BUILDSUBDIR/tools
-
 for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
-    loaddb_file "$DB_LOADDIR/$data" || return $?
+    loaddb_file "$data" || return $?
 done
 
 echo "********* asset_elements.sh ***********************************************************************"
@@ -129,12 +108,7 @@ echo "********* asset_elements.sh **********************************************
 echo "********* 7. no_racks_present *********************************************************************"
 echo "***************************************************************************************************"
 # delete all assets, no racks are present
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-DB_LOADDIR=$BUILDSUBDIR/tools
-loaddb_file "$DB_LOADDIR/$DB_BASE"
+loaddb_file "$DB_BASE"
 
 test_it "no_racks_present"
 curlfail_push_expect_noerrors
@@ -143,14 +117,8 @@ print_result $?
 curlfail_pop
 
 #fill DB again
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-DB_LOADDIR=$BUILDSUBDIR/tools
-
 for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
-    loaddb_file "$DB_LOADDIR/$data" || return $?
+    loaddb_file "$data" || return $?
 done
 
 echo "********* asset_elements.sh ***********************************************************************"
@@ -164,12 +132,7 @@ echo "********* asset_elements.sh **********************************************
 echo "********* 9. no_groups_present *********************************************************************"
 echo "***************************************************************************************************"
 # delete all assets, no racks are present
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-DB_LOADDIR=$BUILDSUBDIR/tools
-loaddb_file "$DB_LOADDIR/$DB_BASE"
+loaddb_file "$DB_BASE"
 
 test_it "no_groups_present"
 curlfail_push_expect_noerrors
@@ -178,14 +141,8 @@ print_result $?
 curlfail_pop
 
 #fill DB again
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-DB_LOADDIR=$BUILDSUBDIR/tools
-
 for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
-    loaddb_file "$DB_LOADDIR/$data" || return $?
+    loaddb_file "$data" || return $?
 done
 
 echo "********* asset_elements.sh ***********************************************************************"

@@ -37,6 +37,7 @@ DATABASE=box_utf8
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 NEED_BUILDSUBDIR=no determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+DB_LOADDIR="$CHECKOUTDIR/database/mysql"
 
 nut_cfg_dir() {
     for cfgd in "/etc/ups" "/etc/nut"; do
@@ -330,8 +331,8 @@ case "$ACTION" in
         $SCRIPTDIR/ci-rc-bios.sh --stop
         create_nut_config
         $SCRIPTDIR/ci-empty-db.sh
-        loaddb_file "$CHECKOUTDIR/tools/initdb_ci_patch.sql"
-        loaddb_file "$CHECKOUTDIR/tools/rack_power.sql"
+        loaddb_file "$DB_LOADDIR"/initdb_ci_patch.sql
+        loaddb_file "$DB_LOADDIR"/rack_power.sql
         $SCRIPTDIR/ci-rc-bios.sh --start
         produce_events
         $SCRIPTDIR/ci-rc-bios.sh --stop
