@@ -304,7 +304,7 @@ int
 }
 
 
-reply_t 
+reply_t
     select_outage_byDC_byInterval
         (tntdb::Connection &conn,
          a_elmnt_id_t dc_id,

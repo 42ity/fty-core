@@ -1,0 +1,177 @@
+This RFC describes communication protocols that are used by ALERT component
+
+Parts involved in communication
+-------------------------------
+* Component METRIC_GENERATOR is any component that publishes METRIC messages into METRICS stream. In the system there CAN be many of such components.
+* Component ALERT is a component that publishes ALERT messages into ALERTS stream as a result of evaluation of metrics in the system. In the system there MUST be only one such component.
+* Component GATEWAY is a component that sends information about alerts in the system to external services. In the system there CAN be many of them.
+* Component USER that communicates directly with ALERT component, to send new rules to update rules and to ask for list of rules.
+
+Component ALERT
+---------------
+    * inputs:
+        ** different metrics from METRICS stream
+        ** rules for evaluation as RULES message to MAILBOX
+    * outputs:
+        ** current ongoing evaluated alerts into ALERTS stream
+        ** resolved alerts into ALERTS stream
+        ** list of actual rules as reply to the requests
+
+Rules are stores as files with extension ".rule". One file for one rule. Only Alert agent is supposed to manipulate with these files.
+
+METRICS stream
+==============
+Messages
+--------
+    * METRIC message ( indicates, that METRIC_GENERATOR component has measured some metrics and wants to share this information with other components in the system )
+
+METRIC message
+~~~~~~~~~~~~~~
+A METRIC message is a multipart message that MUST contain the following fields in that exact order
+    * type          - string ( e.g. "realpower.default", "output.voltage" )
+    * element_src   - string ( e.g. "datacenter_roztoky", "ups-1-lab" )
+    * value         - string ( value of the metric. It can be a floating point number or any string )
+    * units         - string ( e.g. "%","W", "kW","" )
+    * time [opt]    - number ( unix_timestamp in UTC timezone. If it is missing, then it is current time )
+    * element_dest [opt] - string ( e.g. "datacenter_roztoky", "ups-1-lab". Supposed to be used for data about links. )
+
+METRIC message MUST be sent with the subject "type@element_src" into the METRICS stream (see proto.h `metric_send`).
+
+ALERTS stream
+=============
+Messages
+--------
+    * ALERT message ( indicates, that ALERT component has evaluated that in the system there is some alert and wants to share this information with other components in the system )
+
+ALERT message
+~~~~~~~~~~~~~
+ALERT message is a multipart message that MUST contain the following fields in that exact order:
+    * rule_name    - string ( a rule name, that trigger this alert to be generated )
+    * element_name - string ( name of the element, where alert was detected. Most of the time is would be asset element name )
+    * timestamp    - int    ( timestamp, when alert changed state to this one )
+    * state        - string ( state of the alert. Possible values are ACTIVE/ACK-WIP/ACK-IGNORE/ACK-PAUSE/ACK-SILENCE/RESOLVED )
+    * severity     - string ( severity of the alert. Possible values are INFO/WARNING/CRITICAL )
+    * description  - string ( a description of the alert )
+    * actions      - list of strings ( EMAIL/SMS ) ( is optional )
+
+ALERT message MUST be sent with the subject "rule_name/severity@element_name" (see proto.h `alert_send`)
+
+Protocol ALERT + METRIC_GENERATOR on the METRICS stream
+====================================================
+    * METRIC_GENERATOR compoment publishes METRIC messages into METRICS stream as often as it is needed.
+    * ALERT component is subscribed on METRIC messages in the METRICS stream. And starts evaluation every time new metric received.
+      Other messages from METRICS stream MUST be ignored by ALERT component.
+
+Protocol ALERT + GATEWAY on the ALERTS stream
+=============================================
+    * ALERT component publishes ALERT messages into the ALERTS stream after each evaluation.
+    * GATEWAY component is subscribed on ALERT messages in the ALERTS stream.
+      Other messages from ALERTS stream MUST be ignored by GATEWAY component.
+
+Component GATEWAY
+=================
+    * GATEWAY component does the actions that are in alert message, if they are missing does the default actions.
+    * Reacts on ALERT messages and informs users.
+
+
+Rules for generating the alerts
+===============================
+
+Every rule has a unique name.
+
+There are two types of the rules:
+    * pattern rule
+    * single rule
+    * threshold rule
+
+Every rule type is intended to solve particular problem.
+
+Every rule is represented in JSON format.
+PATTERN and SINGLE rules have to have an evaluation function, that should return specified values in ANY case.
+
+Pattern rule
+------------
+This is very simple rule. For evaluation it requires only one metric as input parameter.
+
+This rule has the following JSON format:
+{
+  "rule_name": "common",
+  "severity": "INFO",
+  "in_rex": ".*",
+  "evaluation": "if(value > 7) then return element, topic .. \" too high\", value, \"IS"\ else return \"\", \"\", 0, \"ISNT\" end"
+}
+where
+    * "rule_name" is a name of the rule
+    * "evaluation" is an evaluation function. In the body of this function there are predefined entities "value" and "topic".
+    * "in_rex" is a regexp expression. Rule can be applyed to the metrics that satisfies it.
+    * "severity" indicates how important is the alert (see ALERT message for possible values)
+
+Predefined entities:
+    * "value" - a value of the metric that satisfies regexp expression
+    * "topic" - a topic of the metric that satisfies regexp expression
+    * "element" - a element of the metric that satisfies regexp expression
+
+Evaluation function returns information in the following order:
+    * element - element for with alert was detected
+    * description - a description of the alert (string)
+    * output_value - some number that characterize the alert
+    * result - a string that indicates if rule was evaluated as positive or negative "IS" or "ISNT"
+
+
+Single rule
+------------
+This is a rule, where required input metrics are explicitly defined.
+
+This rule has the following JSON format:
+{
+  "rule_name": "common2",
+  "severity": "CRITICAL",
+  "in": [ "temperature@AAA", "temperature2@BBB"],
+  "evaluation": "if( temperature_AAA > temperature2_BBB) then return "It is too high\", value, \"IS\" else return \"\",0, \"ISNT\" end",
+  "element": "CCC"
+}
+where
+    * "rule_name" is a name of the rule
+    * "severity" indicates how important is the alert (see ALERT message for possible values)
+    * "in" is a list of required metric topics. Rule can be applied only if all input values are known.
+    * "evaluation" is an evaluation function.
+    * "element" is an element alert regards to
+
+Evaluation function returns information in the following order:
+    * description - descriprion of the alert (string)
+    * output_value - some number that characterize the alert
+    * result - a string that indicates if rule was evaluated as positive or negative "IS" or "ISNT"
+
+
+Threshold rule
+------------
+This is a specific rule for thresholds.
+
+This rule has the following JSON format:
+{
+  "rule_name": "threshold1",
+  "severity": "CRITICAL",
+  "metric" : "metric_name",
+  "type" : "low"/"high",
+  "element": "CCC",
+  "value": number_may_be_double,
+  "action" : ["EMAIL", "SMS"]
+}
+where
+    * "rule_name" is a name of the rule
+    * "severity" indicates how important is the alert (see ALERT message for possible values)
+    * "metric" name of the metric that should analyzed
+    * "type" "low" or "high".
+    * "element" is an element alert regards to (input element and output element here are the same)
+    * "value" value of the threshold
+
+Evaluation function returns information in the following order:
+    * description - descriprion of the alert (string) "element __element_name__ is above/lower that threshold __value__"
+    * output_value - some number that characterize the alert
+    * result - a string that indicates if rule was evaluated as positive or negative "IS" or "ISNT"
+
+Evaluation function is missing in the rule, as it has the following template and should be enforced internally:
+    * for "low" :
+        "if ( metric_element < value ) then return \"Element __element_name__ is lower than __value__\", value, \"IS\" else return \"\", value, \"ISNT\" end"
+    * for "high" :
+        "if ( metric_element > value ) then return \"Element __element_name__ is higher than __value__\", value, \"IS\" else return \"\", value, \"ISNT\" end"

@@ -32,13 +32,46 @@
 #include <stdlib.h>
 #include <vector>
 #include <string>
+#include <cmath>
 
 #include "upsstatus.h"
 #include "data.h"
 #include "db/measurements.h"
 #include "log.h"
 #include "dbpath.h" // temporary
-#include "web_utils.h"
+#include "utils_web.h"
+#include "asset_types.h"
+#include "helpers.h"
+
+static std::string
+s_os2string(
+        double d) {
+    // This is a hack for gdn project - if the key is operatingStatus, the value is
+    // converted from number to string using this map
+    static std::map<int, std::string> OS2STRING {
+        {0, "Unknown"},
+            {1, "None"},
+            {2, "Servicing"},
+            {3, "Starting"},
+            {4, "Stopping"},
+            {5, "Stopped"},
+            {6, "Aborted"},
+            {7, "Dormant"},
+            {8, "Completed"},
+            {9, "Migrating"},
+            {10, "Immigrating"},
+            {11, "Emigrating"},
+            {12, "Snapshotting"},
+            {13, "In_Test"},
+            {14, "Transitioning"},
+            {15, "In_Service"}
+    };
+
+    int os = (int) d; // measurements are received as double
+    if (OS2STRING.count(os) == 0)
+        os = 0;
+    return OS2STRING.at(os);
+}
 </%pre>
 
 <%args>
@@ -47,63 +80,47 @@ std::string dev;
 
 <%cpp>
 {
-    // check if method is allowed
-    if ( !request.isMethodGET() )
-    {
-</%cpp>
-<$$ create_error_json("Not implemented", 100) $>
-<%cpp>
-        return HTTP_NOT_IMPLEMENTED;
+    if (dev.empty()) {
+        http_die("request-param-required", "dev");
     }
 
-    // Check URL validity
-    if ( dev.empty() )
-    {
-</%cpp>
-<$$ create_error_json("Invalid url (missing id parameter)", 56) $>
-<%cpp>
-        return HTTP_BAD_REQUEST;
-    }
     std::vector<std::string> asset_ids;
     cxxtools::split(",", dev, std::back_inserter(asset_ids));
+
+    if (asset_ids.empty()) {
+        http_die("request-param-required", "dev");
+    }
 
     // Go through all passed ids
     std::string big_json{};
     for ( auto asset_id : asset_ids)
     {
         // convert id from string to number
+        http_errors_t errors;
         a_elmnt_id_t id = 0;
-        try{
-            size_t pos = 0;
-            id = std::stoul (asset_id, &pos);
-            if ( pos != asset_id.size() )
-            {
-                // if at least one id is malformed then all request
-                // would be rejected
-</%cpp>
-<$$ create_error_json("One id in the list is malformed", 200) $>
-<%cpp>
-                return HTTP_BAD_REQUEST;
-            }
+
+        if (!check_element_identifier ("N/A", asset_id, id, errors)) {
+            log_warning("non-numeric id '%s', skipping", asset_id.c_str());
+            continue;
         }
-        catch ( const std::exception &e) {
-            log_error(e.what());
-</%cpp>
-<$$ create_error_json("One id in the list is malformed", 200) $>
-<%cpp>
-            return HTTP_BAD_REQUEST;
-        }
+
         // Temporary add connection here
-        tntdb::Connection conn = tntdb::connectCached(url);
+        tntdb::Connection conn;
+        try{
+            conn = tntdb::connectCached(url);
+        }
+        catch (const std::exception &e)
+        {
+            LOG_END_ABNORMAL(e);
+            http_die("internal-error", "Cannot connect to the database");
+        }
 
         // check if the element really exists, read its name
-        auto ret = persist::select_asset_element_web_byId (conn, id);
-        if ( ret.status == 0 )
+        auto asset = persist::select_asset_element_web_byId (conn, id);
+        if ( asset.status == 0 )
         {
-</%cpp>
-<$$ create_error_json("One of ids doesn't exist", 202) $>
-<%cpp>
-            return HTTP_NOT_FOUND;
+            log_warning("Element id '%s' is not in DB, skipping", asset_id.c_str());
+            continue;
         }
 
         // definition of the function, that would process the
@@ -127,22 +144,15 @@ std::string dev;
 
                                 m_msrmnt_scale_t scale = 0;
                                 r["scale"].get(scale);
-                                measurements.emplace
+                                bool inserted;
+                                std::map <std::string, double> ::iterator it;
+                                std::tie (it, inserted) = measurements.emplace
                                 (
                                     topic_parts[0],
                                     value * std::pow (10, scale)
                                 );
-                                // TODO what if emplace return an error
-                                /* std::tie (i, inserted) = samples.emplace
-                                if (inserted) {
-                                    log_info ("emplace () ok.");
-                                }
-                                else {
-                                    // This should not happen since we are certain that item being emplaced is not there
-                                    log_warning ("emplace () failed!");
-                                }
-                                */
-
+                                if ( !inserted )
+                                    log_error ("in the list of returned measurements at least two have the same measurement_source");
                             }
                             else
                             {
@@ -154,30 +164,55 @@ std::string dev;
         // selects measurements
         int rv = persist::select_current_measurement_by_element
                     (conn, id, foo);
+
+        // add mandatory keys if not in DB
+        if ( persist::is_rack(asset.item.type_id) || persist::is_dc(asset.item.type_id) ) {
+            for (const auto& key : {"realpower.default", "realpower.output.L1"}) {
+                if (measurements.count(key) != 0)
+                    continue;
+                measurements.emplace(key, NAN);
+            }
+        } else if (persist::is_ups(asset.item.subtype_id)) {
+            for (const auto& key : {"status.ups", "load.default", "realpower.default", "voltage.output.L1-N", "realpower.output.L1", "current.output.L1", "charge.battery", "runtime.battery"}) {
+                if (measurements.count(key) != 0)
+                    continue;
+                measurements.emplace(key, NAN);
+            }
+        }
+        else if (persist::is_pdu(asset.item.subtype_id) ||
+                persist::is_epdu(asset.item.subtype_id)) {
+            for (const auto& key : {"frequency.input", "load.input.L1", "voltage.input.L1-N", "current.input.L1", "realpower.default", "realpower.input.L1", "power.default", "power.input.L1"}) {
+                if (measurements.count(key) != 0)
+                    continue;
+                measurements.emplace(key, NAN);
+            }
+        }
+
         if ( rv != 0 )
         {
-</%cpp>
-<$$ create_error_json("Some problem during selecting measurements", 201) $>
-<%cpp>
-            return HTTP_INTERNAL_SERVER_ERROR;
+            http_die("internal-error");
         }
 
         // we are here -> everything is ok, need just to form
         // this is a small JSON for just ONE asset
         std::string json = "{";
-        json += json_key_value_s("id", asset_id);
+        json += utils::json::jsonify ("id", asset_id);
         json += ",";
-        json += json_key_value_s("name", ret.item.name);
+        json += utils::json::jsonify ("name", asset.item.name);
         json += ",";
         for ( const auto &one_measurement : measurements )
         {
             if( one_measurement.first == "status.ups" )
             {
-                json +=  json_key_value_s(one_measurement.first, shared::upsstatus_to_string(one_measurement.second));
+                json += utils::json::jsonify (one_measurement.first, shared::upsstatus_to_string(one_measurement.second));
+            }
+            else if (one_measurement.first == "operatingStatus" )
+            {
+                json += utils::json::jsonify (one_measurement.first, s_os2string(one_measurement.second));
             }
             else
             {
-                json +=  json_key_value_d(one_measurement.first, one_measurement.second);
+                json += utils::json::jsonify (one_measurement.first, one_measurement.second);
             }
             json += ",";
         }
@@ -187,7 +222,8 @@ std::string dev;
         big_json += ",";
     }
     // remove last ","
-    big_json.pop_back();
+    if (!big_json.empty())
+        big_json.pop_back();
 </%cpp>
 {
    "current":[

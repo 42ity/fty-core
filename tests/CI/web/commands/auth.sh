@@ -29,21 +29,29 @@ _gettoken_auth_sh() {
         sed -n 's|.*"access_token"[[:blank:]]*:[[:blank:]]*"\([^"]*\)".*|\1|p' | tail -n 1
 }
 
+if [ -n "$TESTPASS" ] && [ -x "$TESTPASS" ] ; then : ; else
+    [ -n "$CHECKOUTDIR" ] && [ -d "$CHECKOUTDIR" ] && \
+        TESTPASS="$CHECKOUTDIR/tools/testpass.sh" || \
+        TESTPASS="/usr/libexec/bios/testpass.sh"
+fi
+
+PASS_ORIG_GOOD=""
+
 test_it "good_login"
 TOKEN="`_gettoken_auth_sh`"
-[ "$TOKEN" ]
+[ "$TOKEN" ] && PASS_ORIG_GOOD="$BIOS_PASSWD"
 print_result $?
 
 
 # Check not getting token
 test_it "wrong_login"
-curlfail_push_expect_401
-#api_get "/oauth2/token?username=not$BIOS_USER&password=$BIOS_PASSWD&grant_type=password" >/dev/null
+curlfail_push_expect_400
 _test_auth "not$BIOS_USER" "$BIOS_PASSWD" >/dev/null
 print_result $?
+curlfail_pop
 
 test_it "wrong_password"
-#api_get "/oauth2/token?username=$BIOS_USER&password=not$BIOS_PASSWD&grant_type=password" >/dev/null
+curlfail_push_expect_400
 _test_auth "$BIOS_USER" "not$BIOS_PASSWD" >/dev/null
 print_result $?
 curlfail_pop
@@ -69,15 +77,46 @@ TOKEN="`_gettoken_auth_sh`"
 # is referenced in PAM/SASL/SUDOERS setup of the OS to give certain privileges
 # to processes running as this user account.
 
+# First try a few weak passwords
+
+curlfail_push_expect_400
+
+test_it "change_password_weak_HasUsername"
+api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "'"xZg4$BIOS_PASSWD@$BIOS_USER"'" }'
+print_result $?
+
+test_it "change_password_weak_HasOldPass"
+api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "'"xW6_$BIOS_PASSWD@"'" }'
+print_result $?
+
+# Actually, this likely breaks in cryptlib before length checks by the script
+test_it "change_password_weak_TooShort"
+api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "1qW" }'
+print_result $?
+
+test_it "change_password_weak_OnlyLC"
+api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "1x5g7h2w0f" }'
+print_result $?
+
+test_it "change_password_weak_TooSimple"
+api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "1234abcdef" }'
+print_result $?
+
+curlfail_pop
+
+
+# Now try setting a password that should succeed
+
 ORIG_PASSWD="$BIOS_PASSWD"
-NEW_BIOS_PASSWD="new$BIOS_PASSWD"'@'
+#NEW_BIOS_PASSWD="nEw2`echo "$BIOS_PASSWD" | cut -c 1-3`%`echo "$BIOS_PASSWD" | cut -c 4-`"'@'
+NEW_BIOS_PASSWD="xX!9`head --bytes 16 /dev/urandom | base64 | sed 's,[\+\=\/\ \t\n\r\%],_,g'`"
 
 test_it "change_password"
 api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "'"$NEW_BIOS_PASSWD"'" }'
 print_result $?
 
 
-curlfail_push_expect_401
+curlfail_push_expect_400
 
 test_it "wrong_password_completely"
 _test_auth "$BIOS_USER" "not$BIOS_PASSWD" >/dev/null
@@ -96,15 +135,22 @@ print_result $?
 
 curlfail_push_expect_400
 test_it "wrong_change_password_back_badold"
-BIOS_PASSWD="$NEW_BIOS_PASSWD" api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "bad'"$NEW_BIOS_PASSWD"'", "new_passwd" : "'"$BIOS_PASSWD"'" }'
+BIOS_PASSWD="$NEW_BIOS_PASSWD" api_auth_post_json /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "bad'"$NEW_BIOS_PASSWD"'", "new_passwd" : "'"$BIOS_PASSWD"'" }' >&5
 print_result $?
 curlfail_pop
 
-test_it "change_password_back_goodold"
-BIOS_PASSWD="$NEW_BIOS_PASSWD" api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$NEW_BIOS_PASSWD"'", "new_passwd" : "'"$ORIG_PASSWD"'" }'
+
+echo "=========== Start Restore origin password at low-level========================"
+test_it "restore_PASS_ORIG_GOOD_lowlevel"
+sut_run "( echo "${PASS_ORIG_GOOD}"; echo "${PASS_ORIG_GOOD}"; ) | passwd ${BIOS_USER}"
 print_result $?
 
-curlfail_push_expect_401
+test_it "sasl_cache_cleanup_lowlevel"
+sut_run "testsaslauthd -u '$BIOS_USER' -p '${PASS_ORIG_GOOD}' -s '$SASL_SERVICE'"
+print_result $?
+echo "=========== End Restore origin password at low-level=========================="
+
+curlfail_push_expect_400
 test_it "wrong_password_temporaryNoLonger"
 _test_auth "$BIOS_USER" "$NEW_BIOS_PASSWD" >/dev/null
 print_result $?

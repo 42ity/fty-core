@@ -20,29 +20,29 @@
 /*!
  * \file asset_export.ecpp
  * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
- * \brief Not yet documented file
+ * \brief  exports assets into csv file
  */
  #><%pre>
 #include <string>
 #include <time.h>
 
-#include "auth_levels.h"
 #include "db/inout.h"
 #include "utils.h"
+#include "log.h"
+#include "utils_web.h"
 </%pre>
-<%request scope="global">
-int8_t access_auth_level;
-</%request>
 <%cpp>
-if (access_auth_level <= AUTH_LEVEL_ANONYMOUS) {
-</%cpp>
-    {"error" : "not atuhorized"}
-<%cpp>
-    return HTTP_UNAUTHORIZED;
-}
+{
     char buf[16];
     calendar_to_datetime(time(NULL), buf, 16);
     buf[14] = '\x0';   //kill last Z
 	reply.setHeader(tnt::httpheader::contentDisposition, "asset_export" + std::string{buf} + ".csv");
-    persist::export_asset_csv(reply.out());
+    try {
+        persist::export_asset_csv(reply.out());
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        http_die("internal-error");
+    }
+}
 </%cpp>

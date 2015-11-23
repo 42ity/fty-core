@@ -1,0 +1,77 @@
+<#
+ #
+ # Copyright (C) 2015 Eaton
+ #
+ # This program is free software; you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+ # the Free Software Foundation; either version 2 of the License, or
+ # (at your option) any later version.
+ #
+ # This program is distributed in the hope that it will be useful,
+ # but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+ #
+ # You should have received a copy of the GNU General Public License along
+ # with this program; if not, write to the Free Software Foundation, Inc.,
+ # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ #
+ #><#
+/*!
+ * \file asset_list.ecpp
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \brief  Implementation for short list of assets
+ */
+ #><%pre>
+#include <cxxtools/split.h>
+#include "data.h"
+#include "log.h"
+#include "assetcrud.h"
+#include "utils_web.h"
+</%pre>
+<%args>
+std::string subtype;
+</%args>
+<%thread scope="global">
+asset_manager asset_mgr;
+</%thread>
+<%cpp>
+{
+    // check if method is allowed
+    if ( !request.isMethodGET() )
+    {
+        http_die ("method-not-allowed", request.getMethod().c_str());
+    }
+    log_debug (" type = '%s'", request.getArg("type").c_str());
+    log_debug (" subtype = '%s'", subtype.c_str());
+
+    // we want to support multiple subtype selection
+    std::vector<std::string> asset_subtypes;
+    cxxtools::split(",", subtype, std::back_inserter(asset_subtypes));
+
+    std::string json = "{\"" + request.getArg("type");
+    json +=  "s\":[ "; // attention. This space need to be there! for empty list!
+    for ( const auto &asset_subtype: asset_subtypes )
+    {
+        // Get data
+        auto allAssetsShort = asset_mgr.get_items1 (request.getArg("type"), asset_subtype);
+        if ( allAssetsShort.status == 0 )
+        {
+            http_die_idx(allAssetsShort.rowid, allAssetsShort.msg);
+        }
+
+        for ( auto &oneAsset : allAssetsShort.item )
+        {
+            json += "{";
+            json += utils::json::jsonify ("id", std::to_string(oneAsset.first));
+            json += ",";
+            json +=  utils::json::jsonify ("name", oneAsset.second);
+            json += "},";
+        }
+    }
+    json.back() = ']';
+    json += "}";
+</%cpp>
+<$$ json $>
+%}

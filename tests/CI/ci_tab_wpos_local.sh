@@ -34,7 +34,7 @@ BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
     { echo "CI-FATAL: $0: Can not web script library" >&2; exit 1; }
 
 #SUT_SSH_PORT="2209"
-#SUT_HOST="debian.roz.lab.etn.com"
+#SUT_HOST="debian.roz53.lab.etn.com"
 #SUT_WEB_PORT=8009
 #SUT_IS_REMOTE=no
 

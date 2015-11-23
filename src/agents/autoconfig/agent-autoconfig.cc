@@ -43,6 +43,7 @@ inline void operator<<= (cxxtools::SerializationInfo& si, const AutoConfiguratio
     si.addMember("subtype") <<= std::to_string(info.subtype);
     si.addMember("operation") <<= std::to_string(info.operation);
     si.addMember("configured") <<= info.configured;
+    si.addMember("attributes") <<= info.attributes;
 }
 
 inline void operator>>= (const cxxtools::SerializationInfo& si, AutoConfigurationInfo& info)
@@ -60,6 +61,7 @@ inline void operator>>= (const cxxtools::SerializationInfo& si, AutoConfiguratio
         si.getMember("operation") >>= tmp;
         info.operation = atoi(tmp.c_str());
     }
+    si.getMember("attributes")  >>= info.attributes;
 }
 
 // autoconfig agent public methods
@@ -70,26 +72,6 @@ void Autoconfig::onStart( )
     setPollingInterval();
 }
 
-void Autoconfig::onReply( ymsg_t **message )
-{
-    if( ! message || ! *message ) return;
-    char *name = NULL;
-    zhash_t *extAttributes = NULL;
-    uint32_t type, subtype;
-    int8_t event_type;
-
-    int extract = bios_asset_extra_extract( *message, &name, &extAttributes, &type, &subtype, NULL, NULL, NULL, &event_type );
-    log_debug("received extended attributes for device %s, device type %" PRIu32 "/%" PRIu32 ", extract result %i",
-              name, type, subtype, extract );
-    if(
-        extract  == 0 &&
-        _configurableDevices.find(name) != _configurableDevices.end()
-    ) {
-        _configurableDevices[name].attributes = utils::zhash_to_map(extAttributes);
-    }
-    FREE0(name);
-}
-
 void Autoconfig::onSend( ymsg_t **message )
 {
     if( ! message || ! *message ) return;
@@ -98,8 +80,9 @@ void Autoconfig::onSend( ymsg_t **message )
     uint32_t type = 0;
     uint32_t subtype = 0;
     int8_t operation;
+    zhash_t *extAttributes = NULL;
 
-    int extract = bios_asset_extract( *message, &device_name, &type, &subtype, NULL, NULL, NULL, &operation );
+    int extract = bios_asset_extra_extract( *message, &device_name, &extAttributes, &type, &subtype, NULL, NULL, NULL, NULL, &operation );
     if( ! extract ) {
         log_debug("asset message for %s type %" PRIu32 " subtype %" PRIu32, device_name, type, subtype );
         if( type == asset_type::DEVICE && ( subtype == asset_subtype::UPS || subtype == asset_subtype::EPDU ) ) {
@@ -108,9 +91,9 @@ void Autoconfig::onSend( ymsg_t **message )
             _configurableDevices[device_name].configured = false;
             _configurableDevices[device_name].attributes.clear();
             _configurableDevices[device_name].operation = operation;
+            _configurableDevices[device_name].attributes = utils::zhash_to_map(extAttributes);
             saveState();
             setPollingInterval();
-            requestExtendedAttributes( device_name );
         }
     } else {
         log_debug("this is not bios_asset message (error %i)", extract);
@@ -139,16 +122,6 @@ void Autoconfig::onPoll( )
                 }
                 it.second.date = time(NULL);
             }
-        }
-        // get extended attributes for not configured device
-        if(
-            ! it.second.configured &&
-            it.second.attributes.empty() &&
-            ( it.second.operation == asset_operation::INSERT ||
-              it.second.operation == asset_operation::UPDATE )
-        )
-        {
-            requestExtendedAttributes( it.first.c_str() );
         }
     }
     if( save ) { cleanupState(); saveState(); }
@@ -187,7 +160,7 @@ void Autoconfig::addDeviceIfNeeded(const char *name, uint32_t type, uint32_t sub
 
 void Autoconfig::requestExtendedAttributes( const char *name )
 {
-    ymsg_t *extended = bios_asset_extra_encode( name, NULL, 0, 0, NULL, 0, 0, 0 );
+    ymsg_t *extended = bios_asset_extra_encode( name, NULL, 0, 0, 0, NULL, 0, 0, 0 );
     if( extended ) {
         log_debug("requesting extended attributes for %s", name);
         sendto(BIOS_AGENT_NAME_DB_MEASUREMENT,"get_asset_extra", &extended );
@@ -197,16 +170,22 @@ void Autoconfig::requestExtendedAttributes( const char *name )
 
 void Autoconfig::loadState()
 {
-    std::string json = load_agent_info( AUTOCONFIG );
+    std::string json = "";
+    int rv = load_agent_info( AUTOCONFIG, json );
+    if ( rv != 0 )
+    {
+        log_error( "can't load state from database");
+        return;
+    }
+
     std::istringstream in(json);
 
     try {
         _configurableDevices.clear();
         cxxtools::JsonDeserializer deserializer(in);
-        std::vector<AutoConfigurationInfo> items;
         deserializer.deserialize(_configurableDevices);
     } catch( std::exception &e ) {
-        log_error( "can't load state from database: %s", e.what() );
+        log_error( "can't parse state from database: %s", e.what() );
     }
 }
 

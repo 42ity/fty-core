@@ -28,18 +28,11 @@
 #ifndef SRC_SHARED_DATA_H
 #define SRC_SHARED_DATA_H
 
-#include <czmq.h>
 #include <string>
+#include <map>
 
 #include "dbhelpers.h"
-#include "common_msg.h"
 #include "db/assets.h"
-
-/**
- * \brief extract error, msg and HTTP error code from common_msg instance
- *
- */
-void common_msg_to_rest_error(common_msg_t* cm_msg, std::string& error, std::string& msg, unsigned* code);
 
 class asset_manager {
     public:
@@ -71,12 +64,5 @@ class measures_manager {
                 m_msrmnt_scale_t  &scale);
 };
 
-class ui_props_manager {
-    public:
-        int get(std::string &result);
-        int put(const std::string &properties, std::string &result);
-    private:
-        std::string agent_name(void);
-};
 
 #endif // SRC_SHARED_DATA_H

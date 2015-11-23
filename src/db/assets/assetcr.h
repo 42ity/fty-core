@@ -56,13 +56,15 @@ db_reply_t
  *  \param[in]  element_id - asset element id
  *  \param[in]  attributes - zhash_t of attributes
  *  \param[in]  read_only - set if attribute is read only or not
+ *  \param[out] err       - error message in case of errors
  */
 int
     insert_into_asset_ext_attributes
         (tntdb::Connection &conn,
          a_elmnt_id_t element_id,
          zhash_t* attributes,
-         bool read_only);
+         bool read_only,
+         std::string &err);
 
 
 db_reply_t

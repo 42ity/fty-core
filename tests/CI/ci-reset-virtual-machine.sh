@@ -152,8 +152,8 @@ settraps() {
 ### TODO: Assign this default later in the script, after downloads
 VM="latest"
 [ -z "$IMGTYPE" ] && IMGTYPE="devel"
-[ -z "$OBS_IMAGES" ] && OBS_IMAGES="http://obs.roz.lab.etn.com/images/"
-[ -z "$APT_PROXY" ] && APT_PROXY='http://gate.roz.lab.etn.com:3142'
+[ -z "$OBS_IMAGES" ] && OBS_IMAGES="http://obs.roz53.lab.etn.com/images/"
+[ -z "$APT_PROXY" ] && APT_PROXY='http://gate.roz53.lab.etn.com:3142'
 [ -n "$http_proxy" ] && export http_proxy
 
 [ -z "$LANG" ] && LANG=C

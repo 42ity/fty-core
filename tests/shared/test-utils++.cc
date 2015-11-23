@@ -26,8 +26,6 @@
  */
 #include <catch.hpp>
 #include <string>
-#include <cxxtools/serializationinfo.h>
-#include <cxxtools/jsondeserializer.h>
 #include <limits.h>
 
 #include "utils++.h"
@@ -81,164 +79,7 @@ TEST_CASE ("utils::math::utils::math::dtos","[utils::math::dtos][utilities]")
     CHECK ( result == "-1.44" );
 }
 
-TEST_CASE ("utils::json::escape","[utils::math::dtos][json][escape]")
-{
 
-    // utils::json::escape (<first>) should equal <second>
-    std::vector <std::pair <std::string, std::string>> tests {
-        {"'jednoduche ' uvozovky'",                                     "'jednoduche ' uvozovky'"},
-        {"'jednoduche '' uvozovky'",                                    "'jednoduche '' uvozovky'"},
-        {"dvojite \" uvozovky",                                         R"(dvojite \" uvozovky)"},
-        {"dvojite \\\" uvozovky",                                       R"(dvojite \\\" uvozovky)"},
-        {"dvojite \\\\\" uvozovky",                                     R"(dvojite \\\\\" uvozovky)"},
-        {"dvojite \\\\\\\" uvozovky",                                   R"(dvojite \\\\\\\" uvozovky)"},
-        {"dvojite \\\\\\\\\" uvozovky",                                 R"(dvojite \\\\\\\\\" uvozovky)"},
-        {"'",                                                           R"(')"},
-        {"\"",                                                          R"(\")"},
-        {"'\"",                                                         R"('\")"},
-        {"\"\"",                                                        R"(\"\")"},
-        {"\"\"\"",                                                      R"(\"\"\")"},
-        {"\\\"\"\"",                                                    R"(\\\"\"\")"},
-        {"\"\\\"\"",                                                    R"(\"\\\"\")"},
-        {"\"\"\\\"",                                                    R"(\"\"\\\")"},
-        {"\\\"\\\"\\\"",                                                R"(\\\"\\\"\\\")"},
-        {"\" dvojite \\\\\" uvozovky \"",                               R"(\" dvojite \\\\\" uvozovky \")"},
-        {"dvojite \"\\\"\" uvozovky",                                   R"(dvojite \"\\\"\" uvozovky)"},
-        {"dvojite \\\\\"\\\\\"\\\\\" uvozovky",                         R"(dvojite \\\\\"\\\\\"\\\\\" uvozovky)"},
-
-        {"\b",                                                          R"(\b)"},
-        {"\\b",                                                         R"(\\b)"},
-        {"\\\b",                                                        R"(\\\b)"},
-        {"\\\\b",                                                       R"(\\\\b)"},
-        {"\\\\\b",                                                      R"(\\\\\b)"},
-        {"\\\\\\b",                                                     R"(\\\\\\b)"},
-        {"\\\\\\\b",                                                    R"(\\\\\\\b)"},
-        {"\\\\\\\\b",                                                   R"(\\\\\\\\b)"},
-        {"\\\\\\\\\b",                                                  R"(\\\\\\\\\b)"},
-        
-        {"\f",                                                          R"(\f)"},
-        {"\\f",                                                         R"(\\f)"},
-        {"\\\f",                                                        R"(\\\f)"},
-        {"\\\\f",                                                       R"(\\\\f)"},
-        {"\\\\\f",                                                      R"(\\\\\f)"},
-        {"\\\\\\f",                                                     R"(\\\\\\f)"},
-        {"\\\\\\\f",                                                    R"(\\\\\\\f)"},
-        {"\\\\\\\\f",                                                   R"(\\\\\\\\f)"},
-        {"\\\\\\\\\f",                                                  R"(\\\\\\\\\f)"},
-
-        {"\n",                                                          R"(\n)"},
-        {"\\n",                                                         R"(\\n)"},
-        {"\\\n",                                                        R"(\\\n)"},
-        {"\\\\n",                                                       R"(\\\\n)"},
-        {"\\\\\n",                                                      R"(\\\\\n)"},
-        {"\\\\\\n",                                                     R"(\\\\\\n)"},
-        {"\\\\\\\n",                                                    R"(\\\\\\\n)"},
-        {"\\\\\\\\n",                                                   R"(\\\\\\\\n)"},
-        {"\\\\\\\\\n",                                                  R"(\\\\\\\\\n)"},
-
-        {"\r",                                                          R"(\r)"},
-        {"\\r",                                                         R"(\\r)"},
-        {"\\\r",                                                        R"(\\\r)"},
-        {"\\\\r",                                                       R"(\\\\r)"},
-        {"\\\\\r",                                                      R"(\\\\\r)"},
-        {"\\\\\\r",                                                     R"(\\\\\\r)"},
-        {"\\\\\\\r",                                                    R"(\\\\\\\r)"},
-        {"\\\\\\\\r",                                                   R"(\\\\\\\\r)"},
-        {"\\\\\\\\\r",                                                  R"(\\\\\\\\\r)"},
-
-        {"\t",                                                          R"(\t)"},
-        {"\\t",                                                         R"(\\t)"},
-        {"\\\t",                                                        R"(\\\t)"},
-        {"\\\\t",                                                       R"(\\\\t)"},
-        {"\\\\\t",                                                      R"(\\\\\t)"},
-        {"\\\\\\t",                                                     R"(\\\\\\t)"},
-        {"\\\\\\\t",                                                    R"(\\\\\\\t)"},
-        {"\\\\\\\\t",                                                   R"(\\\\\\\\t)"},
-        {"\\\\\\\\\t",                                                  R"(\\\\\\\\\t)"},
-
-        {"\\",                                                          R"(\\)"},
-        {"\\\\",                                                        R"(\\\\)"},
-        {"\\\\\\",                                                      R"(\\\\\\)"},
-        {"\\\\\\\\",                                                    R"(\\\\\\\\)"},
-        {"\\\\\\\\\\",                                                  R"(\\\\\\\\\\)"},
-
-        {"\uA66A",                                                      R"(\u00ea\u0099\u00aa)"},
-        {"Ꙫ",                                                           R"(\u00ea\u0099\u00aa)"},
-        {"\uA66A Ꙫ",                                                    R"(\u00ea\u0099\u00aa \u00ea\u0099\u00aa)"},
-        {"\\uA66A",                                                     R"(\\uA66A)"},
-        {"\\Ꙫ",                                                         R"(\\\u00ea\u0099\u00aa)"},
-        {"\u040A Њ",                                                    R"(\u00d0\u008a \u00d0\u008a)"},
-        {"\u0002\u0005\u0018\u001B",                                    R"(\u0002\u0005\u0018\u001b)"},
-
-        {"\\\uA66A",                                                    R"(\\\u00ea\u0099\u00aa)"},
-        {"\\\\uA66A",                                                   R"(\\\\uA66A)"},
-        {"\\\\\uA66A",                                                  R"(\\\\\u00ea\u0099\u00aa)"},
-        {"\\\\\\uA66A",                                                 R"(\\\\\\uA66A)"},
-        {"\\\\\\\uA66A",                                                R"(\\\\\\\u00ea\u0099\u00aa)"},
-
-        {"\\\\Ꙫ",                                                       R"(\\\\\u00ea\u0099\u00aa)"},
-        {"\\\\\\Ꙫ",                                                     R"(\\\\\\\u00ea\u0099\u00aa)"},
-        {"\\\\\\\\Ꙫ",                                                   R"(\\\\\\\\\u00ea\u0099\u00aa)"},
-        {"\\\\\\\\\\Ꙫ",                                                 R"(\\\\\\\\\\\u00ea\u0099\u00aa)"},
-
-        {"first second \n third\n\n \\n \\\\\n fourth",                 R"(first second \n third\n\n \\n \\\\\n fourth)"},
-        {"first second \n third\n\"\n \\n \\\\\"\f\\\t\\u\u0007\\\n fourth", R"(first second \n third\n\"\n \\n \\\\\"\f\\\t\\u\u0007\\\n fourth)"},
-    };
-
-    // a valid json { key : utils::json::escape (<string> } is constructed,
-    // fed into cxxtools::JsonDeserializer (), read back and compared 
-    std::vector <std::string> tests_reading{
-        {"newline in \n text \n\"\n times two"},
-        {"x\tx"},
-        {"x\\tx"},
-        {"x\\\tx"},
-        {"x\\\\tx"},
-        {"x\\\\\tx"},
-        {"x\\\\\\tx"},
-        {"x\\\\\\\tx"},
-        {"x\\Ꙫ\uA66A\n \\nx"},
-        {"sdf\ndfg\n\\\n\\\\\n\b\tasd \b f\\bdfg"},
-        {"first second \n third\n\"\n \\n \\\\\"\f\\\t\\u\u0007\\\n fourth"}
-    };
-
-    SECTION ("Manual comparison.") {
-        std::string escaped;
-        for (auto const& item : tests) {
-            escaped = utils::json::escape (item.first);
-            CAPTURE (escaped);
-            CHECK ( escaped.compare (item.second) == 0);
-        }
-    }
-
-    SECTION ("Validate whether the escaped string is a valid json using cxxtools::JsonDeserializer.") {
-        for (auto const& item : tests) {
-            std::string json;
-            std::string escaped = utils::json::escape (item.first);
-
-            json.assign("{ \"string\" : ").append ("\"").append (escaped).append ("\" }");
-
-            std::stringstream input (json, std::ios_base::in);
-            cxxtools::JsonDeserializer deserializer (input);
-            cxxtools::SerializationInfo si;
-            CHECK_NOTHROW (deserializer.deserialize (si));
-        }
-    }
-
-    SECTION ("Construct json, read back, compare.") {
-        for (auto const& it : tests_reading) {
-            std::string json;
-            json.assign("{ \"read\" : ").append ("\"").append (utils::json::escape (it)).append ("\" }");
-
-            std::stringstream input (json, std::ios_base::in);
-            cxxtools::JsonDeserializer deserializer (input);
-            cxxtools::SerializationInfo si;
-            CHECK_NOTHROW (deserializer.deserialize (si));
-            std::string read;
-            si.getMember ("read") >>= read;
-            CHECK ( read.compare (it) == 0 );
-        }   
-    }
-}
 
 TEST_CASE ("escape", "[utilities]")
 {
@@ -270,4 +111,92 @@ TEST_CASE ("escape", "[utilities]")
     std::string inp{R"(\\\\)"};
     std::string out = utils::escape(inp, "\\");
     CHECK(out == inp);
+}
+
+TEST_CASE ("join_keys_map", "[utilities]")
+{
+    std::map <std::string, std::string> map1;
+    std::map <int, std::string> map2;
+    std::map <float, std::string> map3;
+    std::map <uint32_t, std::string> map4;
+
+    map1.emplace (std::make_pair ("a", "neco a"));
+    map1.emplace (std::make_pair ("b", "neco b"));
+    map1.emplace (std::make_pair ("c", "neco c"));
+
+    map2.emplace (std::make_pair (1, "neco a"));
+    map2.emplace (std::make_pair (-2, "neco b"));
+    map2.emplace (std::make_pair (3, "neco c"));
+    map2.emplace (std::make_pair (-10, "neco d"));
+
+    map3.emplace (std::make_pair (1, "neco a"));
+    map3.emplace (std::make_pair (2.2, "neco b"));
+    map3.emplace (std::make_pair (3.33, "neco c"));
+
+    map4.emplace (std::make_pair (1, "neco a"));
+    map4.emplace (std::make_pair (2, "neco b"));
+    map4.emplace (std::make_pair (3, "neco c"));
+
+
+
+    CHECK (utils::join_keys_map (map1, ",").compare ("a,b,c") == 0);
+    CHECK (utils::join_keys_map (map1, ", ").compare ("a, b, c") == 0);
+    CHECK (utils::join_keys_map (map2, ";").compare ("-10;-2;1;3") == 0);
+    CHECK (utils::join_keys_map (map3, ".").compare ("1.2.2.3.33") == 0);
+    CHECK (utils::join_keys_map (map4, " ").compare ("1 2 3") == 0);
+
+}
+
+TEST_CASE ("join", "[utilities]") {
+    const char *arr1[3] = { "mean", "min", "max" };
+    uint32_t arr1_len = 3;
+
+    const char *arr2[5] = { "mean", "min", "", "something", NULL };
+    uint32_t arr2_len = 4;
+
+    const char *arr3[4] = { "mean", "min", NULL, "max" };
+    uint32_t arr3_len = 4;
+
+    const char *arr4[4] = { NULL, "mean", "min", "max" };
+    uint32_t arr4_len = 4;
+
+    const char **arr5 = NULL;
+    const char **arr6 = { NULL };
+    const char **arr_empty = {};  
+     
+
+    SECTION ("version with length specified") {
+        CHECK ( utils::join (arr1, arr1_len, ",").compare ("mean,min,max") == 0 );
+        CAPTURE (utils::join (arr1, arr1_len, ","));
+        CHECK ( utils::join (arr1, arr1_len, ", ").compare ("mean, min, max") == 0 );
+
+        CHECK ( utils::join (arr2, arr2_len, ";").compare ("mean;min;;something") == 0 );
+        CHECK ( utils::join (arr2, arr2_len, " , ").compare ("mean , min ,  , something") == 0 );
+
+        CHECK ( utils::join (arr3, arr3_len, ",").compare ("mean,min") == 0 );
+        CHECK ( utils::join (arr4, arr4_len, ",").empty () );
+
+        CHECK ( utils::join (arr1, arr1_len - 1, ",").compare ("mean,min") == 0 );
+        CHECK ( utils::join (arr2, arr2_len - 2, ";").compare ("mean;min") == 0 );
+    }
+
+    SECTION ("version without length specified") {
+        CHECK ( utils::join (arr2, ",").compare ("mean,min,,something") == 0 );
+        CHECK ( utils::join (arr2, ", ").compare ("mean, min, , something") == 0 );
+        CHECK ( utils::join (arr3, ",").compare ("mean,min") == 0 );
+    }
+    SECTION ("bad invocation") {
+        CHECK ( utils::join (arr1, arr1_len, NULL).empty () );
+        CHECK ( utils::join (arr1, NULL).empty () );
+
+        CHECK ( utils::join (NULL, ",").empty () );
+        CHECK ( utils::join (NULL, 5, ",").empty () );
+        CHECK ( utils::join (arr5, ",").empty () );
+        CHECK ( utils::join (arr5, 5, ",").empty () );
+        CHECK ( utils::join (arr6, ",").empty () );
+        CHECK ( utils::join (arr6, 5, ",").empty () );
+        CHECK ( utils::join (arr_empty, ",").empty () );
+        CHECK ( utils::join (arr_empty, 5, ",").empty () );
+        CHECK ( utils::join (arr4, arr4_len, NULL).empty () );
+    }
 }

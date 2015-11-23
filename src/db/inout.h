@@ -28,6 +28,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <vector>
 #include <string>
 #include <map>
+#include <stdexcept>
 
 #include "asset_types.h"
 #include "csv.h"
@@ -43,7 +44,8 @@ namespace persist {
  * get_priority("X4") -> 4
  * get_priority("777") -> 5
  *
- * \param input[s]     - string with content
+ * \param[in] s - a string with a content
+ *
  * \return numeric value of priority or 5 if not detected
  *
  */
@@ -58,21 +60,36 @@ get_priority(
  * get_priority("No") -> false
  * get_priority("spam") -> false
  *
- * \param input[s]     - string with content
+ * \param[in] bs_critical - string with content
+ *
  * \return boolean value
  *
  */
 bool
     get_business_critical(
             const std::string& bs_critical);
+
+/*
+ * \brief process one asset
+ *
+ * \param[in] cm - an instance of CsvMap (you see this nice evolution, right)
+ *
+ * \return id of inserted/updated asset
+ *
+ * \throws execeptions on errors
+ *
+ */
+std::pair<db_a_elmnt_t, persist::asset_operation>
+    process_one_asset
+        (const shared::CsvMap& cm);
 /*
  * \brief Processes a csv file
  *
  * Resuls are written in DB and into log.
  *
- * \param input[in]     - an input file
- * \param okRows[out]   - a list of short information about inserted rows
- * \param failRows[out] - a list of rejected rows with the message
+ * \param[in]  input    - an input file
+ * \param[out] okRows   - a list of short information about inserted rows
+ * \param[out] failRows - a list of rejected rows with the message
  */
 void
     load_asset_csv
@@ -85,9 +102,9 @@ void
  *
  * Resuls are written in DB and into log.
  *
- * \param cm[in]     - an input csv map
- * \param okRows[out]   - a list of short information about inserted rows
- * \param failRows[out] - a list of rejected rows with the message
+ * \param[in]  cm       - an input csv map
+ * \param[out] okRows   - a list of short information about inserted rows
+ * \param[out] failRows - a list of rejected rows with the message
  */
 void
     load_asset_csv
@@ -97,7 +114,7 @@ void
 
 /** \brief export csv file and write result to output stream
  *
- * \param[out] out - reference to standard output stream to which content will be written
+ * \param[out] out - a reference to the standard output stream to which content will be written
  */
 void
     export_asset_csv

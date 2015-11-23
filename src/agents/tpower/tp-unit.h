@@ -28,6 +28,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <string>
 #include <vector>
 #include <ctime>
+#include <functional>
 
 #include "alert-measurement.h"
 #include "ymsg.h"
@@ -35,9 +36,16 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 //! \brief class representing total power calculation unit (rack or DC)
 class TPUnit {
  public:
-    //\! \brief calculate total realpower
-    Measurement summarize(const std::string & source) const;
-    
+
+    //\! \brief calculate total value for all interesting quantities
+    void calculate(const std::vector<std::string> &quantities);
+
+    //\! \brief get value of particular quantity. Method throws an exception if quantity is unknown.
+    Measurement get( const std::string &quantity) const;
+
+    //\! \brief set value of particular quantity.
+    void set(const std::string &quantity, Measurement measurement);
+
     //\! \brief get set unit name
     std::string name() const { return _name; };
     void name(const std::string &name) { _name = name; };
@@ -49,6 +57,7 @@ class TPUnit {
     bool quantityIsKnown( const std::string &quantity ) const {
         return ! quantityIsUnknown(quantity);
     }
+
     //\! \brief returns list of devices in unknown state
     std::vector<std::string> devicesInUnknownState(const std::string &quantity) const;
 
@@ -79,6 +88,9 @@ class TPUnit {
     //! \brief return timestamp for quantity change
     time_t timestamp( const std::string &quantity ) const;
  protected:
+    //! \brief last measurement value - topic -> Measurement
+    std::map < std::string, Measurement > _lastValue;
+
     //! \brief measurement status
     std::map < std::string, bool > _changed;
 
@@ -91,15 +103,36 @@ class TPUnit {
     /*! \brief list of measurements for included devices
      *
      *     map---device1---map---realpower.default---Measurement
-     *      |               +----realpover.input.L1--Measurement
-     *      |               +----realpover.input.L2--Measurement
-     *      |               +----realpover.input.L3--Measurement
+     *      |               +----realpower.input.L1--Measurement
+     *      |               +----realpower.input.L2--Measurement
+     *      |               +----realpower.input.L3--Measurement
      *      +----device2-...
      */
     std::map< std::string, std::map<std::string,Measurement> > _powerdevices;
 
     //! \brief unit name
     std::string _name;
+
+    //! \brief replace not present measurement with another
+    static const std::map<std::string,std::string> _emergencyReplacements;
+
+    //! \brief replace not present measurement with some algorithm
+    static const std::map<std::string,int> _calculations;
+
+    std::map<std::string,Measurement>::const_iterator getMeasurementIter(
+        const std::map<std::string,Measurement> &measurements,
+        const std::string &quantity,
+        const std::string &deviceName
+    ) const;
+    
+    //\! \brief calculate total value for one quantity
+    void calculate(const std::string &quantity);
+    //\! \brief discard obsolete measurements
+    void dropOldMeasurements();
+    //\! \brief calculate simple sum over devices considering the replacement table  
+    Measurement simpleSummarize(const std::string &quantity) const;
+    //\! \brief calculate realpower sum over devices
+    Measurement realpowerDefault(const std::string &quantity) const;
 };
 
 #endif // SRC_AGENTS_TPOWER_TP_UNIT_H__

@@ -194,8 +194,6 @@ std::string CIDRAddress::netmask() const {
 }
 
 bool CIDRAddress::isNetmask() const {
-  std::string result;
-
   if( protocol() != 4 ) return false; // make sense only for IPv4
   return CIDRAddress( "1.1.1.1/" + toString() ).valid();
 }

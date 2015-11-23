@@ -1,7 +1,7 @@
 FROM debian:jessie
 MAINTAINER gguillaume "geraldguillaume@eaton.com"
 RUN echo "Acquire::http::Proxy \"HTTP_PROXY\";" > /etc/apt/apt.conf 
-RUN echo "deb http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0 /" > /etc/apt/sources.list.d/95bios-obs-roz-deb8.list 
+RUN echo "deb http://obs.roz53.lab.etn.com:82/Pool:/master/Debian_8.0 /" > /etc/apt/sources.list.d/95bios-obs-roz-deb8.list 
 ENV http_proxy HTTP_PROXY 
 RUN apt-get update && apt-get install -y --force-yes \
   nut-server nut-client nut \
@@ -71,7 +71,7 @@ ADD ./usr/local/share/bios/docker/resources/interfaces /etc/network/interfaces
 ADD ./usr/local/share/bios/sql/mysql/initdb.sql /usr/local/share/bios/sql/mysql/initdb.sql
 ADD ./usr/local/share/bios/examples/sql/mysql/load_data.sql /usr/local/share/bios/examples/sql/mysql/load_data.sql
 ADD ./usr/local/share/bios/examples/sql/mysql/load_ROZLAB.sql /usr/local/share/bios/examples/sql/mysql/load_ROZLAB.sql
-ADD ./usr/local/share/bios/docker/resources/patch.sql /usr/local/share/bios/docker/resources/patch.sql
+ADD ./usr/local/share/bios/docker/resources/docker_patch.sql /usr/local/share/bios/docker/resources/docker_patch.sql
 
 #Install NUT dumy drivers and config
 ADD ./usr/local/share/bios/docker/resources/ups.conf /etc/nut/ups.conf

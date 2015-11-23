@@ -28,12 +28,10 @@
  * \author Jim Klimov <EvgenyKlimov@Eaton.com>
  * \brief Not yet documented file
  */
-#include <tnt/http.h>
 #include <algorithm>
-#include <map>
-#include <limits.h>
 
 #include "data.h"
+#include "utils_web.h"
 
 #include "log.h"
 #include "asset_types.h"
@@ -130,102 +128,6 @@ int
     }
 }
 
-int
-    ui_props_manager::get
-        (std::string& result)
-{
-    void *data = NULL;
-    size_t size = 0;
-
-    try{
-        tntdb::Connection conn = tntdb::connectCached(url);
-        auto ret = persist::select_agent_info (conn, agent_name(), &data, size);
-        if ( ret )
-        {
-            result = std::string("Can't load ui/properties from database");
-            FREE0 (data);
-            return 2;
-        }
-
-        result = std::string((const char *)data, size);
-
-        FREE0 (data);
-        return 0;
-    }
-    catch (const std::exception &e) {
-        FREE0 (data);
-        LOG_END_ABNORMAL(e);
-        result = "Unexpected problems with database";
-        return 1;
-    }
-}
-
-std::string
-    ui_props_manager::agent_name()
-{
-    return "UI_PROPERTIES";
-}
-
-int
-    ui_props_manager::put(
-        const std::string &properties,
-        std::string &result
-        )
-{
- 
-    try{
-        tntdb::Connection conn = tntdb::connectCached(url);
-        uint16_t affected_rows = 0;
-        auto ret = persist::update_agent_info (conn, agent_name(), properties.c_str(), properties.size(), affected_rows);
-        if ( ret )
-        {
-            result = std::string("{\"error\" : \"Can't import ui/properties to database\"}");
-            return 2;
-        }
-        return 0;
-    }
-    catch (const std::exception &e) {
-        LOG_END_ABNORMAL(e);
-        return 1;
-    }
-}
-
-/**
- * \brief get the error string, msg string and HTTP code from common_msg
- */
-void common_msg_to_rest_error(common_msg_t* cm_msg, std::string& error, std::string& msg, unsigned* code) {
-
-    assert(cm_msg);
-
-    if (common_msg_id(cm_msg) == COMMON_MSG_FAIL) {
-        switch (common_msg_errorno(cm_msg)) {
-            case DB_ERROR_NOTFOUND:
-                error = "not_found";
-                *code = HTTP_NOT_FOUND;
-                break;
-            case DB_ERROR_BADINPUT:
-                error = "bad_input";
-                *code = HTTP_BAD_REQUEST;
-                break;
-            case DB_ERROR_NOTIMPLEMENTED:
-                error = "not_implemented";
-                *code = HTTP_NOT_IMPLEMENTED;
-                break;
-            default:
-                error = "internal_error";
-                *code = HTTP_INTERNAL_SERVER_ERROR;
-                break;
-        }
-        const char *cmsg = common_msg_errmsg(cm_msg);
-        msg = (cmsg == NULL) ? "" : cmsg;
-    }
-    else {
-        error = "internal_error";
-        msg = "unexpected message";
-        *code = HTTP_INTERNAL_SERVER_ERROR;
-    }
-}
-
 
 db_reply <db_web_element_t>
     asset_manager::get_item1
@@ -233,17 +135,30 @@ db_reply <db_web_element_t>
 {
     db_reply <db_web_element_t> ret;
 
-    // TODO add better converter
-    uint32_t real_id = atoi(id.c_str());
-    if ( real_id == 0 )
-    {
+    unsigned long real_id_l = 0;
+    try {
+        real_id_l = std::stoul (id);
+    }
+    catch (const std::out_of_range& e) {
         ret.status        = 0;
         ret.errtype       = DB_ERR;
-        ret.errsubtype    = DB_ERROR_INTERNAL;
-        ret.msg           = "cannot convert an id";
-        log_warning (ret.msg.c_str());
+        ret.errsubtype    = DB_ERROR_BADINPUT;
         return ret;
     }
+    catch (const std::invalid_argument& e) {
+        ret.status        = 0;
+        ret.errtype       = DB_ERR;
+        ret.errsubtype    = DB_ERROR_BADINPUT;
+        return ret;
+    }
+
+    if (real_id_l == 0 || real_id_l > UINT_MAX) {
+        ret.status        = 0;
+        ret.errtype       = DB_ERR;
+        ret.errsubtype    = DB_ERROR_BADINPUT;
+        return ret;
+    }
+    uint32_t real_id = static_cast<uint32_t> (real_id_l);
     log_debug ("id converted successfully");
 
     try{
@@ -344,26 +259,43 @@ db_reply <std::map <uint32_t, std::string> >
         ret.errsubtype    = DB_ERROR_INTERNAL;
         ret.msg           = "Unsupported type of the elemnts";
         log_error (ret.msg.c_str());
+        // TODO need to have some more precise list of types, so we don't have to change anything here,
+        // if something was changed
+        bios_error_idx(ret.rowid, ret.msg, "request-param-bad", "type", typeName.c_str(), "datacenters,rooms,ros,racks,devices");
         return ret;
     }
     if ( ( typeName == "device" ) && ( !subtypeName.empty() ) )
     {
         subtype_id = persist::subtype_to_subtypeid(subtypeName);
+        if ( subtype_id == persist::asset_subtype::SUNKNOWN ) {
+            ret.status        = 0;
+            ret.errtype       = DB_ERR;
+            ret.errsubtype    = DB_ERROR_INTERNAL;
+            ret.msg           = "Unsupported subtype of the elemnts";
+            log_error (ret.msg.c_str());
+            // TODO need to have some more precise list of types, so we don't have to change anything here,
+            // if something was changed
+            bios_error_idx(ret.rowid, ret.msg, "request-param-bad", "subtype", subtypeName.c_str(), "ups, epdu, pdu, genset, sts, server, feed");
+            return ret;
+        }
     }
     log_debug ("subtypeid = %" PRIi16 " typeid = %" PRIi16, subtype_id, type_id);
 
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
         ret = persist::select_short_elements(conn, type_id, subtype_id);
+        if ( ret.status == 0 )
+            bios_error_idx(ret.rowid, ret.msg, "internal-error");
         LOG_END;
         return ret;
     }
     catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
         ret.status        = 0;
         ret.errtype       = DB_ERR;
         ret.errsubtype    = DB_ERROR_INTERNAL;
         ret.msg           = e.what();
-        LOG_END_ABNORMAL(e);
+        bios_error_idx(ret.rowid, ret.msg, "internal-error");
         return ret;
     }
 }

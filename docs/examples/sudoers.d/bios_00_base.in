@@ -20,26 +20,18 @@
 # globs generally) which we may be interested in:
 
 ### Change date on this device:
-Cmnd_Alias DATE_MANUAL	= /usr/bin/date,/bin/date
-Cmnd_Alias DATE_HWCLOCK	= /sbin/hwclock
-Cmnd_Alias DATE_NTP	= /usr/sbin/ntpdate,/etc/init.d/ntp
-Cmnd_Alias DATE_CLOCK	= /usr/bin/rdate
-Cmnd_Alias DATE		= DATE_MANUAL,DATE_HWCLOCK,DATE_NTP,DATE_CLOCK
-Cmnd_Alias AUGTOOL      = /usr/bin/augtool
-Cmnd_Alias BIOS_PASSWD  = @libexecdir@/@PACKAGE@/bios-passwd
-Cmnd_Alias SSH_RM = /bin/rm -f /etc/ssh/sshd_not_to_be_run
-Cmnd_Alias SSH_RESTART = /bin/systemctl restart ssh.service
-### TODO: Make command aliases for systemctl [list-units, show, start, stop, restart, enable, disable]
-Cmnd_Alias SYSTEMCTL = /bin/systemctl
-
-### Update firmware on this device (disabled by default):
-Cmnd_Alias APT		= /usr/bin/apt-get update,/usr/bin/apt-get upgrade
+Cmnd_Alias DATE	            = /usr/bin/date,/bin/date
+### TODO: Remove hardcoded path both here and in the sources
+Cmnd_Alias AUGTOOL          = /usr/bin/augtool -S -I/usr/share/bios/lenses -e
+Cmnd_Alias BIOS_PASSWD      = @libexecdir@/@PACKAGE@/bios-passwd
+Cmnd_Alias BIOS_NUTCONFIG   = @libexecdir@/@PACKAGE@/bios-nutconfig
+Cmnd_Alias BIOS_SYSTEMCTL   = @libexecdir@/@PACKAGE@/systemctl
 
 # Overall, what is currently allowed with different privileges?
-Cmnd_Alias BIOS_PROGS	= DATE,AUGTOOL,BIOS_PASSWD,SSH_RM,SSH_RESTART,SYSTEMCTL
+Cmnd_Alias BIOS_PROGS	= DATE,AUGTOOL,BIOS_PASSWD,BIOS_SYSTEMCTL,BIOS_NUTCONFIG
 
 # Who is allowed to elevate?
-User_Alias BIOS_USERS	= admin,%bios
+User_Alias BIOS_USERS	= %bios-admin,www-data,%bios-infra
 # With whose privileges can this be executed?
 Runas_Alias BIOS_RUNAS	= root
 

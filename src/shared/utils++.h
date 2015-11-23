@@ -40,21 +40,6 @@ void dtos (double number, std::streamsize precision, std::string& result);
 
 } // namespace utils::math
 
-namespace json {
-
-/*!
- \brief Escape string for json output
- \return Escaped json on success, "(null_ptr)" string on null argument
-*/
-std::string escape (const char *string);
-
-/*!
- \brief Convenient wrapper for escape"("const char *string")"
-*/
-std::string escape (const std::string& before);
-
-} // namespace utils::json
-
 /*!
  * \brief universal escaping function
  *
@@ -89,6 +74,42 @@ sql_escape(
  */
 std::map<std::string,std::string>
 zhash_to_map(zhash_t *hash);
+
+/**
+ * \brief Join keys of std::map using given separator
+ *
+ * Applicable only to maps that have key (i.e. first templated parameter) convertible to std::string or basic arithmetic type
+ *
+ *  \param[in] m - the std::map
+ *  \param[in] separator - the separator
+ *
+ */
+template <typename K, typename V>
+std::string join_keys_map (const std::map<K,V>& t, const std::string& separator) {
+    static_assert (std::is_convertible <K, std::string>::value || std::is_arithmetic<K>::value, "Must be convertible to string or arithmetic type.");
+    std::ostringstream tmp;
+    auto it = t.cbegin ();
+    for (; it != --t.cend (); ++it) {
+        tmp << it->first << separator;
+    }
+    tmp << it->first;
+    std::string result = tmp.str ();
+    return result;
+}
+
+/*!
+ \brief Concatenate items of array of c strings using given separator
+
+ NULL encountered sooner than length items terminates the concatenation.
+ \return Concatenated string or empty on error
+*/ 
+std::string join (const char **str_arr, uint32_t length, const char *separator);
+
+/*!
+ \brief Version of join(const char **str_arr, uint32_t length, const char *separator)" that works until NULL terminating item is encountered
+ \note Use this version only for arrays that are NULL terminated!
+*/
+std::string join (const char **str_arr, const char *separator);
 
 } // namespace utils
 

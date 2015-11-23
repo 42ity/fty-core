@@ -108,43 +108,36 @@ std::vector<std::string>::const_iterator NUTConfigurator::selectBest(const std::
 
 void NUTConfigurator::systemctl( const std::string &operation, const std::string &service )
 {
-    std::vector<std::string> _argv = {"systemctl", operation, service };
+    std::vector<std::string> _argv = {"sudo", "systemctl", operation, service };
     shared::SubProcess systemd( _argv );
     if( systemd.run() ) {
         int result = systemd.wait();
-        log_info("systemctl %s %s result: %i (%s)",
+        log_info("sudo systemctl %s %s result: %i (%s)",
                  operation.c_str(),
                  service.c_str(),
                  result,
                  (result == 0 ? "ok" : "failed"));
     } else {
-        log_error("can't run systemctl %s %s command",
+        log_error("can't run sudo systemctl %s %s command",
                   operation.c_str(),
                   service.c_str() );
     }
 }
 
 void NUTConfigurator::updateNUTConfig() {
-    std::ofstream cfgFile;
-    std::string spath = NUT_PART_STORE;
-    spath += shared::path_separator();
-    const char *NUT_CONFIG_DIR = NULL;
-
-    if( shared::is_dir("/etc/nut") ) { NUT_CONFIG_DIR = "/etc/nut"; }
-    else if( shared::is_dir("/etc/ups") ) { NUT_CONFIG_DIR = "/etc/ups"; }
-
-    if( ! NUT_CONFIG_DIR ) { log_debug("can't find NUT configuration directory"); return; }
-
-    cfgFile.open(std::string(NUT_CONFIG_DIR) + shared::path_separator() + "ups.conf");    
-    for( auto it : shared::files_in_directory( NUT_PART_STORE ) ) {
-        std::ifstream device( spath + it );
-        cfgFile << device.rdbuf();
-        device.close();
+    std::vector<std::string> _argv = { "sudo", "bios-nutconfig" };
+    shared::SubProcess systemd( _argv );
+    if( systemd.run() ) {
+        int result = systemd.wait();
+        log_info("sudo bios-nutconfig %i (%s)",
+                 result,
+                 (result == 0 ? "ok" : "failed"));
+    } else {
+        log_error("can't run sudo bios-nutconfig command");
     }
-    cfgFile.close();
 }
 
-bool NUTConfigurator::configure( const std::string &name, const AutoConfigurationInfo info ) {
+bool NUTConfigurator::configure( const std::string &name, const AutoConfigurationInfo &info ) {
     log_debug("NUT configurator created");
 
     switch( info.operation ) {
@@ -202,7 +195,7 @@ bool NUTConfigurator::configure( const std::string &name, const AutoConfiguratio
 
 bool Configurator::configure(
     UNUSED_PARAM const std::string &name,
-    UNUSED_PARAM const AutoConfigurationInfo info )
+    UNUSED_PARAM const AutoConfigurationInfo &info )
 {
     log_error("don't know how to configure device %s type %" PRIu32 "/%" PRIu32, name.c_str(), info.type, info.subtype );
     return true;

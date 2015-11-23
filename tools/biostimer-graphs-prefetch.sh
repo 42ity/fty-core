@@ -151,7 +151,7 @@ while [ $# -gt 0 ]; do
             TAG="__`echo -e "$SOURCES_ALLOWED" | sed 's,[\*\?\^\$\(\)\[\]{\}\/\\]*,,g'`@`echo "$S" | sed 's, ,_,g'`"
             [ -n "$T" ] && TAG="$TAG`echo ":$T" | sed 's, ,_,g'`"
             [ -z "$LOCKFILE" ] && \
-                LOCKFILE=/var/run/biostimer-graphs-prefetch${TAG}.lock
+                LOCKFILE=/var/run/agent-cm/biostimer-graphs-prefetch${TAG}.lock
             [ -z "$TIMEFILE" ] && \
                 TIMEFILE=/var/lib/bios/agent-cm/biostimer-graphs-prefetch${TAG}.time
             unset S T A TAG
@@ -175,7 +175,7 @@ check_in_list "$STEPS" "$STEPS_SUPPORTED" || \
 # TODO: Set paths via standard autoconf prefix-vars and .in conversions
 # TODO: Run as non-root, and use paths writable by that user (bios?)
 [ -z "$LOCKFILE" ] && \
-    LOCKFILE=/var/run/biostimer-graphs-prefetch.lock
+    LOCKFILE=/var/run/agent-cm/biostimer-graphs-prefetch.lock
 [ -z "$TIMEFILE" ] && \
     TIMEFILE=/var/lib/bios/agent-cm/biostimer-graphs-prefetch.time
 
@@ -479,16 +479,20 @@ generate_getrestapi_strings_temphum() {
     local NUM_STRINGS
     NUM_STRINGS=0
 
-    stype="$TYPE_AVG"
+    stype="$TYPES_SUPPORTED"
     sstep="24h"
     hostname=$(hostname | tr [:lower:] [:upper:])
     i=$(do_select "SELECT id_asset_element FROM t_bios_asset_element WHERE name = '${hostname}'")
     if [ $? = 0 ] && [ -n "$i" ] ; then
         for source in "temperature.TH" "humidity.TH"; do
              for thi in $(seq 1 4); do
+                for t in $stype; do
+                    for sx in $sstep; do
                 s=${source}${thi}
-                echo "$FETCHER '$BASE_URL/metric/computed/average?start_ts=${START_TIMESTAMP}&end_ts=${END_TIMESTAMP}&type=${stype}&step=${sstep}&element_id=${i}&source=$s'"
+                echo "$FETCHER '$BASE_URL/metric/computed/average?start_ts=${START_TIMESTAMP}&end_ts=${END_TIMESTAMP}&type=${t}&step=${sx}&element_id=${i}&source=$s'"
                 NUM_STRINGS=$(($NUM_STRINGS+1))
+                    done
+                done
             done
         done
     else

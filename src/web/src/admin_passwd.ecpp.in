@@ -24,31 +24,65 @@
  */
 #><%pre>
 #include <string>
+#include <sstream>
+#include <vector>
 
 #include <cxxtools/serializationinfo.h>
 #include <cxxtools/jsondeserializer.h>
+#include <cxxtools/regex.h>
+#include <cxxtools/join.h>
 
 #include "subprocess.h"
 #include "cidr.h"
 #include "sasl.h"
 #include "filesystem.h"
-#include "utils++.h"
+#include "utils_web.h"
 
 #define SSH_NOT_TO_BE_RUN "/etc/ssh/sshd_not_to_be_run"
 using namespace shared;
+
+// extract lines beginning with 'BAD PASSWORD: ' from stderr
+static std::string
+s_reason(
+        const std::string& err)
+{
+    static const char* BAD_PASSWORD = "BAD PASSWORD: ";
+    static const size_t SKIP_IDX = strlen(BAD_PASSWORD);
+    static const cxxtools::Regex rgx{std::string("^") + BAD_PASSWORD + ".*"};
+
+    std::stringstream s;
+    s << err;
+    std::string line;
+    std::vector<std::string> out;
+
+    while(std::getline(s, line)) {
+        if (rgx.match(line))
+            out.push_back(line.substr(SKIP_IDX, line.size()));
+    }
+
+    std::stringstream ret;
+    cxxtools::join(out.begin(), out.end(), ", ", ret);
+    return ret.str();
+}
 
 static int
 s_passwd(
     const std::string& user,
     const std::string& old_passwd,
     const std::string& new_passwd,
-    std::string& err)
+    std::string& reason)
 {
     Argv args{"/usr/bin/sudo", "@libexecdir@/@PACKAGE@/bios-passwd"};
     std::string out;
 
     std::string inp = user + "\n" + old_passwd + "\n" + new_passwd + "\n";
-    return output(args, out, err, inp);
+    std::string err;
+    int ret = output(args, out, err, inp);
+    reason = s_reason(err);
+    // expect script prints to stdout
+    if (reason.empty())
+        reason = s_reason(out);
+    return ret;
 }
 
 </%pre>
@@ -68,79 +102,39 @@ s_passwd(
     } catch (const std::exception& e) {
         bad_request = true;
     }
-    if (bad_request || user.empty() || old_passwd.empty() || new_passwd.empty() || \
-        user == "root" || !authenticate(user.c_str(), old_passwd.c_str())) {
-#ifdef DEBUG
-            std::string debug;
-            if (bad_request)
-                debug = "exception when reading JSON file";
-            else if (user.empty())
-                debug = "user is empty";
-            else if (old_passwd.empty())
-                debug = "old_passwd is empty";
-            else if (new_passwd.empty())
-                debug = "new_passwd is empty";
-            else if (user == "root")
-                debug = "user == root";
-            else
-                debug = "can't authenticate '" + user + "'";
-#endif
-</%cpp>
-{
-    "errors" : [
-        {
-            "message" : "user, old password or new password is invalid",
-            "code" : 42
-%#ifdef DEBUG
-            ,"debug" : "<$$ debug $>"
-%#endif
-        }
-    ]
-}
-<%cpp>
-    return HTTP_BAD_REQUEST;
-    }
 
-    std::string err;
-    int r = s_passwd(user, old_passwd, new_passwd, err);
+    // sanity checking
+    if (bad_request)
+        http_die("bad-request-document");
+    else if (user.empty())
+        http_die("request-param-bad", "user", "<empty>", "<user name>");
+    else if (old_passwd.empty())
+        http_die("request-param-bad", "old_passwd", "<empty>", "<password>");
+    else if (new_passwd.empty())
+        http_die("request-param-bad", "new_passwd", "<empty>", "<password>");
+    else if (user == "root")
+        http_die("request-param-bad", "user", user.c_str(), "<user name other than 'root'>");
+    else if (!authenticate(user.c_str(), old_passwd.c_str()))
+        http_die("request-param-bad", "(user|old_passwd)", "<invalid user or password>", "<valid user and password>");
+
+    std::string reason;
+    std::string received;
+    int r = s_passwd(user, old_passwd, new_passwd, reason);
     if (r != 0) {
-        std::string msg = "@libexecdir@/@PACKAGE@/bios-passwd: changing passwd for user '" + user + "' failed with code " + std::to_string(r);
-</%cpp>
-{
-    "errors" : [
-        {
-            "message" : "<$$ msg $>",
-            "code" : 42
-%#ifdef DEBUG
-            ,"debug" : "<$$ utils::json::escape (err) $>"
-%#endif
-        }
-    ]
-}
-<%cpp>
-    return HTTP_BAD_REQUEST;
+        if (!reason.empty())
+            received = "password with problems: " + reason;
+        else
+            received = "bios-passwd returned error code " + std::to_string(r);
+
+        //this stretches semantics of request-param-bad!!!
+        http_die("request-param-bad",
+                 "new_passwd",
+                 received.c_str(),
+                 "<valid password>");
     }
 
     /* Verify the new password and so flush the SASLAUTHD cache that trusts the old one still */
-    if (!authenticate(user.c_str(), new_passwd.c_str())) {
-#ifdef DEBUG
-            std::string debug;
-            debug = "can't authenticate '" + user + "' with the newly changed password";
-#endif
-</%cpp>
-{
-    "errors" : [
-        {
-            "message" : "could not verify application of the new password",
-            "code" : 42
-%#ifdef DEBUG
-            ,"debug" : "<$$ debug $>"
-%#endif
-        }
-    ]
-}
-<%cpp>
-    return HTTP_BAD_REQUEST;
-    }
+    if (!authenticate(user.c_str(), new_passwd.c_str()))
+        http_die("internal-error", "Can't authenticate user with new password, saslauthd service failed");
 </%cpp>
 { "passwd" : "<$$ "password for '" + user + "' changed" $>" }

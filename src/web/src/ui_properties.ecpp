@@ -28,75 +28,60 @@
 #include <sstream>
 #include <cxxtools/jsondeserializer.h>
 
-#include "data.h"
 #include "log.h"
+#include "agentstate.h"
+#include "utils_web.h"
+
+#define UI_PROPERTIES "UI_PROPERTIES"
 </%pre>
-<%thread scope="global">
-ui_props_manager mgr;
-</%thread>
 <%cpp>
+{
     std::string method = request.getMethod();
 
     if ( method == "GET") {
 
         std::string res;
-        int rv = mgr.get(res);
+        int rv = persist::load_agent_info(UI_PROPERTIES, res);
         if ( rv != 0 ) {
-</%cpp>
-{
-    "error" : "<$$ res $>"
-}
-<%cpp>
-            return HTTP_INTERNAL_SERVER_ERROR;
+            http_die("internal-error");
         }
         //mitigate the situation DB content is empty - most of the json parsers don't deal well with empty strings
         if (res.empty()) {
             res = "{}";
         }
+        // there is no official way to save "not JSON"
+        // so there is no check here
 </%cpp>
 <$$ res $>
 <%cpp>
-
     }
-    else if ( method == "PUT") {
-
+    else if ( method == "PUT")
+    {
         std::stringstream input(request.getBody(), std::ios_base::in);
         cxxtools::SerializationInfo si;
         cxxtools::JsonDeserializer deserializer(input);
         log_debug("ui/properties: '''%s'''", input.str().c_str());
 
+        // check, if we got a correct JSON
         try {
             deserializer.deserialize(si);
         } catch (const std::exception& e) {
-</%cpp>
-{
-  "error" : "invalid JSON content",
-  "what" : "<$$ e.what() $>",
-  "content" : "<$$ request.getBody() $>"
-}
-<%cpp>
-            return HTTP_BAD_REQUEST;
+            LOG_END_ABNORMAL(e);
+            http_die("bad-request-document");
         }
-        std::string errmsg = "";
-        int rv = mgr.put(request.getBody(), errmsg);
+        // JSON is correct, try to save it
+        int rv = persist::save_agent_info (UI_PROPERTIES, request.getBody());
         if ( rv != 0 ) {
-</%cpp>
-{
-    "error" : "<$$ errmsg $>"
-}
-<%cpp>
-            return HTTP_INTERNAL_SERVER_ERROR;
+            //come error occured
+            http_die("internal-error");
         }
+        // everything is ok
 </%cpp>
-{"ui_properties": "ui properties changed"}
+{}
 <%cpp>
     }
     else {
-</%cpp>
-{
-    "error" : "invalid request method"
-}
-<%cpp>
-        return HTTP_METHOD_NOT_ALLOWED;
+        http_die("method-not-allowed");
     }
+}
 </%cpp>

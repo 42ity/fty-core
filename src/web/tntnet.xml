@@ -37,22 +37,20 @@
       <target>auth@bios_web</target>
       <url>^/api/v1/oauth2/token$</url>
     </mapping>
-    <!-- Set (int)access_auth_level variable if the request is authenticated -->
+    <!-- Set (int)access_auth_level variable if the request is authenticated
+         and validate rights are sufficient.
+      -->
     <mapping>
       <target>auth-verify@bios_web</target>
     </mapping>
+
+    <!-- Here starts the real API -->
 
     <!-- SysInfo mapping -->
     <!-- Implementation tests (int)access_auth_level variable to limit visibility of some data -->
     <mapping>
       <target>sysinfo@bios_web</target>
       <url>^/api/v1/admin/sysinfo$</url>
-    </mapping>
-
-    <!-- And from now on all modifying requests have to be authenticated -->
-    <mapping>
-      <target>auth-require@bios_web</target>
-      <method>(POST|PUT|DELETE)</method>
     </mapping>
 
     <!-- Token revocation -->
@@ -62,6 +60,30 @@
       <method>(POST|PUT)</method>
     </mapping>
 
+    <!-- alerts/rules -->
+    <mapping>
+        <target>alert_rules_list@bios_web</target>
+        <method>GET</method>
+        <url>^/api/v1/alerts/rules([^/]*)$</url>
+    </mapping>
+
+    <mapping>
+        <target>alert_rules_detail@bios_web</target>
+        <method>GET</method>
+        <url>^/api/v1/alerts/rules/([^/]*)$</url>
+        <args>
+            <name>$1</name>
+        </args>       
+    </mapping>
+
+    <mapping>
+        <target>alert_rules@bios_web</target>
+        <method>(POST|PUT)</method>
+        <url>^/api/v1/alerts/rules(/|/([^/]+)){0,1}$</url>
+        <args>
+            <name>$2</name>
+        </args>       
+    </mapping>
 
     <!-- admin/systemctl GET -->
     <mapping>
@@ -72,7 +94,7 @@
             <operation>$1</operation>
             <!-- ?: non-capture group does not work, so we work around by capturing $3 instead of doing ([^/]+)(?:/(.*))?$-->
             <service_name>$3</service_name>
-        </args>        
+        </args>
     </mapping>
 
     <!-- admin/systemctl POST -->
@@ -82,7 +104,7 @@
         <url>^/api/v1/admin/systemctl/(.+?)$</url>
         <args>
             <operation>$1</operation>
-        </args>        
+        </args>
     </mapping>
 
     <!-- Network configuration -->
@@ -116,6 +138,7 @@
     <!-- Time settings -->
     <mapping>
       <target>time@bios_web</target>
+      <method>(GET|PUT|POST)</method>
       <url>^/api/v1/admin/time.*$</url>
     </mapping>
 
@@ -128,11 +151,10 @@
 
     <!-- Asset management -->
     <mapping>
-      <target>list@bios_web</target>
+      <target>asset_list@bios_web</target>
       <url>^/api/v1/asset/(datacenter|room|row|rack|group|device)s.*$</url>
       <args>
         <type>$1</type>
-        <subtype>$2</subtype>
       </args>
     </mapping>
 
@@ -156,12 +178,37 @@
               asset API, like /asset/import!!!
          -->
     <mapping>
-      <target>item@bios_web</target>
-        <url>^/api/v1/asset/?(datacenter|room|row|rack|group|device)?/?(.*)$</url>
+      <target>asset_GET@bios_web</target>
+      <url>^/api/v1/asset/?(datacenter|room|row|rack|group|device)?/?(.*)$</url>
+      <method>GET</method>
       <args>
         <id>$2</id>
         <type>$1</type>
       </args>
+    </mapping>
+
+    <mapping>
+      <target>asset_DELETE@bios_web</target>
+      <url>^/api/v1/asset/(.*)$</url>
+      <method>DELETE</method>
+      <args>
+        <id>$1</id>
+      </args>
+    </mapping>
+
+    <mapping>
+      <target>asset_PUT@bios_web</target>
+      <url>^/api/v1/asset/(.*)$</url>
+      <method>PUT</method>
+      <args>
+        <id>$1</id>
+      </args>
+    </mapping>
+
+    <mapping>
+      <target>asset_POST@bios_web</target>
+      <url>^/api/v1/asset/?$</url>
+      <method>POST</method>
     </mapping>
 
     <!-- UI/properties -->
@@ -180,33 +227,36 @@
     <!-- API itself -->
 
     <!-- topology/location -->
-    <!-- TODO: If location grows, move input validation into separate file, e.g. topology_inputcheck
     <mapping>
-      <target>topology_inputcheck@bios_web</target>
-      <url>^/api/v1/topology/.*$</url>
-    </mapping>
-    -->
-    <mapping>
-      <target>location@bios_web</target>
+      <target>topology_location_from@bios_web</target>
       <url>^/api/v1/topology/location.*$</url>
+      <method>GET</method>
+    </mapping>
+
+    <mapping>
+      <target>topology_location_to@bios_web</target>
+      <url>^/api/v1/topology/location.*$</url>
+      <method>GET</method>
     </mapping>
 
     <!-- topology/power -->
     <mapping>
-      <target>power@bios_web</target>
+      <target>topology_power@bios_web</target>
       <url>^/api/v1/topology/power.*$</url>
+      <method>GET</method>
     </mapping>
-
 
     <!-- Current meassurements -->
     <mapping>
       <target>current@bios_web</target>
       <url>^/api/v1/metric/current.*$</url>
+      <method>GET</method>
     </mapping>
 
     <!-- rack consumption -->
     <mapping>
       <target>rack_total@bios_web</target>
+      <method>GET</method>
       <url>^/api/v1/metric/computed/rack_total.*$</url>
     </mapping>
 
@@ -214,8 +264,9 @@
     <mapping>
       <target>datacenter_indicators@bios_web</target>
       <url>^/api/v1/metric/computed/datacenter_indicators.*$</url>
+      <method>GET</method>
     </mapping>
-    
+
     <!-- uptime -->
     <mapping>
       <target>uptime@bios_web</target>

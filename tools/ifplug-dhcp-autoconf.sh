@@ -54,7 +54,7 @@ ifplugd_off() {
 }
 
 # Run augtools once to speed up the process
-AUGOUT="`(echo 'match /files/etc/network/interfaces/iface[*]'; echo 'match /files/etc/network/interfaces/iface[*]/method' ; echo 'match /files/etc/default/ifplugd/INTERFACES' ) | augtool`" || die $?
+AUGOUT="`(echo 'match /files/etc/network/interfaces/iface[*]'; echo 'match /files/etc/network/interfaces/iface[*]/method' ; echo 'match /files/etc/default/ifplugd/INTERFACES' ) | augtool -S -I/usr/share/bios/lenses`" || die $?
 logmsg_debug "AUGOUT = " "$AUGOUT"
 
 # Note: This may be revised or option-switched to find not DHCP interfaces,
@@ -86,17 +86,17 @@ else
         ifplugd_off
 
     logmsg_info "Applying changes to ifplugd configuration..."
-    if ! /bin/echo -E set /files/etc/default/ifplugd/INTERFACES "\"\\\"$INTLIST\\\"\"" | augtool -e -s ; then
+    if ! /bin/echo -E set /files/etc/default/ifplugd/INTERFACES "\"\\\"$INTLIST\\\"\"" | augtool -S -I/usr/share/bios/lenses -e -s ; then
         [ -n "$OLDINTLIST" ] && ifplugd_on
         die "Could not apply changes to ifplugd config"
     fi
-    if ! /bin/echo -E set /files/etc/default/networking/EXCLUDE_INTERFACES "\"\\\"$INTLIST\\\"\"" | augtool -e -s ; then
+    if ! /bin/echo -E set /files/etc/default/networking/EXCLUDE_INTERFACES "\"\\\"$INTLIST\\\"\"" | augtool -S -I/usr/share/bios/lenses -e -s ; then
         logmsg_info "WARN: Could not apply changes to networking config, oh well"
     fi
 fi
 
 if [ -n "$INTLIST" ]; then
-    ifplugd_on || die
+    ifplugd_on || die $?
 fi
 
 logmsg_info "Started $0 $@"

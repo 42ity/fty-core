@@ -25,8 +25,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define INCLUDE_AGENTS_H__
 
 #include <czmq.h>
-#include <bios_export.h>
 
+#include "bios_export.h"
 #include "ymsg.h"
 
 #ifdef __cplusplus
@@ -194,25 +194,6 @@ bios_alert_extract(ymsg_t *self,
                    char **description,
                    time_t *since);
 
-BIOS_EXPORT ymsg_t *
-bios_asset_encode( const char *devicename,
-                   uint32_t type_id,
-                   uint32_t subtype_id,
-                   uint32_t parent_id,
-                   const char* status,
-                   uint8_t priority,
-                   int8_t operation);
-
-BIOS_EXPORT int
-bios_asset_extract(ymsg_t *message,
-                   char **devicename,
-                   uint32_t *type_id,
-                   uint32_t *subtype_id,
-                   uint32_t *parent_id,
-                   char **status,
-                   uint8_t *priority,
-                   int8_t *operation);
-
 
 /**
  * \brief extract extended asset message
@@ -236,6 +217,7 @@ bios_asset_extra_extract(ymsg_t *message,
                    char **name,
                    zhash_t **ext_attributes,
                    uint32_t *type_id,
+                   uint32_t *subtype_id,
                    uint32_t *parent_id,
                    char **status,
                    uint8_t *priority,
@@ -261,6 +243,7 @@ BIOS_EXPORT ymsg_t *
 bios_asset_extra_encode_response(const char *name,
                    zhash_t **ext_attributes,
                    uint32_t type_id,
+                   uint32_t subtype_id,
                    uint32_t parent_id,
                    const char* status,
                    uint8_t priority,
@@ -286,6 +269,7 @@ BIOS_EXPORT ymsg_t *
 bios_asset_extra_encode(const char *name,
                    zhash_t **ext_attributes,
                    uint32_t type_id,
+                   uint32_t subtype_id,
                    uint32_t parent_id,
                    const char* status,
                    uint8_t priority,

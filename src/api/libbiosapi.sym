@@ -118,12 +118,13 @@ global:
 		ymsg_get_string;
 		ymsg_get_int32;
 		ymsg_get_int64;
+        ymsg_test;
 
         bios_inventory_decode;
         bios_inventory_encode;
         bios_measurement_decode;
         bios_measurement_encode;
-        
+
         bios_web_average_request_encode;
         bios_web_average_request_extract;
         bios_web_average_reply_encode;
@@ -138,9 +139,6 @@ global:
 
         bios_alert_encode;
         bios_alert_extract;
-
-        bios_asset_encode;
-        bios_asset_extract;
 
         is_app;
         is_ymsg;

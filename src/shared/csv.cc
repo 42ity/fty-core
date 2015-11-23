@@ -227,5 +227,23 @@ CsvMap_from_serialization_info(
     return cm;
 }
 
+CsvMap
+CsvMap_from_serialization_info(
+        const cxxtools::SerializationInfo &si,
+        const std::string                 &id)
+{
+    std::vector <std::vector<cxxtools::String> > data = {{}, {}};
+    s_read_si(si, data);
+
+    cxxtools::SerializationInfo si_id;
+    si_id.setTypeName("id_si");
+    si_id.addMember("id") <<= id;
+    s_read_si(si_id, data);
+
+    CsvMap cm{data};
+    cm.deserialize();
+    return cm;
+}
+
 
 } //namespace shared

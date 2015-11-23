@@ -19,6 +19,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 /*! \file   measurement.h
     \brief  high level db api for measurements
     \author Karol Hrdina <KarolHrdina@Eaton.com>
+    \author Alena Chernikava <AlenaChernikava@Eaton.com>
+    \brief  functionality to manipulate with measurements
 */
 
 #ifndef SRC_DB_MEASUREMENTS_MEASUREMENT_H__
@@ -37,7 +39,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 namespace persist
 {
 
-// -1 err/failure , 0 ok, 1 element_id not found, 2 topic not found    
+// -1 err/failure , 0 ok, 1 element_id not found, 2 topic not found
 reply_t
 select_measurements (
         tntdb::Connection &conn,
@@ -109,7 +111,7 @@ select_measurement_last_web_byTopic (
 int
     delete_measurements(
         tntdb::Connection &conn,
-        m_msrmnt_tp_id_t   topic_id,
+        m_msrmnt_tpc_id_t   topic_id,
         m_msrmnt_id_t     &affected_rows
         );
 
@@ -117,8 +119,8 @@ int
 int
     delete_measurement_topic(
         tntdb::Connection &conn,
-        m_msrmnt_tp_id_t   topic_id,
-        m_msrmnt_tp_id_t  &affected_rows
+        m_msrmnt_tpc_id_t   topic_id,
+        m_msrmnt_tpc_id_t  &affected_rows
         );
 
 db_reply<std::vector<db_msrmnt_t>>
@@ -174,6 +176,71 @@ int
         a_elmnt_id_t       asset_id,
         row_cb_f          &cb);
 
+int
+    select_last_aggregated_by_element_by_src_by_step(
+        tntdb::Connection &conn,
+        a_elmnt_id_t       element_id,
+        const std::string &src,
+        int32_t            step,   // in seconds
+        double            &value,
+        bool               fuzzy
+    );
+
+int
+    select_last_aggregated_by_topic_by_step(
+        tntdb::Connection &conn,
+        const std::string &topic,
+        int32_t            step,   // in seconds
+        double            &value,
+        bool               fuzzy
+    );
+
+/**
+ * \brief select one aggregated (min, max, average) measurement by topic_id
+ *        and by step
+ *
+ * Step of aggreagtion is used for computing the last timestamp, when
+ * measurement was expected to be calculated.
+ *
+ * \param[in]  conn     - db connection
+ * \param[in]  topic_id - id of the topic
+ * \param[in]  step     - step of aggregation (in seconds)
+ * \param[out] value    - returned value of measurement if it
+ *                        was found, otherwise 0.
+ *
+ * \return 0  on success if found
+ *         1  on success if not found
+ *         -1 on failure
+ */
+int
+    select_last_aggregated_by_step(
+        tntdb::Connection &conn,
+        m_msrmnt_tpc_id_t  topic_id,
+        int32_t            step,   // in seconds
+        double            &value
+    );
+
+
+/**
+ * \brief select one measurement by timestamp and topic_id
+ *
+ * \param[in]  conn      - db connection
+ * \param[in]  topic_id  - id of the topic
+ * \param[in]  timestamp - timestamp of the measurements (UTC unixtime)
+ * \param[out] value     - returned value of measurement if it
+ *                         was found, otherwise 0.
+ *
+ * \return 0  on success if found
+ *         1  on success if not found
+ *         -1 on failure
+ */
+int
+    select_measurement_by_time_topic(
+        tntdb::Connection &conn,
+        m_msrmnt_tpc_id_t  topic_id,
+        int64_t            timestamp,
+        double            &value
+    );
 } // namespace persist
 
 #endif // SRC_DB_MEASUREMENTS_MEASUREMENT_H__

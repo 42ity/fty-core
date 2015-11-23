@@ -44,7 +44,7 @@ Smtp::Smtp(
 void Smtp::sendmail(
         const std::vector<std::string> &to,
         const std::string& subject,
-        const std::string& body)
+        const std::string& body) const
 {
     std::ostringstream sbuf;
 
@@ -81,7 +81,7 @@ void Smtp::sendmail(
 void Smtp::sendmail(
         const std::string& to,
         const std::string& subject,
-        const std::string& body)
+        const std::string& body) const
 {
     std::vector<std::string> recip;
     recip.push_back(to);

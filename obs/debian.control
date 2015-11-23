@@ -8,7 +8,7 @@ Build-Depends: bison, debhelper (>= 8), flex, iptables-dev, libatm1-dev, libdb-d
 
 Package: core
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends} , augeas-tools, tntdb-mysql4, libcidr0, tntnet-runtime, nut, malamute, libsnmp30
+Depends: ${misc:Depends}, ${shlibs:Depends} , augeas-tools, tntdb-mysql4, libcidr0, tntnet-runtime, nut, malamute, libsnmp30, cracklib-runtime
 Recommends: msmtp
 Description: BIOS core
  Core functionality implemented for BIOS.
@@ -22,3 +22,17 @@ Depends:
     ${misc:Depends}
 Description: debugging symbols for BIOS core
  This package contains the debugging symbols for core.
+
+Package: core-dev
+Architecture: any
+Section: libdevel
+Depends:
+    core (= ${binary:Version}),
+    ${shlibs:Depends},
+    ${misc:Depends},
+    libmlm-dev,
+    libsodium-dev,
+    libczmq-dev,
+    libzmq4-dev
+Description: development files for BIOS core
+ This package contains the development files for core.

@@ -25,6 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SRC_DB_DBHELPERS_H_
 #include <functional>
 #include <string>
+#include <map>
 #include <tntdb/row.h>
 #include <czmq.h>
 #include <vector>
@@ -41,8 +42,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MAX_VALUE_LENGTH        255
 // t_bios_asset_device.mac
 #define MAX_MAC_LENGTH          17
-// t_bios_asset_device.ip    and t_bios_discovered_ip.ip
-#define MAX_IP_LENGTH           45
 // t_bios_asset_device.hostname
 #define MAX_HOSTNAME_LENGTH     25
 // t_bios_asset_device.fullhostname
@@ -57,7 +56,7 @@ struct db_reply{
     int status; // ok/fail
     int errtype;
     int errsubtype;
-    uint64_t rowid;  // insert/update
+    uint64_t rowid;  // insert/update or http error code if status == 0
     uint64_t affected_rows; // for update/insert/delete
     std::string msg;
     zhash_t *addinfo;
@@ -91,7 +90,7 @@ inline db_reply<T> db_reply_new(T& item) {
         .item = item};
 }
 
-/** 
+/**
  * \brief helper structure for results of v_bios_measurement
  */
 struct db_msrmnt_t {
@@ -117,6 +116,43 @@ struct db_a_elmnt_t {
     a_elmnt_tp_id_t  type_id;
     a_elmnt_stp_id_t subtype_id;
     std::string      asset_tag;
+    std::map <std::string, std::string> ext;
+
+    db_a_elmnt_t () :
+        id{},
+        name{},
+        status{},
+        parent_id{},
+        priority{},
+        bc{},
+        type_id{},
+        subtype_id{},
+        asset_tag{},
+        ext{}
+    {}
+
+    db_a_elmnt_t (
+        a_elmnt_id_t     id,
+        std::string      name,
+        std::string      status,
+        a_elmnt_id_t     parent_id,
+        a_elmnt_pr_t     priority,
+        a_elmnt_bc_t     bc,        // business critical
+        a_elmnt_tp_id_t  type_id,
+        a_elmnt_stp_id_t subtype_id,
+        std::string      asset_tag) :
+
+        id(id),
+        name(name),
+        status(status),
+        parent_id(parent_id),
+        priority(priority),
+        bc(bc),
+        type_id(type_id),
+        subtype_id(subtype_id),
+        asset_tag(asset_tag),
+        ext{}
+    {}
 };
 
 /** 
@@ -309,17 +345,6 @@ bool is_ok_hostname (const char *hostname);
  *         false - fullhostname is not correct
  */
 bool is_ok_fullhostname (const char *fullhostname);
-
-
-/**
- * \brief Checks if the ip is correct
- *
- * \param ip - ip to check
- *
- * \return true  - ok
- *         false - ip is not correct
- */
-bool is_ok_ip (const char *ip);
 
 
 /**

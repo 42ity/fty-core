@@ -31,7 +31,7 @@
     # *** BIOS image must be installed and running on SUT ***
     # *** SUT port and SUT name should be set properly (see below) ***
     # *** tool directory with initdb.sql load_data.sql power_topology.sql and location_topology.sql present on MS ***
-    # *** tests/CI directory (on MS) contains weblib.sh (api_get_content and CURL functions needed) ***
+    # *** tests/CI directory (on MS) contains weblib.sh (api_get_json and CURL functions needed) ***
     # *** tests/CI/web directory containing results, commands and log subdirectories with the proper content 
 
 usage(){
@@ -84,7 +84,7 @@ done
 
 # default values:
 [ -z "$SUT_USER" ] && SUT_USER="root"
-[ -z "$SUT_HOST" ] && SUT_HOST="debian.roz.lab.etn.com"
+[ -z "$SUT_HOST" ] && SUT_HOST="debian.roz53.lab.etn.com"
 # port used for ssh requests:
 [ -z "$SUT_SSH_PORT" ] && SUT_SSH_PORT="2206"
 # port used for REST API requests:

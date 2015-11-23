@@ -1,0 +1,165 @@
+
+RFC-Evaluator-Rules  -  Evaluator rules protocol
+================================================
+Connects USER peer to EVALUATOR peer.
+
+The USER peer sends one of the following messages using MAILBOX SEND to
+EVALUATOR peer:
+
+1) LIST/type - request list of rule names of specified 'type'
+2) GET/name - request detail of rule 'name'
+3) ADD/json[/old_name] - create new rule or update existing rule. If optional
+part 'old_name' is specified, perform additional rename of rule name
+'old_name' to name specified in json property "rule_name" : "<new_name>".
+
+where '/' indicates a multipart string message, 'json' is valid json
+document(1), 'type' is one of [ all | threshold | pattern | single ], 'name',
+'old_name' is rule name and 'subject' of the message is
+"rfc-evaluator-rules".
+
+The EVALUATOR peer MUST send the appropriate message back to USER peer
+using MAILBOX SEND.
+
+For message 1) EVALUTATOR peer MUST respond with one of the following messages:
+a) LIST/type/rule_1[/rule_2]...[/rule_N]
+c) ERROR/reason
+
+
+For messages 2) and 3) EVALUATOR peer MUST respond with one of the following messages:
+b) OK/json
+c) ERROR/reason
+
+where '/' indicates a multipart string message, 'json' is valid json
+document(1), 'reason' is error string, 'type' is one of [ all | threshold |
+pattern | single ] and its value MUST be the same as the value of 'type'
+received in 1) message, 'subject' of the message is "rfc-evaluator-rules".
+
+For messages 1), 2), 3) if the requested 'type', 'name' or 'old_name' does not
+exist the EVALUATOR peer MUST assign NOT_FOUND string as reason.
+
+For message 3) if 'json' is not a valid json or does not adhere to rules schema
+the EVALUATOR peer MUST assing BAD_JSON string as reason.
+
+
+
+(1)
+There are three different json formats that are accepted
+
+{
+    "threshold" : {
+        "rule_name"     :   "<rule_name>",
+        "target"        :   <topic_specification>,
+        "element"       :   "<element_name>",
+        "values"        :   [ { "low_critical"  : "<value>" },
+                              { "low_warning"   : "<value>" },
+                              { "high_warning"  : "<value>" },
+                              { "high_critical" : "<value>" } ],
+        "results"       :   [ { "low_critical"  : { "action" : ["<action_1>", ..., "<action_N>"], "severity" : "<severity>", "description" : "<description>" }},
+                              { "low_warning"   : { "action" : ["<action_1>", ..., "<action_N>"], "severity" : "<severity>", "description" : "<description>" }},
+                              { "high_warning"  : { "action" : ["<action_1>", ..., "<action_N>"], "severity" : "<severity>", "description" : "<description>" }},
+                              { "high_critical" : { "action" : ["<action_1>", ..., "<action_N>"], "severity" : "<severity>", "description" : "<description>" }} ],
+        "evaluation"    :   "<lua_function>"
+    }
+}
+
+{
+    "pattern" : {
+        "rule_name"     :   "<rule_name>",
+        "target"        :   "<regex>",
+        "values"        :   [ { "<value_name_1>"  : "<value>" },
+                               ...,
+                              { "<value_name_N>"  : "<value>" } ],
+        "results"       :   [ { "<result_name_1>"  : { "action" : ["<action_1>", ..., "<action_N>"], "severity" : "<severity>", "description" : "<description>" }},
+                              ...
+                              { "<result_name_N>" : { "action" : ["<action_1>", ..., "<action_N>"], "severity" : "<severity>", "description" : "<description>" }} ],
+        "evaluation"    :   "<lua_function>",
+    }
+}
+
+{
+    "single" : {
+        "rule_name"     :   "<rule_name>",
+        "target"        :   [ "<topic_1>", ... , "<topic_N>"],
+        "values"        :   [ { "<value_name_1>"  : "<value>" },
+                               ...,
+                              { "<value_name_N>"  : "<value>" } ],
+        "element"       :   "<element_name>",
+        "results"       :   [ { "<result_name_1>"  : { "action" : ["<action_1>", ..., "<action_N>"], "severity" : "<severity>", "description" : "<description>" }},
+                              ...
+                              { "<result_name_N>" : { "action" : ["<action_1>", ..., "<action_N>"], "severity" : "<severity>", "description" : "<description>" }} ],
+        "evaluation"    :   "<lua_function>",
+    }
+}
+
+where
+    * <rule_name>       unique rule name, CASE SENSITIVE
+    * <topic_specification>       string value representing topic OR array of topics
+    * <element_name>    name of element
+    * <value>           number (integer, floating-point)
+    * <action_X>        one of [ EMAIL | SMS ] and determines the resulting alert action
+    * <severity>        one of [ INFO | WARNING | CRITICAL ] and determines the resulting alert severity
+    * <lua_function>    lua function that evaluates trigger conditions
+    * <topic_X>         metric topic
+    * <regex>           regular expression
+    * <value_name_X>    unique name (identifier) of value within given rule definition.
+    * <result_name_X>   unique name (identifier) of result within given rule definition (any string except "ok", it is reserved)
+
+
+For threshold rule:
+If <topic_specification> is single string value then property "evaluation" :
+"<lua_function>" is ignored. If <topic_specification> is array then property "evaluation" :
+"<lua_function>" is mandatory. For further details please consult the
+section describing semantics.
+
+
+The semantics is as follows (WIP):
+
+THRESHOLD:
+* When <topic_specification> is one string:
+
+If value of metric specified by <topic_specification> is higher than value of
+"high_warning", "high_critical" or lower than value of "low_warning",
+"low_critical", then alert is triggered for element <element_name> with state
+ACTIVE and severity, description and action states equal to those specified in
+"results" item "high_warning" , "high_critical" or "low_warning",
+"low_critical" respectively. When value of metric specified by
+<topic_specification> returns back to normal (i.e higher than value of
+"low_warning" and lower than value of "high_warning") trigger the same alert
+with state RESOLVED.
+
+
+* When <topic_specification> is an array of strings:
+If result of <lua_function> is one of "high_warning", "high_critical",
+"low_warning", "low_critical", then alert is triggered for element
+<element_name> with state ACTIVE and severity, description and action states
+equal to those specified in "results" item "high_warning", "high_critical" or
+"low_warning", "low_critical" respectively.  If subsequently result of
+<lua_function> is "ok" then the same alert is triggered with state RESOLVED.
+
+If result of <lua_function> is anything else, the rule is ignored.
+
+In the <lua_function> values of metrics specified in <topic_specification> can
+be achieved as follows - for topic "metric@device" value of 'metric' at
+'device' is stored in lua variable "metric_device".
+
+PATTERN:
+Value of metric, whose topic matches <regex>, becomes available in
+<lua_function> as variable "value".  Values of properties <value_name_1>,...,
+<value_name_N> become available in <lua_function> as variables
+"<value_name_1>", ..., "<value_name_N>".  Using these values you MUST return
+one of the following strings: "<result_name_1>", ..., "<result_name_N>" or
+"ok".
+
+If <lua_function> returns one of "<result_name_1>", ..., "<result_name_N>", then alert is
+triggered for element specified by matched topic with state ACTIVE and
+severity, description and action states equal to those specified in "result"
+item returned.
+
+If subsequently result of <lua_function> is "ok" then the same alert is
+triggered with state RESOLVED.
+
+If result of <lua_function> is anything else, the rule is ignored.
+
+SINGLE:
+    Analogously to PATTERN rule, only target is not a regular expression but a predefined set of topics. Everything else is the same as in PATTERN rule.
+

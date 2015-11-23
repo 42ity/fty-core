@@ -232,7 +232,6 @@ db_reply_t
     log_debug ("  element_name = '%s'", element_name);
 
     tntdb::Transaction trans(conn);
-
     auto reply_insert1 = insert_into_asset_element
                         (conn, element_name, element_type_id, parent_id,
                          status, priority, bc, 0, asset_tag.c_str());
@@ -243,11 +242,11 @@ db_reply_t
         return reply_insert1;
     }
     auto element_id = reply_insert1.rowid;
-
+    std::string err = "";
     if ( extattributes != NULL )
     {
         int reply_insert2 = insert_into_asset_ext_attributes
-            (conn, element_id, extattributes, false);
+            (conn, element_id, extattributes, false, err);
         if ( reply_insert2 != 0 )
         {
             trans.rollback();
@@ -256,11 +255,12 @@ db_reply_t
             ret.status     = 0;
             ret.errtype    = DB_ERR;
             ret.errsubtype = DB_ERROR_BADINPUT;
-            ret.msg        = "end: device was not inserted (fail in ext_attributes)";
+            // too complicated, to transform from one format to onother
+            ret.rowid      = -reply_insert2;
+            ret.msg        = err;
             return ret;
         }
     }
-
     auto reply_insert3 = insert_element_into_groups (conn, groups, element_id);
     if ( ( reply_insert3.status == 0 ) && ( reply_insert3.affected_rows != groups.size() ) )
     {
@@ -280,7 +280,6 @@ db_reply_t
             log_info ("end: \"device\" was not inserted (fail monitor_device)");
             return reply_insert4;
         }
-
         auto reply_insert5 = insert_into_monitor_asset_relation
             (conn, reply_insert4.rowid, reply_insert1.rowid);
         if ( reply_insert5.affected_rows == 0 )
@@ -327,11 +326,11 @@ db_reply_t
         return reply_insert1;
     }
     auto element_id = reply_insert1.rowid;
-
+    std::string err = "";
     if ( extattributes != NULL )
     {
         int reply_insert2 = insert_into_asset_ext_attributes
-            (conn, element_id, extattributes, false);
+            (conn, element_id, extattributes, false, err);
         if ( reply_insert2 != 0 )
         {
             trans.rollback();
@@ -340,7 +339,9 @@ db_reply_t
             ret.status     = 0;
             ret.errtype    = DB_ERR;
             ret.errsubtype = DB_ERROR_BADINPUT;
-            ret.msg        = "end: device was not inserted (fail in ext_attributes)";
+            // too complicated, to transform from one format to onother
+            ret.rowid      = -reply_insert2;
+            ret.msg        = err;
             return ret;
         }
     }
@@ -456,7 +457,7 @@ db_reply_t
         }
         // delete all measurements for topic and topic itself
         m_msrmnt_id_t affected_rows = 0;
-        m_msrmnt_tp_id_t affected_rows1 = 0;
+        m_msrmnt_tpc_id_t affected_rows1 = 0;
         for ( auto topic_id : out )
         {
             log_debug ("  topic_id = %" PRIu32 , topic_id);
@@ -487,7 +488,7 @@ db_reply_t
     {
         // find monitor counterpart
         int rv = convert_asset_to_monitor(conn, element_id, monitor_element_id);
-        if ( ( rv != 0 ) && ( rv != 1 ) )
+        if ( rv != 0 )
         {
             db_reply_t ret = db_reply_new();
             ret.status = 0;
@@ -497,7 +498,7 @@ db_reply_t
             return ret;
         }
         // delete from alert devices
-        if ( rv != 1 )
+        if ( monitor_element_id != 0 )
         {
             m_alrtdvc_id_t affected_rows = 0;
             rv = delete_device_from_alert_device_all
@@ -646,7 +647,7 @@ db_reply_t
         }
         // delete all measurements for topic and topic itself
         m_msrmnt_id_t affected_rows = 0;
-        m_msrmnt_tp_id_t affected_rows1 = 0;
+        m_msrmnt_tpc_id_t affected_rows1 = 0;
         for ( auto topic_id : out )
         {
             rv = delete_measurements(conn, topic_id, affected_rows);
@@ -676,7 +677,7 @@ db_reply_t
     {
         // find monitor counterpart
         int rv = convert_asset_to_monitor(conn, element_id, monitor_element_id);
-        if ( ( rv != 0 ) && ( rv != 1 ) )
+        if ( rv != 0 )
         {
             db_reply_t ret = db_reply_new();
             ret.status = 0;
@@ -686,7 +687,7 @@ db_reply_t
             return ret;
         }
         // delete from alert devices
-        if ( rv != 1 )
+        if ( monitor_element_id != 0 )
         {
             m_alrtdvc_id_t affected_rows = 0;
             rv = delete_device_from_alert_device_all

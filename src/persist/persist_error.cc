@@ -20,33 +20,33 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 namespace bios
 {
-    BiosError::BiosError(const std::string& msg)
+    BiosErrorBase::BiosErrorBase(const std::string& msg)
     : std::runtime_error(msg)
     {
     }
     
     NotFound::NotFound()
-    : BiosError("Specified element was not found")
+    : BiosErrorBase("Specified element was not found")
     { 
     }
     
     InternalDBError::InternalDBError(const std::string& msg)
-    : BiosError(msg)
+    : BiosErrorBase(msg)
     { 
     }
 
     ElementIsNotDevice::ElementIsNotDevice()
-    : BiosError("Specified element is not a device")
+    : BiosErrorBase("Specified element is not a device")
     { 
     }
 
     MonitorCounterpartNotFound::MonitorCounterpartNotFound()
-    :BiosError("For specified device monitor counterpart was not found")
+    :BiosErrorBase("For specified device monitor counterpart was not found")
     {
     }
     
     BadInput::BadInput(const std::string& msg)
-    : BiosError(msg)
+    : BiosErrorBase(msg)
     { 
     }
 
