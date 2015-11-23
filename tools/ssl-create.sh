@@ -39,7 +39,17 @@ PEM_TMP_CERT="/tmp/cert.pem"
 WARN_EXPIRE="`expr 45 \* 24 \* 3600`"
 
 TS_NOW="`TZ=UTC date -u +%s`"
-LOCAL_HOSTNAME="`hostname -A | sort | head -1`"
+LOCAL_HOSTNAME="`hostname -f`" || LOCAL_HOSTNAME=""
+if [ -z "$LOCAL_HOSTNAME" ] || [ "$LOCAL_HOSTNAME" = localhost ] ; then
+	LOCAL_HOSTNAME="`hostname`" || LOCAL_HOSTNAME=""
+fi
+[ -z "$LOCAL_HOSTNAME" ] && LOCAL_HOSTNAME="`cat /etc/hostname`"
+
+if [ -z "$LOCAL_HOSTNAME" ]; then
+	echo "ERROR: can't guess hostname" >&2
+	exit 1
+fi
+
 BIOS_USER="admin"
 
 CERT_LOADABLE=no
@@ -76,7 +86,7 @@ if [ ! -r "${PEM_FINAL_CERT}" ] || [ ! -s "${PEM_FINAL_CERT}" ] || \
     fi
 
     # Generate self-signed cert with a new key and other data
-    openssl req -x509 -newkey rsa:2048 \
+    openssl req -x509 -sha256 -newkey rsa:2048 \
         -keyout "${PEM_TMP_KEY}" -out "${PEM_TMP_CERT}" \
         -days 365 -nodes -subj "/CN=${LOCAL_HOSTNAME}" \
     || exit $?
@@ -91,4 +101,4 @@ if [ ! -r "${PEM_FINAL_CERT}" ] || [ ! -s "${PEM_FINAL_CERT}" ] || \
     exit $?
 fi
 
-exit 1
+exit 0

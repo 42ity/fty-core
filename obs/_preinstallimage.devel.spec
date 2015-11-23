@@ -4,7 +4,7 @@ BuildRequires: iptables-dev libatm1-dev libdb-dev lynx lynx-cur
 BuildRequires: libselinux1-dev linux-libc-dev linuxdoc-tools
 BuildRequires: asciidoc docbook-xsl-ns docbook-xsl docbook-xml libxml2-utils xsltproc
 BuildRequires: libzmq4-dev libczmq-dev libjsoncpp-dev libcxxtools-dev libtntdb-dev
-BuildRequires: libcidr0-dev libvariant-dev libtntnet-dev tntnet-runtime tntnet
+BuildRequires: libcidr0-dev libtntnet-dev tntnet-runtime tntnet
 BuildRequires: libsasl2-dev libsodium-dev libmlm-dev libmagic-dev
 BuildRequires: libnutclient-dev libnutscan-dev python vim-tiny man
 #

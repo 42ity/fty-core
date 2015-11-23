@@ -1,5 +1,5 @@
 [Unit]
-Description=Last resort ssh if we messed up with licenses of passwd, for DEVEL purposes only!
+Description=Last resort ssh if we messed up with licenses or passwd, for DEVEL purposes only!
 After=auditd.service network.service
 
 [Service]
