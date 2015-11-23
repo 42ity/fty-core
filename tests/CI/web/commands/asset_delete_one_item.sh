@@ -35,14 +35,14 @@ find_id() {
 
 # Assumption: initdb + load_data files are uploaded.
 # So, make sure this is  true;
-DB_INIT_delete="initdb.sql"
-DB_LOAD_DATA_delete="load_data.sql"
-DB_LOADDIR=$BUILDSUBDIR/tools
-loaddb_file "$DB_LOADDIR/$DB_INIT_delete" || exit $?
-loaddb_file "$DB_LOADDIR/$DB_LOAD_DATA_delete" || exit $?
+DB_LOADDIR="$CHECKOUTDIR/database/mysql"
+DB_INIT_delete="$DB_LOADDIR/initdb.sql"
+DB_LOAD_DATA_delete="$DB_LOADDIR/load_data.sql"
+loaddb_file "$DB_INIT_delete" || exit $?
+loaddb_file "$DB_LOAD_DATA_delete" || exit $?
 
 # Need to check, number of expected rows in the table
-ASSETS_NUMBER="$(mysql -u root box_utf8 <<< "select count(id) as assets_count from v_bios_asset_element")"
+ASSETS_NUMBER="$(mysql -u root box_utf8 <<< 'select count(id) as assets_count from v_bios_asset_element')"
 echo $ASSETS_NUMBER
 echo "expected 35"
 

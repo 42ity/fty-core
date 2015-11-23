@@ -40,14 +40,14 @@ logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to build, and BUILDSUBDIR='$BUILDS
     SKIP_NONSH_TESTS=yes
 export WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT WEBLIB_QUICKFAIL WEBLIB_CURLFAIL SKIP_NONSH_TESTS
 
-DB_LOADDIR="$CHECKOUTDIR/tools"
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_TOPOP="power_topology.sql"
-DB_TOPOL="location_topology.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-DB_ASSET_DEFAULT="initdb_ci_patch_2.sql"
+DB_LOADDIR="$CHECKOUTDIR/database/mysql"
+DB_BASE="$DB_LOADDIR/initdb.sql"
+DB_DATA="$DB_LOADDIR/load_data.sql"
+DB_DATA_TESTREST="$DB_LOADDIR/load_data_test_restapi.sql"
+DB_TOPOP="$DB_LOADDIR/power_topology.sql"
+DB_TOPOL="$DB_LOADDIR/location_topology.sql"
+DB_ASSET_TAG_NOT_UNIQUE="$DB_LOADDIR/initdb_ci_patch.sql"
+DB_ASSET_DEFAULT="$DB_LOADDIR/initdb_ci_patch_2.sql"
 
 PATH="/usr/lib/ccache:/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
 export PATH
@@ -236,7 +236,7 @@ test_web() {
 loaddb_default() {
     echo "--------------- reset db: default ----------------"
     for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
-        loaddb_file "$DB_LOADDIR/$data" || exit $?
+        loaddb_file "$data" || exit $?
     done
     return 0
 }
@@ -249,7 +249,7 @@ test_web_default() {
 test_web_topo_p() {
     echo "----------- reset db: topology : power -----------"
     for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOP"; do
-        loaddb_file "$DB_LOADDIR/$data" || exit $?
+        loaddb_file "$data" || exit $?
     done
     test_web "$@"
 }
@@ -257,7 +257,7 @@ test_web_topo_p() {
 test_web_topo_l() {
     echo "---------- reset db: topology : location ---------"
     for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOL"; do
-        loaddb_file "$DB_LOADDIR/$data" || exit $?
+        loaddb_file "$data" || exit $?
     done
     test_web "$@"
 }
@@ -265,7 +265,7 @@ test_web_topo_l() {
 asset_create() {
     echo "---------- reset db: asset : create ---------"
     for data in "$DB_BASE" "$DB_ASSET_DEFAULT" "$DB_DATA"; do
-          loaddb_file "$DB_LOADDIR/$data" || exit $?
+          loaddb_file "$data" || exit $?
     done
     test_web "$@"
 }

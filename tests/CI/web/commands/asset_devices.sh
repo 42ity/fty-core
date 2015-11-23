@@ -28,14 +28,16 @@ echo
 
 # Assumption: initdb + load_data files are uploaded.
 # So, make sure this is  true;
-DB_INIT_delete="initdb.sql"
-DB_LOAD_DATA_delete="load_data.sql"
-DB_LOADDIR=$BUILDSUBDIR/tools
-loaddb_file "$DB_LOADDIR/$DB_INIT_delete" || exit $?
-loaddb_file "$DB_LOADDIR/$DB_LOAD_DATA_delete" || exit $?
+DB_LOADDIR="$CHECKOUTDIR/database/mysql"
+DB_BASE="$DB_LOADDIR/initdb.sql"
+DB_DATA="$DB_LOADDIR/load_data.sql"
+DB_DATA_TESTREST="$DB_LOADDIR/load_data_test_restapi.sql"
+DB_ASSET_TAG_NOT_UNIQUE="$DB_LOADDIR/initdb_ci_patch.sql"
+loaddb_file "$DB_BASE" || exit $?
+loaddb_file "$DB_DATA" || exit $?
 
 # Need to check, number of expected rows in the table
-ASSETS_NUMBER="$(mysql -u root box_utf8 <<< "select count(id) as assets_count from v_bios_asset_element")"
+ASSETS_NUMBER="$(mysql -u root box_utf8 <<< 'select count(id) as assets_count from v_bios_asset_element')"
 echo $ASSETS_NUMBER
 echo "expected 35"
 
@@ -144,26 +146,15 @@ echo "********* asset_devices.sh ***********************************************
 echo "********* 12. no_devices_present ******************************************************************"
 echo "***************************************************************************************************"
 # delete all assets, no DC are present
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-DB_LOADDIR=$BUILDSUBDIR/tools
-loaddb_file "$DB_LOADDIR/$DB_BASE"
+loaddb_file "$DB_BASE"
 
 test_it "no_devices_present"
 api_get_json /asset/devices >&5
 print_result $?
 
 #fill DB again
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-DB_LOADDIR=$BUILDSUBDIR/tools
-
 for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
-    loaddb_file "$DB_LOADDIR/$data" || return $?
+    loaddb_file "$data" || return $?
 done
 
 echo
