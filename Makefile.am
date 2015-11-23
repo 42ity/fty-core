@@ -806,6 +806,9 @@ test_autoconfig_LDADD = \
 
 test_autoconfig_LDFLAGS = $(LIBCZMQ_LIBS) $(CXXTOOLS_LIBS) -lcidr -lbiosapi
 
+test_autoconfig_DEPENDENCIES = $(test_autoconfig_LDADD) \
+				libbiosapi.la
+
 test_autoconfig_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/ \
 			-I$(abs_top_srcdir)/src/agents/autoconfig/ \
