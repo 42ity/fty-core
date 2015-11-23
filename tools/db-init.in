@@ -120,8 +120,8 @@ generate_database() {
 		secure_database
 
 		for INITSQL in $(ls -1 "${INITSQL_DIR}"/*.sql | grep -v "`basename $INITSQL_FIRST`" | sort) ; do
-			if  [ -r "$INITSQL_FIRST" ] && \
-			    [ -s "$INITSQL_FIRST" ] \
+			if  [ -r "$INITSQL" ] && \
+			    [ -s "$INITSQL" ] \
 			; then
 				echo "Database for BIOS initialization - importing extra schema `basename $INITSQL`..."
 				do_mysql < "$INITSQL" || return 1
