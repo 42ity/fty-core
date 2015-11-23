@@ -1603,6 +1603,7 @@ SYSTEMD_PRESETS +=      42-bios-systemd.preset
 ### TODO? Add the build info (git commit, timestamp) to the header comment?
 systemd/42-bios-systemd.preset: Makefile
 	@( echo "### This is a generated file with a list of all BIOS services"; \
+	  mkdir -p "`dirname "$@"`"; \
 	  for F in $(SYSTEMD_UNITS) $(SYSTEMD_TIMERS) ; do echo "enable $$F" ; done ) > $@
 
 # The rules to actually "compile" the service definition files
@@ -1626,6 +1627,7 @@ systemd-units: systemd-daemons systemd-timers systemd-presets
 systemd-daemons: $(addprefix systemd/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_NOTPRESET))
 systemd-timers:  $(addprefix systemd/,$(SYSTEMD_UNITS_TIMERIMPL))
 	if [ x"$(abs_top_builddir)/" = x"$(abs_top_srcdir)/" ] ; then true; else \
+	mkdir -p "$(abs_top_builddir)/systemd"; \
 	for F in $(addprefix $(abs_top_srcdir)/systemd/,$(SYSTEMD_TIMERS)) ; do \
 	    $(call copy-file,$$F,$(abs_top_builddir)/systemd/) || exit $$?; \
 	done; fi
