@@ -109,10 +109,13 @@ EOF
 generate_database() {
 	local INITSQL=""
 	# Imports the BIOS database files, sets up and saves passwords
+	TIMESTAMP="t=`date -u '+%Y%m%dT%H%M%SZ'`"
 	if [ -r "$INITSQL_FIRST" ] && \
 	   [ -s "$INITSQL_FIRST" ]; then
 		echo "Database for BIOS initialization - importing base schema..."
 		do_mysql < "$INITSQL_FIRST" || return 1
+		BIOS_SCHEMA_VERSION_SQL="v=`grep_sql_version < "$INITSQL_FIRST"`." || BIOS_SCHEMA_VERSION_SQL=""
+		gzip -c < "$INITSQL_FIRST" > "$INITSQL_FIRST.$BIOS_SCHEMA_VERSION_SQL$TIMESTAMP.gz"
 
 		secure_database
 
@@ -122,6 +125,8 @@ generate_database() {
 			; then
 				echo "Database for BIOS initialization - importing extra schema `basename $INITSQL`..."
 				do_mysql < "$INITSQL" || return 1
+				BIOS_SCHEMA_VERSION_SQL="v=`grep_sql_version < "$INITSQL"`." || BIOS_SCHEMA_VERSION_SQL=""
+				gzip -c < "$INITSQL" > "$INITSQL.$BIOS_SCHEMA_VERSION_SQL$TIMESTAMP.gz"
 			else
 				echo "Error: Can't read '$INITSQL' !!!" >&2
 				return 1
