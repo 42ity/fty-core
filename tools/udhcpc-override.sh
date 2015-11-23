@@ -55,7 +55,7 @@ done
 
 # Skip search if we do not have a definite interface or that keyword is missing
 if [ -n "$UDHCPC_IFACE" ] && \
-   grep udhcpc_opts /etc/network/interfaces /etc/network/interfaces.d/*.conf >/dev/null 2>&1 \
+   [ -n "`grep udhcpc_opts /etc/network/interfaces /etc/network/interfaces.d/*.conf 2>/dev/null`" ] \
 ; then
     # Run augtools once to speed up the process
     AUGOUT="`(echo 'match /files/etc/network/interfaces/iface[*]'; echo 'match /files/etc/network/interfaces/iface[*]/udhcpc_opts' ) | augtool -S -I/usr/share/bios/lenses`"
@@ -65,8 +65,11 @@ if [ -n "$UDHCPC_IFACE" ] && \
         UDHCPC_OPTS="`echo "$AUGOUT" | fgrep "$AUGOUT_IFACE/udhcpc_opts"`" && \
         UDHCPC_OPTS="`echo "$UDHCPC_OPTS" | sed 's,^.*/udhcpc_opts = ,,'`" && \
         echo "INFO: Detected UDHCPC_OPTS='$UDHCPC_OPTS' for interface '$UDHCPC_IFACE'" >&2 && \
-        [ -z "$UDHCPC_OPTS" ] && UDHCPC_OPTS=" " || \
+        { [ -n "$UDHCPC_OPTS" ] || UDHCPC_OPTS=" " ; } || \
         UDHCPC_OPTS=""
+        # The braces above ensure that if the admin configured an empty
+        # line with udhcpc_opts in /etc/network/interfaces then we don't
+        # fall back to script defaults; but upon an error we should...
     fi
 fi
 
