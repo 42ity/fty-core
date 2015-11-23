@@ -114,6 +114,7 @@ logmsg_info "Will use BASE_URL = '$BASE_URL'"
 determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 DB_LOADDIR="$CHECKOUTDIR/database/mysql"
+CSV_BAM_LOADDIR="$CHECKOUTDIR/tests/fixtures/csv/bam"
 
 logmsg_info "Ensuring that needed remote daemons are running on VTE"
 sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent bios-agent-nut bios-agent-inventory bios-agent-cm; do systemctl start $SVC ; done'
@@ -135,7 +136,7 @@ subtest() {
         logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
 
     # ***** POST THE CSV FILE *****
-    ASSET="$CHECKOUTDIR/tools/$1"
+    ASSET="$CSV_BAM_LOADDIR/$1"
     api_auth_post_file /asset/import assets=@$ASSET -H "Expect:" | tee $CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log
 
     case "$1" in
@@ -145,7 +146,7 @@ subtest() {
                 echo "Subtest 1 PASSED."
 	    else
                 echo "Subtest 1 FAILED.";exit 1
-	    fi  
+	    fi
             ;;
         bam_import_16_wpos2.csv)
             N_EXPECT=`cat $CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log|grep "location_w_pos should be set"|wc -l`

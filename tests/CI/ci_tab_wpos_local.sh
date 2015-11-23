@@ -53,7 +53,12 @@ DB1="$DB_LOADDIR"/initdb.sql
 
 loaddb_file "$DB1"
 
-ASSET="$CHECKOUTDIR/tools/$1"
+case "$1" in
+    bam*)
+        ASSET="$CHECKOUTDIR/tests/fixtures/csv/bam/$1" ;;
+    *)  ASSET="$CHECKOUTDIR/tests/fixtures/csv/$1" ;; # tpower/*
+esac
+
 # Import the tools/<testname>.csv file
 # <testname> format bam_import_16_vte_wpos<N>.csv, where <N> is tcnumber
 # bam_import_16_wpos1.csv - 2 epdu's + 1 pdu in the same rack
