@@ -282,6 +282,7 @@ include/bios_agent++.h: tools/bios_agent++.h.sh tools/bios_agent++.h.in
 	abs_top_srcdir=$(abs_top_srcdir) abs_top_builddir=$(abs_top_builddir) "$<"
 
 BUILT_SOURCES += include/bios_agent++.h
+EXTRA_DIST += tools/bios_agent++.h.sh tools/bios_agent++.h.in
 
 #----------------------------------------------------------------------
 # Some of our code is arranged into private libraries used during
