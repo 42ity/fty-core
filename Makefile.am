@@ -1587,20 +1587,20 @@ SYSTEMD_UNITS_NOTPRESET += \
 SYSTEMD_UNITS_TIMERIMPL += \
                         biostimer-outage.service \
                         biostimer-graphs-prefetch@.service \
-						biostimer-verify-fs.service
+                        biostimer-verify-fs.service
 
 # These files need no processing, delivered verbatim
 # Enabled as part of BIOS presets
 SYSTEMD_TIMERS +=       biostimer-outage.timer \
                         biostimer-graphs-prefetch__realpower.default@15m.timer \
                         biostimer-graphs-prefetch__realpower.default@24h.timer \
-						biostimer-verify-fs.timer
+                        biostimer-verify-fs.timer
 
 # This file is generated
 SYSTEMD_PRESETS +=      42-bios-systemd.preset
 
 ### TODO? Add the build info (git commit, timestamp) to the header comment?
-tools/42-bios-systemd.preset: Makefile
+systemd/42-bios-systemd.preset: Makefile
 	@( echo "### This is a generated file with a list of all BIOS services"; \
 	  for F in $(SYSTEMD_UNITS) $(SYSTEMD_TIMERS) ; do echo "enable $$F" ; done ) > $@
 
@@ -1610,29 +1610,29 @@ tools/42-bios-systemd.preset: Makefile
 # $(systemdsystemunitdir) and $(systemdsystempresetdir) may be defined
 # externally by automake/autoconf; otherwise they are empty and should
 # effectively resolve to the top_builddir
-systemdsystemunit_generated =	$(addprefix tools/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL) $(SYSTEMD_UNITS_NOTPRESET))
-systemdsystemunit_DATA =	$(systemdsystemunit_generated) $(addprefix tools/,$(SYSTEMD_TIMERS))
-systemdsystempreset_generated =	$(addprefix tools/,$(SYSTEMD_PRESETS))
+systemdsystemunit_generated =	$(addprefix systemd/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL) $(SYSTEMD_UNITS_NOTPRESET))
+systemdsystemunit_DATA =	$(systemdsystemunit_generated) $(addprefix systemd/,$(SYSTEMD_TIMERS))
+systemdsystempreset_generated =	$(addprefix systemd/,$(SYSTEMD_PRESETS))
 systemdsystempreset_DATA =	$(systemdsystempreset_generated)
 
 # auto-cleanup and dist targets
 CLEANFILES += $(systemdsystemunit_generated) $(systemdsystempreset_generated)
-EXTRA_DIST += $(addprefix $(top_srcdir)/tools/,$(SYSTEMD_TIMERS) $(addsuffix .in,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL) $(SYSTEMD_UNITS_NOTPRESET)))
+EXTRA_DIST += $(addprefix $(top_srcdir)/systemd/,$(SYSTEMD_TIMERS) $(addsuffix .in,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL) $(SYSTEMD_UNITS_NOTPRESET)))
 endif
 
 # Quick links to build the systemd files (if enabled)
 systemd-units: systemd-daemons systemd-timers systemd-presets
-systemd-daemons: $(addprefix tools/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_NOTPRESET))
-systemd-timers:  $(addprefix tools/,$(SYSTEMD_UNITS_TIMERIMPL))
+systemd-daemons: $(addprefix systemd/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_NOTPRESET))
+systemd-timers:  $(addprefix systemd/,$(SYSTEMD_UNITS_TIMERIMPL))
 	if [ x"$(abs_top_builddir)/" = x"$(abs_top_srcdir)/" ] ; then true; else \
-	for F in $(addprefix $(abs_top_srcdir)/tools/,$(SYSTEMD_TIMERS)) ; do \
-	    $(call copy-file,$$F,$(abs_top_builddir)/tools/) || exit $$?; \
+	for F in $(addprefix $(abs_top_srcdir)/systemd/,$(SYSTEMD_TIMERS)) ; do \
+	    $(call copy-file,$$F,$(abs_top_builddir)/systemd/) || exit $$?; \
 	done; fi
-systemd-presets: $(addprefix tools/,$(SYSTEMD_PRESETS))
+systemd-presets: $(addprefix systemd/,$(SYSTEMD_PRESETS))
 
 clean-systemd-units:
 	@if [ x"$(abs_top_builddir)/" != x"$(abs_top_srcdir)/" ] && [ -n "$(SYSTEMD_TIMERS)" ]; then \
-	    $(RM) $(addprefix $(abs_top_builddir)/tools/,$(SYSTEMD_TIMERS)) ; \
+	    $(RM) $(addprefix $(abs_top_builddir)/systemd/,$(SYSTEMD_TIMERS)) ; \
 	fi || true
 
 #----------------------------------------------------------------------
