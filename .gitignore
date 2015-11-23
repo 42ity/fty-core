@@ -234,6 +234,10 @@ src/web/src/admin_passwd.cpp
 src/web/src/admin_passwd.ecpp
 !src/web/src/admin_passwd.ecpp.in
 src/web/src/systemctl.cpp
+src/web/src/alert_rules_list.cpp
+src/web/src/alert_rules_detail.cpp
+src/web/src/alert_rules.cpp
+
 tntnet.xml.example
 !src/web/tntnet.xml
 tntnet.xml
