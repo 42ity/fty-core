@@ -109,6 +109,7 @@ logmsg_info "Will use BASE_URL = '$BASE_URL'"
 determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 DB_LOADDIR="$CHECKOUTDIR/database/mysql"
+CSV_BAM_LOADDIR="$CHECKOUTDIR/tests/fixtures/csv/bam"
 
 logmsg_info "Ensuring that needed remote daemons are running on VTE"
 sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent  bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
@@ -134,7 +135,7 @@ set +e
     logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
 
 # ***** POST THE CSV FILE *****
-ASSET="$CHECKOUTDIR/tools/bam_vte_tab_import.csv"
+ASSET="$CSV_BAM_LOADDIR/bam_vte_tab_import.csv"
 
 # Import the bam_vte_tab_import.csv file
 api_auth_post_file /asset/import assets=@$ASSET -H "Expect:" | tee $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log
