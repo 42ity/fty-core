@@ -1,3 +1,19 @@
+/* NOTE FOR DEVELOPERS: The schema-version must be changed (e.g. increased)
+ * whenever you change table/view structures, so upgrade/recreation can be
+ * triggered by bios-db-init service (whenever we figure out how to really
+ * upgrade, see BIOS-1332). CURRENT implementation of "db-init" just refuses
+ * to start the service and its dependents if the strings in database and
+ * supplied copy of this SQL file are different in any manner. */
+/* Gentleman's agreement on thios arbitrary string is that it is YYYYMMDDNNNN
+ * sort of timestamp + number of change within a day, so it always increases
+ * and we can discern upgrades vs. downgrades at later stage in development */
+/* Other schema files, e.g. for additional modules, are encouraged to copy
+ * this pattern and also add their versions and appropriate filenames when
+ * they begin and finish to initialize their schems bits. The "db-init" script
+ * will import and/or validate any *.sql file in its resource directory. */
+SET @bios_db_schema_version = '201510150002' ;
+SET @bios_db_schema_filename = 'initdb.sql' ;
+
 DROP DATABASE IF EXISTS box_utf8;
 CREATE DATABASE IF NOT EXISTS box_utf8 character set utf8 collate utf8_general_ci;
 
@@ -9,8 +25,27 @@ SET GLOBAL time_zone='+00:00';
 CREATE TABLE IF NOT EXISTS t_empty (id TINYINT);
 INSERT INTO t_empty values (1);
 
+/* Values added in the beginning and end of SQL import to validate it succeeded */
+/* Note: theoretically we should support upgrades, so this table would have
+ * several begin-finish entries with different versions and timestamps. So both
+ * in the informative SELECT below and in the "db-init" script we take care to
+ * pick only the latest entry with each tag for report or comparison, and do not
+ * require to destroy the table. */
+CREATE TABLE IF NOT EXISTS t_bios_schema_version(
+    id               INTEGER UNSIGNED  NOT NULL AUTO_INCREMENT,
+    tag              VARCHAR(16)       NOT NULL, /* 'begin-import' or 'finish-import' */
+    filename         VARCHAR(32)       NOT NULL, /* base filename.sql to support multiple SQLs with their versions */
+    timestamp        BIGINT            NOT NULL, /* timestamp of the entry, just in case */
+    version          VARCHAR(16)       NOT NULL, /* arbitrary string, e.g. YYYYMMDDNNNN */
+    PRIMARY KEY(id)
+);
+START TRANSACTION;
+INSERT INTO t_bios_schema_version (tag,timestamp,filename,version) VALUES('begin-import', UTC_TIMESTAMP() + 0, @bios_db_schema_filename, @bios_db_schema_version);
+/* Report the value */
+SELECT * FROM t_bios_schema_version WHERE tag = 'begin-import' order by id desc limit 1;
+COMMIT;
+
 DROP TABLE if exists t_bios_monitor_asset_relation;
-drop table if exists t_bios_discovered_ip;
 drop table if exists t_bios_measurement;
 drop table if exists t_bios_measurement_topic;
 drop table if exists t_bios_discovered_device;
@@ -87,8 +122,6 @@ CREATE TABLE t_bios_alert(
 
     PRIMARY KEY(id),
 
-    INDEX(id),
-
     INDEX(rule_name)
 );
 
@@ -111,21 +144,6 @@ CREATE TABLE t_bios_alert_device(
         REFERENCES t_bios_discovered_device(id_discovered_device)
         ON DELETE RESTRICT
 );
-
-CREATE TABLE t_bios_discovered_ip(
-    id_ip                   INT UNSIGNED        NOT NULL  AUTO_INCREMENT,
-    id_discovered_device    SMALLINT UNSIGNED,
-    timestamp               BIGINT              NOT NULL,
-    ip                      char(45)            NOT NULL,
-    PRIMARY KEY(id_ip),
-
-    INDEX(id_discovered_device),
-
-    FOREIGN KEY (id_discovered_device)
-        REFERENCES t_bios_discovered_device(id_discovered_device)
-        ON DELETE RESTRICT
-);
-
 
 CREATE TABLE t_bios_agent_info(
     id          SMALLINT UNSIGNED   NOT NULL AUTO_INCREMENT,
@@ -166,16 +184,17 @@ CREATE TABLE t_bios_asset_device_type(
 
 );
 
+/* ATTENTION: don't change N_A id. Here it is used*/
 CREATE TABLE t_bios_asset_element (
   id_asset_element  INT UNSIGNED        NOT NULL AUTO_INCREMENT,
   name              VARCHAR(50)         NOT NULL,
   id_type           TINYINT UNSIGNED    NOT NULL,
-  id_subtype        TINYINT UNSIGNED    NOT NULL DEFAULT 10,
+  id_subtype        TINYINT UNSIGNED    NOT NULL DEFAULT 11,
   id_parent         INT UNSIGNED,
-  status            char(9)             NOT NULL DEFAULT "nonactive",
+  status            VARCHAR(9)          NOT NULL DEFAULT "nonactive",
   priority          TINYINT             NOT NULL DEFAULT 5,
   business_crit     TINYINT             NOT NULL DEFAULT 0,
-  asset_tag         CHAR(10)            NOT NULL,
+  asset_tag         VARCHAR(50),
 
   PRIMARY KEY (id_asset_element),
 
@@ -183,7 +202,7 @@ CREATE TABLE t_bios_asset_element (
   INDEX FK_ASSETELEMENT_ELEMENTSUBTYPE_idx (id_subtype   ASC),
   INDEX FK_ASSETELEMENT_PARENTID_idx    (id_parent ASC),
   UNIQUE INDEX `UI_t_bios_asset_element_NAME` (`name` ASC),
-  UNIQUE INDEX `UI_t_bios_asset_element_ASSET_TAG` (`asset_tag`  ASC),
+  INDEX `UI_t_bios_asset_element_ASSET_TAG` (`asset_tag`  ASC),
 
   CONSTRAINT FK_ASSETELEMENT_ELEMENTTYPE
     FOREIGN KEY (id_type)
@@ -210,7 +229,7 @@ CREATE TABLE t_bios_asset_group_relation (
 
   INDEX FK_ASSETGROUPRELATION_ELEMENT_idx (id_asset_element ASC),
   INDEX FK_ASSETGROUPRELATION_GROUP_idx   (id_asset_group   ASC),
-  
+
   UNIQUE INDEX `UI_t_bios_asset_group_relation` (`id_asset_group`, `id_asset_element` ASC),
 
   CONSTRAINT FK_ASSETGROUPRELATION_ELEMENT
@@ -228,7 +247,7 @@ CREATE TABLE t_bios_asset_group_relation (
 CREATE TABLE t_bios_asset_link_type(
   id_asset_link_type   TINYINT UNSIGNED   NOT NULL AUTO_INCREMENT,
   name                 VARCHAR(50)        NOT NULL,
-  
+
   PRIMARY KEY (id_asset_link_type),
   UNIQUE INDEX `UI_t_bios_asset_link_type_name` (`name` ASC)
 
@@ -241,14 +260,14 @@ CREATE TABLE t_bios_asset_link (
   id_asset_device_dest  INT UNSIGNED        NOT NULL,
   dest_in               CHAR(4),
   id_asset_link_type    TINYINT UNSIGNED    NOT NULL,
-  
+
   PRIMARY KEY (id_link),
-  
+
   INDEX FK_ASSETLINK_SRC_idx  (id_asset_device_src    ASC),
   INDEX FK_ASSETLINK_DEST_idx (id_asset_device_dest   ASC),
   INDEX FK_ASSETLINK_TYPE_idx (id_asset_link_type     ASC),
-  
-  CONSTRAINT FK_ASSETLINK_SRC 
+
+  CONSTRAINT FK_ASSETLINK_SRC
     FOREIGN KEY (id_asset_device_src)
     REFERENCES t_bios_asset_element(id_asset_element)
     ON DELETE RESTRICT,
@@ -262,7 +281,7 @@ CREATE TABLE t_bios_asset_link (
     FOREIGN KEY (id_asset_link_type)
     REFERENCES t_bios_asset_link_type(id_asset_link_type)
     ON DELETE RESTRICT
-    
+
 );
 
 CREATE TABLE t_bios_asset_ext_attributes(
@@ -271,12 +290,12 @@ CREATE TABLE t_bios_asset_ext_attributes(
   value                     VARCHAR(255) NOT NULL,
   id_asset_element          INT UNSIGNED NOT NULL,
   read_only                 TINYINT      NOT NULL DEFAULT 0,
-  
+
   PRIMARY KEY (id_asset_ext_attribute),
-  
+
   INDEX FK_ASSETEXTATTR_ELEMENT_idx (id_asset_element ASC),
   UNIQUE INDEX `UI_t_bios_asset_ext_attributes` (`keytag`, `id_asset_element` ASC),
-  
+
   CONSTRAINT FK_ASSETEXTATTR_ELEMENT
     FOREIGN KEY (id_asset_element)
     REFERENCES t_bios_asset_element (id_asset_element)
@@ -289,7 +308,7 @@ CREATE TABLE t_bios_monitor_asset_relation(
     id_asset_element      INT UNSIGNED      NOT NULL,
 
     PRIMARY KEY(id_ma_relation),
-    
+
     INDEX(id_discovered_device),
     INDEX(id_asset_element),
 
@@ -305,7 +324,6 @@ CREATE TABLE t_bios_monitor_asset_relation(
 
 drop view if exists v_bios_device_type;
 drop view if exists v_bios_discovered_device;
-drop view if exists v_bios_discovered_ip;
 
 create view v_bios_device_type as select id_device_type id, name from t_bios_device_type;
 
@@ -316,11 +334,6 @@ CREATE VIEW v_bios_agent_info AS
     SELECT id, info, agent_name
     FROM t_bios_agent_info;
 
-create view v_bios_discovered_ip as select id_ip id, id_discovered_device, ip, timestamp from t_bios_discovered_ip;
-
-drop view if exists v_bios_ip_last;
-
-create view v_bios_ip_last as select max(timestamp) datum, id_discovered_device,  ip,id from v_bios_discovered_ip group by ip;
 
 DROP view if exists v_bios_asset_device;
 DROP view if exists v_bios_asset_device_type;
@@ -502,9 +515,10 @@ SELECT v1.id_asset_element,
        v2.id_parent AS id_parent2,
        v3.id_parent AS id_parent3,
        v4.id_parent AS id_parent4,
+       v5.id_parent AS id_parent5,
        v1.name ,
-       v5.name AS type_name,
-       v5.id_asset_device_type,
+       v6.name AS type_name,
+       v6.id_asset_device_type,
        v1.status,
        v1.asset_tag,
        v1.priority,
@@ -517,8 +531,10 @@ FROM t_bios_asset_element v1
         ON (v2.id_parent = v3.id_asset_element)
      LEFT JOIN t_bios_asset_element v4
         ON (v3.id_parent=v4.id_asset_element)
-     INNER JOIN t_bios_asset_device_type v5
-        ON (v5.id_asset_device_type = v1.id_subtype);
+     LEFT JOIN t_bios_asset_element v5
+        ON (v4.id_parent=v5.id_asset_element)
+     INNER JOIN t_bios_asset_device_type v6
+        ON (v6.id_asset_device_type = v1.id_subtype);
 
 CREATE VIEW v_bios_measurement AS
 SELECT t1.id,
@@ -573,7 +589,7 @@ SELECT  v.id,
         v.value,
         v.scale
 FROM       v_web_measurement_10m v
-INNER JOIN v_web_measurement_lastdate_10m grp 
+INNER JOIN v_web_measurement_lastdate_10m grp
      ON ( v.timestamp = grp.maxdate  AND
         v.topic_id = grp.topic_id );
 
@@ -605,7 +621,7 @@ SELECT  v.id,
         v.value,
         v.scale
 FROM       v_web_measurement_24h v
-INNER JOIN v_web_measurement_lastdate_24h grp 
+INNER JOIN v_web_measurement_lastdate_24h grp
      ON ( v.timestamp = grp.maxdate  AND
         v.topic_id = grp.topic_id );
 
@@ -650,14 +666,15 @@ INSERT INTO t_bios_asset_device_type (name) VALUES ("feed");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("sts");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("switch");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("storage");
-INSERT INTO t_bios_asset_device_type (id_asset_device_type, name) VALUES (10, "N_A");
+INSERT INTO t_bios_asset_device_type (name) VALUES ("vm");
+INSERT INTO t_bios_asset_device_type (id_asset_device_type, name) VALUES (11, "N_A");
 
 /* t_bios_asset_link_type */
 INSERT INTO t_bios_asset_link_type (name) VALUES ("power chain");
 
-/* ui/properties are somewhat special */
-/* TODO REMOVE IT
-SELECT @client_ui_properties := id_client FROM t_bios_client WHERE name = 'ui_properties';
-
-INSERT INTO t_bios_client_info (id_client, id_discovered_device, timestamp, ext) VALUES (@client_ui_properties, @dummy_device, UNIX_TIMESTAMP(), "{}");
-*/
+/* This must be the last line of the SQL file */
+START TRANSACTION;
+INSERT INTO t_bios_schema_version (tag,timestamp,filename,version) VALUES('finish-import', UTC_TIMESTAMP() + 0, @bios_db_schema_filename, @bios_db_schema_version);
+/* Report the value */
+SELECT * FROM t_bios_schema_version WHERE tag = 'finish-import' order by id desc limit 1;
+COMMIT;

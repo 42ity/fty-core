@@ -12,7 +12,7 @@ docker_SCRIPTS	= 	docker_build_bios.sh  \
 dockerresdir	= $(dockerdir)/resources
 dockerres_SCRIPTS =	resources/start_bios.sh
 dockerres_DATA = 	resources/Dockerfile \
-			resources/patch.sql \
+			resources/docker_patch.sql \
 			resources/ePDU1-LAB.dev \
 			resources/ePDU2-LAB.dev \
 			resources/UPS1-LAB.dev \

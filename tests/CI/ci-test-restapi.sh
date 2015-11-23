@@ -47,8 +47,9 @@ DB_DATA_TESTREST="load_data_test_restapi.sql"
 DB_TOPOP="power_topology.sql"
 DB_TOPOL="location_topology.sql"
 DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
+DB_ASSET_DEFAULT="initdb_ci_patch_2.sql"
 
-PATH=/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH
+PATH="/usr/lib/ccache:/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
 export PATH
 
 # Simple check for whether sudo is needed to restart saslauthd
@@ -198,6 +199,8 @@ kill_daemons() {
         ${AUTOGEN_ACTION_CONFIG} || exit
   fi
   ./autogen.sh ${AUTOGEN_ACTION_MAKE} V=0 web-test-deps || exit
+  ./autogen.sh ${AUTOGEN_ACTION_MAKE} V=0 web-test-deps-inst || \
+    logmsg_warn "BIOS-1262: Could not install required scripts, password-related REST API tests will likely fail"
 
   logmsg_info "Spawning the web-server in the background..."
   ./autogen.sh --noparmake ${AUTOGEN_ACTION_MAKE} web-test &
@@ -233,7 +236,7 @@ test_web() {
 loaddb_default() {
     echo "--------------- reset db: default ----------------"
     for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
-        loaddb_file "$DB_LOADDIR/$data" || return $?
+        loaddb_file "$DB_LOADDIR/$data" || exit $?
     done
     return 0
 }
@@ -246,7 +249,7 @@ test_web_default() {
 test_web_topo_p() {
     echo "----------- reset db: topology : power -----------"
     for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOP"; do
-        loaddb_file "$DB_LOADDIR/$data" || return $?
+        loaddb_file "$DB_LOADDIR/$data" || exit $?
     done
     test_web "$@"
 }
@@ -254,7 +257,15 @@ test_web_topo_p() {
 test_web_topo_l() {
     echo "---------- reset db: topology : location ---------"
     for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOL"; do
-        loaddb_file "$DB_LOADDIR/$data" || return $?
+        loaddb_file "$DB_LOADDIR/$data" || exit $?
+    done
+    test_web "$@"
+}
+
+asset_create() {
+    echo "---------- reset db: asset : create ---------"
+    for data in "$DB_BASE" "$DB_ASSET_DEFAULT" "$DB_DATA"; do
+          loaddb_file "$DB_LOADDIR/$data" || exit $?
     done
     test_web "$@"
 }
@@ -262,23 +273,11 @@ test_web_topo_l() {
 # do the test
 set +e
 if [ $# = 0 ]; then
-    # admin_network needs a clean state of database, otherwise it does not work
-    test_web_default admin_networks admin_network
+    test_web_default -topology_power
     RESULT=$?
-    test_web_process || exit
-    # default test routine
-    if [ "$RESULT" -eq 0 ]; then
-    test_web_default -topology -admin_network -admin_networks
-    RESULT=$?
-    fi
     test_web_process || exit
     if [ "$RESULT" -eq 0 ]; then
         test_web_topo_p topology_power
-        RESULT=$?
-    fi
-    test_web_process || exit
-    if [ "$RESULT" -eq 0 ]; then
-        test_web_topo_l topology_location
         RESULT=$?
     fi
     test_web_process || exit
@@ -286,11 +285,11 @@ else
     # selective test routine
     while [ $# -gt 0 ]; do
         case "$1" in
-            topology_location*)
-                test_web_topo_l "$1"
-                RESULT=$? ;;
             topology_power*)
                 test_web_topo_p "$1"
+                RESULT=$? ;;
+            asset_create*)
+                asset_create $1
                 RESULT=$? ;;
             *)        test_web_default "$1"
                 RESULT=$? ;;

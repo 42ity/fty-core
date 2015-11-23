@@ -50,7 +50,7 @@ print_result $RES
 
 # Check getting server system info as unprivileged user
 test_it "sysinfo_get_auth=0"
-SYSINFOU="`api_get_content '/admin/sysinfo'`"
+SYSINFOU="`api_get_json '/admin/sysinfo'`"
 RES=$?
 echo "=== SYSINFOU ($RES):" >&2
 echo "$SYSINFOU" >&2
@@ -148,7 +148,7 @@ print_result $RES
 
 
 test_it "sysinfo_get_auth=2"
-SYSINFOA="`api_auth_get_content '/admin/sysinfo'`"
+SYSINFOA="`api_auth_get_json '/admin/sysinfo'`"
 RES=$?
 echo "=== SYSINFOA ($RES):" >&2
 echo "$SYSINFOA" >&2

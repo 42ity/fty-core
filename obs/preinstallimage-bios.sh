@@ -66,8 +66,13 @@ nosoup4u
 nosoup4u
 EOF
 
-groupadd bios
-useradd -m admin -G sasl -N -g bios -s /bin/bash
+groupadd -g 8003 bios-admin
+groupadd -g 8002 bios-poweruser
+groupadd -g 8001 bios-user
+groupadd -g 8000 bios-guest
+groupadd bios-infra
+useradd -m bios -N -g bios-infra -G dialout -s /bin/bash
+useradd -m admin -G sasl -N -g bios-admin -s /bin/bash
 passwd admin <<EOF
 admin
 admin
@@ -75,7 +80,7 @@ EOF
 
 # Workplace for the webserver and graph daemons
 mkdir -p /var/lib/bios
-chown -R admin /var/lib/bios
+chown -R www-data /var/lib/bios
 
 # A few helper aliases
 cat > /etc/profile.d/bios_aliases.sh << EOF
@@ -83,14 +88,24 @@ alias dbb='mysql -u root box_utf8 -t'
 alias la='ls -la'
 EOF
 
+# BIOS PATH
+cat > /etc/profile.d/bios_path.sh << EOF
+export PATH="/usr/libexec/bios:\$PATH"
+EOF
+
+chmod a+rx /etc/profile.d/*
+
 # BIOS configuration file
 touch /etc/default/bios
-chown admin /etc/default/bios
+chown www-data /etc/default/bios
 chmod a+r /etc/default/bios
+mkdir -p /etc/bios/nut/devices
+chown -R bios:bios-infra /etc/bios
 
 # Setup BIOS lenses
 mkdir -p /usr/share/bios/lenses
-ln -sr /usr/share/augeas/lenses/dist/{build.aug,ethers.aug,interfaces.aug,ntp.aug,ntpd.aug,pam.aug,resolv.aug,rx.aug,sep.aug,util.aug} /usr/share/bios/lenses
+ln -sr /usr/share/augeas/lenses/dist/{build,ethers,interfaces,ntp,ntpd,pam,resolv,rx,sep,util,shellvars}.aug \
+    /usr/share/bios/lenses
 
 # Setup u-Boot
 echo '/dev/mtd3 0x00000 0x40000 0x40000' > /etc/fw_env.config
@@ -145,13 +160,13 @@ cat > /etc/apt/sources.list.d/debian.list <<EOF
 deb http://ftp.debian.org/debian jessie main contrib non-free
 deb http://ftp.debian.org/debian jessie-updates main contrib non-free
 deb http://security.debian.org   jessie/updates main contrib non-free
-deb http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0 /
+deb http://obs.roz53.lab.etn.com:82/Pool:/master/Debian_8.0 /
 EOF
 
 mkdir -p /etc/apt/preferences.d
 cat > /etc/apt/preferences.d/bios <<EOF
 Package: *
-Pin: origin "obs.roz.lab.etn.com"
+Pin: origin "obs.roz53.lab.etn.com"
 Pin-Priority: 9999
 EOF
 
@@ -197,6 +212,8 @@ cp /usr/share/bios/examples/config/pam.d/* /etc/pam.d
 RULES="`sed -n 's|.*pam_cracklib.so||p' /etc/pam.d/bios`"
 [ "$IMGTYPE" = devel ] || sed -i "s|\\(.*pam_cracklib.so\\).*|\1$RULES|" /etc/pam.d/common-password
 
+sed -i 's|\(secure_path="\)|\1/usr/libexec/bios:|' /etc/sudoers
+
 mkdir -p /etc/sudoers.d
 cp /usr/share/bios/examples/config/sudoers.d/bios_00_base /etc/sudoers.d
 
@@ -231,8 +248,17 @@ systemctl enable malamute
 
 # Enable BIOS services (distributed as a systemd preset file)
 systemctl preset-all
+if [ "`uname -m`" = x86_64 ]; then
+    systemctl enable bios-fake-th
+    systemctl disable bios-agent-th
+else
+    systemctl disable bios-fake-th
+    systemctl mask bios-fake-th
+    systemctl enable lcd-boot-display
+    systemctl enable lcd-net-display
+fi
 
-# Fix tntnet unit
+# Our tntnet unit
 cat > /etc/systemd/system/tntnet@.service <<EOF
 [Unit]
 Description=Tntnet web server using /etc/tntnet/%I.xml
@@ -245,23 +271,38 @@ EnvironmentFile=-/etc/default/bios
 EnvironmentFile=-/etc/sysconfig/bios
 EnvironmentFile=-/etc/default/bios__%n.conf
 EnvironmentFile=-/etc/sysconfig/bios__%n.conf
+EnvironmentFile=-/etc/default/bios-db-rw
 PrivateTmp=true
 ExecStartPre=/usr/share/bios/scripts/ssl-create.sh
+ExecStartPre=/usr/share/bios/scripts/xml-cat.sh /etc/tntnet/%i.d /etc/tntnet/%i.xml
 ExecStart=/usr/bin/tntnet -c /etc/tntnet/%i.xml
 Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target
 EOF
+cat > /usr/share/bios/scripts/xml-cat.sh << EOF
+#!/bin/sh
+cat "\$1"/*.xml > "\$2"
+EOF
+chmod a+rx /usr/share/bios/scripts/xml-cat.sh
 rm -f /etc/init.d/tntnet
 
 # Enable REST API via tntnet
+mkdir -p /etc/tntnet/bios.d
 cp /usr/share/bios/examples/tntnet.xml.* /etc/tntnet/bios.xml
 mkdir -p /usr/share/core-0.1/web/static
-sed -i 's|<!--.*<user>.*|<user>admin</user>|' /etc/tntnet/bios.xml
+sed -i 's|<!--.*<user>.*|<user>www-data</user>|' /etc/tntnet/bios.xml
 sed -i 's|<!--.*<group>.*|<group>sasl</group>|' /etc/tntnet/bios.xml
 sed -i 's|.*<daemon>.*|<daemon>0</daemon>|' /etc/tntnet/bios.xml
 sed -i 's|\(.*\)<dir>.*|\1<dir>/usr/share/bios-web/</dir>|' /etc/tntnet/bios.xml
+sed -n '1,/<mappings>/ p' /etc/tntnet/bios.xml  > /etc/tntnet/bios.d/00_start.xml
+sed -n '/<\/mappings>/,$ p' /etc/tntnet/bios.xml > /etc/tntnet/bios.d/99_end.xml
+sed '/<mappings>/,/<\/mappings>/!d; /mappings/ d' /etc/tntnet/bios.xml > /etc/tntnet/bios.d/20_core.xml
+sed '1,/<!-- Here starts the real API -->/!d; /<!-- Here starts the real API -->/ d' /etc/tntnet/bios.d/20_core.xml > /etc/tntnet/bios.d/10_common_basics.xml
+sed '/<!-- Here starts the real API -->/,$!d; /<!-- Here starts the real API -->/ d' /etc/tntnet/bios.d/20_core.xml > /etc/tntnet/bios.d/50_main_api.xml
+rm -f /etc/tntnet/bios.d/20_core.xml
+systemctl enable tntnet@bios
 systemctl enable tntnet@bios
 
 # Disable logind
@@ -269,10 +310,14 @@ systemctl disable systemd-logind
 find / -name systemd-logind.service -delete
 
 # Disable expensive debug logging by default on non-devel images
-[ "$IMGTYPE" = devel ] || {
-    mkdir -p /etc/default/
+mkdir -p /etc/default/
+if [ "$IMGTYPE" = devel ] ; then
+    echo "BIOS_LOG_LEVEL=LOG_DEBUG" > /etc/default/bios
+else
     echo "BIOS_LOG_LEVEL=LOG_INFO" > /etc/default/bios
-}
+fi
+# set path to our libexec directory
+echo "PATH=/usr/libexec/bios:/bin:/usr/bin:/sbin:/usr/sbin" >>/etc/default/bios
 
 # Setup some busybox commands
 for i in vi tftp wget; do
@@ -280,7 +325,7 @@ for i in vi tftp wget; do
 done
 
 # Simplify ntp.conf
-augtool << EOF
+augtool -S -I/usr/share/bios/lenses << EOF
 rm /files/etc/ntp.conf/server
 set /files/etc/ntp.conf/server[1] pool.ntp.org
 save
@@ -303,7 +348,7 @@ for i in mysql tntnet@bios malamute \
    done
 done
 
-sed -i 's|127.0.0.1|greyhound.roz.lab.etn.com|' /etc/zabbix/zabbix_agentd.conf
+sed -i 's|127.0.0.1|greyhound.roz53.lab.etn.com|' /etc/zabbix/zabbix_agentd.conf
 sed -i 's|^Hostname|#\ Hostname|' /etc/zabbix/zabbix_agentd.conf
 # Our network sucks, use longer timeouts
 sed -i 's|#\ Timeout.*|Timeout=15|' /etc/zabbix/zabbix_agentd.conf
@@ -437,7 +482,7 @@ for i in /usr/share/mysql/* /usr/share/locale /usr/share/bios/{docker,develop,ob
    [ -f "$i" ] || \
    [ "$i" = /usr/share/mysql/charsets ] || \
    [ "$i" = /usr/share/mysql/english ] || \
-   $SPACERM "$i"
+   $SPACERM "$i" || true
 done
 
 # Show the package list
