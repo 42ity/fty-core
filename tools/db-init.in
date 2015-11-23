@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2014 Eaton
+# Copyright (C) 2014-2015 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -55,6 +55,16 @@ MYSQL_ROOT_PASSWD_FLAG=''
 # Legacy support
 [ -s /etc/default/mysql-root-passwd ] && . /etc/default/mysql-root-passwd
 # Can set MYSQL_ROOT_PASSWD value
+
+# Currently one value is supported - the first line should be "not-required"
+# or "skip" if the service may start in cases which otherwise require an
+# upgrade of the database. The difference would be for "skip" to quit the
+# routine immediately (even if upgrades are possible, TBD later) and for
+# "not-required" to not fail if the upgrade is impossible.
+# TODO: Other later upgrades of this mechanism may include processing of
+# "sqlbasename: policy" lines to match specific files.
+UPGRADE_POLICY_FILE="/etc/default/bios-db-upgradepolicy"
+UPGRADE_POLICY="require"
 
 do_mysql() {
 	mysql -u root "$@"
@@ -133,11 +143,31 @@ upgrade_database() {
 	local INITSQL_BASENAME="`basename "$INITSQL"`"
 	[ x"$INITSQL" = x"$INITSQL_BASENAME" ] && INITSQL="$INITSQL_DIR/$INITSQL_BASENAME"
 
+	if [ -s "${UPGRADE_POLICY_FILE}" ]; then
+		# TODO: Maybe later parse per-schema "sqlbasename: policy"
+		# lines vs. the default policy in first line
+		UPGRADE_POLICY="`head -1 "${UPGRADE_POLICY_FILE}"`" || \
+		UPGRADE_POLICY="required"
+	fi
+
+	if [ "${UPGRADE_POLICY}" = skip ] ; then
+		echo "WARNING: Database upgrade is disabled since policy is '$UPGRADE_POLICY' and so we proceed..." >&2
+		return 0
+	fi
+
+	# Try an upgrade ant return 0 if succeeded - TODO...
+	# The method may depend on "${UPGRADE_POLICY}" ...
 	echo "Error: Database upgrade for '$INITSQL' not currently implemented (TODO), but was required (see above)!" >&2
 	echo "Consider running 'BIOS_DB_INIT=init $0' to flush and reinitialize the database" >&2
 
+
 	# Currently we prohibit service startup with inconsistent database,
 	# so exit at this point and force a human to take a look at it
+	if [ "${UPGRADE_POLICY}" = not-required ]; then
+		echo "WARNING: Database upgrade failed, but policy is '$UPGRADE_POLICY' and so we proceed..." >&2
+		return 0
+	fi
+
 	exit 1
 }
 
@@ -209,8 +239,8 @@ verify_schema_version() {
 	   [ x"$BIOS_SCHEMA_VERSION_DB_2" = x"finish-NA" ] \
 	; then
 		echo "Error: Schema version for '$INITSQL_BASENAME' is not available in BIOS database" >&2
-		BIOS_SCHEMA_VERSION_DB_2="201510150002" # No schema -> first version
-		secure_database
+		upgrade_database "$INITSQL"        # DB is too old or import failed VERY early
+		exit $?
 	else
 		if [ x"$BIOS_SCHEMA_VERSION_DB_1" != x"$BIOS_SCHEMA_VERSION_DB_2" ] || \
 		   [ -z "$BIOS_SCHEMA_VERSION_DB_1" ] || [ -z "$BIOS_SCHEMA_VERSION_DB_2" ] \
