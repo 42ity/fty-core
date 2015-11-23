@@ -30,7 +30,7 @@ cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 # Names of daemons to (build and) start up for the test
 # Currently we exclude "server-agent" because it spams a lot, unfiltered ;)
-DAEMONS="`sed -n 's|ExecStart=@libexecdir@/@PACKAGE@/||p' "$CHECKOUTDIR"/tools/bios-*.service.in | egrep -v 'server-agent|db-init|bios-networking'`"
+DAEMONS="`sed -n 's|ExecStart=@libexecdir@/@PACKAGE@/||p' "$CHECKOUTDIR"/systemd/bios-*.service.in | egrep -v 'server-agent|db-init|bios-networking'`"
 
 if [ ! -x "$BUILDSUBDIR/config.status" ]; then
     echo "Cannot find $BUILDSUBDIR/config.status, using preinstalled system binaries..."
