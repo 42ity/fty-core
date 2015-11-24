@@ -5,9 +5,10 @@ After=multi-user.target network.target
 Conflicts=rescue.target shutdown.target
 
 [Service]
-Type-oneshot
+Type=oneshot
 ExecStart=/bin/systemctl start bios.target
-ExecStop=/bin/sh -c '/bin/systemctl stop -- $(/bin/systemctl show -p Wants bios.target | /bin/cut -d= -f2)'
+ExecStop=/bin/sh -c '/bin/systemctl stop -- $(/bin/systemctl show -p Wants bios.target | cut -d= -f2)'
 
 [Install]
-Alias=bios.target
+WantedBy=multi-user.target
+
