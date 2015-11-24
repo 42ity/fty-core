@@ -16,4 +16,4 @@ EnvironmentFile=-/etc/sysconfig/bios__%n.conf
 ExecStart=@libexecdir@/@PACKAGE@/db-init
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=bios.target

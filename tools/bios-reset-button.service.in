@@ -10,4 +10,4 @@ EnvironmentFile=-/etc/sysconfig/bios__%n.conf
 ExecStart=@datadir@/@PACKAGE@/scripts/reset-button.sh
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=bios.target

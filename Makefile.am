@@ -1555,6 +1555,7 @@ SYSTEMD_UNITS_NOTPRESET =
 SYSTEMD_UNITS_TIMERIMPL =
 SYSTEMD_TIMERS =
 SYSTEMD_PRESETS =
+SYSTEMD_TARGETS =
 
 # systemd integration enabled?
 if HAVE_SYSTEMD
@@ -1571,6 +1572,8 @@ SYSTEMD_UNITS += bios-agent-nut.service \
                         ifplug-dhcp-autoconf.service \
                         bios-ssh-last-resort.service \
                         bios-networking.service
+
+SYSTEMD_TARGETS += bios.target
 
 # These units have unit files installed but are not enabled by default
 # via presets nor timers (may be enabled in OS image generation script
@@ -1597,7 +1600,7 @@ SYSTEMD_PRESETS +=      42-bios-systemd.preset
 ### TODO? Add the build info (git commit, timestamp) to the header comment?
 tools/42-bios-systemd.preset: Makefile
 	@( echo "### This is a generated file with a list of all BIOS services"; \
-	  for F in $(SYSTEMD_UNITS) $(SYSTEMD_TIMERS) ; do echo "enable $$F" ; done ) > $@
+	  for F in $(SYSTEMD_TARGETS) $(SYSTEMD_UNITS) $(SYSTEMD_TIMERS) ; do echo "enable $$F" ; done ) > $@
 
 # The rules to actually "compile" the service definition files
 # is part of catch-all %.in recipe above
@@ -1606,17 +1609,17 @@ tools/42-bios-systemd.preset: Makefile
 # externally by automake/autoconf; otherwise they are empty and should
 # effectively resolve to the top_builddir
 systemdsystemunit_generated =	$(addprefix tools/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL) $(SYSTEMD_UNITS_NOTPRESET))
-systemdsystemunit_DATA =	$(systemdsystemunit_generated) $(addprefix tools/,$(SYSTEMD_TIMERS))
+systemdsystemunit_DATA =	$(systemdsystemunit_generated) $(addprefix tools/,$(SYSTEMD_TARGETS) $(SYSTEMD_TIMERS))
 systemdsystempreset_generated =	$(addprefix tools/,$(SYSTEMD_PRESETS))
 systemdsystempreset_DATA =	$(systemdsystempreset_generated)
 
 # auto-cleanup and dist targets
 CLEANFILES += $(systemdsystemunit_generated) $(systemdsystempreset_generated)
-EXTRA_DIST += $(addprefix $(top_srcdir)/tools/,$(SYSTEMD_TIMERS) $(addsuffix .in,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL) $(SYSTEMD_UNITS_NOTPRESET)))
+EXTRA_DIST += $(addprefix $(top_srcdir)/tools/,$(SYSTEMD_TIMERS) $(SYSTEMD_TARGETS) $(addsuffix .in,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL) $(SYSTEMD_UNITS_NOTPRESET)))
 endif
 
 # Quick links to build the systemd files (if enabled)
-systemd-units: systemd-daemons systemd-timers systemd-presets
+systemd-units: systemd-daemons systemd-timers systemd-presets systemd-targets
 systemd-daemons: $(addprefix tools/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_NOTPRESET))
 systemd-timers:  $(addprefix tools/,$(SYSTEMD_UNITS_TIMERIMPL))
 	if [ x"$(abs_top_builddir)/" = x"$(abs_top_srcdir)/" ] ; then true; else \
@@ -1624,10 +1627,11 @@ systemd-timers:  $(addprefix tools/,$(SYSTEMD_UNITS_TIMERIMPL))
 	    $(call copy-file,$$F,$(abs_top_builddir)/tools/) || exit $$?; \
 	done; fi
 systemd-presets: $(addprefix tools/,$(SYSTEMD_PRESETS))
+systemd-targets: $(addprefix tools/,$(SYSTEMD_TARGETS))
 
 clean-systemd-units:
 	@if [ x"$(abs_top_builddir)/" != x"$(abs_top_srcdir)/" ] && [ -n "$(SYSTEMD_TIMERS)" ]; then \
-	    $(RM) $(addprefix $(abs_top_builddir)/tools/,$(SYSTEMD_TIMERS)) ; \
+	    $(RM) $(addprefix $(abs_top_builddir)/tools/,$(SYSTEMD_TIMERS) $(SYSTEMD_TARGETS)) ; \
 	fi || true
 
 #----------------------------------------------------------------------

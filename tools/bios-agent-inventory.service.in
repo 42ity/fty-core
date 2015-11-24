@@ -14,4 +14,4 @@ EnvironmentFile=-/etc/default/bios-db-rw
 ExecStart=@libexecdir@/@PACKAGE@/agent-inventory
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=bios.target

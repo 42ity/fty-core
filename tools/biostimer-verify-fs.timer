@@ -13,4 +13,4 @@ Persistent=true
 Unit=biostimer-verify-fs.service
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=bios.target
