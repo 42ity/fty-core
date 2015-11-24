@@ -11,4 +11,4 @@ KillMode=process
 Restart=on-failure
 
 [Install]
-WantedBy=bios.target
+WantedBy=multi-user.target
