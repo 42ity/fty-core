@@ -278,13 +278,6 @@ DISTCLEANFILES +=		src/api/libbiosapi.pc
 pkginclude_HEADERS += 		$(libbiosapi_la_HEADERS_noinst)
 dist_noinst_HEADERS +=		$(libbiosapi_la_HEADERS_noinst)
 
-include/bios_agent++.h: tools/bios_agent++.h.sh tools/bios_agent++.h.in
-	abs_top_srcdir=$(abs_top_srcdir) abs_top_builddir=$(abs_top_builddir) "$<"
-
-BUILT_SOURCES += include/bios_agent++.h
-EXTRA_DIST += tools/bios_agent++.h.sh tools/bios_agent++.h.in
-
-#----------------------------------------------------------------------
 # Some of our code is arranged into private libraries used during
 # build, but not published or distributed outside the build-tree.
 
