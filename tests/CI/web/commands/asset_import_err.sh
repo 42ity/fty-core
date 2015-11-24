@@ -81,11 +81,6 @@ echo "********* asset_import_err.sh ********************** START ***************
 echo "###################################################################################################"
 echo
 
-echo "***************************************************************************************************"
-echo "********* Prerequisites ***************************************************************************"
-echo "***************************************************************************************************"
-init_script
-
 echo "********* asset_import_err.sh *********************************************************************"
 echo "********* 1. No utf csv file **********************************************************************"
 echo "***************************************************************************************************"
@@ -191,7 +186,7 @@ curlfail_pop
 print_result $REZ
 
 echo "********* asset_import_err.sh *********************************************************************"
-echo "********* 8. Too long keytag **********************************************************************"
+echo "********* 9. Too long keytag **********************************************************************"
 echo "***************************************************************************************************"
 test_it "Too_long_keytag"
 #*#*#*#*#*#*# TODO : Too_long_keytag : 128kB is 131072 byte : the not_so_long_asset_tab_16LE.csv has size 130860
@@ -201,7 +196,7 @@ test_tables "universal_asset_tab_8_too_long_keytag.csv" 48 "ERROR"
 print_result $REZ
 
 echo "********* asset_import_err.sh *********************************************************************"
-echo "********* 9. Not proper sequence ******************************************************************"
+echo "********* 10. Not proper sequence ******************************************************************"
 echo "***************************************************************************************************"
 test_it "Not_proper_sequence"
 initiate_db
@@ -211,7 +206,7 @@ test_tables "universal_asset_tab_16LE_DC001A.csv" 47 "ERROR" "_not_proper_sequen
 print_result $REZ
 
 echo "********* asset_import_err.sh *********************************************************************"
-echo "********* 10. Double records **********************************************************************"
+echo "********* 11. Double records **********************************************************************"
 echo "***************************************************************************************************"
 test_it "Double_records"
 initiate_db
@@ -220,7 +215,7 @@ test_tables "universal_asset_tab_16LE_DC001B.csv" 48 "ERROR"
 print_result $REZ
 
 echo "********* asset_import_err.sh *********************************************************************"
-echo "********* 11. Comma semicolon mix *****************************************************************"
+echo "********* 12. Comma semicolon mix *****************************************************************"
 echo "***************************************************************************************************"
 #*#*#*#*#*# TODO : Comma semicolon mix : should be stopped and give some message?
 test_it "Comma_semicolon_mix"
@@ -230,7 +225,7 @@ test_tables "universal_asset_mix_comma_semicolon__8.csv" 48 "ERROR"
 print_result $REZ
 
 echo "********* asset_import_err.sh *********************************************************************"
-echo "********* 12. Tab comma mix ***********************************************************************"
+echo "********* 13. Tab comma mix ***********************************************************************"
 echo "***************************************************************************************************"
 #*#*#*#*#*# TODO : Tab comma mix : should be stopped and give some message?
 test_it "Tab_comma_mix"
@@ -239,3 +234,53 @@ REZ=0
 test_tables "universal_asset_mix_tab_comma_8.csv" 48 "ERROR"
 print_result $REZ
 
+echo "********* asset_import.sh *************************************************************************"
+echo "********* 14. Wrong maximum number of racks *******************************************************"
+echo "***************************************************************************************************"
+test_it "Wrong_maximum_number_of_racks"
+#*#*#*#*#*#*# TODO : Wrong_maximum_number_of_racks : allow 10q and from u10 makes 10
+initiate_db
+REZ=0
+test_tables "universal_asset_semicolon_max_num_rack_wrong_8.csv" 48 "ERROR" "_max_num_rack"
+print_result $REZ
+
+echo "********* asset_import.sh *************************************************************************"
+echo "********* 15. Wrong u_size ************************************************************************"
+echo "***************************************************************************************************"
+test_it "Wrong_u_size"
+initiate_db
+REZ=0
+test_tables "universal_asset_semicolon_u_size_wrong_8.csv" 48 "ERROR" "_u_size"
+print_result $REZ
+
+echo "********* asset_import.sh *************************************************************************"
+echo "********* 16. Runtime *****************************************************************************"
+echo "***************************************************************************************************"
+test_it "Runtime"
+#*#*#*#*#*#*# TODO : Runtime : for sub_type non-genset MUST be ommited, must be integer, both is not
+initiate_db
+REZ=0
+test_tables "universal_asset_semicolon_runtime_8.csv" 48 "ERROR" "_runtime"
+print_result $REZ
+
+echo "********* asset_import.sh *************************************************************************"
+echo "********* 17. Phase *******************************************************************************"
+echo "***************************************************************************************************"
+test_it "Phase"
+#*#*#*#*#*#*# TODO : Phase : for sub_type non-feed MUST be ommited, must be 1,2 or 3, both is not
+initiate_db
+REZ=0
+test_tables "universal_asset_semicolon_phase_8.csv" 48 "ERROR" "_phase"
+print_result $REZ
+
+echo "********* asset_import.sh *************************************************************************"
+echo "********* 18. Email *******************************************************************************"
+echo "***************************************************************************************************"
+test_it "Email"
+#*#*#*#*#*#*# TODO : Email : When the mail addres contains " or ', Internal error is returned, the ` are allowed, addr NOT checked
+initiate_db
+REZ=0
+curlfail_push_expect_5xx
+test_tables "universal_asset_semicolon_email_8.csv" 48 "ERROR" "_phase"
+print_result $REZ
+curlfail_pop
