@@ -15,4 +15,4 @@ EnvironmentFile=-/etc/default/bios-db-ro
 ExecStart=@libexecdir@/@PACKAGE@/outage
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=bios.target

@@ -13,4 +13,4 @@ EnvironmentFile=-/etc/sysconfig/bios__%n.conf
 ExecStart=@libexecdir@/@PACKAGE@/agent-nut
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=bios.target

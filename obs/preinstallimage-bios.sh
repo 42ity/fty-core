@@ -279,7 +279,7 @@ ExecStart=/usr/bin/tntnet -c /etc/tntnet/%i.xml
 Restart=on-failure
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=bios.target
 EOF
 cat > /usr/share/bios/scripts/xml-cat.sh << EOF
 #!/bin/sh

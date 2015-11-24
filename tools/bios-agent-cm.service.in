@@ -17,4 +17,4 @@ EnvironmentFile=-/etc/default/bios-db-ro
 ExecStart=@libexecdir@/@PACKAGE@/agent-cm
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=bios.target
