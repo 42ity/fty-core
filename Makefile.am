@@ -1394,7 +1394,8 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/license.cpp src/web/src/asset_export.cpp    \
                       src/web/src/admin_passwd.cpp src/web/src/systemctl.cpp  \
                       src/web/src/config.cpp src/web/src/alert_rules_list.cpp \
-                      src/web/src/alert_rules_detail.cpp src/web/src/alert_rules.cpp
+                      src/web/src/alert_rules_detail.cpp src/web/src/alert_rules.cpp \
+					  src/web/src/alert_ack.cpp
 
 # Track real-git and nodist (generated) sources SEPARATELY
 nodist_bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)
