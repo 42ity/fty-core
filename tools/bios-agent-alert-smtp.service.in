@@ -26,4 +26,4 @@ EnvironmentFile=-/etc/sysconfig/bios__%n.conf
 ExecStart=@libexecdir@/@PACKAGE@/agent-alert-smtp
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=bios.target
