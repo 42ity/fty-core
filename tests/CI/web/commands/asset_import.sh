@@ -85,8 +85,6 @@ echo "********* asset_import.sh ************************** START ***************
 echo "###################################################################################################"
 echo
 
-if false;then
-
 echo "********* asset_import.sh *************************************************************************"
 echo "********* 1. Import universal tab 16LE ************************************************************"
 echo "***************************************************************************************************"
@@ -218,43 +216,3 @@ REZ=0
 test_tables "universal_asset_comma_insensitive_8.csv" 48 "ERROR" "_case_insensitive"
 print_result $REZ
 
-echo "********* asset_import.sh *************************************************************************"
-echo "********* 15. Wrong maximum number of racks *******************************************************"
-echo "***************************************************************************************************"
-test_it "Wrong_maximum_number_of_racks"
-#*#*#*#*#*#*# TODO : Wrong_maximum_number_of_racks : allow 10q and from u10 makes 10
-initiate_db
-REZ=0
-test_tables "universal_asset_semicolon_max_num_rack_wrong_8.csv" 48 "ERROR" "_max_num_rack"
-print_result $REZ
-
-echo "********* asset_import.sh *************************************************************************"
-echo "********* 16. Wrong u_size ************************************************************************"
-echo "***************************************************************************************************"
-test_it "Wrong_u_size"
-initiate_db
-REZ=0
-test_tables "universal_asset_semicolon_u_size_wrong_8.csv" 48 "ERROR" "_u_size"
-print_result $REZ
-
-fi
-
-echo "********* asset_import.sh *************************************************************************"
-echo "********* 17. Runtime *****************************************************************************"
-echo "***************************************************************************************************"
-test_it "Runtime"
-#*#*#*#*#*#*# TODO : Runtime : for sub_type non-genset MUST be ommited, must be integer, both is not
-initiate_db
-REZ=0
-test_tables "universal_asset_semicolon_runtime_8.csv" 48 "ERROR" "_runtime"
-print_result $REZ
-
-echo "********* asset_import.sh *************************************************************************"
-echo "********* 18. Phase *******************************************************************************"
-echo "***************************************************************************************************"
-test_it "Phase"
-#*#*#*#*#*#*# TODO : Phase : for sub_type non-feed MUST be ommited, must be 1,2 or 3, both is not
-initiate_db
-REZ=0
-test_tables "universal_asset_semicolon_phase_8.csv" 48 "ERROR" "_phase"
-print_result $REZ
