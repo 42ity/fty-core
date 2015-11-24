@@ -1573,7 +1573,7 @@ SYSTEMD_UNITS += bios-agent-nut.service \
                         bios-ssh-last-resort.service \
                         bios-networking.service
 
-SYSTEMD_TARGETS += bios.target
+SYSTEMD_TARGETS += bios.target bios.service
 
 # These units have unit files installed but are not enabled by default
 # via presets nor timers (may be enabled in OS image generation script
@@ -1600,7 +1600,7 @@ SYSTEMD_PRESETS +=      42-bios-systemd.preset
 ### TODO? Add the build info (git commit, timestamp) to the header comment?
 tools/42-bios-systemd.preset: Makefile
 	@( echo "### This is a generated file with a list of all BIOS services"; \
-	  for F in $(SYSTEMD_TARGETS) $(SYSTEMD_UNITS) $(SYSTEMD_TIMERS) ; do echo "enable $$F" ; done ) > $@
+	  for F in $(SYSTEMD_TARGETS) $(SYSTEMD_UNITS) $(SYSTEMD_TIMERS) ; do echo "disable $$F" ; echo "enable $$F" ; done ) > $@
 
 # The rules to actually "compile" the service definition files
 # is part of catch-all %.in recipe above
