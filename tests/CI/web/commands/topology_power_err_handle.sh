@@ -99,6 +99,7 @@ echo "********* topology_power_err_handle.sh ***********************************
 echo "********* 8. to_empty_value *********************************************************************"
 echo "***************************************************************************************************"
 test_it "to_empty_value"
+curlfail_push_expect_400
 api_get_json '/topology/power?to=' >&5
 print_result $?
 curlfail_pop
