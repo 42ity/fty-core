@@ -22,12 +22,11 @@
 echo "***************************************************************************************************"
 echo "********* Prerequisites ***************************************************************************"
 echo "***************************************************************************************************"
+. $CHECKOUTDIR/tests/CI/testlib.sh || \
+{ echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 init_script
 
 _SCRIPT_NAME="asset_import"
-# Add the library
-#. $CHECKOUTDIR/tests/CI/scriptlib.sh || \
-#    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 DUMP_DIR="$CHECKOUTDIR/tests/CI/web/log"
 RES_DIR="$CHECKOUTDIR/tests/CI/web/results"
 DATASWITCH=0

@@ -264,8 +264,6 @@ init_script_topo_loc(){
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
     . $CHECKOUTDIR/tests/CI/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
-    . $CHECKOUTDIR/tests/CI/testlib.sh || \
-    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
     accept_license
     for data in "$DB_BASE" "$DB_DATA" "$DB_TOPOL"; do
         loaddb_file "$DB_LOADDIR/$data" || return $?
@@ -278,10 +276,8 @@ init_script_topo_pow(){
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
     . $CHECKOUTDIR/tests/CI/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
-    . $CHECKOUTDIR/tests/CI/testlib.sh || \
-    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
     accept_license
-    for data in "$DB_BASE" "$DB_TOPOP"; do
+    for data in "$DB_BASE" "$DB_DATA" "$DB_TOPOP"; do
         loaddb_file "$DB_LOADDIR/$data" || return $?
     done
 }
