@@ -6,4 +6,4 @@ Type=simple
 ExecStart=@libexecdir@/@PACKAGE@/verify-fs
 
 [Install]
-WantedBy=bios.target
+WantedBy=multi-user.target
