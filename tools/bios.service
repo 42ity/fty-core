@@ -6,6 +6,7 @@ Conflicts=rescue.target shutdown.target
 
 [Service]
 Type=oneshot
+RemainAfterExit=yes
 ExecStart=/bin/systemctl start bios.target
 ExecStop=/bin/sh -c '/bin/systemctl stop -- $(/bin/systemctl show -p Wants bios.target | cut -d= -f2)'
 
