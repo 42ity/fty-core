@@ -16,7 +16,7 @@ FEED3;device;feed;desc14;DC;;;;;;;;;;active;no;5;EATON;;;;;VALID;;;;;;45kW NG/LG
 FEED4;device;feed;desc15;DC;;;;;;;;;;active;no;5;EATON;;;;;VALID;`x`@sez.cz;;;;;45kW NG/LG 240V 3 Phase;EATON015;ATC15;;;4-Jun-14;;;;;;;;;;;;;;;;;
 GROUP1;group;my_group_1;desc16;DC;;;;;;;;;;active;no;5;;;;;;VALID;;;;;;;EATON016;ATC16;;;;;;;;;;;;;;;;;;;;
 GROUP2;group;my_group_2;desc17;ROOM1;;;;;;;;;;active;no;5;;;;;;VALID;admin@mailserver1;;;;;;EATON017;ATC17;;;;;;;;;;;;;;;;;;;;
-GROUP3;group;my_group_3;desc18;ROW1;;;;;;;;;;active;no;5;;;;;;VALID;;;;;;;EATON018;ATC18;;;;;;;;;;;;;;;;;;;;
+GROUP3;group;my_group_3;desc18;ROW1;;;;;;;;;;active;no;5;;;;;;VALID;jmeno@posta.cz, jmeno2@posta.cz;;;;;;EATON018;ATC18;;;;;;;;;;;;;;;;;;;;
 UPS1;device;ups;desc19;ROOM1;;;;FEED1;;;;;;active;no;16;;;;;Roztoky;VALID;üñîçøðé@example.com;421000000000;;;;9PX 6kVA;EATON019;ATC19;;;;;;;;;;;;;;;;;4-Jun-14;;10.25.38.47;
 UPS2;device;ups;desc20;ROW2;;;;FEED3;;;;;;active;no;5;EATON;;;;;VALID;üñîçøðé@üñîçøðé.com;;;;;45kW NG/LG 240V 3 Phase;EATON020;ATC20;;;;;4-Sep-14;;;;;;;;;;;4-Jun-14;;;;
 UPS3F;device;ups;desc21;ROOM2;;;;FEED4;;;;;;active;no;5;EATON;;;;;VALID;;;;;;45kW NG/LG 240V 3 Phase;EATON021;ATC21;;;;;4-Sep-14;;;;;;;;;;;4-Jun-14;;;;
