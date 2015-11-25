@@ -39,7 +39,7 @@ TEST_ID="$5"
 ASSET="$CHECKOUTDIR/tools/asset_import/${CSV_FILE_NAME}"
 if [ "$NUM_EXPECTED" != 0 ];then
     if [ "$REZ" = 0 ];then
-        api_auth_post_file /asset/import assets="@$ASSET" -H "Expect:" && echo "$OUT_CURL" | $JSONSH -N  >&5
+        api_auth_post_file_form_json /asset/import assets="@$ASSET" >&5
         REZ=$?
 #sleep 120
 #        echo "REZ = $REZ"

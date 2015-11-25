@@ -135,7 +135,7 @@ subtest() {
 
     # ***** POST THE CSV FILE *****
     ASSET="$CHECKOUTDIR/tools/$1"
-    api_auth_post_file /asset/import assets=@$ASSET -H "Expect:" | tee $CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log
+    api_auth_post_file_form /asset/import assets="@$ASSET" | tee $CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log
 
     case "$1" in
         bam_import_16_wpos1.csv)
