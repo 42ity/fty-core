@@ -56,10 +56,7 @@ echo "use box_utf8;" > /tmp/tmp.sql
 }
 
 db_initiate(){
-for data in "$DB_BASE" "$DB_DATA_CURRENT"; do
-#for data in "$DB_BASE" "$DB_DATA_CURRENT" "$DB_DATA_TESTREST"; do
-    loaddb_file "$DB_LOADDIR/$data" || return $?
-done
+loaddb_current || return $?
 
 echo "use box_utf8;" > /tmp/tmp.sql
 sqlline="INSERT INTO t_bios_discovered_device (id_discovered_device,name,id_device_type) VALUES (NULL, 'DC-LAB', 1);"
