@@ -51,13 +51,13 @@ DB_RES_DIR="$CHECKOUTDIR/tests/CI/web/results"
 killdb() {
     echo "--------------- reset db: kill old DB ------------"
     if [ -n "${DATABASE-}" ] ; then
+        sut_run 'mysql --disable-column-names -s -e "SHOW PROCESSLIST" | grep -vi PROCESSLIST | awk '"'\$4 ~ /$DATABASE/ {print \$1}'"' | while read P ; do mysqladmin kill "$P" || do_select "KILL $P" ; done'
         DATABASE=mysql do_select "DROP DATABASE ${DATABASE}" || true
         sut_run "mysqladmin drop ${DATABASE}"
     fi
     DATABASE=mysql do_select "RESET QUERY CACHE" || true
     DATABASE=mysql do_select "FLUSH QUERY CACHE" || true
     sut_run "mysqladmin refresh"
-    sut_run 'mysql --disable-column-names -s -e "SHOW FULL PROCESSLIST" | grep -vi PROCESSLIST | awk '"'{print \$1}'"' | while read P ; do mysqladmin kill "$P" ; done'
     sut_run "sync; [ -w /proc/sys/vm/drop_caches ] && echo 3 > /proc/sys/vm/drop_caches && sync"
     return 0
 }
