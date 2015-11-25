@@ -203,6 +203,16 @@ REZ=0
 test_tables "universal_asset_comma_insensitive_8.csv" 48 "ERROR" "_case_insensitive"
 print_result $REZ
 
+echo "********* asset_import.sh *************************************************************************"
+echo "********* 15. Asset link **************************************************************************"
+echo "***************************************************************************************************"
+test_it "Asset link"
+loaddb_initial
+REZ=0
+test_tables "universal_asset_comma_8_asset_link.csv" 48 "ERROR" "_asset_link"
+#sleep 120
+print_result $REZ
+
 echo
 echo "###################################################################################################"
 echo "********* asset_import.sh *************************** END *****************************************"
