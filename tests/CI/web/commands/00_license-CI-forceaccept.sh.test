@@ -101,8 +101,10 @@ else
         print_result $RES1
 
         test_it "change_password_back_restapi"
+set -x
         BIOS_PASSWD="$NEW_BIOS_PASSWD" api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$NEW_BIOS_PASSWD"'", "new_passwd" : "'"$BIOS_PASSWD"'" }'
         RES2=$?
+set +x
         print_result -$RES2
 
         if [ $RES1 = 0 ] && [ $RES2 != 0 ] ; then
