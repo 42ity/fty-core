@@ -2,13 +2,13 @@
 {"errors":[{"message":"Parameter 'id' has bad value. Received import. Expected id of asset","code":47}]}
 {"errors":[{"message":"Content size is too big, maximum size is 128k","code":53}]}
 {"errors":[{"message":"Parameter 'file=assets' is required.","code":46}]}
-{"errors":[{"message":"Parameter '<mandatory column name>' has bad value. Received missingname. Expected all of those name, type, sub_type, location, status, business_critical, priority","code":47}]}
-{"errors":[{"message":"Parameter '<mandatory column name>' has bad value. Received missingtype. Expected all of those name, type, sub_type, location, status, business_critical, priority","code":47}]}
-{"errors":[{"message":"Parameter '<mandatory column name>' has bad value. Received missingsub_type. Expected all of those name, type, sub_type, location, status, business_critical, priority","code":47}]}
-{"errors":[{"message":"Parameter '<mandatory column name>' has bad value. Received missingname. Expected all of those name, type, sub_type, location, status, business_critical, priority","code":47}]}
-{"errors":[{"message":"Parameter '<mandatory column name>' has bad value. Received missingname. Expected all of those name, type, sub_type, location, status, business_critical, priority","code":47}]}
-{"errors":[{"message":"Parameter '<mandatory column name>' has bad value. Received missingname. Expected all of those name, type, sub_type, location, status, business_critical, priority","code":47}]}
-{"errors":[{"message":"Parameter '<mandatory column name>' has bad value. Received missingname. Expected all of those name, type, sub_type, location, status, business_critical, priority","code":47}]}
+{"errors":[{"message":"Parameter '<mandatory column name>' has bad value. Received missing 'name'. Expected all of those name, type, sub_type, location, status, business_critical, priority","code":47}]}
+{"errors":[{"message":"Parameter '<mandatory column name>' has bad value. Received missing 'type'. Expected all of those name, type, sub_type, location, status, business_critical, priority","code":47}]}
+{"errors":[{"message":"Parameter '<mandatory column name>' has bad value. Received missing 'sub_type'. Expected all of those name, type, sub_type, location, status, business_critical, priority","code":47}]}
+{"errors":[{"message":"Parameter '<mandatory column name>' has bad value. Received missing 'name'. Expected all of those name, type, sub_type, location, status, business_critical, priority","code":47}]}
+{"errors":[{"message":"Parameter '<mandatory column name>' has bad value. Received missing 'name'. Expected all of those name, type, sub_type, location, status, business_critical, priority","code":47}]}
+{"errors":[{"message":"Parameter '<mandatory column name>' has bad value. Received missing 'name'. Expected all of those name, type, sub_type, location, status, business_critical, priority","code":47}]}
+{"errors":[{"message":"Parameter '<mandatory column name>' has bad value. Received missing 'name'. Expected all of those name, type, sub_type, location, status, business_critical, priority","code":47}]}
 {"errors":[{"message":"Request document has invalid syntax. Cannot detect the delimiter, use comma (,) semicolon (;) or tabulator","code":48}]}
 {"errors":[{"message":"Parameter 'This file (Big-endian UTF-16 Unicode text, with very long lines, with CRLF line terminators) is not supported please try again with a different file.' has bad value. Received . Expected ","code":47}]}
 {"errors":[{"message":"Parameter 'This file (Big-endian UTF-16 Unicode text, with very long lines, with CRLF line terminators) is not supported please try again with a different file.' has bad value. Received . Expected ","code":47}]}
