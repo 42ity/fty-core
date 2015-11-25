@@ -169,7 +169,7 @@ print_result $?
 curlfail_pop
 
 echo "********* topology_location.sh ********************************************************************"
-echo "********* 15. End_7032_and_recursive=no_and_filter_rows ******************************************"
+echo "********* 15. End_7032_and_recursive=no_and_filter_rows *******************************************"
 echo "***************************************************************************************************"
 test_it "End_7032_and_recursive=no_and_filter_rows"
 curlfail_push_expect_noerrors
