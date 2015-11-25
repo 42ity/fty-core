@@ -73,7 +73,7 @@ ASSET="$CHECKOUTDIR/tools/$1"
 # and warning in log - "location_w_pow changed to 'right'"
 
 
-api_auth_post_file /asset/import assets=@$ASSET -H "Expect:"
+api_auth_post_file_form /asset/import assets="@$ASSET"
 mysql -u root box_utf8 <<< "select * from t_bios_asset_element_type"
 
 
