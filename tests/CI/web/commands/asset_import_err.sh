@@ -312,9 +312,10 @@ test_it "Duplicate_name_value"
 loaddb_initial
 REZ=0
 ASSET="$CHECKOUTDIR/tools/asset_import/universal_asset_comma_8.csv"
-api_auth_post_file /asset/import assets=@$ASSET -H "Expect:"
+# Not JSON, not to >&5 :
+api_auth_post_file_form /asset/import assets="@$ASSET"
 ASSET="$CHECKOUTDIR/tools/asset_import/universal_asset_comma_8_duplicate_name_value.csv"
-api_auth_post_file /asset/import assets=@$ASSET -H "Expect:" && echo "$OUT_CURL" | $JSONSH -N  >&5
+api_auth_post_file_form_json /asset/import assets="@$ASSET" >&5
 print_result $?
 
 echo "********* asset_import.sh *************************************************************************"
