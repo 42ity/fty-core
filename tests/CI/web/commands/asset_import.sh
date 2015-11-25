@@ -24,15 +24,6 @@ echo "********* Prerequisites **************************************************
 echo "***************************************************************************************************"
 init_script
 
-DUMP_DIR="$CHECKOUTDIR/tests/CI/web/log"
-RES_DIR="$CHECKOUTDIR/tests/CI/web/results"
-
-initiate_db(){
-# Initiate DB
-DB_BASE="initdb.sql"
-loaddb_file "$CHECKOUTDIR/tools/$DB_BASE" || return $?
-}
-
 csv_import(){
 CSV_FILE_NAME=$1
 TABLE_NAME=$2
@@ -48,12 +39,12 @@ if [ "$NUM_EXPECTED" != 0 ];then
 #        echo "REZ = $REZ"
     fi
 fi
-mysqldump -u root box_utf8 ${TABLE_NAME}|grep "INSERT" > ${DUMP_DIR}/${TABLE_NAME}.dmp
+mysqldump -u root box_utf8 "${TABLE_NAME}" |grep "INSERT" > "${DB_DUMP_DIR}/${TABLE_NAME}.dmp"
 if [ "$REZ" = 0 ];then
-   if [ "z${TEST_ID}" != "z" ] && [ -f "${RES_DIR}/${TABLE_NAME}${TEST_ID}.ptr" ] ; then
-      diff ${DUMP_DIR}/${TABLE_NAME}.dmp ${RES_DIR}/${TABLE_NAME}${TEST_ID}.ptr|wc -l || REZ=1
+   if [ "z${TEST_ID}" != "z" ] && [ -f "${DB_RES_DIR}/${TABLE_NAME}${TEST_ID}.ptr" ] ; then
+      diff "${DB_DUMP_DIR}/${TABLE_NAME}.dmp" "${DB_RES_DIR}/${TABLE_NAME}${TEST_ID}.ptr" |wc -l || REZ=1
    else
-      diff ${DUMP_DIR}/${TABLE_NAME}.dmp ${RES_DIR}/${TABLE_NAME}.ptr|wc -l || REZ=1
+      diff "${DB_DUMP_DIR}/${TABLE_NAME}.dmp" "${DB_RES_DIR}/${TABLE_NAME}.ptr" |wc -l || REZ=1
    fi
 fi
 }
@@ -85,7 +76,7 @@ echo "********* asset_import.sh ************************************************
 echo "********* 1. Import universal tab 16LE ************************************************************"
 echo "***************************************************************************************************"
 test_it "Import_universal_tab_16LE"
-initiate_db
+loaddb_initial
 REZ=0
 test_tables "universal_asset_tab_16LE.csv" 48 "TAB_16LE"
 print_result $REZ
@@ -103,7 +94,7 @@ echo "********* asset_import.sh ************************************************
 echo "********* 3. Import exported file without ids *****************************************************"
 echo "***************************************************************************************************"
 test_it "Import_exported_file_without_ids"
-initiate_db
+loaddb_initial
 REZ=0
 test_tables "imp_exp_uni_tab_16LE.csv" 48 "TAB_16LE"
 #echo "REZ5=$REZ"
@@ -113,7 +104,7 @@ echo "********* asset_import.sh ************************************************
 echo "********* 4. Import universal tab 8 ***************************************************************"
 echo "***************************************************************************************************"
 test_it "Import_universal_tab_8"
-initiate_db
+loaddb_initial
 REZ=0
 test_tables "universal_asset_tab_8.csv" 48 "TAB_8"
 print_result $REZ
@@ -131,7 +122,7 @@ echo "********* asset_import.sh ************************************************
 echo "********* 6. Import exported file without ids *****************************************************"
 echo "***************************************************************************************************"
 test_it "Import_exported_file_without_ids"
-initiate_db
+loaddb_initial
 REZ=0
 test_tables "imp_exp_uni_tab_8.csv" 48 "_8"
 #echo "REZ6=$REZ"
@@ -141,7 +132,7 @@ echo "********* asset_import.sh ************************************************
 echo "********* 7. Import universal comma 16LE ************************************************************"
 echo "***************************************************************************************************"
 test_it "Import_universal_comma_16LE"
-initiate_db
+loaddb_initial
 REZ=0
 test_tables "universal_asset_comma_16LE.csv" 48 "COMMA_16LE"
 print_result $REZ
@@ -159,7 +150,7 @@ echo "********* asset_import.sh ************************************************
 echo "********* 9. Import exported file without ids *****************************************************"
 echo "***************************************************************************************************"
 test_it "Import_exported_file_without_ids"
-initiate_db
+loaddb_initial
 REZ=0
 test_tables "imp_exp_uni_comma_16LE.csv" 48 "COMMA_16LE"
 #echo "REZ5=$REZ"
@@ -169,7 +160,7 @@ echo "********* asset_import.sh ************************************************
 echo "********* 10. Import universal comma 8 ************************************************************"
 echo "***************************************************************************************************"
 test_it "Import_universal_comma_8"
-initiate_db
+loaddb_initial
 REZ=0
 test_tables "universal_asset_comma_8.csv" 48 "COMMA_8"
 print_result $REZ
@@ -187,7 +178,7 @@ echo "********* asset_import.sh ************************************************
 echo "********* 12. Import exported file without ids ****************************************************"
 echo "***************************************************************************************************"
 test_it "Import_exported_file_without_ids"
-initiate_db
+loaddb_initial
 REZ=0
 test_tables "imp_exp_uni_comma_8.csv" 48 "COMMA_8"
 #echo "REZ6=$REZ"
@@ -197,7 +188,7 @@ echo "********* asset_import.sh ************************************************
 echo "********* 13. Import universal asset comma 16LE with BOM ******************************************"
 echo "***************************************************************************************************"
 test_it "universal_asset_comma_16LE_with_BOM"
-initiate_db
+loaddb_initial
 REZ=0
 test_tables "universal_asset_comma_16LE_with_BOM.csv" 48 "COMMA_8"
 #echo "REZ6=$REZ"
@@ -207,7 +198,7 @@ echo "********* asset_import.sh ************************************************
 echo "********* 14. Case insensitive ********************************************************************"
 echo "***************************************************************************************************"
 test_it "Case_insensitive"
-initiate_db
+loaddb_initial
 REZ=0
 test_tables "universal_asset_comma_insensitive_8.csv" 48 "ERROR" "_case_insensitive"
 print_result $REZ
