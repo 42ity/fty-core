@@ -51,8 +51,9 @@ DB_RES_DIR="$CHECKOUTDIR/tests/CI/web/results"
 killdb() {
     echo "--------------- reset db: kill old DB ------------"
     if [ -n "${DATABASE-}" ] ; then
-        sut_run 'mysql --disable-column-names -s -e "SHOW PROCESSLIST" | grep -vi PROCESSLIST | awk '"'\$4 ~ /$DATABASE/ {print \$1}'"' | while read P ; do mysqladmin kill "$P" || do_select "KILL $P" ; done'
+#        sut_run 'mysql --disable-column-names -s -e "SHOW PROCESSLIST" | grep -vi PROCESSLIST | awk '"'\$4 ~ /$DATABASE/ {print \$1}'"' | while read P ; do mysqladmin kill "$P" || do_select "KILL $P" ; done'
         DATABASE=mysql do_select "DROP DATABASE ${DATABASE}" || true
+        sleep 1
         sut_run "mysqladmin drop -f ${DATABASE} || true"
     fi
     DATABASE=mysql do_select "RESET QUERY CACHE" || true
