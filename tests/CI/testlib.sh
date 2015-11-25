@@ -87,13 +87,15 @@ print_result() {
     if [ "$_ret" -lt 0 ] 2>/dev/null ; then
         _ret="`expr -1 \* $_ret`"
     fi
-    if [ "$TNAME" = "$NAME" ]; then
+
+    if [ "$TNAME" = "`basename $NAME .sh`" ]; then
         TESTLIB_LASTTESTTAG="`echo "$NAME(${_ret})" | sed 's, ,__,g'`"
+        logmsg_info "Completed test $TNAME :"
     else
         TESTLIB_LASTTESTTAG="`echo "$NAME::$TNAME(${_ret})" | sed 's, ,__,g'`"
+        logmsg_info "Completed test $NAME::TNAME :"
     fi
 
-    logmsg_info "Completed test $TNAME :"
     if [ "$_ret" -eq 0 ]; then  # should include "-0" too
         echo " * PASSED"
         TESTLIB_COUNT_PASS="`expr $TESTLIB_COUNT_PASS + 1`"
