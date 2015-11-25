@@ -467,8 +467,8 @@ api_delete() {
 #    content + HTTP headers
 api_auth_post() {
     local url data
-    url=$1
-    data=$2
+    url="$1"
+    data="$2"
     shift 2
     TOKEN="`_api_get_token`"
     CURL --insecure --header "Authorization: Bearer $TOKEN" -d "$data" \
@@ -540,27 +540,27 @@ api_auth_delete_json() {
 #   $@  aditional params for curl
 # Example:
 #   send file 'assets':
-#   api_auth_post_file assets=@tests/persist/test-loadcsv.cc.csv
+#   api_auth_post_file_form assets=@tests/persist/test-loadcsv.cc.csv
 #   send file 'foo' with proper mime type
-#   api_auth_post_file foo=@path/to/foo.json;type=application/json
+#   api_auth_post_file_form foo=@path/to/foo.json;type=application/json
 #   see man curl, parameter -F/--form
 # Result:
 #    HTTP headers + content
-api_auth_post_file() {
+api_auth_post_file_form() {
     local url data
-    url=$1
-    data=$2
+    url="$1"
+    data="$2"
     shift 2
     TOKEN="`_api_get_token`"
     CURL --insecure -H "Expect:" --header "Authorization: Bearer $TOKEN" --form "$data" \
         -v --progress-bar "$BASE_URL$url" "$@" 3>&2 2>&1
 }
 
-# this version of api_auth_post_file uses the --data instead of --form switch
+# this version of api_auth_post_file* uses the --data instead of --form switch
 api_auth_post_file_data() {
     local url data
-    url=$1
-    data=$2
+    url="$1"
+    data="$2"
     shift 2
     TOKEN="`_api_get_token`"
     CURL --insecure -H "Expect:" --header "Authorization: Bearer $TOKEN" --data "$data" \
@@ -568,8 +568,14 @@ api_auth_post_file_data() {
 }
 
 
-api_auth_post_file_json() {
-    api_auth_post_file "$@" > /dev/null || return $?
+api_auth_post_file_form_json() {
+    api_auth_post_file_form "$@" > /dev/null || return $?
+    _normalize_OUT_CURL_json
+}
+
+
+api_auth_post_file_data_json() {
+    api_auth_post_file_data "$@" > /dev/null || return $?
     _normalize_OUT_CURL_json
 }
 
@@ -716,7 +722,7 @@ simple_get_json_code() {
     fi
 
     local __out
-    __out=$( curl -s --insecure -v --progress-bar "$BASE_URL$1" 2>&1 )
+    __out="$( curl -s --insecure -v --progress-bar "$BASE_URL$1" 2>&1 )"
     if [ $? -ne 0 ]; then
         return 1
     fi
@@ -727,8 +733,8 @@ simple_get_json_code() {
         return 1
     fi
 
-    local __resultcode=$3
-    local __resultout=$2
+    local __resultcode="$3"
+    local __resultout="$2"
     eval $__resultcode='"$__code"'
     eval $__resultout='"$__out"'
     return 0
@@ -746,7 +752,7 @@ simple_get_json_code() {
 simple_get_json_code_sed() {
     ### Old approach to strip any whitespace including linebreaks from JSON
     local __out
-    __out=$( curl -s --insecure -v --progress-bar "$BASE_URL$1" 2>&1 )
+    __out="$( curl -s --insecure -v --progress-bar "$BASE_URL$1" 2>&1 )"
     if [ $? -ne 0 ]; then
         return 1
     fi
@@ -756,8 +762,8 @@ simple_get_json_code_sed() {
         return 1
     fi
 
-    local __resultcode=$3
-    local __resultout=$2
+    local __resultcode="$3"
+    local __resultout="$2"
     eval $__resultcode='"$__code"'
     eval $__resultout='"$__out"'
     return 0
@@ -769,6 +775,8 @@ accept_license(){
         echo 'license already accepted'
     else
         echo "Trying to accept the license via REST API on BIOS server '$BASE_URL'..."
-        api_auth_post_json '/admin/license' "foobar" >&5 || true
+        api_auth_post_json '/admin/license' "foobar" >&5 || \
+        ( . "$CHECKOUTDIR"/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
+            logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
     fi
 }

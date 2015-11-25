@@ -90,9 +90,9 @@ curlfail_pop
 echo "********* asset_one_group.sh **********************************************************************"
 echo "********* 7. group_with_id_of_group ***************************************************************"
 echo "***************************************************************************************************"
-PARSED_REPLY=$(echo $(api_get_json /asset/groups) | $JSONSH -x id)
-ID_1=$(echo "${PARSED_REPLY}" | cut -d '"' -f 6)
-ID_GRP_2=`echo $ID_1 | cut -d ' ' -f 2`
+PARSED_REPLY="$(echo "`api_get_json /asset/groups`" | $JSONSH -x id)"
+ID_1="$(echo "${PARSED_REPLY}" | cut -d '"' -f 6)"
+ID_GRP_2="$(echo $ID_1 | cut -d ' ' -f 2)"
 test_it "group_with_id_of_group"
 curlfail_push_expect_noerrors
 api_get_json /asset/group/${ID_GRP_2} >&5
