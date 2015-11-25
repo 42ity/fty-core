@@ -19,10 +19,6 @@
 #  \brief  CI tests for asset current
 #  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 
-# Add the library
-. $CHECKOUTDIR/tests/CI/scriptlib.sh || \
-    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
-
 # Add the first line of the sql file and create it
 echo "use box_utf8;" > /tmp/tmp.sql
 
