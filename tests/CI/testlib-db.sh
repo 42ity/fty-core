@@ -58,7 +58,6 @@ killdb() {
     DATABASE=mysql do_select "FLUSH QUERY CACHE" || true
     sut_run "mysqladmin refresh"
     sut_run 'mysql --disable-column-names -s -e "SHOW FULL PROCESSLIST" | grep -vi PROCESSLIST | awk '"'{print \$1}'"' | while read P ; do mysqladmin kill "$P" ; done'
-    DATABASE=mysql do_select "KILL HARD USER " || true
     sut_run "sync; [ -w /proc/sys/vm/drop_caches ] && echo 3 > /proc/sys/vm/drop_caches && sync"
     return 0
 }
