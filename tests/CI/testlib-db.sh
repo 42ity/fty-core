@@ -53,7 +53,7 @@ loaddb_initial() {
     [ -n "${DATABASE-}" ] && do_select "DROP DATABASE ${DATABASE}" || true
     do_select "RESET QUERY CACHE" || true
     do_select "FLUSH QUERY CACHE" || true
-    sut_run "sync; echo 3 > /proc/sys/vm/drop_caches; sync"
+    sut_run "sync; [ -w /proc/sys/vm/drop_caches ] && echo 3 > /proc/sys/vm/drop_caches && sync"
     for data in "$DB_BASE" ; do
         loaddb_file "$data" || return $?
     done
