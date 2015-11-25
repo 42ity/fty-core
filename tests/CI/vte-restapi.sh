@@ -112,12 +112,12 @@ cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 # ***** GLOBAL VARIABLES *****
 RESULT=0
 DB_LOADDIR="$CHECKOUTDIR/tools"
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_TOPOP="power_topology.sql"
-DB_TOPOL="location_topology.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
+DB_BASE="$DB_LOADDIR/initdb.sql"
+DB_DATA="$DB_LOADDIR/load_data.sql"
+DB_DATA_TESTREST="$DB_LOADDIR/load_data_test_restapi.sql"
+DB_TOPOP="$DB_LOADDIR/power_topology.sql"
+DB_TOPOL="$DB_LOADDIR/location_topology.sql"
+DB_ASSET_TAG_NOT_UNIQUE="$DB_LOADDIR/initdb_ci_patch.sql"
 
 # Set up weblib test engine preference defaults for automated CI tests
 [ -z "$WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT" ] && \
@@ -174,34 +174,34 @@ test_web() {
 }
 
     # *** load default db setting
-loaddb_default() {
+ci_loaddb_default() {
     echo "--------------- reset db: default ----------------"
-    loaddb_file "$DB_LOADDIR/$DB_BASE" && \
-    loaddb_file "$DB_LOADDIR/$DB_ASSET_TAG_NOT_UNIQUE" && \
-    loaddb_file "$DB_LOADDIR/$DB_DATA" && \
-    loaddb_file "$DB_LOADDIR/$DB_DATA_TESTREST"
+    loaddb_file "$DB_BASE" && \
+    loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
+    loaddb_file "$DB_DATA" && \
+    loaddb_file "$DB_DATA_TESTREST"
 }
     # *** start the default set of TC
 test_web_default() {
-    loaddb_default && \
+    ci_loaddb_default && \
     test_web "$@"
 }
 
     # *** start the power topology set of TC
 test_web_topo_p() {
     echo "----------- reset db: topology : power -----------"
-    loaddb_file "$DB_LOADDIR/$DB_BASE" && \
-    loaddb_file "$DB_LOADDIR/$DB_ASSET_TAG_NOT_UNIQUE" && \
-    loaddb_file "$DB_LOADDIR/$DB_TOPOP" && \
+    loaddb_file "$DB_BASE" && \
+    loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
+    loaddb_file "$DB_TOPOP" && \
     test_web "$@"
 }
 
     # *** start the location topology set of TC
 test_web_topo_l() {
     echo "---------- reset db: topology : location ---------"
-    loaddb_file "$DB_LOADDIR/$DB_BASE" && \
-    loaddb_file "$DB_LOADDIR/$DB_ASSET_TAG_NOT_UNIQUE" && \
-    loaddb_file "$DB_LOADDIR/$DB_TOPOL" && \
+    loaddb_file "$DB_BASE" && \
+    loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
+    loaddb_file "$DB_TOPOL" && \
     test_web "$@"
 }
 

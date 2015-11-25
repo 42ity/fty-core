@@ -75,7 +75,6 @@ echo "**************************************************************************
 test_it "Create_DC_with_the_duplicate_asset_tag"
 api_auth_post_json '/asset' '{"name":"dc_name_test_1","type":"datacenter","sub_type":"","location":"","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST0003","address":"ASDF"}}' >&5
 print_result $?
-loaddb_file "$CHECKOUTDIR/tools/initdb_ci_patch.sql"
 
 echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 6. Create_DC_with_the_duplicate_serial_no ***********************************************"

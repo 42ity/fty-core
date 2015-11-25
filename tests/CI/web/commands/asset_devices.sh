@@ -136,27 +136,14 @@ echo "********* asset_devices.sh ***********************************************
 echo "********* 12. no_devices_present ******************************************************************"
 echo "***************************************************************************************************"
 # delete all assets, no DC are present
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-DB_LOADDIR=$BUILDSUBDIR/tools
-loaddb_file "$DB_LOADDIR/$DB_BASE"
+loaddb_initial
 
 test_it "no_devices_present"
 api_get_json /asset/devices >&5
 print_result $?
 
 #fill DB again
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-DB_LOADDIR=$BUILDSUBDIR/tools
-
-for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
-    loaddb_file "$DB_LOADDIR/$data" || return $?
-done
+loaddb_default
 
 echo
 echo "###################################################################################################"
