@@ -125,6 +125,27 @@ static void
 }
 
 
+
+
+bool
+    is_powering_other_rack (
+        const device_info_t &border_device, 
+        const std::map <a_elmnt_id_t, device_info_t> &devices_in_container,
+        const std::set <std::pair<a_elmnt_id_t, a_elmnt_id_t> > &links)
+{
+    auto adevice_dests = find_dests (links, std::get<0>(border_device));
+    for ( auto &adevice: adevice_dests )
+    {
+        auto it = container_devices.find(adevice);
+        if ( it == container_devices.cend() ) {
+            // it means, that destination device is out of the container
+            return true;
+        }
+    }
+    return false;
+}
+
+
 /**
  *  \brief An implementation of the algorithm.
  *
@@ -150,7 +171,8 @@ static std::vector<std::string>
     {
         for ( auto &border_device: border_devices )
         {
-            if ( is_ups(border_device) || is_epdu(border_device) )
+            if ( ( is_epdu(border_device) ) || 
+                 ( is_ups(border_device) &&  ( !is_powering_other_rack (border_device, devices_in_container, links) ) ) )
             {
                 dvc.push_back(std::get<1>(border_device));
                 // remove from border
