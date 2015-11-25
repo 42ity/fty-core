@@ -93,7 +93,7 @@ else
     RES=$?
 
     if [ "$RES" = 0 ]; then
-        echo "REST API server responds to default password; try to change it back and forth (enables SSH server)"
+        logmsg_info "REST API server responds to default password; try to change it back and forth (enables SSH server)"
 
         test_it "change_password_forth"
         api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "'"$NEW_BIOS_PASSWD"'" }'
@@ -104,7 +104,7 @@ else
         print_result $?
 
 
-        echo "Some info about running server version:"
+        logmsg_info "Some info about running server version:"
 
         test_it "sysinfo_get_auth=2"
         SYSINFOA="`api_auth_get_json '/admin/sysinfo'`"
@@ -125,9 +125,28 @@ else
         print_result $?
 
     else
-        echo "REST API server has a non-default password, OK for our needs"
+        logmsg_warn "REST API server has a non-default password"
     fi
 
     curlfail_pop
+
+    test_it "verify_known_password_2"
+    SYSINFOARAW="`api_auth_get '/admin/sysinfo' 2>/dev/null`"
+    RES=$?
+    print_result -$RES
+
+    if [ $RES != 0 ] && [ -n "$BIOS_PASSWD" ] && [ -n "$BIOS_USER" ]; then
+        test_it "ensure_known_password_2"
+        if [ x"$SKIP_DEFAULT_PASSWORD" = xyes ]; then
+            logmsg_warn "Default password at the beginning of the test suite is: not accepted"
+            print_result 32
+        else
+            logmsg_info "Trying to set the default user password so we can accept the license and go on"
+            sut_run "( echo "${BIOS_PASSWD}"; echo "${BIOS_PASSWD}"; ) | passwd ${BIOS_USER}"
+            print_result $?
+        fi
+    fi
+
+
 fi # // if SKIP_LICENSE != yes
 
