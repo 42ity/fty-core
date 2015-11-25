@@ -93,7 +93,7 @@ print_result() {
         logmsg_info "Completed test $TNAME :"
     else
         TESTLIB_LASTTESTTAG="`echo "$NAME::$TNAME(${_ret})" | sed 's, ,__,g'`"
-        logmsg_info "Completed test $NAME::TNAME :"
+        logmsg_info "Completed test $NAME::$TNAME :"
     fi
 
     if [ "$_ret" -eq 0 ]; then  # should include "-0" too
