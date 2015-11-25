@@ -79,10 +79,10 @@ TRAP_SIGNALS=EXIT settraps 'echo "CI-EXIT: $0: test finished (up to the proper e
 TRAP_SIGNALS="HUP INT QUIT TERM" settraps 'echo "CI-EXIT: $0: got signal, aborting test..." >&2; kill_daemons'
 
 DB_LOADDIR="$CHECKOUTDIR/tools"
-DB1="initdb.sql"
-DB2="rack_power.sql"
-loaddb_file "$DB_LOADDIR/$DB1"
-loaddb_file "$DB_LOADDIR/$DB2"
+DB1="$DB_LOADDIR/initdb.sql"
+DB2="$DB_LOADDIR/rack_power.sql"
+loaddb_file "$DB1"
+loaddb_file "$DB2"
 #
 # only one parameter - ups.realpower for ups ot outlet.realpower for epdu is used for the total rack power value counting
 #

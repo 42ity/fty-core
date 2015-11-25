@@ -32,13 +32,13 @@
 # ***********************************************
 ### Database global variables
 DB_LOADDIR="$CHECKOUTDIR/tools"
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_DATA_CURRENT="current_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_TOPOP="power_topology.sql"
-DB_TOPOL="location_topology.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
+DB_BASE="$DB_LOADDIR/initdb.sql"
+DB_DATA="$DB_LOADDIR/load_data.sql"
+DB_DATA_CURRENT="$DB_LOADDIR/current_data.sql"
+DB_DATA_TESTREST="$DB_LOADDIR/load_data_test_restapi.sql"
+DB_TOPOP="$DB_LOADDIR/power_topology.sql"
+DB_TOPOL="$DB_LOADDIR/location_topology.sql"
+DB_ASSET_TAG_NOT_UNIQUE="$DB_LOADDIR/initdb_ci_patch.sql"
 
 ### Directories where we can dump some output (mysqldump, temporary data, etc.)
 DB_DUMP_DIR="$CHECKOUTDIR/tests/CI/web/log"     # TODO: change to BUILDSUBDIR
@@ -51,7 +51,7 @@ DB_RES_DIR="$CHECKOUTDIR/tests/CI/web/results"
 loaddb_initial() {
     echo "--------------- reset db: initial ----------------"
     for data in "$DB_BASE" ; do
-        loaddb_file "$DB_LOADDIR/$data" || return $?
+        loaddb_file "$data" || return $?
     done
     return 0
 }
@@ -59,7 +59,7 @@ loaddb_initial() {
 loaddb_default() {
     echo "--------------- reset db: default ----------------"
     for data in "$DB_BASE" "$DB_DATA" "$DB_DATA_TESTREST"; do
-        loaddb_file "$DB_LOADDIR/$data" || return $?
+        loaddb_file "$data" || return $?
     done
     return 0
 }
@@ -67,7 +67,7 @@ loaddb_default() {
 loaddb_topo_loc() {
     echo "--------------- reset db: topo-location ----------"
     for data in "$DB_BASE" "$DB_DATA" "$DB_TOPOL"; do
-        loaddb_file "$DB_LOADDIR/$data" || return $?
+        loaddb_file "$data" || return $?
     done
     return 0
 }
@@ -75,7 +75,7 @@ loaddb_topo_loc() {
 loaddb_topo_pow() {
     echo "--------------- reset db: topo-power -------------"
     for data in "$DB_BASE" "$DB_DATA" "$DB_TOPOP"; do
-        loaddb_file "$DB_LOADDIR/$data" || return $?
+        loaddb_file "$data" || return $?
     done
     return 0
 }
