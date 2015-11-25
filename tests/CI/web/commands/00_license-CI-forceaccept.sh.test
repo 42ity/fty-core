@@ -91,6 +91,7 @@ else
     curlfail_push "warn" ""
     SYSINFOARAW="`api_auth_get '/admin/sysinfo'`"
     RES=$?
+    curlfail_pop
 
     if [ "$RES" = 0 ]; then
         logmsg_info "REST API server responds to default password; try to change it back and forth (enables SSH server)"
@@ -98,13 +99,11 @@ else
         test_it "change_password_forth"
         api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "'"$NEW_BIOS_PASSWD"'" }'
         RES1=$?
-        print_result $RES1
+        print_result -$RES1
 
         test_it "change_password_back_restapi"
-set -x
         BIOS_PASSWD="$NEW_BIOS_PASSWD" api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$NEW_BIOS_PASSWD"'", "new_passwd" : "'"$BIOS_PASSWD"'" }'
         RES2=$?
-set +x
         print_result -$RES2
 
         if [ $RES1 = 0 ] && [ $RES2 != 0 ] ; then
@@ -138,7 +137,6 @@ set +x
         logmsg_warn "REST API server has a non-default password"
     fi
 
-    curlfail_pop
 
     # We could break the password above, or leave an unknown one in place...
     # Make sure we end this routine with a working known BIOS_PASSWD value
