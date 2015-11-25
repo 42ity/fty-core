@@ -25,8 +25,6 @@
 #><%pre>
 #include <exception>
 #include <cxxtools/jsondeserializer.h>
-#include <cxxtools/regex.h>
-#include <vector>
 #include <string>
 #include <malamute.h>
 #include <sys/types.h>
@@ -35,6 +33,18 @@
 #include "log.h"
 #include "utils_web.h"
 #include "str_defs.h"
+
+int state_valid (const char *state) {
+    assert (state);
+    if (streq (state, "ACK-WIP") ||
+        streq (state, "ACK-IGNORE") ||
+        streq (state, "ACK-PAUSE") ||
+        streq (state, "ACK-SILENCE") ||
+        streq (state, "ACTIVE"))
+        return 1;
+    return 0;
+}
+
 </%pre>
 <%cpp>
 // sanity check
@@ -46,6 +56,29 @@ std::string rule_name = request.getArg ("rule_name");
 std::string element_name = request.getArg ("element_name");
 log_debug ("rule_name = '%s'", rule_name.c_str ());
 log_debug ("element_name = '%s'", element_name.c_str ());
+
+// Let's take a look at payload
+std::string state;
+cxxtools::SerializationInfo si;
+try {
+    std::stringstream input (request.getBody(), std::ios_base::in); 
+    cxxtools::JsonDeserializer deserializer (input);
+    deserializer.deserialize (si);
+    si.getMember ("state") >>= state;
+    if (state.empty ())
+        throw std::runtime_error ("property 'state' has empty value");
+}
+catch (const std::exception& e) {
+    log_debug ("Bad request document - invalid json: %s", e.what ());
+    http_die ("bad-request-document", "Please check RFC-11 for valid json schema description.");
+}
+log_debug ("state = '%s'", state.c_str ());
+
+if (!state_valid (state.c_str ())) {
+    log_debug ("State is not a recognized valid alert state.");
+    http_die ("request-param-bad", "state", std::string ("'").append (state).append ("'").c_str (),
+        "one of the following values [ ACTIVE | ACK-WIP | ACK-IGNORE | ACK-PAUSE | ACK-SILENCE ].");
+}
 
 // connect to malamute
 mlm_client_t *client = mlm_client_new ();
@@ -66,23 +99,6 @@ if (rv == -1) {
     http_die ("internal-error", "mlm_client_connect() failed.");
 }
 
-// Let's take a look at payload
-std::string state;
-cxxtools::SerializationInfo si;
-try {
-    std::stringstream input (request.getBody(), std::ios_base::in); 
-    cxxtools::JsonDeserializer deserializer (input);
-    deserializer.deserialize (si);
-    si.getMember ("state") >>= state;
-    if (state.empty ())
-        throw std::runtime_error ("property 'state' has empty value");
-}
-catch (const std::exception& e) {
-    log_debug ("Bad request document - invalid json: %s", e.what ());
-    http_die ("bad-request-document", "Please check RFC-11 for valid rule json schema description.");
-}
-log_debug ("state = '%s'", state.c_str ());
-
 // prepare rfc-evaluator-rules ADD message
 zmsg_t *send_msg = zmsg_new ();
 if (!send_msg) {
@@ -102,14 +118,34 @@ if (mlm_client_sendto (client, BIOS_AGENT_NAME_ALERT_AGENT, "rfc-alerts-acknowle
     http_die ("internal-error", "mlm_client_sendto() failed.");
 }
 
+// wait for the right message or time-out
 zmsg_t *recv_msg = NULL;
-// TODO: blocking mlm_client_recv
+zsock_t *pipe = mlm_client_msgpipe (client);
+if (!pipe) {
+    log_critical ("mlm_client_msgpipe() failed.");
+    http_die ("internal-error", "mlm_client_msgpipe() failed.");
+}
+zpoller_t *poller = zpoller_new (pipe, NULL);
+if (!poller) {
+    log_critical ("zpoller_new() failed.");
+    http_die ("internal-error", "zpoller_new() failed.");
+}
 while (true) {
-    recv_msg = mlm_client_recv (client);
+    zsock_t *which = (zsock_t *) zpoller_wait (poller, 5000);
+    if (which) {
+        recv_msg = mlm_client_recv (client);
+        if (!recv_msg) {
+            log_error ("mlm_client_recv() failed.");
+            zpoller_destroy (&poller);
+            mlm_client_destroy (&client);
+            http_die ("internal-error", "mlm_client_recv() failed.");
+        }
+    }
     if (!recv_msg) {
-        log_error ("mlm_client_recv() failed.");
+        log_error ("zpoller_wait(timeout = 5000) timed out waiting for message.");
+        zpoller_destroy (&poller);
         mlm_client_destroy (&client);
-        http_die ("internal-error", "mlm_client_recv() failed.");
+        http_die ("internal-error", "Timed out waiting for message.");
     }
     if (streq (mlm_client_sender (client), BIOS_AGENT_NAME_ALERT_AGENT))
         break;
@@ -154,12 +190,11 @@ if (streq (part, "OK")) {
     }
     free (part);
 // TODO: rfc-11 is not written yet, json format can change freely
-// TODO: use jsonify
 </%cpp>
 {
-    "rule_name" : "<$ rule_name $>"
-    "element_name" : "<$ element_name $>"
-    "state" : "<$ state $>"
+    <$$ utils::json::jsonify ("rule_name", rule_name) $>,
+    <$$ utils::json::jsonify ("element_name", element_name) $>,
+    <$$ utils::json::jsonify ("state", state) $>
 }
 <%cpp>
     zmsg_destroy (&recv_msg);
@@ -184,13 +219,23 @@ if (streq (part, "ERROR")) {
         http_die ("not-found", std::string ("Alert identified by rule name = '").append (rule_name).append ("', element name = '").
             append (element_name).append ("' does not exist.").c_str ());
     }
+    if (streq (part, "BAD_STATE")) {
+        free (part);
+        log_error ("Alert identified by rule_name = '%s' and element_name = '%s' can not change state to '%s'.",
+            rule_name.c_str (), element_name.c_str (), state.c_str ());
+        zmsg_destroy (&recv_msg);
+        mlm_client_destroy (&client);
+        http_die ("parameter-conflict", std::string ("Alert identified by rule name = '").append (rule_name).append ("', element name = '").
+            append (element_name).append ("' can not change state to '").append (state).append ("'.").c_str ());
+    }
     log_error ("%s", part);
     std::string reason = part;
     free (part);
     zmsg_destroy (&recv_msg);
     mlm_client_destroy (&client);
     http_die ("internal-error",
-        std::string ("Error TODO = ").append (reason).c_str ());    
+        std::string ("Error while setting state of alert identified by rule name = '").append (rule_name).append ("', element = '").
+        append (element_name).append ("' to '").append (reason).append ("'").c_str ()); 
 }
 // Message does not conform to protocol
 free (part);
