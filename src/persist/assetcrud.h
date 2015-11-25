@@ -114,6 +114,9 @@ db_reply <std::vector<db_a_elmnt_t>>
         (tntdb::Connection &conn,
          a_elmnt_tp_id_t type_id);
 
+/**
+ * \brief Selects all links, where at least one end is inside the container
+ */
 db_reply <std::set <std::pair<a_elmnt_id_t ,a_elmnt_id_t>>>
     select_links_by_container
         (tntdb::Connection &conn,
