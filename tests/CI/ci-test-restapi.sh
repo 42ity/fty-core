@@ -270,6 +270,10 @@ asset_create() {
     test_web "$@"
 }
 
+# Try to accept the BIOS license on server
+SKIP_SANITY=yes test_web 00_license-CI-forceaccept.sh.test || \
+    logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+
 # do the test
 set +e
 if [ $# = 0 ]; then
