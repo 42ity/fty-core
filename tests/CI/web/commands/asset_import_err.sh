@@ -268,10 +268,8 @@ test_it "Email"
 #*#*#*#*#*#*# TODO : Email : When the mail addres contains " or ', Internal error is returned, the ` are allowed, addr NOT checked
 loaddb_initial
 REZ=0
-curlfail_push_expect_500
 test_tables "universal_asset_semicolon_email_8.csv" 48 "ERROR" "_email"
 print_result $REZ
-curlfail_pop
 
 echo "********* asset_import.sh *************************************************************************"
 echo "********* 19. Not consequently ********************************************************************"
