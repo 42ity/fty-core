@@ -30,3 +30,4 @@
 {"imported_lines":0,"errors":[[2,"Element 'DC' cannot be processed because of conflict. Most likely duplicate entry."]]}
 {"imported_lines":48,"errors":[]}
 {"imported_lines":43,"errors":[[23,"Parameter 'location_w_pos' has bad value. Received <empty>. Expected left, right"],[28,"Request document has invalid syntax. More than than 2 pdu/epdu in the rack is not supported"],[30,"Parameter 'location_w_pos' has bad value. Received <empty>. Expected left, right"],[32,"Parameter 'location_w_pos' has bad value. Received <empty>. Expected left, right"],[34,"Parameter 'location_w_pos' has bad value. Received <empty>. Expected left, right"]]}
+{"imported_lines":47,"errors":[[42,"Parameter 'serial_no' has bad value. Received ATC40. Expected <unique string>"]]}
