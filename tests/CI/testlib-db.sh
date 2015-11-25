@@ -49,7 +49,11 @@ DB_TMPSQL_DIR="/tmp"
 DB_RES_DIR="$CHECKOUTDIR/tests/CI/web/results"
 
 loaddb_initial() {
-    echo "--------------- reset db: initial ----------------"
+    echo "--------------- reset db: initialize -------------"
+    [ -n "${DATABASE-}"; ] && do_select "DROP DATABASE ${DATABASE}" || true
+    do_select "RESET QUERY CACHE" || true
+    do_select "FLUSH QUERY CACHE" || true
+    sut_run "sync; echo 3 > /proc/sys/vm/drop_caches; sync"
     for data in "$DB_BASE" ; do
         loaddb_file "$data" || return $?
     done
@@ -58,7 +62,8 @@ loaddb_initial() {
 
 loaddb_default() {
     echo "--------------- reset db: default ----------------"
-    for data in "$DB_BASE" "$DB_DATA" "$DB_DATA_TESTREST"; do
+    loaddb_initial || return $?
+    for data in "$DB_DATA" "$DB_DATA_TESTREST"; do
         loaddb_file "$data" || return $?
     done
     return 0
@@ -66,7 +71,8 @@ loaddb_default() {
 
 loaddb_topo_loc() {
     echo "--------------- reset db: topo-location ----------"
-    for data in "$DB_BASE" "$DB_DATA" "$DB_TOPOL"; do
+    loaddb_initial || return $?
+    for data in "$DB_DATA" "$DB_TOPOL"; do
         loaddb_file "$data" || return $?
     done
     return 0
@@ -74,7 +80,8 @@ loaddb_topo_loc() {
 
 loaddb_topo_pow() {
     echo "--------------- reset db: topo-power -------------"
-    for data in "$DB_BASE" "$DB_DATA" "$DB_TOPOP"; do
+    loaddb_initial || return $?
+    for data in "$DB_DATA" "$DB_TOPOP"; do
         loaddb_file "$data" || return $?
     done
     return 0
@@ -82,8 +89,9 @@ loaddb_topo_pow() {
 
 loaddb_current() {
     echo "--------------- reset db: current ----------------"
-    for data in "$DB_BASE" "$DB_DATA_CURRENT"; do
-    #for data in "$DB_BASE" "$DB_DATA_CURRENT" "$DB_DATA_TESTREST"; do
+    loaddb_initial || return $?
+    for data in "$DB_DATA_CURRENT"; do
+    #for data in "$DB_DATA_CURRENT" "$DB_DATA_TESTREST"; do
         loaddb_file "$data" || return $?
     done
     return 0
