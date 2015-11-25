@@ -84,7 +84,7 @@ done
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 NEED_BUILDSUBDIR=no determineDirs_default || true
 . "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
-#cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+. "`dirname $0`"/testlib.sh || CODE=$? die "Can not include test script library"
 
 PATH="$PATH:/sbin:/usr/sbin"
 
