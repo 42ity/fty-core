@@ -43,14 +43,15 @@ echo "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 set -u
 
 # Import empty DB
-DB1="/home/rvrajik/core/tools/initdb.sql"
+DB_LOADDIR="$CHECKOUTDIR/tools"
+DB1="$DB_LOADDIR/initdb.sql"
 #mysql -u root < "$DB1"
 #mysql -u root < /home/rvrajik/core/tools/initdb.sql
 #mysql -u root box_utf8 <<< "select * from t_bios_asset_element_type"
 #mysql -u root box_utf8 <<< "delete from t_bios_asset_device_type"
 #mysql -u root box_utf8 <<< "delete from t_bios_asset_link_type"
 
-loaddb_file $DB1
+loaddb_file "$DB1"
 
 ASSET="$CHECKOUTDIR/tools/$1"
 # Import the tools/<testname>.csv file
