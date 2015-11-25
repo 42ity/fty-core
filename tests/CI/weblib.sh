@@ -467,8 +467,8 @@ api_delete() {
 #    content + HTTP headers
 api_auth_post() {
     local url data
-    url=$1
-    data=$2
+    url="$1"
+    data="$2"
     shift 2
     TOKEN="`_api_get_token`"
     CURL --insecure --header "Authorization: Bearer $TOKEN" -d "$data" \
@@ -548,19 +548,19 @@ api_auth_delete_json() {
 #    HTTP headers + content
 api_auth_post_file() {
     local url data
-    url=$1
-    data=$2
+    url="$1"
+    data="$2"
     shift 2
     TOKEN="`_api_get_token`"
     CURL --insecure -H "Expect:" --header "Authorization: Bearer $TOKEN" --form "$data" \
         -v --progress-bar "$BASE_URL$url" "$@" 3>&2 2>&1
 }
 
-# this version of api_auth_post_file uses the --data instead of --form switch
+# this version of api_auth_post_file* uses the --data instead of --form switch
 api_auth_post_file_data() {
     local url data
-    url=$1
-    data=$2
+    url="$1"
+    data="$2"
     shift 2
     TOKEN="`_api_get_token`"
     CURL --insecure -H "Expect:" --header "Authorization: Bearer $TOKEN" --data "$data" \
@@ -722,7 +722,7 @@ simple_get_json_code() {
     fi
 
     local __out
-    __out=$( curl -s --insecure -v --progress-bar "$BASE_URL$1" 2>&1 )
+    __out="$( curl -s --insecure -v --progress-bar "$BASE_URL$1" 2>&1 )"
     if [ $? -ne 0 ]; then
         return 1
     fi
@@ -733,8 +733,8 @@ simple_get_json_code() {
         return 1
     fi
 
-    local __resultcode=$3
-    local __resultout=$2
+    local __resultcode="$3"
+    local __resultout="$2"
     eval $__resultcode='"$__code"'
     eval $__resultout='"$__out"'
     return 0
@@ -752,7 +752,7 @@ simple_get_json_code() {
 simple_get_json_code_sed() {
     ### Old approach to strip any whitespace including linebreaks from JSON
     local __out
-    __out=$( curl -s --insecure -v --progress-bar "$BASE_URL$1" 2>&1 )
+    __out="$( curl -s --insecure -v --progress-bar "$BASE_URL$1" 2>&1 )"
     if [ $? -ne 0 ]; then
         return 1
     fi
@@ -762,8 +762,8 @@ simple_get_json_code_sed() {
         return 1
     fi
 
-    local __resultcode=$3
-    local __resultout=$2
+    local __resultcode="$3"
+    local __resultout="$2"
     eval $__resultcode='"$__code"'
     eval $__resultout='"$__out"'
     return 0
