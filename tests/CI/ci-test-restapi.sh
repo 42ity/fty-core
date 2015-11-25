@@ -47,7 +47,6 @@ DB_DATA_TESTREST="load_data_test_restapi.sql"
 DB_TOPOP="power_topology.sql"
 DB_TOPOL="location_topology.sql"
 DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-DB_ASSET_DEFAULT="initdb_ci_patch_2.sql"
 
 PATH="/usr/lib/ccache:/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
 export PATH
@@ -264,7 +263,7 @@ test_web_topo_l() {
 
 asset_create() {
     echo "---------- reset db: asset : create ---------"
-    for data in "$DB_BASE" "$DB_ASSET_DEFAULT" "$DB_DATA"; do
+    for data in "$DB_BASE" "$DB_DATA"; do
           loaddb_file "$DB_LOADDIR/$data" || exit $?
     done
     test_web "$@"
