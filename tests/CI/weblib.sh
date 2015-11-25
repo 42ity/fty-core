@@ -574,6 +574,12 @@ api_auth_post_file_json() {
 }
 
 
+api_auth_post_file_data_json() {
+    api_auth_post_file_data "$@" > /dev/null || return $?
+    _normalize_OUT_CURL_json
+}
+
+
 # Does an api DELETE request with authorization
 # Authorization is done through HTTP header --header "Authorization: Bearer $TOKEN"
 # Params:
