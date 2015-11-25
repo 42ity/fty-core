@@ -33,9 +33,12 @@
 DB_LOADDIR="$CHECKOUTDIR/tools"
 DB_BASE="initdb.sql"
 DB_DATA="load_data.sql"
+DB_DATA_CURRENT="current_data.sql"
 DB_DATA_TESTREST="load_data_test_restapi.sql"
 DB_TOPOP="power_topology.sql"
 DB_TOPOL="location_topology.sql"
+DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
+DB_ASSET_DEFAULT="initdb_ci_patch_2.sql"
 
 ### Directories where we can dump some output (mysqldump, temporary data, etc.)
 DB_DUMP_DIR="$CHECKOUTDIR/tests/CI/web/log"     # TODO: change to BUILDSUBDIR
