@@ -23,7 +23,9 @@
 #  \brief  Enforce acceptance of license (if needed) and change of password
 #          in REST API, and try an authenticated sysinfo request
 #  \detailed Some REST API scripts just need to get THEIR job done, so here
-#            is a way to force-accept the license and toggle a password change
+#            is a way to force-accept the license and toggle a password change.
+#            Caller can `export SKIP_LICENSE=yes` to avoid this operation as
+#            it is done by default in most of our test-suite scripts.
 
 ### Command-line usage example for a VTE/RC3 remote host:
 ###   ${CHECKOUTDIR}/tests/CI/test_web.sh -q --host bios-rc-seedX --port 80 00_license-CI-forceaccept.sh.test
@@ -35,61 +37,74 @@
         [ -x "$F" -a -s "$F" ] && JSONSH="$F" && break
     done
 
-test_it "license_initial_status_ok"
-if api_get_json '/admin/license/status' | grep "accepted_at" >&5 ; then
-    print_result $?
+# Try to accept the BIOS license on server, unless the caller is testing this
+if [ x"$SKIP_LICENSE" = xyes ]; then
+    test_it "license_initial_status_ok"
+    api_get_json '/admin/license/status' | grep "accepted_at" >&5
+    RES=$?
+    if [ "$RES" != 0 ] ; then
+        logmsg_warn "License status at the beginning of the test suite is: not accepted"
+    fi
+    # Nonpositive argument means "OK to fail"
+    print_result -$RES
 else
-    echo "Trying to accept the license on BIOS server '$BASE_URL'..."
-    api_auth_post_json '/admin/license' "foobar" >&5 || true
+    test_it "license_initial_status_ok"
+    if api_get_json '/admin/license/status' | grep "accepted_at" >&5 ; then
+        print_result 0
+    else
+        echo "Trying to accept the license on BIOS server '$BASE_URL'..."
+        api_auth_post_json '/admin/license' "foobar" >&5 || true
 
-    test_it "license_forced_status_ok"
-    OUT="`api_get_json '/admin/license/status' | grep "accepted"`"
+        test_it "license_forced_status_ok"
+        OUT="`api_get_json '/admin/license/status' | grep "accepted"`"
+        RES=$?
+        [ "$RES" = 0 ] && echo "$OUT" | sed 's|\(accepted_at":"\)[0-9]*"|\1XXX"|' >&5
+        print_result $RES
+    fi
+
+    #NEW_BIOS_PASSWD="nEw2`echo "$BIOS_PASSWD" | cut -c 1-3`%`echo "$BIOS_PASSWD" | cut -c 4-`"'@'
+    NEW_BIOS_PASSWD="xX!9`head --bytes 16 /dev/urandom | base64 | sed 's,[\+\=\/\ \t\n\r\%],_,g'`"
+
+    curlfail_push "warn" ""
+    SYSINFOARAW="`api_auth_get '/admin/sysinfo'`"
     RES=$?
-    [ "$RES" = 0 ] && echo "$OUT" | sed 's|\(accepted_at":"\)[0-9]*"|\1XXX"|' >&5
-    print_result $RES
-fi
 
-#NEW_BIOS_PASSWD="nEw2`echo "$BIOS_PASSWD" | cut -c 1-3`%`echo "$BIOS_PASSWD" | cut -c 4-`"'@'
-NEW_BIOS_PASSWD="xX!9`head --bytes 16 /dev/urandom | base64 | sed 's,[\+\=\/\ \t\n\r\%],_,g'`"
+    if [ "$RES" = 0 ]; then
+        echo "REST API server responds to default password; try to change it back and forth (enables SSH server)"
 
-curlfail_push "warn" ""
-SYSINFOARAW="`api_auth_get '/admin/sysinfo'`"
-RES=$?
+        test_it "change_password_forth"
+        api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "'"$NEW_BIOS_PASSWD"'" }'
+        print_result $?
 
-if [ "$RES" = 0 ]; then
-    echo "REST API server responds to default password; try to change it back and forth (enables SSH server)"
-
-    test_it "change_password_forth"
-    api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "'"$NEW_BIOS_PASSWD"'" }'
-    print_result $?
-
-    test_it "change_password_back"
-    BIOS_PASSWD="$NEW_BIOS_PASSWD" api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$NEW_BIOS_PASSWD"'", "new_passwd" : "'"$BIOS_PASSWD"'" }'
-    print_result $?
+        test_it "change_password_back"
+        BIOS_PASSWD="$NEW_BIOS_PASSWD" api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$NEW_BIOS_PASSWD"'", "new_passwd" : "'"$BIOS_PASSWD"'" }'
+        print_result $?
 
 
-    echo "Some info about running server version:"
+        echo "Some info about running server version:"
 
-    test_it "sysinfo_get_auth=2"
-    SYSINFOA="`api_auth_get_json '/admin/sysinfo'`"
-    RES=$?
-    #echo "=== SYSINFOA ($RES):" >&2
-    #echo "$SYSINFOA" >&2
-    [ $RES = 0 -a -n "$SYSINFOA" ]
-    print_result $?
+        test_it "sysinfo_get_auth=2"
+        SYSINFOA="`api_auth_get_json '/admin/sysinfo'`"
+        RES=$?
+        #echo "=== SYSINFOA ($RES):" >&2
+        #echo "$SYSINFOA" >&2
+        [ $RES = 0 -a -n "$SYSINFOA" ]
+        print_result $?
 
 
-    test_it "sysinfo_auth=2__parse__source_build_package__info"
-    JPATH='"\$BIOS","packages",[0-9]*,".*"$'
-    SYSINFO_VERSION="`echo "$SYSINFOA" | ${JSONSH} -x="$JPATH" -l`"
-    RES=$?
-    { echo "=== SYSINFO_VERSION ($RES):"; echo "$SYSINFO_VERSION"; } >&2
-    [ $RES = 0 -a -n "$SYSINFO_VERSION" -a \
-        x"$SYSINFO_VERSION" != x'""' ]
-    print_result $?
+        test_it "sysinfo_auth=2__parse__source_build_package__info"
+        JPATH='"\$BIOS","packages",[0-9]*,".*"$'
+        SYSINFO_VERSION="`echo "$SYSINFOA" | ${JSONSH} -x="$JPATH" -l`"
+        RES=$?
+        { echo "=== SYSINFO_VERSION ($RES):"; echo "$SYSINFO_VERSION"; } >&2
+        [ $RES = 0 -a -n "$SYSINFO_VERSION" -a \
+            x"$SYSINFO_VERSION" != x'""' ]
+        print_result $?
 
-else
-    echo "REST API server has a non-default password, OK for our needs"
-fi
+    else
+        echo "REST API server has a non-default password, OK for our needs"
+    fi
 
-curlfail_pop
+    curlfail_pop
+fi # // if SKIP_LICENSE != yes
+
