@@ -58,8 +58,11 @@ else
     else
         print_result -$RES
 
+        test_it "verify_known_password"
         SYSINFOARAW="`api_auth_get '/admin/sysinfo' 2>/dev/null`"
         RES=$?
+        print_result -$RES
+
         if [ $RES != 0 ] && [ -n "$BIOS_PASSWD" ] && [ -n "$BIOS_USER" ]; then
             test_it "ensure_known_password"
             if [ x"$SKIP_DEFAULT_PASSWORD" = xyes ]; then
