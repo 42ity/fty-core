@@ -764,9 +764,9 @@ simple_get_json_code_sed() {
 # license accept
 accept_license(){
     if api_get_json '/admin/license/status' | grep "accepted_at"; then
-	echo 'license accepted'
+        echo 'license already accepted'
     else
-        echo "Trying to accept the license on BIOS server '$BASE_URL'..."
+        echo "Trying to accept the license via REST API on BIOS server '$BASE_URL'..."
         api_auth_post_json '/admin/license' "foobar" >&5 || true
     fi
 }
