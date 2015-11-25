@@ -87,7 +87,8 @@ curlfail_push_expect_400
 loaddb_initial
 REZ=0
 ASSET="$CHECKOUTDIR/tools/asset_import/universal_asset_semicolon_16LE.csv"
-api_auth_get /asset/import assets=@$ASSET -H "Expect:"&& echo "$OUT_CURL" | $JSONSH -N  >&5
+# Params do not really matter as this should fail
+api_auth_get_json /asset/import assets="@$ASSET" -H "Expect:" >&5
 REZ=$?
 curlfail_pop
 print_result $REZ
