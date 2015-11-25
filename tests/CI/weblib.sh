@@ -540,13 +540,13 @@ api_auth_delete_json() {
 #   $@  aditional params for curl
 # Example:
 #   send file 'assets':
-#   api_auth_post_file assets=@tests/persist/test-loadcsv.cc.csv
+#   api_auth_post_file_form assets=@tests/persist/test-loadcsv.cc.csv
 #   send file 'foo' with proper mime type
-#   api_auth_post_file foo=@path/to/foo.json;type=application/json
+#   api_auth_post_file_form foo=@path/to/foo.json;type=application/json
 #   see man curl, parameter -F/--form
 # Result:
 #    HTTP headers + content
-api_auth_post_file() {
+api_auth_post_file_form() {
     local url data
     url="$1"
     data="$2"
@@ -568,8 +568,8 @@ api_auth_post_file_data() {
 }
 
 
-api_auth_post_file_json() {
-    api_auth_post_file "$@" > /dev/null || return $?
+api_auth_post_file_form_json() {
+    api_auth_post_file_form "$@" > /dev/null || return $?
     _normalize_OUT_CURL_json
 }
 
