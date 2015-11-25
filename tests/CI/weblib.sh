@@ -351,6 +351,9 @@ CURL() {
                     [ x"$WEBLIB_CURLFAIL_HTTPERRORS_DEBUG" = xonerror ] && \
                         _PRINT_CURL_TRACE=yes
                     RES_CURL=123
+                else
+                    echo "CI-WEBLIB-ERROR-CURL: WEBLIB_CURLFAIL_HTTPERRORS='$WEBLIB_CURLFAIL_HTTPERRORS'" \
+                        "is NOT 'fatal', so assuming the request as successful for now" >&3
                 fi
             fi
         else
@@ -394,13 +397,13 @@ CURL() {
 _api_get_token() {
     _RES_=0
     if [ -z "$_TOKEN_" ]; then
-	    AUTH_URL="/oauth2/token?username=${BIOS_USER}&password=${BIOS_PASSWD}&grant_type=password"
+	AUTH_URL="/oauth2/token?username=${BIOS_USER}&password=${BIOS_PASSWD}&grant_type=password"
         [ x"$WEBLIB_CURLFAIL_GETTOKEN" = xprotected ] && \
             curlfail_push_expect_noerrors
-	    _TOKEN_RAW_="`set +x; api_get "$AUTH_URL"`" || _RES_=$?
+	_TOKEN_RAW_="`set +x; api_get "$AUTH_URL"`" || _RES_=$?
         [ x"$WEBLIB_CURLFAIL_GETTOKEN" = xprotected ] && \
             curlfail_pop
-	    _TOKEN_="`echo "$_TOKEN_RAW_" | sed -n 's|.*\"access_token\"[[:blank:]]*:[[:blank:]]*\"\([^\"]*\)\".*|\1|p'`" || _RES_=$?
+	_TOKEN_="`echo "$_TOKEN_RAW_" | sed -n 's|.*\"access_token\"[[:blank:]]*:[[:blank:]]*\"\([^\"]*\)\".*|\1|p'`" || _RES_=$?
 #	echo "CI-WEBLIB-DEBUG: _api_get_token(): got ($_RES_) new token '$_TOKEN_'" >&2
     fi
     echo "$_TOKEN_"
@@ -470,7 +473,7 @@ api_auth_post() {
     url="$1"
     data="$2"
     shift 2
-    TOKEN="`_api_get_token`"
+    TOKEN="`_api_get_token`" || return $?
     CURL --insecure --header "Authorization: Bearer $TOKEN" -d "$data" \
         -v --progress-bar "$BASE_URL$url" "$@" 3>&2 2>&1
 }
@@ -551,7 +554,7 @@ api_auth_post_file_form() {
     url="$1"
     data="$2"
     shift 2
-    TOKEN="`_api_get_token`"
+    TOKEN="`_api_get_token`" || return $?
     CURL --insecure -H "Expect:" --header "Authorization: Bearer $TOKEN" --form "$data" \
         -v --progress-bar "$BASE_URL$url" "$@" 3>&2 2>&1
 }
@@ -562,7 +565,7 @@ api_auth_post_file_data() {
     url="$1"
     data="$2"
     shift 2
-    TOKEN="`_api_get_token`"
+    TOKEN="`_api_get_token`" || return $?
     CURL --insecure -H "Expect:" --header "Authorization: Bearer $TOKEN" --data "$data" \
         -v --progress-bar "$BASE_URL$url" "$@" 3>&2 2>&1
 }
@@ -587,7 +590,7 @@ api_auth_post_file_data_json() {
 # Result:
 #    HTTP headers + content
 api_auth_delete() {
-    TOKEN="`_api_get_token`"
+    TOKEN="`_api_get_token`" || return $?
     CURL --insecure --header "Authorization: Bearer $TOKEN" -X "DELETE" \
         -v --progress-bar "$BASE_URL$1" 3>&2 2>&1
 }
@@ -600,7 +603,7 @@ api_auth_delete() {
 # Result:
 #    HTTP headers + content
 api_auth_put() {
-    TOKEN="`_api_get_token`"
+    TOKEN="`_api_get_token`" || return $?
     CURL --insecure --header "Authorization: Bearer $TOKEN" -d "$2" -X "PUT" \
         -v --progress-bar "$BASE_URL$1" 3>&2 2>&1
 }
@@ -613,7 +616,7 @@ api_auth_put() {
 # Result:
 #    HTTP headers + content
 api_auth_get() {
-    TOKEN="`_api_get_token`"
+    TOKEN="`_api_get_token`" || return $?
     CURL --insecure --header "Authorization: Bearer $TOKEN" \
         -v --progress-bar "$BASE_URL$1" 3>&2 2>&1
 }
@@ -626,7 +629,7 @@ api_auth_get() {
 # Result:
 #    HTTP headers + content
 api_auth_get_wToken() {
-    TOKEN="`_api_get_token`"
+    TOKEN="`_api_get_token`" || return $?
     URLSEP='?'
     case "$1" in
         *"?"*) URLSEP='&' ;;
@@ -639,14 +642,14 @@ api_auth_get_wToken() {
 # Strips stderr reports, headers, verbosity, etc. and returns raw response data
 # NOTE: Not for direct use in CI tests since REST API returns JSON which we test
 api_auth_get_content() {
-    TOKEN="`_api_get_token`"
+    TOKEN="`_api_get_token`" || return $?
     CURL --insecure --header "Authorization: Bearer $TOKEN" "$BASE_URL$1" 3>&2 2>/dev/null
 }
 
 # GETs a resource with authentication passed in GET arguments
 # Strips stderr reports, headers, verbosity, etc. and returns raw response data
 api_auth_get_content_wToken() {
-    TOKEN="`_api_get_token`"
+    TOKEN="`_api_get_token`" || return $?
     URLSEP='?'
     case "$1" in
         *"?"*) URLSEP='&' ;;
@@ -661,7 +664,7 @@ api_auth_post_content() {
     # Params:
     #	$1	Relative URL for API call
     #	$2	POST data
-    TOKEN="`_api_get_token`"
+    TOKEN="`_api_get_token`" || return $?
     CURL --insecure --header "Authorization: Bearer $TOKEN" -d "$2" \
         "$BASE_URL$1" 3>&2 2>/dev/null
 }
@@ -672,7 +675,7 @@ api_auth_post_wToken() {
     # Params:
     #	$1	Relative URL for API call
     #	$2	POST data
-    TOKEN="`_api_get_token`"
+    TOKEN="`_api_get_token`" || return $?
     CURL --insecure -d "access_token=$TOKEN&$2" \
         -v --progress-bar "$BASE_URL$1" 3>&2 2>&1
 }
@@ -683,7 +686,7 @@ api_auth_post_content_wToken() {
     # Params:
     #	$1	Relative URL for API call
     #	$2	POST data
-    TOKEN="`_api_get_token`"
+    TOKEN="`_api_get_token`" || return $?
     CURL --insecure -d "access_token=$TOKEN&$2" \
         "$BASE_URL$1" 3>&2 2>/dev/null
 }

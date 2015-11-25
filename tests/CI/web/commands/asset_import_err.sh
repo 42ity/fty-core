@@ -268,7 +268,7 @@ test_it "Email"
 #*#*#*#*#*#*# TODO : Email : When the mail addres contains " or ', Internal error is returned, the ` are allowed, addr NOT checked
 loaddb_initial
 REZ=0
-curlfail_push_expect_5xx
+curlfail_push_expect_500
 test_tables "universal_asset_semicolon_email_8.csv" 48 "ERROR" "_email"
 print_result $REZ
 curlfail_pop
@@ -288,7 +288,7 @@ echo "**************************************************************************
 test_it "Double_name_1"
 loaddb_initial
 REZ=0
-curlfail_push_expect_5xx
+curlfail_push_expect_500
 test_tables "universal_asset_comma_8_double_name_1.csv" 48 "ERROR" "_double_name_1"
 print_result $REZ
 curlfail_pop
@@ -300,7 +300,7 @@ echo "**************************************************************************
 test_it "Double_name_2"
 loaddb_initial
 REZ=0
-curlfail_push_expect_5xx
+curlfail_push_expect_500
 test_tables "universal_asset_comma_8_double_name_2.csv" 48 "ERROR" "_double_name_2"
 print_result $REZ
 curlfail_pop
