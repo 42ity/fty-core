@@ -58,13 +58,13 @@ else
     else
         print_result -$RES
 
-        test_it "verify_known_password"
+        test_it "verify_known_password_1"
         SYSINFOARAW="`api_auth_get '/admin/sysinfo' 2>/dev/null`"
         RES=$?
         print_result -$RES
 
         if [ $RES != 0 ] && [ -n "$BIOS_PASSWD" ] && [ -n "$BIOS_USER" ]; then
-            test_it "ensure_known_password"
+            test_it "ensure_known_password_lowlevel_1"
             if [ x"$SKIP_DEFAULT_PASSWORD" = xyes ]; then
                 logmsg_warn "Default password at the beginning of the test suite is: not accepted"
                 print_result 32
@@ -97,14 +97,22 @@ else
 
         test_it "change_password_forth"
         api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "'"$NEW_BIOS_PASSWD"'" }'
-        print_result $?
+        RES1=$?
+        print_result $RES1
 
-        test_it "change_password_back"
+        test_it "change_password_back_restapi"
         BIOS_PASSWD="$NEW_BIOS_PASSWD" api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$NEW_BIOS_PASSWD"'", "new_passwd" : "'"$BIOS_PASSWD"'" }'
-        print_result $?
+        RES2=$?
+        print_result -$RES2
 
+        if [ $RES1 = 0 ] && [ $RES2 != 0 ] ; then
+            test_it "change_password_back_lowlevel"
+            logmsg_info "Trying to set the default user password (which did match earlier) so we can accept the license and go on"
+            sut_run "( echo "${BIOS_PASSWD}"; echo "${BIOS_PASSWD}"; ) | passwd ${BIOS_USER}"
+            print_result $?
+        fi
 
-        logmsg_info "Some info about running server version:"
+        logmsg_info "Some info about running server version (and a test that password is OK):"
 
         test_it "sysinfo_get_auth=2"
         SYSINFOA="`api_auth_get_json '/admin/sysinfo'`"
@@ -130,13 +138,16 @@ else
 
     curlfail_pop
 
+    # We could break the password above, or leave an unknown one in place...
+    # Make sure we end this routine with a working known BIOS_PASSWD value
+    # unless asked otherwise.
     test_it "verify_known_password_2"
     SYSINFOARAW="`api_auth_get '/admin/sysinfo' 2>/dev/null`"
     RES=$?
     print_result -$RES
 
     if [ $RES != 0 ] && [ -n "$BIOS_PASSWD" ] && [ -n "$BIOS_USER" ]; then
-        test_it "ensure_known_password_2"
+        test_it "ensure_known_password_lowlevel_2"
         if [ x"$SKIP_DEFAULT_PASSWORD" = xyes ]; then
             logmsg_warn "Default password at the beginning of the test suite is: not accepted"
             print_result 32
