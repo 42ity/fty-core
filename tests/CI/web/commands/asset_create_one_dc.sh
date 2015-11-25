@@ -55,8 +55,8 @@ test_it "Create_DC_element"
 curlfail_push_expect_noerrors
 api_auth_post_json '/asset' '{"name":"dc_name_test_0","type":"datacenter","sub_type":"","location":"","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST0003","address":"ASDF","serial_no":"ABCD0003","ip.1":"10.229.5.11"}}' >&5
 RES=$?
-PARSED_REPLY=`echo ${OUT_CURL} | $JSONSH -x id`
-ID_DC=`echo "${PARSED_REPLY}" | cut -d '"' -f 4`
+PARSED_REPLY="$(echo "${OUT_CURL}" | $JSONSH -x id)"
+ID_DC="$(echo "${PARSED_REPLY}" | cut -d '"' -f 4)"
 print_result $RES
 curlfail_pop
 

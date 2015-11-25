@@ -88,9 +88,9 @@ curlfail_pop
 echo "********* asset_one_device.sh *********************************************************************"
 echo "********* 7. device_with_id_of_device *************************************************************"
 echo "***************************************************************************************************"
-PARSED_REPLY=$(echo $(api_get_json /asset/devices) | $JSONSH -x id)
-ID_1=$(echo "${PARSED_REPLY}" | cut -d '"' -f 6)
-ID_DEV_6=$(echo $ID_1 | cut -d ' ' -f 6)
+PARSED_REPLY="$(echo "`api_get_json /asset/devices`" | $JSONSH -x id)"
+ID_1="$(echo "${PARSED_REPLY}" | cut -d '"' -f 6)"
+ID_DEV_6="$(echo $ID_1 | cut -d ' ' -f 6)"
 test_it "device_with_id_of_device"
 curlfail_push_expect_noerrors
 api_get_json /asset/device/${ID_DEV_6} >&5
