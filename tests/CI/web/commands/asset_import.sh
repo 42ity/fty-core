@@ -25,15 +25,15 @@ echo "**************************************************************************
 init_script
 
 csv_import(){
-CSV_FILE_NAME=$1
-TABLE_NAME=$2
-NUM_EXPECTED=$3 # when NUM_EXPECTED=0, the import is not performed, in other case it is num of imported lines
-FILENAME_PREFIX=$4
-TEST_ID=$5
+CSV_FILE_NAME="$1"
+TABLE_NAME="$2"
+NUM_EXPECTED="$3" # when NUM_EXPECTED=0, the import is not performed, in other case it is num of imported lines
+FILENAME_PREFIX="$4"
+TEST_ID="$5"
 ASSET="$CHECKOUTDIR/tools/asset_import/${CSV_FILE_NAME}"
 if [ "$NUM_EXPECTED" != 0 ];then
     if [ "$REZ" = 0 ];then
-        api_auth_post_file /asset/import assets=@$ASSET -H "Expect:" && echo "$OUT_CURL" | $JSONSH -N  >&5
+        api_auth_post_file /asset/import assets="@$ASSET" -H "Expect:" && echo "$OUT_CURL" | $JSONSH -N  >&5
         REZ=$?
 #sleep 120
 #        echo "REZ = $REZ"
