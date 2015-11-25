@@ -31,11 +31,11 @@ echo "**************************************************************************
 init_script
 
 find_id() {
-	local __CALL=$(api_get_json /asset/$1)
-	local __REPLY=$(echo "$__CALL" | $JSONSH -x id)
-	ID_1=$(echo "${__REPLY}" | cut -d '"' -f 6)
-	ID=$(echo $ID_1 | cut -d ' ' -f $2)
-	echo $ID
+	local __CALL="$(api_get_json /asset/$1)"
+	local __REPLY="$(echo "$__CALL" | $JSONSH -x id)"
+	ID_1="$(echo "${__REPLY}" | cut -d '"' -f 6)"
+	ID="$(echo $ID_1 | cut -d ' ' -f $2)"
+	echo "$ID"
 }
 
 # Set test number
