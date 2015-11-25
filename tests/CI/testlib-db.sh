@@ -26,7 +26,8 @@
 #           databases, which can be sourced to interactive shell.
 #           Generally it should not be included directly into a script because
 #           it is sourced by weblib.sh along with testlib.sh; if you do need it
-#           explicitly - include after scriptlib.sh and weblib.sh.
+#           explicitly - include after scriptlib.sh, and after weblib.sh if you
+#	    want to use init_script*() which call accept_license().
 
 # ***********************************************
 ### Database global variables
