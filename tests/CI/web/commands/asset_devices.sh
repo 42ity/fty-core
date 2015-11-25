@@ -50,7 +50,7 @@ print_result $?
 curlfail_pop
 
 echo "********* asset_devices.sh ************************************************************************"
-echo "********* 3. list_of_devices_with_subtype_feed *****************************************************"
+echo "********* 3. list_of_devices_with_subtype_feed ****************************************************"
 echo "***************************************************************************************************"
 curlfail_push_expect_noerrors
 test_it "list_of_devices_with_subtype_feed"
@@ -114,7 +114,7 @@ api_get_json /asset/devices?subXtype=epdu >&5
 print_result $?
 
 echo "********* asset_devices.sh ************************************************************************"
-echo "********* 11. list_of_OK_argument_and_empty_list_as_result ***************************************"
+echo "********* 11. list_of_OK_argument_and_empty_list_as_result ****************************************"
 echo "***************************************************************************************************"
 test_it "list_of_OK_arguments_and_empty_list_as_result"
 REZ=0
