@@ -2,7 +2,7 @@
 Name:           core
 Version:        0.1.0
 Release:        0
-License:        GPL-3.0
+License:        GPL-2.0+
 Summary:        BIOS project
 Url:            https://github.com/eaton-bob
 Group:          Development/Libraries/C and C++
