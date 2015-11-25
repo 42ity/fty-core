@@ -80,6 +80,15 @@ loaddb_topo_pow() {
     return 0
 }
 
+loaddb_current() {
+    echo "--------------- reset db: current ----------------"
+    for data in "$DB_BASE" "$DB_DATA_CURRENT"; do
+    #for data in "$DB_BASE" "$DB_DATA_CURRENT" "$DB_DATA_TESTREST"; do
+        loaddb_file "$data" || return $?
+    done
+    return 0
+}
+
 init_script(){
 # Prepare sandbox for the test: ensure the database is freshly made
 # and licenses to not interfere; the accept_license() routine is
