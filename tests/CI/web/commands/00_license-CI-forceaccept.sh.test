@@ -26,6 +26,8 @@
 #            is a way to force-accept the license and toggle a password change.
 #            Caller can `export SKIP_LICENSE=yes` to avoid this operation as
 #            it is done by default in most of our test-suite scripts.
+#            Caller can `export SKIP_DEFAULT_PASSWORD=yes` to avoid resetting
+#            the password of BIOS_USER to BIOS_PASSWD if the operation is done.
 
 ### Command-line usage example for a VTE/RC3 remote host:
 ###   ${CHECKOUTDIR}/tests/CI/test_web.sh -q --host bios-rc-seedX --port 80 00_license-CI-forceaccept.sh.test
@@ -49,10 +51,28 @@ if [ x"$SKIP_LICENSE" = xyes ]; then
     print_result -$RES
 else
     test_it "license_initial_status_ok"
-    if api_get_json '/admin/license/status' | grep "accepted_at" >&5 ; then
+    api_get_json '/admin/license/status' | grep "accepted_at" >&5
+    RES=$?
+    if [ $RES = 0 ] ; then
         print_result 0
     else
-        echo "Trying to accept the license on BIOS server '$BASE_URL'..."
+        print_result -$RES
+
+        SYSINFOARAW="`api_auth_get '/admin/sysinfo' 2>/dev/null`"
+        RES=$?
+        if [ $RES != 0 ] && [ -n "$BIOS_PASSWD" ] && [ -n "$BIOS_USER" ]; then
+            test_it "ensure_known_password"
+            if [ x"$SKIP_DEFAULT_PASSWORD" = xyes ]; then
+                logmsg_warn "Default password at the beginning of the test suite is: not accepted"
+                print_result 32
+            else
+                logmsg_info "Trying to set the default user password so we can accept the license and go on"
+                sut_run "( echo "${BIOS_PASSWD}"; echo "${BIOS_PASSWD}"; ) | passwd ${BIOS_USER}"
+                print_result $?
+            fi
+        fi
+
+        logmsg_info "Trying to accept the license on BIOS server '$BASE_URL'..."
         api_auth_post_json '/admin/license' "foobar" >&5 || true
 
         test_it "license_forced_status_ok"
