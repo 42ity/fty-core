@@ -24,15 +24,7 @@ echo "********* Prerequisites **************************************************
 echo "***************************************************************************************************"
 init_script
 
-DUMP_DIR="$CHECKOUTDIR/tests/CI/web/log"
-RES_DIR="$CHECKOUTDIR/tests/CI/web/results"
 DATASWITCH=0
-
-initiate_db(){
-   # Initiate DB
-   DB_BASE="initdb.sql"
-   loaddb_file "$CHECKOUTDIR/tools/$DB_BASE" || return $?
-}
 
 csv_import_err(){
    CSV_FILE_NAME=$1
@@ -82,7 +74,7 @@ echo "********* 1. No utf csv file *********************************************
 echo "***************************************************************************************************"
 #*#*#*#*#*#*# TODO : No utf csv file : Really should PASS not allowed format?
 test_it "No_utf_csv_file"
-initiate_db
+loaddb_initial
 REZ=0
 test_tables "universal_asset_comma_no_utf.csv" 48 "ERROR"
 print_result $REZ
@@ -93,7 +85,7 @@ echo "**************************************************************************
 #*#*#*#*#*#*# TODO : Method is not allowed : Wrong message : MUST BE LIKE : Method is not allowed : 45
 test_it "Method_is_not_allowed"
 curlfail_push_expect_400
-initiate_db
+loaddb_initial
 REZ=0
 ASSET="$CHECKOUTDIR/tools/asset_import/universal_asset_semicolon_16LE.csv"
 api_auth_get /asset/import assets=@$ASSET -H "Expect:"&& echo "$OUT_CURL" | $JSONSH -N  >&5
@@ -106,7 +98,7 @@ echo "********* 3. Too big file ************************************************
 echo "***************************************************************************************************"
 test_it "Too_big_file"
 curlfail_push_expect_413
-initiate_db
+loaddb_initial
 REZ=0
 test_tables "very_long_asset_tab_16LE.csv" 48 "ERROR"
 curlfail_pop
@@ -120,7 +112,7 @@ echo "**************************************************************************
 test_it "File_assets_is_missing"
 DATASWITCH=1
 curlfail_push_expect_400
-initiate_db
+loaddb_initial
 REZ=0
 test_tables "missing_file.csv" 48 "ERROR"
 curlfail_pop
@@ -132,7 +124,7 @@ echo "********* 5. Missing mandatory name header *******************************
 echo "***************************************************************************************************"
 test_it "Missing_mandatory_name_header"
 curlfail_push_expect_400
-initiate_db
+loaddb_initial
 REZ=0
 test_tables "universal_asset_tab_8_no_name_header.csv" 48 "ERROR"
 test_tables "universal_asset_tab_8_no_type_header.csv" 48 "ERROR"
@@ -150,7 +142,7 @@ echo "**************************************************************************
 test_it "Too_big_file"
 #*#*#*#*#*#*# TODO : Bad separator : the code 48 received is not expected : 47???
 curlfail_push_expect_400
-initiate_db
+loaddb_initial
 REZ=0
 test_tables "universal_asset_comma_16LE_bad_separator.csv" 48 "ERROR"
 curlfail_pop
@@ -161,7 +153,7 @@ echo "********* 7. 16BE - BIG ENDIAN *******************************************
 echo "***************************************************************************************************"
 test_it "16BE_-_BIG_ENDIAN"
 curlfail_push_expect_400
-initiate_db
+loaddb_initial
 REZ=0
 test_tables "universal_asset_comma_16BE.csv" 48 "ERROR"
 test_tables "universal_asset_semicolon_16BE.csv" 48 "ERROR"
@@ -175,7 +167,7 @@ echo "**************************************************************************
 test_it "Not_so_long"
 #*#*#*#*#*#*# TODO : Not so long : 128kB is 131072 byte : the not_so_long_asset_tab_16LE.csv has size 130860
 curlfail_push_expect_413
-initiate_db
+loaddb_initial
 REZ=0
 test_tables "not_so_long_asset_tab_16LE.csv" 48 "ERROR"
 curlfail_pop
@@ -186,7 +178,7 @@ echo "********* 9. Too long keytag *********************************************
 echo "***************************************************************************************************"
 test_it "Too_long_keytag"
 #*#*#*#*#*#*# TODO : Too_long_keytag : 128kB is 131072 byte : the not_so_long_asset_tab_16LE.csv has size 130860
-initiate_db
+loaddb_initial
 REZ=0
 test_tables "universal_asset_tab_8_too_long_keytag.csv" 48 "ERROR"
 print_result $REZ
@@ -195,7 +187,7 @@ echo "********* asset_import_err.sh ********************************************
 echo "********* 10. Not proper sequence ******************************************************************"
 echo "***************************************************************************************************"
 test_it "Not_proper_sequence"
-initiate_db
+loaddb_initial
 REZ=0
 test_tables "universal_asset_tab_16LE_DC001A.csv" 47 "ERROR" "_not_proper_sequence"
 #csv_import "$CSV_FILE_NAME" "t_bios_asset_element" 0 "$FILENAME_PREFIX"
@@ -205,7 +197,7 @@ echo "********* asset_import_err.sh ********************************************
 echo "********* 11. Double records **********************************************************************"
 echo "***************************************************************************************************"
 test_it "Double_records"
-initiate_db
+loaddb_initial
 REZ=0
 test_tables "universal_asset_tab_16LE_DC001B.csv" 48 "ERROR"
 print_result $REZ
@@ -215,7 +207,7 @@ echo "********* 12. Comma semicolon mix ****************************************
 echo "***************************************************************************************************"
 #*#*#*#*#*# TODO : Comma semicolon mix : should be stopped and give some message?
 test_it "Comma_semicolon_mix"
-initiate_db
+loaddb_initial
 REZ=0
 test_tables "universal_asset_mix_comma_semicolon__8.csv" 48 "ERROR"
 print_result $REZ
@@ -225,7 +217,7 @@ echo "********* 13. Tab comma mix **********************************************
 echo "***************************************************************************************************"
 #*#*#*#*#*# TODO : Tab comma mix : should be stopped and give some message?
 test_it "Tab_comma_mix"
-initiate_db
+loaddb_initial
 REZ=0
 test_tables "universal_asset_mix_tab_comma_8.csv" 48 "ERROR"
 print_result $REZ
@@ -235,7 +227,7 @@ echo "********* 14. Wrong maximum number of racks ******************************
 echo "***************************************************************************************************"
 test_it "Wrong_maximum_number_of_racks"
 #*#*#*#*#*#*# TODO : Wrong_maximum_number_of_racks : allow 10q and from u10 makes 10
-initiate_db
+loaddb_initial
 REZ=0
 test_tables "universal_asset_semicolon_max_num_rack_wrong_8.csv" 48 "ERROR" "_max_num_rack"
 print_result $REZ
@@ -244,7 +236,7 @@ echo "********* asset_import.sh ************************************************
 echo "********* 15. Wrong u_size ************************************************************************"
 echo "***************************************************************************************************"
 test_it "Wrong_u_size"
-initiate_db
+loaddb_initial
 REZ=0
 test_tables "universal_asset_semicolon_u_size_wrong_8.csv" 48 "ERROR" "_u_size"
 print_result $REZ
@@ -254,7 +246,7 @@ echo "********* 16. Runtime ****************************************************
 echo "***************************************************************************************************"
 test_it "Runtime"
 #*#*#*#*#*#*# TODO : Runtime : for sub_type non-genset MUST be ommited, must be integer, both is not
-initiate_db
+loaddb_initial
 REZ=0
 test_tables "universal_asset_semicolon_runtime_8.csv" 48 "ERROR" "_runtime"
 print_result $REZ
@@ -264,7 +256,7 @@ echo "********* 17. Phase ******************************************************
 echo "***************************************************************************************************"
 test_it "Phase"
 #*#*#*#*#*#*# TODO : Phase : for sub_type non-feed MUST be ommited, must be 1,2 or 3, both is not
-initiate_db
+loaddb_initial
 REZ=0
 test_tables "universal_asset_semicolon_phase_8.csv" 48 "ERROR" "_phase"
 print_result $REZ
@@ -274,7 +266,7 @@ echo "********* 18. Email ******************************************************
 echo "***************************************************************************************************"
 test_it "Email"
 #*#*#*#*#*#*# TODO : Email : When the mail addres contains " or ', Internal error is returned, the ` are allowed, addr NOT checked
-initiate_db
+loaddb_initial
 REZ=0
 curlfail_push_expect_5xx
 test_tables "universal_asset_semicolon_email_8.csv" 48 "ERROR" "_phase"
