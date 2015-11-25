@@ -136,7 +136,7 @@ set +e
 ASSET="$CHECKOUTDIR/tools/bam_vte_tab_import.csv"
 
 # Import the bam_vte_tab_import.csv file
-api_auth_post_file /asset/import assets=@$ASSET -H "Expect:" | tee $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log
+api_auth_post_file_form /asset/import assets="@$ASSET" | tee $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log
 
 NUM_EXPECTED=13
 grep -q '"imported_lines" : '"$NUM_EXPECTED" $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log || \
