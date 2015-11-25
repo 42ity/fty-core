@@ -29,15 +29,7 @@ echo
 echo "***************************************************************************************************"
 echo "********* Prerequisites ***************************************************************************"
 echo "***************************************************************************************************"
-# Add the libraries
-. $CHECKOUTDIR/tests/CI/weblib.sh || \
-    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
-. $CHECKOUTDIR/tests/CI/scriptlib.sh || \
-    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
-. $CHECKOUTDIR/tests/CI/testlib.sh || \
-    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 loaddb_default
-accept_license
 
 echo "***************************************************************************************************"
 echo "********* 1. list_of_alerts ***********************************************************************"
