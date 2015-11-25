@@ -99,7 +99,7 @@ echo "********* 8. Delete_DC2_with_child_element *******************************
 echo "***************************************************************************************************"
 test_it "Delete_DC2_with_child_element"
 curlfail_push_expect_409
-api_auth_delete /asset/10 > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
+api_auth_delete_json /asset/10 >&5
 print_result $?
 curlfail_pop
 
@@ -108,7 +108,7 @@ echo "********* 9. Delete_dc_name_test_0_without_child_element *****************
 echo "***************************************************************************************************"
 test_it "Delete_dc_name_test_0_without_child_element"
 curlfail_push_expect_noerrors
-api_auth_delete /asset/$ID_DC > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
+api_auth_delete_json /asset/$ID_DC >&5
 print_result $?
 curlfail_pop
 
@@ -253,7 +253,7 @@ echo "**************************************************************************
 #curlfail_push_expect_400
 test_it "Unauthorized_create_operation"
 curlfail_push_expect_noerrors
-api_post '/asset' '{"name":"dc_name_test_25","type":"datacenter","sub_type":"","location":"","status":"nonactive","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST0025","address":"ASDF"}}' > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
+api_post_json '/asset' '{"name":"dc_name_test_25","type":"datacenter","sub_type":"","location":"","status":"nonactive","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST0025","address":"ASDF"}}' >&5
 print_result $?
 curlfail_pop
 
