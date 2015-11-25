@@ -351,6 +351,9 @@ CURL() {
                     [ x"$WEBLIB_CURLFAIL_HTTPERRORS_DEBUG" = xonerror ] && \
                         _PRINT_CURL_TRACE=yes
                     RES_CURL=123
+                else
+                    echo "CI-WEBLIB-ERROR-CURL: WEBLIB_CURLFAIL_HTTPERRORS='$WEBLIB_CURLFAIL_HTTPERRORS'" \
+                        "is NOT 'fatal', so assuming the request as successful for now" >&3
                 fi
             fi
         else
