@@ -43,14 +43,15 @@ echo "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 set -u
 
 # Import empty DB
-DB1="/home/rvrajik/core/tools/initdb.sql"
+DB_LOADDIR="$CHECKOUTDIR/tools"
+DB1="$DB_LOADDIR/initdb.sql"
 #mysql -u root < "$DB1"
 #mysql -u root < /home/rvrajik/core/tools/initdb.sql
 #mysql -u root box_utf8 <<< "select * from t_bios_asset_element_type"
 #mysql -u root box_utf8 <<< "delete from t_bios_asset_device_type"
 #mysql -u root box_utf8 <<< "delete from t_bios_asset_link_type"
 
-loaddb_file $DB1
+loaddb_file "$DB1"
 
 ASSET="$CHECKOUTDIR/tools/$1"
 # Import the tools/<testname>.csv file
@@ -73,7 +74,7 @@ ASSET="$CHECKOUTDIR/tools/$1"
 # and warning in log - "location_w_pow changed to 'right'"
 
 
-api_auth_post_file /asset/import assets=@$ASSET -H "Expect:"
+api_auth_post_file_form /asset/import assets="@$ASSET"
 mysql -u root box_utf8 <<< "select * from t_bios_asset_element_type"
 
 

@@ -90,9 +90,9 @@ curlfail_pop
 echo "********* asset_one_rack.sh ***********************************************************************"
 echo "********* 7. rack_with_id_of_rack *****************************************************************"
 echo "***************************************************************************************************"
-PARSED_REPLY=$(echo $(api_get_json /asset/racks) | $JSONSH -x id)
-ID_1=$(echo "${PARSED_REPLY}" | cut -d '"' -f 6)
-ID_RACK_2=$(echo $ID_1 | cut -d ' ' -f 2)
+PARSED_REPLY="$(echo "`api_get_json /asset/racks`" | $JSONSH -x id)"
+ID_1="$(echo "${PARSED_REPLY}" | cut -d '"' -f 6)"
+ID_RACK_2="$(echo $ID_1 | cut -d ' ' -f 2)"
 test_it "rack_with_id_of_rack"
 curlfail_push_expect_noerrors
 api_get_json /asset/rack/${ID_RACK_2} >&5
