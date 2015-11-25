@@ -134,18 +134,18 @@ while (true) {
     zsock_t *which = (zsock_t *) zpoller_wait (poller, 5000);
     if (which) {
         recv_msg = mlm_client_recv (client);
-        if (!recv_msg) {
-            log_error ("mlm_client_recv() failed.");
-            zpoller_destroy (&poller);
-            mlm_client_destroy (&client);
-            http_die ("internal-error", "mlm_client_recv() failed.");
-        }
     }
     if (!recv_msg) {
-        log_error ("zpoller_wait(timeout = 5000) timed out waiting for message.");
+        if (zpoller_expired (poller)) {
+            log_error ("zpoller_wait(timeout = 5000) timed out waiting for message.");
+            mlm_client_destroy (&client);
+            zpoller_destroy (&poller);
+            http_die ("internal-error", "Timed out waiting for message.");
+        }
+        log_error ("mlm_client_recv() failed.");
         zpoller_destroy (&poller);
         mlm_client_destroy (&client);
-        http_die ("internal-error", "Timed out waiting for message.");
+        http_die ("internal-error", "mlm_client_recv() failed.");
     }
     if (streq (mlm_client_sender (client), BIOS_AGENT_NAME_ALERT_AGENT))
         break;
