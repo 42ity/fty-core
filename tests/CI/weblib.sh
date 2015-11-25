@@ -110,8 +110,10 @@ fi
 [ x"${NEED_TESTLIB-}" != xno ] && \
 if [ -n "$CHECKOUTDIR" ] && [ -d "$CHECKOUTDIR/tests/CI" ]; then
         . "$CHECKOUTDIR/tests/CI"/testlib.sh || exit $?
+        . "$CHECKOUTDIR/tests/CI"/testlib-db.sh || exit $?
 else
         . "$SCRIPTDIR"/testlib.sh || exit $?
+        . "$SCRIPTDIR"/testlib-db.sh || exit $?
 fi
 
 ### Should the test suite break upon first failed test?
