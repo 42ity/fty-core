@@ -269,11 +269,72 @@ test_it "Email"
 loaddb_initial
 REZ=0
 curlfail_push_expect_5xx
-test_tables "universal_asset_semicolon_email_8.csv" 48 "ERROR" "_phase"
+test_tables "universal_asset_semicolon_email_8.csv" 48 "ERROR" "_email"
 print_result $REZ
 curlfail_pop
 
-echo
+echo "********* asset_import.sh *************************************************************************"
+echo "********* 19. Not consequently ********************************************************************"
+echo "***************************************************************************************************"
+test_it "Not_consequently"
+loaddb_initial
+REZ=0
+test_tables "universal_asset_semicolon_not_consequently_8.csv" 48 "ERROR" "_phase"
+print_result $REZ
+
+echo "********* asset_import.sh *************************************************************************"
+echo "********* 20. Double name 1 ***********************************************************************"
+echo "***************************************************************************************************"
+test_it "Double_name_1"
+loaddb_initial
+REZ=0
+curlfail_push_expect_5xx
+test_tables "universal_asset_comma_8_double_name_1.csv" 48 "ERROR" "_double_name_1"
+print_result $REZ
+curlfail_pop
+
+
+echo "********* asset_import.sh *************************************************************************"
+echo "********* 21. Double name 2 ***********************************************************************"
+echo "***************************************************************************************************"
+test_it "Double_name_2"
+loaddb_initial
+REZ=0
+curlfail_push_expect_5xx
+test_tables "universal_asset_comma_8_double_name_2.csv" 48 "ERROR" "_double_name_2"
+print_result $REZ
+curlfail_pop
+
+echo "********* asset_import.sh *************************************************************************"
+echo "********* 22. Duplicate name value ****************************************************************"
+echo "***************************************************************************************************"
+test_it "Duplicate_name_value"
+loaddb_initial
+REZ=0
+ASSET="$CHECKOUTDIR/tools/asset_import/universal_asset_comma_8.csv"
+api_auth_post_file /asset/import assets=@$ASSET -H "Expect:"
+ASSET="$CHECKOUTDIR/tools/asset_import/universal_asset_comma_8_duplicate_name_value.csv"
+api_auth_post_file /asset/import assets=@$ASSET -H "Expect:" && echo "$OUT_CURL" | $JSONSH -N  >&5
+print_result $?
+
+echo "********* asset_import.sh *************************************************************************"
+echo "********* 23. Duplicate ipx ***********************************************************************"
+echo "***************************************************************************************************"
+test_it "Duplicate_ipx"
+loaddb_initial
+REZ=0
+test_tables "universal_asset_comma_8_duplicate_ipx.csv" 48 "ERROR" "_duplicate_ipx"
+print_result $REZ
+
+echo "********* asset_import.sh *************************************************************************"
+echo "********* 24. w_pos ***********************************************************************"
+echo "***************************************************************************************************"
+test_it "w_pos"
+loaddb_initial
+REZ=0
+test_tables "universal_asset_comma_8_wpos.csv" 48 "ERROR" "_w_pos"
+print_result $REZ
+
 echo "###################################################################################################"
 echo "********* asset_import_err.sh *********************** END *****************************************"
 echo "###################################################################################################"
