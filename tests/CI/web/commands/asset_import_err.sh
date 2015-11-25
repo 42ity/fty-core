@@ -24,7 +24,6 @@ echo "********* Prerequisites **************************************************
 echo "***************************************************************************************************"
 init_script
 
-_SCRIPT_NAME="asset_import"
 DUMP_DIR="$CHECKOUTDIR/tests/CI/web/log"
 RES_DIR="$CHECKOUTDIR/tests/CI/web/results"
 DATASWITCH=0
