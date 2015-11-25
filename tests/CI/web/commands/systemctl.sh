@@ -23,6 +23,12 @@
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \brief  Runs a number of scenarios for systemctl valid and invalid calls
 
+echo
+echo "###################################################################################################"
+echo "********* systemctl.sh ************************************************** START *******************"
+echo "###################################################################################################"
+echo
+
 [ -n "$CMPJSON_SH" ] && [ -x "$CMPJSON_SH" ] || \
     logmsg_error "CMPJSON_SH not defined properly!"
 
@@ -129,3 +135,10 @@ api_auth_get_json "/admin/systemctl/status/mysql"
 tmp="`expected mysql`"
 "$CMPJSON_SH" -s "$OUT_CURL" "$tmp"
 print_result $?
+
+echo
+echo "###################################################################################################"
+echo "********* systemctl.sh *************************************************** END ********************"
+echo "###################################################################################################"
+echo
+

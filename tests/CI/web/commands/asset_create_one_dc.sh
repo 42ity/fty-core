@@ -87,7 +87,7 @@ print_result $?
 curlfail_pop
 
 echo "********* asset_create_one_dc.sh ******************************************************************"
-echo "********* 7. Create_DC_with_the_duplicite_ip1 ***********************************************"
+echo "********* 7. Create_DC_with_the_duplicite_ip1 *****************************************************"
 echo "***************************************************************************************************"
 test_it "Create_DC_with_the_duplicite_ip1"
 curlfail_push_expect_noerrors
