@@ -59,6 +59,7 @@ killdb() {
     DATABASE=mysql do_select "FLUSH QUERY CACHE" || true
     sut_run "mysqladmin refresh"
     sut_run "sync; [ -w /proc/sys/vm/drop_caches ] && echo 3 > /proc/sys/vm/drop_caches && sync"
+    logmsg_info "Database should be dropped and caches should have been flushed at this point"
     return 0
 }
 
@@ -66,8 +67,10 @@ loaddb_initial() {
     killdb
     echo "--------------- reset db: initialize -------------"
     for data in "$DB_BASE" ; do
+        logmsg_info "Importing $data ..."
         loaddb_file "$data" || return $?
     done
+    logmsg_info "Database schema should have been initialized at this point"
     return 0
 }
 
@@ -75,8 +78,10 @@ loaddb_default() {
     echo "--------------- reset db: default ----------------"
     loaddb_initial || return $?
     for data in "$DB_DATA" "$DB_DATA_TESTREST"; do
+        logmsg_info "Importing $data ..."
         loaddb_file "$data" || return $?
     done
+    logmsg_info "Database schema and data should have been initialized at this point"
     return 0
 }
 
@@ -84,8 +89,10 @@ loaddb_topo_loc() {
     echo "--------------- reset db: topo-location ----------"
     loaddb_initial || return $?
     for data in "$DB_DATA" "$DB_TOPOL"; do
+        logmsg_info "Importing $data ..."
         loaddb_file "$data" || return $?
     done
+    logmsg_info "Database schema and data should have been initialized at this point"
     return 0
 }
 
@@ -93,8 +100,10 @@ loaddb_topo_pow() {
     echo "--------------- reset db: topo-power -------------"
     loaddb_initial || return $?
     for data in "$DB_DATA" "$DB_TOPOP"; do
+        logmsg_info "Importing $data ..."
         loaddb_file "$data" || return $?
     done
+    logmsg_info "Database schema and data should have been initialized at this point"
     return 0
 }
 
@@ -103,8 +112,10 @@ loaddb_current() {
     loaddb_initial || return $?
     for data in "$DB_DATA_CURRENT"; do
     #for data in "$DB_DATA_CURRENT" "$DB_DATA_TESTREST"; do
+        logmsg_info "Importing $data ..."
         loaddb_file "$data" || return $?
     done
+    logmsg_info "Database schema and data should have been initialized at this point"
     return 0
 }
 
