@@ -136,8 +136,8 @@ bool
     auto adevice_dests = find_dests (links, std::get<0>(border_device));
     for ( auto &adevice: adevice_dests )
     {
-        auto it = container_devices.find(adevice);
-        if ( it == container_devices.cend() ) {
+        auto it = devices_in_container.find(adevice);
+        if ( it == devices_in_container.cend() ) {
             // it means, that destination device is out of the container
             return true;
         }
