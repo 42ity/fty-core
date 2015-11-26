@@ -46,6 +46,7 @@
 
     <!-- Here starts the real API -->
 
+
     <!-- SysInfo mapping -->
     <!-- Implementation tests (int)access_auth_level variable to limit visibility of some data -->
     <mapping>
@@ -58,6 +59,17 @@
       <target>auth@bios_web</target>
       <url>^/api/v1/oauth2/revoke$</url>
       <method>(POST|PUT)</method>
+    </mapping>
+
+    <!-- alerts/ack -->
+    <mapping>
+        <target>alert_ack@bios_web</target>
+        <method>PUT</method>
+        <url>^/api/v1/alerts/ack/([^/]+)/([^/]+)/?$</url>
+        <args>
+            <rule_name>$1</rule_name>
+            <element_name>$2</element_name>
+        </args>       
     </mapping>
 
     <!-- alerts/rules -->

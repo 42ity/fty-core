@@ -101,15 +101,14 @@ SUT_IS_REMOTE=yes
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 # Include our standard web routines for CI scripts
-. "`dirname $0`"/weblib.sh || \
-    { echo "CI-FATAL: $0: Can not web script library" >&2; exit 1; }
+. "`dirname $0`"/weblib.sh || die "Can not include web script library"
 
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
 
 determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
-DB_LOADDIR="$CHECKOUTDIR/database/mysql"
-CSV_BAM_LOADDIR="$CHECKOUTDIR/tests/fixtures/csv/bam"
+[ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
+[ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
 
 logmsg_info "Ensuring that needed remote daemons are running on VTE"
 sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent  bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
@@ -121,7 +120,7 @@ sut_run 'R=0; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server
     # *** write power rack base test data to DB on SUT
 set -o pipefail 2>/dev/null || true
 set -e
-loaddb_file "$DB_LOADDIR"/initdb.sql 2>&1 | tee $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
+loaddb_file "$DB_BASE" 2>&1 | tee "$CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log"
 
 # NOTE: This test verifies that with our standard configuration of the VTE
 # and its database we can import our assets, so we do not apply hacks like
@@ -135,18 +134,18 @@ set +e
     logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
 
 # ***** POST THE CSV FILE *****
-ASSET="$CSV_BAM_LOADDIR/bam_vte_tab_import.csv"
+ASSET="$CSV_LOADDIR_BAM/bam_vte_tab_import.csv"
 
 # Import the bam_vte_tab_import.csv file
-api_auth_post_file /asset/import assets=@$ASSET -H "Expect:" | tee $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log
+api_auth_post_file_form /asset/import assets="@$ASSET" | tee "$CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log"
 
 NUM_EXPECTED=13
-grep -q '"imported_lines" : '"$NUM_EXPECTED" $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log || \
+grep -q '"imported_lines" : '"$NUM_EXPECTED" "$CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log" || \
     die "ERROR : 'Test of the number of imported lines			FAILED  (not $NUM_EXPECTED)'"
 echo "Test of the number of imported lines			PASSED"
 
 for NUM in 9 10 11 16 18 20 21 22 23 24 25 27 28 29 ; do
-    grep -q "\[ $NUM," $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log || \
+    grep -q "\[ $NUM," "$CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log" || \
         die "ERROR : 'Test of the line   $NUM 				FAILED'"
     echo "Test of the line  $NUM  					PASSED"
 done
@@ -196,5 +195,5 @@ TIME=$(date --utc "+%Y-%m-%d %H:%M:%S")
 echo "Finish time is $TIME"
 TIME_END=$(date +%s)
 TEST_LAST=$(expr $TIME_END - $TIME_START)
-echo "Test lasted $TEST_LAST second."
+echo "Test lasted $TEST_LAST second(s)."
 exit 0

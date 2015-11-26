@@ -1,0 +1,247 @@
+<#
+ #
+ # Copyright (C) 2015 Eaton
+ #
+ # This program is free software; you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+ # the Free Software Foundation; either version 2 of the License, or
+ # (at your option) any later version.
+ #
+ # This program is distributed in the hope that it will be useful,
+ # but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+ #
+ # You should have received a copy of the GNU General Public License along
+ # with this program; if not, write to the Free Software Foundation, Inc.,
+ # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ #
+ #><#
+/*!
+ \file alert_ack.ecpp
+ \author Karol Hrdina <KarolHrdina@Eaton.com>
+ \brief Implementation of REST API call for PUT alerts/ack/<rule_name>/<element_name
+*/
+#><%pre>
+#include <exception>
+#include <cxxtools/jsondeserializer.h>
+#include <string>
+#include <malamute.h>
+#include <sys/types.h>
+#include <sys/syscall.h>
+
+#include "log.h"
+#include "utils_web.h"
+#include "str_defs.h"
+
+int state_valid (const char *state) {
+    assert (state);
+    if (streq (state, "ACK-WIP") ||
+        streq (state, "ACK-IGNORE") ||
+        streq (state, "ACK-PAUSE") ||
+        streq (state, "ACK-SILENCE") ||
+        streq (state, "ACTIVE"))
+        return 1;
+    return 0;
+}
+
+</%pre>
+<%cpp>
+// sanity check
+if (request.getMethod () != "PUT") {
+    http_die ("method-not-allowed", request.getMethod ().c_str ());
+}
+
+std::string rule_name = request.getArg ("rule_name");
+std::string element_name = request.getArg ("element_name");
+log_debug ("rule_name = '%s'", rule_name.c_str ());
+log_debug ("element_name = '%s'", element_name.c_str ());
+
+// Let's take a look at payload
+std::string state;
+cxxtools::SerializationInfo si;
+try {
+    std::stringstream input (request.getBody(), std::ios_base::in); 
+    cxxtools::JsonDeserializer deserializer (input);
+    deserializer.deserialize (si);
+    si.getMember ("state") >>= state;
+    if (state.empty ())
+        throw std::runtime_error ("property 'state' has empty value");
+}
+catch (const std::exception& e) {
+    log_debug ("Bad request document - invalid json: %s", e.what ());
+    http_die ("bad-request-document", "Please check RFC-11 for valid json schema description.");
+}
+log_debug ("state = '%s'", state.c_str ());
+
+if (!state_valid (state.c_str ())) {
+    log_debug ("State is not a recognized valid alert state.");
+    http_die ("request-param-bad", "state", std::string ("'").append (state).append ("'").c_str (),
+        "one of the following values [ ACTIVE | ACK-WIP | ACK-IGNORE | ACK-PAUSE | ACK-SILENCE ].");
+}
+
+// connect to malamute
+mlm_client_t *client = mlm_client_new ();
+if (!client) {
+    log_critical ("mlm_client_new() failed.");
+    http_die ("internal-error", "mlm_client_new() failed.");
+}
+
+std::string client_name ("alert_ack.");
+client_name.append (std::to_string (getpid ())).append (".").append (std::to_string (syscall (SYS_gettid)));
+log_debug ("malamute client name = '%s'.", client_name.c_str ());
+
+int rv = mlm_client_connect (client, MLM_ENDPOINT, 1000, client_name.c_str ());
+if (rv == -1) {
+    log_critical ("mlm_client_connect (endpoint = '%s', timeout = '%d', address = '%s') failed.",
+                    MLM_ENDPOINT, 1000, client_name.c_str ());
+    mlm_client_destroy (&client);
+    http_die ("internal-error", "mlm_client_connect() failed.");
+}
+
+// prepare rfc-evaluator-rules ADD message
+zmsg_t *send_msg = zmsg_new ();
+if (!send_msg) {
+    log_critical ("zmsg_new() failed.");
+    http_die ("internal-error", "zmsg_new() failed.");
+}
+zmsg_addstr (send_msg, rule_name.c_str ());
+zmsg_addstr (send_msg, element_name.c_str ());
+zmsg_addstr (send_msg, state.c_str ());
+
+// send it
+if (mlm_client_sendto (client, BIOS_AGENT_NAME_ALERT_AGENT, "rfc-alerts-acknowledge", NULL, 1000, &send_msg) != 0) {
+    log_debug ("mlm_client_sendto (address = '%s', subject = '%s', tracker = NULL, timeout = '%d') failed.",
+        BIOS_AGENT_NAME_ALERT_AGENT, "rfc-alerts-acknowledge", 1000);
+    zmsg_destroy (&send_msg);
+    mlm_client_destroy (&client);
+    http_die ("internal-error", "mlm_client_sendto() failed.");
+}
+
+// wait for the right message or time-out
+zmsg_t *recv_msg = NULL;
+zsock_t *pipe = mlm_client_msgpipe (client);
+if (!pipe) {
+    log_critical ("mlm_client_msgpipe() failed.");
+    http_die ("internal-error", "mlm_client_msgpipe() failed.");
+}
+zpoller_t *poller = zpoller_new (pipe, NULL);
+if (!poller) {
+    log_critical ("zpoller_new() failed.");
+    http_die ("internal-error", "zpoller_new() failed.");
+}
+while (true) {
+    zsock_t *which = (zsock_t *) zpoller_wait (poller, 5000);
+    if (which) {
+        recv_msg = mlm_client_recv (client);
+    }
+    if (!recv_msg) {
+        if (zpoller_expired (poller)) {
+            log_error ("zpoller_wait(timeout = 5000) timed out waiting for message.");
+            mlm_client_destroy (&client);
+            zpoller_destroy (&poller);
+            http_die ("internal-error", "Timed out waiting for message.");
+        }
+        log_error ("mlm_client_recv() failed.");
+        zpoller_destroy (&poller);
+        mlm_client_destroy (&client);
+        http_die ("internal-error", "mlm_client_recv() failed.");
+    }
+    if (streq (mlm_client_sender (client), BIOS_AGENT_NAME_ALERT_AGENT))
+        break;
+    zmsg_destroy (&recv_msg);
+}
+
+// Got it
+// Check subject
+if (!streq (mlm_client_subject (client), "rfc-alerts-acknowledge")) {
+    log_error ("Unexpected reply from '%s'. Subject expected = '%s', received = '%s'.",
+        mlm_client_sender (client), "rfc-alerts-acknowledge", mlm_client_subject (client));
+    zmsg_destroy (&recv_msg);
+    mlm_client_destroy (&client);
+    http_die ("internal-error", "Bad message.");
+}
+// Check command. Can be OK or ERROR
+char *part = zmsg_popstr (recv_msg);
+if (streq (part, "OK")) {
+    free (part);
+    part = zmsg_popstr (recv_msg);
+    if (!part || !streq (part, rule_name.c_str ())) {
+        log_error ("Unexpected reply from '%s'. Expected OK/rule_name/element_name/state. Got OK/(null).", mlm_client_sender (client));
+        zmsg_destroy (&recv_msg);
+        mlm_client_destroy (&client);
+        http_die ("internal-error", "Bad message.");
+    }
+    free (part);
+    part = zmsg_popstr (recv_msg);
+    if (!part || !streq (part, element_name.c_str ())) {
+        log_error ("Unexpected reply from '%s'. Expected OK/rule_name/element_name/state. Got OK/rule_name/(null).", mlm_client_sender (client));
+        zmsg_destroy (&recv_msg);
+        mlm_client_destroy (&client);
+        http_die ("internal-error", "Bad message.");
+    }
+    free (part);   
+    part = zmsg_popstr (recv_msg);
+    if (!part || !streq (part, state.c_str ())) {
+        log_error ("Unexpected reply from '%s'. Expected OK/rule_name/element_name/state. Got OK/rule_name/element_name/(null).", mlm_client_sender (client));
+        zmsg_destroy (&recv_msg);
+        mlm_client_destroy (&client);
+        http_die ("internal-error", "Bad message.");
+    }
+    free (part);
+// TODO: rfc-11 is not written yet, json format can change freely
+</%cpp>
+{
+    <$$ utils::json::jsonify ("rule_name", rule_name) $>,
+    <$$ utils::json::jsonify ("element_name", element_name) $>,
+    <$$ utils::json::jsonify ("state", state) $>
+}
+<%cpp>
+    zmsg_destroy (&recv_msg);
+    mlm_client_destroy (&client);
+    return HTTP_OK;
+}
+if (streq (part, "ERROR")) {
+    free (part);
+    part = zmsg_popstr (recv_msg);
+    if (!part) {
+        log_error ("Unexpected reply from '%s'. Expected ERROR/reason. Got ERROR/(null).", mlm_client_sender (client));
+        zmsg_destroy (&recv_msg);
+        mlm_client_destroy (&client);
+        http_die ("internal-error", "Bad message.");
+    }
+    if (streq (part, "NOT_FOUND")) {
+        free (part);
+        log_error ("Alert identified by rule_name = '%s' and element_name = '%s' does not exist.",
+            rule_name.c_str (), element_name.c_str ());
+        zmsg_destroy (&recv_msg);
+        mlm_client_destroy (&client);
+        http_die ("not-found", std::string ("Alert identified by rule name = '").append (rule_name).append ("', element name = '").
+            append (element_name).append ("' does not exist.").c_str ());
+    }
+    if (streq (part, "BAD_STATE")) {
+        free (part);
+        log_error ("Alert identified by rule_name = '%s' and element_name = '%s' can not change state to '%s'.",
+            rule_name.c_str (), element_name.c_str (), state.c_str ());
+        zmsg_destroy (&recv_msg);
+        mlm_client_destroy (&client);
+        http_die ("parameter-conflict", std::string ("Alert identified by rule name = '").append (rule_name).append ("', element name = '").
+            append (element_name).append ("' can not change state to '").append (state).append ("'.").c_str ());
+    }
+    log_error ("%s", part);
+    std::string reason = part;
+    free (part);
+    zmsg_destroy (&recv_msg);
+    mlm_client_destroy (&client);
+    http_die ("internal-error",
+        std::string ("Error while setting state of alert identified by rule name = '").append (rule_name).append ("', element = '").
+        append (element_name).append ("' to '").append (reason).append ("'").c_str ()); 
+}
+// Message does not conform to protocol
+free (part);
+log_error ("Unexptected reply from  '%s'. Does not conform to rfc-evaluator-rules.",
+    mlm_client_sender (client));
+zmsg_destroy (&recv_msg);
+mlm_client_destroy (&client);
+http_die ("internal-error", "Bad message.");
+</%cpp>
