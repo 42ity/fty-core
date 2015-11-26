@@ -176,11 +176,16 @@ print_result $REZ
 echo "********* asset_import_err.sh *********************************************************************"
 echo "********* 9. Too long keytag **********************************************************************"
 echo "***************************************************************************************************"
+if [ x"$TEST_BIOS_1516" = xyes ] ; then
 test_it "Too_long_keytag"
 loaddb_initial
 REZ=0
 test_tables "universal_asset_tab_8_too_long_keytag.csv" 48 "ERROR"
+# Expected output:
+# {"imported_lines":42,"errors":[[20,"Internal Server Error. "],[28,"Element 'UPS1' not found."],[29,"Element 'ePDU1' not found."],[35,"Element 'ePDU2' not found."],[36,"Element 'ePDU2' not found."],[39,"Element 'ePDU2' not found."]]}
+# In practice it flip-flops so only line20 fails, so the test is skipped for now
 print_result $REZ
+else logmsg_warn "TEST SKIPPED (see BIOS-1516)"; fi
 
 echo "********* asset_import_err.sh *********************************************************************"
 echo "********* 10. Not proper sequence *****************************************************************"
