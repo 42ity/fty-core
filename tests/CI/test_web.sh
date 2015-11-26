@@ -167,38 +167,6 @@ CMPJSON_PY="`pwd`/cmpjson.py"
 
 cd web/commands || CODE=6 die "Can not change to `pwd`/web/commands"
 
-summarizeResults() {
-    TRAP_RES=$?
-    print_result $TRAP_RES
-    set +e
-    NUM_NOTFAILED="`expr $TESTLIB_COUNT_PASS + $TESTLIB_COUNT_SKIP`"
-    logmsg_info "Testing completed ($TRAP_RES), $NUM_NOTFAILED/$TESTLIB_COUNT_TOTAL tests passed($TESTLIB_COUNT_PASS) or not-failed($TESTLIB_COUNT_SKIP) for test-groups:"
-    logmsg_info "  POSITIVE (exec glob) = $POSITIVE"
-    logmsg_info "  NEGATIVE (skip glob) = $NEGATIVE"
-    logmsg_info "  SKIP_NONSH_TESTS = $SKIP_NONSH_TESTS (so skipped $SKIPPED_NONSH_TESTS tests)"
-    if [ -n "$TESTLIB_LIST_FAILED_IGNORED" ]; then
-        logmsg_info "The following $TESTLIB_COUNT_SKIP tests have failed but were ignored (TDD in progress):"
-        for i in $TESTLIB_LIST_FAILED_IGNORED; do
-            echo " * $i"
-        done
-    fi
-    NUM_FAILED="`expr $TESTLIB_COUNT_TOTAL - $NUM_NOTFAILED`"
-    [ -z "$TESTLIB_LIST_FAILED" ] && [ x"$TESTLIB_COUNT_FAIL" = x0 ] && [ x"$NUM_FAILED" = x0 ] && exit 0
-    logmsg_info "The following $TESTLIB_COUNT_FAILED tests have failed:"
-    N=0 # Do a bit of double-accounting to be sure ;)
-    for i in $TESTLIB_LIST_FAILED; do
-        echo " * $i"
-        N="`expr $N + 1`"
-    done
-    [ x"$TESTLIB_COUNT_FAIL" = x"$NUM_FAILED" ] && \
-    [ x"$N" = x"$NUM_FAILED" ] && \
-    [ x"$TESTLIB_COUNT_FAIL" = x"$N" ] || \
-        logmsg_error "TEST-LIB accounting fault: failed-test counts mismatched: TESTLIB_COUNT_FAIL=$TESTLIB_COUNT_FAIL vs NUM_FAILED=$NUM_FAILED vs N=$N"
-    logmsg_error "$N/$TESTLIB_COUNT_TOTAL tests FAILED, $TESTLIB_COUNT_SKIP tests FAILED_IGNORED, $TESTLIB_COUNT_PASS tests PASSED"
-    unset N
-    exit 1
-}
-
 POSITIVE=""
 NEGATIVE=""
 while [ "$1" ]; do
@@ -211,7 +179,7 @@ while [ "$1" ]; do
 done
 [ -n "$POSITIVE" ] || POSITIVE="*"
 
-settraps "summarizeResults"
+settraps "exit_summarizeResults"
 
 for i in $POSITIVE; do
     for NAME in *$i*; do
