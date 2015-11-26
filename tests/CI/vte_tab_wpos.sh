@@ -106,8 +106,7 @@ SUT_IS_REMOTE=yes
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 # Include our standard web routines for CI scripts
-. "`dirname $0`"/weblib.sh || \
-    { echo "CI-FATAL: $0: Can not web script library" >&2; exit 1; }
+. "`dirname $0`"/weblib.sh || die "Can not include web script library"
 
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
 
