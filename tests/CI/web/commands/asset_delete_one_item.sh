@@ -25,28 +25,20 @@ echo "********* asset_delete_one_item.sh ***************** START ***************
 echo "###################################################################################################"
 echo
 
+echo "***************************************************************************************************"
+echo "********* Prerequisites ***************************************************************************"
+echo "***************************************************************************************************"
+init_script
+
 find_id() {
-	local __CALL=$(api_get_json /asset/$1)
-	local __REPLY=$(echo "$__CALL" | $JSONSH -x id)
-	ID_1=$(echo "${__REPLY}" | cut -d '"' -f 6)
-	ID=$(echo $ID_1 | cut -d ' ' -f $2)
-	echo $ID
+	local __CALL="$(api_get_json /asset/$1)"
+	local __REPLY="$(echo "$__CALL" | $JSONSH -x id)"
+	ID_1="$(echo "${__REPLY}" | cut -d '"' -f 6)"
+	ID="$(echo $ID_1 | cut -d ' ' -f $2)"
+	echo "$ID"
 }
 
-# Assumption: initdb + load_data files are uploaded.
-# So, make sure this is  true;
-DB_INIT_delete="initdb.sql"
-DB_LOAD_DATA_delete="load_data.sql"
-DB_LOADDIR=$BUILDSUBDIR/tools
-loaddb_file "$DB_LOADDIR/$DB_INIT_delete" || exit $?
-loaddb_file "$DB_LOADDIR/$DB_LOAD_DATA_delete" || exit $?
-
-# Need to check, number of expected rows in the table
-ASSETS_NUMBER="$(mysql -u root box_utf8 <<< "select count(id) as assets_count from v_bios_asset_element")"
-echo $ASSETS_NUMBER
-echo "expected 35"
-
-# Start
+# Set test number
 No=1
 
 echo "********* asset_delete_one_item.sh ****************************************************************"
