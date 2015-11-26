@@ -108,15 +108,16 @@ SUT_IS_REMOTE=yes
 NEED_BUILDSUBDIR=no determineDirs_default || true
 # *** weblib include
 . "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+[ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
+[ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
 
-        # * config dir for the nut dummy driver parameters allocated in config files
+    # * config dir for the nut dummy driver parameters allocated in config files
     # *** working directories
 CFGDIR="/etc/nut"
-cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 echo "SCRIPTDIR =       $SCRIPTDIR"
 echo "CHECKOUTDIR =     $CHECKOUTDIR"
 echo "BUILDSUBDIR =     $BUILDSUBDIR"
-DB_LOADDIR="$CHECKOUTDIR/database/mysql"
 
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
 

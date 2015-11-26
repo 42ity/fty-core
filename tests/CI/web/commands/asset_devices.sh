@@ -26,20 +26,20 @@ echo "********* asset_devices.sh ************************* START ***************
 echo "###################################################################################################"
 echo
 
-# Assumption: initdb + load_data files are uploaded.
-# So, make sure this is  true;
-DB_LOADDIR="$CHECKOUTDIR/database/mysql"
-DB_BASE="$DB_LOADDIR/initdb.sql"
-DB_DATA="$DB_LOADDIR/load_data.sql"
-DB_DATA_TESTREST="$DB_LOADDIR/load_data_test_restapi.sql"
-DB_ASSET_TAG_NOT_UNIQUE="$DB_LOADDIR/initdb_ci_patch.sql"
-loaddb_file "$DB_BASE" || exit $?
-loaddb_file "$DB_DATA" || exit $?
+echo "***************************************************************************************************"
+echo "********* Prerequisites ***************************************************************************"
+echo "***************************************************************************************************"
 
-# Need to check, number of expected rows in the table
-ASSETS_NUMBER="$(mysql -u root box_utf8 <<< 'select count(id) as assets_count from v_bios_asset_element')"
-echo $ASSETS_NUMBER
-echo "expected 35"
+# Assumption: initdb + load_data files are uploaded.
+# So, make sure this is true:
+init_script_sampledata || exit $?
+
+# Need to check number of expected rows in the table
+test_it "verify_number_of_sample_assets"
+ASSETS_NUMBER="$(do_select 'select count(id) as assets_count from v_bios_asset_element')"
+logmsg_info "ASSETS_NUMBER: $ASSETS_NUMBER,    expected: 35"
+[ "$ASSETS_NUMBER" -eq 35 ]
+print_result $?
 
 echo "********* asset_devices.sh ************************************************************************"
 echo "********* 1. list_of_all_devices ******************************************************************"
@@ -60,7 +60,7 @@ print_result $?
 curlfail_pop
 
 echo "********* asset_devices.sh ************************************************************************"
-echo "********* 3. list_of_devices_with_subtype_feed *****************************************************"
+echo "********* 3. list_of_devices_with_subtype_feed ****************************************************"
 echo "***************************************************************************************************"
 curlfail_push_expect_noerrors
 test_it "list_of_devices_with_subtype_feed"
@@ -124,7 +124,7 @@ api_get_json /asset/devices?subXtype=epdu >&5
 print_result $?
 
 echo "********* asset_devices.sh ************************************************************************"
-echo "********* 11. list_of_OK_argument_and_empty_list_as_result ***************************************"
+echo "********* 11. list_of_OK_argument_and_empty_list_as_result ****************************************"
 echo "***************************************************************************************************"
 test_it "list_of_OK_arguments_and_empty_list_as_result"
 REZ=0
@@ -146,16 +146,14 @@ echo "********* asset_devices.sh ***********************************************
 echo "********* 12. no_devices_present ******************************************************************"
 echo "***************************************************************************************************"
 # delete all assets, no DC are present
-loaddb_file "$DB_BASE"
+loaddb_initial
 
 test_it "no_devices_present"
 api_get_json /asset/devices >&5
 print_result $?
 
 #fill DB again
-for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
-    loaddb_file "$data" || return $?
-done
+loaddb_default
 
 echo
 echo "###################################################################################################"

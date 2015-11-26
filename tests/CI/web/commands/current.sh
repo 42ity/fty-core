@@ -19,9 +19,11 @@
 #  \brief  CI tests for asset current
 #  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 
-# Add the library
-. $CHECKOUTDIR/tests/CI/scriptlib.sh || \
-    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+echo
+echo "###################################################################################################"
+echo "********* current.sh ******************************* START ****************************************"
+echo "###################################################################################################"
+echo
 
 # Add the first line of the sql file and create it
 echo "use box_utf8;" > /tmp/tmp.sql
@@ -54,17 +56,7 @@ echo "use box_utf8;" > /tmp/tmp.sql
 }
 
 db_initiate(){
-DB_LOADDIR="$CHECKOUTDIR/database/mysql"
-DB_BASE="$DB_LOADDIR/initdb.sql"
-DB_DATA="$DB_LOADDIR/current_data.sql"
-DB_DATA_TESTREST="$DB_LOADDIR/load_data_test_restapi.sql"
-DB_ASSET_TAG_NOT_UNIQUE="$DB_LOADDIR/initdb_ci_patch.sql"
-DB_ASSET_DEFAULT="$DB_LOADDIR/initdb_ci_patch_2.sql"
-
-for data in "$DB_BASE" "$DB_DATA"; do
-#for data in "$DB_BASE" "$DB_DATA" "$DB_DATA_TESTREST"; do
-    loaddb_file "$data" || return $?
-done
+loaddb_current || return $?
 
 echo "use box_utf8;" > /tmp/tmp.sql
 sqlline="INSERT INTO t_bios_discovered_device (id_discovered_device,name,id_device_type) VALUES (NULL, 'DC-LAB', 1);"
@@ -207,15 +199,11 @@ done
 }
 
 # START
-# set the counters
-NPAR=${#PARAMS[*]}
-NSAM=${#SAMPLES[*]}
-SAMPLECNT=$(expr $NSAM / $NPAR - 1)
 
-echo "###################################################################################################"
-echo "********* current.sh ******************************* START ****************************************"
-echo "###################################################################################################"
-echo
+echo "***************************************************************************************************"
+echo "********* Prerequisites ***************************************************************************"
+echo "***************************************************************************************************"
+init_script
 
 echo "********* current.sh ******************************************************************************"
 echo "********* 1. UPS mandatory parameters returned ****************************************************"
@@ -343,10 +331,17 @@ api_get_json '/metric/current?dev=abc,21,28%20%20555,35,45' >&5
 print_result $?
 
 echo "********* current.sh ******************************************************************************"
-echo "********* 12. The format of value list error 2 ******************************************************"
+echo "********* 12. The format of value list error 2 ****************************************************"
 echo "***************************************************************************************************"
 
 test_it "The_format_of_value_list_error_2"
 db_initiate
 api_get_json '/metric/current?dev=abc,21,28;555,35,45' >&5
 print_result $?
+
+echo
+echo "###################################################################################################"
+echo "********* current.sh ******************************** END *****************************************"
+echo "###################################################################################################"
+echo
+

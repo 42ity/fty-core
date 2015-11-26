@@ -107,17 +107,12 @@ SUT_IS_REMOTE=yes
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+[ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
+[ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
 
 
 # ***** GLOBAL VARIABLES *****
 RESULT=0
-DB_LOADDIR="$CHECKOUTDIR/database/mysql"
-DB_BASE="$DB_LOADDIR/initdb.sql"
-DB_DATA="$DB_LOADDIR/load_data.sql"
-DB_DATA_TESTREST="$DB_LOADDIR/load_data_test_restapi.sql"
-DB_TOPOP="$DB_LOADDIR/power_topology.sql"
-DB_TOPOL="$DB_LOADDIR/location_topology.sql"
-DB_ASSET_TAG_NOT_UNIQUE="$DB_LOADDIR/initdb_ci_patch.sql"
 
 # Set up weblib test engine preference defaults for automated CI tests
 [ -z "$WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT" ] && \
@@ -174,7 +169,7 @@ test_web() {
 }
 
     # *** load default db setting
-loaddb_default() {
+ci_loaddb_default() {
     echo "--------------- reset db: default ----------------"
     loaddb_file "$DB_BASE" && \
     loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
@@ -183,7 +178,7 @@ loaddb_default() {
 }
     # *** start the default set of TC
 test_web_default() {
-    loaddb_default && \
+    ci_loaddb_default && \
     test_web "$@"
 }
 
