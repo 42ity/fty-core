@@ -13,4 +13,4 @@ EnvironmentFile=-/etc/sysconfig/bios__%n.conf
 ExecStart=@libexecdir@/@PACKAGE@/server-agent
 
 [Install]
-WantedBy=bios.target
+WantedBy=bios.service

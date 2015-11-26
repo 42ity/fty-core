@@ -18,4 +18,4 @@ ExecStartPre=/bin/chown -R bios /var/run/agent-cm /var/lib/bios/agent-cm
 ExecStart=@datadir@/@PACKAGE@/scripts/biostimer-graphs-prefetch.sh --STA "%I"
 
 [Install]
-WantedBy=bios.target
+WantedBy=bios.service
