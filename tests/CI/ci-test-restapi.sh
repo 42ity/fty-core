@@ -28,6 +28,8 @@ NEED_BUILDSUBDIR=no determineDirs_default || true
 cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR' (it may be empty but should exist)"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to build, and BUILDSUBDIR='$BUILDSUBDIR' to run the REST API webserver"
+[ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
+[ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
 
 # Set up weblib test engine preference defaults for automated CI tests
 [ -z "$WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT" ] && \
@@ -39,15 +41,6 @@ logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to build, and BUILDSUBDIR='$BUILDS
 [ -z "$SKIP_NONSH_TESTS" ] && \
     SKIP_NONSH_TESTS=yes
 export WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT WEBLIB_QUICKFAIL WEBLIB_CURLFAIL SKIP_NONSH_TESTS
-
-DB_LOADDIR="$CHECKOUTDIR/database/mysql"
-DB_BASE="$DB_LOADDIR/initdb.sql"
-DB_DATA="$DB_LOADDIR/load_data.sql"
-DB_DATA_TESTREST="$DB_LOADDIR/load_data_test_restapi.sql"
-DB_TOPOP="$DB_LOADDIR/power_topology.sql"
-DB_TOPOL="$DB_LOADDIR/location_topology.sql"
-DB_ASSET_TAG_NOT_UNIQUE="$DB_LOADDIR/initdb_ci_patch.sql"
-DB_ASSET_DEFAULT="$DB_LOADDIR/initdb_ci_patch_2.sql"
 
 PATH="/usr/lib/ccache:/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
 export PATH
@@ -233,7 +226,7 @@ test_web() {
     return $RESULT
 }
 
-loaddb_default() {
+ci_loaddb_default() {
     echo "--------------- reset db: default ----------------"
     for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
         loaddb_file "$data" || exit $?
@@ -242,7 +235,7 @@ loaddb_default() {
 }
 
 test_web_default() {
-    loaddb_default && \
+    ci_loaddb_default && \
     test_web "$@"
 }
 
@@ -264,11 +257,15 @@ test_web_topo_l() {
 
 asset_create() {
     echo "---------- reset db: asset : create ---------"
-    for data in "$DB_BASE" "$DB_ASSET_DEFAULT" "$DB_DATA"; do
+    for data in "$DB_BASE" "$DB_DATA"; do
           loaddb_file "$data" || exit $?
     done
     test_web "$@"
 }
+
+# Try to accept the BIOS license on server
+SKIP_SANITY=yes test_web 00_license-CI-forceaccept.sh.test || \
+    logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
 
 # do the test
 set +e
@@ -299,7 +296,7 @@ else
         [ "$RESULT" != 0 ] && break
     done
 fi
-loaddb_default
+ci_loaddb_default
 
 # cleanup
 kill $MAKEPID >/dev/null 2>&1 || true

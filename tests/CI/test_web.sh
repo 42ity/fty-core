@@ -84,7 +84,7 @@ done
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 NEED_BUILDSUBDIR=no determineDirs_default || true
 . "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
-#cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+. "`dirname $0`"/testlib.sh || CODE=$? die "Can not include test script library"
 
 PATH="$PATH:/sbin:/usr/sbin"
 
@@ -278,10 +278,10 @@ for i in $POSITIVE; do
     # real test failure here.
 
     if [ -r "$EXPECTED_RESULT" ]; then
-        ls -la "$EXPECTED_RESULT" "$REALLIFE_RESULT"
         if [ -x "../results/$NAME".cmp ]; then
             ### Use an optional custom comparator
             test_it "compare_expectation_custom"
+            ls -la "$EXPECTED_RESULT" "$REALLIFE_RESULT"
             ../results/"$NAME".cmp "$EXPECTED_RESULT" "$REALLIFE_RESULT"
             RES=$?
             [ $RES -ne 0 ] && \
@@ -290,6 +290,7 @@ for i in $POSITIVE; do
             ### Use the default comparation script which makes sure that
             ### each line of RESULT matches the same-numbered line of EXPECT
             test_it "compare_expectation_`basename "$CMP"`"
+            ls -la "$EXPECTED_RESULT" "$REALLIFE_RESULT"
             "$CMP" "$EXPECTED_RESULT" "$REALLIFE_RESULT"
             RES_CMP=$?
             RES_JSONV=0

@@ -33,10 +33,14 @@
 NEED_BUILDSUBDIR=no determineDirs_default || true
 . "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+[ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
+[ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
+
+
 DB_LOADDIR="$CHECKOUTDIR/database/mysql"
 
-SQL_INIT="$DB_LOADDIR/initdb.sql"
-SQL_LOAD="$DB_LOADDIR/ci-DC-power-UC1.sql"
+DB_BASE="$DB_LOADDIR/initdb.sql"
+DB_DC_POWER_UC1="$DB_LOADDIR/ci-DC-power-UC1.sql"
 DB_ASSET_TAG_NOT_UNIQUE="$DB_LOADDIR/initdb_ci_patch.sql"
 XML_TNTNET="tntnet.xml"
 
@@ -45,7 +49,7 @@ XML_TNTNET="tntnet.xml"
 # is not used here yet anyway
 TESTWEB_CURLFAIL=no
 
-[ "x$INSTALLDIR" = "x" ] && INSTALLDIR=$CHECKOUTDIR/Installation
+[ "x$INSTALLDIR" = "x" ] && INSTALLDIR="$CHECKOUTDIR/Installation"
 logmsg_info "Installation directory : $INSTALLDIR"
 
 CFGDIR=""
@@ -128,7 +132,7 @@ create_ups_device $UPS3 1200
 
 # drop and fill the database
 fill_database(){
-    for SQLFILE in "$SQL_INIT" "$DB_ASSET_TAG_NOT_UNIQUE" "$SQL_LOAD" ; do
+    for SQLFILE in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DC_POWER_UC1" ; do
         if [ -s "$SQLFILE" ]; then
             loaddb_file "$SQLFILE" || die "Error importing $SQLFILE"
         else
@@ -141,15 +145,15 @@ fill_database(){
 start_bios_daemons(){
     # Kill existing process
     for d in agent-dbstore agent-nut ; do
-        killall -KILL $d lt-$d || true
+        killall -KILL "$d" "lt-$d" || true
     done
     # start agent-dbstore
     for d in agent-dbstore agent-nut ; do
-    if [ -x $INSTALLDIR/usr/local/bin/$d ] ; then
-        $INSTALLDIR/usr/local/bin/$d &
+    if [ -x "$INSTALLDIR/usr/local/bin/$d" ] ; then
+        "$INSTALLDIR/usr/local/bin/$d" &
     else
-        if [ -x ${BUILDSUBDIR}/$d ] ; then
-            ${BUILDSUBDIR}/$d &
+        if [ -x "${BUILDSUBDIR}/$d" ] ; then
+            "${BUILDSUBDIR}/$d" &
         else
             die "Can't find $d"
         fi
