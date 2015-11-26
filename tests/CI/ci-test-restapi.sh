@@ -1,6 +1,6 @@
 #/!bin/sh
 #
-# Copyright (C) 2014 Eaton
+# Copyright (C) 2014-2015 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,6 +28,9 @@ NEED_BUILDSUBDIR=no determineDirs_default || true
 cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR' (it may be empty but should exist)"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to build, and BUILDSUBDIR='$BUILDSUBDIR' to run the REST API webserver"
+# Include these explicitly since we don't use weblib.sh here
+#. "`dirname $0`"/testlib.sh || die "Can not include common test script library"
+. "`dirname $0`"/testlib-db.sh || die "Can not include database test script library"
 [ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
 [ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
 
