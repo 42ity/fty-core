@@ -41,8 +41,6 @@ if [ "$NUM_EXPECTED" != 0 ];then
     if [ "$REZ" = 0 ];then
         api_auth_post_file_form_json /asset/import assets="@$ASSET" >&5
         REZ=$?
-#sleep 120
-#        echo "REZ = $REZ"
     fi
 fi
 mysqldump -u root box_utf8 "${TABLE_NAME}" |grep "INSERT" > "${DB_DUMP_DIR}/${TABLE_NAME}.dmp"
@@ -85,9 +83,9 @@ echo "********* asset_import.sh ************************************************
 echo "********* 2. Export universal tab 16LE ************************************************************"
 echo "***************************************************************************************************"
 test_it "Export_universal_tab_16LE"
-api_auth_get /asset/export -H "Expect:" | grep -v '>'|grep -v '<'|grep -v '*'|grep -v '{' | awk 'NF' > $CHECKOUTDIR/tools/asset_import/exp_uni_tab_16LE.csv
+api_auth_get /asset/export -H "Expect:" | grep -v '>'|grep -v '<'|grep -v '*'|grep -v '{' | awk 'NF' > ${DB_DUMP_DIR}/exp_uni_tab_16LE.csv
 REZ=$?
-sed 's/\(,[^,]*\)$//' $CHECKOUTDIR/tools/asset_import/exp_uni_tab_16LE.csv > $CHECKOUTDIR/tools/asset_import/imp_exp_uni_tab_16LE.csv
+sed 's/\(,[^,]*\)$//' ${DB_DUMP_DIR}/exp_uni_tab_16LE.csv > $CHECKOUTDIR/tools/asset_import/imp_exp_uni_tab_16LE.csv
 print_result $REZ
 
 echo "********* asset_import.sh *************************************************************************"
@@ -211,6 +209,23 @@ loaddb_initial
 REZ=0
 test_tables "universal_asset_comma_8_asset_link.csv" 48 "ERROR" "_asset_link"
 #sleep 120
+print_result $REZ
+
+echo "********* asset_import.sh *************************************************************************"
+echo "********* 16. Export universal tab 16LE with header ***********************************************"
+echo "***************************************************************************************************"
+test_it "Export_universal_tab_16LE"
+#*#*#*#*#*#*# TODO : Export_universal_tab_16LE_with_header : wrong format Content-Disposition: asset_export2015-11-26Tx��.csv
+api_auth_get /asset/export -H "Expect:"|grep 'Content-Disposition'
+REZ=$?
+#sed 's/\(,[^,]*\)$//' $CHECKOUTDIR/tools/asset_import/exp_uni_tab_16LE.csv > $CHECKOUTDIR/tools/asset_import/imp_exp_uni_tab_16LE.csv
+print_result $REZ
+
+echo "********* asset_import.sh *************************************************************************"
+echo "********* 17. Export id *************************** ***********************************************"
+echo "***************************************************************************************************"
+test_it "Export_id"
+diff "${DB_DUMP_DIR}/exp_uni_tab_16LE.csv" "${DB_RES_DIR}/exp_uni_tab_16LE.ptr" |wc -l || REZ=1
 print_result $REZ
 
 echo
