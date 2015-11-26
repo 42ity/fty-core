@@ -73,9 +73,8 @@ killdb() {
     fi
     DATABASE=mysql do_select "RESET QUERY CACHE" || true
     DATABASE=mysql do_select "FLUSH QUERY CACHE" || true
-    sut_run "mysqladmin refresh"
-    sut_run "sync; [ -w /proc/sys/vm/drop_caches ] && echo 3 > /proc/sys/vm/drop_caches && sync"
-    logmsg_info "Database should be dropped and caches should have been flushed at this point"
+    sut_run "mysqladmin refresh ; sync; [ -w /proc/sys/vm/drop_caches ] && echo 3 > /proc/sys/vm/drop_caches && sync"
+    logmsg_info "Database should have been dropped and caches should have been flushed at this point"
     return 0
 }
 
@@ -86,7 +85,7 @@ loaddb_initial() {
         logmsg_info "Importing $data ..."
         loaddb_file "$data" || return $?
     done
-    logmsg_info "Database schema should have been initialized at this point"
+    logmsg_info "Database schema should have been initialized at this point: core schema file only"
     return 0
 }
 
@@ -97,7 +96,7 @@ loaddb_default() {
         logmsg_info "Importing $data ..."
         loaddb_file "$data" || return $?
     done
-    logmsg_info "Database schema and data should have been initialized at this point"
+    logmsg_info "Database schema and data should have been initialized at this point: for common REST API tests"
     return 0
 }
 
@@ -108,7 +107,7 @@ loaddb_topo_loc() {
         logmsg_info "Importing $data ..."
         loaddb_file "$data" || return $?
     done
-    logmsg_info "Database schema and data should have been initialized at this point"
+    logmsg_info "Database schema and data should have been initialized at this point: for topology-location tests"
     return 0
 }
 
@@ -119,7 +118,7 @@ loaddb_topo_pow() {
         logmsg_info "Importing $data ..."
         loaddb_file "$data" || return $?
     done
-    logmsg_info "Database schema and data should have been initialized at this point"
+    logmsg_info "Database schema and data should have been initialized at this point: for topology-power tests"
     return 0
 }
 
@@ -131,7 +130,7 @@ loaddb_current() {
         logmsg_info "Importing $data ..."
         loaddb_file "$data" || return $?
     done
-    logmsg_info "Database schema and data should have been initialized at this point"
+    logmsg_info "Database schema and data should have been initialized at this point: for current tests"
     return 0
 }
 
