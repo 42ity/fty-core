@@ -1,6 +1,6 @@
 #/!bin/sh
 
-# Copyright (C) 2014 Eaton
+# Copyright (C) 2014-2015 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #  \author  Barbora Stepankova <BarboraStepankova@Eaton.com>
 #  \author  Tomas Halman <TomasHalman@Eaton.com>
 #  \author  Alena Chernikava <AlenaChernikava@Eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \details Every database test has its own requirements regarding input data.
 #       That is why before every database test database should be initialised
 #       and appropriate testing data should be filled.
@@ -28,6 +29,8 @@
 # Requirements:
 #   - mariadb running
 #   - db user root without password
+#
+# TODO: rewrite to use test_it()
 
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
@@ -35,22 +38,13 @@
 NEED_BUILDSUBDIR=no NEED_CHECKOUTDIR=yes determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to build the database tests"
+. "`dirname $0`"/testlib.sh || die "Can not include common test script library"
+. "`dirname $0`"/testlib-db.sh || die "Can not include database test script library"
+[ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
+[ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
 
 set -u
 set -e
-
-DB_LOADDIR="$CHECKOUTDIR/database/mysql"
-
-DB_BASE="$DB_LOADDIR/initdb.sql"
-DB_DATA="$DB_LOADDIR/load_data.sql"
-DB_TOPO="$DB_LOADDIR/power_topology.sql"
-DB_TOPO1="$DB_LOADDIR/location_topology.sql"
-DB_RACK_POWER="$DB_LOADDIR/rack_power.sql"
-DB_DC_POWER="$DB_LOADDIR/dc_power.sql"
-DB_CRUD="$DB_LOADDIR/crud_test.sql"
-DB_OUTAGE="$DB_LOADDIR/test_outage.sql"
-DB_ALERT="$DB_LOADDIR/test_alert.sql"
-DB_ASSET_TAG_NOT_UNIQUE="$DB_LOADDIR/initdb_ci_patch.sql"
 
 RESULT=0
 FAILED=""
@@ -63,7 +57,7 @@ trap_exit() {
 
     if [ -n "$FAILED" ]; then
         logmsg_error "The following tests have failed:"
-        for F in $FAILED; do echo " * $F" >&2; done
+        for F in $FAILED; do echo " * FAILED  $F" >&2; done
         [ "$TRAP_RESULT" = 0 ] || TRAP_RESULT=1
     fi
 
@@ -104,6 +98,7 @@ fi
 sleep 1
 
 echo "-------------------- test-db2 --------------------"
+echo "-------------------- reset db --------------------"
 loaddb_file "$DB_BASE" \
 && loaddb_file "$DB_DATA" \
 || die "Can't prepare the database"
@@ -119,6 +114,7 @@ fi
 sleep 1
 
 echo "-------------------- test-db-alert --------------------"
+echo "-------------------- reset db --------------------"
 loaddb_file "$DB_BASE" \
 && loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" \
 && loaddb_file "$DB_ALERT" \
@@ -151,7 +147,7 @@ if [ "$?" != 0 ] ; then
 fi
 sleep 1
 
-for P in "$DB_TOPO" "$DB_TOPO1"; do
+for P in "$DB_TOPOP" "$DB_TOPOL"; do
     echo "-------------------- fill db for topology $P --------------------"
     loaddb_file "$DB_BASE" \
     && loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" \
@@ -205,11 +201,12 @@ if [ "$?" != 0 ] ; then
 fi
 sleep 1
 
+echo "-------------------- test-db-outage --------------------"
+echo "-------------------- fill db for outage ----------------------"
 loaddb_file "$DB_BASE" \
 && loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" \
 && loaddb_file "$DB_OUTAGE" \
 || die "Can't prepare the database"
-echo "-------------------- test-db-outage --------------------"
 "$BUILDSUBDIR"/test-outage
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"

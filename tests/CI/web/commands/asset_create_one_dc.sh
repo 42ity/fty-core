@@ -25,7 +25,10 @@ echo "********* asset_create_one_dc.sh ******************* START ***************
 echo "###################################################################################################"
 echo
 
-DB_LOADDIR="$CHECKOUTDIR/database/mysql"
+echo "***************************************************************************************************"
+echo "********* Prerequisites ***************************************************************************"
+echo "***************************************************************************************************"
+init_script
 
 echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 1. Asset_without_parameter **************************************************************"
@@ -39,7 +42,7 @@ curlfail_pop
 echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 2. Asset_with_empty_parameter ***********************************************************"
 echo "***************************************************************************************************"
-test_it "Asset_with_empty_parameter."
+test_it "Asset_with_empty_parameter"
 curlfail_push_expect_400
 api_auth_post_json '/asset' "{}" >&5
 print_result $?
@@ -48,65 +51,64 @@ curlfail_pop
 echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 3. Create_DC_element ********************************************************************"
 echo "***************************************************************************************************"
-test_it "Create_DC_element."
+test_it "Create_DC_element"
 curlfail_push_expect_noerrors
 api_auth_post_json '/asset' '{"name":"dc_name_test_0","type":"datacenter","sub_type":"","location":"","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST0003","address":"ASDF","serial_no":"ABCD0003","ip.1":"10.229.5.11"}}' >&5
 RES=$?
-PARSED_REPLY=`echo ${OUT_CURL} | $JSONSH -x id`
-ID_DC=`echo "${PARSED_REPLY}" | cut -d '"' -f 4`
+PARSED_REPLY="$(echo "${OUT_CURL}" | $JSONSH -x id)"
+ID_DC="$(echo "${PARSED_REPLY}" | cut -d '"' -f 4)"
 print_result $RES
 curlfail_pop
 
 echo "********* asset_create_one_dc.sh ******************************************************************"
-echo "********* 4. Create_DC_with_the_duplicite_asset_name **********************************************"
+echo "********* 4. Create_DC_with_the_duplicate_asset_name **********************************************"
 echo "***************************************************************************************************"
-test_it "Create_DC_with_the_duplicite_asset_name"
+test_it "Create_DC_with_the_duplicate_asset_name"
 curlfail_push_expect_409
 api_auth_post_json '/asset' '{"name":"dc_name_test_0","type":"datacenter","sub_type":"","location":"","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST0004","address":"ASDF"}}' >&5
 print_result $?
 curlfail_pop
 
 echo "********* asset_create_one_dc.sh ******************************************************************"
-echo "********* 5. Create_DC_with_the_duplicite_asset_tag ***********************************************"
+echo "********* 5. Create_DC_with_the_duplicate_asset_tag ***********************************************"
 echo "***************************************************************************************************"
-test_it "Create_DC_with_the_duplicite_asset_tag"
+test_it "Create_DC_with_the_duplicate_asset_tag"
 api_auth_post_json '/asset' '{"name":"dc_name_test_1","type":"datacenter","sub_type":"","location":"","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST0003","address":"ASDF"}}' >&5
 print_result $?
-loaddb_file "$DB_LOADDIR/initdb_ci_patch.sql"
 
 echo "********* asset_create_one_dc.sh ******************************************************************"
-echo "********* 6. Create_DC_with_the_duplicite_serial_no ***********************************************"
+echo "********* 6. Create_DC_with_the_duplicate_serial_no ***********************************************"
 echo "***************************************************************************************************"
-test_it "Create_DC_with_the_duplicite_serial_no"
+test_it "Create_DC_with_the_duplicate_serial_no"
 curlfail_push_expect_400
 api_auth_post_json '/asset' '{"name":"dc_name_test_6","type":"datacenter","sub_type":"","location":"","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST0006","address":"ASDF","serial_no":"ABCD0003"}}' >&5
 print_result $?
 curlfail_pop
 
 echo "********* asset_create_one_dc.sh ******************************************************************"
-echo "********* 7. Create_DC_with_the_duplicite_ip1 ***********************************************"
+echo "********* 7. Create_DC_with_the_duplicate_ip1 *****************************************************"
 echo "***************************************************************************************************"
-test_it "Create_DC_with_the_duplicite_ip1"
+test_it "Create_DC_with_the_duplicate_ip1"
 curlfail_push_expect_noerrors
 api_auth_post_json '/asset' '{"name":"dc_name_test_7","type":"datacenter","sub_type":"","location":"","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST0007","address":"ASDF","serial_no":"ABCD0007","ip.1":"10.229.5.11"}}' >&5
 print_result $?
 curlfail_pop
 
 echo "********* asset_create_one_dc.sh ******************************************************************"
-echo "********* 8. Delete_DC2_with_child_element. *******************************************************"
+echo "********* 8. Delete_DC2_with_child_element ********************************************************"
 echo "***************************************************************************************************"
-test_it "Delete_DC2_with_child_element."
+test_it "Delete_DC2_with_child_element"
 curlfail_push_expect_409
-api_auth_delete /asset/10 > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
+api_auth_delete_json /asset/10 >&5
 print_result $?
 curlfail_pop
 
 echo "********* asset_create_one_dc.sh ******************************************************************"
-echo "********* 9. Delete_dc_name_test_0_without_child_element. *****************************************"
+echo "********* 9. Delete_dc_name_test_0_without_child_element ******************************************"
 echo "***************************************************************************************************"
-test_it "Delete_dc_name_test_0_without_child_element."
+test_it "Delete_dc_name_test_0_without_child_element"
 curlfail_push_expect_noerrors
-api_auth_delete /asset/$ID_DC > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
+api_auth_delete_json /asset/$ID_DC >&5
 print_result $?
 curlfail_pop
 
@@ -251,7 +253,7 @@ echo "**************************************************************************
 #curlfail_push_expect_400
 test_it "Unauthorized_create_operation"
 curlfail_push_expect_noerrors
-api_post '/asset' '{"name":"dc_name_test_25","type":"datacenter","sub_type":"","location":"","status":"nonactive","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST0025","address":"ASDF"}}' > /dev/null && echo "$OUT_CURL" | $JSONSH -N  >&5
+api_post_json '/asset' '{"name":"dc_name_test_25","type":"datacenter","sub_type":"","location":"","status":"nonactive","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST0025","address":"ASDF"}}' >&5
 print_result $?
 curlfail_pop
 

@@ -113,8 +113,8 @@ logmsg_info "Will use BASE_URL = '$BASE_URL'"
 
 determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
-DB_LOADDIR="$CHECKOUTDIR/database/mysql"
-CSV_BAM_LOADDIR="$CHECKOUTDIR/tests/fixtures/csv/bam"
+[ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
+[ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
 
 logmsg_info "Ensuring that needed remote daemons are running on VTE"
 sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent bios-agent-nut bios-agent-inventory bios-agent-cm; do systemctl start $SVC ; done'
@@ -127,8 +127,8 @@ subtest() {
     # *** write power rack base test data to DB on SUT
     set -o pipefail 2>/dev/null || true
     set -e
-    loaddb_file "$DB_LOADDIR"/initdb.sql 2>&1 | tee $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
-    loaddb_file "$DB_LOADDIR"/initdb_ci_patch.sql 2>&1 | tee -a $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
+    loaddb_file "$DB_BASE" 2>&1 | tee $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
+    loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" 2>&1 | tee -a $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
     set +e
 
     # Try to accept the BIOS license on server
@@ -136,8 +136,7 @@ subtest() {
         logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
 
     # ***** POST THE CSV FILE *****
-    ASSET="$CSV_BAM_LOADDIR/$1"
-    api_auth_post_file /asset/import assets=@$ASSET -H "Expect:" | tee $CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log
+    ASSET="$CSV_LOADDIR_BAM/$1"
 
     case "$1" in
         bam_import_16_wpos1.csv)
