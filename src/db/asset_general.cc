@@ -393,12 +393,12 @@ db_reply_t
     }
     else if ( reply_select.errsubtype == DB_ERROR_NOTFOUND )
     {
-        log_debug ("device should not being inserded into monitor part");
+        log_debug ("device should not being inserted into monitor part");
     }
     else
     {
         trans.rollback();
-        log_warning ("end: some error in denoting a ttype of device in monitor part");
+        log_warning ("end: some error in denoting a type of device in monitor part");
         return reply_select;
 
     }

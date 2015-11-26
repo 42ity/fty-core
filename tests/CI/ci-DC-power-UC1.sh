@@ -29,7 +29,6 @@
 
 SQL_INIT="initdb.sql"
 SQL_LOAD="ci-DC-power-UC1.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
 XML_TNTNET="tntnet.xml"
 
 # Include our standard routines for CI scripts
@@ -132,11 +131,6 @@ fill_database(){
         loaddb_file "$CHECKOUTDIR/tools/$SQL_INIT"
     else
         die "$SQL_INIT not found"
-    fi
-    if [ -f "$CHECKOUTDIR/tools/$DB_ASSET_TAG_NOT_UNIQUE" ] ; then
-        loaddb_file "$CHECKOUTDIR/tools/$DB_ASSET_TAG_NOT_UNIQUE"
-    else
-        die "$DB_ASSET_TAG_NOT_UNIQUE not found"
     fi
     if [ -f "$CHECKOUTDIR/tools/$SQL_LOAD" ] ; then
         loaddb_file "$CHECKOUTDIR/tools/$SQL_LOAD"
