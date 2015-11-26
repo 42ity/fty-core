@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (C) 2014 Eaton
+# Copyright (C) 2014-2015 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,18 +16,22 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-#! \file    testlib.sh
+#! \file    testlib-db.sh
 #  \brief   library of functions and strings useful for database manipulation
 #           specifically in $BIOS testing
 #  \author  Michal Hrusecky <MichalHrusecky@Eaton.com>
 #  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \author  Karol Hrdina <KarolHrdina@Eaton.com>
+#  \author  Radomir Vrajik <RadomirVrajik@Eaton.com>
 #  \details This is library of functions useful for $BIOS testing related to
 #           databases, which can be sourced to interactive shell.
 #           Generally it should not be included directly into a script because
 #           it is sourced by weblib.sh along with testlib.sh; if you do need it
 #           explicitly - include after scriptlib.sh, and after weblib.sh if you
 #	    want to use init_script*() which call accept_license().
+#           Note: at least for now, many definitions relevant to database work
+#           exist in other script-libraries because they first appeared there.
+#           We may later choose to move them here, but it is not a priority.
 
 # ***********************************************
 ### Database global variables
@@ -48,44 +52,85 @@ DB_TMPSQL_DIR="/tmp"
 ### Expected results (saved in Git) are stored here:
 DB_RES_DIR="$CHECKOUTDIR/tests/CI/web/results"
 
+### Killing connections as we recreate the database can help ensure that the
+### old data would not survive and be referred to by subsequent tests which
+### expect to start from a clean slate. But in practice some clients do die.
+### Until we debug this to make them survive the database reconnections, the
+### toggle defaults to "no". Even later it makes sense to keep this variable
+### so we can have regression testing (that the ultimate fix works forever).
+[ -z "${DB_KILL_CONNECTIONS-}" ] && DB_KILL_CONNECTIONS=no
+
+killdb() {
+    echo "--------------- reset db: kill old DB ------------"
+    if [ -n "${DATABASE-}" ] ; then
+        if [ x"$DB_KILL_CONNECTIONS" = xyes ]; then
+            logmsg_warn "Trying to kill all connections to the ${DATABASE} database; some clients can become upset - it is their bug then!"
+            sut_run 'mysql --disable-column-names -s -e "SHOW PROCESSLIST" | grep -vi PROCESSLIST | awk '"'\$4 ~ /$DATABASE/ {print \$1}'"' | while read P ; do mysqladmin kill "$P" || do_select "KILL $P" ; done'
+        fi
+        DATABASE=mysql do_select "DROP DATABASE ${DATABASE}" || true
+        sleep 1
+        sut_run "mysqladmin drop -f ${DATABASE} || true"
+    fi
+    DATABASE=mysql do_select "RESET QUERY CACHE" || true
+    DATABASE=mysql do_select "FLUSH QUERY CACHE" || true
+    sut_run "mysqladmin refresh ; sync; [ -w /proc/sys/vm/drop_caches ] && echo 3 > /proc/sys/vm/drop_caches && sync"
+    logmsg_info "Database should have been dropped and caches should have been flushed at this point"
+    return 0
+}
+
 loaddb_initial() {
-    echo "--------------- reset db: initial ----------------"
+    killdb
+    echo "--------------- reset db: initialize -------------"
     for data in "$DB_BASE" ; do
+        logmsg_info "Importing $data ..."
         loaddb_file "$data" || return $?
     done
+    logmsg_info "Database schema should have been initialized at this point: core schema file only"
     return 0
 }
 
 loaddb_default() {
     echo "--------------- reset db: default ----------------"
-    for data in "$DB_BASE" "$DB_DATA" "$DB_DATA_TESTREST"; do
+    loaddb_initial || return $?
+    for data in "$DB_DATA" "$DB_DATA_TESTREST"; do
+        logmsg_info "Importing $data ..."
         loaddb_file "$data" || return $?
     done
+    logmsg_info "Database schema and data should have been initialized at this point: for common REST API tests"
     return 0
 }
 
 loaddb_topo_loc() {
     echo "--------------- reset db: topo-location ----------"
-    for data in "$DB_BASE" "$DB_DATA" "$DB_TOPOL"; do
+    loaddb_initial || return $?
+    for data in "$DB_DATA" "$DB_TOPOL"; do
+        logmsg_info "Importing $data ..."
         loaddb_file "$data" || return $?
     done
+    logmsg_info "Database schema and data should have been initialized at this point: for topology-location tests"
     return 0
 }
 
 loaddb_topo_pow() {
     echo "--------------- reset db: topo-power -------------"
-    for data in "$DB_BASE" "$DB_DATA" "$DB_TOPOP"; do
+    loaddb_initial || return $?
+    for data in "$DB_DATA" "$DB_TOPOP"; do
+        logmsg_info "Importing $data ..."
         loaddb_file "$data" || return $?
     done
+    logmsg_info "Database schema and data should have been initialized at this point: for topology-power tests"
     return 0
 }
 
 loaddb_current() {
     echo "--------------- reset db: current ----------------"
-    for data in "$DB_BASE" "$DB_DATA_CURRENT"; do
-    #for data in "$DB_BASE" "$DB_DATA_CURRENT" "$DB_DATA_TESTREST"; do
+    loaddb_initial || return $?
+    for data in "$DB_DATA_CURRENT"; do
+    #for data in "$DB_DATA_CURRENT" "$DB_DATA_TESTREST"; do
+        logmsg_info "Importing $data ..."
         loaddb_file "$data" || return $?
     done
+    logmsg_info "Database schema and data should have been initialized at this point: for current tests"
     return 0
 }
 
