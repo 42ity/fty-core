@@ -127,10 +127,14 @@ cmpjson_files() {
         # Both empty files - ok, contents are the same
         [ "$eof1" = 1 -a "$eof2" = 1 -a "$RES" = 255 ] && RES=0
 
-        [ "$eof1" = 0 -a "$eof2" = 0 ] && { \
-            [ "$RES" = 255 ] && RES=0; \
-            cmpjson_strings "$data1" "$data2" \
-            || RES=$(($RES+1)); }
+        if [ "$eof1" = 0 -a "$eof2" = 0 ] ; then
+            [ "$RES" = 255 ] && RES=0
+            cmpjson_strings "$data1" "$data2"
+            if [ $? != 0 ]; then
+                RES=$(($RES+1))
+                echo "^^^ Above we FAILED comparison of lines number $count1($count2) in the source JSON multi-docs" >&2
+            fi
+        fi
     done
     # Close files
     eval exec "$FD1>&-"

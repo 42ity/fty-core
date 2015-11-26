@@ -75,16 +75,12 @@ FILL(token)
   }
 
 // with grant_type argument client wants to get new oauth2 token
-if (!grant_type.empty()) {
-    if (grant_type != "password")
-    {
-        http_die("request-param-bad", "grant_type", grant_type.c_str(), "password");
-    }
+if (grant_type != "password") {
+    http_die("request-param-bad", "grant_type", grant_type.c_str(), "password");
+}
 
-    if(!authenticate(username.c_str(), password.c_str()))
-    {
-        http_die("request-param-bad", "(user|passwd)", "<invalid user or password>", "<valid user and password>");
-    }
+if(!authenticate(username.c_str(), password.c_str())) {
+    http_die("request-param-bad", "(user|passwd)", "<invalid user or password>", "<valid user and password>");
 }
 </%cpp>
 {

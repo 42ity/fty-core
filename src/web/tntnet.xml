@@ -61,7 +61,7 @@
       <method>(POST|PUT)</method>
     </mapping>
 
-    <!-- alerts/rules -->
+    <!-- alerts/ack -->
     <mapping>
         <target>alert_ack@bios_web</target>
         <method>PUT</method>
@@ -71,6 +71,7 @@
             <element_name>$2</element_name>
         </args>       
     </mapping>
+
     <!-- alerts/rules -->
     <mapping>
         <target>alert_rules_list@bios_web</target>

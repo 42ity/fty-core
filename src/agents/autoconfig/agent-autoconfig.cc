@@ -101,6 +101,18 @@ void Autoconfig::onSend( ymsg_t **message )
     FREE0( device_name );
 }
 
+void Autoconfig::sendNewRules(std::vector<std::string> const &rules) {
+    for( const auto &rule: rules ) {
+        zmsg_t *message = zmsg_new ();
+        zmsg_addstr(message, "ADD");
+        zmsg_addstr(message, rule.c_str());
+        if( mlm_client_sendto( bios_agent_client( _bios_agent ), BIOS_AGENT_NAME_ALERT_AGENT, "rfc-evaluator-rules", NULL, 5000, &message) != 0) {
+            zsys_error("failed to send new rule to alert-agent");
+        }
+        zmsg_destroy (&message);   
+    }
+}
+
 void Autoconfig::onPoll( )
 {
     bool save = false;
@@ -116,7 +128,9 @@ void Autoconfig::onPoll( )
                 it.second.operation == asset_operation::RETIRE
             )
             {
-                if( ConfigFactory().configureAsset( it.first, it.second ) ) {
+                auto factory = ConfigFactory();
+                if( factory.configureAsset (it.first, it.second)) {
+                    sendNewRules (factory.getNewRules (it.first, it.second));
                     it.second.configured = true;
                     save = true;
                 }

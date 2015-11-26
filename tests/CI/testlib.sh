@@ -31,6 +31,7 @@
 #           test-suite error (testing stuff known as not implemented yet).
 
 # ***********************************************
+
 ### Should the test suite break upon first failed test?
 [ x"${CITEST_QUICKFAIL-}" != xyes ] && CITEST_QUICKFAIL=no
 
@@ -86,10 +87,13 @@ print_result() {
     if [ "$_ret" -lt 0 ] 2>/dev/null ; then
         _ret="`expr -1 \* $_ret`"
     fi
-    if [ "$TNAME" = "$NAME" ]; then
+
+    if [ "$TNAME" = "`basename $NAME .sh`" ]; then
         TESTLIB_LASTTESTTAG="`echo "$NAME(${_ret})" | sed 's, ,__,g'`"
+        logmsg_info "Completed test $TNAME :"
     else
         TESTLIB_LASTTESTTAG="`echo "$NAME::$TNAME(${_ret})" | sed 's, ,__,g'`"
+        logmsg_info "Completed test $NAME::$TNAME :"
     fi
 
     if [ "$_ret" -eq 0 ]; then  # should include "-0" too
@@ -141,7 +145,8 @@ print_result() {
 
 test_it() {
     if [ x"${_testlib_result_printed}" = xnotyet ]; then
-        logmsg_warning "Starting a new test_it() while an old one was not followed by a print_result()!"
+        logmsg_warn "Starting a new test_it() while an old one was not followed by a print_result()!"
+        logmsg_warn "Closing old test with result code 128 ..."
         print_result 128
     fi
     _testlib_result_printed=notyet
@@ -152,9 +157,9 @@ test_it() {
     [ -n "$TNAME" ] || TNAME="$0"
     TNAME="`basename "$TNAME" .sh | sed 's, ,__,g'`"
     if [ "$TNAME" = "`basename $NAME .sh`" ]; then
-        echo "Running test $TNAME :"
+        logmsg_info "Running test $TNAME :"
     else
-        echo "Running test $NAME::$TNAME :"
+        logmsg_info "Running test $NAME::$TNAME :"
     fi
     TESTLIB_COUNT_TOTAL="`expr $TESTLIB_COUNT_TOTAL + 1`"
 }
@@ -175,6 +180,48 @@ trap_break_testlib() {
     return 1
 }
 trap "trap_break_testlib" SIGUSR2
+
+# A consumer script can set this as (part of) their exit/abort-trap to always
+# print a summary of processed tests in the end, whatever the reason to exit().
+exit_summarizeResults() {
+    TRAP_RES=$?
+    # This would be a no-op if the test case previously started with a
+    # test_it() has been already closed with its proper print_result()
+    print_result $TRAP_RES
+    set +e
+    NUM_NOTFAILED="`expr $TESTLIB_COUNT_PASS + $TESTLIB_COUNT_SKIP`"
+    logmsg_info "Testing completed ($TRAP_RES), $NUM_NOTFAILED/$TESTLIB_COUNT_TOTAL tests passed($TESTLIB_COUNT_PASS) or not-failed($TESTLIB_COUNT_SKIP) for test-groups:"
+    logmsg_info "  POSITIVE (exec glob) = $POSITIVE"
+    logmsg_info "  NEGATIVE (skip glob) = $NEGATIVE"
+    logmsg_info "  SKIP_NONSH_TESTS = $SKIP_NONSH_TESTS (so skipped $SKIPPED_NONSH_TESTS tests)"
+    if [ -n "$TESTLIB_LIST_FAILED_IGNORED" ]; then
+        logmsg_info "The following $TESTLIB_COUNT_SKIP tests have failed but were ignored (TDD in progress):"
+        for i in $TESTLIB_LIST_FAILED_IGNORED; do
+            echo " * $i"
+        done
+    fi
+    NUM_FAILED="`expr $TESTLIB_COUNT_TOTAL - $NUM_NOTFAILED`"
+    if [ -z "$TESTLIB_LIST_FAILED" ] && [ x"$TESTLIB_COUNT_FAIL" = x0 ] && [ x"$NUM_FAILED" = x0 ]; then
+        [ -z "$TRAP_RES" ] && TRAP_RES=0
+        exit $TRAP_RES
+    fi
+    logmsg_info "The following $TESTLIB_COUNT_FAILED tests have failed:"
+    N=0 # Do a bit of double-accounting to be sure ;)
+    for i in $TESTLIB_LIST_FAILED; do
+        echo " * $i"
+        N="`expr $N + 1`"
+    done
+    [ x"$TESTLIB_COUNT_FAIL" = x"$NUM_FAILED" ] && \
+    [ x"$N" = x"$NUM_FAILED" ] && \
+    [ x"$TESTLIB_COUNT_FAIL" = x"$N" ] || \
+        logmsg_error "TEST-LIB accounting fault: failed-test counts mismatched: TESTLIB_COUNT_FAIL=$TESTLIB_COUNT_FAIL vs NUM_FAILED=$NUM_FAILED vs N=$N"
+    logmsg_error "$N/$TESTLIB_COUNT_TOTAL tests FAILED, $TESTLIB_COUNT_SKIP tests FAILED_IGNORED, $TESTLIB_COUNT_PASS tests PASSED"
+    unset N
+
+    # If we are here, we've at least had some failed tests
+    [ -z "$TRAP_RES" -o "$TRAP_RES" = 0 ] && TRAP_RES=1
+    exit $TRAP_RES
+}
 
 # common testing function which compares outputs to a pattern
 # intended for use with weblib.sh driven tests

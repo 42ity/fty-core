@@ -1,0 +1,32 @@
+
+RFC-Alerts-Acknowledge  -  Alert acknowledgement protocol
+=========================================================
+Connects USER peer to EVALUATOR peer.
+
+The USER peer sends the following messages using MAILBOX SEND to
+EVALUATOR peer:
+
+1) rule/element/state - (un)acknowledge alert identified by (rule, element),
+i.e. basically request state change of alert identified by (rule, element).
+
+where '/' indicates a multipart string message, 'rule' is rule name, 'element'
+is element anem, 'state' is one of [ ACTIVE | ACK-WIP | ACK-IGNORE | ACK-PAUSE
+| ACK-SILENCE ] and 'subject' of the message is "rfc-alerts-acknowledge".
+
+The EVALUATOR peer MUST send the appropriate message back to USER peer
+using MAILBOX SEND:
+
+a) OK/rule/element/state
+b) ERROR/reason
+
+where '/' indicates a multipart string message, 'rule', 'element' and 'state'
+have the same meaning as in 1) and their value MUST be the same as the values
+received in message 1), 'reason' is error string and 'subject' of the message
+is "rfc-alerts-acknowledge". 
+
+If alert identified by 'rule' and 'element' does not exist the EVALUATOR peer
+MUST assign NOT_FOUND string as 'reason'.
+
+If 'state' can not be assigned to alert identified by 'rule' and 'element' the
+EVALUATOR peer MUST assign BAD_STATE string as 'reason'.
+
