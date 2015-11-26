@@ -30,9 +30,9 @@
     # *** Must run as root without using password ***
     # *** BIOS image must be installed and running on SUT ***
     # *** SUT port and SUT name should be set properly (see below) ***
-    # *** tool directory with initdb.sql load_data.sql power_topology.sql and location_topology.sql present on MS ***
+    # *** directory with initdb.sql load_data.sql power_topology.sql and location_topology.sql present on MS ***
     # *** tests/CI directory (on MS) contains weblib.sh (api_get_json and CURL functions needed) ***
-    # *** tests/CI/web directory containing results, commands and log subdirectories with the proper content 
+    # *** tests/CI/web directory containing results, commands and log subdirectories with the proper content
 
 usage(){
     echo "Usage: $(basename $0) [options...] [test_name...]"
@@ -106,18 +106,15 @@ SUT_IS_REMOTE=yes
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 determineDirs_default || true
+. "`dirname $0`"/testlib.sh || die "Can not include common test script library"
+. "`dirname $0`"/testlib-db.sh || die "Can not include database test script library"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+[ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
+[ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
 
 
 # ***** GLOBAL VARIABLES *****
 RESULT=0
-DB_LOADDIR="$CHECKOUTDIR/tools"
-DB_BASE="$DB_LOADDIR/initdb.sql"
-DB_DATA="$DB_LOADDIR/load_data.sql"
-DB_DATA_TESTREST="$DB_LOADDIR/load_data_test_restapi.sql"
-DB_TOPOP="$DB_LOADDIR/power_topology.sql"
-DB_TOPOL="$DB_LOADDIR/location_topology.sql"
-DB_ASSET_TAG_NOT_UNIQUE="$DB_LOADDIR/initdb_ci_patch.sql"
 
 # Set up weblib test engine preference defaults for automated CI tests
 [ -z "$WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT" ] && \
