@@ -1628,7 +1628,7 @@ $(SYSTEMD_SUBDIR)/42-bios-systemd.preset: Makefile
 # externally by automake/autoconf; otherwise they are empty and should
 # effectively resolve to the top_builddir
 systemdsystemunit_generated =	$(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL) $(SYSTEMD_UNITS_NOTPRESET))
-systemdsystemunit_DATA =	$(systemdsystemunit_generated) $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_TIMERS) $(SYSTEMD_TIMERS))
+systemdsystemunit_DATA =	$(systemdsystemunit_generated) $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_TIMERS) $(SYSTEMD_TARGETS))
 systemdsystempreset_generated =	$(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_PRESETS))
 systemdsystempreset_DATA =	$(systemdsystempreset_generated)
 
