@@ -19,6 +19,7 @@
 #! \file   vte_tab_uptime.sh
 #  \brief  tests the csv import
 #  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
+# TODO: rewrite for test_it()
 
 # ***** ABBREVIATIONS *****
     # *** SUT - System Under Test - remote server with BIOS
@@ -27,15 +28,15 @@
 
 # ***** DESCRIPTION *****
     # *** test imports the assets from csv file with tab used like separator
-    # *** tests creates initial (near to empty assets) using tools/initdb.sql file.
-    # *** tests compares the exported tableis files with expected (only INSERT command)
+    # *** tests creates initial (near to empty assets) using database/mysql/initdb.sql file.
+    # *** tests compares the exported table's files with expected (only INSERT command)
 
 # ***** PREREQUISITES *****
     # *** SUT_SSH_PORT should be passed as parameter -sp <value>
     # *** it is currently from interval <2206;2209>
     # *** must run as root without using password 
     # *** BIOS image must be installed and running on SUT 
-    # *** tools directory containing tools/initdb.sql tools/bam_import_16_tab_008.csv present on MS 
+    # *** tools directory containing tools/initdb.sql database/mysql/bam_import_16_tab_008.csv present on MS 
     # *** tests/CI directory (on MS) contains weblib.sh and scriptlib.sh library files
 
 # ***** GLOBAL VARIABLES *****
@@ -101,13 +102,14 @@ SUT_IS_REMOTE=yes
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 # Include our standard web routines for CI scripts
-. "`dirname $0`"/weblib.sh || \
-    { echo "CI-FATAL: $0: Can not web script library" >&2; exit 1; }
+. "`dirname $0`"/weblib.sh || die "Can not include web script library"
 
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
 
 determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+[ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
+[ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
 
 logmsg_info "Ensuring that needed remote daemons are running on VTE"
 sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent bios-agent-nut bios-agent-inventory bios-agent-cm; do systemctl start $SVC ; done'
@@ -119,8 +121,8 @@ sut_run 'R=0; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server
     # *** write power rack base test data to DB on SUT
 set -o pipefail 2>/dev/null || true
 set -e
-loaddb_file ./tools/initdb.sql 2>&1 | tee $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
-loaddb_file ./tools/initdb_ci_patch.sql 2>&1 | tee -a $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
+loaddb_file "$DB_BASE" 2>&1 | tee "$CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log"
+loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" 2>&1 | tee -a "$CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log"
 set +e
 
 # Try to accept the BIOS license on server
@@ -128,17 +130,17 @@ set +e
     logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
 
 # ***** POST THE CSV FILE *****
-ASSET="$CHECKOUTDIR/tools/bam_import_16_vte_uptime_2_DC.csv"
+ASSET="$CSV_LOADDIR_BAM/bam_import_16_vte_uptime_2_DC.csv"
 
 # Import the bam_import_16_vte_total_power_2_DC.csv file
-api_auth_post_file /asset/import assets=@$ASSET -H "Expect:" | tee $CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log
+api_auth_post_file_form /asset/import assets="@$ASSET" | tee "$CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log"
 
-grep -q '"imported_lines" : 16' $CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log || die "ERROR : 'Test of the number of imported lines FAILED'"
+grep -q '"imported_lines" : 16' "$CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log" || die "ERROR : 'Test of the number of imported lines FAILED'"
 echo "Test of the number of imported lines 			PASSED"
 
 # create sql file
 settraps 'rm -f $CHECKOUTDIR/tmp_uptime.sql'
-echo "use box_utf8;"> $CHECKOUTDIR/tmp_uptime.sql
+echo "use box_utf8;"> "$CHECKOUTDIR/tmp_uptime.sql"
 
 # dates formats
 # UPS101_1
@@ -219,7 +221,7 @@ TIME=$(date --utc "+%Y-%m-%d %H:%M:%S")
 echo "Finish time is $TIME"
 TIME_END=$(date +%s)
 TEST_LAST=$(expr $TIME_END - $TIME_START)
-echo "Test lasted $TEST_LAST second."
+echo "Test lasted $TEST_LAST second(s)."
 exit 0
- 
+
 
