@@ -52,10 +52,21 @@ DB_TMPSQL_DIR="/tmp"
 ### Expected results (saved in Git) are stored here:
 DB_RES_DIR="$CHECKOUTDIR/tests/CI/web/results"
 
+### Killing connections as we recreate the database can help ensure that the
+### old data would not survive and be referred to by subsequent tests which
+### expect to start from a clean slate. But in practice some clients do die.
+### Until we debug this to make them survive the database reconnections, the
+### toggle defaults to "no". Even later it makes sense to keep this variable
+### so we can have regression testing (that the ultimate fix works forever).
+[ -z "${DB_KILL_CONNECTIONS-}" ] && DB_KILL_CONNECTIONS=no
+
 killdb() {
     echo "--------------- reset db: kill old DB ------------"
     if [ -n "${DATABASE-}" ] ; then
-#        sut_run 'mysql --disable-column-names -s -e "SHOW PROCESSLIST" | grep -vi PROCESSLIST | awk '"'\$4 ~ /$DATABASE/ {print \$1}'"' | while read P ; do mysqladmin kill "$P" || do_select "KILL $P" ; done'
+        if [ x"$DB_KILL_CONNECTIONS" = xyes ]; then
+            logmsg_warn "Trying to kill all connections to the ${DATABASE} database; some clients can become upset - it is their bug then!"
+            sut_run 'mysql --disable-column-names -s -e "SHOW PROCESSLIST" | grep -vi PROCESSLIST | awk '"'\$4 ~ /$DATABASE/ {print \$1}'"' | while read P ; do mysqladmin kill "$P" || do_select "KILL $P" ; done'
+        fi
         DATABASE=mysql do_select "DROP DATABASE ${DATABASE}" || true
         sleep 1
         sut_run "mysqladmin drop -f ${DATABASE} || true"
