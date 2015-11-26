@@ -30,16 +30,16 @@
 
 # ***** DESCRIPTION *****
     # *** test imports the assets from csv file with tab used like separator
-    # *** tests creates initial (near to empty assets) using tools/initdb.sql file.
-    # *** tests finds if the location_w_pos is mandatory, max 2 pdu/epdu devices in one rack, 
+    # *** tests creates initial (near to empty assets) using database/mysql/initdb.sql file.
+    # *** tests finds if the location_w_pos is mandatory, max 2 pdu/epdu devices in one rack,
     # *** only on right or left in the rack
 
 # ***** PREREQUISITES *****
     # *** SUT_SSH_PORT should be passed as parameter -sp <value>
     # *** it is currently from interval <2206;2209>
-    # *** must run as root without using password 
-    # *** BIOS image must be installed and running on SUT 
-    # *** tools directory containing tools/initdb.sql tools/bam_import_16_tab_008.csv present on MS 
+    # *** must run as root without using password
+    # *** BIOS image must be installed and running on SUT
+    # *** directories containing database/mysql/initdb.sql tools/bam_import_16_tab_008.csv present on MS
     # *** tests/CI directory (on MS) contains weblib.sh and scriptlib.sh library files
     # *** tools/bam_import_16_wpos1.csv - bam_import_16_wpos4.csv MUST be present
 
@@ -106,13 +106,14 @@ SUT_IS_REMOTE=yes
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 # Include our standard web routines for CI scripts
-. "`dirname $0`"/weblib.sh || \
-    { echo "CI-FATAL: $0: Can not web script library" >&2; exit 1; }
+. "`dirname $0`"/weblib.sh || die "Can not include web script library"
 
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
 
 determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+[ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
+[ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
 
 logmsg_info "Ensuring that needed remote daemons are running on VTE"
 sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent bios-agent-nut bios-agent-inventory bios-agent-cm; do systemctl start $SVC ; done'
@@ -125,8 +126,8 @@ subtest() {
     # *** write power rack base test data to DB on SUT
     set -o pipefail 2>/dev/null || true
     set -e
-    loaddb_file ./tools/initdb.sql 2>&1 | tee $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
-    loaddb_file ./tools/initdb_ci_patch.sql 2>&1 | tee -a $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
+    loaddb_file "$DB_BASE" 2>&1 | tee $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
+    loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" 2>&1 | tee -a $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
     set +e
 
     # Try to accept the BIOS license on server
@@ -134,8 +135,7 @@ subtest() {
         logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
 
     # ***** POST THE CSV FILE *****
-    ASSET="$CHECKOUTDIR/tools/$1"
-    api_auth_post_file_form /asset/import assets="@$ASSET" | tee $CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log
+    ASSET="$CSV_LOADDIR_BAM/$1"
 
     case "$1" in
         bam_import_16_wpos1.csv)
@@ -144,7 +144,7 @@ subtest() {
                 echo "Subtest 1 PASSED."
 	    else
                 echo "Subtest 1 FAILED.";exit 1
-	    fi  
+	    fi
             ;;
         bam_import_16_wpos2.csv)
             N_EXPECT=`cat $CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log|grep "location_w_pos should be set"|wc -l`
