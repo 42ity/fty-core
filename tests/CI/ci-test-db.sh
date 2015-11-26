@@ -85,6 +85,9 @@ NEED_BUILDSUBDIR=yes determineDirs_default || true
 cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the database tests"
 
+# Tests below have their failsafes
+set +e
+
 echo "------------- empty the db before tests ----------"
 ${CHECKOUTDIR}/tests/CI/ci-empty-db.sh || \
 if [ "$?" != 0 ] ; then
@@ -154,7 +157,6 @@ for P in "$DB_TOPOP" "$DB_TOPOL"; do
     && loaddb_file "$P" \
     || die "Can't prepare the database"
     echo "-------------------- test-dbtopology $P --------------------"
-    set +e
     "$BUILDSUBDIR"/test-dbtopology "[$P]"
     if [ "$?" != 0 ] ; then
         echo "----------------------------------------"
