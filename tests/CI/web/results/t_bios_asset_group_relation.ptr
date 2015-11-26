@@ -1,0 +1,1 @@
+INSERT INTO `t_bios_asset_group_relation` VALUES (1,16,27),(2,16,31),(4,16,36),(3,17,31),(5,17,36),(6,18,36);
