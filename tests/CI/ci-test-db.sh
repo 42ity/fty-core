@@ -58,7 +58,7 @@ trap_exit() {
     if [ -n "$FAILED" ]; then
         logmsg_error "The following tests have failed:"
         for F in $FAILED; do echo " * FAILED  $F" >&2; done
-        [ "$TRAP_RESULT" = 0 ] || TRAP_RESULT=1
+        [ "$TRAP_RESULT" = 0 ] && TRAP_RESULT=1
     fi
 
     cd -
