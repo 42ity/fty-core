@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (C) 2014 Eaton
+# Copyright (C) 2014-2015 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,18 +16,22 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-#! \file    testlib.sh
+#! \file    testlib-db.sh
 #  \brief   library of functions and strings useful for database manipulation
 #           specifically in $BIOS testing
 #  \author  Michal Hrusecky <MichalHrusecky@Eaton.com>
 #  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \author  Karol Hrdina <KarolHrdina@Eaton.com>
+#  \author  Radomir Vrajik <RadomirVrajik@Eaton.com>
 #  \details This is library of functions useful for $BIOS testing related to
 #           databases, which can be sourced to interactive shell.
 #           Generally it should not be included directly into a script because
 #           it is sourced by weblib.sh along with testlib.sh; if you do need it
 #           explicitly - include after scriptlib.sh, and after weblib.sh if you
 #	    want to use init_script*() which call accept_license().
+#           Note: at least for now, many definitions relevant to database work
+#           exist in other script-libraries because they first appeared there.
+#           We may later choose to move them here, but it is not a priority.
 
 # ***********************************************
 ### Database global variables
