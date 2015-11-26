@@ -139,7 +139,7 @@ print_result $REZ
 echo "********* asset_import_err.sh *********************************************************************"
 echo "********* 6. Bad separator ************************************************************************"
 echo "***************************************************************************************************"
-test_it "Too_big_file"
+test_it "Bad_separator"
 #*#*#*#*#*#*# TODO : Bad separator : the code 48 received is not expected : 47???
 curlfail_push_expect_400
 loaddb_initial
@@ -177,7 +177,6 @@ echo "********* asset_import_err.sh ********************************************
 echo "********* 9. Too long keytag **********************************************************************"
 echo "***************************************************************************************************"
 test_it "Too_long_keytag"
-#*#*#*#*#*#*# TODO : Too_long_keytag : 128kB is 131072 byte : the not_so_long_asset_tab_16LE.csv has size 130860
 loaddb_initial
 REZ=0
 test_tables "universal_asset_tab_8_too_long_keytag.csv" 48 "ERROR"
@@ -265,7 +264,7 @@ echo "********* asset_import_err.sh ********************************************
 echo "********* 18. Email *******************************************************************************"
 echo "***************************************************************************************************"
 test_it "Email"
-#*#*#*#*#*#*# TODO : Email : When the mail addres contains " or ', Internal error is returned, the ` are allowed, addr NOT checked
+#*#*#*#*#*#*# TODO : Email : When the mail address (or any CSV content at the moment) contains " or ', Internal error is returned, the ` are allowed, addr itself is NOT checked for "email validity"
 loaddb_initial
 REZ=0
 test_tables "universal_asset_semicolon_email_8.csv" 48 "ERROR" "_email"
