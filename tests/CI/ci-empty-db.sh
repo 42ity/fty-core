@@ -31,7 +31,8 @@ set -u
 set -e
 set -x
 
-DB1="$CHECKOUTDIR/tools/initdb.sql"
+DB_LOADDIR="$CHECKOUTDIR/database/mysql"
+DB1="$DB_LOADDIR/initdb.sql"
 
 loaddb_file "$DB1"
 do_select "select * from t_bios_asset_element_type"
