@@ -14,4 +14,4 @@ Persistent=false
 Unit=biostimer-graphs-prefetch@24h::realpower.default.service
 
 [Install]
-WantedBy=bios.target
+WantedBy=bios.service

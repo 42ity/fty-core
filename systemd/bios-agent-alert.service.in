@@ -14,4 +14,4 @@ EnvironmentFile=-/etc/default/bios-db-ro
 ExecStart=@libexecdir@/@PACKAGE@/agent-alert
 
 [Install]
-WantedBy=bios.target
+WantedBy=bios.service

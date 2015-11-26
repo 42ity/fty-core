@@ -1588,10 +1588,12 @@ SYSTEMD_UNITS += bios-agent-nut.service \
                         bios-ssh-last-resort.service \
                         bios-networking.service
 
-# These units allow to toggle the entirety of BIOS agents and other related
+# This unit allows to toggle the entirety of BIOS agents and other related
 # services on and off (except a few chosen system-level services that remain
-# WantedBy=multi-user.target)
-SYSTEMD_TARGETS += bios.target bios.service
+# WantedBy=multi-user.target). Not implemented as a "target" because being
+# a "service" allows for shorter command-lines and the "target" can not have
+# the [Service] clause (needed for ExecStop that would kill all wanters).
+SYSTEMD_TARGETS += bios.service
 
 # These units have unit files installed but are not enabled by default
 # via presets nor timers (may be enabled in OS image generation script
