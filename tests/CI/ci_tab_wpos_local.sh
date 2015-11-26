@@ -19,6 +19,8 @@
 #! \file   ci_tab_wpos_local.sh
 #  \brief  Not yet documented file
 #  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
+# TODO: This is very much oriented on one test on a single host -
+# rewrite to generalize and make this reusable!
 
 SUT_HOST="127.0.0.1"
 SUT_WEB_PORT=8000
@@ -30,34 +32,41 @@ BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 # Include our standard web routines for CI scripts
-. "`dirname $0`"/weblib.sh || \
-    { echo "CI-FATAL: $0: Can not web script library" >&2; exit 1; }
+. "`dirname $0`"/weblib.sh || die "Can not include web script library"
 
 #SUT_SSH_PORT="2209"
 #SUT_HOST="debian.roz53.lab.etn.com"
 #SUT_WEB_PORT=8009
 #SUT_IS_REMOTE=no
 
+# TODO: Use standard methods fromother CI scripts!
 cd `dirname $0`;cd ../..;CHECKOUTDIR=`pwd`
 echo "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+[ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
+[ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
+
 set -u
 
 # Import empty DB
-DB1="/home/rvrajik/core/tools/initdb.sql"
-#mysql -u root < "$DB1"
+#mysql -u root < "$DB_BASE"
 #mysql -u root < /home/rvrajik/core/tools/initdb.sql
 #mysql -u root box_utf8 <<< "select * from t_bios_asset_element_type"
 #mysql -u root box_utf8 <<< "delete from t_bios_asset_device_type"
 #mysql -u root box_utf8 <<< "delete from t_bios_asset_link_type"
 
-loaddb_file $DB1
+loaddb_file "$DB_BASE"
 
-ASSET="$CHECKOUTDIR/tools/$1"
+case "$1" in
+    bam*)
+        ASSET="$CSV_LOADDIR_BAM/$1" ;;
+    *)  ASSET="$CSV_LOADDIR/$1" ;; # tpower/* asset_import/*
+esac
+
 # Import the tools/<testname>.csv file
 # <testname> format bam_import_16_vte_wpos<N>.csv, where <N> is tcnumber
 # bam_import_16_wpos1.csv - 2 epdu's + 1 pdu in the same rack
 # expected - [ 8, "more than 2 PDU is not supported"]
-# 
+#
 # bam_import_16_wpos2.csv - parameter is missing
 # expected
 #            [ 4, "location_w_pos should be set. Possible variants 'left'/'right'"],
@@ -73,7 +82,7 @@ ASSET="$CHECKOUTDIR/tools/$1"
 # and warning in log - "location_w_pow changed to 'right'"
 
 
-api_auth_post_file /asset/import assets=@$ASSET -H "Expect:"
-mysql -u root box_utf8 <<< "select * from t_bios_asset_element_type"
+api_auth_post_file_form /asset/import assets="@$ASSET"
+do_select "select * from t_bios_asset_element_type"
 
 

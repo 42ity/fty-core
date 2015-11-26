@@ -19,34 +19,38 @@
 #  \brief  CI tests for asset delete calls
 #  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 #  \author Alena Chernikava <AlenaChernikava@Eaton.com>
+
 echo
 echo "###################################################################################################"
 echo "********* asset_delete_one_item.sh ***************** START ****************************************"
 echo "###################################################################################################"
 echo
 
+echo "***************************************************************************************************"
+echo "********* Prerequisites ***************************************************************************"
+echo "***************************************************************************************************"
+
 find_id() {
-	local __CALL=$(api_get_json /asset/$1)
-	local __REPLY=$(echo "$__CALL" | $JSONSH -x id)
-	ID_1=$(echo "${__REPLY}" | cut -d '"' -f 6)
-	ID=$(echo $ID_1 | cut -d ' ' -f $2)
-	echo $ID
+	local __CALL="$(api_get_json /asset/$1)"
+	local __REPLY="$(echo "$__CALL" | $JSONSH -x id)"
+	ID_1="$(echo "${__REPLY}" | cut -d '"' -f 6)"
+	ID="$(echo $ID_1 | cut -d ' ' -f $2)"
+	echo "$ID"
 }
 
 # Assumption: initdb + load_data files are uploaded.
-# So, make sure this is  true;
-DB_INIT_delete="initdb.sql"
-DB_LOAD_DATA_delete="load_data.sql"
-DB_LOADDIR=$BUILDSUBDIR/tools
-loaddb_file "$DB_LOADDIR/$DB_INIT_delete" || exit $?
-loaddb_file "$DB_LOADDIR/$DB_LOAD_DATA_delete" || exit $?
+# So, make sure this is true:
+init_script_sampledata || exit $?
 
-# Need to check, number of expected rows in the table
-ASSETS_NUMBER="$(mysql -u root box_utf8 <<< "select count(id) as assets_count from v_bios_asset_element")"
-echo $ASSETS_NUMBER
-echo "expected 35"
+# Need to check number of expected rows in the table
+test_it "verify_number_of_sample_assets"
+ASSETS_NUMBER="$(do_select 'select count(id) as assets_count from v_bios_asset_element')"
+logmsg_info "ASSETS_NUMBER: $ASSETS_NUMBER,    expected: 35"
+[ "$ASSETS_NUMBER" -eq 35 ]
+print_result $?
 
 # Start
+# Set test number
 No=1
 
 echo "********* asset_delete_one_item.sh ****************************************************************"
