@@ -163,10 +163,10 @@ sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore
     # *** write power rack base test data to DB on SUT
 set -o pipefail 2>/dev/null || true
 set -e
-{ loaddb_file "$DB_LOADDIR"/initdb.sql && \
-  loaddb_file "$DB_LOADDIR"/initdb_ci_patch.sql && \
-  loaddb_file "$DB_LOADDIR"/rack_power.sql \
-; } 2>&1 | tee $CHECKOUTDIR/ci-rackpower-vte.log
+{ loaddb_file "$DB_BASE" && \
+  loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
+  loaddb_file "$DB_RACK_POWER" \
+; } 2>&1 | tee "$CHECKOUTDIR/ci-rackpower-vte.log"
 
 # Try to accept the BIOS license on server
 ( . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
