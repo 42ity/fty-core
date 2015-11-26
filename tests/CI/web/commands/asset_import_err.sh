@@ -139,7 +139,7 @@ print_result $REZ
 echo "********* asset_import_err.sh *********************************************************************"
 echo "********* 6. Bad separator ************************************************************************"
 echo "***************************************************************************************************"
-test_it "Too_big_file"
+test_it "Bad_separator"
 #*#*#*#*#*#*# TODO : Bad separator : the code 48 received is not expected : 47???
 curlfail_push_expect_400
 loaddb_initial
@@ -176,12 +176,16 @@ print_result $REZ
 echo "********* asset_import_err.sh *********************************************************************"
 echo "********* 9. Too long keytag **********************************************************************"
 echo "***************************************************************************************************"
+if [ x"$TEST_BIOS_1516" = xyes ] ; then
 test_it "Too_long_keytag"
-#*#*#*#*#*#*# TODO : Too_long_keytag : 128kB is 131072 byte : the not_so_long_asset_tab_16LE.csv has size 130860
 loaddb_initial
 REZ=0
 test_tables "universal_asset_tab_8_too_long_keytag.csv" 48 "ERROR"
+# Expected output:
+# {"imported_lines":42,"errors":[[20,"Internal Server Error. "],[28,"Element 'UPS1' not found."],[29,"Element 'ePDU1' not found."],[35,"Element 'ePDU2' not found."],[36,"Element 'ePDU2' not found."],[39,"Element 'ePDU2' not found."]]}
+# In practice it flip-flops so only line20 fails, so the test is skipped for now
 print_result $REZ
+else logmsg_warn "TEST SKIPPED (see BIOS-1516)"; fi
 
 echo "********* asset_import_err.sh *********************************************************************"
 echo "********* 10. Not proper sequence *****************************************************************"
@@ -222,7 +226,7 @@ REZ=0
 test_tables "universal_asset_mix_tab_comma_8.csv" 48 "ERROR"
 print_result $REZ
 
-echo "********* asset_import_err.sh *************************************************************************"
+echo "********* asset_import_err.sh *********************************************************************"
 echo "********* 14. Wrong maximum number of racks *******************************************************"
 echo "***************************************************************************************************"
 test_it "Wrong_maximum_number_of_racks"
@@ -232,7 +236,7 @@ REZ=0
 test_tables "universal_asset_semicolon_max_num_rack_wrong_8.csv" 48 "ERROR" "_max_num_rack"
 print_result $REZ
 
-echo "********* asset_import_err.sh *************************************************************************"
+echo "********* asset_import_err.sh *********************************************************************"
 echo "********* 15. Wrong u_size ************************************************************************"
 echo "***************************************************************************************************"
 test_it "Wrong_u_size"
@@ -241,7 +245,7 @@ REZ=0
 test_tables "universal_asset_semicolon_u_size_wrong_8.csv" 48 "ERROR" "_u_size"
 print_result $REZ
 
-echo "********* asset_import_err.sh *************************************************************************"
+echo "********* asset_import_err.sh *********************************************************************"
 echo "********* 16. Runtime *****************************************************************************"
 echo "***************************************************************************************************"
 test_it "Runtime"
@@ -251,7 +255,7 @@ REZ=0
 test_tables "universal_asset_semicolon_runtime_8.csv" 48 "ERROR" "_runtime"
 print_result $REZ
 
-echo "********* asset_import_err.sh *************************************************************************"
+echo "********* asset_import_err.sh *********************************************************************"
 echo "********* 17. Phase *******************************************************************************"
 echo "***************************************************************************************************"
 test_it "Phase"
@@ -261,17 +265,17 @@ REZ=0
 test_tables "universal_asset_semicolon_phase_8.csv" 48 "ERROR" "_phase"
 print_result $REZ
 
-echo "********* asset_import_err.sh *************************************************************************"
+echo "********* asset_import_err.sh *********************************************************************"
 echo "********* 18. Email *******************************************************************************"
 echo "***************************************************************************************************"
 test_it "Email"
-#*#*#*#*#*#*# TODO : Email : When the mail addres contains " or ', Internal error is returned, the ` are allowed, addr NOT checked
+#*#*#*#*#*#*# TODO : Email : When the mail address (or any CSV content at the moment) contains " or ', Internal error is returned, the ` are allowed, addr itself is NOT checked for "email validity"
 loaddb_initial
 REZ=0
 test_tables "universal_asset_semicolon_email_8.csv" 48 "ERROR" "_email"
 print_result $REZ
 
-echo "********* asset_import_err.sh *************************************************************************"
+echo "********* asset_import_err.sh *********************************************************************"
 echo "********* 19. Not consequently ********************************************************************"
 echo "***************************************************************************************************"
 test_it "Not_consequently"
@@ -280,7 +284,7 @@ REZ=0
 test_tables "universal_asset_semicolon_not_consequently_8.csv" 48 "ERROR" "_phase"
 print_result $REZ
 
-echo "********* asset_import_err.sh *************************************************************************"
+echo "********* asset_import_err.sh *********************************************************************"
 echo "********* 20. Double name 1 ***********************************************************************"
 echo "***************************************************************************************************"
 test_it "Double_name_1"
@@ -292,7 +296,7 @@ print_result $REZ
 curlfail_pop
 
 
-echo "********* asset_import_err.sh *************************************************************************"
+echo "********* asset_import_err.sh *********************************************************************"
 echo "********* 21. Double name 2 ***********************************************************************"
 echo "***************************************************************************************************"
 test_it "Double_name_2"
@@ -303,7 +307,7 @@ test_tables "universal_asset_comma_8_double_name_2.csv" 48 "ERROR" "_double_name
 print_result $REZ
 curlfail_pop
 
-echo "********* asset_import_err.sh *************************************************************************"
+echo "********* asset_import_err.sh *********************************************************************"
 echo "********* 22. Duplicate name value ****************************************************************"
 echo "***************************************************************************************************"
 test_it "Duplicate_name_value"
@@ -316,7 +320,7 @@ ASSET="$CHECKOUTDIR/tools/asset_import/universal_asset_comma_8_duplicate_name_va
 api_auth_post_file_form_json /asset/import assets="@$ASSET" >&5
 print_result $?
 
-echo "********* asset_import_err.sh *************************************************************************"
+echo "********* asset_import_err.sh *********************************************************************"
 echo "********* 23. Duplicate ipx ***********************************************************************"
 echo "***************************************************************************************************"
 test_it "Duplicate_ipx"
@@ -325,8 +329,8 @@ REZ=0
 test_tables "universal_asset_comma_8_duplicate_ipx.csv" 48 "ERROR" "_duplicate_ipx"
 print_result $REZ
 
-echo "********* asset_import_err.sh *************************************************************************"
-echo "********* 24. w_pos ***********************************************************************"
+echo "********* asset_import_err.sh *********************************************************************"
+echo "********* 24. w_pos *******************************************************************************"
 echo "***************************************************************************************************"
 test_it "w_pos"
 loaddb_initial
@@ -334,7 +338,7 @@ REZ=0
 test_tables "universal_asset_comma_8_wpos.csv" 48 "ERROR" "_w_pos"
 print_result $REZ
 
-echo "********* asset_import_err.sh *************************************************************************"
+echo "********* asset_import_err.sh *********************************************************************"
 echo "********* 25. Not unique serial No ****************************************************************"
 echo "***************************************************************************************************"
 test_it "Not_unique_serial_No"
@@ -343,7 +347,7 @@ REZ=0
 test_tables "universal_asset_comma_8_serial_no.csv" 48 "ERROR" "_serial_no"
 print_result $REZ
 
-echo "********* asset_import_err.sh *************************************************************************"
+echo "********* asset_import_err.sh *********************************************************************"
 echo "********* 26. Subtype_&_status_values *************************************************************"
 echo "***************************************************************************************************"
 test_it "Subtype & status values"
