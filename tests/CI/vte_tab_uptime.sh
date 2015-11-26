@@ -131,7 +131,7 @@ set +e
 ASSET="$CHECKOUTDIR/tools/bam_import_16_vte_uptime_2_DC.csv"
 
 # Import the bam_import_16_vte_total_power_2_DC.csv file
-api_auth_post_file /asset/import assets=@$ASSET -H "Expect:" | tee $CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log
+api_auth_post_file_form /asset/import assets="@$ASSET" | tee $CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log
 
 grep -q '"imported_lines" : 16' $CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log || die "ERROR : 'Test of the number of imported lines FAILED'"
 echo "Test of the number of imported lines 			PASSED"
