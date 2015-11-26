@@ -1,6 +1,6 @@
 #/!bin/sh
 
-# Copyright (C) 2014 Eaton
+# Copyright (C) 2014-2015 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #  \author  Barbora Stepankova <BarboraStepankova@Eaton.com>
 #  \author  Tomas Halman <TomasHalman@Eaton.com>
 #  \author  Alena Chernikava <AlenaChernikava@Eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \details Every database test has its own requirements regarding input data.
 #       That is why before every database test database should be initialised
 #       and appropriate testing data should be filled.
@@ -28,29 +29,22 @@
 # Requirements:
 #   - mariadb running
 #   - db user root without password
+#
+# TODO: rewrite to use test_it()
 
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 NEED_BUILDSUBDIR=no NEED_CHECKOUTDIR=yes determineDirs_default || true
+. "`dirname $0`"/testlib.sh || die "Can not include common test script library"
+. "`dirname $0`"/testlib-db.sh || die "Can not include database test script library"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to build the database tests"
+[ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
+[ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
 
 set -u
 set -e
-
-DB_LOADDIR="$CHECKOUTDIR/tools"
-
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_TOPO="power_topology.sql"
-DB_TOPO1="location_topology.sql"
-DB_RACK_POWER="rack_power.sql"
-DB_DC_POWER="dc_power.sql"
-DB_CRUD="crud_test.sql"
-DB_OUTAGE="test_outage.sql"
-DB_ALERT="test_alert.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
 
 RESULT=0
 FAILED=""
@@ -63,7 +57,7 @@ trap_exit() {
 
     if [ -n "$FAILED" ]; then
         logmsg_error "The following tests have failed:"
-        for F in $FAILED; do echo " * $F" >&2; done
+        for F in $FAILED; do echo " * FAILED  $F" >&2; done
         [ "$TRAP_RESULT" = 0 ] || TRAP_RESULT=1
     fi
 
@@ -103,9 +97,11 @@ if [ "$?" != 0 ] ; then
 fi
 sleep 1
 
-loaddb_file "$DB_LOADDIR/$DB_BASE"
-loaddb_file "$DB_LOADDIR/$DB_DATA"
 echo "-------------------- test-db2 --------------------"
+echo "-------------------- reset db --------------------"
+loaddb_file "$DB_BASE" \
+&& loaddb_file "$DB_DATA" \
+|| die "Can't prepare the database"
 "$BUILDSUBDIR"/test-db2
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
@@ -118,9 +114,11 @@ fi
 sleep 1
 
 echo "-------------------- test-db-alert --------------------"
-loaddb_file "$DB_LOADDIR/$DB_BASE"
-loaddb_file "$DB_LOADDIR/$DB_ASSET_TAG_NOT_UNIQUE"
-loaddb_file "$DB_LOADDIR/$DB_ALERT"
+echo "-------------------- reset db --------------------"
+loaddb_file "$DB_BASE" \
+&& loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" \
+&& loaddb_file "$DB_ALERT" \
+|| die "Can't prepare the database"
 "$BUILDSUBDIR"/test-db-alert
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
@@ -134,9 +132,10 @@ sleep 1
 
 echo "-------------------- test-db-asset-crud-----"
 echo "-------------------- reset db --------------------"
-loaddb_file "$DB_LOADDIR/$DB_BASE"
-loaddb_file "$DB_LOADDIR/$DB_ASSET_TAG_NOT_UNIQUE"
-loaddb_file "$DB_LOADDIR/$DB_CRUD"
+loaddb_file "$DB_BASE" \
+&& loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" \
+&& loaddb_file "$DB_CRUD" \
+|| die "Can't prepare the database"
 "$BUILDSUBDIR"/test-db-asset-crud
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
@@ -148,11 +147,12 @@ if [ "$?" != 0 ] ; then
 fi
 sleep 1
 
-for P in "$DB_TOPO" "$DB_TOPO1"; do
+for P in "$DB_TOPOP" "$DB_TOPOL"; do
     echo "-------------------- fill db for topology $P --------------------"
-    loaddb_file "$DB_LOADDIR/$DB_BASE"
-    loaddb_file "$DB_LOADDIR/$DB_ASSET_TAG_NOT_UNIQUE"
-    loaddb_file "$DB_LOADDIR/$P"
+    loaddb_file "$DB_BASE" \
+    && loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" \
+    && loaddb_file "$P" \
+    || die "Can't prepare the database"
     echo "-------------------- test-dbtopology $P --------------------"
     set +e
     "$BUILDSUBDIR"/test-dbtopology "[$P]"
@@ -169,9 +169,10 @@ done
 
 echo "-------------------- test-total-power --------------------"
 echo "-------------------- fill db for rack power --------------------"
-loaddb_file "$DB_LOADDIR/$DB_BASE"
-loaddb_file "$DB_LOADDIR/$DB_ASSET_TAG_NOT_UNIQUE"
-loaddb_file "$DB_LOADDIR/$DB_RACK_POWER"
+loaddb_file "$DB_BASE" \
+&& loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" \
+&& loaddb_file "$DB_RACK_POWER" \
+|| die "Can't prepare the database"
 "$BUILDSUBDIR"/test-totalpower "[$DB_RACK_POWER]"
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
@@ -185,9 +186,10 @@ sleep 1
 
 echo "-------------------- test-total-power --------------------"
 echo "-------------------- fill db for dc power --------------------"
-loaddb_file "$DB_LOADDIR/$DB_BASE"
-loaddb_file "$DB_LOADDIR/$DB_ASSET_TAG_NOT_UNIQUE"
-loaddb_file "$DB_LOADDIR/$DB_DC_POWER"
+loaddb_file "$DB_BASE" \
+&& loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" \
+&& loaddb_file "$DB_DC_POWER" \
+|| die "Can't prepare the database"
 "$BUILDSUBDIR"/test-totalpower "[$DB_DC_POWER]"
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
@@ -199,10 +201,12 @@ if [ "$?" != 0 ] ; then
 fi
 sleep 1
 
-loaddb_file "$DB_LOADDIR/$DB_BASE"
-loaddb_file "$DB_LOADDIR/$DB_ASSET_TAG_NOT_UNIQUE"
-loaddb_file "$DB_LOADDIR/$DB_OUTAGE"
 echo "-------------------- test-db-outage --------------------"
+echo "-------------------- fill db for outage ----------------------"
+loaddb_file "$DB_BASE" \
+&& loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" \
+&& loaddb_file "$DB_OUTAGE" \
+|| die "Can't prepare the database"
 "$BUILDSUBDIR"/test-outage
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
