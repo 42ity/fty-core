@@ -188,6 +188,8 @@ CMPJSON_PY="`pwd`/cmpjson.py"
 # web/commands dir contains the request commands
 cd web/commands || CODE=6 die "Can not change to `pwd`/web/commands"
 
+settraps "exit_summarizeResults"
+
 # positive parameters are included to test, negative excluded
 POSITIVE=""
 NEGATIVE=""
@@ -237,12 +239,3 @@ for i in $POSITIVE; do
     fi
     done
 done
-
-echo "Testing completed, $TESTLIB_COUNT_PASS/$TESTLIB_COUNT_TOTAL tests passed and $TESTLIB_COUNT_SKIP more failed but ignored"
-[ -z "$TESTLIB_LIST_FAILED" ] && [ x"$TESTLIB_COUNT_FAIL" = x0 ] && exit 0
-
-echo "Following $TESTLIB_COUNT_FAIL tests failed:"
-for i in $TESTLIB_LIST_FAILED; do
-    echo " * $i"
-done
-exit 1

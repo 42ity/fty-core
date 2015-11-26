@@ -28,6 +28,7 @@ echo
 echo "***************************************************************************************************"
 echo "********* Prerequisites ***************************************************************************"
 echo "***************************************************************************************************"
+[ -n "$CSV_LOADDIR_ASSIMP" ] && [ -d "$CSV_LOADDIR_ASSIMP" ] || die "Can not use CSV_LOADDIR_ASSIMP='$CSV_LOADDIR_ASSIMP'"
 init_script
 
 csv_import(){
@@ -36,7 +37,7 @@ TABLE_NAME="$2"
 NUM_EXPECTED="$3" # when NUM_EXPECTED=0, the import is not performed, in other case it is num of imported lines
 FILENAME_PREFIX="$4"
 TEST_ID="$5"
-ASSET="$CHECKOUTDIR/tools/asset_import/${CSV_FILE_NAME}"
+ASSET="$CSV_LOADDIR_ASSIMP/${CSV_FILE_NAME}"
 if [ "$NUM_EXPECTED" != 0 ];then
     if [ "$REZ" = 0 ];then
         api_auth_post_file_form_json /asset/import assets="@$ASSET" >&5
@@ -85,9 +86,9 @@ echo "********* asset_import.sh ************************************************
 echo "********* 2. Export universal tab 16LE ************************************************************"
 echo "***************************************************************************************************"
 test_it "Export_universal_tab_16LE"
-api_auth_get /asset/export -H "Expect:" | grep -v '>'|grep -v '<'|grep -v '*'|grep -v '{' | awk 'NF' > $CHECKOUTDIR/tools/asset_import/exp_uni_tab_16LE.csv
+api_auth_get /asset/export -H "Expect:" | grep -v '>'|grep -v '<'|grep -v '*'|grep -v '{' | awk 'NF' > $CSV_LOADDIR_ASSIMP/exp_uni_tab_16LE.csv
 REZ=$?
-sed 's/\(,[^,]*\)$//' $CHECKOUTDIR/tools/asset_import/exp_uni_tab_16LE.csv > $CHECKOUTDIR/tools/asset_import/imp_exp_uni_tab_16LE.csv
+sed 's/\(,[^,]*\)$//' $CSV_LOADDIR_ASSIMP/exp_uni_tab_16LE.csv > $CSV_LOADDIR_ASSIMP/imp_exp_uni_tab_16LE.csv
 print_result $REZ
 
 echo "********* asset_import.sh *************************************************************************"
@@ -113,9 +114,9 @@ echo "********* asset_import.sh ************************************************
 echo "********* 5. Export universal tab 8 ***************************************************************"
 echo "***************************************************************************************************"
 test_it "Export_universal_tab_8"
-api_auth_get /asset/export -H "Expect:" | grep -v '>'|grep -v '<'|grep -v '*'|grep -v '{' | awk 'NF' > $CHECKOUTDIR/tools/asset_import/exp_uni_tab_8.csv
+api_auth_get /asset/export -H "Expect:" | grep -v '>'|grep -v '<'|grep -v '*'|grep -v '{' | awk 'NF' > $CSV_LOADDIR_ASSIMP/exp_uni_tab_8.csv
 REZ=$?
-sed 's/\(,[^,]*\)$//' $CHECKOUTDIR/tools/asset_import/exp_uni_tab_8.csv > $CHECKOUTDIR/tools/asset_import/imp_exp_uni_tab_8.csv
+sed 's/\(,[^,]*\)$//' $CSV_LOADDIR_ASSIMP/exp_uni_tab_8.csv > $CSV_LOADDIR_ASSIMP/imp_exp_uni_tab_8.csv
 print_result $REZ
 
 echo "********* asset_import.sh *************************************************************************"
@@ -141,9 +142,9 @@ echo "********* asset_import.sh ************************************************
 echo "********* 8. Export universal comma 16LE **********************************************************"
 echo "***************************************************************************************************"
 test_it "Export_universal_comma_16LE"
-api_auth_get /asset/export -H "Expect:" | grep -v '>'|grep -v '<'|grep -v '*'|grep -v '{' | awk 'NF' > $CHECKOUTDIR/tools/asset_import/exp_uni_comma_16LE.csv
+api_auth_get /asset/export -H "Expect:" | grep -v '>'|grep -v '<'|grep -v '*'|grep -v '{' | awk 'NF' > $CSV_LOADDIR_ASSIMP/exp_uni_comma_16LE.csv
 REZ=$?
-sed 's/\(,[^,]*\)$//' $CHECKOUTDIR/tools/asset_import/exp_uni_comma_16LE.csv > $CHECKOUTDIR/tools/asset_import/imp_exp_uni_comma_16LE.csv
+sed 's/\(,[^,]*\)$//' $CSV_LOADDIR_ASSIMP/exp_uni_comma_16LE.csv > $CSV_LOADDIR_ASSIMP/imp_exp_uni_comma_16LE.csv
 print_result $REZ
 
 echo "********* asset_import.sh *************************************************************************"
@@ -169,9 +170,9 @@ echo "********* asset_import.sh ************************************************
 echo "********* 11. Export universal comma 8 ************************************************************"
 echo "***************************************************************************************************"
 test_it "Export_universal_comma_8"
-api_auth_get /asset/export -H "Expect:" | grep -v '>'|grep -v '<'|grep -v '*'|grep -v '{' | awk 'NF' > $CHECKOUTDIR/tools/asset_import/exp_uni_comma_8.csv
+api_auth_get /asset/export -H "Expect:" | grep -v '>'|grep -v '<'|grep -v '*'|grep -v '{' | awk 'NF' > $CSV_LOADDIR_ASSIMP/exp_uni_comma_8.csv
 REZ=$?
-sed 's/\(,[^,]*\)$//' $CHECKOUTDIR/tools/asset_import/exp_uni_comma_8.csv > $CHECKOUTDIR/tools/asset_import/imp_exp_uni_comma_8.csv
+sed 's/\(,[^,]*\)$//' $CSV_LOADDIR_ASSIMP/exp_uni_comma_8.csv > $CSV_LOADDIR_ASSIMP/imp_exp_uni_comma_8.csv
 print_result $REZ
 
 echo "********* asset_import.sh *************************************************************************"

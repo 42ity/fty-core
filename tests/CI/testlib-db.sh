@@ -28,21 +28,33 @@
 #           Generally it should not be included directly into a script because
 #           it is sourced by weblib.sh along with testlib.sh; if you do need it
 #           explicitly - include after scriptlib.sh, and after weblib.sh if you
-#	    want to use init_script*() which call accept_license().
+#           want to use init_script*() which call accept_license().
 #           Note: at least for now, many definitions relevant to database work
 #           exist in other script-libraries because they first appeared there.
 #           We may later choose to move them here, but it is not a priority.
 
 # ***********************************************
 ### Database global variables
-DB_LOADDIR="$CHECKOUTDIR/tools"
+DB_LOADDIR="$CHECKOUTDIR/database/mysql"
 DB_BASE="$DB_LOADDIR/initdb.sql"
 DB_DATA="$DB_LOADDIR/load_data.sql"
 DB_DATA_CURRENT="$DB_LOADDIR/current_data.sql"
 DB_DATA_TESTREST="$DB_LOADDIR/load_data_test_restapi.sql"
 DB_TOPOP="$DB_LOADDIR/power_topology.sql"
 DB_TOPOL="$DB_LOADDIR/location_topology.sql"
+DB_RACK_POWER="$DB_LOADDIR/rack_power.sql"
+DB_DC_POWER="$DB_LOADDIR/dc_power.sql"
+DB_DC_POWER_UC1="$DB_LOADDIR/ci-DC-power-UC1.sql"
+DB_CRUD="$DB_LOADDIR/crud_test.sql"
+DB_OUTAGE="$DB_LOADDIR/test_outage.sql"
+DB_ALERT="$DB_LOADDIR/test_alert.sql"
 DB_ASSET_TAG_NOT_UNIQUE="$DB_LOADDIR/initdb_ci_patch.sql"
+
+### Some pre-sets for CSV tests
+CSV_LOADDIR="$CHECKOUTDIR/tests/fixtures/csv"
+CSV_LOADDIR_BAM="$CSV_LOADDIR/bam"
+CSV_LOADDIR_TPOWER="$CSV_LOADDIR/tpower"
+CSV_LOADDIR_ASSIMP="$CSV_LOADDIR/asset_import"
 
 ### Directories where we can dump some output (mysqldump, temporary data, etc.)
 DB_DUMP_DIR="$CHECKOUTDIR/tests/CI/web/log"     # TODO: change to BUILDSUBDIR
@@ -89,8 +101,19 @@ loaddb_initial() {
     return 0
 }
 
+loaddb_sampledata() {
+    echo "--------------- reset db: default sample data ----"
+    loaddb_initial || return $?
+    for data in "$DB_DATA" ; do
+        logmsg_info "Importing $data ..."
+        loaddb_file "$data" || return $?
+    done
+    logmsg_info "Database schema and data should have been initialized at this point: sample datacenter for tests"
+    return 0
+}
+
 loaddb_default() {
-    echo "--------------- reset db: default ----------------"
+    echo "--------------- reset db: default REST API -------"
     loaddb_initial || return $?
     for data in "$DB_DATA" "$DB_DATA_TESTREST"; do
         logmsg_info "Importing $data ..."
@@ -134,21 +157,35 @@ loaddb_current() {
     return 0
 }
 
-init_script(){
+init_script_initial(){
 # Prepare sandbox for the test: ensure the database is freshly made
 # and licenses to not interfere; the accept_license() routine is
 # defined in weblib.sh at the moment
-    loaddb_default
+    loaddb_initial && \
     accept_license
 }
 
+init_script_sampledata(){
+    loaddb_sampledata && \
+    accept_license
+}
+
+init_script_default(){
+    loaddb_default && \
+    accept_license
+}
+
+init_script(){
+    init_script_default "$@"
+}
+
 init_script_topo_loc(){
-    loaddb_topo_loc
+    loaddb_topo_loc && \
     accept_license
 }
 
 init_script_topo_pow(){
-    loaddb_topo_pow
+    loaddb_topo_pow && \
     accept_license
 }
 
