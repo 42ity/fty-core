@@ -101,6 +101,7 @@ chown www-data /etc/default/bios
 chmod a+r /etc/default/bios
 mkdir -p /etc/bios/nut/devices
 chown -R bios:bios-infra /etc/bios
+systemd-tmpfiles --create
 
 # Setup BIOS lenses
 mkdir -p /usr/share/bios/lenses
@@ -257,6 +258,10 @@ else
     systemctl enable lcd-boot-display
     systemctl enable lcd-net-display
 fi
+systemctl enable dc_th
+systemctl enable composite-metrics
+systemctl enable bios-agent-legacy-metrics
+systemctl enable alert-agent
 
 # Our tntnet unit
 cat > /etc/systemd/system/tntnet@.service <<EOF
