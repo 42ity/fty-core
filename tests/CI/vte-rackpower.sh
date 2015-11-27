@@ -39,7 +39,7 @@
     # *** must run as root without using password 
     # *** BIOS image must be installed and running on SUT 
     # *** upsd.conf, upssched.conf and upsmon.conf are present on SUT in the /etc/nut dir 
-    # *** tools directory containing tools/initdb.sql tools/rack_power.sql present on MS for assets
+    # *** tools directory containing tools/initdb.sql database/mysql/rack_power.sql present on MS for assets
     # *** tests/CI directory (on MS) contains weblib.sh (api_get_json and CURL functions needed) and scriptlib.sh
 
 TIME_START=$(date +%s)
@@ -108,11 +108,13 @@ SUT_IS_REMOTE=yes
 NEED_BUILDSUBDIR=no determineDirs_default || true
 # *** weblib include
 . "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+[ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
+[ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
 
-        # * config dir for the nut dummy driver parameters allocated in config files
+    # * config dir for the nut dummy driver parameters allocated in config files
     # *** working directories
 CFGDIR="/etc/nut"
-cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 echo "SCRIPTDIR =       $SCRIPTDIR"
 echo "CHECKOUTDIR =     $CHECKOUTDIR"
 echo "BUILDSUBDIR =     $BUILDSUBDIR"
@@ -161,10 +163,10 @@ sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore
     # *** write power rack base test data to DB on SUT
 set -o pipefail 2>/dev/null || true
 set -e
-{ loaddb_file ./tools/initdb.sql && \
-  loaddb_file ./tools/initdb_ci_patch.sql && \
-  loaddb_file ./tools/rack_power.sql \
-; } 2>&1 | tee $CHECKOUTDIR/ci-rackpower-vte.log
+{ loaddb_file "$DB_BASE" && \
+  loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
+  loaddb_file "$DB_RACK_POWER" \
+; } 2>&1 | tee "$CHECKOUTDIR/ci-rackpower-vte.log"
 
 # Try to accept the BIOS license on server
 ( . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \

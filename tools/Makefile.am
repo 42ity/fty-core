@@ -9,17 +9,8 @@ helper_SCRIPTS	= init-os-accounts.sh resolveip.sh JSON.sh rc-bios \
 helper_SCRIPTS	+= ../tests/CI/scriptlib.sh ../tests/CI/weblib.sh \
 		    ../tests/CI/restapi-request.sh ../tests/CI/curlbbwget.sh
 
-mysqldir	= $(datadir)/@PACKAGE@/sql/mysql
-mysql_DATA	= initdb.sql
-
-mysqlexdir	= $(datadir)/@PACKAGE@/examples/sql/mysql
-mysqlex_DATA	= \
-		    load_data.sql ci-DC-power-UC1.sql location_topology.sql \
-		    power_topology.sql rack_power.sql load_ROZLAB.sql \
-		    load_data_test_restapi.sql
-
 malamuteexdir	= $(datadir)/@PACKAGE@/examples/config/malamute
 malamuteex_DATA	= malamute.cfg
 
-EXTRA_DIST += $(helper_SCRIPTS) $(mysql_DATA) $(mysqlex_DATA) $(malamuteex_DATA)
+EXTRA_DIST += $(helper_SCRIPTS) $(malamuteex_DATA)
 
