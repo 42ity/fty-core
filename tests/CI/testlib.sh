@@ -62,8 +62,11 @@ fi
 _TOKEN_=""
 TESTLIB_FORCEABORT=no
 _testlib_result_printed=notest
+LOGMSG_PREFIX_TESTLIB="CI-TESTLIB-"
+# TNAME of the specific test as named by the test_it() argument
 TNAME=""
-NAME=""
+# NAME of the tested scriptlet (if used, or the parent script by default)
+NAME="$0"
 
 # Numeric counters
 [ -z "${TESTLIB_COUNT_PASS-}" ] && TESTLIB_COUNT_PASS="0"
@@ -85,7 +88,7 @@ print_result() {
     # value is hardcoded as a failure (255).
     # The absolute(!) value of the exit-code should be passed to the
     # caller as this routine's exit-code.
-    [ "${_testlib_result_printed}" = yes ] && return 0
+    [ "${_testlib_result_printed-}" = yes ] && return 0
     _testlib_result_printed=yes
     _code="$1"
     shift
@@ -112,10 +115,10 @@ print_result() {
 
     if [ "${TNAME-}" = "`basename $NAME .sh`" ]; then
         TESTLIB_LASTTESTTAG="`echo "$NAME(${_report})" | sed 's, ,__,g'`"
-        logmsg_info "Completed test $TNAME :"
+        LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_info "Completed test $TNAME :"
     else
         TESTLIB_LASTTESTTAG="`echo "$NAME::$TNAME(${_report})" | sed 's, ,__,g'`"
-        logmsg_info "Completed test $NAME::$TNAME :"
+        LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_info "Completed test $NAME::$TNAME :"
     fi
 
     if [ "$_code" -eq 0 ]; then  # should include "-0" too
@@ -144,7 +147,7 @@ print_result() {
 	if [ "$CITEST_QUICKFAIL" = yes ]; then
 	    echo ""
 	    echo "$TESTLIB_COUNT_PASS previous tests have succeeded"
-	    echo "CI-TESTLIB-FATAL-ABORT[$$]: Testing aborted due to" \
+	    echo "${LOGMSG_PREFIX_TESTLIB}FATAL-ABORT[$$]: Testing aborted due to" \
 		"CITEST_QUICKFAIL=$CITEST_QUICKFAIL" \
 		"after first failure with test $TESTLIB_LASTTESTTAG"
 	    exit $_ret
@@ -154,7 +157,7 @@ print_result() {
 	if [ "$TESTLIB_FORCEABORT" = yes ]; then
 	    echo ""
 	    echo "$TESTLIB_COUNT_PASS previous tests have succeeded"
-	    echo "CI-TESTLIB-FATAL-ABORT[$$]: Testing aborted due to" \
+	    echo "${LOGMSG_PREFIX_TESTLIB}FATAL-ABORT[$$]: Testing aborted due to" \
 		"TESTLIB_FORCEABORT=$TESTLIB_FORCEABORT" \
 		"after forced abortion in test $TESTLIB_LASTTESTTAG"
 	    exit $_ret
@@ -166,8 +169,8 @@ print_result() {
 
 test_it() {
     if [ x"${_testlib_result_printed}" = xnotyet ]; then
-        logmsg_warn "Starting a new test_it() while an old one was not followed by a print_result()!"
-        logmsg_warn "Closing old test with result code 128 ..."
+        LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_warn "Starting a new test_it() while an old one was not followed by a print_result()!"
+        LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_warn "Closing old test with result code 128 ..."
         print_result 128 "Automatically closed an unfinished test"
     fi
     _testlib_result_printed=notyet
@@ -179,9 +182,9 @@ test_it() {
     [ -n "$TNAME" ] || TNAME="$0"
     TNAME="`basename "$TNAME" .sh | sed 's, ,__,g'`"
     if [ "$TNAME" = "`basename $NAME .sh`" ]; then
-        logmsg_info "Running test $TNAME :"
+        LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_info "Running test $TNAME :"
     else
-        logmsg_info "Running test $NAME::$TNAME :"
+        LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_info "Running test $NAME::$TNAME :"
     fi
     TESTLIB_COUNT_TOTAL="`expr $TESTLIB_COUNT_TOTAL + 1`"
 }
@@ -193,8 +196,8 @@ trap_break_testlib() {
     ### This SIGUSR2 handler is reserved for testscript-initiated failures
 #    set +e
     [ "$RES_TEST" != 0 ] && \
-        echo "CI-TESTLIB-ERROR-WEB: test program failed ($RES_TEST), aborting test suite" >&2
-    echo "CI-TESTLIB-FATAL-BREAK: Got forced interruption signal" >&2
+        echo "${LOGMSG_PREFIX_TESTLIB}ERROR-WEB: test program failed ($RES_TEST), aborting test suite" >&2
+    echo "${LOGMSG_PREFIX_TESTLIB}FATAL-BREAK: Got forced interruption signal" >&2
     TESTLIB_FORCEABORT=yes
 
 ### Just cause the loop to break at a proper moment in print_result()
@@ -212,6 +215,8 @@ exit_summarizeResults() {
     print_result $TRAP_RES
     set +e
     NUM_NOTFAILED="`expr $TESTLIB_COUNT_PASS + $TESTLIB_COUNT_SKIP`"
+    # Do not doctor up the LOGMSG_PREFIX as these are rather results of the
+    # test-script than the framework
     logmsg_info "Testing completed ($TRAP_RES), $NUM_NOTFAILED/$TESTLIB_COUNT_TOTAL tests passed($TESTLIB_COUNT_PASS) or not-failed($TESTLIB_COUNT_SKIP) for test-groups:"
     logmsg_info "  POSITIVE (exec glob) = $POSITIVE"
     logmsg_info "  NEGATIVE (skip glob) = $NEGATIVE"
@@ -236,7 +241,7 @@ exit_summarizeResults() {
     [ x"$TESTLIB_COUNT_FAIL" = x"$NUM_FAILED" ] && \
     [ x"$N" = x"$NUM_FAILED" ] && \
     [ x"$TESTLIB_COUNT_FAIL" = x"$N" ] || \
-        logmsg_error "TEST-LIB accounting fault: failed-test counts mismatched: TESTLIB_COUNT_FAIL=$TESTLIB_COUNT_FAIL vs NUM_FAILED=$NUM_FAILED vs N=$N"
+        LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_error "TEST-LIB accounting fault: failed-test counts mismatched: TESTLIB_COUNT_FAIL=$TESTLIB_COUNT_FAIL vs NUM_FAILED=$NUM_FAILED vs N=$N"
     logmsg_error "$N/$TESTLIB_COUNT_TOTAL tests FAILED, $TESTLIB_COUNT_SKIP tests FAILED_IGNORED, $TESTLIB_COUNT_PASS tests PASSED"
     unset N
 
