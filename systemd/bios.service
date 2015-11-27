@@ -1,4 +1,5 @@
 [Unit]
+# This is desired just for CLI simplicity: "systemctl restart bios" with no extensions asked
 Description=Service to toggle bios.target and whoever wants it
 Requires=multi-user.target network.target
 After=multi-user.target network.target
@@ -8,8 +9,7 @@ Conflicts=rescue.target shutdown.target
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/bin/systemctl start bios.target
-ExecStop=/bin/sh -c '/bin/systemctl stop -- $(/bin/systemctl show -p Wants bios.target | cut -d= -f2)'
+ExecStop=/bin/systemctl stop bios.target
 
 [Install]
 WantedBy=multi-user.target
-
