@@ -112,7 +112,10 @@ killdb() {
 }
 
 do_loaddb_list() {
-    [ "$#" = 0 ] && {logmsg_error "do_loaddb_list() called without arguments" ; return 1; }
+    if [ $# = 0 ] ; then
+        logmsg_error "do_loaddb_list() called without arguments"
+        return 1
+    fi
     for data in "$@" ; do
         logmsg_info "Importing $data ..."
         loaddb_file "$data" || return $?
