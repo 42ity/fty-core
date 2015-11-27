@@ -217,10 +217,13 @@ exit_summarizeResults() {
     NUM_NOTFAILED="`expr $TESTLIB_COUNT_PASS + $TESTLIB_COUNT_SKIP`"
     # Do not doctor up the LOGMSG_PREFIX as these are rather results of the
     # test-script than the framework
-    logmsg_info "Testing completed ($TRAP_RES), $NUM_NOTFAILED/$TESTLIB_COUNT_TOTAL tests passed($TESTLIB_COUNT_PASS) or not-failed($TESTLIB_COUNT_SKIP) for test-groups:"
-    logmsg_info "  POSITIVE (exec glob) = $POSITIVE"
-    logmsg_info "  NEGATIVE (skip glob) = $NEGATIVE"
-    logmsg_info "  SKIP_NONSH_TESTS = $SKIP_NONSH_TESTS (so skipped $SKIPPED_NONSH_TESTS tests)"
+    _FTG=""
+    [ -n "${POSITIVE+isdefined}" ] || [ -n "${NEGATIVE+isdefined}" ] || [ -n "${SKIP_NONSH_TESTS+isdefined}" ] && \
+        _FTG=" for test-groups:"
+    logmsg_info "Testing completed ($TRAP_RES), $NUM_NOTFAILED/$TESTLIB_COUNT_TOTAL tests passed($TESTLIB_COUNT_PASS) or not-failed($TESTLIB_COUNT_SKIP)${_FTG}"
+    [ -n "${POSITIVE+isdefined}" ] && logmsg_info "  POSITIVE (exec glob) = $POSITIVE"
+    [ -n "${NEGATIVE+isdefined}" ] && logmsg_info "  NEGATIVE (skip glob) = $NEGATIVE"
+    [ -n "${SKIP_NONSH_TESTS+isdefined}" ] && logmsg_info "  SKIP_NONSH_TESTS = $SKIP_NONSH_TESTS (so skipped ${SKIPPED_NONSH_TESTS+0} tests)"
     if [ -n "$TESTLIB_LIST_FAILED_IGNORED" ]; then
         logmsg_info "The following $TESTLIB_COUNT_SKIP tests have failed but were ignored (TDD in progress):"
         for i in $TESTLIB_LIST_FAILED_IGNORED; do
