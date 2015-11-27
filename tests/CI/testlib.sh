@@ -74,47 +74,66 @@ _testlib_result_printed=notest
 [ -z "${TESTLIB_LIST_PASSED-}" ] && TESTLIB_LIST_PASSED=""
 
 print_result() {
+    # $1 = exit-code of the test being closed:
+    #   0|-0    success
+    #   >0      failed (and can abort the test suite if setup so)
+    #   <0      failed but this was expected and so not fatal
+    # $2+ = optional SHORT comment about the failure if it strikes
+    # For legacy purposes, "$1" can be the comment, then exit-code
+    # value is hardcoded as a failure (255).
+    # The absolute(!) value of the exit-code should be passed to the
+    # caller as this routine's exit-code.
     [ "${_testlib_result_printed}" = yes ] && return 0
     _testlib_result_printed=yes
-    _ret="$1"
-    ### Is this a valid number (negative == failed_ignored)?
-    ### If not - it may be some text comment about the error.
-    [ "$_ret" -ge 0 -o "$_ret" -le 0 ] 2>/dev/null || \
-        _ret=255
+    _code="$1"
+    shift
+    _info="$*"
+    ### Is this _code a valid number (negative == failed_ignored)?
+    ### If not - it may also be some text comment about the error.
+    [ -n "$_code" ] && [ "$_code" -ge 0 -o "$_code" -le 0 ] 2>/dev/null || \
+        { _info="${_code} ${_info}"; _code=255 ; }
+
+    _info="`echo "${_info}" | sed -e 's,^ *,,g' -e 's, *$,,g'`"
 
     # Produce a single-token name for the failed test, including its
     # positive return-code value
-    if [ "$_ret" -lt 0 ] 2>/dev/null ; then
-        _ret="`expr -1 \* $_ret`"
+    if [ "$_code" -lt 0 ] 2>/dev/null ; then
+        _ret="`expr -1 \* $_code`"
+    else
+        _ret="$_code"
     fi
 
+    # If we have some failure-info, clamp it into the echos and tags uniformly
+    [ -n "$_info" ] && [ "$_code" -ne 0 ] && \
+        _report="$_ret, $_info" || \
+        _report="$_ret"
+
     if [ "$TNAME" = "`basename $NAME .sh`" ]; then
-        TESTLIB_LASTTESTTAG="`echo "$NAME(${_ret})" | sed 's, ,__,g'`"
+        TESTLIB_LASTTESTTAG="`echo "$NAME(${_report})" | sed 's, ,__,g'`"
         logmsg_info "Completed test $TNAME :"
     else
-        TESTLIB_LASTTESTTAG="`echo "$NAME::$TNAME(${_ret})" | sed 's, ,__,g'`"
+        TESTLIB_LASTTESTTAG="`echo "$NAME::$TNAME(${_report})" | sed 's, ,__,g'`"
         logmsg_info "Completed test $NAME::$TNAME :"
     fi
 
-    if [ "$_ret" -eq 0 ]; then  # should include "-0" too
+    if [ "$_code" -eq 0 ]; then  # should include "-0" too
         echo " * PASSED"
         TESTLIB_COUNT_PASS="`expr $TESTLIB_COUNT_PASS + 1`"
         TESTLIB_LIST_PASSED="$TESTLIB_LIST_PASSED $TESTLIB_LASTTESTTAG"
+        return 0
     else
-        if [ x-"$_ret" = x"$1" ] ; then
+        if [ "$_code" -lt 0 ] ; then
             # The "$1" string was a negative number
             TESTLIB_COUNT_SKIP="`expr $TESTLIB_COUNT_SKIP + 1`"
-            echo " * FAILED_IGNORED ($_ret)"
+            echo " * FAILED_IGNORED ($_report)"
             TESTLIB_LIST_FAILED_IGNORED="$TESTLIB_LIST_FAILED_IGNORED $TESTLIB_LASTTESTTAG"
             echo
             return $_ret
         fi
 
-        # Positive _ret, including 255 set for a failure with comment
-        # Unlike ignored negative retcodes above, this can abort the script
-        [ x"$_ret" = x"$1" ] && \
-            echo " * FAILED ($_ret)" || \
-            echo " * FAILED ($_ret, $1)"
+        # Positive _code, including 255 set for anon failure with comment
+        # Unlike ignored-negative retcodes above, this can abort the script
+        echo " * FAILED ($_report)"
 
         TESTLIB_LIST_FAILED="$TESTLIB_LIST_FAILED $TESTLIB_LASTTESTTAG"
         TESTLIB_COUNT_FAIL="`expr $TESTLIB_COUNT_FAIL + 1`"
@@ -147,7 +166,7 @@ test_it() {
     if [ x"${_testlib_result_printed}" = xnotyet ]; then
         logmsg_warn "Starting a new test_it() while an old one was not followed by a print_result()!"
         logmsg_warn "Closing old test with result code 128 ..."
-        print_result 128
+        print_result 128 "Automatically closed an unfinished test"
     fi
     _testlib_result_printed=notyet
     [ -n "$TNAME" ] || TNAME="$NAME"
