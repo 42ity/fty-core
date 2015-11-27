@@ -36,7 +36,11 @@ DATABASE=box_utf8
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 NEED_BUILDSUBDIR=no determineDirs_default || true
+. "`dirname $0`"/testlib.sh || die "Can not include common test script library"
+. "`dirname $0`"/testlib-db.sh || die "Can not include database test script library"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+[ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
+[ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
 
 nut_cfg_dir() {
     for cfgd in "/etc/ups" "/etc/nut"; do
@@ -51,18 +55,18 @@ nut_cfg_dir() {
 }
 
 set_value_in_ups() {
-    local UPS=$(basename $1 .dev)
-    local PARAM=$2
-    local VALUE=$3
+    local UPS="$(basename "$1" .dev)"
+    local PARAM="$2"
+    local VALUE="$3"
 
-    sed -i -r -e "s/^$PARAM *:.+$/$PARAM: $VALUE/i" $CFGDIR/$UPS.dev
-    upsrw -s $PARAM=$VALUE -u $NUTUSER -p $NUTPASSWORD $UPS@localhost >/dev/null 2>&1
+    sed -i -r -e 's/^'"$PARAM"' *:.+$/'"$PARAM: $VALUE/i" "$CFGDIR/$UPS.dev"
+    upsrw -s "$PARAM=$VALUE" -u "$NUTUSER" -p "$NUTPASSWORD" "$UPS@localhost" >/dev/null 2>&1
 }
 
 get_value_from_ups() {
-    local UPS=$(basename $1 .dev)
-    local PARAM=$2
-    upsc $UPS $PARAM
+    local UPS="$(basename "$1" .dev)"
+    local PARAM="$2"
+    upsc "$UPS" "$PARAM"
 }
 
 create_epdu_dev_file() {
@@ -295,18 +299,18 @@ usage() {
 }
 
 ACTION=test
-SAMPLEFILE="$SCRIPTDIR/ci-longrun.data"
+SAMPLEFILE="$SCRIPTDIR/../fixtures/ci-longrun.data"
 
 while [ "$#" -gt 0 ] ; do 
     case "$1" in
         --create-samples)
-            TIME=$2
-            FREQ=$3
+            TIME="$2"
+            FREQ="$3"
             ACTION=samples
             shift 3
             ;;
         -s|--samples)
-            SAMPLEFILE=$2
+            SAMPLEFILE="$2"
             shift 2
             ;;
         --help|-h)
@@ -330,8 +334,8 @@ case "$ACTION" in
         $SCRIPTDIR/ci-rc-bios.sh --stop
         create_nut_config
         $SCRIPTDIR/ci-empty-db.sh
-        loaddb_file "$CHECKOUTDIR/tools/initdb_ci_patch.sql"
-        loaddb_file "$CHECKOUTDIR/tools/rack_power.sql"
+        loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE"
+        loaddb_file "$DB_RACK_POWER"
         $SCRIPTDIR/ci-rc-bios.sh --start
         produce_events
         $SCRIPTDIR/ci-rc-bios.sh --stop

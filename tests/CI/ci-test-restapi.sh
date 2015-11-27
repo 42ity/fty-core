@@ -1,6 +1,6 @@
 #/!bin/sh
 #
-# Copyright (C) 2014 Eaton
+# Copyright (C) 2014-2015 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,9 +25,14 @@
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 NEED_BUILDSUBDIR=no determineDirs_default || true
+# Include these explicitly since we don't use weblib.sh here
+#. "`dirname $0`"/testlib.sh || die "Can not include common test script library"
+. "`dirname $0`"/testlib-db.sh || die "Can not include database test script library"
 cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR' (it may be empty but should exist)"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to build, and BUILDSUBDIR='$BUILDSUBDIR' to run the REST API webserver"
+[ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
+[ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
 
 # Set up weblib test engine preference defaults for automated CI tests
 [ -z "$WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT" ] && \
@@ -39,14 +44,6 @@ logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to build, and BUILDSUBDIR='$BUILDS
 [ -z "$SKIP_NONSH_TESTS" ] && \
     SKIP_NONSH_TESTS=yes
 export WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT WEBLIB_QUICKFAIL WEBLIB_CURLFAIL SKIP_NONSH_TESTS
-
-DB_LOADDIR="$CHECKOUTDIR/tools"
-DB_BASE="$DB_LOADDIR/initdb.sql"
-DB_DATA="$DB_LOADDIR/load_data.sql"
-DB_DATA_TESTREST="$DB_LOADDIR/load_data_test_restapi.sql"
-DB_TOPOP="$DB_LOADDIR/power_topology.sql"
-DB_TOPOL="$DB_LOADDIR/location_topology.sql"
-DB_ASSET_TAG_NOT_UNIQUE="$DB_LOADDIR/initdb_ci_patch.sql"
 
 PATH="/usr/lib/ccache:/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
 export PATH
