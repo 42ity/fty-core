@@ -116,6 +116,7 @@ print_result() {
 
     # Tags are single-token strings saved into the corresponding list
     # of passed/ignored/failed tests
+    echo
     if [ "${TNAME-}" = "`basename $NAME .sh`" ]; then
         TESTLIB_LASTTESTTAG="`echo "$NAME(${_report})" | sed 's, ,__,g'`"
         LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_info "Completed test $TNAME :"
@@ -185,6 +186,7 @@ test_it() {
     fi
     [ -n "$TNAME" ] || TNAME="$0"
     TNAME="`basename "$TNAME" .sh | sed 's, ,__,g'`"
+    echo
     if [ "$TNAME" = "`basename $NAME .sh`" ]; then
         LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_info "Running test $TNAME :"
     else
