@@ -217,6 +217,11 @@ exit_summarizeTestlibResults() {
     NUM_NOTFAILED="`expr $TESTLIB_COUNT_PASS + $TESTLIB_COUNT_SKIP`"
     # Do not doctor up the LOGMSG_PREFIX as these are rather results of the
     # test-script than the framework
+    echo
+    echo "####################################################################"
+    echo "************ Ending testlib-driven suite execution *****************"
+    echo "####################################################################"
+    echo
     logmsg_info "Testing completed ($TRAP_RES), $NUM_NOTFAILED/$TESTLIB_COUNT_TOTAL tests passed($TESTLIB_COUNT_PASS) or not-failed($TESTLIB_COUNT_SKIP)"
     if [ -n "$TESTLIB_LIST_FAILED_IGNORED" ]; then
         logmsg_info "The following $TESTLIB_COUNT_SKIP tests have failed but were ignored (TDD in progress):"
@@ -227,23 +232,30 @@ exit_summarizeTestlibResults() {
     NUM_FAILED="`expr $TESTLIB_COUNT_TOTAL - $NUM_NOTFAILED`"
     if [ -z "$TESTLIB_LIST_FAILED" ] && [ x"$TESTLIB_COUNT_FAIL" = x0 ] && [ x"$NUM_FAILED" = x0 ]; then
         [ -z "$TRAP_RES" ] && TRAP_RES=0
-        exit $TRAP_RES
-    fi
-    logmsg_info "The following $TESTLIB_COUNT_FAIL tests have failed:"
-    N=0 # Do a bit of double-accounting to be sure ;)
-    for i in $TESTLIB_LIST_FAILED; do
-        echo " * $i"
-        N="`expr $N + 1`"
-    done
-    [ x"$TESTLIB_COUNT_FAIL" = x"$NUM_FAILED" ] && \
-    [ x"$N" = x"$NUM_FAILED" ] && \
-    [ x"$TESTLIB_COUNT_FAIL" = x"$N" ] || \
-        LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_error "TEST-LIB accounting fault: failed-test counts mismatched: TESTLIB_COUNT_FAIL=$TESTLIB_COUNT_FAIL vs NUM_FAILED=$NUM_FAILED vs N=$N"
-    logmsg_error "$N/$TESTLIB_COUNT_TOTAL tests FAILED, $TESTLIB_COUNT_SKIP tests FAILED_IGNORED, $TESTLIB_COUNT_PASS tests PASSED"
-    unset N
+    else
+        logmsg_info "The following $TESTLIB_COUNT_FAIL tests have failed:"
+        N=0 # Do a bit of double-accounting to be sure ;)
+        for i in $TESTLIB_LIST_FAILED; do
+            echo " * $i"
+            N="`expr $N + 1`"
+        done
+        [ x"$TESTLIB_COUNT_FAIL" = x"$NUM_FAILED" ] && \
+        [ x"$N" = x"$NUM_FAILED" ] && \
+        [ x"$TESTLIB_COUNT_FAIL" = x"$N" ] || \
+            LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_error "TEST-LIB accounting fault: failed-test counts mismatched: TESTLIB_COUNT_FAIL=$TESTLIB_COUNT_FAIL vs NUM_FAILED=$NUM_FAILED vs N=$N"
+        logmsg_error "$N/$TESTLIB_COUNT_TOTAL tests FAILED, $TESTLIB_COUNT_SKIP tests FAILED_IGNORED, $TESTLIB_COUNT_PASS tests PASSED"
+        unset N
 
-    # If we are here, we've at least had some failed tests
-    [ -z "$TRAP_RES" -o "$TRAP_RES" = 0 ] && TRAP_RES=1
+        # If we are here, we've at least had some failed tests
+        [ -z "$TRAP_RES" -o "$TRAP_RES" = 0 ] && TRAP_RES=1
+    fi
+
+    echo
+    echo "####################################################################"
+    echo "************ END OF testlib-driven suite execution ($TRAP_RES) *************"
+    echo "####################################################################"
+    echo
+
     exit $TRAP_RES
 }
 
