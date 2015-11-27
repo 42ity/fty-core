@@ -138,12 +138,13 @@ void NUTConfigurator::updateNUTConfig() {
 }
 
 std::string NUTConfigurator::makeRule(std::string const &alert, std::string const &bit, std::string const &device, std::string const &description) const {
-    return 
+    return
+        "{\n"
         "\"single\" : {\n"
         "    \"rule_name\"     :   \"" + alert + "-" + device + "\",\n"
         "    \"target\"        :   [\"status.ups@" + device + "\"],\n"
         "    \"element\"       :   \"" + device + "\",\n"
-        "    \"results\"       :   [ {\"high_critical\"  : { \"description\" : \""+description+"\" }} ],\n"
+        "    \"results\"       :   [ {\"high_critical\"  : { \"action\" : [ \"EMAIL\" ], \"description\" : \""+description+"\" }} ],\n"
         "    \"evaluation\"    : \""
         " function has_bit(x,bit)"
         "     local mask = 2 ^ (bit - 1)"
@@ -153,7 +154,10 @@ std::string NUTConfigurator::makeRule(std::string const &alert, std::string cons
         " function main(status)"
         "     if has_bit(status,"+bit+") then return HIGH_CRITICAL end"
         "     return OK"
-        " end";
+        " end"
+        "\"\n"
+        "  }\n"
+        "}";
 };
 
 std::vector<std::string> NUTConfigurator::createRules(std::string const &name) {
