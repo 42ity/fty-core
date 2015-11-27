@@ -56,6 +56,7 @@ class BIOSAgent {
     zactor_t *  actor(  ) { return bios_agent_actor( _bios_agent ); };
     zsock_t *  msgpipe(  ) { return bios_agent_msgpipe( _bios_agent ); };
     uint16_t  seq(  ) { return bios_agent_seq( _bios_agent ); };
+    mlm_client_t *  client(  ) { return bios_agent_client( _bios_agent ); };
 
     void timeout(const int timeoutms) { _timeout = timeoutms; };
     int timeout() { return _timeout; };
