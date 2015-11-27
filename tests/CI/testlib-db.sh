@@ -136,16 +136,16 @@ loaddb_list() {
 }
 
 loaddb_initial() {
-    echo "CI-TESTLIB_DB - reset db: (re-)initialize --------"
     killdb || true      # Would fail the next step, probably
+    echo "CI-TESTLIB_DB - reset db: (re-)initializing --------"
     loaddb_list "$DB_BASE" || return $?
     logmsg_debug "Database schema should have been initialized at this point: core schema file only"
     return 0
 }
 
 loaddb_sampledata() {
-    echo "CI-TESTLIB_DB - reset db: default sample data ----"
     loaddb_initial && \
+    echo "CI-TESTLIB_DB - reset db: loading default sample data ----" && \
     loaddb_list "$DB_DATA" || return $?
     logmsg_debug "Database schema and data should have been initialized at this point: sample datacenter for tests"
     return 0
@@ -178,7 +178,7 @@ loaddb_topo_pow() {
 loaddb_current() {
     echo "CI-TESTLIB_DB - reset db: current ----------------"
     loaddb_initial && \
-    loaddb_list "$DB_DATA_CURRENT"|| return $?
+    loaddb_list "$DB_DATA_CURRENT" || return $?
     logmsg_debug "Database schema and data should have been initialized at this point: for current tests"
     return 0
 }
