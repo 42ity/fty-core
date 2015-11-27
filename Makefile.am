@@ -1405,7 +1405,7 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/admin_passwd.cpp src/web/src/systemctl.cpp  \
                       src/web/src/config.cpp src/web/src/alert_rules_list.cpp \
                       src/web/src/alert_rules_detail.cpp src/web/src/alert_rules.cpp \
-					  src/web/src/alert_ack.cpp
+					  src/web/src/alert_ack.cpp src/web/src/alert_list.cpp
 
 # Track real-git and nodist (generated) sources SEPARATELY
 nodist_bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)
@@ -1442,7 +1442,7 @@ bios_web_la_CPPFLAGS =	$(AM_CPPFLAGS) \
 bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 			${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
 			-Wl,--no-undefined \
-			-module -lm -ltntdb -ltntnet -lcidr -lmagic -lbiosapi
+			-module -lm -ltntdb -ltntnet -lcidr -lmagic -lbiosapi -lbiosproto
 
 bios_web_la_LIBADD = \
 			libpriv-db.la libpriv-cidr.la libpriv-proto.la \
