@@ -103,6 +103,7 @@ void Autoconfig::onSend( ymsg_t **message )
 
 void Autoconfig::sendNewRules(std::vector<std::string> const &rules) {
     for( const auto &rule: rules ) {
+        log_debug("Sending new lua rule: %s", rule.c_str ());
         zmsg_t *message = zmsg_new ();
         zmsg_addstr(message, "ADD");
         zmsg_addstr(message, rule.c_str());
