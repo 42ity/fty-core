@@ -1,5 +1,5 @@
 [Unit]
-Description=Service to toggle the BIOS pseudo-target and whoever wants it
+Description=Service to toggle bios.target and whoever wants it
 Requires=multi-user.target network.target
 After=multi-user.target network.target
 Conflicts=rescue.target shutdown.target
@@ -7,8 +7,9 @@ Conflicts=rescue.target shutdown.target
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/bin/true
-ExecStop=/bin/sh -c '/bin/systemctl stop -- $(/bin/systemctl show -p Wants bios.service | cut -d= -f2 | sed "s/[ \t]*\(system\.slice\)//")'
+ExecStart=/bin/systemctl start bios.target
+ExecStop=/bin/sh -c '/bin/systemctl stop -- $(/bin/systemctl show -p Wants bios.target | cut -d= -f2)'
 
 [Install]
 WantedBy=multi-user.target
+

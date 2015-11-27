@@ -16,4 +16,4 @@ EnvironmentFile=-/etc/default/bios-db-ro
 ExecStart=@libexecdir@/@PACKAGE@/agent-tpower
 
 [Install]
-WantedBy=bios.service
+WantedBy=bios.target
