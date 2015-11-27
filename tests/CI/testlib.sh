@@ -208,7 +208,7 @@ trap "trap_break_testlib" SIGUSR2
 
 # A consumer script can set this as (part of) their exit/abort-trap to always
 # print a summary of processed tests in the end, whatever the reason to exit().
-exit_summarizeResults() {
+exit_summarizeTestlibResults() {
     TRAP_RES=$?
     # This would be a no-op if the test case previously started with a
     # test_it() has been already closed with its proper print_result()
@@ -217,13 +217,7 @@ exit_summarizeResults() {
     NUM_NOTFAILED="`expr $TESTLIB_COUNT_PASS + $TESTLIB_COUNT_SKIP`"
     # Do not doctor up the LOGMSG_PREFIX as these are rather results of the
     # test-script than the framework
-    _FTG=""
-    [ -n "${POSITIVE+isdefined}" ] || [ -n "${NEGATIVE+isdefined}" ] || [ -n "${SKIP_NONSH_TESTS+isdefined}" ] && \
-        _FTG=" for test-groups:"
-    logmsg_info "Testing completed ($TRAP_RES), $NUM_NOTFAILED/$TESTLIB_COUNT_TOTAL tests passed($TESTLIB_COUNT_PASS) or not-failed($TESTLIB_COUNT_SKIP)${_FTG}"
-    [ -n "${POSITIVE+isdefined}" ] && logmsg_info "  POSITIVE (exec glob) = $POSITIVE"
-    [ -n "${NEGATIVE+isdefined}" ] && logmsg_info "  NEGATIVE (skip glob) = $NEGATIVE"
-    [ -n "${SKIP_NONSH_TESTS+isdefined}" ] && logmsg_info "  SKIP_NONSH_TESTS = $SKIP_NONSH_TESTS (so skipped ${SKIPPED_NONSH_TESTS+0} tests)"
+    logmsg_info "Testing completed ($TRAP_RES), $NUM_NOTFAILED/$TESTLIB_COUNT_TOTAL tests passed($TESTLIB_COUNT_PASS) or not-failed($TESTLIB_COUNT_SKIP)"
     if [ -n "$TESTLIB_LIST_FAILED_IGNORED" ]; then
         logmsg_info "The following $TESTLIB_COUNT_SKIP tests have failed but were ignored (TDD in progress):"
         for i in $TESTLIB_LIST_FAILED_IGNORED; do
@@ -235,7 +229,7 @@ exit_summarizeResults() {
         [ -z "$TRAP_RES" ] && TRAP_RES=0
         exit $TRAP_RES
     fi
-    logmsg_info "The following $TESTLIB_COUNT_FAILED tests have failed:"
+    logmsg_info "The following $TESTLIB_COUNT_FAIL tests have failed:"
     N=0 # Do a bit of double-accounting to be sure ;)
     for i in $TESTLIB_LIST_FAILED; do
         echo " * $i"
