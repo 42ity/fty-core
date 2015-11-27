@@ -255,6 +255,7 @@ exit_summarizeTestlibResults() {
         # If we are here, we've at least had some failed tests
         [ -z "$TRAP_RES" -o "$TRAP_RES" = 0 ] && TRAP_RES=1
     fi
+    sleep 2
 
     echo
     echo "####################################################################"
