@@ -83,7 +83,8 @@ print_result() {
     #   0|-0    success
     #   >0      failed (and can abort the test suite if setup so)
     #   <0      failed but this was expected and so not fatal
-    # $2+ = optional SHORT comment about the failure if it strikes
+    # $2+ = optional SHORT SINGLE-LINE comment about the failure
+    #           if it does strike
     # For legacy purposes, "$1" can be the comment, then exit-code
     # value is hardcoded as a failure (255).
     # The absolute(!) value of the exit-code should be passed to the
@@ -113,6 +114,8 @@ print_result() {
         _report="$_ret, $_info" || \
         _report="$_ret"
 
+    # Tags are single-token strings saved into the corresponding list
+    # of passed/ignored/failed tests
     if [ "${TNAME-}" = "`basename $NAME .sh`" ]; then
         TESTLIB_LASTTESTTAG="`echo "$NAME(${_report})" | sed 's, ,__,g'`"
         LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_info "Completed test $TNAME :"
@@ -125,6 +128,7 @@ print_result() {
         echo " * PASSED"
         TESTLIB_COUNT_PASS="`expr $TESTLIB_COUNT_PASS + 1`"
         TESTLIB_LIST_PASSED="$TESTLIB_LIST_PASSED $TESTLIB_LASTTESTTAG"
+        echo
         return 0
     else
         if [ "$_code" -lt 0 ] ; then
