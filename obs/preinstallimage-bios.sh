@@ -264,6 +264,7 @@ cat > /etc/systemd/system/tntnet@.service <<EOF
 Description=Tntnet web server using /etc/tntnet/%I.xml
 After=network.target bios-db-init.service
 Requires=bios-db-init.service
+PartOf=bios.target
 
 [Service]
 Type=simple
