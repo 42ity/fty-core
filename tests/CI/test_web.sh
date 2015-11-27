@@ -179,7 +179,7 @@ done
 [ -n "$POSITIVE" ] || POSITIVE="*"
 
 exit_summarizeTestedScriptlets() {
-    logmsg_info "This $0 $* run selected the following scriptlets from web/commands :"
+    logmsg_info "This ${_SCRIPT_NAME} ${_SCRIPT_ARGS} run selected the following scriptlets from web/commands :"
     logmsg_info "  Execution pattern (POSITIVE) = $POSITIVE"
     logmsg_info "  Ignored pattern (NEGATIVE)   = $NEGATIVE"
     logmsg_info "  SKIP_NONSH_TESTS = $SKIP_NONSH_TESTS (so skipped ${SKIPPED_NONSH_TESTS+0} tests)"
