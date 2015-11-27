@@ -72,22 +72,32 @@ DB_RES_DIR="$CHECKOUTDIR/tests/CI/web/results"
 ### so we can have regression testing (that the ultimate fix works forever).
 [ -z "${DB_KILL_CONNECTIONS-}" ] && DB_KILL_CONNECTIONS=no
 
-killdb() {
-    echo "--------------- reset db: kill old DB ------------"
+do_killdb() {
+    KILLDB_RES=0
     if [ -n "${DATABASE-}" ] ; then
         if [ x"$DB_KILL_CONNECTIONS" = xyes ]; then
             logmsg_warn "Trying to kill all connections to the ${DATABASE} database; some clients can become upset - it is their bug then!"
-            sut_run 'mysql --disable-column-names -s -e "SHOW PROCESSLIST" | grep -vi PROCESSLIST | awk '"'\$4 ~ /$DATABASE/ {print \$1}'"' | while read P ; do mysqladmin kill "$P" || do_select "KILL $P" ; done'
+            sut_run 'mysql --disable-column-names -s -e "SHOW PROCESSLIST" | grep -vi PROCESSLIST | awk '"'\$4 ~ /$DATABASE/ {print \$1}'"' | while read P ; do mysqladmin kill "$P" || do_select "KILL $P" ; done' || KILLDB_RES=$?
         fi
-        DATABASE=mysql do_select "DROP DATABASE ${DATABASE}" || true
-        sleep 1
-        sut_run "mysqladmin drop -f ${DATABASE} || true"
+        DATABASE=mysql do_select "DROP DATABASE ${DATABASE}" || \
+        sut_run "mysqladmin drop -f ${DATABASE}" || KILLDB_RES=$?
     fi
-    DATABASE=mysql do_select "RESET QUERY CACHE" || true
-    DATABASE=mysql do_select "FLUSH QUERY CACHE" || true
-    sut_run "mysqladmin refresh ; sync; [ -w /proc/sys/vm/drop_caches ] && echo 3 > /proc/sys/vm/drop_caches && sync"
+    DATABASE=mysql do_select "RESET QUERY CACHE" || KILLDB_RES=$?
+    DATABASE=mysql do_select "FLUSH QUERY CACHE" || KILLDB_RES=$?
+    sut_run "mysqladmin refresh ; sync; [ -w /proc/sys/vm/drop_caches ] && echo 3 > /proc/sys/vm/drop_caches && sync" || true
+    return $KILLDB_RES
+}
+
+killdb() {
+    echo "--------------- reset db: kill old DB ------------"
+    KILLDB_OUT="`do_killdb 2>&1`"
+    KILLDB_RES=$?
+    { logmsg_error "Hit some error while killing old database:"
+      echo "==========================================="
+      echo "$KILLDB_OUT"
+      echo "==========================================="; }
     logmsg_info "Database should have been dropped and caches should have been flushed at this point"
-    return 0
+    return $KILLDB_RES
 }
 
 loaddb_initial() {
