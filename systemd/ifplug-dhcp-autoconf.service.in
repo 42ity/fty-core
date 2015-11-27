@@ -19,3 +19,4 @@ ExecStart=@datadir@/@PACKAGE@/scripts/ifplug-dhcp-autoconf.sh
 
 [Install]
 WantedBy=bios.target
+PartOf=bios.target

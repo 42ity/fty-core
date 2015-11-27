@@ -4,6 +4,7 @@ After=malamute.service bios-db-init.service
 Requires=malamute.service bios-db-init.service
 # We only need the database during agent-tpower startup to read
 # our service configs, and don't care if it is restarted later
+PartOf=bios.target
 
 [Service]
 Type=simple

@@ -2,6 +2,7 @@
 Description=Computation Module agent for BIOS project
 After=malamute.service bios-db-init.service
 Requires=malamute.service bios-db-init.service
+PartOf=bios.target
 
 [Service]
 Type=simple
