@@ -80,11 +80,18 @@ do_killdb() {
             sut_run 'mysql --disable-column-names -s -e "SHOW PROCESSLIST" | grep -vi PROCESSLIST | awk '"'\$4 ~ /$DATABASE/ {print \$1}'"' | while read P ; do mysqladmin kill "$P" || do_select "KILL $P" ; done' || KILLDB_RES=$?
         fi
         DATABASE=mysql do_select "DROP DATABASE ${DATABASE}" || \
-        sut_run "mysqladmin drop -f ${DATABASE}" || KILLDB_RES=$?
+        sut_run "mysqladmin drop -f ${DATABASE}" || \
+        { KILLDB_RES=$? ; logmsg_error "Failed to DROP DATABASE" ; }
+        sleep 1
+    else
+        logmsg_warn "The DATABASE variable is not set, nothing known to DROP"
     fi
-    DATABASE=mysql do_select "RESET QUERY CACHE" || KILLDB_RES=$?
-    DATABASE=mysql do_select "FLUSH QUERY CACHE" || KILLDB_RES=$?
-    sut_run "mysqladmin refresh ; sync; [ -w /proc/sys/vm/drop_caches ] && echo 3 > /proc/sys/vm/drop_caches && sync" || true
+    DATABASE=mysql do_select "RESET QUERY CACHE" || \
+        logmsg_warn "Failed to RESET QUERY CACHE"
+    DATABASE=mysql do_select "FLUSH QUERY CACHE" || \
+        logmsg_warn "Failed to FLUSH QUERY CACHE"
+    sut_run "mysqladmin refresh ; sync; [ -w /proc/sys/vm/drop_caches ] && echo 3 > /proc/sys/vm/drop_caches && sync" || \
+        logmsg_warn "Failed to FLUSH OS/VM CACHE"
     return $KILLDB_RES
 }
 
