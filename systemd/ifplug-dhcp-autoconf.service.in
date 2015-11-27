@@ -18,4 +18,4 @@ EnvironmentFile=-/etc/sysconfig/bios__%n.conf
 ExecStart=@datadir@/@PACKAGE@/scripts/ifplug-dhcp-autoconf.sh
 
 [Install]
-WantedBy=bios.service
+WantedBy=bios.target
