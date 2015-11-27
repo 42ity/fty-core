@@ -9,4 +9,4 @@ User=nobody
 ExecStart=@libexecdir@/@PACKAGE@/fake-th
 
 [Install]
-WantedBy=bios.service
+WantedBy=bios.target

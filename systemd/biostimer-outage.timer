@@ -14,4 +14,4 @@ Persistent=true
 Unit=biostimer-outage.service
 
 [Install]
-WantedBy=bios.service
+WantedBy=bios.target
