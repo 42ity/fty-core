@@ -62,6 +62,8 @@ fi
 _TOKEN_=""
 TESTLIB_FORCEABORT=no
 _testlib_result_printed=notest
+TNAME=""
+NAME=""
 
 # Numeric counters
 [ -z "${TESTLIB_COUNT_PASS-}" ] && TESTLIB_COUNT_PASS="0"
@@ -108,7 +110,7 @@ print_result() {
         _report="$_ret, $_info" || \
         _report="$_ret"
 
-    if [ "$TNAME" = "`basename $NAME .sh`" ]; then
+    if [ "${TNAME-}" = "`basename $NAME .sh`" ]; then
         TESTLIB_LASTTESTTAG="`echo "$NAME(${_report})" | sed 's, ,__,g'`"
         logmsg_info "Completed test $TNAME :"
     else
@@ -169,7 +171,8 @@ test_it() {
         print_result 128 "Automatically closed an unfinished test"
     fi
     _testlib_result_printed=notyet
-    [ -n "$TNAME" ] || TNAME="$NAME"
+    [ -n "${NAME-}" ] || NAME="$0"
+    [ -n "${TNAME-}" ] || TNAME="${NAME}"
     if [ "$1" ]; then
         TNAME="$1"
     fi
