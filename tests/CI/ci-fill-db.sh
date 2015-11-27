@@ -31,8 +31,9 @@ set -u
 set -e
 set -x
 
-DB1="$CHECKOUTDIR/tools/initdb.sql"
-DB2="$CHECKOUTDIR/tools/load_data.sql"
+DB_LOADDIR="$CHECKOUTDIR/database/mysql"
+DB1="$DB_LOADDIR/initdb.sql"
+DB2="$DB_LOADDIR/load_data.sql"
 
 loaddb_file "$DB1"
 loaddb_file "$DB2"

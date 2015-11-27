@@ -54,7 +54,7 @@ echo "Stopping services..."
 systemctl stop bios-db-init malamute tntnet@bios.service mysql 'biostimer*.timer'
 rm -f /var/lib/bios/agent-cm/biostimer-graphs-prefetch*.time
 
-echo "Stopping mysql..."
+echo "Starting mysql..."
 systemctl start mysql 
 
 echo "Dropping old database (if any)..."

@@ -19,6 +19,7 @@
 #  \brief  CI tests for asset delete calls
 #  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 #  \author Alena Chernikava <AlenaChernikava@Eaton.com>
+
 echo
 echo "###################################################################################################"
 echo "********* asset_delete_one_item.sh ***************** START ****************************************"
@@ -28,7 +29,6 @@ echo
 echo "***************************************************************************************************"
 echo "********* Prerequisites ***************************************************************************"
 echo "***************************************************************************************************"
-init_script
 
 find_id() {
 	local __CALL="$(api_get_json /asset/$1)"
@@ -38,6 +38,18 @@ find_id() {
 	echo "$ID"
 }
 
+# Assumption: initdb + load_data files are uploaded.
+# So, make sure this is true:
+init_script_sampledata || exit $?
+
+# Need to check number of expected rows in the table
+test_it "verify_number_of_sample_assets"
+ASSETS_NUMBER="$(do_select 'select count(id) as assets_count from v_bios_asset_element')"
+logmsg_info "ASSETS_NUMBER: $ASSETS_NUMBER,    expected: 35"
+[ "$ASSETS_NUMBER" -eq 35 ]
+print_result $?
+
+# Start
 # Set test number
 No=1
 

@@ -473,3 +473,8 @@ ymsg_set_int64(ymsg_t* msg, const char *key, int64_t value) {
     sprintf(buff, "%" PRIi64, value);
     set_hash(msg, key, buff);
 }
+
+BIOS_EXPORT mlm_client_t *
+bios_agent_client (bios_agent_t *self) {
+    return self ? self->client : NULL;
+}

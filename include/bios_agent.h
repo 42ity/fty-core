@@ -282,6 +282,9 @@ BIOS_EXPORT const char *
 BIOS_EXPORT void
     ymsg_set_content_type (ymsg_t *self, const char *content_type);
 
+BIOS_EXPORT mlm_client_t *
+    bios_agent_client (bios_agent_t *self);
+
 // TODO (miska): please change for utils_ymsg.h functions
 BIOS_EXPORT const char * ymsg_get_string(ymsg_t* msg, const char *key);
 BIOS_EXPORT int32_t ymsg_get_int32(ymsg_t* msg, const char *key);

@@ -142,6 +142,8 @@ global:
 
         is_app;
         is_ymsg;
+        
+        bios_agent_client;
 local:
         *;
 };
