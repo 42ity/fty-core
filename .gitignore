@@ -238,6 +238,7 @@ src/web/src/alert_rules_list.cpp
 src/web/src/alert_rules_detail.cpp
 src/web/src/alert_rules.cpp
 src/web/src/alert_ack.cpp
+src/web/src/alert_list.cpp
 
 tntnet.xml.example
 !src/web/tntnet.xml
