@@ -1560,10 +1560,22 @@ obs_SCRIPTS	=  obs/preinstallimage-bios.sh
 EXTRA_DIST	+= $(obs_SCRIPTS)
 
 # SystemD integrations files; if not enabled - variables remain empty
+SYSTEMD_UNITS_LOWLEVEL =
+SYSTEMD_UNITS_TARGET_BIOS =
 SYSTEMD_UNITS =
+
+SYSTEMD_UNITS_NOTPRESET_LOWLEVEL =
+SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS =
 SYSTEMD_UNITS_NOTPRESET =
+
+SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL =
+SYSTEMD_UNITS_TIMERIMPL_TARGET_BIOS =
 SYSTEMD_UNITS_TIMERIMPL =
+
+SYSTEMD_TIMERS_LOWLEVEL =
+SYSTEMD_TIMERS_TARGET_BIOS =
 SYSTEMD_TIMERS =
+
 SYSTEMD_PRESETS =
 SYSTEMD_TARGETS =
 
@@ -1575,44 +1587,73 @@ SYSTEMD_SUBDIR = systemd
 # systemd integration enabled?
 if HAVE_SYSTEMD
 
-# Here we list the actual service-definition files that should be compiled
-# Enabled as part of BIOS presets
-SYSTEMD_UNITS += bios-agent-nut.service \
-                        bios-agent-dbstore.service bios-server-agent.service \
-                        bios-agent-inventory.service bios-agent-cm.service \
-                        bios-agent-alert.service \
-                        bios-agent-alert-smtp.service bios-agent-tpower.service \
-                        bios-agent-autoconfig.service bios-agent-th.service \
-                        bios-db-init.service bios-reset-button.service \
+# These units allow to toggle the entirety of BIOS agents and other related
+# services on and off (except a few chosen low-level services that remain
+# WantedBy=multi-user.target)
+SYSTEMD_TARGETS += bios.target bios.service
+
+# These units are not part of the common bios.target etc. but are to be
+# considered rather a part of the operating environment independent of
+# the BIOS high-level target groupings.
+SYSTEMD_UNITS_LOWLEVEL += \
+                        bios-reset-button.service \
                         ifplug-dhcp-autoconf.service \
                         bios-ssh-last-resort.service \
                         bios-networking.service
 
-# These units allow to toggle the entirety of BIOS agents and other related
-# services on and off (except a few chosen system-level services that remain
-# WantedBy=multi-user.target)
-SYSTEMD_TARGETS += bios.target bios.service
+# These service-units are PartOf and WantedBy the "bios.target"
+# And also "tntnet@.service" customized by obs/preinstall.sh
+# And also some of the timer units and implementations below
+SYSTEMD_UNITS_TARGET_BIOS += \
+                        bios-db-init.service \
+                        bios-agent-alert.service \
+                        bios-agent-alert-smtp.service \
+                        bios-agent-autoconfig.service \
+                        bios-agent-cm.service \
+                        bios-agent-dbstore.service \
+                        bios-agent-inventory.service \
+                        bios-agent-nut.service \
+                        bios-agent-th.service \
+                        bios-agent-tpower.service \
+                        bios-server-agent.service
+
+# Here we list the actual service-definition files that should be compiled
+# Enabled as part of BIOS presets
+SYSTEMD_UNITS += $(SYSTEMD_UNITS_TARGET_BIOS) $(SYSTEMD_UNITS_LOWLEVEL)
 
 # These units have unit files installed but are not enabled by default
 # via presets nor timers (may be enabled in OS image generation script
 # or during deployment's lifetime)
-SYSTEMD_UNITS_NOTPRESET += \
+#SYSTEMD_UNITS_NOTPRESET_LOWLEVEL +=
+SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS += \
                         bios-fake-th.service
 
+SYSTEMD_UNITS_NOTPRESET += $(SYSTEMD_UNITS_NOTPRESET_LOWLEVEL) $(SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS)
+
 # These unit files are compiled, but are not enabled via BIOS presets
-SYSTEMD_UNITS_TIMERIMPL += \
-                        biostimer-outage.service \
-                        biostimer-graphs-prefetch@.service \
+SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL += \
                         biostimer-verify-fs.service
+
+SYSTEMD_UNITS_TIMERIMPL_TARGET_BIOS += \
+                        biostimer-outage.service \
+                        biostimer-graphs-prefetch@.service
+
+SYSTEMD_UNITS_TIMERIMPL += $(SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL) $(SYSTEMD_UNITS_TIMERIMPL_TARGET_BIOS)
 
 # These files need no processing, delivered verbatim
 # Enabled as part of BIOS presets
-SYSTEMD_TIMERS +=       biostimer-outage.timer \
-                        biostimer-graphs-prefetch__realpower.default@15m.timer \
-                        biostimer-graphs-prefetch__realpower.default@24h.timer \
+SYSTEMD_TIMERS_LOWLEVEL += \
                         biostimer-verify-fs.timer
 
-# This file is generated
+SYSTEMD_TIMERS_TARGET_BIOS += \
+                        biostimer-outage.timer \
+                        biostimer-graphs-prefetch__realpower.default@15m.timer \
+                        biostimer-graphs-prefetch__realpower.default@24h.timer
+
+SYSTEMD_TIMERS += $(SYSTEMD_TIMERS_LOWLEVEL) $(SYSTEMD_TIMERS_TARGET_BIOS)
+
+# This file is generated to toggle the defined units and targets
+# (except those in SYSTEMD_UNITS_NOTPRESET list)
 SYSTEMD_PRESETS +=      42-bios-systemd.preset
 
 ### TODO? Add the build info (git commit, timestamp) to the header comment?
