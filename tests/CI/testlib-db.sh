@@ -99,10 +99,12 @@ killdb() {
     echo "--------------- reset db: kill old DB ------------"
     KILLDB_OUT="`do_killdb 2>&1`"
     KILLDB_RES=$?
-    { logmsg_error "Hit some error while killing old database:"
-      echo "==========================================="
-      echo "$KILLDB_OUT"
-      echo "==========================================="; }
+    if [ $KILLDB_RES != 0 ]; then
+        logmsg_error "Hit some error while killing old database:"
+        echo "==========================================="
+        echo "$KILLDB_OUT"
+        echo "==========================================="
+    fi
     logmsg_info "Database should have been dropped and caches should have been flushed at this point"
     return $KILLDB_RES
 }
