@@ -105,74 +105,76 @@ killdb() {
         echo "$KILLDB_OUT"
         echo "==========================================="
     fi
-    logmsg_info "Database should have been dropped and caches should have been flushed at this point"
+    logmsg_debug "Database should have been dropped and caches should have been flushed at this point"
     return $KILLDB_RES
 }
 
-loaddb_initial() {
-    killdb
-    echo "--------------- reset db: initialize -------------"
-    for data in "$DB_BASE" ; do
+do_loaddb_list() {
+    [ "$#" = 0 ] && {logmsg_error "do_loaddb_list() called without arguments" ; return 1; }
+    for data in "$@" ; do
         logmsg_info "Importing $data ..."
         loaddb_file "$data" || return $?
     done
-    logmsg_info "Database schema should have been initialized at this point: core schema file only"
+    return 0
+}
+
+loaddb_list() {
+    LOADDB_OUT="`do_loaddb_list "$@" 2>&1`"
+    LOADDB_RES=$?
+    if [ $LOADDB_RES != 0 ]; then
+        logmsg_error "Hit some error while importing database file(s):"
+        echo "==========================================="
+        echo "$LOADDB_OUT"
+        echo "==========================================="
+    fi
+    return $LOADDB_RES
+}
+
+loaddb_initial() {
+    echo "--------------- reset db: (re-)initialize --------"
+    killdb || true      # Would fail the next step, probably
+    loaddb_list "$DB_BASE" || return $?
+    logmsg_debug "Database schema should have been initialized at this point: core schema file only"
     return 0
 }
 
 loaddb_sampledata() {
     echo "--------------- reset db: default sample data ----"
-    loaddb_initial || return $?
-    for data in "$DB_DATA" ; do
-        logmsg_info "Importing $data ..."
-        loaddb_file "$data" || return $?
-    done
-    logmsg_info "Database schema and data should have been initialized at this point: sample datacenter for tests"
+    loaddb_initial && \
+    loaddb_list "$DB_DATA" || return $?
+    logmsg_debug "Database schema and data should have been initialized at this point: sample datacenter for tests"
     return 0
 }
 
 loaddb_default() {
     echo "--------------- reset db: default REST API -------"
-    loaddb_initial || return $?
-    for data in "$DB_DATA" "$DB_DATA_TESTREST"; do
-        logmsg_info "Importing $data ..."
-        loaddb_file "$data" || return $?
-    done
-    logmsg_info "Database schema and data should have been initialized at this point: for common REST API tests"
+    loaddb_sampledata && \
+    loaddb_list "$DB_DATA_TESTREST" || return $?
+    logmsg_debug "Database schema and data should have been initialized at this point: for common REST API tests"
     return 0
 }
 
 loaddb_topo_loc() {
     echo "--------------- reset db: topo-location ----------"
-    loaddb_initial || return $?
-    for data in "$DB_DATA" "$DB_TOPOL"; do
-        logmsg_info "Importing $data ..."
-        loaddb_file "$data" || return $?
-    done
-    logmsg_info "Database schema and data should have been initialized at this point: for topology-location tests"
+    loaddb_sampledata && \
+    loaddb_list "$DB_TOPOL" || return $?
+    logmsg_debug "Database schema and data should have been initialized at this point: for topology-location tests"
     return 0
 }
 
 loaddb_topo_pow() {
     echo "--------------- reset db: topo-power -------------"
-    loaddb_initial || return $?
-    for data in "$DB_DATA" "$DB_TOPOP"; do
-        logmsg_info "Importing $data ..."
-        loaddb_file "$data" || return $?
-    done
-    logmsg_info "Database schema and data should have been initialized at this point: for topology-power tests"
+    loaddb_sampledata && \
+    loaddb_list "$DB_TOPOP" || return $?
+    logmsg_debug "Database schema and data should have been initialized at this point: for topology-power tests"
     return 0
 }
 
 loaddb_current() {
     echo "--------------- reset db: current ----------------"
-    loaddb_initial || return $?
-    for data in "$DB_DATA_CURRENT"; do
-    #for data in "$DB_DATA_CURRENT" "$DB_DATA_TESTREST"; do
-        logmsg_info "Importing $data ..."
-        loaddb_file "$data" || return $?
-    done
-    logmsg_info "Database schema and data should have been initialized at this point: for current tests"
+    loaddb_initial && \
+    loaddb_list "$DB_DATA_CURRENT"|| return $?
+    logmsg_debug "Database schema and data should have been initialized at this point: for current tests"
     return 0
 }
 
