@@ -258,6 +258,10 @@ else
     systemctl enable lcd-boot-display
     systemctl enable lcd-net-display
 fi
+systemctl enable dc_th
+systemctl enable composite-metrics
+systemctl enable bios-agent-legacy-metrics
+systemctl enable alert-agent
 
 # Our tntnet unit
 cat > /etc/systemd/system/tntnet@.service <<EOF
