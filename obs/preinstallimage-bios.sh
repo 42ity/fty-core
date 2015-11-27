@@ -101,6 +101,7 @@ chown www-data /etc/default/bios
 chmod a+r /etc/default/bios
 mkdir -p /etc/bios/nut/devices
 chown -R bios:bios-infra /etc/bios
+systemd-tmpfiles --create
 
 # Setup BIOS lenses
 mkdir -p /usr/share/bios/lenses
