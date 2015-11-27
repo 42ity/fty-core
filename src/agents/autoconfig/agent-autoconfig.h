@@ -37,6 +37,7 @@ class Autoconfig : public BIOSAgent {
     void onSend( ymsg_t **message );
     void onPoll( );
  private:
+    void sendNewRules(std::vector<std::string> const &rules);
     void setPollingInterval();
     void addDeviceIfNeeded(const char *name, uint32_t type, uint32_t subtype);
     void requestExtendedAttributes( const char *name );

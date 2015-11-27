@@ -274,7 +274,7 @@ int
     select_assets_by_container
         (tntdb::Connection &conn,
          a_elmnt_id_t element_id,
-         std::function<void(const tntdb::Row&)>& cb);
+         std::function<void(const tntdb::Row&)> cb);
 
 
 /**
