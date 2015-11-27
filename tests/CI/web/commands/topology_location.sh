@@ -29,18 +29,10 @@ echo
 echo "***************************************************************************************************"
 echo "********* Prerequisites ***************************************************************************"
 echo "***************************************************************************************************"
-init_script_topo_loc
 
 # Assumption: initdb + load_data + location_topology files are uploaded.
-# So, make sure this is  true;
-DB_LOADDIR=$BUILDSUBDIR/tools
-DB_INIT_topology_location="$DB_LOADDIR/initdb.sql"
-DB_TOPOL_topology_location="$DB_LOADDIR/location_topology.sql"
-DB_LOAD_DATA_topology_location="$DB_LOADDIR/load_data.sql"
-loaddb_file "$DB_INIT_topology_location" || exit $?
-#load_data should be first, as we want elements to ave ids starting from 1
-loaddb_file "$DB_LOAD_DATA_topology_location" || exit $?
-loaddb_file "$DB_TOPOL_topology_location" || exit $?
+# So, make sure this is true:
+init_script_topo_loc || exit $?
 
 echo "********* topology_location.sh ********************************************************************"
 echo "********* 1. From_top_but_not_recursive ***********************************************************"

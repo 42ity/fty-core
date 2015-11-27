@@ -29,15 +29,17 @@ echo
 echo "***************************************************************************************************"
 echo "********* Prerequisites ***************************************************************************"
 echo "***************************************************************************************************"
-init_script
+init_script_initial || exit $?
 
 echo "********* asset_elements.sh ***********************************************************************"
 echo "********* 1. No_datacenters_present ***************************************************************"
 echo "***************************************************************************************************"
 test_it "No_datacenters_present"
-
 # delete all assets, no racks are present
-loaddb_initial
+### NOTE: This state is achieved by init_script() above, so we don't need
+### to recreate the DB at this point; routine commented away but left in
+### place for readability:
+#loaddb_initial
 
 curlfail_push_expect_noerrors
 api_get_json /asset/datacenters >&5
@@ -79,7 +81,6 @@ print_result $?
 echo "********* asset_elements.sh ***********************************************************************"
 echo "********* 5. no_rows_present **********************************************************************"
 echo "***************************************************************************************************"
-
 # delete all assets, no racks are present
 loaddb_initial
 
