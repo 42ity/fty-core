@@ -29,7 +29,7 @@ cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 set -u
 set -e
-set -x
+#set -x
 
 DB_LOADDIR="$CHECKOUTDIR/database/mysql"
 DB1="$DB_LOADDIR/initdb.sql"
