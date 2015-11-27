@@ -1,4 +1,3 @@
-#!/bin/sh
 #
 # Copyright (C) 2014-2015 Eaton
 #
@@ -96,7 +95,7 @@ do_killdb() {
 }
 
 killdb() {
-    echo "--------------- reset db: kill old DB ------------"
+    echo "CI-TESTLIB_DB - reset db: kill old DB ------------"
     KILLDB_OUT="`do_killdb 2>&1`"
     KILLDB_RES=$?
     if [ $KILLDB_RES != 0 ]; then
@@ -131,7 +130,7 @@ loaddb_list() {
 }
 
 loaddb_initial() {
-    echo "--------------- reset db: (re-)initialize --------"
+    echo "CI-TESTLIB_DB - reset db: (re-)initialize --------"
     killdb || true      # Would fail the next step, probably
     loaddb_list "$DB_BASE" || return $?
     logmsg_debug "Database schema should have been initialized at this point: core schema file only"
@@ -139,7 +138,7 @@ loaddb_initial() {
 }
 
 loaddb_sampledata() {
-    echo "--------------- reset db: default sample data ----"
+    echo "CI-TESTLIB_DB - reset db: default sample data ----"
     loaddb_initial && \
     loaddb_list "$DB_DATA" || return $?
     logmsg_debug "Database schema and data should have been initialized at this point: sample datacenter for tests"
@@ -147,7 +146,7 @@ loaddb_sampledata() {
 }
 
 loaddb_default() {
-    echo "--------------- reset db: default REST API -------"
+    echo "CI-TESTLIB_DB - reset db: default REST API -------"
     loaddb_sampledata && \
     loaddb_list "$DB_DATA_TESTREST" || return $?
     logmsg_debug "Database schema and data should have been initialized at this point: for common REST API tests"
@@ -155,7 +154,7 @@ loaddb_default() {
 }
 
 loaddb_topo_loc() {
-    echo "--------------- reset db: topo-location ----------"
+    echo "CI-TESTLIB_DB - reset db: topo-location ----------"
     loaddb_sampledata && \
     loaddb_list "$DB_TOPOL" || return $?
     logmsg_debug "Database schema and data should have been initialized at this point: for topology-location tests"
@@ -163,7 +162,7 @@ loaddb_topo_loc() {
 }
 
 loaddb_topo_pow() {
-    echo "--------------- reset db: topo-power -------------"
+    echo "CI-TESTLIB_DB - reset db: topo-power -------------"
     loaddb_sampledata && \
     loaddb_list "$DB_TOPOP" || return $?
     logmsg_debug "Database schema and data should have been initialized at this point: for topology-power tests"
@@ -171,7 +170,7 @@ loaddb_topo_pow() {
 }
 
 loaddb_current() {
-    echo "--------------- reset db: current ----------------"
+    echo "CI-TESTLIB_DB - reset db: current ----------------"
     loaddb_initial && \
     loaddb_list "$DB_DATA_CURRENT"|| return $?
     logmsg_debug "Database schema and data should have been initialized at this point: for current tests"
@@ -209,4 +208,3 @@ init_script_topo_pow(){
     loaddb_topo_pow && \
     accept_license
 }
-
