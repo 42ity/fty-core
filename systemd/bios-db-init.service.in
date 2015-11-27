@@ -3,6 +3,7 @@ Description=Ensure database schema exists for BIOS services
 After=mysql.service
 Requires=mysql.service
 Conflicts=shutdown.target
+PartOf=bios.target
 
 [Service]
 # it is expected that the process has to exit before systemd starts follow-up units

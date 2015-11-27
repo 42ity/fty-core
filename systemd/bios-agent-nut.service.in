@@ -2,6 +2,7 @@
 Description=NUT driver for BIOS project
 After=malamute.service
 Requires=malamute.service
+PartOf=bios.target
 
 [Service]
 Type=simple
