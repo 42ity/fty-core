@@ -258,8 +258,8 @@ else
     systemctl enable lcd-boot-display
     systemctl enable lcd-net-display
 fi
+# Services not part of core
 systemctl enable dc_th
-systemctl enable composite-metrics
 systemctl enable bios-agent-legacy-metrics
 systemctl enable alert-agent
 
