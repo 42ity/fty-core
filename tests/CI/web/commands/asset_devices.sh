@@ -29,7 +29,17 @@ echo
 echo "***************************************************************************************************"
 echo "********* Prerequisites ***************************************************************************"
 echo "***************************************************************************************************"
-init_script
+
+# Assumption: initdb + load_data files are uploaded.
+# So, make sure this is true:
+init_script_sampledata || exit $?
+
+# Need to check number of expected rows in the table
+test_it "verify_number_of_sample_assets"
+ASSETS_NUMBER="$(do_select 'select count(id) as assets_count from v_bios_asset_element')"
+logmsg_info "ASSETS_NUMBER: $ASSETS_NUMBER,    expected: 35"
+[ "$ASSETS_NUMBER" -eq 35 ]
+print_result $?
 
 echo "********* asset_devices.sh ************************************************************************"
 echo "********* 1. list_of_all_devices ******************************************************************"

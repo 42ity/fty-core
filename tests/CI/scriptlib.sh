@@ -398,6 +398,9 @@ do_select() {
 
 loaddb_file() {
     DBFILE="$1"
+    if [ $# -gt 0 ] && [ x"$1" = x ] ; then
+        die "loaddb_file() was called with a present but empty filename argument, check your scripts!"
+    fi
     [ -z "$DBFILE" ] && DBFILE='&0'
     ### Note: syntax below 'eval ... "<$DBFILE"' is sensitive to THIS spelling
 
