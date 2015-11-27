@@ -208,7 +208,7 @@ TEST_CASE("asset element INSERT/DELETE #3","[db][CRUD][insert][delete][asset_ele
     const char *status = "active";
     a_elmnt_pr_t priority   = 4;
     a_elmnt_bc_t bc         = 0;
-    a_dvc_tp_id_t subtype_id = 10;
+    a_dvc_tp_id_t subtype_id = persist::asset_subtype::N_A;
 
     // first insert
     auto reply_insert = persist::insert_into_asset_element (conn, element_name, element_type_id,
@@ -234,7 +234,7 @@ TEST_CASE("asset element INSERT/DELETE #3","[db][CRUD][insert][delete][asset_ele
 
     // must handle duplicate insert without insert
     reply_insert = persist::insert_into_asset_element (conn, element_name, element_type_id,
-            parent_id, status, priority, bc, 10, UGLY_ASSET_TAG);
+            parent_id, status, priority, bc, persist::asset_subtype::N_A, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.status == 0 );
     REQUIRE ( reply_insert.affected_rows == 0 );
 
@@ -411,7 +411,7 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
     REQUIRE (item.type_name == "datacenter");
     REQUIRE (item.parent_id == parent_id);
     REQUIRE (item.parent_type_id == 0);     // in crud_test.sql
-    REQUIRE (item.subtype_id == 10); // 10 magic->default from initdb.sql
+    REQUIRE (item.subtype_id == persist::asset_subtype::N_A);
 
     auto reply_ext = persist::select_ext_attributes(conn, rowid);
     REQUIRE (reply_ext.status == 1);
@@ -553,7 +553,7 @@ TEST_CASE("room unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlocka
     REQUIRE (item.type_name == "room");
     REQUIRE (item.parent_id == parent_id);
     REQUIRE (item.parent_type_id == 0);     // in crud_test.sql
-    REQUIRE (item.subtype_id == 10); //magic
+    REQUIRE (item.subtype_id == persist::asset_subtype::N_A);
 
     auto reply_ext = persist::select_ext_attributes(conn, rowid);
     REQUIRE (reply_ext.status == 1);
@@ -630,7 +630,7 @@ TEST_CASE("row unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockat
     REQUIRE (item.type_name == "row");
     REQUIRE (item.parent_id == parent_id);
     REQUIRE (item.parent_type_id == 0);     // in crud_test.sql
-    REQUIRE (item.subtype_id == 10); //magic
+    REQUIRE (item.subtype_id == persist::asset_subtype::N_A); 
 
     auto reply_ext = persist::select_ext_attributes(conn, rowid);
     REQUIRE (reply_ext.status == 1);
@@ -663,11 +663,11 @@ TEST_CASE("row unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockat
     log_close();
 }
 
-TEST_CASE("rack unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlockated][rack][crud_test.sql]")
+TEST_CASE("rack unlockated INSERT/DELETE #persist::asset_subtype::N_A","[db][CRUD][insert][delete][unlockated][rack][crud_test.sql]")
 {
     log_open ();
 
-    log_info ("=============== rack INSERT/DELETE #10 ==================");
+    log_info ("=============== rack INSERT/DELETE #persist::asset_subtype::N_A ==================");
     
     tntdb::Connection conn;
     REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
@@ -713,7 +713,7 @@ TEST_CASE("rack unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlock
     REQUIRE (item.type_name == "rack");
     REQUIRE (item.parent_id == parent_id);
     REQUIRE (item.parent_type_id == 0);     // in crud_test.sql
-    REQUIRE (item.subtype_id == 10); // magic
+    REQUIRE (item.subtype_id == persist::asset_subtype::N_A); 
 
     auto reply_ext = persist::select_ext_attributes(conn, rowid);
     REQUIRE (reply_ext.status == 1);
@@ -882,7 +882,7 @@ TEST_CASE("group unlockated INSERT/DELETE #11","[db][CRUD][insert][delete][unloc
     REQUIRE (item.type_name == "group");
     REQUIRE (item.parent_id == parent_id);
     REQUIRE (item.parent_type_id == 0);     // in crud_test.sql
-    REQUIRE (item.subtype_id == 10);  //magic
+    REQUIRE (item.subtype_id == persist::asset_subtype::N_A); 
 
     auto reply_ext = persist::select_ext_attributes(conn, rowid);
     REQUIRE (reply_ext.status == 1);
