@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2015 Eaton
 #
-#T his program is free software; you can redistribute it and/or modify
+# This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
@@ -12,7 +12,7 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License along
-# with this program; in case not, write to the Free Software Foundation, Inc.,
+# with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 #! \file   asset_import_err.sh
@@ -28,6 +28,7 @@ echo
 echo "***************************************************************************************************"
 echo "********* Prerequisites ***************************************************************************"
 echo "***************************************************************************************************"
+[ -n "$CSV_LOADDIR_ASSIMP" ] && [ -d "$CSV_LOADDIR_ASSIMP" ] || die "Can not use CSV_LOADDIR_ASSIMP='$CSV_LOADDIR_ASSIMP'"
 init_script
 
 DATASWITCH=0
@@ -37,7 +38,7 @@ csv_import_err(){
    TABLE_NAME=$2
    NUM_EXPECTED=$3 # when NUM_EXPECTED=0, the import is not performed, in other case it is num of imported lines
    FILENAME_PREFIX=$4
-   ASSET="$CHECKOUTDIR/tools/asset_import/${CSV_FILE_NAME}"
+   ASSET="$CSV_LOADDIR_ASSIMP/${CSV_FILE_NAME}"
    if [ "$NUM_EXPECTED" != 0 ];then
       if [ "$REZ" = 0 ];then
         if [ "$DATASWITCH" == 0 ];then
@@ -86,7 +87,7 @@ test_it "Method_is_not_allowed"
 curlfail_push_expect_400
 loaddb_initial
 REZ=0
-ASSET="$CHECKOUTDIR/tools/asset_import/universal_asset_semicolon_16LE.csv"
+ASSET="$CSV_LOADDIR_ASSIMP/universal_asset_semicolon_16LE.csv"
 # Params do not really matter as this should fail
 api_auth_get_json /asset/import assets="@$ASSET" -H "Expect:" >&5
 REZ=$?
@@ -313,10 +314,10 @@ echo "**************************************************************************
 test_it "Duplicate_name_value"
 loaddb_initial
 REZ=0
-ASSET="$CHECKOUTDIR/tools/asset_import/universal_asset_comma_8.csv"
+ASSET="$CSV_LOADDIR_ASSIMP/universal_asset_comma_8.csv"
 # Not JSON, not to >&5 :
 api_auth_post_file_form /asset/import assets="@$ASSET"
-ASSET="$CHECKOUTDIR/tools/asset_import/universal_asset_comma_8_duplicate_name_value.csv"
+ASSET="$CSV_LOADDIR_ASSIMP/universal_asset_comma_8_duplicate_name_value.csv"
 api_auth_post_file_form_json /asset/import assets="@$ASSET" >&5
 print_result $?
 
