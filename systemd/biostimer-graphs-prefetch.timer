@@ -15,4 +15,4 @@ Persistent=true
 Unit=biostimer-graphs-prefetch.service
 
 [Install]
-WantedBy=bios.service
+WantedBy=bios.target
