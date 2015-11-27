@@ -60,6 +60,9 @@ DB_DUMP_DIR="$CHECKOUTDIR/tests/CI/web/log"     # TODO: change to BUILDSUBDIR
 DB_TMPSQL_DIR="/tmp"
 #DB_TMPSQL_DIR="$DB_DUMP_DIR"
 
+### We also have to write exported temporary CSVs somewhere
+CSV_TMP_DIR="$DB_DUMP_DIR"
+
 ### Expected results (saved in Git) are stored here:
 DB_RES_DIR="$CHECKOUTDIR/tests/CI/web/results"
 
