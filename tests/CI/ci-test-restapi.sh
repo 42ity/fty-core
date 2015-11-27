@@ -223,7 +223,7 @@ kill_daemons() {
 
 test_web() {
     echo "==== Calling test_web.sh ==================================="
-    /bin/bash tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" "$@"
+    /bin/bash "${CHECKOUTDIR}"/tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" "$@"
     RESULT=$?
     echo "==== test_web RESULT: ($RESULT) =================================="
     return $RESULT
