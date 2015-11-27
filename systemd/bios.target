@@ -1,5 +1,5 @@
 [Unit]
-Description=Target which wants all BIOS-related services so they can be started and stopped uniformly
+Description=Grouping which wants all BIOS-related services so they can be started and stopped uniformly
 Requires=multi-user.target network.target
 After=multi-user.target network.target
 Conflicts=rescue.target shutdown.target
