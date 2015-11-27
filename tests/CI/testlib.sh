@@ -188,9 +188,9 @@ test_it() {
     TNAME="`basename "$TNAME" .sh | sed 's, ,__,g'`"
     echo
     if [ "$TNAME" = "`basename $NAME .sh`" ]; then
-        LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_info "Running test $TNAME :"
+        LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_info "Running test $TNAME ..."
     else
-        LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_info "Running test $NAME::$TNAME :"
+        LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_info "Running test $NAME::$TNAME ..."
     fi
     TESTLIB_COUNT_TOTAL="`expr $TESTLIB_COUNT_TOTAL + 1`"
 }
