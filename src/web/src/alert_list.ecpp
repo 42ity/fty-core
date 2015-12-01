@@ -18,9 +18,9 @@
  #
  #><#
 /*!
- \file alert_ack.ecpp
+ \file alert_list.ecpp
  \author Karol Hrdina <KarolHrdina@Eaton.com>
- \brief Implementation of REST API call for PUT alerts/ack/<rule_name>/<element_name
+ \brief Implementation of REST API call for PUT alerts/list/<rule_name>/<element_name
 */
 #><%pre>
 #include <exception>
@@ -33,7 +33,7 @@
 #include <tntdb/connection.h>
 #include <tntdb/error.h>
 
-#include "bios_proto.h"
+#include <bios_proto.h>
 #include "log.h"
 #include "utils_web.h"
 #include "str_defs.h"
