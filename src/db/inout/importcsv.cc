@@ -761,8 +761,8 @@ void
         std::string msg{"column '" + m + "' is missing, import is aborted"};
         log_error("%s", msg.c_str());
         LOG_END;
-        bios_throw("request-param-bad", "<mandatory column name>", std::string("missing '").append(m).append("'").c_str(),
-            std::string("all of those ").append(cxxtools::join(MANDATORY.cbegin(), MANDATORY.cend(), ", ")).c_str());
+        bios_throw("request-param-bad", m.c_str(), std::string("<missing column'").append(m).append("'>").c_str(),
+            std::string("<column '").append(m).append("' is present in csv>").c_str());
     }
 
     tntdb::Connection conn;
