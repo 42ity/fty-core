@@ -39,6 +39,7 @@
 #include "str_defs.h"
 #include "dbpath.h"
 #include "db/assets.h"
+#include "cleanup.h"
 
 #define RFC_ALERTS_LIST "rfc-alerts-list"
 
@@ -149,7 +150,7 @@ for (auto const& item : desired_elements) {
 log_debug ("=== end ===");
 
 // connect to malamute
-mlm_client_t *client = mlm_client_new ();
+_scoped_mlm_client_t *client = mlm_client_new ();
 if (!client) {
     log_critical ("mlm_client_new() failed.");
     http_die ("internal-error", "mlm_client_new() failed.");
@@ -192,32 +193,35 @@ if (!pipe) {
     log_critical ("mlm_client_msgpipe() failed.");
     http_die ("internal-error", "mlm_client_msgpipe() failed.");
 }
-zpoller_t *poller = zpoller_new (pipe, NULL);
+
+_scoped_zpoller_t *poller = zpoller_new (pipe, NULL);
 if (!poller) {
     log_critical ("zpoller_new() failed.");
     http_die ("internal-error", "zpoller_new() failed.");
 }
 while (true) {
     zsock_t *which = (zsock_t *) zpoller_wait (poller, 5000);
-    if (which) {
+    if (which == pipe) {
         recv_msg = mlm_client_recv (client);
     }
     if (!recv_msg) {
-        if (zpoller_expired (poller)) {
+        if (zpoller_expired (poller) || zpoller_terminated (poller)) {
             log_error ("zpoller_wait(timeout = 5000) timed out waiting for message.");
-            mlm_client_destroy (&client);
             zpoller_destroy (&poller);
+            mlm_client_destroy (&client);
             http_die ("internal-error", "Timed out waiting for message.");
         }
         log_error ("mlm_client_recv() failed.");
         zpoller_destroy (&poller);
-        mlm_client_destroy (&client);
+        mlm_client_destroy (&client); 
         http_die ("internal-error", "mlm_client_recv() failed.");
     }
     if (streq (mlm_client_sender (client), "ALERTS-LIST"))
         break;
     zmsg_destroy (&recv_msg);
 }
+zpoller_destroy (&poller);
+
 
 // Got it
 // Check subject
@@ -228,12 +232,13 @@ if (!streq (mlm_client_subject (client), RFC_ALERTS_LIST)) {
     mlm_client_destroy (&client);
     http_die ("internal-error", "Bad message.");
 }
-
+log_debug (" subject ... OK.");
 log_debug (" ! Number of frames = '%d'.", zmsg_size (recv_msg));
 // Check command. Can be LIST or ERROR
 char *part = zmsg_popstr (recv_msg);
 if (streq (part, "LIST")) {
-    free (part); part = NULL;    
+    log_debug ("First frame == LIST ... OK");
+    free (part); part = NULL;
     part = zmsg_popstr (recv_msg);
     if (!part || !streq (part, state.c_str ())) {
         log_error ("Unexpected reply from '%s'. Expected OK/state[/alert_1]...[/alert_N]. Got OK/(null).", mlm_client_sender (client));
@@ -241,8 +246,12 @@ if (streq (part, "LIST")) {
         mlm_client_destroy (&client);
         http_die ("internal-error", "Bad message.");
     }
+    log_debug ("Second frame == '%s' ... OK", part);
     free (part); part = NULL;
     zframe_t *frame = zmsg_pop (recv_msg);
+    if (!frame) {
+        log_debug ("First `zframe_t *frame = zmsg_pop (recv_msg)` returned NULL.");
+    }
     bool first = true;
 //    <$$ utils::json::jsonify ("rule_name", rule_name) $>,
 </%cpp>
@@ -277,11 +286,11 @@ if (streq (part, "LIST")) {
 %       continue;
 %   } 
 %   if (first) {
-    <$$ bios_proto_time (decoded) $>
+    time = <$$ bios_proto_time (decoded) $>
 %     first = false;
 %   }
 %   else {
-,   <$$ bios_proto_time (decoded) $>
+,   time = <$$ bios_proto_time (decoded) $>
 %   }
 %   bios_proto_destroy (&decoded);
 %   frame = zmsg_pop (recv_msg);
