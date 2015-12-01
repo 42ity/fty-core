@@ -114,7 +114,7 @@ catch (const std::exception& e) {
     log_error ("Exception caught: '%s'.", e.what ());
     http_die ("internal-error", e.what ()); // TODO
 }
-log_debug ("Asset element id = '%" PRIu64 "'.", element_id);
+log_debug ("Asset element id = '%" PRIu32 "'.", element_id);
 
 if (!asset.empty ()) {
     auto asset_element = persist::select_asset_element_web_byId (connection, element_id); // TODO: skontrolovat tu navratovu hodnotu 
@@ -229,7 +229,7 @@ if (!streq (mlm_client_subject (client), RFC_ALERTS_LIST)) {
     http_die ("internal-error", "Bad message.");
 }
 
-log_debug (" ! Number of frames = '%d'.", zmsg_size (recv_msg));
+log_debug (" ! Number of frames = '%zu'.", zmsg_size (recv_msg));
 // Check command. Can be LIST or ERROR
 char *part = zmsg_popstr (recv_msg);
 if (streq (part, "LIST")) {
