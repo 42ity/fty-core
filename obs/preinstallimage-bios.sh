@@ -261,7 +261,7 @@ fi
 # Services not part of core
 systemctl enable dc_th
 systemctl enable bios-agent-legacy-metrics
-systemctl enable alert-agent
+systemctl enable bios-agent-alert-generator
 
 # Our tntnet unit
 cat > /etc/systemd/system/tntnet@.service <<EOF
