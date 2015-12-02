@@ -79,7 +79,7 @@ killdb() {
             logmsg_warn "Trying to kill all connections to the ${DATABASE} database; some clients can become upset - it is their bug then!"
             sut_run 'mysql --disable-column-names -s -e "SHOW PROCESSLIST" | grep -vi PROCESSLIST | awk '"'\$4 ~ /$DATABASE/ {print \$1}'"' | while read P ; do mysqladmin kill "$P" || do_select "KILL $P" ; done'
         fi
-        DATABASE=mysql do_select "DROP DATABASE ${DATABASE}" || true
+        DATABASE=mysql do_select "DROP DATABASE if exists ${DATABASE}" || true
         sleep 1
         sut_run "mysqladmin drop -f ${DATABASE} || true"
     fi
