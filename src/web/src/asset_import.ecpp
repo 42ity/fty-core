@@ -39,7 +39,7 @@
 </%pre>
 <%cpp>
 if (request.getMethod() != "POST") {
-    http_die("method-not-allowed");
+    http_die("method-not-allowed", request.getMethod().c_str() );
 }
 
 //HARDCODED limit: can't import things larger than 128K
