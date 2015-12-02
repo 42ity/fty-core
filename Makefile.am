@@ -1394,9 +1394,9 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/json.cpp  src/web/src/asset_list.cpp        \
                       src/web/src/time.cpp  src/web/src/sysinfo.cpp           \
                       src/web/src/current.cpp src/web/src/ui_properties.cpp   \
-                      src/web/src/rack_total.cpp 							  \
-					  src/web/src/topology_location_from.cpp                  \
-					  src/web/src/topology_location_to.cpp				      \
+                      src/web/src/rack_total.cpp                              \
+                      src/web/src/topology_location_from.cpp                  \
+                      src/web/src/topology_location_to.cpp                    \
                       src/web/src/datacenter_indicators.cpp                   \
                       src/web/src/average.cpp src/web/src/asset_import.cpp    \
                       src/web/src/alerts.cpp src/web/src/netcfg.cpp           \
@@ -1405,7 +1405,11 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/admin_passwd.cpp src/web/src/systemctl.cpp  \
                       src/web/src/config.cpp src/web/src/alert_rules_list.cpp \
                       src/web/src/alert_rules_detail.cpp src/web/src/alert_rules.cpp \
-					  src/web/src/alert_ack.cpp
+                      src/web/src/alert_ack.cpp
+
+if HAVE_LIBBIOSPROTO
+BUILT_SOURCES_bios_web_la += src/web/src/alert_list.cpp
+endif
 
 # Track real-git and nodist (generated) sources SEPARATELY
 nodist_bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)
@@ -1443,6 +1447,12 @@ bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 			${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
 			-Wl,--no-undefined \
 			-module -lm -ltntdb -ltntnet -lcidr -lmagic -lbiosapi
+
+if HAVE_LIBBIOSPROTO
+bios_web_la_LDFLAGS +=	-lbiosproto
+### TODO: Detect header directory for <bios_proto.h> and put it here?
+#bios_web_la_CPPFLAGS += -I
+endif
 
 bios_web_la_LIBADD = \
 			libpriv-db.la libpriv-cidr.la libpriv-proto.la \
