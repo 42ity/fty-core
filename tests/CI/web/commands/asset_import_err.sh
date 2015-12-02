@@ -84,9 +84,8 @@ print_result $REZ
 echo "********* asset_import_err.sh *********************************************************************"
 echo "********* 2. Method is not allowed ****************************************************************"
 echo "***************************************************************************************************"
-#*#*#*#*#*#*# TODO : Method is not allowed : Wrong message : MUST BE LIKE : Method is not allowed : 45
 test_it "Method_is_not_allowed"
-curlfail_push_expect_400
+curlfail_push_expect_405
 loaddb_initial
 REZ=0
 ASSET="$CSV_LOADDIR_ASSIMP/universal_asset_semicolon_16LE.csv"
