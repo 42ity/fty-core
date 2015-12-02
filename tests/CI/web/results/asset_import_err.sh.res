@@ -1,14 +1,14 @@
 {"imported_lines":48,"errors":[]}
-{"errors":[{"message":"Http method 'GET' not allowed.","code": 45}]}
+{"errors":[{"message":"Http method 'GET' not allowed.","code":45}]}
 {"errors":[{"message":"Content size is too big, maximum size is 125k","code":53}]}
 {"errors":[{"message":"Parameter 'file=assets' is required.","code":46}]}
 {"errors":[{"message":"Parameter 'name' has bad value. Received <missing column'name'>. Expected <column 'name' is present in csv>","code":47}]}
 {"errors":[{"message":"Parameter 'type' has bad value. Received <missing column'type'>. Expected <column 'type' is present in csv>","code":47}]}
 {"errors":[{"message":"Parameter 'sub_type' has bad value. Received <missing column'sub_type'>. Expected <column 'sub_type' is present in csv>","code":47}]}
-{"errors":[{"message":"Parameter 'name' has bad value. Received <missing column'name'>. Expected <column 'name' is present in csv>","code":47}]}
-{"errors":[{"message":"Parameter 'name' has bad value. Received <missing column'name'>. Expected <column 'name' is present in csv>","code":47}]}
-{"errors":[{"message":"Parameter 'name' has bad value. Received <missing column'name'>. Expected <column 'name' is present in csv>","code":47}]}
-{"errors":[{"message":"Parameter 'name' has bad value. Received <missing column'name'>. Expected <column 'name' is present in csv>","code":47}]}
+{"errors":[{"message":"Parameter 'location' has bad value. Received <missing column'location'>. Expected <column 'location' is present in csv>","code":47}]}
+{"errors":[{"message":"Parameter 'status' has bad value. Received <missing column'status'>. Expected <column 'status' is present in csv>","code":47}]}
+{"errors":[{"message":"Parameter 'business_critical' has bad value. Received <missing column'business_critical'>. Expected <column 'business_critical' is present in csv>","code":47}]}
+{"errors":[{"message":"Parameter 'priority' has bad value. Received <missing column'priority'>. Expected <column 'priority' is present in csv>","code":47}]}
 {"errors":[{"message":"Request document has invalid syntax. Cannot detect the delimiter, use comma (,) semicolon (;) or tabulator","code":48}]}
 {"errors":[{"message":"Parameter 'This file (Big-endian UTF-16 Unicode text, with very long lines, with CRLF line terminators) is not supported please try again with a different file.' has bad value. Received . Expected ","code":47}]}
 {"errors":[{"message":"Parameter 'This file (Big-endian UTF-16 Unicode text, with very long lines, with CRLF line terminators) is not supported please try again with a different file.' has bad value. Received . Expected ","code":47}]}
@@ -30,3 +30,6 @@
 {"imported_lines":48,"errors":[]}
 {"imported_lines":43,"errors":[[23,"Parameter 'location_w_pos' has bad value. Received <empty>. Expected left, right"],[28,"Request document has invalid syntax. More than than 2 pdu/epdu in the rack is not supported"],[30,"Parameter 'location_w_pos' has bad value. Received <empty>. Expected left, right"],[32,"Parameter 'location_w_pos' has bad value. Received <empty>. Expected left, right"],[34,"Parameter 'location_w_pos' has bad value. Received <empty>. Expected left, right"]]}
 {"imported_lines":47,"errors":[[42,"Parameter 'serial_no' has bad value. Received ATC40. Expected <unique string>"]]}
+{"imported_lines":42,"errors":[[18,"Parameter 'subtype (for type group)' is required."],[38,"Parameter 'status' has bad value. Received nonsense. Expected active, nonactive, retired, spare"],[41,"Parameter 'subtype' has bad value. Received n_a. Expected N_A, epdu, feed, genset, pdu, server, storage, sts, switch, ups, vm"],[42,"Parameter 'subtype' has bad value. Received <empty>. Expected N_A, epdu, feed, genset, pdu, server, storage, sts, switch, ups, vm"],[43,"Parameter 'subtype' has bad value. Received nonsens. Expected N_A, epdu, feed, genset, pdu, server, storage, sts, switch, ups, vm"],[49,"Parameter 'status' has bad value. Received <empty>. Expected active, nonactive, retired, spare"]]}
+{"imported_lines":47,"errors":[[46,"Parameter 'asset_tag' has bad value. Received <to long>. Expected <unique string from 1 to 50 characters>"]]}
+{"imported_lines":48,"errors":[]}
