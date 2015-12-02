@@ -1,14 +1,14 @@
 {"imported_lines":48,"errors":[]}
-{"errors":[{"message":"Http method 'GET' not allowed.","code": 45}]}
+{"errors":[{"message":"Http method 'GET' not allowed.","code":45}]}
 {"errors":[{"message":"Content size is too big, maximum size is 125k","code":53}]}
 {"errors":[{"message":"Parameter 'file=assets' is required.","code":46}]}
 {"errors":[{"message":"Parameter 'name' has bad value. Received <missing column'name'>. Expected <column 'name' is present in csv>","code":47}]}
 {"errors":[{"message":"Parameter 'type' has bad value. Received <missing column'type'>. Expected <column 'type' is present in csv>","code":47}]}
 {"errors":[{"message":"Parameter 'sub_type' has bad value. Received <missing column'sub_type'>. Expected <column 'sub_type' is present in csv>","code":47}]}
-{"errors":[{"message":"Parameter 'name' has bad value. Received <missing column'name'>. Expected <column 'name' is present in csv>","code":47}]}
-{"errors":[{"message":"Parameter 'name' has bad value. Received <missing column'name'>. Expected <column 'name' is present in csv>","code":47}]}
-{"errors":[{"message":"Parameter 'name' has bad value. Received <missing column'name'>. Expected <column 'name' is present in csv>","code":47}]}
-{"errors":[{"message":"Parameter 'name' has bad value. Received <missing column'name'>. Expected <column 'name' is present in csv>","code":47}]}
+{"errors":[{"message":"Parameter 'location' has bad value. Received <missing column'location'>. Expected <column 'location' is present in csv>","code":47}]}
+{"errors":[{"message":"Parameter 'status' has bad value. Received <missing column'status'>. Expected <column 'status' is present in csv>","code":47}]}
+{"errors":[{"message":"Parameter 'business_critical' has bad value. Received <missing column'business_critical'>. Expected <column 'business_critical' is present in csv>","code":47}]}
+{"errors":[{"message":"Parameter 'priority' has bad value. Received <missing column'priority'>. Expected <column 'priority' is present in csv>","code":47}]}
 {"errors":[{"message":"Request document has invalid syntax. Cannot detect the delimiter, use comma (,) semicolon (;) or tabulator","code":48}]}
 {"errors":[{"message":"Parameter 'This file (Big-endian UTF-16 Unicode text, with very long lines, with CRLF line terminators) is not supported please try again with a different file.' has bad value. Received . Expected ","code":47}]}
 {"errors":[{"message":"Parameter 'This file (Big-endian UTF-16 Unicode text, with very long lines, with CRLF line terminators) is not supported please try again with a different file.' has bad value. Received . Expected ","code":47}]}
