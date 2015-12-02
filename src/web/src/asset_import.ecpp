@@ -46,8 +46,9 @@ if (request.getMethod() != "POST") {
 // this prevents DoS attacks against the box - can be raised if needed
 // don't forget internal processing is in UCS-32, therefore the
 // real memory requirements are ~640kB
+// Content size = body + something. So max size of body is about 125k
 if (request.getContentSize() > 128*1024) {
-    http_die("content-too-big", "128k");
+    http_die("content-too-big", "125k");
 }
 
 // http://www.tntnet.org/howto/upload-howto.html
