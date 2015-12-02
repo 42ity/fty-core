@@ -123,30 +123,12 @@ else
             "Check the existence of /etc/pam.d/bios (and maybe /etc/sasl2/bios.conf for some OS distributions)"
 
     logmsg_info "Testing webserver ability to serve the REST API"
-    if [ -n "`api_get "/oauth2/token" 2>&1 | grep 'HTTP/.* 500'`" ]; then
-        logmsg_error "api_get() returned an error:"
-        api_get "" >&2
-        CODE=4 die "Webserver code is deeply broken, please fix it first!"
+    TMP_TOKEN="`_api_get_token`" || return $?
+    if [ -n "`echo "$TMP_TOKEN" | grep 'errors'`" ]; then
+        logmsg_error "cannot get a token:"
+        echo $TMP_TOKEN >&2
+        CODE=4 die "Webserver does not allow to get the token, please fix it first!"
     fi
-
-    if [ -z "`api_get "/oauth2/token" 2>&1 | grep 'HTTP/.* 200 OK'`" ]; then
-        # We do expect an HTTP-404 on the API base URL
-        logmsg_error "api_get() returned an error:"
-        api_get "" >&2
-        CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
-    fi
-
-    if [ "$SKIP_SANITY" != onlyerrors ]; then
-        curlfail_push_expect_noerrors
-        if [ -z "`api_get '/oauth2/token' 2>&1 | grep 'HTTP/.* 200 OK'`" ]; then
-            # We expect that the login service responds
-            logmsg_error "api_get() returned an error:"
-            api_get "/oauth2/token" >&2
-            CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
-        fi
-        curlfail_pop
-    fi
-
     logmsg_info "Webserver seems basically able to serve the REST API"
 fi
 
