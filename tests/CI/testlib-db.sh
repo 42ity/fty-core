@@ -81,7 +81,6 @@ killdb() {
         fi
         DATABASE=mysql do_select "DROP DATABASE if exists ${DATABASE}" || true
         sleep 1
-        sut_run "mysqladmin drop -f ${DATABASE} || true"
     fi
     DATABASE=mysql do_select "RESET QUERY CACHE" || true
     DATABASE=mysql do_select "FLUSH QUERY CACHE" || true
