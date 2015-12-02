@@ -447,6 +447,19 @@ AS_IF([which augtool >/dev/null 2>&1], [AC_MSG_RESULT([yes])], [
 	AC_MSG_WARN([some CI tests (inspection and modification of OS configuration) can fail on this host due to lack of augeas-tools; but this is not fatal for compilation itself])
 ])
 
+# Comes from different repo
+_HAVE_LIBBIOSPROTO=0
+AC_CHECK_HEADER([bios_proto.h],
+	[AC_CHECK_LIB([biosproto],[bios_proto_decode], [_HAVE_LIBBIOSPROTO=1])]
+	)
+AS_IF([test "x$_HAVE_LIBBIOSPROTO" = x0],
+	[AC_MSG_WARN([libbiosproto sister-project not detected, clients for it will not be compiled])])
+# For Makefile
+AM_CONDITIONAL([HAVE_LIBBIOSPROTO],
+	[test "x$_HAVE_LIBBIOSPROTO" != x0])
+# For headers/CPP
+AC_DEFINE([HAVE_LIBBIOSPROTO], ["$_HAVE_LIBBIOSPROTO"], [Do we have libbiosproto])
+
 dnl ------ it was suggested by autoscan
 dnl TODO  I am not sure whether we need this. TODO MVY Please look at this.
 dnl Checks for libraries.
