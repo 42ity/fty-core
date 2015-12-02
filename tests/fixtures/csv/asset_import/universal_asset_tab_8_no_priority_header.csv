@@ -1,4 +1,4 @@
-﻿ Ame	type	sub_type	description	location	group.1	group.2	group.3	power_source.1	power_plug_src.1	power_input.1	power_source.2	power_plug_src.2	power_input.2	status	business_critical	prioritay	company	site_name	region	country	address	contact_name	contact_email	contact_phone	maximum_number_racks	u_size	manufacturer	model	asset_tag	serial_no	runtime	phase	installation_date	maintenance_date	maintenance_due	service_contact_name	service_contact_mail	service_contact_phone	location_front_pos	location_rear_pos	location_u_pos	location_w_pos	location_d_pos	end_warranty_date	battery_type	battery_installation_date	battery_maintenance_date	IP.1	Hostname.1	http_link.1
+nAme	type	sub_type	description	location	group.1	group.2	group.3	power_source.1	power_plug_src.1	power_input.1	power_source.2	power_plug_src.2	power_input.2	status	business_critical	prioritay	company	site_name	region	country	address	contact_name	contact_email	contact_phone	maximum_number_racks	u_size	manufacturer	model	asset_tag	serial_no	runtime	phase	installation_date	maintenance_date	maintenance_due	service_contact_name	service_contact_mail	service_contact_phone	location_front_pos	location_rear_pos	location_u_pos	location_w_pos	location_d_pos	end_warranty_date	battery_type	battery_installation_date	battery_maintenance_date	IP.1	Hostname.1	http_link.1
 DC	datacenter		desc1											active	yes	p1	EATON	Eaton DC 1	EMEA	Switzerland	Place de la Gare	John Smith	john.smith@company.com		10				EATON001	ATC01																				
 ROOM1	room		desc2	DC										active	no	p2													EATON002	ATC02																				
 ROOM2	room		desc3	DC										active	yes	p3													EATON003	ATC03																				
@@ -11,13 +11,13 @@ RACK4	rack	some	desc9	ROOM2										active	yes	1													EATON009	ATC09
 RACK5	rack	some	desc10	ROOM2										active	yes	1													EATON010	ATC10																				
 RACK6	rack	some	desc11	ROOM2										active	yes	1													EATON011	ATC11																				
 FEED1	device	feed	desc12	DC										active	yes	3													EATON012	ATC12																				
-FEED2	device	feed	desc13	DC										active	no	4		Eaton DC 1											EATON013	ATC13		3						4.20E+11												
+FEED2	device	feed	desc13	DC										active	no	4		Eaton DC 1											EATON013	ATC13		3						420000000000												
 FEED3	device	feed	desc14	DC										active	yes	5	EATON											45kW NG/LG 240V 3 Phase	EATON014	ATC14			4-Jun-14																	
 FEED4	device	feed	desc15	DC										active	yes	5	EATON											45kW NG/LG 240V 3 Phase	EATON015	ATC15			4-Jun-14																	
 GROUP1	group	my_group_1	desc16	DC										active	yes	5													EATON016	ATC16																				
 GROUP2	group	my_group_2	desc17	ROOM1										active	yes	5													EATON017	ATC17																				
 GROUP3	group	my_group_3	desc18	ROW1										active	yes	5													EATON018	ATC18																				
-UPS1	device	ups	desc19	ROOM1				FEED1						active	yes	16					Roztoky	NOVAK	n@x.cz	4.21E+11		3U		9PX 6kVA	EATON019	ATC19																	4-Jun-14		10.25.38.47	
+UPS1	device	ups	desc19	ROOM1				FEED1						active	yes	16					Roztoky	NOVAK	n@x.cz	421000000000		3U		9PX 6kVA	EATON019	ATC19																	4-Jun-14		10.25.38.47	
 UPS2	device	ups	desc20	ROW2				FEED3						active	yes	5	EATON											45kW NG/LG 240V 3 Phase	EATON020	ATC20					4-Sep-14											4-Jun-14				
 UPS3F	device	ups	desc21	ROOM2				FEED4						active	yes	5	EATON											45kW NG/LG 240V 3 Phase	EATON021	ATC21					4-Sep-14											4-Jun-14				
 PDU2	device	pdu	desc22	RACK3				UPS2				B5		active	yes	0												Eaton ePDU MA 1P IN:IEC309 16A OUT:21xC13	EATON022	ATC22											sor2	right								http://a.cz
