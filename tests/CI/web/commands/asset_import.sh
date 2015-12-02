@@ -58,11 +58,11 @@ csv_import(){
 CSV_FILE_NAME="$1"
 TEST_ID="$2"
 # import csv with assets
-ASSET="$CHECKOUTDIR/tools/asset_import/${CSV_FILE_NAME}"
+ASSET="${CSV_LOADDIR_ASSIMP}/${CSV_FILE_NAME}"
 api_auth_post_file_form_json /asset/import assets="@$ASSET" >&5
 RES_PART=$?
 res_err "$RES_PART" "The import of $CSV_FILE_NAME was not successful"
-# tables compared with patterns using diff using function table_diff <table name> <test id>
+# tables compared with patterns using dif using function table_diff <table name> <test id>
 # pattern file full names are : ${DB_RES_DIR}/${TABLE_NAME}${TEST_ID}.ptr
 for i in "t_bios_asset_element" "t_bios_asset_group_relation" "t_bios_asset_ext_attributes" "t_bios_asset_link" "t_bios_asset_link_type"; do
     table_diff "$i" "$TEST_ID"
@@ -176,17 +176,10 @@ echo "********* asset_import.sh ************************************************
 echo "********* 11. Export universal comma 8 ************************************************************"
 echo "***************************************************************************************************"
 test_it "Export_universal_comma_8"
-<<<<<<< HEAD
-api_auth_get /asset/export -H "Expect:" | grep -v '>'|grep -v '<'|grep -v '*'|grep -v '{' | awk 'NF' > $CHECKOUTDIR/tools/asset_import/exp_uni_comma_8.csv
+api_auth_get /asset/export -H "Expect:" | grep -v '>'|grep -v '<'|grep -v '*'|grep -v '{' | awk 'NF' > ${CSV_LOADDIR_ASSIMP}/exp_uni_comma_8.csv
 RES=$?
-sed 's/\(,[^,]*\)$//' $CHECKOUTDIR/tools/asset_import/exp_uni_comma_8.csv > $CHECKOUTDIR/tools/asset_import/imp_exp_uni_comma_8.csv
-print_result $RES
-=======
-api_auth_get /asset/export -H "Expect:" | grep -v '>'|grep -v '<'|grep -v '*'|grep -v '{' | awk 'NF' > $CSV_LOADDIR_ASSIMP/exp_uni_comma_8.csv
-REZ=$?
 sed 's/\(,[^,]*\)$//' $CSV_LOADDIR_ASSIMP/exp_uni_comma_8.csv > $CSV_LOADDIR_ASSIMP/imp_exp_uni_comma_8.csv
-print_result $REZ
->>>>>>> FETCH_HEAD
+print_result $RES
 
 echo "********* asset_import.sh *************************************************************************"
 echo "********* 12. Import exported file without ids ****************************************************"
@@ -233,7 +226,7 @@ echo "**************************************************************************
 # Content-Disposition in the export header
 test_it "Export_universal_tab_16LE"
 #*#*#*#*#*#*# TODO : Export_universal_tab_16LE_with_header : wrong format Content-Disposition: asset_export2015-11-26Tx��.csv
-api_auth_get /asset/export -H "Expect:"|grep 'Content-Disposition'
+api_auth_get /asset/export -H "Expect:"|grep 'Content-Disposition'|grep 'asset_export201[0-9]-[0-1][0-9]-[0-3][0-9]T.*csv'
 RES=$?
 print_result $RES
 
@@ -250,4 +243,3 @@ echo "##########################################################################
 echo "********* asset_import.sh *************************** END *****************************************"
 echo "###################################################################################################"
 echo
-
