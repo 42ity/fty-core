@@ -36,9 +36,9 @@
 {
     char buf[16] = {0x00};
     calendar_to_datetime(time(NULL), buf, 16);
-    char *Z = strstr(buf, "Z");
-    if (Z)
-        *Z = 0x00; // fill the last Z
+    char *T = strstr(buf, "T");
+    if (T)
+        *T = 0x00; // fill the T
 	reply.setHeader(tnt::httpheader::contentDisposition, "asset_export" + std::string{buf} + ".csv");
     try {
         persist::export_asset_csv(reply.out());
