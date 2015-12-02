@@ -1,0 +1,357 @@
+<#
+ #
+ # Copyright (C) 2015 Eaton
+ #
+ # This program is free software; you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+ # the Free Software Foundation; either version 2 of the License, or
+ # (at your option) any later version.
+ #
+ # This program is distributed in the hope that it will be useful,
+ # but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+ #
+ # You should have received a copy of the GNU General Public License along
+ # with this program; if not, write to the Free Software Foundation, Inc.,
+ # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ #
+ #><#
+/*!
+ \file alert_list.ecpp
+ \author Karol Hrdina <KarolHrdina@Eaton.com>
+ \brief Implementation of REST API call for PUT alerts/list/<rule_name>/<element_name
+*/
+#><%pre>
+#include <exception>
+#include <string>
+#include <map>
+#include <functional>
+#include <malamute.h>
+#include <sys/types.h>
+#include <sys/syscall.h>
+#include <tntdb/connection.h>
+#include <tntdb/error.h>
+
+#include <bios_proto.h>
+#include "log.h"
+#include "utils_web.h"
+#include "str_defs.h"
+#include "dbpath.h"
+#include "db/assets.h"
+#include "cleanup.h"
+#include "helpers.h"
+
+#define RFC_ALERTS_LIST "rfc-alerts-list"
+
+static
+int state_valid (const char *state) {
+    assert (state);
+    if (streq (state, "ALL") ||
+        streq (state, "ACK-WIP") ||
+        streq (state, "ACK-IGNORE") ||
+        streq (state, "ACK-PAUSE") ||
+        streq (state, "ACK-SILENCE") ||
+        streq (state, "ACTIVE"))
+        return 1;
+    return 0;
+}
+
+</%pre>
+<%args>
+    std::string state;
+    std::string asset;
+    std::string recursive;
+</%args>
+<%cpp>
+// sanity check
+if (request.getMethod () != "GET") {
+    http_die ("method-not-allowed", request.getMethod ().c_str ());
+}
+
+log_debug ("Request parameters - Initial values received:\n\tstate = '%s'\n\tasset = '%s'\n\trecursive = '%s'\n",
+            state.c_str (), asset.c_str (), recursive.c_str ());
+
+// Check 'state' parameter
+if (state.empty ()) {
+    state = "ALL";
+}
+else if (!state_valid (state.c_str ())) {
+    log_error ("state = '%s' is not a valid alert state.", state.c_str ());
+    http_die ("request-param-bad", "state", std::string ("value '").append (state).append ("'").c_str (),
+        std::string ("one of the following values [ ACTIVE | ACK-WIP | ACK-IGNORE | ACK-PAUSE | ACK-SILENCE ]").c_str ());
+}
+
+// Check 'recursive' parameter
+if (recursive.empty ()) {
+    recursive = "false";
+}
+else if (recursive.compare ("true") != 0 && recursive.compare ("false") != 0) {
+    log_error ("recursive = '%s' is not a valid value.", recursive.c_str ());
+    http_die ("request-param-bad", "recursive", std::string ("value '").append (state).append ("'").c_str (),
+        std::string ("one of the following values [ true | false ]").c_str ());
+}
+
+a_elmnt_id_t element_id = 0;
+if (!asset.empty ()) {
+    http_errors_t errors;
+    if (!check_element_identifier ("asset", asset, element_id, errors)) {
+        http_die_error (errors);
+    }
+}
+
+log_debug ("Request parameters - default values applied:\n\tstate = '%s'\n\tasset = '%s'\n\trecursive = '%s'\n",
+            state.c_str (), asset.c_str (), recursive.c_str ());
+
+std::map<std::string, int> desired_elements;
+
+tntdb::Connection connection;
+try {
+    connection = tntdb::connectCached (url);
+}
+catch (const tntdb::Error& e) {
+    log_error ("tntdb::connectCached (url = '%s') failed: %s.", url.c_str (), e.what ());
+    http_die ("internal-error", "Connecting to database failed.");
+}
+catch (const std::exception& e) {
+    log_error ("Exception caught: '%s'.", e.what ());
+    http_die ("internal-error", e.what ()); // TODO
+}
+log_debug ("Asset element id = '%" PRIu32 "'.", element_id);
+
+if (!asset.empty ()) {
+    auto asset_element = persist::select_asset_element_web_byId (connection, element_id); // TODO: check the return value
+    log_debug ("Asset element name = '%s'.", asset_element.item.name.c_str ());
+    desired_elements.emplace (std::make_pair (asset_element.item.name, 5));
+
+    if (recursive.compare ("true") == 0) {
+        try {
+            int rv = persist::select_assets_by_container (
+                connection,
+                element_id,
+                [&desired_elements](const tntdb::Row& row) -> void {
+                    std::string name; 
+                    row[0].get (name); 
+                    desired_elements.emplace (std::make_pair (name, 5));
+                });
+            if (rv != 0) { http_die ("internal-error", "persist::select_assets_by_container () failed."); }
+        }
+        catch (const tntdb::Error& e) {
+            http_die ("internal-error", e.what ());// TODO
+        }
+        catch (const std::exception& e) {
+            http_die ("internal-error", e.what ());// TODO
+        }
+    }
+}
+
+log_debug ("=== These elements are in topologically under element id: '%" PRIu32"' ===", element_id);
+for (auto const& item : desired_elements) {
+    log_debug ("%s", item.first.c_str ());
+}
+log_debug ("=== end ===");
+
+// connect to malamute
+_scoped_mlm_client_t *client = mlm_client_new ();
+if (!client) {
+    log_critical ("mlm_client_new() failed.");
+    http_die ("internal-error", "mlm_client_new() failed.");
+}
+
+std::string client_name ("web.alert_list.");
+client_name.append (std::to_string (getpid ())).append (".").append (std::to_string (syscall (SYS_gettid)));
+log_debug ("malamute client name = '%s'.", client_name.c_str ());
+
+int rv = mlm_client_connect (client, MLM_ENDPOINT, 1000, client_name.c_str ());
+if (rv == -1) {
+    log_critical ("mlm_client_connect (endpoint = '%s', timeout = '%" PRIu32"', address = '%s') failed.",
+                    MLM_ENDPOINT, 1000, client_name.c_str ());
+    mlm_client_destroy (&client);
+    http_die ("internal-error", "mlm_client_connect() failed.");
+}
+
+// prepare rfc-alerts-list ADD message
+zmsg_t *send_msg = zmsg_new ();
+if (!send_msg) {
+    log_critical ("zmsg_new() failed.");
+    http_die ("internal-error", "zmsg_new() failed.");
+}
+zmsg_addstr (send_msg, "LIST");
+zmsg_addstr (send_msg, state.c_str ());
+
+// send it
+if (mlm_client_sendto (client, "ALERTS-LIST", RFC_ALERTS_LIST, NULL, 1000, &send_msg) != 0) {
+    log_debug ("mlm_client_sendto (address = '%s', subject = '%s', tracker = NULL, timeout = '%" PRIu32"') failed.",
+        BIOS_AGENT_NAME_ALERT_AGENT, RFC_ALERTS_LIST, 1000);
+    zmsg_destroy (&send_msg);
+    mlm_client_destroy (&client);
+    http_die ("internal-error", "mlm_client_sendto() failed.");
+}
+
+// wait for the right message or time-out
+zmsg_t *recv_msg = NULL;
+zsock_t *pipe = mlm_client_msgpipe (client);
+if (!pipe) {
+    log_critical ("mlm_client_msgpipe() failed.");
+    http_die ("internal-error", "mlm_client_msgpipe() failed.");
+}
+
+_scoped_zpoller_t *poller = zpoller_new (pipe, NULL);
+if (!poller) {
+    log_critical ("zpoller_new() failed.");
+    http_die ("internal-error", "zpoller_new() failed.");
+}
+while (true) {
+    zsock_t *which = (zsock_t *) zpoller_wait (poller, 5000);
+    if (which == pipe) {
+        recv_msg = mlm_client_recv (client);
+    }
+    if (!recv_msg) {
+        if (zpoller_expired (poller) || zpoller_terminated (poller)) {
+            log_error ("zpoller_wait(timeout = 5000) timed out waiting for message.");
+            zpoller_destroy (&poller);
+            mlm_client_destroy (&client);
+            http_die ("internal-error", "Timed out waiting for message.");
+        }
+        log_error ("mlm_client_recv() failed.");
+        zpoller_destroy (&poller);
+        mlm_client_destroy (&client); 
+        http_die ("internal-error", "mlm_client_recv() failed.");
+    }
+    if (streq (mlm_client_sender (client), "ALERTS-LIST"))
+        break;
+    zmsg_destroy (&recv_msg);
+}
+zpoller_destroy (&poller);
+
+
+// Got it
+// Check subject
+if (!streq (mlm_client_subject (client), RFC_ALERTS_LIST)) {
+    log_error ("Unexpected reply from '%s'. Subject expected = '%s', received = '%s'.",
+        mlm_client_sender (client), RFC_ALERTS_LIST, mlm_client_subject (client));
+    zmsg_destroy (&recv_msg);
+    mlm_client_destroy (&client);
+    http_die ("internal-error", "Bad message.");
+}
+log_debug (" subject ... OK.");
+log_debug (" number of frames = '%" PRIu64"'.", zmsg_size (recv_msg));
+// Check command. Can be LIST or ERROR
+char *part = zmsg_popstr (recv_msg);
+if (streq (part, "LIST")) {
+    log_debug ("First frame == LIST ... OK");
+    free (part); part = NULL;
+    part = zmsg_popstr (recv_msg);
+    if (!part || !streq (part, state.c_str ())) {
+        log_error ("Unexpected reply from '%s'. Expected OK/state[/alert_1]...[/alert_N]. Got OK/(null).", mlm_client_sender (client));
+        zmsg_destroy (&recv_msg);
+        mlm_client_destroy (&client);
+        http_die ("internal-error", "Bad message.");
+    }
+    log_debug ("Second frame == '%s' ... OK", part);
+    free (part); part = NULL;
+    zframe_t *frame = zmsg_pop (recv_msg);
+    if (!frame) {
+        log_debug ("First `zframe_t *frame = zmsg_pop (recv_msg)` returned NULL.");
+    }
+    bool first = true;
+</%cpp>
+[
+% while (frame) {
+%   zmsg_t *decoded_zmsg = zmsg_decode (zframe_data (frame), zframe_size (frame));
+%   zframe_destroy (&frame);
+%   if (!decoded_zmsg) {
+%       zmsg_destroy (&recv_msg);
+%       mlm_client_destroy (&client);
+%       log_error ("TODO"); // TODO
+%       http_die ("internal-error", "Bad Message.");
+%   }
+%   bios_proto_t *decoded = bios_proto_decode (&decoded_zmsg);
+%   if (!decoded) {
+%       zmsg_destroy (&recv_msg);
+%       mlm_client_destroy (&client);
+%       log_error ("TODO"); // TODO
+%       http_die ("internal-error", "Bad Message.");
+%   }
+%   if (!bios_proto_id (decoded) == BIOS_PROTO_ALERT) {
+%       zmsg_destroy (&recv_msg);
+%       mlm_client_destroy (&client);
+%       log_error ("TODO"); // TODO
+%       http_die ("internal-error", "Bad Message.");
+%   }
+%   if ((!asset.empty () && desired_elements.find (bios_proto_element_src (decoded)) == desired_elements.end ())) {
+%       log_debug ("skipping due to element_src not being in the list");
+%       bios_proto_destroy (&decoded);
+%       frame = zmsg_pop (recv_msg);
+%       continue;
+%   }
+%   if (state.compare("ALL") != 0 && !streq (bios_proto_state (decoded), state.c_str ())) {
+%       log_debug ("skipping due to state not being requested");
+%       bios_proto_destroy (&decoded);
+%       frame = zmsg_pop (recv_msg);
+%       continue;
+%   }
+%
+%   if (first) {
+    {
+        <$$ utils::json::jsonify ("rule", bios_proto_rule (decoded)) $>,
+        <$$ utils::json::jsonify ("element_src", bios_proto_element_src (decoded)) $>,
+        <$$ utils::json::jsonify ("state", bios_proto_state (decoded)) $>,
+        <$$ utils::json::jsonify ("severity", bios_proto_severity (decoded)) $>,
+        <$$ utils::json::jsonify ("description", bios_proto_description (decoded)) $>,
+        <$$ utils::json::jsonify ("time", bios_proto_time (decoded)) $>,
+        <$$ utils::json::jsonify ("action", bios_proto_action (decoded)) $>
+    }
+%     first = false;
+%   }
+%   else {
+, {
+        <$$ utils::json::jsonify ("rule", bios_proto_rule (decoded)) $>,
+        <$$ utils::json::jsonify ("element_src", bios_proto_element_src (decoded)) $>,
+        <$$ utils::json::jsonify ("state", bios_proto_state (decoded)) $>,
+        <$$ utils::json::jsonify ("severity", bios_proto_severity (decoded)) $>,
+        <$$ utils::json::jsonify ("description", bios_proto_description (decoded)) $>,
+        <$$ utils::json::jsonify ("time", bios_proto_time (decoded)) $>,
+        <$$ utils::json::jsonify ("action", bios_proto_action (decoded)) $>
+}
+%   }
+%   bios_proto_destroy (&decoded);
+%   frame = zmsg_pop (recv_msg);
+% }
+]
+<%cpp>
+    zmsg_destroy (&recv_msg);
+    mlm_client_destroy (&client);
+    return HTTP_OK;
+}
+if (streq (part, "ERROR")) {
+    free (part);
+    part = zmsg_popstr (recv_msg);
+    if (!part) {
+        log_error ("Unexpected reply from '%s'. Expected ERROR/reason. Got ERROR/(null).", mlm_client_sender (client));
+        zmsg_destroy (&recv_msg);
+        mlm_client_destroy (&client);
+        http_die ("internal-error", "Bad message.");
+    }
+    if (streq (part, "NOT_FOUND")) {
+        free (part);
+        log_error ("State = '%s' does not exist.", state.c_str ());
+        zmsg_destroy (&recv_msg);
+        mlm_client_destroy (&client);
+        http_die ("not-found", std::string ("State '").append (state).append ("'").c_str ());
+    }
+    log_error ("%s", part);
+    std::string reason = part;
+    free (part); part = NULL;
+    zmsg_destroy (&recv_msg);
+    mlm_client_destroy (&client);
+    http_die ("internal-error", std::string ("Error while requesting list of alerts: ").append (reason).c_str ());
+
+}
+// Message does not conform to protocol
+log_error ("Unexptected reply from  '%s'. Does not conform to '%s' protocol.",
+    mlm_client_sender (client), RFC_ALERTS_LIST);
+zmsg_destroy (&recv_msg);
+mlm_client_destroy (&client);
+http_die ("internal-error", "Bad message.");
+</%cpp>
