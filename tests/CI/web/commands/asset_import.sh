@@ -224,8 +224,7 @@ echo "********* 16. Export universal tab 16LE with header **********************
 echo "***************************************************************************************************"
 # Content-Disposition in the export header
 test_it "Export_universal_tab_16LE"
-#*#*#*#*#*#*# TODO : Export_universal_tab_16LE_with_header : wrong format Content-Disposition: asset_export2015-11-26Tx��.csv
-api_auth_get /asset/export -H "Expect:"|grep 'Content-Disposition'|grep 'asset_export201[0-9]-[0-1][0-9]-[0-3][0-9]T.*csv'
+api_auth_get /asset/export -H "Expect:"|grep 'Content-Disposition'|grep 'asset_export201[0-9]-[0-1][0-9]-[0-3][0-9].csv'
 RES=$?
 print_result $RES
 
