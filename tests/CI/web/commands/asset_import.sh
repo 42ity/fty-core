@@ -233,7 +233,7 @@ echo "********* 17. Export id *************************** **********************
 echo "***************************************************************************************************"
 # exported id present and proper in exported file.
 test_it "Export_id"
-diff "${DB_DUMP_DIR}/exp_uni_tab_16LE.csv" "${DB_RES_DIR}/exp_uni_tab_16LE.ptr" || RES=1
+diff "${CSV_LOADDIR_ASSIMP}/exp_uni_tab_16LE.csv" "${DB_RES_DIR}/exp_uni_tab_16LE.ptr" || RES=1
 print_result $RES
 
 echo
