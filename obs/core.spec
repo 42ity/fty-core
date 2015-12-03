@@ -23,6 +23,7 @@ BuildRequires:  tntnet-devel tntnet
 BuildRequires:  malamute-devel
 BuildRequires:  autoconf
 BuildRequires:  automake
+BuildRequires:  libbiosproto-devel
 # documentation
 BuildRequires:  asciidoc
 BuildRequires:  xmlto
