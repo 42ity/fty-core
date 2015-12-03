@@ -51,7 +51,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 namespace persist {
 
 // used by src/agents/dbstore
-void process_measurement(UNUSED_PARAM const std::string &topic, zmsg_t **msg_p, TopicCache& c) {
+void process_measurement(zmsg_t **msg_p, TopicCache& c) {
 
     if (!msg_p || !*msg_p)
         return;

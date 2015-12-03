@@ -72,9 +72,7 @@ s_metric_store(zsock_t *pipe, void* args)
             break;
 
         zmsg_t *msg = mlm_client_recv (client);
-        // New measurements publish
-        std::string topic = mlm_client_subject(client);
-        persist::process_measurement(topic, &msg, topic_cache);
+        persist::process_measurement(&msg, topic_cache);
 
         zmsg_destroy (&msg);
     }
