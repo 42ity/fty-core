@@ -68,7 +68,7 @@ s_metric_store(zsock_t *pipe, void* args)
 
         void * which = zpoller_wait (poller, -1);
 
-        if (which == pipe)
+        if (!which || which == pipe)
             break;
 
         zmsg_t *msg = mlm_client_recv (client);
