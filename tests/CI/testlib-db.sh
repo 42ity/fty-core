@@ -161,7 +161,7 @@ loaddb_rack_power() {
 loaddb_dc_power() {
     echo "--------------- reset db: dc-power -------------"
     loaddb_initial || return $?
-    for data in "$DB_RACK_POWER"; do
+    for data in "$DB_DC_POWER"; do
         logmsg_info "Importing $data ..."
         loaddb_file "$data" || return $?
     done
