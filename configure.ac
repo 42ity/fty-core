@@ -440,25 +440,13 @@ PKG_CHECK_MODULES([CXXTOOLS], [cxxtools >= 2.2.0], [], [AC_MSG_ERROR([cannot fin
 PKG_CHECK_MODULES([LIBSODIUM], [libsodium >= 0.7.0], [], [AC_MSG_ERROR([cannot find libsodium >= 0.7.0])])
 PKG_CHECK_MODULES([LIBSASL2], [libsasl2 >= 2.1.0], [], [AC_MSG_ERROR([cannot find sasl 2 library >= 2.1.0])])
 PKG_CHECK_MODULES([LIBMLM], [libmlm >= 0.1.0], [], [AC_MSG_ERROR([cannot find malamute library >= 0.1.0])])
+PKG_CHECK_MODULES([LIBBIOSPROTO], [libbiosproto >= 0.1.0], [], AC_MSG_ERROR([cannot find libbiosproto library >= 0.1.0]))
 
 AC_MSG_CHECKING([presence of augtool])
 AS_IF([which augtool >/dev/null 2>&1], [AC_MSG_RESULT([yes])], [
 	AC_MSG_RESULT([no])
 	AC_MSG_WARN([some CI tests (inspection and modification of OS configuration) can fail on this host due to lack of augeas-tools; but this is not fatal for compilation itself])
 ])
-
-# Comes from different repo
-_HAVE_LIBBIOSPROTO=0
-AC_CHECK_HEADER([bios_proto.h],
-	[AC_CHECK_LIB([biosproto],[bios_proto_decode], [_HAVE_LIBBIOSPROTO=1])]
-	)
-AS_IF([test "x$_HAVE_LIBBIOSPROTO" = x0],
-	[AC_MSG_WARN([libbiosproto sister-project not detected, clients for it will not be compiled])])
-# For Makefile
-AM_CONDITIONAL([HAVE_LIBBIOSPROTO],
-	[test "x$_HAVE_LIBBIOSPROTO" != x0])
-# For headers/CPP
-AC_DEFINE([HAVE_LIBBIOSPROTO], ["$_HAVE_LIBBIOSPROTO"], [Do we have libbiosproto])
 
 dnl ------ it was suggested by autoscan
 dnl TODO  I am not sure whether we need this. TODO MVY Please look at this.
@@ -674,6 +662,7 @@ Summary:
         LIBSASL2_LIBS:           ${LIBSASL2_LIBS}
         LIBMLM_CFLAGS:           ${LIBMLM_CFLAGS}
         LIBMLM_LIBS:             ${LIBMLM_LIBS}
+        LIBBIOSPROTO_LIBS:       ${LIBBIOSPROTO_LIBS}
         SASLAUTHD_MUX:           ${SASLAUTHD_MUX}
         SYSTEMDSYSTEMUNITDIR:    ${systemdsystemunitdir}
         SYSTEMDSYSTEMPRESETDIR:  ${systemdsystempresetdir}

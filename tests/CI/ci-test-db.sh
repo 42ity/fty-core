@@ -149,6 +149,7 @@ sleep 1
 
 echo "-------------------- test-dbtopology location --------------------"
 echo "-------------------- fill db for topology loaction --------------------"
+loaddb_initial || die "Can't prepare the database"
 loaddb_topo_loc || die "Can't prepare the database"
 set +e
 "$BUILDSUBDIR"/test-dbtopology "[$DB_TOPOL_NAME]"
@@ -164,6 +165,7 @@ sleep 1
 
 echo "-------------------- test-dbtopology power --------------------"
 echo "-------------------- fill db for topology power --------------------"
+loaddb_initial || die "Can't prepare the database"
 loaddb_topo_pow || die "Can't prepare the database"
 set +e
 "$BUILDSUBDIR"/test-dbtopology "[$DB_TOPOP_NAME]"
