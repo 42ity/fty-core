@@ -147,33 +147,40 @@ if [ "$?" != 0 ] ; then
 fi
 sleep 1
 
-for P in "$DB_TOPOP" "$DB_TOPOL"; do
-    echo "-------------------- fill db for topology $P --------------------"
-    loaddb_file "$DB_BASE" \
-    && loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" \
-    && loaddb_file "$P" \
-    || die "Can't prepare the database"
-    echo "-------------------- test-dbtopology $P --------------------"
-    set +e
-    "$BUILDSUBDIR"/test-dbtopology "[$P]"
-    if [ "$?" != 0 ] ; then
-        echo "----------------------------------------"
-        echo "ERROR: test-dbtopology $P failed"
-        echo "----------------------------------------"
-        RESULT=1
-        FAILED="$FAILED test-dbtopology::$P"
-        [ x"$CITEST_QUICKFAIL" = xyes ] && exit $RESULT
-    fi
-    sleep 1
-done
+echo "-------------------- test-dbtopology location --------------------"
+echo "-------------------- fill db for topology loaction --------------------"
+loaddb_topo_loc || die "Can't prepare the database"
+set +e
+"$BUILDSUBDIR"/test-dbtopology "[$DB_TOPOL_NAME]"
+if [ "$?" != 0 ] ; then
+    echo "----------------------------------------"
+    echo "ERROR: test-dbtopology location failed"
+    echo "----------------------------------------"
+    RESULT=1
+    FAILED="$FAILED test-dbtopology::location"
+    [ x"$CITEST_QUICKFAIL" = xyes ] && exit $RESULT
+fi
+sleep 1
+
+echo "-------------------- test-dbtopology power --------------------"
+echo "-------------------- fill db for topology power --------------------"
+loaddb_topo_pow || die "Can't prepare the database"
+set +e
+"$BUILDSUBDIR"/test-dbtopology "[$DB_TOPOP_NAME]"
+if [ "$?" != 0 ] ; then
+    echo "----------------------------------------"
+    echo "ERROR: test-dbtopology power failed"
+    echo "----------------------------------------"
+    RESULT=1
+    FAILED="$FAILED test-dbtopology::power"
+    [ x"$CITEST_QUICKFAIL" = xyes ] && exit $RESULT
+fi
+sleep 1
 
 echo "-------------------- test-total-power --------------------"
 echo "-------------------- fill db for rack power --------------------"
-loaddb_file "$DB_BASE" \
-&& loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" \
-&& loaddb_file "$DB_RACK_POWER" \
-|| die "Can't prepare the database"
-"$BUILDSUBDIR"/test-totalpower "[$DB_RACK_POWER]"
+loaddb_rack_power || die "Can't prepare the database"
+"$BUILDSUBDIR"/test-totalpower "[$DB_RACK_POWER_NAME]"
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
     echo "ERROR: test-totalpower failed"
@@ -186,11 +193,8 @@ sleep 1
 
 echo "-------------------- test-total-power --------------------"
 echo "-------------------- fill db for dc power --------------------"
-loaddb_file "$DB_BASE" \
-&& loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" \
-&& loaddb_file "$DB_DC_POWER" \
-|| die "Can't prepare the database"
-"$BUILDSUBDIR"/test-totalpower "[$DB_DC_POWER]"
+loaddb_dc_power || die "Can't prepare the database"
+"$BUILDSUBDIR"/test-totalpower "[$DB_DC_POWER_NAME]"
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
     echo "ERROR: test-totalpower failed"
