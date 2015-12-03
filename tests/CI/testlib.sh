@@ -61,7 +61,11 @@ fi
 
 _TOKEN_=""
 TESTLIB_FORCEABORT=no
-_testlib_result_printed=notest
+# this is a shared variable between test_it and print_result
+# that should not allow to call
+#   print_it before apripriate test_it
+#   test_it before previous result was printed
+_testlib_result_printed=yes
 
 # Numeric counters
 [ -z "${TESTLIB_COUNT_PASS-}" ] && TESTLIB_COUNT_PASS="0"
