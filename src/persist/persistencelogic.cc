@@ -62,6 +62,7 @@ void process_measurement(zmsg_t **msg_p, TopicCache& c) {
     _scoped_char *quantity    = NULL;   // TODO: THA: what does this parameter mean?
     _scoped_char *units       = NULL;
     m_msrmnt_value_t value = 0;
+    m_msrmnt_scale_t scale = 0;
     std::string db_topic;
     time_t _time;
     bios_proto_t *m = NULL;
@@ -90,17 +91,26 @@ void process_measurement(zmsg_t **msg_p, TopicCache& c) {
     db_topic = std::string (quantity) + "@" + device_name;
     _time = (time_t) tme;
 
-    value = string_to_int64 (bios_proto_value (m));
-    if (errno != 0) {
-        errno = 0;
-        goto free_mem_toto;
+    if (!strstr (bios_proto_value (m), ".")) {
+        value = string_to_int64 (bios_proto_value (m));
+        if (errno != 0)
+            goto free_mem_toto;
+    }
+    else {
+        double dvalue = string_to_double (bios_proto_value (m));
+        if (errno != 0)
+            goto free_mem_toto;
+        // TODO: KHR KHR KHR compute the reasonable scale
+        value = trunc (dvalue);
+        scale = 0;
     }
 
     units = strdup (bios_proto_unit (m));
     persist::insert_into_measurement(
-            conn, db_topic.c_str(), value, 0, _time, units, device_name, c);
+            conn, db_topic.c_str(), value, scale, _time, units, device_name, c);
 free_mem_toto:
     //free resources
+    errno = 0;
     bios_proto_destroy (&m);
     zmsg_destroy(msg_p);
     FREE0 (device_name)
