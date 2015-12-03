@@ -54,7 +54,7 @@ TEST_CASE("DC power #1 v2","[db][power][dc][calc][v2][dc_power.sql]")
     REQUIRE ( ret.status == 1 );
 
     std::map<std::string, std::set<std::string>> const EXP {
-        { "DC1",  { "UPS1-DC1" } },
+        { "DC1",  { "UPS2-RACK1", "EPDU1-RACK2" } },
         { "DC2",  { "UPS3-DC2", "EPDU2-DC2" } }
     };
 

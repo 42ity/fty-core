@@ -132,24 +132,18 @@ loaddb_default() {
 }
 
 loaddb_topo_loc() {
-    echo "--------------- reset db: topo-location ----------"
-    loaddb_initial || return $?
-    for data in "$DB_DATA" "$DB_TOPOL"; do
-        logmsg_info "Importing $data ..."
-        loaddb_file "$data" || return $?
-    done
-    logmsg_info "Database schema and data should have been initialized at this point: for topology-location tests"
+    data="$DB_TOPOL"
+    logmsg_info "Importing $data ..."
+    loaddb_file "$data" || return $?
+    logmsg_info "file $data applied"
     return 0
 }
 
 loaddb_topo_pow() {
-    echo "--------------- reset db: topo-power -------------"
-    loaddb_initial || return $?
-    for data in "$DB_DATA" "$DB_TOPOP"; do
-        logmsg_info "Importing $data ..."
-        loaddb_file "$data" || return $?
-    done
-    logmsg_info "Database schema and data should have been initialized at this point: for topology-power tests"
+    data="$DB_TOPOP"
+    logmsg_info "Importing $data ..."
+    loaddb_file "$data" || return $?
+    logmsg_info "file $data applied"
     return 0
 }
 
@@ -167,7 +161,7 @@ loaddb_rack_power() {
 loaddb_dc_power() {
     echo "--------------- reset db: dc-power -------------"
     loaddb_initial || return $?
-    for data in "$DB_RACK_POWER"; do
+    for data in "$DB_DC_POWER"; do
         logmsg_info "Importing $data ..."
         loaddb_file "$data" || return $?
     done

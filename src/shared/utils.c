@@ -253,6 +253,15 @@ uint8_t string_to_uint8( const char *value )
     return (uint8_t)result;
 }
 
+double string_to_double (const char *value)
+{
+    char *end;
+    double result = strtod (value, &end);
+    if (*end) errno = EINVAL;
+    if (errno) return NAN;
+    return result;
+}
+
 const char* alert_state_to_str(alert_state_t astate) {
     switch (astate) {
         case ALERT_STATE_UNKNOWN:
