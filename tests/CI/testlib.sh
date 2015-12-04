@@ -84,7 +84,6 @@ print_result() {
         logmsg_error "printing result before test was started!"
         return 0;
     fi
-
     _testlib_result_printed=yes
     _ret="$1"
     ### Is this a valid number (negative == failed_ignored)?
