@@ -208,16 +208,8 @@ for i in $POSITIVE; do
     ### Default value for logging the test items
     TNAME="$NAME"
 
-    # "Poison"-protection about unused standard infrastructure aka test_it()
-    _testlib_result_printed=notest
     . ./"$NAME" 5>"$REALLIFE_RESULT"
     RES=$?
-
-    [ "${_testlib_result_printed}" = notest ] && \
-        logmsg_error "NOTE: Previous test(s) apparently did not use test_it()" \
-            "to begin logging, amending that omission now by assigning filename" \
-            "as the test name:" && \
-        test_it "$NAME"
 
     # Stash the last result-code for trivial tests and no expectations below
     # For better reliability, all test files should call print_result to verify
