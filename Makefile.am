@@ -422,6 +422,7 @@ libpriv_db_la_LIBADD =	libbiosapi.la \
 			libpriv-log.la \
 			libpriv-csv.la \
 			libpriv-db-assets.la \
+			libpriv-utils-plusplus.la \
 			libpriv-topic-cache.la
 
 noinst_LTLIBRARIES += 	libpriv-db-measurements.la
@@ -1459,7 +1460,6 @@ bios_web_la_LIBADD = \
 			libpriv-magic.la \
 			libpriv-configure-inform.la \
 			libpriv-utils-web.la \
-			libpriv-utils-plusplus.la \
 			libpriv-enums.la
 
 dist_noinst_HEADERS += \
