@@ -314,7 +314,7 @@ if (streq (part, "LIST")) {
     {
         <$$ utils::json::jsonify ("timestamp", buff) $>,
         <$$ utils::json::jsonify ("rule_name", bios_proto_rule (decoded)) $>,
-        <$$ utils::json::jsonify ("element_id", asset_element.item.id) $>,
+        <$$ utils::json::jsonify ("element_id", std::to_string (asset_element.item.id)) $>,
         <$$ utils::json::jsonify ("element_name", bios_proto_element_src (decoded)) $>,
         <$$ utils::json::jsonify ("element_type", asset_element.item.type_name) $>,
         <$$ utils::json::jsonify ("element_sub_type", asset_element.item.subtype_name) $>,
@@ -328,7 +328,7 @@ if (streq (part, "LIST")) {
 , {
         <$$ utils::json::jsonify ("timestamp", buff) $>,
         <$$ utils::json::jsonify ("rule_name", bios_proto_rule (decoded)) $>,
-        <$$ utils::json::jsonify ("element_id", asset_element.item.id) $>,
+        <$$ utils::json::jsonify ("element_id", std::to_string (asset_element.item.id)) $>,
         <$$ utils::json::jsonify ("element_name", bios_proto_element_src (decoded)) $>,
         <$$ utils::json::jsonify ("element_type", asset_element.item.type_name) $>,
         <$$ utils::json::jsonify ("element_sub_type", asset_element.item.subtype_name) $>,
