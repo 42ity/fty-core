@@ -40,6 +40,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "agents.h"
 #include "cleanup.h"
 #include "utils.h"
+#include "utils++.h"
 #include "ymsg-asset.h"
 
 #include <biosproto.h>
@@ -97,12 +98,12 @@ void process_measurement(zmsg_t **msg_p, TopicCache& c) {
             goto free_mem_toto;
     }
     else {
-        double dvalue = string_to_double (bios_proto_value (m));
-        if (errno != 0)
+        uint8_t lscale = 0;
+        int32_t integer = 0;
+        if (!utils::math::stobiosf (bios_proto_value (m), integer, lscale))
             goto free_mem_toto;
-        // TODO: KHR KHR KHR compute the reasonable scale
-        value = trunc (dvalue);
-        scale = 0;
+        value = integer;
+        scale = lscale;
     }
 
     units = strdup (bios_proto_unit (m));
