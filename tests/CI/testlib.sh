@@ -61,20 +61,30 @@ fi
 
 _TOKEN_=""
 TESTLIB_FORCEABORT=no
-_testlib_result_printed=notest
+
+# this is a shared variable between test_it and print_result
+# that should not allow to call
+#   print_it before apropriate test_it
+#   test_it before previous result was printed with print_result
+# possible values: yes/notyet
+_testlib_result_printed=yes
 
 # Numeric counters
-[ -z "${TESTLIB_COUNT_PASS-}" ] && TESTLIB_COUNT_PASS="0"
-[ -z "${TESTLIB_COUNT_SKIP-}" ] && TESTLIB_COUNT_SKIP="0"
-[ -z "${TESTLIB_COUNT_FAIL-}" ] && TESTLIB_COUNT_FAIL="0"
-[ -z "${TESTLIB_COUNT_TOTAL-}" ] && TESTLIB_COUNT_TOTAL="0"
+[ -z "${TESTLIB_COUNT_PASS-}" ] && TESTLIB_COUNT_PASS=0
+[ -z "${TESTLIB_COUNT_SKIP-}" ] && TESTLIB_COUNT_SKIP=0
+[ -z "${TESTLIB_COUNT_FAIL-}" ] && TESTLIB_COUNT_FAIL=0
+[ -z "${TESTLIB_COUNT_TOTAL-}" ] && TESTLIB_COUNT_TOTAL=0
 # String lists of space-separated single-token test names that failed
 [ -z "${TESTLIB_LIST_FAILED-}" ] && TESTLIB_LIST_FAILED=""
 [ -z "${TESTLIB_LIST_FAILED_IGNORED-}" ] && TESTLIB_LIST_FAILED_IGNORED=""
 [ -z "${TESTLIB_LIST_PASSED-}" ] && TESTLIB_LIST_PASSED=""
 
 print_result() {
-    [ "${_testlib_result_printed}" = yes ] && return 0
+    if [ x"${_testlib_result_printed}" = xyes ]; then
+        logmsg_error "printing result before test was started!"
+        return 0;
+    fi
+
     _testlib_result_printed=yes
     _ret="$1"
     ### Is this a valid number (negative == failed_ignored)?
@@ -99,6 +109,11 @@ print_result() {
     if [ "$_ret" -eq 0 ]; then  # should include "-0" too
         echo " * PASSED"
         TESTLIB_COUNT_PASS="`expr $TESTLIB_COUNT_PASS + 1`"
+        TEMP_NUMBER="`expr $TESTLIB_COUNT_PASS - $TESTLIB_COUNT_TOTAL`"
+        echo "**${TEMP_NUMBER}********************************************************************"
+        if [  "$TEMP_NUMBER" -gt 0 ]; then
+            logmsg_error "WOWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"
+        fi
         TESTLIB_LIST_PASSED="$TESTLIB_LIST_PASSED $TESTLIB_LASTTESTTAG"
     else
         if [ x-"$_ret" = x"$1" ] ; then
@@ -145,8 +160,8 @@ print_result() {
 
 test_it() {
     if [ x"${_testlib_result_printed}" = xnotyet ]; then
-        logmsg_warn "Starting a new test_it() while an old one was not followed by a print_result()!"
-        logmsg_warn "Closing old test with result code 128 ..."
+        logmsg_info  "Starting a new test_it() while an old one was not followed by a print_result()!"
+        logmsg_error "Closing old test with result code 128 ..."
         print_result 128
     fi
     _testlib_result_printed=notyet
