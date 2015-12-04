@@ -35,6 +35,7 @@
 
 #include <bios_proto.h>
 #include "log.h"
+#include "utils.h"
 #include "utils_web.h"
 #include "str_defs.h"
 #include "dbpath.h"
@@ -120,7 +121,9 @@ catch (const std::exception& e) {
 log_debug ("Asset element id = '%" PRIu32 "'.", element_id);
 
 if (!asset.empty ()) {
-    auto asset_element = persist::select_asset_element_web_byId (connection, element_id); // TODO: check the return value
+    auto asset_element = persist::select_asset_element_web_byId (connection, element_id);
+    if (asset_element.status != 1)
+        http_die ("internal-error", asset_element.msg.c_str ());
     log_debug ("Asset element name = '%s'.", asset_element.item.name.c_str ());
     desired_elements.emplace (std::make_pair (asset_element.item.name, 5));
 
@@ -196,7 +199,7 @@ if (!pipe) {
     http_die ("internal-error", "mlm_client_msgpipe() failed.");
 }
 
-_scoped_zpoller_t *poller = zpoller_new (pipe, NULL);
+zpoller_t *poller = zpoller_new (pipe, NULL);
 if (!poller) {
     log_critical ("zpoller_new() failed.");
     http_die ("internal-error", "zpoller_new() failed.");
@@ -274,7 +277,7 @@ if (streq (part, "LIST")) {
 %       http_die ("internal-error", "Bad Message.");
 %   }
 %   if (!bios_proto_id (decoded) == BIOS_PROTO_ALERT) {
-%       zmsg_destroy (&recv_msg);
+%       bios_proto_destroy (&decoded);
 %       mlm_client_destroy (&client);
 %       log_error ("TODO"); // TODO
 %       http_die ("internal-error", "Bad Message.");
@@ -291,28 +294,47 @@ if (streq (part, "LIST")) {
 %       frame = zmsg_pop (recv_msg);
 %       continue;
 %   }
+%   char buff[64];
+%   rv = calendar_to_datetime (bios_proto_time (decoded), buff, 64);
+%   if (rv == -1) {
+%       bios_proto_destroy (&decoded);
+%       mlm_client_destroy (&client);
+%       log_error ("TODO"); // TODO
+%       http_die ("internal-error", "TODO: calendar_to_datetime () ");
+%   }
+%   auto asset_element = persist::select_asset_element_web_byName (connection, bios_proto_element_src (decoded));
+%   if (asset_element.status != 1) {
+%       bios_proto_destroy (&decoded);
+%       mlm_client_destroy (&client);
+%       log_error ("TODO"); // TODO
+%       http_die ("internal-error", asset_element.msg.c_str ());
+%   }
 %
 %   if (first) {
     {
-        <$$ utils::json::jsonify ("rule", bios_proto_rule (decoded)) $>,
-        <$$ utils::json::jsonify ("element_src", bios_proto_element_src (decoded)) $>,
+        <$$ utils::json::jsonify ("timestamp", buff) $>,
+        <$$ utils::json::jsonify ("rule_name", bios_proto_rule (decoded)) $>,
+        <$$ utils::json::jsonify ("element_id", asset_element.item.id) $>,
+        <$$ utils::json::jsonify ("element_name", bios_proto_element_src (decoded)) $>,
+        <$$ utils::json::jsonify ("element_type", asset_element.item.type_name) $>,
+        <$$ utils::json::jsonify ("element_sub_type", asset_element.item.subtype_name) $>,
         <$$ utils::json::jsonify ("state", bios_proto_state (decoded)) $>,
         <$$ utils::json::jsonify ("severity", bios_proto_severity (decoded)) $>,
-        <$$ utils::json::jsonify ("description", bios_proto_description (decoded)) $>,
-        <$$ utils::json::jsonify ("time", bios_proto_time (decoded)) $>,
-        <$$ utils::json::jsonify ("action", bios_proto_action (decoded)) $>
+        <$$ utils::json::jsonify ("description", bios_proto_description (decoded)) $>
     }
 %     first = false;
 %   }
 %   else {
 , {
-        <$$ utils::json::jsonify ("rule", bios_proto_rule (decoded)) $>,
-        <$$ utils::json::jsonify ("element_src", bios_proto_element_src (decoded)) $>,
+        <$$ utils::json::jsonify ("timestamp", buff) $>,
+        <$$ utils::json::jsonify ("rule_name", bios_proto_rule (decoded)) $>,
+        <$$ utils::json::jsonify ("element_id", asset_element.item.id) $>,
+        <$$ utils::json::jsonify ("element_name", bios_proto_element_src (decoded)) $>,
+        <$$ utils::json::jsonify ("element_type", asset_element.item.type_name) $>,
+        <$$ utils::json::jsonify ("element_sub_type", asset_element.item.subtype_name) $>,
         <$$ utils::json::jsonify ("state", bios_proto_state (decoded)) $>,
         <$$ utils::json::jsonify ("severity", bios_proto_severity (decoded)) $>,
-        <$$ utils::json::jsonify ("description", bios_proto_description (decoded)) $>,
-        <$$ utils::json::jsonify ("time", bios_proto_time (decoded)) $>,
-        <$$ utils::json::jsonify ("action", bios_proto_action (decoded)) $>
+        <$$ utils::json::jsonify ("description", bios_proto_description (decoded)) $>
 }
 %   }
 %   bios_proto_destroy (&decoded);

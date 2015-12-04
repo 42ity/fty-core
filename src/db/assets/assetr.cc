@@ -101,6 +101,59 @@ db_reply <db_web_basic_element_t>
     }
 }
 
+db_reply <db_web_basic_element_t>
+    select_asset_element_web_byName
+        (tntdb::Connection &conn,
+         const char *element_name) {
+    // TODO write function new
+    db_web_basic_element_t item {0, "", "", 0, 0, 0, "", 0, 0, 0, "",""};
+    db_reply <db_web_basic_element_t> ret = db_reply_new(item);
+
+    try {
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT"
+            "   v.id, v.name, v.id_type, v.type_name,"
+            "   v.subtype_id, v.subtype_name, v.id_parent,"
+            "   v.id_parent_type, v.business_crit, v.status,"
+            "   v.priority, v.asset_tag"
+            " FROM"
+            "   v_web_element v"
+            " WHERE :name = v.name"
+        );
+
+        tntdb::Row row = st.set ("name", element_name).selectRow ();
+
+        row[0].get(ret.item.id);
+        row[1].get(ret.item.name);
+        row[2].get(ret.item.type_id);
+        row[3].get(ret.item.type_name);
+        row[4].get(ret.item.subtype_id);
+        row[5].get(ret.item.subtype_name);
+        row[6].get(ret.item.parent_id);
+        row[7].get(ret.item.parent_type_id);
+        row[8].get(ret.item.bc);
+        row[9].get(ret.item.status);
+        row[10].get(ret.item.priority);
+        row[11].get(ret.item.asset_tag);
+
+        ret.status = 1;
+        return ret;
+    }
+    catch (const tntdb::NotFound &e) {
+        ret.status        = 0;
+        ret.errtype       = DB_ERR;
+        ret.errsubtype    = DB_ERROR_NOTFOUND;
+        ret.msg           = std::string ("Element with specified name = '").append (element_name).append ("' was not found.");
+        return ret;
+    }
+    catch (const std::exception &e) {
+        ret.status        = 0;
+        ret.errtype       = DB_ERR;
+        ret.errsubtype    = DB_ERROR_INTERNAL;
+        ret.msg           = std::string ("Expcetion caught: '").append (e.what()).append ("'.");
+        return ret;
+    }
+}
 
 db_reply <std::map <std::string, std::pair<std::string, bool> >>
     select_ext_attributes
