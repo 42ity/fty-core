@@ -110,13 +110,10 @@ loaddb_initial() {
 }
 
 loaddb_sampledata() {
-    echo "--------------- reset db: default sample data ----"
-    loaddb_initial || return $?
-    for data in "$DB_DATA" ; do
-        logmsg_info "Importing $data ..."
-        loaddb_file "$data" || return $?
-    done
-    logmsg_info "Database schema and data should have been initialized at this point: sample datacenter for tests"
+    local data="$DB_DATA"
+    logmsg_info "Importing $data ..."
+    loaddb_file "$data" || return $?
+    logmsg_info "file $data applied"
     return 0
 }
 
@@ -132,7 +129,7 @@ loaddb_default() {
 }
 
 loaddb_topo_loc() {
-    data="$DB_TOPOL"
+    local data="$DB_TOPOL"
     logmsg_info "Importing $data ..."
     loaddb_file "$data" || return $?
     logmsg_info "file $data applied"
@@ -140,7 +137,7 @@ loaddb_topo_loc() {
 }
 
 loaddb_topo_pow() {
-    data="$DB_TOPOP"
+    local data="$DB_TOPOP"
     logmsg_info "Importing $data ..."
     loaddb_file "$data" || return $?
     logmsg_info "file $data applied"
@@ -190,6 +187,7 @@ init_script_initial(){
 }
 
 init_script_sampledata(){
+    loaddb_initial || return $?
     loaddb_sampledata && \
     accept_license
 }
@@ -205,12 +203,14 @@ init_script(){
 
 init_script_topo_loc(){
     loaddb_initial || return $?
+    loaddb_sampledata && \
     loaddb_topo_loc && \
     accept_license
 }
 
 init_script_topo_pow(){
     loaddb_initial || return $?
+    loaddb_sampledata && \
     loaddb_topo_pow && \
     accept_license
 }
