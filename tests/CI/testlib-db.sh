@@ -204,11 +204,13 @@ init_script(){
 }
 
 init_script_topo_loc(){
+    loaddb_initial || return $?
     loaddb_topo_loc && \
     accept_license
 }
 
 init_script_topo_pow(){
+    loaddb_initial || return $?
     loaddb_topo_pow && \
     accept_license
 }
