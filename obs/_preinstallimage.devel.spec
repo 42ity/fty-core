@@ -17,6 +17,7 @@ BuildRequires: tntdb-mysql4 libtntdb4 systemd-sysv malamute mariadb-server-10.0 
 BuildRequires: mime-support ncurses-base libgdbm3 zabbix-agent msmtp u-boot-tools ifplugd
 BuildRequires: augeas-tools augeas-lenses
 BuildRequires: libpam-cracklib libcrack2 cracklib-runtime wamerican
+BuildRequires: alerts-list
 
 %build
 IMGTYPE=devel /usr/share/bios/obs/preinstallimage-bios.sh || exit 1
