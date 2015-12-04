@@ -79,6 +79,11 @@ db_reply <db_web_basic_element_t>
         (tntdb::Connection &conn,
          a_elmnt_id_t element_id);
 
+db_reply <db_web_basic_element_t>
+    select_asset_element_web_byName
+        (tntdb::Connection &conn,
+         const char *element_name);
+
 db_reply < std::map <std::string, std::pair<std::string, bool> > >
     select_ext_attributes
         (tntdb::Connection &conn,
