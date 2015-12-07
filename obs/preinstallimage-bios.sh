@@ -494,6 +494,25 @@ done
 dpkg --get-selections
 dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n
 
+# Create the CSV Legal packages manifest, to display from the Web UI
+# copyright files path are adapted to Web UI display!
+CSV_FILE_PATH="/usr/share/doc/ipc-packages.csv"
+rm -f ${CSV_FILE_PATH}
+touch ${CSV_FILE_PATH}
+dpkg-query -W -f='${db:Status-Abbrev};${source:Package};${Version};${binary:Package}\n' | grep '^i' | cut -d';' -f2,3,4 | sort -u > ./pkg-list.log
+for pkg_line in `cat ./pkg-list.log`
+do
+   CURRENT_PKG="`echo ${pkg_line} | cut -d';' -f3 | cut -d':' -f1`"
+   SOURCE_PKG="`echo ${pkg_line} | cut -d';' -f1`"
+   PKG_VERSION="`echo ${pkg_line} | cut -d';' -f2`"
+   grep "${SOURCE_PKG};${PKG_VERSION};" "${CSV_FILE_PATH}" 2>&1 1>/dev/null
+   if [ $? -eq 1 ]; then
+      echo "${SOURCE_PKG};${PKG_VERSION};/usr/share/doc/${CURRENT_PKG}/copyright" >> ${CSV_FILE_PATH}
+      [ ! -f "/usr/share/doc/${CURRENT_PKG}/copyright" ] && echo "Missing ${CURRENT_PKG}/copyright file!"
+   fi
+done
+rm -f ./pkg-list.log
+
 # Prepare the ccache (for development image type)
 case "$IMGTYPE" in
     devel)
