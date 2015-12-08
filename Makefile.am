@@ -422,6 +422,7 @@ libpriv_db_la_LIBADD =	libbiosapi.la \
 			libpriv-log.la \
 			libpriv-csv.la \
 			libpriv-db-assets.la \
+			libpriv-utils-plusplus.la \
 			libpriv-topic-cache.la
 
 noinst_LTLIBRARIES += 	libpriv-db-measurements.la
@@ -589,8 +590,6 @@ SUFFIXES=.ecpp .gif .jpg .css .js .cpp
 # including those that are generated here. And does not add *.ecpp by default.
 # Not-including the build *.cpp into dist is tricky, but does not matter much.
 EXTRA_DIST +=				$(top_srcdir)/src/web/src/*.ecpp
-
-src/web/src/sysinfo.cpp: src/include/git_details_override.h
 
 .ecpp.cpp:
 	${ECPPC} ${ECPPFLAGS} ${ECPPFLAGS_CPP} -o $@ $<
@@ -1112,7 +1111,7 @@ agent_dbstore_SOURCES =		src/agents/dbstore/agent-dbstore.cc \
 			tools/dbpath.h
 
 agent_dbstore_LDFLAGS =		${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} \
-			${LIBMLM_LIBS} -ltntdb -lcidr
+			${LIBMLM_LIBS} -ltntdb -lcidr ${LIBBIOSPROTO_LIBS}
 
 agent_dbstore_LDADD = \
 			libpriv-db.la \
@@ -1250,7 +1249,9 @@ agent_inventory_SOURCES = \
 			src/agents/inventory/agent-inventory.cc \
 			tools/dbpath.h
 
-agent_inventory_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS}  -ltntdb -lbiosapi -lcidr
+agent_inventory_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} \
+							${LIBBIOSPROTO_LIBS} \
+							-ltntdb -lbiosapi -lcidr
 
 ### TODO this agent should not link with libpriv-db-alerts.
 ### But now it is required, because of "huge" libpriv-db
@@ -1405,11 +1406,8 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/admin_passwd.cpp src/web/src/systemctl.cpp  \
                       src/web/src/config.cpp src/web/src/alert_rules_list.cpp \
                       src/web/src/alert_rules_detail.cpp src/web/src/alert_rules.cpp \
-                      src/web/src/alert_ack.cpp
-
-if HAVE_LIBBIOSPROTO
-BUILT_SOURCES_bios_web_la += src/web/src/alert_list.cpp
-endif
+                      src/web/src/alert_ack.cpp \
+					  src/web/src/alert_list.cpp
 
 # Track real-git and nodist (generated) sources SEPARATELY
 nodist_bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)
@@ -1433,6 +1431,7 @@ CLEANFILES +=		$(BUILT_SOURCES_bios_web_la)
 bios_web_la_CPPFLAGS =	$(AM_CPPFLAGS) \
 			${LIBCZMQ_CFLAGS} ${CXXTOOLS_CFLAGS} \
 			${LIBSODIUM_CFLAGS} ${LIBSASL2_CFLAGS} \
+			${LIBBIOSPROTO_CFLAGS} \
 			-DSASLAUTHD_MUX=${SASLAUTHD_MUX} \
 			-I$(abs_top_srcdir)/src/web/include \
 			-I$(abs_top_srcdir)/src/db \
@@ -1445,14 +1444,9 @@ bios_web_la_CPPFLAGS =	$(AM_CPPFLAGS) \
 
 bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 			${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
+			${LIBBIOSPROTO_LIBS} \
 			-Wl,--no-undefined \
 			-module -lm -ltntdb -ltntnet -lcidr -lmagic -lbiosapi
-
-if HAVE_LIBBIOSPROTO
-bios_web_la_LDFLAGS +=	-lbiosproto
-### TODO: Detect header directory for <bios_proto.h> and put it here?
-#bios_web_la_CPPFLAGS += -I
-endif
 
 bios_web_la_LIBADD = \
 			libpriv-db.la libpriv-cidr.la libpriv-proto.la \
@@ -1464,7 +1458,6 @@ bios_web_la_LIBADD = \
 			libpriv-magic.la \
 			libpriv-configure-inform.la \
 			libpriv-utils-web.la \
-			libpriv-utils-plusplus.la \
 			libpriv-enums.la
 
 dist_noinst_HEADERS += \
