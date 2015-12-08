@@ -203,7 +203,7 @@ TEST_CASE ("join", "[utilities]") {
 
 
 TEST_CASE ("stobiosf", "[utilities]") {
-    uint8_t scale = 0;
+    int8_t scale = 0;
     int32_t integer = 0;
     
     CHECK (utils::math::stobiosf ("12.835", integer, scale));
@@ -236,19 +236,19 @@ TEST_CASE ("stobiosf", "[utilities]") {
 
     CHECK ( utils::math::stobiosf ("0.0", integer, scale) );
     CHECK ( integer == 0 );
-    CHECK ( scale == -1 );
+    CHECK ( scale == 0 );
 
     CHECK ( utils::math::stobiosf ("0.00", integer, scale) );
     CHECK ( integer == 0 );
-    CHECK ( scale == -2 );
+    CHECK ( scale == 0 );
 
     CHECK ( utils::math::stobiosf ("1.0", integer, scale) );
-    CHECK ( integer == 10 );
-    CHECK ( scale == -1 );
+    CHECK ( integer == 1 );
+    CHECK ( scale == 0 );
 
     CHECK ( utils::math::stobiosf ("1.00", integer, scale) );
-    CHECK ( integer == 100 );
-    CHECK ( scale == -2 );
+    CHECK ( integer == 1 );
+    CHECK ( scale == 0 );
 
     CHECK ( utils::math::stobiosf ("1234324532452345623541.00", integer, scale) == false );
 
