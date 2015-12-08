@@ -226,6 +226,10 @@ TEST_CASE ("stobiosf", "[utilities]") {
     CHECK ( integer == -1  );
     CHECK ( scale == 0 );
 
+    CHECK ( utils::math::stobiosf ("-1.000", integer, scale) );
+    CHECK ( integer == -1  );
+    CHECK ( scale == 0 );
+
     CHECK ( utils::math::stobiosf ("0", integer, scale) );
     CHECK ( integer == 0 );
     CHECK ( scale == 0 );
