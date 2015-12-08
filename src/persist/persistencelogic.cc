@@ -40,7 +40,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "agents.h"
 #include "cleanup.h"
 #include "utils.h"
+#include "utils++.h"
 #include "ymsg-asset.h"
+
+#include <biosproto.h>
 
 #define NETHISTORY_AUTO_CMD     'a'
 #define NETHISTORY_MAN_CMD      'm'
@@ -49,17 +52,21 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 namespace persist {
 
 // used by src/agents/dbstore
-void process_measurement(UNUSED_PARAM const std::string &topic, ymsg_t **ymsg, TopicCache& c) {
+void process_measurement(zmsg_t **msg_p, TopicCache& c) {
+
+    if (!msg_p || !*msg_p)
+        return;
+
     log_debug("Processing measurement");
     int64_t tme = 0;
     _scoped_char *device_name = NULL;
     _scoped_char *quantity    = NULL;   // TODO: THA: what does this parameter mean?
     _scoped_char *units       = NULL;
     m_msrmnt_value_t value = 0;
-    int32_t scale = -1;
-    int rv;
+    m_msrmnt_scale_t scale = 0;
     std::string db_topic;
     time_t _time;
+    bios_proto_t *m = NULL;
 
     tntdb::Connection conn;
     try {
@@ -70,24 +77,43 @@ void process_measurement(UNUSED_PARAM const std::string &topic, ymsg_t **ymsg, T
         goto free_mem_toto;
     }
 
-    rv = bios_measurement_decode (ymsg, &device_name, &quantity, 
-                                      &units, &value, &scale, &tme);
-    if ( rv != 0 ) {
-        log_error("Can't decode the ymsg, ignore it");
+    m = bios_proto_decode (msg_p);
+    if ( !m ) {
+        log_error("Can't decode the biosproto, ignore it");
         goto free_mem_toto;
     }
 
+    tme = bios_proto_time (m);
     if(tme < 1)
         tme = ::time(NULL);
 
-    db_topic = std::string (quantity) + "@" + device_name; 
+    quantity = strdup (bios_proto_type (m));
+    device_name = strdup (bios_proto_element_src (m));
+    db_topic = std::string (quantity) + "@" + device_name;
     _time = (time_t) tme;
+
+    if (!strstr (bios_proto_value (m), ".")) {
+        value = string_to_int64 (bios_proto_value (m));
+        if (errno != 0)
+            goto free_mem_toto;
+    }
+    else {
+        uint8_t lscale = 0;
+        int32_t integer = 0;
+        if (!utils::math::stobiosf (bios_proto_value (m), integer, lscale))
+            goto free_mem_toto;
+        value = integer;
+        scale = lscale;
+    }
+
+    units = strdup (bios_proto_unit (m));
     persist::insert_into_measurement(
-            conn, db_topic.c_str(), value, (m_msrmnt_scale_t) scale, _time, units, device_name, c);
+            conn, db_topic.c_str(), value, scale, _time, units, device_name, c);
 free_mem_toto:
     //free resources
-    if(*ymsg)
-        ymsg_destroy(ymsg);
+    errno = 0;
+    bios_proto_destroy (&m);
+    zmsg_destroy(msg_p);
     FREE0 (device_name)
     FREE0 (quantity)
     FREE0 (units)
