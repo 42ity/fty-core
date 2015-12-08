@@ -98,7 +98,7 @@ void process_measurement(zmsg_t **msg_p, TopicCache& c) {
             goto free_mem_toto;
     }
     else {
-        uint8_t lscale = 0;
+        int8_t lscale = 0;
         int32_t integer = 0;
         if (!utils::math::stobiosf (bios_proto_value (m), integer, lscale))
             goto free_mem_toto;
