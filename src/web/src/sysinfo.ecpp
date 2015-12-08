@@ -204,7 +204,10 @@ int8_t access_auth_level;
                 std::vector <std::string> line_tokens;
                 cxxtools::split (" \t", item, std::back_inserter (line_tokens));
                 // status
-                rv = shared::output ({"systemctl", "show", line_tokens.at (0).c_str ()}, output, cmderr);
+		if (line_tokens.at (0).compare ("*") == 0) 
+	            rv = shared::output ({"systemctl", "show", line_tokens.at (1).c_str ()}, output, cmderr);
+		else
+	            rv = shared::output ({"systemctl", "show", line_tokens.at (0).c_str ()}, output, cmderr);
                 if (rv == 0) {
 </%cpp>
 %                   if (first) {
