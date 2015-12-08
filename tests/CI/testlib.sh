@@ -24,8 +24,8 @@
 #           which can be sourced to interactive shell
 #           You can 'export CITEST_QUICKFAIL=yes' to abort on first failure
 #           Tests start with a `test_it "testname"` to initialize, and end
-#           with a `print_results $?` to account successes and failures.
-#           When doing TDD, you can use `print_results -$?` for tests that
+#           with a `print_result $?` to account successes and failures.
+#           When doing TDD, you can use `print_result -$?` for tests that
 #           are expected/allowed to fail but this should not cause overall
 #           test-suite error (testing stuff known as not implemented yet).
 
@@ -60,6 +60,16 @@ fi
 
 _TOKEN_=""
 TESTLIB_FORCEABORT=no
+# this is a shared variable between test_it and print_result
+# that should not allow to call
+#   print_result before apropriate test_it
+#   test_it before previous result was printed with print_result
+# possible values:
+#   notest - test suite not yet started (zero test_it's called)
+#   notyet - a test_it() clause began a routine, but no result so far
+#   yes    - a print_result() completed a previous test routine and
+#            no new one was started yet; it is not a fatal error to
+#            call print_result() when in this state, but is a warning
 _testlib_result_printed=notest
 LOGMSG_PREFIX_TESTLIB="CI-TESTLIB-"
 # TNAME of the specific test as named by the test_it() argument
@@ -68,10 +78,10 @@ TNAME=""
 NAME="$0"
 
 # Numeric counters
-[ -z "${TESTLIB_COUNT_PASS-}" ] && TESTLIB_COUNT_PASS="0"
-[ -z "${TESTLIB_COUNT_SKIP-}" ] && TESTLIB_COUNT_SKIP="0"
-[ -z "${TESTLIB_COUNT_FAIL-}" ] && TESTLIB_COUNT_FAIL="0"
-[ -z "${TESTLIB_COUNT_TOTAL-}" ] && TESTLIB_COUNT_TOTAL="0"
+[ -z "${TESTLIB_COUNT_PASS-}" ] && TESTLIB_COUNT_PASS=0
+[ -z "${TESTLIB_COUNT_SKIP-}" ] && TESTLIB_COUNT_SKIP=0
+[ -z "${TESTLIB_COUNT_FAIL-}" ] && TESTLIB_COUNT_FAIL=0
+[ -z "${TESTLIB_COUNT_TOTAL-}" ] && TESTLIB_COUNT_TOTAL=0
 # String lists of space-separated single-token test names that failed
 [ -z "${TESTLIB_LIST_FAILED-}" ] && TESTLIB_LIST_FAILED=""
 [ -z "${TESTLIB_LIST_FAILED_IGNORED-}" ] && TESTLIB_LIST_FAILED_IGNORED=""
@@ -88,7 +98,14 @@ print_result() {
     # value is hardcoded as a failure (255).
     # The absolute(!) value of the exit-code should be passed to the
     # caller as this routine's exit-code.
-    [ "${_testlib_result_printed-}" = yes ] && return 0
+    if [ x"${_testlib_result_printed-}" = xyes ]; then
+        logmsg_warn "print_result() called before a new test_it() was started!"
+        return 0
+    fi
+    if [ x"${_testlib_result_printed-}" = xnotest ]; then
+        logmsg_warn "print_result() called before any test_it() was started!"
+        return 0
+    fi
     _testlib_result_printed=yes
     _code="$1"
     shift
@@ -127,6 +144,10 @@ print_result() {
     if [ "$_code" -eq 0 ]; then  # should include "-0" too
         echo " * PASSED"
         TESTLIB_COUNT_PASS="`expr $TESTLIB_COUNT_PASS + 1`"
+        TEMP_NUMBER="`expr $TESTLIB_COUNT_PASS - $TESTLIB_COUNT_TOTAL`"
+        if [ "$TEMP_NUMBER" -gt 0 ]; then
+            logmsg_error "WOW: TESTLIB_COUNT_PASS - TESTLIB_COUNT_TOTAL = $TESTLIB_COUNT_PASS - $TESTLIB_COUNT_TOTAL = $TEMP_NUMBER > 0 ! This should not happen!"
+        fi
         TESTLIB_LIST_PASSED="$TESTLIB_LIST_PASSED $TESTLIB_LASTTESTTAG"
         echo
         return 0
@@ -217,7 +238,9 @@ exit_summarizeTestlibResults() {
     TRAP_RES=$?
     # This would be a no-op if the test case previously started with a
     # test_it() has been already closed with its proper print_result()
-    print_result $TRAP_RES
+    if [ x"${_testlib_result_printed}" = xnotyet ]; then
+        print_result $TRAP_RES
+    fi
     set +e
     NUM_NOTFAILED="`expr $TESTLIB_COUNT_PASS + $TESTLIB_COUNT_SKIP`"
     # Do not doctor up the LOGMSG_PREFIX as these are rather results of the
