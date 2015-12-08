@@ -38,7 +38,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define AUTH_LEVEL_ERROR_EMPTY      -1  // Token was passed but empty
 /* Level <= error == no valid session exists, token not accepted */
 #define AUTH_LEVEL__ERROR           -1
-#define AUTH_LEVEL_ANONYMOUS        0   // No token was passed
+#define AUTH_LEVEL_ANONYMOUS        0   
 /* Level >= authorized == valid session exists */
 #define AUTH_LEVEL__AUTHORIZED      1
 #define AUTH_LEVEL_USER             1   // Identified as a minimal user
