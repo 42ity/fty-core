@@ -500,17 +500,15 @@ CSV_FILE_PATH="/usr/share/doc/ipc-packages.csv"
 rm -f ${CSV_FILE_PATH}
 touch ${CSV_FILE_PATH}
 dpkg-query -W -f='${db:Status-Abbrev};${source:Package};${Version};${binary:Package}\n' | grep '^i' | cut -d';' -f2,3,4 | sort -u > ./pkg-list.log
-for pkg_line in `cat ./pkg-list.log`
+while IFS=';' read SOURCE_PKG PKG_VERSION CURRENT_PKG
 do
-   CURRENT_PKG="`echo ${pkg_line} | cut -d';' -f3 | cut -d':' -f1`"
-   SOURCE_PKG="`echo ${pkg_line} | cut -d';' -f1`"
-   PKG_VERSION="`echo ${pkg_line} | cut -d';' -f2`"
-   grep "${SOURCE_PKG};${PKG_VERSION};" "${CSV_FILE_PATH}" 2>&1 1>/dev/null
+   CURRENT_PKG="`echo ${CURRENT_PKG} | cut -d':' -f1`"
+   grep -q "${SOURCE_PKG};${PKG_VERSION};" "${CSV_FILE_PATH}"
    if [ $? -eq 1 ]; then
-      echo "${SOURCE_PKG};${PKG_VERSION};/usr/share/doc/${CURRENT_PKG}/copyright" >> ${CSV_FILE_PATH}
+      echo "${SOURCE_PKG};${PKG_VERSION};/usr/share/doc/${CURRENT_PKG}/copyright" 2>/dev/null >> "${CSV_FILE_PATH}"
       [ ! -f "/usr/share/doc/${CURRENT_PKG}/copyright" ] && echo "Missing ${CURRENT_PKG}/copyright file!"
    fi
-done
+done < ./pkg-list.log
 rm -f ./pkg-list.log
 
 # Prepare the ccache (for development image type)
