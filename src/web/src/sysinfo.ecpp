@@ -21,357 +21,166 @@
  * \file sysinfo.ecpp
  * \author Jim Klimov <EvgenyKlimov@Eaton.com>
  * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \author Karol Hrdina <karolhrdina@eaton.com>
  * \brief Not yet documented file
  */
  #><%pre>
-#include <stdexcept>
-#include <iostream>
-#include <sstream>
-#include <fstream>
-#include <tntdb/connect.h>
-
-#include <cxxtools/regex.h>
-#include <cxxtools/jsondeserializer.h>
+#include <vector>
 #include <sys/utsname.h>
-
+#include <cxxtools/split.h>
+#include <cxxtools/regex.h>
 #include "auth_levels.h"
-#include "subprocess.h"
-#include "config.h"
-#include "utils.h"
 #include "utils_web.h"
-#include "asset_types.h"
-#include "dbpath.h"
-#include "assets.h"
-#include "cleanup.h"
-
-#ifdef DEBUG
-#include <exception>
-#endif
-
-static std::string chomp(std::string data) {
-	/* TODO: replace inner newlines by "\n" strings */
-	data.resize( data.find_last_not_of('\n')+1 );
-	return data;
-}
-
-static int output2(const shared::Argv& args, std::string& o, std::string& e) {
-    int ret = shared::output(args, o, e);
-    o = chomp(o);
-    e = chomp(e);
-    return ret;
-}
-
-#include "git_details_override.h"
-
+#include "subprocess.h"
+#include "log.h"
 </%pre>
 <%request scope="global">
 int8_t access_auth_level;
 </%request>
-<%cpp>
-
-#ifdef DEBUG
-        std::string access_auth_level_str;
-        try { // Temporary discardable output stream
-            std::ostringstream access_auth_level_os;
-            access_auth_level_os << (int)access_auth_level;
-            access_auth_level_str = access_auth_level_os.str();
-        } catch (const std::exception& e) {
-            access_auth_level_str = "decoding-error: " ;
-            access_auth_level_str += e.what();
-        }
-        access_auth_level_str = chomp(access_auth_level_str);
-
-        reply.setHeader( (std::string)"X-Auth-SysInfo: ",
-                (std::string)"access_auth_level=\"" +
-                access_auth_level_str + "\"");
-#endif // DEBUG
-
-</%cpp>
 {
-  "operating-system" : {
-<%cpp>
-	std::string cmdout;
-	std::string cmderr;
-	std::ostringstream cmderr_total;
-	static const std::string UNKNOWN = "unknown";
-	static const std::string UNAUTHORIZED = "unauthorized";
-	static const std::string AVAILABLE = "available";
-	int ret;
-
-</%cpp>
-<%cpp>
-	/* TODO: This currently relies on "systemd-detect-virt" -
-         * so what about OSes that do not have it? */
-
-	/* Detect container virtualization */
-    ret = output2({"/usr/bin/systemd-detect-virt", "-c"}, cmdout, cmderr);
-    if (ret!=0) {
-        cmderr_total << "=== Ran:\n" << "/usr/bin/systemd-detect-virt -c"
-                << "\n=== Got stderr ("<<ret<<"):\n" << cmderr << "\n";
-	if (cmderr=="" && cmdout=="none")
-		ret=0;
+    "operating-system" : {
+<%cpp>    
+    std::string output, cmderr;
+    int rv = shared::output ({"/usr/bin/systemd-detect-virt", "-c"}, output, cmderr);
+    if (rv != 0) {
+        output = "N/A";
     }
 </%cpp>
-    "container": "<$ ret == 0 ? cmdout : UNKNOWN $>",
+        <$$ utils::json::jsonify ("container", output) $>,
 <%cpp>
-	/* Detect VM virtualization */
-    ret = output2({"/usr/bin/systemd-detect-virt", "-v"}, cmdout, cmderr);
-    if (ret!=0) {
-        cmderr_total << "=== Ran:\n" << "/usr/bin/systemd-detect-virt -v"
-                << "\n=== Got stderr ("<<ret<<"):\n" << cmderr << "\n";
-	if (cmderr=="" && cmdout=="none")
-		ret=0;
+    rv = shared::output ({"/usr/bin/systemd-detect-virt", "-v"}, output, cmderr);
+    if (rv != 0) {
+        output = "N/A";
     }
 </%cpp>
-    "hypervisor": "<$ ret == 0 ? cmdout : UNKNOWN $>",
-    "uname": {
+        <$$ utils::json::jsonify ("hypervisor", output) $>,
 <%cpp>
     struct utsname u;
-    ret = uname(&u);
-    if (ret == -1) {
-        return HTTP_INTERNAL_SERVER_ERROR;
+    if (uname (&u) == -1) {
+        http_die ("internal-error", "uname() failed.");
     }
 </%cpp>
-      "sysname": "<$ (char*) u.sysname $>",
-      "nodename" : "<$ (char*) u.nodename $>",
-      "release": "<$ (access_auth_level<=AUTH_LEVEL_ANONYMOUS) ? UNAUTHORIZED : (char*) u.release $>",
-      "version": "<$ (access_auth_level<=AUTH_LEVEL_ANONYMOUS) ? UNAUTHORIZED : (char*) u.version $>",
-      "machine": "<$ (char*) u.machine $>"
-    }
-  },
-  "$BIOS": {
-    "packages": [
-      { "package-name": "<$ PACKAGE $>",
-        "package-version": "<$ PACKAGE_VERSION $>",
-        "package-bugreport": "<$ PACKAGE_BUGREPORT $>",
-        "package-url": "<$ PACKAGE_URL $>",
-        "vendor": "<$ PACKAGE_VENDOR $>"
-<%cpp>
-      /* Note that PACKAGE_VENDOR above is NOT an automake default variable,
-       * we define it locally in our project configuration. */
-
-      if (access_auth_level>=AUTH_LEVEL_POWERUSER) {
-#ifdef HAVE_PACKAGE_GIT
-</%cpp>
-      , "source-repo": {
-          "scm": "git",
-          "origin": "<$ PACKAGE_GIT_ORIGIN_ESCAPED $>",
-          "branch": "<$ PACKAGE_GIT_BRANCH_ESCAPED $>",
-          "commit": "<$ PACKAGE_GIT_HASH_L_ESCAPED $>",
-          "commit-timestamp": "<$ PACKAGE_GIT_TSTAMP_ESCAPED $>",
-          "commit-timestamp-iso8601": "<$ PACKAGE_GIT_TSTAMP_ISO8601_ESCAPED $>",
-          "status": "<$$ PACKAGE_GIT_STATUS_ESCAPED $>"
+        "uname": {
+            <$$ utils::json::jsonify ("sysname", (char*) u.sysname) $>,
+            <$$ utils::json::jsonify ("nodename", (char*) u.nodename) $>,
+            <$$ utils::json::jsonify ("release", (access_auth_level<=AUTH_LEVEL_ANONYMOUS) ? "UNAUTHORIZED" : (char*) u.release) $>,
+            <$$ utils::json::jsonify ("version", (access_auth_level<=AUTH_LEVEL_ANONYMOUS) ? "UNAUTHORIZED" : (char*) u.version) $>,
+            <$$ utils::json::jsonify ("machine", (char*) u.machine) $>
         }
-<%cpp>
-#endif // HAVE_PACKAGE_GIT
-#if defined(HAVE_PACKAGE_BUILD_HOST) || defined(HAVE_PACKAGE_BUILD_TSTAMP)
-</%cpp>
-      , "build-info": {
-<%cpp>
-# ifdef HAVE_PACKAGE_BUILD_HOST
-</%cpp>
-          "build-host-name": "<$ PACKAGE_BUILD_HOST_NAME_ESCAPED $>",
-          "build-host-os": "<$ PACKAGE_BUILD_HOST_OS_ESCAPED $>",
-          "build-host-uname": "<$ PACKAGE_BUILD_HOST_UNAME_ESCAPED $>",
-<%cpp>
-# endif // HAVE_PACKAGE_BUILD_HOST
-
-	std::string BTS = "", BTS_ISO = "";
-# if defined(HAVE_PACKAGE_BUILD_TSTAMP)
-	BTS = PACKAGE_BUILD_TSTAMP_ESCAPED;
-	BTS_ISO = PACKAGE_BUILD_TSTAMP_ISO8601_ESCAPED;
-# endif // HAVE_PACKAGE_BUILD_TSTAMP
-	if (BTS=="") {
-		BTS = UNKNOWN;
-	}
-	if (BTS_ISO=="") {
-		BTS_ISO = UNKNOWN;
-	}
-</%cpp>
-          "build-timestamp": "<$ BTS $>",
-          "build-timestamp-iso8601": "<$ BTS_ISO $>"
-        }
-<%cpp>
-#endif // HAVE_PACKAGE_BUILD_*: HOST and/or TSTAMP
-      } // if (access_auth_level>=AUTH_LEVEL_POWERUSER)
-</%cpp>
-      }
-    ],
-    "main-process-status" :
-<%cpp>
-      if (access_auth_level<=AUTH_LEVEL_ANONYMOUS) {
-</%cpp>
-        "<$ UNAUTHORIZED $>"
-<%cpp>
-      } else { // (access_auth_level>=AUTH_LEVEL_USER)
-          /* The monster shell below should be parsable by about any POSIX shell
-             I am less sure about capabilities of "ps" programs in constrained
-             environments and/or other OSes... however for a predefined target
-             platform this should do :) */
-          
-          /* TODO: This implementation is considered as a temporary solution,
-           * just so we don't use random fake data in the lists below - but
-           * rather have something realistic. The "correct" solution would be
-           * to check the state of "systemd" units or equivalent services
-           * (server OS dependent) and report those details rather than to
-           * parse "ps" outputs like this. */
-
-          // A glob usable by shell "case" and "egrep":
-          // NOTE: THIS IS NOT A REGULAR EXPRESSION !!!
-          std::string interesting_basenames;
-          interesting_basenames = "mysqld|upsd|saslauthd|tntnet";
-
-          // Add the $BIOS daemon names
-          interesting_basenames += "|agent-dbstore|agent-cm";
-          interesting_basenames += "|agent-nut";
-          interesting_basenames += "|agent-alert|agent-alert-smtp";
-          interesting_basenames += "|agent-inventory|server-agent";
-#ifdef DEBUG
-          // Add libtoolized $BIOS daemon names for dev-testing
-          interesting_basenames += "|lt-agent-dbstore|lt-agent-cm";
-          interesting_basenames += "|lt-agent-nut";
-          interesting_basenames += "|lt-agent-alert|lt-agent-alert-smtp";
-          interesting_basenames += "|lt-agent-inventory|lt-server-agent";
-#endif
-
-          //interesting_basenames += "|";
-          //testing-hack// interesting_basenames = "abc";
-          //testing-hack// interesting_basenames = "netm*|upsd*|my*";
-
-          std::ostringstream psgrep;
-          /* TODO: Consider escaping the $ARGS, possibly $CMD and maybe others */
-          psgrep  << "NF=\"\"; PSLIST=\"`/bin/ps -ewww -o "
-                  << "pid,ppid,user,tty,state,time,size,pcpu,pmem,command`\"; "
-                  << "echo -E \"$PSLIST\" | ( while read _P _PP _U _TTY _STATE"
-                  << " _TIMECPU _SIZE _PCPU _PMEM CMD ARGS; do "
-                  << "case \"`basename \"$CMD\" 2>/dev/null`\" in "
-                  << interesting_basenames <<") echo \"$NF\"\'{"
-                  << "\"process\":\"\'\"$CMD\"\'\",\"args\":\"\'\"$ARGS\"\'\","
-                  << "\"process-basename\":\"\'\"`basename \"$CMD\"`\"\'\","
-                  << "\"process-pid\":\'\"$_P\"\',\"parent-pid\":\'\"$_PP\"\',"
-                  << "\"user-name\":\"\'\"$_U\"\'\",\"tty\":\"\'\"$_TTY\"\'\","
-                  << "\"process-state-raw\":\"\'\"$_STATE\"\'\","
-                  << "\"process-state\":\"\'\"`case \"$_STATE\" in "
-                  <<  "D*|R*|S*|T*|W*) echo running;; Z*) echo zombie;; "
-                  <<  "X*) echo dead;; *) echo " << UNKNOWN << " ; esac`\"\'\""
-                  << ",\"process-time-cpu\":\"\'\"$_TIMECPU\"\'\""
-                  << ",\"process-percent-cpu\":\"\'\"$_PCPU\"\'\""
-                  << ",\"process-percent-mem\":\"\'\"$_PMEM\"\'\""
-                  << ",\"process-mem-size\":\"\'\"$_SIZE\"\'\""
-                  << "}\'; NF=\",\"; esac; done; [ x\"$NF\" = x, ] )" ;
-
-          /* Use the PSLIST and "interesting_basenames" definition above to
-           * pick out the interesting processes that are not running now.
-           * Note that this requires that the "interesting_basenames" definition
-           * contains complete basenames separated by pipes (no asterisks)
-           * for output to be reasonable (e.g. "mysqld" is "notrunning", 
-           * not "mysql*" process is "notrunning" */
-          psgrep  << " && NF=,; IBN=\"" << interesting_basenames << "\";"
-                  << "IFS=\"|$IFS\"; export IFS; for CMDPAT in $IBN; do { "
-                  << "echo -E \"$PSLIST\" | ( while read _P _PP _U _TTY _STATE"
-                  << " _TIMECPU _SIZE _PCPU _PMEM CMD ARGS; do "
-                  << "case \"`basename \"$CMD\" 2>/dev/null`\" in "
-                  << " $CMDPAT) exit 0;; "
-                  << "esac; done; exit 1; ) || { echo \"$NF\"\'{"
-                  << "\"process\":\"\'\"$CMDPAT\"\'\""
-                  << ",\"process-basename\":\"\'\"`basename \"$CMDPAT\"`\"\'\""
-                  << ",\"process-pid\":-1"
-                  << ",\"process-state\":\"notrunning\""
-                  << "}\'; NF=\",\";} ; }; done" ;
-
-          ret = output2({"/bin/sh", "-c", psgrep.str()},
-                        cmdout, cmderr);
-          if (ret != 0 || cmdout == "") {
-              cmderr_total << "=== Ran:\n" << psgrep.str()
-                      << "\n=== Got stderr ("<<ret<<"):\n" << cmderr << "\n";
-</%cpp>
-        "<$ UNKNOWN $>"
-<%cpp>
-          } else { // ret == 0 and output is not empty
-</%cpp>
-        "<$ AVAILABLE $>"
-  , "main-process-details": [
-<$$ cmdout $>
-    ]
-<%cpp>
-          } // ret == 0
-      } // if (access_auth_level>=AUTH_LEVEL_USER)
-
-    // installation date
-    std::string installation_date = "N/A";
-    _scoped_char *accepted_license = accepted_license_file ();
-    if (!accepted_license) {
-        cmderr_total << "Error retrieving accepted license file location. accepted_license_file () failed.\n";
     }
-    else
-    try {
-        std::ifstream finput (accepted_license);
-        if (finput.is_open () && finput.good ()) {
-            // We assume the second line is license acceptance unix time
-            std::getline (finput, installation_date);
-            std::getline (finput, installation_date);
-            int64_t i64 = std::stoll (installation_date);
-            // TODO: we should probably check for time_t max/min, but hey!... ;)
-            char chtmp[64]; 
-            if (calendar_to_datetime ((time_t) i64, chtmp, 64) == -1) {
-                throw std::runtime_error ("calendar_to_datetime () failed.");
-            }
-            installation_date.assign (chtmp);
-        }
-        else {
-            installation_date = "License not accepted yet"; 
-            cmderr_total << "Accepted license file does not exist!\n";
-        }        
-    } catch (const std::exception& e) {
-        cmderr_total << "Exception caught: " << e.what () << std::endl;
-    }
-
-    // location
-    std::string location = "N/A";
-    bool do_break = false;
-    try {
-        tntdb::Connection conn = tntdb::connectCached(url);
-        db_reply <std::map <uint32_t, std::string>>
-        elements = persist::select_short_elements (conn, persist::asset_type::DATACENTER, persist::asset_subtype::N_A);
-        for (std::map<uint32_t, std::string>::const_iterator it = elements.item.cbegin(); it != elements.item.cend(); ++it) {
-            // it->first is element_id
-            std::map <std::string, std::pair<std::string, bool>> ext;
-            int rv = persist::select_ext_attributes (conn, it->first, ext); 
-            if (rv == -1) {
-                continue;
-            }
-            for (std::map <std::string, std::pair<std::string, bool>>::const_iterator it2 = ext.cbegin(); it2 != ext.cend (); ++it2) {
-                if (it2->first.compare ("address") == 0) {
-                    location = it2->second.first;
-                    do_break = true;
-                    break;
+<%cpp>
+    if (access_auth_level >= AUTH_LEVEL_POWERUSER) { 
+        rv = shared::output ({"dpkg", "--list"}, output, cmderr);
+        if (rv == 0) {
+</%cpp>
+,   "packages" : [
+<%cpp>
+            std::vector<std::string> tokens;
+            cxxtools::split ("\n", output, std::back_inserter (tokens));
+            // Strip first 5 lines
+            for (int i = 0; i < 5; i++)
+                tokens.erase (tokens.begin ());
+            bool first = true;
+            for (auto const& item : tokens) {
+                if (item.empty ())
+                    continue;
+                std::vector <std::string> line_tokens;
+                cxxtools::split (cxxtools::Regex("[ \t]+"), item, std::back_inserter (line_tokens));
+                std::string version, commit;
+                auto pos = line_tokens.at (2).find ("~");
+                if (pos != std::string::npos) {
+                    version = line_tokens.at (2).substr (0, pos);
+                    commit = line_tokens.at (2).substr (pos+1); 
                 }
+                else {
+                    version = line_tokens.at (2);
+
+                }
+// Note: Shall we desire maintainers name etc...
+//                rv = shared::output ({"dpkg", "status", line_tokens.at (1).c_str ()}, output, cmderr);
+//                if (rv == 0) {
+//                      Parse `dpkg status <package_name>` here
+//                }
+</%cpp>
+%               if (first) {
+            {
+%                   first = false;
+%               }
+%               else {
+          , {
+%               }
+                <$$ utils::json::jsonify ("package-name", line_tokens.at (1)) $>,
+                <$$ utils::json::jsonify ("package-version", version) $>,
+%               if (pos != std::string::npos) {
+              , <$$ utils::json::jsonify ("commit", commit) $>
+%               }
             }
-            if (do_break)
-                break;
-        }
-
-    } catch (const std::exception& e) {
-        cmderr_total << "Exception caught: " << e.what () << std::endl;
-    }
-
-</%cpp>
-  }
-  , "installation-date": "<$$ utils::json::escape (installation_date) $>"
-  , "location": "<$$ utils::json::escape (location) $>"
+%           }
+    ]
+%       }
 <%cpp>
-#ifdef DEBUG
+        rv = shared::output ({"systemctl", "list-units"}, output, cmderr);
+        if (rv == 0) {
 </%cpp>
-  , "auth-level": "<$$ access_auth_level_str $>"
+,   "processes" : [
 <%cpp>
-#endif // DEBUG
-#if (DEBUG>1)
+            std::vector<std::string> tokens;
+            cxxtools::split("\n", output, std::back_inserter (tokens));
+            // Strip first 1 lines
+            for (int i = 0; i < 1; i++)
+                tokens.erase (tokens.begin ());
+            // Strip last 7 lines
+            for (int i = 0; i < 7; i++)
+                tokens.erase (tokens.end ());
+            bool first = true;
+            for (auto const& item : tokens) {
+                if (item.empty ())
+                    continue;
+                std::vector <std::string> line_tokens;
+                cxxtools::split (" \t", item, std::back_inserter (line_tokens));
+                // status
+                rv = shared::output ({"systemctl", "show", line_tokens.at (0).c_str ()}, output, cmderr);
+                if (rv == 0) {
 </%cpp>
-  , "stderr-unescaped": "<$$ chomp(cmderr_total.str()) $>"
-<%cpp>
-#endif // DEBUG>1
-    /* If we've collected any errors, dump them here to tntnet's stderr or
-     * its configured errorLog (used in daemon mode only) or /dev/null ;) */
-    std::cerr << cmderr_total.str();
+%                   if (first) {
+            {
+%                       first = false;
+%                   }
+%                   else {
+          , { 
+%                   }
+                <$$ utils::json::jsonify ("unit", line_tokens.at (0)) $>
+<%cpp> 
+                    std::vector<std::string> status_tokens;
+                    cxxtools::split("\n", output, std::back_inserter(status_tokens));
+                    for (const auto& line : status_tokens) {
+                        if (line.empty ())
+                            continue;
+                        std::size_t found = line.find ("=");
+                        if (found == std::string::npos)
+                            continue;
+                        std::string key = line.substr (0, found);
+                        std::string value  = line.substr (found+1, std::string::npos);
 </%cpp>
+%                       if (key.compare ("LoadState") == 0) {
+              , <$$ utils::json::jsonify ("LoadState", value) $>             
+%                       }
+%                       else if (key.compare ("ActiveState") == 0) {
+              , <$$ utils::json::jsonify ("ActiveState", value) $>             
+%                       }
+%                       else if (key.compare ("UnitFileState") == 0) {
+              , <$$ utils::json::jsonify ("UnitFileState", value) $>             
+%                       }
+%                       else if (key.compare ("SubState") == 0) {
+              , <$$ utils::json::jsonify ("SubState", value) $>             
+%                       }
+%                       // Note: We can parse out more info here
+%                       // TODO: DECIDE if we want to parse out more info
+%                   } // for line
+            }
+%               } // if (rv == 0)
+%           } // for auto
+    ]
+%       }
+%   } // if (access_auth_level >= AUTH_LEVEL_POWERUSER)
 }
