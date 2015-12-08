@@ -57,7 +57,7 @@ def jobParams = [
   new StringParameterValue('BUILDMACHINE', buildmachine),
 ]
 
-
+count_good = 0;
 // Running other tests, it make sense to continue if some of them fail
 for(
     jobName in [
@@ -74,7 +74,8 @@ for(
         println "SKIPPED: Job $jobName is disabled, skipped";
     } else {
         result = lastbuild.getResult();
-            if ( result == Result.SUCCESS ) {
+        if ( result == Result.SUCCESS ) {
+            count_good++;
             print result.toString();
             println ", see " + lastbuild.getAbsoluteUrl() + " for details";
         } else  if ( result == Result.ABORTED ) {
@@ -93,3 +94,7 @@ println "=== Wrapping up the umbrella build:"
 println "* Build scheduled: " + build.getTimestamp().getTime().toString();
 println "* Build duration: " + build.getDurationString() + " (finishing now)";
 println ""
+
+if (count_good == 0 ) {
+    throw new Exception("NONE of the VTE jobs have succeeded, marking the build as FAILED");
+}
