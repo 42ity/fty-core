@@ -43,7 +43,7 @@ OUTPUT="`api_get_json /admin/sysinfo`"
 [ $? -eq 0 -a -n "$OUTPUT" ]
 print_result $?
 
-test_it "unauthorized installation-date"
+test_it "unauthorized sysinfo - installation-date"
 JPATH='"operating-system","installation-date"$'
 SYSINFO_PARSED="`echo "$OUTPUT" | ${JSONSH} -x="$JPATH"`"
 [ $? -eq 0 -a -n "$SYSINFO_PARSED" ]
@@ -55,18 +55,27 @@ SYSINFO_PARSED="`echo "$OUTPUT" | ${JSONSH} -x="$JPATH"`"
 [ $? -eq 0 -a -n "$SYSINFO_PARSED" ]
 print_result $?
 
-test_it "unauthorized sysinfo"
+test_it "unauthorized sysinfo - processes"
 JPATH='"operating-system","processes"$'
 SYSINFO_PARSED="`echo "$OUTPUT" | ${JSONSH} -x="$JPATH"`"
 [ $? -eq 0 -a -z "$SYSINFO_PARSED" ]
 print_result $?
 
+echo "***************************************************************************************************"
+echo "********* 2. sysinfo_get_auth=2_raw ***************************************************************"
+echo "***************************************************************************************************"
+
 test_it "authorized sysinfo"
 OUTPUT="`api_auth_get_json /admin/sysinfo`"
+[ $? -eq 0 -a -n "$OUTPUT" ]
+print_result $?
+
+test_it "authorized sysinfo - processes"
 JPATH='"operating-system","processes"$'
 SYSINFO_PARSED="`echo "$OUTPUT" | ${JSONSH} -x="$JPATH"`"
 [ $? -eq 0 -a -n "$SYSINFO_PARSED" ]
 print_result $?
+
 echo
 echo "###################################################################################################"
 echo "********* sysinfo-info.sh ******************************** END ************************************"
