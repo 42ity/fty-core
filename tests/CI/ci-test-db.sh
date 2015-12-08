@@ -89,8 +89,8 @@ sleep 1
 
 echo "-------------------- test-db2 --------------------"
 test_it "db_prepare_data"
-loaddb_file "$DB_BASE" \
-&& loaddb_file "$DB_DATA"
+#done by script above# loaddb_file "$DB_BASE"
+loaddb_file "$DB_DATA"
 CITEST_QUICKFAIL=yes print_result $? "Can not prepare the database"
 
 test_it test-db2
@@ -122,7 +122,7 @@ test_it test-db-asset-crud
 print_result $?
 sleep 1
 
-for T in power location ; do
+for T in location power ; do
     case "$T" in
         power) P="$DB_TOPOP" ;;
         location) P="$DB_TOPOL" ;;
