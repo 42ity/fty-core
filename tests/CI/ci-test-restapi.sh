@@ -222,10 +222,10 @@ kill_daemons() {
   test_web_process || exit
 
 test_web() {
-    echo "============================================================"
-    /bin/bash tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" "$@"
+    echo "==== Calling test_web.sh ==================================="
+    /bin/bash "${CHECKOUTDIR}"/tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" "$@"
     RESULT=$?
-    echo "============================================================"
+    echo "==== test_web RESULT: ($RESULT) =================================="
     return $RESULT
 }
 
