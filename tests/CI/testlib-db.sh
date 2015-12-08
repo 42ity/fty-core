@@ -39,10 +39,19 @@ DB_BASE="$DB_LOADDIR/initdb.sql"
 DB_DATA="$DB_LOADDIR/load_data.sql"
 DB_DATA_CURRENT="$DB_LOADDIR/current_data.sql"
 DB_DATA_TESTREST="$DB_LOADDIR/load_data_test_restapi.sql"
-DB_TOPOP="$DB_LOADDIR/power_topology.sql"
-DB_TOPOL="$DB_LOADDIR/location_topology.sql"
-DB_RACK_POWER="$DB_LOADDIR/rack_power.sql"
-DB_DC_POWER="$DB_LOADDIR/dc_power.sql"
+
+DB_TOPOP_NAME="power_topology.sql"
+DB_TOPOP="$DB_LOADDIR/$DB_TOPOP_NAME"
+
+DB_TOPOL_NAME="location_topology.sql"
+DB_TOPOL="$DB_LOADDIR/$DB_TOPOL_NAME"
+
+DB_RACK_POWER_NAME="rack_power.sql"
+DB_RACK_POWER="$DB_LOADDIR/$DB_RACK_POWER_NAME"
+
+DB_DC_POWER_NAME="dc_power.sql"
+DB_DC_POWER="$DB_LOADDIR/$DB_DC_POWER_NAME"
+
 DB_DC_POWER_UC1="$DB_LOADDIR/ci-DC-power-UC1.sql"
 DB_CRUD="$DB_LOADDIR/crud_test.sql"
 DB_OUTAGE="$DB_LOADDIR/test_outage.sql"
@@ -81,7 +90,7 @@ do_killdb() {
             logmsg_warn "Trying to kill all connections to the ${DATABASE} database; some clients can become upset - it is their bug then!"
             sut_run 'mysql --disable-column-names -s -e "SHOW PROCESSLIST" | grep -vi PROCESSLIST | awk '"'\$4 ~ /$DATABASE/ {print \$1}'"' | while read P ; do mysqladmin kill "$P" || do_select "KILL $P" ; done' || KILLDB_RES=$?
         fi
-        DATABASE=mysql do_select "DROP DATABASE ${DATABASE}" || \
+        DATABASE=mysql do_select "DROP DATABASE if exists ${DATABASE}" || \
         sut_run "mysqladmin drop -f ${DATABASE}" || \
         { KILLDB_RES=$? ; logmsg_error "Failed to DROP DATABASE" ; }
         sleep 1
@@ -119,6 +128,7 @@ do_loaddb_list() {
     for data in "$@" ; do
         logmsg_info "Importing $data ..."
         loaddb_file "$data" || return $?
+        logmsg_info "file $data applied OK"
     done
     return 0
 }
@@ -131,6 +141,10 @@ loaddb_list() {
         echo "==========================================="
         echo "$LOADDB_OUT"
         echo "==========================================="
+    else
+        for data in "$@" ; do
+            logmsg_info "file $data applied OK"
+        done
     fi
     return $LOADDB_RES
 }
@@ -172,6 +186,28 @@ loaddb_topo_pow() {
     loaddb_sampledata && \
     loaddb_list "$DB_TOPOP" || return $?
     logmsg_debug "Database schema and data should have been initialized at this point: for topology-power tests"
+    return 0
+}
+
+loaddb_rack_power() {
+    echo "--------------- reset db: rack-power -------------"
+    loaddb_initial || return $?
+    for data in "$DB_RACK_POWER"; do
+        logmsg_info "Importing $data ..."
+        loaddb_file "$data" || return $?
+    done
+    logmsg_info "Database schema and data should have been initialized at this point: for rack-power tests"
+    return 0
+}
+
+loaddb_dc_power() {
+    echo "--------------- reset db: dc-power -------------"
+    loaddb_initial || return $?
+    for data in "$DB_DC_POWER"; do
+        logmsg_info "Importing $data ..."
+        loaddb_file "$data" || return $?
+    done
+    logmsg_info "Database schema and data should have been initialized at this point: for dc-power tests"
     return 0
 }
 
