@@ -162,11 +162,11 @@ sut_run "testsaslauthd -u '$BIOS_USER' -p '$BIOS_PASSWD' -s '$SASL_SERVICE'" && 
 # ***** FUNCTIONS *****
     # *** starting the testcases
 test_web() {
-    echo "============================================================"
-    /bin/bash $CHECKOUTDIR/tests/CI/vte-test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" \
+    echo "==== Calling vte-test_web.sh ==============================="
+    /bin/bash "${CHECKOUTDIR}"/tests/CI/vte-test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" \
         -s "$SASL_SERVICE" -sh "$SUT_HOST" -su "$SUT_USER" -sp "$SUT_SSH_PORT" "$@"
     RESULT=$?
-    echo "==== RESULT: ($RESULT) ==========================================="
+    echo "==== test_web RESULT: ($RESULT) =================================="
     return $RESULT
 }
 
