@@ -591,8 +591,6 @@ SUFFIXES=.ecpp .gif .jpg .css .js .cpp
 # Not-including the build *.cpp into dist is tricky, but does not matter much.
 EXTRA_DIST +=				$(top_srcdir)/src/web/src/*.ecpp
 
-src/web/src/sysinfo.cpp: src/include/git_details_override.h
-
 .ecpp.cpp:
 	${ECPPC} ${ECPPFLAGS} ${ECPPFLAGS_CPP} -o $@ $<
 .gif.cpp:
