@@ -151,6 +151,8 @@ uint16_t string_to_uint16( const char *value );
 int8_t string_to_int8( const char *value );
 uint8_t string_to_uint8( const char *value );
 
+double string_to_double (const char *value);
+
 // inspired by https://gcc.gnu.org/onlinedocs/gcc/Integer-Overflow-Builtins.html#Integer-Overflow-Builtins
 bool addi32_overflow(int32_t a, int32_t b, int32_t *res);
 

@@ -61,6 +61,13 @@
       <method>(POST|PUT)</method>
     </mapping>
 
+    <!-- alerts/activelist -->
+    <mapping>
+        <target>alert_list@bios_web</target>
+        <method>GET</method>
+        <url>^/api/v1/alerts/activelist(\?[^/]+)?$</url>
+    </mapping>
+
     <!-- alerts/ack -->
     <mapping>
         <target>alert_ack@bios_web</target>
@@ -173,7 +180,6 @@
     <!-- Asset import -->
     <mapping>
       <target>asset_import@bios_web</target>
-      <method>POST</method>
       <url>^/api/v1/asset/import.*</url>
     </mapping>
 

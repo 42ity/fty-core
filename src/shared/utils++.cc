@@ -16,6 +16,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 #include <sstream>
+#include <limits>
+#include <cmath>
 
 #include "utils++.h"
 
@@ -31,6 +33,85 @@ void dtos (double number, std::streamsize precision, std::string& result) {
     stream << number;
     result.assign (stream.str ());
 }
+
+bool 
+stobiosf (const std::string& string, int32_t& integer, int8_t& scale) {
+    // Note: Shall performance __really__ become an issue, consider
+    // http://stackoverflow.com/questions/1205506/calculating-a-round-order-of-magnitude
+    if (string.empty ())
+        return false;
+
+    // See if string is encoded double
+    size_t pos = 0;
+    double temp = 0;
+    try {
+        temp = std::stod (string, &pos);
+    }
+    catch (...) {
+        return false;
+    }
+    if (pos != string.size () || std::isnan (temp) || std::isinf (temp)) {
+        return false;
+    }
+
+    // parse out the string
+    std::string integer_string, fraction_string;
+    int32_t integer_part = 0, fraction_part = 0;
+    std::string::size_type comma = string.find (".");
+    bool minus = false;
+
+    integer_string = string.substr (0, comma);
+    try {
+        integer_part = std::stoi (integer_string);
+    }
+    catch (...) {
+        return false;
+    }
+    if (integer_part < 0)
+        minus = true;
+    if (comma ==  std::string::npos) {
+        scale = 0;
+        integer = integer_part;
+        return true;
+    }
+    fraction_string = string.substr (comma+1);
+    // strip zeroes from right
+    while (!fraction_string.empty ()  && fraction_string.back () == 48) {
+        fraction_string.resize (fraction_string.size () - 1);
+    }
+    if (fraction_string.empty ()) {
+        scale = 0;
+        integer = integer_part;
+        return true;
+    }
+    std::string::size_type fraction_size = fraction_string.size ();
+    try {
+        fraction_part = std::stoi (fraction_string);
+    }
+    catch (...) {
+        return false;
+    }
+
+    int64_t sum = integer_part;
+    for (std::string::size_type i = 0; i < fraction_size; i++) {
+        sum = sum * 10;
+    }
+    if (minus)
+        sum = sum - fraction_part;
+    else
+        sum = sum + fraction_part;
+    
+    if ( sum > std::numeric_limits<int32_t>::max ()) {
+        return false;
+    }
+    if (fraction_size - 1 > std::numeric_limits<int8_t>::max ()) {
+        return false;
+    }
+    scale = -fraction_size;
+    integer = static_cast <int32_t> (sum);
+    return true;
+}
+
 
 } // namespace utils::math
 

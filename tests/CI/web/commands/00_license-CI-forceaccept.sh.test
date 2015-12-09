@@ -108,12 +108,7 @@ else
         RES1=$?
         print_result -$RES1
 
-        test_it "change_password_back_restapi"
-        BIOS_PASSWD="$NEW_BIOS_PASSWD" api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$NEW_BIOS_PASSWD"'", "new_passwd" : "'"$BIOS_PASSWD"'" }'
-        RES2=$?
-        print_result -$RES2
-
-        if [ $RES1 = 0 ] && [ $RES2 != 0 ] ; then
+        if [ $RES1 = 0 ] ; then
             test_it "change_password_back_lowlevel"
             logmsg_info "Trying to set the default user password (which did match earlier) so we can accept the license and go on"
             sut_run "( echo "${BIOS_PASSWD}"; echo "${BIOS_PASSWD}"; ) | passwd ${BIOS_USER}"

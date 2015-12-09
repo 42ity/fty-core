@@ -49,6 +49,38 @@ s_safe_str(const char* s) {
     return s ? s : "<null>";
 }
 
+static void
+s_metric_store(zsock_t *pipe, void* args)
+{
+    char* endpoint = (char*) args;
+
+    mlm_client_t *client = mlm_client_new ();
+    mlm_client_connect (client, endpoint, 1000, "metric-store");
+    mlm_client_set_consumer(client, "METRICS", ".*");
+
+    zpoller_t *poller = zpoller_new (pipe, mlm_client_msgpipe (client), NULL);
+
+    persist::TopicCache topic_cache{256};
+
+    zsock_signal (pipe, 0);
+
+    while (!zsys_interrupted) {
+
+        void * which = zpoller_wait (poller, -1);
+
+        if (!which || which == pipe)
+            break;
+
+        zmsg_t *msg = mlm_client_recv (client);
+        persist::process_measurement(&msg, topic_cache);
+
+        zmsg_destroy (&msg);
+    }
+
+    zpoller_destroy (&poller);
+    mlm_client_destroy (&client);
+}
+
 #define _s s_safe_str
 
 int main (int argc, char *argv []) {
@@ -66,6 +98,9 @@ int main (int argc, char *argv []) {
         url = argv[2];
     }
 
+    // create actor storing measurements
+    zactor_t *actor = zactor_new (s_metric_store, (void*) addr);
+
     // Create a client
     bios_agent_t *client = bios_agent_new(addr, BIOS_AGENT_NAME_DB_MEASUREMENT);
     if(!client) {
@@ -73,11 +108,7 @@ int main (int argc, char *argv []) {
         return 1;
     }
 
-    persist::TopicCache c{256};
-
-    // We are listening for measurements
-    bios_agent_set_consumer(client, bios_get_stream_main(), ".*"); // to be dropped onc we migrate to multiple streams
-    bios_agent_set_consumer(client, bios_get_stream_measurements(), ".*");
+    bios_agent_set_consumer(client, bios_get_stream_main(), ".*");
     while(!zsys_interrupted) {
 
         _scoped_ymsg_t *in = bios_agent_recv(client);
@@ -127,12 +158,6 @@ int main (int argc, char *argv []) {
                 char* out_subj = NULL;
                 persist::process_alert(&out, &out_subj, in,bios_agent_subject(client));
             }
-            else if ( ( streq (stream, bios_get_stream_measurements())) ||
-                 ( streq (stream, bios_get_stream_main()) ) ) {
-                // New measurements publish
-                std::string topic = bios_agent_subject(client);
-                persist::process_measurement(topic, &in, c);
-            }
             else {
                 log_warning("Unsupported stream '%s' for STREAM DELIVER", stream);
             }
@@ -144,6 +169,7 @@ int main (int argc, char *argv []) {
         ymsg_destroy (&in);
     }
 
+    zactor_destroy (&actor);
     bios_agent_destroy (&client);
     log_close();
     return 0;
