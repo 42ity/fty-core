@@ -38,9 +38,21 @@ SYSTEMCTL_UNITS="networking mysql ntp saslauthd malamute                \
 
 SYSTEMCTL="/bin/systemctl"
 
-if [ "x$1" = "xlist-units" ]; then
-    exec $SYSTEMCTL "list-units"
-fi
+case "$1" in
+    list-units|--all|-a)
+        SYSTEMCTL_ARGS=""
+        while [ $# -gt 0 ]; do
+            case "$1" in
+                list-units|--all|-a|--full|-l)
+                    SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
+                *) echo "Action not allowed" >&2; exit 1;;
+            esac
+            shift
+        done
+        exec $SYSTEMCTL $SYSTEMCTL_ARGS
+        ;;
+esac
+
 for unit in ${SYSTEMCTL_UNITS}; do
     for cmd in ${SYSTEMCTL_COMMANDS}; do
         if [ "x$cmd" = "x$1" ] && ( \
@@ -50,5 +62,5 @@ for unit in ${SYSTEMCTL_UNITS}; do
         fi
     done
 done
-echo "Action not allowed"
+echo "Action not allowed" >&2
 exit 1
