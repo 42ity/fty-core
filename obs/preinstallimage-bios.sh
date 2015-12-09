@@ -504,7 +504,7 @@ dpkg-query -W -f='${db:Status-Abbrev};${source:Package};${Version};${binary:Pack
 while IFS=';' read SOURCE_PKG PKG_VERSION CURRENT_PKG
 do
    CURRENT_PKG="`echo ${CURRENT_PKG} | cut -d':' -f1`"
-   grep -q "${SOURCE_PKG};${PKG_VERSION};" "${CSV_FILE_PATH}"
+   grep -q "${SOURCE_PKG};${PKG_VERSION};" "${CSV_FILE_PATH}" || \
    if [ $? -eq 1 ]; then
       echo "${SOURCE_PKG};${PKG_VERSION};/usr/share/doc/${CURRENT_PKG}/copyright" 2>/dev/null >> "${CSV_FILE_PATH}"
       [ ! -f "/usr/share/doc/${CURRENT_PKG}/copyright" ] && echo "Missing ${CURRENT_PKG}/copyright file!"
