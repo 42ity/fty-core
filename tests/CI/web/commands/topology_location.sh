@@ -26,16 +26,13 @@ echo "********* topology_location.sh ********************* START ***************
 echo "###################################################################################################"
 echo
 
+echo "***************************************************************************************************"
+echo "********* Prerequisites ***************************************************************************"
+echo "***************************************************************************************************"
+
 # Assumption: initdb + load_data + location_topology files are uploaded.
-# So, make sure this is  true;
-DB_INIT_topology_location="initdb.sql"
-DB_TOPOL_topology_location="location_topology.sql"
-DB_LOAD_DATA_topology_location="load_data.sql"
-DB_LOADDIR=$BUILDSUBDIR/tools
-loaddb_file "$DB_LOADDIR/$DB_INIT_topology_location" || exit $?
-#load_data should be first, as we want elements to ave ids starting from 1
-loaddb_file "$DB_LOADDIR/$DB_LOAD_DATA_topology_location" || exit $?
-loaddb_file "$DB_LOADDIR/$DB_TOPOL_topology_location" || exit $?
+# So, make sure this is true:
+init_script_topo_loc || exit $?
 
 echo "********* topology_location.sh ********************************************************************"
 echo "********* 1. From_top_but_not_recursive ***********************************************************"
@@ -164,7 +161,7 @@ print_result $?
 curlfail_pop
 
 echo "********* topology_location.sh ********************************************************************"
-echo "********* 15. End_7032_and_recursive=no_and_filter_rows ******************************************"
+echo "********* 15. End_7032_and_recursive=no_and_filter_rows *******************************************"
 echo "***************************************************************************************************"
 test_it "End_7032_and_recursive=no_and_filter_rows"
 curlfail_push_expect_noerrors

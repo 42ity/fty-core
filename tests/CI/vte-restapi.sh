@@ -30,9 +30,9 @@
     # *** Must run as root without using password ***
     # *** BIOS image must be installed and running on SUT ***
     # *** SUT port and SUT name should be set properly (see below) ***
-    # *** tool directory with initdb.sql load_data.sql power_topology.sql and location_topology.sql present on MS ***
+    # *** directory with initdb.sql load_data.sql power_topology.sql and location_topology.sql present on MS ***
     # *** tests/CI directory (on MS) contains weblib.sh (api_get_json and CURL functions needed) ***
-    # *** tests/CI/web directory containing results, commands and log subdirectories with the proper content 
+    # *** tests/CI/web directory containing results, commands and log subdirectories with the proper content
 
 usage(){
     echo "Usage: $(basename $0) [options...] [test_name...]"
@@ -106,18 +106,15 @@ SUT_IS_REMOTE=yes
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 determineDirs_default || true
+. "`dirname $0`"/testlib.sh || die "Can not include common test script library"
+. "`dirname $0`"/testlib-db.sh || die "Can not include database test script library"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+[ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
+[ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
 
 
 # ***** GLOBAL VARIABLES *****
 RESULT=0
-DB_LOADDIR="$CHECKOUTDIR/tools"
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_TOPOP="power_topology.sql"
-DB_TOPOL="location_topology.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
 
 # Set up weblib test engine preference defaults for automated CI tests
 [ -z "$WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT" ] && \
@@ -165,43 +162,43 @@ sut_run "testsaslauthd -u '$BIOS_USER' -p '$BIOS_PASSWD' -s '$SASL_SERVICE'" && 
 # ***** FUNCTIONS *****
     # *** starting the testcases
 test_web() {
-    echo "============================================================"
-    /bin/bash $CHECKOUTDIR/tests/CI/vte-test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" \
+    echo "==== Calling vte-test_web.sh ==============================="
+    /bin/bash "${CHECKOUTDIR}"/tests/CI/vte-test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" \
         -s "$SASL_SERVICE" -sh "$SUT_HOST" -su "$SUT_USER" -sp "$SUT_SSH_PORT" "$@"
     RESULT=$?
-    echo "==== RESULT: ($RESULT) ==========================================="
+    echo "==== test_web RESULT: ($RESULT) =================================="
     return $RESULT
 }
 
     # *** load default db setting
-loaddb_default() {
+ci_loaddb_default() {
     echo "--------------- reset db: default ----------------"
-    loaddb_file "$DB_LOADDIR/$DB_BASE" && \
-    loaddb_file "$DB_LOADDIR/$DB_ASSET_TAG_NOT_UNIQUE" && \
-    loaddb_file "$DB_LOADDIR/$DB_DATA" && \
-    loaddb_file "$DB_LOADDIR/$DB_DATA_TESTREST"
+    loaddb_file "$DB_BASE" && \
+    loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
+    loaddb_file "$DB_DATA" && \
+    loaddb_file "$DB_DATA_TESTREST"
 }
     # *** start the default set of TC
 test_web_default() {
-    loaddb_default && \
+    ci_loaddb_default && \
     test_web "$@"
 }
 
     # *** start the power topology set of TC
 test_web_topo_p() {
     echo "----------- reset db: topology : power -----------"
-    loaddb_file "$DB_LOADDIR/$DB_BASE" && \
-    loaddb_file "$DB_LOADDIR/$DB_ASSET_TAG_NOT_UNIQUE" && \
-    loaddb_file "$DB_LOADDIR/$DB_TOPOP" && \
+    loaddb_file "$DB_BASE" && \
+    loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
+    loaddb_file "$DB_TOPOP" && \
     test_web "$@"
 }
 
     # *** start the location topology set of TC
 test_web_topo_l() {
     echo "---------- reset db: topology : location ---------"
-    loaddb_file "$DB_LOADDIR/$DB_BASE" && \
-    loaddb_file "$DB_LOADDIR/$DB_ASSET_TAG_NOT_UNIQUE" && \
-    loaddb_file "$DB_LOADDIR/$DB_TOPOL" && \
+    loaddb_file "$DB_BASE" && \
+    loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
+    loaddb_file "$DB_TOPOL" && \
     test_web "$@"
 }
 

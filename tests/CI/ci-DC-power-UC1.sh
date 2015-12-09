@@ -27,25 +27,29 @@
 #   INSTALLDIR should be set as the installation directory (make DESTDIR install)
 #
 
-SQL_INIT="initdb.sql"
-SQL_LOAD="ci-DC-power-UC1.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-XML_TNTNET="tntnet.xml"
-
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 NEED_BUILDSUBDIR=no determineDirs_default || true
 . "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+[ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
+[ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
 
+
+DB_LOADDIR="$CHECKOUTDIR/database/mysql"
+
+DB_BASE="$DB_LOADDIR/initdb.sql"
+DB_DC_POWER_UC1="$DB_LOADDIR/ci-DC-power-UC1.sql"
+DB_ASSET_TAG_NOT_UNIQUE="$DB_LOADDIR/initdb_ci_patch.sql"
+XML_TNTNET="tntnet.xml"
 
 # Disable intermediate failures due to CURL (there are currently too few tests
 # here to care), and the weblib infrastructure like test_it()/print_result()
 # is not used here yet anyway
 TESTWEB_CURLFAIL=no
 
-[ "x$INSTALLDIR" = "x" ] && INSTALLDIR=$CHECKOUTDIR/Installation
+[ "x$INSTALLDIR" = "x" ] && INSTALLDIR="$CHECKOUTDIR/Installation"
 logmsg_info "Installation directory : $INSTALLDIR"
 
 CFGDIR=""
@@ -128,36 +132,28 @@ create_ups_device $UPS3 1200
 
 # drop and fill the database
 fill_database(){
-    if [ -f "$CHECKOUTDIR/tools/$SQL_INIT" ] ; then
-        loaddb_file "$CHECKOUTDIR/tools/$SQL_INIT"
-    else
-        die "$SQL_INIT not found"
-    fi
-    if [ -f "$CHECKOUTDIR/tools/$DB_ASSET_TAG_NOT_UNIQUE" ] ; then
-        loaddb_file "$CHECKOUTDIR/tools/$DB_ASSET_TAG_NOT_UNIQUE"
-    else
-        die "$DB_ASSET_TAG_NOT_UNIQUE not found"
-    fi
-    if [ -f "$CHECKOUTDIR/tools/$SQL_LOAD" ] ; then
-        loaddb_file "$CHECKOUTDIR/tools/$SQL_LOAD"
-    else
-        die "$SQL_LOAD not found"
-    fi
+    for SQLFILE in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DC_POWER_UC1" ; do
+        if [ -s "$SQLFILE" ]; then
+            loaddb_file "$SQLFILE" || die "Error importing $SQLFILE"
+        else
+            die "`basename "$SQLFILE"` not found"
+        fi
+    done
 }
 
 # start built daemons as a subprocess
 start_bios_daemons(){
     # Kill existing process
     for d in agent-dbstore agent-nut ; do
-        killall -KILL $d lt-$d || true
+        killall -KILL "$d" "lt-$d" || true
     done
     # start agent-dbstore
     for d in agent-dbstore agent-nut ; do
-    if [ -x $INSTALLDIR/usr/local/bin/$d ] ; then
-        $INSTALLDIR/usr/local/bin/$d &
+    if [ -x "$INSTALLDIR/usr/local/bin/$d" ] ; then
+        "$INSTALLDIR/usr/local/bin/$d" &
     else
-        if [ -x ${BUILDSUBDIR}/$d ] ; then
-            ${BUILDSUBDIR}/$d &
+        if [ -x "${BUILDSUBDIR}/$d" ] ; then
+            "${BUILDSUBDIR}/$d" &
         else
             die "Can't find $d"
         fi

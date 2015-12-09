@@ -26,29 +26,31 @@ echo "********* asset_elements.sh ************************ START ***************
 echo "###################################################################################################"
 echo
 
+echo "***************************************************************************************************"
+echo "********* Prerequisites ***************************************************************************"
+echo "***************************************************************************************************"
+init_script_initial || exit $?
+
 echo "********* asset_elements.sh ***********************************************************************"
 echo "********* 1. No_datacenters_present ***************************************************************"
 echo "***************************************************************************************************"
 test_it "No_datacenters_present"
-# delete all assets, no rooms are present
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-DB_LOADDIR=$BUILDSUBDIR/tools
-loaddb_file "$DB_LOADDIR/$DB_BASE"
+# delete all assets, no racks are present
+### NOTE: This state is achieved by init_script() above, so we don't need
+### to recreate the DB at this point; routine commented away but left in
+### place for readability:
+#loaddb_initial
 
 curlfail_push_expect_noerrors
 api_get_json /asset/datacenters >&5
 print_result $?
 curlfail_pop
 
-for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
-    loaddb_file "$DB_LOADDIR/$data" || return $?
-done
+#fill DB again
+loaddb_default
 
 echo "********* asset_elements.sh ***********************************************************************"
-echo "********* 2. Get_the_list_of_datacenters ****************************************************************"
+echo "********* 2. Get_the_list_of_datacenters **********************************************************"
 echo "***************************************************************************************************"
 test_it "Get_the_list_of_datacenters"
 api_get_json /asset/datacenters >&5
@@ -57,13 +59,8 @@ print_result $?
 echo "********* asset_elements.sh ***********************************************************************"
 echo "********* 3. no_rooms_present *********************************************************************"
 echo "***************************************************************************************************"
-# delete all assets, no rooms are present
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-DB_LOADDIR=$BUILDSUBDIR/tools
-loaddb_file "$DB_LOADDIR/$DB_BASE"
+# delete all assets, no racks are present
+loaddb_initial
 
 test_it "no_rooms_present"
 curlfail_push_expect_noerrors
@@ -72,15 +69,7 @@ print_result $?
 curlfail_pop
 
 #fill DB again
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-DB_LOADDIR=$BUILDSUBDIR/tools
-
-for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
-    loaddb_file "$DB_LOADDIR/$data" || return $?
-done
+loaddb_default
 
 echo "********* asset_elements.sh ***********************************************************************"
 echo "********* 4. list_of_all_rooms ********************************************************************"
@@ -90,15 +79,10 @@ api_get_json /asset/rooms >&5
 print_result $?
 
 echo "********* asset_elements.sh ***********************************************************************"
-echo "********* 5. no_rows_present *********************************************************************"
+echo "********* 5. no_rows_present **********************************************************************"
 echo "***************************************************************************************************"
-# delete all assets, no rows are present
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-DB_LOADDIR=$BUILDSUBDIR/tools
-loaddb_file "$DB_LOADDIR/$DB_BASE"
+# delete all assets, no racks are present
+loaddb_initial
 
 test_it "no_rows_present"
 curlfail_push_expect_noerrors
@@ -107,18 +91,10 @@ print_result $?
 curlfail_pop
 
 #fill DB again
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-DB_LOADDIR=$BUILDSUBDIR/tools
-
-for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
-    loaddb_file "$DB_LOADDIR/$data" || return $?
-done
+loaddb_default
 
 echo "********* asset_elements.sh ***********************************************************************"
-echo "********* 6. list_of_all_rows ********************************************************************"
+echo "********* 6. list_of_all_rows *********************************************************************"
 echo "***************************************************************************************************"
 test_it "list_of_all_rows"
 api_get_json /asset/rows >&5
@@ -129,12 +105,7 @@ echo "********* asset_elements.sh **********************************************
 echo "********* 7. no_racks_present *********************************************************************"
 echo "***************************************************************************************************"
 # delete all assets, no racks are present
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-DB_LOADDIR=$BUILDSUBDIR/tools
-loaddb_file "$DB_LOADDIR/$DB_BASE"
+loaddb_initial
 
 test_it "no_racks_present"
 curlfail_push_expect_noerrors
@@ -143,15 +114,7 @@ print_result $?
 curlfail_pop
 
 #fill DB again
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-DB_LOADDIR=$BUILDSUBDIR/tools
-
-for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
-    loaddb_file "$DB_LOADDIR/$data" || return $?
-done
+loaddb_default
 
 echo "********* asset_elements.sh ***********************************************************************"
 echo "********* 8. list_of_all_racks ********************************************************************"
@@ -161,15 +124,10 @@ api_get_json /asset/racks >&5
 print_result $?
 
 echo "********* asset_elements.sh ***********************************************************************"
-echo "********* 9. no_groups_present *********************************************************************"
+echo "********* 9. no_groups_present ********************************************************************"
 echo "***************************************************************************************************"
 # delete all assets, no racks are present
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-DB_LOADDIR=$BUILDSUBDIR/tools
-loaddb_file "$DB_LOADDIR/$DB_BASE"
+loaddb_initial
 
 test_it "no_groups_present"
 curlfail_push_expect_noerrors
@@ -178,18 +136,10 @@ print_result $?
 curlfail_pop
 
 #fill DB again
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-DB_LOADDIR=$BUILDSUBDIR/tools
-
-for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
-    loaddb_file "$DB_LOADDIR/$data" || return $?
-done
+loaddb_default
 
 echo "********* asset_elements.sh ***********************************************************************"
-echo "********* 10. list_of_all_groups ********************************************************************"
+echo "********* 10. list_of_all_groups ******************************************************************"
 echo "***************************************************************************************************"
 test_it "list_of_all_groups"
 api_get_json /asset/groups >&5

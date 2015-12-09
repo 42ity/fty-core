@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2014 Eaton
+# Copyright (C) 2014-2015 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -84,7 +84,6 @@ done
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 NEED_BUILDSUBDIR=no determineDirs_default || true
 . "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
-#cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 PATH="$PATH:/sbin:/usr/sbin"
 
@@ -123,30 +122,12 @@ else
             "Check the existence of /etc/pam.d/bios (and maybe /etc/sasl2/bios.conf for some OS distributions)"
 
     logmsg_info "Testing webserver ability to serve the REST API"
-    if [ -n "`api_get "/oauth2/token" 2>&1 | grep 'HTTP/.* 500'`" ]; then
-        logmsg_error "api_get() returned an error:"
-        api_get "" >&2
-        CODE=4 die "Webserver code is deeply broken, please fix it first!"
+    TMP_TOKEN="`_api_get_token`" || return $?
+    if [ -n "`echo "$TMP_TOKEN" | grep 'errors'`" ]; then
+        logmsg_error "cannot get a token:"
+        echo $TMP_TOKEN >&2
+        CODE=4 die "Webserver does not allow to get the token, please fix it first!"
     fi
-
-    if [ -z "`api_get "/oauth2/token" 2>&1 | grep 'HTTP/.* 200 OK'`" ]; then
-        # We do expect an HTTP-404 on the API base URL
-        logmsg_error "api_get() returned an error:"
-        api_get "" >&2
-        CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
-    fi
-
-    if [ "$SKIP_SANITY" != onlyerrors ]; then
-        curlfail_push_expect_noerrors
-        if [ -z "`api_get '/oauth2/token' 2>&1 | grep 'HTTP/.* 200 OK'`" ]; then
-            # We expect that the login service responds
-            logmsg_error "api_get() returned an error:"
-            api_get "/oauth2/token" >&2
-            CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
-        fi
-        curlfail_pop
-    fi
-
     logmsg_info "Webserver seems basically able to serve the REST API"
 fi
 
@@ -167,38 +148,6 @@ CMPJSON_PY="`pwd`/cmpjson.py"
 
 cd web/commands || CODE=6 die "Can not change to `pwd`/web/commands"
 
-summarizeResults() {
-    TRAP_RES=$?
-    print_result $TRAP_RES
-    set +e
-    NUM_NOTFAILED="`expr $TESTLIB_COUNT_PASS + $TESTLIB_COUNT_SKIP`"
-    logmsg_info "Testing completed ($TRAP_RES), $NUM_NOTFAILED/$TESTLIB_COUNT_TOTAL tests passed($TESTLIB_COUNT_PASS) or not-failed($TESTLIB_COUNT_SKIP) for test-groups:"
-    logmsg_info "  POSITIVE (exec glob) = $POSITIVE"
-    logmsg_info "  NEGATIVE (skip glob) = $NEGATIVE"
-    logmsg_info "  SKIP_NONSH_TESTS = $SKIP_NONSH_TESTS (so skipped $SKIPPED_NONSH_TESTS tests)"
-    if [ -n "$TESTLIB_LIST_FAILED_IGNORED" ]; then
-        logmsg_info "The following $TESTLIB_COUNT_SKIP tests have failed but were ignored (TDD in progress):"
-        for i in $TESTLIB_LIST_FAILED_IGNORED; do
-            echo " * $i"
-        done
-    fi
-    NUM_FAILED="`expr $TESTLIB_COUNT_TOTAL - $NUM_NOTFAILED`"
-    [ -z "$TESTLIB_LIST_FAILED" ] && [ x"$TESTLIB_COUNT_FAIL" = x0 ] && [ x"$NUM_FAILED" = x0 ] && exit 0
-    logmsg_info "The following $TESTLIB_COUNT_FAILED tests have failed:"
-    N=0 # Do a bit of double-accounting to be sure ;)
-    for i in $TESTLIB_LIST_FAILED; do
-        echo " * $i"
-        N="`expr $N + 1`"
-    done
-    [ x"$TESTLIB_COUNT_FAIL" = x"$NUM_FAILED" ] && \
-    [ x"$N" = x"$NUM_FAILED" ] && \
-    [ x"$TESTLIB_COUNT_FAIL" = x"$N" ] || \
-        logmsg_error "TEST-LIB accounting fault: failed-test counts mismatched: TESTLIB_COUNT_FAIL=$TESTLIB_COUNT_FAIL vs NUM_FAILED=$NUM_FAILED vs N=$N"
-    logmsg_error "$N/$TESTLIB_COUNT_TOTAL tests FAILED, $TESTLIB_COUNT_SKIP tests FAILED_IGNORED, $TESTLIB_COUNT_PASS tests PASSED"
-    unset N
-    exit 1
-}
-
 POSITIVE=""
 NEGATIVE=""
 while [ "$1" ]; do
@@ -211,7 +160,14 @@ while [ "$1" ]; do
 done
 [ -n "$POSITIVE" ] || POSITIVE="*"
 
-settraps "summarizeResults"
+exit_summarizeTestedScriptlets() {
+    logmsg_info "This ${_SCRIPT_NAME} ${_SCRIPT_ARGS} run selected the following scriptlets from web/commands :"
+    logmsg_info "  Execution pattern (POSITIVE) = $POSITIVE"
+    logmsg_info "  Ignored pattern (NEGATIVE)   = $NEGATIVE"
+    logmsg_info "  SKIP_NONSH_TESTS = $SKIP_NONSH_TESTS (so skipped ${SKIPPED_NONSH_TESTS+0} tests)"
+}
+
+settraps '_TRAP_RES=$?; exit_summarizeTestedScriptlets ; exit_summarizeTestlibResults; exit $_TRAP_RES'
 
 for i in $POSITIVE; do
     for NAME in *$i*; do
@@ -258,16 +214,8 @@ for i in $POSITIVE; do
     ### Default value for logging the test items
     TNAME="$NAME"
 
-    # "Poison"-protection about unused standard infrastructure aka test_it()
-    _testlib_result_printed=notest
     . ./"$NAME" 5>"$REALLIFE_RESULT"
     RES=$?
-
-    [ "${_testlib_result_printed}" = notest ] && \
-        logmsg_error "NOTE: Previous test(s) apparently did not use test_it()" \
-            "to begin logging, amending that omission now by assigning filename" \
-            "as the test name:" && \
-        test_it "$NAME"
 
     # Stash the last result-code for trivial tests and no expectations below
     # For better reliability, all test files should call print_result to verify
@@ -278,10 +226,10 @@ for i in $POSITIVE; do
     # real test failure here.
 
     if [ -r "$EXPECTED_RESULT" ]; then
-        ls -la "$EXPECTED_RESULT" "$REALLIFE_RESULT"
         if [ -x "../results/$NAME".cmp ]; then
             ### Use an optional custom comparator
             test_it "compare_expectation_custom"
+            ls -la "$EXPECTED_RESULT" "$REALLIFE_RESULT"
             ../results/"$NAME".cmp "$EXPECTED_RESULT" "$REALLIFE_RESULT"
             RES=$?
             [ $RES -ne 0 ] && \
@@ -290,6 +238,7 @@ for i in $POSITIVE; do
             ### Use the default comparation script which makes sure that
             ### each line of RESULT matches the same-numbered line of EXPECT
             test_it "compare_expectation_`basename "$CMP"`"
+            ls -la "$EXPECTED_RESULT" "$REALLIFE_RESULT"
             "$CMP" "$EXPECTED_RESULT" "$REALLIFE_RESULT"
             RES_CMP=$?
             RES_JSONV=0

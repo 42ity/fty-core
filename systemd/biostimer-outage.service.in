@@ -1,0 +1,19 @@
+[Unit]
+Description=BIOS-Timer service that re-counts outage statistics (implementation)
+# This service only relies on database directly
+After=bios-db-init.service
+Requires=bios-db-init.service
+PartOf=bios.target
+
+[Service]
+Type=simple
+User=bios
+EnvironmentFile=-/etc/default/bios
+EnvironmentFile=-/etc/sysconfig/bios
+EnvironmentFile=-/etc/default/bios__%n.conf
+EnvironmentFile=-/etc/sysconfig/bios__%n.conf
+EnvironmentFile=-/etc/default/bios-db-ro
+ExecStart=@libexecdir@/@PACKAGE@/outage
+
+[Install]
+WantedBy=bios.target
