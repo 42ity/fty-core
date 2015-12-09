@@ -101,6 +101,7 @@ chown www-data /etc/default/bios
 chmod a+r /etc/default/bios
 mkdir -p /etc/bios/nut/devices
 chown -R bios:bios-infra /etc/bios
+systemd-tmpfiles --create
 
 # Setup BIOS lenses
 mkdir -p /usr/share/bios/lenses
@@ -257,6 +258,10 @@ else
     systemctl enable lcd-boot-display
     systemctl enable lcd-net-display
 fi
+# Services not part of core
+systemctl enable dc_th
+systemctl enable bios-agent-legacy-metrics
+systemctl enable bios-agent-alert-generator
 
 # Our tntnet unit
 cat > /etc/systemd/system/tntnet@.service <<EOF
@@ -489,6 +494,23 @@ done
 # Show the package list
 dpkg --get-selections
 dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n
+
+# Create the CSV Legal packages manifest, to display from the Web UI
+# copyright files path are adapted to Web UI display!
+CSV_FILE_PATH="/usr/share/doc/ipc-packages.csv"
+rm -f ${CSV_FILE_PATH}
+touch ${CSV_FILE_PATH}
+dpkg-query -W -f='${db:Status-Abbrev};${source:Package};${Version};${binary:Package}\n' | grep '^i' | cut -d';' -f2,3,4 | sort -u > ./pkg-list.log
+while IFS=';' read SOURCE_PKG PKG_VERSION CURRENT_PKG
+do
+   CURRENT_PKG="`echo ${CURRENT_PKG} | cut -d':' -f1`"
+   grep -q "${SOURCE_PKG};${PKG_VERSION};" "${CSV_FILE_PATH}"
+   if [ $? -eq 1 ]; then
+      echo "${SOURCE_PKG};${PKG_VERSION};/usr/share/doc/${CURRENT_PKG}/copyright" 2>/dev/null >> "${CSV_FILE_PATH}"
+      [ ! -f "/usr/share/doc/${CURRENT_PKG}/copyright" ] && echo "Missing ${CURRENT_PKG}/copyright file!"
+   fi
+done < ./pkg-list.log
+rm -f ./pkg-list.log
 
 # Prepare the ccache (for development image type)
 case "$IMGTYPE" in

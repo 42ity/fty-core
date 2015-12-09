@@ -1,6 +1,5 @@
-#!/bin/sh
 #
-# Copyright (C) 2014 Eaton
+# Copyright (C) 2014-2015 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,8 +24,8 @@
 #           which can be sourced to interactive shell
 #           You can 'export CITEST_QUICKFAIL=yes' to abort on first failure
 #           Tests start with a `test_it "testname"` to initialize, and end
-#           with a `print_results $?` to account successes and failures.
-#           When doing TDD, you can use `print_results -$?` for tests that
+#           with a `print_result $?` to account successes and failures.
+#           When doing TDD, you can use `print_result -$?` for tests that
 #           are expected/allowed to fail but this should not cause overall
 #           test-suite error (testing stuff known as not implemented yet).
 
@@ -61,60 +60,110 @@ fi
 
 _TOKEN_=""
 TESTLIB_FORCEABORT=no
+# this is a shared variable between test_it and print_result
+# that should not allow to call
+#   print_result before apropriate test_it
+#   test_it before previous result was printed with print_result
+# possible values:
+#   notest - test suite not yet started (zero test_it's called)
+#   notyet - a test_it() clause began a routine, but no result so far
+#   yes    - a print_result() completed a previous test routine and
+#            no new one was started yet; it is not a fatal error to
+#            call print_result() when in this state, but is a warning
 _testlib_result_printed=notest
+LOGMSG_PREFIX_TESTLIB="CI-TESTLIB-"
+# TNAME of the specific test as named by the test_it() argument
+TNAME=""
+# NAME of the tested scriptlet (if used, or the parent script by default)
+NAME="$0"
 
 # Numeric counters
-[ -z "${TESTLIB_COUNT_PASS-}" ] && TESTLIB_COUNT_PASS="0"
-[ -z "${TESTLIB_COUNT_SKIP-}" ] && TESTLIB_COUNT_SKIP="0"
-[ -z "${TESTLIB_COUNT_FAIL-}" ] && TESTLIB_COUNT_FAIL="0"
-[ -z "${TESTLIB_COUNT_TOTAL-}" ] && TESTLIB_COUNT_TOTAL="0"
+[ -z "${TESTLIB_COUNT_PASS-}" ] && TESTLIB_COUNT_PASS=0
+[ -z "${TESTLIB_COUNT_SKIP-}" ] && TESTLIB_COUNT_SKIP=0
+[ -z "${TESTLIB_COUNT_FAIL-}" ] && TESTLIB_COUNT_FAIL=0
+[ -z "${TESTLIB_COUNT_TOTAL-}" ] && TESTLIB_COUNT_TOTAL=0
 # String lists of space-separated single-token test names that failed
 [ -z "${TESTLIB_LIST_FAILED-}" ] && TESTLIB_LIST_FAILED=""
 [ -z "${TESTLIB_LIST_FAILED_IGNORED-}" ] && TESTLIB_LIST_FAILED_IGNORED=""
 [ -z "${TESTLIB_LIST_PASSED-}" ] && TESTLIB_LIST_PASSED=""
 
 print_result() {
-    [ "${_testlib_result_printed}" = yes ] && return 0
+    # $1 = exit-code of the test being closed:
+    #   0|-0    success
+    #   >0      failed (and can abort the test suite if setup so)
+    #   <0      failed but this was expected and so not fatal
+    # $2+ = optional SHORT SINGLE-LINE comment about the failure
+    #           if it does strike
+    # For legacy purposes, "$1" can be the comment, then exit-code
+    # value is hardcoded as a failure (255).
+    # The absolute(!) value of the exit-code should be passed to the
+    # caller as this routine's exit-code.
+    if [ x"${_testlib_result_printed-}" = xyes ]; then
+        logmsg_warn "print_result() called before a new test_it() was started!"
+        return 0
+    fi
+    if [ x"${_testlib_result_printed-}" = xnotest ]; then
+        logmsg_warn "print_result() called before any test_it() was started!"
+        return 0
+    fi
     _testlib_result_printed=yes
-    _ret="$1"
-    ### Is this a valid number (negative == failed_ignored)?
-    ### If not - it may be some text comment about the error.
-    [ "$_ret" -ge 0 -o "$_ret" -le 0 ] 2>/dev/null || \
-        _ret=255
+    _code="$1"
+    shift
+    _info="$*"
+    ### Is this _code a valid number (negative == failed_ignored)?
+    ### If not - it may also be some text comment about the error.
+    [ -n "$_code" ] && [ "$_code" -ge 0 -o "$_code" -le 0 ] 2>/dev/null || \
+        { _info="${_code} ${_info}"; _code=255 ; }
+
+    _info="`echo "${_info}" | sed -e 's,^ *,,g' -e 's, *$,,g'`"
 
     # Produce a single-token name for the failed test, including its
     # positive return-code value
-    if [ "$_ret" -lt 0 ] 2>/dev/null ; then
-        _ret="`expr -1 \* $_ret`"
-    fi
-
-    if [ "$TNAME" = "`basename $NAME .sh`" ]; then
-        TESTLIB_LASTTESTTAG="`echo "$NAME(${_ret})" | sed 's, ,__,g'`"
-        logmsg_info "Completed test $TNAME :"
+    if [ "$_code" -lt 0 ] 2>/dev/null ; then
+        _ret="`expr -1 \* $_code`"
     else
-        TESTLIB_LASTTESTTAG="`echo "$NAME::$TNAME(${_ret})" | sed 's, ,__,g'`"
-        logmsg_info "Completed test $NAME::$TNAME :"
+        _ret="$_code"
     fi
 
-    if [ "$_ret" -eq 0 ]; then  # should include "-0" too
+    # If we have some failure-info, clamp it into the echos and tags uniformly
+    [ -n "$_info" ] && [ "$_code" -ne 0 ] && \
+        _report="$_ret, $_info" || \
+        _report="$_ret"
+
+    # Tags are single-token strings saved into the corresponding list
+    # of passed/ignored/failed tests
+    echo
+    if [ "${TNAME-}" = "`basename $NAME .sh`" ]; then
+        TESTLIB_LASTTESTTAG="`echo "$NAME(${_report})" | sed 's, ,__,g'`"
+        LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_info "Completed test $TNAME :"
+    else
+        TESTLIB_LASTTESTTAG="`echo "$NAME::$TNAME(${_report})" | sed 's, ,__,g'`"
+        LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_info "Completed test $NAME::$TNAME :"
+    fi
+
+    if [ "$_code" -eq 0 ]; then  # should include "-0" too
         echo " * PASSED"
         TESTLIB_COUNT_PASS="`expr $TESTLIB_COUNT_PASS + 1`"
+        TEMP_NUMBER="`expr $TESTLIB_COUNT_PASS - $TESTLIB_COUNT_TOTAL`"
+        if [ "$TEMP_NUMBER" -gt 0 ]; then
+            logmsg_error "WOW: TESTLIB_COUNT_PASS - TESTLIB_COUNT_TOTAL = $TESTLIB_COUNT_PASS - $TESTLIB_COUNT_TOTAL = $TEMP_NUMBER > 0 ! This should not happen!"
+        fi
         TESTLIB_LIST_PASSED="$TESTLIB_LIST_PASSED $TESTLIB_LASTTESTTAG"
+        echo
+        return 0
     else
-        if [ x-"$_ret" = x"$1" ] ; then
+        if [ "$_code" -lt 0 ] ; then
             # The "$1" string was a negative number
             TESTLIB_COUNT_SKIP="`expr $TESTLIB_COUNT_SKIP + 1`"
-            echo " * FAILED_IGNORED ($_ret)"
+            echo " * FAILED_IGNORED ($_report)"
             TESTLIB_LIST_FAILED_IGNORED="$TESTLIB_LIST_FAILED_IGNORED $TESTLIB_LASTTESTTAG"
             echo
             return $_ret
         fi
 
-        # Positive _ret, including 255 set for a failure with comment
-        # Unlike ignored negative retcodes above, this can abort the script
-        [ x"$_ret" = x"$1" ] && \
-            echo " * FAILED ($_ret)" || \
-            echo " * FAILED ($_ret, $1)"
+        # Positive _code, including 255 set for anon failure with comment
+        # Unlike ignored-negative retcodes above, this can abort the script
+        echo " * FAILED ($_report)"
 
         TESTLIB_LIST_FAILED="$TESTLIB_LIST_FAILED $TESTLIB_LASTTESTTAG"
         TESTLIB_COUNT_FAIL="`expr $TESTLIB_COUNT_FAIL + 1`"
@@ -123,7 +172,7 @@ print_result() {
 	if [ "$CITEST_QUICKFAIL" = yes ]; then
 	    echo ""
 	    echo "$TESTLIB_COUNT_PASS previous tests have succeeded"
-	    echo "CI-TESTLIB-FATAL-ABORT[$$]: Testing aborted due to" \
+	    echo "${LOGMSG_PREFIX_TESTLIB}FATAL-ABORT[$$]: Testing aborted due to" \
 		"CITEST_QUICKFAIL=$CITEST_QUICKFAIL" \
 		"after first failure with test $TESTLIB_LASTTESTTAG"
 	    exit $_ret
@@ -133,7 +182,7 @@ print_result() {
 	if [ "$TESTLIB_FORCEABORT" = yes ]; then
 	    echo ""
 	    echo "$TESTLIB_COUNT_PASS previous tests have succeeded"
-	    echo "CI-TESTLIB-FATAL-ABORT[$$]: Testing aborted due to" \
+	    echo "${LOGMSG_PREFIX_TESTLIB}FATAL-ABORT[$$]: Testing aborted due to" \
 		"TESTLIB_FORCEABORT=$TESTLIB_FORCEABORT" \
 		"after forced abortion in test $TESTLIB_LASTTESTTAG"
 	    exit $_ret
@@ -145,21 +194,23 @@ print_result() {
 
 test_it() {
     if [ x"${_testlib_result_printed}" = xnotyet ]; then
-        logmsg_warn "Starting a new test_it() while an old one was not followed by a print_result()!"
-        logmsg_warn "Closing old test with result code 128 ..."
-        print_result 128
+        LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_warn "Starting a new test_it() while an old one was not followed by a print_result()!"
+        LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_warn "Closing old test with result code 128 ..."
+        print_result 128 "Automatically closed an unfinished test"
     fi
     _testlib_result_printed=notyet
-    [ -n "$TNAME" ] || TNAME="$NAME"
+    [ -n "${NAME-}" ] || NAME="$0"
+    [ -n "${TNAME-}" ] || TNAME="${NAME}"
     if [ "$1" ]; then
         TNAME="$1"
     fi
     [ -n "$TNAME" ] || TNAME="$0"
     TNAME="`basename "$TNAME" .sh | sed 's, ,__,g'`"
+    echo
     if [ "$TNAME" = "`basename $NAME .sh`" ]; then
-        logmsg_info "Running test $TNAME :"
+        LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_info "Running test $TNAME ..."
     else
-        logmsg_info "Running test $NAME::$TNAME :"
+        LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_info "Running test $NAME::$TNAME ..."
     fi
     TESTLIB_COUNT_TOTAL="`expr $TESTLIB_COUNT_TOTAL + 1`"
 }
@@ -171,8 +222,8 @@ trap_break_testlib() {
     ### This SIGUSR2 handler is reserved for testscript-initiated failures
 #    set +e
     [ "$RES_TEST" != 0 ] && \
-        echo "CI-TESTLIB-ERROR-WEB: test program failed ($RES_TEST), aborting test suite" >&2
-    echo "CI-TESTLIB-FATAL-BREAK: Got forced interruption signal" >&2
+        echo "${LOGMSG_PREFIX_TESTLIB}ERROR-WEB: test program failed ($RES_TEST), aborting test suite" >&2
+    echo "${LOGMSG_PREFIX_TESTLIB}FATAL-BREAK: Got forced interruption signal" >&2
     TESTLIB_FORCEABORT=yes
 
 ### Just cause the loop to break at a proper moment in print_result()
@@ -183,17 +234,23 @@ trap "trap_break_testlib" SIGUSR2
 
 # A consumer script can set this as (part of) their exit/abort-trap to always
 # print a summary of processed tests in the end, whatever the reason to exit().
-exit_summarizeResults() {
+exit_summarizeTestlibResults() {
     TRAP_RES=$?
     # This would be a no-op if the test case previously started with a
     # test_it() has been already closed with its proper print_result()
-    print_result $TRAP_RES
+    if [ x"${_testlib_result_printed}" = xnotyet ]; then
+        print_result $TRAP_RES
+    fi
     set +e
     NUM_NOTFAILED="`expr $TESTLIB_COUNT_PASS + $TESTLIB_COUNT_SKIP`"
-    logmsg_info "Testing completed ($TRAP_RES), $NUM_NOTFAILED/$TESTLIB_COUNT_TOTAL tests passed($TESTLIB_COUNT_PASS) or not-failed($TESTLIB_COUNT_SKIP) for test-groups:"
-    logmsg_info "  POSITIVE (exec glob) = $POSITIVE"
-    logmsg_info "  NEGATIVE (skip glob) = $NEGATIVE"
-    logmsg_info "  SKIP_NONSH_TESTS = $SKIP_NONSH_TESTS (so skipped $SKIPPED_NONSH_TESTS tests)"
+    # Do not doctor up the LOGMSG_PREFIX as these are rather results of the
+    # test-script than the framework
+    echo
+    echo "####################################################################"
+    echo "************ Ending testlib-driven suite execution *****************"
+    echo "####################################################################"
+    echo
+    logmsg_info "Testing completed ($TRAP_RES), $NUM_NOTFAILED/$TESTLIB_COUNT_TOTAL tests passed($TESTLIB_COUNT_PASS) or not-failed($TESTLIB_COUNT_SKIP)"
     if [ -n "$TESTLIB_LIST_FAILED_IGNORED" ]; then
         logmsg_info "The following $TESTLIB_COUNT_SKIP tests have failed but were ignored (TDD in progress):"
         for i in $TESTLIB_LIST_FAILED_IGNORED; do
@@ -203,23 +260,31 @@ exit_summarizeResults() {
     NUM_FAILED="`expr $TESTLIB_COUNT_TOTAL - $NUM_NOTFAILED`"
     if [ -z "$TESTLIB_LIST_FAILED" ] && [ x"$TESTLIB_COUNT_FAIL" = x0 ] && [ x"$NUM_FAILED" = x0 ]; then
         [ -z "$TRAP_RES" ] && TRAP_RES=0
-        exit $TRAP_RES
-    fi
-    logmsg_info "The following $TESTLIB_COUNT_FAILED tests have failed:"
-    N=0 # Do a bit of double-accounting to be sure ;)
-    for i in $TESTLIB_LIST_FAILED; do
-        echo " * $i"
-        N="`expr $N + 1`"
-    done
-    [ x"$TESTLIB_COUNT_FAIL" = x"$NUM_FAILED" ] && \
-    [ x"$N" = x"$NUM_FAILED" ] && \
-    [ x"$TESTLIB_COUNT_FAIL" = x"$N" ] || \
-        logmsg_error "TEST-LIB accounting fault: failed-test counts mismatched: TESTLIB_COUNT_FAIL=$TESTLIB_COUNT_FAIL vs NUM_FAILED=$NUM_FAILED vs N=$N"
-    logmsg_error "$N/$TESTLIB_COUNT_TOTAL tests FAILED, $TESTLIB_COUNT_SKIP tests FAILED_IGNORED, $TESTLIB_COUNT_PASS tests PASSED"
-    unset N
+    else
+        logmsg_info "The following $TESTLIB_COUNT_FAIL tests have failed:"
+        N=0 # Do a bit of double-accounting to be sure ;)
+        for i in $TESTLIB_LIST_FAILED; do
+            echo " * $i"
+            N="`expr $N + 1`"
+        done
+        [ x"$TESTLIB_COUNT_FAIL" = x"$NUM_FAILED" ] && \
+        [ x"$N" = x"$NUM_FAILED" ] && \
+        [ x"$TESTLIB_COUNT_FAIL" = x"$N" ] || \
+            LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_error "TEST-LIB accounting fault: failed-test counts mismatched: TESTLIB_COUNT_FAIL=$TESTLIB_COUNT_FAIL vs NUM_FAILED=$NUM_FAILED vs N=$N"
+        logmsg_error "$N/$TESTLIB_COUNT_TOTAL tests FAILED, $TESTLIB_COUNT_SKIP tests FAILED_IGNORED, $TESTLIB_COUNT_PASS tests PASSED"
+        unset N
 
-    # If we are here, we've at least had some failed tests
-    [ -z "$TRAP_RES" -o "$TRAP_RES" = 0 ] && TRAP_RES=1
+        # If we are here, we've at least had some failed tests
+        [ -z "$TRAP_RES" -o "$TRAP_RES" = 0 ] && TRAP_RES=1
+    fi
+    sleep 2
+
+    echo
+    echo "####################################################################"
+    echo "************ END OF testlib-driven suite execution ($TRAP_RES) *************"
+    echo "####################################################################"
+    echo
+
     exit $TRAP_RES
 }
 
