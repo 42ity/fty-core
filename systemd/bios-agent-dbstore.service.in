@@ -1,7 +1,7 @@
 [Unit]
 Description=Database layer for BIOS
-After=malamute.service bios-db-init.service
-Requires=malamute.service bios-db-init.service
+After=malamute.service bios-db-init.service legacy-metrics.service
+Requires=malamute.service bios-db-init.service legacy-metrics.service
 PartOf=bios.target
 
 [Service]
