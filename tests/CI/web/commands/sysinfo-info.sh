@@ -71,7 +71,7 @@ OUTPUT="`api_auth_get_json /admin/sysinfo`"
 print_result $?
 
 test_it "authorized sysinfo - processes"
-JPATH='"operating-system","processes"$'
+JPATH='"processes"$'
 SYSINFO_PARSED="`echo "$OUTPUT" | ${JSONSH} -x="$JPATH"`"
 [ $? -eq 0 -a -n "$SYSINFO_PARSED" ]
 print_result $?
