@@ -1,6 +1,6 @@
 #/!bin/sh
 #
-# Copyright (C) 2014 Eaton
+# Copyright (C) 2014-2015 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,9 +25,14 @@
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 NEED_BUILDSUBDIR=no determineDirs_default || true
+# Include these explicitly since we don't use weblib.sh here
+#. "`dirname $0`"/testlib.sh || die "Can not include common test script library"
+. "`dirname $0`"/testlib-db.sh || die "Can not include database test script library"
 cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR' (it may be empty but should exist)"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to build, and BUILDSUBDIR='$BUILDSUBDIR' to run the REST API webserver"
+[ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
+[ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
 
 # Set up weblib test engine preference defaults for automated CI tests
 [ -z "$WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT" ] && \
@@ -39,15 +44,6 @@ logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to build, and BUILDSUBDIR='$BUILDS
 [ -z "$SKIP_NONSH_TESTS" ] && \
     SKIP_NONSH_TESTS=yes
 export WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT WEBLIB_QUICKFAIL WEBLIB_CURLFAIL SKIP_NONSH_TESTS
-
-DB_LOADDIR="$CHECKOUTDIR/tools"
-DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
-DB_DATA_TESTREST="load_data_test_restapi.sql"
-DB_TOPOP="power_topology.sql"
-DB_TOPOL="location_topology.sql"
-DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
-DB_ASSET_DEFAULT="initdb_ci_patch_2.sql"
 
 PATH="/usr/lib/ccache:/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
 export PATH
@@ -226,30 +222,30 @@ kill_daemons() {
   test_web_process || exit
 
 test_web() {
-    echo "============================================================"
-    /bin/bash tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" "$@"
+    echo "==== Calling test_web.sh ==================================="
+    /bin/bash "${CHECKOUTDIR}"/tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" "$@"
     RESULT=$?
-    echo "============================================================"
+    echo "==== test_web RESULT: ($RESULT) =================================="
     return $RESULT
 }
 
-loaddb_default() {
+ci_loaddb_default() {
     echo "--------------- reset db: default ----------------"
     for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
-        loaddb_file "$DB_LOADDIR/$data" || exit $?
+        loaddb_file "$data" || exit $?
     done
     return 0
 }
 
 test_web_default() {
-    loaddb_default && \
+    ci_loaddb_default && \
     test_web "$@"
 }
 
 test_web_topo_p() {
     echo "----------- reset db: topology : power -----------"
     for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOP"; do
-        loaddb_file "$DB_LOADDIR/$data" || exit $?
+        loaddb_file "$data" || exit $?
     done
     test_web "$@"
 }
@@ -257,18 +253,22 @@ test_web_topo_p() {
 test_web_topo_l() {
     echo "---------- reset db: topology : location ---------"
     for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOL"; do
-        loaddb_file "$DB_LOADDIR/$data" || exit $?
+        loaddb_file "$data" || exit $?
     done
     test_web "$@"
 }
 
 asset_create() {
     echo "---------- reset db: asset : create ---------"
-    for data in "$DB_BASE" "$DB_ASSET_DEFAULT" "$DB_DATA"; do
-          loaddb_file "$DB_LOADDIR/$data" || exit $?
+    for data in "$DB_BASE" "$DB_DATA"; do
+          loaddb_file "$data" || exit $?
     done
     test_web "$@"
 }
+
+# Try to accept the BIOS license on server
+SKIP_SANITY=yes test_web 00_license-CI-forceaccept.sh.test || \
+    logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
 
 # do the test
 set +e
@@ -299,7 +299,7 @@ else
         [ "$RESULT" != 0 ] && break
     done
 fi
-loaddb_default
+ci_loaddb_default
 
 # cleanup
 kill $MAKEPID >/dev/null 2>&1 || true

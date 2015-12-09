@@ -1,6 +1,5 @@
-# !/bin/sh
 #
-# Copyright (C) 2014 Eaton
+# Copyright (C) 2014-2015 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -110,8 +109,10 @@ fi
 [ x"${NEED_TESTLIB-}" != xno ] && \
 if [ -n "$CHECKOUTDIR" ] && [ -d "$CHECKOUTDIR/tests/CI" ]; then
         . "$CHECKOUTDIR/tests/CI"/testlib.sh || exit $?
+        . "$CHECKOUTDIR/tests/CI"/testlib-db.sh || exit $?
 else
         . "$SCRIPTDIR"/testlib.sh || exit $?
+        . "$SCRIPTDIR"/testlib-db.sh || exit $?
 fi
 
 ### Should the test suite break upon first failed test?
@@ -277,6 +278,11 @@ curlfail_push_expect_409() {
     curlfail_push "expect" 'HTTP/[^ ]+ 409'
 }
 
+curlfail_push_expect_413() {
+    ### Preconfigured push that resets current values to specifically
+    ### expect an HTTP-413 Request Entity Too Large (and fail for other results)
+    curlfail_push "expect" 'HTTP/[^ ]+ 413'
+}
 
 curlfail_push_expect_500() {
     ### Preconfigured push that resets current values to specifically
@@ -323,7 +329,7 @@ CURL() {
 
     ERR_MATCH=""
     if [ -n "$ERR_CURL" -a x"$WEBLIB_CURLFAIL_HTTPERRORS" != xignore ]; then
-        ERR_MATCH="`( echo "$ERR_CURL"; echo "" ) | tr '\r' '\n' | egrep '^( *< |wget: server returned error: )'"$WEBLIB_HTTPERRORS_REGEX"`" 2>&3 || true
+        ERR_MATCH="`( echo "$ERR_CURL"; echo "" ) | tr '\r' '\n' | egrep '^( *< |.*#+ 100.0%< |wget: server returned error: )'"$WEBLIB_HTTPERRORS_REGEX"`" 2>&3 || true
         if [ -n "$ERR_MATCH" ]; then
             if [ x"$WEBLIB_CURLFAIL_HTTPERRORS" = xexpect ]; then
                 [ x"$WEBLIB_CURLFAIL_HTTPERRORS_DEBUG" = xyes ] && \
@@ -344,6 +350,9 @@ CURL() {
                     [ x"$WEBLIB_CURLFAIL_HTTPERRORS_DEBUG" = xonerror ] && \
                         _PRINT_CURL_TRACE=yes
                     RES_CURL=123
+                else
+                    echo "CI-WEBLIB-ERROR-CURL: WEBLIB_CURLFAIL_HTTPERRORS='$WEBLIB_CURLFAIL_HTTPERRORS'" \
+                        "is NOT 'fatal', so assuming the request as successful for now" >&3
                 fi
             fi
         else
@@ -460,10 +469,10 @@ api_delete() {
 #    content + HTTP headers
 api_auth_post() {
     local url data
-    url=$1
-    data=$2
+    url="$1"
+    data="$2"
     shift 2
-    TOKEN="`_api_get_token`"
+    TOKEN="`_api_get_token`" || return $?
     CURL --insecure --header "Authorization: Bearer $TOKEN" -d "$data" \
         -v --progress-bar "$BASE_URL$url" "$@" 3>&2 2>&1
 }
@@ -533,21 +542,45 @@ api_auth_delete_json() {
 #   $@  aditional params for curl
 # Example:
 #   send file 'assets':
-#   api_auth_post_file assets=@tests/persist/test-loadcsv.cc.csv
+#   api_auth_post_file_form assets=@tests/persist/test-loadcsv.cc.csv
 #   send file 'foo' with proper mime type
-#   api_auth_post_file foo=@path/to/foo.json;type=application/json
+#   api_auth_post_file_form foo=@path/to/foo.json;type=application/json
 #   see man curl, parameter -F/--form
 # Result:
 #    HTTP headers + content
-api_auth_post_file() {
+api_auth_post_file_form() {
     local url data
-    url=$1
-    data=$2
+    url="$1"
+    data="$2"
     shift 2
-    TOKEN="`_api_get_token`"
+    TOKEN="`_api_get_token`" || return $?
     CURL --insecure -H "Expect:" --header "Authorization: Bearer $TOKEN" --form "$data" \
         -v --progress-bar "$BASE_URL$url" "$@" 3>&2 2>&1
 }
+
+# this version of api_auth_post_file* uses the --data instead of --form switch
+api_auth_post_file_data() {
+    local url data
+    url="$1"
+    data="$2"
+    shift 2
+    TOKEN="`_api_get_token`" || return $?
+    CURL --insecure -H "Expect:" --header "Authorization: Bearer $TOKEN" --data "$data" \
+        -v --progress-bar "$BASE_URL$url" "$@" 3>&2 2>&1
+}
+
+
+api_auth_post_file_form_json() {
+    api_auth_post_file_form "$@" > /dev/null || return $?
+    _normalize_OUT_CURL_json
+}
+
+
+api_auth_post_file_data_json() {
+    api_auth_post_file_data "$@" > /dev/null || return $?
+    _normalize_OUT_CURL_json
+}
+
 
 # Does an api DELETE request with authorization
 # Authorization is done through HTTP header --header "Authorization: Bearer $TOKEN"
@@ -556,7 +589,7 @@ api_auth_post_file() {
 # Result:
 #    HTTP headers + content
 api_auth_delete() {
-    TOKEN="`_api_get_token`"
+    TOKEN="`_api_get_token`" || return $?
     CURL --insecure --header "Authorization: Bearer $TOKEN" -X "DELETE" \
         -v --progress-bar "$BASE_URL$1" 3>&2 2>&1
 }
@@ -569,7 +602,7 @@ api_auth_delete() {
 # Result:
 #    HTTP headers + content
 api_auth_put() {
-    TOKEN="`_api_get_token`"
+    TOKEN="`_api_get_token`" || return $?
     CURL --insecure --header "Authorization: Bearer $TOKEN" -d "$2" -X "PUT" \
         -v --progress-bar "$BASE_URL$1" 3>&2 2>&1
 }
@@ -582,7 +615,7 @@ api_auth_put() {
 # Result:
 #    HTTP headers + content
 api_auth_get() {
-    TOKEN="`_api_get_token`"
+    TOKEN="`_api_get_token`" || return $?
     CURL --insecure --header "Authorization: Bearer $TOKEN" \
         -v --progress-bar "$BASE_URL$1" 3>&2 2>&1
 }
@@ -595,7 +628,7 @@ api_auth_get() {
 # Result:
 #    HTTP headers + content
 api_auth_get_wToken() {
-    TOKEN="`_api_get_token`"
+    TOKEN="`_api_get_token`" || return $?
     URLSEP='?'
     case "$1" in
         *"?"*) URLSEP='&' ;;
@@ -608,14 +641,14 @@ api_auth_get_wToken() {
 # Strips stderr reports, headers, verbosity, etc. and returns raw response data
 # NOTE: Not for direct use in CI tests since REST API returns JSON which we test
 api_auth_get_content() {
-    TOKEN="`_api_get_token`"
+    TOKEN="`_api_get_token`" || return $?
     CURL --insecure --header "Authorization: Bearer $TOKEN" "$BASE_URL$1" 3>&2 2>/dev/null
 }
 
 # GETs a resource with authentication passed in GET arguments
 # Strips stderr reports, headers, verbosity, etc. and returns raw response data
 api_auth_get_content_wToken() {
-    TOKEN="`_api_get_token`"
+    TOKEN="`_api_get_token`" || return $?
     URLSEP='?'
     case "$1" in
         *"?"*) URLSEP='&' ;;
@@ -630,7 +663,7 @@ api_auth_post_content() {
     # Params:
     #	$1	Relative URL for API call
     #	$2	POST data
-    TOKEN="`_api_get_token`"
+    TOKEN="`_api_get_token`" || return $?
     CURL --insecure --header "Authorization: Bearer $TOKEN" -d "$2" \
         "$BASE_URL$1" 3>&2 2>/dev/null
 }
@@ -641,7 +674,7 @@ api_auth_post_wToken() {
     # Params:
     #	$1	Relative URL for API call
     #	$2	POST data
-    TOKEN="`_api_get_token`"
+    TOKEN="`_api_get_token`" || return $?
     CURL --insecure -d "access_token=$TOKEN&$2" \
         -v --progress-bar "$BASE_URL$1" 3>&2 2>&1
 }
@@ -652,7 +685,7 @@ api_auth_post_content_wToken() {
     # Params:
     #	$1	Relative URL for API call
     #	$2	POST data
-    TOKEN="`_api_get_token`"
+    TOKEN="`_api_get_token`" || return $?
     CURL --insecure -d "access_token=$TOKEN&$2" \
         "$BASE_URL$1" 3>&2 2>/dev/null
 }
@@ -691,7 +724,7 @@ simple_get_json_code() {
     fi
 
     local __out
-    __out=$( curl -s --insecure -v --progress-bar "$BASE_URL$1" 2>&1 )
+    __out="$( curl -s --insecure -v --progress-bar "$BASE_URL$1" 2>&1 )"
     if [ $? -ne 0 ]; then
         return 1
     fi
@@ -702,8 +735,8 @@ simple_get_json_code() {
         return 1
     fi
 
-    local __resultcode=$3
-    local __resultout=$2
+    local __resultcode="$3"
+    local __resultout="$2"
     eval $__resultcode='"$__code"'
     eval $__resultout='"$__out"'
     return 0
@@ -721,7 +754,7 @@ simple_get_json_code() {
 simple_get_json_code_sed() {
     ### Old approach to strip any whitespace including linebreaks from JSON
     local __out
-    __out=$( curl -s --insecure -v --progress-bar "$BASE_URL$1" 2>&1 )
+    __out="$( curl -s --insecure -v --progress-bar "$BASE_URL$1" 2>&1 )"
     if [ $? -ne 0 ]; then
         return 1
     fi
@@ -731,9 +764,21 @@ simple_get_json_code_sed() {
         return 1
     fi
 
-    local __resultcode=$3
-    local __resultout=$2
+    local __resultcode="$3"
+    local __resultout="$2"
     eval $__resultcode='"$__code"'
     eval $__resultout='"$__out"'
     return 0
+}
+
+# license accept
+accept_license(){
+    if api_get_json '/admin/license/status' | grep "accepted_at"; then
+        echo 'license already accepted'
+    else
+        echo "Trying to accept the license via REST API on BIOS server '$BASE_URL'..."
+        api_auth_post_json '/admin/license' "foobar" >&5 || \
+        ( . "$CHECKOUTDIR"/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
+            logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+    fi
 }
