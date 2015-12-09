@@ -57,8 +57,22 @@ for unit in ${SYSTEMCTL_UNITS}; do
     for cmd in ${SYSTEMCTL_COMMANDS}; do
         if [ "x$cmd" = "x$1" ] && ( \
            expr match "x$2" "^x$unit\$" > /dev/null || \
-           expr match "x$2" "^x$unit\\.service\$" > /dev/null ); then
-            exec $SYSTEMCTL $cmd "$2"
+           expr match "x$2" "^x$unit\\.timer\$" > /dev/null || \
+           expr match "x$2" "^x$unit\\.target\$" > /dev/null || \
+           expr match "x$2" "^x$unit\\.service\$" > /dev/null ) \
+        ; then
+            SYSTEMCTL_UNIT="$2"
+            SYSTEMCTL_ARGS=""
+            shift 2
+            while [ $# -gt 0 ]; do
+                case "$1" in
+                    --all|-a|--full|-l)
+                        SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
+                    *) echo "Action not allowed" >&2; exit 1;;
+                esac
+                shift
+            done
+            exec $SYSTEMCTL "$cmd" "$SYSTEMCTL_UNIT" $SYSTEMCTL_ARGS
         fi
     done
 done
