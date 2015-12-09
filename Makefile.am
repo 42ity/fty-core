@@ -1625,9 +1625,9 @@ SYSTEMD_UNITS_TARGET_BIOS += \
 # Enabled as part of BIOS presets
 SYSTEMD_UNITS += $(SYSTEMD_UNITS_TARGET_BIOS) $(SYSTEMD_UNITS_LOWLEVEL)
 
-# These units have unit files installed but are not enabled by default
-# via presets nor timers (may be enabled in OS image generation script
-# or during deployment's lifetime)
+# These units have unit files installed but are not enabled nor disabled
+# by default via presets nor timers (may be enabled in OS image generation
+# script or during deployment's lifetime)
 #SYSTEMD_UNITS_NOTPRESET_LOWLEVEL +=
 SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS += \
                         bios-fake-th.service
@@ -1663,8 +1663,8 @@ SYSTEMD_PRESETS +=      42-bios-systemd.preset
 ### TODO? Add the build info (git commit, timestamp) to the header comment?
 $(SYSTEMD_SUBDIR)/42-bios-systemd.preset: Makefile
 	@mkdir -p "$(abs_top_builddir)/$(SYSTEMD_SUBDIR)" "`dirname "$@"`" || true
-	@( echo "### This is a generated file with a list of all BIOS services"; \
-	  for F in $(SYSTEMD_TARGETS) $(SYSTEMD_UNITS) $(SYSTEMD_TIMERS) ; do echo "disable $$F" ; echo "enable $$F" ; done ) > $@
+	@( echo "### This is a generated file with a list of all BIOS-related services with their default state"; \
+	  for F in $(SYSTEMD_TARGETS) $(SYSTEMD_UNITS) $(SYSTEMD_TIMERS) ; do echo "enable $$F" ; done ) > $@
 
 # The rules to actually "compile" the service definition files
 # is part of catch-all %.in recipe above
