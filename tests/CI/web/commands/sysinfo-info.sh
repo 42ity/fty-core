@@ -56,7 +56,7 @@ SYSINFO_PARSED="`echo "$OUTPUT" | ${JSONSH} -x="$JPATH"`"
 print_result $?
 
 test_it "unauthorized sysinfo - processes"
-JPATH='"operating-system","processes"$'
+JPATH='"processes",[0-9]+$'
 SYSINFO_PARSED="`echo "$OUTPUT" | ${JSONSH} -x="$JPATH"`"
 [ $? -eq 0 -a -z "$SYSINFO_PARSED" ]
 print_result $?
@@ -71,7 +71,7 @@ OUTPUT="`api_auth_get_json /admin/sysinfo`"
 print_result $?
 
 test_it "authorized sysinfo - processes"
-JPATH='"processes"$'
+JPATH='"processes",[0-9]+$'
 SYSINFO_PARSED="`echo "$OUTPUT" | ${JSONSH} -x="$JPATH"`"
 [ $? -eq 0 -a -n "$SYSINFO_PARSED" ]
 print_result $?
