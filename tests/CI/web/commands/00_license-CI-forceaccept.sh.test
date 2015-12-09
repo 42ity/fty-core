@@ -127,10 +127,10 @@ else
 
 
         test_it "sysinfo_auth=2__parse__source_build_package__info"
-        JPATH='"\$BIOS","packages",[0-9]*,".*"$'
-        SYSINFO_VERSION="`echo "$SYSINFOA" | ${JSONSH} -x="$JPATH" -l`"
+        JPATH='"packages",[0-9]*'
+        SYSINFO_VERSION="`echo "$SYSINFOA" | ${JSONSH} -x="$JPATH" | grep -E '"package-name":"core".*"commit":"[a-f0-9-]+"'`"
         RES=$?
-        { echo "=== SYSINFO_VERSION ($RES):"; echo "$SYSINFO_VERSION"; } >&2
+        { echo "=== SYSINFO_VERSION ($RES):"; echo "$SYSINFO_VERSION" | sed 's/.*commit":"\(.*\)".*/\1/'; } >&2
         [ $RES = 0 -a -n "$SYSINFO_VERSION" -a \
             x"$SYSINFO_VERSION" != x'""' ]
         print_result $?
