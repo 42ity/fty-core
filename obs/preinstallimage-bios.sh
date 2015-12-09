@@ -269,6 +269,7 @@ cat > /etc/systemd/system/tntnet@.service <<EOF
 Description=Tntnet web server using /etc/tntnet/%I.xml
 After=network.target bios-db-init.service
 Requires=bios-db-init.service
+PartOf=bios.target
 
 [Service]
 Type=simple
@@ -284,7 +285,7 @@ ExecStart=/usr/bin/tntnet -c /etc/tntnet/%i.xml
 Restart=on-failure
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=bios.target
 EOF
 cat > /usr/share/bios/scripts/xml-cat.sh << EOF
 #!/bin/sh
