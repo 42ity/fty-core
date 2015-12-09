@@ -136,7 +136,7 @@ int8_t access_auth_level;
 <%cpp>
     if (access_auth_level >= AUTH_LEVEL_POWERUSER) {
         rv = shared::output ({"dpkg", "--list"}, output, cmderr);
-        if (rv == 0) {
+        if (rv == 0 && !output.empty()) {
 </%cpp>
 ,   "packages" : [
 <%cpp>
@@ -175,7 +175,7 @@ int8_t access_auth_level;
           , {
 %               }
                 <$$ utils::json::jsonify ("package-name", line_tokens.at (1)) $>,
-                <$$ utils::json::jsonify ("package-version", version) $>,
+                <$$ utils::json::jsonify ("package-version", version) $>
 %               if (pos != std::string::npos) {
               , <$$ utils::json::jsonify ("commit", commit) $>
 %               }
