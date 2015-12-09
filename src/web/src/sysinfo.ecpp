@@ -46,21 +46,31 @@ int8_t access_auth_level;
 </%request>
 {
     "operating-system" : {
-<%cpp>    
+<%cpp>
     std::string output, cmderr;
     int rv = shared::output ({"/usr/bin/systemd-detect-virt", "-c"}, output, cmderr);
     if (rv != 0) {
         output = "N/A";
+    } else {
+        size_t output_len = output.length();
+        if (output_len>0 && output[output_len-1] == '\n') {
+            output[output_len-1] = '\0';
+        }
     }
 </%cpp>
-        <$$ utils::json::jsonify ("container", output) $>,
+        <$$ utils::json::jsonify ("container", output.c_str()) $>,
 <%cpp>
     rv = shared::output ({"/usr/bin/systemd-detect-virt", "-v"}, output, cmderr);
     if (rv != 0) {
         output = "N/A";
+    } else {
+        size_t output_len = output.length();
+        if (output_len>0 && output[output_len-1] == '\n') {
+            output[output_len-1] = '\0';
+        }
     }
 </%cpp>
-        <$$ utils::json::jsonify ("hypervisor", output) $>,
+        <$$ utils::json::jsonify ("hypervisor", output.c_str()) $>,
 <%cpp>
     struct utsname u;
     if (uname (&u) == -1) {
@@ -215,7 +225,7 @@ int8_t access_auth_level;
 %                       first = false;
 %                   }
 %                   else {
-          , { 
+          , {
 %                   }
                 <$$ utils::json::jsonify ("unit", line_tokens.at (0)) $>
 <%cpp> 
@@ -231,16 +241,16 @@ int8_t access_auth_level;
                         std::string value  = line.substr (found+1, std::string::npos);
 </%cpp>
 %                       if (key.compare ("LoadState") == 0) {
-              , <$$ utils::json::jsonify ("LoadState", value) $>             
+              , <$$ utils::json::jsonify ("LoadState", value) $>
 %                       }
 %                       else if (key.compare ("ActiveState") == 0) {
-              , <$$ utils::json::jsonify ("ActiveState", value) $>             
+              , <$$ utils::json::jsonify ("ActiveState", value) $>
 %                       }
 %                       else if (key.compare ("UnitFileState") == 0) {
-              , <$$ utils::json::jsonify ("UnitFileState", value) $>             
+              , <$$ utils::json::jsonify ("UnitFileState", value) $>
 %                       }
 %                       else if (key.compare ("SubState") == 0) {
-              , <$$ utils::json::jsonify ("SubState", value) $>             
+              , <$$ utils::json::jsonify ("SubState", value) $>
 %                       }
 %                       // Note: We can parse out more info here
 %                       // TODO: DECIDE if we want to parse out more info
