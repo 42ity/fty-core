@@ -43,6 +43,7 @@
 #define SubState        "SubState"      // running/
 
 // List of hardcoded services that we allow to be manipulated through REST API
+// TODO: Match this up with tools/systemctl and maybe the Makefile variables
 static const char *list[] =
 {
 // SYSTEM services

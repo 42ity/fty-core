@@ -194,6 +194,7 @@ int8_t access_auth_level;
     ]
 %       }
 <%cpp>
+// Note: Commands and unit names are constrained in tools/systemctl and web/systemctl.ecpp
         rv = shared::output ({"systemctl", "list-units", "--all", "--full"}, output, cmderr);
         if (rv == 0 && !output.empty()) {
 </%cpp>
