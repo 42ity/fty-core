@@ -34,12 +34,8 @@ LOW_IMPORTANCE_WARNINGS=(
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
-NEED_BUILDSUBDIR=yes determineDirs_default || true
+NEED_BUILDSUBDIR=no determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
-[ -n "$BUILDSUBDIR" ] && \
-    [ x"$CHECKOUTDIR" != x"$BUILDSUBDIR" -a ! -d "$BUILDSUBDIR" ] && \
-    mkdir -p "$BUILDSUBDIR"
-cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR"
 
 RESULT=0
 set -o pipefail || true
@@ -48,7 +44,7 @@ set -e
 ### Note that configure and make are used explicitly to avoid a cleanup
 ### and full rebuild of the project if nothing had changed.
 NEWBUILD=no
-if [ ! -s "${MAKELOG}" ] || [ ! -s Makefile ] || [ ! -s config.status ] ; then
+if [ ! -s "${MAKELOG}" ] || [ ! -s "$BUILDSUBDIR/"Makefile ] || [ ! -s "$BUILDSUBDIR/"config.status ] ; then
     # Newly checked-out branch, rebuild
     echo "============= auto-configure and rebuild all ================"
     /bin/rm -f ${MAKELOG}
