@@ -168,6 +168,12 @@ int8_t access_auth_level;
 <%cpp>
     if (access_auth_level >= AUTH_LEVEL_POWERUSER) {
         rv = shared::output ({"dpkg", "--list"}, output, cmderr);
+	if (!cmderr.empty()) {
+            log_error("Calling 'dpkg --list' got exit-code %i and this stderr:\n-----\n%s-----\n\n", rv, cmderr.c_str());
+        }
+#ifdef DEBUG
+        log_debug("Calling 'dpkg --list' got exit-code %i and this stdout:\n-----\n%s-----\n\n", rv, output.c_str());
+#endif
         if (rv == 0 && !output.empty()) {
 </%cpp>
 ,   "packages" : [
@@ -222,6 +228,12 @@ int8_t access_auth_level;
 //   the filters defined for web/systemctl.ecpp would be more efficient than
 //   calling the script dozens of times?
         rv = shared::output ({"systemctl", "list-units", "--all", "--full"}, output, cmderr);
+	if (!cmderr.empty()) {
+            log_error("Calling 'systemctl list-units -a -l' got exit-code %i and this stderr:\n-----\n%s-----\n\n", rv, cmderr.c_str());
+        }
+#ifdef DEBUG
+        log_debug("Calling 'systemctl list-units -a -l' got exit-code %i and this stdout:\n-----\n%s-----\n\n", rv, output.c_str());
+#endif
         if (rv == 0 && !output.empty()) {
 </%cpp>
 ,   "processes" : [
@@ -244,7 +256,17 @@ int8_t access_auth_level;
                 // status
 		if (line_tokens.at (0).compare ("*") == 0) 
 	            token_unitname=1;
-	        rv = shared::output ({"systemctl", "show", "--full", line_tokens.at (token_unitname).c_str ()}, output, cmderr);
+		std::string unitname = line_tokens.at (token_unitname);
+	        rv = shared::output ({"systemctl", "show", "--full", unitname.c_str()}, output, cmderr);
+
+		if (!cmderr.empty() && !cmderr.compare("Action not allowed")) {
+// Note: Here we filter by the stderr contents because it will be
+// full of units we do not have right to access in our systemctl script
+	            log_error("Calling 'systemctl show -l %s' got exit-code %i and this stderr:\n-----\n%s-----\n\n", unitname.c_str(), rv, cmderr.c_str());
+        	}
+#ifdef DEBUG
+	        log_debug("Calling 'systemctl show -l %s' got exit-code %i and this stdout:\n-----\n%s-----\n\n", unitname.c_str(), rv, output.c_str());
+#endif
                 if (rv == 0 && !output.empty()) {
 </%cpp>
 %                   if (first) {
@@ -254,7 +276,7 @@ int8_t access_auth_level;
 %                   else {
           , {
 %                   }
-                <$$ utils::json::jsonify ("unit", line_tokens.at (token_unitname)) $>
+                <$$ utils::json::jsonify ("unit", unitname) $>
 <%cpp> 
                     std::vector<std::string> status_tokens;
                     cxxtools::split("\n", output, std::back_inserter(status_tokens));
