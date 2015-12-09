@@ -194,8 +194,8 @@ int8_t access_auth_level;
     ]
 %       }
 <%cpp>
-        rv = shared::output ({"systemctl", "list-units"}, output, cmderr);
-        if (rv == 0) {
+        rv = shared::output ({"systemctl", "list-units", "--all", "--full"}, output, cmderr);
+        if (rv == 0 && !output.empty()) {
 </%cpp>
 ,   "processes" : [
 <%cpp>
@@ -209,16 +209,16 @@ int8_t access_auth_level;
                 tokens.erase (tokens.end ());
             bool first = true;
             for (auto const& item : tokens) {
+                int token_unitname=0;
                 if (item.empty ())
                     continue;
                 std::vector <std::string> line_tokens;
                 cxxtools::split (" \t", item, std::back_inserter (line_tokens));
                 // status
 		if (line_tokens.at (0).compare ("*") == 0) 
-	            rv = shared::output ({"systemctl", "show", line_tokens.at (1).c_str ()}, output, cmderr);
-		else
-	            rv = shared::output ({"systemctl", "show", line_tokens.at (0).c_str ()}, output, cmderr);
-                if (rv == 0) {
+	            token_unitname=1;
+	        rv = shared::output ({"systemctl", "show", "--full", line_tokens.at (token_unitname).c_str ()}, output, cmderr);
+                if (rv == 0 && !output.empty()) {
 </%cpp>
 %                   if (first) {
             {
@@ -227,7 +227,7 @@ int8_t access_auth_level;
 %                   else {
           , {
 %                   }
-                <$$ utils::json::jsonify ("unit", line_tokens.at (0)) $>
+                <$$ utils::json::jsonify ("unit", line_tokens.at (token_unitname)) $>
 <%cpp> 
                     std::vector<std::string> status_tokens;
                     cxxtools::split("\n", output, std::back_inserter(status_tokens));
@@ -256,9 +256,9 @@ int8_t access_auth_level;
 %                       // TODO: DECIDE if we want to parse out more info
 %                   } // for line
             }
-%               } // if (rv == 0)
+%               } // if (systemctl show) rv == 0
 %           } // for auto
     ]
-%       }
+%       } // if (systemctl list-units) rv == 0
 %   } // if (access_auth_level >= AUTH_LEVEL_POWERUSER)
 }
