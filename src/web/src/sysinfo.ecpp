@@ -256,9 +256,9 @@ int8_t access_auth_level;
                 // status
 		if (line_tokens.at (0).compare ("*") == 0)
 	            token_unitname=1;
-		while (line_tokens.at (token_unitname).compare (" ") == 0 ||
+		while (line_tokens.at (token_unitname).compare ("") == 0 ||
 		       line_tokens.at (token_unitname).compare ({'\t'}) == 0 ||
-		       line_tokens.at (token_unitname).compare ("") == 0 )
+		       line_tokens.at (token_unitname).compare (" ") == 0 )
 	            token_unitname++;
 		std::string unitname = line_tokens.at (token_unitname);
 // Note: unitname must be the "$2" for our systemctl script
@@ -270,7 +270,11 @@ int8_t access_auth_level;
 	            log_error("Calling 'systemctl show -l %s' got exit-code %i and this stderr:\n-----\n%s-----\n\n", unitname.c_str(), rv, cmderr.c_str());
         	}
 #ifdef DEBUG
-	        log_debug("Calling 'systemctl show -l %s' got exit-code %i and this stdout:\n-----\n%s-----\n\n", unitname.c_str(), rv, output.c_str());
+		if (output.empty() || (output[0]=='\n' && output[1]=='\0')) {
+		    log_debug("Calling 'systemctl show -l %s' got exit-code %i and no stdout", unitname.c_str(), rv);
+		} else {
+		    log_debug("Calling 'systemctl show -l %s' got exit-code %i and this stdout:\n-----\n%s-----\n\n", unitname.c_str(), rv, output.c_str());
+		}
 #endif
                 if (rv == 0 && !output.empty()) {
 </%cpp>
