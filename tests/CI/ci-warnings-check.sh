@@ -36,6 +36,9 @@ LOW_IMPORTANCE_WARNINGS=(
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 NEED_BUILDSUBDIR=yes determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+[ -n "$BUILDSUBDIR" ] && \
+    [ x"$CHECKOUTDIR" != x"$BUILDSUBDIR" -a ! -d "$BUILDSUBDIR" ] && \
+    mkdir -p "$BUILDSUBDIR"
 cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR"
 
 RESULT=0
