@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2014 Eaton
+# Copyright (C) 2014-2015 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,8 +34,9 @@ LOW_IMPORTANCE_WARNINGS=(
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
-NEED_BUILDSUBDIR=no determineDirs_default || true
+NEED_BUILDSUBDIR=yes determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR"
 
 RESULT=0
 set -o pipefail || true
@@ -44,12 +45,12 @@ set -e
 ### Note that configure and make are used explicitly to avoid a cleanup
 ### and full rebuild of the project if nothing had changed.
 NEWBUILD=no
-if [ ! -s "${MAKELOG}" ] ; then
+if [ ! -s "${MAKELOG}" ] || [ ! -s Makefile ] || [ ! -s config.status ] ; then
     # Newly checked-out branch, rebuild
     echo "============= auto-configure and rebuild all ================"
     /bin/rm -f ${MAKELOG}
     touch ${MAKELOG}
-    ./autogen.sh --configure-flags \
+    ${CHECKOUTDIR}/autogen.sh --configure-flags \
         "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
         ${AUTOGEN_ACTION_BUILD} 2>&1 | tee ${MAKELOG}
     NEWBUILD=yes
@@ -57,7 +58,7 @@ fi
 
 # This branch was already configured and compiled here, only refresh it now
 echo "======== auto-make (refresh all-buildproducts) =============="
-./autogen.sh --no-distclean --optseqmake ${AUTOGEN_ACTION_MAKE} \
+${CHECKOUTDIR}/autogen.sh --no-distclean --optseqmake ${AUTOGEN_ACTION_MAKE} \
     all-buildproducts 2>&1 | tee -a ${MAKELOG}
 
 echo "======================= cppcheck ============================"
