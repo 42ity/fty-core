@@ -40,7 +40,7 @@
 #define VALID_FOR 3600
 #endif //VALID_FOR
 
-#define FILL(PROP)   tmp =  body_args.param("PROP", ""); \
+#define FILL(PROP)   tmp =  body_args.param(#PROP, ""); \
                      if(PROP.empty()) \
 					   PROP = tmp;
 
@@ -58,12 +58,14 @@ std::string token="";
 
     // Just in case someone put urlencoded stuff in body
     cxxtools::QueryParams body_args(request.getBody());
+
     std::string tmp;
     FILL(token)
     FILL(username)
     FILL(password)
     FILL(client_id)
     FILL(token)
+    FILL(grant_type);
 
     static cxxtools::Regex rex_rev("^.*/revoke$");
     if(request.isMethodPOST() && rex_rev.match(request.getUrl())) {
