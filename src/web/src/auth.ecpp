@@ -34,6 +34,16 @@
 #include <tnt/httpheader.h>
 #include <cxxtools/query_params.h>
 #include <stdio.h>
+#include "log.h"
+
+#ifndef VALID_FOR
+#define VALID_FOR 3600
+#endif //VALID_FOR
+
+#define FILL(PROP)   tmp =  body_args.param("PROP", ""); \
+                     if(PROP.empty()) \
+					   PROP = tmp;
+
 </%pre>
 <%args>
 std::string grant_type="";
@@ -43,52 +53,45 @@ std::string client_id="";
 std::string token="";
 </%args>
 <%cpp>
-#ifndef VALID_FOR
-#define VALID_FOR 3600
-#endif //VALID_FOR
+{
+    int valid = VALID_FOR;
 
-int valid = VALID_FOR;
+    // Just in case someone put urlencoded stuff in body
+    cxxtools::QueryParams body_args(request.getBody());
+    std::string tmp;
+    FILL(token)
+    FILL(username)
+    FILL(password)
+    FILL(client_id)
+    FILL(token)
 
-// Just in case someone put urlencoded stuff in body
-cxxtools::QueryParams body_args(request.getBody());
-std::string tmp;
-#define FILL(PROP)   tmp =  body_args.param("PROP", ""); \
-                     if(PROP.empty()) \
-					   PROP = tmp;
-FILL(token)
-FILL(username)
-FILL(password)
-FILL(client_id)
-FILL(token)
-
-  static cxxtools::Regex rex_rev("^.*/revoke$");
-  if(request.isMethodPOST() && rex_rev.match(request.getUrl())) {
-	if(token.empty()) {
-        http_die("request-param-required", "token to revoke");
-    } else {
-	  tokens::get_instance()->revoke(token);
+    static cxxtools::Regex rex_rev("^.*/revoke$");
+    if(request.isMethodPOST() && rex_rev.match(request.getUrl())) {
+        if(token.empty()) {
+            http_die("request-param-required", "token to revoke");
+        } else {
+            tokens::get_instance()->revoke(token);
 </%cpp>
 { "success": "Everything went well" }
 <%cpp>
-      return HTTP_OK;
-    }
-  }
-
-// with grant_type argument client wants to get new oauth2 token
-if (!grant_type.empty()) {
-    if (grant_type != "password")
-    {
-        http_die("request-param-bad", "grant_type", grant_type.c_str(), "password");
+            return HTTP_OK;
+        }
     }
 
-    if(!authenticate(username.c_str(), password.c_str()))
-    {
-        http_die("request-param-bad", "(user|passwd)", "<invalid user or password>", "<valid user and password>");
+    // with grant_type argument client wants to get new oauth2 token
+    if (grant_type != "password") {
+        log_debug ("grant_type is not 'password', but '%s'", grant_type.c_str());
+        http_die ("request-param-bad", "grant_type", grant_type.c_str(), "password");
     }
-}
+
+    if(!authenticate(username.c_str(), password.c_str())) {
+        log_debug ("bad user + password");
+        http_die ("request-param-bad", "(user|passwd)", "<invalid user or password>", "<valid user and password>");
+    }
 </%cpp>
 {
     "access_token":"<$$ tokens::get_instance()->gen_token(valid, username.c_str()) $>",
     "token_type":"bearer",
     "expires_in":<$ valid $>
 }
+%}

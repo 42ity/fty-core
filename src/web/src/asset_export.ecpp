@@ -24,6 +24,7 @@
  */
  #><%pre>
 #include <string>
+#include <string.h>
 #include <time.h>
 
 #include "db/inout.h"
@@ -33,9 +34,11 @@
 </%pre>
 <%cpp>
 {
-    char buf[16];
+    char buf[16] = {0x00};
     calendar_to_datetime(time(NULL), buf, 16);
-    buf[14] = '\x0';   //kill last Z
+    char *T = strstr(buf, "T");
+    if (T)
+        *T = 0x00; // fill the T
 	reply.setHeader(tnt::httpheader::contentDisposition, "asset_export" + std::string{buf} + ".csv");
     try {
         persist::export_asset_csv(reply.out());

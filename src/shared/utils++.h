@@ -38,6 +38,12 @@ namespace math {
 */
 void dtos (double number, std::streamsize precision, std::string& result);
 
+/*!
+ \brief Take string encoded double value and if possible return representation: integer x 10^scale
+*/ 
+bool
+    stobiosf (const std::string& string, int32_t& integer, int8_t& scale);
+
 } // namespace utils::math
 
 /*!

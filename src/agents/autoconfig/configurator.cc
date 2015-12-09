@@ -137,6 +137,40 @@ void NUTConfigurator::updateNUTConfig() {
     }
 }
 
+std::string NUTConfigurator::makeRule(std::string const &alert, std::string const &bit, std::string const &device, std::string const &description) const {
+    return
+        "{\n"
+        "\"single\" : {\n"
+        "    \"rule_name\"     :   \"" + alert + "-" + device + "\",\n"
+        "    \"target\"        :   [\"status.ups@" + device + "\"],\n"
+        "    \"element\"       :   \"" + device + "\",\n"
+        "    \"results\"       :   [ {\"high_critical\"  : { \"action\" : [ \"EMAIL\" ], \"description\" : \""+description+"\" }} ],\n"
+        "    \"evaluation\"    : \""
+        " function has_bit(x,bit)"
+        "     local mask = 2 ^ (bit - 1)"
+        "     x = x % (2*mask)"
+        "     if x >= mask then return true else return false end"
+        " end"
+        " function main(status)"
+        "     if has_bit(status,"+bit+") then return HIGH_CRITICAL end"
+        "     return OK"
+        " end"
+        "\"\n"
+        "  }\n"
+        "}";
+};
+
+std::vector<std::string> NUTConfigurator::createRules(std::string const &name) {
+    std::vector<std::string> result;
+
+    // bits OB - 5 LB - 7 BYPASS - 9
+
+    result.push_back (makeRule ("onbattery","5",name,"UPS is running on battery!"));
+    result.push_back (makeRule ("lowbattery","7",name,"Battery depleted!"));
+    result.push_back (makeRule ("onbypass","7",name,"UPS is running on bypass!"));
+    return result;
+}
+
 bool NUTConfigurator::configure( const std::string &name, const AutoConfigurationInfo &info ) {
     log_debug("NUT configurator created");
 
@@ -201,6 +235,11 @@ bool Configurator::configure(
     return true;
 }
 
+std::vector<std::string> Configurator::createRules(UNUSED_PARAM std::string const &name) {
+    std::vector<std::string> result;
+    return result;
+}
+
 Configurator * ConfigFactory::getConfigurator( uint32_t type, uint32_t subtype ) {
     if( type == asset_type::DEVICE && ( subtype == asset_subtype::UPS || subtype == asset_subtype::EPDU ) ) {
         return new NUTConfigurator();
@@ -217,3 +256,12 @@ bool ConfigFactory::configureAsset( const std::string &name, AutoConfigurationIn
     delete C;
     return result;
 }
+
+std::vector<std::string> ConfigFactory::getNewRules( const std::string &name, AutoConfigurationInfo &info) {
+    log_debug("rules attempt device name %s type %" PRIu32 "/%" PRIu32, name.c_str(), info.type, info.subtype );
+    Configurator *C = getConfigurator( info.type, info.subtype );
+    std::vector<std::string> result = C->createRules (name);
+    delete C;
+    return result;
+}
+

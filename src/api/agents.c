@@ -159,6 +159,7 @@ int
    *value = ymsg_get_int32( *self_p, "value" );
    *scale = ymsg_get_int32( *self_p, "scale" );
    *time = ymsg_get_int64( *self_p, "time" );
+   ymsg_destroy (self_p);
    return 0;
 }
 

@@ -1321,6 +1321,7 @@ TEST_CASE("Location topology from #13","[db][topology][location][location_topolo
     r1.insert(r2.begin(), r2.end());
     r2.clear();
 
+    REQUIRE ( r1.size() == expected.size() );
     // check if edges are ok
     for (auto  it = r1.begin(); it != r1.end(); ++it )
     {   

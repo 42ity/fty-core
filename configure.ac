@@ -6,7 +6,7 @@ PACKAGE_VENDOR="Eaton"
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
 # Sub-makefiles: do not forget to update SUBDIRS list in root Makefile.am
-AC_CONFIG_FILES([Makefile docs/man/Makefile tools/Makefile docs/examples/Makefile])
+AC_CONFIG_FILES([Makefile docs/man/Makefile tools/Makefile docs/examples/Makefile database/mysql/Makefile])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([foreign 1.11 -Wall -Wno-portability silent-rules tar-pax no-dist-gzip dist-xz subdir-objects])
 
@@ -440,6 +440,7 @@ PKG_CHECK_MODULES([CXXTOOLS], [cxxtools >= 2.2.0], [], [AC_MSG_ERROR([cannot fin
 PKG_CHECK_MODULES([LIBSODIUM], [libsodium >= 0.7.0], [], [AC_MSG_ERROR([cannot find libsodium >= 0.7.0])])
 PKG_CHECK_MODULES([LIBSASL2], [libsasl2 >= 2.1.0], [], [AC_MSG_ERROR([cannot find sasl 2 library >= 2.1.0])])
 PKG_CHECK_MODULES([LIBMLM], [libmlm >= 0.1.0], [], [AC_MSG_ERROR([cannot find malamute library >= 0.1.0])])
+PKG_CHECK_MODULES([LIBBIOSPROTO], [libbiosproto >= 0.1.0], [], AC_MSG_ERROR([cannot find libbiosproto library >= 0.1.0]))
 
 AC_MSG_CHECKING([presence of augtool])
 AS_IF([which augtool >/dev/null 2>&1], [AC_MSG_RESULT([yes])], [
@@ -661,6 +662,7 @@ Summary:
         LIBSASL2_LIBS:           ${LIBSASL2_LIBS}
         LIBMLM_CFLAGS:           ${LIBMLM_CFLAGS}
         LIBMLM_LIBS:             ${LIBMLM_LIBS}
+        LIBBIOSPROTO_LIBS:       ${LIBBIOSPROTO_LIBS}
         SASLAUTHD_MUX:           ${SASLAUTHD_MUX}
         SYSTEMDSYSTEMUNITDIR:    ${systemdsystemunitdir}
         SYSTEMDSYSTEMPRESETDIR:  ${systemdsystempresetdir}
