@@ -177,9 +177,9 @@ wait_for_web() {
     logmsg_info "Testing webserver ability to serve the REST API"
     curlfail_push_expect_404
     if [ -n "`api_get "" 2>&1 | grep 'HTTP/.* 500'`" ] >/dev/null 2>&1 ; then
-        logmsg_error "api_get() returned an error:"
+        logmsg_error "api_get() returned an Internal Server Error:"
         api_get "" >&2
-        CODE=4 die "Webserver code is deeply broken, please fix it first!"
+        CODE=4 die "Webserver code is deeply broken (maybe missing libraries), please fix it first!"
     fi
 
     if [ -z "`api_get "" 2>&1 | grep 'HTTP/.* 404 Not Found'`" ] >/dev/null 2>&1 ; then
