@@ -1,6 +1,5 @@
-# !/bin/sh
 #
-# Copyright (C) 2014 Eaton
+# Copyright (C) 2014-2015 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -397,13 +396,13 @@ CURL() {
 _api_get_token() {
     _RES_=0
     if [ -z "$_TOKEN_" ]; then
-	AUTH_URL="/oauth2/token?username=${BIOS_USER}&password=${BIOS_PASSWD}&grant_type=password"
+	    AUTH_URL="/oauth2/token?username=${BIOS_USER}&password=${BIOS_PASSWD}&grant_type=password"
         [ x"$WEBLIB_CURLFAIL_GETTOKEN" = xprotected ] && \
             curlfail_push_expect_noerrors
-	_TOKEN_RAW_="`set +x; api_get "$AUTH_URL"`" || _RES_=$?
+	    _TOKEN_RAW_="`set +x; api_get "$AUTH_URL"`" || _RES_=$?
         [ x"$WEBLIB_CURLFAIL_GETTOKEN" = xprotected ] && \
             curlfail_pop
-	_TOKEN_="`echo "$_TOKEN_RAW_" | sed -n 's|.*\"access_token\"[[:blank:]]*:[[:blank:]]*\"\([^\"]*\)\".*|\1|p'`" || _RES_=$?
+	    _TOKEN_="`echo "$_TOKEN_RAW_" | sed -n 's|.*\"access_token\"[[:blank:]]*:[[:blank:]]*\"\([^\"]*\)\".*|\1|p'`" || _RES_=$?
 #	echo "CI-WEBLIB-DEBUG: _api_get_token(): got ($_RES_) new token '$_TOKEN_'" >&2
     fi
     echo "$_TOKEN_"

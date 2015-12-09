@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2015 Eaton
 #
-#T his program is free software; you can redistribute it and/or modify
+# This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
@@ -12,7 +12,7 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License along
-# with this program; in case not, write to the Free Software Foundation, Inc.,
+# with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 #! \file   asset_import_err.sh
@@ -29,7 +29,7 @@ echo "**************************************************************************
 echo "********* Prerequisites ***************************************************************************"
 echo "***************************************************************************************************"
 [ -n "$CSV_LOADDIR_ASSIMP" ] && [ -d "$CSV_LOADDIR_ASSIMP" ] || die "Can not use CSV_LOADDIR_ASSIMP='$CSV_LOADDIR_ASSIMP'"
-init_script
+#init_script
 
 DATASWITCH=0
 
@@ -72,7 +72,7 @@ test_tables(){
 echo "********* asset_import_err.sh *********************************************************************"
 echo "********* 1. No utf csv file **********************************************************************"
 echo "***************************************************************************************************"
-#*#*#*#*#*#*# TODO : No utf csv file : Really should PASS not allowed format?
+#*#*#*#*#*#*# TODO : No utf csv file : Really should PASS not allowed format? SOLVED!
 test_it "No_utf_csv_file"
 loaddb_initial
 REZ=0
@@ -82,9 +82,8 @@ print_result $REZ
 echo "********* asset_import_err.sh *********************************************************************"
 echo "********* 2. Method is not allowed ****************************************************************"
 echo "***************************************************************************************************"
-#*#*#*#*#*#*# TODO : Method is not allowed : Wrong message : MUST BE LIKE : Method is not allowed : 45
 test_it "Method_is_not_allowed"
-curlfail_push_expect_400
+curlfail_push_expect_405
 loaddb_initial
 REZ=0
 ASSET="$CSV_LOADDIR_ASSIMP/universal_asset_semicolon_16LE.csv"
@@ -141,7 +140,7 @@ echo "********* asset_import_err.sh ********************************************
 echo "********* 6. Bad separator ************************************************************************"
 echo "***************************************************************************************************"
 test_it "Bad_separator"
-#*#*#*#*#*#*# TODO : Bad separator : the code 48 received is not expected : 47???
+#*#*#*#*#*#*# TODO : Bad separator : the code 48 received is not expected : 47??? SOLVED!! 48 - OK
 curlfail_push_expect_400
 loaddb_initial
 REZ=0
@@ -166,7 +165,7 @@ echo "********* asset_import_err.sh ********************************************
 echo "********* 8. Not so long **************************************************************************"
 echo "***************************************************************************************************"
 test_it "Not_so_long"
-#*#*#*#*#*#*# TODO : Not so long : 128kB is 131072 byte : the not_so_long_asset_tab_16LE.csv has size 130860
+#*#*#*#*#*#*# TODO : Not so long : 128kB is 131072 byte : the not_so_long_asset_tab_16LE.csv has size 130860: Is planned!!!
 curlfail_push_expect_413
 loaddb_initial
 REZ=0
@@ -216,6 +215,7 @@ loaddb_initial
 REZ=0
 test_tables "universal_asset_mix_comma_semicolon__8.csv" 48 "ERROR"
 print_result $REZ
+
 
 echo "********* asset_import_err.sh *********************************************************************"
 echo "********* 13. Tab comma mix ***********************************************************************"
@@ -296,7 +296,6 @@ test_tables "universal_asset_comma_8_double_name_1.csv" 48 "ERROR" "_double_name
 print_result $REZ
 curlfail_pop
 
-
 echo "********* asset_import_err.sh *********************************************************************"
 echo "********* 21. Double name 2 ***********************************************************************"
 echo "***************************************************************************************************"
@@ -312,6 +311,7 @@ echo "********* asset_import_err.sh ********************************************
 echo "********* 22. Duplicate name value ****************************************************************"
 echo "***************************************************************************************************"
 test_it "Duplicate_name_value"
+#*#*#*#*#*#*# TODO : Duplicate_name_value : There should not be code 200 OK
 loaddb_initial
 REZ=0
 ASSET="$CSV_LOADDIR_ASSIMP/universal_asset_comma_8.csv"
@@ -325,6 +325,7 @@ echo "********* asset_import_err.sh ********************************************
 echo "********* 23. Duplicate ipx ***********************************************************************"
 echo "***************************************************************************************************"
 test_it "Duplicate_ipx"
+#*#*#*#*#*#*# TODO : Duplicate_ipx : is it allowed?
 loaddb_initial
 REZ=0
 test_tables "universal_asset_comma_8_duplicate_ipx.csv" 48 "ERROR" "_duplicate_ipx"
@@ -348,8 +349,35 @@ REZ=0
 test_tables "universal_asset_comma_8_serial_no.csv" 48 "ERROR" "_serial_no"
 print_result $REZ
 
+echo "********* asset_import_err.sh *********************************************************************"
+echo "********* 26. Subtype_&_status_values *************************************************************"
+echo "***************************************************************************************************"
+test_it "Subtype & status values"
+loaddb_initial
+REZ=0
+test_tables "universal_asset_comma_8_subtype_status_values.csv" 48 "ERROR" "_subtype_status_values"
+print_result $REZ
+
+echo "********* asset_import_err.sh *************************************************************************"
+echo "********* 27. Asset tag values *************************************************************"
+echo "***************************************************************************************************"
+test_it "Asset_tag_values"
+#*#*#*#*#*#*# TODO : error msg contais "to long", should "too long"
+loaddb_initial
+REZ=0
+test_tables "universal_asset_comma_8_asset_tag.csv" 48 "ERROR" "_asset_tag"
+print_result $REZ
+
+echo "********* asset_import_err.sh *************************************************************************"
+echo "********* 28. Bussines critical values *************************************************************"
+echo "***************************************************************************************************"
+test_it "Bussines_critical_values"
+loaddb_initial
+REZ=0
+test_tables "universal_asset_comma_8_bussines_critical.csv" 48 "ERROR" "_bussines_critical"
+print_result $REZ
+
 echo "###################################################################################################"
 echo "********* asset_import_err.sh *********************** END *****************************************"
 echo "###################################################################################################"
 echo
-
