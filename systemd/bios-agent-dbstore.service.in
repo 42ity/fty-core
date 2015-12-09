@@ -2,6 +2,7 @@
 Description=Database layer for BIOS
 After=malamute.service bios-db-init.service legacy-metrics.service
 Requires=malamute.service bios-db-init.service legacy-metrics.service
+PartOf=bios.target
 
 [Service]
 Type=simple
@@ -14,4 +15,4 @@ EnvironmentFile=-/etc/default/bios-db-rw
 ExecStart=@libexecdir@/@PACKAGE@/agent-dbstore
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=bios.target

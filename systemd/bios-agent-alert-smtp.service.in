@@ -2,6 +2,7 @@
 Description=Notification agent for BIOS project
 After=malamute.service
 Requires=malamute.service
+PartOf=bios.target
 
 [Service]
 Type=simple
@@ -26,4 +27,4 @@ EnvironmentFile=-/etc/sysconfig/bios__%n.conf
 ExecStart=@libexecdir@/@PACKAGE@/agent-alert-smtp
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=bios.target
