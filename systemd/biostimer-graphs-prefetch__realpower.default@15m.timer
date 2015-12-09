@@ -1,5 +1,6 @@
 [Unit]
 Description=BIOS-Timer service that prefetches average computations for quicker graphs (custom regular runner)
+PartOf=bios.target
 
 [Timer]
 # Time to wait after booting before we run first time
@@ -14,4 +15,4 @@ Persistent=false
 Unit=biostimer-graphs-prefetch@15m::realpower.default.service
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=bios.target

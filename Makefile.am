@@ -1563,55 +1563,107 @@ obs_SCRIPTS	=  obs/preinstallimage-bios.sh
 EXTRA_DIST	+= $(obs_SCRIPTS)
 
 # SystemD integrations files; if not enabled - variables remain empty
+SYSTEMD_UNITS_LOWLEVEL =
+SYSTEMD_UNITS_TARGET_BIOS =
 SYSTEMD_UNITS =
+
+SYSTEMD_UNITS_NOTPRESET_LOWLEVEL =
+SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS =
 SYSTEMD_UNITS_NOTPRESET =
+
+SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL =
+SYSTEMD_UNITS_TIMERIMPL_TARGET_BIOS =
 SYSTEMD_UNITS_TIMERIMPL =
+
+SYSTEMD_TIMERS_LOWLEVEL =
+SYSTEMD_TIMERS_TARGET_BIOS =
 SYSTEMD_TIMERS =
+
 SYSTEMD_PRESETS =
+SYSTEMD_TARGETS =
+
+# The subdirectory in source (and build) tree where systemd unit files
+# and their .in templates reside, starting from workspace (or build) root
+# Note: No leading nor trailing slash is expected here!
+SYSTEMD_SUBDIR = systemd
 
 # systemd integration enabled?
 if HAVE_SYSTEMD
 
-# Here we list the actual service-definition files that should be compiled
-# Enabled as part of BIOS presets
-SYSTEMD_UNITS += bios-agent-nut.service \
-                        bios-agent-dbstore.service bios-server-agent.service \
-                        bios-agent-inventory.service bios-agent-cm.service \
-                        bios-agent-alert.service \
-                        bios-agent-alert-smtp.service bios-agent-tpower.service \
-                        bios-agent-autoconfig.service bios-agent-th.service \
-                        bios-db-init.service bios-reset-button.service \
+# These units allow to toggle the entirety of BIOS agents and other related
+# services on and off (except a few chosen low-level services that remain
+# WantedBy=multi-user.target)
+SYSTEMD_TARGETS += bios.target bios.service
+
+# These units are not part of the common bios.target etc. but are to be
+# considered rather a part of the operating environment independent of
+# the BIOS high-level target groupings.
+SYSTEMD_UNITS_LOWLEVEL += \
+                        bios-reset-button.service \
                         ifplug-dhcp-autoconf.service \
                         bios-ssh-last-resort.service \
                         bios-networking.service
 
+# These service-units are PartOf and WantedBy the "bios.target"
+# And also "tntnet@.service" customized by obs/preinstall.sh
+# And also some of the timer units and implementations below
+SYSTEMD_UNITS_TARGET_BIOS += \
+                        bios-db-init.service \
+                        bios-agent-alert.service \
+                        bios-agent-alert-smtp.service \
+                        bios-agent-autoconfig.service \
+                        bios-agent-cm.service \
+                        bios-agent-dbstore.service \
+                        bios-agent-inventory.service \
+                        bios-agent-nut.service \
+                        bios-agent-th.service \
+                        bios-agent-tpower.service \
+                        bios-server-agent.service
+
+# Here we list the actual service-definition files that should be compiled
+# Enabled as part of BIOS presets
+SYSTEMD_UNITS += $(SYSTEMD_UNITS_TARGET_BIOS) $(SYSTEMD_UNITS_LOWLEVEL)
+
 # These units have unit files installed but are not enabled by default
 # via presets nor timers (may be enabled in OS image generation script
 # or during deployment's lifetime)
-SYSTEMD_UNITS_NOTPRESET += \
+#SYSTEMD_UNITS_NOTPRESET_LOWLEVEL +=
+SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS += \
                         bios-fake-th.service
 
+SYSTEMD_UNITS_NOTPRESET += $(SYSTEMD_UNITS_NOTPRESET_LOWLEVEL) $(SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS)
+
 # These unit files are compiled, but are not enabled via BIOS presets
-SYSTEMD_UNITS_TIMERIMPL += \
-                        biostimer-outage.service \
-                        biostimer-graphs-prefetch@.service \
+SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL += \
                         biostimer-verify-fs.service
+
+SYSTEMD_UNITS_TIMERIMPL_TARGET_BIOS += \
+                        biostimer-outage.service \
+                        biostimer-graphs-prefetch@.service
+
+SYSTEMD_UNITS_TIMERIMPL += $(SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL) $(SYSTEMD_UNITS_TIMERIMPL_TARGET_BIOS)
 
 # These files need no processing, delivered verbatim
 # Enabled as part of BIOS presets
-SYSTEMD_TIMERS +=       biostimer-outage.timer \
-                        biostimer-graphs-prefetch__realpower.default@15m.timer \
-                        biostimer-graphs-prefetch__realpower.default@24h.timer \
+SYSTEMD_TIMERS_LOWLEVEL += \
                         biostimer-verify-fs.timer
 
-# This file is generated
+SYSTEMD_TIMERS_TARGET_BIOS += \
+                        biostimer-outage.timer \
+                        biostimer-graphs-prefetch__realpower.default@15m.timer \
+                        biostimer-graphs-prefetch__realpower.default@24h.timer
+
+SYSTEMD_TIMERS += $(SYSTEMD_TIMERS_LOWLEVEL) $(SYSTEMD_TIMERS_TARGET_BIOS)
+
+# This file is generated to toggle the defined units and targets
+# (except those in SYSTEMD_UNITS_NOTPRESET list)
 SYSTEMD_PRESETS +=      42-bios-systemd.preset
 
 ### TODO? Add the build info (git commit, timestamp) to the header comment?
-systemd/42-bios-systemd.preset: Makefile
-	mkdir -p "$(abs_top_builddir)/systemd" "`dirname "$@"`"
+$(SYSTEMD_SUBDIR)/42-bios-systemd.preset: Makefile
+	@mkdir -p "$(abs_top_builddir)/$(SYSTEMD_SUBDIR)" "`dirname "$@"`" || true
 	@( echo "### This is a generated file with a list of all BIOS services"; \
-	  for F in $(SYSTEMD_UNITS) $(SYSTEMD_TIMERS) ; do echo "enable $$F" ; done ) > $@
+	  for F in $(SYSTEMD_TARGETS) $(SYSTEMD_UNITS) $(SYSTEMD_TIMERS) ; do echo "disable $$F" ; echo "enable $$F" ; done ) > $@
 
 # The rules to actually "compile" the service definition files
 # is part of catch-all %.in recipe above
@@ -1619,30 +1671,31 @@ systemd/42-bios-systemd.preset: Makefile
 # $(systemdsystemunitdir) and $(systemdsystempresetdir) may be defined
 # externally by automake/autoconf; otherwise they are empty and should
 # effectively resolve to the top_builddir
-systemdsystemunit_generated =	$(addprefix systemd/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL) $(SYSTEMD_UNITS_NOTPRESET))
-systemdsystemunit_DATA =	$(systemdsystemunit_generated) $(addprefix systemd/,$(SYSTEMD_TIMERS))
-systemdsystempreset_generated =	$(addprefix systemd/,$(SYSTEMD_PRESETS))
+systemdsystemunit_generated =	$(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL) $(SYSTEMD_UNITS_NOTPRESET))
+systemdsystemunit_DATA =	$(systemdsystemunit_generated) $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_TIMERS) $(SYSTEMD_TARGETS))
+systemdsystempreset_generated =	$(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_PRESETS))
 systemdsystempreset_DATA =	$(systemdsystempreset_generated)
 
 # auto-cleanup and dist targets
 CLEANFILES += $(systemdsystemunit_generated) $(systemdsystempreset_generated)
-EXTRA_DIST += $(addprefix $(top_srcdir)/systemd/,$(SYSTEMD_TIMERS) $(addsuffix .in,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL) $(SYSTEMD_UNITS_NOTPRESET)))
+EXTRA_DIST += $(addprefix $(top_srcdir)/$(SYSTEMD_SUBDIR)/,$(SYSTEMD_TIMERS) $(SYSTEMD_TARGETS) $(addsuffix .in,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL) $(SYSTEMD_UNITS_NOTPRESET)))
 endif
 
 # Quick links to build the systemd files (if enabled)
-systemd-units: systemd-daemons systemd-timers systemd-presets
-systemd-daemons: $(addprefix systemd/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_NOTPRESET))
-systemd-timers:  $(addprefix systemd/,$(SYSTEMD_UNITS_TIMERIMPL))
+systemd-units: systemd-daemons systemd-timers systemd-presets systemd-targets
+systemd-daemons: $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_NOTPRESET))
+systemd-timers:  $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_UNITS_TIMERIMPL))
 	if [ x"$(abs_top_builddir)/" = x"$(abs_top_srcdir)/" ] ; then true; else \
-	mkdir -p "$(abs_top_builddir)/systemd"; \
-	for F in $(addprefix $(abs_top_srcdir)/systemd/,$(SYSTEMD_TIMERS)) ; do \
-	    $(call copy-file,$$F,$(abs_top_builddir)/systemd/) || exit $$?; \
+	mkdir -p "$(abs_top_builddir)/$(SYSTEMD_SUBDIR)"; \
+	for F in $(addprefix $(abs_top_srcdir)/$(SYSTEMD_SUBDIR)/,$(SYSTEMD_TIMERS)) ; do \
+	    $(call copy-file,$$F,$(abs_top_builddir)/$(SYSTEMD_SUBDIR)/) || exit $$?; \
 	done; fi
-systemd-presets: $(addprefix systemd/,$(SYSTEMD_PRESETS))
+systemd-presets: $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_PRESETS))
+systemd-targets: $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_TARGETS))
 
 clean-systemd-units:
 	@if [ x"$(abs_top_builddir)/" != x"$(abs_top_srcdir)/" ] && [ -n "$(SYSTEMD_TIMERS)" ]; then \
-	    $(RM) $(addprefix $(abs_top_builddir)/systemd/,$(SYSTEMD_TIMERS)) ; \
+	    $(RM) $(addprefix $(abs_top_builddir)/$(SYSTEMD_SUBDIR)/,$(SYSTEMD_TIMERS) $(SYSTEMD_TARGETS)) ; \
 	fi || true
 
 #----------------------------------------------------------------------
