@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2014 Eaton
+# Copyright (C) 2014-2015 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -203,6 +203,15 @@ done
 # if POSITIVE parameters variable is empty, then all tests are included
 [ -n "$POSITIVE" ] || POSITIVE="*"
 
+exit_summarizeTestedScriptlets() {
+    logmsg_info "This ${_SCRIPT_NAME} ${_SCRIPT_ARGS} run selected the following scriptlets from web/commands :"
+    logmsg_info "  Execution pattern (POSITIVE) = $POSITIVE"
+    logmsg_info "  Ignored pattern (NEGATIVE)   = $NEGATIVE"
+    logmsg_info "  SKIP_NONSH_TESTS = $SKIP_NONSH_TESTS (so skipped ${SKIPPED_NONSH_TESTS+0} tests)"
+}
+
+settraps '_TRAP_RES=$?; exit_summarizeTestedScriptlets ; exit_summarizeTestlibResults; exit $_TRAP_RES'
+
 # A bash-ism, should set the exitcode of the rightmost failed command
 # in a pipeline, otherwise e.g. exitcode("false | true") == 0
 set -o pipefail 2>/dev/null || true
@@ -237,12 +246,3 @@ for i in $POSITIVE; do
     fi
     done
 done
-
-echo "Testing completed, $TESTLIB_COUNT_PASS/$TESTLIB_COUNT_TOTAL tests passed and $TESTLIB_COUNT_SKIP more failed but ignored"
-[ -z "$TESTLIB_LIST_FAILED" ] && [ x"$TESTLIB_COUNT_FAIL" = x0 ] && exit 0
-
-echo "Following $TESTLIB_COUNT_FAIL tests failed:"
-for i in $TESTLIB_LIST_FAILED; do
-    echo " * $i"
-done
-exit 1
