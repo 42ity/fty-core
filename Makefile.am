@@ -4,6 +4,7 @@
 
 ACLOCAL_AMFLAGS =	-I m4 ${ACLOCAL_FLAGS}
 AUTOMAKE_OPTIONS =	color-tests parallel-tests
+LDFLAGS_NO_UNDEFS =	-Wl,--no-undefined
 
 # http://www.gnu.org/software/automake/manual/html_node/Basics-of-Distribution.html
 # NOTE: "dist" is not "install": The dist rule in the Makefile can be used to
@@ -258,7 +259,7 @@ libbiosapi_la_LDFLAGS = \
 		-fPIC -shared \
 		${LIBZMQ_LIBS} ${LIBCZMQ_LIBS} ${LIBMLM_LIBS} \
 		-version-info $(LIBBIOSAPI_CURRENT):$(LIBBIOSAPI_REVISION):$(LIBBIOSAPI_AGE) \
-		-Wl,--no-undefined
+		$(LDFLAGS_NO_UNDEFS)
 
 if HAVE_LD_VERSION_SCRIPT
 libbiosapi_la_LDFLAGS += \
@@ -1445,7 +1446,7 @@ bios_web_la_CPPFLAGS =	$(AM_CPPFLAGS) \
 bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 			${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
 			${LIBBIOSPROTO_LIBS} \
-			-Wl,--no-undefined \
+			$(LDFLAGS_NO_UNDEFS) \
 			-module -lm -ltntdb -ltntnet -lcidr -lmagic -lbiosapi
 
 bios_web_la_LIBADD = \
