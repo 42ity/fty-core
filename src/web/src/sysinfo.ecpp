@@ -261,7 +261,8 @@ int8_t access_auth_level;
 		       line_tokens.at (token_unitname).compare ("") == 0 )
 	            token_unitname++;
 		std::string unitname = line_tokens.at (token_unitname);
-	        rv = shared::output ({"systemctl", "show", "--full", unitname.c_str()}, output, cmderr);
+// Note: unitname must be the "$2" for our systemctl script
+	        rv = shared::output ({"systemctl", "show", unitname.c_str(), "--full"}, output, cmderr);
 
 		if (!cmderr.empty() && !cmderr.compare("Action not allowed")) {
 // Note: Here we filter by the stderr contents because it will be
