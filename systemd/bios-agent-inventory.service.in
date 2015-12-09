@@ -2,6 +2,7 @@
 Description=Inventory agent for BIOS project
 After=malamute.service bios-db-init.service
 Requires=malamute.service bios-db-init.service
+PartOf=bios.target
 
 [Service]
 Type=simple
@@ -14,4 +15,4 @@ EnvironmentFile=-/etc/default/bios-db-rw
 ExecStart=@libexecdir@/@PACKAGE@/agent-inventory
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=bios.target
