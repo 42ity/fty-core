@@ -40,6 +40,28 @@
 #include "assets.h"
 #include "asset_types.h"
 #include "utils.h"
+
+// Magic numbers - systemctl fancy formatting du-jour
+#ifndef SYSTEMCTL__LIST_UNITS__STRIP_HEADER
+#define SYSTEMCTL__LIST_UNITS__STRIP_HEADER 1
+#endif
+
+#ifndef SYSTEMCTL__LIST_UNITS__STRIP_FOOTER
+#define SYSTEMCTL__LIST_UNITS__STRIP_FOOTER 7
+#endif
+
+#ifndef DPKG__LIST__STRIP_HEADER
+#define DPKG__LIST__STRIP_HEADER 5
+#endif
+
+#ifndef DPKG__LIST__COLUMN_PKGNAME
+#define DPKG__LIST__COLUMN_PKGNAME 1
+#endif
+
+#ifndef DPKG__LIST__COLUMN_PKGVERSION
+#define DPKG__LIST__COLUMN_PKGVERSION 2
+#endif
+
 </%pre>
 <%request scope="global">
 int8_t access_auth_level;
@@ -153,7 +175,7 @@ int8_t access_auth_level;
             std::vector<std::string> tokens;
             cxxtools::split ("\n", output, std::back_inserter (tokens));
             // Strip first 5 lines
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < DPKG__LIST__STRIP_HEADER; i++)
                 tokens.erase (tokens.begin ());
             bool first = true;
             for (auto const& item : tokens) {
@@ -161,20 +183,21 @@ int8_t access_auth_level;
                     continue;
                 std::vector <std::string> line_tokens;
                 cxxtools::split (cxxtools::Regex("[ \t]+"), item, std::back_inserter (line_tokens));
-                std::string version, commit;
-                auto pos = line_tokens.at (2).find ("~");
+                std::string pkgname, version, commit;
+                pkgname = line_tokens.at (DPKG__LIST__COLUMN_PKGNAME);
+                auto pos = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION).find ("~");
                 if (pos != std::string::npos) {
-                    version = line_tokens.at (2).substr (0, pos);
-                    commit = line_tokens.at (2).substr (pos+1); 
+                    version = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION).substr (0, pos);
+                    commit = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION).substr (pos+1);
                 }
                 else {
-                    version = line_tokens.at (2);
+                    version = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION);
 
                 }
 // Note: Shall we desire maintainers name etc...
-//                rv = shared::output ({"dpkg", "status", line_tokens.at (1).c_str ()}, output, cmderr);
-//                if (rv == 0) {
-//                      Parse `dpkg status <package_name>` here
+//                rv = shared::output ({"dpkg", "status", pkgname.c_str ()}, output, cmderr);
+//                if (rv == 0 && !output.empty()) {
+//                      Parse `dpkg status <pkgname>` here
 //                }
 </%cpp>
 %               if (first) {
@@ -184,7 +207,7 @@ int8_t access_auth_level;
 %               else {
           , {
 %               }
-                <$$ utils::json::jsonify ("package-name", line_tokens.at (1)) $>,
+                <$$ utils::json::jsonify ("package-name", pkgname) $>,
                 <$$ utils::json::jsonify ("package-version", version) $>
 %               if (pos != std::string::npos) {
               , <$$ utils::json::jsonify ("commit", commit) $>
@@ -195,6 +218,9 @@ int8_t access_auth_level;
 %       }
 <%cpp>
 // Note: Commands and unit names are constrained in tools/systemctl and web/systemctl.ecpp
+// TODO: Maybe parsing 'systemctl show -l *' to get per-service info and apply
+//   the filters defined for web/systemctl.ecpp would be more efficient than
+//   calling the script dozens of times?
         rv = shared::output ({"systemctl", "list-units", "--all", "--full"}, output, cmderr);
         if (rv == 0 && !output.empty()) {
 </%cpp>
@@ -203,10 +229,10 @@ int8_t access_auth_level;
             std::vector<std::string> tokens;
             cxxtools::split("\n", output, std::back_inserter (tokens));
             // Strip first 1 lines
-            for (int i = 0; i < 1; i++)
+            for (int i = 0; i < SYSTEMCTL__LIST_UNITS__STRIP_HEADER; i++)
                 tokens.erase (tokens.begin ());
             // Strip last 7 lines
-            for (int i = 0; i < 7; i++)
+            for (int i = 0; i < SYSTEMCTL__LIST_UNITS__STRIP_FOOTER; i++)
                 tokens.erase (tokens.end ());
             bool first = true;
             for (auto const& item : tokens) {
