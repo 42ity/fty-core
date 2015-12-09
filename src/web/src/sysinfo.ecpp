@@ -254,8 +254,12 @@ int8_t access_auth_level;
                 std::vector <std::string> line_tokens;
                 cxxtools::split (" \t", item, std::back_inserter (line_tokens));
                 // status
-		if (line_tokens.at (0).compare ("*") == 0) 
+		if (line_tokens.at (0).compare ("*") == 0)
 	            token_unitname=1;
+		while (line_tokens.at (token_unitname).compare (" ") == 0 ||
+		       line_tokens.at (token_unitname).compare ({'\t'}) == 0 ||
+		       line_tokens.at (token_unitname).compare ("") == 0 )
+	            token_unitname++;
 		std::string unitname = line_tokens.at (token_unitname);
 	        rv = shared::output ({"systemctl", "show", "--full", unitname.c_str()}, output, cmderr);
 
