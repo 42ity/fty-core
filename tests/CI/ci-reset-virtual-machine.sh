@@ -296,10 +296,11 @@ mkdir -p "/srv/libvirt/snapshots/$IMGTYPE/$ARCH" "/srv/libvirt/rootfs" "/srv/lib
 cd "/srv/libvirt/rootfs" || \
 	die "Can not 'cd /srv/libvirt/rootfs' to keep container root trees"
 
-if [ -s "$VM.config-reset-vm" ]; then
+if [ -s "`pwd`/$VM.config-reset-vm" ]; then
 	if [ "$ALLOW_CONFIG_FILE" = yes ]; then
-		logmsg_warn "Found configuration file for the '$VM', it will override the command-line settings!"
-		. "$VM.config-reset-vm" || die "Can not import config file '`pwd`/$VM.config-reset-vm'"
+		logmsg_warn "Found configuration file for the '$VM', it will override the command-line settings:"
+		cat "`pwd`/$VM.config-reset-vm"
+		. "`pwd`/$VM.config-reset-vm" || die "Can not import config file '`pwd`/$VM.config-reset-vm'"
 	else
 		logmsg_warn "Found configuration file for the '$VM', but it is ignored because ALLOW_CONFIG_FILE='$ALLOW_CONFIG_FILE'"
 	fi
