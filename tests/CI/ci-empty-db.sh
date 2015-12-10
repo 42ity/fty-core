@@ -24,15 +24,29 @@
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
-NEED_BUILDSUBDIR=no determineDirs_default || true
+NEED_BUILDSUBDIR=no NEED_CHECKOUTDIR=yes determineDirs_default || true
+. "`dirname $0`"/testlib.sh || die "Can not include common test script library"
+. "`dirname $0`"/testlib-db.sh || die "Can not include database test script library"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to test the database initialization"
+[ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
+settraps 'exit_summarizeTestlibResults'
 
 set -u
 set -e
-set -x
+#set -x
 
-DB_LOADDIR="$CHECKOUTDIR/database/mysql"
-DB1="$DB_LOADDIR/initdb.sql"
+#DB_LOADDIR="$CHECKOUTDIR/database/mysql"
+#DB1="$DB_LOADDIR/initdb.sql"
+#loaddb_file "$DB1"
 
-loaddb_file "$DB1"
+test_it "loaddb_initial"
+loaddb_initial
+print_result $?
+
+test_it "presence of t_bios_asset_element_type"
 do_select "select * from t_bios_asset_element_type"
+print_result $?
+
+# The trap-handler should display the summary (if any)
+exit
