@@ -12,7 +12,7 @@ BUT IS NOT LIMITED TO, THE SOFTWARE USAGE LICENSE, THE DISCLAIMER OF WARRANTY
 AND LIMITED WARRANTY, AND LIMITATION OF EATON LIABILITY.
 READ THE TERMS AND CONDITIONS OF THIS AGREEMENT CAREFULLY BEFORE INSTALLING
 OR USING THE SOFTWARE. IF YOU HAVE NOT ENTERED INTO A BETA TESTING AGREEMENT
-WITH EATON OR ARE NOT ONE OF EATON’S BETA TEST PARTNERS, OR YOU DO NOT AGREE
+WITH EATON OR ARE NOT ONE OF EATON'S BETA TEST PARTNERS, OR YOU DO NOT AGREE
 TO THE TERMS, CONDITIONS AND LIMITATIONS OF THIS AGREEMENT, YOU SHOULD NOT
 USE AND YOU ARE NOT AND WILL NOT BE AUTHORISED TO USE THIS SOFTWARE. YOU
 SHOULD PROMPTLY DELETE THE LICENSE FILE MEDIA, THE ENTIRE MEDIA PACKAGE AND
@@ -24,19 +24,19 @@ Between
 And
 	BETA TEST PARTNER or END-USER
 
-This Beta Test End-User License Agreement (the “Agreement”, “Beta Test EULA”
-or “BTE”) is made at the Effective Date between the Parties as identified below.
+This Beta Test End-User License Agreement (the "Agreement", "Beta Test EULA"
+or "BTE") is made at the Effective Date between the Parties as identified below.
 A.	PARTIES
-  1.	EATON Industries Manufacturing GmbH (“EATON”), a Swiss company, having
+  1.	EATON Industries Manufacturing GmbH ("EATON"), a Swiss company, having
 		a place of business at Route de la Longeraie 7, 1110  Morges  VD,
-		Switzerland (hereinafter referred to as “Eaton”); and
+		Switzerland (hereinafter referred to as "Eaton"); and
   2.	Beta Test Partner or End-User.
 
-The Beta Test Partner and Eaton are collectively referred to as the “Parties”
-and each individually as a “Party”.
+The Beta Test Partner and Eaton are collectively referred to as the "Parties"
+and each individually as a "Party".
 B.	RECITALS
   1.	Eaton has developed new products and Software listed in Appendix 2
-		(hereinafter referred to as the “Beta Product(s)”), which can be
+		(hereinafter referred to as the "Beta Product(s)"), which can be
 		integrated in IT systems. 
   2.	Eaton and Beta Test Partner have agreed on the terms of a Beta Test NDA
 		and the terms of a Beta Testing Agreement (Beta Testing and Equipment
@@ -58,14 +58,14 @@ C.	TERMS OF AGREEMENT
 		you, as End-User, agree on the terms and conditions of this Beta Test
 		End-User License Agreement or Beta Test EULA. Your use of the Software
 		will be considered as an acceptance of the terms of the Beta Test EULA.
-		In case you would not be one of Eaton’s Beta Test Partners but would
+		In case you would not be one of Eaton's Beta Test Partners but would
 		nevertheless continue to use the Software, Eaton will consider that you
 		have accepted these terms and their limitations, and exclusions will
 		apply. Eaton will however reserve its rights at law, contract or equity.
   2.2	The limitations of use of the Beta Testing Agreement shall apply except
 		for and vis-a-vis Software Components, which are made available and
-		licensed under an Open Source License (the “Open Source Software
-		Components” or “OSSC”). These OSSC are identified by Eaton and their use
+		licensed under an Open Source License (the "Open Source Software
+		Components" or "OSSC"). These OSSC are identified by Eaton and their use
 		is governed by the Open Source License terms which are associated with
 		these OSSC.
   2.3	Unless any portion of the Software would be specifically designated as
@@ -112,8 +112,8 @@ C.	TERMS OF AGREEMENT
 		advance. Beta Test Partner shall provide the name of the Agent(s) and
 		details of intended use and any scope of work connected to the Software.
 		Eaton will inform Beta Test Partner in writing whether such Agent(s)
-		will be authorised to use and access the Software (the “Authorized
-		Agents”).
+		will be authorised to use and access the Software (the "Authorized
+		Agents").
   2.11	Beta Test Partner shall be and shall remain liable for any misuse,
 		illegal use or breach of this Agreement by any of its Affiliates and
 		Agents.
@@ -132,8 +132,8 @@ C.	TERMS OF AGREEMENT
 		at all times retain all right, title, and interests and full and
 		exclusive ownership in and to the Software.  Beta Test Partner or
 		End-User shall not remove and shall not authorize anyone to remove any
-		label or marking affixed on or to the Software, evidencing Eaton’s
-		(and/or its Affiliates’) ownership. 
+		label or marking affixed on or to the Software, evidencing Eaton's
+		(and/or its Affiliates') ownership.
   4.2	Beta Test Partner or End-User may not (and may not authorize anyone to)
 		sell, offer for sale, commercialize, transfer, assign, loan, pledge, or
 		in any way encumber, or convey the Software  or any portion or component
@@ -163,7 +163,7 @@ C.	TERMS OF AGREEMENT
 		Agreement shall imply any license, grant of a right of use, transfer or
 		assignment of title of any IP to the other Party or any of its
 		Affiliates. Except for the limited right of use granted under Section 2
-		(Limited Release and Limitations of Use), no license of the Parties’ IP
+		(Limited Release and Limitations of Use), no license of the Parties' IP
 		(or any IP of their Affiliates) is explicitly or impliedly granted under
 		this Agreement. 
   5.2	The Beta Test Partner or End-User shall not do or authorise any third
@@ -213,8 +213,8 @@ C.	TERMS OF AGREEMENT
   8.2	Eaton shall not be liable for damage due to third party acts,
 		atmospheric discharges, excess voltage, chemical influences and for loss
 		and damage in transit.
-  8.3	Eaton’s sole obligation and Beta Test Partner’s and End-User’s sole
-		remedy under the Warranty shall be, at Eaton’s option and discretion, to
+  8.3	Eaton's sole obligation and Beta Test Partner's and End-User's sole
+		remedy under the Warranty shall be, at Eaton's option and discretion, to
 		either repair, replace or remove at no additional charge, the defective
 		Software (or the defective part of the Software) thereof, which is
 		proved to breach such Warranty under the Agreement. 
@@ -224,7 +224,7 @@ C.	TERMS OF AGREEMENT
 		particular purpose, their merchantability, fitness, quality, non
 		infringement, or otherwise. 
   8.5	All drawings, descriptive matter, specifications and advertising issued
-		by Eaton and any descriptions or illustrations contained in Eaton’s
+		by Eaton and any descriptions or illustrations contained in Eaton's
 		catalogues or brochures are issued or published for the sole purpose of
 		giving an approximate idea of the Software described in them.
   9.	Liability
@@ -234,7 +234,7 @@ C.	TERMS OF AGREEMENT
 		such liability arises, to the extent possible under mandatory applicable
 		law.  This limit of liability is cumulative and not per-incident (i.e.,
 		the existence of two or more claims will not enlarge this limit).
-		Furthermore, it applies cumulatively to all of Eaton’s Affiliates.  
+		Furthermore, it applies cumulatively to all of Eaton's Affiliates.
   9.2	In no event, whether under contract, statutory law or tort, Eaton or its
 		Affiliates, officers, directors, employees, Agents, shall be liable for
 		indirect, incidental or consequential damages, including but not limited
@@ -255,8 +255,8 @@ C.	TERMS OF AGREEMENT
 		take any action which could place Eaton or any of its Affiliates in
 		jeopardy of breaching or violating any such laws, regulations,
 		provisions and/or acts or any interpretations thereof.
-  10.2	The Beta Test Partner or End-user and its Affiliates shall not – without
-		the prior written consent of Eaton – support or sell, directly or
+  10.2	The Beta Test Partner or End-user and its Affiliates shall not - without
+		the prior written consent of Eaton - support or sell, directly or
 		indirectly, products to customers in the military sector or to
 		customers, which may use the Software for military purposes.
   10.3	The Beta Test Partner or End-User agrees to comply fully with all
@@ -269,16 +269,16 @@ C.	TERMS OF AGREEMENT
 		which are available on request.  The Beta Test Partner or End-user shall
 		inform its Affiliates and Authorised Agents of such obligations. 
   10.4	The Beta Test Partner or End-User acknowledges that the failure to
-		comply with all applicable laws and/or Eaton’s policies as contemplated
+		comply with all applicable laws and/or Eaton's policies as contemplated
 		in this Section 10 (Export Regulations and Anti-Corruption) will be
 		deemed a material breach of this Agreement, and shall entitle Eaton to
 		terminate this Agreement (in addition to any other remedies it may
 		have).  The Beta Test Partner or End-User agrees to indemnify, defend
-		and hold Eaton harmless from any breach of the Beta Test Partner’s and
-		its Affiliates’ obligation under this Section 10.
+		and hold Eaton harmless from any breach of the Beta Test Partner's and
+		its Affiliates' obligation under this Section 10.
   11.	Confidentiality and Announcements
   11.1	The Parties have agreed on the terms and have executed a Non-Disclosure
-		Agreement (the “NDA”). The Software shall be considered confidential and
+		Agreement (the "NDA"). The Software shall be considered confidential and
 		shall not be disclosed by the Beta Test Partner or End-User.  Eaton and
 		its Affiliates shall be free to use any Derivatives of the Software made
 		by Beta Test Partner or End-User for the development, exploitation and
@@ -290,7 +290,7 @@ C.	TERMS OF AGREEMENT
 		Agreement, the Beta Test Partner or End-User may have access to one or
 		more databases, applications, reports, documents and/or other
 		information in hardcopy or electronic form that contain or process data
-		relating to identified or identifiable individuals (“Personal Data”),
+		relating to identified or identifiable individuals ("Personal Data"),
 		which the Beta Test Partner or End-User acknowledges may be of a
 		sensitive nature and which the Beta Test Partner or End-User undertakes
 		to treat in a strictly confidential manner and not to use unless
@@ -312,13 +312,13 @@ C.	TERMS OF AGREEMENT
 		employee relationship between the Beta Test Partner or End-user and
 		Eaton.
   14.	Force Majeure
-  14.1	If a Party (the “Affected Party”) is prevented, hindered or delayed from
+  14.1	If a Party (the "Affected Party") is prevented, hindered or delayed from
 		or in performing any of its obligations under this Agreement (other than
 		a payment obligation) by a Force Majeure Event, the Affected Party's
 		obligations under this Agreement are suspended while the Force Majeure
 		Event continues and to the extent that it is prevented, hindered or
 		delayed.
-  14.2	In clause 14.1, “Force Majeure Event” means an event beyond the
+  14.2	In clause 14.1, "Force Majeure Event" means an event beyond the
 		reasonable control of the Affected Party and unknown to the Affected
 		Party at the date of this Agreement including, without limitation,
 		strike, lock out, labour dispute, (but excluding strikes, lockouts and
@@ -362,8 +362,8 @@ C.	TERMS OF AGREEMENT
   16.3	If sent by fax, it shall be deemed, in the absence of proof to the
 		contrary, to have been received by the Party to whom it was sent on the
 		Business Day after despatch provided that the report generated by the
-		sender’s fax machine shows that all pages of such notice, demand or
-		other communications were properly transmitted to the recipients’ fax
+		sender's fax machine shows that all pages of such notice, demand or
+		other communications were properly transmitted to the recipients' fax
 		machine.
   16.4	If sent by e-mail and the report generated by the sender's server shows
 		that the e-mail was properly delivered to the recipient mail box, on the
@@ -394,7 +394,7 @@ C.	TERMS OF AGREEMENT
 		supersedes any previous agreements between the Parties relating to the
 		subject matter of this Agreement, including but not limited to all
 		previous communications, oral or written between the Parties. No terms
-		contained in a Party’s proposals, quotations, acknowledgements, invoices
+		contained in a Party's proposals, quotations, acknowledgements, invoices
 		or other documentation shall be part of this Agreement or shall be
 		binding on the other Party unless explicitly agreed in writing by the
 		Parties.
@@ -428,50 +428,50 @@ EATON Industries Manufacturing GmbH		Beta Test Partner or End-User
 APPENDIX 1
 FURTHER DEFINITIONS AND INTERPRETATION
 1.	In this Agreement:
-  a.	“Affiliate” means any legal entity that, directly or indirectly, owns,
+  a.	"Affiliate" means any legal entity that, directly or indirectly, owns,
 		is owned by, or is under common ownership with a Party for so long as
 		such ownership exists.  For the purposes of the foregoing, "own,"
 		"owned," or "ownership" shall mean majority ownership or controlling
 		interest of such legal entity.
-  b.	“Agent” means any agent, partner, contractor, subcontractor and
+  b.	"Agent" means any agent, partner, contractor, subcontractor and
 		generally any contract worker of any Party or any of its Affiliates. 
-  c.	“Agreement” means this agreement, including its Appendices and any other
+  c.	"Agreement" means this agreement, including its Appendices and any other
 		attachments thereto, together with any amendments, modifications and
 		supplements thereto executed by the Parties.
-  d.	“Background IP” means any intellectual property and Intellectual
+  d.	"Background IP" means any intellectual property and Intellectual
 		Property Rights existing before the Effective Date of this Agreement,
 		and any Intellectual Property Rights generated after the Effective Date
 		but outside the scope of this Agreement.
-  e.	“Beta” means any pre-commercialization version of the Beta Products,
+  e.	"Beta" means any pre-commercialization version of the Beta Products,
 		including the alpha and beta versions and any equivalent and
 		intermediary iteration. 
-  f.	“Beta Test Partner” means the entity that has entered into a Beta
+  f.	"Beta Test Partner" means the entity that has entered into a Beta
 		Testing Agreement with Eaton for the limited use and testing of the Beta
 		Test Products. 
-  g.	“Beta Test NDA” means the non-disclosure agreement executed between
+  g.	"Beta Test NDA" means the non-disclosure agreement executed between
 		Eaton and Beta Test Partner to cover this transaction. 
-  h.	“BTA” or “Beta Testing Agreement” means the Beta Testing and Equipment
+  h.	"BTA" or "Beta Testing Agreement" means the Beta Testing and Equipment
 		Loan Agreement executed between Eaton and Beta Test Partner for the
 		limited use and test of the Beta Products. 
-  i.	“Control” means, in relation to any entity, the situation where more
-		than fifty per cent (50%) of such entity’s shares or ownership
+  i.	"Control" means, in relation to any entity, the situation where more
+		than fifty per cent (50%) of such entity's shares or ownership
 		interests, the voting rights to make decisions or the ability to appoint
 		the management or directors of such controlled entity are held by, owned
 		or controlled, directly or indirectly, by a controlling entity.
-  j.	“Derivative Work” means a work that is based upon the Software,
+  j.	"Derivative Work" means a work that is based upon the Software,
 		including but not limited to a revision, enhancement, modification,
 		abridgment, condensation, translation, expansion or equivalent any other
 		form (such as optimization or adaptation under applicable copyright law)
 		in which the Software may be recast, transformed or adapted.
-  k.	“End-User” means any entity or individual using the Software.
-  l.	“EULA” means the End-User License Agreement that is applicable for this
+  k.	"End-User" means any entity or individual using the Software.
+  l.	"EULA" means the End-User License Agreement that is applicable for this
 		transaction. 
-  m.	“Effective Date” means the earliest of either the first date of
+  m.	"Effective Date" means the earliest of either the first date of
 		availability of the Software to the Beta Test Partner by Eaton or the
 		first date of use of the Software by the Beta Test Partner.
-  n.	“Foreground IP” means all intellectual property and Intellectual
+  n.	"Foreground IP" means all intellectual property and Intellectual
 		Property Rights generated under this Agreement.
-  o.	“Intellectual Property Rights” or “IP” means any intellectual and
+  o.	"Intellectual Property Rights" or "IP" means any intellectual and
 		industrial property rights including, but not limited to, copyright,
 		moral rights and neighbouring rights, all rights in relation to:
 		inventions (including patent rights and utility models), trademarks,
@@ -481,19 +481,19 @@ FURTHER DEFINITIONS AND INTERPRETATION
 		in the industrial, scientific, literary or artistic field, afforded by
 		law anywhere in the world whether registered or unregistered or capable
 		of registration and all applications therefore.
-  p.	“Object Code” means all or any portion of machine-readable and
+  p.	"Object Code" means all or any portion of machine-readable and
 		executable code
-  q.	“Open Source License” means the permissive terms under which a software
+  q.	"Open Source License" means the permissive terms under which a software
 		is made available and licensed by or on behalf of a licensor. Such terms
 		includes but are not limited to the GPL license and its different
 		versions, as well as other licenses such as Apache, BSD, MIT and others.
-  r.	“Software” means a programme or set of instructions, in binary or source
+  r.	"Software" means a programme or set of instructions, in binary or source
 		code form, which is made available and licensed by Eaton for testing
 		under this Agreement. 
-  s.	“Source Code” means all or any portion of human readable software code.
+  s.	"Source Code" means all or any portion of human readable software code.
 		For clarity, Source Code includes scripts which are in human readable
 		format
-  t.	“Software Components” means software components, modules, functional
+  t.	"Software Components" means software components, modules, functional
 		blocks, libraries and organized groups of lines of codes. 
 2.	The headings in this Agreement do not affect its interpretation.
 3.	In the event of any conflict between this Agreement and other documents
@@ -502,14 +502,14 @@ FURTHER DEFINITIONS AND INTERPRETATION
   b.	The Beta Testing Agreement or BTA
   c.	The Beta Test NDA;
   d.	the Appendices to this Agreement;
-  e.	Eaton’s terms and conditions of sale (if applicable); and
+  e.	Eaton's terms and conditions of sale (if applicable); and
   f.	any other documents referred to, incorporated into or attached to any of
 		the documents contemplated in paragraphs a to e above.
  
 APPENDIX 2
 Beta Product(s) 
 
-•	Pre-production Intelligent Power Controller with Intelligent Power Manager
+-	Pre-production Intelligent Power Controller with Intelligent Power Manager
 	Infrastructure software
 
 APPENDIX 3
