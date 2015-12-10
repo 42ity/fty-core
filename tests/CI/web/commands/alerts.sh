@@ -20,6 +20,7 @@
 #  \author Michal Vyskocil <MichalVyskocil@Eaton.com>
 #  \brief Not yet documented file
 
+init_script
 echo
 echo "###################################################################################################"
 echo "********* alerts.sh ******************************** START ****************************************"
