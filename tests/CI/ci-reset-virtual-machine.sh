@@ -29,6 +29,9 @@
 # NOTE: This script is copied to VM hosts and used standalone,
 # so we do not depend it on scriptlib.sh or anything else.
 
+PATH="/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
+export PATH
+
 ### This is prefixed before ERROR, WARN, INFO tags in the logged messages
 [ -z "$LOGMSG_PREFIX" ] && LOGMSG_PREFIX="CI-RESETVM-"
 ### Store some important CLI values
@@ -651,7 +654,7 @@ if [ -n "${COPYHOST_GROUPS-}" ]; then
 			die "Can not replicate unknown group '$G' from the host!"
 
 		logmsg_info "Defining group account '$_G' from host to VM"
-		if egrep "^$G:" "../rootfs/$VM/etc/group" ; then
+		if egrep "^$G:" "../rootfs/$VM/etc/group" >/dev/null ; then
 			egrep -v "^$G:" < "../rootfs/$VM/etc/group" > "../rootfs/$VM/etc/group.tmp" && \
 			echo "$_G" >> "../rootfs/$VM/etc/group.tmp" && \
 			cat "../rootfs/$VM/etc/group.tmp" > "../rootfs/$VM/etc/group"
@@ -671,7 +674,7 @@ if [ -n "${COPYHOST_USERS-}" ]; then
 			_S="$U:*:16231:0:99999:7:::"
 
 		logmsg_info "Defining user account '$_P' from host to VM"
-		if egrep "^$U:" "../rootfs/$VM/etc/passwd" ; then
+		if egrep "^$U:" "../rootfs/$VM/etc/passwd" >/dev/null ; then
 			egrep -v "^$U:" < "../rootfs/$VM/etc/passwd" > "../rootfs/$VM/etc/passwd.tmp" && \
 			echo "$_P" >> "../rootfs/$VM/etc/passwd.tmp" && \
 			cat "../rootfs/$VM/etc/passwd.tmp" > "../rootfs/$VM/etc/passwd"
@@ -680,7 +683,7 @@ if [ -n "${COPYHOST_USERS-}" ]; then
 			echo "$_P" >> "../rootfs/$VM/etc/passwd"
 		fi
 
-		if egrep "^$U:" "../rootfs/$VM/etc/shadow" ; then
+		if egrep "^$U:" "../rootfs/$VM/etc/shadow" >/dev/null ; then
 			egrep -v "^$U:" < "../rootfs/$VM/etc/shadow" > "../rootfs/$VM/etc/shadow.tmp" && \
 			echo "$_S" >> "../rootfs/$VM/etc/shadow.tmp" && \
 			cat "../rootfs/$VM/etc/shadow.tmp" > "../rootfs/$VM/etc/shadow"
