@@ -203,26 +203,30 @@ TEST_CASE ("join", "[utilities]") {
 
 
 TEST_CASE ("stobiosf", "[utilities]") {
-    uint8_t scale = 0;
+    int8_t scale = 0;
     int32_t integer = 0;
     
     CHECK (utils::math::stobiosf ("12.835", integer, scale));
     CHECK ( integer == 12835 );
-    CHECK ( scale == 3 );
+    CHECK ( scale == -3 );
  
     CHECK (utils::math::stobiosf ("178746.2332", integer, scale));
     CHECK ( integer == 1787462332 );
-    CHECK ( scale == 4 );
+    CHECK ( scale == -4 );
  
     CHECK (utils::math::stobiosf ("0.00004", integer, scale));
     CHECK ( integer == 4 );
-    CHECK ( scale == 5 );
+    CHECK ( scale == -5 );
 
     CHECK ( utils::math::stobiosf ("-12134.013", integer, scale) );
     CHECK ( integer == -12134013  );
-    CHECK ( scale == 3 );
+    CHECK ( scale == -3 );
 
     CHECK ( utils::math::stobiosf ("-1", integer, scale) );
+    CHECK ( integer == -1  );
+    CHECK ( scale == 0 );
+
+    CHECK ( utils::math::stobiosf ("-1.000", integer, scale) );
     CHECK ( integer == -1  );
     CHECK ( scale == 0 );
 
@@ -236,19 +240,19 @@ TEST_CASE ("stobiosf", "[utilities]") {
 
     CHECK ( utils::math::stobiosf ("0.0", integer, scale) );
     CHECK ( integer == 0 );
-    CHECK ( scale == 1 );
+    CHECK ( scale == 0 );
 
     CHECK ( utils::math::stobiosf ("0.00", integer, scale) );
     CHECK ( integer == 0 );
-    CHECK ( scale == 2 );
+    CHECK ( scale == 0 );
 
     CHECK ( utils::math::stobiosf ("1.0", integer, scale) );
-    CHECK ( integer == 10 );
-    CHECK ( scale == 1 );
+    CHECK ( integer == 1 );
+    CHECK ( scale == 0 );
 
     CHECK ( utils::math::stobiosf ("1.00", integer, scale) );
-    CHECK ( integer == 100 );
-    CHECK ( scale == 2 );
+    CHECK ( integer == 1 );
+    CHECK ( scale == 0 );
 
     CHECK ( utils::math::stobiosf ("1234324532452345623541.00", integer, scale) == false );
 
@@ -256,5 +260,4 @@ TEST_CASE ("stobiosf", "[utilities]") {
     
     CHECK ( utils::math::stobiosf ("12x43", integer, scale) == false );
     CHECK ( utils::math::stobiosf ("sdfsd", integer, scale) == false );
-
 }

@@ -2,6 +2,7 @@
 Description=NUT driver for BIOS project
 After=malamute.service
 Requires=malamute.service
+PartOf=bios.target
 
 [Service]
 Type=simple
@@ -13,4 +14,4 @@ EnvironmentFile=-/etc/sysconfig/bios__%n.conf
 ExecStart=@libexecdir@/@PACKAGE@/agent-nut
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=bios.target

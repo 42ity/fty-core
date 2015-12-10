@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2014 Eaton
+# Copyright (C) 2014-2015 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -166,11 +166,40 @@ if [ "$SKIP_SANITY" = yes ]; then
 else
     logmsg_info "Testing webserver ability to serve the REST API"
     # is web server running?
+
     curlfail_push_expect_404
-    if [ -z "`api_get "" | grep 'HTTP/.* 404 Not Found'`" ]; then
-        CODE=4 die "Webserver is not running or has errors, please start it first!"
+    if [ -n "`api_get "" 2>&1 | grep 'HTTP/.* 500'`" ] >/dev/null 2>&1 ; then
+        logmsg_error "api_get() returned an Internal Server Error:"
+        api_get "" >&2
+        CODE=4 die "Webserver code is deeply broken (maybe missing libraries), please fix it first!"
+    fi
+
+    if [ -z "`api_get "" 2>&1 | grep 'HTTP/.* 404 Not Found'`" ] >/dev/null 2>&1 ; then
+        # We do expect an HTTP-404 on the API base URL
+        logmsg_error "api_get() returned an error:"
+        api_get "" >&2
+        CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
     fi
     curlfail_pop
+
+    if [ "$SKIP_SANITY" != onlyerrors ]; then
+        curlfail_push_expect_noerrors
+        if [ -z "`api_get '/admin/ifaces' 2>&1 | grep 'HTTP/.* 200 OK'`" ] >/dev/null 2>&1 ; then
+            # We expect that the login service responds
+            logmsg_error "api_get() returned an error:"
+            api_get "/admin/ifaces" >&2
+            CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
+        fi
+
+        TMP_TOKEN="`_api_get_token`" 
+        if [ $? != 0 ] || [ -n "`echo "$TMP_TOKEN" | grep 'errors'`" ]; then
+            logmsg_error "cannot get a token:"
+            echo "$TMP_TOKEN" >&2
+            logmsg_warn "Webserver does not allow to get the token, is the license accepted?"
+        fi
+        unset TMP_TOKEN
+        curlfail_pop
+    fi
 fi
 
 # log dir contents the real responses
@@ -188,8 +217,6 @@ CMPJSON_PY="`pwd`/cmpjson.py"
 # web/commands dir contains the request commands
 cd web/commands || CODE=6 die "Can not change to `pwd`/web/commands"
 
-settraps "exit_summarizeResults"
-
 # positive parameters are included to test, negative excluded
 POSITIVE=""
 NEGATIVE=""
@@ -204,6 +231,15 @@ done
 
 # if POSITIVE parameters variable is empty, then all tests are included
 [ -n "$POSITIVE" ] || POSITIVE="*"
+
+exit_summarizeTestedScriptlets() {
+    logmsg_info "This ${_SCRIPT_NAME} ${_SCRIPT_ARGS} run selected the following scriptlets from web/commands :"
+    logmsg_info "  Execution pattern (POSITIVE) = $POSITIVE"
+    logmsg_info "  Ignored pattern (NEGATIVE)   = $NEGATIVE"
+    logmsg_info "  SKIP_NONSH_TESTS = $SKIP_NONSH_TESTS (so skipped ${SKIPPED_NONSH_TESTS+0} tests)"
+}
+
+settraps '_TRAP_RES=$?; exit_summarizeTestedScriptlets ; exit_summarizeTestlibResults; exit $_TRAP_RES'
 
 # A bash-ism, should set the exitcode of the rightmost failed command
 # in a pipeline, otherwise e.g. exitcode("false | true") == 0

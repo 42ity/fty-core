@@ -1,6 +1,34 @@
 #!/bin/sh
+#
+# Copyright (C) 2015 Eaton
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+#! \file    systemctl
+#  \brief   Helper script for REST API /admin/systemctl and /admin/sysinfo
+#  \author  Michal Hrusecky <MichalHrusecky@Eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \details Helper script for REST API /admin/systemctl and /admin/sysinfo
+#           Wraps the OS-provided /bin/systemctl to apply filters and allow
+#           only those actions over those objects as needed for our project.
+#
+
 SYSTEMCTL_COMMANDS="show start stop restart enable disable status"
-SYSTEMCTL_UNITS="networking mysql ntp saslauthd malamute                \
+
+# TODO: Match this up with web/systemctl.ecpp and maybe the Makefile variables
+SYSTEMCTL_UNITS="networking mysql mysqld mariadb ntp saslauthd malamute \
                  bios-reset-button tntnet@bios bios-agent-alert-smtp    \
                  bios-agent-alert bios-agent-autoconfig bios-agent-cm   \
                  bios-agent-dbstore bios-agent-inventory bios-agent-nut \
@@ -10,17 +38,43 @@ SYSTEMCTL_UNITS="networking mysql ntp saslauthd malamute                \
 
 SYSTEMCTL="/bin/systemctl"
 
-if [ "x$1" = "xlist-units" ]; then
-    exec $SYSTEMCTL "list-units"
-fi
+case "$1" in
+    list-units|--all|-a)
+        SYSTEMCTL_ARGS=""
+        while [ $# -gt 0 ]; do
+            case "$1" in
+                list-units|--all|-a|--full|-l)
+                    SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
+                *) echo "Action not allowed" >&2; exit 1;;
+            esac
+            shift
+        done
+        exec $SYSTEMCTL $SYSTEMCTL_ARGS
+        ;;
+esac
+
 for unit in ${SYSTEMCTL_UNITS}; do
     for cmd in ${SYSTEMCTL_COMMANDS}; do
         if [ "x$cmd" = "x$1" ] && ( \
            expr match "x$2" "^x$unit\$" > /dev/null || \
-           expr match "x$2" "^x$unit\\.service\$" > /dev/null ); then
-            exec $SYSTEMCTL $cmd "$2"
+           expr match "x$2" "^x$unit\\.timer\$" > /dev/null || \
+           expr match "x$2" "^x$unit\\.target\$" > /dev/null || \
+           expr match "x$2" "^x$unit\\.service\$" > /dev/null ) \
+        ; then
+            SYSTEMCTL_UNIT="$2"
+            SYSTEMCTL_ARGS=""
+            shift 2
+            while [ $# -gt 0 ]; do
+                case "$1" in
+                    --all|-a|--full|-l)
+                        SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
+                    *) echo "Action not allowed" >&2; exit 1;;
+                esac
+                shift
+            done
+            exec $SYSTEMCTL "$cmd" "$SYSTEMCTL_UNIT" $SYSTEMCTL_ARGS
         fi
     done
 done
-echo "Action not allowed"
+echo "Action not allowed" >&2
 exit 1
