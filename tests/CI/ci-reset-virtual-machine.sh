@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (C) 2014 Eaton
+# Copyright (C) 2014-2015 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -138,10 +138,12 @@ cleanup_wget() {
 
 settraps() {
 	# Not all trap names are recognized by all shells consistently
-	for P in "" SIG; do for S in ERR EXIT QUIT TERM HUP INT ; do
+	# Note: slight difference from scriptlib.sh, we trap ERR too by default
+	[ -z "${TRAP_SIGNALS-}" ] && TRAP_SIGNALS="ERR  EXIT QUIT TERM HUP INT"
+	for P in "" SIG; do for S in $TRAP_SIGNALS ; do
 		case "$1" in
-		-|"") trap "$1" $P$S 2>/dev/null ;;
-		*)    trap 'ERRCODE=$?; ('"$*"'); exit $ERRCODE;' $P$S 2>/dev/null ;;
+		-|"") trap "$1" $P$S 2>/dev/null || true ;;
+		*)    trap 'ERRCODE=$?; ('"$*"'); exit $ERRCODE;' $P$S 2>/dev/null || true ;;
 		esac
 	done; done
 }
