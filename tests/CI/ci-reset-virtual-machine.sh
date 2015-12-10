@@ -89,6 +89,7 @@ usage() {
     echo "    --deploy-only        end the script just before it would start the VM (skips apt-get too)"
     echo "    --copy-host-users 'a b c'    Copies specified user or group account definitions"
     echo "    --copy-host-groups 'a b c'   (e.g. for bind-mounted homes from host into the VM)"
+    echo "    --no-config-file     Forbid use in this run of a per-VM config file if one is found"
     echo "    -h|--help            print this help"
 }
 
@@ -176,6 +177,7 @@ DOTDOMAINNAME=""
 [ -z "$DEPLOYONLY" ] && DEPLOYONLY=no
 [ -z "$INSTALL_DEV_PKGS" ] && INSTALL_DEV_PKGS=no
 [ -z "$ATTEMPT_DOWNLOAD" ] && ATTEMPT_DOWNLOAD=auto
+[ -z "$ALLOW_CONFIG_FILE" ] && ALLOW_CONFIG_FILE=yes
 
 while [ $# -gt 0 ] ; do
     case "$1" in
@@ -227,6 +229,8 @@ while [ $# -gt 0 ] ; do
 	    COPYHOST_USERS="$2"; shift 2;;
 	--copy-host-groups)
 	    COPYHOST_GROUPS="$2"; shift 2;;
+	--no-config-file)
+	    ALLOW_CONFIG_FILE=no; shift ;;
 	-h|--help)
 	    usage
 	    exit 1
@@ -293,8 +297,12 @@ cd "/srv/libvirt/rootfs" || \
 	die "Can not 'cd /srv/libvirt/rootfs' to keep container root trees"
 
 if [ -s "$VM.config-reset-vm" ]; then
-	logmsg_warn "Found configuration file for the '$VM', it will override the command-line settings!"
-	. "$VM.config-reset-vm" || die "Can not import config file '`pwd`/$VM.config-reset-vm'"
+	if [ "$ALLOW_CONFIG_FILE" = yes ]; then
+		logmsg_warn "Found configuration file for the '$VM', it will override the command-line settings!"
+		. "$VM.config-reset-vm" || die "Can not import config file '`pwd`/$VM.config-reset-vm'"
+	else
+		logmsg_warn "Found configuration file for the '$VM', but it is ignored because ALLOW_CONFIG_FILE='$ALLOW_CONFIG_FILE'"
+	fi
 fi
 
 # Verify that this script runs once at a time for the given VM
