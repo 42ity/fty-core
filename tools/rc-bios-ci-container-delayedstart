@@ -37,8 +37,11 @@
 #           after the host OS is up, so they can pull new images (if any).
 #           Intended for hosts involved in CI and test infrastructure.
 
+[ -s /etc/default/bios-ci-container-delayedstart.conf ] && \
+	. /etc/default/bios-ci-container-delayedstart.conf
+
 [ -n "$CONTAINERS" ] || \
-	CONTAINERS="`virsh -c lxc:// list --all | tail -n +3 | awk '{print $2}' | egrep '^latest$|^demo$|^test-debian-'`" || \
+	CONTAINERS="`virsh -c lxc:// list --all | tail -n +3 | awk '{print $2}' | egrep '^latest$|^demo$|^test-debian-|^bios-'`" || \
 	CONTAINERS="latest"
 [ -z "$STARTDELAY_DL" ] && STARTDELAY_DL="2 min"
 [ -z "$STARTDELAY" ] && STARTDELAY="3 min"
@@ -46,6 +49,9 @@
 # The real script is part of $BIOS CI suite
 [ -z "$CI_RESET_VM" ] && CI_RESET_VM="/root/ci-reset-virtual-machine.sh"
 [ ! -x "$CI_RESET_VM" ] && echo "ERROR: CI_RESET_VM script not found at '$CI_RESET_VM'" && exit 1
+
+[ -z "$CI_UPDATE_DEMO_VM" ] && CI_UPDATE_DEMO_VM="`dirname "$CI_RESET_VM"`/update_demo"
+[ ! -x "$CI_UPDATE_DEMO_VM" -a -x /root/update_demo ] && CI_UPDATE_DEMO_VM="/root/update_demo"
 
 # Run apt-get to set up packages which we need?
 # Needs "ci-setup-test-machine.sh" in same dir as $CI_RESET_VM
@@ -64,13 +70,13 @@ start_delayed() {
 		echo "Queuing '$C' container to autoboot and update in $STARTDELAY..." >&2
 		case "$C" in
 		    demo)
-			[ -x /root/update_demo ] && \
-			    echo "/root/update_demo"  | at -M "now + $STARTDELAY" || \
+			[ -x ${CI_UPDATE_DEMO_VM} ] && \
+			    echo "${CI_UPDATE_DEMO_VM}"  | at -M "now + $STARTDELAY" || \
 			    echo "INSTALL_DEV_PKGS=no $CI_RESET_VM -m '$C' -b deploy" | at -M "now + $STARTDELAY"
 			;;
-		    test-debian-[6789]) # VTEs need only the default image
+		    test-debian-[6789]|*deploy*) # VTEs need only the default image
 			echo "INSTALL_DEV_PKGS=no $CI_RESET_VM -m '$C' -b deploy" | at -M "now + $STARTDELAY" ;;
-		    *) # By default we do updates
+		    *devel*|*) # By default we do updates
 			echo "$CI_RESET_VM -m '$C' -b devel --install-dev" | at -M "now + $STARTDELAY" ;;
 		esac
 	done
@@ -82,13 +88,13 @@ start_instant() {
 		echo "(Re-)starting and updating '$C' container..." >&2
 		case "$C" in
 		    demo)
-			( [ -x /root/update_demo ] && \
-			    /root/update_demo || \
+			( [ -x ${CI_UPDATE_DEMO_VM} ] && \
+			    ${CI_UPDATE_DEMO_VM} || \
 			    INSTALL_DEV_PKGS=no $CI_RESET_VM -m '$C' -b deploy --attempt-download no ) &
 			;;
-		    test-debian-[6789]) # VTEs need only the default image
+		    test-debian-[6789]|*deploy*) # VTEs need only the default image
 			INSTALL_DEV_PKGS=no $CI_RESET_VM -m "$C" -b deploy --attempt-download no & ;;
-		    *) # By default we do updates
+		    *devel*|*) # By default we do updates
 			$CI_RESET_VM -m "$C" -b devel --install-dev --attempt-download no & ;;
 		esac
 	done
