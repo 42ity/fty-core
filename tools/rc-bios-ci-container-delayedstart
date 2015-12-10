@@ -102,7 +102,7 @@ start_instant() {
 }
 
 start() {
-	if /etc/init.d/atd status || /etc/init.d/atd restart ; then
+	if /etc/init.d/atd status || /etc/init.d/atd restart || /bin/systemctl status atd || /bin/systemctl restart atd ; then
 		start_delayed
 	else
 		start_instant
