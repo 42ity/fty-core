@@ -778,7 +778,8 @@ accept_license(){
         echo 'license already accepted'
     else
         echo "Trying to accept the license via REST API on BIOS server '$BASE_URL'..."
-        api_auth_post_json '/admin/license' "foobar" >&5 || \
+#        api_auth_post_json '/admin/license' "foobar" >&5 || \
+        api_auth_post_json '/admin/license' "foobar" || \
         ( . "$CHECKOUTDIR"/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
             logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
     fi
