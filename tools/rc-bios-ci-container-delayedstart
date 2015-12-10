@@ -155,7 +155,7 @@ status() {
 
 case "$1" in
 start|start_delayed|start_instant|restart|stop|refresh|download|status)
-	$1
-	return $?
+	"$@"
+	exit $?
 	;;
 esac
