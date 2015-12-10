@@ -87,6 +87,8 @@ usage() {
     echo "                         (default: auto; default if only the option is specified: yes)"
     echo "    --stop-only          end the script after stopping the VM and cleaning up"
     echo "    --deploy-only        end the script just before it would start the VM (skips apt-get too)"
+    echo "    --copy-host-users 'a b c'    Copies specified user or group account definitions"
+    echo "    --copy-host-groups 'a b c'   (e.g. for bind-mounted homes from host into the VM)"
     echo "    -h|--help            print this help"
 }
 
@@ -221,6 +223,10 @@ while [ $# -gt 0 ] ; do
 	    INSTALL_DEV_PKGS=yes
 	    shift
 	    ;;
+	--copy-host-users)
+	    COPYHOST_USERS="$2"; shift 2;;
+	--copy-host-groups)
+	    COPYHOST_GROUPS="$2"; shift 2;;
 	-h|--help)
 	    usage
 	    exit 1
@@ -285,6 +291,11 @@ fi
 mkdir -p "/srv/libvirt/snapshots/$IMGTYPE/$ARCH" "/srv/libvirt/rootfs" "/srv/libvirt/overlays"
 cd "/srv/libvirt/rootfs" || \
 	die "Can not 'cd /srv/libvirt/rootfs' to keep container root trees"
+
+if [ -s "$VM.config-reset-vm" ]; then
+	logmsg_warn "Found configuration file for the '$VM', it will override the command-line settings!"
+	. "$VM.config-reset-vm" || die "Can not import config file '`pwd`/$VM.config-reset-vm'"
+fi
 
 # Verify that this script runs once at a time for the given VM
 if [ -f "$VM.lock" ] ; then
@@ -623,6 +634,52 @@ if [ ! -d "../rootfs/$VM/var/lib/mysql/mysql" ] && \
 ; then
 	logmsg_info "Copying MySQL root password from the host into VM"
 	cp -pf ~root/.my.cnf "../rootfs/$VM/root/.my.cnf"
+fi
+
+if [ -n "${COPYHOST_GROUPS-}" ]; then
+	for G in $COPYHOST_GROUPS ; do
+		_G="$(egrep "^$G:" "/etc/group")" || \
+			die "Can not replicate unknown group '$G' from the host!"
+
+		logmsg_info "Defining group account '$_G' from host to VM"
+		if egrep "^$G:" "../rootfs/$VM/etc/group" ; then
+			egrep -v "^$G:" < "../rootfs/$VM/etc/group" > "../rootfs/$VM/etc/group.tmp" && \
+			echo "$_G" >> "../rootfs/$VM/etc/group.tmp" && \
+			cat "../rootfs/$VM/etc/group.tmp" > "../rootfs/$VM/etc/group"
+			rm -f "../rootfs/$VM/etc/group.tmp"
+		else
+			echo "$_G" >> "../rootfs/$VM/etc/group"
+		fi
+	done
+fi
+
+if [ -n "${COPYHOST_USERS-}" ]; then
+	for U in $COPYHOST_USERS ; do
+		_P="$(egrep "^$U:" "/etc/passwd")" || \
+			die "Can not replicate unknown user '$U' from the host!"
+
+		_S="$(egrep "^$U:" "/etc/shadow")" || \
+			_S="$U:*:16231:0:99999:7:::"
+
+		logmsg_info "Defining user account '$_P' from host to VM"
+		if egrep "^$U:" "../rootfs/$VM/etc/passwd" ; then
+			egrep -v "^$U:" < "../rootfs/$VM/etc/passwd" > "../rootfs/$VM/etc/passwd.tmp" && \
+			echo "$_P" >> "../rootfs/$VM/etc/passwd.tmp" && \
+			cat "../rootfs/$VM/etc/passwd.tmp" > "../rootfs/$VM/etc/passwd"
+			rm -f "../rootfs/$VM/etc/passwd.tmp"
+		else
+			echo "$_P" >> "../rootfs/$VM/etc/passwd"
+		fi
+
+		if egrep "^$U:" "../rootfs/$VM/etc/shadow" ; then
+			egrep -v "^$U:" < "../rootfs/$VM/etc/shadow" > "../rootfs/$VM/etc/shadow.tmp" && \
+			echo "$_S" >> "../rootfs/$VM/etc/shadow.tmp" && \
+			cat "../rootfs/$VM/etc/shadow.tmp" > "../rootfs/$VM/etc/shadow"
+			rm -f "../rootfs/$VM/etc/shadow.tmp"
+		else
+			echo "$_S" >> "../rootfs/$VM/etc/shadow"
+		fi
+	done
 fi
 
 logmsg_info "Pre-configuration of VM '$VM' ($IMGTYPE/$ARCH) is completed"
