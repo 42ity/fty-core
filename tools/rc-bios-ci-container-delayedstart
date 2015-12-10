@@ -121,8 +121,11 @@ stop() {
 }
 
 download() {
-	$CI_RESET_VM --download-only -b devel
-	$CI_RESET_VM --download-only -b deploy
+	for C in $CONTAINERS ; do
+		$CI_RESET_VM --download-only -m "$C" -b devel
+		$CI_RESET_VM --download-only -m "$C" -b deploy
+		break
+	done
 }
 
 refresh() {
