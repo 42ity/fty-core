@@ -266,6 +266,8 @@ if \
 	logmsg_info "Detected support of OVERLAYFS on the host" \
 	    "`hostname`${DOTDOMAINNAME}, so will mount a .$EXT file" \
 	    "as an RO base and overlay the RW changes"
+	modprobe squashfs
+	modprobe overlay || modprobe overlayfs
 else
 	EXT="tar.gz"
 	OVERLAYFS=""
