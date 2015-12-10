@@ -2,6 +2,7 @@
 Description=Computation Module agent for BIOS project
 After=malamute.service bios-db-init.service
 Requires=malamute.service bios-db-init.service
+PartOf=bios.target
 
 [Service]
 Type=simple
@@ -17,4 +18,4 @@ EnvironmentFile=-/etc/default/bios-db-ro
 ExecStart=@libexecdir@/@PACKAGE@/agent-cm
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=bios.target

@@ -269,6 +269,7 @@ cat > /etc/systemd/system/tntnet@.service <<EOF
 Description=Tntnet web server using /etc/tntnet/%I.xml
 After=network.target bios-db-init.service
 Requires=bios-db-init.service
+PartOf=bios.target
 
 [Service]
 Type=simple
@@ -284,7 +285,7 @@ ExecStart=/usr/bin/tntnet -c /etc/tntnet/%i.xml
 Restart=on-failure
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=bios.target
 EOF
 cat > /usr/share/bios/scripts/xml-cat.sh << EOF
 #!/bin/sh
@@ -493,6 +494,23 @@ done
 # Show the package list
 dpkg --get-selections
 dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n
+
+# Create the CSV Legal packages manifest, to display from the Web UI
+# copyright files path are adapted to Web UI display!
+CSV_FILE_PATH="/usr/share/doc/ipc-packages.csv"
+rm -f ${CSV_FILE_PATH}
+touch ${CSV_FILE_PATH}
+dpkg-query -W -f='${db:Status-Abbrev};${source:Package};${Version};${binary:Package}\n' | grep '^i' | cut -d';' -f2,3,4 | sort -u > ./pkg-list.log
+while IFS=';' read SOURCE_PKG PKG_VERSION CURRENT_PKG
+do
+   CURRENT_PKG="`echo ${CURRENT_PKG} | cut -d':' -f1`"
+   grep -q "${SOURCE_PKG};${PKG_VERSION};" "${CSV_FILE_PATH}" || \
+   if [ $? -eq 1 ]; then
+      echo "${SOURCE_PKG};${PKG_VERSION};/usr/share/doc/${CURRENT_PKG}/copyright" 2>/dev/null >> "${CSV_FILE_PATH}"
+      [ ! -f "/usr/share/doc/${CURRENT_PKG}/copyright" ] && echo "Missing ${CURRENT_PKG}/copyright file!"
+   fi
+done < ./pkg-list.log
+rm -f ./pkg-list.log
 
 # Prepare the ccache (for development image type)
 case "$IMGTYPE" in

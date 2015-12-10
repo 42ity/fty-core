@@ -2,6 +2,7 @@
 Description=Generates fake temperature and humidity readings
 After=bios-agent-dbstore.service
 Requires=bios-agent-dbstore.service
+PartOf=bios.target
 
 [Service]
 Type=simple
@@ -9,4 +10,4 @@ User=nobody
 ExecStart=@libexecdir@/@PACKAGE@/fake-th
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=bios.target
