@@ -1,4 +1,3 @@
-#!/bin/sh
 #
 # Copyright (C) 2014-2015 Eaton
 #
@@ -70,6 +69,9 @@ DB_DUMP_DIR="$CHECKOUTDIR/tests/CI/web/log"     # TODO: change to BUILDSUBDIR
 DB_TMPSQL_DIR="/tmp"
 #DB_TMPSQL_DIR="$DB_DUMP_DIR"
 
+### We also have to write exported temporary CSVs somewhere
+CSV_TMP_DIR="$DB_DUMP_DIR"
+
 ### Expected results (saved in Git) are stored here:
 DB_RES_DIR="$CHECKOUTDIR/tests/CI/web/results"
 
@@ -81,66 +83,109 @@ DB_RES_DIR="$CHECKOUTDIR/tests/CI/web/results"
 ### so we can have regression testing (that the ultimate fix works forever).
 [ -z "${DB_KILL_CONNECTIONS-}" ] && DB_KILL_CONNECTIONS=no
 
-killdb() {
-    echo "--------------- reset db: kill old DB ------------"
+do_killdb() {
+    KILLDB_RES=0
     if [ -n "${DATABASE-}" ] ; then
         if [ x"$DB_KILL_CONNECTIONS" = xyes ]; then
             logmsg_warn "Trying to kill all connections to the ${DATABASE} database; some clients can become upset - it is their bug then!"
-            sut_run 'mysql --disable-column-names -s -e "SHOW PROCESSLIST" | grep -vi PROCESSLIST | awk '"'\$4 ~ /$DATABASE/ {print \$1}'"' | while read P ; do mysqladmin kill "$P" || do_select "KILL $P" ; done'
+            sut_run 'mysql --disable-column-names -s -e "SHOW PROCESSLIST" | grep -vi PROCESSLIST | awk '"'\$4 ~ /$DATABASE/ {print \$1}'"' | while read P ; do mysqladmin kill "$P" || do_select "KILL $P" ; done' || KILLDB_RES=$?
         fi
-        DATABASE=mysql do_select "DROP DATABASE if exists ${DATABASE}" || true
+        DATABASE=mysql do_select "DROP DATABASE if exists ${DATABASE}" || \
+        sut_run "mysqladmin drop -f ${DATABASE}" || \
+        { KILLDB_RES=$? ; logmsg_error "Failed to DROP DATABASE" ; }
         sleep 1
+    else
+        logmsg_warn "The DATABASE variable is not set, nothing known to DROP"
     fi
-    DATABASE=mysql do_select "RESET QUERY CACHE" || true
-    DATABASE=mysql do_select "FLUSH QUERY CACHE" || true
-    sut_run "mysqladmin refresh ; sync; [ -w /proc/sys/vm/drop_caches ] && echo 3 > /proc/sys/vm/drop_caches && sync"
-    logmsg_info "Database should have been dropped and caches should have been flushed at this point"
+    DATABASE=mysql do_select "RESET QUERY CACHE" || \
+        logmsg_warn "Failed to RESET QUERY CACHE"
+    DATABASE=mysql do_select "FLUSH QUERY CACHE" || \
+        logmsg_warn "Failed to FLUSH QUERY CACHE"
+    sut_run "mysqladmin refresh ; sync; [ -w /proc/sys/vm/drop_caches ] && echo 3 > /proc/sys/vm/drop_caches && sync" || \
+        logmsg_warn "Failed to FLUSH OS/VM CACHE"
+    return $KILLDB_RES
+}
+
+killdb() {
+    echo "CI-TESTLIB_DB - reset db: kill old DB ------------"
+    KILLDB_OUT="`do_killdb 2>&1`"
+    KILLDB_RES=$?
+    if [ $KILLDB_RES != 0 ]; then
+        logmsg_error "Hit some error while killing old database:"
+        echo "==========================================="
+        echo "$KILLDB_OUT"
+        echo "==========================================="
+    fi
+    logmsg_debug "Database should have been dropped and caches should have been flushed at this point"
+    return $KILLDB_RES
+}
+
+do_loaddb_list() {
+    if [ $# = 0 ] ; then
+        logmsg_error "do_loaddb_list() called without arguments"
+        return 1
+    fi
+    for data in "$@" ; do
+        logmsg_info "Importing $data ..."
+        loaddb_file "$data" || return $?
+        logmsg_info "file $data applied OK"
+    done
     return 0
 }
 
+loaddb_list() {
+    LOADDB_OUT="`do_loaddb_list "$@" 2>&1`"
+    LOADDB_RES=$?
+    if [ $LOADDB_RES != 0 ]; then
+        logmsg_error "Hit some error while importing database file(s):"
+        echo "==========================================="
+        echo "$LOADDB_OUT"
+        echo "==========================================="
+    else
+        for data in "$@" ; do
+            logmsg_info "file $data applied OK"
+        done
+    fi
+    return $LOADDB_RES
+}
+
 loaddb_initial() {
-    killdb
-    echo "--------------- reset db: initialize -------------"
-    for data in "$DB_BASE" ; do
-        logmsg_info "Importing $data ..."
-        loaddb_file "$data" || return $?
-    done
-    logmsg_info "Database schema should have been initialized at this point: core schema file only"
+    killdb || true      # Would fail the next step, probably
+    echo "CI-TESTLIB_DB - reset db: (re-)initializing --------"
+    loaddb_list "$DB_BASE" || return $?
+    logmsg_debug "Database schema should have been initialized at this point: core schema file only"
     return 0
 }
 
 loaddb_sampledata() {
-    local data="$DB_DATA"
-    logmsg_info "Importing $data ..."
-    loaddb_file "$data" || return $?
-    logmsg_info "file $data applied"
+    loaddb_initial && \
+    echo "CI-TESTLIB_DB - reset db: loading default sample data ----" && \
+    loaddb_list "$DB_DATA" || return $?
+    logmsg_debug "Database schema and data should have been initialized at this point: sample datacenter for tests"
     return 0
 }
 
 loaddb_default() {
-    echo "--------------- reset db: default REST API -------"
-    loaddb_initial || return $?
-    for data in "$DB_DATA" "$DB_DATA_TESTREST"; do
-        logmsg_info "Importing $data ..."
-        loaddb_file "$data" || return $?
-    done
-    logmsg_info "Database schema and data should have been initialized at this point: for common REST API tests"
+    echo "CI-TESTLIB_DB - reset db: default REST API -------"
+    loaddb_sampledata && \
+    loaddb_list "$DB_DATA_TESTREST" || return $?
+    logmsg_debug "Database schema and data should have been initialized at this point: for common REST API tests"
     return 0
 }
 
 loaddb_topo_loc() {
-    local data="$DB_TOPOL"
-    logmsg_info "Importing $data ..."
-    loaddb_file "$data" || return $?
-    logmsg_info "file $data applied"
+    echo "CI-TESTLIB_DB - reset db: topo-location ----------"
+    loaddb_sampledata && \
+    loaddb_list "$DB_TOPOL" || return $?
+    logmsg_debug "Database schema and data should have been initialized at this point: for topology-location tests"
     return 0
 }
 
 loaddb_topo_pow() {
-    local data="$DB_TOPOP"
-    logmsg_info "Importing $data ..."
-    loaddb_file "$data" || return $?
-    logmsg_info "file $data applied"
+    echo "CI-TESTLIB_DB - reset db: topo-power -------------"
+    loaddb_sampledata && \
+    loaddb_list "$DB_TOPOP" || return $?
+    logmsg_debug "Database schema and data should have been initialized at this point: for topology-power tests"
     return 0
 }
 
@@ -167,14 +212,10 @@ loaddb_dc_power() {
 }
 
 loaddb_current() {
-    echo "--------------- reset db: current ----------------"
-    loaddb_initial || return $?
-    for data in "$DB_DATA_CURRENT"; do
-    #for data in "$DB_DATA_CURRENT" "$DB_DATA_TESTREST"; do
-        logmsg_info "Importing $data ..."
-        loaddb_file "$data" || return $?
-    done
-    logmsg_info "Database schema and data should have been initialized at this point: for current tests"
+    echo "CI-TESTLIB_DB - reset db: current ----------------"
+    loaddb_initial && \
+    loaddb_list "$DB_DATA_CURRENT" || return $?
+    logmsg_debug "Database schema and data should have been initialized at this point: for current tests"
     return 0
 }
 
@@ -187,7 +228,6 @@ init_script_initial(){
 }
 
 init_script_sampledata(){
-    loaddb_initial || return $?
     loaddb_sampledata && \
     accept_license
 }
@@ -202,16 +242,11 @@ init_script(){
 }
 
 init_script_topo_loc(){
-    loaddb_initial || return $?
-    loaddb_sampledata && \
     loaddb_topo_loc && \
     accept_license
 }
 
 init_script_topo_pow(){
-    loaddb_initial || return $?
-    loaddb_sampledata && \
     loaddb_topo_pow && \
     accept_license
 }
-
