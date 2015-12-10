@@ -97,7 +97,7 @@ while [ $# -gt 0 ] ; do
             break
             ;;
         *)  echo "Unrecognized params follow: $*" \
-                "Note that the RELATIVE_URL must start with a slash"
+                "Note that the RELATIVE_URL must start with a slash" >&2
             exit 1
             ;;
     esac
@@ -111,18 +111,18 @@ if [ -z "$SUT_WEB_PORT" ]; then
 fi
 
 # Include our standard routines for CI scripts
-. "`dirname $0`"/scriptlib.sh || \
+. "`dirname $0`"/scriptlib.sh >&2 || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 
-NEED_BUILDSUBDIR=no determineDirs_default || true
+NEED_BUILDSUBDIR=no determineDirs_default >&2 || true
 NEED_TESTLIB=no
 
 # No "cd" is required for this script to perform
 [ -n "$CHECKOUTDIR" ] && { [ -d "$CHECKOUTDIR" ] || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"; }
-logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to run the requests"
+logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to run the requests" >&2
 
 # Included after CLI processing because sets autovars like BASE_URL
-. "$SCRIPTDIR/weblib.sh" || CODE=$? die "Can not include web script library"
+. "$SCRIPTDIR/weblib.sh" >&2 || CODE=$? die "Can not include web script library"
 
 [ -z "$RELATIVE_URL" ] && die "No RELATIVE_URL was provided"
 
@@ -148,7 +148,7 @@ wait_for_web() {
 
 # it is up to the caller to prepare environment - tntnet, saslauthd, malamute etc.
   if [ "$SKIP_SANITY" = yes ]; then
-    logmsg_info "Skipping sanity checks due to SKIP_SANITY=$SKIP_SANITY"
+    logmsg_info "Skipping sanity checks due to SKIP_SANITY=$SKIP_SANITY" >&2
   else
     if ! pidof saslauthd > /dev/null; then
       SUT_is_localhost && \
@@ -165,21 +165,21 @@ wait_for_web() {
       logmsg_warn "mysqld is not running (locally), you may need to start it first!"
     fi
 
-    logmsg_info "Waiting for web-server to begin responding..."
+    logmsg_info "Waiting for web-server to begin responding..." >&2
     if wait_for_web ; then
       SUT_is_localhost && \
-      logmsg_info "Web-server is responsive!"
+      logmsg_info "Web-server is responsive!" >&2
     else
       die "Web-server is NOT responsive!" >&2
     fi
 
     # Validate the fundamental BIOS webserver capabilities
-    logmsg_info "Testing webserver ability to serve the REST API"
+    logmsg_info "Testing webserver ability to serve the REST API" >&2
     curlfail_push_expect_404
     if [ -n "`api_get "" 2>&1 | grep 'HTTP/.* 500'`" ] >/dev/null 2>&1 ; then
-        logmsg_error "api_get() returned an error:"
+        logmsg_error "api_get() returned an Internal Server Error:"
         api_get "" >&2
-        CODE=4 die "Webserver code is deeply broken, please fix it first!"
+        CODE=4 die "Webserver code is deeply broken (maybe missing libraries), please fix it first!"
     fi
 
     if [ -z "`api_get "" 2>&1 | grep 'HTTP/.* 404 Not Found'`" ] >/dev/null 2>&1 ; then
@@ -201,8 +201,8 @@ wait_for_web() {
         curlfail_pop
     fi
 
-    logmsg_info "Webserver seems basically able to serve the REST API"
+    logmsg_info "Webserver seems basically able to serve the REST API" >&2
   fi
 
-  logmsg_info "Requesting: '$BASE_URL$RELATIVE_URL' with '$WEBLIB_FUNC' $*"
+  logmsg_info "Requesting: '$BASE_URL$RELATIVE_URL' with '$WEBLIB_FUNC' $*" >&2
   "$WEBLIB_FUNC" "$RELATIVE_URL" "$@"

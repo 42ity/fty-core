@@ -40,27 +40,59 @@
 #include "assets.h"
 #include "asset_types.h"
 #include "utils.h"
+
+// Magic numbers - systemctl fancy formatting du-jour
+#ifndef SYSTEMCTL__LIST_UNITS__STRIP_HEADER
+#define SYSTEMCTL__LIST_UNITS__STRIP_HEADER 1
+#endif
+
+#ifndef SYSTEMCTL__LIST_UNITS__STRIP_FOOTER
+#define SYSTEMCTL__LIST_UNITS__STRIP_FOOTER 7
+#endif
+
+#ifndef DPKG__LIST__STRIP_HEADER
+#define DPKG__LIST__STRIP_HEADER 5
+#endif
+
+#ifndef DPKG__LIST__COLUMN_PKGNAME
+#define DPKG__LIST__COLUMN_PKGNAME 1
+#endif
+
+#ifndef DPKG__LIST__COLUMN_PKGVERSION
+#define DPKG__LIST__COLUMN_PKGVERSION 2
+#endif
+
 </%pre>
 <%request scope="global">
 int8_t access_auth_level;
 </%request>
 {
     "operating-system" : {
-<%cpp>    
+<%cpp>
     std::string output, cmderr;
     int rv = shared::output ({"/usr/bin/systemd-detect-virt", "-c"}, output, cmderr);
     if (rv != 0) {
         output = "N/A";
+    } else {
+        size_t output_len = output.length();
+        if (output_len>0 && output[output_len-1] == '\n') {
+            output[output_len-1] = '\0';
+        }
     }
 </%cpp>
-        <$$ utils::json::jsonify ("container", output) $>,
+        <$$ utils::json::jsonify ("container", output.c_str()) $>,
 <%cpp>
     rv = shared::output ({"/usr/bin/systemd-detect-virt", "-v"}, output, cmderr);
     if (rv != 0) {
         output = "N/A";
+    } else {
+        size_t output_len = output.length();
+        if (output_len>0 && output[output_len-1] == '\n') {
+            output[output_len-1] = '\0';
+        }
     }
 </%cpp>
-        <$$ utils::json::jsonify ("hypervisor", output) $>,
+        <$$ utils::json::jsonify ("hypervisor", output.c_str()) $>,
 <%cpp>
     struct utsname u;
     if (uname (&u) == -1) {
@@ -136,6 +168,12 @@ int8_t access_auth_level;
 <%cpp>
     if (access_auth_level >= AUTH_LEVEL_POWERUSER) {
         rv = shared::output ({"dpkg", "--list"}, output, cmderr);
+	if (!cmderr.empty()) {
+            log_error("Calling 'dpkg --list' got exit-code %i and this stderr:\n-----\n%s-----\n\n", rv, cmderr.c_str());
+        }
+#ifdef DEBUG
+        log_debug("Calling 'dpkg --list' got exit-code %i and this stdout:\n-----\n%s-----\n\n", rv, output.c_str());
+#endif
         if (rv == 0 && !output.empty()) {
 </%cpp>
 ,   "packages" : [
@@ -143,7 +181,7 @@ int8_t access_auth_level;
             std::vector<std::string> tokens;
             cxxtools::split ("\n", output, std::back_inserter (tokens));
             // Strip first 5 lines
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < DPKG__LIST__STRIP_HEADER; i++)
                 tokens.erase (tokens.begin ());
             bool first = true;
             for (auto const& item : tokens) {
@@ -151,20 +189,21 @@ int8_t access_auth_level;
                     continue;
                 std::vector <std::string> line_tokens;
                 cxxtools::split (cxxtools::Regex("[ \t]+"), item, std::back_inserter (line_tokens));
-                std::string version, commit;
-                auto pos = line_tokens.at (2).find ("~");
+                std::string pkgname, version, commit;
+                pkgname = line_tokens.at (DPKG__LIST__COLUMN_PKGNAME);
+                auto pos = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION).find ("~");
                 if (pos != std::string::npos) {
-                    version = line_tokens.at (2).substr (0, pos);
-                    commit = line_tokens.at (2).substr (pos+1); 
+                    version = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION).substr (0, pos);
+                    commit = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION).substr (pos+1);
                 }
                 else {
-                    version = line_tokens.at (2);
+                    version = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION);
 
                 }
 // Note: Shall we desire maintainers name etc...
-//                rv = shared::output ({"dpkg", "status", line_tokens.at (1).c_str ()}, output, cmderr);
-//                if (rv == 0) {
-//                      Parse `dpkg status <package_name>` here
+//                rv = shared::output ({"dpkg", "status", pkgname.c_str ()}, output, cmderr);
+//                if (rv == 0 && !output.empty()) {
+//                      Parse `dpkg status <pkgname>` here
 //                }
 </%cpp>
 %               if (first) {
@@ -174,7 +213,7 @@ int8_t access_auth_level;
 %               else {
           , {
 %               }
-                <$$ utils::json::jsonify ("package-name", line_tokens.at (1)) $>,
+                <$$ utils::json::jsonify ("package-name", pkgname) $>,
                 <$$ utils::json::jsonify ("package-version", version) $>
 %               if (pos != std::string::npos) {
               , <$$ utils::json::jsonify ("commit", commit) $>
@@ -184,40 +223,69 @@ int8_t access_auth_level;
     ]
 %       }
 <%cpp>
-        rv = shared::output ({"systemctl", "list-units"}, output, cmderr);
-        if (rv == 0) {
+// Note: Commands and unit names are constrained in tools/systemctl and web/systemctl.ecpp
+// TODO: Maybe parsing 'systemctl show -l *' to get per-service info and apply
+//   the filters defined for web/systemctl.ecpp would be more efficient than
+//   calling the script dozens of times?
+        rv = shared::output ({"systemctl", "list-units", "--all", "--full"}, output, cmderr);
+	if (!cmderr.empty()) {
+            log_error("Calling 'systemctl list-units -a -l' got exit-code %i and this stderr:\n-----\n%s-----\n\n", rv, cmderr.c_str());
+        }
+#ifdef DEBUG
+        log_debug("Calling 'systemctl list-units -a -l' got exit-code %i and this stdout:\n-----\n%s-----\n\n", rv, output.c_str());
+#endif
+        if (rv == 0 && !output.empty()) {
 </%cpp>
 ,   "processes" : [
 <%cpp>
             std::vector<std::string> tokens;
             cxxtools::split("\n", output, std::back_inserter (tokens));
             // Strip first 1 lines
-            for (int i = 0; i < 1; i++)
+            for (int i = 0; i < SYSTEMCTL__LIST_UNITS__STRIP_HEADER; i++)
                 tokens.erase (tokens.begin ());
             // Strip last 7 lines
-            for (int i = 0; i < 7; i++)
+            for (int i = 0; i < SYSTEMCTL__LIST_UNITS__STRIP_FOOTER; i++)
                 tokens.erase (tokens.end ());
             bool first = true;
             for (auto const& item : tokens) {
+                int token_unitname=0;
                 if (item.empty ())
                     continue;
                 std::vector <std::string> line_tokens;
                 cxxtools::split (" \t", item, std::back_inserter (line_tokens));
                 // status
-		if (line_tokens.at (0).compare ("*") == 0) 
-	            rv = shared::output ({"systemctl", "show", line_tokens.at (1).c_str ()}, output, cmderr);
-		else
-	            rv = shared::output ({"systemctl", "show", line_tokens.at (0).c_str ()}, output, cmderr);
-                if (rv == 0) {
+		if (line_tokens.at (0).compare ("*") == 0)
+	            token_unitname=1;
+		while (line_tokens.at (token_unitname).compare ("") == 0 ||
+		       line_tokens.at (token_unitname).compare ({'\t'}) == 0 ||
+		       line_tokens.at (token_unitname).compare (" ") == 0 )
+	            token_unitname++;
+		std::string unitname = line_tokens.at (token_unitname);
+// Note: unitname must be the "$2" for our systemctl script
+	        rv = shared::output ({"systemctl", "show", unitname.c_str(), "--full"}, output, cmderr);
+
+		if (!cmderr.empty() && !cmderr.compare("Action not allowed")) {
+// Note: Here we filter by the stderr contents because it will be
+// full of units we do not have right to access in our systemctl script
+	            log_error("Calling 'systemctl show -l %s' got exit-code %i and this stderr:\n-----\n%s-----\n\n", unitname.c_str(), rv, cmderr.c_str());
+        	}
+#ifdef DEBUG
+		if (output.empty() || (output[0]=='\n' && output[1]=='\0')) {
+		    log_debug("Calling 'systemctl show -l %s' got exit-code %i and no stdout", unitname.c_str(), rv);
+		} else {
+		    log_debug("Calling 'systemctl show -l %s' got exit-code %i and this stdout:\n-----\n%s-----\n\n", unitname.c_str(), rv, output.c_str());
+		}
+#endif
+                if (rv == 0 && !output.empty()) {
 </%cpp>
 %                   if (first) {
             {
 %                       first = false;
 %                   }
 %                   else {
-          , { 
+          , {
 %                   }
-                <$$ utils::json::jsonify ("unit", line_tokens.at (0)) $>
+                <$$ utils::json::jsonify ("unit", unitname) $>
 <%cpp> 
                     std::vector<std::string> status_tokens;
                     cxxtools::split("\n", output, std::back_inserter(status_tokens));
@@ -231,24 +299,24 @@ int8_t access_auth_level;
                         std::string value  = line.substr (found+1, std::string::npos);
 </%cpp>
 %                       if (key.compare ("LoadState") == 0) {
-              , <$$ utils::json::jsonify ("LoadState", value) $>             
+              , <$$ utils::json::jsonify ("LoadState", value) $>
 %                       }
 %                       else if (key.compare ("ActiveState") == 0) {
-              , <$$ utils::json::jsonify ("ActiveState", value) $>             
+              , <$$ utils::json::jsonify ("ActiveState", value) $>
 %                       }
 %                       else if (key.compare ("UnitFileState") == 0) {
-              , <$$ utils::json::jsonify ("UnitFileState", value) $>             
+              , <$$ utils::json::jsonify ("UnitFileState", value) $>
 %                       }
 %                       else if (key.compare ("SubState") == 0) {
-              , <$$ utils::json::jsonify ("SubState", value) $>             
+              , <$$ utils::json::jsonify ("SubState", value) $>
 %                       }
 %                       // Note: We can parse out more info here
 %                       // TODO: DECIDE if we want to parse out more info
 %                   } // for line
             }
-%               } // if (rv == 0)
+%               } // if (systemctl show) rv == 0
 %           } // for auto
     ]
-%       }
+%       } // if (systemctl list-units) rv == 0
 %   } // if (access_auth_level >= AUTH_LEVEL_POWERUSER)
 }
