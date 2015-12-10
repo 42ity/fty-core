@@ -125,7 +125,7 @@ cleanup_script() {
 	fi
 
 	[ "$ERRCODE" -ge 0 ] 2>/dev/null && \
-	for F in `ls -1 /srv/libvirt/rootfs/$VM.wantexitcode.* 2>/dev/null` ; do
+	for F in `ls -1 /srv/libvirt/rootfs/$VM.wantexitcode.* 2>/dev/null || true` ; do
 		echo "$ERRCODE" > "$F"
 	done
 }
@@ -267,10 +267,13 @@ if \
 	    "`hostname`${DOTDOMAINNAME}, so will mount a .$EXT file" \
 	    "as an RO base and overlay the RW changes"
 	modprobe squashfs
-	modprobe overlay || modprobe overlayfs
+	for OVERLAYFS_TYPE in overlay overlayfs ; do
+		modprobe ${OVERLAYFS_TYPE} && break
+	done
 else
 	EXT="tar.gz"
 	OVERLAYFS=""
+	OVERLAYFS_TYPE=""
 	logmsg_info "Detected no support of OVERLAYFS on the host" \
 	    "`hostname`${DOTDOMAINNAME}, so will unpack a .$EXT file" \
 	    "into a dedicated full RW directory"
@@ -459,8 +462,9 @@ if [ ! -s "$IMAGE" ]; then
 fi
 logmsg_info "Will use IMAGE='$IMAGE' for further VM set-up (flattened to '$IMAGE_FLAT')"
 
-# Destroy whatever was running
-virsh -c lxc:// destroy "$VM" 2> /dev/null > /dev/null
+# Destroy whatever was running, if anything
+virsh -c lxc:// destroy "$VM" 2> /dev/null > /dev/null || \
+	logmsg_warn "Could not destroy old instance of '$VM'"
 # may be wait for slow box
 sleep 5
 
@@ -468,11 +472,11 @@ sleep 5
 logmsg_info "Unmounting paths related to VM '$VM':" \
 	"'`pwd`/../rootfs/$VM/lib/modules', '`pwd`../rootfs/$VM/root/.ccache'" \
 	"'`pwd`/../rootfs/$VM'/proc, `pwd`/../rootfs/$VM', '`pwd`/../rootfs/${IMAGE_FLAT}-ro'"
-umount -fl "../rootfs/$VM/lib/modules" 2> /dev/null > /dev/null
-umount -fl "../rootfs/$VM/root/.ccache" 2> /dev/null > /dev/null
-umount -fl "../rootfs/$VM/proc" 2> /dev/null > /dev/null
-umount -fl "../rootfs/$VM" 2> /dev/null > /dev/null
-fusermount -u -z  "../rootfs/$VM" 2> /dev/null > /dev/null
+umount -fl "../rootfs/$VM/lib/modules" 2> /dev/null > /dev/null || true
+umount -fl "../rootfs/$VM/root/.ccache" 2> /dev/null > /dev/null || true
+umount -fl "../rootfs/$VM/proc" 2> /dev/null > /dev/null || true
+umount -fl "../rootfs/$VM" 2> /dev/null > /dev/null || true
+fusermount -u -z  "../rootfs/$VM" 2> /dev/null > /dev/null || true
 
 # This unmount can fail if for example several containers use the same RO image
 # or if it is not used at all; not shielding by "$OVERLAYFS" check just in case
@@ -483,11 +487,12 @@ if [ -d "../overlays/${IMAGE_FLAT}__${VM}" ]; then
 	logmsg_info "Removing RW directory of the stopped VM:" \
 		"'../overlays/${IMAGE_FLAT}__${VM}'"
 	rm -rf "../overlays/${IMAGE_FLAT}__${VM}"
+	rm -rf "../overlays/${IMAGE_FLAT}__${VM}.tmp"
 	sleep 1; echo ""
 fi
 
 # When the host gets ungracefully rebooted, useless old dirs may remain...
-for D in ../overlays/*__${VM}/ ; do
+for D in ../overlays/*__${VM}/ ../overlays/*__${VM}.tmp/ ; do
 	if [ -d "$D" ]; then
 		logmsg_warn "Obsolete RW directory for an old version" \
 			"of this VM was found, removing '`pwd`/$D':"
@@ -511,7 +516,7 @@ for D in ../rootfs/*-ro/ ; do
 			continue
 
 			logmsg_info "Old RO mountpoint '$FD' seems unused, unmounting"
-			umount -fl "$FD"
+			umount -fl "$FD" || true
 
 			### NOTE: experiments showed, that even if we unmount
 			### the RO lowerdir and it is no longer seen by the OS,
@@ -530,7 +535,7 @@ for D in ../rootfs/*-ro/ ; do
 			logmsg_warn "Obsolete RO mountpoint for this IMAGE was found," \
 			    "removing '`pwd`/$D':"
 			ls -lad "$D"; ls -la "$D"
-			umount -fl "$D" 2> /dev/null > /dev/null
+			umount -fl "$D" 2> /dev/null > /dev/null || true
 			rm -rf "$D"
 			sleep 1; echo ""
 		fi
@@ -559,10 +564,11 @@ if [ "$OVERLAYFS" = yes ]; then
 	logmsg_info "Use the individual RW component" \
 		"located in '`pwd`/../overlays/${IMAGE_FLAT}__${VM}'" \
 		"for an overlay-mount united at '`pwd`/../rootfs/$VM'"
-	mkdir -p "../overlays/${IMAGE_FLAT}__${VM}"
-	mount -t overlayfs \
-	    -o lowerdir="../rootfs/${IMAGE_FLAT}-ro",upperdir="../overlays/${IMAGE_FLAT}__${VM}" \
-	    overlayfs "../rootfs/$VM" 2> /dev/null \
+	mkdir -p "../overlays/${IMAGE_FLAT}__${VM}" \
+		"../overlays/${IMAGE_FLAT}__${VM}.tmp"
+	mount -t ${OVERLAYFS_TYPE} \
+	    -o lowerdir="../rootfs/${IMAGE_FLAT}-ro",upperdir="../overlays/${IMAGE_FLAT}__${VM}",workdir="../overlays/${IMAGE_FLAT}__${VM}.tmp" \
+	    ${OVERLAYFS_TYPE} "../rootfs/$VM" \
 	|| die "Can't overlay-mount rw directory"
 else
 	logmsg_info "Unpack the full individual RW copy of the image" \
@@ -577,12 +583,14 @@ mount -o rbind "/lib/modules" "../rootfs/$VM/lib/modules"
 mount -o remount,ro,rbind "../rootfs/$VM/lib/modules"
 
 logmsg_info "Bind-mount ccache directory from the host OS"
-umount -fl "../rootfs/$VM/root/.ccache" 2> /dev/null > /dev/null
+umount -fl "../rootfs/$VM/root/.ccache" 2> /dev/null > /dev/null || true
 # The devel-image can make this a symlink to user homedir, so kill it:
-[ -h "../rootfs/$VM/root/.ccache" ] && rm -rf "../rootfs/$VM/root/.ccache"
-mkdir -p "../rootfs/$VM/root/.ccache"
-[ -d "/root/.ccache" ] || mkdir -p "/root/.ccache"
-mount -o rbind "/root/.ccache" "../rootfs/$VM/root/.ccache"
+[ -h "../rootfs/$VM/root/.ccache" ] && rm -f "../rootfs/$VM/root/.ccache"
+# On some systems this may fail due to strange implementation of overlayfs:
+if mkdir -p "../rootfs/$VM/root/.ccache" ; then
+	[ -d "/root/.ccache" ] || mkdir -p "/root/.ccache"
+	mount -o rbind "/root/.ccache" "../rootfs/$VM/root/.ccache"
+fi
 
 logmsg_info "Setup virtual hostname"
 echo "$VM" > "../rootfs/$VM/etc/hostname"
@@ -596,9 +604,11 @@ cp -r --preserve /etc/ssh/*_key /etc/ssh/*.pub "../rootfs/$VM/etc/ssh"
 logmsg_info "Copy environment settings from the host OS"
 cp /etc/profile.d/* ../rootfs/$VM/etc/profile.d/
 
-logmsg_info "Add xterm terminfo from the host OS"
-mkdir -p ../rootfs/$VM/lib/terminfo/x
-cp /lib/terminfo/x/xterm* ../rootfs/$VM/lib/terminfo/x
+if [ -d /lib/terminfo/x ] ; then
+	logmsg_info "Add xterm terminfo from the host OS"
+	mkdir -p ../rootfs/$VM/lib/terminfo/x
+	cp -prf /lib/terminfo/x/xterm* ../rootfs/$VM/lib/terminfo/x
+fi
 
 mkdir -p "../rootfs/$VM/etc/apt/apt.conf.d/"
 # setup debian proxy
@@ -606,6 +616,14 @@ mkdir -p "../rootfs/$VM/etc/apt/apt.conf.d/"
 	logmsg_info "Set up APT proxy configuration" && \
 	echo 'Acquire::http::Proxy "'"$APT_PROXY"'";' > \
 		"../rootfs/$VM/etc/apt/apt.conf.d/01proxy-apt-cacher"
+
+if [ ! -d "../rootfs/$VM/var/lib/mysql/mysql" ] && \
+   [ ! -s "../rootfs/$VM/root/.my.cnf" ] && \
+   [ -s ~root/.my.cnf ] \
+; then
+	logmsg_info "Copying MySQL root password from the host into VM"
+	cp -pf ~root/.my.cnf "../rootfs/$VM/root/.my.cnf"
+fi
 
 logmsg_info "Pre-configuration of VM '$VM' ($IMGTYPE/$ARCH) is completed"
 if [ x"$DEPLOYONLY" = xyes ]; then
@@ -616,8 +634,8 @@ if [ x"$DEPLOYONLY" = xyes ]; then
 	exit 0
 fi
 
-logmsg_info "Start the virtual machine"
-virsh -c lxc:// start "$VM" || die "Can't start the virtual machine"
+logmsg_info "Start the virtual machine $VM"
+virsh -c lxc:// start "$VM" || die "Can't start the virtual machine $VM"
 
 if [ "$INSTALL_DEV_PKGS" = yes ]; then
 	INSTALLER=""
@@ -650,6 +668,6 @@ logmsg_info "Preparation and startup of the virtual machine '$VM'" \
 	"is successfully completed on `date -u` on host" \
 	"'`hostname`${DOTDOMAINNAME}'"
 
-cleanup_script
+cleanup_script || true
 settraps '-'
 exit 0
