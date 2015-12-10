@@ -227,7 +227,7 @@ int8_t access_auth_level;
 // TODO: Maybe parsing 'systemctl show -l *' to get per-service info and apply
 //   the filters defined for web/systemctl.ecpp would be more efficient than
 //   calling the script dozens of times?
-        rv = shared::output ({"systemctl", "list-units", "--all", "--full"}, output, cmderr);
+        rv = shared::output ({"sudo", "systemctl", "list-units", "--all", "--full"}, output, cmderr);
 	if (!cmderr.empty()) {
             log_error("Calling 'systemctl list-units -a -l' got exit-code %i and this stderr:\n-----\n%s-----\n\n", rv, cmderr.c_str());
         }
@@ -262,7 +262,7 @@ int8_t access_auth_level;
 	            token_unitname++;
 		std::string unitname = line_tokens.at (token_unitname);
 // Note: unitname must be the "$2" for our systemctl script
-	        rv = shared::output ({"systemctl", "show", unitname.c_str(), "--full"}, output, cmderr);
+	        rv = shared::output ({"sudo", "systemctl", "show", unitname.c_str(), "--full"}, output, cmderr);
 
 		if (!cmderr.empty() && !cmderr.compare("Action not allowed")) {
 // Note: Here we filter by the stderr contents because it will be
