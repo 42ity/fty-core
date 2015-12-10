@@ -724,8 +724,10 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 		echo "Sleeping 30 sec to let VM startup settle down first..."
 		sleep 30
 		echo "Running $INSTALLER against the VM '$VM' (via chroot)..."
+		set +e
 		chroot ../rootfs/$VM/ /bin/sh < "$INSTALLER"
 		echo "Result of installer script: $?"
+		set -e
 	else
 		echo "WARNING: Got request to update and install a predefined" \
 			"development package set, but got no ci-setup-test-machine.sh" \
