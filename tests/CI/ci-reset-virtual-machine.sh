@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (C) 2014 Eaton
+# Copyright (C) 2014-2015 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,6 +28,9 @@
 
 # NOTE: This script is copied to VM hosts and used standalone,
 # so we do not depend it on scriptlib.sh or anything else.
+
+PATH="/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
+export PATH
 
 ### This is prefixed before ERROR, WARN, INFO tags in the logged messages
 [ -z "$LOGMSG_PREFIX" ] && LOGMSG_PREFIX="CI-RESETVM-"
@@ -87,6 +90,9 @@ usage() {
     echo "                         (default: auto; default if only the option is specified: yes)"
     echo "    --stop-only          end the script after stopping the VM and cleaning up"
     echo "    --deploy-only        end the script just before it would start the VM (skips apt-get too)"
+    echo "    --copy-host-users 'a b c'    Copies specified user or group account definitions"
+    echo "    --copy-host-groups 'a b c'   (e.g. for bind-mounted homes from host into the VM)"
+    echo "    --no-config-file     Forbid use in this run of a per-VM config file if one is found"
     echo "    -h|--help            print this help"
 }
 
@@ -125,7 +131,7 @@ cleanup_script() {
 	fi
 
 	[ "$ERRCODE" -ge 0 ] 2>/dev/null && \
-	for F in `ls -1 /srv/libvirt/rootfs/$VM.wantexitcode.* 2>/dev/null` ; do
+	for F in `ls -1 /srv/libvirt/rootfs/$VM.wantexitcode.* 2>/dev/null || true` ; do
 		echo "$ERRCODE" > "$F"
 	done
 }
@@ -138,10 +144,12 @@ cleanup_wget() {
 
 settraps() {
 	# Not all trap names are recognized by all shells consistently
-	for P in "" SIG; do for S in ERR EXIT QUIT TERM HUP INT ; do
+	# Note: slight difference from scriptlib.sh, we trap ERR too by default
+	[ -z "${TRAP_SIGNALS-}" ] && TRAP_SIGNALS="ERR  EXIT QUIT TERM HUP INT"
+	for P in "" SIG; do for S in $TRAP_SIGNALS ; do
 		case "$1" in
-		-|"") trap "$1" $P$S 2>/dev/null ;;
-		*)    trap 'ERRCODE=$?; ('"$*"'); exit $ERRCODE;' $P$S 2>/dev/null ;;
+		-|"") trap "$1" $P$S 2>/dev/null || true ;;
+		*)    trap 'ERRCODE=$?; ('"$*"'); exit $ERRCODE;' $P$S 2>/dev/null || true ;;
 		esac
 	done; done
 }
@@ -172,6 +180,7 @@ DOTDOMAINNAME=""
 [ -z "$DEPLOYONLY" ] && DEPLOYONLY=no
 [ -z "$INSTALL_DEV_PKGS" ] && INSTALL_DEV_PKGS=no
 [ -z "$ATTEMPT_DOWNLOAD" ] && ATTEMPT_DOWNLOAD=auto
+[ -z "$ALLOW_CONFIG_FILE" ] && ALLOW_CONFIG_FILE=yes
 
 while [ $# -gt 0 ] ; do
     case "$1" in
@@ -219,6 +228,12 @@ while [ $# -gt 0 ] ; do
 	    INSTALL_DEV_PKGS=yes
 	    shift
 	    ;;
+	--copy-host-users)
+	    COPYHOST_USERS="$2"; shift 2;;
+	--copy-host-groups)
+	    COPYHOST_GROUPS="$2"; shift 2;;
+	--no-config-file)
+	    ALLOW_CONFIG_FILE=no; shift ;;
 	-h|--help)
 	    usage
 	    exit 1
@@ -264,9 +279,14 @@ if \
 	logmsg_info "Detected support of OVERLAYFS on the host" \
 	    "`hostname`${DOTDOMAINNAME}, so will mount a .$EXT file" \
 	    "as an RO base and overlay the RW changes"
+	modprobe squashfs
+	for OVERLAYFS_TYPE in overlay overlayfs ; do
+		modprobe ${OVERLAYFS_TYPE} && break
+	done
 else
 	EXT="tar.gz"
 	OVERLAYFS=""
+	OVERLAYFS_TYPE=""
 	logmsg_info "Detected no support of OVERLAYFS on the host" \
 	    "`hostname`${DOTDOMAINNAME}, so will unpack a .$EXT file" \
 	    "into a dedicated full RW directory"
@@ -278,6 +298,16 @@ fi
 mkdir -p "/srv/libvirt/snapshots/$IMGTYPE/$ARCH" "/srv/libvirt/rootfs" "/srv/libvirt/overlays"
 cd "/srv/libvirt/rootfs" || \
 	die "Can not 'cd /srv/libvirt/rootfs' to keep container root trees"
+
+if [ -s "`pwd`/$VM.config-reset-vm" ]; then
+	if [ "$ALLOW_CONFIG_FILE" = yes ]; then
+		logmsg_warn "Found configuration file for the '$VM', it will override the command-line settings:"
+		cat "`pwd`/$VM.config-reset-vm"
+		. "`pwd`/$VM.config-reset-vm" || die "Can not import config file '`pwd`/$VM.config-reset-vm'"
+	else
+		logmsg_warn "Found configuration file for the '$VM', but it is ignored because ALLOW_CONFIG_FILE='$ALLOW_CONFIG_FILE'"
+	fi
+fi
 
 # Verify that this script runs once at a time for the given VM
 if [ -f "$VM.lock" ] ; then
@@ -455,8 +485,9 @@ if [ ! -s "$IMAGE" ]; then
 fi
 logmsg_info "Will use IMAGE='$IMAGE' for further VM set-up (flattened to '$IMAGE_FLAT')"
 
-# Destroy whatever was running
-virsh -c lxc:// destroy "$VM" 2> /dev/null > /dev/null
+# Destroy whatever was running, if anything
+virsh -c lxc:// destroy "$VM" 2> /dev/null > /dev/null || \
+	logmsg_warn "Could not destroy old instance of '$VM'"
 # may be wait for slow box
 sleep 5
 
@@ -464,11 +495,11 @@ sleep 5
 logmsg_info "Unmounting paths related to VM '$VM':" \
 	"'`pwd`/../rootfs/$VM/lib/modules', '`pwd`../rootfs/$VM/root/.ccache'" \
 	"'`pwd`/../rootfs/$VM'/proc, `pwd`/../rootfs/$VM', '`pwd`/../rootfs/${IMAGE_FLAT}-ro'"
-umount -fl "../rootfs/$VM/lib/modules" 2> /dev/null > /dev/null
-umount -fl "../rootfs/$VM/root/.ccache" 2> /dev/null > /dev/null
-umount -fl "../rootfs/$VM/proc" 2> /dev/null > /dev/null
-umount -fl "../rootfs/$VM" 2> /dev/null > /dev/null
-fusermount -u -z  "../rootfs/$VM" 2> /dev/null > /dev/null
+umount -fl "../rootfs/$VM/lib/modules" 2> /dev/null > /dev/null || true
+umount -fl "../rootfs/$VM/root/.ccache" 2> /dev/null > /dev/null || true
+umount -fl "../rootfs/$VM/proc" 2> /dev/null > /dev/null || true
+umount -fl "../rootfs/$VM" 2> /dev/null > /dev/null || true
+fusermount -u -z  "../rootfs/$VM" 2> /dev/null > /dev/null || true
 
 # This unmount can fail if for example several containers use the same RO image
 # or if it is not used at all; not shielding by "$OVERLAYFS" check just in case
@@ -479,11 +510,12 @@ if [ -d "../overlays/${IMAGE_FLAT}__${VM}" ]; then
 	logmsg_info "Removing RW directory of the stopped VM:" \
 		"'../overlays/${IMAGE_FLAT}__${VM}'"
 	rm -rf "../overlays/${IMAGE_FLAT}__${VM}"
+	rm -rf "../overlays/${IMAGE_FLAT}__${VM}.tmp"
 	sleep 1; echo ""
 fi
 
 # When the host gets ungracefully rebooted, useless old dirs may remain...
-for D in ../overlays/*__${VM}/ ; do
+for D in ../overlays/*__${VM}/ ../overlays/*__${VM}.tmp/ ; do
 	if [ -d "$D" ]; then
 		logmsg_warn "Obsolete RW directory for an old version" \
 			"of this VM was found, removing '`pwd`/$D':"
@@ -507,7 +539,7 @@ for D in ../rootfs/*-ro/ ; do
 			continue
 
 			logmsg_info "Old RO mountpoint '$FD' seems unused, unmounting"
-			umount -fl "$FD"
+			umount -fl "$FD" || true
 
 			### NOTE: experiments showed, that even if we unmount
 			### the RO lowerdir and it is no longer seen by the OS,
@@ -526,7 +558,7 @@ for D in ../rootfs/*-ro/ ; do
 			logmsg_warn "Obsolete RO mountpoint for this IMAGE was found," \
 			    "removing '`pwd`/$D':"
 			ls -lad "$D"; ls -la "$D"
-			umount -fl "$D" 2> /dev/null > /dev/null
+			umount -fl "$D" 2> /dev/null > /dev/null || true
 			rm -rf "$D"
 			sleep 1; echo ""
 		fi
@@ -555,10 +587,11 @@ if [ "$OVERLAYFS" = yes ]; then
 	logmsg_info "Use the individual RW component" \
 		"located in '`pwd`/../overlays/${IMAGE_FLAT}__${VM}'" \
 		"for an overlay-mount united at '`pwd`/../rootfs/$VM'"
-	mkdir -p "../overlays/${IMAGE_FLAT}__${VM}"
-	mount -t overlayfs \
-	    -o lowerdir="../rootfs/${IMAGE_FLAT}-ro",upperdir="../overlays/${IMAGE_FLAT}__${VM}" \
-	    overlayfs "../rootfs/$VM" 2> /dev/null \
+	mkdir -p "../overlays/${IMAGE_FLAT}__${VM}" \
+		"../overlays/${IMAGE_FLAT}__${VM}.tmp"
+	mount -t ${OVERLAYFS_TYPE} \
+	    -o lowerdir="../rootfs/${IMAGE_FLAT}-ro",upperdir="../overlays/${IMAGE_FLAT}__${VM}",workdir="../overlays/${IMAGE_FLAT}__${VM}.tmp" \
+	    ${OVERLAYFS_TYPE} "../rootfs/$VM" \
 	|| die "Can't overlay-mount rw directory"
 else
 	logmsg_info "Unpack the full individual RW copy of the image" \
@@ -573,12 +606,14 @@ mount -o rbind "/lib/modules" "../rootfs/$VM/lib/modules"
 mount -o remount,ro,rbind "../rootfs/$VM/lib/modules"
 
 logmsg_info "Bind-mount ccache directory from the host OS"
-umount -fl "../rootfs/$VM/root/.ccache" 2> /dev/null > /dev/null
+umount -fl "../rootfs/$VM/root/.ccache" 2> /dev/null > /dev/null || true
 # The devel-image can make this a symlink to user homedir, so kill it:
-[ -h "../rootfs/$VM/root/.ccache" ] && rm -rf "../rootfs/$VM/root/.ccache"
-mkdir -p "../rootfs/$VM/root/.ccache"
-[ -d "/root/.ccache" ] || mkdir -p "/root/.ccache"
-mount -o rbind "/root/.ccache" "../rootfs/$VM/root/.ccache"
+[ -h "../rootfs/$VM/root/.ccache" ] && rm -f "../rootfs/$VM/root/.ccache"
+# On some systems this may fail due to strange implementation of overlayfs:
+if mkdir -p "../rootfs/$VM/root/.ccache" ; then
+	[ -d "/root/.ccache" ] || mkdir -p "/root/.ccache"
+	mount -o rbind "/root/.ccache" "../rootfs/$VM/root/.ccache"
+fi
 
 logmsg_info "Setup virtual hostname"
 echo "$VM" > "../rootfs/$VM/etc/hostname"
@@ -592,9 +627,11 @@ cp -r --preserve /etc/ssh/*_key /etc/ssh/*.pub "../rootfs/$VM/etc/ssh"
 logmsg_info "Copy environment settings from the host OS"
 cp /etc/profile.d/* ../rootfs/$VM/etc/profile.d/
 
-logmsg_info "Add xterm terminfo from the host OS"
-mkdir -p ../rootfs/$VM/lib/terminfo/x
-cp /lib/terminfo/x/xterm* ../rootfs/$VM/lib/terminfo/x
+if [ -d /lib/terminfo/x ] ; then
+	logmsg_info "Add xterm terminfo from the host OS"
+	mkdir -p ../rootfs/$VM/lib/terminfo/x
+	cp -prf /lib/terminfo/x/xterm* ../rootfs/$VM/lib/terminfo/x
+fi
 
 mkdir -p "../rootfs/$VM/etc/apt/apt.conf.d/"
 # setup debian proxy
@@ -602,6 +639,60 @@ mkdir -p "../rootfs/$VM/etc/apt/apt.conf.d/"
 	logmsg_info "Set up APT proxy configuration" && \
 	echo 'Acquire::http::Proxy "'"$APT_PROXY"'";' > \
 		"../rootfs/$VM/etc/apt/apt.conf.d/01proxy-apt-cacher"
+
+if [ ! -d "../rootfs/$VM/var/lib/mysql/mysql" ] && \
+   [ ! -s "../rootfs/$VM/root/.my.cnf" ] && \
+   [ -s ~root/.my.cnf ] \
+; then
+	logmsg_info "Copying MySQL root password from the host into VM"
+	cp -pf ~root/.my.cnf "../rootfs/$VM/root/.my.cnf"
+fi
+
+if [ -n "${COPYHOST_GROUPS-}" ]; then
+	for G in $COPYHOST_GROUPS ; do
+		_G="$(egrep "^$G:" "/etc/group")" || \
+			die "Can not replicate unknown group '$G' from the host!"
+
+		logmsg_info "Defining group account '$_G' from host to VM"
+		if egrep "^$G:" "../rootfs/$VM/etc/group" >/dev/null ; then
+			egrep -v "^$G:" < "../rootfs/$VM/etc/group" > "../rootfs/$VM/etc/group.tmp" && \
+			echo "$_G" >> "../rootfs/$VM/etc/group.tmp" && \
+			cat "../rootfs/$VM/etc/group.tmp" > "../rootfs/$VM/etc/group"
+			rm -f "../rootfs/$VM/etc/group.tmp"
+		else
+			echo "$_G" >> "../rootfs/$VM/etc/group"
+		fi
+	done
+fi
+
+if [ -n "${COPYHOST_USERS-}" ]; then
+	for U in $COPYHOST_USERS ; do
+		_P="$(egrep "^$U:" "/etc/passwd")" || \
+			die "Can not replicate unknown user '$U' from the host!"
+
+		_S="$(egrep "^$U:" "/etc/shadow")" || \
+			_S="$U:*:16231:0:99999:7:::"
+
+		logmsg_info "Defining user account '$_P' from host to VM"
+		if egrep "^$U:" "../rootfs/$VM/etc/passwd" >/dev/null ; then
+			egrep -v "^$U:" < "../rootfs/$VM/etc/passwd" > "../rootfs/$VM/etc/passwd.tmp" && \
+			echo "$_P" >> "../rootfs/$VM/etc/passwd.tmp" && \
+			cat "../rootfs/$VM/etc/passwd.tmp" > "../rootfs/$VM/etc/passwd"
+			rm -f "../rootfs/$VM/etc/passwd.tmp"
+		else
+			echo "$_P" >> "../rootfs/$VM/etc/passwd"
+		fi
+
+		if egrep "^$U:" "../rootfs/$VM/etc/shadow" >/dev/null ; then
+			egrep -v "^$U:" < "../rootfs/$VM/etc/shadow" > "../rootfs/$VM/etc/shadow.tmp" && \
+			echo "$_S" >> "../rootfs/$VM/etc/shadow.tmp" && \
+			cat "../rootfs/$VM/etc/shadow.tmp" > "../rootfs/$VM/etc/shadow"
+			rm -f "../rootfs/$VM/etc/shadow.tmp"
+		else
+			echo "$_S" >> "../rootfs/$VM/etc/shadow"
+		fi
+	done
+fi
 
 logmsg_info "Pre-configuration of VM '$VM' ($IMGTYPE/$ARCH) is completed"
 if [ x"$DEPLOYONLY" = xyes ]; then
@@ -612,8 +703,8 @@ if [ x"$DEPLOYONLY" = xyes ]; then
 	exit 0
 fi
 
-logmsg_info "Start the virtual machine"
-virsh -c lxc:// start "$VM" || die "Can't start the virtual machine"
+logmsg_info "Start the virtual machine $VM"
+virsh -c lxc:// start "$VM" || die "Can't start the virtual machine $VM"
 
 if [ "$INSTALL_DEV_PKGS" = yes ]; then
 	INSTALLER=""
@@ -633,8 +724,10 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 		echo "Sleeping 30 sec to let VM startup settle down first..."
 		sleep 30
 		echo "Running $INSTALLER against the VM '$VM' (via chroot)..."
+		set +e
 		chroot ../rootfs/$VM/ /bin/sh < "$INSTALLER"
 		echo "Result of installer script: $?"
+		set -e
 	else
 		echo "WARNING: Got request to update and install a predefined" \
 			"development package set, but got no ci-setup-test-machine.sh" \
@@ -646,6 +739,6 @@ logmsg_info "Preparation and startup of the virtual machine '$VM'" \
 	"is successfully completed on `date -u` on host" \
 	"'`hostname`${DOTDOMAINNAME}'"
 
-cleanup_script
+cleanup_script || true
 settraps '-'
 exit 0
