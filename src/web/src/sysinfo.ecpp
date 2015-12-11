@@ -69,31 +69,26 @@
 #define DPKG__LIST__COLUMN_PKGVERSION 2
 #endif
 
-#define FILL(PROP) \
-	{ tmp =  body_args.param(#PROP, ""); \
-	  if(PROP.empty()) \
-		PROP = tmp; }
-
 </%pre>
 <%request scope="global">
 int8_t access_auth_level;
-// This is quite noisy, so we only enable this option in sysinfo REST API tests
-std::string debug_trace = "";
+// Tracing this call is quite noisy, so we only enable this
+// option in sysinfo REST API tests
 </%request>
+<%args>
+std::string debug_trace;
+</%args>
 {
     "operating-system" : {
 <%cpp>
     std::string output, cmderr;
     bool b_debug_trace = false;
-    {
-        // Just in case someone put urlencoded stuff in body
-        cxxtools::QueryParams body_args(request.getBody());
-        std::string tmp;
-        FILL(debug_trace);
-        if ( debug_trace == "yes" ) {
-            b_debug_trace = true;
-        }
+    if ( !debug_trace.empty() && debug_trace == "yes" ) {
+        b_debug_trace = true;
     }
+#ifdef DEBUG
+    log_debug("SYSINFO TRACING: ARG debug_trace='%s'  BOOL b_debug_trace='%i'", debug_trace.c_str(), b_debug_trace);
+#endif
 
 // Certain strings returned to caller in some cases
     static const std::string UNKNOWN = "unknown";
