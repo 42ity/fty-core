@@ -153,12 +153,20 @@ if (streq (part, "ERROR")) {
         mlm_client_destroy (&client);
         http_die ("not-found", std::string ("Rule name '").append (name).append ("'").c_str ());
     }
-    if (streq (part, "BAD_JSON")) {
+    if (streq (part, "BAD_JSON") || streq (part, "RULE_HAS_ERRORS")) {
         free (part);
         log_error ("Request document not valid json or does not adhere to specified schema.");
         zmsg_destroy (&recv_msg);
         mlm_client_destroy (&client);
         http_die ("bad-request-document", "Please check RFC-11 for valid rule json schema description.");
+    }
+    if (streq (part, "ALREADY_EXISTS")) {
+        free (part);
+        std::string msg{"Cannot update rule, name already exists"};
+        log_error(msg.c_str());
+        zmsg_destroy (&recv_msg);
+        mlm_client_destroy (&client);
+        http_die ("parameter-conflict", msg.c_str());
     }
     log_error ("%s", part);
     std::string reason = part;
