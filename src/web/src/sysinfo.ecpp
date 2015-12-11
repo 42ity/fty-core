@@ -18,11 +18,17 @@
  #
  #><#
 /*!
- * \file sysinfo.ecpp
- * \author Jim Klimov <EvgenyKlimov@Eaton.com>
- * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
- * \author Karol Hrdina <karolhrdina@eaton.com>
- * \brief Not yet documented file
+ * \file    sysinfo.ecpp
+ * \author  Jim Klimov <EvgenyKlimov@Eaton.com>
+ * \author  Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \author  Karol Hrdina <KarolHrdina@Eaton.com>
+ * \brief   This REST API call returns information about the OS
+ * \details This REST API call returns information about the operating
+ *          environment for the installed OS image, including packages
+ *          and states of services related or important to BIOS project.
+ *          Note that this no longer reports raw process information as
+ *          might be relevant to a developer's workspace or to packaging
+ *          in some OS other than the primary development target NFC OS.
  */
  #><%pre>
 #include <vector>
@@ -40,6 +46,7 @@
 #include "assets.h"
 #include "asset_types.h"
 #include "utils.h"
+#include "git_details_override.h"
 
 // Magic numbers - systemctl fancy formatting du-jour
 #ifndef SYSTEMCTL__LIST_UNITS__STRIP_HEADER
@@ -62,17 +69,42 @@
 #define DPKG__LIST__COLUMN_PKGVERSION 2
 #endif
 
+#define FILL(PROP) \
+	{ tmp =  body_args.param(#PROP, ""); \
+	  if(PROP.empty()) \
+		PROP = tmp; }
+
 </%pre>
 <%request scope="global">
 int8_t access_auth_level;
+// This is quite noisy, so we only enable this option in sysinfo REST API tests
+std::string debug_trace = "";
 </%request>
 {
     "operating-system" : {
 <%cpp>
     std::string output, cmderr;
+    bool b_debug_trace = false;
+    {
+        // Just in case someone put urlencoded stuff in body
+        cxxtools::QueryParams body_args(request.getBody());
+        std::string tmp;
+        FILL(debug_trace);
+        if ( debug_trace == "yes" ) {
+            b_debug_trace = true;
+        }
+    }
+
+// Certain strings returned to caller in some cases
+    static const std::string UNKNOWN = "unknown";
+    static const std::string UNAUTHORIZED = "unauthorized";
+    static const std::string AVAILABLE = "available";
+    static const std::string NOTAVAILABLE = "N/A";
+    static const std::string NOTLICENSEDYET = "License not accepted yet";
+
     int rv = shared::output ({"/usr/bin/systemd-detect-virt", "-c"}, output, cmderr);
     if (rv != 0) {
-        output = "N/A";
+        output = NOTAVAILABLE;
     } else {
         size_t output_len = output.length();
         if (output_len>0 && output[output_len-1] == '\n') {
@@ -84,7 +116,7 @@ int8_t access_auth_level;
 <%cpp>
     rv = shared::output ({"/usr/bin/systemd-detect-virt", "-v"}, output, cmderr);
     if (rv != 0) {
-        output = "N/A";
+        output = NOTAVAILABLE;
     } else {
         size_t output_len = output.length();
         if (output_len>0 && output[output_len-1] == '\n') {
@@ -102,12 +134,12 @@ int8_t access_auth_level;
         "uname": {
             <$$ utils::json::jsonify ("sysname", (char*) u.sysname) $>,
             <$$ utils::json::jsonify ("nodename", (char*) u.nodename) $>,
-            <$$ utils::json::jsonify ("release", (access_auth_level<=AUTH_LEVEL_ANONYMOUS) ? "UNAUTHORIZED" : (char*) u.release) $>,
-            <$$ utils::json::jsonify ("version", (access_auth_level<=AUTH_LEVEL_ANONYMOUS) ? "UNAUTHORIZED" : (char*) u.version) $>,
+            <$$ utils::json::jsonify ("release", (access_auth_level<=AUTH_LEVEL_ANONYMOUS) ? UNAUTHORIZED : (char*) u.release) $>,
+            <$$ utils::json::jsonify ("version", (access_auth_level<=AUTH_LEVEL_ANONYMOUS) ? UNAUTHORIZED : (char*) u.version) $>,
             <$$ utils::json::jsonify ("machine", (char*) u.machine) $>
         }
 <%cpp>
-    std::string installation_date = "License not accepted yet";
+    std::string installation_date = NOTLICENSEDYET;
     char *accepted_license = accepted_license_file ();
     if (accepted_license) {
         try {
@@ -118,7 +150,7 @@ int8_t access_auth_level;
                 std::getline (finput, installation_date);
                 int64_t i64 = std::stoll (installation_date);
                 // TODO: we should probably check for time_t max/min, but hey!... ;)
-                char chtmp[64]; 
+                char chtmp[64];
                 if (calendar_to_datetime ((time_t) i64, chtmp, 64) == -1) {
                     installation_date = "N/A - Error retrieveing installation date";
                     throw std::runtime_error ("calendar_to_datetime () failed.");
@@ -126,8 +158,8 @@ int8_t access_auth_level;
                 installation_date.assign (chtmp);
             }
             else {
-                installation_date = "License not accepted yet"; 
-            } 
+                installation_date = NOTLICENSEDYET;
+            }
         } catch (const std::exception& e) {
             log_error ("Exception caught: %s", e.what ());
         }
@@ -136,7 +168,7 @@ int8_t access_auth_level;
 </%cpp>
       , <$$ utils::json::jsonify ("installation-date", installation_date) $>
 <%cpp>
-    std::string location = "N/A - Error retrieving location.";
+    std::string location = "N/A - Error retrieving location";
     bool do_break = false;
     try {
         tntdb::Connection conn = tntdb::connectCached(url);
@@ -145,7 +177,7 @@ int8_t access_auth_level;
         for (std::map<uint32_t, std::string>::const_iterator it = elements.item.cbegin(); it != elements.item.cend(); ++it) {
             // it->first is element_id
             std::map <std::string, std::pair<std::string, bool>> ext;
-            int rv = persist::select_ext_attributes (conn, it->first, ext); 
+            int rv = persist::select_ext_attributes (conn, it->first, ext);
             if (rv == -1) {
                 continue;
             }
@@ -166,14 +198,95 @@ int8_t access_auth_level;
       , <$$ utils::json::jsonify ("location", location) $>
     }
 <%cpp>
+
+#ifdef DEBUG
+// For developer builds, show some data about this binary (library) for
+// the REST API, because installed packages may be irrelevant and unused
+// vs. what is actually running
+
+</%cpp>
+,   "restapi-metadata": {
+        "core-package": {
+          "package-name": "<$ PACKAGE $>",
+          "package-version": "<$ PACKAGE_VERSION $>",
+          "package-bugreport": "<$ PACKAGE_BUGREPORT $>",
+          "package-url": "<$ PACKAGE_URL $>",
+<%cpp>
+# ifdef PACKAGE_VENDOR
+      /* Note that PACKAGE_VENDOR is NOT an automake default variable,
+       * we define it locally in our project configuration. */
+</%cpp>
+          "vendor": "<$ PACKAGE_VENDOR $>"
+<%cpp>
+# endif
+</%cpp>
+        }
+<%cpp>
+
+    if (access_auth_level >= AUTH_LEVEL_POWERUSER) {
+# ifdef HAVE_PACKAGE_GIT
+</%cpp>
+,       "source-repo" : {
+          "scm": "git",
+          "origin": "<$ PACKAGE_GIT_ORIGIN_ESCAPED $>",
+          "branch": "<$ PACKAGE_GIT_BRANCH_ESCAPED $>",
+          "commit": "<$ PACKAGE_GIT_HASH_L_ESCAPED $>",
+          "commit-timestamp": "<$ PACKAGE_GIT_TSTAMP_ESCAPED $>",
+          "commit-timestamp-iso8601": "<$ PACKAGE_GIT_TSTAMP_ISO8601_ESCAPED $>",
+          "status": "<$$ PACKAGE_GIT_STATUS_ESCAPED $>"
+        }
+<%cpp>
+# endif // HAVE_PACKAGE_GIT
+
+# if defined(HAVE_PACKAGE_BUILD_HOST) || defined(HAVE_PACKAGE_BUILD_TSTAMP)
+</%cpp>
+,       "build-info": {
+<%cpp>
+#  ifdef HAVE_PACKAGE_BUILD_HOST
+// Note the trailing comma is needed and okay
+</%cpp>
+          "build-host-name": "<$ PACKAGE_BUILD_HOST_NAME_ESCAPED $>",
+          "build-host-os": "<$ PACKAGE_BUILD_HOST_OS_ESCAPED $>",
+          "build-host-uname": "<$ PACKAGE_BUILD_HOST_UNAME_ESCAPED $>",
+<%cpp>
+#  endif // HAVE_PACKAGE_BUILD_HOST
+
+    std::string BTS = "", BTS_ISO = "";
+#  ifdef HAVE_PACKAGE_BUILD_TSTAMP
+    BTS = PACKAGE_BUILD_TSTAMP_ESCAPED;
+    BTS_ISO = PACKAGE_BUILD_TSTAMP_ISO8601_ESCAPED;
+#  endif // HAVE_PACKAGE_BUILD_TSTAMP
+    if (BTS=="") {
+        BTS = UNKNOWN;
+    }
+    if (BTS_ISO=="") {
+        BTS_ISO = UNKNOWN;
+    }
+// Note the code below always has something to print, so the previous optional
+// block ends with trailing comma
+</%cpp>
+          "build-timestamp": "<$ BTS $>",
+          "build-timestamp-iso8601": "<$ BTS_ISO $>"
+        }
+<%cpp>
+# endif // HAVE_PACKAGE_BUILD_*: HOST and/or TSTAMP
+    } // if (access_auth_level>=AUTH_LEVEL_POWERUSER)
+</%cpp>
+    }
+<%cpp>
+#endif // DEBUG - "restapi-metadata" which may differ from installed packages
+
     if (access_auth_level >= AUTH_LEVEL_POWERUSER) {
         rv = shared::output ({"dpkg", "--list"}, output, cmderr);
-	if (!cmderr.empty()) {
-            log_error("Calling 'dpkg --list' got exit-code %i and this stderr:\n-----\n%s-----\n\n", rv, cmderr.c_str());
-        }
+        if (b_debug_trace) {
+	    if (!cmderr.empty()) {
+                log_error("Calling 'dpkg --list' got exit-code %i and this stderr:\n-----\n%s-----\n\n", rv, cmderr.c_str());
+            }
 #ifdef DEBUG
-        log_debug("Calling 'dpkg --list' got exit-code %i and this stdout:\n-----\n%s-----\n\n", rv, output.c_str());
+            log_debug("Calling 'dpkg --list' got exit-code %i and this stdout:\n-----\n%s-----\n\n", rv, output.c_str());
 #endif
+        }
+
         if (rv == 0 && !output.empty()) {
 </%cpp>
 ,   "packages" : [
@@ -228,12 +341,15 @@ int8_t access_auth_level;
 //   the filters defined for web/systemctl.ecpp would be more efficient than
 //   calling the script dozens of times?
         rv = shared::output ({"sudo", "systemctl", "list-units", "--all", "--full"}, output, cmderr);
-	if (!cmderr.empty()) {
-            log_error("Calling 'systemctl list-units -a -l' got exit-code %i and this stderr:\n-----\n%s-----\n\n", rv, cmderr.c_str());
-        }
+        if (b_debug_trace) {
+	    if (!cmderr.empty()) {
+                log_error("Calling 'systemctl list-units -a -l' got exit-code %i and this stderr:\n-----\n%s-----\n\n", rv, cmderr.c_str());
+            }
 #ifdef DEBUG
-        log_debug("Calling 'systemctl list-units -a -l' got exit-code %i and this stdout:\n-----\n%s-----\n\n", rv, output.c_str());
+            log_debug("Calling 'systemctl list-units -a -l' got exit-code %i and this stdout:\n-----\n%s-----\n\n", rv, output.c_str());
 #endif
+	}
+
         if (rv == 0 && !output.empty()) {
 </%cpp>
 ,   "processes" : [
@@ -264,18 +380,21 @@ int8_t access_auth_level;
 // Note: unitname must be the "$2" for our systemctl script
 	        rv = shared::output ({"sudo", "systemctl", "show", unitname.c_str(), "--full"}, output, cmderr);
 
-		if (!cmderr.empty() && !cmderr.compare("Action not allowed")) {
+	        if (b_debug_trace) {
+			if (!cmderr.empty() && !cmderr.compare("Action not allowed")) {
 // Note: Here we filter by the stderr contents because it will be
 // full of units we do not have right to access in our systemctl script
-	            log_error("Calling 'systemctl show -l %s' got exit-code %i and this stderr:\n-----\n%s-----\n\n", unitname.c_str(), rv, cmderr.c_str());
-        	}
+		            log_error("Calling 'systemctl show -l %s' got exit-code %i and this stderr:\n-----\n%s-----\n\n", unitname.c_str(), rv, cmderr.c_str());
+        		}
 #ifdef DEBUG
-		if (output.empty() || (output[0]=='\n' && output[1]=='\0')) {
-		    log_debug("Calling 'systemctl show -l %s' got exit-code %i and no stdout", unitname.c_str(), rv);
-		} else {
-		    log_debug("Calling 'systemctl show -l %s' got exit-code %i and this stdout:\n-----\n%s-----\n\n", unitname.c_str(), rv, output.c_str());
-		}
+			if (output.empty() || (output[0]=='\n' && output[1]=='\0')) {
+			    log_debug("Calling 'systemctl show -l %s' got exit-code %i and no stdout", unitname.c_str(), rv);
+			} else {
+			    log_debug("Calling 'systemctl show -l %s' got exit-code %i and this stdout:\n-----\n%s-----\n\n", unitname.c_str(), rv, output.c_str());
+			}
 #endif
+		}
+
                 if (rv == 0 && !output.empty()) {
 </%cpp>
 %                   if (first) {
@@ -286,7 +405,7 @@ int8_t access_auth_level;
           , {
 %                   }
                 <$$ utils::json::jsonify ("unit", unitname) $>
-<%cpp> 
+<%cpp>
                     std::vector<std::string> status_tokens;
                     cxxtools::split("\n", output, std::back_inserter(status_tokens));
                     for (const auto& line : status_tokens) {
