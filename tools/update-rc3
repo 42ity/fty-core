@@ -233,14 +233,14 @@ download_osimage() (
     # TODO: Free space verification before download - BIOS-1562?
     # TODO: Currently hardcoded for md5 accompanying checksums only
 
-    logmsg_info "Fetching newest filename for ${ARCH} image of type ${IMGTYPE}..."
+    logmsg_info "Fetching newest filename for ${ARCH} OS image of type ${IMGTYPE}..."
     IMAGE_URL="`findnewest_osimage`" && \
     IMAGE_URL_BASENAME="`basename "$IMAGE_URL" ".${EXT}"`" || \
         die "Can not find the remote image URL"
 
     logmsg_info "Downloading '$IMAGE_URL.md5' (if any)..."
     rm -f "$IMAGE_URL_BASENAME.$EXT.md5.tmp"
-    wget -nv -O - "$IMAGE_URL.md5" > "$IMAGE_URL_BASENAME.$EXT.md5.tmp"
+    wget -q -O - "$IMAGE_URL.md5" > "$IMAGE_URL_BASENAME.$EXT.md5.tmp"
 
     if  [ -s "$IMAGE_URL_BASENAME.$EXT" ] && \
         [ -s "$IMAGE_URL_BASENAME.$EXT.md5" ] \
@@ -290,7 +290,7 @@ download_osimage() (
 
             [ ! -s "$IMAGE_URL_BASENAME.$EXT.md5.tmp" ] && \
                 logmsg_info "Downloading '$IMAGE_URL.md5' (if any)..."
-                wget -nv -O - "$IMAGE_URL.md5" > "$IMAGE_URL_BASENAME.$EXT.md5.tmp"
+                wget -q -O - "$IMAGE_URL.md5" > "$IMAGE_URL_BASENAME.$EXT.md5.tmp"
 
             sed 's,  .*$,  '"`basename "$TGT_FILE"`", < "$IMAGE_URL_BASENAME.$EXT.md5.tmp" > "$TGT_FILE.md5.tmp"
             rm -f "$IMAGE_URL_BASENAME.$EXT.md5.tmp"
