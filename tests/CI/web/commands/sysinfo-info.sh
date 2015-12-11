@@ -39,7 +39,7 @@ echo "********* 1. sysinfo_get_auth=0_raw **************************************
 echo "***************************************************************************************************"
 
 test_it "unauthorized sysinfo"
-OUTPUT="`api_get_json /admin/sysinfo`"
+OUTPUT="`api_get_json /admin/sysinfo?debug_trace=yes`"
 [ $? -eq 0 -a -n "$OUTPUT" ]
 print_result $?
 
@@ -66,7 +66,7 @@ echo "********* 2. sysinfo_get_auth=2_raw **************************************
 echo "***************************************************************************************************"
 
 test_it "authorized sysinfo"
-OUTPUT="`api_auth_get_json /admin/sysinfo`"
+OUTPUT="`api_auth_get_json /admin/sysinfo?debug_trace=yes`"
 [ $? -eq 0 -a -n "$OUTPUT" ]
 print_result $?
 
@@ -75,6 +75,48 @@ JPATH='"processes",[0-9]+$'
 SYSINFO_PARSED="`echo "$OUTPUT" | ${JSONSH} -x="$JPATH"`"
 [ $? -eq 0 -a -n "$SYSINFO_PARSED" ]
 print_result $?
+
+test_it "authorized sysinfo - commitid-core-package"
+RES=0
+JPATH='^"packages",[0-9]+,"package-name"$'
+PKG_NUM="`echo "$OUTPUT" | ${JSONSH} -x="$JPATH" | awk -F'\t' '$2 ~ /\"core\"/ { print $1 }' | sed 's/^.*,\([0-9]*\),.*$/\1/'`"
+PKG_COMMIT="N/A"
+if [ $? -eq 0 -a -n "$PKG_NUM" ]; then
+    JPATH='^"packages",'"${PKG_NUM}"',"commit"$'
+    PKG_COMMIT="`echo "$OUTPUT" | ${JSONSH} -x="$JPATH" | awk -F'\t' '{ print $2 }' | sed -e 's,^\"\(.*\)\"$,\1,' -e 's,\-.*$,,' | tr '[A-Z]' '[a-z]'`"
+    [ $? -eq 0 -a -n "$PKG_COMMIT" ]
+    RES=$?
+else
+    RES=1
+fi
+logmsg_info "Commit ID built into package 'core' is '$PKG_COMMIT' (inspection result $RES)"
+print_result $RES
+
+test_it "authorized sysinfo - commitid-core-restapi"
+JPATH='^"restapi-metadata","source-repo","commit"$'
+BLD_COMMIT="`echo "$OUTPUT" | ${JSONSH} -x="$JPATH" | awk -F'\t' '{ print $2 }' | sed -e 's,^\"\(.*\)\"$,\1,' | tr '[A-Z]' '[a-z]'`"
+if [ $? -eq 0 -a -n "$BLD_COMMIT" ]; then
+    logmsg_info "Commit ID built into REST API binaries is '$BLD_COMMIT'"
+    print_result 0
+
+    if [ -n "$PKG_COMMIT" -a x"$PKG_COMMIT" != "xN/A" ]; then
+        test_it "authorized sysinfo - commitid-core-COMPARE"
+
+        [ "${#PKG_COMMIT}" = "${#BLD_COMMIT}" ] || \
+        if [ "${#PKG_COMMIT}" -gt "${#BLD_COMMIT}" ]; then
+            PKG_COMMIT="`echo "$PKG_COMMIT" | cut -c 1-"${#BLD_COMMIT}"`"
+        else
+            BLD_COMMIT="`echo "$BLD_COMMIT" | cut -c 1-"${#PKG_COMMIT}"`"
+        fi
+
+        logmsg_info "Comparing PKG_COMMIT='$PKG_COMMIT' and BLD_COMMIT='$BLD_COMMIT'"
+        [ x"$PKG_COMMIT" = x"$BLD_COMMIT" ]
+        print_result -$?
+    fi
+else
+    logmsg_info "This is debug-build info, not required to succeed"
+    print_result -1
+fi
 
 echo
 echo "###################################################################################################"
