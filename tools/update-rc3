@@ -153,7 +153,7 @@ calculate_checksum() {
 
 expected_checksum() (
     # Extracts precalculated checksum of file "$1" recorded in file "$2"
-    CHECKSUM_EXP="`grep -i "`basename "$1"`" < "$2" | awk '{print $1}'`" 2>/dev/null
+    CHECKSUM_EXP="$(grep -i "`basename "$1"`" < "$2" | awk '{print $1}')" 2>/dev/null
     if [ $? != 0 -o -z "$CHECKSUM_EXP" ] && [ "`wc -l < "$2"`" -eq 1 ] ; then
         # Maybe the whole file content is one line with the value
         CHECKSUM_EXP="`awk '{print $1}' < "$2"`"
@@ -328,6 +328,8 @@ download_osimage() (
 
     # If we are here, the IMAGE_URL is valid and points to a different content
     # than what we already have; the TGT_FILE names the ultimate local filename
+    [ -s "$TGT_FILE.md5.tmp" -a ! -s "$TGT_FILE.md5" ] && \
+        mv -f "$TGT_FILE.md5.tmp" "$TGT_FILE.md5"
 
     logmsg_info "Downloading '$IMAGE_URL' into '$TGT_FILE'..."
     rm -f "$TGT_FILE"
