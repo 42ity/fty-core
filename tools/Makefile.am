@@ -2,7 +2,7 @@
 EXTRA_DIST =
 
 helperdir	= $(datadir)/@PACKAGE@/scripts
-helper_SCRIPTS	= init-os-accounts.sh resolveip.sh JSON.sh rc-bios \
+helper_SCRIPTS	= init-os-accounts.sh resolveip.sh JSON.sh rc-bios update-rc3 \
 		    ifplug-dhcp-autoconf.sh udhcpc-override.sh udhcpc-ntp.sh \
 		    ethtool-static-nolink ifupdown-force ssl-create.sh \
 		    biostimer-graphs-prefetch.sh reset-button.sh check_bios_license
