@@ -1233,12 +1233,11 @@ agent_autoconfig_LDADD = \
 			libpriv-defs.la \
 			libpriv-subprocess.la \
 			libpriv-utils-ymsg.la \
-			libpriv-utils-plusplus.la \
-			libpriv-db.la
+			libpriv-utils-plusplus.la
 
 # FIXME remove utils ymsg
 
-agent_autoconfig_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lcidr -lbiosapi -ltntdb
+agent_autoconfig_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lcidr -lbiosapi
 
 agent_autoconfig_CPPFLAGS =	$(AM_CPPFLAGS) \
 				-I$(abs_top_srcdir)/tools \
