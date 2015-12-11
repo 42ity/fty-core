@@ -86,6 +86,8 @@ std::string debug_trace = "";
     std::string output, cmderr;
     bool b_debug_trace = false;
     {
+        // Just in case someone put urlencoded stuff in body
+        cxxtools::QueryParams body_args(request.getBody());
         std::string tmp;
         FILL(debug_trace);
         if ( debug_trace == "yes" ) {
