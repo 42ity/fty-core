@@ -72,10 +72,10 @@
 </%pre>
 <%request scope="global">
 int8_t access_auth_level;
-// Tracing this call is quite noisy, so we only enable this
-// option in sysinfo REST API tests
 </%request>
 <%args>
+// Tracing this call is quite noisy, so we only enable this
+// option in sysinfo REST API tests
 std::string debug_trace;
 </%args>
 {
