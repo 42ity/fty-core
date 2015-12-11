@@ -76,9 +76,17 @@ int8_t access_auth_level;
     "operating-system" : {
 <%cpp>
     std::string output, cmderr;
+
+// Certain strings returned to caller in some cases
+    static const std::string UNKNOWN = "unknown";
+    static const std::string UNAUTHORIZED = "unauthorized";
+    static const std::string AVAILABLE = "available";
+    static const std::string NOTAVAILABLE = "N/A";
+    static const std::string NOTLICENSEDYET = "License not accepted yet";
+
     int rv = shared::output ({"/usr/bin/systemd-detect-virt", "-c"}, output, cmderr);
     if (rv != 0) {
-        output = "N/A";
+        output = NOTAVAILABLE;
     } else {
         size_t output_len = output.length();
         if (output_len>0 && output[output_len-1] == '\n') {
@@ -90,7 +98,7 @@ int8_t access_auth_level;
 <%cpp>
     rv = shared::output ({"/usr/bin/systemd-detect-virt", "-v"}, output, cmderr);
     if (rv != 0) {
-        output = "N/A";
+        output = NOTAVAILABLE;
     } else {
         size_t output_len = output.length();
         if (output_len>0 && output[output_len-1] == '\n') {
@@ -108,12 +116,12 @@ int8_t access_auth_level;
         "uname": {
             <$$ utils::json::jsonify ("sysname", (char*) u.sysname) $>,
             <$$ utils::json::jsonify ("nodename", (char*) u.nodename) $>,
-            <$$ utils::json::jsonify ("release", (access_auth_level<=AUTH_LEVEL_ANONYMOUS) ? "UNAUTHORIZED" : (char*) u.release) $>,
-            <$$ utils::json::jsonify ("version", (access_auth_level<=AUTH_LEVEL_ANONYMOUS) ? "UNAUTHORIZED" : (char*) u.version) $>,
+            <$$ utils::json::jsonify ("release", (access_auth_level<=AUTH_LEVEL_ANONYMOUS) ? UNAUTHORIZED : (char*) u.release) $>,
+            <$$ utils::json::jsonify ("version", (access_auth_level<=AUTH_LEVEL_ANONYMOUS) ? UNAUTHORIZED : (char*) u.version) $>,
             <$$ utils::json::jsonify ("machine", (char*) u.machine) $>
         }
 <%cpp>
-    std::string installation_date = "License not accepted yet";
+    std::string installation_date = NOTLICENSEDYET;
     char *accepted_license = accepted_license_file ();
     if (accepted_license) {
         try {
@@ -124,7 +132,7 @@ int8_t access_auth_level;
                 std::getline (finput, installation_date);
                 int64_t i64 = std::stoll (installation_date);
                 // TODO: we should probably check for time_t max/min, but hey!... ;)
-                char chtmp[64]; 
+                char chtmp[64];
                 if (calendar_to_datetime ((time_t) i64, chtmp, 64) == -1) {
                     installation_date = "N/A - Error retrieveing installation date";
                     throw std::runtime_error ("calendar_to_datetime () failed.");
@@ -132,8 +140,8 @@ int8_t access_auth_level;
                 installation_date.assign (chtmp);
             }
             else {
-                installation_date = "License not accepted yet"; 
-            } 
+                installation_date = NOTLICENSEDYET;
+            }
         } catch (const std::exception& e) {
             log_error ("Exception caught: %s", e.what ());
         }
@@ -142,7 +150,7 @@ int8_t access_auth_level;
 </%cpp>
       , <$$ utils::json::jsonify ("installation-date", installation_date) $>
 <%cpp>
-    std::string location = "N/A - Error retrieving location.";
+    std::string location = "N/A - Error retrieving location";
     bool do_break = false;
     try {
         tntdb::Connection conn = tntdb::connectCached(url);
@@ -151,7 +159,7 @@ int8_t access_auth_level;
         for (std::map<uint32_t, std::string>::const_iterator it = elements.item.cbegin(); it != elements.item.cend(); ++it) {
             // it->first is element_id
             std::map <std::string, std::pair<std::string, bool>> ext;
-            int rv = persist::select_ext_attributes (conn, it->first, ext); 
+            int rv = persist::select_ext_attributes (conn, it->first, ext);
             if (rv == -1) {
                 continue;
             }
@@ -292,7 +300,7 @@ int8_t access_auth_level;
           , {
 %                   }
                 <$$ utils::json::jsonify ("unit", unitname) $>
-<%cpp> 
+<%cpp>
                     std::vector<std::string> status_tokens;
                     cxxtools::split("\n", output, std::back_inserter(status_tokens));
                     for (const auto& line : status_tokens) {
