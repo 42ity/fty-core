@@ -150,6 +150,16 @@ restore_ssh_service() {
     systemctl mask ssh.socket
     systemctl unmask ssh.service
     systemctl start ssh.service
+
+# Note: we can fail to start the SSH service e.g. via chroot,
+# so to avoid an error exit-code just report if the needed
+# systemd file(s) exist
+    systemctl status ssh.service || \
+    [ -e /etc/systemd/system/ssh.service ] || \
+    [ -e /etc/systemd/system/ssh.socket ] || \
+    [ -e /etc/systemd/system/sshd.service ] || \
+    [ -e /etc/systemd/system/ssh@.service ] || \
+    [ -e /etc/systemd/system/sshd@.service ]
 }
 
 update_system() {
