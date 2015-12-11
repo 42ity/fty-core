@@ -114,7 +114,7 @@ if [ $? -eq 0 -a -n "$BLD_COMMIT" ]; then
         print_result -$?
     fi
 else
-    # This is debug info, not required to succeed
+    logmsg_info "This is debug-build info, not required to succeed"
     print_result -1
 fi
 
