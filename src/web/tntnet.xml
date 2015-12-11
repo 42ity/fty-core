@@ -76,7 +76,7 @@
         <args>
             <rule_name>$1</rule_name>
             <element_name>$2</element_name>
-        </args>       
+        </args>
     </mapping>
 
     <!-- alerts/rules -->
@@ -92,7 +92,7 @@
         <url>^/api/v1/alerts/rules/([^/]*)$</url>
         <args>
             <name>$1</name>
-        </args>       
+        </args>
     </mapping>
 
     <mapping>
@@ -101,7 +101,7 @@
         <url>^/api/v1/alerts/rules(/|/([^/]+)){0,1}$</url>
         <args>
             <name>$2</name>
-        </args>       
+        </args>
     </mapping>
 
     <!-- admin/systemctl GET -->
