@@ -17,4 +17,13 @@ examplecfgpam_DATA	= pam.d/bios
 examplecfgsecdir	= $(datarootdir)/@PACKAGE@/examples/config/security
 examplecfgsec_DATA	= security/bios_groups.conf
 
-EXTRA_DIST += $(examplecfgsudo_DATA) $(examplecfgpam_DATA) $(examplecfgsec_DATA)
+examplecfgupdatedir	= $(datarootdir)/@PACKAGE@/examples/config/update-rc3.d
+examplecfgupdate_DATA	= \
+                        update-rc3.d/02-http-proxy.conf \
+                        update-rc3.d/05-image-arch.conf \
+                        update-rc3.d/10-image-os-location.etn.conf \
+                        update-rc3.d/20-image-kernel.etn.conf \
+                        update-rc3.d/30-image-uboot.etn.conf \
+                        update-rc3.d/90-local-paths.rc3.conf
+
+EXTRA_DIST += $(examplecfgsudo_DATA) $(examplecfgpam_DATA) $(examplecfgsec_DATA) $(examplecfgupdate_DATA)
