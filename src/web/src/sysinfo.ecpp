@@ -18,11 +18,17 @@
  #
  #><#
 /*!
- * \file sysinfo.ecpp
- * \author Jim Klimov <EvgenyKlimov@Eaton.com>
- * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
- * \author Karol Hrdina <karolhrdina@eaton.com>
- * \brief Not yet documented file
+ * \file    sysinfo.ecpp
+ * \author  Jim Klimov <EvgenyKlimov@Eaton.com>
+ * \author  Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \author  Karol Hrdina <KarolHrdina@Eaton.com>
+ * \brief   This REST API call returns information about the OS
+ * \details This REST API call returns information about the operating
+ *          environment for the installed OS image, including packages
+ *          and states of services related or important to BIOS project.
+ *          Note that this no longer reports raw process information as
+ *          might be relevant to a developer's workspace or to packaging
+ *          in some OS other than the primary development target NFC OS.
  */
  #><%pre>
 #include <vector>
