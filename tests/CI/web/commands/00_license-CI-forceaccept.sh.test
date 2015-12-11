@@ -136,7 +136,7 @@ else
 
         test_it "sysinfo_auth=2__parse__source_build_running__info"
         JPATH='^"restapi-metadata","source-repo","commit"$'
-        SYSINFO_VERSION_R="`echo "$SYSINFOA" | ${JSONSH} -x="$JPATH"`"
+        SYSINFO_VERSION_R="`echo "$SYSINFOA" | ${JSONSH} -x="$JPATH" | sed 's,^.*\t"\(.*\)",\1,'`"
         RES=$?
         echo "=== SYSINFO_VERSION_RUN ($RES): $SYSINFO_VERSION_R" >&2
         [ $RES = 0 -a -n "$SYSINFO_VERSION_R" -a \
