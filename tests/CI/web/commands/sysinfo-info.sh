@@ -39,7 +39,7 @@ echo "********* 1. sysinfo_get_auth=0_raw **************************************
 echo "***************************************************************************************************"
 
 test_it "unauthorized sysinfo"
-OUTPUT="`api_get_json /admin/sysinfo`"
+OUTPUT="`api_get_json /admin/sysinfo?debug_trace=yes`"
 [ $? -eq 0 -a -n "$OUTPUT" ]
 print_result $?
 
@@ -66,7 +66,7 @@ echo "********* 2. sysinfo_get_auth=2_raw **************************************
 echo "***************************************************************************************************"
 
 test_it "authorized sysinfo"
-OUTPUT="`api_auth_get_json /admin/sysinfo`"
+OUTPUT="`api_auth_get_json /admin/sysinfo?debug_trace=yes`"
 [ $? -eq 0 -a -n "$OUTPUT" ]
 print_result $?
 
