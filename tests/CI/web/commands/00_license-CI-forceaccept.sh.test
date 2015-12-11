@@ -66,7 +66,7 @@ else
         print_result -$RES
 
         test_it "verify_known_password_1"
-        SYSINFOARAW="`api_auth_get '/admin/sysinfo' 2>/dev/null`"
+        TIMEINFO="`api_auth_get_json '/admin/time' 2>/dev/null`"
         RES=$?
         print_result -$RES
 
@@ -96,7 +96,7 @@ else
     NEW_BIOS_PASSWD="xX!9`head --bytes 16 /dev/urandom | base64 | sed 's,[\+\=\/\ \t\n\r\%],_,g'`"
 
     curlfail_push "warn" ""
-    SYSINFOARAW="`api_auth_get '/admin/sysinfo'`"
+    TIMEINFO="`api_auth_get_json '/admin/time'`"
     RES=$?
     curlfail_pop
 
@@ -125,15 +125,23 @@ else
         [ $RES = 0 -a -n "$SYSINFOA" ]
         print_result $?
 
-
         test_it "sysinfo_auth=2__parse__source_build_package__info"
         JPATH='"packages",[0-9]*$'
         SYSINFO_VERSION="`echo "$SYSINFOA" | ${JSONSH} -x="$JPATH" | egrep '"package-name":"core".*"commit":"[a-f0-9-]+"'`"
         RES=$?
-        { echo "=== SYSINFO_VERSION ($RES):"; echo "$SYSINFO_VERSION" | sed 's/.*commit":"\(.*\)".*/\1/'; } >&2
+        echo "=== SYSINFO_VERSION_PKG ($RES): `echo "$SYSINFO_VERSION" | sed 's/.*commit":"\(.*\)".*/\1/'`" >&2
         [ $RES = 0 -a -n "$SYSINFO_VERSION" -a \
             x"$SYSINFO_VERSION" != x'""' ]
         print_result $?
+
+        test_it "sysinfo_auth=2__parse__source_build_running__info"
+        JPATH='^"restapi-metadata","source-repo","commit"$'
+        SYSINFO_VERSION_R="`echo "$SYSINFOA" | ${JSONSH} -x="$JPATH"`"
+        RES=$?
+        echo "=== SYSINFO_VERSION_RUN ($RES): $SYSINFO_VERSION_R" >&2
+        [ $RES = 0 -a -n "$SYSINFO_VERSION_R" -a \
+            x"$SYSINFO_VERSION_R" != x'""' ]
+        print_result -$?
 
     else
         logmsg_warn "REST API server has a non-default password"
@@ -144,7 +152,7 @@ else
     # Make sure we end this routine with a working known BIOS_PASSWD value
     # unless asked otherwise.
     test_it "verify_known_password_2"
-    SYSINFOARAW="`api_auth_get '/admin/sysinfo' 2>/dev/null`"
+    TIMEINFO="`api_auth_get_json '/admin/time' 2>/dev/null`"
     RES=$?
     print_result -$RES
 
