@@ -201,12 +201,12 @@ bool NUTConfigurator::configure( const std::string &name, const AutoConfiguratio
             cfgFile.open(std::string(NUT_PART_STORE) + shared::path_separator() + name );
             cfgFile << *it;
             {
-                log_debug ("add synchronous = yes");
                 std::string s = *it;
                 // prototypes expects std::vector <std::string> - lets create fake vector
                 // this is not performance critical code anyway
                 std::vector <std::string> foo = {s};
                 if (isEpdu (foo) && canSnmp (foo)) {
+                    log_debug ("add synchronous = yes");
                     cfgFile << "\n\tsynchronous = yes";
                 }
             }
