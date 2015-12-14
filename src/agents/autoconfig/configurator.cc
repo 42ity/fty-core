@@ -50,7 +50,7 @@ std::vector<std::string>::const_iterator NUTConfigurator::stringMatch(const std:
             return it;
         }
     }
-    log_debug("regex: not found");    
+    log_debug("regex: not found");
     return texts.end();
 }
 
@@ -90,8 +90,8 @@ std::vector<std::string>::const_iterator NUTConfigurator::getBestSnmpMib(const s
 std::vector<std::string>::const_iterator NUTConfigurator::selectBest(const std::vector<std::string> &configs) {
     // don't do any complicated decision on empty/single set
     if( configs.size() <= 1 ) return configs.begin();
-    
-    log_debug("isEpdu: %i; isUps: %i; canSnmp: %i; canXml: %i", isEpdu(configs), isUps(configs), canSnmp(configs), canXml(configs) ); 
+
+    log_debug("isEpdu: %i; isUps: %i; canSnmp: %i; canXml: %i", isEpdu(configs), isUps(configs), canSnmp(configs), canXml(configs) );
     if( canSnmp( configs ) && isEpdu( configs ) ) {
         log_debug("SNMP capable EPDU => Use SNMP");
         return getBestSnmpMib( configs );
@@ -200,6 +200,16 @@ bool NUTConfigurator::configure( const std::string &name, const AutoConfiguratio
             log_info("creating new config file %s/%s", NUT_PART_STORE, name.c_str() );
             cfgFile.open(std::string(NUT_PART_STORE) + shared::path_separator() + name );
             cfgFile << *it;
+            {
+                log_debug ("add synchronous = yes");
+                std::string s = *it;
+                // prototypes expects std::vector <std::string> - lets create fake vector
+                // this is not performance critical code anyway
+                std::vector <std::string> foo = {s};
+                if (isEpdu (foo) && canSnmp (foo)) {
+                    cfgFile << "\n\tsynchronous = yes";
+                }
+            }
             cfgFile.close();
             updateNUTConfig();
             systemctl("enable",  std::string("nut-driver@") + name);
