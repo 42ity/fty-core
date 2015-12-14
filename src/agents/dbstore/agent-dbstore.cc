@@ -159,7 +159,7 @@ int main (int argc, char *argv []) {
                 persist::process_alert(&out, &out_subj, in,bios_agent_subject(client));
             }
             else {
-                log_warning("Unsupported stream '%s' for STREAM DELIVER", stream);
+                log_warning("Unsupported message. Stream = '%s'. Subject = '%s'", stream, _s(bios_agent_subject(client)));
             }
         }
 
