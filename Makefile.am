@@ -456,17 +456,6 @@ libpriv_db_calculations_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist/
 
 
-#####
-#libpriv_db_alerts_la_CPPFLAGS = $(AM_CPPFLAGS) \
-#			-I$(abs_top_srcdir)/src/persist \
-#			-I$(abs_top_srcdir)/tools \
-#			-I$(abs_top_srcdir)/src \
-#			-I$(abs_top_builddir)/tools \
-#			-I$(abs_top_builddir)/src/persist
-
-#libpriv_db_alerts_la_LIBADD =	libbiosapi.la \
-#			libpriv-log.la libpriv-csv.la
-
 noinst_LTLIBRARIES += 	libpriv-db-assets.la
 
 HEADERS_ASSETS = \
@@ -540,10 +529,6 @@ libpriv_configure_inform_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_builddir)/tools \
 			-I$(abs_top_builddir)/src/persist
-
-#libpriv_db_alerts_la_LIBADD =	libbiosapi.la \
-#			libpriv-log.la libpriv-csv.la
-
 
 
 #----------------------------------------------------------------------
@@ -1306,7 +1291,7 @@ client_PROGRAMS +=	agent-tpower
 agent_tpower_SOURCES = \
 			src/agents/tpower/agent-tpower.cc \
 			src/agents/tpower/tp-unit.cc \
-			src/agents/alert/alert-measurement.cc
+			src/agents/tpower/alert-measurement.cc
 
 agent_tpower_LDADD = \
 			libpriv-log.la \
@@ -1318,35 +1303,9 @@ agent_tpower_LDADD = \
 agent_tpower_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -ltntdb -lbiosapi
 
 agent_tpower_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/src/agents/alert \
 			-I$(abs_top_srcdir)/src/persist \
 			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_srcdir)/tools
-
-client_PROGRAMS +=      agent-alert
-
-agent_alert_SOURCES = \
-			src/agents/alert/alert-entity.cc \
-			src/agents/alert/alert-measurement.cc \
-			src/agents/alert/agent-alert.cc \
-			src/agents/alert/alert-model.cc \
-			src/shared/utils_app.c \
-			src/shared/utils_ymsg.c \
-			src/include/str_defs.c
-
-agent_alert_LDADD = \
-			libpriv-utils.la \
-			libpriv-log.la \
-			libpriv-db.la \
-			libpriv-proto.la \
-			libbiosapi.la
-
-agent_alert_LDFLAGS =  ${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -ltntdb -lbiosapi
-
-agent_alert_CPPFLAGS = $(AM_CPPFLAGS) \
-                       -I$(abs_top_srcdir)/src/persist \
-                       -I$(abs_top_srcdir)/src/db \
-                       -I$(abs_top_srcdir)/tools
 
 client_PROGRAMS += 	outage
 outage_SOURCES = \
@@ -1612,7 +1571,6 @@ SYSTEMD_UNITS_LOWLEVEL += \
 # And also some of the timer units and implementations below
 SYSTEMD_UNITS_TARGET_BIOS += \
                         bios-db-init.service \
-                        bios-agent-alert.service \
                         bios-agent-alert-smtp.service \
                         bios-agent-autoconfig.service \
                         bios-agent-cm.service \
