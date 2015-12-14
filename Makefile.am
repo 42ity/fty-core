@@ -1402,7 +1402,7 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/topology_location_to.cpp                    \
                       src/web/src/datacenter_indicators.cpp                   \
                       src/web/src/average.cpp src/web/src/asset_import.cpp    \
-                      src/web/src/alerts.cpp src/web/src/netcfg.cpp           \
+                      src/web/src/netcfg.cpp           \
                       src/web/src/uptime.cpp src/web/src/iface.cpp            \
                       src/web/src/license.cpp src/web/src/asset_export.cpp    \
                       src/web/src/admin_passwd.cpp src/web/src/systemctl.cpp  \
