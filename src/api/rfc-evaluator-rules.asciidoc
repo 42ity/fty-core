@@ -37,9 +37,10 @@ received in 1) message, 'subject' of the message is "rfc-evaluator-rules".
 For messages 1), 2), 3) if the requested 'type', 'name' or 'old_name' does not
 exist the EVALUATOR peer MUST assign NOT_FOUND string as reason.
 
-For message 3) if 'json' is not a valid json or does not adhere to rules schema
-the EVALUATOR peer MUST assing BAD_JSON string as reason.
-
+For message 3)
+ * if 'json' is not a valid json the EVALUATOR peer MUST assign BAD_JSON string as reason.
+ * if 'json' does not adhere to rules schema the EVALUATOR peer MUST assign RULE_HAS_ERRORS string as reason.
+ * if 'json' specifies a rule that already exists the EVALUATOR peer MUST assign ALREADY_EXISTS string as reason.
 
 
 (1)
