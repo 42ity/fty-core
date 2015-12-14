@@ -27,6 +27,11 @@
       <pathinfo>./favicon.ico</pathinfo>
       <url>^/favicon.ico</url>
     </mapping>
+    <mapping>
+      <target>static@tntnet</target>
+      <pathinfo>/usr/share/doc/$1</pathinfo>
+      <url>^/legal/(.*)$</url>
+    </mapping>
 
     <!-- Make sure everybody speaks json from now on -->
     <mapping>
