@@ -1678,6 +1678,9 @@ systemdsystemunit_DATA =	$(systemdsystemunit_generated) $(addprefix $(SYSTEMD_SU
 systemdsystempreset_generated =	$(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_PRESETS))
 systemdsystempreset_DATA =	$(systemdsystempreset_generated)
 
+tmpfilesdir=/usr/lib/tmpfiles.d/
+tmpfiles_DATA=$(abs_top_srcdir)/systemd/bios-agent-autoconfig.conf
+
 # auto-cleanup and dist targets
 CLEANFILES += $(systemdsystemunit_generated) $(systemdsystempreset_generated)
 EXTRA_DIST += $(addprefix $(top_srcdir)/$(SYSTEMD_SUBDIR)/,$(SYSTEMD_TIMERS) $(SYSTEMD_TARGETS) $(addsuffix .in,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL) $(SYSTEMD_UNITS_NOTPRESET)))
