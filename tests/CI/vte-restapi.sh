@@ -227,8 +227,16 @@ test_web_topo_l topology_location || RESULT_OVERALL=$?
 # ***** RESULTS *****
 if [ "$RESULT_OVERALL" = 0 ]; then
     logmsg_info "Overall result: SUCCESS"
+    if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
+        { logmsg_info "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}': SUCCESS"; \
+          echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY"
+    fi
 else
     logmsg_error "Overall result: FAILED ($RESULT_OVERALL), seek details above"
+    if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
+        { logmsg_error "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}': FAILED ($RESULT_OVERALL)"; \
+          echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY" 2>&1
+    fi
 fi
 
 exit $RESULT_OVERALL
