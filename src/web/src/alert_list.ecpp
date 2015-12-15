@@ -264,32 +264,32 @@ if (streq (part, "LIST")) {
 %   zmsg_t *decoded_zmsg = zmsg_decode (zframe_data (frame), zframe_size (frame));
 %   zframe_destroy (&frame);
 %   if (!decoded_zmsg) {
+%       log_error ("Bad frame, skipping");
 %       zmsg_destroy (&recv_msg);
-%       mlm_client_destroy (&client);
-%       log_error ("TODO"); // TODO
-%       http_die ("internal-error", "Bad Message.");
+%       frame = zmsg_pop (recv_msg);
+%       continue;
 %   }
 %   bios_proto_t *decoded = bios_proto_decode (&decoded_zmsg);
 %   if (!decoded) {
+%       log_error ("Can't decode bios_proto");
 %       zmsg_destroy (&recv_msg);
-%       mlm_client_destroy (&client);
-%       log_error ("TODO"); // TODO
-%       http_die ("internal-error", "Bad Message.");
+%       frame = zmsg_pop (recv_msg);
+%       continue;
 %   }
 %   if (!bios_proto_id (decoded) == BIOS_PROTO_ALERT) {
+%       log_error ("message id is not BIOS_PROTO_ALERT");
 %       bios_proto_destroy (&decoded);
-%       mlm_client_destroy (&client);
-%       log_error ("TODO"); // TODO
-%       http_die ("internal-error", "Bad Message.");
+%       frame = zmsg_pop (recv_msg);
+%       continue;
 %   }
 %   if ((!asset.empty () && desired_elements.find (bios_proto_element_src (decoded)) == desired_elements.end ())) {
-%       log_debug ("skipping due to element_src not being in the list");
+%       log_debug ("skipping due to element_src '%s' not being in the list", bios_proto_element_src (decoded));
 %       bios_proto_destroy (&decoded);
 %       frame = zmsg_pop (recv_msg);
 %       continue;
 %   }
 %   if (state.compare("ALL") != 0 && !streq (bios_proto_state (decoded), state.c_str ())) {
-%       log_debug ("skipping due to state not being requested");
+%       log_debug ("skipping due to state '%s' not being requested", bios_proto_state (decoded));
 %       bios_proto_destroy (&decoded);
 %       frame = zmsg_pop (recv_msg);
 %       continue;
@@ -297,17 +297,17 @@ if (streq (part, "LIST")) {
 %   char buff[64];
 %   rv = calendar_to_datetime (bios_proto_time (decoded), buff, 64);
 %   if (rv == -1) {
+%       log_error ("can't convert %" PRIu64 "to calendar time, skipping element '%s'", bios_proto_time (decoded), bios_proto_rule (decoded) );
 %       bios_proto_destroy (&decoded);
-%       mlm_client_destroy (&client);
-%       log_error ("TODO"); // TODO
-%       http_die ("internal-error", "TODO: calendar_to_datetime () ");
+%       frame = zmsg_pop (recv_msg);
+%       continue;
 %   }
 %   auto asset_element = persist::select_asset_element_web_byName (connection, bios_proto_element_src (decoded));
 %   if (asset_element.status != 1) {
+%       log_error ("%s", asset_element.msg.c_str ());
 %       bios_proto_destroy (&decoded);
-%       mlm_client_destroy (&client);
-%       log_error ("TODO"); // TODO
-%       http_die ("internal-error", asset_element.msg.c_str ());
+%       frame = zmsg_pop (recv_msg);
+%       continue;
 %   }
 %
 %   if (first) {
