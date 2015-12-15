@@ -29,7 +29,7 @@ cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 set -o pipefail || true
 set -e
 
-if [ -s "${MAKELOG}" ] ; then
+if [ -s "${MAKELOG}" ] && [ -s "$BUILDSUBDIR/"Makefile ] && [ -s "$BUILDSUBDIR/"config.status ] ; then
     # This branch was already configured and compiled here, only refresh it now
     # Just in case, we still provide consistent configure flags
     echo "=========== auto-make (refresh) and install ================="
