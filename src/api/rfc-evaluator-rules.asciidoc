@@ -38,7 +38,10 @@ For messages 1), 2), 3) if the requested 'type', 'name' or 'old_name' does not
 exist the EVALUATOR peer MUST assign NOT_FOUND string as reason.
 
 For message 3) if 'json' is not a valid json or does not adhere to rules schema
-the EVALUATOR peer MUST assing BAD_JSON string as reason.
+the EVALUATOR peer MUST assign BAD_JSON string as reason.
+For message 3) if 'json' is ok but, evaluation function hgas lua syntax errors
+the EVALUATOR peer MUST assign BAD_LUA string as reason.
+
 
 
 
