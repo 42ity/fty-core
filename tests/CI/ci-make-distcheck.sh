@@ -167,7 +167,7 @@ if [ "$REQUIRE_DISTCHECK" = no ]; then
     exit 0
 fi
 
-if [ ! -s "Makefile" ] ; then
+if [ ! -s "${MAKELOG}" ] || [ ! -s "$BUILDSUBDIR/"Makefile ] || [ ! -s "$BUILDSUBDIR/"config.status ] ; then
     # Newly checked-out branch, rebuild
     echo "==================== auto-configure ========================="
     ./autogen.sh --install-dir / --no-distclean --configure-flags \
