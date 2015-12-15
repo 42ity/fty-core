@@ -26,7 +26,7 @@
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 NEED_BUILDSUBDIR=no determineDirs_default || true
 # Include these explicitly since we don't use weblib.sh here
-#. "`dirname $0`"/testlib.sh || die "Can not include common test script library"
+. "`dirname $0`"/testlib.sh || die "Can not include common test script library"
 . "`dirname $0`"/testlib-db.sh || die "Can not include database test script library"
 cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR' (it may be empty but should exist)"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
@@ -238,11 +238,13 @@ ci_loaddb_default() {
 }
 
 test_web_default() {
+    init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_default() $*"
     ci_loaddb_default && \
     test_web "$@"
 }
 
 test_web_topo_p() {
+    init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_p() $*"
     echo "----------- reset db: topology : power -----------"
     for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOP"; do
         loaddb_file "$data" || exit $?
@@ -251,6 +253,7 @@ test_web_topo_p() {
 }
 
 test_web_topo_l() {
+    init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_l() $*"
     echo "---------- reset db: topology : location ---------"
     for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOL"; do
         loaddb_file "$data" || exit $?
@@ -258,7 +261,8 @@ test_web_topo_l() {
     test_web "$@"
 }
 
-asset_create() {
+test_web_asset_create() {
+    init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_asset_create() $*"
     echo "---------- reset db: asset : create ---------"
     for data in "$DB_BASE" "$DB_DATA"; do
           loaddb_file "$data" || exit $?
@@ -267,6 +271,7 @@ asset_create() {
 }
 
 # Try to accept the BIOS license on server
+init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "00_license-CI-forceaccept"
 SKIP_SANITY=yes test_web 00_license-CI-forceaccept.sh.test || \
     logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
 
@@ -289,7 +294,7 @@ else
                 test_web_topo_p "$1"
                 RESULT=$? ;;
             asset_create*)
-                asset_create $1
+                test_web_asset_create "$1"
                 RESULT=$? ;;
             *)        test_web_default "$1"
                 RESULT=$? ;;
