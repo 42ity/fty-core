@@ -260,9 +260,13 @@ init_summarizeTestlibResults() {
     esac
     export TESTLIB_LOG_SUMMARY
 
-    [ -z "${TESTLIB_LOG_SUMMARY_COMMENT-}" ] && \
+    if [ $# -ge 2 ]; then
         TESTLIB_LOG_SUMMARY_COMMENT="${2-}"
         # Empty or not - take it as THIS test-run's comment
+    else
+        TESTLIB_LOG_SUMMARY_COMMENT="${TESTLIB_LOG_SUMMARY_COMMENT-}"
+        # Keep the previously defined value
+    fi
     export TESTLIB_LOG_SUMMARY_COMMENT
 
     { echo ""; echo "=============================================================="
