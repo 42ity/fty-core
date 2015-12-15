@@ -169,12 +169,13 @@ if (streq (part, "ERROR")) {
     }
     if (streq (part, "ALREADY_EXISTS")) {
         free (part);
-        std::string msg{"Cannot update rule, name already exists"};
+        std::string msg{"Rule with such name (new rule name) already exists"};
         log_error(msg.c_str());
         zmsg_destroy (&recv_msg);
         mlm_client_destroy (&client);
         http_die ("parameter-conflict", msg.c_str());
     }
+
     log_error ("%s", part);
     std::string reason = part;
     free (part);
