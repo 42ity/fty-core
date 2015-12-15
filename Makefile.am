@@ -1682,8 +1682,8 @@ systemdsystempreset_DATA =	$(systemdsystempreset_generated)
 # http://www.freedesktop.org/software/systemd/man/tmpfiles.d.html
 # Maybe it (and the feature altogether?) should later pass through "congiure"
 tmpfilesdir=/usr/lib/tmpfiles.d/
-tmpfiles_DATA=$(abs_top_srcdir)/systemd/bios-agent-autoconfig.conf
-EXTRA_DIST += $(tmpfiles_DATA)
+tmpfiles_DATA=$(SYSTEMD_SUBDIR)/bios-agent-autoconfig.conf
+EXTRA_DIST += $(top_srcdir)/$(tmpfiles_DATA)
 
 # auto-cleanup and dist targets
 CLEANFILES += $(systemdsystemunit_generated) $(systemdsystempreset_generated)
