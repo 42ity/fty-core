@@ -131,7 +131,8 @@ DISTCLEANDIRS += \
 # recommended by daemon(7)
 DISTCHECK_CONFIGURE_FLAGS = \
         --with-systemdsystemunitdir=$$dc_install_base/$(systemdsystemunitdir) \
-        --with-systemdsystempresetdir=$$dc_install_base/$(systemdsystempresetdir)
+        --with-systemdsystempresetdir=$$dc_install_base/$(systemdsystempresetdir) \
+        --with-systemdtmpfilesdir=$$dc_install_base/$(systemdtmpfilesdir)
 
 AM_CPPFLAGS = \
 		${my_CPPFLAGS} \
@@ -1543,6 +1544,9 @@ SYSTEMD_TIMERS =
 SYSTEMD_PRESETS =
 SYSTEMD_TARGETS =
 
+# Preconfiguration for systemd-tmpfiles service to create needed paths
+SYSTEMD_TMPFILES =
+
 # The subdirectory in source (and build) tree where systemd unit files
 # and their .in templates reside, starting from workspace (or build) root
 # Note: No leading nor trailing slash is expected here!
@@ -1619,6 +1623,8 @@ SYSTEMD_TIMERS += $(SYSTEMD_TIMERS_LOWLEVEL) $(SYSTEMD_TIMERS_TARGET_BIOS)
 # (except those in SYSTEMD_UNITS_NOTPRESET list)
 SYSTEMD_PRESETS +=      42-bios-systemd.preset
 
+SYSTEMD_TMPFILES +=	bios-agent-autoconfig.conf
+
 ### TODO? Add the build info (git commit, timestamp) to the header comment?
 $(SYSTEMD_SUBDIR)/42-bios-systemd.preset: Makefile
 	@mkdir -p "$(abs_top_builddir)/$(SYSTEMD_SUBDIR)" "`dirname "$@"`" || true
@@ -1635,21 +1641,16 @@ systemdsystemunit_generated =	$(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_UNITS) $(
 systemdsystemunit_DATA =	$(systemdsystemunit_generated) $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_TIMERS) $(SYSTEMD_TARGETS))
 systemdsystempreset_generated =	$(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_PRESETS))
 systemdsystempreset_DATA =	$(systemdsystempreset_generated)
-
-# Note: path for "systemd-tmpfiles" packaged configs is currently hardcoded per
-# http://www.freedesktop.org/software/systemd/man/tmpfiles.d.html
-# Maybe it (and the feature altogether?) should later pass through "congiure"
-tmpfilesdir=/usr/lib/tmpfiles.d/
-tmpfiles_DATA=$(SYSTEMD_SUBDIR)/bios-agent-autoconfig.conf
-EXTRA_DIST += $(top_srcdir)/$(tmpfiles_DATA)
+# Nothing generated so far for TMPFILES
+systemdtmpfiles_DATA =	$(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_TMPFILES))
 
 # auto-cleanup and dist targets
 CLEANFILES += $(systemdsystemunit_generated) $(systemdsystempreset_generated)
-EXTRA_DIST += $(addprefix $(top_srcdir)/$(SYSTEMD_SUBDIR)/,$(SYSTEMD_TIMERS) $(SYSTEMD_TARGETS) $(addsuffix .in,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL) $(SYSTEMD_UNITS_NOTPRESET)))
+EXTRA_DIST += $(addprefix $(top_srcdir)/$(SYSTEMD_SUBDIR)/,$(SYSTEMD_TIMERS) $(SYSTEMD_TARGETS) $(SYSTEMD_TMPFILES) $(addsuffix .in,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL) $(SYSTEMD_UNITS_NOTPRESET)))
 endif
 
 # Quick links to build the systemd files (if enabled)
-systemd-units: systemd-daemons systemd-timers systemd-presets systemd-targets
+systemd-units: systemd-daemons systemd-timers systemd-presets systemd-targets systemd-tmpfiles
 systemd-daemons: $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_NOTPRESET))
 systemd-timers:  $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_UNITS_TIMERIMPL))
 	if [ x"$(abs_top_builddir)/" = x"$(abs_top_srcdir)/" ] ; then true; else \
@@ -1659,10 +1660,14 @@ systemd-timers:  $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_UNITS_TIMERIMPL))
 	done; fi
 systemd-presets: $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_PRESETS))
 systemd-targets: $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_TARGETS))
+systemd-tmpfiles: $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_TMPFILES))
 
 clean-systemd-units:
-	@if [ x"$(abs_top_builddir)/" != x"$(abs_top_srcdir)/" ] && [ -n "$(SYSTEMD_TIMERS)" ]; then \
-	    $(RM) $(addprefix $(abs_top_builddir)/$(SYSTEMD_SUBDIR)/,$(SYSTEMD_TIMERS) $(SYSTEMD_TARGETS)) ; \
+	@if [ x"$(abs_top_builddir)/" != x"$(abs_top_srcdir)/" ] ; then \
+	    if [ -n "$(SYSTEMD_TIMERS)" ]; then \
+	        $(RM) $(addprefix $(abs_top_builddir)/$(SYSTEMD_SUBDIR)/,$(SYSTEMD_TIMERS)) ; fi ; \
+	    if [ -n "$(SYSTEMD_TARGETS)" ]; then \
+	        $(RM) $(addprefix $(abs_top_builddir)/$(SYSTEMD_SUBDIR)/,$(SYSTEMD_TARGETS)) ; fi ; \
 	fi || true
 
 #----------------------------------------------------------------------
