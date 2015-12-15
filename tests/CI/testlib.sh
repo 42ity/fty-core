@@ -266,7 +266,7 @@ init_summarizeTestlibResults() {
     export TESTLIB_LOG_SUMMARY_COMMENT
 
     { echo ""; echo "=============================================================="
-      logmsg_info "`date -u`: Starting '${_SCRIPT_PATH} ${_SCRIPT_ARGS}'${TESTLIB_LOG_SUMMARY_COMMENT+: $TESTLIB_LOG_SUMMARY_COMMENT}"; \
+      logmsg_info "`date -u`: Starting '${_SCRIPT_PATH} ${_SCRIPT_ARGS}'${TESTLIB_LOG_SUMMARY_COMMENT:+: $TESTLIB_LOG_SUMMARY_COMMENT}"; \
     } >> "$TESTLIB_LOG_SUMMARY"
     logmsg_info "Summary of this test run will be appended to '$TESTLIB_LOG_SUMMARY'"
     return 0
@@ -353,7 +353,7 @@ exit_summarizeTestlibResults() {
     echo "$TRAP_OUT"
 
     { echo ""; echo "$TRAP_OUT"; echo "";
-      logmsg_info "`date -u`: Finished '${_SCRIPT_PATH} ${_SCRIPT_ARGS}'${TESTLIB_LOG_SUMMARY_COMMENT+: $TESTLIB_LOG_SUMMARY_COMMENT}"
+      logmsg_info "`date -u`: Finished '${_SCRIPT_PATH} ${_SCRIPT_ARGS}'${TESTLIB_LOG_SUMMARY_COMMENT:+: $TESTLIB_LOG_SUMMARY_COMMENT}"
       echo "=============================================================="; echo ""; \
     } >> "$TESTLIB_LOG_SUMMARY"
     logmsg_info "Summary of this test run was appended to '$TESTLIB_LOG_SUMMARY'"
