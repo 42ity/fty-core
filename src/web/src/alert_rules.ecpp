@@ -153,6 +153,13 @@ if (streq (part, "ERROR")) {
         mlm_client_destroy (&client);
         http_die ("not-found", std::string ("Rule name '").append (name).append ("'").c_str ());
     }
+    if (streq (part, "BAD_LUA")) {
+        free (part);
+        log_error ("Request document has lua syntax error.");
+        zmsg_destroy (&recv_msg);
+        mlm_client_destroy (&client);
+        http_die ("bad-request-document", "Request document has lua syntax error.");
+    }
     if (streq (part, "BAD_JSON") || streq (part, "RULE_HAS_ERRORS")) {
         free (part);
         log_error ("Request document not valid json or does not adhere to specified schema.");
