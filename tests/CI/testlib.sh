@@ -269,11 +269,11 @@ init_summarizeTestlibResults() {
     fi
     export TESTLIB_LOG_SUMMARY_COMMENT
 
+    logmsg_info "Summary of this test run will be appended to '$TESTLIB_LOG_SUMMARY'"
     { echo ""; echo "=============================================================="
       logmsg_info "`date -u`: Starting '${_SCRIPT_PATH} ${_SCRIPT_ARGS}'${TESTLIB_LOG_SUMMARY_COMMENT:+: $TESTLIB_LOG_SUMMARY_COMMENT}"; \
     } >> "$TESTLIB_LOG_SUMMARY"
-    logmsg_info "Summary of this test run will be appended to '$TESTLIB_LOG_SUMMARY'"
-    return 0
+    return $?
 }
 
 # This implements the summary of the test run; can be just echoed or also
