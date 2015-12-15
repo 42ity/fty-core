@@ -573,6 +573,22 @@ AS_IF([test "x$with_systemdsystempresetdir" != "xno"],
         [AC_SUBST([systemdsystempresetdir], [$with_systemdsystempresetdir])])
 AM_CONDITIONAL([HAVE_SYSTEMD], [test "x$with_systemdsystempresetdir" != "xno"])
 
+# Note: default path for "systemd-tmpfiles" packaged configs is currently
+# hardcoded per http://www.freedesktop.org/software/systemd/man/tmpfiles.d.html
+#systemdtmpfilesdir =    /usr/lib/tmpfiles.d/
+AC_ARG_WITH([systemdtmpfilesdir],
+     [AS_HELP_STRING([--with-systemdtmpfilesdir=DIR], [Directory for systemd preset files])],,
+     [with_systemdtmpfilesdir=auto])
+AS_IF([test "x$with_systemdtmpfilesdir" = "xyes" -o "x$with_systemdtmpfilesdir" = "xauto"], [
+     def_systemdtmpfilesdir=$($PKG_CONFIG --variable=systemdtmpfilesdir systemd)
+     # NOTE: The variable queried above might not exist at all
+     AS_IF([test "x$def_systemdtmpfilesdir" = "x"],
+         [with_systemdtmpfilesdir="/usr/lib/tmpfiles.d"],
+         [with_systemdtmpfilesdir="$def_systemdtmpfilesdir"])])
+AS_IF([test "x$with_systemdtmpfilesdir" != "xno"],
+        [AC_SUBST([systemdtmpfilesdir], [$with_systemdtmpfilesdir])])
+AM_CONDITIONAL([HAVE_SYSTEMD], [test "x$with_systemdtmpfilesdir" != "xno"])
+
 AC_SUBST([my_CFLAGS])
 AC_SUBST([my_CPPFLAGS])
 AC_SUBST([my_CXXFLAGS])
@@ -664,8 +680,10 @@ Summary:
         LIBMLM_LIBS:             ${LIBMLM_LIBS}
         LIBBIOSPROTO_LIBS:       ${LIBBIOSPROTO_LIBS}
         SASLAUTHD_MUX:           ${SASLAUTHD_MUX}
+        PKG_CONFIG:              ${PKG_CONFIG}
         SYSTEMDSYSTEMUNITDIR:    ${systemdsystemunitdir}
         SYSTEMDSYSTEMPRESETDIR:  ${systemdsystempresetdir}
+        SYSTEMDTMPFILESDIR:      ${systemdtmpfilesdir}
 
         absolute SRC DIR:        ${_srcdir_abs}
         absolute CUR DIR:        ${_curdir_abs}
