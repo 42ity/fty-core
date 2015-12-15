@@ -358,7 +358,7 @@ exit_summarizeTestlibResults() {
 
     { echo ""; echo "$TRAP_OUT"; echo "";
       logmsg_info "`date -u`: Finished '${_SCRIPT_PATH} ${_SCRIPT_ARGS}'${TESTLIB_LOG_SUMMARY_COMMENT:+: $TESTLIB_LOG_SUMMARY_COMMENT}"
-      echo "=============================================================="; echo ""; \
+      echo "=============================================================="; echo ""; echo ""; \
     } >> "$TESTLIB_LOG_SUMMARY"
     logmsg_info "Summary of this test run was appended to '$TESTLIB_LOG_SUMMARY'"
     exit $TRAP_RES
