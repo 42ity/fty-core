@@ -15,6 +15,7 @@ You should have received a copy of the GNU General Public License along
 with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
+#include <fstream>
 
 #include <cxxtools/jsonserializer.h>
 #include <cxxtools/jsondeserializer.h>
@@ -27,13 +28,53 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "utils++.h"
 #include "asset_types.h"
 #include "utils_ymsg.h"
-#include "db/agentstate.h"
+#include "filesystem.h"
 
 #define AUTOCONFIG "AUTOCONFIG"
 
 using namespace persist;
 
 // cxxtool serialization operators
+static const char* PATH = "/var/lib/bios/agent-autoconfig";
+static const char* STATE = "/var/lib/bios/agent-autoconfig/state";
+
+static int
+load_agent_info(std::string &info)
+{
+    if (shared::is_file (STATE))
+    {
+        try {
+            std::fstream f{STATE};
+            f >> info;
+            return 0;
+        }
+        catch (const std::exception& e)
+        {
+            log_error("Fail to read '%s', %s", PATH, e.what());
+            return -1;
+        }
+    }
+    info = "";
+    return 0;
+}
+
+static int
+save_agent_info(const std::string& json)
+{
+    if (!shared::is_dir (PATH)) {
+        zsys_error ("Can't serialize state, '%s' is not directory", PATH);
+        return -1;
+    }
+    try {
+        std::fstream f{STATE};
+        f << json;
+    }
+    catch (const std::exception& e) {
+        zsys_error ("Can't serialize state, %s", e.what());
+        return -1;
+    }
+    return 0;
+}
 
 inline void operator<<= (cxxtools::SerializationInfo& si, const AutoConfigurationInfo& info)
 {
@@ -186,12 +227,9 @@ void Autoconfig::requestExtendedAttributes( const char *name )
 void Autoconfig::loadState()
 {
     std::string json = "";
-    int rv = load_agent_info( AUTOCONFIG, json );
-    if ( rv != 0 )
-    {
-        log_error( "can't load state from database");
+    int rv = load_agent_info(json);
+    if ( rv != 0 || json.empty() )
         return;
-    }
 
     std::istringstream in(json);
 
@@ -200,7 +238,7 @@ void Autoconfig::loadState()
         cxxtools::JsonDeserializer deserializer(in);
         deserializer.deserialize(_configurableDevices);
     } catch( std::exception &e ) {
-        log_error( "can't parse state from database: %s", e.what() );
+        log_error( "can't parse state: %s", e.what() );
     }
 }
 
@@ -222,7 +260,7 @@ void Autoconfig::saveState()
 
     serializer.serialize( _configurableDevices ).finish();
     std::string json = stream.str();
-    save_agent_info( AUTOCONFIG, json );
+    save_agent_info(json );
 }
 
 int main( UNUSED_PARAM int argc, UNUSED_PARAM char *argv[] )
