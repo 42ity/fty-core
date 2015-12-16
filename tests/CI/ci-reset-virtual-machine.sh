@@ -85,6 +85,7 @@ usage() {
     echo "    -hp|--http-proxy URL the http_proxy override to access OBS ('$http_proxy')"
     echo "    -ap|--apt-proxy URL  the http_proxy to access external APT images ('$APT_PROXY')"
     echo "    --install-dev        run ci-setup-test-machine.sh (if available) to install packages"
+    echo "    --no-overlayfs       enforce use of tarballs, even if overlayfs is supported by host"
     echo "    --download-only      end the script after downloading the newest image file"
     echo "    --attempt-download [auto|yes|no] Should an OS image download be attempted at all?"
     echo "                         (default: auto; default if only the option is specified: yes)"
@@ -181,6 +182,7 @@ DOTDOMAINNAME=""
 [ -z "$INSTALL_DEV_PKGS" ] && INSTALL_DEV_PKGS=no
 [ -z "$ATTEMPT_DOWNLOAD" ] && ATTEMPT_DOWNLOAD=auto
 [ -z "$ALLOW_CONFIG_FILE" ] && ALLOW_CONFIG_FILE=yes
+[ -z "${OVERLAYFS-}" ] && OVERLAYFS=""
 
 while [ $# -gt 0 ] ; do
     case "$1" in
@@ -207,6 +209,10 @@ while [ $# -gt 0 ] ; do
 	    ;;
 	--stop-only)
 	    STOPONLY=yes
+	    shift
+	    ;;
+	--no-overlayfs)
+	    OVERLAYFS=no
 	    shift
 	    ;;
 	--download-only)
@@ -271,6 +277,7 @@ modprobe loop # TODO: die on failure?
 
 # Do we have overlayfs in kernel?
 if \
+	[ x"$OVERLAYFS" != xno ] || \
 	[ "`gzip -cd /proc/config.gz 2>/dev/null | grep OVERLAY`" ] || \
 	grep OVERLAY "/boot/config-`uname -r`" >/dev/null 2>/dev/null  \
 ; then
@@ -284,6 +291,7 @@ if \
 		modprobe ${OVERLAYFS_TYPE} && break
 	done
 else
+	[ x"$OVERLAYFS" = xno ] && logmsg_warn "OVERLAYFS='$OVERLAYFS' set by caller"
 	EXT="tar.gz"
 	OVERLAYFS=""
 	OVERLAYFS_TYPE=""
