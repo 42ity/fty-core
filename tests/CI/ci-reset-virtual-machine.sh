@@ -86,6 +86,7 @@ usage() {
     echo "    -ap|--apt-proxy URL  the http_proxy to access external APT images ('$APT_PROXY')"
     echo "    --install-dev        run ci-setup-test-machine.sh (if available) to install packages"
     echo "    --no-overlayfs       enforce use of tarballs, even if overlayfs is supported by host"
+    echo "    --with-overlayfs     enforce use of overlayfs, fail if not supported by host"
     echo "    --download-only      end the script after downloading the newest image file"
     echo "    --attempt-download [auto|yes|no] Should an OS image download be attempted at all?"
     echo "                         (default: auto; default if only the option is specified: yes)"
@@ -182,7 +183,7 @@ DOTDOMAINNAME=""
 [ -z "$INSTALL_DEV_PKGS" ] && INSTALL_DEV_PKGS=no
 [ -z "$ATTEMPT_DOWNLOAD" ] && ATTEMPT_DOWNLOAD=auto
 [ -z "$ALLOW_CONFIG_FILE" ] && ALLOW_CONFIG_FILE=yes
-[ -z "${OVERLAYFS-}" ] && OVERLAYFS=""
+[ -z "${OVERLAYFS-}" ] && OVERLAYFS="auto"
 
 while [ $# -gt 0 ] ; do
     case "$1" in
@@ -213,6 +214,10 @@ while [ $# -gt 0 ] ; do
 	    ;;
 	--no-overlayfs)
 	    OVERLAYFS=no
+	    shift
+	    ;;
+	--with-overlayfs)
+	    OVERLAYFS=yes
 	    shift
 	    ;;
 	--download-only)
@@ -292,14 +297,26 @@ fi
 # Make sure we have a loop device support
 modprobe loop # TODO: die on failure?
 
-# Do we have overlayfs in kernel?
-if \
-	[ x"$OVERLAYFS" != xno ] || \
-	[ "`gzip -cd /proc/config.gz 2>/dev/null | grep OVERLAY`" ] || \
-	grep OVERLAY "/boot/config-`uname -r`" >/dev/null 2>/dev/null  \
-; then
+case x"$OVERLAYFS" in
+xauto|xyes)
+	# Do we have overlayfs in kernel?
+	if \
+		[ "`gzip -cd /proc/config.gz 2>/dev/null | grep OVERLAY`" ] || \
+		grep OVERLAY "/boot/config-`uname -r`" >/dev/null 2>/dev/null  \
+	; then
+		OVERLAYFS="yes"
+	else
+		[ x"$OVERLAYFS" = xyes ] && die "OVERLAYFS='$OVERLAYFS' set by caller but not supported by kernel"
+		OVERLAYFS="no"
+	fi
+	;;
+xno)	logmsg_warn "OVERLAYFS='$OVERLAYFS' set by caller" ;;
+*)	logmsg_warn "Unknown OVERLAYFS='$OVERLAYFS' set by caller, assuming 'no'"; OVERLAYFS="no" ;;
+esac
+
+case x"$OVERLAYFS" in
+xyes)
 	EXT="squashfs"
-	OVERLAYFS="yes"
 	logmsg_info "Detected support of OVERLAYFS on the host" \
 	    "`hostname`${DOTDOMAINNAME}, so will mount a .$EXT file" \
 	    "as an RO base and overlay the RW changes"
@@ -307,15 +324,15 @@ if \
 	for OVERLAYFS_TYPE in overlay overlayfs ; do
 		modprobe ${OVERLAYFS_TYPE} && break
 	done
-else
-	[ x"$OVERLAYFS" = xno ] && logmsg_warn "OVERLAYFS='$OVERLAYFS' set by caller"
+	;;
+xno)
 	EXT="tar.gz"
-	OVERLAYFS=""
 	OVERLAYFS_TYPE=""
 	logmsg_info "Detected no support of OVERLAYFS on the host" \
 	    "`hostname`${DOTDOMAINNAME}, so will unpack a .$EXT file" \
 	    "into a dedicated full RW directory"
-fi
+	;;
+esac
 
 # Verify that this script runs once at a time for the given VM
 if [ -f "$VM.lock" ] ; then
@@ -586,7 +603,7 @@ fi
 
 logmsg_info "Creating a new VM rootfs at '`pwd`/../rootfs/$VM'"
 mkdir -p "../rootfs/$VM"
-if [ "$OVERLAYFS" = yes ]; then
+if [ x"$OVERLAYFS" = xyes ]; then
 	logmsg_info "Mount the common RO squashfs at '`pwd`/../rootfs/${IMAGE_FLAT}-ro'"
 	mkdir -p "../rootfs/${IMAGE_FLAT}-ro"
 	mount -o loop "$IMAGE" "../rootfs/${IMAGE_FLAT}-ro" || \
