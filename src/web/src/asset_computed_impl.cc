@@ -97,14 +97,17 @@ int free_u_size( a_elmnt_id_t elementId)
             };
 
         auto rv = persist::select_assets_by_container(conn, elementId, func);
-        if ( !rv ) {
+        if ( rv==-1 ) {
+            log_debug( "free_u_size() rv is null");
             return -1;
         }
         // substract sum( device size ) if there are some
         freeusize -= element_ids.empty() ? 0 : s_get_devices_usize( conn, element_ids);
+        log_debug( "freeusize %d", freeusize);
         return freeusize;
     }
     catch (const std::exception& ex) {
+        log_error("free_u_size fails %s", ex.what());
         return -1;
     }
 }
