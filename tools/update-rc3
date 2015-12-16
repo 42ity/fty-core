@@ -34,6 +34,16 @@ set -o pipefail
 # The RC3 base OS ensures support for squashfs and overlay(fs)
 [ -z "${EXT-}" ] && EXT="squashfs"
 
+# This script is intended as the downloader tool for both CI/dev-workstation
+# hosts and the ultimate devices. Most of the logic is the same, but there are
+# a few differences. File and directory naming is one of them :
+# Our CI farm deployments mimic the build farm paths - with IMGTYPE/ARCH/filename.ext
+# The RC3 units expect a flat directory srtucture rootfs/filename.ext so the
+# details (especially IMGTYPE) should end up in the flat filename.
+[ -z "${FLATTEN_FILENAMES-}" ] && FLATTEN_FILENAMES="yes"
+
+# TODO: TFTP support, busybox can do it
+# TODO: Test with https - can require custom CA trust configuration, etc.
 [ -z "${SOURCESITEROOT-}" ] && SOURCESITEROOT='http://obs.roz53.lab.etn.com/images'
 [ -z "${SOURCESITEROOT_OSIMAGE-}" ] && SOURCESITEROOT_OSIMAGE="$SOURCESITEROOT/$IMGTYPE/$ARCH"
 
@@ -61,7 +71,6 @@ set -o pipefail
 [ -z "${ftp_proxy-}" -o x"${ftp_proxy-}" = x- ] && ftp_proxy=""
 [ -z "${ftps_proxy-}" -o x"${ftps_proxy-}" = x- ] && ftps_proxy=""
 export http_proxy https_proxy ftp_proxy ftps_proxy
-# TODO: TFTP support
 
 # The RC3 SPI flash partitioning determines these sizes, value hardcoded in the
 # default installation routines as well as the init/upgrade script in uImage.
@@ -74,8 +83,8 @@ UBOOT_MAX_SIZE_RC3=1048576
 PATH="/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
 export PATH
 
-### NOTE: This script can be copied to VM hosts and used standalone,
-### so we do not depend it on scriptlib.sh or anything else.
+### NOTE: This script can be copied to VM hosts and used standalone, so we do
+### not depend it on scriptlib.sh or anything else. Implement a few bits here.
 
 ### This is prefixed before ERROR, WARN, INFO tags in the logged messages
 LOGMSG_PREFIX="BIOS-UPDATE-RC3-"
@@ -92,9 +101,13 @@ usage() {
 # TODO ...
 }
 
-SCRIPTDIR=$(realpath `dirname ${_SCRIPT_PATH}`)
+SCRIPTDIR=$(realpath "`dirname ${_SCRIPT_PATH}`") || \
+    SCRIPTDIR=$(cd "`dirname ${_SCRIPT_PATH}`" && pwd)
 SCRIPTPWD="`pwd`"
-[ -z "$CHECKOUTDIR" ] && CHECKOUTDIR=$(realpath $SCRIPTDIR/../..)
+if [ -z "$CHECKOUTDIR" ] ; then
+    CHECKOUTDIR=$(realpath "$SCRIPTDIR/../..") || \
+        CHECKOUTDIR=$(cd "$SCRIPTDIR/../.." && pwd)
+fi
 [ "$CHECKOUTDIR" = / -o ! -d "$CHECKOUTDIR/tests/CI" ] && CHECKOUTDIR=""
 [ -z "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
 export CHECKOUTDIR BUILDSUBDIR
@@ -173,7 +186,9 @@ verify_checksum() {
     # Compares actual checksum of file "$1" with value recorded in file "$2"
     # with optional algorithm in "$3" (defaults to 'md5')
     FILENAME_DATA="$1"
-    FILENAME_CSUM="$2"
+    FILENAME_CSUM="${2-}"
+    [ -z "$FILENAME_CSUM" ] && \
+        FILENAME_CSUM="$FILENAME_DATA.md5"
     if [ -z "${3-}" ]; then
         CHECKSUM_ALGO="`echo "$FILENAME_CSUM" | sed 's,^.*\.\([^\.]*\)$,\1,' | tr '[A-Z]' '[a-z]'`"
         [ $? = 0 -a -n "$CHECKSUM_ALGO" ] || \
@@ -240,6 +255,12 @@ download_osimage() (
     cd "${DOWNLOADROOT_OSIMAGE}" || die "Can not use DOWNLOADROOT_OSIMAGE='$DOWNLOADROOT_OSIMAGE'"
     # TODO: Free space verification before download - BIOS-1562?
     # TODO: Currently hardcoded for md5 accompanying checksums only
+    # TODO: Consider DEPLOYMENTROOT* variables to verify presence of local files against
+    # TODO: Consider FLATTEN_FILENAMES=yes in TGT_FILE logic
+    # TODO: Refactor the triple-file verification (local/remote checksum and the
+    # data file) into a separate routine
+    # TODO (later): Support file sizes as part of checksum info
+    # TODO (later): Support presence of multipple checksum files (e.g. sha* and md5)
 
     logmsg_info "Fetching newest filename for ${ARCH} OS image of type ${IMGTYPE}..."
     IMAGE_URL="`findnewest_osimage`" && \
