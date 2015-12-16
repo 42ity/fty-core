@@ -45,6 +45,7 @@
 	CONTAINERS="latest"
 [ -z "$STARTDELAY_DL" ] && STARTDELAY_DL="2 min"
 [ -z "$STARTDELAY" ] && STARTDELAY="3 min"
+[ -z "$DOWNLOAD_ROUTINE" ] && DOWNLOAD_ROUTINE=download_default
 
 # The real script is part of $BIOS CI suite
 [ -z "$CI_RESET_VM" ] && CI_RESET_VM="/root/ci-reset-virtual-machine.sh"
@@ -139,6 +140,10 @@ download_tailored() {
 }
 
 download() {
+	if [ "$DOWNLOAD_ROUTINE" = download_tailored ] ; then
+		download_tailored
+		return $?
+	fi
 	download_default
 }
 
