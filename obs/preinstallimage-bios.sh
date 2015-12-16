@@ -252,6 +252,12 @@ systemctl preset-all
 if [ "`uname -m`" = x86_64 ]; then
     systemctl enable bios-fake-th
     systemctl disable bios-agent-th
+    systemctl disable lcd-boot-display
+    systemctl disable lcd-net-display
+    systemctl mask lcd-boot-display
+    systemctl mask lcd-net-display
+    systemctl disable bios-reset-button
+    systemctl mask bios-reset-button
 else
     systemctl disable bios-fake-th
     systemctl mask bios-fake-th
