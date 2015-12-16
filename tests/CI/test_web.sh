@@ -189,13 +189,23 @@ while [ "$1" ]; do
 done
 [ -n "$POSITIVE" ] || POSITIVE="*"
 
-exit_summarizeTestedScriptlets() {
+echo_summarizeTestedScriptlets() {
     logmsg_info "This ${_SCRIPT_NAME} ${_SCRIPT_ARGS} run selected the following scriptlets from web/commands :"
     logmsg_info "  Execution pattern (POSITIVE) = $POSITIVE"
     logmsg_info "  Ignored pattern (NEGATIVE)   = $NEGATIVE"
     logmsg_info "  SKIP_NONSH_TESTS = $SKIP_NONSH_TESTS (so skipped ${SKIPPED_NONSH_TESTS+0} tests)"
 }
 
+exit_summarizeTestedScriptlets() {
+    echo_summarizeTestedScriptlets
+    if [ -z "$TESTLIB_LOG_SUMMARY" ]; then
+        echo_summarizeTestedScriptlets >> "$TESTLIB_LOG_SUMMARY"
+    fi
+    return 0
+}
+
+# Note: this default log filename will be ignored if already set by caller
+init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" ""
 settraps '_TRAP_RES=$?; exit_summarizeTestedScriptlets ; exit_summarizeTestlibResults; exit $_TRAP_RES'
 
 for i in $POSITIVE; do

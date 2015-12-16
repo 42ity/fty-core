@@ -131,7 +131,8 @@ DISTCLEANDIRS += \
 # recommended by daemon(7)
 DISTCHECK_CONFIGURE_FLAGS = \
         --with-systemdsystemunitdir=$$dc_install_base/$(systemdsystemunitdir) \
-        --with-systemdsystempresetdir=$$dc_install_base/$(systemdsystempresetdir)
+        --with-systemdsystempresetdir=$$dc_install_base/$(systemdsystempresetdir) \
+        --with-systemdtmpfilesdir=$$dc_install_base/$(systemdtmpfilesdir)
 
 AM_CPPFLAGS = \
 		${my_CPPFLAGS} \
@@ -456,17 +457,6 @@ libpriv_db_calculations_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist/
 
 
-#####
-#libpriv_db_alerts_la_CPPFLAGS = $(AM_CPPFLAGS) \
-#			-I$(abs_top_srcdir)/src/persist \
-#			-I$(abs_top_srcdir)/tools \
-#			-I$(abs_top_srcdir)/src \
-#			-I$(abs_top_builddir)/tools \
-#			-I$(abs_top_builddir)/src/persist
-
-#libpriv_db_alerts_la_LIBADD =	libbiosapi.la \
-#			libpriv-log.la libpriv-csv.la
-
 noinst_LTLIBRARIES += 	libpriv-db-assets.la
 
 HEADERS_ASSETS = \
@@ -540,10 +530,6 @@ libpriv_configure_inform_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_builddir)/tools \
 			-I$(abs_top_builddir)/src/persist
-
-#libpriv_db_alerts_la_LIBADD =	libbiosapi.la \
-#			libpriv-log.la libpriv-csv.la
-
 
 
 #----------------------------------------------------------------------
@@ -1233,12 +1219,11 @@ agent_autoconfig_LDADD = \
 			libpriv-defs.la \
 			libpriv-subprocess.la \
 			libpriv-utils-ymsg.la \
-			libpriv-utils-plusplus.la \
-			libpriv-db.la
+			libpriv-utils-plusplus.la
 
 # FIXME remove utils ymsg
 
-agent_autoconfig_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lcidr -lbiosapi -ltntdb
+agent_autoconfig_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lcidr -lbiosapi
 
 agent_autoconfig_CPPFLAGS =	$(AM_CPPFLAGS) \
 				-I$(abs_top_srcdir)/tools \
@@ -1306,7 +1291,7 @@ client_PROGRAMS +=	agent-tpower
 agent_tpower_SOURCES = \
 			src/agents/tpower/agent-tpower.cc \
 			src/agents/tpower/tp-unit.cc \
-			src/agents/alert/alert-measurement.cc
+			src/agents/tpower/alert-measurement.cc
 
 agent_tpower_LDADD = \
 			libpriv-log.la \
@@ -1318,35 +1303,9 @@ agent_tpower_LDADD = \
 agent_tpower_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -ltntdb -lbiosapi
 
 agent_tpower_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/src/agents/alert \
 			-I$(abs_top_srcdir)/src/persist \
 			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_srcdir)/tools
-
-client_PROGRAMS +=      agent-alert
-
-agent_alert_SOURCES = \
-			src/agents/alert/alert-entity.cc \
-			src/agents/alert/alert-measurement.cc \
-			src/agents/alert/agent-alert.cc \
-			src/agents/alert/alert-model.cc \
-			src/shared/utils_app.c \
-			src/shared/utils_ymsg.c \
-			src/include/str_defs.c
-
-agent_alert_LDADD = \
-			libpriv-utils.la \
-			libpriv-log.la \
-			libpriv-db.la \
-			libpriv-proto.la \
-			libbiosapi.la
-
-agent_alert_LDFLAGS =  ${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -ltntdb -lbiosapi
-
-agent_alert_CPPFLAGS = $(AM_CPPFLAGS) \
-                       -I$(abs_top_srcdir)/src/persist \
-                       -I$(abs_top_srcdir)/src/db \
-                       -I$(abs_top_srcdir)/tools
 
 client_PROGRAMS += 	outage
 outage_SOURCES = \
@@ -1403,7 +1362,7 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/topology_location_to.cpp                    \
                       src/web/src/datacenter_indicators.cpp                   \
                       src/web/src/average.cpp src/web/src/asset_import.cpp    \
-                      src/web/src/alerts.cpp src/web/src/netcfg.cpp           \
+                      src/web/src/netcfg.cpp           \
                       src/web/src/uptime.cpp src/web/src/iface.cpp            \
                       src/web/src/license.cpp src/web/src/asset_export.cpp    \
                       src/web/src/admin_passwd.cpp src/web/src/systemctl.cpp  \
@@ -1585,6 +1544,9 @@ SYSTEMD_TIMERS =
 SYSTEMD_PRESETS =
 SYSTEMD_TARGETS =
 
+# Preconfiguration for systemd-tmpfiles service to create needed paths
+SYSTEMD_TMPFILES =
+
 # The subdirectory in source (and build) tree where systemd unit files
 # and their .in templates reside, starting from workspace (or build) root
 # Note: No leading nor trailing slash is expected here!
@@ -1612,7 +1574,6 @@ SYSTEMD_UNITS_LOWLEVEL += \
 # And also some of the timer units and implementations below
 SYSTEMD_UNITS_TARGET_BIOS += \
                         bios-db-init.service \
-                        bios-agent-alert.service \
                         bios-agent-alert-smtp.service \
                         bios-agent-autoconfig.service \
                         bios-agent-cm.service \
@@ -1662,6 +1623,8 @@ SYSTEMD_TIMERS += $(SYSTEMD_TIMERS_LOWLEVEL) $(SYSTEMD_TIMERS_TARGET_BIOS)
 # (except those in SYSTEMD_UNITS_NOTPRESET list)
 SYSTEMD_PRESETS +=      42-bios-systemd.preset
 
+SYSTEMD_TMPFILES +=	bios-agent-autoconfig.conf
+
 ### TODO? Add the build info (git commit, timestamp) to the header comment?
 $(SYSTEMD_SUBDIR)/42-bios-systemd.preset: Makefile
 	@mkdir -p "$(abs_top_builddir)/$(SYSTEMD_SUBDIR)" "`dirname "$@"`" || true
@@ -1678,14 +1641,16 @@ systemdsystemunit_generated =	$(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_UNITS) $(
 systemdsystemunit_DATA =	$(systemdsystemunit_generated) $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_TIMERS) $(SYSTEMD_TARGETS))
 systemdsystempreset_generated =	$(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_PRESETS))
 systemdsystempreset_DATA =	$(systemdsystempreset_generated)
+# Nothing generated so far for TMPFILES
+systemdtmpfiles_DATA =	$(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_TMPFILES))
 
 # auto-cleanup and dist targets
 CLEANFILES += $(systemdsystemunit_generated) $(systemdsystempreset_generated)
-EXTRA_DIST += $(addprefix $(top_srcdir)/$(SYSTEMD_SUBDIR)/,$(SYSTEMD_TIMERS) $(SYSTEMD_TARGETS) $(addsuffix .in,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL) $(SYSTEMD_UNITS_NOTPRESET)))
+EXTRA_DIST += $(addprefix $(top_srcdir)/$(SYSTEMD_SUBDIR)/,$(SYSTEMD_TIMERS) $(SYSTEMD_TARGETS) $(SYSTEMD_TMPFILES) $(addsuffix .in,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL) $(SYSTEMD_UNITS_NOTPRESET)))
 endif
 
 # Quick links to build the systemd files (if enabled)
-systemd-units: systemd-daemons systemd-timers systemd-presets systemd-targets
+systemd-units: systemd-daemons systemd-timers systemd-presets systemd-targets systemd-tmpfiles
 systemd-daemons: $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_NOTPRESET))
 systemd-timers:  $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_UNITS_TIMERIMPL))
 	if [ x"$(abs_top_builddir)/" = x"$(abs_top_srcdir)/" ] ; then true; else \
@@ -1695,10 +1660,14 @@ systemd-timers:  $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_UNITS_TIMERIMPL))
 	done; fi
 systemd-presets: $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_PRESETS))
 systemd-targets: $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_TARGETS))
+systemd-tmpfiles: $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_TMPFILES))
 
 clean-systemd-units:
-	@if [ x"$(abs_top_builddir)/" != x"$(abs_top_srcdir)/" ] && [ -n "$(SYSTEMD_TIMERS)" ]; then \
-	    $(RM) $(addprefix $(abs_top_builddir)/$(SYSTEMD_SUBDIR)/,$(SYSTEMD_TIMERS) $(SYSTEMD_TARGETS)) ; \
+	@if [ x"$(abs_top_builddir)/" != x"$(abs_top_srcdir)/" ] ; then \
+	    if [ -n "$(SYSTEMD_TIMERS)" ]; then \
+	        $(RM) $(addprefix $(abs_top_builddir)/$(SYSTEMD_SUBDIR)/,$(SYSTEMD_TIMERS)) ; fi ; \
+	    if [ -n "$(SYSTEMD_TARGETS)" ]; then \
+	        $(RM) $(addprefix $(abs_top_builddir)/$(SYSTEMD_SUBDIR)/,$(SYSTEMD_TARGETS)) ; fi ; \
 	fi || true
 
 #----------------------------------------------------------------------
