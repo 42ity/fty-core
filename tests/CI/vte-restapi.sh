@@ -180,12 +180,14 @@ ci_loaddb_default() {
 }
     # *** start the default set of TC
 test_web_default() {
+    init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_default() $*"
     ci_loaddb_default && \
     test_web "$@"
 }
 
     # *** start the power topology set of TC
 test_web_topo_p() {
+    init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_p() $*"
     echo "----------- reset db: topology : power -----------"
     loaddb_file "$DB_BASE" && \
     loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
@@ -195,6 +197,7 @@ test_web_topo_p() {
 
     # *** start the location topology set of TC
 test_web_topo_l() {
+    init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_l() $*"
     echo "---------- reset db: topology : location ---------"
     loaddb_file "$DB_BASE" && \
     loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
@@ -203,6 +206,7 @@ test_web_topo_l() {
 }
 
 # Try to accept the BIOS license on server
+init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "00_license-CI-forceaccept"
 SKIP_SANITY=yes test_web 00_license-CI-forceaccept.sh.test || \
     logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
 
@@ -223,8 +227,16 @@ test_web_topo_l topology_location || RESULT_OVERALL=$?
 # ***** RESULTS *****
 if [ "$RESULT_OVERALL" = 0 ]; then
     logmsg_info "Overall result: SUCCESS"
+    if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
+        { logmsg_info "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}': SUCCESS"; \
+          echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY"
+    fi
 else
     logmsg_error "Overall result: FAILED ($RESULT_OVERALL), seek details above"
+    if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
+        { logmsg_error "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}': FAILED ($RESULT_OVERALL)"; \
+          echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY" 2>&1
+    fi
 fi
 
 exit $RESULT_OVERALL
