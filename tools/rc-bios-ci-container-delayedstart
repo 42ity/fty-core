@@ -45,6 +45,7 @@
 	CONTAINERS="latest"
 [ -z "$STARTDELAY_DL" ] && STARTDELAY_DL="2 min"
 [ -z "$STARTDELAY" ] && STARTDELAY="3 min"
+[ -z "$DOWNLOAD_ROUTINE" ] && DOWNLOAD_ROUTINE=download_default
 
 # The real script is part of $BIOS CI suite
 [ -z "$CI_RESET_VM" ] && CI_RESET_VM="/root/ci-reset-virtual-machine.sh"
@@ -76,8 +77,10 @@ start_delayed() {
 			;;
 		    test-debian-[6789]|*deploy*) # VTEs need only the default image
 			echo "INSTALL_DEV_PKGS=no $CI_RESET_VM -m '$C' -b deploy" | at -M "now + $STARTDELAY" ;;
-		    *devel*|*) # By default we do updates
+		    test-debian-[012345]|latest|*devel*) # In devel-images we do updates
 			echo "$CI_RESET_VM -m '$C' -b devel --install-dev" | at -M "now + $STARTDELAY" ;;
+		    *) # By default we do no definite IMGTYPE (use default or VM config)
+			echo "$CI_RESET_VM -m '$C'" | at -M "now + $STARTDELAY" ;;
 		esac
 	done
 }
@@ -94,8 +97,10 @@ start_instant() {
 			;;
 		    test-debian-[6789]|*deploy*) # VTEs need only the default image
 			INSTALL_DEV_PKGS=no $CI_RESET_VM -m "$C" -b deploy --attempt-download no & ;;
-		    *devel*|*) # By default we do updates
+		    test-debian-[012345]|latest|*devel*) # In devel-images we do updates
 			$CI_RESET_VM -m "$C" -b devel --install-dev --attempt-download no & ;;
+		    *) # By default we do no definite IMGTYPE (use default or VM config)
+			$CI_RESET_VM -m "$C" --attempt-download no & ;;
 		esac
 	done
 	wait
@@ -120,12 +125,26 @@ stop() {
 	done >/dev/null 2>&1
 }
 
-download() {
-	for C in $CONTAINERS ; do
-		$CI_RESET_VM --download-only -m "$C" -b devel
-		$CI_RESET_VM --download-only -m "$C" -b deploy
-		break
+download_default() {
+	for T in devel deploy ; do
+		$CI_RESET_VM --download-only -m '' -b "$T" --with-overlayfs || true
+		$CI_RESET_VM --download-only -m '' -b "$T" --no-overlayfs
 	done
+}
+
+download_tailored() {
+	# Use VM config, if any
+	for C in $CONTAINERS ; do
+		$CI_RESET_VM --download-only -m "$C"
+	done
+}
+
+download() {
+	if [ "$DOWNLOAD_ROUTINE" = download_tailored ] ; then
+		download_tailored
+		return $?
+	fi
+	download_default
 }
 
 refresh() {
@@ -157,7 +176,11 @@ status() {
 }
 
 case "$1" in
-start|start_delayed|start_instant|restart|stop|refresh|download|status)
+help|-h)
+	echo "$0 {start|start_delayed|start_instant|restart|stop|refresh|download|download_default|download_tailored|status}"
+	exit 0
+	;;
+start|start_delayed|start_instant|restart|stop|refresh|download|download_default|download_tailored|status)
 	"$@"
 	exit $?
 	;;
