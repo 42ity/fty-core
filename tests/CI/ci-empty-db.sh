@@ -30,6 +30,9 @@ NEED_BUILDSUBDIR=no NEED_CHECKOUTDIR=yes determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to test the database initialization"
 [ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
+
+# Note: this default log filename will be ignored if already set by caller
+init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" ""
 settraps 'exit_summarizeTestlibResults'
 
 set -u
