@@ -261,16 +261,20 @@ done
 # check if VM exists
 #
 ### TODO: Actions dependent on a particular "$VM" begin after image downloads
-[ -z "$VM" ] && die "VM parameter not provided!"
-RESULT=$(virsh -c lxc:// list --all | awk '/^ *[0-9-]+ +'"$VM"' / {print $2}' | wc -l)
-if [ $RESULT = 0 ] ; then
-    die "VM $VM does not exist"
+[ "$DOWNLOADONLY" != yes ] && [ -z "$VM" ] && die "VM parameter not provided!"
+# $VM may be empty if we only want to download
+if [ -n "$VM" ]; then
+	RESULT=$(virsh -c lxc:// list --all | awk '/^ *[0-9-]+ +'"$VM"' / {print $2}' | wc -l)
+	if [ $RESULT = 0 ] ; then
+	    die "VM $VM does not exist"
+	fi
+	if [ $RESULT -gt 1 ] ; then
+	    ### Should not get here via CI
+	    die "VM pattern '$VM' matches too much ($RESULT)"
+	    ### TODO: spawn many child-shells with same parameters, for each VM?
+	fi
 fi
-if [ $RESULT -gt 1 ] ; then
-    ### Should not get here via CI
-    die "VM pattern '$VM' matches too much ($RESULT)"
-    ### TODO: spawn many child-shells with same parameters, for each VM?
-fi
+# If $VM is not empty here, it is trustworthy
 
 # This should not be hit...
 [ -z "$APT_PROXY" ] && APT_PROXY="$http_proxy"
@@ -284,7 +288,7 @@ mkdir -p "/srv/libvirt/snapshots/$IMGTYPE/$ARCH" "/srv/libvirt/rootfs" "/srv/lib
 cd "/srv/libvirt/rootfs" || \
 	die "Can not 'cd /srv/libvirt/rootfs' to keep container root trees"
 
-if [ -s "`pwd`/$VM.config-reset-vm" ]; then
+if [ -n "$VM" ] && [ -s "`pwd`/$VM.config-reset-vm" ]; then
 	if [ "$ALLOW_CONFIG_FILE" = yes ]; then
 		logmsg_warn "Found configuration file for the '$VM', it will override the command-line settings:"
 		cat "`pwd`/$VM.config-reset-vm"
@@ -335,7 +339,7 @@ xno)
 esac
 
 # Verify that this script runs once at a time for the given VM
-if [ -f "$VM.lock" ] ; then
+if [ -n "$VM" ] && [ -f "$VM.lock" ] ; then
 	OTHERINST_PID="`head -1 "$VM.lock"`"
 	OTHERINST_PROG="`head -n +2 "$VM.lock" | tail -1`"
 	OTHERINST_ARGS="`head -n +3 "$VM.lock" | tail -1`"
@@ -374,7 +378,9 @@ if [ -f "$VM.lock" ] ; then
 	fi
 fi
 
-( echo "$$"; echo "${_SCRIPT_PATH}"; echo "${_SCRIPT_ARGS}" ) > "$VM.lock"
+if [ -n "$VM" ] ; then
+	( echo "$$"; echo "${_SCRIPT_PATH}"; echo "${_SCRIPT_ARGS}" ) > "$VM.lock"
+fi
 settraps 'cleanup_script'
 
 # Proceed to downloads, etc.
@@ -509,6 +515,9 @@ if [ ! -s "$IMAGE" ]; then
 	die "No downloaded image files located in my cache (`pwd`/$IMAGE)!"
 fi
 logmsg_info "Will use IMAGE='$IMAGE' for further VM set-up (flattened to '$IMAGE_FLAT')"
+
+# Should not get here normally
+[ -z "$VM" ] && die "Downloads and verifications are completed, at this point I need a definite VM value to work on!"
 
 # Destroy whatever was running, if anything
 virsh -c lxc:// destroy "$VM" 2> /dev/null > /dev/null || \
