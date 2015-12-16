@@ -66,8 +66,8 @@
             http_die("bad-request-document", "Cannot import empty document.");
         if (!cm.hasTitle("type"))
             http_die("request-param-required", "type");
-        if ( cm.get(1, "type") != "device" )
-            http_die("request-param-bad", "type", cm.get(1, "type").empty() ? "<empty>" : cm.get(1, "type").c_str(), "device");
+        if ( cm.get(1, "type") != "device" && cm.get(1, "type") != "datacenter")
+            http_die("request-param-bad", "type", cm.get(1, "type").empty() ? "<empty>" : cm.get(1, "type").c_str(), "device|datacenter");
         // currently we do not need to support updatein these elements
         if ( cm.hasTitle("powers") )
             bios_throw("bad-request-document", "key 'powers' is not supported");
