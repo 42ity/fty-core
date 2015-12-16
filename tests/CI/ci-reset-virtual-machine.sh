@@ -86,6 +86,7 @@ usage() {
     echo "    -ap|--apt-proxy URL  the http_proxy to access external APT images ('$APT_PROXY')"
     echo "    --install-dev        run ci-setup-test-machine.sh (if available) to install packages"
     echo "    --no-overlayfs       enforce use of tarballs, even if overlayfs is supported by host"
+    echo "    --with-overlayfs     enforce use of overlayfs, fail if not supported by host"
     echo "    --download-only      end the script after downloading the newest image file"
     echo "    --attempt-download [auto|yes|no] Should an OS image download be attempted at all?"
     echo "                         (default: auto; default if only the option is specified: yes)"
@@ -182,7 +183,7 @@ DOTDOMAINNAME=""
 [ -z "$INSTALL_DEV_PKGS" ] && INSTALL_DEV_PKGS=no
 [ -z "$ATTEMPT_DOWNLOAD" ] && ATTEMPT_DOWNLOAD=auto
 [ -z "$ALLOW_CONFIG_FILE" ] && ALLOW_CONFIG_FILE=yes
-[ -z "${OVERLAYFS-}" ] && OVERLAYFS=""
+[ -z "${OVERLAYFS-}" ] && OVERLAYFS="auto"
 
 while [ $# -gt 0 ] ; do
     case "$1" in
@@ -213,6 +214,10 @@ while [ $# -gt 0 ] ; do
 	    ;;
 	--no-overlayfs)
 	    OVERLAYFS=no
+	    shift
+	    ;;
+	--with-overlayfs)
+	    OVERLAYFS=yes
 	    shift
 	    ;;
 	--download-only)
@@ -256,49 +261,25 @@ done
 # check if VM exists
 #
 ### TODO: Actions dependent on a particular "$VM" begin after image downloads
-[ -z "$VM" ] && die "VM parameter not provided!"
-RESULT=$(virsh -c lxc:// list --all | awk '/^ *[0-9-]+ +'"$VM"' / {print $2}' | wc -l)
-if [ $RESULT = 0 ] ; then
-    die "VM $VM does not exist"
+[ "$DOWNLOADONLY" != yes ] && [ -z "$VM" ] && die "VM parameter not provided!"
+# $VM may be empty if we only want to download
+if [ -n "$VM" ]; then
+	RESULT=$(virsh -c lxc:// list --all | awk '/^ *[0-9-]+ +'"$VM"' / {print $2}' | wc -l)
+	if [ $RESULT = 0 ] ; then
+	    die "VM $VM does not exist"
+	fi
+	if [ $RESULT -gt 1 ] ; then
+	    ### Should not get here via CI
+	    die "VM pattern '$VM' matches too much ($RESULT)"
+	    ### TODO: spawn many child-shells with same parameters, for each VM?
+	fi
 fi
-if [ $RESULT -gt 1 ] ; then
-    ### Should not get here via CI
-    die "VM pattern '$VM' matches too much ($RESULT)"
-    ### TODO: spawn many child-shells with same parameters, for each VM?
-fi
+# If $VM is not empty here, it is trustworthy
 
 # This should not be hit...
 [ -z "$APT_PROXY" ] && APT_PROXY="$http_proxy"
 [ x"$APT_PROXY" = x- ] && APT_PROXY=""
 [ x"$http_proxy" = x- ] && http_proxy="" && export http_proxy
-
-# Make sure we have a loop device support
-modprobe loop # TODO: die on failure?
-
-# Do we have overlayfs in kernel?
-if \
-	[ x"$OVERLAYFS" != xno ] || \
-	[ "`gzip -cd /proc/config.gz 2>/dev/null | grep OVERLAY`" ] || \
-	grep OVERLAY "/boot/config-`uname -r`" >/dev/null 2>/dev/null  \
-; then
-	EXT="squashfs"
-	OVERLAYFS="yes"
-	logmsg_info "Detected support of OVERLAYFS on the host" \
-	    "`hostname`${DOTDOMAINNAME}, so will mount a .$EXT file" \
-	    "as an RO base and overlay the RW changes"
-	modprobe squashfs
-	for OVERLAYFS_TYPE in overlay overlayfs ; do
-		modprobe ${OVERLAYFS_TYPE} && break
-	done
-else
-	[ x"$OVERLAYFS" = xno ] && logmsg_warn "OVERLAYFS='$OVERLAYFS' set by caller"
-	EXT="tar.gz"
-	OVERLAYFS=""
-	OVERLAYFS_TYPE=""
-	logmsg_info "Detected no support of OVERLAYFS on the host" \
-	    "`hostname`${DOTDOMAINNAME}, so will unpack a .$EXT file" \
-	    "into a dedicated full RW directory"
-fi
 
 [ -z "$ARCH" ] && ARCH="`uname -m`"
 # Note: several hardcoded paths are expected relative to "snapshots", so
@@ -307,7 +288,7 @@ mkdir -p "/srv/libvirt/snapshots/$IMGTYPE/$ARCH" "/srv/libvirt/rootfs" "/srv/lib
 cd "/srv/libvirt/rootfs" || \
 	die "Can not 'cd /srv/libvirt/rootfs' to keep container root trees"
 
-if [ -s "`pwd`/$VM.config-reset-vm" ]; then
+if [ -n "$VM" ] && [ -s "`pwd`/$VM.config-reset-vm" ]; then
 	if [ "$ALLOW_CONFIG_FILE" = yes ]; then
 		logmsg_warn "Found configuration file for the '$VM', it will override the command-line settings:"
 		cat "`pwd`/$VM.config-reset-vm"
@@ -317,8 +298,48 @@ if [ -s "`pwd`/$VM.config-reset-vm" ]; then
 	fi
 fi
 
+# Make sure we have a loop device support
+modprobe loop # TODO: die on failure?
+
+case x"$OVERLAYFS" in
+xauto|xyes)
+	# Do we have overlayfs in kernel?
+	if \
+		[ "`gzip -cd /proc/config.gz 2>/dev/null | grep OVERLAY`" ] || \
+		grep OVERLAY "/boot/config-`uname -r`" >/dev/null 2>/dev/null  \
+	; then
+		OVERLAYFS="yes"
+	else
+		[ x"$OVERLAYFS" = xyes ] && die "OVERLAYFS='$OVERLAYFS' set by caller but not supported by kernel"
+		OVERLAYFS="no"
+	fi
+	;;
+xno)	logmsg_warn "OVERLAYFS='$OVERLAYFS' set by caller" ;;
+*)	logmsg_warn "Unknown OVERLAYFS='$OVERLAYFS' set by caller, assuming 'no'"; OVERLAYFS="no" ;;
+esac
+
+case x"$OVERLAYFS" in
+xyes)
+	EXT="squashfs"
+	logmsg_info "Detected support of OVERLAYFS on the host" \
+	    "`hostname`${DOTDOMAINNAME}, so will mount a .$EXT file" \
+	    "as an RO base and overlay the RW changes"
+	modprobe squashfs
+	for OVERLAYFS_TYPE in overlay overlayfs ; do
+		modprobe ${OVERLAYFS_TYPE} && break
+	done
+	;;
+xno)
+	EXT="tar.gz"
+	OVERLAYFS_TYPE=""
+	logmsg_info "Detected no support of OVERLAYFS on the host" \
+	    "`hostname`${DOTDOMAINNAME}, so will unpack a .$EXT file" \
+	    "into a dedicated full RW directory"
+	;;
+esac
+
 # Verify that this script runs once at a time for the given VM
-if [ -f "$VM.lock" ] ; then
+if [ -n "$VM" ] && [ -f "$VM.lock" ] ; then
 	OTHERINST_PID="`head -1 "$VM.lock"`"
 	OTHERINST_PROG="`head -n +2 "$VM.lock" | tail -1`"
 	OTHERINST_ARGS="`head -n +3 "$VM.lock" | tail -1`"
@@ -357,7 +378,9 @@ if [ -f "$VM.lock" ] ; then
 	fi
 fi
 
-( echo "$$"; echo "${_SCRIPT_PATH}"; echo "${_SCRIPT_ARGS}" ) > "$VM.lock"
+if [ -n "$VM" ] ; then
+	( echo "$$"; echo "${_SCRIPT_PATH}"; echo "${_SCRIPT_ARGS}" ) > "$VM.lock"
+fi
 settraps 'cleanup_script'
 
 # Proceed to downloads, etc.
@@ -493,6 +516,9 @@ if [ ! -s "$IMAGE" ]; then
 fi
 logmsg_info "Will use IMAGE='$IMAGE' for further VM set-up (flattened to '$IMAGE_FLAT')"
 
+# Should not get here normally
+[ -z "$VM" ] && die "Downloads and verifications are completed, at this point I need a definite VM value to work on!"
+
 # Destroy whatever was running, if anything
 virsh -c lxc:// destroy "$VM" 2> /dev/null > /dev/null || \
 	logmsg_warn "Could not destroy old instance of '$VM'"
@@ -586,7 +612,7 @@ fi
 
 logmsg_info "Creating a new VM rootfs at '`pwd`/../rootfs/$VM'"
 mkdir -p "../rootfs/$VM"
-if [ "$OVERLAYFS" = yes ]; then
+if [ x"$OVERLAYFS" = xyes ]; then
 	logmsg_info "Mount the common RO squashfs at '`pwd`/../rootfs/${IMAGE_FLAT}-ro'"
 	mkdir -p "../rootfs/${IMAGE_FLAT}-ro"
 	mount -o loop "$IMAGE" "../rootfs/${IMAGE_FLAT}-ro" || \
