@@ -54,6 +54,7 @@ logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to build the database tests"
 set -u
 set -e
 
+init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log"
 settraps 'exit_summarizeTestlibResults'
 
 echo "-------- ensure bins to test are up to date -------"
