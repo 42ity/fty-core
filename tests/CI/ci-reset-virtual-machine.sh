@@ -272,6 +272,23 @@ fi
 [ x"$APT_PROXY" = x- ] && APT_PROXY=""
 [ x"$http_proxy" = x- ] && http_proxy="" && export http_proxy
 
+[ -z "$ARCH" ] && ARCH="`uname -m`"
+# Note: several hardcoded paths are expected relative to "snapshots", so
+# it is critical that we succeed changing into this directory in the end.
+mkdir -p "/srv/libvirt/snapshots/$IMGTYPE/$ARCH" "/srv/libvirt/rootfs" "/srv/libvirt/overlays"
+cd "/srv/libvirt/rootfs" || \
+	die "Can not 'cd /srv/libvirt/rootfs' to keep container root trees"
+
+if [ -s "`pwd`/$VM.config-reset-vm" ]; then
+	if [ "$ALLOW_CONFIG_FILE" = yes ]; then
+		logmsg_warn "Found configuration file for the '$VM', it will override the command-line settings:"
+		cat "`pwd`/$VM.config-reset-vm"
+		. "`pwd`/$VM.config-reset-vm" || die "Can not import config file '`pwd`/$VM.config-reset-vm'"
+	else
+		logmsg_warn "Found configuration file for the '$VM', but it is ignored because ALLOW_CONFIG_FILE='$ALLOW_CONFIG_FILE'"
+	fi
+fi
+
 # Make sure we have a loop device support
 modprobe loop # TODO: die on failure?
 
@@ -298,23 +315,6 @@ else
 	logmsg_info "Detected no support of OVERLAYFS on the host" \
 	    "`hostname`${DOTDOMAINNAME}, so will unpack a .$EXT file" \
 	    "into a dedicated full RW directory"
-fi
-
-[ -z "$ARCH" ] && ARCH="`uname -m`"
-# Note: several hardcoded paths are expected relative to "snapshots", so
-# it is critical that we succeed changing into this directory in the end.
-mkdir -p "/srv/libvirt/snapshots/$IMGTYPE/$ARCH" "/srv/libvirt/rootfs" "/srv/libvirt/overlays"
-cd "/srv/libvirt/rootfs" || \
-	die "Can not 'cd /srv/libvirt/rootfs' to keep container root trees"
-
-if [ -s "`pwd`/$VM.config-reset-vm" ]; then
-	if [ "$ALLOW_CONFIG_FILE" = yes ]; then
-		logmsg_warn "Found configuration file for the '$VM', it will override the command-line settings:"
-		cat "`pwd`/$VM.config-reset-vm"
-		. "`pwd`/$VM.config-reset-vm" || die "Can not import config file '`pwd`/$VM.config-reset-vm'"
-	else
-		logmsg_warn "Found configuration file for the '$VM', but it is ignored because ALLOW_CONFIG_FILE='$ALLOW_CONFIG_FILE'"
-	fi
 fi
 
 # Verify that this script runs once at a time for the given VM
