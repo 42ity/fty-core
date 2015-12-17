@@ -96,8 +96,7 @@ if [ -z "${SUT_WEB_PORT-}" ]; then
     fi
 fi
 
-# unconditionally calculated values
-BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+[ -z "$BASE_URL" ] && BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 SUT_IS_REMOTE=yes
 
 # Include our standard routines for CI scripts
