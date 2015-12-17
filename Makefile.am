@@ -86,12 +86,6 @@ RUN_TNTNET = export LICENSE_DIR="$(abs_top_srcdir)/tests/fixtures/license"; \
 	     [ -d "$$DATADIR" ] && [ -w "$$DATADIR" ] && \
 	     ${TNTNET} $(abs_top_builddir)/tntnet.xml
 
-if ENABLE_DOCKER_SUPPORT
-# Integrate packaging of resource files for management of Docker containers
-# Note that docker/README is processed by this root Makefile, below...
-SUBDIRS +=	docker
-endif
-
 # ----------------------------------------------------------------------
 # List of header files. The purpose of this list is not dependency
 # tracking (which is automatic), but to ensure these files are
@@ -1775,11 +1769,6 @@ MAPPED_TXT_DOCS_ASCIIDOC = \
 	tests/CI/web/README.txt:$(myDEVDOCDIR)/README-web-tests-ciAutomation.txt \
 	src/web/README.txt:$(myDEVDOCDIR)/README-web-tests-generalInfo.txt \
 	src/agents/nut/README:$(myDEVDOCDIR)/README-drivers-nut.txt
-
-if ENABLE_DOCKER_SUPPORT
-MAPPED_TXT_DOCS_ASCIIDOC += \
-	docker/README:$(myDEVDOCDIR)/README-docker.txt
-endif
 
 #################################################################
 # Items below are intended for automatic generation and appendage
