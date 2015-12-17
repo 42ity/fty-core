@@ -247,26 +247,6 @@ of tokens that would be passed to the `configure` command should one be
 called (as part of the 'build*', 'install*', 'configure' or 'distcheck'
 methods).
 
-The following invokations are equivalent:
-----
-:; CONFIGURE_FLAGS='--disable-docker-support --help' ./autogen.sh configure
-:; ./autogen.sh --configure-flags '--disable-docker-support --help' configure
-----
-
-This overrides the variable from environment by the value on command-line,
-in this example resetting it to empty (defaults picked by `configure`):
-----
-:; CONFIGURE_FLAGS='--enable-docker-support' \
-   ./autogen.sh --configure-flags '' configure
-----
-
-Also, this convenient syntax with natural command-line arguments is only
-available to the 'configure' and 'distcheck' methods:
-----
-:; ./autogen.sh configure --disable-docker-support --help
-----
-
-
 === 'BLDARCH' tag
 The 'BLDARCH' is a string tag for the "relocated" build environment
 to use uniquely named directories for the compilation and installation.
