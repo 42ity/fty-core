@@ -97,8 +97,7 @@ if [ -z "$SUT_WEB_PORT" ]; then
             SUT_WEB_PORT=$(expr $SUT_WEB_PORT - 2200)
     fi
 fi
-# unconditionally calculated values
-BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+[ -z "$BASE_URL" ] && BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 SUT_IS_REMOTE=yes
 
 # ***** SET CHECKOUTDIR *****
