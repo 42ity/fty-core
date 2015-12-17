@@ -116,7 +116,7 @@ for ent in datacenters rooms rows racks groups devices; do
       echo "********* ${No}. Delete_${ent}_with_ID_=_${ITEM_ID} ******************************************************"
       echo "***************************************************************************************************"
       test_it "Delete_${ent}_with_ID_=_${ITEM_ID}"
-      PARENTS_ID="$(mysql -u root box_utf8 <<< "select id from v_bios_asset_element where id_parent=$ITEM_ID")"
+      PARENTS_ID=$(sut_run "mysql -u root box_utf8 <<< 'select id from v_bios_asset_element where id_parent='$ITEM_ID")
       if [[ "$PARENTS_ID" == "" ]];then
          curlfail_push_expect_noerrors
          echo "${ent} with ID = $ITEM_ID is expected to be deleted."
@@ -143,7 +143,7 @@ for ent in devices groups racks rows rooms datacenters; do
       echo "********* ${No}. Delete_${ent}_with_ID_=_${ITEM_ID} ***********************************************"
       echo "***************************************************************************************************"
       test_it "Delete_${ent}_with_ID_=_${ITEM_ID}"
-      PARENTS_ID=$(mysql -u root box_utf8 <<< "select id from v_bios_asset_element where id_parent=${ITEM_ID}")
+      PARENTS_ID=$(sut_run "mysql -u root box_utf8 <<< 'select id from v_bios_asset_element where id_parent='${ITEM_ID}")
       if [[ "$PARENTS_ID" == "" ]];then
          curlfail_push_expect_noerrors
          echo "${ent} with ID = ${ITEM_ID} is expected to be deleted."
@@ -165,7 +165,7 @@ for i in t_bios_asset_ext_attributes t_bios_asset_group_relation t_bios_asset_li
     echo "********* ${No}. Related_table ${i} must be empty ****************************"
     echo "***************************************************************************************************"
     test_it "Table ${i} must be empty"
-    EXT_ATTR="$(mysql -u root box_utf8 <<< "select * from ${i}")"
+    EXT_ATTR=$(sut_run "mysql -u root box_utf8 <<< 'select * from '${i}")
     if [[ "$EXT_ATTR" != "" ]];then
         DEL_RES="$(expr $DEL_RES + 1)"
     fi

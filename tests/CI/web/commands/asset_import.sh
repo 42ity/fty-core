@@ -43,7 +43,7 @@ TABLE_NAME="$1"
 TEST_ID="$2"
 RES_PART=0
 # dump requested table and compare it with expected content
-mysqldump -u root box_utf8 "${TABLE_NAME}" |grep "INSERT" > "${DB_DUMP_DIR}/${TABLE_NAME}.dmp"
+sut_run "mysqldump -u root box_utf8 ${TABLE_NAME}" |grep "INSERT" > "${DB_DUMP_DIR}/${TABLE_NAME}.dmp"
 #if [ "z${TEST_ID}" != "z" ] && [ -f "${DB_RES_DIR}/${TABLE_NAME}${TEST_ID}.ptr" ] ; then
 if [ -f "${DB_RES_DIR}/${TABLE_NAME}${TEST_ID}.ptr" ] ; then
     diff "${DB_DUMP_DIR}/${TABLE_NAME}.dmp" "${DB_RES_DIR}/${TABLE_NAME}${TEST_ID}.ptr" > /dev/null || RES_PART=1
