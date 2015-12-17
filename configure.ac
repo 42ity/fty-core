@@ -166,25 +166,6 @@ AS_IF([test "x$_ENABLE_DEBUG_TSAN" != x0 -a "x$_ENABLE_DEBUG_ASAN" != x0],
          CFLAGS="$my_save_cflags"]
 )
 
-# the default value may be revised, so we have two layers of conditionals here
-_ENABLE_DOCKER_SUPPORT=1
-AC_ARG_ENABLE(docker-support,
-	[AS_HELP_STRING([--enable-docker-support],
-		[configure Makefile to deliver Docker helpers])],
-	[AS_CASE(["x$enableval"],
-		["xyes"],[_ENABLE_DOCKER_SUPPORT=1],
-		["xno"],[_ENABLE_DOCKER_SUPPORT=0])])
-# value for both Makefile conditionals as well as the AM_COND_IF macro below
-AM_CONDITIONAL([ENABLE_DOCKER_SUPPORT],
-	[test "x$_ENABLE_DOCKER_SUPPORT" != x0])
-AM_COND_IF([ENABLE_DOCKER_SUPPORT],
-	[AC_MSG_NOTICE([Enabling Docker support files])
-	 AC_CONFIG_FILES([docker/Makefile])],
-	[AC_MSG_NOTICE([Not enabling Docker support files])])
-# a define-flag into config.h just in case some C code would need it later on?
-AC_DEFINE_UNQUOTED([ENABLE_DOCKER_SUPPORT],   [$_ENABLE_DOCKER_SUPPORT],
-        [Flag mostly for Makefile: enable installation of Docker image generation support files (0=no)?])
-
 # display source/build paths of interest to us
 AC_MSG_NOTICE([Determining source code paths:])
 AC_MSG_NOTICE(AS_HELP_STRING([Value of srcdir:], ['$srcdir']))
@@ -639,7 +620,6 @@ Summary:
         doxygen:                 ${DOXYGEN:-none}
         ecppc:                   ${ECPPC:-none}
 
-	ENABLE_DOCKER_SUPPORT:   ${_ENABLE_DOCKER_SUPPORT}
 	ENABLE_CI_TESTS:         ${ci_tests}
 
         CFLAGS:                  ${my_CFLAGS} ${CFLAGS}
