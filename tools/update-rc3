@@ -1,0 +1,405 @@
+#!/bin/bash
+#
+# Copyright (C) 2015 Eaton
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+#! \file    systemctl
+#  \brief   Helper script to manage download of new images initiated from RC3
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \author  Michal Hrusecky <MichalHrusecky@Eaton.com>
+#  \author  Tomas Halman <TomasHalman@Eaton.com>
+#
+
+# Important bashism
+set -o pipefail
+
+# Default values matching Eaton internal (at the moment) resources
+# The actual RC3 should be reconfigured to refer to some customer-local mirror
+# or an external Eaton resource, done by snipets in /etc/update-rc3.d/*.conf
+[ -z "${IMGTYPE-}" ] && IMGTYPE="deploy"
+[ -z "${ARCH-}" ] && ARCH="`uname -m`"
+# The RC3 base OS ensures support for squashfs and overlay(fs)
+[ -z "${EXT-}" ] && EXT="squashfs"
+
+# This script is intended as the downloader tool for both CI/dev-workstation
+# hosts and the ultimate devices. Most of the logic is the same, but there are
+# a few differences. File and directory naming is one of them :
+# Our CI farm deployments mimic the build farm paths - with IMGTYPE/ARCH/filename.ext
+# The RC3 units expect a flat directory srtucture rootfs/filename.ext so the
+# details (especially IMGTYPE) should end up in the flat filename.
+[ -z "${FLATTEN_FILENAMES-}" ] && FLATTEN_FILENAMES="yes"
+
+# TODO: TFTP support, busybox can do it
+# TODO: Test with https - can require custom CA trust configuration, etc.
+[ -z "${SOURCESITEROOT-}" ] && SOURCESITEROOT='http://obs.roz53.lab.etn.com/images'
+[ -z "${SOURCESITEROOT_OSIMAGE-}" ] && SOURCESITEROOT_OSIMAGE="$SOURCESITEROOT/$IMGTYPE/$ARCH"
+
+[ -z "${SOURCESITEROOTFW-}" ] && SOURCESITEROOTFW="http://obs.roz53.lab.etn.com/flash-rc3/recovery"
+[ -z "${SOURCESITEROOTFW_UBOOT-}" ] && SOURCESITEROOTFW_UBOOT="$SOURCESITEROOTFW"
+[ -z "${SOURCESITEROOTFW_UIMAGE-}" ] && SOURCESITEROOTFW_UIMAGE="$SOURCESITEROOTFW"
+[ -z "${SOURCESITEROOTFW_MODULES-}" ] && SOURCESITEROOTFW_MODULES="$SOURCESITEROOTFW/modules"
+
+# Recovery location (on MMC or mSATA) - for downloads
+[ -z "${DOWNLOADROOT-}" ] && DOWNLOADROOT="/mnt/mmc/recovery"
+[ -z "${DOWNLOADROOT_OSIMAGE-}" ] && DOWNLOADROOT_OSIMAGE="$DOWNLOADROOT/rootfs"
+[ -z "${DOWNLOADROOTFW_UBOOT-}" ] && DOWNLOADROOT_UBOOT="$DOWNLOADROOT"
+[ -z "${DOWNLOADROOTFW_UIMAGE-}" ] && DOWNLOADROOT_UIMAGE="$DOWNLOADROOT"
+[ -z "${DOWNLOADROOTFW_MODULES-}" ] && DOWNLOADROOT_MODULES="$DOWNLOADROOT_UIMAGE/modules"
+
+# Deployment location (on SPI flash in production) - for boot-mounted OS image
+[ -z "${DEPLOYMENTROOT-}" ] && DEPLOYMENTROOT="/mnt/nand"
+[ -z "${DEPLOYMENTROOT_OSIMAGE-}" ] && DEPLOYMENTROOT_OSIMAGE="$DEPLOYMENTROOT/rootfs"
+[ -z "${DEPLOYMENTROOTFW_UBOOT-}" ] && DEPLOYMENTROOT_UBOOT="$DEPLOYMENTROOT"
+[ -z "${DEPLOYMENTROOTFW_UIMAGE-}" ] && DEPLOYMENTROOT_UIMAGE="$DEPLOYMENTROOT"
+[ -z "${DEPLOYMENTROOTFW_MODULES-}" ] && DEPLOYMENTROOT_MODULES="$DEPLOYMENTROOT_UIMAGE/modules"
+
+[ -z "${http_proxy-}" -o x"${http_proxy-}" = x- ] && http_proxy=""
+[ -z "${https_proxy-}" -o x"${https_proxy-}" = x- ] && https_proxy=""
+[ -z "${ftp_proxy-}" -o x"${ftp_proxy-}" = x- ] && ftp_proxy=""
+[ -z "${ftps_proxy-}" -o x"${ftps_proxy-}" = x- ] && ftps_proxy=""
+export http_proxy https_proxy ftp_proxy ftps_proxy
+
+# The RC3 SPI flash partitioning determines these sizes, value hardcoded in the
+# default installation routines as well as the init/upgrade script in uImage.
+# These numbers are used for "padded" checksum calculations.
+UIMAGE_MAX_SIZE_RC3=3145728
+UBOOT_MAX_SIZE_RC3=1048576
+[ -z "${UIMAGE_MAX_SIZE-}" ] && UIMAGE_MAX_SIZE="$UIMAGE_MAX_SIZE_RC3"
+[ -z "${UBOOT_MAX_SIZE-}" ] && UBOOT_MAX_SIZE="$UBOOT_MAX_SIZE_RC3"
+
+PATH="/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
+export PATH
+
+### NOTE: This script can be copied to VM hosts and used standalone, so we do
+### not depend it on scriptlib.sh or anything else. Implement a few bits here.
+
+### This is prefixed before ERROR, WARN, INFO tags in the logged messages
+LOGMSG_PREFIX="BIOS-UPDATE-RC3-"
+
+### Store some important CLI values
+[ -z "$_SCRIPT_PATH" ] && _SCRIPT_PATH="$0"
+[ -z "$_SCRIPT_NAME" ] && _SCRIPT_NAME="`basename "${_SCRIPT_PATH}"`"
+_SCRIPT_ARGS="$*"
+_SCRIPT_ARGC="$#"
+
+usage() {
+    echo "Usage: ${_SCRIPT_NAME} [options...]"
+    echo "options:"
+# TODO ...
+}
+
+SCRIPTDIR=$(realpath "`dirname ${_SCRIPT_PATH}`") || \
+    SCRIPTDIR=$(cd "`dirname ${_SCRIPT_PATH}`" && pwd)
+SCRIPTPWD="`pwd`"
+if [ -z "$CHECKOUTDIR" ] ; then
+    CHECKOUTDIR=$(realpath "$SCRIPTDIR/../..") || \
+        CHECKOUTDIR=$(cd "$SCRIPTDIR/../.." && pwd)
+fi
+[ "$CHECKOUTDIR" = / -o ! -d "$CHECKOUTDIR/tests/CI" ] && CHECKOUTDIR=""
+[ -z "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
+export CHECKOUTDIR BUILDSUBDIR
+
+[ -z "$LANG" ] && LANG=C
+[ -z "$LANGUAGE" ] && LANGUAGE=C
+[ -z "$LC_ALL" ] && LC_ALL=C
+[ -z "$TZ" ] && TZ=UTC
+export LANG LANGUAGE LC_ALL TZ
+
+logmsg_info() {
+    echo "${LOGMSG_PREFIX}INFO: ${_SCRIPT_PATH}:" "$@"
+}
+
+logmsg_warn() {
+    echo "${LOGMSG_PREFIX}WARN: ${_SCRIPT_PATH}:" "$@" >&2
+}
+
+logmsg_error() {
+    echo "${LOGMSG_PREFIX}ERROR: ${_SCRIPT_PATH}:" "$@" >&2
+}
+
+die() {
+    CODE="${CODE-1}"
+    [ "$CODE" -ge 0 ] 2>/dev/null || CODE=1
+    for LINE in "$@" ; do
+        echo "${LOGMSG_PREFIX}FATAL: ${_SCRIPT_PATH}:" "$LINE" >&2
+    done
+    exit $CODE
+}
+
+settraps() {
+    # Not all trap names are recognized by all shells consistently
+    # Note: slight difference from scriptlib.sh, we trap ERR too by default
+    [ -z "${TRAP_SIGNALS-}" ] && TRAP_SIGNALS="ERR  EXIT QUIT TERM HUP INT"
+    for P in "" SIG; do for S in $TRAP_SIGNALS ; do
+        case "$1" in
+        -|"") trap "$1" $P$S 2>/dev/null || true ;;
+        *)    trap 'ERRCODE=$?; ('"$*"'); exit $ERRCODE;' $P$S 2>/dev/null || true ;;
+        esac
+    done; done
+}
+
+##############################################################################
+# Calculate and print to stdout checksum of the stdin stream using algo "$1"
+calculate_checksum() {
+    ALGO="`echo "$1" | tr '[A-Z]' '[a-z]'`"
+    [ $? = 0 -a -n "$ALGO" ] || ALGO=md5
+    # we expect to have either ${ALGO}sum program or openssl support for ${ALGO}
+    case "$ALGO" in
+        md5|sha|sha1|sha224|sha256|sha384|sha512) ;;
+        *)  logmsg_error "Unsupported checksum algorithm: '$ALGO'"
+            return 32 ;;
+    esac
+
+    if [ -x "`which openssl`" ] 2>/dev/null ; then
+        openssl dgst -"${ALGO}" | awk '{print $NF}'
+        return $?
+    fi
+
+    ${ALGO}sum | awk '{print $1}'
+    return $?
+}
+
+expected_checksum() (
+    # Extracts precalculated checksum of file "$1" recorded in file "$2"
+    CHECKSUM_EXP="$(grep -i "`basename "$1"`" < "$2" | awk '{print $1}')" 2>/dev/null
+    if [ $? != 0 -o -z "$CHECKSUM_EXP" ] && [ "`wc -l < "$2"`" -eq 1 ] ; then
+        # Maybe the whole file content is one line with the value
+        CHECKSUM_EXP="`awk '{print $1}' < "$2"`"
+    fi
+    [ -n "$CHECKSUM_EXP" ] && echo "$CHECKSUM_EXP"
+)
+
+verify_checksum() {
+    # Compares actual checksum of file "$1" with value recorded in file "$2"
+    # with optional algorithm in "$3" (defaults to 'md5')
+    FILENAME_DATA="$1"
+    FILENAME_CSUM="${2-}"
+    [ -z "$FILENAME_CSUM" ] && \
+        FILENAME_CSUM="$FILENAME_DATA.md5"
+    if [ -z "${3-}" ]; then
+        CHECKSUM_ALGO="`echo "$FILENAME_CSUM" | sed 's,^.*\.\([^\.]*\)$,\1,' | tr '[A-Z]' '[a-z]'`"
+        [ $? = 0 -a -n "$CHECKSUM_ALGO" ] || \
+            CHECKSUM_ALGO="md5"
+    else
+        CHECKSUM_ALGO="$3"
+    fi
+    LOGINTRO="Checksum validation of '$FILENAME_DATA' against value in '$FILENAME_CSUM' ($CHECKSUM_ALGO)"
+
+    if [ -n "$FILENAME_DATA" ] && [ -n "$FILENAME_CSUM" ] && \
+       [ -s "$FILENAME_DATA" -a -s "$FILENAME_CSUM" ] \
+    ; then
+        logmsg_info "Beginning $LOGINTRO..."
+
+        CHECKSUM_EXP="`expected_checksum "$FILENAME_DATA" "$FILENAME_CSUM"`"
+        if [ $? != 0 -o -z "$CHECKSUM_EXP" ]; then
+            logmsg_warn "$LOGINTRO SKIPPED (can not detect expected value)"
+            return 0
+        fi
+
+        CHECKSUM_ACT="`calculate_checksum < "$FILENAME_DATA"`" || CHECKSUM_ACT=""
+        if [ -z "$CHECKSUM_ACT" ]; then
+            logmsg_warn "$LOGINTRO SKIPPED (can not calculate actual value)"
+            return 0
+        fi
+
+        if [ x"$CHECKSUM_ACT" = x"$CHECKSUM_EXP" ]; then
+            logmsg_info "$LOGINTRO SUCCEEDED!"
+            return 0
+        fi
+
+        logmsg_error "$LOGINTRO FAILED (mismatch)!"
+        echo "ACTUAL: $CHECKSUM_ACT" >&2
+        echo "EXPECT: $CHECKSUM_EXP" >&2
+        return 1
+    fi
+    logmsg_warn "$LOGINTRO SKIPPED (one of the files is missing)"
+    return 0
+}
+
+ensure_checksum() {
+    # A destructive wrapper of verify_checksum(), destroys bad downloads
+    if ! verify_checksum "$@" ; then
+        logmsg_warn "Removing broken file: '$1' and its checksum"
+        rm -f "$1"{,.md5,.sha,.sha1,.sha224,.sha256,.sha384,.sha512} "$2"
+        return 1
+    fi
+    return 0
+}
+
+findnewest_osimage() (
+    # Echo the URL to the newest OS image file found on remote resource, if any
+    # Note: currently expects certain filename patterns and http-dir listing markup
+    IMAGE_URL="`wget -q -O - ${SOURCESITEROOT_OSIMAGE}/ | sed -n 's|.*href="\(.*simpleimage.*\.'"${EXT}"'\)".*|'"${SOURCESITEROOT_OSIMAGE}"'/\1|p' | sed 's,\([^:]\)//,\1/,g'`" && \
+    if [ x"$IMAGE_URL" != x ]; then
+# | sort -n | tail -1
+        [ x"`basename "$IMAGE_URL" .${EXT}`" != x ] && \
+        echo "$IMAGE_URL" && return 0
+    fi
+    return 1
+)
+
+download_osimage() (
+    cd "${DOWNLOADROOT_OSIMAGE}" || die "Can not use DOWNLOADROOT_OSIMAGE='$DOWNLOADROOT_OSIMAGE'"
+    # TODO: Free space verification before download - BIOS-1562?
+    # TODO: Currently hardcoded for md5 accompanying checksums only
+    # TODO: Consider DEPLOYMENTROOT* variables to verify presence of local files against
+    # TODO: Consider FLATTEN_FILENAMES=yes in TGT_FILE logic
+    # TODO: Refactor the triple-file verification (local/remote checksum and the
+    # data file) into a separate routine
+    # TODO (later): Support file sizes as part of checksum info
+    # TODO (later): Support presence of multipple checksum files (e.g. sha* and md5)
+
+    logmsg_info "Fetching newest filename for ${ARCH} OS image of type ${IMGTYPE}..."
+    IMAGE_URL="`findnewest_osimage`" && \
+    IMAGE_URL_BASENAME="`basename "$IMAGE_URL" ".${EXT}"`" || \
+        die "Can not find the remote image URL"
+
+    logmsg_info "Downloading '$IMAGE_URL.md5' (if any)..."
+    rm -f "$IMAGE_URL_BASENAME.$EXT.md5.tmp"
+    wget -q -O - "$IMAGE_URL.md5" > "$IMAGE_URL_BASENAME.$EXT.md5.tmp"
+
+    if  [ -s "$IMAGE_URL_BASENAME.$EXT" ] && \
+        [ -s "$IMAGE_URL_BASENAME.$EXT.md5" ] \
+    ; then
+        CSOLD="`expected_checksum "$IMAGE_URL_BASENAME.$EXT" "$IMAGE_URL_BASENAME.$EXT.md5"`"
+        CSNEW="`expected_checksum "$IMAGE_URL_BASENAME.$EXT" "$IMAGE_URL_BASENAME.$EXT.md5.tmp"`"
+        if [ x"$CSOLD" = x"$CSNEW" ]; then
+            rm -f "$IMAGE_URL_BASENAME.$EXT.md5.tmp"
+        else
+            # Here, two checksum files differ...
+            if verify_checksum "$IMAGE_URL_BASENAME.$EXT" "$IMAGE_URL_BASENAME.$EXT.md5.tmp" ; then
+                # Remote checksum is good, local copy was corrupted
+                mv -f "$IMAGE_URL_BASENAME.$EXT.md5.tmp" "$IMAGE_URL_BASENAME.$EXT.md5"
+                logmsg_info "The newest available image is '$IMAGE_URL' and we already have a good copy (as '$IMAGE_URL_BASENAME.$EXT')"
+                exit 0
+            fi
+        fi
+
+        # Here, the new and old checksums are the same, or the different
+        # new checksum for new filename did not match existing file.
+        # Does the old couple match up?
+        ensure_checksum "$IMAGE_URL_BASENAME.$EXT" "$IMAGE_URL_BASENAME.$EXT.md5" && \
+        logmsg_info "The newest available image is '$IMAGE_URL' and we already have a good copy (as '$IMAGE_URL_BASENAME.$EXT')" && \
+        rm -f "$IMAGE_URL_BASENAME.$EXT.md5.tmp" && \
+        exit 0  # Local checksum is good & remote copy was corrupted, or the
+                # remote files were replaced in-place which is not expected!
+
+        # Here, the old file did not match either checksum and was killed...
+        # The newly downloaded md5.tmp should remain available...
+    elif [ -s "$IMAGE_URL_BASENAME.$EXT" ] && \
+         [ -s "$IMAGE_URL_BASENAME.$EXT.md5.tmp" ] \
+    ; then
+        # Got new checksum file for this name, and old is not available at all
+        # If the checks fail, this is most likely an aborted and corrupt download
+        mv -f "$IMAGE_URL_BASENAME.$EXT.md5.tmp" "$IMAGE_URL_BASENAME.$EXT.md5" && \
+        ensure_checksum "$IMAGE_URL_BASENAME.$EXT" "$IMAGE_URL_BASENAME.$EXT.md5" && \
+        logmsg_info "The newest available image is '$IMAGE_URL' and we already have a good copy (as '$IMAGE_URL_BASENAME.$EXT')" && \
+        rm -f "$IMAGE_URL_BASENAME.$EXT.md5.tmp" && \
+        exit 0
+    fi
+
+    # We rename the incoming image to include the type in flat directory space
+    case "${IMAGE_URL_BASENAME}" in
+        *__${ARCH}__${IMGTYPE}) TGT_FILE="${IMAGE_URL_BASENAME}.${EXT}" ;;
+        *)  TGT_FILE="${IMAGE_URL_BASENAME}__${ARCH}__${IMGTYPE}.${EXT}" || \
+                die "Can not produce the TGT_FILE value to save into"
+
+            [ ! -s "$IMAGE_URL_BASENAME.$EXT.md5.tmp" ] && \
+                logmsg_info "Downloading '$IMAGE_URL.md5' (if any)..."
+                wget -q -O - "$IMAGE_URL.md5" > "$IMAGE_URL_BASENAME.$EXT.md5.tmp"
+
+            sed 's,  .*$,  '"`basename "$TGT_FILE"`", < "$IMAGE_URL_BASENAME.$EXT.md5.tmp" > "$TGT_FILE.md5.tmp"
+            rm -f "$IMAGE_URL_BASENAME.$EXT.md5.tmp"
+
+            if  [ -s "$TGT_FILE" ] && \
+                [ -s "$TGT_FILE.md5" ] \
+            ; then
+                CSOLD="`expected_checksum "$TGT_FILE" "$TGT_FILE.md5"`"
+                CSNEW="`expected_checksum "$TGT_FILE" "$TGT_FILE.md5.tmp"`"
+                if [ x"$CSOLD" = x"$CSNEW" ]; then
+                    rm -f "$TGT_FILE.md5.tmp"
+                else
+                    # Here, two checksum files differ...
+                    if verify_checksum "$TGT_FILE" "$TGT_FILE.md5.tmp" ; then
+                        # Remote checksum is good, local copy was corrupted
+                        mv -f "$TGT_FILE.md5.tmp" "$TGT_FILE.md5"
+                        logmsg_info "The newest available image is '$IMAGE_URL' and we already have a good copy (as '$TGT_FILE')"
+                        exit 0
+                    fi
+                fi
+
+                # Here, the new and old checksums are the same, or the different
+                # new checksum for new filename did not match existing file.
+                # Does the old couple match up?
+                ensure_checksum "$TGT_FILE" "$TGT_FILE.md5" && \
+                logmsg_info "The newest available image is '$IMAGE_URL' and we already have a good copy (as '$TGT_FILE')" && \
+                rm -f "$TGT_FILE.md5.tmp" && \
+                exit 0  # Local checksum is good & remote copy was corrupted, or the
+                        # remote files were replaced in-place which is not expected!
+
+                # Here, the old file did not match either checksum and was killed...
+            fi
+            ;;  # Had to define TGT_FILE different from IMAGE_URL_BASENAME
+    esac
+
+    # If we are here, the IMAGE_URL is valid and points to a different content
+    # than what we already have; the TGT_FILE names the ultimate local filename
+    [ -s "$TGT_FILE.md5.tmp" -a ! -s "$TGT_FILE.md5" ] && \
+        mv -f "$TGT_FILE.md5.tmp" "$TGT_FILE.md5"
+
+    logmsg_info "Downloading '$IMAGE_URL' into '$TGT_FILE'..."
+    rm -f "$TGT_FILE"
+    wget -O "$TGT_FILE" -c "$IMAGE_URL" && [ -s "$TGT_FILE" ] || \
+        { rm -f "$TGT_FILE"; die "Could not download '$IMAGE_URL' into '$TGT_FILE'"; }
+
+    if [ -s "$TGT_FILE".md5 ]; then
+        ensure_checksum "$TGT_FILE" "$TGT_FILE".md5 || exit $?
+    else
+        logmsg_warn "Generating '$TGT_FILE.md5' because there was none at the source..."
+        md5sum < "$TGT_FILE" | sed 's,\-$,'"`basename "$TGT_FILE"`", > "$TGT_FILE".md5 || \
+        { rm -f "$TGT_FILE.md5"; die "Could not generate '$TGT_FILE.md5'"; }
+    fi
+
+    touch -r "$TGT_FILE" "$TGT_FILE".md5
+    logmsg_info "Got OS image OK:" && \
+    ls -ld "$TGT_FILE" "$TGT_FILE".md5 && \
+    cat "$TGT_FILE".md5
+)
+
+removeold_osimage() (
+    cd "${DOWNLOADROOT_OSIMAGE}" || die "Can not use DOWNLOADROOT_OSIMAGE='$DOWNLOADROOT_OSIMAGE'"
+    # Sort of implementation for BIOS-1566 snatched from bios-boot::Makefile
+    # This removes all but the newest (alphabetically) files for the pattern
+    for F in `ls -1d *__${ARCH}__${IMGTYPE}.${EXT} 2>/dev/null | head -n -1` ; do
+        logmsg_info "Removing older OS image: '$F' and its checksum"
+        rm -f "$F"{,.md5,.sha,.sha1,.sha224,.sha256,.sha384,.sha512} "$F"
+    done || true
+)
+
+if [ -d "/etc/update-rc3.d/" ]; then
+    for F in "/etc/update-rc3.d/"*.conf ; do
+        if [ -s "$F" ] && [ -r "$F" ] ; then
+            logmsg_info "Sourcing configuration file: '$F' ..."
+            . "$F" || die
+        fi
+    done
+fi
+
+# TODO: Locking against multiple runs
+# TODO: define CLI methods for status/size/... checks per BIOS-1563
+# TODO: while-loop for CLI processing
+download_osimage && \
+removeold_osimage
