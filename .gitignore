@@ -75,8 +75,6 @@ docs/doxygen/*.tmp
 docs/examples/sudoers.d/bios_00_base
 !docs/examples/sudoers.d/bios_00_base.in
 
-docker/resources/license
-
 .test.log
 .test.trs
 test-log.*
