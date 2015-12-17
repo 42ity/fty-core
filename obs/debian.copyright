@@ -24,13 +24,6 @@ Licenses:
   or (at your option) any later version.
 
   The following files are exceptions to the above rule:
-  
-  * tools/docker_clean_vfs.py:
-    Copyright (c) 2014 Adam Ever-Hadani
-    Licensed under the Apache License Version 2.0
-
-    On Debian systems, the full text of the Apache License Version 2.0
-    may be found in /usr/share/common-licenses/Apache-2.0.
 
   * tools/JSON.sh:
     Copyright (C) 2014-2015 Dominic Tarr
