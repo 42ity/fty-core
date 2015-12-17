@@ -223,6 +223,11 @@ cp /usr/share/bios/examples/config/security/* /etc/security
 sed -i 's|START=no|START=yes|' /etc/default/saslauthd
 systemctl enable saslauthd
 
+mkdir -p /etc/update-rc3.d
+cp /usr/share/bios/examples/config/update-rc3.d/* /etc/update-rc3.d
+[ -n "$IMGTYPE" ] && \
+    echo "IMGTYPE='$IMGTYPE'" > /etc/update-rc3.d/image-os-type.conf
+
 # Enable mysql
 systemctl enable mysql
 

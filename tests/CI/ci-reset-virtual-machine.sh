@@ -118,8 +118,8 @@ check_md5sum() {
 ensure_md5sum() {
 	# A destructive wrapper of check_md5sum(), destroys bad downloads
 	if ! check_md5sum "$@" ; then
-		logmsg_warn "Removing broken file: '$IMAGE'"
-		rm -f "$IMAGE" "$IMAGE.md5"
+		logmsg_warn "Removing broken file: '$1'"
+		rm -f "$1" "$1.md5" "$2"
 		return 1
 	fi
 	return 0
