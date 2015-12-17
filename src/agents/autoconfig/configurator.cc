@@ -167,7 +167,7 @@ std::vector<std::string> NUTConfigurator::createRules(std::string const &name) {
 
     result.push_back (makeRule ("onbattery","5",name,"UPS is running on battery!"));
     result.push_back (makeRule ("lowbattery","7",name,"Battery depleted!"));
-    result.push_back (makeRule ("onbypass","7",name,"UPS is running on bypass!"));
+    result.push_back (makeRule ("onbypass","9",name,"UPS is running on bypass!"));
     return result;
 }
 
