@@ -495,7 +495,7 @@ case "$SPACERM" in
         install -m 0755 /usr/share/bios/scripts/resolveip.sh /usr/bin/resolveip
         ;;
 esac
-for i in /usr/share/mysql/* /usr/share/locale /usr/share/bios/{docker,develop,obs}; do
+for i in /usr/share/mysql/* /usr/share/locale /usr/share/bios/{develop,obs}; do
    [ -f "$i" ] || \
    [ "$i" = /usr/share/mysql/charsets ] || \
    [ "$i" = /usr/share/mysql/english ] || \
