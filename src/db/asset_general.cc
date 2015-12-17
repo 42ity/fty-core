@@ -274,7 +274,7 @@ db_reply_t
     {
         auto reply_insert4 = insert_into_monitor_device
             (conn, 1, element_name);
-        if ( reply_insert4.affected_rows == 0 )
+        if ( reply_insert4.status == 0 )
         {
             trans.rollback();
             log_info ("end: \"device\" was not inserted (fail monitor_device)");
@@ -282,7 +282,7 @@ db_reply_t
         }
         auto reply_insert5 = insert_into_monitor_asset_relation
             (conn, reply_insert4.rowid, reply_insert1.rowid);
-        if ( reply_insert5.affected_rows == 0 )
+        if ( reply_insert5.status == 0 )
         {
             trans.rollback();
             log_info ("end: monitor asset link was not inserted (fail monitor asset relation)");
@@ -375,7 +375,7 @@ db_reply_t
     {
         auto reply_insert6 = insert_into_monitor_device
             (conn, reply_select.item, element_name);
-        if ( reply_insert6.affected_rows == 0 )
+        if ( reply_insert6.status == 0 )
         {
             trans.rollback();
             log_info ("end: device was not inserted (fail monitor_device)");
@@ -384,7 +384,7 @@ db_reply_t
 
         auto reply_insert7 = insert_into_monitor_asset_relation
             (conn, reply_insert6.rowid, reply_insert1.rowid);
-        if ( reply_insert7.affected_rows == 0 )
+        if ( reply_insert7.status == 0 )
         {
             trans.rollback();
             log_info ("end: monitor asset link was not inserted (fail monitor asset relation)");
