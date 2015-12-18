@@ -30,77 +30,77 @@ echo "use box_utf8;" > /tmp/tmp.sql
 
 # Function definition - Add the measurement chosen from the SAMPLES variable
 measurement() {
-UNIT=$1
-TOPIC=$2
-DEVICE=$3
-TIMESTAMP=$4
-VALUE=$5
-SCALE=$6
+    UNIT="$1"
+    TOPIC="$2"
+    DEVICE="$3"
+    TIMESTAMP="$4"
+    VALUE="$5"
+    SCALE="$6"
 
-echo "use box_utf8;" > /tmp/tmp.sql
-SLCT="select id from t_bios_measurement_topic where topic='$TOPIC'"
-TOP_ID="$(echo $SLCT | mysql -u root box_utf8 -N)"
-if [ "$TOP_ID" == "" ]; then
-   sqlline="INSERT INTO t_bios_measurement_topic (device_id, units,topic) SELECT r.id_discovered_device,'$UNIT','$TOPIC' FROM t_bios_asset_element AS e,t_bios_monitor_asset_relation AS r WHERE e.name = '$DEVICE' AND e.id_asset_element = r.id_asset_element;"
-   echo $sqlline >> /tmp/tmp.sql
-   sqlline="set @topic_id = LAST_INSERT_ID();"
-else
-   sqlline="set @topic_id = $TOP_ID;"
-fi
-echo $sqlline >> /tmp/tmp.sql
-# measurement
-sqlline="INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ($TIMESTAMP, $VALUE, $SCALE, @topic_id);"
-echo $sqlline >> /tmp/tmp.sql
-loaddb_file "/tmp/tmp.sql"
-echo "use box_utf8;" > /tmp/tmp.sql
+    echo "use box_utf8;" > /tmp/tmp.sql
+    SLCT="select id from t_bios_measurement_topic where topic='$TOPIC'"
+    TOP_ID="`do_select "$SLCT"`"
+    if [ "$TOP_ID" == "" ]; then
+        sqlline="INSERT INTO t_bios_measurement_topic (device_id, units,topic) SELECT r.id_discovered_device,'$UNIT','$TOPIC' FROM t_bios_asset_element AS e,t_bios_monitor_asset_relation AS r WHERE e.name = '$DEVICE' AND e.id_asset_element = r.id_asset_element;"
+        echo $sqlline >> /tmp/tmp.sql
+        sqlline="set @topic_id = LAST_INSERT_ID();"
+    else
+        sqlline="set @topic_id = $TOP_ID;"
+    fi
+    echo "$sqlline" >> /tmp/tmp.sql
+    # measurement
+    sqlline="INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ($TIMESTAMP, $VALUE, $SCALE, @topic_id);"
+    echo "$sqlline" >> /tmp/tmp.sql
+    loaddb_file "/tmp/tmp.sql"
+    echo "use box_utf8;" > /tmp/tmp.sql
 }
 
 db_initiate(){
-loaddb_current || return $?
+    loaddb_current || return $?
 
-echo "use box_utf8;" > /tmp/tmp.sql
-sqlline="INSERT INTO t_bios_discovered_device (id_discovered_device,name,id_device_type) VALUES (NULL, 'DC-LAB', 1);"
-echo $sqlline >> /tmp/tmp.sql
-loaddb_file "/tmp/tmp.sql"
-echo "use box_utf8;" > /tmp/tmp.sql
-SEL_ID="select id_discovered_device from t_bios_discovered_device where name='DC-LAB'"
-TOP_ID="$(echo $SEL_ID | mysql -u root box_utf8 -N)"
-sqlline="INSERT INTO t_bios_monitor_asset_relation (id_ma_relation,id_discovered_device,id_asset_element) VALUES (NULL, $TOP_ID, 19);"
-echo $sqlline >> /tmp/tmp.sql
-loaddb_file "/tmp/tmp.sql"
+    echo "use box_utf8;" > /tmp/tmp.sql
+    sqlline="INSERT INTO t_bios_discovered_device (id_discovered_device,name,id_device_type) VALUES (NULL, 'DC-LAB', 1);"
+    echo "$sqlline" >> /tmp/tmp.sql
+    loaddb_file "/tmp/tmp.sql"
+    echo "use box_utf8;" > /tmp/tmp.sql
+    SEL_ID="select id_discovered_device from t_bios_discovered_device where name='DC-LAB'"
+    TOP_ID="$(echo $SEL_ID | mysql -u root box_utf8 -N)"
+    sqlline="INSERT INTO t_bios_monitor_asset_relation (id_ma_relation,id_discovered_device,id_asset_element) VALUES (NULL, $TOP_ID, 19);"
+    echo "$sqlline" >> /tmp/tmp.sql
+    loaddb_file "/tmp/tmp.sql"
 }
 
 db_measure(){
-# set actual time
-TIME=$(date +%s)
-STEP=$1
-VAL=$3
-D0=$2
-D1=$(expr $D0 - $STEP)
-D2=$(expr $D1 - $STEP)
-D3=$(expr $D2 - $STEP)
-D4=$(expr $D3 - $STEP)
-D5=$(expr $D4 - $STEP)
-D6=$(expr $D5 - $STEP)
-D7=$(expr $D6 - $STEP)
-D8=$(expr $D7 - $STEP)
-D9=$(expr $D8 - $STEP)
-D10=$(expr $D9 - $STEP)
-D11=$(expr $D10 - $STEP)
-D12=$(expr $D11 - $STEP)
-D13=$(expr $D12 - $STEP)
-D14=$(expr $D13 - $STEP)
-D15=$(expr $D14 - $STEP)
-D16=$(expr $D15 - $STEP)
-D17=$(expr $D16 - $STEP)
-D18=$(expr $D17 - $STEP)
-D19=$(expr $D18 - $STEP)
+    # set actual time
+    TIME=$(date +%s)
+    STEP="$1"
+    VAL="$3"
+    D0="$2"
+    D1=$(expr $D0 - $STEP)
+    D2=$(expr $D1 - $STEP)
+    D3=$(expr $D2 - $STEP)
+    D4=$(expr $D3 - $STEP)
+    D5=$(expr $D4 - $STEP)
+    D6=$(expr $D5 - $STEP)
+    D7=$(expr $D6 - $STEP)
+    D8=$(expr $D7 - $STEP)
+    D9=$(expr $D8 - $STEP)
+    D10=$(expr $D9 - $STEP)
+    D11=$(expr $D10 - $STEP)
+    D12=$(expr $D11 - $STEP)
+    D13=$(expr $D12 - $STEP)
+    D14=$(expr $D13 - $STEP)
+    D15=$(expr $D14 - $STEP)
+    D16=$(expr $D15 - $STEP)
+    D17=$(expr $D16 - $STEP)
+    D18=$(expr $D17 - $STEP)
+    D19=$(expr $D18 - $STEP)
 
-# set the header names of the params
-PARAMS=(units topic name timestamp value scale)
+    # set the header names of the params
+    PARAMS=(units topic name timestamp value scale)
 
-#Define the measurements samples
-SAMPLES=(
+    #Define the measurements samples
+    SAMPLES=(
 NULL    status.ups@UPS1-LAB     	UPS1-LAB    	$(expr $TIME - $D0)     $(expr 400 + $VAL)    -2
 %       load.default@UPS1-LAB   	UPS1-LAB        $(expr $TIME - $D0)     $(expr 435 + $VAL)    -2
 V       voltage.output.L1-N@UPS1-LAB    UPS1-LAB        $(expr $TIME - $D1)     $(expr 470 + $VAL)    -2
@@ -181,21 +181,21 @@ A	current.input.L1@SRV1-LAB	SRV1-LAB	$(expr $TIME - $D7 + 5) $(expr 98 + $VAL)  
 W	realpower.default@DC-LAB	DC-LAB		$(expr $TIME - $D8 + 6) $(expr 98 + $VAL)     -2
 )
 
-# set the counters
-NPAR=${#PARAMS[*]}
-NSAM=${#SAMPLES[*]}
-SAMPLECNT=$(expr $NSAM / $NPAR - 1)
+    # set the counters
+    NPAR=${#PARAMS[*]}
+    NSAM=${#SAMPLES[*]}
+    SAMPLECNT=$(expr $NSAM / $NPAR - 1)
 
-# Add all samples including the appropriate topics to DB
-for s in $(seq 0 $SAMPLECNT);do
-   SAMPLECURSOR=$(expr $s \* ${NPAR})
-   measurement ${SAMPLES[$SAMPLECURSOR]} \
+    # Add all samples including the appropriate topics to DB
+    for s in $(seq 0 $SAMPLECNT); do
+        SAMPLECURSOR=$(expr $s \* ${NPAR})
+        measurement ${SAMPLES[$SAMPLECURSOR]} \
                ${SAMPLES[$(expr $SAMPLECURSOR + 1)]} \
                ${SAMPLES[$(expr $SAMPLECURSOR + 2)]} \
                ${SAMPLES[$(expr $SAMPLECURSOR + 3)]} \
                ${SAMPLES[$(expr $SAMPLECURSOR + 4)]} \
                ${SAMPLES[$(expr $SAMPLECURSOR + 5)]}
-done
+    done
 }
 
 # START
@@ -267,10 +267,10 @@ echo "**************************************************************************
 test_it "The_last_measurement_is_used"
 db_initiate
 for i in $(seq 0 2);do
-   DELAY=$(expr 600 - $i \* 180)
-   STEP=7
-   VAL=$(expr $i \* 2000)
-   db_measure $STEP $DELAY $VAL
+    DELAY=$(expr 600 - $i \* 180)
+    STEP=7
+    VAL=$(expr $i \* 2000)
+    db_measure $STEP $DELAY $VAL
 done
 api_get_json '/metric/current?dev=24' >&5
 print_result $?
@@ -282,13 +282,13 @@ echo "**************************************************************************
 test_it "All_kinds_of_devices"
 db_initiate
 for i in $(seq 0 2);do
-   DELAY=$(expr 600 - $i \* 180)
-   STEP=7
-   VAL=$(expr $i \* 2000)
-   db_measure $STEP $DELAY $VAL
+    DELAY=$(expr 600 - $i \* 180)
+    STEP=7
+    VAL=$(expr $i \* 2000)
+    db_measure $STEP $DELAY $VAL
 done
 for j in $(seq 19 35);do
-api_get_json "/metric/current?dev=$j" >&5
+    api_get_json "/metric/current?dev=$j" >&5
 done
 print_result $?
 
