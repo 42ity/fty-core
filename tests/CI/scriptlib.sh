@@ -71,12 +71,12 @@ export BIOS_USER BIOS_PASSWD SASL_SERVICE
 [ -z "${SUT_HOST-}" ] && SUT_HOST="127.0.0.1"       # Hostname or IP address
 [ -z "${SUT_SSH_PORT-}" ] && SUT_SSH_PORT="22"       # SSH (maybe via NAT)
 [ -z "${SUT_WEB_PORT-}" ] && SUT_WEB_PORT="8000"       # TNTNET (maybe via NAT)
+[ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="http"
 if [ "${SUT_WEB_PORT-}" -eq 443 ]; then
-[ -z "${BASE_URL-}" ] && BASE_URL="https://$SUT_HOST:$SUT_WEB_PORT/api/v1"
-else
-[ -z "${BASE_URL-}" ] && BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+	SUT_WEB_SCHEMA="https"
 fi
-export SUT_IS_REMOTE SUT_USER SUT_HOST SUT_SSH_PORT SUT_WEB_PORT BASE_URL
+[ -z "${BASE_URL-}" ] && BASE_URL="${SUT_WEB_SCHEMA}://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+export SUT_IS_REMOTE SUT_USER SUT_HOST SUT_SSH_PORT SUT_WEB_PORT SUT_WEB_SCHEMA BASE_URL
 
 ### Should the test suite break upon first failed test?
 [ x"${CITEST_QUICKFAIL-}" != xyes ] && CITEST_QUICKFAIL=no
@@ -179,6 +179,7 @@ default_posval CI_DEBUGLEVEL_ERROR      1
 default_posval CI_DEBUGLEVEL_WARN       2
 default_posval CI_DEBUGLEVEL_INFO       3
 default_posval CI_DEBUGLEVEL_LOADDB     5
+default_posval CI_DEBUGLEVEL_DUMPDB     3
 default_posval CI_DEBUGLEVEL_SELECT     3
 default_posval CI_DEBUGLEVEL_RUN        4
 default_posval CI_DEBUGLEVEL_DEBUG      5
@@ -392,6 +393,23 @@ do_select() {
 #    DB_OUT="$(echo "$1" | sut_run "mysql -u ${DBUSER} ${DATABASE}")"
 #    DB_RES=$?
 #    echo "$DB_OUT" | tail -n +2
+#    [ $? = 0 -a "$DB_RES" = 0 ]
+    return $?
+}
+
+do_dumpdb() {
+    # Unifies the call to get a dump of our database, either all (by default)
+    # or some tables etc. via custom arguments that may be set by the caller.
+    logmsg_info "$CI_DEBUGLEVEL_DUMPDB" \
+        "do_dumpdb(): $@ ;" >&2
+    if [ -z "${DBPASSWD-}" ]; then
+        sut_run "mysqldump -u ${DBUSER} \"${DATABASE}\" $@"
+    else
+        sut_run "mysqldump -u ${DBUSER} -p\"${DBPASSWD}\" \"${DATABASE}\" $@"
+    fi
+#    DB_OUT="$(sut_run "mysqldump -u ${DBUSER} \"${DATABASE}\" $@")"
+#    DB_RES=$?
+#    echo "$DB_OUT"
 #    [ $? = 0 -a "$DB_RES" = 0 ]
     return $?
 }

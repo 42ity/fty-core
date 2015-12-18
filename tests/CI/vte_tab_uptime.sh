@@ -41,6 +41,7 @@
 
 # ***** GLOBAL VARIABLES *****
 TIME_START=$(date +%s)
+[ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="https"
 
     # *** read parameters if present
 while [ $# -gt 0 ]; do
@@ -57,6 +58,8 @@ while [ $# -gt 0 ]; do
             SUT_HOST="$2"
             shift 2
             ;;
+        --use-https|--sut-web-https)    SUT_WEB_SCHEMA="https"; shift;;
+        --use-http|--sut-web-http)      SUT_WEB_SCHEMA="http"; shift;;
         --sut-user|-su)
             SUT_USER="$2"
             shift 2
@@ -95,7 +98,7 @@ if [ -z "$SUT_WEB_PORT" ]; then
     fi
 fi
 # unconditionally calculated values
-BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+BASE_URL="${SUT_WEB_SCHEMA}://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 SUT_IS_REMOTE=yes
 
 # Include our standard routines for CI scripts
@@ -118,11 +121,15 @@ sut_run 'R=0; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server
     die "Some required services are not running on the VTE"
 
 # ***** INIT DB *****
+DB_TMPSQL_FILE_UPTIME="${DB_TMPSQL_DIR}/tmp-${_SCRIPT_NAME}-$$.sql"
+LOGFILE_LOADDB="$BUILDSUBDIR/vte-tab-loaddb-${_SCRIPT_NAME}.log"
+LOGFILE_IMPORT="$BUILDSUBDIR/vte-tab-import_TP-${_SCRIPT_NAME}.log"
+
     # *** write power rack base test data to DB on SUT
 set -o pipefail 2>/dev/null || true
 set -e
-loaddb_file "$DB_BASE" 2>&1 | tee "$CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log"
-loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" 2>&1 | tee -a "$CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log"
+loaddb_file "$DB_BASE" 2>&1 | tee "${LOGFILE_LOADDB}"
+loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" 2>&1 | tee -a "${LOGFILE_LOADDB}"
 set +e
 
 # Try to accept the BIOS license on server
@@ -133,14 +140,14 @@ set +e
 ASSET="$CSV_LOADDIR_BAM/bam_import_16_vte_uptime_2_DC.csv"
 
 # Import the bam_import_16_vte_total_power_2_DC.csv file
-api_auth_post_file_form /asset/import assets="@$ASSET" | tee "$CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log"
+api_auth_post_file_form /asset/import assets="@$ASSET" | tee "${LOGFILE_IMPORT}"
 
-grep -q '"imported_lines" : 16' "$CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log" || die "ERROR : 'Test of the number of imported lines FAILED'"
+grep -q '"imported_lines" : 16' "${LOGFILE_IMPORT}" || die "ERROR : 'Test of the number of imported lines FAILED'"
 echo "Test of the number of imported lines 			PASSED"
 
 # create sql file
-settraps 'rm -f $CHECKOUTDIR/tmp_uptime.sql'
-echo "use box_utf8;"> "$CHECKOUTDIR/tmp_uptime.sql"
+settraps 'rm -f "${DB_TMPSQL_FILE_UPTIME}"'
+echo "use ${DATABASE};"> "${DB_TMPSQL_FILE_UPTIME}"
 
 # dates formats
 # UPS101_1
@@ -169,25 +176,25 @@ date_to_2_2=`date -d "1 day ago" '+%F '`;date_to_2_2=$date_to_2_2`echo 02:00:00`
 
 #insert line for UPS101_1
 sqlline="INSERT INTO t_bios_alert ( rule_name, date_from, priority, state, description, date_till, notification, dc_id) VALUES ( 'upsonbattery@UPS101_1', UNIX_TIMESTAMP('$date_from_1_1_1') ,        1 ,     1 , 'UPS is running on battery!    ', UNIX_TIMESTAMP('$date_to_1_1_1') ,            0 , 1);"
-echo $sqlline >> $CHECKOUTDIR/tmp_uptime.sql
+echo "$sqlline" >> "${DB_TMPSQL_FILE_UPTIME}"
 sqlline="INSERT INTO t_bios_alert ( rule_name, date_from, priority, state, description, date_till, notification, dc_id) VALUES ( 'upsonbattery@UPS101_1', UNIX_TIMESTAMP('$date_from_2_1_1') ,        1 ,     1 , 'UPS is running on battery!    ', UNIX_TIMESTAMP('$date_to_2_1_1') ,            0 , 1);"
-echo $sqlline >> $CHECKOUTDIR/tmp_uptime.sql
+echo "$sqlline" >> "${DB_TMPSQL_FILE_UPTIME}"
 
 #insert line for UPS101_2
 sqlline="INSERT INTO t_bios_alert ( rule_name, date_from, priority, state, description, date_till, notification, dc_id) VALUES ( 'upsonbattery@UPS101_2', UNIX_TIMESTAMP('$date_from_1_1_2') ,        1 ,     1 , 'UPS is running on battery!    ', UNIX_TIMESTAMP('$date_to_1_1_2') ,            0 , 1);"
-echo $sqlline >> $CHECKOUTDIR/tmp_uptime.sql
+echo "$sqlline" >> "${DB_TMPSQL_FILE_UPTIME}"
 sqlline="INSERT INTO t_bios_alert ( rule_name, date_from, priority, state, description, date_till, notification, dc_id) VALUES ( 'upsonbattery@UPS101_2', UNIX_TIMESTAMP('$date_from_1_1_2') ,        1 ,     1 , 'UPS is running on battery!    ', UNIX_TIMESTAMP('$date_to_1_1_2') ,            0 , 1);"
-echo $sqlline >> $CHECKOUTDIR/tmp_uptime.sql
+echo "$sqlline" >> "${DB_TMPSQL_FILE_UPTIME}"
 
 
 #insert line for UPS201_1
 sqlline="INSERT INTO t_bios_alert ( rule_name, date_from, priority, state, description, date_till, notification, dc_id) VALUES ( 'upsonbattery@UPS201_1', UNIX_TIMESTAMP('$date_from_2_1') ,        1 ,     1 , 'UPS is running on battery!    ', UNIX_TIMESTAMP('$date_to_2_1') ,            0 , 9);"
-echo $sqlline >> $CHECKOUTDIR/tmp_uptime.sql
+echo "$sqlline" >> "${DB_TMPSQL_FILE_UPTIME}"
 #insert line for UPS201_2
 sqlline="INSERT INTO t_bios_alert ( rule_name, date_from, priority, state, description, date_till, notification, dc_id) VALUES ( 'upsonbattery@UPS201_2', UNIX_TIMESTAMP('$date_from_2_2') ,        1 ,     1 , 'UPS is running on battery!    ', UNIX_TIMESTAMP('$date_to_2_2') ,            0 , 9);"
-echo $sqlline >> $CHECKOUTDIR/tmp_uptime.sql
-cat $CHECKOUTDIR/tmp_uptime.sql
-loaddb_file $CHECKOUTDIR/tmp_uptime.sql 2>&1 | tee -a $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
+echo "$sqlline" >> "${DB_TMPSQL_FILE_UPTIME}"
+cat "${DB_TMPSQL_FILE_UPTIME}"
+loaddb_file "${DB_TMPSQL_FILE_UPTIME}" 2>&1 | tee -a "${LOGFILE_LOADDB}"
 
 sut_run 'systemctl restart biostimer-outage.service'
 
