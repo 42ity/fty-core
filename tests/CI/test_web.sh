@@ -48,6 +48,8 @@ SKIPPED_NONSH_TESTS=0
 #   onlyerrors = do only tests expected to fail (not for curlbbwget.sh)
 [ -z "$SKIP_SANITY" ] && SKIP_SANITY=no
 
+[ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="https"
+
 while [ $# -gt 0 ]; do
     case "$1" in
         --port-web|--sut-port-web|-wp|--port)
@@ -58,6 +60,8 @@ while [ $# -gt 0 ]; do
             SUT_HOST="$2"
             shift
             ;;
+        --use-https|--sut-web-https)    SUT_WEB_SCHEMA="https"; export SUT_WEB_SCHEMA;;
+        --use-http|--sut-web-http)      SUT_WEB_SCHEMA="http"; export SUT_WEB_SCHEMA;;
         -u|--user|--bios-user)
             BIOS_USER="$2"
             shift
