@@ -23,6 +23,7 @@
 
 # Defaults; note that SUT_WEB_PORT is guessed below based on ultimate SUT_HOST
 [ -z "$SUT_HOST" ] && SUT_HOST="127.0.0.1"
+[ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="http"
 
 # REST API returns JSON except one or two special cases
 [ -z "$WEBLIB_FUNC" ] && WEBLIB_FUNC="api_auth_get_json"
@@ -70,6 +71,8 @@ while [ $# -gt 0 ] ; do
             SUT_HOST="$2"
             shift
             ;;
+        --use-https|--sut-web-https)    SUT_WEB_SCHEMA="https";;
+        --use-http|--sut-web-http)      SUT_WEB_SCHEMA="http";;
         -u|--user|--bios-user)
             BIOS_USER="$2"
             shift
