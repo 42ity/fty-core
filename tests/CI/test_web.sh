@@ -141,7 +141,7 @@ else
     if [ "$SKIP_SANITY" != onlyerrors ]; then
         curlfail_push_expect_noerrors
         if [ -z "`api_get '/admin/ifaces' 2>&1 | grep 'HTTP/.* 200 OK'`" ] >/dev/null 2>&1 ; then
-            # We expect that the login service responds
+            # We expect that this simple service responds
             logmsg_error "api_get() returned an error:"
             api_get "/admin/ifaces" >&2
             CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
@@ -189,13 +189,23 @@ while [ "$1" ]; do
 done
 [ -n "$POSITIVE" ] || POSITIVE="*"
 
-exit_summarizeTestedScriptlets() {
+echo_summarizeTestedScriptlets() {
     logmsg_info "This ${_SCRIPT_NAME} ${_SCRIPT_ARGS} run selected the following scriptlets from web/commands :"
     logmsg_info "  Execution pattern (POSITIVE) = $POSITIVE"
     logmsg_info "  Ignored pattern (NEGATIVE)   = $NEGATIVE"
     logmsg_info "  SKIP_NONSH_TESTS = $SKIP_NONSH_TESTS (so skipped ${SKIPPED_NONSH_TESTS+0} tests)"
 }
 
+exit_summarizeTestedScriptlets() {
+    echo_summarizeTestedScriptlets
+    if [ -n "$TESTLIB_LOG_SUMMARY" ]; then
+        echo_summarizeTestedScriptlets >> "$TESTLIB_LOG_SUMMARY"
+    fi
+    return 0
+}
+
+# Note: this default log filename will be ignored if already set by caller
+init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" ""
 settraps '_TRAP_RES=$?; exit_summarizeTestedScriptlets ; exit_summarizeTestlibResults; exit $_TRAP_RES'
 
 for i in $POSITIVE; do
