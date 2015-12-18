@@ -21,7 +21,6 @@
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \brief Not yet documented file
 
-# remove the licence file, if exists, license not accepted in result
 
 echo
 echo "###################################################################################################"
@@ -29,7 +28,8 @@ echo "********* 00_license.sh **************************** START ***************
 echo "###################################################################################################"
 echo
 
-sut_run "rm -f /var/lib/bios/license $CHECKOUTDIR/var/bios/license" || true
+# remove the license file, if exists, license not accepted in result
+sut_run "rm -f /var/lib/bios/license $BUILDSUBDIR/var/bios/license $CHECKOUTDIR/var/bios/license" || true
 
 echo "********* 00_license.sh ***************************************************************************"
 echo "********* 1. license_status_not_ok ****************************************************************"
@@ -97,28 +97,31 @@ print_result $?
 echo "********* 00_license.sh ***************************************************************************"
 echo "********* 8. missing_license_text *****************************************************************"
 echo "***************************************************************************************************"
-if [ $SUT_IS_REMOTE ]; then
-    echo "SKIPPED ON REMOTE"
-    echo '{"errors":[{"message":"Internal Server Error. Error reading license file, check integrity of storage.","code":42}]}' >&5
-else
-
 #*#*#*#*#* 00_license.sh - subtest 8 - TODO, 500?
 test_it "missing_license_text"
-curlfail_push_expect_500
-echo "BUILDSUBDIR =     $BUILDSUBDIR"
-mv $BUILDSUBDIR/COPYING $BUILDSUBDIR/org-COPYING
+if [ "$SUT_IS_REMOTE" = yes ]; then
+    sut_run "mv -f /usr/share/bios/license/current /usr/share/bios/license/org-current ; mv -f /usr/share/bios/license/1.0 /usr/share/bios/license/org-1.0"
+else
+    echo "BUILDSUBDIR =     $BUILDSUBDIR"
+    # Tests for local-source builds: license data are in $BUILDSUBDIR/tests/fixtures/license and are symlinks to the ../../../COPYING file
+    mv -f $BUILDSUBDIR/COPYING $BUILDSUBDIR/org-COPYING
+fi # SUT_IS_REMOTE
 ### This GET should produce an error message in JSON about missing file
+curlfail_push_expect_500
 api_get_json '/admin/license' >&5
 RES=$?
 curlfail_pop
-mv $BUILDSUBDIR/org-COPYING $BUILDSUBDIR/COPYING
+if [ "$SUT_IS_REMOTE" = yes ]; then
+    sut_run "mv -f /usr/share/bios/license/org-current /usr/share/bios/license/current ; mv -f /usr/share/bios/license/org-1.0 /usr/share/bios/license/1.0"
+else
+    mv -f $BUILDSUBDIR/org-COPYING $BUILDSUBDIR/COPYING
+fi # SUT_IS_REMOTE
 print_result $RES
-fi
 
 echo "********* 00_license.sh ***************************************************************************"
 echo "********* 9. disabled_method_delete ***************************************************************"
 echo "***************************************************************************************************"
-test_it "disabled_method_delete "
+test_it "disabled_method_delete"
 curlfail_push_expect_405
 api_auth_delete_json '/admin/license/status' >&5
 print_result $?
@@ -128,21 +131,23 @@ echo "********* 00_license.sh **************************************************
 echo "********* 10. cannot save the license *************************************************************"
 echo "***************************************************************************************************"
 #*#*#*#*#* 00_license.sh - subtest 10 - TODO, 500?
-if [ $SUT_IS_REMOTE ]; then
-    echo "SKIPPED ON REMOTE"
-    echo '{"errors":[{"message":"Internal Server Error. Error saving license acceptance or getting license version, check integrity of storage.","code":42}]}' >&5
-else
+#if [ "$SUT_IS_REMOTE" = yes ]; then
+#    echo "SKIPPED ON REMOTE"
+#    echo '{"errors":[{"message":"Internal Server Error. Error saving license acceptance or getting license version, check integrity of storage.","code":42}]}' >&5
+#else
 
 test_it "cannot save the license"
 curlfail_push_expect_500
-rm -f /var/lib/bios/license $CHECKOUTDIR/var/bios/license
-rm -rf $CHECKOUTDIR/var/bios;touch $CHECKOUTDIR/var/bios
+# Make it a file instead of directory (so no file can be created under it)
+# TODO: Manupulations with /var/lib/bios directory should be better locked
+# against intermittent errors (test if src/tgt dirs exist, etc.)
+sut_run "rm -f /var/lib/bios/license $BUILDSUBDIR/var/bios/license $CHECKOUTDIR/var/bios/license; rm -rf $BUILDSUBDIR/var/bios $CHECKOUTDIR/var/bios; mv -f /var/lib/bios /var/lib/bios.x ; touch /var/lib/bios $CHECKOUTDIR/var/bios $BUILDSUBDIR/var/bios || true"
 api_auth_post_json '/admin/license' "foobar" >&5
 RES=$?
 curlfail_pop
-rm -f $CHECKOUTDIR/var/bios;mkdir $CHECKOUTDIR/var/bios
+sut_run "rm -f $BUILDSUBDIR/var/bios $CHECKOUTDIR/var/bios;mkdir $CHECKOUTDIR/var/bios $BUILDSUBDIR/var/bios || true; mv -f /var/lib/bios.x /var/lib/bios"
 print_result $RES
-fi
+#fi # SUT_IS_REMOTE 
 
 echo "********* 00_license.sh ***************************************************************************"
 echo "********* 11. license_acceptance ******************************************************************"
