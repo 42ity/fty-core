@@ -239,6 +239,27 @@ ensure_checksum() {
     return 0
 }
 
+threeway_checksum() {
+    # We can have (or not) a local copy of the data file "$1", a local copy
+    # of the checksum file "$2", and a freshly fetched copy of remote checksum
+    # file "$3"; all previously downloaded by caller. Optional algo is in "$4".
+    # Return codes:
+    #   0       OK, local data and checksum files are (now) consistent, keep'em
+    #   1       ERROR, local files inconsistent or missing, pull from remote!
+    # Verify if any of these files match together (in a destructive manner):
+    # * If some of the files are not available:
+    # ** data file - fail (must download all bits)
+    # ** both checksums - fail (legacy mode allowed no checksums, now not so)
+    # ** local checksum - fall through (only compare to remote checksum then)
+    # ** remote checksum - fall through (only compare to local checksum then)
+    # * If two checksums are the same, remove the newly downloaded one; ELSE:
+    # ** If the local checksum does not match the file, and the remote checksum
+    #    does match - assume it authoritative and local one broken (overwrite)
+    # ** If neither checksum matches - kill local data and pull remote files
+    # * If the local CS+DATA do NOT match together, kill them and return error
+    # 
+}
+
 findnewest_osimage() (
     # Echo the URL to the newest OS image file found on remote resource, if any
     # Note: currently expects certain filename patterns and http-dir listing markup
@@ -269,7 +290,8 @@ download_osimage() (
 
     logmsg_info "Downloading '$IMAGE_URL.md5' (if any)..."
     rm -f "$IMAGE_URL_BASENAME.$EXT.md5.tmp"
-    wget -q -O - "$IMAGE_URL.md5" > "$IMAGE_URL_BASENAME.$EXT.md5.tmp"
+    wget -q -O - "$IMAGE_URL.md5" > "$IMAGE_URL_BASENAME.$EXT.md5.tmp" || \
+        rm -f "$IMAGE_URL_BASENAME.$EXT.md5.tmp"
 
     if  [ -s "$IMAGE_URL_BASENAME.$EXT" ] && \
         [ -s "$IMAGE_URL_BASENAME.$EXT.md5" ] \
