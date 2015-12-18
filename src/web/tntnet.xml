@@ -29,6 +29,11 @@
     </mapping>
     <mapping>
       <target>static@tntnet</target>
+      <pathinfo>/usr/share/common-licenses/Eaton-EULA</pathinfo>
+      <url>^/legal/Eaton-EULA</url>
+    </mapping>
+    <mapping>
+      <target>static@tntnet</target>
       <pathinfo>/usr/share/doc/$1</pathinfo>
       <url>^/legal/(.*)$</url>
     </mapping>
