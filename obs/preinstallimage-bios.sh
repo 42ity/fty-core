@@ -223,6 +223,11 @@ cp /usr/share/bios/examples/config/security/* /etc/security
 sed -i 's|START=no|START=yes|' /etc/default/saslauthd
 systemctl enable saslauthd
 
+mkdir -p /etc/update-rc3.d
+cp /usr/share/bios/examples/config/update-rc3.d/* /etc/update-rc3.d
+[ -n "$IMGTYPE" ] && \
+    echo "IMGTYPE='$IMGTYPE'" > /etc/update-rc3.d/image-os-type.conf
+
 # Enable mysql
 systemctl enable mysql
 
@@ -252,14 +257,21 @@ systemctl preset-all
 if [ "`uname -m`" = x86_64 ]; then
     systemctl enable bios-fake-th
     systemctl disable bios-agent-th
+    systemctl disable lcd-boot-display
+    systemctl disable lcd-net-display
+    systemctl mask lcd-boot-display
+    systemctl mask lcd-net-display
+    systemctl disable bios-reset-button
+    systemctl mask bios-reset-button
 else
     systemctl disable bios-fake-th
     systemctl mask bios-fake-th
     systemctl enable lcd-boot-display
     systemctl enable lcd-net-display
+    sed -i 's|PathChanged=/etc|PathChanged=/mnt/nand/overlay/etc|' /usr/lib/systemd/system/composite-metrics\@.path
 fi
 # Services not part of core
-systemctl enable dc_th
+systemctl enable dc_th.timer
 systemctl enable bios-agent-legacy-metrics
 systemctl enable bios-agent-alert-generator
 
@@ -484,7 +496,7 @@ case "$SPACERM" in
         install -m 0755 /usr/share/bios/scripts/resolveip.sh /usr/bin/resolveip
         ;;
 esac
-for i in /usr/share/mysql/* /usr/share/locale /usr/share/bios/{docker,develop,obs}; do
+for i in /usr/share/mysql/* /usr/share/locale /usr/share/bios/{develop,obs}; do
    [ -f "$i" ] || \
    [ "$i" = /usr/share/mysql/charsets ] || \
    [ "$i" = /usr/share/mysql/english ] || \
