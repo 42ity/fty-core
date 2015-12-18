@@ -403,11 +403,11 @@ do_dumpdb() {
     logmsg_info "$CI_DEBUGLEVEL_DUMPDB" \
         "do_dumpdb(): $@ ;" >&2
     if [ -z "${DBPASSWD-}" ]; then
-        sut_run "mysqldump -u ${DBUSER} --databases \"${DATABASE}\" $@"
+        sut_run "mysqldump -u ${DBUSER} \"${DATABASE}\" $@"
     else
-        sut_run "mysqldump -u ${DBUSER} -p\"${DBPASSWD}\" --databases \"${DATABASE}\" $@"
+        sut_run "mysqldump -u ${DBUSER} -p\"${DBPASSWD}\" \"${DATABASE}\" $@"
     fi
-#    DB_OUT="$(sut_run "mysqldump -u ${DBUSER} --databases \"${DATABASE}\" $@")"
+#    DB_OUT="$(sut_run "mysqldump -u ${DBUSER} \"${DATABASE}\" $@")"
 #    DB_RES=$?
 #    echo "$DB_OUT"
 #    [ $? = 0 -a "$DB_RES" = 0 ]
