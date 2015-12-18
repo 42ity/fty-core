@@ -31,43 +31,43 @@ echo "**************************************************************************
 [ -n "$CSV_LOADDIR_ASSIMP" ] && [ -d "$CSV_LOADDIR_ASSIMP" ] || die "Can not use CSV_LOADDIR_ASSIMP='$CSV_LOADDIR_ASSIMP'"
 
 res_err(){
-RESULT=$1
-DESCR=$2
-if [ ${RESULT} != 0 ];then
-    echo "ERROR : ${DESCR}"
-fi
+    RESULT="$1"
+    DESCR="$2"
+    if [ "${RESULT}" != 0 ];then
+        echo "ERROR : ${DESCR}" >&2
+    fi
 }
 
 table_diff(){
-TABLE_NAME="$1"
-TEST_ID="$2"
-RES_PART=0
-# dump requested table and compare it with expected content
-mysqldump -u root box_utf8 "${TABLE_NAME}" |grep "INSERT" > "${DB_DUMP_DIR}/${TABLE_NAME}.dmp"
-#if [ "z${TEST_ID}" != "z" ] && [ -f "${DB_RES_DIR}/${TABLE_NAME}${TEST_ID}.ptr" ] ; then
-if [ -f "${DB_RES_DIR}/${TABLE_NAME}${TEST_ID}.ptr" ] ; then
-    diff "${DB_DUMP_DIR}/${TABLE_NAME}.dmp" "${DB_RES_DIR}/${TABLE_NAME}${TEST_ID}.ptr" > /dev/null || RES_PART=1
-else
-    diff "${DB_DUMP_DIR}/${TABLE_NAME}.dmp" "${DB_RES_DIR}/${TABLE_NAME}.ptr" > /dev/null || RES_PART=1
-fi
-RES=$(expr ${RES} + ${RES_PART})
+    TABLE_NAME="$1"
+    TEST_ID="$2"
+    RES_PART=0
+    # dump requested table and compare it with expected content
+    do_dumpdb "${TABLE_NAME}" |grep "INSERT" > "${DB_DUMP_DIR}/${TABLE_NAME}.dmp"
+    #if [ "z${TEST_ID}" != "z" ] && [ -f "${DB_RES_DIR}/${TABLE_NAME}${TEST_ID}.ptr" ] ; then
+    if [ -f "${DB_RES_DIR}/${TABLE_NAME}${TEST_ID}.ptr" ] ; then
+        diff "${DB_DUMP_DIR}/${TABLE_NAME}.dmp" "${DB_RES_DIR}/${TABLE_NAME}${TEST_ID}.ptr" > /dev/null || RES_PART=1
+    else
+        diff "${DB_DUMP_DIR}/${TABLE_NAME}.dmp" "${DB_RES_DIR}/${TABLE_NAME}.ptr" > /dev/null || RES_PART=1
+    fi
+    RES=$(expr ${RES} + ${RES_PART})
 }
 
 csv_import(){
-CSV_FILE_NAME="$1"
-TEST_ID="$2"
-# import csv with assets
-ASSET="${CSV_LOADDIR_ASSIMP}/${CSV_FILE_NAME}"
-api_auth_post_file_form_json /asset/import assets="@$ASSET" >&5
-RES_PART=$?
-res_err "$RES_PART" "The import of $CSV_FILE_NAME was not successful"
-# tables compared with patterns using dif using function table_diff <table name> <test id>
-# pattern file full names are : ${DB_RES_DIR}/${TABLE_NAME}${TEST_ID}.ptr
-for i in "t_bios_asset_element" "t_bios_asset_group_relation" "t_bios_asset_ext_attributes" "t_bios_asset_link" "t_bios_asset_link_type"; do
-    table_diff "$i" "$TEST_ID"
-    res_err "$RES_PART" "Wrong $i table content."
-    NUM_EXPECTED=0
-done
+    CSV_FILE_NAME="$1"
+    TEST_ID="$2"
+    # import csv with assets
+    ASSET="${CSV_LOADDIR_ASSIMP}/${CSV_FILE_NAME}"
+    api_auth_post_file_form_json /asset/import assets="@$ASSET" >&5
+    RES_PART=$?
+    res_err "$RES_PART" "The import of $CSV_FILE_NAME was not successful"
+    # tables compared with patterns using dif using function table_diff <table name> <test id>
+    # pattern file full names are : ${DB_RES_DIR}/${TABLE_NAME}${TEST_ID}.ptr
+    for T in "t_bios_asset_element" "t_bios_asset_group_relation" "t_bios_asset_ext_attributes" "t_bios_asset_link" "t_bios_asset_link_type"; do
+        table_diff "$T" "$TEST_ID"
+        res_err "$RES_PART" "Wrong $T table content."
+        NUM_EXPECTED=0
+    done
 }
 
 echo "********* asset_import.sh *************************************************************************"

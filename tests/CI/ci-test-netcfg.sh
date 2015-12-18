@@ -38,7 +38,7 @@ WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT="ignore" # we do this in-script
 WEBLIB_QUICKFAIL=no
 WEBLIB_CURLFAIL=no
 export WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT WEBLIB_QUICKFAIL WEBLIB_CURLFAIL
-export BASE_URL="http://${SUT_HOST}:${SUT_WEB_PORT}/api/v1"
+export BASE_URL="${SUT_WEB_SCHEMA}://${SUT_HOST}:${SUT_WEB_PORT}/api/v1"
 
 # Include our standard web routines for CI scripts
 . "`dirname $0`"/weblib.sh || \

@@ -34,39 +34,39 @@ echo "**************************************************************************
 DATASWITCH=0
 
 csv_import_err(){
-   CSV_FILE_NAME=$1
-   TABLE_NAME=$2
-   NUM_EXPECTED=$3 # when NUM_EXPECTED=0, the import is not performed, in other case it is num of imported lines
-   FILENAME_PREFIX=$4
-   ASSET="$CSV_LOADDIR_ASSIMP/${CSV_FILE_NAME}"
-   if [ "$NUM_EXPECTED" != 0 ];then
-      if [ "$REZ" = 0 ];then
-        if [ "$DATASWITCH" == 0 ];then
-           api_auth_post_file_form_json /asset/import assets="@$ASSET" >&5
-           REZ=$?
-        else
-           api_auth_post_file_data_json /asset/import assets=@$ASSET >&5
-           REZ=$?
+    CSV_FILE_NAME="$1"
+    TABLE_NAME="$2"
+    NUM_EXPECTED="$3" # when NUM_EXPECTED=0, the import is not performed, in other case it is num of imported lines
+    FILENAME_PREFIX="$4"
+    ASSET="$CSV_LOADDIR_ASSIMP/${CSV_FILE_NAME}"
+    if [ "$NUM_EXPECTED" != 0 ]; then
+        if [ "$REZ" = 0 ]; then
+            if [ "$DATASWITCH" == 0 ]; then
+                api_auth_post_file_form_json /asset/import assets="@$ASSET" >&5
+                REZ=$?
+            else
+                api_auth_post_file_data_json /asset/import assets="@$ASSET" >&5
+                REZ=$?
+            fi
+            echo "REZ = $REZ"
         fi
-        echo "REZ = $REZ"
-      fi
-   fi
+    fi
 }
 
 test_tables(){
-   CSV_FILE_NAME=$1
-   NUM_EXPECTED=$2 # when NUM_EXPECTED=0, the import is not performed, in other case it is num of imported lines
-   FILENAME_PREFIX=$3
-   csv_import_err "$CSV_FILE_NAME" "t_bios_asset_element" "$NUM_EXPECTED" "$FILENAME_PREFIX"
-   echo "REZ1=$REZ"
-   csv_import_err "$CSV_FILE_NAME" "t_bios_asset_group_relation" 0 "$FILENAME_PREFIX"
-   echo "REZ2=$REZ"
-   csv_import_err "$CSV_FILE_NAME" "t_bios_asset_ext_attributes" 0 "$FILENAME_PREFIX"
-   echo "REZ3=$REZ"
-   csv_import_err "$CSV_FILE_NAME" "t_bios_asset_link" 0 "$FILENAME_PREFIX"
-   echo "REZ4=$REZ"
-   csv_import_err "$CSV_FILE_NAME" "t_bios_asset_link_type" 0 "$FILENAME_PREFIX"
-   echo "REZ5=$REZ"
+    CSV_FILE_NAME="$1"
+    NUM_EXPECTED="$2" # when NUM_EXPECTED=0, the import is not performed, in other case it is num of imported lines
+    FILENAME_PREFIX="$3"
+    csv_import_err "$CSV_FILE_NAME" "t_bios_asset_element" "$NUM_EXPECTED" "$FILENAME_PREFIX"
+    echo "REZ1=$REZ"
+    csv_import_err "$CSV_FILE_NAME" "t_bios_asset_group_relation" 0 "$FILENAME_PREFIX"
+    echo "REZ2=$REZ"
+    csv_import_err "$CSV_FILE_NAME" "t_bios_asset_ext_attributes" 0 "$FILENAME_PREFIX"
+    echo "REZ3=$REZ"
+    csv_import_err "$CSV_FILE_NAME" "t_bios_asset_link" 0 "$FILENAME_PREFIX"
+    echo "REZ4=$REZ"
+    csv_import_err "$CSV_FILE_NAME" "t_bios_asset_link_type" 0 "$FILENAME_PREFIX"
+    echo "REZ5=$REZ"
 }
 
 echo "********* asset_import_err.sh *********************************************************************"

@@ -87,6 +87,11 @@ NAME="$0"
 [ -z "${TESTLIB_LIST_FAILED_IGNORED-}" ] && TESTLIB_LIST_FAILED_IGNORED=""
 [ -z "${TESTLIB_LIST_PASSED-}" ] && TESTLIB_LIST_PASSED=""
 
+# Optional filename (preferably full path) that can be set by caller - if it is
+# set, then the exit_summarizeTestlibResults() would append its output there.
+[ -z "${TESTLIB_LOG_SUMMARY-}" ] && TESTLIB_LOG_SUMMARY=""
+[ -z "${TESTLIB_LOG_SUMMARY_COMMENT-}" ] && TESTLIB_LOG_SUMMARY_COMMENT=""
+
 print_result() {
     # $1 = exit-code of the test being closed:
     #   0|-0    success
@@ -232,17 +237,49 @@ trap_break_testlib() {
 }
 trap "trap_break_testlib" SIGUSR2
 
-# A consumer script can set this as (part of) their exit/abort-trap to always
-# print a summary of processed tests in the end, whatever the reason to exit().
-exit_summarizeTestlibResults() {
-    TRAP_RES=$?
-    # This would be a no-op if the test case previously started with a
-    # test_it() has been already closed with its proper print_result()
-    if [ x"${_testlib_result_printed}" = xnotyet ]; then
-        print_result $TRAP_RES
+# If the TESTLIB_LOG_SUMMARY is set, appends the beginning of the current run.
+# Note: the path will be absolutized and the variable will be exported so child
+# processes can inherit and use it, and it remains valid after "cd" in scripts.
+# Note: this DOES NOT set up the trap_summarizeTestlibResults() for caller!!!
+init_summarizeTestlibResults() {
+    # $1 - optional default value for TESTLIB_LOG_SUMMARY (if not set already)
+    # $2 - optional comment about the test run being started
+    if [ -z "$TESTLIB_LOG_SUMMARY" ]; then
+        [ -n "${1-}" ] && TESTLIB_LOG_SUMMARY="$1"
     fi
-    set +e
-    NUM_NOTFAILED="`expr $TESTLIB_COUNT_PASS + $TESTLIB_COUNT_SKIP`"
+
+    if [ -z "$TESTLIB_LOG_SUMMARY" ]; then
+        logmsg_warn "init_summarizeTestlibResults(): called without a TESTLIB_LOG_SUMMARY value, skipped"
+        return 1
+    fi
+
+    # Absolutize the path
+    case "$TESTLIB_LOG_SUMMARY" in
+        /*) ;;
+        *) TESTLIB_LOG_SUMMARY="`pwd`/$TESTLIB_LOG_SUMMARY" ;;
+    esac
+    export TESTLIB_LOG_SUMMARY
+
+    if [ $# -ge 2 ]; then
+        TESTLIB_LOG_SUMMARY_COMMENT="${2-}"
+        # Empty or not - take it as THIS test-run's comment
+    else
+        TESTLIB_LOG_SUMMARY_COMMENT="${TESTLIB_LOG_SUMMARY_COMMENT-}"
+        # Keep the previously defined value
+    fi
+    export TESTLIB_LOG_SUMMARY_COMMENT
+
+    logmsg_info "Summary of this test run will be appended to '$TESTLIB_LOG_SUMMARY'"
+    { echo ""; echo "=============================================================="
+      logmsg_info "`date -u`: Starting '${_SCRIPT_PATH} ${_SCRIPT_ARGS}'${TESTLIB_LOG_SUMMARY_COMMENT:+: $TESTLIB_LOG_SUMMARY_COMMENT}"; \
+    } >> "$TESTLIB_LOG_SUMMARY"
+    return $?
+}
+
+# This implements the summary of the test run; can be just echoed or also
+# appended to the TESTLIB_LOG_SUMMARY by exit_summarizeTestlibResults()
+# Uses and changes TRAP_RES defined by caller exit_summarizeTestlibResults()
+echo_summarizeTestlibResults() {
     # Do not doctor up the LOGMSG_PREFIX as these are rather results of the
     # test-script than the framework
     echo
@@ -250,6 +287,8 @@ exit_summarizeTestlibResults() {
     echo "************ Ending testlib-driven suite execution *****************"
     echo "####################################################################"
     echo
+
+    NUM_NOTFAILED="`expr $TESTLIB_COUNT_PASS + $TESTLIB_COUNT_SKIP`"
     logmsg_info "Testing completed ($TRAP_RES), $NUM_NOTFAILED/$TESTLIB_COUNT_TOTAL tests passed($TESTLIB_COUNT_PASS) or not-failed($TESTLIB_COUNT_SKIP)"
     if [ -n "$TESTLIB_LIST_FAILED_IGNORED" ]; then
         logmsg_info "The following $TESTLIB_COUNT_SKIP tests have failed but were ignored (TDD in progress):"
@@ -257,6 +296,7 @@ exit_summarizeTestlibResults() {
             echo " * $i"
         done
     fi
+
     NUM_FAILED="`expr $TESTLIB_COUNT_TOTAL - $NUM_NOTFAILED`"
     if [ -z "$TESTLIB_LIST_FAILED" ] && [ x"$TESTLIB_COUNT_FAIL" = x0 ] && [ x"$NUM_FAILED" = x0 ]; then
         [ -z "$TRAP_RES" ] && TRAP_RES=0
@@ -272,6 +312,12 @@ exit_summarizeTestlibResults() {
         [ x"$TESTLIB_COUNT_FAIL" = x"$N" ] || \
             LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_error "TEST-LIB accounting fault: failed-test counts mismatched: TESTLIB_COUNT_FAIL=$TESTLIB_COUNT_FAIL vs NUM_FAILED=$NUM_FAILED vs N=$N"
         logmsg_error "$N/$TESTLIB_COUNT_TOTAL tests FAILED, $TESTLIB_COUNT_SKIP tests FAILED_IGNORED, $TESTLIB_COUNT_PASS tests PASSED"
+        if [ -n "$TESTLIB_LOG_SUMMARY" ]; then
+            # Duplicate on stdout for the log file
+            [ x"$TESTLIB_COUNT_FAIL" = x"$N" ] || \
+                LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_error "TEST-LIB accounting fault: failed-test counts mismatched: TESTLIB_COUNT_FAIL=$TESTLIB_COUNT_FAIL vs NUM_FAILED=$NUM_FAILED vs N=$N"
+            logmsg_error "$N/$TESTLIB_COUNT_TOTAL tests FAILED, $TESTLIB_COUNT_SKIP tests FAILED_IGNORED, $TESTLIB_COUNT_PASS tests PASSED"
+        fi 2>&1
         unset N
 
         # If we are here, we've at least had some failed tests
@@ -285,6 +331,36 @@ exit_summarizeTestlibResults() {
     echo "####################################################################"
     echo
 
+    return $TRAP_RES
+}
+
+# A consumer script can set this as (part of) their exit/abort-trap to always
+# print a summary of processed tests in the end, whatever the reason to exit().
+exit_summarizeTestlibResults() {
+    TRAP_RES=$?
+    # No longer error out on bad lines, even if we did
+    set +e
+    # This would be a no-op if the test case previously started with a
+    # test_it() has been already closed with its proper print_result()
+    if [ x"${_testlib_result_printed}" = xnotyet ]; then
+        print_result $TRAP_RES
+    fi
+
+    if [ -z "$TESTLIB_LOG_SUMMARY" ]; then
+        echo_summarizeTestlibResults
+        exit $?
+    fi
+
+    # NOTE: There can be a bit of STDERR here
+    TRAP_OUT="`echo_summarizeTestlibResults`"
+    TRAP_RES=$?
+    echo "$TRAP_OUT"
+
+    { echo ""; echo "$TRAP_OUT"; echo "";
+      logmsg_info "`date -u`: Finished '${_SCRIPT_PATH} ${_SCRIPT_ARGS}'${TESTLIB_LOG_SUMMARY_COMMENT:+: $TESTLIB_LOG_SUMMARY_COMMENT}"
+      echo "=============================================================="; echo ""; echo ""; \
+    } >> "$TESTLIB_LOG_SUMMARY"
+    logmsg_info "Summary of this test run was appended to '$TESTLIB_LOG_SUMMARY'"
     exit $TRAP_RES
 }
 
