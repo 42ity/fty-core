@@ -26,7 +26,9 @@ echo "##########################################################################
 echo
 
 # Add the first line of the sql file and create it
-echo "use ${DATABASE};" > /tmp/tmp.sql
+DB_TMPSQL_FILE_CURRENT="${DB_TMPSQL_DIR}/tmp-current-$$.sql"
+
+echo "use ${DATABASE};" > "${DB_TMPSQL_FILE_CURRENT}"
 
 # Function definition - Add the measurement chosen from the SAMPLES variable
 measurement() {
@@ -37,37 +39,37 @@ measurement() {
     VALUE="$5"
     SCALE="$6"
 
-    echo "use ${DATABASE};" > /tmp/tmp.sql
+    echo "use ${DATABASE};" > "${DB_TMPSQL_FILE_CURRENT}"
     SLCT="select id from t_bios_measurement_topic where topic='$TOPIC'"
     TOP_ID="`do_select "$SLCT"`"
     if [ "$TOP_ID" == "" ]; then
         sqlline="INSERT INTO t_bios_measurement_topic (device_id, units,topic) SELECT r.id_discovered_device,'$UNIT','$TOPIC' FROM t_bios_asset_element AS e,t_bios_monitor_asset_relation AS r WHERE e.name = '$DEVICE' AND e.id_asset_element = r.id_asset_element;"
-        echo $sqlline >> /tmp/tmp.sql
+        echo $sqlline >> "${DB_TMPSQL_FILE_CURRENT}"
         sqlline="set @topic_id = LAST_INSERT_ID();"
     else
         sqlline="set @topic_id = $TOP_ID;"
     fi
-    echo "$sqlline" >> /tmp/tmp.sql
+    echo "$sqlline" >> "${DB_TMPSQL_FILE_CURRENT}"
     # measurement
     sqlline="INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ($TIMESTAMP, $VALUE, $SCALE, @topic_id);"
-    echo "$sqlline" >> /tmp/tmp.sql
-    loaddb_file "/tmp/tmp.sql"
-    echo "use ${DATABASE};" > /tmp/tmp.sql
+    echo "$sqlline" >> "${DB_TMPSQL_FILE_CURRENT}"
+    loaddb_file ""${DB_TMPSQL_FILE_CURRENT}""
+    echo "use ${DATABASE};" > "${DB_TMPSQL_FILE_CURRENT}"
 }
 
 db_initiate(){
     loaddb_current || return $?
 
-    echo "use ${DATABASE};" > /tmp/tmp.sql
+    echo "use ${DATABASE};" > "${DB_TMPSQL_FILE_CURRENT}"
     sqlline="INSERT INTO t_bios_discovered_device (id_discovered_device,name,id_device_type) VALUES (NULL, 'DC-LAB', 1);"
-    echo "$sqlline" >> /tmp/tmp.sql
-    loaddb_file "/tmp/tmp.sql"
-    echo "use ${DATABASE};" > /tmp/tmp.sql
+    echo "$sqlline" >> "${DB_TMPSQL_FILE_CURRENT}"
+    loaddb_file ""${DB_TMPSQL_FILE_CURRENT}""
+    echo "use ${DATABASE};" > "${DB_TMPSQL_FILE_CURRENT}"
     SEL_ID="select id_discovered_device from t_bios_discovered_device where name='DC-LAB'"
     TOP_ID="$(do_select "$SEL_ID")"
     sqlline="INSERT INTO t_bios_monitor_asset_relation (id_ma_relation,id_discovered_device,id_asset_element) VALUES (NULL, $TOP_ID, 19);"
-    echo "$sqlline" >> /tmp/tmp.sql
-    loaddb_file "/tmp/tmp.sql"
+    echo "$sqlline" >> "${DB_TMPSQL_FILE_CURRENT}"
+    loaddb_file ""${DB_TMPSQL_FILE_CURRENT}""
 }
 
 db_measure(){
