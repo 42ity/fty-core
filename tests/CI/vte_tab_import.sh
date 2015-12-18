@@ -119,11 +119,14 @@ sleep 5
 sut_run 'R=0; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent  bios-agent-nut bios-agent-inventory ; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
     die "Some required services are not running on the VTE"
 
+LOGFILE_MAIN="$BUILDSUBDIR/vte-tab-DC008-${_SCRIPT_NAME}.log"
+LOGFILE_LOADDB="$BUILDSUBDIR/vte-tab-DC008-import-${_SCRIPT_NAME}.log"
+
 # ***** INIT DB *****
     # *** write power rack base test data to DB on SUT
 set -o pipefail 2>/dev/null || true
 set -e
-loaddb_file "$DB_BASE" 2>&1 | tee "$CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log"
+loaddb_file "$DB_BASE" 2>&1 | tee "${LOGFILE_LOADDB}"
 
 # NOTE: This test verifies that with our standard configuration of the VTE
 # and its database we can import our assets, so we do not apply hacks like
@@ -140,15 +143,15 @@ set +e
 ASSET="$CSV_LOADDIR_BAM/bam_vte_tab_import.csv"
 
 # Import the bam_vte_tab_import.csv file
-api_auth_post_file_form /asset/import assets="@$ASSET" | tee "$CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log"
+api_auth_post_file_form /asset/import assets="@$ASSET" | tee "${LOGFILE_MAIN}"
 
 NUM_EXPECTED=13
-grep -q '"imported_lines" : '"$NUM_EXPECTED" "$CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log" || \
+grep -q '"imported_lines" : '"$NUM_EXPECTED" "${LOGFILE_MAIN}" || \
     die "ERROR : 'Test of the number of imported lines			FAILED  (not $NUM_EXPECTED)'"
 echo "Test of the number of imported lines			PASSED"
 
 for NUM in 9 10 11 16 18 20 21 22 23 24 25 27 28 29 ; do
-    grep -q "\[ $NUM," "$CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log" || \
+    grep -q "\[ $NUM," "${LOGFILE_MAIN}" || \
         die "ERROR : 'Test of the line   $NUM 				FAILED'"
     echo "Test of the line  $NUM  					PASSED"
 done
@@ -160,39 +163,39 @@ ELEMENT="\(1,'DC-LAB1',2,10,NULL,'active',1,1,'EATON12310'\),\(2,'ROOM-01',3,10,
 
 I=$(do_dumpdb t_bios_asset_element | awk "/INSERT/ && /ROOM-01/" | egrep -c "$ELEMENT" ) 2>/dev/null
 [ "$I" = 1 ] || die "ERROR : 'Test of the table t_bios_asset_element FAILED'"
-echo 'Test of the table t_bios_asset_element 			PASSED' | tee -a "$CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log"
+echo 'Test of the table t_bios_asset_element 			PASSED' | tee -a "${LOGFILE_MAIN}"
 
 ELEMENT="\(2,'datacenter'\),\(6,'device'\),\(1,'group'\),\(5,'rack'\),\(3,'room'\),\(4,'row'\)"
 I=$(do_dumpdb t_bios_asset_element_type | grep INSERT | egrep -c "$ELEMENT") 2>/dev/null
 [ "$I" = 1 ] || die "ERROR : 'Test of the table t_bios_asset_element_type FAILED'"
-echo 'Test of the table t_bios_asset_element_type 		PASSED' | tee -a "$CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log"
+echo 'Test of the table t_bios_asset_element_type 		PASSED' | tee -a "${LOGFILE_MAIN}"
 
 ELEMENT="\(1,'company','EATON',1,0\),\(2,'description','Lab DC',1,0\),\(3,'site_name','Eaton DC 1',1,0\),\(4,'address','Place de la Gare',1,0\),\(5,'contact_name',' 1345 Le Lieu',1,0\),\(6,'region','EMEA',1,0\),\(7,'contact_email','John Smith',1,0\),\(8,'maximum_number_racks','476010203',1,0\),\(9,'country','Switzerland',1,0\),\(10,'contact_phone','john.smith@company.com',1,0\),\(11,'description','main room',2,0\),\(12,'description','Annex',3,0\),\(13,'description','cage 01',4,0\),\(14,'type','cage',4,0\),\(15,'description','row in a cage',5,0\),\(16,'maximum_number_racks','10',5,0\),\(17,'description','row in a room',6,0\),\(18,'maximum_number_racks','10',6,0\),\(19,'description','rack 01',7,0\),\(20,'u_size','42U',7,0\),\(21,'serial_no','21545212HGFV2',7,0\),\(22,'model','RESSPU4210KB 600mm x 1000mm - 42U Rack',7,0\),\(23,'manufacturer','Cooper',7,0\),\(24,'description','rack Lab',8,0\),\(25,'u_size','42U',8,0\),\(26,'model','RESSPU4210KB 600mm x 1000mm - 42U Rack',8,0\),\(27,'manufacturer','Cooper',8,0\),\(29,'description','customer X \(IT\)',10,0\),\(30,'type','customer',10,0\),\(31,'description','MAIN 240V',11,0\),\(32,'description','Genset',12,0\),\(33,'maintenance_date','4-Jun-14',12,0\),\(34,'runtime','8',12,0\),\(35,'service_contact_name','Bob Jones',12,0\),\(36,'serial_no','G789456',12,0\),\(37,'maintenance_due','4-Sep-14',12,0\),\(38,'installation_date','4-Jun-14',12,0\),\(39,'model','45kW NG/LG 240V 3 Phase',12,0\),\(40,'service_contact_mail','Bob.Jones@company.com',12,0\),\(41,'service_contact_phone','476010203',12,0\),\(42,'manufacturer','Generac',12,0\),\(43,'description','Genset',13,0\),\(44,'maintenance_date','4-Jun-14',13,0\),\(45,'runtime','8',13,0\),\(46,'service_contact_name','Bob Jones',13,0\),\(47,'maintenance_due','4-Sep-14',13,0\),\(48,'installation_date','4-Jun-14',13,0\),\(49,'model','45kW NG/LG 240V 3 Phase',13,0\),\(50,'service_contact_mail','Bob.Jones@company.com',13,0\),\(51,'service_contact_phone','476010203',13,0\),\(52,'manufacturer','Generac',13,0\),\(53,'description','Genset',14,0\),\(54,'maintenance_date','4-Jun-14',14,0\),\(55,'runtime','8',14,0\),\(56,'service_contact_name','Bob Jones',14,0\),\(57,'location_w_pos','left',14,0\),\(58,'maintenance_due','4-Sep-14',14,0\),\(59,'installation_date','4-Jun-14',14,0\),\(60,'model','45kW NG/LG 240V 3 Phase',14,0\),\(61,'service_contact_mail','Bob.Jones@company.com',14,0\),\(62,'service_contact_phone','476010203',14,0\),\(63,'manufacturer','Generac',14,0\),\(64,'description','Automatic transfer switch',15,0\),\(65,'serial_no','ATC1235',15,0\),\(66,'model','ATC-100',15,0\),\(67,'manufacturer','eaton',15,0\),\(78,'description','SRV1 PRIMERGY RX100 G8',18,0\),\(79,'location_u_pos','6',18,0\),\(80,'u_size','1U',18,0\),\(81,'hostname.1','srv1.Bios.Labo.Kalif.com',18,0\),\(82,'end_warranty_date','4-Jun-14',18,0\),\(83,'installation_date','4-Jun-14',18,0\),\(84,'http_link.1','htps://srv1.Bios.Labo.Kalif.com',18,0\),\(85,'model','RX100 G8',18,0\),\(86,'ip.1','10.130.32.16',18,0\),\(87,'manufacturer','Fujisu',18,0\)"
 
 I=$(do_dumpdb t_bios_asset_ext_attributes | grep INSERT | egrep -c "$ELEMENT") 2>/dev/null
 [ "$I" = 1 ] || die "ERROR : 'Test of the table t_bios_asset_ext_attributes FAILED'"
-echo 'Test of the table t_bios_asset_ext_attributes		PASSED' | tee -a "$CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log"
+echo 'Test of the table t_bios_asset_ext_attributes		PASSED' | tee -a "${LOGFILE_MAIN}"
 
 ELEMENT="\(3,'epdu'\),\(2,'genset'\),\(6,'feed'\),\(10,'N_A'\),\(4,'pdu'\),\(5,'server'\),\(9,'storage'\),\(7,'sts'\),\(8,'switch'\),\(1,'ups'\)"
 I=$(do_dumpdb t_bios_asset_device_type | grep INSERT | egrep -c "$ELEMENT") 2>/dev/null
 [ "$I" = 1 ] || die "ERROR : 'Test of the table t_bios_asset_device_type FAILED'"
-echo 'Test of the table t_bios_asset_device_type		PASSED' | tee -a "$CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log"
+echo 'Test of the table t_bios_asset_device_type		PASSED' | tee -a "${LOGFILE_MAIN}"
 #ELEMENT="\(1,10,NULL,14,NULL,1\),\(2,12,NULL,14,NULL,1\)"
 ELEMENT="\(1,10,NULL,13,NULL,1\),\(2,11,NULL,13,NULL,1\)"
 I=$(do_dumpdb t_bios_asset_link | grep INSERT | egrep "$ELEMENT") 2>/dev/null
 [ "$I" = 1 ] || die "ERROR : 'Test of the table t_bios_asset_link FAILED'"
-echo 'Test of the table t_bios_asset_ext_link			PASSED' | tee -a "$CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log"
+echo 'Test of the table t_bios_asset_ext_link			PASSED' | tee -a "${LOGFILE_MAIN}"
 
 #ELEMENT="\(1,'power chain'\)"
 ELEMENT="\(1,'power chain'\)"
 I=$(do_dumpdb t_bios_asset_link_type | grep INSERT | egrep -c "$ELEMENT") 2>/dev/null
 [ "$I" = 1 ] || die "ERROR : 'Test of the table t_bios_asset_link_type FAILED'"
-echo 'Test of the table t_bios_asset_ext_link_type		PASSED' | tee -a "$CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log"
+echo 'Test of the table t_bios_asset_ext_link_type		PASSED' | tee -a "${LOGFILE_MAIN}"
 
 ELEMENT="\(1,4,5\)"
 I=$(do_dumpdb t_bios_asset_group_relation | grep INSERT | egrep -c "$ELEMENT") 2>/dev/null
 [ "$I" = 1 ] || die "ERROR : 'Test of the table t_bios_asset_group_relation FAILED'"
-echo 'Test of the table t_bios_asset_ext_group_relation       PASSED' | tee -a "$CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log"
+echo 'Test of the table t_bios_asset_ext_group_relation       PASSED' | tee -a "${LOGFILE_MAIN}"
 
 TIME=$(date --utc "+%Y-%m-%d %H:%M:%S")
 echo "Finish time is $TIME"
