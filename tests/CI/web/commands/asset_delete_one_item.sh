@@ -106,67 +106,67 @@ print_result $?
 curlfail_pop
 No="$(expr $No + 1)"
 
-# Start od deleting from up to down
+# Start of deleting from up to down
 for ent in datacenters rooms rows racks groups devices; do
-   i=1
-   ITEM_ID="`find_id $ent $i`"
-   until [ -z "$ITEM_ID" ]
-   do
-      echo "********* asset_delete_one_item.sh ****************************************************************"
-      echo "********* ${No}. Delete_${ent}_with_ID_=_${ITEM_ID} ******************************************************"
-      echo "***************************************************************************************************"
-      test_it "Delete_${ent}_with_ID_=_${ITEM_ID}"
-      PARENTS_ID=$(sut_run "mysql -u root box_utf8 <<< 'select id from v_bios_asset_element where id_parent='$ITEM_ID")
-      if [[ "$PARENTS_ID" == "" ]];then
-         curlfail_push_expect_noerrors
-         echo "${ent} with ID = $ITEM_ID is expected to be deleted."
-      else
-         curlfail_push_expect_409
-         echo "ERROR 409. ${ent} with ID = $ITEM_ID is expected to be NOT deleted."
-      fi
-      api_auth_delete_json /asset/$ITEM_ID >&5
-      print_result $?
-      curlfail_pop
-      No="$(expr $No + 1)"
-      i="$(expr $i + 1)"
-      ITEM_ID="`find_id $ent $i`"
-   done
+    i=1
+    ITEM_ID="`find_id $ent $i`"
+    until [ -z "$ITEM_ID" ]
+    do
+        echo "********* asset_delete_one_item.sh ****************************************************************"
+        echo "********* ${No}. Delete_${ent}_with_ID_=_${ITEM_ID} ******************************************************"
+        echo "***************************************************************************************************"
+        test_it "Delete_${ent}_with_ID_=_${ITEM_ID}"
+        PARENTS_ID="$(do_select 'select id from v_bios_asset_element where id_parent='"${ITEM_ID}")"
+        if [[ "$PARENTS_ID" == "" ]]; then
+            curlfail_push_expect_noerrors
+            echo "${ent} with ID = $ITEM_ID is expected to be deleted."
+        else
+            curlfail_push_expect_409
+            echo "ERROR 409. ${ent} with ID = $ITEM_ID is expected to be NOT deleted."
+        fi
+        api_auth_delete_json /asset/$ITEM_ID >&5
+        print_result $?
+        curlfail_pop
+        No="$(expr $No + 1)"
+        i="$(expr $i + 1)"
+        ITEM_ID="`find_id $ent $i`"
+    done
 done
 
 # Start of deleting from down to up
 for ent in devices groups racks rows rooms datacenters; do
-   i=1
-   ITEM_ID=`find_id $ent $i`
-   until [ -z "$ITEM_ID" ]
-   do
-      echo "********* asset_delete_one_item.sh ****************************************************************"
-      echo "********* ${No}. Delete_${ent}_with_ID_=_${ITEM_ID} ***********************************************"
-      echo "***************************************************************************************************"
-      test_it "Delete_${ent}_with_ID_=_${ITEM_ID}"
-      PARENTS_ID=$(sut_run "mysql -u root box_utf8 <<< 'select id from v_bios_asset_element where id_parent='${ITEM_ID}")
-      if [[ "$PARENTS_ID" == "" ]];then
-         curlfail_push_expect_noerrors
-         echo "${ent} with ID = ${ITEM_ID} is expected to be deleted."
-      else
-         curlfail_push_expect_409
-         echo "ERROR 409. ${ent} with ID = ${ITEM_ID} is expected to be NOT deleted."
-      fi
-      api_auth_delete_json /asset/$ITEM_ID >&5
-      print_result $?
-      curlfail_pop
-      No="$(expr $No + 1)"
-      ITEM_ID=`find_id $ent $i`
-   done
+    i=1
+    ITEM_ID="`find_id $ent $i`"
+    until [ -z "$ITEM_ID" ]
+    do
+        echo "********* asset_delete_one_item.sh ****************************************************************"
+        echo "********* ${No}. Delete_${ent}_with_ID_=_${ITEM_ID} ***********************************************"
+        echo "***************************************************************************************************"
+        test_it "Delete_${ent}_with_ID_=_${ITEM_ID}"
+        PARENTS_ID="$(do_select 'select id from v_bios_asset_element where id_parent='"${ITEM_ID}")"
+        if [[ "$PARENTS_ID" == "" ]]; then
+            curlfail_push_expect_noerrors
+            echo "${ent} with ID = ${ITEM_ID} is expected to be deleted."
+        else
+            curlfail_push_expect_409
+            echo "ERROR 409. ${ent} with ID = ${ITEM_ID} is expected to be NOT deleted."
+        fi
+        api_auth_delete_json /asset/$ITEM_ID >&5
+        print_result $?
+        curlfail_pop
+        No="$(expr $No + 1)"
+        ITEM_ID="`find_id $ent $i`"
+    done
 done
 
 DEL_RES=0
-for i in t_bios_asset_ext_attributes t_bios_asset_group_relation t_bios_asset_link t_bios_asset_ext_attributes t_bios_monitor_asset_relation ; do
+for T in t_bios_asset_ext_attributes t_bios_asset_group_relation t_bios_asset_link t_bios_asset_ext_attributes t_bios_monitor_asset_relation ; do
     echo "********* asset_delete_one_item.sh ****************************************************************"
-    echo "********* ${No}. Related_table ${i} must be empty ****************************"
+    echo "********* ${No}. Related_table ${T} must be empty ****************************"
     echo "***************************************************************************************************"
-    test_it "Table ${i} must be empty"
-    EXT_ATTR=$(sut_run "mysql -u root box_utf8 <<< 'select * from '${i}")
-    if [[ "$EXT_ATTR" != "" ]];then
+    test_it "Table ${T} must be empty"
+    EXT_ATTR="$(do_select 'select * from '"${T}")"
+    if [[ "$EXT_ATTR" != "" ]]; then
         DEL_RES="$(expr $DEL_RES + 1)"
     fi
     print_result $DEL_RES
