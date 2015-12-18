@@ -76,7 +76,7 @@ if [ "${SUT_WEB_PORT-}" -eq 443 ]; then
 	SUT_WEB_SCHEMA="https"
 fi
 [ -z "${BASE_URL-}" ] && BASE_URL="${SUT_WEB_SCHEMA}://$SUT_HOST:$SUT_WEB_PORT/api/v1"
-export SUT_IS_REMOTE SUT_USER SUT_HOST SUT_SSH_PORT SUT_WEB_PORT BASE_URL
+export SUT_IS_REMOTE SUT_USER SUT_HOST SUT_SSH_PORT SUT_WEB_PORT SUT_WEB_SCHEMA BASE_URL
 
 ### Should the test suite break upon first failed test?
 [ x"${CITEST_QUICKFAIL-}" != xyes ] && CITEST_QUICKFAIL=no
