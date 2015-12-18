@@ -26,7 +26,7 @@ echo "##########################################################################
 echo
 
 # Add the first line of the sql file and create it
-echo "use box_utf8;" > /tmp/tmp.sql
+echo "use ${DATABASE};" > /tmp/tmp.sql
 
 # Function definition - Add the measurement chosen from the SAMPLES variable
 measurement() {
@@ -37,7 +37,7 @@ measurement() {
     VALUE="$5"
     SCALE="$6"
 
-    echo "use box_utf8;" > /tmp/tmp.sql
+    echo "use ${DATABASE};" > /tmp/tmp.sql
     SLCT="select id from t_bios_measurement_topic where topic='$TOPIC'"
     TOP_ID="`do_select "$SLCT"`"
     if [ "$TOP_ID" == "" ]; then
@@ -52,19 +52,19 @@ measurement() {
     sqlline="INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ($TIMESTAMP, $VALUE, $SCALE, @topic_id);"
     echo "$sqlline" >> /tmp/tmp.sql
     loaddb_file "/tmp/tmp.sql"
-    echo "use box_utf8;" > /tmp/tmp.sql
+    echo "use ${DATABASE};" > /tmp/tmp.sql
 }
 
 db_initiate(){
     loaddb_current || return $?
 
-    echo "use box_utf8;" > /tmp/tmp.sql
+    echo "use ${DATABASE};" > /tmp/tmp.sql
     sqlline="INSERT INTO t_bios_discovered_device (id_discovered_device,name,id_device_type) VALUES (NULL, 'DC-LAB', 1);"
     echo "$sqlline" >> /tmp/tmp.sql
     loaddb_file "/tmp/tmp.sql"
-    echo "use box_utf8;" > /tmp/tmp.sql
+    echo "use ${DATABASE};" > /tmp/tmp.sql
     SEL_ID="select id_discovered_device from t_bios_discovered_device where name='DC-LAB'"
-    TOP_ID="$(echo $SEL_ID | mysql -u root box_utf8 -N)"
+    TOP_ID="$(do_select "$SEL_ID")"
     sqlline="INSERT INTO t_bios_monitor_asset_relation (id_ma_relation,id_discovered_device,id_asset_element) VALUES (NULL, $TOP_ID, 19);"
     echo "$sqlline" >> /tmp/tmp.sql
     loaddb_file "/tmp/tmp.sql"
