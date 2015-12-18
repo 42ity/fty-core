@@ -74,10 +74,14 @@ GENERATEDDATA =	docs/examples/sudoers.d/bios_00_base
 EXTRA_DIST +=	$(GENERATEDSCRIPTS) $(GENERATEDDATA)
 CLEANFILES +=	$(GENERATEDSCRIPTS) $(GENERATEDDATA)
 
+# Test data are also part of sources to redistribute
+# The COPYING file is symlinked to from the license fixtures
+EXTRA_DIST +=	tests/fixtures tests/CI/web/results COPYING
+
 # How to run tntnet from Makefile
-RUN_TNTNET = export LICENSE_DIR="$(abs_top_srcdir)/tests/fixtures/license"; \
+RUN_TNTNET = export LICENSE_DIR="$(abs_top_builddir)/tests/fixtures/license"; \
 	     export DATADIR_BASE="$(abs_top_builddir)/var"; \
-	     export TESTPASS="$(abs_top_srcdir)/tools/testpass.sh"; \
+	     export TESTPASS="$(abs_top_builddir)/tools/testpass.sh"; \
 	     export NO_SSL="1"; \
 		 export BIOS_LOG_LEVEL=LOG_DEBUG; \
 	     export DATADIR="$$DATADIR_BASE/bios"; \
