@@ -41,7 +41,7 @@ usage(){
     echo "  -p|--passwd password for SASL (Default: '$BIOS_PASSWD')"
 }
 
-[ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="http"
+[ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="https"
 
     # *** read parameters if present
 while [ $# -gt 0 ]; do

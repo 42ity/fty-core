@@ -42,7 +42,7 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-[ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="http"
+[ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="https"
 
     # *** read parameters if present
 while [ $# -gt 0 ]; do
