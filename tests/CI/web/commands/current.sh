@@ -44,7 +44,7 @@ measurement() {
     TOP_ID="`do_select "$SLCT"`"
     if [ "$TOP_ID" == "" ]; then
         sqlline="INSERT INTO t_bios_measurement_topic (device_id, units,topic) SELECT r.id_discovered_device,'$UNIT','$TOPIC' FROM t_bios_asset_element AS e,t_bios_monitor_asset_relation AS r WHERE e.name = '$DEVICE' AND e.id_asset_element = r.id_asset_element;"
-        echo $sqlline >> "${DB_TMPSQL_FILE_CURRENT}"
+        echo "$sqlline" >> "${DB_TMPSQL_FILE_CURRENT}"
         sqlline="set @topic_id = LAST_INSERT_ID();"
     else
         sqlline="set @topic_id = $TOP_ID;"
