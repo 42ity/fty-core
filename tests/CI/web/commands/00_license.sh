@@ -97,7 +97,7 @@ print_result $?
 echo "********* 00_license.sh ***************************************************************************"
 echo "********* 8. missing_license_text *****************************************************************"
 echo "***************************************************************************************************"
-if [ $SUT_IS_REMOTE ]; then
+if [ "$SUT_IS_REMOTE" = yes ]; then
     echo "SKIPPED ON REMOTE"
     echo '{"errors":[{"message":"Internal Server Error. Error reading license file, check integrity of storage.","code":42}]}' >&5
 else
@@ -113,7 +113,7 @@ RES=$?
 curlfail_pop
 mv $BUILDSUBDIR/org-COPYING $BUILDSUBDIR/COPYING
 print_result $RES
-fi
+fi # SUT_IS_REMOTE
 
 echo "********* 00_license.sh ***************************************************************************"
 echo "********* 9. disabled_method_delete ***************************************************************"
@@ -128,7 +128,7 @@ echo "********* 00_license.sh **************************************************
 echo "********* 10. cannot save the license *************************************************************"
 echo "***************************************************************************************************"
 #*#*#*#*#* 00_license.sh - subtest 10 - TODO, 500?
-if [ $SUT_IS_REMOTE ]; then
+if [ "$SUT_IS_REMOTE" = yes ]; then
     echo "SKIPPED ON REMOTE"
     echo '{"errors":[{"message":"Internal Server Error. Error saving license acceptance or getting license version, check integrity of storage.","code":42}]}' >&5
 else
@@ -142,7 +142,7 @@ RES=$?
 curlfail_pop
 rm -f $CHECKOUTDIR/var/bios;mkdir $CHECKOUTDIR/var/bios
 print_result $RES
-fi
+fi # SUT_IS_REMOTE 
 
 echo "********* 00_license.sh ***************************************************************************"
 echo "********* 11. license_acceptance ******************************************************************"
