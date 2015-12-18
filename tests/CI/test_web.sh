@@ -141,7 +141,7 @@ else
     if [ "$SKIP_SANITY" != onlyerrors ]; then
         curlfail_push_expect_noerrors
         if [ -z "`api_get '/admin/ifaces' 2>&1 | grep 'HTTP/.* 200 OK'`" ] >/dev/null 2>&1 ; then
-            # We expect that the login service responds
+            # We expect that this simple service responds
             logmsg_error "api_get() returned an error:"
             api_get "/admin/ifaces" >&2
             CODE=4 die "Webserver is not running or serving the REST API, please start it first!"

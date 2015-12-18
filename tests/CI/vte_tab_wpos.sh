@@ -45,6 +45,7 @@
 
 # ***** GLOBAL VARIABLES *****
 TIME_START=$(date +%s)
+[ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="http"
 
     # *** read parameters if present
 while [ $# -gt 0 ]; do
@@ -61,6 +62,8 @@ while [ $# -gt 0 ]; do
             SUT_HOST="$2"
             shift 2
             ;;
+        --use-https|--sut-web-https)    SUT_WEB_SCHEMA="https"; shift;;
+        --use-http|--sut-web-http)      SUT_WEB_SCHEMA="http"; shift;;
         --sut-user|-su)
             SUT_USER="$2"
             shift 2
@@ -99,7 +102,7 @@ if [ -z "$SUT_WEB_PORT" ]; then
     fi
 fi
 # unconditionally calculated values
-BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+BASE_URL="${SUT_WEB_SCHEMA}://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 SUT_IS_REMOTE=yes
 
 # Include our standard routines for CI scripts
