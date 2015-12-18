@@ -59,8 +59,8 @@ while [ $# -gt 0 ]; do
             SUT_HOST="$2"
             shift 2
             ;;
-        --use-https|--sut-web-https)    SUT_WEB_SCHEMA="https"; shift;;
-        --use-http|--sut-web-http)      SUT_WEB_SCHEMA="http"; shift;;
+        --use-https|--sut-web-https)    SUT_WEB_SCHEMA="https"; export SUT_WEB_SCHEMA; shift;;
+        --use-http|--sut-web-http)      SUT_WEB_SCHEMA="http"; export SUT_WEB_SCHEMA; shift;;
         --sut-user|-su)
             SUT_USER="$2"
             shift 2
