@@ -139,8 +139,8 @@ grep -q '"imported_lines" : 16' "$CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log" || 
 echo "Test of the number of imported lines 			PASSED"
 
 # create sql file
-settraps 'rm -f $CHECKOUTDIR/tmp_uptime.sql'
-echo "use box_utf8;"> "$CHECKOUTDIR/tmp_uptime.sql"
+settraps 'rm -f "$CHECKOUTDIR/tmp_uptime.sql"'
+echo "use ${DATABASE};"> "$CHECKOUTDIR/tmp_uptime.sql"
 
 # dates formats
 # UPS101_1
