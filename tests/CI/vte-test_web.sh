@@ -245,7 +245,7 @@ echo_summarizeTestedScriptlets() {
 
 exit_summarizeTestedScriptlets() {
     echo_summarizeTestedScriptlets
-    if [ -z "$TESTLIB_LOG_SUMMARY" ]; then
+    if [ -n "$TESTLIB_LOG_SUMMARY" ]; then
         echo_summarizeTestedScriptlets >> "$TESTLIB_LOG_SUMMARY"
     fi
     return 0
