@@ -45,6 +45,7 @@
 
 # ***** GLOBAL VARIABLES *****
 TIME_START=$(date +%s)
+[ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="https"
 
     # *** read parameters if present
 while [ $# -gt 0 ]; do
@@ -61,6 +62,8 @@ while [ $# -gt 0 ]; do
             SUT_HOST="$2"
             shift 2
             ;;
+        --use-https|--sut-web-https)    SUT_WEB_SCHEMA="https"; shift;;
+        --use-http|--sut-web-http)      SUT_WEB_SCHEMA="http"; shift;;
         --sut-user|-su)
             SUT_USER="$2"
             shift 2
@@ -99,7 +102,7 @@ if [ -z "$SUT_WEB_PORT" ]; then
     fi
 fi
 # unconditionally calculated values
-BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+BASE_URL="${SUT_WEB_SCHEMA}://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 SUT_IS_REMOTE=yes
 
 # Include our standard routines for CI scripts
@@ -121,13 +124,16 @@ sleep 3
 sut_run 'R=0; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent bios-agent-nut bios-agent-inventory bios-agent-cm; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
     die "Some required services are not running on the VTE"
 
+LOGFILE_LOADDB="$BUILDSUBDIR/vte-tab-loaddb-${_SCRIPT_NAME}.log"
+LOGFILE_IMPORT="$BUILDSUBDIR/vte-tab-import_TP-${_SCRIPT_NAME}.log"
+
 subtest() {
     # ***** INIT DB *****
     # *** write power rack base test data to DB on SUT
     set -o pipefail 2>/dev/null || true
     set -e
-    loaddb_file "$DB_BASE" 2>&1 | tee $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
-    loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" 2>&1 | tee -a $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
+    loaddb_file "$DB_BASE" 2>&1 | tee "${LOGFILE_LOADDB}"
+    loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" 2>&1 | tee -a "${LOGFILE_LOADDB}"
     set +e
 
     # Try to accept the BIOS license on server
@@ -136,10 +142,13 @@ subtest() {
 
     # ***** POST THE CSV FILE *****
     ASSET="$CSV_LOADDIR_BAM/$1"
+    # TODO: Original script misses some step that actually imports the data and
+    # generates the "${LOGFILE_IMPORT}".
+    # Maybe we should port this logic into web/commands/asset*sh tests
 
     case "$1" in
         bam_import_16_wpos1.csv)
-            N_EXPECT=`cat $CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log|grep "more than 2 PDU is not supported"|wc -l`
+            N_EXPECT=`cat ${LOGFILE_IMPORT}|grep "more than 2 PDU is not supported"|wc -l`
             if [ "$N_EXPECT" = "1" ];then
                 echo "Subtest 1 PASSED."
 	    else
@@ -147,7 +156,7 @@ subtest() {
 	    fi
             ;;
         bam_import_16_wpos2.csv)
-            N_EXPECT=`cat $CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log|grep "location_w_pos should be set"|wc -l`
+            N_EXPECT=`cat ${LOGFILE_IMPORT}|grep "location_w_pos should be set"|wc -l`
             echo "N_EXPECT = $N_EXPECT"
             if [ "$N_EXPECT" = "4" ];then
                 echo "Subtest 2 PASSED."
@@ -156,7 +165,7 @@ subtest() {
             fi
             ;;
         bam_import_16_wpos3.csv)
-            N_EXPECT=`cat $CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log|grep '"imported_lines" : 7'|wc -l`
+            N_EXPECT=`cat ${LOGFILE_IMPORT}|grep '"imported_lines" : 7'|wc -l`
             echo "N_EXPECT = $N_EXPECT"
             if [ "$N_EXPECT" = "1" ];then
                 echo "Subtest 3 PASSED."
@@ -165,7 +174,7 @@ subtest() {
 	    fi  
             ;;
         bam_import_16_wpos4.csv)
-            N_EXPECT=`cat $CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log|grep '"imported_lines" : 7'|wc -l`
+            N_EXPECT=`cat ${LOGFILE_IMPORT}|grep '"imported_lines" : 7'|wc -l`
             echo "N_EXPECT = $N_EXPECT"
             if [ "$N_EXPECT" = "1" ];then
                 echo "Subtest 4 PASSED."

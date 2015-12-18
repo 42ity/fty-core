@@ -24,8 +24,9 @@
 
 SUT_HOST="127.0.0.1"
 SUT_WEB_PORT=8000
+[ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA=http
 SUT_IS_REMOTE=no
-BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+BASE_URL="${SUT_WEB_SCHEMA}://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 
 
 # Include our standard routines for CI scripts
@@ -48,11 +49,11 @@ echo "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 set -u
 
 # Import empty DB
-#mysql -u root < "$DB_BASE"
-#mysql -u root < /home/rvrajik/core/tools/initdb.sql
-#mysql -u root box_utf8 <<< "select * from t_bios_asset_element_type"
-#mysql -u root box_utf8 <<< "delete from t_bios_asset_device_type"
-#mysql -u root box_utf8 <<< "delete from t_bios_asset_link_type"
+#loaddb_file "$DB_BASE"
+#loaddb_file "/home/rvrajik/core/tools/initdb.sql"
+#do_select 'select * from t_bios_asset_element_type'
+#do_select 'delete from t_bios_asset_device_type'
+#do_select 'delete from t_bios_asset_link_type'
 
 loaddb_file "$DB_BASE"
 
