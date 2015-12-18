@@ -24,8 +24,9 @@
 
 SUT_HOST="127.0.0.1"
 SUT_WEB_PORT=8000
+[ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA=http
 SUT_IS_REMOTE=no
-BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+BASE_URL="${SUT_WEB_SCHEMA}://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 
 
 # Include our standard routines for CI scripts
