@@ -41,6 +41,7 @@ usage(){
     echo "  -p|--passwd password for SASL (Default: '$BIOS_PASSWD')"
 }
 
+[ x"${SUT_WEB_SCHEMA-}" = x- ] && SUT_WEB_SCHEMA=""
 [ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="https"
 
     # *** read parameters if present
@@ -257,7 +258,7 @@ if [ -n "$TESTLIB_LOG_SUMMARY" ] && [ -s "$TESTLIB_LOG_SUMMARY" ]; then
     echo "############### TESTLIB_LOG_SUMMARY contents: #############"
     echo "### ($TESTLIB_LOG_SUMMARY) ###"
     echo "###########################################################"
-    cat "$TESTLIB_LOG_SUMMARY"
+    awk '{print "|| "$0}' < "$TESTLIB_LOG_SUMMARY"
     echo "###########################################################"
     echo "########### END OF TESTLIB_LOG_SUMMARY contents ###########"
     echo "###########################################################"
