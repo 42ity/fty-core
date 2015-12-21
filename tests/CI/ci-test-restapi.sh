@@ -253,6 +253,7 @@ test_web_topo_p() {
 }
 
 test_web_topo_l() {
+# NOTE: This piece of legacy code is still here, but no usecase below calls it
     init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_l() $*"
     echo "---------- reset db: topology : location ---------"
     for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOL"; do
@@ -301,7 +302,7 @@ else
         esac
         shift
         test_web_process || exit
-        [ "$RESULT" != 0 ] && break
+        [ "$RESULT" != 0 ] && [ x"$CITEST_QUICKFAIL" != xno ] && break
     done
 fi
 ci_loaddb_default
@@ -324,6 +325,20 @@ else
         { logmsg_error "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}': FAILED ($RESULT)"; \
           echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY" 2>&1
     fi
+fi
+
+if [ -n "$TESTLIB_LOG_SUMMARY" ] && [ -s "$TESTLIB_LOG_SUMMARY" ]; then
+    echo ""
+    echo "================================================================"
+    echo ""
+    echo "###########################################################"
+    echo "############### TESTLIB_LOG_SUMMARY contents: #############"
+    echo "### ($TESTLIB_LOG_SUMMARY) ###"
+    echo "###########################################################"
+    cat "$TESTLIB_LOG_SUMMARY"
+    echo "###########################################################"
+    echo "########### END OF TESTLIB_LOG_SUMMARY contents ###########"
+    echo "###########################################################"
 fi
 
 exit $RESULT
