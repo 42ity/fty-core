@@ -32,6 +32,7 @@
 # ***********************************************
 
 ### Should the test suite break upon first failed test?
+[ x"${CITEST_QUICKFAIL-}" = x- ] && CITEST_QUICKFAIL=""
 [ x"${CITEST_QUICKFAIL-}" != xyes ] && CITEST_QUICKFAIL=no
 
 [ -n "${SCRIPTDIR-}" ] && [ -d "$SCRIPTDIR" ] || \
