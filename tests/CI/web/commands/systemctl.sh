@@ -36,8 +36,8 @@ expected() {
     # print 'systemctl show' in format of REST API call to help comparing
     # $1 = systemd service name
     echo "{\"$1\": {"
-    sudo /bin/systemctl show "$1" \
-        -p ActiveState -p SubState -p LoadState -p UnitFileState \
+    sut_run -t "sudo /bin/systemctl show '$1' \
+        -p ActiveState -p SubState -p LoadState -p UnitFileState" \
     | awk -F= 'NR>1 {print ", "}{print "\""$1"\" : \""$2"\""}'
     echo "} }"
 }
@@ -97,7 +97,7 @@ print_result $?
 
 #FIXME: the mysql stop tests is constantly failing, turn it off for now
 #test_it "Stop mysql"
-#sudo systemctl stop mysql
+#sut_run -t "sudo systemctl stop mysql"
 #print_result $?
 #test_it "Authorized status 2"
 #simple_auth_get_code "/admin/systemctl/status/mysql" received HTTP_CODE
@@ -106,7 +106,7 @@ print_result $?
 #print_result $?
 
 test_it "Force-Enable mysql now"
-sudo systemctl enable mysql
+sut_run -t "sudo systemctl enable mysql"
 print_result $?
 
 test_it "Authorized status 3"
@@ -116,7 +116,7 @@ tmp="`expected mysql`"
 print_result $?
 
 test_it "Force-Disable mysql now"
-sudo systemctl disable mysql
+sut_run -t "sudo systemctl disable mysql"
 print_result $?
 
 
@@ -127,7 +127,7 @@ tmp="`expected mysql`"
 print_result $?
 
 test_it "Force-Start mysql now"
-sudo systemctl start mysql
+sut_run -t "sudo systemctl start mysql"
 print_result $?
 
 test_it "Authorized status 5"
