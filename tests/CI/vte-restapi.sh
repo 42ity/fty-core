@@ -222,10 +222,16 @@ RESULT_OVERALL=0
 # admin_network needs a clean state of database, otherwise it does not work
 test_web_default admin_networks admin_network || RESULT_OVERALL=$?
     # *** start the other default TC's instead of sysinfo
+test_web_process || exit
+[ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] && \
 test_web_default -topology -admin_network -admin_networks -sysinfo || RESULT_OVERALL=$?
     # *** start power topology TC's
+test_web_process || exit
+[ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] && \
 test_web_topo_p topology_power || RESULT_OVERALL=$?
     # *** start location topology TC's
+test_web_process || exit
+[ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] && \
 test_web_topo_l topology_location || RESULT_OVERALL=$?
 
 # ***** RESULTS *****
@@ -241,6 +247,17 @@ else
         { logmsg_error "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}': FAILED ($RESULT_OVERALL)"; \
           echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY" 2>&1
     fi
+fi
+
+if [ -n "$TESTLIB_LOG_SUMMARY" ] && [ -s "$TESTLIB_LOG_SUMMARY" ]; then
+    echo "###########################################################"
+    echo "############### TESTLIB_LOG_SUMMARY contents: #############"
+    echo "### ($TESTLIB_LOG_SUMMARY) ###"
+    echo "###########################################################"
+    cat "$TESTLIB_LOG_SUMMARY"
+    echo "###########################################################"
+    echo "############### TESTLIB_LOG_SUMMARY contents: #############"
+    echo "###########################################################"
 fi
 
 exit $RESULT_OVERALL
