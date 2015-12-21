@@ -71,6 +71,7 @@ export BIOS_USER BIOS_PASSWD SASL_SERVICE
 [ -z "${SUT_HOST-}" ] && SUT_HOST="127.0.0.1"       # Hostname or IP address
 [ -z "${SUT_SSH_PORT-}" ] && SUT_SSH_PORT="22"       # SSH (maybe via NAT)
 [ -z "${SUT_WEB_PORT-}" ] && SUT_WEB_PORT="8000"       # TNTNET (maybe via NAT)
+[ x"${SUT_WEB_SCHEMA-}" = x- ] && SUT_WEB_SCHEMA=""
 [ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="http"
 if [ "${SUT_WEB_PORT-}" -eq 443 ]; then
     SUT_WEB_SCHEMA="https"
