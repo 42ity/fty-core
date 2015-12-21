@@ -310,12 +310,14 @@ SKIP_SANITY=yes test_web 00_license-CI-forceaccept.sh.test || \
 # do the test
 set +e
 if [ $# = 0 ]; then
-    test_web_default -topology_power
-    RESULT=$?
+    test_web_default -topology_power -asset_create || RESULT=$?
     test_web_process || exit
-    if [ "$RESULT" -eq 0 ]; then
-        test_web_topo_p topology_power
-        RESULT=$?
+    if [ "$RESULT" -eq 0 ] || [ x"$CITEST_QUICKFAIL" = xno ]; then
+        test_web_asset_create asset_create || RESULT=$?
+    fi
+    test_web_process || exit
+    if [ "$RESULT" -eq 0 ] || [ x"$CITEST_QUICKFAIL" = xno ]; then
+        test_web_topo_p topology_power || RESULT=$?
     fi
     test_web_process || exit
 else
