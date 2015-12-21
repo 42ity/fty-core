@@ -210,6 +210,45 @@ test_web_topo_l() {
     test_web "$@"
 }
 
+trap_cleanup(){
+    # ***** RESULTS *****
+    if [ "$RESULT_OVERALL" = 0 ]; then
+        logmsg_info "Overall result: SUCCESS"
+        if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
+            { logmsg_info "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}': SUCCESS"; \
+              echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY"
+        fi
+    else
+        logmsg_error "Overall result: FAILED ($RESULT_OVERALL), seek details above"
+        if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
+            { logmsg_error "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}': FAILED ($RESULT_OVERALL)"; \
+              echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY" 2>&1
+        fi
+    fi
+
+    if [ -n "$TESTLIB_LOG_SUMMARY" ] && [ -s "$TESTLIB_LOG_SUMMARY" ]; then
+        echo ""
+        echo "================================================================"
+        echo ""
+        echo "###########################################################"
+        echo "############### TESTLIB_LOG_SUMMARY contents: #############"
+        echo "### ($TESTLIB_LOG_SUMMARY) ###"
+        echo "###########################################################"
+        awk '{print "|| "$0}' < "$TESTLIB_LOG_SUMMARY"
+        echo "###########################################################"
+        echo "########### END OF TESTLIB_LOG_SUMMARY contents ###########"
+        echo "###########################################################"
+    fi
+
+    exit $RESULT_OVERALL
+}
+
+# Ensure that no processes remain dangling when test completes
+# The ERRCODE is defined by settraps() as the program exitcode
+# as it enters the trap
+TRAP_SIGNALS=EXIT settraps 'echo "CI-EXIT: $0: test finished (up to the proper exit command)..." >&2; trap_cleanup'
+TRAP_SIGNALS="HUP INT QUIT TERM" settraps '[ "$ERRCODE" = 0 ] && ERRCODE=123; echo "CI-EXIT: $0: got signal, aborting test..." >&2; trap_cleanup && exit $ERRCODE'
+
 # Try to accept the BIOS license on server
 init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "00_license-CI-forceaccept"
 SKIP_SANITY=yes test_web 00_license-CI-forceaccept.sh.test || \
@@ -229,33 +268,5 @@ test_web_topo_p topology_power || RESULT_OVERALL=$?
 [ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] && \
 test_web_topo_l topology_location || RESULT_OVERALL=$?
 
-# ***** RESULTS *****
-if [ "$RESULT_OVERALL" = 0 ]; then
-    logmsg_info "Overall result: SUCCESS"
-    if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
-        { logmsg_info "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}': SUCCESS"; \
-          echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY"
-    fi
-else
-    logmsg_error "Overall result: FAILED ($RESULT_OVERALL), seek details above"
-    if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
-        { logmsg_error "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}': FAILED ($RESULT_OVERALL)"; \
-          echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY" 2>&1
-    fi
-fi
-
-if [ -n "$TESTLIB_LOG_SUMMARY" ] && [ -s "$TESTLIB_LOG_SUMMARY" ]; then
-    echo ""
-    echo "================================================================"
-    echo ""
-    echo "###########################################################"
-    echo "############### TESTLIB_LOG_SUMMARY contents: #############"
-    echo "### ($TESTLIB_LOG_SUMMARY) ###"
-    echo "###########################################################"
-    awk '{print "|| "$0}' < "$TESTLIB_LOG_SUMMARY"
-    echo "###########################################################"
-    echo "########### END OF TESTLIB_LOG_SUMMARY contents ###########"
-    echo "###########################################################"
-fi
-
+# trap_cleanup() should handle the cleanup and final logging
 exit $RESULT_OVERALL
