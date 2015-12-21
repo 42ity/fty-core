@@ -42,6 +42,7 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
+[ x"${SUT_WEB_SCHEMA-}" = x- ] && SUT_WEB_SCHEMA=""
 [ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="https"
 
     # *** read parameters if present
