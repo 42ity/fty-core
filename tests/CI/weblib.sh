@@ -772,9 +772,9 @@ simple_get_json_code_sed() {
     return 0
 }
 
-# license accept
+# license accept (note: no password change)
 accept_license(){
-    if api_get_json '/admin/license/status' | grep "accepted_at"; then
+    if CITEST_QUICKFAIL=no WEBLIB_QUICKFAIL=no WEBLIB_CURLFAIL=no api_get_json '/admin/license/status' | grep "accepted_at"; then
         echo 'license already accepted'
     else
         echo "Trying to accept the license via REST API on BIOS server '$BASE_URL'..."
