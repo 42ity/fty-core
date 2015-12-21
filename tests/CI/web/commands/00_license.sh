@@ -84,7 +84,7 @@ echo "********* 7. license_text ************************************************
 echo "***************************************************************************************************"
 test_it "license_text"
 ### This GET should return plaintext license text "as is"
-TEXT="`api_get_content '/admin/license' | grep GNU | wc -l`"
+TEXT="`api_get_content '/admin/license' | egrep -ic 'GNU|EATON'`"
 echo "TEXT = $TEXT (lines in license text)"
 if [ "$TEXT" -gt 0 ]; then
    echo '{"text":"yes"}'
@@ -100,11 +100,12 @@ echo "**************************************************************************
 #*#*#*#*#* 00_license.sh - subtest 8 - TODO, 500?
 test_it "missing_license_text"
 if [ "$SUT_IS_REMOTE" = yes ]; then
+    # TODO: Maybe this should consider Eaton EULA as well/instead
     sut_run "mv -f /usr/share/bios/license/current /usr/share/bios/license/org-current ; mv -f /usr/share/bios/license/1.0 /usr/share/bios/license/org-1.0"
 else
     echo "BUILDSUBDIR =     $BUILDSUBDIR"
     # Tests for local-source builds: license data are in $BUILDSUBDIR/tests/fixtures/license and are symlinks to the ../../../COPYING file
-    mv -f $BUILDSUBDIR/COPYING $BUILDSUBDIR/org-COPYING
+    mv -f "$BUILDSUBDIR/COPYING" "$BUILDSUBDIR/org-COPYING"
 fi # SUT_IS_REMOTE
 ### This GET should produce an error message in JSON about missing file
 curlfail_push_expect_500
@@ -114,7 +115,7 @@ curlfail_pop
 if [ "$SUT_IS_REMOTE" = yes ]; then
     sut_run "mv -f /usr/share/bios/license/org-current /usr/share/bios/license/current ; mv -f /usr/share/bios/license/org-1.0 /usr/share/bios/license/1.0"
 else
-    mv -f $BUILDSUBDIR/org-COPYING $BUILDSUBDIR/COPYING
+    mv -f "$BUILDSUBDIR/org-COPYING" "$BUILDSUBDIR/COPYING"
 fi # SUT_IS_REMOTE
 print_result $RES
 
