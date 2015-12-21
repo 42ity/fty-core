@@ -13,6 +13,7 @@ where '/' indicates a multipart string message, 'rule' is rule name, 'element'
 is element anem, 'state' is one of [ ACTIVE | ACK-WIP | ACK-IGNORE | ACK-PAUSE
 | ACK-SILENCE ] and 'subject' of the message is "rfc-alerts-acknowledge".
 
+
 The EVALUATOR peer MUST send the appropriate message back to USER peer
 using MAILBOX SEND:
 
@@ -30,3 +31,11 @@ MUST assign NOT_FOUND string as 'reason'.
 If 'state' can not be assigned to alert identified by 'rule' and 'element' the
 EVALUATOR peer MUST assign BAD_STATE string as 'reason'.
 
+If EVALUATOR peer receives a message with correct 'subject' but the message
+itself does not conform to protocol, the EVALUATOR peer MUST send back to USER
+peer using MAILBOX SEND the following message:
+c) ERROR/BAD_MESSAGE
+
+If EVALUATOR peer received a message with incorrect 'subject', the EVALUATOR
+peer MAY or MAY NOT send back to USER peer using MAILBOX SEND the following message:
+c) ERROR/UNKNOWN_PROTOCOL

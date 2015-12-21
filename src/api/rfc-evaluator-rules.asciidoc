@@ -17,13 +17,13 @@ document(1), 'type' is one of [ all | threshold | pattern | single ], 'name',
 'old_name' is rule name and 'subject' of the message is
 "rfc-evaluator-rules".
 
+
 The EVALUATOR peer MUST send the appropriate message back to USER peer
 using MAILBOX SEND.
 
 For message 1) EVALUTATOR peer MUST respond with one of the following messages:
 a) LIST/type/rule_1[/rule_2]...[/rule_N]
 c) ERROR/reason
-
 
 For messages 2) and 3) EVALUATOR peer MUST respond with one of the following messages:
 b) OK/json
@@ -34,6 +34,7 @@ document(1), 'reason' is error string, 'type' is one of [ all | threshold |
 pattern | single ] and its value MUST be the same as the value of 'type'
 received in 1) message, 'subject' of the message is "rfc-evaluator-rules".
 
+
 For messages 1), 2), 3) if the requested 'type', 'name' or 'old_name' does not
 exist the EVALUATOR peer MUST assign NOT_FOUND string as reason.
 
@@ -43,6 +44,14 @@ For message 3)
  * if 'json' specifies a rule that already exists the EVALUATOR peer MUST assign ALREADY_EXISTS string as reason.
  * if 'json' satisfies JSON schema, but evaluation function has lua syntax errors the EVALUATOR peer MUST assign BAD_LUA string as reason.
 
+If EVALUATOR peer receives a message with correct 'subject' but the message
+itself does not conform to protocol, the EVALUATOR peer MUST send back to USER
+peer using MAILBOX SEND the following message:
+c) ERROR/BAD_MESSAGE
+
+If EVALUATOR peer received a message with incorrect 'subject', the EVALUATOR
+peer MAY or MAY NOT send back to USER peer using MAILBOX SEND the following message:
+c) ERROR/UNKNOWN_PROTOCOL
 
 (1)
 There are three different json formats that are accepted
