@@ -190,6 +190,15 @@ test_web_default() {
     test_web "$@"
 }
 
+test_web_asset_create() {
+    init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_asset_create() $*"
+    echo "---------- reset db: asset : create ---------"
+    for data in "$DB_BASE" "$DB_DATA"; do
+          loaddb_file "$data" || exit $?
+    done
+    test_web "$@"
+}
+
     # *** start the power topology set of TC
 test_web_topo_p() {
     init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_p() $*"
@@ -258,15 +267,41 @@ SKIP_SANITY=yes test_web 00_license-CI-forceaccept.sh.test || \
 set +e
 RESULT_OVERALL=0
 
-    # *** start the other default TC's instead subsequent topology tests
-[ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] && \
-test_web_default -topology || RESULT_OVERALL=$?
+
+# do the test
+set +e
+if [ $# = 0 ]; then
+    # *** start the default TC's instead of subsequent topology tests
+    test_web_default -topology -asset_create || RESULT_OVERALL=$?
+    # *** start the asset_create TC's
+    [ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] && \
+    test_web_asset_create asset_create || RESULT_OVERALL=$?
     # *** start power topology TC's
-[ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] && \
-test_web_topo_p topology_power || RESULT_OVERALL=$?
+    [ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] && \
+    test_web_topo_p topology_power || RESULT_OVERALL=$?
     # *** start location topology TC's
-[ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] && \
-test_web_topo_l topology_location || RESULT_OVERALL=$?
+    [ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] && \
+    test_web_topo_l topology_location || RESULT_OVERALL=$?
+else
+    # selective test routine
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            topology_power*)
+                test_web_topo_p "$1"
+                RESULT_OVERALL=$? ;;
+            topology_location*)
+                test_web_topo_l "$1"
+                RESULT_OVERALL=$? ;;
+            asset_create*)
+                test_web_asset_create "$1"
+                RESULT_OVERALL=$? ;;
+            *)        test_web_default "$1"
+                RESULT_OVERALL=$? ;;
+        esac
+        shift
+        [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" != xno ] && break
+    done
+fi
 
 # trap_cleanup() should handle the cleanup and final logging
 exit $RESULT_OVERALL
