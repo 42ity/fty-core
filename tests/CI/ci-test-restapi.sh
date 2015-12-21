@@ -71,10 +71,10 @@ while [ $# -gt 0 ] ; do
             BIOS_PASSWD="$2"
             shift 2
             ;;
-	--service|-s)
-	    SASL_SERVICE="$2"
-	    shift 2
-	    ;;
+        --service|-s)
+            SASL_SERVICE="$2"
+            shift 2
+            ;;
         --help|-h)
             usage
             exit 1
@@ -120,6 +120,7 @@ wait_for_web() {
 
 MAKEPID=""
 DBNGPID=""
+RESULT=0
 kill_daemons() {
     if [ -n "$MAKEPID" -a -d "/proc/$MAKEPID" ]; then
         logmsg_info "Killing make web-test PID $MAKEPID to exit"
@@ -138,7 +139,37 @@ kill_daemons() {
         logmsg_error "tntnet and/or agent-dbstore still alive, trying SIGKILL" && \
         { killall -KILL tntnet agent-dbstore lt-agent-dbstore 2>/dev/null ; exit 1; }
 
-    return 0
+    ci_loaddb_default
+
+    if [ "$RESULT" = 0 ]; then
+        logmsg_info "Overall result: SUCCESS"
+        if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
+            { logmsg_info "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}': SUCCESS"; \
+              echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY"
+        fi
+    else
+        logmsg_error "Overall result: FAILED ($RESULT) seek details above"
+        if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
+            { logmsg_error "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}': FAILED ($RESULT)"; \
+          echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY" 2>&1
+        fi
+    fi
+
+    if [ -n "$TESTLIB_LOG_SUMMARY" ] && [ -s "$TESTLIB_LOG_SUMMARY" ]; then
+        echo ""
+        echo "================================================================"
+        echo ""
+        echo "###########################################################"
+        echo "############### TESTLIB_LOG_SUMMARY contents: #############"
+        echo "### ($TESTLIB_LOG_SUMMARY) ###"
+        echo "###########################################################"
+        awk '{print "|| "$0}' < "$TESTLIB_LOG_SUMMARY"
+        echo "###########################################################"
+        echo "########### END OF TESTLIB_LOG_SUMMARY contents ###########"
+        echo "###########################################################"
+    fi
+
+    return $RESULT
 }
 
 # prepare environment
@@ -305,40 +336,6 @@ else
         [ "$RESULT" != 0 ] && [ x"$CITEST_QUICKFAIL" != xno ] && break
     done
 fi
-ci_loaddb_default
 
-# cleanup
-kill $MAKEPID >/dev/null 2>&1 || true
-sleep 2
-killall tntnet >/dev/null 2>&1 || true
-sleep 2
-
-if [ "$RESULT" = 0 ]; then
-    logmsg_info "Overall result: SUCCESS"
-    if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
-        { logmsg_info "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}': SUCCESS"; \
-          echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY"
-    fi
-else
-    logmsg_error "Overall result: FAILED ($RESULT) seek details above"
-    if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
-        { logmsg_error "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}': FAILED ($RESULT)"; \
-          echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY" 2>&1
-    fi
-fi
-
-if [ -n "$TESTLIB_LOG_SUMMARY" ] && [ -s "$TESTLIB_LOG_SUMMARY" ]; then
-    echo ""
-    echo "================================================================"
-    echo ""
-    echo "###########################################################"
-    echo "############### TESTLIB_LOG_SUMMARY contents: #############"
-    echo "### ($TESTLIB_LOG_SUMMARY) ###"
-    echo "###########################################################"
-    awk '{print "|| "$0}' < "$TESTLIB_LOG_SUMMARY"
-    echo "###########################################################"
-    echo "########### END OF TESTLIB_LOG_SUMMARY contents ###########"
-    echo "###########################################################"
-fi
-
+# kill_daemons() should handle the cleanup and final logging
 exit $RESULT
