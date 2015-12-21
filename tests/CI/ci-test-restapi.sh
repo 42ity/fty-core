@@ -305,7 +305,11 @@ test_web_asset_create() {
 # Try to accept the BIOS license on server
 init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "00_license-CI-forceaccept"
 SKIP_SANITY=yes test_web 00_license-CI-forceaccept.sh.test || \
-    logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+    if [ x"$CITEST_QUICKFAIL" = xyes ] ; then
+        die "BIOS license not accepted on the server, subsequent tests will fail"
+    else
+        logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+    fi
 
 # do the test
 set +e

@@ -781,6 +781,10 @@ accept_license(){
 #        api_auth_post_json '/admin/license' "foobar" >&5 || \
         api_auth_post_json '/admin/license' "foobar" || \
         ( . "$CHECKOUTDIR"/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
-            logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+            if [ x"$CITEST_QUICKFAIL" = xyes ] ; then
+                die "BIOS license not accepted on the server, subsequent tests will fail"
+            else
+                logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+            fi
     fi
 }
