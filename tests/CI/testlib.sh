@@ -32,6 +32,7 @@
 # ***********************************************
 
 ### Should the test suite break upon first failed test?
+[ x"${CITEST_QUICKFAIL-}" = x- ] && CITEST_QUICKFAIL=""
 [ x"${CITEST_QUICKFAIL-}" != xyes ] && CITEST_QUICKFAIL=no
 
 [ -n "${SCRIPTDIR-}" ] && [ -d "$SCRIPTDIR" ] || \
@@ -173,25 +174,25 @@ print_result() {
         TESTLIB_LIST_FAILED="$TESTLIB_LIST_FAILED $TESTLIB_LASTTESTTAG"
         TESTLIB_COUNT_FAIL="`expr $TESTLIB_COUNT_FAIL + 1`"
 
-	# This optional envvar can be set by the caller
-	if [ "$CITEST_QUICKFAIL" = yes ]; then
-	    echo ""
-	    echo "$TESTLIB_COUNT_PASS previous tests have succeeded"
-	    echo "${LOGMSG_PREFIX_TESTLIB}FATAL-ABORT[$$]: Testing aborted due to" \
-		"CITEST_QUICKFAIL=$CITEST_QUICKFAIL" \
-		"after first failure with test $TESTLIB_LASTTESTTAG"
-	    exit $_ret
-	fi >&2
+        # This optional envvar can be set by the caller
+        if [ "$CITEST_QUICKFAIL" = yes ]; then
+            echo ""
+            echo "$TESTLIB_COUNT_PASS previous tests have succeeded"
+            echo "${LOGMSG_PREFIX_TESTLIB}FATAL-ABORT[$$]: Testing aborted due to" \
+                "CITEST_QUICKFAIL=$CITEST_QUICKFAIL" \
+                "after first failure with test $TESTLIB_LASTTESTTAG"
+            exit $_ret
+        fi >&2
 
-	# This optional envvar can be set by CURL() and trap_*() below
-	if [ "$TESTLIB_FORCEABORT" = yes ]; then
-	    echo ""
-	    echo "$TESTLIB_COUNT_PASS previous tests have succeeded"
-	    echo "${LOGMSG_PREFIX_TESTLIB}FATAL-ABORT[$$]: Testing aborted due to" \
-		"TESTLIB_FORCEABORT=$TESTLIB_FORCEABORT" \
-		"after forced abortion in test $TESTLIB_LASTTESTTAG"
-	    exit $_ret
-	fi >&2
+        # This optional envvar can be set by CURL() and trap_*() below
+        if [ "$TESTLIB_FORCEABORT" = yes ]; then
+            echo ""
+            echo "$TESTLIB_COUNT_PASS previous tests have succeeded"
+            echo "${LOGMSG_PREFIX_TESTLIB}FATAL-ABORT[$$]: Testing aborted due to" \
+                "TESTLIB_FORCEABORT=$TESTLIB_FORCEABORT" \
+                "after forced abortion in test $TESTLIB_LASTTESTTAG"
+            exit $_ret
+        fi >&2
     fi
     echo
     return $_ret

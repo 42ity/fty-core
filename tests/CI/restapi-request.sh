@@ -23,6 +23,7 @@
 
 # Defaults; note that SUT_WEB_PORT is guessed below based on ultimate SUT_HOST
 [ -z "$SUT_HOST" ] && SUT_HOST="127.0.0.1"
+[ x"${SUT_WEB_SCHEMA-}" = x- ] && SUT_WEB_SCHEMA=""
 [ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="http"
 
 # REST API returns JSON except one or two special cases
