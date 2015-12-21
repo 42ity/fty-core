@@ -84,7 +84,7 @@ echo "********* 7. license_text ************************************************
 echo "***************************************************************************************************"
 test_it "license_text"
 ### This GET should return plaintext license text "as is"
-TEXT="`api_get_content '/admin/license' | egrep -i 'GNU|EATON'`"
+TEXT="`api_get_content '/admin/license' | egrep -ic 'GNU|EATON'`"
 echo "TEXT = $TEXT (lines in license text)"
 if [ "$TEXT" -gt 0 ]; then
    echo '{"text":"yes"}'
