@@ -48,6 +48,7 @@ SKIPPED_NONSH_TESTS=0
 #   onlyerrors = do only tests expected to fail (not for curlbbwget.sh)
 [ -z "$SKIP_SANITY" ] && SKIP_SANITY=no
 
+[ x"${SUT_WEB_SCHEMA-}" = x- ] && SUT_WEB_SCHEMA=""
 [ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="https"
 
 while [ $# -gt 0 ]; do
