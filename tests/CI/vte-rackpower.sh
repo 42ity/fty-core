@@ -44,6 +44,7 @@
 
 TIME_START=$(date +%s)
 #export BIOS_LOG_LEVEL=LOG_DEBUG
+[ x"${SUT_WEB_SCHEMA-}" = x- ] && SUT_WEB_SCHEMA=""
 [ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="https"
 
     # *** read parameters if present
