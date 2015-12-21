@@ -217,21 +217,15 @@ SKIP_SANITY=yes test_web 00_license-CI-forceaccept.sh.test || \
 
 # ***** PERFORM THE TESTCASES *****
 set +e
-    # *** start default admin network(s) TC's
-
 RESULT_OVERALL=0
-# admin_network needs a clean state of database, otherwise it does not work
-test_web_default admin_networks admin_network || RESULT_OVERALL=$?
-    # *** start the other default TC's instead of sysinfo
-test_web_process || exit
+
+    # *** start the other default TC's instead subsequent topology tests
 [ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] && \
-test_web_default -topology -admin_network -admin_networks -sysinfo || RESULT_OVERALL=$?
+test_web_default -topology || RESULT_OVERALL=$?
     # *** start power topology TC's
-test_web_process || exit
 [ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] && \
 test_web_topo_p topology_power || RESULT_OVERALL=$?
     # *** start location topology TC's
-test_web_process || exit
 [ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] && \
 test_web_topo_l topology_location || RESULT_OVERALL=$?
 
