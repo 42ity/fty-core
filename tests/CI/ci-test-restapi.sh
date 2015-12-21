@@ -328,13 +328,16 @@ else
 fi
 
 if [ -n "$TESTLIB_LOG_SUMMARY" ] && [ -s "$TESTLIB_LOG_SUMMARY" ]; then
+    echo ""
+    echo "================================================================"
+    echo ""
     echo "###########################################################"
     echo "############### TESTLIB_LOG_SUMMARY contents: #############"
     echo "### ($TESTLIB_LOG_SUMMARY) ###"
     echo "###########################################################"
     cat "$TESTLIB_LOG_SUMMARY"
     echo "###########################################################"
-    echo "############### TESTLIB_LOG_SUMMARY contents: #############"
+    echo "########### END OF TESTLIB_LOG_SUMMARY contents ###########"
     echo "###########################################################"
 fi
 
