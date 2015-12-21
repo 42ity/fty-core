@@ -196,12 +196,14 @@ zmsg_t *recv_msg = NULL;
 zsock_t *pipe = mlm_client_msgpipe (client);
 if (!pipe) {
     log_critical ("mlm_client_msgpipe() failed.");
+    mlm_client_destroy (&client);
     http_die ("internal-error", "mlm_client_msgpipe() failed.");
 }
 
 zpoller_t *poller = zpoller_new (pipe, NULL);
 if (!poller) {
     log_critical ("zpoller_new() failed.");
+    mlm_client_destroy (&client);
     http_die ("internal-error", "zpoller_new() failed.");
 }
 while (true) {
