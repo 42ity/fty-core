@@ -65,8 +65,9 @@ test_web_process() {
         logmsg_error "Web-server process seems to have died!" >&2
         # Ensure it is dead though, since we abort the tests now
         kill $MAKEPID >/dev/null 2>&1
-        wait $MAKEPID >/dev/null 2>&1
-        return
+        RES_TWP=32
+        wait $MAKEPID >/dev/null 2>&1 || RES_TWP=$?
+        return $RES_TWP
     fi
     return 0
 }
