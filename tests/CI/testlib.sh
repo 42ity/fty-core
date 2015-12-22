@@ -396,7 +396,9 @@ echo_summarizeTestlibResults() {
         ( [ -n "$TESTLIB_LIST_PASSED" ] && for i in $TESTLIB_LIST_PASSED ; do echo "PASSED	$i" ; done
           [ -n "$TESTLIB_LIST_FAILED" ] && for i in $TESTLIB_LIST_FAILED ; do echo "FAILED	$i" ; done
           [ -n "$TESTLIB_LIST_FAILED_IGNORED" ] && for i in $TESTLIB_LIST_FAILED_IGNORED ; do echo "FAILED_IGNORED	$i" ; done
-        ) | sed 's,^\(.*\)\[\([0-9]*\)sec\]$,\2\t\1,' | sort -nr | egrep '^[0-9]' | head -${TESTLIB_PROFILE_TESTDURATION_TOP}
+        ) | egrep '\[[0-9]+sec\]$' | \
+            sed 's,^\(.*\)\[\([0-9]*\)sec\]$,\2\t\1,' | \
+            sort -nr | head -${TESTLIB_PROFILE_TESTDURATION_TOP}
     fi
 
     [ "$TESTLIB_DURATION_TESTSUITE" -ge 0 ] 2>/dev/null && \
