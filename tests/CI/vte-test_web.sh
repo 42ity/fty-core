@@ -278,8 +278,12 @@ for i in $POSITIVE; do
         RESULT="../results/$NAME".res
         EXPECT="$LOG_DIR/$NAME".log
         if [ -x "../results/$NAME".cmp ]; then
+            test_it "compare_expectation_custom"
+            ls -la "$RESULT" "$EXPECT"
             ../results/"$NAME".cmp "$RESULT" "$EXPECT"
         else
+            test_it "compare_expectation_`basename "$CMP"`"
+            ls -la "$RESULT" "$EXPECT"
             "$CMP" "$RESULT" "$EXPECT"
         fi
         RES=$?
