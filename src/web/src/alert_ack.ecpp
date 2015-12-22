@@ -181,7 +181,7 @@ if (streq (part, "OK")) {
         mlm_client_destroy (&client);
         http_die ("internal-error", "Bad message.");
     }
-    free (part);   
+    free (part);
     part = zmsg_popstr (recv_msg);
     if (!part || !streq (part, state.c_str ())) {
         log_error ("Unexpected reply from '%s'. Expected OK/rule_name/element_name/state. Got OK/rule_name/element_name/(null).", mlm_client_sender (client));
@@ -217,8 +217,8 @@ if (streq (part, "ERROR")) {
             rule_name.c_str (), element_name.c_str ());
         zmsg_destroy (&recv_msg);
         mlm_client_destroy (&client);
-        http_die ("not-found", std::string ("Alert identified by rule name = '").append (rule_name).append ("', element name = '").
-            append (element_name).append ("' does not exist.").c_str ());
+        http_die ("not-found", std::string ("Alert identified by rule name = '").append (rule_name).append ("' and element name = '").
+            append (element_name));
     }
     if (streq (part, "BAD_STATE")) {
         free (part);
@@ -236,7 +236,7 @@ if (streq (part, "ERROR")) {
     mlm_client_destroy (&client);
     http_die ("internal-error",
         std::string ("Error while setting state of alert identified by rule name = '").append (rule_name).append ("', element = '").
-        append (element_name).append ("' to '").append (reason).append ("'").c_str ()); 
+        append (element_name).append ("' to '").append (reason).append ("'").c_str ());
 }
 // Message does not conform to protocol
 free (part);
