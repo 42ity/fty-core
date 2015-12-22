@@ -88,6 +88,14 @@ NAME="$0"
 [ -z "${TESTLIB_LIST_FAILED_IGNORED-}" ] && TESTLIB_LIST_FAILED_IGNORED=""
 [ -z "${TESTLIB_LIST_PASSED-}" ] && TESTLIB_LIST_PASSED=""
 
+# Should we track and add timestamps to each test (profile what took long)?
+[ -z "${TESTLIB_PROFILE_TESTDURATION-}" ] && TESTLIB_PROFILE_TESTDURATION=no
+# ... and summarize longest tests in the end?
+[ -z "${TESTLIB_PROFILE_TESTDURATION_TOP-}" ] && TESTLIB_PROFILE_TESTDURATION_TOP=10
+export TESTLIB_PROFILE_TESTDURATION TESTLIB_PROFILE_TESTDURATION_TOP
+[ -z "${TESTLIB_TIMESTAMP_TESTSTART-}" ] && TESTLIB_TIMESTAMP_TESTSTART=0
+[ -z "${TESTLIB_TIMESTAMP_TESTFINISH-}" ] && TESTLIB_TIMESTAMP_TESTFINISH=0
+
 # Optional filename (preferably full path) that can be set by caller - if it is
 # set, then the exit_summarizeTestlibResults() would append its output there.
 [ -z "${TESTLIB_LOG_SUMMARY-}" ] && TESTLIB_LOG_SUMMARY=""
@@ -112,6 +120,23 @@ print_result() {
         logmsg_warn "print_result() called before any test_it() was started!"
         return 0
     fi
+
+    [ "$TESTLIB_PROFILE_TESTDURATION" = yes ] && \
+        TESTLIB_TIMESTAMP_TESTFINISH="`date -u +%s 2>/dev/null`" \
+        || TESTLIB_TIMESTAMP_TESTFINISH=0
+
+    [ "$TESTLIB_PROFILE_TESTDURATION" = yes ] && \
+    [ "$TESTLIB_TIMESTAMP_TESTFINISH" -gt 0 -a "$TESTLIB_TIMESTAMP_TESTSTART" -gt 0 ] 2>/dev/null && \
+        TESTLIB_TESTDURATION="`expr $TESTLIB_TIMESTAMP_TESTFINISH - $TESTLIB_TIMESTAMP_TESTSTART`" && \
+        [ "$TESTLIB_TESTDURATION" -ge 0 ] \
+        || TESTLIB_TESTDURATION="-1"
+    TESTLIB_TIMESTAMP_TESTSTART=0
+    # At this point, if TESTLIB_TESTDURATION>=0 then profiling is enabled
+    # and a reasonable value is available
+    [ "$TESTLIB_TESTDURATION" -ge 0 ] 2>/dev/null && \
+        TESTLIB_TESTDURATION_TEXT=" (took $TESTLIB_TESTDURATION seconds)" || \
+        TESTLIB_TESTDURATION_TEXT=""
+
     _testlib_result_printed=yes
     _code="$1"
     shift
@@ -141,11 +166,13 @@ print_result() {
     echo
     if [ "${TNAME-}" = "`basename $NAME .sh`" ]; then
         TESTLIB_LASTTESTTAG="`echo "$NAME(${_report})" | sed 's, ,__,g'`"
-        LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_info "Completed test $TNAME :"
+        LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_info "Completed test $TNAME${TESTLIB_TESTDURATION_TEXT} :"
     else
         TESTLIB_LASTTESTTAG="`echo "$NAME::$TNAME(${_report})" | sed 's, ,__,g'`"
-        LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_info "Completed test $NAME::$TNAME :"
+        LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_info "Completed test $NAME::$TNAME${TESTLIB_TESTDURATION_TEXT} :"
     fi
+    [ "$TESTLIB_TESTDURATION" -ge 0 ] 2>/dev/null && \
+        TESTLIB_LASTTESTTAG="$TESTLIB_LASTTESTTAG[${TESTLIB_TESTDURATION}sec]"
 
     if [ "$_code" -eq 0 ]; then  # should include "-0" too
         echo " * PASSED"
@@ -218,6 +245,10 @@ test_it() {
     else
         LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_info "Running test $NAME::$TNAME ..."
     fi
+    [ "$TESTLIB_PROFILE_TESTDURATION" = yes ] && \
+        TESTLIB_TIMESTAMP_TESTSTART="`date -u +%s 2>/dev/null`" \
+        || TESTLIB_TIMESTAMP_TESTSTART=0
+    TESTLIB_TIMESTAMP_TESTFINISH=0
     TESTLIB_COUNT_TOTAL="`expr $TESTLIB_COUNT_TOTAL + 1`"
 }
 
@@ -324,13 +355,22 @@ echo_summarizeTestlibResults() {
         # If we are here, we've at least had some failed tests
         [ -z "$TRAP_RES" -o "$TRAP_RES" = 0 ] && TRAP_RES=1
     fi
-    sleep 2
+
+    if [ "$TESTLIB_PROFILE_TESTDURATION" = yes ] && [ "$TESTLIB_COUNT_TOTAL" -gt 0 ] ; then
+        [ "${TESTLIB_PROFILE_TESTDURATION_TOP-}" -gt 0 ] 2>/dev/null || TESTLIB_PROFILE_TESTDURATION_TOP=10
+        logmsg_info "Below are up to $TESTLIB_PROFILE_TESTDURATION_TOP longest test units (duration rounded to seconds):"
+        ( for i in "$TESTLIB_LIST_PASSED" ; do echo "PASSED	$i" ; done
+          for i in "$TESTLIB_LIST_FAILED" ; do echo "FAILED	$i" ; done
+          for i in "$TESTLIB_LIST_FAILED_IGNORED" ; do echo "FAILED_IGNORED	$i" ; done
+        ) | sed 's,^\(.*\)\[\([0-9]*\)sec\]$,\2\t\1' | sort -nr | head -${TESTLIB_PROFILE_TESTDURATION_TOP}
+    fi
 
     echo
     echo "####################################################################"
     echo "************ END OF testlib-driven suite execution ($TRAP_RES) *************"
     echo "####################################################################"
     echo
+    sleep 2
 
     return $TRAP_RES
 }
