@@ -127,11 +127,18 @@ print_result() {
         TESTLIB_TIMESTAMP_TESTFINISH="`date -u +%s 2>/dev/null`" \
         || TESTLIB_TIMESTAMP_TESTFINISH=0
 
-    [ "$TESTLIB_PROFILE_TESTDURATION" = yes ] && \
-    [ "$TESTLIB_TIMESTAMP_TESTFINISH" -gt 0 -a "$TESTLIB_TIMESTAMP_TESTSTART" -gt 0 ] 2>/dev/null && \
-        TESTLIB_TESTDURATION="`expr $TESTLIB_TIMESTAMP_TESTFINISH - $TESTLIB_TIMESTAMP_TESTSTART`" && \
-        [ "$TESTLIB_TESTDURATION" -ge 0 ] \
-        || TESTLIB_TESTDURATION="-1"
+    TESTLIB_TESTDURATION="-1"
+    if [ "$TESTLIB_PROFILE_TESTDURATION" = yes ] && \
+       [ "$TESTLIB_TIMESTAMP_TESTFINISH" -gt 0 -a "$TESTLIB_TIMESTAMP_TESTSTART" -gt 0 ] 2>/dev/null \
+    ; then
+        if [ x"$TESTLIB_TIMESTAMP_TESTFINISH" = x"$TESTLIB_TIMESTAMP_TESTSTART" ]; then
+            TESTLIB_TESTDURATION=0
+        else
+            TESTLIB_TESTDURATION="`expr $TESTLIB_TIMESTAMP_TESTFINISH - $TESTLIB_TIMESTAMP_TESTSTART`" && \
+            [ "$TESTLIB_TESTDURATION" -ge 0 ] \
+            || TESTLIB_TESTDURATION="-1"
+        fi
+    fi
     TESTLIB_TIMESTAMP_TESTSTART=0
     # At this point, if TESTLIB_TESTDURATION>=0 then profiling is enabled
     # and a reasonable value is available
@@ -175,6 +182,7 @@ print_result() {
     fi
     [ "$TESTLIB_TESTDURATION" -ge 0 ] 2>/dev/null && \
         TESTLIB_LASTTESTTAG="$TESTLIB_LASTTESTTAG[${TESTLIB_TESTDURATION}sec]"
+        # Note: This tag is inspected in summarizeResults() so format matters!
 
     if [ "$_code" -eq 0 ]; then  # should include "-0" too
         echo " * PASSED"
@@ -324,14 +332,26 @@ echo_summarizeTestlibResults() {
     echo "####################################################################"
     echo
 
+    # Ensure the common whitespace IFS
+    IFS=" 	"
+    export IFS
+
     [ "$TESTLIB_TIMESTAMP_SUITESTART" -gt 0 ] 2>/dev/null && \
     TESTLIB_TIMESTAMP_SUITEFINISH="`date -u +%s 2>/dev/null`" \
     || TESTLIB_TIMESTAMP_SUITEFINISH=0
 
-    [ "$TESTLIB_TIMESTAMP_SUITESTART" -gt 0 ] 2>/dev/null && \
-    [ "$TESTLIB_TIMESTAMP_SUITEFINISH" -gt 0 ] 2>/dev/null && \
-        TESTLIB_DURATION_TESTSUITE="`expr $TESTLIB_TIMESTAMP_SUITEFINISH - $TESTLIB_TIMESTAMP_SUITESTART`" \
-        || TESTLIB_DURATION_TESTSUITE=-1
+    TESTLIB_DURATION_TESTSUITE=-1
+    if [ "$TESTLIB_TIMESTAMP_SUITESTART" -gt 0 ] 2>/dev/null && \
+       [ "$TESTLIB_TIMESTAMP_SUITEFINISH" -gt 0 ] 2>/dev/null \
+    ; then
+        if [ x"$TESTLIB_TIMESTAMP_SUITEFINISH" = x"$TESTLIB_TIMESTAMP_SUITESTART" ]; then
+            TESTLIB_DURATION_TESTSUITE=0
+        else
+            TESTLIB_DURATION_TESTSUITE="`expr $TESTLIB_TIMESTAMP_SUITEFINISH - $TESTLIB_TIMESTAMP_SUITESTART`" && \
+            [ "$TESTLIB_DURATION_TESTSUITE" -ge 0 ] \
+            || TESTLIB_DURATION_TESTSUITE=-1
+        fi
+    fi
 
     NUM_NOTFAILED="`expr $TESTLIB_COUNT_PASS + $TESTLIB_COUNT_SKIP`"
     logmsg_info "Testing completed ($TRAP_RES), $NUM_NOTFAILED/$TESTLIB_COUNT_TOTAL tests passed($TESTLIB_COUNT_PASS) or not-failed($TESTLIB_COUNT_SKIP)"
@@ -373,10 +393,10 @@ echo_summarizeTestlibResults() {
     if [ "$TESTLIB_PROFILE_TESTDURATION" = yes ] && [ "$TESTLIB_COUNT_TOTAL" -gt 0 ] ; then
         [ "${TESTLIB_PROFILE_TESTDURATION_TOP-}" -gt 0 ] 2>/dev/null || TESTLIB_PROFILE_TESTDURATION_TOP=10
         logmsg_info "Below are up to $TESTLIB_PROFILE_TESTDURATION_TOP longest test units (duration rounded to seconds):"
-        ( for i in "$TESTLIB_LIST_PASSED" ; do echo "PASSED	$i" ; done
-          for i in "$TESTLIB_LIST_FAILED" ; do echo "FAILED	$i" ; done
-          for i in "$TESTLIB_LIST_FAILED_IGNORED" ; do echo "FAILED_IGNORED	$i" ; done
-        ) | sed 's,^\(.*\)\[\([0-9]*\)sec\]$,\2\t\1,' | sort -nr | head -${TESTLIB_PROFILE_TESTDURATION_TOP}
+        ( [ -n "$TESTLIB_LIST_PASSED" ] && for i in $TESTLIB_LIST_PASSED ; do echo "PASSED	$i" ; done
+          [ -n "$TESTLIB_LIST_FAILED" ] && for i in $TESTLIB_LIST_FAILED ; do echo "FAILED	$i" ; done
+          [ -n "$TESTLIB_LIST_FAILED_IGNORED" ] && for i in $TESTLIB_LIST_FAILED_IGNORED ; do echo "FAILED_IGNORED	$i" ; done
+        ) | sed 's,^\(.*\)\[\([0-9]*\)sec\]$,\2\t\1,' | sort -nr | egrep '^[0-9]' | head -${TESTLIB_PROFILE_TESTDURATION_TOP}
     fi
 
     [ "$TESTLIB_DURATION_TESTSUITE" -ge 0 ] 2>/dev/null && \
