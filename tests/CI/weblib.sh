@@ -772,15 +772,19 @@ simple_get_json_code_sed() {
     return 0
 }
 
-# license accept
+# license accept (note: no password change)
 accept_license(){
-    if api_get_json '/admin/license/status' | grep "accepted_at"; then
+    if CITEST_QUICKFAIL=no WEBLIB_QUICKFAIL=no WEBLIB_CURLFAIL=no api_get_json '/admin/license/status' | grep "accepted_at"; then
         echo 'license already accepted'
     else
         echo "Trying to accept the license via REST API on BIOS server '$BASE_URL'..."
 #        api_auth_post_json '/admin/license' "foobar" >&5 || \
         api_auth_post_json '/admin/license' "foobar" || \
         ( . "$CHECKOUTDIR"/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
-            logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+            if [ x"$CITEST_QUICKFAIL" = xyes ] ; then
+                die "BIOS license not accepted on the server, subsequent tests will fail"
+            else
+                logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+            fi
     fi
 }

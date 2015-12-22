@@ -139,7 +139,11 @@ subtest() {
 
     # Try to accept the BIOS license on server
     ( . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
-        logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+            if [ x"$CITEST_QUICKFAIL" = xyes ] ; then
+                die "BIOS license not accepted on the server, subsequent tests will fail"
+            else
+                logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+            fi
 
     # ***** POST THE CSV FILE *****
     ASSET="$CSV_LOADDIR_BAM/$1"
@@ -152,16 +156,16 @@ subtest() {
             N_EXPECT=`cat ${LOGFILE_IMPORT}|grep "more than 2 PDU is not supported"|wc -l`
             if [ "$N_EXPECT" = "1" ];then
                 echo "Subtest 1 PASSED."
-	    else
+            else
                 echo "Subtest 1 FAILED.";exit 1
-	    fi
+            fi
             ;;
         bam_import_16_wpos2.csv)
             N_EXPECT=`cat ${LOGFILE_IMPORT}|grep "location_w_pos should be set"|wc -l`
             echo "N_EXPECT = $N_EXPECT"
             if [ "$N_EXPECT" = "4" ];then
                 echo "Subtest 2 PASSED."
-	    else
+            else
                 echo "Subtest 2 FAILED.";exit 1
             fi
             ;;
@@ -170,16 +174,16 @@ subtest() {
             echo "N_EXPECT = $N_EXPECT"
             if [ "$N_EXPECT" = "1" ];then
                 echo "Subtest 3 PASSED."
-	    else
+            else
                 echo "Subtest 3 FAILED.";exit 1
-	    fi  
+            fi  
             ;;
         bam_import_16_wpos4.csv)
             N_EXPECT=`cat ${LOGFILE_IMPORT}|grep '"imported_lines" : 7'|wc -l`
             echo "N_EXPECT = $N_EXPECT"
             if [ "$N_EXPECT" = "1" ];then
                 echo "Subtest 4 PASSED."
-	    else
+            else
                 echo "Subtest 4 FAILED.";exit 1
             fi
             ;;
