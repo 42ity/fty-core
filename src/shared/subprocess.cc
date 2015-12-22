@@ -483,19 +483,30 @@ int call(const Argv& args) {
 }
 
 int output(const Argv& args, std::string& o, std::string& e, unsigned int timeout) {
+
     SubProcess p(args, SubProcess::STDOUT_PIPE | SubProcess::STDERR_PIPE);
     p.run();
 
+    unsigned int tme = 0;
+    if(timeout == 0)
+        timeout = 5;
     int ret;
-    if( timeout ) {
-        ret = p.wait(timeout);
-        if( p.isRunning() ) { p.terminate(); ret = p.wait(); }
-    } else {
-        ret = p.wait();
-    }
 
-    o.assign(read_all(p.getStdout()));
-    e.assign(read_all(p.getStderr()));
+    std::string out;
+    std::string err;
+
+    while(tme < timeout) {
+        ret = p.wait((unsigned int)1);
+        out += wait_read_all(p.getStdout());
+        err += wait_read_all(p.getStderr());
+        tme++;
+    }
+    if( p.isRunning() ) { p.terminate(); ret = p.wait(); }
+    out += wait_read_all(p.getStdout());
+    err += wait_read_all(p.getStderr());
+
+    o.assign(out);
+    e.assign(err);
     return ret;
 }
 
