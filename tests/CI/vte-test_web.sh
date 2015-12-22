@@ -272,21 +272,52 @@ for i in $POSITIVE; do
         fi
     done
     [ -z "$SKIP" ] || continue
+
+    EXPECTED_RESULT="../results/$NAME".res
+    REALLIFE_RESULT="$LOG_DIR/$NAME".log
+    case "$NAME" in
+        *.sh) ;;
+        *.sh.*) # If we process the renamed tests, consider original result-names
+            if [ ! -f "$EXPECTED_RESULT" ]; then
+                SHORTNAME="`echo "$NAME" | sed 's/^\(.*\.sh\).*$/\1/'`" || \
+                    SHORTNAME="$NAME"
+                [ -f "../results/$SHORTNAME.res" ] && \
+                    EXPECTED_RESULT="../results/$SHORTNAME.res"
+            fi
+            ;;
+    esac
+
 # start testcase $NAME and put the result to $NAME.log
-    . ./"$NAME" 5> "$LOG_DIR/$NAME".log
-    if [ -r "../results/$NAME".res ]; then
-        RESULT="../results/$NAME".res
-        EXPECT="$LOG_DIR/$NAME".log
+    . ./"$NAME" 5> "$REALLIFE_RESULT"
+    RES=$?
+
+    if [ -r "$EXPECTED_RESULT" ]; then
         if [ -x "../results/$NAME".cmp ]; then
-            ../results/"$NAME".cmp "$RESULT" "$EXPECT"
+            test_it "compare_expectation_custom"
+            ls -la "$EXPECTED_RESULT" "$REALLIFE_RESULT"
+            ../results/"$NAME".cmp "$EXPECTED_RESULT" "$REALLIFE_RESULT"
+            RES=$?
         else
-            "$CMP" "$RESULT" "$EXPECT"
+            test_it "compare_expectation_`basename "$CMP"`"
+            ls -la "$EXPECTED_RESULT" "$REALLIFE_RESULT"
+            "$CMP" "$EXPECTED_RESULT" "$REALLIFE_RESULT"
+            RES=$?
         fi
-        RES=$?
         if [ $RES -ne 0 ]; then
-            diff -Naru "../results/$NAME".res "$LOG_DIR/$NAME".log
+            diff -Naru "$EXPECTED_RESULT" "$REALLIFE_RESULT"
         fi
         print_result $RES
+    else
+        # This might do nothing, if the test file already ended with a print_result
+        if [ "${_testlib_result_printed}" != yes ]; then
+        logmsg_info "No expected-results file was found for test script '$NAME'," \
+            "so nothing to compare real-life output against. Note that the result" \
+            "below ($RES) may refer to execution of the test script itself and" \
+            "recording the log-files of its output, rather than failure of a test:"
+        print_result $RES
+        echo ""
+        fi
     fi
     done
 done
+
