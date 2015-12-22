@@ -133,8 +133,8 @@ subtest() {
     # *** write power rack base test data to DB on SUT
     set -o pipefail 2>/dev/null || true
     set -e
-    LOADDB_FILE_REMOTE_SLEEP=5 loaddb_file "$DB_BASE" 2>&1 | tee "${LOGFILE_LOADDB}"
-    loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" 2>&1 | tee -a "${LOGFILE_LOADDB}"
+    loaddb_file "$DB_BASE" 2>&1 | tee "${LOGFILE_LOADDB}"
+    LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" 2>&1 | tee -a "${LOGFILE_LOADDB}"
     set +e
 
     # Try to accept the BIOS license on server
