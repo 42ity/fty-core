@@ -311,6 +311,8 @@ init_summarizeTestlibResults() {
 # This implements the summary of the test run; can be just echoed or also
 # appended to the TESTLIB_LOG_SUMMARY by exit_summarizeTestlibResults()
 # Uses and changes TRAP_RES defined by caller exit_summarizeTestlibResults()
+TESTLIB_TIMESTAMP_SUITESTART="`date -u +%s 2>/dev/null`" \
+|| TESTLIB_TIMESTAMP_SUITESTART=0
 echo_summarizeTestlibResults() {
     # Do not doctor up the LOGMSG_PREFIX as these are rather results of the
     # test-script than the framework
@@ -320,8 +322,18 @@ echo_summarizeTestlibResults() {
     echo "####################################################################"
     echo
 
+    [ "$TESTLIB_TIMESTAMP_SUITESTART" -gt 0 ] 2>/dev/null && \
+    TESTLIB_TIMESTAMP_SUITEFINISH="`date -u +%s 2>/dev/null`" \
+    || TESTLIB_TIMESTAMP_SUITEFINISH=0
+
+    [ "$TESTLIB_TIMESTAMP_SUITESTART" -gt 0 ] 2>/dev/null && \
+    [ "$TESTLIB_TIMESTAMP_SUITEFINISH" -gt 0 ] 2>/dev/null && \
+        TESTLIB_DURATION_TESTSUITE="`expr $TESTLIB_TIMESTAMP_SUITEFINISH - $TESTLIB_TIMESTAMP_SUITESTART`" \
+        || TESTLIB_DURATION_TESTSUITE=-1
+
     NUM_NOTFAILED="`expr $TESTLIB_COUNT_PASS + $TESTLIB_COUNT_SKIP`"
     logmsg_info "Testing completed ($TRAP_RES), $NUM_NOTFAILED/$TESTLIB_COUNT_TOTAL tests passed($TESTLIB_COUNT_PASS) or not-failed($TESTLIB_COUNT_SKIP)"
+
     if [ -n "$TESTLIB_LIST_FAILED_IGNORED" ]; then
         logmsg_info "The following $TESTLIB_COUNT_SKIP tests have failed but were ignored (TDD in progress):"
         for i in $TESTLIB_LIST_FAILED_IGNORED; do
@@ -364,6 +376,9 @@ echo_summarizeTestlibResults() {
           for i in "$TESTLIB_LIST_FAILED_IGNORED" ; do echo "FAILED_IGNORED	$i" ; done
         ) | sed 's,^\(.*\)\[\([0-9]*\)sec\]$,\2\t\1' | sort -nr | head -${TESTLIB_PROFILE_TESTDURATION_TOP}
     fi
+
+    [ "$TESTLIB_DURATION_TESTSUITE" -ge 0 ] 2>/dev/null && \
+        logmsg_info "This test suite took $TESTLIB_DURATION_TESTSUITE seconds to complete (counting from import of testlib.sh)"
 
     echo
     echo "####################################################################"
