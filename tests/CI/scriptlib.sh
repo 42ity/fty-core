@@ -82,6 +82,7 @@ export SUT_IS_REMOTE SUT_USER SUT_HOST SUT_SSH_PORT SUT_WEB_PORT SUT_WEB_SCHEMA 
 ### Should the test suite break upon first failed test?
 [ x"${CITEST_QUICKFAIL-}" = x- ] && CITEST_QUICKFAIL=""
 [ x"${CITEST_QUICKFAIL-}" != xyes ] && CITEST_QUICKFAIL=no
+export CITEST_QUICKFAIL
 
 ### Set the default language (e.g. for CI apt-get to stop complaining)
 [ -z "${LANG-}" ] && LANG=C

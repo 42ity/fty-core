@@ -41,7 +41,7 @@ print_result $?
 echo "********* 00_license.sh ***************************************************************************"
 echo "********* 2. request without license **************************************************************"
 echo "***************************************************************************************************"
-test_it "request without license"
+test_it "request_without_license::systemctl_list"
 curlfail_push_expect_401
 api_get_json /admin/systemctl/list >&5
 print_result $?
@@ -50,7 +50,7 @@ curlfail_pop
 echo "********* 00_license.sh ***************************************************************************"
 echo "********* 3. request without license **************************************************************"
 echo "***************************************************************************************************"
-test_it "request without license"
+test_it "request_without_license::alerts"
 curlfail_push_expect_403
 api_get_json /admin/alerts >&5
 print_result $?
@@ -59,7 +59,7 @@ curlfail_pop
 echo "********* 00_license.sh ***************************************************************************"
 echo "********* 4. license_acceptance_unauthorised ******************************************************"
 echo "***************************************************************************************************"
-test_it "license_acceptance"
+test_it "license_acceptance_notauthed"
 curlfail_push_expect_401
 api_post_json '/admin/license' "foobar" >&5
 print_result $?
@@ -68,7 +68,7 @@ curlfail_pop
 echo "********* 00_license.sh ***************************************************************************"
 echo "********* 5. license_acceptance *******************************************************************"
 echo "***************************************************************************************************"
-test_it "license_acceptance"
+test_it "license_acceptance_authed"
 api_auth_post_json '/admin/license' "foobar" >&5
 print_result $?
 
