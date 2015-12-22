@@ -302,7 +302,7 @@ for i in $POSITIVE; do
                 diff -Naru "$EXPECTED_RESULT" "$REALLIFE_RESULT"
             elif [ $RES_JSONV -ne 0 ]; then
                 RES=$RES_JSONV
-                logmsg_error "INVALID JSON!" 
+                logmsg_error "INVALID JSON!"
             fi
         fi
         print_result $RES
