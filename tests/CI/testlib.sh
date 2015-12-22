@@ -438,6 +438,7 @@ exit_summarizeTestlibResults() {
     TRAP_RES=$?
     # No longer error out on bad lines, even if we did
     set +e
+    set +u
     # This would be a no-op if the test case previously started with a
     # test_it() has been already closed with its proper print_result()
     if [ x"${_testlib_result_printed}" = xnotyet ]; then
