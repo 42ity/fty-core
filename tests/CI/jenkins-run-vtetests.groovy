@@ -46,15 +46,27 @@ def doJob(name,params) {
 def buildmachine = build.buildVariableResolver.resolve("BUILDMACHINE");
 def fork = build.buildVariableResolver.resolve("FORK");
 def branch = build.buildVariableResolver.resolve("BRANCH");
+def buildsubdir = build.buildVariableResolver.resolve("BUILDSUBDIR");
+def SKIP_MAKE_CHECK_GITIGNORE = build.buildVariableResolver.resolve("SKIP_MAKE_CHECK_GITIGNORE");
+def CITEST_QUICKFAIL = build.buildVariableResolver.resolve("CITEST_QUICKFAIL");
+def SUT_WEB_SCHEMA = build.buildVariableResolver.resolve("SUT_WEB_SCHEMA");
 
 println "BRANCH=$branch"
 println "FORK=$fork"
 println "BUILDMACHINE=$buildmachine"
+println "BUILDSUBDIR=$buildsubdir"
+println "SKIP_MAKE_CHECK_GITIGNORE=$SKIP_MAKE_CHECK_GITIGNORE"
+println "CITEST_QUICKFAIL=$CITEST_QUICKFAIL"
+println "SUT_WEB_SCHEMA=$SUT_WEB_SCHEMA"
 
 def jobParams = [
   new StringParameterValue('FORK', fork),
   new StringParameterValue('BRANCH', branch),
   new StringParameterValue('BUILDMACHINE', buildmachine),
+  new StringParameterValue('BUILDSUBDIR', buildsubdir),
+  new StringParameterValue('SKIP_MAKE_CHECK_GITIGNORE', SKIP_MAKE_CHECK_GITIGNORE),
+  new StringParameterValue('CITEST_QUICKFAIL', CITEST_QUICKFAIL),
+  new StringParameterValue('SUT_WEB_SCHEMA', SUT_WEB_SCHEMA),
 ]
 
 count_good = 0;

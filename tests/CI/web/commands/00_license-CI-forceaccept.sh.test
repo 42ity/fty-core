@@ -83,12 +83,12 @@ else
         fi
 
         logmsg_info "Trying to accept the license on BIOS server '$BASE_URL'..."
-        api_auth_post_json '/admin/license' "foobar" >&5 || true
+        CITEST_QUICKFAIL=no WEBLIB_QUICKFAIL=no WEBLIB_CURLFAIL=no api_auth_post_json '/admin/license' "foobar" >&5 || true
 
         test_it "license_forced_status_ok"
-        OUT="`api_get_json '/admin/license/status' | grep "accepted"`"
+        OUT="`api_get_json '/admin/license/status' | grep "accepted_at"`"
         RES=$?
-        [ "$RES" = 0 ] && echo "$OUT" | sed 's|\(accepted_at":"\)[0-9]*"|\1XXX"|' >&5
+        [ "$RES" = 0 ] && echo "$OUT" | sed 's|\(accepted_at":"\)[0-9]*"|\1XXX"|' >&5 && echo "$OUT"
         print_result $RES
     fi
 
@@ -96,7 +96,7 @@ else
     NEW_BIOS_PASSWD="xX!9`head --bytes 16 /dev/urandom | base64 | sed 's,[\+\=\/\ \t\n\r\%],_,g'`"
 
     curlfail_push "warn" ""
-    TIMEINFO="`api_auth_get_json '/admin/time'`"
+    TIMEINFO="`CITEST_QUICKFAIL=no WEBLIB_QUICKFAIL=no WEBLIB_CURLFAIL=no api_auth_get_json '/admin/time'`"
     RES=$?
     curlfail_pop
 

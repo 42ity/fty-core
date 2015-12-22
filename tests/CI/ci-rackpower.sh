@@ -220,7 +220,11 @@ for UPS in $UPS1 $UPS2 ; do
         ( BASE_URL='http://127.0.0.1:8000/api/v1'; export BASE_URL
           . "`dirname $0`"/weblib.sh && \
           . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
-            logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+            if [ x"$CITEST_QUICKFAIL" = xyes ] ; then
+                die "BIOS license not accepted on the server, subsequent tests will fail"
+            else
+                logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+            fi
 
         URL="http://127.0.0.1:8000/api/v1/metric/computed/rack_total?arg1=$RACK&arg2=total_power"
         POWER="$(curl -s "$URL" | awk '/total_power/{ print $NF; }')"
