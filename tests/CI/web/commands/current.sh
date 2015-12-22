@@ -53,23 +53,23 @@ measurement() {
     # measurement
     sqlline="INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ($TIMESTAMP, $VALUE, $SCALE, @topic_id);"
     echo "$sqlline" >> "${DB_TMPSQL_FILE_CURRENT}"
-    loaddb_file ""${DB_TMPSQL_FILE_CURRENT}""
+    LOADDB_FILE_REMOTE_SLEEP=0 loaddb_file ""${DB_TMPSQL_FILE_CURRENT}""
     echo "use ${DATABASE};" > "${DB_TMPSQL_FILE_CURRENT}"
 }
 
 db_initiate(){
-    loaddb_current || return $?
+    LOADDB_FILE_REMOTE_SLEEP=5 loaddb_current || return $?
 
     echo "use ${DATABASE};" > "${DB_TMPSQL_FILE_CURRENT}"
     sqlline="INSERT INTO t_bios_discovered_device (id_discovered_device,name,id_device_type) VALUES (NULL, 'DC-LAB', 1);"
     echo "$sqlline" >> "${DB_TMPSQL_FILE_CURRENT}"
-    loaddb_file ""${DB_TMPSQL_FILE_CURRENT}""
+    LOADDB_FILE_REMOTE_SLEEP=0 loaddb_file ""${DB_TMPSQL_FILE_CURRENT}""
     echo "use ${DATABASE};" > "${DB_TMPSQL_FILE_CURRENT}"
     SEL_ID="select id_discovered_device from t_bios_discovered_device where name='DC-LAB'"
     TOP_ID="$(do_select "$SEL_ID")"
     sqlline="INSERT INTO t_bios_monitor_asset_relation (id_ma_relation,id_discovered_device,id_asset_element) VALUES (NULL, $TOP_ID, 19);"
     echo "$sqlline" >> "${DB_TMPSQL_FILE_CURRENT}"
-    loaddb_file ""${DB_TMPSQL_FILE_CURRENT}""
+    LOADDB_FILE_REMOTE_SLEEP=0 loaddb_file ""${DB_TMPSQL_FILE_CURRENT}""
 }
 
 db_measure(){
