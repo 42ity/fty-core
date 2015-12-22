@@ -318,6 +318,16 @@ init_summarizeTestlibResults() {
     return $?
 }
 
+echo_profilingLadder() {
+    # Checks whether to call this routine are on the caller
+    ( IFS=" 	"; export IFS
+      [ -n "$TESTLIB_LIST_PASSED" ] && for i in $TESTLIB_LIST_PASSED ; do echo "PASSED	$i" ; done
+      [ -n "$TESTLIB_LIST_FAILED" ] && for i in $TESTLIB_LIST_FAILED ; do echo "FAILED	$i" ; done
+      [ -n "$TESTLIB_LIST_FAILED_IGNORED" ] && for i in $TESTLIB_LIST_FAILED_IGNORED ; do echo "FAILED_IGNORED	$i" ; done
+    ) | egrep '\[[0-9]+sec\][ \t]*$' | \
+        sed 's,^\(.*\)\[\([0-9]*\)sec\][ \t]*$,\2\t\1,' | sort -nr
+}
+
 # This implements the summary of the test run; can be just echoed or also
 # appended to the TESTLIB_LOG_SUMMARY by exit_summarizeTestlibResults()
 # Uses and changes TRAP_RES defined by caller exit_summarizeTestlibResults()
@@ -392,13 +402,21 @@ echo_summarizeTestlibResults() {
 
     if [ "$TESTLIB_PROFILE_TESTDURATION" = yes ] && [ "$TESTLIB_COUNT_TOTAL" -gt 0 ] ; then
         [ "${TESTLIB_PROFILE_TESTDURATION_TOP-}" -gt 0 ] 2>/dev/null || TESTLIB_PROFILE_TESTDURATION_TOP=10
-        logmsg_info "Below are up to $TESTLIB_PROFILE_TESTDURATION_TOP longest test units (duration rounded to seconds):"
-        ( [ -n "$TESTLIB_LIST_PASSED" ] && for i in $TESTLIB_LIST_PASSED ; do echo "PASSED	$i" ; done
-          [ -n "$TESTLIB_LIST_FAILED" ] && for i in $TESTLIB_LIST_FAILED ; do echo "FAILED	$i" ; done
-          [ -n "$TESTLIB_LIST_FAILED_IGNORED" ] && for i in $TESTLIB_LIST_FAILED_IGNORED ; do echo "FAILED_IGNORED	$i" ; done
-        ) | egrep '\[[0-9]+sec\]$' | \
-            sed 's,^\(.*\)\[\([0-9]*\)sec\]$,\2\t\1,' | \
-            sort -nr | head -${TESTLIB_PROFILE_TESTDURATION_TOP}
+        [ "$TESTLIB_COUNT_TOTAL" -lt "$TESTLIB_PROFILE_TESTDURATION_TOP" ] && \
+                TESTLIB_PROFILE_TESTDURATION_TOP="$TESTLIB_COUNT_TOTAL"
+
+        LADDER="`echo_profilingLadder`" && \
+        LADDER_LEN="`echo "$LADDER" | wc -l`"
+        if [ $? = 0 ] && [ "$LADDER_LEN" -gt 0 ]; then
+            [ "$LADDER_LEN" -lt "$TESTLIB_PROFILE_TESTDURATION_TOP" ] && \
+                TESTLIB_PROFILE_TESTDURATION_TOP="$LADDER_LEN"
+            logmsg_info "Below are up to $TESTLIB_PROFILE_TESTDURATION_TOP longest test units (duration rounded to seconds):"
+            if [ "$LADDER_LEN" -le "$TESTLIB_PROFILE_TESTDURATION_TOP" ] ; then
+                echo "$LADDER"
+            else
+                echo "$LADDER" | head -${TESTLIB_PROFILE_TESTDURATION_TOP}
+            fi
+        fi
     fi
 
     [ "$TESTLIB_DURATION_TESTSUITE" -ge 0 ] 2>/dev/null && \
