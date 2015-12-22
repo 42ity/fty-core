@@ -89,10 +89,12 @@ NAME="$0"
 [ -z "${TESTLIB_LIST_PASSED-}" ] && TESTLIB_LIST_PASSED=""
 
 # Should we track and add timestamps to each test (profile what took long)?
-[ -z "${TESTLIB_PROFILE_TESTDURATION-}" ] && TESTLIB_PROFILE_TESTDURATION=no
+[ x"${TESTLIB_PROFILE_TESTDURATION-}" = x- ] && TESTLIB_PROFILE_TESTDURATION=""
+[ -z "${TESTLIB_PROFILE_TESTDURATION-}" ] && TESTLIB_PROFILE_TESTDURATION="no"
 # ... and summarize longest tests in the end?
 [ -z "${TESTLIB_PROFILE_TESTDURATION_TOP-}" ] && TESTLIB_PROFILE_TESTDURATION_TOP=10
 export TESTLIB_PROFILE_TESTDURATION TESTLIB_PROFILE_TESTDURATION_TOP
+# Do not export these local variables...
 [ -z "${TESTLIB_TIMESTAMP_TESTSTART-}" ] && TESTLIB_TIMESTAMP_TESTSTART=0
 [ -z "${TESTLIB_TIMESTAMP_TESTFINISH-}" ] && TESTLIB_TIMESTAMP_TESTFINISH=0
 
@@ -374,7 +376,7 @@ echo_summarizeTestlibResults() {
         ( for i in "$TESTLIB_LIST_PASSED" ; do echo "PASSED	$i" ; done
           for i in "$TESTLIB_LIST_FAILED" ; do echo "FAILED	$i" ; done
           for i in "$TESTLIB_LIST_FAILED_IGNORED" ; do echo "FAILED_IGNORED	$i" ; done
-        ) | sed 's,^\(.*\)\[\([0-9]*\)sec\]$,\2\t\1' | sort -nr | head -${TESTLIB_PROFILE_TESTDURATION_TOP}
+        ) | sed 's,^\(.*\)\[\([0-9]*\)sec\]$,\2\t\1,' | sort -nr | head -${TESTLIB_PROFILE_TESTDURATION_TOP}
     fi
 
     [ "$TESTLIB_DURATION_TESTSUITE" -ge 0 ] 2>/dev/null && \
