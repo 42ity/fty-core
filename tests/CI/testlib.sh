@@ -187,7 +187,9 @@ print_result() {
     if [ "$_code" -eq 0 ]; then  # should include "-0" too
         echo " * PASSED"
         TESTLIB_COUNT_PASS="`expr $TESTLIB_COUNT_PASS + 1`"
-        TEMP_NUMBER="`expr $TESTLIB_COUNT_PASS - $TESTLIB_COUNT_TOTAL`"
+        [ "$TESTLIB_COUNT_PASS" -eq "$TESTLIB_COUNT_TOTAL" ] && \
+            TEMP_NUMBER=0 || \
+            TEMP_NUMBER="`expr $TESTLIB_COUNT_PASS - $TESTLIB_COUNT_TOTAL`"
         if [ "$TEMP_NUMBER" -gt 0 ]; then
             logmsg_error "WOW: TESTLIB_COUNT_PASS - TESTLIB_COUNT_TOTAL = $TESTLIB_COUNT_PASS - $TESTLIB_COUNT_TOTAL = $TEMP_NUMBER > 0 ! This should not happen!"
         fi
