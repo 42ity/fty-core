@@ -179,7 +179,7 @@ test_web() {
 ci_loaddb_default() {
     echo "--------------- reset db: default ----------------"
     loaddb_file "$DB_BASE" && \
-    loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
+    LOADDB_FILE_REMOTE_SLEEP=5 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
     loaddb_file "$DB_DATA" && \
     loaddb_file "$DB_DATA_TESTREST"
 }
@@ -204,7 +204,7 @@ test_web_topo_p() {
     init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_p() $*"
     echo "----------- reset db: topology : power -----------"
     loaddb_file "$DB_BASE" && \
-    loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
+    LOADDB_FILE_REMOTE_SLEEP=5 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
     loaddb_file "$DB_TOPOP" && \
     test_web "$@"
 }
@@ -214,7 +214,7 @@ test_web_topo_l() {
     init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_l() $*"
     echo "---------- reset db: topology : location ---------"
     loaddb_file "$DB_BASE" && \
-    loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
+    LOADDB_FILE_REMOTE_SLEEP=5 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
     loaddb_file "$DB_TOPOL" && \
     test_web "$@"
 }
