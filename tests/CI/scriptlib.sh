@@ -84,6 +84,12 @@ export SUT_IS_REMOTE SUT_USER SUT_HOST SUT_SSH_PORT SUT_WEB_PORT SUT_WEB_SCHEMA 
 [ x"${CITEST_QUICKFAIL-}" != xyes ] && CITEST_QUICKFAIL=no
 export CITEST_QUICKFAIL
 
+### For remote tests and general database initalization, we want some quiet
+### time after initializing the database. For tests that loop with uploads
+### of small DB snippets, we want to minimize such sleeps!
+[ -z "${LOADDB_FILE_REMOTE_SLEEP-}" ] && LOADDB_FILE_REMOTE_SLEEP=20
+export LOADDB_FILE_REMOTE_SLEEP
+
 ### Set the default language (e.g. for CI apt-get to stop complaining)
 [ -z "${LANG-}" ] && LANG=C
 [ -z "${LANGUAGE-}" ] && LANGUAGE=C
@@ -418,6 +424,9 @@ do_dumpdb() {
 }
 
 loaddb_file() {
+    ### Note: The input (file or stdin) MUST specify 'use ${DATABASE};' in order
+    ### to upload data into the database the caller wants (including creation of
+    ### one, so it can not be specified as command-line argument)
     DBFILE="$1"
     if [ $# -gt 0 ] && [ x"$1" = x ] ; then
         die "loaddb_file() was called with a present but empty filename argument, check your scripts!"
@@ -433,7 +442,8 @@ loaddb_file() {
         ( sut_run "systemctl start mysql"
           REMCMD="mysql -u ${DBUSER}"
           eval sut_run "${REMCMD}" "<$DBFILE" && \
-          sleep 20 && echo "Updated DB on remote system $SUT_HOST:$SUT_SSH_PORT: $DBFILE" ) || \
+          { [ "$LOADDB_FILE_REMOTE_SLEEP" -gt 0 ] 2>/dev/null && sleep ${LOADDB_FILE_REMOTE_SLEEP} || true; } && \
+          logmsg_info "Updated DB on remote system $SUT_HOST:$SUT_SSH_PORT: $DBFILE" ) || \
           CODE=$? die "Could not load database file to remote system $SUT_HOST:$SUT_SSH_PORT: $DBFILE"
     else
         logmsg_info "$CI_DEBUGLEVEL_LOADDB" \
