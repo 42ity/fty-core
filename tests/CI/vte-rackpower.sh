@@ -168,8 +168,8 @@ sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore
 set -o pipefail 2>/dev/null || true
 set -e
 { loaddb_file "$DB_BASE" && \
-  LOADDB_FILE_REMOTE_SLEEP=5 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
-  LOADDB_FILE_REMOTE_SLEEP=5 loaddb_file "$DB_RACK_POWER" \
+  LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
+  LOADDB_FILE_REMOTE_SLEEP=2 loaddb_file "$DB_RACK_POWER" \
 ; } 2>&1 | tee "$CHECKOUTDIR/ci-rackpower-vte.log"
 
 # Try to accept the BIOS license on server

@@ -130,7 +130,7 @@ LOGFILE_IMPORT="$BUILDSUBDIR/vte-tab-import_TP-${_SCRIPT_NAME}.log"
 set -o pipefail 2>/dev/null || true
 set -e
 loaddb_file "$DB_BASE" 2>&1 | tee "${LOGFILE_LOADDB}"
-LOADDB_FILE_REMOTE_SLEEP=5 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" 2>&1 | tee -a "${LOGFILE_LOADDB}"
+LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" 2>&1 | tee -a "${LOGFILE_LOADDB}"
 set +e
 
 # Try to accept the BIOS license on server
@@ -199,7 +199,7 @@ echo "$sqlline" >> "${DB_TMPSQL_FILE_UPTIME}"
 sqlline="INSERT INTO t_bios_alert ( rule_name, date_from, priority, state, description, date_till, notification, dc_id) VALUES ( 'upsonbattery@UPS201_2', UNIX_TIMESTAMP('$date_from_2_2') ,        1 ,     1 , 'UPS is running on battery!    ', UNIX_TIMESTAMP('$date_to_2_2') ,            0 , 9);"
 echo "$sqlline" >> "${DB_TMPSQL_FILE_UPTIME}"
 cat "${DB_TMPSQL_FILE_UPTIME}"
-LOADDB_FILE_REMOTE_SLEEP=5 loaddb_file "${DB_TMPSQL_FILE_UPTIME}" 2>&1 | tee -a "${LOGFILE_LOADDB}"
+LOADDB_FILE_REMOTE_SLEEP=2 loaddb_file "${DB_TMPSQL_FILE_UPTIME}" 2>&1 | tee -a "${LOGFILE_LOADDB}"
 
 sut_run 'systemctl restart biostimer-outage.service'
 

@@ -87,7 +87,7 @@ export CITEST_QUICKFAIL
 ### For remote tests and general database initalization, we want some quiet
 ### time after initializing the database. For tests that loop with uploads
 ### of small DB snippets, we want to minimize such sleeps!
-[ -z "${LOADDB_FILE_REMOTE_SLEEP-}" ] && LOADDB_FILE_REMOTE_SLEEP=20
+[ -z "${LOADDB_FILE_REMOTE_SLEEP-}" ] && LOADDB_FILE_REMOTE_SLEEP=5
 export LOADDB_FILE_REMOTE_SLEEP
 
 ### Set the default language (e.g. for CI apt-get to stop complaining)
