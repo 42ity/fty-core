@@ -324,7 +324,7 @@ echo_profilingLadder() {
       [ -n "$TESTLIB_LIST_PASSED" ] && for i in $TESTLIB_LIST_PASSED ; do echo "PASSED	$i" ; done
       [ -n "$TESTLIB_LIST_FAILED" ] && for i in $TESTLIB_LIST_FAILED ; do echo "FAILED	$i" ; done
       [ -n "$TESTLIB_LIST_FAILED_IGNORED" ] && for i in $TESTLIB_LIST_FAILED_IGNORED ; do echo "FAILED_IGNORED	$i" ; done
-    ) | egrep '\[[0-9]+sec\][ \t]*$' | \
+      echo "" ) | egrep '\[[0-9]+sec\][ \t]*$' | \
         sed 's,^\(.*\)\[\([0-9]*\)sec\][ \t]*$,\2\t\1,' | sort -nr
 }
 
