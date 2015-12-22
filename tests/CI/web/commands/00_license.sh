@@ -85,7 +85,7 @@ echo "**************************************************************************
 test_it "license_text"
 ### This GET should return plaintext license text "as is"
 TEXT="`api_get_content '/admin/license' | egrep -ic 'GNU|EATON'`"
-echo "TEXT = $TEXT (lines in license text)"
+echo "TEXT = $TEXT (matched lines in license text)"
 if [ "$TEXT" -gt 0 ]; then
    echo '{"text":"yes"}'
 else
@@ -109,7 +109,7 @@ else
 fi # SUT_IS_REMOTE
 ### This GET should produce an error message in JSON about missing file
 curlfail_push_expect_500
-api_get_json '/admin/license' >&5
+CITEST_QUICKFAIL=no WEBLIB_QUICKFAIL=no WEBLIB_CURLFAIL=no api_get_json '/admin/license' >&5
 RES=$?
 curlfail_pop
 if [ "$SUT_IS_REMOTE" = yes ]; then
@@ -132,23 +132,34 @@ echo "********* 00_license.sh **************************************************
 echo "********* 10. cannot save the license *************************************************************"
 echo "***************************************************************************************************"
 #*#*#*#*#* 00_license.sh - subtest 10 - TODO, 500?
-#if [ "$SUT_IS_REMOTE" = yes ]; then
-#    echo "SKIPPED ON REMOTE"
 #    echo '{"errors":[{"message":"Internal Server Error. Error saving license acceptance or getting license version, check integrity of storage.","code":42}]}' >&5
-#else
 
 test_it "cannot save the license"
 curlfail_push_expect_500
 # Make it a file instead of directory (so no file can be created under it)
 # TODO: Manupulations with /var/lib/bios directory should be better locked
 # against intermittent errors (test if src/tgt dirs exist, etc.)
-sut_run "rm -f /var/lib/bios/license $BUILDSUBDIR/var/bios/license $CHECKOUTDIR/var/bios/license; rm -rf $BUILDSUBDIR/var/bios $CHECKOUTDIR/var/bios; mv -f /var/lib/bios /var/lib/bios.x ; touch /var/lib/bios $CHECKOUTDIR/var/bios $BUILDSUBDIR/var/bios || true"
-api_auth_post_json '/admin/license' "foobar" >&5
+if [ "$SUT_IS_REMOTE" = yes ]; then
+    # TODO: Maybe this should consider Eaton EULA as well/instead
+    sut_run "rm -f /var/lib/bios/license ; mv -f /var/lib/bios /var/lib/bios.x ; touch /var/lib/bios || true"
+else
+    echo "CHECKOUTDIR =     $CHECKOUTDIR"
+    echo "BUILDSUBDIR =     $BUILDSUBDIR"
+    # Tests for local-source builds: license data are in $BUILDSUBDIR/tests/fixtures/license and are symlinks to the ../../../COPYING file
+    rm -f /var/lib/bios/license $BUILDSUBDIR/var/bios/license $CHECKOUTDIR/var/bios/license; rm -rf $BUILDSUBDIR/var/bios $CHECKOUTDIR/var/bios; mv -f /var/lib/bios /var/lib/bios.x ; touch /var/lib/bios $CHECKOUTDIR/var/bios $BUILDSUBDIR/var/bios || true
+fi # SUT_IS_REMOTE
+CITEST_QUICKFAIL=no WEBLIB_QUICKFAIL=no WEBLIB_CURLFAIL=no api_auth_post_json '/admin/license' "foobar" >&5
 RES=$?
 curlfail_pop
-sut_run "rm -f $BUILDSUBDIR/var/bios $CHECKOUTDIR/var/bios;mkdir $CHECKOUTDIR/var/bios $BUILDSUBDIR/var/bios || true; mv -f /var/lib/bios.x /var/lib/bios"
+if [ "$SUT_IS_REMOTE" = yes ]; then
+    # TODO: Maybe this should consider Eaton EULA as well/instead
+    sut_run "rm -f /var/lib/bios; mv -f /var/lib/bios.x /var/lib/bios"
+else
+    echo "CHECKOUTDIR =     $CHECKOUTDIR"
+    echo "BUILDSUBDIR =     $BUILDSUBDIR"
+    rm -f /var/lib/bios $BUILDSUBDIR/var/bios $CHECKOUTDIR/var/bios;mkdir $CHECKOUTDIR/var/bios $BUILDSUBDIR/var/bios || true; mv -f /var/lib/bios.x /var/lib/bios
+fi # SUT_IS_REMOTE
 print_result $RES
-#fi # SUT_IS_REMOTE 
 
 echo "********* 00_license.sh ***************************************************************************"
 echo "********* 11. license_acceptance ******************************************************************"
