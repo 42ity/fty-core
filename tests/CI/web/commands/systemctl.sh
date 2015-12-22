@@ -32,12 +32,11 @@ echo
 [ -n "$CMPJSON_SH" ] && [ -x "$CMPJSON_SH" ] || \
     logmsg_error "CMPJSON_SH not defined properly!"
 
-expected() {
+systemctl_expected() {
     # print 'systemctl show' in format of REST API call to help comparing
     # $1 = systemd service name
     echo "{\"$1\": {"
-    sut_run -t "sudo /bin/systemctl show '$1' \
-        -p ActiveState -p SubState -p LoadState -p UnitFileState" \
+    sut_run -t "sudo -n /bin/systemctl show \"$1\" -p ActiveState -p SubState -p LoadState -p UnitFileState" \
     | awk -F= 'NR>1 {print ", "}{print "\""$1"\" : \""$2"\""}'
     echo "} }"
 }
@@ -91,48 +90,49 @@ test_it "Authorized status"
 # at this point it contains result of license, so clean it up by hand
 OUT_CURL=""
 api_auth_get_json "/admin/systemctl/status/mysql"
-tmp="`expected mysql`"
+tmp="`systemctl_expected mysql`"
+echo "$tmp"
 "$CMPJSON_SH" -s "$OUT_CURL" "$tmp"
 print_result $?
 
 #FIXME: the mysql stop tests is constantly failing, turn it off for now
 #test_it "Stop mysql"
-#sut_run -t "sudo systemctl stop mysql"
+#sut_run -t "sudo -n systemctl stop mysql"
 #print_result $?
 #test_it "Authorized status 2"
 #simple_auth_get_code "/admin/systemctl/status/mysql" received HTTP_CODE
-#tmp="`expected mysql`"
+#tmp="`systemctl_expected mysql`"
 #"$CMPJSON_SH" -s "$received" "$tmp"
 #print_result $?
 
 test_it "Force-Enable mysql now"
-sut_run -t "sudo systemctl enable mysql"
+sut_run -t "sudo -n systemctl enable mysql"
 print_result $?
 
 test_it "Authorized status 3"
 api_auth_get_json "/admin/systemctl/status/mysql"
-tmp="`expected mysql`"
+tmp="`systemctl_expected mysql`"
 "$CMPJSON_SH" -s "$OUT_CURL" "$tmp"
 print_result $?
 
 test_it "Force-Disable mysql now"
-sut_run -t "sudo systemctl disable mysql"
+sut_run -t "sudo -n systemctl disable mysql"
 print_result $?
 
 
 test_it "Authorized status 4"
 api_auth_get_json "/admin/systemctl/status/mysql"
-tmp="`expected mysql`"
+tmp="`systemctl_expected mysql`"
 "$CMPJSON_SH" -s "$OUT_CURL" "$tmp"
 print_result $?
 
 test_it "Force-Start mysql now"
-sut_run -t "sudo systemctl start mysql"
+sut_run -t "sudo -n systemctl start mysql"
 print_result $?
 
 test_it "Authorized status 5"
 api_auth_get_json "/admin/systemctl/status/mysql"
-tmp="`expected mysql`"
+tmp="`systemctl_expected mysql`"
 "$CMPJSON_SH" -s "$OUT_CURL" "$tmp"
 print_result $?
 
