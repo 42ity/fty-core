@@ -36,8 +36,11 @@ systemctl_expected() {
     # print 'systemctl show' in format of REST API call to help comparing
     # $1 = systemd service name
     echo "{\"$1\": {"
-    sut_run -t "sudo -n /bin/systemctl show \"$1\" -p ActiveState -p SubState -p LoadState -p UnitFileState" \
-    | awk -F= 'NR>1 {print ", "}{print "\""$1"\" : \""$2"\""}'
+    #sut_run -t "timeout 30s sudo -n -S /bin/systemctl show \"$1\" -p ActiveState -p SubState -p LoadState -p UnitFileState </dev/null" \
+    #sut_run -t "export PATH=\"/bin:/sbin:\$PATH\" ; timeout 30s sudo -n systemctl show \"$1\" -p ActiveState -p SubState -p LoadState -p UnitFileState" \
+    #sut_run -t "/bin/systemctl show \"$1\" -p ActiveState -p SubState -p LoadState -p UnitFileState" \
+    sut_run -t "sudo -n systemctl show \"$1\" | egrep \"^(ActiveState|SubState|LoadState|UnitFileState)=\"" \
+    | sed 's,[\r\n]*$,,g' | awk -F= 'NR>1 {print ", "}{print "\""$1"\" : \""$2"\""}'
     echo "} }"
 }
 
