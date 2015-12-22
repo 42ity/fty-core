@@ -218,7 +218,7 @@ if (streq (part, "ERROR")) {
         zmsg_destroy (&recv_msg);
         mlm_client_destroy (&client);
         http_die ("not-found", std::string ("Alert identified by rule name = '").append (rule_name).append ("' and element name = '").
-            append (element_name).append ("'");
+            append (element_name).append ("'").c_str());
     }
     if (streq (part, "BAD_STATE")) {
         free (part);
