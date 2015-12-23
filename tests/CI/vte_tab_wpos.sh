@@ -137,14 +137,6 @@ subtest() {
     LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" 2>&1 | tee -a "${LOGFILE_LOADDB}"
     print_result $?
 
-    # Try to accept the BIOS license on server
-    ( . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
-            if [ x"$CITEST_QUICKFAIL" = xyes ] ; then
-                die "BIOS license not accepted on the server, subsequent tests will fail"
-            else
-                logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
-            fi
-
     # ***** POST THE CSV FILE *****
     ASSET="$CSV_LOADDIR_BAM/$1"
     # TODO: Original script missed some step that actually imports the data and
@@ -191,6 +183,14 @@ subtest() {
 # Note: this default log filename will be ignored if already set by caller
 init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" ""
 settraps 'exit_summarizeTestlibResults'
+
+# Try to accept the BIOS license on server
+( . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
+    if [ x"$CITEST_QUICKFAIL" = xyes ] ; then
+        die "BIOS license not accepted on the server, subsequent tests will fail"
+    else
+        logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+    fi
 
 subtest "bam_import_16_wpos1.csv"
 subtest "bam_import_16_wpos2.csv"
