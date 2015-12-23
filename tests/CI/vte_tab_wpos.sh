@@ -133,12 +133,9 @@ subtest() {
     # ***** INIT DB *****
     # *** write power rack base test data to DB on SUT
     test_it "re-initialize database"
-    set -o pipefail 2>/dev/null || true
-    set -e
     loaddb_file "$DB_BASE" 2>&1 | tee "${LOGFILE_LOADDB}"
     LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" 2>&1 | tee -a "${LOGFILE_LOADDB}"
     print_result $?
-    set +e
 
     # Try to accept the BIOS license on server
     ( . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
