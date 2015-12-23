@@ -490,12 +490,12 @@ int output(const Argv& args, std::string& o, std::string& e, unsigned int timeou
     unsigned int tme = 0;
     if(timeout == 0)
         timeout = 5;
-    int ret;
+    int ret = 0;
 
     std::string out;
     std::string err;
 
-    while(tme < timeout) {
+    while((tme < timeout) && p.isRunning()) {
         ret = p.wait((unsigned int)1);
         out += wait_read_all(p.getStdout());
         err += wait_read_all(p.getStderr());
