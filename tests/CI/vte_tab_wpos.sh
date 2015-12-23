@@ -110,6 +110,7 @@ SUT_IS_REMOTE=yes
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 # Include our standard web routines for CI scripts
+NEED_TESTLIB=yes
 . "`dirname $0`"/weblib.sh || die "Can not include web script library"
 
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
@@ -128,79 +129,76 @@ sut_run 'R=0; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server
 LOGFILE_LOADDB="$BUILDSUBDIR/vte-tab-loaddb-${_SCRIPT_NAME}.log"
 LOGFILE_IMPORT="$BUILDSUBDIR/vte-tab-import_TP-${_SCRIPT_NAME}.log"
 
+subtest_matcher() {
+    # The LOGFILE_IMPORT should be prepopulated
+    # $1 - expected number of hits
+    # $2 - regexp to match
+    # Returns: equality result (0 ok, 1+ bad)
+    N_RESULT=0
+    N_EXPECT="`egrep -c "$2" "${LOGFILE_IMPORT}"`" || N_RESULT=$?
+    echo "N_EXPECT = $1 (got $N_EXPECT)"
+    [ "$N_EXPECT" -eq "$1" ] || N_RESULT=$?
+    return $N_RESULT
+}
+
 subtest() {
     # ***** INIT DB *****
     # *** write power rack base test data to DB on SUT
-    set -o pipefail 2>/dev/null || true
-    set -e
+    test_it "re-initialize database"
     loaddb_file "$DB_BASE" 2>&1 | tee "${LOGFILE_LOADDB}"
     LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" 2>&1 | tee -a "${LOGFILE_LOADDB}"
-    set +e
-
-    # Try to accept the BIOS license on server
-    ( . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
-            if [ x"$CITEST_QUICKFAIL" = xyes ] ; then
-                die "BIOS license not accepted on the server, subsequent tests will fail"
-            else
-                logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
-            fi
+    print_result $?
 
     # ***** POST THE CSV FILE *****
     ASSET="$CSV_LOADDIR_BAM/$1"
-    # TODO: Original script misses some step that actually imports the data and
-    # generates the "${LOGFILE_IMPORT}".
-    # Maybe we should port this logic into web/commands/asset*sh tests
+    # TODO: Original script missed some step that actually imports the data and
+    # generates the "${LOGFILE_IMPORT}". I guess the one below is it...
+    # QA said, maybe we should port this logic into web/commands/asset*sh tests
 
+    logmsg_info "Importing asset file: $ASSET"
+    test_it "import_asset::$1"
+    api_auth_post_file_form /asset/import assets="@$ASSET" | tee "${LOGFILE_IMPORT}"
+    print_result $?
+
+    test_it "inspect_asset::$1"
     case "$1" in
         bam_import_16_wpos1.csv)
-            N_EXPECT=`cat ${LOGFILE_IMPORT}|grep "more than 2 PDU is not supported"|wc -l`
-            if [ "$N_EXPECT" = "1" ];then
-                echo "Subtest 1 PASSED."
-            else
-                echo "Subtest 1 FAILED.";exit 1
-            fi
+            subtest_matcher 1 "more than 2 PDU is not supported"
+            print_result $?
             ;;
         bam_import_16_wpos2.csv)
-            N_EXPECT=`cat ${LOGFILE_IMPORT}|grep "location_w_pos should be set"|wc -l`
-            echo "N_EXPECT = $N_EXPECT"
-            if [ "$N_EXPECT" = "4" ];then
-                echo "Subtest 2 PASSED."
-            else
-                echo "Subtest 2 FAILED.";exit 1
-            fi
+            subtest_matcher 4 "location_w_pos should be set"
+            print_result $?
             ;;
         bam_import_16_wpos3.csv)
-            N_EXPECT=`cat ${LOGFILE_IMPORT}|grep '"imported_lines" : 7'|wc -l`
-            echo "N_EXPECT = $N_EXPECT"
-            if [ "$N_EXPECT" = "1" ];then
-                echo "Subtest 3 PASSED."
-            else
-                echo "Subtest 3 FAILED.";exit 1
-            fi  
+            subtest_matcher 1 '"imported_lines" : 7'
+            print_result $?
             ;;
         bam_import_16_wpos4.csv)
-            N_EXPECT=`cat ${LOGFILE_IMPORT}|grep '"imported_lines" : 7'|wc -l`
-            echo "N_EXPECT = $N_EXPECT"
-            if [ "$N_EXPECT" = "1" ];then
-                echo "Subtest 4 PASSED."
-            else
-                echo "Subtest 4 FAILED.";exit 1
-            fi
+            subtest_matcher 1 '"imported_lines" : 7'
+            print_result $?
             ;;
         *)  echo "$0: Unknown param and all after it are ignored: $@"
-            break
+            print_result 1
             ;;
     esac
 }
+
+# Note: this default log filename will be ignored if already set by caller
+init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" ""
+settraps 'exit_summarizeTestlibResults'
+
+# Try to accept the BIOS license on server
+( . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
+    if [ x"$CITEST_QUICKFAIL" = xyes ] ; then
+        die "BIOS license not accepted on the server, subsequent tests will fail"
+    else
+        logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+    fi
 
 subtest "bam_import_16_wpos1.csv"
 subtest "bam_import_16_wpos2.csv"
 subtest "bam_import_16_wpos3.csv"
 subtest "bam_import_16_wpos4.csv"
 
-TIME=$(date --utc "+%Y-%m-%d %H:%M:%S")
-echo "Finish time is $TIME"
-TIME_END=$(date +%s)
-TEST_LAST=$(expr $TIME_END - $TIME_START)
-echo "Test lasted $TEST_LAST second."
-exit 0
+exit
