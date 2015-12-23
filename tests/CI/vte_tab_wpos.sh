@@ -129,6 +129,18 @@ sut_run 'R=0; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server
 LOGFILE_LOADDB="$BUILDSUBDIR/vte-tab-loaddb-${_SCRIPT_NAME}.log"
 LOGFILE_IMPORT="$BUILDSUBDIR/vte-tab-import_TP-${_SCRIPT_NAME}.log"
 
+subtest_matcher() {
+    # The LOGFILE_IMPORT should be prepopulated
+    # $1 - expected number of hits
+    # $2 - regexp to match
+    # Returns: equality result (0 ok, 1+ bad)
+    N_RESULT=0
+    N_EXPECT="`egrep -c "$2" "${LOGFILE_IMPORT}"`" || N_RESULT=$?
+    echo "N_EXPECT = $1 (got $N_EXPECT)"
+    [ "$N_EXPECT" -eq "$1" ] || N_RESULT=$?
+    return $N_RESULT
+}
+
 subtest() {
     # ***** INIT DB *****
     # *** write power rack base test data to DB on SUT
@@ -151,27 +163,19 @@ subtest() {
     test_it "inspect_asset::$1"
     case "$1" in
         bam_import_16_wpos1.csv)
-            N_EXPECT="`grep -c "more than 2 PDU is not supported" "${LOGFILE_IMPORT}"`"
-            echo "N_EXPECT = $N_EXPECT (1)"
-            [ "$N_EXPECT" = "1" ]
+            subtest_matcher 1 "more than 2 PDU is not supported"
             print_result $?
             ;;
         bam_import_16_wpos2.csv)
-            N_EXPECT="`grep -c "location_w_pos should be set" "${LOGFILE_IMPORT}"`"
-            echo "N_EXPECT = $N_EXPECT (4)"
-            [ "$N_EXPECT" = "4" ]
+            subtest_matcher 4 "location_w_pos should be set"
             print_result $?
             ;;
         bam_import_16_wpos3.csv)
-            N_EXPECT="`grep -c '"imported_lines" : 7' "${LOGFILE_IMPORT}"`"
-            echo "N_EXPECT = $N_EXPECT (1)"
-            [ "$N_EXPECT" = "1" ]
+            subtest_matcher 1 '"imported_lines" : 7'
             print_result $?
             ;;
         bam_import_16_wpos4.csv)
-            N_EXPECT="`grep -c '"imported_lines" : 7' "${LOGFILE_IMPORT}"`"
-            echo "N_EXPECT = $N_EXPECT (1)"
-            [ "$N_EXPECT" = "1" ]
+            subtest_matcher 1 '"imported_lines" : 7'
             print_result $?
             ;;
         *)  echo "$0: Unknown param and all after it are ignored: $@"
