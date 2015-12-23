@@ -153,7 +153,7 @@ subtest() {
 
     case "$1" in
         bam_import_16_wpos1.csv)
-            N_EXPECT=`cat ${LOGFILE_IMPORT}|grep "more than 2 PDU is not supported"|wc -l`
+            N_EXPECT="`grep -c "more than 2 PDU is not supported" "${LOGFILE_IMPORT}"`"
             if [ "$N_EXPECT" = "1" ];then
                 echo "Subtest 1 PASSED."
             else
@@ -161,7 +161,7 @@ subtest() {
             fi
             ;;
         bam_import_16_wpos2.csv)
-            N_EXPECT=`cat ${LOGFILE_IMPORT}|grep "location_w_pos should be set"|wc -l`
+            N_EXPECT="`grep -c "location_w_pos should be set" "${LOGFILE_IMPORT}"`"
             echo "N_EXPECT = $N_EXPECT"
             if [ "$N_EXPECT" = "4" ];then
                 echo "Subtest 2 PASSED."
@@ -170,7 +170,7 @@ subtest() {
             fi
             ;;
         bam_import_16_wpos3.csv)
-            N_EXPECT=`cat ${LOGFILE_IMPORT}|grep '"imported_lines" : 7'|wc -l`
+            N_EXPECT="`grep -c '"imported_lines" : 7' "${LOGFILE_IMPORT}"`"
             echo "N_EXPECT = $N_EXPECT"
             if [ "$N_EXPECT" = "1" ];then
                 echo "Subtest 3 PASSED."
@@ -179,7 +179,7 @@ subtest() {
             fi  
             ;;
         bam_import_16_wpos4.csv)
-            N_EXPECT=`cat ${LOGFILE_IMPORT}|grep '"imported_lines" : 7'|wc -l`
+            N_EXPECT="`grep -c '"imported_lines" : 7' "${LOGFILE_IMPORT}"`"
             echo "N_EXPECT = $N_EXPECT"
             if [ "$N_EXPECT" = "1" ];then
                 echo "Subtest 4 PASSED."
