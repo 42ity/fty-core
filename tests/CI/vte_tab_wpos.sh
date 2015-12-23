@@ -147,13 +147,17 @@ subtest() {
 
     # ***** POST THE CSV FILE *****
     ASSET="$CSV_LOADDIR_BAM/$1"
-    # TODO: Original script misses some step that actually imports the data and
-    # generates the "${LOGFILE_IMPORT}".
-    # Maybe we should port this logic into web/commands/asset*sh tests
+    # TODO: Original script missed some step that actually imports the data and
+    # generates the "${LOGFILE_IMPORT}". I guess the one below is it...
+    # QA said, maybe we should port this logic into web/commands/asset*sh tests
+
+    logmsg_info "Importing asset file: $ASSET"
+    api_auth_post_file_form /asset/import assets="@$ASSET" | tee "${LOGFILE_IMPORT}"
 
     case "$1" in
         bam_import_16_wpos1.csv)
             N_EXPECT="`grep -c "more than 2 PDU is not supported" "${LOGFILE_IMPORT}"`"
+            echo "N_EXPECT = $N_EXPECT (1)"
             if [ "$N_EXPECT" = "1" ];then
                 echo "Subtest 1 PASSED."
             else
@@ -162,7 +166,7 @@ subtest() {
             ;;
         bam_import_16_wpos2.csv)
             N_EXPECT="`grep -c "location_w_pos should be set" "${LOGFILE_IMPORT}"`"
-            echo "N_EXPECT = $N_EXPECT"
+            echo "N_EXPECT = $N_EXPECT (4)"
             if [ "$N_EXPECT" = "4" ];then
                 echo "Subtest 2 PASSED."
             else
@@ -171,7 +175,7 @@ subtest() {
             ;;
         bam_import_16_wpos3.csv)
             N_EXPECT="`grep -c '"imported_lines" : 7' "${LOGFILE_IMPORT}"`"
-            echo "N_EXPECT = $N_EXPECT"
+            echo "N_EXPECT = $N_EXPECT (1)"
             if [ "$N_EXPECT" = "1" ];then
                 echo "Subtest 3 PASSED."
             else
@@ -180,7 +184,7 @@ subtest() {
             ;;
         bam_import_16_wpos4.csv)
             N_EXPECT="`grep -c '"imported_lines" : 7' "${LOGFILE_IMPORT}"`"
-            echo "N_EXPECT = $N_EXPECT"
+            echo "N_EXPECT = $N_EXPECT (1)"
             if [ "$N_EXPECT" = "1" ];then
                 echo "Subtest 4 PASSED."
             else
