@@ -35,9 +35,7 @@
 
 # Set up weblib test engine
 WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT="ignore" # we do this in-script
-WEBLIB_QUICKFAIL=no
-WEBLIB_CURLFAIL=no
-export WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT WEBLIB_QUICKFAIL WEBLIB_CURLFAIL
+export WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT
 export BASE_URL="${SUT_WEB_SCHEMA}://${SUT_HOST}:${SUT_WEB_PORT}/api/v1"
 
 # Include our standard web routines for CI scripts
@@ -82,8 +80,9 @@ test_web_process() {
         logmsg_error "Web-server process seems to have died!" >&2
         # Ensure it is dead though, since we abort the tests now
         kill $MAKEPID >/dev/null 2>&1
-        wait $MAKEPID >/dev/null 2>&1
-        return
+        RES_TWP=32
+        wait $MAKEPID >/dev/null 2>&1 || RES_TWP=$?
+        return $RES_TWP
     fi
     return 0
 }

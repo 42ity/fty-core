@@ -49,15 +49,22 @@ def branch = build.buildVariableResolver.resolve("BRANCH");
 def buildsubdir = build.buildVariableResolver.resolve("BUILDSUBDIR");
 def SKIP_MAKE_CHECK_GITIGNORE = build.buildVariableResolver.resolve("SKIP_MAKE_CHECK_GITIGNORE");
 def CITEST_QUICKFAIL = build.buildVariableResolver.resolve("CITEST_QUICKFAIL");
+def WEBLIB_CURLFAIL = build.buildVariableResolver.resolve("WEBLIB_CURLFAIL");
+def CI_DEBUG = build.buildVariableResolver.resolve("CI_DEBUG");
 def SUT_WEB_SCHEMA = build.buildVariableResolver.resolve("SUT_WEB_SCHEMA");
+def TESTLIB_PROFILE_TESTDURATION = build.buildVariableResolver.resolve("TESTLIB_PROFILE_TESTDURATION");
+def TESTLIB_PROFILE_TESTDURATION_TOP = build.buildVariableResolver.resolve("TESTLIB_PROFILE_TESTDURATION_TOP");
 
 println "BRANCH=$branch"
 println "FORK=$fork"
 println "BUILDMACHINE=$buildmachine"
 println "BUILDSUBDIR=$buildsubdir"
+println "CI_DEBUG=$CI_DEBUG"
 println "SKIP_MAKE_CHECK_GITIGNORE=$SKIP_MAKE_CHECK_GITIGNORE"
 println "CITEST_QUICKFAIL=$CITEST_QUICKFAIL"
+println "WEBLIB_CURLFAIL=$WEBLIB_CURLFAIL"
 println "SUT_WEB_SCHEMA=$SUT_WEB_SCHEMA"
+println "TESTLIB_PROFILE_TESTDURATION=$TESTLIB_PROFILE_TESTDURATION     TESTLIB_PROFILE_TESTDURATION_TOP=$TESTLIB_PROFILE_TESTDURATION_TOP"
 
 def jobParams = [
   new StringParameterValue('FORK', fork),
@@ -66,7 +73,11 @@ def jobParams = [
   new StringParameterValue('BUILDSUBDIR', buildsubdir),
   new StringParameterValue('SKIP_MAKE_CHECK_GITIGNORE', SKIP_MAKE_CHECK_GITIGNORE),
   new StringParameterValue('CITEST_QUICKFAIL', CITEST_QUICKFAIL),
+  new StringParameterValue('WEBLIB_CURLFAIL', WEBLIB_CURLFAIL),
+  new StringParameterValue('CI_DEBUG', CI_DEBUG),
   new StringParameterValue('SUT_WEB_SCHEMA', SUT_WEB_SCHEMA),
+  new StringParameterValue('TESTLIB_PROFILE_TESTDURATION', TESTLIB_PROFILE_TESTDURATION),
+  new StringParameterValue('TESTLIB_PROFILE_TESTDURATION_TOP', TESTLIB_PROFILE_TESTDURATION_TOP),
 ]
 
 count_good = 0;
