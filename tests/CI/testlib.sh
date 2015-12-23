@@ -88,6 +88,16 @@ NAME="$0"
 [ -z "${TESTLIB_LIST_FAILED_IGNORED-}" ] && TESTLIB_LIST_FAILED_IGNORED=""
 [ -z "${TESTLIB_LIST_PASSED-}" ] && TESTLIB_LIST_PASSED=""
 
+# Should we track and add timestamps to each test (profile what took long)?
+[ x"${TESTLIB_PROFILE_TESTDURATION-}" = x- ] && TESTLIB_PROFILE_TESTDURATION=""
+[ -z "${TESTLIB_PROFILE_TESTDURATION-}" ] && TESTLIB_PROFILE_TESTDURATION="no"
+# ... and summarize longest tests in the end?
+[ -z "${TESTLIB_PROFILE_TESTDURATION_TOP-}" ] && TESTLIB_PROFILE_TESTDURATION_TOP=10
+export TESTLIB_PROFILE_TESTDURATION TESTLIB_PROFILE_TESTDURATION_TOP
+# Do not export these local variables...
+[ -z "${TESTLIB_TIMESTAMP_TESTSTART-}" ] && TESTLIB_TIMESTAMP_TESTSTART=0
+[ -z "${TESTLIB_TIMESTAMP_TESTFINISH-}" ] && TESTLIB_TIMESTAMP_TESTFINISH=0
+
 # Optional filename (preferably full path) that can be set by caller - if it is
 # set, then the exit_summarizeTestlibResults() would append its output there.
 [ -z "${TESTLIB_LOG_SUMMARY-}" ] && TESTLIB_LOG_SUMMARY=""
@@ -112,6 +122,30 @@ print_result() {
         logmsg_warn "print_result() called before any test_it() was started!"
         return 0
     fi
+
+    [ "$TESTLIB_PROFILE_TESTDURATION" = yes ] && \
+        TESTLIB_TIMESTAMP_TESTFINISH="`date -u +%s 2>/dev/null`" \
+        || TESTLIB_TIMESTAMP_TESTFINISH=0
+
+    TESTLIB_TESTDURATION="-1"
+    if [ "$TESTLIB_PROFILE_TESTDURATION" = yes ] && \
+       [ "$TESTLIB_TIMESTAMP_TESTFINISH" -gt 0 -a "$TESTLIB_TIMESTAMP_TESTSTART" -gt 0 ] 2>/dev/null \
+    ; then
+        if [ x"$TESTLIB_TIMESTAMP_TESTFINISH" = x"$TESTLIB_TIMESTAMP_TESTSTART" ]; then
+            TESTLIB_TESTDURATION=0
+        else
+            TESTLIB_TESTDURATION="`expr $TESTLIB_TIMESTAMP_TESTFINISH - $TESTLIB_TIMESTAMP_TESTSTART`" && \
+            [ "$TESTLIB_TESTDURATION" -ge 0 ] \
+            || TESTLIB_TESTDURATION="-1"
+        fi
+    fi
+    TESTLIB_TIMESTAMP_TESTSTART=0
+    # At this point, if TESTLIB_TESTDURATION>=0 then profiling is enabled
+    # and a reasonable value is available
+    [ "$TESTLIB_TESTDURATION" -ge 0 ] 2>/dev/null && \
+        TESTLIB_TESTDURATION_TEXT=" (took $TESTLIB_TESTDURATION seconds)" || \
+        TESTLIB_TESTDURATION_TEXT=""
+
     _testlib_result_printed=yes
     _code="$1"
     shift
@@ -141,16 +175,21 @@ print_result() {
     echo
     if [ "${TNAME-}" = "`basename $NAME .sh`" ]; then
         TESTLIB_LASTTESTTAG="`echo "$NAME(${_report})" | sed 's, ,__,g'`"
-        LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_info "Completed test $TNAME :"
+        LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_info "Completed test $TNAME${TESTLIB_TESTDURATION_TEXT} :"
     else
         TESTLIB_LASTTESTTAG="`echo "$NAME::$TNAME(${_report})" | sed 's, ,__,g'`"
-        LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_info "Completed test $NAME::$TNAME :"
+        LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_info "Completed test $NAME::$TNAME${TESTLIB_TESTDURATION_TEXT} :"
     fi
+    [ "$TESTLIB_TESTDURATION" -ge 0 ] 2>/dev/null && \
+        TESTLIB_LASTTESTTAG="$TESTLIB_LASTTESTTAG[${TESTLIB_TESTDURATION}sec]"
+        # Note: This tag is inspected in summarizeResults() so format matters!
 
     if [ "$_code" -eq 0 ]; then  # should include "-0" too
         echo " * PASSED"
         TESTLIB_COUNT_PASS="`expr $TESTLIB_COUNT_PASS + 1`"
-        TEMP_NUMBER="`expr $TESTLIB_COUNT_PASS - $TESTLIB_COUNT_TOTAL`"
+        [ "$TESTLIB_COUNT_PASS" -eq "$TESTLIB_COUNT_TOTAL" ] && \
+            TEMP_NUMBER=0 || \
+            TEMP_NUMBER="`expr $TESTLIB_COUNT_PASS - $TESTLIB_COUNT_TOTAL`"
         if [ "$TEMP_NUMBER" -gt 0 ]; then
             logmsg_error "WOW: TESTLIB_COUNT_PASS - TESTLIB_COUNT_TOTAL = $TESTLIB_COUNT_PASS - $TESTLIB_COUNT_TOTAL = $TEMP_NUMBER > 0 ! This should not happen!"
         fi
@@ -218,6 +257,10 @@ test_it() {
     else
         LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_info "Running test $NAME::$TNAME ..."
     fi
+    [ "$TESTLIB_PROFILE_TESTDURATION" = yes ] && \
+        TESTLIB_TIMESTAMP_TESTSTART="`date -u +%s 2>/dev/null`" \
+        || TESTLIB_TIMESTAMP_TESTSTART=0
+    TESTLIB_TIMESTAMP_TESTFINISH=0
     TESTLIB_COUNT_TOTAL="`expr $TESTLIB_COUNT_TOTAL + 1`"
 }
 
@@ -277,9 +320,21 @@ init_summarizeTestlibResults() {
     return $?
 }
 
+echo_profilingLadder() {
+    # Checks whether to call this routine are on the caller
+    ( IFS=" 	"; export IFS
+      [ -n "$TESTLIB_LIST_PASSED" ] && for i in $TESTLIB_LIST_PASSED ; do echo "PASSED	$i" ; done
+      [ -n "$TESTLIB_LIST_FAILED" ] && for i in $TESTLIB_LIST_FAILED ; do echo "FAILED	$i" ; done
+      [ -n "$TESTLIB_LIST_FAILED_IGNORED" ] && for i in $TESTLIB_LIST_FAILED_IGNORED ; do echo "FAILED_IGNORED	$i" ; done
+      echo "" ) | egrep '\[[0-9]+sec\][ \t]*$' | \
+        sed 's,^\(.*\)\[\([0-9]*\)sec\][ \t]*$,\2\t\1,' | sort -nr
+}
+
 # This implements the summary of the test run; can be just echoed or also
 # appended to the TESTLIB_LOG_SUMMARY by exit_summarizeTestlibResults()
 # Uses and changes TRAP_RES defined by caller exit_summarizeTestlibResults()
+TESTLIB_TIMESTAMP_SUITESTART="`date -u +%s 2>/dev/null`" \
+|| TESTLIB_TIMESTAMP_SUITESTART=0
 echo_summarizeTestlibResults() {
     # Do not doctor up the LOGMSG_PREFIX as these are rather results of the
     # test-script than the framework
@@ -289,8 +344,30 @@ echo_summarizeTestlibResults() {
     echo "####################################################################"
     echo
 
+    # Ensure the common whitespace IFS
+    IFS=" 	"
+    export IFS
+
+    [ "$TESTLIB_TIMESTAMP_SUITESTART" -gt 0 ] 2>/dev/null && \
+    TESTLIB_TIMESTAMP_SUITEFINISH="`date -u +%s 2>/dev/null`" \
+    || TESTLIB_TIMESTAMP_SUITEFINISH=0
+
+    TESTLIB_DURATION_TESTSUITE=-1
+    if [ "$TESTLIB_TIMESTAMP_SUITESTART" -gt 0 ] 2>/dev/null && \
+       [ "$TESTLIB_TIMESTAMP_SUITEFINISH" -gt 0 ] 2>/dev/null \
+    ; then
+        if [ x"$TESTLIB_TIMESTAMP_SUITEFINISH" = x"$TESTLIB_TIMESTAMP_SUITESTART" ]; then
+            TESTLIB_DURATION_TESTSUITE=0
+        else
+            TESTLIB_DURATION_TESTSUITE="`expr $TESTLIB_TIMESTAMP_SUITEFINISH - $TESTLIB_TIMESTAMP_SUITESTART`" && \
+            [ "$TESTLIB_DURATION_TESTSUITE" -ge 0 ] \
+            || TESTLIB_DURATION_TESTSUITE=-1
+        fi
+    fi
+
     NUM_NOTFAILED="`expr $TESTLIB_COUNT_PASS + $TESTLIB_COUNT_SKIP`"
     logmsg_info "Testing completed ($TRAP_RES), $NUM_NOTFAILED/$TESTLIB_COUNT_TOTAL tests passed($TESTLIB_COUNT_PASS) or not-failed($TESTLIB_COUNT_SKIP)"
+
     if [ -n "$TESTLIB_LIST_FAILED_IGNORED" ]; then
         logmsg_info "The following $TESTLIB_COUNT_SKIP tests have failed but were ignored (TDD in progress):"
         for i in $TESTLIB_LIST_FAILED_IGNORED; do
@@ -324,13 +401,35 @@ echo_summarizeTestlibResults() {
         # If we are here, we've at least had some failed tests
         [ -z "$TRAP_RES" -o "$TRAP_RES" = 0 ] && TRAP_RES=1
     fi
-    sleep 2
+
+    if [ "$TESTLIB_PROFILE_TESTDURATION" = yes ] && [ "$TESTLIB_COUNT_TOTAL" -gt 0 ] ; then
+        [ "${TESTLIB_PROFILE_TESTDURATION_TOP-}" -gt 0 ] 2>/dev/null || TESTLIB_PROFILE_TESTDURATION_TOP=10
+        [ "$TESTLIB_COUNT_TOTAL" -lt "$TESTLIB_PROFILE_TESTDURATION_TOP" ] && \
+                TESTLIB_PROFILE_TESTDURATION_TOP="$TESTLIB_COUNT_TOTAL"
+
+        LADDER="`echo_profilingLadder`" && \
+        LADDER_LEN="`echo "$LADDER" | wc -l`"
+        if [ $? = 0 ] && [ "$LADDER_LEN" -gt 0 ]; then
+            [ "$LADDER_LEN" -lt "$TESTLIB_PROFILE_TESTDURATION_TOP" ] && \
+                TESTLIB_PROFILE_TESTDURATION_TOP="$LADDER_LEN"
+            logmsg_info "Below are up to $TESTLIB_PROFILE_TESTDURATION_TOP longest test units (duration rounded to seconds):"
+            if [ "$LADDER_LEN" -le "$TESTLIB_PROFILE_TESTDURATION_TOP" ] ; then
+                echo "$LADDER"
+            else
+                echo "$LADDER" | head -${TESTLIB_PROFILE_TESTDURATION_TOP}
+            fi
+        fi
+    fi
+
+    [ "$TESTLIB_DURATION_TESTSUITE" -ge 0 ] 2>/dev/null && \
+        logmsg_info "This test suite took $TESTLIB_DURATION_TESTSUITE seconds to complete (counting from import of testlib.sh)"
 
     echo
     echo "####################################################################"
     echo "************ END OF testlib-driven suite execution ($TRAP_RES) *************"
     echo "####################################################################"
     echo
+    sleep 2
 
     return $TRAP_RES
 }
@@ -341,6 +440,7 @@ exit_summarizeTestlibResults() {
     TRAP_RES=$?
     # No longer error out on bad lines, even if we did
     set +e
+    set +u
     # This would be a no-op if the test case previously started with a
     # test_it() has been already closed with its proper print_result()
     if [ x"${_testlib_result_printed}" = xnotyet ]; then

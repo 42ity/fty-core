@@ -37,13 +37,11 @@ logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to build, and BUILDSUBDIR='$BUILDS
 # Set up weblib test engine preference defaults for automated CI tests
 [ -z "$WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT" ] && \
     WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT="fatal"
-[ -z "$WEBLIB_QUICKFAIL" ] && \
-    WEBLIB_QUICKFAIL=no
 [ -z "$WEBLIB_CURLFAIL" ] && \
     WEBLIB_CURLFAIL=no
 [ -z "$SKIP_NONSH_TESTS" ] && \
     SKIP_NONSH_TESTS=yes
-export WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT WEBLIB_QUICKFAIL WEBLIB_CURLFAIL SKIP_NONSH_TESTS
+export WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT WEBLIB_CURLFAIL SKIP_NONSH_TESTS
 
 PATH="/usr/lib/ccache:/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
 export PATH
@@ -100,8 +98,9 @@ test_web_process() {
         logmsg_error "Web-server process seems to have died!" >&2
         # Ensure it is dead though, since we abort the tests now
         kill $MAKEPID >/dev/null 2>&1
-        wait $MAKEPID >/dev/null 2>&1
-        return
+        RES_TWP=32
+        wait $MAKEPID >/dev/null 2>&1 || RES_TWP=$?
+        return $RES_TWP
     fi
     return 0
 }
@@ -116,6 +115,56 @@ wait_for_web() {
     done
     logmsg_error "Port ${SUT_WEB_PORT} still not in LISTEN state" >&2
     return 1
+}
+
+test_web() {
+    echo "==== Calling test_web.sh ==================================="
+    /bin/bash "${CHECKOUTDIR}"/tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" "$@"
+    RESULT=$?
+    echo "==== test_web RESULT: ($RESULT) =================================="
+    return $RESULT
+}
+
+ci_loaddb_default() {
+    echo "--------------- reset db: default ----------------"
+    for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
+        loaddb_file "$data" || exit $?
+    done
+    return 0
+}
+
+test_web_default() {
+    init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_default() $*"
+    ci_loaddb_default && \
+    test_web "$@"
+}
+
+test_web_topo_p() {
+    init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_p() $*"
+    echo "----------- reset db: topology : power -----------"
+    for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOP"; do
+        loaddb_file "$data" || exit $?
+    done
+    test_web "$@"
+}
+
+test_web_topo_l() {
+# NOTE: This piece of legacy code is still here, but no usecase below calls it
+    init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_l() $*"
+    echo "---------- reset db: topology : location ---------"
+    for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOL"; do
+        loaddb_file "$data" || exit $?
+    done
+    test_web "$@"
+}
+
+test_web_asset_create() {
+    init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_asset_create() $*"
+    echo "---------- reset db: asset : create ---------"
+    for data in "$DB_BASE" "$DB_DATA"; do
+          loaddb_file "$data" || exit $?
+    done
+    test_web "$@"
 }
 
 MAKEPID=""
@@ -251,56 +300,6 @@ kill_daemons() {
   logmsg_info "Waiting for webserver process $MAKEPID to settle after startup..."
   sleep 5
   test_web_process || exit
-
-test_web() {
-    echo "==== Calling test_web.sh ==================================="
-    /bin/bash "${CHECKOUTDIR}"/tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" "$@"
-    RESULT=$?
-    echo "==== test_web RESULT: ($RESULT) =================================="
-    return $RESULT
-}
-
-ci_loaddb_default() {
-    echo "--------------- reset db: default ----------------"
-    for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
-        loaddb_file "$data" || exit $?
-    done
-    return 0
-}
-
-test_web_default() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_default() $*"
-    ci_loaddb_default && \
-    test_web "$@"
-}
-
-test_web_topo_p() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_p() $*"
-    echo "----------- reset db: topology : power -----------"
-    for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOP"; do
-        loaddb_file "$data" || exit $?
-    done
-    test_web "$@"
-}
-
-test_web_topo_l() {
-# NOTE: This piece of legacy code is still here, but no usecase below calls it
-    init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_l() $*"
-    echo "---------- reset db: topology : location ---------"
-    for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOL"; do
-        loaddb_file "$data" || exit $?
-    done
-    test_web "$@"
-}
-
-test_web_asset_create() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_asset_create() $*"
-    echo "---------- reset db: asset : create ---------"
-    for data in "$DB_BASE" "$DB_DATA"; do
-          loaddb_file "$data" || exit $?
-    done
-    test_web "$@"
-}
 
 # Try to accept the BIOS license on server
 init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "00_license-CI-forceaccept"
