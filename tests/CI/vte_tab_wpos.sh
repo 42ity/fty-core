@@ -110,6 +110,7 @@ SUT_IS_REMOTE=yes
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 # Include our standard web routines for CI scripts
+NEED_TESTLIB=yes
 . "`dirname $0`"/weblib.sh || die "Can not include web script library"
 
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
@@ -131,10 +132,12 @@ LOGFILE_IMPORT="$BUILDSUBDIR/vte-tab-import_TP-${_SCRIPT_NAME}.log"
 subtest() {
     # ***** INIT DB *****
     # *** write power rack base test data to DB on SUT
+    test_it "re-initialize database"
     set -o pipefail 2>/dev/null || true
     set -e
     loaddb_file "$DB_BASE" 2>&1 | tee "${LOGFILE_LOADDB}"
     LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" 2>&1 | tee -a "${LOGFILE_LOADDB}"
+    print_result $?
     set +e
 
     # Try to accept the BIOS license on server
@@ -152,59 +155,49 @@ subtest() {
     # QA said, maybe we should port this logic into web/commands/asset*sh tests
 
     logmsg_info "Importing asset file: $ASSET"
+    test_it "import_asset::$1"
     api_auth_post_file_form /asset/import assets="@$ASSET" | tee "${LOGFILE_IMPORT}"
+    print_result $?
 
+    test_it "inspect_asset::$1"
     case "$1" in
         bam_import_16_wpos1.csv)
             N_EXPECT="`grep -c "more than 2 PDU is not supported" "${LOGFILE_IMPORT}"`"
             echo "N_EXPECT = $N_EXPECT (1)"
-            if [ "$N_EXPECT" = "1" ];then
-                echo "Subtest 1 PASSED."
-            else
-                echo "Subtest 1 FAILED.";exit 1
-            fi
+            [ "$N_EXPECT" = "1" ]
+            print_result $?
             ;;
         bam_import_16_wpos2.csv)
             N_EXPECT="`grep -c "location_w_pos should be set" "${LOGFILE_IMPORT}"`"
             echo "N_EXPECT = $N_EXPECT (4)"
-            if [ "$N_EXPECT" = "4" ];then
-                echo "Subtest 2 PASSED."
-            else
-                echo "Subtest 2 FAILED.";exit 1
-            fi
+            [ "$N_EXPECT" = "4" ]
+            print_result $?
             ;;
         bam_import_16_wpos3.csv)
             N_EXPECT="`grep -c '"imported_lines" : 7' "${LOGFILE_IMPORT}"`"
             echo "N_EXPECT = $N_EXPECT (1)"
-            if [ "$N_EXPECT" = "1" ];then
-                echo "Subtest 3 PASSED."
-            else
-                echo "Subtest 3 FAILED.";exit 1
-            fi  
+            [ "$N_EXPECT" = "1" ]
+            print_result $?
             ;;
         bam_import_16_wpos4.csv)
             N_EXPECT="`grep -c '"imported_lines" : 7' "${LOGFILE_IMPORT}"`"
             echo "N_EXPECT = $N_EXPECT (1)"
-            if [ "$N_EXPECT" = "1" ];then
-                echo "Subtest 4 PASSED."
-            else
-                echo "Subtest 4 FAILED.";exit 1
-            fi
+            [ "$N_EXPECT" = "1" ]
+            print_result $?
             ;;
         *)  echo "$0: Unknown param and all after it are ignored: $@"
-            break
+            print_result 1
             ;;
     esac
 }
+
+# Note: this default log filename will be ignored if already set by caller
+init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" ""
+settraps 'exit_summarizeTestlibResults'
 
 subtest "bam_import_16_wpos1.csv"
 subtest "bam_import_16_wpos2.csv"
 subtest "bam_import_16_wpos3.csv"
 subtest "bam_import_16_wpos4.csv"
 
-TIME=$(date --utc "+%Y-%m-%d %H:%M:%S")
-echo "Finish time is $TIME"
-TIME_END=$(date +%s)
-TEST_LAST=$(expr $TIME_END - $TIME_START)
-echo "Test lasted $TEST_LAST second."
-exit 0
+exit
