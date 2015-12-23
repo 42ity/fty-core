@@ -27,9 +27,7 @@
 
 # Set up weblib test engine
 WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT="ignore" # we do this in-script
-WEBLIB_QUICKFAIL=no
-WEBLIB_CURLFAIL=no
-export WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT WEBLIB_QUICKFAIL WEBLIB_CURLFAIL
+export WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT
 
 # Include our standard web routines for CI scripts
 . "`dirname $0`"/weblib.sh || \

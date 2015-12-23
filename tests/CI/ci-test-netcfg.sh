@@ -35,9 +35,7 @@
 
 # Set up weblib test engine
 WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT="ignore" # we do this in-script
-WEBLIB_QUICKFAIL=no
-WEBLIB_CURLFAIL=no
-export WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT WEBLIB_QUICKFAIL WEBLIB_CURLFAIL
+export WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT
 export BASE_URL="${SUT_WEB_SCHEMA}://${SUT_HOST}:${SUT_WEB_PORT}/api/v1"
 
 # Include our standard web routines for CI scripts

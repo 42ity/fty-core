@@ -37,13 +37,11 @@ logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to build, and BUILDSUBDIR='$BUILDS
 # Set up weblib test engine preference defaults for automated CI tests
 [ -z "$WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT" ] && \
     WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT="fatal"
-[ -z "$WEBLIB_QUICKFAIL" ] && \
-    WEBLIB_QUICKFAIL=no
 [ -z "$WEBLIB_CURLFAIL" ] && \
     WEBLIB_CURLFAIL=no
 [ -z "$SKIP_NONSH_TESTS" ] && \
     SKIP_NONSH_TESTS=yes
-export WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT WEBLIB_QUICKFAIL WEBLIB_CURLFAIL SKIP_NONSH_TESTS
+export WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT WEBLIB_CURLFAIL SKIP_NONSH_TESTS
 
 PATH="/usr/lib/ccache:/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
 export PATH
