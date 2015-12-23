@@ -25,7 +25,7 @@
 #           You can 'export CITEST_QUICKFAIL=yes' to abort on first failure
 
 # Should the test suite abort if "curl" errors out?
-[ -z "${WEBLIB_CURLFAIL-}" ] && WEBLIB_CURLFAIL=yes
+[ -z "${WEBLIB_CURLFAIL-}" ] || [ x"${WEBLIB_CURLFAIL-}" = x- ] && WEBLIB_CURLFAIL=yes
 
 # Should the test suite abort if "curl" sees HTTP error codes?
 # This can be overridden on a per-call basis for those api_get's
