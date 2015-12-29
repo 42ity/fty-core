@@ -59,7 +59,7 @@ if(rex_lic.match(request.getUrl())) {
 	if(request.isMethodGET()) {
 		std::ifstream source(current_license, std::ios::binary);
 		if(!source.good())
-            http_die("internal-error", "Error reading license file, check integrity of storage.");
+			http_die("internal-error", "Error reading license file, check integrity of storage.");
 		reply.out() << source.rdbuf();
 		RETURN HTTP_OK;
 	}
@@ -79,15 +79,15 @@ if(rex_lic.match(request.getUrl())) {
 		pw_lock.unlock();
 		if(user == NULL) {
 			if(dest > 0)
-                close(dest);
-            std::string msg = "Can't get username for user with id " + std::to_string(uid);
-            http_die("internal-error", msg.c_str());
+				close(dest);
+			std::string msg = "Can't get username for user with id " + std::to_string(uid);
+			http_die("internal-error", msg.c_str());
 		}
 		if(dest < 0 || buff[0] == 0 ||
 		   dprintf(dest, "%s\n%" PRIu64 "\n%s\n", buff, tme, user) < 4) {
 			if(dest > 0)
-                close(dest);
-            http_die("internal-error", "Error saving license acceptance or getting license version, check integrity of storage.");
+				close(dest);
+			http_die("internal-error", "Error saving license acceptance or getting license version, check integrity of storage.");
 		} else {
 </%cpp>
 { "success" : "License version <$ buff $> accepted." }
@@ -96,7 +96,7 @@ if(rex_lic.match(request.getUrl())) {
 			RETURN HTTP_OK;
 		}
 	}
-    http_die("method-not-allowed", request.getMethod().c_str());
+	http_die("method-not-allowed", request.getMethod().c_str());
 }
 
 _scoped_char *buff_a = NULL;
@@ -113,7 +113,7 @@ if(src != NULL) {
 static cxxtools::Regex rex_st("^.*/license/status$");
 if(rex_st.match(request.getUrl())) {
 	if(!request.isMethodGET())
-        http_die("method-not-allowed", request.getMethod().c_str());
+		http_die("method-not-allowed", request.getMethod().c_str());
 </%cpp>
 {
   "accepted" : "<$ (buff_a == NULL || strcmp(buff_a, buff_r) != 0) ? "no" : "yes" $>"
@@ -127,22 +127,22 @@ if(rex_st.match(request.getUrl())) {
 % }
 }
 <%cpp>
-    FREE0(buff_a);
-    FREE0(user);
+	FREE0(buff_a);
+	FREE0(user);
 	RETURN HTTP_OK;
 }
 if(buff_a == NULL || strcmp(buff_a, buff_r) != 0) {
   if(buff_a == NULL) {
-    http_die("action-forbidden", "REST API call", "Please accept license first.");
+	http_die("action-forbidden", "REST API call", "Please accept license first.");
   } else {
-    std::string msg = std::string{"License version changed (new is "} + buff_r + ", accepted is " + buff_a + "). Please accept new license first";
-    FREE0(buff_a);
-    FREE0(user);
-    http_die("action-forbidden", "REST API call", msg.c_str());
+	std::string msg = std::string{"License version changed (new is "} + buff_r + ", accepted is " + buff_a + "). Please accept new license first";
+	FREE0(buff_a);
+	FREE0(user);
+	http_die("action-forbidden", "REST API call", msg.c_str());
   }
 } else {
-    FREE0(buff_a);
-    FREE0(user);
+	FREE0(buff_a);
+	FREE0(user);
 	RETURN DECLINED;
 }
 </%cpp>
