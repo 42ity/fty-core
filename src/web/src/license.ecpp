@@ -75,6 +75,7 @@ if(rex_lic.match(request.getUrl())) {
 		RETURN HTTP_OK;
 	}
 	if(request.isMethodPOST()) {
+		/* Read symlink, get license version number */
 		char buff[512];
 		memset(buff, 0, sizeof(buff));
 		ssize_t reslink = readlink(current_license, buff, sizeof(buff)-1);
@@ -92,8 +93,8 @@ if(rex_lic.match(request.getUrl())) {
 #endif
 			http_die("internal-error", "Error saving license acceptance or getting license version, check integrity of storage.");
 		}
-		int dest = open(accepted_license, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-		uint64_t tme = time(NULL);
+
+		/* Identify user */
 		char *user = NULL;
 		static std::mutex pw_lock;
 		pw_lock.lock();
@@ -103,23 +104,29 @@ if(rex_lic.match(request.getUrl())) {
 		}
 		pw_lock.unlock();
 		if(user == NULL) {
-			if(dest > 0)
-				close(dest);
 			std::string msg = "Can't get username for user with id " + std::to_string(uid);
 #ifdef DEBUG
 			log_debug("Error: %s", msg.c_str());
 #endif
 			http_die("internal-error", msg.c_str());
 		}
+
+		/* Try to write license-acceptance file data */
+		int dest = open(accepted_license, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+		uint64_t tme = time(NULL);
 		int dpdest = -42;
 		if(dest > 0)
 			dpdest = dprintf(dest, "%s\n%" PRIu64 "\n%s\n", buff, tme, user);
 		if(dest < 0 || dpdest < 4) {
 #ifdef DEBUG
 			if (dest < 0)
-				log_debug("Error saving license acceptance into file '%s'", accepted_license);
+				log_debug("Error opening license acceptance file '%s': got dest=%i", accepted_license, dest);
 			if (dpdest < 4 && dpdest != -42)
-				log_debug("Error saving license acceptance into file '%s': got dpdest=%i", accepted_license, dpdest);
+				log_debug("Error saving license acceptance into file '%s': got dpdest=%i",
+				accepted_license, dpdest);
+
+			log_debug("FYI: Tried to write version buff='%s', tme='%" PRIu64 "', user='%s' (uid='%li')",
+				buff, tme, user, uid);
 #endif
 			if(dest > 0)
 				close(dest);
