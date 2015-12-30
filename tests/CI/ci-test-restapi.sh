@@ -344,7 +344,7 @@ else
         esac
         shift
         test_web_process || exit
-        [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" != xno ] && break
+        [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && break
     done
 fi
 
