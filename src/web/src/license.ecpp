@@ -42,10 +42,7 @@
 #include "utils.h"
 #include "cleanup.h"
 #include "utils_web.h"
-
-#ifdef DEBUG
-# include "log.h"
-#endif
+#include "log.h"
 
 #define RETURN return
 
@@ -66,9 +63,7 @@ if(rex_lic.match(request.getUrl())) {
 	if(request.isMethodGET()) {
 		std::ifstream source(current_license, std::ios::binary);
 		if(!source.good()) {
-#ifdef DEBUG
 			log_debug("Error reading license acceptance from file '%s'", current_license);
-#endif
 			http_die("internal-error", "Error reading license file, check integrity of storage.");
 		}
 		reply.out() << source.rdbuf();
@@ -80,7 +75,6 @@ if(rex_lic.match(request.getUrl())) {
 		memset(buff, 0, sizeof(buff));
 		ssize_t reslink = readlink(current_license, buff, sizeof(buff)-1);
 		if (reslink < 0 || buff[0] == 0) {
-#ifdef DEBUG
 			if (reslink < 0) {
 				char errbuff[512];
 				memset(errbuff, 0, sizeof(errbuff));
@@ -90,7 +84,6 @@ if(rex_lic.match(request.getUrl())) {
 			}
 			if (buff[0] == 0)
 				log_debug("Error reading license data from file '%s' (got empty buffer)", current_license);
-#endif
 			http_die("internal-error", "Error saving license acceptance or getting license version, check integrity of storage.");
 		}
 
@@ -105,9 +98,7 @@ if(rex_lic.match(request.getUrl())) {
 		pw_lock.unlock();
 		if(user == NULL) {
 			std::string msg = "Can't get username for user with id " + std::to_string(uid);
-#ifdef DEBUG
 			log_debug("Error: %s", msg.c_str());
-#endif
 			http_die("internal-error", msg.c_str());
 		}
 
@@ -118,13 +109,12 @@ if(rex_lic.match(request.getUrl())) {
 		if(dest > 0)
 			dpdest = dprintf(dest, "%s\n%" PRIu64 "\n%s\n", buff, tme, user);
 		if(dest < 0 || dpdest < 4) {
-#ifdef DEBUG
 			if (dest < 0)
-				log_debug("Error opening license acceptance file '%s': got dest=%i", accepted_license, dest);
+				log_debug("Error opening license acceptance file '%s': got FD dest=%i", accepted_license, dest);
 			if (dpdest < 4 && dpdest != -42)
-				log_debug("Error saving license acceptance into file '%s': got dpdest=%i",
+				log_debug("Error saving license acceptance into file '%s': got dpdest=%i bytes written",
 				accepted_license, dpdest);
-
+#ifdef DEBUG
 			log_debug("FYI: Tried to write version buff='%s', tme='%" PRIu64 "', user='%s' (uid='%li')",
 				buff, tme, user, uid);
 #endif
