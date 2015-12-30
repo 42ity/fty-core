@@ -346,7 +346,7 @@ TESTLIB_TIMESTAMP_SUITESTART="`date -u +%s 2>/dev/null`" \
 echo_summarizeTestlibResults() {
     # Do not doctor up the LOGMSG_PREFIX as these are rather results of the
     # test-script than the framework
-    eTRAP_RES="$1"
+    eTRAP_RES="${1-}"
 
     echo
     echo "####################################################################"
@@ -448,7 +448,7 @@ echo_summarizeTestlibResults() {
 # print a summary of processed tests in the end, whatever the reason to exit().
 exit_summarizeTestlibResults() {
     sTRAP_RES=$?
-    [ -n "$1" ] && [ "$1" -gt 0 ] && sTRAP_RES="$1"
+    [ -n "${1-}" ] && [ "$1" -gt 0 ] && sTRAP_RES="$1"
 
     # No longer error out on bad lines, even if we did
     set +e
