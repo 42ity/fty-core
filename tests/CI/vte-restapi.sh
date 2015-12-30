@@ -284,14 +284,17 @@ if [ $# = 0 ]; then
     # *** start the default TC's instead of subsequent topology tests
     test_web_default -topology -asset_create || RESULT_OVERALL=$?
     # *** start the asset_create TC's
-    [ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] && \
-    test_web_asset_create asset_create || RESULT_OVERALL=$?
+    if [ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] ; then
+        test_web_asset_create asset_create || RESULT_OVERALL=$?
+    fi
     # *** start power topology TC's
-    [ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] && \
-    test_web_topo_p topology_power || RESULT_OVERALL=$?
+    if [ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] ; then
+        test_web_topo_p topology_power || RESULT_OVERALL=$?
+    fi
     # *** start location topology TC's
-    [ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] && \
-    test_web_topo_l topology_location || RESULT_OVERALL=$?
+    if [ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] ; then
+        test_web_topo_l topology_location || RESULT_OVERALL=$?
+    fi
 else
     # selective test routine
     while [ $# -gt 0 ]; do
@@ -309,7 +312,7 @@ else
                 RESULT_OVERALL=$? ;;
         esac
         shift
-        [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" != xno ] && break
+        [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && break
     done
 fi
 
