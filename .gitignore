@@ -241,6 +241,7 @@ src/web/src/alert_list.cpp
 tntnet.xml.example
 !src/web/tntnet.xml
 tntnet.xml
+tests/CI/run_tntnet_make.env
 
 !src/agents
 !src/agents/dbstore
