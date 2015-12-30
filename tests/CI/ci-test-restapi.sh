@@ -120,9 +120,9 @@ wait_for_web() {
 test_web() {
     echo "==== Calling test_web.sh ==================================="
     /bin/bash "${CHECKOUTDIR}"/tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" "$@"
-    RESULT=$?
+    RES_TW=$?
     echo "==== test_web RESULT: ($RESULT) =================================="
-    return $RESULT
+    return $RES_TW
 }
 
 ci_loaddb_default() {
@@ -169,7 +169,7 @@ test_web_asset_create() {
 
 MAKEPID=""
 DBNGPID=""
-RESULT=0
+RESULT_OVERALL=0
 kill_daemons() {
     if [ -n "$MAKEPID" -a -d "/proc/$MAKEPID" ]; then
         logmsg_info "Killing make web-test PID $MAKEPID to exit"
@@ -190,16 +190,16 @@ kill_daemons() {
 
     ci_loaddb_default
 
-    if [ "$RESULT" = 0 ]; then
+    if [ "$RESULT_OVERALL" = 0 ]; then
         logmsg_info "Overall result: SUCCESS"
         if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
             { logmsg_info "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}': SUCCESS"; \
               echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY"
         fi
     else
-        logmsg_error "Overall result: FAILED ($RESULT) seek details above"
+        logmsg_error "Overall result: FAILED ($RESULT_OVERALL) seek details above"
         if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
-            { logmsg_error "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}': FAILED ($RESULT)"; \
+            { logmsg_error "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}': FAILED ($RESULT_OVERALL)"; \
           echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY" 2>&1
         fi
     fi
@@ -218,7 +218,7 @@ kill_daemons() {
         echo "###########################################################"
     fi
 
-    return $RESULT
+    return $RESULT_OVERALL
 }
 
 # prepare environment
@@ -319,14 +319,14 @@ esac
 # do the test
 set +e
 if [ $# = 0 ]; then
-    test_web_default -topology_power -asset_create || RESULT=$?
+    test_web_default -topology_power -asset_create || RESULT_OVERALL=$?
     test_web_process || exit
-    if [ "$RESULT" -eq 0 ] || [ x"$CITEST_QUICKFAIL" = xno ]; then
-        test_web_asset_create asset_create || RESULT=$?
+    if [ "$RESULT_OVERALL" -eq 0 ] || [ x"$CITEST_QUICKFAIL" = xno ]; then
+        test_web_asset_create asset_create || RESULT_OVERALL=$?
     fi
     test_web_process || exit
-    if [ "$RESULT" -eq 0 ] || [ x"$CITEST_QUICKFAIL" = xno ]; then
-        test_web_topo_p topology_power || RESULT=$?
+    if [ "$RESULT_OVERALL" -eq 0 ] || [ x"$CITEST_QUICKFAIL" = xno ]; then
+        test_web_topo_p topology_power || RESULT_OVERALL=$?
     fi
     test_web_process || exit
 else
@@ -334,19 +334,19 @@ else
     while [ $# -gt 0 ]; do
         case "$1" in
             topology_power*)
-                test_web_topo_p "$1"
-                RESULT=$? ;;
+                test_web_topo_p "$1" || \
+                RESULT_OVERALL=$? ;;
             asset_create*)
-                test_web_asset_create "$1"
-                RESULT=$? ;;
-            *)  test_web_default "$1"
-                RESULT=$? ;;
+                test_web_asset_create "$1" || \
+                RESULT_OVERALL=$? ;;
+            *)  test_web_default "$1" || \
+                RESULT_OVERALL=$? ;;
         esac
         shift
         test_web_process || exit
-        [ "$RESULT" != 0 ] && [ x"$CITEST_QUICKFAIL" != xno ] && break
+        [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" != xno ] && break
     done
 fi
 
 # kill_daemons() should handle the cleanup and final logging
-exit $RESULT
+exit $RESULT_OVERALL
