@@ -216,20 +216,28 @@ print_result() {
         # This optional envvar can be set by the caller
         if [ "$CITEST_QUICKFAIL" = yes ]; then
             echo ""
-            echo "$TESTLIB_COUNT_PASS previous tests have succeeded"
+            echo ""
+            echo "################### ABORT on CITEST_QUICKFAIL #######################"
+            echo ""            echo "$TESTLIB_COUNT_PASS previous tests have succeeded"
             echo "${LOGMSG_PREFIX_TESTLIB}FATAL-ABORT[$$]: Testing aborted due to" \
                 "CITEST_QUICKFAIL=$CITEST_QUICKFAIL" \
                 "after first failure with test $TESTLIB_LASTTESTTAG"
+            echo "#####################################################################"
+            echo ""
             exit $_ret
         fi >&2
 
         # This optional envvar can be set by CURL() and trap_*() below
         if [ "$TESTLIB_FORCEABORT" = yes ]; then
             echo ""
+            echo ""
+            echo "################### ABORT on TESTLIB_FORCEABORT #####################"
             echo "$TESTLIB_COUNT_PASS previous tests have succeeded"
             echo "${LOGMSG_PREFIX_TESTLIB}FATAL-ABORT[$$]: Testing aborted due to" \
                 "TESTLIB_FORCEABORT=$TESTLIB_FORCEABORT" \
                 "after forced abortion in test $TESTLIB_LASTTESTTAG"
+            echo "#####################################################################"
+            echo ""
             exit $_ret
         fi >&2
     fi
