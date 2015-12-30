@@ -48,6 +48,8 @@ def fork = build.buildVariableResolver.resolve("FORK");
 def branch = build.buildVariableResolver.resolve("BRANCH");
 def buildsubdir = build.buildVariableResolver.resolve("BUILDSUBDIR");
 def SKIP_MAKE_CHECK_GITIGNORE = build.buildVariableResolver.resolve("SKIP_MAKE_CHECK_GITIGNORE");
+def SKIP_LICENSE_FORCEACCEPT = build.buildVariableResolver.resolve("SKIP_LICENSE_FORCEACCEPT");
+def SKIP_SANITY = build.buildVariableResolver.resolve("SKIP_SANITY");
 def CITEST_QUICKFAIL = build.buildVariableResolver.resolve("CITEST_QUICKFAIL");
 def WEBLIB_CURLFAIL = build.buildVariableResolver.resolve("WEBLIB_CURLFAIL");
 def CI_DEBUG = build.buildVariableResolver.resolve("CI_DEBUG");
@@ -61,6 +63,8 @@ println "BUILDMACHINE=$buildmachine"
 println "BUILDSUBDIR=$buildsubdir"
 println "CI_DEBUG=$CI_DEBUG"
 println "SKIP_MAKE_CHECK_GITIGNORE=$SKIP_MAKE_CHECK_GITIGNORE"
+println "SKIP_LICENSE_FORCEACCEPT=$SKIP_LICENSE_FORCEACCEPT"
+println "SKIP_SANITY=$SKIP_SANITY"
 println "CITEST_QUICKFAIL=$CITEST_QUICKFAIL"
 println "WEBLIB_CURLFAIL=$WEBLIB_CURLFAIL"
 println "SUT_WEB_SCHEMA=$SUT_WEB_SCHEMA"
@@ -72,6 +76,8 @@ def jobParams = [
   new StringParameterValue('BUILDMACHINE', buildmachine),
   new StringParameterValue('BUILDSUBDIR', buildsubdir),
   new StringParameterValue('SKIP_MAKE_CHECK_GITIGNORE', SKIP_MAKE_CHECK_GITIGNORE),
+  new StringParameterValue('SKIP_LICENSE_FORCEACCEPT', SKIP_LICENSE_FORCEACCEPT),
+  new StringParameterValue('SKIP_SANITY', SKIP_SANITY),
   new StringParameterValue('CI_DEBUG', CI_DEBUG),
   new StringParameterValue('CITEST_QUICKFAIL', CITEST_QUICKFAIL),
   new StringParameterValue('WEBLIB_CURLFAIL', WEBLIB_CURLFAIL),
