@@ -189,12 +189,7 @@ init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.lo
 settraps 'exit_summarizeTestlibResults'
 
 # Try to accept the BIOS license on server
-( . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
-    if [ x"$CITEST_QUICKFAIL" = xyes ] ; then
-        die "BIOS license not accepted on the server, subsequent tests will fail"
-    else
-        logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
-    fi
+accept_license
 
 subtest "bam_import_16_wpos1.csv"
 subtest "bam_import_16_wpos2.csv"
