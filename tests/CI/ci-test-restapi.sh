@@ -339,7 +339,7 @@ else
             asset_create*)
                 test_web_asset_create "$1"
                 RESULT=$? ;;
-            *)        test_web_default "$1"
+            *)  test_web_default "$1"
                 RESULT=$? ;;
         esac
         shift
