@@ -254,7 +254,7 @@ exit_summarizeTestedScriptlets() {
 
 # Note: this default log filename will be ignored if already set by caller
 init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" ""
-settraps '_TRAP_RES=$?; exit_summarizeTestedScriptlets ; exit_summarizeTestlibResults; exit $_TRAP_RES'
+settraps 'wTRAP_RES=$?; exit_summarizeTestedScriptlets ; exit_summarizeTestlibResults $wTRAP_RES || exit $?; exit $wTRAP_RES'
 
 # A bash-ism, should set the exitcode of the rightmost failed command
 # in a pipeline, otherwise e.g. exitcode("false | true") == 0
