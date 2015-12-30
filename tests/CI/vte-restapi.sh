@@ -256,14 +256,22 @@ trap_cleanup(){
 TRAP_SIGNALS=EXIT settraps 'echo "CI-EXIT: $0: test finished (up to the proper exit command)..." >&2; trap_cleanup'
 TRAP_SIGNALS="HUP INT QUIT TERM" settraps '[ "$ERRCODE" = 0 ] && ERRCODE=123; echo "CI-EXIT: $0: got signal, aborting test..." >&2; trap_cleanup && exit $ERRCODE'
 
-# Try to accept the BIOS license on server
-init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "00_license-CI-forceaccept"
-SKIP_SANITY=yes test_web 00_license-CI-forceaccept.sh.test || \
-    if [ x"$CITEST_QUICKFAIL" = xyes ] ; then
-        die "BIOS license not accepted on the server, subsequent tests will fail"
-    else
-        logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
-    fi
+[ x"${SKIP_LICENSE_FORCEACCEPT-}" = xyes ] && \
+logmsg_warn "SKIP_LICENSE_FORCEACCEPT=$SKIP_LICENSE_FORCEACCEPT so not running '00_license-CI-forceaccept.sh.test' first" || \
+case "$*" in
+    *license*) # We are specifically testing license stuff
+        logmsg_warn "The tests requested on command line explicitly include 'license', so $0 will not interfere by running '00_license-CI-forceaccept.sh.test' first"
+        ;;
+    *) # Try to accept the BIOS license on server
+        init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "00_license-CI-forceaccept"
+        SKIP_SANITY=yes test_web 00_license-CI-forceaccept.sh.test || \
+            if [ x"$CITEST_QUICKFAIL" = xyes ] ; then
+                die "BIOS license not accepted on the server, subsequent tests will fail"
+            else
+                logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+            fi
+        ;;
+esac
 
 # ***** PERFORM THE TESTCASES *****
 set +e
@@ -297,7 +305,7 @@ else
             asset_create*)
                 test_web_asset_create "$1"
                 RESULT_OVERALL=$? ;;
-            *)        test_web_default "$1"
+            *)  test_web_default "$1"
                 RESULT_OVERALL=$? ;;
         esac
         shift
