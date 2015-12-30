@@ -91,7 +91,8 @@ $(RUN_TNTNET_ENVFILE): $(abs_top_builddir)/Makefile
 	     echo 'export DATADIR="$$DATADIR_BASE/bios"'; \
 	 } > $@
 
-RUN_TNTNET = . "$(RUN_TNTNET_ENVFILE)" || exit; \
+RUN_TNTNET = cat "$(RUN_TNTNET_ENVFILE)" || exit; \
+	     . "$(RUN_TNTNET_ENVFILE)" || exit; \
 	     [ "x${KEEP_LICENSE}" = "xyes" ] || rm -rf "$$DATADIR_BASE"; id; \
 	     mkdir -p "$$DATADIR" && ls -la "$$DATADIR" && \
 	     [ -d "$$DATADIR" ] && [ -w "$$DATADIR" ] && \
