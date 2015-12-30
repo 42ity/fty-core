@@ -90,6 +90,7 @@ fi
 #   yes = skip sanity tests in certain ultimate request/test scripts
 #   no  = do all tests
 #   onlyerrors = do only tests expected to fail (not for curlbbwget.sh)
+[ x"${SKIP_SANITY-}" = x- ] && SKIP_SANITY=""
 [ -z "${SKIP_SANITY-}" ] && SKIP_SANITY=no
 
 ( which curl >/dev/null 2>&1 ) || {
