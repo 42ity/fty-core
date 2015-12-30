@@ -346,6 +346,8 @@ TESTLIB_TIMESTAMP_SUITESTART="`date -u +%s 2>/dev/null`" \
 echo_summarizeTestlibResults() {
     # Do not doctor up the LOGMSG_PREFIX as these are rather results of the
     # test-script than the framework
+    eTRAP_RES="$1"
+
     echo
     echo "####################################################################"
     echo "************ Ending testlib-driven suite execution *****************"
@@ -374,7 +376,7 @@ echo_summarizeTestlibResults() {
     fi
 
     NUM_NOTFAILED="`expr $TESTLIB_COUNT_PASS + $TESTLIB_COUNT_SKIP`"
-    logmsg_info "Testing completed ($TRAP_RES), $NUM_NOTFAILED/$TESTLIB_COUNT_TOTAL tests passed($TESTLIB_COUNT_PASS) or not-failed($TESTLIB_COUNT_SKIP)"
+    logmsg_info "Testing completed ($eTRAP_RES), $NUM_NOTFAILED/$TESTLIB_COUNT_TOTAL tests passed($TESTLIB_COUNT_PASS) or not-failed($TESTLIB_COUNT_SKIP)"
 
     if [ -n "$TESTLIB_LIST_FAILED_IGNORED" ]; then
         logmsg_info "The following $TESTLIB_COUNT_SKIP tests have failed but were ignored (TDD in progress):"
@@ -385,7 +387,7 @@ echo_summarizeTestlibResults() {
 
     NUM_FAILED="`expr $TESTLIB_COUNT_TOTAL - $NUM_NOTFAILED`"
     if [ -z "$TESTLIB_LIST_FAILED" ] && [ x"$TESTLIB_COUNT_FAIL" = x0 ] && [ x"$NUM_FAILED" = x0 ]; then
-        [ -z "$TRAP_RES" ] && TRAP_RES=0
+        [ -z "$eTRAP_RES" ] && eTRAP_RES=0
     else
         logmsg_info "The following $TESTLIB_COUNT_FAIL tests have failed:"
         N=0 # Do a bit of double-accounting to be sure ;)
@@ -407,7 +409,7 @@ echo_summarizeTestlibResults() {
         unset N
 
         # If we are here, we've at least had some failed tests
-        [ -z "$TRAP_RES" -o "$TRAP_RES" = 0 ] && TRAP_RES=1
+        [ -z "$eTRAP_RES" -o "$eTRAP_RES" = 0 ] && eTRAP_RES=1
     fi
 
     if [ "$TESTLIB_PROFILE_TESTDURATION" = yes ] && [ "$TESTLIB_COUNT_TOTAL" -gt 0 ] ; then
@@ -434,35 +436,37 @@ echo_summarizeTestlibResults() {
 
     echo
     echo "####################################################################"
-    echo "************ END OF testlib-driven suite execution ($TRAP_RES) *************"
+    echo "************ END OF testlib-driven suite execution ($eTRAP_RES) *************"
     echo "####################################################################"
     echo
     sleep 2
 
-    return $TRAP_RES
+    return $eTRAP_RES
 }
 
 # A consumer script can set this as (part of) their exit/abort-trap to always
 # print a summary of processed tests in the end, whatever the reason to exit().
 exit_summarizeTestlibResults() {
-    TRAP_RES=$?
+    sTRAP_RES=$?
+    [ -n "$1" ] && [ "$1" -gt 0 ] && sTRAP_RES="$1"
+
     # No longer error out on bad lines, even if we did
     set +e
     set +u
     # This would be a no-op if the test case previously started with a
     # test_it() has been already closed with its proper print_result()
     if [ x"${_testlib_result_printed}" = xnotyet ]; then
-        print_result $TRAP_RES
+        print_result $sTRAP_RES
     fi
 
     if [ -z "$TESTLIB_LOG_SUMMARY" ]; then
-        echo_summarizeTestlibResults
+        echo_summarizeTestlibResults $sTRAP_RES
         exit $?
     fi
 
     # NOTE: There can be a bit of STDERR here
-    TRAP_OUT="`echo_summarizeTestlibResults`"
-    TRAP_RES=$?
+    TRAP_OUT="`echo_summarizeTestlibResults $sTRAP_RES`"
+    sTRAP_RES=$?
     echo "$TRAP_OUT"
 
     { echo ""; echo "$TRAP_OUT"; echo "";
@@ -470,7 +474,7 @@ exit_summarizeTestlibResults() {
       echo "=============================================================="; echo ""; echo ""; \
     } >> "$TESTLIB_LOG_SUMMARY"
     logmsg_info "Summary of this test run was appended to '$TESTLIB_LOG_SUMMARY'"
-    exit $TRAP_RES
+    exit $sTRAP_RES
 }
 
 # common testing function which compares outputs to a pattern
