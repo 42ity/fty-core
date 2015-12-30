@@ -83,7 +83,7 @@ if(rex_lic.match(request.getUrl())) {
 					(char *)strerror_r(errno, errbuff, sizeof(errbuff)-1) );
 			}
 			if (buff[0] == 0)
-				log_debug("Error reading license data from file '%s' (got empty buffer)", current_license);
+				log_debug("Error reading license version number from symlink name '%s' (got empty buffer)", current_license);
 			http_die("internal-error", "Error saving license acceptance or getting license version, check integrity of storage.");
 		}
 
