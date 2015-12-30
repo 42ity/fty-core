@@ -46,6 +46,7 @@ SKIPPED_NONSH_TESTS=0
 #   yes = skip sanity tests in ultimate request/test scripts
 #   no  = do all tests
 #   onlyerrors = do only tests expected to fail (not for curlbbwget.sh)
+[ x"${SKIP_SANITY-}" = x- ] && SKIP_SANITY=""
 [ -z "$SKIP_SANITY" ] && SKIP_SANITY=no
 
 [ x"${SUT_WEB_SCHEMA-}" = x- ] && SUT_WEB_SCHEMA=""
