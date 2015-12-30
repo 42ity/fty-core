@@ -69,7 +69,7 @@ else
 fi
 print_result $RES
 
-test_it "verify that license/1.0 is a not-empty readable file"
+test_it "verify that license/1.0 is a not-empty readable file (or symlink to one)"
 RES=0
 if [ "$SUT_IS_REMOTE" = yes ]; then
     ( ALTROOT=/ . "$CHECKOUTDIR/tests/CI/run_tntnet_packaged.env" && [ -n "$LICENSE_DIR" ] && \
