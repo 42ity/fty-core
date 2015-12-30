@@ -217,6 +217,7 @@ test_web_topo_l() {
     test_web "$@"
 }
 
+RESULT_OVERALL=0
 trap_cleanup(){
     # ***** RESULTS *****
     if [ "$RESULT_OVERALL" = 0 ]; then
@@ -275,7 +276,6 @@ esac
 
 # ***** PERFORM THE TESTCASES *****
 set +e
-RESULT_OVERALL=0
 
 
 # do the test
@@ -297,15 +297,15 @@ else
     while [ $# -gt 0 ]; do
         case "$1" in
             topology_power*)
-                test_web_topo_p "$1"
+                test_web_topo_p "$1" || \
                 RESULT_OVERALL=$? ;;
             topology_location*)
-                test_web_topo_l "$1"
+                test_web_topo_l "$1" || \
                 RESULT_OVERALL=$? ;;
             asset_create*)
-                test_web_asset_create "$1"
+                test_web_asset_create "$1" || \
                 RESULT_OVERALL=$? ;;
-            *)  test_web_default "$1"
+            *)  test_web_default "$1" || \
                 RESULT_OVERALL=$? ;;
         esac
         shift
