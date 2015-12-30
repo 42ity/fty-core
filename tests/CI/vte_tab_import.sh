@@ -137,12 +137,7 @@ loaddb_file "$DB_BASE" 2>&1 | tee "${LOGFILE_LOADDB}"
 set +e
 
 # Try to accept the BIOS license on server
-( . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
-    if [ x"$CITEST_QUICKFAIL" = xyes ] ; then
-        die "BIOS license not accepted on the server, subsequent tests will fail"
-    else
-        logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
-    fi
+accept_license
 
 # ***** POST THE CSV FILE *****
 ASSET="$CSV_LOADDIR_BAM/bam_vte_tab_import.csv"

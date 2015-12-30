@@ -134,12 +134,7 @@ LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" 2>&1 | tee -a 
 set +e
 
 # Try to accept the BIOS license on server
-( . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
-    if [ x"$CITEST_QUICKFAIL" = xyes ] ; then
-        die "BIOS license not accepted on the server, subsequent tests will fail"
-    else
-        logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
-    fi
+accept_license
 
 # ***** POST THE CSV FILE *****
 ASSET="$CSV_LOADDIR_BAM/bam_import_16_vte_uptime_2_DC.csv"
