@@ -301,14 +301,20 @@ kill_daemons() {
   sleep 5
   test_web_process || exit
 
-# Try to accept the BIOS license on server
-init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "00_license-CI-forceaccept"
-SKIP_SANITY=yes test_web 00_license-CI-forceaccept.sh.test || \
-    if [ x"$CITEST_QUICKFAIL" = xyes ] ; then
-        die "BIOS license not accepted on the server, subsequent tests will fail"
-    else
-        logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
-    fi
+case "$*" in
+    *license*) # We are specifically testing license stuff
+        logmsg_warn "The tests requested on command line explicitly include 'license', so $0 will not interfere by running '00_license-CI-forceaccept.sh.test' first"
+        ;;
+    *) # Try to accept the BIOS license on server
+        init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "00_license-CI-forceaccept"
+        SKIP_SANITY=yes test_web 00_license-CI-forceaccept.sh.test || \
+            if [ x"$CITEST_QUICKFAIL" = xyes ] ; then
+                die "BIOS license not accepted on the server, subsequent tests will fail"
+            else
+                logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+            fi
+        ;;
+esac
 
 # do the test
 set +e
