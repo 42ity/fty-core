@@ -59,6 +59,7 @@ SUT_is_localhost() {
 
 RELATIVE_URL=""
 # SKIP_SANITY=(yes|no|onlyerrors)
+[ x"${SKIP_SANITY-}" = x- ] && SKIP_SANITY=""
 [ -z "$SKIP_SANITY" ] && SKIP_SANITY=no
 while [ $# -gt 0 ] ; do
     case "$1" in
