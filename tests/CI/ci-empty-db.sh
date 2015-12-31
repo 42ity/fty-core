@@ -32,7 +32,7 @@ logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to test the database initializatio
 [ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
 
 # Note: this default log filename will be ignored if already set by caller
-init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" ""
+init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" ""
 settraps 'exit_summarizeTestlibResults'
 
 set -u
