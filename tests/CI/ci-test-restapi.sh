@@ -169,7 +169,6 @@ test_web_asset_create() {
 
 MAKEPID=""
 DBNGPID=""
-RESULT_OVERALL=0
 kill_daemons() {
     if [ -n "$MAKEPID" -a -d "/proc/$MAKEPID" ]; then
         logmsg_info "Killing make web-test PID $MAKEPID to exit"
@@ -186,20 +185,43 @@ kill_daemons() {
     ps -ef | grep -v grep | egrep "tntnet|agent-dbstore" | egrep "^`id -u -n` " && \
         ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
         logmsg_error "tntnet and/or agent-dbstore still alive, trying SIGKILL" && \
-        { killall -KILL tntnet agent-dbstore lt-agent-dbstore 2>/dev/null ; exit 1; }
+        { killall -KILL tntnet agent-dbstore lt-agent-dbstore 2>/dev/null ; return 1; }
+    return 0
+}
 
-    ci_loaddb_default
+RESULT_OVERALL=0
+trap_cleanup(){
+    cleanTRAP_RES="${1-}"
+    [ -n "$cleanTRAP_RES" ] || cleanTRAP_RES=0
+    [ "$cleanTRAP_RES" = 0 ] && [ "$RESULT_OVERALL" != 0 ] && cleanTRAP_RES="$RESULT_OVERALL"
+
+    kill_daemons || cleanTRAP_RES=$?
+    ci_loaddb_default || cleanTRAP_RES=$?
 
     if [ "$RESULT_OVERALL" = 0 ]; then
-        logmsg_info "Overall result: SUCCESS"
+        logmsg_info "Overall test suite result: SUCCESS"
         if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
-            { logmsg_info "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}': SUCCESS"; \
+            { logmsg_info "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}' test suite: SUCCESS"; \
               echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY"
         fi
     else
-        logmsg_error "Overall result: FAILED ($RESULT_OVERALL) seek details above"
+        logmsg_error "Overall test suite result: FAILED ($RESULT_OVERALL) seek details above"
         if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
-            { logmsg_error "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}': FAILED ($RESULT_OVERALL)"; \
+            { logmsg_error "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}' test suite: FAILED ($RESULT_OVERALL)"; \
+          echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY" 2>&1
+        fi
+    fi
+
+    if [ "$cleanTRAP_RES" = 0 ]; then
+        logmsg_info "Overall test-suite script result (including cleanup): SUCCESS"
+        if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
+            { logmsg_info "`date -u`: Finished and cleaned up '${_SCRIPT_NAME} ${_SCRIPT_ARGS}' test-suite script: SUCCESS"; \
+              echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY"
+        fi
+    else
+        logmsg_error "Overall test-suite script result (including cleanup): FAILED ($cleanTRAP_RES) seek details above"
+        if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
+            { logmsg_error "`date -u`: Finished and cleaned up '${_SCRIPT_NAME} ${_SCRIPT_ARGS}' test-suite script: FAILED ($cleanTRAP_RES)"; \
           echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY" 2>&1
         fi
     fi
@@ -218,7 +240,7 @@ kill_daemons() {
         echo "###########################################################"
     fi
 
-    return $RESULT_OVERALL
+    return $cleanTRAP_RES
 }
 
 # prepare environment
@@ -290,13 +312,13 @@ kill_daemons() {
   # Ensure that no processes remain dangling when test completes
   # The ERRCODE is defined by settraps() as the program exitcode
   # as it enters the trap
-  TRAP_SIGNALS=EXIT settraps 'echo "CI-EXIT: $0: test finished (up to the proper exit command)..." >&2; kill_daemons'
-  TRAP_SIGNALS="HUP INT QUIT TERM" settraps '[ "$ERRCODE" = 0 ] && ERRCODE=123; echo "CI-EXIT: $0: got signal, aborting test..." >&2; kill_daemons && exit $ERRCODE'
+  TRAP_SIGNALS=EXIT settraps 'ciTRAP_RES=$?; echo "CI-EXIT: $0: test finished (up to the proper exit($ciTRAP_RES) command)..." >&2; trap_cleanup $ciTRAP_RES'
+  TRAP_SIGNALS="HUP INT QUIT TERM" settraps '[ "$ERRCODE" = 0 ] && ERRCODE=123; echo "CI-EXIT: $0: got signal, aborting test..." >&2; trap_cleanup $ERRCODE'
 
   logmsg_info "Waiting for web-server to begin responding..."
   wait_for_web && \
     logmsg_info "Web-server is responsive!" || \
-    logmsg_error "Web-server is NOT responsive!" >&2
+    logmsg_error "Web-server is NOT responsive!"
   logmsg_info "Waiting for webserver process $MAKEPID to settle after startup..."
   sleep 5
   test_web_process || exit
@@ -348,5 +370,5 @@ else
     done
 fi
 
-# kill_daemons() should handle the cleanup and final logging
+# trap_cleanup() should handle the cleanup and final logging
 exit $RESULT_OVERALL
