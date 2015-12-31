@@ -232,8 +232,8 @@ verify_checksum() {
 ensure_checksum() {
     # A destructive wrapper of verify_checksum(), destroys bad downloads
     if ! verify_checksum "$@" ; then
-        logmsg_warn "Removing broken file: '$1' and its checksum"
-        rm -f "$1"{,.md5,.sha,.sha1,.sha224,.sha256,.sha384,.sha512} "$2"
+        logmsg_warn "Removing broken file: '$1' and its checksum(s)"
+        rm -f "$1"{,.md5,.sha,.sha1,.sha224,.sha256,.sha384,.sha512} ${2:+"$2"}
         return 1
     fi
     return 0
