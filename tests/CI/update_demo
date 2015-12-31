@@ -4,12 +4,93 @@
 ### Update bios demo
 ### 0 1 * * * bash /root/update_demo > /root/update_demo.log 2>&1
 
+# Copyright (C) 2014-2015 Eaton
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+#! \file    update_demo
+#  \brief   Initialize demo containers of different OS image variants
+#  \author  Tomas Halman <TomasHalman@Eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \details Initialize demo containers of different OS image variants
+#           on our common debian-test host server
+
 PATH="/bin:/usr/bin:/sbin:/usr/sbin"
 
-[ -n "$VARIANT" ] || VARIANT="deploy"
+OBS_IMAGES_SERVER="http://obs.roz53.lab.etn.com"
+OBS_IMAGES_BASEURL="$OBS_IMAGES_SERVER/images"
+ARCH="x86_64"
+PEMFILE_DIR="/root/pems"
 
-# Download images, stop VM, preconfigure and finish at that
-/root/ci-reset-virtual-machine.sh -b "$VARIANT" -m "demo" --deploy-only
+deploy_image_online() {
+        # Download images, stop VM, preconfigure and finish at that
+        # $1 = LXC container name (also rootfs subdir name, and OE hostname)
+        # $2 = OS image variant (path component on OBS)
+        # $3 = PEM filename (tntnet SSL certificate); "-" to not install one
+        # $4 = start flag (if "start" then the container is booted in the end)
+        VM="$1"
+        IMGTYPE="$2"
+        PEMFILE="$3"
+        STARTFLAG="$4"
+
+        # The logic below is similar to, but simpler than, a callout to
+        # /root/ci-reset-virtual-machine.sh -b "$IMGTYPE" -m "$VM" --deploy-only
+        # Here we do not mount subdirs between host and container, etc.
+        # We do not even keep the OS image tarball, just unpack it on the fly.
+
+        [ -z "$PEMFILE" ] && [ -s "$PEMFILE_DIR/$VM.pem" ] && \
+                PEMFILE="$PEMFILE_DIR/$VM.pem"
+        [ x"$PEMFILE" = x- ] && PEMFILE=""
+        case "$PEMFILE" in
+                "") ;;
+                /*|./*|../*) [ -s "$PEMFILE" ] || \
+                        echo "WARN: Can not detect PEMFILE by filename '$PEMFILE'" >&2
+                   ;;
+                *) { [ -s "./$PEMFILE" ] && PEMFILE="`pwd`/$PEMFILE" ; } || \
+                   { [ -s "$PEMFILE_DIR/$PEMFILE" ] && PEMFILE="$PEMFILE_DIR/$PEMFILE" ; } || \
+                        echo "WARN: Can not detect PEMFILE by short filename '$PEMFILE'" >&2
+                   ;;
+        esac
+
+        virsh -c lxc:/// destroy "$VM"
+        rm -rf /srv/libvirt/rootfs/"$VM"
+        mkdir /srv/libvirt/rootfs/"$VM" || return $?
+        IMG_NAME="`wget -O - "$OBS_IMAGES_BASEURL/$IMGTYPE/$ARCH" | sed -n 's|.*>\(simpleimage.[0-9]*-[0-9]*.tar.gz\)<.*|\1|p'`" && \
+        [ -n "$IMG_NAME" ] || return $?
+        wget -O - "$OBS_IMAGES_BASEURL/$IMGTYPE/$ARCH/$IMG_NAME" | tar -C /srv/libvirt/rootfs/"$VM" -xzf -
+        echo "$VM" > /srv/libvirt/rootfs/"$VM"/etc/hostname || \
+                echo "WARN: Got an error($?) setting container hostname, continuing" >&2
+        if [ -n "$PEMFILE" ]; then
+                cp "$PEMFILE" /srv/libvirt/rootfs/"$VM"/etc/tntnet/bios.pem || \
+                echo "WARN: Got an error($?) copying PEM file '$PEMFILE', continuing" >&2
+        fi
+        if [ x"$STARTFLAG" = xstart ] ; then
+                virsh -c lxc:/// start "$VM"
+                return $?
+        fi
+        return 0
+}
+
+deploy_image_online "emc4j-demo" "epfl" "emc4j.pem" start
+deploy_image_online "lba-demo"   "lba"  "lba.pem"   start
+
+# This one is hosted in a separate path, and has no PEM:
+OBS_IMAGES_BASEURL="$OBS_IMAGES_SERVER" deploy_image_online "opensuse-demo" "opensuse-image" "-" start
+
+# This one we will configure in detail below:
+deploy_image_online "demo"       "deploy" "demo.pem" "-" || exit $?
 cd /srv/libvirt/rootfs/demo/ || exit $?
 
 echo "Populating custom configuration for the bios-demo VM"
@@ -18,54 +99,18 @@ echo "Populating custom configuration for the bios-demo VM"
 #
 cp -f /etc/resolv.conf ./etc/
 echo bios-demo.roz53.lab.etn.com > ./etc/hostname
-#
-# create NUT config
-#
-cp /root/nut/* ./etc/nut
 
-cat >./etc/nut/ups.conf.new << EOF
-maxretry = 3
+if [ -n "`ssh -p 4222 root@bios-rc-demo.roz53.lab.etn.com echo ahoj`" ] ; then
+    #
+    # replicate NUT config from bios-rc-demo
+    #
+    scp -P 4222 root@bios-rc-demo.roz53.lab.etn.com:/etc/nut/* ./etc/nut
 
-[ROZ.ePDU05]
-	driver = snmp-ups
-	port =  epdu05.roz53.lab.etn.com
-	synchronous = yes
-
-[ROZ.ePDU04]
-	driver = snmp-ups
-	port = epdu04.roz53.lab.etn.com
-	synchronous = yes
-
-[ROZ.UPS1]
-	driver = netxml-ups
-	port = http://nmc03.roz53.lab.etn.com
-
-[UPS1-LAB]
-        driver =  dummy-ups
-        port =  UPS1-LAB.dev
-        desc = "9PX-31-xml"
-
-[UPS2-LAB]
-        driver =  dummy-ups
-        port =  UPS2-LAB.dev
-        desc = "9PX-31-xml"
-
-[ePDU1-LAB]
-        driver =  dummy-ups
-        port = ePDU1-LAB.dev
-        desc = "epdu-marlin-ma-snmp"
-
-[ePDU2-LAB]
-        driver =  dummy-ups
-        port = ePDU2-LAB.dev
-        desc = "epdu-marlin-ma-snmp"
-EOF
-
-#
-# Dump database from bios-rc-demo
-#
-[ -n "`ssh bios@bios-rc-demo.roz53.lab.etn.com echo ahoj`" ] && \
-    ssh bios@bios-rc-demo.roz53.lab.etn.com mysqldump -u root box_utf8 > mysqldump
+    #
+    # Dump database from bios-rc-demo
+    #
+    ssh -p 4222 root@bios-rc-demo.roz53.lab.etn.com mysqldump -u root box_utf8 > ./mysqldump || rm -f ./mysqldump
+fi
 
 #
 # Populate bios-demo database from project defaults and
@@ -75,14 +120,36 @@ cat << EOF | chroot . /bin/bash
 wget -O - "http://tomcat.roz53.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=tools/initdb.sql;hb=HEAD" |  mysql -u root
 # wget -O - "http://tomcat.roz53.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=tools/load_data.sql;hb=HEAD" | mysql -u root box_utf8
 # wget -O - "http://tomcat.roz53.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=tools/load_ROZLAB.sql;hb=HEAD" | mysql -u root box_utf8
-cat /mysqldump | mysql -u root box_utf8
-rm /mysqldump
+[ -s /mysqldump ] && mysql -u root box_utf8 < /mysqldump
 /usr/lib/mysql/rcmysql stop
 EOF
+
+mkdir -p var/lib/bios
+cat << EOF > var/lib/bios/license
+1.0
+1439207029
+bios
+EOF
+mkdir -p mnt/nand/overlay/etc
+cp etc/shadow mnt/nand/overlay/etc
+
+#
+# nut config
+#
+# tha - commented out since mysql transfer is broken
+[ -s ./mysqldump ] && \
+cat <<EOF | chroot . /bin/bash
+for device in \$(awk '/ *\[/{ gsub(/[\\[\\]]/,"",\$1); print \$1; }' </etc/nut/ups.conf) ; do
+    systemctl enable nut-driver@\$device
+done
+EOF
+
+rm -f ./mysqldump
 
 sed -i 's|exit.*|systemctl restart ssh|' etc/rc.local
 
 # mv /srv/libvirt/rootfs/demo/usr/share/bios-web /srv/libvirt/rootfs/demo/usr/share/bios-web.x.$$; rsync -avPHK bios-backup:/export/DUMP/manual/test-debian/fullroot/srv/libvirt/.zfs/snapshot/20150212-0000/rootfs/demo/usr/share/bios-web/ /srv/libvirt/rootfs/demo/usr/share/bios-web/
 
+cd /
 virsh -c lxc:/// start demo
 
