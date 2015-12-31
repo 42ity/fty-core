@@ -134,13 +134,13 @@ ci_loaddb_default() {
 }
 
 test_web_default() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_default() $*"
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_default() $*"
     ci_loaddb_default && \
     test_web "$@"
 }
 
 test_web_topo_p() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_p() $*"
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_p() $*"
     echo "----------- reset db: topology : power -----------"
     for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOP"; do
         loaddb_file "$data" || exit $?
@@ -150,7 +150,7 @@ test_web_topo_p() {
 
 test_web_topo_l() {
 # NOTE: This piece of legacy code is still here, but no usecase below calls it
-    init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_l() $*"
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_l() $*"
     echo "---------- reset db: topology : location ---------"
     for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOL"; do
         loaddb_file "$data" || exit $?
@@ -159,7 +159,7 @@ test_web_topo_l() {
 }
 
 test_web_asset_create() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_asset_create() $*"
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_asset_create() $*"
     echo "---------- reset db: asset : create ---------"
     for data in "$DB_BASE" "$DB_DATA"; do
           loaddb_file "$data" || exit $?
@@ -328,7 +328,7 @@ case "$*" in
         logmsg_warn "The tests requested on command line explicitly include 'license', so $0 will not interfere by running '00_license-CI-forceaccept.sh.test' first"
         ;;
     *) # Try to accept the BIOS license on server
-        init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "00_license-CI-forceaccept"
+        init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "00_license-CI-forceaccept"
         SKIP_SANITY=yes test_web 00_license-CI-forceaccept.sh.test || \
             if [ x"$CITEST_QUICKFAIL" = xyes ] ; then
                 die "BIOS license not accepted on the server, subsequent tests will fail"
