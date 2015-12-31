@@ -185,7 +185,7 @@ subtest() {
 }
 
 # Note: this default log filename will be ignored if already set by caller
-init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" ""
+init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" ""
 settraps 'exit_summarizeTestlibResults'
 
 # Try to accept the BIOS license on server

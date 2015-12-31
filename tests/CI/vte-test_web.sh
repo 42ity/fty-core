@@ -253,7 +253,7 @@ exit_summarizeTestedScriptlets() {
 }
 
 # Note: this default log filename will be ignored if already set by caller
-init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" ""
+init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" ""
 settraps 'wTRAP_RES=$?; exit_summarizeTestedScriptlets ; exit_summarizeTestlibResults $wTRAP_RES || exit $?; exit $wTRAP_RES'
 
 # A bash-ism, should set the exitcode of the rightmost failed command
