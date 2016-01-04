@@ -480,6 +480,12 @@ ACTION_RESULT=0
 while [ $# -gt 0 ]; do
         case "${1-}" in
                 -h|--help|-help)        usage; exit 0 ;;
+                --debug-calls)
+                    if [ $# -eq 1 ]; then
+                        die "The '$1' option requires further arguments"
+                    fi
+                    shift
+                    "$@" ; exit $? ;;
                 --download-image-os)    ACTION_DOWNLOAD_OSIMAGE="yes";;
                 --download-image-fw)    ACTION_DOWNLOAD_FWIMAGE="yes";;
                 --download-images)      ACTION_DOWNLOAD_OSIMAGE="yes"; ACTION_DOWNLOAD_FWIMAGE="yes";;
