@@ -315,11 +315,29 @@ verify_threeway_checksum() (
     # The IMAGE_URL_BASENAME_EXT (on remote site with hierarchical structure)
     # may be different from local FILE_DATA name (with flattened structure).
     IMAGE_URL="$1"
-    # Basenames of data and checksum files (under current dir set by caller).
+    # Basenames of data and checksum files (under current dir set by caller
+    # or absolute - e.g. for recovery vs. deployed storage locations).
     # Theoretically checksums may be from different algorithms (see extension).
     FILE_DATA="$2"
     FILE_CSOLD="$3"
     FILE_CSNEW="$4"
+
+    FILE_DIR="`pwd`"
+    case "$FILE_DATA" in
+        /*) FILE_DIR="`dirname "$FILE_DATA"`";;
+        ./*|../*) FILE_DIR="`pwd`/`dirname "$FILE_DATA"`"; FILE_DATA="$FILE_DIR/`basename "$FILE_DATA"`";;
+        *) FILE_DATA="$FILE_DIR/$FILE_DATA" ;;
+    esac
+    case "$FILE_CSOLD" in
+        /*) ;;
+        ./*|../*) FILE_CSOLD="`pwd`/$FILE_CSOLD";;
+        *) FILE_CSOLD="$FILE_DIR/$FILE_CSOLD" ;;
+    esac
+    case "$FILE_CSNEW" in
+        /*) ;;
+        ./*|../*) FILE_CSNEW="`pwd`/$FILE_CSNEW";;
+        *) FILE_CSNEW="$FILE_DIR/$FILE_CSNEW" ;;
+    esac
 
     [ -n "$IMAGE_URL" ] && \
     IMAGE_URL_BASENAME="`basename "$IMAGE_URL" ".${EXT}"`" && \
@@ -329,12 +347,12 @@ verify_threeway_checksum() (
           IMAGE_URL=""; IMAGE_URL_BASENAME=""; IMAGE_URL_BASENAME_EXT=""; }
 
     if [ ! -s "$FILE_DATA" ] ; then
-        logmsg_info "Local data file '`pwd`/$FILE_DATA' is missing"
+        logmsg_info "Local data file '$FILE_DATA' is missing"
         return 2
     fi
 
     if [ ! -s "$FILE_CSOLD" ] && [ ! -s "$FILE_CSNEW" ] ; then
-        logmsg_info "Both checksum files '`pwd`/$FILE_CSOLD' and '`pwd`/$FILE_CSNEW' are missing"
+        logmsg_info "Both checksum files '$FILE_CSOLD' and '$FILE_CSNEW' are missing"
         return 2
     fi
 
@@ -344,16 +362,16 @@ verify_threeway_checksum() (
         CSOLDALGO="`get_csalgo_from_filename "$FILE_CSOLD"`" && \
         { CSOLD="`expected_checksum "$FILE_DATA" "$FILE_CSOLD"`" || \
           CSOLD="`[ -z "$IMAGE_URL_BASENAME_EXT" ] && [ x"$FILE_DATA" != x"$IMAGE_URL_BASENAME_EXT" ] && expected_checksum "$IMAGE_URL_BASENAME_EXT" "$FILE_CSOLD"`" ; } || \
-        { CSOLD=""; CSOLDALGO=""; logmsg_info "Local checksum file '`pwd`/$FILE_CSOLD' is missing"; }
+        { CSOLD=""; CSOLDALGO=""; logmsg_info "Local checksum file '$FILE_CSOLD' is missing"; }
 
     [ -s "$FILE_CSNEW" ] && \
         CSNEWALGO="`get_csalgo_from_filename "$FILE_CSNEW"`" && \
         { CSNEW="`expected_checksum "$FILE_DATA" "$FILE_CSNEW"`" || \
           CSNEW="`[ -z "$IMAGE_URL_BASENAME_EXT" ] && [ x"$FILE_DATA" != x"$IMAGE_URL_BASENAME_EXT" ] && expected_checksum "$IMAGE_URL_BASENAME_EXT" "$FILE_CSNEW"`" ; } || \
-        { CSNEW=""; CSNEWALGO=""; logmsg_info "Remote checksum file '`pwd`/$FILE_CSNEW' is missing"; }
+        { CSNEW=""; CSNEWALGO=""; logmsg_info "Remote checksum file '$FILE_CSNEW' is missing"; }
 
     if [ -z "$CSNEW" ] && [ -z "$CSOLD" ]; then
-        logmsg_info "Could not get usable checksum values from both checksum files: '`pwd`/$FILE_CSOLD' and '`pwd`/$FILE_CSNEW'"
+        logmsg_info "Could not get usable checksum values from both checksum files: '$FILE_CSOLD' and '$FILE_CSNEW'"
         return 2
     fi
 
@@ -377,25 +395,25 @@ verify_threeway_checksum() (
 
     [ -n "$CSNEW" ] && \
     if verify_checksum "$FILE_DATA" "$FILE_CSNEW" ; then
-        logmsg_info "Remote checksum is good for '`pwd`/$FILE_CSNEW', local copy was corrupted - replacing checksum file"
+        logmsg_info "Remote checksum is good for '$FILE_CSNEW', local copy was corrupted - replacing checksum file"
         mv -f "$FILE_CSNEW" "$FILE_CSOLD" && \
             logmsg_info "The newest available image is '$IMAGE_URL' and we already have a good copy (as '$FILE_DATA')"
         return $?
     else
-        logmsg_info "Remote checksum is not good for '`pwd`/$FILE_CSNEW', local file is corrupted or obsolete and should be re-downloaded from '$IMAGE_URL'"
+        logmsg_info "Remote checksum is not good for '$FILE_CSNEW', local file is corrupted or obsolete and should be re-downloaded from '$IMAGE_URL'"
         RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
         return 1
     fi
 
     [ -n "$CSOLD" ] && \
     if verify_checksum "$FILE_DATA" "$FILE_CSOLD" ; then
-        logmsg_info "Local checksum matched for '`pwd`/$FILE_CSOLD'"
+        logmsg_info "Local checksum matched for '$FILE_CSOLD'"
         RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
         return 0
     else
         # Ensuring against old checksum failed, so data file and its related
         # files (checksums) should have been removed; keep the FILE_CSNEW
-        logmsg_info "Local checksum mismatched for '`pwd`/$FILE_CSOLD', local file is corrupted or obsolete and should be re-downloaded from '$IMAGE_URL'"
+        logmsg_info "Local checksum mismatched for '$FILE_CSOLD', local file is corrupted or obsolete and should be re-downloaded from '$IMAGE_URL'"
         RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
         return 1
     fi
