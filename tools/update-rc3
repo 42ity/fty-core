@@ -277,13 +277,13 @@ ensure_checksum() {
     return 0
 }
 
-threeway_checksum() {
+threeway_checksum() (
     # We can have (or not) a local copy of the data file "$1", a local copy
     # of the checksum file "$2", and a freshly fetched copy of remote checksum
-    # file "$3"; all previously downloaded by caller. Optional algo is in "$4".
+    # file "$3" (usually an *.algo.tmp); all previously downloaded by caller.
     # Return codes:
     #   0       OK, local data and checksum files are (now) consistent, keep'em
-    #   1       ERROR, local files inconsistent or missing, pull from remote!
+    #   1       ERROR, local files inconsistent or missing, re-pull from remote!
     # Verify if any of these files match together (in a destructive manner):
     # * If some of the files are not available:
     # ** data file - fail (must download all bits)
@@ -293,10 +293,49 @@ threeway_checksum() {
     # * If two checksums are the same, remove the newly downloaded one; ELSE:
     # ** If the local checksum does not match the file, and the remote checksum
     #    does match - assume it authoritative and local one broken (overwrite)
-    # ** If neither checksum matches - kill local data and pull remote files
+    # ** If neither checksum matches - kill local data and return error
     # * If the local CS+DATA do NOT match together, kill them and return error
-    # 
-}
+    #    (caller would pull remote files)
+
+    # Basenames of data and checksum files (under current dir set by caller)
+    # Theoretically checksums may be from different algorithms
+    FILE_DATA="$1"
+    FILE_CSOLD="$2"
+    FILE_CSNEW="$3"
+
+    if [ ! -s "$FILE_DATA" ] ; then
+        logmsg_info "Local data file '`pwd`/$FILE_DATA' is missing"
+        return 1
+    fi
+
+    if [ ! -s "$FILE_CSOLD" ] && [ ! -s "$FILE_CSNEW" ] ; then
+        logmsg_info "Both local checksum files '`pwd`/$FILE_CSOLD' and '`pwd`/$FILE_CSNEW' are missing"
+        return 1
+    fi
+
+    [ -s "$FILE_CSOLD" ] && \
+        CSOLDALGO="`get_csalgo_from_filename "$FILE_CSOLD"`" && \
+        CSOLD="`expected_checksum "$FILE_DATA" "$FILE_CSOLD"`" \
+        || { CSOLD=""; CSOLDALGO=""; }
+    [ -s "$FILE_CSNEW" ] && \
+        CSNEWALGO="`get_csalgo_from_filename "$FILE_CSNEW"`" && \
+        CSNEW="`expected_checksum "$FILE_DATA" "$FILE_CSNEW"`" \
+        || { CSNEW=""; CSNEWALGO=""; }
+
+    if [ -n "$CSNEWALGO" ] && [ -n "$CSNEW" ] && \
+       [ -n "$CSOLDALGO" ] && [ -n "$CSOLD" ] \
+    ; then
+        if [ x"$CSNEWALGO" = x"$CSOLDALGO" ]; then
+            if [ "$CSNEW" ="$CSOLD" ]; then
+                rm -f "$FILE_CSNEW"
+            else
+                logmsg_warn "Old and new checksum values differ: '$CSOLD' vs '$CSNEW' (algo is the same '$CSOLDALGO')"
+            fi
+        else
+            logmsg_warn "Old and new checksum files have different algorithms: '$CSOLDALGO' vs '$CSNEWALGO' (so not comparable directly)"
+        fi
+    fi
+)
 
 findnewest_osimage() (
     # Echo the URL to the newest OS image file found on remote resource, if any
