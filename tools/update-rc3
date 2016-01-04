@@ -412,7 +412,6 @@ verify_threeway_checksum() (
     [ -n "$CSOLD" ] && \
     if verify_checksum "$FILE_DATA" "$FILE_CSOLD" ; then
         logmsg_info "Local checksum matched for '$FILE_CSOLD'"
-        RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
         return 0
     else
         # Verifying against old checksum failed, so data file and its related
