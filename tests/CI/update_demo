@@ -87,39 +87,34 @@ deploy_image_online() {
         return 0
 }
 
-deploy_image_online "emc4j-demo" "epfl" "emc4j.pem" start
-deploy_image_online "lba-demo"   "lba"  "lba.pem"   start
+setup_bios_demo() (
+    cd /srv/libvirt/rootfs/demo/ || exit $?
 
-# This one is hosted in a separate path, and has no PEM:
-OBS_IMAGES_BASEURL="$OBS_IMAGES_SERVER" deploy_image_online "opensuse-demo" "opensuse-image" "-" start
-
-# This one we will configure in detail below:
-deploy_image_online "demo"       "deploy" "demo.pem" "-" || exit $?
-cd /srv/libvirt/rootfs/demo/ || exit $?
-
-echo "Populating custom configuration for the bios-demo VM"
-#
-# copy resolv.conf (demo has not OBS default, but ROZ LAB one)
-#
-cp -f /etc/resolv.conf ./etc/
-echo bios-demo.roz53.lab.etn.com > ./etc/hostname
-
-if [ -n "`ssh -p 4222 root@bios-rc-demo.roz53.lab.etn.com echo ahoj`" ] ; then
+    echo "Populating custom configuration for the bios-demo VM"
     #
-    # replicate NUT config from bios-rc-demo
+    # copy resolv.conf (demo has not OBS default, but ROZ LAB one)
     #
-    scp -P 4222 root@bios-rc-demo.roz53.lab.etn.com:/etc/nut/* ./etc/nut
+    cp -f /etc/resolv.conf ./etc/
+    echo bios-demo.roz53.lab.etn.com > ./etc/hostname
+
+    if [ -n "`ssh -p 4222 root@bios-rc-demo.roz53.lab.etn.com echo ahoj`" ] ; then
+        #
+        # replicate NUT config from bios-rc-demo
+        #
+        echo "Exporting a copy of NUT configs from bios-rc-demo..."
+        scp -P 4222 root@bios-rc-demo.roz53.lab.etn.com:/etc/nut/* ./etc/nut
+
+        #
+        # Dump database from bios-rc-demo
+        #
+        echo "Exporting a copy of database content from bios-rc-demo..."
+        ssh -p 4222 root@bios-rc-demo.roz53.lab.etn.com mysqldump -u root box_utf8 > ./mysqldump || rm -f ./mysqldump
+    fi
 
     #
-    # Dump database from bios-rc-demo
-    #
-    ssh -p 4222 root@bios-rc-demo.roz53.lab.etn.com mysqldump -u root box_utf8 > ./mysqldump || rm -f ./mysqldump
-fi
-
-#
-# Populate bios-demo database from project defaults and
-# if available - override from replica of bios-rc-demo
-cat << EOF | chroot . /bin/bash
+    # Populate bios-demo database from project defaults and
+    # if available - override from replica of bios-rc-demo
+    cat << EOF | chroot . /bin/bash
 /usr/lib/mysql/rcmysql start
 echo 'Importing default database schema...'
 wget -O - "http://tomcat.roz53.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=database/mysql/initdb.sql;hb=HEAD" |  mysql -u root
@@ -129,34 +124,45 @@ wget -O - "http://tomcat.roz53.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=da
 /usr/lib/mysql/rcmysql stop
 EOF
 
-echo "'Accept license' and 'Set password' as far as bios-core is concerned"
-mkdir -p var/lib/bios
+    echo "'Accept license' and 'Set password' as far as bios-core is concerned"
+    mkdir -p var/lib/bios
 cat << EOF > var/lib/bios/license
 1.0
 1439207029
 bios
 EOF
-mkdir -p mnt/nand/overlay/etc
-cp etc/shadow mnt/nand/overlay/etc
+    mkdir -p mnt/nand/overlay/etc
+    cp etc/shadow mnt/nand/overlay/etc
 
-#
-# nut config
-#
-# tha - commented out since mysql transfer is broken
-[ -s ./mysqldump ] && \
-echo "Enable NUT-driver service instances" && \
-cat <<EOF | chroot . /bin/bash
+    #
+    # nut config
+    #
+    # tha - commented out since mysql transfer is broken
+    [ -s ./mysqldump ] && \
+    echo "Enable NUT-driver service instances" && \
+    cat <<EOF | chroot . /bin/bash
 for device in \$(awk '/ *\[/{ gsub(/[\\[\\]]/,"",\$1); print \$1; }' </etc/nut/ups.conf) ; do
     systemctl enable nut-driver@\$device
 done
 EOF
 
-rm -f ./mysqldump
+    echo "Finishing up with 'bios-demo'..."
+    rm -f ./mysqldump
 
-sed -i 's|exit.*|systemctl restart ssh|' etc/rc.local
+    sed -i 's|exit.*|systemctl restart ssh|' etc/rc.local
 
-# mv /srv/libvirt/rootfs/demo/usr/share/bios-web /srv/libvirt/rootfs/demo/usr/share/bios-web.x.$$; rsync -avPHK bios-backup:/export/DUMP/manual/test-debian/fullroot/srv/libvirt/.zfs/snapshot/20150212-0000/rootfs/demo/usr/share/bios-web/ /srv/libvirt/rootfs/demo/usr/share/bios-web/
+    # mv /srv/libvirt/rootfs/demo/usr/share/bios-web /srv/libvirt/rootfs/demo/usr/share/bios-web.x.$$; rsync -avPHK bios-backup:/export/DUMP/manual/test-debian/fullroot/srv/libvirt/.zfs/snapshot/20150212-0000/rootfs/demo/usr/share/bios-web/ /srv/libvirt/rootfs/demo/usr/share/bios-web/
 
-cd /
-virsh -c lxc:/// start demo
+    cd /
+    virsh -c lxc:/// start demo
+)
 
+deploy_image_online "emc4j-demo" "epfl" "emc4j.pem" start
+deploy_image_online "lba-demo"   "lba"  "lba.pem"   start
+
+# This one is hosted in a separate path, and has no PEM:
+OBS_IMAGES_BASEURL="$OBS_IMAGES_SERVER" deploy_image_online "opensuse-demo" "opensuse-image" "-" start
+
+# This one we will configure in detail via setup_bios_demo()
+deploy_image_online "demo"       "deploy" "demo.pem" "-" || exit $?
+setup_bios_demo || exit $?
