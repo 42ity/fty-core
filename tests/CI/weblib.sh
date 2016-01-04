@@ -90,6 +90,7 @@ fi
 #   yes = skip sanity tests in certain ultimate request/test scripts
 #   no  = do all tests
 #   onlyerrors = do only tests expected to fail (not for curlbbwget.sh)
+[ x"${SKIP_SANITY-}" = x- ] && SKIP_SANITY=""
 [ -z "${SKIP_SANITY-}" ] && SKIP_SANITY=no
 
 ( which curl >/dev/null 2>&1 ) || {
@@ -775,16 +776,21 @@ simple_get_json_code_sed() {
 # license accept (note: no password change)
 accept_license(){
     if CITEST_QUICKFAIL=no WEBLIB_QUICKFAIL=no WEBLIB_CURLFAIL=no api_get_json '/admin/license/status' | grep "accepted_at"; then
-        echo 'license already accepted'
+        echo 'WEBLIB::accept_license(): license already accepted'
     else
-        echo "Trying to accept the license via REST API on BIOS server '$BASE_URL'..."
-#        api_auth_post_json '/admin/license' "foobar" >&5 || \
-        api_auth_post_json '/admin/license' "foobar" || \
-        ( . "$CHECKOUTDIR"/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
-            if [ x"$CITEST_QUICKFAIL" = xyes ] ; then
-                die "BIOS license not accepted on the server, subsequent tests will fail"
-            else
-                logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
-            fi
+        if [ x"${SKIP_LICENSE_FORCEACCEPT-}" = xyes ] ; then
+            echo "WEBLIB::accept_license(): SKIP_LICENSE_FORCEACCEPT=$SKIP_LICENSE_FORCEACCEPT so not running '00_license-CI-forceaccept.sh.test' first"
+            logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+        else
+            ### Note: If CITEST_QUICKFAIL=yes then the license-acceptance can kill the test suite
+            echo "WEBLIB::accept_license(): Trying to accept the license via REST API on BIOS server '$BASE_URL'..."
+            api_auth_post_json '/admin/license' "foobar" || \
+            ( . "$CHECKOUTDIR"/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
+                if [ x"$CITEST_QUICKFAIL" = xyes ] ; then
+                    die "BIOS license not accepted on the server, subsequent tests will fail"
+                else
+                    logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+                fi
+        fi
     fi
 }
