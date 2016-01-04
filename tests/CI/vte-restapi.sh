@@ -168,9 +168,9 @@ test_web() {
     echo "==== Calling vte-test_web.sh ==============================="
     /bin/bash "${CHECKOUTDIR}"/tests/CI/vte-test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" \
         -s "$SASL_SERVICE" -sh "$SUT_HOST" -su "$SUT_USER" -sp "$SUT_SSH_PORT" "$@"
-    RESULT=$?
-    echo "==== test_web RESULT: ($RESULT) =================================="
-    return $RESULT
+    RES_TW=$?
+    echo "==== test_web RESULT: ($RES_TW) =================================="
+    return $RES_TW
 }
 
     # *** load default db setting
@@ -183,13 +183,13 @@ ci_loaddb_default() {
 }
     # *** start the default set of TC
 test_web_default() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_default() $*"
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_default() $*"
     ci_loaddb_default && \
     test_web "$@"
 }
 
 test_web_asset_create() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_asset_create() $*"
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_asset_create() $*"
     echo "---------- reset db: asset : create ---------"
     for data in "$DB_BASE" "$DB_DATA"; do
           loaddb_file "$data" || exit $?
@@ -199,7 +199,7 @@ test_web_asset_create() {
 
     # *** start the power topology set of TC
 test_web_topo_p() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_p() $*"
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_p() $*"
     echo "----------- reset db: topology : power -----------"
     loaddb_file "$DB_BASE" && \
     LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
@@ -209,7 +209,7 @@ test_web_topo_p() {
 
     # *** start the location topology set of TC
 test_web_topo_l() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_l() $*"
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_l() $*"
     echo "---------- reset db: topology : location ---------"
     loaddb_file "$DB_BASE" && \
     LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
@@ -219,18 +219,37 @@ test_web_topo_l() {
 
 RESULT_OVERALL=0
 trap_cleanup(){
+    cleanTRAP_RES="${1-}"
+    [ -n "$cleanTRAP_RES" ] || cleanTRAP_RES=0
+    [ "$cleanTRAP_RES" = 0 ] && [ "$RESULT_OVERALL" != 0 ] && cleanTRAP_RES="$RESULT_OVERALL"
+
+    ci_loaddb_default || cleanTRAP_RES=$?
     # ***** RESULTS *****
     if [ "$RESULT_OVERALL" = 0 ]; then
-        logmsg_info "Overall result: SUCCESS"
+        logmsg_info "Overall test suite result: SUCCESS"
         if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
-            { logmsg_info "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}': SUCCESS"; \
+            { logmsg_info "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}' test suite: SUCCESS"; \
               echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY"
         fi
     else
-        logmsg_error "Overall result: FAILED ($RESULT_OVERALL), seek details above"
+        logmsg_error "Overall test suite result: FAILED ($RESULT_OVERALL), seek details above"
         if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
-            { logmsg_error "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}': FAILED ($RESULT_OVERALL)"; \
+            { logmsg_error "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}' test suite: FAILED ($RESULT_OVERALL)"; \
               echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY" 2>&1
+        fi
+    fi
+
+    if [ "$cleanTRAP_RES" = 0 ]; then
+        logmsg_info "Overall test-suite script result (including cleanup): SUCCESS"
+        if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
+            { logmsg_info "`date -u`: Finished and cleaned up '${_SCRIPT_NAME} ${_SCRIPT_ARGS}' test-suite script: SUCCESS"; \
+              echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY"
+        fi
+    else
+        logmsg_error "Overall test-suite script result (including cleanup): FAILED ($cleanTRAP_RES) seek details above"
+        if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
+            { logmsg_error "`date -u`: Finished and cleaned up '${_SCRIPT_NAME} ${_SCRIPT_ARGS}' test-suite script: FAILED ($cleanTRAP_RES)"; \
+          echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY" 2>&1
         fi
     fi
 
@@ -254,8 +273,8 @@ trap_cleanup(){
 # Ensure that no processes remain dangling when test completes
 # The ERRCODE is defined by settraps() as the program exitcode
 # as it enters the trap
-TRAP_SIGNALS=EXIT settraps 'echo "CI-EXIT: $0: test finished (up to the proper exit command)..." >&2; trap_cleanup'
-TRAP_SIGNALS="HUP INT QUIT TERM" settraps '[ "$ERRCODE" = 0 ] && ERRCODE=123; echo "CI-EXIT: $0: got signal, aborting test..." >&2; trap_cleanup && exit $ERRCODE'
+TRAP_SIGNALS=EXIT settraps 'ciTRAP_RES=$?; echo "CI-EXIT: $0: test finished (up to the proper exit($ciTRAP_RES) command)..." >&2; trap_cleanup $ciTRAP_RES'
+TRAP_SIGNALS="HUP INT QUIT TERM" settraps '[ "$ERRCODE" = 0 ] && ERRCODE=123; echo "CI-EXIT: $0: got signal, aborting test..." >&2; trap_cleanup $ERRCODE'
 
 [ x"${SKIP_LICENSE_FORCEACCEPT-}" = xyes ] && \
 logmsg_warn "SKIP_LICENSE_FORCEACCEPT=$SKIP_LICENSE_FORCEACCEPT so not running '00_license-CI-forceaccept.sh.test' first" || \
@@ -264,7 +283,7 @@ case "$*" in
         logmsg_warn "The tests requested on command line explicitly include 'license', so $0 will not interfere by running '00_license-CI-forceaccept.sh.test' first"
         ;;
     *) # Try to accept the BIOS license on server
-        init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "00_license-CI-forceaccept"
+        init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "00_license-CI-forceaccept"
         SKIP_SANITY=yes test_web 00_license-CI-forceaccept.sh.test || \
             if [ x"$CITEST_QUICKFAIL" = xyes ] ; then
                 die "BIOS license not accepted on the server, subsequent tests will fail"
