@@ -548,7 +548,7 @@ if [ -d "/etc/update-rc3.d/" ]; then
     for F in "/etc/update-rc3.d/"*.conf ; do
         if [ -s "$F" ] && [ -r "$F" ] ; then
             logmsg_info "Sourcing configuration file: '$F' ..."
-            . "$F" || die
+            . "$F" || logmsg_error "Possibly got an error sourcing '$F', see above..."
         fi
     done
 fi
