@@ -402,20 +402,22 @@ verify_threeway_checksum() (
             logmsg_info "The newest available image is '$IMAGE_URL' and we already have a good copy (as '$FILE_DATA')"
         return $?
     else
+        # In-place changes are not nice but can happen e.g. for FW images
         logmsg_info "Remote checksum is not good for '$FILE_CSNEW', local file is corrupted or obsolete and should be re-downloaded from '$IMAGE_URL'"
         RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
         return 1
     fi
 
+    # Here we do not have a new checksum value for whatever reason
     [ -n "$CSOLD" ] && \
     if verify_checksum "$FILE_DATA" "$FILE_CSOLD" ; then
         logmsg_info "Local checksum matched for '$FILE_CSOLD'"
         RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
         return 0
     else
-        # Ensuring against old checksum failed, so data file and its related
-        # files (checksums) should have been removed; keep the FILE_CSNEW
-        logmsg_info "Local checksum mismatched for '$FILE_CSOLD', local file is corrupted or obsolete and should be re-downloaded from '$IMAGE_URL'"
+        # Verifying against old checksum failed, so data file and its related
+        # files (checksums) should be removed; keep the FILE_CSNEW if available
+        logmsg_info "Local checksum mismatched for '$FILE_CSOLD', local file is corrupted and should be re-downloaded from '$IMAGE_URL'"
         RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
         return 1
     fi
