@@ -66,6 +66,7 @@ deploy_image_online() {
 
         echo "=== `date`: Deploying container '$VM' of type '$IMGTYPE' ..."
         virsh -c lxc:/// destroy "$VM"
+        umount /srv/libvirt/rootfs/"$VM"/proc 2>/dev/null
         rm -rf /srv/libvirt/rootfs/"$VM"
         mkdir /srv/libvirt/rootfs/"$VM" || return $?
         IMG_NAME="`wget -O - "$OBS_IMAGES_BASEURL/$IMGTYPE/$ARCH" | sed -n 's|.*>\(simpleimage.[0-9]*-[0-9]*.tar.gz\)<.*|\1|p'`" && \
