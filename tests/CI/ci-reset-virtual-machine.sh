@@ -728,12 +728,17 @@ if [ -n "${COPYHOST_USERS-}" ]; then
 	done
 fi
 
+if [ -s "../rootfs/$VM/usr/share/bios-web/git_details.txt" ]; then
+	logmsg_info "GIT details of 'bios-core' preinstalled as a package in '$VM':" \
+		"$(cat "../rootfs/$VM/usr/share/bios-web/git_details.txt")"
+fi
+
 logmsg_info "Pre-configuration of VM '$VM' ($IMGTYPE/$ARCH) is completed"
 if [ x"$DEPLOYONLY" = xyes ]; then
 	logmsg_info "DEPLOYONLY was requested, so ending" \
 		"'${_SCRIPT_PATH} ${_SCRIPT_ARGS}' now with exit-code '0'" >&2
 	[ "$INSTALL_DEV_PKGS" = yes ] && \
-		logmsg_info "Note that INSTALL_DEV_PKGS was requested - it is hereby skipped" >&2
+		logmsg_warn "Note that INSTALL_DEV_PKGS was requested - it is hereby skipped" >&2
 	exit 0
 fi
 
