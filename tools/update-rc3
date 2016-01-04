@@ -45,6 +45,7 @@ set -o pipefail
 
 # TODO: TFTP support, busybox can do it
 # TODO: Test with https - can require custom CA trust configuration, etc.
+# TODO: Use our common requester as a wrapper for real/busybox wget/curl
 [ -z "${SOURCESITEROOT-}" ] && SOURCESITEROOT='http://obs.roz53.lab.etn.com/images'
 [ -z "${SOURCESITEROOT_OSIMAGE-}" ] && SOURCESITEROOT_OSIMAGE="$SOURCESITEROOT/$IMGTYPE/$ARCH"
 
@@ -167,10 +168,13 @@ settraps() {
 remove_image() {
     # Remove the image file "$1" and its possible checksum patterns,
     # and the optional explicit checksum filename that can be in "$2"
+    # If the RETAIN_FILE variable is set, keep this file (downloaded new CS)
     [ x"${FLAG_CAN_REMOVE_IMAGES-}" = xno ] && \
         logmsg_info "FLAG_CAN_REMOVE_IMAGES=$FLAG_CAN_REMOVE_IMAGES so do not remove_image($*)" && \
         return 0
+    [ -n "$RETAIN_FILE" ] && [ -s "$RETAIN_FILE" ] && mv -f "$RETAIN_FILE" ".$$.$RETAIN_FILE"
     rm -f "$1"{,.md5,.sha,.sha1,.sha224,.sha256,.sha384,.sha512}{,-padded}{,.tmp} ${2:+"$2"}
+    [ -n "$RETAIN_FILE" ] && [ -s ".$$.$RETAIN_FILE" ] && mv -f ".$$.$RETAIN_FILE" "$RETAIN_FILE"
 }
 
 get_csalgo_from_filename() {
@@ -375,31 +379,29 @@ verify_threeway_checksum() (
     if verify_checksum "$FILE_DATA" "$FILE_CSNEW" ; then
         logmsg_info "Remote checksum is good for '`pwd`/$FILE_CSNEW', local copy was corrupted - replacing checksum file"
         mv -f "$FILE_CSNEW" "$FILE_CSOLD" && \
-        logmsg_info "The newest available image is '$IMAGE_URL' and we already have a good copy (as '$FILE_DATA')"
+            logmsg_info "The newest available image is '$IMAGE_URL' and we already have a good copy (as '$FILE_DATA')"
         return $?
     else
         logmsg_info "Remote checksum is not good for '`pwd`/$FILE_CSNEW', local file is corrupted or obsolete and should be re-downloaded from '$IMAGE_URL'"
-        [ -s "$FILE_CSNEW" ] && mv -f "$FILE_CSNEW" ".$$.$FILE_CSNEW"
-        remove_image "$FILE_DATA"
-        [ -s ".$$.$FILE_CSNEW" ] && mv -f ".$$.$FILE_CSNEW" "$FILE_CSNEW"
+        RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
         return 1
     fi
 
     [ -n "$CSOLD" ] && \
     if verify_checksum "$FILE_DATA" "$FILE_CSOLD" ; then
         logmsg_info "Local checksum matched for '`pwd`/$FILE_CSOLD'"
+        RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
         return 0
     else
         # Ensuring against old checksum failed, so data file and its related
         # files (checksums) should have been removed; keep the FILE_CSNEW
         logmsg_info "Local checksum mismatched for '`pwd`/$FILE_CSOLD', local file is corrupted or obsolete and should be re-downloaded from '$IMAGE_URL'"
-        [ -s "$FILE_CSNEW" ] && mv -f "$FILE_CSNEW" ".$$.$FILE_CSNEW"
-        remove_image "$FILE_DATA"
-        [ -s ".$$.$FILE_CSNEW" ] && mv -f ".$$.$FILE_CSNEW" "$FILE_CSNEW"
+        RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
         return 1
     fi
 
-    logmsg_info "Neither path of three-way verification has succeeded for $FILE_DATA', it should be re-downloaded from '$IMAGE_URL'"
+    logmsg_info "Neither path of three-way verification has succeeded for '$FILE_DATA', it should be re-downloaded from '$IMAGE_URL'"
+    RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
     return 1
 )
 
