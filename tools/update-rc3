@@ -281,64 +281,126 @@ ensure_checksum() {
     return 0
 }
 
-threeway_checksum() (
-    # We can have (or not) a local copy of the data file "$1", a local copy
-    # of the checksum file "$2", and a freshly fetched copy of remote checksum
-    # file "$3" (usually an *.algo.tmp); all previously downloaded by caller.
+verify_threeway_checksum() (
+    # We can have (or not) a local copy of the data file "$2", a local copy
+    # of the checksum file "$3", and a freshly fetched copy of remote checksum
+    # file "$4" (usually an *.algo.tmp); all previously downloaded by caller
+    # from URL in "$1".
     # Return codes:
     #   0       OK, local data and checksum files are (now) consistent, keep'em
-    #   1       ERROR, local files inconsistent or missing, re-pull from remote!
+    #   1       ERROR, local files inconsistent (removed), re-pull from remote!
+    #   2       ERROR, some prerequisites missing, etc.
     # Verify if any of these files match together (in a destructive manner):
     # * If some of the files are not available:
     # ** data file - fail (must download all bits)
     # ** both checksums - fail (legacy mode allowed no checksums, now not so)
     # ** local checksum - fall through (only compare to remote checksum then)
     # ** remote checksum - fall through (only compare to local checksum then)
-    # * If two checksums are the same, remove the newly downloaded one; ELSE:
-    # ** If the local checksum does not match the file, and the remote checksum
-    #    does match - assume it authoritative and local one broken (overwrite)
-    # ** If neither checksum matches - kill local data and return error
-    # * If the local CS+DATA do NOT match together, kill them and return error
+    # * If two checksums are the same (both in algo and value), remove the
+    #   newly downloaded one and fall through for verifications
+    # * If the remote checksum file exists (thus different from local) and
+    #   a checksum value is detected from it:
+    # ** If the remote checksum value does match the file - assume it to be
+    #    authoritative and local one possibly broken (overwrite checksum file)
+    # ** If the remote checksum does not match, assume the source file updated
+    #    in-place on the remote source - kill local data and return error
     #    (caller would pull remote files)
+    # * If the local CS+DATA do NOT match together, kill them and return error
+    # * If neither checksum matches - kill local data and return error
 
-    # Basenames of data and checksum files (under current dir set by caller)
-    # Theoretically checksums may be from different algorithms
-    FILE_DATA="$1"
-    FILE_CSOLD="$2"
-    FILE_CSNEW="$3"
+    # The IMAGE_URL_BASENAME_EXT (on remote site with hierarchical structure)
+    # may be different from local FILE_DATA name (with flattened structure).
+    IMAGE_URL="$1"
+    # Basenames of data and checksum files (under current dir set by caller).
+    # Theoretically checksums may be from different algorithms (see extension).
+    FILE_DATA="$2"
+    FILE_CSOLD="$3"
+    FILE_CSNEW="$4"
+
+    [ -n "$IMAGE_URL" ] && \
+    IMAGE_URL_BASENAME="`basename "$IMAGE_URL" ".${EXT}"`" && \
+    [ -n "$IMAGE_URL_BASENAME" ] && \
+    IMAGE_URL_BASENAME_EXT="${IMAGE_URL_BASENAME}.${EXT}" || \
+        { logmsg_warn "Could not resolve IMAGE_URL value '$IMAGE_URL' into a filename"
+          IMAGE_URL=""; IMAGE_URL_BASENAME=""; IMAGE_URL_BASENAME_EXT=""; }
 
     if [ ! -s "$FILE_DATA" ] ; then
         logmsg_info "Local data file '`pwd`/$FILE_DATA' is missing"
-        return 1
+        return 2
     fi
 
     if [ ! -s "$FILE_CSOLD" ] && [ ! -s "$FILE_CSNEW" ] ; then
-        logmsg_info "Both local checksum files '`pwd`/$FILE_CSOLD' and '`pwd`/$FILE_CSNEW' are missing"
-        return 1
+        logmsg_info "Both checksum files '`pwd`/$FILE_CSOLD' and '`pwd`/$FILE_CSNEW' are missing"
+        return 2
     fi
 
+    # If checksum files are available, try to get checksum values using the
+    # current (local) or maybe original (remote from IMAGE_URL) filename.
     [ -s "$FILE_CSOLD" ] && \
         CSOLDALGO="`get_csalgo_from_filename "$FILE_CSOLD"`" && \
-        CSOLD="`expected_checksum "$FILE_DATA" "$FILE_CSOLD"`" \
-        || { CSOLD=""; CSOLDALGO=""; }
+        { CSOLD="`expected_checksum "$FILE_DATA" "$FILE_CSOLD"`" || \
+          CSOLD="`[ -z "$IMAGE_URL_BASENAME_EXT" ] && [ x"$FILE_DATA" != x"$IMAGE_URL_BASENAME_EXT" ] && expected_checksum "$IMAGE_URL_BASENAME_EXT" "$FILE_CSOLD"`" ; } || \
+        { CSOLD=""; CSOLDALGO=""; logmsg_info "Local checksum file '`pwd`/$FILE_CSOLD' is missing"; }
+
     [ -s "$FILE_CSNEW" ] && \
         CSNEWALGO="`get_csalgo_from_filename "$FILE_CSNEW"`" && \
-        CSNEW="`expected_checksum "$FILE_DATA" "$FILE_CSNEW"`" \
-        || { CSNEW=""; CSNEWALGO=""; }
+        { CSNEW="`expected_checksum "$FILE_DATA" "$FILE_CSNEW"`" || \
+          CSNEW="`[ -z "$IMAGE_URL_BASENAME_EXT" ] && [ x"$FILE_DATA" != x"$IMAGE_URL_BASENAME_EXT" ] && expected_checksum "$IMAGE_URL_BASENAME_EXT" "$FILE_CSNEW"`" ; } || \
+        { CSNEW=""; CSNEWALGO=""; logmsg_info "Remote checksum file '`pwd`/$FILE_CSNEW' is missing"; }
 
+    if [ -z "$CSNEW" ] && [ -z "$CSOLD" ]; then
+        logmsg_info "Could not get usable checksum values from both checksum files: '`pwd`/$FILE_CSOLD' and '`pwd`/$FILE_CSNEW'"
+        return 2
+    fi
+
+    # Now that we have a validated request, do the actual suite of comparisons.
     if [ -n "$CSNEWALGO" ] && [ -n "$CSNEW" ] && \
        [ -n "$CSOLDALGO" ] && [ -n "$CSOLD" ] \
     ; then
         if [ x"$CSNEWALGO" = x"$CSOLDALGO" ]; then
-            if [ "$CSNEW" ="$CSOLD" ]; then
+            if [ x"$CSNEW" = x"$CSOLD" ]; then
+                # Keep old checksum file and fall through
                 rm -f "$FILE_CSNEW"
+                CSNEW=""
+                CSNEWALGO=""
             else
-                logmsg_warn "Old and new checksum values differ: '$CSOLD' vs '$CSNEW' (algo is the same '$CSOLDALGO')"
+                logmsg_warn "Old and new checksum values differ with same algo ($CSOLDALGO): '$CSOLD' vs '$CSNEW'"
             fi
         else
-            logmsg_warn "Old and new checksum files have different algorithms: '$CSOLDALGO' vs '$CSNEWALGO' (so not comparable directly)"
+            logmsg_warn "Old and new checksum files have different algorithms: '$CSOLDALGO' vs '$CSNEWALGO' (so values are not comparable directly)"
         fi
     fi
+
+    [ -n "$CSNEW" ] && \
+    if verify_checksum "$FILE_DATA" "$FILE_CSNEW" ; then
+        logmsg_info "Remote checksum is good for '`pwd`/$FILE_CSNEW', local copy was corrupted - replacing checksum file"
+        mv -f "$FILE_CSNEW" "$FILE_CSOLD" && \
+        logmsg_info "The newest available image is '$IMAGE_URL' and we already have a good copy (as '$FILE_DATA')"
+        return $?
+    else
+        logmsg_info "Remote checksum is not good for '`pwd`/$FILE_CSNEW', local file is corrupted or obsolete and should be re-downloaded from '$IMAGE_URL'"
+        [ -s "$FILE_CSNEW" ] && mv -f "$FILE_CSNEW" ".$$.$FILE_CSNEW"
+        remove_image "$FILE_DATA"
+        [ -s ".$$.$FILE_CSNEW" ] && mv -f ".$$.$FILE_CSNEW" "$FILE_CSNEW"
+        return 1
+    fi
+
+    [ -n "$CSOLD" ] && \
+    if verify_checksum "$FILE_DATA" "$FILE_CSOLD" ; then
+        logmsg_info "Local checksum matched for '`pwd`/$FILE_CSOLD'"
+        return 0
+    else
+        # Ensuring against old checksum failed, so data file and its related
+        # files (checksums) should have been removed; keep the FILE_CSNEW
+        logmsg_info "Local checksum mismatched for '`pwd`/$FILE_CSOLD', local file is corrupted or obsolete and should be re-downloaded from '$IMAGE_URL'"
+        [ -s "$FILE_CSNEW" ] && mv -f "$FILE_CSNEW" ".$$.$FILE_CSNEW"
+        remove_image "$FILE_DATA"
+        [ -s ".$$.$FILE_CSNEW" ] && mv -f ".$$.$FILE_CSNEW" "$FILE_CSNEW"
+        return 1
+    fi
+
+    logmsg_info "Neither path of three-way verification has succeeded for $FILE_DATA', it should be re-downloaded from '$IMAGE_URL'"
+    return 1
 )
 
 findnewest_osimage() (
