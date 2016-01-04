@@ -28,8 +28,70 @@ echo "********* 00_license.sh **************************** START ***************
 echo "###################################################################################################"
 echo
 
-# remove the license file, if exists, license not accepted in result
-sut_run "rm -f /var/lib/bios/license $BUILDSUBDIR/var/bios/license $CHECKOUTDIR/var/bios/license" || true
+test_it "license-related directories should exist"
+# TODO: Writability by *specific* account - not checked so far
+RES=0
+echo "SUT_IS_REMOTE =   $SUT_IS_REMOTE"
+if [ "$SUT_IS_REMOTE" = yes ]; then
+    ( ALTROOT=/ . "$CHECKOUTDIR/tests/CI/run_tntnet_packaged.env" && \
+      [ -n "$DATADIR" ] && [ -n "$LICENSE_DIR" ] && [ -n "$TESTPASS" ] && \
+      echo "DATADIR     =     $DATADIR" && \
+      echo "LICENSE_DIR =     $LICENSE_DIR" && \
+      echo "TESTPASS    =     $TESTPASS" && \
+      sut_run "ls -al '${DATADIR}' '${LICENSE_DIR}' && [ -d '${DATADIR}' ] && [ -d '${LICENSE_DIR}' ] && [ -w '${DATADIR}' ] && [ -w '${LICENSE_DIR}' ]"
+    ) || RES=$?
+else
+    ( . "$BUILDSUBDIR/tests/CI/run_tntnet_make.env" && \
+      [ -n "$DATADIR" ] && [ -n "$LICENSE_DIR" ] && [ -n "$TESTPASS" ] && \
+      echo "DATADIR     =     $DATADIR" && \
+      echo "LICENSE_DIR =     $LICENSE_DIR" && \
+      echo "TESTPASS    =     $TESTPASS" && \
+      ls -al "${DATADIR}" "${LICENSE_DIR}" && \
+      [ -d "${DATADIR}" ] && [ -d "${LICENSE_DIR}" ] && \
+      [ -w "${DATADIR}" ] && [ -w "${LICENSE_DIR}" ]
+    ) || RES=$?
+fi
+[ "$RES" != 0 ] && logmsg_error "Something is wrong with 'run_tntnet*.env' settings files or with license-related directories or with access settings, tests below are likely to fail!"
+print_result $RES
+
+test_it "verify that license/current is a symlink to a not-empty readable file"
+RES=0
+if [ "$SUT_IS_REMOTE" = yes ]; then
+    ( ALTROOT=/ . "$CHECKOUTDIR/tests/CI/run_tntnet_packaged.env" && [ -n "$LICENSE_DIR" ] && \
+      sut_run "[ -s '${LICENSE_DIR}/current' ] && [ -r '${LICENSE_DIR}/current' ] && [ -h '${LICENSE_DIR}/current' ]"
+    ) || RES=$?
+else
+    ( . "$BUILDSUBDIR/tests/CI/run_tntnet_make.env" && [ -n "$LICENSE_DIR" ] && \
+      [ -s "${LICENSE_DIR}/current" ] && \
+      [ -r "${LICENSE_DIR}/current" ] && \
+      [ -h "${LICENSE_DIR}/current" ]
+    ) || RES=$?
+fi
+print_result $RES
+
+test_it "verify that license/1.0 is a not-empty readable file (or symlink to one)"
+RES=0
+if [ "$SUT_IS_REMOTE" = yes ]; then
+    ( ALTROOT=/ . "$CHECKOUTDIR/tests/CI/run_tntnet_packaged.env" && [ -n "$LICENSE_DIR" ] && \
+      sut_run "[ -s '${LICENSE_DIR}/1.0' ] && [ -r '${LICENSE_DIR}/1.0' ]"
+    ) || RES=$?
+else
+    ( . "$BUILDSUBDIR/tests/CI/run_tntnet_make.env" && [ -n "$LICENSE_DIR" ] && \
+      [ -s "${LICENSE_DIR}/1.0" ] && \
+      [ -r "${LICENSE_DIR}/1.0" ]
+    ) || RES=$?
+fi
+print_result $RES
+
+logmsg_info "Removing the license file before test, if exists: license becomes not-accepted"
+if [ "$SUT_IS_REMOTE" = yes ]; then
+    ( ALTROOT=/ . "$CHECKOUTDIR/tests/CI/run_tntnet_packaged.env" && [ -n "$DATADIR" ] && \
+      sut_run "rm -f '${DATADIR}/license'" ) || true
+else
+    ( . "$BUILDSUBDIR/tests/CI/run_tntnet_make.env" && [ -n "$DATADIR" ] && \
+      rm -f "${DATADIR}"/license ) || true
+fi
+
 
 echo "********* 00_license.sh ***************************************************************************"
 echo "********* 1. license_status_not_ok ****************************************************************"
@@ -87,9 +149,9 @@ test_it "license_text"
 TEXT="`api_get_content '/admin/license' | egrep -ic 'GNU|EATON'`"
 echo "TEXT = $TEXT (matched lines in license text)"
 if [ "$TEXT" -gt 0 ]; then
-   echo '{"text":"yes"}'
+    echo '{"text":"yes"}'
 else
-   echo '{"text":"no"}'
+    echo '{"text":"no"}'
 fi >&5
 [ "$TEXT" -gt 0 ]
 print_result $?
@@ -99,26 +161,48 @@ echo "********* 8. missing_license_text ****************************************
 echo "***************************************************************************************************"
 #*#*#*#*#* 00_license.sh - subtest 8 - TODO, 500?
 test_it "missing_license_text"
-logmsg_info "Prepare test conditions: remove the license text file"
+logmsg_info "Prepare test conditions: remove the license text file (which the current symlink points to)"
+RES=0
 if [ "$SUT_IS_REMOTE" = yes ]; then
     # TODO: Maybe this should consider Eaton EULA as well/instead
-    sut_run "mv -f /usr/share/bios/license/current /usr/share/bios/license/org-current ; mv -f /usr/share/bios/license/1.0 /usr/share/bios/license/org-1.0"
+    #sut_run "mv -f /usr/share/bios/license/current /usr/share/bios/license/org-current ; mv -f /usr/share/bios/license/1.0 /usr/share/bios/license/org-1.0"
+    ( ALTROOT=/ . "$CHECKOUTDIR/tests/CI/run_tntnet_packaged.env" && \
+      [ -n "$LICENSE_DIR" ] && \
+      sut_run "mv -f '${LICENSE_DIR}/current' '${LICENSE_DIR}/x-current' && mv -f '${LICENSE_DIR}/1.0' '${LICENSE_DIR}/x-1.0' && [ ! -e '${LICENSE_DIR}/current' ]"
+    ) || { RES=$?; logmsg_error "Could not prepare the remote/VTE test well"; }
 else
     echo "BUILDSUBDIR =     $BUILDSUBDIR"
     # Tests for local-source builds: license data are in $BUILDSUBDIR/tests/fixtures/license and are symlinks to the ../../../COPYING file
-    mv -f "$BUILDSUBDIR/COPYING" "$BUILDSUBDIR/org-COPYING"
+    mv -f "$BUILDSUBDIR/COPYING" "$BUILDSUBDIR/org-COPYING" \
+      || { RES=$?; logmsg_error "Could not prepare the local/CI test well"; }
+    ( . "$BUILDSUBDIR/tests/CI/run_tntnet_make.env" && \
+      [ -n "$LICENSE_DIR" ] && \
+      mv -f "${LICENSE_DIR}/current" "${LICENSE_DIR}/x-current" && \
+      mv -f "${LICENSE_DIR}/1.0" "${LICENSE_DIR}/x-1.0" && \
+      [ ! -e "${LICENSE_DIR}/current" ]
+    ) || { RES=$?; logmsg_error "Could not prepare the local/CI test well"; }
 fi # SUT_IS_REMOTE
+
 ### This GET should produce an error message in JSON about missing file
 curlfail_push_expect_500
 logmsg_info "Try to read license (should fail)"
-CITEST_QUICKFAIL=no WEBLIB_QUICKFAIL=no WEBLIB_CURLFAIL=no api_get_json '/admin/license' >&5
-RES=$?
+CITEST_QUICKFAIL=no WEBLIB_QUICKFAIL=no WEBLIB_CURLFAIL=no api_get_json '/admin/license' >&5 || RES=$?
 curlfail_pop
+
 logmsg_info "Clean up after test (restore license file)..."
 if [ "$SUT_IS_REMOTE" = yes ]; then
-    sut_run "mv -f /usr/share/bios/license/org-current /usr/share/bios/license/current ; mv -f /usr/share/bios/license/org-1.0 /usr/share/bios/license/1.0"
+    ( ALTROOT=/ . "$CHECKOUTDIR/tests/CI/run_tntnet_packaged.env" && \
+      [ -n "$LICENSE_DIR" ] && \
+      sut_run "mv -f '${LICENSE_DIR}/x-current' '${LICENSE_DIR}/current' && mv -f '${LICENSE_DIR}/x-1.0' '${LICENSE_DIR}/1.0'"
+    ) || { RES=$?; logmsg_error "Could not un-prepare the remote/VTE test well"; }
 else
-    mv -f "$BUILDSUBDIR/org-COPYING" "$BUILDSUBDIR/COPYING"
+    mv -f "$BUILDSUBDIR/org-COPYING" "$BUILDSUBDIR/COPYING" \
+      || { RES=$?; logmsg_error "Could not un-prepare the local/CI test well"; }
+    ( . "$BUILDSUBDIR/tests/CI/run_tntnet_make.env" && \
+      [ -n "$LICENSE_DIR" ] && \
+      mv -f "${LICENSE_DIR}/x-current" "${LICENSE_DIR}/current" && \
+      mv -f "${LICENSE_DIR}/x-1.0" "${LICENSE_DIR}/1.0"
+    ) || { RES=$?; logmsg_error "Could not un-prepare the local/CI test well"; }
 fi # SUT_IS_REMOTE
 print_result $RES
 
@@ -132,38 +216,95 @@ print_result $?
 curlfail_pop
 
 echo "********* 00_license.sh ***************************************************************************"
-echo "********* 10. cannot save the license *************************************************************"
+echo "********* 10a. cannot save the license if current_license file is not a symlink *******************"
 echo "***************************************************************************************************"
 #*#*#*#*#* 00_license.sh - subtest 10 - TODO, 500?
 #    echo '{"errors":[{"message":"Internal Server Error. Error saving license acceptance or getting license version, check integrity of storage.","code":42}]}' >&5
 
-test_it "cannot save the license"
+test_it "cannot save the accepted_license if current_license is not a symlink"
 curlfail_push_expect_500
+RES=0
+# Make ".../license/current" a file instead of symlink (so we can not find
+# the license version number with our current approach and expectations).
+# TODO: Manupulations with /var/lib/bios directory should be better locked
+# against intermittent errors (test if src/tgt dirs exist, etc.)
+logmsg_info "Prepare test conditions: current_license becomes a file, not symlink..."
+if [ "$SUT_IS_REMOTE" = yes ]; then
+    ( ALTROOT=/ . "$CHECKOUTDIR/tests/CI/run_tntnet_packaged.env" && \
+      [ -n "$LICENSE_DIR" ] && \
+      sut_run "mv -f '${LICENSE_DIR}/current' '${LICENSE_DIR}/x-current' && echo TEST > '${LICENSE_DIR}/current' && [ -s '${LICENSE_DIR}/current' ] && [ ! -h '${LICENSE_DIR}/current' ]"
+    ) || { RES=$?; logmsg_error "Could not prepare the remote/VTE test well"; }
+else
+    ( . "$BUILDSUBDIR/tests/CI/run_tntnet_make.env" && \
+      [ -n "$LICENSE_DIR" ] && \
+      mv -f "${LICENSE_DIR}/current" "${LICENSE_DIR}/x-current" && \
+      echo TEST > "${LICENSE_DIR}/current" && \
+      [ -s "${LICENSE_DIR}/current" ] && \
+      [ ! -h "${LICENSE_DIR}/current" ]
+    ) || { RES=$?; logmsg_error "Could not prepare the local/CI test well"; }
+fi # SUT_IS_REMOTE
+logmsg_info "Try to accept license (should fail)"
+CITEST_QUICKFAIL=no WEBLIB_QUICKFAIL=no WEBLIB_CURLFAIL=no api_auth_post_json '/admin/license' "foobar" >&5 || RES=$?
+curlfail_pop
+logmsg_info "Clean up after test (restore directory for license and other data)..."
+if [ "$SUT_IS_REMOTE" = yes ]; then
+    # TODO: Maybe this should consider Eaton EULA as well/instead
+    ( ALTROOT=/ . "$CHECKOUTDIR/tests/CI/run_tntnet_packaged.env" && \
+      [ -n "$LICENSE_DIR" ] && \
+      sut_run "rm -f '${LICENSE_DIR}/current' && mv -f  '${LICENSE_DIR}/x-current' '${LICENSE_DIR}/current' && [ -h '${LICENSE_DIR}/current' ] && [ -s '${LICENSE_DIR}/current' ] && [ -r '${LICENSE_DIR}/current' ]"
+    ) || { RES=$?; logmsg_error "Could not un-prepare the remote/VTE test well"; }
+else
+    ( . "$BUILDSUBDIR/tests/CI/run_tntnet_make.env" && \
+      [ -n "$LICENSE_DIR" ] && \
+      rm -f "${LICENSE_DIR}/current" && \
+      mv -f "${LICENSE_DIR}/x-current" "${LICENSE_DIR}/current" && \
+      [ -h "${LICENSE_DIR}/current" ] && \
+      [ -s "${LICENSE_DIR}/current" ] && \
+      [ -r "${LICENSE_DIR}/current" ]
+    ) || { RES=$?; logmsg_error "Could not un-prepare the local/CI test well"; }
+fi # SUT_IS_REMOTE
+print_result $RES
+
+echo "********* 00_license.sh ***************************************************************************"
+echo "********* 10b. cannot save the license into a non-directory ***************************************"
+echo "***************************************************************************************************"
+#*#*#*#*#* 00_license.sh - subtest 10 - TODO, 500?
+#    echo '{"errors":[{"message":"Internal Server Error. Error saving license acceptance or getting license version, check integrity of storage.","code":42}]}' >&5
+
+test_it "cannot save the license into a non-directory"
+curlfail_push_expect_500
+RES=0
 # Make it a file instead of directory (so no file can be created under it)
 # TODO: Manupulations with /var/lib/bios directory should be better locked
 # against intermittent errors (test if src/tgt dirs exist, etc.)
 logmsg_info "Prepare test conditions: location for license becomes a file, not directory..."
 if [ "$SUT_IS_REMOTE" = yes ]; then
     # TODO: Maybe this should consider Eaton EULA as well/instead
-    sut_run "rm -f /var/lib/bios/license ; mv -f /var/lib/bios /var/lib/bios.x ; touch /var/lib/bios || true"
+    ( ALTROOT=/ . "$CHECKOUTDIR/tests/CI/run_tntnet_packaged.env" && [ -n "$DATADIR" ] && \
+      sut_run "rm -f '${DATADIR}/license' && mv -f '${DATADIR}' '${DATADIR}'.x && echo qwe > '${DATADIR}'" \
+    ) || { RES=$?; logmsg_error "Could not prepare the remote/VTE test well"; }
 else
-    echo "CHECKOUTDIR =     $CHECKOUTDIR"
-    echo "BUILDSUBDIR =     $BUILDSUBDIR"
     # Tests for local-source builds: license data are in $BUILDSUBDIR/tests/fixtures/license and are symlinks to the ../../../COPYING file
-    rm -f /var/lib/bios/license $BUILDSUBDIR/var/bios/license $CHECKOUTDIR/var/bios/license; rm -rf $BUILDSUBDIR/var/bios $CHECKOUTDIR/var/bios; mv -f /var/lib/bios /var/lib/bios.x ; touch /var/lib/bios $CHECKOUTDIR/var/bios $BUILDSUBDIR/var/bios || true
+    ( . "$BUILDSUBDIR/tests/CI/run_tntnet_make.env" && [ -n "$DATADIR" ] && { \
+        rm -f "${DATADIR}"/license && \
+        mv -f "${DATADIR}" "${DATADIR}".x && \
+        echo qwe > "${DATADIR}"
+      } ) || { RES=$?; logmsg_error "Could not prepare the local/CI test well"; }
 fi # SUT_IS_REMOTE
 logmsg_info "Try to accept license (should fail)"
-CITEST_QUICKFAIL=no WEBLIB_QUICKFAIL=no WEBLIB_CURLFAIL=no api_auth_post_json '/admin/license' "foobar" >&5
-RES=$?
+CITEST_QUICKFAIL=no WEBLIB_QUICKFAIL=no WEBLIB_CURLFAIL=no api_auth_post_json '/admin/license' "foobar" >&5 || RES=$?
 curlfail_pop
 logmsg_info "Clean up after test (restore directory for license and other data)..."
 if [ "$SUT_IS_REMOTE" = yes ]; then
     # TODO: Maybe this should consider Eaton EULA as well/instead
-    sut_run "rm -f /var/lib/bios; mv -f /var/lib/bios.x /var/lib/bios"
+    ( ALTROOT=/ . "$CHECKOUTDIR/tests/CI/run_tntnet_packaged.env" && [ -n "$DATADIR" ] && \
+      sut_run "rm -f '${DATADIR}' && mv -f '${DATADIR}'.x '${DATADIR}'"
+    ) || { RES=$?; logmsg_error "Could not un-prepare the remote/VTE test well"; }
 else
-    echo "CHECKOUTDIR =     $CHECKOUTDIR"
-    echo "BUILDSUBDIR =     $BUILDSUBDIR"
-    rm -f /var/lib/bios $BUILDSUBDIR/var/bios $CHECKOUTDIR/var/bios;mkdir $CHECKOUTDIR/var/bios $BUILDSUBDIR/var/bios || true; mv -f /var/lib/bios.x /var/lib/bios
+    ( . "$BUILDSUBDIR/tests/CI/run_tntnet_make.env" && [ -n "$DATADIR" ] && { \
+        rm -f "${DATADIR}" && \
+        mv -f "${DATADIR}".x "${DATADIR}"
+      } ) || { RES=$?; logmsg_error "Could not un-prepare the local/CI test well"; }
 fi # SUT_IS_REMOTE
 print_result $RES
 

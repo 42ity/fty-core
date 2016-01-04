@@ -8,4 +8,5 @@
 {"errors":[{"message":"Internal Server Error. Error reading license file, check integrity of storage.","code":42}]}
 {"errors":[{"message":"Http method 'DELETE' not allowed.","code":45}]}
 {"errors":[{"message":"Internal Server Error. Error saving license acceptance or getting license version, check integrity of storage.","code":42}]}
+{"errors":[{"message":"Internal Server Error. Error saving license acceptance or getting license version, check integrity of storage.","code":42}]}
 {"success":"License version 1.0 accepted."}

@@ -217,6 +217,7 @@ test_web_topo_l() {
     test_web "$@"
 }
 
+RESULT_OVERALL=0
 trap_cleanup(){
     # ***** RESULTS *****
     if [ "$RESULT_OVERALL" = 0 ]; then
@@ -256,18 +257,25 @@ trap_cleanup(){
 TRAP_SIGNALS=EXIT settraps 'echo "CI-EXIT: $0: test finished (up to the proper exit command)..." >&2; trap_cleanup'
 TRAP_SIGNALS="HUP INT QUIT TERM" settraps '[ "$ERRCODE" = 0 ] && ERRCODE=123; echo "CI-EXIT: $0: got signal, aborting test..." >&2; trap_cleanup && exit $ERRCODE'
 
-# Try to accept the BIOS license on server
-init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "00_license-CI-forceaccept"
-SKIP_SANITY=yes test_web 00_license-CI-forceaccept.sh.test || \
-    if [ x"$CITEST_QUICKFAIL" = xyes ] ; then
-        die "BIOS license not accepted on the server, subsequent tests will fail"
-    else
-        logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
-    fi
+[ x"${SKIP_LICENSE_FORCEACCEPT-}" = xyes ] && \
+logmsg_warn "SKIP_LICENSE_FORCEACCEPT=$SKIP_LICENSE_FORCEACCEPT so not running '00_license-CI-forceaccept.sh.test' first" || \
+case "$*" in
+    *license*) # We are specifically testing license stuff
+        logmsg_warn "The tests requested on command line explicitly include 'license', so $0 will not interfere by running '00_license-CI-forceaccept.sh.test' first"
+        ;;
+    *) # Try to accept the BIOS license on server
+        init_summarizeTestlibResults "${BUILDSUBDIR}/`basename "${_SCRIPT_NAME}" .sh`.log" "00_license-CI-forceaccept"
+        SKIP_SANITY=yes test_web 00_license-CI-forceaccept.sh.test || \
+            if [ x"$CITEST_QUICKFAIL" = xyes ] ; then
+                die "BIOS license not accepted on the server, subsequent tests will fail"
+            else
+                logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+            fi
+        ;;
+esac
 
 # ***** PERFORM THE TESTCASES *****
 set +e
-RESULT_OVERALL=0
 
 
 # do the test
@@ -276,32 +284,35 @@ if [ $# = 0 ]; then
     # *** start the default TC's instead of subsequent topology tests
     test_web_default -topology -asset_create || RESULT_OVERALL=$?
     # *** start the asset_create TC's
-    [ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] && \
-    test_web_asset_create asset_create || RESULT_OVERALL=$?
+    if [ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] ; then
+        test_web_asset_create asset_create || RESULT_OVERALL=$?
+    fi
     # *** start power topology TC's
-    [ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] && \
-    test_web_topo_p topology_power || RESULT_OVERALL=$?
+    if [ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] ; then
+        test_web_topo_p topology_power || RESULT_OVERALL=$?
+    fi
     # *** start location topology TC's
-    [ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] && \
-    test_web_topo_l topology_location || RESULT_OVERALL=$?
+    if [ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] ; then
+        test_web_topo_l topology_location || RESULT_OVERALL=$?
+    fi
 else
     # selective test routine
     while [ $# -gt 0 ]; do
         case "$1" in
             topology_power*)
-                test_web_topo_p "$1"
+                test_web_topo_p "$1" || \
                 RESULT_OVERALL=$? ;;
             topology_location*)
-                test_web_topo_l "$1"
+                test_web_topo_l "$1" || \
                 RESULT_OVERALL=$? ;;
             asset_create*)
-                test_web_asset_create "$1"
+                test_web_asset_create "$1" || \
                 RESULT_OVERALL=$? ;;
-            *)        test_web_default "$1"
+            *)  test_web_default "$1" || \
                 RESULT_OVERALL=$? ;;
         esac
         shift
-        [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" != xno ] && break
+        [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && break
     done
 fi
 
