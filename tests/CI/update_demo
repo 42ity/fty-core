@@ -64,6 +64,7 @@ deploy_image_online() {
                    ;;
         esac
 
+        echo "=== `date`: Deploying container '$VM' of type '$IMGTYPE' ..."
         virsh -c lxc:/// destroy "$VM"
         rm -rf /srv/libvirt/rootfs/"$VM"
         mkdir /srv/libvirt/rootfs/"$VM" || return $?
@@ -77,9 +78,11 @@ deploy_image_online() {
                 echo "WARN: Got an error($?) copying PEM file '$PEMFILE', continuing" >&2
         fi
         if [ x"$STARTFLAG" = xstart ] ; then
+                echo "=== `date`: Booting container '$VM' of type '$IMGTYPE' ..."
                 virsh -c lxc:/// start "$VM"
                 return $?
         fi
+        echo "=== `date`: Done without booting container '$VM' of type '$IMGTYPE'"
         return 0
 }
 
