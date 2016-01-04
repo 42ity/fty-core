@@ -83,17 +83,14 @@ print_result $?
 curlfail_pop
 No="$(expr $No + 1)"
 
-# XXX this doesn't work correctly
-# json in res is incorrect for now
-# expected SUCCESS for now, but it should be 404
 echo "********* asset_delete_one_item.sh ****************************************************************"
 echo "********* ${No}. Unauthorized_delete_devices **********************************************************"
 echo "***************************************************************************************************"
 test_it "Unauthorized_delete_devices"
-#curlfail_push_expect_404
+curlfail_push_expect_404
 api_delete_json /asset/31  >&5
 print_result $?
-#curlfail_pop
+curlfail_pop
 No="$(expr $No + 1)"
 
 echo "********* asset_delete_one_item.sh ****************************************************************"
