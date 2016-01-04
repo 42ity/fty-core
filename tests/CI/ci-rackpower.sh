@@ -215,8 +215,10 @@ for UPS in $UPS1 $UPS2 ; do
         esac
         TP="$(awk -vX=${LASTPOW[0]} -vY=${LASTPOW[1]} 'BEGIN{ print X + Y; }')"
         # TODO: parametrize
-        # TODO: use weblib.sh
+        # TODO: use weblib.sh and proper BASE_URL and accept_license()
         # Try to accept the BIOS license on server
+        [ x"${SKIP_LICENSE_FORCEACCEPT-}" = xyes ] && \
+        logmsg_warn "SKIP_LICENSE_FORCEACCEPT=$SKIP_LICENSE_FORCEACCEPT so not running '00_license-CI-forceaccept.sh.test' first" || \
         ( BASE_URL='http://127.0.0.1:8000/api/v1'; export BASE_URL
           . "`dirname $0`"/weblib.sh && \
           . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
