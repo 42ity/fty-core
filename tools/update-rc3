@@ -109,6 +109,7 @@ usage() {
     echo "                   If download-image of this type was requested and successful,"
     echo "                   or if download was not requested at all, remove all but the"
     echo "                   newest (alphabetcally) image file from the recovery location"
+    echo "  --no-remove-files         Skip removing image files deemed corrupt or obsolete"
 # TODO ...
 }
 
@@ -166,6 +167,9 @@ settraps() {
 remove_image() {
     # Remove the image file "$1" and its possible checksum patterns,
     # and the optional explicit checksum filename that can be in "$2"
+    [ x"${FLAG_CAN_REMOVE_IMAGES-}" = xno ] && \
+        logmsg_info "FLAG_CAN_REMOVE_IMAGES=$FLAG_CAN_REMOVE_IMAGES so do not remove_image($*)" && \
+        return 0
     rm -f "$1"{,.md5,.sha,.sha1,.sha224,.sha256,.sha384,.sha512}{,-padded}{,.tmp} ${2:+"$2"}
 }
 
@@ -514,6 +518,9 @@ ACTION_REMOVEOLD_OSIMAGE="yes"
 # This is currently no-op because we only track one FW image, unpacked on SRC
 ACTION_REMOVEOLD_FWIMAGE="no"
 
+# (dev) If set to "no", then do not remove files even if deemed broken or old
+FLAG_CAN_REMOVE_IMAGES="yes"
+
 ACTION_RESULT=0
 
 while [ $# -gt 0 ]; do
@@ -526,6 +533,7 @@ while [ $# -gt 0 ]; do
                     shift
                     set -xv
                     "$@" ; exit $? ;;
+                --no-remove-files)      FLAG_CAN_REMOVE_IMAGES="no";;
                 --download-image-os)    ACTION_DOWNLOAD_OSIMAGE="yes";;
                 --download-image-fw)    ACTION_DOWNLOAD_FWIMAGE="yes";;
                 --download-images)      ACTION_DOWNLOAD_OSIMAGE="yes"; ACTION_DOWNLOAD_FWIMAGE="yes";;
