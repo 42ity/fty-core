@@ -120,9 +120,9 @@ fi
 # if available - override from replica of bios-rc-demo
 cat << EOF | chroot . /bin/bash
 /usr/lib/mysql/rcmysql start
-wget -O - "http://tomcat.roz53.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=tools/initdb.sql;hb=HEAD" |  mysql -u root
-# wget -O - "http://tomcat.roz53.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=tools/load_data.sql;hb=HEAD" | mysql -u root box_utf8
-# wget -O - "http://tomcat.roz53.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=tools/load_ROZLAB.sql;hb=HEAD" | mysql -u root box_utf8
+wget -O - "http://tomcat.roz53.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=database/mysql/initdb.sql;hb=HEAD" |  mysql -u root
+# wget -O - "http://tomcat.roz53.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=database/mysql/load_data.sql;hb=HEAD" | mysql -u root box_utf8
+# wget -O - "http://tomcat.roz53.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=database/mysql/load_ROZLAB.sql;hb=HEAD" | mysql -u root box_utf8
 [ -s /mysqldump ] && mysql -u root box_utf8 < /mysqldump
 /usr/lib/mysql/rcmysql stop
 EOF
