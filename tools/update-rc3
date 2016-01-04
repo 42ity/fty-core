@@ -163,16 +163,41 @@ settraps() {
 }
 
 ##############################################################################
-calculate_stream_checksum() {
-    # Calculate and print to stdout checksum of the stdin stream using algo "$1"
-    ALGO="`echo "$1" | tr '[A-Z]' '[a-z]'`"
-    [ $? = 0 -a -n "$ALGO" ] || ALGO="${CHECKSUM_ALGO_DEFAULT}"
-    # we expect to have either ${ALGO}sum program or openssl support for ${ALGO}
-    case "$ALGO" in
-        md5|sha|sha1|sha224|sha256|sha384|sha512) ;;
-        *)  logmsg_error "Unsupported checksum algorithm: '$ALGO'"
+remove_image() {
+    # Remove the image file "$1" and its possible checksum patterns,
+    # and the optional explicit checksum filename that can be in "$2"
+    rm -f "$1"{,.md5,.sha,.sha1,.sha224,.sha256,.sha384,.sha512}{,-padded}{,.tmp} ${2:+"$2"}
+}
+
+get_csalgo_from_filename() {
+    # Parse (extensions of) the filename in "$1" to retrieve the
+    # checksum algo (if any); set of supported algos and extensions
+    # is to be kept in sync with remove_image() above.
+    _A="`echo "$1" | tr '[A-Z]' '[a-z]' | sed -e 's,\.tmp$,,' -e 's,^.*\.\([^\.]*\)$,\1,' -e 's,-padded$,,'`" || _A=""
+
+    case "${_A}" in
+        md5|sha|sha1|sha224|sha256|sha384|sha512)
+            echo "${_A}"
+            unset _A
+            return 0 ;;
+        "") logmsg_error "Could not extract checksum algorithm from filename '$1'"
+            unset _A
+            return 31 ;;
+        *)  logmsg_error "Unrecognized checksum algorithm: '${_A}'"
+            unset _A
             return 32 ;;
     esac
+}
+
+calculate_stream_checksum() {
+    # Calculate and print to stdout checksum of the stdin stream using algo "$1"
+    # Use the function above to validate known algorithm names
+    # We expect to have either ${ALGO}sum program or openssl support for ${ALGO}
+    if [ -z "${1-}" ]; then
+        ALGO="${CHECKSUM_ALGO_DEFAULT}"
+    else
+        ALGO="`get_csalgo_from_filename "$1"`" || return $?
+    fi
 
     if [ -x "`which openssl`" ] 2>/dev/null ; then
         openssl dgst -"${ALGO}" | awk '{print $NF}'
@@ -191,6 +216,7 @@ expected_checksum() (
         CHECKSUM_EXP="`awk '{print $1}' < "$2"`"
     fi
     [ -n "$CHECKSUM_EXP" ] && echo "$CHECKSUM_EXP"
+    # If the value is empty, this statement returns an error exit-code
 )
 
 verify_checksum() {
@@ -202,7 +228,7 @@ verify_checksum() {
     [ -z "$FILENAME_CSUM" ] && \
         FILENAME_CSUM="$FILENAME_DATA.${CHECKSUM_ALGO_DEFAULT}"
     if [ -z "${3-}" ]; then
-        CHECKSUM_ALGO="`echo "$FILENAME_CSUM" | tr '[A-Z]' '[a-z]' | sed -e 's,\.tmp$,,' -e 's,^.*\.\([^\.]*\)$,\1,'`"
+        CHECKSUM_ALGO="`get_csalgo_from_filename "$FILENAME_CSUM"`"
         [ $? = 0 -a -n "$CHECKSUM_ALGO" ] || \
             CHECKSUM_ALGO="${CHECKSUM_ALGO_DEFAULT}"
     else
@@ -239,12 +265,6 @@ verify_checksum() {
     fi
     logmsg_warn "$LOGINTRO SKIPPED (one of the files is missing)"
     return 0
-}
-
-remove_image() {
-    # Remove the image file "$1" and its possible checksum patterns,
-    # and the optional explicit checksum filename that can be in "$2"
-    rm -f "$1"{,.md5,.sha,.sha1,.sha224,.sha256,.sha384,.sha512}{,-padded}{,.tmp} ${2:+"$2"}
 }
 
 ensure_checksum() {
