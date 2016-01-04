@@ -311,8 +311,12 @@ init_summarizeTestlibResults() {
         *) TESTLIB_LOG_SUMMARY="`pwd`/$TESTLIB_LOG_SUMMARY" ;;
     esac
     export TESTLIB_LOG_SUMMARY
-    [ -d "`dirname "$TESTLIB_LOG_SUMMARY"`" ] && [ -w "`dirname "$TESTLIB_LOG_SUMMARY"`" ] || \
-        logmsg_warn "init_summarizeTestlibResults(): TESTLIB_LOG_SUMMARY='$TESTLIB_LOG_SUMMARY' is not under an existing writable directory... maybe it will appear later in the script?"
+    if [ -d "`dirname "$TESTLIB_LOG_SUMMARY"`" ] && [ -w "`dirname "$TESTLIB_LOG_SUMMARY"`" ] \
+    ; then true ; else
+        logmsg_warn "init_summarizeTestlibResults(): TESTLIB_LOG_SUMMARY='$TESTLIB_LOG_SUMMARY' is not under an existing writable directory, creating..."
+        mkdir -p "`dirname "$TESTLIB_LOG_SUMMARY"`"
+        chmod 775 "`dirname "$TESTLIB_LOG_SUMMARY"`"
+    fi
 
     if [ $# -ge 2 ]; then
         TESTLIB_LOG_SUMMARY_COMMENT="${2-}"
