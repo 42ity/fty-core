@@ -121,13 +121,15 @@ fi
 # if available - override from replica of bios-rc-demo
 cat << EOF | chroot . /bin/bash
 /usr/lib/mysql/rcmysql start
+echo 'Importing default database schema...'
 wget -O - "http://tomcat.roz53.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=database/mysql/initdb.sql;hb=HEAD" |  mysql -u root
 # wget -O - "http://tomcat.roz53.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=database/mysql/load_data.sql;hb=HEAD" | mysql -u root box_utf8
 # wget -O - "http://tomcat.roz53.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=database/mysql/load_ROZLAB.sql;hb=HEAD" | mysql -u root box_utf8
-[ -s /mysqldump ] && mysql -u root box_utf8 < /mysqldump
+[ -s /mysqldump ] && echo 'Importing /mysqldump...' && mysql -u root box_utf8 < /mysqldump
 /usr/lib/mysql/rcmysql stop
 EOF
 
+echo "'Accept license' and 'Set password' as far as bios-core is concerned"
 mkdir -p var/lib/bios
 cat << EOF > var/lib/bios/license
 1.0
@@ -142,6 +144,7 @@ cp etc/shadow mnt/nand/overlay/etc
 #
 # tha - commented out since mysql transfer is broken
 [ -s ./mysqldump ] && \
+echo "Enable NUT-driver service instances" && \
 cat <<EOF | chroot . /bin/bash
 for device in \$(awk '/ *\[/{ gsub(/[\\[\\]]/,"",\$1); print \$1; }' </etc/nut/ups.conf) ; do
     systemctl enable nut-driver@\$device
