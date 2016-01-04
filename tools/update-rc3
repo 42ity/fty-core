@@ -507,6 +507,9 @@ download_osimage() (
 
     # If we are here, the IMAGE_URL is valid and points to a different content
     # than what we already have; the TGT_FILE names the ultimate local filename
+    TGT_FILE="`pwd`/${TGT_FILE}"
+    TGT_FILE_CSOLD="`pwd`/${TGT_FILE_CSOLD}"
+
     [ -s "${TGT_FILE_CSNEW}" -a ! -s "${TGT_FILE_CSOLD}" ] && \
         mv -f "${TGT_FILE_CSNEW}" "${TGT_FILE_CSOLD}"
 
@@ -536,7 +539,7 @@ removeold_osimage() (
     # TODO: add support for hierarchical namespace (container hosts) with
     #       flattened or original filenames inside
     for F in `ls -1d *__${ARCH}__${IMGTYPE}.${EXT} 2>/dev/null | head -n -1` ; do
-        logmsg_info "Removing older OS image: '$F' and its checksum"
+        logmsg_info "Removing older OS image: '`pwd`/$F' and its checksum(s)"
         remove_image "$F"
     done || true
 )
