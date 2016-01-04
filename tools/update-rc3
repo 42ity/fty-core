@@ -98,7 +98,17 @@ _SCRIPT_ARGC="$#"
 
 usage() {
     echo "Usage: ${_SCRIPT_NAME} [options...]"
-    echo "options:"
+    echo "Options:"
+    echo "  --help | -help | -h       Display this hep and exit"
+    echo "  --(no-)download-image-os  Enable or disable downloading of OS images"
+    echo "  --(no-)download-image-fw  Likewise for downloading of uBoot, uImage+modules"
+    echo "  --(no-)download-images    Enable or disable downloading of all image types"
+    echo "  --(no-)check-image-os, --(no-)check-image-fw, --(no-)check-images"
+    echo "                   Only check the source location if new images are available"
+    echo "  --(no-)removeold-image-os, --(no-)removeold-image-fw, --(no-)removeold-images"
+    echo "                   If download-image of this type was requested and successful,"
+    echo "                   or if download was not requested at all, remove all but the"
+    echo "                   newest (alphabetcally) image file from the recovery location"
 # TODO ...
 }
 
@@ -433,6 +443,53 @@ fi
 
 # TODO: Locking against multiple runs
 # TODO: define CLI methods for status/size/... checks per BIOS-1563
-# TODO: while-loop for CLI processing
-download_osimage && \
-removeold_osimage
+# TODO: Expose more methods via CLI, e.g. to verify checksums of an image file
+
+ACTION_DOWNLOAD_OSIMAGE="yes"
+ACTION_DOWNLOAD_FWIMAGE="yes"
+
+ACTION_CHECK_OSIMAGE="no"
+ACTION_CHECK_FWIMAGE="no"
+
+ACTION_REMOVEOLD_OSIMAGE="yes"
+# This is currently no-op because we only track one FW image, unpacked on SRC
+ACTION_REMOVEOLD_FWIMAGE="no"
+
+ACTION_RESULT=0
+
+while [ $# -gt 0 ]; do
+        case "${1-}" in
+                -h|--help|-help)        usage; exit 0 ;;
+                --download-image-os)    ACTION_DOWNLOAD_OSIMAGE="yes";;
+                --download-image-fw)    ACTION_DOWNLOAD_FWIMAGE="yes";;
+                --download-images)      ACTION_DOWNLOAD_OSIMAGE="yes"; ACTION_DOWNLOAD_FWIMAGE="yes";;
+                --no-download-image-os) ACTION_DOWNLOAD_OSIMAGE="no";;
+                --no-download-image-fw) ACTION_DOWNLOAD_FWIMAGE="no";;
+                --no-download-images)   ACTION_DOWNLOAD_OSIMAGE="no"; ACTION_DOWNLOAD_FWIMAGE="no";;
+                --check-image-os)       ACTION_CHECK_OSIMAGE="yes";;
+                --check-image-fw)       ACTION_CHECK_FWIMAGE="yes";;
+                --check-images)         ACTION_CHECK_OSIMAGE="yes"; ACTION_CHECK_FWIMAGE="yes";;
+                --no-check-image-os)    ACTION_CHECK_OSIMAGE="no";;
+                --no-check-image-fw)    ACTION_CHECK_FWIMAGE="no";;
+                --no-check-images)      ACTION_CHECK_OSIMAGE="no"; ACTION_CHECK_FWIMAGE="no";;
+                --removeold-image-os)   ACTION_REMOVEOLD_OSIMAGE="yes";;
+                --removeold-image-fw)   ACTION_REMOVEOLD_FWIMAGE="yes";;
+                --removeold-images)     ACTION_REMOVEOLD_OSIMAGE="yes"; ACTION_REMOVEOLD_FWIMAGE="yes";;
+                --no-removeold-image-os)ACTION_REMOVEOLD_OSIMAGE="no";;
+                --no-removeold-image-fw)ACTION_REMOVEOLD_FWIMAGE="no";;
+                --no-removeold-images)  ACTION_REMOVEOLD_OSIMAGE="no"; ACTION_REMOVEOLD_FWIMAGE="no";;
+        esac
+        shift
+done
+
+if [ "$ACTION_DOWNLOAD_OSIMAGE" = yes ]; then
+        download_osimage || ACTION_RESULT=$?
+fi
+
+if [ "$ACTION_REMOVEOLD_OSIMAGE" = yes ]; then
+        if [ "$ACTION_DOWNLOAD_OSIMAGE" = no ] || [ "$ACTION_RESULT" -eq 0 ]; then
+                removeold_osimage || ACTION_RESULT=$?
+        fi
+fi
+
+exit $ACTION_RESULT
