@@ -320,7 +320,7 @@ verify_threeway_checksum() (
     [ -n "$IMAGE_URL" ] && \
     IMAGE_URL_BASENAME="`basename "$IMAGE_URL" ".${EXT}"`" && \
     [ -n "$IMAGE_URL_BASENAME" ] && \
-    IMAGE_URL_BASENAME_EXT="${IMAGE_URL_BASENAME}.${EXT}" || \
+    IMAGE_URL_BASENAME_EXT="${IMAGE_URL_BASENAME}${EXT:+.$EXT}" || \
         { logmsg_warn "Could not resolve IMAGE_URL value '$IMAGE_URL' into a filename"
           IMAGE_URL=""; IMAGE_URL_BASENAME=""; IMAGE_URL_BASENAME_EXT=""; }
 
@@ -418,38 +418,45 @@ findnewest_osimage() (
 download_osimage() (
     cd "${DOWNLOADROOT_OSIMAGE}" || die "Can not use DOWNLOADROOT_OSIMAGE='$DOWNLOADROOT_OSIMAGE'"
     # TODO: Free space verification before download - BIOS-1562?
-    # TODO: Currently hardcoded for md5 accompanying checksums only
     # TODO: Consider DEPLOYMENTROOT* variables to verify presence of local files against
     # TODO: Consider FLATTEN_FILENAMES=yes in TGT_FILE logic
     # TODO: Refactor the triple-file verification (local/remote checksum and the
     # data file) into a separate routine
     # TODO (later): Support file sizes as part of checksum info
-    # TODO (later): Support presence of multipple checksum files (e.g. sha* and md5)
 
     logmsg_info "Fetching newest filename for ${ARCH} OS image of type ${IMGTYPE}..."
     IMAGE_URL="`findnewest_osimage`" && \
-    IMAGE_URL_BASENAME="`basename "$IMAGE_URL" ".${EXT}"`" || \
+    IMAGE_URL_BASENAME="`basename "$IMAGE_URL" ".${EXT}"`" && \
+        [ -n "$IMAGE_URL_BASENAME" ] && \
+        IMAGE_URL_BASENAME_EXT="${IMAGE_URL_BASENAME}${EXT:+.$EXT}" || \
         die "Can not find the remote image URL"
+
+    # TODO: Currently hardcoded for md5 accompanying checksums only
+    # TODO (later): Support presence of multiple checksum files (e.g. sha* and md5)
     IMAGE_CSALGO="${CHECKSUM_ALGO_DEFAULT}"
 
-    logmsg_info "Downloading '$IMAGE_URL.${IMAGE_CSALGO}' (if any)..."
-    rm -f "$IMAGE_URL_BASENAME.$EXT.${IMAGE_CSALGO}.tmp"
-    wget -q -O - "$IMAGE_URL.${IMAGE_CSALGO}" > "$IMAGE_URL_BASENAME.$EXT.${IMAGE_CSALGO}.tmp" || \
-        rm -f "$IMAGE_URL_BASENAME.$EXT.${IMAGE_CSALGO}.tmp"
+    IMAGE_CSURL="${IMAGE_URL}.${IMAGE_CSALGO}"
+    IMAGE_CSOLD="${IMAGE_URL_BASENAME_EXT}.${IMAGE_CSALGO}"
+    IMAGE_CSNEW="${IMAGE_URL_BASENAME_EXT}.${IMAGE_CSALGO}.tmp"
 
-    if  [ -s "$IMAGE_URL_BASENAME.$EXT" ] && \
-        [ -s "$IMAGE_URL_BASENAME.$EXT.${IMAGE_CSALGO}" ] \
+    logmsg_info "Downloading '${IMAGE_CSURL}' (if any)..."
+    rm -f "${IMAGE_CSNEW}"
+    wget -q -O - "${IMAGE_CSURL}" > "${IMAGE_CSNEW}" || \
+        rm -f "${IMAGE_CSNEW}"
+
+    if  [ -s "${IMAGE_URL_BASENAME_EXT}" ] && \
+        [ -s "${IMAGE_CSOLD}" ] \
     ; then
-        CSOLD="`expected_checksum "$IMAGE_URL_BASENAME.$EXT" "$IMAGE_URL_BASENAME.$EXT.${IMAGE_CSALGO}"`"
-        CSNEW="`expected_checksum "$IMAGE_URL_BASENAME.$EXT" "$IMAGE_URL_BASENAME.$EXT.${IMAGE_CSALGO}.tmp"`"
+        CSOLD="`expected_checksum "${IMAGE_URL_BASENAME_EXT}" "${IMAGE_CSOLD}"`"
+        CSNEW="`expected_checksum "${IMAGE_URL_BASENAME_EXT}" "${IMAGE_CSNEW}"`"
         if [ x"$CSOLD" = x"$CSNEW" ]; then
-            rm -f "$IMAGE_URL_BASENAME.$EXT.${IMAGE_CSALGO}.tmp"
+            rm -f "${IMAGE_CSNEW}"
         else
             # Here, two checksum files differ...
-            if verify_checksum "$IMAGE_URL_BASENAME.$EXT" "$IMAGE_URL_BASENAME.$EXT.${IMAGE_CSALGO}.tmp" "${IMAGE_CSALGO}"; then
+            if verify_checksum "${IMAGE_URL_BASENAME_EXT}" "${IMAGE_CSNEW}" "${IMAGE_CSALGO}"; then
                 # Remote checksum is good, local copy was corrupted
-                mv -f "$IMAGE_URL_BASENAME.$EXT.${IMAGE_CSALGO}.tmp" "$IMAGE_URL_BASENAME.$EXT.${IMAGE_CSALGO}"
-                logmsg_info "The newest available image is '$IMAGE_URL' and we already have a good copy (as '$IMAGE_URL_BASENAME.$EXT')"
+                mv -f "${IMAGE_CSNEW}" "${IMAGE_CSOLD}"
+                logmsg_info "The newest available image is '$IMAGE_URL' and we already have a good copy (as '${IMAGE_URL_BASENAME_EXT}')"
                 exit 0
             fi
         fi
@@ -457,51 +464,57 @@ download_osimage() (
         # Here, the new and old checksums are the same, or the different
         # new checksum for new filename did not match existing file.
         # Does the old couple match up?
-        ensure_checksum "$IMAGE_URL_BASENAME.$EXT" "$IMAGE_URL_BASENAME.$EXT.${IMAGE_CSALGO}" && \
-        logmsg_info "The newest available image is '$IMAGE_URL' and we already have a good copy (as '$IMAGE_URL_BASENAME.$EXT')" && \
-        rm -f "$IMAGE_URL_BASENAME.$EXT.${IMAGE_CSALGO}.tmp" && \
+        ensure_checksum "${IMAGE_URL_BASENAME_EXT}" "${IMAGE_CSOLD}" && \
+        logmsg_info "The newest available image is '$IMAGE_URL' and we already have a good copy (as '${IMAGE_URL_BASENAME_EXT}')" && \
+        rm -f "${IMAGE_CSNEW}" && \
         exit 0  # Local checksum is good & remote copy was corrupted, or the
                 # remote files were replaced in-place which is not expected!
 
         # Here, the old file did not match either checksum and was killed...
         # The newly downloaded md5.tmp should remain available...
-    elif [ -s "$IMAGE_URL_BASENAME.$EXT" ] && \
-         [ -s "$IMAGE_URL_BASENAME.$EXT.${IMAGE_CSALGO}.tmp" ] \
+    elif [ -s "${IMAGE_URL_BASENAME_EXT}" ] && \
+         [ -s "${IMAGE_CSNEW}" ] \
     ; then
         # Got new checksum file for this name, and old is not available at all
         # If the checks fail, this is most likely an aborted and corrupt download
-        mv -f "$IMAGE_URL_BASENAME.$EXT.${IMAGE_CSALGO}.tmp" "$IMAGE_URL_BASENAME.$EXT.${IMAGE_CSALGO}" && \
-        ensure_checksum "$IMAGE_URL_BASENAME.$EXT" "$IMAGE_URL_BASENAME.$EXT.${IMAGE_CSALGO}" && \
-        logmsg_info "The newest available image is '$IMAGE_URL' and we already have a good copy (as '$IMAGE_URL_BASENAME.$EXT')" && \
-        rm -f "$IMAGE_URL_BASENAME.$EXT.${IMAGE_CSALGO}.tmp" && \
+        mv -f "${IMAGE_CSNEW}" "${IMAGE_CSOLD}" && \
+        ensure_checksum "${IMAGE_URL_BASENAME_EXT}" "${IMAGE_CSOLD}" && \
+        logmsg_info "The newest available image is '$IMAGE_URL' and we already have a good copy (as '${IMAGE_URL_BASENAME_EXT}')" && \
+        rm -f "${IMAGE_CSNEW}" && \
         exit 0
     fi
 
     # We rename the incoming image to include the type in flat directory space
     case "${IMAGE_URL_BASENAME}" in
-        *__${ARCH}__${IMGTYPE}) TGT_FILE="${IMAGE_URL_BASENAME}.${EXT}" ;;
-        *)  TGT_FILE="${IMAGE_URL_BASENAME}__${ARCH}__${IMGTYPE}.${EXT}" || \
+        *__${ARCH}__${IMGTYPE})
+            TGT_FILE="${IMAGE_URL_BASENAME_EXT}"
+            TGT_FILE_CSOLD="${TGT_FILE}.${IMAGE_CSALGO}"
+            TGT_FILE_CSNEW="${TGT_FILE}.${IMAGE_CSALGO}.tmp"
+            ;;
+        *)  TGT_FILE="${IMAGE_URL_BASENAME}__${ARCH}__${IMGTYPE}${EXT:+.$EXT}" || \
                 die "Can not produce the TGT_FILE value to save into"
+            TGT_FILE_CSOLD="${TGT_FILE}.${IMAGE_CSALGO}"
+            TGT_FILE_CSNEW="${TGT_FILE}.${IMAGE_CSALGO}.tmp"
 
-            [ ! -s "$IMAGE_URL_BASENAME.$EXT.${IMAGE_CSALGO}.tmp" ] && \
-                logmsg_info "Downloading '$IMAGE_URL.${IMAGE_CSALGO}' (if any)..."
-                wget -q -O - "$IMAGE_URL.${IMAGE_CSALGO}" > "$IMAGE_URL_BASENAME.$EXT.${IMAGE_CSALGO}.tmp"
+            [ ! -s "${IMAGE_CSNEW}" ] && \
+                logmsg_info "Downloading '${IMAGE_CSURL}' (if any)..."
+                wget -q -O - "${IMAGE_CSURL}" > "${IMAGE_CSNEW}"
 
-            sed 's,  .*$,  '"`basename "$TGT_FILE"`", < "$IMAGE_URL_BASENAME.$EXT.${IMAGE_CSALGO}.tmp" > "$TGT_FILE.${IMAGE_CSALGO}.tmp"
-            rm -f "$IMAGE_URL_BASENAME.$EXT.${IMAGE_CSALGO}.tmp"
+            sed 's,  .*$,  '"`basename "$TGT_FILE"`", < "${IMAGE_CSNEW}" > "${TGT_FILE_CSNEW}"
+            rm -f "${IMAGE_CSNEW}"
 
             if  [ -s "$TGT_FILE" ] && \
-                [ -s "$TGT_FILE.${IMAGE_CSALGO}" ] \
+                [ -s "${TGT_FILE_CSOLD}" ] \
             ; then
-                CSOLD="`expected_checksum "$TGT_FILE" "$TGT_FILE.${IMAGE_CSALGO}"`"
-                CSNEW="`expected_checksum "$TGT_FILE" "$TGT_FILE.${IMAGE_CSALGO}.tmp"`"
+                CSOLD="`expected_checksum "$TGT_FILE" "${TGT_FILE_CSOLD}"`"
+                CSNEW="`expected_checksum "$TGT_FILE" "${TGT_FILE_CSNEW}"`"
                 if [ x"$CSOLD" = x"$CSNEW" ]; then
-                    rm -f "$TGT_FILE.${IMAGE_CSALGO}.tmp"
+                    rm -f "${TGT_FILE_CSNEW}"
                 else
                     # Here, two checksum files (expected values) do differ...
-                    if verify_checksum "$TGT_FILE" "$TGT_FILE.${IMAGE_CSALGO}.tmp" "${IMAGE_CSALGO}"; then
+                    if verify_checksum "$TGT_FILE" "${TGT_FILE_CSNEW}" "${IMAGE_CSALGO}"; then
                         # Remote checksum is good, local copy was corrupted
-                        mv -f "$TGT_FILE.${IMAGE_CSALGO}.tmp" "$TGT_FILE.${IMAGE_CSALGO}"
+                        mv -f "${TGT_FILE_CSNEW}" "${TGT_FILE_CSOLD}"
                         logmsg_info "The newest available image is '$IMAGE_URL' and we already have a good copy (as '$TGT_FILE')"
                         exit 0
                     fi
@@ -510,9 +523,9 @@ download_osimage() (
                 # Here, the new and old checksums are the same, or the different
                 # new checksum for new filename did not match existing file.
                 # Does the old couple match up?
-                ensure_checksum "$TGT_FILE" "$TGT_FILE.${IMAGE_CSALGO}" && \
+                ensure_checksum "$TGT_FILE" "${TGT_FILE_CSOLD}" && \
                 logmsg_info "The newest available image is '$IMAGE_URL' and we already have a good copy (as '$TGT_FILE')" && \
-                rm -f "$TGT_FILE.${IMAGE_CSALGO}.tmp" && \
+                rm -f "${TGT_FILE_CSNEW}" && \
                 exit 0  # Local checksum is good & remote copy was corrupted, or the
                         # remote files were replaced in-place which is not expected!
 
@@ -523,26 +536,26 @@ download_osimage() (
 
     # If we are here, the IMAGE_URL is valid and points to a different content
     # than what we already have; the TGT_FILE names the ultimate local filename
-    [ -s "$TGT_FILE.${IMAGE_CSALGO}.tmp" -a ! -s "$TGT_FILE.${IMAGE_CSALGO}" ] && \
-        mv -f "$TGT_FILE.${IMAGE_CSALGO}.tmp" "$TGT_FILE.${IMAGE_CSALGO}"
+    [ -s "${TGT_FILE_CSNEW}" -a ! -s "${TGT_FILE_CSOLD}" ] && \
+        mv -f "${TGT_FILE_CSNEW}" "${TGT_FILE_CSOLD}"
 
     logmsg_info "Downloading '$IMAGE_URL' into '$TGT_FILE'..."
     rm -f "$TGT_FILE"
     wget -O "$TGT_FILE" -c "$IMAGE_URL" && [ -s "$TGT_FILE" ] || \
         { rm -f "$TGT_FILE"; die "Could not download '$IMAGE_URL' into '$TGT_FILE'"; }
 
-    if [ -s "$TGT_FILE.${IMAGE_CSALGO}" ]; then
-        ensure_checksum "$TGT_FILE" "$TGT_FILE.${IMAGE_CSALGO}" || exit $?
+    if [ -s "${TGT_FILE_CSOLD}" ]; then
+        ensure_checksum "$TGT_FILE" "${TGT_FILE_CSOLD}" || exit $?
     else
-        logmsg_warn "Generating '$TGT_FILE.${IMAGE_CSALGO}' because there was none at the source..."
-        echo "`calculate_stream_checksum "${IMAGE_CSALGO}" < "$TGT_FILE"`  `basename "$TGT_FILE"`" > "$TGT_FILE.${IMAGE_CSALGO}" || \
-        { rm -f "$TGT_FILE.${IMAGE_CSALGO}"; die "Could not generate '$TGT_FILE.${IMAGE_CSALGO}'"; }
+        logmsg_warn "Generating '${TGT_FILE_CSOLD}' because there was none at the source..."
+        echo "`calculate_stream_checksum "${IMAGE_CSALGO}" < "$TGT_FILE"`  `basename "$TGT_FILE"`" > "${TGT_FILE_CSOLD}" || \
+        { rm -f "${TGT_FILE_CSOLD}"; die "Could not generate '${TGT_FILE_CSOLD}'"; }
     fi
 
-    touch -r "$TGT_FILE" "$TGT_FILE.${IMAGE_CSALGO}" && \
+    touch -r "$TGT_FILE" "${TGT_FILE_CSOLD}" && \
     logmsg_info "Got OS image OK:" && \
-    ls -ld "$TGT_FILE" "$TGT_FILE.${IMAGE_CSALGO}" && \
-    cat "$TGT_FILE.${IMAGE_CSALGO}"
+    ls -ld "$TGT_FILE" "${TGT_FILE_CSOLD}" && \
+    cat "${TGT_FILE_CSOLD}"
 )
 
 removeold_osimage() (
