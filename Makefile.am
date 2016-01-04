@@ -1470,7 +1470,7 @@ dist_noinst_DATA +=	tntnet.xml $(top_srcdir)/src/web/tntnet.xml
 CLEANFILES +=		tntnet.xml tntnet.xml.example tests/CI/tntnet.xml
 
 # Make sure needed files are up-to-date to test web-server for $BIOS REST API
-web-test-deps: tntnet.xml bios_web.la web-link-test agent-dbstore $(RUN_TNTNET_ENVFILE)
+web-test-deps: tntnet.xml bios_web.la web-link-test agent-dbstore
 
 # TODO (BIOS-1262): the "install-ci_helperSCRIPTS" recipe installs one script
 # into "@libexecdir@/@PACKAGE@/bios-passwd" because this is hardcoded in
@@ -1495,7 +1495,7 @@ web-test-deps-inst: install-ci_helperSCRIPTS
 # executed as different shell scripts by make). That is why ultimate exec
 # of the tntnet program is done twice in the same manner.
 
-web-test: web-test-deps
+web-test: $(RUN_TNTNET_ENVFILE) web-test-deps
 	@echo "=== Running target $@ with credentials of this user: "; \
 	id || true; echo "";
 if ENABLE_DEBUG_ASAN
