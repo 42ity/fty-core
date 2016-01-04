@@ -573,12 +573,11 @@ ACTION_RESULT=0
 while [ $# -gt 0 ]; do
         case "${1-}" in
                 -h|--help|-help)        usage; exit 0 ;;
-                --debug-calls)
+                --debug-calls|--debug-calls-x)
                     if [ $# -eq 1 ]; then
                         die "The '$1' option requires further arguments"
                     fi
-                    shift
-                    set -xv
+                    [ "$1" = "--debug-calls" ] && shift || { shift; set -xv; }
                     "$@" ; exit $? ;;
                 --no-remove-files)      FLAG_CAN_REMOVE_IMAGES="no";;
                 --download-image-os)    ACTION_DOWNLOAD_OSIMAGE="yes";;
