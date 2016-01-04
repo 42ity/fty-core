@@ -172,7 +172,9 @@ remove_image() {
     [ x"${FLAG_CAN_REMOVE_IMAGES-}" = xno ] && \
         logmsg_info "FLAG_CAN_REMOVE_IMAGES=$FLAG_CAN_REMOVE_IMAGES so do not remove_image($*)" && \
         return 0
-    [ -n "$RETAIN_FILE" ] && [ -s "$RETAIN_FILE" ] && mv -f "$RETAIN_FILE" ".$$.$RETAIN_FILE"
+    [ -n "$RETAIN_FILE" ] && [ -s "$RETAIN_FILE" ] && \
+        logmsg_info "Retaining '$RETAIN_FILE' during remove_image($*)" && \
+        mv -f "$RETAIN_FILE" ".$$.$RETAIN_FILE"
     rm -f "$1"{,.md5,.sha,.sha1,.sha224,.sha256,.sha384,.sha512}{,-padded}{,.tmp} ${2:+"$2"}
     [ -n "$RETAIN_FILE" ] && [ -s ".$$.$RETAIN_FILE" ] && mv -f ".$$.$RETAIN_FILE" "$RETAIN_FILE"
 }
