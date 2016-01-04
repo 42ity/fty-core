@@ -22,4 +22,4 @@
 {"id":"42"}
 {"errors":[{"message":"Parameter 'status' has bad value. Received <empty>. Expected active, nonactive, retired, spare","code":47}]}
 {"id":"43"}
-{"id":"44"}
+{"errors":[{"message":"You are not authenticated or your rights are insufficient.","code":43}]}
