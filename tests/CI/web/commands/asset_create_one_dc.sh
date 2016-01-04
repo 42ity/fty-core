@@ -16,7 +16,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 #! \file   asset_create_one_dc.sh
-#  \brief  CI tests for asset create and delete DC 
+#  \brief  CI tests for asset create and delete DC
 #  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 
 echo
@@ -249,10 +249,8 @@ curlfail_pop
 echo "********* asset_create_one_dc.sh ******************************************************************"
 echo "********* 25. Unauthorized_create_operation   *****************************************************"
 echo "***************************************************************************************************"
-#*#*#*#*#* asset_create_one_dc.sh - subtest 25 - TODO, should not be response 200?
-#curlfail_push_expect_400
 test_it "Unauthorized_create_operation"
-curlfail_push_expect_noerrors
+curlfail_push_expect_401
 api_post_json '/asset' '{"name":"dc_name_test_25","type":"datacenter","sub_type":"","location":"","status":"nonactive","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST0025","address":"ASDF"}}' >&5
 print_result $?
 curlfail_pop
