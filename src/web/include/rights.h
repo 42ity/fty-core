@@ -47,6 +47,8 @@ std::map<std::string, int> rights_management = {
 { "W/api/v1/alerts/activelist", 2},
 { "W/api/v1/alerts/ack/", 2},
 { "W/api/v1/alerts/rules", 2},
+{ "W/api/v1/asset", 2},
 { "R/api/v1/asset/export", 2 },
+{ "W/api/v1/asset/import", 2 },
 { "W/api/v1/oauth2/token", -1 },
 };
