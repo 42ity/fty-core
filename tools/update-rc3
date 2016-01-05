@@ -664,14 +664,22 @@ while [ $# -gt 0 ]; do
         shift
 done
 
+RESULT_ACTION_DOWNLOAD_OSIMAGE=0
 if [ "$ACTION_DOWNLOAD_OSIMAGE" = yes ]; then
-        download_osimage || ACTION_RESULT=$?
+        download_osimage
+        RESULT_ACTION_DOWNLOAD_OSIMAGE=$?
+        [ "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -gt 0 ] && \
+            ACTION_RESULT=$RESULT_ACTION_DOWNLOAD_OSIMAGE && \
+            if [ "$ACTION_REMOVEOLD_OSIMAGE" = yes ] ; then
+                logmsg_warn "New OS image was not downloaded successfully, so old ones are not purged"
+                ACTION_REMOVEOLD_OSIMAGE=no_BadDownload
+            fi
 fi
 
 if [ "$ACTION_REMOVEOLD_OSIMAGE" = yes ]; then
-        if [ "$ACTION_DOWNLOAD_OSIMAGE" = no ] || [ "$ACTION_RESULT" -eq 0 ]; then
-                removeold_osimage || ACTION_RESULT=$?
-        fi
+        removeold_osimage || ACTION_RESULT=$?
+else
+        logmsg_info "Not purging old OS images because ACTION_REMOVEOLD_OSIMAGE=$ACTION_REMOVEOLD_OSIMAGE"
 fi
 
 exit $ACTION_RESULT
