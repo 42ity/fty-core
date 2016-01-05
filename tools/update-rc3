@@ -497,8 +497,8 @@ download_osimage() (
 
     # First try the modified filenames in local directories: more probable hit
     if [ x"$rTGT_FILE" != x"$rIMAGE_URL_BASENAME_EXT" ] ; then
-        logmsg_info "Verifying if we have this checksum and corresponding file under flat name..."
         if [ -s "$aTGT_FILE_CSNEW" ] && [ x"$aTGT_FILE_CSNEW" != x"${aIMAGE_CSNEW}" ]; then
+            logmsg_info "Verifying if we have this checksum and corresponding file under flat name of data and checksum files..."
             verify_threeway_checksum "${IMAGE_URL}" "${rTGT_FILE}" "${rTGT_FILE_CSOLD}" "${aTGT_FILE_CSNEW}" && return 0
             if [ -d "${DEPLOYMENTROOT_OSIMAGE}" ] ; then
                 # Do not remove deployed files!
@@ -508,6 +508,7 @@ download_osimage() (
                     "${aTGT_FILE_CSNEW}" && return 0
             fi
         fi
+        logmsg_info "Verifying if we have this checksum and corresponding file under flat name of data and original name of checksum file..."
         verify_threeway_checksum "${IMAGE_URL}" "${rTGT_FILE}" "${rTGT_FILE_CSOLD}" "${aIMAGE_CSNEW}" && return 0
         if [ -d "${DEPLOYMENTROOT_OSIMAGE}" ] ; then
             # Do not remove deployed files!
