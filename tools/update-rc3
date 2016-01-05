@@ -386,7 +386,7 @@ verify_threeway_checksum() (
     ; then
         if [ x"$CSNEWALGO" = x"$CSOLDALGO" ]; then
             if [ x"$CSNEW" = x"$CSOLD" ]; then
-                # Keep old checksum file and fall through
+                logmsg_info "Old and new checksum values are the same; keeping old checksum file and discarding new one"
                 rm -f "$FILE_CSNEW"
                 CSNEW=""
                 CSNEWALGO=""
@@ -483,14 +483,14 @@ download_osimage() (
 
     trap 'TRAPCODE=$?; rm -f "$aTGT_FILE_CSNEW" "$aIMAGE_CSNEW"; exit $TRAPCODE' 0
 
-    logmsg_info "Downloading '${IMAGE_CSURL}' (if any)..."
+    logmsg_info "Downloading '${IMAGE_CSURL}' (if any) into '${aIMAGE_CSNEW}'..."
     rm -f "${aIMAGE_CSNEW}"
     wget -q -O - "${IMAGE_CSURL}" > "${aIMAGE_CSNEW}" || \
         { logmsg_error "Could not save '${IMAGE_CSURL}' into '${aIMAGE_CSNEW}'";
           rm -f "${aIMAGE_CSNEW}"; }
 
     if [ ! -s "${aTGT_FILE_CSNEW}" ] ; then
-        logmsg_info "Processing '${IMAGE_CSURL}' (if any) to flatten the names..."
+        logmsg_info "Processing '${IMAGE_CSURL}' (if any) to flatten the names into '${aTGT_FILE_CSNEW}'..."
         { [ -s "${aIMAGE_CSNEW}" ] && cat "${aIMAGE_CSNEW}" || wget -q -O - "${IMAGE_CSURL}"; } | \
         sed 's,  .*$,  '"`basename "$rTGT_FILE"`", > "${aTGT_FILE_CSNEW}" || \
             { logmsg_error "Could not save and process '${IMAGE_CSURL}' into '${aTGT_FILE_CSNEW}'";
@@ -567,7 +567,7 @@ download_osimage() (
         { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
 
     if [ -s "${aTGT_FILE_CSOLD}" ]; then
-        ensure_checksum "${aTGT_FILE}" "${aTGT_FILE_CSOLD}" || exit $?
+        ensure_checksum "${aTGT_FILE}" "${aTGT_FILE_CSOLD}" || return $?
     else
         logmsg_warn "Generating '${aTGT_FILE_CSOLD}' because there was none at the source..."
         echo "`calculate_stream_checksum "${IMAGE_CSALGO}" < "$aTGT_FILE"`  `basename "$aTGT_FILE"`" > "${aTGT_FILE_CSOLD}" || \
