@@ -434,9 +434,8 @@ verify_threeway_checksum() (
 findnewest_osimage() (
     # Echo the URL to the newest OS image file found on remote resource, if any
     # Note: currently expects certain filename patterns and http-dir listing markup
-    IMAGE_URL="`wget -q -O - ${SOURCESITEROOT_OSIMAGE}/ | sed -n 's|.*href="\(.*simpleimage.*\.'"${EXT}"'\)".*|'"${SOURCESITEROOT_OSIMAGE}"'/\1|p' | sed 's,\([^:]\)//,\1/,g'`" && \
+    IMAGE_URL="`wget -q -O - ${SOURCESITEROOT_OSIMAGE}/ | sed -n 's|.*href="\(.*simpleimage.*\.'"${EXT}"'\)".*|'"${SOURCESITEROOT_OSIMAGE}"'/\1|p' | sed 's,\([^:]\)//,\1/,g' | sort -n | tail -1`" && \
     if [ x"$IMAGE_URL" != x ]; then
-# | sort -n | tail -1
         [ x"`basename "$IMAGE_URL" .${EXT}`" != x ] && \
         echo "$IMAGE_URL" && return 0
     fi
@@ -660,6 +659,7 @@ while [ $# -gt 0 ]; do
                 --no-removeold-image-os)ACTION_REMOVEOLD_OSIMAGE="no";;
                 --no-removeold-image-fw)ACTION_REMOVEOLD_FWIMAGE="no";;
                 --no-removeold-images)  ACTION_REMOVEOLD_OSIMAGE="no"; ACTION_REMOVEOLD_FWIMAGE="no";;
+                *)  die "Aborting due to unknown command-line argument(s): $*" ;;
         esac
         shift
 done
