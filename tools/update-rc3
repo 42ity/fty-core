@@ -235,6 +235,7 @@ verify_checksum() {
     # Compares actual checksum of file "$1" with value recorded in file "$2"
     # with optional algorithm in "$3" (defaults to CHECKSUM_ALGO_DEFAULT='md5')
     # TODO: add generalized support for .${CHECKSUM_ALGO_DEFAULT}-padded checksum files (firmware imgs)
+    # TODO (later): Support file sizes as part of checksum info
     FILENAME_DATA="$1"
     FILENAME_CSUM="${2-}"
     [ -z "$FILENAME_CSUM" ] && \
@@ -444,8 +445,6 @@ findnewest_osimage() (
 
 download_osimage() (
     cd "${DOWNLOADROOT_OSIMAGE}" || die "Can not use DOWNLOADROOT_OSIMAGE='$DOWNLOADROOT_OSIMAGE'"
-    # TODO: Free space verification before download - BIOS-1562?
-    # TODO (later): Support file sizes as part of checksum info
 
     logmsg_info "Fetching newest filename for ${ARCH} OS image of type ${IMGTYPE}..."
     IMAGE_URL="`findnewest_osimage`" && \
@@ -459,8 +458,9 @@ download_osimage() (
     IMAGE_CSALGO="${CHECKSUM_ALGO_DEFAULT}"
 
     # NOTE: "Old" filename and checksum are basenames that can be located under
-    # different directories ("r"elative varnames), but a "new" checksum is
-    # ensured to be in recovery ("a"bsolute varnames)
+    # different directories ("r"elative varnames), but e.g. a "new" checksum is
+    # ensured to be in a temporary location and a newly downloaded file should
+    # land into the recovery location ("a"bsolute varnames)
     IMAGE_CSURL="${IMAGE_URL}.${IMAGE_CSALGO}"
     rIMAGE_CSOLD="${rIMAGE_URL_BASENAME_EXT}.${IMAGE_CSALGO}"
     aIMAGE_CSNEW="`pwd`/${rIMAGE_URL_BASENAME_EXT}.${IMAGE_CSALGO}.tmp"
@@ -579,6 +579,10 @@ removeold_osimage() (
     done || true
 )
 
+###########################################################################
+### Start of application logic
+###########################################################################
+
 if [ -d "/etc/update-rc3.d/" ]; then
     for F in "/etc/update-rc3.d/"*.conf ; do
         if [ -s "$F" ] && [ -r "$F" ] ; then
@@ -590,7 +594,10 @@ fi
 
 # TODO: Locking against multiple runs
 # TODO: define CLI methods for status/size/... checks per BIOS-1563
+# TODO: Free space verification before download - BIOS-1562?
 # TODO: Expose more methods via CLI, e.g. to verify checksums of an image file
+# TODO: Methods to compare if we have a candidate image newer than flashed bits
+#       (and so if the user should reboot)
 
 ACTION_DOWNLOAD_OSIMAGE="yes"
 ACTION_DOWNLOAD_FWIMAGE="yes"
@@ -608,6 +615,7 @@ FLAG_CAN_REMOVE_IMAGES="yes"
 # If set to "no", use original filenames from the source server
 FLAG_FLATTEN_FILENAMES="yes"
 
+# Ultimate exit code of the script
 ACTION_RESULT=0
 
 while [ $# -gt 0 ]; do
