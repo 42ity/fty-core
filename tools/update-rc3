@@ -585,10 +585,24 @@ removeold_osimage() (
     # This removes all but the newest (alphabetically) files for the pattern
     # TODO: add support for hierarchical namespace (container hosts) with
     #       flattened or original filenames inside
-    for F in `ls -1d *__${ARCH}__${IMGTYPE}.${EXT} 2>/dev/null | head -n -1` ; do
-        logmsg_info "Removing older OS image: '`pwd`/$F' and its checksum(s)"
-        remove_image "$F"
-    done || true
+    VICTIMS=0
+    if [ x"$FLAG_FLATTEN_FILENAMES" = xyes ] ; then
+        for F in `ls -1d *__${ARCH}__${IMGTYPE}.${EXT} 2>/dev/null | head -n -1` ; do
+            logmsg_info "Removing older OS image: '`pwd`/$F' and its checksum(s)"
+            remove_image "$F"
+            VICTIMS=$(($VICTIMS+1))
+        done
+    else
+        [ -d "./$IMGTYPE/$ARCH" ] && cd "./$IMGTYPE/$ARCH"
+        for F in `ls -1d *.${EXT} 2>/dev/null | grep -v _ | head -n -1` ; do
+            logmsg_info "Removing older OS image: '`pwd`/$F' and its checksum(s)"
+            remove_image "$F"
+            VICTIMS=$(($VICTIMS+1))
+        done
+    fi
+    [ "$VICTIMS" -eq 0 ] && logmsg_info "removeold_osimage() had nothing to remove" || \
+        logmsg_info "removeold_osimage() requested to remove $VICTIMS file(s)"
+    return 0
 )
 
 ###########################################################################
