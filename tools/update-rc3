@@ -111,6 +111,8 @@ usage() {
     echo "                   or if download was not requested at all, remove all but the"
     echo "                   newest (alphabetcally) image file from the recovery location"
     echo "  --no-remove-files         Skip removing image files deemed corrupt or obsolete"
+    echo "  --no-flatten-filenames    Skip renaming image files to include ARCH and TYPE"
+    echo "                            for easier differentiation in the flat storage dirs"
 # TODO ...
 }
 
@@ -397,7 +399,7 @@ verify_threeway_checksum() (
 
     [ -n "$CSNEW" ] && \
     if verify_checksum "$FILE_DATA" "$FILE_CSNEW" ; then
-        logmsg_info "Remote checksum is good for '$FILE_CSNEW', local copy was corrupted - replacing checksum file"
+        logmsg_info "Remote checksum is good for '$FILE_CSNEW', local copy was corrupted or missing - replacing checksum file"
         mv -f "$FILE_CSNEW" "$FILE_CSOLD" && \
             logmsg_info "The newest available image is '$IMAGE_URL' and we already have a good copy (as '$FILE_DATA')"
         return $?
@@ -441,95 +443,125 @@ findnewest_osimage() (
 download_osimage() (
     cd "${DOWNLOADROOT_OSIMAGE}" || die "Can not use DOWNLOADROOT_OSIMAGE='$DOWNLOADROOT_OSIMAGE'"
     # TODO: Free space verification before download - BIOS-1562?
-    # TODO: Consider DEPLOYMENTROOT* variables to verify presence of local files against
-    # TODO: Consider FLATTEN_FILENAMES=yes in TGT_FILE logic
-    # TODO: Refactor the triple-file verification (local/remote checksum and the
-    # data file) into a separate routine
     # TODO (later): Support file sizes as part of checksum info
 
     logmsg_info "Fetching newest filename for ${ARCH} OS image of type ${IMGTYPE}..."
     IMAGE_URL="`findnewest_osimage`" && \
-    IMAGE_URL_BASENAME="`basename "$IMAGE_URL" ".${EXT}"`" && \
-        [ -n "$IMAGE_URL_BASENAME" ] && \
-        IMAGE_URL_BASENAME_EXT="${IMAGE_URL_BASENAME}${EXT:+.$EXT}" || \
+    rIMAGE_URL_BASENAME="`basename "$IMAGE_URL" ".${EXT}"`" && \
+        [ -n "$rIMAGE_URL_BASENAME" ] && \
+        rIMAGE_URL_BASENAME_EXT="${rIMAGE_URL_BASENAME}${EXT:+.$EXT}" || \
         die "Can not find the remote image URL"
 
     # TODO: Currently hardcoded for md5 accompanying checksums only
     # TODO (later): Support presence of multiple checksum files (e.g. sha* and md5)
     IMAGE_CSALGO="${CHECKSUM_ALGO_DEFAULT}"
 
+    # NOTE: "Old" filename and checksum are basenames that can be located under
+    # different directories ("r"elative varnames), but a "new" checksum is
+    # ensured to be in recovery ("a"bsolute varnames)
     IMAGE_CSURL="${IMAGE_URL}.${IMAGE_CSALGO}"
-    IMAGE_CSOLD="${IMAGE_URL_BASENAME_EXT}.${IMAGE_CSALGO}"
-    IMAGE_CSNEW="`pwd`/${IMAGE_URL_BASENAME_EXT}.${IMAGE_CSALGO}.tmp"
-
-    logmsg_info "Downloading '${IMAGE_CSURL}' (if any)..."
-    rm -f "${IMAGE_CSNEW}"
-    wget -q -O - "${IMAGE_CSURL}" > "${IMAGE_CSNEW}" || \
-        rm -f "${IMAGE_CSNEW}"
-
-    # First try the unmodified filenames in local directories
-    verify_threeway_checksum "${IMAGE_URL}" "${IMAGE_URL_BASENAME_EXT}" "${IMAGE_CSOLD}" "${IMAGE_CSNEW}" && return 0
-    if [ -d "${DEPLOYMENTROOT_OSIMAGE}" ] ; then
-        # Do not remove deployed files!
-        FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" "${DEPLOYMENTROOT_OSIMAGE}/${IMAGE_URL_BASENAME_EXT}" "${DEPLOYMENTROOT_OSIMAGE}/${IMAGE_CSOLD}" "${IMAGE_CSNEW}" && return 0
-    fi
+    rIMAGE_CSOLD="${rIMAGE_URL_BASENAME_EXT}.${IMAGE_CSALGO}"
+    aIMAGE_CSNEW="`pwd`/${rIMAGE_URL_BASENAME_EXT}.${IMAGE_CSALGO}.tmp"
 
     # We rename the incoming image to include the type in flat directory space
-    case "${IMAGE_URL_BASENAME}" in
+    rTGT_FILE="${rIMAGE_URL_BASENAME_EXT}"
+    case "${rIMAGE_URL_BASENAME}" in
         *__${ARCH}__${IMGTYPE}) # Already good and flat
-            TGT_FILE="${IMAGE_URL_BASENAME_EXT}"
-            TGT_FILE_CSOLD="${TGT_FILE}.${IMAGE_CSALGO}"
-            TGT_FILE_CSNEW="${IMAGE_CSNEW}"
-
-            [ ! -s "${IMAGE_CSNEW}" ] && \
-                logmsg_info "Downloading '${IMAGE_CSURL}' (if any)..." && \
-                wget -q -O - "${IMAGE_CSURL}" > "${IMAGE_CSNEW}"
             ;;
-        *)  TGT_FILE="${IMAGE_URL_BASENAME}__${ARCH}__${IMGTYPE}${EXT:+.$EXT}" || \
-                die "Can not produce the TGT_FILE value to save into"
-            TGT_FILE_CSOLD="${TGT_FILE}.${IMAGE_CSALGO}"
-            TGT_FILE_CSNEW="${TGT_FILE}.${IMAGE_CSALGO}.tmp"
-
-            [ ! -s "${IMAGE_CSNEW}" ] && \
-                logmsg_info "Downloading '${IMAGE_CSURL}' (if any)..." && \
-                wget -q -O - "${IMAGE_CSURL}" > "${IMAGE_CSNEW}"
-
-            sed 's,  .*$,  '"`basename "$TGT_FILE"`", < "${IMAGE_CSNEW}" > "${TGT_FILE_CSNEW}"
-            rm -f "${IMAGE_CSNEW}"
-            ;;  # Had to define TGT_FILE different from IMAGE_URL_BASENAME
+        *)  if [ x"$FLAG_FLATTEN_FILENAMES" = xyes ]; then
+                rTGT_FILE="${rIMAGE_URL_BASENAME}__${ARCH}__${IMGTYPE}${EXT:+.$EXT}" && \
+                [ -n "$rTGT_FILE" ] || \
+                die "Can not produce the relative TGT_FILE value to save into"
+            fi
+            ;;  # Had to define TGT_FILE different from rIMAGE_URL_BASENAME
     esac
 
-    verify_threeway_checksum "${IMAGE_URL}" "${TGT_FILE}" "${TGT_FILE_CSOLD}" "${TGT_FILE_CSNEW}" && return 0
+    rTGT_FILE_CSOLD="${rTGT_FILE}.${IMAGE_CSALGO}"
+    aTGT_FILE_CSNEW="`pwd`/${rTGT_FILE}.${IMAGE_CSALGO}.tmp"
+
+    logmsg_info "Downloading '${IMAGE_CSURL}' (if any)..."
+    rm -f "${aIMAGE_CSNEW}"
+    wget -q -O - "${IMAGE_CSURL}" > "${aIMAGE_CSNEW}" || \
+        { logmsg_error "Could not save '${IMAGE_CSURL}' into '${aIMAGE_CSNEW}'";
+          rm -f "${aIMAGE_CSNEW}"; }
+
+    if [ ! -s "${aTGT_FILE_CSNEW}" ] ; then
+        logmsg_info "Processing '${IMAGE_CSURL}' (if any) to flatten the names..."
+        { [ -s "${aIMAGE_CSNEW}" ] && cat "${aIMAGE_CSNEW}" || wget -q -O - "${IMAGE_CSURL}"; } | \
+        sed 's,  .*$,  '"`basename "$rTGT_FILE"`", > "${aTGT_FILE_CSNEW}" || \
+            { logmsg_error "Could not save and process '${IMAGE_CSURL}' into '${aTGT_FILE_CSNEW}'";
+              rm -f "${aTGT_FILE_CSNEW}"; }
+    fi
+
+    # First try the modified filenames in local directories: more probable hit
+    if [ x"$rTGT_FILE" != x"$rIMAGE_URL_BASENAME_EXT" ] ; then
+        logmsg_info "Verifying if we have this checksum and corresponding file under flat name..."
+        if [ -s "$aTGT_FILE_CSNEW" ] && [ x"$aTGT_FILE_CSNEW" != x"${aIMAGE_CSNEW}" ]; then
+            verify_threeway_checksum "${IMAGE_URL}" "${rTGT_FILE}" "${rTGT_FILE_CSOLD}" "${aTGT_FILE_CSNEW}" && return 0
+            if [ -d "${DEPLOYMENTROOT_OSIMAGE}" ] ; then
+                # Do not remove deployed files!
+                FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+                    "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE}" \
+                    "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE_CSOLD}" \
+                    "${aTGT_FILE_CSNEW}" && return 0
+            fi
+        fi
+        verify_threeway_checksum "${IMAGE_URL}" "${rTGT_FILE}" "${rTGT_FILE_CSOLD}" "${aIMAGE_CSNEW}" && return 0
+        if [ -d "${DEPLOYMENTROOT_OSIMAGE}" ] ; then
+            # Do not remove deployed files!
+            FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+                "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE}" \
+                "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE_CSOLD}" \
+                "${aIMAGE_CSNEW}" && return 0
+        fi
+    fi
+
+    # Then try unmodified filenames in local directories (e.g. USB download)
+    logmsg_info "Verifying if we have this checksum and corresponding file under original name in base dir..."
+    verify_threeway_checksum "${IMAGE_URL}" "${rIMAGE_URL_BASENAME_EXT}" "${rIMAGE_CSOLD}" "${aIMAGE_CSNEW}" && return 0
     if [ -d "${DEPLOYMENTROOT_OSIMAGE}" ] ; then
         # Do not remove deployed files!
-        FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" "${DEPLOYMENTROOT_OSIMAGE}/${TGT_FILE}" "${DEPLOYMENTROOT_OSIMAGE}/${TGT_FILE_CSOLD}" "${TGT_FILE_CSNEW}" && return 0
+        FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+            "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_URL_BASENAME_EXT}" \
+            "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_CSOLD}" \
+            "${aIMAGE_CSNEW}" && return 0
+    fi
+    if [ -d "./$IMGTYPE/$ARCH" ]; then
+        # Bit of support for container hosts
+        logmsg_info "Verifying if we have this checksum and corresponding file under original name in hierarchy..."
+        verify_threeway_checksum "${IMAGE_URL}" "./$IMGTYPE/$ARCH/${rIMAGE_URL_BASENAME_EXT}" "./$IMGTYPE/$ARCH/${rIMAGE_CSOLD}" "${aIMAGE_CSNEW}" && return 0
     fi
 
     # If we are here, the IMAGE_URL is valid and points to a different content
     # than what we already have; the TGT_FILE names the ultimate local filename
-    TGT_FILE="`pwd`/${TGT_FILE}"
-    TGT_FILE_CSOLD="`pwd`/${TGT_FILE_CSOLD}"
-
-    [ -s "${TGT_FILE_CSNEW}" -a ! -s "${TGT_FILE_CSOLD}" ] && \
-        mv -f "${TGT_FILE_CSNEW}" "${TGT_FILE_CSOLD}"
-
-    logmsg_info "Downloading '$IMAGE_URL' into '$TGT_FILE'..."
-    rm -f "$TGT_FILE"
-    wget -O "$TGT_FILE" "$IMAGE_URL" && [ -s "$TGT_FILE" ] || \
-        { remove_image "$TGT_FILE"; die "Could not download '$IMAGE_URL' into '$TGT_FILE'"; }
-
-    if [ -s "${TGT_FILE_CSOLD}" ]; then
-        ensure_checksum "$TGT_FILE" "${TGT_FILE_CSOLD}" || exit $?
+    if [ -d "./$IMGTYPE/$ARCH" ]; then
+        aTGT_FILE="`pwd`/$IMGTYPE/$ARCH/${rTGT_FILE}"
+        aTGT_FILE_CSOLD="`pwd`/$IMGTYPE/$ARCH/${rTGT_FILE_CSOLD}"
     else
-        logmsg_warn "Generating '${TGT_FILE_CSOLD}' because there was none at the source..."
-        echo "`calculate_stream_checksum "${IMAGE_CSALGO}" < "$TGT_FILE"`  `basename "$TGT_FILE"`" > "${TGT_FILE_CSOLD}" || \
-        { rm -f "${TGT_FILE_CSOLD}"; die "Could not generate '${TGT_FILE_CSOLD}'"; }
+        aTGT_FILE="`pwd`/${rTGT_FILE}"
+        aTGT_FILE_CSOLD="`pwd`/${rTGT_FILE_CSOLD}"
     fi
 
-    touch -r "$TGT_FILE" "${TGT_FILE_CSOLD}" && \
+    [ -s "${aTGT_FILE_CSNEW}" -a ! -s "${aTGT_FILE_CSOLD}" ] && \
+        mv -f "${aTGT_FILE_CSNEW}" "${aTGT_FILE_CSOLD}"
+
+    logmsg_info "Downloading '$IMAGE_URL' into '$aTGT_FILE'..."
+    rm -f "${aTGT_FILE}"
+    wget -O "${aTGT_FILE}" "$IMAGE_URL" && [ -s "$aTGT_FILE" ] || \
+        { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
+
+    if [ -s "${aTGT_FILE_CSOLD}" ]; then
+        ensure_checksum "${aTGT_FILE}" "${aTGT_FILE_CSOLD}" || exit $?
+    else
+        logmsg_warn "Generating '${aTGT_FILE_CSOLD}' because there was none at the source..."
+        echo "`calculate_stream_checksum "${IMAGE_CSALGO}" < "$aTGT_FILE"`  `basename "$aTGT_FILE"`" > "${aTGT_FILE_CSOLD}" || \
+        { rm -f "${aTGT_FILE_CSOLD}"; die "Could not generate '${aTGT_FILE_CSOLD}'"; }
+    fi
+
+    touch -r "${aTGT_FILE}" "${aTGT_FILE_CSOLD}" && \
     logmsg_info "Got OS image OK:" && \
-    ls -ld "$TGT_FILE" "${TGT_FILE_CSOLD}" && \
-    cat "${TGT_FILE_CSOLD}"
+    ls -ld "${aTGT_FILE}" "${aTGT_FILE_CSOLD}" && \
+    cat "${aTGT_FILE_CSOLD}"
 )
 
 removeold_osimage() (
@@ -570,6 +602,9 @@ ACTION_REMOVEOLD_FWIMAGE="no"
 # (dev) If set to "no", then do not remove files even if deemed broken or old
 FLAG_CAN_REMOVE_IMAGES="yes"
 
+# If set to "no", use original filenames from the source server
+FLAG_FLATTEN_FILENAMES="yes"
+
 ACTION_RESULT=0
 
 while [ $# -gt 0 ]; do
@@ -582,6 +617,7 @@ while [ $# -gt 0 ]; do
                     [ "$1" = "--debug-calls" ] && shift || { shift; set -xv; }
                     "$@" ; exit $? ;;
                 --no-remove-files)      FLAG_CAN_REMOVE_IMAGES="no";;
+                --no-flatten-filenames) FLAG_FLATTEN_FILENAMES="no";;
                 --download-image-os)    ACTION_DOWNLOAD_OSIMAGE="yes";;
                 --download-image-fw)    ACTION_DOWNLOAD_FWIMAGE="yes";;
                 --download-images)      ACTION_DOWNLOAD_OSIMAGE="yes"; ACTION_DOWNLOAD_FWIMAGE="yes";;
