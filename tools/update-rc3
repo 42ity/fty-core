@@ -462,7 +462,7 @@ download_osimage() (
     # land into the recovery location ("a"bsolute varnames)
     IMAGE_CSURL="${IMAGE_URL}.${IMAGE_CSALGO}"
     rIMAGE_CSOLD="${rIMAGE_URL_BASENAME_EXT}.${IMAGE_CSALGO}"
-    aIMAGE_CSNEW="/tmp/${rIMAGE_URL_BASENAME_EXT}.${IMAGE_CSALGO}.$$.tmp"
+    aIMAGE_CSNEW="/tmp/${rIMAGE_URL_BASENAME_EXT}.$$.${IMAGE_CSALGO}.tmp"
 
     # We rename the incoming image to include the type in flat directory space
     rTGT_FILE="${rIMAGE_URL_BASENAME_EXT}"
@@ -478,7 +478,7 @@ download_osimage() (
     esac
 
     rTGT_FILE_CSOLD="${rTGT_FILE}.${IMAGE_CSALGO}"
-    aTGT_FILE_CSNEW="/tmp/${rTGT_FILE}.${IMAGE_CSALGO}.$$.tmp"
+    aTGT_FILE_CSNEW="/tmp/${rTGT_FILE}.$$.${IMAGE_CSALGO}.tmp"
 
     trap 'TRAPCODE=$?; rm -f "$aTGT_FILE_CSNEW" "$aIMAGE_CSNEW"; exit $TRAPCODE' 0
 
