@@ -176,9 +176,9 @@ remove_image() {
         return 0
     [ -n "$RETAIN_FILE" ] && [ -s "$RETAIN_FILE" ] && \
         logmsg_info "Retaining '$RETAIN_FILE' during remove_image($*)" && \
-        mv -f "$RETAIN_FILE" ".$$.$RETAIN_FILE"
+        mv -f "$RETAIN_FILE" "$RETAIN_FILE.$$"
     rm -f "$1"{,.md5,.sha,.sha1,.sha224,.sha256,.sha384,.sha512}{,-padded}{,.tmp} ${2:+"$2"}
-    [ -n "$RETAIN_FILE" ] && [ -s ".$$.$RETAIN_FILE" ] && mv -f ".$$.$RETAIN_FILE" "$RETAIN_FILE"
+    [ -n "$RETAIN_FILE" ] && [ -s "$RETAIN_FILE.$$" ] && mv -f "$RETAIN_FILE.$$" "$RETAIN_FILE"
 }
 
 get_csalgo_from_filename() {
@@ -283,7 +283,7 @@ ensure_checksum() {
     # A destructive wrapper of verify_checksum(), destroys bad downloads
     if ! verify_checksum "$@" ; then
         logmsg_warn "Removing broken file: '$1' and its checksum(s)"
-        remove_image "$@"
+        remove_image "$@" || return $?
         return 1
     fi
     return 0
@@ -427,6 +427,8 @@ verify_threeway_checksum() (
     RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
     return 1
 )
+
+##################################################
 
 findnewest_osimage() (
     # Echo the URL to the newest OS image file found on remote resource, if any
