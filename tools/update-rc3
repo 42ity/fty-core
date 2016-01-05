@@ -605,6 +605,71 @@ removeold_osimage() (
     return 0
 )
 
+##################################################
+
+findnewest_rawfwimage_uboot() (
+    # Echo the URL to the newest "raw" (not tarballed, only one)
+    # uBoot image file found on remote resource, if any
+    # Note: currently expects certain filename patterns and http-dir listing markup
+    IMAGE_URL="`wget -q -O - ${SOURCESITEROOTFW_UBOOT}/ | sed -n 's|.*href="\(u\-*Boot\)".*|'"${SOURCESITEROOTFW_UBOOT}"'/u-Boot|p' | sed 's,\([^:]\)//,\1/,g'`" && \
+    if [ x"$IMAGE_URL" != x ]; then
+        echo "$IMAGE_URL" && return 0
+    fi
+    return 1
+)
+
+download_rawfwimage_uboot() (
+    cd "${DOWNLOADROOTFW_UBOOT}" || die "Can not use DOWNLOADROOTFW_UBOOT='$DOWNLOADROOTFW_UBOOT'"
+)
+
+removeold_rawfwimage_uboot() (
+    cd "${DOWNLOADROOTFW_UBOOT}" || die "Can not use DOWNLOADROOTFW_UBOOT='$DOWNLOADROOTFW_UBOOT'"
+)
+
+
+##################################################
+
+findnewest_rawfwimage_uimage() (
+    # Echo the URL to the newest "raw" (not tarballed, only one)
+    # uImage image file found on remote resource, if any
+    # Note: currently expects certain filename patterns and http-dir listing markup
+    IMAGE_URL="`wget -q -O - ${SOURCESITEROOTFW_UIMAGE}/ | sed -n 's|.*href="\(uImage\)".*|'"${SOURCESITEROOTFW_UIMAGE}"'/uImage|p' | sed 's,\([^:]\)//,\1/,g'`" && \
+    if [ x"$IMAGE_URL" != x ]; then
+        echo "$IMAGE_URL" && return 0
+    fi
+    return 1
+)
+
+download_rawfwimage_uimage() (
+    cd "${DOWNLOADROOTFW_UIMAGE}" || die "Can not use DOWNLOADROOTFW_UIMAGE='$DOWNLOADROOTFW_UIMAGE'"
+)
+
+removeold_rawfwimage_uimage() (
+    cd "${DOWNLOADROOTFW_UIMAGE}" || die "Can not use DOWNLOADROOTFW_UIMAGE='$DOWNLOADROOTFW_UIMAGE'"
+)
+
+##################################################
+
+findnewest_rawfwimage_modules() (
+    # Echo the URL to the newest "raw" (not tarballed, only one)
+    # uImage image file found on remote resource, if any
+    # Note: currently expects certain filename patterns and http-dir listing markup
+    IMAGE_URL="`wget -q -O - ${SOURCESITEROOTFW_MODULES}/ | sed -n 's|.*href="\(.*[0-9]\.[0-9].*'"\.${EXT}"'\)".*|'"${SOURCESITEROOTFW_MODULES}"'/\1|p' | sed 's,\([^:]\)//,\1/,g'`" && \
+    if [ x"$IMAGE_URL" != x ]; then
+        echo "$IMAGE_URL" && return 0
+    fi
+    return 1
+)
+
+download_rawfwimage_modules() (
+    cd "${DOWNLOADROOTFW_MODULES}" || die "Can not use DOWNLOADROOTFW_MODULES='$DOWNLOADROOTFW_MODULES'"
+)
+
+removeold_rawfwimage_modules() (
+    cd "${DOWNLOADROOTFW_MODULES}" || die "Can not use DOWNLOADROOTFW_MODULES='$DOWNLOADROOTFW_MODULES'"
+)
+
+
 ###########################################################################
 ### Start of application logic
 ###########################################################################
