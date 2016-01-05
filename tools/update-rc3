@@ -463,7 +463,7 @@ download_osimage() (
     # land into the recovery location ("a"bsolute varnames)
     IMAGE_CSURL="${IMAGE_URL}.${IMAGE_CSALGO}"
     rIMAGE_CSOLD="${rIMAGE_URL_BASENAME_EXT}.${IMAGE_CSALGO}"
-    aIMAGE_CSNEW="`pwd`/${rIMAGE_URL_BASENAME_EXT}.${IMAGE_CSALGO}.tmp"
+    aIMAGE_CSNEW="/tmp/${rIMAGE_URL_BASENAME_EXT}.${IMAGE_CSALGO}.$$.tmp"
 
     # We rename the incoming image to include the type in flat directory space
     rTGT_FILE="${rIMAGE_URL_BASENAME_EXT}"
@@ -479,7 +479,9 @@ download_osimage() (
     esac
 
     rTGT_FILE_CSOLD="${rTGT_FILE}.${IMAGE_CSALGO}"
-    aTGT_FILE_CSNEW="`pwd`/${rTGT_FILE}.${IMAGE_CSALGO}.tmp"
+    aTGT_FILE_CSNEW="/tmp/${rTGT_FILE}.${IMAGE_CSALGO}.$$.tmp"
+
+    trap 'TRAPCODE=$?; rm -f "$aTGT_FILE_CSNEW" "$aIMAGE_CSNEW"; exit $TRAPCODE' 0
 
     logmsg_info "Downloading '${IMAGE_CSURL}' (if any)..."
     rm -f "${aIMAGE_CSNEW}"
@@ -545,8 +547,19 @@ download_osimage() (
         aTGT_FILE_CSOLD="`pwd`/${rTGT_FILE_CSOLD}"
     fi
 
-    [ -s "${aTGT_FILE_CSNEW}" -a ! -s "${aTGT_FILE_CSOLD}" ] && \
-        mv -f "${aTGT_FILE_CSNEW}" "${aTGT_FILE_CSOLD}"
+    if [ x"$aTGT_FILE_CSNEW" != x"${aIMAGE_CSNEW}" ] && [ -s "$aIMAGE_CSNEW" ] && [ -s "$aTGT_FILE_CSNEW" ] ; then
+        # We have both a flat and original checksum files; keep one
+        if [ x"$FLAG_FLATTEN_FILENAMES" = xyes ]; then
+            rm -f "$aIMAGE_CSNEW"
+        else
+            rm -f "$aTGT_FILE_CSNEW"
+        fi
+    fi
+
+    if [ ! -s "${aTGT_FILE_CSOLD}" ]; then
+        [ -s "${aIMAGE_CSNEW}" ] && mv -f "${aIMAGE_CSNEW}" "${aTGT_FILE_CSOLD}"
+        [ -s "${aTGT_FILE_CSNEW}" ] && mv -f "${aTGT_FILE_CSNEW}" "${aTGT_FILE_CSOLD}"
+    fi
 
     logmsg_info "Downloading '$IMAGE_URL' into '$aTGT_FILE'..."
     rm -f "${aTGT_FILE}"
