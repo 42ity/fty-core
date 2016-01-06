@@ -1093,10 +1093,7 @@ bin_PROGRAMS += 		generate_measurement
 
 generate_measurement_SOURCES =	tools/generate_measurement.cc
 
-generate_measurement_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lbiosapi
-
-generate_measurement_LDADD = \
-				libpriv-proto.la
+generate_measurement_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBBIOSPROTO_LIBS}
 
 generate_measurement_CPPFLAGS =	$(AM_CPPFLAGS)
 
