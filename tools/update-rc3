@@ -46,6 +46,7 @@ set -o pipefail
 # TODO: TFTP support, busybox can do it
 # TODO: Test with https - can require custom CA trust configuration, etc.
 # TODO: Use our common requester as a wrapper for real/busybox wget/curl
+# TODO: Make a common routine to list remote directories (e.g. http-dir parsing, ftp, tftp, localfs...)
 [ -z "${SOURCESITEROOT-}" ] && SOURCESITEROOT='http://obs.roz53.lab.etn.com/images'
 [ -z "${SOURCESITEROOT_OSIMAGE-}" ] && SOURCESITEROOT_OSIMAGE="$SOURCESITEROOT/$IMGTYPE/$ARCH"
 
@@ -431,11 +432,58 @@ verify_threeway_checksum() (
 
 ##################################################
 
+lshost_http() (
+    # List the remote resource "$1" which is an apache-style http directory
+    # (HTML) and return links that are relative or under the same virtserver
+    REMOTE_DIR="`echo "$1" | sed 's,/$,,g'`"
+    REMOTE_ROOTURL="`echo "$REMOTE_DIR" | sed 's,^\(.*://[^/]*\)/.*$,\1,'`"
+    # Hostname from the URL, without schema and port
+    REMOTE_VIRTHOST="`echo "$REMOTE_DIR" | sed 's,^.*://\([^/:]*\)[/:].*$,\1,'`"
+    wget -q -O - "$REMOTE_DIR"/ | \
+        sed -n 's|.*href="\([^\"]*\)".*|\1|pg' | \
+    while read URL ; do
+        case "$URL" in
+            "[Hh][Tt]|[Tt][Pp]?([Ss])://${REMOTE_VIRTHOST}[:/]"*)
+                # URL is under this virthost
+                echo "$URL" ;;
+            "[Hh][Tt][Tt][Pp]?([Ss])://"*)
+                # URL is under some other virthost
+                ;;
+            *://*)
+                # URL is under some unknown schema (e.g. FTP)
+                ;;
+            /*)  # Assume relative URL under server root
+                echo "${REMOTE_ROOTURL}/${URL}" ;;
+            *)  # Assume relative URL under current dir
+                echo "${REMOTE_DIR}/${URL}" ;;
+        esac
+    done | sed 's,\([^:]\)//,\1/,g'
+)
+
+lsdir_http() (
+    # List the remote resource "$1/" which is an apache-style http directory
+    # and selects URLs starting with this "$1/"
+    REMOTE_DIR="`echo "$1" | sed 's,/$,,g'`"
+    lshost_http "$REMOTE_DIR" | egrep -i "^$REMOTE_DIR/"
+)
+
+lsdir_http_pattern() {
+    # List the remote directory resource "$1/" and select sub-files by glob $2
+    REMOTE_DIR="`echo "$1" | sed 's,/$,,g'`"
+    REMOTE_GLOB="$2"
+    lsdir_http "$REMOTE_DIR" | while read URL; do case "$URL" in
+        $REMOTE_DIR/$REMOTE_GLOB) echo "$URL" ;;
+    esac; done
+}
+
+
+##################################################
+
 findnewest_osimage() (
     # Echo the URL to the newest OS image file found on remote resource, if any
     # Note: currently expects certain filename patterns and http-dir listing markup
-    IMAGE_URL="`wget -q -O - ${SOURCESITEROOT_OSIMAGE}/ | sed -n 's|.*href="\(.*simpleimage.*\.'"${EXT}"'\)".*|'"${SOURCESITEROOT_OSIMAGE}"'/\1|p' | sed 's,\([^:]\)//,\1/,g' | sort -n | tail -1`" && \
-    if [ x"$IMAGE_URL" != x ]; then
+    IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOT_OSIMAGE}" "simpleimage*.${EXT}"`"
+    if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
         [ x"`basename "$IMAGE_URL" .${EXT}`" != x ] && \
         echo "$IMAGE_URL" && return 0
     fi
