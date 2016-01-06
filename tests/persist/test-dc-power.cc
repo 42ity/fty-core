@@ -76,6 +76,5 @@ TEST_CASE("DC power #1 v2","[db][power][dc][calc][v2][dc_power.sql]")
             REQUIRE(exp_devices.count(oneDevice) == 1);
         }
     }
-    log_close();
 }
 

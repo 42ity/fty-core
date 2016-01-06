@@ -98,6 +98,5 @@ int main (int argc, char *argv[])
 
     bios_agent_destroy (&agent);
     log_info ("%s finished.", BIOS_AGENT_NAME_DB_INVENTORY);
-    log_close();
     return EXIT_SUCCESS;
 }

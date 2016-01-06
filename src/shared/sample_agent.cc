@@ -43,6 +43,7 @@ int main (int argc, char *argv []) {
         return 0;
     }
 
+    log_open ();
     const char *addr = (argc == 1) ? "ipc://@/malamute" : argv[1];
     std::map<std::string, std::pair<int32_t, time_t>> cache;
 

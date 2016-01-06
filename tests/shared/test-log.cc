@@ -53,29 +53,23 @@ end:
 }
 
 TEST_CASE("log-getset-level", "[log][level]") {
-    // log_level is initially set to LOG_SYSLOG_NA
-    CHECK(log_get_syslog_level() == LOG_SYSLOG_NA);
 #ifdef ENABLE_DEBUG_BUILD
-    CHECK(log_get_stderr_level() == LOG_DEBUG);
+    CHECK(log_get_level() == LOG_DEBUG);
 #else
-    CHECK(log_get_stderr_level() == LOG_ERR);
+    CHECK(log_get_level() == LOG_WARNING);
 #endif
 
-    log_set_syslog_level(LOG_DEBUG);
-    CHECK(log_get_syslog_level() == LOG_DEBUG);
 #ifdef ENABLE_DEBUG_BUILD
-    CHECK(log_get_stderr_level() == LOG_DEBUG);
+    CHECK(log_get_level() == LOG_DEBUG);
 #else
-    CHECK(log_get_stderr_level() == LOG_ERR);
+    CHECK(log_get_level() == LOG_ERR);
 #endif
-    
-    log_set_stderr_level(LOG_WARNING);
-    CHECK(log_get_syslog_level() == LOG_DEBUG);
-    CHECK(log_get_stderr_level() == LOG_WARNING);
+
+    log_set_level(LOG_WARNING);
+    CHECK(log_get_level() == LOG_WARNING);
 
     log_set_level(LOG_CRIT);
-    CHECK(log_get_syslog_level() == LOG_CRIT);
-    CHECK(log_get_stderr_level() == LOG_CRIT);
+    CHECK(log_get_level() == LOG_CRIT);
 }
 
 TEST_CASE("log-getset-stderr", "[log][stderr]") {
@@ -93,11 +87,9 @@ TEST_CASE("log-do_log", "[log][do_log]") {
 
     //XXX: all get/set modify global state of log.lo
     //thus sanitize manually
-    log_set_syslog_level(LOG_NOOP);
-    log_set_stderr_level(LOG_ERR);
+    log_set_level(LOG_ERR);
     log_set_file(tempf);
-    CHECK(log_get_stderr_level() == LOG_ERR);
-    CHECK(log_get_syslog_level() < LOG_CRIT);
+    CHECK(log_get_level() == LOG_ERR);
 
     //XXX: don't use log_XXX macros as the subsequent check
     //will be complicated - TODO: check usage of regexes

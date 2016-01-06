@@ -34,7 +34,6 @@
 #include <tnt/httpheader.h>
 #include <cxxtools/query_params.h>
 #include <stdio.h>
-#include "log.h"
 
 #ifndef VALID_FOR
 #define VALID_FOR 3600
@@ -81,15 +80,11 @@ std::string token="";
     }
 
     // with grant_type argument client wants to get new oauth2 token
-    if (grant_type != "password") {
-        log_debug ("grant_type is not 'password', but '%s'", grant_type.c_str());
+    if (grant_type != "password")
         http_die ("request-param-bad", "grant_type", grant_type.c_str(), "password");
-    }
 
-    if(!authenticate(username.c_str(), password.c_str())) {
-        log_debug ("bad user + password");
+    if(!authenticate(username.c_str(), password.c_str()))
         http_die ("request-param-bad", "(user|passwd)", "<invalid user or password>", "<valid user and password>");
-    }
 </%cpp>
 {
     "access_token":"<$$ tokens::get_instance()->gen_token(valid, username.c_str()) $>",

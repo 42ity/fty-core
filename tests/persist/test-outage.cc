@@ -48,8 +48,6 @@ TEST_CASE("f:select_alertDates_byRuleName_byInterval_byDcId #1","[db][outage][se
     REQUIRE ( reply_select.rv == 0 );
     REQUIRE ( start.size() == 10 );
     REQUIRE ( end.size() == 10 );
-
-    log_close();
 }
 
 
@@ -70,8 +68,6 @@ TEST_CASE("f:calculate_outage_byInerval_byDcId #2","[db][calculate][outage][test
 
     REQUIRE ( rv == 0 );
     REQUIRE ( outage == 60*60*24 );
-
-    log_close();
 }
 
 
@@ -92,8 +88,6 @@ TEST_CASE("f:calculate_outage_byInerval_byDcId #3","[db][calculate][outage][test
 
     REQUIRE ( rv == 0 );
     REQUIRE ( outage == 8361 );
-
-    log_close();
 }
 
 
@@ -126,5 +120,4 @@ TEST_CASE("f:insert_outage  select_outage_byDC_byInterval #4","[db][insert][sele
 
     REQUIRE ( ret.status == 1 );
     REQUIRE ( ret.affected_rows == 1 );
-    log_close();
 }

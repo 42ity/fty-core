@@ -64,7 +64,6 @@ TEST_CASE("Location topology from #1","[db][topology][location][location_topolog
 
     asset_msg_destroy (&getmsg);
     common_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology from #3","[db][topology][location][location_topology.sql][from][lf3]")
@@ -168,7 +167,6 @@ TEST_CASE("Location topology from #3","[db][topology][location][location_topolog
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology from #4","[db][topology][location][location_topology.sql][from][lf4]")
@@ -296,7 +294,6 @@ TEST_CASE("Location topology from #4","[db][topology][location][location_topolog
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology from #5","[db][topology][location][location_topology.sql][from][lf5]")
@@ -396,7 +393,6 @@ TEST_CASE("Location topology from #5","[db][topology][location][location_topolog
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology from #5.1","[db][topology][location][location_topology.sql][from][lf5.1]")
@@ -489,7 +485,6 @@ TEST_CASE("Location topology from #5.1","[db][topology][location][location_topol
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology from #6","[db][topology][location][location_topology.sql][from][lf6]")
@@ -586,7 +581,6 @@ TEST_CASE("Location topology from #6","[db][topology][location][location_topolog
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology from #6.1","[db][topology][location][location_topology.sql][from][lf6.1]")
@@ -662,7 +656,6 @@ TEST_CASE("Location topology from #6.1","[db][topology][location][location_topol
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology from #7","[db][topology][location][location_topology.sql][from][lf7]")
@@ -754,7 +747,6 @@ TEST_CASE("Location topology from #7","[db][topology][location][location_topolog
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology from #8","[db][topology][location][location_topology.sql][from][lf8]")
@@ -847,7 +839,6 @@ TEST_CASE("Location topology from #8","[db][topology][location][location_topolog
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology from #9","[db][topology][location][location_topology.sql][from][lf9]")
@@ -954,7 +945,6 @@ TEST_CASE("Location topology from #9","[db][topology][location][location_topolog
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology from #10","[db][topology][location][location_topology.sql][from][lf10]")
@@ -1047,7 +1037,6 @@ TEST_CASE("Location topology from #10","[db][topology][location][location_topolo
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology from #11","[db][topology][location][location_topology.sql][from][lf11]")
@@ -1142,7 +1131,6 @@ TEST_CASE("Location topology from #11","[db][topology][location][location_topolo
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology from #12","[db][topology][location][location_topology.sql][from][lf12]")
@@ -1244,7 +1232,6 @@ TEST_CASE("Location topology from #12","[db][topology][location][location_topolo
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology from #13","[db][topology][location][location_topology.sql][from][lf13]")
@@ -1344,7 +1331,6 @@ TEST_CASE("Location topology from #13","[db][topology][location][location_topolo
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology from #14","[db][topology][location][location_topology.sql][from][lf14]")
@@ -1439,7 +1425,6 @@ TEST_CASE("Location topology from #14","[db][topology][location][location_topolo
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology from #15","[db][topology][location][location_topology.sql][from][lf15]")
@@ -1517,7 +1502,6 @@ TEST_CASE("Location topology from #15","[db][topology][location][location_topolo
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 TEST_CASE("Location topology from #16","[db][topology][location][location_topology.sql][from][lf16]")
 {
@@ -1594,7 +1578,6 @@ TEST_CASE("Location topology from #16","[db][topology][location][location_topolo
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology from #17","[db][topology][location][location_topology.sql][from][lf17]")
@@ -1672,7 +1655,6 @@ TEST_CASE("Location topology from #17","[db][topology][location][location_topolo
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology from #18","[db][topology][location][location_topology.sql][from][lf18]")
@@ -1750,7 +1732,6 @@ TEST_CASE("Location topology from #18","[db][topology][location][location_topolo
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology from #19","[db][topology][location][location_topology.sql][from][lf19]")
@@ -1828,7 +1809,6 @@ TEST_CASE("Location topology from #19","[db][topology][location][location_topolo
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 
@@ -1907,7 +1887,6 @@ TEST_CASE("Location topology from #20","[db][topology][location][location_topolo
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology from #21","[db][topology][location][location_topology.sql][from][lf21]")
@@ -1985,7 +1964,6 @@ TEST_CASE("Location topology from #21","[db][topology][location][location_topolo
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology from #22","[db][topology][location][location_topology.sql][from][lf22]")
@@ -2063,7 +2041,6 @@ TEST_CASE("Location topology from #22","[db][topology][location][location_topolo
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology from #23","[db][topology][location][location_topology.sql][from][lf23]")
@@ -2155,7 +2132,6 @@ TEST_CASE("Location topology from #23","[db][topology][location][location_topolo
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology from #24","[db][topology][location][location_topology.sql][from][lf24]")
@@ -2229,7 +2205,6 @@ TEST_CASE("Location topology from #24","[db][topology][location][location_topolo
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology from #25","[db][topology][location][location_topology.sql][from][lf25]")
@@ -2328,7 +2303,6 @@ TEST_CASE("Location topology from #25","[db][topology][location][location_topolo
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 
@@ -2425,7 +2399,6 @@ TEST_CASE("Location topology from #26","[db][topology][location][location_topolo
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 
@@ -2521,5 +2494,4 @@ TEST_CASE("Location topology from #27","[db][topology][location][location_topolo
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }

@@ -101,5 +101,4 @@ TEST_CASE("Power topology group #1","[db][topology][power][group][power_topology
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
