@@ -31,6 +31,7 @@
 #include <vector>
 #include <stdexcept>
 #include <cstdlib>
+#include <algorithm>
 #include <ctime>
 #include <cxxtools/split.h>
 #include <sys/types.h>
@@ -48,6 +49,30 @@
 #include "utils_web.h"
 #include "helpers.h"
 
+// Check if value of parameter 'relative' is supported:
+//  * No - return false, value of unixtime is not changed
+//  * Yes - return true; value of unixtime contains now - (relative expressed in seconds) 
+//
+// Currently supported values of relative: 24h, 7d, 30d
+// Expects string relative converted to lowercase.
+
+bool relative_to_unixtime (const std::string& relative, int64_t now, int64_t& unixtime) { 
+    if (relative.compare ("24h") == 0) {
+        unixtime = now - 86400;        
+        return true;
+    }
+    else if (relative.compare ("7d") == 0) {
+        unixtime = now - 604800;
+        return true;
+    }
+    else if (relative.compare ("30d") == 0) {
+        unixtime = now - 2592000;
+        return true;
+    }
+    return false;
+}
+
+
 </%pre>
 <%args>
     std::string start_ts;
@@ -56,31 +81,47 @@
     std::string step;
     std::string source;
     std::string element_id;
+    std::string relative;
 </%args>
 <%cpp>
     // Input arguments checking
 
-    // check both start_ts and end_ts
-    if (start_ts.empty ()) {
-        http_die ("request-param-required", "start_ts");
+    int64_t st = -1, end = -1;
+    if (relative.empty ()) {
+        // check both start_ts and end_ts
+        if (start_ts.empty ()) {
+            http_die ("request-param-required", "start_ts");
+        }
+        st = datetime_to_calendar (start_ts.c_str ());
+        if (st == -1) {
+            http_die ("request-param-bad", "start_ts", std::string ("'").append (start_ts).append ("'").c_str (), "format 'YYYYMMDDhhmmssZ");
+        }
+        if (end_ts.empty ()) {
+            http_die ("request-param-required", "end_ts");
+        }
+        end = datetime_to_calendar (end_ts.c_str ());
+        if (end == -1) {
+            http_die ("request-param-bad", "end_ts", std::string ("'").append (end_ts).append ("'").c_str (), "format 'YYYYMMDDhhmmssZ");
+        }
+       
+        // check that start_ts < end_ts
+        if (end <= st) {
+            http_die ("parameter-conflict",
+                std::string ("Start timestamp '").append (start_ts).append ("' is greater than end timestamp '").append (end_ts).append ("'.").c_str ());
+        }
     }
-    int64_t st = datetime_to_calendar (start_ts.c_str ());
-    if (st == -1) {
-        http_die ("request-param-bad", "start_ts", std::string ("'").append (start_ts).append ("'").c_str (), "format 'YYYYMMDDhhmmssZ");
+    else {
+        // check value of relative parameter
+        std::transform (relative.begin(), relative.end(), relative.begin(), ::tolower);
+        int64_t now = (int64_t) time (NULL); 
+        if (!relative_to_unixtime (relative, now, st)) {
+            http_die ("request-param-bad", "relative", std::string ("'").append (relative).append ("'").c_str (),
+                      "one of the following values: '24h', '7d', '30d'.");
+        } 
+        end = (int64_t) time (NULL);
     }
-    if (end_ts.empty ()) {
-        http_die ("request-param-required", "end_ts");
-    }
-    int64_t end = datetime_to_calendar (end_ts.c_str ());
-    if (end == -1) {
-        http_die ("request-param-bad", "end_ts", std::string ("'").append (end_ts).append ("'").c_str (), "format 'YYYYMMDDThhmmssZ");
-    }
-   
-    // check that start_ts < end_ts
-    if (end <= st) {
-        http_die ("parameter-conflict",
-            std::string ("Start timestamp '").append (start_ts).append ("' is greater than end timestamp '").append (end_ts).append ("'.").c_str ());
-    }
+
+    log_debug ("st = '%" PRIi64"', end = '%" PRIi64"'", st, end);
 
     // type is optional, default type is arithmetic average
     if (type.empty ()) {
