@@ -471,6 +471,7 @@ lsdir_http() (
 
 lsdir_http_pattern() {
     # List the remote directory resource "$1/" and select sub-files by glob $2
+    # See "Pathname Expansion" in `man bash` for syntax details
     REMOTE_DIR="`echo "$1" | sed 's,/$,,g'`"
     REMOTE_GLOB="$2"
     lsdir_http "$REMOTE_DIR" | while read URL; do case "$URL" in
@@ -661,10 +662,12 @@ findnewest_rawfwimage_uboot() (
     # Echo the URL to the newest "raw" (not tarballed, only one)
     # uBoot image file found on remote resource, if any
     # Note: currently expects certain filename patterns and http-dir listing markup
-    IMAGE_URL="`wget -q -O - ${SOURCESITEROOTFW_UBOOT}/ | sed -n 's|.*href="\(u\-*Boot\)".*|'"${SOURCESITEROOTFW_UBOOT}"'/u-Boot|p' | sed 's,\([^:]\)//,\1/,g'`" && \
-    if [ x"$IMAGE_URL" != x ]; then
-        echo "$IMAGE_URL" && return 0
-    fi
+    for P in 'u-Boot' 'uBoot' ; do
+        IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOTFW_UBOOT}" "$P"`"
+        if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
+            echo "$IMAGE_URL" && return 0
+        fi
+    done
     return 1
 )
 
@@ -683,8 +686,8 @@ findnewest_rawfwimage_uimage() (
     # Echo the URL to the newest "raw" (not tarballed, only one)
     # uImage image file found on remote resource, if any
     # Note: currently expects certain filename patterns and http-dir listing markup
-    IMAGE_URL="`wget -q -O - ${SOURCESITEROOTFW_UIMAGE}/ | sed -n 's|.*href="\(uImage\)".*|'"${SOURCESITEROOTFW_UIMAGE}"'/uImage|p' | sed 's,\([^:]\)//,\1/,g'`" && \
-    if [ x"$IMAGE_URL" != x ]; then
+    IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOTFW_UIMAGE}" "uImage"`"
+    if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
         echo "$IMAGE_URL" && return 0
     fi
     return 1
@@ -704,8 +707,8 @@ findnewest_rawfwimage_modules() (
     # Echo the URL to the newest "raw" (not tarballed, only one)
     # uImage image file found on remote resource, if any
     # Note: currently expects certain filename patterns and http-dir listing markup
-    IMAGE_URL="`wget -q -O - ${SOURCESITEROOTFW_MODULES}/ | sed -n 's|.*href="\(.*[0-9]\.[0-9].*'"\.${EXT}"'\)".*|'"${SOURCESITEROOTFW_MODULES}"'/\1|p' | sed 's,\([^:]\)//,\1/,g'`" && \
-    if [ x"$IMAGE_URL" != x ]; then
+    IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOTFW_MODULES}" "*[0-9].[0-9]*.${EXT}"`"
+    if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
         echo "$IMAGE_URL" && return 0
     fi
     return 1
