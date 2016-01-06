@@ -21,7 +21,7 @@
  * \file time.ecpp
  * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \author Karol Hrdina <KarolHrdina@Eaton.com>
- * \brief Not yet documented file
+ * \brief  manipulating with time service
  */
  #><%pre>
 #include <iostream>
@@ -37,36 +37,34 @@
 	augtool* augeas = augtool::get_instance();
 
     if(!request.isMethodGET()) {
-</%cpp>
-<%cpp>
 		std::stringstream input(request.getBody(), std::ios_base::in);
 		cxxtools::SerializationInfo si;
 		cxxtools::JsonDeserializer deserializer(input);
-		std::string time;
-		std::string ntp;
 		try {
 			deserializer.deserialize(si);
 		} catch (const std::exception& e) {
             http_die ("bad-request-document", std::string("Expecting valid json document: ").append (e.what ()).c_str ());
 		}
 
+		std::string time;
 		try {
 			si.getMember("time") >>= time;
 		} catch (const std::exception& e) {
 			time = "";
 		}
+
+		std::string ntp;
 		try {
 			si.getMember("ntp") >>= ntp;
 		} catch (const std::exception& e) {
 			ntp = "";
 		}
 
-	    static cxxtools::Regex t_rex("^[1-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]T[0-2][0-9]:[0-6][0-9]:[0-6][0-9]Z$");
-	    static cxxtools::Regex n_rex("^[0-9a-z_.-]*$");
-
 	    if (time.empty() && ntp.empty()) {
             http_die ("request-param-required", "time' or 'ntp");
 		}
+
+	    static cxxtools::Regex t_rex("^[1-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]T[0-2][0-9]:[0-6][0-9]:[0-6][0-9]Z$");
 	    if(!time.empty()) {
             if (!t_rex.match (time)) {
                 http_die ("request-param-bad", "time", time.c_str (), "format <YYYY>-<MM>-<DD>T<hh>:<mm>:<ss>Z (ISO 8601).");
@@ -78,6 +76,8 @@
 			system("sudo systemctl stop ntp");
 			system("sudo systemctl disable ntp");
 	    }
+
+	    static cxxtools::Regex n_rex("^[0-9a-z_.-]*$");
 	    if(!ntp.empty()) {
 		    if(!n_rex.match (ntp)) {
                 http_die ("request-param-bad", "time", ntp.c_str (), "any combination of alphanumeric characters, underscore (_), dot (.) and hyphen (-).");
