@@ -171,6 +171,5 @@ int main (int argc, char *argv []) {
 
     zactor_destroy (&actor);
     bios_agent_destroy (&client);
-    log_close();
     return 0;
 }

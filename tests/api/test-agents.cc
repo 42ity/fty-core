@@ -77,8 +77,6 @@ TEST_CASE(" inventory message encode/decode","[db][ENCODE][DECODE][bios_inventor
     FREE0 (device_name_new)
     FREE0 (module_name_new)
     zhash_destroy(&ext_attributes_new);
-
-    log_close ();
 }
 
 TEST_CASE ("Functions fail for bad input arguments", "[agents][public_api]") {
@@ -390,8 +388,6 @@ TEST_CASE ("bios asset extended message encode & decode", "[agents][public_api][
     FREE0 (name_new)
     zhash_destroy(&ext_attributes_new);
     zhash_destroy(&ext_attributes);
-
-    log_close ();
 }
 
 
@@ -470,8 +466,6 @@ TEST_CASE ("bios asset extended message decode", "[agents][public_api][asset_ext
     FREE0 (name_new)
     zhash_destroy(&ext_attributes_new);
     zhash_destroy(&ext_attributes);
-
-    log_close ();
 }
 
 
@@ -829,6 +823,4 @@ TEST_CASE ("bios asset extended message decode, missing keys", "[agents][public_
     FREE0 (name_new)
     zhash_destroy(&ext_attributes_new);
     zhash_destroy(&ext_attributes);
-
-    log_close ();
 }

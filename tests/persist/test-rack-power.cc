@@ -88,5 +88,4 @@ TEST_CASE("Rack power v2","[db][power][rack][calc][v2][rack_power.sql]")
             REQUIRE(exp_devices.count(oneDevice) == 1);
         }
     }
-    log_close();
 }

@@ -58,7 +58,6 @@ TEST_CASE("Power topology group","[db][topology][power][group]")
     
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 
@@ -81,7 +80,6 @@ TEST_CASE("Power topology group empty","[db][topology][power][group]")
     
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Power topology datacenter1","[db][topology][power][datacenter]")
@@ -103,7 +101,6 @@ TEST_CASE("Power topology datacenter1","[db][topology][power][datacenter]")
     
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 /* TODO
@@ -127,7 +124,6 @@ TEST_CASE("Power topology datacenter10","[db][topology][power][datacenter]")
     
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 */
