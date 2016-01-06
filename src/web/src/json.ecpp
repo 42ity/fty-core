@@ -27,6 +27,8 @@
 #include <locale.h>
 #include <stdlib.h>
 #include <cxxtools/regex.h>
+
+#include "log.h"
 </%pre>
 <%cpp>
 	// Get rid of locales
@@ -40,6 +42,9 @@
 
 	// Do not let zeromq took away our signals
 	setenv("ZSYS_SIGHANDLER", "false", 1);
+
+    // setup BIOS logging
+    log_open ();
 
 	// Silence the warning about unused "request" variable
 	request.keepAlive();
