@@ -27,6 +27,10 @@
 #ifndef SRC_WEB_SRC_DCI_IMPL_H
 #define SRC_WEB_SRC_DCI_IMPL_H
 
+#include <map>
+#include <string>
+
+#include "db/measurements.h"
 #include "utils++.h"
 
 // this file exists only to have syntax highlighting correct
@@ -221,7 +225,7 @@ s_is_valid_param(const std::string& p)
     return PARAM_TO_SRC.count(p) != 0;
 }
 
-std::string 
+std::string
 s_get_valid_param () {
     return utils::join_keys_map (PARAM_TO_SRC, ", ");
 }
