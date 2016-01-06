@@ -162,7 +162,6 @@ zmsg_t *process_assettopology (const char *database_url,
         assert (is_common_msg (return_msg));
     }
     assert (return_msg); // safeguard non-NULL return value
-    log_close ();
     return return_msg;
 }
 

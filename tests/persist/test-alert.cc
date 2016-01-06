@@ -121,8 +121,6 @@ TEST_CASE("t_bios_alert INSERT/DELETE/SELECT #1","[db][CRUD][insert][delete][sel
     reply_delete = delete_from_alert (conn, rowid);
     REQUIRE ( reply_delete.affected_rows == 0 );
     REQUIRE ( reply_delete.status == 1 );
-
-    log_close();
 }
 
 TEST_CASE("t_bios_alert UPDATE end date #2","[db][CRUD][update][alert][crud_test.sql]")
@@ -203,8 +201,6 @@ TEST_CASE("t_bios_alert UPDATE end date #2","[db][CRUD][update][alert][crud_test
     
     // delete
     delete_from_alert (conn, rowid);
-
-    log_close();
 }
 
 TEST_CASE("t_bios_alert UPDATE notification #3","[db][CRUD][update][alert][crud_test.sql]")
@@ -267,8 +263,6 @@ TEST_CASE("t_bios_alert UPDATE notification #3","[db][CRUD][update][alert][crud_
 
     // delete
     delete_from_alert (conn, rowid);
-
-    log_close();
 }
 
 
@@ -362,8 +356,6 @@ TEST_CASE("t_bios_alert_device INSERT/DELETE #4","[db][CRUD][insert][delete][ale
     REQUIRE (affected_rows == 1 );
     //delete element
     delete_asset_element (conn, rowid_element);
-
-    log_close();
 }
 
 
@@ -475,8 +467,6 @@ TEST_CASE("t_bios_alert_device INSERT/DELETE #5","[db][CRUD][insert][alert][dele
     //delete element
     delete_asset_element (conn, rowid_element1);
     delete_asset_element (conn, rowid_element2);
-
-    log_close();
 }
 
 
@@ -565,8 +555,6 @@ TEST_CASE("insert_alert_new #6","[db][CRUD][insert][delete][alert][crud_test.sql
 
     persist::delete_device (conn, rowid_element1);
     persist::delete_device (conn, rowid_element2);
-
-    log_close();
 }
 
 TEST_CASE("t_bios_alert INSERT Fail #7","[db][CRUD][insert][alert][crud_test.sql][wrong_input]")
@@ -593,8 +581,6 @@ TEST_CASE("t_bios_alert INSERT Fail #7","[db][CRUD][insert][alert][crud_test.sql
     REQUIRE ( reply_insert.errtype == DB_ERR );
     REQUIRE ( reply_insert.errsubtype == DB_ERROR_BADINPUT );
     REQUIRE ( reply_insert.msg == "rule name is invalid" );
-
-    log_close();
 }
 
 TEST_CASE("t_bios_alert INSERT Null description #8","[db][CRUD][insert][alert][crud_test.sql]")
@@ -622,8 +608,6 @@ TEST_CASE("t_bios_alert INSERT Null description #8","[db][CRUD][insert][alert][c
 
     // delete
     delete_from_alert (conn, rowid);
-
-    log_close();
 }
 
 TEST_CASE("t_bios_alert UPDATE notification by id #9","[db][CRUD][update][alert][crud_test.sql][wrong_input]")
@@ -642,8 +626,6 @@ TEST_CASE("t_bios_alert UPDATE notification by id #9","[db][CRUD][update][alert]
     REQUIRE (reply_update.status == 1);
     REQUIRE (reply_update.affected_rows == 0);
     REQUIRE (reply_update.rowid == 0);
-
-    log_close();
 }
 
 TEST_CASE("t_bios_alert UPDATE tilldate by rulename #10","[db][CRUD][update][alert][crud_test.sql][wrong_input]")
@@ -662,7 +644,5 @@ TEST_CASE("t_bios_alert UPDATE tilldate by rulename #10","[db][CRUD][update][ale
     REQUIRE (reply_update.status == 1);
     REQUIRE (reply_update.affected_rows == 0);
     REQUIRE (reply_update.rowid == 0);
-
-    log_close();
 }
 

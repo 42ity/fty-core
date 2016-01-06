@@ -132,7 +132,6 @@ int main (UNUSED_PARAM int argc, UNUSED_PARAM char **argv) {
 
     bios_agent_destroy (&agent);
     log_info ("%s finished.", BIOS_AGENT_NAME_COMPUTATION);
-    log_close ();
     return EXIT_SUCCESS;
 }
 
