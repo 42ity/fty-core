@@ -102,6 +102,8 @@ usage() {
     echo "Usage: ${_SCRIPT_NAME} [options...]"
     echo "Options:"
     echo "  --help | -help | -h       Display this hep and exit"
+    echo "  --config | -c             Source an additional config file (beside looking in"
+    echo "                            standard locations e.g. '/etc/update-rc3.d/*.conf')"
     echo "  --(no-)download-image-os  Enable or disable downloading of OS images"
     echo "  --(no-)download-image-fw  Likewise for downloading of uBoot, uImage+modules"
     echo "  --(no-)download-images    Enable or disable downloading of all image types"
@@ -111,8 +113,8 @@ usage() {
     echo "                   If download-image of this type was requested and successful,"
     echo "                   or if download was not requested at all, remove all but the"
     echo "                   newest (alphabetcally) image file from the recovery location"
-    echo "  --no-remove-files         Skip removing image files deemed corrupt or obsolete"
-    echo "  --no-flatten-filenames    Skip renaming image files to include ARCH and TYPE"
+    echo "  --(no-)remove-files       Skip removing image files deemed corrupt or obsolete"
+    echo "  --(no-)flatten-filenames  Skip renaming image files to include ARCH and TYPE"
     echo "                            for easier differentiation in the flat storage dirs"
 # TODO ...
 }
@@ -722,6 +724,14 @@ removeold_rawfwimage_modules() (
 ### Start of application logic
 ###########################################################################
 
+### Values below can be changed by command-line choices, and some defaults
+### may be overridden by config files before CLI choices
+# (dev) If set to "no", then do not remove files even if deemed broken or old
+FLAG_CAN_REMOVE_IMAGES="yes"
+
+# (rc3/virthost) If set to "no", use original filenames from the source server
+FLAG_FLATTEN_FILENAMES="yes"
+
 if [ -d "/etc/update-rc3.d/" ]; then
     for F in "/etc/update-rc3.d/"*.conf ; do
         if [ -s "$F" ] && [ -r "$F" ] ; then
@@ -748,12 +758,6 @@ ACTION_REMOVEOLD_OSIMAGE="yes"
 # This is currently no-op because we only track one FW image, unpacked on SRC
 ACTION_REMOVEOLD_FWIMAGE="no"
 
-# (dev) If set to "no", then do not remove files even if deemed broken or old
-FLAG_CAN_REMOVE_IMAGES="yes"
-
-# If set to "no", use original filenames from the source server
-FLAG_FLATTEN_FILENAMES="yes"
-
 # Ultimate exit code of the script
 ACTION_RESULT=0
 
@@ -766,7 +770,13 @@ while [ $# -gt 0 ]; do
                     fi
                     [ "$1" = "--debug-calls" ] && shift || { shift; set -xv; }
                     "$@" ; exit $? ;;
+                -c|--config) [ -n "$2" ] && [ -s "$2" ] && [ -r "$2" ] && \
+                        logmsg_info "Sourcing configuration file: '$2' ..." && \
+                        . "$2" || die "Possibly got an error sourcing '$2', see above..."
+                    shift ;;
+                --remove-files)         FLAG_CAN_REMOVE_IMAGES="yes";;
                 --no-remove-files)      FLAG_CAN_REMOVE_IMAGES="no";;
+                --flatten-filenames)    FLAG_FLATTEN_FILENAMES="yes";;
                 --no-flatten-filenames) FLAG_FLATTEN_FILENAMES="no";;
                 --download-image-os)    ACTION_DOWNLOAD_OSIMAGE="yes";;
                 --download-image-fw)    ACTION_DOWNLOAD_FWIMAGE="yes";;
