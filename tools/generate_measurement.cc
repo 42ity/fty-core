@@ -22,15 +22,12 @@
  *  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  *  \brief Not yet documented file
  */
-#include "cleanup.h"
-#include "bios_agent.h"
-#include "defs.h"
-
 #include <stdio.h>
-#include <zsys.h>
-#include <map>
 
-#include "agents.h"
+#include <czmq.h>
+#include <malamute.h>
+#include <biosproto.h>
+
 #include "defs.h"
 
 int main(int argc, char *argv []) {
@@ -40,29 +37,39 @@ int main(int argc, char *argv []) {
         return 0;
     }
 
-    const char *addr = (argc == 5) ? "ipc://@/malamute" : argv[5];
+    const char *endpoint = (argc == 5) ? "ipc://@/malamute" : argv[5];
 
     // Form ID from pid
-    char id[128];
-    snprintf(id, 128, "fake_agent.%d", getpid());
+    char address[128];
+    snprintf(address, 128, "generate-measurement.%d", getpid());
 
     // Create client
-    bios_agent_t *client = bios_agent_new(addr, id);
-    if(!client) {
-        zsys_error ("server-agent: server not reachable at ipc://@/malamute");
+    mlm_client_t *client = mlm_client_new ();
+    assert (client);
+    mlm_client_connect (client, endpoint, 5000, address);
+    if (!mlm_client_connected (client)) {
+        zsys_error ("server-agent: server not reachable at %s", endpoint);
         return 1;
     }
 
+    char *type = argv[2];
+    char *element_src = argv[1];
+    char *value = argv[4];
+    char *unit = argv[3];
+
     // Produce meassurement
-    bios_agent_set_producer(client, bios_get_stream_main());
-    ymsg_t *msg = bios_measurement_encode(argv[1], argv[2], argv[3], atoi(argv[4])*100, -2, -1);
-    char *topic = (char*)malloc((strlen(argv[1]) + strlen(argv[2]) + 15) * sizeof(char));
-    sprintf(topic, "measurement.%s@%s", argv[2], argv[1]);
-    bios_agent_send(client, topic, &msg);
+    mlm_client_set_producer(client, "METRICS");
+    zmsg_t *msg = bios_proto_encode_metric(NULL, type, element_src, value, unit, time(NULL));
+    assert (msg);
+
+    char *topic;
+    asprintf (&topic, "%s@%s", type, element_src);
+    mlm_client_send(client, topic, &msg);
     // To make sure message is send before we do something else
     // https://github.com/Malamute/malamute-core/issues/35
     zclock_sleep (100);
 
-    bios_agent_destroy (&client);
+    zstr_free (&topic);
+    mlm_client_destroy (&client);
     return 0;
 }
