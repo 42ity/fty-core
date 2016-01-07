@@ -114,11 +114,13 @@ usage() {
     echo "  --help | -help | -h       Display this hep and exit"
     echo "  --config | -c             Source an additional config file (beside looking in"
     echo "                            standard locations e.g. '/etc/update-rc3.d/*.conf')"
+    echo "  --(no-)check-image-os, --(no-)check-image-fw, --(no-)check-images"
+    echo "                   Only check the source location if new images are available"
+    echo "                   and exit, whatever the outcome (returns 0 if nothing found,"
+    echo "                   42 if there is something to download)"
     echo "  --(no-)download-image-os  Enable or disable downloading of OS images"
     echo "  --(no-)download-image-fw  Likewise for downloading of uBoot, uImage+modules"
     echo "  --(no-)download-images    Enable or disable downloading of all image types"
-    echo "  --(no-)check-image-os, --(no-)check-image-fw, --(no-)check-images"
-    echo "                   Only check the source location if new images are available"
     echo "  --(no-)removeold-image-os, --(no-)removeold-image-fw, --(no-)removeold-images"
     echo "                   If download-image of this type was requested and successful,"
     echo "                   or if download was not requested at all, remove all but the"
@@ -504,6 +506,10 @@ findnewest_osimage() (
 )
 
 download_osimage() (
+    # If the caller sets CHECK_ONLY=yes and no copy of the remote image is
+    # found on this local system, then the routine just returns code "42"
+    # instead of downloading this detected new image otherwise.
+    # A successful download of an image (consistent non-empty file) is 42 too
     cd "${DOWNLOADROOT_OSIMAGE}" || die "Can not use DOWNLOADROOT_OSIMAGE='$DOWNLOADROOT_OSIMAGE'"
 
     logmsg_info "Fetching newest filename for ${ARCH} OS image of type ${IMGTYPE}..."
@@ -597,6 +603,11 @@ download_osimage() (
         verify_threeway_checksum "${IMAGE_URL}" "./$IMGTYPE/$ARCH/${rIMAGE_URL_BASENAME_EXT}" "./$IMGTYPE/$ARCH/${rIMAGE_CSOLD}" "${aIMAGE_CSNEW}" && return 0
     fi
 
+    if [ x"${CHECK_ONLY-}" = xyes ]; then
+        logmsg_info "According to checksums, the remote resource '$IMAGE_URL' points to an OS image we do not have on this system"
+        return 42
+    fi
+
     # If we are here, the IMAGE_URL is valid and points to a different content
     # than what we already have; the TGT_FILE names the ultimate local filename
     if [ -d "./$IMGTYPE/$ARCH" ]; then
@@ -634,10 +645,12 @@ download_osimage() (
         { rm -f "${aTGT_FILE_CSOLD}"; die "Could not generate '${aTGT_FILE_CSOLD}'"; }
     fi
 
+    [ -s "${aTGT_FILE}" ] && [ -s "${aTGT_FILE_CSOLD}" ] && \
     touch -r "${aTGT_FILE}" "${aTGT_FILE_CSOLD}" && \
     logmsg_info "Got OS image OK:" && \
     ls -ld "${aTGT_FILE}" "${aTGT_FILE_CSOLD}" && \
-    cat "${aTGT_FILE_CSOLD}"
+    cat "${aTGT_FILE_CSOLD}" && \
+    return 42
 )
 
 removeold_osimage() (
@@ -836,6 +849,26 @@ while [ $# -gt 0 ]; do
         shift
 done
 
+# Checks are special - after we do all which were requested (if any), we exit
+if [ x"$ACTION_CHECK_OSIMAGE" = xyes ] || [ x"$ACTION_CHECK_FWIMAGE" = xyes ]; then
+    RESULT_ACTION_CHECK_ANYIMAGE=0
+    if [ x"$ACTION_CHECK_OSIMAGE" = xyes ]; then
+        CHECK_ONLY=yes download_osimage || RESULT_ACTION_CHECK_ANYIMAGE=$?
+    fi
+    if [ x"$ACTION_CHECK_FWIMAGE" = xyes ]; then
+        CHECK_ONLY=yes download_rawfwimage_uboot   || RESULT_ACTION_CHECK_ANYIMAGE=$?
+        CHECK_ONLY=yes download_rawfwimage_uimage  || RESULT_ACTION_CHECK_ANYIMAGE=$?
+        CHECK_ONLY=yes download_rawfwimage_modules || RESULT_ACTION_CHECK_ANYIMAGE=$?
+    fi
+    RES_STR="$RESULT_ACTION_CHECK_ANYIMAGE"
+    case "$RESULT_ACTION_CHECK_ANYIMAGE" in
+        0)  RES_STR="$RESULT_ACTION_CHECK_ANYIMAGE = Local files are OK, but there is nothing new to download" ;;
+        42) RES_STR="$RESULT_ACTION_CHECK_ANYIMAGE = Should download something different from what we have locally" ;;
+    esac
+    logmsg_info "Exiting after completion of requested --check-* operations ($RES_STR)"
+    exit $RESULT_ACTION_CHECK_ANYIMAGE
+fi
+
 RESULT_ACTION_DOWNLOAD_FWIMAGE=0
 RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT=0
 RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE=0
@@ -882,7 +915,9 @@ RESULT_ACTION_DOWNLOAD_OSIMAGE=0
 if [ "$ACTION_DOWNLOAD_OSIMAGE" = yes ]; then
         download_osimage
         RESULT_ACTION_DOWNLOAD_OSIMAGE=$?
-        [ "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -gt 0 ] && \
+        # If there was indeed a successful download, we have code=42 from the
+        # routine; however the script succeeded - so overall exitcode stays 0
+        [ "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -gt 0 -a "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -ne 42 ] && \
             ACTION_RESULT=$RESULT_ACTION_DOWNLOAD_OSIMAGE && \
             if [ "$ACTION_REMOVEOLD_OSIMAGE" = yes ] ; then
                 logmsg_warn "New OS image was not downloaded successfully, so old ones are not purged"
