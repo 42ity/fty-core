@@ -837,7 +837,9 @@ ACTION_CHECK_FWIMAGE="no"
 [ -z "${URL_DOWNLOAD_FWIMAGE_RAW_MODULES-}" ] &&    URL_DOWNLOAD_FWIMAGE_RAW_MODULES=""
 
 ACTION_REMOVEOLD_OSIMAGE="yes"
-# This is currently no-op because we only track one FW image, unpacked on SRC
+# This is currently no-op because we only track "raw" FW images which have one
+# data file per fwimage sub-type, unpacked on remote server
+# TODO: Support creation, download and installation of timestamped FW tarballs
 ACTION_REMOVEOLD_FWIMAGE="no"
 
 # Ultimate exit code of the script
