@@ -116,7 +116,6 @@ TEST_CASE("Location topology to #1","[db][topology][location][location_topology.
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology to #2","[db][topology][location][location_topology.sql][to][lt2]")
@@ -191,7 +190,6 @@ TEST_CASE("Location topology to #2","[db][topology][location][location_topology.
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology to #3","[db][topology][location][location_topology.sql][to][lt3]")
@@ -263,7 +261,6 @@ TEST_CASE("Location topology to #3","[db][topology][location][location_topology.
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology to #4","[db][topology][location][location_topology.sql][to][lt4]")
@@ -333,7 +330,6 @@ TEST_CASE("Location topology to #4","[db][topology][location][location_topology.
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology to #5","[db][topology][location][location_topology.sql][to][lt5]")
@@ -403,7 +399,6 @@ TEST_CASE("Location topology to #5","[db][topology][location][location_topology.
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology to #6","[db][topology][location][location_topology.sql][to][lt6]")
@@ -472,7 +467,6 @@ TEST_CASE("Location topology to #6","[db][topology][location][location_topology.
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Location topology to #7","[db][topology][location][location_topology.sql][to][lt7]")
@@ -540,7 +534,6 @@ TEST_CASE("Location topology to #7","[db][topology][location][location_topology.
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 TEST_CASE("Location topology to #8","[db][topology][location][location_topology.sql][to][lt8]")
 {
@@ -564,6 +557,5 @@ TEST_CASE("Location topology to #8","[db][topology][location][location_topology.
 
     asset_msg_destroy (&getmsg);
     common_msg_destroy (&cretTopology);
-    log_close();
 }
 

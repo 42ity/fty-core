@@ -134,7 +134,6 @@ TEST_CASE("Power topology datacenter #1","[db][topology][power][datacenter][powe
     
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Power topology datacenter #2","[db][topology][power][datacenter][power_topology.sql][pd2]")
@@ -174,5 +173,4 @@ TEST_CASE("Power topology datacenter #2","[db][topology][power][datacenter][powe
     
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
-    log_close();
 }

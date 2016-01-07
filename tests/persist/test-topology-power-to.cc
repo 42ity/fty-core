@@ -60,7 +60,6 @@ TEST_CASE("Power topology to #1","[db][topology][power][to][power_topology.sql][
 
     asset_msg_destroy (&getmsg);
     common_msg_destroy (&cretTopology);
-    log_close();
 }
 
 
@@ -86,7 +85,6 @@ TEST_CASE("Power topology to #2","[db][topology][power][power_topology.sql][to][
 
     asset_msg_destroy (&getmsg);
     common_msg_destroy (&cretTopology);
-    log_close();
 }
 
 TEST_CASE("Power topology to #3","[db][topology][power][power_topology.sql][to][t3]")
@@ -145,7 +143,6 @@ TEST_CASE("Power topology to #3","[db][topology][power][power_topology.sql][to][
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
     zmsg_destroy (&zmsg);
-    log_close();
 }
 
 TEST_CASE("Power topology to #4","[db][topology][power][power_topology.sql][to][t4]")
@@ -200,7 +197,6 @@ TEST_CASE("Power topology to #4","[db][topology][power][power_topology.sql][to][
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
     zmsg_destroy (&zmsg);
-    log_close();
 }
 
 TEST_CASE("Power topology to #5","[db][topology][power][power_topology.sql][to][t5]")
@@ -292,7 +288,6 @@ TEST_CASE("Power topology to #5","[db][topology][power][power_topology.sql][to][
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
     zmsg_destroy (&zmsg);
-    log_close();
 }
 
 TEST_CASE("Power topology to #6","[db][topology][power_topology.sql][power][to][t6]")
@@ -388,7 +383,6 @@ TEST_CASE("Power topology to #6","[db][topology][power_topology.sql][power][to][
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
     zmsg_destroy (&zmsg);
-    log_close();
 }
  
 TEST_CASE("Power topology to #7","[db][topology][power_topology.sql][power][to][t7]")
@@ -474,7 +468,6 @@ TEST_CASE("Power topology to #7","[db][topology][power_topology.sql][power][to][
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
     zmsg_destroy (&zmsg);
-    log_close();
 }
 
 TEST_CASE("Power topology to #8","[db][topology][power_topology.sql][power][to][t8]")
@@ -563,7 +556,6 @@ TEST_CASE("Power topology to #8","[db][topology][power_topology.sql][power][to][
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
     zmsg_destroy (&zmsg);
-    log_close();
 }
 
 TEST_CASE("Power topology to #9","[db][topology][power_topology.sql][power][to][t9]")
@@ -661,7 +653,6 @@ TEST_CASE("Power topology to #9","[db][topology][power_topology.sql][power][to][
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
     zmsg_destroy (&zmsg);
-    log_close();
 }
 
 TEST_CASE("Power topology to #10","[db][topology][power_topology.sql][power][to][t10]")
@@ -748,7 +739,6 @@ TEST_CASE("Power topology to #10","[db][topology][power_topology.sql][power][to]
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
     zmsg_destroy (&zmsg);
-    log_close();
 }
 
 TEST_CASE("Power topology to #11","[db][topology][power][power_topology.sql][to][t11]")
@@ -836,5 +826,4 @@ TEST_CASE("Power topology to #11","[db][topology][power][power_topology.sql][to]
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
     zmsg_destroy (&zmsg);
-    log_close();
 }

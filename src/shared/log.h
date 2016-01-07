@@ -1,6 +1,6 @@
 /*
 Copyright (C) 2014 Eaton
- 
+
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or
@@ -19,9 +19,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 /*! \file log.h
     \brief logging API
     \author Michal Vyskocil <MichalVyskocil@Eaton.com>
- 
+
 Example:
- 
+
    #include "log.h"
 
    int main() {
@@ -29,9 +29,7 @@ Example:
        log_open();
 
        log_debug("debug level is invisible");
-        
        log_set_level(LOG_DEBUG);
-        
        log_debug("%s", "debug level is visible");
 
        log_critical("%s", "critical level");
@@ -39,8 +37,6 @@ Example:
        log_warning("%s", "warning level");
        log_info("%s", "info level");
        log_debug("%s", "debug level");
-
-       log_close();
     }
  */
 
@@ -70,15 +66,13 @@ extern "C" {
 #endif
 
 #define LOG_NOOP LOG_EMERG -1
-#define LOG_SYSLOG_NA LOG_NOOP -1
 
 /*! \brief open log
  *
- * This function does open a connection to syslog and set the level according value from log_get_syslog_level(). You can omit it if you don't want to log to syslog (for example for cli).
+ * Function initialize logging system - it can react on BIOS_LOG_LEVEL environment and setup log level accordingly.
+ * BIOS_LOG_LEVEL can contain LOG_CRIT, LOG_ERR, LOG_WARNING, LOG_INFO or LOG_DEBUG
  * */
 void log_open();
-/*! \brief close log */
-void log_close();
 
 /*! \brief set the maximum log level
  *
@@ -93,17 +87,8 @@ void log_close();
  * */
 void log_set_level(int level);
 
-/*! \brief set the maximum syslog level */
-void log_set_syslog_level(int level);
-
-/*! \brief get the maximum syslog level */
-int log_get_syslog_level();
-
-/*! \brief set the maximum stderr level */
-void log_set_stderr_level(int level);
-
 /*! \brief get the maximum stderr level */
-int log_get_stderr_level();
+int log_get_level();
 
 /*! \brief get the stderr FILE* */
 FILE *log_get_file();
@@ -158,13 +143,13 @@ int do_log(
         log_macro(LOG_CRIT, __VA_ARGS__)
 
 #define LOG_START \
-    log_info("start")
+    log_debug("start")
 
 #define LOG_END \
-    log_info("end::normal")
+    log_debug("end::normal")
 
 #define LOG_END_ABNORMAL(exp) \
-    log_warning("end::abnormal with %s", (exp).what())
+    log_error("end::abnormal with %s", (exp).what())
 
 #ifdef __cplusplus
 }

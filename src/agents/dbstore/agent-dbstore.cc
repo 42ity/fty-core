@@ -158,9 +158,6 @@ int main (int argc, char *argv []) {
                 char* out_subj = NULL;
                 persist::process_alert(&out, &out_subj, in,bios_agent_subject(client));
             }
-            else {
-                log_warning("Unsupported message. Stream = '%s'. Subject = '%s'", stream, _s(bios_agent_subject(client)));
-            }
         }
 
         else {
@@ -171,6 +168,5 @@ int main (int argc, char *argv []) {
 
     zactor_destroy (&actor);
     bios_agent_destroy (&client);
-    log_close();
     return 0;
 }

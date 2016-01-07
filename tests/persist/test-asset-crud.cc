@@ -105,8 +105,6 @@ TEST_CASE("asset ext attribute INSERT/DELETE #1","[db][CRUD][insert][delete][ass
     reply_delete = persist::delete_asset_ext_attribute (conn, keytag, asset_element_id);
     REQUIRE ( reply_delete.status == 1 ); // 0 fail  , 1 ok
     REQUIRE ( reply_delete.affected_rows == 0 );
-
-    log_close();
 }
 
 
@@ -185,8 +183,6 @@ TEST_CASE("asset ext attribute INSERT/DELETE #2","[db][CRUD][insert][delete][ass
     REQUIRE ( rowid == rowid1 );
 
     reply_delete = persist::delete_asset_ext_attribute (conn, keytag, asset_element_id);
-    
-    log_close();
 }
 
 
@@ -252,8 +248,6 @@ TEST_CASE("asset element INSERT/DELETE #3","[db][CRUD][insert][delete][asset_ele
     reply_delete = persist::delete_asset_element (conn, rowid);
     REQUIRE ( reply_delete.affected_rows == 0 );
     REQUIRE ( reply_delete.status == 1 );
-
-    log_close();
 }
 
 
@@ -300,8 +294,6 @@ TEST_CASE("into asset group INSERT/DELETE #5","[db][CRUD][insert][delete][grp_el
     reply_delete = persist::delete_asset_element_from_asset_group (conn, asset_group_id, asset_element_id);
     REQUIRE ( reply_delete.affected_rows == 0 );
     REQUIRE ( reply_delete.status == 1 );
-
-    log_close();
 }
 
 
@@ -356,7 +348,6 @@ TEST_CASE("into asset link INSERT/DELETE #6","[db][CRUD][insert][delete][asset_l
     REQUIRE ( reply_delete.status == 1 );
     
     zlist_destroy (&reply_select);
-    log_close();
 }
 
 
@@ -504,8 +495,6 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
     reply_delete = persist::delete_dc_room_row_rack (conn, rowid);
     REQUIRE ( reply_delete.affected_rows == 0 );
     REQUIRE ( reply_delete.status == 1 );
-
-    log_close();
 }
 
 TEST_CASE("room unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlockated][room][crud_test.sql]")
@@ -581,8 +570,6 @@ TEST_CASE("room unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlocka
     reply_delete = persist::delete_dc_room_row_rack (conn, rowid);
     REQUIRE ( reply_delete.affected_rows == 0 );
     REQUIRE ( reply_delete.status == 1 );
-
-    log_close();
 }
 
 TEST_CASE("row unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockated][row][crud_test.sql]")
@@ -659,8 +646,6 @@ TEST_CASE("row unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockat
     reply_delete = persist::delete_dc_room_row_rack (conn, rowid);
     REQUIRE ( reply_delete.affected_rows == 0 );
     REQUIRE ( reply_delete.status == 1 );
-
-    log_close();
 }
 
 TEST_CASE("rack unlockated INSERT/DELETE #persist::asset_subtype::N_A","[db][CRUD][insert][delete][unlockated][rack][crud_test.sql]")
@@ -832,8 +817,6 @@ TEST_CASE("rack unlockated INSERT/DELETE #persist::asset_subtype::N_A","[db][CRU
     reply_delete = persist::delete_dc_room_row_rack (conn, rowid);
     REQUIRE ( reply_delete.affected_rows == 0 );
     REQUIRE ( reply_delete.status == 1 );
-
-    log_close();
 }
 
 TEST_CASE("group unlockated INSERT/DELETE #11","[db][CRUD][insert][delete][unlockated][group][crud_test.sql]")
@@ -910,8 +893,6 @@ TEST_CASE("group unlockated INSERT/DELETE #11","[db][CRUD][insert][delete][unloc
     reply_delete = persist::delete_dc_room_row_rack (conn, rowid);
     REQUIRE ( reply_delete.affected_rows == 0 );
     REQUIRE ( reply_delete.status == 1 );
-
-    log_close();
 }
 
 
@@ -1085,6 +1066,4 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
     reply_delete = persist::delete_device (conn, rowid);
     REQUIRE ( reply_delete.affected_rows == 0 );
     REQUIRE ( reply_delete.status == 1 );
-
-    log_close();
 }

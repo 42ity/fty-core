@@ -92,5 +92,4 @@ TEST_CASE("UPDATE asset element #1","[db][CRUD][update][asset_element][crud_test
     r = persist::update_asset_element
         (conn, asset_element_id, element_name, parent_id, status, priority, bc, asset_tag, n);
     REQUIRE ( r == 0 );
-    log_close();
 }

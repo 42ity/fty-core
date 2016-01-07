@@ -33,14 +33,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
            level == LOG_CRIT    || \
            level == LOG_NOOP)
 
-static int log_syslog_level = LOG_SYSLOG_NA;
 #ifdef ENABLE_DEBUG_BUILD
 static int log_stderr_level = LOG_DEBUG;
 #else
-static int log_stderr_level = LOG_ERR;
+static int log_stderr_level = LOG_WARNING;
 #endif
 static FILE* log_file = NULL;
-static int log_facility = LOG_DAEMON;
 
 extern int errno;
 
@@ -54,30 +52,10 @@ void log_set_level(int level) {
 
     ASSERT_LEVEL;
 
-    log_set_syslog_level(level);
-    log_set_stderr_level(level);
-}
-
-void log_set_syslog_level(int level) {
-
-    ASSERT_LEVEL;
-
-    setlogmask(LOG_UPTO(level));
-    log_syslog_level = level;
-}
-
-void log_set_stderr_level(int level) {
-
-    ASSERT_LEVEL;
-
     log_stderr_level = level;
 }
 
-int log_get_syslog_level() {
-    return log_syslog_level;
-}
-
-int log_get_stderr_level() {
+int log_get_level() {
     return log_stderr_level;
 }
 
@@ -90,11 +68,6 @@ void log_set_file(FILE* file) {
 }
 
 void log_open() {
-    openlog(NULL, LOG_PID, log_facility);
-    if (log_syslog_level == LOG_SYSLOG_NA) {
-        log_syslog_level = LOG_ERR;
-    }
-    log_set_syslog_level(log_syslog_level);
 
     char *ev_log_level = getenv("BIOS_LOG_LEVEL");
 
@@ -121,10 +94,6 @@ void log_open() {
     }
 }
 
-void log_close() {
-    closelog();
-}
-
 static int do_logv(
         int level,
         const char* file,
@@ -140,7 +109,7 @@ static int do_logv(
 
     int r;
 
-    if (level > log_get_syslog_level() && level > log_get_stderr_level()) {
+    if (level > log_get_level()) {
         //no-op if logging disabled
         return 0;
     }
@@ -173,7 +142,7 @@ static int do_logv(
         fprintf(log_file, "[ERROR]: %s:%d (%s) can't allocate enough memory for format string: %m", __FILE__, __LINE__, __func__);
         return r;
     }
-    
+
     r = vasprintf(&buffer, fmt, args);
     free(fmt);   // we don't need it in any case
     if (r == -1) {
@@ -185,10 +154,6 @@ static int do_logv(
         fputs(buffer, log_file);
         fputc('\n', log_file);
     }
-    if (level <= log_syslog_level) {
-        syslog(level, buffer);
-    }
-
     free(buffer);
 
     return 0;
@@ -206,11 +171,11 @@ int do_log(
     int r;
     int saved_errno = errno;
     va_list args;
-    
+
     va_start(args, format);
     r = do_logv(level, file, line, func, format, args);
     va_end(args);
-    
+
     errno = saved_errno;
     return r;
 }

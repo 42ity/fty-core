@@ -43,6 +43,7 @@ int main (int argc, char *argv []) {
         return 0;
     }
 
+    log_open ();
     const char *addr = (argc == 1) ? "ipc://@/malamute" : argv[1];
     std::map<std::string, std::pair<int32_t, time_t>> cache;
 
@@ -93,7 +94,7 @@ int main (int argc, char *argv []) {
                 ymsg_set_string(msg, "quantity", topic);
                 strcat(topic, "@");
                 sprintf(topic + strlen(topic), agent.at, hostname);
-                log_info("Sending new measurement '%s' with value %" PRIi32 " * 10^%" PRIi32,
+                log_debug("Sending new measurement '%s' with value %" PRIi32 " * 10^%" PRIi32,
                          topic, ymsg_get_int32(msg, "value"),
                                 ymsg_get_int32(msg, "scale"));
 
