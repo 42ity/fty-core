@@ -836,6 +836,48 @@ while [ $# -gt 0 ]; do
         shift
 done
 
+RESULT_ACTION_DOWNLOAD_FWIMAGE=0
+RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT=0
+RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE=0
+RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES=0
+if [ "$ACTION_DOWNLOAD_FWIMAGE" = yes ]; then
+        download_rawfwimage_uboot
+        RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT=$?
+        download_rawfwimage_uimage
+        RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE=$?
+        download_rawfwimage_modules
+        RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES=$?
+
+        [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT" -gt 0 ] && \
+            ACTION_RESULT=$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT && \
+            if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] ; then
+                logmsg_warn "New u-Boot image was not downloaded successfully, so old ones are not purged"
+                ACTION_REMOVEOLD_FWIMAGE=no_BadDownload
+            fi
+
+        [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE" -gt 0 ] && \
+            ACTION_RESULT=$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE && \
+            if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] ; then
+                logmsg_warn "New kernel uImage was not downloaded successfully, so old ones are not purged"
+                ACTION_REMOVEOLD_FWIMAGE=no_BadDownload
+            fi
+
+        [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES" -gt 0 ] && \
+            ACTION_RESULT=$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES && \
+            if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] ; then
+                logmsg_warn "New modules archive was not downloaded successfully, so old ones are not purged"
+                ACTION_REMOVEOLD_FWIMAGE=no_BadDownload
+            fi
+fi
+
+if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ]; then
+        removeold_rawfwimage_modules || ACTION_RESULT=$?
+        removeold_rawfwimage_uimage || ACTION_RESULT=$?
+        removeold_rawfwimage_uboot || ACTION_RESULT=$?
+else
+        logmsg_info "Not purging old FW images because ACTION_REMOVEOLD_FWIMAGE=$ACTION_REMOVEOLD_FWIMAGE"
+fi
+
 RESULT_ACTION_DOWNLOAD_OSIMAGE=0
 if [ "$ACTION_DOWNLOAD_OSIMAGE" = yes ]; then
         download_osimage
