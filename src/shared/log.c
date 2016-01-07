@@ -103,7 +103,6 @@ static int do_logv(
         va_list args) {
 
     char *prefix;
-    char *header;
     char *fmt;
     char *buffer;
 
@@ -130,14 +129,7 @@ static int do_logv(
             return -1;
     };
 
-    r = asprintf(&header, "[%s]: %s:%d (%s)", prefix, file, line, func);
-    if (r == -1) {
-        fprintf(log_file, "[ERROR]: %s:%d (%s) can't allocate enough memory for header string: %m", __FILE__, __LINE__, __func__);
-        return r;
-    }
-
-    r = asprintf(&fmt, "%s %s", header, format);
-    free(header);   // we don't need it in any case
+    r = asprintf(&fmt, "[%s]: %s:%d (%s) %s", prefix, file, line, func, format);
     if (r == -1) {
         fprintf(log_file, "[ERROR]: %s:%d (%s) can't allocate enough memory for format string: %m", __FILE__, __LINE__, __func__);
         return r;
