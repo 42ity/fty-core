@@ -687,6 +687,16 @@ download_rawfwimage_uboot() (
 
 removeold_rawfwimage_uboot() (
     cd "${DOWNLOADROOTFW_UBOOT}" || die "Can not use DOWNLOADROOTFW_UBOOT='$DOWNLOADROOTFW_UBOOT'"
+    logmsg_info "NOTE: removeold_rawfwimage_uboot() is likely a no-op at this point"
+    VICTIMS=0
+    for F in `ls -1d u-Boot 2>/dev/null | head -n -1` ; do
+        logmsg_info "Removing older u-Boot loader image: '`pwd`/$F' and its checksum(s)"
+        remove_image "$F"
+        VICTIMS=$(($VICTIMS+1))
+    done
+    [ "$VICTIMS" -eq 0 ] && logmsg_info "removeold_rawfwimage_uboot() had nothing to remove" || \
+        logmsg_info "removeold_rawfwimage_uboot() requested to remove $VICTIMS file(s)"
+    return 0
 )
 
 
@@ -709,6 +719,16 @@ download_rawfwimage_uimage() (
 
 removeold_rawfwimage_uimage() (
     cd "${DOWNLOADROOTFW_UIMAGE}" || die "Can not use DOWNLOADROOTFW_UIMAGE='$DOWNLOADROOTFW_UIMAGE'"
+    logmsg_info "NOTE: removeold_rawfwimage_uimage() is likely a no-op at this point"
+    VICTIMS=0
+    for F in `ls -1d uImage 2>/dev/null | head -n -1` ; do
+        logmsg_info "Removing older kernel uImage: '`pwd`/$F' and its checksum(s)"
+        remove_image "$F"
+        VICTIMS=$(($VICTIMS+1))
+    done
+    [ "$VICTIMS" -eq 0 ] && logmsg_info "removeold_rawfwimage_uimage() had nothing to remove" || \
+        logmsg_info "removeold_rawfwimage_uimage() requested to remove $VICTIMS file(s)"
+    return 0
 )
 
 ##################################################
@@ -730,6 +750,16 @@ download_rawfwimage_modules() (
 
 removeold_rawfwimage_modules() (
     cd "${DOWNLOADROOTFW_MODULES}" || die "Can not use DOWNLOADROOTFW_MODULES='$DOWNLOADROOTFW_MODULES'"
+    logmsg_info "NOTE: removeold_rawfwimage_modules() is likely a no-op at this point"
+    VICTIMS=0
+    for F in `ls -1d *[0-9]*.*[0-9]*.${EXT} 2>/dev/null | head -n -1` ; do
+        logmsg_info "Removing older modules archive: '`pwd`/$F' and its checksum(s)"
+        remove_image "$F"
+        VICTIMS=$(($VICTIMS+1))
+    done
+    [ "$VICTIMS" -eq 0 ] && logmsg_info "removeold_rawfwimage_modules() had nothing to remove" || \
+        logmsg_info "removeold_rawfwimage_modules() requested to remove $VICTIMS file(s)"
+    return 0
 )
 
 
