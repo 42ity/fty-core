@@ -41,7 +41,17 @@ set -o pipefail
 # Our CI farm deployments mimic the build farm paths - with IMGTYPE/ARCH/filename.ext
 # The RC3 units expect a flat directory structure rootfs/filename.ext so the
 # details (especially IMGTYPE) should end up in the flat filename - ...__${ARCH}__${IMGTYPE}.${EXT}.
-[ -z "${FLATTEN_FILENAMES-}" ] && FLATTEN_FILENAMES="yes"
+# (rc3/virthost) If set to "no", use original filenames from the source server
+# Overridable by CLI option "--(no-)flatten-filenames"
+[ -z "${FLAG_FLATTEN_FILENAMES-}" ] && FLAG_FLATTEN_FILENAMES="yes"
+
+### Values below can be changed by command-line choices, and some defaults
+### may be overridden by config files before CLI choices
+# (dev) If set to "no", then do not remove files even if deemed broken or old
+# Overridable by CLI option "--(no-)remove-files" which is somewhat different
+# from "--(no-)removeold-images" that only impacts old-image removal after a
+# successful download of new image(s)
+[ -z "${FLAG_CAN_REMOVE_IMAGES-}" ] && FLAG_CAN_REMOVE_IMAGES="yes"
 
 # TODO: TFTP support, busybox can do it
 # TODO: Test with https - can require custom CA trust configuration, etc.
@@ -726,14 +736,6 @@ removeold_rawfwimage_modules() (
 ###########################################################################
 ### Start of application logic
 ###########################################################################
-
-### Values below can be changed by command-line choices, and some defaults
-### may be overridden by config files before CLI choices
-# (dev) If set to "no", then do not remove files even if deemed broken or old
-FLAG_CAN_REMOVE_IMAGES="yes"
-
-# (rc3/virthost) If set to "no", use original filenames from the source server
-FLAG_FLATTEN_FILENAMES="yes"
 
 if [ -d "/etc/update-rc3.d/" ]; then
     for F in "/etc/update-rc3.d/"*.conf ; do
