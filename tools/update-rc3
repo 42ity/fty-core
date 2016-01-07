@@ -154,22 +154,22 @@ export CHECKOUTDIR BUILDSUBDIR
 export LANG LANGUAGE LC_ALL TZ
 
 logmsg_info() {
-    echo "${LOGMSG_PREFIX}INFO: ${_SCRIPT_PATH}:" "$@"
+    echo "${LOGMSG_PREFIX}INFO:" "$@"
 }
 
 logmsg_warn() {
-    echo "${LOGMSG_PREFIX}WARN: ${_SCRIPT_PATH}:" "$@" >&2
+    echo "${LOGMSG_PREFIX}WARN:" "$@" >&2
 }
 
 logmsg_error() {
-    echo "${LOGMSG_PREFIX}ERROR: ${_SCRIPT_PATH}:" "$@" >&2
+    echo "${LOGMSG_PREFIX}ERROR:" "$@" >&2
 }
 
 die() {
     CODE="${CODE-1}"
     [ "$CODE" -ge 0 ] 2>/dev/null || CODE=1
     for LINE in "$@" ; do
-        echo "${LOGMSG_PREFIX}FATAL: ${_SCRIPT_PATH}:" "$LINE" >&2
+        echo "${LOGMSG_PREFIX}FATAL:" "$LINE" >&2
     done
     exit $CODE
 }
@@ -802,6 +802,8 @@ removeold_rawfwimage_modules() (
 ###########################################################################
 ### Start of application logic
 ###########################################################################
+
+logmsg_info "`date`: Starting ${_SCRIPT_PATH} ${_SCRIPT_ARGS}"
 
 if [ -d "/etc/update-rc3.d/" ]; then
     for F in "/etc/update-rc3.d/"*.conf ; do
