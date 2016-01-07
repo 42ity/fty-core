@@ -143,13 +143,13 @@ int do_log(
         log_macro(LOG_CRIT, __VA_ARGS__)
 
 #define LOG_START \
-    log_info("start")
+    log_debug("start")
 
 #define LOG_END \
-    log_info("end::normal")
+    log_debug("end::normal")
 
 #define LOG_END_ABNORMAL(exp) \
-    log_warning("end::abnormal with %s", (exp).what())
+    log_error("end::abnormal with %s", (exp).what())
 
 #ifdef __cplusplus
 }
