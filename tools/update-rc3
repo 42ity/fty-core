@@ -719,6 +719,7 @@ findnewest_rawfwimage_uboot() (
 
 download_rawfwimage_uboot() (
     cd "${DOWNLOADROOTFW_UBOOT}" || die "Can not use DOWNLOADROOTFW_UBOOT='$DOWNLOADROOTFW_UBOOT'"
+    logmsg_error "download_rawfwimage_uboot() : NOT IMPLEMENTED YET"
 )
 
 removeold_rawfwimage_uboot() (
@@ -751,6 +752,7 @@ findnewest_rawfwimage_uimage() (
 
 download_rawfwimage_uimage() (
     cd "${DOWNLOADROOTFW_UIMAGE}" || die "Can not use DOWNLOADROOTFW_UIMAGE='$DOWNLOADROOTFW_UIMAGE'"
+    logmsg_error "download_rawfwimage_uimage() : NOT IMPLEMENTED YET"
 )
 
 removeold_rawfwimage_uimage() (
@@ -782,6 +784,7 @@ findnewest_rawfwimage_modules() (
 
 download_rawfwimage_modules() (
     cd "${DOWNLOADROOTFW_MODULES}" || die "Can not use DOWNLOADROOTFW_MODULES='$DOWNLOADROOTFW_MODULES'"
+    logmsg_error "download_rawfwimage_modules() : NOT IMPLEMENTED YET"
 )
 
 removeold_rawfwimage_modules() (
