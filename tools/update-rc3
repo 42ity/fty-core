@@ -128,6 +128,11 @@ usage() {
     echo "  --(no-)remove-files       Skip removing image files deemed corrupt or obsolete"
     echo "  --(no-)flatten-filenames  Skip renaming image files to include ARCH and TYPE"
     echo "                            for easier differentiation in the flat storage dirs"
+    echo "For the check* and download* methods, you can specify a full URL to the image"
+    echo "file which you want rather than trying to detect the newest one available, with"
+    echo "the following arguments ('raw' firmwares are the non-tarballed singular files):"
+    echo "  --url-image-os {URL} (expected checksum patterns should still exist nearby)"
+    echo "  --url-image-fw-raw-uboot --url-image-fw-raw-uimage --url-image-fw-raw-modules"
 # TODO ...
 }
 
@@ -512,8 +517,21 @@ download_osimage() (
     # A successful download of an image (consistent non-empty file) is 42 too
     cd "${DOWNLOADROOT_OSIMAGE}" || die "Can not use DOWNLOADROOT_OSIMAGE='$DOWNLOADROOT_OSIMAGE'"
 
-    logmsg_info "Fetching newest filename for ${ARCH} OS image of type ${IMGTYPE}..."
-    IMAGE_URL="`findnewest_osimage`" && \
+    case "${1-}" in
+            *://*)
+                logmsg_info "download_osimage() was asked to try downloading '$1' as the ${IMGTYPE} OS image for ${ARCH}"
+                IMAGE_URL="$1" ;;
+            "")
+                logmsg_info "Fetching newest filename for ${ARCH} OS image of type ${IMGTYPE}..."
+                IMAGE_URL="`findnewest_osimage`" && [ -n "$IMAGE_URL" ] \
+                && logmsg_info "download_osimage() detected '$IMAGE_URL' as the newest ${IMGTYPE} OS image for ${ARCH}" \
+                || { logmsg_error "Could not find any remote OS image"; IMAGE_URL="";} ;;
+            *)  logmsg_error "download_osimage() got an unsupported argument: $*"
+                IMAGE_URL=""
+                ;;
+    esac
+
+    [ -n "$IMAGE_URL" ] && \
     rIMAGE_URL_BASENAME="`basename "$IMAGE_URL" ".${EXT}"`" && \
         [ -n "$rIMAGE_URL_BASENAME" ] && \
         rIMAGE_URL_BASENAME_EXT="${rIMAGE_URL_BASENAME}${EXT:+.$EXT}" || \
@@ -552,15 +570,20 @@ download_osimage() (
     logmsg_info "Downloading '${IMAGE_CSURL}' (if any) into '${aIMAGE_CSNEW}'..."
     rm -f "${aIMAGE_CSNEW}"
     wget -q -O - "${IMAGE_CSURL}" > "${aIMAGE_CSNEW}" || \
-        { logmsg_error "Could not save '${IMAGE_CSURL}' into '${aIMAGE_CSNEW}'";
-          rm -f "${aIMAGE_CSNEW}"; }
+        { logmsg_error "Could not save '${IMAGE_CSURL}' into '${aIMAGE_CSNEW}'"
+          rm -f "${aIMAGE_CSNEW}"
+          if [ x"${CHECK_ONLY-}" = xyes ]; then
+            die "Got an error while checking if there is something new to download, so no reason to proceed"
+          fi
+        }
 
     if [ ! -s "${aTGT_FILE_CSNEW}" ] ; then
         logmsg_info "Processing '${IMAGE_CSURL}' (if any) to flatten the names into '${aTGT_FILE_CSNEW}'..."
         { [ -s "${aIMAGE_CSNEW}" ] && cat "${aIMAGE_CSNEW}" || wget -q -O - "${IMAGE_CSURL}"; } | \
         sed 's,  .*$,  '"`basename "$rTGT_FILE"`", > "${aTGT_FILE_CSNEW}" || \
-            { logmsg_error "Could not save and process '${IMAGE_CSURL}' into '${aTGT_FILE_CSNEW}'";
-              rm -f "${aTGT_FILE_CSNEW}"; }
+            { logmsg_error "Could not save and process '${IMAGE_CSURL}' into '${aTGT_FILE_CSNEW}'"
+              rm -f "${aTGT_FILE_CSNEW}"
+            }
     fi
 
     # First try the modified filenames in local directories: more probable hit
@@ -802,6 +825,12 @@ ACTION_DOWNLOAD_FWIMAGE="yes"
 ACTION_CHECK_OSIMAGE="no"
 ACTION_CHECK_FWIMAGE="no"
 
+# The routines can force a specific URL rather than detecting the "newest" one
+[ -z "${URL_DOWNLOAD_OSIMAGE-}" ] &&                URL_DOWNLOAD_OSIMAGE=""
+[ -z "${URL_DOWNLOAD_FWIMAGE_RAW_UBOOT-}" ] &&      URL_DOWNLOAD_FWIMAGE_RAW_UBOOT=""
+[ -z "${URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE-}" ] &&     URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE=""
+[ -z "${URL_DOWNLOAD_FWIMAGE_RAW_MODULES-}" ] &&    URL_DOWNLOAD_FWIMAGE_RAW_MODULES=""
+
 ACTION_REMOVEOLD_OSIMAGE="yes"
 # This is currently no-op because we only track one FW image, unpacked on SRC
 ACTION_REMOVEOLD_FWIMAGE="no"
@@ -838,6 +867,15 @@ while [ $# -gt 0 ]; do
                 --no-check-image-os)    ACTION_CHECK_OSIMAGE="no";;
                 --no-check-image-fw)    ACTION_CHECK_FWIMAGE="no";;
                 --no-check-images)      ACTION_CHECK_OSIMAGE="no"; ACTION_CHECK_FWIMAGE="no";;
+                --url-image-*)
+                    [ $# -eq 1 ] && die "The '$1' option requires a further argument"
+                    case "${1-}" in
+                        --url-image-os)         URL_DOWNLOAD_OSIMAGE="$2"; shift;;
+                        --url-image-fw-raw-uboot)   URL_DOWNLOAD_FWIMAGE_RAW_UBOOT="$2"; shift;;
+                        --url-image-fw-raw-uimage)  URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE="$2"; shift;;
+                        --url-image-fw-raw-modules) URL_DOWNLOAD_FWIMAGE_RAW_MODULES="$2"; shift;;
+                        *)  die "Aborting due to unknown command-line argument(s): $*" ;;
+                    esac ;;
                 --removeold-image-os)   ACTION_REMOVEOLD_OSIMAGE="yes";;
                 --removeold-image-fw)   ACTION_REMOVEOLD_FWIMAGE="yes";;
                 --removeold-images)     ACTION_REMOVEOLD_OSIMAGE="yes"; ACTION_REMOVEOLD_FWIMAGE="yes";;
@@ -853,12 +891,12 @@ done
 if [ x"$ACTION_CHECK_OSIMAGE" = xyes ] || [ x"$ACTION_CHECK_FWIMAGE" = xyes ]; then
     RESULT_ACTION_CHECK_ANYIMAGE=0
     if [ x"$ACTION_CHECK_OSIMAGE" = xyes ]; then
-        CHECK_ONLY=yes download_osimage || RESULT_ACTION_CHECK_ANYIMAGE=$?
+        CHECK_ONLY=yes download_osimage $URL_DOWNLOAD_OSIMAGE || RESULT_ACTION_CHECK_ANYIMAGE=$?
     fi
     if [ x"$ACTION_CHECK_FWIMAGE" = xyes ]; then
-        CHECK_ONLY=yes download_rawfwimage_uboot   || RESULT_ACTION_CHECK_ANYIMAGE=$?
-        CHECK_ONLY=yes download_rawfwimage_uimage  || RESULT_ACTION_CHECK_ANYIMAGE=$?
-        CHECK_ONLY=yes download_rawfwimage_modules || RESULT_ACTION_CHECK_ANYIMAGE=$?
+        CHECK_ONLY=yes download_rawfwimage_uboot   $URL_DOWNLOAD_FWIMAGE_RAW_UBOOT   || RESULT_ACTION_CHECK_ANYIMAGE=$?
+        CHECK_ONLY=yes download_rawfwimage_uimage  $URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE  || RESULT_ACTION_CHECK_ANYIMAGE=$?
+        CHECK_ONLY=yes download_rawfwimage_modules $URL_DOWNLOAD_FWIMAGE_RAW_MODULES || RESULT_ACTION_CHECK_ANYIMAGE=$?
     fi
     RES_STR="$RESULT_ACTION_CHECK_ANYIMAGE"
     case "$RESULT_ACTION_CHECK_ANYIMAGE" in
@@ -874,11 +912,11 @@ RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT=0
 RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE=0
 RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES=0
 if [ "$ACTION_DOWNLOAD_FWIMAGE" = yes ]; then
-        download_rawfwimage_uboot
+        download_rawfwimage_uboot $URL_DOWNLOAD_FWIMAGE_RAW_UBOOT
         RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT=$?
-        download_rawfwimage_uimage
+        download_rawfwimage_uimage $URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE
         RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE=$?
-        download_rawfwimage_modules
+        download_rawfwimage_modules $URL_DOWNLOAD_FWIMAGE_RAW_MODULES
         RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES=$?
 
         [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT" -gt 0 ] && \
@@ -913,7 +951,7 @@ fi
 
 RESULT_ACTION_DOWNLOAD_OSIMAGE=0
 if [ "$ACTION_DOWNLOAD_OSIMAGE" = yes ]; then
-        download_osimage
+        download_osimage $URL_DOWNLOAD_OSIMAGE
         RESULT_ACTION_DOWNLOAD_OSIMAGE=$?
         # If there was indeed a successful download, we have code=42 from the
         # routine; however the script succeeded - so overall exitcode stays 0
