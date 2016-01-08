@@ -843,7 +843,10 @@ config_defaults
 #       (and so if the user should reboot)
 
 ACTION_DOWNLOAD_OSIMAGE="yes"
-ACTION_DOWNLOAD_FWIMAGE="yes"
+case "$ARCH" in
+    *arm*)  ACTION_DOWNLOAD_FWIMAGE="yes" ;;
+    *)      ACTION_DOWNLOAD_FWIMAGE="no" ;;
+esac
 
 ACTION_CHECK_OSIMAGE="no"
 ACTION_CHECK_FWIMAGE="no"
