@@ -533,7 +533,19 @@ download_osimage() (
                 || { logmsg_error "Could not find any remote OS image"; IMAGE_URL="";} ;;
             *)  logmsg_error "download_osimage() got an unsupported argument: $*"
                 IMAGE_URL=""
-                ;;
+                ;; # This dies a bit below
+    esac
+
+    case "$IMAGE_URL" in
+            *"${IMGTYPE}"*) ;;
+            "") ;; # This dies a bit below
+            *)  logmsg_warn "The IMAGE_URL='$IMAGE_URL' does not contain IMGTYPE='$IMGTYPE'!" ; sleep 5 ;;
+    esac
+
+    case "$IMAGE_URL" in
+            *"${ARCH}"*) ;;
+            "") ;; # This dies a bit below
+            *)  logmsg_warn "The IMAGE_URL='$IMAGE_URL' does not contain ARCH='$ARCH'!" ; sleep 5 ;;
     esac
 
     [ -n "$IMAGE_URL" ] && \
