@@ -736,8 +736,6 @@ findnewest_rawfwimage_uboot() (
 
 download_rawfwimage_uboot() (
     cd "${DOWNLOADROOTFW_UBOOT}" || die "Can not use DOWNLOADROOTFW_UBOOT='$DOWNLOADROOTFW_UBOOT'"
-    logmsg_error "download_rawfwimage_uboot() : NOT IMPLEMENTED YET"
-    return 0
 
     case "${1-}" in
             *://*)
@@ -755,7 +753,7 @@ download_rawfwimage_uboot() (
 
     [ -n "$IMAGE_URL" ] && \
     rIMAGE_URL_BASENAME="`basename "$IMAGE_URL"`" && \
-        [ -n "$rIMAGE_URL_BASENAME" ] && \
+        [ -n "$rIMAGE_URL_BASENAME" ] || \
         die "Can not find the remote image URL"
 
     # TODO: Currently hardcoded for md5 accompanying checksums only
@@ -793,10 +791,10 @@ download_rawfwimage_uboot() (
             "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_CSOLD}" \
             "${aIMAGE_CSNEW}" && return 0
     fi
-    # TODO: Verify partition flashed bits here ...
+    logmsg_warn "TODO: Should verify checksum against a partition with flashed bits here ..."
 
     if [ x"${CHECK_ONLY-}" = xyes ]; then
-        logmsg_info "According to checksums, the remote resource '$IMAGE_URL' points to an OS image we do not have on this system"
+        logmsg_info "According to checksums, the remote resource '$IMAGE_URL' points to an u-Boot loader image we do not have on this system"
         return 42
     fi
 
@@ -805,17 +803,7 @@ download_rawfwimage_uboot() (
     aTGT_FILE="`pwd`/${rIMAGE_URL_BASENAME}"
     aIMAGE_CSOLD="`pwd`/${rIMAGE_CSOLD}"
 
-    if [ x"$aIMAGE_CSNEW" != x"${aIMAGE_CSNEW}" ] && [ -s "$aIMAGE_CSNEW" ] && [ -s "$aIMAGE_CSNEW" ] ; then
-        # We have both a flat and original checksum files; keep one
-        if [ x"$FLAG_FLATTEN_FILENAMES" = xyes ]; then
-            rm -f "$aIMAGE_CSNEW"
-        else
-            rm -f "$aIMAGE_CSNEW"
-        fi
-    fi
-
     if [ ! -s "${aIMAGE_CSOLD}" ]; then
-        [ -s "${aIMAGE_CSNEW}" ] && mv -f "${aIMAGE_CSNEW}" "${aIMAGE_CSOLD}"
         [ -s "${aIMAGE_CSNEW}" ] && mv -f "${aIMAGE_CSNEW}" "${aIMAGE_CSOLD}"
     fi
 
@@ -823,6 +811,17 @@ download_rawfwimage_uboot() (
     rm -f "${aTGT_FILE}"
     wget -O "${aTGT_FILE}" "$IMAGE_URL" && [ -s "$aTGT_FILE" ] || \
         { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
+
+    lsdir_http_pattern "${SOURCESITEROOTFW_UBOOT}" | egrep "^${IMAGE_URL}\." | \
+        egrep -v "^${IMAGE_CSURL}"'$' | \
+        while read U ; do
+            # Note these are helper files, e.g. a padded checksum or some
+            # touched-flags (may even be empty) and not fatal if missing
+            aBU="`pwd`/`basename "$U"`"
+            logmsg_info "Downloading additional file '$U' into '$aBU'..."
+            rm -f "$aBU"
+            wget -O "${aBU}" "$U" || logmsg_error "Could not download the additional '$U'"
+        done
 
     if [ -s "${aIMAGE_CSOLD}" ]; then
         ensure_checksum "${aTGT_FILE}" "${aIMAGE_CSOLD}" || return $?
@@ -832,13 +831,13 @@ download_rawfwimage_uboot() (
         { rm -f "${aIMAGE_CSOLD}"; die "Could not generate '${aIMAGE_CSOLD}'"; }
     fi
 
+    # TODO: Verify file size against partition size (flashability after reboot)
     [ -s "${aTGT_FILE}" ] && [ -s "${aIMAGE_CSOLD}" ] && \
     touch -r "${aTGT_FILE}" "${aIMAGE_CSOLD}" && \
-    logmsg_info "Got OS image OK:" && \
+    logmsg_info "Got u-Boot loader image OK:" && \
     ls -ld "${aTGT_FILE}" "${aIMAGE_CSOLD}" && \
     cat "${aIMAGE_CSOLD}" && \
     return 42
-
 )
 
 removeold_rawfwimage_uboot() (
