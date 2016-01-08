@@ -43,7 +43,6 @@ struct db_web_basic_element_t {
     std::string      name;
     std::string      status;
     a_elmnt_pr_t     priority;
-    a_elmnt_bc_t     bc;        // business critical
     a_elmnt_tp_id_t  type_id;
     std::string      type_name;
     a_elmnt_id_t     parent_id;

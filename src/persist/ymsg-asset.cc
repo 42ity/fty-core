@@ -55,7 +55,7 @@ void
     *out_subj = strdup (in_subj);
     char *name = NULL;
     int8_t operation;
-    int rv = bios_asset_extra_extract (in, &name, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &operation);
+    int rv = bios_asset_extra_extract (in, &name, NULL, NULL, NULL, NULL, NULL, NULL, &operation);
     if ( rv == 0 )
     {
         try{
@@ -74,7 +74,7 @@ void
                 *out = bios_asset_extra_encode_response (element.item.name.c_str(),
                     &ext_attributes, element.item.type_id, element.item.subtype_id,
                     element.item.parent_id, element.item.status.c_str(),
-                    element.item.priority, element.item.bc, operation);
+                    element.item.priority, operation);
                 ymsg_set_status (*out, true);
             }
             else

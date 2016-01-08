@@ -53,21 +53,6 @@ int
 get_priority(
         const std::string& s);
 
-/*
- * \brief Converts the string yes/no to boolean value
- *
- * get_priority("yEs") -> true
- * get_priority("No") -> false
- * get_priority("spam") -> false
- *
- * \param[in] bs_critical - string with content
- *
- * \return boolean value
- *
- */
-bool
-    get_business_critical(
-            const std::string& bs_critical);
 
 /*
  * \brief process one asset

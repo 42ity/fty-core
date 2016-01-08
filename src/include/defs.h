@@ -131,8 +131,7 @@ enum ipaddr_version {
 #define KEY_ASSET_PRIORITY  "__priority"
 #define KEY_ASSET_STATUS    "__status"
 #define KEY_ASSET_NAME      "__name"
-#define KEY_ASSET_BC        "__bc"
 #define KEY_OPERATION       "__operation"
- 
+
 #endif // SRC_INCLUDE_DEFS_H__
 

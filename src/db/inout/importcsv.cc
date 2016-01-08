@@ -59,17 +59,6 @@ int
     return 5;
 }
 
-bool
-    get_business_critical(
-            const std::string& s)
-{
-    std::string s1 = s;
-    std::transform(s1.cbegin(), s1.cend(), s1.begin(), ::tolower);
-    if ( s1 == "yes" )
-        return true;
-    return false;
-}
-
 static std::map<std::string,int>
     read_element_types
         (tntdb::Connection &conn)
@@ -288,10 +277,6 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             cxxtools::join(STATUSES.cbegin(), STATUSES.cend(), ", ").c_str());
     }
     unused_columns.erase("status");
-
-    bool bs_critical = get_business_critical(cm.get_strip(row_i, "business_critical"));
-    unused_columns.erase("business_critical");
-    int bc = bs_critical ? 1 : 0;
 
     auto asset_tag =  unused_columns.count("asset_tag") ? cm.get(row_i, "asset_tag") : "";
     log_debug ("asset_tag = '%s'", asset_tag.c_str());
@@ -590,7 +575,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
         {
             auto ret = update_dc_room_row_rack_group
                 (conn, m.id, name.c_str(), type_id, parent_id,
-                 extattributes, status.c_str(), priority, bc, groups, asset_tag, errmsg);
+                 extattributes, status.c_str(), priority, groups, asset_tag, errmsg);
             if ( ( ret ) || ( !errmsg.empty() ) )
             {
                 //TODO: redo the update_dc_room_row_rack_group
@@ -601,7 +586,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
         {
             auto ret = update_device
                 (conn, m.id, name.c_str(), type_id, parent_id,
-                 extattributes, status.c_str(), priority, bc, groups, links, asset_tag, errmsg);
+                 extattributes, status.c_str(), priority, groups, links, asset_tag, errmsg);
             if ( ( ret ) || ( !errmsg.empty() ) )
             {
                 //TODO: redo the update_dc_room_row_rack_group
@@ -617,7 +602,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             // this is a transaction
             auto ret = insert_dc_room_row_rack_group
                 (conn, name.c_str(), type_id, parent_id,
-                 extattributes, status.c_str(), priority, bc, groups, asset_tag);
+                 extattributes, status.c_str(), priority, groups, asset_tag);
             if ( ret.status != 1 )
             {
                 throw BiosError(ret.rowid, ret.msg);
@@ -629,7 +614,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             // this is a transaction
             auto ret = insert_device (conn, links, groups, name.c_str(),
                     parent_id, extattributes, subtype_id, subtype.c_str(), status.c_str(),
-                    priority, bc, asset_tag);
+                    priority, asset_tag);
             if ( ret.status != 1 )
             {
                 throw BiosError(ret.rowid, ret.msg);
@@ -641,7 +626,6 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     m.status = status;
     m.parent_id = parent_id;
     m.priority = priority;
-    m.bc = bc;
     m.type_id = type_id;
     m.subtype_id = subtype_id;
     m.asset_tag = asset_tag;
@@ -668,7 +652,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
 //MVY: moved out to support friendly error messages below
 static std::vector<std::string> MANDATORY = {
     "name", "type", "sub_type", "location", "status",
-    "business_critical", "priority"
+    "priority"
 };
 static std::string
 mandatory_missing

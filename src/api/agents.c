@@ -425,7 +425,6 @@ bios_asset_extra(const char *name,
                  uint32_t parent_id,
                  const char* status,
                  uint8_t priority,
-                 uint8_t bc,
                  int8_t operation)
 {
     if ( !name )
@@ -452,7 +451,6 @@ bios_asset_extra(const char *name,
     if ( status )
         app_args_set_string (app, KEY_ASSET_STATUS, status);
     app_args_set_string (app, KEY_ASSET_NAME, name);
-    app_args_set_uint8  (app, KEY_ASSET_BC, bc);
     app_args_set_int8   (app, KEY_OPERATION, operation);
     return app;
 }
@@ -466,11 +464,10 @@ bios_asset_extra_encode(const char *name,
                    uint32_t parent_id,
                    const char* status,
                    uint8_t priority,
-                   uint8_t bc,
                    int8_t operation)
 {
     app_t *app = bios_asset_extra(name, ext_attributes, type_id,
-                 subtype_id, parent_id, status, priority, bc, operation);
+                 subtype_id, parent_id, status, priority, operation);
     if ( !app )
         return NULL;
 
@@ -492,11 +489,10 @@ bios_asset_extra_encode_response(const char *name,
                    uint32_t parent_id,
                    const char* status,
                    uint8_t priority,
-                   uint8_t bc,
                    int8_t operation)
 {
     app_t *app = bios_asset_extra(name, ext_attributes, type_id,
-                 subtype_id, parent_id, status, priority, bc, operation);
+                 subtype_id, parent_id, status, priority, operation);
     if ( !app )
         return NULL;
 
@@ -521,14 +517,13 @@ bios_asset_extra_extract(ymsg_t *message,
                    uint32_t *parent_id,
                    char **status,
                    uint8_t *priority,
-                   uint8_t *bc,
                    int8_t *operation)
 {
     if ( !message || !name )
         return -1;
 
     app_t *app = NULL;
-    
+
     switch ( ymsg_id( message ) ) {
     case YMSG_REPLY:
         if ( !ymsg_is_ok(message) )
@@ -545,7 +540,7 @@ bios_asset_extra_extract(ymsg_t *message,
         return -2;
     }
     int errcode = 0;
-        
+
     {
         const char *p = app_args_string( app, KEY_ASSET_NAME, NULL );
         if ( p )
@@ -555,17 +550,6 @@ bios_asset_extra_extract(ymsg_t *message,
             errcode = -7;
             goto bios_asset_extract_err;
         }
-    }
-    if( bc ) {
-        uint8_t t = app_args_uint8( app, KEY_ASSET_BC );
-        if ( !errno ) {
-            *bc = t;
-            if( *bc != 0  && *bc != 1 )
-            {
-                errcode = -8;
-                goto bios_asset_extract_err;
-            }
-        } // if key is missingm, then bc wouldn't change
     }
     if( type_id ) {
         uint32_t t = app_args_uint32( app, KEY_ASSET_TYPE_ID );
@@ -616,7 +600,6 @@ bios_asset_extra_extract(ymsg_t *message,
         zhash_delete (*ext_attributes, KEY_ASSET_NAME);
         zhash_delete (*ext_attributes, KEY_ASSET_PRIORITY);
         zhash_delete (*ext_attributes, KEY_ASSET_TYPE_ID);
-        zhash_delete (*ext_attributes, KEY_ASSET_BC);
         zhash_delete (*ext_attributes, KEY_ASSET_PARENT_ID);
         zhash_delete (*ext_attributes, KEY_ASSET_STATUS);
         zhash_delete (*ext_attributes, KEY_ASSET_SUBTYPE_ID);
@@ -631,7 +614,6 @@ bios_asset_extra_extract(ymsg_t *message,
     if ( subtype_id ) *subtype_id = 0;
     if ( parent_id )  *parent_id = 0;
     if ( priority )   *priority = 0;
-    if ( bc )         *bc = 0;
     if ( operation )  *operation = 0;
     return errcode;
 }

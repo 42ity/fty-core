@@ -203,12 +203,11 @@ TEST_CASE("asset element INSERT/DELETE #3","[db][CRUD][insert][delete][asset_ele
     const char      *element_name    = "Room_insert_test";
     const char *status = "active";
     a_elmnt_pr_t priority   = 4;
-    a_elmnt_bc_t bc         = 0;
     a_dvc_tp_id_t subtype_id = persist::asset_subtype::N_A;
 
     // first insert
     auto reply_insert = persist::insert_into_asset_element (conn, element_name, element_type_id,
-        parent_id, status, priority, bc, subtype_id, UGLY_ASSET_TAG);
+        parent_id, status, priority, subtype_id, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.status == 1 );
     uint64_t rowid = reply_insert.rowid;
     CAPTURE (rowid);
@@ -221,7 +220,6 @@ TEST_CASE("asset element INSERT/DELETE #3","[db][CRUD][insert][delete][asset_ele
     REQUIRE (item.name == element_name);
     REQUIRE (item.status == status);
     REQUIRE (item.priority == priority);
-    REQUIRE (item.bc == bc);
     REQUIRE (item.type_id == persist::asset_type::ROOM);
     REQUIRE (item.type_name == "room");
     REQUIRE (item.parent_id == parent_id);
@@ -230,7 +228,7 @@ TEST_CASE("asset element INSERT/DELETE #3","[db][CRUD][insert][delete][asset_ele
 
     // must handle duplicate insert without insert
     reply_insert = persist::insert_into_asset_element (conn, element_name, element_type_id,
-            parent_id, status, priority, bc, persist::asset_subtype::N_A, UGLY_ASSET_TAG);
+            parent_id, status, priority, persist::asset_subtype::N_A, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.status == 0 );
     REQUIRE ( reply_insert.affected_rows == 0 );
 
@@ -367,7 +365,6 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
     zhash_autofree (ext_attributes);
     const char *status = "active";
     a_elmnt_pr_t priority   = 4;
-    a_elmnt_bc_t bc         = 0;
     std::set <a_elmnt_id_t>  groups;    // left empty, simple cass
 
     std::set<std::pair<std::string, std::string>> expected_ext_attributes;
@@ -385,7 +382,7 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
 
     // first insert
     auto reply_insert = persist::insert_dc_room_row_rack_group (conn, name, element_type_id,
-                parent_id, ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
+                parent_id, ext_attributes, status, priority, groups, UGLY_ASSET_TAG);
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
     REQUIRE ( reply_insert.status == 1 );
@@ -397,7 +394,6 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
     REQUIRE (item.name == name);
     REQUIRE (item.status == status);
     REQUIRE (item.priority == priority);
-    REQUIRE (item.bc == bc);
     REQUIRE (item.type_id == element_type_id);
     REQUIRE (item.type_name == "datacenter");
     REQUIRE (item.parent_id == parent_id);
@@ -451,7 +447,7 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
 
     // second insert
     reply_insert = persist::insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
-            ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
+            ext_attributes, status, priority, groups, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 0 );
 
@@ -513,7 +509,6 @@ TEST_CASE("room unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlocka
     zhash_autofree (ext_attributes);
     const char* status = "active";
     a_elmnt_pr_t priority   = 4;
-    a_elmnt_bc_t bc         = 0;
     std::set <a_elmnt_id_t>  groups;    // left empty, simple cass
 
     std::set<std::pair<std::string, std::string>> expected_ext_attributes;
@@ -525,7 +520,7 @@ TEST_CASE("room unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlocka
 
     // first insert
     auto reply_insert = persist::insert_dc_room_row_rack_group (conn, name, element_type_id,
-            parent_id, ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
+            parent_id, ext_attributes, status, priority, groups, UGLY_ASSET_TAG);
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
     REQUIRE ( reply_insert.status == 1 );
@@ -537,7 +532,6 @@ TEST_CASE("room unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlocka
     REQUIRE (item.name == name);
     REQUIRE (item.status == status);
     REQUIRE (item.priority == priority);
-    REQUIRE (item.bc == bc);
     REQUIRE (item.type_id == element_type_id);
     REQUIRE (item.type_name == "room");
     REQUIRE (item.parent_id == parent_id);
@@ -553,7 +547,7 @@ TEST_CASE("room unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlocka
     }
     // second insert
     reply_insert = persist::insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
-            ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
+            ext_attributes, status, priority, groups, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 0 );
 
@@ -588,7 +582,6 @@ TEST_CASE("row unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockat
     zhash_autofree (ext_attributes);
     const char* status = "active";
     a_elmnt_pr_t priority   = 4;
-    a_elmnt_bc_t bc         = 0;
     std::set <a_elmnt_id_t>  groups;    // left empty, simple cass
 
     std::set<std::pair<std::string, std::string>> expected_ext_attributes;
@@ -600,7 +593,7 @@ TEST_CASE("row unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockat
 
     // first insert
     auto reply_insert = persist::insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
-            ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG) ;
+            ext_attributes, status, priority, groups, UGLY_ASSET_TAG) ;
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
     REQUIRE ( reply_insert.status == 1 );
@@ -612,12 +605,11 @@ TEST_CASE("row unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockat
     REQUIRE (item.name == name);
     REQUIRE (item.status == status);
     REQUIRE (item.priority == priority);
-    REQUIRE (item.bc == bc);
     REQUIRE (item.type_id == element_type_id);
     REQUIRE (item.type_name == "row");
     REQUIRE (item.parent_id == parent_id);
     REQUIRE (item.parent_type_id == 0);     // in crud_test.sql
-    REQUIRE (item.subtype_id == persist::asset_subtype::N_A); 
+    REQUIRE (item.subtype_id == persist::asset_subtype::N_A);
 
     auto reply_ext = persist::select_ext_attributes(conn, rowid);
     REQUIRE (reply_ext.status == 1);
@@ -629,7 +621,7 @@ TEST_CASE("row unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockat
 
     // second insert
     reply_insert = persist::insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
-            ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
+            ext_attributes, status, priority, groups, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 0 );
 
@@ -653,7 +645,7 @@ TEST_CASE("rack unlockated INSERT/DELETE #persist::asset_subtype::N_A","[db][CRU
     log_open ();
 
     log_info ("=============== rack INSERT/DELETE #persist::asset_subtype::N_A ==================");
-    
+
     tntdb::Connection conn;
     REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
 
@@ -664,7 +656,6 @@ TEST_CASE("rack unlockated INSERT/DELETE #persist::asset_subtype::N_A","[db][CRU
     zhash_autofree (ext_attributes);
     const char* status = "active";
     a_elmnt_pr_t priority   = 4;
-    a_elmnt_bc_t bc         = 0;
     std::set <a_elmnt_id_t>  groups;    // left empty, simple cass
 
     std::set<std::pair<std::string, std::string>> expected_ext_attributes;
@@ -675,13 +666,13 @@ TEST_CASE("rack unlockated INSERT/DELETE #persist::asset_subtype::N_A","[db][CRU
     expected_ext_attributes.insert (std::make_pair ("model", "2"));
     expected_ext_attributes.insert (std::make_pair ("u_size", "3"));
     expected_ext_attributes.insert (std::make_pair ("asset_tag", "This doesn't matter"));
-    
+
     for ( auto &ea : expected_ext_attributes )
         zhash_insert (ext_attributes, ea.first.c_str(), (void *)ea.second.c_str());
 
     // first insert
     auto reply_insert = persist::insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
-            ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
+            ext_attributes, status, priority, groups, UGLY_ASSET_TAG);
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
     REQUIRE ( reply_insert.status == 1 );
@@ -693,7 +684,6 @@ TEST_CASE("rack unlockated INSERT/DELETE #persist::asset_subtype::N_A","[db][CRU
     REQUIRE (item.name == name);
     REQUIRE (item.status == status);
     REQUIRE (item.priority == priority);
-    REQUIRE (item.bc == bc);
     REQUIRE (item.type_id == element_type_id);
     REQUIRE (item.type_name == "rack");
     REQUIRE (item.parent_id == parent_id);
@@ -760,7 +750,7 @@ TEST_CASE("rack unlockated INSERT/DELETE #persist::asset_subtype::N_A","[db][CRU
 
     // second insert
     reply_insert = persist::insert_dc_room_row_rack_group (conn, name, element_type_id,
-            parent_id, ext_attributes, status, priority, bc, groups,
+            parent_id, ext_attributes, status, priority, groups,
             UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 0 );
@@ -835,7 +825,6 @@ TEST_CASE("group unlockated INSERT/DELETE #11","[db][CRUD][insert][delete][unloc
     zhash_autofree (ext_attributes);
     const char* status = "active";
     a_elmnt_pr_t priority   = 4;
-    a_elmnt_bc_t bc         = 0;
     std::set <a_elmnt_id_t>  groups;    // left empty, simple cass
 
     std::set<std::pair<std::string, std::string>> expected_ext_attributes;
@@ -847,7 +836,7 @@ TEST_CASE("group unlockated INSERT/DELETE #11","[db][CRUD][insert][delete][unloc
 
     // first insert
     auto reply_insert = persist::insert_dc_room_row_rack_group (conn, name, element_type_id,
-            parent_id, ext_attributes, status, priority, bc, groups,
+            parent_id, ext_attributes, status, priority, groups,
             UGLY_ASSET_TAG);
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
@@ -860,7 +849,6 @@ TEST_CASE("group unlockated INSERT/DELETE #11","[db][CRUD][insert][delete][unloc
     REQUIRE (item.name == name);
     REQUIRE (item.status == status);
     REQUIRE (item.priority == priority);
-    REQUIRE (item.bc == bc);
     REQUIRE (item.type_id == element_type_id);
     REQUIRE (item.type_name == "group");
     REQUIRE (item.parent_id == parent_id);
@@ -876,7 +864,7 @@ TEST_CASE("group unlockated INSERT/DELETE #11","[db][CRUD][insert][delete][unloc
     }
     // second insert
     reply_insert = persist::insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
-            ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
+            ext_attributes, status, priority, groups, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 0 );
 
@@ -911,7 +899,6 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
     zhash_autofree (ext_attributes);
     const char* status = "active";
     a_elmnt_pr_t priority   = 4;
-    a_elmnt_bc_t bc         = 0;
 
     std::set<std::pair<std::string, std::string>> expected_ext_attributes;
     expected_ext_attributes.insert (std::make_pair ("description", "Hello people, do we have any problems with % and %% characters"));
@@ -930,7 +917,7 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
     // first insert
     auto reply_insert = persist::insert_device (conn, links, groups, name, parent_id,
                             ext_attributes, asset_device_type_id,
-                            asset_device_type, status, priority, bc,
+                            asset_device_type, status, priority,
                             UGLY_ASSET_TAG);
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
@@ -943,7 +930,6 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
     REQUIRE (item.name == name);
     REQUIRE (item.status == status);
     REQUIRE (item.priority == priority);
-    REQUIRE (item.bc == bc);
     REQUIRE (item.type_id == element_type_id);
     REQUIRE (item.type_name == "device");
     REQUIRE (item.parent_id == parent_id);
@@ -1011,7 +997,7 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
     // second insert
     reply_insert = persist::insert_device (conn, links, groups, name, parent_id,
                             ext_attributes, asset_device_type_id,
-                            asset_device_type, status, priority, bc,
+                            asset_device_type, status, priority,
                             UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 0 );

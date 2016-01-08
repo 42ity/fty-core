@@ -40,7 +40,6 @@ int
          a_elmnt_id_t     parent_id,
          const char      *status,
          a_elmnt_pr_t     priority,
-         a_elmnt_bc_t     bc,
          const char      *asset_tag,
          int32_t         &affected_rows);
 

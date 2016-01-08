@@ -46,7 +46,7 @@ db_reply <db_web_basic_element_t>
     log_debug ("element_id = %" PRIi32, element_id);
 
     // TODO write function new
-    db_web_basic_element_t item {0, "", "", 0, 0, 0, "", 0, 0, 0, "",""};
+    db_web_basic_element_t item {0, "", "", 0, 0, "", 0, 0, 0, "",""};
     db_reply <db_web_basic_element_t> ret = db_reply_new(item);
 
     try{
@@ -55,7 +55,7 @@ db_reply <db_web_basic_element_t>
             " SELECT"
             "   v.id, v.name, v.id_type, v.type_name,"
             "   v.subtype_id, v.subtype_name, v.id_parent,"
-            "   v.id_parent_type, v.business_crit, v.status,"
+            "   v.id_parent_type, v.status,"
             "   v.priority, v.asset_tag"
             " FROM"
             "   v_web_element v"
@@ -74,10 +74,9 @@ db_reply <db_web_basic_element_t>
         row[5].get(ret.item.subtype_name);
         row[6].get(ret.item.parent_id);
         row[7].get(ret.item.parent_type_id);
-        row[8].get(ret.item.bc);
-        row[9].get(ret.item.status);
-        row[10].get(ret.item.priority);
-        row[11].get(ret.item.asset_tag);
+        row[8].get(ret.item.status);
+        row[9].get(ret.item.priority);
+        row[10].get(ret.item.asset_tag);
 
         ret.status = 1;
         LOG_END;
@@ -106,7 +105,7 @@ db_reply <db_web_basic_element_t>
         (tntdb::Connection &conn,
          const char *element_name) {
     // TODO write function new
-    db_web_basic_element_t item {0, "", "", 0, 0, 0, "", 0, 0, 0, "",""};
+    db_web_basic_element_t item {0, "", "", 0, 0, "", 0, 0, 0, "",""};
     db_reply <db_web_basic_element_t> ret = db_reply_new(item);
 
     try {
@@ -114,7 +113,7 @@ db_reply <db_web_basic_element_t>
             " SELECT"
             "   v.id, v.name, v.id_type, v.type_name,"
             "   v.subtype_id, v.subtype_name, v.id_parent,"
-            "   v.id_parent_type, v.business_crit, v.status,"
+            "   v.id_parent_type, v.status,"
             "   v.priority, v.asset_tag"
             " FROM"
             "   v_web_element v"
@@ -131,10 +130,9 @@ db_reply <db_web_basic_element_t>
         row[5].get(ret.item.subtype_name);
         row[6].get(ret.item.parent_id);
         row[7].get(ret.item.parent_type_id);
-        row[8].get(ret.item.bc);
-        row[9].get(ret.item.status);
-        row[10].get(ret.item.priority);
-        row[11].get(ret.item.asset_tag);
+        row[8].get(ret.item.status);
+        row[9].get(ret.item.priority);
+        row[10].get(ret.item.asset_tag);
 
         ret.status = 1;
         return ret;
@@ -494,7 +492,7 @@ int
             " SELECT"
             "   v.id, v.name, v.type_name,"
             "   v.subtype_name, v.id_parent,"
-            "   v.business_crit, v.status, v.priority,"
+            "   v.status, v.priority,"
             "   v.asset_tag"
             " FROM"
             "   v_web_element v"

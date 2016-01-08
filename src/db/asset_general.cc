@@ -40,7 +40,6 @@ int
          zhash_t         *extattributes,
          const char      *status,
          a_elmnt_pr_t     priority,
-         a_elmnt_bc_t     bc,
          std::set <a_elmnt_id_t> const &groups,
          const std::string &asset_tag,
          std::string     &errmsg)
@@ -52,12 +51,12 @@ int
     int affected_rows = 0;
     int ret1 = update_asset_element
         (conn, element_id, element_name, parent_id, status, priority,
-         bc, asset_tag.c_str(), affected_rows);
+         asset_tag.c_str(), affected_rows);
 
     if ( ( ret1 != 0 ) && ( affected_rows != 1 ) )
     {
         trans.rollback();
-        errmsg = "check  element name, location, status, priority, bc, asset_tag";
+        errmsg = "check  element name, location, status, priority, asset_tag";
         log_error ("end: %s", errmsg.c_str());
         return 1;
     }
@@ -119,7 +118,6 @@ int
          zhash_t         *extattributes,
          const char      *status,
          a_elmnt_pr_t     priority,
-         a_elmnt_bc_t     bc,
          std::set <a_elmnt_id_t> const &groups,
          std::vector <link_t> &links,
          const std::string &asset_tag,
@@ -132,12 +130,12 @@ int
     int affected_rows = 0;
     int ret1 = update_asset_element
         (conn, element_id, element_name, parent_id, status, priority,
-         bc, asset_tag.c_str(), affected_rows);
+         asset_tag.c_str(), affected_rows);
 
     if ( ( ret1 != 0 ) && ( affected_rows != 1 ) )
     {
         trans.rollback();
-        errmsg = "check  element name, location, status, priority, bc, asset_tag";
+        errmsg = "check  element name, location, status, priority, asset_tag";
         log_error ("end: %s", errmsg.c_str());
         return 1;
     }
@@ -224,7 +222,6 @@ db_reply_t
      zhash_t         *extattributes,
      const char      *status,
      a_elmnt_pr_t     priority,
-     a_elmnt_bc_t     bc,
      std::set <a_elmnt_id_t> const &groups,
      const std::string &asset_tag)
 {
@@ -234,7 +231,7 @@ db_reply_t
     tntdb::Transaction trans(conn);
     auto reply_insert1 = insert_into_asset_element
                         (conn, element_name, element_type_id, parent_id,
-                         status, priority, bc, 0, asset_tag.c_str());
+                         status, priority, 0, asset_tag.c_str());
     if ( reply_insert1.status == 0 )
     {
         trans.rollback();
@@ -308,7 +305,6 @@ db_reply_t
         const char    *asset_device_type_name,
         const char    *status,
         a_elmnt_pr_t   priority,
-        a_elmnt_bc_t   bc,
         const std::string &asset_tag)
 {
     LOG_START;
@@ -318,7 +314,7 @@ db_reply_t
 
     auto reply_insert1 = insert_into_asset_element
                         (conn, element_name, asset_type::DEVICE, parent_id,
-                        status, priority, bc, asset_device_type_id, asset_tag.c_str());
+                        status, priority, asset_device_type_id, asset_tag.c_str());
     if ( reply_insert1.status == 0 )
     {
         trans.rollback();

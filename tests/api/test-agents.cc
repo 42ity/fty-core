@@ -342,10 +342,9 @@ TEST_CASE ("bios asset extended message encode & decode", "[agents][public_api][
     uint32_t parent_id = 1;
     const char *status = "active";
     uint8_t priority = 2;
-    uint8_t bc = 1;
     int8_t operation = 1;
     _scoped_ymsg_t * ymsg_encoded = bios_asset_extra_encode
-        (name, &ext_attributes, type_id, subtype_id, parent_id, status, priority, bc, operation);
+        (name, &ext_attributes, type_id, subtype_id, parent_id, status, priority, operation);
     REQUIRE ( ymsg_encoded != NULL );
     REQUIRE ( ext_attributes == NULL );
 
@@ -357,12 +356,11 @@ TEST_CASE ("bios asset extended message encode & decode", "[agents][public_api][
     uint32_t parent_id_new = 0;
     char *status_new = NULL;
     uint8_t priority_new = 0;
-    uint8_t bc_new = 0;
     int8_t operation_new = 0;
  
     int rv = bios_asset_extra_extract (ymsg_encoded, &name_new, 
         &ext_attributes_new, &type_id_new, &subtype_id_new, &parent_id_new, &status_new,
-        &priority_new, &bc_new, &operation_new);
+        &priority_new, &operation_new);
     REQUIRE ( rv == 0 );
     REQUIRE ( ymsg_encoded != NULL );
     REQUIRE ( streq (name, name_new) == true );
@@ -370,7 +368,6 @@ TEST_CASE ("bios asset extended message encode & decode", "[agents][public_api][
     REQUIRE ( subtype_id == subtype_id_new );
     REQUIRE ( parent_id == parent_id_new );
     REQUIRE ( priority == priority_new );
-    REQUIRE ( bc == bc_new );
     REQUIRE ( operation == operation_new );
     REQUIRE ( streq (status, status_new) == true );
     REQUIRE ( zhash_size (ext_attributes_new) == 3 );
@@ -407,7 +404,6 @@ TEST_CASE ("bios asset extended message decode", "[agents][public_api][asset_ext
     uint32_t parent_id = 1;
     const char *status = "active";
     uint8_t priority = 2;
-    uint8_t bc = 1;
     int8_t operation = 1;
 
     app_t *app = app_new(APP_MODULE);
@@ -421,7 +417,6 @@ TEST_CASE ("bios asset extended message decode", "[agents][public_api][asset_ext
     app_args_set_uint8  (app, "__priority", priority);
     app_args_set_string (app, "__status", status);
     app_args_set_string (app, "__name", name);
-    app_args_set_uint8  (app, "__bc", bc);
     app_args_set_int8   (app, "__operation", operation);
     
     ymsg_t *msg = ymsg_new(YMSG_SEND);
@@ -435,12 +430,11 @@ TEST_CASE ("bios asset extended message decode", "[agents][public_api][asset_ext
     uint32_t parent_id_new = 0;
     char *status_new = NULL;
     uint8_t priority_new = 0;
-    uint8_t bc_new = 0;
     int8_t operation_new = 0;
  
     int rv = bios_asset_extra_extract (msg, &name_new, 
         &ext_attributes_new, &type_id_new, &subtype_id_new, &parent_id_new, &status_new,
-        &priority_new, &bc_new, &operation_new);
+        &priority_new, &operation_new);
     REQUIRE ( rv == 0 );
     REQUIRE ( msg != NULL );
     REQUIRE ( streq (name, name_new) == true );
@@ -448,7 +442,6 @@ TEST_CASE ("bios asset extended message decode", "[agents][public_api][asset_ext
     REQUIRE ( subtype_id == subtype_id_new );
     REQUIRE ( parent_id == parent_id_new );
     REQUIRE ( priority == priority_new );
-    REQUIRE ( bc == bc_new );
     REQUIRE ( operation == operation_new );
     REQUIRE ( streq (status, status_new) == true );
     REQUIRE ( zhash_size (ext_attributes_new) == 3 );
@@ -485,7 +478,6 @@ TEST_CASE ("bios asset extended message decode, missing keys", "[agents][public_
     uint32_t parent_id = 2;
     const char *status = "active";
     uint8_t priority   = 3;
-    uint8_t bc         = 1;
     int8_t operation   = 1;
 
     _scoped_zhash_t *ext_attributes_new = NULL;
@@ -495,7 +487,6 @@ TEST_CASE ("bios asset extended message decode, missing keys", "[agents][public_
     uint32_t parent_id_new = 0;
     char *status_new       = NULL;
     uint8_t priority_new   = 0;
-    uint8_t bc_new         = 0;
     int8_t operation_new   = 0;
 
     SECTION ("__type_id is missing") {
@@ -510,7 +501,6 @@ TEST_CASE ("bios asset extended message decode, missing keys", "[agents][public_
         app_args_set_uint8  (app, "__priority", priority);
         app_args_set_string (app, "__status", status);
         app_args_set_string (app, "__name", name);
-        app_args_set_uint8  (app, "__bc", bc);
         app_args_set_int8   (app, "__operation", operation);
 
         ymsg_t *msg = ymsg_new(YMSG_SEND);
@@ -519,7 +509,7 @@ TEST_CASE ("bios asset extended message decode, missing keys", "[agents][public_
 
         int rv = bios_asset_extra_extract (msg, &name_new,
                 &ext_attributes_new, &type_id_new, &subtype_id_new, &parent_id_new, &status_new,
-                &priority_new, &bc_new, &operation_new);
+                &priority_new, &operation_new);
         REQUIRE ( rv == 0 );
         REQUIRE ( msg != NULL );
         REQUIRE ( streq (name_new, name) == true );
@@ -527,7 +517,6 @@ TEST_CASE ("bios asset extended message decode, missing keys", "[agents][public_
         REQUIRE ( subtype_id_new == subtype_id );
         REQUIRE ( parent_id_new == parent_id );
         REQUIRE ( priority_new == priority );
-        REQUIRE ( bc_new == bc );
         REQUIRE ( operation_new == operation );
         REQUIRE ( streq (status_new, status) == true );
         REQUIRE ( zhash_size (ext_attributes_new) == 3 );
@@ -555,7 +544,6 @@ TEST_CASE ("bios asset extended message decode, missing keys", "[agents][public_
         app_args_set_uint8  (app, "__priority", priority);
         app_args_set_string (app, "__status", status);
         app_args_set_string (app, "__name", name);
-        app_args_set_uint8  (app, "__bc", bc);
         app_args_set_int8   (app, "__operation", operation);
 
         ymsg_t *msg = ymsg_new(YMSG_SEND);
@@ -564,14 +552,13 @@ TEST_CASE ("bios asset extended message decode, missing keys", "[agents][public_
 
         int rv = bios_asset_extra_extract (msg, &name_new,
                 &ext_attributes_new, &type_id_new, &subtype_id_new, &parent_id_new, &status_new,
-                &priority_new, &bc_new, &operation_new);
+                &priority_new, &operation_new);
         REQUIRE ( rv == 0 );
         REQUIRE ( msg != NULL );
         REQUIRE ( streq (name_new, name) == true );
         REQUIRE ( type_id_new == type_id );
         REQUIRE ( parent_id_new == 0 );
         REQUIRE ( priority_new == priority );
-        REQUIRE ( bc_new == bc );
         REQUIRE ( operation_new == operation );
         REQUIRE ( streq (status_new, status) == true );
         REQUIRE ( zhash_size (ext_attributes_new) == 3 );
@@ -598,7 +585,6 @@ TEST_CASE ("bios asset extended message decode, missing keys", "[agents][public_
         app_args_set_uint32 (app, "__parent_id", parent_id);
         app_args_set_string (app, "__status", status);
         app_args_set_string (app, "__name", name);
-        app_args_set_uint8  (app, "__bc", bc);
         app_args_set_int8   (app, "__operation", operation);
 
         ymsg_t *msg = ymsg_new(YMSG_SEND);
@@ -607,14 +593,13 @@ TEST_CASE ("bios asset extended message decode, missing keys", "[agents][public_
 
         int rv = bios_asset_extra_extract (msg, &name_new,
                 &ext_attributes_new, &type_id_new, &subtype_id_new, &parent_id_new, &status_new,
-                &priority_new, &bc_new, &operation_new);
+                &priority_new, &operation_new);
         REQUIRE ( rv == 0 );
         REQUIRE ( msg != NULL );
         REQUIRE ( streq (name_new, name) == true );
         REQUIRE ( type_id_new == type_id );
         REQUIRE ( parent_id_new == parent_id );
         REQUIRE ( priority_new == 0 );
-        REQUIRE ( bc_new == bc );
         REQUIRE ( operation_new == operation );
         REQUIRE ( streq (status_new, status) == true );
         REQUIRE ( zhash_size (ext_attributes_new) == 3 );
@@ -641,7 +626,6 @@ TEST_CASE ("bios asset extended message decode, missing keys", "[agents][public_
         app_args_set_uint32 (app, "__parent_id", parent_id);
         app_args_set_uint8  (app, "__priority", priority);
         app_args_set_string (app, "__name", name);
-        app_args_set_uint8  (app, "__bc", bc);
         app_args_set_int8   (app, "__operation", operation);
 
         ymsg_t *msg = ymsg_new(YMSG_SEND);
@@ -650,14 +634,13 @@ TEST_CASE ("bios asset extended message decode, missing keys", "[agents][public_
 
         int rv = bios_asset_extra_extract (msg, &name_new,
                 &ext_attributes_new, &type_id_new, &subtype_id_new, &parent_id_new, &status_new,
-                &priority_new, &bc_new, &operation_new);
+                &priority_new, &operation_new);
         REQUIRE ( rv == 0 );
         REQUIRE ( msg != NULL );
         REQUIRE ( streq (name_new, name) == true );
         REQUIRE ( type_id_new == type_id );
         REQUIRE ( parent_id_new == parent_id );
         REQUIRE ( priority_new == priority );
-        REQUIRE ( bc_new == bc );
         REQUIRE ( operation_new == operation );
         REQUIRE ( status_new == NULL );
         REQUIRE ( zhash_size (ext_attributes_new) == 3 );
@@ -684,7 +667,6 @@ TEST_CASE ("bios asset extended message decode, missing keys", "[agents][public_
         app_args_set_uint32 (app, "__parent_id", parent_id);
         app_args_set_uint8  (app, "__priority", priority);
         app_args_set_string (app, "__status", status);
-        app_args_set_uint8  (app, "__bc", bc);
         app_args_set_int8   (app, "__operation", operation);
 
         ymsg_t *msg = ymsg_new(YMSG_SEND);
@@ -693,51 +675,8 @@ TEST_CASE ("bios asset extended message decode, missing keys", "[agents][public_
 
         int rv = bios_asset_extra_extract (msg, &name_new,
                 &ext_attributes_new, &type_id_new, &subtype_id_new, &parent_id_new, &status_new,
-                &priority_new, &bc_new, &operation_new);
+                &priority_new, &operation_new);
         REQUIRE ( rv == -7 );
-        ymsg_destroy (&msg);
-        app_destroy (&app);
-    }
-    SECTION ("__bc is missing") {
-
-        app_t *app = app_new(APP_MODULE);
-        REQUIRE ( app );
-        app_set_name (app, "ASSET_EXTENDED");
-
-        app_set_args        (app, &ext_attributes);
-        app_args_set_uint32 (app, "__type_id", type_id);
-        app_args_set_uint32 (app, "__parent_id", parent_id);
-        app_args_set_uint8  (app, "__priority", priority);
-        app_args_set_string (app, "__status", status);
-        app_args_set_string (app, "__name", name);
-        app_args_set_int8   (app, "__operation", operation);
-
-        ymsg_t *msg = ymsg_new(YMSG_SEND);
-        REQUIRE ( msg );
-        ymsg_request_set_app (msg, &app);
-
-        int rv = bios_asset_extra_extract (msg, &name_new,
-                &ext_attributes_new, &type_id_new, &subtype_id_new, &parent_id_new, &status_new,
-                &priority_new, &bc_new, &operation_new);
-        REQUIRE ( rv == 0 );
-        REQUIRE ( msg != NULL );
-        REQUIRE ( streq (name_new, name) == true );
-        REQUIRE ( type_id_new == type_id );
-        REQUIRE ( parent_id_new == parent_id );
-        REQUIRE ( priority_new == priority );
-        REQUIRE ( bc_new == 0 );
-        REQUIRE ( operation_new == operation );
-        REQUIRE ( streq (status_new, status) == true );
-        REQUIRE ( zhash_size (ext_attributes_new) == 3 );
-
-        const char *value1 = (char *) zhash_lookup (ext_attributes_new, "key1");
-        REQUIRE ( streq (value1, "value1") == true );
-
-        const char *value2 = (char*) zhash_lookup (ext_attributes_new, "key2");
-        REQUIRE ( streq (value2, "value2") == true );
-
-        const char *value3 = (char *) zhash_lookup (ext_attributes_new, "key3");
-        REQUIRE ( streq (value3, "value3") == true );
         ymsg_destroy (&msg);
         app_destroy (&app);
     }
@@ -753,7 +692,6 @@ TEST_CASE ("bios asset extended message decode, missing keys", "[agents][public_
         app_args_set_uint8  (app, "__priority", priority);
         app_args_set_string (app, "__status", status);
         app_args_set_string (app, "__name", name);
-        app_args_set_uint8  (app, "__bc", bc);
 
         ymsg_t *msg = ymsg_new(YMSG_SEND);
         REQUIRE ( msg );
@@ -761,14 +699,13 @@ TEST_CASE ("bios asset extended message decode, missing keys", "[agents][public_
 
         int rv = bios_asset_extra_extract (msg, &name_new,
                 &ext_attributes_new, &type_id_new, &subtype_id_new, &parent_id_new, &status_new,
-                &priority_new, &bc_new, &operation_new);
+                &priority_new, &operation_new);
         REQUIRE ( rv == 0 );
         REQUIRE ( msg != NULL );
         REQUIRE ( streq (name_new, name) == true );
         REQUIRE ( type_id_new == type_id );
         REQUIRE ( parent_id_new == parent_id );
         REQUIRE ( priority_new == priority );
-        REQUIRE ( bc_new == bc );
         REQUIRE ( operation_new == 0 );
         REQUIRE ( streq (status_new, status) == true );
         REQUIRE ( zhash_size (ext_attributes_new) == 3 );
@@ -795,7 +732,6 @@ TEST_CASE ("bios asset extended message decode, missing keys", "[agents][public_
         app_args_set_uint8  (app, "__priority", priority);
         app_args_set_string (app, "__status", status);
         app_args_set_string (app, "__name", name);
-        app_args_set_uint8  (app, "__bc", bc);
         app_args_set_int8   (app, "__operation", operation);
 
         ymsg_t *msg = ymsg_new(YMSG_SEND);
@@ -804,14 +740,13 @@ TEST_CASE ("bios asset extended message decode, missing keys", "[agents][public_
 
         int rv = bios_asset_extra_extract (msg, &name_new,
                 &ext_attributes_new, &type_id_new, &subtype_id_new, &parent_id_new, &status_new,
-                &priority_new, &bc_new, &operation_new);
+                &priority_new, &operation_new);
         REQUIRE ( rv == 0 );
         REQUIRE ( msg != NULL );
         REQUIRE ( streq (name_new, name) == true );
         REQUIRE ( type_id_new == type_id );
         REQUIRE ( parent_id_new == parent_id );
         REQUIRE ( priority_new == priority );
-        REQUIRE ( bc_new == bc );
         REQUIRE ( operation_new == operation );
         REQUIRE ( streq (status_new, status) == true );
         REQUIRE ( zhash_size (ext_attributes_new) == 0 );

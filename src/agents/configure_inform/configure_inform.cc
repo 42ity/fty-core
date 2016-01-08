@@ -51,7 +51,7 @@ void
         zhash_t *ext = s_map2zhash (oneRow.first.ext);
         ymsg_t *msg = bios_asset_extra_encode (oneRow.first.name.c_str(), &ext, oneRow.first.type_id,
 		oneRow.first.subtype_id, oneRow.first.parent_id, oneRow.first.status.c_str(),
-		oneRow.first.priority, oneRow.first.bc, oneRow.second);
+		oneRow.first.priority, oneRow.second);
         if ( msg == NULL )
         {
             bios_agent_destroy (&agent);

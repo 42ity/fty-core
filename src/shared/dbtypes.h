@@ -53,10 +53,6 @@ typedef uint32_t a_elmnt_id_t;
 // ----- column: priority -----------------------------
 typedef uint16_t a_elmnt_pr_t;
 
-// ----- table:  t_bios_asset_element -----------------
-// ----- column: business_crit ------------------------
-typedef uint16_t a_elmnt_bc_t;
-
 // ----- table:  t_bios_asset_ext_attributes ----------
 // ----- column: id_asset_ext_attribute ---------------
 typedef uint32_t a_ext_attr_id_t;

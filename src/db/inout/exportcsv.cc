@@ -38,7 +38,7 @@ namespace persist {
 
 // names of element from v_web_asset_element - they'll be printed as the first ones
 static std::vector<std::string> ASSET_ELEMENT_KEYTAGS{
-    "id", "name", "type", "sub_type", "location", "status", "priority", "business_critical", "asset_tag"};
+    "id", "name", "type", "sub_type", "location", "status", "priority", "asset_tag"};
 
 // get all keytags available in the system and update the s argument
 // + remove the duplicate names from v_web_asset_element/t_bios_asset_element table
@@ -263,10 +263,6 @@ void
         uint32_t priority;
         r["priority"].get(priority);
         lcs.add("P" + std::to_string(priority));
-
-        uint32_t business_critical = 0;
-        r["business_crit"].get(business_critical);
-        lcs.add(business_critical == 1 ? "yes" : "no");
 
         std::string asset_tag;
         r["asset_tag"].get(asset_tag);

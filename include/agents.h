@@ -205,7 +205,6 @@ bios_alert_extract(ymsg_t *self,
  * \param[out] parent_id      - id of the parent device (0 if it has no parent device).
  * \param[out] status         - status of the element
  * \param[out] priority       - priority of the elemnt.
- * \param[out] bc             - 1 if element is business critical otherwise 0.
  * \param[out] event type     - type of action with element 1(insert), 2(update), 3(delete).
  * 
  * \return int  0 = success, 
@@ -221,7 +220,6 @@ bios_asset_extra_extract(ymsg_t *message,
                    uint32_t *parent_id,
                    char **status,
                    uint8_t *priority,
-                   uint8_t *bc,
                    int8_t *event_type);
 
 
@@ -234,7 +232,6 @@ bios_asset_extra_extract(ymsg_t *message,
  * \param[in] parent_id      - id of the parent device (0 if it has no parent device).
  * \param[in] status         - status of the element
  * \param[in] priority       - priority of the elemnt.
- * \param[in] bc             - 1 if element is business critical otherwise 0.
  * \param[in] event type     - type of action with element 1(insert), 2(update), 3(delete).
  *
  * \return ymsg_t * or NULL if failed
@@ -247,7 +244,6 @@ bios_asset_extra_encode_response(const char *name,
                    uint32_t parent_id,
                    const char* status,
                    uint8_t priority,
-                   uint8_t bc,
                    int8_t event_type);
 
 
@@ -260,7 +256,6 @@ bios_asset_extra_encode_response(const char *name,
  * \param[in] parent_id      - id of the parent device (0 if it has no parent device).
  * \param[in] status         - status of the element
  * \param[in] priority       - priority of the elemnt.
- * \param[in] bc             - 1 if element is business critical otherwise 0.
  * \param[in] event type     - type of action with element 1(insert), 2(update), 3(delete).
  *
  * \return ymsg_t * or NULL if failed
@@ -273,7 +268,6 @@ bios_asset_extra_encode(const char *name,
                    uint32_t parent_id,
                    const char* status,
                    uint8_t priority,
-                   uint8_t bc,
                    int8_t event_type);
 
 #ifdef __cplusplus

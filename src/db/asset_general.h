@@ -39,7 +39,6 @@ int
          zhash_t         *extattributes,
          const char      *status,
          a_elmnt_pr_t     priority,
-         a_elmnt_bc_t     bc,
          std::set <a_elmnt_id_t> const &groups,
          const std::string &asset_tag,
          std::string     &errmsg);
@@ -55,7 +54,6 @@ int
          zhash_t         *extattributes,
          const char      *status,
          a_elmnt_pr_t     priority,
-         a_elmnt_bc_t     bc,
          std::set <a_elmnt_id_t> const &groups,
          std::vector <link_t> &links,
          const std::string &asset_tag,
@@ -71,7 +69,6 @@ db_reply_t
          zhash_t         *extattributes,
          const char      *status,
          a_elmnt_pr_t     priority,
-         a_elmnt_bc_t     bc,
          std::set <a_elmnt_id_t> const &groups,
          const std::string &asset_tag);
 
@@ -88,7 +85,6 @@ db_reply_t
         const char    *asset_device_type_name,
         const char    *status,
         a_elmnt_pr_t   priority,
-        a_elmnt_bc_t   bc,
         const std::string &asset_tag);
 
 

@@ -74,14 +74,6 @@ if ( !typeNameArg.empty() &&
 "id": "<$$ tmp.item.basic.id $>"
 , "name": "<$$ tmp.item.basic.name $>"
 , "status": "<$$ tmp.item.basic.status $>"
-%       if ( tmp.item.basic.bc == 0 )
-%       {
-, "business_critical": "no"
-%       }
-%       else
-%       {
-, "business_critical": "yes"
-%       }
 , "priority": "P<$$ tmp.item.basic.priority $>"
 <%cpp>
 // if element is located, then show the location
