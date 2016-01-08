@@ -184,15 +184,18 @@ default_posval() {
 default_posval CI_DEBUGLEVEL_ECHO       0
         # By default, do echo unless $1 says otherwise
 
+# Standard stuff
 default_posval CI_DEBUGLEVEL_ERROR      1
 default_posval CI_DEBUGLEVEL_WARN       2
 default_posval CI_DEBUGLEVEL_INFO       3
-default_posval CI_DEBUGLEVEL_LOADDB     5
-default_posval CI_DEBUGLEVEL_DUMPDB     3
-default_posval CI_DEBUGLEVEL_SELECT     3
-default_posval CI_DEBUGLEVEL_RUN        4
 default_posval CI_DEBUGLEVEL_DEBUG      5
-default_posval CI_DEBUGLEVEL_PIPESNIFFER 5
+
+# Custom stuff for specific routines
+default_posval CI_DEBUGLEVEL_RUN        4
+default_posval CI_DEBUGLEVEL_LOADDB     $CI_DEBUGLEVEL_RUN
+default_posval CI_DEBUGLEVEL_DUMPDB     $CI_DEBUGLEVEL_RUN
+default_posval CI_DEBUGLEVEL_SELECT     $CI_DEBUGLEVEL_RUN
+default_posval CI_DEBUGLEVEL_PIPESNIFFER $CI_DEBUGLEVEL_DEBUG
 
 logmsg_echo() {
     ### Optionally echoes a message, based on current debug-level
