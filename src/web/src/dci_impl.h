@@ -23,7 +23,7 @@
  * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
  * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \brief  Helper functions for datacenter metrics
- * 
+ *
  * This file exists only to have syntax highlighting correct.
  * To be included in datacenter_indicators.ecpp
  */
@@ -42,58 +42,58 @@
 static const std::map<std::string, const std::string> PARAM_TO_SRC = {
     {"power", "realpower.default"},
     {"avg_power_last_day", "realpower.default_arithmetic_mean_24h"},
-    {"avg_power_last_week", "<zero>"},
+    {"avg_power_last_week", "realpower.default_arithmetic_mean_7d"},
     {"avg_power_last_month", "<zero>"},
 
     {"min_power_last_day", "realpower.default_min_24h"},
-    {"min_power_last_week", "<zero>"},
+    {"min_power_last_week", "realpower.default_min_7d"},
     {"min_power_last_month", "<zero>"},
 
     {"max_power_last_day", "realpower.default_max_24h"},
-    {"max_power_last_week", "<zero>"},
+    {"max_power_last_week", "realpower.default_max_7d"},
     {"max_power_last_month", "<zero>"},
 
     {"trend_power_last_day", "realpower.default_arithmetic_mean_24h/realpower.default"},
-    {"trend_power_last_week", "<zero>"},
+    {"trend_power_last_week", "realpower.default_arithmetic_mean_7d/realpower.default"},
     {"trend_power_last_month", "<zero>"},
 
     {"temperature", "average.temperature"},
-    {"avg_temperature_last_day", R"(average.temperature_arithmetic_mean_24h)"},
-    {"avg_temperature_last_week", "<zero>"},
+    {"avg_temperature_last_day",  "average.temperature_arithmetic_mean_24h"},
+    {"avg_temperature_last_week", "average.temperature_arithmetic_mean_7d"},
     {"avg_temperature_last_month", "<zero>"},
 
-    {"min_temperature_last_day", R"(average.temperature_min_24h)"},
-    {"min_temperature_last_week", "<zero>"},
+    {"min_temperature_last_day",  "average.temperature_min_24h"},
+    {"min_temperature_last_week", "average.temperature_min_7d"},
     {"min_temperature_last_month", "<zero>"},
 
-    {"max_temperature_last_day", R"(average.temperature_max_24h)"},
-    {"max_temperature_last_week", "<zero>"},
+    {"max_temperature_last_day",  "average.temperature_max_24h"},
+    {"max_temperature_last_week", "average.temperature_max_7d"},
     {"max_temperature_last_month", "<zero>"},
 
-    {"trend_temperature_last_day", R"(average.temperature_arithmetic_mean_24h/average.temperature)"},
-    {"trend_temperature_last_week", "<zero>"},
+    {"trend_temperature_last_day",  "average.temperature_arithmetic_mean_24h/average.temperature"},
+    {"trend_temperature_last_week", "average.temperature_arithmetic_mean_7d/average.temperature"},
     {"trend_temperature_last_month", "<zero>"},
 
     {"humidity", "average.humidity"},
-    {"avg_humidity_last_day", R"(average.humidity_arithmetic_mean_24h)"},
-    {"avg_humidity_last_week", "<zero>"},
+    {"avg_humidity_last_day", "average.humidity_arithmetic_mean_24h"},
+    {"avg_humidity_last_week", "average.humidity_arithmetic_mean_7d"},
     {"avg_humidity_last_month", "<zero>"},
 
-    {"min_humidity_last_day", R"(average.humidity_min_24h)"},
-    {"min_humidity_last_week", "<zero>"},
+    {"min_humidity_last_day", "average.humidity_min_24h"},
+    {"min_humidity_last_week", "average.humidity_min_7d"},
     {"min_humidity_last_month", "<zero>"},
 
-    {"max_humidity_last_day", R"(average.humidity_max_24h)"},
-    {"max_humidity_last_week", "<zero>"},
+    {"max_humidity_last_day", "average.humidity_max_24h"},
+    {"max_humidity_last_week", "average.humidity_max_7d"},
     {"max_humidity_last_month", "<zero>"},
 
-    {"trend_humidity_last_day", R"(average.humidity_arithmetic_mean_24h/average.humidity)"},
-    {"trend_humidity_last_week", "<zero>"},
+    {"trend_humidity_last_day", "average.humidity_arithmetic_mean_24h/average.humidity"},
+    {"trend_humidity_last_week", "average.humidity_arithmetic_mean_7d/average.humidity"},
     {"trend_humidity_last_month", "<zero>"}
 };
 
 
-double
+static double
     get_dc_raw(
         tntdb::Connection& conn,
         const std::string& src,
@@ -104,10 +104,13 @@ double
     if ( src.find("24h") != std::string::npos ) {
         step = 24*60*60;
     }
+    else if ( src.find("7d") != std::string::npos ) {
+        step = 7*24*60*60; // ASSUMPTION 1 measurement in 7d; if one measurement each day -> remove 7!
+    }
     else if ( src.find("15m") != std::string::npos ) {
         step = 60*15;
     }
-    log_debug ("step = %d", step);
+    log_error ("step = %d", step);
     double value = 0;
     if ( step != 0 ) {
         // here we are, if we are looking for some aggregated data
@@ -133,7 +136,7 @@ double
 }
 
 
-double
+static double
 get_dc_trend(
     tntdb::Connection& conn,
     const std::string& src,
@@ -151,7 +154,6 @@ get_dc_trend(
     }
 
     double value_actual = 0.0f;
-    double value_average = 0.0f;
     auto it = cache.find(items.at(1));
     if ( it != cache.cend() ) {
         value_actual = it->second;
@@ -161,6 +163,7 @@ get_dc_trend(
         cache.insert(std::make_pair(src, value_actual));
     }
 
+    double value_average = 0.0f;
     it = cache.find(items.at(0));
     if ( it != cache.cend() ) {
         value_average = it->second;
