@@ -366,7 +366,7 @@ sut_run() {
             "sut_run()::ssh(${SUT_HOST}:${SUT_SSH_PORT}): $@" >&2
         SSH_TERMINAL_REQUEST=""
         [ "$1" = "-t" ] && shift && SSH_TERMINAL_REQUEST="-t -t" #" -o RequestTTY=true"
-        [ "$CI_DEBUG" -gt 0 ] 2>/dev/null && \
+        [ "$CI_DEBUG" -ge "$CI_DEBUGLEVEL_RUN" ] 2>/dev/null && \
             REMCMD="sh -x -c \"$@\"" ||
             REMCMD="sh -c \"$@\""
         ssh $SSH_TERMINAL_REQUEST -p "${SUT_SSH_PORT}" -l "${SUT_USER}" "${SUT_HOST}" "$@"
@@ -375,7 +375,7 @@ sut_run() {
         [ "$1" = "-t" ] && shift        # Ignore for local host
         logmsg_info "$CI_DEBUGLEVEL_RUN" \
             "sut_run()::local: $@" >&2
-        if [ "$CI_DEBUG" -gt 0 ] 2>/dev/null ; then
+        if [ "$CI_DEBUG" -ge "$CI_DEBUGLEVEL_RUN" ] 2>/dev/null ; then
             sh -x -c "$@"
         else
             sh -c "$@"
