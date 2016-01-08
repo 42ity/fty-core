@@ -89,7 +89,8 @@ $(RUN_TNTNET_ENVFILE): $(abs_top_builddir)/Makefile
 	     echo 'export DATADIR_BASE="$(abs_top_builddir)/var"'; \
 	     echo 'export TESTPASS="$(abs_top_builddir)/tools/testpass.sh"'; \
 	     echo 'export NO_SSL="1"'; \
-	     echo 'export BIOS_LOG_LEVEL="LOG_DEBUG"'; \
+	     echo '[ -z "$$BIOS_LOG_LEVEL" ] && BIOS_LOG_LEVEL="LOG_DEBUG"'; \
+	     echo 'export BIOS_LOG_LEVEL'; \
 	     echo 'export DATADIR="$$DATADIR_BASE/bios"'; \
 	} > $@
 

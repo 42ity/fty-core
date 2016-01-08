@@ -365,9 +365,15 @@ db_reply <std::map <uint32_t, std::string> >
         tntdb::Statement st = conn.prepareCached(query);
 
         tntdb::Result result;
-        result = st.set("typeid", type_id).
+        if ( subtype_id == 0 )
+        {
+            result = st.set("typeid", type_id).
+                    select();
+        } else {
+            result = st.set("typeid", type_id).
                     set("subtypeid", subtype_id).
                     select();
+        }
 
         // Go through the selected elements
         for (auto const& row: result) {
