@@ -110,7 +110,7 @@ static double
     else if ( src.find("15m") != std::string::npos ) {
         step = 60*15;
     }
-    log_error ("step = %d", step);
+    log_debug ("step = %d", step);
     double value = 0;
     if ( step != 0 ) {
         // here we are, if we are looking for some aggregated data
