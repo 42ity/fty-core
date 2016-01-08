@@ -26,75 +26,80 @@
 # Important bashism
 set -o pipefail
 
-# Default values matching Eaton internal (at the moment) resources
-# The actual RC3 should be reconfigured to refer to some customer-local mirror
-# or an external Eaton resource, done by snipets in /etc/update-rc3.d/*.conf
-[ -z "${IMGTYPE-}" ] && IMGTYPE="deploy"
-[ -z "${ARCH-}" ] && ARCH="`uname -m`"
-# The RC3 base OS ensures support for squashfs and overlay(fs)
-[ -z "${EXT-}" ] && EXT="squashfs"
-[ -z "${CHECKSUM_ALGO_DEFAULT-}" ] && CHECKSUM_ALGO_DEFAULT="md5"
+config_defaults() {
+    # This routine sets variables required for the script to work
+    # They can be set earlier by configuration files or caller's env
 
-# This script is intended as the downloader tool for both CI/dev-workstation
-# hosts and the ultimate devices. Most of the logic is the same, but there are
-# a few differences. File and directory naming is one of them :
-# Our CI farm deployments mimic the build farm paths - with IMGTYPE/ARCH/filename.ext
-# The RC3 units expect a flat directory structure rootfs/filename.ext so the
-# details (especially IMGTYPE) should end up in the flat filename - ...__${ARCH}__${IMGTYPE}.${EXT}.
-# (rc3/virthost) If set to "no", use original filenames from the source server
-# Overridable by CLI option "--(no-)flatten-filenames"
-[ -z "${FLAG_FLATTEN_FILENAMES-}" ] && FLAG_FLATTEN_FILENAMES="yes"
+    # Default values matching Eaton internal (at the moment) resources
+    # The actual RC3 should be reconfigured to refer some customer-local mirror
+    # or an external Eaton resource, done by snippets in /etc/update-rc3.d/*.conf
+    [ -z "${IMGTYPE-}" ] && IMGTYPE="deploy"
+    [ -z "${ARCH-}" ] && ARCH="`uname -m`"
+    # The RC3 base OS ensures support for squashfs and overlay(fs)
+    [ -z "${EXT-}" ] && EXT="squashfs"
+    [ -z "${CHECKSUM_ALGO_DEFAULT-}" ] && CHECKSUM_ALGO_DEFAULT="md5"
 
-### Values below can be changed by command-line choices, and some defaults
-### may be overridden by config files before CLI choices
-# (dev) If set to "no", then do not remove files even if deemed broken or old
-# Overridable by CLI option "--(no-)remove-files" which is somewhat different
-# from "--(no-)removeold-images" that only impacts old-image removal after a
-# successful download of new image(s)
-[ -z "${FLAG_CAN_REMOVE_IMAGES-}" ] && FLAG_CAN_REMOVE_IMAGES="yes"
+    # This script is intended as the downloader tool for both CI/dev-workstation
+    # hosts and the ultimate devices. Most of the logic is the same, but there are
+    # a few differences. File and directory naming is one of them :
+    # Our CI farm deployments mimic the build farm paths - with IMGTYPE/ARCH/filename.ext
+    # The RC3 units expect a flat directory structure rootfs/filename.ext so the
+    # details (especially IMGTYPE) should end up in the flat filename - ...__${ARCH}__${IMGTYPE}.${EXT}.
+    # (rc3/virthost) If set to "no", use original filenames from the source server
+    # Overridable by CLI option "--(no-)flatten-filenames"
+    [ -z "${FLAG_FLATTEN_FILENAMES-}" ] && FLAG_FLATTEN_FILENAMES="yes"
 
-# TODO: TFTP support, busybox can do it
-# TODO: Test with https - can require custom CA trust configuration, etc.
-# TODO: Use our common requester as a wrapper for real/busybox wget/curl
-# TODO: Make a common routine to list remote directories (e.g. http-dir parsing, ftp, tftp, localfs...)
-[ -z "${SOURCESITEROOT-}" ] && SOURCESITEROOT='http://obs.roz53.lab.etn.com/images'
-[ -z "${SOURCESITEROOT_OSIMAGE-}" ] && SOURCESITEROOT_OSIMAGE="$SOURCESITEROOT/$IMGTYPE/$ARCH"
+    ### Values below can be changed by command-line choices, and some defaults
+    ### may be overridden by config files before CLI choices
+    # (dev) If set to "no", then do not remove files even if deemed broken or old
+    # Overridable by CLI option "--(no-)remove-files" which is somewhat different
+    # from "--(no-)removeold-images" that only impacts old-image removal after a
+    # successful download of new image(s)
+    [ -z "${FLAG_CAN_REMOVE_IMAGES-}" ] && FLAG_CAN_REMOVE_IMAGES="yes"
 
-[ -z "${SOURCESITEROOTFW-}" ] && SOURCESITEROOTFW="http://obs.roz53.lab.etn.com/flash-rc3/recovery"
-[ -z "${SOURCESITEROOTFW_UBOOT-}" ] && SOURCESITEROOTFW_UBOOT="$SOURCESITEROOTFW"
-[ -z "${SOURCESITEROOTFW_UIMAGE-}" ] && SOURCESITEROOTFW_UIMAGE="$SOURCESITEROOTFW"
-[ -z "${SOURCESITEROOTFW_MODULES-}" ] && SOURCESITEROOTFW_MODULES="$SOURCESITEROOTFW/modules"
+    # TODO: TFTP support, busybox can do it
+    # TODO: Test with https - can require custom CA trust configuration, etc.
+    # TODO: Use our common requester as a wrapper for real/busybox wget/curl
+    # TODO: Make a common routine to list remote directories (e.g. http-dir parsing, ftp, tftp, localfs...)
+    [ -z "${SOURCESITEROOT-}" ] && SOURCESITEROOT='http://obs.roz53.lab.etn.com/images'
+    [ -z "${SOURCESITEROOT_OSIMAGE-}" ] && SOURCESITEROOT_OSIMAGE="$SOURCESITEROOT/$IMGTYPE/$ARCH"
 
-# Recovery location (on MMC or mSATA) - for downloads
-[ -z "${DOWNLOADROOT-}" ] && DOWNLOADROOT="/mnt/mmc/recovery"
-[ -z "${DOWNLOADROOT_OSIMAGE-}" ] && DOWNLOADROOT_OSIMAGE="$DOWNLOADROOT/rootfs"
-[ -z "${DOWNLOADROOTFW_UBOOT-}" ] && DOWNLOADROOT_UBOOT="$DOWNLOADROOT"
-[ -z "${DOWNLOADROOTFW_UIMAGE-}" ] && DOWNLOADROOT_UIMAGE="$DOWNLOADROOT"
-[ -z "${DOWNLOADROOTFW_MODULES-}" ] && DOWNLOADROOT_MODULES="$DOWNLOADROOT_UIMAGE/modules"
+    [ -z "${SOURCESITEROOTFW-}" ] && SOURCESITEROOTFW="http://obs.roz53.lab.etn.com/flash-rc3/recovery"
+    [ -z "${SOURCESITEROOTFW_UBOOT-}" ] && SOURCESITEROOTFW_UBOOT="$SOURCESITEROOTFW"
+    [ -z "${SOURCESITEROOTFW_UIMAGE-}" ] && SOURCESITEROOTFW_UIMAGE="$SOURCESITEROOTFW"
+    [ -z "${SOURCESITEROOTFW_MODULES-}" ] && SOURCESITEROOTFW_MODULES="$SOURCESITEROOTFW/modules"
 
-# Deployment location (on SPI flash in production) - for boot-mounted OS image
-[ -z "${DEPLOYMENTROOT-}" ] && DEPLOYMENTROOT="/mnt/nand"
-[ -z "${DEPLOYMENTROOT_OSIMAGE-}" ] && DEPLOYMENTROOT_OSIMAGE="$DEPLOYMENTROOT/rootfs"
-[ -z "${DEPLOYMENTROOTFW_UBOOT-}" ] && DEPLOYMENTROOT_UBOOT="$DEPLOYMENTROOT"
-[ -z "${DEPLOYMENTROOTFW_UIMAGE-}" ] && DEPLOYMENTROOT_UIMAGE="$DEPLOYMENTROOT"
-[ -z "${DEPLOYMENTROOTFW_MODULES-}" ] && DEPLOYMENTROOT_MODULES="$DEPLOYMENTROOT_UIMAGE/modules"
+    # Recovery location (on MMC or mSATA) - for downloads
+    [ -z "${DOWNLOADROOT-}" ] && DOWNLOADROOT="/mnt/mmc/recovery"
+    [ -z "${DOWNLOADROOT_OSIMAGE-}" ] && DOWNLOADROOT_OSIMAGE="$DOWNLOADROOT/rootfs"
+    [ -z "${DOWNLOADROOTFW_UBOOT-}" ] && DOWNLOADROOT_UBOOT="$DOWNLOADROOT"
+    [ -z "${DOWNLOADROOTFW_UIMAGE-}" ] && DOWNLOADROOT_UIMAGE="$DOWNLOADROOT"
+    [ -z "${DOWNLOADROOTFW_MODULES-}" ] && DOWNLOADROOT_MODULES="$DOWNLOADROOT_UIMAGE/modules"
 
-[ -z "${http_proxy-}" -o x"${http_proxy-}" = x- ] && http_proxy=""
-[ -z "${https_proxy-}" -o x"${https_proxy-}" = x- ] && https_proxy=""
-[ -z "${ftp_proxy-}" -o x"${ftp_proxy-}" = x- ] && ftp_proxy=""
-[ -z "${ftps_proxy-}" -o x"${ftps_proxy-}" = x- ] && ftps_proxy=""
-export http_proxy https_proxy ftp_proxy ftps_proxy
+    # Deployment location (on SPI flash in production) - for boot-mounted OS image
+    [ -z "${DEPLOYMENTROOT-}" ] && DEPLOYMENTROOT="/mnt/nand"
+    [ -z "${DEPLOYMENTROOT_OSIMAGE-}" ] && DEPLOYMENTROOT_OSIMAGE="$DEPLOYMENTROOT/rootfs"
+    [ -z "${DEPLOYMENTROOTFW_UBOOT-}" ] && DEPLOYMENTROOT_UBOOT="$DEPLOYMENTROOT"
+    [ -z "${DEPLOYMENTROOTFW_UIMAGE-}" ] && DEPLOYMENTROOT_UIMAGE="$DEPLOYMENTROOT"
+    [ -z "${DEPLOYMENTROOTFW_MODULES-}" ] && DEPLOYMENTROOT_MODULES="$DEPLOYMENTROOT_UIMAGE/modules"
 
-# The RC3 SPI flash partitioning determines these sizes, value hardcoded in the
-# default installation routines as well as the init/upgrade script in uImage.
-# These numbers are used for "padded" checksum calculations.
-UIMAGE_MAX_SIZE_RC3=3145728
-UBOOT_MAX_SIZE_RC3=1048576
-[ -z "${UIMAGE_MAX_SIZE-}" ] && UIMAGE_MAX_SIZE="$UIMAGE_MAX_SIZE_RC3"
-[ -z "${UBOOT_MAX_SIZE-}" ] && UBOOT_MAX_SIZE="$UBOOT_MAX_SIZE_RC3"
+    [ -z "${http_proxy-}" -o x"${http_proxy-}" = x- ] && http_proxy=""
+    [ -z "${https_proxy-}" -o x"${https_proxy-}" = x- ] && https_proxy=""
+    [ -z "${ftp_proxy-}" -o x"${ftp_proxy-}" = x- ] && ftp_proxy=""
+    [ -z "${ftps_proxy-}" -o x"${ftps_proxy-}" = x- ] && ftps_proxy=""
+    export http_proxy https_proxy ftp_proxy ftps_proxy
 
-PATH="/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
-export PATH
+    # The RC3 SPI flash partitioning determines these sizes, value hardcoded in the
+    # default installation routines as well as the init/upgrade script in uImage.
+    # These numbers are used for "padded" checksum calculations.
+    UIMAGE_MAX_SIZE_RC3=3145728
+    UBOOT_MAX_SIZE_RC3=1048576
+    [ -z "${UIMAGE_MAX_SIZE-}" ] && UIMAGE_MAX_SIZE="$UIMAGE_MAX_SIZE_RC3"
+    [ -z "${UBOOT_MAX_SIZE-}" ] && UBOOT_MAX_SIZE="$UBOOT_MAX_SIZE_RC3"
+
+    PATH="/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
+    export PATH
+}
 
 ### NOTE: This script can be copied to VM hosts and used standalone, so we do
 ### not depend it on scriptlib.sh or anything else. Implement a few bits here.
@@ -816,6 +821,7 @@ if [ -d "/etc/update-rc3.d/" ]; then
         fi
     done
 fi
+config_defaults
 
 # TODO: Locking against multiple runs
 # TODO: define CLI methods for status/size/... checks per BIOS-1563
