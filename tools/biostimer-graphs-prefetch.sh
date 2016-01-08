@@ -412,7 +412,6 @@ prepare_timestamps() {
 
 generate_getrestapi_strings() {
     generate_getrestapi_strings_sources
-    generate_getrestapi_strings_temphum
 }
 
 generate_getrestapi_strings_sources() {
@@ -434,7 +433,7 @@ generate_getrestapi_strings_sources() {
         logmsg_debug $CI_DEBUGLEVEL_DEBUG "-> $i" >&2
 
         # 3. Try to get corresponding device id from given element id
-        device_id=$(element_to_device_id $i)    
+        device_id=$(element_to_device_id $i)
         if [ $? -eq 1 ]; then   # device id not found for this element id
             continue
         elif [ $? -gt 1 ]; then # error
@@ -473,35 +472,6 @@ generate_getrestapi_strings_sources() {
     return 0
 }
 
-generate_getrestapi_strings_temphum() {
-    # This is a read-only operation
-    # Generate temperature and humidity averages for 4*TH ports of this box
-    local NUM_STRINGS
-    NUM_STRINGS=0
-
-    stype="$TYPES_SUPPORTED"
-    sstep="24h"
-    hostname=$(hostname | tr [:lower:] [:upper:])
-    i=$(do_select "SELECT id_asset_element FROM t_bios_asset_element WHERE name = '${hostname}'")
-    if [ $? = 0 ] && [ -n "$i" ] ; then
-        for source in "temperature.TH" "humidity.TH"; do
-             for thi in $(seq 1 4); do
-                for t in $stype; do
-                    for sx in $sstep; do
-                s=${source}${thi}
-                echo "$FETCHER '$BASE_URL/metric/computed/average?start_ts=${START_TIMESTAMP}&end_ts=${END_TIMESTAMP}&type=${t}&step=${sx}&element_id=${i}&source=$s'"
-                NUM_STRINGS=$(($NUM_STRINGS+1))
-                    done
-                done
-            done
-        done
-    else
-        logmsg_error "Could not select id_asset_element for host name '${hostname}', skipping T&H"
-    fi
-
-    logmsg_info "Successfully generated $NUM_STRINGS URLs for temperature and humidity sensors" >&2
-    return 0
-}
 
 # Background processes (if any) listed here for killer-trap
 FIRED_BATCH=""

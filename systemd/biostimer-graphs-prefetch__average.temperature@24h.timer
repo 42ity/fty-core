@@ -1,0 +1,18 @@
+[Unit]
+Description=BIOS-Timer service that prefetches average.temperature computations for quicker dashbord response (custom regular runner)
+PartOf=bios.target
+
+[Timer]
+# Time to wait after booting before we run first time
+OnBootSec=10min
+# Time between running each consecutive time - after the unit stops processing
+# OnUnitInactiveSec=15min
+### Run every midnight
+OnCalendar=*-*-* 00:20:00
+# Do not record last-execution times
+Persistent=false
+# Which unit to trigger:
+Unit=biostimer-graphs-prefetch@24h::average.temperature.service
+
+[Install]
+WantedBy=bios.target
