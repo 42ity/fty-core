@@ -78,10 +78,13 @@ ymsg_t* get_measurement(char* what) {
     auto it = cache.find(th);
     if((it == cache.end()) || (time(NULL) - it->second.time) > (NUT_POLLING_INTERVAL/1000)) {
         log_debug("No usable value in cache");
-        std::string path = "/dev/ttyS1";
-        th[2] += 2;
-        path  += th + 2;
-        th[2] -= 2;
+        std::string path = "/dev/ttyS";
+	switch(th[2]) {
+           case '1': path +=  "9"; break;
+           case '2': path += "10"; break;
+           case '3': path += "11"; break;
+           case '4': path += "12"; break;
+        }
         log_debug("Reading from %s", path.c_str());
         data.time = time(NULL);
         int fd = open_device(path.c_str());
