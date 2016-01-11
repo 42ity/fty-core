@@ -364,6 +364,8 @@ if [ $# = 0 ]; then
         test_web_topo_p topology_power || RESULT_OVERALL=$?
     fi
     test_web_process || exit
+    test_web_averages averages || RESULT_OVERALL=$?
+    test_web_process || exit
 else
     # selective test routine
     while [ $# -gt 0 ]; do
