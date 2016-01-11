@@ -1,15 +1,16 @@
 #!/bin/bash
 # $1 - path to directory with mysql database files 
 
-#######################################
-#   TEST CASE:                        #
-#      relative=7d&step=24h           #
-#######################################
 
 read -r -d '' OUT <<EOF
 use box_utf8;
 
 select @topic_temperature := id from t_bios_measurement_topic where device_id=(select id_discovered_device from t_bios_discovered_device where name='AVG-SRV') and units='C' and topic='temperature.thermal_zone0@AVG-SRV';
+
+/* ************************************************************************ */
+/* TEST CASE:                                                               */
+/*      relative=7d step=24h type=arithmetic_mean source=@topic_temperature */
+/* ************************************************************************ */
 
 INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("`date -ud '1 day ago' +%F` 04:00:00"), 10, 0, @topic_temperature);
 INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("`date -ud '1 day ago' +%F` 15:00:00"), 20, 0, @topic_temperature);
@@ -58,6 +59,15 @@ INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_
 INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("`date -ud '9 day ago' +%F` 17:00:00"), 100, 0, @topic_temperature);
 /* timestamp: `date -ud '8 day ago 00:00:00' +%s`    acg_24: 900 */
 /* 7d window midnight aligned: 400 */
+
+
+/* ************************************************************************* */
+/* TEST CASE:                                                                */
+/*      relative=24h step=24h type=arithmetic_mean source=@topic_temperature */
+/* ************************************************************************* */
+
+
+
 EOF
 echo "$OUT" > "$1"/test_averages_relative.sql
 
