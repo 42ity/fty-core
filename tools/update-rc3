@@ -138,7 +138,7 @@ usage() {
     echo "the following arguments ('raw' firmwares are the non-tarballed singular files):"
     echo "  --url-image-os {URL} (expected checksum patterns should still exist nearby)"
     echo "  --url-image-fw-raw-uboot --url-image-fw-raw-uimage --url-image-fw-raw-modules"
-# TODO ...
+# TODO(recurring) Maintain usage() as CLI options get added to the script
 }
 
 SCRIPTDIR=$(realpath "`dirname ${_SCRIPT_PATH}`") || \
@@ -870,7 +870,108 @@ findnewest_rawfwimage_uimage() (
 
 download_rawfwimage_uimage() (
     cd "${DOWNLOADROOTFW_UIMAGE}" || die "Can not use DOWNLOADROOTFW_UIMAGE='$DOWNLOADROOTFW_UIMAGE'"
-    logmsg_error "download_rawfwimage_uimage() : NOT IMPLEMENTED YET"
+
+    case "${1-}" in
+            *://*)
+                logmsg_info "download_rawfwimage_uimage() was asked to try downloading '$1' as the raw kernel uImage"
+                IMAGE_URL="$1" ;;
+            "")
+                logmsg_info "Fetching newest filename for the raw kernel uImage..."
+                IMAGE_URL="`findnewest_rawfwimage_uimage`" && [ -n "$IMAGE_URL" ] \
+                && logmsg_info "download_rawfwimage_uimage() detected '$IMAGE_URL' as the newest raw kernel uImage" \
+                || { logmsg_error "Could not find any remote raw kernel uImage"; IMAGE_URL="";} ;;
+            *)  logmsg_error "download_rawfwimage_uimage() got an unsupported argument: $*"
+                IMAGE_URL=""
+                ;;
+    esac
+
+    [ -n "$IMAGE_URL" ] && \
+    rIMAGE_URL_BASENAME="`basename "$IMAGE_URL"`" && \
+        [ -n "$rIMAGE_URL_BASENAME" ] || \
+        die "Can not find the remote image URL"
+
+    # TODO: Currently hardcoded for md5 accompanying checksums only
+    # TODO (later): Support presence of multiple checksum files (e.g. sha* and md5)
+    # TODO: Also support checksum-verifying against the flashed partition bits
+    IMAGE_CSALGO="${CHECKSUM_ALGO_DEFAULT}"
+
+    # NOTE: "Old" filename and checksum are basenames that can be located under
+    # different directories ("r"elative varnames), but e.g. a "new" checksum is
+    # ensured to be in a temporary location and a newly downloaded file should
+    # land into the recovery location ("a"bsolute varnames)
+    IMAGE_CSURL="${IMAGE_URL}.${IMAGE_CSALGO}"
+    rIMAGE_CSOLD="${rIMAGE_URL_BASENAME}.${IMAGE_CSALGO}"
+    aIMAGE_CSNEW="/tmp/${rIMAGE_URL_BASENAME}.$$.${IMAGE_CSALGO}.tmp"
+
+    trap 'TRAPCODE=$?; rm -f "$aIMAGE_CSNEW"; exit $TRAPCODE' 0
+
+    logmsg_info "Downloading '${IMAGE_CSURL}' (if any) into '${aIMAGE_CSNEW}'..."
+    rm -f "${aIMAGE_CSNEW}"
+    wget -q -O - "${IMAGE_CSURL}" > "${aIMAGE_CSNEW}" || \
+        { logmsg_error "Could not save '${IMAGE_CSURL}' into '${aIMAGE_CSNEW}'"
+          rm -f "${aIMAGE_CSNEW}"
+          if [ x"${CHECK_ONLY-}" = xyes ]; then
+            die "Got an error while checking if there is something new to download, so no reason to proceed"
+          fi
+        }
+
+    # Try the filenames in local directories
+    logmsg_info "Verifying if we have this checksum and corresponding file under original name in base dir..."
+    verify_threeway_checksum "${IMAGE_URL}" "${rIMAGE_URL_BASENAME}" "${rIMAGE_CSOLD}" "${aIMAGE_CSNEW}" && return 0
+    if [ -d "${DEPLOYMENTROOT_OSIMAGE}" ] ; then
+        # Do not remove deployed files!
+        FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+            "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_URL_BASENAME}" \
+            "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_CSOLD}" \
+            "${aIMAGE_CSNEW}" && return 0
+    fi
+    logmsg_warn "TODO: Should verify checksum against a partition with flashed bits here ..."
+
+    if [ x"${CHECK_ONLY-}" = xyes ]; then
+        logmsg_info "According to checksums, the remote resource '$IMAGE_URL' points to an kernel uImage we do not have on this system"
+        return 42
+    fi
+
+    # If we are here, the IMAGE_URL is valid and points to a different content
+    # than what we already have; the aTGT_FILE names the ultimate local filename
+    aTGT_FILE="`pwd`/${rIMAGE_URL_BASENAME}"
+    aIMAGE_CSOLD="`pwd`/${rIMAGE_CSOLD}"
+
+    if [ ! -s "${aIMAGE_CSOLD}" ]; then
+        [ -s "${aIMAGE_CSNEW}" ] && mv -f "${aIMAGE_CSNEW}" "${aIMAGE_CSOLD}"
+    fi
+
+    logmsg_info "Downloading '$IMAGE_URL' into '$aTGT_FILE'..."
+    rm -f "${aTGT_FILE}"
+    wget -O "${aTGT_FILE}" "$IMAGE_URL" && [ -s "$aTGT_FILE" ] || \
+        { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
+
+    lsdir_http_pattern "${SOURCESITEROOTFW_UIMAGE}" | egrep "^${IMAGE_URL}\." | \
+        egrep -v "^${IMAGE_CSURL}"'$' | \
+        while read U ; do
+            # Note these are helper files, e.g. a padded checksum or some
+            # touched-flags (may even be empty) and not fatal if missing
+            aBU="`pwd`/`basename "$U"`"
+            logmsg_info "Downloading additional file '$U' into '$aBU'..."
+            rm -f "$aBU"
+            wget -O "${aBU}" "$U" || logmsg_error "Could not download the additional '$U'"
+        done
+
+    if [ -s "${aIMAGE_CSOLD}" ]; then
+        ensure_checksum "${aTGT_FILE}" "${aIMAGE_CSOLD}" || return $?
+    else
+        logmsg_warn "Generating '${aIMAGE_CSOLD}' because there was none at the source..."
+        echo "`calculate_stream_checksum "${IMAGE_CSALGO}" < "$aTGT_FILE"`  `basename "$aTGT_FILE"`" > "${aIMAGE_CSOLD}" || \
+        { rm -f "${aIMAGE_CSOLD}"; die "Could not generate '${aIMAGE_CSOLD}'"; }
+    fi
+
+    # TODO: Verify file size against partition size (flashability after reboot)
+    [ -s "${aTGT_FILE}" ] && [ -s "${aIMAGE_CSOLD}" ] && \
+    touch -r "${aTGT_FILE}" "${aIMAGE_CSOLD}" && \
+    logmsg_info "Got kernel uImage OK:" && \
+    ls -ld "${aTGT_FILE}" "${aIMAGE_CSOLD}" && \
+    cat "${aIMAGE_CSOLD}" && \
+    return 42
 )
 
 removeold_rawfwimage_uimage() (
@@ -902,7 +1003,107 @@ findnewest_rawfwimage_modules() (
 
 download_rawfwimage_modules() (
     cd "${DOWNLOADROOTFW_MODULES}" || die "Can not use DOWNLOADROOTFW_MODULES='$DOWNLOADROOTFW_MODULES'"
-    logmsg_error "download_rawfwimage_modules() : NOT IMPLEMENTED YET"
+
+    case "${1-}" in
+            *://*)
+                logmsg_info "download_rawfwimage_modules() was asked to try downloading '$1' as the raw kernel modules archive"
+                IMAGE_URL="$1" ;;
+            "")
+                logmsg_info "Fetching newest filename for the raw kernel modules archive..."
+                IMAGE_URL="`findnewest_rawfwimage_modules`" && [ -n "$IMAGE_URL" ] \
+                && logmsg_info "download_rawfwimage_modules() detected '$IMAGE_URL' as the newest raw kernel modules archive" \
+                || { logmsg_error "Could not find any remote raw kernel modules archive"; IMAGE_URL="";} ;;
+            *)  logmsg_error "download_rawfwimage_modules() got an unsupported argument: $*"
+                IMAGE_URL=""
+                ;;
+    esac
+
+    [ -n "$IMAGE_URL" ] && \
+    rIMAGE_URL_BASENAME="`basename "$IMAGE_URL"`" && \
+        [ -n "$rIMAGE_URL_BASENAME" ] || \
+        die "Can not find the remote image URL"
+
+    # TODO: Currently hardcoded for md5 accompanying checksums only
+    # TODO (later): Support presence of multiple checksum files (e.g. sha* and md5)
+    # TODO: Also support checksum-verifying against the flashed partition bits
+    IMAGE_CSALGO="${CHECKSUM_ALGO_DEFAULT}"
+
+    # NOTE: "Old" filename and checksum are basenames that can be located under
+    # different directories ("r"elative varnames), but e.g. a "new" checksum is
+    # ensured to be in a temporary location and a newly downloaded file should
+    # land into the recovery location ("a"bsolute varnames)
+    IMAGE_CSURL="${IMAGE_URL}.${IMAGE_CSALGO}"
+    rIMAGE_CSOLD="${rIMAGE_URL_BASENAME}.${IMAGE_CSALGO}"
+    aIMAGE_CSNEW="/tmp/${rIMAGE_URL_BASENAME}.$$.${IMAGE_CSALGO}.tmp"
+
+    trap 'TRAPCODE=$?; rm -f "$aIMAGE_CSNEW"; exit $TRAPCODE' 0
+
+    logmsg_info "Downloading '${IMAGE_CSURL}' (if any) into '${aIMAGE_CSNEW}'..."
+    rm -f "${aIMAGE_CSNEW}"
+    wget -q -O - "${IMAGE_CSURL}" > "${aIMAGE_CSNEW}" || \
+        { logmsg_error "Could not save '${IMAGE_CSURL}' into '${aIMAGE_CSNEW}'"
+          rm -f "${aIMAGE_CSNEW}"
+          if [ x"${CHECK_ONLY-}" = xyes ]; then
+            die "Got an error while checking if there is something new to download, so no reason to proceed"
+          fi
+        }
+
+    # Try the filenames in local directories
+    logmsg_info "Verifying if we have this checksum and corresponding file under original name in base dir..."
+    verify_threeway_checksum "${IMAGE_URL}" "${rIMAGE_URL_BASENAME}" "${rIMAGE_CSOLD}" "${aIMAGE_CSNEW}" && return 0
+    if [ -d "${DEPLOYMENTROOT_OSIMAGE}" ] ; then
+        # Do not remove deployed files!
+        FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+            "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_URL_BASENAME}" \
+            "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_CSOLD}" \
+            "${aIMAGE_CSNEW}" && return 0
+    fi
+
+    if [ x"${CHECK_ONLY-}" = xyes ]; then
+        logmsg_info "According to checksums, the remote resource '$IMAGE_URL' points to an kernel modules archive we do not have on this system"
+        return 42
+    fi
+
+    # If we are here, the IMAGE_URL is valid and points to a different content
+    # than what we already have; the aTGT_FILE names the ultimate local filename
+    aTGT_FILE="`pwd`/${rIMAGE_URL_BASENAME}"
+    aIMAGE_CSOLD="`pwd`/${rIMAGE_CSOLD}"
+
+    if [ ! -s "${aIMAGE_CSOLD}" ]; then
+        [ -s "${aIMAGE_CSNEW}" ] && mv -f "${aIMAGE_CSNEW}" "${aIMAGE_CSOLD}"
+    fi
+
+    logmsg_info "Downloading '$IMAGE_URL' into '$aTGT_FILE'..."
+    rm -f "${aTGT_FILE}"
+    wget -O "${aTGT_FILE}" "$IMAGE_URL" && [ -s "$aTGT_FILE" ] || \
+        { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
+
+    lsdir_http_pattern "${SOURCESITEROOTFW_MODULES}" | egrep "^${IMAGE_URL}\." | \
+        egrep -v "^${IMAGE_CSURL}"'$' | \
+        while read U ; do
+            # Note these are helper files, e.g. a padded checksum or some
+            # touched-flags (may even be empty) and not fatal if missing
+            aBU="`pwd`/`basename "$U"`"
+            logmsg_info "Downloading additional file '$U' into '$aBU'..."
+            rm -f "$aBU"
+            wget -O "${aBU}" "$U" || logmsg_error "Could not download the additional '$U'"
+        done
+
+    if [ -s "${aIMAGE_CSOLD}" ]; then
+        ensure_checksum "${aTGT_FILE}" "${aIMAGE_CSOLD}" || return $?
+    else
+        logmsg_warn "Generating '${aIMAGE_CSOLD}' because there was none at the source..."
+        echo "`calculate_stream_checksum "${IMAGE_CSALGO}" < "$aTGT_FILE"`  `basename "$aTGT_FILE"`" > "${aIMAGE_CSOLD}" || \
+        { rm -f "${aIMAGE_CSOLD}"; die "Could not generate '${aIMAGE_CSOLD}'"; }
+    fi
+
+    # TODO: Verify file size against partition size (flashability after reboot)
+    [ -s "${aTGT_FILE}" ] && [ -s "${aIMAGE_CSOLD}" ] && \
+    touch -r "${aTGT_FILE}" "${aIMAGE_CSOLD}" && \
+    logmsg_info "Got kernel modules archive OK:" && \
+    ls -ld "${aTGT_FILE}" "${aIMAGE_CSOLD}" && \
+    cat "${aIMAGE_CSOLD}" && \
+    return 42
 )
 
 removeold_rawfwimage_modules() (
