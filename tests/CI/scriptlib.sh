@@ -454,6 +454,32 @@ loaddb_file() {
     return 0
 }
 
+loaddb_file_params() {
+    # 
+    if [ $# -eq 0 ]; then
+        die "loaddb_file_param() requires parameters"
+    fi  
+    if [ -z "$1" -o ! -e "$1" ]; then
+        die "loaddb_file_param(): empty first parameter or file '$1' does not exist."
+    fi
+
+    local DBFILE="$1"
+    shift
+    
+    logmsg_info "$CI_DEBUGLEVEL_LOADDB" \
+        "loaddb_file_params()::local: $DBFILE $@" >&2
+
+    local E=
+    local i=
+    for i in $@; do
+        E="${E}set ${i};"
+    done
+    E="${E}source $DBFILE;"
+    mysql -u "${DBUSER}" -e "${E}" > /dev/null || \
+        CODE=$? die "Could not load database file: $DBFILE with params $@"
+    return 0        
+}
+
 settraps() {
         # Not all trap names are recognized by all shells consistently
         [ -z "${TRAP_SIGNALS-}" ] && TRAP_SIGNALS="EXIT QUIT TERM HUP INT"
