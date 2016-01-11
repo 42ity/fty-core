@@ -162,12 +162,17 @@ int
 {
     LOG_START;
 
+    if ( parent_id == 0 ) {
+        return 1;
+    }
     db_reply <db_web_basic_element_t> parent = select_asset_element_web_byId
         (conn, parent_id);
-    if ( parent.status == 0 )
+    if ( parent.status == 0 ) {
         return 2;
-    if ( parent.item.type_id != persist::asset_type::RACK )
+    }
+    if ( parent.item.type_id != persist::asset_type::RACK ) {
         return 1;
+    }
 
     std::map<a_elmnt_id_t, a_elmnt_stp_id_t> devices{};
     std::function<void(const tntdb::Row&)> func = \
