@@ -167,6 +167,18 @@ test_web_asset_create() {
     test_web "$@"
 }
 
+test_web_averages() {
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_averages() $*"
+    echo "----------- Re-generating averages sql files -----------"
+    CI_TEST_AVERAGES_DATA="`$DB_LOADDIR/generate_averages.sh "$DB_LOADDIR"`"
+    export CI_TEST_AVERAGES_DATA
+    echo "----------- reset db: averages -----------"
+    for data in "$DB_BASE" "$DB_DATA" "$DB_AVERAGES" "$DB_AVERAGES_RELATIVE"; do
+        loaddb_file "$data" || exit $?
+    done
+    test_web "$@"
+}
+
 MAKEPID=""
 DBNGPID=""
 kill_daemons() {
@@ -323,6 +335,7 @@ trap_cleanup(){
   sleep 5
   test_web_process || exit
 
+  
 case "$*" in
     *license*) # We are specifically testing license stuff
         logmsg_warn "The tests requested on command line explicitly include 'license', so $0 will not interfere by running '00_license-CI-forceaccept.sh.test' first"
@@ -360,6 +373,9 @@ else
                 RESULT_OVERALL=$? ;;
             asset_create*)
                 test_web_asset_create "$1" || \
+                RESULT_OVERALL=$? ;;
+            averages*)
+                test_web_averages "$1" || \
                 RESULT_OVERALL=$? ;;
             *)  test_web_default "$1" || \
                 RESULT_OVERALL=$? ;;
