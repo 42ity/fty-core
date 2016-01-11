@@ -131,7 +131,6 @@ test_tables "universal_asset_tab_8_no_type_header.csv" 48 "ERROR"
 test_tables "universal_asset_tab_8_no_sub_type_header.csv" 48 "ERROR"
 test_tables "universal_asset_tab_8_no_location_header.csv" 48 "ERROR"
 test_tables "universal_asset_tab_8_no_status_header.csv" 48 "ERROR"
-test_tables "universal_asset_tab_8_no_business_critical_header.csv" 48 "ERROR"
 test_tables "universal_asset_tab_8_no_priority_header.csv" 48 "ERROR"
 curlfail_pop
 print_result $REZ
