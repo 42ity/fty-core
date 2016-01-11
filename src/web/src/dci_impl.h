@@ -43,53 +43,53 @@ static const std::map<std::string, const std::string> PARAM_TO_SRC = {
     {"power", "realpower.default"},
     {"avg_power_last_day", "realpower.default_arithmetic_mean_24h"},
     {"avg_power_last_week", "realpower.default_arithmetic_mean_7d"},
-    {"avg_power_last_month", "<zero>"},
+    {"avg_power_last_month", "realpower.default_arithmetic_mean_20d"},
 
     {"min_power_last_day", "realpower.default_min_24h"},
     {"min_power_last_week", "realpower.default_min_7d"},
-    {"min_power_last_month", "<zero>"},
+    {"min_power_last_month", "realpower.default_min_30d"},
 
     {"max_power_last_day", "realpower.default_max_24h"},
     {"max_power_last_week", "realpower.default_max_7d"},
-    {"max_power_last_month", "<zero>"},
+    {"max_power_last_month", "realpower.default_max_30d"},
 
     {"trend_power_last_day", "realpower.default_arithmetic_mean_24h/realpower.default"},
     {"trend_power_last_week", "realpower.default_arithmetic_mean_7d/realpower.default"},
-    {"trend_power_last_month", "<zero>"},
+    {"trend_power_last_month", "realpower.default_arithmetic_mean_30d/realpower.default"},
 
     {"temperature", "average.temperature"},
     {"avg_temperature_last_day",  "average.temperature_arithmetic_mean_24h"},
     {"avg_temperature_last_week", "average.temperature_arithmetic_mean_7d"},
-    {"avg_temperature_last_month", "<zero>"},
+    {"avg_temperature_last_month", "average.temperature_arithmetic_mean_30d"},
 
     {"min_temperature_last_day",  "average.temperature_min_24h"},
     {"min_temperature_last_week", "average.temperature_min_7d"},
-    {"min_temperature_last_month", "<zero>"},
+    {"min_temperature_last_month", "average.temperature_min_30d"},
 
     {"max_temperature_last_day",  "average.temperature_max_24h"},
     {"max_temperature_last_week", "average.temperature_max_7d"},
-    {"max_temperature_last_month", "<zero>"},
+    {"max_temperature_last_month", "average.temperature_max_30d"},
 
     {"trend_temperature_last_day",  "average.temperature_arithmetic_mean_24h/average.temperature"},
     {"trend_temperature_last_week", "average.temperature_arithmetic_mean_7d/average.temperature"},
-    {"trend_temperature_last_month", "<zero>"},
+    {"trend_temperature_last_month", "average.temperature_arithmetic_mean_30d/average.temperature"},
 
     {"humidity", "average.humidity"},
     {"avg_humidity_last_day", "average.humidity_arithmetic_mean_24h"},
     {"avg_humidity_last_week", "average.humidity_arithmetic_mean_7d"},
-    {"avg_humidity_last_month", "<zero>"},
+    {"avg_humidity_last_month", "average.humidity_arithmetic_mean_30d"},
 
     {"min_humidity_last_day", "average.humidity_min_24h"},
     {"min_humidity_last_week", "average.humidity_min_7d"},
-    {"min_humidity_last_month", "<zero>"},
+    {"min_humidity_last_month", "average.humidity_min_30d"},
 
     {"max_humidity_last_day", "average.humidity_max_24h"},
     {"max_humidity_last_week", "average.humidity_max_7d"},
-    {"max_humidity_last_month", "<zero>"},
+    {"max_humidity_last_month", "average.humidity_max_30d"},
 
     {"trend_humidity_last_day", "average.humidity_arithmetic_mean_24h/average.humidity"},
     {"trend_humidity_last_week", "average.humidity_arithmetic_mean_7d/average.humidity"},
-    {"trend_humidity_last_month", "<zero>"}
+    {"trend_humidity_last_month", "average.humidity_arithmetic_mean_30d/average.humidity"},
 };
 
 
@@ -105,7 +105,10 @@ static double
         step = 24*60*60;
     }
     else if ( src.find("7d") != std::string::npos ) {
-        step = 7*24*60*60; // ASSUMPTION 1 measurement in 7d; if one measurement each day -> remove 7!
+        step = 7*24*60*60 + 10*60; // ASSUMPTION 1 measurement in 7d; if one measurement each day -> remove 7!
+    }
+    else if ( src.find("30d") != std::string::npos ) {
+        step = 30*24*60*60 + 10*60; // ASSUMPTION 1 measurement in 30; if one measurement each day -> remove 30!
     }
     else if ( src.find("15m") != std::string::npos ) {
         step = 60*15;
