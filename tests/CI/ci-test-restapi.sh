@@ -354,7 +354,7 @@ esac
 # do the test
 set +e
 if [ $# = 0 ]; then
-    test_web_default -topology_power -asset_create || RESULT_OVERALL=$?
+    test_web_default -topology_power -asset_create -averages || RESULT_OVERALL=$?
     test_web_process || exit
     if [ "$RESULT_OVERALL" -eq 0 ] || [ x"$CITEST_QUICKFAIL" = xno ]; then
         test_web_asset_create asset_create || RESULT_OVERALL=$?
