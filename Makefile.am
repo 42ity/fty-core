@@ -89,7 +89,8 @@ $(RUN_TNTNET_ENVFILE): $(abs_top_builddir)/Makefile
 	     echo 'export DATADIR_BASE="$(abs_top_builddir)/var"'; \
 	     echo 'export TESTPASS="$(abs_top_builddir)/tools/testpass.sh"'; \
 	     echo 'export NO_SSL="1"'; \
-	     echo 'export BIOS_LOG_LEVEL="LOG_DEBUG"'; \
+	     echo '[ -z "$$BIOS_LOG_LEVEL" ] && BIOS_LOG_LEVEL="LOG_DEBUG"'; \
+	     echo 'export BIOS_LOG_LEVEL'; \
 	     echo 'export DATADIR="$$DATADIR_BASE/bios"'; \
 	} > $@
 
@@ -1620,6 +1621,14 @@ SYSTEMD_TIMERS_LOWLEVEL += \
 SYSTEMD_TIMERS_TARGET_BIOS += \
                         biostimer-outage.timer \
                         biostimer-graphs-prefetch__realpower.default@15m.timer \
+                        biostimer-graphs-prefetch__realpower.default@7d.timer \
+                        biostimer-graphs-prefetch__realpower.default@30d.timer \
+                        biostimer-graphs-prefetch__average.temperature@24h.timer \
+                        biostimer-graphs-prefetch__average.temperature@7d.timer \
+                        biostimer-graphs-prefetch__average.temperature@30d.timer \
+                        biostimer-graphs-prefetch__average.humidity@24h.timer \
+                        biostimer-graphs-prefetch__average.humidity@7d.timer \
+                        biostimer-graphs-prefetch__average.humidity@30d.timer \
                         biostimer-graphs-prefetch__realpower.default@24h.timer
 
 SYSTEMD_TIMERS += $(SYSTEMD_TIMERS_LOWLEVEL) $(SYSTEMD_TIMERS_TARGET_BIOS)
