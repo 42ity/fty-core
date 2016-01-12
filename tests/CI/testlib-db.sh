@@ -58,6 +58,9 @@ DB_OUTAGE="$DB_LOADDIR/test_outage.sql"
 DB_ALERT="$DB_LOADDIR/test_alert.sql"
 DB_ASSET_TAG_NOT_UNIQUE="$DB_LOADDIR/initdb_ci_patch.sql"
 
+DB_AVERAGES="$DB_LOADDIR/test_averages.sql"
+DB_AVERAGES_RELATIVE="$DB_LOADDIR/test_averages_relative.sql"
+
 ### Some pre-sets for CSV tests
 CSV_LOADDIR="$CHECKOUTDIR/tests/fixtures/csv"
 CSV_LOADDIR_BAM="$CSV_LOADDIR/bam"
