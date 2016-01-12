@@ -1217,6 +1217,7 @@ agent_autoconfig_SOURCES = \
 
 agent_autoconfig_LDADD = \
 			libpriv-log.la \
+			libpriv-db.la \
 			libpriv-proto.la \
 			libbiosapi.la \
 			libpriv-log.la \
@@ -1225,8 +1226,7 @@ agent_autoconfig_LDADD = \
 			libpriv-defs.la \
 			libpriv-subprocess.la \
 			libpriv-utils-ymsg.la \
-			libpriv-utils-plusplus.la \
-			libpriv-db.la
+			libpriv-utils-plusplus.la
 
 # FIXME remove utils ymsg
 
