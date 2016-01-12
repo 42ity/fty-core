@@ -98,8 +98,6 @@ asset_manager asset_mgr;
                 client,
                 "uptime",
                 "UPTIME",
-                NULL,
-                1000,
                 "UPTIME",
                 DCNames[D].c_str(),
                 NULL);
