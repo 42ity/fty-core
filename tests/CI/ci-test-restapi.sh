@@ -196,13 +196,13 @@ kill_daemons() {
         kill -INT "$CMPID"
     fi
 
-    killall -INT tntnet agent-dbstore lt-agent-dbstore agent-cm 2>/dev/null || true; sleep 1
-    killall      tntnet agent-dbstore lt-agent-dbstore agent-cm 2>/dev/null || true; sleep 1
+    killall -INT tntnet agent-dbstore lt-agent-dbstore agent-cm lt-agent-cm 2>/dev/null || true; sleep 1
+    killall      tntnet agent-dbstore lt-agent-dbstore agent-cm lt-agent-cm 2>/dev/null || true; sleep 1
 
     ps -ef | grep -v grep | egrep "tntnet|agent-dbstore|agent-cm" | egrep "^`id -u -n` " && \
         ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
         logmsg_error "tntnet and/or agent-dbstore, agent-cm still alive, trying SIGKILL" && \
-        { killall -KILL tntnet agent-dbstore lt-agent-dbstore agent-cm 2>/dev/null ; return 1; }
+        { killall -KILL tntnet agent-dbstore lt-agent-dbstore agent-cm lt-agent-cm 2>/dev/null ; return 1; }
     return 0
 }
 
@@ -262,9 +262,9 @@ trap_cleanup(){
 
 # prepare environment
   # might have some mess
-  killall tntnet lt-agent-dbstore agent-dbstore agent-cm 2>/dev/null || true
+  killall tntnet lt-agent-dbstore agent-dbstore agent-cm lt-agent-cm 2>/dev/null || true
   sleep 1
-  killall -KILL tntnet lt-agent-dbstore agent-dbstore agent-cm 2>/dev/null || true
+  killall -KILL tntnet lt-agent-dbstore agent-dbstore agent-cm lt-agent-cm 2>/dev/null || true
   sleep 1
   test_web_port && \
     die "Port ${SUT_WEB_PORT} is in LISTEN state when it should be free"
@@ -330,7 +330,7 @@ trap_cleanup(){
   logmsg_info "Spawning agent-cm in the background..."
   ${BUILDSUBDIR}/agent-cm &
   CMPID=$!
-  logmsg_info "PID of agent-dbstore is '${CMPID}'"
+  logmsg_info "PID of agent-cm is '${CMPID}'"
 
   # Ensure that no processes remain dangling when test completes
   # The ERRCODE is defined by settraps() as the program exitcode
