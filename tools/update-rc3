@@ -97,6 +97,13 @@ config_defaults() {
     [ -z "${UIMAGE_MAX_SIZE-}" ] && UIMAGE_MAX_SIZE="$UIMAGE_MAX_SIZE_RC3"
     [ -z "${UBOOT_MAX_SIZE-}" ] && UBOOT_MAX_SIZE="$UBOOT_MAX_SIZE_RC3"
 
+    # /dev/mtdX numbers for RC3 partitions
+    ROOT_MTD=5
+    KERNEL_MTD=4
+    UBOOTCFG_MTD=3
+    UBOOT_MTD=2
+
+
     PATH="/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
     export PATH
 }
@@ -256,6 +263,36 @@ expected_checksum() (
     # If the value is empty, this statement returns an error exit-code
 )
 
+# Colon-separated values: CHECKSUM:LENGTH:ALGO:PATHNAME
+# Length of -1 means full file or device byte-range
+CHECKSUM_CACHE=""
+find_checksum_cache() {
+    # Finds from the cache the entry with given pathname $3 and algo $2 and length $1
+    [ $# != 3 ] && return 22
+    [ -z "${CHECKSUM_CACHE}" ] && return 1
+    echo "$CHECKSUM_CACHE" | egrep '^[^:]+'":$1:$2:$3"'$' | awk -F: '{print $1}'
+}
+
+remove_checksum_cache() {
+    # Removes from the cache the entry with given pathname $3 and algo $2 and length $1
+    [ $# != 3 ] && return 22
+    [ -z "${CHECKSUM_CACHE}" ] && return 0
+    CHECKSUM_CACHE="`echo "$CHECKSUM_CACHE" | egrep -v '^[^:]+'"$1:$2:$3"'$'`"
+}
+
+add_checksum_cache() {
+    # Adds to the cache if the given pathname and algo and length are missing
+    # If a value exists, it is replaced
+    # Arguments $1..$4 are same as in CHECKSUM_CACHE above
+    [ $# != 4 ] && return 22
+    if [ -z "${CHECKSUM_CACHE}" ]; then
+        CHECKSUM_CACHE="$1:$2:$3:$4"
+    else
+        CHECKSUM_CACHE="`echo "$CHECKSUM_CACHE" | egrep -v '^[^:]+'":$2:$3:$4"'$'`
+$1:$2:$3:$4"
+    fi
+}
+
 verify_checksum() {
     # Compares actual checksum of file "$1" with value recorded in file "$2"
     # with optional algorithm in "$3" (defaults to CHECKSUM_ALGO_DEFAULT='md5')
@@ -275,7 +312,8 @@ verify_checksum() {
     LOGINTRO="Checksum validation of '$FILENAME_DATA' against value in '$FILENAME_CSUM' ($CHECKSUM_ALGO)"
 
     if [ -n "$FILENAME_DATA" ] && [ -n "$FILENAME_CSUM" ] && \
-       [ -s "$FILENAME_DATA" -a -s "$FILENAME_CSUM" ] \
+       [ -s "$FILENAME_DATA" -o -c "$FILENAME_DATA" -o -b "$FILENAME_DATA" ] && \
+       [ -s "$FILENAME_CSUM" ] \
     ; then
         logmsg_info "Beginning $LOGINTRO..."
 
@@ -285,7 +323,17 @@ verify_checksum() {
             return 0
         fi
 
-        CHECKSUM_ACT="`calculate_stream_checksum < "$FILENAME_DATA"`" || CHECKSUM_ACT=""
+        CHECKSUM_ACT="`find_checksum_cache '-1' "${CHECKSUM_ALGO}" "${FILENAME_DATA}"`" && \
+            [ -n "${CHECKSUM_ACT}" ] && logmsg_info "Got cached checksum (${CHECKSUM_ALGO}) for ${FILENAME_DATA}" \
+            || CHECKSUM_ACT=""
+        if [ -z "$CHECKSUM_ACT" ]; then
+            CHECKSUM_ACT="`calculate_stream_checksum < "$FILENAME_DATA"`"
+            if [ $? = 0 ] && [ -n "$CHECKSUM_ACT" ]; then
+                add_checksum_cache "${CHECKSUM_ACT}" "-1" "${CHECKSUM_ALGO}" "${FILENAME_DATA}"
+            else
+                CHECKSUM_ACT=""
+            fi
+        fi
         if [ -z "$CHECKSUM_ACT" ]; then
             logmsg_warn "$LOGINTRO SKIPPED (can not calculate actual value)"
             return 0
@@ -315,7 +363,7 @@ ensure_checksum() {
     return 0
 }
 
-verify_threeway_checksum() (
+verify_threeway_checksum() {
     # We can have (or not) a local copy of the data file "$2", a local copy
     # of the checksum file "$3", and a freshly fetched copy of remote checksum
     # file "$4" (usually an *.algo.tmp); all previously downloaded by caller
@@ -344,15 +392,19 @@ verify_threeway_checksum() (
 
     # The IMAGE_URL_BASENAME_EXT (on remote site with hierarchical structure)
     # may be different from local FILE_DATA name (with flattened structure).
-    IMAGE_URL="$1"
+    local IMAGE_URL="$1"
+    local IMAGE_URL_BASENAME
+    local IMAGE_URL_BASENAME_EXT
     # Basenames of data and checksum files (under current dir set by caller
     # or absolute - e.g. for recovery vs. deployed storage locations).
     # Theoretically checksums may be from different algorithms (see extension).
-    FILE_DATA="$2"
-    FILE_CSOLD="$3"
-    FILE_CSNEW="$4"
+    local FILE_DATA="$2"
+    local FILE_CSOLD="$3"
+    local FILE_CSNEW="$4"
 
-    FILE_DIR="`pwd`"
+    local CSNEW CSOLD CSNEWALGO CSOLDALGO
+
+    local FILE_DIR="`pwd`"
     case "$FILE_DATA" in
         /*) FILE_DIR="`dirname "$FILE_DATA"`";;
         ./*|../*) FILE_DIR="`pwd`/`dirname "$FILE_DATA"`"; FILE_DATA="$FILE_DIR/`basename "$FILE_DATA"`";;
@@ -376,7 +428,7 @@ verify_threeway_checksum() (
         { logmsg_warn "Could not resolve IMAGE_URL value '$IMAGE_URL' into a filename"
           IMAGE_URL=""; IMAGE_URL_BASENAME=""; IMAGE_URL_BASENAME_EXT=""; }
 
-    if [ ! -s "$FILE_DATA" ] ; then
+    if [ ! -s "$FILE_DATA" ] && [ ! -c "$FILE_DATA" ] && [ ! -b "$FILE_DATA" ] ; then
         logmsg_info "Local data file '$FILE_DATA' is missing"
         return 2
     fi
@@ -432,7 +484,9 @@ verify_threeway_checksum() (
     else
         # In-place changes are not nice but can happen e.g. for FW images
         logmsg_info "Remote checksum is not good for '$FILE_CSNEW', local file is corrupted or obsolete and should be re-downloaded from '$IMAGE_URL'"
-        RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
+        if [ ! -c "$FILE_DATA" ] && [ ! -b "$FILE_DATA" ] ; then
+            RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
+        fi
         return 1
     fi
 
@@ -445,14 +499,50 @@ verify_threeway_checksum() (
         # Verifying against old checksum failed, so data file and its related
         # files (checksums) should be removed; keep the FILE_CSNEW if available
         logmsg_info "Local checksum mismatched for '$FILE_CSOLD', local file is corrupted and should be re-downloaded from '$IMAGE_URL'"
-        RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
+        if [ ! -c "$FILE_DATA" ] && [ ! -b "$FILE_DATA" ] ; then
+            RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
+        fi
         return 1
     fi
 
     logmsg_info "Neither path of three-way verification has succeeded for '$FILE_DATA', it should be re-downloaded from '$IMAGE_URL'"
-    RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
+    if [ ! -c "$FILE_DATA" ] && [ ! -b "$FILE_DATA" ] ; then
+        RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
+    fi
     return 1
-)
+}
+
+##################################################
+
+# Routines below come from bios-boot::init codebase
+readbytes() {
+    # Input: "$1" == total size in bytes to copy from stdin to stdout;
+    # chunked by $BS as much as possible for speed
+    [ "$1" -ge 0 ] || \
+        { echo "readbytes(): bad input size '$1'" ; return 1; }
+    BS=16384
+    if [ "$1" -le "$BS" ]; then
+        dd bs=1 count="$1"
+        return $?
+    else
+        dd bs="$BS" count="`expr $1 / $BS`" && \
+        dd bs=1 count="`expr $1 % $BS`"
+        return $?
+    fi 2>/dev/null
+}
+
+calculate_stream_checksum_bytes() {
+    # Calculate and print to stdout checksum of "$1" bytes from the stdin
+    # stream using algo "$2" (or default algo, if not specified)
+    readbytes "$1" | calculate_stream_checksum $2
+}
+
+filesize() {
+    # Prints logical size of file in "$1", avoids dependency on ext.parsers
+    ls -lHd "$1" | while \
+        read _P _I _U _G _SZ _D1 _D2 _D3 _N; do echo ${_SZ}; done
+}
+
 
 ##################################################
 
@@ -769,6 +859,10 @@ download_rawfwimage_uboot() (
     rIMAGE_CSOLD="${rIMAGE_URL_BASENAME}.${IMAGE_CSALGO}"
     aIMAGE_CSNEW="/tmp/${rIMAGE_URL_BASENAME}.$$.${IMAGE_CSALGO}.tmp"
 
+    IMAGE_CSURL_PADDED="${IMAGE_URL}.${IMAGE_CSALGO}-padded"
+    rIMAGE_CSOLD_PADDED="${rIMAGE_URL_BASENAME}.${IMAGE_CSALGO}-padded"
+    aIMAGE_CSNEW_PADDED="/tmp/${rIMAGE_URL_BASENAME}.$$.${IMAGE_CSALGO}-padded.tmp"
+
     trap 'TRAPCODE=$?; rm -f "$aIMAGE_CSNEW"; exit $TRAPCODE' 0
 
     logmsg_info "Downloading '${IMAGE_CSURL}' (if any) into '${aIMAGE_CSNEW}'..."
@@ -776,6 +870,16 @@ download_rawfwimage_uboot() (
     wget -q -O - "${IMAGE_CSURL}" > "${aIMAGE_CSNEW}" || \
         { logmsg_error "Could not save '${IMAGE_CSURL}' into '${aIMAGE_CSNEW}'"
           rm -f "${aIMAGE_CSNEW}"
+          if [ x"${CHECK_ONLY-}" = xyes ]; then
+            die "Got an error while checking if there is something new to download, so no reason to proceed"
+          fi
+        }
+
+    logmsg_info "Downloading '${IMAGE_CSURL_PADDED}' (if any) into '${aIMAGE_CSNEW_PADDED}'..."
+    rm -f "${aIMAGE_CSNEW_PADDED}"
+    wget -q -O - "${IMAGE_CSURL_PADDED}" > "${aIMAGE_CSNEW_PADDED}" || \
+        { logmsg_error "Could not save '${IMAGE_CSURL_PADDED}' into '${aIMAGE_CSNEW_PADDED}'"
+          rm -f "${aIMAGE_CSNEW_PADDED}"
           if [ x"${CHECK_ONLY-}" = xyes ]; then
             die "Got an error while checking if there is something new to download, so no reason to proceed"
           fi
@@ -791,7 +895,19 @@ download_rawfwimage_uboot() (
             "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_CSOLD}" \
             "${aIMAGE_CSNEW}" && return 0
     fi
-    logmsg_warn "TODO: Should verify checksum against a partition with flashed bits here ..."
+    if [ -s "${aIMAGE_CSNEW_PADDED}" ] && [ -c "/dev/mtd$KERNEL_MTD" ]; then
+        logmsg_info "Verify padded checksum against a raw u-Boot loader partition with flashed bits here ..."
+        FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+            "/dev/mtd$UBOOT_MTD" \
+            "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_CSOLD_PADDED}" \
+            "${aIMAGE_CSNEW_PADDED}" && return 0
+    fi
+    logmsg_info "Verify non-padded checksum against a raw u-Boot loader partition with flashed bits here ..."
+    FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+            "/dev/mtd$UBOOT_MTD" \
+            "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_CSOLD}" \
+            "${aIMAGE_CSNEW}" && return 0
+    logmsg_warn "TODO: If we can detect the file size of the remote image, use calculate_stream_checksum_bytes() to verify flashed bits"
 
     if [ x"${CHECK_ONLY-}" = xyes ]; then
         logmsg_info "According to checksums, the remote resource '$IMAGE_URL' points to an u-Boot loader image we do not have on this system"
@@ -802,9 +918,14 @@ download_rawfwimage_uboot() (
     # than what we already have; the aTGT_FILE names the ultimate local filename
     aTGT_FILE="`pwd`/${rIMAGE_URL_BASENAME}"
     aIMAGE_CSOLD="`pwd`/${rIMAGE_CSOLD}"
+    aIMAGE_CSOLD_PADDED="`pwd`/${rIMAGE_CSOLD_PADDED}"
 
     if [ ! -s "${aIMAGE_CSOLD}" ]; then
         [ -s "${aIMAGE_CSNEW}" ] && mv -f "${aIMAGE_CSNEW}" "${aIMAGE_CSOLD}"
+    fi
+
+    if [ ! -s "${aIMAGE_CSOLD_PADDED}" ]; then
+        [ -s "${aIMAGE_CSNEW_PADDED}" ] && mv -f "${aIMAGE_CSNEW_PADDED}" "${aIMAGE_CSOLD_PADDED}"
     fi
 
     logmsg_info "Downloading '$IMAGE_URL' into '$aTGT_FILE'..."
@@ -813,7 +934,7 @@ download_rawfwimage_uboot() (
         { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
 
     lsdir_http_pattern "${SOURCESITEROOTFW_UBOOT}" | egrep "^${IMAGE_URL}\." | \
-        egrep -v "^${IMAGE_CSURL}"'$' | \
+        egrep -v "^(${IMAGE_CSURL}|${IMAGE_CSURL_PADDED})"'$' | \
         while read U ; do
             # Note these are helper files, e.g. a padded checksum or some
             # touched-flags (may even be empty) and not fatal if missing
@@ -903,6 +1024,10 @@ download_rawfwimage_uimage() (
     rIMAGE_CSOLD="${rIMAGE_URL_BASENAME}.${IMAGE_CSALGO}"
     aIMAGE_CSNEW="/tmp/${rIMAGE_URL_BASENAME}.$$.${IMAGE_CSALGO}.tmp"
 
+    IMAGE_CSURL_PADDED="${IMAGE_URL}.${IMAGE_CSALGO}-padded"
+    rIMAGE_CSOLD_PADDED="${rIMAGE_URL_BASENAME}.${IMAGE_CSALGO}-padded"
+    aIMAGE_CSNEW_PADDED="/tmp/${rIMAGE_URL_BASENAME}.$$.${IMAGE_CSALGO}-padded.tmp"
+
     trap 'TRAPCODE=$?; rm -f "$aIMAGE_CSNEW"; exit $TRAPCODE' 0
 
     logmsg_info "Downloading '${IMAGE_CSURL}' (if any) into '${aIMAGE_CSNEW}'..."
@@ -910,6 +1035,16 @@ download_rawfwimage_uimage() (
     wget -q -O - "${IMAGE_CSURL}" > "${aIMAGE_CSNEW}" || \
         { logmsg_error "Could not save '${IMAGE_CSURL}' into '${aIMAGE_CSNEW}'"
           rm -f "${aIMAGE_CSNEW}"
+          if [ x"${CHECK_ONLY-}" = xyes ]; then
+            die "Got an error while checking if there is something new to download, so no reason to proceed"
+          fi
+        }
+
+    logmsg_info "Downloading '${IMAGE_CSURL_PADDED}' (if any) into '${aIMAGE_CSNEW_PADDED}'..."
+    rm -f "${aIMAGE_CSNEW_PADDED}"
+    wget -q -O - "${IMAGE_CSURL_PADDED}" > "${aIMAGE_CSNEW_PADDED}" || \
+        { logmsg_error "Could not save '${IMAGE_CSURL_PADDED}' into '${aIMAGE_CSNEW_PADDED}'"
+          rm -f "${aIMAGE_CSNEW_PADDED}"
           if [ x"${CHECK_ONLY-}" = xyes ]; then
             die "Got an error while checking if there is something new to download, so no reason to proceed"
           fi
@@ -925,10 +1060,22 @@ download_rawfwimage_uimage() (
             "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_CSOLD}" \
             "${aIMAGE_CSNEW}" && return 0
     fi
-    logmsg_warn "TODO: Should verify checksum against a partition with flashed bits here ..."
+    if [ -s "${aIMAGE_CSNEW_PADDED}" ] && [ -c "/dev/mtd$KERNEL_MTD" ]; then
+        logmsg_info "Verify padded checksum against a raw kernel uImage partition with flashed bits here ..."
+        FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+            "/dev/mtd$KERNEL_MTD" \
+            "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_CSOLD_PADDED}" \
+            "${aIMAGE_CSNEW_PADDED}" && return 0
+    fi
+    logmsg_info "Verify non-padded checksum against a raw kernel uImage partition with flashed bits here ..."
+    FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+            "/dev/mtd$KERNEL_MTD" \
+            "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_CSOLD}" \
+            "${aIMAGE_CSNEW}" && return 0
+    logmsg_warn "TODO: If we can detect the file size of the remote image, use calculate_stream_checksum_bytes() to verify flashed bits"
 
     if [ x"${CHECK_ONLY-}" = xyes ]; then
-        logmsg_info "According to checksums, the remote resource '$IMAGE_URL' points to an kernel uImage we do not have on this system"
+        logmsg_info "According to checksums, the remote resource '$IMAGE_URL' points to a kernel uImage we do not have on this system"
         return 42
     fi
 
@@ -936,9 +1083,14 @@ download_rawfwimage_uimage() (
     # than what we already have; the aTGT_FILE names the ultimate local filename
     aTGT_FILE="`pwd`/${rIMAGE_URL_BASENAME}"
     aIMAGE_CSOLD="`pwd`/${rIMAGE_CSOLD}"
+    aIMAGE_CSOLD_PADDED="`pwd`/${rIMAGE_CSOLD_PADDED}"
 
     if [ ! -s "${aIMAGE_CSOLD}" ]; then
         [ -s "${aIMAGE_CSNEW}" ] && mv -f "${aIMAGE_CSNEW}" "${aIMAGE_CSOLD}"
+    fi
+
+    if [ ! -s "${aIMAGE_CSOLD_PADDED}" ]; then
+        [ -s "${aIMAGE_CSNEW_PADDED}" ] && mv -f "${aIMAGE_CSNEW_PADDED}" "${aIMAGE_CSOLD_PADDED}"
     fi
 
     logmsg_info "Downloading '$IMAGE_URL' into '$aTGT_FILE'..."
@@ -947,7 +1099,7 @@ download_rawfwimage_uimage() (
         { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
 
     lsdir_http_pattern "${SOURCESITEROOTFW_UIMAGE}" | egrep "^${IMAGE_URL}\." | \
-        egrep -v "^${IMAGE_CSURL}"'$' | \
+        egrep -v "^(${IMAGE_CSURL}|${IMAGE_CSURL_PADDED})"'$' | \
         while read U ; do
             # Note these are helper files, e.g. a padded checksum or some
             # touched-flags (may even be empty) and not fatal if missing
