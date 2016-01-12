@@ -1473,7 +1473,7 @@ dist_noinst_DATA +=	tntnet.xml $(top_srcdir)/src/web/tntnet.xml
 CLEANFILES +=		tntnet.xml tntnet.xml.example tests/CI/tntnet.xml
 
 # Make sure needed files are up-to-date to test web-server for $BIOS REST API
-web-test-deps: tntnet.xml bios_web.la web-link-test agent-dbstore
+web-test-deps: tntnet.xml bios_web.la web-link-test agent-dbstore agent-cm
 
 # TODO (BIOS-1262): the "install-ci_helperSCRIPTS" recipe installs one script
 # into "@libexecdir@/@PACKAGE@/bios-passwd" because this is hardcoded in

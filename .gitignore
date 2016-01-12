@@ -254,3 +254,5 @@ src/api/libbiosapi.pc
 !src/api/libbiosapi.pc.in
 tools/verify-fs
 !tools/verify-fs.in
+
+database/mysql/test_averages_relative.sql
