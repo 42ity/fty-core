@@ -181,6 +181,7 @@ test_web_averages() {
 
 MAKEPID=""
 DBNGPID=""
+CMPID=""
 kill_daemons() {
     if [ -n "$MAKEPID" -a -d "/proc/$MAKEPID" ]; then
         logmsg_info "Killing make web-test PID $MAKEPID to exit"
@@ -190,14 +191,18 @@ kill_daemons() {
         logmsg_info "Killing agent-dbstore PID $DBNGPID to exit"
         kill -INT "$DBNGPID"
     fi
+    if [ -n "$CMPID" -a -d "/proc/$CMPID" ]; then
+        logmsg_info "Killing agent-cm PID $CMPID to exit"
+        kill -INT "$CMPID"
+    fi
 
-    killall -INT tntnet agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
-    killall      tntnet agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
+    killall -INT tntnet agent-dbstore lt-agent-dbstore agent-cm 2>/dev/null || true; sleep 1
+    killall      tntnet agent-dbstore lt-agent-dbstore agent-cm 2>/dev/null || true; sleep 1
 
-    ps -ef | grep -v grep | egrep "tntnet|agent-dbstore" | egrep "^`id -u -n` " && \
+    ps -ef | grep -v grep | egrep "tntnet|agent-dbstore|agent-cm" | egrep "^`id -u -n` " && \
         ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
-        logmsg_error "tntnet and/or agent-dbstore still alive, trying SIGKILL" && \
-        { killall -KILL tntnet agent-dbstore lt-agent-dbstore 2>/dev/null ; return 1; }
+        logmsg_error "tntnet and/or agent-dbstore, agent-cm still alive, trying SIGKILL" && \
+        { killall -KILL tntnet agent-dbstore lt-agent-dbstore agent-cm 2>/dev/null ; return 1; }
     return 0
 }
 
@@ -257,9 +262,9 @@ trap_cleanup(){
 
 # prepare environment
   # might have some mess
-  killall tntnet lt-agent-dbstore agent-dbstore 2>/dev/null || true
+  killall tntnet lt-agent-dbstore agent-dbstore agent-cm 2>/dev/null || true
   sleep 1
-  killall -KILL tntnet lt-agent-dbstore agent-dbstore 2>/dev/null || true
+  killall -KILL tntnet lt-agent-dbstore agent-dbstore agent-cm 2>/dev/null || true
   sleep 1
   test_web_port && \
     die "Port ${SUT_WEB_PORT} is in LISTEN state when it should be free"
@@ -317,9 +322,15 @@ trap_cleanup(){
   MAKEPID=$!
 
   # TODO: this requirement should later become the REST AGENT
-  logmsg_info "Spawning the agent-dbstore server in the background..."
+  logmsg_info "Spawning agent-dbstore in the background..."
   ${BUILDSUBDIR}/agent-dbstore &
   DBNGPID=$!
+  logmsg_info "PID of agent-dbstore is '${DBNGPID}'"
+
+  logmsg_info "Spawning agent-cm in the background..."
+  ${BUILDSUBDIR}/agent-cm &
+  CMPID=$!
+  logmsg_info "PID of agent-dbstore is '${CMPID}'"
 
   # Ensure that no processes remain dangling when test completes
   # The ERRCODE is defined by settraps() as the program exitcode
