@@ -19,8 +19,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include <cxxtools/jsonserializer.h>
 #include <cxxtools/jsondeserializer.h>
+#include <tntdb.h>
 #include <preproc.h>
 
+#include "dbpath.h"
+#include "calc_power.h"
 #include "agent-autoconfig.h"
 #include "str_defs.h"
 #include "log.h"
@@ -113,6 +116,46 @@ void Autoconfig::onStart( )
     setPollingInterval();
 }
 
+// MVY: this is huge hack - needs to be better integrated to aoutconfig
+static void
+    s_configure_uptime_agent()
+{
+    tntdb::Connection conn = tntdb::connectCached (url);
+    auto dbreply = select_devices_total_power_dcs(conn);
+    conn.close ();
+    if (dbreply.status == 0) {
+        log_error ("Fail to call select_devices_total_power_dcs");
+        return;
+    }
+
+    mlm_client_t *client = mlm_client_new ();
+    if (!client) {
+        log_error ("Fail to call mlm_client_new");
+        return;
+    }
+
+    mlm_client_connect (client, "ipc://@/malamute", 1000, "agent-autoconfig");
+    zmsg_t *msg = zmsg_new ();
+    if (!msg) {
+        mlm_client_destroy (&client);
+        log_error ("Fail to allocate new zmsg_t");
+        return;
+    }
+
+    zmsg_addstrf (msg, "%s", "SET");
+    for (const auto &it : dbreply.item) {
+        zmsg_addstrf (msg, "%s", it.first.c_str());
+        for (const auto &it2 : it.second) {
+            zmsg_addstrf (msg, "%s", it2.c_str());
+        }
+    }
+
+    mlm_client_sendto (client, "uptime", "UPTIME", NULL, 1000, &msg);
+    mlm_client_destroy (&client);
+
+    return;
+}
+
 void Autoconfig::onSend( ymsg_t **message )
 {
     if( ! message || ! *message ) return;
@@ -135,6 +178,11 @@ void Autoconfig::onSend( ymsg_t **message )
             _configurableDevices[device_name].attributes = utils::zhash_to_map(extAttributes);
             saveState();
             setPollingInterval();
+        }
+        //MVY: hack for uptime calculation
+        if (type == asset_type::DATACENTER || type == asset_subtype::UPS)
+        {
+            s_configure_uptime_agent ();
         }
     } else {
         log_debug("this is not bios_asset message (error %i)", extract);
@@ -198,7 +246,7 @@ void Autoconfig::setPollingInterval( )
                 return;
             } else {
                 // we failed to configure some device
-                // let's try after one minute again 
+                // let's try after one minute again
                 _timeout = 60000;
             }
         }
