@@ -167,8 +167,21 @@ test_web_asset_create() {
     test_web "$@"
 }
 
+test_web_averages() {
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_averages() $*"
+    echo "----------- Re-generating averages sql files -----------"
+    CI_TEST_AVERAGES_DATA="`$DB_LOADDIR/generate_averages.sh "$DB_LOADDIR"`"
+    export CI_TEST_AVERAGES_DATA
+    echo "----------- reset db: averages -----------"
+    for data in "$DB_BASE" "$DB_DATA" "$DB_AVERAGES" "$DB_AVERAGES_RELATIVE"; do
+        loaddb_file "$data" || exit $?
+    done
+    test_web "$@"
+}
+
 MAKEPID=""
 DBNGPID=""
+CMPID=""
 kill_daemons() {
     if [ -n "$MAKEPID" -a -d "/proc/$MAKEPID" ]; then
         logmsg_info "Killing make web-test PID $MAKEPID to exit"
@@ -178,14 +191,18 @@ kill_daemons() {
         logmsg_info "Killing agent-dbstore PID $DBNGPID to exit"
         kill -INT "$DBNGPID"
     fi
+    if [ -n "$CMPID" -a -d "/proc/$CMPID" ]; then
+        logmsg_info "Killing agent-cm PID $CMPID to exit"
+        kill -INT "$CMPID"
+    fi
 
-    killall -INT tntnet agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
-    killall      tntnet agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
+    killall -INT tntnet agent-dbstore lt-agent-dbstore agent-cm lt-agent-cm 2>/dev/null || true; sleep 1
+    killall      tntnet agent-dbstore lt-agent-dbstore agent-cm lt-agent-cm 2>/dev/null || true; sleep 1
 
-    ps -ef | grep -v grep | egrep "tntnet|agent-dbstore" | egrep "^`id -u -n` " && \
+    ps -ef | grep -v grep | egrep "tntnet|agent-dbstore|agent-cm" | egrep "^`id -u -n` " && \
         ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
-        logmsg_error "tntnet and/or agent-dbstore still alive, trying SIGKILL" && \
-        { killall -KILL tntnet agent-dbstore lt-agent-dbstore 2>/dev/null ; return 1; }
+        logmsg_error "tntnet and/or agent-dbstore, agent-cm still alive, trying SIGKILL" && \
+        { killall -KILL tntnet agent-dbstore lt-agent-dbstore agent-cm lt-agent-cm 2>/dev/null ; return 1; }
     return 0
 }
 
@@ -245,9 +262,9 @@ trap_cleanup(){
 
 # prepare environment
   # might have some mess
-  killall tntnet lt-agent-dbstore agent-dbstore 2>/dev/null || true
+  killall tntnet lt-agent-dbstore agent-dbstore agent-cm lt-agent-cm 2>/dev/null || true
   sleep 1
-  killall -KILL tntnet lt-agent-dbstore agent-dbstore 2>/dev/null || true
+  killall -KILL tntnet lt-agent-dbstore agent-dbstore agent-cm lt-agent-cm 2>/dev/null || true
   sleep 1
   test_web_port && \
     die "Port ${SUT_WEB_PORT} is in LISTEN state when it should be free"
@@ -305,9 +322,15 @@ trap_cleanup(){
   MAKEPID=$!
 
   # TODO: this requirement should later become the REST AGENT
-  logmsg_info "Spawning the agent-dbstore server in the background..."
+  logmsg_info "Spawning agent-dbstore in the background..."
   ${BUILDSUBDIR}/agent-dbstore &
   DBNGPID=$!
+  logmsg_info "PID of agent-dbstore is '${DBNGPID}'"
+
+  logmsg_info "Spawning agent-cm in the background..."
+  ${BUILDSUBDIR}/agent-cm &
+  CMPID=$!
+  logmsg_info "PID of agent-cm is '${CMPID}'"
 
   # Ensure that no processes remain dangling when test completes
   # The ERRCODE is defined by settraps() as the program exitcode
@@ -323,6 +346,7 @@ trap_cleanup(){
   sleep 5
   test_web_process || exit
 
+  
 case "$*" in
     *license*) # We are specifically testing license stuff
         logmsg_warn "The tests requested on command line explicitly include 'license', so $0 will not interfere by running '00_license-CI-forceaccept.sh.test' first"
@@ -341,7 +365,7 @@ esac
 # do the test
 set +e
 if [ $# = 0 ]; then
-    test_web_default -topology_power -asset_create || RESULT_OVERALL=$?
+    test_web_default -topology_power -asset_create -averages || RESULT_OVERALL=$?
     test_web_process || exit
     if [ "$RESULT_OVERALL" -eq 0 ] || [ x"$CITEST_QUICKFAIL" = xno ]; then
         test_web_asset_create asset_create || RESULT_OVERALL=$?
@@ -350,6 +374,8 @@ if [ $# = 0 ]; then
     if [ "$RESULT_OVERALL" -eq 0 ] || [ x"$CITEST_QUICKFAIL" = xno ]; then
         test_web_topo_p topology_power || RESULT_OVERALL=$?
     fi
+    test_web_process || exit
+    test_web_averages averages || RESULT_OVERALL=$?
     test_web_process || exit
 else
     # selective test routine
@@ -360,6 +386,9 @@ else
                 RESULT_OVERALL=$? ;;
             asset_create*)
                 test_web_asset_create "$1" || \
+                RESULT_OVERALL=$? ;;
+            averages*)
+                test_web_averages "$1" || \
                 RESULT_OVERALL=$? ;;
             *)  test_web_default "$1" || \
                 RESULT_OVERALL=$? ;;
