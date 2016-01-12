@@ -863,7 +863,7 @@ download_rawfwimage_uboot() (
     rIMAGE_CSOLD_PADDED="${rIMAGE_URL_BASENAME}.${IMAGE_CSALGO}-padded"
     aIMAGE_CSNEW_PADDED="/tmp/${rIMAGE_URL_BASENAME}.$$.${IMAGE_CSALGO}-padded.tmp"
 
-    trap 'TRAPCODE=$?; rm -f "$aIMAGE_CSNEW"; exit $TRAPCODE' 0
+    trap 'TRAPCODE=$?; rm -f "${aIMAGE_CSNEW}" "${aIMAGE_CSNEW_PADDED}"; exit $TRAPCODE' 0
 
     logmsg_info "Downloading '${IMAGE_CSURL}' (if any) into '${aIMAGE_CSNEW}'..."
     rm -f "${aIMAGE_CSNEW}"
@@ -1028,7 +1028,7 @@ download_rawfwimage_uimage() (
     rIMAGE_CSOLD_PADDED="${rIMAGE_URL_BASENAME}.${IMAGE_CSALGO}-padded"
     aIMAGE_CSNEW_PADDED="/tmp/${rIMAGE_URL_BASENAME}.$$.${IMAGE_CSALGO}-padded.tmp"
 
-    trap 'TRAPCODE=$?; rm -f "$aIMAGE_CSNEW"; exit $TRAPCODE' 0
+    trap 'TRAPCODE=$?; rm -f "${aIMAGE_CSNEW}" "${aIMAGE_CSNEW_PADDED}"; exit $TRAPCODE' 0
 
     logmsg_info "Downloading '${IMAGE_CSURL}' (if any) into '${aIMAGE_CSNEW}'..."
     rm -f "${aIMAGE_CSNEW}"
