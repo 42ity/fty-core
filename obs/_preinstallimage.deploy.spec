@@ -57,6 +57,7 @@ BuildRequires: mime-support ncurses-base libgdbm3 zabbix-agent msmtp u-boot-tool
 BuildRequires: augeas-tools augeas-lenses
 BuildRequires: libpam-cracklib libcrack2 cracklib-runtime wamerican
 BuildRequires: alerts-list
+BuildRequires: uptime
 
 %build
 IMGTYPE=deploy /usr/share/bios/obs/preinstallimage-bios.sh || exit 1

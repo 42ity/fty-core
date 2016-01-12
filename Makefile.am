@@ -1217,6 +1217,7 @@ agent_autoconfig_SOURCES = \
 
 agent_autoconfig_LDADD = \
 			libpriv-log.la \
+			libpriv-db.la \
 			libpriv-proto.la \
 			libbiosapi.la \
 			libpriv-log.la \
@@ -1229,10 +1230,13 @@ agent_autoconfig_LDADD = \
 
 # FIXME remove utils ymsg
 
-agent_autoconfig_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lcidr -lbiosapi
+agent_autoconfig_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lcidr -lbiosapi -ltntdb
 
 agent_autoconfig_CPPFLAGS =	$(AM_CPPFLAGS) \
 				-I$(abs_top_srcdir)/tools \
+				-I$(abs_top_srcdir)/src/persist \
+				-I$(abs_top_srcdir)/src/shared \
+				-I$(abs_top_srcdir)/src/db \
 				-I$(abs_top_builddir)/tools
 
 
@@ -1315,9 +1319,10 @@ agent_tpower_CPPFLAGS =	$(AM_CPPFLAGS) \
 
 client_PROGRAMS += 	outage
 outage_SOURCES = \
-			src/outage/outage.cc
+			src/outage/outage.cc tools/dbpath.h
 
 outage_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_srcdir)/src/persist
 
