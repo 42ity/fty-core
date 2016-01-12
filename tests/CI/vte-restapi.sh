@@ -313,7 +313,7 @@ set +e
 set +e
 if [ $# = 0 ]; then
     # *** start the default TC's instead of subsequent topology tests
-    test_web_default -topology -asset_create || RESULT_OVERALL=$?
+    test_web_default -topology -asset_create -averages || RESULT_OVERALL=$?
     # *** start the asset_create TC's
     if [ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] ; then
         test_web_asset_create asset_create || RESULT_OVERALL=$?
