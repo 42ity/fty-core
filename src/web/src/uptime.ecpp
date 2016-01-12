@@ -98,8 +98,6 @@ asset_manager asset_mgr;
                 client,
                 "uptime",
                 "UPTIME",
-                NULL,
-                1000,
                 "UPTIME",
                 DCNames[D].c_str(),
                 NULL);
@@ -108,6 +106,11 @@ asset_manager asset_mgr;
             r = mlm_client_recvx (client, &subject, &command, &total, &offline, NULL);
             if (r == -1)
                 throw std::runtime_error ("Can't send the request");
+
+            if (!total || !offline) {
+                log_warning ("Data for datacenter %s not found, skipping", DCNames[D].c_str());
+                continue;
+            }
 
             //MVY: why this calculation can't be done in Javascript???
             //     exceptions will be catched below ...
