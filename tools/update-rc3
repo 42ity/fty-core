@@ -26,64 +26,87 @@
 # Important bashism
 set -o pipefail
 
-# Default values matching Eaton internal (at the moment) resources
-# The actual RC3 should be reconfigured to refer to some customer-local mirror
-# or an external Eaton resource, done by snipets in /etc/update-rc3.d/*.conf
-[ -z "${IMGTYPE-}" ] && IMGTYPE="deploy"
-[ -z "${ARCH-}" ] && ARCH="`uname -m`"
-# The RC3 base OS ensures support for squashfs and overlay(fs)
-[ -z "${EXT-}" ] && EXT="squashfs"
-[ -z "${CHECKSUM_ALGO_DEFAULT-}" ] && CHECKSUM_ALGO_DEFAULT="md5"
+config_defaults() {
+    # This routine sets variables required for the script to work
+    # They can be set earlier by configuration files or caller's env
 
-# This script is intended as the downloader tool for both CI/dev-workstation
-# hosts and the ultimate devices. Most of the logic is the same, but there are
-# a few differences. File and directory naming is one of them :
-# Our CI farm deployments mimic the build farm paths - with IMGTYPE/ARCH/filename.ext
-# The RC3 units expect a flat directory structure rootfs/filename.ext so the
-# details (especially IMGTYPE) should end up in the flat filename - ...__${ARCH}__${IMGTYPE}.${EXT}.
-[ -z "${FLATTEN_FILENAMES-}" ] && FLATTEN_FILENAMES="yes"
+    # Default values matching Eaton internal (at the moment) resources
+    # The actual RC3 should be reconfigured to refer some customer-local mirror
+    # or an external Eaton resource, done by snippets in /etc/update-rc3.d/*.conf
+    [ -z "${IMGTYPE-}" ] && IMGTYPE="deploy"
+    [ -z "${ARCH-}" ] && ARCH="`uname -m`"
+    # The RC3 base OS ensures support for squashfs and overlay(fs)
+    [ -z "${EXT-}" ] && EXT="squashfs"
+    [ -z "${CHECKSUM_ALGO_DEFAULT-}" ] && CHECKSUM_ALGO_DEFAULT="md5"
 
-# TODO: TFTP support, busybox can do it
-# TODO: Test with https - can require custom CA trust configuration, etc.
-# TODO: Use our common requester as a wrapper for real/busybox wget/curl
-[ -z "${SOURCESITEROOT-}" ] && SOURCESITEROOT='http://obs.roz53.lab.etn.com/images'
-[ -z "${SOURCESITEROOT_OSIMAGE-}" ] && SOURCESITEROOT_OSIMAGE="$SOURCESITEROOT/$IMGTYPE/$ARCH"
+    # This script is intended as the downloader tool for both CI/dev-workstation
+    # hosts and the ultimate devices. Most of the logic is the same, but there are
+    # a few differences. File and directory naming is one of them :
+    # Our CI farm deployments mimic the build farm paths - with IMGTYPE/ARCH/filename.ext
+    # The RC3 units expect a flat directory structure rootfs/filename.ext so the
+    # details (especially IMGTYPE) should end up in the flat filename - ...__${ARCH}__${IMGTYPE}.${EXT}.
+    # (rc3/virthost) If set to "no", use original filenames from the source server
+    # Overridable by CLI option "--(no-)flatten-filenames"
+    [ -z "${FLAG_FLATTEN_FILENAMES-}" ] && FLAG_FLATTEN_FILENAMES="yes"
 
-[ -z "${SOURCESITEROOTFW-}" ] && SOURCESITEROOTFW="http://obs.roz53.lab.etn.com/flash-rc3/recovery"
-[ -z "${SOURCESITEROOTFW_UBOOT-}" ] && SOURCESITEROOTFW_UBOOT="$SOURCESITEROOTFW"
-[ -z "${SOURCESITEROOTFW_UIMAGE-}" ] && SOURCESITEROOTFW_UIMAGE="$SOURCESITEROOTFW"
-[ -z "${SOURCESITEROOTFW_MODULES-}" ] && SOURCESITEROOTFW_MODULES="$SOURCESITEROOTFW/modules"
+    ### Values below can be changed by command-line choices, and some defaults
+    ### may be overridden by config files before CLI choices
+    # (dev) If set to "no", then do not remove files even if deemed broken or old
+    # Overridable by CLI option "--(no-)remove-files" which is somewhat different
+    # from "--(no-)removeold-images" that only impacts old-image removal after a
+    # successful download of new image(s)
+    [ -z "${FLAG_CAN_REMOVE_IMAGES-}" ] && FLAG_CAN_REMOVE_IMAGES="yes"
 
-# Recovery location (on MMC or mSATA) - for downloads
-[ -z "${DOWNLOADROOT-}" ] && DOWNLOADROOT="/mnt/mmc/recovery"
-[ -z "${DOWNLOADROOT_OSIMAGE-}" ] && DOWNLOADROOT_OSIMAGE="$DOWNLOADROOT/rootfs"
-[ -z "${DOWNLOADROOTFW_UBOOT-}" ] && DOWNLOADROOT_UBOOT="$DOWNLOADROOT"
-[ -z "${DOWNLOADROOTFW_UIMAGE-}" ] && DOWNLOADROOT_UIMAGE="$DOWNLOADROOT"
-[ -z "${DOWNLOADROOTFW_MODULES-}" ] && DOWNLOADROOT_MODULES="$DOWNLOADROOT_UIMAGE/modules"
+    # TODO: TFTP support, busybox can do it
+    # TODO: Test with https - can require custom CA trust configuration, etc.
+    # TODO: Use our common requester as a wrapper for real/busybox wget/curl
+    # TODO: Make a common routine to list remote directories (e.g. http-dir parsing, ftp, tftp, localfs...)
+    [ -z "${SOURCESITEROOT-}" ] && SOURCESITEROOT='http://obs.roz53.lab.etn.com/images'
+    [ -z "${SOURCESITEROOT_OSIMAGE-}" ] && SOURCESITEROOT_OSIMAGE="$SOURCESITEROOT/$IMGTYPE/$ARCH"
 
-# Deployment location (on SPI flash in production) - for boot-mounted OS image
-[ -z "${DEPLOYMENTROOT-}" ] && DEPLOYMENTROOT="/mnt/nand"
-[ -z "${DEPLOYMENTROOT_OSIMAGE-}" ] && DEPLOYMENTROOT_OSIMAGE="$DEPLOYMENTROOT/rootfs"
-[ -z "${DEPLOYMENTROOTFW_UBOOT-}" ] && DEPLOYMENTROOT_UBOOT="$DEPLOYMENTROOT"
-[ -z "${DEPLOYMENTROOTFW_UIMAGE-}" ] && DEPLOYMENTROOT_UIMAGE="$DEPLOYMENTROOT"
-[ -z "${DEPLOYMENTROOTFW_MODULES-}" ] && DEPLOYMENTROOT_MODULES="$DEPLOYMENTROOT_UIMAGE/modules"
+    [ -z "${SOURCESITEROOTFW-}" ] && SOURCESITEROOTFW="http://obs.roz53.lab.etn.com/flash-rc3/recovery"
+    [ -z "${SOURCESITEROOTFW_UBOOT-}" ] && SOURCESITEROOTFW_UBOOT="$SOURCESITEROOTFW"
+    [ -z "${SOURCESITEROOTFW_UIMAGE-}" ] && SOURCESITEROOTFW_UIMAGE="$SOURCESITEROOTFW"
+    [ -z "${SOURCESITEROOTFW_MODULES-}" ] && SOURCESITEROOTFW_MODULES="$SOURCESITEROOTFW/modules"
 
-[ -z "${http_proxy-}" -o x"${http_proxy-}" = x- ] && http_proxy=""
-[ -z "${https_proxy-}" -o x"${https_proxy-}" = x- ] && https_proxy=""
-[ -z "${ftp_proxy-}" -o x"${ftp_proxy-}" = x- ] && ftp_proxy=""
-[ -z "${ftps_proxy-}" -o x"${ftps_proxy-}" = x- ] && ftps_proxy=""
-export http_proxy https_proxy ftp_proxy ftps_proxy
+    # Recovery location (on MMC or mSATA) - for downloads
+    [ -z "${DOWNLOADROOT-}" ] && DOWNLOADROOT="/mnt/mmc/recovery"
+    [ -z "${DOWNLOADROOT_OSIMAGE-}" ] && DOWNLOADROOT_OSIMAGE="$DOWNLOADROOT/rootfs"
+    [ -z "${DOWNLOADROOTFW_UBOOT-}" ] && DOWNLOADROOTFW_UBOOT="$DOWNLOADROOT"
+    [ -z "${DOWNLOADROOTFW_UIMAGE-}" ] && DOWNLOADROOTFW_UIMAGE="$DOWNLOADROOT"
+    [ -z "${DOWNLOADROOTFW_MODULES-}" ] && DOWNLOADROOTFW_MODULES="$DOWNLOADROOTFW_UIMAGE/modules"
 
-# The RC3 SPI flash partitioning determines these sizes, value hardcoded in the
-# default installation routines as well as the init/upgrade script in uImage.
-# These numbers are used for "padded" checksum calculations.
-UIMAGE_MAX_SIZE_RC3=3145728
-UBOOT_MAX_SIZE_RC3=1048576
-[ -z "${UIMAGE_MAX_SIZE-}" ] && UIMAGE_MAX_SIZE="$UIMAGE_MAX_SIZE_RC3"
-[ -z "${UBOOT_MAX_SIZE-}" ] && UBOOT_MAX_SIZE="$UBOOT_MAX_SIZE_RC3"
+    # Deployment location (on SPI flash in production) - for boot-mounted OS image
+    [ -z "${DEPLOYMENTROOT-}" ] && DEPLOYMENTROOT="/mnt/nand"
+    [ -z "${DEPLOYMENTROOT_OSIMAGE-}" ] && DEPLOYMENTROOT_OSIMAGE="$DEPLOYMENTROOT/rootfs"
+    [ -z "${DEPLOYMENTROOTFW_UBOOT-}" ] && DEPLOYMENTROOTFW_UBOOT="$DEPLOYMENTROOT"
+    [ -z "${DEPLOYMENTROOTFW_UIMAGE-}" ] && DEPLOYMENTROOTFW_UIMAGE="$DEPLOYMENTROOT"
+    [ -z "${DEPLOYMENTROOTFW_MODULES-}" ] && DEPLOYMENTROOTFW_MODULES="$DEPLOYMENTROOTFW_UIMAGE/modules"
 
-PATH="/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
-export PATH
+    [ -z "${http_proxy-}" -o x"${http_proxy-}" = x- ] && http_proxy=""
+    [ -z "${https_proxy-}" -o x"${https_proxy-}" = x- ] && https_proxy=""
+    [ -z "${ftp_proxy-}" -o x"${ftp_proxy-}" = x- ] && ftp_proxy=""
+    [ -z "${ftps_proxy-}" -o x"${ftps_proxy-}" = x- ] && ftps_proxy=""
+    export http_proxy https_proxy ftp_proxy ftps_proxy
+
+    # The RC3 SPI flash partitioning determines these sizes, value hardcoded in the
+    # default installation routines as well as the init/upgrade script in uImage.
+    # These numbers are used for "padded" checksum calculations.
+    UIMAGE_MAX_SIZE_RC3=3145728
+    UBOOT_MAX_SIZE_RC3=1048576
+    [ -z "${UIMAGE_MAX_SIZE-}" ] && UIMAGE_MAX_SIZE="$UIMAGE_MAX_SIZE_RC3"
+    [ -z "${UBOOT_MAX_SIZE-}" ] && UBOOT_MAX_SIZE="$UBOOT_MAX_SIZE_RC3"
+
+    # /dev/mtdX numbers for RC3 partitions
+    ROOT_MTD=5
+    KERNEL_MTD=4
+    UBOOTCFG_MTD=3
+    UBOOT_MTD=2
+
+
+    PATH="/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
+    export PATH
+}
 
 ### NOTE: This script can be copied to VM hosts and used standalone, so we do
 ### not depend it on scriptlib.sh or anything else. Implement a few bits here.
@@ -101,19 +124,28 @@ usage() {
     echo "Usage: ${_SCRIPT_NAME} [options...]"
     echo "Options:"
     echo "  --help | -help | -h       Display this hep and exit"
+    echo "  --config | -c             Source an additional config file (beside looking in"
+    echo "                            standard locations e.g. '/etc/update-rc3.d/*.conf')"
+    echo "  --(no-)check-image-os, --(no-)check-image-fw, --(no-)check-images"
+    echo "                   Only check the source location if new images are available"
+    echo "                   and exit, whatever the outcome (returns 0 if nothing found,"
+    echo "                   42 if there is something to download)"
     echo "  --(no-)download-image-os  Enable or disable downloading of OS images"
     echo "  --(no-)download-image-fw  Likewise for downloading of uBoot, uImage+modules"
     echo "  --(no-)download-images    Enable or disable downloading of all image types"
-    echo "  --(no-)check-image-os, --(no-)check-image-fw, --(no-)check-images"
-    echo "                   Only check the source location if new images are available"
     echo "  --(no-)removeold-image-os, --(no-)removeold-image-fw, --(no-)removeold-images"
     echo "                   If download-image of this type was requested and successful,"
     echo "                   or if download was not requested at all, remove all but the"
     echo "                   newest (alphabetcally) image file from the recovery location"
-    echo "  --no-remove-files         Skip removing image files deemed corrupt or obsolete"
-    echo "  --no-flatten-filenames    Skip renaming image files to include ARCH and TYPE"
+    echo "  --(no-)remove-files       Skip removing image files deemed corrupt or obsolete"
+    echo "  --(no-)flatten-filenames  Skip renaming image files to include ARCH and TYPE"
     echo "                            for easier differentiation in the flat storage dirs"
-# TODO ...
+    echo "For the check* and download* methods, you can specify a full URL to the image"
+    echo "file which you want rather than trying to detect the newest one available, with"
+    echo "the following arguments ('raw' firmwares are the non-tarballed singular files):"
+    echo "  --url-image-os {URL} (expected checksum patterns should still exist nearby)"
+    echo "  --url-image-fw-raw-uboot --url-image-fw-raw-uimage --url-image-fw-raw-modules"
+# TODO(recurring) Maintain usage() as CLI options get added to the script
 }
 
 SCRIPTDIR=$(realpath "`dirname ${_SCRIPT_PATH}`") || \
@@ -134,22 +166,22 @@ export CHECKOUTDIR BUILDSUBDIR
 export LANG LANGUAGE LC_ALL TZ
 
 logmsg_info() {
-    echo "${LOGMSG_PREFIX}INFO: ${_SCRIPT_PATH}:" "$@"
+    echo "${LOGMSG_PREFIX}INFO:" "$@"
 }
 
 logmsg_warn() {
-    echo "${LOGMSG_PREFIX}WARN: ${_SCRIPT_PATH}:" "$@" >&2
+    echo "${LOGMSG_PREFIX}WARN:" "$@" >&2
 }
 
 logmsg_error() {
-    echo "${LOGMSG_PREFIX}ERROR: ${_SCRIPT_PATH}:" "$@" >&2
+    echo "${LOGMSG_PREFIX}ERROR:" "$@" >&2
 }
 
 die() {
     CODE="${CODE-1}"
     [ "$CODE" -ge 0 ] 2>/dev/null || CODE=1
     for LINE in "$@" ; do
-        echo "${LOGMSG_PREFIX}FATAL: ${_SCRIPT_PATH}:" "$LINE" >&2
+        echo "${LOGMSG_PREFIX}FATAL:" "$LINE" >&2
     done
     exit $CODE
 }
@@ -231,6 +263,36 @@ expected_checksum() (
     # If the value is empty, this statement returns an error exit-code
 )
 
+# Colon-separated values: CHECKSUM:LENGTH:ALGO:PATHNAME
+# Length of -1 means full file or device byte-range
+CHECKSUM_CACHE=""
+find_checksum_cache() {
+    # Finds from the cache the entry with given pathname $3 and algo $2 and length $1
+    [ $# != 3 ] && return 22
+    [ -z "${CHECKSUM_CACHE}" ] && return 1
+    echo "$CHECKSUM_CACHE" | egrep '^[^:]+'":$1:$2:$3"'$' | awk -F: '{print $1}'
+}
+
+remove_checksum_cache() {
+    # Removes from the cache the entry with given pathname $3 and algo $2 and length $1
+    [ $# != 3 ] && return 22
+    [ -z "${CHECKSUM_CACHE}" ] && return 0
+    CHECKSUM_CACHE="`echo "$CHECKSUM_CACHE" | egrep -v '^[^:]+'"$1:$2:$3"'$'`"
+}
+
+add_checksum_cache() {
+    # Adds to the cache if the given pathname and algo and length are missing
+    # If a value exists, it is replaced
+    # Arguments $1..$4 are same as in CHECKSUM_CACHE above
+    [ $# != 4 ] && return 22
+    if [ -z "${CHECKSUM_CACHE}" ]; then
+        CHECKSUM_CACHE="$1:$2:$3:$4"
+    else
+        CHECKSUM_CACHE="`echo "$CHECKSUM_CACHE" | egrep -v '^[^:]+'":$2:$3:$4"'$'`
+$1:$2:$3:$4"
+    fi
+}
+
 verify_checksum() {
     # Compares actual checksum of file "$1" with value recorded in file "$2"
     # with optional algorithm in "$3" (defaults to CHECKSUM_ALGO_DEFAULT='md5')
@@ -250,7 +312,8 @@ verify_checksum() {
     LOGINTRO="Checksum validation of '$FILENAME_DATA' against value in '$FILENAME_CSUM' ($CHECKSUM_ALGO)"
 
     if [ -n "$FILENAME_DATA" ] && [ -n "$FILENAME_CSUM" ] && \
-       [ -s "$FILENAME_DATA" -a -s "$FILENAME_CSUM" ] \
+       [ -s "$FILENAME_DATA" -o -c "$FILENAME_DATA" -o -b "$FILENAME_DATA" ] && \
+       [ -s "$FILENAME_CSUM" ] \
     ; then
         logmsg_info "Beginning $LOGINTRO..."
 
@@ -260,7 +323,17 @@ verify_checksum() {
             return 0
         fi
 
-        CHECKSUM_ACT="`calculate_stream_checksum < "$FILENAME_DATA"`" || CHECKSUM_ACT=""
+        CHECKSUM_ACT="`find_checksum_cache '-1' "${CHECKSUM_ALGO}" "${FILENAME_DATA}"`" && \
+            [ -n "${CHECKSUM_ACT}" ] && logmsg_info "Got cached checksum (${CHECKSUM_ALGO}) for ${FILENAME_DATA}" \
+            || CHECKSUM_ACT=""
+        if [ -z "$CHECKSUM_ACT" ]; then
+            CHECKSUM_ACT="`calculate_stream_checksum < "$FILENAME_DATA"`"
+            if [ $? = 0 ] && [ -n "$CHECKSUM_ACT" ]; then
+                add_checksum_cache "${CHECKSUM_ACT}" "-1" "${CHECKSUM_ALGO}" "${FILENAME_DATA}"
+            else
+                CHECKSUM_ACT=""
+            fi
+        fi
         if [ -z "$CHECKSUM_ACT" ]; then
             logmsg_warn "$LOGINTRO SKIPPED (can not calculate actual value)"
             return 0
@@ -290,7 +363,7 @@ ensure_checksum() {
     return 0
 }
 
-verify_threeway_checksum() (
+verify_threeway_checksum() {
     # We can have (or not) a local copy of the data file "$2", a local copy
     # of the checksum file "$3", and a freshly fetched copy of remote checksum
     # file "$4" (usually an *.algo.tmp); all previously downloaded by caller
@@ -319,15 +392,19 @@ verify_threeway_checksum() (
 
     # The IMAGE_URL_BASENAME_EXT (on remote site with hierarchical structure)
     # may be different from local FILE_DATA name (with flattened structure).
-    IMAGE_URL="$1"
+    local IMAGE_URL="$1"
+    local IMAGE_URL_BASENAME
+    local IMAGE_URL_BASENAME_EXT
     # Basenames of data and checksum files (under current dir set by caller
     # or absolute - e.g. for recovery vs. deployed storage locations).
     # Theoretically checksums may be from different algorithms (see extension).
-    FILE_DATA="$2"
-    FILE_CSOLD="$3"
-    FILE_CSNEW="$4"
+    local FILE_DATA="$2"
+    local FILE_CSOLD="$3"
+    local FILE_CSNEW="$4"
 
-    FILE_DIR="`pwd`"
+    local CSNEW CSOLD CSNEWALGO CSOLDALGO
+
+    local FILE_DIR="`pwd`"
     case "$FILE_DATA" in
         /*) FILE_DIR="`dirname "$FILE_DATA"`";;
         ./*|../*) FILE_DIR="`pwd`/`dirname "$FILE_DATA"`"; FILE_DATA="$FILE_DIR/`basename "$FILE_DATA"`";;
@@ -351,7 +428,7 @@ verify_threeway_checksum() (
         { logmsg_warn "Could not resolve IMAGE_URL value '$IMAGE_URL' into a filename"
           IMAGE_URL=""; IMAGE_URL_BASENAME=""; IMAGE_URL_BASENAME_EXT=""; }
 
-    if [ ! -s "$FILE_DATA" ] ; then
+    if [ ! -s "$FILE_DATA" ] && [ ! -c "$FILE_DATA" ] && [ ! -b "$FILE_DATA" ] ; then
         logmsg_info "Local data file '$FILE_DATA' is missing"
         return 2
     fi
@@ -407,7 +484,9 @@ verify_threeway_checksum() (
     else
         # In-place changes are not nice but can happen e.g. for FW images
         logmsg_info "Remote checksum is not good for '$FILE_CSNEW', local file is corrupted or obsolete and should be re-downloaded from '$IMAGE_URL'"
-        RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
+        if [ ! -c "$FILE_DATA" ] && [ ! -b "$FILE_DATA" ] ; then
+            RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
+        fi
         return 1
     fi
 
@@ -420,22 +499,106 @@ verify_threeway_checksum() (
         # Verifying against old checksum failed, so data file and its related
         # files (checksums) should be removed; keep the FILE_CSNEW if available
         logmsg_info "Local checksum mismatched for '$FILE_CSOLD', local file is corrupted and should be re-downloaded from '$IMAGE_URL'"
-        RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
+        if [ ! -c "$FILE_DATA" ] && [ ! -b "$FILE_DATA" ] ; then
+            RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
+        fi
         return 1
     fi
 
     logmsg_info "Neither path of three-way verification has succeeded for '$FILE_DATA', it should be re-downloaded from '$IMAGE_URL'"
-    RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
+    if [ ! -c "$FILE_DATA" ] && [ ! -b "$FILE_DATA" ] ; then
+        RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
+    fi
     return 1
+}
+
+##################################################
+
+# Routines below come from bios-boot::init codebase
+readbytes() {
+    # Input: "$1" == total size in bytes to copy from stdin to stdout;
+    # chunked by $BS as much as possible for speed
+    [ "$1" -ge 0 ] || \
+        { echo "readbytes(): bad input size '$1'" ; return 1; }
+    BS=16384
+    if [ "$1" -le "$BS" ]; then
+        dd bs=1 count="$1"
+        return $?
+    else
+        dd bs="$BS" count="`expr $1 / $BS`" && \
+        dd bs=1 count="`expr $1 % $BS`"
+        return $?
+    fi 2>/dev/null
+}
+
+calculate_stream_checksum_bytes() {
+    # Calculate and print to stdout checksum of "$1" bytes from the stdin
+    # stream using algo "$2" (or default algo, if not specified)
+    readbytes "$1" | calculate_stream_checksum $2
+}
+
+filesize() {
+    # Prints logical size of file in "$1", avoids dependency on ext.parsers
+    ls -lHd "$1" | while \
+        read _P _I _U _G _SZ _D1 _D2 _D3 _N; do echo ${_SZ}; done
+}
+
+
+##################################################
+
+lshost_http() (
+    # List the remote resource "$1" which is an apache-style http directory
+    # (HTML) and return links that are relative or under the same virtserver
+    REMOTE_DIR="`echo "$1" | sed 's,/$,,g'`"
+    REMOTE_ROOTURL="`echo "$REMOTE_DIR" | sed 's,^\(.*://[^/]*\)/.*$,\1,'`"
+    # Hostname from the URL, without schema and port
+    REMOTE_VIRTHOST="`echo "$REMOTE_DIR" | sed 's,^.*://\([^/:]*\)[/:].*$,\1,'`"
+    wget -q -O - "$REMOTE_DIR"/ | \
+        sed -n 's|.*href="\([^\"]*\)".*|\1|pg' | \
+    while read URL ; do
+        case "$URL" in
+            "[Hh][Tt]|[Tt][Pp]?([Ss])://${REMOTE_VIRTHOST}[:/]"*)
+                # URL is under this virthost
+                echo "$URL" ;;
+            "[Hh][Tt][Tt][Pp]?([Ss])://"*)
+                # URL is under some other virthost
+                ;;
+            *://*)
+                # URL is under some unknown schema (e.g. FTP)
+                ;;
+            /*)  # Assume relative URL under server root
+                echo "${REMOTE_ROOTURL}/${URL}" ;;
+            *)  # Assume relative URL under current dir
+                echo "${REMOTE_DIR}/${URL}" ;;
+        esac
+    done | sed 's,\([^:]\)//,\1/,g'
 )
+
+lsdir_http() (
+    # List the remote resource "$1/" which is an apache-style http directory
+    # and selects URLs starting with this "$1/"
+    REMOTE_DIR="`echo "$1" | sed 's,/$,,g'`"
+    lshost_http "$REMOTE_DIR" | egrep -i "^$REMOTE_DIR/"
+)
+
+lsdir_http_pattern() {
+    # List the remote directory resource "$1/" and select sub-files by glob $2
+    # See "Pathname Expansion" in `man bash` for syntax details
+    REMOTE_DIR="`echo "$1" | sed 's,/$,,g'`"
+    REMOTE_GLOB="$2"
+    lsdir_http "$REMOTE_DIR" | while read URL; do case "$URL" in
+        $REMOTE_DIR/$REMOTE_GLOB) echo "$URL" ;;
+    esac; done
+}
+
 
 ##################################################
 
 findnewest_osimage() (
     # Echo the URL to the newest OS image file found on remote resource, if any
     # Note: currently expects certain filename patterns and http-dir listing markup
-    IMAGE_URL="`wget -q -O - ${SOURCESITEROOT_OSIMAGE}/ | sed -n 's|.*href="\(.*simpleimage.*\.'"${EXT}"'\)".*|'"${SOURCESITEROOT_OSIMAGE}"'/\1|p' | sed 's,\([^:]\)//,\1/,g' | sort -n | tail -1`" && \
-    if [ x"$IMAGE_URL" != x ]; then
+    IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOT_OSIMAGE}" "simpleimage*.${EXT}"`"
+    if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
         [ x"`basename "$IMAGE_URL" .${EXT}`" != x ] && \
         echo "$IMAGE_URL" && return 0
     fi
@@ -443,10 +606,39 @@ findnewest_osimage() (
 )
 
 download_osimage() (
+    # If the caller sets CHECK_ONLY=yes and no copy of the remote image is
+    # found on this local system, then the routine just returns code "42"
+    # instead of downloading this detected new image otherwise.
+    # A successful download of an image (consistent non-empty file) is 42 too
     cd "${DOWNLOADROOT_OSIMAGE}" || die "Can not use DOWNLOADROOT_OSIMAGE='$DOWNLOADROOT_OSIMAGE'"
 
-    logmsg_info "Fetching newest filename for ${ARCH} OS image of type ${IMGTYPE}..."
-    IMAGE_URL="`findnewest_osimage`" && \
+    case "${1-}" in
+            *://*)
+                logmsg_info "download_osimage() was asked to try downloading '$1' as the ${IMGTYPE} OS image for ${ARCH}"
+                IMAGE_URL="$1" ;;
+            "")
+                logmsg_info "Fetching newest filename for ${ARCH} OS image of type ${IMGTYPE}..."
+                IMAGE_URL="`findnewest_osimage`" && [ -n "$IMAGE_URL" ] \
+                && logmsg_info "download_osimage() detected '$IMAGE_URL' as the newest ${IMGTYPE} OS image for ${ARCH}" \
+                || { logmsg_error "Could not find any remote OS image"; IMAGE_URL="";} ;;
+            *)  logmsg_error "download_osimage() got an unsupported argument: $*"
+                IMAGE_URL=""
+                ;; # This dies a bit below
+    esac
+
+    case "$IMAGE_URL" in
+            *"${IMGTYPE}"*) ;;
+            "") ;; # This dies a bit below
+            *)  logmsg_warn "The IMAGE_URL='$IMAGE_URL' does not contain IMGTYPE='$IMGTYPE'!" ; sleep 5 ;;
+    esac
+
+    case "$IMAGE_URL" in
+            *"${ARCH}"*) ;;
+            "") ;; # This dies a bit below
+            *)  logmsg_warn "The IMAGE_URL='$IMAGE_URL' does not contain ARCH='$ARCH'!" ; sleep 5 ;;
+    esac
+
+    [ -n "$IMAGE_URL" ] && \
     rIMAGE_URL_BASENAME="`basename "$IMAGE_URL" ".${EXT}"`" && \
         [ -n "$rIMAGE_URL_BASENAME" ] && \
         rIMAGE_URL_BASENAME_EXT="${rIMAGE_URL_BASENAME}${EXT:+.$EXT}" || \
@@ -485,15 +677,20 @@ download_osimage() (
     logmsg_info "Downloading '${IMAGE_CSURL}' (if any) into '${aIMAGE_CSNEW}'..."
     rm -f "${aIMAGE_CSNEW}"
     wget -q -O - "${IMAGE_CSURL}" > "${aIMAGE_CSNEW}" || \
-        { logmsg_error "Could not save '${IMAGE_CSURL}' into '${aIMAGE_CSNEW}'";
-          rm -f "${aIMAGE_CSNEW}"; }
+        { logmsg_error "Could not save '${IMAGE_CSURL}' into '${aIMAGE_CSNEW}'"
+          rm -f "${aIMAGE_CSNEW}"
+          if [ x"${CHECK_ONLY-}" = xyes ]; then
+            die "Got an error while checking if there is something new to download, so no reason to proceed"
+          fi
+        }
 
     if [ ! -s "${aTGT_FILE_CSNEW}" ] ; then
         logmsg_info "Processing '${IMAGE_CSURL}' (if any) to flatten the names into '${aTGT_FILE_CSNEW}'..."
         { [ -s "${aIMAGE_CSNEW}" ] && cat "${aIMAGE_CSNEW}" || wget -q -O - "${IMAGE_CSURL}"; } | \
         sed 's,  .*$,  '"`basename "$rTGT_FILE"`", > "${aTGT_FILE_CSNEW}" || \
-            { logmsg_error "Could not save and process '${IMAGE_CSURL}' into '${aTGT_FILE_CSNEW}'";
-              rm -f "${aTGT_FILE_CSNEW}"; }
+            { logmsg_error "Could not save and process '${IMAGE_CSURL}' into '${aTGT_FILE_CSNEW}'"
+              rm -f "${aTGT_FILE_CSNEW}"
+            }
     fi
 
     # First try the modified filenames in local directories: more probable hit
@@ -536,6 +733,11 @@ download_osimage() (
         verify_threeway_checksum "${IMAGE_URL}" "./$IMGTYPE/$ARCH/${rIMAGE_URL_BASENAME_EXT}" "./$IMGTYPE/$ARCH/${rIMAGE_CSOLD}" "${aIMAGE_CSNEW}" && return 0
     fi
 
+    if [ x"${CHECK_ONLY-}" = xyes ]; then
+        logmsg_info "According to checksums, the remote resource '$IMAGE_URL' points to an OS image we do not have on this system"
+        return 42
+    fi
+
     # If we are here, the IMAGE_URL is valid and points to a different content
     # than what we already have; the TGT_FILE names the ultimate local filename
     if [ -d "./$IMGTYPE/$ARCH" ]; then
@@ -573,10 +775,12 @@ download_osimage() (
         { rm -f "${aTGT_FILE_CSOLD}"; die "Could not generate '${aTGT_FILE_CSOLD}'"; }
     fi
 
+    [ -s "${aTGT_FILE}" ] && [ -s "${aTGT_FILE_CSOLD}" ] && \
     touch -r "${aTGT_FILE}" "${aTGT_FILE_CSOLD}" && \
     logmsg_info "Got OS image OK:" && \
     ls -ld "${aTGT_FILE}" "${aTGT_FILE_CSOLD}" && \
-    cat "${aTGT_FILE_CSOLD}"
+    cat "${aTGT_FILE_CSOLD}" && \
+    return 42
 )
 
 removeold_osimage() (
@@ -611,19 +815,164 @@ findnewest_rawfwimage_uboot() (
     # Echo the URL to the newest "raw" (not tarballed, only one)
     # uBoot image file found on remote resource, if any
     # Note: currently expects certain filename patterns and http-dir listing markup
-    IMAGE_URL="`wget -q -O - ${SOURCESITEROOTFW_UBOOT}/ | sed -n 's|.*href="\(u\-*Boot\)".*|'"${SOURCESITEROOTFW_UBOOT}"'/u-Boot|p' | sed 's,\([^:]\)//,\1/,g'`" && \
-    if [ x"$IMAGE_URL" != x ]; then
-        echo "$IMAGE_URL" && return 0
-    fi
+    for P in 'u-Boot' 'uBoot' ; do
+        IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOTFW_UBOOT}" "$P"`"
+        if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
+            echo "$IMAGE_URL" && return 0
+        fi
+    done
     return 1
 )
 
 download_rawfwimage_uboot() (
     cd "${DOWNLOADROOTFW_UBOOT}" || die "Can not use DOWNLOADROOTFW_UBOOT='$DOWNLOADROOTFW_UBOOT'"
+
+    case "${1-}" in
+            *://*)
+                logmsg_info "download_rawfwimage_uboot() was asked to try downloading '$1' as the raw u-Boot loader image"
+                IMAGE_URL="$1" ;;
+            "")
+                logmsg_info "Fetching newest filename for the raw u-Boot loader image..."
+                IMAGE_URL="`findnewest_rawfwimage_uboot`" && [ -n "$IMAGE_URL" ] \
+                && logmsg_info "download_rawfwimage_uboot() detected '$IMAGE_URL' as the newest raw u-Boot loader image" \
+                || { logmsg_error "Could not find any remote raw u-Boot loader image"; IMAGE_URL="";} ;;
+            *)  logmsg_error "download_rawfwimage_uboot() got an unsupported argument: $*"
+                IMAGE_URL=""
+                ;;
+    esac
+
+    [ -n "$IMAGE_URL" ] && \
+    rIMAGE_URL_BASENAME="`basename "$IMAGE_URL"`" && \
+        [ -n "$rIMAGE_URL_BASENAME" ] || \
+        die "Can not find the remote image URL"
+
+    # TODO: Currently hardcoded for md5 accompanying checksums only
+    # TODO (later): Support presence of multiple checksum files (e.g. sha* and md5)
+    # TODO: Also support checksum-verifying against the flashed partition bits
+    IMAGE_CSALGO="${CHECKSUM_ALGO_DEFAULT}"
+
+    # NOTE: "Old" filename and checksum are basenames that can be located under
+    # different directories ("r"elative varnames), but e.g. a "new" checksum is
+    # ensured to be in a temporary location and a newly downloaded file should
+    # land into the recovery location ("a"bsolute varnames)
+    IMAGE_CSURL="${IMAGE_URL}.${IMAGE_CSALGO}"
+    rIMAGE_CSOLD="${rIMAGE_URL_BASENAME}.${IMAGE_CSALGO}"
+    aIMAGE_CSNEW="/tmp/${rIMAGE_URL_BASENAME}.$$.${IMAGE_CSALGO}.tmp"
+
+    IMAGE_CSURL_PADDED="${IMAGE_URL}.${IMAGE_CSALGO}-padded"
+    rIMAGE_CSOLD_PADDED="${rIMAGE_URL_BASENAME}.${IMAGE_CSALGO}-padded"
+    aIMAGE_CSNEW_PADDED="/tmp/${rIMAGE_URL_BASENAME}.$$.${IMAGE_CSALGO}-padded.tmp"
+
+    trap 'TRAPCODE=$?; rm -f "${aIMAGE_CSNEW}" "${aIMAGE_CSNEW_PADDED}"; exit $TRAPCODE' 0
+
+    logmsg_info "Downloading '${IMAGE_CSURL}' (if any) into '${aIMAGE_CSNEW}'..."
+    rm -f "${aIMAGE_CSNEW}"
+    wget -q -O - "${IMAGE_CSURL}" > "${aIMAGE_CSNEW}" || \
+        { logmsg_error "Could not save '${IMAGE_CSURL}' into '${aIMAGE_CSNEW}'"
+          rm -f "${aIMAGE_CSNEW}"
+          if [ x"${CHECK_ONLY-}" = xyes ]; then
+            die "Got an error while checking if there is something new to download, so no reason to proceed"
+          fi
+        }
+
+    logmsg_info "Downloading '${IMAGE_CSURL_PADDED}' (if any) into '${aIMAGE_CSNEW_PADDED}'..."
+    rm -f "${aIMAGE_CSNEW_PADDED}"
+    wget -q -O - "${IMAGE_CSURL_PADDED}" > "${aIMAGE_CSNEW_PADDED}" || \
+        { logmsg_error "Could not save '${IMAGE_CSURL_PADDED}' into '${aIMAGE_CSNEW_PADDED}'"
+          rm -f "${aIMAGE_CSNEW_PADDED}"
+          if [ x"${CHECK_ONLY-}" = xyes ]; then
+            die "Got an error while checking if there is something new to download, so no reason to proceed"
+          fi
+        }
+
+    # Try the filenames in local directories
+    logmsg_info "Verifying if we have this checksum and corresponding file under original name in base dir..."
+    verify_threeway_checksum "${IMAGE_URL}" "${rIMAGE_URL_BASENAME}" "${rIMAGE_CSOLD}" "${aIMAGE_CSNEW}" && return 0
+    if [ -d "${DEPLOYMENTROOT_OSIMAGE}" ] ; then
+        # Do not remove deployed files!
+        FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+            "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_URL_BASENAME}" \
+            "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_CSOLD}" \
+            "${aIMAGE_CSNEW}" && return 0
+    fi
+    if [ -s "${aIMAGE_CSNEW_PADDED}" ] && [ -c "/dev/mtd$KERNEL_MTD" ]; then
+        logmsg_info "Verify padded checksum against a raw u-Boot loader partition with flashed bits here ..."
+        FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+            "/dev/mtd$UBOOT_MTD" \
+            "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_CSOLD_PADDED}" \
+            "${aIMAGE_CSNEW_PADDED}" && return 0
+    fi
+    logmsg_info "Verify non-padded checksum against a raw u-Boot loader partition with flashed bits here ..."
+    FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+            "/dev/mtd$UBOOT_MTD" \
+            "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_CSOLD}" \
+            "${aIMAGE_CSNEW}" && return 0
+    logmsg_warn "TODO: If we can detect the file size of the remote image, use calculate_stream_checksum_bytes() to verify flashed bits"
+
+    if [ x"${CHECK_ONLY-}" = xyes ]; then
+        logmsg_info "According to checksums, the remote resource '$IMAGE_URL' points to an u-Boot loader image we do not have on this system"
+        return 42
+    fi
+
+    # If we are here, the IMAGE_URL is valid and points to a different content
+    # than what we already have; the aTGT_FILE names the ultimate local filename
+    aTGT_FILE="`pwd`/${rIMAGE_URL_BASENAME}"
+    aIMAGE_CSOLD="`pwd`/${rIMAGE_CSOLD}"
+    aIMAGE_CSOLD_PADDED="`pwd`/${rIMAGE_CSOLD_PADDED}"
+
+    if [ ! -s "${aIMAGE_CSOLD}" ]; then
+        [ -s "${aIMAGE_CSNEW}" ] && mv -f "${aIMAGE_CSNEW}" "${aIMAGE_CSOLD}"
+    fi
+
+    if [ ! -s "${aIMAGE_CSOLD_PADDED}" ]; then
+        [ -s "${aIMAGE_CSNEW_PADDED}" ] && mv -f "${aIMAGE_CSNEW_PADDED}" "${aIMAGE_CSOLD_PADDED}"
+    fi
+
+    logmsg_info "Downloading '$IMAGE_URL' into '$aTGT_FILE'..."
+    rm -f "${aTGT_FILE}"
+    wget -O "${aTGT_FILE}" "$IMAGE_URL" && [ -s "$aTGT_FILE" ] || \
+        { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
+
+    lsdir_http_pattern "${SOURCESITEROOTFW_UBOOT}" | egrep "^${IMAGE_URL}\." | \
+        egrep -v "^(${IMAGE_CSURL}|${IMAGE_CSURL_PADDED})"'$' | \
+        while read U ; do
+            # Note these are helper files, e.g. a padded checksum or some
+            # touched-flags (may even be empty) and not fatal if missing
+            aBU="`pwd`/`basename "$U"`"
+            logmsg_info "Downloading additional file '$U' into '$aBU'..."
+            rm -f "$aBU"
+            wget -O "${aBU}" "$U" || logmsg_error "Could not download the additional '$U'"
+        done
+
+    if [ -s "${aIMAGE_CSOLD}" ]; then
+        ensure_checksum "${aTGT_FILE}" "${aIMAGE_CSOLD}" || return $?
+    else
+        logmsg_warn "Generating '${aIMAGE_CSOLD}' because there was none at the source..."
+        echo "`calculate_stream_checksum "${IMAGE_CSALGO}" < "$aTGT_FILE"`  `basename "$aTGT_FILE"`" > "${aIMAGE_CSOLD}" || \
+        { rm -f "${aIMAGE_CSOLD}"; die "Could not generate '${aIMAGE_CSOLD}'"; }
+    fi
+
+    # TODO: Verify file size against partition size (flashability after reboot)
+    [ -s "${aTGT_FILE}" ] && [ -s "${aIMAGE_CSOLD}" ] && \
+    touch -r "${aTGT_FILE}" "${aIMAGE_CSOLD}" && \
+    logmsg_info "Got u-Boot loader image OK:" && \
+    ls -ld "${aTGT_FILE}" "${aIMAGE_CSOLD}" && \
+    cat "${aIMAGE_CSOLD}" && \
+    return 42
 )
 
 removeold_rawfwimage_uboot() (
     cd "${DOWNLOADROOTFW_UBOOT}" || die "Can not use DOWNLOADROOTFW_UBOOT='$DOWNLOADROOTFW_UBOOT'"
+    logmsg_info "NOTE: removeold_rawfwimage_uboot() is likely a no-op at this point"
+    VICTIMS=0
+    for F in `ls -1d u-Boot 2>/dev/null | head -n -1` ; do
+        logmsg_info "Removing older u-Boot loader image: '`pwd`/$F' and its checksum(s)"
+        remove_image "$F"
+        VICTIMS=$(($VICTIMS+1))
+    done
+    [ "$VICTIMS" -eq 0 ] && logmsg_info "removeold_rawfwimage_uboot() had nothing to remove" || \
+        logmsg_info "removeold_rawfwimage_uboot() requested to remove $VICTIMS file(s)"
+    return 0
 )
 
 
@@ -633,8 +982,8 @@ findnewest_rawfwimage_uimage() (
     # Echo the URL to the newest "raw" (not tarballed, only one)
     # uImage image file found on remote resource, if any
     # Note: currently expects certain filename patterns and http-dir listing markup
-    IMAGE_URL="`wget -q -O - ${SOURCESITEROOTFW_UIMAGE}/ | sed -n 's|.*href="\(uImage\)".*|'"${SOURCESITEROOTFW_UIMAGE}"'/uImage|p' | sed 's,\([^:]\)//,\1/,g'`" && \
-    if [ x"$IMAGE_URL" != x ]; then
+    IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOTFW_UIMAGE}" "uImage"`"
+    if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
         echo "$IMAGE_URL" && return 0
     fi
     return 1
@@ -642,10 +991,153 @@ findnewest_rawfwimage_uimage() (
 
 download_rawfwimage_uimage() (
     cd "${DOWNLOADROOTFW_UIMAGE}" || die "Can not use DOWNLOADROOTFW_UIMAGE='$DOWNLOADROOTFW_UIMAGE'"
+
+    case "${1-}" in
+            *://*)
+                logmsg_info "download_rawfwimage_uimage() was asked to try downloading '$1' as the raw kernel uImage"
+                IMAGE_URL="$1" ;;
+            "")
+                logmsg_info "Fetching newest filename for the raw kernel uImage..."
+                IMAGE_URL="`findnewest_rawfwimage_uimage`" && [ -n "$IMAGE_URL" ] \
+                && logmsg_info "download_rawfwimage_uimage() detected '$IMAGE_URL' as the newest raw kernel uImage" \
+                || { logmsg_error "Could not find any remote raw kernel uImage"; IMAGE_URL="";} ;;
+            *)  logmsg_error "download_rawfwimage_uimage() got an unsupported argument: $*"
+                IMAGE_URL=""
+                ;;
+    esac
+
+    [ -n "$IMAGE_URL" ] && \
+    rIMAGE_URL_BASENAME="`basename "$IMAGE_URL"`" && \
+        [ -n "$rIMAGE_URL_BASENAME" ] || \
+        die "Can not find the remote image URL"
+
+    # TODO: Currently hardcoded for md5 accompanying checksums only
+    # TODO (later): Support presence of multiple checksum files (e.g. sha* and md5)
+    # TODO: Also support checksum-verifying against the flashed partition bits
+    IMAGE_CSALGO="${CHECKSUM_ALGO_DEFAULT}"
+
+    # NOTE: "Old" filename and checksum are basenames that can be located under
+    # different directories ("r"elative varnames), but e.g. a "new" checksum is
+    # ensured to be in a temporary location and a newly downloaded file should
+    # land into the recovery location ("a"bsolute varnames)
+    IMAGE_CSURL="${IMAGE_URL}.${IMAGE_CSALGO}"
+    rIMAGE_CSOLD="${rIMAGE_URL_BASENAME}.${IMAGE_CSALGO}"
+    aIMAGE_CSNEW="/tmp/${rIMAGE_URL_BASENAME}.$$.${IMAGE_CSALGO}.tmp"
+
+    IMAGE_CSURL_PADDED="${IMAGE_URL}.${IMAGE_CSALGO}-padded"
+    rIMAGE_CSOLD_PADDED="${rIMAGE_URL_BASENAME}.${IMAGE_CSALGO}-padded"
+    aIMAGE_CSNEW_PADDED="/tmp/${rIMAGE_URL_BASENAME}.$$.${IMAGE_CSALGO}-padded.tmp"
+
+    trap 'TRAPCODE=$?; rm -f "${aIMAGE_CSNEW}" "${aIMAGE_CSNEW_PADDED}"; exit $TRAPCODE' 0
+
+    logmsg_info "Downloading '${IMAGE_CSURL}' (if any) into '${aIMAGE_CSNEW}'..."
+    rm -f "${aIMAGE_CSNEW}"
+    wget -q -O - "${IMAGE_CSURL}" > "${aIMAGE_CSNEW}" || \
+        { logmsg_error "Could not save '${IMAGE_CSURL}' into '${aIMAGE_CSNEW}'"
+          rm -f "${aIMAGE_CSNEW}"
+          if [ x"${CHECK_ONLY-}" = xyes ]; then
+            die "Got an error while checking if there is something new to download, so no reason to proceed"
+          fi
+        }
+
+    logmsg_info "Downloading '${IMAGE_CSURL_PADDED}' (if any) into '${aIMAGE_CSNEW_PADDED}'..."
+    rm -f "${aIMAGE_CSNEW_PADDED}"
+    wget -q -O - "${IMAGE_CSURL_PADDED}" > "${aIMAGE_CSNEW_PADDED}" || \
+        { logmsg_error "Could not save '${IMAGE_CSURL_PADDED}' into '${aIMAGE_CSNEW_PADDED}'"
+          rm -f "${aIMAGE_CSNEW_PADDED}"
+          if [ x"${CHECK_ONLY-}" = xyes ]; then
+            die "Got an error while checking if there is something new to download, so no reason to proceed"
+          fi
+        }
+
+    # Try the filenames in local directories
+    logmsg_info "Verifying if we have this checksum and corresponding file under original name in base dir..."
+    verify_threeway_checksum "${IMAGE_URL}" "${rIMAGE_URL_BASENAME}" "${rIMAGE_CSOLD}" "${aIMAGE_CSNEW}" && return 0
+    if [ -d "${DEPLOYMENTROOT_OSIMAGE}" ] ; then
+        # Do not remove deployed files!
+        FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+            "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_URL_BASENAME}" \
+            "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_CSOLD}" \
+            "${aIMAGE_CSNEW}" && return 0
+    fi
+    if [ -s "${aIMAGE_CSNEW_PADDED}" ] && [ -c "/dev/mtd$KERNEL_MTD" ]; then
+        logmsg_info "Verify padded checksum against a raw kernel uImage partition with flashed bits here ..."
+        FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+            "/dev/mtd$KERNEL_MTD" \
+            "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_CSOLD_PADDED}" \
+            "${aIMAGE_CSNEW_PADDED}" && return 0
+    fi
+    logmsg_info "Verify non-padded checksum against a raw kernel uImage partition with flashed bits here ..."
+    FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+            "/dev/mtd$KERNEL_MTD" \
+            "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_CSOLD}" \
+            "${aIMAGE_CSNEW}" && return 0
+    logmsg_warn "TODO: If we can detect the file size of the remote image, use calculate_stream_checksum_bytes() to verify flashed bits"
+
+    if [ x"${CHECK_ONLY-}" = xyes ]; then
+        logmsg_info "According to checksums, the remote resource '$IMAGE_URL' points to a kernel uImage we do not have on this system"
+        return 42
+    fi
+
+    # If we are here, the IMAGE_URL is valid and points to a different content
+    # than what we already have; the aTGT_FILE names the ultimate local filename
+    aTGT_FILE="`pwd`/${rIMAGE_URL_BASENAME}"
+    aIMAGE_CSOLD="`pwd`/${rIMAGE_CSOLD}"
+    aIMAGE_CSOLD_PADDED="`pwd`/${rIMAGE_CSOLD_PADDED}"
+
+    if [ ! -s "${aIMAGE_CSOLD}" ]; then
+        [ -s "${aIMAGE_CSNEW}" ] && mv -f "${aIMAGE_CSNEW}" "${aIMAGE_CSOLD}"
+    fi
+
+    if [ ! -s "${aIMAGE_CSOLD_PADDED}" ]; then
+        [ -s "${aIMAGE_CSNEW_PADDED}" ] && mv -f "${aIMAGE_CSNEW_PADDED}" "${aIMAGE_CSOLD_PADDED}"
+    fi
+
+    logmsg_info "Downloading '$IMAGE_URL' into '$aTGT_FILE'..."
+    rm -f "${aTGT_FILE}"
+    wget -O "${aTGT_FILE}" "$IMAGE_URL" && [ -s "$aTGT_FILE" ] || \
+        { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
+
+    lsdir_http_pattern "${SOURCESITEROOTFW_UIMAGE}" | egrep "^${IMAGE_URL}\." | \
+        egrep -v "^(${IMAGE_CSURL}|${IMAGE_CSURL_PADDED})"'$' | \
+        while read U ; do
+            # Note these are helper files, e.g. a padded checksum or some
+            # touched-flags (may even be empty) and not fatal if missing
+            aBU="`pwd`/`basename "$U"`"
+            logmsg_info "Downloading additional file '$U' into '$aBU'..."
+            rm -f "$aBU"
+            wget -O "${aBU}" "$U" || logmsg_error "Could not download the additional '$U'"
+        done
+
+    if [ -s "${aIMAGE_CSOLD}" ]; then
+        ensure_checksum "${aTGT_FILE}" "${aIMAGE_CSOLD}" || return $?
+    else
+        logmsg_warn "Generating '${aIMAGE_CSOLD}' because there was none at the source..."
+        echo "`calculate_stream_checksum "${IMAGE_CSALGO}" < "$aTGT_FILE"`  `basename "$aTGT_FILE"`" > "${aIMAGE_CSOLD}" || \
+        { rm -f "${aIMAGE_CSOLD}"; die "Could not generate '${aIMAGE_CSOLD}'"; }
+    fi
+
+    # TODO: Verify file size against partition size (flashability after reboot)
+    [ -s "${aTGT_FILE}" ] && [ -s "${aIMAGE_CSOLD}" ] && \
+    touch -r "${aTGT_FILE}" "${aIMAGE_CSOLD}" && \
+    logmsg_info "Got kernel uImage OK:" && \
+    ls -ld "${aTGT_FILE}" "${aIMAGE_CSOLD}" && \
+    cat "${aIMAGE_CSOLD}" && \
+    return 42
 )
 
 removeold_rawfwimage_uimage() (
     cd "${DOWNLOADROOTFW_UIMAGE}" || die "Can not use DOWNLOADROOTFW_UIMAGE='$DOWNLOADROOTFW_UIMAGE'"
+    logmsg_info "NOTE: removeold_rawfwimage_uimage() is likely a no-op at this point"
+    VICTIMS=0
+    for F in `ls -1d uImage 2>/dev/null | head -n -1` ; do
+        logmsg_info "Removing older kernel uImage: '`pwd`/$F' and its checksum(s)"
+        remove_image "$F"
+        VICTIMS=$(($VICTIMS+1))
+    done
+    [ "$VICTIMS" -eq 0 ] && logmsg_info "removeold_rawfwimage_uimage() had nothing to remove" || \
+        logmsg_info "removeold_rawfwimage_uimage() requested to remove $VICTIMS file(s)"
+    return 0
 )
 
 ##################################################
@@ -654,8 +1146,8 @@ findnewest_rawfwimage_modules() (
     # Echo the URL to the newest "raw" (not tarballed, only one)
     # uImage image file found on remote resource, if any
     # Note: currently expects certain filename patterns and http-dir listing markup
-    IMAGE_URL="`wget -q -O - ${SOURCESITEROOTFW_MODULES}/ | sed -n 's|.*href="\(.*[0-9]\.[0-9].*'"\.${EXT}"'\)".*|'"${SOURCESITEROOTFW_MODULES}"'/\1|p' | sed 's,\([^:]\)//,\1/,g'`" && \
-    if [ x"$IMAGE_URL" != x ]; then
+    IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOTFW_MODULES}" "*[0-9].[0-9]*.${EXT}"`"
+    if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
         echo "$IMAGE_URL" && return 0
     fi
     return 1
@@ -663,16 +1155,129 @@ findnewest_rawfwimage_modules() (
 
 download_rawfwimage_modules() (
     cd "${DOWNLOADROOTFW_MODULES}" || die "Can not use DOWNLOADROOTFW_MODULES='$DOWNLOADROOTFW_MODULES'"
+
+    case "${1-}" in
+            *://*)
+                logmsg_info "download_rawfwimage_modules() was asked to try downloading '$1' as the raw kernel modules archive"
+                IMAGE_URL="$1" ;;
+            "")
+                logmsg_info "Fetching newest filename for the raw kernel modules archive..."
+                IMAGE_URL="`findnewest_rawfwimage_modules`" && [ -n "$IMAGE_URL" ] \
+                && logmsg_info "download_rawfwimage_modules() detected '$IMAGE_URL' as the newest raw kernel modules archive" \
+                || { logmsg_error "Could not find any remote raw kernel modules archive"; IMAGE_URL="";} ;;
+            *)  logmsg_error "download_rawfwimage_modules() got an unsupported argument: $*"
+                IMAGE_URL=""
+                ;;
+    esac
+
+    [ -n "$IMAGE_URL" ] && \
+    rIMAGE_URL_BASENAME="`basename "$IMAGE_URL"`" && \
+        [ -n "$rIMAGE_URL_BASENAME" ] || \
+        die "Can not find the remote image URL"
+
+    # TODO: Currently hardcoded for md5 accompanying checksums only
+    # TODO (later): Support presence of multiple checksum files (e.g. sha* and md5)
+    # TODO: Also support checksum-verifying against the flashed partition bits
+    IMAGE_CSALGO="${CHECKSUM_ALGO_DEFAULT}"
+
+    # NOTE: "Old" filename and checksum are basenames that can be located under
+    # different directories ("r"elative varnames), but e.g. a "new" checksum is
+    # ensured to be in a temporary location and a newly downloaded file should
+    # land into the recovery location ("a"bsolute varnames)
+    IMAGE_CSURL="${IMAGE_URL}.${IMAGE_CSALGO}"
+    rIMAGE_CSOLD="${rIMAGE_URL_BASENAME}.${IMAGE_CSALGO}"
+    aIMAGE_CSNEW="/tmp/${rIMAGE_URL_BASENAME}.$$.${IMAGE_CSALGO}.tmp"
+
+    trap 'TRAPCODE=$?; rm -f "$aIMAGE_CSNEW"; exit $TRAPCODE' 0
+
+    logmsg_info "Downloading '${IMAGE_CSURL}' (if any) into '${aIMAGE_CSNEW}'..."
+    rm -f "${aIMAGE_CSNEW}"
+    wget -q -O - "${IMAGE_CSURL}" > "${aIMAGE_CSNEW}" || \
+        { logmsg_error "Could not save '${IMAGE_CSURL}' into '${aIMAGE_CSNEW}'"
+          rm -f "${aIMAGE_CSNEW}"
+          if [ x"${CHECK_ONLY-}" = xyes ]; then
+            die "Got an error while checking if there is something new to download, so no reason to proceed"
+          fi
+        }
+
+    # Try the filenames in local directories
+    logmsg_info "Verifying if we have this checksum and corresponding file under original name in base dir..."
+    verify_threeway_checksum "${IMAGE_URL}" "${rIMAGE_URL_BASENAME}" "${rIMAGE_CSOLD}" "${aIMAGE_CSNEW}" && return 0
+    if [ -d "${DEPLOYMENTROOT_OSIMAGE}" ] ; then
+        # Do not remove deployed files!
+        FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+            "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_URL_BASENAME}" \
+            "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_CSOLD}" \
+            "${aIMAGE_CSNEW}" && return 0
+    fi
+
+    if [ x"${CHECK_ONLY-}" = xyes ]; then
+        logmsg_info "According to checksums, the remote resource '$IMAGE_URL' points to an kernel modules archive we do not have on this system"
+        return 42
+    fi
+
+    # If we are here, the IMAGE_URL is valid and points to a different content
+    # than what we already have; the aTGT_FILE names the ultimate local filename
+    aTGT_FILE="`pwd`/${rIMAGE_URL_BASENAME}"
+    aIMAGE_CSOLD="`pwd`/${rIMAGE_CSOLD}"
+
+    if [ ! -s "${aIMAGE_CSOLD}" ]; then
+        [ -s "${aIMAGE_CSNEW}" ] && mv -f "${aIMAGE_CSNEW}" "${aIMAGE_CSOLD}"
+    fi
+
+    logmsg_info "Downloading '$IMAGE_URL' into '$aTGT_FILE'..."
+    rm -f "${aTGT_FILE}"
+    wget -O "${aTGT_FILE}" "$IMAGE_URL" && [ -s "$aTGT_FILE" ] || \
+        { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
+
+    lsdir_http_pattern "${SOURCESITEROOTFW_MODULES}" | egrep "^${IMAGE_URL}\." | \
+        egrep -v "^${IMAGE_CSURL}"'$' | \
+        while read U ; do
+            # Note these are helper files, e.g. a padded checksum or some
+            # touched-flags (may even be empty) and not fatal if missing
+            aBU="`pwd`/`basename "$U"`"
+            logmsg_info "Downloading additional file '$U' into '$aBU'..."
+            rm -f "$aBU"
+            wget -O "${aBU}" "$U" || logmsg_error "Could not download the additional '$U'"
+        done
+
+    if [ -s "${aIMAGE_CSOLD}" ]; then
+        ensure_checksum "${aTGT_FILE}" "${aIMAGE_CSOLD}" || return $?
+    else
+        logmsg_warn "Generating '${aIMAGE_CSOLD}' because there was none at the source..."
+        echo "`calculate_stream_checksum "${IMAGE_CSALGO}" < "$aTGT_FILE"`  `basename "$aTGT_FILE"`" > "${aIMAGE_CSOLD}" || \
+        { rm -f "${aIMAGE_CSOLD}"; die "Could not generate '${aIMAGE_CSOLD}'"; }
+    fi
+
+    # TODO: Verify file size against partition size (flashability after reboot)
+    [ -s "${aTGT_FILE}" ] && [ -s "${aIMAGE_CSOLD}" ] && \
+    touch -r "${aTGT_FILE}" "${aIMAGE_CSOLD}" && \
+    logmsg_info "Got kernel modules archive OK:" && \
+    ls -ld "${aTGT_FILE}" "${aIMAGE_CSOLD}" && \
+    cat "${aIMAGE_CSOLD}" && \
+    return 42
 )
 
 removeold_rawfwimage_modules() (
     cd "${DOWNLOADROOTFW_MODULES}" || die "Can not use DOWNLOADROOTFW_MODULES='$DOWNLOADROOTFW_MODULES'"
+    logmsg_info "NOTE: removeold_rawfwimage_modules() is likely a no-op at this point"
+    VICTIMS=0
+    for F in `ls -1d *[0-9]*.*[0-9]*.${EXT} 2>/dev/null | head -n -1` ; do
+        logmsg_info "Removing older modules archive: '`pwd`/$F' and its checksum(s)"
+        remove_image "$F"
+        VICTIMS=$(($VICTIMS+1))
+    done
+    [ "$VICTIMS" -eq 0 ] && logmsg_info "removeold_rawfwimage_modules() had nothing to remove" || \
+        logmsg_info "removeold_rawfwimage_modules() requested to remove $VICTIMS file(s)"
+    return 0
 )
 
 
 ###########################################################################
 ### Start of application logic
 ###########################################################################
+
+logmsg_info "`date`: Starting ${_SCRIPT_PATH} ${_SCRIPT_ARGS}"
 
 if [ -d "/etc/update-rc3.d/" ]; then
     for F in "/etc/update-rc3.d/"*.conf ; do
@@ -682,6 +1287,7 @@ if [ -d "/etc/update-rc3.d/" ]; then
         fi
     done
 fi
+config_defaults
 
 # TODO: Locking against multiple runs
 # TODO: define CLI methods for status/size/... checks per BIOS-1563
@@ -691,20 +1297,25 @@ fi
 #       (and so if the user should reboot)
 
 ACTION_DOWNLOAD_OSIMAGE="yes"
-ACTION_DOWNLOAD_FWIMAGE="yes"
+case "$ARCH" in
+    *arm*)  ACTION_DOWNLOAD_FWIMAGE="yes" ;;
+    *)      ACTION_DOWNLOAD_FWIMAGE="no" ;;
+esac
 
 ACTION_CHECK_OSIMAGE="no"
 ACTION_CHECK_FWIMAGE="no"
 
+# The routines can force a specific URL rather than detecting the "newest" one
+[ -z "${URL_DOWNLOAD_OSIMAGE-}" ] &&                URL_DOWNLOAD_OSIMAGE=""
+[ -z "${URL_DOWNLOAD_FWIMAGE_RAW_UBOOT-}" ] &&      URL_DOWNLOAD_FWIMAGE_RAW_UBOOT=""
+[ -z "${URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE-}" ] &&     URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE=""
+[ -z "${URL_DOWNLOAD_FWIMAGE_RAW_MODULES-}" ] &&    URL_DOWNLOAD_FWIMAGE_RAW_MODULES=""
+
 ACTION_REMOVEOLD_OSIMAGE="yes"
-# This is currently no-op because we only track one FW image, unpacked on SRC
+# This is currently no-op because we only track "raw" FW images which have one
+# data file per fwimage sub-type, unpacked on remote server
+# TODO: Support creation, download and installation of timestamped FW tarballs
 ACTION_REMOVEOLD_FWIMAGE="no"
-
-# (dev) If set to "no", then do not remove files even if deemed broken or old
-FLAG_CAN_REMOVE_IMAGES="yes"
-
-# If set to "no", use original filenames from the source server
-FLAG_FLATTEN_FILENAMES="yes"
 
 # Ultimate exit code of the script
 ACTION_RESULT=0
@@ -718,7 +1329,13 @@ while [ $# -gt 0 ]; do
                     fi
                     [ "$1" = "--debug-calls" ] && shift || { shift; set -xv; }
                     "$@" ; exit $? ;;
+                -c|--config) [ -n "$2" ] && [ -s "$2" ] && [ -r "$2" ] && \
+                        logmsg_info "Sourcing configuration file: '$2' ..." && \
+                        . "$2" || die "Possibly got an error sourcing '$2', see above..."
+                    shift ;;
+                --remove-files)         FLAG_CAN_REMOVE_IMAGES="yes";;
                 --no-remove-files)      FLAG_CAN_REMOVE_IMAGES="no";;
+                --flatten-filenames)    FLAG_FLATTEN_FILENAMES="yes";;
                 --no-flatten-filenames) FLAG_FLATTEN_FILENAMES="no";;
                 --download-image-os)    ACTION_DOWNLOAD_OSIMAGE="yes";;
                 --download-image-fw)    ACTION_DOWNLOAD_FWIMAGE="yes";;
@@ -732,6 +1349,15 @@ while [ $# -gt 0 ]; do
                 --no-check-image-os)    ACTION_CHECK_OSIMAGE="no";;
                 --no-check-image-fw)    ACTION_CHECK_FWIMAGE="no";;
                 --no-check-images)      ACTION_CHECK_OSIMAGE="no"; ACTION_CHECK_FWIMAGE="no";;
+                --url-image-*)
+                    [ $# -eq 1 ] && die "The '$1' option requires a further argument"
+                    case "${1-}" in
+                        --url-image-os)         URL_DOWNLOAD_OSIMAGE="$2"; shift;;
+                        --url-image-fw-raw-uboot)   URL_DOWNLOAD_FWIMAGE_RAW_UBOOT="$2"; shift;;
+                        --url-image-fw-raw-uimage)  URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE="$2"; shift;;
+                        --url-image-fw-raw-modules) URL_DOWNLOAD_FWIMAGE_RAW_MODULES="$2"; shift;;
+                        *)  die "Aborting due to unknown command-line argument(s): $*" ;;
+                    esac ;;
                 --removeold-image-os)   ACTION_REMOVEOLD_OSIMAGE="yes";;
                 --removeold-image-fw)   ACTION_REMOVEOLD_FWIMAGE="yes";;
                 --removeold-images)     ACTION_REMOVEOLD_OSIMAGE="yes"; ACTION_REMOVEOLD_FWIMAGE="yes";;
@@ -743,11 +1369,75 @@ while [ $# -gt 0 ]; do
         shift
 done
 
+# Checks are special - after we do all which were requested (if any), we exit
+if [ x"$ACTION_CHECK_OSIMAGE" = xyes ] || [ x"$ACTION_CHECK_FWIMAGE" = xyes ]; then
+    RESULT_ACTION_CHECK_ANYIMAGE=0
+    if [ x"$ACTION_CHECK_OSIMAGE" = xyes ]; then
+        CHECK_ONLY=yes download_osimage $URL_DOWNLOAD_OSIMAGE || RESULT_ACTION_CHECK_ANYIMAGE=$?
+    fi
+    if [ x"$ACTION_CHECK_FWIMAGE" = xyes ]; then
+        CHECK_ONLY=yes download_rawfwimage_uboot   $URL_DOWNLOAD_FWIMAGE_RAW_UBOOT   || RESULT_ACTION_CHECK_ANYIMAGE=$?
+        CHECK_ONLY=yes download_rawfwimage_uimage  $URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE  || RESULT_ACTION_CHECK_ANYIMAGE=$?
+        CHECK_ONLY=yes download_rawfwimage_modules $URL_DOWNLOAD_FWIMAGE_RAW_MODULES || RESULT_ACTION_CHECK_ANYIMAGE=$?
+    fi
+    RES_STR="$RESULT_ACTION_CHECK_ANYIMAGE"
+    case "$RESULT_ACTION_CHECK_ANYIMAGE" in
+        0)  RES_STR="$RESULT_ACTION_CHECK_ANYIMAGE = Local files are OK, but there is nothing new to download" ;;
+        42) RES_STR="$RESULT_ACTION_CHECK_ANYIMAGE = Should download something different from what we have locally" ;;
+    esac
+    logmsg_info "Exiting after completion of requested --check-* operations ($RES_STR)"
+    exit $RESULT_ACTION_CHECK_ANYIMAGE
+fi
+
+RESULT_ACTION_DOWNLOAD_FWIMAGE=0
+RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT=0
+RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE=0
+RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES=0
+if [ "$ACTION_DOWNLOAD_FWIMAGE" = yes ]; then
+        download_rawfwimage_uboot $URL_DOWNLOAD_FWIMAGE_RAW_UBOOT
+        RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT=$?
+        download_rawfwimage_uimage $URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE
+        RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE=$?
+        download_rawfwimage_modules $URL_DOWNLOAD_FWIMAGE_RAW_MODULES
+        RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES=$?
+
+        [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT" -gt 0 ] && \
+            ACTION_RESULT=$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT && \
+            if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] ; then
+                logmsg_warn "New u-Boot image was not downloaded successfully, so old ones are not purged"
+                ACTION_REMOVEOLD_FWIMAGE=no_BadDownload
+            fi
+
+        [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE" -gt 0 ] && \
+            ACTION_RESULT=$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE && \
+            if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] ; then
+                logmsg_warn "New kernel uImage was not downloaded successfully, so old ones are not purged"
+                ACTION_REMOVEOLD_FWIMAGE=no_BadDownload
+            fi
+
+        [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES" -gt 0 ] && \
+            ACTION_RESULT=$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES && \
+            if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] ; then
+                logmsg_warn "New modules archive was not downloaded successfully, so old ones are not purged"
+                ACTION_REMOVEOLD_FWIMAGE=no_BadDownload
+            fi
+fi
+
+if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ]; then
+        removeold_rawfwimage_modules || ACTION_RESULT=$?
+        removeold_rawfwimage_uimage || ACTION_RESULT=$?
+        removeold_rawfwimage_uboot || ACTION_RESULT=$?
+else
+        logmsg_info "Not purging old FW images because ACTION_REMOVEOLD_FWIMAGE=$ACTION_REMOVEOLD_FWIMAGE"
+fi
+
 RESULT_ACTION_DOWNLOAD_OSIMAGE=0
 if [ "$ACTION_DOWNLOAD_OSIMAGE" = yes ]; then
-        download_osimage
+        download_osimage $URL_DOWNLOAD_OSIMAGE
         RESULT_ACTION_DOWNLOAD_OSIMAGE=$?
-        [ "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -gt 0 ] && \
+        # If there was indeed a successful download, we have code=42 from the
+        # routine; however the script succeeded - so overall exitcode stays 0
+        [ "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -gt 0 -a "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -ne 42 ] && \
             ACTION_RESULT=$RESULT_ACTION_DOWNLOAD_OSIMAGE && \
             if [ "$ACTION_REMOVEOLD_OSIMAGE" = yes ] ; then
                 logmsg_warn "New OS image was not downloaded successfully, so old ones are not purged"
