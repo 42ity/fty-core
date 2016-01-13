@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Copyright (C) 2015 Eaton
 #
@@ -28,15 +28,52 @@
 SYSTEMCTL_COMMANDS="show start stop restart enable disable status"
 
 # TODO: Match this up with web/systemctl.ecpp and maybe the Makefile variables
-SYSTEMCTL_UNITS="networking mysql mysqld mariadb ntp saslauthd malamute \
+# List of fixed strings that are good both for "case" and regexp matching
+SYSTEMCTL_UNITS_COMMON="mariadb mysql mysqld ntp saslauthd malamute     \
                  bios-reset-button tntnet@bios bios-agent-alert-smtp    \
                  bios-agent-alert bios-agent-autoconfig bios-agent-cm   \
                  bios-agent-dbstore bios-agent-inventory bios-agent-nut \
                  bios-agent-th bios-agent-tpower bios-db-init           \
                  bios-server-agent                                      \
-                 nut-monitor nut-server nut-driver@[^[:blank:]]*"
+                 networking nut-monitor nut-server"
+
+# For regexp matching
+SYSTEMCTL_UNITS_REGEX='nut-driver@[^[:blank:]]*'
+# Same for "case" matching
+SYSTEMCTL_UNITS_GLOBS='nut-driver@*'
 
 SYSTEMCTL="/bin/systemctl"
+
+# Note: The matching code seems a bit overcomplicated, but it evolved
+# to be almost 30x faster than the original simple-looking case ;)
+SYSTEMCTL_UNITS_REGEX_SINGLE=""
+FIRST=yes
+for unit in ${SYSTEMCTL_UNITS_COMMON} ${SYSTEMCTL_UNITS_REGEX}; do
+    [[ "$FIRST" = yes ]] && SYSTEMCTL_UNITS_REGEX_SINGLE="$unit" || \
+        SYSTEMCTL_UNITS_REGEX_SINGLE="$SYSTEMCTL_UNITS_REGEX_SINGLE|$unit"
+    FIRST=no
+done
+SYSTEMCTL_UNITS_REGEX_SINGLE='^('"${SYSTEMCTL_UNITS_REGEX_SINGLE}"')(|\.(service|timer|target))$'
+
+isAllowed_Unit() {
+    # $1 is a specific unit name, at most basename without an extension
+    # We test if it matches one of the regexps listed in SYSTEMCTL_UNITS
+    [[ -z "$1" ]] && return 2
+    # NOTE: bash regex matching requires the regex to be not quoted, slashed etc
+    [[ "$1" =~ $SYSTEMCTL_UNITS_REGEX_SINGLE ]] > /dev/null && return 0
+#    echo "$1" | egrep "$SYSTEMCTL_UNITS_REGEX_SINGLE" > /dev/null && return 0
+    return 1
+}
+
+isAllowed_cmd() {
+    [[ -z "$1" ]] && return 2
+    for cmd in ${SYSTEMCTL_COMMANDS}; do
+        if [[ "x$cmd" = "x$1" ]] ; then
+            return 0
+        fi
+    done
+    return 1
+}
 
 case "$1" in
     list-units|--all|-a)
@@ -50,31 +87,28 @@ case "$1" in
             shift
         done
         exec $SYSTEMCTL $SYSTEMCTL_ARGS
+        # Should not get to this line
         ;;
 esac
 
-for unit in ${SYSTEMCTL_UNITS}; do
-    for cmd in ${SYSTEMCTL_COMMANDS}; do
-        if [ "x$cmd" = "x$1" ] && ( \
-           expr match "x$2" "^x$unit\$" > /dev/null || \
-           expr match "x$2" "^x$unit\\.timer\$" > /dev/null || \
-           expr match "x$2" "^x$unit\\.target\$" > /dev/null || \
-           expr match "x$2" "^x$unit\\.service\$" > /dev/null ) \
-        ; then
-            SYSTEMCTL_UNIT="$2"
-            SYSTEMCTL_ARGS=""
-            shift 2
-            while [ $# -gt 0 ]; do
-                case "$1" in
-                    --all|-a|--full|-l)
-                        SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
-                    *) echo "Action not allowed" >&2; exit 1;;
-                esac
-                shift
-            done
-            exec $SYSTEMCTL "$cmd" "$SYSTEMCTL_UNIT" $SYSTEMCTL_ARGS
-        fi
+if  isAllowed_Cmd "$1" && \
+    isAllowed_Unit "$2"
+then
+    cmd="$1"
+    SYSTEMCTL_UNIT="$2"
+    SYSTEMCTL_ARGS=""
+    shift 2
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --all|-a|--full|-l)
+                SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
+            *) echo "Action not allowed" >&2; exit 1;;
+        esac
+        shift
     done
-done
+    exec $SYSTEMCTL "$cmd" "$SYSTEMCTL_UNIT" $SYSTEMCTL_ARGS
+    # Should not get to this line
+fi
+
 echo "Action not allowed" >&2
 exit 1
