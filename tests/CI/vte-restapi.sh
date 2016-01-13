@@ -150,9 +150,9 @@ fi
 # konec vynechavky **********************************
 
 logmsg_info "Ensuring that needed remote daemons are running on VTE"
-sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-server-agent  bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
+sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-cm bios-agent-dbstore bios-server-agent  bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
 sleep 5
-sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-server-agent  bios-agent-nut bios-agent-inventory ; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
+sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-cm bios-agent-dbstore bios-server-agent  bios-agent-nut bios-agent-inventory ; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
     die "Some required services are not running on the VTE"
 
 # ***** AUTHENTICATION ISSUES *****
@@ -214,6 +214,18 @@ test_web_topo_l() {
     loaddb_file "$DB_BASE" && \
     LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
     loaddb_file "$DB_TOPOL" && \
+    test_web "$@"
+}
+
+test_web_averages() {
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_averages() $*"
+    echo "----------- Re-generating averages sql files -----------"
+    CI_TEST_AVERAGES_DATA="`$DB_LOADDIR/generate_averages.sh "$DB_LOADDIR"`"
+    export CI_TEST_AVERAGES_DATA
+    echo "----------- reset db: averages -----------"
+    for data in "$DB_BASE" "$DB_DATA" "$DB_AVERAGES" "$DB_AVERAGES_RELATIVE"; do
+        loaddb_file "$data" || exit $?
+    done
     test_web "$@"
 }
 
@@ -301,7 +313,7 @@ set +e
 set +e
 if [ $# = 0 ]; then
     # *** start the default TC's instead of subsequent topology tests
-    test_web_default -topology -asset_create || RESULT_OVERALL=$?
+    test_web_default -topology -asset_create -averages || RESULT_OVERALL=$?
     # *** start the asset_create TC's
     if [ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] ; then
         test_web_asset_create asset_create || RESULT_OVERALL=$?
@@ -314,6 +326,7 @@ if [ $# = 0 ]; then
     if [ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] ; then
         test_web_topo_l topology_location || RESULT_OVERALL=$?
     fi
+    test_web_averages averages || RESULT_OVERALL=$?
 else
     # selective test routine
     while [ $# -gt 0 ]; do
@@ -327,6 +340,9 @@ else
             asset_create*)
                 test_web_asset_create "$1" || \
                 RESULT_OVERALL=$? ;;
+            averages*)
+                test_web_averages "$1" || \
+                RESULT_OVERALL=$? ;;                
             *)  test_web_default "$1" || \
                 RESULT_OVERALL=$? ;;
         esac
