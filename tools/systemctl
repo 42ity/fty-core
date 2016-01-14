@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Copyright (C) 2015 Eaton
 #
@@ -23,20 +23,59 @@
 #  \details Helper script for REST API /admin/systemctl and /admin/sysinfo
 #           Wraps the OS-provided /bin/systemctl to apply filters and allow
 #           only those actions over those objects as needed for our project.
+#           Also adds a "list-json" command to display some details on units
+#           we are allowed to see through the filter.
 #
 
 SYSTEMCTL_COMMANDS="show start stop restart enable disable status"
 
 # TODO: Match this up with web/systemctl.ecpp and maybe the Makefile variables
-SYSTEMCTL_UNITS="networking mysql mysqld mariadb ntp saslauthd malamute \
+# List of fixed strings that are good both for "case" and regexp matching
+SYSTEMCTL_UNITS_COMMON="mariadb mysql mysqld ntp saslauthd malamute     \
                  bios-reset-button tntnet@bios bios-agent-alert-smtp    \
                  bios-agent-alert bios-agent-autoconfig bios-agent-cm   \
                  bios-agent-dbstore bios-agent-inventory bios-agent-nut \
                  bios-agent-th bios-agent-tpower bios-db-init           \
                  bios-server-agent                                      \
-                 nut-monitor nut-server nut-driver@[^[:blank:]]*"
+                 networking nut-monitor nut-server"
+
+# For regexp matching
+SYSTEMCTL_UNITS_REGEX='nut-driver@[^[:blank:]]*'
+# Same for "case" matching
+SYSTEMCTL_UNITS_GLOBS='nut-driver@*'
 
 SYSTEMCTL="/bin/systemctl"
+
+# Note: The matching code seems a bit overcomplicated, but it evolved
+# to be almost 30x faster than the original simple-looking case ;)
+SYSTEMCTL_UNITS_REGEX_SINGLE=""
+FIRST=yes
+for unit in ${SYSTEMCTL_UNITS_COMMON} ${SYSTEMCTL_UNITS_REGEX}; do
+    [[ "$FIRST" = yes ]] && SYSTEMCTL_UNITS_REGEX_SINGLE="$unit" || \
+        SYSTEMCTL_UNITS_REGEX_SINGLE="$SYSTEMCTL_UNITS_REGEX_SINGLE|$unit"
+    FIRST=no
+done
+SYSTEMCTL_UNITS_REGEX_SINGLE='^('"${SYSTEMCTL_UNITS_REGEX_SINGLE}"')(|\.(service|timer|target))$'
+
+isAllowed_Unit() {
+    # $1 is a specific unit name, at most basename without an extension
+    # We test if it matches one of the regexps listed in SYSTEMCTL_UNITS
+    [[ -z "$1" ]] && return 2
+    # NOTE: bash regex matching requires the regex to be not quoted, slashed etc
+    [[ "$1" =~ $SYSTEMCTL_UNITS_REGEX_SINGLE ]] > /dev/null && return 0
+#    echo "$1" | egrep "$SYSTEMCTL_UNITS_REGEX_SINGLE" > /dev/null && return 0
+    return 1
+}
+
+isAllowed_cmd() {
+    [[ -z "$1" ]] && return 2
+    for cmd in ${SYSTEMCTL_COMMANDS}; do
+        if [[ "x$cmd" = "x$1" ]] ; then
+            return 0
+        fi
+    done
+    return 1
+}
 
 case "$1" in
     list-units|--all|-a)
@@ -50,31 +89,131 @@ case "$1" in
             shift
         done
         exec $SYSTEMCTL $SYSTEMCTL_ARGS
+        # Should not get to this line
+        ;;
+    list-json)
+        # TODO: List of "interesting" fields is currently hardcoded here and in
+        # the two "case"s below, and in variable mapping too; there is quite a
+        # bit to rewrite should we want this to be anyhow dynamic/on-request.
+        SYSTEMCTL_ATTRS="-p Id -p SubState -p ActiveState -p UnitFileState -p LoadState"
+        SYSTEMCTL_UNITS=""  # If empty, default of 'all allowed' will be used
+        shift
+        while [ $# -gt 0 ]; do
+            case "$1" in
+                --all|-a)
+                        SYSTEMCTL_ATTRS="--all" ;;
+                --full|-l) ;; # We do not truncate anyway
+                *)  if isAllowed_Unit "$1" ; then
+                        SYSTEMCTL_UNITS="$SYSTEMCTL_UNITS $1"
+                    else
+                        echo "Action not allowed" >&2; exit 1
+                    fi;;
+            esac
+            shift
+        done
+
+        # We need to convert a potentially multi-line or quoted values into an
+        # escaped single-line token for valid markup; our JSON.sh can do that.
+        [ -n "$JSONSH" ] && [ -s "$JSONSH" ] && [ -x "$JSONSH" ] || \
+        for F in "`dirname $0`/JSON.sh" "/usr/share/bios/scripts/JSON.sh" \
+            "$CHECKOUTDIR/tools/JSON.sh"; do
+                [ -x "$F" -a -s "$F" ] && JSONSH="$F" && break
+        done
+        if [ -x "$JSONSH" ] ; then
+            BASH_SOURCE=yes . "$JSONSH"
+            cook_a_string_arg() { [[ -z "$1" ]] || [[ "$1" =~ ^[A-Za-z0-9\ \-\.\+\\\/\:\;\(\)\{\}]*$ ]] >/dev/null && echo "$1" && return 0; echo "$*" | cook_a_string; }
+        else
+            echo "systemctl: FAILED to use JSON.sh from '$JSONSH'; will not cook strings" >&2 && JSONSH=""
+            cook_a_string_arg() { echo "$*"; }
+        fi
+
+        FIRST=yes
+        vID=""; vSS=""; vLS=""; vAS=""; vUFS=""; lOTHER=""
+        # If the caller named certain unit names (and they were allowed) then
+        # we pass them for listing; otherwise list everything and the filtered
+        # pattern list (since "everything" on a local system might not include
+        # items from this list because not installed). But this causes duplicates.
+        # So we make single-lines of markup and follow up with sort|uniq and the
+        # comma-adder in the end (possible loophole: case-sensitive matching).
+
+        if [ "$DEBUG_SYSTEMCTL" = yes ]; then
+            SYSTEMCTL="time $SYSTEMCTL"
+            echo "$SYSTEMCTL show --full $SYSTEMCTL_ATTRS ${SYSTEMCTL_UNITS:-'*' $SYSTEMCTL_UNITS_COMMON $SYSTEMCTL_UNITS_GLOBS}" >&2
+        fi
+
+        ( $SYSTEMCTL show --full $SYSTEMCTL_ATTRS \
+          ${SYSTEMCTL_UNITS:-'*' $SYSTEMCTL_UNITS_COMMON $SYSTEMCTL_UNITS_GLOBS} && echo "" ) | \
+        while IFS='=' read -r KEY VALUE; do
+            case "$KEY" in
+                "") if [ -n "$vID" ] && [ x"$vID" != x".skip.$$" ]; then
+                        sOTHER=""
+                        if [[ x"$SYSTEMCTL_ATTRS" = 'x--all' ]] && [[ -n "$lOTHER" ]]; then
+                            sOTHER="$(echo "$lOTHER" | while IFS== read K V; do printf ',"%s":"%s"' "`cook_a_string_arg "$K"`" "`cook_a_string_arg "$V"`" ; done )"
+                        fi
+                        printf '{"unit":"%s",\t"LoadState":"%s","ActiveState":"%s","UnitFileState":"%s","SubState":"%s"%s}\n' \
+                            "`cook_a_string_arg "$vID"`" "$vLS" "$vAS" "`cook_a_string_arg "$vUFS"`" "$vSS" "$sOTHER"
+                    fi
+                    vID=""; vSS=""; vLS=""; vAS=""; vUFS=""; lOTHER=""
+                    ;;
+                Id)
+                    isAllowed_Unit "$VALUE" && vID="$VALUE" || vID=".skip.$$" ;;
+                UnitFileState)
+                    vUFS="$VALUE";;
+                ActiveState)
+                    vAS="$VALUE";;
+                LoadState)
+                    vLS="$VALUE";;
+                SubState)
+                    vSS="$VALUE";;
+                *) # Fallback for different casing, separate to optimize
+                   # Do not waste time if the ID is known bad; empty is OK here
+                    [ x"$vID" != x".skip.$$" ] && \
+                    case "$KEY" in
+                    [Ii][Dd])
+                        isAllowed_Unit "$VALUE" && vID="$VALUE" || vID=".skip.$$" ;;
+                    [Uu][Nn][Ii][Tt][Ff][Ii][Ll][Ss][Tt][Aa][Tt][Ee])
+                        vUFS="$VALUE";;
+                    [Aa][Cc][Tt][Ii][Vv][Ee][Ss][Tt][Aa][Tt][Ee])
+                        vAS="$VALUE";;
+                    [Ll][Oo][Aa][Dd][Ss][Tt][Aa][Tt][Ee])
+                        vLS="$VALUE";;
+                    [Ss][Uu][Bb][Ss][Tt][Aa][Tt][Ee])
+                        vSS="$VALUE";;
+                    *) # Ignore or expose unsupported fields?
+                        if [[ x"$SYSTEMCTL_ATTRS" == 'x--all' ]]; then
+                            # Display ALL
+                            lOTHER="$KEY=$VALUE
+$lOTHER"
+                        fi # else = Ignore unknown
+                        ;;
+                    esac;;
+            esac
+        done | sort | uniq | { echo "["; while IFS='' read -r LINE; do
+                [[ x"$FIRST" = xyes ]] && printf ' %s\n' "$LINE" || printf ',%s\n' "$LINE"
+                FIRST=no
+            done; echo "]"; }
+        exit $?
         ;;
 esac
 
-for unit in ${SYSTEMCTL_UNITS}; do
-    for cmd in ${SYSTEMCTL_COMMANDS}; do
-        if [ "x$cmd" = "x$1" ] && ( \
-           expr match "x$2" "^x$unit\$" > /dev/null || \
-           expr match "x$2" "^x$unit\\.timer\$" > /dev/null || \
-           expr match "x$2" "^x$unit\\.target\$" > /dev/null || \
-           expr match "x$2" "^x$unit\\.service\$" > /dev/null ) \
-        ; then
-            SYSTEMCTL_UNIT="$2"
-            SYSTEMCTL_ARGS=""
-            shift 2
-            while [ $# -gt 0 ]; do
-                case "$1" in
-                    --all|-a|--full|-l)
-                        SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
-                    *) echo "Action not allowed" >&2; exit 1;;
-                esac
-                shift
-            done
-            exec $SYSTEMCTL "$cmd" "$SYSTEMCTL_UNIT" $SYSTEMCTL_ARGS
-        fi
+if  isAllowed_Cmd "$1" && \
+    isAllowed_Unit "$2"
+then
+    cmd="$1"
+    SYSTEMCTL_UNIT="$2"
+    SYSTEMCTL_ARGS=""
+    shift 2
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --all|-a|--full|-l)
+                SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
+            *) echo "Action not allowed" >&2; exit 1;;
+        esac
+        shift
     done
-done
+    exec $SYSTEMCTL "$cmd" "$SYSTEMCTL_UNIT" $SYSTEMCTL_ARGS
+    # Should not get to this line
+fi
+
 echo "Action not allowed" >&2
 exit 1
