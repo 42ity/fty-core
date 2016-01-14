@@ -51,6 +51,7 @@
 [ -z "$CI_RESET_VM" ] && CI_RESET_VM="/root/ci-reset-virtual-machine.sh"
 [ ! -x "$CI_RESET_VM" ] && echo "ERROR: CI_RESET_VM script not found at '$CI_RESET_VM'" && exit 1
 
+# Note this script can handle several other demo VM types too, automatically
 [ -z "$CI_UPDATE_DEMO_VM" ] && CI_UPDATE_DEMO_VM="`dirname "$CI_RESET_VM"`/update_demo"
 [ ! -x "$CI_UPDATE_DEMO_VM" -a -x /root/update_demo ] && CI_UPDATE_DEMO_VM="/root/update_demo"
 
@@ -91,9 +92,9 @@ start_instant() {
 		echo "(Re-)starting and updating '$C' container..." >&2
 		case "$C" in
 		    demo)
-			( [ -x ${CI_UPDATE_DEMO_VM} ] && \
-			    ${CI_UPDATE_DEMO_VM} || \
-			    INSTALL_DEV_PKGS=no $CI_RESET_VM -m '$C' -b deploy --attempt-download no ) &
+			( if [ -x ${CI_UPDATE_DEMO_VM} ]; then
+			    ${CI_UPDATE_DEMO_VM} ; else
+			    INSTALL_DEV_PKGS=no $CI_RESET_VM -m "$C" -b deploy --attempt-download no; fi ) &
 			;;
 		    test-debian-[6789]|*deploy*) # VTEs need only the default image
 			INSTALL_DEV_PKGS=no $CI_RESET_VM -m "$C" -b deploy --attempt-download no & ;;
@@ -112,10 +113,30 @@ start() {
 	else
 		start_instant
 	fi
+	systemctl restart networking libvirtd
 }
 
 restart() {
 	start_instant
+	systemctl restart networking libvirtd
+}
+
+reboot() {
+	for C in $CONTAINERS ; do
+		echo "Rebooting the '$C' container with whatever it has..." >&2
+		( virsh -c lxc:// reboot "$C" ) &
+	done
+	wait
+	systemctl restart networking libvirtd
+}
+
+reset() {
+	for C in $CONTAINERS ; do
+		echo "Destroying and starting the '$C' container with whatever it has..." >&2
+		( virsh -c lxc:// destroy "$C" && sleep 5 && virsh -c lxc:// start "$C" ) &
+	done
+	wait
+	systemctl restart networking libvirtd
 }
 
 stop() {
@@ -148,6 +169,8 @@ download() {
 }
 
 refresh() {
+	# TODO: This is not helpful if one of the image types did not change
+	# but others did
 	download 2>&1 | \
 	grep 'The file is already fully retrieved; nothing to do' || \
 	restart
@@ -177,10 +200,10 @@ status() {
 
 case "$1" in
 help|-h)
-	echo "$0 {start|start_delayed|start_instant|restart|stop|refresh|download|download_default|download_tailored|status}"
+	echo "$0 {start|start_delayed|start_instant|restart|reboot|reset|stop|refresh|download|download_default|download_tailored|status}"
 	exit 0
 	;;
-start|start_delayed|start_instant|restart|stop|refresh|download|download_default|download_tailored|status)
+start|start_delayed|start_instant|restart|reboot|reset|stop|refresh|download|download_default|download_tailored|status)
 	"$@"
 	exit $?
 	;;
