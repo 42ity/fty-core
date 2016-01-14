@@ -130,7 +130,8 @@ fi
 
 # Check if we already have jsonsh_cli() defined... afterwards we should have it :)
 [ -z "${JSONSH_CLI_DEFINED-}" ] && JSONSH_CLI_DEFINED="no"
-if [ -n "$JSONSH" ] && [ -x "$JSONSH" ] && [ "$JSONSH_CLI_DEFINED" = no ]; then
+[ x"$JSONSH_CLI_DEFINED" = xyes ] || \
+if [ -n "$JSONSH" ] && [ -x "$JSONSH" ] ; then
     if [ x"$(jsonsh_cli -QQ '"' 2>/dev/null)" = 'x\"' ]
     then : ; else
         if [ -n "${BASH-}" ] && . "$JSONSH" ; then
