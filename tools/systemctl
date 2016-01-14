@@ -30,7 +30,7 @@
 if [ -n "${BASH-}" ]; then
     set -o pipefail 2>/dev/null || true
 else
-    echo "WARNING: It seems you execute '$0' not with 'bash' - this can fail!" >&2
+    echo "systemctl: WARNING: It seems you execute '$0' not with 'bash' - this can fail!" >&2
 fi
 
 SYSTEMCTL_COMMANDS="show start stop restart enable disable status"
@@ -126,8 +126,12 @@ case "$1" in
                 [ -x "$F" -a -s "$F" ] && JSONSH="$F" && break
         done
         if [ -x "$JSONSH" ] ; then
-            . "$JSONSH"
-            cook_a_string_arg() { [[ -z "$1" ]] || [[ "$1" =~ ^[A-Za-z0-9\ \-\.\+\\\/\:\;\(\)\{\}]*$ ]] >/dev/null && echo "$1" && return 0; echo "$*" | cook_a_string; }
+            if [ -n "${BASH-}" ]; then
+                . "$JSONSH"
+            else
+                echo "systemctl: Will fork to use JSON.sh from '$JSONSH' to cook strings" >&2
+                cook_a_string_arg() { "$JSONSH" -QQ "$1"; }
+            fi
         else
             echo "systemctl: FAILED to use JSON.sh from '$JSONSH'; will not cook strings" >&2 && JSONSH=""
             cook_a_string_arg() { echo "$*"; }
