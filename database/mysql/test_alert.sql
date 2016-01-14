@@ -16,7 +16,7 @@ select @asset_device_feed := id_asset_device_type from t_bios_asset_device_type 
 
 
 /* ALERT_LAB */
-insert into t_bios_asset_element (name , id_type, id_parent,status,priority,business_crit) values ("ALERT_LAB", @asset_element_datacenter,  NULL,"active",1,1);
+insert into t_bios_asset_element (name , id_type, id_parent,status,priority) values ("ALERT_LAB", @asset_element_datacenter,  NULL,"active",1);
 select @last_asset_element:=id_asset_element from t_bios_asset_element where name="ALERT_LAB";
 set @last_datacenter := @last_asset_element;
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description",    "EEIC Roztoky DC", @last_asset_element);
