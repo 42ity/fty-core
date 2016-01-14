@@ -67,7 +67,7 @@ isAllowed_Unit() {
     return 1
 }
 
-isAllowed_cmd() {
+isAllowed_Cmd() {
     [[ -z "$1" ]] && return 2
     for cmd in ${SYSTEMCTL_COMMANDS}; do
         if [[ "x$cmd" = "x$1" ]] ; then
