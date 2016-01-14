@@ -29,10 +29,7 @@ echo "********* sysinfo-info.sh ******************************* START **********
 echo "###################################################################################################"
 echo
 
-[ -z "${JSONSH-}" ] && \
-    for F in "$CHECKOUTDIR/tools/JSON.sh" "$SCRIPTDIR/JSON.sh"; do
-        [ -x "$F" -a -s "$F" ] && JSONSH="$F" && break
-    done
+[ x"${JSONSH_CLI_DEFINED-}" = xyes ] || CODE=127 die "jsonsh_cli() not defined"
 
 echo "***************************************************************************************************"
 echo "********* 1. sysinfo_get_auth=0_raw ***************************************************************"
@@ -45,19 +42,19 @@ print_result $?
 
 test_it "unauthorized sysinfo - installation-date"
 JPATH='"operating-system","installation-date"$'
-SYSINFO_PARSED="`echo "$OUTPUT" | ${JSONSH} -x="$JPATH"`"
+SYSINFO_PARSED="`echo "$OUTPUT" | jsonsh_cli -x="$JPATH"`"
 [ $? -eq 0 -a -n "$SYSINFO_PARSED" ]
 print_result $?
 
 test_it "unauthorized sysinfo - location"
 JPATH='"operating-system","location"$'
-SYSINFO_PARSED="`echo "$OUTPUT" | ${JSONSH} -x="$JPATH"`"
+SYSINFO_PARSED="`echo "$OUTPUT" | jsonsh_cli -x="$JPATH"`"
 [ $? -eq 0 -a -n "$SYSINFO_PARSED" ]
 print_result $?
 
 test_it "unauthorized sysinfo - processes"
 JPATH='"processes",[0-9]+$'
-SYSINFO_PARSED="`echo "$OUTPUT" | ${JSONSH} -x="$JPATH"`"
+SYSINFO_PARSED="`echo "$OUTPUT" | jsonsh_cli -x="$JPATH"`"
 [ $? -eq 0 -a -z "$SYSINFO_PARSED" ]
 print_result $?
 
@@ -72,18 +69,18 @@ print_result $?
 
 test_it "authorized sysinfo - processes"
 JPATH='"processes",[0-9]+$'
-SYSINFO_PARSED="`echo "$OUTPUT" | ${JSONSH} -x="$JPATH"`"
+SYSINFO_PARSED="`echo "$OUTPUT" | jsonsh_cli -x="$JPATH"`"
 [ $? -eq 0 -a -n "$SYSINFO_PARSED" ]
 print_result $?
 
 test_it "authorized sysinfo - commitid-core-package"
 RES=0
 JPATH='^"packages",[0-9]+,"package-name"$'
-PKG_NUM="`echo "$OUTPUT" | ${JSONSH} -x="$JPATH" | awk -F'\t' '$2 ~ /\"core\"/ { print $1 }' | sed 's/^.*,\([0-9]*\),.*$/\1/'`"
+PKG_NUM="`echo "$OUTPUT" | jsonsh_cli -x="$JPATH" | awk -F'\t' '$2 ~ /\"core\"/ { print $1 }' | sed 's/^.*,\([0-9]*\),.*$/\1/'`"
 PKG_COMMIT="N/A"
 if [ $? -eq 0 -a -n "$PKG_NUM" ]; then
     JPATH='^"packages",'"${PKG_NUM}"',"commit"$'
-    PKG_COMMIT="`echo "$OUTPUT" | ${JSONSH} -x="$JPATH" | awk -F'\t' '{ print $2 }' | sed -e 's,^\"\(.*\)\"$,\1,' -e 's,\-.*$,,' | tr '[A-Z]' '[a-z]'`"
+    PKG_COMMIT="`echo "$OUTPUT" | jsonsh_cli -x="$JPATH" | awk -F'\t' '{ print $2 }' | sed -e 's,^\"\(.*\)\"$,\1,' -e 's,\-.*$,,' | tr '[A-Z]' '[a-z]'`"
     [ $? -eq 0 -a -n "$PKG_COMMIT" ]
     RES=$?
 else
@@ -94,7 +91,7 @@ print_result $RES
 
 test_it "authorized sysinfo - commitid-core-restapi"
 JPATH='^"restapi-metadata","source-repo","commit"$'
-BLD_COMMIT="`echo "$OUTPUT" | ${JSONSH} -x="$JPATH" | awk -F'\t' '{ print $2 }' | sed -e 's,^\"\(.*\)\"$,\1,' | tr '[A-Z]' '[a-z]'`"
+BLD_COMMIT="`echo "$OUTPUT" | jsonsh_cli -x="$JPATH" | awk -F'\t' '{ print $2 }' | sed -e 's,^\"\(.*\)\"$,\1,' | tr '[A-Z]' '[a-z]'`"
 if [ $? -eq 0 -a -n "$BLD_COMMIT" ]; then
     logmsg_info "Commit ID built into REST API binaries is '$BLD_COMMIT'"
     print_result 0

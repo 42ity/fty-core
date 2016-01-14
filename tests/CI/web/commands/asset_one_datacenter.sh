@@ -29,6 +29,7 @@ echo "**************************************************************************
 echo "********* Prerequisites ***************************************************************************"
 echo "***************************************************************************************************"
 init_script
+[ x"${JSONSH_CLI_DEFINED-}" = xyes ] || CODE=127 die "jsonsh_cli() not defined"
 
 echo "********* asset_one_datacenter.sh *****************************************************************"
 echo "********* 1. read_DC_with_id_of_another_element ***************************************************"
@@ -42,7 +43,7 @@ curlfail_pop
 echo "********* asset_one_datacenter.sh *****************************************************************"
 echo "********* 2. request_to existing_DC ***************************************************************"
 echo "***************************************************************************************************"
-PARSED_REPLY="$(echo "`api_get_json /asset/datacenters`" | $JSONSH -x id)"
+PARSED_REPLY="$(echo "`api_get_json /asset/datacenters`" | jsonsh_cli -x id)"
 ID_1="$(echo "${PARSED_REPLY}" | cut -d '"' -f 6)"
 ID_DC_2="$(echo $ID_1 | cut -d ' ' -f 2)"
 test_it "request_to existing_DC"
