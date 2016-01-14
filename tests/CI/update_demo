@@ -161,7 +161,7 @@ deploy_image_online "emc4j-demo" "epfl" "emc4j.pem" start
 deploy_image_online "lba-demo"   "lba"  "lba.pem"   start
 
 # This one is hosted in a separate path, and has no PEM:
-OBS_IMAGES_BASEURL="$OBS_IMAGES_SERVER" deploy_image_online "opensuse-demo" "opensuse-image" "-" start
+( OBS_IMAGES_BASEURL="$OBS_IMAGES_SERVER" deploy_image_online "opensuse-demo" "opensuse-image" "-" start )
 
 # This one we will configure in detail via setup_bios_demo()
 deploy_image_online "demo"       "deploy" "demo.pem" "-" || exit $?
