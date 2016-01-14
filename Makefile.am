@@ -88,7 +88,7 @@ $(RUN_TNTNET_ENVFILE): $(abs_top_builddir)/Makefile
 	     echo 'export LICENSE_DIR="$(abs_top_builddir)/tests/fixtures/license"'; \
 	     echo 'export DATADIR_BASE="$(abs_top_builddir)/var"'; \
 	     echo 'export TESTPASS="$(abs_top_builddir)/tools/testpass.sh"'; \
-	     echo 'export PATH="$(abs_top_builddir)/tools:$(abs_top_srcdir)/tools:$$PATH"'; \
+	     echo 'export PATH="$(abs_top_builddir)/tools:$(abs_top_srcdir)/tools:$(ci_helperdir):$$PATH"'; \
 	     echo 'export NO_SSL="1"'; \
 	     echo '[ -z "$$BIOS_LOG_LEVEL" ] && BIOS_LOG_LEVEL="LOG_DEBUG"'; \
 	     echo 'export BIOS_LOG_LEVEL'; \
