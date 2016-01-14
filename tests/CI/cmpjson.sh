@@ -45,9 +45,9 @@ determineDirs || true
 
 [ x"${JSONSH_CLI_DEFINED-}" = xyes ] || \
 if [ -n "${BASH-}" ] && . "$JSONSH" ; then
-    echo "cmpjson: Will use sourced JSON.sh from '$JSONSH'" >&2
+    logmsg_debug "cmpjson: Will use sourced JSON.sh from '$JSONSH'"
 else
-    echo "cmpjson: Will fork to use JSON.sh from '$JSONSH'" >&2
+    logmsg_debug "cmpjson: Will fork to use JSON.sh from '$JSONSH'"
     jsonsh_cli() { "$JSONSH" "$@"; }
 fi
 JSONSH_CLI_DEFINED=yes
@@ -57,10 +57,10 @@ self_test() {
     local jsonstr2='{"current":[{"id":3,"realpower.1":1,"current.2":12,"current.1":31,"voltage.2":1,"voltage.1":3}]}'
     local jsonstr3='{"current":[{"id":3,"realpower.1":1,"current.2":12,"current.1":31,"voltage.2":1,"voltage.2":3}]}'
 
-    echo "=== This test should show no differences if JSON content sorting is enabled:"
+    logmsg_info "=== This test should show no differences if JSON content sorting is enabled:"
     cmpjson_strings "$jsonstr1" "$jsonstr2" || die "json1 should equal to json2 (when sorted)"
 
-    echo "=== This test should find some differences:"
+    logmsg_info "=== This test should find some differences:"
     cmpjson_strings "$jsonstr1" "$jsonstr3" && die "json1 should NOT equal to json3"
 
     :
@@ -90,9 +90,9 @@ cmpjson_strings() {
         fi
     fi
 
-    [ "$res1" != 0 ] && echo "=== DEBUG: error parsing input 1:" >&2 && \
+    [ "$res1" != 0 ] && logmsg_error "Error parsing input 1:" && \
         echo "$1" >&2
-    [ "$res2" != 0 ] && echo "=== DEBUG: error parsing input 2:" >&2 && \
+    [ "$res2" != 0 ] && logmsg_error "Error parsing input 2:" && \
         echo "$2" >&2
 
     return 1
@@ -141,7 +141,7 @@ cmpjson_files() {
             cmpjson_strings "$data1" "$data2"
             if [ $? != 0 ]; then
                 RES=$(($RES+1))
-                echo "^^^ Above we FAILED comparison of lines number $count1($count2) in the source JSON multi-docs" >&2
+                logmsg_error "^^^ Above we FAILED comparison of lines number $count1($count2) in the source JSON multi-docs" >&2
             fi
         fi
     done
@@ -153,13 +153,13 @@ cmpjson_files() {
             [ "$count2" = 0 -a "$count1" != 0 ]; then RES=255; fi
     fi
     [ "$RES" = 255 ] && \
-        echo "ERROR: one of the files '$file1' or '$file2' is empty" >&2
+        logmsg_error "One of the files '$file1' or '$file2' is empty" >&2
     if [ "$eof1" = 0 -o "$eof2" = 0 -o "$count1" != "$count2" ]; then
-        echo "ERROR: read $count1 lines from '$file1' EOF1=$eof1 and $count2 lines from '$file2' EOF2=$eof2" >&2
+        logmsg_error "Read $count1 lines from '$file1' EOF1=$eof1 but $count2 lines from '$file2' EOF2=$eof2" >&2
         [ "$RES" = 0 ] && RES=126
     fi
     [ $RES != 0 ] && \
-        echo "ERROR: files '$file1' and '$file2' do not contain equivalent JSON content" >&2
+        logmsg_error "Files '$file1' and '$file2' do not contain equivalent JSON content" >&2
     return $RES
 }
 
