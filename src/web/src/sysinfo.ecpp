@@ -340,7 +340,7 @@ std::string debug_trace;
 
         if (rv == 0 && !output.empty()) {
 </%cpp>
-,   "processes" : <$$ output $$>
+,   "processes" : <$$ output.c_str() $>
 <%cpp>
         } // if (systemctl list-json) rv == 0
     } // if (access_auth_level >= AUTH_LEVEL_POWERUSER)
