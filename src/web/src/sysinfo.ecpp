@@ -274,7 +274,7 @@ std::string debug_trace;
     if (access_auth_level >= AUTH_LEVEL_POWERUSER) {
         rv = shared::output ({"dpkg", "--list"}, output, cmderr);
         if (b_debug_trace) {
-	    if (!cmderr.empty()) {
+            if (!cmderr.empty()) {
                 log_error("Calling 'dpkg --list' got exit-code %i and this stderr:\n-----\n%s-----\n\n", rv, cmderr.c_str());
             }
 #ifdef DEBUG
@@ -337,13 +337,13 @@ std::string debug_trace;
 //   calling the script dozens of times?
         rv = shared::output ({"sudo", "systemctl", "list-units", "--all", "--full"}, output, cmderr);
         if (b_debug_trace) {
-	    if (!cmderr.empty()) {
+            if (!cmderr.empty()) {
                 log_error("Calling 'systemctl list-units -a -l' got exit-code %i and this stderr:\n-----\n%s-----\n\n", rv, cmderr.c_str());
             }
 #ifdef DEBUG
             log_debug("Calling 'systemctl list-units -a -l' got exit-code %i and this stdout:\n-----\n%s-----\n\n", rv, output.c_str());
 #endif
-	}
+        }
 
         if (rv == 0 && !output.empty()) {
 </%cpp>
@@ -365,30 +365,30 @@ std::string debug_trace;
                 std::vector <std::string> line_tokens;
                 cxxtools::split (" \t", item, std::back_inserter (line_tokens));
                 // status
-		if (line_tokens.at (0).compare ("*") == 0)
-	            token_unitname=1;
-		while (line_tokens.at (token_unitname).compare ("") == 0 ||
-		       line_tokens.at (token_unitname).compare ({'\t'}) == 0 ||
-		       line_tokens.at (token_unitname).compare (" ") == 0 )
-	            token_unitname++;
-		std::string unitname = line_tokens.at (token_unitname);
+                if (line_tokens.at (0).compare ("*") == 0)
+                    token_unitname=1;
+                while (line_tokens.at (token_unitname).compare ("") == 0 ||
+                       line_tokens.at (token_unitname).compare ({'\t'}) == 0 ||
+                       line_tokens.at (token_unitname).compare (" ") == 0 )
+                    token_unitname++;
+                std::string unitname = line_tokens.at (token_unitname);
 // Note: unitname must be the "$2" for our systemctl script
-	        rv = shared::output ({"sudo", "systemctl", "show", unitname.c_str(), "--full"}, output, cmderr);
+                rv = shared::output ({"sudo", "systemctl", "show", unitname.c_str(), "--full"}, output, cmderr);
 
-	        if (b_debug_trace) {
-			if (!cmderr.empty() && !cmderr.compare("Action not allowed")) {
+                if (b_debug_trace) {
+                        if (!cmderr.empty() && !cmderr.compare("Action not allowed")) {
 // Note: Here we filter by the stderr contents because it will be
 // full of units we do not have right to access in our systemctl script
-		            log_error("Calling 'systemctl show -l %s' got exit-code %i and this stderr:\n-----\n%s-----\n\n", unitname.c_str(), rv, cmderr.c_str());
-        		}
+                            log_error("Calling 'systemctl show -l %s' got exit-code %i and this stderr:\n-----\n%s-----\n\n", unitname.c_str(), rv, cmderr.c_str());
+                        }
 #ifdef DEBUG
-			if (output.empty() || (output[0]=='\n' && output[1]=='\0')) {
-			    log_debug("Calling 'systemctl show -l %s' got exit-code %i and no stdout", unitname.c_str(), rv);
-			} else {
-			    log_debug("Calling 'systemctl show -l %s' got exit-code %i and this stdout:\n-----\n%s-----\n\n", unitname.c_str(), rv, output.c_str());
-			}
+                        if (output.empty() || (output[0]=='\n' && output[1]=='\0')) {
+                            log_debug("Calling 'systemctl show -l %s' got exit-code %i and no stdout", unitname.c_str(), rv);
+                        } else {
+                            log_debug("Calling 'systemctl show -l %s' got exit-code %i and this stdout:\n-----\n%s-----\n\n", unitname.c_str(), rv, output.c_str());
+                        }
 #endif
-		}
+                }
 
                 if (rv == 0 && !output.empty()) {
 </%cpp>
