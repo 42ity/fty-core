@@ -85,8 +85,8 @@
 
             augeas->run_cmd("set /files/etc/ntp.conf/server[1] " + ntp);
             augeas->save();
-            system("sudo systemctl restart ntp");
             system("sudo systemctl enable ntp");
+            system("sudo systemctl restart ntp");
 	    }
     }
 
