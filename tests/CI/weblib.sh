@@ -138,7 +138,7 @@ if [ -n "$JSONSH" ] && [ -x "$JSONSH" ] && [ "$JSONSH_CLI_DEFINED" = no ]; then
         else
             logmsg_debug "Will fork to use JSON.sh from '$JSONSH'" >&2
             jsonsh_cli() { "$JSONSH" "$@"; }
-            export -f jsonsh_cli 2>/dev/null && export JSONSH_CLI_DEFINED || true
+            export -f jsonsh_cli 2>/dev/null || true
         fi
     fi
     JSONSH_CLI_DEFINED=yes
