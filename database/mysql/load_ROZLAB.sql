@@ -28,7 +28,7 @@ select @device_server := id_device_type from t_bios_device_type where name = 'se
 /* ************* */
 
 /* ROZ-LAB */
-insert into t_bios_asset_element (name , id_type, id_parent,status,priority,business_crit, asset_tag) values ("DC-ROZ", @asset_element_datacenter,  NULL,"active",1,1,"ROZ1");
+insert into t_bios_asset_element (name , id_type, id_parent,status,priority, asset_tag) values ("DC-ROZ", @asset_element_datacenter,  NULL,"active",1,"ROZ1");
 select @last_asset_element:=id_asset_element from t_bios_asset_element where name="DC-ROZ";
 set @last_datacenter := @last_asset_element; 
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description",    "EEIC Roztoky DC", @last_asset_element);
@@ -40,7 +40,7 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_email",    "michalhrusecky@eaton.com", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",    "240211151532", @last_asset_element);
 /* ROZ.ROOM01 */
-insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent,status,priority,business_crit, asset_tag) values (NULL, "ROZ.ROOM01", @asset_element_room, @last_datacenter,"active",1,1,"ROZ2");
+insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent,status,priority, asset_tag) values (NULL, "ROZ.ROOM01", @asset_element_room, @last_datacenter,"active",1,"ROZ2");
 set @last_asset_element := LAST_INSERT_ID();
 set @last_room := @last_asset_element;
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "IT Server room", @last_asset_element);
@@ -50,7 +50,7 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",    "240211151532", @last_asset_element);
 
 /* ROZ.ROOM01.RACK01 */
-insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent,status,priority,business_crit, asset_tag) values (NULL, "ROZ.ROOM01.RACK01", @asset_element_rack, @last_room,"active",1,1,"ROZ3");
+insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent,status,priority, asset_tag) values (NULL, "ROZ.ROOM01.RACK01", @asset_element_rack, @last_room,"active",1,"ROZ3");
 set @last_asset_element := LAST_INSERT_ID();
 set @last_rack := @last_asset_element;
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("model", "RESSPU4210KB 600mm x 1000mm - 42U Rack", @last_asset_element);
@@ -63,7 +63,7 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",    "240211151532", @last_asset_element);
 
 /* ROZ.UPS1 */
-insert into t_bios_asset_element (name , id_type, id_subtype, id_parent,status,priority,business_crit, asset_tag) values ("ROZ.UPS1", @asset_element_device, @asset_device_ups, @last_rack,"active",1,1,"ROZ4");
+insert into t_bios_asset_element (name , id_type, id_subtype, id_parent,status,priority, asset_tag) values ("ROZ.UPS1", @asset_element_device, @asset_device_ups, @last_rack,"active",1,"ROZ4");
 set @last_asset_element := LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "UPS1 9PX 6kVA", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("model", "9PX 5kVA", @last_asset_element);
@@ -84,7 +84,7 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 
 
 /* ROZ.ePDU05 */
-insert into t_bios_asset_element (name , id_type, id_subtype, id_parent,status,priority,business_crit, asset_tag) values ("ROZ.ePDU05", @asset_element_device, @asset_device_epdu, @last_rack,"active",1,1,"ROZ5");
+insert into t_bios_asset_element (name , id_type, id_subtype, id_parent,status,priority, asset_tag) values ("ROZ.ePDU05", @asset_element_device, @asset_device_epdu, @last_rack,"active",1,"ROZ5");
 set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description",    "ePDU05 eSWA01", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("model",          "Eaton ePDU MA 1P IN:IEC309 10A OUT:21xC13, 3xC19", @last_asset_element);
@@ -98,7 +98,7 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("outlet.count",   "16.00",@last_asset_element);
 
 /* ROZ.ePDU04 */
-insert into t_bios_asset_element (name , id_type, id_subtype, id_parent,status,priority,business_crit, asset_tag) values ("ROZ.ePDU04", @asset_element_device, @asset_device_epdu, @last_rack,"active",1,1,"ROZ6");
+insert into t_bios_asset_element (name , id_type, id_subtype, id_parent,status,priority, asset_tag) values ("ROZ.ePDU04", @asset_element_device, @asset_device_epdu, @last_rack,"active",1,"ROZ6");
 set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description",    "ePDU04 eMAA10", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("model",          "Eaton ePDU MA 1P IN:IEC309 16A OUT:21xC13, 3xC19", @last_asset_element);
@@ -112,7 +112,7 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("outlet.count",   "16.00",@last_asset_element);
 
 /* GRASSHOPPER */
-insert into t_bios_asset_element (name , id_type, id_subtype, id_parent,status,priority,business_crit, asset_tag) values ("GRASSHOPPER",  @asset_element_device, @asset_device_server, @last_rack,"active",1,1,"ROZ7");
+insert into t_bios_asset_element (name , id_type, id_subtype, id_parent,status,priority, asset_tag) values ("GRASSHOPPER",  @asset_element_device, @asset_device_server, @last_rack,"active",1,"ROZ7");
 set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description",        "Secondary BIOS server (kvm)",  @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("u_size",  "1",        @last_asset_element);

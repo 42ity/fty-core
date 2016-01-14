@@ -193,7 +193,6 @@ CREATE TABLE t_bios_asset_element (
   id_parent         INT UNSIGNED,
   status            VARCHAR(9)          NOT NULL DEFAULT "nonactive",
   priority          TINYINT             NOT NULL DEFAULT 5,
-  business_crit     TINYINT             NOT NULL DEFAULT 0,
   asset_tag         VARCHAR(50),
 
   PRIMARY KEY (id_asset_element),
@@ -395,7 +394,6 @@ CREATE VIEW v_web_element AS
         v4.name AS subtype_name,
         t1.id_parent,
         t2.id_type AS id_parent_type,
-        t1.business_crit,
         t1.status,
         t1.priority,
         t1.asset_tag
@@ -499,7 +497,6 @@ CREATE VIEW v_bios_asset_element AS
             v1.id_subtype,
             v1.id_parent,
             v2.id_type AS id_parent_type,
-            v1.business_crit,
             v1.status,
             v1.priority,
             v1.asset_tag
@@ -522,7 +519,6 @@ SELECT v1.id_asset_element,
        v1.status,
        v1.asset_tag,
        v1.priority,
-       v1.business_crit,
        v1.id_type
 FROM t_bios_asset_element v1
      LEFT JOIN t_bios_asset_element v2
