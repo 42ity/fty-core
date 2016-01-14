@@ -294,11 +294,10 @@ TEST_CASE("t_bios_alert_device INSERT/DELETE #4","[db][CRUD][insert][delete][ale
     a_elmnt_id_t     parent_id = 0;
     const char      *status = "active";
     a_elmnt_pr_t     priority_el = 4;
-    a_elmnt_bc_t     bc = 3;
     a_dvc_tp_id_t    subtype_id = 3;
 
     auto reply_insert_element = persist::insert_into_asset_element (conn, element_name,
-        element_type_id, parent_id, status, priority_el, bc, subtype_id,
+        element_type_id, parent_id, status, priority_el, subtype_id,
         UGLY_ASSET_TAG2);
     uint64_t rowid_element = reply_insert_element.rowid;
     CAPTURE ( rowid_element );
@@ -387,11 +386,10 @@ TEST_CASE("t_bios_alert_device INSERT/DELETE #5","[db][CRUD][insert][alert][dele
     a_elmnt_id_t     parent_id = 0;
     const char      *status = "active";
     a_elmnt_pr_t     priority_el = 4;
-    a_elmnt_bc_t     bc = 3;
     a_dvc_tp_id_t    subtype_id = 3;
 
     auto reply_insert_element1 = insert_into_asset_element (conn, element_name1,
-        element_type_id, parent_id, status, priority_el, bc,
+        element_type_id, parent_id, status, priority_el,
         subtype_id, UGLY_ASSET_TAG2);
     uint64_t rowid_element1 = reply_insert_element1.rowid;
     CAPTURE ( rowid_element1 );
@@ -410,7 +408,7 @@ TEST_CASE("t_bios_alert_device INSERT/DELETE #5","[db][CRUD][insert][alert][dele
     //insert element
     const char *element_name2 = "test_element_name5.2";
     auto reply_insert_element2 = insert_into_asset_element (conn, element_name2,
-            element_type_id, parent_id, status, priority_el, bc, subtype_id,
+            element_type_id, parent_id, status, priority_el, subtype_id,
             UGLY_ASSET_TAG2);
     uint64_t rowid_element2 = reply_insert_element2.rowid;
     CAPTURE ( rowid_element2 );
@@ -485,7 +483,6 @@ TEST_CASE("insert_alert_new #6","[db][CRUD][insert][delete][alert][crud_test.sql
     a_elmnt_id_t     parent_id = 0;
     const char      *status = "active";
     a_elmnt_pr_t     priority_el = 4;
-    a_elmnt_bc_t     bc = 3;
     a_dvc_tp_id_t    asset_device_type_id = 5;
     const char      *asset_device_type_name = "server";
 
@@ -495,7 +492,7 @@ TEST_CASE("insert_alert_new #6","[db][CRUD][insert][delete][alert][crud_test.sql
     auto reply_insert_element1 = persist::insert_device
        (conn, links, groups, element_name1, parent_id,
         NULL, asset_device_type_id, asset_device_type_name,
-        status, priority_el, bc, UGLY_ASSET_TAG2);
+        status, priority_el, UGLY_ASSET_TAG2);
     REQUIRE ( reply_insert_element1.status == 1 );
     uint64_t rowid_element1 = reply_insert_element1.rowid;
     CAPTURE ( rowid_element1 );
@@ -505,7 +502,7 @@ TEST_CASE("insert_alert_new #6","[db][CRUD][insert][delete][alert][crud_test.sql
     auto reply_insert_element2 = persist::insert_device
        (conn, links, groups, element_name2, parent_id,
         NULL, asset_device_type_id, asset_device_type_name,
-        status, priority_el, bc, UGLY_ASSET_TAG2);
+        status, priority_el, UGLY_ASSET_TAG2);
     REQUIRE ( reply_insert_element2.status == 1 );
     uint64_t rowid_element2 = reply_insert_element2.rowid;
     CAPTURE ( rowid_element2 );

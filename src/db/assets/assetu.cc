@@ -41,7 +41,6 @@ int
          a_elmnt_id_t     parent_id,
          const char      *status,
          a_elmnt_pr_t     priority,
-         a_elmnt_bc_t     bc,
          const char      *asset_tag,
          int32_t         &affected_rows)
 {
@@ -51,7 +50,6 @@ int
     log_debug ("  parent_id = %" PRIu32, parent_id);
     log_debug ("  status = '%s'", status);
     log_debug ("  priority = %" PRIu16, priority);
-    log_debug ("  bc = %" PRIu16, bc);
     log_debug ("  asset_tag = '%s'", asset_tag);
 
     // if parent id == 0 ->  it means that there is no parent and value
@@ -64,7 +62,6 @@ int
 //            "   name = :name,"
             "   asset_tag = :asset_tag,"
             "   id_parent = :id_parent,"
-            "   business_crit = :bc,"
             "   status = :status,"
             "   priority = :priority"
             " WHERE id_asset_element = :id"
@@ -74,7 +71,6 @@ int
 //                           set("name", element_name).
                            set("status", status).
                            set("priority", priority).
-                           set("bc", bc).
                            set("asset_tag", asset_tag);
 
         if ( parent_id != 0 )

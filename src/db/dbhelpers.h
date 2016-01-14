@@ -103,7 +103,7 @@ struct db_msrmnt_t {
     std::string topic;
 };
 
-/** 
+/**
  * \brief helper structure for results of v_bios_asset_element
  */
 struct db_a_elmnt_t {
@@ -112,7 +112,6 @@ struct db_a_elmnt_t {
     std::string      status;
     a_elmnt_id_t     parent_id;
     a_elmnt_pr_t     priority;
-    a_elmnt_bc_t     bc;        // business critical
     a_elmnt_tp_id_t  type_id;
     a_elmnt_stp_id_t subtype_id;
     std::string      asset_tag;
@@ -124,7 +123,6 @@ struct db_a_elmnt_t {
         status{},
         parent_id{},
         priority{},
-        bc{},
         type_id{},
         subtype_id{},
         asset_tag{},
@@ -137,7 +135,6 @@ struct db_a_elmnt_t {
         std::string      status,
         a_elmnt_id_t     parent_id,
         a_elmnt_pr_t     priority,
-        a_elmnt_bc_t     bc,        // business critical
         a_elmnt_tp_id_t  type_id,
         a_elmnt_stp_id_t subtype_id,
         std::string      asset_tag) :
@@ -147,7 +144,6 @@ struct db_a_elmnt_t {
         status(status),
         parent_id(parent_id),
         priority(priority),
-        bc(bc),
         type_id(type_id),
         subtype_id(subtype_id),
         asset_tag(asset_tag),

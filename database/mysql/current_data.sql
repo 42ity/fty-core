@@ -300,7 +300,7 @@ SELECT @measures_device := id_discovered_device FROM t_bios_discovered_device WH
 /* ************* */
 
 /* DC-LAB */
-insert into t_bios_asset_element (name , id_type, id_parent,status,priority,business_crit, asset_tag)values ("DC-LAB", @asset_element_datacenter,  NULL, "active",1,1, "myasset19");
+insert into t_bios_asset_element (name , id_type, id_parent,status,priority, asset_tag)values ("DC-LAB", @asset_element_datacenter,  NULL, "active",1, "myasset19");
 set @last_asset_element := LAST_INSERT_ID();
 set @last_datacenter := @last_asset_element;
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description",    "EATON Montobonnot Datacenter (тест)", @last_asset_element);
@@ -312,7 +312,7 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_email",    "john.smith@eaton.com", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",    "+33 (0)4 42 42 42 42", @last_asset_element);
 /* ROOM1-LAB */
-insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent, status,priority,business_crit, asset_tag) values (NULL, "ROOM1-LAB", @asset_element_room, @last_datacenter, "active",1,1,"myasset20");
+insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent, status,priority, asset_tag) values (NULL, "ROOM1-LAB", @asset_element_room, @last_datacenter, "active",1,"myasset20");
 set @last_asset_element := LAST_INSERT_ID();
 set @last_room := @last_asset_element;
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "Lab Room", @last_asset_element);
@@ -322,7 +322,7 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",    "+33 (0)4 42 42 42 42", @last_asset_element);
 
 /* RACK1-LAB */
-insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent, status,priority,business_crit, asset_tag) values (NULL, "RACK1-LAB", @asset_element_rack, @last_room, "active",1,1,"myasset21");
+insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent, status,priority, asset_tag) values (NULL, "RACK1-LAB", @asset_element_rack, @last_room, "active",1,"myasset21");
 set @last_asset_element := LAST_INSERT_ID();
 set @last_rack := @last_asset_element;
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("model", "RESSPU4210KB 600mm x 1000mm - 42U Rack", @last_asset_element);
@@ -335,7 +335,7 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",    "+33 (0)4 42 42 42 42", @last_asset_element);
 
 /* UPS1-LAB */
-insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,business_crit,asset_tag) values ("UPS1-LAB", @asset_element_device, @asset_device_ups, @last_rack,"active",1,1, "myasset22");
+insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,asset_tag) values ("UPS1-LAB", @asset_element_device, @asset_device_ups, @last_rack,"active",1,"myasset22");
 set @last_asset_element := LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "UPS1 9PX 6kVA", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("installation_date", "2014-11-12", @last_asset_element);
@@ -355,7 +355,7 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",    "+33 (0)4 42 42 42 42", @last_asset_element);
 
 /* UPS2-LAB */
-insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,business_crit,asset_tag) values ("UPS2-LAB", @asset_element_device, @asset_device_ups, @last_rack, "active",1,1,"myasset23");
+insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,asset_tag) values ("UPS2-LAB", @asset_element_device, @asset_device_ups, @last_rack, "active",1,"myasset23");
 set @last_asset_element := LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "UPS2 9PX 6kVA", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("installation_date", "2014-11-12", @last_asset_element);
@@ -375,7 +375,7 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",    "+33 (0)4 42 42 42 42", @last_asset_element);
 
 /* ePDU1-LAB */
-insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,business_crit,asset_tag) values ("ePDU1-LAB", @asset_element_device, @asset_device_epdu, @last_rack, "active",1,1,"myasset24");
+insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,asset_tag) values ("ePDU1-LAB", @asset_element_device, @asset_device_epdu, @last_rack, "active",1,"myasset24");
 set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description",    "ePDU1 eMAA10", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer",   "EATON", @last_asset_element);
@@ -388,7 +388,7 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_w_pos", "left",@last_asset_element);
 
 /* ePDU2-LAB */
-insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,business_crit,asset_tag) values ("ePDU2-LAB", @asset_element_device, @asset_device_epdu, @last_rack,"active",1,1, "myasset25");
+insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,asset_tag) values ("ePDU2-LAB", @asset_element_device, @asset_device_epdu, @last_rack,"active",1,"myasset25");
 set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description",    "ePDU2 eMAA10", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer",   "EATON", @last_asset_element);
@@ -401,7 +401,7 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_w_pos", "right",@last_asset_element);
 
 /* SRV1-LAB */
-insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,business_crit,asset_tag) values ("SRV1-LAB",  @asset_element_device, @asset_device_server, @last_rack,"active",1,1, "myasset26");
+insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,asset_tag) values ("SRV1-LAB",  @asset_element_device, @asset_device_server, @last_rack,"active",1,"myasset26");
 set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description",        "SRV1 PRIMERGY RX100 G8",  @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("u_size",  "1",        @last_asset_element);
@@ -413,7 +413,7 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",    "+32-2-555-42-42", @last_asset_element);
 
 /* SRV2-LAB */
-insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,business_crit,asset_tag) values ("SRV2-LAB", @asset_element_device, @asset_device_server, @last_rack, "active",1,1,"myasset27");
+insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,asset_tag) values ("SRV2-LAB", @asset_element_device, @asset_device_server, @last_rack, "active",1,"myasset27");
 set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description","SRV2 PRIMERGY RX100 G8", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("u_size",  "1",        @last_asset_element);
@@ -434,13 +434,13 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 
 
 /* FEED-LAB */
-insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,business_crit,asset_tag) values ("FEED-LAB", @asset_element_device, @asset_device_feed, @last_datacenter,"active",1,1, "myasset29");
+insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,asset_tag) values ("FEED-LAB", @asset_element_device, @asset_device_feed, @last_datacenter,"active",1,"myasset29");
 set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "FEED 3Ph 240V", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("phases.output",       "3",         @last_asset_element);
 
 /* GROUP1-LAB */
-insert into t_bios_asset_element (name , id_type, id_parent, status,priority,business_crit,asset_tag) values ("GROUP1-LAB", @asset_element_group, @last_datacenter, "active",1,1,"myasset30");
+insert into t_bios_asset_element (name , id_type, id_parent, status,priority,asset_tag) values ("GROUP1-LAB", @asset_element_group, @last_datacenter, "active",1,"myasset30");
 set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "input power chain", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("type",        "input_power",       @last_asset_element);
@@ -459,7 +459,7 @@ values
 
 
 /* SRV3-LAB */
-insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,business_crit,asset_tag) values ("SRV3-LAB",  @asset_element_device, @asset_device_server, @last_rack, "active",1,1,"myasset50");
+insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,asset_tag) values ("SRV3-LAB",  @asset_element_device, @asset_device_server, @last_rack, "active",1,"myasset50");
 set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description",        "SRV3 DL320e G8",  @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("u_size",  "1",        @last_asset_element);
@@ -470,7 +470,7 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",    "+33 (0)4 42 42 42 42", @last_asset_element);
 
 /* SRV4-LAB */
-insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,business_crit,asset_tag) values ("SRV4-LAB", @asset_element_device, @asset_device_server, @last_rack, "active",1,1,"myasset31");
+insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,asset_tag) values ("SRV4-LAB", @asset_element_device, @asset_device_server, @last_rack, "active",1,"myasset31");
 set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description","SRV4 DL320e G8", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("u_size",  "1",        @last_asset_element);
@@ -481,7 +481,7 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",    "+33 (0)4 42 42 42 42", @last_asset_element);
 
 /* SRV5-LAB */
-insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,business_crit,asset_tag) values ("SRV5-LAB",  @asset_element_device, @asset_device_server, @last_rack, "active",1,1,"myasset32");
+insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,asset_tag) values ("SRV5-LAB",  @asset_element_device, @asset_device_server, @last_rack, "active",1,"myasset32");
 set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description",        "SRV5 PowerEdge R320",  @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("u_size",  "1",        @last_asset_element);
@@ -492,7 +492,7 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",    "+33 (0)4 42 42 42 42", @last_asset_element);
 
 /* SRV6-LAB */
-insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,business_crit,asset_tag) values ("SRV6-LAB", @asset_element_device, @asset_device_server, @last_rack, "active",1,1,"myasset33");
+insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,asset_tag) values ("SRV6-LAB", @asset_element_device, @asset_device_server, @last_rack, "active",1,"myasset33");
 set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description","SRV6 System x 3530 M4", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("u_size",  "1",        @last_asset_element);
@@ -503,7 +503,7 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",    "+33 (0)4 42 42 42 42", @last_asset_element);
 
 /* UPS3PH-LAB */
-insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,business_crit,asset_tag) values ("UPS3PH-LAB", @asset_element_device, @asset_device_ups, @last_datacenter, "active",1,1,"_myasset22");
+insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, status,priority,asset_tag) values ("UPS3PH-LAB", @asset_element_device, @asset_device_ups, @last_datacenter, "active",1,"_myasset22");
 set @last_asset_element := LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "PXGX UPS + EATON Parallel BladeUPS", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("installation_date", "2014-11-12", @last_asset_element);

@@ -17,9 +17,7 @@
 {"errors":[{"message":"Parameter 'sub_type' is required.","code":46}]}
 {"errors":[{"message":"Parameter 'location' is required.","code":46}]}
 {"errors":[{"message":"Parameter 'status' is required.","code":46}]}
-{"errors":[{"message":"Parameter 'business_critical' is required.","code":46}]}
 {"errors":[{"message":"Parameter 'priority' is required.","code":46}]}
 {"id":"42"}
 {"errors":[{"message":"Parameter 'status' has bad value. Received <empty>. Expected active, nonactive, retired, spare","code":47}]}
-{"id":"43"}
 {"errors":[{"message":"You are not authenticated or your rights are insufficient.","code":43}]}

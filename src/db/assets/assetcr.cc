@@ -239,7 +239,7 @@ db_reply_t
 
     // it possible to generate insert as "insert into table values (),(),();" But here it
     // can cause a secuire problems, because SQL injection can be abused here,
-    // bcause keytag and value are unknown strings
+    // because keytag and value are unknown strings
     while ( value != NULL )
     {
         char *key = (char *) zhash_cursor (attributes);   // key of this value
@@ -681,7 +681,6 @@ db_reply_t
          a_elmnt_id_t     parent_id,
          const char      *status,
          a_elmnt_pr_t     priority,
-         a_elmnt_bc_t     bc,
          a_dvc_tp_id_t    subtype_id,
          const char      *asset_tag)
 {
@@ -734,10 +733,10 @@ db_reply_t
                 " INSERT INTO"
                 "   t_bios_asset_element"
                 "   (name, id_type, id_parent, status, priority,"
-                "    business_crit, id_subtype, asset_tag)"
+                "    id_subtype, asset_tag)"
                 " SELECT"
                 "   :name, :type, NULL, :status, :priority,"
-                "   :business_crit, :subtype, :assettag"
+                "   :subtype, :assettag"
                 " FROM"
                 "   t_empty"
                 " WHERE NOT EXISTS"
@@ -757,7 +756,6 @@ db_reply_t
                                    set("type", element_type_id).
                                    set("status", status).
                                    set("priority", priority).
-                                   set("business_crit", bc).
                                    set("subtype", subtype_id).
                                    set("assettag", asset_tag).
                                    execute();
@@ -768,10 +766,10 @@ db_reply_t
                 " INSERT INTO"
                 "   t_bios_asset_element"
                 "   (name, id_type, id_parent, status, priority,"
-                "    business_crit, id_subtype, asset_tag)"
+                "    id_subtype, asset_tag)"
                 " SELECT"
                 "   :name, :type, :parent, :status, :priority,"
-                "   :business_crit, :subtype, :assettag"
+                "   :subtype, :assettag"
                 " FROM"
                 "   t_empty"
                 " WHERE NOT EXISTS"
@@ -791,7 +789,6 @@ db_reply_t
                                    set("parent", parent_id).
                                    set("status", status).
                                    set("priority", priority).
-                                   set("business_crit", bc).
                                    set("subtype", subtype_id).
                                    set("assettag", asset_tag).
                                    execute();
