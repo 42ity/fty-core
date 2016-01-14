@@ -285,6 +285,7 @@ std::string debug_trace;
                 tokens.erase (tokens.begin ());
             bool first = true;
             for (auto const& item : tokens) {
+                request.touch(); // Reset the deadman timer while in a loop
                 if (item.empty ())
                     continue;
                 std::vector <std::string> line_tokens;
