@@ -342,6 +342,7 @@ std::string debug_trace;
 </%cpp>
 ,   "processes" : <$$ output $$>
 <%cpp>
-%       } // if (systemctl list-json) rv == 0
-%   } // if (access_auth_level >= AUTH_LEVEL_POWERUSER)
+        } // if (systemctl list-json) rv == 0
+    } // if (access_auth_level >= AUTH_LEVEL_POWERUSER)
+</%cpp>
 }
