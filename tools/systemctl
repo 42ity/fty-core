@@ -126,7 +126,7 @@ case "$1" in
                 [ -x "$F" -a -s "$F" ] && JSONSH="$F" && break
         done
         if [ -x "$JSONSH" ] ; then
-            BASH_SOURCE=yes . "$JSONSH"
+            . "$JSONSH"
             cook_a_string_arg() { [[ -z "$1" ]] || [[ "$1" =~ ^[A-Za-z0-9\ \-\.\+\\\/\:\;\(\)\{\}]*$ ]] >/dev/null && echo "$1" && return 0; echo "$*" | cook_a_string; }
         else
             echo "systemctl: FAILED to use JSON.sh from '$JSONSH'; will not cook strings" >&2 && JSONSH=""
