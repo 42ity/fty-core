@@ -240,7 +240,7 @@ if (!streq (mlm_client_subject (client), RFC_ALERTS_LIST)) {
     http_die ("internal-error", "Bad message.");
 }
 log_debug (" subject ... OK.");
-log_debug (" number of frames = '%" PRIu64"'.", zmsg_size (recv_msg));
+log_debug (" number of frames = '%zu.", zmsg_size (recv_msg));
 // Check command. Can be LIST or ERROR
 char *part = zmsg_popstr (recv_msg);
 if (streq (part, "LIST")) {
