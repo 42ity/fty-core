@@ -31,13 +31,13 @@ SYSTEMCTL_COMMANDS="show start stop restart enable disable status"
 
 # TODO: Match this up with web/systemctl.ecpp and maybe the Makefile variables
 # List of fixed strings that are good both for "case" and regexp matching
-SYSTEMCTL_UNITS_COMMON="mariadb mysql mysqld ntp saslauthd malamute     \
+SYSTEMCTL_UNITS_COMMON="mariadb mysql mysqld ntp ntpd ntpdate sntp      \
                  bios-reset-button tntnet@bios bios-agent-alert-smtp    \
                  bios-agent-alert bios-agent-autoconfig bios-agent-cm   \
                  bios-agent-dbstore bios-agent-inventory bios-agent-nut \
                  bios-agent-th bios-agent-tpower bios-db-init           \
                  bios-server-agent                                      \
-                 networking nut-monitor nut-server"
+                 malamute saslauthd networking nut-monitor nut-server"
 
 # For regexp matching
 SYSTEMCTL_UNITS_REGEX='nut-driver@[^[:blank:]]*'
