@@ -88,6 +88,7 @@ $(RUN_TNTNET_ENVFILE): $(abs_top_builddir)/Makefile
 	     echo 'export LICENSE_DIR="$(abs_top_builddir)/tests/fixtures/license"'; \
 	     echo 'export DATADIR_BASE="$(abs_top_builddir)/var"'; \
 	     echo 'export TESTPASS="$(abs_top_builddir)/tools/testpass.sh"'; \
+	     echo 'export PATH="$(abs_top_builddir)/tools:$(abs_top_srcdir)/tools:$(ci_helperdir):$$PATH"'; \
 	     echo 'export NO_SSL="1"'; \
 	     echo '[ -z "$$BIOS_LOG_LEVEL" ] && BIOS_LOG_LEVEL="LOG_DEBUG"'; \
 	     echo 'export BIOS_LOG_LEVEL'; \
@@ -1380,7 +1381,7 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/config.cpp src/web/src/alert_rules_list.cpp \
                       src/web/src/alert_rules_detail.cpp src/web/src/alert_rules.cpp \
                       src/web/src/alert_ack.cpp \
-					  src/web/src/alert_list.cpp
+                      src/web/src/alert_list.cpp
 
 # Track real-git and nodist (generated) sources SEPARATELY
 nodist_bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)
@@ -1482,7 +1483,7 @@ web-test-deps: tntnet.xml bios_web.la web-link-test agent-dbstore agent-cm
 # bios-db-init.service definition (installed into OS root /lib in CI builds).
 # This is an optional target - without this script working (including the
 # sudoers setup), the REST API tests involving password changes will fail.
-ci_helper_SCRIPTS =	tools/bios-passwd tools/db-init tools/testpass.sh
+ci_helper_SCRIPTS =	tools/bios-passwd tools/db-init tools/testpass.sh tools/systemctl
 ci_helperdir =	        $(clientdir)
 
 # TODO: the "tools/testpass.sh" should be invoked via TESTPASS envvar used
