@@ -23,13 +23,13 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <preproc.h>
 
 #include "dbpath.h"
-#include "calc_power.h"
 #include "agent-autoconfig.h"
 #include "str_defs.h"
 #include "log.h"
 #include "utils.h"
 #include "utils++.h"
 #include "asset_types.h"
+#include "assets.h"
 #include "utils_ymsg.h"
 #include "filesystem.h"
 
@@ -117,16 +117,52 @@ void Autoconfig::onStart( )
 }
 
 // MVY: this is huge hack - needs to be better integrated to aoutconfig
+// // TROWS!!!!!!!!!!!!!!!!!!
 static void
     s_configure_uptime_agent()
 {
     tntdb::Connection conn = tntdb::connectCached (url);
-    auto dbreply = select_devices_total_power_dcs(conn);
-    conn.close ();
-    if (dbreply.status == 0) {
-        log_error ("Fail to call select_devices_total_power_dcs");
+
+    std::vector <std::string> container_upses{};
+    std::function<void(const tntdb::Row&)> func = \
+            [&container_upses](const tntdb::Row& row)
+            {
+                a_elmnt_tp_id_t type_id = 0;
+                row["type_id"].get(type_id);
+                
+                std::string device_type_name = "";
+                row["subtype_name"].get(device_type_name);
+
+                if ( ( type_id == persist::asset_type::DEVICE ) && ( device_type_name == "ups" ) )
+                {
+                    std::string device_name = "";
+                    row["name"].get(device_name);
+
+                    container_upses.push_back(device_name);
+                }
+            };
+
+    // dc_name is mapped on the ups names
+    std::map <std::string , std::vector<std::string> > dc_upses;
+    // select dcs
+    db_reply <std::map <uint32_t, std::string> > reply = 
+        persist::select_short_elements 
+        (conn, persist::asset_type::DATACENTER, persist::asset_subtype::N_A);
+    if ( reply.status == 0 ) {
+        zsys_error ("Cannot select datacenters");
         return;
     }
+    for ( const auto dc : reply.item ) {
+        int rv = select_assets_by_container (conn, dc.first, func);
+        if ( rv != 0 ) {
+            zsys_error ("Cannot read upses for dc with is %" PRIu32, dc.first);
+            continue;
+        }
+        dc_upses.emplace (dc.second, container_upses);
+        container_upses.clear();
+    }
+
+    conn.close ();
 
     mlm_client_t *client = mlm_client_new ();
     if (!client) {
@@ -143,7 +179,7 @@ static void
     }
 
     zmsg_addstrf (msg, "%s", "SET");
-    for (const auto &it : dbreply.item) {
+    for (const auto &it :dc_upses) {
         zmsg_addstrf (msg, "%s", it.first.c_str());
         for (const auto &it2 : it.second) {
             zmsg_addstrf (msg, "%s", it2.c_str());
