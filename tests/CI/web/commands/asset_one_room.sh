@@ -30,6 +30,7 @@ echo "**************************************************************************
 echo "********* Prerequisites ***************************************************************************"
 echo "***************************************************************************************************"
 init_script
+[ x"${JSONSH_CLI_DEFINED-}" = xyes ] || CODE=127 die "jsonsh_cli() not defined"
 
 echo "********* asset_one_room.sh ***********************************************************************"
 echo "********* 1. read_room_with_id_of_another_element *************************************************"
@@ -43,7 +44,7 @@ curlfail_pop
 echo "********* asset_one_room.sh ***********************************************************************"
 echo "********* 2. request_to existing_room *************************************************************"
 echo "***************************************************************************************************"
-PARSED_REPLY="$(echo "`api_get_json /asset/rooms`" | $JSONSH -x id)"
+PARSED_REPLY="$(echo "`api_get_json /asset/rooms`" | jsonsh_cli -x id)"
 ID_1="$(echo "${PARSED_REPLY}" | cut -d '"' -f 6)"
 ID_ROOM_1="$(echo $ID_1 | cut -d ' ' -f 1)"
 test_it "request_to existing_room"

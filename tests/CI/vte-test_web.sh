@@ -112,6 +112,7 @@ NEED_BUILDSUBDIR=no determineDirs_default || true
 # *** include weblib.sh
 . "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+[ x"${JSONSH_CLI_DEFINED-}" = xyes ] || CODE=127 die "jsonsh_cli() not defined"
 
 
     # *** set TESTLIB_COUNT_* to 0 and TESTLIB_LIST_* to ""
