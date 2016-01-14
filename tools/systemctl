@@ -196,7 +196,7 @@ $lOTHER"
         ;;
 esac
 
-if  isAllowed_Cmd "$1" && \
+if  isAllowed_cmd "$1" && \
     isAllowed_Unit "$2"
 then
     cmd="$1"
