@@ -40,11 +40,7 @@ echo "********* 00_license-CI-forceaccept.sh.test ****************** START *****
 echo "###################################################################################################"
 echo
 
-
-[ -z "${JSONSH-}" ] && \
-    for F in "$CHECKOUTDIR/tools/JSON.sh" "$SCRIPTDIR/JSON.sh"; do
-        [ -x "$F" -a -s "$F" ] && JSONSH="$F" && break
-    done
+[ x"${JSONSH_CLI_DEFINED-}" = xyes ] || CODE=127 die "jsonsh_cli() not defined"
 
 # Try to accept the BIOS license on server, unless the caller is testing this
 if [ x"$SKIP_LICENSE" = xyes ]; then
@@ -127,7 +123,7 @@ else
 
         test_it "sysinfo_auth=2__parse__source_build_package__info"
         JPATH='"packages",[0-9]*$'
-        SYSINFO_VERSION="`echo "$SYSINFOA" | ${JSONSH} -x="$JPATH" | egrep '"package-name":"core".*"commit":"[a-f0-9-]+"'`"
+        SYSINFO_VERSION="`echo "$SYSINFOA" | jsonsh_cli -x="$JPATH" | egrep '"package-name":"core".*"commit":"[a-f0-9-]+"'`"
         RES=$?
         echo "=== SYSINFO_VERSION_PKG ($RES): `echo "$SYSINFO_VERSION" | sed 's/.*commit":"\(.*\)".*/\1/'`" >&2
         [ $RES = 0 -a -n "$SYSINFO_VERSION" -a \
@@ -136,7 +132,7 @@ else
 
         test_it "sysinfo_auth=2__parse__source_build_running__info"
         JPATH='^"restapi-metadata","source-repo","commit"$'
-        SYSINFO_VERSION_R="`echo "$SYSINFOA" | ${JSONSH} -x="$JPATH" | sed 's,^.*\t"\(.*\)",\1,'`"
+        SYSINFO_VERSION_R="`echo "$SYSINFOA" | jsonsh_cli -x="$JPATH" | sed 's,^.*\t"\(.*\)",\1,'`"
         RES=$?
         echo "=== SYSINFO_VERSION_RUN ($RES): $SYSINFO_VERSION_R" >&2
         [ $RES = 0 -a -n "$SYSINFO_VERSION_R" -a \

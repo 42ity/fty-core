@@ -33,11 +33,7 @@ echo "**************************************************************************
 echo "********* Prerequisites ***************************************************************************"
 echo "***************************************************************************************************"
 init_script
-
-[ -z "${JSONSH-}" ] && \
-    for F in "$CHECKOUTDIR/tools/JSON.sh" "$SCRIPTDIR/JSON.sh"; do
-        [ -x "$F" -a -s "$F" ] && JSONSH="$F" && break
-    done
+[ x"${JSONSH_CLI_DEFINED-}" = xyes ] || CODE=127 die "jsonsh_cli() not defined"
 
 SED_FILTER_TIME='s|.*\"time\"[[:blank:]]*:[[:blank:]]*\"\([^\"]*\)\".*|\1|p'
 ZEROEPOCH='{ "time":"1970-01-01T00:00:00Z" }'
@@ -62,7 +58,7 @@ curlfail_pop
 SYSINFO="`api_get_json '/admin/sysinfo'`"
 RES=$?
 JPATH='"operating-system","container"'
-SYSINFO_CONTAINER="`echo "$SYSINFO" | ${JSONSH} -x="$JPATH"`" || RES=$?
+SYSINFO_CONTAINER="`echo "$SYSINFO" | jsonsh_cli -x="$JPATH"`" || RES=$?
 if [ $RES = 0 -a -n "$SYSINFO_CONTAINER" -a \
      x"$SYSINFO_CONTAINER" != x'""' ] && \
     echo "$SYSINFO_CONTAINER" | egrep 'lxc' >/dev/null ; \
@@ -73,7 +69,7 @@ else
     test_it "auth_time_set"
     TIME_NOW="`date --utc +%FT%TZ`"
     TIME="`api_auth_post '/admin/time' "$ZEROEPOCH" | \
-	sed -n "$SED_FILTER_TIME"`"
+        sed -n "$SED_FILTER_TIME"`"
     api_auth_post '/admin/time' '{ "time":"'"$TIME_NOW"'" }' > /dev/null
     TIME_S="`date -d"$TIME" +%s 2> /dev/null`"
     [ "$TIME_S" ] && [ "$TIME_S" -lt 10 ]
