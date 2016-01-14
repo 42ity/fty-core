@@ -27,6 +27,12 @@
 #           we are allowed to see through the filter.
 #
 
+if [ -n "${BASH-}" ]; then
+    set -o pipefail 2>/dev/null || true
+else
+    echo "WARNING: It seems you execute '$0' not with 'bash' - this can fail!" >&2
+fi
+
 SYSTEMCTL_COMMANDS="show start stop restart enable disable status"
 
 # TODO: Match this up with web/systemctl.ecpp and maybe the Makefile variables
