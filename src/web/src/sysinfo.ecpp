@@ -48,15 +48,7 @@
 #include "utils.h"
 #include "git_details_override.h"
 
-// Magic numbers - systemctl fancy formatting du-jour
-#ifndef SYSTEMCTL__LIST_UNITS__STRIP_HEADER
-#define SYSTEMCTL__LIST_UNITS__STRIP_HEADER 1
-#endif
-
-#ifndef SYSTEMCTL__LIST_UNITS__STRIP_FOOTER
-#define SYSTEMCTL__LIST_UNITS__STRIP_FOOTER 7
-#endif
-
+// Magic numbers - dpkg fancy formatting du-jour
 #ifndef DPKG__LIST__STRIP_HEADER
 #define DPKG__LIST__STRIP_HEADER 5
 #endif
@@ -332,105 +324,23 @@ std::string debug_trace;
 %       }
 <%cpp>
 // Note: Commands and unit names are constrained in tools/systemctl and web/systemctl.ecpp
-// TODO: Maybe parsing 'systemctl show -l *' to get per-service info and apply
-//   the filters defined for web/systemctl.ecpp would be more efficient than
-//   calling the script dozens of times?
-        rv = shared::output ({"sudo", "systemctl", "list-units", "--all", "--full"}, output, cmderr);
+// No argments to our custom "list-json" causes fallback to try and list all
+// allowed units and a constrained list of fields and so be quite quick;
+// adding "--all" would show all fields... over time...
+        rv = shared::output ({"sudo", "systemctl", "list-json"}, output, cmderr);
         if (b_debug_trace) {
             if (!cmderr.empty()) {
-                log_error("Calling 'systemctl list-units -a -l' got exit-code %i and this stderr:\n-----\n%s-----\n\n", rv, cmderr.c_str());
+                log_error("Calling 'systemctl list-json' got exit-code %i and this stderr:\n-----\n%s-----\n\n", rv, cmderr.c_str());
             }
 #ifdef DEBUG
-            log_debug("Calling 'systemctl list-units -a -l' got exit-code %i and this stdout:\n-----\n%s-----\n\n", rv, output.c_str());
+            log_debug("Calling 'systemctl list-json' got exit-code %i and this stdout:\n-----\n%s-----\n\n", rv, output.c_str());
 #endif
         }
 
         if (rv == 0 && !output.empty()) {
 </%cpp>
-,   "processes" : [
+,   "processes" : <$$ output $$>
 <%cpp>
-            std::vector<std::string> tokens;
-            cxxtools::split("\n", output, std::back_inserter (tokens));
-            // Strip first 1 lines
-            for (int i = 0; i < SYSTEMCTL__LIST_UNITS__STRIP_HEADER; i++)
-                tokens.erase (tokens.begin ());
-            // Strip last 7 lines
-            for (int i = 0; i < SYSTEMCTL__LIST_UNITS__STRIP_FOOTER; i++)
-                tokens.erase (tokens.end ());
-            bool first = true;
-            for (auto const& item : tokens) {
-                int token_unitname=0;
-                if (item.empty ())
-                    continue;
-                std::vector <std::string> line_tokens;
-                cxxtools::split (" \t", item, std::back_inserter (line_tokens));
-                // status
-                if (line_tokens.at (0).compare ("*") == 0)
-                    token_unitname=1;
-                while (line_tokens.at (token_unitname).compare ("") == 0 ||
-                       line_tokens.at (token_unitname).compare ({'\t'}) == 0 ||
-                       line_tokens.at (token_unitname).compare (" ") == 0 )
-                    token_unitname++;
-                std::string unitname = line_tokens.at (token_unitname);
-// Note: unitname must be the "$2" for our systemctl script
-                rv = shared::output ({"sudo", "systemctl", "show", unitname.c_str(), "--full"}, output, cmderr);
-
-                if (b_debug_trace) {
-                        if (!cmderr.empty() && !cmderr.compare("Action not allowed")) {
-// Note: Here we filter by the stderr contents because it will be
-// full of units we do not have right to access in our systemctl script
-                            log_error("Calling 'systemctl show -l %s' got exit-code %i and this stderr:\n-----\n%s-----\n\n", unitname.c_str(), rv, cmderr.c_str());
-                        }
-#ifdef DEBUG
-                        if (output.empty() || (output[0]=='\n' && output[1]=='\0')) {
-                            log_debug("Calling 'systemctl show -l %s' got exit-code %i and no stdout", unitname.c_str(), rv);
-                        } else {
-                            log_debug("Calling 'systemctl show -l %s' got exit-code %i and this stdout:\n-----\n%s-----\n\n", unitname.c_str(), rv, output.c_str());
-                        }
-#endif
-                }
-
-                if (rv == 0 && !output.empty()) {
-</%cpp>
-%                   if (first) {
-            {
-%                       first = false;
-%                   }
-%                   else {
-          , {
-%                   }
-                <$$ utils::json::jsonify ("unit", unitname) $>
-<%cpp>
-                    std::vector<std::string> status_tokens;
-                    cxxtools::split("\n", output, std::back_inserter(status_tokens));
-                    for (const auto& line : status_tokens) {
-                        if (line.empty ())
-                            continue;
-                        std::size_t found = line.find ("=");
-                        if (found == std::string::npos)
-                            continue;
-                        std::string key = line.substr (0, found);
-                        std::string value  = line.substr (found+1, std::string::npos);
-</%cpp>
-%                       if (key.compare ("LoadState") == 0) {
-              , <$$ utils::json::jsonify ("LoadState", value) $>
-%                       }
-%                       else if (key.compare ("ActiveState") == 0) {
-              , <$$ utils::json::jsonify ("ActiveState", value) $>
-%                       }
-%                       else if (key.compare ("UnitFileState") == 0) {
-              , <$$ utils::json::jsonify ("UnitFileState", value) $>
-%                       }
-%                       else if (key.compare ("SubState") == 0) {
-              , <$$ utils::json::jsonify ("SubState", value) $>
-%                       }
-%                       // Note: We can parse out more info here
-%                       // TODO: DECIDE if we want to parse out more info
-%                   } // for line
-            }
-%               } // if (systemctl show) rv == 0
-%           } // for auto
-    ]
-%       } // if (systemctl list-units) rv == 0
+%       } // if (systemctl list-json) rv == 0
 %   } // if (access_auth_level >= AUTH_LEVEL_POWERUSER)
 }
