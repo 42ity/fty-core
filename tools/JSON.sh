@@ -64,6 +64,7 @@ NORMALIZE_NUMBERS_STRIP=0
 EXTRACT_JPATH=""
 TOXIC_NEWLINE=0
 COOKASTRING=0
+COOKASTRING_INPUT=""
 
 findbin() {
     # Locates a named binary or one from path, prints to stdout
@@ -146,7 +147,9 @@ usage() {
   echo "into a string valid for JSON (backslashes, quotes and newlines escaped,"
   echo "with no trailing newline); after cooking, the script exits:"
   echo '       COOKEDSTRING="`somecommand 2>&1 | JSON.sh -Q`"'
-  echo "This can also be used to pack JSON in JSON."
+  echo "A '-QQ' mode also exists to cook a (single) command-line argument:"
+  echo '       COOKEDSTRING="`JSON.sh -QQ "$SAVED_INPUT"`"'
+  echo "This can also be used to pack JSON in JSON. Note that '-QQ' ignores stdin."
   echo
 }
 
@@ -277,6 +280,10 @@ parse_options() {
       ;;
       -Q) COOKASTRING=1
       ;;
+      -QQ) COOKASTRING=2
+          COOKASTRING_INPUT="$2"
+          shift
+      ;;
       ?*) echo "ERROR: Unknown option '$1'."
           usage
           exit 0
@@ -366,6 +373,16 @@ cook_a_string() {
       [ -z "$FIRST" ] && FIRST='\n'
       done; }
     :
+}
+
+cook_a_string_arg() {
+    # Use routine above to cook a string passed as "$1" unless it is trivial
+    [[ -z "$1" ]] && return 0
+    [[ "$1" =~ ^[A-Za-z0-9\ \-\.\+\\\/\:\;\(\)\{\}]*$ ]] >/dev/null && \
+        echo "$1" && \
+        return 0
+
+    echo "$1" | cook_a_string
 }
 
 tokenize () {
@@ -670,19 +687,35 @@ jsonsh_cli() {
   parse_options "$@"
   jsonsh_debugging_setup
   jsonsh_debugging_report
-  tee_stderr RAW_INPUT $DEBUGLEVEL_PRINTTOKEN_PIPELINE | \
-  if [ "$COOKASTRING" -eq 1 ]; then
-    cook_a_string
+  if [[ "$COOKASTRING" -eq 2 ]]; then
+    if [[ "$DEBUG" -ge "$DEBUGLEVEL_PRINTTOKEN" ]] || \
+       [[ "$DEBUG" -ge "$DEBUGLEVEL_PRINTTOKEN_PIPELINE" ]] ; then
+        echo "[$$]DEBUG: Cooking an argument into JSON string and exiting:" "$1" >&2
+    fi
+    cook_a_string_arg "$COOKASTRING_INPUT"
   else
-    smart_parse
+    tee_stderr RAW_INPUT $DEBUGLEVEL_PRINTTOKEN_PIPELINE | \
+    case "$COOKASTRING" in
+      1) cook_a_string ;;
+      *) smart_parse ;;
+    esac
   fi
 }
+
+jsonsh_cli_subshell() (
+  # Same as above, but isolated in a subshell (no variables come back)
+  jsonsh_cli "$@"
+  exit $?
+)
+
 
 ###########################################################
 ### Active logic
 jsonsh_debugging_defaults
 
-if ([ "$0" = "$BASH_SOURCE" ] || ! [ -n "$BASH_SOURCE" ]);
+# If not sourced into a bash script, parse stdin and quit
+if ([ "$0" = "$BASH_SOURCE[0]" ] || [ "$0" = "$BASH_SOURCE" ] || [ -z "${BASH-}" ]);
 then
   jsonsh_cli "$@"
+  exit $?
 fi

@@ -27,17 +27,23 @@
 #           we are allowed to see through the filter.
 #
 
+if [ -n "${BASH-}" ]; then
+    set -o pipefail 2>/dev/null || true
+else
+    echo "systemctl: WARNING: It seems you execute '$0' not with 'bash' - this can fail!" >&2
+fi
+
 SYSTEMCTL_COMMANDS="show start stop restart enable disable status"
 
 # TODO: Match this up with web/systemctl.ecpp and maybe the Makefile variables
 # List of fixed strings that are good both for "case" and regexp matching
-SYSTEMCTL_UNITS_COMMON="mariadb mysql mysqld ntp saslauthd malamute     \
+SYSTEMCTL_UNITS_COMMON="mariadb mysql mysqld ntp ntpd ntpdate sntp      \
                  bios-reset-button tntnet@bios bios-agent-alert-smtp    \
                  bios-agent-alert bios-agent-autoconfig bios-agent-cm   \
                  bios-agent-dbstore bios-agent-inventory bios-agent-nut \
                  bios-agent-th bios-agent-tpower bios-db-init           \
                  bios-server-agent                                      \
-                 networking nut-monitor nut-server"
+                 malamute saslauthd networking nut-monitor nut-server"
 
 # For regexp matching
 SYSTEMCTL_UNITS_REGEX='nut-driver@[^[:blank:]]*'
@@ -120,8 +126,12 @@ case "$1" in
                 [ -x "$F" -a -s "$F" ] && JSONSH="$F" && break
         done
         if [ -x "$JSONSH" ] ; then
-            BASH_SOURCE=yes . "$JSONSH"
-            cook_a_string_arg() { [[ -z "$1" ]] || [[ "$1" =~ ^[A-Za-z0-9\ \-\.\+\\\/\:\;\(\)\{\}]*$ ]] >/dev/null && echo "$1" && return 0; echo "$*" | cook_a_string; }
+            if [ -n "${BASH-}" ]; then
+                . "$JSONSH"
+            else
+                echo "systemctl: Will fork to use JSON.sh from '$JSONSH' to cook strings" >&2
+                cook_a_string_arg() { "$JSONSH" -QQ "$1"; }
+            fi
         else
             echo "systemctl: FAILED to use JSON.sh from '$JSONSH'; will not cook strings" >&2 && JSONSH=""
             cook_a_string_arg() { echo "$*"; }
