@@ -113,10 +113,12 @@ start() {
 	else
 		start_instant
 	fi
+	systemctl restart networking
 }
 
 restart() {
 	start_instant
+	systemctl restart networking
 }
 
 stop() {
