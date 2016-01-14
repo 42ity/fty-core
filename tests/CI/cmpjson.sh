@@ -43,13 +43,14 @@ determineDirs || true
 [ -n "$JSONSH" ] && [ -x "$JSONSH" ] || \
     die "JSON.sh is not executable (tried '${JSONSH-}')"
 
+[ x"${JSONSH_CLI_DEFINED-}" = xyes ] || \
 if [ -n "${BASH-}" ] && . "$JSONSH" ; then
     echo "cmpjson: Will use sourced JSON.sh from '$JSONSH'" >&2
-     :
 else
     echo "cmpjson: Will fork to use JSON.sh from '$JSONSH'" >&2
     jsonsh_cli() { "$JSONSH" "$@"; }
 fi
+JSONSH_CLI_DEFINED=yes
 
 self_test() {
     local jsonstr1='{"current":[{"id":3,"realpower.1":1,"voltage.2":1,"current.2":12,"current.1":31,"voltage.1":3}]}'
