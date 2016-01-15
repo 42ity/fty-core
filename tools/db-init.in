@@ -308,6 +308,9 @@ esac
 if [ -z "`exec_sql 'show databases;' | egrep '^'"${DATABASE}"'$'`" ]; then
 	generate_database
 	exit $?         # Success or failure - we exit here anyway
+else
+	# Just make sure user passwords are okay
+	secure_database
 fi
 
 # If there are any consistency checks to run on the database -
