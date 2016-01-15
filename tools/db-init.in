@@ -118,7 +118,7 @@ EOF
 		chown bios /etc/default/bios-db-r[wo]
 		chmod 600 /etc/default/bios-db-r[wo]
 	else
-		echo "Database for BIOS initialization - existing user passwords are good"
+		echo "Database for BIOS - all existing user passwords are good"
 	fi
 }
 
