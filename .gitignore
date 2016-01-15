@@ -113,7 +113,6 @@ agent-alert-smtp
 agent-autoconfig
 server-agent
 agent-cm
-agent-th
 bios-email
 bios-nutscan
 agent-tpower
@@ -175,10 +174,8 @@ systemd/bios-server-agent.service
 systemd/bios-agent-tpower.service
 !systemd/bios-agent-autoconfig.service.in
 systemd/bios-agent-autoconfig.service
-!systemd/bios-agent-th.service.in
 systemd/bios-reset-button.service
 !systemd/bios-reset-button.service.in
-systemd/bios-agent-th.service
 !systemd/biostimer-graphs-prefetch.service.in
 systemd/biostimer-graphs-prefetch.service
 !systemd/biostimer-graphs-prefetch@.service.in

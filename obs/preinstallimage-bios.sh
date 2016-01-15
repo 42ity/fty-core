@@ -257,7 +257,7 @@ systemctl enable malamute
 systemctl preset-all
 if [ "`uname -m`" = x86_64 ]; then
     systemctl enable bios-fake-th
-    systemctl disable bios-agent-th
+    systemctl disable agent-th
     systemctl disable lcd-boot-display
     systemctl disable lcd-net-display
     systemctl mask lcd-boot-display
