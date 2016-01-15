@@ -30,11 +30,7 @@ echo "*********     accept_license *********************************************
 echo "***************************************************************************************************"
 
 accept_license
-
-[ -z "${JSONSH-}" ] && \
-    for F in "$CHECKOUTDIR/tools/JSON.sh" "$SCRIPTDIR/JSON.sh"; do
-        [ -x "$F" -a -s "$F" ] && JSONSH="$F" && break
-    done
+[ x"${JSONSH_CLI_DEFINED-}" = xyes ] || CODE=127 die "jsonsh_cli() not defined"
 
 echo "****************************************************************************************"
 echo "********* 1. relative=7d step=24h type=arithmetic_mean *********************************"
@@ -46,7 +42,7 @@ print_result $?
 
 # store the "data" array part of json output
 JPATH='^"data",[0-9]+$'
-DATA_OUTPUT="`echo "$OUTPUT" | ${JSONSH} -Nnx -x="$JPATH"`"
+DATA_OUTPUT="`echo "$OUTPUT" | jsonsh_cli -Nnx -x="$JPATH"`"
 [ $? -eq 0 -a -n "$DATA_OUTPUT" ]
 echo "--- POZOR !!!! ---"
 echo "$DATA_OUTPUT"
@@ -54,35 +50,35 @@ echo "$DATA_OUTPUT"
 # "units": "C"
 test_it "relative=7d - check \"units\""
 JPATH='^"units"$'
-JSON_PARSED="`echo "$OUTPUT" | ${JSONSH} -x="$JPATH" | grep '"C"'`"
+JSON_PARSED="`echo "$OUTPUT" | jsonsh_cli -x="$JPATH" | grep '"C"'`"
 [ $? -eq 0 -a -n "$JSON_PARSED" ]
 print_result $?
 
 test_it "relative=7d - check \"source\""
 # "source": "temperature.thermal_zone0"
 JPATH='^"source"$'
-JSON_PARSED="`echo "$OUTPUT" | ${JSONSH} -x="$JPATH" | grep '"temperature.thermal_zone0"'`"
+JSON_PARSED="`echo "$OUTPUT" | jsonsh_cli -x="$JPATH" | grep '"temperature.thermal_zone0"'`"
 [ $? -eq 0 -a -n "$JSON_PARSED" ]
 print_result $?
 
 test_it "relative=7d - check \"step\""
 # "step": "24h"
 JPATH='^"step"$'
-JSON_PARSED="`echo "$OUTPUT" | ${JSONSH} -x="$JPATH" | grep '"24h"'`"
+JSON_PARSED="`echo "$OUTPUT" | jsonsh_cli -x="$JPATH" | grep '"24h"'`"
 [ $? -eq 0 -a -n "$JSON_PARSED" ]
 print_result $?
 
 test_it "relative=7d - check \"type\""
 # "type": "arithmetic_mean"
 JPATH='^"type"$'
-JSON_PARSED="`echo "$OUTPUT" | ${JSONSH} -x="$JPATH" | grep '"arithmetic_mean"'`"
+JSON_PARSED="`echo "$OUTPUT" | jsonsh_cli -x="$JPATH" | grep '"arithmetic_mean"'`"
 [ $? -eq 0 -a -n "$JSON_PARSED" ]
 print_result $?
 
 test_it "relative=7d - check \"element_id\""
 # "element_id": 36
 JPATH='^"element_id"$'
-JSON_PARSED="`echo "$OUTPUT" | ${JSONSH} -x="$JPATH" | grep '36'`"
+JSON_PARSED="`echo "$OUTPUT" | jsonsh_cli -x="$JPATH" | grep '36'`"
 [ $? -eq 0 -a -n "$JSON_PARSED" ]
 print_result $?
 

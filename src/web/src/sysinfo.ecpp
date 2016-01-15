@@ -328,7 +328,7 @@ std::string debug_trace;
 // No argments to our custom "list-json" causes fallback to try and list all
 // allowed units and a constrained list of fields and so be quite quick;
 // adding "--all" would show all fields... over time...
-        rv = shared::output ({"sudo", "systemctl", "list-json"}, output, cmderr);
+        rv = shared::output ({"sudo", "systemctl", "list-json"}, output, cmderr, 120);
         if (b_debug_trace) {
             if (!cmderr.empty()) {
                 log_error("Calling 'systemctl list-json' got exit-code %i and this stderr:\n-----\n%s-----\n\n", rv, cmderr.c_str());

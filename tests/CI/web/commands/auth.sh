@@ -29,6 +29,7 @@ echo "**************************************************************************
 echo "********* Prerequisites ***************************************************************************"
 echo "***************************************************************************************************"
 init_script
+[ x"${JSONSH_CLI_DEFINED-}" = xyes ] || CODE=127 die "jsonsh_cli() not defined"
 
 # Check getting token
 _test_auth() {
@@ -72,10 +73,10 @@ TOKEN="`_gettoken_auth_sh`"
 CURL --insecure --header "Authorization: Bearer $TOKEN" -d "foobar" \
         -v --progress-bar "$BASE_URL/admin/license" 3> /dev/null 2> /dev/null >/dev/null
 CURL --insecure --header "Authorization: Bearer $TOKEN" -d "token=$TOKEN"  \
-        -v --progress-bar "$BASE_URL/oauth2/revoke" 3> /dev/null 2> /dev/null | $JSONSH -N >&5
+        -v --progress-bar "$BASE_URL/oauth2/revoke" 3> /dev/null 2> /dev/null | jsonsh_cli -N >&5
 curlfail_push_expect_401
 CURL --insecure --header "Authorization: Bearer $TOKEN" -d "foobar" \
-        -v --progress-bar "$BASE_URL/admin/license" 3> /dev/null 2> /dev/null | $JSONSH -N >&5
+        -v --progress-bar "$BASE_URL/admin/license" 3> /dev/null 2> /dev/null | jsonsh_cli -N >&5
 curlfail_pop
 print_result 0
 TOKEN="`_gettoken_auth_sh`"

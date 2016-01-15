@@ -124,9 +124,31 @@ fi
         CITEST_QUICKFAIL="$WEBLIB_QUICKFAIL"
 
 [ -z "${JSONSH-}" ] && \
-    for F in "$CHECKOUTDIR/tools/JSON.sh" "$SCRIPTDIR/JSON.sh"; do
+    for F in "$CHECKOUTDIR/tools/JSON.sh" "$SCRIPTDIR/JSON.sh" "$SCRIPTDIR/../../tools/JSON.sh" "/usr/share/bios/scripts/JSON.sh"; do
         [ -x "$F" -a -s "$F" ] && JSONSH="$F" && break
     done
+
+# Check if we already have jsonsh_cli() defined... afterwards we should have it :)
+[ -z "${JSONSH_CLI_DEFINED-}" ] && JSONSH_CLI_DEFINED="no"
+[ x"$JSONSH_CLI_DEFINED" = xyes ] || \
+if [ -n "$JSONSH" ] && [ -x "$JSONSH" ] ; then
+    if [ x"$(jsonsh_cli -QQ '"' 2>/dev/null)" = 'x\"' ]
+    then : ; else
+        if [ -n "${BASH-}" ] && . "$JSONSH" ; then
+            logmsg_debug "Will use sourced JSON.sh from '$JSONSH'" >&2
+        else
+            logmsg_debug "Will fork to use JSON.sh from '$JSONSH'" >&2
+            jsonsh_cli() { "$JSONSH" "$@"; }
+            export -f jsonsh_cli 2>/dev/null || true
+        fi
+    fi
+    JSONSH_CLI_DEFINED=yes
+    export JSONSH
+else
+    JSONSH=""
+    JSONSH_CLI_DEFINED=no
+    export JSONSH
+fi
 
 _TOKEN_=""
 
@@ -415,7 +437,8 @@ _api_get_token() {
 # normalize output and either succeed or report errors and dump the input.
 # Called from api_*_json functions after they populate OUT_CURL by API calls.
 _normalize_OUT_CURL_json() {
-    echo "$OUT_CURL" | $JSONSH -N
+    [ x"$JSONSH_CLI_DEFINED" != xyes ] && logmsg_error "jsonsh_cli() not defined" && return 127
+    echo "$OUT_CURL" | jsonsh_cli -N
     JSONSH_RES=$?
     [ "$JSONSH_RES" = 0 ] && return 0
     logmsg_debug "The '$JSONSH' JSON normalization choked on this input:" \
@@ -720,7 +743,7 @@ api_post_content() {
 # TODO:
 #   check args
 simple_get_json_code() {
-    if [ -z "$JSONSH" -o ! -x "$JSONSH" ] ; then
+    if [ x"$JSONSH_CLI_DEFINED" != xyes ] ; then
         simple_get_json_code_sed "$@"
         return $?
     fi
@@ -732,7 +755,7 @@ simple_get_json_code() {
     fi
     local __code="`echo "$__out" | grep -E '<\s+HTTP' | sed -r -e 's/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/'`"
     __out="`echo "$__out" | grep -vE '^([<>*]|\{ *\[data not shown\]|\{\s\[[0-9]+).*'`"
-    __out="`echo "$__out" | $JSONSH -N`"
+    __out="`echo "$__out" | jsonsh_cli -N`"
     if [ $? -ne 0 ]; then
         return 1
     fi
