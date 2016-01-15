@@ -117,6 +117,8 @@ EOF
 			printf 'DB_USER="%s"\nDB_PASSWD="%s"\n' "bios-ro" "${BIOS_RO}" > /etc/default/bios-db-ro
 		chown bios /etc/default/bios-db-r[wo]
 		chmod 600 /etc/default/bios-db-r[wo]
+	else
+		echo "Database for BIOS initialization - existing user passwords are good"
 	fi
 }
 
