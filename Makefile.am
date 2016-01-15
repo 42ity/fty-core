@@ -453,19 +453,6 @@ libpriv_db_measurements_la_CPPFLAGS = $(AM_CPPFLAGS) \
 
 #libpriv_db_measurements_la_LIBADD =	libpriv-utils.la
 
-noinst_LTLIBRARIES +=	libpriv-db-calculations.la
-
-libpriv_db_calculations_la_SOURCES = \
-			src/db/calculation.h \
-			src/db/calculation.cc
-
-libpriv_db_calculations_la_CPPFLAGS = $(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_builddir)/tools \
-			-I$(abs_top_srcdir)/src \
-			-I$(abs_top_srcdir)/src/db \
-			-I$(abs_top_srcdir)/src/persist/
-
 
 noinst_LTLIBRARIES += 	libpriv-db-assets.la
 
@@ -874,31 +861,6 @@ test_db2_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src
 
 test_db2_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
-
-cibin_programs += 	test-outage
-
-test_outage_SOURCES = \
-			tests/persist/test-outage.cc
-
-test_outage_LDADD = \
-			libpriv-log.la \
-			libpriv-db-calculations.la \
-			libpriv-db-measurements.la \
-			libpriv-db.la \
-			libpriv-defs.la \
-			libpriv-proto.la \
-			libpriv-test-run.la \
-			libpriv-utils-ymsg.la
-
-test_outage_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/tests/include/ \
-			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_builddir)/tools \
-			-I$(abs_top_srcdir)/src/db \
-			-I$(abs_top_srcdir)/src
-
-test_outage_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS}
 
 cibin_programs += 	test-dbtopology
 
@@ -1318,28 +1280,6 @@ agent_tpower_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_srcdir)/tools
 
-client_PROGRAMS += 	outage
-outage_SOURCES = \
-			src/outage/outage.cc tools/dbpath.h
-
-outage_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_srcdir)/src/db \
-			-I$(abs_top_srcdir)/src/persist
-
-outage_LDADD = \
-			libpriv-defs.la \
-			libpriv-db-calculations.la \
-			libpriv-db-measurements.la \
-			libpriv-db.la \
-			libpriv-log.la \
-			libpriv-utils.la \
-			libpriv-proto.la \
-			libpriv-utils-ymsg.la
-
-
-outage_LDFLAGS =	-ltntdb
-
 client_SCRIPTS +=	tools/bios-passwd \
 			tools/bios-networking \
 			tools/fake-th \
@@ -1425,7 +1365,6 @@ bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 bios_web_la_LIBADD = \
 			libpriv-db.la libpriv-cidr.la libpriv-proto.la \
 			libpriv-git-details-override.la \
-			libpriv-db-calculations.la \
 			libpriv-subprocess.la \
 			libpriv-utils-ymsg.la \
 			libpriv-db-measurements.la \
@@ -1614,7 +1553,6 @@ SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL += \
                         biostimer-verify-fs.service
 
 SYSTEMD_UNITS_TIMERIMPL_TARGET_BIOS += \
-                        biostimer-outage.service \
                         biostimer-graphs-prefetch@.service
 
 SYSTEMD_UNITS_TIMERIMPL += $(SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL) $(SYSTEMD_UNITS_TIMERIMPL_TARGET_BIOS)
@@ -1625,7 +1563,6 @@ SYSTEMD_TIMERS_LOWLEVEL += \
                         biostimer-verify-fs.timer
 
 SYSTEMD_TIMERS_TARGET_BIOS += \
-                        biostimer-outage.timer \
                         biostimer-graphs-prefetch__realpower.default@15m.timer \
                         biostimer-graphs-prefetch__realpower.default@7d.timer \
                         biostimer-graphs-prefetch__realpower.default@30d.timer \
