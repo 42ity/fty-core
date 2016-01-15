@@ -217,6 +217,7 @@ sed -i 's|\(secure_path="\)|\1/usr/libexec/bios:|' /etc/sudoers
 
 mkdir -p /etc/sudoers.d
 cp /usr/share/bios/examples/config/sudoers.d/bios_00_base /etc/sudoers.d
+[ "$IMGTYPE" = devel ] && cp /usr/share/bios/examples/config/sudoers.d/bios_01_citest /etc/sudoers.d
 
 mkdir -p /etc/security
 cp /usr/share/bios/examples/config/security/* /etc/security

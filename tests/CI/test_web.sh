@@ -180,6 +180,7 @@ CMPJSON_PY="`pwd`/cmpjson.py"
         [ -x "$F" -a -s "$F" ] && JSONSH="$F" && break
     done
 [ -s "$JSONSH" ] || CODE=7 die "Can not find JSON.sh"
+[ x"${JSONSH_CLI_DEFINED-}" = xyes ] || CODE=127 die "jsonsh_cli() not defined"
 
 cd web/commands || CODE=6 die "Can not change to `pwd`/web/commands"
 
@@ -288,7 +289,7 @@ for i in $POSITIVE; do
             RES_CMP=$?
             RES_JSONV=0
             while IFS='' read -r line || [ -n "$line" ]; do
-                OUT_JSONV="`echo "$line" | "$JSONSH" 2>&1`"
+                OUT_JSONV="`echo "$line" | jsonsh_cli 2>&1`"
                 RES_JSONV=$?
                 if [ $RES_JSONV -ne 0 ]; then
                     echo "$OUT_JSONV"
