@@ -55,9 +55,31 @@ if [ -z "${CHECKOUTDIR-}" ]; then
 fi
 
 [ -z "${JSONSH-}" ] && \
-    for F in "$CHECKOUTDIR/tools/JSON.sh" "$SCRIPTDIR/JSON.sh"; do
+    for F in "$CHECKOUTDIR/tools/JSON.sh" "$SCRIPTDIR/JSON.sh" "$SCRIPTDIR/../../tools/JSON.sh" "/usr/share/bios/scripts/JSON.sh"; do
         [ -x "$F" -a -s "$F" ] && JSONSH="$F" && break
     done
+
+# Check if we already have jsonsh_cli() defined... afterwards we should have it :)
+[ -z "${JSONSH_CLI_DEFINED-}" ] && JSONSH_CLI_DEFINED="no"
+[ x"$JSONSH_CLI_DEFINED" = xyes ] || \
+if [ -n "$JSONSH" ] && [ -x "$JSONSH" ] ; then
+    if [ x"$(jsonsh_cli -QQ '"' 2>/dev/null)" = 'x\"' ]
+    then : ; else
+        if [ -n "${BASH-}" ] && . "$JSONSH" ; then
+            logmsg_debug "Will use sourced JSON.sh from '$JSONSH'" >&2
+        else
+            logmsg_debug "Will fork to use JSON.sh from '$JSONSH'" >&2
+            jsonsh_cli() { "$JSONSH" "$@"; }
+            export -f jsonsh_cli 2>/dev/null || true
+        fi
+    fi
+    JSONSH_CLI_DEFINED=yes
+    export JSONSH
+else
+    JSONSH=""
+    JSONSH_CLI_DEFINED=no
+    export JSONSH
+fi
 
 _TOKEN_=""
 TESTLIB_FORCEABORT=no
