@@ -52,7 +52,7 @@ TEST_CASE("UPDATE asset element #1","[db][CRUD][update][asset_element][crud_test
     int r = persist::update_asset_element
         (conn, asset_element_id, element_name, parent_id, status, priority, asset_tag, n);
     REQUIRE ( r == 0 );
-    REQUIRE ( n == 0 );
+    REQUIRE ( n == 1 );
 
     auto reply_select = persist::select_asset_element_web_byId(conn, asset_element_id);
     REQUIRE ( reply_select.status == 1 );
@@ -62,6 +62,7 @@ TEST_CASE("UPDATE asset element #1","[db][CRUD][update][asset_element][crud_test
     REQUIRE ( item.status == status );
     REQUIRE ( item.priority == priority );
     REQUIRE ( item.parent_id == parent_id );
+    REQUIRE ( item.asset_tag == asset_tag );
 
     const char   *element_name_new = "asset_crud_DEVICE_updateN";
     a_elmnt_id_t  parent_id_new = 2;

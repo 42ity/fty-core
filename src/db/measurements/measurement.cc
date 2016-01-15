@@ -27,6 +27,7 @@
  * \brief Not yet documented file
  */
 #include <tntdb.h>
+#include <cxxtools/join.h>
 
 #include "log.h"
 #include "cleanup.h"
@@ -624,6 +625,91 @@ int
         return 1;
     }
 }
+
+
+
+
+//cxxtools::split(',', std::string(devices), std::back_inserter(devices_v));
+//cxxtools::join(topics.cbegin(), topics.cend(), ", ").c_str();
+
+
+// generate the proper tntdb::Statement for multi value delete for measurement topics
+static tntdb::Statement
+    s_multi_delete_topics_statement(
+        tntdb::Connection& conn,
+        std::set<m_msrmnt_tpc_id_t> topics)
+{
+    static const std::string sql_header = "DELETE FROM t_bios_measurement_topic where id in (";
+    const std::string sql_body = cxxtools::join(topics.cbegin(), topics.cend(), ", ");
+    static const std::string sql_end = ")";
+
+    log_debug("sql: '%s'", (sql_header + sql_body + sql_end).c_str());
+    
+    auto st = conn.prepare(sql_header + sql_body + sql_end);
+
+    return st;
+}
+
+// generate the proper tntdb::Statement for multi value delete for measurements
+static tntdb::Statement
+    s_multi_delete_measurements_statement(
+        tntdb::Connection& conn,
+        std::set<m_msrmnt_tpc_id_t> topics)
+{
+    static const std::string sql_header = "DELETE FROM t_bios_measurement where topic_id in (";
+    const std::string sql_body = cxxtools::join(topics.cbegin(), topics.cend(), ", ");
+    static const std::string sql_end = ")";
+
+    log_debug("sql: '%s'", (sql_header + sql_body + sql_end).c_str());
+    
+    auto st = conn.prepare(sql_header + sql_body + sql_end);
+
+    return st;
+}
+
+int
+    delete_measurements(
+        tntdb::Connection& conn,
+        std::set<m_msrmnt_tpc_id_t> topics)
+{
+    LOG_START;
+    if ( topics.empty() ) {
+        return 0;
+    }
+    try {
+        auto st = s_multi_delete_measurements_statement(conn, topics);
+        st.execute();
+        LOG_END;
+        return 0;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return 1;
+    }
+}
+
+
+int
+    delete_measurement_topics(
+        tntdb::Connection& conn,
+        std::set<m_msrmnt_tpc_id_t> topics)
+{
+    LOG_START;
+    if ( topics.empty() ) {
+        return 0;
+    }
+    try {
+        auto st = s_multi_delete_topics_statement(conn, topics);
+        st.execute();
+        LOG_END;
+        return 0;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return 1;
+    }
+}
+
 
 db_reply <std::vector<db_msrmnt_t>>
     select_from_measurement_by_topic(
