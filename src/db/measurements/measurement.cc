@@ -627,12 +627,6 @@ int
 }
 
 
-
-
-//cxxtools::split(',', std::string(devices), std::back_inserter(devices_v));
-//cxxtools::join(topics.cbegin(), topics.cend(), ", ").c_str();
-
-
 // generate the proper tntdb::Statement for multi value delete for measurement topics
 static tntdb::Statement
     s_multi_delete_topics_statement(
