@@ -88,22 +88,38 @@ random_password() {
 }
 
 secure_database() {
-		test \! -f /etc/default/bios-db-rw || return 0
-		test \! -f /etc/default/bios-db-ro || return 0
+	GOOD_BIOS_RW=no
+	GOOD_BIOS_RO=no
+	[ -s /etc/default/bios-db-rw ] && \
+		( . /etc/default/bios-db-rw && mysql -u "${DB_USER}" --password="${DB_PASSWD}" -D "${DATABASE}" -e "select 'working';" | grep -w working >/dev/null ) && \
+		GOOD_BIOS_RW=yes
+	[ -s /etc/default/bios-db-ro ] && \
+		( . /etc/default/bios-db-ro && mysql -u "${DB_USER}" --password="${DB_PASSWD}" -D "${DATABASE}" -e "select 'working';" | grep -w working >/dev/null ) && \
+		GOOD_BIOS_RO=yes
+	if [ "$GOOD_BIOS_RW" = no ] || [ "$GOOD_BIOS_RO" = no ]; then
 		echo "Database for BIOS initialization - generating user passwords..."
 
-		BIOS_RW="`random_password`"
-		BIOS_RO="`random_password`"
+		[ "$GOOD_BIOS_RW" = yes ] && \
+			BIOS_RW="`(. /etc/default/bios-db-rw && echo "${DB_PASSWD}")`" && \
+			[ -n "$BIOS_RW" ] || BIOS_RW="`random_password`"
+		[ "$GOOD_BIOS_RO" = yes ] && \
+			BIOS_RO="`(. /etc/default/bios-db-ro && echo "${DB_PASSWD}")`" && \
+			[ -n "$BIOS_RO" ] || BIOS_RO="`random_password`"
 
 		cat << EOF | do_mysql
 GRANT DELETE,INSERT,SELECT,UPDATE ON ${DATABASE}.* TO 'bios-rw'@'localhost' IDENTIFIED BY '$BIOS_RW';
 GRANT SELECT                      ON ${DATABASE}.* TO 'bios-ro'@'localhost' IDENTIFIED BY '$BIOS_RO';
 FLUSH PRIVILEGES;
 EOF
-		printf 'DB_USER="%s"\nDB_PASSWD="%s"\n' "bios-rw" "${BIOS_RW}" > /etc/default/bios-db-rw
-		printf 'DB_USER="%s"\nDB_PASSWD="%s"\n' "bios-ro" "${BIOS_RO}" > /etc/default/bios-db-ro
+		[ "$GOOD_BIOS_RW" = yes ] || \
+			printf 'DB_USER="%s"\nDB_PASSWD="%s"\n' "bios-rw" "${BIOS_RW}" > /etc/default/bios-db-rw
+		[ "$GOOD_BIOS_RO" = yes ] || \
+			printf 'DB_USER="%s"\nDB_PASSWD="%s"\n' "bios-ro" "${BIOS_RO}" > /etc/default/bios-db-ro
 		chown bios /etc/default/bios-db-r[wo]
 		chmod 600 /etc/default/bios-db-r[wo]
+	else
+		echo "Database for BIOS - all existing user passwords are good"
+	fi
 }
 
 SQLINSTALL_TIMESTAMP="t=`date -u '+%Y%m%dT%H%M%SZ'`"
@@ -292,6 +308,9 @@ esac
 if [ -z "`exec_sql 'show databases;' | egrep '^'"${DATABASE}"'$'`" ]; then
 	generate_database
 	exit $?         # Success or failure - we exit here anyway
+else
+	# Just make sure user passwords are okay
+	secure_database
 fi
 
 # If there are any consistency checks to run on the database -
