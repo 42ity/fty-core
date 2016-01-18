@@ -200,7 +200,7 @@ reportGitInfo() {
 
             [ $_B_RES = 0 -a -n "$_B" ] && \
                 echo "GIT_DETAILS-INFO: This workspace is a 'detached HEAD'," \
-                    "but its commit-id matches the head of known branch '$_B'" && \
+                    "but its commit-id matches the head of known branch '$_B'" >&2 && \
                 PACKAGE_GIT_BRANCH="$_B"
 
             unset _B
