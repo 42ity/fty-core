@@ -75,7 +75,7 @@ bool relative_to_unixtime (const std::string& relative, int64_t now, int64_t& un
 
 class StdReply {
     public:
-        std::ostream & out() { return std::cout; }
+        std::ostream & out() { return std::cerr; }
 };
 
 int main(int argc, char **argv) {
