@@ -116,6 +116,7 @@ agent-cm
 bios-email
 bios-nutscan
 agent-tpower
+average
 generate_measurement
 outage
 test-outage
