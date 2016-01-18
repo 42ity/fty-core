@@ -98,7 +98,7 @@ process
 
         // Check if returned averages are complete
         if (averages.empty ()) {
-            log_info ("Requested averages: Empty");
+            log_debug ("Requested averages: Empty");
             if (last_average_ts < start_ts) {
                 // requesting stored averages returned an empty set && last stored average's timestamp < start of requested interval
                 // => we need to extend compute everything from the last stored average's timestamp 
@@ -121,7 +121,7 @@ process
                 }
                 log_info ("last_average_ts: '%" PRId64"', start_sampled_ts: '%" PRId64"'.", last_average_ts, start_sampled_ts);
 
-                log_info ("Timestamp of last stored average: '%" PRId64"' <<  start_timestamp: '%" PRId64"'. "
+                log_debug ("Timestamp of last stored average: '%" PRId64"' <<  start_timestamp: '%" PRId64"'. "
                           "Therefore we need to compute averages from following sampled data interval: "
                           "<Timestamp of last stored average, end_timestamp + nut_repeat_interval> which is "
                           "<%" PRId64", %" PRId64">.",
@@ -142,7 +142,7 @@ process
                     assert (chunk);
                     ymsg_set_response (*message_out, &chunk);
 
-                    log_info ("nothing to compute");
+                    log_debug ("nothing to compute");
                     return;
                 }
                 if ( rv != 0 )
@@ -166,7 +166,7 @@ process
                           "of sampled data.");
         }
         else {
-            log_info ("Requested averages: '%" PRIu64"'", averages.size ());
+            log_debug ("Requested averages: '%" PRIu64"'", averages.size ());
             // put the stored averages into json
             for (const auto &p : averages) {
                 std::string item = BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL;
@@ -201,15 +201,15 @@ process
                 }
             }
             else
-                log_info ("returned averages complete");
+                log_debug ("returned averages complete");
         }
 
         if (!samples.empty ()) {
-            log_info ("Samples directly from db; count: '%" PRIu64"', first measurement -> timestamp: '%" PRId64"', value '%f'",
+            log_debug ("Samples directly from db; count: '%" PRIu64"', first measurement -> timestamp: '%" PRId64"', value '%f'",
                        samples.size (), samples.cbegin ()->first, samples.cbegin ()->second);
             log_info ("Calling solve_left_margin (extended_start = '%" PRId64"').", start_sampled_ts);
             solve_left_margin (samples, start_sampled_ts);
-            log_info ("Samples after solving left margin; count: '%" PRIu64"', first measurement -> timestamp: '%" PRId64"', value '%f'",
+            log_debug ("Samples after solving left margin; count: '%" PRIu64"', first measurement -> timestamp: '%" PRId64"', value '%f'",
                        samples.size (), samples.cbegin ()->first, samples.cbegin ()->second);
             if (!samples.empty ()) {
                 int64_t first_ts = samples.cbegin()->first;
