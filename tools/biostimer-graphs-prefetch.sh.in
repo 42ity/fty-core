@@ -16,7 +16,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-#! \file   biostimer-graphs-prefetch.sh
+#! \file   biostimer-graphs-prefetch.sh(.in)
 #  \brief  Speed up power-average graphs displaying in the Web UI
 #  \author Karol Hrdina <KarolHrdina@Eaton.com>
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
@@ -25,11 +25,12 @@
 # biostimer-graphs-prefetch.sh
 # Script finds assets with power-average data and triggers pre-calculation
 # of the averages needed for graphs, thus speeding them up in web-GUI.
-# TODO: remove all the fetcher, ports and all the stuff written for the
-#       REST API way
+# Now this is done by lots of (throttled) calls to a binary that manipulates
+# data in the database, one call for each pre-calculation pattern (data-type,
+# time-step, function).
 #
 # PURPOSE:
-# Have cron job periodically call this script
+# Have a cron job or a systemd timer unit periodically call this script
 
 # supported average types and steps
 TYPE_AVG=arithmetic_mean
@@ -45,16 +46,6 @@ STEPS_SUPPORTED="15m 30m 1h 8h 24h"
 # Regexp wrapped into "^(...)$" when used, so it must describe the whole string
 [ -z "$SOURCES_ALLOWED" ] && SOURCES_ALLOWED=""
 
-[ -z "$SUT_HOST" ] && \
-        SUT_HOST="127.0.0.1"
-
-[ -z "$SUT_WEB_PORT" ] && \
-if [ -n "$CHECKOUTDIR" ] ; then
-        SUT_WEB_PORT="8000"
-else
-        SUT_WEB_PORT="80"
-fi
-
 # How many requests can fire at once? Throttle when we reach this amount...
 [ -z "$MAX_CHILDREN" ] && MAX_CHILDREN=1
 
@@ -63,20 +54,38 @@ fi
         SCRIPTDIR="`pwd`/`dirname "$0"`" || \
         SCRIPTDIR="`dirname "$0"`"
 
+# Beside HTTP support, SUT_HOST is also used in sut_run() and so in do_select()
+[ -z "${SUT_HOST-}" ] || \
+        echo "WARNING: $0: SUT_HOST was set to '$SUT_HOST', however we only support 'localhost'!" >&2
+SUT_HOST="127.0.0.1"
+SUT_IS_REMOTE="no"
+export SUT_HOST SUT_IS_REMOTE
+
 # Include our standard routines for CI scripts
 CI_DEBUG_CALLER="$CI_DEBUG" # may be empty
-BASE_URL_CALLER="$BASE_URL" # may be empty
 [ -s "$SCRIPTDIR/scriptlib.sh" ] &&
         . "$SCRIPTDIR"/scriptlib.sh || \
 { [ -s "$SCRIPTDIR/../tests/CI/scriptlib.sh" ] &&
         . "$SCRIPTDIR"/../tests/CI/scriptlib.sh ; } || \
+{ [ -s "@datadir@/@PACKAGE@/scripts/scriptlib.sh" ] &&
+        . "@datadir@/@PACKAGE@/scripts/scriptlib.sh" ; } || \
 { echo "FATAL: $0: Can not include script library" >&2; exit 1; }
 NEED_CHECKOUTDIR=no NEED_BUILDSUBDIR=no determineDirs_default || true
 LOGMSG_PREFIX="BIOS-TIMER-"
 
-FETCHER=
-( which wget >/dev/null 2>&1 ) && FETCHER=fetch_wget
-( which curl >/dev/null 2>&1 ) && FETCHER=fetch_curl
+# Legacy naming from the past of HTTP-based implementation
+[ -z "${FETCHER-}" ] && FETCHER=""
+[ -z "${FETCHER-}" ] && \
+for F in \
+        "$SCRIPTDIR/../average" \
+        "$SCRIPTDIR/average" \
+        "@libexecdir@/@PACKAGE@/average" \
+; do
+        [ -s "$F" ] && [ -x "$F" ] && FETCHER="$F" && break
+done
+[ -n "${FETCHER-}" ] && [ -s "$FETCHER" ] && [ -x "$FETCHER" ] || \
+        logmsg_warn "Can not find 'average' pre-calculator program, wet-run mode would fail!"
+
 
 check_in_list() {
     # Tests that tokens listed in "$1" are among
@@ -103,8 +112,6 @@ usage() {
     echo "  -j N                Max parallel fetchers to launch (default $MAX_CHILDREN)"
     echo "  --lockfile file     Filename used to block against multiple runs"
     echo "  --timefile file     Filename used to save last request end-timestamp"
-    echo "  --host hostname     Where to place the REST API request"
-    echo "  --port portnum         (default http://$SUT_HOST:$SUT_WEB_PORT)"
     echo "  --steps '15m 24h'   A space-separated string of (supported!) time steps"
     echo "                         (among '$STEPS_SUPPORTED')"
     echo "  --types 'min max'   A space-separated string of (supported!) precalc types"
@@ -114,11 +121,6 @@ usage() {
     echo "                      these parts may be empty; will also generate"
     echo "                      lockfile and timefile strings to match"
 }
-
-[ -z "$FETCHER" ] && \
-        logmsg_error "WARNING: Neither curl nor wget were found, wet-run mode would fail"
-[ -z "$FETCHER" ] && \
-        FETCHER=curl
 
 ACTION="request-quiet"
 while [ $# -gt 0 ]; do
@@ -131,10 +133,6 @@ while [ $# -gt 0 ]; do
             shift ;;
         --lockfile) LOCKFILE="$2"; shift ;;
         --timefile) TIMEFILE="$2"; shift ;;
-        --host|--sut-web-host|--sut-host)
-            SUT_HOST="$2"; shift ;;
-        --port|--sut-web-port|--sut-port)
-            SUT_WEB_PORT="$2"; shift ;;
         # No sanity check enforced against STEPS_SUPPORTED and TYPES_SUPPORTED
         # at the moment, to allow testing of other values as well. However, we
         # do test and issue a sanity-check note below. Can become fatal later.
@@ -179,20 +177,8 @@ check_in_list "$STEPS" "$STEPS_SUPPORTED" || \
 [ -z "$TIMEFILE" ] && \
     TIMEFILE=/var/lib/bios/agent-cm/biostimer-graphs-prefetch.time
 
-BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
-[ -n "$BASE_URL_CALLER" ] && BASE_URL="$BASE_URL_CALLER" && \
-    logmsg_info "Using BASE_URL='$BASE_URL' passed to us via envvars"
-
 # Helper join array function
 function join { local IFS="$1"; shift; echo "$*"; }
-
-fetch_wget() {
-    wget -q -O - "$@"
-}
-
-fetch_curl() {
-    curl "$@"
-}
 
 # Converts asset element id to (discovered) device element id
 #
@@ -372,7 +358,7 @@ start_lock() {
     # Previous biostimer-graphs-prefetch.sh should execute successfully
     # TODO: see flock command
     [ -f "$LOCKFILE" ] && \
-        die 0 "A copy of the script seems already running:" "`cat "$LOCKFILE"`"
+        die 0 "A copy of the script seems already running ('$LOCKFILE' exists):" "`cat "$LOCKFILE"`"
 
     # Set a default handler for default signal list, and then a custom one
     settraps 'trap_abort'
@@ -410,11 +396,11 @@ prepare_timestamps() {
     export START_TIMESTAMP END_TIMESTAMP
 }
 
-generate_getrestapi_strings() {
-    generate_getrestapi_strings_sources
+generate_prefetchcmd_strings() {
+    generate_prefetchcmd_strings_sources
 }
 
-generate_getrestapi_strings_sources() {
+generate_prefetchcmd_strings_sources() {
     # This is a read-only operation
     local NUM_STRINGS
     NUM_STRINGS=0
@@ -450,7 +436,7 @@ generate_getrestapi_strings_sources() {
             return 1
         fi
 
-        # 5. Generate curl request for each combination of source, step, type for the given element id
+        # 5. Generate prefetch request for each combination of source, step, type for the given element id
         for s in $SOURCES; do
             if [ -n "$SOURCES_ALLOWED" ] && \
                 echo "$s" | egrep -vi "^($SOURCES_ALLOWED$)" > /dev/null ; then
@@ -459,25 +445,23 @@ generate_getrestapi_strings_sources() {
             fi
             for stype in $TYPES; do
                 for sstep in $STEPS; do
-                    # TODO: change this to api_get with related checks?
-                    echo "/usr/libexec/bios/average 'start_ts=${START_TIMESTAMP}&end_ts=${END_TIMESTAMP}&type=${stype}&step=${sstep}&element_id=${i}&source=$s'"
+                    echo "${FETCHER} 'start_ts=${START_TIMESTAMP}&end_ts=${END_TIMESTAMP}&type=${stype}&step=${sstep}&element_id=${i}&source=$s'"
                     NUM_STRINGS=$(($NUM_STRINGS+1))
-                    # TODO: Does it make sense to check for 404/500? What can we do?
                 done
             done
         done
     done
 
-    logmsg_info "Successfully generated $NUM_STRINGS URLs for power sources" >&2
+    logmsg_info "Successfully generated $NUM_STRINGS request command-lines for power sources" >&2
     return 0
 }
 
 
 # Background processes (if any) listed here for killer-trap
 FIRED_BATCH=""
-run_getrestapi_strings() {
+run_prefetchcmd_strings() {
     # This is a write-possible operation that updates timestamp files.
-    # Executes a series of fetch-lines from generate_getrestapi_strings()
+    # Executes a series of fetch-lines from generate_prefetchcmd_strings()
     # called inside this routine.
 
     start_lock
@@ -488,10 +472,10 @@ run_getrestapi_strings() {
     COUNT_BATCH=0
     RES=-1
     if [ "$MAX_CHILDREN" -gt 1 ] 2>/dev/null; then
-        run_getrestapi_strings_parallel "$@"
+        run_prefetchcmd_strings_parallel "$@"
     else
-        run_getrestapi_strings_sequential "$@"
-    fi < <(generate_getrestapi_strings)
+        run_prefetchcmd_strings_sequential "$@"
+    fi < <(generate_prefetchcmd_strings)
     # Special bash syntax to avoid forking and thus hiding of variables
 
     TS_ENDED="`date -u +%s 2>/dev/null`" || TS_ENDED=""
@@ -514,12 +498,13 @@ run_getrestapi_strings() {
     return $RES
 }
 
-run_getrestapi_strings_sequential() {
-    # Internal detail for run_getrestapi_strings()
-    logmsg_info 0 "`date`: Using sequential foreground REST API requests" >&2
+run_prefetchcmd_strings_sequential() {
+    # Internal detail for run_prefetchcmd_strings()
+    logmsg_info 0 "`date`: Using sequential foreground prefetcher requests" >&2
     while IFS="" read CMDLINE; do
         [ "$RES" -lt 0 ] && RES=0
         COUNT_TOTAL=$(($COUNT_TOTAL+1))
+        [ "$1" = -v ] && logmsg_debug 0 "Running: $CMDLINE" >&2
         eval $CMDLINE
         RESLINE=$?
         [ "$1" = -v ] && logmsg_debug 0 "Result ($RESLINE) of: $CMDLINE" >&2
@@ -529,9 +514,9 @@ run_getrestapi_strings_sequential() {
     done
 }
 
-run_getrestapi_strings_parallel() {
-    # Internal detail for run_getrestapi_strings()
-    logmsg_info 0 "`date`: Using parallel background REST API requests (at most $MAX_CHILDREN at once)" >&2
+run_prefetchcmd_strings_parallel() {
+    # Internal detail for run_prefetchcmd_strings()
+    logmsg_info 0 "`date`: Using parallel background prefetcher requests (at most $MAX_CHILDREN at once)" >&2
     while IFS="" read CMDLINE; do
         [ "$RES" -lt 0 ] && RES=0
         COUNT_TOTAL=$(($COUNT_TOTAL+1))
@@ -591,15 +576,15 @@ case "$ACTION" in
         # Moderate logging - ERROR and WARN - by default
         [ x"$CI_DEBUG_CALLER" = x ] && CI_DEBUG=2
         [ -z "$FETCHER" ] && \
-                FETCHER=curl
-        generate_getrestapi_strings "$@"
+                FETCHER="average"
+        generate_prefetchcmd_strings "$@"
         exit $?
         ;;
     request-verbose) # production run with verbose output
         [ x"$CI_DEBUG_CALLER" = x ] && CI_DEBUG=5
         [ -z "$FETCHER" ] && \
                 die "No usable FETCHER was detected on this system"
-        run_getrestapi_strings "$@"
+        run_prefetchcmd_strings "$@"
         exit $?
         ;;
     request-quiet) # default / quiet mode for timed runs
@@ -607,7 +592,7 @@ case "$ACTION" in
         [ x"$CI_DEBUG_CALLER" = x ] && CI_DEBUG=0
         [ -z "$FETCHER" ] && \
                 die "No usable FETCHER was detected on this system"
-        run_getrestapi_strings "$@" >/dev/null
+        run_prefetchcmd_strings "$@" >/dev/null
         exit $?
         ;;
 esac
