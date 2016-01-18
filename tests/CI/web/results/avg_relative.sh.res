@@ -28,6 +28,7 @@
 {"units":"W","source":"realpower.default","step":"15m","type":"min","element_id":22,"start_ts":1111111,"end_ts":1111111,"data":[{"value":20.00,"timestamp":1111111}]}
 {"units":"W","source":"realpower.default","step":"15m","type":"min","element_id":22,"start_ts":1111111,"end_ts":1111111,"data":[]}
 {"units":"W","source":"realpower.default","step":"15m","type":"min","element_id":22,"start_ts":1111111,"end_ts":1111111,"data":[]}
+{"units":"W","source":"realpower.default","step":"15m","type":"min","element_id":22,"start_ts":1111111,"end_ts":1111111,"data":[]}
 {"units":"A","source":"current.output.L1","step":"15m","type":"min","element_id":22,"start_ts":1111111,"end_ts":1111111,"data":[{"value":2.00,"timestamp":1111111}]}
 {"units":"A","source":"current.output.L1","step":"15m","type":"min","element_id":22,"start_ts":1111111,"end_ts":1111111,"data":[{"value":2.00,"timestamp":1111111}]}
 {"units":"A","source":"current.output.L1","step":"15m","type":"min","element_id":22,"start_ts":1111111,"end_ts":1111111,"data":[{"value":2.00,"timestamp":1111111}]}
