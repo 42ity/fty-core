@@ -335,6 +335,7 @@ if [ "$IMGTYPE" = devel ] ; then
     echo "BIOS_LOG_LEVEL=LOG_DEBUG" > /etc/default/bios
 else
     echo "BIOS_LOG_LEVEL=LOG_INFO" > /etc/default/bios
+    sed -i 's|.*MaxLevelStore.*|MaxLevelStore=info|'                  /etc/systemd/journald.conf
 fi
 # set path to our libexec directory
 echo "PATH=/usr/libexec/bios:/bin:/usr/bin:/sbin:/usr/sbin" >>/etc/default/bios
