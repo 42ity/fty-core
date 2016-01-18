@@ -37,6 +37,7 @@
 #include <cxxtools/split.h>
 #include <sys/types.h>
 #include <sys/syscall.h>
+#include <tnt/tntnet.h>
 
 #include "utils.h"
 #include "utils++.h"
@@ -80,19 +81,26 @@ class StdReply {
 
 int main(int argc, char **argv) {
 
+    log_open ();
+    if (argc == 1) {
+        log_error ("Usage: %s query", argv[0]);
+        exit (EXIT_FAILURE);
+    }
+
+    tnt::QueryParams q {};
+    q.parse_url (argv[1]);
+
+    std::string start_ts = q["start_ts"];
+    std::string end_ts = q["end_ts"];
+    std::string type = q["type"];
+    std::string step = q["step"];
+    std::string source = q["source"];
+    std::string element_id = q["element_id"];
+    std::string relative = q["relative"];
+
     auto reply = StdReply{};
 
-    std::string start_ts;
-    std::string end_ts;
-    std::string type;
-    std::string step;
-    std::string source;
-    std::string element_id;
-    std::string relative;
-    // Input arguments checking
-
-    log_open ();
-
+    // Input argument checking
     int64_t st = -1, end = -1;
     if (relative.empty ()) {
         // check both start_ts and end_ts
