@@ -101,6 +101,14 @@ A       current.output.L1@UPS1-LAB      UPS1-LAB        $(expr $TIME - 50000)   
     done
 }
 
+api_get_json_ntstp(){
+[ -z ${RES+x} ] && RES=0
+GTJSON=`api_get_json $1`
+RES="$(expr $RES + $?)"
+echo $GTJSON | sed 's/[[:digit:]]\{10\}/1111111/g' >&5
+}
+
+
 # START
 
 echo "***************************************************************************************************"
@@ -116,42 +124,45 @@ echo "********* 1. AVG for measurement with < 24 hod old timestamp *************
 echo "***************************************************************************************************"
 test_it "AVG_for_measurement_with_<_24_hod_old_timestamp"
 curlfail_push_expect_noerrors
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=current.output.L1' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=current.output.L1&relative=24h' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=current.output.L1&relative=7d' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=current.output.L1&relative=30d' >&5
-print_result $?
+RES=0
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=current.output.L1'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=current.output.L1&relative=24h'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=current.output.L1&relative=7d'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=current.output.L1&relative=30d'
+print_result $RES;RES=0
 
 echo
 echo "********* avg_relative.sh *************************************************************************"
 echo "********* 2. AVG for measurement with > 24 hod old timestamp **************************************"
 echo "***************************************************************************************************"
 test_it "AVG_for_measurement_with_>_24_hod_old_timestamp"
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=realpower.output.L1' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=realpower.output.L1&relative=24h' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=realpower.output.L1&relative=7d' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=realpower.output.L1&relative=30d' >&5
-print_result $?
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=realpower.output.L1'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=realpower.output.L1&relative=24h'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=realpower.output.L1&relative=7d'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=realpower.output.L1&relative=30d'
+print_result $RES;RES=0
 
 echo
 echo "********* avg_relative.sh *************************************************************************"
 echo "********* 3. AVG for measurement with > 7 days old timestamp **************************************"
 echo "***************************************************************************************************"
 test_it "AVG_for_measurement_with_>_7_days_old_timestamp"
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=load.default' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=load.default&relative=24h' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=load.default&relative=7d' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=load.default&relative=30d' >&5
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=load.default'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=load.default&relative=24h'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=load.default&relative=7d'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=load.default&relative=30d'
+print_result $RES;RES=0
 
 echo
 echo "********* avg_relative.sh *************************************************************************"
 echo "********* 4. AVG for measurement with > 30 days old timestamp **************************************"
 echo "***************************************************************************************************"
 test_it "AVG_for_measurement_with_>_7_days_old_timestamp"
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=realpower.default' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=realpower.default&relative=24h' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=realpower.default&relative=7d' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=realpower.default&relative=30d' >&5
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=realpower.default'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=realpower.default&relative=24h'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=realpower.default&relative=7d'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=realpower.default&relative=30d'
+print_result $RES;RES=0
 
 echo
 echo "********* avg_relative.sh *************************************************************************"
@@ -159,41 +170,43 @@ echo "********* 5. AVG for measurement with < 24 hod old timestamp without start
 echo "***************************************************************************************************"
 test_it "AVG_for_measurement_with_<_24_hod_old_timestamp_without_start-end-ts"
 curlfail_push_expect_noerrors
-api_get_json '/metric/computed/average?type=arithmetic_mean&step=15m&element_id=22&source=current.output.L1&relative=24h' >&5
-api_get_json '/metric/computed/average?type=arithmetic_mean&step=15m&element_id=22&source=current.output.L1&relative=7d' >&5
-api_get_json '/metric/computed/average?type=arithmetic_mean&step=15m&element_id=22&source=current.output.L1&relative=30d' >&5
-print_result $?
+api_get_json_ntstp '/metric/computed/average?type=arithmetic_mean&step=15m&element_id=22&source=current.output.L1&relative=24h'
+api_get_json_ntstp '/metric/computed/average?type=arithmetic_mean&step=15m&element_id=22&source=current.output.L1&relative=7d'
+api_get_json_ntstp '/metric/computed/average?type=arithmetic_mean&step=15m&element_id=22&source=current.output.L1&relative=30d'
+print_result $RES;RES=0
 
 echo
 echo "********* avg_relative.sh *************************************************************************"
 echo "********* 6. MIN for measurement with > 24 hod old timestamp **************************************"
 echo "***************************************************************************************************"
 test_it "AVG_for_measurement_with_>_24_hod_old_timestamp"
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=min&step=15m&element_id=22&source=realpower.output.L1' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=min&step=15m&element_id=22&source=realpower.output.L1&relative=24h' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=min&step=15m&element_id=22&source=realpower.output.L1&relative=7d' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=min&step=15m&element_id=22&source=realpower.output.L1&relative=30d' >&5
-print_result $?
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=min&step=15m&element_id=22&source=realpower.output.L1'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=min&step=15m&element_id=22&source=realpower.output.L1&relative=24h'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=min&step=15m&element_id=22&source=realpower.output.L1&relative=7d'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=min&step=15m&element_id=22&source=realpower.output.L1&relative=30d'
+print_result $RES;RES=0
 
 echo
 echo "********* avg_relative.sh *************************************************************************"
 echo "********* 7. MIN for measurement with > 7 days old timestamp **************************************"
 echo "***************************************************************************************************"
 test_it "AVG_for_measurement_with_>_7_days_old_timestamp"
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=min&step=15m&element_id=22&source=load.default' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=min&step=15m&element_id=22&source=load.default&relative=24h' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=min&step=15m&element_id=22&source=load.default&relative=7d' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=min&step=15m&element_id=22&source=load.default&relative=30d' >&5
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=min&step=15m&element_id=22&source=load.default'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=min&step=15m&element_id=22&source=load.default&relative=24h'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=min&step=15m&element_id=22&source=load.default&relative=7d'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=min&step=15m&element_id=22&source=load.default&relative=30d'
+print_result $RES;RES=0
 
 echo
 echo "********* avg_relative.sh *************************************************************************"
 echo "********* 8. MIN for measurement with > 30 days old timestamp **************************************"
 echo "***************************************************************************************************"
 test_it "AVG_for_measurement_with_>_7_days_old_timestamp"
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=min&step=15m&element_id=22&source=realpower.default' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=min&step=15m&element_id=22&source=realpower.default&relative=24h' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=min&step=15m&element_id=22&source=realpower.default&relative=7d' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=min&step=15m&element_id=22&source=realpower.default&relative=30d' >&5
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=min&step=15m&element_id=22&source=realpower.default'
+api_get_jso n '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=min&step=15m&element_id=22&source=realpower.default&relative=24h'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=min&step=15m&element_id=22&source=realpower.default&relative=7d'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=min&step=15m&element_id=22&source=realpower.default&relative=30d'
+print_result $RES;RES=0
 
 echo
 echo "********* avg_relative.sh *************************************************************************"
@@ -201,41 +214,44 @@ echo "********* 9. MIN for measurement with < 24 hod old timestamp without start
 echo "***************************************************************************************************"
 test_it "AVG_for_measurement_with_<_24_hod_old_timestamp_without_start-end-ts"
 curlfail_push_expect_noerrors
-api_get_json '/metric/computed/average?type=min&step=15m&element_id=22&source=current.output.L1&relative=24h' >&5
-api_get_json '/metric/computed/average?type=min&step=15m&element_id=22&source=current.output.L1&relative=7d' >&5
-api_get_json '/metric/computed/average?type=min&step=15m&element_id=22&source=current.output.L1&relative=30d' >&5
-print_result $?
+api_get_json_ntstp '/metric/computed/average?type=min&step=15m&element_id=22&source=current.output.L1&relative=24h'
+api_get_json_ntstp '/metric/computed/average?type=min&step=15m&element_id=22&source=current.output.L1&relative=7d'
+api_get_json_ntstp '/metric/computed/average?type=min&step=15m&element_id=22&source=current.output.L1&relative=30d'
+print_result $RES;RES=0
 
 echo
 echo "********* avg_relative.sh *************************************************************************"
 echo "********* 10. MAX for measurement with > 24 hod old timestamp **************************************"
 echo "***************************************************************************************************"
 test_it "AVG_for_measurement_with_>_24_hod_old_timestamp"
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=max&step=15m&element_id=22&source=realpower.output.L1' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=max&step=15m&element_id=22&source=realpower.output.L1&relative=24h' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=max&step=15m&element_id=22&source=realpower.output.L1&relative=7d' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=max&step=15m&element_id=22&source=realpower.output.L1&relative=30d' >&5
-print_result $?
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=max&step=15m&element_id=22&source=realpower.output.L1'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=max&step=15m&element_id=22&source=realpower.output.L1&relative=24h'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=max&step=15m&element_id=22&source=realpower.output.L1&relative=7d'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=max&step=15m&element_id=22&source=realpower.output.L1&relative=30d'
+print_result $RES;RES=0
 
 echo
 echo "********* avg_relative.sh *************************************************************************"
 echo "********* 11. MAX for measurement with > 7 days old timestamp **************************************"
 echo "***************************************************************************************************"
 test_it "AVG_for_measurement_with_>_7_days_old_timestamp"
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=max&step=15m&element_id=22&source=load.default' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=max&step=15m&element_id=22&source=load.default&relative=24h' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=max&step=15m&element_id=22&source=load.default&relative=7d' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=max&step=15m&element_id=22&source=load.default&relative=30d' >&5
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=max&step=15m&element_id=22&source=load.default'
+RES=$?
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=max&step=15m&element_id=22&source=load.default&relative=24h'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=max&step=15m&element_id=22&source=load.default&relative=7d'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=max&step=15m&element_id=22&source=load.default&relative=30d'
+print_result $RES;RES=0
 
 echo
 echo "********* avg_relative.sh *************************************************************************"
 echo "********* 12. MAX for measurement with > 30 days old timestamp **************************************"
 echo "***************************************************************************************************"
 test_it "AVG_for_measurement_with_>_7_days_old_timestamp"
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=max&step=15m&element_id=22&source=realpower.default' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=max&step=15m&element_id=22&source=realpower.default&relative=24h' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=max&step=15m&element_id=22&source=realpower.default&relative=7d' >&5
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=max&step=15m&element_id=22&source=realpower.default&relative=30d' >&5
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=max&step=15m&element_id=22&source=realpower.default'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=max&step=15m&element_id=22&source=realpower.default&relative=24h'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=max&step=15m&element_id=22&source=realpower.default&relative=7d'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=max&step=15m&element_id=22&source=realpower.default&relative=30d'
+print_result $RES;RES=0
 
 echo
 echo "********* avg_relative.sh *************************************************************************"
@@ -243,10 +259,10 @@ echo "********* 13. MAX for measurement with < 24 hod old timestamp without star
 echo "***************************************************************************************************"
 test_it "AVG_for_measurement_with_<_24_hod_old_timestamp_without_start-end-ts"
 curlfail_push_expect_noerrors
-api_get_json '/metric/computed/average?type=max&step=15m&element_id=22&source=current.output.L1&relative=24h' >&5
-api_get_json '/metric/computed/average?type=max&step=15m&element_id=22&source=current.output.L1&relative=7d' >&5
-api_get_json '/metric/computed/average?type=max&step=15m&element_id=22&source=current.output.L1&relative=30d' >&5
-print_result $?
+api_get_json_ntstp '/metric/computed/average?type=max&step=15m&element_id=22&source=current.output.L1&relative=24h'
+api_get_json_ntstp '/metric/computed/average?type=max&step=15m&element_id=22&source=current.output.L1&relative=7d'
+api_get_json_ntstp '/metric/computed/average?type=max&step=15m&element_id=22&source=current.output.L1&relative=30d'
+print_result $RES;RES=0
 curlfail_pop
 
 echo
@@ -254,7 +270,8 @@ echo "********* avg_relative.sh ************************************************
 echo "********* 14. MAX for measurement with empty relative parameter ***********************************"
 echo "***************************************************************************************************"
 test_it "MAX_for_measurement_with_empty_relative_parameter"
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=max&step=15m&element_id=22&source=realpower.default&relative=' >&5
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=max&step=15m&element_id=22&source=realpower.default&relative='
+print_result $RES;RES=0
 
 echo
 echo "********* avg_relative.sh *************************************************************************"
@@ -263,6 +280,6 @@ echo "**************************************************************************
 
 test_it "Wrong_value_of_relative"
 curlfail_push_expect_400
-api_get_json '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=realpower.default&relative=40d' >&5
-curlfail_pop
-print_result $?
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=realpower.default&relative=40d'
+print_result $RES;RES=0
+#curlfail_pop
