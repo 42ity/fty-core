@@ -109,7 +109,7 @@ start_instant() {
 
 restart_virtnet() {
 	echo "Restarting virtnet-related services..." >&2
-	systemctl restart networking libvirtd
+	/bin/systemctl restart networking libvirtd
 }
 
 start() {

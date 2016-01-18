@@ -41,15 +41,15 @@ LOGMSG_PREFIX="BIOS-IFPLUG-DHCP-"
 
 ifplugd_on() {
     logmsg_info "(Re-)starting ifplugd..."
-    systemctl enable ifplugd.service && \
-    systemctl restart ifplugd.service && \
+    /bin/systemctl enable ifplugd.service && \
+    /bin/systemctl restart ifplugd.service && \
     logmsg_info "Enabled and (re-)started the systemd ifplugd.service"
 }
 
 ifplugd_off() {
     logmsg_info "Stopping ifplugd..."
-    systemctl disable ifplugd.service
-    systemctl stop ifplugd.service
+    /bin/systemctl disable ifplugd.service
+    /bin/systemctl stop ifplugd.service
     logmsg_info "Disabled and perhaps stopped systemd ifplugd.service"
 }
 
