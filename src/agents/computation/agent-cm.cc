@@ -99,7 +99,7 @@ int main (UNUSED_PARAM int argc, UNUSED_PARAM char **argv) {
         std::string msg_print; // formatted message
 
         ymsg_format (msg_recv, msg_print);
-        log_info ("RECEIVED\n\tSender: '%s', address: '%s', pattern: '%s',  subject: '%s', status: '%d'.\n\tMessage:\n%s", 
+        log_debug ("RECEIVED\n\tSender: '%s', address: '%s', pattern: '%s',  subject: '%s', status: '%d'.\n\tMessage:\n%s", 
             sender, recipient, pattern, subject, bios_agent_status (agent), msg_print.c_str());
 
         if (!msg_recv) {
