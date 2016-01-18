@@ -162,6 +162,7 @@ deb http://ftp.debian.org/debian jessie main contrib non-free
 deb http://ftp.debian.org/debian jessie-updates main contrib non-free
 deb http://security.debian.org   jessie/updates main contrib non-free
 deb http://obs.roz53.lab.etn.com:82/Pool:/master/Debian_8.0 /
+deb http://obs.roz53.lab.etn.com:82/Pool:/master:/proprietary/Debian_8.0 /
 EOF
 
 mkdir -p /etc/apt/preferences.d
@@ -358,6 +359,7 @@ EOF
 #########################################################################
 # Setup zabbix
 # TODO: revise the list of BIOS services here
+if [ -f /usr/bin/zabbix_agent ]; then
 for i in mysql tntnet@bios malamute \
     bios-db bios-server-agent bios-agent-inventory bios-agent-nut bios-driver-netmon \
     nut-driver nut-monitor systemd-journald \
@@ -419,6 +421,7 @@ echo '{
 }'
 EOF
 chmod a+rx /etc/zabbix/scripts/queryDisks.sh
+fi
 # End of setup of zabbix
 #########################################################################
 
