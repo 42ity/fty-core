@@ -53,28 +53,28 @@ void
 solve_left_margin
 (std::map <int64_t, double>& samples, int64_t extended_start) {
     if (samples.empty ()) {
-        log_info ("Samples empty.");
+        log_debug ("Samples empty.");
         return;
     }
     int64_t start = extended_start + AGENT_NUT_REPEAT_INTERVAL_SEC;
-    log_info ("Start timestamp: '%" PRId64"'.", start);
+    log_debug ("Start timestamp: '%" PRId64"'.", start);
     if (samples.cbegin()->first >= start) {
-        log_info ("Nothing to solve. First item in samples: '%" PRId64"', >= start: '%" PRId64"'.", samples.cbegin()->first, start);
+        log_debug ("Nothing to solve. First item in samples: '%" PRId64"', >= start: '%" PRId64"'.", samples.cbegin()->first, start);
         return;
     }
     auto it = samples.find (start);
     if (it != samples.end ()) {
-        log_info ("Value exactly on start: '%" PRId64"' exists, value = '%f'.", it->first, it->second);
+        log_debug ("Value exactly on start: '%" PRId64"' exists, value = '%f'.", it->first, it->second);
         samples.erase (samples.cbegin(), it);
         return;
     }
 
     it = samples.lower_bound (extended_start);
     if (it != samples.end ()) {
-        log_info ("lower_bound () returned timestamp: '%" PRId64"', value: '%f'.", it->first, it->second);
+        log_debug ("lower_bound () returned timestamp: '%" PRId64"', value: '%f'.", it->first, it->second);
     }
     else if (it == samples.end () || it->first >= start) {
-        log_info ("lower_bound () == end () OR lower_bound () >= start timestamp.");
+        log_debug ("lower_bound () == end () OR lower_bound () >= start timestamp.");
         samples.erase (samples.cbegin (), it);
         return;
     }
@@ -89,22 +89,22 @@ solve_left_margin
     auto prev = it; --prev;
 
     if (it->first - prev->first <= AGENT_NUT_REPEAT_INTERVAL_SEC) {
-        log_info ("First sample that is after start timestamp is within nut repeat interval from previous sample.");
+        log_debug ("First sample that is after start timestamp is within nut repeat interval from previous sample.");
         std::map <int64_t, double>::const_iterator i;
         bool inserted;
         std::tie (i, inserted) = samples.emplace (std::make_pair (extended_start + AGENT_NUT_REPEAT_INTERVAL_SEC, prev->second));
         if (inserted) {
-            log_info ("emplace () ok.");
+            log_debug ("emplace () ok.");
         }
         else {
             // This should not happen since we are certain that item being emplaced is not there
             log_warning ("emplace () failed!");
         }
         //cut the beginning
-        log_info ("Erasing from beginning of samples '%" PRId64"' to '%" PRId64"'.", samples.cbegin ()->first, i->first);
+        log_debug ("Erasing from beginning of samples '%" PRId64"' to '%" PRId64"'.", samples.cbegin ()->first, i->first);
         samples.erase (samples.cbegin (), i);
     } else {
-        log_info ("Erasing from beginning of samples '%" PRId64"' to '%" PRId64"'.", samples.cbegin ()->first, it->first);
+        log_debug ("Erasing from beginning of samples '%" PRId64"' to '%" PRId64"'.", samples.cbegin ()->first, it->first);
         samples.erase (samples.cbegin (), it);
     }
 }
@@ -115,7 +115,7 @@ calculate
     assert (type);
     assert (is_average_type_supported (type));
     if (start >= end) {
-        log_warning ("'start' timestamp >= 'end' timestamp.");
+        log_debug ("'start' timestamp >= 'end' timestamp.");
         return -1;
     }
     if (samples.empty ()) {
@@ -238,7 +238,7 @@ check_completeness
 
 
     int64_t step_sec = average_step_seconds (step);
-    log_info ("last container: %" PRId64"\t last average: %" PRId64"\tend: %" PRId64"\tstep: '%s'\tstep seconds: %" PRId64,
+    log_debug ("last container: %" PRId64"\t last average: %" PRId64"\tend: %" PRId64"\tstep: '%s'\tstep seconds: %" PRId64,
                 last_container_timestamp, last_average_timestamp, end_timestamp, step, step_sec);
 
     if (last_average_timestamp < last_container_timestamp) {
@@ -398,7 +398,7 @@ publish_measurement
     assert (unit);
 
     if (strlen (device_name) == 0) {
-        log_info ("Device name empty, measurement not published.");
+        log_debug ("Device name empty, measurement not published.");
         return;
     }
     std::string quantity;
@@ -415,7 +415,7 @@ publish_measurement
     _scoped_ymsg_t *published_measurement =
         bios_measurement_encode (device_name, quantity.c_str(), unit, (int32_t) std::round (value * 100), -2, timestamp); // TODO: propagae this upwards....
     if (!published_measurement) {
-        log_critical (
+        log_error (
         "bios_measurement_encode (device = '%s', source = '%s', type = '%s', step = '%s', value = '%f', timestamp = '%" PRId64"') failed.",
         device_name, source, type, step, value, timestamp);
         return;
@@ -424,9 +424,9 @@ publish_measurement
     ymsg_format (published_measurement, formatted_msg);
     int rv = bios_agent_send (agent, topic.c_str (), &published_measurement); // published_measurement destroyed 
     if (rv == 0) {
-        log_info ("Publishing message on stream '%s' with subject '%s':\n%s", bios_get_stream_main (), topic.c_str (), formatted_msg.c_str());
+        log_debug ("Publishing message on stream '%s' with subject '%s':\n%s", bios_get_stream_main (), topic.c_str (), formatted_msg.c_str());
     } else {
-        log_critical ("bios_agent_send (subject = '%s') failed.", topic.c_str ());
+        log_error ("bios_agent_send (subject = '%s') failed.", topic.c_str ());
     } 
 }
 
