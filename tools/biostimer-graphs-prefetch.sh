@@ -25,8 +25,8 @@
 # biostimer-graphs-prefetch.sh
 # Script finds assets with power-average data and triggers pre-calculation
 # of the averages needed for graphs, thus speeding them up in web-GUI.
-# At the moment script only outputs curl requests in dry-run mode (-n)
-# and can execute them quietly (-q/default) or verbosely (-v).
+# TODO: remove all the fetcher, ports and all the stuff written for the
+#       REST API way
 #
 # PURPOSE:
 # Have cron job periodically call this script
@@ -460,7 +460,7 @@ generate_getrestapi_strings_sources() {
             for stype in $TYPES; do
                 for sstep in $STEPS; do
                     # TODO: change this to api_get with related checks?
-                    echo "$FETCHER '$BASE_URL/metric/computed/average?start_ts=${START_TIMESTAMP}&end_ts=${END_TIMESTAMP}&type=${stype}&step=${sstep}&element_id=${i}&source=$s'"
+                    echo "/usr/libexec/bios/average 'start_ts=${START_TIMESTAMP}&end_ts=${END_TIMESTAMP}&type=${stype}&step=${sstep}&element_id=${i}&source=$s'"
                     NUM_STRINGS=$(($NUM_STRINGS+1))
                     # TODO: Does it make sense to check for 404/500? What can we do?
                 done

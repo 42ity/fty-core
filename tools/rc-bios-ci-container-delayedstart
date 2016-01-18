@@ -107,18 +107,23 @@ start_instant() {
 	wait
 }
 
+restart_virtnet() {
+	echo "Restarting services..." >&2
+	systemctl restart networking libvirtd
+}
+
 start() {
 	if /etc/init.d/atd status || /etc/init.d/atd restart || /bin/systemctl status atd || /bin/systemctl restart atd ; then
 		start_delayed
 	else
 		start_instant
 	fi
-	systemctl restart networking libvirtd
+	restart_virtnet
 }
 
 restart() {
 	start_instant
-	systemctl restart networking libvirtd
+	restart_virtnet
 }
 
 reboot() {
@@ -126,17 +131,17 @@ reboot() {
 		echo "Rebooting the '$C' container with whatever it has..." >&2
 		( virsh -c lxc:// reboot "$C" ) &
 	done
-	wait
-	systemctl restart networking libvirtd
+	wait; sync; wait
+	restart_virtnet
 }
 
 reset() {
 	for C in $CONTAINERS ; do
 		echo "Destroying and starting the '$C' container with whatever it has..." >&2
-		( virsh -c lxc:// destroy "$C" && sleep 5 && virsh -c lxc:// start "$C" ) &
+		( virsh -c lxc:// destroy "$C" ; sleep 5 ; virsh -c lxc:// start "$C" ) &
 	done
-	wait
-	systemctl restart networking libvirtd
+	wait; sync; wait
+	restart_virtnet
 }
 
 stop() {
@@ -200,10 +205,10 @@ status() {
 
 case "$1" in
 help|-h)
-	echo "$0 {start|start_delayed|start_instant|restart|reboot|reset|stop|refresh|download|download_default|download_tailored|status}"
+	echo "$0 {start|start_delayed|start_instant|restart|reboot|reset|stop|refresh|download|download_default|download_tailored|restart_virtnet|status}"
 	exit 0
 	;;
-start|start_delayed|start_instant|restart|reboot|reset|stop|refresh|download|download_default|download_tailored|status)
+start|start_delayed|start_instant|restart|reboot|reset|stop|refresh|download|download_default|download_tailored|restart_virtnet|status)
 	"$@"
 	exit $?
 	;;
