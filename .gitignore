@@ -195,6 +195,9 @@ systemd/bios-fake-th.service
 !systemd/biostimer-verify-fs.service.in
 systemd/biostimer-verify-fs.service
 
+!tools/biostimer-graphs-prefetch.sh.in
+tools/biostimer-graphs-prefetch.sh
+
 src/web/src/auth-verify.cpp
 src/web/src/auth-require.cpp
 src/web/src/augtool.cpp

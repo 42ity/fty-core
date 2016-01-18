@@ -16,7 +16,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-#! \file   biostimer-graphs-prefetch.sh
+#! \file   biostimer-graphs-prefetch.sh(.in)
 #  \brief  Speed up power-average graphs displaying in the Web UI
 #  \author Karol Hrdina <KarolHrdina@Eaton.com>
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
@@ -67,8 +67,8 @@ CI_DEBUG_CALLER="$CI_DEBUG" # may be empty
         . "$SCRIPTDIR"/scriptlib.sh || \
 { [ -s "$SCRIPTDIR/../tests/CI/scriptlib.sh" ] &&
         . "$SCRIPTDIR"/../tests/CI/scriptlib.sh ; } || \
-{ [ -s "/usr/share/bios/scripts/scriptlib.sh" ] &&
-        . "/usr/share/bios/scripts/scriptlib.sh" ; } || \
+{ [ -s "@datadir@/@PACKAGE@/scripts/scriptlib.sh" ] &&
+        . "@datadir@/@PACKAGE@/scripts/scriptlib.sh" ; } || \
 { echo "FATAL: $0: Can not include script library" >&2; exit 1; }
 NEED_CHECKOUTDIR=no NEED_BUILDSUBDIR=no determineDirs_default || true
 LOGMSG_PREFIX="BIOS-TIMER-"
@@ -79,7 +79,7 @@ LOGMSG_PREFIX="BIOS-TIMER-"
 for F in \
         "$SCRIPTDIR/../average" \
         "$SCRIPTDIR/average" \
-        "/usr/libexec/bios/average" \
+        "@libexecdir@/@PACKAGE@/average" \
 ; do
         [ -s "$F" ] && [ -x "$F" ] && FETCHER="$F" && break
 done
