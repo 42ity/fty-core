@@ -25,9 +25,9 @@
 #           The variable values may be set by caller or an earlier stage
 #           in script interpretation, otherwise they get defaulted here.
 
-# A bash-ism, should set the exitcode of the rightmost failed command
-# in a pipeline, otherwise e.g. exitcode("false | true") == 0
 if [ -n "${BASH-}" ]; then
+    # A bash-ism, should set the exitcode of the rightmost failed command
+    # in a pipeline, otherwise e.g. exitcode("false | true") == 0
     set -o pipefail 2>/dev/null || true
     echo_E() { echo -E "$@"; }
     echo_e() { echo -e "$@"; }
