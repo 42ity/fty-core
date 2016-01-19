@@ -162,6 +162,7 @@ deb http://ftp.debian.org/debian jessie main contrib non-free
 deb http://ftp.debian.org/debian jessie-updates main contrib non-free
 deb http://security.debian.org   jessie/updates main contrib non-free
 deb http://obs.roz53.lab.etn.com:82/Pool:/master/Debian_8.0 /
+deb http://obs.roz53.lab.etn.com:82/Pool:/master:/proprietary/Debian_8.0 /
 EOF
 
 mkdir -p /etc/apt/preferences.d
@@ -257,7 +258,7 @@ systemctl enable malamute
 systemctl preset-all
 if [ "`uname -m`" = x86_64 ]; then
     systemctl enable bios-fake-th
-    systemctl disable bios-agent-th
+    systemctl disable agent-th
     systemctl disable lcd-boot-display
     systemctl disable lcd-net-display
     systemctl mask lcd-boot-display
@@ -334,6 +335,7 @@ if [ "$IMGTYPE" = devel ] ; then
     echo "BIOS_LOG_LEVEL=LOG_DEBUG" > /etc/default/bios
 else
     echo "BIOS_LOG_LEVEL=LOG_INFO" > /etc/default/bios
+    sed -i 's|.*MaxLevelStore.*|MaxLevelStore=info|'                  /etc/systemd/journald.conf
 fi
 # set path to our libexec directory
 echo "PATH=/usr/libexec/bios:/bin:/usr/bin:/sbin:/usr/sbin" >>/etc/default/bios
@@ -358,6 +360,7 @@ EOF
 #########################################################################
 # Setup zabbix
 # TODO: revise the list of BIOS services here
+if [ -f /usr/bin/zabbix_agent ]; then
 for i in mysql tntnet@bios malamute \
     bios-db bios-server-agent bios-agent-inventory bios-agent-nut bios-driver-netmon \
     nut-driver nut-monitor systemd-journald \
@@ -419,6 +422,7 @@ echo '{
 }'
 EOF
 chmod a+rx /etc/zabbix/scripts/queryDisks.sh
+fi
 # End of setup of zabbix
 #########################################################################
 
