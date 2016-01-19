@@ -283,6 +283,25 @@ verifyGU() {
     return $RES
 }
 
-genGroup
-genUser
-verifyGU
+if [ $# = 0 ]; then
+    genGroup
+    genUser
+    verifyGU
+else
+    case "$1" in
+        help) echo "Usage: USER_NAME=... GROUP_NAME=... ALTROOT=... $0
+See the script code for envvars (a lot!) that you can define to specify the user details
+Usage: USER_PASS='...' $0 hashPasswd"
+            exit 0 ;;
+        genGroup|genUser|verifyGU)
+            [ -z "$DEBUG" = yes ] && echo "FATAL: Unknown args" >&2 && exit 1
+            eval "$@"
+            exit $? ;;
+        hashPasswd*)
+            eval "$@" >&2
+            RES=$?
+            echo "${USER_PASS_HASH}"
+            exit $RES ;;
+        *) echo "FATAL: Unknown args" >&2 ; exit 1 ;;
+    esac
+fi
