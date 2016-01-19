@@ -790,7 +790,8 @@ test_libbiosapiut_DEPENDENCIES = \
 
 check_PROGRAMS += 	test-autoconfig
 test_autoconfig_SOURCES = tests/agents/autoconfig/test-autoconfig.cc \
-                          src/agents/autoconfig/configurator.cc
+                          src/agents/autoconfig/NUTConfigurator.h src/agents/autoconfig/NUTConfigurator.cc \
+						  src/agents/autoconfig/Configurator.h src/agents/autoconfig/Configurator.cc
 
 test_autoconfig_LDADD = \
 			libpriv-defs.la \
