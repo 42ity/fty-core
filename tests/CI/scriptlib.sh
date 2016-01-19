@@ -458,29 +458,39 @@ loaddb_file() {
 }
 
 loaddb_file_params() {
-    # 
+    # This routine allows to import the database file named in "$1",
+    # prepending some SQL "set" clauses to customize the "@" SQL vars.
+    # Due to limitations of MySQL "source" commmand, this is only local so far.
     if [ $# -eq 0 ]; then
         die "loaddb_file_param() requires parameters"
-    fi  
+    fi
     if [ -z "$1" -o ! -e "$1" ]; then
-        die "loaddb_file_param(): empty first parameter or file '$1' does not exist."
+        die "loaddb_file_param(): empty first parameter or file '$1' does not exist"
     fi
 
     local DBFILE="$1"
     shift
-    
+
     logmsg_info "$CI_DEBUGLEVEL_LOADDB" \
         "loaddb_file_params()::local: $DBFILE $@" >&2
 
     local E=
     local i=
-    for i in $@; do
+    for i in "$@"; do
         E="${E}set ${i};"
     done
     E="${E}source $DBFILE;"
-    mysql -u "${DBUSER}" -e "${E}" > /dev/null || \
-        CODE=$? die "Could not load database file: $DBFILE with params $@"
-    return 0        
+
+    if isRemoteSUT ; then
+        ### Push local SQL file contents to remote system and sleep a bit
+        logmsg_warn \
+            "loaddb_file_params($DBFILE, ...): Currently not implemented for remote execution: '${E}" >&2
+        return 32
+    else
+        mysql -u "${DBUSER}" -e "${E}" > /dev/null || \
+            CODE=$? die "Could not load database file: $DBFILE with params: '${E}'"
+    fi
+    return 0
 }
 
 settraps() {
