@@ -497,9 +497,12 @@ settraps() {
         # Not all trap names are recognized by all shells consistently
         [ -z "${TRAP_SIGNALS-}" ] && TRAP_SIGNALS="EXIT QUIT TERM HUP INT ERR"
         for P in "" SIG; do for S in $TRAP_SIGNALS ; do
+                if [ -n "$BASH" ] && [ "$S" = ERR ] ; then
+                    set -o errtrace
+                fi
                 case "$1" in
-                -|"") trap "$1" $P$S 2>/dev/null || true ;;
-                *)    trap 'ERRCODE=$?; { '"$*"' ;}; exit $ERRCODE;' $P$S 2>/dev/null || true ;;
+                -|"") trap "$1" "$P$S" 2>/dev/null || true ;;
+                *)    trap 'ERRCODE=$?; [ -n "${LINENO-}" ] && [ "$LINENO" -gt 0 ] 2>/dev/null && ERRLINE="$LINENO" || ERRLINE=""; ERRFILE="${_SCRIPT_NAME}"; if [ -n "${BASH-}" ] 2>/dev/null; then ERRFUNC="${FUNCNAME[0]-}" || ERRFUNC=""; ERRLINE="${BASH_LINENO[0]}" || ERRLINE=0; [ "$ERRLINE" -eq 0 ] && ERRLINE="$LINENO"; [ -n "$ERRLINE" ] && [ "$ERRLINE" -gt 1 ] || ERRLINE=""; ERRFILE="${BASH_SOURCE[0]}"; ERRPOS="${ERRFILE}${ERRLINE:+:$ERRLINE}${ERRFUNC:+ :: $ERRFUNC()}"; [ "`basename "${_SCRIPT_NAME}"`" = "`basename "${ERRFILE}"`" ] || ERRPOS="${_SCRIPT_NAME} => $ERRPOS"; else ERRPOS="$ERRFILE${ERRLINE-:+:$ERRLINE}"; fi; ERRTEXT="script ($ERRPOS) due to trapped signal ('"$P$S"') with exit-code ($ERRCODE)"; echo ""; if [ "$ERRCODE" = 0 ]; then LOGMSG_PREFIX="CI-SIGNALTRAP-" logmsg_info "Completing $ERRTEXT" ; else echo ""; echo "!!!!!!!!!"; LOGMSG_PREFIX="CI-SIGNALTRAP-" logmsg_error "Aborting $ERRTEXT"; echo "!!!!!!!!!"; fi; echo ""; for SS in EXIT SIGEXIT 0 ERR SIGERR; do trap "-" $SS 2>/dev/null || true; done; { set +e; (exit $ERRCODE 2>/dev/null 2>&1); '"$*"' ;} || exit $? ; exit $ERRCODE;' "$P$S" 2>/dev/null || true ;;
                 esac
         done; done
 }
