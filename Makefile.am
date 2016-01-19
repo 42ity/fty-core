@@ -780,7 +780,8 @@ test_libbiosapiut_DEPENDENCIES = \
 
 check_PROGRAMS += 	test-autoconfig
 test_autoconfig_SOURCES = tests/agents/autoconfig/test-autoconfig.cc \
-                          src/agents/autoconfig/configurator.cc
+                          src/agents/autoconfig/NUTConfigurator.h src/agents/autoconfig/NUTConfigurator.cc \
+						  src/agents/autoconfig/Configurator.h src/agents/autoconfig/Configurator.cc
 
 test_autoconfig_LDADD = \
 			libpriv-defs.la \
@@ -1167,8 +1168,10 @@ agent_alert_smtp_CPPFLAGS =	$(AM_CPPFLAGS) \
 client_PROGRAMS +=	agent-autoconfig
 
 agent_autoconfig_SOURCES = \
-			src/agents/autoconfig/agent-autoconfig.cc \
-			src/agents/autoconfig/configurator.cc
+			src/agents/autoconfig/agent-autoconfig.cc src/agents/autoconfig/agent-autoconfig.h \
+			src/agents/autoconfig/ConfiguratorFactory.h src/agents/autoconfig/ConfiguratorFactory.cc \
+			src/agents/autoconfig/NUTConfigurator.h src/agents/autoconfig/NUTConfigurator.cc \
+			src/agents/autoconfig/Configurator.h src/agents/autoconfig/Configurator.cc
 
 agent_autoconfig_LDADD = \
 			libpriv-log.la \
