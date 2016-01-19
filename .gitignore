@@ -91,7 +91,6 @@ test-cidr
 test-computation
 test-csv
 test-loadcsv
-test-db-alert
 test-db2
 test-log
 test-subprocess
@@ -108,12 +107,9 @@ test-autoconfig
 agent-inventory
 agent-dbstore
 agent-nut
-agent-alert
-agent-alert-smtp
 agent-autoconfig
 server-agent
 agent-cm
-bios-email
 bios-nutscan
 agent-tpower
 average
@@ -157,10 +153,6 @@ tools/bios-nutconfig
 systemd/42-bios-systemd.preset
 !systemd/bios-db-init.service.in
 systemd/bios-db-init.service
-!systemd/bios-agent-alert.service.in
-systemd/bios-agent-alert.service
-!systemd/bios-agent-alert-smtp.service.in
-systemd/bios-agent-alert-smtp.service
 !systemd/bios-agent-cm.service.in
 systemd/bios-agent-cm.service
 !systemd/bios-agent-inventory.service.in
