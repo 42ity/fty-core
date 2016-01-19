@@ -166,9 +166,10 @@ sut_run "testsaslauthd -u '$BIOS_USER' -p '$BIOS_PASSWD' -s '$SASL_SERVICE'" && 
     # *** starting the testcases
 test_web() {
     echo "==== Calling vte-test_web.sh ==============================="
+    RES_TW=0
     /bin/bash "${CHECKOUTDIR}"/tests/CI/vte-test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" \
-        -s "$SASL_SERVICE" -sh "$SUT_HOST" -su "$SUT_USER" -sp "$SUT_SSH_PORT" "$@"
-    RES_TW=$?
+        -s "$SASL_SERVICE" -sh "$SUT_HOST" -su "$SUT_USER" -sp "$SUT_SSH_PORT" "$@" || \
+        RES_TW=$?
     echo "==== test_web RESULT: ($RES_TW) =================================="
     return $RES_TW
 }
@@ -179,46 +180,52 @@ ci_loaddb_default() {
     loaddb_file "$DB_BASE" && \
     LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
     loaddb_file "$DB_DATA" && \
-    loaddb_file "$DB_DATA_TESTREST"
+    loaddb_file "$DB_DATA_TESTREST" || return $?
+    return 0
 }
     # *** start the default set of TC
 test_web_default() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_default() $*"
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_default() $*" || true
     ci_loaddb_default && \
-    test_web "$@"
+    test_web "$@" || return $?
+    return 0
 }
 
 test_web_asset_create() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_asset_create() $*"
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_asset_create() $*" || true
     echo "---------- reset db: asset : create ---------"
     for data in "$DB_BASE" "$DB_DATA"; do
           loaddb_file "$data" || exit $?
     done
-    test_web "$@"
+    test_web "$@" || return $?
+    return 0
 }
 
     # *** start the power topology set of TC
 test_web_topo_p() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_p() $*"
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_p() $*" || true
     echo "----------- reset db: topology : power -----------"
     loaddb_file "$DB_BASE" && \
     LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
     loaddb_file "$DB_TOPOP" && \
-    test_web "$@"
+    test_web "$@" || return $?
+    return 0
+
 }
 
     # *** start the location topology set of TC
 test_web_topo_l() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_l() $*"
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_l() $*" || true
     echo "---------- reset db: topology : location ---------"
     loaddb_file "$DB_BASE" && \
     LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
     loaddb_file "$DB_TOPOL" && \
-    test_web "$@"
+    test_web "$@" || return $?
+    return 0
 }
 
 test_web_averages() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_averages() $*"
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_averages() $*" || true
     echo "----------- Re-generating averages sql files -----------"
     CI_TEST_AVERAGES_DATA="`$DB_LOADDIR/generate_averages.sh "$DB_LOADDIR"`"
     export CI_TEST_AVERAGES_DATA
@@ -226,7 +233,8 @@ test_web_averages() {
     for data in "$DB_BASE" "$DB_DATA" "$DB_AVERAGES" "$DB_AVERAGES_RELATIVE"; do
         loaddb_file "$data" || exit $?
     done
-    test_web "$@"
+    test_web "$@" || return $?
+    return 0
 }
 
 RESULT_OVERALL=0
@@ -342,7 +350,7 @@ else
                 RESULT_OVERALL=$? ;;
             averages*)
                 test_web_averages "$1" || \
-                RESULT_OVERALL=$? ;;                
+                RESULT_OVERALL=$? ;;
             *)  test_web_default "$1" || \
                 RESULT_OVERALL=$? ;;
         esac
