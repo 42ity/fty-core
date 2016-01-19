@@ -111,7 +111,7 @@ asset_manager asset_mgr;
                 continue;
             }
 
-            if (!streq (total, "ERROR")) {
+            if (streq (total, "ERROR")) {
                 log_error ("Got ERROR reply from kpi-uptime: %s, skipping DC %s", offline, DCNames[D].c_str());
                 continue;
             }
