@@ -157,19 +157,19 @@ if [ $? != 0 -o -z "$LINE" ]; then
     CODE=2 die "BIOS_USER absent on remote system"
 fi >&2
 
-# is bios access to sasl right?
-SASLTEST=$(sut_run "which testsaslauthd")
-LINE="$(sut_run "$SASLTEST -u '$BIOS_USER' -p '$BIOS_PASSWD' -s '$SASL_SERVICE'")"
-if [ $? != 0 -o -z "$LINE" ]; then
-    CODE=3 die "SASL autentication for user '$BIOS_USER' has failed." \
-        "Please check the existence of /etc/pam.d/bios (and maybe" \
-        "/etc/sasl2/bios.conf for some OS distributions)"
-fi
-
 if [ "$SKIP_SANITY" = yes ]; then
     # This is hit e.g. when a wget-based "curl emulator" is used for requests
     logmsg_info "$0: REST API sanity checks skipped due to SKIP_SANITY=$SKIP_SANITY"
 else
+    # is bios access to sasl right?
+    SASLTEST=$(sut_run "which testsaslauthd")
+    LINE="$(sut_run "$SASLTEST -u '$BIOS_USER' -p '$BIOS_PASSWD' -s '$SASL_SERVICE'")"
+    if [ $? != 0 -o -z "$LINE" ]; then
+        CODE=3 die "SASL autentication for user '$BIOS_USER' has failed." \
+            "Please check the existence of /etc/pam.d/bios (and maybe" \
+            "/etc/sasl2/bios.conf for some OS distributions)"
+    fi
+
     logmsg_info "Testing webserver ability to serve the REST API"
     # is web server running?
 
