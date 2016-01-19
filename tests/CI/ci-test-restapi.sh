@@ -85,7 +85,7 @@ while [ $# -gt 0 ] ; do
 done
 
 set -u
-set -e
+#set -e
 
 test_web_port() {
     netstat -tan | grep -w "${SUT_WEB_PORT}" | egrep 'LISTEN' >/dev/null

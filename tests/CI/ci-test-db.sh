@@ -52,7 +52,7 @@ logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to build the database tests"
 [ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
 
 set -u
-set -e
+#set -e
 
 init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log"
 settraps 'exit_summarizeTestlibResults'
