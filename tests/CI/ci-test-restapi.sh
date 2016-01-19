@@ -119,8 +119,9 @@ wait_for_web() {
 
 test_web() {
     echo "==== Calling test_web.sh ==================================="
-    /bin/bash "${CHECKOUTDIR}"/tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" "$@"
-    RES_TW=$?
+    RES_TW=0
+    /bin/bash "${CHECKOUTDIR}"/tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" "$@" || \
+        RES_TW=$?
     echo "==== test_web RESULT: ($RES_TW) =================================="
     return $RES_TW
 }
@@ -134,37 +135,41 @@ ci_loaddb_default() {
 }
 
 test_web_default() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_default() $*"
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_default() $*" || true
     ci_loaddb_default && \
-    test_web "$@"
+    test_web "$@" || return $?
+    return 0
 }
 
 test_web_topo_p() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_p() $*"
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_p() $*" || true
     echo "----------- reset db: topology : power -----------"
     for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOP"; do
         loaddb_file "$data" || exit $?
     done
-    test_web "$@"
+    test_web "$@" || return $?
+    return 0
 }
 
 test_web_topo_l() {
 # NOTE: This piece of legacy code is still here, but no usecase below calls it
-    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_l() $*"
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_l() $*" || true
     echo "---------- reset db: topology : location ---------"
     for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOL"; do
         loaddb_file "$data" || exit $?
     done
-    test_web "$@"
+    test_web "$@" || return $?
+    return 0
 }
 
 test_web_asset_create() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_asset_create() $*"
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_asset_create() $*" || true
     echo "---------- reset db: asset : create ---------"
     for data in "$DB_BASE" "$DB_DATA"; do
           loaddb_file "$data" || exit $?
     done
-    test_web "$@"
+    test_web "$@" || return $?
+    return 0
 }
 
 test_web_averages() {
@@ -176,7 +181,8 @@ test_web_averages() {
     for data in "$DB_BASE" "$DB_DATA" "$DB_AVERAGES" "$DB_AVERAGES_RELATIVE"; do
         loaddb_file "$data" || exit $?
     done
-    test_web "$@"
+    test_web "$@" || return $?
+    return 0
 }
 
 MAKEPID=""

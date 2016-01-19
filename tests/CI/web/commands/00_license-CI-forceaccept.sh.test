@@ -45,8 +45,9 @@ echo
 # Try to accept the BIOS license on server, unless the caller is testing this
 if [ x"$SKIP_LICENSE" = xyes ]; then
     test_it "license_initial_status_ok"
-    api_get_json '/admin/license/status' | grep "accepted_at" >&5
-    RES=$?
+    RES=0
+    api_get_json '/admin/license/status' | grep "accepted_at" >&5 || \
+        RES=$?
     if [ "$RES" != 0 ] ; then
         logmsg_warn "License status at the beginning of the test suite is: not accepted"
     fi
@@ -54,8 +55,9 @@ if [ x"$SKIP_LICENSE" = xyes ]; then
     print_result -$RES
 else
     test_it "license_initial_status_ok"
-    api_get_json '/admin/license/status' | grep "accepted_at" >&5
-    RES=$?
+    RES=0
+    api_get_json '/admin/license/status' | grep "accepted_at" >&5 || \
+        RES=$?
     if [ $RES = 0 ] ; then
         print_result 0
     else
