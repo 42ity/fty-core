@@ -108,8 +108,8 @@ start_instant() {
 }
 
 restart_virtnet() {
-	echo "Restarting services..." >&2
-	systemctl restart networking libvirtd
+	echo "Restarting virtnet-related services..." >&2
+	/bin/systemctl restart networking libvirtd
 }
 
 start() {
@@ -127,21 +127,21 @@ restart() {
 }
 
 reboot() {
+	restart_virtnet
 	for C in $CONTAINERS ; do
 		echo "Rebooting the '$C' container with whatever it has..." >&2
 		( virsh -c lxc:// reboot "$C" ) &
 	done
 	wait; sync; wait
-	restart_virtnet
 }
 
 reset() {
+	restart_virtnet
 	for C in $CONTAINERS ; do
 		echo "Destroying and starting the '$C' container with whatever it has..." >&2
 		( virsh -c lxc:// destroy "$C" ; sleep 5 ; virsh -c lxc:// start "$C" ) &
 	done
 	wait; sync; wait
-	restart_virtnet
 }
 
 stop() {
