@@ -139,6 +139,24 @@ fi
   -f "$ALTROOT/etc/login.defs" -a -f "$ALTROOT/etc/nsswitch.conf" ] || \
 	echo "WARNING: Alternate (chroot) OS-image directory '$ALTROOT' does not contain all expected files: local authentication database manipulation can fail during processing below"
 
+hashPasswd_mkpasswd() {
+	ALGO="$1"
+	ALGO_DESCR="$2"
+	[ -z "$ALGO_DESCR" ] && ALGO_DESCR="$ALGO"
+	{ USER_PASS_HASH="`echo "$USER_PASS" | ${MKPASSWD} -s -m ${ALGO}`" && \
+	  echo "INFO: Generated password hash with mkpasswd: ${ALGO_DESCR}" || \
+	  USER_PASS_HASH="" ; }
+}
+
+hashPasswd_openssl() {
+	ALGO="$1"   # For openssl, can be empty to use default
+	ALGO_DESCR="$2"
+	[ -z "$ALGO_DESCR" ] && ALGO_DESCR="$ALGO"
+	{ USER_PASS_HASH="`echo "$USER_PASS" | ${OPENSSL} passwd -stdin $ALGO`" && \
+	  echo "INFO: Generated password hash with openssl: ${ALGO_DESCR}" || \
+	  USER_PASS_HASH="" ; }
+}
+
 hashPasswd() {
     # Creates a UNIX password hash using $MKPASSWD or $OPENSSL and the
     # value of global $USER_PASS as the plaintext password (no salt now).
@@ -151,36 +169,16 @@ hashPasswd() {
     #	md5    		'$1$'
     #	crypt		'...'
     if [ -x ${MKPASSWD} ]; then
-	{ USER_PASS_HASH="`echo "$USER_PASS" | ${MKPASSWD} -s -m sha-512`" && \
-	  echo "INFO: Generated password hash with mkpasswd: sha-512" || \
-	  USER_PASS_HASH="" ; }
-
-	[ x"$USER_PASS_HASH" = x ] && \
-	{ USER_PASS_HASH="`echo "$USER_PASS" | ${MKPASSWD} -s -m sha-256`" && \
-	  echo "INFO: Generated password hash with mkpasswd: sha-256" || \
-	  USER_PASS_HASH="" ; }
-
-	[ x"$USER_PASS_HASH" = x ] && \
-	{ USER_PASS_HASH="`echo "$USER_PASS" | ${MKPASSWD} -s -m md5`" && \
-	  echo "INFO: Generated password hash with mkpasswd: md5" || \
-	  USER_PASS_HASH="" ; }
-
-	[ x"$USER_PASS_HASH" = x ] && \
-	{ USER_PASS_HASH="`echo "$USER_PASS" | ${MKPASSWD} -s -m des`" && \
-	  echo "INFO: Generated password hash with mkpasswd: des-56/crypt" || \
-	  USER_PASS_HASH="" ; }
+        hashPasswd_mkpasswd "sha-512"
+        [ x"$USER_PASS_HASH" = x ] && hashPasswd_mkpasswd "sha-256"
+        [ x"$USER_PASS_HASH" = x ] && hashPasswd_mkpasswd "md5"
+        [ x"$USER_PASS_HASH" = x ] && hashPasswd_mkpasswd "des" "des-56/crypt"
     fi
 
     # openssl as in debian8 today can generate md5 and crypt hashes
     [ x"$USER_PASS_HASH" = x ] && if [ -x ${OPENSSL} ]; then \
-	{ USER_PASS_HASH="`${OPENSSL} passwd -1 "$USER_PASS"`" && \
-	  echo "INFO: Generated password hash with openssl: md5" || \
-	  USER_PASS_HASH="" ; }
-
-	[ x"$USER_PASS_HASH" = x ] && \
-	{ USER_PASS_HASH="`${OPENSSL} passwd "$USER_PASS"`" && \
-	  echo "INFO: Generated password hash with openssl: crypt" || \
-	  USER_PASS_HASH="" ; }
+        hashPasswd_openssl "-1" "md5"
+        [ x"$USER_PASS_HASH" = x ] && hashPasswd_openssl "-crypt" "crypt"
     fi
 
     # Final verification as the exitcode
