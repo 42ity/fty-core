@@ -136,7 +136,7 @@ export PATH
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
 
 set -u
-set -e
+#set -e
 
 # TODO. TOHLE PREDELAT, ZATIM MOZNO VYNECHAT
 # zacatek vynechavky ********************************
@@ -286,7 +286,7 @@ trap_cleanup(){
 # The ERRCODE is defined by settraps() as the program exitcode
 # as it enters the trap
 TRAP_SIGNALS=EXIT settraps 'ciTRAP_RES=$?; echo "CI-EXIT: $0: test finished (up to the proper exit($ciTRAP_RES) command)..." >&2; trap_cleanup $ciTRAP_RES'
-TRAP_SIGNALS="HUP INT QUIT TERM" settraps '[ "$ERRCODE" = 0 ] && ERRCODE=123; echo "CI-EXIT: $0: got signal, aborting test..." >&2; trap_cleanup $ERRCODE'
+TRAP_SIGNALS="HUP INT QUIT TERM ERR" settraps '[ "$ERRCODE" = 0 ] && ERRCODE=123; echo "CI-EXIT: $0: got signal, aborting test..." >&2; trap_cleanup $ERRCODE'
 
 [ x"${SKIP_LICENSE_FORCEACCEPT-}" = xyes ] && \
 logmsg_warn "SKIP_LICENSE_FORCEACCEPT=$SKIP_LICENSE_FORCEACCEPT so not running '00_license-CI-forceaccept.sh.test' first" || \
