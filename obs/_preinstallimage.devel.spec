@@ -19,6 +19,7 @@ BuildRequires: augeas-tools augeas-lenses
 BuildRequires: libpam-cracklib libcrack2 cracklib-runtime wamerican
 BuildRequires: alerts-list
 BuildRequires: uptime
+BuildRequires: agent-th
 
 %build
 IMGTYPE=devel /usr/share/bios/obs/preinstallimage-bios.sh || exit 1

@@ -5,7 +5,7 @@ helperdir	= $(datadir)/@PACKAGE@/scripts
 helper_SCRIPTS	= init-os-accounts.sh resolveip.sh JSON.sh rc-bios update-rc3 \
 		    ifplug-dhcp-autoconf.sh udhcpc-override.sh udhcpc-ntp.sh \
 		    ethtool-static-nolink ifupdown-force ssl-create.sh \
-		    biostimer-graphs-prefetch.sh reset-button.sh check_bios_license
+		    check_bios_license
 helper_SCRIPTS	+= ../tests/CI/scriptlib.sh ../tests/CI/weblib.sh \
 		    ../tests/CI/restapi-request.sh ../tests/CI/curlbbwget.sh
 
