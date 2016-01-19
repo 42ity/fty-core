@@ -16,21 +16,26 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include "configurator.h"
+/*!
+ \file   NutConfigurator.cc
+ \brief  Implementation of class for nut configuration
+ \author Tomas Halman <TomasHalman@Eaton.com>
+*/
 
-#include <string>
 #include <algorithm>
 #include <iostream>
 #include <fstream>
+
 #include <cxxtools/regex.h>
-#include <preproc.h>
 
 #include "log.h"
+#include "preproc.h"
 #include "subprocess.h"
-#include "asset_types.h"
 #include "utils.h"
 #include "filesystem.h"
-#include "asset_types.h"
+#include "nutscan.h"
+
+#include "NUTConfigurator.h"
 
 #define NUT_PART_STORE "/etc/bios/nut/devices"
 
@@ -237,41 +242,4 @@ bool NUTConfigurator::configure( const std::string &name, const AutoConfiguratio
     }
 }
 
-bool Configurator::configure(
-    UNUSED_PARAM const std::string &name,
-    UNUSED_PARAM const AutoConfigurationInfo &info )
-{
-    log_error("don't know how to configure device %s type %" PRIu32 "/%" PRIu32, name.c_str(), info.type, info.subtype );
-    return true;
-}
-
-std::vector<std::string> Configurator::createRules(UNUSED_PARAM std::string const &name) {
-    std::vector<std::string> result;
-    return result;
-}
-
-Configurator * ConfigFactory::getConfigurator( uint32_t type, uint32_t subtype ) {
-    if( type == asset_type::DEVICE && ( subtype == asset_subtype::UPS || subtype == asset_subtype::EPDU ) ) {
-        return new NUTConfigurator();
-    }
-    // if( type == "server" ) return ServerConfigurator();
-    // if( type == "wheelbarrow" ) retrun WheelBarrowConfigurator();
-    return new Configurator();
-}
-
-bool ConfigFactory::configureAsset( const std::string &name, AutoConfigurationInfo &info) {
-    log_debug("configuration attempt device name %s type %" PRIu32 "/%" PRIu32, name.c_str(), info.type, info.subtype );
-    Configurator *C = getConfigurator( info.type, info.subtype );
-    bool result = C->configure( name, info );
-    delete C;
-    return result;
-}
-
-std::vector<std::string> ConfigFactory::getNewRules( const std::string &name, AutoConfigurationInfo &info) {
-    log_debug("rules attempt device name %s type %" PRIu32 "/%" PRIu32, name.c_str(), info.type, info.subtype );
-    Configurator *C = getConfigurator( info.type, info.subtype );
-    std::vector<std::string> result = C->createRules (name);
-    delete C;
-    return result;
-}
 
