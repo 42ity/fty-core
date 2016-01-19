@@ -23,6 +23,7 @@ INSERT INTO t_bios_monitor_asset_relation (id_discovered_device, id_asset_elemen
 
 /* Create topics for 'AVG-SRV', i.e. add some quantities measured on 'AVG-SRV': */
 /*    temperature.thermal_zone0     C                                           */
+/*    realpower.default             W                                           */
 /*    rocket.fuelpressure           MPa                                         */
 /*    <add another measurement>                                                 */
 INSERT INTO t_bios_measurement_topic (device_id, units, topic)
@@ -30,6 +31,12 @@ INSERT INTO t_bios_measurement_topic (device_id, units, topic)
     FROM t_bios_asset_element AS e,t_bios_monitor_asset_relation AS r WHERE
     e.name = 'AVG-SRV' AND e.id_asset_element = r.id_asset_element;
 SET @topic_temperature = LAST_INSERT_ID();
+
+INSERT INTO t_bios_measurement_topic (device_id, units, topic)
+    SELECT r.id_discovered_device,'W','realpower.default@AVG-SRV'
+    FROM t_bios_asset_element AS e,t_bios_monitor_asset_relation AS r WHERE
+    e.name = 'AVG-SRV' AND e.id_asset_element = r.id_asset_element;
+SET @topic_power = LAST_INSERT_ID();
 
 INSERT INTO t_bios_measurement_topic (device_id, units, topic)
     SELECT r.id_discovered_device,'MPa','rocket.fuelpressure@AVG-SRV'

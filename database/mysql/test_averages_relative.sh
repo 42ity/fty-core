@@ -5,10 +5,18 @@
 read -r -d '' OUT <<EOF
 use box_utf8;
 
-select @topic_temperature := id from t_bios_measurement_topic where device_id=(select id_discovered_device from t_bios_discovered_device where name='AVG-SRV') and units='C' and topic='temperature.thermal_zone0@AVG-SRV';
+SELECT @topic_temperature := id FROM t_bios_measurement_topic
+WHERE device_id=(SELECT id_discovered_device FROM t_bios_discovered_device WHERE name='AVG-SRV') AND
+      units='C' AND
+      topic='temperature.thermal_zone0@AVG-SRV';
+
+SELECT @topic_power := id FROM t_bios_measurement_topic
+WHERE device_id=(SELECT id_discovered_device FROM t_bios_discovered_device WHERE name='AVG-SRV') AND
+      units='W' AND
+      topic='realpower.default@AVG-SRV';
 
 /* ************************************************************************ */
-/* TEST CASE:                                                               */
+/* TEST CASE -1-                                                            */
 /*      relative=7d step=24h type=arithmetic_mean source=@topic_temperature */
 /* ************************************************************************ */
 
@@ -61,17 +69,40 @@ INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_
 /* 7d window midnight aligned: 400 */
 
 
-/* ************************************************************************* */
-/* TEST CASE:                                                                */
-/*      relative=24h step=24h type=arithmetic_mean source=@topic_temperature */
-/* ************************************************************************* */
+/* ******************************************************************* */
+/* TEST CASE -2-                                                       */
+/*      relative=24h step=24h type=arithmetic_mean source=@topic_power */
+/* ******************************************************************* */
 
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("`date -ud '1 day ago' +%F` 01:00:00"), 10, 0, @topic_power);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("`date -ud '1 day ago' +%F` 01:05:00"), 10, 0, @topic_power);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("`date -ud '1 day ago' +%F` 01:10:00"), 10, 0, @topic_power);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("`date -ud '1 day ago' +%F` 01:15:00"), 10, 0, @topic_power);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("`date -ud '1 day ago' +%F` 01:20:00"), 10, 0, @topic_power);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("`date -ud '1 day ago' +%F` 01:25:00"), 10, 0, @topic_power);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("`date -ud '1 day ago' +%F` 01:30:00"), 10, 0, @topic_power);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("`date -ud '1 day ago' +%F` 01:35:00"), 10, 0, @topic_power);
 
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("`date -ud '1 day ago' +%F` 02:20:00"), 30, 0, @topic_power);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("`date -ud '1 day ago' +%F` 02:25:00"), 30, 0, @topic_power);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("`date -ud '1 day ago' +%F` 02:30:00"), 30, 0, @topic_power);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("`date -ud '1 day ago' +%F` 02:35:00"), 30, 0, @topic_power);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("`date -ud '1 day ago' +%F` 02:40:00"), 30, 0, @topic_power);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("`date -ud '1 day ago' +%F` 02:45:00"), 30, 0, @topic_power);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("`date -ud '1 day ago' +%F` 02:50:00"), 30, 0, @topic_power);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("`date -ud '1 day ago' +%F` 03:55:00"), 30, 0, @topic_power);
+
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("`date -ud '1 day ago' +%F` 21:05:00"), 80, 0, @topic_power);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("`date -ud '1 day ago' +%F` 21:15:00"), 80, 0, @topic_power);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("`date -ud '1 day ago' +%F` 21:20:00"), 80, 0, @topic_power);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("`date -ud '1 day ago' +%F` 21:25:00"), 80, 0, @topic_power);
+/* timestamp: `date -ud '0 day ago 00:00:00' +%s`    avg_24: 32 */
 
 EOF
 echo "$OUT" > "$1"/test_averages_relative.sql
 
 
+# TEST CASE -1- expected results
 AVERAGES_RELATIVE_PATTERNS_1="{\"value\":20,\"timestamp\":`date -ud '0 day ago 00:00:00' +%s`}"
 AVERAGES_RELATIVE_PATTERNS_1="$AVERAGES_RELATIVE_PATTERNS_1 {\"value\":200,\"timestamp\":`date -ud '1 day ago 00:00:00' +%s`}"
 AVERAGES_RELATIVE_PATTERNS_1="$AVERAGES_RELATIVE_PATTERNS_1 {\"value\":40,\"timestamp\":`date -ud '2 day ago 00:00:00' +%s`}"
@@ -81,3 +112,6 @@ AVERAGES_RELATIVE_PATTERNS_1="$AVERAGES_RELATIVE_PATTERNS_1 {\"value\":600,\"tim
 AVERAGES_RELATIVE_PATTERNS_1="$AVERAGES_RELATIVE_PATTERNS_1 {\"value\":80,\"timestamp\":`date -ud '6 day ago 00:00:00' +%s`}"
 echo "$AVERAGES_RELATIVE_PATTERNS_1"
 
+# TEST CASE -2- expected results
+AVERAGES_RELATIVE_PATTERNS_2="{\"value\":32,\"timestamp\":`date -ud '0 day ago 00:00:00' +%s`}"
+echo "$AVERAGES_RELATIVE_PATTERNS_2"
