@@ -1,0 +1,21 @@
+# This is included into auth/license tests
+if [ -z "${DEFINED_ENFORCE_PASSWD-}" ]; then
+enforce_passwd() (
+    # "$1" = new USERPASS (for the ${BIOS_USER} account)
+    set +e
+    logmsg_info "Trying to set the user password with 'passwd'"
+    sut_run "( echo "$1"; echo "$1"; ) | passwd ${BIOS_USER}"
+    PW_RES=$?
+    if [ $PW_RES != 0 ] && [ -x "$CHECKOUTDIR/tools/init-os-accounts.sh" ]; then
+        logmsg_info "Trying to directly set HASH OF the user password with 'usermod'"
+        USER_PASS_HASH="`USER_PASS="$1" "$CHECKOUTDIR/tools/init-os-accounts.sh" hashPasswd 2>/dev/null`" && \
+        sut_run "( usermod -p "${USER_PASS_HASH}" "${BIOS_USER}" )"
+        PW_RES=$?
+    fi
+    return $PW_RES
+)
+
+DEFINED_ENFORCE_PASSWD=yes
+fi
+true
+
