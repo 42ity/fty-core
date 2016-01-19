@@ -28,5 +28,5 @@
 
 # to ensure REST API call at least reply before actually changing the network
 sleep 3
-systemctl restart networking.service
-systemctl restart ifplugd.service
+/bin/systemctl restart networking.service
+/bin/systemctl restart ifplugd.service
