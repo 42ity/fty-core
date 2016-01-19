@@ -33,7 +33,6 @@
 
 #include "assetcrud.h"
 #include "db/assets.h"
-#include "db/alerts.h"
 #include "db/asset_general.h"
 #include "measurements.h"
 #include "common_msg.h"
@@ -735,19 +734,6 @@ TEST_CASE("rack unlockated INSERT/DELETE #persist::asset_subtype::N_A","[db][CRU
     REQUIRE ( rv == 0 );
     REQUIRE ( rowid4 != 0 );
 
-    const char      *rule_name = "my_test_ruleName";
-    a_elmnt_pr_t     alert_priority = 1;
-    m_alrt_state_t   alert_state = 1;
-    const char      *description = "AAA";
-    m_alrt_ntfctn_t  notification = 0;
-    int64_t          date_from = 1433769783;
-    std::vector<std::string> device_names = {name};
-
-    db_reply_t rep_alert = persist::insert_new_alert
-        (conn, rule_name, alert_priority, alert_state, description,
-         notification, date_from, device_names);
-    REQUIRE ( rep_alert.status == 1 );
-
     // second insert
     reply_insert = persist::insert_dc_room_row_rack_group (conn, name, element_type_id,
             parent_id, ext_attributes, status, priority, groups,
@@ -785,18 +771,6 @@ TEST_CASE("rack unlockated INSERT/DELETE #persist::asset_subtype::N_A","[db][CRU
     rv = persist::select_measurements_by_topic_id (conn, topic2_id,
                 start_timestamp, end_timestamp, true, true, foo2);
     REQUIRE ( out2 == false );
-
-    // check alerts
-    bool out3 = false;
-    row_cb_f foo3 = \
-                    [&out3](const tntdb::Row& r)
-                    {
-                        out3 = true;
-                    };
-
-    rv =  persist::select_alert_by_element_all(conn, rowid, foo3);
-    REQUIRE ( rv == 0 );
-    REQUIRE ( out3 == false );
 
     // check select element
     reply_select = persist::select_asset_element_web_byId(conn, rowid);
@@ -981,19 +955,6 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
     REQUIRE ( rv == 0 );
     REQUIRE ( rowid4 != 0 );
 
-    const char      *rule_name = "my_test_ruleName";
-    a_elmnt_pr_t     alert_priority = 1;
-    m_alrt_state_t   alert_state = 1;
-    const char      *description = "AAA";
-    m_alrt_ntfctn_t  notification = 0;
-    int64_t          date_from = 1433769783;
-    std::vector<std::string> device_names = {name};
-
-    db_reply_t rep_alert = persist::insert_new_alert
-        (conn, rule_name, alert_priority, alert_state, description,
-         notification, date_from, device_names);
-    REQUIRE ( rep_alert.status == 1 );
-
     // second insert
     reply_insert = persist::insert_device (conn, links, groups, name, parent_id,
                             ext_attributes, asset_device_type_id,
@@ -1033,17 +994,6 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
                 start_timestamp, end_timestamp, true, true, foo2);
     REQUIRE ( out2 == false );
 
-    // check alerts
-    bool out3 = false;
-    row_cb_f foo3 = \
-                    [&out3](const tntdb::Row& r)
-                    {
-                        out3 = true;
-                    };
-
-    rv =  persist::select_alert_by_element_all(conn, rowid, foo3);
-    REQUIRE ( rv == 0 );
-    REQUIRE ( out3 == false );
     reply_select = persist::select_asset_element_web_byId(conn, rowid);
     REQUIRE (reply_select.status == 0);
     REQUIRE (reply_select.errtype == BIOS_ERROR_DB);
