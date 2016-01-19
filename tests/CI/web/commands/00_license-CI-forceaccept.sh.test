@@ -41,6 +41,7 @@ echo "##########################################################################
 echo
 
 [ x"${JSONSH_CLI_DEFINED-}" = xyes ] || CODE=127 die "jsonsh_cli() not defined"
+. "$CHECKOUTDIR/tests/CI/web/commands/00_enforcePasswd.include"
 
 # Try to accept the BIOS license on server, unless the caller is testing this
 if [ x"$SKIP_LICENSE" = xyes ]; then
@@ -48,35 +49,39 @@ if [ x"$SKIP_LICENSE" = xyes ]; then
     RES=0
     api_get_json '/admin/license/status' | grep "accepted_at" >&5 || \
         RES=$?
+
     if [ "$RES" != 0 ] ; then
         logmsg_warn "License status at the beginning of the test suite is: not accepted"
     fi
     # Nonpositive argument means "OK to fail"
-    print_result -$RES
+    print_result -$RES || true
 else
     test_it "license_initial_status_ok"
     RES=0
     api_get_json '/admin/license/status' | grep "accepted_at" >&5 || \
         RES=$?
+
     if [ $RES = 0 ] ; then
         print_result 0
     else
-        print_result -$RES
+        print_result -$RES || true
 
         test_it "verify_known_password_1"
-        TIMEINFO="`api_auth_get_json '/admin/time' 2>/dev/null`"
-        RES=$?
-        print_result -$RES
+        RES=0
+        TIMEINFO="`api_auth_get_json '/admin/time' 2>/dev/null`" || \
+           RES=$?
+        print_result -$RES || true
 
         if [ $RES != 0 ] && [ -n "$BIOS_PASSWD" ] && [ -n "$BIOS_USER" ]; then
             test_it "ensure_known_password_lowlevel_1"
             if [ x"$SKIP_DEFAULT_PASSWORD" = xyes ]; then
                 logmsg_warn "Default password at the beginning of the test suite is: not accepted"
-                print_result 32
+                print_result 32 || true
             else
-                logmsg_info "Trying to set the default user password so we can accept the license and go on"
-                sut_run "( echo "${BIOS_PASSWD}"; echo "${BIOS_PASSWD}"; ) | passwd ${BIOS_USER}"
-                print_result $?
+                logmsg_info "Trying to set the default user password so we can accept the license and go on..."
+                RES=0
+                enforce_passwd "${BIOS_PASSWD}" || RES=$?
+                print_result $RES || true
             fi
         fi
 
@@ -84,62 +89,68 @@ else
         CITEST_QUICKFAIL=no WEBLIB_QUICKFAIL=no WEBLIB_CURLFAIL=no api_auth_post_json '/admin/license' "foobar" >&5 || true
 
         test_it "license_forced_status_ok"
-        OUT="`api_get_json '/admin/license/status' | grep "accepted_at"`"
-        RES=$?
+        RES=0
+        OUT="`api_get_json '/admin/license/status' | grep "accepted_at"`" || \
+            RES=$?
         [ "$RES" = 0 ] && echo "$OUT" | sed 's|\(accepted_at":"\)[0-9]*"|\1XXX"|' >&5 && echo "$OUT"
-        print_result $RES
+        print_result $RES || true
     fi
 
     #NEW_BIOS_PASSWD="nEw2`echo "$BIOS_PASSWD" | cut -c 1-3`%`echo "$BIOS_PASSWD" | cut -c 4-`"'@'
     NEW_BIOS_PASSWD="xX!9`head --bytes 16 /dev/urandom | base64 | sed 's,[\+\=\/\ \t\n\r\%],_,g'`"
 
     curlfail_push "warn" ""
-    TIMEINFO="`CITEST_QUICKFAIL=no WEBLIB_QUICKFAIL=no WEBLIB_CURLFAIL=no api_auth_get_json '/admin/time'`"
-    RES=$?
+    RES=0
+    TIMEINFO="`CITEST_QUICKFAIL=no WEBLIB_QUICKFAIL=no WEBLIB_CURLFAIL=no api_auth_get_json '/admin/time'`" || \
+        RES=$?
     curlfail_pop
 
     if [ "$RES" = 0 ]; then
         logmsg_info "REST API server responds to default password; try to change it back and forth (enables SSH server)"
 
         test_it "change_password_forth"
-        api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "'"$NEW_BIOS_PASSWD"'" }'
-        RES1=$?
-        print_result -$RES1
+        RES1=0
+        api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "'"$NEW_BIOS_PASSWD"'" }' || \
+            RES1=$?
+        print_result -$RES1 || true
 
         if [ $RES1 = 0 ] ; then
             test_it "change_password_back_lowlevel"
             logmsg_info "Trying to set the default user password (which did match earlier) so we can accept the license and go on"
-            sut_run "( echo "${BIOS_PASSWD}"; echo "${BIOS_PASSWD}"; ) | passwd ${BIOS_USER}"
-            print_result $?
+            enforce_passwd "${BIOS_PASSWD}" || RES1=$?
+            print_result $RES1 || true
         fi
 
         logmsg_info "Some info about running server version (and a test that password is OK):"
 
         test_it "sysinfo_get_auth=2"
-        SYSINFOA="`api_auth_get_json '/admin/sysinfo'`"
-        RES=$?
+        RES=0
+        SYSINFOA="`api_auth_get_json '/admin/sysinfo'`" || \
+            RES=$?
         #echo "=== SYSINFOA ($RES):" >&2
         #echo "$SYSINFOA" >&2
-        [ $RES = 0 -a -n "$SYSINFOA" ]
-        print_result $?
+        [ $RES = 0 -a -n "$SYSINFOA" ] || RES=$?
+        print_result $RES || true
 
         test_it "sysinfo_auth=2__parse__source_build_package__info"
         JPATH='"packages",[0-9]*$'
-        SYSINFO_VERSION="`echo "$SYSINFOA" | jsonsh_cli -x="$JPATH" | egrep '"package-name":"core".*"commit":"[a-f0-9-]+"'`"
-        RES=$?
+        RES=0
+        SYSINFO_VERSION="`echo "$SYSINFOA" | jsonsh_cli -x="$JPATH" | egrep '"package-name":"core".*"commit":"[a-f0-9-]+"'`" || \
+            RES=$?
         echo "=== SYSINFO_VERSION_PKG ($RES): `echo "$SYSINFO_VERSION" | sed 's/.*commit":"\(.*\)".*/\1/'`" >&2
         [ $RES = 0 -a -n "$SYSINFO_VERSION" -a \
-            x"$SYSINFO_VERSION" != x'""' ]
-        print_result $?
+            x"$SYSINFO_VERSION" != x'""' ] || RES=$?
+        print_result $RES || true
 
         test_it "sysinfo_auth=2__parse__source_build_running__info"
         JPATH='^"restapi-metadata","source-repo","commit"$'
-        SYSINFO_VERSION_R="`echo "$SYSINFOA" | jsonsh_cli -x="$JPATH" | sed 's,^.*\t"\(.*\)",\1,'`"
-        RES=$?
+        RES=0
+        SYSINFO_VERSION_R="`echo "$SYSINFOA" | jsonsh_cli -x="$JPATH" | sed 's,^.*\t"\(.*\)",\1,'`" || \
+            RES=$?
         echo "=== SYSINFO_VERSION_RUN ($RES): $SYSINFO_VERSION_R" >&2
         [ $RES = 0 -a -n "$SYSINFO_VERSION_R" -a \
-            x"$SYSINFO_VERSION_R" != x'""' ]
-        print_result -$?
+            x"$SYSINFO_VERSION_R" != x'""' ] || RES=$?
+        print_result -$RES || true
 
     else
         logmsg_warn "REST API server has a non-default password"
@@ -150,9 +161,10 @@ else
     # Make sure we end this routine with a working known BIOS_PASSWD value
     # unless asked otherwise.
     test_it "verify_known_password_2"
-    TIMEINFO="`api_auth_get_json '/admin/time' 2>/dev/null`"
-    RES=$?
-    print_result -$RES
+    RES=0
+    TIMEINFO="`api_auth_get_json '/admin/time' 2>/dev/null`" || \
+        RES=$?
+    print_result -$RES || true
 
     if [ $RES != 0 ] && [ -n "$BIOS_PASSWD" ] && [ -n "$BIOS_USER" ]; then
         test_it "ensure_known_password_lowlevel_2"
@@ -160,12 +172,23 @@ else
             logmsg_warn "Default password at the beginning of the test suite is: not accepted"
             print_result 32
         else
-            logmsg_info "Trying to set the default user password so we can accept the license and go on"
-            sut_run "( echo "${BIOS_PASSWD}"; echo "${BIOS_PASSWD}"; ) | passwd ${BIOS_USER}"
-            print_result $?
+            logmsg_info "Trying to set the default user password so we can go on"
+            RES=0
+            enforce_passwd "${BIOS_PASSWD}" || RES=$?
+            print_result $RES
         fi
     fi
 
+    test_it "license_status_before_tests"
+    RES=0
+    api_get_json '/admin/license/status' | grep "accepted_at" >&5 || \
+        RES=$?
+
+    if [ "$RES" != 0 ] ; then
+        logmsg_warn "License status at the beginning of the test suite is: not accepted"
+    fi
+    # Nonpositive argument means "OK to fail"
+    print_result -$RES
 
 fi # // if SKIP_LICENSE != yes
 
