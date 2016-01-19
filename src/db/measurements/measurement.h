@@ -112,26 +112,39 @@ int
     delete_measurements(
         tntdb::Connection &conn,
         m_msrmnt_tpc_id_t   topic_id,
-        m_msrmnt_id_t     &affected_rows
-        );
+        m_msrmnt_id_t     &affected_rows);
+
+
+int
+    delete_measurements(
+        tntdb::Connection& conn,
+        std::set<m_msrmnt_tpc_id_t> topics);
+
+
+int
+    delete_measurement_topics(
+        tntdb::Connection& conn,
+        std::set<m_msrmnt_tpc_id_t> topics);
 
 
 int
     delete_measurement_topic(
         tntdb::Connection &conn,
         m_msrmnt_tpc_id_t   topic_id,
-        m_msrmnt_tpc_id_t  &affected_rows
-        );
+        m_msrmnt_tpc_id_t  &affected_rows);
+
 
 db_reply<std::vector<db_msrmnt_t>>
     select_from_measurement_by_topic(
         tntdb::Connection &conn,
         const char        *topic);
 
+
 db_reply_t
     delete_from_measurement_by_id(
         tntdb::Connection &conn,
         m_msrmnt_id_t      id);
+
 
 int
     select_for_element_topics_all(
@@ -176,6 +189,7 @@ int
         a_elmnt_id_t       asset_id,
         row_cb_f          &cb);
 
+
 int
     select_last_aggregated_by_element_by_src_by_step(
         tntdb::Connection &conn,
@@ -185,6 +199,7 @@ int
         double            &value,
         bool               fuzzy
     );
+
 
 int
     select_last_aggregated_by_topic_by_step(

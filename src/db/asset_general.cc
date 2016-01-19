@@ -430,11 +430,11 @@ db_reply_t
 
     { // need to delete all measurements
         // select all topic_id for the element
-        std::set <a_elmnt_id_t> out{};
+        std::set <m_msrmnt_tpc_id_t> out{};
         row_cb_f foo = \
                        [&out](const tntdb::Row& r)
                        {
-                           a_elmnt_id_t id = 0;
+                           m_msrmnt_tpc_id_t id = 0;
                            r["id"].get(id);
                            out.insert(id);
                        };
@@ -452,31 +452,25 @@ db_reply_t
             return ret;
         }
         // delete all measurements for topic and topic itself
-        m_msrmnt_id_t affected_rows = 0;
-        m_msrmnt_tpc_id_t affected_rows1 = 0;
-        for ( auto topic_id : out )
+        rv = delete_measurements(conn, out);
+        if ( rv != 0 )
         {
-            log_debug ("  topic_id = %" PRIu32 , topic_id);
-            rv = delete_measurements(conn, topic_id, affected_rows);
-            if ( rv != 0 )
-            {
-                db_reply_t ret = db_reply_new();
-                ret.status = 0;
-                ret.errtype = rv;
-                ret.errsubtype = rv;
-                log_error ("error during measurements deleting");
-                return ret;
-            }
-            rv = delete_measurement_topic(conn, topic_id, affected_rows1);
-            if ( rv != 0 )
-            {
-                db_reply_t ret = db_reply_new();
-                ret.status = 0;
-                ret.errtype = rv;
-                ret.errsubtype = rv;
-                log_error ("error during topic deleting");
-                return ret;
-            }
+            db_reply_t ret = db_reply_new();
+            ret.status = 0;
+            ret.errtype = rv;
+            ret.errsubtype = rv;
+            log_error ("error during measurements deleting");
+            return ret;
+        }
+        rv = delete_measurement_topics(conn, out);
+        if ( rv != 0 )
+        {
+            db_reply_t ret = db_reply_new();
+            ret.status = 0;
+            ret.errtype = rv;
+            ret.errsubtype = rv;
+            log_error ("error during topic deleting");
+            return ret;
         }
     }
     // need delete devices from alerts, but alerts will stay in the system
@@ -620,11 +614,11 @@ db_reply_t
 
     { // need to delete all measurements
         // select all topic_id for the element
-        std::set <a_elmnt_id_t> out{};
+        std::set <m_msrmnt_tpc_id_t> out{};
         row_cb_f foo = \
                        [&out](const tntdb::Row& r)
                        {
-                           a_elmnt_id_t id = 0;
+                           m_msrmnt_tpc_id_t id = 0;
                            r["id"].get(id);
                            out.insert(id);
                        };
@@ -642,30 +636,25 @@ db_reply_t
             return ret;
         }
         // delete all measurements for topic and topic itself
-        m_msrmnt_id_t affected_rows = 0;
-        m_msrmnt_tpc_id_t affected_rows1 = 0;
-        for ( auto topic_id : out )
+        rv = delete_measurements(conn, out);
+        if ( rv != 0 )
         {
-            rv = delete_measurements(conn, topic_id, affected_rows);
-            if ( rv != 0 )
-            {
-                db_reply_t ret = db_reply_new();
-                ret.status = 0;
-                ret.errtype = rv;
-                ret.errsubtype = rv;
-                log_error ("error during measurements deleting");
-                return ret;
-            }
-            rv = delete_measurement_topic(conn, topic_id, affected_rows1);
-            if ( rv != 0 )
-            {
-                db_reply_t ret = db_reply_new();
-                ret.status = 0;
-                ret.errtype = rv;
-                ret.errsubtype = rv;
-                log_error ("error during topic deleting");
-                return ret;
-            }
+            db_reply_t ret = db_reply_new();
+            ret.status = 0;
+            ret.errtype = rv;
+            ret.errsubtype = rv;
+            log_error ("error during measurements deleting");
+            return ret;
+        }
+        rv = delete_measurement_topics(conn, out);
+        if ( rv != 0 )
+        {
+            db_reply_t ret = db_reply_new();
+            ret.status = 0;
+            ret.errtype = rv;
+            ret.errsubtype = rv;
+            log_error ("error during topic deleting");
+            return ret;
         }
     }
     // need delete devices from alerts, but alerts will stay in the system
