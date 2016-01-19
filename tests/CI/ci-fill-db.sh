@@ -36,7 +36,7 @@ init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRI
 settraps 'exit_summarizeTestlibResults'
 
 set -u
-set -e
+#set -e
 #set -x
 
 #DB_LOADDIR="$CHECKOUTDIR/database/mysql"
