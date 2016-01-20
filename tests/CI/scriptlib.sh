@@ -493,16 +493,64 @@ loaddb_file_params() {
     return 0
 }
 
+settraps_exit_clear() {
+    # Reset the exit() handler to defaults, used in routines below
+    for SS in EXIT SIGEXIT 0 ERR SIGERR; do trap "-" "$SS" 2>/dev/null || true; done
+}
+
+settraps_nonfatal() {
+    # While the legacy common settraps() wraps the caller's custom handler "$*"
+    # with an exit(), this one is not fatal by itself, and it does not subshell
+    # as it is intended to be used for interrupts, etc. And for settraps() too.
+    # It detects and presets the variables that can be used by the caller's
+    # trap handler, including one from settraps() below. Variables include:
+    #   ERRCODE     Number of upstream exitcode that came into the trap
+    #   ERRSIGNAL   Name of the signal as registered (HUP or SIGEXIT etc.)
+    #   ERRFILE     File from which the trap was called, if we can guess it
+    #   ERRFUNC     Function inside which failure, exit() or die() happened
+    #   ERRLINE     Line in source file or function, if any (else empty)
+    #   ERRPOS      String that combines available bits of _SCRIPT_NAME
+    #               ERRFILE ERRFUNC ERRLINE into meaningful markup
+    #   ERRTEXT     String that meaningfully combines ERRPOS ERRCODE ERRSIGNAL
+    # The handler built into this routine does not report anything, it just
+    # sets the variables above and calls the caller's handle - such as the
+    # settrap() which reports stuff and exit()s with some code in the end.
+
+    # Not all trap names are recognized by all shells consistently
+    [ -z "${TRAP_SIGNALS-}" ] && TRAP_SIGNALS="EXIT QUIT TERM HUP INT ERR"
+    for P in "" SIG; do for S in $TRAP_SIGNALS ; do
+        if [ -n "$BASH" ] && [ "$S" = ERR ] ; then
+            set -o errtrace
+        fi
+        case "$1" in
+            -|"") trap "$1" "$P$S" 2>/dev/null || true ;;
+            *)    ERRHANDLER="$*"
+                  case "$ERRHANDLER" in
+                    *";"|*"; "|*";  ") ;;
+                    *)    ERRHANDLER="$ERRHANDLER ;" ;;
+                  esac
+                  trap 'ERRCODE=$?; ERRSIGNAL="'"$P$S"'"; [ -n "${LINENO-}" ] && [ "$LINENO" -gt 0 ] 2>/dev/null && ERRLINE="$LINENO" || ERRLINE=""; ERRFILE="${_SCRIPT_NAME}"; if [ -n "${BASH-}" ] 2>/dev/null; then ERRFUNC="${FUNCNAME[0]-}" || ERRFUNC=""; ERRLINE="${BASH_LINENO[0]}" || ERRLINE=0; [ "$ERRLINE" -eq 0 ] && ERRLINE="$LINENO"; [ -n "$ERRLINE" ] && [ "$ERRLINE" -gt 1 ] || ERRLINE=""; ERRFILE="${BASH_SOURCE[0]}"; ERRPOS="${ERRFILE}${ERRLINE:+:$ERRLINE}${ERRFUNC:+ :: $ERRFUNC()}"; [ "`basename "${_SCRIPT_NAME}"`" = "`basename "${ERRFILE}"`" ] || ERRPOS="${_SCRIPT_NAME} => $ERRPOS"; else ERRPOS="$ERRFILE${ERRLINE-:+:$ERRLINE}"; fi; ERRTEXT="script ($ERRPOS) due to trapped signal ($ERRSIGNAL) with exit-code ($ERRCODE)"; { (settraps_exit_clear; exit $ERRCODE 2>/dev/null 2>&1); '"$ERRHANDLER"' } ;' \
+                    "$P$S" 2>/dev/null || true
+                  ;;
+        esac
+    done; done
+}
+
 settraps() {
-        # Not all trap names are recognized by all shells consistently
-        [ -z "${TRAP_SIGNALS-}" ] && TRAP_SIGNALS="EXIT QUIT TERM HUP INT ERR"
-        for P in "" SIG; do for S in $TRAP_SIGNALS ; do
-                if [ -n "$BASH" ] && [ "$S" = ERR ] ; then
-                    set -o errtrace
-                fi
-                case "$1" in
-                -|"") trap "$1" "$P$S" 2>/dev/null || true ;;
-                *)    trap 'ERRCODE=$?; [ -n "${LINENO-}" ] && [ "$LINENO" -gt 0 ] 2>/dev/null && ERRLINE="$LINENO" || ERRLINE=""; ERRFILE="${_SCRIPT_NAME}"; if [ -n "${BASH-}" ] 2>/dev/null; then ERRFUNC="${FUNCNAME[0]-}" || ERRFUNC=""; ERRLINE="${BASH_LINENO[0]}" || ERRLINE=0; [ "$ERRLINE" -eq 0 ] && ERRLINE="$LINENO"; [ -n "$ERRLINE" ] && [ "$ERRLINE" -gt 1 ] || ERRLINE=""; ERRFILE="${BASH_SOURCE[0]}"; ERRPOS="${ERRFILE}${ERRLINE:+:$ERRLINE}${ERRFUNC:+ :: $ERRFUNC()}"; [ "`basename "${_SCRIPT_NAME}"`" = "`basename "${ERRFILE}"`" ] || ERRPOS="${_SCRIPT_NAME} => $ERRPOS"; else ERRPOS="$ERRFILE${ERRLINE-:+:$ERRLINE}"; fi; ERRTEXT="script ($ERRPOS) due to trapped signal ('"$P$S"') with exit-code ($ERRCODE)"; echo ""; if [ "$ERRCODE" = 0 ]; then LOGMSG_PREFIX="CI-SIGNALTRAP-" logmsg_info "Completing $ERRTEXT" ; else echo ""; echo "!!!!!!!!!"; LOGMSG_PREFIX="CI-SIGNALTRAP-" logmsg_error "Aborting $ERRTEXT"; echo "!!!!!!!!!"; fi; echo ""; for SS in EXIT SIGEXIT 0 ERR SIGERR; do trap "-" $SS 2>/dev/null || true; done; { set +e; (exit $ERRCODE 2>/dev/null 2>&1); '"$*"' ;} || exit $? ; exit $ERRCODE;' "$P$S" 2>/dev/null || true ;;
-                esac
-        done; done
+    # Sets up or clear traps defined in $TRAP_SIGNALS (or falls back to default
+    # list of signals) to report the trap, call consumer's handler, and if that
+    # routine does not exit() the shell by itself - the wrapper would exit with
+    # either that handler's non-zero return code or with original trapped code.
+    # The ERR* variables reported here are defined by settraps_nonfatal() above
+    case "$1" in
+        -|"") settraps_nonfatal "$1" || true ;;
+        *)    ERRHANDLER="$*"
+              case "$ERRHANDLER" in
+                *";"|*"; "|*";  ") ;;
+                *)    ERRHANDLER="$ERRHANDLER ;" ;;
+              esac
+              settraps_nonfatal 'echo ""; if [ "$ERRCODE" = 0 ]; then LOGMSG_PREFIX="CI-SIGNALTRAP-" logmsg_info "Completing $ERRTEXT" ; else echo ""; echo "!!!!!!!!!"; LOGMSG_PREFIX="CI-SIGNALTRAP-" logmsg_error "Aborting $ERRTEXT"; echo "!!!!!!!!!"; fi; echo ""; settraps_exit_clear; { '"$ERRHANDLER"' } || exit $? ; exit $ERRCODE;' \
+                || true
+              ;;
+    esac
 }
