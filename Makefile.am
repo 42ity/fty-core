@@ -1281,13 +1281,14 @@ average_SOURCES = src/average/average.cc \
 				  src/web/include/helpers.h \
 				  src/web/src/helpers.cc
 
-average_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} -lbiosapi
+average_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS}
 
 average_LDADD = \
 			libpriv-log.la \
 			libpriv-utils.la \
 			libpriv-utils-plusplus.la \
 			libpriv-utils-ymsg.la \
+			libbiosapi.la \
 			libpriv-utils-web.la
 
 average_CPPFLAGS =	$(AM_CPPFLAGS) \
