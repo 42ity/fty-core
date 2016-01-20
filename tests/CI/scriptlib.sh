@@ -282,6 +282,21 @@ tee_stderr() {
     :
 }
 
+# This value can be set, at least in bash, to specify at which location
+# the caller of DIE was in the scripts
+SCRIPTLIB_DIE_FILENAME=""	# Which (maybe included) file caused the failure
+SCRIPTLIB_DIE_FUNCNAME=""	# Which function failed, maybe main(), source() etc
+SCRIPTLIB_DIE_LINENO=0  	# Which line in the file (or function) failed?
+SCRIPTLIB_DIE_SUBSHELL=-1	# Depth of automatic subshelling "()" "``" "$()"...
+# These are inherited from caller in any shell:
+SCRIPTLIB_DIE_SCRIPT_PATH=""
+SCRIPTLIB_DIE_SCRIPT_NAME=""
+SCRIPTLIB_DIE_SCRIPT_ARGS=""
+SCRIPTLIB_DIE_SCRIPT_ARGC=-1
+# This value is also a flag to decide if the SCRIPTLIB_DIE_* vars are to
+# be consulted in the settraps() handler below rather than autodetection
+# at the moment of trap execution (which may be already limited by shell).
+SCRIPTLIB_DIE_ERRCODE=-1
 die() {
     # The exit CODE can be passed as a variable, or as the first parameter
     # (if it is a number), both ways can be used for legacy reasons
@@ -293,8 +308,29 @@ die() {
     fi
     [ "$CODE" -ge 0 ] 2>/dev/null || CODE=1
     for LINE in "$@" ; do
-        echo_E "${LOGMSG_PREFIX}FATAL: ${_SCRIPT_PATH}:" "$LINE" >&2
+        echo_E "${LOGMSG_PREFIX-}FATAL: ${_SCRIPT_PATH-}:" "$LINE" >&2
     done
+    # Set common vars for settraps() standard handler
+    SCRIPTLIB_DIE_ERRCODE="${CODE}"
+    SCRIPTLIB_DIE_SCRIPT_PATH="${_SCRIPT_PATH-}"
+    SCRIPTLIB_DIE_SCRIPT_NAME="${_SCRIPT_NAME-}"
+    SCRIPTLIB_DIE_SCRIPT_ARGS="${_SCRIPT_ARGS-}"
+    SCRIPTLIB_DIE_SCRIPT_ARGC="${_SCRIPT_ARGC-}"
+    if [ -n "${BASH}" ]; then
+        # Detect who called die()
+        SCRIPTLIB_DIE_LINENO="${BASH_LINENO[0]-}"
+        SCRIPTLIB_DIE_FUNCNAME="${FUNCNAME[1]-}"
+        SCRIPTLIB_DIE_FILENAME="${BASH_SOURCE[1]}"
+        SCRIPTLIB_DIE_SUBSHELL="${BASH_SUBSHELL}"
+    else
+        # Definitions of LINENO vary greatly from shell to shell
+        # In practice must be >= 1 if defined at all
+        SCRIPTLIB_DIE_LINENO="${LINENO-}"
+        [ "$SCRIPTLIB_DIE_LINENO" -ge 1 ] 2>/dev/null || SCRIPTLIB_DIE_LINENO=0
+        SCRIPTLIB_DIE_FILENAME="${SCRIPTLIB_DIE_SCRIPT_NAME}"
+        SCRIPTLIB_DIE_FUNCNAME=""
+        SCRIPTLIB_DIE_SUBSHELL=-1
+    fi
     exit $CODE
 }
 
@@ -530,6 +566,13 @@ settraps_nonfatal() {
                     *)    ERRHANDLER="$ERRHANDLER ;" ;;
                   esac
                   trap 'ERRCODE=$?; ERRSIGNAL="'"$P$S"'"; \
+if [ -n "${SCRIPTLIB_DIE_ERRCODE-}" ] && [ "$SCRIPTLIB_DIE_ERRCODE" -ge 0 ] 2>/dev/null; then
+    ERRFILE="$SCRIPTLIB_DIE_FILENAME"
+    ERRFUNC="$SCRIPTLIB_DIE_FUNCNAME"
+    ERRLINE="$SCRIPTLIB_DIE_LINENO"
+    ERRCODE="$SCRIPTLIB_DIE_ERRCODE"
+else
+    SCRIPTLIB_DIE_ERRCODE=""
     [ -n "${LINENO-}" ] && [ "$LINENO" -gt 0 ] 2>/dev/null && ERRLINE="$LINENO" || ERRLINE=""
     ERRFILE="${_SCRIPT_NAME}"; ERRFUNC=""
     if [ -n "${BASH-}" ] 2>/dev/null; then
@@ -539,9 +582,11 @@ settraps_nonfatal() {
         [ -n "$ERRLINE" ] && [ "$ERRLINE" -gt 1 ] || ERRLINE=""
         ERRFILE="${BASH_SOURCE[0]}"
     fi
+fi
 ERRPOS="${ERRFILE}${ERRLINE:+:$ERRLINE}${ERRFUNC:+ :: $ERRFUNC()}"
 [ "`basename "${_SCRIPT_NAME}"`" = "`basename "${ERRFILE}"`" ] || ERRPOS="${_SCRIPT_NAME} => $ERRPOS"
 ERRTEXT="script ($ERRPOS) due to trapped signal ($ERRSIGNAL) with exit-code ($ERRCODE)"
+[ -n "${SCRIPTLIB_DIE_ERRCODE-}" ] && ERRTEXT="$ERRTEXT, using die()"
 { (settraps_exit_clear; exit $ERRCODE 2>/dev/null 2>&1); '"$ERRHANDLER"' } ;' \
                     "$P$S" 2>/dev/null || true
                   ;;
