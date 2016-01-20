@@ -316,3 +316,35 @@ TEST_CASE("get_mac", "[utils][get_mac]") {
 
     }
 }
+
+TEST_CASE("sanitize_date", "[utils][sanitize_date]") {
+
+    // invalid date
+    char *r = sanitize_date ("123");
+    CHECK (r == NULL);
+
+    // ISO date
+    r = sanitize_date ("2010-02-15");
+    CHECK (r != NULL);
+    CHECK (streq (r, "2010-02-15"));
+    zstr_free (&r);
+
+    // European date
+    r = sanitize_date ("15.02.2010");
+    CHECK (r != NULL);
+    CHECK (streq (r, "2010-02-15"));
+    zstr_free (&r);
+
+    // European date
+    r = sanitize_date ("15 02 2010");
+    CHECK (r != NULL);
+    CHECK (streq (r, "2010-02-15"));
+    zstr_free (&r);
+
+    // US date
+    r = sanitize_date ("02/15/2010");
+    CHECK (r != NULL);
+    CHECK (streq (r, "2010-02-15"));
+    zstr_free (&r);
+
+}
