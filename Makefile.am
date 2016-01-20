@@ -823,6 +823,7 @@ test_loadcsv_LDADD = \
 			libpriv-cidr.la \
 			libpriv-proto.la \
 			libpriv-csv.la \
+			libpriv-utils.la \
 			libpriv-utils-plusplus.la \
 			libpriv-test-run.la
 
@@ -1121,6 +1122,7 @@ bios_csv_LDADD = \
 						 libpriv-db.la \
 						 libpriv-proto.la \
 						 libpriv-log.la \
+						 libpriv-utils.la \
 						 libpriv-utils-plusplus.la \
 						 libpriv-csv.la
 bios_csv_LDFLAGS = \
