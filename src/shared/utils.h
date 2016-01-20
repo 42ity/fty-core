@@ -213,6 +213,12 @@ char *current_license_file (void);
 */
 char *accepted_license_file (void);
 
+/*!
+ \brief sanitize input date (ISO, European day.month.year, day month year, US month/day/year)
+ \return NULL or freshly allocated string with ISO format
+ */
+char* sanitize_date (const char* inp);
+
 #ifdef __cplusplus
 }
 #endif
