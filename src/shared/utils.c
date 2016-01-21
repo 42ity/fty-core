@@ -414,13 +414,12 @@ char*
         struct tm tm;
         char *r = strptime (inp, FORMATS[i], &tm);
 
-        if (r && i == 0)
-            return strdup (inp);
-        if (r && i != 0) {
-            char *buf = (char*) malloc (11); //buffer for ISO date
-            strftime (buf, 11, FORMATS[0], &tm);
-            return buf;
-        }
+        if (!r)
+            continue;
+
+        char *buf = (char*) malloc (11); //buffer for ISO date
+        strftime (buf, 11, FORMATS[0], &tm);
+        return buf;
     }
 
     return NULL;
