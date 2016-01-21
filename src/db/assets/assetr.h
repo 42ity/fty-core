@@ -303,5 +303,26 @@ int
         const std::set<a_elmnt_id_t> &element_ids,
         std::function< void( const tntdb::Row& ) > &cb);
 
+/**
+ * \brief select all devices (name, warranty_end) which have warranty_end argument
+ *
+ * \param[in] conn        - db connection
+ * \param[in] keytag      - asset ext attribute name like "u_size"
+ * \param[in] element_ids - list of element_id-s
+ *                          if the list is empty, all elements with
+ *                          requested tag are returned.
+ * \param[in] cb          - callback to be called with every selected row.
+ *
+ *  Every selected row has the following columns:
+ *      id_asset_ext_attribute, keytag, value, id_asset_element, read_only
+ *
+ * \return 0 on success (even if nothing was found)
+ */
+int
+    select_asset_element_all_with_warranty_end(
+            tntdb::Connection& conn,
+            std::function<void(
+                const tntdb::Row&
+                )>& cb);
 } //namespace end
 #endif // SRC_DB_ASSETS_ASSETR_H
