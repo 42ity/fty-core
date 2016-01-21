@@ -403,6 +403,7 @@ char*
 
     static const char* FORMATS[] = {
         "%Y-%m-%d",
+        "%Y-%b-%d",
         "%d.%m.%Y",
         "%d %m %Y",
         "%m/%d/%Y",
