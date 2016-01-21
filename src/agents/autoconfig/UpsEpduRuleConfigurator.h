@@ -17,31 +17,28 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 /*!
- \file   ConfiguratorFactory.h
- \brief  ConfiguratorFactory header file
+ \file   UpsEpduRuleConfigurator.h
+ \brief  Configuration of rules for ups and epdu devices
  \author Tomas Halman <TomasHalman@Eaton.com>
 */
 
-#ifndef SRC_AGENTS_AUTOCONFIG_CONFIGURATORFACTORY_H__
-#define SRC_AGENTS_AUTOCONFIG_CONFIGURATORFACTORY_H__
+#ifndef SRC_AGENTS_AUTOCONFIG_UPSEPDURULECONFIGURATOR_H__
+#define SRC_AGENTS_AUTOCONFIG_UPSEPDURULECONFIGURATOR_H__
 
 #include <string>
-#include <vector>
 
 #include "Configurator.h"
 
-class ConfiguratorFactory
-{
+class UpsEpduRuleConfigurator : public Configurator {
  public:
-    static std::vector <Configurator*> getConfigurator (uint32_t type, uint32_t subtype); // TODO: std::reference_wrapper
+    bool v_configure (const std::string& name, const AutoConfigurationInfo& info, mlm_client_t *client); 
+    
+    // helper methods
+    std::string makeRule (const std::string& alert, const std::string& bit, const std::string& device, const std::string& description) const;
+    bool        sendNewRule (const std::string& rule, mlm_client_t *client);
 
-    ConfiguratorFactory (const ConfiguratorFactory&) = delete;
-    void operator= (const ConfiguratorFactory&)      = delete;
-
- private:
-    ConfiguratorFactory () {};
+    virtual ~UpsEpduRuleConfigurator() {};
 };
 
-
-#endif // SRC_AGENTS_AUTOCONFIG_CONFIGURATORFACTORY_H__
+#endif // SRC_AGENTS_AUTOCONFIG_UPSEPDURULECONFIGURATOR_H__
 

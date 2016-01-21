@@ -34,6 +34,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "utils.h"
 #include "filesystem.h"
 #include "nutscan.h"
+#include "asset_types.h"
 
 #include "NUTConfigurator.h"
 
@@ -58,7 +59,6 @@ std::vector<std::string>::const_iterator NUTConfigurator::stringMatch(const std:
     log_debug("regex: not found");
     return texts.end();
 }
-
 
 bool NUTConfigurator::match( const std::vector<std::string> &texts, const char *pattern) {
     return stringMatch(texts,pattern) != texts.end();
@@ -142,47 +142,18 @@ void NUTConfigurator::updateNUTConfig() {
     }
 }
 
-std::string NUTConfigurator::makeRule(std::string const &alert, std::string const &bit, std::string const &device, std::string const &description) const {
-    return
-        "{\n"
-        "\"single\" : {\n"
-        "    \"rule_name\"     :   \"" + alert + "-" + device + "\",\n"
-        "    \"target\"        :   [\"status.ups@" + device + "\"],\n"
-        "    \"element\"       :   \"" + device + "\",\n"
-        "    \"results\"       :   [ {\"high_critical\"  : { \"action\" : [ \"EMAIL\" ], \"description\" : \""+description+"\" }} ],\n"
-        "    \"evaluation\"    : \""
-        " function has_bit(x,bit)"
-        "     local mask = 2 ^ (bit - 1)"
-        "     x = x % (2*mask)"
-        "     if x >= mask then return true else return false end"
-        " end"
-        " function main(status)"
-        "     if has_bit(status,"+bit+") then return HIGH_CRITICAL end"
-        "     return OK"
-        " end"
-        "\"\n"
-        "  }\n"
-        "}";
-};
 
-std::vector<std::string> NUTConfigurator::createRules(std::string const &name) {
-    std::vector<std::string> result;
-
-    // bits OB - 5 LB - 7 BYPASS - 9
-
-    result.push_back (makeRule ("onbattery","5",name,"UPS is running on battery!"));
-    result.push_back (makeRule ("lowbattery","7",name,"Battery depleted!"));
-    result.push_back (makeRule ("onbypass","9",name,"UPS is running on bypass!"));
-    return result;
-}
-
-bool NUTConfigurator::configure( const std::string &name, const AutoConfigurationInfo &info ) {
+bool NUTConfigurator::v_configure (const std::string &name, const AutoConfigurationInfo &info, mlm_client_t *client) {
     log_debug("NUT configurator created");
 
     switch( info.operation ) {
     case asset_operation::INSERT:
     case asset_operation::UPDATE:
         {
+            //TODO: boldly check size of info.attributes
+            //      if empty (or NULL) => return false
+            //      i don't know all the bussiness/domain knowledge, but this should be enough
+            //      as it seems insert/update require some attributes
             auto ipit = info.attributes.find("ip.1");
             if( ipit == info.attributes.end() ) {
                 log_error("device %s has no IP address", name.c_str() );
