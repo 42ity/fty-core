@@ -339,7 +339,7 @@ TEST_CASE("sanitize_date", "[utils][sanitize_date]") {
     zstr_free (&r);
 
     // Excell date
-    r = sanitize_date ("2010-Feb-15");
+    r = sanitize_date ("15-Feb-10");
     CHECK (r != NULL);
     CHECK (streq (r, "2010-02-15"));
     zstr_free (&r);
