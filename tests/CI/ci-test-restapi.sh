@@ -271,8 +271,8 @@ trap_cleanup(){
   # Ensure that no processes remain dangling when test completes
   # The ERRCODE is defined by settraps() as the program exitcode
   # as it enters the trap
-  TRAP_SIGNALS=EXIT settraps 'ciTRAP_RES=$?; echo "CI-EXIT: $0: test finished (up to the proper exit($ciTRAP_RES) command)..." >&2; trap_cleanup $ciTRAP_RES'
-  TRAP_SIGNALS="HUP INT QUIT TERM ERR" settraps '[ "$ERRCODE" = 0 ] && ERRCODE=123; echo "CI-EXIT: $0: got signal, aborting test..." >&2; trap_cleanup $ERRCODE'
+  settraps '[ "$ERRCODE" = 0 ] && ERRCODE=123; trap_cleanup $ERRCODE'
+  TRAP_SIGNALS=EXIT settraps 'trap_cleanup $ERRCODE'
 
   # might have some mess
   kill_daemons || true

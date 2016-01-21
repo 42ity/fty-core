@@ -129,7 +129,7 @@ function cleanup {
     rm -f "$LOCKFILE"
 }
     # ***  SET trap FOR EXIT SIGNALS
-TRAP_SIGNALS=EXIT settraps cleanup
+settraps "cleanup"
 
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
 

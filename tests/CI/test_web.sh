@@ -95,7 +95,8 @@ PATH="$PATH:/sbin:/usr/sbin"
 
 # Note: this default log filename will be ignored if already set by caller
 init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" ""
-settraps 'wTRAP_RES=$?; exit_summarizeTestedScriptlets ; exit_summarizeTestlibResults $wTRAP_RES || exit $?; exit $wTRAP_RES'
+# ERRCODE is maintained by settraps()
+settraps 'exit_summarizeTestedScriptlets ; exit_summarizeTestlibResults $ERRCODE'
 
 if [ "$SKIP_SANITY" = yes ]; then
     # This is hit e.g. when a wget-based "curl emulator" is used for requests
