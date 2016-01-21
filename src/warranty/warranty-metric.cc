@@ -77,7 +77,7 @@ int main()
         exit (EXIT_FAILURE);
     }
 
-    mlm_client_set_producer (client, "METRIC");
+    r = mlm_client_set_producer (client, "METRIC");
     if (r == -1) {
         log_error ("Can't set producer to METRIC stream");
         exit (EXIT_FAILURE);
