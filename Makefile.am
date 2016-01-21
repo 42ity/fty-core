@@ -780,8 +780,9 @@ test_libbiosapiut_DEPENDENCIES = \
 
 check_PROGRAMS += 	test-autoconfig
 test_autoconfig_SOURCES = tests/agents/autoconfig/test-autoconfig.cc \
-                          src/agents/autoconfig/NUTConfigurator.h src/agents/autoconfig/NUTConfigurator.cc \
-						  src/agents/autoconfig/Configurator.h src/agents/autoconfig/Configurator.cc
+						  src/agents/autoconfig/Configurator.h \
+                          src/agents/autoconfig/NUTConfigurator.h src/agents/autoconfig/NUTConfigurator.cc
+
 
 test_autoconfig_LDADD = \
 			libpriv-defs.la \
@@ -793,12 +794,16 @@ test_autoconfig_LDADD = \
 			libpriv-utils.la \
 			libpriv-utils-plusplus.la
 
-test_autoconfig_LDFLAGS = $(LIBCZMQ_LIBS) $(CXXTOOLS_LIBS) -lcidr -lbiosapi
+test_autoconfig_LDFLAGS = $(LIBCZMQ_LIBS) $(CXXTOOLS_LIBS) -lcidr -lbiosapi -ltntdb
 
 test_autoconfig_DEPENDENCIES = $(test_autoconfig_LDADD) \
 				libbiosapi.la
 
 test_autoconfig_CPPFLAGS = $(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/shared \
+			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_srcdir)/tests/include/ \
 			-I$(abs_top_srcdir)/src/agents/autoconfig/ \
 			-DTDIR=$(abs_top_srcdir)/tests/agents/autoconfig/
@@ -1171,9 +1176,11 @@ client_PROGRAMS +=	agent-autoconfig
 
 agent_autoconfig_SOURCES = \
 			src/agents/autoconfig/agent-autoconfig.cc src/agents/autoconfig/agent-autoconfig.h \
+			src/agents/autoconfig/Configurator.h \
 			src/agents/autoconfig/ConfiguratorFactory.h src/agents/autoconfig/ConfiguratorFactory.cc \
 			src/agents/autoconfig/NUTConfigurator.h src/agents/autoconfig/NUTConfigurator.cc \
-			src/agents/autoconfig/Configurator.h src/agents/autoconfig/Configurator.cc
+			src/agents/autoconfig/UpsEpduRuleConfigurator.h src/agents/autoconfig/UpsEpduRuleConfigurator.cc \
+			src/agents/autoconfig/UptimeConfigurator.h src/agents/autoconfig/UptimeConfigurator.cc
 
 agent_autoconfig_LDADD = \
 			libpriv-log.la \
@@ -1300,6 +1307,21 @@ average_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/shared \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
+
+client_PROGRAMS += warranty-metric
+
+warranty_metric_SOURCES = src/warranty/warranty-metric.cc
+
+warranty_metric_LDFLAGS = ${CXXTOOLS_LIBS} -ltntdb -lbiosproto -lmlm
+
+warranty_metric_LDADD = \
+			libpriv-log.la \
+			libpriv-db.la
+
+warranty_metric_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_srcdir)/src/db
 
 client_SCRIPTS +=	tools/bios-passwd \
 			tools/bios-networking \
