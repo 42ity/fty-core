@@ -19,20 +19,22 @@
 #  \brief  CI tests for asset create and delete DC
 #  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 init_script
+[ x"${JSONSH_CLI_DEFINED-}" = xyes ] || CODE=127 die "jsonsh_cli() not defined"
+
 No=1
 SEQUE=0
 ent=""
 loc=""
 #for cube in datacenter room rack; do
 echo
+curlfail_push_expect_noerrors
 for cube in datacenter; do
     echo "********* asset_create_one_device.sh **************************************************************"
     echo "********* ${No}. Create_${cube} ********************************************************************"
     echo "***************************************************************************************************"
     test_it "Create_${cube}"
-    curlfail_push_expect_noerrors
     PARAM='{"name":"'${cube}'_0","type":"'${cube}'","sub_type":"","location":"'${loc}'","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST00'${SEQUE}'","address":"ASDF","serial_no":"ABCD00'${SEQUE}'","ip.1":"10.229.5.'${SEQUE}'"}}'
-api_auth_post_json "/asset" "${PARAM}" >&5
+    api_auth_post_json "/asset" "${PARAM}" >&5
     print_result $?
     loc="$cube"_0
     SEQUE="$(expr $SEQUE + 1)"
@@ -48,7 +50,6 @@ for ent in feed ups genset server storage switch vm; do
     api_auth_post_json "/asset" "${PARAM}" >&5
     print_result $?
     loc="${ent}_0"
-    curlfail_pop
     SEQUE="$(expr $SEQUE + 1)"
     No="$(expr $No + 1)"
 done
@@ -61,21 +62,22 @@ for ent in epdu pdu; do
     echo "***************************************************************************************************"
     test_it "Create_${ent}"
     PARAM='{"name":"'${ent}'_0","type":"device","sub_type":"'${ent}'","location":"'${loc}'","status":"active","business_critical":"yes","priority":"P1","location_w_pos":"'${wpos}'","ext":{"asset_tag":"TEST00'${SEQUE}'","address":"ASDF","serial_no":"ABCD00'${SEQUE}'","ip.1":"10.229.5.'${SEQUE}'"}}'
-api_auth_post_json "/asset" "${PARAM}" >&5
+    api_auth_post_json "/asset" "${PARAM}" >&5
     print_result $?
     SEQUE="$(expr $SEQUE + 1)"
     No="$(expr $No + 1)"
     wpos="right"
 done
+curlfail_pop
 
 # ERROR MESSAGES
+curlfail_push_expect_400
 
 echo "********* asset_create_one_device.sh **************************************************************"
 echo "********* ${No}. Request document have wrong format or error in the syntax ************************"
 echo "***************************************************************************************************"
 test_it "Request_document_have_wrong_format_or_error_in_the_syntax"
 
-curlfail_push_expect_400
 ent=feed
 PARAM='{"name":"'${ent}'_0","type":"device","sub_type":"'${ent}'","location":"'${loc}'","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST00'${SEQUE}'","address":"ASDF","serial_no":"ABCD00'${SEQUE}'","ip.1":::"10.229.5.'${SEQUE}'"}}'
 api_auth_post_json "/asset" "${PARAM}" >&5
@@ -99,18 +101,20 @@ echo "********* asset_create_one_device.sh *************************************
 echo "********* ${No}. Request document have keys that are not implemented yet **************************"
 echo "***************************************************************************************************"
 test_it "Request_document_have_keys_that_are_not_implemented_yet"
+curlfail_push_expect_4xx5xx
 PARAM='{"name":"'${ent}'_0","type":"device","sub_type":"'${ent}'","location":"'${loc}'","status":"active","business_critical":"yes","priority":"P1","nonexist":"item","ext":{"asset_tag":"TEST00'${SEQUE}'","address":"ASDF","serial_no":"ABCD00'${SEQUE}'","ip.1":"10.229.5.'${SEQUE}'"}}'
 api_auth_post_json "/asset" "${PARAM}" >&5
 print_result $?
 SEQUE="$(expr $SEQUE + 1)"
 No="$(expr $No + 1)"
+curlfail_pop
 fi
 
 #*#*#*#*#*#*# TODO : The response had another msg then is in RFC-11 - Request document has invalid syntax. key 'id' is forbidden to be used","code":48
 echo "********* asset_create_one_device.sh **************************************************************"
 echo "********* ${No}. Request document has key "id" ****************************************************"
 echo "***************************************************************************************************"
-test_it "Request_document_have_keys_that_are_not_implemented_yet"
+test_it "Request_document_has_key_by_ID"
 PARAM='{"name":"'${ent}'_0","type":"device","sub_type":"'${ent}'","location":"'${loc}'","status":"active","business_critical":"yes","priority":"P1","id":"item","ext":{"asset_tag":"TEST00'${SEQUE}'","address":"ASDF","serial_no":"ABCD00'${SEQUE}'","ip.1":"10.229.5.'${SEQUE}'"}}'
 api_auth_post_json "/asset" "${PARAM}" >&5
 print_result $?
@@ -118,9 +122,9 @@ SEQUE="$(expr $SEQUE + 1)"
 No="$(expr $No + 1)"
 
 echo "********* asset_create_one_device.sh **************************************************************"
-echo "********* ${No}. Request document key "type" has unsupported value ********************************"
+echo "********* ${No}. Request document key 'type' has unsupported value ********************************"
 echo "***************************************************************************************************"
-test_it "Request_document_key_"type"_has_unsupported_value"
+test_it "Request_document_key_type_has_unsupported_value"
 PARAM='{"name":"'${ent}'_0","type":"Dejvice","sub_type":"'${ent}'","location":"'${loc}'","status":"active","business_critical":"yes","priority":"P1","id":"item","ext":{"asset_tag":"TEST00'${SEQUE}'","address":"ASDF","serial_no":"ABCD00'${SEQUE}'","ip.1":"10.229.5.'${SEQUE}'"}}'
 api_auth_post_json "/asset" "${PARAM}" >&5
 print_result $?
@@ -146,6 +150,9 @@ api_auth_post_json "/asset" "${PARAM}" >&5
 print_result $?
 SEQUE="$(expr $SEQUE + 1)"
 No="$(expr $No + 1)"
+
+curlfail_pop
+### End of expected ERRORS
 
 echo
 echo "###################################################################################################"
