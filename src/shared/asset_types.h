@@ -60,7 +60,7 @@ enum asset_subtype {
     /* ATTENTION: don't change N_A id. It is used as default value in init.sql for types, that don't have N_A */
 };
 
-enum class asset_operation : int8_t
+enum asset_operation
 {
     INSERT = 1,
     DELETE,

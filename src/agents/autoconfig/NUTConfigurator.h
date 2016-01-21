@@ -32,15 +32,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 class NUTConfigurator : public Configurator {
  public:
+    bool v_configure (const std::string& name, const AutoConfigurationInfo& info, mlm_client_t *client);
+
+    // helper methods
     std::vector<std::string>::const_iterator selectBest (const std::vector<std::string>& configs);
-    std::vector<std::string> createRules (const std::string& name);
     void updateNUTConfig ();
-    bool configure (const std::string& name, const AutoConfigurationInfo& info);
     virtual ~NUTConfigurator() {};
 
  private:
     std::vector<std::string>::const_iterator stringMatch (const std::vector<std::string>& texts, const char *pattern);
-    std::string makeRule (const std::string& alert, const std::string& bit, const std::string& device, const std::string& description) const;
     bool match (const std::vector<std::string>& texts, const char *pattern);
     bool isEpdu (const std::vector<std::string>& texts);
     bool isUps (const std::vector<std::string>& texts);
