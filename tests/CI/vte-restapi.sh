@@ -135,9 +135,6 @@ export PATH
 
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
 
-set -u
-#set -e
-
 RESULT_OVERALL=0
 trap_cleanup(){
     cleanTRAP_RES="${1-}"
@@ -191,12 +188,6 @@ trap_cleanup(){
     exit $RESULT_OVERALL
 }
 
-# Ensure that no processes remain dangling when test completes
-# The ERRCODE is defined by settraps() as the program exitcode
-# as it enters the trap
-TRAP_SIGNALS=EXIT settraps 'ciTRAP_RES=$?; echo "CI-EXIT: $0: test finished (up to the proper exit($ciTRAP_RES) command)..." >&2; trap_cleanup $ciTRAP_RES'
-TRAP_SIGNALS="HUP INT QUIT TERM ERR" settraps '[ "$ERRCODE" = 0 ] && ERRCODE=123; echo "CI-EXIT: $0: got signal, aborting test..." >&2; trap_cleanup $ERRCODE'
-
 # TODO. TOHLE PREDELAT, ZATIM MOZNO VYNECHAT
 # zacatek vynechavky ********************************
 if [ 1 = 2 ]; then
@@ -207,19 +198,6 @@ test_web_port() {
 }
 fi
 # konec vynechavky **********************************
-
-logmsg_info "Ensuring that needed remote daemons are running on VTE"
-sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-cm bios-agent-dbstore bios-server-agent  bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
-sleep 5
-sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-cm bios-agent-dbstore bios-server-agent  bios-agent-nut bios-agent-inventory ; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
-    die "Some required services are not running on the VTE"
-
-# ***** AUTHENTICATION ISSUES *****
-# check SASL is working
-logmsg_info "Checking remote SASL Auth Daemon"
-sut_run "testsaslauthd -u '$BIOS_USER' -p '$BIOS_PASSWD' -s '$SASL_SERVICE'" && \
-  logmsg_info "saslauthd is responsive and configured well!" || \
-  logmsg_error "saslauthd is NOT responsive or not configured!" >&2
 
 # ***** FUNCTIONS *****
     # *** starting the testcases
@@ -295,6 +273,29 @@ test_web_averages() {
     test_web "$@" || return $?
     return 0
 }
+
+# ************** Prepare the test suite ***
+set -u
+#set -e
+
+# Ensure that no processes remain dangling when test completes
+# The ERRCODE is defined by settraps() as the program exitcode
+# as it enters the trap
+TRAP_SIGNALS=EXIT settraps 'ciTRAP_RES=$?; echo "CI-EXIT: $0: test finished (up to the proper exit($ciTRAP_RES) command)..." >&2; trap_cleanup $ciTRAP_RES'
+TRAP_SIGNALS="HUP INT QUIT TERM ERR" settraps '[ "$ERRCODE" = 0 ] && ERRCODE=123; echo "CI-EXIT: $0: got signal, aborting test..." >&2; trap_cleanup $ERRCODE'
+
+logmsg_info "Ensuring that needed remote daemons are running on VTE"
+sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-cm bios-agent-dbstore bios-server-agent  bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
+sleep 5
+sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-cm bios-agent-dbstore bios-server-agent  bios-agent-nut bios-agent-inventory ; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
+    die "Some required services are not running on the VTE"
+
+# ***** AUTHENTICATION ISSUES *****
+# check SASL is working
+logmsg_info "Checking remote SASL Auth Daemon"
+sut_run "testsaslauthd -u '$BIOS_USER' -p '$BIOS_PASSWD' -s '$SASL_SERVICE'" && \
+  logmsg_info "saslauthd is responsive and configured well!" || \
+  logmsg_error "saslauthd is NOT responsive or not configured!" >&2
 
 
 [ x"${SKIP_LICENSE_FORCEACCEPT-}" = xyes ] && \
