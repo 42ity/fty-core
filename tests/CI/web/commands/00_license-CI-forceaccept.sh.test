@@ -176,6 +176,12 @@ else
             RES=0
             enforce_passwd "${BIOS_PASSWD}" || RES=$?
             print_result $RES
+
+            test_it "verify_known_password_3"
+            RES=0
+            TIMEINFO="`api_auth_get_json '/admin/time' 2>/dev/null`" || \
+                RES=$?
+            print_result -$RES || true
         fi
     fi
 
