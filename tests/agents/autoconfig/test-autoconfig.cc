@@ -32,7 +32,7 @@
 #include <regex>
 #include <cxxtools/regex.h>
 
-#include "configurator.h"
+#include "NUTConfigurator.h"
 
 const char *nutEpduSnmp = "[nutdev1]\n"
     "\tdriver = \"snmp-ups\"\n"

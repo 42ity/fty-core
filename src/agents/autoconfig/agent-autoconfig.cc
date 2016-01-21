@@ -16,14 +16,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 #include <fstream>
+#include <string>
 
 #include <cxxtools/jsonserializer.h>
 #include <cxxtools/jsondeserializer.h>
 #include <tntdb.h>
-#include <preproc.h>
 
+#include "preproc.h"
 #include "dbpath.h"
-#include "agent-autoconfig.h"
 #include "str_defs.h"
 #include "log.h"
 #include "utils.h"
@@ -33,27 +33,28 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "utils_ymsg.h"
 #include "filesystem.h"
 
+#include "agent-autoconfig.h"
+
 #define AUTOCONFIG "AUTOCONFIG"
 
 using namespace persist;
 
-// cxxtool serialization operators
-static const char* PATH = "/var/lib/bios/agent-autoconfig";
-static const char* STATE = "/var/lib/bios/agent-autoconfig/state";
+const char* Autoconfig::StateFilePath = "/var/lib/bios/agent-autoconfig";
+const char* Autoconfig::StateFile = "/var/lib/bios/agent-autoconfig/state";
 
 static int
 load_agent_info(std::string &info)
 {
-    if (shared::is_file (STATE))
+    if (shared::is_file (Autoconfig::StateFile))
     {
         try {
-            std::fstream f{STATE};
+            std::fstream f{Autoconfig::StateFile};
             f >> info;
             return 0;
         }
         catch (const std::exception& e)
         {
-            log_error("Fail to read '%s', %s", PATH, e.what());
+            log_error("Fail to read '%s', %s", Autoconfig::StateFilePath, e.what());
             return -1;
         }
     }
@@ -64,12 +65,12 @@ load_agent_info(std::string &info)
 static int
 save_agent_info(const std::string& json)
 {
-    if (!shared::is_dir (PATH)) {
-        zsys_error ("Can't serialize state, '%s' is not directory", PATH);
+    if (!shared::is_dir (Autoconfig::StateFilePath)) {
+        zsys_error ("Can't serialize state, '%s' is not directory", Autoconfig::StateFilePath);
         return -1;
     }
     try {
-        std::fstream f{STATE};
+        std::fstream f{Autoconfig::StateFile};
         f << json;
     }
     catch (const std::exception& e) {
@@ -82,189 +83,136 @@ save_agent_info(const std::string& json)
 inline void operator<<= (cxxtools::SerializationInfo& si, const AutoConfigurationInfo& info)
 {
     si.setTypeName("AutoConfigurationInfo");
-    // serializing integer doesn't work for unknown reason
-    si.addMember("type") <<= std::to_string(info.type);
-    si.addMember("subtype") <<= std::to_string(info.subtype);
-    si.addMember("operation") <<= std::to_string(info.operation);
+    si.addMember("type") <<= info.type;
+    si.addMember("subtype") <<= info.subtype;
+    si.addMember("operation") <<= info.operation;
     si.addMember("configured") <<= info.configured;
+    si.addMember("date") <<= info.date;
     si.addMember("attributes") <<= info.attributes;
 }
 
 inline void operator>>= (const cxxtools::SerializationInfo& si, AutoConfigurationInfo& info)
 {
     si.getMember("configured") >>= info.configured;
-    {
-        // serializing integer doesn't work
-        std::string tmp;
-        si.getMember("type") >>= tmp;
-        info.type = atoi(tmp.c_str());
-
-        si.getMember("subtype") >>= tmp;
-        info.subtype = atoi(tmp.c_str());
-
-        si.getMember("operation") >>= tmp;
-        info.operation = atoi(tmp.c_str());
-    }
+    si.getMember("type") >>= info.type;
+    si.getMember("subtype") >>= info.subtype;
+    si.getMember("operation") >>= info.operation;
+    si.getMember("date") >>= info.date;
     si.getMember("attributes")  >>= info.attributes;
 }
 
-// autoconfig agent public methods
-
-void Autoconfig::onStart( )
+void Autoconfig::main ()
 {
-    loadState();
-    setPollingInterval();
-}
-
-// MVY: this is huge hack - needs to be better integrated to aoutconfig
-// // TROWS!!!!!!!!!!!!!!!!!!
-static void
-    s_configure_uptime_agent()
-{
-    tntdb::Connection conn = tntdb::connectCached (url);
-
-    std::vector <std::string> container_upses{};
-    std::function<void(const tntdb::Row&)> func = \
-            [&container_upses](const tntdb::Row& row)
-            {
-                a_elmnt_tp_id_t type_id = 0;
-                row["type_id"].get(type_id);
-                
-                std::string device_type_name = "";
-                row["subtype_name"].get(device_type_name);
-
-                if ( ( type_id == persist::asset_type::DEVICE ) && ( device_type_name == "ups" ) )
-                {
-                    std::string device_name = "";
-                    row["name"].get(device_name);
-
-                    container_upses.push_back(device_name);
-                }
-            };
-
-    // dc_name is mapped on the ups names
-    std::map <std::string , std::vector<std::string> > dc_upses;
-    // select dcs
-    db_reply <std::map <uint32_t, std::string> > reply = 
-        persist::select_short_elements 
-        (conn, persist::asset_type::DATACENTER, persist::asset_subtype::N_A);
-    if ( reply.status == 0 ) {
-        zsys_error ("Cannot select datacenters");
+    zsock_t *pipe = msgpipe();
+    if (!pipe) {
+        log_error ("msgpipe () failed");
         return;
     }
-    for ( const auto dc : reply.item ) {
-        int rv = select_assets_by_container (conn, dc.first, func);
-        if ( rv != 0 ) {
-            zsys_error ("Cannot read upses for dc with is %" PRIu32, dc.first);
+
+    zpoller_t *poller = zpoller_new (pipe, NULL);
+    if (!poller) {
+        log_error ("zpoller_new () failed");
+        return;
+    }
+
+    _timestamp = zclock_mono ();
+    while (!zsys_interrupted) {
+        void *which = zpoller_wait (poller, _timeout);
+        if (which == NULL) {
+            if (zpoller_terminated (poller) || zsys_interrupted) {
+                log_warning ("zpoller_terminated () or zsys_interrupted ()");
+                break;
+            }
+            if (zpoller_expired (poller)) {
+                onPoll ();
+                _timestamp = zclock_mono ();
+                continue;
+            }
+            _timestamp = zclock_mono ();
+            log_warning ("zpoller_wait () returned NULL while at the same time zpoller_terminated == 0, zsys_interrupted == 0, zpoller_expired == 0");
             continue;
         }
-        dc_upses.emplace (dc.second, container_upses);
-        container_upses.clear();
-    }
 
-    conn.close ();
+        int64_t now = zclock_mono ();
+        if (now - _timestamp >= _timeout) {
+            onPoll ();
+            _timestamp = zclock_mono ();
+        }
 
-    mlm_client_t *client = mlm_client_new ();
-    if (!client) {
-        log_error ("Fail to call mlm_client_new");
-        return;
-    }
+        ymsg_t *message = recv ();
+        if (!message) {
+            log_warning ("recv () returned NULL; zsys_interrupted == '%s'; command = '%s', subject = '%s', sender = '%s'",
+                    zsys_interrupted ? "true" : "false", command (), subject (), sender ());
+            continue;
+        }
 
-    mlm_client_connect (client, "ipc://@/malamute", 1000, "agent-autoconfig");
-    zmsg_t *msg = zmsg_new ();
-    if (!msg) {
-        mlm_client_destroy (&client);
-        log_error ("Fail to allocate new zmsg_t");
-        return;
-    }
-
-    zmsg_addstrf (msg, "%s", "SET");
-    for (const auto &it :dc_upses) {
-        zmsg_addstrf (msg, "%s", it.first.c_str());
-        for (const auto &it2 : it.second) {
-            zmsg_addstrf (msg, "%s", it2.c_str());
+        switch (ymsg_id (message)) {
+            case YMSG_REPLY:
+            {    
+                onReply (&message);
+                break;
+            }
+            case YMSG_SEND:
+            {
+                onSend (&message);
+                break;
+            }
+            default:
+            {
+                log_warning ("Weird ymsg received, id = '%d', command = '%s', subject = '%s', sender = '%s'",
+                        ymsg_id (message), command (), subject (), sender ());
+                ymsg_destroy (&message);
+            }
         }
     }
-
-    mlm_client_sendto (client, "uptime", "UPTIME", NULL, 1000, &msg);
-    mlm_client_destroy (&client);
-
-    return;
+    zpoller_destroy (&poller);
 }
 
-void Autoconfig::onSend( ymsg_t **message )
+void Autoconfig::onSend (ymsg_t **message)
 {
-    if( ! message || ! *message ) return;
+    if (!message || ! *message)
+       return;
 
+    AutoConfigurationInfo info;
     char *device_name = NULL;
-    uint32_t type = 0;
-    uint32_t subtype = 0;
-    int8_t operation;
+
     zhash_t *extAttributes = NULL;
 
-    int extract = bios_asset_extra_extract( *message, &device_name, &extAttributes, &type, &subtype, NULL, NULL, NULL, &operation );
-    if( ! extract ) {
-        log_debug("asset message for %s type %" PRIu32 " subtype %" PRIu32, device_name, type, subtype );
-        if( type == asset_type::DEVICE && ( subtype == asset_subtype::UPS || subtype == asset_subtype::EPDU ) ) {
-            // this is a device that we should configure, we need extended attributes (ip.1 particulary)
-            addDeviceIfNeeded( device_name, type, subtype );
-            _configurableDevices[device_name].configured = false;
-            _configurableDevices[device_name].attributes.clear();
-            _configurableDevices[device_name].operation = operation;
-            _configurableDevices[device_name].attributes = utils::zhash_to_map(extAttributes);
-            saveState();
-            setPollingInterval();
-        }
-        //MVY: hack for uptime calculation
-        if (type == asset_type::DATACENTER || type == asset_subtype::UPS)
-        {
-            s_configure_uptime_agent ();
-        }
-    } else {
-        log_debug("this is not bios_asset message (error %i)", extract);
+    if (bios_asset_extra_extract (*message, &device_name, &extAttributes, &info.type, &info.subtype, NULL, NULL, NULL, &info.operation) != 0) {
+        log_debug("bios_asset_extra_extract () failed.");
+        FREE0(device_name);
+        return;
     }
-    FREE0( device_name );
-}
-
-void Autoconfig::sendNewRules(std::vector<std::string> const &rules) {
-    for( const auto &rule: rules ) {
-        log_debug("Sending new lua rule: %s", rule.c_str ());
-        zmsg_t *message = zmsg_new ();
-        zmsg_addstr(message, "ADD");
-        zmsg_addstr(message, rule.c_str());
-        if( mlm_client_sendto( bios_agent_client( _bios_agent ), BIOS_AGENT_NAME_ALERT_AGENT, "rfc-evaluator-rules", NULL, 5000, &message) != 0) {
-            zsys_error("failed to send new rule to alert-agent");
-        }
-        zmsg_destroy (&message);   
-    }
+    log_debug("Decoded asset message - device name = '%s', type = '%" PRIu32 "', subtype = '%" PRIu32"', operation = '%" PRIi8"'",
+           device_name, info.type, info.subtype, info.operation);
+    info.attributes = utils::zhash_to_map(extAttributes);
+    _configurableDevices.emplace (std::make_pair (device_name, info));
+    saveState ();
+    setPollingInterval();
+    FREE0(device_name);
 }
 
 void Autoconfig::onPoll( )
 {
+
     bool save = false;
-    
-    for( auto &it : _configurableDevices) {
-        // check not configured devices
-        if( ! it.second.configured ) {
-            // we don't need extended attributes for deleting configuration
-            // but we need them for update/insert
-            if(
-                ! it.second.attributes.empty() ||
-                it.second.operation == asset_operation::DELETE ||
-                it.second.operation == asset_operation::RETIRE
-            )
-            {
-                auto factory = ConfigFactory();
-                if( factory.configureAsset (it.first, it.second)) {
-                    sendNewRules (factory.getNewRules (it.first, it.second));
-                    it.second.configured = true;
-                    save = true;
-                }
-                it.second.date = time(NULL);
+
+    for (auto& it : _configurableDevices) {
+        if (it.second.configured)
+            continue;
+
+        for (const auto& configurator : ConfiguratorFactory::getConfigurator (it.second.type, it.second.subtype)) {
+            if (configurator->configure (it.first, it.second, client ())) {
+                it.second.configured = true;
+                save = true;
             }
+            it.second.date = zclock_mono ();
         }
     }
-    if( save ) { cleanupState(); saveState(); }
+    if (save) {
+        cleanupState();
+        saveState();
+    }
     setPollingInterval();
 }
 
@@ -286,25 +234,6 @@ void Autoconfig::setPollingInterval( )
                 _timeout = 60000;
             }
         }
-    }
-}
-
-void Autoconfig::addDeviceIfNeeded(const char *name, uint32_t type, uint32_t subtype) {
-    if( _configurableDevices.find(name) == _configurableDevices.end() ) {
-        AutoConfigurationInfo device;
-        device.type = type;
-        device.subtype = subtype;
-        _configurableDevices[name] = device;
-    }
-}
-
-void Autoconfig::requestExtendedAttributes( const char *name )
-{
-    ymsg_t *extended = bios_asset_extra_encode( name, NULL, 0, 0, 0, NULL, 0, 0 );
-    if( extended ) {
-        log_debug("requesting extended attributes for %s", name);
-        sendto(BIOS_AGENT_NAME_DB_MEASUREMENT,"get_asset_extra", &extended );
-        ymsg_destroy( &extended );
     }
 }
 

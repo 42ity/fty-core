@@ -16,36 +16,39 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-/*! \file   agent-autoconfig.h
-    \brief  autoconfiguration agent
-    \author Tomas Halman <TomasHalman@Eaton.com>
+/*!
+ \file   agent-autoconfig.h
+ \brief  autoconfiguration agent
+ \author Tomas Halman <TomasHalman@Eaton.com>
 */
  
 #ifndef SRC_AGENTS_AUTOCONFIG_AGENT_H__
 #define SRC_AGENTS_AUTOCONFIG_AGENT_H__
 
 #include "bios_agent++.h"
-#include "configurator.h"
+#include "ConfiguratorFactory.h"
+
 
 class Autoconfig : public BIOSAgent {
  public:
-    explicit Autoconfig( const char *agentName ) :BIOSAgent( agentName ) {  };
-    explicit Autoconfig( const std::string &agentName ) :BIOSAgent( agentName ) { };
+    explicit Autoconfig (const char *agentName) : BIOSAgent(agentName) {};
+    explicit Autoconfig (const std::string& agentName) : BIOSAgent(agentName) {};
 
-    void onStart( );
-    void onEnd( ) { cleanupState(); saveState(); };
-    void onSend( ymsg_t **message );
-    void onPoll( );
+    static const char *StateFile; //!< file&path where Autoconfig state is saved
+    static const char *StateFilePath; //!< fully-qualified path to dir where Autoconfig state is saved
+
+    void main ();
+    void onStart () { loadState(); setPollingInterval(); };
+    void onEnd ()   { cleanupState(); saveState(); };
+    void onSend (ymsg_t **message);
+    void onPoll ();
  private:
-    void sendNewRules(std::vector<std::string> const &rules);
     void setPollingInterval();
-    void addDeviceIfNeeded(const char *name, uint32_t type, uint32_t subtype);
-    void requestExtendedAttributes( const char *name );
     void cleanupState();
     void saveState();
     void loadState();
-    ConfigFactory _configurator;
     std::map<std::string,AutoConfigurationInfo> _configurableDevices;
+    int64_t _timestamp;
 };
 
 #endif // SRC_AGENTS_AUTOCONFIG_AGENT_H__

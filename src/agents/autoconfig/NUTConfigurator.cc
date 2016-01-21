@@ -16,21 +16,27 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include "configurator.h"
+/*!
+ \file   NutConfigurator.cc
+ \brief  Implementation of class for nut configuration
+ \author Tomas Halman <TomasHalman@Eaton.com>
+*/
 
-#include <string>
 #include <algorithm>
 #include <iostream>
 #include <fstream>
+
 #include <cxxtools/regex.h>
-#include <preproc.h>
 
 #include "log.h"
+#include "preproc.h"
 #include "subprocess.h"
-#include "asset_types.h"
 #include "utils.h"
 #include "filesystem.h"
+#include "nutscan.h"
 #include "asset_types.h"
+
+#include "NUTConfigurator.h"
 
 #define NUT_PART_STORE "/etc/bios/nut/devices"
 
@@ -53,7 +59,6 @@ std::vector<std::string>::const_iterator NUTConfigurator::stringMatch(const std:
     log_debug("regex: not found");
     return texts.end();
 }
-
 
 bool NUTConfigurator::match( const std::vector<std::string> &texts, const char *pattern) {
     return stringMatch(texts,pattern) != texts.end();
@@ -137,47 +142,18 @@ void NUTConfigurator::updateNUTConfig() {
     }
 }
 
-std::string NUTConfigurator::makeRule(std::string const &alert, std::string const &bit, std::string const &device, std::string const &description) const {
-    return
-        "{\n"
-        "\"single\" : {\n"
-        "    \"rule_name\"     :   \"" + alert + "-" + device + "\",\n"
-        "    \"target\"        :   [\"status.ups@" + device + "\"],\n"
-        "    \"element\"       :   \"" + device + "\",\n"
-        "    \"results\"       :   [ {\"high_critical\"  : { \"action\" : [ \"EMAIL\" ], \"description\" : \""+description+"\" }} ],\n"
-        "    \"evaluation\"    : \""
-        " function has_bit(x,bit)"
-        "     local mask = 2 ^ (bit - 1)"
-        "     x = x % (2*mask)"
-        "     if x >= mask then return true else return false end"
-        " end"
-        " function main(status)"
-        "     if has_bit(status,"+bit+") then return HIGH_CRITICAL end"
-        "     return OK"
-        " end"
-        "\"\n"
-        "  }\n"
-        "}";
-};
 
-std::vector<std::string> NUTConfigurator::createRules(std::string const &name) {
-    std::vector<std::string> result;
-
-    // bits OB - 5 LB - 7 BYPASS - 9
-
-    result.push_back (makeRule ("onbattery","5",name,"UPS is running on battery!"));
-    result.push_back (makeRule ("lowbattery","7",name,"Battery depleted!"));
-    result.push_back (makeRule ("onbypass","9",name,"UPS is running on bypass!"));
-    return result;
-}
-
-bool NUTConfigurator::configure( const std::string &name, const AutoConfigurationInfo &info ) {
+bool NUTConfigurator::v_configure (const std::string &name, const AutoConfigurationInfo &info, mlm_client_t *client) {
     log_debug("NUT configurator created");
 
     switch( info.operation ) {
     case asset_operation::INSERT:
     case asset_operation::UPDATE:
         {
+            //TODO: boldly check size of info.attributes
+            //      if empty (or NULL) => return false
+            //      i don't know all the bussiness/domain knowledge, but this should be enough
+            //      as it seems insert/update require some attributes
             auto ipit = info.attributes.find("ip.1");
             if( ipit == info.attributes.end() ) {
                 log_error("device %s has no IP address", name.c_str() );
@@ -237,41 +213,4 @@ bool NUTConfigurator::configure( const std::string &name, const AutoConfiguratio
     }
 }
 
-bool Configurator::configure(
-    UNUSED_PARAM const std::string &name,
-    UNUSED_PARAM const AutoConfigurationInfo &info )
-{
-    log_error("don't know how to configure device %s type %" PRIu32 "/%" PRIu32, name.c_str(), info.type, info.subtype );
-    return true;
-}
-
-std::vector<std::string> Configurator::createRules(UNUSED_PARAM std::string const &name) {
-    std::vector<std::string> result;
-    return result;
-}
-
-Configurator * ConfigFactory::getConfigurator( uint32_t type, uint32_t subtype ) {
-    if( type == asset_type::DEVICE && ( subtype == asset_subtype::UPS || subtype == asset_subtype::EPDU ) ) {
-        return new NUTConfigurator();
-    }
-    // if( type == "server" ) return ServerConfigurator();
-    // if( type == "wheelbarrow" ) retrun WheelBarrowConfigurator();
-    return new Configurator();
-}
-
-bool ConfigFactory::configureAsset( const std::string &name, AutoConfigurationInfo &info) {
-    log_debug("configuration attempt device name %s type %" PRIu32 "/%" PRIu32, name.c_str(), info.type, info.subtype );
-    Configurator *C = getConfigurator( info.type, info.subtype );
-    bool result = C->configure( name, info );
-    delete C;
-    return result;
-}
-
-std::vector<std::string> ConfigFactory::getNewRules( const std::string &name, AutoConfigurationInfo &info) {
-    log_debug("rules attempt device name %s type %" PRIu32 "/%" PRIu32, name.c_str(), info.type, info.subtype );
-    Configurator *C = getConfigurator( info.type, info.subtype );
-    std::vector<std::string> result = C->createRules (name);
-    delete C;
-    return result;
-}
 

@@ -911,4 +911,41 @@ int select_asset_ext_attribute_by_keytag(
     }
 }
 
+int
+    select_asset_element_all_with_warranty_end(
+            tntdb::Connection& conn,
+            std::function<void(
+                const tntdb::Row&
+                )>& cb)
+{
+    LOG_START;
+
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT "
+            "   v.name as name, t.keytag as keytag, t.value as date "
+            " FROM v_web_element v "
+            " JOIN t_bios_asset_ext_attributes t "
+            " ON "
+            "   v.id = t.id_asset_element "
+            " WHERE "
+            "   t.keytag='end_warranty_date' "
+            " OR "
+            "   t.keytag='warranty_expiration_date' "
+            );
+
+        tntdb::Result res = st.select();
+
+        for (const auto& r: res) {
+            cb(r);
+        }
+        LOG_END;
+        return 0;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
+}
+
 } // namespace end
