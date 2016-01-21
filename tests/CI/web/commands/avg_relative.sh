@@ -24,6 +24,7 @@ echo "##########################################################################
 echo "********* avg_relative.sh ************************** START ****************************************"
 echo "###################################################################################################"
 echo
+[ x"${JSONSH_CLI_DEFINED-}" = xyes ] || CODE=127 die "jsonsh_cli() not defined"
 
 # Add the first line of the sql file and create it
 DB_TMPSQL_FILE_CURRENT="${DB_TMPSQL_DIR}/tmp-current-$$.sql"
@@ -102,10 +103,10 @@ A       current.output.L1@UPS1-LAB      UPS1-LAB        $(expr $TIME - 50000)   
 }
 
 api_get_json_ntstp(){
-[ -z ${RES+x} ] && RES=0
-GTJSON=`api_get_json $1`
-RES="$(expr $RES + $?)"
-echo $GTJSON | sed 's/[[:digit:]]\{10\}/1111111/g' >&5
+    [ -z ${RES+x} ] && RES=0
+    GTJSON=`api_get_json $1`
+    RES="$(expr $RES + $?)"
+    echo $GTJSON | sed 's/[[:digit:]]\{10\}/1111111/g' >&5
 }
 
 
@@ -255,12 +256,10 @@ echo "********* avg_relative.sh ************************************************
 echo "********* 13. MAX for measurement with < 24 hod old timestamp without start-end-ts *****************"
 echo "***************************************************************************************************"
 test_it "MAX_for_measurement_with_<_24_hod_old_timestamp_without_start-end-ts"
-curlfail_push_expect_noerrors
 api_get_json_ntstp '/metric/computed/average?type=max&step=15m&element_id=22&source=current.output.L1&relative=24h'
 api_get_json_ntstp '/metric/computed/average?type=max&step=15m&element_id=22&source=current.output.L1&relative=7d'
 api_get_json_ntstp '/metric/computed/average?type=max&step=15m&element_id=22&source=current.output.L1&relative=30d'
 print_result $RES;RES=0
-curlfail_pop
 
 echo
 echo "********* avg_relative.sh *************************************************************************"
@@ -269,6 +268,7 @@ echo "**************************************************************************
 test_it "MAX_for_measurement_with_empty_relative_parameter"
 api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=max&step=15m&element_id=22&source=realpower.default&relative='
 print_result $RES;RES=0
+curlfail_pop
 
 echo
 echo "********* avg_relative.sh *************************************************************************"
