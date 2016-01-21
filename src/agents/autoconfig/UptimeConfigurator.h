@@ -1,5 +1,5 @@
-/* 
-Copyright (C) 2014 - 2015 Eaton
+/*
+Copyright (C) 2014 Eaton
  
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -17,24 +17,27 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 /*!
- \file   Configurator.cc
- \brief  Configurator implementation
+ \file   UptimeConfigurator.h
+ \brief  Configuration of uptime
  \author Tomas Halman <TomasHalman@Eaton.com>
 */
 
-#include "log.h"
-#include "preproc.h"
+#ifndef SRC_AGENTS_AUTOCONFIG_UPTIMECONFIGURATOR_H__
+#define SRC_AGENTS_AUTOCONFIG_UPTIMECONFIGURATOR_H__
+
+#include <string>
 
 #include "Configurator.h"
 
-bool Configurator::configure (const std::string& name, const AutoConfigurationInfo& info)
-{
-    log_error ("Configuration of device = '%s' type = '%" PRIu32 "' subtype = '%" PRIu32"' was not implemented yet.",
-               name.c_str(), info.type, info.subtype );
-    return true;
-}
+class UptimeConfigurator : public Configurator {
+ public:
+    bool v_configure (const std::string& name, const AutoConfigurationInfo& info, mlm_client_t *client);
 
-std::vector<std::string> Configurator::createRules (UNUSED_PARAM std::string const& name) {
-    std::vector<std::string> result;
-    return result;
-}
+    // helper methods
+    bool    obtainData (std::map <std::string, std::vector <std::string>>& dc_upses);
+    bool    sendMessage (std::map <std::string, std::vector <std::string>>& dc_upses, mlm_client_t *client);
+
+    virtual ~UptimeConfigurator () {};
+};
+
+#endif // SRC_AGENTS_AUTOCONFIG_UPTIMECONFIGURATOR_H__

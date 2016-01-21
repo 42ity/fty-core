@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*!
  \file   Configurator.h
- \brief  Configurator header
+ \brief  Configurator class
  \author Tomas Halman <TomasHalman@Eaton.com>
 */
 
@@ -29,13 +29,13 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <map>
 #include <vector>
 
-#include "asset_types.h"
+#include <malamute.h>
 
 struct AutoConfigurationInfo
 {
     uint32_t type = 0;
     uint32_t subtype = 0;
-    persist::asset_operation operation;
+    int8_t operation;
     bool configured = false;
     time_t date = 0;
     std::map <std::string, std::string> attributes;
@@ -44,12 +44,20 @@ struct AutoConfigurationInfo
 class Configurator
 {
  public:
-    //! TODO declare what is this method expected to do for subclass implementors
-    virtual bool configure (const std::string& name, const AutoConfigurationInfo& info);
-    //! TODO declare what is this method expected to do for subclass implementors
-    virtual std::vector<std::string> createRules(std::string const &name);
+    bool configure (const std::string& name, const AutoConfigurationInfo& info)
+    {
+        return configure (name, info, NULL);
+    }
+
+    bool configure (const std::string& name, const AutoConfigurationInfo& info, mlm_client_t *client)
+    {
+        return v_configure (name, info, client);
+    }
 
     virtual ~Configurator() {};
+
+ protected:
+    virtual bool v_configure (const std::string& name, const AutoConfigurationInfo& info, mlm_client_t *client) = 0;
 };
 
 #endif // SRC_AGENTS_AUTOCONFIG_CONFIGURATOR_H__

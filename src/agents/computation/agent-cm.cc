@@ -103,7 +103,7 @@ int main (UNUSED_PARAM int argc, UNUSED_PARAM char **argv) {
             sender, recipient, pattern, subject, bios_agent_status (agent), msg_print.c_str());
 
         if (!msg_recv) {
-            log_info ("ACTION. N/A");            
+            log_debug ("ACTION. N/A");            
             continue;
         }
 
@@ -117,10 +117,10 @@ int main (UNUSED_PARAM int argc, UNUSED_PARAM char **argv) {
                 ymsg_format (msg_out, msg_print);                
                 rv = bios_agent_replyto (agent, sender, "", &msg_out, msg_recv); // msg_out is destroyed
                 if (rv != 0) {
-                    log_critical ("bios_agent_replyto (address = \"%s\", subject = \"%s\") failed.", sender, "");
+                    log_error ("bios_agent_replyto (address = \"%s\", subject = \"%s\") failed.", sender, "");
                 }
                 else {
-                    log_info ("ACTION: message sent to '%s' with subject '%s':\n%s", sender, "", msg_print.c_str ());
+                    log_debug ("ACTION: message sent to '%s' with subject '%s':\n%s", sender, "", msg_print.c_str ());
                 }
             }
         }
