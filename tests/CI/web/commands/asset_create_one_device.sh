@@ -25,12 +25,12 @@ ent=""
 loc=""
 #for cube in datacenter room rack; do
 echo
+curlfail_push_expect_noerrors
 for cube in datacenter; do
     echo "********* asset_create_one_device.sh **************************************************************"
     echo "********* ${No}. Create_${cube} ********************************************************************"
     echo "***************************************************************************************************"
     test_it "Create_${cube}"
-    curlfail_push_expect_noerrors
     PARAM='{"name":"'${cube}'_0","type":"'${cube}'","sub_type":"","location":"'${loc}'","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST00'${SEQUE}'","address":"ASDF","serial_no":"ABCD00'${SEQUE}'","ip.1":"10.229.5.'${SEQUE}'"}}'
 api_auth_post_json "/asset" "${PARAM}" >&5
     print_result $?
@@ -44,14 +44,15 @@ for ent in feed ups genset server storage switch vm; do
     echo "********* ${No}. Create_${ent} ********************************************************************"
     echo "***************************************************************************************************"
     test_it "Create_${ent}"
+    curlfail_push_expect_noerrors
     PARAM='{"name":"'${ent}'_0","type":"device","sub_type":"'${ent}'","location":"'${loc}'","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST00'${SEQUE}'","address":"ASDF","serial_no":"ABCD00'${SEQUE}'","ip.1":"10.229.5.'${SEQUE}'"}}'
     api_auth_post_json "/asset" "${PARAM}" >&5
     print_result $?
     loc="${ent}_0"
-    curlfail_pop
     SEQUE="$(expr $SEQUE + 1)"
     No="$(expr $No + 1)"
 done
+curlfail_pop
 
 loc="datacenter_0"
 wpos="left"
@@ -80,6 +81,7 @@ ent=feed
 PARAM='{"name":"'${ent}'_0","type":"device","sub_type":"'${ent}'","location":"'${loc}'","status":"active","business_critical":"yes","priority":"P1","ext":{"asset_tag":"TEST00'${SEQUE}'","address":"ASDF","serial_no":"ABCD00'${SEQUE}'","ip.1":::"10.229.5.'${SEQUE}'"}}'
 api_auth_post_json "/asset" "${PARAM}" >&5
 print_result $?
+curlfail_pop
 SEQUE="$(expr $SEQUE + 1)"
 No="$(expr $No + 1)"
 
