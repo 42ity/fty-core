@@ -140,6 +140,7 @@ trap_cleanup(){
     cleanTRAP_RES="${1-}"
     [ -n "$cleanTRAP_RES" ] || cleanTRAP_RES=0
     [ "$cleanTRAP_RES" = 0 ] && [ "$RESULT_OVERALL" != 0 ] && cleanTRAP_RES="$RESULT_OVERALL"
+    [ "$cleanTRAP_RES" != 0 ] && [ "$RESULT_OVERALL" = 0 ] && RESULT_OVERALL="$cleanTRAP_RES"
 
     ci_loaddb_default || cleanTRAP_RES=$?
     # ***** RESULTS *****
