@@ -28,10 +28,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 namespace persist {
 
-//! Processes alert message and creates an answer
-void process_alert(ymsg_t** out, char** out_subj,
-                   ymsg_t* in, const char* in_subj);
-
 void
     process_get_asset_extra
         (ymsg_t** out, char** out_subj,

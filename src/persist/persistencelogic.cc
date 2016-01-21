@@ -36,7 +36,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "log.h"
 #include "dbpath.h"
 #include "measurement.h"
-#include "db/alerts.h"
 #include "agents.h"
 #include "cleanup.h"
 #include "utils.h"
@@ -130,14 +129,7 @@ free_mem_toto:
 void process_mailbox_deliver(ymsg_t** out, char** out_subj, ymsg_t* in, const char* in_subj) {
     if (!in_subj)
         return;
-    // subject "get_measurements exists, we have a message for it, but nobody
-    // used this message to get data, every one uses directly acces to db
-    // for now
-    if (strncmp(in_subj, "alert.", 6) == 0 ) {
-        persist::process_alert(out, out_subj, in, in_subj);
-        return;
-    }
-    else if (streq(in_subj, "get_asset_extra") ) {
+    if (streq(in_subj, "get_asset_extra") ) {
         persist::process_get_asset_extra (out, out_subj, in, in_subj);
         return;
     }
