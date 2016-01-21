@@ -64,8 +64,7 @@ kill_daemons() {
 }
 
 # Ensure that no processes remain dangling when test completes
-TRAP_SIGNALS=EXIT settraps 'echo "CI-EXIT: $0: test finished (up to the proper exit command)..." >&2; kill_daemons'
-TRAP_SIGNALS="HUP INT QUIT TERM" settraps 'echo "CI-EXIT: $0: got signal, aborting test..." >&2; kill_daemons'
+settraps "kill_daemons"
 
 logmsg_info "Ensuring that the tested programs have been built and up-to-date"
 if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
