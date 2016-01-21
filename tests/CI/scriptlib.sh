@@ -556,6 +556,7 @@ settraps_nonfatal() {
     [ -z "${TRAP_SIGNALS-}" ] && TRAP_SIGNALS="EXIT QUIT TERM HUP INT ERR"
     for P in "" SIG; do for S in $TRAP_SIGNALS ; do
         if [ -n "$BASH" ] && [ "$S" = ERR ] ; then
+            # If "set -e" aka "set -o errexit" would be used, inherit the trap
             set -o errtrace
         fi
         case "$1" in
@@ -566,12 +567,17 @@ settraps_nonfatal() {
                     *)    ERRHANDLER="$ERRHANDLER ;" ;;
                   esac
                   trap 'ERRCODE=$?; ERRSIGNAL="'"$P$S"'"; \
-if [ -n "${SCRIPTLIB_DIE_ERRCODE-}" ] && [ "$SCRIPTLIB_DIE_ERRCODE" -ge 0 ] 2>/dev/null; then
+[ -z "${ERRIGNORE-}" ] && ERRIGNORE=no
+if [ "$ERRSIGNAL" = "ERR" ] || [ "$ERRSIGNAL" = "SIGERR" ]; then
+    set -o | egrep -i "^errexit.*off$" >/dev/null && ERRIGNORE=yes
+fi
+if [ "$ERRIGNORE" = no ]; then
+  if [ -n "${SCRIPTLIB_DIE_ERRCODE-}" ] && [ "$SCRIPTLIB_DIE_ERRCODE" -ge 0 ] 2>/dev/null; then
     ERRFILE="$SCRIPTLIB_DIE_FILENAME"
     ERRFUNC="$SCRIPTLIB_DIE_FUNCNAME"
     ERRLINE="$SCRIPTLIB_DIE_LINENO"
     ERRCODE="$SCRIPTLIB_DIE_ERRCODE"
-else
+  else
     SCRIPTLIB_DIE_ERRCODE=""
     [ -n "${LINENO-}" ] && [ "$LINENO" -gt 0 ] 2>/dev/null && ERRLINE="$LINENO" || ERRLINE=""
     ERRFILE="${_SCRIPT_NAME}"; ERRFUNC=""
@@ -582,17 +588,42 @@ else
         [ -n "$ERRLINE" ] && [ "$ERRLINE" -gt 1 ] || ERRLINE=""
         ERRFILE="${BASH_SOURCE[0]}"
     fi
-fi
-ERRPOS="${ERRFILE}${ERRLINE:+:$ERRLINE}${ERRFUNC:+ :: $ERRFUNC()}"
-[ "`basename "${_SCRIPT_NAME}"`" = "`basename "${ERRFILE}"`" ] || ERRPOS="${_SCRIPT_NAME} => $ERRPOS"
-ERRTEXT="script ($ERRPOS) due to trapped signal ($ERRSIGNAL) with exit-code ($ERRCODE)"
-[ -n "${SCRIPTLIB_DIE_ERRCODE-}" ] && ERRTEXT="$ERRTEXT, using die()"
-{ (settraps_exit_clear; exit $ERRCODE 2>/dev/null 2>&1); '"$ERRHANDLER"' } ;' \
+  fi
+  ERRPOS="${ERRFILE}${ERRLINE:+:$ERRLINE}${ERRFUNC:+ :: $ERRFUNC()}"
+  [ "`basename "${_SCRIPT_NAME}"`" = "`basename "${ERRFILE}"`" ] || ERRPOS="${_SCRIPT_NAME} => $ERRPOS"
+  ERRTEXT="script ($ERRPOS) due to trapped signal ($ERRSIGNAL) with exit-code ($ERRCODE)"
+  [ -n "${SCRIPTLIB_DIE_ERRCODE-}" ] && ERRTEXT="$ERRTEXT, using die()"
+  { (settraps_exit_clear; exit $ERRCODE 2>/dev/null 2>&1); '"$ERRHANDLER"' } ;
+else ERRIGNORE=""; fi ;' \
                     "$P$S" 2>/dev/null || true
                   ;;
         esac
     done; done
 }
+
+# These variables are tested for equality to "yes" when the trap is processed.
+#   When a trap is handled by settraps(), should any message be printed?
+[ -n "${SCRIPTLIB_TRAPWRAP_PRINT_MESSAGE-}" ] && [ x"${SCRIPTLIB_TRAPWRAP_PRINT_MESSAGE-}" != "x-" ] || \
+    if [ "$CI_DEBUG" -ge "$CI_DEBUGLEVEL_ERROR" ]; then
+        SCRIPTLIB_TRAPWRAP_PRINT_MESSAGE="yes"
+    else
+        SCRIPTLIB_TRAPWRAP_PRINT_MESSAGE="yes"
+    fi
+#   If SCRIPTLIB_TRAPWRAP_PRINT_MESSAGE==yes and cause is exit(0), still print?
+[ -n "${SCRIPTLIB_TRAPWRAP_PRINT_EXIT0-}" ] && [ x"${SCRIPTLIB_TRAPWRAP_PRINT_EXIT0-}" != "x-" ] || \
+    if [ "$CI_DEBUG" -ge "$CI_DEBUGLEVEL_DEBUG" ]; then
+        SCRIPTLIB_TRAPWRAP_PRINT_EXIT0="yes"
+    else
+        SCRIPTLIB_TRAPWRAP_PRINT_EXIT0="no"
+    fi
+#   If SCRIPTLIB_TRAPWRAP_PRINT_MESSAGE==yes and we have a shell with func-call
+#   history like bash, print also a stack trace of the failure?
+[ -n "${SCRIPTLIB_TRAPWRAP_PRINT_STACKTRACE-}" ] && [ x"${SCRIPTLIB_TRAPWRAP_PRINT_STACKTRACE-}" != "x-" ] || \
+    if [ "$CI_DEBUG" -ge "$CI_DEBUGLEVEL_DEBUG" ]; then
+        SCRIPTLIB_TRAPWRAP_PRINT_STACKTRACE="yes"
+    else
+        SCRIPTLIB_TRAPWRAP_PRINT_STACKTRACE="no"
+    fi
 
 settraps() {
     # Sets up or clear traps defined in $TRAP_SIGNALS (or falls back to default
@@ -607,7 +638,44 @@ settraps() {
                 *";"|*"; "|*";  ") ;;
                 *)    ERRHANDLER="$ERRHANDLER ;" ;;
               esac
-              settraps_nonfatal 'echo ""; if [ "$ERRCODE" = 0 ]; then LOGMSG_PREFIX="CI-SIGNALTRAP-" logmsg_info "Completing $ERRTEXT" ; else echo ""; echo "!!!!!!!!!"; LOGMSG_PREFIX="CI-SIGNALTRAP-" logmsg_error "Aborting $ERRTEXT"; echo "!!!!!!!!!"; fi; echo ""; settraps_exit_clear; { '"$ERRHANDLER"' } || exit $? ; exit $ERRCODE;' \
+              settraps_nonfatal 'if [ "$SCRIPTLIB_TRAPWRAP_PRINT_MESSAGE" = yes ]\
+; then
+    echo ""
+    if [ "$ERRCODE" = 0 ]; then
+        if [ "$SCRIPTLIB_TRAPWRAP_PRINT_EXIT0" = yes ] || \
+            [ "$ERRSIGNAL" != 0 -a "$ERRSIGNAL" != EXIT -a "$ERRSIGNAL" != SIGEXIT ] \
+        ; then
+            LOGMSG_PREFIX="CI-SIGNALTRAP-" logmsg_info "Completing $ERRTEXT"
+        fi
+    else
+        echo ""; echo "!!!!!!!!!"
+        LOGMSG_PREFIX="CI-SIGNALTRAP-" logmsg_error "Aborting $ERRTEXT"
+        echo "!!!!!!!!!"
+    fi
+    echo ""
+    if [ "$SCRIPTLIB_TRAPWRAP_PRINT_STACKTRACE" = yes ] && [ -n "$BASH" ]; then
+        echo "======= Stack trace and other clues of the failure:"
+        echo "  Depth of sub-shelling (BASH_SUBSHELL) = $BASH_SUBSHELL"
+        printf "  Depth of function call stack = ${#FUNCNAME[@]} : "
+        if [ "${#FUNCNAME[@]}" -gt 0 ] ; then
+            printf "::%s" ${FUNCNAME[@]}
+        else
+            printf "failed in main body of main script"
+        fi
+        printf "\n"
+        i=0
+        while [ "$i" -lt "${#FUNCNAME[@]}" ] ; do
+            echo "  ($i)	-> in ${FUNCNAME[$i]-}() at ${BASH_SOURCE[$i+1]-}:${BASH_LINENO[$i]-}"
+            i=$(($i+1))
+        done
+        echo "	~> in ${ERRFUNC:-main-script-body}() at $ERRFILE:$ERRLINE"
+        echo "======= End of stack trace, $_SCRIPT_NAME:$LINENO"
+        echo ""
+    fi
+fi >&2
+settraps_exit_clear
+{ '"$ERRHANDLER"' } || exit $?
+exit $ERRCODE;' \
                 || true
               ;;
     esac
