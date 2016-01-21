@@ -274,9 +274,7 @@ trap_cleanup(){
   TRAP_SIGNALS="HUP INT QUIT TERM ERR" settraps '[ "$ERRCODE" = 0 ] && ERRCODE=123; echo "CI-EXIT: $0: got signal, aborting test..." >&2; trap_cleanup $ERRCODE'
 
   # might have some mess
-  killall tntnet lt-agent-dbstore agent-dbstore agent-cm lt-agent-cm 2>/dev/null || true
-  sleep 1
-  killall -KILL tntnet lt-agent-dbstore agent-dbstore agent-cm lt-agent-cm 2>/dev/null || true
+  kill_daemons || true
   sleep 1
   test_web_port && \
     die "Port ${SUT_WEB_PORT} is in LISTEN state when it should be free"
