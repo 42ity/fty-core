@@ -121,6 +121,7 @@ test_it "to=x_filter_dc=y"
 curlfail_push_expect_400
 api_get_json '/topology/power?to=x\&filter_dc=y' >&5
 print_result $?
+curlfail_pop
 
 echo "********* topology_power_err_handle.sh ************************************************************"
 echo "********* 11. to=x_filter_group=y *****************************************************************"
