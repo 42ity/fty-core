@@ -267,6 +267,12 @@ trap_cleanup(){
 }
 
 # prepare environment
+  # Ensure that no processes remain dangling when test completes
+  # The ERRCODE is defined by settraps() as the program exitcode
+  # as it enters the trap
+  TRAP_SIGNALS=EXIT settraps 'ciTRAP_RES=$?; echo "CI-EXIT: $0: test finished (up to the proper exit($ciTRAP_RES) command)..." >&2; trap_cleanup $ciTRAP_RES'
+  TRAP_SIGNALS="HUP INT QUIT TERM ERR" settraps '[ "$ERRCODE" = 0 ] && ERRCODE=123; echo "CI-EXIT: $0: got signal, aborting test..." >&2; trap_cleanup $ERRCODE'
+
   # might have some mess
   killall tntnet lt-agent-dbstore agent-dbstore agent-cm lt-agent-cm 2>/dev/null || true
   sleep 1
@@ -337,12 +343,6 @@ trap_cleanup(){
   ${BUILDSUBDIR}/agent-cm &
   CMPID=$!
   logmsg_info "PID of agent-cm is '${CMPID}'"
-
-  # Ensure that no processes remain dangling when test completes
-  # The ERRCODE is defined by settraps() as the program exitcode
-  # as it enters the trap
-  TRAP_SIGNALS=EXIT settraps 'ciTRAP_RES=$?; echo "CI-EXIT: $0: test finished (up to the proper exit($ciTRAP_RES) command)..." >&2; trap_cleanup $ciTRAP_RES'
-  TRAP_SIGNALS="HUP INT QUIT TERM ERR" settraps '[ "$ERRCODE" = 0 ] && ERRCODE=123; echo "CI-EXIT: $0: got signal, aborting test..." >&2; trap_cleanup $ERRCODE'
 
   logmsg_info "Waiting for web-server to begin responding..."
   wait_for_web && \

@@ -123,6 +123,14 @@ echo "SCRIPTDIR =       $SCRIPTDIR"
 echo "CHECKOUTDIR =     $CHECKOUTDIR"
 echo "BUILDSUBDIR =     $BUILDSUBDIR"
 
+# ***** INIT *****
+function cleanup {
+    set +e
+    rm -f "$LOCKFILE"
+}
+    # ***  SET trap FOR EXIT SIGNALS
+TRAP_SIGNALS=EXIT settraps cleanup
+
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
 
 # ***** GLOBAL VARIABLES *****
@@ -137,11 +145,6 @@ PSW=user1
     # *** create lockfile name ***
 LOCKFILE="`echo "/tmp/ci-test-rackpower-vte__${SUT_USER}@${SUT_HOST}:${SUT_SSH_PORT}:${SUT_WEB_PORT}.lock" | sed 's, ,__,g'`"
 
-# ***** INIT *****
-function cleanup {
-    set +e
-    rm -f "$LOCKFILE"
-}
     # *** is system running?
 if [ -f "$LOCKFILE" ]; then
     ls -la "$LOCKFILE" >&2
@@ -150,9 +153,6 @@ if [ -f "$LOCKFILE" ]; then
 fi
     # *** lock the script with creating $LOCKFILE
 echo $$ > "$LOCKFILE"
-
-    # ***  SET trap FOR EXIT SIGNALS
-TRAP_SIGNALS=EXIT settraps cleanup
 
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
 
