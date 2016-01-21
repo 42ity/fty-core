@@ -410,12 +410,9 @@ libpriv_db_la_SOURCES = \
 			src/persist/measurement.cc \
 			src/persist/ymsg-asset.h \
 			src/persist/ymsg-asset.cc \
-			src/db/alerts/alert.cc \
-			src/db/alerts/alert_basic.h \
 			src/db/agentstate/agentstate.cc \
 			src/db/agentstate/agentstate.h \
 			src/db/agentstate.h \
-			src/db/alerts.h \
 			tools/dbpath.cc
 
 noinst_LTLIBRARIES += 		libpriv-enums.la
@@ -496,11 +493,6 @@ libpriv_proto_la_SOURCES = \
 			src/msg/common_msg.h
 
 libpriv_proto_la_LIBADD = ${CXXTOOLS_LIBS} libbiosapi.la
-
-noinst_LTLIBRARIES +=	libpriv-email.la
-libpriv_email_la_SOURCES = \
-			src/shared/email.h \
-			src/shared/email.cc
 
 noinst_LTLIBRARIES +=	libpriv-nutscan.la
 libpriv_nutscan_la_SOURCES = \
@@ -928,31 +920,6 @@ test_db_asset_crud_LDFLAGS = \
 			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
 
-cibin_programs += 	test-db-alert
-
-test_db_alert_SOURCES = \
-			tests/persist/test-alert.cc
-
-test_db_alert_LDADD = \
-			libpriv-db.la \
-			libpriv-db-measurements.la \
-			libpriv-proto.la \
-			libpriv-test-run.la \
-			libpriv-log.la
-
-test_db_alert_CPPFLAGS = \
-			$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/tests/include/ \
-			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/src/db \
-			-I$(abs_top_srcdir)/src/ \
-			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_builddir)/tools
-
-test_db_alert_LDFLAGS = \
-			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
-
-
 #### total power tests
 cibin_programs += 	test-totalpower
 
@@ -978,19 +945,6 @@ test_totalpower_CPPFLAGS = \
 test_totalpower_LDFLAGS = \
 			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
-
-cibin_programs +=	bios-email
-
-bios_email_SOURCES = \
-			src/shared/email.h \
-			tests/shared/bios-email.cc
-
-bios_email_LDADD = \
-			libpriv-log.la \
-			libpriv-email.la \
-			libpriv-subprocess.la
-
-bios_email_LDFLAGS = $(CXXTOOLS_LIBS)
 
 cibin_programs +=	bios-nutscan
 
@@ -1150,28 +1104,6 @@ agent_nut_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS} -lbiosap
 
 agent_nut_CPPFLAGS =	$(AM_CPPFLAGS)
 
-client_PROGRAMS +=	agent-alert-smtp
-
-agent_alert_smtp_SOURCES = \
-			src/agents/alert-smtp/agent-alert-smtp.h \
-			src/agents/alert-smtp/agent-alert-smtp.cc \
-			src/agents/alert-smtp/alert-basic.h
-
-
-agent_alert_smtp_LDADD = \
-			libbiosapi.la \
-			libpriv-log.la \
-			libpriv-email.la \
-			libpriv-subprocess.la \
-			libpriv-defs.la
-
-agent_alert_smtp_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lbiosapi
-
-agent_alert_smtp_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(abs_top_builddir)/src/agents/alert \
-			-I$(abs_top_srcdir)/src/agents/alert
-
-
 client_PROGRAMS +=	agent-autoconfig
 
 agent_autoconfig_SOURCES = \
@@ -1218,8 +1150,6 @@ agent_inventory_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} \
 							${LIBBIOSPROTO_LIBS} \
 							-ltntdb -lbiosapi -lcidr
 
-### TODO this agent should not link with libpriv-db-alerts.
-### But now it is required, because of "huge" libpriv-db
 agent_inventory_LDADD = \
 			libpriv-db.la \
 			libpriv-cidr.la \
@@ -1569,7 +1499,6 @@ SYSTEMD_UNITS_LOWLEVEL += \
 # And also some of the timer units and implementations below
 SYSTEMD_UNITS_TARGET_BIOS += \
                         bios-db-init.service \
-                        bios-agent-alert-smtp.service \
                         bios-agent-autoconfig.service \
                         bios-agent-cm.service \
                         bios-agent-dbstore.service \
