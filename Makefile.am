@@ -828,6 +828,7 @@ test_loadcsv_LDADD = \
 			libpriv-cidr.la \
 			libpriv-proto.la \
 			libpriv-csv.la \
+			libpriv-utils.la \
 			libpriv-utils-plusplus.la \
 			libpriv-test-run.la
 
@@ -1126,6 +1127,7 @@ bios_csv_LDADD = \
 						 libpriv-db.la \
 						 libpriv-proto.la \
 						 libpriv-log.la \
+						 libpriv-utils.la \
 						 libpriv-utils-plusplus.la \
 						 libpriv-csv.la
 bios_csv_LDFLAGS = \
@@ -1288,13 +1290,14 @@ average_SOURCES = src/average/average.cc \
 				  src/web/include/helpers.h \
 				  src/web/src/helpers.cc
 
-average_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} -lbiosapi
+average_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS}
 
 average_LDADD = \
 			libpriv-log.la \
 			libpriv-utils.la \
 			libpriv-utils-plusplus.la \
 			libpriv-utils-ymsg.la \
+			libbiosapi.la \
 			libpriv-utils-web.la
 
 average_CPPFLAGS =	$(AM_CPPFLAGS) \
