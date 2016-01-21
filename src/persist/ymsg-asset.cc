@@ -28,7 +28,6 @@
 #include <string>
 
 #include "assetcrud.h"
-#include "db/alerts.h"
 
 #include "log.h"
 #include "cleanup.h"
@@ -92,69 +91,6 @@ void
         log_error ("unable to get name of requested device, ignore the message");
     }
     FREE0(name);
-    LOG_END;
-}
-
-
-void process_alert(ymsg_t** out, char** out_subj,
-                   ymsg_t* in, const char* in_subj)
-{
-    if( ! in || ! out ) return;
-    *out = ymsg_new(YMSG_REPLY);
-    LOG_START;
-    
-    if( in_subj ) { *out_subj = strdup(in_subj); }
-    else { *out_subj = NULL; }
-    
-    log_debug("processing alert"); // FIXME: some macro
-    
-    // decode message
-    _scoped_char *rule = NULL, *devices = NULL, *desc = NULL;
-    uint8_t priority;
-    int8_t state;
-    time_t since;
-    if( bios_alert_extract( in, &rule, &priority, &state, &devices, &desc, &since) != 0 ) {
-        log_debug("can't decode message");
-        LOG_END;
-        return;
-    }
-    std::vector<std::string> devices_v;
-    cxxtools::split(',', std::string(devices), std::back_inserter(devices_v));
-    tntdb::Connection conn;
-    try{        
-        conn = tntdb::connectCached(url);
-        db_reply_t ret;
-        
-        switch( (int)state ) {
-        case ALERT_STATE_ONGOING_ALERT:
-            // alert started
-            ret = insert_new_alert(
-                conn,
-                rule,
-                priority,
-                state,
-                ( desc ? desc : rule ),
-                0,
-                since,
-                devices_v);
-            ymsg_set_status( *out, ret.status );
-            break;
-        case ALERT_STATE_NO_ALERT:
-            //alarm end
-            ret = update_alert_tilldate_by_rulename(
-                conn,
-                since,
-                rule);
-            ymsg_set_status( *out, ret.status );
-            break;
-        }
-        if(!ret.status) { log_error("Writting alert into the database failed"); }
-    } catch(const std::exception &e) {
-        LOG_END_ABNORMAL(e);
-        ymsg_set_status( *out, false );
-    }
-    FREE0 (rule)
-    FREE0 (devices)
     LOG_END;
 }
 
