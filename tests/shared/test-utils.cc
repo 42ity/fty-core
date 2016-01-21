@@ -316,3 +316,68 @@ TEST_CASE("get_mac", "[utils][get_mac]") {
 
     }
 }
+
+TEST_CASE("sanitize_date", "[utils][sanitize_date]") {
+
+    // sanitize_date is locale specific, but the test expects C locale
+    ::setlocale (LC_ALL, "C");
+
+    // invalid date
+    char *r = sanitize_date ("123");
+    CHECK (r == NULL);
+
+    // ISO date
+    r = sanitize_date ("2010-02-15");
+    CHECK (r != NULL);
+    CHECK (streq (r, "2010-02-15"));
+    zstr_free (&r);
+
+    // ISO date w/0 zeros
+    r = sanitize_date ("2010-2-15");
+    CHECK (r != NULL);
+    CHECK (streq (r, "2010-02-15"));
+    zstr_free (&r);
+
+    // Excell date
+    r = sanitize_date ("15-Feb-10");
+    CHECK (r != NULL);
+    CHECK (streq (r, "2010-02-15"));
+    zstr_free (&r);
+
+    // European date
+    r = sanitize_date ("15.02.2010");
+    CHECK (r != NULL);
+    CHECK (streq (r, "2010-02-15"));
+    zstr_free (&r);
+
+    // ISO date
+    r = sanitize_date ("2010-2-2");
+    CHECK (r != NULL);
+    CHECK (streq (r, "2010-02-02"));
+    zstr_free (&r);
+
+    // European date
+    r = sanitize_date ("15 02 2010");
+    CHECK (r != NULL);
+    CHECK (streq (r, "2010-02-15"));
+    zstr_free (&r);
+
+    // European date
+    r = sanitize_date ("15 2 2010");
+    CHECK (r != NULL);
+    CHECK (streq (r, "2010-02-15"));
+    zstr_free (&r);
+
+    // US date
+    r = sanitize_date ("02/15/2010");
+    CHECK (r != NULL);
+    CHECK (streq (r, "2010-02-15"));
+    zstr_free (&r);
+
+    // US date
+    r = sanitize_date ("2/15/2010");
+    CHECK (r != NULL);
+    CHECK (streq (r, "2010-02-15"));
+    zstr_free (&r);
+
+}

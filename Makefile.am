@@ -780,7 +780,8 @@ test_libbiosapiut_DEPENDENCIES = \
 
 check_PROGRAMS += 	test-autoconfig
 test_autoconfig_SOURCES = tests/agents/autoconfig/test-autoconfig.cc \
-                          src/agents/autoconfig/configurator.cc
+                          src/agents/autoconfig/NUTConfigurator.h src/agents/autoconfig/NUTConfigurator.cc \
+						  src/agents/autoconfig/Configurator.h src/agents/autoconfig/Configurator.cc
 
 test_autoconfig_LDADD = \
 			libpriv-defs.la \
@@ -822,6 +823,7 @@ test_loadcsv_LDADD = \
 			libpriv-cidr.la \
 			libpriv-proto.la \
 			libpriv-csv.la \
+			libpriv-utils.la \
 			libpriv-utils-plusplus.la \
 			libpriv-test-run.la
 
@@ -1120,6 +1122,7 @@ bios_csv_LDADD = \
 						 libpriv-db.la \
 						 libpriv-proto.la \
 						 libpriv-log.la \
+						 libpriv-utils.la \
 						 libpriv-utils-plusplus.la \
 						 libpriv-csv.la
 bios_csv_LDFLAGS = \
@@ -1167,8 +1170,10 @@ agent_alert_smtp_CPPFLAGS =	$(AM_CPPFLAGS) \
 client_PROGRAMS +=	agent-autoconfig
 
 agent_autoconfig_SOURCES = \
-			src/agents/autoconfig/agent-autoconfig.cc \
-			src/agents/autoconfig/configurator.cc
+			src/agents/autoconfig/agent-autoconfig.cc src/agents/autoconfig/agent-autoconfig.h \
+			src/agents/autoconfig/ConfiguratorFactory.h src/agents/autoconfig/ConfiguratorFactory.cc \
+			src/agents/autoconfig/NUTConfigurator.h src/agents/autoconfig/NUTConfigurator.cc \
+			src/agents/autoconfig/Configurator.h src/agents/autoconfig/Configurator.cc
 
 agent_autoconfig_LDADD = \
 			libpriv-log.la \
@@ -1278,13 +1283,14 @@ average_SOURCES = src/average/average.cc \
 				  src/web/include/helpers.h \
 				  src/web/src/helpers.cc
 
-average_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} -lbiosapi
+average_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS}
 
 average_LDADD = \
 			libpriv-log.la \
 			libpriv-utils.la \
 			libpriv-utils-plusplus.la \
 			libpriv-utils-ymsg.la \
+			libbiosapi.la \
 			libpriv-utils-web.la
 
 average_CPPFLAGS =	$(AM_CPPFLAGS) \

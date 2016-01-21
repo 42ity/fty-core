@@ -25,7 +25,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SRC_AGENTS_AUTOCONFIG_AGENT_H__
 
 #include "bios_agent++.h"
-#include "configurator.h"
+#include "ConfiguratorFactory.h"
+
 
 class Autoconfig : public BIOSAgent {
  public:
@@ -44,7 +45,7 @@ class Autoconfig : public BIOSAgent {
     void cleanupState();
     void saveState();
     void loadState();
-    ConfigFactory _configurator;
+    ConfiguratorFactory _configurator;
     std::map<std::string,AutoConfigurationInfo> _configurableDevices;
 };
 

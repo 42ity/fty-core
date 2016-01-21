@@ -1,0 +1,44 @@
+name,type,sub_type,location,status,priority,business_critical,asset_tag,power_source.1,power_plug_src.1,power_input.1,power_source.2,power_plug_src.2,power_input.2,description,ip.1,company,site_name,region,country,address,contact_name,contact_email,contact_phone,maximum_number_racks,u_size,manufacturer,model,serial_no,runtime,phase,installation_date,maintenance_date,maintenance_due,service_contact_name,service_contact_mail,service_contact_phone,location_front_pos,location_rear_pos,location_u_pos,location_w_pos,location_d_pos,end_warranty_date,battery_type,battery_installation_date,battery_maintenance_date,hostname.1,http_link.1,battery.type,device.contact,device.location,device.part,device.type,outlet.count,phases.input,phases.output,ups.alarm,ups.serial,group.1
+DC-Roztoky,datacenter,,,nonactive,P5,no,1234242321,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Room.2.15.a,room,,DC-Roztoky,spare,P1,no,foobar2,,,,,,,Server room 2.15.a,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Room.2.15.a.Row1,row,,Room.2.15.a,active,P4,yes,foobar3,,,,,,,Row,,,,,,,,,,10,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Rack01,rack,,Room.2.15.a.Row1,active,P1,yes,foobar4,,,,,,,BIOS rack,,,,,,,,,,,42,EATON,???,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+GRP.ROZ-MAIN,group,input_power,DC-Roztoky,active,P1,yes,foobar5,,,,,,,input_power chain,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+GRP.BIOS,group,customer,DC-Roztoky,active,P1,yes,foobar6,,,,,,,BIOS Team,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+GRP.ITPower,group,customer,DC-Roztoky,active,P2,yes,foobar7,,,,,,,IT Power stuff,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+ROZ.UPS36,device,ups,Rack01,active,P1,yes,foy7obar2,,,,,,,UPS1 9PX 5kVA,10.130.53.36,,,,,,,,,,3,EATON,Eaton 9PX,G202E02032,,,5-Jan-15,,,,,,,,1,,,,,,,ups36.roz53.lab.etn.com,,PbAc,Bios Team,Server Room,,ups,,1,1,Communication fault!,G202E02032,GRP.BIOS
+ROZ.UPS33,device,ups,Rack01,active,P2,yes,foobar12.5,,,,,,,UPS1 9PX 5000i,10.130.53.33,,,,,,,,,,3,EATON,Eaton 9PX,G202D51129,,,5-Jan-15,,,,,,,,1,,,,,,,ups33.roz53.lab.etn.com,,PbAc,Gabriel Szabo,New IT Power LAB,,ups,,1,1,Automatic bypass mode!,G202D51129,GRP.BIOS
+ROZ.ePDU13,device,epdu,Rack01,active,P1,yes,foobar13,ROZ.UPS36,,,,,,ePDU13 G3,10.130.53.13,,,,,,Michal Hrušecký,michalhrusecky@eaton.com,+240 211 151 532,,,EATON,EPDU MA 0U (C14 10A 1P)16XC13,H734F27016,,,5-Jan-15,,,,,,,,,right,,,,,,epdu13.roz.lab.etn.com,http://epdu13.roz.lab.etn.com/,,,,EMAB03,epdu,16,1,1,,H734F27016,GRP.BIOS
+ROZ.ePDU14,device,epdu,Rack01,active,P1,yes,foobar14,ROZ.UPS33,,,,,,ePDU14 G3,10.130.53.14,,,,,,Michal Hrušecký,michalhrusecky@eaton.com,+240 211 151 532,,,EATON,EPDU MA 0U (C14 10A 1P)16XC13,H734F27009,,,5-Jan-15,,,,,,,,,left,,,,,,epdu14.roz.lab.etn.com,http://epdu14.roz.lab.etn.com/,,,,EMAB03,epdu,16,1,1,,H734F27009,GRP.BIOS
+bios-rc-demo.roz.lab.etn.com,device,server,Rack01,active,P1,yes,foobar16,ROZ.ePDU13,9,1,ROZ.ePDU14,9,2,BIOS Rack Controller,10.130.38.205,,,,,,Michal Hrušecký,michalhrusecky@eaton.com,+240 211 151 532,,1,Eaton,RC3,,,,5-Mar-15,,,,,,,,37,,,,,,,bios-rc-demo.roz53.lab.etn.com,http://bios-rc-demo.roz.lab.etn.com,,,,,,,,,,,GRP.BIOS
+HORNET,device,server,Rack01,active,P1,yes,foobar17,ROZ.ePDU13,8,1,ROZ.ePDU14,8,2,"Main BIOS server (kvm, OBS, CI)",10.130.38.95,,,,,,Michal Hrušecký,michalhrusecky@eaton.com,+240 211 151 532,,1,HP,HP DL360p G8,CZ.34320225,,,5-Jan-15,,,,,,,,27,,,,,,,hornet.roz.lab.etn.com,http://hornet.roz.lab.etn.com,,,,,,,,,,,GRP.BIOS
+SHERPA,device,server,Rack01,active,P2,yes,foobar18,ROZ.ePDU13,7,1,ROZ.ePDU14,7,2,BIOS NAS,10.130.38.165,,,,,,Michal Hrušecký,michalhrusecky@eaton.com,+240 211 151 532,,1,Synology,RackStation RS815RP+,1510MSN347300,,,20-Apr-15,,,,,,,,26,,,,,,,sherpa.roz.lab.etn.com,ssh://sherpa.roz.lab.etn.com/,,,,,,,,,,,GRP.BIOS
+SRV13,device,server,Rack01,active,P3,no,foobar19,ROZ.ePDU13,6,1,ROZ.ePDU14,6,2,IT Power testing server,10.130.32.48,,,,,,,,,,1,HP,HP DL360p G8,CZ3512SWJE,,,5-Jan-15,,,,,,,,25,,,,,,,srv13.roz.lab.etn.com,https://srv13.roz.lab.etn.com/,,,,,,,,,,,GRP.ITPower
+GRASSHOPPER,device,server,Rack01,active,P4,no,foobar20,ROZ.ePDU13,5,1,ROZ.ePDU14,5,2,"Secondary BIOS server (kvm, OBS)",10.130.38.164,,,,,,Michal Hrušecký,michalhrusecky@eaton.com,+240 211 151 532,,1,Dell,PowerEdge R320,,,,20-Apr-15,,,,,,,,24,,,,,,,grasshopper.roz.lab.etn.com,ssh://grasshopper.roz.lab.etn.com/,,,,,,,,,,,GRP.BIOS
+HPSERVER001,device,server,Rack01,nonactive,P4,no,foobar21,ROZ.ePDU13,4,1,ROZ.ePDU14,4,2,HP server,,,,,,,,,,,2,HP,,,,,,,,,,,,,22,,,,,,,,,,,,,,,,,,,GRP.BIOS
+POWERSERVER001,device,server,Rack01,nonactive,P5,no,foobar22,ROZ.ePDU13,3,1,ROZ.ePDU14,3,2,IBM Power 710,,,,,,,,,,,2,IBM,,,,,,,,,,,,,20,,,,,,,,,,,,,,,,,,,GRP.BIOS
+Rack02,rack,,Room.2.15.a.Row1,active,P1,yes,foobar26,,,,,,,,,,,,,,,,,,42,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,GRP.ITPower
+gate,device,server,Rack02,active,P1,yes,foobar28,,,,,,,,10.130.38.2,,,,,,,,,,3,,,,,,,,,,,,,,1,,,,,,,gate.roz.lab.etn.com,,,,,,,,,,,,GRP.ITPower
+srv07,device,server,Rack02,active,P1,yes,foobar29,,,,,,,,10.130.38.37,,,,,,,,,,1,,,,,,,,,,,,,,10,,,,,,,srv07.roz.lab.etn.com,,,,,,,,,,,,GRP.ITPower
+srv06,device,server,Rack02,active,P1,yes,foobar30,,,,,,,,10.130.38.36,,,,,,,,,,1,,,,,,,,,,,,,,12,,,,,,,srv06.roz.lab.etn.com,,,,,,,,,,,,GRP.ITPower
+srv05,device,server,Rack02,active,P1,yes,foobar31,,,,,,,,10.130.38.35,,,,,,,,,,1,,,,,,,,,,,,,,14,,,,,,,srv05.roz.lab.etn.com,,,,,,,,,,,,GRP.ITPower
+srv04,device,server,Rack02,active,P1,yes,foobar32,,,,,,,,10.130.38.34,,,,,,,,,,1,,,,,,,,,,,,,,16,,,,,,,srv04.roz.lab.etn.com,,,,,,,,,,,,GRP.ITPower
+srv03,device,server,Rack02,active,P1,yes,foobar33,,,,,,,,10.130.38.33,,,,,,,,,,1,,,,,,,,,,,,,,18,,,,,,,srv03.roz.lab.etn.com,,,,,,,,,,,,GRP.ITPower
+srv02,device,server,Rack02,active,P1,yes,foobar34,,,,,,,,10.130.38.32,,,,,,,,,,1,,,,,,,,,,,,,,20,,,,,,,srv02.roz.lab.etn.com,,,,,,,,,,,,GRP.ITPower
+srv01,device,server,Rack02,active,P1,yes,foobar35,,,,,,,,10.130.38.31,,,,,,,,,,1,,,,,,,,,,,,,,22,,,,,,,srv01.roz.lab.etn.com,,,,,,,,,,,,GRP.ITPower
+srv12,device,server,Rack02,active,P1,yes,foobar36,,,,,,,,10.130.38.38,,,,,,,,,,1,,,,,,,,,,,,,,24,,,,,,,srv12.roz.lab.etn.com,,,,,,,,,,,,GRP.ITPower
+nas03,device,storage,Rack02,active,P1,yes,foobar37,,,,,,,,10.130.38.102,,,,,,,,,,1,,,,,,,,,,,,,,26,,,,,,,nas03.roz.lab.etn.com,,,,,,,,,,,,GRP.ITPower
+Laboratory.2.03,room,,DC-Roztoky,active,P1,yes,foobar41,,,,,,,IT lab,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Shelfs01,rack,,Laboratory.2.03,active,P1,yes,foobar42,,,,,,,,,,,,,,,,,,42,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+ups13,device,ups,Shelfs01,active,P1,yes,foobar43,,,,,,,,10.130.38.141,,,,,,,,,,3,DELL,Dell UPS Rack 3750W High Efficiency Online HV - 230V,CN-0H952N-75162-28L-0038-A03,,,,,,,,,,,1,,,,,,,mnc12.roz.lab.etn.com,,PbAc,Gabriel Szabo,New IT Power Lab,,ups,,1,1,Shutdown imminent!,CN-0H952N-75162-28L-0038-A03,GRP.ITPower
+ups19,device,ups,Shelfs01,active,P1,yes,foobar44,,,,,,,,10.130.38.138,,,,,,,,,,3,IBM,IBM 3000VA/2700W Rack HV UPS,23G3411                     ,,,,,,,,,,,4,,,,,,,nmc14.roz.lab.etn.com,,PbAc,Rastislav Kolenik,ROZTOKY - IT Power LAB,,ups,,1,1,,23G3411                     ,GRP.ITPower
+shelf01-sts,device,sts,Shelfs01,active,P1,yes,foobar45,ups13,,,ups19,,,,,,,,,,,,,,1,,,,,,,,,,,,,,8,,,,,,,,,,,,,,,,,,,GRP.ITPower
+epdu06,device,epdu,Shelfs01,active,P1,yes,foobar46,shelf01-sts,2,,,,,,10.130.38.115,,,,,,,,,,,EATON,Eaton ePDU SW 1P IN:C14 10A OUT:16xC13,U038B42007,,,,,,,,,,,,left,,,,,,epdu06.roz.lab.etn.com,,,,,eSWA01,epdu,16,1,1,,U038B42007,GRP.ITPower
+Fake DC,datacenter,,,active,P1,yes,qwerty23,,,,,,,,,,,,,xyz,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Room.xyz,room,,Fake DC,spare,P1,no,foobar222,,,,,,,srvr room,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+ROZ.MAIN.XYZ,device,feed,Fake DC,active,P1,yes,foobar223,,,,,,,MAIN 240V,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,3,,,
+NMC18,device,ups,Fake DC,active,P1,yes,foobar131,ROZ.MAIN.XYZ,,,,,,NMC 18,10.130.38.149,,,,,,Michal Hrušecký,michalhrusecky@eaton.com,+240 211 151 532,,,Eaton Corporation,PXGMS UPS + EATON 93 PM,"ID: esa, Msg: 9PE10A0200A00H0",,,,,,,,,,,,,,,,,,epdu18.roz.lab.etn.com,,,,,,ups,5,3,3,Building alarm!,"ID: esa, Msg: 9PE10A0200A00H0",
+Room.xyz_1,room,,Fake DC,spare,P1,no,foobar226,,,,,,,srvr room,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Room.xyz_1_rack,rack,,Room.xyz_1,spare,P1,no,foobar229,,,,,,,srvr room,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+Room.xyz_2,room,,Fake DC,spare,P1,no,foobar230,,,,,,,srvr room,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+SWITCH.RACK01,device,switch,Rack01,active,P1,yes,foobar15,ROZ.ePDU13,16,1,,,,switch,,,,,,,,,,,1,,,,,,,,,,,,,,41,,,,,,,,,,,,,,,,,,,GRP.BIOS

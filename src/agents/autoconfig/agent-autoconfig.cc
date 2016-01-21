@@ -16,14 +16,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 #include <fstream>
+#include <string>
 
 #include <cxxtools/jsonserializer.h>
 #include <cxxtools/jsondeserializer.h>
 #include <tntdb.h>
-#include <preproc.h>
 
+#include "preproc.h"
 #include "dbpath.h"
-#include "agent-autoconfig.h"
 #include "str_defs.h"
 #include "log.h"
 #include "utils.h"
@@ -32,6 +32,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "assets.h"
 #include "utils_ymsg.h"
 #include "filesystem.h"
+
+#include "agent-autoconfig.h"
 
 #define AUTOCONFIG "AUTOCONFIG"
 
@@ -82,29 +84,25 @@ save_agent_info(const std::string& json)
 inline void operator<<= (cxxtools::SerializationInfo& si, const AutoConfigurationInfo& info)
 {
     si.setTypeName("AutoConfigurationInfo");
-    // serializing integer doesn't work for unknown reason
-    si.addMember("type") <<= std::to_string(info.type);
-    si.addMember("subtype") <<= std::to_string(info.subtype);
-    si.addMember("operation") <<= std::to_string(info.operation);
+    si.addMember("type") <<= info.type;
+    si.addMember("subtype") <<= info.subtype;
+    si.addMember("operation") <<= static_cast<std::underlying_type<persist::asset_operation>::type>(info.operation);
     si.addMember("configured") <<= info.configured;
+    si.addMember("date") <<= info.date;
     si.addMember("attributes") <<= info.attributes;
 }
 
 inline void operator>>= (const cxxtools::SerializationInfo& si, AutoConfigurationInfo& info)
 {
     si.getMember("configured") >>= info.configured;
-    {
-        // serializing integer doesn't work
-        std::string tmp;
-        si.getMember("type") >>= tmp;
-        info.type = atoi(tmp.c_str());
+    si.getMember("type") >>= info.type;
+    si.getMember("subtype") >>= info.subtype;
 
-        si.getMember("subtype") >>= tmp;
-        info.subtype = atoi(tmp.c_str());
+    std::underlying_type<asset_operation>::type e;
+    si.getMember("operation") >>= e;
+    info.operation = (asset_operation) e;
 
-        si.getMember("operation") >>= tmp;
-        info.operation = atoi(tmp.c_str());
-    }
+    si.getMember("date") >>= info.date;
     si.getMember("attributes")  >>= info.attributes;
 }
 
@@ -210,7 +208,7 @@ void Autoconfig::onSend( ymsg_t **message )
             addDeviceIfNeeded( device_name, type, subtype );
             _configurableDevices[device_name].configured = false;
             _configurableDevices[device_name].attributes.clear();
-            _configurableDevices[device_name].operation = operation;
+            _configurableDevices[device_name].operation = (persist::asset_operation) operation;
             _configurableDevices[device_name].attributes = utils::zhash_to_map(extAttributes);
             saveState();
             setPollingInterval();
@@ -248,13 +246,10 @@ void Autoconfig::onPoll( )
         if( ! it.second.configured ) {
             // we don't need extended attributes for deleting configuration
             // but we need them for update/insert
-            if(
-                ! it.second.attributes.empty() ||
+            if (!it.second.attributes.empty() ||
                 it.second.operation == asset_operation::DELETE ||
-                it.second.operation == asset_operation::RETIRE
-            )
-            {
-                auto factory = ConfigFactory();
+                it.second.operation == asset_operation::RETIRE) {
+                auto factory = ConfiguratorFactory();
                 if( factory.configureAsset (it.first, it.second)) {
                     sendNewRules (factory.getNewRules (it.first, it.second));
                     it.second.configured = true;
@@ -264,7 +259,10 @@ void Autoconfig::onPoll( )
             }
         }
     }
-    if( save ) { cleanupState(); saveState(); }
+    if (save) {
+        cleanupState();
+        saveState();
+    }
     setPollingInterval();
 }
 

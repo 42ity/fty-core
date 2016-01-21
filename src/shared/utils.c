@@ -395,3 +395,34 @@ char *accepted_license_file (void) {
     }
     return accepted_license;
 }
+
+char*
+    sanitize_date (const char* inp)
+{
+    assert (inp);
+
+    static const char* FORMATS[] = {
+        "%Y-%m-%d",
+        "%d-%b-%y",
+        "%d.%m.%Y",
+        "%d %m %Y",
+        "%m/%d/%Y",
+        NULL
+    };
+
+    for (size_t i = 0; FORMATS[i] != NULL; i++)
+    {
+        struct tm tm;
+        char *r = strptime (inp, FORMATS[i], &tm);
+
+        if (!r)
+            continue;
+
+        char *buf = (char*) malloc (11); //buffer for ISO date
+        strftime (buf, 11, FORMATS[0], &tm);
+        return buf;
+    }
+
+    return NULL;
+
+}

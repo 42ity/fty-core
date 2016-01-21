@@ -39,6 +39,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "db/asset_general.h"
 #include "db/assets.h"
 #include "db/inout.h"
+#include "utils.h"
 #include "utils++.h"
 #include "utils_web.h"
 
@@ -139,6 +140,15 @@ static bool
         return check_u_size(value);
     }
     return ( !value.empty() );
+}
+
+// check if key contains date
+// ... warranty_end or ends with _date
+static bool
+    is_date (const std::string &key)
+{
+    static cxxtools::Regex regex{"(^warranty_end$|_date$)"};
+    return regex.match (key);
 }
 
 int
@@ -511,6 +521,18 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     {
         // try is not needed, because here are keys that are definitely there
         std::string value = cm.get(row_i, key);
+
+        // BIOS-1564: sanitize the date for warranty_end -- start
+        if (is_date (key) && !value.empty()) {
+            char *date = sanitize_date (value.c_str());
+            if (!date) {
+                log_error ("Cannot sanitize %s '%s' for device '%s'", key.c_str(), value.c_str(), name.c_str());
+                bios_throw("request-param-bad", key.c_str(), value.c_str(), "ISO date");
+            }
+            value = date;
+            zstr_free (&date);
+        }
+        // BIOS-1564 -- end
 
         if ( match_ext_attr (value, key) )
         {
