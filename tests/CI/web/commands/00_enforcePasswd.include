@@ -9,7 +9,7 @@ enforce_passwd() (
     if [ $PW_RES != 0 ] && [ -x "$CHECKOUTDIR/tools/init-os-accounts.sh" ]; then
         logmsg_info "Trying to directly set HASH OF the user password with 'usermod'"
         USER_PASS_HASH="`USER_PASS="$1" "$CHECKOUTDIR/tools/init-os-accounts.sh" hashPasswd 2>/dev/null`" && \
-        sut_run "( usermod -p "${USER_PASS_HASH}" "${BIOS_USER}" )"
+        sut_run "( usermod -p '${USER_PASS_HASH}' '${BIOS_USER}' )"
         PW_RES=$?
     fi
     return $PW_RES
