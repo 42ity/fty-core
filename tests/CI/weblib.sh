@@ -438,8 +438,9 @@ _api_get_token() {
 # Called from api_*_json functions after they populate OUT_CURL by API calls.
 _normalize_OUT_CURL_json() {
     [ x"$JSONSH_CLI_DEFINED" != xyes ] && logmsg_error "jsonsh_cli() not defined" && return 127
-    echo "$OUT_CURL" | jsonsh_cli -N
-    JSONSH_RES=$?
+    JSONSH_RES=0
+    echo "$OUT_CURL" | jsonsh_cli -N || \
+        JSONSH_RES=$?
     [ "$JSONSH_RES" = 0 ] && return 0
     logmsg_debug "The '$JSONSH' JSON normalization choked on this input:" \
         "### ===vvvvvv" "$OUT_CURL" "### ===^^^^^^"
