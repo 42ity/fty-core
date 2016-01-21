@@ -290,8 +290,13 @@ for i in $POSITIVE; do
     esac
 
 # start testcase $NAME and put the result to $NAME.log
+    STACKED_HTTPERRORS_COUNT_BEFORE="${STACKED_HTTPERRORS_COUNT-}"
     . ./"$NAME" 5> "$REALLIFE_RESULT"
     RES=$?
+
+    test_it "compare_curlfail_stackdepth"
+    [ "$STACKED_HTTPERRORS_COUNT_BEFORE" = "${STACKED_HTTPERRORS_COUNT-}" ]
+    print_result $? "Had STACKED_HTTPERRORS_COUNT='$STACKED_HTTPERRORS_COUNT_BEFORE' before scriptlet '$NAME', got '${STACKED_HTTPERRORS_COUNT-}' after the test"
 
     if [ -r "$EXPECTED_RESULT" ]; then
         if [ -x "../results/$NAME".cmp ]; then
