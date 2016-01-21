@@ -30,6 +30,7 @@
 
 #include <string>
 #include <vector>
+#include <list>
 #include <utility>
 #include <array>
 #include <stdarg.h>
@@ -297,6 +298,28 @@ while (0)
         throw BiosError{key_idx, str}; \
     } while (0);
 
+
+// General template for whether type T (a standard container) is iterable
+// We deliberatelly don't want to solve this for general case (we don't need it)
+// If we ever need a general is_container - http://stackoverflow.com/a/9407521
+template <typename T>
+struct is_iterable {
+      static const bool value = false;
+};
+
+// Partial specialization for std::vector
+template <typename T,typename Alloc>
+struct is_iterable<std::vector <T,Alloc> > {
+      static const bool value = true;
+};
+
+// Partial specialization for std::list
+template <typename T,typename Alloc>
+struct is_iterable<std::list <T,Alloc> > {
+      static const bool value = true;
+};
+
+
 namespace utils {
 
 /*!
@@ -315,6 +338,9 @@ namespace json {
  \return Escaped json on success, "(null_ptr)" string on null argument
 */
 std::string escape (const char *string);
+
+
+
 
 /*!
  \brief Convenient wrapper for escape"("const char *string")"
@@ -338,7 +364,7 @@ std::string jsonify (T t) {
 // single arg version escapes and quotes were necessary (i.e. except int types...)
 
 template <typename T
-        , typename = typename std::enable_if<std::is_convertible<T, std::string>::value>::type>
+        , typename std::enable_if<std::is_convertible<T, std::string>::value>::type* = nullptr>
 std::string jsonify (const T& t) {
     try {
         return std::string ("\"").append (escape (t)).append ("\"");
@@ -347,10 +373,32 @@ std::string jsonify (const T& t) {
     }
 }
 
+template <typename T
+        , typename std::enable_if<is_iterable<T>::value>::type* = nullptr>
+std::string jsonify (const T& t) {
+    try {
+        std::string result = "[ ";
+        bool first = true;
+        for (const auto& item : t) {
+            if (first) {
+                result += jsonify (item);
+                first = false;
+            }
+            else {
+                result += ", " + jsonify (item);
+            }
+        }
+        result += " ]";
+        return result;
+    } catch (...) {
+        return "[]";
+    }
+}
+
 template <typename S
-        , typename = typename std::enable_if<std::is_convertible<S, std::string>::value>::type
+        , typename std::enable_if<std::is_convertible<S, std::string>::value>::type* = nullptr
         , typename T
-        , typename = typename std::enable_if<std::is_convertible<T, std::string>::value>::type>
+        , typename std::enable_if<std::is_convertible<T, std::string>::value>::type* = nullptr>
 std::string jsonify (const S& key, const T& value) {
     return std::string (jsonify (key)).append (" : ").append (jsonify (value));
 }
@@ -364,9 +412,9 @@ std::string jsonify (const S& key, T value) {
 }
 
 template <typename S
-        , typename = typename std::enable_if<std::is_convertible<S, std::string>::value>::type
+        , typename std::enable_if<std::is_convertible<S, std::string>::value>::type* = nullptr
         , typename T
-        , typename = typename std::enable_if<std::is_arithmetic<T>::value>::type>
+        , typename std::enable_if<std::is_arithmetic<T>::value>::type* = nullptr>
 std::string jsonify (T key, const S& value) {
     return std::string ("\"").append (jsonify (key)).append ("\" : ").append (jsonify (value));
 }
@@ -374,6 +422,22 @@ std::string jsonify (T key, const S& value) {
 template <typename T
         , typename = typename std::enable_if<std::is_arithmetic<T>::value>::type>
 std::string jsonify (T key, T value) {
+    return std::string ("\"").append (jsonify (key)).append ("\" : ").append (jsonify (value));
+}
+
+template <typename S
+        , typename std::enable_if<std::is_convertible<S, std::string>::value>::type* = nullptr
+        , typename T
+        , typename std::enable_if<is_iterable<T>::value>::type* = nullptr>
+std::string jsonify (const S& key, const T& value) {
+    return std::string (jsonify (key)).append (" : ").append (jsonify (value));
+}
+
+template <typename S
+        , typename std::enable_if<is_iterable<S>::value>::type* = nullptr
+        , typename T
+        , typename std::enable_if<std::is_arithmetic<T>::value>::type* = nullptr>
+std::string jsonify (T key, const S& value) {
     return std::string ("\"").append (jsonify (key)).append ("\" : ").append (jsonify (value));
 }
 
