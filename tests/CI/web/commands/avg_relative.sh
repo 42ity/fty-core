@@ -24,6 +24,7 @@ echo "##########################################################################
 echo "********* avg_relative.sh ************************** START ****************************************"
 echo "###################################################################################################"
 echo
+[ x"${JSONSH_CLI_DEFINED-}" = xyes ] || CODE=127 die "jsonsh_cli() not defined"
 
 # Add the first line of the sql file and create it
 DB_TMPSQL_FILE_CURRENT="${DB_TMPSQL_DIR}/tmp-current-$$.sql"
@@ -102,10 +103,10 @@ A       current.output.L1@UPS1-LAB      UPS1-LAB        $(expr $TIME - 50000)   
 }
 
 api_get_json_ntstp(){
-[ -z ${RES+x} ] && RES=0
-GTJSON=`api_get_json $1`
-RES="$(expr $RES + $?)"
-echo $GTJSON | sed 's/[[:digit:]]\{10\}/1111111/g' >&5
+    [ -z ${RES+x} ] && RES=0
+    GTJSON=`api_get_json $1`
+    RES="$(expr $RES + $?)"
+    echo $GTJSON | sed 's/[[:digit:]]\{10\}/1111111/g' >&5
 }
 
 
