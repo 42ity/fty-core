@@ -1308,6 +1308,21 @@ average_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
 
+client_PROGRAMS += warranty-metric
+
+warranty_metric_SOURCES = src/warranty/warranty-metric.cc
+
+warranty_metric_LDFLAGS = ${CXXTOOLS_LIBS} -ltntdb -lbiosproto -lmlm
+
+warranty_metric_LDADD = \
+			libpriv-log.la \
+			libpriv-db.la
+
+warranty_metric_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_srcdir)/src/db
+
 client_SCRIPTS +=	tools/bios-passwd \
 			tools/bios-networking \
 			tools/fake-th \
