@@ -153,11 +153,6 @@ int main (int argc, char *argv []) {
             else if (strncmp(bios_agent_subject(client), "configure", 9) == 0 ) {
                 log_debug ("configure message recieved, ingore it. In future this should never happen");
             }
-            else if (strncmp(bios_agent_subject(client), "alert.", 6) == 0 ) {
-                ymsg_t* out = NULL;
-                char* out_subj = NULL;
-                persist::process_alert(&out, &out_subj, in,bios_agent_subject(client));
-            }
         }
 
         else {
