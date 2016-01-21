@@ -138,6 +138,65 @@ logmsg_info "Will use BASE_URL = '$BASE_URL'"
 set -u
 #set -e
 
+RESULT_OVERALL=0
+trap_cleanup(){
+    cleanTRAP_RES="${1-}"
+    [ -n "$cleanTRAP_RES" ] || cleanTRAP_RES=0
+    [ "$cleanTRAP_RES" = 0 ] && [ "$RESULT_OVERALL" != 0 ] && cleanTRAP_RES="$RESULT_OVERALL"
+
+    ci_loaddb_default || cleanTRAP_RES=$?
+    # ***** RESULTS *****
+    if [ "$RESULT_OVERALL" = 0 ]; then
+        logmsg_info "Overall test suite result: SUCCESS"
+        if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
+            { logmsg_info "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}' test suite: SUCCESS"; \
+              echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY"
+        fi
+    else
+        logmsg_error "Overall test suite result: FAILED ($RESULT_OVERALL), seek details above"
+        if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
+            { logmsg_error "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}' test suite: FAILED ($RESULT_OVERALL)"; \
+              echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY" 2>&1
+        fi
+    fi
+
+    if [ "$cleanTRAP_RES" = 0 ]; then
+        logmsg_info "Overall test-suite script result (including cleanup): SUCCESS"
+        if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
+            { logmsg_info "`date -u`: Finished and cleaned up '${_SCRIPT_NAME} ${_SCRIPT_ARGS}' test-suite script: SUCCESS"; \
+              echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY"
+        fi
+    else
+        logmsg_error "Overall test-suite script result (including cleanup): FAILED ($cleanTRAP_RES) seek details above"
+        if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
+            { logmsg_error "`date -u`: Finished and cleaned up '${_SCRIPT_NAME} ${_SCRIPT_ARGS}' test-suite script: FAILED ($cleanTRAP_RES)"; \
+          echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY" 2>&1
+        fi
+    fi
+
+    if [ -n "$TESTLIB_LOG_SUMMARY" ] && [ -s "$TESTLIB_LOG_SUMMARY" ]; then
+        echo ""
+        echo "================================================================"
+        echo ""
+        echo "###########################################################"
+        echo "############### TESTLIB_LOG_SUMMARY contents: #############"
+        echo "### ($TESTLIB_LOG_SUMMARY) ###"
+        echo "###########################################################"
+        awk '{print "|| "$0}' < "$TESTLIB_LOG_SUMMARY"
+        echo "###########################################################"
+        echo "########### END OF TESTLIB_LOG_SUMMARY contents ###########"
+        echo "###########################################################"
+    fi
+
+    exit $RESULT_OVERALL
+}
+
+# Ensure that no processes remain dangling when test completes
+# The ERRCODE is defined by settraps() as the program exitcode
+# as it enters the trap
+TRAP_SIGNALS=EXIT settraps 'ciTRAP_RES=$?; echo "CI-EXIT: $0: test finished (up to the proper exit($ciTRAP_RES) command)..." >&2; trap_cleanup $ciTRAP_RES'
+TRAP_SIGNALS="HUP INT QUIT TERM ERR" settraps '[ "$ERRCODE" = 0 ] && ERRCODE=123; echo "CI-EXIT: $0: got signal, aborting test..." >&2; trap_cleanup $ERRCODE'
+
 # TODO. TOHLE PREDELAT, ZATIM MOZNO VYNECHAT
 # zacatek vynechavky ********************************
 if [ 1 = 2 ]; then
@@ -237,64 +296,6 @@ test_web_averages() {
     return 0
 }
 
-RESULT_OVERALL=0
-trap_cleanup(){
-    cleanTRAP_RES="${1-}"
-    [ -n "$cleanTRAP_RES" ] || cleanTRAP_RES=0
-    [ "$cleanTRAP_RES" = 0 ] && [ "$RESULT_OVERALL" != 0 ] && cleanTRAP_RES="$RESULT_OVERALL"
-
-    ci_loaddb_default || cleanTRAP_RES=$?
-    # ***** RESULTS *****
-    if [ "$RESULT_OVERALL" = 0 ]; then
-        logmsg_info "Overall test suite result: SUCCESS"
-        if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
-            { logmsg_info "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}' test suite: SUCCESS"; \
-              echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY"
-        fi
-    else
-        logmsg_error "Overall test suite result: FAILED ($RESULT_OVERALL), seek details above"
-        if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
-            { logmsg_error "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}' test suite: FAILED ($RESULT_OVERALL)"; \
-              echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY" 2>&1
-        fi
-    fi
-
-    if [ "$cleanTRAP_RES" = 0 ]; then
-        logmsg_info "Overall test-suite script result (including cleanup): SUCCESS"
-        if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
-            { logmsg_info "`date -u`: Finished and cleaned up '${_SCRIPT_NAME} ${_SCRIPT_ARGS}' test-suite script: SUCCESS"; \
-              echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY"
-        fi
-    else
-        logmsg_error "Overall test-suite script result (including cleanup): FAILED ($cleanTRAP_RES) seek details above"
-        if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
-            { logmsg_error "`date -u`: Finished and cleaned up '${_SCRIPT_NAME} ${_SCRIPT_ARGS}' test-suite script: FAILED ($cleanTRAP_RES)"; \
-          echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY" 2>&1
-        fi
-    fi
-
-    if [ -n "$TESTLIB_LOG_SUMMARY" ] && [ -s "$TESTLIB_LOG_SUMMARY" ]; then
-        echo ""
-        echo "================================================================"
-        echo ""
-        echo "###########################################################"
-        echo "############### TESTLIB_LOG_SUMMARY contents: #############"
-        echo "### ($TESTLIB_LOG_SUMMARY) ###"
-        echo "###########################################################"
-        awk '{print "|| "$0}' < "$TESTLIB_LOG_SUMMARY"
-        echo "###########################################################"
-        echo "########### END OF TESTLIB_LOG_SUMMARY contents ###########"
-        echo "###########################################################"
-    fi
-
-    exit $RESULT_OVERALL
-}
-
-# Ensure that no processes remain dangling when test completes
-# The ERRCODE is defined by settraps() as the program exitcode
-# as it enters the trap
-TRAP_SIGNALS=EXIT settraps 'ciTRAP_RES=$?; echo "CI-EXIT: $0: test finished (up to the proper exit($ciTRAP_RES) command)..." >&2; trap_cleanup $ciTRAP_RES'
-TRAP_SIGNALS="HUP INT QUIT TERM ERR" settraps '[ "$ERRCODE" = 0 ] && ERRCODE=123; echo "CI-EXIT: $0: got signal, aborting test..." >&2; trap_cleanup $ERRCODE'
 
 [ x"${SKIP_LICENSE_FORCEACCEPT-}" = xyes ] && \
 logmsg_warn "SKIP_LICENSE_FORCEACCEPT=$SKIP_LICENSE_FORCEACCEPT so not running '00_license-CI-forceaccept.sh.test' first" || \
