@@ -30,6 +30,7 @@ echo "********* Prerequisites **************************************************
 echo "***************************************************************************************************"
 init_script
 [ x"${JSONSH_CLI_DEFINED-}" = xyes ] || CODE=127 die "jsonsh_cli() not defined"
+. "$CHECKOUTDIR/tests/CI/web/commands/00_enforcePasswd.include"
 
 # Check getting token
 _test_auth() {
@@ -154,7 +155,7 @@ curlfail_pop
 
 echo "=========== Start Restore origin password at low-level========================"
 test_it "restore_PASS_ORIG_GOOD_lowlevel"
-sut_run "( echo "${PASS_ORIG_GOOD}"; echo "${PASS_ORIG_GOOD}"; ) | passwd ${BIOS_USER}"
+enforce_passwd "${PASS_ORIG_GOOD}"
 print_result $?
 
 test_it "sasl_cache_cleanup_lowlevel"

@@ -438,8 +438,9 @@ _api_get_token() {
 # Called from api_*_json functions after they populate OUT_CURL by API calls.
 _normalize_OUT_CURL_json() {
     [ x"$JSONSH_CLI_DEFINED" != xyes ] && logmsg_error "jsonsh_cli() not defined" && return 127
-    echo "$OUT_CURL" | jsonsh_cli -N
-    JSONSH_RES=$?
+    JSONSH_RES=0
+    echo "$OUT_CURL" | jsonsh_cli -N || \
+        JSONSH_RES=$?
     [ "$JSONSH_RES" = 0 ] && return 0
     logmsg_debug "The '$JSONSH' JSON normalization choked on this input:" \
         "### ===vvvvvv" "$OUT_CURL" "### ===^^^^^^"
@@ -808,8 +809,10 @@ accept_license(){
             ### Note: If CITEST_QUICKFAIL=yes then the license-acceptance can kill the test suite
             echo "WEBLIB::accept_license(): Trying to accept the license via REST API on BIOS server '$BASE_URL'..."
             api_auth_post_json '/admin/license' "foobar" || \
-            ( . "$CHECKOUTDIR"/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
-                if [ x"$CITEST_QUICKFAIL" = xyes ] ; then
+            ( SKIP_SANITY=yes; WEBLIB_CURLFAIL=no; CITEST_QUICKFAIL=no; WEBLIB_QUICKFAIL=no
+              export SKIP_SANITY WEBLIB_CURLFAIL CITEST_QUICKFAIL WEBLIB_QUICKFAIL
+              . "$CHECKOUTDIR"/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
+                if [ x"$CITEST_QUICKFAIL" = xyes ] || [ x"$WEBLIB_QUICKFAIL" = xyes ] ; then
                     die "BIOS license not accepted on the server, subsequent tests will fail"
                 else
                     logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"

@@ -85,7 +85,7 @@ while [ $# -gt 0 ] ; do
 done
 
 set -u
-set -e
+#set -e
 
 test_web_port() {
     netstat -tan | grep -w "${SUT_WEB_PORT}" | egrep 'LISTEN' >/dev/null
@@ -119,8 +119,9 @@ wait_for_web() {
 
 test_web() {
     echo "==== Calling test_web.sh ==================================="
-    /bin/bash "${CHECKOUTDIR}"/tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" "$@"
-    RES_TW=$?
+    RES_TW=0
+    /bin/bash "${CHECKOUTDIR}"/tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" "$@" || \
+        RES_TW=$?
     echo "==== test_web RESULT: ($RES_TW) =================================="
     return $RES_TW
 }
@@ -134,37 +135,41 @@ ci_loaddb_default() {
 }
 
 test_web_default() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_default() $*"
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_default() $*" || true
     ci_loaddb_default && \
-    test_web "$@"
+    test_web "$@" || return $?
+    return 0
 }
 
 test_web_topo_p() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_p() $*"
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_p() $*" || true
     echo "----------- reset db: topology : power -----------"
     for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOP"; do
         loaddb_file "$data" || exit $?
     done
-    test_web "$@"
+    test_web "$@" || return $?
+    return 0
 }
 
 test_web_topo_l() {
 # NOTE: This piece of legacy code is still here, but no usecase below calls it
-    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_l() $*"
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_l() $*" || true
     echo "---------- reset db: topology : location ---------"
     for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOL"; do
         loaddb_file "$data" || exit $?
     done
-    test_web "$@"
+    test_web "$@" || return $?
+    return 0
 }
 
 test_web_asset_create() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_asset_create() $*"
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_asset_create() $*" || true
     echo "---------- reset db: asset : create ---------"
     for data in "$DB_BASE" "$DB_DATA"; do
           loaddb_file "$data" || exit $?
     done
-    test_web "$@"
+    test_web "$@" || return $?
+    return 0
 }
 
 test_web_averages() {
@@ -176,7 +181,8 @@ test_web_averages() {
     for data in "$DB_BASE" "$DB_DATA" "$DB_AVERAGES" "$DB_AVERAGES_RELATIVE"; do
         loaddb_file "$data" || exit $?
     done
-    test_web "$@"
+    test_web "$@" || return $?
+    return 0
 }
 
 MAKEPID=""
@@ -211,6 +217,7 @@ trap_cleanup(){
     cleanTRAP_RES="${1-}"
     [ -n "$cleanTRAP_RES" ] || cleanTRAP_RES=0
     [ "$cleanTRAP_RES" = 0 ] && [ "$RESULT_OVERALL" != 0 ] && cleanTRAP_RES="$RESULT_OVERALL"
+    [ "$cleanTRAP_RES" != 0 ] && [ "$RESULT_OVERALL" = 0 ] && RESULT_OVERALL="$cleanTRAP_RES"
 
     kill_daemons || cleanTRAP_RES=$?
     ci_loaddb_default || cleanTRAP_RES=$?
@@ -261,10 +268,14 @@ trap_cleanup(){
 }
 
 # prepare environment
+  # Ensure that no processes remain dangling when test completes
+  # The ERRCODE is defined by settraps() as the program exitcode
+  # as it enters the trap
+  settraps '[ "$ERRCODE" = 0 ] && ERRCODE=123; trap_cleanup $ERRCODE'
+  TRAP_SIGNALS=EXIT settraps 'trap_cleanup $ERRCODE'
+
   # might have some mess
-  killall tntnet lt-agent-dbstore agent-dbstore agent-cm lt-agent-cm 2>/dev/null || true
-  sleep 1
-  killall -KILL tntnet lt-agent-dbstore agent-dbstore agent-cm lt-agent-cm 2>/dev/null || true
+  kill_daemons || true
   sleep 1
   test_web_port && \
     die "Port ${SUT_WEB_PORT} is in LISTEN state when it should be free"
@@ -332,12 +343,6 @@ trap_cleanup(){
   CMPID=$!
   logmsg_info "PID of agent-cm is '${CMPID}'"
 
-  # Ensure that no processes remain dangling when test completes
-  # The ERRCODE is defined by settraps() as the program exitcode
-  # as it enters the trap
-  TRAP_SIGNALS=EXIT settraps 'ciTRAP_RES=$?; echo "CI-EXIT: $0: test finished (up to the proper exit($ciTRAP_RES) command)..." >&2; trap_cleanup $ciTRAP_RES'
-  TRAP_SIGNALS="HUP INT QUIT TERM" settraps '[ "$ERRCODE" = 0 ] && ERRCODE=123; echo "CI-EXIT: $0: got signal, aborting test..." >&2; trap_cleanup $ERRCODE'
-
   logmsg_info "Waiting for web-server to begin responding..."
   wait_for_web && \
     logmsg_info "Web-server is responsive!" || \
@@ -353,8 +358,8 @@ case "$*" in
         ;;
     *) # Try to accept the BIOS license on server
         init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "00_license-CI-forceaccept"
-        SKIP_SANITY=yes test_web 00_license-CI-forceaccept.sh.test || \
-            if [ x"$CITEST_QUICKFAIL" = xyes ] ; then
+        SKIP_SANITY=yes WEBLIB_CURLFAIL=no CITEST_QUICKFAIL=no WEBLIB_QUICKFAIL=no test_web 00_license-CI-forceaccept.sh.test || \
+            if [ x"$CITEST_QUICKFAIL" = xyes ] || [ x"$WEBLIB_QUICKFAIL" = xyes ] ; then
                 die "BIOS license not accepted on the server, subsequent tests will fail"
             else
                 logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"

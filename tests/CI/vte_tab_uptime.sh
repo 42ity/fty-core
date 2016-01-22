@@ -115,6 +115,8 @@ cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 [ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
 [ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
 
+settraps 'rm -f "${DB_TMPSQL_FILE_UPTIME}"'
+
 logmsg_info "Ensuring that needed remote daemons are running on VTE"
 sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent bios-agent-nut bios-agent-inventory bios-agent-cm; do systemctl start $SVC ; done'
 sleep 3
@@ -146,7 +148,6 @@ grep -q '"imported_lines" : 16' "${LOGFILE_IMPORT}" || die "ERROR : 'Test of the
 echo "Test of the number of imported lines 			PASSED"
 
 # create sql file
-settraps 'rm -f "${DB_TMPSQL_FILE_UPTIME}"'
 echo "use ${DATABASE};"> "${DB_TMPSQL_FILE_UPTIME}"
 
 # dates formats
