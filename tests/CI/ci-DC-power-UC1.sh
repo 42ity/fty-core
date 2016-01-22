@@ -212,7 +212,7 @@ start_tntnet(){
 # Note: this default log filename will be ignored if already set by caller
 # ERRCODE is maintained by settraps()
 init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" ""
-settraps 'exit_summarizeTestlibResults $ERRCODE'
+settraps 'stop_processes; exit_summarizeTestlibResults $ERRCODE'
 
 nut_cfg_dir
 
