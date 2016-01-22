@@ -476,6 +476,9 @@ echo_summarizeTestlibResults() {
 # print a summary of processed tests in the end, whatever the reason to exit().
 exit_summarizeTestlibResults() {
     sTRAP_RES=$?
+    # ERRCODE is maintained by testlib settraps() routines as "$?" at real
+    # beginning of the (wrapped) trap processing
+    [ -n "${ERRCODE-}" ] && [ "$ERRCODE" -ge 0 ] 2>/dev/null && sTRAP_RES="$ERRCODE"
     [ -n "${1-}" ] && [ "$1" -gt 0 ] && sTRAP_RES="$1"
 
     # No longer error out on bad lines, even if we did
