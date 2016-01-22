@@ -138,8 +138,9 @@ PATH="$PATH:/sbin:/usr/sbin"
 
 # Note: this default log filename will be ignored if already set by caller
 init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" ""
-# ERRCODE is maintained by settraps()
-settraps 'exit_summarizeTestedScriptlets ; exit_summarizeTestlibResults $ERRCODE'
+# NOTE: This is the initial trap for sanity checks etc;
+# we override it for test results (if we get so far) below
+settraps 'exit_summarizeTestlibResults $ERRCODE'
 
 # A bash-ism, should set the exitcode of the rightmost failed command
 # in a pipeline, otherwise e.g. exitcode("false | true") == 0
@@ -265,6 +266,9 @@ exit_summarizeTestedScriptlets() {
 
 # TODO: Port recent changes from main test_web.sh
 # ... or merge these two via sut_run() commands etc.
+
+# ERRCODE is maintained by settraps()
+settraps 'exit_summarizeTestedScriptlets ; exit_summarizeTestlibResults $ERRCODE'
 
 for i in $POSITIVE; do
     for NAME in *$i*; do
