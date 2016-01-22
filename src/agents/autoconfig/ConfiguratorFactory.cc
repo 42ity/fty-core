@@ -31,20 +31,20 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "ConfiguratorFactory.h"
 
-std::vector <Configurator*> ConfiguratorFactory::getConfigurator (uint32_t type, uint32_t subtype)
+std::vector <Configurator*> ConfiguratorFactory::getConfigurator (const AutoConfigurationInfo& info)
 {
     static NUTConfigurator iNUTConfigurator;
     static UpsEpduRuleConfigurator iUpsEpduRuleConfigurator;
     static UptimeConfigurator iUptimeConfigurator;
 
     std::vector <Configurator*> retval;
-    if (type == persist::asset_type::DATACENTER || subtype == persist::asset_subtype::UPS)
+    if (info.type == persist::asset_type::DATACENTER || info.subtype == persist::asset_subtype::UPS)
         retval.push_back (&iUptimeConfigurator);
 
-    switch (type) {
+    switch (info.type) {
         case persist::asset_type::DEVICE:
         {
-            switch (subtype) {
+            switch (info.subtype) {
                 case persist::asset_subtype::UPS:
                 case persist::asset_subtype::EPDU:
                 {

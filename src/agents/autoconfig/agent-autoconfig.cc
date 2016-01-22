@@ -201,7 +201,7 @@ void Autoconfig::onPoll( )
         if (it.second.configured)
             continue;
 
-        for (const auto& configurator : ConfiguratorFactory::getConfigurator (it.second.type, it.second.subtype)) {
+        for (const auto& configurator : ConfiguratorFactory::getConfigurator (it.second)) {
             if (configurator->configure (it.first, it.second, client ())) {
                 it.second.configured = true;
                 save = true;

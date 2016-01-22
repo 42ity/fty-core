@@ -33,7 +33,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 class ConfiguratorFactory
 {
  public:
-    static std::vector <Configurator*> getConfigurator (uint32_t type, uint32_t subtype); // TODO: std::reference_wrapper
+    static std::vector <Configurator*> getConfigurator (const AutoConfigurationInfo& info); // TODO: std::reference_wrapper for std::vector's
+                                                                                            //       template parameter Configurator*
 
     ConfiguratorFactory (const ConfiguratorFactory&) = delete;
     void operator= (const ConfiguratorFactory&)      = delete;
