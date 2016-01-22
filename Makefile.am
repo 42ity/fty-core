@@ -781,7 +781,8 @@ test_libbiosapiut_DEPENDENCIES = \
 check_PROGRAMS += 	test-autoconfig
 test_autoconfig_SOURCES = tests/agents/autoconfig/test-autoconfig.cc \
 						  src/agents/autoconfig/Configurator.h \
-                          src/agents/autoconfig/NUTConfigurator.h src/agents/autoconfig/NUTConfigurator.cc
+                          src/agents/autoconfig/NUTConfigurator.h src/agents/autoconfig/NUTConfigurator.cc \
+						  src/agents/autoconfig/RuleConfigurator.h src/agents/autoconfig/RuleConfigurator.cc
 
 
 test_autoconfig_LDADD = \
@@ -792,6 +793,7 @@ test_autoconfig_LDADD = \
 			libpriv-subprocess.la \
 			libpriv-nutscan.la \
 			libpriv-utils.la \
+			libpriv-utils-web.la \
 			libpriv-utils-plusplus.la
 
 test_autoconfig_LDFLAGS = $(LIBCZMQ_LIBS) $(CXXTOOLS_LIBS) -lcidr -lbiosapi -ltntdb
@@ -1179,7 +1181,9 @@ agent_autoconfig_SOURCES = \
 			src/agents/autoconfig/Configurator.h \
 			src/agents/autoconfig/ConfiguratorFactory.h src/agents/autoconfig/ConfiguratorFactory.cc \
 			src/agents/autoconfig/NUTConfigurator.h src/agents/autoconfig/NUTConfigurator.cc \
+			src/agents/autoconfig/RuleConfigurator.h src/agents/autoconfig/RuleConfigurator.cc \
 			src/agents/autoconfig/UpsEpduRuleConfigurator.h src/agents/autoconfig/UpsEpduRuleConfigurator.cc \
+			src/agents/autoconfig/DcRuleConfigurator.h src/agents/autoconfig/DcRuleConfigurator.cc \
 			src/agents/autoconfig/UptimeConfigurator.h src/agents/autoconfig/UptimeConfigurator.cc
 
 agent_autoconfig_LDADD = \
@@ -1193,6 +1197,7 @@ agent_autoconfig_LDADD = \
 			libpriv-defs.la \
 			libpriv-subprocess.la \
 			libpriv-utils-ymsg.la \
+			libpriv-utils-web.la \
 			libpriv-utils-plusplus.la
 
 # FIXME remove utils ymsg
