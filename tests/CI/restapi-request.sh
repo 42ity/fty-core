@@ -24,7 +24,6 @@
 # Defaults; note that SUT_WEB_PORT is guessed below based on ultimate SUT_HOST
 [ -z "$SUT_HOST" ] && SUT_HOST="127.0.0.1"
 [ x"${SUT_WEB_SCHEMA-}" = x- ] && SUT_WEB_SCHEMA=""
-[ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="http"
 
 # REST API returns JSON except one or two special cases
 [ -z "$WEBLIB_FUNC" ] && WEBLIB_FUNC="api_auth_get_json"
@@ -110,7 +109,13 @@ done
 if [ -z "$SUT_WEB_PORT" ]; then
     SUT_is_localhost \
     && SUT_WEB_PORT="8000" \
-    || SUT_WEB_PORT="80"
+    || SUT_WEB_PORT="443"
+fi
+
+if [ -z "$SUT_WEB_SCHEMA" ]; then
+    SUT_is_localhost \
+    && SUT_WEB_SCHEMA="http" \
+    || SUT_WEB_SCHEMA="https"
 fi
 
 # Include our standard routines for CI scripts
