@@ -32,7 +32,7 @@
 #include "db/assets.h"
 
 /*
- * Tool will send following messages on the stream METRIC
+ * Tool will send following messages on the stream METRICS
  *
  *  SUBJECT: end_warranty_date@device and warranty_expiration_date@device
  *           value ISO date
@@ -77,9 +77,9 @@ int main()
         exit (EXIT_FAILURE);
     }
 
-    r = mlm_client_set_producer (client, "METRIC");
+    r = mlm_client_set_producer (client, "METRICS");
     if (r == -1) {
-        log_error ("Can't set producer to METRIC stream");
+        log_error ("Can't set producer to METRICS stream");
         exit (EXIT_FAILURE);
     }
 
