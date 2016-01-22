@@ -91,7 +91,6 @@ test-cidr
 test-computation
 test-csv
 test-loadcsv
-test-db-alert
 test-db2
 test-log
 test-subprocess
@@ -108,18 +107,16 @@ test-autoconfig
 agent-inventory
 agent-dbstore
 agent-nut
-agent-alert
-agent-alert-smtp
 agent-autoconfig
 server-agent
 agent-cm
-bios-email
 bios-nutscan
 agent-tpower
 average
 generate_measurement
 outage
 test-outage
+warranty-metric
 bios-csv
 
 tests/junit/
@@ -157,10 +154,6 @@ tools/bios-nutconfig
 systemd/42-bios-systemd.preset
 !systemd/bios-db-init.service.in
 systemd/bios-db-init.service
-!systemd/bios-agent-alert.service.in
-systemd/bios-agent-alert.service
-!systemd/bios-agent-alert-smtp.service.in
-systemd/bios-agent-alert-smtp.service
 !systemd/bios-agent-cm.service.in
 systemd/bios-agent-cm.service
 !systemd/bios-agent-inventory.service.in
@@ -185,6 +178,8 @@ systemd/biostimer-graphs-prefetch@.service
 systemd/biostimer-graphs-prefetch__realpower.default@.service
 !systemd/biostimer-outage.service.in
 systemd/biostimer-outage.service
+!systemd/biostimer-warranty-metric.service.in
+systemd/biostimer-warranty-metric.service
 !systemd/ifplug-dhcp-autoconf.service.in
 systemd/ifplug-dhcp-autoconf.service
 !systemd/bios-ssh-last-resort.service.in
