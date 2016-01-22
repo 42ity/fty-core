@@ -39,6 +39,7 @@ DB_BASE="$DB_LOADDIR/initdb.sql"
 DB_DATA="$DB_LOADDIR/load_data.sql"
 DB_DATA_CURRENT="$DB_LOADDIR/current_data.sql"
 DB_DATA_TESTREST="$DB_LOADDIR/load_data_test_restapi.sql"
+export DB_LOADDIR DB_BASE DB_DATA
 
 DB_TOPOP_NAME="power_topology.sql"
 DB_TOPOP="$DB_LOADDIR/$DB_TOPOP_NAME"
@@ -77,6 +78,9 @@ CSV_TMP_DIR="$DB_DUMP_DIR"
 
 ### Expected results (saved in Git) are stored here:
 DB_RES_DIR="$CHECKOUTDIR/tests/CI/web/results"
+
+export DB_DUMP_DIR DB_TMPSQL_DIR DB_RES_DIR CSV_TMP_DIR
+export CSV_LOADDIR CSV_LOADDIR_TPOWER CSV_LOADDIR_ASSIMP CSV_LOADDIR_BAM
 
 ### Killing connections as we recreate the database can help ensure that the
 ### old data would not survive and be referred to by subsequent tests which
