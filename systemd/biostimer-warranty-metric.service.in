@@ -1,0 +1,19 @@
+[Unit]
+Description=BIOS-Timer service to send metrics about warranty date
+After=malamute.service bios-db-init.service
+Requires=malamute.service bios-db-init.service
+PartOf=bios.target
+
+[Service]
+Type=simple
+User=bios
+EnvironmentFile=-/etc/default/bios
+EnvironmentFile=-/etc/sysconfig/bios
+EnvironmentFile=-/etc/default/bios__%n.conf
+EnvironmentFile=-/etc/sysconfig/bios__%n.conf
+EnvironmentFile=-/etc/default/bios-db-ro
+PermissionsStartOnly=true
+ExecStart=@libexecdir@/@PACKAGE@/warranty-metrics
+
+[Install]
+WantedBy=bios.target
