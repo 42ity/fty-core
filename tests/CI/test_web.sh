@@ -93,6 +93,11 @@ NEED_BUILDSUBDIR=no determineDirs_default || true
 
 PATH="$PATH:/sbin:/usr/sbin"
 
+# Note: this default log filename will be ignored if already set by caller
+init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" ""
+# ERRCODE is maintained by settraps()
+settraps 'exit_summarizeTestedScriptlets ; exit_summarizeTestlibResults $ERRCODE'
+
 if [ "$SKIP_SANITY" = yes ]; then
     # This is hit e.g. when a wget-based "curl emulator" is used for requests
     logmsg_info "$0: REST API sanity checks skipped due to SKIP_SANITY=$SKIP_SANITY"
@@ -210,10 +215,6 @@ exit_summarizeTestedScriptlets() {
     fi
     return 0
 }
-
-# Note: this default log filename will be ignored if already set by caller
-init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" ""
-settraps 'wTRAP_RES=$?; exit_summarizeTestedScriptlets ; exit_summarizeTestlibResults $wTRAP_RES || exit $?; exit $wTRAP_RES'
 
 for i in $POSITIVE; do
     for NAME in *$i*; do

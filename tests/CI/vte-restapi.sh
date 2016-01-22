@@ -1,4 +1,4 @@
-#/!bin/sh
+#/!bin/bash
 #
 # Copyright (C) 2015 Eaton
 #
@@ -135,105 +135,12 @@ export PATH
 
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
 
-set -u
-set -e
-
-# TODO. TOHLE PREDELAT, ZATIM MOZNO VYNECHAT
-# zacatek vynechavky ********************************
-if [ 1 = 2 ]; then
-# NETSTAT ZAVOLAT PRES SSH
-# KONTROLOVAT PORT 80 PROCESS TNTNET A STAV LISTEN
-test_web_port() {
-    netstat -tan | grep -w "${SUT_WEB_PORT}" | egrep 'LISTEN' >/dev/null
-}
-fi
-# konec vynechavky **********************************
-
-logmsg_info "Ensuring that needed remote daemons are running on VTE"
-sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-cm bios-agent-dbstore bios-server-agent  bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
-sleep 5
-sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-cm bios-agent-dbstore bios-server-agent  bios-agent-nut bios-agent-inventory ; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
-    die "Some required services are not running on the VTE"
-
-# ***** AUTHENTICATION ISSUES *****
-# check SASL is working
-logmsg_info "Checking remote SASL Auth Daemon"
-sut_run "testsaslauthd -u '$BIOS_USER' -p '$BIOS_PASSWD' -s '$SASL_SERVICE'" && \
-  logmsg_info "saslauthd is responsive and configured well!" || \
-  logmsg_error "saslauthd is NOT responsive or not configured!" >&2
-
-# ***** FUNCTIONS *****
-    # *** starting the testcases
-test_web() {
-    echo "==== Calling vte-test_web.sh ==============================="
-    /bin/bash "${CHECKOUTDIR}"/tests/CI/vte-test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" \
-        -s "$SASL_SERVICE" -sh "$SUT_HOST" -su "$SUT_USER" -sp "$SUT_SSH_PORT" "$@"
-    RES_TW=$?
-    echo "==== test_web RESULT: ($RES_TW) =================================="
-    return $RES_TW
-}
-
-    # *** load default db setting
-ci_loaddb_default() {
-    echo "--------------- reset db: default ----------------"
-    loaddb_file "$DB_BASE" && \
-    LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
-    loaddb_file "$DB_DATA" && \
-    loaddb_file "$DB_DATA_TESTREST"
-}
-    # *** start the default set of TC
-test_web_default() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_default() $*"
-    ci_loaddb_default && \
-    test_web "$@"
-}
-
-test_web_asset_create() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_asset_create() $*"
-    echo "---------- reset db: asset : create ---------"
-    for data in "$DB_BASE" "$DB_DATA"; do
-          loaddb_file "$data" || exit $?
-    done
-    test_web "$@"
-}
-
-    # *** start the power topology set of TC
-test_web_topo_p() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_p() $*"
-    echo "----------- reset db: topology : power -----------"
-    loaddb_file "$DB_BASE" && \
-    LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
-    loaddb_file "$DB_TOPOP" && \
-    test_web "$@"
-}
-
-    # *** start the location topology set of TC
-test_web_topo_l() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_l() $*"
-    echo "---------- reset db: topology : location ---------"
-    loaddb_file "$DB_BASE" && \
-    LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
-    loaddb_file "$DB_TOPOL" && \
-    test_web "$@"
-}
-
-test_web_averages() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_averages() $*"
-    echo "----------- Re-generating averages sql files -----------"
-    CI_TEST_AVERAGES_DATA="`$DB_LOADDIR/generate_averages.sh "$DB_LOADDIR"`"
-    export CI_TEST_AVERAGES_DATA
-    echo "----------- reset db: averages -----------"
-    for data in "$DB_BASE" "$DB_DATA" "$DB_AVERAGES" "$DB_AVERAGES_RELATIVE"; do
-        loaddb_file "$data" || exit $?
-    done
-    test_web "$@"
-}
-
 RESULT_OVERALL=0
 trap_cleanup(){
     cleanTRAP_RES="${1-}"
     [ -n "$cleanTRAP_RES" ] || cleanTRAP_RES=0
     [ "$cleanTRAP_RES" = 0 ] && [ "$RESULT_OVERALL" != 0 ] && cleanTRAP_RES="$RESULT_OVERALL"
+    [ "$cleanTRAP_RES" != 0 ] && [ "$RESULT_OVERALL" = 0 ] && RESULT_OVERALL="$cleanTRAP_RES"
 
     ci_loaddb_default || cleanTRAP_RES=$?
     # ***** RESULTS *****
@@ -282,11 +189,115 @@ trap_cleanup(){
     exit $RESULT_OVERALL
 }
 
+# TODO. TOHLE PREDELAT, ZATIM MOZNO VYNECHAT
+# zacatek vynechavky ********************************
+if [ 1 = 2 ]; then
+# NETSTAT ZAVOLAT PRES SSH
+# KONTROLOVAT PORT 80 PROCESS TNTNET A STAV LISTEN
+test_web_port() {
+    netstat -tan | grep -w "${SUT_WEB_PORT}" | egrep 'LISTEN' >/dev/null
+}
+fi
+# konec vynechavky **********************************
+
+# ***** FUNCTIONS *****
+    # *** starting the testcases
+test_web() {
+    echo "==== Calling vte-test_web.sh ==============================="
+    RES_TW=0
+    /bin/bash "${CHECKOUTDIR}"/tests/CI/vte-test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" \
+        -s "$SASL_SERVICE" -sh "$SUT_HOST" -su "$SUT_USER" -sp "$SUT_SSH_PORT" "$@" || \
+        RES_TW=$?
+    echo "==== test_web RESULT: ($RES_TW) =================================="
+    return $RES_TW
+}
+
+    # *** load default db setting
+ci_loaddb_default() {
+    echo "--------------- reset db: default ----------------"
+    loaddb_file "$DB_BASE" && \
+    LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
+    loaddb_file "$DB_DATA" && \
+    loaddb_file "$DB_DATA_TESTREST" || return $?
+    return 0
+}
+    # *** start the default set of TC
+test_web_default() {
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_default() $*" || true
+    ci_loaddb_default && \
+    test_web "$@" || return $?
+    return 0
+}
+
+test_web_asset_create() {
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_asset_create() $*" || true
+    echo "---------- reset db: asset : create ---------"
+    for data in "$DB_BASE" "$DB_DATA"; do
+          loaddb_file "$data" || exit $?
+    done
+    test_web "$@" || return $?
+    return 0
+}
+
+    # *** start the power topology set of TC
+test_web_topo_p() {
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_p() $*" || true
+    echo "----------- reset db: topology : power -----------"
+    loaddb_file "$DB_BASE" && \
+    LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
+    loaddb_file "$DB_TOPOP" && \
+    test_web "$@" || return $?
+    return 0
+
+}
+
+    # *** start the location topology set of TC
+test_web_topo_l() {
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_l() $*" || true
+    echo "---------- reset db: topology : location ---------"
+    loaddb_file "$DB_BASE" && \
+    LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
+    loaddb_file "$DB_TOPOL" && \
+    test_web "$@" || return $?
+    return 0
+}
+
+test_web_averages() {
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_averages() $*" || true
+    echo "----------- Re-generating averages sql files -----------"
+    CI_TEST_AVERAGES_DATA="`$DB_LOADDIR/generate_averages.sh "$DB_LOADDIR"`"
+    export CI_TEST_AVERAGES_DATA
+    echo "----------- reset db: averages -----------"
+    for data in "$DB_BASE" "$DB_DATA" "$DB_AVERAGES" "$DB_AVERAGES_RELATIVE"; do
+        loaddb_file "$data" || exit $?
+    done
+    test_web "$@" || return $?
+    return 0
+}
+
+# ************** Prepare the test suite ***
+set -u
+#set -e
+
 # Ensure that no processes remain dangling when test completes
 # The ERRCODE is defined by settraps() as the program exitcode
 # as it enters the trap
-TRAP_SIGNALS=EXIT settraps 'ciTRAP_RES=$?; echo "CI-EXIT: $0: test finished (up to the proper exit($ciTRAP_RES) command)..." >&2; trap_cleanup $ciTRAP_RES'
-TRAP_SIGNALS="HUP INT QUIT TERM" settraps '[ "$ERRCODE" = 0 ] && ERRCODE=123; echo "CI-EXIT: $0: got signal, aborting test..." >&2; trap_cleanup $ERRCODE'
+settraps '[ "$ERRCODE" = 0 ] && ERRCODE=123; trap_cleanup $ERRCODE'
+TRAP_SIGNALS=EXIT settraps 'trap_cleanup $ERRCODE'
+
+logmsg_info "Ensuring that needed remote daemons are running on VTE"
+sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-cm bios-agent-dbstore bios-server-agent  bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
+sleep 5
+sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-cm bios-agent-dbstore bios-server-agent  bios-agent-nut bios-agent-inventory ; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
+    die "Some required services are not running on the VTE"
+
+# ***** AUTHENTICATION ISSUES *****
+# check SASL is working
+logmsg_info "Checking remote SASL Auth Daemon"
+sut_run "testsaslauthd -u '$BIOS_USER' -p '$BIOS_PASSWD' -s '$SASL_SERVICE'" && \
+  logmsg_info "saslauthd is responsive and configured well!" || \
+  logmsg_error "saslauthd is NOT responsive or not configured!" >&2
+
 
 [ x"${SKIP_LICENSE_FORCEACCEPT-}" = xyes ] && \
 logmsg_warn "SKIP_LICENSE_FORCEACCEPT=$SKIP_LICENSE_FORCEACCEPT so not running '00_license-CI-forceaccept.sh.test' first" || \
@@ -296,8 +307,8 @@ case "$*" in
         ;;
     *) # Try to accept the BIOS license on server
         init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "00_license-CI-forceaccept"
-        SKIP_SANITY=yes test_web 00_license-CI-forceaccept.sh.test || \
-            if [ x"$CITEST_QUICKFAIL" = xyes ] ; then
+        SKIP_SANITY=yes WEBLIB_CURLFAIL=no CITEST_QUICKFAIL=no WEBLIB_QUICKFAIL=no test_web 00_license-CI-forceaccept.sh.test || \
+            if [ x"$CITEST_QUICKFAIL" = xyes ] || [ x"$WEBLIB_QUICKFAIL" = xyes ] ; then
                 die "BIOS license not accepted on the server, subsequent tests will fail"
             else
                 logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
@@ -342,7 +353,7 @@ else
                 RESULT_OVERALL=$? ;;
             averages*)
                 test_web_averages "$1" || \
-                RESULT_OVERALL=$? ;;                
+                RESULT_OVERALL=$? ;;
             *)  test_web_default "$1" || \
                 RESULT_OVERALL=$? ;;
         esac

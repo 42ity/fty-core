@@ -63,6 +63,9 @@ kill_daemons() {
     return 0
 }
 
+# Ensure that no processes remain dangling when test completes
+settraps "kill_daemons"
+
 logmsg_info "Ensuring that the tested programs have been built and up-to-date"
 if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
     ./autogen.sh --nodistclean --configure-flags \
@@ -78,10 +81,6 @@ WEBTESTPID=$!
 logmsg_info "Spawning the agent-dbstore server in the background..."
 ${BUILDSUBDIR}/agent-dbstore &
 DBNGPID=$!
-
-# Ensure that no processes remain dangling when test completes
-TRAP_SIGNALS=EXIT settraps 'echo "CI-EXIT: $0: test finished (up to the proper exit command)..." >&2; kill_daemons'
-TRAP_SIGNALS="HUP INT QUIT TERM" settraps 'echo "CI-EXIT: $0: got signal, aborting test..." >&2; kill_daemons'
 
 # These are defined in testlib-db.sh
 loaddb_file "$DB_BASE"
@@ -220,9 +219,11 @@ for UPS in $UPS1 $UPS2 ; do
         [ x"${SKIP_LICENSE_FORCEACCEPT-}" = xyes ] && \
         logmsg_warn "SKIP_LICENSE_FORCEACCEPT=$SKIP_LICENSE_FORCEACCEPT so not running '00_license-CI-forceaccept.sh.test' first" || \
         ( BASE_URL='http://127.0.0.1:8000/api/v1'; export BASE_URL
+          SKIP_SANITY=yes; WEBLIB_CURLFAIL=no; CITEST_QUICKFAIL=no; WEBLIB_QUICKFAIL=no
+          export SKIP_SANITY WEBLIB_CURLFAIL CITEST_QUICKFAIL WEBLIB_QUICKFAIL
           . "`dirname $0`"/weblib.sh && \
           . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
-            if [ x"$CITEST_QUICKFAIL" = xyes ] ; then
+            if [ x"$CITEST_QUICKFAIL" = xyes ] || [ x"$WEBLIB_QUICKFAIL" = xyes ] ; then
                 die "BIOS license not accepted on the server, subsequent tests will fail"
             else
                 logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
