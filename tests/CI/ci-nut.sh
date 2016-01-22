@@ -34,9 +34,11 @@
 NEED_BUILDSUBDIR=no determineDirs_default || true
 . "`dirname $0`"/testlib.sh || die "Can not include common test script library"
 . "`dirname $0`"/testlib-db.sh || die "Can not include database test script library"
+. "`dirname $0`/testlib-nut.sh" || CODE=$? die "Can not include testlib-NUT script library"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 [ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
 [ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
+detect_nut_cfg_dir || CODE=$? die "NUT config dir not found"
 
 set -o pipefail || true
 set -u
@@ -59,55 +61,11 @@ SAMPLES=(
 )
 
 # NUT options
-CFGDIR=""
-USR=user1
-PSW=user1
 UPS1="UPS1-LAB"
 UPS2="UPS2-LAB"
-nut_cfg_dir() {
-    for cfgd in "/etc/ups" "/etc/nut"; do
-        if [ -d "$cfgd" ] ; then
-            CFGDIR="$cfgd"
-            break
-        fi
-    done
-    if [ "$CFGDIR" = "" ] ; then
-        die "NUT config dir not found"
-    fi
-}
 
-set_value_in_ups() {
-    local UPS="$(basename "$1" .dev)"
-    local PARAM="$2"
-    local VALUE="$3"
-
-    sed -r -e "s/^$PARAM *:.+"'$'"/$PARAM: $VALUE/i" <"$CFGDIR/$UPS.dev" >"$CFGDIR/$UPS.new" && \
-    mv -f "$CFGDIR/$UPS.new" "$CFGDIR/$UPS.dev" || \
-        logmsg_error "Could not generate '$CFGDIR/$UPS.dev'"
-
-    case "$UPS" in
-        ""|@*) logmsg_error "get_value_from_ups() got no reasonable UPS parameter ('$UPS')"; return 1 ;;
-        *@*) ;;
-        *)   UPS="$UPS@localhost" ;;
-    esac
-
-    upsrw -s "$PARAM=$VALUE" -u "$USR" -p "$PSW" "$UPS" >/dev/null 2>&1
-}
-
-get_value_from_ups() {
-    local UPS="$(basename "$1" .dev)"
-    local PARAM="$2"
-    case "$UPS" in
-        ""|@*) logmsg_error "get_value_from_ups() got no reasonable UPS parameter ('$UPS')"; return 1 ;;
-        *@*) ;;
-        *)   UPS="$UPS@localhost" ;;
-    esac
-    upsc "$UPS" "$PARAM"
-}
-
-create_ups_dev_file() {
+custom_create_ups_dev_file() {
     local FILE="$1"
-    logmsg_debug "create_ups_dev_file($FILE)"
     echo -e \
         "device.type: ups" \
         "\ndevice.model: B32" \
@@ -125,92 +83,7 @@ create_ups_dev_file() {
         "\noutlet.1.voltage: 220" \
         "\noutlet.2.voltage: 220" \
         "\nups.load: 10" \
-        "\nups.status: OL" \
-        > "$FILE" || CODE=$? die "create_ups_dev_file($FILE) FAILED ($?)"
-}
-
-list_nut_devices() {
-    awk '/^\[.+\]/{ print substr($0,2,index($0,"]") - 2); }' < "$CFGDIR/ups.conf"
-}
-
-have_nut_target() {
-    local STATE="`systemctl show nut-driver.target | egrep '^LoadState=' | cut -d= -f2`"
-    if [ "$STATE" = "not-found" ] ; then
-        echo N
-        return 1
-    else
-        echo Y
-        return 0
-    fi
-}
-
-stop_nut() {
-    if [ "$(have_nut_target)" = Y ] ; then
-        systemctl stop nut-server
-        systemctl stop "nut-driver@*"
-        systemctl disable "nut-driver@*"
-    else
-        systemctl stop nut-server.service
-        systemctl stop nut-driver.service
-    fi
-    sleep 3
-}
-
-start_nut() {
-    local ups
-    if [ "$(have_nut_target)" = Y ] ; then
-        for ups in $(list_nut_devices) ; do
-            systemctl enable "nut-driver@$ups" || return $?
-            systemctl start "nut-driver@$ups" || return $?
-        done
-        systemctl start nut-server || return $?
-    else
-        systemctl start nut-driver.service || return $?
-        systemctl start nut-server.service || return $?
-    fi
-    sleep 3
-}
-
-create_nut_config() {
-    stop_nut
-    test_it "create_nut_config"
-    RES=0
-
-    echo "MODE=standalone" > "$CFGDIR/nut.conf" || \
-        die "Can not tweak 'nut.conf'"
-
-    echo -e \
-        "[$UPS1]" \
-        "\ndriver=dummy-ups" \
-        "\nport=$UPS1.dev" \
-        "\ndesc=\"dummy-pdu in dummy mode\"" \
-        "\n" \
-        "\n[$UPS2]" \
-        "\ndriver=dummy-ups" \
-        "\nport=$UPS2.dev" \
-        "\ndesc=\"dummy-ups 2 in dummy mode\"" \
-        > "$CFGDIR/ups.conf" || \
-        die "Can not tweak 'ups.conf'"
-
-    echo -e \
-        "[$USR]" \
-        "\npassword=$PSW" \
-        "\nactions=SET" \
-        "\ninstcmds=ALL" \
-        > "$CFGDIR/upsd.users" || \
-        die "Can not tweak 'upsd.users'"
-
-    create_ups_dev_file "$CFGDIR/$UPS1.dev" || RES=$?
-    create_ups_dev_file "$CFGDIR/$UPS2.dev" || RES=$?
-
-    chown nut:root "$CFGDIR/"*.dev
-    logmsg_info "restart NUT server"
-    stop_nut || true
-    start_nut || RES=$?
-    logmsg_info "waiting for a while"
-    sleep 10
-    print_result $RES
-    return $RES
+        "\nups.status: OL"
 }
 
 expected_db_value() {
@@ -246,8 +119,7 @@ NSAM="${#SAMPLES[*]}"
 SAMPLESCNT="$(($NSAM/$NPAR - 1))"
 PARAMSCNT="$(($NPAR - 1))"
 
-nut_cfg_dir
-create_nut_config
+create_nut_config "$UPS1 $UPS2" ""
 
 logmsg_info "Starting the test"
 for UPS in $UPS1 $UPS2 ; do
