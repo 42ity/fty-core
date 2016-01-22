@@ -33,9 +33,11 @@
 NEED_BUILDSUBDIR=no determineDirs_default || true
 . "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
 # This should have pulled also testlib.sh and testlib-db.sh
+. "`dirname $0`/testlib-nut.sh" || CODE=$? die "Can not include testlib-NUT script library"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 [ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
 [ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
+detect_nut_cfg_dir || CODE=$? die "NUT config dir not found"
 
 # We customize the webserver config for this test
 XML_TNTNET="tntnet.xml"
@@ -48,27 +50,16 @@ set -u
 #set -x
 
 # NUT options
-CFGDIR=""
 UPS1="UPS1-US477"
 UPS2="UPS2-US477"
 UPS3="UPS3-US477"
-nut_cfg_dir() {
-    for cfgd in "/etc/ups" "/etc/nut"; do
-        if [ -d "$cfgd" ] ; then
-            CFGDIR="$cfgd"
-            break
-        fi
-    done
-    if [ "$CFGDIR" = "" ] ; then
-        die "NUT config dir not found"
-    fi
-}
 
 # Fill the .dev file for UPS parameters
 # arg1 : UPS name (for .dev file)
 # arg2 : Realpower value
-create_ups_device(){
-    DEVNAME="$1"
+# Wrapped to populate a file by testlib-nut::create_ups_dev_file()
+custom_create_ups_dev_file() {
+    DEVNAME="`basename "$1" .dev`"
     WATTS="$2"
     VOLTS="230"
     AMPS="`expr 14 \* $WATTS / $VOLTS / 10`"
@@ -88,50 +79,14 @@ ups.status: OL
 outlet.1.voltage: 230
 outlet.2.voltage: 230
 outlet.3.voltage: 230
-" > "${CFGDIR}/${DEVNAME}.dev" || \
-        die "Can not tweak '$DEVNAME.dev'"
+"
 }
 
-# Create a NUT config for 3 dummy UPS
-create_nut_config() {
-    test_it "create_nut_config"
-    echo "MODE=standalone" > "$CFGDIR/nut.conf" || \
-        die "Can not tweak 'nut.conf'"
-
-    echo "[$UPS1]
-driver=dummy-ups
-port=$UPS1.dev
-desc=\"dummy-ups 1 in dummy mode\" 
-
-[$UPS2]
-driver=dummy-ups
-port=$UPS2.dev
-desc=\"dummy-ups 2 in dummy mode\" 
-
-[$UPS3]
-driver=dummy-ups
-port=$UPS3.dev
-desc=\"dummy-ups 3 in dummy mode\"
-" > "$CFGDIR/ups.conf" || \
-        die "Can not tweak 'ups.conf'"
-
-    create_ups_device "$UPS1" 1500
-    create_ups_device "$UPS2" 700
-    create_ups_device "$UPS3" 1200
-
-    RES=0
-    chown nut:root "$CFGDIR"/*.dev || RES=$?
-    logmsg_info "restart NUT server"
-    systemctl stop nut-server
-    systemctl stop nut-driver
-    sleep 3
-    systemctl start nut-driver || RES=$?
-    sleep 3
-    systemctl start nut-server || RES=$?
-    logmsg_info "waiting for a while after applying NUT config"
-    sleep 15
-    print_results $RES
-    return $RES
+custom_create_ups_dev_files() {
+    # Called below via testlib-nut::create_nut_config()
+    create_ups_dev_file "$NUTCFGDIR/$UPS1" 1500
+    create_ups_dev_file "$NUTCFGDIR/$UPS2" 700
+    create_ups_dev_file "$NUTCFGDIR/$UPS3" 1200
 }
 
 # drop and fill the database
@@ -170,13 +125,13 @@ start_bios_daemons(){
         test_it "start_bios_daemons:$d"
         if [ -x "$INSTALLDIR/usr/local/bin/$d" ] ; then
             "$INSTALLDIR/usr/local/bin/$d" &
-            print_results $?
+            print_result $?
         else
             if [ -x "${BUILDSUBDIR}/$d" ] ; then
                 "${BUILDSUBDIR}/$d" &
-                print_results $?
+                print_result $?
             else
-                print_results 127
+                print_result 127
                 die "Can't find $d"
             fi
         fi
@@ -200,11 +155,11 @@ start_tntnet(){
           echo "</tntnet>"
         } >> "$SCRIPTDIR/$XML_TNTNET"
         tntnet -c "$SCRIPTDIR/$XML_TNTNET" &
-        print_results $?
+        print_result $?
     else
         logmsg_error "$XML_TNTNET not found"
         stop_processes
-        print_results 127
+        print_result 127
         exit 1
     fi
 }
@@ -214,15 +169,13 @@ start_tntnet(){
 init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" ""
 settraps 'stop_processes; exit_summarizeTestlibResults $ERRCODE'
 
-nut_cfg_dir
-
 for d in mysql saslauthd malamute ; do
     test_it "systemctl_start_3rdParty:$d"
     systemctl start $d
-    print_results $?
+    print_result $?
 done
 
-create_nut_config
+create_nut_config "" "" -- custom_create_ups_dev_files
 fill_database
 start_bios_daemons
 start_tntnet
