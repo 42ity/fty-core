@@ -1525,7 +1525,8 @@ SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL += \
                         biostimer-verify-fs.service
 
 SYSTEMD_UNITS_TIMERIMPL_TARGET_BIOS += \
-                        biostimer-graphs-prefetch@.service
+                        biostimer-graphs-prefetch@.service \
+                        biostimer-warranty-metric.service
 
 SYSTEMD_UNITS_TIMERIMPL += $(SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL) $(SYSTEMD_UNITS_TIMERIMPL_TARGET_BIOS)
 
@@ -1544,7 +1545,8 @@ SYSTEMD_TIMERS_TARGET_BIOS += \
                         biostimer-graphs-prefetch__average.humidity@24h.timer \
                         biostimer-graphs-prefetch__average.humidity@7d.timer \
                         biostimer-graphs-prefetch__average.humidity@30d.timer \
-                        biostimer-graphs-prefetch__realpower.default@24h.timer
+                        biostimer-graphs-prefetch__realpower.default@24h.timer \
+                        biostimer-warranty-metric.timer
 
 SYSTEMD_TIMERS += $(SYSTEMD_TIMERS_LOWLEVEL) $(SYSTEMD_TIMERS_TARGET_BIOS)
 
