@@ -22,7 +22,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "log.h"
 #include "measurements.h"
-#include "alerts.h"
 #include "asset_types.h"
 #include "defs.h"
 
@@ -487,22 +486,6 @@ db_reply_t
             log_error ("error during converting asset to monitor");
             return ret;
         }
-        // delete from alert devices
-        if ( monitor_element_id != 0 )
-        {
-            m_alrtdvc_id_t affected_rows = 0;
-            rv = delete_device_from_alert_device_all
-                (conn, monitor_element_id, affected_rows);
-            if ( rv != 0 )
-            {
-                db_reply_t ret = db_reply_new();
-                ret.status = 0;
-                ret.errtype = rv;
-                ret.errsubtype = rv;
-                log_error ("error during alert device deleting");
-                return ret;
-            }
-        }
     }
 
     auto reply_delete3 = delete_monitor_asset_relation_by_a
@@ -657,38 +640,7 @@ db_reply_t
             return ret;
         }
     }
-    // need delete devices from alerts, but alerts will stay in the system
     m_dvc_id_t monitor_element_id = 0;
-    {
-        // find monitor counterpart
-        int rv = convert_asset_to_monitor(conn, element_id, monitor_element_id);
-        if ( rv != 0 )
-        {
-            db_reply_t ret = db_reply_new();
-            ret.status = 0;
-            ret.errtype = rv;
-            ret.errsubtype = rv;
-            log_error ("error during converting asset to monitor");
-            return ret;
-        }
-        // delete from alert devices
-        if ( monitor_element_id != 0 )
-        {
-            m_alrtdvc_id_t affected_rows = 0;
-            rv = delete_device_from_alert_device_all
-                (conn, monitor_element_id, affected_rows);
-            if ( rv != 0 )
-            {
-                db_reply_t ret = db_reply_new();
-                ret.status = 0;
-                ret.errtype = rv;
-                ret.errsubtype = rv;
-                log_error ("error during alert device deleting");
-                return ret;
-            }
-        }
-    }
-
     auto reply_delete5 = delete_monitor_asset_relation_by_a
                                                 (conn, element_id);
     if ( reply_delete5.status == 0 )

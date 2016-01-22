@@ -27,6 +27,9 @@
  * \author Tomas Halman <TomasHalman@Eaton.com>
  * \brief Not yet documented file
  */
+
+#include <cxxtools/regex.h>
+
 #include "cleanup.h"
 #include "malamute.h"
 #include "monitor.h"
@@ -54,13 +57,14 @@ s_metric_store(zsock_t *pipe, void* args)
 {
     char* endpoint = (char*) args;
 
+    persist::TopicCache topic_cache{256};
+    cxxtools::Regex warranty_subject{"^(end_warranty_date|warranty_expiration_date)@.*$"};
+
     mlm_client_t *client = mlm_client_new ();
     mlm_client_connect (client, endpoint, 1000, "metric-store");
     mlm_client_set_consumer(client, "METRICS", ".*");
 
     zpoller_t *poller = zpoller_new (pipe, mlm_client_msgpipe (client), NULL);
-
-    persist::TopicCache topic_cache{256};
 
     zsock_signal (pipe, 0);
 
@@ -72,6 +76,10 @@ s_metric_store(zsock_t *pipe, void* args)
             break;
 
         zmsg_t *msg = mlm_client_recv (client);
+
+        if (warranty_subject.match (mlm_client_subject (client)))
+            continue;
+
         persist::process_measurement(&msg, topic_cache);
 
         zmsg_destroy (&msg);
@@ -146,17 +154,11 @@ int main (int argc, char *argv []) {
         // stream deliver
         else if (streq (command, "STREAM DELIVER")) {
 
-            const char *stream = bios_agent_address(client);
             if (strncmp(bios_agent_subject(client), "inventory", 9) == 0 ) {
                 log_debug ("inventory message recieved, ingore it. In future this should never happen");
             }
             else if (strncmp(bios_agent_subject(client), "configure", 9) == 0 ) {
                 log_debug ("configure message recieved, ingore it. In future this should never happen");
-            }
-            else if (strncmp(bios_agent_subject(client), "alert.", 6) == 0 ) {
-                ymsg_t* out = NULL;
-                char* out_subj = NULL;
-                persist::process_alert(&out, &out_subj, in,bios_agent_subject(client));
             }
         }
 
