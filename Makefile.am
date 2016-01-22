@@ -788,7 +788,7 @@ test_autoconfig_LDADD = \
 			libpriv-utils-web.la \
 			libpriv-utils-plusplus.la
 
-test_autoconfig_LDFLAGS = $(LIBCZMQ_LIBS) $(CXXTOOLS_LIBS) -lcidr -lbiosapi -ltntdb
+test_autoconfig_LDFLAGS = $(LIBCZMQ_LIBS) $(CXXTOOLS_LIBS) ${LIBMLM_LIBS} -lcidr -lbiosapi -ltntdb
 
 test_autoconfig_DEPENDENCIES = $(test_autoconfig_LDADD) \
 				libbiosapi.la
