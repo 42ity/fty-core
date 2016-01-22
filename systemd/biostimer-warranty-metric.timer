@@ -1,0 +1,14 @@
+[Unit]
+Description=BIOS-Timer to regularly send warranty metrics
+PartOf=bios.target
+
+[Timer]
+# Time to wait after booting before we run first time
+OnBootSec=60min
+### Run every night
+OnCalendar=*-*-* 04:20:00
+# Do not record last-execution times
+Persistent=false
+
+[Install]
+WantedBy=bios.target
