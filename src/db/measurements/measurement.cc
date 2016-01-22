@@ -281,11 +281,11 @@ int
     LOG_START;
 
     std::string topic;
-    // this should be here, as temperature and humidity for DC are not the
-    // measurements for DC, but for controller!!!!
-    // XXX: this should removed, when with logic everything would be ok
     if ( !fuzzy )
     {
+        // when it is not fuzzy, we need to search for the topic.
+        // But as input we have only src and id
+        // 1. found element_name
         std::string name;
         auto rep = select_device_name_from_element_id(conn, element_id, name);
         if (rep.rv != 0)
@@ -293,11 +293,15 @@ int
             log_error ("requested asset id = %" PRIu32 "doesn't exist", element_id);
             return 1;
         }
+        // gererate a topic
         topic = src + "@" + name;
     }
-    else
+    else {
+        // if it is fuzzy, we don't need to modify it
         topic = src;
+    }
     log_debug ("topic = %s", topic.c_str());
+
     return select_last_aggregated_by_topic_by_step(conn, topic, step, value, fuzzy);
 }
 
@@ -328,7 +332,7 @@ int
 
         m_msrmnt_tpc_id_t topic_id = 0;
         row["id"].get(topic_id);
-        return  select_last_aggregated_by_step(conn, topic_id, step, value);
+        return select_last_aggregated_by_step(conn, topic_id, step, value);
     }
     catch ( const tntdb::NotFound &e ){
         log_warning ("topic '%s' wasn't found, fuzzy = %s", topic.c_str(), fuzzy ? "true":"false");
@@ -444,19 +448,22 @@ select_measurement_last_web_byTopic (
     reply_t ret;
 
     std::string view;
-    if ( minutes_back <= 10 )
+    if ( minutes_back <= 10 ) {
         view = "v_web_measurement_10m";
     // TODO fix longer time period after demo
-    else // if ( minutes_back <= 60*24 )
-        view = "v_web_measurement_24h";
+    }
+    else { // if ( minutes_back <= 60*24 )
+        view = "v_bios_measurement";
+    }
     log_debug ("fuzzy %s", fuzzy ? " true " : " false ");
     int64_t max_time = 0 ;
     try {
         std::string query_max_time =
-        " SELECT max(timestamp) "
+        " SELECT max(v.timestamp) "
         " FROM " +
             view + " v " +
         " WHERE " +
+        "   v.timestamp > UNIX_TIMESTAMP() - :timeinterval AND "
         "   v.topic ";
         query_max_time += fuzzy ? " LIKE " : " = ";
         query_max_time += " :topic ";
@@ -464,6 +471,7 @@ select_measurement_last_web_byTopic (
 
         tntdb::Statement statement = conn.prepareCached(query_max_time);
         tntdb::Row row = statement.set("topic", topic).
+                                   set("timeinterval", minutes_back + 60*10).
                                    selectRow();
 
         log_debug("[%s]: were selected %" PRIu32 " rows," \
