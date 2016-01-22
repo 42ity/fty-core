@@ -27,7 +27,6 @@
 #
 
 ### Fixed settings for the test
-CFGDIR=""
 NUTUSER=nut
 NUTPASSWORD=secret
 DBUSER=root
@@ -39,40 +38,14 @@ DATABASE=box_utf8
 NEED_BUILDSUBDIR=no determineDirs_default || true
 . "`dirname $0`"/testlib.sh || die "Can not include common test script library"
 . "`dirname $0`"/testlib-db.sh || die "Can not include database test script library"
+. "`dirname $0`/testlib-nut.sh" || CODE=$? die "Can not include testlib-NUT script library"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 [ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
 [ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
+detect_nut_cfg_dir || CODE=$? die "NUT config dir not found"
 
-nut_cfg_dir() {
-    for cfgd in "/etc/ups" "/etc/nut"; do
-        if [ -d "$cfgd" ] ; then
-            CFGDIR="$cfgd"
-            break
-        fi
-    done
-    if [ "$CFGDIR" = "" ] ; then
-        die "NUT config dir not found"
-    fi
-}
-
-set_value_in_ups() {
-    local UPS="$(basename "$1" .dev)"
-    local PARAM="$2"
-    local VALUE="$3"
-
-    sed -i -r -e 's/^'"$PARAM"' *:.+$/'"$PARAM: $VALUE/i" "$CFGDIR/$UPS.dev"
-    upsrw -s "$PARAM=$VALUE" -u "$NUTUSER" -p "$NUTPASSWORD" "$UPS@localhost" >/dev/null 2>&1
-}
-
-get_value_from_ups() {
-    local UPS="$(basename "$1" .dev)"
-    local PARAM="$2"
-    upsc "$UPS" "$PARAM"
-}
-
-create_epdu_dev_file() {
+custom_create_epdu_dev_file() {
     local FILE="$1"
-    logmsg_debug "create_epdu_dev_file($FILE)"
     echo -e \
         "device.type: epdu" \
         "\ndevice.model: A12" \
@@ -98,13 +71,11 @@ create_epdu_dev_file() {
         "\noutlet.3.voltage: 230" \
         "\noutlet.4.current: 1.3" \
         "\noutlet.4.realpower: 25" \
-        "\noutlet.4.voltage: 230" \
-        > "$FILE" || CODE=$? die "create_epdu_dev_file($FILE) FAILED ($?)"
+        "\noutlet.4.voltage: 230"
 }
 
-create_ups_dev_file() {
+custom_create_ups_dev_file() {
     local FILE="$1"
-    logmsg_debug "create_ups_dev_file($FILE)"
     echo -e \
         "device.type: ups" \
         "\ndevice.model: B32" \
@@ -120,69 +91,14 @@ create_ups_dev_file() {
         "\nups.temperature: 25" \
         "\noutlet.realpower: 20" \
         "\nups.load: 10" \
-        "\nups.status: OL" \
-        > "$FILE" || CODE=$? die "create_ups_dev_file($FILE) FAILED ($?)"
-}
-
-create_nut_config() {
-    test_it "create_nut_config()"
-    echo "\nMODE=standalone" \
-        > "$CFGDIR/nut.conf" || \
-        die "Can not tweak 'nut.conf'"
-
-    echo -e \
-        "\n[epdu101_1_]" \
-        "\ndriver=dummy-ups" \
-        "\nport=epdu101_1_.dev" \
-        "\n" \
-        "\n[epdu101_2_]" \
-        "\ndriver=dummy-ups" \
-        "\nport=epdu101_2_.dev" \
-        "\n" \
-        "\n[ups103_1_]" \
-        "\ndriver=dummy-ups" \
-        "\nport=ups103_1_.dev" \
-        "\n" \
-        "\n[ups103_2_]" \
-        "\ndriver=dummy-ups" \
-        "\nport=ups103_2_.dev" \
-        "\n" \
-        > "$CFGDIR/ups.conf" || \
-        die "Can not tweak 'ups.conf'"
-
-    echo -e \
-        "\n[$NUTUSER]" \
-        "\npassword=$NUTPASSWORD" \
-        "\nactions=SET" \
-        "\ninstcmds=ALL" \
-        > "$CFGDIR/upsd.users" || \
-        die "Can not tweak 'upsd.users'"
-
-    create_epdu_dev_file "$CFGDIR/epdu101_1_.dev"
-    create_epdu_dev_file "$CFGDIR/epdu101_2_.dev"
-    create_ups_dev_file  "$CFGDIR/ups103_1_.dev"
-    create_ups_dev_file  "$CFGDIR/ups103_2_.dev"
-
-    RES=0
-    chown nut:root "$CFGDIR/"*.dev || RES=$?
-    logmsg_info "restart NUT server"
-    systemctl stop nut-server
-    systemctl stop nut-driver
-    sleep 3
-    systemctl start nut-driver || RES=$?
-    sleep 3
-    systemctl start nut-server || RES=$?
-    logmsg_info "waiting for a while after applying NUT config"
-    sleep 15
-    print_results $RES
-    return $RES
+        "\nups.status: OL"
 }
 
 random_thing(){
     local DEVICE="$1"
-    LINES="$(egrep -v '^device' "$CFGDIR/$DEVICE" | wc -l)"
+    LINES="$(egrep -v '^device' "$NUTCFGDIR/$DEVICE" | wc -l)"
     LINE="$(($RANDOM % $LINES + 1))"
-    egrep -v '^device' "$CFGDIR/$DEVICE" | sed -n -r -e 's/:.+//g' -e "${LINE}p"
+    egrep -v '^device' "$NUTCFGDIR/$DEVICE" | sed -n -r -e 's/:.+//g' -e "${LINE}p"
 }
 
 new_value() {
@@ -353,7 +269,6 @@ if [ "$(id -u)" != 0 ] ; then
     die "must run as root"
 fi
 
-nut_cfg_dir
 case "$ACTION" in
     samples)
         create_nut_config >/dev/null 2>&1
@@ -361,7 +276,7 @@ case "$ACTION" in
         ;;
     test)
         "$SCRIPTDIR/"ci-rc-bios.sh --stop
-        create_nut_config
+        create_nut_config "ups103_1_ ups103_2_" "epdu101_1_ epdu101_2_"
         "$SCRIPTDIR/"ci-empty-db.sh
         loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE"
         loaddb_file "$DB_RACK_POWER"
