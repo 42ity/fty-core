@@ -162,7 +162,7 @@ settraps() {
 ### TODO: Assign this default later in the script, after downloads
 VM="latest"
 [ -z "$IMGTYPE" ] && IMGTYPE="devel"
-[ -z "$OBS_IMAGES" ] && OBS_IMAGES="http://obs.roz53.lab.etn.com/images/"
+[ -z "$OBS_IMAGES" ] && OBS_IMAGES="http://tomcat.roz53.lab.etn.com/images/"
 [ -z "$APT_PROXY" ] && APT_PROXY='http://gate.roz53.lab.etn.com:3142'
 [ -n "$http_proxy" ] && export http_proxy
 
@@ -394,7 +394,7 @@ IMAGE_SKIP=""
 
 if [ "$ATTEMPT_DOWNLOAD" != no ] ; then
 	logmsg_info "Get the latest operating environment image prepared for us by OBS"
-	IMAGE_URL="`wget -O - $OBS_IMAGES/$IMGTYPE/$ARCH/ 2> /dev/null | sed -n 's|.*href="\(.*simpleimage.*\.'"$EXT"'\)".*|'"$OBS_IMAGES/$IMGTYPE/$ARCH"'/\1|p' | sed 's,\([^:]\)//,\1/,g'`"
+	IMAGE_URL="`wget -O - $OBS_IMAGES/${IMGTYPE}-image/master/$ARCH/ 2> /dev/null | sed -n 's|.*href="\(.*'"${IMGTYPE}"'-image.*\.'"$EXT"'\)".*|'"$OBS_IMAGES/${IMGTYPE}-image/master/$ARCH"'/\1|p' | sort | tail -n 1 | sed 's,\([^:]\)//,\1/,g'`"
 	IMAGE="`basename "$IMAGE_URL"`"
 
 	# Set up sleeping
