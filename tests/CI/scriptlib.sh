@@ -25,9 +25,9 @@
 #           The variable values may be set by caller or an earlier stage
 #           in script interpretation, otherwise they get defaulted here.
 
-# A bash-ism, should set the exitcode of the rightmost failed command
-# in a pipeline, otherwise e.g. exitcode("false | true") == 0
 if [ -n "${BASH-}" ]; then
+    # A bash-ism, should set the exitcode of the rightmost failed command
+    # in a pipeline, otherwise e.g. exitcode("false | true") == 0
     set -o pipefail 2>/dev/null || true
     echo_E() { echo -E "$@"; }
     echo_e() { echo -e "$@"; }
@@ -282,6 +282,21 @@ tee_stderr() {
     :
 }
 
+# This value can be set, at least in bash, to specify at which location
+# the caller of DIE was in the scripts
+SCRIPTLIB_DIE_FILENAME=""	# Which (maybe included) file caused the failure
+SCRIPTLIB_DIE_FUNCNAME=""	# Which function failed, maybe main(), source() etc
+SCRIPTLIB_DIE_LINENO=0  	# Which line in the file (or function) failed?
+SCRIPTLIB_DIE_SUBSHELL=-1	# Depth of automatic subshelling "()" "``" "$()"...
+# These are inherited from caller in any shell:
+SCRIPTLIB_DIE_SCRIPT_PATH=""
+SCRIPTLIB_DIE_SCRIPT_NAME=""
+SCRIPTLIB_DIE_SCRIPT_ARGS=""
+SCRIPTLIB_DIE_SCRIPT_ARGC=-1
+# This value is also a flag to decide if the SCRIPTLIB_DIE_* vars are to
+# be consulted in the settraps() handler below rather than autodetection
+# at the moment of trap execution (which may be already limited by shell).
+SCRIPTLIB_DIE_ERRCODE=-1
 die() {
     # The exit CODE can be passed as a variable, or as the first parameter
     # (if it is a number), both ways can be used for legacy reasons
@@ -293,8 +308,29 @@ die() {
     fi
     [ "$CODE" -ge 0 ] 2>/dev/null || CODE=1
     for LINE in "$@" ; do
-        echo_E "${LOGMSG_PREFIX}FATAL: ${_SCRIPT_PATH}:" "$LINE" >&2
+        echo_E "${LOGMSG_PREFIX-}FATAL: ${_SCRIPT_PATH-}:" "$LINE" >&2
     done
+    # Set common vars for settraps() standard handler
+    SCRIPTLIB_DIE_ERRCODE="${CODE}"
+    SCRIPTLIB_DIE_SCRIPT_PATH="${_SCRIPT_PATH-}"
+    SCRIPTLIB_DIE_SCRIPT_NAME="${_SCRIPT_NAME-}"
+    SCRIPTLIB_DIE_SCRIPT_ARGS="${_SCRIPT_ARGS-}"
+    SCRIPTLIB_DIE_SCRIPT_ARGC="${_SCRIPT_ARGC-}"
+    if [ -n "${BASH}" ]; then
+        # Detect who called die()
+        SCRIPTLIB_DIE_LINENO="${BASH_LINENO[0]-}"
+        SCRIPTLIB_DIE_FUNCNAME="${FUNCNAME[1]-}"
+        SCRIPTLIB_DIE_FILENAME="${BASH_SOURCE[1]}"
+        SCRIPTLIB_DIE_SUBSHELL="${BASH_SUBSHELL}"
+    else
+        # Definitions of LINENO vary greatly from shell to shell
+        # In practice must be >= 1 if defined at all
+        SCRIPTLIB_DIE_LINENO="${LINENO-}"
+        [ "$SCRIPTLIB_DIE_LINENO" -ge 1 ] 2>/dev/null || SCRIPTLIB_DIE_LINENO=0
+        SCRIPTLIB_DIE_FILENAME="${SCRIPTLIB_DIE_SCRIPT_NAME}"
+        SCRIPTLIB_DIE_FUNCNAME=""
+        SCRIPTLIB_DIE_SUBSHELL=-1
+    fi
     exit $CODE
 }
 
@@ -458,38 +494,189 @@ loaddb_file() {
 }
 
 loaddb_file_params() {
-    # 
+    # This routine allows to import the database file named in "$1",
+    # prepending some SQL "set" clauses to customize the "@" SQL vars.
+    # Due to limitations of MySQL "source" commmand, this is only local so far.
     if [ $# -eq 0 ]; then
         die "loaddb_file_param() requires parameters"
-    fi  
+    fi
     if [ -z "$1" -o ! -e "$1" ]; then
-        die "loaddb_file_param(): empty first parameter or file '$1' does not exist."
+        die "loaddb_file_param(): empty first parameter or file '$1' does not exist"
     fi
 
     local DBFILE="$1"
     shift
-    
+
     logmsg_info "$CI_DEBUGLEVEL_LOADDB" \
         "loaddb_file_params()::local: $DBFILE $@" >&2
 
     local E=
     local i=
-    for i in $@; do
+    for i in "$@"; do
         E="${E}set ${i};"
     done
     E="${E}source $DBFILE;"
-    mysql -u "${DBUSER}" -e "${E}" > /dev/null || \
-        CODE=$? die "Could not load database file: $DBFILE with params $@"
-    return 0        
+
+    if isRemoteSUT ; then
+        ### Push local SQL file contents to remote system and sleep a bit
+        logmsg_warn \
+            "loaddb_file_params($DBFILE, ...): Currently not implemented for remote execution: '${E}" >&2
+        return 32
+    else
+        mysql -u "${DBUSER}" -e "${E}" > /dev/null || \
+            CODE=$? die "Could not load database file: $DBFILE with params: '${E}'"
+    fi
+    return 0
 }
 
+settraps_exit_clear() {
+    # Reset the exit() handler to defaults, used in routines below
+    for SS in EXIT SIGEXIT 0 ERR SIGERR; do trap "-" "$SS" 2>/dev/null || true; done
+}
+
+settraps_nonfatal() {
+    # While the legacy common settraps() wraps the caller's custom handler "$*"
+    # with an exit(), this one is not fatal by itself, and it does not subshell
+    # as it is intended to be used for interrupts, etc. And for settraps() too.
+    # It detects and presets the variables that can be used by the caller's
+    # trap handler, including one from settraps() below. Variables include:
+    #   ERRCODE     Number of upstream exitcode that came into the trap
+    #   ERRSIGNAL   Name of the signal as registered (HUP or SIGEXIT etc.)
+    #   ERRFILE     File from which the trap was called, if we can guess it
+    #   ERRFUNC     Function inside which failure, exit() or die() happened
+    #   ERRLINE     Line in source file or function, if any (else empty)
+    #   ERRPOS      String that combines available bits of _SCRIPT_NAME
+    #               ERRFILE ERRFUNC ERRLINE into meaningful markup
+    #   ERRTEXT     String that meaningfully combines ERRPOS ERRCODE ERRSIGNAL
+    # The handler built into this routine does not report anything, it just
+    # sets the variables above and calls the caller's handle - such as the
+    # settrap() which reports stuff and exit()s with some code in the end.
+
+    # Not all trap names are recognized by all shells consistently
+    [ -z "${TRAP_SIGNALS-}" ] && TRAP_SIGNALS="EXIT QUIT TERM HUP INT ERR"
+    for P in "" SIG; do for S in $TRAP_SIGNALS ; do
+        if [ -n "$BASH" ] && [ "$S" = ERR ] ; then
+            # If "set -e" aka "set -o errexit" would be used, inherit the trap
+            set -o errtrace
+        fi
+        case "$1" in
+            -|"") trap "$1" "$P$S" 2>/dev/null || true ;;
+            *)    ERRHANDLER="$*"
+                  case "$ERRHANDLER" in
+                    *";"|*"; "|*";  ") ;;
+                    *)    ERRHANDLER="$ERRHANDLER ;" ;;
+                  esac
+                  trap 'ERRCODE=$?; ERRSIGNAL="'"$P$S"'"; \
+[ -z "${ERRIGNORE-}" ] && ERRIGNORE=no
+if [ "$ERRSIGNAL" = "ERR" ] || [ "$ERRSIGNAL" = "SIGERR" ]; then
+    set -o | egrep -i "^errexit.*off$" >/dev/null && ERRIGNORE=yes
+fi
+if [ "$ERRIGNORE" = no ]; then
+  if [ -n "${SCRIPTLIB_DIE_ERRCODE-}" ] && [ "$SCRIPTLIB_DIE_ERRCODE" -ge 0 ] 2>/dev/null; then
+    ERRFILE="$SCRIPTLIB_DIE_FILENAME"
+    ERRFUNC="$SCRIPTLIB_DIE_FUNCNAME"
+    ERRLINE="$SCRIPTLIB_DIE_LINENO"
+    ERRCODE="$SCRIPTLIB_DIE_ERRCODE"
+  else
+    SCRIPTLIB_DIE_ERRCODE=""
+    [ -n "${LINENO-}" ] && [ "$LINENO" -gt 0 ] 2>/dev/null && ERRLINE="$LINENO" || ERRLINE=""
+    ERRFILE="${_SCRIPT_NAME}"; ERRFUNC=""
+    if [ -n "${BASH-}" ] 2>/dev/null; then
+        ERRFUNC="${FUNCNAME[0]-}" || ERRFUNC=""
+        ERRLINE="${BASH_LINENO[0]}" || ERRLINE=0
+        [ "$ERRLINE" -eq 0 ] && ERRLINE="${LINENO-}"
+        [ -n "$ERRLINE" ] && [ "$ERRLINE" -gt 1 ] || ERRLINE=""
+        ERRFILE="${BASH_SOURCE[0]}"
+    fi
+  fi
+  ERRPOS="${ERRFILE}${ERRLINE:+:$ERRLINE}${ERRFUNC:+ :: $ERRFUNC()}"
+  [ "`basename "${_SCRIPT_NAME}"`" = "`basename "${ERRFILE}"`" ] || ERRPOS="${_SCRIPT_NAME} => $ERRPOS"
+  ERRTEXT="script ($ERRPOS) due to trapped signal ($ERRSIGNAL) with exit-code ($ERRCODE)"
+  [ -n "${SCRIPTLIB_DIE_ERRCODE-}" ] && ERRTEXT="$ERRTEXT, using die()"
+  { (settraps_exit_clear; exit $ERRCODE 2>/dev/null 2>&1); '"$ERRHANDLER"' } ;
+else ERRIGNORE=""; fi ;' \
+                    "$P$S" 2>/dev/null || true
+                  ;;
+        esac
+    done; done
+}
+
+# These variables are tested for equality to "yes" when the trap is processed.
+#   When a trap is handled by settraps(), should any message be printed?
+[ -n "${SCRIPTLIB_TRAPWRAP_PRINT_MESSAGE-}" ] && [ x"${SCRIPTLIB_TRAPWRAP_PRINT_MESSAGE-}" != "x-" ] || \
+    if [ "$CI_DEBUG" -ge "$CI_DEBUGLEVEL_ERROR" ]; then
+        SCRIPTLIB_TRAPWRAP_PRINT_MESSAGE="yes"
+    else
+        SCRIPTLIB_TRAPWRAP_PRINT_MESSAGE="yes"
+    fi
+#   If SCRIPTLIB_TRAPWRAP_PRINT_MESSAGE==yes and cause is exit(0), still print?
+[ -n "${SCRIPTLIB_TRAPWRAP_PRINT_EXIT0-}" ] && [ x"${SCRIPTLIB_TRAPWRAP_PRINT_EXIT0-}" != "x-" ] || \
+    if [ "$CI_DEBUG" -ge "$CI_DEBUGLEVEL_DEBUG" ]; then
+        SCRIPTLIB_TRAPWRAP_PRINT_EXIT0="yes"
+    else
+        SCRIPTLIB_TRAPWRAP_PRINT_EXIT0="no"
+    fi
+#   If SCRIPTLIB_TRAPWRAP_PRINT_MESSAGE==yes and we have a shell with func-call
+#   history like bash, print also a stack trace of the failure?
+[ -n "${SCRIPTLIB_TRAPWRAP_PRINT_STACKTRACE-}" ] && [ x"${SCRIPTLIB_TRAPWRAP_PRINT_STACKTRACE-}" != "x-" ] || \
+    if [ "$CI_DEBUG" -ge "$CI_DEBUGLEVEL_DEBUG" ]; then
+        SCRIPTLIB_TRAPWRAP_PRINT_STACKTRACE="yes"
+    else
+        SCRIPTLIB_TRAPWRAP_PRINT_STACKTRACE="no"
+    fi
+
 settraps() {
-        # Not all trap names are recognized by all shells consistently
-        [ -z "${TRAP_SIGNALS-}" ] && TRAP_SIGNALS="EXIT QUIT TERM HUP INT"
-        for P in "" SIG; do for S in $TRAP_SIGNALS ; do
-                case "$1" in
-                -|"") trap "$1" $P$S 2>/dev/null || true ;;
-                *)    trap 'ERRCODE=$?; { '"$*"' ;}; exit $ERRCODE;' $P$S 2>/dev/null || true ;;
-                esac
-        done; done
+    # Sets up or clear traps defined in $TRAP_SIGNALS (or falls back to default
+    # list of signals) to report the trap, call consumer's handler, and if that
+    # routine does not exit() the shell by itself - the wrapper would exit with
+    # either that handler's non-zero return code or with original trapped code.
+    # The ERR* variables reported here are defined by settraps_nonfatal() above
+    case "$1" in
+        -|"") settraps_nonfatal "$1" || true ;;
+        *)    ERRHANDLER="$*"
+              case "$ERRHANDLER" in
+                *";"|*"; "|*";  ") ;;
+                *)    ERRHANDLER="$ERRHANDLER ;" ;;
+              esac
+              settraps_nonfatal 'if [ "$SCRIPTLIB_TRAPWRAP_PRINT_MESSAGE" = yes ]\
+; then
+    echo ""
+    if [ "$ERRCODE" = 0 ]; then
+        if [ "$SCRIPTLIB_TRAPWRAP_PRINT_EXIT0" = yes ] || \
+            [ "$ERRSIGNAL" != 0 -a "$ERRSIGNAL" != EXIT -a "$ERRSIGNAL" != SIGEXIT ] \
+        ; then
+            LOGMSG_PREFIX="CI-SIGNALTRAP-" logmsg_info "Completing $ERRTEXT"
+        fi
+    else
+        echo ""; echo "!!!!!!!!!"
+        LOGMSG_PREFIX="CI-SIGNALTRAP-" logmsg_error "Aborting $ERRTEXT"
+        echo "!!!!!!!!!"
+    fi
+    echo ""
+    if [ "$SCRIPTLIB_TRAPWRAP_PRINT_STACKTRACE" = yes ] && [ -n "$BASH" ]; then
+        echo "======= Stack trace and other clues of the failure:"
+        echo "  Depth of sub-shelling (BASH_SUBSHELL) = $BASH_SUBSHELL"
+        printf "  Depth of function call stack = ${#FUNCNAME[@]} : "
+        if [ "${#FUNCNAME[@]}" -gt 0 ] ; then
+            printf "::%s" ${FUNCNAME[@]}
+        else
+            printf "failed in main body of main script"
+        fi
+        printf "\n"
+        i=0
+        while [ "$i" -lt "${#FUNCNAME[@]}" ] ; do
+            echo "  ($i)	-> in ${FUNCNAME[$i]-}() at ${BASH_SOURCE[$i+1]-}:${BASH_LINENO[$i]-}"
+            i=$(($i+1))
+        done
+        echo "	~> in ${ERRFUNC:-main-script-body}() at $ERRFILE:$ERRLINE"
+        echo "======= End of stack trace, $_SCRIPT_NAME:$LINENO"
+        echo ""
+    fi
+fi >&2
+settraps_exit_clear
+{ '"$ERRHANDLER"' } || exit $?
+exit $ERRCODE;' \
+                || true
+              ;;
+    esac
 }

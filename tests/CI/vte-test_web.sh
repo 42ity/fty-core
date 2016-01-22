@@ -136,6 +136,15 @@ echo $SUT_WEB_PORT
 
 PATH="$PATH:/sbin:/usr/sbin"
 
+# Note: this default log filename will be ignored if already set by caller
+init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" ""
+# ERRCODE is maintained by settraps()
+settraps 'exit_summarizeTestedScriptlets ; exit_summarizeTestlibResults $ERRCODE'
+
+# A bash-ism, should set the exitcode of the rightmost failed command
+# in a pipeline, otherwise e.g. exitcode("false | true") == 0
+set -o pipefail 2>/dev/null || true
+
     # *** is sasl running on SUT?
 if [ "$(sut_run 'pidof saslauthd'|wc -l| sed 's, ,,g')" -gt 0 ];then
     logmsg_info "saslauthd is running"
@@ -157,19 +166,19 @@ if [ $? != 0 -o -z "$LINE" ]; then
     CODE=2 die "BIOS_USER absent on remote system"
 fi >&2
 
-# is bios access to sasl right?
-SASLTEST=$(sut_run "which testsaslauthd")
-LINE="$(sut_run "$SASLTEST -u '$BIOS_USER' -p '$BIOS_PASSWD' -s '$SASL_SERVICE'")"
-if [ $? != 0 -o -z "$LINE" ]; then
-    CODE=3 die "SASL autentication for user '$BIOS_USER' has failed." \
-        "Please check the existence of /etc/pam.d/bios (and maybe" \
-        "/etc/sasl2/bios.conf for some OS distributions)"
-fi
-
 if [ "$SKIP_SANITY" = yes ]; then
     # This is hit e.g. when a wget-based "curl emulator" is used for requests
     logmsg_info "$0: REST API sanity checks skipped due to SKIP_SANITY=$SKIP_SANITY"
 else
+    # is bios access to sasl right?
+    SASLTEST=$(sut_run "which testsaslauthd")
+    LINE="$(sut_run "$SASLTEST -u '$BIOS_USER' -p '$BIOS_PASSWD' -s '$SASL_SERVICE'")"
+    if [ $? != 0 -o -z "$LINE" ]; then
+        CODE=3 die "SASL autentication for user '$BIOS_USER' has failed." \
+            "Please check the existence of /etc/pam.d/bios (and maybe" \
+            "/etc/sasl2/bios.conf for some OS distributions)"
+    fi
+
     logmsg_info "Testing webserver ability to serve the REST API"
     # is web server running?
 
@@ -253,13 +262,6 @@ exit_summarizeTestedScriptlets() {
     return 0
 }
 
-# Note: this default log filename will be ignored if already set by caller
-init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" ""
-settraps 'wTRAP_RES=$?; exit_summarizeTestedScriptlets ; exit_summarizeTestlibResults $wTRAP_RES || exit $?; exit $wTRAP_RES'
-
-# A bash-ism, should set the exitcode of the rightmost failed command
-# in a pipeline, otherwise e.g. exitcode("false | true") == 0
-set -o pipefail 2>/dev/null || true
 
 # TODO: Port recent changes from main test_web.sh
 # ... or merge these two via sut_run() commands etc.
