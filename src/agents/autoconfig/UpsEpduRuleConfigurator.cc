@@ -23,7 +23,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "log.h"
-#include "str_defs.h"
 #include "asset_types.h"
 
 #include "UpsEpduRuleConfigurator.h"
@@ -50,21 +49,6 @@ std::string UpsEpduRuleConfigurator::makeRule (const std::string& alert, const s
         "  }\n"
         "}";
 };
-
-bool UpsEpduRuleConfigurator::sendNewRule (const std::string& rule, mlm_client_t *client)
-{
-    if (!client)
-        return false;
-    zmsg_t *message = zmsg_new ();
-    zmsg_addstr (message, "ADD");
-    zmsg_addstr (message, rule.c_str());
-    if (mlm_client_sendto (client, BIOS_AGENT_NAME_ALERT_AGENT, "rfc-evaluator-rules", NULL, 5000, &message) != 0) {
-        zsys_error ("mlm_client_sendto (address = '%s', subject = '%s', timeout = '5000') failed.",
-                BIOS_AGENT_NAME_ALERT_AGENT, "rfc-evaluator-rules");
-        return false;
-    }
-    return true;
-}
 
 bool UpsEpduRuleConfigurator::v_configure (const std::string& name, const AutoConfigurationInfo& info, mlm_client_t *client)
 {

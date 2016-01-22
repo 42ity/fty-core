@@ -22,23 +22,19 @@ with this program; if not, write to the Free Software Foundation, Inc.,
  \author Tomas Halman <TomasHalman@Eaton.com>
 */
 
-#ifndef SRC_AGENTS_AUTOCONFIG_UPSEPDURULECONFIGURATOR_H__
-#define SRC_AGENTS_AUTOCONFIG_UPSEPDURULECONFIGURATOR_H__
+#ifndef SRC_AGENTS_AUTOCONFIG_DCRULECONFIGURATOR_H__
+#define SRC_AGENTS_AUTOCONFIG_DCRULECONFIGURATOR_H__
 
 #include <string>
 
 #include "RuleConfigurator.h"
 
-class UpsEpduRuleConfigurator : public RuleConfigurator {
+class DcRuleConfigurator : public RuleConfigurator {
  public:
-    bool v_configure (const std::string& name, const AutoConfigurationInfo& info, mlm_client_t *client); 
-    
-    // helper methods
-    // TODO: re-do using parent's methods
-    std::string makeRule (const std::string& alert, const std::string& bit, const std::string& device, const std::string& description) const;
+    bool v_configure (const std::string& name, const AutoConfigurationInfo& info, mlm_client_t *client);
 
-    virtual ~UpsEpduRuleConfigurator() {};
+    virtual ~DcRuleConfigurator() {};
+
 };
 
-#endif // SRC_AGENTS_AUTOCONFIG_UPSEPDURULECONFIGURATOR_H__
-
+#endif // SRC_AGENTS_AUTOCONFIG_DCRULECONFIGURATOR_H__

@@ -38,8 +38,7 @@ std::vector <Configurator*> ConfiguratorFactory::getConfigurator (uint32_t type,
     static UptimeConfigurator iUptimeConfigurator;
 
     std::vector <Configurator*> retval;
-    // TODO: Ask MVY if is sure about type == asset_subtype comparison
-    if (type == persist::asset_type::DATACENTER || type == persist::asset_subtype::UPS)
+    if (type == persist::asset_type::DATACENTER || subtype == persist::asset_subtype::UPS)
         retval.push_back (&iUptimeConfigurator);
 
     switch (type) {

@@ -192,7 +192,7 @@ TEST_CASE ("utils::json::escape","[utils::math::dtos][json][escape]")
     }
 }
 
-TEST_CASE ("utils::json::jsonify","[utils::json::make][json][escape]")
+TEST_CASE ("utils::json::jsonify","[utils::json::jsonify][json][escape]")
 {
     // 
     int var_int = -1;
@@ -215,6 +215,13 @@ TEST_CASE ("utils::json::jsonify","[utils::json::make][json][escape]")
     std::string str = const_char;
     std::string& str_ref = str;
     std::string* str_ptr = &str;
+
+    //
+    std::vector<std::string> vector_str{"j\nedna", "dva", "tri"};
+    std::vector<int> vector_int{1, 2, 3};
+
+    std::list<std::string> list_str{"styri", "p\"at", "sest", "sedem"};
+    std::list<int> list_int{4, -5, 6, 7};
 
     std::string x; // temporary result placeholder
     
@@ -274,11 +281,26 @@ TEST_CASE ("utils::json::jsonify","[utils::json::make][json][escape]")
         CHECK ( x.compare (R"("*const char with a '\"' quote and newline \n '\\\"'")") == 0);
 
     }
+    
+    SECTION ("single parameter ('iterable standard container') invocation") {
+
+        x = utils::json::jsonify (vector_str);
+        CHECK ( x.compare (R"([ "j\nedna", "dva", "tri" ])") == 0);
+    
+        x = utils::json::jsonify (vector_int);
+        CHECK ( x.compare (R"([ 1, 2, 3 ])") == 0);
+    
+        x = utils::json::jsonify (list_str);
+        CHECK ( x.compare (R"([ "styri", "p\"at", "sest", "sedem" ])") == 0);
+    
+        x = utils::json::jsonify (list_int);
+        CHECK ( x.compare (R"([ 4, -5, 6, 7 ])") == 0);
+    
+    }
 
     SECTION ("pairs") {
         x = utils::json::jsonify (*str_ptr, var_int64_t);
         CHECK ( x.compare (std::string(R"("*const char with a '\"' quote and newline \n '\\\"'" : )") + std::to_string (var_int64_t)) == 0);
-
         
         x = utils::json::jsonify ("hey\"!\n", str_ref);
         CHECK ( x.compare (R"("hey\"!\n" : "*const char with a '\"' quote and newline \n '\\\"'")") == 0);
@@ -288,6 +310,14 @@ TEST_CASE ("utils::json::jsonify","[utils::json::make][json][escape]")
 
         x = utils::json::jsonify (var_uint64_t, str);
         CHECK ( x.compare (std::string ("\"") + std::to_string (var_uint64_t) + "\" : " + R"("*const char with a '\"' quote and newline \n '\\\"'")") == 0 ); 
+
+
+        x = utils::json::jsonify ("test", vector_str);
+        CHECK ( x.compare (std::string ("\"test\" : ").append (R"([ "j\nedna", "dva", "tri" ])")) == 0);
+
+
+        x = utils::json::jsonify (4, vector_int);
+        CHECK ( x.compare (std::string ("\"4\" : ").append ("[ 1, 2, 3 ]")) == 0);
     }
 }
 
