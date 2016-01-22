@@ -62,6 +62,7 @@ if pgrep malamute; then
     #[ -s ${BUILDSUBDIR}/malamute.pid ] || \
     #   pidof malamute > ${BUILDSUBDIR}/malamute.pid
     #exit 1
+    settraps "true"
 else
     malamute /etc/malamute/malamute.cfg &
     [ $? = 0 ] && MALAMUTE_STARTED=yes
