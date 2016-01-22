@@ -27,11 +27,13 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include <string>
 
+#include "preproc.h"
+
 #include "Configurator.h"
 
 class RuleConfigurator : public Configurator {
  public:
-    virtual bool v_configure (const std::string& name, const AutoConfigurationInfo& info, mlm_client_t *client) { return false; };
+    virtual bool v_configure (const std::string& name, const AutoConfigurationInfo& info, mlm_client_t *client);
     bool sendNewRule (const std::string& rule, mlm_client_t *client);
 
     std::string makeThresholdRule (

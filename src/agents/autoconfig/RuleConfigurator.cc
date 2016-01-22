@@ -105,3 +105,7 @@ std::string RuleConfigurator::makeThresholdRule (
     return result;    
 }
 
+bool RuleConfigurator::v_configure (UNUSED_PARAM const std::string& name, UNUSED_PARAM const AutoConfigurationInfo& info, UNUSED_PARAM mlm_client_t *client)
+{
+    return false;
+}
