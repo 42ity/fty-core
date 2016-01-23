@@ -683,13 +683,13 @@ settraps() {
     fi
     echo ""
     if [ "$SCRIPTLIB_TRAPWRAP_PRINT_STACKTRACE" = yes ] && [ -n "$BASH" ]; then
-        echo "======= Stack trace and other clues of the failure:"
+        echo "======= Stack trace and other clues of the end-of-work:"
         echo "  Depth of sub-shelling (BASH_SUBSHELL) = $BASH_SUBSHELL"
         printf "  Depth of function call stack = ${#FUNCNAME[@]-} : "
         if [ "${#FUNCNAME[@]-}" -gt 0 ] 2>/dev/null; then
             printf "::%s" ${FUNCNAME[@]-}
         else
-            printf "failed in main body of main script"
+            printf "finished in main body of main script"
         fi
         printf "\n"
         i=0
