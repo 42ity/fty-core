@@ -190,7 +190,7 @@ testcase() {
             test_it "verify_total_power_restapi:$RACK:$UPS:$SAMPLECURSOR"
             TP="$(awk -vX=${LASTPOW[0]} -vY=${LASTPOW[1]} 'BEGIN{ print X + Y; }')"
             URL="/metric/computed/rack_total?arg1=$RACK&arg2=total_power"
-            POWER="$(api_get "$URL" | awk '/total_power/{ print $NF; }')"
+            POWER="$(api_get "$URL" >/dev/null && echo "$OUT_CURL" | awk '/total_power/{ print $NF; }')"
             STR1="$(printf "%f" "$TP")"  # this returns "2000000.000000"
             STR2="$(printf "%f" "$POWER")"  # also returns "2000000.000000"
             DEL="$(awk -vX=${STR1} -vY=${STR2} 'BEGIN{ print int( 10*(X - Y) - 0.5 ); }')"
