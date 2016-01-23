@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Copyright (C) 2014-2015 Eaton
 #
@@ -764,7 +764,7 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 		sleep 30
 		echo "Running $INSTALLER against the VM '$VM' (via chroot)..."
 		set +e
-		chroot ../rootfs/$VM/ /bin/sh < "$INSTALLER"
+		chroot ../rootfs/$VM/ /bin/bash < "$INSTALLER"
 		echo "Result of installer script: $?"
 		set -e
 	else
