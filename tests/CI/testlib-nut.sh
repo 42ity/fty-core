@@ -115,10 +115,12 @@ have_nut_target() {
 
 stop_nut() {
     if [ "$(have_nut_target)" = Y ] ; then
+        logmsg_info "Stopping NUT server via systemctl using nut-driver@ instances"
         systemctl stop nut-server
         systemctl stop "nut-driver@*"
         systemctl disable "nut-driver@*"
     else
+        logmsg_info "Stopping NUT server via systemctl using monolithic nut-driver"
         systemctl stop nut-server.service
         systemctl stop nut-driver.service
     fi
@@ -128,6 +130,7 @@ stop_nut() {
 start_nut() {
     local ups
     if [ "$(have_nut_target)" = Y ] ; then
+        logmsg_info "Starting NUT server via systemctl using nut-driver@ instances"
         for ups in $(list_nut_devices) ; do
             systemctl enable "nut-driver@$ups" || return $?
             systemctl start "nut-driver@$ups" || return $?
@@ -135,6 +138,7 @@ start_nut() {
         sleep 3
         systemctl start nut-server || return $?
     else
+        logmsg_info "Starting NUT server via systemctl using nut-driver@ instances"
         systemctl start nut-driver.service || return $?
         sleep 3
         systemctl start nut-server.service || return $?
@@ -197,7 +201,6 @@ create_nut_config() {
     fi
 
     chown nut:root "$NUTCFGDIR/"*.dev
-    logmsg_info "Restarting NUT server"
     start_nut || RES=$?
     logmsg_info "Waiting for a while after applying NUT config"
     sleep 10

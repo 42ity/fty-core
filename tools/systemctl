@@ -33,7 +33,7 @@ else
     echo "systemctl: WARNING: It seems you execute '$0' not with 'bash' - this can fail!" >&2
 fi
 
-SYSTEMCTL_COMMANDS="show start stop restart enable disable status"
+SYSTEMCTL_COMMANDS="show start stop restart enable disable daemon-reload status is-active"
 
 # TODO: Match this up with web/systemctl.ecpp and maybe the Makefile variables
 # List of fixed strings that are good both for "case" and regexp matching
@@ -41,9 +41,10 @@ SYSTEMCTL_UNITS_COMMON="mariadb mysql mysqld ntp ntpd ntpdate sntp bios \
                  bios-reset-button tntnet@bios bios-agent-alert-smtp    \
                  bios-agent-alert bios-agent-autoconfig bios-agent-cm   \
                  bios-agent-dbstore bios-agent-inventory bios-agent-nut \
-                 agent-th bios-agent-tpower bios-db-init           \
+                 agent-th bios-agent-tpower bios-db-init                \
                  bios-server-agent                                      \
-                 malamute saslauthd networking nut-monitor nut-server"
+                 malamute saslauthd networking                          \
+                 nut-driver nut-monitor nut-server"
 
 # For regexp matching
 SYSTEMCTL_UNITS_REGEX='nut-driver@[^[:blank:]]*'
@@ -215,7 +216,7 @@ then
     shift 2
     while [ $# -gt 0 ]; do
         case "$1" in
-            --all|-a|--full|-l)
+            --all|-a|--full|-l|--quiet)
                 SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
             *) echo "Action not allowed" >&2; exit 1;;
         esac
