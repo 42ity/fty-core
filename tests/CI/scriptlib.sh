@@ -656,15 +656,15 @@ settraps() {
     if [ "$SCRIPTLIB_TRAPWRAP_PRINT_STACKTRACE" = yes ] && [ -n "$BASH" ]; then
         echo "======= Stack trace and other clues of the failure:"
         echo "  Depth of sub-shelling (BASH_SUBSHELL) = $BASH_SUBSHELL"
-        printf "  Depth of function call stack = ${#FUNCNAME[@]} : "
-        if [ "${#FUNCNAME[@]}" -gt 0 ] ; then
-            printf "::%s" ${FUNCNAME[@]}
+        printf "  Depth of function call stack = ${#FUNCNAME[@]-} : "
+        if [ "${#FUNCNAME[@]-}" -gt 0 ] 2>/dev/null; then
+            printf "::%s" ${FUNCNAME[@]-}
         else
             printf "failed in main body of main script"
         fi
         printf "\n"
         i=0
-        while [ "$i" -lt "${#FUNCNAME[@]}" ] ; do
+        while [ "$i" -lt "${#FUNCNAME[@]-}" ] ; do
             echo "  ($i)	-> in ${FUNCNAME[$i]-}() at ${BASH_SOURCE[$i+1]-}:${BASH_LINENO[$i]-}"
             i=$(($i+1))
         done
