@@ -277,7 +277,6 @@ else
     sed -i 's|PathChanged=/etc|PathChanged=/mnt/nand/overlay/etc|' /usr/lib/systemd/system/composite-metrics\@.path
 fi
 # Services not part of core
-systemctl enable dc_th.timer
 systemctl enable bios-agent-legacy-metrics
 systemctl enable bios-agent-alert-generator
 
