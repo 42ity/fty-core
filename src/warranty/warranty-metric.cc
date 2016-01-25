@@ -34,7 +34,7 @@
 /*
  * Tool will send following messages on the stream METRICS
  *
- *  SUBJECT: end_warranty_date@device and warranty_expiration_date@device
+ *  SUBJECT: end_warranty_date@device
  *           value ISO date
  */
 
