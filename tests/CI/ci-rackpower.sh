@@ -177,8 +177,7 @@ testcase() {
             TYPE2="$(echo "$UPS"|egrep '^epdu'|wc -l)"
             test_it "configure_total_power_nut:$RACK:$UPS:$SAMPLECURSOR"
             if [[ "$TYPE2" -eq 1 ]]; then
-                # Note: ePDU can fail to set ups.realpower, it is ok
-                set_value_in_ups "$UPS" "$PARAM1" 0 0 || true
+                set_value_in_ups "$UPS" "$PARAM1" 0 0 || logmsg_info "Note: ePDU can fail to set ups.realpower, it is OK"
                 set_value_in_ups "$UPS" "$PARAM2" "$NEWVALUE"
                 print_result $?
             else
