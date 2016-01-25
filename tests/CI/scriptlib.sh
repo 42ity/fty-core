@@ -683,7 +683,7 @@ settraps() {
     fi
     echo ""
     if [ "$SCRIPTLIB_TRAPWRAP_PRINT_STACKTRACE" = yes ] && [ -n "$BASH" ]; then
-        echo "======= Stack trace and other clues of the end-of-work:"
+        echo "======= Stack trace and other clues of the end-of-work (code=$ERRCODE, sig=$ERRSIGNAL):"
         echo "  Depth of sub-shelling (BASH_SUBSHELL) = $BASH_SUBSHELL"
         if [ -z "${FUNCNAME-}" ] || [ -z "${FUNCNAME[0]}" ]; then
             FUNCDEPTH=-1
