@@ -55,18 +55,20 @@ set_value_in_ups() {
     local UPS="$(basename "$1" .dev)"
     local PARAM="$2"
     local VALUE="$3"
+    local RES=0
 
     sed -r -e "s/^$PARAM *:.+"'$'"/$PARAM: $VALUE/i" <"$NUTCFGDIR/$UPS.dev" >"$NUTCFGDIR/$UPS.new" && \
     mv -f "$NUTCFGDIR/$UPS.new" "$NUTCFGDIR/$UPS.dev" || \
-        logmsg_error "Could not generate '$NUTCFGDIR/$UPS.dev'"
+        { RES=$?; logmsg_error "Could not generate '$NUTCFGDIR/$UPS.dev'"; }
 
     case "$UPS" in
-        ""|@*) logmsg_error "get_value_from_ups() got no reasonable UPS parameter ('$UPS')"; return 1 ;;
+        ""|@*) logmsg_error "set_value_from_ups() got no reasonable UPS parameter ('$UPS')"; return 1 ;;
         *@*) ;;
         *)   UPS="$UPS@localhost" ;;
     esac
 
-    upsrw -s "$PARAM=$VALUE" -u "$NUTUSER" -p "$NUTPASSWORD" "$UPS" >/dev/null 2>&1
+    upsrw -s "$PARAM=$VALUE" -u "$NUTUSER" -p "$NUTPASSWORD" "$UPS" >/dev/null || RES=$?
+    return $RES
 }
 
 get_value_from_ups() {
@@ -87,7 +89,7 @@ create_ups_dev_file() {
     logmsg_debug "create_ups_dev_file($FILE)"
     ( custom_create_ups_dev_file "$@" ) \
         > "$FILE" \
-        || CODE=$? die "create_ups_dev_file($FILE) FAILED ($?)"
+        || CODE=$? logmsg_error "create_ups_dev_file($FILE) FAILED ($?)"
 }
 
 create_epdu_dev_file() {
@@ -95,7 +97,7 @@ create_epdu_dev_file() {
     logmsg_debug "create_epdu_dev_file($FILE)"
     ( custom_create_epdu_dev_file "$@" ) \
         > "$FILE" \
-        || CODE=$? die "create_epdu_dev_file($FILE) FAILED ($?)"
+        || CODE=$? logmsg_error "create_epdu_dev_file($FILE) FAILED ($?)"
 }
 
 list_nut_devices() {
@@ -148,7 +150,7 @@ start_nut() {
 
 create_nut_config() {
     local DUMMY_UPSES="${1-}"; shift    # space-separated list
-    local DUMMY_EPDUS="${2-}"; shift
+    local DUMMY_EPDUS="${1-}"; shift
     if [ $# -gt 0 ] && [ x"${1-}" != x-- ]; then
         die "Bad call to create_nut_config('$DUMMY_UPSES', '$DUMMY_EPDUS'; eval '$*')!"
     fi
@@ -167,7 +169,8 @@ create_nut_config() {
         die "Can not tweak 'nut.conf'"
 
     { for DEV in $DUMMY_UPSES ; do
-        create_ups_dev_file "$NUTCFGDIR/$DEV.dev" || RES=$?
+        create_ups_dev_file "$NUTCFGDIR/$DEV.dev" && \
+            logmsg_debug "create_ups_dev_file '$NUTCFGDIR/$DEV.dev' - OK" || RES=$?
         echo -e \
             "[$DEV]" \
             "\ndriver=dummy-ups" \
@@ -176,7 +179,8 @@ create_nut_config() {
             "\n"
       done
       for DEV in $DUMMY_EPDUS ; do
-        create_epdu_dev_file "$NUTCFGDIR/$DEV.dev" || RES=$?
+        create_epdu_dev_file "$NUTCFGDIR/$DEV.dev" && \
+            logmsg_debug "create_epdu_dev_file '$NUTCFGDIR/$DEV.dev' - OK" || RES=$?
         echo -e \
             "[$DEV]" \
             "\ndriver=dummy-ups" \
