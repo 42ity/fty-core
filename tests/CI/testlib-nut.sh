@@ -57,9 +57,14 @@ set_value_in_ups() {
     local VALUE="$3"
     local RES=0
 
+    logmsg_debug "set_value_in_ups('$UPS' '$PARAM' '$VALUE')..."
+    egrep '^'"$PARAM"' *:' <"$NUTCFGDIR/$UPS.dev" >/dev/null || \
+        logmsg_warn "Parameter '$PARAM' is not set in file '$NUTCFGDIR/$UPS.dev'"
+
     sed -r -e "s/^$PARAM *:.+"'$'"/$PARAM: $VALUE/i" <"$NUTCFGDIR/$UPS.dev" >"$NUTCFGDIR/$UPS.new" && \
+    egrep '^'"$PARAM"' *: *'"$VALUE"' *$' <"$NUTCFGDIR/$UPS.new" >/dev/null && \
     mv -f "$NUTCFGDIR/$UPS.new" "$NUTCFGDIR/$UPS.dev" || \
-        { RES=$?; logmsg_error "Could not generate '$NUTCFGDIR/$UPS.dev'"; }
+        { RES=$?; logmsg_error "set_value_from_ups() could not generate '$NUTCFGDIR/$UPS.dev' with new '$PARAM=$VALUE' setting"; }
 
     case "$UPS" in
         ""|@*) logmsg_error "set_value_from_ups() got no reasonable UPS parameter ('$UPS')"; return 1 ;;
@@ -67,19 +72,30 @@ set_value_in_ups() {
         *)   UPS="$UPS@localhost" ;;
     esac
 
-    upsrw -s "$PARAM=$VALUE" -u "$NUTUSER" -p "$NUTPASSWORD" "$UPS" >/dev/null || RES=$?
+    upsrw -s "$PARAM=$VALUE" -u "$NUTUSER" -p "$NUTPASSWORD" "$UPS" >/dev/null || \
+        { logmsg_warn "set_value_from_ups() could not upsrw the '$PARAM=$VALUE' setting onto '$UPS' in real-time";
+          [ "$RES" = 0 ] && sleep 2; }
+        # The "sleep" above allows dummy-ups to roll around the end of file
+        # and propagate the setting, if it is available in that config file
+    [ "$RES" = 0 ] && logmsg_debug "set_value_in_ups('$UPS' '$PARAM' '$VALUE') - OK"
     return $RES
 }
 
 get_value_from_ups() {
     local UPS="$(basename "$1" .dev)"
     local PARAM="$2"
+    logmsg_debug "get_value_from_ups('$UPS' '$PARAM')..."
+    RES=0
     case "$UPS" in
         ""|@*) logmsg_error "get_value_from_ups() got no reasonable UPS parameter ('$UPS')"; return 1 ;;
         *@*) ;;
         *)   UPS="$UPS@localhost" ;;
     esac
-    upsc "$UPS" "$PARAM"
+    VALUE="`upsc "$UPS" "$PARAM"`" || \
+        { RES=$?; logmsg_error "get_value_from_ups() could not upsc the '$PARAM' setting from '$UPS'"; }
+    [ "$RES" = 0 ] && logmsg_debug "get_value_from_ups('$UPS' '$PARAM') - got '$VALUE' - OK"
+    echo "$VALUE"
+    return $RES
 }
 
 # Before using these wrappers, caller must define custom_create_ups_dev_file()
@@ -117,12 +133,12 @@ have_nut_target() {
 
 stop_nut() {
     if [ "$(have_nut_target)" = Y ] ; then
-        logmsg_info "Stopping NUT server via systemctl using nut-driver@ instances"
+        logmsg_info "Stopping NUT server via systemctl using nut-driver@ instances" >&2
         systemctl stop nut-server
         systemctl stop "nut-driver@*"
         systemctl disable "nut-driver@*"
     else
-        logmsg_info "Stopping NUT server via systemctl using monolithic nut-driver"
+        logmsg_info "Stopping NUT server via systemctl using monolithic nut-driver" >&2
         systemctl stop nut-server.service
         systemctl stop nut-driver.service
     fi
@@ -131,8 +147,13 @@ stop_nut() {
 
 start_nut() {
     local ups
+    local F
+    for F in ups.conf upsmon.conf ; do
+        [ -s "$NUTCFGDIR/$F" ] && [ -r "$NUTCFGDIR/$F" ] || \
+            logmsg_warn "start_nut(): '$NUTCFGDIR/$F' should be a non-empty readable file"
+    done
     if [ "$(have_nut_target)" = Y ] ; then
-        logmsg_info "Starting NUT server via systemctl using nut-driver@ instances"
+        logmsg_info "Starting NUT server via systemctl using nut-driver@ instances" >&2
         for ups in $(list_nut_devices) ; do
             systemctl enable "nut-driver@$ups" || return $?
             systemctl start "nut-driver@$ups" || return $?
@@ -140,7 +161,7 @@ start_nut() {
         sleep 3
         systemctl start nut-server || return $?
     else
-        logmsg_info "Starting NUT server via systemctl using nut-driver@ instances"
+        logmsg_info "Starting NUT server via systemctl using nut-driver@ instances" >&2
         systemctl start nut-driver.service || return $?
         sleep 3
         systemctl start nut-server.service || return $?
@@ -169,6 +190,7 @@ create_nut_config() {
         die "Can not tweak 'nut.conf'"
 
     { for DEV in $DUMMY_UPSES ; do
+        logmsg_debug "Creating config snippet for device: dummy UPS: $DEV"
         create_ups_dev_file "$NUTCFGDIR/$DEV.dev" && \
             logmsg_debug "create_ups_dev_file '$NUTCFGDIR/$DEV.dev' - OK" || RES=$?
         echo -e \
@@ -179,6 +201,7 @@ create_nut_config() {
             "\n"
       done
       for DEV in $DUMMY_EPDUS ; do
+        logmsg_debug "Creating config snippet for device: dummy ePDU: $DEV"
         create_epdu_dev_file "$NUTCFGDIR/$DEV.dev" && \
             logmsg_debug "create_epdu_dev_file '$NUTCFGDIR/$DEV.dev' - OK" || RES=$?
         echo -e \
