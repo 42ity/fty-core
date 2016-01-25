@@ -136,6 +136,7 @@ for(
         "start_bios",
         "test_db_tests",
         "test_restapi",
+        "test_iface",
         "test_netcfg",
         "test_NUT",
         "test_rackpower",
