@@ -125,6 +125,8 @@ custom_create_ups_dev_file() {
     if [ "$TYPE" = "epdu" ] ; then
         echo "# epdu power sequence file
 device.type: epdu
+manufacturer: ci-rackpower dummy ePDU
+model: `basename "$FILE" .dev`
 outlet.realpower: 0
 #outlet.1.voltage: 220
 #outlet.2.voltage: 220
@@ -133,6 +135,8 @@ outlet.realpower: 0
     else
         echo "# ups power sequence file
 device.type: ups
+manufacturer: ci-rackpower dummy UPS
+model: `basename "$FILE" .dev`
 ups.realpower: 0
 outlet.realpower: 0
 #battery.charge: 90
@@ -173,7 +177,8 @@ testcase() {
             TYPE2="$(echo "$UPS"|egrep '^epdu'|wc -l)"
             test_it "configure_total_power_nut:$RACK:$UPS:$SAMPLECURSOR"
             if [[ "$TYPE2" -eq 1 ]]; then
-                set_value_in_ups "$UPS" "$PARAM1" 0 0 && \
+                # Note: ePDU can fail to set ups.realpower, it is ok
+                set_value_in_ups "$UPS" "$PARAM1" 0 0 || true
                 set_value_in_ups "$UPS" "$PARAM2" "$NEWVALUE"
                 print_result $?
             else
