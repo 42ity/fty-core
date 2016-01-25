@@ -1,4 +1,5 @@
 #!/bin/bash
+# NOTE: Bash or compatible syntax interpreter required in code below
 #
 # Copyright (C) 2014-2016 Eaton
 #
@@ -137,7 +138,7 @@ for UPS in $UPS1 $UPS2 ; do
 
             test_it "verify_value_in_ups:$UPS:$PARAM:$NEWVALUE"
             OUT="`get_value_from_ups "$UPS" "$PARAM"`"
-            if [ $? = 0 ] && [ x"$OUT" = x"$NEWVALUE" ]; then  
+            if [[ $? = 0 ]] && [[ x"$OUT" = x"$NEWVALUE" ]]; then
                 print_result 0
             else
                 print_result 1 "Failed to set $PARAM value to $NEWVALUE in NUT dummy driver"
@@ -151,10 +152,11 @@ for UPS in $UPS1 $UPS2 ; do
             test_it "verify_value_in_db:$UPS:$PARAM:$NEWVALUE"
             SELECT='select count(*) from t_bios_measurement where timestamp >= '"UNIX_TIMESTAMP('$TIME') and value = $(expected_db_value "$PARAM" "$NEWVALUE");"
             #echo $SELECT
-            if [[ "$(do_select "$SELECT")" -eq 1 ]]; then
+            OUT="$(do_select "$SELECT")"
+            if [[ $? = 0 ]] && [[ "$OUT" -eq 1 ]]; then
                 print_result 0
             else
-                print_result 2 "Looking for exactly one result failed: $SELECT"
+                print_result 2 "Looking for exactly one result failed: got '$OUT' for query: $SELECT"
             fi
         done
     done
