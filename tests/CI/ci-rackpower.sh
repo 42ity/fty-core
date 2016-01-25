@@ -48,6 +48,7 @@ PATH="$BUILDSUBDIR/tools:$CHECKOUTDIR/tools:${DESTDIR:-/root}/libexec/bios:/usr/
 export PATH
 
 WEBTESTPID=""
+AGNUTPID=""
 DBNGPID=""
 kill_daemons() {
     set +e
@@ -55,18 +56,22 @@ kill_daemons() {
         logmsg_info "Killing make web-test PID $WEBTESTPID to exit"
         kill -INT "$WEBTESTPID"
     fi
+    if [ -n "$AGNUTPID" -a -d "/proc/$AGNUTPID" ]; then
+        logmsg_info "Killing agent-nut PID $AGNUTPID to exit"
+        kill -INT "$AGNUTPID"
+    fi
     if [ -n "$DBNGPID" -a -d "/proc/$DBNGPID" ]; then
         logmsg_info "Killing agent-dbstore PID $DBNGPID to exit"
         kill -INT "$DBNGPID"
     fi
 
-    killall -INT tntnet agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
-    killall      tntnet agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
+    killall -INT tntnet agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
+    killall      tntnet agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
 
-    ps -ef | grep -v grep | egrep "tntnet|agent-dbstore" | egrep "^`id -u -n` " && \
+    ps -ef | grep -v grep | egrep "tntnet|agent-nut|agent-dbstore" | egrep "^`id -u -n` " && \
         ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
-        logmsg_error "tntnet and/or agent-dbstore still alive, trying SIGKILL" && \
-        { killall -KILL tntnet agent-dbstore lt-agent-dbstore 2>/dev/null ; exit 1; }
+        logmsg_error "tntnet and/or agent-dbstore and/or agent-nut still alive, trying SIGKILL" && \
+        { killall -KILL tntnet agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null ; exit 1; }
 
     return 0
 }
@@ -89,6 +94,10 @@ WEBTESTPID=$!
 logmsg_info "Spawning the agent-dbstore server in the background..."
 ${BUILDSUBDIR}/agent-dbstore &
 DBNGPID=$!
+
+logmsg_info "Spawning the agent-nut server in the background..."
+${BUILDSUBDIR}/agent-nut &
+AGNUTPID=$!
 
 # These are defined in testlib-db.sh
 test_it "initialize_db_rackpower"
