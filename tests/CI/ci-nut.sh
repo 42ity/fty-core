@@ -186,7 +186,7 @@ for UPS in $UPS1 $UPS2 ; do
             NEWVALUE="${SAMPLES[$SAMPLECURSOR+$i]}"
             test_it "set_value_in_ups:$UPS:$PARAM:$NEWVALUE"
             set_value_in_ups "$UPS" "$PARAM" "$NEWVALUE"
-            print_result $?
+            print_result $? "Failed to set $PARAM value to $NEWVALUE in NUT dummy driver"
             sleep 1 # give time to nut dummy driver for change
 
             test_it "verify_value_in_ups:$UPS:$PARAM:$NEWVALUE"
@@ -194,7 +194,7 @@ for UPS in $UPS1 $UPS2 ; do
             if [[ $? = 0 ]] && [[ x"$OUT" = x"$NEWVALUE" ]]; then
                 print_result 0
             else
-                print_result 1 "Failed to set $PARAM value to $NEWVALUE in NUT dummy driver"
+                print_result 1 "Failed to see that we could set $PARAM value to $NEWVALUE in NUT dummy driver"
             fi
         done
         sleep 8  # 8s is max time for propagating into DB (poll every 5s in nut actor + some time to process)
