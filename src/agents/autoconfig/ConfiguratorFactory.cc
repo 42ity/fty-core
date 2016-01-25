@@ -22,24 +22,41 @@ with this program; if not, write to the Free Software Foundation, Inc.,
  \author Tomas Halman <TomasHalman@Eaton.com>
 */
 
+#include <unistd.h>
+
 #include "log.h"
 #include "asset_types.h"
 
-#include "NUTConfigurator.h" 
+#include "NUTConfigurator.h"
 #include "UpsEpduRuleConfigurator.h"
 #include "UptimeConfigurator.h"
+#include "DCTHConfigurator.h"
 
 #include "ConfiguratorFactory.h"
+
+static bool
+    s_is_rc (const AutoConfigurationInfo &info)
+{
+    // Form ID from hostname and agent name
+    char hostname[HOST_NAME_MAX];
+    ::gethostname(hostname, HOST_NAME_MAX);
+    return (info.attributes.count("hostname.1") == 1 && info.attributes.at("hostname.1") == hostname);
+}
 
 std::vector <Configurator*> ConfiguratorFactory::getConfigurator (const AutoConfigurationInfo& info)
 {
     static NUTConfigurator iNUTConfigurator;
     static UpsEpduRuleConfigurator iUpsEpduRuleConfigurator;
     static UptimeConfigurator iUptimeConfigurator;
+    static DCTHConfigurator iDCTHConfigurator;
 
     std::vector <Configurator*> retval;
+
     if (info.type == persist::asset_type::DATACENTER || info.subtype == persist::asset_subtype::UPS)
         retval.push_back (&iUptimeConfigurator);
+
+    if (info.type == persist::asset_type::DATACENTER || s_is_rc (info))
+        retval.push_back (&iDCTHConfigurator);
 
     switch (info.type) {
         case persist::asset_type::DEVICE:
