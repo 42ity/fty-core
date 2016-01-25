@@ -33,6 +33,7 @@ std::string UpsEpduRuleConfigurator::makeRule (const std::string& alert, const s
         "\"single\" : {\n"
         "    \"rule_name\"     :   \"" + alert + "-" + device + "\",\n"
         "    \"target\"        :   [\"status.ups@" + device + "\"],\n"
+        "    \"values\"        :   [],\n"
         "    \"element\"       :   \"" + device + "\",\n"
         "    \"results\"       :   [ {\"high_critical\"  : { \"action\" : [ \"EMAIL\" ], \"description\" : \""+description+"\" }} ],\n"
         "    \"evaluation\"    : \""
