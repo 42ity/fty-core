@@ -58,7 +58,7 @@ s_metric_store(zsock_t *pipe, void* args)
     char* endpoint = (char*) args;
 
     persist::TopicCache topic_cache{256};
-    cxxtools::Regex warranty_subject{"^(end_warranty_date|warranty_expiration_date)@.*$"};
+    cxxtools::Regex warranty_subject{"^end_warranty_date@.*$"};
 
     mlm_client_t *client = mlm_client_new ();
     mlm_client_connect (client, endpoint, 1000, "metric-store");

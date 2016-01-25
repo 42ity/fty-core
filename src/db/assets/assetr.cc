@@ -930,8 +930,6 @@ int
             "   v.id = t.id_asset_element "
             " WHERE "
             "   t.keytag='end_warranty_date' "
-            " OR "
-            "   t.keytag='warranty_expiration_date' "
             );
 
         tntdb::Result res = st.select();
