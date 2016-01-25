@@ -200,7 +200,7 @@ produce_events(){
             # check last 5 min data
             TS6MINAGO="`date '+%s' --date '6 minutes ago'`"
             test_it "check_measurement_flow_for_last_6min:line=$NUMLINE:now=$NOW"
-            CNT6MIN="`do_select 'select count(*) from t_bios_measurement where timestamp > ( $TS6MINAGO )'`"
+            CNT6MIN="`do_select 'select count(*) from t_bios_measurement where timestamp > ( '"${TS6MINAGO}"' )'`"
             if [[ "$CNT6MIN" -eq "0" ]] ; then
                 # no data flow
                 logmsg_error "nothing appeared in measurement table in last 6 minutes"
@@ -271,7 +271,7 @@ fi
 
 case "$ACTION" in
     samples)
-        create_nut_config >/dev/null 2>&1
+        create_nut_config "ups103_1_ ups103_2_" "epdu101_1_ epdu101_2_" >/dev/null 2>&1
         create_random_samples "$TIME" "$FREQ"
         ;;
     test)
