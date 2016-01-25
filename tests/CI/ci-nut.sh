@@ -187,7 +187,7 @@ for UPS in $UPS1 $UPS2 ; do
             test_it "set_value_in_ups:$UPS:$PARAM:$NEWVALUE"
             set_value_in_ups "$UPS" "$PARAM" "$NEWVALUE"
             print_result $?
-            sleep 2 # give time to nut dummy driver for change
+            sleep 1 # give time to nut dummy driver for change
 
             test_it "verify_value_in_ups:$UPS:$PARAM:$NEWVALUE"
             OUT="`get_value_from_ups "$UPS" "$PARAM"`"
