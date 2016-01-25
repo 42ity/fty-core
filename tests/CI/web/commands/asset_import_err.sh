@@ -35,9 +35,9 @@ DATASWITCH=0
 
 csv_import_err(){
     CSV_FILE_NAME="$1"
-    TABLE_NAME="$2"
-    NUM_EXPECTED="$3" # when NUM_EXPECTED=0, the import is not performed, in other case it is num of imported lines
-    FILENAME_PREFIX="$4"
+#    TABLE_NAME="$2"
+    NUM_EXPECTED="$2" # when NUM_EXPECTED=0, the import is not performed, in other case it is num of imported lines
+#    FILENAME_PREFIX="$4"
     ASSET="$CSV_LOADDIR_ASSIMP/${CSV_FILE_NAME}"
     if [ "$NUM_EXPECTED" != 0 ]; then
         if [ "$REZ" = 0 ]; then
@@ -57,6 +57,8 @@ test_tables(){
     CSV_FILE_NAME="$1"
     NUM_EXPECTED="$2" # when NUM_EXPECTED=0, the import is not performed, in other case it is num of imported lines
     FILENAME_PREFIX="$3"
+    csv_import_err "$CSV_FILE_NAME" "$NUM_EXPECTED"
+if false;then
     csv_import_err "$CSV_FILE_NAME" "t_bios_asset_element" "$NUM_EXPECTED" "$FILENAME_PREFIX"
     echo "REZ1=$REZ"
     csv_import_err "$CSV_FILE_NAME" "t_bios_asset_group_relation" 0 "$FILENAME_PREFIX"
@@ -67,6 +69,7 @@ test_tables(){
     echo "REZ4=$REZ"
     csv_import_err "$CSV_FILE_NAME" "t_bios_asset_link_type" 0 "$FILENAME_PREFIX"
     echo "REZ5=$REZ"
+fi
 }
 
 echo "********* asset_import_err.sh *********************************************************************"
