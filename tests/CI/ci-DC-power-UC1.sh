@@ -46,6 +46,9 @@ XML_TNTNET="tntnet.xml"
 [ -n "${INSTALLDIR-}" ] || INSTALLDIR="$CHECKOUTDIR/Installation"
 logmsg_info "Installation directory : $INSTALLDIR"
 
+PATH="$BUILDSUBDIR/tools:$CHECKOUTDIR/tools:$INSTALLDIR/libexec/bios:${DESTDIR:-/root}/libexec/bios:/usr/lib/ccache:/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
+export PATH
+
 set -u
 #set -x
 
