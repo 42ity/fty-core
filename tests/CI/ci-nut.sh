@@ -47,6 +47,32 @@ set -u
 PATH="$BUILDSUBDIR/tools:$CHECKOUTDIR/tools:${DESTDIR:-/root}/libexec/bios:/usr/lib/ccache:/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
 export PATH
 
+AGNUTPID=""
+DBNGPID=""
+kill_daemons() {
+    set +e
+    if [ -n "$AGNUTPID" -a -d "/proc/$AGNUTPID" ]; then
+        logmsg_info "Killing make agent-nut PID $AGNUTPID to exit"
+        kill -INT "$AGNUTPID"
+    fi
+    if [ -n "$DBNGPID" -a -d "/proc/$DBNGPID" ]; then
+        logmsg_info "Killing agent-dbstore PID $DBNGPID to exit"
+        kill -INT "$DBNGPID"
+    fi
+
+    killall -INT agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
+    killall      agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
+
+    ps -ef | grep -v grep | egrep "agent-nut|agent-dbstore" | egrep "^`id -u -n` " && \
+        ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
+        logmsg_error "agent-nut and/or agent-dbstore still alive, trying SIGKILL" && \
+        { killall -KILL agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null ; exit 1; }
+
+    return 0
+}
+
+
+
 #
 # list of values in samples
 #
@@ -116,7 +142,31 @@ expected_db_value() {
 # Note: this default log filename will be ignored if already set by caller
 # ERRCODE is maintained by settraps()
 init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" ""
-settraps 'exit_summarizeTestlibResults $ERRCODE'
+settraps 'kill_daemons; exit_summarizeTestlibResults $ERRCODE'
+
+logmsg_info "Ensuring that the tested programs have been built and up-to-date"
+if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
+    ./autogen.sh --nodistclean --configure-flags \
+        "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
+        ${AUTOGEN_ACTION_CONFIG}
+fi
+./autogen.sh ${AUTOGEN_ACTION_MAKE} agent-dbstore agent-nut
+
+# These are defined in testlib-db.sh
+test_it "initialize_db_rackpower"
+loaddb_file "$DB_BASE" && \
+loaddb_file "$DB_RACK_POWER"
+print_result $? || CODE=$? die "Could not prepare database"
+
+# TODO: this requirement should later become the REST AGENT
+logmsg_info "Spawning the agent-dbstore server in the background..."
+${BUILDSUBDIR}/agent-dbstore &
+DBNGPID=$!
+
+logmsg_info "Spawning the agent-nut server in the background..."
+${BUILDSUBDIR}/agent-nut &
+AGNUTPID=$!
+
 
 NPAR="${#PARAMS[*]}"
 NSAM="${#SAMPLES[*]}"
