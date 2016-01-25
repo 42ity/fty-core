@@ -36,6 +36,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "nutscan.h"
 #include "asset_types.h"
 
+#include "bits.h"
 #include "NUTConfigurator.h"
 
 #define NUT_PART_STORE "/etc/bios/nut/devices"
@@ -113,20 +114,7 @@ std::vector<std::string>::const_iterator NUTConfigurator::selectBest(const std::
 
 void NUTConfigurator::systemctl( const std::string &operation, const std::string &service )
 {
-    std::vector<std::string> _argv = {"sudo", "systemctl", operation, service };
-    shared::SubProcess systemd( _argv );
-    if( systemd.run() ) {
-        int result = systemd.wait();
-        log_info("sudo systemctl %s %s result: %i (%s)",
-                 operation.c_str(),
-                 service.c_str(),
-                 result,
-                 (result == 0 ? "ok" : "failed"));
-    } else {
-        log_error("can't run sudo systemctl %s %s command",
-                  operation.c_str(),
-                  service.c_str() );
-    }
+    systemctl (operation, service);
 }
 
 void NUTConfigurator::updateNUTConfig() {
