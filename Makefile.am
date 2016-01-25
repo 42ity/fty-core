@@ -773,8 +773,10 @@ test_libbiosapiut_DEPENDENCIES = \
 check_PROGRAMS += 	test-autoconfig
 test_autoconfig_SOURCES = tests/agents/autoconfig/test-autoconfig.cc \
 						  src/agents/autoconfig/Configurator.h \
-                          src/agents/autoconfig/NUTConfigurator.h src/agents/autoconfig/NUTConfigurator.cc \
-						  src/agents/autoconfig/RuleConfigurator.h src/agents/autoconfig/RuleConfigurator.cc
+						  src/agents/autoconfig/NUTConfigurator.h \
+						  src/agents/autoconfig/NUTConfigurator.cc \
+						  src/agents/autoconfig/RuleConfigurator.h \
+						  src/agents/autoconfig/RuleConfigurator.cc
 
 
 test_autoconfig_LDADD = \
@@ -1109,14 +1111,25 @@ agent_nut_CPPFLAGS =	$(AM_CPPFLAGS)
 client_PROGRAMS +=	agent-autoconfig
 
 agent_autoconfig_SOURCES = \
-			src/agents/autoconfig/agent-autoconfig.cc src/agents/autoconfig/agent-autoconfig.h \
+			src/agents/autoconfig/agent-autoconfig.cc \
+			src/agents/autoconfig/agent-autoconfig.h \
+			src/agents/autoconfig/bits.cc \
+			src/agents/autoconfig/bits.h \
 			src/agents/autoconfig/Configurator.h \
-			src/agents/autoconfig/ConfiguratorFactory.h src/agents/autoconfig/ConfiguratorFactory.cc \
-			src/agents/autoconfig/NUTConfigurator.h src/agents/autoconfig/NUTConfigurator.cc \
-			src/agents/autoconfig/RuleConfigurator.h src/agents/autoconfig/RuleConfigurator.cc \
-			src/agents/autoconfig/UpsEpduRuleConfigurator.h src/agents/autoconfig/UpsEpduRuleConfigurator.cc \
-			src/agents/autoconfig/DcRuleConfigurator.h src/agents/autoconfig/DcRuleConfigurator.cc \
-			src/agents/autoconfig/UptimeConfigurator.h src/agents/autoconfig/UptimeConfigurator.cc
+			src/agents/autoconfig/ConfiguratorFactory.h \
+			src/agents/autoconfig/ConfiguratorFactory.cc \
+			src/agents/autoconfig/DCTHConfigurator.cc \
+			src/agents/autoconfig/DCTHConfigurator.h \
+			src/agents/autoconfig/NUTConfigurator.h \
+			src/agents/autoconfig/NUTConfigurator.cc \
+			src/agents/autoconfig/RuleConfigurator.h \
+			src/agents/autoconfig/RuleConfigurator.cc \
+			src/agents/autoconfig/UpsEpduRuleConfigurator.h \
+			src/agents/autoconfig/UpsEpduRuleConfigurator.cc \
+			src/agents/autoconfig/DcRuleConfigurator.h \
+			src/agents/autoconfig/DcRuleConfigurator.cc \
+			src/agents/autoconfig/UptimeConfigurator.h \
+			src/agents/autoconfig/UptimeConfigurator.cc
 
 agent_autoconfig_LDADD = \
 			libpriv-log.la \
