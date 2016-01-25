@@ -67,8 +67,7 @@ print_result $?
 
 test_it "tested_source_is_built"
 ./autogen.sh --optseqmake --nodistclean ${AUTOGEN_ACTION_MAKE} \
-    test-db2 test-db-alert \
-    test-db-asset-crud test-dbtopology test-outage test-totalpower
+    test-db2 test-db-asset-crud test-dbtopology test-totalpower
 print_result $?
 
 sleep 1
@@ -96,18 +95,6 @@ CITEST_QUICKFAIL=yes print_result $? "Can not prepare the database"
 
 test_it test-db2
 "$BUILDSUBDIR"/test-db2
-print_result $?
-sleep 1
-
-echo "-------------------- test-db-alert --------------------"
-test_it "db_prepare_alert"
-loaddb_file "$DB_BASE" \
-&& loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" \
-&& loaddb_file "$DB_ALERT"
-CITEST_QUICKFAIL=yes print_result $? "Can not prepare the database"
-
-test_it test-db-alert
-"$BUILDSUBDIR"/test-db-alert
 print_result $?
 sleep 1
 
@@ -159,17 +146,6 @@ for T in rack dc ; do
     sleep 1
 done
 
-echo "-------------------- test-db-outage --------------------"
-test_it "db_prepare_outage"
-loaddb_file "$DB_BASE" \
-&& loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" \
-&& loaddb_file "$DB_OUTAGE"
-CITEST_QUICKFAIL=yes print_result $? "Can not prepare the database"
-
-test_it test-outage
-"$BUILDSUBDIR"/test-outage
-print_result $?
-sleep 1
 
 # The trap-handler should display the summary (if any)
 exit
