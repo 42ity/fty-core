@@ -117,8 +117,8 @@ custom_create_ups_dev_file() {
 }
 
 expected_db_value() {
-    PARAM="$1"
-    SAMPLE="$2"
+    local PARAM="$1"
+    local SAMPLE="$2"
     case "$PARAM" in
         "ups.status")
             case "$SAMPLE" in
@@ -179,17 +179,23 @@ logmsg_info "Starting the test"
 for UPS in $UPS1 $UPS2 ; do
     for s in $(seq 0 $SAMPLESCNT); do
         SAMPLECURSOR="$(($s*$NPAR))"
+        # String representation used in SQL query below
         TIME="$(date --utc '+%Y-%m-%d %H:%M:%S')"
+        TIMENUM="$(date --utc -d "$TIME" '+%s')"
         # set values
         for i in $(seq 0 $PARAMSCNT); do
             PARAM="${PARAMS[$i]}"
             NEWVALUE="${SAMPLES[$SAMPLECURSOR+$i]}"
-            test_it "set_value_in_ups:$UPS:$PARAM:$NEWVALUE"
+            test_it "set_value_in_ups:$TIMENUM:$UPS:$PARAM:$NEWVALUE"
             set_value_in_ups "$UPS" "$PARAM" "$NEWVALUE"
             print_result $? "Failed to set $PARAM value to $NEWVALUE in NUT dummy driver"
-            sleep 1 # give time to nut dummy driver for change
+        done
+        sleep 3 # give time to nut dummy driver for change
 
-            test_it "verify_value_in_ups:$UPS:$PARAM:$NEWVALUE"
+        for i in $(seq 0 $PARAMSCNT); do
+            PARAM="${PARAMS[$i]}"
+            NEWVALUE="${SAMPLES[$SAMPLECURSOR+$i]}"
+            test_it "verify_value_in_ups:$TIMENUM:$UPS:$PARAM:$NEWVALUE"
             OUT="`get_value_from_ups "$UPS" "$PARAM"`"
             if [[ $? = 0 ]] && [[ x"$OUT" = x"$NEWVALUE" ]]; then
                 print_result 0
@@ -202,8 +208,8 @@ for UPS in $UPS1 $UPS2 ; do
         for i in $(seq 0 $PARAMSCNT); do
             PARAM="${PARAMS[$i]}"
             NEWVALUE="${SAMPLES[$SAMPLECURSOR+$i]}"
-            test_it "verify_value_in_db:$UPS:$PARAM:$NEWVALUE"
-            SELECT='select count(*) from t_bios_measurement where timestamp >= '"UNIX_TIMESTAMP('$TIME') and value = $(expected_db_value "$PARAM" "$NEWVALUE");"
+            test_it "verify_value_in_db:$TIMENUM:$UPS:$PARAM:$NEWVALUE"
+            SELECT='select count(*) from t_bios_measurement where timestamp >= '"UNIX_TIMESTAMP('$TIME') and value = $(expected_db_value "$PARAM" "$NEWVALUE")"
             #echo $SELECT
             OUT="$(do_select "$SELECT")"
             if [[ $? = 0 ]] && [[ "$OUT" -eq 1 ]]; then
