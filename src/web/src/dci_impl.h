@@ -100,6 +100,7 @@ static double
         a_elmnt_id_t id,
         std::map<const std::string, double> &cache)
 {
+    // step in seconds
     int step = 0;
     if ( src.find("24h") != std::string::npos ) {
         step = 24*60*60;
@@ -117,11 +118,32 @@ static double
     double value = 0;
     if ( step != 0 ) {
         // here we are, if we are looking for some aggregated data
-        int rv = persist::select_last_aggregated_by_element_by_src_by_step(conn, id, src, step, value, false);
-        if ( rv != 0 ) {
-            log_debug ("not computed, take 0");
+        // BIOS-1553 BUG:
+        // for 24h average the following is true: we know the exact time, when the average SHOULD be
+        // for 7d and for 30d average: we DON'T KNOW IT!!!! it can be any midnight in the 
+        // interval (NOW -7day, NOW) / (NOW-30Day, NOW)
+        // fix 7d and 30d computation with this HACKY SOLUTION
+        // TODO: remove the hack, when proper way of 7d and 30d computation would work
+        if ( src.find("24h") != std::string::npos ) {
+            int rv = persist::select_last_aggregated_by_element_by_src_by_step(conn, id, src, step, value, false);
+            if ( rv != 0 ) {
+                log_debug ("not computed, take 0");
+            }
         }
-    }
+        else {
+            //  minutes back
+            m_msrmnt_value_t val = 0;
+            m_msrmnt_scale_t scale = 0;
+            // step in seconds, need in minutes -> step * 60
+            reply_t reply = persist::select_measurement_last_web_byElementId (conn, src, id, val, scale, step * 60);
+            if ( reply.rv != 0 ) {
+                log_debug ("not computed, take 0");
+            }
+            else {
+                value = val * pow(10, scale);
+            }
+        }
+     }
     else {
         // not an aggregate -> current -> 10 minutes back
         m_msrmnt_value_t val = 0;
