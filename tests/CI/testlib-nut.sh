@@ -55,6 +55,7 @@ set_value_in_ups() {
     local UPS="$(basename "$1" .dev)"
     local PARAM="$2"
     local VALUE="$3"
+    local SLEEP="${4-}"; [ -z "$SLEEP" ] && SLEEP=2
     local RES=0
 
     logmsg_debug "set_value_in_ups('$UPS' '$PARAM' '$VALUE')..."
@@ -74,10 +75,12 @@ set_value_in_ups() {
 
     upsrw -s "$PARAM=$VALUE" -u "$NUTUSER" -p "$NUTPASSWORD" "$UPS" >/dev/null || \
         { logmsg_warn "set_value_from_ups() could not upsrw the '$PARAM=$VALUE' setting onto '$UPS' in real-time";
-          [ "$RES" = 0 ] && sleep 2; }
+          [ "$RES" = 0 ] && [ "$SLEEP" -gt 0 ] 2>/dev/null && \
+            { logmsg_debug "Waiting for a while after applying new parameter to '$UPS'..." ; sleep 2; } ; }
         # The "sleep" above allows dummy-ups to roll around the end of file
         # and propagate the setting, if it is available in that config file
-    [ "$RES" = 0 ] && logmsg_debug "set_value_in_ups('$UPS' '$PARAM' '$VALUE') - OK"
+    [ "$RES" = 0 ] && \
+         logmsg_debug "set_value_in_ups('$UPS' '$PARAM' '$VALUE') - OK"
     return $RES
 }
 
