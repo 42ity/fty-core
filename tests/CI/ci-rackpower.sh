@@ -173,11 +173,11 @@ testcase() {
             TYPE2="$(echo "$UPS"|egrep '^epdu'|wc -l)"
             test_it "configure_total_power_nut:$RACK:$UPS:$SAMPLECURSOR"
             if [[ "$TYPE2" -eq 1 ]]; then
-                set_value_in_ups "$UPS" "$PARAM1" 0 && \
+                set_value_in_ups "$UPS" "$PARAM1" 0 0 && \
                 set_value_in_ups "$UPS" "$PARAM2" "$NEWVALUE"
                 print_result $?
             else
-                set_value_in_ups "$UPS" "$PARAM1" "$NEWVALUE" && \
+                set_value_in_ups "$UPS" "$PARAM1" "$NEWVALUE" 0 && \
                 set_value_in_ups "$UPS" "$PARAM2" 0
                 print_result $?
             fi
