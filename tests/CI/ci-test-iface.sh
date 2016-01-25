@@ -164,7 +164,7 @@ test_web_process || die "test_web_process() failed"
 ### Script starts here ###
 
 # 1. Create temporary dir under /tmp
-declare -r TMP_DIR=$(mktemp -d) || \
+declare -r TMP_DIR="$(mktemp -d)" && [ -n "$TMP_DIR" ] && [ -d "$TMP_DIR" ] || \
     CODE=$? die "Creating temporary directory failed"
 logmsg_info "Temporary directory created successfully: '${TMP_DIR}'"
 
@@ -207,36 +207,49 @@ logmsg_info "Interfaces=${INTERFACES[@]}"
 
 # TEST CASES
 
-####################
-### admin/ifaces ###
-####################
-test_it "admin/ifaces"
-tmp='{ "ifaces": [ '
+logmsg_info '####################'
+logmsg_info '### admin/ifaces ###'
+logmsg_info '####################'
+
+test_it "admin/ifaces:got_some_ifaces_local"
 counter=0
+tmp=''
 for i in "${INTERFACES[@]}"; do
     if [[ $counter -eq 0 ]]; then
         counter=1
-        tmp="${tmp} \"${i}\""
+        tmp="\"${i}\""
         continue
     fi
     tmp="${tmp}, \"${i}\""
 done
-tmp="${tmp} ] }"
-echo "$tmp" > "${TMP_DIR}/${JSON_EXPECTED_FILE}"
-HTTP_CODE=
-simple_get_json_code "${REST_IFACES}" tmp HTTP_CODE || die "'api_get_json ${REST_IFACES}' failed."
-echo "$tmp" > "${TMP_DIR}/${JSON_RECEIVED_FILE}"
-bash "${CHECKOUTDIR}/tests/CI/cmpjson.sh" "${TMP_DIR}/${JSON_RECEIVED_FILE}" "${TMP_DIR}/${JSON_EXPECTED_FILE}" || \
-    die "Test case '$TEST_CASE' failed. Expected and returned json do not match."
-[[ $HTTP_CODE -eq 200 ]] || die "Test case '$TEST_CASE' failed. Expected HTTP return code: 200, received: $HTTP_CODE."
-print_result 0
+[ -n "$tmp" ] && [ -n "`echo "$tmp" | sed 's,[\ \,\"],,g'`" ]
+print_result $? "Nothing found in the INTERFACES array"
+tmp='{ "ifaces": [ '"${tmp}"' ] }'
 
+test_it "admin/ifaces:got_some_ifaces_restapi"
+RES=0
+curlfail_push_expect_noerrors
+api_get_json "${REST_IFACES}" > "${TMP_DIR}/${JSON_RECEIVED_FILE}" || RES=$?
+curlfail_pop
+print_result $RES
 
+test_it "admin/ifaces:compare_lists_of_ifaces"
+RES=0
+echo "$tmp" > "${TMP_DIR}/${JSON_EXPECTED_FILE}" || RES=$?
+"${CHECKOUTDIR}/tests/CI/cmpjson.sh" -f "${TMP_DIR}/${JSON_RECEIVED_FILE}" "${TMP_DIR}/${JSON_EXPECTED_FILE}" || RES=$?
+print_result $RES || ls -la "${TMP_DIR}/${JSON_RECEIVED_FILE}" "${TMP_DIR}/${JSON_EXPECTED_FILE}"
 
-################################
-### admin/iface/<iface_name> ###
-################################
-# TODO Not finished yet
+# The trap-handler should display the summary (if any)
+exit 0
+
+######################################################
+
+logmsg_info '################################'
+logmsg_info '### admin/iface/<iface_name> ###'
+logmsg_info '################################'
+logmsg_info '#### TODO: Not finished yet ####'
+logmsg_info '################################'
+
 test_it "admin/iface/"
 read -r -d '' TEMPLATE <<'EOF-TMPL'
 {
