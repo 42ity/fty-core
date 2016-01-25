@@ -162,7 +162,7 @@ create_random_samples() {
         NEWVALUE="$(new_value "$DEVICE" "$ITEM")"
         SLEEP="$(($RANDOM % $FREQ))"
         echo "nut:$DEVICE:$ITEM:$NEWVALUE:$SLEEP"
-        set_value_in_ups "$DEVICE" "$ITEM" "$NEWVALUE"
+        set_value_in_ups "$DEVICE" "$ITEM" "$NEWVALUE" 0
         TIME="$(($TIME + $SLEEP))"
     done
 }
