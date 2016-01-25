@@ -114,8 +114,6 @@ bios-nutscan
 agent-tpower
 average
 generate_measurement
-outage
-test-outage
 warranty-metric
 bios-csv
 
@@ -176,8 +174,6 @@ systemd/biostimer-graphs-prefetch.service
 systemd/biostimer-graphs-prefetch@.service
 !systemd/biostimer-graphs-prefetch__realpower.default@.service.in
 systemd/biostimer-graphs-prefetch__realpower.default@.service
-!systemd/biostimer-outage.service.in
-systemd/biostimer-outage.service
 !systemd/biostimer-warranty-metric.service.in
 systemd/biostimer-warranty-metric.service
 !systemd/ifplug-dhcp-autoconf.service.in
@@ -244,7 +240,6 @@ tests/CI/run_tntnet_make.env
 !src/agents/nut
 !src/agents/server-agent
 !src/agents/th
-!src/outage
 
 src/api/libbiosapi.pc
 !src/api/libbiosapi.pc.in
