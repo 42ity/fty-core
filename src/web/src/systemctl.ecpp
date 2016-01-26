@@ -146,7 +146,7 @@ unsigned int process_get (
 
             if (proc_rv != 0) {
                 message.assign ("TODO executing `systemctl show` failed: " + std::to_string (proc_rv)); // TODO change error message
-                http_die("internal-error", message );
+                http_die("internal-error", message.c_str() );
             }
 
             std::string active_state, sub_state, load_state, unit_file_state;
@@ -230,7 +230,7 @@ unsigned int process_post (
         int proc_rv = shared::output (proc_cmd, proc_out, proc_err);
         if (proc_rv != 0) {
             message.assign ("executing systemctl failed: ").append (proc_err);
-            http_die("internal-error", message );
+            http_die("internal-error", message.c_str() );
         }
 
         // but we want to pretend we have used networking service ...
@@ -242,13 +242,13 @@ unsigned int process_post (
         proc_rv = shared::output (proc_cmd2, proc_out, proc_err);
         if (proc_rv != 0) {
             message.assign ("executing `systemctl show` failed: " + std::to_string (proc_rv));
-            http_die("internal-error", message );
+            http_die("internal-error", message.c_str() );
         }
 
         std::string active_state, sub_state, load_state, unit_file_state;
         if (!parse_systemctl_status (proc_out, active_state, sub_state, load_state, unit_file_state)) {
             message.assign ("cant parse systemctl show output");
-            http_die("internal-error", message );
+            http_die("internal-error", message.c_str() );
         }
         message.assign (
 "{\n"
@@ -264,11 +264,11 @@ unsigned int process_post (
     }
     catch (const cxxtools::SerializationError& e) {
         message.assign("Expected: { \"service_name\" : \"<service_name>\" }").append (e.what ());
-        http_die( "bad-request-document", message );
+        http_die( "bad-request-document", message.c_str() );
     }
     catch (const std::exception& e) {
         message.assign ("Exception caught: '").append(e.what ()).append("'.");
-        http_die( "internal-error", message );
+        http_die( "internal-error", message.c_str() );
     }
 }
 

@@ -138,13 +138,13 @@ _die_asprintf(
 
 #define http_die(key, ...) \
     do { \
-        constexpr size_t key_idx = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
-        static_assert(key_idx != 0, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
-        char *message; \
-        _die_asprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__, "", "", "", "", "" ); \
-        reply.out() << utils::json::create_error_json(message, _errors.at(key_idx).err_code); \
-        free(message); \
-        return _errors.at(key_idx).http_code;\
+        constexpr size_t __http_die__key_idx__ = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
+        static_assert(__http_die__key_idx__ != 0, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
+        char *__http_die__error_message__; \
+        _die_asprintf(&__http_die__error_message__, _errors.at(__http_die__key_idx__).message, ##__VA_ARGS__, "", "", "", "", "" ); \
+        reply.out() << utils::json::create_error_json(__http_die__error_message__, _errors.at(__http_die__key_idx__).err_code); \
+        free(__http_die__error_message__); \
+        return _errors.at(__http_die__key_idx__).http_code;\
     } \
     while(0)
 
@@ -181,13 +181,13 @@ typedef struct _http_errors_t {
 #define http_add_error(errors, key, ...) \
 do { \
     static_assert (std::is_same <decltype (errors), http_errors_t&>::value, "'errors' argument in macro http_add_error must be a http_errors_t."); \
-    constexpr size_t key_idx = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
-    static_assert(key_idx != 0, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
-    (errors).http_code = _errors.at (key_idx).http_code; \
-    char *message; \
-    _die_asprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__, "", "", "", "", "" ); \
-    (errors).errors.push_back (std::make_pair (_errors.at (key_idx).err_code, message)); \
-    free (message); \
+    constexpr size_t __http_die__key_idx__ = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
+    static_assert(__http_die__key_idx__ != 0, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
+    (errors).http_code = _errors.at (__http_die__key_idx__).http_code; \
+    char *__http_die__error_message__; \
+    _die_asprintf(&__http_die__error_message__, _errors.at(__http_die__key_idx__).message, ##__VA_ARGS__, "", "", "", "", "" ); \
+    (errors).errors.push_back (std::make_pair (_errors.at (__http_die__key_idx__).err_code, __http_die__error_message__)); \
+    free (__http_die__error_message__); \
 } \
 while (0)
 
@@ -265,13 +265,13 @@ struct BiosError : std::invalid_argument {
 #define bios_error_idx(idx, str, key, ...) \
 do { \
     static_assert (std::is_same <decltype (str), std::string>::value || std::is_same <decltype (str), std::string&>::value, "'str' argument in macro bios_error_idx must be a std::string."); \
-    constexpr size_t key_idx = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
-    static_assert(key_idx != 0, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
-    char *message; \
-    _die_asprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__, "", "", "", "", "" ); \
-    str = message; \
-    idx = key_idx; \
-    free (message); \
+    constexpr size_t __http_die__key_idx__ = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
+    static_assert(__http_die__key_idx__ != 0, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
+    char *__http_die__error_message__; \
+    _die_asprintf(&__http_die__error_message__, _errors.at(__http_die__key_idx__).message, ##__VA_ARGS__, "", "", "", "", "" ); \
+    str = __http_die__error_message__; \
+    idx = __http_die__key_idx__; \
+    free (__http_die__error_message__); \
 } \
 while (0)
 
@@ -288,14 +288,14 @@ while (0)
 
 #define bios_throw(key, ...) \
     do { \
-        constexpr size_t key_idx = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
-        static_assert(key_idx != 0, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
-        char *message; \
-        _die_asprintf(&message, _errors.at(key_idx).message, ##__VA_ARGS__, "", "", "", "", "" ); \
-        std::string str{message}; \
-        free(message); \
-        log_warning("throw BiosError{%zu, \"%s\"}", key_idx, str.c_str());\
-        throw BiosError{key_idx, str}; \
+        constexpr size_t __http_die__key_idx__ = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
+        static_assert(__http_die__key_idx__ != 0, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
+        char *__http_die__error_message__; \
+        _die_asprintf(&__http_die__error_message__, _errors.at(__http_die__key_idx__).message, ##__VA_ARGS__, "", "", "", "", "" ); \
+        std::string str{__http_die__error_message__}; \
+        free(__http_die__error_message__); \
+        log_warning("throw BiosError{%zu, \"%s\"}", __http_die__key_idx__, str.c_str());\
+        throw BiosError{__http_die__key_idx__, str}; \
     } while (0);
 
 
