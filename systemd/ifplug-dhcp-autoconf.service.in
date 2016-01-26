@@ -15,6 +15,7 @@ EnvironmentFile=-/etc/default/bios
 EnvironmentFile=-/etc/sysconfig/bios
 EnvironmentFile=-/etc/default/bios__%n.conf
 EnvironmentFile=-/etc/sysconfig/bios__%n.conf
+Environment=PATH=/bin:/usr/bin:/sbin:/usr/sbin
 ExecStart=@datadir@/@PACKAGE@/scripts/ifplug-dhcp-autoconf.sh
 
 [Install]
