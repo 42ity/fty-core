@@ -215,8 +215,8 @@ testcase() {
                 set_value_in_ups "$UPS" "$PARAM2" 0
                 print_result $?
             fi
-            logmsg_debug "Sleeping 10sec to propagate measurements..."
-            sleep 10  # 10 s is max time for propagating into DB (poll ever 5s in nut actor + some time to process)
+            logmsg_debug "Sleeping 8sec to propagate measurements..."
+            sleep 8  # 8s is max time for propagating into DB (poll ever 5s in nut actor + some time to process)
             logmsg_debug "Sleep time is over!"
 
             NEWVALUE="${SAMPLES[$SAMPLECURSOR]}"
@@ -243,10 +243,10 @@ testcase() {
             STR2="$(printf "%f" "$POWER")"  # also returns "2000000.000000"
             DEL="$(awk -vX=${STR1} -vY=${STR2} 'BEGIN{ print int( 10*(X - Y) - 0.5 ); }')"
             if [[ "$DEL" -eq 0 ]]; then
-                logmsg_info "The total power has an expected value: $TP = $POWER"
+                logmsg_info "The total power on rack $RACK has an expected value: $TP = $POWER"
                 print_result 0
             else
-                print_result 1 "Total power does not equal expected value: $TP <> $POWER "
+                print_result 1 "Total power on rack $RACK does not equal expected value: $TP <> $POWER "
             fi
         done
     done
