@@ -157,10 +157,10 @@ int main (int argc, char *argv []) {
         else if (streq (command, "STREAM DELIVER")) {
 
             if (strncmp(bios_agent_subject(client), "inventory", 9) == 0 ) {
-                log_debug ("inventory message recieved, ingore it. In future this should never happen");
+                log_debug ("inventory message recieved, ignoring it. In future this should never happen");
             }
             else if (strncmp(bios_agent_subject(client), "configure", 9) == 0 ) {
-                log_debug ("configure message recieved, ingore it. In future this should never happen");
+                log_debug ("configure message recieved, ignoring it. In future this should never happen");
             }
         }
 
