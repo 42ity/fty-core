@@ -66,11 +66,11 @@ csv_import(){
 
     #MVY: as business_critical field is no longer in t_bios_asset_element, someone would need to redo all of csv files and expected files
     #     limit the testin to ability to import (or reject) the files for now
-    #for T in "t_bios_asset_element" "t_bios_asset_group_relation" "t_bios_asset_ext_attributes" "t_bios_asset_link" "t_bios_asset_link_type"; do
-    #    table_diff "$T" "$TEST_ID"
-    #    res_err "$RES_PART" "Wrong $T table content."
-    #    NUM_EXPECTED=0
-    #done
+    for T in "t_bios_asset_element" "t_bios_asset_group_relation" "t_bios_asset_ext_attributes" "t_bios_asset_link" "t_bios_asset_link_type"; do
+        table_diff "$T" "$TEST_ID"
+        res_err "$RES_PART" "Wrong $T table content."
+        NUM_EXPECTED=0
+    done
 }
 
 echo "********* asset_import.sh *************************************************************************"
