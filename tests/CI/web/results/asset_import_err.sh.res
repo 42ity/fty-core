@@ -7,7 +7,6 @@
 {"errors":[{"message":"Parameter 'sub_type' has bad value. Received <missing column'sub_type'>. Expected <column 'sub_type' is present in csv>","code":47}]}
 {"errors":[{"message":"Parameter 'location' has bad value. Received <missing column'location'>. Expected <column 'location' is present in csv>","code":47}]}
 {"errors":[{"message":"Parameter 'status' has bad value. Received <missing column'status'>. Expected <column 'status' is present in csv>","code":47}]}
-{"errors":[{"message":"Parameter 'priority' has bad value. Received <missing column'priority'>. Expected <column 'priority' is present in csv>","code":47}]}
 {"errors":[{"message":"Request document has invalid syntax. Cannot detect the delimiter, use comma (,) semicolon (;) or tabulator","code":48}]}
 {"errors":[{"message":"Parameter 'This file (Big-endian UTF-16 Unicode text, with very long lines, with CRLF line terminators) is not supported please try again with a different file.' has bad value. Received . Expected ","code":47}]}
 {"errors":[{"message":"Parameter 'This file (Big-endian UTF-16 Unicode text, with very long lines, with CRLF line terminators) is not supported please try again with a different file.' has bad value. Received . Expected ","code":47}]}
@@ -31,4 +30,3 @@
 {"imported_lines":47,"errors":[[42,"Parameter 'serial_no' has bad value. Received ATC40. Expected <unique string>"]]}
 {"imported_lines":42,"errors":[[18,"Parameter 'subtype (for type group)' is required."],[38,"Parameter 'status' has bad value. Received nonsense. Expected active, nonactive, retired, spare"],[41,"Parameter 'subtype' has bad value. Received n_a. Expected N_A, epdu, feed, genset, pdu, server, storage, sts, switch, ups, vm"],[42,"Parameter 'subtype' has bad value. Received <empty>. Expected N_A, epdu, feed, genset, pdu, server, storage, sts, switch, ups, vm"],[43,"Parameter 'subtype' has bad value. Received nonsens. Expected N_A, epdu, feed, genset, pdu, server, storage, sts, switch, ups, vm"],[49,"Parameter 'status' has bad value. Received <empty>. Expected active, nonactive, retired, spare"]]}
 {"imported_lines":47,"errors":[[46,"Parameter 'asset_tag' has bad value. Received <to long>. Expected <unique string from 1 to 50 characters>"]]}
-{"imported_lines":48,"errors":[]}
