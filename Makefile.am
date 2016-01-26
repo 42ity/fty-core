@@ -776,7 +776,9 @@ test_autoconfig_SOURCES = tests/agents/autoconfig/test-autoconfig.cc \
 						  src/agents/autoconfig/NUTConfigurator.h \
 						  src/agents/autoconfig/NUTConfigurator.cc \
 						  src/agents/autoconfig/RuleConfigurator.h \
-						  src/agents/autoconfig/RuleConfigurator.cc
+						  src/agents/autoconfig/RuleConfigurator.cc \
+		         		  src/agents/autoconfig/bits.cc \
+						  src/agents/autoconfig/bits.h
 
 
 test_autoconfig_LDADD = \
