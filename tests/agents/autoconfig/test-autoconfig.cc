@@ -29,6 +29,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <tuple>
 #include <catch.hpp>
 #include <czmq.h>
 #include <regex>
@@ -37,9 +38,23 @@
 #include <cxxtools/jsondeserializer.h>
 #include <cxxtools/serializationinfo.h>
 
+#include "log.h"
 
 #include "NUTConfigurator.h"
 #include "RuleConfigurator.h"
+
+#define LUA_RULE(BIT) \
+        " function has_bit(x,bit)"\
+        "     local mask = 2 ^ (bit - 1)"\
+        "     x = x % (2*mask)"\
+        "     if x >= mask then return true else return false end"\
+        " end"\
+        " function main(status)"\
+        "     if has_bit(status,"\
+        #BIT\
+        ") then return HIGH_CRITICAL end"\
+        "     return OK"\
+        " end"
 
 const char *nutEpduSnmp = "[nutdev1]\n"
     "\tdriver = \"snmp-ups\"\n"
@@ -83,9 +98,37 @@ TEST_CASE("autoconfig-preference", "[agent-autoconfig]") {
     CHECK( ( it == UPSPW.end() ? "" : *it ) == nutUpsSnmpPw );
 }
 
+
+// Note: if this test suite (i.e. test-autoconfig.cc) grows too much
+//       please consider moving Rule configurator or others to separate files
+
 TEST_CASE("RuleConfigurator", "[RuleConfigurator][agent-autoconfig]")
 {
     RuleConfigurator rc;
+
+    SECTION ("method makeSingleRule_results")
+    {
+        CHECK (
+        rc.makeSingleRule_results (
+            std::make_tuple (
+            "kajo\"vajo",
+            std::vector <std::string>{"action 1", "punk neni mrkef", "aja\nja"},
+            "middle",
+            "fuff")) ==
+        "{ \"kajo\\\"vajo\" : { \"action\" : [ \"action 1\", \"punk neni mrkef\", \"aja\\nja\" ], \"severity\" : \"middle\", \"description\" : \"fuff\" }}"
+        );
+
+        CHECK (
+        rc.makeSingleRule_results (
+            std::make_tuple (
+            "result name",
+            std::vector <std::string>{},
+            "low",
+            "hata titla")) ==
+        "{ \"result name\" : { \"action\" : [  ], \"severity\" : \"low\", \"description\" : \"hata titla\" }}"
+        );
+
+    }
 
     SECTION ("method makeThresholdRule") {
         std::string threshold = rc.makeThresholdRule (
@@ -159,4 +202,45 @@ TEST_CASE("RuleConfigurator", "[RuleConfigurator][agent-autoconfig]")
         CHECK (si_threshold.getMember("results").category () == cxxtools::SerializationInfo::Array);       
     }
 
+    SECTION ("method makeSingleRule") {
+        //
+        
+        std::string single = rc.makeSingleRule (
+            "alert-ups9",
+            std::vector<std::string>{"status.ups@ups-9", "status.sensor@ups-9"},
+            "ups-9",
+            std::vector <std::pair <std::string, std::string>>{ {"value name 1","10"}, {"value name 2","20"}},
+            std::vector <std::tuple <std::string, std::vector <std::string>, std::string, std::string>> {
+                std::make_tuple ("result name 1", std::vector <std::string> {"action 1", "action 2"}, "high", "something"),
+                std::make_tuple ("result name 2", std::vector <std::string> {"action 1"}, "low", "something else"),
+            },
+            LUA_RULE(5) 
+        );
+        
+        // deserialize
+        {
+        std::istringstream in (single);
+        cxxtools::JsonDeserializer deserializer(in);
+        cxxtools::SerializationInfo si;
+        CHECK_NOTHROW ( deserializer.deserialize (si); );      
+
+        CHECK (si.category () == cxxtools::SerializationInfo::Object);
+        auto si_single = si.getMember ("single");
+        CHECK (si_single.category () == cxxtools::SerializationInfo::Object);
+        std::string tmpstr;
+        si_single.getMember ("rule_name") >>= tmpstr;
+        CHECK (tmpstr == "alert-ups9" );
+        
+        CHECK (si_single.getMember("target").category () == cxxtools::SerializationInfo::Array);
+        // TODO check values of target
+
+        si_single.getMember ("element") >>= tmpstr;
+        CHECK (tmpstr == "ups-9");
+        si_single.getMember ("evaluation") >>= tmpstr;
+        // TODO check value of evaluation
+        CHECK (si_single.getMember("values").category () == cxxtools::SerializationInfo::Array);
+        CHECK (si_single.getMember("results").category () == cxxtools::SerializationInfo::Array);
+        // TODO value checks of 'values', 'results'
+        }
+    }
 }

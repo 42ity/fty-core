@@ -105,6 +105,71 @@ std::string RuleConfigurator::makeThresholdRule (
     return result;    
 }
 
+std::string RuleConfigurator::makeSingleRule (
+        const std::string& rule_name,
+        const std::vector<std::string>& target,
+        const std::string& element_name,
+        //                          value_name   value
+        const std::vector <std::pair<std::string, std::string>>& values,
+        //                           result_name               actions       severity     description 
+        const std::vector <std::tuple<std::string, std::vector <std::string>, std::string, std::string>>& results,
+        const std::string& evaluation)
+{
+    assert (target.size () >= 1);
+
+    // values
+    std::string result_values = "[ ";
+    bool first = true;
+    for (const auto& item : values) {
+        if (first) {
+            result_values += "{ " + jsonify (item.first, item.second) + " }";
+            first = false;
+        }
+        else {
+            result_values += ", { " + jsonify (item.first, item.second) + " }";
+        }
+    }
+    result_values += " ]";
+
+    // results
+    std::string result_results = "[ ";
+    first = true;
+    for (const auto& item : results) {
+        if (first) {
+            result_results += makeSingleRule_results (item);
+            first = false;
+        }
+        else {
+            result_results += ", " + makeSingleRule_results (item);
+        }
+    }
+    result_results += " ]";
+
+
+    std::string result =
+        "{\n"
+        "\"single\" : {\n"
+        + jsonify ("rule_name", rule_name) + ",\n"
+        + jsonify ("target", target) + ",\n"
+        + jsonify ("element", element_name) + ",\n"
+        "\"values\" : " + result_values + ",\n"
+        "\"results\" : " + result_results + ",\n"
+        + jsonify ("evaluation", evaluation) + "}\n"
+        "}";
+
+    return result;   
+
+}
+
+std::string RuleConfigurator::makeSingleRule_results (std::tuple<std::string, std::vector <std::string>, std::string, std::string> one_result)
+{
+    std::string result = "{ " + jsonify (std::get<0> (one_result)) + " : { ";
+    result += jsonify ("action", std::get<1> (one_result)) + ", ";
+    result += jsonify ("severity", std::get<2> (one_result)) + ", ";
+    result += jsonify ("description", std::get<3> (one_result)) + " }}";
+    return result;
+}
+
 bool RuleConfigurator::v_configure (UNUSED_PARAM const std::string& name, UNUSED_PARAM const AutoConfigurationInfo& info, UNUSED_PARAM mlm_client_t *client)
 {
     return false;
