@@ -162,6 +162,12 @@ int main (int argc, char *argv []) {
             else if (strncmp(bios_agent_subject(client), "configure", 9) == 0 ) {
                 log_debug ("configure message recieved, ignoring it. In future this should never happen");
             }
+            else {
+                /* TODO: Previously everything not specified above was
+                 * ignored silently. Now it is loud. No idea if anything
+                 * SHOULD be done about such messages. //Jim 2016-01-26 */
+                log_debug ("%s STREAM DELIVERed message recieved, ignoring it", bios_agent_subject(client));
+            }
         }
 
         else {
