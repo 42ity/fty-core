@@ -48,7 +48,7 @@ int main(int argc, char *argv []) {
     assert (client);
     mlm_client_connect (client, endpoint, 5000, address);
     if (!mlm_client_connected (client)) {
-        zsys_error ("server-agent: server not reachable at %s", endpoint);
+        zsys_error ("generate_measurement: mlm server not reachable at %s", endpoint);
         return 1;
     }
 
@@ -57,7 +57,7 @@ int main(int argc, char *argv []) {
     char *value = argv[4];
     char *unit = argv[3];
 
-    // Produce meassurement
+    // Produce measurement
     mlm_client_set_producer(client, "METRICS");
     zmsg_t *msg = bios_proto_encode_metric(NULL, type, element_src, value, unit, time(NULL));
     assert (msg);

@@ -31,7 +31,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 class UpsEpduRuleConfigurator : public RuleConfigurator {
  public:
-    bool v_configure (const std::string& name, const AutoConfigurationInfo& info, mlm_client_t *client); 
+    bool v_configure (const std::string& name, const AutoConfigurationInfo& info, mlm_client_t *client);
+    bool isApplicable (const AutoConfigurationInfo& info);
 
     virtual ~UpsEpduRuleConfigurator() {};
 };

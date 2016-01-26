@@ -27,8 +27,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include <string>
 
-#include "preproc.h"
-
 #include "Configurator.h"
 
 class RuleConfigurator : public Configurator {

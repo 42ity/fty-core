@@ -226,7 +226,7 @@ void TotalPowerAgent::onPoll() {
 
 int main( UNUSED_PARAM int argc, UNUSED_PARAM char *argv[] ) {
     int result = 1;
-    
+
     log_open();
     log_info ("tpower agent started");
     TotalPowerAgent agent("TPOWER");
