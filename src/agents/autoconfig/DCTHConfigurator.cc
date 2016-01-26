@@ -46,7 +46,7 @@ bool DCTHConfigurator::v_configure (UNUSED_PARAM const std::string& name, const 
         case persist::asset_operation::UPDATE:
         case persist::asset_operation::DELETE:
             {
-                systemctl ("dc_th", "restart");
+                systemctl ("restart", "dc_th");
             }
         case persist::asset_operation::RETIRE:
         {
