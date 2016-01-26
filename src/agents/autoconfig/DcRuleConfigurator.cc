@@ -73,3 +73,11 @@ bool DcRuleConfigurator::v_configure (const std::string& name, const AutoConfigu
     return true;
 
 }
+
+bool DcRuleConfigurator::isApplicable (const AutoConfigurationInfo& info)
+{
+    if (info.type == persist::asset_type::DATACENTER) {
+        return true;
+    }
+    return false;
+}

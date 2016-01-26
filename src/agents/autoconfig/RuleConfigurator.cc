@@ -25,6 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "log.h"
 #include "str_defs.h"
 #include "utils_web.h"
+#include "preproc.h"
 
 #include "RuleConfigurator.h"
 
