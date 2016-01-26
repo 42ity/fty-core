@@ -27,8 +27,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include <string>
 
-#include "preproc.h"
-
 #include "Configurator.h"
 
 class RuleConfigurator : public Configurator {
@@ -46,6 +44,18 @@ class RuleConfigurator : public Configurator {
         std::tuple <std::string, std::vector <std::string>, std::string, std::string> high_warning,
         std::tuple <std::string, std::vector <std::string>, std::string, std::string> high_critical,
         const char *lua_function);
+
+    std::string makeSingleRule (
+        const std::string& rule_name,
+        const std::vector<std::string>& target,
+        const std::string& element_name,
+        //                          value_name   value
+        const std::vector <std::pair<std::string, std::string>>& values,
+        //                           result_name               actions       severity     description 
+        const std::vector <std::tuple<std::string, std::vector <std::string>, std::string, std::string>>& results,
+        const std::string& evaluation);
+
+    std::string makeSingleRule_results (std::tuple<std::string, std::vector <std::string>, std::string, std::string> result);
 
     // TODO:
     // provide prepared methods for two remaining rule types

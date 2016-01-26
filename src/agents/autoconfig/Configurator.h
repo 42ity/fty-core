@@ -31,6 +31,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include <malamute.h>
 
+#include "preproc.h"
+
 struct AutoConfigurationInfo
 {
     uint32_t type = 0;
@@ -52,6 +54,11 @@ class Configurator
     bool configure (const std::string& name, const AutoConfigurationInfo& info, mlm_client_t *client)
     {
         return v_configure (name, info, client);
+    }
+
+    virtual bool isApplicable (UNUSED_PARAM const AutoConfigurationInfo& info)
+    {
+        return false;
     }
 
     virtual ~Configurator() {};

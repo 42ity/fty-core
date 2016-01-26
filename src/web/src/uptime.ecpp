@@ -124,6 +124,7 @@ asset_manager asset_mgr;
             json << "\t\t}" << (  D < DCs.size() -1 ? ",\n" : "\n" );
         }
         json << "\t]\n}\n";
+        mlm_client_destroy (&client);
     }
     catch (const std::exception& e) {
         mlm_client_destroy (&client);

@@ -58,7 +58,7 @@ s_metric_store(zsock_t *pipe, void* args)
     char* endpoint = (char*) args;
 
     persist::TopicCache topic_cache{256};
-    cxxtools::Regex warranty_subject{"^(end_warranty_date|warranty_expiration_date)@.*$"};
+    cxxtools::Regex warranty_subject{"^end_warranty_date@.*$"};
 
     mlm_client_t *client = mlm_client_new ();
     mlm_client_connect (client, endpoint, 1000, "metric-store");
@@ -77,8 +77,10 @@ s_metric_store(zsock_t *pipe, void* args)
 
         zmsg_t *msg = mlm_client_recv (client);
 
-        if (warranty_subject.match (mlm_client_subject (client)))
+        if (warranty_subject.match (mlm_client_subject (client))) {
+            zmsg_destroy (&msg);
             continue;
+        }
 
         persist::process_measurement(&msg, topic_cache);
 
@@ -92,10 +94,10 @@ s_metric_store(zsock_t *pipe, void* args)
 #define _s s_safe_str
 
 int main (int argc, char *argv []) {
-    
+
     log_open();
     log_info ("## agent: %s started", BIOS_AGENT_NAME_DB_MEASUREMENT);
-    
+
     // Basic settings
     if (argc > 3) {
         printf ("syntax: agent-dbstore [ <endpoint> | <endpoint> <mysql:db=bios;user=bios;password=test> ]\n");
@@ -155,10 +157,16 @@ int main (int argc, char *argv []) {
         else if (streq (command, "STREAM DELIVER")) {
 
             if (strncmp(bios_agent_subject(client), "inventory", 9) == 0 ) {
-                log_debug ("inventory message recieved, ingore it. In future this should never happen");
+                log_debug ("inventory message recieved, ignoring it. In future this should never happen");
             }
             else if (strncmp(bios_agent_subject(client), "configure", 9) == 0 ) {
-                log_debug ("configure message recieved, ingore it. In future this should never happen");
+                log_debug ("configure message recieved, ignoring it. In future this should never happen");
+            }
+            else {
+                /* TODO: Previously everything not specified above was
+                 * ignored silently. Now it is loud. No idea if anything
+                 * SHOULD be done about such messages. //Jim 2016-01-26 */
+                log_debug ("%s STREAM DELIVERed message recieved, ignoring it", bios_agent_subject(client));
             }
         }
 

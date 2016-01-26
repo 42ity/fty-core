@@ -31,17 +31,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "UpsEpduRuleConfigurator.h"
 #include "UptimeConfigurator.h"
 #include "DCTHConfigurator.h"
+#include "DcRuleConfigurator.h"
 
 #include "ConfiguratorFactory.h"
-
-static bool
-    s_is_rc (const AutoConfigurationInfo &info)
-{
-    // Form ID from hostname and agent name
-    char hostname[HOST_NAME_MAX];
-    ::gethostname(hostname, HOST_NAME_MAX);
-    return (info.attributes.count("hostname.1") == 1 && info.attributes.at("hostname.1") == hostname);
-}
 
 std::vector <Configurator*> ConfiguratorFactory::getConfigurator (const AutoConfigurationInfo& info)
 {
@@ -49,29 +41,24 @@ std::vector <Configurator*> ConfiguratorFactory::getConfigurator (const AutoConf
     static UpsEpduRuleConfigurator iUpsEpduRuleConfigurator;
     static UptimeConfigurator iUptimeConfigurator;
     static DCTHConfigurator iDCTHConfigurator;
+    static DcRuleConfigurator iDcRuleConfigurator;
 
-    std::vector <Configurator*> retval;
+    static std::vector <Configurator *> configurators {
+        &iNUTConfigurator,
+        &iUpsEpduRuleConfigurator,
+        &iUptimeConfigurator,
+        &iDCTHConfigurator,
+        &iDcRuleConfigurator
+    };
 
-    if (info.type == persist::asset_type::DATACENTER || info.subtype == persist::asset_subtype::UPS)
-        retval.push_back (&iUptimeConfigurator);
+    std::vector <Configurator *> retval;
 
-    if (info.type == persist::asset_type::DATACENTER || s_is_rc (info))
-        retval.push_back (&iDCTHConfigurator);
-
-    switch (info.type) {
-        case persist::asset_type::DEVICE:
-        {
-            switch (info.subtype) {
-                case persist::asset_subtype::UPS:
-                case persist::asset_subtype::EPDU:
-                {
-                    retval.push_back (&iNUTConfigurator);
-                    retval.push_back (&iUpsEpduRuleConfigurator);
-                }
-            }
-            break;
+    for (Configurator* item : configurators) {
+        if (item->isApplicable (info)) {
+            retval.push_back (item);
         }
     }
+
     return retval;
 }
 

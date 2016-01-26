@@ -1,6 +1,6 @@
 /*
 Copyright (C) 2014 Eaton
- 
+
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or
@@ -17,25 +17,25 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 /*!
- \file   UpsEpduRuleConfigurator.h
- \brief  Configuration of rules for ups and epdu devices
- \author Tomas Halman <TomasHalman@Eaton.com>
+ \file   DCTHConfigurator.h
+ \brief  Configuration of composite-metrics
+ \author Michal Vyskocil <michalvyskocil@eaton.com>
 */
 
-#ifndef SRC_AGENTS_AUTOCONFIG_UPSEPDURULECONFIGURATOR_H__
-#define SRC_AGENTS_AUTOCONFIG_UPSEPDURULECONFIGURATOR_H__
+#ifndef SRC_AGENTS_AUTOCONFIG_DCTHCONFIGURATOR_H__
+#define SRC_AGENTS_AUTOCONFIG_DCTHCONFIGURATOR_H__
 
 #include <string>
 
-#include "RuleConfigurator.h"
+#include "Configurator.h"
 
-class UpsEpduRuleConfigurator : public RuleConfigurator {
+class DCTHConfigurator : public Configurator {
  public:
     bool v_configure (const std::string& name, const AutoConfigurationInfo& info, mlm_client_t *client);
     bool isApplicable (const AutoConfigurationInfo& info);
 
-    virtual ~UpsEpduRuleConfigurator() {};
+    virtual ~DCTHConfigurator() {};
+
 };
 
-#endif // SRC_AGENTS_AUTOCONFIG_UPSEPDURULECONFIGURATOR_H__
-
+#endif // SRC_AGENTS_AUTOCONFIG_DCRULECONFIGURATOR_H__
