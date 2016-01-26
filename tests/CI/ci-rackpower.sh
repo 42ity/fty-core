@@ -228,8 +228,8 @@ SAMPLES=(
    30.85
    40.41
 )
-UPS1="epdu101_1_"
-UPS2="epdu101_2_"
+UPS1="epdu101_1"
+UPS2="epdu101_2"
 RACK="8101"
 create_nut_config "" "$UPS1 $UPS2"
 testcase "$UPS1" "$UPS2" "$SAMPLES" "$RACK"
@@ -243,8 +243,8 @@ SAMPLES=(
   1064.34
   1130000
 )
-UPS1="epdu102_1_"
-UPS2="epdu102_2_"
+UPS1="epdu102_1"
+UPS2="epdu102_2"
 RACK="8108"
 create_nut_config "" "$UPS1 $UPS2"
 testcase "$UPS1" "$UPS2" "$SAMPLES" "$RACK"
@@ -258,8 +258,8 @@ SAMPLES=(
   80.001
   120.499
 )
-UPS1="ups103_1_"
-UPS2="ups103_2_"
+UPS1="ups103_1"
+UPS2="ups103_2"
 RACK="8116"
 create_nut_config "$UPS1 $UPS2" ""
 testcase "$UPS1" "$UPS2" "$SAMPLES" "$RACK"
@@ -273,8 +273,8 @@ SAMPLES=(
   80.499
   120.99999999999999
 )
-UPS1="epdu105_1_"
-UPS2="pdu105_1_"
+UPS1="epdu105_1"
+UPS2="pdu105_1"
 RACK="8134"
 create_nut_config "" "$UPS1 $UPS2"
 testcase "$UPS1" "$UPS2" "$SAMPLES" "$RACK"
@@ -288,8 +288,8 @@ SAMPLES=(
   55
   63
 )
-UPS1="ups106_1_"
-UPS2="pdu106_2_"
+UPS1="ups106_1"
+UPS2="pdu106_2"
 RACK="8141"
 create_nut_config "$UPS1" "$UPS2"
 testcase "$UPS1" "$UPS2" "$SAMPLES" "$RACK"
