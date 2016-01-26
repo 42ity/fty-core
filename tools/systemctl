@@ -42,7 +42,7 @@ SYSTEMCTL_UNITS_COMMON="mariadb mysql mysqld ntp ntpd ntpdate sntp bios \
                  bios-agent-alert bios-agent-autoconfig bios-agent-cm   \
                  bios-agent-dbstore bios-agent-inventory bios-agent-nut \
                  agent-th bios-agent-tpower bios-db-init                \
-                 bios-server-agent                                      \
+                 bios-server-agent dc_th                                \
                  malamute saslauthd networking                          \
                  nut-driver nut-monitor nut-server"
 
