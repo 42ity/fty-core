@@ -153,22 +153,6 @@ determineDirs() {
     [ -x "$BUILDSUBDIR/config.status" ]
 }
 
-### This is prefixed before ERROR, WARN, INFO tags in the logged messages
-[ -z "$LOGMSG_PREFIX" ] && LOGMSG_PREFIX="CI-"
-### Default debugging/info/warning level for this lifetime of the script
-### Messages are printed if their assigned level is at least CI_DEBUG
-### The default of "3" allows INFO messages to be printed or easily
-### suppressed by change to a smaller number. The level of "2" is default
-### for warnings and "1" for errors, and a "0" would likely hide most
-### such output. "Yes" bumps up a high level to enable even greater debug
-### details, while "No" only leaves the default errors and warnings.
-[ -z "${CI_DEBUG-}" ] && CI_DEBUG=3
-case "$CI_DEBUG" in
-    [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])     CI_DEBUG=99 ;;
-    [Nn]|[Nn][Oo]|[Oo][Ff][Ff]|[Ff][Aa][Ll][Ss][Ee]) CI_DEBUG=2 ;;
-esac
-[ "$CI_DEBUG" -ge 0 ] 2>/dev/null || CI_DEBUG=3
-
 ### Empty and non-numeric and non-positive values should be filtered out here
 is_positive() {
     [ -n "$1" -a "$1" -gt 0 ] 2>/dev/null
@@ -181,25 +165,58 @@ default_posval() {
 ### high in its environment variables for a specific script run.
 ### Scripts can use this mechanism to set flexible required-verbosity
 ### levels for their messages.
+CI_DEBUGLEVEL_NOOP="-1"
+# logmsg_echo() adds no prefix and prints the message if CI_DEBUG>=$1
+# (or CI_DEBUGLEVEL_ECHO if $1 is not a number)
 default_posval CI_DEBUGLEVEL_ECHO       0
-        # By default, do echo unless $1 says otherwise
 
 # Standard stuff
 default_posval CI_DEBUGLEVEL_ERROR      1
 default_posval CI_DEBUGLEVEL_WARN       2
 default_posval CI_DEBUGLEVEL_INFO       3
+default_posval CI_DEBUGLEVEL_TRACE      4
 default_posval CI_DEBUGLEVEL_DEBUG      5
 
 # Custom stuff for specific routines
-default_posval CI_DEBUGLEVEL_RUN        4
+default_posval CI_DEBUGLEVEL_RUN        $CI_DEBUGLEVEL_TRACE
 default_posval CI_DEBUGLEVEL_LOADDB     $CI_DEBUGLEVEL_RUN
 default_posval CI_DEBUGLEVEL_DUMPDB     $CI_DEBUGLEVEL_RUN
 default_posval CI_DEBUGLEVEL_SELECT     $CI_DEBUGLEVEL_RUN
 default_posval CI_DEBUGLEVEL_PIPESNIFFER $CI_DEBUGLEVEL_DEBUG
 
+### Default debugging/info/warning level for this lifetime of the script
+### Messages are printed if their assigned level is at least CI_DEBUG
+### The default of "3" allows INFO messages to be printed or easily
+### suppressed by change to a smaller number. The level of "2" is default
+### for warnings and "1" for errors, and a "0" would likely hide most
+### such output. "Yes" bumps up a high level to enable even greater debug
+### details, while "No" only leaves the default errors and warnings.
+case "${CI_DEBUG-}" in
+    ""|"-")
+        CI_DEBUG="$CI_DEBUGLEVEL_INFO"
+        case "${BIOS_LOG_LEVEL-}" in
+            LOG_DEBUG)      CI_DEBUG="$CI_DEBUGLEVEL_DEBUG" ;;
+            LOG_INFO)       CI_DEBUG="$CI_DEBUGLEVEL_INFO"  ;;
+            LOG_WARNING)    CI_DEBUG="$CI_DEBUGLEVEL_WARN"  ;;
+            LOG_ERR)        CI_DEBUG="$CI_DEBUGLEVEL_ERROR" ;;
+            LOG_CRIT)       CI_DEBUG="`expr $CI_DEBUGLEVEL_NOOP + 1`"  ;;
+            LOG_NOOP)       CI_DEBUG="$CI_DEBUGLEVEL_NOOP" ;;
+        esac
+        ;;
+    [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])     CI_DEBUG=99 ;;
+    [Nn]|[Nn][Oo]|[Oo][Ff][Ff]|[Ff][Aa][Ll][Ss][Ee]) CI_DEBUG="$CI_DEBUGLEVEL_WARN" ;;
+esac
+[ "$CI_DEBUG" -ge -1 ] 2>/dev/null || CI_DEBUG="$CI_DEBUGLEVEL_INFO"
+[ "$CI_DEBUG" -ge -1 ] 2>/dev/null || CI_DEBUG=3
+
+### This is prefixed before ERROR, WARN, INFO tags in the logged messages
+[ -z "$LOGMSG_PREFIX" ] && LOGMSG_PREFIX="CI-"
+
 logmsg_echo() {
     ### Optionally echoes a message, based on current debug-level
     ### Does not add any headers to the output line
+        # By default, do echo unless $1 says otherwise
+
     WANT_DEBUG_LEVEL=$CI_DEBUGLEVEL_ECHO
     if [ "$1" -ge 0 ] 2>/dev/null; then
         WANT_DEBUG_LEVEL="$1"
@@ -244,6 +261,18 @@ logmsg_error() {
     fi
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
     echo_E "${LOGMSG_PREFIX}ERROR: ${_SCRIPT_PATH}:" "$@" >&2
+    :
+}
+
+logmsg_trace() {
+    WANT_DEBUG_LEVEL=$CI_DEBUGLEVEL_TRACE
+    if [ "$1" -ge 0 ] 2>/dev/null; then
+        WANT_DEBUG_LEVEL="$1"
+        shift
+    else if [ x"$1" = x"" ] && [ $# -gt 0 ]; then shift; fi
+    fi
+    [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
+    echo_E "${LOGMSG_PREFIX}TRACE: ${_SCRIPT_PATH}:" "$@" >&2
     :
 }
 
