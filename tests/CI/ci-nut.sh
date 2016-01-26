@@ -48,6 +48,8 @@ PATH="$BUILDSUBDIR/tools:$CHECKOUTDIR/tools:${DESTDIR:-/root}/libexec/bios:/usr/
 export PATH
 
 AGNUTPID=""
+AGPWRPID=""
+AGLEGMETPID=""
 DBNGPID=""
 kill_daemons() {
     set +e
@@ -55,18 +57,26 @@ kill_daemons() {
         logmsg_info "Killing make agent-nut PID $AGNUTPID to exit"
         kill -INT "$AGNUTPID"
     fi
+    if [ -n "$AGPWRPID" -a -d "/proc/$AGPWRPID" ]; then
+        logmsg_info "Killing agent-tpower PID $AGPWRPID to exit"
+        kill -INT "$AGPWRPID"
+    fi
+    if [ -n "$AGLEGMETPID" -a -d "/proc/$AGLEGMETPID" ]; then
+        logmsg_info "Killing bios-agent-legacy-metrics PID $AGLEGMETPID to exit"
+        kill -INT "$AGLEGMETPID"
+    fi
     if [ -n "$DBNGPID" -a -d "/proc/$DBNGPID" ]; then
         logmsg_info "Killing agent-dbstore PID $DBNGPID to exit"
         kill -INT "$DBNGPID"
     fi
 
-    killall -INT agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
-    killall      agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
+    killall -INT bios-agent-legacy-metrics agent-tpower lt-agent-tpower agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
+    killall      bios-agent-legacy-metrics agent-tpower lt-agent-tpower agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
 
-    ps -ef | grep -v grep | egrep "agent-nut|agent-dbstore" | egrep "^`id -u -n` " && \
+    ps -ef | grep -v grep | egrep "agent-(nut|dbstore|tpower)|legacy-metrics" | egrep "^`id -u -n` " && \
         ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
-        logmsg_error "agent-nut and/or agent-dbstore still alive, trying SIGKILL" && \
-        { killall -KILL agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null ; exit 1; }
+        logmsg_error "At least one of: bios-agent-legacy-metrics, agent-nut, agent-tpower, agent-dbstore still alive, trying SIGKILL" && \
+        { killall -KILL bios-agent-legacy-metrics agent-tpower lt-agent-tpower agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null ; exit 1; }
 
     return 0
 }
@@ -145,12 +155,17 @@ init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRI
 settraps 'kill_daemons; exit_summarizeTestlibResults $ERRCODE'
 
 logmsg_info "Ensuring that the tested programs have been built and up-to-date"
+
 if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
+    test_it "config-deps"
     ./autogen.sh --nodistclean --configure-flags \
         "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
         ${AUTOGEN_ACTION_CONFIG}
+    print_result $? || CODE=$? die "Could not prepare binaries"
 fi
-./autogen.sh ${AUTOGEN_ACTION_MAKE} agent-dbstore agent-nut
+test_it "make-deps"
+./autogen.sh ${AUTOGEN_ACTION_MAKE} agent-dbstore agent-nut agent-tpower
+print_result $? || CODE=$? die "Could not prepare binaries"
 
 # These are defined in testlib-db.sh
 test_it "initialize_db_rackpower"
@@ -158,14 +173,27 @@ loaddb_file "$DB_BASE" && \
 loaddb_file "$DB_RACK_POWER"
 print_result $? || CODE=$? die "Could not prepare database"
 
+# This program is delivered by another repo, should "just exist" in container
+logmsg_info "Spawning the bios-agent-legacy-metrics service in the background..."
+bios-agent-legacy-metrics ipc://@/malamute legacy-metrics bios METRICS &
+[ $? = 0 ] || CODE=$? die "Could not spawn bios-agent-legacy-metrics"
+AGLEGMETPID=$!
+
 # TODO: this requirement should later become the REST AGENT
 logmsg_info "Spawning the agent-dbstore server in the background..."
 ${BUILDSUBDIR}/agent-dbstore &
+[ $? = 0 ] || CODE=$? die "Could not spawn agent-dbstore"
 DBNGPID=$!
 
 logmsg_info "Spawning the agent-nut server in the background..."
 ${BUILDSUBDIR}/agent-nut &
+[ $? = 0 ] || CODE=$? die "Could not spawn agent-nut"
 AGNUTPID=$!
+
+logmsg_info "Spawning the agent-tpower service in the background..."
+${BUILDSUBDIR}/agent-tpower &
+[ $? = 0 ] || CODE=$? die "Could not spawn agent-tpower"
+AGPWRPID=$!
 
 
 NPAR="${#PARAMS[*]}"
