@@ -280,9 +280,12 @@ SAMPLES=(
 UPS1="epdu102_1"
 UPS2="epdu102_2"
 RACK="8108"
-create_nut_config "ups102_1" "$UPS1 $UPS2"
-testcase "$UPS1" "$UPS2" "$SAMPLES" "$RACK"
-
+if false; then
+    create_nut_config "ups102_1" "$UPS1 $UPS2"
+    testcase "$UPS1" "$UPS2" "$SAMPLES" "$RACK"
+else
+    logmsg_warn "Test skipped: topology too complex for now"
+fi
 
 echo "+++++++++++++++++++++++++++++++++++"
 echo "Test 3"
@@ -295,8 +298,12 @@ SAMPLES=(
 UPS1="ups103_1"
 UPS2="ups103_2"
 RACK="8116"
-create_nut_config "$UPS1 $UPS2" "pdu103_1 pdu103_2"
-testcase "$UPS1" "$UPS2" "$SAMPLES" "$RACK"
+if false; then
+    create_nut_config "$UPS1 $UPS2" "pdu103_1 pdu103_2"
+    testcase "$UPS1" "$UPS2" "$SAMPLES" "$RACK"
+else
+    logmsg_warn "Test skipped: topology too complex for now"
+fi
 
 
 echo "+++++++++++++++++++++++++++++++++++"
@@ -325,8 +332,12 @@ SAMPLES=(
 UPS1="ups106_1"
 UPS2="pdu106_2"
 RACK="8141"
-create_nut_config "$UPS1" "$UPS2 pdu106_1"
-testcase "$UPS1" "$UPS2" "$SAMPLES" "$RACK"
+if false; then
+    create_nut_config "$UPS1" "$UPS2 pdu106_1"
+    testcase "$UPS1" "$UPS2" "$SAMPLES" "$RACK"
+else
+    logmsg_warn "Test skipped: topology too complex for now"
+fi
 
 
 # The trap-handler should kill_daemons() and display the summary (if any)
