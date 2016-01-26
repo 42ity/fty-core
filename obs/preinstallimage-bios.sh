@@ -227,7 +227,7 @@ cp /usr/share/bios/examples/config/sudoers.d/bios_00_base /etc/sudoers.d
 mkdir -p /etc/security
 cp /usr/share/bios/examples/config/security/* /etc/security
 sed -i 's|START=no|START=yes|' /etc/default/saslauthd
-systemctl enable saslauthd
+/bin/systemctl enable saslauthd
 
 mkdir -p /etc/update-rc3.d
 cp /usr/share/bios/examples/config/update-rc3.d/* /etc/update-rc3.d
@@ -235,7 +235,7 @@ cp /usr/share/bios/examples/config/update-rc3.d/* /etc/update-rc3.d
     echo "IMGTYPE='$IMGTYPE'" > /etc/update-rc3.d/image-os-type.conf
 
 # Enable mysql
-systemctl enable mysql
+/bin/systemctl enable mysql
 
 # Enable ssh
 echo "UseDNS no" >> /etc/ssh/sshd_config
@@ -243,9 +243,9 @@ rm /etc/ssh/*key*
 mkdir -p /etc/systemd/system
 sed 's|\[Service\]|[Service]\nExecStartPre=/usr/bin/ssh-keygen -A|' /lib*/systemd/system/ssh@.service > /etc/systemd/system/ssh@.service
 sed -i 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/bios/license\nConditionPathExists=/mnt/nand/overlay/etc/shadow|' /etc/systemd/system/ssh@.service
-systemctl disable ssh.service
-systemctl mask ssh.service
-systemctl enable ssh.socket
+/bin/systemctl disable ssh.service
+/bin/systemctl mask ssh.service
+/bin/systemctl enable ssh.socket
 
 # Workaround nutscanner's ldopen
 ln -sr /usr/lib/*/libnetsnmp.so.*.* /usr/lib/libnetsnmp.so
@@ -256,29 +256,29 @@ ln -sr /usr/lib/libneon.so.*.*      /usr/lib/libneon.so
 # Enable malamute with BIOS configuration
 mkdir -p /etc/malamute
 cp /usr/share/bios/examples/config/malamute/malamute.cfg /etc/malamute
-systemctl enable malamute
+/bin/systemctl enable malamute
 
 # Enable BIOS services (distributed as a systemd preset file)
-systemctl preset-all
+/bin/systemctl preset-all
 if [ "`uname -m`" = x86_64 ]; then
-    systemctl enable bios-fake-th
-    systemctl disable agent-th
-    systemctl disable lcd-boot-display
-    systemctl disable lcd-net-display
-    systemctl mask lcd-boot-display
-    systemctl mask lcd-net-display
-    systemctl disable bios-reset-button
-    systemctl mask bios-reset-button
+    /bin/systemctl enable bios-fake-th
+    /bin/systemctl disable agent-th
+    /bin/systemctl disable lcd-boot-display
+    /bin/systemctl disable lcd-net-display
+    /bin/systemctl mask lcd-boot-display
+    /bin/systemctl mask lcd-net-display
+    /bin/systemctl disable bios-reset-button
+    /bin/systemctl mask bios-reset-button
 else
-    systemctl disable bios-fake-th
-    systemctl mask bios-fake-th
-    systemctl enable lcd-boot-display
-    systemctl enable lcd-net-display
+    /bin/systemctl disable bios-fake-th
+    /bin/systemctl mask bios-fake-th
+    /bin/systemctl enable lcd-boot-display
+    /bin/systemctl enable lcd-net-display
     sed -i 's|PathChanged=/etc|PathChanged=/mnt/nand/overlay/etc|' /usr/lib/systemd/system/composite-metrics\@.path
 fi
 # Services not part of core
-systemctl enable bios-agent-legacy-metrics
-systemctl enable bios-agent-alert-generator
+/bin/systemctl enable bios-agent-legacy-metrics
+/bin/systemctl enable bios-agent-alert-generator
 
 # Our tntnet unit
 cat > /etc/systemd/system/tntnet@.service <<EOF
@@ -325,11 +325,11 @@ sed '/<mappings>/,/<\/mappings>/!d; /mappings/ d' /etc/tntnet/bios.xml > /etc/tn
 sed '1,/<!-- Here starts the real API -->/!d; /<!-- Here starts the real API -->/ d' /etc/tntnet/bios.d/20_core.xml > /etc/tntnet/bios.d/10_common_basics.xml
 sed '/<!-- Here starts the real API -->/,$!d; /<!-- Here starts the real API -->/ d' /etc/tntnet/bios.d/20_core.xml > /etc/tntnet/bios.d/50_main_api.xml
 rm -f /etc/tntnet/bios.d/20_core.xml
-systemctl enable tntnet@bios
-systemctl enable tntnet@bios
+/bin/systemctl enable tntnet@bios
+/bin/systemctl enable tntnet@bios
 
 # Disable logind
-systemctl disable systemd-logind
+/bin/systemctl disable systemd-logind
 find / -name systemd-logind.service -delete
 
 # Disable expensive debug logging by default on non-devel images
@@ -377,7 +377,7 @@ sed -i 's|127.0.0.1|greyhound.roz53.lab.etn.com|' /etc/zabbix/zabbix_agentd.conf
 sed -i 's|^Hostname|#\ Hostname|' /etc/zabbix/zabbix_agentd.conf
 # Our network sucks, use longer timeouts
 sed -i 's|#\ Timeout.*|Timeout=15|' /etc/zabbix/zabbix_agentd.conf
-systemctl enable zabbix-agent
+/bin/systemctl enable zabbix-agent
 sed -i 's|\(chown -R.*\)|\1\nmkdir -p /var/log/zabbix-agent\nchown zabbix:zabbix /var/log/zabbix-agent|' /etc/init.d/zabbix-agent
 
 cat > /etc/zabbix/zabbix_agentd.conf.d/mysql.conf << EOF
@@ -396,22 +396,21 @@ EOF
 
 cat > /etc/zabbix/zabbix_agentd.conf.d/iostat.conf << EOF
 UserParameter=custom.vfs.dev.discovery,/etc/zabbix/scripts/queryDisks.sh
-                              
-# reads completed successfully                                                                       
+# reads completed successfully
 UserParameter=custom.vfs.dev.read.ops[*],cat /proc/diskstats | egrep \$1 | head -1 | awk '{print \$\$4}'
-# sectors read                                                                                           
+# sectors read
 UserParameter=custom.vfs.dev.read.sectors[*],cat /proc/diskstats | egrep \$1 | head -1 | awk '{print \$\$6}'
-# time spent reading (ms)                                                                           
+# time spent reading (ms)
 UserParameter=custom.vfs.dev.read.ms[*],cat /proc/diskstats | egrep \$1 | head -1 | awk '{print \$\$7}'
-# writes completed                                                                                    
+# writes completed
 UserParameter=custom.vfs.dev.write.ops[*],cat /proc/diskstats | egrep \$1 | head -1 | awk '{print \$\$8}'
-# sectors written                                                                                          
+# sectors written
 UserParameter=custom.vfs.dev.write.sectors[*],cat /proc/diskstats | egrep \$1 | head -1 | awk '{print \$\$10}'
-# time spent writing (ms)                                                                             
+# time spent writing (ms)
 UserParameter=custom.vfs.dev.write.ms[*],cat /proc/diskstats | egrep \$1 | head -1 | awk '{print \$\$11}'
-# I/Os currently in progress                                                                           
+# I/Os currently in progress
 UserParameter=custom.vfs.dev.io.active[*],cat /proc/diskstats | egrep \$1 | head -1 | awk '{print \$\$12}'
-# time spent doing I/Os (ms)                                                                       
+# time spent doing I/Os (ms)
 UserParameter=custom.vfs.dev.io.ms[*],cat /proc/diskstats | egrep \$1 | head -1 | awk '{print \$\$13}'
 EOF
 mkdir -p /etc/zabbix/scripts/
