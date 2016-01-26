@@ -1,0 +1,46 @@
+nAme	type	sub_type	description	location	group.1	group.2	outlet.count	power_source.1	power_plug_src.1	power_input.1	power_source.2	power_plug_src.2	power_input.2	status	priority	company	site_name	region	country	address	contact_name	contact_email	contact_phone	maximum_number_racks	u_size	manufacturer	model	asset_tag	serial_no	runtime	phase	installation_date	FEEDtenance_date	FEEDtenance_due	service_contact_name	service_contact_mail	service_contact_phone	location_front_pos	location_rear_pos	location_u_pos	location_w_pos	location_d_pos	end_warranty_date	battery_type	battery_installation_date	battery_FEEDtenance_date	IP.1	Hostname.1	http_link.1
+DC	datacenter		desc1				99							active	p1	EATON	Eaton DC 1	EMEA	Switzerland	Place de la Gare	John Smith	john.smith@company.com		10	99u			EATON001	ATC01																				
+ROOM1	room		desc2	DC			99							active	p2										99u			EATON002	ATC02																				
+ROOM2	room		desc3	DC			99							active	p3										99u			EATON003	ATC03																				
+ROW1	row		desc4	ROOM1			99							active	p5									10	99u			EATON004	ATC04																				
+ROW2	row		desc5	ROOM1			99							active	p6			EMEA						10	99u			EATON005	ATC05																				
+RACK1	rack		desc6	ROW1			99							active	p16										24u		RESSPU4210KB 600mm x 1000mm - 42U Rack	EATON006	ATC06																				
+RACK2	rack		desc7	ROW1			99							active	1										42u		RESSPU4210KB 600mm x 1000mm - 42U Rack	EATON007	ATC07																				
+RACK3	rack		desc8	ROW2			99							active	1										42u		RESSPU4210KB 600mm x 1000mm - 42U Rack	EATON008	ATC08																				
+RACK4	rack	some	desc9	ROOM2			99							active	1										42u			EATON009	ATC09																				
+RACK5	rack	some	desc10	ROOM2			99							active	1										42u			EATON010	ATC10																				
+RACK6	rack	some	desc11	ROOM2			99							active	1										42u			EATON011	ATC11																				
+FEED1	device	feed	desc12	DC			99							active	3										99u			EATON012	ATC12																				
+FEED2	device	feed	desc13	DC			99							active	4		Eaton DC 1								99u			EATON013	ATC13		3						4.21E+11												
+FEED3	device	feed	desc14	DC			99							active	5	EATON									99u		45kW NG/LG 240V 3 Phase	EATON014	ATC14			4-Jun-14																	
+FEED4	device	feed	desc15	DC			99							active	5	EATON									99u		45kW NG/LG 240V 3 Phase	EATON015	ATC15			4-Jun-14																	
+UPS1	device	ups	desc16	ROOM1			99	FEED1						active	16					Roztoky	NOVAK	n@x.cz	4.20E+11		3U		9PX 6kVA	EATON016	ATC16																	4-Jun-14		10.25.38.47	
+UPS2	device	ups	desc17	ROW2			99	FEED3						active	5	EATON									99u		45kW NG/LG 240V 3 Phase	EATON017	ATC17					4-Sep-14											4-Jun-14				
+UPS3F	device	ups	desc18	ROOM2			99	FEED4						active	5	EATON									99u		45kW NG/LG 240V 3 Phase	EATON018	ATC18					4-Sep-14											4-Jun-14				
+PDU2	device	pdu	desc28	RACK3			8	UPS2				B5		active	0												Eaton ePDU MA 1P IN:IEC309 16A OUT:21xC13	EATON028	ATC28											sor2	right								http://a.cz
+PDU7	device	pdu	desc29	RACK4				UPS3F	L1			B5		active	0												Eaton ePDU MA 1P IN:IEC309 16A OUT:21xC13	EATON029	ATC29											sor2	right								http://a.cz
+PDU8	device	pdu	desc30	RACK4			8	UPS3F	L2			B5		active	0												Eaton ePDU MA 1P IN:IEC309 16A OUT:21xC13	EATON030	ATC30											sor2	right								http://a.cz
+PDU14	device	pdu	desc33	RACK6			8	UPS3F	L3			B5		active	0												Eaton ePDU MA 1P IN:IEC309 16A OUT:21xC13	EATON033	ATC33											sor2	right								http://a.cz
+PDU15	device	pdu	desc34	RACK6			8	UPS3F	L3			B5		active	0												Eaton ePDU MA 1P IN:IEC309 16A OUT:21xC13	EATON034	ATC34											sor2	right								http://a.cz
+ePDU1	device	epdu	desc19	RACK2			1	UPS1	B1			B5		active	0												Eaton ePDU MA 1P IN:IEC309 16A OUT:21xC13	EATON019	ATC19	10:30										sor1	left								http://a.cz
+ePDU2	device	epdu	desc20	RACK2			2	ePDU1	B2			B5		active	0												Eaton ePDU MA 1P IN:IEC309 16A OUT:21xC13	EATON020	ATC20											sor2	right								http://a.cz
+ePDU3	device	epdu	desc21	RACK1			1	FEED2	B3					active	0												Eaton ePDU MA 1P IN:IEC309 16A OUT:21xC13	EATON021	ATC21											sor1	left								
+ePDU4	device	epdu	desc22	RACK1			99999999999	FEED2	B4					active	ABCD												Eaton ePDU MA 1P IN:IEC309 16A OUT:21xC13	EATON022	ATC22				4-Jun-14							sor2	right								
+ePDU6	device	epdu	desc24	RACK3			8	PDU2	B3			B5		active	0												Eaton ePDU MA 1P IN:IEC309 16A OUT:21xC13	EATON024	ATC24											sor2	right								http://a.cz
+ePDU10	device	epdu	desc25	RACK5			8	UPS3F	L1					active	0												Eaton ePDU MA 1P IN:IEC309 16A OUT:21xC13	EATON025	ATC25											sor1	left								
+ePDU12	device	epdu	desc27	RACK5			8	UPS3F	L3					active	ABCD												Eaton ePDU MA 1P IN:IEC309 16A OUT:21xC13	EATON027	ATC27				4-Jun-14							sor2	right								
+SRV7	device	server	desc41	RACK4			99	PDU7						active	2										10U			EATON041	ATC41																				
+SRV8	device	server	desc42	RACK4			99	PDU8						active	3										10U			EATON042	ATC42																				
+SRV9	device	server	desc43	RACK4			99	UPS3F	L3					active	2										10U			EATON043	ATC43																				
+SRV3	device	server	desc37	RACK1			99	ePDU3						active	2										12u			EATON037	ATC37																				
+SRV2	device	server	desc36	RACK2			99	ePDU2						active	3										12u			EATON036	ATC36																				
+SRV4	device	server	desc38	RACK1			99	ePDU4						active	3										13u			EATON038	ATC38																				
+SRV1	device	server	desc35	RACK2			99	ePDU2						active	2										21u			EATON035	ATC35																				
+SRV5	device	server	desc39	RACK3			99	PDU2			PDU2			active	2										36u			EATON039	ATC39																				
+SRV13	device	server	desc47	RACK6			99	UPS3F	L3					active	3										50u			EATON047	ATC47																				
+SRV11	device	server	desc45	RACK5			99	UPS3F	L2					active	2										5u			EATON045	ATC45																				
+SRV12	device	server	desc46	RACK5			99	ePDU12			PDU15			active	3										5u			EATON046	ATC46																				
+SRV6	device	server	desc40	RACK3			99	ePDU6						active	3										6u			EATON040	ATC40																				
+SRV10	device	server	desc44	RACK5			99	ePDU10						active	3										25u			EATON044	ATC44																				
+SRV14	device	server	desc48	RACK6			99	PDU14						active	2													EATON048	ATC48																				
+SRV15	device	server	desc49	RACK6			99				PDU15			active	3													EATON049	ATC49																				
