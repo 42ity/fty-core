@@ -85,12 +85,22 @@ kill_daemons() {
 settraps "kill_daemons; exit_summarizeTestlibResults"
 
 logmsg_info "Ensuring that the tested programs have been built and up-to-date"
+test_it "make-deps"
 if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
     ./autogen.sh --nodistclean --configure-flags \
         "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
         ${AUTOGEN_ACTION_CONFIG}
 fi
 ./autogen.sh ${AUTOGEN_ACTION_MAKE} web-test-deps agent-dbstore agent-nut agent-tpower
+print_result $? || CODE=$? die "Could not prepare binaries"
+
+# These are defined in testlib-db.sh
+test_it "initialize_db_rackpower"
+loaddb_file "$DB_BASE" && \
+loaddb_file "$DB_RACK_POWER"
+print_result $? || CODE=$? die "Could not prepare database"
+
+logmsg_info "Spawning the tntnet web server in the background..."
 ./autogen.sh --noparmake ${AUTOGEN_ACTION_MAKE} web-test \
     >> ${BUILDSUBDIR}/web-test.log 2>&1 &
 WEBTESTPID=$!
@@ -107,12 +117,6 @@ AGNUTPID=$!
 logmsg_info "Spawning the agent-tpower server in the background..."
 ${BUILDSUBDIR}/agent-tpower &
 AGPWRPID=$!
-
-# These are defined in testlib-db.sh
-test_it "initialize_db_rackpower"
-loaddb_file "$DB_BASE" && \
-loaddb_file "$DB_RACK_POWER"
-print_result $? || CODE=$? die "Could not prepare database"
 
 # Let the webserver settle
 sleep 5
