@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2015 Eaton
+# Copyright (c) 2016 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,8 +15,8 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-#! \file   avg_relative.sh
-#  \brief  CI tests for avg "relative" parameter
+#! \file   trends.sh
+#  \brief  CI tests for avg, min, max, trends - datacenter indicators
 #  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 
 echo
@@ -52,7 +52,7 @@ measurement() {
     # measurement
     sqlline="INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ($TIMESTAMP, $VALUE, $SCALE, @topic_id);"
     echo "$sqlline" >> "${DB_TMPSQL_FILE_CURRENT}"
-    LOADDB_FILE_REMOTE_SLEEP=0 loaddb_file ""${DB_TMPSQL_FILE_CURRENT}""
+    LOADDB_FILE_REMOTE_SLEEP=0 loaddb_file "${DB_TMPSQL_FILE_CURRENT}"
     echo "use ${DATABASE};" > "${DB_TMPSQL_FILE_CURRENT}"
 }
 
@@ -72,7 +72,7 @@ db_initiate(){
 
 db_measure(){
     # set actual time
-    TIME=$(date +%s)
+    TIME=$(date -u)
 
     # set the header names of the params
     PARAMS=(units topic name timestamp value scale)
