@@ -246,7 +246,7 @@ testcase() {
                 logmsg_info "The total power on rack $RACK has an expected value: $TP = $POWER"
                 print_result 0
             else
-                print_result 1 "Total power on rack $RACK does not equal expected value: $TP <> $POWER "
+                print_result 1 "Total power on rack $RACK does not equal expected value: $TP <> $POWER"
             fi
         done
     done
