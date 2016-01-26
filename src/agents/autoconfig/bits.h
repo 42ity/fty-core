@@ -19,5 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <string>
 #include "subprocess.h"
 
+namespace bits {
 int
     systemctl(const std::string &operation, const std::string &service);
+}

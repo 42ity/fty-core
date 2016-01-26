@@ -19,6 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "bits.h"
 #include "log.h"
 
+namespace bits {
 int
     systemctl( const std::string &operation, const std::string &service )
 {
@@ -38,4 +39,5 @@ int
                   service.c_str() );
     }
     return -1;
+}
 }

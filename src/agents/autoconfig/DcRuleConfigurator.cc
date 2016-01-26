@@ -29,6 +29,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 bool DcRuleConfigurator::v_configure (const std::string& name, const AutoConfigurationInfo& info, mlm_client_t *client)
 {
+    log_debug ("DcRuleConfigurator::v_configure (name = '%s', info.type = '%" PRIi32"', info.subtype = '%" PRIi32"')",
+            name.c_str(), info.type, info.subtype);
     switch (info.operation) {
         case persist::asset_operation::INSERT:
         {

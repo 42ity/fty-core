@@ -41,12 +41,14 @@ static bool
 
 bool DCTHConfigurator::v_configure (UNUSED_PARAM const std::string& name, const AutoConfigurationInfo& info, UNUSED_PARAM mlm_client_t *client)
 {
+    log_debug ("DCTHConfigurator::v_configure (name = '%s', info.type = '%" PRIi32"', info.subtype = '%" PRIi32"')",
+        name.c_str(), info.type, info.subtype);
     switch (info.operation) {
         case persist::asset_operation::INSERT:
         case persist::asset_operation::UPDATE:
         case persist::asset_operation::DELETE:
             {
-                systemctl ("restart", "dc_th");
+                bits::systemctl ("restart", "dc_th");
             }
         case persist::asset_operation::RETIRE:
         {
