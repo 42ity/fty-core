@@ -194,7 +194,7 @@ print_result() {
 
     # Tags are single-token strings saved into the corresponding list
     # of passed/ignored/failed tests
-    echo
+    [ "$CI_DEBUG" -gt "$CI_DEBUGLEVEL_NOOP" ] && echo ""
     if [ "${TNAME-}" = "`basename $NAME .sh`" ]; then
         TESTLIB_LASTTESTTAG="`echo "$NAME(${_report})" | sed 's, ,__,g'`"
         LOGMSG_PREFIX="${LOGMSG_PREFIX_TESTLIB}" logmsg_info "Completed test $TNAME${TESTLIB_TESTDURATION_TEXT} :"
@@ -207,7 +207,7 @@ print_result() {
         # Note: This tag is inspected in summarizeResults() so format matters!
 
     if [ "$_code" -eq 0 ]; then  # should include "-0" too
-        echo " * PASSED"
+        logmsg_echo $CI_DEBUGLEVEL_INFO " * PASSED"
         TESTLIB_COUNT_PASS="`expr $TESTLIB_COUNT_PASS + 1`"
         [ "$TESTLIB_COUNT_PASS" -eq "$TESTLIB_COUNT_TOTAL" ] && \
             TEMP_NUMBER=0 || \
@@ -216,27 +216,28 @@ print_result() {
             logmsg_error "WOW: TESTLIB_COUNT_PASS - TESTLIB_COUNT_TOTAL = $TESTLIB_COUNT_PASS - $TESTLIB_COUNT_TOTAL = $TEMP_NUMBER > 0 ! This should not happen!"
         fi
         TESTLIB_LIST_PASSED="$TESTLIB_LIST_PASSED $TESTLIB_LASTTESTTAG"
-        echo
+        logmsg_echo $CI_DEBUGLEVEL_INFO ""
         return 0
     else
         if [ "$_code" -lt 0 ] ; then
             # The "$1" string was a negative number
             TESTLIB_COUNT_SKIP="`expr $TESTLIB_COUNT_SKIP + 1`"
-            echo " * FAILED_IGNORED ($_report)"
+            logmsg_echo $CI_DEBUGLEVEL_INFO " * FAILED_IGNORED ($_report)"
             TESTLIB_LIST_FAILED_IGNORED="$TESTLIB_LIST_FAILED_IGNORED $TESTLIB_LASTTESTTAG"
-            echo
+            logmsg_echo $CI_DEBUGLEVEL_INFO ""
             return $_ret
         fi
 
         # Positive _code, including 255 set for anon failure with comment
         # Unlike ignored-negative retcodes above, this can abort the script
-        echo " * FAILED ($_report)"
+        logmsg_echo $CI_DEBUGLEVEL_ERROR " * FAILED ($_report)"
 
         TESTLIB_LIST_FAILED="$TESTLIB_LIST_FAILED $TESTLIB_LASTTESTTAG"
         TESTLIB_COUNT_FAIL="`expr $TESTLIB_COUNT_FAIL + 1`"
 
         # This optional envvar can be set by the caller
         if [ "$CITEST_QUICKFAIL" = yes ]; then
+            [ "$CI_DEBUG" -gt "$CI_DEBUGLEVEL_NOOP" ] && {
             echo ""
             echo ""
             echo "################### ABORT on CITEST_QUICKFAIL #######################"
@@ -246,11 +247,13 @@ print_result() {
                 "after first failure with test $TESTLIB_LASTTESTTAG"
             echo "#####################################################################"
             echo ""
+            }
             exit $_ret
         fi >&2
 
         # This optional envvar can be set by CURL() and trap_*() below
         if [ "$TESTLIB_FORCEABORT" = yes ]; then
+            [ "$CI_DEBUG" -gt "$CI_DEBUGLEVEL_NOOP" ] && {
             echo ""
             echo ""
             echo "################### ABORT on TESTLIB_FORCEABORT #####################"
@@ -260,6 +263,7 @@ print_result() {
                 "after forced abortion in test $TESTLIB_LASTTESTTAG"
             echo "#####################################################################"
             echo ""
+            }
             exit $_ret
         fi >&2
     fi
