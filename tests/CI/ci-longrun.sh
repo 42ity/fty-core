@@ -151,7 +151,7 @@ new_value() {
 }
 
 create_random_samples() {
-    local DEVICES=(epdu101_1_.dev epdu101_2_.dev ups103_1_.dev ups103_2_.dev)
+    local DEVICES=(epdu101_1.dev epdu101_2.dev ups103_1.dev ups103_2.dev)
     local TOTALTIME="$1"
     local FREQ="$2"
     local TIME=0
@@ -271,12 +271,12 @@ fi
 
 case "$ACTION" in
     samples)
-        create_nut_config "ups103_1_ ups103_2_" "epdu101_1_ epdu101_2_" >/dev/null 2>&1
+        create_nut_config "ups103_1 ups103_2" "epdu101_1 epdu101_2" >/dev/null 2>&1
         create_random_samples "$TIME" "$FREQ"
         ;;
     test)
         "$SCRIPTDIR/"ci-rc-bios.sh --stop
-        create_nut_config "ups103_1_ ups103_2_" "epdu101_1_ epdu101_2_"
+        create_nut_config "ups103_1 ups103_2" "epdu101_1 epdu101_2"
         "$SCRIPTDIR/"ci-empty-db.sh
         loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE"
         loaddb_file "$DB_RACK_POWER"
