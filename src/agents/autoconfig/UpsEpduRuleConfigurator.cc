@@ -100,3 +100,11 @@ bool UpsEpduRuleConfigurator::v_configure (const std::string& name, const AutoCo
     return true;
 }
 
+bool UpsEpduRuleConfigurator::isApplicable (const AutoConfigurationInfo& info)
+{
+    if (info.type == persist::asset_type::DEVICE &&
+        (info.subtype == persist::asset_subtype::UPS || info.subtype == persist::asset_subtype::EPDU)) {
+        return true;
+    }
+    return false;
+}

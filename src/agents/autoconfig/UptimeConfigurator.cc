@@ -126,3 +126,12 @@ bool UptimeConfigurator::v_configure (const std::string& name, const AutoConfigu
         return false;
     return true;
 }
+
+bool UptimeConfigurator::isApplicable (const AutoConfigurationInfo& info)
+{
+    if (info.type == persist::asset_type::DATACENTER || info.subtype == persist::asset_subtype::UPS)
+    {
+        return true;
+    }
+    return false;
+}

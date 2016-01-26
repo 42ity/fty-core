@@ -32,6 +32,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 class UptimeConfigurator : public Configurator {
  public:
     bool v_configure (const std::string& name, const AutoConfigurationInfo& info, mlm_client_t *client);
+    bool isApplicable (const AutoConfigurationInfo& info);
 
     // helper methods
     bool    obtainData (std::map <std::string, std::vector <std::string>>& dc_upses);

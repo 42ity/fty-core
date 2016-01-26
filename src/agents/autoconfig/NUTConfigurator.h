@@ -33,6 +33,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 class NUTConfigurator : public Configurator {
  public:
     bool v_configure (const std::string& name, const AutoConfigurationInfo& info, mlm_client_t *client);
+    bool isApplicable (const AutoConfigurationInfo& info);
 
     // helper methods
     std::vector<std::string>::const_iterator selectBest (const std::vector<std::string>& configs);

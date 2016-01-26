@@ -131,17 +131,13 @@ void NUTConfigurator::updateNUTConfig() {
 }
 
 
-bool NUTConfigurator::v_configure (const std::string &name, const AutoConfigurationInfo &info, mlm_client_t *client) {
+bool NUTConfigurator::v_configure (UNUSED_PARAM const std::string &name, const AutoConfigurationInfo &info, UNUSED_PARAM mlm_client_t *client) {
     log_debug("NUT configurator created");
 
     switch( info.operation ) {
     case asset_operation::INSERT:
     case asset_operation::UPDATE:
         {
-            //TODO: boldly check size of info.attributes
-            //      if empty (or NULL) => return false
-            //      i don't know all the bussiness/domain knowledge, but this should be enough
-            //      as it seems insert/update require some attributes
             auto ipit = info.attributes.find("ip.1");
             if( ipit == info.attributes.end() ) {
                 log_error("device %s has no IP address", name.c_str() );
@@ -201,4 +197,11 @@ bool NUTConfigurator::v_configure (const std::string &name, const AutoConfigurat
     }
 }
 
-
+bool NUTConfigurator::isApplicable (const AutoConfigurationInfo& info)
+{
+    if (info.type == persist::asset_type::DEVICE &&
+        (info.subtype == persist::asset_subtype::UPS || info.subtype == persist::asset_subtype::EPDU)) {
+        return true;
+    }
+    return false;
+}

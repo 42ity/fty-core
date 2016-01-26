@@ -24,11 +24,22 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "log.h"
 #include "asset_types.h"
+#include "preproc.h"
 
 #include "bits.h"
 #include "DCTHConfigurator.h"
 
-bool DCTHConfigurator::v_configure (const std::string& name, const AutoConfigurationInfo& info, mlm_client_t *client)
+static bool
+    s_is_rc (const AutoConfigurationInfo &info)
+{
+    // Form ID from hostname and agent name
+    char hostname[HOST_NAME_MAX];
+    ::gethostname(hostname, HOST_NAME_MAX);
+    return (info.attributes.count("hostname.1") == 1 && info.attributes.at("hostname.1") == hostname);
+}
+
+
+bool DCTHConfigurator::v_configure (UNUSED_PARAM const std::string& name, const AutoConfigurationInfo& info, UNUSED_PARAM mlm_client_t *client)
 {
     switch (info.operation) {
         case persist::asset_operation::INSERT:
@@ -49,4 +60,12 @@ bool DCTHConfigurator::v_configure (const std::string& name, const AutoConfigura
     }
     return true;
 
+}
+
+bool DCTHConfigurator::isApplicable (const AutoConfigurationInfo& info)
+{
+    if (info.type == persist::asset_type::DATACENTER || s_is_rc (info)) {
+        return true;
+    }
+    return false;
 }
