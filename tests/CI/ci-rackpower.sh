@@ -50,6 +50,7 @@ export PATH
 WEBTESTPID=""
 AGNUTPID=""
 AGPWRPID=""
+AGLEGMETPID=""
 DBNGPID=""
 kill_daemons() {
     set +e
@@ -65,18 +66,22 @@ kill_daemons() {
         logmsg_info "Killing agent-tpower PID $AGPWRPID to exit"
         kill -INT "$AGPWRPID"
     fi
+    if [ -n "$AGLEGMETPID" -a -d "/proc/$AGLEGMETPID" ]; then
+        logmsg_info "Killing bios-agent-legacy-metrics PID $AGLEGMETPID to exit"
+        kill -INT "$AGLEGMETPID"
+    fi
     if [ -n "$DBNGPID" -a -d "/proc/$DBNGPID" ]; then
         logmsg_info "Killing agent-dbstore PID $DBNGPID to exit"
         kill -INT "$DBNGPID"
     fi
 
-    killall -INT tntnet agent-nut lt-agent-nut agent-tpower lt-agent-tpower agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
-    killall      tntnet agent-nut lt-agent-nut agent-tpower lt-agent-tpower agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
+    killall -INT tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut agent-tpower lt-agent-tpower agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
+    killall      tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut agent-tpower lt-agent-tpower agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
 
-    ps -ef | grep -v grep | egrep "tntnet|agent-(nut|dbstore|tpower)" | egrep "^`id -u -n` " && \
+    ps -ef | grep -v grep | egrep "tntnet|agent-(nut|dbstore|tpower)|legacy-metrics" | egrep "^`id -u -n` " && \
         ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
-        logmsg_error "tntnet and/or agent-dbstore and/or agent-nut and/or agent-tpower still alive, trying SIGKILL" && \
-        { killall -KILL tntnet agent-nut lt-agent-nut agent-tpower lt-agent-tpower agent-dbstore lt-agent-dbstore 2>/dev/null ; exit 1; }
+        logmsg_error "At least one of: tntnet, bios-agent-legacy-metrics, agent-dbstore, agent-nut, agent-tpower still alive, trying SIGKILL" && \
+        { killall -KILL tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut agent-tpower lt-agent-tpower agent-dbstore lt-agent-dbstore 2>/dev/null ; exit 1; }
 
     return 0
 }
@@ -100,22 +105,32 @@ loaddb_file "$DB_BASE" && \
 loaddb_file "$DB_RACK_POWER"
 print_result $? || CODE=$? die "Could not prepare database"
 
+# This program is delivered by another repo, should "just exist" in container
+logmsg_info "Spawning the bios-agent-legacy-metrics service in the background..."
+bios-agent-legacy-metrics ipc://@/malamute legacy-metrics bios METRICS &
+[ $? = 0 ] || CODE=$? die "Could not spawn bios-agent-legacy-metrics"
+AGLEGMETPID=$!
+
 logmsg_info "Spawning the tntnet web server in the background..."
 ./autogen.sh --noparmake ${AUTOGEN_ACTION_MAKE} web-test \
     >> ${BUILDSUBDIR}/web-test.log 2>&1 &
+[ $? = 0 ] || CODE=$? die "Could not spawn tntnet"
 WEBTESTPID=$!
 
 # TODO: this requirement should later become the REST AGENT
 logmsg_info "Spawning the agent-dbstore server in the background..."
 ${BUILDSUBDIR}/agent-dbstore &
+[ $? = 0 ] || CODE=$? die "Could not spawn agent-dbstore"
 DBNGPID=$!
 
-logmsg_info "Spawning the agent-nut server in the background..."
+logmsg_info "Spawning the agent-nut service in the background..."
 ${BUILDSUBDIR}/agent-nut &
+[ $? = 0 ] || CODE=$? die "Could not spawn agent-nut"
 AGNUTPID=$!
 
-logmsg_info "Spawning the agent-tpower server in the background..."
+logmsg_info "Spawning the agent-tpower service in the background..."
 ${BUILDSUBDIR}/agent-tpower &
+[ $? = 0 ] || CODE=$? die "Could not spawn agent-tpower"
 AGPWRPID=$!
 
 # Let the webserver settle
