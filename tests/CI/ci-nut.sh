@@ -190,7 +190,9 @@ for UPS in $UPS1 $UPS2 ; do
             set_value_in_ups "$UPS" "$PARAM" "$NEWVALUE"
             print_result $? "Failed to set $PARAM value to $NEWVALUE in NUT dummy driver"
         done
+        logmsg_debug "Sleeping 3sec to propagate NUT driver changes..."
         sleep 3 # give time to nut dummy driver for change
+        logmsg_debug "Sleeping time is over!"
 
         for i in $(seq 0 $PARAMSCNT); do
             PARAM="${PARAMS[$i]}"
@@ -203,7 +205,9 @@ for UPS in $UPS1 $UPS2 ; do
                 print_result 1 "Failed to see that we could set $PARAM value to $NEWVALUE in NUT dummy driver"
             fi
         done
+        logmsg_debug "Sleeping 8sec to propagate measurements..."
         sleep 8  # 8s is max time for propagating into DB (poll every 5s in nut actor + some time to process)
+        logmsg_debug "Sleeping time is over!"
 
         for i in $(seq 0 $PARAMSCNT); do
             PARAM="${PARAMS[$i]}"
