@@ -27,40 +27,61 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "UpsEpduRuleConfigurator.h"
 
-std::string UpsEpduRuleConfigurator::makeRule (const std::string& alert, const std::string& bit, const std::string& device, const std::string& description) const {
-    return
-        "{\n"
-        "\"single\" : {\n"
-        "    \"rule_name\"     :   \"" + alert + "-" + device + "\",\n"
-        "    \"target\"        :   [\"status.ups@" + device + "\"],\n"
-        "    \"values\"        :   [],\n"
-        "    \"element\"       :   \"" + device + "\",\n"
-        "    \"results\"       :   [ {\"high_critical\"  : { \"action\" : [ \"EMAIL\" ], \"description\" : \""+description+"\" }} ],\n"
-        "    \"evaluation\"    : \""
-        " function has_bit(x,bit)"
-        "     local mask = 2 ^ (bit - 1)"
-        "     x = x % (2*mask)"
-        "     if x >= mask then return true else return false end"
+#define LUA_RULE(BIT) \
+        " function has_bit(x,bit)"\
+        "     local mask = 2 ^ (bit - 1)"\
+        "     x = x % (2*mask)"\
+        "     if x >= mask then return true else return false end"\
+        " end"\
+        " function main(status)"\
+        "     if has_bit(status,"\
+        #BIT\
+        ") then return HIGH_CRITICAL end"\
+        "     return OK"\
         " end"
-        " function main(status)"
-        "     if has_bit(status,"+bit+") then return HIGH_CRITICAL end"
-        "     return OK"
-        " end"
-        "\"\n"
-        "  }\n"
-        "}";
-};
 
 bool UpsEpduRuleConfigurator::v_configure (const std::string& name, const AutoConfigurationInfo& info, mlm_client_t *client)
 {
     switch (info.operation) {
         case persist::asset_operation::INSERT:
         {
-            // bits OB - 5 LB - 7 BYPASS - 9
+            // bits OB - 5 
             bool result = true;
-            result &= sendNewRule (makeRule ("onbattery",  "5", name, "UPS is running on battery!"), client);
-            result &= sendNewRule (makeRule ("lowbattery", "7", name, "Battery depleted!"), client);
-            result &= sendNewRule (makeRule ("onbypass",   "9", name, "UPS is running on bypass!"), client);
+            result &= sendNewRule (makeSingleRule (
+                "onbattery - " + name, // rule_name
+                std::vector<std::string>{"status.ups@" + name}, // target
+                name, // element_name
+                std::vector <std::pair <std::string, std::string>>{}, // values
+                std::vector <std::tuple <std::string, std::vector <std::string>, std::string, std::string>> {
+                    std::make_tuple ("high_critical", std::vector <std::string> {"EMAIL"}, "high", "UPS is running on battery!")
+                }, // results
+                LUA_RULE(5) // lua
+                ), client);
+
+            // LB - 7
+            result &= sendNewRule (makeSingleRule (
+                "lowbattery - " + name, // rule_name
+                std::vector<std::string>{"status.ups@" + name}, // target
+                name, // element_name
+                std::vector <std::pair <std::string, std::string>>{}, // values
+                std::vector <std::tuple <std::string, std::vector <std::string>, std::string, std::string>> {
+                    std::make_tuple ("high_critical", std::vector <std::string> {"EMAIL"}, "high", "Battery depleted!")
+                }, // results
+                LUA_RULE(7) // lua
+                ), client);
+
+            // BYPASS - 9
+            result &= sendNewRule (makeSingleRule (
+                "onbypass - " + name, // rule_name
+                std::vector<std::string>{"status.ups@" + name}, // target
+                name, // element_name
+                std::vector <std::pair <std::string, std::string>>{}, // values
+                std::vector <std::tuple <std::string, std::vector <std::string>, std::string, std::string>> {
+                    std::make_tuple ("high_critical", std::vector <std::string> {"EMAIL"}, "high", "UPS is running on bypass!")
+                }, // results
+                LUA_RULE(9) // lua
+                ), client);            
+             
             return result;
             break;
         }

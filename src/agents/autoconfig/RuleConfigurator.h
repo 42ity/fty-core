@@ -57,7 +57,7 @@ class RuleConfigurator : public Configurator {
         const std::vector <std::tuple<std::string, std::vector <std::string>, std::string, std::string>>& results,
         const std::string& evaluation);
 
-    std::string makeSingleRule_results (std::tuple<std::string, std::vector <std::string>, std::string, std::string>& result);
+    std::string makeSingleRule_results (std::tuple<std::string, std::vector <std::string>, std::string, std::string> result);
 
     // TODO:
     // provide prepared methods for two remaining rule types

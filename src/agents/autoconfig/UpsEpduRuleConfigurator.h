@@ -32,10 +32,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 class UpsEpduRuleConfigurator : public RuleConfigurator {
  public:
     bool v_configure (const std::string& name, const AutoConfigurationInfo& info, mlm_client_t *client); 
-    
-    // helper methods
-    // TODO: re-do using parent's methods
-    std::string makeRule (const std::string& alert, const std::string& bit, const std::string& device, const std::string& description) const;
 
     virtual ~UpsEpduRuleConfigurator() {};
 };

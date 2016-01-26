@@ -27,9 +27,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include <string>
 
-#include "RuleConfigurator.h"
+#include "Configurator.h"
 
-class DCTHConfigurator : public RuleConfigurator {
+class DCTHConfigurator : public Configurator {
  public:
     bool v_configure (const std::string& name, const AutoConfigurationInfo& info, mlm_client_t *client);
 

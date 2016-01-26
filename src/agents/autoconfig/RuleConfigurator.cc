@@ -120,7 +120,7 @@ std::string RuleConfigurator::makeSingleRule (
     // values
     std::string result_values = "[ ";
     bool first = true;
-    for (const auto& item : value) {
+    for (const auto& item : values) {
         if (first) {
             result_values += "{ " + jsonify (item.first, item.second) + " }";
             first = false;
@@ -129,10 +129,21 @@ std::string RuleConfigurator::makeSingleRule (
             result_values += ", { " + jsonify (item.first, item.second) + " }";
         }
     }
-    result_values = " ]";
+    result_values += " ]";
 
     // results
-    std::string result_results;
+    std::string result_results = "[ ";
+    first = true;
+    for (const auto& item : results) {
+        if (first) {
+            result_results += makeSingleRule_results (item);
+            first = false;
+        }
+        else {
+            result_results += ", " + makeSingleRule_results (item);
+        }
+    }
+    result_results += " ]";
 
 
     std::string result =
@@ -141,8 +152,8 @@ std::string RuleConfigurator::makeSingleRule (
         + jsonify ("rule_name", rule_name) + ",\n"
         + jsonify ("target", target) + ",\n"
         + jsonify ("element", element_name) + ",\n"
-        "\"values\" : " + result_values +",\n"
-        "\"results\" : " + result_results
+        "\"values\" : " + result_values + ",\n"
+        "\"results\" : " + result_results + ",\n"
         + jsonify ("evaluation", evaluation) + "}\n"
         "}";
 
@@ -150,9 +161,9 @@ std::string RuleConfigurator::makeSingleRule (
 
 }
 
-std::string RuleConfigurator::makeSingleRule_results (std::tuple<std::string, std::vector <std::string>, std::string, std::string>& one_result)
+std::string RuleConfigurator::makeSingleRule_results (std::tuple<std::string, std::vector <std::string>, std::string, std::string> one_result)
 {
-    std::string result = "{ " + std::get<0> (one_result) + " : { ";
+    std::string result = "{ " + jsonify (std::get<0> (one_result)) + " : { ";
     result += jsonify ("action", std::get<1> (one_result)) + ", ";
     result += jsonify ("severity", std::get<2> (one_result)) + ", ";
     result += jsonify ("description", std::get<3> (one_result)) + " }}";
