@@ -49,6 +49,7 @@ export PATH
 
 WEBTESTPID=""
 AGNUTPID=""
+AGPWRPID=""
 DBNGPID=""
 kill_daemons() {
     set +e
@@ -60,18 +61,22 @@ kill_daemons() {
         logmsg_info "Killing agent-nut PID $AGNUTPID to exit"
         kill -INT "$AGNUTPID"
     fi
+    if [ -n "$AGPWRPID" -a -d "/proc/$AGPWRPID" ]; then
+        logmsg_info "Killing agent-tpower PID $AGPWRPID to exit"
+        kill -INT "$AGPWRPID"
+    fi
     if [ -n "$DBNGPID" -a -d "/proc/$DBNGPID" ]; then
         logmsg_info "Killing agent-dbstore PID $DBNGPID to exit"
         kill -INT "$DBNGPID"
     fi
 
-    killall -INT tntnet agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
-    killall      tntnet agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
+    killall -INT tntnet agent-nut lt-agent-nut agent-tpower lt-agent-tpower agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
+    killall      tntnet agent-nut lt-agent-nut agent-tpower lt-agent-tpower agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
 
-    ps -ef | grep -v grep | egrep "tntnet|agent-nut|agent-dbstore" | egrep "^`id -u -n` " && \
+    ps -ef | grep -v grep | egrep "tntnet|agent-(nut|dbstore|tpower)" | egrep "^`id -u -n` " && \
         ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
-        logmsg_error "tntnet and/or agent-dbstore and/or agent-nut still alive, trying SIGKILL" && \
-        { killall -KILL tntnet agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null ; exit 1; }
+        logmsg_error "tntnet and/or agent-dbstore and/or agent-nut and/or agent-tpower still alive, trying SIGKILL" && \
+        { killall -KILL tntnet agent-nut lt-agent-nut agent-tpower lt-agent-tpower agent-dbstore lt-agent-dbstore 2>/dev/null ; exit 1; }
 
     return 0
 }
@@ -85,7 +90,7 @@ if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
         "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
         ${AUTOGEN_ACTION_CONFIG}
 fi
-./autogen.sh ${AUTOGEN_ACTION_MAKE} web-test-deps agent-dbstore agent-nut
+./autogen.sh ${AUTOGEN_ACTION_MAKE} web-test-deps agent-dbstore agent-nut agent-tpower
 ./autogen.sh --noparmake ${AUTOGEN_ACTION_MAKE} web-test \
     >> ${BUILDSUBDIR}/web-test.log 2>&1 &
 WEBTESTPID=$!
@@ -98,6 +103,10 @@ DBNGPID=$!
 logmsg_info "Spawning the agent-nut server in the background..."
 ${BUILDSUBDIR}/agent-nut &
 AGNUTPID=$!
+
+logmsg_info "Spawning the agent-tpower server in the background..."
+${BUILDSUBDIR}/agent-tpower &
+AGPWRPID=$!
 
 # These are defined in testlib-db.sh
 test_it "initialize_db_rackpower"
@@ -125,8 +134,8 @@ custom_create_ups_dev_file() {
     if [ "$TYPE" = "epdu" ] ; then
         echo "# epdu power sequence file
 device.type: epdu
-manufacturer: ci-rackpower dummy ePDU
-model: `basename "$FILE" .dev`
+device.mfr: ci-rackpower dummy ePDU
+device.model: `basename "$FILE" .dev`
 outlet.realpower: 0
 #outlet.1.voltage: 220
 #outlet.2.voltage: 220
@@ -135,8 +144,10 @@ outlet.realpower: 0
     else
         echo "# ups power sequence file
 device.type: ups
-manufacturer: ci-rackpower dummy UPS
-model: `basename "$FILE" .dev`
+device.mfr: ci-rackpower dummy UPS
+device.model: `basename "$FILE" .dev`
+ups.mfr: ci-rackpower dummy UPS
+ups.model: `basename "$FILE" .dev`
 ups.realpower: 0
 outlet.realpower: 0
 #battery.charge: 90
@@ -185,7 +196,9 @@ testcase() {
                 set_value_in_ups "$UPS" "$PARAM2" 0
                 print_result $?
             fi
+            logmsg_debug "Sleeping 10sec to propagate measurements..."
             sleep 10  # 10 s is max time for propagating into DB (poll ever 5s in nut actor + some time to process)
+            logmsg_debug "Sleep time is over!"
 
             NEWVALUE="${SAMPLES[$SAMPLECURSOR]}"
             case "$UPS" in
