@@ -77,8 +77,10 @@ s_metric_store(zsock_t *pipe, void* args)
 
         zmsg_t *msg = mlm_client_recv (client);
 
-        if (warranty_subject.match (mlm_client_subject (client)))
+        if (warranty_subject.match (mlm_client_subject (client))) {
+            zmsg_destroy (&msg);
             continue;
+        }
 
         persist::process_measurement(&msg, topic_cache);
 
@@ -92,10 +94,10 @@ s_metric_store(zsock_t *pipe, void* args)
 #define _s s_safe_str
 
 int main (int argc, char *argv []) {
-    
+
     log_open();
     log_info ("## agent: %s started", BIOS_AGENT_NAME_DB_MEASUREMENT);
-    
+
     // Basic settings
     if (argc > 3) {
         printf ("syntax: agent-dbstore [ <endpoint> | <endpoint> <mysql:db=bios;user=bios;password=test> ]\n");
