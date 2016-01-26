@@ -90,12 +90,14 @@ kill_daemons() {
 settraps "kill_daemons; exit_summarizeTestlibResults"
 
 logmsg_info "Ensuring that the tested programs have been built and up-to-date"
-test_it "make-deps"
 if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
+    test_it "config-deps"
     ./autogen.sh --nodistclean --configure-flags \
         "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
         ${AUTOGEN_ACTION_CONFIG}
+    print_result $? || CODE=$? die "Could not prepare binaries"
 fi
+test_it "make-deps"
 ./autogen.sh ${AUTOGEN_ACTION_MAKE} web-test-deps agent-dbstore agent-nut agent-tpower
 print_result $? || CODE=$? die "Could not prepare binaries"
 
