@@ -67,7 +67,8 @@ int8_t access_auth_level;
 </%request>
 <%args>
 // Tracing this call is quite noisy, so we only enable this
-// option in sysinfo REST API tests
+// option in sysinfo REST API tests. For support purposes,
+// this is available in non-DEBUG builds too for now...
 std::string debug_trace;
 </%args>
 {
@@ -186,11 +187,9 @@ std::string debug_trace;
     }
 <%cpp>
 
-#ifdef DEBUG
-// For developer builds, show some data about this binary (library) for
-// the REST API, because installed packages may be irrelevant and unused
-// vs. what is actually running
-
+// To aid developers, show some data about this binary (library) for
+// the REST API, because installed packages may be irrelevant and not
+// really used vs. what is actually running
 </%cpp>
 ,   "restapi-metadata": {
         "core-package": {
@@ -261,7 +260,7 @@ std::string debug_trace;
 </%cpp>
     }
 <%cpp>
-#endif // DEBUG - "restapi-metadata" which may differ from installed packages
+    // End of "restapi-metadata" which may differ from installed packages
 
     if (access_auth_level >= AUTH_LEVEL_POWERUSER) {
         rv = shared::output ({"dpkg", "--list"}, output, cmderr);
