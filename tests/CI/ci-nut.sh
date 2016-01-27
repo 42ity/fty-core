@@ -144,7 +144,8 @@ expected_db_value() {
             esac
             ;;
         *)
-            echo "$(($SAMPLE*100))"
+            #echo "$(($SAMPLE*100))"
+            echo "$SAMPLE"
             ;;
     esac
 }
@@ -241,7 +242,13 @@ for UPS in $UPS1 $UPS2 ; do
             PARAM="${PARAMS[$i]}"
             NEWVALUE="${SAMPLES[$SAMPLECURSOR+$i]}"
             test_it "verify_value_in_db:$TIMENUM:$UPS:$PARAM:$NEWVALUE"
-            SELECT='select count(*) from t_bios_measurement where timestamp >= '"UNIX_TIMESTAMP('$TIME') and value = $(expected_db_value "$PARAM" "$NEWVALUE")"
+            SELECT='select count(*) from t_bios_measurement where timestamp >= '"UNIX_TIMESTAMP('$TIME') and CAST( ((0.0 + value)*(pow(10,scale))) AS DECIMAL(50,6)) = $(expected_db_value "$PARAM" "$NEWVALUE")"
+            # NOTE: The comparison above requires that numbers match up at
+            # least when rounded to some same precision. Currently NEWVALUE
+            # items are integers, so this is a little concern. Otherwise
+            # we'd have to detect periods, count the digits after a dot,
+            # and feed that to DECIMAL (totaldigits, afterdot) second param.
+            #CAST( ((0.0 + value)*(pow(10,scale))) AS DECIMAL(50,1))
             #echo $SELECT
             OUT="$(do_select "$SELECT")"
             if [[ $? = 0 ]] && [[ "$OUT" -eq 1 ]]; then
