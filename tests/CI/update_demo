@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # For crontab:
 ### Update bios demo
@@ -142,14 +142,14 @@ EOF
     echo "Enable NUT-driver service instances" && \
     cat <<EOF | chroot . /bin/bash
 for device in \$(awk '/ *\[/{ gsub(/[\\[\\]]/,"",\$1); print \$1; }' </etc/nut/ups.conf) ; do
-    systemctl enable nut-driver@\$device
+    /bin/systemctl enable nut-driver@\$device
 done
 EOF
 
     echo "Finishing up with 'bios-demo'..."
     rm -f ./mysqldump
 
-    sed -i 's|exit.*|systemctl restart ssh|' etc/rc.local
+    sed -i 's|exit.*|/bin/systemctl restart ssh|' etc/rc.local
 
     # mv /srv/libvirt/rootfs/demo/usr/share/bios-web /srv/libvirt/rootfs/demo/usr/share/bios-web.x.$$; rsync -avPHK bios-backup:/export/DUMP/manual/test-debian/fullroot/srv/libvirt/.zfs/snapshot/20150212-0000/rootfs/demo/usr/share/bios-web/ /srv/libvirt/rootfs/demo/usr/share/bios-web/
 
