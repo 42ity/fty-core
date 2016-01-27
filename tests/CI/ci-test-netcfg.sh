@@ -48,7 +48,7 @@ cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the `basename $0` REST API webserver"
 
-PATH="/usr/lib/ccache:/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
+PATH="$BUILDSUBDIR/tools:$CHECKOUTDIR/tools:${DESTDIR:-/root}/libexec/bios:/usr/lib/ccache:/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
 export PATH
 
 
@@ -181,7 +181,7 @@ touch "$LOCKFILE"
 test_web_port && die "Port ${SUT_WEB_PORT} is in LISTEN state when it should be free."
 
 # make sure sasl is running
-if ! systemctl --quiet is-active saslauthd; then
+if ! systemctl is-active --quiet saslauthd; then
     logmsg_info "Starting saslauthd..."
     systemctl start saslauthd || die "Could not start saslauthd."
 fi
@@ -191,7 +191,7 @@ testsaslauthd -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" || \
     die "saslauthd is NOT responsive or not configured!"
 
 # make sure database is running
-if ! systemctl --quiet is-active mysql; then
+if ! systemctl is-active --quiet mysql; then
     logmsg_info "Starting mysql..."
     systemctl start mysql || die "Could not start mysql."
 fi
