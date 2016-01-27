@@ -32,6 +32,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "UptimeConfigurator.h"
 #include "DCTHConfigurator.h"
 #include "DcRuleConfigurator.h"
+#include "TemplateRuleConfigurator.h"
 
 #include "ConfiguratorFactory.h"
 
@@ -42,13 +43,16 @@ std::vector <Configurator*> ConfiguratorFactory::getConfigurator (const AutoConf
     static UptimeConfigurator iUptimeConfigurator;
     static DCTHConfigurator iDCTHConfigurator;
     static DcRuleConfigurator iDcRuleConfigurator;
+    static TemplateRuleConfigurator iTemplateRuleConfigurator;
 
     static std::vector <Configurator *> configurators {
         &iNUTConfigurator,
         &iUpsEpduRuleConfigurator,
         &iUptimeConfigurator,
         &iDCTHConfigurator,
-        &iDcRuleConfigurator
+        &iDcRuleConfigurator,
+        &iTemplateRuleConfigurator
+                
     };
 
     std::vector <Configurator *> retval;
