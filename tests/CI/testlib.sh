@@ -70,7 +70,6 @@ if [ -n "$JSONSH" ] && [ -x "$JSONSH" ] ; then
         else
             logmsg_debug "Will fork to use JSON.sh from '$JSONSH'" >&2
             jsonsh_cli() { "$JSONSH" "$@"; }
-            export -f jsonsh_cli 2>/dev/null || true
         fi
     fi
     JSONSH_CLI_DEFINED=yes
@@ -112,7 +111,12 @@ NAME="$0"
 
 # Should we track and add timestamps to each test (profile what took long)?
 [ x"${TESTLIB_PROFILE_TESTDURATION-}" = x- ] && TESTLIB_PROFILE_TESTDURATION=""
-[ -z "${TESTLIB_PROFILE_TESTDURATION-}" ] && TESTLIB_PROFILE_TESTDURATION="no"
+[ -z "${TESTLIB_PROFILE_TESTDURATION-}" ] && \
+    if [ -n "${CI_DEBUG-}" ] && [ -n "${CI_DEBUGLEVEL_DEBUG-}" ] && [ "$CI_DEBUG" -ge "$CI_DEBUGLEVEL_DEBUG" ]; then
+        TESTLIB_PROFILE_TESTDURATION="yes"
+    else
+        TESTLIB_PROFILE_TESTDURATION="no"
+    fi
 # ... and summarize longest tests in the end?
 [ -z "${TESTLIB_PROFILE_TESTDURATION_TOP-}" ] && TESTLIB_PROFILE_TESTDURATION_TOP=10
 export TESTLIB_PROFILE_TESTDURATION TESTLIB_PROFILE_TESTDURATION_TOP

@@ -432,8 +432,8 @@ sut_run() {
         SSH_TERMINAL_REQUEST=""
         [ "$1" = "-t" ] && shift && SSH_TERMINAL_REQUEST="-t -t" #" -o RequestTTY=true"
         [ "$CI_DEBUG" -ge "$CI_DEBUGLEVEL_RUN" ] 2>/dev/null && \
-            REMCMD="sh -x -c \"$@\"" ||
-            REMCMD="sh -c \"$@\""
+            REMCMD="bash -x -c \"$@\"" ||
+            REMCMD="bash -c \"$@\""
         ssh $SSH_TERMINAL_REQUEST -p "${SUT_SSH_PORT}" -l "${SUT_USER}" "${SUT_HOST}" "$@"
         return $?
     else
@@ -441,9 +441,9 @@ sut_run() {
         logmsg_info "$CI_DEBUGLEVEL_RUN" \
             "sut_run()::local: $@" >&2
         if [ "$CI_DEBUG" -ge "$CI_DEBUGLEVEL_RUN" ] 2>/dev/null ; then
-            sh -x -c "$@"
+            bash -x -c "$@"
         else
-            sh -c "$@"
+            bash -c "$@"
         fi
         return $?
     fi
@@ -683,17 +683,22 @@ settraps() {
     fi
     echo ""
     if [ "$SCRIPTLIB_TRAPWRAP_PRINT_STACKTRACE" = yes ] && [ -n "$BASH" ]; then
-        echo "======= Stack trace and other clues of the failure:"
+        echo "======= Stack trace and other clues of the end-of-work (code=$ERRCODE, sig=$ERRSIGNAL):"
         echo "  Depth of sub-shelling (BASH_SUBSHELL) = $BASH_SUBSHELL"
-        printf "  Depth of function call stack = ${#FUNCNAME[@]} : "
-        if [ "${#FUNCNAME[@]}" -gt 0 ] ; then
-            printf "::%s" ${FUNCNAME[@]}
+        if [ -z "${FUNCNAME-}" ] || [ -z "${FUNCNAME[0]}" ]; then
+            FUNCDEPTH=-1
         else
-            printf "failed in main body of main script"
+            FUNCDEPTH="${#FUNCNAME[@]-}" 2>/dev/null && [ -n "$FUNCDEPTH" ] && [ "$FUNCDEPTH" -ge 0 ] || FUNCDEPTH=-1
+        fi
+        printf "  Depth of function call stack = $FUNCDEPTH : "
+        if [ "$FUNCDEPTH" -gt 0 ] 2>/dev/null; then
+            printf "::%s" ${FUNCNAME[@]-}
+        else
+            printf "finished in main body of main script"
         fi
         printf "\n"
         i=0
-        while [ "$i" -lt "${#FUNCNAME[@]}" ] ; do
+        while [ "$i" -lt "$FUNCDEPTH" ] ; do
             echo "  ($i)	-> in ${FUNCNAME[$i]-}() at ${BASH_SOURCE[$i+1]-}:${BASH_LINENO[$i]-}"
             i=$(($i+1))
         done
