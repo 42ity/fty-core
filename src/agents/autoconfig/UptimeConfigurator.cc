@@ -117,6 +117,8 @@ bool UptimeConfigurator::obtainData (std::map <std::string, std::vector <std::st
 
 bool UptimeConfigurator::v_configure (const std::string& name, const AutoConfigurationInfo& info, mlm_client_t *client)
 {
+    log_debug ("UptimeConfigurator::v_configure (name = '%s', info.type = '%" PRIi32"', info.subtype = '%" PRIi32"')",
+        name.c_str(), info.type, info.subtype);    
     // dc_name is mapped on the ups names
     std::map <std::string , std::vector<std::string> > dc_upses;
 

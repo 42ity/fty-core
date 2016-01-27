@@ -194,21 +194,24 @@ void Autoconfig::onSend (ymsg_t **message)
 
 void Autoconfig::onPoll( )
 {
-
     bool save = false;
 
     for (auto& it : _configurableDevices) {
-        if (it.second.configured)
+        if (it.second.configured) {
             continue;
-
-        for (const auto& configurator : ConfiguratorFactory::getConfigurator (it.second)) {
-            if (configurator->configure (it.first, it.second, client ())) {
-                it.second.configured = true;
-                save = true;
-            }
-            it.second.date = zclock_mono ();
         }
+
+        bool device_configured = true;
+        for (const auto& configurator : ConfiguratorFactory::getConfigurator (it.second)) {
+            device_configured &= configurator->configure (it.first, it.second, client ());
+        }
+        if (device_configured) {
+            it.second.configured = true;
+            save = true;
+        }
+        it.second.date = zclock_mono ();
     }
+
     if (save) {
         cleanupState();
         saveState();

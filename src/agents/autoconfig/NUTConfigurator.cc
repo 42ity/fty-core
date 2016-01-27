@@ -114,7 +114,7 @@ std::vector<std::string>::const_iterator NUTConfigurator::selectBest(const std::
 
 void NUTConfigurator::systemctl( const std::string &operation, const std::string &service )
 {
-    systemctl (operation, service);
+    bits::systemctl (operation, service);
 }
 
 void NUTConfigurator::updateNUTConfig() {
@@ -132,7 +132,8 @@ void NUTConfigurator::updateNUTConfig() {
 
 
 bool NUTConfigurator::v_configure (UNUSED_PARAM const std::string &name, const AutoConfigurationInfo &info, UNUSED_PARAM mlm_client_t *client) {
-    log_debug("NUT configurator created");
+    log_debug ("NUTConfigurator::v_configure (name = '%s', info.type = '%" PRIi32"', info.subtype = '%" PRIi32"')",
+            name.c_str(), info.type, info.subtype);
 
     switch( info.operation ) {
     case asset_operation::INSERT:
