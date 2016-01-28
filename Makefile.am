@@ -1128,8 +1128,6 @@ agent_autoconfig_SOURCES = \
 			src/agents/autoconfig/RuleConfigurator.cc \
 			src/agents/autoconfig/UpsEpduRuleConfigurator.h \
 			src/agents/autoconfig/UpsEpduRuleConfigurator.cc \
-			src/agents/autoconfig/DcRuleConfigurator.h \
-			src/agents/autoconfig/DcRuleConfigurator.cc \
 			src/agents/autoconfig/UptimeConfigurator.h \
 			src/agents/autoconfig/UptimeConfigurator.cc \
 			src/agents/autoconfig/TemplateRuleConfigurator.h \
