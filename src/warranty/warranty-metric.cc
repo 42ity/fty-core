@@ -67,23 +67,33 @@ int main()
             int day_diff;
             {
                 struct tm tm_ewd;
+                struct tm *tm_now_p;
                 ::memset (&tm_ewd, 0, sizeof(struct tm));
 
                 char* ret = ::strptime (date.c_str(), "%Y-%m-%d", &tm_ewd);
                 if (ret == NULL) {
-                    log_error ("Cannot connect %s to date, skipping", date.c_str());
+                    fprintf (stderr, "Cannot connect %s to date, skipping", date.c_str());
                     return;
                 }
 
                 time_t ewd = ::mktime (&tm_ewd);
+                time_t now = ::time (NULL);
+
+                tm_now_p = ::gmtime (&now);
+                tm_now_p->tm_hour = 0;
+                tm_now_p->tm_min = 0;
+                tm_now_p->tm_sec = 0;
+                now = ::mktime (tm_now_p);
+
                 // end_warranty_date (s) - now (s) -> to days
-                day_diff = (ewd - ::time (NULL)) / (60*60*24);
-                log_debug ("day_diff: %d", day_diff);
+                day_diff = std::ceil ((ewd - now) / (60*60*24));
+                log_error ("day_diff: %d", day_diff);
             }
 
             std::string rule_name = "warranty";
 
             const char* severity = NULL;
+            const char* state = "NEW";
             if (day_diff <= 10)
                 severity = "HIGH_CRITICAL";
             else
@@ -91,13 +101,13 @@ int main()
                 severity = "LOW_WARNING";
 
             if (!severity)
-                return;
+                state = "RESOLVED";
 
             zmsg_t *msg = bios_proto_encode_alert (
                     NULL,
                     rule_name.c_str(),
                     name.c_str(),
-                    "NEW",
+                    state,
                     severity,
                     "Warranty date is going to expire",
                     ::time (NULL),
