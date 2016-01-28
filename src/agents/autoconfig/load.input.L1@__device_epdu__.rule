@@ -1,0 +1,13 @@
+{
+    "threshold" : {
+        "rule_name"     :   "load.input.L1@__name__",
+        "rule_desc"     :   "Load",
+        "target"        :   "load.input.L1@__name__",
+        "element"       :   "__name__",
+        "values_unit"   :   "%",
+        "values"        :   [ {"high_warning"  : "4"},
+                              {"high_critical" : "5"} ],
+        "results"       :   [ {"high_warning"  : { "action" : ["EMAIL","SMS"], "description" : "Load high WARNING" }},
+                              {"high_critical" : { "action" : ["EMAIL","SMS"], "description" : "Load high critical" } } ]
+    }
+}

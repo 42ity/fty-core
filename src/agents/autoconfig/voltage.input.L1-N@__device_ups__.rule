@@ -1,0 +1,13 @@
+{
+    "threshold" : {
+        "rule_name"     :   "voltage.input.L1-N@__name__",
+        "rule_desc"     :   "Input Voltage",
+        "target"        :   "voltage.input.L1-N@__name__",
+        "element"       :   "__name__",
+        "values_unit"   :   "V",
+        "values"        :   [ {"high_warning"  : "100"},
+                              {"high_critical" : "120"} ],
+        "results"       :   [ {"high_warning"  : { "action" : ["EMAIL","SMS"], "description" : "Input Voltage high WARNING" }},
+                              {"high_critical" : { "action" : ["EMAIL","SMS"], "description" : "Input Voltage high critical" } } ]
+    }
+}

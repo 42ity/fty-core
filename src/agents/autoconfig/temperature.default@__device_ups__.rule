@@ -1,0 +1,13 @@
+{
+    "threshold" : {
+        "rule_name"     :   "temperature.default@__name__",
+        "rule_desc"     :   "Temperature",
+        "target"        :   "temperature.default@__name__",
+        "element"       :   "__name__",
+        "values_unit"   :   "C",
+        "values"        :   [ {"high_warning"  : "27"},
+                              {"high_critical" : "30"} ],
+        "results"       :   [ {"high_warning"  : { "action" : ["EMAIL","SMS"], "description" : "Temperature high WARNING" }},
+                              {"high_critical" : { "action" : ["EMAIL","SMS"], "description" : "Temperature high critical" } } ]
+    }
+}
