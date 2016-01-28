@@ -660,6 +660,7 @@ settraps() {
     # routine does not exit() the shell by itself - the wrapper would exit with
     # either that handler's non-zero return code or with original trapped code.
     # The ERR* variables reported here are defined by settraps_nonfatal() above
+    # Note that all output (if any) goes to stderr (see end of "if" clause).
     case "$1" in
         -|"") settraps_nonfatal "$1" || true ;;
         *)    ERRHANDLER="$*"
@@ -682,7 +683,14 @@ settraps() {
         echo "!!!!!!!!!"
     fi
     echo ""
+    _DO_PRINT_STACKTRACE=no
     if [ "$SCRIPTLIB_TRAPWRAP_PRINT_STACKTRACE" = yes ] && [ -n "$BASH" ]; then
+        _DO_PRINT_STACKTRACE=yes
+        if [ "$ERRCODE" = 0 ] && [ "$SCRIPTLIB_TRAPWRAP_PRINT_EXIT0" != yes ]; then
+            _DO_PRINT_STACKTRACE=no
+        fi
+    fi
+    if [ "$_DO_PRINT_STACKTRACE" = yes ]; then
         echo "======= Stack trace and other clues of the end-of-work (code=$ERRCODE, sig=$ERRSIGNAL):"
         echo "  Depth of sub-shelling (BASH_SUBSHELL) = $BASH_SUBSHELL"
         if [ -z "${FUNCNAME-}" ] || [ -z "${FUNCNAME[0]}" ]; then
