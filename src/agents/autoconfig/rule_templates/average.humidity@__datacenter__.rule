@@ -10,9 +10,9 @@
                               {"high_warning"  : "60"},
                               {"high_critical" : "70"} ],
         "results"       :   [
-            { "low_warning"   : { "action" : ["EMAIL","SMS"], "severity" : "low", "description" : "Humidity in datacenter __name __ is low" }},
-            { "low_critical"  : { "action" : ["EMAIL","SMS"], "severity" : "high", "description" : "Humidity in datacenter __name __ is critically low" }},
-            { "high_warning"  : { "action" : ["EMAIL","SMS"], "severity" : "low", "description" : "Humidity in datacenter __name __ is high" }},
-            { "high_critical" : { "action" : ["EMAIL","SMS"], "severity" : "high", "description" : "Humidity in datacenter __name __ is critically high" }} ]
+            { "low_warning"   : { "action" : ["EMAIL","SMS"], "severity" : "low", "description" : "Humidity in datacenter __name__ is low" }},
+            { "low_critical"  : { "action" : ["EMAIL","SMS"], "severity" : "high", "description" : "Humidity in datacenter __name__ is critically low" }},
+            { "high_warning"  : { "action" : ["EMAIL","SMS"], "severity" : "low", "description" : "Humidity in datacenter __name__ is high" }},
+            { "high_critical" : { "action" : ["EMAIL","SMS"], "severity" : "high", "description" : "Humidity in datacenter __name__ is critically high" }} ]
     }
 }
