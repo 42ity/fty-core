@@ -46,56 +46,64 @@ bool RuleConfigurator::sendNewRule (const std::string& rule, mlm_client_t *clien
     return true;
 }
 
-std::string RuleConfigurator::makeSimpleThresholdRule (
+std::string RuleConfigurator::makeThresholdRule (
         const std::string& rule_name,
-        const std::string& target,
+        std::vector<std::string> topic_specification,
         const std::string& element_name,
         std::tuple <std::string, std::vector <std::string>, std::string, std::string> low_critical,
         std::tuple <std::string, std::vector <std::string>, std::string, std::string> low_warning,
         std::tuple <std::string, std::vector <std::string>, std::string, std::string> high_warning,
-        std::tuple <std::string, std::vector <std::string>, std::string, std::string> high_critical
-        )
+        std::tuple <std::string, std::vector <std::string>, std::string, std::string> high_critical,
+        const char *lua_function)
 {
-    return make_rule (
-        RuleConfigurator::RuleType::THRESHOLD,
-        rule_name,
-        std::vector <std::string> {target},
-        element_name.c_str (),
-        std::vector <std::pair <std::string, std::string>>{
-            { "low_critical",   std::get<0> (low_critical) },
-            { "low_warning",    std::get<0> (low_warning) },
-            { "high_warning",   std::get<0> (high_warning) },
-            { "high_critical",  std::get<0> (high_critical) }
-        },
-        std::vector <std::tuple <std::string, std::vector <std::string>, std::string, std::string>> {
-            std::make_tuple ("low_critical", std::get <1> (low_critical), std::get <2> (low_critical), std::get <3> (low_critical)),
-            std::make_tuple ("low_warning", std::get <1> (low_warning), std::get <2> (low_warning), std::get <3> (low_warning)),
-            std::make_tuple ("high_warning", std::get <1> (high_warning), std::get <2> (high_warning), std::get <3> (high_warning)),
-            std::make_tuple ("high_critical", std::get <1> (high_critical), std::get <2> (high_critical), std::get <3> (high_critical))
-        },
-        NULL
-    );
+    assert (topic_specification.size () >= 1);
 
-}
+    // target
+    std::string target;
+    if (topic_specification.size () == 1) {
+        target = jsonify ("target", topic_specification [0]);
+    }
+    else {
+        target = jsonify ("target", topic_specification);
+    }
 
-std::string RuleConfigurator::makeThresholdRule (
-    const std::string& rule_name,
-    const std::vector<std::string>& target,
-    const std::string& element_name,
-    //                          value_name   value
-    const std::vector <std::pair<std::string, std::string>>& values,
-    //                           result_name               actions       severity     description 
-    const std::vector <std::tuple<std::string, std::vector <std::string>, std::string, std::string>>& results,
-    const std::string& evaluation) {
-    return make_rule (
-        RuleConfigurator::RuleType::THRESHOLD,
-        rule_name,
-        target,
-        element_name.c_str (),
-        values,
-        results,
-        evaluation.c_str ()       
-    );
+    // values
+    std::string values =
+        "[ { " + jsonify ("low_critical", std::get<0>(low_critical)) + " },\n"
+        "  { " + jsonify ("low_warning", std::get<0>(low_warning)) + " },\n"
+        "  { " + jsonify ("high_warning", std::get<0>(high_warning)) + " },\n"
+        "  { " + jsonify ("high_critical", std::get<0>(high_critical)) + " } ]";
+
+    // results
+    std::string results =
+        "[ { \"low_critical\"  : { " + jsonify ("action", std::get<1>(low_critical)) + ", " + jsonify ("severity", std::get<2>(low_critical))
+        + ", " + jsonify ("description", std::get<3>(low_critical))  + " }},\n"
+        "  { \"low_warning\"   : { " + jsonify ("action", std::get<1>(low_warning)) + ", " + jsonify ("severity", std::get<2>(low_warning))
+        + ", " + jsonify ("description", std::get<3>(low_warning)) + " }},\n"
+        "  { \"high_warning\"  : { " + jsonify ("action", std::get<1>(high_warning)) + ", " + jsonify ("severity", std::get<2>(high_warning))
+        + ", " + jsonify ("description", std::get<3>(high_warning)) + " }},\n"
+        "  { \"high_critical\" : { " + jsonify ("action", std::get<1>(high_critical)) + ", " + jsonify ("severity", std::get<2>(high_critical))
+        + ", " + jsonify ("description", std::get<3>(high_critical))+ " }} ]";
+
+    // evaluation
+    std::string evaluation;
+    if (lua_function) {
+        evaluation = ",\n" + jsonify ("evaluation", lua_function);
+    }
+
+
+    std::string result =
+        "{\n"
+        "\"threshold\" : {\n"
+        + jsonify ("rule_name", rule_name) + ",\n"
+        + target + ",\n"
+        + jsonify ("element", element_name) + ",\n"
+        "\"values\" : " + values +",\n"
+        "\"results\" : " + results
+        + evaluation + "}\n"
+        "}";
+
+    return result;    
 }
 
 std::string RuleConfigurator::makeSingleRule (
@@ -108,77 +116,7 @@ std::string RuleConfigurator::makeSingleRule (
         const std::vector <std::tuple<std::string, std::vector <std::string>, std::string, std::string>>& results,
         const std::string& evaluation)
 {
-     return make_rule (
-        RuleConfigurator::RuleType::SINGLE,
-        rule_name,
-        target,
-        element_name.c_str (),
-        values,
-        results,
-        evaluation.c_str ()       
-    );   
-}
-
-std::string RuleConfigurator::makePatternRule (
-        const std::string& rule_name,
-        const std::string& target,
-        //                          value_name   value
-        const std::vector <std::pair<std::string, std::string>>& values,
-        //                           result_name               actions       severity     description 
-        const std::vector <std::tuple<std::string, std::vector <std::string>, std::string, std::string>>& results,
-        const std::string& evaluation) {
-    return make_rule (
-        RuleConfigurator::RuleType::PATTERN,
-        rule_name,
-        std::vector <std::string> {target},
-        NULL,
-        values,
-        results,
-        evaluation.c_str () 
-    );
-}
-
-std::string RuleConfigurator::make_rule (
-        RuleType rule_type,
-        const std::string& rule_name,
-        const std::vector<std::string>& target,
-        const char *element_name,
-        //                            value_name   value
-        const std::vector <std::pair <std::string, std::string>>& values,
-        //                             result_name               actions       severity     description 
-        const std::vector <std::tuple <std::string, std::vector <std::string>, std::string, std::string>>& results,
-        const char *lua_function) {
-    assert (!rule_name.empty ());
     assert (target.size () >= 1);
-    assert (rule_type == RuleType::THRESHOLD || rule_type == RuleType::SINGLE || rule_type == RuleType::PATTERN);
-
-    // type, target
-    std::string str_rule_type, result_target;
-    switch (rule_type) {
-        case RuleType::THRESHOLD:
-        {
-            str_rule_type = "threshold";
-            if (target.size () == 1) {
-                result_target = jsonify ("target", target [0]);
-            }
-            else {
-                result_target = jsonify ("target", target);
-            }
-            break;
-        }
-        case RuleType::SINGLE:
-        {
-            str_rule_type = "single";
-            result_target = jsonify ("target", target);
-            break;
-        }
-        case RuleType::PATTERN:
-        {
-            str_rule_type = "pattern";
-            result_target = jsonify ("target", target [0]);
-            break;
-        }
-    }
 
     // values
     std::string result_values = "[ ";
@@ -199,42 +137,32 @@ std::string RuleConfigurator::make_rule (
     first = true;
     for (const auto& item : results) {
         if (first) {
-            result_results += make_results (item);
+            result_results += makeSingleRule_results (item);
             first = false;
         }
         else {
-            result_results += ", " + make_results (item);
+            result_results += ", " + makeSingleRule_results (item);
         }
     }
     result_results += " ]";
 
-    // element
-    std::string result_element;
-    if (element_name) {
-        result_element = ",\n" + jsonify ("element", element_name);
-    }
-
-    // evaluation
-    std::string result_evaluation;
-    if (lua_function) {
-        result_evaluation = ",\n" + jsonify ("evaluation", lua_function);
-    }
 
     std::string result =
         "{\n"
-        "\"" + str_rule_type + "\" : {\n"
+        "\"single\" : {\n"
         + jsonify ("rule_name", rule_name) + ",\n"
-        + result_target + ",\n"
+        + jsonify ("target", target) + ",\n"
+        + jsonify ("element", element_name) + ",\n"
         "\"values\" : " + result_values + ",\n"
-        "\"results\" : " + result_results
-        + result_element 
-        + result_evaluation + "\n}\n"
+        "\"results\" : " + result_results + ",\n"
+        + jsonify ("evaluation", evaluation) + "}\n"
         "}";
 
     return result;   
+
 }
 
-std::string RuleConfigurator::make_results (std::tuple<std::string, std::vector <std::string>, std::string, std::string> one_result)
+std::string RuleConfigurator::makeSingleRule_results (std::tuple<std::string, std::vector <std::string>, std::string, std::string> one_result)
 {
     std::string result = "{ " + jsonify (std::get<0> (one_result)) + " : { ";
     result += jsonify ("action", std::get<1> (one_result)) + ", ";

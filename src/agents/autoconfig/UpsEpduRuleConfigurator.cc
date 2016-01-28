@@ -27,75 +27,63 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "UpsEpduRuleConfigurator.h"
 
-#define UPSEPDU_InputVoltage_3Phase_Threshold_LUA \
-    "function main(v1,v2,v3)"\
-    "   if (v1 > high_critical or v2 > high_critical or v3 > high_critical) then return HIGH_CRITICAL end;"\
-    "   if (v1 > high_warning or v2 > high_warning or v3 > high_warning) then return HIGH_WARNING end;"\
-    "   if (v1 < low_critical or v2 < low_critical or v3 < low_critical) then return LOW_CRITICAL end;"\
-    "   if (v1 < low_warning or v2 < low_warning or v3 < low_warning) then return LOW_WARNING end;"\
-    "   return OK;"\
-    "end"
-
-#define UPSEPDU_PhaseImbalance_Threshold_LUA \
-    "function main(f1,f2,f3)"\
-    "   local avg = (f1 + f2 + f3) / 3;"\
-    "   local deviation = math.max (math.abs (f1 - avg), math.abs (f2 - avg), math.abs (f3 - avg));"\
-    "   local percentage = deviation / avg * 100;"\
-    "   if (percentage > high_critical) then return HIGH_CRITICAL end;"\
-    "   if (percentage > high_warning) then return HIGH_WARNING end;"\
-    "   return OK;"\
-    "end"
-
+#define LUA_RULE(BIT) \
+        " function has_bit(x,bit)"\
+        "     local mask = 2 ^ (bit - 1)"\
+        "     x = x % (2*mask)"\
+        "     if x >= mask then return true else return false end"\
+        " end"\
+        " function main(status)"\
+        "     if has_bit(status,"\
+        #BIT\
+        ") then return HIGH_CRITICAL end"\
+        "     return OK"\
+        " end"
 
 bool UpsEpduRuleConfigurator::v_configure (const std::string& name, const AutoConfigurationInfo& info, mlm_client_t *client)
 {
     log_debug ("UpsEpduRuleConfigurator::v_configure (name = '%s', info.type = '%" PRIi32"', info.subtype = '%" PRIi32"')",
-        name.c_str(), info.type, info.subtype);
+        name.c_str(), info.type, info.subtype);    
     switch (info.operation) {
         case persist::asset_operation::INSERT:
         {
+            // bits OB - 5 
             bool result = true;
-       
-            result &= sendNewRule (makeSimpleThresholdRule (
-                "UPSEPDU_InputVoltage_1Phase_Threshold",
-                "voltage.input.L1@"+name,
-                name,
-                std::make_tuple ("0", std::vector <std::string>{"EMAIL"}, "high", "Input voltage (1 phase) in device" + name + " is critically low"), // low_critical
-                std::make_tuple ("0", std::vector <std::string>{"EMAIL"}, "low", "Input voltage (1 phase) in device " + name + " is low"), // low_warning
-                std::make_tuple ("0", std::vector <std::string>{"EMAIL"}, "low", "Input voltage (1 phase) in device " + name + " is high"), // high_warning
-                std::make_tuple ("0", std::vector <std::string>{"EMAIL"}, "high", "Input voltage (1 phase) in device " + name + " is critically high") // high_critical
+            result &= sendNewRule (makeSingleRule (
+                "onbattery - " + name, // rule_name
+                std::vector<std::string>{"status.ups@" + name}, // target
+                name, // element_name
+                std::vector <std::pair <std::string, std::string>>{}, // values
+                std::vector <std::tuple <std::string, std::vector <std::string>, std::string, std::string>> {
+                    std::make_tuple ("high_critical", std::vector <std::string> {"EMAIL"}, "high", "UPS is running on battery!")
+                }, // results
+                LUA_RULE(5) // lua
                 ), client);
 
-            result &= sendNewRule (makeThresholdRule (
-                "UPSEPDU_InputVoltage_3Phase_Threshold",
-                std::vector<std::string>{"voltage.input.L1@" + name, "voltage.input.L2@" + name, "voltage.input.L3@" + name},
-                name,
-                std::vector <std::pair <std::string, std::string>>{
-                    {"low_critical","210"},
-                    {"low_warning","215"},
-                    {"high_warning","235"},
-                    {"high_critical","240"}
-                    },
+            // LB - 7
+            result &= sendNewRule (makeSingleRule (
+                "lowbattery - " + name, // rule_name
+                std::vector<std::string>{"status.ups@" + name}, // target
+                name, // element_name
+                std::vector <std::pair <std::string, std::string>>{}, // values
                 std::vector <std::tuple <std::string, std::vector <std::string>, std::string, std::string>> {
-                    std::make_tuple ("low_critical", std::vector <std::string> {"EMAIL"}, "high", "Input voltage (3 phase) in device " + name + " is critically low"),
-                    std::make_tuple ("low_warning", std::vector <std::string> {"EMAIL"}, "high", "Input voltage (3 phase) in device " + name + " is low"),
-                    std::make_tuple ("high_warning", std::vector <std::string> {"EMAIL"}, "high", "Input voltage (3 phase) in device " + name + " is high"),
-                    std::make_tuple ("high_critical", std::vector <std::string> {"EMAIL"}, "high", "Input voltage (3 phase) in device " + name + " is critically high"),
-                },
-                UPSEPDU_InputVoltage_3Phase_Threshold_LUA
+                    std::make_tuple ("high_critical", std::vector <std::string> {"EMAIL"}, "high", "Battery depleted!")
+                }, // results
+                LUA_RULE(7) // lua
                 ), client);
 
-            result &= sendNewRule (makeThresholdRule (
-                "UPSEPDU_PhaseImbalance_Threshold",
-                std::vector<std::string>{"realpower.output.L1@" + name, "realpower.output.L2@" + name, "realpower.output.L3@" + name},
-                name,
-                std::vector <std::pair <std::string, std::string>>{ {"high_warning","10"}, {"high_critical","20"}},
+            // BYPASS - 9
+            result &= sendNewRule (makeSingleRule (
+                "onbypass - " + name, // rule_name
+                std::vector<std::string>{"status.ups@" + name}, // target
+                name, // element_name
+                std::vector <std::pair <std::string, std::string>>{}, // values
                 std::vector <std::tuple <std::string, std::vector <std::string>, std::string, std::string>> {
-                    std::make_tuple ("high_warning", std::vector <std::string> {"EMAIL"}, "high", "Phase imbalance in device " + name + " is high"),
-                    std::make_tuple ("high_critical", std::vector <std::string> {"EMAIL"}, "high", "Phase imbalance in device " + name + " is critically high"),
-                },
-                UPSEPDU_PhaseImbalance_Threshold_LUA
-                ), client); 
+                    std::make_tuple ("high_critical", std::vector <std::string> {"EMAIL"}, "high", "UPS is running on bypass!")
+                }, // results
+                LUA_RULE(9) // lua
+                ), client);            
+             
             return result;
             break;
         }
@@ -122,4 +110,3 @@ bool UpsEpduRuleConfigurator::isApplicable (const AutoConfigurationInfo& info)
     }
     return false;
 }
-

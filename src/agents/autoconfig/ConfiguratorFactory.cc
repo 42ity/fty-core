@@ -28,33 +28,27 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "asset_types.h"
 
 #include "NUTConfigurator.h"
-#include "UpsRuleConfigurator.h"
+#include "UpsEpduRuleConfigurator.h"
 #include "UptimeConfigurator.h"
 #include "DCTHConfigurator.h"
 #include "DcRuleConfigurator.h"
-#include "DcRackRuleConfigurator.h"
-#include "UpsEpduRuleConfigurator.h"
 
 #include "ConfiguratorFactory.h"
 
 std::vector <Configurator*> ConfiguratorFactory::getConfigurator (const AutoConfigurationInfo& info)
 {
     static NUTConfigurator iNUTConfigurator;
-    static UpsRuleConfigurator iUpsRuleConfigurator;
+    static UpsEpduRuleConfigurator iUpsEpduRuleConfigurator;
     static UptimeConfigurator iUptimeConfigurator;
     static DCTHConfigurator iDCTHConfigurator;
     static DcRuleConfigurator iDcRuleConfigurator;
-    static DcRackRuleConfigurator iDcRackRuleConfigurator;
-    static UpsEpduRuleConfigurator iUpsEpduRuleConfigurator;
 
     static std::vector <Configurator *> configurators {
         &iNUTConfigurator,
-        &iUpsRuleConfigurator,
+        &iUpsEpduRuleConfigurator,
         &iUptimeConfigurator,
         &iDCTHConfigurator,
-        &iDcRuleConfigurator,
-        &iDcRackRuleConfigurator,
-        &iUpsEpduRuleConfigurator
+        &iDcRuleConfigurator
     };
 
     std::vector <Configurator *> retval;
