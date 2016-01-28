@@ -1,26 +1,16 @@
 {
 	"threshold": {
 		"rule_name": "phase_imbalance@__name__",
-		"rule_desc": "Phase Imbalance",
-		"target": ["voltage.input.L1-N@__name__", "voltage.input.L2-N@__name__", "voltage.input.L3-N@__name__"],
+		"rule_desc": "Phase Imbalance for ups __name__",
+		"target": [ "realpower.output.L1@__name__", "realpower.output.L2@__name__", "realpower.output.L3@__name__" ],
 		"element": "__name__",
 		"values_unit": "%",
-		"values": [{
-			"high_critical": "3"
-		}, {
-			"high_warning": "2.27"
-		}],
-		"results": [{
-			"high_critical": {
-				"action": ["EMAIL"],
-				"description": "high critical description"
-			}
-		}, {
-			"high_warning": {
-				"action": ["EMAIL"],
-				"description": "high WARNING description"
-			}
-		}],
-		"evaluation": "function main(voltage_L1, voltage_L2, voltage_L3) local avg = (voltage_L1 + voltage_L2 + voltage_L3)/3; local diff_avg_L1, diff_avg_L2, diff_avg_L3 = math.abs(avg - voltage_L1 ), math.abs(avg - voltage_L2 ), math.abs(avg - voltage_L3 ); local max_diff = math.max(diff_avg_L1, diff_avg_L2, diff_avg_L3); local imbalance = 100.0*max_diff/avg;if ( high_critical < imbalance ) then return HIGH_CRITICAL end; if ( high_warning < imbalance ) then return HIGH_WARNING  end; return OK; end"
+		"values": [
+            { "high_critical": "10"},
+            { "high_warning": "20"} ],
+		"results": [
+            { "high_critical": { "action": ["EMAIL"], "severity" : "high", "description": "Phase imbalance in device __name__ is critically high" }},
+            { "high_warning": { "action": ["EMAIL"], "severity" : "high", "description": "Phase imbalance in device __name__ is high" }} ],
+		"evaluation": "function main(f1,f2,f3) local avg = (f1 + f2 + f3) / 3; local deviation = math.max (math.abs (f1 - avg), math.abs (f2 - avg), math.abs (f3 - avg)); local percentage = deviation / avg * 100; if (percentage > high_critical) then return HIGH_CRITICAL end; if (percentage > high_warning) then return HIGH_WARNING end; return OK; end"
 	}
 }

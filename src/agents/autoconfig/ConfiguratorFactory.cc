@@ -28,7 +28,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "asset_types.h"
 
 #include "NUTConfigurator.h"
-#include "UpsEpduRuleConfigurator.h"
 #include "UptimeConfigurator.h"
 #include "DCTHConfigurator.h"
 #include "TemplateRuleConfigurator.h"
@@ -38,14 +37,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 std::vector <Configurator*> ConfiguratorFactory::getConfigurator (const AutoConfigurationInfo& info)
 {
     static NUTConfigurator iNUTConfigurator;
-    static UpsEpduRuleConfigurator iUpsEpduRuleConfigurator;
     static UptimeConfigurator iUptimeConfigurator;
     static DCTHConfigurator iDCTHConfigurator;
     static TemplateRuleConfigurator iTemplateRuleConfigurator;
 
     static std::vector <Configurator *> configurators {
         &iNUTConfigurator,
-        &iUpsEpduRuleConfigurator,
         &iUptimeConfigurator,
         &iDCTHConfigurator,
         &iTemplateRuleConfigurator
