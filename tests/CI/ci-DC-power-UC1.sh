@@ -1,6 +1,6 @@
-#!/bin/bash -ux
+#!/bin/bash
 #
-# Copyright (C) 2014 Eaton
+# Copyright (C) 2014-2016 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -32,37 +32,27 @@
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 NEED_BUILDSUBDIR=no determineDirs_default || true
 . "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
+# This should have pulled also testlib.sh and testlib-db.sh
+. "`dirname $0`/testlib-nut.sh" || CODE=$? die "Can not include testlib-NUT script library"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 [ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
 [ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
+detect_nut_cfg_dir || CODE=$? die "NUT config dir not found"
 
-
-DB_LOADDIR="$CHECKOUTDIR/database/mysql"
-
-DB_BASE="$DB_LOADDIR/initdb.sql"
-DB_DC_POWER_UC1="$DB_LOADDIR/ci-DC-power-UC1.sql"
-DB_ASSET_TAG_NOT_UNIQUE="$DB_LOADDIR/initdb_ci_patch.sql"
+# We customize the webserver config for this test
 XML_TNTNET="tntnet.xml"
 
-# Disable intermediate failures due to CURL (there are currently too few tests
-# here to care), and the weblib infrastructure like test_it()/print_result()
-# is not used here yet anyway
-TESTWEB_CURLFAIL=no
-
-[ "x$INSTALLDIR" = "x" ] && INSTALLDIR="$CHECKOUTDIR/Installation"
+# Bamboo local DESTDIR
+[ -n "${INSTALLDIR-}" ] || INSTALLDIR="$CHECKOUTDIR/Installation"
 logmsg_info "Installation directory : $INSTALLDIR"
 
-CFGDIR=""
-for cfgd in "/etc/ups" "/etc/nut"; do
-    if [ -d "$cfgd" ] ; then
-        CFGDIR="$cfgd"
-        break
-    fi
-done
-if [ "$CFGDIR" = "" ] ; then
-    die "NUT config dir not found"
-fi
+PATH="$BUILDSUBDIR/tools:$CHECKOUTDIR/tools:$INSTALLDIR/libexec/bios:${DESTDIR:-/root}/libexec/bios:/usr/lib/ccache:/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
+export PATH
 
+set -u
+#set -x
+
+# NUT options
 UPS1="UPS1-US477"
 UPS2="UPS2-US477"
 UPS3="UPS3-US477"
@@ -70,8 +60,9 @@ UPS3="UPS3-US477"
 # Fill the .dev file for UPS parameters
 # arg1 : UPS name (for .dev file)
 # arg2 : Realpower value
-create_ups_device(){
-    DEVNAME="$1"
+# Wrapped to populate a file by testlib-nut::create_ups_dev_file()
+custom_create_ups_dev_file() {
+    DEVNAME="`basename "$1" .dev`"
     WATTS="$2"
     VOLTS="230"
     AMPS="`expr 14 \* $WATTS / $VOLTS / 10`"
@@ -91,47 +82,19 @@ ups.status: OL
 outlet.1.voltage: 230
 outlet.2.voltage: 230
 outlet.3.voltage: 230
-" > $CFGDIR/${DEVNAME}.dev
+"
 }
 
-# Create a NUT config for 3 dummy UPS
-create_nut_config() {
-    logmsg_info "creating nut config"
-    echo "MODE=standalone" > $CFGDIR/nut.conf 
-
-    echo "[$UPS1]
-driver=dummy-ups
-port=$UPS1.dev
-desc=\"dummy-ups 1 in dummy mode\" 
-
-[$UPS2]
-driver=dummy-ups
-port=$UPS2.dev
-desc=\"dummy-ups 2 in dummy mode\" 
-
-[$UPS3]
-driver=dummy-ups
-port=$UPS3.dev
-desc=\"dummy-ups 3 in dummy mode\" " > $CFGDIR/ups.conf
-
-create_ups_device $UPS1 1500
-create_ups_device $UPS2 700
-create_ups_device $UPS3 1200
-
-    chown nut:root $CFGDIR/*.dev
-    logmsg_info "restart NUT server"
-    systemctl stop nut-server
-    systemctl stop nut-driver
-    sleep 3
-    systemctl start nut-driver
-    sleep 3
-    systemctl start nut-server
-    logmsg_info "waiting for a while"
-    sleep 15
+custom_create_ups_dev_files() {
+    # Called below via testlib-nut::create_nut_config()
+    create_ups_dev_file "$NUTCFGDIR/$UPS1" 1500
+    create_ups_dev_file "$NUTCFGDIR/$UPS2" 700
+    create_ups_dev_file "$NUTCFGDIR/$UPS3" 1200
 }
 
 # drop and fill the database
 fill_database(){
+    test_it "fill_database"
     for SQLFILE in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DC_POWER_UC1" ; do
         if [ -s "$SQLFILE" ]; then
             loaddb_file "$SQLFILE" || die "Error importing $SQLFILE"
@@ -139,64 +102,83 @@ fill_database(){
             die "`basename "$SQLFILE"` not found"
         fi
     done
+    print_result 0
+}
+
+# stop all processes launched in the script
+stop_bios_daemons(){
+    for d in agent-dbstore agent-nut ; do
+        killall -KILL $d lt-$d || true
+    done
+}
+
+stop_tntnet() {
+    killall -KILL tntnet || true
+}
+
+stop_processes(){
+    stop_bios_daemons
+    stop_tntnet
 }
 
 # start built daemons as a subprocess
 start_bios_daemons(){
-    # Kill existing process
+    stop_bios_daemons
     for d in agent-dbstore agent-nut ; do
-        killall -KILL "$d" "lt-$d" || true
-    done
-    # start agent-dbstore
-    for d in agent-dbstore agent-nut ; do
-    if [ -x "$INSTALLDIR/usr/local/bin/$d" ] ; then
-        "$INSTALLDIR/usr/local/bin/$d" &
-    else
-        if [ -x "${BUILDSUBDIR}/$d" ] ; then
-            "${BUILDSUBDIR}/$d" &
+        test_it "start_bios_daemons:$d"
+        if [ -x "$INSTALLDIR/usr/local/bin/$d" ] ; then
+            "$INSTALLDIR/usr/local/bin/$d" &
+            print_result $?
         else
-            die "Can't find $d"
+            if [ -x "${BUILDSUBDIR}/$d" ] ; then
+                "${BUILDSUBDIR}/$d" &
+                print_result $?
+            else
+                print_result 127
+                die "Can't find $d"
+            fi
         fi
-    fi
     done
 
     # wait a bit
-    echo "Sleeping after daemon startup..."
+    logmsg_info "Sleeping after daemon startup..."
     sleep 15
 }
 
 # start tntnet in order to make REST API request
 start_tntnet(){
-    # Kill existing process
-    killall -KILL tntnet || true
+    stop_tntnet
     # Mod xml file and start tntnet
-    if [ -f "$CHECKOUTDIR/src/web/$XML_TNTNET" ] ; then
+    test_it "start_tntnet"
+    if [ -s "$CHECKOUTDIR/src/web/$XML_TNTNET" ] ; then
         cp "$CHECKOUTDIR/src/web/$XML_TNTNET" "$SCRIPTDIR/$XML_TNTNET"
         sed -i '$ d' "$SCRIPTDIR/$XML_TNTNET"
-        echo "<dir>$CHECKOUTDIR/src/web</dir>" >> "$SCRIPTDIR/$XML_TNTNET"
-        echo "<compPath><entry>$BUILDSUBDIR/.libs</entry></compPath>" >> "$SCRIPTDIR/$XML_TNTNET"
-        echo "</tntnet>" >> "$SCRIPTDIR/$XML_TNTNET"
+        { echo "<dir>$CHECKOUTDIR/src/web</dir>"
+          echo "<compPath><entry>$BUILDSUBDIR/.libs</entry></compPath>"
+          echo "</tntnet>"
+        } >> "$SCRIPTDIR/$XML_TNTNET"
         tntnet -c "$SCRIPTDIR/$XML_TNTNET" &
+        print_result $?
     else
         logmsg_error "$XML_TNTNET not found"
         stop_processes
+        print_result 127
         exit 1
     fi
 }
 
-# stop all processes launched in the script
-stop_processes(){
-    for d in agent-dbstore agent-nut  ; do
-        killall -KILL $d lt-$d || true
-    done
-    killall -KILL tntnet || true
-}
+# Note: this default log filename will be ignored if already set by caller
+# ERRCODE is maintained by settraps()
+init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" ""
+settraps 'stop_processes; exit_summarizeTestlibResults $ERRCODE'
 
 for d in mysql saslauthd malamute ; do
+    test_it "systemctl_start_3rdParty:$d"
     systemctl start $d
+    print_result $?
 done
 
-create_nut_config
+create_nut_config "" "" -- custom_create_ups_dev_files
 fill_database
 start_bios_daemons
 start_tntnet
@@ -207,36 +189,47 @@ accept_license
 logmsg_info "starting the test"
 
 # Get first rack total power
-RACK_TOTAL_POWER1_CONTENT="`api_get_json '/metric/computed/rack_total?arg1=477002&arg2=total_power'`"
+test_it "api_get_rackpower-1"
+RACK_TOTAL_POWER1_CONTENT="`api_get_json '/metric/computed/rack_total?arg1=477002&arg2=total_power'`" && \
 RACK_TOTAL_POWER1=$(echo "$RACK_TOTAL_POWER1_CONTENT" | grep total_power | sed "s/: /%/" | cut -d'%' -f2)
+[ $? = 0 ] && [ -n "$RACK_TOTAL_POWER1" ] && [ -n "$RACK_TOTAL_POWER1_CONTENT" ]
+print_result $?
 
-RACK_TOTAL_POWER2_CONTENT="`api_get_json '/metric/computed/rack_total?arg1=477003&arg2=total_power'`"
+test_it "api_get_rackpower-2"
+RACK_TOTAL_POWER2_CONTENT="`api_get_json '/metric/computed/rack_total?arg1=477003&arg2=total_power'`" && \
 RACK_TOTAL_POWER2=$(echo "$RACK_TOTAL_POWER2_CONTENT" | grep total_power | sed "s/: /%/" | cut -d'%' -f2)
+[ $? = 0 ] && [ -n "$RACK_TOTAL_POWER2" ] && [ -n "$RACK_TOTAL_POWER2_CONTENT" ]
+print_result $?
 
-RACK_TOTAL_POWER3_CONTENT="`api_get_json '/metric/computed/rack_total?arg1=477004&arg2=total_power'`"
+test_it "api_get_rackpower-3"
+RACK_TOTAL_POWER3_CONTENT="`api_get_json '/metric/computed/rack_total?arg1=477004&arg2=total_power'`" && \
 RACK_TOTAL_POWER3=$(echo "$RACK_TOTAL_POWER3_CONTENT" | grep total_power | sed "s/: /%/" | cut -d'%' -f2)
+[ $? = 0 ] && [ -n "$RACK_TOTAL_POWER3" ] && [ -n "$RACK_TOTAL_POWER3_CONTENT" ]
+print_result $?
 
-DATACENTER_POWER_CONTENT="`api_get_json '/metric/computed/datacenter_indicators?arg1=477000&arg2=power'`"
+test_it "api_get_dcpower"
+DATACENTER_POWER_CONTENT="`api_get_json '/metric/computed/datacenter_indicators?arg1=477000&arg2=power'`" && \
 DATACENTER_POWER=$(echo "$DATACENTER_POWER_CONTENT" | grep power | sed "s/: /%/" | cut -d'%' -f2)
+[ $? = 0 ] && [ -n "$DATACENTER_POWER" ] && [ -n "$DATACENTER_POWER_CONTENT" ]
+print_result $? "No DC data"
 
+test_it "calculate_racks_totalpower"
 RACKS_TOTAL_POWER=$(($RACK_TOTAL_POWER1+$RACK_TOTAL_POWER2+$RACK_TOTAL_POWER3))
+[ $? = 0 ] && [ -n "$RACKS_TOTAL_POWER" ]
+print_result $?
 
 # Print test data
-echo "Rack1 total power :       $RACK_TOTAL_POWER1"
-echo "Rack2 total power :       $RACK_TOTAL_POWER2"
-echo "Rack3 total power :       $RACK_TOTAL_POWER3"
-echo "Sum of rack total power : $RACKS_TOTAL_POWER"
-echo "Datacenter power :        $DATACENTER_POWER"
+logmsg_info "Rack1 total power :       $RACK_TOTAL_POWER1"
+logmsg_info "Rack2 total power :       $RACK_TOTAL_POWER2"
+logmsg_info "Rack3 total power :       $RACK_TOTAL_POWER3"
+logmsg_info "Sum of rack total power : $RACKS_TOTAL_POWER"
+logmsg_info "Datacenter power :        $DATACENTER_POWER"
 
 stop_processes
 
-if [ "$DATACENTER_POWER" == "" ] ; then
-    logmsg_error "TEST FAILED - No Data"
-    exit 1
-elif [ "$DATACENTER_POWER" -eq "$RACKS_TOTAL_POWER" ] ; then
-    logmsg_info "TEST PASSED"
-    exit 0
-else
-    logmsg_error "TEST FAILED"
-    exit 1
-fi
+test_it "DCpower==RacksTotalPower"
+[ "$DATACENTER_POWER" -eq "$RACKS_TOTAL_POWER" ]
+print_result $?
+
+# The trap-handler should display the summary (if any)
+exit
