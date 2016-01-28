@@ -1169,7 +1169,8 @@ template_rule_DATA = src/agents/autoconfig/rule_templates/average.humidity@__dat
 					 src/agents/autoconfig/rule_templates/load.default@__device_ups__.rule \
 					 src/agents/autoconfig/rule_templates/load.input.L1@__device_epdu__.rule \
 					 src/agents/autoconfig/rule_templates/phase_imbalance@__device_ups__.rule \
-					 src/agents/autoconfig/rule_templates/realpower.default@__datacenter__.rule \
+					 src/agents/autoconfig/rule_templates/realpower.default_1phase@__datacenter__.rule \
+					 src/agents/autoconfig/rule_templates/realpower.default_3phase@__datacenter__.rule \
 					 src/agents/autoconfig/rule_templates/realpower.default@__rack__.rule \
 					 src/agents/autoconfig/rule_templates/status.ups@__device_ups__.rule \
 					 src/agents/autoconfig/rule_templates/temperature.default@__device_ups__.rule \
