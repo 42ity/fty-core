@@ -28,11 +28,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "UpsEpduRuleConfigurator.h"
 
 #define UPSEPDU_InputVoltage_3Phase_Threshold_LUA \
-    "function main(v1,v2,v3)"\
-    "   if (v1 > high_critical or v2 > high_critical or v3 > high_critical) then return HIGH_CRITICAL end;"\
-    "   if (v1 > high_warning or v2 > high_warning or v3 > high_warning) then return HIGH_WARNING end;"\
-    "   if (v1 < low_critical or v2 < low_critical or v3 < low_critical) then return LOW_CRITICAL end;"\
-    "   if (v1 < low_warning or v2 < low_warning or v3 < low_warning) then return LOW_WARNING end;"\
+    "function main(p1,p2,p3)"\
+    "   local suma = p1 + p2 + p3;"\
+    "   if (suma > high_critical) then return HIGH_CRITICAL end;"\
+    "   if (suma > high_warning) then return HIGH_WARNING end;"\
     "   return OK;"\
     "end"
 
@@ -70,15 +69,8 @@ bool UpsEpduRuleConfigurator::v_configure (const std::string& name, const AutoCo
                 "UPSEPDU_InputVoltage_3Phase_Threshold",
                 std::vector<std::string>{"voltage.input.L1@" + name, "voltage.input.L2@" + name, "voltage.input.L3@" + name},
                 name,
-                std::vector <std::pair <std::string, std::string>>{
-                    {"low_critical","210"},
-                    {"low_warning","215"},
-                    {"high_warning","235"},
-                    {"high_critical","240"}
-                    },
+                std::vector <std::pair <std::string, std::string>>{ {"high_warning","0"}, {"high_critical","0"}},
                 std::vector <std::tuple <std::string, std::vector <std::string>, std::string, std::string>> {
-                    std::make_tuple ("low_critical", std::vector <std::string> {"EMAIL"}, "high", "Input voltage (3 phase) in device " + name + " is critically low"),
-                    std::make_tuple ("low_warning", std::vector <std::string> {"EMAIL"}, "high", "Input voltage (3 phase) in device " + name + " is low"),
                     std::make_tuple ("high_warning", std::vector <std::string> {"EMAIL"}, "high", "Input voltage (3 phase) in device " + name + " is high"),
                     std::make_tuple ("high_critical", std::vector <std::string> {"EMAIL"}, "high", "Input voltage (3 phase) in device " + name + " is critically high"),
                 },
