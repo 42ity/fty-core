@@ -1161,7 +1161,22 @@ agent_autoconfig_CPPFLAGS =	$(AM_CPPFLAGS) \
 				-I$(abs_top_srcdir)/src/db \
 				-I$(abs_top_builddir)/tools
 
-
+#XXX: $(localstatedir) did not worked
+#FIXME: installing things to /var is not a good idea according FHS or GNU standards
+#		so this needs to be reconsidered later on (datadir is preffered location)
+template_ruledir = /var/lib/$(PACKAGE)/agent-autoconfig/
+template_rule_DATA = src/agents/autoconfig/average.humidity@__datacenter__.rule \
+					 src/agents/autoconfig/average.temperature@__datacenter__.rule \
+					 src/agents/autoconfig/charge.battery@__device_ups__.rule \
+					 src/agents/autoconfig/load.default@__device_ups__.rule \
+					 src/agents/autoconfig/load.input.L1@__device_epdu__.rule \
+					 src/agents/autoconfig/phase_imbalance@__device_ups__.rule \
+					 src/agents/autoconfig/realpower.default@__datacenter__.rule \
+					 src/agents/autoconfig/realpower.default@__rack__.rule \
+					 src/agents/autoconfig/status.ups@__device_ups__.rule \
+					 src/agents/autoconfig/temperature.default@__device_ups__.rule \
+					 src/agents/autoconfig/voltage.input.L1-N@__device_epdu__.rule \
+					 src/agents/autoconfig/voltage.input.L1-N@__device_ups__.rule
 
 client_PROGRAMS +=	agent-inventory
 
