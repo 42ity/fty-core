@@ -215,7 +215,7 @@ kill_daemons() {
 RESULT_OVERALL=0
 trap_cleanup(){
     cleanTRAP_RES="${1-}"
-    logmsg_info "trap_cleanup(): initial cleanTRAP_RES='$cleanTRAP_RES' RESULT_OVERALL='$RESULT_OVERALL'"
+    logmsg_debug "trap_cleanup(): initial cleanTRAP_RES='$cleanTRAP_RES' RESULT_OVERALL='$RESULT_OVERALL'"
     [ -n "$cleanTRAP_RES" ] || cleanTRAP_RES=0
     [ "$cleanTRAP_RES" = 0 ] && [ "$RESULT_OVERALL" != 0 ] && cleanTRAP_RES="$RESULT_OVERALL"
     [ "$cleanTRAP_RES" != 0 ] && [ "$RESULT_OVERALL" = 0 ] && RESULT_OVERALL="$cleanTRAP_RES"
@@ -265,7 +265,7 @@ trap_cleanup(){
         echo "###########################################################"
     fi
 
-    logmsg_info "trap_cleanup(): final cleanTRAP_RES='$cleanTRAP_RES' RESULT_OVERALL='$RESULT_OVERALL'"
+    logmsg_debug "trap_cleanup(): final cleanTRAP_RES='$cleanTRAP_RES' RESULT_OVERALL='$RESULT_OVERALL'"
     return $cleanTRAP_RES
 }
 
@@ -382,8 +382,12 @@ if [ $# = 0 ]; then
         test_web_topo_p topology_power || RESULT_OVERALL=$?
     fi
     test_web_process || CODE=$? die "failed in test_web_process()"
+    [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && \
+        CODE=$RESULT_OVERALL die "Quickly aborting the test suite after failure, as requested"
     test_web_averages averages || RESULT_OVERALL=$?
     test_web_process || CODE=$? die "failed in test_web_process()"
+    [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && \
+        CODE=$RESULT_OVERALL die "Quickly aborting the test suite after failure, as requested"
 else
     # selective test routine
     while [ $# -gt 0 ]; do
@@ -402,9 +406,11 @@ else
         esac
         shift
         test_web_process || CODE=$? die "failed in test_web_process()"
-        [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && break
+        [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && \
+            CODE=$RESULT_OVERALL die "Quickly aborting the test suite after failure, as requested"
     done
 fi
 
 # trap_cleanup() should handle the cleanup and final logging
+logmsg_debug "Got to the end of $0 with RESULT_OVERALL='$RESULT_OVERALL'"
 exit $RESULT_OVERALL
