@@ -87,7 +87,7 @@ int main()
 
                 // end_warranty_date (s) - now (s) -> to days
                 day_diff = std::ceil ((ewd - now) / (60*60*24));
-                log_error ("day_diff: %d", day_diff);
+                log_debug ("day_diff: %d", day_diff);
             }
 
             std::string rule_name = "warranty";
