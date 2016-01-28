@@ -72,7 +72,7 @@ db_initiate(){
 
 db_measure(){
     # set actual time
-    TIME=$(date -u)
+    TIME=$(date -u '+%s')
 
     # set the header names of the params
     PARAMS=(units topic name timestamp value scale)
@@ -100,7 +100,7 @@ C   average.temperature@DC-LAB                      DC-LAB    $(expr $TIME - 10)
 )
     # set the counters
     NPAR=${#PARAMS[*]}
-   NSAM=${#SAMPLES[*]}
+    NSAM=${#SAMPLES[*]}
     SAMPLECNT=$(expr $NSAM / $NPAR - 1)
 
     # Add all samples including the appropriate topics to DB
@@ -116,9 +116,9 @@ C   average.temperature@DC-LAB                      DC-LAB    $(expr $TIME - 10)
 }
 
 api_get_json_ntstp(){
-[ -z ${RES+x} ] && RES=0
-api_get_json $1 >&5
-RES="$(expr $RES + $?)"
+    [ -z ${RES+x} ] && RES=0
+    api_get_json $1 >&5
+    RES="$(expr $RES + $?)"
 }
 
 
