@@ -1,16 +1,16 @@
 {
     "threshold" : {
-        "rule_name"     :   "realpower.default_3phase@__datacenter__",
+        "rule_name"     :   "realpower.default_3phase@__name__",
         "rule_desc"     :   "Total Power 3 Phase",
-        "target"        :   [ "realpower.input.L1@__datacenter__", "realpower.input.L2@__datacenter__", "realpower.input.L3@__datacenter__" ],
-        "element"       :   "__datacenter__",
+        "target"        :   [ "realpower.input.L1@__name__", "realpower.input.L2@__name__", "realpower.input.L3@__name__" ],
+        "element"       :   "__name__",
         "values_unit"   :   "W",
         "values"        :   [
             { "high_warning"    : "0" },
             { "high_critical"   : "0" } ],
         "results"       :   [
-            {"high_warning"  : { "action" : ["EMAIL"], "severity" : "low", "description" : "Total power (3 phase) in datacenter __datacenter__ is high" }},
-            {"high_critical" : { "action" : ["EMAIL","SMS"], "severity" : "high", "description" : "Total power (3 phase) in datacenter __datacenter__ is critically high" }} ],
+            {"high_warning"  : { "action" : ["EMAIL"], "severity" : "low", "description" : "Total power (3 phase) in datacenter __name__ is high" }},
+            {"high_critical" : { "action" : ["EMAIL","SMS"], "severity" : "high", "description" : "Total power (3 phase) in datacenter __name__ is critically high" }} ],
         "evaluation" : "function main(p1,p2,p3) local suma = p1 + p2 + p3; if (suma > high_critical) then return HIGH_CRITICAL end; if (suma > high_warning) then return HIGH_WARNING end; return OK; end"
     }
 }
