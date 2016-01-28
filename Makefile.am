@@ -1131,7 +1131,9 @@ agent_autoconfig_SOURCES = \
 			src/agents/autoconfig/DcRuleConfigurator.h \
 			src/agents/autoconfig/DcRuleConfigurator.cc \
 			src/agents/autoconfig/UptimeConfigurator.h \
-			src/agents/autoconfig/UptimeConfigurator.cc
+			src/agents/autoconfig/UptimeConfigurator.cc \
+			src/agents/autoconfig/TemplateRuleConfigurator.h \
+			src/agents/autoconfig/TemplateRuleConfigurator.cc 
 
 agent_autoconfig_LDADD = \
 			libpriv-log.la \
@@ -1145,7 +1147,8 @@ agent_autoconfig_LDADD = \
 			libpriv-subprocess.la \
 			libpriv-utils-ymsg.la \
 			libpriv-utils-web.la \
-			libpriv-utils-plusplus.la
+			libpriv-utils-plusplus.la \
+			libpriv-enums.la 
 
 # FIXME remove utils ymsg
 
