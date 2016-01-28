@@ -1,6 +1,7 @@
 #!/bin/bash
+# Note: Bash-specific syntax is in use!
 #
-# Copyright (C) 2014 Eaton
+# Copyright (C) 2014-2016 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,14 +20,13 @@
 #! \file   ci-longrun.sh
 #  \brief  tests the bios system stability for longer period
 #  \author Tomas Halman <TomasHalman@Eaton.com>
-
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 #
 # requirements:
 #   Must run as root (nut configuration)
 #
 
 ### Fixed settings for the test
-CFGDIR=""
 NUTUSER=nut
 NUTPASSWORD=secret
 DBUSER=root
@@ -38,39 +38,14 @@ DATABASE=box_utf8
 NEED_BUILDSUBDIR=no determineDirs_default || true
 . "`dirname $0`"/testlib.sh || die "Can not include common test script library"
 . "`dirname $0`"/testlib-db.sh || die "Can not include database test script library"
+. "`dirname $0`/testlib-nut.sh" || CODE=$? die "Can not include testlib-NUT script library"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 [ -d "$DB_LOADDIR" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
 [ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
+detect_nut_cfg_dir || CODE=$? die "NUT config dir not found"
 
-nut_cfg_dir() {
-    for cfgd in "/etc/ups" "/etc/nut"; do
-        if [ -d "$cfgd" ] ; then
-            CFGDIR="$cfgd"
-            break
-        fi
-    done
-    if [ "$CFGDIR" = "" ] ; then
-        die "NUT config dir not found"
-    fi
-}
-
-set_value_in_ups() {
-    local UPS="$(basename "$1" .dev)"
-    local PARAM="$2"
-    local VALUE="$3"
-
-    sed -i -r -e 's/^'"$PARAM"' *:.+$/'"$PARAM: $VALUE/i" "$CFGDIR/$UPS.dev"
-    upsrw -s "$PARAM=$VALUE" -u "$NUTUSER" -p "$NUTPASSWORD" "$UPS@localhost" >/dev/null 2>&1
-}
-
-get_value_from_ups() {
-    local UPS="$(basename "$1" .dev)"
-    local PARAM="$2"
-    upsc "$UPS" "$PARAM"
-}
-
-create_epdu_dev_file() {
-    local FILE=$1
+custom_create_epdu_dev_file() {
+    local FILE="$1"
     echo -e \
         "device.type: epdu" \
         "\ndevice.model: A12" \
@@ -96,12 +71,11 @@ create_epdu_dev_file() {
         "\noutlet.3.voltage: 230" \
         "\noutlet.4.current: 1.3" \
         "\noutlet.4.realpower: 25" \
-        "\noutlet.4.voltage: 230" \
-        > $FILE
+        "\noutlet.4.voltage: 230"
 }
 
-create_ups_dev_file() {
-    local FILE=$1
+custom_create_ups_dev_file() {
+    local FILE="$1"
     echo -e \
         "device.type: ups" \
         "\ndevice.model: B32" \
@@ -117,74 +91,30 @@ create_ups_dev_file() {
         "\nups.temperature: 25" \
         "\noutlet.realpower: 20" \
         "\nups.load: 10" \
-        "\nups.status: OL" \
-        > $FILE
-}
-
-create_nut_config() {
-    echo "\nMODE=standalone" > $CFGDIR/nut.conf 
-    echo -e \
-        "\n[epdu101_1_]" \
-        "\ndriver=dummy-ups" \
-        "\nport=epdu101_1_.dev" \
-        "\n" \
-        "\n[epdu101_2_]" \
-        "\ndriver=dummy-ups" \
-        "\nport=epdu101_2_.dev" \
-        "\n" \
-        "\n[ups103_1_]" \
-        "\ndriver=dummy-ups" \
-        "\nport=ups103_1_.dev" \
-        "\n" \
-        "\n[ups103_2_]" \
-        "\ndriver=dummy-ups" \
-        "\nport=ups103_2_.dev" \
-        "\n" \
-        > $CFGDIR/ups.conf
-    echo -e \
-        "\n[$NUTUSER]" \
-        "\npassword=$NUTPASSWORD" \
-        "\nactions=SET" \
-        "\ninstcmds=ALL" \
-        > $CFGDIR/upsd.users
-    create_epdu_dev_file $CFGDIR/epdu101_1_.dev
-    create_epdu_dev_file $CFGDIR/epdu101_2_.dev
-    create_ups_dev_file  $CFGDIR/ups103_1_.dev
-    create_ups_dev_file  $CFGDIR/ups103_2_.dev
-
-    chown nut:root $CFGDIR/*.dev
-    logmsg_info "restart NUT server"
-    systemctl stop nut-server
-    systemctl stop nut-driver
-    sleep 3
-    systemctl start nut-driver
-    sleep 3
-    systemctl start nut-server
-    logmsg_info "waiting for a while"
-    sleep 15
+        "\nups.status: OL"
 }
 
 random_thing(){
-    local DEVICE=$1
-    LINES=$(grep -v -E ^device $CFGDIR/$DEVICE | wc -l)
-    LINE=$(expr $RANDOM % $LINES + 1)
-    grep -v -E ^device $CFGDIR/$DEVICE | sed -n -r -e 's/:.+//g' -e ${LINE}p 
+    local DEVICE="$1"
+    LINES="$(egrep -v '^device' "$NUTCFGDIR/$DEVICE" | wc -l)"
+    LINE="$(($RANDOM % $LINES + 1))"
+    egrep -v '^device' "$NUTCFGDIR/$DEVICE" | sed -n -r -e 's/:.+//g' -e "${LINE}p"
 }
 
 new_value() {
-    local DEVICE=$(basename $1 .dev)
-    local ITEM=$2
-    local VALUE=$(get_value_from_ups $DEVICE $ITEM)
+    local DEVICE="$(basename "$1" .dev)"
+    local ITEM="$2"
+    local VALUE="$(get_value_from_ups "$DEVICE" "$ITEM")"
     case "$ITEM" in
         ups.status)
             statuses=("OL" "OB DISCHRG" "OL CHRG" "BYPASS" "OVER")
-            cnt=${#statuses[@]}
-            i=$(expr $RANDOM % $cnt)
-            echo ${statuses[$i]}
+            cnt="${#statuses[@]}"
+            i="$(($RANDOM % $cnt))"
+            echo "${statuses[$i]}"
             ;;
         battery.charge)
             # charge 0 - 100
-            awk -vVALUE=$VALUE -vSEED=$RANDOM '
+            awk -vVALUE="$VALUE" -vSEED="$RANDOM" '
                 BEGIN{
                    srand(SEED);
                    change=(rand() * 20 - 10 )/100
@@ -196,7 +126,7 @@ new_value() {
             ;;
         *.load)
             # load 0 - 120
-            awk -vVALUE=$VALUE -vSEED=$RANDOM '
+            awk -vVALUE="$VALUE" -vSEED="$RANDOM" '
                 BEGIN{
                    srand(SEED);
                    change=(rand() * 15 - 7.5 )/100
@@ -208,7 +138,7 @@ new_value() {
             ;;
         *)
             # default only positive number
-            awk -vVALUE=$VALUE -vSEED=$RANDOM '
+            awk -vVALUE="$VALUE" -vSEED="$RANDOM" '
                 BEGIN{
                    srand(SEED);
                    change=(rand() * 15 - 7.5 )/100
@@ -221,86 +151,96 @@ new_value() {
 }
 
 create_random_samples() {
-    local DEVICES=(epdu101_1_.dev epdu101_2_.dev ups103_1_.dev ups103_2_.dev)
-    local TOTALTIME=$1
-    local FREQ=$2
+    local DEVICES=(epdu101_1.dev epdu101_2.dev ups103_1.dev ups103_2.dev)
+    local TOTALTIME="$1"
+    local FREQ="$2"
     local TIME=0
-    while [ $TIME -lt $TOTALTIME ] ; do
-        I=$(expr $RANDOM % 4)
-        DEVICE=${DEVICES[$I]}
-        ITEM=$(random_thing $DEVICE)
-        NEWVALUE=$(new_value $DEVICE $ITEM)
-        SLEEP=$(expr $RANDOM % $FREQ)
+    while [[ "$TIME" -lt "$TOTALTIME" ]] ; do
+        I="$(($RANDOM % 4))"
+        DEVICE="${DEVICES[$I]}"
+        ITEM="$(random_thing "$DEVICE")"
+        NEWVALUE="$(new_value "$DEVICE" "$ITEM")"
+        SLEEP="$(($RANDOM % $FREQ))"
         echo "nut:$DEVICE:$ITEM:$NEWVALUE:$SLEEP"
-        set_value_in_ups $DEVICE $ITEM $NEWVALUE
-        TIME=$(expr $TIME + $SLEEP)
+        set_value_in_ups "$DEVICE" "$ITEM" "$NEWVALUE" 0
+        TIME="$(($TIME + $SLEEP))"
     done
 }
 
 produce_events(){
     MEASUREMENTS="`do_select 'select count(*) from t_bios_measurement'`"
-    LASTCHECK=$(date +%s)
-    while read sample
+    LASTCHECK="$(date +%s)"
+    NUMLINE=0
+    while IFS=: read TYPE DEVICE ITEM VALUE SLEEPAFTER
     do
-        TYPE=$(cut <<< "$sample" -d:  -f1)
-        DEVICE=$(cut <<< "$sample" -d:  -f2)
-        ITEM=$(cut <<< "$sample" -d:  -f3)
-        VALUE=$(cut <<< "$sample" -d:  -f4)
-        SLEEPAFTER=$(cut <<< "$sample" -d:  -f5)
+        NUMLINE="$((NUMLINE+1))"
         case "$TYPE" in
             nut)
-                set_value_in_ups $DEVICE $ITEM $VALUE
+                set_value_in_ups "$DEVICE" "$ITEM" "$VALUE"
                 echo "$(date +%T) $DEVICE $ITEM = $VALUE"
                 ;;
         esac
-        sleep $(expr $SLEEPAFTER )
-        if expr $(date +%s) \> $LASTCHECK + 300 >/dev/null 2>&1 ; then
+        sleep $SLEEPAFTER
+        NOW="$(date +%s)"
+        if [[ "$NOW" -gt "$(($LASTCHECK + 300))" ]] >/dev/null 2>&1 ; then
             # 5 min since last check
             # check measurement flow
+            test_it "check_measurement_flow_since_last_check:line=$NUMLINE:now=$NOW"
             NEWCNT="`do_select 'select count(*) from t_bios_measurement'`"
-            if [ $NEWCNT = $MEASUREMENTS ] ; then
+            if [[ "$NEWCNT" -eq "$MEASUREMENTS" ]] ; then
                 # no data flow
                 logmsg_error "nothing appeared in measurement table since last check ($NEWCNT lines in table)"
+                print_result 5
             else
                 logmsg_info "OK: new measurements ($NEWCNT lines in table)"
+                print_result 0
             fi
-            MEASUREMENTS=$NEWCNT
+            MEASUREMENTS="$NEWCNT"
+
             # check last 5 min data
             TS6MINAGO="`date '+%s' --date '6 minutes ago'`"
-            CNT6MIN="`do_select \"select count(*) from t_bios_measurement where timestamp > ( $TS6MINAGO )\"`"
-            if [ "$CNT6MIN" = "0" ] ; then
+            test_it "check_measurement_flow_for_last_6min:line=$NUMLINE:now=$NOW"
+            CNT6MIN="`do_select 'select count(*) from t_bios_measurement where timestamp > ( '"${TS6MINAGO}"' )'`"
+            if [[ "$CNT6MIN" -eq "0" ]] ; then
                 # no data flow
                 logmsg_error "nothing appeared in measurement table in last 6 minutes"
+                print_result 6
             else
                 logmsg_info "OK: $CNT6MIN new measurements in last 6 minutes"
+                print_result 0
             fi
+
             # check servises
-            if $SCRIPTDIR/ci-rc-bios.sh --status >/dev/null 2>&1 ; then
+            test_it "check_service_status:line=$NUMLINE:now=$NOW"
+            if "$SCRIPTDIR/"ci-rc-bios.sh --status >/dev/null 2>&1 ; then
                 logmsg_info "OK: all services running"
+                print_result 0
             else
-                logmsg_error "some services are not running"
-                $SCRIPTDIR/ci-rc-bios.sh --status
+                logmsg_error "some services are not running:" \
+                    "`"$SCRIPTDIR/"ci-rc-bios.sh --status`"
+                print_result 1
             fi
-            LASTCHECK=$(date +%s)
+            LASTCHECK="$(date +%s)"
         fi
-    done < $SAMPLEFILE
+    done < "$SAMPLEFILE"
 }
 
+[ -n "${SAMPLEFILE_DEFAULT-}" ] || \
+    SAMPLEFILE_DEFAULT="$SCRIPTDIR/../fixtures/ci-longrun.data"
 usage() {
-    echo "usage: $(basename $0) [options]"
-    echo "options:"
+    echo "Usage: $(basename $0) [options]"
+    echo "Options:"
     echo "    -h|--help                   print this help"
     echo "    --create-samples TIME FREQ  create random samles instead of"
     echo "                                running test and print samples to STDOUT."
     echo "                                Events are generated as often as (\$RANDOM % FREQ)."
     echo "                                So many events are generated to take TIME to produce them."
     echo "                                TIME and FREQ are in seconds."
-    echo "    -s|--samples FILE           use this sample file [default ci-longrun.data]"
+    echo "    -s|--samples FILE           use this sample file [default $SAMPLEFILE_DEFAULT]"
 }
 
 ACTION=test
-SAMPLEFILE="$SCRIPTDIR/../fixtures/ci-longrun.data"
-
+SAMPLEFILE="$SAMPLEFILE_DEFAULT"
 while [ "$#" -gt 0 ] ; do 
     case "$1" in
         --create-samples)
@@ -320,24 +260,31 @@ while [ "$#" -gt 0 ] ; do
     esac
 done
 
+# Note: this default log filename will be ignored if already set by caller
+# ERRCODE is maintained by settraps()
+init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" ""
+settraps 'exit_summarizeTestlibResults $ERRCODE'
+
 if [ "$(id -u)" != 0 ] ; then
     die "must run as root"
 fi
 
-nut_cfg_dir
 case "$ACTION" in
     samples)
-        create_nut_config >/dev/null 2>&1
+        create_nut_config "ups103_1 ups103_2" "epdu101_1 epdu101_2" >/dev/null 2>&1
         create_random_samples "$TIME" "$FREQ"
         ;;
     test)
-        $SCRIPTDIR/ci-rc-bios.sh --stop
-        create_nut_config
-        $SCRIPTDIR/ci-empty-db.sh
+        "$SCRIPTDIR/"ci-rc-bios.sh --stop
+        create_nut_config "ups103_1 ups103_2" "epdu101_1 epdu101_2"
+        "$SCRIPTDIR/"ci-empty-db.sh
         loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE"
         loaddb_file "$DB_RACK_POWER"
-        $SCRIPTDIR/ci-rc-bios.sh --start
+        "$SCRIPTDIR/"ci-rc-bios.sh --start
         produce_events
-        $SCRIPTDIR/ci-rc-bios.sh --stop
+        "$SCRIPTDIR/"ci-rc-bios.sh --stop
         ;;
 esac
+
+# The trap-handler should display the summary (if any)
+exit
