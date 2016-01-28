@@ -32,10 +32,15 @@
 #include "db/assets.h"
 
 /*
+ *  HOTFIX: let it generate alert itself, pattern rules in alert-generator are broken!
+ *
+ */
+
+/*
  * Tool will send following messages on the stream METRICS
  *
  *  SUBJECT: end_warranty_date@device
- *           value ISO date
+ *           value now() - end_warranty_date
  */
 
 int main()
@@ -57,8 +62,51 @@ int main()
             std::string date;
             row["date"].get(date);
 
-            //TODO
             log_debug ("name: %s, keytag: %s, date: %s", name.c_str(), keytag.c_str(), date.c_str());
+
+            int day_diff;
+            {
+                struct tm tm_ewd;
+                ::memset (&tm_ewd, 0, sizeof(struct tm));
+
+                char* ret = ::strptime (date.c_str(), "%Y-%m-%d", &tm_ewd);
+                if (ret == NULL) {
+                    log_error ("Cannot connect %s to date, skipping", date.c_str());
+                    return;
+                }
+
+                time_t ewd = ::mktime (&tm_ewd);
+                // end_warranty_date (s) - now (s) -> to days
+                day_diff = (ewd - ::time (NULL)) / (60*60*24);
+                log_debug ("day_diff: %d", day_diff);
+            }
+
+            std::string rule_name = "warranty";
+
+            const char* severity = NULL;
+            if (day_diff <= 10)
+                severity = "HIGH_CRITICAL";
+            else
+            if (day_diff <= 60)
+                severity = "LOW_WARNING";
+
+            if (!severity)
+                return;
+
+            zmsg_t *msg = bios_proto_encode_alert (
+                    NULL,
+                    rule_name.c_str(),
+                    name.c_str(),
+                    "NEW",
+                    severity,
+                    "Warranty date is going to expire",
+                    ::time (NULL),
+                    "EMAIL");
+
+            std::string subject = rule_name.append ("@").append (name);
+            mlm_client_send (client, subject.c_str (), &msg);
+
+            /* HOTFIX: let it send alerts for a while, unless pattern rules in alert generator will be fixed
             zmsg_t *msg = bios_proto_encode_metric (
                     NULL,
                     keytag.c_str(),
@@ -69,6 +117,7 @@ int main()
             assert (msg);
             std::string subject = keytag.append ("@").append (name);
             mlm_client_send (client, subject.c_str (), &msg);
+            */
         };
 
     int r = mlm_client_connect (client, "ipc://@/malamute", 1000, "warranty-metric");
@@ -77,9 +126,9 @@ int main()
         exit (EXIT_FAILURE);
     }
 
-    r = mlm_client_set_producer (client, "METRICS");
+    r = mlm_client_set_producer (client, "ALERTS");
     if (r == -1) {
-        log_error ("Can't set producer to METRICS stream");
+        log_error ("Can't set producer to ALERTS stream");
         exit (EXIT_FAILURE);
     }
 
