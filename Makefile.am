@@ -1165,13 +1165,16 @@ agent_autoconfig_CPPFLAGS =	$(AM_CPPFLAGS) \
 template_ruledir = /var/lib/$(PACKAGE)/agent-autoconfig/
 template_rule_DATA = src/agents/autoconfig/rule_templates/average.humidity@__datacenter__.rule \
 					 src/agents/autoconfig/rule_templates/average.temperature@__datacenter__.rule \
+					 src/agents/autoconfig/rule_templates/realpower.default_1phase@__datacenter__.rule \
+					 src/agents/autoconfig/rule_templates/realpower.default_3phase@__datacenter__.rule \
+					 src/agents/autoconfig/rule_templates/phase_imbalance@__datacenter__.rule \
+					 src/agents/autoconfig/rule_templates/realpower.default_1phase@__rack__.rule \
+					 src/agents/autoconfig/rule_templates/realpower.default_3phase@__rack__.rule \
+					 src/agents/autoconfig/rule_templates/phase_imbalance@__rack__.rule \
 					 src/agents/autoconfig/rule_templates/charge.battery@__device_ups__.rule \
 					 src/agents/autoconfig/rule_templates/load.default@__device_ups__.rule \
 					 src/agents/autoconfig/rule_templates/load.input.L1@__device_epdu__.rule \
 					 src/agents/autoconfig/rule_templates/phase_imbalance@__device_ups__.rule \
-					 src/agents/autoconfig/rule_templates/realpower.default_1phase@__datacenter__.rule \
-					 src/agents/autoconfig/rule_templates/realpower.default_3phase@__datacenter__.rule \
-					 src/agents/autoconfig/rule_templates/realpower.default@__rack__.rule \
 					 src/agents/autoconfig/rule_templates/status.ups@__device_ups__.rule \
 					 src/agents/autoconfig/rule_templates/temperature.default@__device_ups__.rule \
 					 src/agents/autoconfig/rule_templates/voltage.input.L1-N@__device_epdu__.rule \

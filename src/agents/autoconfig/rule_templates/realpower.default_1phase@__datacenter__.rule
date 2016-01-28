@@ -1,9 +1,9 @@
 {
     "threshold" : {
-        "rule_name"     :   "realpower.default_1phase@__datacenter__",
+        "rule_name"     :   "realpower.default_1phase@__name__",
         "rule_desc"     :   "Total Power 1 Phase",
-        "target"        :   "realpower.input.L1@__datacenter__",
-        "element"       :   "__datacenter__",
+        "target"        :   "realpower.input.L1@__name__",
+        "element"       :   "__name__",
         "values_unit"   :   "W",
         "values"        :   [
             { "low_critical"    : "0" },
