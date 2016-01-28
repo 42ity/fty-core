@@ -45,8 +45,9 @@ usage(){
     echo "options:"
     echo "  -u|--user   username for SASL (Default: '$BIOS_USER')"
     echo "  -p|--passwd password for SASL (Default: '$BIOS_PASSWD')"
-    echo "  -host NAME       REST API service host name [$SUT_HOST]"
-    echo "  -port-web PORT   REST API service HTTP port (default: it depends)"
+    echo "  --host NAME       REST API service host name [$SUT_HOST]"
+    echo "  --port-web PORT   REST API service HTTP port (default: it depends)"
+    echo "  --use-https|--use-http  Specify if REST API service requires HTTP(S)"
     echo "  -q|--quick  skip sanity checks that the server serves BIOS REST API"
     echo "  -m|--method which routine to use from weblib.sh (Default: '$WEBLIB_FUNC')"
     echo "NOTE: RELATIVE_URL is under the BASE_URL (host:port/api/v1)"
@@ -132,7 +133,15 @@ logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to run the requests" >&2
 # Included after CLI processing because sets autovars like BASE_URL
 . "$SCRIPTDIR/weblib.sh" >&2 || CODE=$? die "Can not include web script library"
 
-[ -z "$RELATIVE_URL" ] && die "No RELATIVE_URL was provided"
+if [ "$WEBLIB_FUNC" = "accept_license" && $# = 1
+
+if [ -z "$RELATIVE_URL" ]; then
+    if [ "$WEBLIB_FUNC" = "accept_license" ]; then
+        RELATIVE_URL=/
+    else
+        die "No RELATIVE_URL was provided"
+    fi
+fi
 
 test_web_port() {
     if ! SUT_is_localhost ; then
