@@ -1,0 +1,12 @@
+{
+    "single" : {
+        "rule_name"     :   "status.ups@__name__",
+        "target"        :   ["status.ups@__name__"],
+        "element"       :   "__name__",
+        "values"        :   [ ],
+        "results"       :   [ {"high_critical"  : { "action" : ["EMAIL","SMS"], "description" : "low" }},
+                              {"high_warning"  : { "action" : ["EMAIL"],        "description" : "onbat"}}
+                            ],
+        "evaluation"    : "function has_bit(x,bit) mask = 2 ^ (bit - 1); x = x % (2*mask); if x >= mask then return true else return false end end; function main(status) if has_bit(status,7) then return HIGH_CRITICAL end if has_bit(status,5) then return HIGH_WARNING end return OK end"
+    }
+}
