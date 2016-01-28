@@ -72,7 +72,7 @@ int main()
 
                 char* ret = ::strptime (date.c_str(), "%Y-%m-%d", &tm_ewd);
                 if (ret == NULL) {
-                    fprintf (stderr, "Cannot connect %s to date, skipping", date.c_str());
+                    log_error ("Cannot connect %s to date, skipping", date.c_str());
                     return;
                 }
 
