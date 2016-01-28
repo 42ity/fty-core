@@ -108,7 +108,7 @@ test_web_process() {
 wait_for_web() {
     for a in $(seq 60) ; do
         sleep 5
-        test_web_process || exit
+        test_web_process || CODE=$? die "failed in test_web_process"
         if ( test_web_port ) ; then
             return 0
         fi
@@ -129,7 +129,7 @@ test_web() {
 ci_loaddb_default() {
     echo "--------------- reset db: default ----------------"
     for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
-        loaddb_file "$data" || exit $?
+        loaddb_file "$data" || CODE=$? die "failed in loaddb_file($data)"
     done
     return 0
 }
@@ -145,7 +145,7 @@ test_web_topo_p() {
     init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_p() $*" || true
     echo "----------- reset db: topology : power -----------"
     for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOP"; do
-        loaddb_file "$data" || exit $?
+        loaddb_file "$data" || CODE=$? die "failed in loaddb_file($data)"
     done
     test_web "$@" || return $?
     return 0
@@ -156,7 +156,7 @@ test_web_topo_l() {
     init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_l() $*" || true
     echo "---------- reset db: topology : location ---------"
     for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOL"; do
-        loaddb_file "$data" || exit $?
+        loaddb_file "$data" || CODE=$? die "failed in loaddb_file($data)"
     done
     test_web "$@" || return $?
     return 0
@@ -166,7 +166,7 @@ test_web_asset_create() {
     init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_asset_create() $*" || true
     echo "---------- reset db: asset : create ---------"
     for data in "$DB_BASE" "$DB_DATA"; do
-          loaddb_file "$data" || exit $?
+          loaddb_file "$data" || CODE=$? die "failed in loaddb_file($data)"
     done
     test_web "$@" || return $?
     return 0
@@ -179,7 +179,7 @@ test_web_averages() {
     export CI_TEST_AVERAGES_DATA
     echo "----------- reset db: averages -----------"
     for data in "$DB_BASE" "$DB_DATA" "$DB_AVERAGES" "$DB_AVERAGES_RELATIVE"; do
-        loaddb_file "$data" || exit $?
+        loaddb_file "$data" || CODE=$? die "failed in loaddb_file($data)"
     done
     test_web "$@" || return $?
     return 0
@@ -215,6 +215,7 @@ kill_daemons() {
 RESULT_OVERALL=0
 trap_cleanup(){
     cleanTRAP_RES="${1-}"
+    logmsg_debug "trap_cleanup(): initial cleanTRAP_RES='$cleanTRAP_RES' RESULT_OVERALL='$RESULT_OVERALL'"
     [ -n "$cleanTRAP_RES" ] || cleanTRAP_RES=0
     [ "$cleanTRAP_RES" = 0 ] && [ "$RESULT_OVERALL" != 0 ] && cleanTRAP_RES="$RESULT_OVERALL"
     [ "$cleanTRAP_RES" != 0 ] && [ "$RESULT_OVERALL" = 0 ] && RESULT_OVERALL="$cleanTRAP_RES"
@@ -264,6 +265,7 @@ trap_cleanup(){
         echo "###########################################################"
     fi
 
+    logmsg_debug "trap_cleanup(): final cleanTRAP_RES='$cleanTRAP_RES' RESULT_OVERALL='$RESULT_OVERALL'"
     return $cleanTRAP_RES
 }
 
@@ -349,9 +351,9 @@ trap_cleanup(){
     logmsg_error "Web-server is NOT responsive!"
   logmsg_info "Waiting for webserver process $MAKEPID to settle after startup..."
   sleep 5
-  test_web_process || exit
+  test_web_process || CODE=$? die "failed in test_web_process()"
 
-  
+
 case "$*" in
     *license*) # We are specifically testing license stuff
         logmsg_warn "The tests requested on command line explicitly include 'license', so $0 will not interfere by running '00_license-CI-forceaccept.sh.test' first"
@@ -371,17 +373,21 @@ esac
 set +e
 if [ $# = 0 ]; then
     test_web_default -topology_power -asset_create -averages || RESULT_OVERALL=$?
-    test_web_process || exit
+    test_web_process || CODE=$? die "failed in test_web_process()"
     if [ "$RESULT_OVERALL" -eq 0 ] || [ x"$CITEST_QUICKFAIL" = xno ]; then
         test_web_asset_create asset_create || RESULT_OVERALL=$?
     fi
-    test_web_process || exit
+    test_web_process || CODE=$? die "failed in test_web_process()"
     if [ "$RESULT_OVERALL" -eq 0 ] || [ x"$CITEST_QUICKFAIL" = xno ]; then
         test_web_topo_p topology_power || RESULT_OVERALL=$?
     fi
-    test_web_process || exit
+    test_web_process || CODE=$? die "failed in test_web_process()"
+    [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && \
+        CODE=$RESULT_OVERALL die "Quickly aborting the test suite after failure, as requested"
     test_web_averages averages || RESULT_OVERALL=$?
-    test_web_process || exit
+    test_web_process || CODE=$? die "failed in test_web_process()"
+    [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && \
+        CODE=$RESULT_OVERALL die "Quickly aborting the test suite after failure, as requested"
 else
     # selective test routine
     while [ $# -gt 0 ]; do
@@ -399,10 +405,12 @@ else
                 RESULT_OVERALL=$? ;;
         esac
         shift
-        test_web_process || exit
-        [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && break
+        test_web_process || CODE=$? die "failed in test_web_process()"
+        [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && \
+            CODE=$RESULT_OVERALL die "Quickly aborting the test suite after failure, as requested"
     done
 fi
 
 # trap_cleanup() should handle the cleanup and final logging
+logmsg_debug "Got to the end of $0 with RESULT_OVERALL='$RESULT_OVERALL'"
 exit $RESULT_OVERALL
