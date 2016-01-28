@@ -772,7 +772,6 @@ test_libbiosapiut_DEPENDENCIES = \
 
 check_PROGRAMS += 	test-autoconfig
 test_autoconfig_SOURCES = tests/agents/autoconfig/test-autoconfig.cc \
-						  tests/agents/autoconfig/test-ruleconfigurator.cc \
 						  src/agents/autoconfig/Configurator.h \
 						  src/agents/autoconfig/NUTConfigurator.h \
 						  src/agents/autoconfig/NUTConfigurator.cc \
@@ -1127,14 +1126,10 @@ agent_autoconfig_SOURCES = \
 			src/agents/autoconfig/NUTConfigurator.cc \
 			src/agents/autoconfig/RuleConfigurator.h \
 			src/agents/autoconfig/RuleConfigurator.cc \
-			src/agents/autoconfig/UpsRuleConfigurator.h \
-			src/agents/autoconfig/UpsRuleConfigurator.cc \
-			src/agents/autoconfig/DcRuleConfigurator.h \
-			src/agents/autoconfig/DcRuleConfigurator.cc \
-			src/agents/autoconfig/DcRackRuleConfigurator.h \
-			src/agents/autoconfig/DcRackRuleConfigurator.cc \
 			src/agents/autoconfig/UpsEpduRuleConfigurator.h \
 			src/agents/autoconfig/UpsEpduRuleConfigurator.cc \
+			src/agents/autoconfig/DcRuleConfigurator.h \
+			src/agents/autoconfig/DcRuleConfigurator.cc \
 			src/agents/autoconfig/UptimeConfigurator.h \
 			src/agents/autoconfig/UptimeConfigurator.cc
 
