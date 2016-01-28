@@ -1126,8 +1126,6 @@ agent_autoconfig_SOURCES = \
 			src/agents/autoconfig/NUTConfigurator.cc \
 			src/agents/autoconfig/RuleConfigurator.h \
 			src/agents/autoconfig/RuleConfigurator.cc \
-			src/agents/autoconfig/UpsEpduRuleConfigurator.h \
-			src/agents/autoconfig/UpsEpduRuleConfigurator.cc \
 			src/agents/autoconfig/UptimeConfigurator.h \
 			src/agents/autoconfig/UptimeConfigurator.cc \
 			src/agents/autoconfig/TemplateRuleConfigurator.h \
@@ -1171,14 +1169,15 @@ template_rule_DATA = src/agents/autoconfig/rule_templates/average.humidity@__dat
 					 src/agents/autoconfig/rule_templates/realpower.default_1phase@__rack__.rule \
 					 src/agents/autoconfig/rule_templates/realpower.default_3phase@__rack__.rule \
 					 src/agents/autoconfig/rule_templates/phase_imbalance@__rack__.rule \
-					 src/agents/autoconfig/rule_templates/charge.battery@__device_ups__.rule \
 					 src/agents/autoconfig/rule_templates/load.default@__device_ups__.rule \
-					 src/agents/autoconfig/rule_templates/load.input.L1@__device_epdu__.rule \
+					 src/agents/autoconfig/rule_templates/lowbattery@__device_ups__.rule \
+					 src/agents/autoconfig/rule_templates/onbypass@__device_ups__.rule \
+					 src/agents/autoconfig/rule_templates/onbattery@__device_ups__.rule \
 					 src/agents/autoconfig/rule_templates/phase_imbalance@__device_ups__.rule \
-					 src/agents/autoconfig/rule_templates/status.ups@__device_ups__.rule \
 					 src/agents/autoconfig/rule_templates/temperature.default@__device_ups__.rule \
-					 src/agents/autoconfig/rule_templates/voltage.input.L1-N@__device_epdu__.rule \
-					 src/agents/autoconfig/rule_templates/voltage.input.L1-N@__device_ups__.rule
+					 src/agents/autoconfig/rule_templates/voltage.input_1phase@__device_ups__.rule \
+					 src/agents/autoconfig/rule_templates/voltage.input_3phase@__device_ups__.rule \
+					 src/agents/autoconfig/rule_templates/voltage.input.L1-N@__device_epdu__.rule
 
 client_PROGRAMS +=	agent-inventory
 
