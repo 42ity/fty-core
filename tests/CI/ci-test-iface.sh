@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2014 Eaton
+# Copyright (c) 2014-2016 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -39,7 +39,7 @@ cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the `basename $0` REST API webserver"
 
-PATH="/usr/lib/ccache:/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
+PATH="$BUILDSUBDIR/tools:$CHECKOUTDIR/tools:${DESTDIR:-/root}/libexec/bios:/usr/lib/ccache:/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
 export PATH
 
 declare -r REST_IFACES="/admin/ifaces"
@@ -47,6 +47,7 @@ declare -r REST_IFACE="/admin/iface"
 
 declare -r RESOLV_PATH="/etc"
 declare -r RESOLV_FILE="resolv.conf"
+declare -r RESOLV_FILE_INITIAL="$RESOLV_FILE.initial"
 
 declare -r JSON_EXPECTED_FILE="json_expected"
 declare -r JSON_RECEIVED_FILE="json_received"
@@ -59,12 +60,12 @@ test_web_port() {
 test_web_process() {
     [ -z "$MAKEPID" ] && return 0
 
-    if [ ! -d /proc/$MAKEPID ]; then
+    if [ ! "-d /proc/$MAKEPID" ]; then
         logmsg_error "Web-server process seems to have died!" >&2
         # Ensure it is dead though, since we abort the tests now
-        kill $MAKEPID >/dev/null 2>&1
+        kill "$MAKEPID" >/dev/null 2>&1
         RES_TWP=32
-        wait $MAKEPID >/dev/null 2>&1 || RES_TWP=$?
+        wait "$MAKEPID" >/dev/null 2>&1 || RES_TWP=$?
         return $RES_TWP
     fi
     return 0
@@ -81,19 +82,9 @@ wait_for_web() {
     return 1
 }
 
-cleanup() {
-    local __exit=$?
-    rm -f "$LOCKFILE"
-    if [[ -n "$TMP_DIR" && -e "$TMP_DIR" ]]; then
-        if [ $__exit -ne 0 ]; then
-            echo "Test failed => no cleanup; so it's possible to look at files."        
-        else
-            echo "Cleaning up '$TMP_DIR'"
-            rm -rf "$TMP_DIR"
-        fi
-    fi
+kill_daemons() {
     if [ -n "$MAKEPID" -a -d "/proc/$MAKEPID" ]; then
-        logmsg_info "Killing make web-test PID $MAKEPID to exit."
+        logmsg_info "Killing make web-test PID $MAKEPID to exit"
         kill -INT "$MAKEPID"
     fi
     killall -INT tntnet 2>/dev/null
@@ -103,9 +94,23 @@ cleanup() {
     ps -ef | grep -v grep | egrep "tntnet" | egrep "^`id -u -n` " && \
         ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
         logmsg_error "tntnet still alive, trying SIGKILL" && \
-        { killall -KILL tntnet 2>/dev/null ; exit 1; }
+        { killall -KILL tntnet 2>/dev/null ; return 1; }
+    return 0
+}
 
-    exit $__exit
+cleanup() {
+    local __exit="$1"
+    rm -f "$LOCKFILE"
+    if [[ -n "${TMP_DIR-}" ]] && [[ -e "$TMP_DIR" ]]; then
+        if [ $__exit -ne 0 ]; then
+            logmsg_error "Test failed => no cleanup; so it's possible to look at files."
+        else
+            logmsg_info "Cleaning up '$TMP_DIR'"
+            rm -rf "$TMP_DIR"
+        fi
+    fi
+    kill_daemons || return $?
+    return $__exit
 }
 
 ### Environment preparation ###
@@ -114,16 +119,18 @@ cleanup() {
 #   script is called as root
 
 # Previous executions should execute successfully
-[ -f "$LOCKFILE" ] && exit 0
-trap "cleanup" EXIT
+# ERRCODE is maintained by scriptlib::settraps()
+settraps 'cleanup $ERRCODE || ERRCODE=$?; exit_summarizeTestlibResults $ERRCODE'
+
+[ -f "$LOCKFILE" ] && die "Previous executions should execute successfully first"
 touch "$LOCKFILE"
 
 test_web_port && die "Port ${SUT_WEB_PORT} is in LISTEN state when it should be free."
 
 # make sure sasl is running
-if ! systemctl --quiet is-active saslauthd; then
+if ! systemctl is-active --quiet saslauthd; then
     logmsg_info "Starting saslauthd..."
-    systemctl start saslauthd || die "Could not start saslauthd."
+    systemctl start saslauthd || die "Could not start saslauthd"
 fi
 
 # check sasl is working
@@ -131,9 +138,9 @@ testsaslauthd -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" || \
     die "saslauthd is NOT responsive or not configured!"
 
 # make sure database is running
-if ! systemctl --quiet is-active mysql; then
+if ! systemctl is-active --quiet mysql; then
     logmsg_info "Starting mysql..."
-    systemctl start mysql || die "Could not start mysql."
+    systemctl start mysql || die "Could not start mysql"
 fi
 
 # do the webserver
@@ -152,17 +159,14 @@ MAKEPID=$!
 
 wait_for_web || die "Web-server is NOT responsive!"
 sleep 5
-test_web_process || die "test_web_process() failed."
+test_web_process || die "test_web_process() failed"
 
 ### Script starts here ###
 
 # 1. Create temporary dir under /tmp
-declare -r TMP_DIR=$(mktemp -d)
-if [[ $? -ne 0 ]]; then
-    echo "ERROR: Creating temporary directory failed."
-    exit 1
-fi
-echo "Temporary directory created successfully: '${TMP_DIR}'."
+declare -r TMP_DIR="$(mktemp -d)" && [ -n "$TMP_DIR" ] && [ -d "$TMP_DIR" ] || \
+    CODE=$? die "Creating temporary directory failed"
+logmsg_info "Temporary directory created successfully: '${TMP_DIR}'"
 
 # 2. Nameservers
 # If /etc/resolv.conf not present it is functionally equivalent to being empty
@@ -187,8 +191,10 @@ while IFS='' read -r line || [[ -n "$line" ]]; do
 done < "${TMP_DIR}/${RESOLV_FILE_INITIAL}"
 
 # 3. Interfaces
+test_it "get_ip_addr"
 ip addr > "${TMP_DIR}/ip_addr" || \
     die "Error executing 'ip addr > \"${TMP_DIR}/ip_addr\"'."
+print_result 0
 
 declare -a tmp_arr
 while read -r line || [[ -n "$line" ]]; do
@@ -197,43 +203,54 @@ while read -r line || [[ -n "$line" ]]; do
     fi
 done < "${TMP_DIR}/ip_addr"
 declare -ar INTERFACES=("${tmp_arr[@]}")
-echo "Interfaces=${INTERFACES[@]}"
+logmsg_info "Interfaces=${INTERFACES[@]}"
 
 # TEST CASES
 
-####################
-### admin/ifaces ###
-####################
-TEST_CASE="admin/ifaces"
-echo -e "=====\t\tTEST_CASE: $TEST_CASE\t\t====="
-tmp='{ "ifaces": [ '
+logmsg_info '####################'
+logmsg_info '### admin/ifaces ###'
+logmsg_info '####################'
+
+test_it "admin/ifaces:got_some_ifaces_local"
 counter=0
+tmp=''
 for i in "${INTERFACES[@]}"; do
     if [[ $counter -eq 0 ]]; then
         counter=1
-        tmp="${tmp} \"${i}\""
+        tmp="\"${i}\""
         continue
     fi
     tmp="${tmp}, \"${i}\""
 done
-tmp="${tmp} ] }"
-echo "$tmp" > "${TMP_DIR}/${JSON_EXPECTED_FILE}"
-HTTP_CODE=
-simple_get_json_code "${REST_IFACES}" tmp HTTP_CODE || die "'api_get_json ${REST_IFACES}' failed."
-echo "$tmp" > "${TMP_DIR}/${JSON_RECEIVED_FILE}"
-bash "${CHECKOUTDIR}/tests/CI/cmpjson.sh" "${TMP_DIR}/${JSON_RECEIVED_FILE}" "${TMP_DIR}/${JSON_EXPECTED_FILE}" || \
-    die "Test case '$TEST_CASE' failed. Expected and returned json do not match."
-[[ $HTTP_CODE -eq 200 ]] || die "Test case '$TEST_CASE' failed. Expected HTTP return code: 200, received: $HTTP_CODE."
+[ -n "$tmp" ] && [ -n "`echo "$tmp" | sed 's,[\ \,\"],,g'`" ]
+print_result $? "Nothing found in the INTERFACES array"
+tmp='{ "ifaces": [ '"${tmp}"' ] }'
 
-echo "SUCCESS"
+test_it "admin/ifaces:got_some_ifaces_restapi"
+RES=0
+curlfail_push_expect_noerrors
+api_get_json "${REST_IFACES}" > "${TMP_DIR}/${JSON_RECEIVED_FILE}" || RES=$?
+curlfail_pop
+print_result $RES
 
+test_it "admin/ifaces:compare_lists_of_ifaces"
+RES=0
+echo "$tmp" > "${TMP_DIR}/${JSON_EXPECTED_FILE}" || RES=$?
+"${CHECKOUTDIR}/tests/CI/cmpjson.sh" -f "${TMP_DIR}/${JSON_RECEIVED_FILE}" "${TMP_DIR}/${JSON_EXPECTED_FILE}" || RES=$?
+print_result $RES || ls -la "${TMP_DIR}/${JSON_RECEIVED_FILE}" "${TMP_DIR}/${JSON_EXPECTED_FILE}"
 
-################################
-### admin/iface/<iface_name> ###
-################################
-# TODO Not finished yet
-TEST_CASE="admin/iface/"
-echo -e "=====\t\tTEST_CASE: $TEST_CASE\t\t====="
+# The trap-handler should display the summary (if any)
+exit 0
+
+######################################################
+
+logmsg_info '################################'
+logmsg_info '### admin/iface/<iface_name> ###'
+logmsg_info '################################'
+logmsg_info '#### TODO: Not finished yet ####'
+logmsg_info '################################'
+
+test_it "admin/iface/"
 read -r -d '' TEMPLATE <<'EOF-TMPL'
 {
     "##IFACE##" : {
@@ -246,7 +263,10 @@ read -r -d '' TEMPLATE <<'EOF-TMPL'
     }
 }
 EOF-TMPL
-echo "IMPLEMETATION WIP"
+logmsg_info "IMPLEMENTATION WIP"
 #for iface in "${INTERFACES[@]}"; do
 #done
+print_result 0
 
+# The trap-handler should display the summary (if any)
+exit 0
