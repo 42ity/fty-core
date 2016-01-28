@@ -112,11 +112,6 @@ std::vector<std::string>::const_iterator NUTConfigurator::selectBest(const std::
     }
 };
 
-void NUTConfigurator::systemctl( const std::string &operation, const std::string &service )
-{
-    bits::systemctl (operation, service);
-}
-
 void NUTConfigurator::updateNUTConfig() {
     std::vector<std::string> _argv = { "sudo", "bios-nutconfig" };
     shared::SubProcess systemd( _argv );
@@ -173,9 +168,9 @@ bool NUTConfigurator::v_configure (UNUSED_PARAM const std::string &name, const A
             }
             cfgFile.close();
             updateNUTConfig();
-            systemctl("enable",  std::string("nut-driver@") + name);
-            systemctl("restart", std::string("nut-driver@") + name);
-            systemctl("restart", "nut-server");
+            bits::systemctl("enable",  std::string("nut-driver@") + name);
+            bits::systemctl("restart", std::string("nut-driver@") + name);
+            bits::systemctl("restart", "nut-server");
             return true;
         }
     case asset_operation::DELETE:
@@ -187,9 +182,9 @@ bool NUTConfigurator::v_configure (UNUSED_PARAM const std::string &name, const A
                 + name;
             remove( fileName.c_str() );
             updateNUTConfig();
-            systemctl("stop",    std::string("nut-driver@") + name);
-            systemctl("disable", std::string("nut-driver@") + name);
-            systemctl("restart", "nut-server");
+            bits::systemctl("stop",    std::string("nut-driver@") + name);
+            bits::systemctl("disable", std::string("nut-driver@") + name);
+            bits::systemctl("restart", "nut-server");
             return true;
         }
     default:

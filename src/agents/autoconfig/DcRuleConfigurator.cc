@@ -35,27 +35,25 @@ bool DcRuleConfigurator::v_configure (const std::string& name, const AutoConfigu
         case persist::asset_operation::INSERT:
         {
             bool result = true;
-            result &= sendNewRule (makeThresholdRule (
-                        "DC_General_Temperature_Threshold",
-                        std::vector<std::string>{"average.temperature@"+name},
-                        name,
-                        std::make_tuple ("14", std::vector <std::string>{"EMAIL", "SMS"}, "high", "TODO - low critical temperature"), // low_critical
-                        std::make_tuple ("17", std::vector <std::string>{"EMAIL"}, "low", "TODO - low warning temperatur"), // low_warning
-                        std::make_tuple ("27", std::vector <std::string>{"EMAIL"}, "low", "TODO - high warning temperature"), // high_warning
-                        std::make_tuple ("30", std::vector <std::string>{"EMAIL", "SMS"}, "high", "TODO - high critical temperature"), // high_critical
-                        NULL
-                        ), client);
+            result &= sendNewRule (makeSimpleThresholdRule (
+                "DC_Temperature_Threshold",
+                "average.temperature@"+name,
+                name,
+                std::make_tuple ("14", std::vector <std::string>{"EMAIL", "SMS"}, "high", "Temperature critically low in datacenter " + name), // low_critical
+                std::make_tuple ("17", std::vector <std::string>{"EMAIL"}, "low", "Temperature low in datacenter "  + name), // low_warning
+                std::make_tuple ("27", std::vector <std::string>{"EMAIL"}, "low", "Temperature high in datacenter " + name), // high_warning
+                std::make_tuple ("30", std::vector <std::string>{"EMAIL", "SMS"}, "high", "Temperature critically high in datacenter " + name) // high_critical
+                ), client);
 
-            result &= sendNewRule (makeThresholdRule (
-                        "DC_General_Humidity_Threshold",
-                        std::vector<std::string>{"average.humidity@"+name},
-                        name,
-                        std::make_tuple ("30", std::vector <std::string>{"EMAIL", "SMS"}, "high", "TODO - low critical humidity"), // low_critical
-                        std::make_tuple ("40", std::vector <std::string>{"EMAIL"}, "low", "TODO - low warning humidity"), // low_warning
-                        std::make_tuple ("60", std::vector <std::string>{"EMAIL"}, "low", "TODO - high warning humidity"), // high_warning
-                        std::make_tuple ("70", std::vector <std::string>{"EMAIL", "SMS"}, "high", "TODO - high critical humidity"), // high_critical
-                        NULL
-                        ), client);
+            result &= sendNewRule (makeSimpleThresholdRule (
+                "DC_Humidity_Threshold",
+                "average.humidity@"+name,
+                name,
+                std::make_tuple ("30", std::vector <std::string>{"EMAIL", "SMS"}, "high", "Humidity critically low in datacenter " + name), // low_critical
+                std::make_tuple ("40", std::vector <std::string>{"EMAIL"}, "low", "Humidity low in datacenter "  + name), // low_warning
+                std::make_tuple ("60", std::vector <std::string>{"EMAIL"}, "low", "Humidity high in datacenter " + name), // high_warning
+                std::make_tuple ("70", std::vector <std::string>{"EMAIL", "SMS"}, "high", "Humidity critically high in datacenter " + name) // high_critical
+                ), client);
 
             return result;
             break;
