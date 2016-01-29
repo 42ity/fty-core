@@ -13,7 +13,7 @@ EnvironmentFile=-/etc/default/bios__%n.conf
 EnvironmentFile=-/etc/sysconfig/bios__%n.conf
 EnvironmentFile=-/etc/default/bios-db-ro
 PermissionsStartOnly=true
-ExecStart=@libexecdir@/@PACKAGE@/warranty-metrics
+ExecStart=@libexecdir@/@PACKAGE@/warranty-metric
 
 [Install]
 WantedBy=bios.target
