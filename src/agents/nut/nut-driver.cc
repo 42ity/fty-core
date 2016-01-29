@@ -108,6 +108,8 @@ static const std::vector< std::pair<std::string,std::string> > physicsMapping {
     { "outlet.#.voltage",      "voltage.outlet.#" },
     { "outlet.#.realpower",    "realpower.outlet.#" },
     { "ups.realpower.nominal", "realpower.nominal" },
+    { "outlet.group.#.load",   "load.outlet.group.#" },            
+            
 };
 
 static const std::vector< std::pair< std::string, std::string > > inventoryMapping {
@@ -127,6 +129,7 @@ static const std::vector< std::pair< std::string, std::string > > inventoryMappi
     { "outlet.count",       "outlet.count" },
     { "input.phases",       "phases.input" },
     { "output.phases",      "phases.output" },
+    { "outlet.group.count", "outlet.group.count" },        
 };
 
 

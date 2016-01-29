@@ -1,0 +1,13 @@
+{
+    "threshold" : {
+        "rule_name"     :   "section_load@__name__",
+        "rule_desc"     :   "Load",
+        "target"        :   "[load.outlet.group.1@__name__,load.outlet.group.2@__name__,load.outlet.group.3@__name__,load.outlet.group.4@__name__]",
+        "element"       :   "__name__",
+        "values_unit"   :   "%",
+        "values"        :   [ {"high_warning"  : "70"},
+                              {"high_critical" : "90"} ],
+        "results"       :   [ {"high_warning"  : { "action" : ["EMAIL"], "description" : "Section Load high warning" }}, 
+                              {"high_critical" : { "action" : ["EMAIL","SMS"], "description" : "Section Load high critical"}} ]
+    }
+}
