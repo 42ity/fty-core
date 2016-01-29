@@ -1,0 +1,16 @@
+{
+	"threshold": {
+		"rule_name": "phase_imbalance@__name__",
+		"rule_desc": "Datacenter __name__ phase imbalance",
+		"target": [ "realpower.output.L1@__name__", "realpower.output.L2@__name__", "realpower.output.L3@__name__" ],
+		"element": "__name__",
+		"values_unit": "%",
+		"values": [
+            { "high_warning": "10" },
+            { "high_critical": "20"} ],
+		"results": [
+            { "high_critical" : { "action": ["EMAIL"], "severity": "high", "description": "Phase imbalance in datacenter __name__ is critically high" }},
+            { "high_warning" : { "action": ["EMAIL"], "severity": "low", "description": "Phase imbalance in datacenter __name__ is high" }} ],
+		"evaluation": "function main(f1, f2, f3) local avg = (f1 + f2 + f3) / 3; local deviation = math.max (math.abs (f1 - avg), math.abs (f2 - avg), math.abs (f3 - avg)); local percentage = deviation / avg * 100; if (percentage > high_critical) then return HIGH_CRITICAL end; if (percentage > high_warning) then return HIGH_WARNING end; return OK; end "
+	}
+}

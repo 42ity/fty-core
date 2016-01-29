@@ -561,6 +561,7 @@ loaddb_file_params() {
 settraps_exit_clear() {
     # Reset the exit() handler to defaults, used in routines below
     for SS in EXIT SIGEXIT 0 ERR SIGERR; do trap "-" "$SS" 2>/dev/null || true; done
+    set +E      # unset -o errtrace
 }
 
 settraps_nonfatal() {
@@ -597,32 +598,32 @@ settraps_nonfatal() {
                   esac
                   trap 'ERRCODE=$?; ERRSIGNAL="'"$P$S"'"; \
 [ -z "${ERRIGNORE-}" ] && ERRIGNORE=no
-if [ "$ERRSIGNAL" = "ERR" ] || [ "$ERRSIGNAL" = "SIGERR" ]; then
+if [ "${ERRSIGNAL-}" = "ERR" ] || [ "${ERRSIGNAL-}" = "SIGERR" ]; then
     set -o | egrep -i "^errexit.*off$" >/dev/null && ERRIGNORE=yes
 fi
-if [ "$ERRIGNORE" = no ]; then
-  if [ -n "${SCRIPTLIB_DIE_ERRCODE-}" ] && [ "$SCRIPTLIB_DIE_ERRCODE" -ge 0 ] 2>/dev/null; then
+if [ "${ERRIGNORE-}" = no ]; then
+  if [ -n "${SCRIPTLIB_DIE_ERRCODE-}" ] && [ "${SCRIPTLIB_DIE_ERRCODE-}" -ge 0 ] 2>/dev/null; then
     ERRFILE="$SCRIPTLIB_DIE_FILENAME"
     ERRFUNC="$SCRIPTLIB_DIE_FUNCNAME"
     ERRLINE="$SCRIPTLIB_DIE_LINENO"
     ERRCODE="$SCRIPTLIB_DIE_ERRCODE"
   else
     SCRIPTLIB_DIE_ERRCODE=""
-    [ -n "${LINENO-}" ] && [ "$LINENO" -gt 0 ] 2>/dev/null && ERRLINE="$LINENO" || ERRLINE=""
-    ERRFILE="${_SCRIPT_NAME}"; ERRFUNC=""
+    [ -n "${LINENO-}" ] && [ "${LINENO-}" -gt 0 ] 2>/dev/null && ERRLINE="${LINENO-}" || ERRLINE=""
+    ERRFILE="${_SCRIPT_NAME-}"; ERRFUNC=""
     if [ -n "${BASH-}" ] 2>/dev/null; then
-        ERRFUNC="${FUNCNAME[0]-}" || ERRFUNC=""
-        ERRLINE="${BASH_LINENO[0]}" || ERRLINE=0
+        [ -n "${FUNCNAME-}" -o -n "${FUNCNAME[0]-}" ] && ERRFUNC="${FUNCNAME[0]-}" || ERRFUNC=""
+        ERRLINE="${BASH_LINENO[0]-}" || ERRLINE=0
         [ "$ERRLINE" -eq 0 ] && ERRLINE="${LINENO-}"
         [ -n "$ERRLINE" ] && [ "$ERRLINE" -gt 1 ] || ERRLINE=""
-        ERRFILE="${BASH_SOURCE[0]}"
+        ERRFILE="${BASH_SOURCE[0]-}"
     fi
   fi
-  ERRPOS="${ERRFILE}${ERRLINE:+:$ERRLINE}${ERRFUNC:+ :: $ERRFUNC()}"
-  [ "`basename "${_SCRIPT_NAME}"`" = "`basename "${ERRFILE}"`" ] || ERRPOS="${_SCRIPT_NAME} => $ERRPOS"
-  ERRTEXT="script ($ERRPOS) due to trapped signal ($ERRSIGNAL) with exit-code ($ERRCODE)"
-  [ -n "${SCRIPTLIB_DIE_ERRCODE-}" ] && ERRTEXT="$ERRTEXT, using die()"
-  { (settraps_exit_clear; exit $ERRCODE 2>/dev/null 2>&1); '"$ERRHANDLER"' } ;
+  ERRPOS="${ERRFILE-}${ERRLINE:+:$ERRLINE}${ERRFUNC:+ :: $ERRFUNC()}"
+  [ "`basename "${_SCRIPT_NAME-}"`" = "`basename "${ERRFILE-}"`" ] || ERRPOS="${_SCRIPT_NAME-} => ${ERRPOS-}"
+  ERRTEXT="script (${ERRPOS-}) due to trapped signal (${ERRSIGNAL-}) with exit-code (${ERRCODE-})"
+  [ -n "${SCRIPTLIB_DIE_ERRCODE-}" ] && ERRTEXT="${ERRTEXT-}, using die()"
+  { (settraps_exit_clear; exit ${ERRCODE-} 2>/dev/null 2>&1); '"$ERRHANDLER"' } ;
 else ERRIGNORE=""; fi ;' \
                     "$P$S" 2>/dev/null || true
                   ;;
@@ -660,6 +661,7 @@ settraps() {
     # routine does not exit() the shell by itself - the wrapper would exit with
     # either that handler's non-zero return code or with original trapped code.
     # The ERR* variables reported here are defined by settraps_nonfatal() above
+    # Note that all output (if any) goes to stderr (see end of "if" clause).
     case "$1" in
         -|"") settraps_nonfatal "$1" || true ;;
         *)    ERRHANDLER="$*"
@@ -667,24 +669,30 @@ settraps() {
                 *";"|*"; "|*";  ") ;;
                 *)    ERRHANDLER="$ERRHANDLER ;" ;;
               esac
-              settraps_nonfatal 'if [ "$SCRIPTLIB_TRAPWRAP_PRINT_MESSAGE" = yes ]\
+              settraps_nonfatal 'if [ "${SCRIPTLIB_TRAPWRAP_PRINT_MESSAGE-}" = yes ]\
 ; then
     echo ""
-    if [ "$ERRCODE" = 0 ]; then
-        if [ "$SCRIPTLIB_TRAPWRAP_PRINT_EXIT0" = yes ] || \
-            [ "$ERRSIGNAL" != 0 -a "$ERRSIGNAL" != EXIT -a "$ERRSIGNAL" != SIGEXIT ] \
+    _DO_PRINT_STACKTRACE=no
+    if [ "${SCRIPTLIB_TRAPWRAP_PRINT_STACKTRACE-}" = yes ] && [ -n "${BASH-}" ]; then
+        _DO_PRINT_STACKTRACE=yes
+    fi
+    if [ "${ERRCODE-}" = 0 ]; then
+        _DO_PRINT_STACKTRACE=no
+        if [ "${SCRIPTLIB_TRAPWRAP_PRINT_EXIT0-}" = yes ] || \
+            [ "${ERRSIGNAL-}" != 0 -a "${ERRSIGNAL-}" != EXIT -a "${ERRSIGNAL-}" != SIGEXIT ] \
         ; then
-            LOGMSG_PREFIX="CI-SIGNALTRAP-" logmsg_info "Completing $ERRTEXT"
+            LOGMSG_PREFIX="CI-SIGNALTRAP-" logmsg_info "Completing ${ERRTEXT-}"
+            _DO_PRINT_STACKTRACE=yes
         fi
     else
         echo ""; echo "!!!!!!!!!"
-        LOGMSG_PREFIX="CI-SIGNALTRAP-" logmsg_error "Aborting $ERRTEXT"
+        LOGMSG_PREFIX="CI-SIGNALTRAP-" logmsg_error "Aborting ${ERRTEXT-}"
         echo "!!!!!!!!!"
     fi
     echo ""
-    if [ "$SCRIPTLIB_TRAPWRAP_PRINT_STACKTRACE" = yes ] && [ -n "$BASH" ]; then
-        echo "======= Stack trace and other clues of the end-of-work (code=$ERRCODE, sig=$ERRSIGNAL):"
-        echo "  Depth of sub-shelling (BASH_SUBSHELL) = $BASH_SUBSHELL"
+    if [ "${_DO_PRINT_STACKTRACE-}" = yes ]; then
+        echo "======= Stack trace and other clues of the end-of-work (code=${ERRCODE-}, sig=${ERRSIGNAL-}):"
+        echo "  Depth of sub-shelling (BASH_SUBSHELL) = ${BASH_SUBSHELL-}"
         if [ -z "${FUNCNAME-}" ] || [ -z "${FUNCNAME[0]}" ]; then
             FUNCDEPTH=-1
         else
@@ -702,14 +710,14 @@ settraps() {
             echo "  ($i)	-> in ${FUNCNAME[$i]-}() at ${BASH_SOURCE[$i+1]-}:${BASH_LINENO[$i]-}"
             i=$(($i+1))
         done
-        echo "	~> in ${ERRFUNC:-main-script-body}() at $ERRFILE:$ERRLINE"
-        echo "======= End of stack trace, $_SCRIPT_NAME:$LINENO"
+        echo "	~> in ${ERRFUNC:-main-script-body}() at ${ERRFILE-}:${ERRLINE-}"
+        echo "======= End of stack trace, ${_SCRIPT_NAME-}:${LINENO-}"
         echo ""
     fi
 fi >&2
 settraps_exit_clear
 { '"$ERRHANDLER"' } || exit $?
-exit $ERRCODE;' \
+exit ${ERRCODE-};' \
                 || true
               ;;
     esac

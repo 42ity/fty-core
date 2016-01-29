@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2014 Eaton
+Copyright (C) 2014-2016 Eaton
  
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -17,25 +17,38 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 /*!
- \file   UpsEpduRuleConfigurator.h
- \brief  Configuration of rules for ups and epdu devices
- \author Tomas Halman <TomasHalman@Eaton.com>
+ \file   TemplateRuleConfigurator.h
+ \brief  Generic Configuration of rules 
+ \author Gerald Guillaume <GeraldGuillaume@Eaton.com>
 */
 
-#ifndef SRC_AGENTS_AUTOCONFIG_UPSEPDURULECONFIGURATOR_H__
-#define SRC_AGENTS_AUTOCONFIG_UPSEPDURULECONFIGURATOR_H__
+#ifndef SRC_AGENTS_AUTOCONFIG_TEMPLATERULECONFIGURATOR_H
+#define	SRC_AGENTS_AUTOCONFIG_TEMPLATERULECONFIGURATOR_H
 
 #include <string>
+#include <fstream>
 
 #include "RuleConfigurator.h"
 
-class UpsEpduRuleConfigurator : public RuleConfigurator {
+
+class TemplateRuleConfigurator : public RuleConfigurator {
  public:
     bool v_configure (const std::string& name, const AutoConfigurationInfo& info, mlm_client_t *client);
     bool isApplicable (const AutoConfigurationInfo& info);
 
-    virtual ~UpsEpduRuleConfigurator() {};
+    virtual ~TemplateRuleConfigurator() {};
+private:
+    bool checkTemplate(uint32_t type, uint32_t subtype);
+    std::vector <std::string> loadTemplates(uint32_t type, uint32_t subtype);
+    std::string convertTypeSubType2Name(uint32_t type, uint32_t subtype);
+    std::string replaceTokens( const std::string &text, const std::string &pattern, const std::string &replacement) const;
+
+    
+
 };
 
-#endif // SRC_AGENTS_AUTOCONFIG_UPSEPDURULECONFIGURATOR_H__
+#endif	/* SRC_AGENTS_AUTOCONFIG_TEMPLATERULECONFIGURATOR_H */
+
+
+
 

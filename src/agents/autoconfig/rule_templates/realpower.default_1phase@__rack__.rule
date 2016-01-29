@@ -1,0 +1,19 @@
+{
+    "threshold" : {
+        "rule_name"     :   "realpower.default_1phase@__name__",
+        "rule_desc"     :   "Rack __name__ total power 1 phase",
+        "target"        :   "realpower.input.L1@__name__",
+        "element"       :   "__name__",
+        "values_unit"   :   "W",
+        "values"        :   [
+            { "low_critical"    : "0" },
+            { "low_warning"     : "0" },
+            { "high_warning"    : "0" },
+            { "high_critical"   : "0" } ],
+        "results"       :   [
+            {"low_critical"  : { "action" : ["EMAIL","SMS"], "severity" : "high", "description" : "Total power (1 phase) in rack __name__ is critically low" }},
+            {"low_warning"   : { "action" : ["EMAIL"], "severity" : "low", "description" : "Total power (1 phase) in rack __name__ is low" }},
+            {"high_warning"  : { "action" : ["EMAIL"], "severity" : "low", "description" : "Total power (1 phase) in rack __name__ is high" }},
+            {"high_critical" : { "action" : ["EMAIL","SMS"], "severity" : "high", "description" : "Total power (1 phase) in rack __name__ is critically high" }} ]
+    }
+}

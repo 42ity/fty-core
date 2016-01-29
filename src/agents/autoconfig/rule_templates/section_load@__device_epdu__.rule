@@ -1,0 +1,17 @@
+{
+    "threshold" : {
+        "rule_name"     :   "section_load@__name__",
+        "rule_desc"     :   "Section Load",
+        "target"        :   "load.outlet.group.1@__name__",
+        "element"       :   "__name__",
+        "values_unit"   :   "%",
+        "values"        :   [
+                              {"high_warning"  : "70"},
+                              {"high_critical" : "90"} ],
+        "results"       :   [
+                              {"high_warning"  : { "action" : ["EMAIL","SMS"], "description" : "Section Load high warning" }},
+                              {"high_critical" : { "action" : ["EMAIL","SMS"], "description" : "Section Load high critical"}} ],
+        "evaluation"    :   "function main(v1) if (v1 > high_critical) then return HIGH_CRITICAL end; if (v1 > high_warning) then return HIGH_WARNING end; return OK; end"
+
+    }
+}

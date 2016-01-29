@@ -1,0 +1,19 @@
+{
+    "threshold" : {
+        "rule_name"     :   "temperature.default@__name__",
+        "rule_desc"     :   "Internal temperature for ups __name__",
+        "target"        :   "temperature.default@__name__",
+        "element"       :   "__name__",
+        "values_unit"   :   "C",
+        "values"        :   [
+            {"low_critical"  : "0"},
+            {"low_warning"   : "0"},
+            {"high_warning"  : "0"},
+            {"high_critical" : "0"} ],
+        "results" :   [
+            { "low_critical"  : { "action" : ["EMAIL","SMS"], "severity" : "high", "description" : "Temperature in datacenter __name__ is critically low" }},
+            { "low_warning"   : { "action" : ["EMAIL","SMS"], "severity" : "low", "description" : "Temperature in datacenter __name__ is low" }},
+            { "high_warning"  : { "action" : ["EMAIL","SMS"], "severity" : "low", "description" : "Temperature in datacenter __name__ is high" }},
+            { "high_critical" : { "action" : ["EMAIL","SMS"], "severity" : "high", "description" : "Temperature in datacenter __name__ is critically high" }} ]
+    }
+}
