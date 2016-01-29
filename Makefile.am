@@ -1182,7 +1182,9 @@ template_rule_DATA = src/agents/autoconfig/rule_templates/average.humidity@__dat
 					 src/agents/autoconfig/rule_templates/voltage.input_3phase@__device_epdu__.rule \
 					 src/agents/autoconfig/rule_templates/load.input_1phase@__device_epdu__.rule \
 					 src/agents/autoconfig/rule_templates/load.input_3phase@__device_epdu__.rule \
-					 src/agents/autoconfig/rule_templates/phase_imbalance@__device_epdu__.rule
+					 src/agents/autoconfig/rule_templates/phase_imbalance@__device_epdu__.rule \
+					 src/agents/autoconfig/rule_templates/section_load@__device_epdu__.rule 
+
 
 client_PROGRAMS +=	agent-inventory
 
