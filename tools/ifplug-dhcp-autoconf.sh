@@ -23,6 +23,10 @@
 #           currently configured as DHCP clients, and puts them into ifplugd
 #           configuration so they can reconfigure upon link up/down events.
 
+# As an OS service this must use /bin/systemctl in its children in particular
+PATH=/sbin:/usr/sbin:/bin:/usr/bin:$PATH
+export PATH
+
 [ -n "$SCRIPTDIR" -a -d "$SCRIPTDIR" ] || \
         SCRIPTDIR="$(cd "`dirname "$0"`" && pwd)" || \
         SCRIPTDIR="`pwd`/`dirname "$0"`" || \
