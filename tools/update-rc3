@@ -34,6 +34,10 @@ config_defaults() {
     # The actual RC3 should be reconfigured to refer some customer-local mirror
     # or an external Eaton resource, done by snippets in /etc/update-rc3.d/*.conf
     [ -z "${IMGTYPE-}" ] && IMGTYPE="deploy"
+    # We have several rounds of QA in the CI system; if the IMGQALEVEL is
+    # defined then this sub-path including a slash is added into the URL.
+    # Currently defined values include "master" and "pre-rc"
+    [ -z "${IMGQALEVEL-}" ] && IMGQALEVEL="master"
     [ -z "${ARCH-}" ] && ARCH="`uname -m`"
     # The RC3 base OS ensures support for squashfs and overlay(fs)
     [ -z "${EXT-}" ] && EXT="squashfs"
@@ -46,8 +50,16 @@ config_defaults() {
     # The RC3 units expect a flat directory structure rootfs/filename.ext so the
     # details (especially IMGTYPE) should end up in the flat filename - ...__${ARCH}__${IMGTYPE}.${EXT}.
     # (rc3/virthost) If set to "no", use original filenames from the source server
-    # Overridable by CLI option "--(no-)flatten-filenames"
-    [ -z "${FLAG_FLATTEN_FILENAMES-}" ] && FLAG_FLATTEN_FILENAMES="yes"
+    # FLAG_FLATTEN_FILENAMES is overridable by CLI option "--(no-)flatten-filenames"
+    # The base filename pattern for an OS image as a shell glob, without the extension
+    # on the download server.
+    # [ -z "${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN-}" ] && SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN="*"
+    # [ -z "${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN-}" ] && SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN="simpleimage*"
+    # [ -z "${FLAG_FLATTEN_FILENAMES-}" ] && FLAG_FLATTEN_FILENAMES="yes"
+
+    # Apparently, the new smarter build-names do not require flattery.
+    [ -z "${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN-}" ] && SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN="${IMGTYPE}-image-*_${ARCH}"
+    [ -z "${FLAG_FLATTEN_FILENAMES-}" ] && FLAG_FLATTEN_FILENAMES="no"
 
     ### Values below can be changed by command-line choices, and some defaults
     ### may be overridden by config files before CLI choices
@@ -61,10 +73,10 @@ config_defaults() {
     # TODO: Test with https - can require custom CA trust configuration, etc.
     # TODO: Use our common requester as a wrapper for real/busybox wget/curl
     # TODO: Make a common routine to list remote directories (e.g. http-dir parsing, ftp, tftp, localfs...)
-    [ -z "${SOURCESITEROOT-}" ] && SOURCESITEROOT='http://obs.roz53.lab.etn.com/images'
-    [ -z "${SOURCESITEROOT_OSIMAGE-}" ] && SOURCESITEROOT_OSIMAGE="$SOURCESITEROOT/$IMGTYPE/$ARCH"
+    [ -z "${SOURCESITEROOT-}" ] && SOURCESITEROOT='http://obs.roz.lab.etn.com/images'
+    [ -z "${SOURCESITEROOT_OSIMAGE-}" ] && SOURCESITEROOT_OSIMAGE="$SOURCESITEROOT/${IMGTYPE}-image/${IMGQALEVEL:+$IMGQALEVEL/}$ARCH"
 
-    [ -z "${SOURCESITEROOTFW-}" ] && SOURCESITEROOTFW="http://obs.roz53.lab.etn.com/flash-rc3/recovery"
+    [ -z "${SOURCESITEROOTFW-}" ] && SOURCESITEROOTFW="http://obs.roz.lab.etn.com/flash-rc3/recovery"
     [ -z "${SOURCESITEROOTFW_UBOOT-}" ] && SOURCESITEROOTFW_UBOOT="$SOURCESITEROOTFW"
     [ -z "${SOURCESITEROOTFW_UIMAGE-}" ] && SOURCESITEROOTFW_UIMAGE="$SOURCESITEROOTFW"
     [ -z "${SOURCESITEROOTFW_MODULES-}" ] && SOURCESITEROOTFW_MODULES="$SOURCESITEROOTFW/modules"
@@ -556,6 +568,7 @@ lshost_http() (
     wget -q -O - "$REMOTE_DIR"/ | \
         sed -n 's|.*href="\([^\"]*\)".*|\1|pg' | \
     while read URL ; do
+#        echo "DEBUG: lshost_http(): got URL='$URL'" >&2
         case "$URL" in
             "[Hh][Tt]|[Tt][Pp]?([Ss])://${REMOTE_VIRTHOST}[:/]"*)
                 # URL is under this virthost
@@ -586,9 +599,12 @@ lsdir_http_pattern() {
     # See "Pathname Expansion" in `man bash` for syntax details
     REMOTE_DIR="`echo "$1" | sed 's,/$,,g'`"
     REMOTE_GLOB="$2"
-    lsdir_http "$REMOTE_DIR" | while read URL; do case "$URL" in
-        $REMOTE_DIR/$REMOTE_GLOB) echo "$URL" ;;
-    esac; done
+    lsdir_http "$REMOTE_DIR" | while read URL; do
+#        echo "DEBUG: lsdir_http_pattern('$REMOTE_DIR', '$REMOTE_GLOB'): got URL='$URL'" >&2
+        case "$URL" in
+            $REMOTE_DIR/$REMOTE_GLOB) echo "$URL" ;;
+        esac
+    done
 }
 
 
@@ -597,7 +613,7 @@ lsdir_http_pattern() {
 findnewest_osimage() (
     # Echo the URL to the newest OS image file found on remote resource, if any
     # Note: currently expects certain filename patterns and http-dir listing markup
-    IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOT_OSIMAGE}" "simpleimage*.${EXT}"`"
+    IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOT_OSIMAGE}" "${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}.${EXT}" | tail -1`"
     if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
         [ x"`basename "$IMAGE_URL" .${EXT}`" != x ] && \
         echo "$IMAGE_URL" && return 0
