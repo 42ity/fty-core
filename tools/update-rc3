@@ -501,7 +501,7 @@ verify_threeway_checksum() {
     if verify_checksum "$FILE_DATA" "$FILE_CSNEW" ; then
         logmsg_info "Remote checksum is good for '$FILE_CSNEW', local copy was corrupted or missing - replacing checksum file"
         mv -f "$FILE_CSNEW" "$FILE_CSOLD" && \
-            logmsg_info "The newest available image is '$IMAGE_URL' and we already have a good copy (as '$FILE_DATA')"
+            logmsg_info "The newest available remote image is '$IMAGE_URL' and we already have a good copy (as '$FILE_DATA')"
         return $?
     else
         # In-place changes are not nice but can happen e.g. for FW images
@@ -643,9 +643,9 @@ download_osimage() (
                 logmsg_info "download_osimage() was asked to try downloading '$1' as the ${IMGTYPE} OS image for ${ARCH}"
                 IMAGE_URL="$1" ;;
             "")
-                logmsg_info "Fetching newest filename for ${ARCH} OS image of type ${IMGTYPE}..."
+                logmsg_info "Fetching newest remote filename for ${ARCH} OS image of type ${IMGTYPE}..."
                 IMAGE_URL="`findnewest_osimage`" && [ -n "$IMAGE_URL" ] \
-                && logmsg_info "download_osimage() detected '$IMAGE_URL' as the newest ${IMGTYPE} OS image for ${ARCH}" \
+                && logmsg_info "download_osimage() detected '$IMAGE_URL' as the newest remote ${IMGTYPE} OS image for ${ARCH}" \
                 || { logmsg_error "Could not find any remote OS image"; IMAGE_URL="";} ;;
             *)  logmsg_error "download_osimage() got an unsupported argument: $*"
                 IMAGE_URL=""
@@ -858,9 +858,9 @@ download_rawfwimage_uboot() (
                 logmsg_info "download_rawfwimage_uboot() was asked to try downloading '$1' as the raw u-Boot loader image"
                 IMAGE_URL="$1" ;;
             "")
-                logmsg_info "Fetching newest filename for the raw u-Boot loader image..."
+                logmsg_info "Fetching newest remote filename for the raw u-Boot loader image..."
                 IMAGE_URL="`findnewest_rawfwimage_uboot`" && [ -n "$IMAGE_URL" ] \
-                && logmsg_info "download_rawfwimage_uboot() detected '$IMAGE_URL' as the newest raw u-Boot loader image" \
+                && logmsg_info "download_rawfwimage_uboot() detected '$IMAGE_URL' as the newest remote raw u-Boot loader image" \
                 || { logmsg_error "Could not find any remote raw u-Boot loader image"; IMAGE_URL="";} ;;
             *)  logmsg_error "download_rawfwimage_uboot() got an unsupported argument: $*"
                 IMAGE_URL=""
@@ -1023,9 +1023,9 @@ download_rawfwimage_uimage() (
                 logmsg_info "download_rawfwimage_uimage() was asked to try downloading '$1' as the raw kernel uImage"
                 IMAGE_URL="$1" ;;
             "")
-                logmsg_info "Fetching newest filename for the raw kernel uImage..."
+                logmsg_info "Fetching newest remote filename for the raw kernel uImage..."
                 IMAGE_URL="`findnewest_rawfwimage_uimage`" && [ -n "$IMAGE_URL" ] \
-                && logmsg_info "download_rawfwimage_uimage() detected '$IMAGE_URL' as the newest raw kernel uImage" \
+                && logmsg_info "download_rawfwimage_uimage() detected '$IMAGE_URL' as the newest remote raw kernel uImage" \
                 || { logmsg_error "Could not find any remote raw kernel uImage"; IMAGE_URL="";} ;;
             *)  logmsg_error "download_rawfwimage_uimage() got an unsupported argument: $*"
                 IMAGE_URL=""
@@ -1187,9 +1187,9 @@ download_rawfwimage_modules() (
                 logmsg_info "download_rawfwimage_modules() was asked to try downloading '$1' as the raw kernel modules archive"
                 IMAGE_URL="$1" ;;
             "")
-                logmsg_info "Fetching newest filename for the raw kernel modules archive..."
+                logmsg_info "Fetching newest remote filename for the raw kernel modules archive..."
                 IMAGE_URL="`findnewest_rawfwimage_modules`" && [ -n "$IMAGE_URL" ] \
-                && logmsg_info "download_rawfwimage_modules() detected '$IMAGE_URL' as the newest raw kernel modules archive" \
+                && logmsg_info "download_rawfwimage_modules() detected '$IMAGE_URL' as the newest remote raw kernel modules archive" \
                 || { logmsg_error "Could not find any remote raw kernel modules archive"; IMAGE_URL="";} ;;
             *)  logmsg_error "download_rawfwimage_modules() got an unsupported argument: $*"
                 IMAGE_URL=""
