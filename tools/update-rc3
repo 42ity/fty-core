@@ -72,6 +72,9 @@ config_defaults() {
     # Should we do a factory reset (erase all userdata)?
     [ -z "${FLAG_ERASE_FACTORYRESET-}" ] && FLAG_ERASE_FACTORYRESET="unset"
 
+    # Should we do an erase_all (erase all userdata AND (re-)format /mnt/nand)?
+    [ -z "${FLAG_ERASE_ALL-}" ] && FLAG_ERASE_ALL="unset"
+
     # TODO: TFTP support, busybox can do it
     # TODO: Test with https - can require custom CA trust configuration, etc.
     # TODO: Use our common requester as a wrapper for real/busybox wget/curl
@@ -162,6 +165,8 @@ usage() {
     echo "  --url-image-fw-raw-uboot --url-image-fw-raw-uimage --url-image-fw-raw-modules"
     echo "  --(no-)erase-factory-reset If a new OS image downloaded successfully, touch"
     echo "                   the control file so 'init' does a factory reset after reboot"
+    echo "  --(no-)erase-all           If a new OS image downloaded successfully, then"
+    echo "                   request a factory reset + NAND format after reboot"
 # TODO(recurring) Maintain usage() as CLI options get added to the script
 }
 
@@ -1387,6 +1392,8 @@ while [ $# -gt 0 ]; do
                 --no-removeold-images)  ACTION_REMOVEOLD_OSIMAGE="no"; ACTION_REMOVEOLD_FWIMAGE="no";;
                 --erase-factory-reset)  FLAG_ERASE_FACTORYRESET="yes" ;;
                 --no-erase-factory-reset)  FLAG_ERASE_FACTORYRESET="no" ;;
+                --erase-all)            FLAG_ERASE_ALL="yes" ;;
+                --no-erase-all)         FLAG_ERASE_ALL="no" ;;
                 *)  die "Aborting due to unknown command-line argument(s): $*" ;;
         esac
         shift
@@ -1468,19 +1475,39 @@ if [ "$ACTION_DOWNLOAD_OSIMAGE" = yes ]; then
             fi
 fi
 
-[ "$FLAG_ERASE_FACTORYRESET" = yes ] && \
-if [ "$ACTION_DOWNLOAD_OSIMAGE" = no ] || \
-   [ "$ACTION_DOWNLOAD_OSIMAGE" = yes -a "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -eq 42 ] || \
-   [ "$ACTION_DOWNLOAD_OSIMAGE" = yes -a "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -eq 0 ] \
-; then
-	logmsg_info "New OS image was downloaded successfully, so requesting factory-reset during reboot"
-	touch "$DOWNLOADROOT/factory_reset"
-else
-	logmsg_warn "New OS image was not downloaded successfully, so not requesting factory-reset"
-fi
+case "$FLAG_ERASE_FACTORYRESET" in
+	yes)
+		if [ "$ACTION_DOWNLOAD_OSIMAGE" = no ] || \
+		   [ "$ACTION_DOWNLOAD_OSIMAGE" = yes -a "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -eq 42 ] || \
+		   [ "$ACTION_DOWNLOAD_OSIMAGE" = yes -a "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -eq 0 ] \
+		; then
+			logmsg_info "New OS image was downloaded successfully, so requesting factory-reset during reboot"
+			touch "$DOWNLOADROOT/factory_reset"
+		else
+			logmsg_warn "New OS image was not downloaded successfully, so not requesting factory-reset"
+		fi
+		;;
+	no)
+		rm -f "$DEPLOYMENTROOT/factory_reset" "$DOWNLOADROOT/factory_reset"
+		;;
+esac
 
-[ "$FLAG_ERASE_FACTORYRESET" = no ] && \
-	rm -f "$DEPLOYMENTROOT/factory_reset" "$DOWNLOADROOT/factory_reset"
+case "$FLAG_ERASE_ALL" in
+	yes)
+		if [ "$ACTION_DOWNLOAD_OSIMAGE" = no ] || \
+		   [ "$ACTION_DOWNLOAD_OSIMAGE" = yes -a "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -eq 42 ] || \
+		   [ "$ACTION_DOWNLOAD_OSIMAGE" = yes -a "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -eq 0 ] \
+		; then
+			logmsg_info "New OS image was downloaded successfully, so requesting erase-all during reboot"
+			touch "$DOWNLOADROOT/erase_all"
+		else
+			logmsg_warn "New OS image was not downloaded successfully, so not requesting erase-all"
+		fi
+		;;
+	no)
+		rm -f "$DEPLOYMENTROOT/erase_all" "$DOWNLOADROOT/erase_all"
+		;;
+esac
 
 if [ "$ACTION_REMOVEOLD_OSIMAGE" = yes ]; then
         removeold_osimage || ACTION_RESULT=$?
@@ -1490,6 +1517,10 @@ fi
 
 if [ -f "$DEPLOYMENTROOT/factory_reset" ] || [ -f "$DOWNLOADROOT/factory_reset" ]; then
 	logmsg_warn "NOTE: a FACTORY RESET was requested and will be done during reboot"
+fi
+
+if [ -f "$DEPLOYMENTROOT/erase_all" ] || [ -f "$DOWNLOADROOT/erase_all" ]; then
+	logmsg_warn "NOTE: a FACTORY RESET + NAND FORMAT was requested and will be done during reboot"
 fi
 
 exit $ACTION_RESULT
