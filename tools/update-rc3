@@ -34,6 +34,12 @@ config_defaults() {
     # The actual RC3 should be reconfigured to refer some customer-local mirror
     # or an external Eaton resource, done by snippets in /etc/update-rc3.d/*.conf
     [ -z "${IMGTYPE-}" ] && IMGTYPE="deploy"
+
+    # Prefix and suffix around $IMGTYPE in the URL directory component
+    # and the image filename (at the moment, at least, applies to both)
+    [ -z "$IMGTYPE_PREFIX" ] && IMGTYPE_PREFIX=""
+    [ -z "$IMGTYPE_SUFFIX" ] && IMGTYPE_SUFFIX="-image"
+
     # We have several rounds of QA in the CI system; if the IMGQALEVEL is
     # defined then this sub-path including a slash is added into the URL.
     # Currently defined values include "master" and "pre-rc"
@@ -58,7 +64,7 @@ config_defaults() {
     # [ -z "${FLAG_FLATTEN_FILENAMES-}" ] && FLAG_FLATTEN_FILENAMES="yes"
 
     # Apparently, the new smarter build-names do not require flattery.
-    [ -z "${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN-}" ] && SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN="${IMGTYPE}-image-*_${ARCH}"
+    [ -z "${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN-}" ] && SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN="${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}"'-*_'"${ARCH}"
     [ -z "${FLAG_FLATTEN_FILENAMES-}" ] && FLAG_FLATTEN_FILENAMES="no"
 
     ### Values below can be changed by command-line choices, and some defaults
@@ -80,7 +86,7 @@ config_defaults() {
     # TODO: Use our common requester as a wrapper for real/busybox wget/curl
     # TODO: Make a common routine to list remote directories (e.g. http-dir parsing, ftp, tftp, localfs...)
     [ -z "${SOURCESITEROOT-}" ] && SOURCESITEROOT='http://obs.roz.lab.etn.com/images'
-    [ -z "${SOURCESITEROOT_OSIMAGE-}" ] && SOURCESITEROOT_OSIMAGE="$SOURCESITEROOT/${IMGTYPE}-image/${IMGQALEVEL:+$IMGQALEVEL/}$ARCH"
+    [ -z "${SOURCESITEROOT_OSIMAGE-}" ] && SOURCESITEROOT_OSIMAGE="$SOURCESITEROOT/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}$ARCH"
 
     [ -z "${SOURCESITEROOTFW-}" ] && SOURCESITEROOTFW="http://obs.roz.lab.etn.com/flash-rc3/recovery"
     [ -z "${SOURCESITEROOTFW_UBOOT-}" ] && SOURCESITEROOTFW_UBOOT="$SOURCESITEROOTFW"
