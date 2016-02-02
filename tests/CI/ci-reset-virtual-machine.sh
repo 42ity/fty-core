@@ -162,11 +162,18 @@ settraps() {
 ### TODO: Assign this default later in the script, after downloads
 VM="latest"
 [ -z "$IMGTYPE" ] && IMGTYPE="devel"
+[ -z "$IMGQALEVEL" ] && IMGQALEVEL="master"
+#[ -z "$IMGQALEVEL" ] && IMGQALEVEL="pre-rc"
 [ -z "$OBS_IMAGES" ] && OBS_IMAGES="http://tomcat.roz.lab.etn.com/images/"
 #[ -z "$OBS_IMAGES" ] && OBS_IMAGES="http://obs.roz.lab.etn.com/images/"
 [ -z "$APT_PROXY" ] && APT_PROXY='http://thunderbolt.roz.lab.etn.com:3142'
 #[ -z "$APT_PROXY" ] && APT_PROXY='http://gate.roz.lab.etn.com:3142'
 [ -n "$http_proxy" ] && export http_proxy
+
+### SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN is a regex of the basename (no ext)
+### Defaults are assigned below after CLI processing
+# SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN="simpleimage.*"
+# FLAG_FLATTEN_FILENAMES=yes
 
 [ -z "$LANG" ] && LANG=C
 [ -z "$LANGUAGE" ] && LANGUAGE=C
@@ -286,10 +293,12 @@ fi
 [ -z "$ARCH" ] && ARCH="`uname -m`"
 # Note: several hardcoded paths are expected relative to "snapshots", so
 # it is critical that we succeed changing into this directory in the end.
-mkdir -p "/srv/libvirt/snapshots/$IMGTYPE/$ARCH" "/srv/libvirt/rootfs" "/srv/libvirt/overlays"
+
+mkdir -p "/srv/libvirt/rootfs" "/srv/libvirt/overlays"
 cd "/srv/libvirt/rootfs" || \
 	die "Can not 'cd /srv/libvirt/rootfs' to keep container root trees"
 
+# A per-VM config file might change things like the IMGTYPE
 if [ -n "$VM" ] && [ -s "`pwd`/$VM.config-reset-vm" ]; then
 	if [ "$ALLOW_CONFIG_FILE" = yes ]; then
 		logmsg_warn "Found configuration file for the '$VM', it will override the command-line settings:"
@@ -299,6 +308,13 @@ if [ -n "$VM" ] && [ -s "`pwd`/$VM.config-reset-vm" ]; then
 		logmsg_warn "Found configuration file for the '$VM', but it is ignored because ALLOW_CONFIG_FILE='$ALLOW_CONFIG_FILE'"
 	fi
 fi
+
+mkdir -p "/srv/libvirt/snapshots/$IMGTYPE/$ARCH"
+
+# Unless these were set by caller or config or somehow else,
+# define the values now
+[ -z "$SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN" ] && SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN="${IMGTYPE}"'-image-.*_'"${ARCH}"
+#NOOP:# [ -z "$FLAG_FLATTEN_FILENAMES" ] && FLAG_FLATTEN_FILENAMES=no
 
 # Make sure we have a loop device support
 modprobe loop # TODO: die on failure?
@@ -396,7 +412,7 @@ IMAGE_SKIP=""
 
 if [ "$ATTEMPT_DOWNLOAD" != no ] ; then
 	logmsg_info "Get the latest operating environment image prepared for us by OBS"
-	IMAGE_URL="`wget -O - $OBS_IMAGES/${IMGTYPE}-image/master/$ARCH/ 2> /dev/null | sed -n 's|.*href="\(.*'"${IMGTYPE}"'-image.*\.'"$EXT"'\)".*|'"$OBS_IMAGES/${IMGTYPE}-image/master/$ARCH"'/\1|p' | sort | tail -n 1 | sed 's,\([^:]\)//,\1/,g'`"
+	IMAGE_URL="`wget -O - $OBS_IMAGES/${IMGTYPE}-image/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}/ 2> /dev/null | sed -n 's|.*href="\(.*'"${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}"'\.'"$EXT"'\)".*|'"$OBS_IMAGES/${IMGTYPE}-image/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}"'/\1|p' | sort | tail -n 1 | sed 's,\([^:]\)//,\1/,g'`"
 	IMAGE="`basename "$IMAGE_URL"`"
 
 	# Set up sleeping
