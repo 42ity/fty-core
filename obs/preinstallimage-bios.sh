@@ -274,7 +274,7 @@ else
     /bin/systemctl mask bios-fake-th
     /bin/systemctl enable lcd-boot-display
     /bin/systemctl enable lcd-net-display
-    sed -i 's|PathChanged=/etc|PathChanged=/mnt/nand/overlay/etc|' /usr/lib/systemd/system/composite-metrics\@.path
+    #sed -i 's|PathChanged=/etc|PathChanged=/mnt/nand/overlay/etc|' /usr/lib/systemd/system/composite-metrics\@.path
 fi
 # Services not part of core
 /bin/systemctl enable bios-agent-legacy-metrics
