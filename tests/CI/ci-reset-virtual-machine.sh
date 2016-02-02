@@ -162,6 +162,10 @@ settraps() {
 ### TODO: Assign this default later in the script, after downloads
 VM="latest"
 [ -z "$IMGTYPE" ] && IMGTYPE="devel"
+### Prefix and suffix around $IMGTYPE in the URL directory component
+### and the image filename (at the moment, at least, applies to both)
+[ -z "$IMGTYPE_PREFIX" ] && IMGTYPE_PREFIX=""
+[ -z "$IMGTYPE_SUFFIX" ] && IMGTYPE_SUFFIX="-image"
 [ -z "$IMGQALEVEL" ] && IMGQALEVEL="master"
 #[ -z "$IMGQALEVEL" ] && IMGQALEVEL="pre-rc"
 [ -z "$OBS_IMAGES" ] && OBS_IMAGES="http://tomcat.roz.lab.etn.com/images/"
@@ -313,7 +317,7 @@ mkdir -p "/srv/libvirt/snapshots/$IMGTYPE/$ARCH"
 
 # Unless these were set by caller or config or somehow else,
 # define the values now
-[ -z "$SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN" ] && SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN="${IMGTYPE}"'-image-.*_'"${ARCH}"
+[ -z "$SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN" ] && SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN="${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}"'-*_'"${ARCH}"
 #NOOP:# [ -z "$FLAG_FLATTEN_FILENAMES" ] && FLAG_FLATTEN_FILENAMES=no
 
 # Make sure we have a loop device support
@@ -412,7 +416,7 @@ IMAGE_SKIP=""
 
 if [ "$ATTEMPT_DOWNLOAD" != no ] ; then
 	logmsg_info "Get the latest operating environment image prepared for us by OBS"
-	IMAGE_URL="`wget -O - $OBS_IMAGES/${IMGTYPE}-image/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}/ 2> /dev/null | sed -n 's|.*href="\(.*'"${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}"'\.'"$EXT"'\)".*|'"$OBS_IMAGES/${IMGTYPE}-image/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}"'/\1|p' | sort | tail -n 1 | sed 's,\([^:]\)//,\1/,g'`"
+	IMAGE_URL="`wget -O - "$OBS_IMAGES/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}/" 2> /dev/null | sed -n 's|.*href="\(.*'"${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}"'\.'"$EXT"'\)".*|'"$OBS_IMAGES/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}"'/\1|p' | sort | tail -n 1 | sed 's,\([^:]\)//,\1/,g'`"
 	IMAGE="`basename "$IMAGE_URL"`"
 
 	# Set up sleeping
