@@ -36,7 +36,7 @@ bool TemplateRuleConfigurator::v_configure (const std::string& name, const AutoC
     switch (info.operation) {
         case persist::asset_operation::INSERT:
         {
-            bool result = false;
+            bool result = true;
             std::vector <std::string> templates = loadTemplates(info.type, info.subtype);
             for ( auto &templat : templates) {
                 std::string rule=replaceTokens(templat,"__name__",name);
