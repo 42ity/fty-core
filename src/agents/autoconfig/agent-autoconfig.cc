@@ -288,11 +288,11 @@ void Autoconfig::saveState()
 {
     std::ostringstream stream;
     cxxtools::JsonSerializer serializer(stream);
-    log_critical ("size = '%zu'",_configurableDevices.size ());
+    log_debug ("size = '%zu'",_configurableDevices.size ());
     serializer.serialize( _configurableDevices );
     serializer.finish();
     std::string json = stream.str();
-    log_critical (json.c_str ());
+    log_debug (json.c_str ());
     save_agent_info(json );
 }
 
