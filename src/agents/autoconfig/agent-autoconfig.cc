@@ -45,21 +45,23 @@ const char* Autoconfig::StateFile = "/var/lib/bios/agent-autoconfig/state";
 static int
 load_agent_info(std::string &info)
 {
-    if (shared::is_file (Autoconfig::StateFile))
-    {
-        try {
-            std::fstream f{Autoconfig::StateFile};
-            f >> info;
-            return 0;
-        }
-        catch (const std::exception& e)
-        {
-            log_error("Fail to read '%s', %s", Autoconfig::StateFilePath, e.what());
-            return -1;
-        }
+    if (shared::is_file (Autoconfig::StateFile)) {
+        log_error ("not a file");
+        info = "";
+        return 0;
     }
-    info = "";
-    return 0;
+
+    std::ifstream f(Autoconfig::StateFile, std::ios::in | std::ios::binary);
+    if (f) {
+        f.seekg (0, std::ios::end);
+        info.resize (f.tellg ());
+        f.seekg (0, std::ios::beg);
+        f.read (&info[0], info.size());
+        f.close ();
+        return 0;
+    }
+    log_error("Fail to read '%s'", Autoconfig::StateFilePath);
+    return -1;
 }
 
 static int
@@ -70,8 +72,10 @@ save_agent_info(const std::string& json)
         return -1;
     }
     try {
-        std::fstream f{Autoconfig::StateFile};
+        std::ofstream f(Autoconfig::StateFile);
+        f.exceptions (~std::ofstream::goodbit);
         f << json;
+        f.close();
     }
     catch (const std::exception& e) {
         zsys_error ("Can't serialize state, %s", e.what());
@@ -83,21 +87,26 @@ save_agent_info(const std::string& json)
 inline void operator<<= (cxxtools::SerializationInfo& si, const AutoConfigurationInfo& info)
 {
     si.setTypeName("AutoConfigurationInfo");
-    si.addMember("type") <<= info.type;
-    si.addMember("subtype") <<= info.subtype;
-    si.addMember("operation") <<= info.operation;
+    si.addMember("type") <<= std::to_string (info.type);
+    si.addMember("subtype") <<= std::to_string (info.subtype);
+    si.addMember("operation") <<= std::to_string (info.operation);
     si.addMember("configured") <<= info.configured;
-    si.addMember("date") <<= info.date;
+    si.addMember("date") <<= std::to_string (info.date);
     si.addMember("attributes") <<= info.attributes;
 }
 
 inline void operator>>= (const cxxtools::SerializationInfo& si, AutoConfigurationInfo& info)
 {
+    std::string temp;
     si.getMember("configured") >>= info.configured;
-    si.getMember("type") >>= info.type;
-    si.getMember("subtype") >>= info.subtype;
-    si.getMember("operation") >>= info.operation;
-    si.getMember("date") >>= info.date;
+    si.getMember("type") >>= temp;
+    info.type = std::stoi (temp);
+    si.getMember("subtype") >>= temp;
+    info.subtype = std::stoi (temp);
+    si.getMember("operation") >>= temp;
+    info.operation = std::stoi (temp);
+    si.getMember("date") >>= temp;
+    info.date = std::stoi (temp);
     si.getMember("attributes")  >>= info.attributes;
 }
 
@@ -206,8 +215,12 @@ void Autoconfig::onPoll( )
             device_configured &= configurator->configure (it.first, it.second, client ());
         }
         if (device_configured) {
+            log_debug ("Device '%s' configured successfully", it.first.c_str ());
             it.second.configured = true;
             save = true;
+        }
+        else {
+            log_debug ("Device '%s' NOT configured yet.", it.first.c_str ());
         }
         it.second.date = zclock_mono ();
     }
@@ -260,6 +273,7 @@ void Autoconfig::loadState()
 
 void Autoconfig::cleanupState()
 {
+    log_debug ("Size before cleanup '%zu'", _configurableDevices.size ());
     for( auto it = _configurableDevices.cbegin(); it != _configurableDevices.cend() ; ) {
         if( it->second.configured ) {
             _configurableDevices.erase(it++);
@@ -267,15 +281,18 @@ void Autoconfig::cleanupState()
             ++it;
         }
     }
+    log_debug ("Size after cleanup '%zu'", _configurableDevices.size ());
 }
 
 void Autoconfig::saveState()
 {
     std::ostringstream stream;
     cxxtools::JsonSerializer serializer(stream);
-
-    serializer.serialize( _configurableDevices ).finish();
+    log_critical ("size = '%zu'",_configurableDevices.size ());
+    serializer.serialize( _configurableDevices );
+    serializer.finish();
     std::string json = stream.str();
+    log_critical (json.c_str ());
     save_agent_info(json );
 }
 
