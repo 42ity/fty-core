@@ -133,7 +133,7 @@ logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to run the requests" >&2
 # Included after CLI processing because sets autovars like BASE_URL
 . "$SCRIPTDIR/weblib.sh" >&2 || CODE=$? die "Can not include web script library"
 
-if [ "$WEBLIB_FUNC" = "accept_license" && $# = 1
+logmsg_info "Using BASE_URL='$BASE_URL' to run the requests" >&2
 
 if [ -z "$RELATIVE_URL" ]; then
     if [ "$WEBLIB_FUNC" = "accept_license" ]; then
