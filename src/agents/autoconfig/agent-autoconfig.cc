@@ -60,7 +60,7 @@ load_agent_info(std::string &info)
         f.close ();
         return 0;
     }
-    log_error("Fail to read '%s'", Autoconfig::StateFilePath);
+    log_error("Fail to read '%s'", Autoconfig::StateFile);
     return -1;
 }
 
