@@ -48,7 +48,7 @@ load_agent_info(std::string &info)
     if (shared::is_file (Autoconfig::StateFile)) {
         log_error ("not a file");
         info = "";
-        return 0;
+        return -1;
     }
 
     std::ifstream f(Autoconfig::StateFile, std::ios::in | std::ios::binary);
@@ -60,7 +60,7 @@ load_agent_info(std::string &info)
         f.close ();
         return 0;
     }
-    log_error("Fail to read '%s'", Autoconfig::StateFilePath);
+    log_error("Fail to read '%s'", Autoconfig::StateFile);
     return -1;
 }
 
@@ -288,11 +288,11 @@ void Autoconfig::saveState()
 {
     std::ostringstream stream;
     cxxtools::JsonSerializer serializer(stream);
-    log_critical ("size = '%zu'",_configurableDevices.size ());
+    log_debug ("size = '%zu'",_configurableDevices.size ());
     serializer.serialize( _configurableDevices );
     serializer.finish();
     std::string json = stream.str();
-    log_critical (json.c_str ());
+    log_debug (json.c_str ());
     save_agent_info(json );
 }
 
