@@ -204,6 +204,10 @@ std::string debug_trace;
 </%cpp>
           "vendor": "<$ PACKAGE_VENDOR $>"
 <%cpp>
+# else
+</%cpp>
+          "vendor": ""
+<%cpp>
 # endif
 </%cpp>
         }
