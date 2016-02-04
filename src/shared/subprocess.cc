@@ -501,7 +501,12 @@ int output(const Argv& args, std::string& o, std::string& e, unsigned int timeou
         err += wait_read_all(p.getStderr());
         tme++;
     }
-    if( p.isRunning() ) { p.terminate(); ret = p.wait(); }
+    if( p.isRunning() ) {
+        p.terminate();
+        ret = p.wait();
+    }
+    else
+        ret = p.poll ();
     out += wait_read_all(p.getStdout());
     err += wait_read_all(p.getStderr());
 
