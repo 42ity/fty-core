@@ -45,12 +45,11 @@ const char* Autoconfig::StateFile = "/var/lib/bios/agent-autoconfig/state";
 static int
 load_agent_info(std::string &info)
 {
-    if (shared::is_file (Autoconfig::StateFile)) {
+    if ( !shared::is_file (Autoconfig::StateFile)) {
         log_error ("not a file");
         info = "";
         return -1;
     }
-
     std::ifstream f(Autoconfig::StateFile, std::ios::in | std::ios::binary);
     if (f) {
         f.seekg (0, std::ios::end);
