@@ -303,10 +303,14 @@ std::string debug_trace;
                 if (pos != std::string::npos) {
                     version = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION).substr (0, pos);
                     commit = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION).substr (pos+1);
+                    auto pos2 = commit.find ("-");
+                    if (pos2 != std::string::npos) {
+                        version += commit.substr (pos2);
+                        commit = commit.substr (0, pos2);
+                    }
                 }
                 else {
                     version = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION);
-
                 }
 // Note: Shall we desire maintainers name etc...
 //                rv = shared::output ({"dpkg", "status", pkgname.c_str ()}, output, cmderr);
