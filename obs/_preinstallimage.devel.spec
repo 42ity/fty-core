@@ -7,6 +7,7 @@ BuildRequires: libzmq4-dev libczmq-dev libjsoncpp-dev libcxxtools-dev libtntdb-d
 BuildRequires: libcidr0-dev libtntnet-dev tntnet-runtime tntnet
 BuildRequires: libsasl2-dev libsodium-dev libmlm-dev libmagic-dev
 BuildRequires: libnutclient-dev libnutscan-dev python vim-tiny man
+BuildRequires: liblua5.1-0-dev
 #
 
 #!SimpleImage
