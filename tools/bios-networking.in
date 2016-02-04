@@ -28,5 +28,6 @@
 
 # to ensure REST API call at least reply before actually changing the network
 sleep 3
+for L in 1 2 3 ; do ( ifdown --force LAN$L ; sleep 5; ifup --force LAN$L ) & done ; wait
 /bin/systemctl restart networking.service
 /bin/systemctl restart ifplugd.service
