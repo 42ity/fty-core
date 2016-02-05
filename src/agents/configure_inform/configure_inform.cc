@@ -25,6 +25,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "str_defs.h"
 #include "agents.h"
 #include "db/assets.h"
+#include "dbpath.h"
+#include "asset_types.h"
 
 #include <biosproto.h>
 
@@ -33,14 +35,34 @@ static void
 {
     try {
         tntdb::Connection conn = tntdb::connectCached (url);
-        int r = persist::select_asset_element_parent_name (conn, oneRow.first.id, parent_name);
-        if (r != 0)
+        auto reply = persist::select_asset_element_web_byId (conn, id);
+        if (reply.status == 0)
             parent_name = "";
+        else
+            parent_name = reply.item.name;
     }
     catch (const std::exception &e)
     {
-        log_error ("fail to connect to DB: ", e.what ());
+        log_error ("fail to connect to DB: %s", e.what ());
     }
+}
+
+static const char*
+    s_operation (persist::asset_operation o)
+{
+    switch (o) {
+        case persist::asset_operation::INSERT:
+            return "INSERT";
+        case persist::asset_operation::DELETE:
+            return "DELETE";
+        case persist::asset_operation::UPDATE:
+            return "UPDATE";
+        case persist::asset_operation::GET:
+            return "GET";
+        case persist::asset_operation::RETIRE:
+            return "RETIRE";
+    }
+    return "I'm making gcc happy!"; //make gcc happy
 }
 
 static zhash_t*
@@ -106,7 +128,7 @@ void
         zmsg_t *zmsg = bios_proto_encode_asset (
                 aux,
                 oneRow.first.name.c_str(),
-                "TODO",
+                s_operation (oneRow.second),
                 ext2);
         zhash_destroy (&aux);
         zhash_destroy (&ext2);
