@@ -91,24 +91,28 @@ std::string debug_trace;
     static const std::string NOTLICENSEDYET = "License not accepted yet";
 
     int rv = shared::output ({"/usr/bin/systemd-detect-virt", "-c"}, output, cmderr);
-    if (rv != 0) {
-        output = NOTAVAILABLE;
-    } else {
+    { //scoping
         size_t output_len = output.length();
-        if (output_len>0 && output[output_len-1] == '\n') {
-            output[output_len-1] = '\0';
+        if (rv != 0 && output_len<2) {
+            output = NOTAVAILABLE;
+        } else {
+            if (output_len>0 && output[output_len-1] == '\n') {
+                output[output_len-1] = '\0';
+            }
         }
     }
 </%cpp>
         <$$ utils::json::jsonify ("container", output.c_str()) $>,
 <%cpp>
     rv = shared::output ({"/usr/bin/systemd-detect-virt", "-v"}, output, cmderr);
-    if (rv != 0) {
-        output = NOTAVAILABLE;
-    } else {
+    { //scoping
         size_t output_len = output.length();
-        if (output_len>0 && output[output_len-1] == '\n') {
-            output[output_len-1] = '\0';
+        if (rv != 0 && output_len<2) {
+            output = NOTAVAILABLE;
+        } else {
+            if (output_len>0 && output[output_len-1] == '\n') {
+                output[output_len-1] = '\0';
+            }
         }
     }
 </%cpp>
@@ -204,6 +208,10 @@ std::string debug_trace;
 </%cpp>
           "vendor": "<$ PACKAGE_VENDOR $>"
 <%cpp>
+# else
+</%cpp>
+          "vendor": ""
+<%cpp>
 # endif
 </%cpp>
         }
@@ -295,10 +303,14 @@ std::string debug_trace;
                 if (pos != std::string::npos) {
                     version = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION).substr (0, pos);
                     commit = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION).substr (pos+1);
+                    auto pos2 = commit.find ("-");
+                    if (pos2 != std::string::npos) {
+                        version += commit.substr (pos2);
+                        commit = commit.substr (0, pos2);
+                    }
                 }
                 else {
                     version = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION);
-
                 }
 // Note: Shall we desire maintainers name etc...
 //                rv = shared::output ({"dpkg", "status", pkgname.c_str ()}, output, cmderr);
@@ -324,7 +336,7 @@ std::string debug_trace;
 %       }
 <%cpp>
 // Note: Commands and unit names are constrained in tools/systemctl and web/systemctl.ecpp
-// No argments to our custom "list-json" causes fallback to try and list all
+// No arguments to our custom "list-json" causes fallback to try and list all
 // allowed units and a constrained list of fields and so be quite quick;
 // adding "--all" would show all fields... over time...
         rv = shared::output ({"sudo", "systemctl", "list-json"}, output, cmderr, 120);
