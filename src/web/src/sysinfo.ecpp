@@ -336,7 +336,7 @@ std::string debug_trace;
 %       }
 <%cpp>
 // Note: Commands and unit names are constrained in tools/systemctl and web/systemctl.ecpp
-// No argments to our custom "list-json" causes fallback to try and list all
+// No arguments to our custom "list-json" causes fallback to try and list all
 // allowed units and a constrained list of fields and so be quite quick;
 // adding "--all" would show all fields... over time...
         rv = shared::output ({"sudo", "systemctl", "list-json"}, output, cmderr, 120);
