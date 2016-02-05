@@ -927,7 +927,7 @@ download_rawfwimage_uboot() (
             "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_CSOLD}" \
             "${aIMAGE_CSNEW}" && return 0
     fi
-    if [ -s "${aIMAGE_CSNEW_PADDED}" ] && [ -c "/dev/mtd$KERNEL_MTD" ]; then
+    if [ -s "${aIMAGE_CSNEW_PADDED}" ] && [ -c "/dev/mtd$UBOOT_MTD" ]; then
         logmsg_info "Verify padded checksum against a raw u-Boot loader partition with flashed bits here ..."
         FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
             "/dev/mtd$UBOOT_MTD" \
@@ -965,7 +965,7 @@ download_rawfwimage_uboot() (
     wget -O "${aTGT_FILE}" "$IMAGE_URL" && [ -s "$aTGT_FILE" ] || \
         { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
 
-    lsdir_http_pattern "${SOURCESITEROOTFW_UBOOT}" | egrep "^${IMAGE_URL}\." | \
+    lsdir_http_pattern "${SOURCESITEROOTFW_UBOOT}" "`basename ${IMAGE_URL}`"'*' | egrep "^${IMAGE_URL}\." | \
         egrep -v "^(${IMAGE_CSURL}|${IMAGE_CSURL_PADDED})"'$' | \
         while read U ; do
             # Note these are helper files, e.g. a padded checksum or some
@@ -1130,7 +1130,7 @@ download_rawfwimage_uimage() (
     wget -O "${aTGT_FILE}" "$IMAGE_URL" && [ -s "$aTGT_FILE" ] || \
         { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
 
-    lsdir_http_pattern "${SOURCESITEROOTFW_UIMAGE}" | egrep "^${IMAGE_URL}\." | \
+    lsdir_http_pattern "${SOURCESITEROOTFW_UIMAGE}" "`basename ${IMAGE_URL}`"'*' | egrep "^${IMAGE_URL}\." | \
         egrep -v "^(${IMAGE_CSURL}|${IMAGE_CSURL_PADDED})"'$' | \
         while read U ; do
             # Note these are helper files, e.g. a padded checksum or some
@@ -1262,7 +1262,7 @@ download_rawfwimage_modules() (
     wget -O "${aTGT_FILE}" "$IMAGE_URL" && [ -s "$aTGT_FILE" ] || \
         { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
 
-    lsdir_http_pattern "${SOURCESITEROOTFW_MODULES}" | egrep "^${IMAGE_URL}\." | \
+    lsdir_http_pattern "${SOURCESITEROOTFW_MODULES}" "`basename ${IMAGE_URL}`"'*' | egrep "^${IMAGE_URL}\." | \
         egrep -v "^${IMAGE_CSURL}"'$' | \
         while read U ; do
             # Note these are helper files, e.g. a padded checksum or some
@@ -1529,4 +1529,8 @@ if [ -f "$DEPLOYMENTROOT/erase_all" ] || [ -f "$DOWNLOADROOT/erase_all" ]; then
 	logmsg_warn "NOTE: a FACTORY RESET + NAND FORMAT was requested and will be done during reboot"
 fi
 
+logmsg_info "Syncing to ensure all writes are done..."
+time sync || true
+
+logmsg_info "Completed '$_SCRIPT_NAME $_SCRIPT_ARGS' with result $ACTION_RESULT"
 exit $ACTION_RESULT
