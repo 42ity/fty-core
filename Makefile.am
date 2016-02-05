@@ -1071,8 +1071,8 @@ dshell_LDADD = \
 dshell_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/include
 
-client_SCRIPTS +=	tools/systemctl tools/testpass.sh
-EXTRA_DIST +=		tools/systemctl tools/testpass.sh
+client_SCRIPTS +=	tools/systemctl tools/testpass.sh tools/update-rc3
+EXTRA_DIST +=		tools/systemctl tools/testpass.sh tools/update-rc3
 
 cibin_programs += bios-csv
 bios_csv_SOURCES = tests/db/bios-csv.cc
