@@ -1529,4 +1529,7 @@ if [ -f "$DEPLOYMENTROOT/erase_all" ] || [ -f "$DOWNLOADROOT/erase_all" ]; then
 	logmsg_warn "NOTE: a FACTORY RESET + NAND FORMAT was requested and will be done during reboot"
 fi
 
+logmsg_info "Syncing to ensure all writes are done..."
+time sync || true
+
 exit $ACTION_RESULT
