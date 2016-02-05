@@ -122,7 +122,7 @@ void
 
         std::string parent_name;
         s_parent_name (oneRow.first.id, parent_name);
-        zhash_insert (aux, "parent_name",
+        zhash_insert (aux, "parent",
                 (void*) parent_name.c_str ());
 
         zmsg_t *zmsg = bios_proto_encode_asset (
