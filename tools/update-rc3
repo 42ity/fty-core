@@ -965,7 +965,7 @@ download_rawfwimage_uboot() (
     wget -O "${aTGT_FILE}" "$IMAGE_URL" && [ -s "$aTGT_FILE" ] || \
         { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
 
-    lsdir_http_pattern "${SOURCESITEROOTFW_UBOOT}" | egrep "^${IMAGE_URL}\." | \
+    lsdir_http_pattern "${SOURCESITEROOTFW_UBOOT}" "`basename ${IMAGE_URL}`"'*' | egrep "^${IMAGE_URL}\." | \
         egrep -v "^(${IMAGE_CSURL}|${IMAGE_CSURL_PADDED})"'$' | \
         while read U ; do
             # Note these are helper files, e.g. a padded checksum or some
@@ -1130,7 +1130,7 @@ download_rawfwimage_uimage() (
     wget -O "${aTGT_FILE}" "$IMAGE_URL" && [ -s "$aTGT_FILE" ] || \
         { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
 
-    lsdir_http_pattern "${SOURCESITEROOTFW_UIMAGE}" | egrep "^${IMAGE_URL}\." | \
+    lsdir_http_pattern "${SOURCESITEROOTFW_UIMAGE}" "`basename ${IMAGE_URL}`"'*' | egrep "^${IMAGE_URL}\." | \
         egrep -v "^(${IMAGE_CSURL}|${IMAGE_CSURL_PADDED})"'$' | \
         while read U ; do
             # Note these are helper files, e.g. a padded checksum or some
@@ -1262,7 +1262,7 @@ download_rawfwimage_modules() (
     wget -O "${aTGT_FILE}" "$IMAGE_URL" && [ -s "$aTGT_FILE" ] || \
         { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
 
-    lsdir_http_pattern "${SOURCESITEROOTFW_MODULES}" | egrep "^${IMAGE_URL}\." | \
+    lsdir_http_pattern "${SOURCESITEROOTFW_MODULES}" "`basename ${IMAGE_URL}`"'*' | egrep "^${IMAGE_URL}\." | \
         egrep -v "^${IMAGE_CSURL}"'$' | \
         while read U ; do
             # Note these are helper files, e.g. a padded checksum or some
