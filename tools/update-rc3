@@ -1532,4 +1532,5 @@ fi
 logmsg_info "Syncing to ensure all writes are done..."
 time sync || true
 
+logmsg_info "Completed '$_SCRIPT_NAME $_SCRIPT_ARGS' with result $ACTION_RESULT"
 exit $ACTION_RESULT
