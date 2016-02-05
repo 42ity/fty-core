@@ -253,6 +253,8 @@ trap_cleanup(){
         fi
     fi
 
+    (exit_summarizeTestlibResults) || true
+
     if [ -n "$TESTLIB_LOG_SUMMARY" ] && [ -s "$TESTLIB_LOG_SUMMARY" ]; then
         echo ""
         echo "================================================================"
