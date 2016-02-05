@@ -927,7 +927,7 @@ download_rawfwimage_uboot() (
             "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_CSOLD}" \
             "${aIMAGE_CSNEW}" && return 0
     fi
-    if [ -s "${aIMAGE_CSNEW_PADDED}" ] && [ -c "/dev/mtd$KERNEL_MTD" ]; then
+    if [ -s "${aIMAGE_CSNEW_PADDED}" ] && [ -c "/dev/mtd$UBOOT_MTD" ]; then
         logmsg_info "Verify padded checksum against a raw u-Boot loader partition with flashed bits here ..."
         FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
             "/dev/mtd$UBOOT_MTD" \
