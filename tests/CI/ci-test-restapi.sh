@@ -120,8 +120,10 @@ wait_for_web() {
 test_web() {
     echo "==== Calling test_web.sh ==================================="
     RES_TW=0
+    test_it "ci-test-restapi::test_web::$@"
     /bin/bash "${CHECKOUTDIR}"/tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" "$@" || \
         RES_TW=$?
+    print_result $RES_TW
     echo "==== test_web RESULT: ($RES_TW) =================================="
     return $RES_TW
 }
