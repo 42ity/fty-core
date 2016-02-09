@@ -100,7 +100,7 @@ app_params_append_string(app_t* msg, const char *value)
         list = zlist_new();
         zlist_autofree(list);
     }
-    zlist_append( list, (void *)value );
+    zlist_append( list, (void*) strdup (value) );
     app_set_params( msg, &list );
 }
 
@@ -151,7 +151,7 @@ app_args_set_string(app_t* msg, const char *key, const char *value) {
         hash = zhash_new();
         zhash_autofree(hash);
     }
-    zhash_update(hash, key, (void *)value);
+    zhash_update(hash, key, (void*) strdup (value));
     app_set_args(msg, &hash);
 }
 

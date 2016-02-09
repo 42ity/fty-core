@@ -28,7 +28,13 @@
 
 prefix="@prefix@"
 DATABASE=box_utf8
+# This is where we take current SQL files from updated OS images
 INITSQL_DIR="@datarootdir@/@PACKAGE@/sql/mysql"
+# This is where we save timestamped copies of applied SQL files that
+# are in the database. Note/TODO: currently this may include schema/data
+# files from a previous database lifetime, if it is re-initialized.
+# Conversely, as part of /var namespace this is erased during factory-reset.
+INSTSQL_DIR="/var/lib/@PACKAGE@/sql/mysql"
 # This file is applied first; others (if exist in $INITSQL_DIR) will be applied
 # in alphabetic order; all files in $INITSQL_DIR will be version-tested as well
 INITSQL_FIRST="${INITSQL_DIR}/initdb.sql"
@@ -131,13 +137,28 @@ install_sql_file() {
 	local INITSQL="$1"
 	local COMMENT="$2"
 
+	case "$INSTSQL_DIR" in
+		/*) [ -d "$INSTSQL_DIR" ] || { \
+			echo "Creating INSTSQL_DIR='$INSTSQL_DIR' to save copies of applied SQL files..."; \
+			mkdir -p "$INSTSQL_DIR"; }
+		    [ ! -d "$INSTSQL_DIR" -o ! -w "$INSTSQL_DIR" ] && \
+			echo "WARNING: Can not use INSTSQL_DIR='$INSTSQL_DIR', copies of applied SQL files will not be stashed" && \
+			INSTSQL_DIR=""
+		    ;;
+		"") echo "WARNING: Empty INSTSQL_DIR provided, copies of applied SQL files will not be stashed" ;;
+		*)  echo "ERROR: Non-absolute INSTSQL_DIR='$INSTSQL_DIR' provided, copies of applied SQL files will not be stashed"
+		    INSTSQL_DIR=""
+		    ;;
+	esac
+
 	if  [ -r "$INITSQL" ] && \
 	    [ -s "$INITSQL" ] \
 	; then
 		echo "Database for BIOS initialization - importing $COMMENT `basename $INITSQL`..."
 		do_mysql < "$INITSQL" || return 1
 		SQLINSTALL_SCHEMA_VERSION="v=`grep_sql_version < "$INITSQL"`." || BIOS_SCHEMA_VERSION_SQL=""
-		gzip -c < "$INITSQL" > "$INITSQL.$SQLINSTALL_SCHEMA_VERSION$SQLINSTALL_TIMESTAMP.gz"
+		[ -n "$INSTSQL_DIR" ] && [ -d "$INSTSQL_DIR" ] && \
+			gzip -c < "$INITSQL" > "$INSTSQL_DIR/`basename "$INITSQL"`.$SQLINSTALL_SCHEMA_VERSION$SQLINSTALL_TIMESTAMP.gz"
 		return 0
 	else
 		echo "Error: Can't read '$INITSQL' !!!" >&2
