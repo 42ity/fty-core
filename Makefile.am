@@ -523,6 +523,7 @@ libpriv_configure_inform_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/tools \
 			-I$(abs_top_builddir)/src/persist
 
+
 #----------------------------------------------------------------------
 
 # Tester for the doxygen output sanity
