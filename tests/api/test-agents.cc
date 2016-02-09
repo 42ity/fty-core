@@ -36,6 +36,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "utils_ymsg.h"
 #include "cleanup.h"
 
+
 TEST_CASE(" inventory message encode/decode","[db][ENCODE][DECODE][bios_inventory]")
 {
     log_open ();
@@ -327,68 +328,8 @@ TEST_CASE ("bios alert message encoded & decoded", "[agents][public_api]") {
     ymsg_destroy( &msg );
 }
 
-TEST_CASE ("bios asset extended message encode & decode", "[agents][public_api][asset_extra]")
-{
-    log_open ();
 
-    const char *name = "my_test_device";
-    _scoped_zhash_t *ext_attributes = zhash_new();
-    zhash_autofree (ext_attributes);
-    zhash_insert (ext_attributes, "key1", (char*)"value1");
-    zhash_insert (ext_attributes, "key2", (char*)"value2");
-    zhash_insert (ext_attributes, "key3", (char*)"value3");
-    uint32_t type_id = 1;
-    uint32_t subtype_id = 2;
-    uint32_t parent_id = 1;
-    const char *status = "active";
-    uint8_t priority = 2;
-    int8_t operation = 1;
-    _scoped_ymsg_t * ymsg_encoded = bios_asset_extra_encode
-        (name, &ext_attributes, type_id, subtype_id, parent_id, status, priority, operation);
-    REQUIRE ( ymsg_encoded != NULL );
-    REQUIRE ( ext_attributes == NULL );
-
-    _scoped_zhash_t *ext_attributes_new = NULL;
-
-    char *name_new = NULL;
-    uint32_t type_id_new = 0;
-    uint32_t subtype_id_new = 0;
-    uint32_t parent_id_new = 0;
-    char *status_new = NULL;
-    uint8_t priority_new = 0;
-    int8_t operation_new = 0;
- 
-    int rv = bios_asset_extra_extract (ymsg_encoded, &name_new, 
-        &ext_attributes_new, &type_id_new, &subtype_id_new, &parent_id_new, &status_new,
-        &priority_new, &operation_new);
-    REQUIRE ( rv == 0 );
-    REQUIRE ( ymsg_encoded != NULL );
-    REQUIRE ( streq (name, name_new) == true );
-    REQUIRE ( type_id == type_id_new );
-    REQUIRE ( subtype_id == subtype_id_new );
-    REQUIRE ( parent_id == parent_id_new );
-    REQUIRE ( priority == priority_new );
-    REQUIRE ( operation == operation_new );
-    REQUIRE ( streq (status, status_new) == true );
-    REQUIRE ( zhash_size (ext_attributes_new) == 3 );
-    
-    const char *value1 = (char *) zhash_lookup (ext_attributes_new, "key1");
-    REQUIRE ( streq (value1, "value1") == true );
-
-    const char *value2 = (char*) zhash_lookup (ext_attributes_new, "key2");
-    REQUIRE ( streq (value2, "value2") == true );
-
-    const char *value3 = (char *) zhash_lookup (ext_attributes_new, "key3");
-    REQUIRE ( streq (value3, "value3") == true );
-
-    FREE0 (status_new)
-    FREE0 (name_new)
-    zhash_destroy(&ext_attributes_new);
-    zhash_destroy(&ext_attributes);
-}
-
-
-TEST_CASE ("bios asset extended message decode", "[agents][public_api][asset_extra]") 
+TEST_CASE ("bios asset extended message encode/decode", "[agents][public_api][asset_extra]") 
 {
     log_open ();
 
@@ -406,22 +347,17 @@ TEST_CASE ("bios asset extended message decode", "[agents][public_api][asset_ext
     uint8_t priority = 2;
     int8_t operation = 1;
 
-    app_t *app = app_new(APP_MODULE);
-    REQUIRE ( app );
-    app_set_name (app, "ASSET_EXTENDED");
-        
-    app_set_args  (app, &ext_attributes);
-    app_args_set_uint32 (app, "__type_id", type_id);
-    app_args_set_uint32 (app, "__subtype_id", type_id);
-    app_args_set_uint32 (app, "__parent_id", parent_id);
-    app_args_set_uint8  (app, "__priority", priority);
-    app_args_set_string (app, "__status", status);
-    app_args_set_string (app, "__name", name);
-    app_args_set_int8   (app, "__operation", operation);
-    
-    ymsg_t *msg = ymsg_new(YMSG_SEND);
-    REQUIRE ( msg );
-    ymsg_request_set_app (msg, &app);
+    _scoped_ymsg_t *encoded_message = bios_asset_extra_encode (
+            name,
+            &ext_attributes,
+            type_id,
+            subtype_id,
+            parent_id,
+            status,
+            priority,
+            operation);
+    REQUIRE (ext_attributes == NULL);
+
 
     _scoped_zhash_t *ext_attributes_new = NULL;
     char *name_new = NULL;
@@ -432,11 +368,11 @@ TEST_CASE ("bios asset extended message decode", "[agents][public_api][asset_ext
     uint8_t priority_new = 0;
     int8_t operation_new = 0;
  
-    int rv = bios_asset_extra_extract (msg, &name_new, 
+    int rv = bios_asset_extra_extract (encoded_message, &name_new, 
         &ext_attributes_new, &type_id_new, &subtype_id_new, &parent_id_new, &status_new,
         &priority_new, &operation_new);
     REQUIRE ( rv == 0 );
-    REQUIRE ( msg != NULL );
+    REQUIRE ( encoded_message != NULL );
     REQUIRE ( streq (name, name_new) == true );
     REQUIRE ( type_id == type_id_new );
     REQUIRE ( subtype_id == subtype_id_new );
@@ -457,12 +393,12 @@ TEST_CASE ("bios asset extended message decode", "[agents][public_api][asset_ext
 
     FREE0 (status_new)
     FREE0 (name_new)
-    ymsg_destroy (&msg);
+    ymsg_destroy (&encoded_message);
     zhash_destroy(&ext_attributes_new);
     zhash_destroy(&ext_attributes);
 }
 
-
+/*
 TEST_CASE ("bios asset extended message decode, missing keys", "[agents][public_api][asset_extra][1]")
 {
     log_open ();
@@ -760,3 +696,4 @@ TEST_CASE ("bios asset extended message decode, missing keys", "[agents][public_
     zhash_destroy(&ext_attributes_new);
     zhash_destroy(&ext_attributes);
 }
+*/
