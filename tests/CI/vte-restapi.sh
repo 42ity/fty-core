@@ -172,6 +172,8 @@ trap_cleanup(){
         fi
     fi
 
+    (exit_summarizeTestlibResults) || true
+
     if [ -n "$TESTLIB_LOG_SUMMARY" ] && [ -s "$TESTLIB_LOG_SUMMARY" ]; then
         echo ""
         echo "================================================================"
@@ -205,9 +207,11 @@ fi
 test_web() {
     echo "==== Calling vte-test_web.sh ==============================="
     RES_TW=0
+    test_it "vte-test-restapi::test_web::$@"
     /bin/bash "${CHECKOUTDIR}"/tests/CI/vte-test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" \
         -s "$SASL_SERVICE" -sh "$SUT_HOST" -su "$SUT_USER" -sp "$SUT_SSH_PORT" "$@" || \
         RES_TW=$?
+    print_result $RES_TW
     echo "==== test_web RESULT: ($RES_TW) =================================="
     return $RES_TW
 }
