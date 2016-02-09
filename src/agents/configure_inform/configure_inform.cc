@@ -24,24 +24,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "cleanup.h"
 #include "str_defs.h"
 #include "agents.h"
-#include "db/assets.h"
 
 #include <biosproto.h>
-
-static void
-    s_parent_name (a_elmnt_id_t id, std::string &parent_name)
-{
-    try {
-        tntdb::Connection conn = tntdb::connectCached (url);
-        int r = persist::select_asset_element_parent_name (conn, oneRow.first.id, parent_name);
-        if (r != 0)
-            parent_name = "";
-    }
-    catch (const std::exception &e)
-    {
-        log_error ("fail to connect to DB: ", e.what ());
-    }
-}
 
 static zhash_t*
 s_map2zhash (const std::map<std::string, std::string>& m)
@@ -88,27 +72,22 @@ void
 		oneRow.first.subtype_id, oneRow.first.parent_id, oneRow.first.status.c_str(),
 		oneRow.first.priority, static_cast<int8_t>(oneRow.second));
 
-        zhash_t *aux = zhash_new ();
-        zhash_insert (aux, "type",
+        zhash_insert (ext2, "type",
                 (void*) persist::typeid_to_type (oneRow.first.type_id).c_str ());
-        zhash_insert (aux, "subtype",
+        zhash_insert (ext2, "subtype",
                 (void*) persist::subtypeid_to_subtype (oneRow.first.subtype_id).c_str ());
-        zhash_insert (aux, "status",
+        //TODO: what to do with parent_id?
+        zhash_insert (ext2, "status",
                 (void*) oneRow.first.status.c_str());
-        zhash_insert (aux, "priority",
+        zhash_insert (ext2, "priority",
                 (void*) std::to_string (oneRow.first.priority).c_str ());
 
-        std::string parent_name;
-        s_parent_name (oneRow.first.id, parent_name);
-        zhash_insert (aux, "parent_name",
-                (void*) parent_name.c_str ());
-
         zmsg_t *zmsg = bios_proto_encode_asset (
-                aux,
+                NULL,
                 oneRow.first.name.c_str(),
                 "TODO",
                 ext2);
-        zhash_destroy (&aux);
+        //TODO: maybe cleanup the zhash_t
         zhash_destroy (&ext2);
 
         if ( msg == NULL || zmsg == NULL)
