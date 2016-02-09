@@ -428,7 +428,7 @@ echo_summarizeTestlibResults() {
         logmsg_info "The following $TESTLIB_COUNT_FAIL tests have failed:"
         N=0 # Do a bit of double-accounting to be sure ;)
         for i in $TESTLIB_LIST_FAILED; do
-            echo " * $i"
+            echo " * FAILED : $i"
             N="`expr $N + 1`"
         done
         [ x"$TESTLIB_COUNT_FAIL" = x"$NUM_FAILED" ] && \
