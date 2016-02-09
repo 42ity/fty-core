@@ -605,9 +605,11 @@ bios_asset_extra_extract(ymsg_t *message,
         zhash_delete (*ext_attributes, KEY_ASSET_SUBTYPE_ID);
         zhash_delete (*ext_attributes, KEY_OPERATION);
     }
+    app_destroy (&app);
 
     return 0;
  bios_asset_extract_err:
+    app_destroy (&app);
     if ( name )       FREE0( *name );
     if ( status )     FREE0( *status );
     if ( type_id )    *type_id = 0;
