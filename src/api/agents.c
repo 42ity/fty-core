@@ -466,15 +466,16 @@ bios_asset_extra_encode(const char *name,
                    uint8_t priority,
                    int8_t operation)
 {
-    if (!ext_attributes || !*ext_attributed || !name)
+    if (!ext_attributes || !*ext_attributes || !name)
         return NULL;
 
     ymsg_t *message = ymsg_new (YMSG_SEND);
     assert (message);
 
 
-    zframe_t *frame = zhash_pack (ext_attributes);
+    zframe_t *frame = zhash_pack (*ext_attributes);
     assert (frame);
+    zhash_destroy (ext_attributes);
 
     // Create a new chunk of the specified size. If you specify the data, it
     // is copied into the chunk.
