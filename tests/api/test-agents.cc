@@ -457,6 +457,7 @@ TEST_CASE ("bios asset extended message decode", "[agents][public_api][asset_ext
 
     FREE0 (status_new)
     FREE0 (name_new)
+    ymsg_destroy (&msg);
     zhash_destroy(&ext_attributes_new);
     zhash_destroy(&ext_attributes);
 }
