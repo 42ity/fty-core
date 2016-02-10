@@ -150,6 +150,7 @@ usage() {
     echo "  --help | -help | -h       Display this hep and exit"
     echo "  --config | -c             Source an additional config file (beside looking in"
     echo "                            standard locations e.g. '/etc/update-rc3.d/*.conf')"
+    echo '  --no-config-file          Do not source default /etc/update-rc3.d/*.conf files'
     echo "  -ls              List remote images (except standard checksum files) and do an"
     echo "                   estimate if the newest differ from local copies. Effect and"
     echo "                   exitcodes similar to --check* below but with different output."
@@ -1314,14 +1315,19 @@ removeold_rawfwimage_modules() (
 
 logmsg_info "`date`: Starting ${_SCRIPT_PATH} ${_SCRIPT_ARGS}"
 
-if [ -d "/etc/update-rc3.d/" ]; then
-    for F in "/etc/update-rc3.d/"*.conf ; do
-        if [ -s "$F" ] && [ -r "$F" ] ; then
-            logmsg_info "Sourcing configuration file: '$F' ..."
-            . "$F" || logmsg_error "Possibly got an error sourcing '$F', see above..."
+case "$*" in
+    *--no-config-file*) logmsg_info "NOT sourcing configs from /etc/update-rc3.d/" ;;
+    *)
+        if [ -d "/etc/update-rc3.d/" ]; then
+            for F in "/etc/update-rc3.d/"*.conf ; do
+                if [ -s "$F" ] && [ -r "$F" ] ; then
+                    logmsg_info "Sourcing configuration file: '$F' ..."
+                    . "$F" || logmsg_error "Possibly got an error sourcing '$F', see above..."
+                fi
+            done
         fi
-    done
-fi
+        ;;
+esac
 config_defaults
 
 # TODO: Locking against multiple runs
@@ -1368,6 +1374,7 @@ while [ $# -gt 0 ]; do
                         logmsg_info "Sourcing configuration file: '$2' ..." && \
                         . "$2" || die "Possibly got an error sourcing '$2', see above..."
                     shift ;;
+                --no-config-file) ;; # Processed above
 		-ls)
 			RES=0
 			lsdir_http_pattern "${SOURCESITEROOTFW_UBOOT}" "uBoot*" \
