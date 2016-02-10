@@ -39,7 +39,8 @@ fi
 ### Some variables might not be initialized
 set +u
 
-### Store some important CLI values
+### Store some important CLI values. DO NOT "export" THESE!
+[ -z "${_SCRIPT_STARTPWD-}" ] && _SCRIPT_STARTPWD="`pwd`"
 [ -z "${_SCRIPT_PATH-}" ] && _SCRIPT_PATH="$0"
 [ -z "${_SCRIPT_NAME-}" ] && _SCRIPT_NAME="`basename "${_SCRIPT_PATH}"`"
 _SCRIPT_ARGS="$*"
