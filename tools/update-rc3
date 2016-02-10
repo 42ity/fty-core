@@ -1425,7 +1425,7 @@ while [ $# -gt 0 ]; do
                 --url-image-*)
                     [ $# -eq 1 ] && die "The '$1' option requires a further argument"
                     case "${1-}" in
-                        --url-image-os)         URL_DOWNLOAD_OSIMAGE="$2"; shift;;
+                        --url-image-os)             URL_DOWNLOAD_OSIMAGE="$2"; shift;;
                         --url-image-fw-raw-uboot)   URL_DOWNLOAD_FWIMAGE_RAW_UBOOT="$2"; shift;;
                         --url-image-fw-raw-uimage)  URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE="$2"; shift;;
                         --url-image-fw-raw-modules) URL_DOWNLOAD_FWIMAGE_RAW_MODULES="$2"; shift;;
