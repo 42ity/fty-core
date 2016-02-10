@@ -86,7 +86,7 @@ if [ ! "$SUT_HOST" ] ; then
     exit 1
 fi
 
-printf "\n\n\n\n======================== collecting log files ========================"
+printf "\n\n\n\n======================== collecting log files ========================\n"
 logmsg_info "SSHing to '${SUT_USER}@$SUT_HOST' port '$SUT_SSH_PORT' from '`id -n -u`@`hostname`:$_SCRIPT_STARTPWD'"
 
 LOGS=$(log_list | wc -l)
