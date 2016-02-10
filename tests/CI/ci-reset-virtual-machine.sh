@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2014-2015 Eaton
+# Copyright (C) 2014-2016 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -316,8 +316,8 @@ fi
 mkdir -p "/srv/libvirt/snapshots/$IMGTYPE/$ARCH"
 
 # Unless these were set by caller or config or somehow else,
-# define the values now
-[ -z "$SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN" ] && SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN="${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}"'-*_'"${ARCH}"
+# define the values now. This pattern is a REGEX.
+[ -z "$SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN" ] && SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN="${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}"'-.*_'"${ARCH}"
 #NOOP:# [ -z "$FLAG_FLATTEN_FILENAMES" ] && FLAG_FLATTEN_FILENAMES=no
 
 # Make sure we have a loop device support
@@ -417,7 +417,9 @@ IMAGE_SKIP=""
 if [ "$ATTEMPT_DOWNLOAD" != no ] ; then
 	logmsg_info "Get the latest operating environment image prepared for us by OBS"
 	IMAGE_URL="`wget -O - "$OBS_IMAGES/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}/" 2> /dev/null | sed -n 's|.*href="\(.*'"${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}"'\.'"$EXT"'\)".*|'"$OBS_IMAGES/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}"'/\1|p' | sort | tail -n 1 | sed 's,\([^:]\)//,\1/,g'`"
+        [ $? = 0 ] && [ -n "$IMAGE_URL" ] || die "Could not detect remote IMAGE_URL at '$OBS_IMAGES/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}/' (looking for regex '${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}')!"
 	IMAGE="`basename "$IMAGE_URL"`"
+        [ $? = 0 ] && [ -n "$IMAGE" ] || die "Could not detect remote IMAGE_URL at '$OBS_IMAGES/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}/' (looking for regex '${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}')!"
 
 	# Set up sleeping
 	MAXSLEEP=240
