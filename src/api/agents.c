@@ -466,19 +466,35 @@ bios_asset_extra_encode(const char *name,
                    uint8_t priority,
                    int8_t operation)
 {
-    app_t *app = bios_asset_extra(name, ext_attributes, type_id,
-                 subtype_id, parent_id, status, priority, operation);
-    if ( !app )
+    if (!ext_attributes || !*ext_attributes || !name)
         return NULL;
 
-    ymsg_t *msg = ymsg_new(YMSG_SEND);
-    if ( !msg )
-    {
-        app_destroy (&app);
-        return NULL;
-    }
-    ymsg_request_set_app (msg, &app);
-    return msg;
+    ymsg_t *message = ymsg_new (YMSG_SEND);
+    assert (message);
+
+
+    zframe_t *frame = zhash_pack (*ext_attributes);
+    assert (frame);
+    zhash_destroy (ext_attributes);
+
+    // Create a new chunk of the specified size. If you specify the data, it
+    // is copied into the chunk.
+    zchunk_t *chunk = zchunk_new (zframe_data (frame), zframe_size (frame));
+    assert (chunk);
+    zframe_destroy (&frame);
+
+    // Set the request field, transferring ownership from caller
+    ymsg_set_request (message, &chunk);
+
+    ymsg_aux_insert (message, "name", "%s", name);    
+    ymsg_aux_insert (message, "type_id", "%" PRIu32, type_id);    
+    ymsg_aux_insert (message, "subtype_id", "%" PRIu32, subtype_id);    
+    ymsg_aux_insert (message, "parent_id", "%" PRIu32, parent_id);    
+    ymsg_aux_insert (message, "status", "%s", status);    
+    ymsg_aux_insert (message, "priority", "%" PRIu8, priority);    
+    ymsg_aux_insert (message, "operation", "%" PRIi8, operation);    
+
+    return message;
 }
 
 ymsg_t *
@@ -519,103 +535,35 @@ bios_asset_extra_extract(ymsg_t *message,
                    uint8_t *priority,
                    int8_t *operation)
 {
-    if ( !message || !name )
+    if (!message || !name)
         return -1;
 
-    app_t *app = NULL;
+    // Get the request field and transfer ownership to caller
+    zchunk_t *chunk = ymsg_get_request (message);
 
-    switch ( ymsg_id( message ) ) {
-    case YMSG_REPLY:
-        if ( !ymsg_is_ok(message) )
-            return -1;
-        app = ymsg_response_app( message );
-        break;
-    case YMSG_SEND:
-        app = ymsg_request_app( message );
-        break;
-    }
-    if( !app || !streq( app_name( app ), "ASSET_EXTENDED" ) )
-    {
-        app_destroy(&app);
-        return -2;
-    }
-    int errcode = 0;
+    // Copies size octets from the specified data into the frame body.
+    zframe_t *frame = zframe_new ((void  *) zchunk_data (chunk), zchunk_size (chunk));
+    zchunk_destroy (&chunk);
+    assert (frame);
 
-    {
-        const char *p = app_args_string( app, KEY_ASSET_NAME, NULL );
-        if ( p )
-            *name = strdup(p);
-        else
-        {
-            errcode = -7;
-            goto bios_asset_extract_err;
-        }
-    }
-    if( type_id ) {
-        uint32_t t = app_args_uint32( app, KEY_ASSET_TYPE_ID );
-        if ( !errno ) { // the key is missing in the message
-            *type_id = t;
-        }
-    }
-    if( subtype_id ) {
-        uint32_t t = app_args_uint32( app, KEY_ASSET_SUBTYPE_ID );
-        if ( !errno ) { // the key is missing in the message
-            *subtype_id = t;
-        }
-    }
-    if( parent_id ) {
-        uint32_t t = app_args_uint32( app, KEY_ASSET_PARENT_ID );
-        if ( !errno ) {
-            *parent_id = t;
-        }
-    }
-    if( status ) {
-        *status = NULL;
-        const char *p = app_args_string( app, KEY_ASSET_STATUS, NULL );
-        if( p ) {
-            *status = strdup(p);
-        }
-    }
-    if ( operation ) {
-        int8_t t = app_args_int8 (app, KEY_OPERATION);
-        if ( !errno ) {
-            *operation = t;
-        }
-    }
-    if( priority ) {
-        uint8_t t = app_args_uint8( app, KEY_ASSET_PRIORITY );
-        if ( !errno ){
-            *priority = t;
-            if( *priority < ALERT_PRIORITY_P1 || *priority > ALERT_PRIORITY_P5 ) {
-                errcode = -11;
-                goto bios_asset_extract_err;
-            }
-        }
-    }
-    if( ext_attributes )
-    {
-        if ( *ext_attributes )
-            zhash_destroy(ext_attributes);
-        *ext_attributes = app_get_args (app);
-        zhash_delete (*ext_attributes, KEY_ASSET_NAME);
-        zhash_delete (*ext_attributes, KEY_ASSET_PRIORITY);
-        zhash_delete (*ext_attributes, KEY_ASSET_TYPE_ID);
-        zhash_delete (*ext_attributes, KEY_ASSET_PARENT_ID);
-        zhash_delete (*ext_attributes, KEY_ASSET_STATUS);
-        zhash_delete (*ext_attributes, KEY_ASSET_SUBTYPE_ID);
-        zhash_delete (*ext_attributes, KEY_OPERATION);
-    }
-    app_destroy (&app);
+    if (ext_attributes)
+        *ext_attributes = zhash_unpack (frame);
+    zframe_destroy (&frame);
 
-    return 0;
- bios_asset_extract_err:
-    app_destroy (&app);
-    if ( name )       FREE0( *name );
-    if ( status )     FREE0( *status );
-    if ( type_id )    *type_id = 0;
-    if ( subtype_id ) *subtype_id = 0;
-    if ( parent_id )  *parent_id = 0;
-    if ( priority )   *priority = 0;
-    if ( operation )  *operation = 0;
-    return errcode;
+    *name = strdup (ymsg_aux_string (message, "name", ""));
+    if (type_id)
+        *type_id = (uint32_t) atol (ymsg_aux_string (message, "type_id", "0"));
+    if (subtype_id)
+        *subtype_id = (uint32_t) atol (ymsg_aux_string (message, "subtype_id", "0"));
+    if (parent_id)
+        *parent_id = (uint32_t) atol (ymsg_aux_string (message, "parent_id", "0"));
+    if (status)
+        *status = strdup (ymsg_aux_string (message, "status", ""));
+    if (priority)
+        *priority = (uint8_t) atoi (ymsg_aux_string (message, "priority", "0"));
+    if (operation)
+        *operation = (int8_t) atoi (ymsg_aux_string (message, "operation", "0"));
+
+    return 0;    
+   
 }
