@@ -102,11 +102,13 @@ A       current.output.L1@UPS1-LAB      UPS1-LAB        $(expr $TIME - 50000)   
     done
 }
 
+NUM_NTSTP=0
 api_get_json_ntstp(){
     [ -z ${RES+x} ] && RES=0
     GTJSON="`api_get_json "$1"`"
     RES="$(expr $RES + $?)"
-    logmsg_debug "api_get_json_ntstp(): Requested '$1', returned code '$RES' and this output:" "$GTJSON"
+    NUM_NTSTP="$(expr $NUM_NTSTP + 1)"
+    logmsg_debug "api_get_json_ntstp(#$NUM_NTSTP): Requested '$1', returned code '$RES' and this output:" "$GTJSON"
     echo "$GTJSON" | sed 's/[[:digit:]]\{10\}/1111111/g' >&5
 }
 
