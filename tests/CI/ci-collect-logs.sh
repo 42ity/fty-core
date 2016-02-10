@@ -44,6 +44,16 @@ usage() {
     echo "    -h|--help                           print this help"
 }
 
+log_list() {
+    # Note: cppcheck.xml is listed and processed separately
+    REMCMD='find . -type f -name '"'"'*.log'"'"' -o -name '"'"'*.trs'"'"' -o -wholename '"'"'*/tests/junit/*.xml'"'"' -o -name '"'"'*.out*'"'"' -o -name '"'"'*.err*'"'"' | grep -v cppcheck.xml'
+    sut_run "$REMCMD"
+}
+
+cppcheck_list() {
+    sut_run "find . -type f -name cppcheck.xml"
+}
+
 while [ $# -gt 0 ] ; do
     case "$1" in
         -m|-sh|--machine|--sut-host)
@@ -76,17 +86,9 @@ if [ ! "$SUT_HOST" ] ; then
     exit 1
 fi
 
-log_list() {
-    # Note: cppcheck.xml is listed and processed separately
-    REMCMD='find . -type f -name '"'"'*.log'"'"' -o -name '"'"'*.trs'"'"' -o -wholename '"'"'*/tests/junit/*.xml'"'"' -o -name '"'"'*.out*'"'"' -o -name '"'"'*.err*'"'"' | grep -v cppcheck.xml'
-    sut_run "$REMCMD"
-}
+printf "\n\n\n\n======================== collecting log files ========================"
+logmsg_info "SSHing to '${SUT_USER}@$SUT_HOST' port '$SUT_SSH_PORT' from '`id -n`@`hostname`:$_SCRIPT_STARTPWD'"
 
-cppcheck_list() {
-    sut_run "find . -type f -name cppcheck.xml"
-}
-
-/bin/echo -e "\n\n\n\n======================== collecting log files ========================"
 LOGS=$(log_list | wc -l)
 if [ $LOGS = 0 ] ; then
     echo "no log files"
