@@ -87,7 +87,7 @@ if [ ! "$SUT_HOST" ] ; then
 fi
 
 printf "\n\n\n\n======================== collecting log files ========================"
-logmsg_info "SSHing to '${SUT_USER}@$SUT_HOST' port '$SUT_SSH_PORT' from '`id -n`@`hostname`:$_SCRIPT_STARTPWD'"
+logmsg_info "SSHing to '${SUT_USER}@$SUT_HOST' port '$SUT_SSH_PORT' from '`id -n -u`@`hostname`:$_SCRIPT_STARTPWD'"
 
 LOGS=$(log_list | wc -l)
 if [ $LOGS = 0 ] ; then
