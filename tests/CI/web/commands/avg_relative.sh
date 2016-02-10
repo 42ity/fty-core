@@ -280,6 +280,6 @@ echo "**************************************************************************
 
 test_it "Wrong_value_of_relative"
 curlfail_push_expect_400
-api_get_json_ntstp '/metric/computed/average?end_ts=20160212000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=realpower.default&relative=40d'
+api_get_json_ntstp '/metric/computed/average?end_ts=20160202000000Z&start_ts=20130101000000Z&type=arithmetic_mean&step=15m&element_id=22&source=realpower.default&relative=40d'
 print_result $RES;RES=0
 curlfail_pop
