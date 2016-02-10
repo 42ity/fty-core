@@ -316,8 +316,8 @@ fi
 mkdir -p "/srv/libvirt/snapshots/$IMGTYPE/$ARCH"
 
 # Unless these were set by caller or config or somehow else,
-# define the values now
-[ -z "$SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN" ] && SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN="${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}"'-*_'"${ARCH}"
+# define the values now. This pattern is a REGEX.
+[ -z "$SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN" ] && SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN="${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}"'-.*_'"${ARCH}"
 #NOOP:# [ -z "$FLAG_FLATTEN_FILENAMES" ] && FLAG_FLATTEN_FILENAMES=no
 
 # Make sure we have a loop device support
