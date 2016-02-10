@@ -1160,7 +1160,7 @@ agent_autoconfig_CPPFLAGS =	$(AM_CPPFLAGS) \
 #XXX: $(localstatedir) did not worked
 #FIXME: installing things to /var is not a good idea according FHS or GNU standards
 #		so this needs to be reconsidered later on (datadir is preffered location)
-template_ruledir = /var/lib/$(PACKAGE)/agent-autoconfig/
+template_ruledir = $(datadir)/$(PACKAGE)/agent-autoconfig
 template_rule_DATA = src/agents/autoconfig/rule_templates/average.humidity@__datacenter__.rule \
 					 src/agents/autoconfig/rule_templates/average.temperature@__datacenter__.rule \
 					 src/agents/autoconfig/rule_templates/realpower.default_1phase@__datacenter__.rule \
