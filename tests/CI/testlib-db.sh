@@ -56,7 +56,6 @@ DB_DC_POWER="$DB_LOADDIR/$DB_DC_POWER_NAME"
 DB_DC_POWER_UC1="$DB_LOADDIR/ci-DC-power-UC1.sql"
 DB_CRUD="$DB_LOADDIR/crud_test.sql"
 DB_OUTAGE="$DB_LOADDIR/test_outage.sql"
-DB_ALERT="$DB_LOADDIR/test_alert.sql"
 DB_ASSET_TAG_NOT_UNIQUE="$DB_LOADDIR/initdb_ci_patch.sql"
 
 DB_AVERAGES="$DB_LOADDIR/test_averages.sql"
