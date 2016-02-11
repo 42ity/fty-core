@@ -472,7 +472,6 @@ db_reply_t
             return ret;
         }
     }
-    // need delete devices from alerts, but alerts will stay in the system
     m_dvc_id_t monitor_element_id = 0;
     {
         // find monitor counterpart

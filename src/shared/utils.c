@@ -262,18 +262,6 @@ double string_to_double (const char *value)
     return result;
 }
 
-const char* alert_state_to_str(alert_state_t astate) {
-    switch (astate) {
-        case ALERT_STATE_UNKNOWN:
-            return "unknown";;
-        case ALERT_STATE_NO_ALERT:
-            return "no-alert";;
-        case ALERT_STATE_ONGOING_ALERT:
-            return "ongoing";;
-    }
-    return "unknown"; //make gcc happy
-}
-
 bool addi32_overflow(int32_t a, int32_t b, int32_t *res) {
     int64_t l_res = (int64_t)a + (int64_t)b;
     if (l_res > INT32_MAX || l_res < INT32_MIN)

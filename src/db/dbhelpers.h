@@ -151,23 +151,6 @@ struct db_a_elmnt_t {
     {}
 };
 
-/** 
- * \brief helper structure for results of v_bios_alert + v_bios_alert_devices
- */
-struct db_alert_t {
-    m_alrt_id_t         id;
-    std::string         rule_name;
-    a_elmnt_pr_t        priority;
-    m_alrt_state_t      alert_state;
-    std::string         description;
-    m_alrt_ntfctn_t     notification;
-    int64_t             date_from;
-    int64_t             date_till;
-    std::string         type_name;
-    std::string         subtype_name;
-    std::vector<m_dvc_id_t> device_ids;
-};
-
 /**
  * \brief A type for storing basic information about device.
  *
@@ -386,16 +369,6 @@ bool is_ok_rule_name (const char *rule_name);
  */
 bool is_ok_priority (a_elmnt_pr_t priority);
 
-
-/**
- * \brief Checks if state of alert is correct
- *
- * \param state - state to check
- *
- * \return true  - ok
- *         false - state is not correct
- */
-bool is_ok_alert_state (UNUSED_PARAM m_alrt_state_t state);
 
 /**
  * \brief Generate the placeholder name
