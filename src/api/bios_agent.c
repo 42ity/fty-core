@@ -42,7 +42,7 @@
 #define BIOS_MLM_STREAM "bios"
 #define BIOS_MLM_MEASUREMENTS_STREAM "measurements"
 #define BIOS_MLM_ASSETS_STREAM "assets"
-#define BIOS_MLM_STREAM_COUNT 4
+#define BIOS_MLM_STREAM_COUNT 3
 
 static const char *bios_streams[BIOS_MLM_STREAM_COUNT+1] =
 {
