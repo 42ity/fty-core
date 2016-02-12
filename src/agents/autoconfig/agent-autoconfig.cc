@@ -40,6 +40,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 using namespace persist;
 
 const char* Autoconfig::StateFilePath = "/var/lib/bios/agent-autoconfig";
+const char* Autoconfig::RuleFilePath = "/usr/share/bios/agent-autoconfig";
 const char* Autoconfig::StateFile = "/var/lib/bios/agent-autoconfig/state";
 
 static int

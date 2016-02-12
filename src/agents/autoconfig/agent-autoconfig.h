@@ -36,6 +36,7 @@ class Autoconfig : public BIOSAgent {
 
     static const char *StateFile; //!< file&path where Autoconfig state is saved
     static const char *StateFilePath; //!< fully-qualified path to dir where Autoconfig state is saved
+    static const char *RuleFilePath; //!< fully-qualified path to dir where Autoconfig rule templates are saved
 
     void main ();
     void onStart () { loadState(); setPollingInterval(); };
