@@ -38,7 +38,9 @@ SYSTEMCTL_COMMANDS="show start stop restart enable disable daemon-reload status 
 # TODO: Match this up with web/systemctl.ecpp and maybe the Makefile variables
 # List of fixed strings that are good both for "case" and regexp matching
 # NOTE: Quick search in directory that holds checkouts of all component repos:
-# for F in */src/*.{service,timer}* ; do echo "=== $F"; grep -i alias "$F" 2>/dev/null ; done
+#   for F in */src/*.{service,timer,target}* ; do echo "=== $F"; grep -i alias "$F" 2>/dev/null ; done
+# Similarly in bios-core repo (note we might not want to allow all of those):
+#   for F in systemd/*.{service,timer,target}* ; do echo "=== $F"; grep -i alias "$F" 2>/dev/null ; done
 SYSTEMCTL_UNITS_COMMON="mariadb mysql mysqld ntp ntpd ntpdate sntp bios \
                  bios-reset-button tntnet@bios bios-agent-smtp          \
                  bios-agent-alert-generator agent-alerts-list           \
@@ -47,13 +49,14 @@ SYSTEMCTL_UNITS_COMMON="mariadb mysql mysqld ntp ntpd ntpdate sntp bios \
                  bios-agent-asset bios-agent-legacy-metrics kpi-uptime  \
                  agent-th bios-agent-tpower bios-db-init                \
                  bios-server-agent dc_th                                \
+                 biostimer-warranty-metric biostimer-graphs-prefetch    \
                  malamute saslauthd networking bios-networking          \
                  nut-driver nut-monitor nut-server"
 
 # For regexp matching
-SYSTEMCTL_UNITS_REGEX='(nut-driver|composite-metrics)@[^[:blank:]]*'
+SYSTEMCTL_UNITS_REGEX='(nut-driver|composite-metrics|biostimer-graphs-prefetch|biostimer-graphs-prefetch__.+)@[^[:blank:]]*'
 # Same for "case" matching
-SYSTEMCTL_UNITS_GLOBS='nut-driver@* composite-metrics@*'
+SYSTEMCTL_UNITS_GLOBS='nut-driver@* composite-metrics@* biostimer-graphs-prefetch@* biostimer-graphs-prefetch__*@*'
 
 SYSTEMCTL="/bin/systemctl"
 
