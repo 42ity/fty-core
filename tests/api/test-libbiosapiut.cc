@@ -50,9 +50,8 @@ TEST_CASE ("stream names", "[api][bios_agent]") {
     for (int i = 0; i < count; ++i) {
         CHECK ((strcmp (streams[i], bios_get_stream_main ()) == 0 ||
             strcmp (streams[i], bios_get_stream_measurements ()) == 0 ||
-            strcmp (streams[i], bios_get_stream_assets ()) == 0 ||
-            strcmp (streams[i], bios_get_stream_alerts ()) == 0));
-    } 
+            strcmp (streams[i], bios_get_stream_assets ()) == 0 ));
+    }
 }
 
 

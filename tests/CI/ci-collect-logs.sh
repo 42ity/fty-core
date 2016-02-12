@@ -86,7 +86,7 @@ if [ ! "$SUT_HOST" ] ; then
     exit 1
 fi
 
-printf "\n\n\n\n======================== collecting log files ========================"
+printf "\n\n\n\n======================== collecting log files ========================\n"
 logmsg_info "SSHing to '${SUT_USER}@$SUT_HOST' port '$SUT_SSH_PORT' from '`id -n -u`@`hostname`:$_SCRIPT_STARTPWD'"
 
 LOGS=$(log_list | wc -l)
@@ -104,7 +104,7 @@ if [ $LOGS == 1 ] ; then
     cppcheck_list | while read file ; do
         scp -P "$SUT_SSH_PORT" "${SUT_USER}@$SUT_HOST:$file" ./
         sut_run "/bin/rm -f \"$file\""
-	echo $file
+    echo $file
     done
 fi
 

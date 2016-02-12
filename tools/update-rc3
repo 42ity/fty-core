@@ -150,6 +150,10 @@ usage() {
     echo "  --help | -help | -h       Display this hep and exit"
     echo "  --config | -c             Source an additional config file (beside looking in"
     echo "                            standard locations e.g. '/etc/update-rc3.d/*.conf')"
+    echo '  --no-config-file          Do not source default /etc/update-rc3.d/*.conf files'
+    echo "  -ls              List remote images (except standard checksum files) and do an"
+    echo "                   estimate if the newest differ from local copies. Effect and"
+    echo "                   exitcodes similar to --check* below but with different output."
     echo "  --(no-)check-image-os, --(no-)check-image-fw, --(no-)check-images"
     echo "                   Only check the source location if new images are available"
     echo "                   and exit, whatever the outcome (returns 0 if nothing found,"
@@ -1311,14 +1315,19 @@ removeold_rawfwimage_modules() (
 
 logmsg_info "`date`: Starting ${_SCRIPT_PATH} ${_SCRIPT_ARGS}"
 
-if [ -d "/etc/update-rc3.d/" ]; then
-    for F in "/etc/update-rc3.d/"*.conf ; do
-        if [ -s "$F" ] && [ -r "$F" ] ; then
-            logmsg_info "Sourcing configuration file: '$F' ..."
-            . "$F" || logmsg_error "Possibly got an error sourcing '$F', see above..."
+case "$*" in
+    *--no-config-file*) logmsg_info "NOT sourcing configs from /etc/update-rc3.d/" ;;
+    *)
+        if [ -d "/etc/update-rc3.d/" ]; then
+            for F in "/etc/update-rc3.d/"*.conf ; do
+                if [ -s "$F" ] && [ -r "$F" ] ; then
+                    logmsg_info "Sourcing configuration file: '$F' ..."
+                    . "$F" || logmsg_error "Possibly got an error sourcing '$F', see above..."
+                fi
+            done
         fi
-    done
-fi
+        ;;
+esac
 config_defaults
 
 # TODO: Locking against multiple runs
@@ -1365,6 +1374,45 @@ while [ $# -gt 0 ]; do
                         logmsg_info "Sourcing configuration file: '$2' ..." && \
                         . "$2" || die "Possibly got an error sourcing '$2', see above..."
                     shift ;;
+                --no-config-file) ;; # Processed above
+		-ls)
+			RES=0
+			lsdir_http_pattern "${SOURCESITEROOTFW_UBOOT}" "uBoot*" \
+				| egrep -v '\.(md5'"$CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT"')$' || RES=$?
+			lsdir_http_pattern "${SOURCESITEROOTFW_UBOOT}" "u-Boot*" \
+				| egrep -v '\.(md5'"$CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT"')$' || RES=$?
+			lsdir_http_pattern "${SOURCESITEROOTFW_UIMAGE}" "uImage*" \
+				| egrep -v '\.(md5'"$CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT"')$' || RES=$?
+			lsdir_http_pattern "${SOURCESITEROOTFW_MODULES}" "*[0-9].[0-9]*.${EXT}*" \
+				| egrep -v '\.(md5'"$CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT"')$' || RES=$?
+			lsdir_http_pattern "${SOURCESITEROOT_OSIMAGE}" "${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}.${EXT}*" \
+				| egrep -v '\.(md5'"$CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT"')$' || RES=$?
+
+			summarize_check() {
+				IMG="$1"
+				shift
+				OUT="`CHECK_ONLY=yes "$@" 2>&1`"
+				sRES=$?
+				case "$sRES" in
+					0) echo "$IMG: Local is up-to-date" ;;
+					42) echo "$IMG: Newest remote is different";;
+					*) echo "$IMG: Some error ($sRES):"; echo "$OUT";;
+				esac
+				return $sRES
+			}
+
+			summarize_check "OSIMAGE" download_osimage $URL_DOWNLOAD_OSIMAGE &
+			PID1=$!
+			summarize_check "KERNEL-UIMAGE"  download_rawfwimage_uimage  $URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE &
+			PID2=$!
+			summarize_check "KERNEL-MODULES" download_rawfwimage_modules $URL_DOWNLOAD_FWIMAGE_RAW_MODULES &
+			PID3=$!
+			summarize_check "LOADER-UBOOT"   download_rawfwimage_uboot   $URL_DOWNLOAD_FWIMAGE_RAW_UBOOT &
+			PID4=$!
+			for P in $PID1 $PID2 $PID3 $PID4 ; do wait $P || RES=$? ; done
+			wait || RES=$?
+			exit $RES
+			;;
                 --remove-files)         FLAG_CAN_REMOVE_IMAGES="yes";;
                 --no-remove-files)      FLAG_CAN_REMOVE_IMAGES="no";;
                 --flatten-filenames)    FLAG_FLATTEN_FILENAMES="yes";;
@@ -1384,7 +1432,7 @@ while [ $# -gt 0 ]; do
                 --url-image-*)
                     [ $# -eq 1 ] && die "The '$1' option requires a further argument"
                     case "${1-}" in
-                        --url-image-os)         URL_DOWNLOAD_OSIMAGE="$2"; shift;;
+                        --url-image-os)             URL_DOWNLOAD_OSIMAGE="$2"; shift;;
                         --url-image-fw-raw-uboot)   URL_DOWNLOAD_FWIMAGE_RAW_UBOOT="$2"; shift;;
                         --url-image-fw-raw-uimage)  URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE="$2"; shift;;
                         --url-image-fw-raw-modules) URL_DOWNLOAD_FWIMAGE_RAW_MODULES="$2"; shift;;

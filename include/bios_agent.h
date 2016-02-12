@@ -247,10 +247,6 @@ BIOS_EXPORT const char *
 BIOS_EXPORT const char *
     bios_get_stream_assets ();
 
-//! Get name of the ##BIOS## stream for alerts
-BIOS_EXPORT const char *
-    bios_get_stream_alerts ();
-
 //! Get array of ##BIOS## streams
 BIOS_EXPORT const char **
     bios_get_streams (uint8_t *count);
@@ -259,7 +255,7 @@ BIOS_EXPORT const char **
 BIOS_EXPORT uint16_t
     bios_agent_seq (bios_agent_t *self);
 
-//! Returns true if status value of ROZP message is OK, false otherwise 
+//! Returns true if status value of ROZP message is OK, false otherwise
 BIOS_EXPORT bool
     ymsg_is_ok (ymsg_t *self);
 
@@ -267,7 +263,7 @@ BIOS_EXPORT bool
 BIOS_EXPORT void
     ymsg_set_status (ymsg_t *self, bool status);
 
-//! Returns true if repeat value of ROZP message is YES, false otherwise 
+//! Returns true if repeat value of ROZP message is YES, false otherwise
 BIOS_EXPORT bool
     ymsg_is_repeat (ymsg_t *self);
 

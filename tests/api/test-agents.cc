@@ -294,42 +294,8 @@ TEST_CASE ("bios db measurement read reply encoded & decoded", "[agents][public_
     FREE0 (json_r)
 }
 
-TEST_CASE ("bios alert message encoded & decoded", "[agents][public_api]") {
 
-    _scoped_ymsg_t *msg = bios_alert_encode(
-        "testrule",
-        ALERT_PRIORITY_P2,
-        ALERT_STATE_ONGOING_ALERT,
-        "myDev",
-        "some text",
-        42);
-    REQUIRE ( msg );
-
-    _scoped_char *rule = NULL, *devices = NULL, *description = NULL;
-    uint8_t priority = ALERT_PRIORITY_UNKNOWN;
-    int8_t state = ALERT_STATE_UNKNOWN;
-    time_t time = 0;
-
-    bios_alert_extract( msg, NULL, &priority, &state, &devices, &description, &time);
-    CHECK( msg );
-    
-    int x = bios_alert_extract( msg, &rule, &priority, &state, &devices, &description, &time);
-    REQUIRE ( x == 0 );
-    CHECK ( msg != NULL );
-    CHECK ( strcmp (rule, "testrule") == 0 );
-    CHECK ( strcmp (devices, "myDev") == 0 );
-    CHECK ( strcmp (description, "some text") == 0 );
-    CHECK ( priority == ALERT_PRIORITY_P2 );
-    CHECK ( state == ALERT_STATE_ONGOING_ALERT );
-    CHECK ( time == 42 );
-    FREE0 (rule)
-    FREE0 (devices)
-    FREE0 (description)
-    ymsg_destroy( &msg );
-}
-
-
-TEST_CASE ("bios asset extended message encode/decode", "[agents][public_api][asset_extra]") 
+TEST_CASE ("bios asset extended message encode/decode", "[agents][public_api][asset_extra]")
 {
     log_open ();
 
@@ -339,7 +305,7 @@ TEST_CASE ("bios asset extended message encode/decode", "[agents][public_api][as
     zhash_insert (ext_attributes, "key1", (char*)"value1");
     zhash_insert (ext_attributes, "key2", (char*)"value2");
     zhash_insert (ext_attributes, "key3", (char*)"value3");
-    
+
     uint32_t type_id = 1;
     uint32_t subtype_id = 1;
     uint32_t parent_id = 1;

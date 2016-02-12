@@ -93,7 +93,7 @@ int main()
             std::string rule_name = "warranty";
 
             const char* severity = NULL;
-            const char* state = "NEW";
+            const char* state = "ACTIVE";
             if (day_diff <= 10)
                 severity = "HIGH_CRITICAL";
             else

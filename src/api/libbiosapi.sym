@@ -63,7 +63,6 @@ global:
         bios_get_stream_main;
         bios_get_stream_measurements;
         bios_get_stream_assets;
-        bios_get_stream_alerts;
         bios_get_streams;
         bios_agent_seq;
 
@@ -137,12 +136,9 @@ global:
         bios_asset_extra_encode_response;
         bios_asset_extra_encode;
 
-        bios_alert_encode;
-        bios_alert_extract;
-
         is_app;
         is_ymsg;
-        
+
         bios_agent_client;
 local:
         *;
