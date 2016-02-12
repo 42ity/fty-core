@@ -104,7 +104,7 @@ if [ $LOGS == 1 ] ; then
     cppcheck_list | while read file ; do
         scp -P "$SUT_SSH_PORT" "${SUT_USER}@$SUT_HOST:$file" ./
         sut_run "/bin/rm -f \"$file\""
-	echo $file
+    echo $file
     done
 fi
 
