@@ -1161,30 +1161,33 @@ agent_autoconfig_CPPFLAGS =	$(AM_CPPFLAGS) \
 #FIXME: installing things to /var is not a good idea according FHS or GNU standards
 #		so this needs to be reconsidered later on (datadir is preffered location)
 template_ruledir = $(datadir)/$(PACKAGE)/agent-autoconfig
-template_rule_DATA = src/agents/autoconfig/rule_templates/average.humidity@__datacenter__.rule \
-					 src/agents/autoconfig/rule_templates/average.temperature@__datacenter__.rule \
-					 src/agents/autoconfig/rule_templates/realpower.default_1phase@__datacenter__.rule \
-					 src/agents/autoconfig/rule_templates/realpower.default_3phase@__datacenter__.rule \
-					 src/agents/autoconfig/rule_templates/phase_imbalance@__datacenter__.rule \
-					 src/agents/autoconfig/rule_templates/realpower.default_1phase@__rack__.rule \
-					 src/agents/autoconfig/rule_templates/realpower.default_3phase@__rack__.rule \
-					 src/agents/autoconfig/rule_templates/phase_imbalance@__rack__.rule \
-					 src/agents/autoconfig/rule_templates/load.default@__device_ups__.rule \
-					 src/agents/autoconfig/rule_templates/lowbattery@__device_ups__.rule \
-					 src/agents/autoconfig/rule_templates/onbypass@__device_ups__.rule \
-					 src/agents/autoconfig/rule_templates/onbattery@__device_ups__.rule \
-					 src/agents/autoconfig/rule_templates/phase_imbalance@__device_ups__.rule \
-					 src/agents/autoconfig/rule_templates/temperature.default@__device_ups__.rule \
-					 src/agents/autoconfig/rule_templates/voltage.input_1phase@__device_ups__.rule \
-					 src/agents/autoconfig/rule_templates/voltage.input_3phase@__device_ups__.rule \
-					 src/agents/autoconfig/rule_templates/charge.battery@__device_ups__.rule \
-					 src/agents/autoconfig/rule_templates/voltage.input_1phase@__device_epdu__.rule \
-					 src/agents/autoconfig/rule_templates/voltage.input_3phase@__device_epdu__.rule \
-					 src/agents/autoconfig/rule_templates/load.input_1phase@__device_epdu__.rule \
-					 src/agents/autoconfig/rule_templates/load.input_3phase@__device_epdu__.rule \
-					 src/agents/autoconfig/rule_templates/phase_imbalance@__device_epdu__.rule \
-					 src/agents/autoconfig/rule_templates/section_load@__device_epdu__.rule 
+RULE_TEMPLATES = \
+			src/agents/autoconfig/rule_templates/average.humidity@__datacenter__.rule \
+			src/agents/autoconfig/rule_templates/average.temperature@__datacenter__.rule \
+			src/agents/autoconfig/rule_templates/realpower.default_1phase@__datacenter__.rule \
+			src/agents/autoconfig/rule_templates/realpower.default_3phase@__datacenter__.rule \
+			src/agents/autoconfig/rule_templates/phase_imbalance@__datacenter__.rule \
+			src/agents/autoconfig/rule_templates/realpower.default_1phase@__rack__.rule \
+			src/agents/autoconfig/rule_templates/realpower.default_3phase@__rack__.rule \
+			src/agents/autoconfig/rule_templates/phase_imbalance@__rack__.rule \
+			src/agents/autoconfig/rule_templates/load.default@__device_ups__.rule \
+			src/agents/autoconfig/rule_templates/lowbattery@__device_ups__.rule \
+			src/agents/autoconfig/rule_templates/onbypass@__device_ups__.rule \
+			src/agents/autoconfig/rule_templates/onbattery@__device_ups__.rule \
+			src/agents/autoconfig/rule_templates/phase_imbalance@__device_ups__.rule \
+			src/agents/autoconfig/rule_templates/temperature.default@__device_ups__.rule \
+			src/agents/autoconfig/rule_templates/voltage.input_1phase@__device_ups__.rule \
+			src/agents/autoconfig/rule_templates/voltage.input_3phase@__device_ups__.rule \
+			src/agents/autoconfig/rule_templates/charge.battery@__device_ups__.rule \
+			src/agents/autoconfig/rule_templates/voltage.input_1phase@__device_epdu__.rule \
+			src/agents/autoconfig/rule_templates/voltage.input_3phase@__device_epdu__.rule \
+			src/agents/autoconfig/rule_templates/load.input_1phase@__device_epdu__.rule \
+			src/agents/autoconfig/rule_templates/load.input_3phase@__device_epdu__.rule \
+			src/agents/autoconfig/rule_templates/phase_imbalance@__device_epdu__.rule \
+			src/agents/autoconfig/rule_templates/section_load@__device_epdu__.rule
 
+template_rule_DATA =	$(RULE_TEMPLATES)
+EXTRA_DIST +=		$(RULE_TEMPLATES)
 
 client_PROGRAMS +=	agent-inventory
 
