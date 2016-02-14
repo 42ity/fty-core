@@ -46,12 +46,21 @@
 // TODO: Match this up with tools/systemctl and maybe the Makefile variables
 static const char *list[] =
 {
-// SYSTEM services
+// SYSTEM services as named in Debian 8:
     "networking", "mysql", "ntp", "saslauthd", "malamute",
+// SYSTEM services as named in some non-Debian OSes:
+    "network", "mysqld", "mariadb", "ntpd", "ntpdate", "sntp",
 // BIOS services
-    "bios-reset-button", "bios-ssh-last-resort", "tntnet@bios", "bios-agent-smtp", "bios-agent-alert", "bios-agent-autoconfig",
-    "bios-agent-cm", "bios-agent-dbstore", "bios-agent-inventory", "bios-agent-nut", "agent-th", "bios-agent-tpower", "bios-db-init",
-    "bios-server-agent",
+    "bios-networking",
+    "bios-reset-button", "tntnet@bios", "bios-agent-smtp",
+    "bios-agent-alert-generator", "agent-alerts-list",
+    "bios-agent-autoconfig", "bios-agent-cm",
+    "bios-agent-dbstore", "bios-agent-inventory", "bios-agent-nut",
+    "bios-agent-asset", "bios-agent-legacy-metrics", "kpi-uptime",
+    "agent-th", "bios-agent-tpower", "bios-db-init",
+    "bios-server-agent", "dc_th",
+    "biostimer-warranty-metric", "biostimer-graphs-prefetch",
+// TODO: Wildcard services, e.g. instances defined at run-time
 // NUT services
     "nut-driver", "nut-monitor", "nut-server",
     NULL
@@ -229,7 +238,7 @@ unsigned int process_post (
         std::string proc_out, proc_err;
         int proc_rv = shared::output (proc_cmd, proc_out, proc_err);
         if (proc_rv != 0) {
-            message.assign ("executing systemctl failed: ").append (proc_err);
+            message.assign ("Executing systemctl failed: ").append (proc_err);
             http_die("internal-error", message.c_str() );
         }
 
