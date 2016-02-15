@@ -287,7 +287,7 @@ trap_cleanup(){
     die "Port ${SUT_WEB_PORT} is in LISTEN state when it should be free"
 
   # make sure sasl is running
-  if ! $RUNAS systemctl is-active --quiet saslauthd; then
+  if ! $RUNAS systemctl is-active saslauthd --quiet; then
     logmsg_info "Starting saslauthd..."
     $RUNAS systemctl start saslauthd || \
       [ x"$RUNAS" = x ] || \
@@ -301,7 +301,7 @@ trap_cleanup(){
     logmsg_error "saslauthd is NOT responsive or not configured!" >&2
 
   # make sure message bus is running
-  if ! $RUNAS systemctl is-active --quiet malamute; then
+  if ! $RUNAS systemctl is-active malamute --quiet; then
     logmsg_info "Starting malamute..."
     $RUNAS systemctl start malamute || \
       [ x"$RUNAS" = x ] || \
@@ -310,7 +310,7 @@ trap_cleanup(){
   fi
 
   # make sure database is running
-  if ! $RUNAS systemctl is-active --quiet mysql; then
+  if ! $RUNAS systemctl is-active mysql --quiet; then
     logmsg_info "Starting mysql..."
     $RUNAS systemctl start mysql || \
       [ x"$RUNAS" = x ] || \
