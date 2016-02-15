@@ -280,6 +280,10 @@ fi
 /bin/systemctl enable bios-agent-legacy-metrics
 /bin/systemctl enable bios-agent-alert-generator
 
+# post Alpha services - the conditional allows is to use same script for alpha and post-alpha
+[[ -f /usr/lib/systemd/system/bios-agent-asset.service ]] && systemctl enable bios-agent-asset.service
+[[ -f /usr/lib/systemd/system/bios-agent-smtp.service ]] && systemctl enable bios-agent-smtp.service
+
 # Our tntnet unit
 cat > /etc/systemd/system/tntnet@.service <<EOF
 [Unit]
