@@ -400,25 +400,28 @@ determineDirs_default() {
 }
 
 isRemoteSUT() {
-    if [ "${SUT_IS_REMOTE-}" = yes ]; then
-        ### Yes, we are testing a remote box or a VTE,
-        ### and have a cached decision or explicit setting
-        return 0
-    else
-        ### No, test is local
-        return 1
-    fi
+    case "${SUT_IS_REMOTE-}" in
+        yes)
+            ### Yes, we are testing a remote box or a VTE,
+            ### and have a cached decision or explicit setting
+            return 0 ;;
+        no) ### No, the test is known local
+            return 1 ;;
+    esac
 
-    if  [ -z "$SUT_IS_REMOTE" -o x"$SUT_IS_REMOTE" = xauto ] && \
-        [ -n "$SUT_HOST" -a -n "$SUT_SSH_PORT" ] && \
-        [ x"$SUT_HOST" != xlocalhost -a x"$SUT_HOST" != x127.0.0.1 ] \
+    if  [ -z "${SUT_IS_REMOTE-}" -o x"${SUT_IS_REMOTE-}" = xauto -o x"${SUT_IS_REMOTE-}" = x- ] && \
+        [ -n "${SUT_HOST-}" -a -n "${SUT_SSH_PORT-}" ] && \
+        [ x"${SUT_HOST-}" != xlocalhost -a x"${SUT_HOST-}" != x127.0.0.1 ] \
     ; then
         ### TODO: Maybe a better test is needed e.g. "localhost and port==22"
         SUT_IS_REMOTE=yes
         return 0
-        ### NOTE: No automatic decision for "no" since the needed variables
-        ### may become defined later.
     fi
+
+    ### No, test is local as far as we currently know
+    ### NOTE: No automatic caching of decision for "maybe-no" since the needed
+    ### variables may become defined later.
+    return 2
 }
 
 sut_run() {
