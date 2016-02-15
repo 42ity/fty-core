@@ -205,7 +205,7 @@ else
     fi >&2
 
     # is bios access to sasl correct?
-	SASLTEST=$(sut_run 'SASLTEST="`which testsaslauthd`" && [ -n "$SASLTEST" ] && [ -x "$SASLTEST" ] || { SASLTEST=""; for S in /usr/sbin/testsaslauthd /sbin/testsaslauthd; do [ -x "$S" ] && SASLTEST="$S"; break; done; echo "$SASLTEST"; [ -n "$SASLTEST" ]') && \
+	SASLTEST=$(sut_run 'SASLTEST="`which testsaslauthd`" && [ -n "$SASLTEST" ] && [ -x "$SASLTEST" ] || SASLTEST=""; if [ -z "$SASLTEST" ]; then for S in /usr/sbin/testsaslauthd /sbin/testsaslauthd; do [ -x "$S" ] && SASLTEST="$S"; break; done; fi; echo "$SASLTEST"; [ -n "$SASLTEST" ]') && \
     LINE="$(sut_run "$SASLTEST -u '$BIOS_USER' -p '$BIOS_PASSWD' -s '$SASL_SERVICE'")"
     if [ $? != 0 -o -z "$LINE" ]; then
         CODE=3 die "SASL autentication for user '$BIOS_USER' has failed." \
