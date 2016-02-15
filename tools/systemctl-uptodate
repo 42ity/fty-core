@@ -1,0 +1,63 @@
+#!/bin/bash
+
+# This ad-hoc script helps verify that the current "systemctl" wrapper filter
+# definition permits the systemd units which our project family defines
+# Copyright (C) 2016 by Jim Klimov <EvgenyKlimov@Eaton.com>
+# Should be run in the tools/ directory, and expects that all our repos are
+# checked-out in the same directory as bios-core or one level deeper than that.
+
+# REGEX of unit basenames that we deliver but are to be NOT ALLOWED (filtered)
+# by the systemctl wrapper script.
+# TODO: Revise this anti-filter to be dynamic with BIOS-1620?
+MUST_FILTER='^(bios-fake-th|bios-ssh-last-resort|biostimer-verify-fs|ifplug-dhcp-autoconf)$'
+
+# Temp vars
+FAILEDU=""
+FAILEDA=""
+FAILEDUv=""
+FAILEDAv=""
+FAILEDNU=""
+FAILEDNA=""
+FAILEDNUv=""
+FAILEDNAv=""
+ls -1d {../,../../}{./,*/,*/*/}{src,systemd}/*.{service,timer,target}* 2>/dev/null | \
+grep -v "core-" | \
+sort | uniq | \
+{ while read F ; do
+#    echo "=== $F"
+    U="`basename "$F" | sed 's,\.\(service\|timer\|target\)\(\|\.in\) *$,,'`"
+    A="`grep -i alias "$F" 2>/dev/null | sed 's,^Alias=,,'`"
+#    echo "$U     $A"
+
+    OUTU="`./systemctl is-active "$U" 2>&1`"
+    if [[ "$U" =~ $MUST_FILTER ]] >/dev/null ; then
+        [ "$OUTU" != "Action not allowed" ] && FAILEDNU="$FAILEDNU $U" && FAILEDNUv="$FAILEDNUv $U!!!$F"
+    else
+        [ "$OUTU" = "Action not allowed" ] && FAILEDU="$FAILEDU $U" && FAILEDUv="$FAILEDUv $U!!!$F"
+    fi
+
+    OUTA=""
+    [ -n "$A" ] && \
+        OUTA="`./systemctl is-active "$A" 2>&1`"
+
+    [ -n "$A" ] && \
+    if [[ "$A" =~ $MUST_FILTER ]] >/dev/null ; then
+        [ "$OUTA" != "Action not allowed" ] && FAILEDNA="$FAILEDNA $A" && FAILEDNAv="$FAILEDNAv $A!!!$F"
+    else
+        [ "$OUTA" = "Action not allowed" ] && FAILEDA="$FAILEDA $A" && FAILEDAv="$FAILEDAv $A!!!$F"
+    fi
+  done
+  [ -z "$FAILEDU" ] && echo "OK: All units are allowed" || {
+    echo "FAILED: These unit basenames are not allowed:"
+    for U in $FAILEDU ; do echo "    $U "; done | sort | uniq ; }
+  [ -z "$FAILEDNU" ] && echo "OK: All units that must be filtered are not allowed" || {
+    echo "FAILED: These unit basenames must be filtered but were allowed:"
+    for U in $FAILEDNU ; do echo "    $U "; done | sort | uniq ; }
+
+  [ -z "$FAILEDA" ] && echo "OK: All aliases are allowed" || {
+    echo "FAILED: These alias basenames are not allowed:"
+    for U in $FAILEDA ; do echo "    $U "; done | sort | uniq ; }
+  [ -z "$FAILEDNA" ] && echo "OK: All aliases that must be filtered are not allowed" || {
+    echo "FAILED: These alias basenames must be filtered but were allowed:"
+    for U in $FAILEDNA ; do echo "    $U "; done | sort | uniq ; }
+}
