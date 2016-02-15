@@ -140,7 +140,7 @@ subtest_matcher() {
     # Returns: equality result (0 ok, 1+ bad)
     N_RESULT=0
     N_EXPECT="`egrep -c "$2" "${LOGFILE_IMPORT}"`" || N_RESULT=$?
-    echo "N_EXPECT = $1 (got $N_EXPECT)"
+    echo "N_EXPECT = $1 (got $N_EXPECT hits looking for regex '$2')"
     [ "$N_EXPECT" -eq "$1" ] || N_RESULT=$?
     return $N_RESULT
 }
