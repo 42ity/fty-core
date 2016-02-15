@@ -154,13 +154,16 @@ unsigned int process_get (
             int proc_rv = shared::output (proc_cmd, proc_out, proc_err);
 
             if (proc_rv != 0) {
-                message.assign ("TODO executing `systemctl show` failed: " + std::to_string (proc_rv)); // TODO change error message
-                http_die("internal-error", message.c_str() );
+                message = "shared::output (command = 'sudo systemctl show " + service_name +
+                          "') failed. Return value = '" + std::to_string (proc_rv) + "', stderr = '" + proc_err + "'.";
+                log_error (message.c_str ());
+                http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
             }
 
             std::string active_state, sub_state, load_state, unit_file_state;
             if (!parse_systemctl_status (proc_out, active_state, sub_state, load_state, unit_file_state)) {
-                http_die("internal-error", "TODO Expected different format of systemctl show"); // TODO: change error message
+                log_error ("Could not parse output of `systemctl show` due to different expected output format.");
+                http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
             }
 
             message.assign (
@@ -202,7 +205,7 @@ unsigned int process_post (
     }
 
     if (body.empty ()) {
-        http_die("bad-request-document", "{ \"service_name\" : \"<service_name>\" }");
+        http_die("bad-request-document", "Expected json document  { \"service_name\" : \"<service_name>\" }. Received empty request document.");
     }
 
     try {
@@ -211,15 +214,15 @@ unsigned int process_post (
         cxxtools::SerializationInfo si;
         deserializer.deserialize (si);
         if (si.category () != cxxtools::SerializationInfo::Object) {
-            throw cxxtools::SerializationError ("TODO Root object TODO"); // TODO change error message
+            throw cxxtools::SerializationError ("Received document's root is not json object.");
         }
         std::string service_name;
         si.getMember("service_name") >>= service_name;
         if (! service_name_valid (service_name.c_str ())) {
-            throw cxxtools::SerializationError ("TODO service_name empty or invalid"); // TODO change error message
+            throw cxxtools::SerializationError ("Received document's 'service_name' field is empty or invalid.");
         }
 
-        // networking is different animal, threat differently
+        // networking is different animal, treat differently
         if (service_name == "networking") {
             if (operation != "restart" && operation != "show") {
                 http_die("request-param-bad",
@@ -238,8 +241,10 @@ unsigned int process_post (
         std::string proc_out, proc_err;
         int proc_rv = shared::output (proc_cmd, proc_out, proc_err);
         if (proc_rv != 0) {
-            message.assign ("Executing systemctl failed: ").append (proc_err);
-            http_die("internal-error", message.c_str() );
+            message = "shared::output (command = 'sudo systemctl " + operation + " " + service_name + "') failed. Return value = '"
+                      + std::to_string (proc_rv) + "', stderr = '" + proc_err + "'.";
+            log_error (message.c_str ());
+            http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
         }
 
         // but we want to pretend we have used networking service ...
@@ -250,14 +255,16 @@ unsigned int process_post (
 
         proc_rv = shared::output (proc_cmd2, proc_out, proc_err);
         if (proc_rv != 0) {
-            message.assign ("executing `systemctl show` failed: " + std::to_string (proc_rv));
-            http_die("internal-error", message.c_str() );
+            message = "shared::output (command = 'sudo systemctl show " + service_name + "') failed. Return value = '"
+                      + std::to_string (proc_rv) + "', stderr = '" + proc_err + "'."; 
+            log_error (message.c_str ());
+            http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
         }
 
         std::string active_state, sub_state, load_state, unit_file_state;
         if (!parse_systemctl_status (proc_out, active_state, sub_state, load_state, unit_file_state)) {
-            message.assign ("cant parse systemctl show output");
-            http_die("internal-error", message.c_str() );
+            log_error ("Could not parse output of `systemctl show` due to different expected output format.");
+            http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
         }
         message.assign (
 "{\n"
@@ -272,12 +279,13 @@ unsigned int process_post (
         return HTTP_OK;
     }
     catch (const cxxtools::SerializationError& e) {
-        message.assign("Expected: { \"service_name\" : \"<service_name>\" }").append (e.what ());
+        message.assign("Expected json document { \"service_name\" : \"<service_name>\" }. ").append (e.what ());
         http_die( "bad-request-document", message.c_str() );
     }
     catch (const std::exception& e) {
-        message.assign ("Exception caught: '").append(e.what ()).append("'.");
-        http_die( "internal-error", message.c_str() );
+        message.assign ("Exception caught: ").append (e.what ());
+        log_error (message.c_str ());
+        http_die( "internal-error", "Exception caught. Please check logs for more details.");
     }
 }
 
