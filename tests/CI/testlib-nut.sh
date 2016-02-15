@@ -41,12 +41,12 @@
 [ -n "${NUTPASSWORD-}" ] || NUTPASSWORD="secret"
 detect_nut_cfg_dir() {
     for cfgd in "/etc/ups" "/etc/nut"; do
-        if [[ -d "$cfgd" ]] ; then
+        if sut_run "[ -d '$cfgd' ]" ; then
             NUTCFGDIR="$cfgd"
             break
         fi
     done
-    [[ -n "$NUTCFGDIR" ]] && [[ -d "$NUTCFGDIR" ]] || \
+    [[ -n "$NUTCFGDIR" ]] && sut_run "[ -d '$NUTCFGDIR' ]" || \
         return $?
     return 0
 }
@@ -59,12 +59,12 @@ set_value_in_ups() {
     local RES=0
 
     logmsg_debug "set_value_in_ups('$UPS' '$PARAM' '$VALUE')..."
-    egrep '^'"$PARAM"' *:' <"$NUTCFGDIR/$UPS.dev" >/dev/null || \
+    sut_run "egrep '^$PARAM *:' <'$NUTCFGDIR/$UPS.dev' >/dev/null" || \
         logmsg_warn "Parameter '$PARAM' is not set in file '$NUTCFGDIR/$UPS.dev'"
 
-    sed -r -e "s/^$PARAM *:.+"'$'"/$PARAM: $VALUE/i" <"$NUTCFGDIR/$UPS.dev" >"$NUTCFGDIR/$UPS.new" && \
-    egrep '^'"$PARAM"' *: *'"$VALUE"' *$' <"$NUTCFGDIR/$UPS.new" >/dev/null && \
-    mv -f "$NUTCFGDIR/$UPS.new" "$NUTCFGDIR/$UPS.dev" || \
+    sut_run "sed -r -e 's/^$PARAM *:.+\$/$PARAM: $VALUE/i' <'$NUTCFGDIR/$UPS.dev' >'$NUTCFGDIR/$UPS.new'" && \
+    sut_run "egrep '^$PARAM *: *$VALUE *\$' <'$NUTCFGDIR/$UPS.new' >/dev/null" && \
+    sut_run "cat '$NUTCFGDIR/$UPS.new' > '$NUTCFGDIR/$UPS.dev' && rm -rf '$NUTCFGDIR/$UPS.new'" || \
         { RES=$?; logmsg_error "set_value_from_ups() could not generate '$NUTCFGDIR/$UPS.dev' with new '$PARAM=$VALUE' setting"; }
 
     case "$UPS" in
@@ -73,10 +73,10 @@ set_value_in_ups() {
         *)   UPS="$UPS@localhost" ;;
     esac
 
-    upsrw -s "$PARAM=$VALUE" -u "$NUTUSER" -p "$NUTPASSWORD" "$UPS" >/dev/null || \
+    sut_run "upsrw -s '$PARAM=$VALUE' -u '$NUTUSER' -p '$NUTPASSWORD' '$UPS' >/dev/null" || \
         { logmsg_warn "set_value_from_ups() could not upsrw the '$PARAM=$VALUE' setting onto '$UPS' in real-time";
           [ "$RES" = 0 ] && [ "$SLEEP" -gt 0 ] 2>/dev/null && \
-            { logmsg_debug "Waiting for a while after applying new parameter to '$UPS'..." ; sleep 2; } ; }
+            { logmsg_debug "Waiting for a while after applying new parameter via '$UPS.dev' file..." ; sleep 2; } ; }
         # The "sleep" above allows dummy-ups to roll around the end of file
         # and propagate the setting, if it is available in that config file
     [ "$RES" = 0 ] && \
@@ -94,7 +94,7 @@ get_value_from_ups() {
         *@*) ;;
         *)   UPS="$UPS@localhost" ;;
     esac
-    VALUE="`upsc "$UPS" "$PARAM"`" || \
+    VALUE="`sut_run "upsc '$UPS' '$PARAM'"`" || \
         { RES=$?; logmsg_error "get_value_from_ups() could not upsc the '$PARAM' setting from '$UPS'"; }
     [ "$RES" = 0 ] && logmsg_debug "get_value_from_ups('$UPS' '$PARAM') - got '$VALUE' - OK"
     echo "$VALUE"
@@ -107,7 +107,7 @@ create_ups_dev_file() {
     local FILE="$1"
     logmsg_debug "create_ups_dev_file($FILE)"
     ( custom_create_ups_dev_file "$@" ) \
-        > "$FILE" \
+        | sut_run "cat > '$FILE'" \
         || CODE=$? logmsg_error "create_ups_dev_file($FILE) FAILED ($?)"
 }
 
@@ -115,16 +115,16 @@ create_epdu_dev_file() {
     local FILE="$1"
     logmsg_debug "create_epdu_dev_file($FILE)"
     ( custom_create_epdu_dev_file "$@" ) \
-        > "$FILE" \
+        | sut_run "cat > '$FILE'" \
         || CODE=$? logmsg_error "create_epdu_dev_file($FILE) FAILED ($?)"
 }
 
 list_nut_devices() {
-    awk '/^\[.+\]/{ print substr($0,2,index($0,"]") - 2); }' < "$NUTCFGDIR/ups.conf"
+    sut_run "awk '/^\[.+\]/{ print substr(\$0,2,index(\$0,\"]\") - 2); }' < '$NUTCFGDIR/ups.conf'"
 }
 
 have_nut_target() {
-    local STATE="`systemctl show nut-driver.target | egrep '^LoadState=' | cut -d= -f2`"
+    local STATE="`sut_run 'systemctl show nut-driver.target' | egrep '^LoadState=' | cut -d= -f2`"
     if [ "$STATE" = "not-found" ] ; then
         echo N
         return 1
@@ -137,13 +137,13 @@ have_nut_target() {
 stop_nut() {
     if [ "$(have_nut_target)" = Y ] ; then
         logmsg_info "Stopping NUT server via systemctl using nut-driver@ instances" >&2
-        systemctl stop nut-server
-        systemctl stop "nut-driver@*"
-        systemctl disable "nut-driver@*"
+        sut_run 'systemctl stop nut-server'
+        sut_run 'systemctl stop "nut-driver@*"'
+        sut_run 'systemctl disable "nut-driver@*"'
     else
         logmsg_info "Stopping NUT server via systemctl using monolithic nut-driver" >&2
-        systemctl stop nut-server.service
-        systemctl stop nut-driver.service
+        sut_run 'systemctl stop nut-server.service'
+        sut_run 'systemctl stop nut-driver.service'
     fi
     sleep 3
 }
@@ -152,22 +152,22 @@ start_nut() {
     local ups
     local F
     for F in ups.conf upsmon.conf ; do
-        [ -s "$NUTCFGDIR/$F" ] && [ -r "$NUTCFGDIR/$F" ] || \
+        sut_run "[ -s '$NUTCFGDIR/$F' ] && [ -r '$NUTCFGDIR/$F' ]" || \
             logmsg_warn "start_nut(): '$NUTCFGDIR/$F' should be a non-empty readable file"
     done
     if [ "$(have_nut_target)" = Y ] ; then
         logmsg_info "Starting NUT server via systemctl using nut-driver@ instances" >&2
         for ups in $(list_nut_devices) ; do
-            systemctl enable "nut-driver@$ups" || return $?
-            systemctl start "nut-driver@$ups" || return $?
+            sut_run "systemctl enable 'nut-driver@$ups'" || return $?
+            sut_run "systemctl start 'nut-driver@$ups'" || return $?
         done
         sleep 3
-        systemctl start nut-server || return $?
+        sut_run 'systemctl start nut-server' || return $?
     else
         logmsg_info "Starting NUT server via systemctl using nut-driver@ instances" >&2
-        systemctl start nut-driver.service || return $?
+        sut_run 'systemctl start nut-driver.service' || return $?
         sleep 3
-        systemctl start nut-server.service || return $?
+        sut_run 'systemctl start nut-server.service' || return $?
     fi
     sleep 3
 }
@@ -189,7 +189,7 @@ create_nut_config() {
     test_it "create_nut_config"
 
     RES=0
-    echo "MODE=standalone" > "$NUTCFGDIR/nut.conf" || \
+    sut_run "echo 'MODE=standalone' > '$NUTCFGDIR/nut.conf'" || \
         die "Can not tweak 'nut.conf'"
 
     { for DEV in $DUMMY_UPSES ; do
@@ -214,7 +214,7 @@ create_nut_config() {
             "\ndesc=\"dummy-ups ePDU in dummy mode\"" \
             "\n"
       done
-      } > "$NUTCFGDIR/ups.conf" || \
+      } | sut_run "cat > '$NUTCFGDIR/ups.conf'" || \
         die "Can not tweak 'ups.conf'"
 
     echo -e \
@@ -222,15 +222,16 @@ create_nut_config() {
         "\npassword=$NUTPASSWORD" \
         "\nactions=SET" \
         "\ninstcmds=ALL" \
-        > "$NUTCFGDIR/upsd.users" || \
+        | sut_run "cat > '$NUTCFGDIR/upsd.users'" || \
         die "Can not tweak 'upsd.users'"
 
     if [ $# -gt 0 ]; then
         logmsg_debug "Calling custom implementation snippet under create_nut_config(): $*"
+        # NOTE: This is expected to be a local routine in the script, not sut_run()ed
         eval "$@"
     fi
 
-    chown nut:root "$NUTCFGDIR/"*.dev
+    sut_run "chown nut:root '$NUTCFGDIR/'*.dev"
     start_nut || RES=$?
     logmsg_info "Waiting for a while after applying NUT config"
     sleep 10
