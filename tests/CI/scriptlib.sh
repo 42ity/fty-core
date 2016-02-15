@@ -759,7 +759,7 @@ settraps() {
         printf "\n"
         i=0
         while [ "$i" -lt "$FUNCDEPTH" ] ; do
-            echo "  ($i)	-> in ${FUNCNAME[$i]-}() at ${BASH_SOURCE[$i+1]-}:${BASH_LINENO[$i]-}"
+            echo "  ($i)	-> in ${FUNCNAME[$i]-}() called at ${BASH_SOURCE[$i+1]-}:${BASH_LINENO[$i]-}"
             i=$(($i+1))
         done
         echo "	~> in ${ERRFUNC:-main-script-body}() at ${ERRFILE-}:${ERRLINE-}"
