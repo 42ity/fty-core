@@ -69,12 +69,12 @@ bool TemplateRuleConfigurator::isApplicable (const AutoConfigurationInfo& info){
 
 std::vector <std::string> TemplateRuleConfigurator::loadTemplates(uint32_t type, uint32_t subtype){
     std::vector <std::string> templates;
-    if (!cxxtools::Directory::exists (Autoconfig::StateFilePath)){
-        log_info("TemplateRuleConfigurator '%s' dir does not exist",Autoconfig::StateFilePath);
+    if (!cxxtools::Directory::exists (Autoconfig::RuleFilePath)){
+        log_info("TemplateRuleConfigurator '%s' dir does not exist",Autoconfig::RuleFilePath);
         return templates;
     }
     std::string type_name = convertTypeSubType2Name(type,subtype);
-    cxxtools::Directory d(Autoconfig::StateFilePath);
+    cxxtools::Directory d(Autoconfig::RuleFilePath);
     for ( const auto &fn : d) {
         if ( fn.find(type_name.c_str())!= std::string::npos){
             log_debug("match %s", fn.c_str());
@@ -89,12 +89,12 @@ std::vector <std::string> TemplateRuleConfigurator::loadTemplates(uint32_t type,
 }
 
 bool TemplateRuleConfigurator::checkTemplate(uint32_t type, uint32_t subtype){
-    if (!cxxtools::Directory::exists (Autoconfig::StateFilePath)){
-        log_info("TemplateRuleConfigurator '%s' dir does not exist",Autoconfig::StateFilePath);
+    if (!cxxtools::Directory::exists (Autoconfig::RuleFilePath)){
+        log_info("TemplateRuleConfigurator '%s' dir does not exist",Autoconfig::RuleFilePath);
         return false;
     }
     std::string type_name = convertTypeSubType2Name(type,subtype);
-    cxxtools::Directory d(Autoconfig::StateFilePath);
+    cxxtools::Directory d(Autoconfig::RuleFilePath);
     for ( const auto &fn : d) {
         if ( fn.find(type_name.c_str())!= std::string::npos){
             return true;

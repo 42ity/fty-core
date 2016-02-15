@@ -226,12 +226,6 @@ bool is_ok_priority (a_elmnt_pr_t priority)
         return false;
 }
 
-bool is_ok_alert_state (UNUSED_PARAM m_alrt_state_t state)
-{
-    // TODO
-    return true;
-}
-
 std::string
 sql_plac(
         size_t i,

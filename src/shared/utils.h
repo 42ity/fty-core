@@ -156,9 +156,6 @@ double string_to_double (const char *value);
 // inspired by https://gcc.gnu.org/onlinedocs/gcc/Integer-Overflow-Builtins.html#Integer-Overflow-Builtins
 bool addi32_overflow(int32_t a, int32_t b, int32_t *res);
 
-//! \brief convert alert_state_t to string
-const char* alert_state_to_str(alert_state_t astate);
-
 /**
  *  \brief rescale number to the new scale - upscalling loses information
  *

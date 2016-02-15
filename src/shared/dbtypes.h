@@ -29,22 +29,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SRCOUT_DESTIN_IS_NULL "999"
 #define INPUT_POWER_CHAIN     1
 
-// ----- table:  t_bios_alert -------------------------
-// ----- column: id -----------------------------------
-typedef uint32_t m_alrt_id_t;
-
-// ----- table:  t_bios_alert -------------------------
-// ----- column: state --------------------------------
-typedef uint16_t m_alrt_state_t;
-
-// ----- table:  t_bios_alert -------------------------
-// ----- column: notification -------------------------
-typedef uint32_t m_alrt_ntfctn_t;
-
-// ----- table:  t_bios_alert_device ------------------
-// ----- column: id -----------------------------------
-typedef uint32_t m_alrtdvc_id_t;
-
 // ----- table:  t_bios_asset_element -----------------
 // ----- column: id_asset_element ---------------------
 typedef uint32_t a_elmnt_id_t;

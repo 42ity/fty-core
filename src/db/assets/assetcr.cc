@@ -483,12 +483,12 @@ db_reply_t
             "    )"
         );
 
-        if ( strcmp(src_out, "") == 0 )
+        if ( !src_out || strcmp(src_out, "") == 0 )
             st = st.setNull("out");
         else
             st = st.set("out", src_out);
 
-        if ( strcmp(dest_in, "") == 0)
+        if ( !dest_in || strcmp(dest_in, "") == 0)
             st = st.setNull("in");
         else
             st = st.set("in", dest_in);

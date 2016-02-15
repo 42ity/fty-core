@@ -16,7 +16,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-/*! \file   alert_measurement.h
+/*! \file   tp_unit.h
     \brief  Object representing one rack or DC
     \author Tomas Halman <TomasHalman@Eaton.com>
 */
