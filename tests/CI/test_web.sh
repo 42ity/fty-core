@@ -16,20 +16,43 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-#! \file   test_web.sh
-#  \brief  This script automates local tests of REST API for the $BIOS project
+#! \file   test_web.sh aliased as vte-test_web.sh
+#  \brief  This script automates tests of REST API for the $BIOS project
 #  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
 #  \author Tomas Halman <TomasHalman@Eaton.com>
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 #  \details This script automates tests of REST API for the $BIOS project
-# It works with the image installation of the BIOS on local machine and
-# is started from a checked-out copy of the bios-core development workspace
+# In CI (local) mode it works with the image installation of the BIOS on the
+# local machine (CI container, developer workstation) and is started from a
+# checked-out copy of the bios-core development workspace.
+# In VTE (remote) mode it works with the image installation of the BIOS on the
+# SUT (System Under Test) server and tests are started from another server - 
+# MS (test Management Station) from a checked-out copy of the bios-core
+# development workspace.
+#
+# ***** ABBREVIATIONS *****
+    # *** abbreviation SUT - System Under Test - remote server with BIOS ***
+    # *** abbreviation MS - Management Station - local server with this script ***
 
+# ***** PREREQUISITES *****
+    # *** dealing with external parameter, some are mandatory.
+    # *** The script must be called in the following format:
+        # * test_web.sh -u "<user on SUT>" -p "<pasword>" -s "<SASL service>" \
+        # * "<substring for the testcase filtering>"
+   # *** no parameters? ERROR!
 if [ $# -eq 0 ]; then
-    echo "ERROR: test_web.sh is no longer suitable to run all REST API tests"
+    echo "ERROR: (vte-)test_web.sh is no longer suitable to run all REST API tests"
     echo "       either use ci-test-restapi.sh or specify test on a commandline"
     exit 1
 fi
+
+case "`basename "$0"`" in
+	vte*) SUT_IS_REMOTE=yes ;; # Unconditionally remote
+	*) [ -z "${SUT_IS_REMOTE-}" ] && SUT_IS_REMOTE="" ;;
+		  # Determine default SUT_IS_REMOTE when we include script libs
+		  # or assign SUT-related CLI settings
+esac
 
     # *** set TESTLIB_COUNT_* to 0 and TESTLIB_LIST_* to ""
 TESTLIB_COUNT_PASS=0
@@ -59,7 +82,12 @@ SKIPPED_NONSH_TESTS=0
     # *** read parameters if present
 while [ $# -gt 0 ]; do
     case "$1" in
-        --port-web|--sut-port-web|-wp|--port)
+        --port-ssh|--sut-port-ssh|-sp)
+            SUT_SSH_PORT="$2"
+            SUT_IS_REMOTE=yes
+            shift
+            ;;
+        --port-web|--sut-port-web|-wp)
             SUT_WEB_PORT="$2"
             shift
             ;;
@@ -69,6 +97,11 @@ while [ $# -gt 0 ]; do
             ;;
         --use-https|--sut-web-https)	SUT_WEB_SCHEMA="https"; export SUT_WEB_SCHEMA;;
         --use-http|--sut-web-http)		SUT_WEB_SCHEMA="http"; export SUT_WEB_SCHEMA;;
+        --sut-user|-su)
+            SUT_USER="$2"
+            SUT_IS_REMOTE=yes
+            shift
+            ;;
         -u|--user|--bios-user)
             BIOS_USER="$2"
             shift
@@ -90,6 +123,27 @@ while [ $# -gt 0 ]; do
     shift
 done
 
+if [ "${SUT_IS_REMOTE}" = yes ]; then
+	# default values:
+	[ -z "${SUT_USER-}" ] && SUT_USER="root"
+	[ -z "${SUT_HOST-}" ] && SUT_HOST="debian.roz53.lab.etn.com"
+	# port used for ssh requests:
+	[ -z "${SUT_SSH_PORT-}" ] && SUT_SSH_PORT="2206"
+	# port used for REST API requests:
+	if [ -z "${SUT_WEB_PORT-}" ]; then
+		if [ -n "${BIOS_PORT-}" ]; then
+		    SUT_WEB_PORT="$BIOS_PORT"
+		else
+		    SUT_WEB_PORT=$(expr $SUT_SSH_PORT + 8000)
+		    [ "${SUT_SSH_PORT-}" -ge 2200 ] && \
+		        SUT_WEB_PORT=$(expr $SUT_WEB_PORT - 2200)
+		fi
+	fi
+
+	# unconditionally calculated values for current setup
+	BASE_URL="${SUT_WEB_SCHEMA}://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+fi
+
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
@@ -97,6 +151,18 @@ NEED_BUILDSUBDIR=no determineDirs_default || true
 . "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 [ x"${JSONSH_CLI_DEFINED-}" = xyes ] || CODE=127 die "jsonsh_cli() not defined"
+
+echo '************************************************************************'
+logmsg_info "REST API test-case scriptlets will use the following settings:"
+echo "BASE_URL   	= $BASE_URL"
+echo "SUT_IS_REMOTE	= $SUT_IS_REMOTE"
+echo "BIOS_USER 	= $BIOS_USER"
+echo "BIOS_PASSWD	= $BIOS_PASSWD"
+echo "SASL_SERVICE	= $SASL_SERVICE"
+echo "SUT_HOST  	= $SUT_HOST"
+echo "SUT_SSH_PORT	= $SUT_SSH_PORT"
+echo "SUT_WEB_PORT	= $SUT_WEB_PORT"
+echo "SUT_WEB_SCHEMA	= $SUT_WEB_SCHEMA"
 
 PATH="$PATH:/sbin:/usr/sbin"
 
@@ -110,29 +176,33 @@ if [ "$SKIP_SANITY" = yes ]; then
     # This is hit e.g. when a wget-based "curl emulator" is used for requests
     logmsg_info "$0: REST API sanity checks skipped due to SKIP_SANITY=$SKIP_SANITY"
 else
-    # fixture ini
-    if ! pidof saslauthd > /dev/null; then
-        CODE=1 die "saslauthd is not running, please start it first!"
+    # *** is sasl running on SUT?
+    if ! sut_run "pidof saslauthd > /dev/null" ; then
+        CODE=1 die "saslauthd is not running (on SUT), please start it first!"
     fi
 
-    if ! pidof malamute > /dev/null; then
-        logmsg_error "malamute is not running (locally), you may need to start it first!"
+    if ! sut_run "pidof malamute > /dev/null"; then
+        logmsg_error "malamute is not running (on SUT), you may need to start it first!"
     fi
 
-    if ! pidof mysqld > /dev/null ; then
-        logmsg_error "mysqld is not running (locally), you may need to start it first!"
+    if ! sut_run "pidof mysqld > /dev/null" ; then
+        logmsg_error "mysqld is not running (on SUT), you may need to start it first!"
     fi
 
 	# is bios user present?
     # Check the user account in system
     # We expect SASL uses Linux PAM, therefore getent will tell us all we need
-    LINE="$(getent passwd "$BIOS_USER")"
+	LINE="$(sut_run "getent passwd '$BIOS_USER'")"
 	if [ $? != 0 -o -z "$LINE" ]; then
-        CODE=2 die "User $BIOS_USER is not known to system administrative database" \
-            "To add it locally, run: " \
-            "    sudo /usr/sbin/useradd --comment 'BIOS REST API testing user' --groups nobody,sasl --no-create-home --no-user-group $BIOS_USER" \
-            "and don't forget the password '$BIOS_PASSWD'"
-    fi
+    	logmsg_error "User $BIOS_USER is not known to system administrative database"
+		[ "$SUT_IS_REMOTE" = yes ] && \
+    		echo "at $SUT_HOST:$SUT_SSH_PORT." || \
+    		echo "at the local system."
+	    logmsg_info "To add it locally on the SUT, run: "
+	    echo "    sudo /usr/sbin/useradd --comment 'BIOS REST API testing user' --groups nobody,sasl --no-create-home --no-user-group $BIOS_USER"
+	    echo "and don't forget the password '$BIOS_PASSWD'"
+	    CODE=2 die "BIOS_USER absent on system under test"
+    fi >&2
 
     # is bios access to sasl correct?
     SASLTEST="`which testsaslauthd`"
