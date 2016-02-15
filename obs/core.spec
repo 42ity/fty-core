@@ -87,7 +87,7 @@ mv %{buildroot}%{_includedir}/* \
 #MVY: prevents file listed twice error - most likely libexecdir above
 # % {_unitdir}/*
 %{_prefix}/lib/tmpfiles.d/bios-agent-autoconfig.conf
-/var/lib/bios/agent-autoconfig/*.rule
+%{_datadir}/bios/agent-autoconfig/*.rule
 
 %files devel
 %defattr(-,root,root)

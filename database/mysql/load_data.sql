@@ -780,21 +780,8 @@ INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_
 
 /* KAROL-LAB */
 
-INSERT INTO t_bios_measurement_topic (device_id, units,topic) 
-    SELECT r.id_discovered_device,'C','temperature.thermal_zone0@KAROL-LAB' 
+INSERT INTO t_bios_measurement_topic (device_id, units,topic)
+    SELECT r.id_discovered_device,'C','temperature.thermal_zone0@KAROL-LAB'
     FROM t_bios_asset_element AS e,t_bios_monitor_asset_relation AS r WHERE
     e.name = 'KAROL-LAB' AND e.id_asset_element = r.id_asset_element;
 set @topic_id2 = LAST_INSERT_ID();
-
-/* Example alerts */
-INSERT INTO t_bios_alert (id, rule_name, date_from, priority, state, description) VALUES (2, "upsonbypass@UPS2-LAB", UNIX_TIMESTAMP("2015-03-28 06:41:10"), 2, 1, "UPS is on battery");
-INSERT INTO t_bios_alert (id, rule_name, date_from, priority, state, description) VALUES (3, "upsonbattery@UPS1-LAB", UNIX_TIMESTAMP("2015-03-27 16:30:12"), 2, 1, "UPS is on battery");
-INSERT INTO t_bios_alert (id, rule_name, date_from, priority, state, description) VALUES (4, "pebkac@admin01", UNIX_TIMESTAMP("2015-03-27 17:30:12"), 1, 1, "admin01 login failed");
-INSERT INTO t_bios_alert (id, rule_name, date_from, date_till, priority, state, description) VALUES (5, "upsonbattery@UPS1-LAB", UNIX_TIMESTAMP("2015-03-27 17:30:12"), UNIX_TIMESTAMP("2015-03-27 22:00:00"), 1, 1, "TO TEST ALREADY PASSED ALERTS");
-
-/* Example alert devices*/
-INSERT INTO t_bios_alert_device (alert_id, device_id) VALUES(2, 8);
-INSERT INTO t_bios_alert_device (alert_id, device_id) VALUES(3, 7);
-/* To test the fact more devices can be linked to one alert */
-INSERT INTO t_bios_alert_device (alert_id, device_id) VALUES(2, 11);
-INSERT INTO t_bios_alert_device (alert_id, device_id) VALUES(5, 8);

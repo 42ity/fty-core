@@ -50,8 +50,6 @@ drop table if exists t_bios_measurement;
 drop table if exists t_bios_measurement_topic;
 drop table if exists t_bios_discovered_device;
 drop table if exists t_bios_device_type;
-drop table if exists t_bios_alert_device;
-drop table if exists t_bios_alert;
 
 CREATE TABLE t_bios_measurement_topic(
     id               INTEGER UNSIGNED  NOT NULL AUTO_INCREMENT,
@@ -106,42 +104,6 @@ CREATE TABLE t_bios_discovered_device(
 
     FOREIGN KEY(id_device_type)
 	REFERENCES t_bios_device_type(id_device_type)
-        ON DELETE RESTRICT
-);
-
-CREATE TABLE t_bios_alert(
-    id           INT UNSIGNED     NOT NULL AUTO_INCREMENT,
-    rule_name    VARCHAR(50)      NOT NULL,
-    date_from    BIGINT         NOT NULL,
-    priority     TINYINT UNSIGNED NOT NULL,
-    state        TINYINT UNSIGNED NOT NULL,
-    description  VARCHAR(255),
-    date_till    BIGINT,
-    notification TINYINT         NOT NULL DEFAULT 0,
-    dc_id        INT UNSIGNED     , /*NOT NULL,*/
-
-    PRIMARY KEY(id),
-
-    INDEX(rule_name)
-);
-
-CREATE TABLE t_bios_alert_device(
-    id          INT UNSIGNED        NOT NULL AUTO_INCREMENT,
-    alert_id    INT UNSIGNED        NOT NULL,
-    device_id   SMALLINT UNSIGNED   NOT NULL,
-
-    PRIMARY KEY(id),
-    UNIQUE INDEX `UI_t_bios_alert_device` (`alert_id`, device_id ASC),
-
-    INDEX(alert_id),
-    INDEX(device_id),
-
-    FOREIGN KEY(alert_id)
-        REFERENCES t_bios_alert(id)
-        ON DELETE RESTRICT,
-
-    FOREIGN KEY(device_id)
-        REFERENCES t_bios_discovered_device(id_discovered_device)
         ON DELETE RESTRICT
 );
 
@@ -342,30 +304,6 @@ DROP view if exists v_bios_asset_link_type;
 DROP view if exists v_bios_asset_link;
 DROP VIEW IF EXISTS v_bios_monitor_asset_relation;
 
-DROP VIEW IF EXISTS v_bios_alert_device;
-CREATE VIEW v_bios_alert_device AS
-    SELECT
-        id,
-        alert_id,
-        device_id
-    FROM
-        t_bios_alert_device;
-
-
-DROP VIEW IF EXISTS v_bios_alert;
-CREATE VIEW v_bios_alert AS
-    SELECT
-        id,
-        rule_name,
-        date_from,
-        priority,
-        state,
-        description,
-        date_till,
-        notification
-    FROM
-        t_bios_alert;
-
 DROP VIEW IF EXISTS v_bios_asset_element_type;
 CREATE VIEW v_bios_asset_element_type AS
     SELECT
@@ -406,31 +344,6 @@ CREATE VIEW v_web_element AS
         LEFT JOIN t_bios_asset_device_type v4
             ON (v4.id_asset_device_type = t1.id_subtype);
 
-
-/* for REST API: /asset/all */
-DROP VIEW IF EXISTS v_web_alert_all;
-CREATE VIEW v_web_alert_all AS
-    SELECT
-        v1.id,
-        v1.rule_name,
-        v1.date_from,
-        v1.priority,
-        v1.state,
-        v1.description,
-        v1.date_till,
-        v1.notification,
-        t3.id_asset_element,
-        v4.type_name,
-        v4.subtype_name
-    FROM
-        v_bios_alert v1
-        LEFT JOIN v_bios_alert_device v2
-            ON v1.id = v2.alert_id
-        LEFT JOIN t_bios_monitor_asset_relation t3
-            ON v2.device_id = t3.id_discovered_device
-        LEFT JOIN v_web_element v4
-            ON t3.id_asset_element = v4.id
-    ORDER BY v1.id;
 
 DROP VIEW IF EXISTS v_bios_asset_link;
 CREATE VIEW v_bios_asset_link AS
