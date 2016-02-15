@@ -698,7 +698,9 @@ void
     load_asset_csv
         (std::istream& input,
          std::vector <std::pair<db_a_elmnt_t,persist::asset_operation>> &okRows,
-         std::map <int, std::string> &failRows)
+         std::map <int, std::string> &failRows,
+         touch_cb_t touch_fn
+         )
 {
     LOG_START;
 
@@ -718,7 +720,7 @@ void
     CsvMap cm{data};
     cm.deserialize();
 
-    return load_asset_csv(cm, okRows, failRows);
+    return load_asset_csv(cm, okRows, failRows, touch_fn);
 }
 
 std::pair<db_a_elmnt_t, persist::asset_operation>
@@ -762,7 +764,9 @@ void
     load_asset_csv
         (const CsvMap& cm,
          std::vector <std::pair<db_a_elmnt_t,persist::asset_operation>> &okRows,
-         std::map <int, std::string> &failRows)
+         std::map <int, std::string> &failRows,
+         touch_cb_t touch_fn
+         )
 {
     LOG_START;
 
@@ -797,6 +801,7 @@ void
     {
         try{
             auto ret = process_row(conn, cm, row_i, TYPES, SUBTYPES, ids);
+            touch_fn ();
             okRows.push_back (ret);
             log_info ("row %zu was imported successfully", row_i);
         }

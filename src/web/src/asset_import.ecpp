@@ -85,7 +85,11 @@ try{
     std::ifstream inp{path_p};
     std::vector <std::pair<db_a_elmnt_t,persist::asset_operation>> okRows{};
     std::map<int,std::string> failRows{};
-    persist::load_asset_csv(inp, okRows, failRows);
+
+    auto touch_fn = [&request]() {
+        request.touch ();};
+    persist::load_asset_csv(inp, okRows, failRows, touch_fn);
+
     inp.close();
     ::unlink(path_p.c_str());
 
