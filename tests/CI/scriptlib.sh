@@ -277,6 +277,54 @@ logmsg_trace() {
     :
 }
 
+logmsg_sut_run() {
+    WANT_DEBUG_LEVEL=$CI_DEBUGLEVEL_RUN
+    if [ "$1" -ge 0 ] 2>/dev/null; then
+        WANT_DEBUG_LEVEL="$1"
+        shift
+    else if [ x"$1" = x"" ] && [ $# -gt 0 ]; then shift; fi
+    fi
+    [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
+    echo_E "${LOGMSG_PREFIX}TRACE-SUT_RUN: ${_SCRIPT_PATH}:" "$@" >&2
+    :
+}
+
+logmsg_loaddb() {
+    WANT_DEBUG_LEVEL=$CI_DEBUGLEVEL_LOADDB
+    if [ "$1" -ge 0 ] 2>/dev/null; then
+        WANT_DEBUG_LEVEL="$1"
+        shift
+    else if [ x"$1" = x"" ] && [ $# -gt 0 ]; then shift; fi
+    fi
+    [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
+    echo_E "${LOGMSG_PREFIX}TRACE-LOADDB: ${_SCRIPT_PATH}:" "$@" >&2
+    :
+}
+
+logmsg_dumpdb() {
+    WANT_DEBUG_LEVEL=$CI_DEBUGLEVEL_DUMPDB
+    if [ "$1" -ge 0 ] 2>/dev/null; then
+        WANT_DEBUG_LEVEL="$1"
+        shift
+    else if [ x"$1" = x"" ] && [ $# -gt 0 ]; then shift; fi
+    fi
+    [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
+    echo_E "${LOGMSG_PREFIX}TRACE-DUMPDB: ${_SCRIPT_PATH}:" "$@" >&2
+    :
+}
+
+logmsg_do_select() {
+    WANT_DEBUG_LEVEL=$CI_DEBUGLEVEL_SELECT
+    if [ "$1" -ge 0 ] 2>/dev/null; then
+        WANT_DEBUG_LEVEL="$1"
+        shift
+    else if [ x"$1" = x"" ] && [ $# -gt 0 ]; then shift; fi
+    fi
+    [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
+    echo_E "${LOGMSG_PREFIX}TRACE-DO_SELECT: ${_SCRIPT_PATH}:" "$@" >&2
+    :
+}
+
 logmsg_debug() {
     # A script can flexibly define its different debug messages via variables
     # with debug-levels assigned (and easily changeable) to different subjects
@@ -431,7 +479,7 @@ sut_run() {
     ### NOTE: By current construction this may fail for parameters that are
     ### not one token aka "$1".
     if isRemoteSUT ; then
-        logmsg_info "$CI_DEBUGLEVEL_RUN" \
+        logmsg_sut_run \
             "sut_run()::ssh(${SUT_HOST}:${SUT_SSH_PORT}): $@" >&2
         SSH_TERMINAL_REQUEST=""
         [ "$1" = "-t" ] && shift && SSH_TERMINAL_REQUEST="-t -t" #" -o RequestTTY=true"
@@ -442,7 +490,7 @@ sut_run() {
         return $?
     else
         [ "$1" = "-t" ] && shift        # Ignore for local host
-        logmsg_info "$CI_DEBUGLEVEL_RUN" \
+        logmsg_sut_run \
             "sut_run()::local: $@" >&2
         if [ "$CI_DEBUG" -ge "$CI_DEBUGLEVEL_RUN" ] 2>/dev/null ; then
             bash -x -c "$@"
@@ -464,7 +512,7 @@ do_select() {
     ### followed by results, as our tail is chopped below).
     ### Note2: As verified on version 10.0.17-MariaDB, the amount of trailing
     ### semicolons does not matter for such non-interactive mysql client use.
-    logmsg_info "$CI_DEBUGLEVEL_SELECT" \
+    logmsg_do_select \
         "do_select(): $1 ;" >&2
     if [ -z "${DBPASSWD-}" ]; then
         echo "$1" | sut_run "mysql -u ${DBUSER} -D ${DATABASE} -N -s"
@@ -481,7 +529,7 @@ do_select() {
 do_dumpdb() {
     # Unifies the call to get a dump of our database, either all (by default)
     # or some tables etc. via custom arguments that may be set by the caller.
-    logmsg_info "$CI_DEBUGLEVEL_DUMPDB" \
+    logmsg_dumbdb \
         "do_dumpdb(): $@ ;" >&2
     if [ -z "${DBPASSWD-}" ]; then
         sut_run "mysqldump -u ${DBUSER} \"${DATABASE}\" $@"
@@ -509,16 +557,16 @@ loaddb_file() {
     ### Due to comments currently don't converge to sut_run(), maybe TODO later
     if isRemoteSUT ; then
         ### Push local SQL file contents to remote system and sleep a bit
-        logmsg_info "$CI_DEBUGLEVEL_LOADDB" \
+        logmsg_loaddb \
             "loaddb_file()::ssh(${SUT_HOST}:${SUT_SSH_PORT}): $DBFILE" >&2
         ( sut_run "systemctl start mysql"
           REMCMD="mysql -u ${DBUSER}"
           eval sut_run "${REMCMD}" "<$DBFILE" && \
           { [ "$LOADDB_FILE_REMOTE_SLEEP" -gt 0 ] 2>/dev/null && sleep ${LOADDB_FILE_REMOTE_SLEEP} || true; } && \
-          logmsg_info "Updated DB on remote system $SUT_HOST:$SUT_SSH_PORT: $DBFILE" ) || \
+          logmsg_loaddb "Updated DB on remote system $SUT_HOST:$SUT_SSH_PORT: $DBFILE" ) || \
           CODE=$? die "Could not load database file to remote system $SUT_HOST:$SUT_SSH_PORT: $DBFILE"
     else
-        logmsg_info "$CI_DEBUGLEVEL_LOADDB" \
+        logmsg_loaddb \
             "loaddb_file()::local: $DBFILE" >&2
         eval mysql -u "${DBUSER}" "<$DBFILE" > /dev/null || \
             CODE=$? die "Could not load database file: $DBFILE"
@@ -540,7 +588,7 @@ loaddb_file_params() {
     local DBFILE="$1"
     shift
 
-    logmsg_info "$CI_DEBUGLEVEL_LOADDB" \
+    logmsg_loaddb \
         "loaddb_file_params()::local: $DBFILE $@" >&2
 
     local E=
