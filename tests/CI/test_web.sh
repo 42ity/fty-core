@@ -76,10 +76,7 @@ SKIPPED_NONSH_TESTS=0
 [ x"${SKIP_SANITY-}" = x- ] && SKIP_SANITY=""
 [ -z "$SKIP_SANITY" ] && SKIP_SANITY=no
 
-[ x"${SUT_WEB_SCHEMA-}" = x- ] && SUT_WEB_SCHEMA=""
-[ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="https"
-
-    # *** read parameters if present
+# *** read parameters if present
 while [ $# -gt 0 ]; do
     case "$1" in
         --port-ssh|--sut-port-ssh|-sp)
@@ -123,7 +120,15 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-if [ "${SUT_IS_REMOTE}" = yes ]; then
+[ x"${SUT_WEB_SCHEMA-}" = x- ] && SUT_WEB_SCHEMA=""
+# *** default connection parameters values:
+case "${SUT_IS_REMOTE}" in
+no)
+	[ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="http"
+	;;
+yes)
+	# default values:
+	[ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="https"
 	# default values:
 	[ -z "${SUT_USER-}" ] && SUT_USER="root"
 	[ -z "${SUT_HOST-}" ] && SUT_HOST="debian.roz53.lab.etn.com"
@@ -132,17 +137,17 @@ if [ "${SUT_IS_REMOTE}" = yes ]; then
 	# port used for REST API requests:
 	if [ -z "${SUT_WEB_PORT-}" ]; then
 		if [ -n "${BIOS_PORT-}" ]; then
-		    SUT_WEB_PORT="$BIOS_PORT"
+			SUT_WEB_PORT="$BIOS_PORT"
 		else
-		    SUT_WEB_PORT=$(expr $SUT_SSH_PORT + 8000)
-		    [ "${SUT_SSH_PORT-}" -ge 2200 ] && \
-		        SUT_WEB_PORT=$(expr $SUT_WEB_PORT - 2200)
+			SUT_WEB_PORT=$(expr $SUT_SSH_PORT + 8000)
+			[ "${SUT_SSH_PORT-}" -ge 2200 ] && \
+				SUT_WEB_PORT=$(expr $SUT_WEB_PORT - 2200)
 		fi
 	fi
-
 	# unconditionally calculated values for current setup
 	BASE_URL="${SUT_WEB_SCHEMA}://$SUT_HOST:$SUT_WEB_PORT/api/v1"
-fi
+#auto|""|*) ;; ### Defaulted in the script libraries below
+esac
 
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
