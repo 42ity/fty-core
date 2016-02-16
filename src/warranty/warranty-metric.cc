@@ -95,10 +95,10 @@ int main()
             const char* severity = NULL;
             const char* state = "ACTIVE";
             if (day_diff <= 10)
-                severity = "HIGH_CRITICAL";
+                severity = "CRITICAL";
             else
             if (day_diff <= 60)
-                severity = "LOW_WARNING";
+                severity = "WARNING";
 
             if (!severity)
                 state = "RESOLVED";
