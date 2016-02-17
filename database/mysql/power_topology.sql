@@ -24,7 +24,7 @@ insert into t_bios_asset_group_relation (id_asset_group_relation , id_asset_grou
 
 /* prepared to insert */
 
-INSERT INTO t_bios_asset_device_type (name) VALUES ("sink");
+INSERT INTO t_bios_asset_device_type (name) VALUES ("sink") on duplicate key update name = "sink";
 
 SELECT @id_ups := id_asset_device_type FROM t_bios_asset_device_type WHERE name = 'ups';
 SELECT @id_sink := id_asset_device_type FROM t_bios_asset_device_type WHERE name = 'sink';
