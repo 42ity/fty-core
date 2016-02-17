@@ -10,9 +10,9 @@
                               {"high_warning"  : "235"},
                               {"high_critical" : "240"} ],
         "results"       :   [
-            { "low_warning"   : { "action" : ["EMAIL","SMS"], "severity" : "high", "description" : "Input voltage (1 phase) in device __name__ is critically low"  }},
-            { "low_critical"  : { "action" : ["EMAIL","SMS"], "severity" : "low", "description" : "Input voltage (1 phase) in device __name__ is critically low" }},
-            { "high_warning"  : { "action" : ["EMAIL","SMS"], "severity" : "low", "description" : "Input voltage (1 phase) in device __name__ is critically low" }},
-            { "high_critical" : { "action" : ["EMAIL","SMS"], "severity" : "high", "description" : "Input voltage (1 phase) in device __name__ is critically low"}} ]
+            { "low_warning"   : { "action" : ["EMAIL","SMS"], "severity" : "WARNING", "description" : "Input voltage (1 phase) in device __name__ is critically low"  }},
+            { "low_critical"  : { "action" : ["EMAIL","SMS"], "severity" : "CRITICAL", "description" : "Input voltage (1 phase) in device __name__ is critically low" }},
+            { "high_warning"  : { "action" : ["EMAIL","SMS"], "severity" : "WARNING", "description" : "Input voltage (1 phase) in device __name__ is critically low" }},
+            { "high_critical" : { "action" : ["EMAIL","SMS"], "severity" : "CRITICAL", "description" : "Input voltage (1 phase) in device __name__ is critically low"}} ]
     }
 }

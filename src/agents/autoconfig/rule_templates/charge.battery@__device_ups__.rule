@@ -8,8 +8,8 @@
         "values"        :   [
             {"low_warning"  : "50"},
             {"low_critical" : "25"} ],
-        "results"       :   [ {"low_warning"  : { "action" : ["EMAIL","SMS"], "description" : "Battery Level low" }},
-                              {"low_critical" : { "action" : ["EMAIL","SMS"], "description" : "Battery Level critically low" }} ],
+        "results"       :   [ {"low_warning"  : { "action" : ["EMAIL","SMS"], "severity" : "WARNING", "description" : "Battery Level low" }},
+                              {"low_critical" : { "action" : ["EMAIL","SMS"], "severity" : "CRITICAL", "description" : "Battery Level critically low" }} ],
         "evaluation" : "function main(v1) if (v1 < low_critical) then return LOW_CRITICAL end; if (v1 > low_critical and v1 < low_warning) then return LOW_WARNING end; return OK; end"
     }
 }

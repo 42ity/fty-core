@@ -9,8 +9,8 @@
                               {"high_warning"  : "70"},
                               {"high_critical" : "90"} ],
         "results"       :   [
-                              {"high_warning"  : { "action" : ["EMAIL","SMS"], "description" : "Section Load high warning" }},
-                              {"high_critical" : { "action" : ["EMAIL","SMS"], "description" : "Section Load high critical"}} ],
+                              {"high_warning"  : { "action" : ["EMAIL","SMS"], "severity" : "WARNING", "description" : "Section Load high warning" }},
+                              {"high_critical" : { "action" : ["EMAIL","SMS"], "severity" : "CRITICAL", "description" : "Section Load high critical"}} ],
         "evaluation"    :   "function main(v1) if (v1 > high_critical) then return HIGH_CRITICAL end; if (v1 > high_warning) then return HIGH_WARNING end; return OK; end"
 
     }

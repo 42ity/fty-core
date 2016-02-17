@@ -9,8 +9,8 @@
             { "high_critical": "10"},
             { "high_warning": "20"} ],
 		"results": [
-            { "high_critical": { "action": ["EMAIL"], "severity" : "high", "description": "Phase imbalance in device __name__ is critically high" }},
-            { "high_warning": { "action": ["EMAIL"], "severity" : "high", "description": "Phase imbalance in device __name__ is high" }} ],
+            { "high_critical": { "action": ["EMAIL"], "severity" : "CRITICAL", "description": "Phase imbalance in device __name__ is critically high" }},
+            { "high_warning": { "action": ["EMAIL"], "severity" : "CRITICAL", "description": "Phase imbalance in device __name__ is high" }} ],
 		"evaluation": "function main(f1,f2,f3) local avg = (f1 + f2 + f3) / 3; local deviation = math.max (math.abs (f1 - avg), math.abs (f2 - avg), math.abs (f3 - avg)); local percentage = deviation / avg * 100; if (percentage > high_critical) then return HIGH_CRITICAL end; if (percentage > high_warning) then return HIGH_WARNING end; return OK; end"
 	}
 }

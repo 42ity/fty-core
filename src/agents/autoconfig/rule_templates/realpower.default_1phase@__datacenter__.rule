@@ -11,9 +11,9 @@
             { "high_warning"    : "0" },
             { "high_critical"   : "0" } ],
         "results"       :   [
-            {"low_critical"  : { "action" : ["EMAIL","SMS"], "severity" : "high", "description" : "Total power (1 phase) in datacenter __name__ is critically low" }},
-            {"low_warning"   : { "action" : ["EMAIL"], "severity" : "low", "description" : "Total power (1 phase) in datacenter __name__ is low" }},
-            {"high_warning"  : { "action" : ["EMAIL"], "severity" : "low", "description" : "Total power (1 phase) in datacenter __name__ is high" }},
-            {"high_critical" : { "action" : ["EMAIL","SMS"], "severity" : "high", "description" : "Total power (1 phase) in datacenter __name__ is critically high" }} ]
+            {"low_critical"  : { "action" : ["EMAIL","SMS"], "severity" : "CRITICAL", "description" : "Total power (1 phase) in datacenter __name__ is critically low" }},
+            {"low_warning"   : { "action" : ["EMAIL"], "severity" : "WARNING", "description" : "Total power (1 phase) in datacenter __name__ is low" }},
+            {"high_warning"  : { "action" : ["EMAIL"], "severity" : "WARNING", "description" : "Total power (1 phase) in datacenter __name__ is high" }},
+            {"high_critical" : { "action" : ["EMAIL","SMS"], "severity" : "CRITICAL", "description" : "Total power (1 phase) in datacenter __name__ is critically high" }} ]
     }
 }

@@ -5,7 +5,7 @@
         "element"       :   "__name__",
         "values"        :   [ ],
         "results"       :   [
-            {"high_critical"  : { "action" : ["EMAIL","SMS"], "severity" : "high", "description" : "Ups __name__ is running on battery!" }} ],
+            {"high_critical"  : { "action" : ["EMAIL","SMS"], "severity" : "CRITICAL", "description" : "Ups __name__ is running on battery!" }} ],
         "evaluation"    : "function has_bit(x,bit) local mask = 2 ^ (bit - 1); x = x % (2*mask); if x >= mask then return true else return false end end; function main(status) if has_bit(status,5) then return HIGH_CRITICAL end return OK end"
     }
 }
