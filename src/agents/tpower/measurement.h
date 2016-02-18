@@ -16,37 +16,18 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-/*! \file   alert_measurement.h
+/*! \file   measurement.h
     \brief  Object representing one measurement
     \author Tomas Halman <TomasHalman@Eaton.com>
 */
 
-#ifndef SRC_AGENTS_ALERT_ALERT_MEASUREMENT_H__
-#define SRC_AGENTS_ALERT_ALERT_MEASUREMENT_H__
+#ifndef SRC_AGENTS_TPOWER_MEASUREMENT_H__
+#define SRC_AGENTS_TPOWER_MEASUREMENT_H__
 
 #include <string>
 #include <ctime>
 
 #include "ymsg.h"
-
-typedef enum {
-    ALARM_STATE_UNKNOWN = -1,
-    ALARM_STATE_NO_ALARM,
-    ALARM_STATE_ONGOING_ALARM
-} alarm_state_t;
-
-typedef enum {
-    ALARM_SEVERITY_UNKNOWN = 0,
-    ALARM_SEVERITY_P1,
-    ALARM_SEVERITY_P2,
-    ALARM_SEVERITY_P3,
-    ALARM_SEVERITY_P4,
-    ALARM_SEVERITY_P5
-} alarm_severity_t;
-
-
-#define NO_ALARM_PUBLISH_INTERVAL 20
-#define ONGOING_ALARM_PUBLISH_INTERVAL 5
 
 class Measurement {
  public:
@@ -92,5 +73,5 @@ inline bool operator!=( const Measurement &lhs, const Measurement &rhs ) {
     return ! ( lhs == rhs );
 }
 
-#endif // SRC_AGENTS_ALERT_ALERT_MEASUREMENT_H__
+#endif // SRC_AGENTS_TPOWER_MEASUREMENT_H__
 

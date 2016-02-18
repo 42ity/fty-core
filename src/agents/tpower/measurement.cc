@@ -19,13 +19,13 @@
  */
 
 /*!
- * \file alert-measurement.cc
+ * \file measurement.cc
  * \author Tomas Halman <TomasHalman@Eaton.com>
  * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
  * \author Karol Hrdina <KarolHrdina@Eaton.com>
  * \brief Not yet documented file
  */
-#include "alert-measurement.h"
+#include "measurement.h"
 
 #include<iostream>
 #include<ctime>
