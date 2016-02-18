@@ -1789,7 +1789,7 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
             "   v.id_asset_element, v.name,"
-            "   v.type_name, v.id_asset_device_type"
+            "   v.id_asset_device_type"
             " FROM"
             "   v_bios_asset_element_super_parent v"
             " WHERE :dcid IN (v.id_parent1, v.id_parent2 ,v.id_parent3,"
@@ -1815,15 +1815,11 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
             row[1].get(device_name);
             assert ( !device_name.empty() );
 
-            // device_type_name, required
-            std::string device_type_name = "";
-            row[2].get(device_type_name);
-            assert ( !device_type_name.empty() );
-
             // device_type_id, required
             a_dvc_tp_id_t device_type_id = 0;
-            row[3].get(device_type_id);
+            row[2].get(device_type_id);
             assert ( device_type_id );
+            std::string device_type_name = persist::subtypeid_to_subtype (device_type_id);
 
             log_debug ("for");
             log_debug ("device_name = %s", device_name.c_str());
