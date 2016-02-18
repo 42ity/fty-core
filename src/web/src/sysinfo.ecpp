@@ -86,7 +86,6 @@ std::string debug_trace;
 // Certain strings returned to caller in some cases
     static const std::string UNKNOWN = "unknown";
     static const std::string UNAUTHORIZED = "unauthorized";
-    static const std::string AVAILABLE = "available";
     static const std::string NOTAVAILABLE = "N/A";
     static const std::string NOTLICENSEDYET = "License not accepted yet";
 
