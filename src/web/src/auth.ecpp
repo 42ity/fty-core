@@ -48,7 +48,6 @@
 std::string grant_type="";
 std::string username="";
 std::string password="";
-std::string client_id="";
 std::string token="";
 </%args>
 <%cpp>
@@ -62,7 +61,6 @@ std::string token="";
     FILL(token)
     FILL(username)
     FILL(password)
-    FILL(client_id)
     FILL(token)
     FILL(grant_type);
 

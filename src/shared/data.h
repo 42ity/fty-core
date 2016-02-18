@@ -54,8 +54,6 @@ class asset_manager {
 class measures_manager {
     public:
         std::string map_names(std::string name);
-        std::string map_values(std::string name, std::string value);
-        std::string apply_scale(const std::string &val, const std::string &scale);
         int
             get_last_10minute_measurement(
                 const std::string &source,

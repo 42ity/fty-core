@@ -91,23 +91,6 @@ static std::string s_scale(const std::string& val, int8_t scale) {
 
 }
 
-std::string measures_manager::apply_scale(const std::string &val, const std::string &scale)
-{
-    int scale_num = std::stoi (scale, nullptr, 10);
-    return s_scale(val, scale_num);
-}
-
-std::string measures_manager::map_values(std::string name, std::string value) {
-    static std::map<std::string, MapValuesTransformation > map = {
-        { "status.ups", &shared::upsstatus_to_string }
-    };
-    
-    auto it = map.find(name);
-    if(it != map.end()) {
-        return "\"" + it->second(value) + "\"";
-    }
-    return value;
-}
 
 int
     measures_manager::get_last_10minute_measurement(

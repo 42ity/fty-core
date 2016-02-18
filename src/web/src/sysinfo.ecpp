@@ -86,7 +86,6 @@ std::string debug_trace;
 // Certain strings returned to caller in some cases
     static const std::string UNKNOWN = "unknown";
     static const std::string UNAUTHORIZED = "unauthorized";
-    static const std::string AVAILABLE = "available";
     static const std::string NOTAVAILABLE = "N/A";
     static const std::string NOTLICENSEDYET = "License not accepted yet";
 
@@ -161,11 +160,11 @@ std::string debug_trace;
       , <$$ utils::json::jsonify ("installation-date", installation_date) $>
 <%cpp>
     std::string location = "N/A - Error retrieving location";
-    bool do_break = false;
     try {
         tntdb::Connection conn = tntdb::connectCached(url);
         db_reply <std::map <uint32_t, std::string>>
         elements = persist::select_short_elements (conn, persist::asset_type::DATACENTER, persist::asset_subtype::N_A);
+        bool do_break = false;
         for (std::map<uint32_t, std::string>::const_iterator it = elements.item.cbegin(); it != elements.item.cend(); ++it) {
             // it->first is element_id
             std::map <std::string, std::pair<std::string, bool>> ext;
