@@ -999,19 +999,6 @@ TESTS += $(check_SCRIPTS)
 #                        binaries
 #----------------------------------------------------------------------
 
-client_PROGRAMS += 	server-agent
-
-server_agent_SOURCES =	src/agents/server-agent/server-agent.cc src/shared/sample_agent.cc
-
-server_agent_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS} -lbiosapi
-
-server_agent_LDADD = \
-			 libpriv-proto.la \
-			 libpriv-log.la \
-			 libpriv-defs.la
-
-server_agent_CPPFLAGS =	$(AM_CPPFLAGS)
-
 bin_PROGRAMS += 		generate_measurement
 
 generate_measurement_SOURCES =	tools/generate_measurement.cc
@@ -1552,8 +1539,7 @@ SYSTEMD_UNITS_TARGET_BIOS += \
                         bios-agent-dbstore.service \
                         bios-agent-inventory.service \
                         bios-agent-nut.service \
-                        bios-agent-tpower.service \
-                        bios-server-agent.service
+                        bios-agent-tpower.service
 
 # Here we list the actual service-definition files that should be compiled
 # Enabled as part of BIOS presets
