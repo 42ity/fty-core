@@ -294,10 +294,10 @@ PartOf=bios.target
 
 [Service]
 Type=simple
+EnvironmentFile=-/usr/share/bios/etc/default/bios
+EnvironmentFile=-/usr/share/bios/etc/default/bios__%n.conf
 EnvironmentFile=-/etc/default/bios
-EnvironmentFile=-/etc/sysconfig/bios
 EnvironmentFile=-/etc/default/bios__%n.conf
-EnvironmentFile=-/etc/sysconfig/bios__%n.conf
 EnvironmentFile=-/etc/default/bios-db-rw
 PrivateTmp=true
 ExecStartPre=/usr/share/bios/scripts/ssl-create.sh
@@ -337,15 +337,15 @@ rm -f /etc/tntnet/bios.d/20_core.xml
 find / -name systemd-logind.service -delete
 
 # Disable expensive debug logging by default on non-devel images
-mkdir -p /etc/default/
+mkdir -p /usr/share/bios/etc/default
 if [ "$IMGTYPE" = devel ] ; then
-    echo "BIOS_LOG_LEVEL=LOG_DEBUG" > /etc/default/bios
+    echo "BIOS_LOG_LEVEL=LOG_DEBUG" > /usr/share/bios/etc/default/bios
 else
-    echo "BIOS_LOG_LEVEL=LOG_INFO" > /etc/default/bios
+    echo "BIOS_LOG_LEVEL=LOG_INFO" > /usr/share/bios/etc/default/bios
     sed -i 's|.*MaxLevelStore.*|MaxLevelStore=info|'                  /etc/systemd/journald.conf
 fi
 # set path to our libexec directory
-echo "PATH=/usr/libexec/bios:/bin:/usr/bin:/sbin:/usr/sbin" >>/etc/default/bios
+echo "PATH=/usr/libexec/bios:/bin:/usr/bin:/sbin:/usr/sbin" >>/usr/share/etc/default/bios
 
 # Setup some busybox commands
 for i in vi tftp wget; do
