@@ -145,7 +145,7 @@ std::string
         case asset_subtype::VIRTUAL:
             return "vm";
         case asset_subtype::N_A:
-            return "";
+            return "N_A";
         default:
             return "unknown";
     }
