@@ -369,7 +369,7 @@ EOF
 # TODO: revise the list of BIOS services here
 if [ -f /usr/bin/zabbix_agent ]; then
 for i in mysql tntnet@bios malamute \
-    bios-db bios-server-agent bios-agent-inventory bios-agent-nut bios-driver-netmon \
+    bios-db bios-agent-inventory bios-agent-nut bios-driver-netmon \
     nut-driver nut-monitor systemd-journald \
 ; do
    find /lib /usr -name "$i".service | while read file; do
