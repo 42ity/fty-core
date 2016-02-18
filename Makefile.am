@@ -1228,7 +1228,7 @@ client_PROGRAMS +=	agent-tpower
 agent_tpower_SOURCES = \
 			src/agents/tpower/agent-tpower.cc \
 			src/agents/tpower/tp-unit.cc \
-			src/agents/tpower/alert-measurement.cc
+			src/agents/tpower/measurement.cc
 
 agent_tpower_LDADD = \
 			libpriv-log.la \
