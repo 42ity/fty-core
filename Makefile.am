@@ -413,11 +413,7 @@ libpriv_db_la_SOURCES = \
 			src/db/agentstate/agentstate.cc \
 			src/db/agentstate/agentstate.h \
 			src/db/agentstate.h \
-			tools/dbpath.cc
-
-noinst_LTLIBRARIES += 		libpriv-enums.la
-
-libpriv_enums_la_SOURCES = \
+			tools/dbpath.cc \
 			src/shared/asset_types.cc \
 			src/shared/asset_types.h \
 			src/shared/dbtypes.h
@@ -1130,8 +1126,7 @@ agent_autoconfig_LDADD = \
 			libpriv-subprocess.la \
 			libpriv-utils-ymsg.la \
 			libpriv-utils-web.la \
-			libpriv-utils-plusplus.la \
-			libpriv-enums.la 
+			libpriv-utils-plusplus.la
 
 # FIXME remove utils ymsg
 
@@ -1379,8 +1374,7 @@ bios_web_la_LIBADD = \
 			libpriv-db-measurements.la \
 			libpriv-magic.la \
 			libpriv-configure-inform.la \
-			libpriv-utils-web.la \
-			libpriv-enums.la
+			libpriv-utils-web.la
 
 dist_noinst_HEADERS += \
 			src/shared/data.h \
