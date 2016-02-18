@@ -58,7 +58,7 @@ static const char *list[] =
     "bios-agent-dbstore", "bios-agent-inventory", "bios-agent-nut",
     "bios-agent-asset", "bios-agent-legacy-metrics", "kpi-uptime",
     "agent-th", "bios-agent-tpower", "bios-db-init",
-    "bios-server-agent", "dc_th",
+    "dc_th",
     "biostimer-warranty-metric", "biostimer-graphs-prefetch",
 // TODO: Wildcard services, e.g. instances defined at run-time
 // NUT services
