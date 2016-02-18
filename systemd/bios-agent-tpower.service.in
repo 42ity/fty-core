@@ -9,10 +9,10 @@ PartOf=bios.target
 [Service]
 Type=simple
 User=nobody
+EnvironmentFile=-/usr/share/bios/etc/default/bios
+EnvironmentFile=-/usr/share/bios/etc/default/bios__%n.conf
 EnvironmentFile=-/etc/default/bios
-EnvironmentFile=-/etc/sysconfig/bios
 EnvironmentFile=-/etc/default/bios__%n.conf
-EnvironmentFile=-/etc/sysconfig/bios__%n.conf
 EnvironmentFile=-/etc/default/bios-db-ro
 ExecStart=@libexecdir@/@PACKAGE@/agent-tpower
 
