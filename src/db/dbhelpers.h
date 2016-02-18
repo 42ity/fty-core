@@ -292,7 +292,7 @@ bool is_ok_value (const char* value);
 
 
 /**
- * \brief Checks if device type is is correct
+ * \brief Checks if device type is correct
  *
  * Checks only if device type is specified (!=0)
  *
@@ -346,28 +346,6 @@ bool is_ok_mac (const char *mac);
  *         false - link type is not correct
  */
 bool is_ok_link_type (a_lnk_tp_id_t link_type_id);
-
-
-/**
- * \brief Checks if the rule_name is correct
- *
- * \param rule_name - rule name to check
- *
- * \return true  - ok
- *         false - rule_name is not correct
- */
-bool is_ok_rule_name (const char *rule_name);
-
-
-/**
- * \brief Checks if priority is correct
- *
- * \param priority - priority type to check
- *
- * \return true  - ok
- *         false - priority is not correct
- */
-bool is_ok_priority (a_elmnt_pr_t priority);
 
 
 /**
