@@ -30,7 +30,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <ctime>
 #include <functional>
 
-#include "alert-measurement.h"
+#include "measurement.h"
 #include "ymsg.h"
 
 //! \brief class representing total power calculation unit (rack or DC)
