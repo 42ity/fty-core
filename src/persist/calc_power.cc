@@ -53,17 +53,6 @@ bool is_ups (const device_info_t &device)
 }
 
 
-bool is_it_device (const device_info_t &device)
-{
-    auto device_type_id = std::get<3>(device);
-    // TODO add all IT devices
-    if ( device_type_id == DEVICE_TYPE_SERVER )
-        return true;
-    else
-        return false;
-}
-
-
 /**
  *  \brief From set of links derives set of elements that at least once were
  *  a dest device in a link.
@@ -75,7 +64,7 @@ static std::set<a_elmnt_id_t>
          a_elmnt_id_t element_id)
 {
     std::set<a_elmnt_id_t> dests;
-    
+
     for ( auto &one_link: links )
     {
         if ( std::get<0>(one_link) == element_id )
@@ -123,8 +112,6 @@ static void
                           new_border_devices.end());
     LOG_END;
 }
-
-
 
 
 bool
