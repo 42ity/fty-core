@@ -27,7 +27,6 @@
 #include <sys/syscall.h>
 
 #include <cxxtools/jsondeserializer.h>
-#include <cxxtools/serializationinfo.h>
 #include "configure_inform.h"
 #include "utils_web.h"
 #include "inout.h"
@@ -109,7 +108,7 @@
     }
     catch (const std::exception& e) {
         LOG_END_ABNORMAL(e);
-        http_die("internal-error");
+        http_die("internal-error", "Consult system log");
     }
 }
 </%cpp>
