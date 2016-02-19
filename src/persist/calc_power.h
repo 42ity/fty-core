@@ -79,17 +79,6 @@ bool is_pdu (const device_info_t &device);
 bool is_ups (const device_info_t &device);
 
 
-/**
- * \brief Checks the type of device.
- *
- * \param device - a device to be checked.
- *
- * \return true  if it is an IT device.
- *         false if it is not an IT device.
- */
-bool is_it_device (const device_info_t &device);
-
-
 // ===========================================================================
 // Functions that find power sources
 // ===========================================================================

@@ -45,7 +45,6 @@ bool TemplateRuleConfigurator::v_configure (const std::string& name, const AutoC
             }
 
             return result;
-            break;
         }
         case persist::asset_operation::UPDATE:
         case persist::asset_operation::DELETE:
