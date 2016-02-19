@@ -36,61 +36,13 @@
 #include "log.h"
 #include "asset_types.h"
 #include "dbpath.h"
-#include "monitor.h"
-#include "upsstatus.h"
 #include "defs.h"
 
 #include "asset_general.h"
 #include "utils.h"
 #include "measurements.h"
 
-#include "db/agentstate.h"
-
 typedef std::string (*MapValuesTransformation)(std::string);
-
-
-static std::string s_scale(const std::string& val, int8_t scale) {
-// TODO: Refactor away multiple calls to val.size(),
-// they seem redundant (val does not change here?)
-    assert(val != "");
-// The string.size() is a size_t (unsigned int or larger), and
-// our scale is a signed byte; make sure they fit each other
-    assert(val.size() <= SCHAR_MAX);
-
-    std::string ret{val};
-
-    //1. no scale, nothing to do
-    if (!scale)
-        return ret;
-
-    //2. positive scale, simply append things
-    if (scale > 0) {
-        while (scale > 0) {
-            ret.append("0");
-            scale--;
-        }
-        return ret;
-    }
-
-    //3. scale is "bigger" than size of string,
-    if (-scale >= (int8_t)val.size()) {
-        //3a. prepend zeroes
-        while (-scale != (int8_t)val.size()) {
-            ret.insert(0, "0");
-            scale++;
-        }
-
-        //3b and prepend 0.
-        ret.insert(0, "0.");
-        return ret;
-    }
-
-    //4. just find the right place for dot
-    ret.insert(val.size() + scale, ".");
-    return ret;
-
-}
-
 
 int
     measures_manager::get_last_10minute_measurement(
