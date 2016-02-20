@@ -93,12 +93,13 @@ test_it "authorized sysinfo - commitid-core-restapi"
 JPATH='^"restapi-metadata","source-repo","commit"$'
 BLD_COMMIT="`echo "$OUTPUT" | jsonsh_cli -x="$JPATH" | awk -F'\t' '{ print $2 }' | sed -e 's,^\"\(.*\)\"$,\1,' | tr '[A-Z]' '[a-z]'`"
 if [ $? -eq 0 -a -n "$BLD_COMMIT" ]; then
-    logmsg_info "Commit ID built into REST API binaries is '$BLD_COMMIT'"
+    logmsg_info "Commit ID built into REST API binaries is found: '$BLD_COMMIT'"
     print_result 0
 
     if [ -n "$PKG_COMMIT" -a x"$PKG_COMMIT" != "xN/A" ]; then
-        test_it "authorized sysinfo - commitid-core-COMPARE"
+        test_it "authorized sysinfo:commitid-core-COMPARE-restapi-to-package"
 
+        # Align the lengths of commit hashes - full of short
         [ "${#PKG_COMMIT}" = "${#BLD_COMMIT}" ] || \
         if [ "${#PKG_COMMIT}" -gt "${#BLD_COMMIT}" ]; then
             PKG_COMMIT="`echo "$PKG_COMMIT" | cut -c 1-"${#BLD_COMMIT}"`"
@@ -109,6 +110,24 @@ if [ $? -eq 0 -a -n "$BLD_COMMIT" ]; then
         logmsg_info "Comparing PKG_COMMIT='$PKG_COMMIT' and BLD_COMMIT='$BLD_COMMIT'"
         [ x"$PKG_COMMIT" = x"$BLD_COMMIT" ]
         print_result -$?
+    fi
+
+    if [ -s "$BUILDSUBDIR/.git_details" ]; then
+        CI_COMMIT="$(. "$BUILDSUBDIR/.git_details" > /dev/null && echo "${PACKAGE_GIT_HASH_L-}")" || CI_COMMIT=""
+        if [ -n "$CI_COMMIT" ]; then
+            test_it "authorized sysinfo:commitid-core-COMPARE-restapi-to-testsuite"
+
+            [ "${#CI_COMMIT}" = "${#BLD_COMMIT}" ] || \
+            if [ "${#CI_COMMIT}" -gt "${#BLD_COMMIT}" ]; then
+                CI_COMMIT="`echo "$CI_COMMIT" | cut -c 1-"${#BLD_COMMIT}"`"
+            else
+                BLD_COMMIT="`echo "$BLD_COMMIT" | cut -c 1-"${#CI_COMMIT}"`"
+            fi
+
+            logmsg_info "Comparing CI_COMMIT='$CI_COMMIT' (test suite) and BLD_COMMIT='$BLD_COMMIT' (running webserver)"
+            [ x"$CI_COMMIT" = x"$BLD_COMMIT" ]
+            print_result -$?
+        fi
     fi
 else
     logmsg_info "This is debug-build info, not required to succeed"
