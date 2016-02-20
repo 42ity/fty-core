@@ -185,6 +185,9 @@ default_posval CI_DEBUGLEVEL_DUMPDB     $CI_DEBUGLEVEL_RUN
 default_posval CI_DEBUGLEVEL_SELECT     $CI_DEBUGLEVEL_RUN
 default_posval CI_DEBUGLEVEL_PIPESNIFFER $CI_DEBUGLEVEL_DEBUG
 
+# Semihack used below to enable "set -x" by very large debug level
+default_posval CI_DEBUGLEVEL_TRACEEXEC  200
+
 ### Default debugging/info/warning level for this lifetime of the script
 ### Messages are printed if their assigned level is at least CI_DEBUG
 ### The default of "3" allows INFO messages to be printed or easily
@@ -774,3 +777,8 @@ exit ${ERRCODE-};' \
               ;;
     esac
 }
+
+# Allow to togle shell-tracing in CI-driven builds more easily
+[ "$CI_DEBUG" -ge "$CI_DEBUGLEVEL_TRACEEXEC" ] && \
+    logmsg_info "CI_DEBUG is $CI_DEBUG >= $CI_DEBUGLEVEL_TRACEEXEC : enabling source-code tracing!" >&2 \
+    && set -x
