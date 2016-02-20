@@ -61,11 +61,11 @@ usage(){
 
 while [ $# -gt 0 ] ; do
     case "$1" in
-        --user|-u)
+        --user|-u|--bios-user)
             BIOS_USER="$2"
             shift 2
             ;;
-        --passwd|-p)
+        --passwd|-p|--password|--bios-password)
             BIOS_PASSWD="$2"
             shift 2
             ;;
