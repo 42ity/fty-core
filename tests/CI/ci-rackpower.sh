@@ -105,21 +105,21 @@ while [ $# -gt 0 ]; do
             break
             ;;
     esac
-	shift
+    shift
 done
 
 [ x"${SUT_WEB_SCHEMA-}" = x- ] && SUT_WEB_SCHEMA=""
     # *** default connection parameters values:
 case "${SUT_IS_REMOTE}" in
 no)
-	[ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="http"
-	;;
+    [ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="http"
+    ;;
 yes)
     # default values:
-	[ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="https"
-	[ -z "${SUT_USER-}" ] && SUT_USER="root"
-	[ -z "${SUT_HOST-}" ] && SUT_HOST="debian.roz53.lab.etn.com"
-	# port used for ssh requests:
+    [ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="https"
+    [ -z "${SUT_USER-}" ] && SUT_USER="root"
+    [ -z "${SUT_HOST-}" ] && SUT_HOST="debian.roz53.lab.etn.com"
+    # port used for ssh requests:
     [ -z "${SUT_SSH_PORT-}" ] && SUT_SSH_PORT="2206"
     # port used for REST API requests:
     if [ -z "${SUT_WEB_PORT-}" ]; then
@@ -131,10 +131,10 @@ yes)
                 SUT_WEB_PORT=$(expr $SUT_WEB_PORT - 2200)
         fi
     fi
-            
+
     # unconditionally calculated values for current setup
     BASE_URL="${SUT_WEB_SCHEMA}://$SUT_HOST:$SUT_WEB_PORT/api/v1"
-	;;
+    ;;
 #auto|""|*) ;; ### Defaulted in the script libraries below
 esac
 
@@ -202,80 +202,80 @@ function cleanup {
 
 # Ensure that no processes remain dangling when test completes
 if [ "$SUT_IS_REMOTE" = yes ]; then
-	# *** create lockfile name ***
-	LOCKFILE="`echo "/tmp/ci-test-rackpower-vte__${SUT_USER}@${SUT_HOST}:${SUT_SSH_PORT}:${SUT_WEB_PORT}.lock" | sed 's, ,__,g'`"
-	settraps "cleanup; exit_summarizeTestlibResults"
-	# *** is system running?
-	if [ -f "$LOCKFILE" ]; then
-		ls -la "$LOCKFILE" >&2
-		die "Script already running. Aborting."
-	fi
-	# *** lock the script with creating $LOCKFILE
-	echo $$ > "$LOCKFILE"
+        # *** create lockfile name ***
+        LOCKFILE="`echo "/tmp/ci-test-rackpower-vte__${SUT_USER}@${SUT_HOST}:${SUT_SSH_PORT}:${SUT_WEB_PORT}.lock" | sed 's, ,__,g'`"
+        settraps "cleanup; exit_summarizeTestlibResults"
+        # *** is system running?
+        if [ -f "$LOCKFILE" ]; then
+                ls -la "$LOCKFILE" >&2
+                die "Script already running. Aborting."
+        fi
+        # *** lock the script with creating $LOCKFILE
+        echo $$ > "$LOCKFILE"
 
-	# TODO: replace by calls to proper rc-bios script
-	logmsg_info "Ensuring that needed remote daemons are running on VTE"
-	sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-agent-nut bios-agent-inventory bios-agent-cm bios-agent-tpower; do systemctl start $SVC ; done'
-	sleep 5
-	sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-agent-nut bios-agent-inventory bios-agent-cm bios-agent-tpower; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done;exit $R' || \
-		die "Some required services are not running on the VTE"
+        # TODO: replace by calls to proper rc-bios script
+        logmsg_info "Ensuring that needed remote daemons are running on VTE"
+        sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-agent-nut bios-agent-inventory bios-agent-cm bios-agent-tpower; do systemctl start $SVC ; done'
+        sleep 5
+        sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-agent-nut bios-agent-inventory bios-agent-cm bios-agent-tpower; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done;exit $R' || \
+                die "Some required services are not running on the VTE"
 
-	# TODO: The different contents (2ci vs 3vte files to be revised)
-	# *** write power rack base test data to DB on SUT
-	# These are defined in testlib-db.sh
-	test_it "initialize_db_rackpower"
-	loaddb_file "$DB_BASE" && \
-	LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
-	LOADDB_FILE_REMOTE_SLEEP=2 loaddb_file "$DB_RACK_POWER"
-	print_result $? || CODE=$? die "Could not prepare database"
+        # TODO: The different contents (2ci vs 3vte files to be revised)
+        # *** write power rack base test data to DB on SUT
+        # These are defined in testlib-db.sh
+        test_it "initialize_db_rackpower"
+        loaddb_file "$DB_BASE" && \
+        LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
+        LOADDB_FILE_REMOTE_SLEEP=2 loaddb_file "$DB_RACK_POWER"
+        print_result $? || CODE=$? die "Could not prepare database"
 else
-	settraps "kill_daemons; exit_summarizeTestlibResults"
+        settraps "kill_daemons; exit_summarizeTestlibResults"
 
-	logmsg_info "Ensuring that the tested programs have been built and up-to-date"
-	if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
-		test_it "config-deps"
-		./autogen.sh --nodistclean --configure-flags \
-		    "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
-		    ${AUTOGEN_ACTION_CONFIG}
-		print_result $? || CODE=$? die "Could not prepare binaries"
-	fi
-	test_it "make-deps"
-	./autogen.sh ${AUTOGEN_ACTION_MAKE} web-test-deps agent-dbstore agent-nut agent-tpower
-	print_result $? || CODE=$? die "Could not prepare binaries"
+        logmsg_info "Ensuring that the tested programs have been built and up-to-date"
+        if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
+                test_it "config-deps"
+                ./autogen.sh --nodistclean --configure-flags \
+                    "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
+                    ${AUTOGEN_ACTION_CONFIG}
+                print_result $? || CODE=$? die "Could not prepare binaries"
+        fi
+        test_it "make-deps"
+        ./autogen.sh ${AUTOGEN_ACTION_MAKE} web-test-deps agent-dbstore agent-nut agent-tpower
+        print_result $? || CODE=$? die "Could not prepare binaries"
 
-	# These are defined in testlib-db.sh
-	test_it "initialize_db_rackpower"
-	loaddb_file "$DB_BASE" && \
-	loaddb_file "$DB_RACK_POWER"
-	print_result $? || CODE=$? die "Could not prepare database"
+        # These are defined in testlib-db.sh
+        test_it "initialize_db_rackpower"
+        loaddb_file "$DB_BASE" && \
+        loaddb_file "$DB_RACK_POWER"
+        print_result $? || CODE=$? die "Could not prepare database"
 
-	# This program is delivered by another repo, should "just exist" in container
-	logmsg_info "Spawning the bios-agent-legacy-metrics service in the background..."
-	bios-agent-legacy-metrics ipc://@/malamute legacy-metrics bios METRICS &
-	[ $? = 0 ] || CODE=$? die "Could not spawn bios-agent-legacy-metrics"
-	AGLEGMETPID=$!
+        # This program is delivered by another repo, should "just exist" in container
+        logmsg_info "Spawning the bios-agent-legacy-metrics service in the background..."
+        bios-agent-legacy-metrics ipc://@/malamute legacy-metrics bios METRICS &
+        [ $? = 0 ] || CODE=$? die "Could not spawn bios-agent-legacy-metrics"
+        AGLEGMETPID=$!
 
-	logmsg_info "Spawning the tntnet web server in the background..."
-	./autogen.sh --noparmake ${AUTOGEN_ACTION_MAKE} web-test \
-		>> ${BUILDSUBDIR}/web-test.log 2>&1 &
-	[ $? = 0 ] || CODE=$? die "Could not spawn tntnet"
-	WEBTESTPID=$!
+        logmsg_info "Spawning the tntnet web server in the background..."
+        ./autogen.sh --noparmake ${AUTOGEN_ACTION_MAKE} web-test \
+                >> ${BUILDSUBDIR}/web-test.log 2>&1 &
+        [ $? = 0 ] || CODE=$? die "Could not spawn tntnet"
+        WEBTESTPID=$!
 
-	# TODO: this requirement should later become the REST AGENT
-	logmsg_info "Spawning the agent-dbstore server in the background..."
-	${BUILDSUBDIR}/agent-dbstore &
-	[ $? = 0 ] || CODE=$? die "Could not spawn agent-dbstore"
-	DBNGPID=$!
+        # TODO: this requirement should later become the REST AGENT
+        logmsg_info "Spawning the agent-dbstore server in the background..."
+        ${BUILDSUBDIR}/agent-dbstore &
+        [ $? = 0 ] || CODE=$? die "Could not spawn agent-dbstore"
+        DBNGPID=$!
 
-	logmsg_info "Spawning the agent-nut service in the background..."
-	${BUILDSUBDIR}/agent-nut &
-	[ $? = 0 ] || CODE=$? die "Could not spawn agent-nut"
-	AGNUTPID=$!
+        logmsg_info "Spawning the agent-nut service in the background..."
+        ${BUILDSUBDIR}/agent-nut &
+        [ $? = 0 ] || CODE=$? die "Could not spawn agent-nut"
+        AGNUTPID=$!
 
-	logmsg_info "Spawning the agent-tpower service in the background..."
-	${BUILDSUBDIR}/agent-tpower &
-	[ $? = 0 ] || CODE=$? die "Could not spawn agent-tpower"
-	AGPWRPID=$!
+        logmsg_info "Spawning the agent-tpower service in the background..."
+        ${BUILDSUBDIR}/agent-tpower &
+        [ $? = 0 ] || CODE=$? die "Could not spawn agent-tpower"
+        AGPWRPID=$!
 fi
 
 # Let the webserver settle
@@ -283,8 +283,8 @@ sleep 5
 accept_license
 
 if [ "$SUT_IS_REMOTE" = yes ]; then
-	sut_run 'systemctl restart bios-agent-tpower'
-	sut_run 'systemctl restart bios-agent-dbstore'
+        sut_run 'systemctl restart bios-agent-tpower'
+        sut_run 'systemctl restart bios-agent-dbstore'
 fi
 
 #
@@ -346,17 +346,17 @@ testcase() {
     SAMPLESCNT="$((${#SAMPLES[*]} - 1))" # sample counter begins from 0
     LASTPOW=(0 0)
     for UPS in $UPS1 $UPS2 ; do
-		# count expected value of total power
+        # count expected value of total power
         for SAMPLECURSOR in $(seq 0 $SAMPLESCNT); do
             # set values
             NEWVALUE="${SAMPLES[$SAMPLECURSOR]}"
 
-			case "$UPS" in
-				ups*)  TYPE="ups";;
-				pdu*)  TYPE="pdu";;
-				epdu*) TYPE="epdu";;
-				*) die "Unknown device name pattern: '$UPS'" ;;
-			esac
+            case "$UPS" in
+            	ups*)  TYPE="ups";;
+            	pdu*)  TYPE="pdu";;
+            	epdu*) TYPE="epdu";;
+            	*) die "Unknown device name pattern: '$UPS'" ;;
+            esac
 ### It makes sense that a dumb PDU has no measurements...
             if [[ "$TYPE" = "pdu" ]]; then
                NEWVALUE=0
@@ -387,13 +387,13 @@ testcase() {
 
             test_it "verify_total_power_restapi:$RACK:$UPS:$SAMPLECURSOR"
             TP="$(awk -vX=${LASTPOW[0]} -vY=${LASTPOW[1]} 'BEGIN{ print X + Y; }')"
-			# send restAPI request to find generated value of total power
+            # send restAPI request to find generated value of total power
             URL="/metric/computed/rack_total?arg1=${RACK}&arg2=total_power"
             POWER="$(api_get "$URL" >/dev/null && echo "$OUT_CURL" | awk '/total_power/{ print $NF; }')" || { print_result $? "REST API call failed"; continue; }
-			# synchronize format of the expected and generated values of total power
+            # synchronize format of the expected and generated values of total power
             STR1="$(printf "%f" "$TP")"  # this returns "2000000.000000"
             STR2="$(printf "%f" "$POWER")"  # also returns "2000000.000000"
-			# round both numbers and compare them to
+            # round both numbers and compare them to
             # decide if the test is successfull or failed
             DEL="$(awk -vX=${STR1} -vY=${STR2} 'BEGIN{ print int( 10*(X - Y) - 0.5 ); }')"
             if [[ "$DEL" -eq 0 ]]; then
