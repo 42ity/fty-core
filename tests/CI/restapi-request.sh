@@ -77,7 +77,7 @@ while [ $# -gt 0 ] ; do
             BIOS_USER="$2"
             shift
             ;;
-        -p|--passwd|--bios-passwd)
+        -p|--passwd|--bios-passwd|--password|--bios-password)
             BIOS_PASSWD="$2"
             shift
             ;;
