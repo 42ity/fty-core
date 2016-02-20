@@ -64,7 +64,7 @@ case "`basename "$0"`" in
 esac
 
 # Set to "yes" to un-block tests that currently fail (to develop them)
-[ "${CI_RACKPOWER_NONTRIVIAL-}" ] && CI_RACKPOWER_NONTRIVIAL="no"
+[ -z "${CI_RACKPOWER_NONTRIVIAL-}" ] && CI_RACKPOWER_NONTRIVIAL="no"
 
 # *** read parameters if present
 while [ $# -gt 0 ]; do
