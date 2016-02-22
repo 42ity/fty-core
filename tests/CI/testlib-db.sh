@@ -256,3 +256,6 @@ init_script_topo_pow(){
     loaddb_topo_pow && \
     accept_license
 }
+
+:
+
