@@ -19,7 +19,6 @@
  */
 
 #include "asset_computed_impl.h"
-#include <sstream>
 #include <functional>
 #include <tntdb/connection.h>
 #include <tntdb/row.h>
