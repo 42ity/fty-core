@@ -76,7 +76,7 @@ if ( !typeNameArg.empty() &&
 , "status": "<$$ tmp.item.basic.status $>"
 , "priority": "P<$$ tmp.item.basic.priority $>"
 , "type": "<$$ tmp.item.basic.type_name $>"
-, "subtype": "<$$ tmp.item.basic.subtype_name $>"
+, "sub_type": "<$$ tmp.item.basic.subtype_name $>"
 <%cpp>
 // if element is located, then show the location
 if ( tmp.item.basic.parent_id != 0 )
