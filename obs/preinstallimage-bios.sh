@@ -345,7 +345,7 @@ else
     sed -i 's|.*MaxLevelStore.*|MaxLevelStore=info|'                  /etc/systemd/journald.conf
 fi
 # set path to our libexec directory
-echo "PATH=/usr/libexec/bios:/bin:/usr/bin:/sbin:/usr/sbin" >>/usr/share/etc/default/bios
+echo "PATH=/usr/libexec/bios:/bin:/usr/bin:/sbin:/usr/sbin" >>/usr/share/bios/etc/default/bios
 
 # Setup some busybox commands
 for i in vi tftp wget; do
