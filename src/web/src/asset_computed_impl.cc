@@ -18,37 +18,15 @@
  *
  */
 
-/*!
- * \file asset_computed_impl.cc
- * \author Tomas Halman <TomasHalman@Eaton.com>
- * \brief Not yet documented file
- */
-
-/*
-#include <exception>
-#include <tntdb/connection.h>
-#include <cxxtools/trim.h>
-#include <tntdb/result.h>
-#include <tntdb/error.h>
-*/
-#include <string>
-#include <map>
-#include <sstream>
-
-#include <tnt/http.h>
-#include <tntdb/connection.h>
-#include <cxxtools/regex.h>
-#include <cxxtools/char.h>
-#include <cxxtools/jsonformatter.h>
-
 #include "asset_computed_impl.h"
-#include "shared/dbtypes.h"
+#include <functional>
+#include <tntdb/connection.h>
+#include <tntdb/row.h>
+
 #include "shared/utils.h"
 #include "dbpath.h"
 #include "db/assets.h"
 #include "asset_types.h"
-#include "assetcrud.h"
-#include "utils_web.h"
 #include "log.h"
 
 static int
@@ -191,4 +169,3 @@ rack_outlets_available(
         res["sum"] = sum +1;   //sum is initialized to -1
     return;
 }
-
