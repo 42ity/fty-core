@@ -350,6 +350,29 @@ void NUTDevice::update( std::map< std::string,std::vector<std::string> > vars, b
             // variable found in received data
             std::vector<std::string> values = vars[inventoryMapping[i].first];
             updateInventory( inventoryMapping[i].second, values );
+        } else {
+            // iterating numbered items in physics
+            // like outlet.1.voltage, outlet.2.voltage, ...
+            int x = inventoryMapping[i].first.find(".#."); // is always in the middle: outlet.1.realpower
+            int y = inventoryMapping[i].second.find(".#"); // can be at the end: outlet.voltage.#
+            if( x > 0 && y > 0 ) {
+                // this is something like outlet.#.realpower
+                std::string nutprefix = inventoryMapping[i].first.substr(0,x+1);
+                std::string nutsuffix = inventoryMapping[i].first.substr(x+2);
+                std::string biosprefix = inventoryMapping[i].second.substr(0,y+1);
+                std::string biossuffix = inventoryMapping[i].second.substr(y+2);
+                std::string nutname,biosname;
+                int i = 1;
+                while(true) {
+                    nutname = nutprefix + std::to_string(i) + nutsuffix;
+                    biosname = biosprefix + std::to_string(i) + biossuffix;
+                    if( vars.count(nutname) == 0 ) break; // variable out of scope
+                    // variable found
+                    std::vector<std::string> values = vars[nutname];
+                    updateInventory(biosname, values);
+                    ++i;
+                }
+            }
         }
     }
     commitChanges();

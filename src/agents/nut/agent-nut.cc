@@ -119,7 +119,7 @@ void NUTAgent::advertisePhysics() {
                 if( device.second.hasProperty(property) && ( advertise || device.second.changed(property) ) ) {
                     topic = "measurement.status.outlet." + std::to_string(i) + "@" + device.second.name();
                     std::string status_s = device.second.property(property);
-                    uint16_t    status_i = status_s == "on" ? 1 : 0;
+                    uint16_t    status_i = status_s == "on" ? 42 : 0;
                     _scoped_ymsg_t *msg = bios_measurement_encode(
                         device.second.name().c_str(),
                         property.c_str(),
