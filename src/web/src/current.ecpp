@@ -210,9 +210,6 @@ std::string dev;
             {
                 json += utils::json::jsonify (one_measurement.first, s_os2string(one_measurement.second));
             }
-            else if (one_measurement.first.find ("status.outlet.") != std::string::npos) {
-                json += utils::json::jsonify (one_measurement.first, (int) one_measurement.second == 42 ? "on" : "off");
-            }
             else
             {
                 json += utils::json::jsonify (one_measurement.first, one_measurement.second);
