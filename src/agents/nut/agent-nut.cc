@@ -110,6 +110,33 @@ void NUTAgent::advertisePhysics() {
                     device.second.setChanged("status.ups",false);
                 }
             }
+            //MVY: send also epdu status as bitmap
+            for (int i = 1; i != 100; i++) {
+                std::string property = "status.outlet." + std::to_string(i);
+                // assumption, if outlet.10 does not exists, outlet.11 does not as well
+                if (!device.second.hasProperty(property))
+                    break;
+                if( device.second.hasProperty(property) && ( advertise || device.second.changed(property) ) ) {
+                    topic = "measurement.status.outlet." + std::to_string(i) + "@" + device.second.name();
+                    std::string status_s = device.second.property(property);
+                    uint16_t    status_i = status_s == "on" ? 42 : 0;
+                    _scoped_ymsg_t *msg = bios_measurement_encode(
+                        device.second.name().c_str(),
+                        property.c_str(),
+                        "",
+                        status_i, 0, std::time(0));
+                    if( msg ) {
+                        log_debug("sending new status for %s %s, value %i (%s)",
+                                property.c_str (),
+                                device.second.name().c_str(),
+                                status_i,
+                                status_s.c_str() );
+                        send( topic.c_str(), &msg );
+                        ymsg_destroy(&msg);
+                        device.second.setChanged(property,false);
+                }
+            }
+            }
         }
     }
 }
