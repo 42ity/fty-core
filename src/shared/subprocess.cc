@@ -40,6 +40,8 @@ namespace shared {
 
 // small internal structure to be passed to callbacks
 struct sbp_info_t {
+    uint64_t timeout;
+    uint64_t now;
     SubProcess *proc_p;
     std::stringstream &buff;
 };
@@ -262,6 +264,7 @@ std::string read_all(int fd) {
     while (true) {
         memset(buf, '\0', BUF_SIZE+1);
         r = ::read(fd, buf, BUF_SIZE);
+
         //TODO what to do if errno != EAGAIN | EWOULDBLOCK
         if (r <= 0) {
             break;
@@ -401,8 +404,13 @@ s_handler (zloop_t *loop, zmq_pollitem_t *item, void *arg)
     assert (loop); //remove compiler warning
     struct sbp_info_t *i = (struct sbp_info_t*) arg;
 
-    std::string s = read_all (item->fd);
-    i->buff << s;
+    //XXX: read_all is not a good idea for write intensive processes (like ping)
+    //     because s_handler won't return - so lets read only PIPE_BUF and exit
+    char buf[PIPE_BUF+1];
+    memset(buf, '\0', PIPE_BUF+1);
+    ::read(item->fd, buf, PIPE_BUF);
+    i->buff << buf;
+
     return 0;
 }
 
@@ -426,44 +434,41 @@ s_end_loop (UNUSED_PARAM zloop_t *loop, UNUSED_PARAM int timer_id, UNUSED_PARAM 
     return -1;
 }
 
-static int s_output(SubProcess& p, std::string& o, std::string& e, uint64_t timeout) {
-
-    p.run();
-
+static int s_output(SubProcess& p, std::string& o, std::string& e, uint64_t timeout)
+{
     std::stringstream out;
     std::stringstream err;
 
-    sbp_info_t out_info {&p, out};
-    sbp_info_t err_info {&p, err};
+    sbp_info_t out_info {timeout * 1000, (uint64_t) zclock_mono (), &p, out};
+    sbp_info_t err_info {timeout * 1000, (uint64_t) zclock_mono (), &p, err};
 
-    out << read_all (p.getStdout ());
-    err << read_all (p.getStderr ());
+    p.run();
 
     zloop_t *loop = zloop_new ();
     assert (loop);
 
-    xzloop_add_fd (loop, p.getStdin (), s_handler, &out_info);
-    xzloop_add_fd (loop, p.getStderr (), s_handler, &err_info);
     if (timeout != 0)
-        zloop_timer (loop, timeout, 1, s_end_loop, NULL);
+        zloop_timer (loop, timeout * 1000, 1, s_end_loop, NULL);
     zloop_timer (loop, 500, 0, s_ping_process, &out_info);
+    xzloop_add_fd (loop, p.getStdout (), s_handler, &out_info);
+    xzloop_add_fd (loop, p.getStderr (), s_handler, &err_info);
     zloop_start (loop);
 
     zloop_destroy (&loop);
 
-    out << read_all (p.getStdin ());
-    err << read_all (p.getStderr ());
-
     int r = p.poll ();
     if (p.isRunning ()) {
         p.kill ();
-        sleep (2);
         r = p.poll ();
         if (p.isRunning ()) {
+            zclock_sleep (2000);
             p.terminate ();
             r = p.poll ();
         }
     }
+
+    out << read_all (p.getStdin ());
+    err << read_all (p.getStderr ());
 
     o.assign(out.str ());
     e.assign(err.str ());

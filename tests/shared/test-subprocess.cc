@@ -31,6 +31,8 @@
 #include <time.h>
 #include <sys/types.h>
 #include <signal.h>
+#include <czmq.h>       // sadly, but zclock_mono is way simpler than std::chrono ...
+#include <iostream>
 
 #include "subprocess.h"
 
@@ -355,4 +357,34 @@ TEST_CASE("subprocess-call-no-binary", "[subprocess][run]") {
 
     ret = call(argv);
     CHECK(ret != 0);
+}
+
+TEST_CASE ("subprocess-test-timeout", "[subprocess][output]")
+{
+    Argv args {"/bin/cat", "/dev/stdin"};
+    auto start = zclock_mono ();
+    std::string o;
+    std::string e;
+    int r = output (args, o, e, 4);
+    auto stop = zclock_mono ();
+
+    CHECK (r == -15);   //killed by SIGTERM
+    CHECK (o.empty ());
+    CHECK (e.empty());
+    CHECK ((stop - start) >= 4000); // it's hard to tell how long the delay was, but it must be at least 4 secs
+}
+
+TEST_CASE ("subprocess-test-timeout2", "[subprocess][output]")
+{
+    Argv args {"/bin/ping", "127.0.0.1"};
+    auto start = zclock_mono ();
+    std::string o;
+    std::string e;
+    int r = output (args, o, e, 4);
+    auto stop = zclock_mono ();
+
+    CHECK (r == -15);   //killed by SIGTERM
+    CHECK (!o.empty ());
+    CHECK (e.empty());
+    CHECK ((stop - start) >= 4000); // it's hard to tell how long the delay was, but it must be at least 4 secs
 }
