@@ -261,18 +261,14 @@ std::string feed_by;
                     json.append("\"id\" : \"")
                         .append(std::to_string(std::get<0>(row)))
                         .append("\"");
-                    if (std::get<4>(row) != "N_A") { // magic constant from initdb.sql
-                        json.append(",\n");
-                        for (int i = 0; i < indent; i++) {
-                            json.append ("\t");
-                        }
-                        json.append("\"type\" : \"")
-                            .append(std::get<4>(row))
-                            .append("\"\n");
-                    } else {
-                        json.append("\n");
+                    json.append(",\n");
+                    json += "\"type\" : \"" + persist::typeid_to_type(std::get<1>(row)) + "\",";
+                    for (int i = 0; i < indent; i++) {
+                        json.append ("\t");
                     }
-
+                    json.append("\"sub_type\" : \"")
+                        .append(std::get<4>(row))
+                        .append("\"\n");
                 }
 
             }
