@@ -24,6 +24,7 @@
  * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \author Tomas Halman <TomasHalman@Eaton.com>
  * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+ * \author GeraldGuillaume <GeraldGuillaume@Eaton.com>
  * \brief Not yet documented file
  */
 #include <inttypes.h>
@@ -36,7 +37,7 @@
 #include "defs.h"
 
 namespace persist {
-
+    
 //Notice for future developers - this functions is ugly and better to split to smaller
 //functions doing only one thing. Please try to avoid adding even more logic here, thanks
 db_reply_t
@@ -51,6 +52,7 @@ db_reply_t
         TopicCache& c)
 {
     db_reply_t ret = db_reply_new();
+    
 
     if ( !units ) {
         ret.status     = 0;
@@ -61,11 +63,11 @@ db_reply_t
         return ret;
     }
 
-    if ( !topic ) {
+    if ( !topic || topic[0]=='@') {
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "NULL value of topic is not allowed";
+        ret.msg        = "NULL or malformed value of topic is not allowed";
         log_error("end: %s", ret.msg.c_str());
         return ret;
     }
@@ -79,10 +81,11 @@ db_reply_t
         log_error("end: %s", ret.msg.c_str());
         return ret;
     }
-
-    try {
+    
+      try {
 insert_into_measurement_again:
         tntdb::Statement st;
+        m_msrmnt_tpc_id_t topic_id;
 
         if (  !c.has(topic) )
         {
@@ -104,25 +107,35 @@ insert_into_measurement_again:
                            .set("units", units)
                            .set("name", device_name)
                            .execute();
-            log_debug("[t_bios_measurement_topic]: inserted topic %s, #%" PRIu32 " rows ", topic, n);
+            topic_id=conn.lastInsertId();
+            if(topic_id!=0){
+                c.add(topic,topic_id);
+                log_debug("[t_bios_measurement_topic]: inserted topic %s, #%" PRIu32 " rows , topic_id %u", topic, n, topic_id);
+            }else{
+                log_error("[t_bios_measurement_topic]:  topic %s not inserted", topic);
+            }
+        }else{
+            topic_id=c.get(topic);
         }
+        
+        ret.affected_rows = 0; 
+        if(topic_id!=0){
+            st = conn.prepareCached (
+                    "INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) "
+                    "  VALUES (:time, :value, :scale, :topic_id)"
+                    "  ON DUPLICATE KEY UPDATE value = :value, scale = :scale");
+            ret.affected_rows = st.set("time",  time)
+                                  .set("value", value)
+                                  .set("scale", scale)
+                                  //.set("units", units)
+                                  .set("topic_id", topic_id)
+                                  .execute();
 
-        st = conn.prepareCached (
-                "INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) "
-                "SELECT :time, :value, :scale, id FROM t_bios_measurement_topic "
-                "WHERE topic=:topic AND units=:units "
-                "ON DUPLICATE KEY UPDATE value = :value, scale = :scale");
-        ret.affected_rows = st.set("time",  time)
-                              .set("value", value)
-                              .set("scale", scale)
-                              .set("units", units)
-                              .set("topic", topic)
-                              .execute();
-
-        log_debug("[t_bios_measurement]: inserted %" PRIu64 " rows "\
-                   "value:%" PRIi32 " * 10^%" PRIi16 " %s "\
-                   "topic = '%s' time = %" PRIu64, 
-                   ret.affected_rows, value, scale, units, topic, time);
+            log_debug("[t_bios_measurement]: inserted %" PRIu64 " rows "\
+                       "value:%" PRIi32 " * 10^%" PRIi16 " %s "\
+                       "topic = '%s' topic_id=%" PRIi16 " time = %" PRIu64, 
+                       ret.affected_rows, value, scale, units, topic, topic_id, time);
+        }
 
         if( ret.affected_rows == 0 && device_name != NULL && device_name[0] != 0 ) {
             // probably device doesn't exist in t_bios_discovered_device. Let's fill it.
@@ -158,12 +171,7 @@ insert_into_measurement_again:
                 goto insert_into_measurement_again; // successfully inserted into _discovered_device, save measurement one more time
             }
         }
-        else
-        {
-            c.add(topic);
-            log_debug ("topic added to cache");
-        }
-        
+               
         ret.rowid = conn.lastInsertId();
         ret.status = 1;
         return ret;
