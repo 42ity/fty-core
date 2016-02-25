@@ -76,7 +76,6 @@ if ( !typeNameArg.empty() &&
 , "status": "<$$ tmp.item.basic.status $>"
 , "priority": "P<$$ tmp.item.basic.priority $>"
 , "type": "<$$ tmp.item.basic.type_name $>"
-, "sub_type": "<$$ tmp.item.basic.subtype_name $>"
 <%cpp>
 // if element is located, then show the location
 if ( tmp.item.basic.parent_id != 0 )
@@ -175,10 +174,25 @@ if ( tmp.item.basic.type_id == persist::asset_type::DEVICE )
 ]
 <%cpp>
 }
-
+// ACE: to be consistent with RFC-11 this was put here
+if ( tmp.item.basic.type_id == persist::asset_type::GROUP )
+{
+    auto it = tmp.item.ext.find("type");
+    if ( it != tmp.item.ext.end() )
+    {
+</%cpp>
+, "sub_type":"<$$ it->second.first $>"
+<%cpp>
+        tmp.item.ext.erase(it);
+    }
+}
+else {
+</%cpp>
+, "sub_type": "<$$ tmp.item.basic.subtype_name $>"
+<%cpp>
+}
 </%cpp>
 , "ext" : [
-%       // ACE: to be consistent with RFC-11 this was put here
 {"asset_tag": "<$$ tmp.item.basic.asset_tag $>", "read_only": true }
 <%cpp>
 if ( !tmp.item.ext.empty() )
