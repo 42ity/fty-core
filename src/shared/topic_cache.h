@@ -20,6 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
     \brief  Realisation of small cache for topic
     \author MichalVyskocil <MichalVyskocil@Eaton.com>
     \author AlenaChernikava <AlenaChernikava@Eaton.com>
+    \author GeraldGuillaume <GeraldGuillaume@Eaton.com>
  */
 
 #ifndef SRC_SHARED_TOPIC_CACHE_H_
@@ -27,12 +28,13 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include <string>
 #include <set>
+#include <map>
 
 namespace persist {
 
 class TopicCache {
     public:
-        explicit TopicCache(size_t max = 1024):
+        explicit TopicCache(size_t max = 8 * 1024):
             _cache{},
             _max{max}
         {};
@@ -43,13 +45,16 @@ class TopicCache {
         TopicCache& operator=(TopicCache&& other) = delete;
 
         //\brief check if value is in cache or not
-        bool has(const std::string& topic) const;
+        bool has(const std::string& topic_name) const;
 
          //\brief add a key to cache
-        void add(const std::string& topic);
+        void add(const std::string& topic_name,int topic_id);
+        
+        //\brief get topic_id vs topic_name, return 0 when not found
+        int get(const std::string& topic_name);
 
     private:
-        std::set<std::string> _cache;
+        std::map<std::string,int> _cache;
         size_t _max;
 };
 

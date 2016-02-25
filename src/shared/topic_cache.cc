@@ -21,26 +21,31 @@
 /*!
  * \file topic_cache.cc
  * \author Alena Chernikava <AlenaChernikava@Eaton.com>
- * \brief Not yet documented file
+ * \author GeraldGuillaume <GeraldGuillaume@Eaton.com>
+ * \brief map of (topic name, topic id) keys
  */
 #include "topic_cache.h"
 
 namespace persist {
 
-bool TopicCache::has(const std::string& topic) const {
-    if (_cache.count(topic) == 1)
+bool TopicCache::has(const std::string& topic_name) const {
+    if (_cache.count(topic_name) == 1)
         return true;
 
     return false;
 }
 
-void TopicCache::add(const std::string& topic) {
+void TopicCache::add(const std::string& topic_name, int topic_id) {
     if (_max <= _cache.size())
     {
         _cache.clear();
     }
+    _cache.insert(std::make_pair (topic_name, topic_id));
+}
 
-    _cache.insert(topic);
+int TopicCache::get(const std::string& topic_name) {
+    if(!has(topic_name))return 0;
+    return _cache[topic_name];
 }
 
 }
