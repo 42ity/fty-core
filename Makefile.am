@@ -671,7 +671,7 @@ test_subprocess_LDADD = 		libpriv-subprocess.la \
 					libpriv-test-run.la
 test_subprocess_CPPFLAGS =		$(AM_CPPFLAGS) \
 					-I$(abs_top_srcdir)/tests/include/
-test_subprocess_LDFLAGS =		${CXXTOOLS_LIBS} -lcidr -lczmq
+test_subprocess_LDFLAGS =		${CXXTOOLS_LIBS} -lczmq
 
 check_PROGRAMS += 	test-cidr
 test_cidr_SOURCES = 	src/shared/cidr.cc \
