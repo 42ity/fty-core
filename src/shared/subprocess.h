@@ -44,7 +44,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
  *
  * Note that SubProcess instance is tied to one process only, so cannot be reused
  * to execute more than one subprocess. This is due "simulate" dynamic nature
- * of a processes. Therefor for a code running unspecified amount of processes, 
+ * of a processes. Therefor for a code running unspecified amount of processes,
  * instances must be heap allocated using new constructor.
  *
  * For that reason copy/move constructor and operator are disallowed.
@@ -57,25 +57,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
  * std::cout "process pid: " << proc.getPid() << std::endl;
  * \endcode
  *
- * class ProcessQue:
- * This maintains a queue of a processes. There are three queues: incomming,
- * running and done. Those are updated only at schedule() call, when finished
- * processes are moved to done and those from the incomming queue are started
- * and moved to running.
- *
- * class ProcCache:
- * Maintains stdout/stderr output for a process in
- * std::ostringstream. It is helper class for
- *
- * class ProcCacheMap:
- * Maintain a cache for set of processes - each is identified by pid
- * (/todo think about const SubProcess *). It stores output of several
- * processes run and poll'ed in parallel.
  */
 
 namespace shared {
 
-//! \brief list of arguments    
+//! \brief list of arguments
 typedef std::vector<std::string> Argv;
 
 class SubProcess {
@@ -84,7 +70,7 @@ class SubProcess {
         static const int STDIN_PIPE=0x01;
         static const int STDOUT_PIPE=0x02;
         static const int STDERR_PIPE=0x04;
-       
+
         static const int PIPE_DEFAULT = -1;
         static const int PIPE_DISABLED = -2;
 
@@ -104,20 +90,20 @@ class SubProcess {
 
         // \brief return the commandline as a space delimited string
         std::string argvString() const;
-        
+
         //! \brief return pid of executed command
         pid_t getPid() const { return _fork.getPid(); }
-        
+
         //! \brief get the pipe ends connected to stdin of started program, or -1 if not started
         int getStdin() const { return _inpair[1]; }
 
         //! \brief get the pipe ends connected to stdout of started program, or -1 if not started
         int getStdout() const { return _outpair[0]; }
-        
+
         //! \brief get the pipe ends connected to stderr of started program, or -1 if not started
         int getStderr() const { return _errpair[0]; }
 
-        //! \brief returns last checked status of the process 
+        //! \brief returns last checked status of the process
         bool isRunning() { poll(); return _state == SubProcessState::RUNNING; }
 
         //! \brief get the return code, \see wait for meaning
@@ -212,12 +198,11 @@ int call(const Argv& args);
 // @param args list of command line arguments
 // @param o reference to variable will contain stdout
 // @param e reference to variable will contain stderr
-// @param timeout of the process (0 = no timeout, wait forever)
+// @param timeout - maximum timeout in seconds (0 means wait forewer)
 // @return see \SubProcess.wait for meaning
 //
-// \warning use only for commands producing less than default pipe capacity (65536 on Linux).
-//          Otherwise this call would be blocked indefinitelly.
- int output(const Argv& args, std::string& o, std::string& e, unsigned int timeout = 0);
+// \warning use internal reactor, so it regularly reads from stdout and stderr
+ int output(const Argv& args, std::string& o, std::string& e, uint64_t timeout = 0);
 
 // \brief Run command with arguments and input on stdin and return its output as a string.
 //
@@ -225,18 +210,16 @@ int call(const Argv& args);
 // @param o reference to variable will contain stdout
 // @param e reference to variable will contain stderr
 // @param i const reference to variable will contain stdin
-// @param timeout of the process (0 = no timeout, wait forever)
+// @param timeout - maximum timeout in seconds (0 means wait forewer)
 // @return see \SubProcess.wait for meaning
 //
-// \warning use only for commands producing less than default pipe capacity (65536 on Linux).
-//          Otherwise this call would be blocked indefinitelly.
+// \warning use internal reactor, so it regularly reads from stdout and stderr
 int
 output(
     const Argv& args,
     std::string& o,
     std::string& e,
-    const std::string& i,
-    unsigned int timeout = 0);
+    const std::string& i, uint64_t timeout = 0);
 
 } //namespace shared
 
