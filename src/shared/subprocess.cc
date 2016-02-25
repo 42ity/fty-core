@@ -17,6 +17,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "subprocess.h"
+#include "preproc.h"
 
 #include <cassert>
 #include <cerrno>
@@ -30,14 +31,26 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <fcntl.h>
 #include <errno.h>
 #include <unistd.h>
+#include <czmq.h>
 
 namespace shared {
 
 // forward declaration of helper functions
 // TODO: move somewhere else
+
+// small internal structure to be passed to callbacks
+struct sbp_info_t {
+    uint64_t timeout;
+    uint64_t now;
+    SubProcess *proc_p;
+    std::stringstream &buff;
+};
+
 char * const * _mk_argv(const Argv& vec);
 void _free_argv(char * const * argv);
 std::size_t _argv_hash(Argv args);
+static int s_output(SubProcess& p, std::string& o, std::string& e, uint64_t timeout);
+
 
 SubProcess::SubProcess(Argv cxx_argv, int flags) :
     _fork(false),
@@ -251,6 +264,7 @@ std::string read_all(int fd) {
     while (true) {
         memset(buf, '\0', BUF_SIZE+1);
         r = ::read(fd, buf, BUF_SIZE);
+
         //TODO what to do if errno != EAGAIN | EWOULDBLOCK
         if (r <= 0) {
             break;
@@ -258,6 +272,26 @@ std::string read_all(int fd) {
         sbuf.sputn(buf, strlen(buf));
     }
     return sbuf.str();
+}
+
+int call(const Argv& args) {
+    SubProcess p(args);
+    p.run();
+    return p.wait();
+}
+
+int output(const Argv& args, std::string& o, std::string& e, uint64_t timeout) {
+    SubProcess p(args, SubProcess::STDOUT_PIPE | SubProcess::STDERR_PIPE);
+    return s_output (p, o, e, timeout);
+}
+
+int output(const Argv& args, std::string& o, std::string& e, const std::string& i, uint64_t timeout) {
+    SubProcess p(args, SubProcess::STDOUT_PIPE | SubProcess::STDERR_PIPE| SubProcess::STDIN_PIPE);
+    p.run();
+    ::write(p.getStdin(), i.c_str(), i.size());
+    ::fsync(p.getStdin());
+    ::close(p.getStdin());
+    return s_output (p, o, e, timeout);
 }
 
 std::string wait_read_all(int fd) {
@@ -299,65 +333,6 @@ std::string wait_read_all(int fd) {
     }
     fcntl(fd, F_SETFL, o_flags);
     return sbuf.str();
-}
-
-int call(const Argv& args) {
-    SubProcess p(args);
-    p.run();
-    return p.wait();
-}
-
-int output(const Argv& args, std::string& o, std::string& e, unsigned int timeout) {
-
-    SubProcess p(args, SubProcess::STDOUT_PIPE | SubProcess::STDERR_PIPE);
-    p.run();
-
-    unsigned int tme = 0;
-    if(timeout == 0)
-        timeout = 5;
-    int ret = 0;
-
-    std::string out;
-    std::string err;
-
-    while((tme < timeout) && p.isRunning()) {
-        ret = p.wait((unsigned int)1);
-        out += wait_read_all(p.getStdout());
-        err += wait_read_all(p.getStderr());
-        tme++;
-    }
-    if( p.isRunning() ) {
-        p.terminate();
-        ret = p.wait();
-    }
-    else
-        ret = p.poll ();
-    out += wait_read_all(p.getStdout());
-    err += wait_read_all(p.getStderr());
-
-    o.assign(out);
-    e.assign(err);
-    return ret;
-}
-
-int output(const Argv& args, std::string& o, std::string& e, const std::string& i, unsigned int timeout) {
-    SubProcess p(args, SubProcess::STDOUT_PIPE | SubProcess::STDERR_PIPE| SubProcess::STDIN_PIPE);
-    p.run();
-    ::write(p.getStdin(), i.c_str(), i.size());
-    ::fsync(p.getStdin());
-    ::close(p.getStdin());
-
-    int ret;
-    if( timeout ) {
-        ret = p.wait(timeout);
-        if( p.isRunning() ) { p.terminate(); ret = p.wait(); }
-    } else {
-        ret = p.wait();
-    }
-
-    o.assign(read_all(p.getStdout()));
-    e.assign(read_all(p.getStderr()));
-    return ret;
 }
 
 // ### helper functions ###
@@ -405,6 +380,100 @@ std::size_t _argv_hash(Argv args) {
     return ret;
 }
 
+/*  ZLOOP AND PROPER TIMEOUT SUPPORT */
+
+// add file descriptor to zloop
+static int
+xzloop_add_fd (zloop_t *self, int fd, zloop_fn handler, void *arg)
+{
+    assert (self);
+    zmq_pollitem_t *fditem = (zmq_pollitem_t*) zmalloc (sizeof (zmq_pollitem_t));
+    assert (fditem);
+    fditem->fd = fd;
+    fditem->events = ZMQ_POLLIN;
+
+    int r = zloop_poller (self, fditem, handler, arg);
+    free (fditem);
+    return r;
+}
+
+// handle incoming data on fd
+static int
+s_handler (zloop_t *loop, zmq_pollitem_t *item, void *arg)
+{
+    assert (loop); //remove compiler warning
+    struct sbp_info_t *i = (struct sbp_info_t*) arg;
+
+    //XXX: read_all is not a good idea for write intensive processes (like ping)
+    //     because s_handler won't return - so lets read only PIPE_BUF and exit
+    char buf[PIPE_BUF+1];
+    memset(buf, '\0', PIPE_BUF+1);
+    ::read(item->fd, buf, PIPE_BUF);
+    i->buff << buf;
+
+    return 0;
+}
+
+// ping the process
+static int
+s_ping_process (UNUSED_PARAM zloop_t *loop, UNUSED_PARAM int timer_id, void *args)
+{
+    assert (loop); //remove compiler warning
+    struct sbp_info_t *i = (struct sbp_info_t*) args;
+
+    i->proc_p->poll ();
+    if (!i->proc_p->isRunning ())
+        return -1;
+    return 0;
+}
+
+// stop the loop
+static int
+s_end_loop (UNUSED_PARAM zloop_t *loop, UNUSED_PARAM int timer_id, UNUSED_PARAM void *args)
+{
+    return -1;
+}
+
+static int s_output(SubProcess& p, std::string& o, std::string& e, uint64_t timeout)
+{
+    std::stringstream out;
+    std::stringstream err;
+
+    sbp_info_t out_info {timeout * 1000, (uint64_t) zclock_mono (), &p, out};
+    sbp_info_t err_info {timeout * 1000, (uint64_t) zclock_mono (), &p, err};
+
+    p.run();
+
+    zloop_t *loop = zloop_new ();
+    assert (loop);
+
+    if (timeout != 0)
+        zloop_timer (loop, timeout * 1000, 1, s_end_loop, NULL);
+    zloop_timer (loop, 500, 0, s_ping_process, &out_info);
+    xzloop_add_fd (loop, p.getStdout (), s_handler, &out_info);
+    xzloop_add_fd (loop, p.getStderr (), s_handler, &err_info);
+    zloop_start (loop);
+
+    zloop_destroy (&loop);
+
+    int r = p.poll ();
+    if (p.isRunning ()) {
+        p.kill ();
+        r = p.poll ();
+        if (p.isRunning ()) {
+            zclock_sleep (2000);
+            p.terminate ();
+            r = p.poll ();
+        }
+    }
+
+    out << read_all (p.getStdin ());
+    err << read_all (p.getStderr ());
+
+    o.assign(out.str ());
+    e.assign(err.str ());
+    return r;
+}
 
 } //namespace shared
 
