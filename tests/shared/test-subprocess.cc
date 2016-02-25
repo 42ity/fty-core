@@ -31,6 +31,8 @@
 #include <time.h>
 #include <sys/types.h>
 #include <signal.h>
+#include <czmq.h>       // sadly, but zclock_mono is way simpler than std::chrono ...
+#include <iostream>
 
 #include "subprocess.h"
 
@@ -357,167 +359,32 @@ TEST_CASE("subprocess-call-no-binary", "[subprocess][run]") {
     CHECK(ret != 0);
 }
 
-TEST_CASE("subprocess-proccache", "[subprocess][proccache]") {
-    ProcCache c{};
+TEST_CASE ("subprocess-test-timeout", "[subprocess][output]")
+{
+    Argv args {"/bin/cat", "/dev/stdin"};
+    auto start = zclock_mono ();
+    std::string o;
+    std::string e;
+    int r = output (args, o, e, 4);
+    auto stop = zclock_mono ();
 
-    c.pushStdout("stdout");
-    c.pushStderr("s");
-    c.pushStderr("td");
-    c.pushStderr("err");
-
-    std::pair<std::string, std::string> r = c.pop();
-    CHECK(r.first == "stdout");
-    CHECK(r.second == "stderr");
-    
-    //pop means to clear everything - so next attempt is an empty string(s)
-    std::pair<std::string, std::string> r2 = c.pop();
-    CHECK(r2.first == "");
-    CHECK(r2.second == "");
-
-    // test the copy contructor
-    c.pushStdout("copy");
-    ProcCache c2 = c;
-    c.pushStdout(" this");
-
-    r = c.pop();
-    r2 = c2.pop();
-    CHECK(r.first == "copy this");
-    CHECK(r.second == "");
-    CHECK(r2.first == "copy");
-    CHECK(r2.second == "");
-
+    CHECK (r == -15);   //killed by SIGTERM
+    CHECK (o.empty ());
+    CHECK (e.empty());
+    CHECK ((stop - start) >= 4000); // it's hard to tell how long the delay was, but it must be at least 4 secs
 }
 
-TEST_CASE("subprocess-proccache-big", "[subprocess][proccache]") {
-    ProcCache c{};
+TEST_CASE ("subprocess-test-timeout2", "[subprocess][output]")
+{
+    Argv args {"/bin/ping", "127.0.0.1"};
+    auto start = zclock_mono ();
+    std::string o;
+    std::string e;
+    int r = output (args, o, e, 4);
+    auto stop = zclock_mono ();
 
-    static const auto LIMIT = 1024*1024u;
-    static const auto SENTENCE = "The quick brown fox jumps over a lazy dog!\n";
-    static constexpr auto SIZE = LIMIT * strlen(SENTENCE);
-
-    for (auto i = 0u; i != LIMIT; i++) {
-        c.pushStdout(SENTENCE);
-    }
-
-    std::pair<std::string, std::string> r = c.pop();
-    CHECK(r.second == "");
-    CHECK(r.first.size() == SIZE);
-    
-    //pop means to clear everything - so next attempt is an empty string(s)
-    std::pair<std::string, std::string> r2 = c.pop();
-    CHECK(r2.first == "");
-    CHECK(r2.second == "");
-
-    // test the copy contructor
-    c.pushStdout("copy");
-    ProcCache c2 = c;
-    c.pushStdout(" this");
-
-    r = c.pop();
-    r2 = c2.pop();
-    CHECK(r.first == "copy this");
-    CHECK(r.second == "");
-    CHECK(r2.first == "copy");
-    CHECK(r2.second == "");
-
-}
-
-TEST_CASE("subprocess-proccachemap", "[subprocess][proccachemap]") {
-    ProcCacheMap c{};
-    pid_t pid1, pid2;
-
-    pid1 = 1;
-    pid2 = 42;
-
-    REQUIRE(!c.hasPid(pid1));
-    REQUIRE(!c.hasPid(pid2));
-
-    c.pushStdout(pid1, "stdout");
-
-    CHECK(c.hasPid(pid1));
-    CHECK(!c.hasPid(pid2));
-
-    //XXX: I've assumed [] would raise an exception ...
-    std::pair<std::string, std::string> r = c.pop(pid2);
-    CHECK(r.first == "");
-    CHECK(r.second == "");
-
-    CHECK(c.hasPid(pid1));
-    CHECK(!c.hasPid(pid2));
-
-    r = c.pop(pid1);
-    CHECK(!c.hasPid(pid1));
-    CHECK(!c.hasPid(pid2));
-    CHECK(r.first == "stdout");
-    CHECK(r.second == "");
-
-    r = c.pop(pid1);
-    CHECK(!c.hasPid(pid1));
-    CHECK(!c.hasPid(pid2));
-    CHECK(r.first == "");
-    CHECK(r.second == "");
-
-}
-
-TEST_CASE("subprocess-que", "[subprocess][processque]") {
-    Argv args{"/bin/cat"};
-    ProcessQue q{1};
-
-    CHECK(!q.hasDone());
-    CHECK(!q.hasIncomming());
-    CHECK(!q.hasRunning());
-    CHECK(q.runningSize() == 0);
-    
-    q.add(args);
-    CHECK(!q.hasDone());
-    CHECK(q.hasIncomming());
-    CHECK(!q.hasRunning());
-    CHECK(q.runningSize() == 0);
-    
-    q.add(args);
-    CHECK(!q.hasDone());
-    CHECK(q.hasIncomming());
-    CHECK(!q.hasRunning());
-    CHECK(q.runningSize() == 0);
-
-    q.schedule();
-    CHECK(!q.hasDone());
-    CHECK(q.hasIncomming());
-    CHECK(q.hasRunning());
-    CHECK(q.runningSize() == 1);
-    
-    //second schedule does not have any impact on runningSize due limit == 1
-    q.schedule();
-    CHECK(!q.hasDone());
-    CHECK(q.hasIncomming());
-    CHECK(q.hasRunning());
-    CHECK(q.runningSize() == 1);
-
-    //test the iterators + schedule(false) - terminateAll does not
-    //start any new jobs
-    q.terminateAll();
-    //XXX: THE PART BELOW IS EXTREMLY UNRELIABLE - THE BEST
-    //I WAS ABLE TO GET WITH A LOT OF USLEEP INSIDE WAS
-    //AROUND 75% SUCCESS RATE - SKIPPING FOR NOW
-    /*
-    for (int i = 0; i != 6; i++) {
-        if (q.hasDone()) {
-            break;
-        }
-        usleep(i*100);
-    }
-    CHECK(q.hasDone());
-    CHECK(q.hasIncomming());
-    CHECK(!q.hasRunning());
-    CHECK(q.runningSize() == 0);
- 
-    q.schedule();
-    CHECK(q.hasDone());
-    CHECK(!q.hasIncomming());
-    CHECK(q.hasRunning());
-    CHECK(q.runningSize() == 1);
-
-    q.terminateAll();
-    */
-
+    CHECK (r == -15);   //killed by SIGTERM
+    CHECK (!o.empty ());
+    CHECK (e.empty());
+    CHECK ((stop - start) >= 4000); // it's hard to tell how long the delay was, but it must be at least 4 secs
 }
