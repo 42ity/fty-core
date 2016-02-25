@@ -449,6 +449,8 @@ static int s_output(SubProcess& p, std::string& o, std::string& e, uint64_t time
     zloop_timer (loop, 500, 0, s_ping_process, &out_info);
     zloop_start (loop);
 
+    zloop_destroy (&loop);
+
     out << read_all (p.getStdin ());
     err << read_all (p.getStderr ());
 
