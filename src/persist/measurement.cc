@@ -37,6 +37,113 @@
 #include "defs.h"
 
 namespace persist {
+
+//Notice for future developers - this functions is ugly and better to split to smaller
+//functions doing only one thing. Please try to avoid adding even more logic here, thanks
+db_reply_t
+    insert_into_measurement(
+        tntdb::Connection &conn,
+        const char        *topic,
+        m_msrmnt_value_t   value,
+        m_msrmnt_scale_t   scale,
+        int64_t            time,
+        const char        *units,
+        const char        *device_name,
+        TopicCache& c)
+{
+    db_reply_t ret = db_reply_new();
+    
+
+    if ( !units ) {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_BADINPUT;
+        ret.msg        = "NULL value of units is not allowed";
+        log_error("end: %s", ret.msg.c_str());
+        return ret;
+    }
+
+    if ( !topic || topic[0]=='@') {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_BADINPUT;
+        ret.msg        = "NULL or malformed value of topic is not allowed";
+        log_error("end: %s", ret.msg.c_str());
+        return ret;
+    }
+
+    // ATTENTION: now name is taken from t_bios_discovered_device
+    if ( !device_name ) {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_BADINPUT;
+        ret.msg        = "NULL value of device name is not allowed";
+        log_error("end: %s", ret.msg.c_str());
+        return ret;
+    }
+    
+    try {
+        tntdb::Statement st;
+        
+        m_msrmnt_tpc_id_t topic_id = prepare_topic(conn, topic, units, device_name, c);
+        if(topic_id!=0){
+            st = conn.prepareCached (
+                    "INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) "
+                    "  VALUES (:time, :value, :scale, :topic_id)"
+                    "  ON DUPLICATE KEY UPDATE value = :value, scale = :scale");
+            ret.affected_rows = st.set("time",  time)
+                                  .set("value", value)
+                                  .set("scale", scale)
+                                  .set("topic_id", topic_id)
+                                  .execute();
+
+            log_debug("[t_bios_measurement]: inserted %" PRIu64 " rows "\
+                       "value:%" PRIi32 " * 10^%" PRIi16 " %s "\
+                       "topic = '%s' topic_id=%" PRIi16 " time = %" PRIu64, 
+                       ret.affected_rows, value, scale, units, topic, topic_id, time);
+        }else{
+            ret.status     = 0;
+            ret.errtype    = DB_ERR;
+            ret.errsubtype = DB_ERROR_INTERNAL;
+            ret.msg        = "Can't prepare a valid topic";
+            log_error ("NOT INSERTED: value:%" PRIi32 " * 10^%" PRIi16 " %s "\
+                       "topic = '%s' time = %" PRIu64, 
+                        value, scale, units, topic, time);    
+            return ret;
+        }
+
+        ret.rowid = conn.lastInsertId();
+        ret.status = 1;
+        return ret;
+    } catch(const std::exception &e) {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_INTERNAL;
+        ret.msg        = e.what();
+        log_error ("NOT INSERTED: value:%" PRIi32 " * 10^%" PRIi16 " %s "\
+                   "topic = '%s' time = %" PRIu64, 
+                   value, scale, units, topic, time);
+        LOG_END_ABNORMAL(e);
+        return ret;
+    }
+}
+
+
+// backward compatible function for a case where no cache is required
+db_reply_t
+    insert_into_measurement(
+        tntdb::Connection &conn,
+        const char        *topic,
+        m_msrmnt_value_t   value,
+        m_msrmnt_scale_t   scale,
+        int64_t            time,
+        const char        *units,
+        const char        *device_name)
+{
+    TopicCache c{};
+    return insert_into_measurement(conn, topic, value, scale, time, units, device_name, c);
+}
+
 /*
  * add a new device in t_bios_discovered_device table and upate t_bios_monitor_asset_relation 
  * if the device is known in  t_bios_asset_element
@@ -166,110 +273,5 @@ m_msrmnt_tpc_id_t
     
 }
 
-//Notice for future developers - this functions is ugly and better to split to smaller
-//functions doing only one thing. Please try to avoid adding even more logic here, thanks
-db_reply_t
-    insert_into_measurement(
-        tntdb::Connection &conn,
-        const char        *topic,
-        m_msrmnt_value_t   value,
-        m_msrmnt_scale_t   scale,
-        int64_t            time,
-        const char        *units,
-        const char        *device_name,
-        TopicCache& c)
-{
-    db_reply_t ret = db_reply_new();
-    
-
-    if ( !units ) {
-        ret.status     = 0;
-        ret.errtype    = DB_ERR;
-        ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "NULL value of units is not allowed";
-        log_error("end: %s", ret.msg.c_str());
-        return ret;
-    }
-
-    if ( !topic || topic[0]=='@') {
-        ret.status     = 0;
-        ret.errtype    = DB_ERR;
-        ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "NULL or malformed value of topic is not allowed";
-        log_error("end: %s", ret.msg.c_str());
-        return ret;
-    }
-
-    // ATTENTION: now name is taken from t_bios_discovered_device
-    if ( !device_name ) {
-        ret.status     = 0;
-        ret.errtype    = DB_ERR;
-        ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "NULL value of device name is not allowed";
-        log_error("end: %s", ret.msg.c_str());
-        return ret;
-    }
-    
-    try {
-        tntdb::Statement st;
-        
-        m_msrmnt_tpc_id_t topic_id = prepare_topic(conn, topic, units, device_name, c);
-        if(topic_id!=0){
-            st = conn.prepareCached (
-                    "INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) "
-                    "  VALUES (:time, :value, :scale, :topic_id)"
-                    "  ON DUPLICATE KEY UPDATE value = :value, scale = :scale");
-            ret.affected_rows = st.set("time",  time)
-                                  .set("value", value)
-                                  .set("scale", scale)
-                                  .set("topic_id", topic_id)
-                                  .execute();
-
-            log_debug("[t_bios_measurement]: inserted %" PRIu64 " rows "\
-                       "value:%" PRIi32 " * 10^%" PRIi16 " %s "\
-                       "topic = '%s' topic_id=%" PRIi16 " time = %" PRIu64, 
-                       ret.affected_rows, value, scale, units, topic, topic_id, time);
-        }else{
-            ret.status     = 0;
-            ret.errtype    = DB_ERR;
-            ret.errsubtype = DB_ERROR_INTERNAL;
-            ret.msg        = "Can't prepare a valid topic";
-            log_error ("NOT INSERTED: value:%" PRIi32 " * 10^%" PRIi16 " %s "\
-                       "topic = '%s' time = %" PRIu64, 
-                        value, scale, units, topic, time);    
-            return ret;
-        }
-
-        ret.rowid = conn.lastInsertId();
-        ret.status = 1;
-        return ret;
-    } catch(const std::exception &e) {
-        ret.status     = 0;
-        ret.errtype    = DB_ERR;
-        ret.errsubtype = DB_ERROR_INTERNAL;
-        ret.msg        = e.what();
-        log_error ("NOT INSERTED: value:%" PRIi32 " * 10^%" PRIi16 " %s "\
-                   "topic = '%s' time = %" PRIu64, 
-                   value, scale, units, topic, time);
-        LOG_END_ABNORMAL(e);
-        return ret;
-    }
-}
-
-
-// backward compatible function for a case where no cache is required
-db_reply_t
-    insert_into_measurement(
-        tntdb::Connection &conn,
-        const char        *topic,
-        m_msrmnt_value_t   value,
-        m_msrmnt_scale_t   scale,
-        int64_t            time,
-        const char        *units,
-        const char        *device_name)
-{
-    TopicCache c{};
-    return insert_into_measurement(conn, topic, value, scale, time, units, device_name, c);
-}
 
 } //namespace persist
