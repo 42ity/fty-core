@@ -671,7 +671,7 @@ test_subprocess_LDADD = 		libpriv-subprocess.la \
 					libpriv-test-run.la
 test_subprocess_CPPFLAGS =		$(AM_CPPFLAGS) \
 					-I$(abs_top_srcdir)/tests/include/
-test_subprocess_LDFLAGS =		${CXXTOOLS_LIBS} -lcidr
+test_subprocess_LDFLAGS =		${CXXTOOLS_LIBS} -lcidr -lczmq
 
 check_PROGRAMS += 	test-cidr
 test_cidr_SOURCES = 	src/shared/cidr.cc \
@@ -960,7 +960,7 @@ bios_nutscan_LDADD = \
 			libpriv-nutscan.la \
 			libpriv-subprocess.la
 
-bios_nutscan_LDFLAGS = $(CXXTOOLS_LIBS) -lcidr $(LIBNUTSCAN_LIBS)
+bios_nutscan_LDFLAGS = $(CXXTOOLS_LIBS) -lcidr $(LIBNUTSCAN_LIBS) -lczmq
 
 # Do we build and install CI programs by default? (see configure)
 cibin_programs_list := $(cibin_programs)
