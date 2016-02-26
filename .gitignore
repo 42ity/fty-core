@@ -58,6 +58,7 @@ db_dump
 .dirstamp
 stamp-h1
 
+docs/man/*.xml
 docs/man/*.8
 docs/develop/*.html
 
