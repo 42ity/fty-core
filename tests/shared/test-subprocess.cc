@@ -361,7 +361,10 @@ TEST_CASE("subprocess-call-no-binary", "[subprocess][run]") {
 
 TEST_CASE ("subprocess-test-timeout", "[subprocess][output]")
 {
-    Argv args {"/bin/cat", "/dev/stdin"};
+    if (!zsys_file_exists ("/dev/full"))
+        return;
+
+    Argv args {"/bin/cat", "/dev/full"};
     auto start = zclock_mono ();
     std::string o;
     std::string e;
