@@ -201,7 +201,7 @@ function cleanup {
 }
 
 # Ensure that no processes remain dangling when test completes
-if [ "$SUT_IS_REMOTE" = yes ]; then
+if isRemoteSUT ; then
         # *** create lockfile name ***
         LOCKFILE="`echo "/tmp/ci-test-rackpower-vte__${SUT_USER}@${SUT_HOST}:${SUT_SSH_PORT}:${SUT_WEB_PORT}.lock" | sed 's, ,__,g'`"
         settraps "cleanup; exit_summarizeTestlibResults"
@@ -282,7 +282,7 @@ fi
 sleep 5
 accept_license
 
-if [ "$SUT_IS_REMOTE" = yes ]; then
+if isRemoteSUT ; then
         sut_run 'systemctl restart bios-agent-tpower'
         sut_run 'systemctl restart bios-agent-dbstore'
 fi
