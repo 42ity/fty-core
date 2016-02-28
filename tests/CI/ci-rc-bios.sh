@@ -28,7 +28,7 @@ determineDirs_default || true
 cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
-# Names of daemons to (build and) start up for the test
+# Names of "bios-core" daemons to (build and) start up for the test
 DAEMONS="`sed -n 's|ExecStart=@libexecdir@/@PACKAGE@/||p' "$CHECKOUTDIR"/systemd/bios-*.service.in | egrep -v 'db-init|bios-networking'`"
 
 if [ ! -x "$BUILDSUBDIR/config.status" ]; then
@@ -168,12 +168,14 @@ stop() {
     done
     sleep 1
     # Test successful kills
+    RESULT=0
     for d in $DAEMONS ; do
         pidof $d lt-$d >/dev/null 2>&1 && \
-            echo "ERROR: stop(): $d still running (`pidof $d lt-$d`)" && return 1
+            echo "ERROR: stop(): $d still running (`pidof $d lt-$d`)" >&2 && RESULT=1
     done
-    echo "INFO: stop(): none of the DAEMONS ($DAEMONS) are running (OK)"
-    return 0
+    [ "$RESULT" = 0 ] && \
+        echo "INFO: stop(): none of the DAEMONS (`echo $DAEMONS | tr '\n' ' '`) are running (OK)"
+    return $RESULT
 }
 
 status() {
@@ -240,6 +242,12 @@ while [ $# -gt 0 ] ; do
         --start)
             OPERATION=start
             ;;
+        --restart)
+            OPERATION=restart
+            ;;
+        --startQ|--start-quick)
+            OPERATION=startQ
+            ;;
         --stop)
             OPERATION=stop
             ;;
@@ -262,14 +270,16 @@ while [ $# -gt 0 ] ; do
 done
 
 case "$OPERATION" in
-    start)
+    start|restart|startQ)
         RESULT=0
-        stop
-        update_compiled
+        if [ "$OPERATION" != startQ ] ; then
+            stop    # Legacy usage: part of "start", should be for "restart"
+            update_compiled
+        fi
         start_malamute && \
         start
         status started || \
-            { echo "ERROR: Some daemons are not running" ; RESULT=1; }
+            { echo "ERROR: Some daemons are not running" >&2 ; RESULT=1; }
         exit $RESULT
         ;;
     stop)
@@ -277,7 +287,7 @@ case "$OPERATION" in
         stop || RESULT=$?
         stop_malamute || RESULT=$?
         status stopped || \
-            { echo "ERROR: Some daemons are still running" ; RESULT=1; }
+            { echo "ERROR: Some daemons are still running" >&2 ; RESULT=1; }
         exit $RESULT
         ;;
     status)
