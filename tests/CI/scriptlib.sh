@@ -1,6 +1,6 @@
 # shell include file: scriptlib.sh
 #
-# Copyright (C) 2014-2015 Eaton
+# Copyright (C) 2014-2016 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -550,6 +550,9 @@ loaddb_file() {
     ### Note: The input (file or stdin) MUST specify 'use ${DATABASE};' in order
     ### to upload data into the database the caller wants (including creation of
     ### one, so it can not be specified as command-line argument)
+    ### Note: To avoid race-conditions, CI test scripts generally should not
+    ### call this routine directly, but rather use wrappers from testlib-db.sh
+    ### to stop database consumers before reinitializing it to avoid surprises.
     DBFILE="$1"
     if [ $# -gt 0 ] && [ x"$1" = x ] ; then
         die "loaddb_file() was called with a present but empty filename argument, check your scripts!"
