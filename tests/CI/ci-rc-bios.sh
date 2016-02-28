@@ -347,14 +347,24 @@ update_compiled() {
 }
 
 start() {
+    # Each service's start can take a while including a sleep to see if it's ok
+    # So run multiple starters in parallel and then see how each one ended up
     RESULT=0
+    BGPIDS=""
     for d in $DAEMONS ; do
-        start_daemon $d || RESULT=$?
+        start_daemon $d &
+        BGPIDS="$BGPIDS $!"
     done
 
     for s in $SERVICES ; do
-        /bin/systemctl start $s || RESULT=$?
+        /bin/systemctl start $s &
+        BGPIDS="$BGPIDS $!"
     done
+
+    for P in $BGPIDS ; do
+        wait "$P" || RESULT=$?
+    done
+
     return $RESULT
 }
 
