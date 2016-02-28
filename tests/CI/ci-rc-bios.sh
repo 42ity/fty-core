@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2014-2015 Eaton
+# Copyright (C) 2014-2016 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,17 +19,133 @@
 #! \file   ci-rc-bios.sh
 #  \brief  starts or stops the $BIOS daemons installed in $HOME
 #  \author Tomas Halman <TomasHalman@Eaton.com>
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+# NOTE: The rest of usual initialization is below, call dependent on situation
+
+usage(){
+    echo "Usage: $(basename $0) [options...]
+Options:
+    --stop       stop BIOS processes
+    --start      start BIOS processes (does restart if BIOS is running)
+    --status     check whether all processes are running
+    --statusX    check whether all processes are stopped
+    --update-compiled   when using custom compiled code (rather than packaged)
+                 use this option to ensure needed programs are up-to-date
+                 (invoked automatically before a start)
+    --help|-h    print this help"
+}
+
+OPERATION=help
+
+while [ $# -gt 0 ] ; do
+    case "${1}" in
+        -h|--help)
+            OPERATION=help
+            ;;
+        --start)
+            OPERATION=start
+            ;;
+        --restart)
+            OPERATION=restart
+            ;;
+        --startQ|--start-quick)
+            OPERATION=startQ
+            ;;
+        --stop)
+            OPERATION=stop
+            ;;
+        --status)
+            OPERATION=status
+            ;;
+        --statusX)
+            OPERATION=statusX
+            ;;
+        --update-compiled)
+            OPERATION=update_compiled
+            ;;
+        *)
+            echo "Invalid option $1" 1>&2
+            usage
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+# For VTE or similar cases, just use the systemd integration and quit
+if isRemoteSUT ; then
+
+    SERVICES="$(sut_run 'ls -1 /etc/systemd/system/bios.target.wants/*.service | egrep -v "malamute|db-init|bios-networking" | while read F ; do echo "`basename "$F"`"; done' )"
+
+    statusSVC() {
+        GOODSTATE="$1"
+        [ -z "$GOODSTATE" ] && GOODSTATE=started
+        RESULT=0
+        for d in malamute $SERVICES ; do
+            echo -n "$d is currently "
+            if sut_run "/bin/systemctl status $d >/dev/null 2>&1" ; then
+                echo "running (remote)"
+                [ "$GOODSTATE" = started ] || RESULT=1
+            else
+                echo "stopped"
+                [ "$GOODSTATE" = stopped ] || RESULT=1
+            fi
+        done
+        return $RESULT
+    }
+
+    case "$OPERATION" in
+    start|restart|startQ)
+        [ "$OPERATION" = startQ ] && OPERATION=start
+        sut_run "/bin/systemctl $OPERATION malamute $SERVICES bios.target" && \
+            statusSVC started
+        exit $?
+        ;;
+    stop)
+        sut_run "/bin/systemctl $OPERATION bios.target $SERVICES malamute" && \
+            statusSVC stopped
+        exit $?
+        ;;
+    status)  # Good if all services are started
+        statusSVC started
+        exit
+        ;;
+    statusX)  # Good if all services are stopped
+        statusSVC stopped
+        exit
+        ;;
+    update_compiled)
+        echo "WARN: update_compiled() is a no-op for remote testing"
+        exit 0
+        ;;
+    help)
+        usage
+        exit 1
+        ;;
+    *)
+        echo "ERROR: '$OPERATION' is not supported for remote testing" >&2
+        exit 1
+        ;;
+    esac
+
+    # Should not get here
+    exit 255
+fi
+
 # do not set NEED_BUILDSUBDIR=yes because this aborts on unbuilt project
 determineDirs_default || true
 cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 # Names of "bios-core" daemons to (build and) start up for the test
+# Services of interest are those that are provided by BIOS packages
+# built from non-"core" repositories, and not by "bios-core" itself.
 DAEMONS="`sed -n 's|ExecStart=@libexecdir@/@PACKAGE@/||p' "$CHECKOUTDIR"/systemd/bios-*.service.in | egrep -v 'db-init|bios-networking'`"
+SERVICES="$(ls -1 /etc/systemd/system/bios.target.wants/*.service | egrep -v 'malamute|db-init|bios-networking' | while read F ; do BF="`basename "$F"`"; [ -s "$CHECKOUTDIR/systemd/$BF.in" ] || echo "$BF"; done)"
 
 if [ ! -x "$BUILDSUBDIR/config.status" ]; then
     echo "Cannot find $BUILDSUBDIR/config.status, using preinstalled system binaries..."
@@ -167,14 +283,21 @@ stop() {
        ( pidof $d lt-$d >/dev/null 2>&1 && kill -KILL `pidof $d lt-$d` 2>/dev/null ) || true
     done
     sleep 1
+    for s in $SERVICES ; do
+        /bin/systemctl stop $s || true
+    done
     # Test successful kills
     RESULT=0
     for d in $DAEMONS ; do
         pidof $d lt-$d >/dev/null 2>&1 && \
-            echo "ERROR: stop(): $d still running (`pidof $d lt-$d`)" >&2 && RESULT=1
+            echo "ERROR: stop(): daemon $d still running (`pidof $d lt-$d`)" >&2 && RESULT=1
+    done
+    for s in $SERVICES ; do
+        /bin/systemctl status $s >/dev/null 2>&1 && \
+            echo "ERROR: stop(): service $s still running" && RESULT=1
     done
     [ "$RESULT" = 0 ] && \
-        echo "INFO: stop(): none of the DAEMONS (`echo $DAEMONS | tr '\n' ' '`) are running (OK)"
+        echo "INFO: stop() OK: none of the DAEMONS (`echo $DAEMONS | tr '\n' ' '`) and SERVICES ($SERVICES) are running"
     return $RESULT
 }
 
@@ -183,9 +306,19 @@ status() {
     [ -z "$GOODSTATE" ] && GOODSTATE=started
     RESULT=0
     for d in malamute $DAEMONS ; do
-        echo -n "$d is currently "
+        echo -n "daemon $d is currently "
         if pidof $d lt-$d >/dev/null 2>&1 ; then
             echo "running (`pidof $d lt-$d `)"
+            [ "$GOODSTATE" = started ] || RESULT=1
+        else
+            echo "stopped"
+            [ "$GOODSTATE" = stopped ] || RESULT=1
+        fi
+    done
+    for s in $SERVICES ; do
+        echo -n "service $s is currently "
+        if /bin/systemctl status $s >/dev/null 2>&1 ; then
+            echo "running"
             [ "$GOODSTATE" = started ] || RESULT=1
         else
             echo "stopped"
@@ -214,60 +347,17 @@ update_compiled() {
 }
 
 start() {
+    RESULT=0
     for d in $DAEMONS ; do
-        start_daemon $d
+        start_daemon $d || RESULT=$?
     done
+
+    for s in $SERVICES ; do
+        /bin/systemctl start $s || RESULT=$?
+    done
+    return $RESULT
 }
 
-usage(){
-    echo "Usage: $(basename $0) [options...]
-Options:
-    --stop       stop BIOS processes
-    --start      start BIOS processes (does restart if BIOS is running)
-    --status     check whether all processes are running
-    --statusX    check whether all processes are stopped
-    --update-compiled   when using custom compiled code (rather than packaged)
-                 use this option to ensure needed programs are up-to-date
-                 (invoked automatically before a start)
-    --help|-h    print this help"
-}
-
-OPERATION=help
-
-while [ $# -gt 0 ] ; do
-    case "${1}" in
-        -h|--help)
-            OPERATION=help
-            ;;
-        --start)
-            OPERATION=start
-            ;;
-        --restart)
-            OPERATION=restart
-            ;;
-        --startQ|--start-quick)
-            OPERATION=startQ
-            ;;
-        --stop)
-            OPERATION=stop
-            ;;
-        --status)
-            OPERATION=status
-            ;;
-        --statusX)
-            OPERATION=statusX
-            ;;
-        --update-compiled)
-            OPERATION=update_compiled
-            ;;
-        *)
-            echo "Invalid option $1" 1>&2
-            usage
-            exit 1
-            ;;
-    esac
-    shift
-done
 
 case "$OPERATION" in
     start|restart|startQ)
