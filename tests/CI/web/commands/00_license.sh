@@ -32,7 +32,7 @@ test_it "license-related directories should exist"
 # TODO: Writability by *specific* account - not checked so far
 RES=0
 echo "SUT_IS_REMOTE =   $SUT_IS_REMOTE"
-if [ "$SUT_IS_REMOTE" = yes ]; then
+if isRemoteSUT ; then
     ( ALTROOT=/ . "$CHECKOUTDIR/tests/CI/run_tntnet_packaged.env" && \
       [ -n "$DATADIR" ] && [ -n "$LICENSE_DIR" ] && [ -n "$TESTPASS" ] && \
       echo "DATADIR     =     $DATADIR" && \
@@ -56,7 +56,7 @@ print_result $RES
 
 test_it "verify that license/current is a symlink to a not-empty readable file"
 RES=0
-if [ "$SUT_IS_REMOTE" = yes ]; then
+if isRemoteSUT ; then
     ( ALTROOT=/ . "$CHECKOUTDIR/tests/CI/run_tntnet_packaged.env" && [ -n "$LICENSE_DIR" ] && \
       sut_run "[ -s '${LICENSE_DIR}/current' ] && [ -r '${LICENSE_DIR}/current' ] && [ -h '${LICENSE_DIR}/current' ]"
     ) || RES=$?
@@ -71,7 +71,7 @@ print_result $RES
 
 test_it "verify that license/1.0 is a not-empty readable file (or symlink to one)"
 RES=0
-if [ "$SUT_IS_REMOTE" = yes ]; then
+if isRemoteSUT ; then
     ( ALTROOT=/ . "$CHECKOUTDIR/tests/CI/run_tntnet_packaged.env" && [ -n "$LICENSE_DIR" ] && \
       sut_run "[ -s '${LICENSE_DIR}/1.0' ] && [ -r '${LICENSE_DIR}/1.0' ]"
     ) || RES=$?
@@ -84,7 +84,7 @@ fi
 print_result $RES
 
 logmsg_info "Removing the license file before test, if exists: license becomes not-accepted"
-if [ "$SUT_IS_REMOTE" = yes ]; then
+if isRemoteSUT ; then
     ( ALTROOT=/ . "$CHECKOUTDIR/tests/CI/run_tntnet_packaged.env" && [ -n "$DATADIR" ] && \
       sut_run "rm -f '${DATADIR}/license'" ) || true
 else
@@ -163,7 +163,7 @@ echo "**************************************************************************
 test_it "missing_license_text"
 logmsg_info "Prepare test conditions: remove the license text file (which the current symlink points to)"
 RES=0
-if [ "$SUT_IS_REMOTE" = yes ]; then
+if isRemoteSUT ; then
     # TODO: Maybe this should consider Eaton EULA as well/instead
     #sut_run "mv -f /usr/share/bios/license/current /usr/share/bios/license/org-current ; mv -f /usr/share/bios/license/1.0 /usr/share/bios/license/org-1.0"
     ( ALTROOT=/ . "$CHECKOUTDIR/tests/CI/run_tntnet_packaged.env" && \
@@ -190,7 +190,7 @@ CITEST_QUICKFAIL=no WEBLIB_QUICKFAIL=no WEBLIB_CURLFAIL=no api_get_json '/admin/
 curlfail_pop
 
 logmsg_info "Clean up after test (restore license file)..."
-if [ "$SUT_IS_REMOTE" = yes ]; then
+if isRemoteSUT ; then
     ( ALTROOT=/ . "$CHECKOUTDIR/tests/CI/run_tntnet_packaged.env" && \
       [ -n "$LICENSE_DIR" ] && \
       sut_run "mv -f '${LICENSE_DIR}/x-current' '${LICENSE_DIR}/current' && mv -f '${LICENSE_DIR}/x-1.0' '${LICENSE_DIR}/1.0'"
@@ -229,7 +229,7 @@ RES=0
 # TODO: Manupulations with /var/lib/bios directory should be better locked
 # against intermittent errors (test if src/tgt dirs exist, etc.)
 logmsg_info "Prepare test conditions: current_license becomes a file, not symlink..."
-if [ "$SUT_IS_REMOTE" = yes ]; then
+if isRemoteSUT ; then
     ( ALTROOT=/ . "$CHECKOUTDIR/tests/CI/run_tntnet_packaged.env" && \
       [ -n "$LICENSE_DIR" ] && \
       sut_run "mv -f '${LICENSE_DIR}/current' '${LICENSE_DIR}/x-current' && echo TEST > '${LICENSE_DIR}/current' && [ -s '${LICENSE_DIR}/current' ] && [ ! -h '${LICENSE_DIR}/current' ]"
@@ -247,7 +247,7 @@ logmsg_info "Try to accept license (should fail)"
 CITEST_QUICKFAIL=no WEBLIB_QUICKFAIL=no WEBLIB_CURLFAIL=no api_auth_post_json '/admin/license' "foobar" >&5 || RES=$?
 curlfail_pop
 logmsg_info "Clean up after test (restore directory for license and other data)..."
-if [ "$SUT_IS_REMOTE" = yes ]; then
+if isRemoteSUT ; then
     # TODO: Maybe this should consider Eaton EULA as well/instead
     ( ALTROOT=/ . "$CHECKOUTDIR/tests/CI/run_tntnet_packaged.env" && \
       [ -n "$LICENSE_DIR" ] && \
@@ -278,7 +278,7 @@ RES=0
 # TODO: Manupulations with /var/lib/bios directory should be better locked
 # against intermittent errors (test if src/tgt dirs exist, etc.)
 logmsg_info "Prepare test conditions: location for license becomes a file, not directory..."
-if [ "$SUT_IS_REMOTE" = yes ]; then
+if isRemoteSUT ; then
     # TODO: Maybe this should consider Eaton EULA as well/instead
     ( ALTROOT=/ . "$CHECKOUTDIR/tests/CI/run_tntnet_packaged.env" && [ -n "$DATADIR" ] && \
       sut_run "rm -f '${DATADIR}/license' && mv -f '${DATADIR}' '${DATADIR}'.x && echo qwe > '${DATADIR}'" \
@@ -295,7 +295,7 @@ logmsg_info "Try to accept license (should fail)"
 CITEST_QUICKFAIL=no WEBLIB_QUICKFAIL=no WEBLIB_CURLFAIL=no api_auth_post_json '/admin/license' "foobar" >&5 || RES=$?
 curlfail_pop
 logmsg_info "Clean up after test (restore directory for license and other data)..."
-if [ "$SUT_IS_REMOTE" = yes ]; then
+if isRemoteSUT ; then
     # TODO: Maybe this should consider Eaton EULA as well/instead
     ( ALTROOT=/ . "$CHECKOUTDIR/tests/CI/run_tntnet_packaged.env" && [ -n "$DATADIR" ] && \
       sut_run "rm -f '${DATADIR}' && mv -f '${DATADIR}'.x '${DATADIR}'"

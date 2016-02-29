@@ -127,7 +127,7 @@ LOGFILE_LOADDB="$BUILDSUBDIR/vte-tab-DC008-import-${_SCRIPT_NAME}.log"
     # *** write power rack base test data to DB on SUT
 set -o pipefail 2>/dev/null || true
 set -e
-loaddb_file "$DB_BASE" 2>&1 | tee "${LOGFILE_LOADDB}"
+init_script_initial 2>&1 | tee "${LOGFILE_LOADDB}"
 
 # NOTE: This test verifies that with our standard configuration of the VTE
 # and its database we can import our assets, so we do not apply hacks like

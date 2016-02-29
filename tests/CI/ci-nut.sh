@@ -170,8 +170,7 @@ print_result $? || CODE=$? die "Could not prepare binaries"
 
 # These are defined in testlib-db.sh
 test_it "initialize_db_rackpower"
-loaddb_file "$DB_BASE" && \
-loaddb_file "$DB_RACK_POWER"
+init_script_rack_power
 print_result $? || CODE=$? die "Could not prepare database"
 
 # This program is delivered by another repo, should "just exist" in container
