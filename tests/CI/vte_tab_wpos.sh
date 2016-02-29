@@ -112,6 +112,7 @@ SUT_IS_REMOTE=yes
 # Include our standard web routines for CI scripts
 NEED_TESTLIB=yes
 . "`dirname $0`"/weblib.sh || die "Can not include web script library"
+# This should have pulled also testlib.sh and testlib-db.sh
 
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
 
@@ -149,8 +150,9 @@ subtest() {
     # ***** INIT DB *****
     # *** write power rack base test data to DB on SUT
     test_it "re-initialize database"
-    loaddb_file "$DB_BASE" 2>&1 | tee "${LOGFILE_LOADDB}"
-    LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" 2>&1 | tee -a "${LOGFILE_LOADDB}"
+#    loaddb_file "$DB_BASE" 2>&1 | tee "${LOGFILE_LOADDB}"
+#    LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" 2>&1 | tee -a "${LOGFILE_LOADDB}"
+    init_script_initial 2>&1 | tee -a "${LOGFILE_LOADDB}"
     print_result $?
 
     # ***** POST THE CSV FILE *****
