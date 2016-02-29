@@ -45,6 +45,8 @@ set -u
 #loaddb_file "$DB1"
 #loaddb_file "$DB2"
 
+# Not wrapped with testlib-db init_script* routines - this test is often
+# a quick-run component of tests that are in control, or via the CI suite
 test_it "loaddb_initial+loaddb_sampledata"
 loaddb_sampledata       # in testlib-db this includes loaddb_initial()
 print_result $?
