@@ -196,7 +196,7 @@ loaddb_topo_pow() {
 }
 
 loaddb_rack_power() {
-    echo "--------------- reset db: rack-power -------------"
+    echo "CI-TESTLIB_DB - reset db: rack-power -------------"
     loaddb_initial || return $?
     for data in "$DB_RACK_POWER"; do
         logmsg_info "Importing $data ..."
@@ -207,7 +207,7 @@ loaddb_rack_power() {
 }
 
 loaddb_dc_power() {
-    echo "--------------- reset db: dc-power -------------"
+    echo "CI-TESTLIB_DB - reset db: dc-power ---------------"
     loaddb_initial || return $?
     for data in "$DB_DC_POWER"; do
         logmsg_info "Importing $data ..."
@@ -225,36 +225,53 @@ loaddb_current() {
     return 0
 }
 
-init_script_initial(){
-# Prepare sandbox for the test: ensure the database is freshly made
-# and licenses to not interfere; the accept_license() routine is
-# defined in weblib.sh at the moment
-    loaddb_initial && \
+reloaddb_init_script_WRAPPER() {
+    # Prepare sandbox for the test: ensure the database is freshly made
+    # and licenses to not interfere; the accept_license() routine is
+    # defined in weblib.sh at the moment.
+    # As parameter(s) pass the loaddb_*() routine names to execute
+    # while the database is down.
+    reloaddb_stops_BIOS && \
+    [ -x "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" ] && \
+        echo "CI-TESTLIB_DB - reset db: stop BIOS ---------------" && \
+        "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" --stop
+
+    while [ $# -gt 0 ]; do
+        $1 || return $?
+        shift
+    done
+
+    reloaddb_stops_BIOS && \
+    [ -x "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" ] && \
+        echo "CI-TESTLIB_DB - reset db: start BIOS ---------------" && \
+        { "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" --start-quick || return $? ; }
+
     accept_license
+}
+
+init_script_initial(){
+    reloaddb_init_script_WRAPPER loaddb_initial
 }
 
 init_script_sampledata(){
-    loaddb_sampledata && \
-    accept_license
+    reloaddb_init_script_WRAPPER loaddb_sampledata
 }
 
 init_script_default(){
-    loaddb_default && \
-    accept_license
+    reloaddb_init_script_WRAPPER loaddb_default
 }
 
 init_script(){
+    # Alias, legacy
     init_script_default "$@"
 }
 
 init_script_topo_loc(){
-    loaddb_topo_loc && \
-    accept_license
+    reloaddb_init_script_WRAPPER loaddb_topo_loc
 }
 
 init_script_topo_pow(){
-    loaddb_topo_pow && \
-    accept_license
+    reloaddb_init_script_WRAPPER loaddb_topo_pow
 }
 
 :
