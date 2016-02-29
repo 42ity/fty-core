@@ -46,12 +46,23 @@ table_diff(){
     do_dumpdb "${TABLE_NAME}" |grep "INSERT" > "${DB_DUMP_DIR}/${TABLE_NAME}.dmp"
     #if [ "z${TEST_ID}" != "z" ] && [ -f "${DB_RES_DIR}/${TABLE_NAME}${TEST_ID}.ptr" ] ; then
     if [ -f "${DB_RES_DIR}/${TABLE_NAME}${TEST_ID}.ptr" ] ; then
-        DIFFOUT="$( diff -bu "${DB_RES_DIR}/${TABLE_NAME}${TEST_ID}.ptr" "${DB_DUMP_DIR}/${TABLE_NAME}.dmp" )" || \
-            { RES_PART=1; logmsg_debug " * FAILED : MISMATCHED DIFF for table='${TABLE_NAME}' testid='${TEST_ID}'" "$DIFFOUT"; }
+        if ! diff "${DB_RES_DIR}/${TABLE_NAME}${TEST_ID}.ptr" "${DB_DUMP_DIR}/${TABLE_NAME}.dmp" > /dev/null ; then
+            RES_PART=1
+            sed -e 's|),(|),\n(|g' < "${DB_RES_DIR}/${TABLE_NAME}${TEST_ID}.ptr" > "/tmp/asset_import.$$.${TABLE_NAME}${TEST_ID}.ptr"
+            sed -e 's|),(|),\n(|g' < "${DB_DUMP_DIR}/${TABLE_NAME}.dmp" > "/tmp/asset_import.$$.${TABLE_NAME}.dmp"
+            DIFFOUT="$(diff -bu "/tmp/asset_import.$$.${TABLE_NAME}${TEST_ID}.ptr" "/tmp/asset_import.$$.${TABLE_NAME}.dmp")"
+            logmsg_error " * FAILED : MISMATCHED DIFF for table='${TABLE_NAME}' testid='${TEST_ID}'" "$DIFFOUT"
+        fi
     else
-        DIFFOUT="$( diff -bu "${DB_RES_DIR}/${TABLE_NAME}.ptr" "${DB_DUMP_DIR}/${TABLE_NAME}.dmp" )" || \
-            { RES_PART=1; logmsg_debug " * FAILED : MISMATCHED DIFF for table='${TABLE_NAME}' (testid='${TEST_ID}' unused)" "$DIFFOUT"; }
+        if ! diff "${DB_RES_DIR}/${TABLE_NAME}.ptr" "${DB_DUMP_DIR}/${TABLE_NAME}.dmp" > /dev/null ; then
+            RES_PART=1
+            sed -e 's|),(|),\n(|g' < "${DB_RES_DIR}/${TABLE_NAME}.ptr" > "/tmp/asset_import.$$.${TABLE_NAME}.ptr"
+            sed -e 's|),(|),\n(|g' < "${DB_DUMP_DIR}/${TABLE_NAME}.dmp" > "/tmp/asset_import.$$.${TABLE_NAME}.dmp"
+            DIFFOUT="$(diff -bu "/tmp/asset_import.$$.${TABLE_NAME}.ptr" "/tmp/asset_import.$$.${TABLE_NAME}.dmp")"
+            logmsg_error " * FAILED : MISMATCHED DIFF for table='${TABLE_NAME}' (testid='${TEST_ID}' unused)" "$DIFFOUT"
+        fi
     fi
+    rm -f "/tmp/asset_import.$$.${TABLE_NAME}"* >/dev/null 2>&1 || true
     RES=$(expr ${RES} + ${RES_PART})
 }
 
