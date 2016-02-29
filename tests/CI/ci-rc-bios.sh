@@ -79,25 +79,28 @@ done
 # For VTE or similar cases, just use the systemd integration and quit
 if isRemoteSUT ; then
 
-    SERVICES="$(sut_run 'ls -1 /etc/systemd/system/bios.target.wants/*.service | egrep -v "malamute|dc_th|db-init|bios-networking" | while read F ; do echo "`basename "$F"`"; done | tr "\n" " "' )"
+    SERVICES="$(sut_run 'ls -1 /etc/systemd/system/bios.target.wants/*.service | egrep -v "biostimer-|malamute|dc_th|db-init|bios-networking" | while read F ; do echo "`basename "$F"`"; done | tr "\n" " "' )"
 
     do_statusSVC() {
         GOODSTATE="$1"
         [ -z "$GOODSTATE" ] && GOODSTATE=started
         RESULT=0
         for s in malamute $SERVICES ; do
-            echo -n "$s is currently "
+            echo -n "$s (remote) is currently "
             sut_run "/bin/systemctl status $s" >/dev/null 2>&1
             case $? in
             0) # Is running
-                echo -n "running (remote) "
+                echo -n "running "
                 [ "$GOODSTATE" = started ] && \
                     echo "[--OK--]" || { echo "[-FAIL-]"; RESULT=1; }
                 ;;
             3) # Oneshot exited (maybe OK), but is not running now
-                echo -n "oneshot-finished (remote) "
+               # Ordinary service requested to stop and not running as well
+                echo -n "stopped "
                 sut_run "/bin/systemctl is-failed $s" >/dev/null 2>&1 && \
-                    { echo "and crashed [-FAIL-]"; RESULT=1; } || echo "[--OK--]"
+                    { echo "and crashed [-FAIL-]"; RESULT=1; } || \
+                    { [ "$GOODSTATE" = stopped ] && \
+                        echo "[--OK--]" || { echo "[-FAIL-]"; RESULT=1; } ; }
                 ;;
             1|*) # Is not running or other error
                 echo -n "stopped "
@@ -169,7 +172,7 @@ cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 # Services of interest are those that are provided by BIOS packages
 # built from non-"core" repositories, and not by "bios-core" itself.
 DAEMONS="`sed -n 's|ExecStart=@libexecdir@/@PACKAGE@/||p' "$CHECKOUTDIR"/systemd/bios-*.service.in | egrep -v 'db-init|bios-networking'`"
-SERVICES="$(ls -1 /etc/systemd/system/bios.target.wants/*.service | egrep -v 'malamute|dc_th|db-init|bios-networking' | while read F ; do BF="`basename "$F"`"; [ -s "$CHECKOUTDIR/systemd/$BF.in" ] || echo "$BF"; done | tr '\n' ' ')"
+SERVICES="$(ls -1 /etc/systemd/system/bios.target.wants/*.service | egrep -v 'biostimer-|malamute|dc_th|db-init|bios-networking' | while read F ; do BF="`basename "$F"`"; [ -s "$CHECKOUTDIR/systemd/$BF.in" ] || echo "$BF"; done | tr '\n' ' ')"
 
 if [ ! -x "$BUILDSUBDIR/config.status" ]; then
     echo "Cannot find $BUILDSUBDIR/config.status, using preinstalled system binaries..."
@@ -351,11 +354,14 @@ do_status() {
                 echo "[--OK--]" || { echo "[-FAIL-]"; RESULT=1; }
             ;;
         3) # Oneshot exited OK, but is not running now
-            echo -n "oneshot-finished "
+           # Ordinary service requested to stop and not running as well
+            echo -n "stopped "
             /bin/systemctl is-failed $s >/dev/null 2>&1 && \
-                { echo "and crashed [-FAIL-]"; RESULT=1; } || echo "[--OK--]"
+                { echo "and crashed [-FAIL-]"; RESULT=1; } || \
+                { [ "$GOODSTATE" = stopped ] && \
+                    echo "[--OK--]" || { echo "[-FAIL-]"; RESULT=1; } ; }
             ;;
-        1) # Is not running
+        1) # Is not running or some other error
             echo -n "stopped "
             [ "$GOODSTATE" = stopped ] && \
                 echo "[--OK--]" || { echo "[-FAIL-]"; RESULT=1; }
