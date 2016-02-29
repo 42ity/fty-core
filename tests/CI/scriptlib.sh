@@ -78,7 +78,13 @@ if [ "${SUT_WEB_PORT-}" -eq 443 ]; then
     SUT_WEB_SCHEMA="https"
 fi
 [ -z "${BASE_URL-}" ] && BASE_URL="${SUT_WEB_SCHEMA}://$SUT_HOST:$SUT_WEB_PORT/api/v1"
-export SUT_IS_REMOTE SUT_USER SUT_HOST SUT_SSH_PORT SUT_WEB_PORT SUT_WEB_SCHEMA BASE_URL
+
+### By default, do we stop BIOS services before re-initializing the database?
+### See reloaddb_stops_BIOS() as the callable method
+[ -z "${LOADDB_RESTART_BIOS-}" ] && LOADDB_RESTART_BIOS=auto
+[ x"${LOADDB_RESTART_BIOS-}" = x- ] && LOADDB_RESTART_BIOS=auto
+
+export SUT_IS_REMOTE LOADDB_RESTART_BIOS SUT_USER SUT_HOST SUT_SSH_PORT SUT_WEB_PORT SUT_WEB_SCHEMA BASE_URL
 
 ### Should the test suite break upon first failed test?
 [ x"${CITEST_QUICKFAIL-}" = x- ] && CITEST_QUICKFAIL=""
@@ -473,6 +479,22 @@ isRemoteSUT() {
     ### NOTE: No automatic caching of decision for "maybe-no" since the needed
     ### variables may become defined later.
     return 2
+}
+
+reloaddb_stops_BIOS() {
+    if [ "$LOADDB_RESTART_BIOS" = auto ] || [ x"$LOADDB_RESTART_BIOS" = x- ]; then
+        isRemoteSUT
+        case $? in
+            0) LOADDB_RESTART_BIOS=yes ;;
+            1) LOADDB_RESTART_BIOS=no ;;
+            *) LOADDB_RESTART_BIOS=auto ;;
+        esac
+    fi
+    [ "$LOADDB_RESTART_BIOS" = yes ] && return 0
+    [ "$LOADDB_RESTART_BIOS" = no ] && return 1
+    LOADDB_RESTART_BIOS=auto
+    # To be on the safe side, we cause service restart while undecided
+    return 0
 }
 
 sut_run() {
