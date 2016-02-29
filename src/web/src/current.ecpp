@@ -29,8 +29,10 @@
  */
  #><%pre>
 #include <cxxtools/split.h>
+#include <cxxtools/regex.h>
 #include <stdlib.h>
 #include <vector>
+#include <map>
 #include <string>
 #include <cmath>
 
@@ -72,6 +74,52 @@ s_os2string(
         os = 0;
     return OS2STRING.at(os);
 }
+
+struct OutletProperties {
+    double realpower;
+    double current;
+    double voltage;
+    std::string status;
+
+    OutletProperties ():
+        realpower (NAN),
+        current (NAN),
+        voltage (NAN),
+        status {}
+    {};
+
+    void put (const std::string &key, double value) {
+        if (key == "realpower")
+            realpower = value;
+        else
+        if (key == "current")
+            current = value;
+        else
+        if (key == "voltage")
+            voltage = value;
+        else
+        if (key == "status")
+            status = (value == 42) ? "on" : "off";
+    }
+
+    std::string toJson () const {
+        std::string ret = "{";
+        ret += utils::json::jsonify ("realpower", realpower);
+        ret += ", ";
+        ret += utils::json::jsonify ("current", current);
+        ret += ", ";
+        ret += utils::json::jsonify ("voltage", voltage);
+        ret += ", \"status\" : ";
+        if (status.empty ())
+            ret += "null";
+        else
+            ret += "\"" + status + "\"";
+        ret += "}";
+        return ret;
+    }
+
+};
+
 </%pre>
 
 <%args>
@@ -80,6 +128,8 @@ std::string dev;
 
 <%cpp>
 {
+    cxxtools::Regex outlet_properties_re {"(realpower|current|voltage|status).(outlet).([0-9]+)"};
+
     if (dev.empty()) {
         http_die("request-param-required", "dev");
     }
@@ -200,8 +250,23 @@ std::string dev;
         json += ",";
         json += utils::json::jsonify ("name", asset.item.name);
         json += ",";
+        std::map <std::string, OutletProperties> outlet_properties;
+
         for ( const auto &one_measurement : measurements )
         {
+            // BIOS-951 -- begin
+            cxxtools::RegexSMatch s;
+            if (persist::is_epdu (asset.item.subtype_id) &&
+                outlet_properties_re.match (one_measurement.first, s)) {
+
+                if (outlet_properties.count (s.get (3)) == 0)
+                    outlet_properties [s.get (3)] = OutletProperties {};
+
+                outlet_properties [s.get (3)].put (s.get (1), one_measurement.second);
+                continue;
+            }
+            // BIOS-951 -- end
+
             if( one_measurement.first == "status.ups" )
             {
                 json += utils::json::jsonify (one_measurement.first, shared::upsstatus_to_string(one_measurement.second));
@@ -216,6 +281,25 @@ std::string dev;
             }
             json += ",";
         }
+
+        // BIOS-951 -- begin
+        if (persist::is_epdu (asset.item.subtype_id)) {
+            json += "\n    \"outlets\" : {";
+            for (const auto &it : outlet_properties) {
+                json += "\n        \"" + it.first + "\" : " + it.second.toJson () + ",";
+            }
+
+            if (json.back () == ',') {
+                json.back () = '\n';
+                json += "    }";
+            }
+            else
+                json += '}';    // outlet_properties is empty
+
+            json += "\n,";
+        }
+        // BIOS-951 -- end
+
         // replace last "," by "}"
         json.back() = '}';
         big_json += json;
