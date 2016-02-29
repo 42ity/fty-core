@@ -1087,11 +1087,19 @@ agent_nut_LDADD = \
 			libpriv-log.la \
 			libpriv-proto.la \
 			libbiosapi.la \
-			libpriv-utils-ymsg.la
+			libpriv-utils-ymsg.la \
+			libpriv-utils-plusplus.la
 
 agent_nut_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS} -lbiosapi
 
 agent_nut_CPPFLAGS =	$(AM_CPPFLAGS)
+
+template_nutmappingdir = $(datadir)/$(PACKAGE)/agent-nut
+NUT_MAPPING = \
+		src/agents/nut/mapping.conf 
+
+template_nutmapping_DATA =	$(NUT_MAPPING)
+EXTRA_DIST +=		$(NUT_MAPPING)
 
 client_PROGRAMS +=	agent-autoconfig
 
