@@ -362,14 +362,14 @@ set +e
 if [ $# = 0 ]; then
     test_web_default -topology_power -asset_create -averages || RESULT_OVERALL=$?
     test_web_process || CODE=$? die "failed in test_web_process()"
-    if [ "$RESULT_OVERALL" -eq 0 ] || [ x"$CITEST_QUICKFAIL" = xno ]; then
-        test_web_asset_create asset_create || RESULT_OVERALL=$?
-    fi
-    test_web_process || CODE=$? die "failed in test_web_process()"
-    if [ "$RESULT_OVERALL" -eq 0 ] || [ x"$CITEST_QUICKFAIL" = xno ]; then
-        test_web_topo_p topology_power || RESULT_OVERALL=$?
-    fi
-    test_web_process || CODE=$? die "failed in test_web_process()"
+#    if [ "$RESULT_OVERALL" -eq 0 ] || [ x"$CITEST_QUICKFAIL" = xno ]; then
+#        test_web_asset_create asset_create || RESULT_OVERALL=$?
+#    fi
+#    test_web_process || CODE=$? die "failed in test_web_process()"
+#    if [ "$RESULT_OVERALL" -eq 0 ] || [ x"$CITEST_QUICKFAIL" = xno ]; then
+#        test_web_topo_p topology_power || RESULT_OVERALL=$?
+#    fi
+#    test_web_process || CODE=$? die "failed in test_web_process()"
     [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && \
         CODE=$RESULT_OVERALL die "Quickly aborting the test suite after failure, as requested"
     test_web_averages averages || RESULT_OVERALL=$?
@@ -378,6 +378,8 @@ if [ $# = 0 ]; then
         CODE=$RESULT_OVERALL die "Quickly aborting the test suite after failure, as requested"
 else
     # selective test routine
+    # Note we still support here the obsoleted tests,
+    # just in case someone runs them explicitly
     while [ $# -gt 0 ]; do
         case "$1" in
             topology_power*)
