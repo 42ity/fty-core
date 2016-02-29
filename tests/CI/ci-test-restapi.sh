@@ -128,17 +128,9 @@ test_web() {
     return $RES_TW
 }
 
-ci_loaddb_default() {
-    echo "--------------- reset db: default ----------------"
-    for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
-        loaddb_file "$data" || CODE=$? die "failed in loaddb_file($data)"
-    done
-    return 0
-}
-
 test_web_default() {
     init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_default() $*" || true
-    ci_loaddb_default && \
+    init_script_default && \
     test_web "$@" || return $?
     return 0
 }
@@ -146,9 +138,7 @@ test_web_default() {
 test_web_topo_p() {
     init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_p() $*" || true
     echo "----------- reset db: topology : power -----------"
-    for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOP"; do
-        loaddb_file "$data" || CODE=$? die "failed in loaddb_file($data)"
-    done
+    init_script_topo_pow && \
     test_web "$@" || return $?
     return 0
 }
@@ -157,9 +147,7 @@ test_web_topo_l() {
 # NOTE: This piece of legacy code is still here, but no usecase below calls it
     init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_l() $*" || true
     echo "---------- reset db: topology : location ---------"
-    for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOL"; do
-        loaddb_file "$data" || CODE=$? die "failed in loaddb_file($data)"
-    done
+    init_script_topo_loc && \
     test_web "$@" || return $?
     return 0
 }
@@ -167,9 +155,7 @@ test_web_topo_l() {
 test_web_asset_create() {
     init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_asset_create() $*" || true
     echo "---------- reset db: asset : create ---------"
-    for data in "$DB_BASE" "$DB_DATA"; do
-          loaddb_file "$data" || CODE=$? die "failed in loaddb_file($data)"
-    done
+    init_script_sampledata && \
     test_web "$@" || return $?
     return 0
 }
@@ -180,9 +166,7 @@ test_web_averages() {
     CI_TEST_AVERAGES_DATA="`$DB_LOADDIR/generate_averages.sh "$DB_LOADDIR"`"
     export CI_TEST_AVERAGES_DATA
     echo "----------- reset db: averages -----------"
-    for data in "$DB_BASE" "$DB_DATA" "$DB_AVERAGES" "$DB_AVERAGES_RELATIVE"; do
-        loaddb_file "$data" || CODE=$? die "failed in loaddb_file($data)"
-    done
+    init_script_averages && \
     test_web "$@" || return $?
     return 0
 }
@@ -223,7 +207,7 @@ trap_cleanup(){
     [ "$cleanTRAP_RES" != 0 ] && [ "$RESULT_OVERALL" = 0 ] && RESULT_OVERALL="$cleanTRAP_RES"
 
     kill_daemons || cleanTRAP_RES=$?
-    ci_loaddb_default || cleanTRAP_RES=$?
+    init_script_default || cleanTRAP_RES=$?
 
     if [ "$RESULT_OVERALL" = 0 ]; then
         logmsg_info "Overall test suite result: SUCCESS"
@@ -378,14 +362,14 @@ set +e
 if [ $# = 0 ]; then
     test_web_default -topology_power -asset_create -averages || RESULT_OVERALL=$?
     test_web_process || CODE=$? die "failed in test_web_process()"
-    if [ "$RESULT_OVERALL" -eq 0 ] || [ x"$CITEST_QUICKFAIL" = xno ]; then
-        test_web_asset_create asset_create || RESULT_OVERALL=$?
-    fi
-    test_web_process || CODE=$? die "failed in test_web_process()"
-    if [ "$RESULT_OVERALL" -eq 0 ] || [ x"$CITEST_QUICKFAIL" = xno ]; then
-        test_web_topo_p topology_power || RESULT_OVERALL=$?
-    fi
-    test_web_process || CODE=$? die "failed in test_web_process()"
+#    if [ "$RESULT_OVERALL" -eq 0 ] || [ x"$CITEST_QUICKFAIL" = xno ]; then
+#        test_web_asset_create asset_create || RESULT_OVERALL=$?
+#    fi
+#    test_web_process || CODE=$? die "failed in test_web_process()"
+#    if [ "$RESULT_OVERALL" -eq 0 ] || [ x"$CITEST_QUICKFAIL" = xno ]; then
+#        test_web_topo_p topology_power || RESULT_OVERALL=$?
+#    fi
+#    test_web_process || CODE=$? die "failed in test_web_process()"
     [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && \
         CODE=$RESULT_OVERALL die "Quickly aborting the test suite after failure, as requested"
     test_web_averages averages || RESULT_OVERALL=$?
@@ -394,6 +378,8 @@ if [ $# = 0 ]; then
         CODE=$RESULT_OVERALL die "Quickly aborting the test suite after failure, as requested"
 else
     # selective test routine
+    # Note we still support here the obsoleted tests,
+    # just in case someone runs them explicitly
     while [ $# -gt 0 ]; do
         case "$1" in
             topology_power*)
