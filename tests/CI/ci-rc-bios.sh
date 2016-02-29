@@ -171,7 +171,7 @@ cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 # Names of "bios-core" daemons to (build and) start up for the test
 # Services of interest are those that are provided by BIOS packages
 # built from non-"core" repositories, and not by "bios-core" itself.
-DAEMONS="`sed -n 's|ExecStart=@libexecdir@/@PACKAGE@/||p' "$CHECKOUTDIR"/systemd/bios-*.service.in | egrep -v 'db-init|bios-networking'`"
+DAEMONS="`sed -n 's|ExecStart=@libexecdir@/@PACKAGE@/||p' "$CHECKOUTDIR"/systemd/bios-*.service.in | sed -e 's|^\([^ ]*\)\([ \t].*\)$|\1|' | egrep -v 'db-init|bios-networking'`"
 SERVICES="$(ls -1 /etc/systemd/system/bios.target.wants/*.service | egrep -v 'biostimer-|malamute|dc_th|db-init|bios-networking' | while read F ; do BF="`basename "$F"`"; [ -s "$CHECKOUTDIR/systemd/$BF.in" ] || echo "$BF"; done | tr '\n' ' ')"
 
 if [ ! -x "$BUILDSUBDIR/config.status" ]; then
