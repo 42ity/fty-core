@@ -127,6 +127,8 @@ test_web() {
         RES_TW=$?
     print_result $RES_TW
     echo "==== test_web RESULT: ($RES_TW) =================================="
+    echo ""
+    echo ""
     return $RES_TW
 }
 
