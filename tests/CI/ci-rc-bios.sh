@@ -402,7 +402,7 @@ update_compiled() {
         web-test-deps $DAEMONS
 }
 
-start() {
+do_start() {
     # Each service's start can take a while including a sleep to see if it's ok
     # So run multiple starters in parallel and then see how each one ended up
     RESULT=0
@@ -424,6 +424,16 @@ start() {
     return $RESULT
 }
 
+start() {
+    OUT="`do_start "$@" 2>&1`"
+    RES=$?
+    if [ $RES != 0 ] || [ "${CI_DEBUG-}" -ge "${CI_DEBUGLEVEL_RUN-}" ] 2>/dev/null ; then
+        echo "$OUT"
+    fi
+    [ "$RES" = 0 ] && echo "BIOS services: OK (all local started)" || \
+        echo "BIOS services: FAILED (some local not started)"
+    return $RES
+}
 
 case "$OPERATION" in
     start|restart|startQ)

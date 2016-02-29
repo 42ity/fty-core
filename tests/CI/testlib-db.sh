@@ -268,7 +268,12 @@ reloaddb_init_script_WRAPPER() {
         echo "CI-TESTLIB_DB - reset db: start BIOS ---------------" && \
         { "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" --start-quick || return $? ; }
 
-    accept_license
+    # Some scripts only care about database and do not have weblib.sh included
+    if type -t accept_license | grep -q 'shell function' ; then
+        accept_license
+        return $?
+    fi
+    return 0
 }
 
 init_script_initial(){
