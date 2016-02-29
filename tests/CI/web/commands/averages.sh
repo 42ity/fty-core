@@ -33,11 +33,22 @@ echo "**************************************************************************
 accept_license
 [ x"${JSONSH_CLI_DEFINED-}" = xyes ] || CODE=127 die "jsonsh_cli() not defined"
 
+# Value set up via generated script in ci-test-restapi preparation for the averages test
+AVGSRV_ELEMENT_ID="36"
+test_it "verify_AVG-SRV::exists"
+AVGSRV_ELEMENT_ID="$(do_select "SELECT id_discovered_device FROM t_bios_discovered_device WHERE name='AVG-SRV'")"
+[ $? -eq 0 -a -n "$AVGSRV_ELEMENT_ID" ] && [ "$AVGSRV_ELEMENT_ID" -ge 0 ]
+print_result $? "See errors above, maybe the custom averages-test SQL files were not imported"
+
+test_it "verify_AVG-SRV::expected=36"
+[ "$AVGSRV_ELEMENT_ID" -eq 36 ]
+print_result -$? "This used to be '36', is '$AVGSRV_ELEMENT_ID' now... MAYBE database is inconsistent for the test below"
+
 echo "****************************************************************************************"
 echo "********* 1. relative=7d step=24h type=arithmetic_mean *********************************"
 echo "****************************************************************************************"
 test_it "relative=7d"
-OUTPUT="`api_get_json /metric/computed/average?type=arithmetic_mean\&step=24h\&source=temperature.thermal_zone0\&element_id=36\&relative=7d`"
+OUTPUT="`api_get_json /metric/computed/average?type=arithmetic_mean\&step=24h\&source=temperature.thermal_zone0\&element_id=${AVGSRV_ELEMENT_ID}\&relative=7d`"
 [ $? -eq 0 -a -n "$OUTPUT" ]
 print_result $?
 
@@ -77,9 +88,10 @@ JSON_PARSED="`echo "$OUTPUT" | jsonsh_cli -x="$JPATH" | grep '"arithmetic_mean"'
 print_result $?
 
 test_it "relative=7d - check \"element_id\""
-# "element_id": 36
+# "element_id": ${AVGSRV_ELEMENT_ID}
+# e.g.   "element_id": 36
 JPATH='^"element_id"$'
-JSON_PARSED="`echo "$OUTPUT" | jsonsh_cli -x="$JPATH" | grep '36'`"
+JSON_PARSED="`echo "$OUTPUT" | jsonsh_cli -x="$JPATH" | grep -w "${AVGSRV_ELEMENT_ID}"`"
 [ $? -eq 0 -a -n "$JSON_PARSED" ]
 print_result $?
 
