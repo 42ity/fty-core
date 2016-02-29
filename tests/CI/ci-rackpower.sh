@@ -201,7 +201,7 @@ function cleanup {
 }
 
 # Ensure that no processes remain dangling when test completes
-if [ "$SUT_IS_REMOTE" = yes ]; then
+if isRemoteSUT ; then
         # *** create lockfile name ***
         LOCKFILE="`echo "/tmp/ci-test-rackpower-vte__${SUT_USER}@${SUT_HOST}:${SUT_SSH_PORT}:${SUT_WEB_PORT}.lock" | sed 's, ,__,g'`"
         settraps "cleanup; exit_summarizeTestlibResults"
@@ -224,9 +224,8 @@ if [ "$SUT_IS_REMOTE" = yes ]; then
         # *** write power rack base test data to DB on SUT
         # These are defined in testlib-db.sh
         test_it "initialize_db_rackpower"
-        loaddb_file "$DB_BASE" && \
-        LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
-        LOADDB_FILE_REMOTE_SLEEP=2 loaddb_file "$DB_RACK_POWER"
+        init_script_rack_power
+        # && LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE"
         print_result $? || CODE=$? die "Could not prepare database"
 else
         settraps "kill_daemons; exit_summarizeTestlibResults"
@@ -245,8 +244,7 @@ else
 
         # These are defined in testlib-db.sh
         test_it "initialize_db_rackpower"
-        loaddb_file "$DB_BASE" && \
-        loaddb_file "$DB_RACK_POWER"
+        init_script_rack_power
         print_result $? || CODE=$? die "Could not prepare database"
 
         # This program is delivered by another repo, should "just exist" in container
@@ -282,7 +280,7 @@ fi
 sleep 5
 accept_license
 
-if [ "$SUT_IS_REMOTE" = yes ]; then
+if isRemoteSUT ; then
         sut_run 'systemctl restart bios-agent-tpower'
         sut_run 'systemctl restart bios-agent-dbstore'
 fi
