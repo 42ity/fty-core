@@ -200,7 +200,7 @@ else
     LINE="$(sut_run "getent passwd '$BIOS_USER'")"
     if [ $? != 0 -o -z "$LINE" ]; then
         logmsg_error "User $BIOS_USER is not known to system administrative database"
-        [ "$SUT_IS_REMOTE" = yes ] && \
+        isRemoteSUT && \
             echo "at $SUT_HOST:$SUT_SSH_PORT." || \
             echo "at the local system."
         logmsg_info "To add it locally on the SUT, run: "

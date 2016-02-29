@@ -142,7 +142,7 @@ trap_cleanup(){
     [ "$cleanTRAP_RES" = 0 ] && [ "$RESULT_OVERALL" != 0 ] && cleanTRAP_RES="$RESULT_OVERALL"
     [ "$cleanTRAP_RES" != 0 ] && [ "$RESULT_OVERALL" = 0 ] && RESULT_OVERALL="$cleanTRAP_RES"
 
-    ci_loaddb_default || cleanTRAP_RES=$?
+    init_script_default || cleanTRAP_RES=$?
     # ***** RESULTS *****
     if [ "$RESULT_OVERALL" = 0 ]; then
         logmsg_info "Overall test suite result: SUCCESS"
@@ -216,19 +216,10 @@ test_web() {
     return $RES_TW
 }
 
-    # *** load default db setting
-ci_loaddb_default() {
-    echo "--------------- reset db: default ----------------"
-    loaddb_file "$DB_BASE" && \
-    LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
-    loaddb_file "$DB_DATA" && \
-    loaddb_file "$DB_DATA_TESTREST" || return $?
-    return 0
-}
     # *** start the default set of TC
 test_web_default() {
     init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_default() $*" || true
-    ci_loaddb_default && \
+    init_script_default && \
     test_web "$@" || return $?
     return 0
 }
@@ -236,9 +227,7 @@ test_web_default() {
 test_web_asset_create() {
     init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_asset_create() $*" || true
     echo "---------- reset db: asset : create ---------"
-    for data in "$DB_BASE" "$DB_DATA"; do
-          loaddb_file "$data" || exit $?
-    done
+    init_script_sampledata && \
     test_web "$@" || return $?
     return 0
 }
@@ -247,9 +236,8 @@ test_web_asset_create() {
 test_web_topo_p() {
     init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_p() $*" || true
     echo "----------- reset db: topology : power -----------"
-    loaddb_file "$DB_BASE" && \
-    LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
-    loaddb_file "$DB_TOPOP" && \
+#    LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
+    init_script_topo_pow && \
     test_web "$@" || return $?
     return 0
 
@@ -259,9 +247,7 @@ test_web_topo_p() {
 test_web_topo_l() {
     init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_l() $*" || true
     echo "---------- reset db: topology : location ---------"
-    loaddb_file "$DB_BASE" && \
-    LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
-    loaddb_file "$DB_TOPOL" && \
+    init_script_topo_loc && \
     test_web "$@" || return $?
     return 0
 }
@@ -272,9 +258,7 @@ test_web_averages() {
     CI_TEST_AVERAGES_DATA="`$DB_LOADDIR/generate_averages.sh "$DB_LOADDIR"`"
     export CI_TEST_AVERAGES_DATA
     echo "----------- reset db: averages -----------"
-    for data in "$DB_BASE" "$DB_DATA" "$DB_AVERAGES" "$DB_AVERAGES_RELATIVE"; do
-        loaddb_file "$data" || exit $?
-    done
+    init_script_averages && \
     test_web "$@" || return $?
     return 0
 }
