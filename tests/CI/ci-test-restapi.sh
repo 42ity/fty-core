@@ -362,9 +362,11 @@ esac
 # do the test
 set +e
 ONLYNEG=yes # Also yes for zero args
+[ $# -gt 0 ] && \
 for ARG in "$@" ; do
     case "$ARG" in
-        -*) ONLYNEG=no;;
+        -*) ;; # Still a negative argument
+        *) ONLYNEG=no;;
     esac
 done
 
