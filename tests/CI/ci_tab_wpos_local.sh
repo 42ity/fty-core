@@ -56,7 +56,7 @@ set -u
 #do_select 'delete from t_bios_asset_device_type'
 #do_select 'delete from t_bios_asset_link_type'
 
-loaddb_file "$DB_BASE"
+init_script_initial
 
 case "$1" in
     bam*)
