@@ -31,11 +31,16 @@
 
 #include <nutclient.h>
 #include <iostream>
+#include <fstream>
 #include <algorithm>
 #include <exception>
+#include <cxxtools/jsondeserializer.h>
+#include <cxxtools/serializationerror.h>
+
 
 #include "log.h"
 #include "defs.h"
+#include "filesystem.h"
 
 using namespace std;
 
@@ -43,95 +48,6 @@ namespace drivers
 {
 namespace nut
 {
-
-/*
- * See the meaning of variables at NUT project
- * http://www.networkupstools.org/docs/user-manual.chunked/apcs01.html
- */
-
-/* TODO: mapping should be in configuration */
-static const std::vector< std::pair<std::string,std::string> > physicsMapping {
-    { "ups.temperature",  "temperature.default" },
-    { "ups.load",         "load.default" },
-    { "ups.realpower",    "realpower.default" },
-
-    { "input.frequency",  "frequency.input" },
-
-    { "input.load",       "load.input.L1" }, // not found in nut drivers, including input.L?.load ??
-    { "input.L1.load",    "load.input.L1" },
-    { "input.L2.load",    "load.input.L2" },
-    { "input.L3.load",    "load.input.L3" },
-
-    { "input.voltage",    "voltage.input.L1-N" },
-    // as far NUT doesn't support DMTF format, multi-phase is not yet full supported, so NUT publishes voltage in a simple way
-    { "input.L1.voltage", "voltage.input.L1-N" },
-    // as far NUT doesn't support DMTF format, multi-phase is not yet full supported, so NUT publishes voltage in a simple way
-    { "input.L2.voltage", "voltage.input.L2-N" },
-    // as far NUT doesn't support DMTF format, multi-phase is not yet full supported, so NUT publishes voltage in a simple way
-    { "input.L3.voltage", "voltage.input.L3-N" },
-
-    { "input.current",    "current.input.L1" },
-    { "input.L1.current", "current.input.L1" },
-    { "input.L2.current", "current.input.L2" },
-    { "input.L3.current", "current.input.L3" },
-
-    { "input.realpower",     "realpower.default" },
-    { "input.L1.realpower",  "realpower.input.L1" },
-    { "input.L2.realpower",  "realpower.input.L2" },
-    { "input.L3.realpower",  "realpower.input.L3" },
-    { "input.realpower",     "realpower.output.L1" }, // FIXME after demo: using input, as output doesn't work correctly
-    { "output.L1.realpower", "realpower.output.L1" },
-    { "output.L2.realpower", "realpower.output.L2" },
-    { "output.L3.realpower", "realpower.output.L3" },
-
-    { "input.power",     "power.default" },
-    { "input.L1.power",  "power.input.L1" }, // not in snmp drivers ??
-    { "input.L2.power",  "power.input.L2" },
-    { "input.L3.power",  "power.input.L3" },
-
-    { "output.voltage",  "voltage.output.L1-N" },
-    { "output.current",  "current.output.L1" },
-    { "output.L1-N.voltage", "voltage.output.L1-N" },
-
-    { "output.L1.realpower",   "realpower.output.L1" },
-    { "output.L1.current",     "current.output.L1" },
-    { "output.L2-N.voltage",   "voltage.output.L2-N" },
-    { "output.L2.realpower",   "realpower.output.L2" },
-    { "output.L2.current",     "current.output.L2" },
-    { "output.L3-N.voltage",   "voltage.output.L3-N" },
-    { "output.L3.realpower",   "realpower.output.L3" },
-    { "output.L3.current",     "current.output.L3" },
-    { "battery.charge",        "charge.battery" },
-    { "battery.runtime",       "runtime.battery" },
-    { "outlet.realpower",      "realpower.default" },
-    { "outlet.#.current",      "current.outlet.#" },
-    { "outlet.#.voltage",      "voltage.outlet.#" },
-    { "outlet.#.realpower",    "realpower.outlet.#" },
-    { "ups.realpower.nominal", "realpower.nominal" },
-    { "outlet.group.#.load",   "load.outlet.group.#" }
-};
-
-static const std::vector< std::pair< std::string, std::string > > inventoryMapping {
-    { "device.model",       "model" },
-    { "device.mfr",         "manufacturer" },
-    { "device.serial",      "serial_no" },
-    { "device.type",        "device.type" },
-    { "device.description", "device.description" },
-    { "device.contact",     "device.contact" },
-    { "device.location",    "device.location" },
-    { "device.part",        "device.part" },
-    { "ups.status",         "status.ups" },
-    { "ups.alarm",          "ups.alarm" },
-    { "ups.serial",         "ups.serial" },
-    { "battery.date",       "battery.date" },
-    { "battery.type",       "battery.type" },
-    { "outlet.count",       "outlet.count" },
-    { "input.phases",       "phases.input" },
-    { "output.phases",      "phases.output" },
-    { "outlet.group.count", "outlet.group.count" },
-    { "outlet.#.status",    "status.outlet.#"}
-};
-
 
 NUTDevice::NUTDevice(): _name("") {  
 }
@@ -305,30 +221,35 @@ void NUTDevice::updateInventory(const std::string& varName, std::vector<std::str
     }
 }
 
-void NUTDevice::update( std::map< std::string,std::vector<std::string> > vars, bool forceUpdate ) {
+void NUTDevice::update (std::map <std::string, std::vector <std::string>> vars,
+                        std::function <const std::map <std::string, std::string>&(const char *)> mapping,
+                        bool forceUpdate) {
 
     if( vars.empty() ) return;
     _lastUpdate = time(NULL);
     // use transformation table first
     NUTValuesTransformation( vars );
 
+    
+
     // walk trough physics
-    for(size_t i = 0; i < physicsMapping.size(); ++i) {
-        if( vars.find(physicsMapping[i].first) != vars.end() ) {
+    for (const auto& item : mapping ("physicsMapping")) {
+        if (vars.find (item.first) != vars.end ()) {
             // variable found in received data
-            std::vector<std::string> values = vars[physicsMapping[i].first];
-            updatePhysics( physicsMapping[i].second, values, (forceUpdate ? 0 : NUT_USE_DEFAULT_THRESHOLD) );
-        } else {
+            std::vector<std::string> values = vars[item.first];
+            updatePhysics (item.second, values, (forceUpdate ? 0 : NUT_USE_DEFAULT_THRESHOLD));
+        }
+        else {
             // iterating numbered items in physics
             // like outlet.1.voltage, outlet.2.voltage, ...
-            int x = physicsMapping[i].first.find(".#."); // is always in the middle: outlet.1.realpower
-            int y = physicsMapping[i].second.find(".#"); // can be at the end: outlet.voltage.#
+            int x = item.first.find(".#."); // is always in the middle: outlet.1.realpower
+            int y = item.second.find(".#"); // can be at the end: outlet.voltage.#
             if( x > 0 && y > 0 ) {
                 // this is something like outlet.#.realpower
-                std::string nutprefix = physicsMapping[i].first.substr(0,x+1);
-                std::string nutsuffix = physicsMapping[i].first.substr(x+2);
-                std::string biosprefix = physicsMapping[i].second.substr(0,y+1);
-                std::string biossuffix = physicsMapping[i].second.substr(y+2);
+                std::string nutprefix = item.first.substr(0,x+1);
+                std::string nutsuffix = item.first.substr(x+2);
+                std::string biosprefix = item.second.substr(0,y+1);
+                std::string biossuffix = item.second.substr(y+2);
                 std::string nutname,biosname;
                 int i = 1;
                 while(true) {
@@ -345,22 +266,23 @@ void NUTDevice::update( std::map< std::string,std::vector<std::string> > vars, b
     }
 
     // walk trough inventory
-    for(size_t i = 0; i < inventoryMapping.size(); ++i) {
-        if( vars.find(inventoryMapping[i].first) != vars.end() ) {
+    //for(size_t i = 0; i < inventoryMapping.size(); ++i) {
+    for (const auto& item : mapping ("inventoryMapping")) {
+        if( vars.find (item.first) != vars.end() ) {
             // variable found in received data
-            std::vector<std::string> values = vars[inventoryMapping[i].first];
-            updateInventory( inventoryMapping[i].second, values );
+            std::vector<std::string> values = vars[item.first];
+            updateInventory (item.second, values);
         } else {
             // iterating numbered items in physics
             // like outlet.1.voltage, outlet.2.voltage, ...
-            int x = inventoryMapping[i].first.find(".#."); // is always in the middle: outlet.1.realpower
-            int y = inventoryMapping[i].second.find(".#"); // can be at the end: outlet.voltage.#
+            int x = item.first.find(".#."); // is always in the middle: outlet.1.realpower
+            int y = item.second.find(".#"); // can be at the end: outlet.voltage.#
             if( x > 0 && y > 0 ) {
                 // this is something like outlet.#.realpower
-                std::string nutprefix = inventoryMapping[i].first.substr(0,x+1);
-                std::string nutsuffix = inventoryMapping[i].first.substr(x+2);
-                std::string biosprefix = inventoryMapping[i].second.substr(0,y+1);
-                std::string biossuffix = inventoryMapping[i].second.substr(y+2);
+                std::string nutprefix = item.first.substr(0,x+1);
+                std::string nutsuffix = item.first.substr(x+2);
+                std::string biosprefix = item.second.substr(0,y+1);
+                std::string biossuffix = item.second.substr(y+2);
                 std::string nutname,biosname;
                 int i = 1;
                 while(true) {
@@ -560,7 +482,8 @@ void NUTDeviceList::updateDeviceStatus( bool forceUpdate ) {
     for(auto &device : _devices ) {
         try {
             nutclient::Device nutDevice = nutClient.getDevice(device.first);
-            device.second.update( nutDevice.getVariableValues(), forceUpdate );
+            std::function <const std::map <std::string, std::string>&(const char *)> x = std::bind (&NUTDeviceList::get_mapping, this, std::placeholders::_1);
+            device.second.update( nutDevice.getVariableValues(), x, forceUpdate );
         } catch ( std::exception &e ) {
             log_error("Communication problem with %s (%s)", device.first.c_str(), e.what() );
             if( time(NULL) - device.second.lastUpdate() > NUT_MEASUREMENT_REPEAT_AFTER/2 ) {
@@ -613,6 +536,83 @@ bool NUTDeviceList::changed() const {
         if(it.second.changed() ) return true; 
     }
     return false;
+}
+
+static void 
+s_deserialize_to_map (cxxtools::SerializationInfo& si, std::map <std::string, std::string>& m) {
+    for (const auto& i : si) {
+        std::string temp;
+        std::cout << i.category () << std::endl;
+        if (i.category () != cxxtools::SerializationInfo::Category::Value) {
+            log_warning ("While reading mapping configuration - Value of property '%s' is not json string.", i.name ().c_str ());
+          continue;
+        }
+        try {
+            i.getValue (temp);
+        }
+        catch (const cxxtools::SerializationError& e) {
+            log_error ("Error deserializing value for property '%s'", i.name ().c_str ());
+            continue;
+        }
+        m.emplace (std::make_pair (i.name (), temp));
+    }
+} 
+
+void NUTDeviceList::load_mapping (const char *path_to_file)
+{
+    if (!shared::is_file (path_to_file)) {
+        log_error ("'%s' is not a file", path_to_file);
+        return;
+    }
+    std::ifstream input (path_to_file);
+    if (!input) {
+        log_error ("Error opening file '%s'", path_to_file);
+        return;
+    }
+
+    cxxtools::SerializationInfo si;
+    cxxtools::JsonDeserializer deserializer (input);
+    try {
+        deserializer.deserialize (si);
+    }
+    catch (const std::exception& e) {
+        log_error ("Error deserializing file '%s' to json", path_to_file);
+        return;
+    }
+
+    cxxtools::SerializationInfo *physicsMappingMember = si.findMember ("physicsMapping");
+    if (physicsMappingMember == NULL) {
+        log_error ("Configuration file for mapping '%s' does not contain property 'physicsMapping'", path_to_file);
+    }
+    else {
+        _physicsMapping.clear ();
+        s_deserialize_to_map (*physicsMappingMember, _physicsMapping);
+    }
+
+    cxxtools::SerializationInfo *inventoryMappingMember = si.findMember ("inventoryMapping");
+    if (inventoryMappingMember == NULL) {
+        log_error ("Configuration file for mapping '%s' does not contain property 'inventoryMapping'", path_to_file);
+    }
+    else {
+        _inventoryMapping.clear ();
+        s_deserialize_to_map (*inventoryMappingMember, _inventoryMapping);
+    }
+
+    log_debug ("Number of entries loaded for physicsMapping '%zu'", _physicsMapping.size ());
+    log_debug ("Number of entries loaded for inventoryMapping '%zu'", _inventoryMapping.size ());
+}
+
+const std::map <std::string, std::string>& NUTDeviceList::get_mapping (const char *mapping)
+{
+    if (!mapping)
+        std::invalid_argument ("mapping is NULL");
+    if (strcmp (mapping, "physicsMapping") == 0) {
+        return _physicsMapping;
+    }
+    else if (strcmp (mapping, "inventoryMapping") == 0) {
+        return _inventoryMapping;
+    }
+    throw std::invalid_argument ("mapping");
 }
 
 NUTDeviceList::~NUTDeviceList() {
