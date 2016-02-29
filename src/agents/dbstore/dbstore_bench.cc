@@ -34,7 +34,6 @@
 
 using namespace std;
 
-int stat_total_row=0;
 
 long get_clock_ms(){
     struct timeval time;
@@ -66,7 +65,6 @@ void insert_new_measurement( int device_id, int topic_id, persist::TopicCache &c
     sprintf(value,"%d",rand() % 999999 );
     zmsg_t *msg = bios_proto_encode_metric (NULL, topic_name, device_name, value, "%", time(NULL));
     persist::process_measurement(&msg, cache);
-    stat_total_row++;
 }
 /*
  * do the bench insertion
