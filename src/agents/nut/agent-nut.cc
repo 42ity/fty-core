@@ -37,10 +37,16 @@
 #include "cleanup.h"
 #include "defs.h"
 
+
 void NUTAgent::onStart( ) {
     _timeout = NUT_POLLING_INTERVAL;
+    _deviceList.load_mapping (_conf.c_str ());
 }
 
+void NUTAgent::setConf (const char *path_to_file)
+{
+    _conf = path_to_file;
+}
 
 void NUTAgent::onPoll() {
     advertisePhysics();
@@ -175,12 +181,12 @@ void NUTAgent::advertiseInventory() {
 
 int main(int argc, char *argv[]){
     if( argc > 0 ) {}; // silence compiler warnings
-    if( argv ) {};  // silence compiler warnings
     
     int result = 1;
     log_open();
     log_info ("nut agent started");
     NUTAgent agent("NUT");
+    agent.setConf (argv[1]);
     if( agent.connect("ipc://@/malamute", bios_get_stream_main(), NULL) ) {
         result = agent.run();
     }
