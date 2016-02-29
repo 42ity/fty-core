@@ -375,21 +375,40 @@ esac
 
 # do the test
 set +e
-if [ $# = 0 ]; then
-    test_web_default -topology_power -asset_create -averages || RESULT_OVERALL=$?
+ONLYNEG=yes # Also yes for zero args
+for ARG in "$@" ; do
+    case "$ARG" in
+        -*) ONLYNEG=no;;
+    esac
+done
+
+if [ $ONLYNEG = yes ]; then
+    test_web_default -topology_power -asset_create -averages "$@" || RESULT_OVERALL=$?
     test_web_process || CODE=$? die "failed in test_web_process()"
-    if [ "$RESULT_OVERALL" -eq 0 ] || [ x"$CITEST_QUICKFAIL" = xno ]; then
-        test_web_asset_create asset_create || RESULT_OVERALL=$?
+    if [[ "$*" =~ \-asset_create ]]; then
+        logmsg_info "SKIPPED special test by request: asset_create"
+    else
+        if [ "$RESULT_OVERALL" -eq 0 ] || [ x"$CITEST_QUICKFAIL" = xno ]; then
+            test_web_asset_create "$@" asset_create || RESULT_OVERALL=$?
+        fi
+        test_web_process || CODE=$? die "failed in test_web_process()"
     fi
-    test_web_process || CODE=$? die "failed in test_web_process()"
-    if [ "$RESULT_OVERALL" -eq 0 ] || [ x"$CITEST_QUICKFAIL" = xno ]; then
-        test_web_topo_p topology_power || RESULT_OVERALL=$?
+    if [[ "$*" =~ \-topology_power ]] || [[ "$*" =~ \-topology ]]; then
+        logmsg_info "SKIPPED special test by request: topology_power"
+    else
+        if [ "$RESULT_OVERALL" -eq 0 ] || [ x"$CITEST_QUICKFAIL" = xno ]; then
+            test_web_topo_p "$@" topology_power || RESULT_OVERALL=$?
+        fi
+        test_web_process || CODE=$? die "failed in test_web_process()"
     fi
-    test_web_process || CODE=$? die "failed in test_web_process()"
-    [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && \
-        CODE=$RESULT_OVERALL die "Quickly aborting the test suite after failure, as requested"
-    test_web_averages averages || RESULT_OVERALL=$?
-    test_web_process || CODE=$? die "failed in test_web_process()"
+    if [[ "$*" =~ \-averages ]] ; then
+        logmsg_info "SKIPPED special test by request: averages"
+    else
+        [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && \
+            CODE=$RESULT_OVERALL die "Quickly aborting the test suite after failure, as requested"
+        test_web_averages "$@" averages || RESULT_OVERALL=$?
+        test_web_process || CODE=$? die "failed in test_web_process()"
+    fi
     [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && \
         CODE=$RESULT_OVERALL die "Quickly aborting the test suite after failure, as requested"
 else
