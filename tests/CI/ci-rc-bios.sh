@@ -81,21 +81,45 @@ if isRemoteSUT ; then
 
     SERVICES="$(sut_run 'ls -1 /etc/systemd/system/bios.target.wants/*.service | egrep -v "malamute|dc_th|db-init|bios-networking" | while read F ; do echo "`basename "$F"`"; done | tr "\n" " "' )"
 
-    statusSVC() {
+    do_statusSVC() {
         GOODSTATE="$1"
         [ -z "$GOODSTATE" ] && GOODSTATE=started
         RESULT=0
-        for d in malamute $SERVICES ; do
-            echo -n "$d is currently "
-            if sut_run "/bin/systemctl status $d" >/dev/null 2>&1 ; then
-                echo "running (remote)"
-                [ "$GOODSTATE" = started ] || RESULT=1
-            else
-                echo "stopped"
-                [ "$GOODSTATE" = stopped ] || RESULT=1
-            fi
+        for s in malamute $SERVICES ; do
+            echo -n "$s is currently "
+            sut_run "/bin/systemctl status $s" >/dev/null 2>&1
+            case $? in
+            0) # Is running
+                echo -n "running (remote) "
+                [ "$GOODSTATE" = started ] && \
+                    echo "[--OK--]" || { echo "[-FAIL-]"; RESULT=1; }
+                ;;
+            3) # Oneshot exited (maybe OK), but is not running now
+                echo -n "oneshot-finished (remote) "
+                sut_run "/bin/systemctl is-failed $s" >/dev/null 2>&1 && \
+                    { echo "and crashed [-FAIL-]"; RESULT=1; } || echo "[--OK--]"
+                ;;
+            1|*) # Is not running or other error
+                echo -n "stopped "
+                [ "$GOODSTATE" = stopped ] && \
+                    echo "[--OK--]" || { echo "[-FAIL-]"; RESULT=1; }
+                ;;
+            esac
         done
         return $RESULT
+    }
+
+    statusSVC() {
+        GOODSTATE="$1"
+        [ -z "$GOODSTATE" ] && GOODSTATE=started
+        OUT="`do_statusSVC "$@" 2>&1`"
+        RES=$?
+        if [ $RES != 0 ] || [ "${CI_DEBUG-}" -gt 6 ] 2>/dev/null ; then
+            echo "$OUT"
+        fi
+        [ "$RES" = 0 ] && echo "BIOS services: OK (all remote $GOODSTATE)" || \
+            echo "BIOS services: FAILED (some remote not $GOODSTATE)"
+        return $RES
     }
 
     case "$OPERATION" in
@@ -301,31 +325,57 @@ stop() {
     return $RESULT
 }
 
-status() {
+do_status() {
     GOODSTATE="$1"
     [ -z "$GOODSTATE" ] && GOODSTATE=started
     RESULT=0
     for d in malamute $DAEMONS ; do
         echo -n "daemon $d is currently "
         if pidof $d lt-$d >/dev/null 2>&1 ; then
-            echo "running (`pidof $d lt-$d `)"
-            [ "$GOODSTATE" = started ] || RESULT=1
+            echo "running (`pidof $d lt-$d `) "
+            [ "$GOODSTATE" = started ] && \
+                echo "[--OK--]" || { echo "[-FAIL-]"; RESULT=1; }
         else
-            echo "stopped"
-            [ "$GOODSTATE" = stopped ] || RESULT=1
+            echo -n "stopped "
+            [ "$GOODSTATE" = stopped ] && \
+                echo "[--OK--]" || { echo "[-FAIL-]"; RESULT=1; }
         fi
     done
     for s in $SERVICES ; do
         echo -n "service $s is currently "
-        if /bin/systemctl status $s >/dev/null 2>&1 ; then
-            echo "running"
-            [ "$GOODSTATE" = started ] || RESULT=1
-        else
-            echo "stopped"
-            [ "$GOODSTATE" = stopped ] || RESULT=1
-        fi
+        /bin/systemctl status $s >/dev/null 2>&1
+        case "$?" in
+        0) # Is running
+            echo -n "running "
+            [ "$GOODSTATE" = started ] && \
+                echo "[--OK--]" || { echo "[-FAIL-]"; RESULT=1; }
+            ;;
+        3) # Oneshot exited OK, but is not running now
+            echo -n "oneshot-finished "
+            /bin/systemctl is-failed $s >/dev/null 2>&1 && \
+                { echo "and crashed [-FAIL-]"; RESULT=1; } || echo "[--OK--]"
+            ;;
+        1) # Is not running
+            echo -n "stopped "
+            [ "$GOODSTATE" = stopped ] && \
+                echo "[--OK--]" || { echo "[-FAIL-]"; RESULT=1; }
+            ;;
+        esac
     done
     return $RESULT
+}
+
+status() {
+    GOODSTATE="$1"
+    [ -z "$GOODSTATE" ] && GOODSTATE=started
+    OUT="`do_status "$@" 2>&1`"
+    RES=$?
+    if [ $RES != 0 ] || [ "${CI_DEBUG-}" -ge "${CI_DEBUGLEVEL_RUN-}" ] 2>/dev/null ; then
+        echo "$OUT"
+    fi
+    [ "$RES" = 0 ] && echo "BIOS services: OK (all local $GOODSTATE)" || \
+        echo "BIOS services: FAILED (some local not $GOODSTATE)"
+    return $RES
 }
 
 update_compiled() {
