@@ -118,7 +118,9 @@ s_run_nut_scaner(
 {
     std::string o;
     std::string e;
+    log_debug ("START: nut-scanner with timeout 10 ...");
     int ret = shared::output(args, o, e, 10);
+    log_debug ("       done with code %d", ret);
 
     if (ret != 0)
         return -1;
