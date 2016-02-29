@@ -65,6 +65,7 @@ void insert_new_measurement( int device_id, int topic_id, persist::TopicCache &c
     sprintf(value,"%d",rand() % 999999 );
     zmsg_t *msg = bios_proto_encode_metric (NULL, topic_name, device_name, value, "%", time(NULL));
     persist::process_measurement(&msg, cache);
+    zmsg_destroy (&msg);
 }
 /*
  * do the bench insertion
