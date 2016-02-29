@@ -19,7 +19,7 @@
  */
 
 /*!
- * \file agent-dbstore_benchtest.cc
+ * \file dbstore_bench.cc
  * \author Gerald Guillaume <GeraldGuillaume@Eaton.com>
  * \brief do intensive and endurance insertion job 
  */
