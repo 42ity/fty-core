@@ -361,36 +361,6 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
         }
     }
 
-    // BIOS-991 --start
-    int pdu_epdu_count = 0;
-    std::string last_position = "";
-    a_elmnt_id_t last_position_element_id = 0;
-    bool in_rack = true;
-    if ( ( subtype == "epdu" ) || ( subtype == "pdu" ) )
-    {
-        if ( unused_columns.count("location_w_pos") == 0 ) {
-            bios_throw("request-param-required", "location_w_pos (for epdu/pdu)");
-        }
-        // find a number of pdu/epdu in the rack
-        int ret = get_pdu_epdu_info_location_w_pos (conn, parent_id, pdu_epdu_count, last_position, last_position_element_id);
-        if ( ret == 1 )
-        {
-            // it is not in rack -> nothing to check
-            in_rack = false;
-        }
-        else{
-            if ( ret != 0 )
-            {
-                log_error ( "ret = %d", ret);
-                bios_throw ("internal-error", "Unspecified problem with database, see log for more details");
-            }
-            if ( ( pdu_epdu_count > 1 ) && ( id_str.empty() ) ) {
-                bios_throw("bad-request-document", "More than than 2 pdu/epdu in the rack is not supported");
-            }
-        }
-    }
-    // BIOS-991 --end
-
     std::string group;
 
     // list of element ids of all groups, the element belongs to
@@ -536,33 +506,6 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
 
         if ( match_ext_attr (value, key) )
         {
-            if ( ( ( subtype == "pdu" ) || ( subtype == "epdu" ) ) && ( key == "location_w_pos" ) && ( in_rack ) )
-            {
-                // BIOS-991 --start
-                switch ( pdu_epdu_count ) {
-                    case 0: {
-                                zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
-                                break;
-                            }
-                    case 1: {
-                                std::string new_value = ( last_position == "left" ) ? "right" : "left";
-                                if ( new_value != value )
-                                    log_warning (" location_w_pos changed to '%s'", new_value.c_str());
-                                zhash_insert (extattributes, key.c_str(), (void*)new_value.c_str());
-                                break;
-                            }
-                    default:
-                            {
-                                if ( id_str.empty() ) {
-                                    bios_throw("request-param-required", "location_w_pos", last_position.c_str(), "(left|right)");
-                                }
-                                else
-                                    zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
-                            }
-                }
-                // BIOS-991 --end
-                continue;
-            }
             if ( key == "serial_no" )
             {
 
