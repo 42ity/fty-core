@@ -1,6 +1,6 @@
 /*
  #
- # Copyright (C) 2015 Eaton
+ # Copyright (C) 2015-2016 Eaton
  #
  # This program is free software; you can redistribute it and/or modify
  # it under the terms of the GNU General Public License as published by
@@ -72,7 +72,7 @@ int main()
 
                 char* ret = ::strptime (date.c_str(), "%Y-%m-%d", &tm_ewd);
                 if (ret == NULL) {
-                    log_error ("Cannot connect %s to date, skipping", date.c_str());
+                    log_error ("Cannot convert %s to date, skipping", date.c_str());
                     return;
                 }
 

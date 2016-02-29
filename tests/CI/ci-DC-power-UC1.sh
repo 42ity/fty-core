@@ -95,14 +95,8 @@ custom_create_ups_dev_files() {
 # drop and fill the database
 fill_database(){
     test_it "fill_database"
-    for SQLFILE in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DC_POWER_UC1" ; do
-        if [ -s "$SQLFILE" ]; then
-            loaddb_file "$SQLFILE" || die "Error importing $SQLFILE"
-        else
-            die "`basename "$SQLFILE"` not found"
-        fi
-    done
-    print_result 0
+    init_script_dc_power_UC1
+    print_result $? || die "Error importing test data"
 }
 
 # stop all processes launched in the script

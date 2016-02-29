@@ -153,11 +153,39 @@ else
         print_result -$RES || true
 
         if [ -s "$BUILDSUBDIR/.git_details" ]; then
-            CI_COMMIT="$(. "$BUILDSUBDIR/.git_details" > /dev/null && echo "${PACKAGE_GIT_HASH_L-}")" || CI_COMMIT=""
-            if [ -n "$CI_COMMIT" ]; then
-                echo "=== SYSINFO_VERSION_TESTSUITE: $CI_COMMIT" >&2
+            SYSINFO_VERSION_TESTSUITE="$(. "$BUILDSUBDIR/.git_details" > /dev/null && echo "${PACKAGE_GIT_HASH_L-}")" || SYSINFO_VERSION_TESTSUITE=""
+            if [ -n "$SYSINFO_VERSION_TESTSUITE" ]; then
+                echo "=== SYSINFO_VERSION_TESTSUITE: $SYSINFO_VERSION_TESTSUITE" >&2
             fi
         fi
+
+        if [ -n "$SYSINFO_VERSION_PKG" -a x"$SYSINFO_VERSION_PKG" != "xN/A" ]; then
+            test_it "FYI:commitid-core-COMPARE-running_restapi-to-package"
+            # Align the lengths of commit hashes - full or short
+            [ "${#SYSINFO_VERSION_PKG}" = "${#SYSINFO_VERSION_RUN}" ] || \
+            if [ "${#SYSINFO_VERSION_PKG}" -gt "${#SYSINFO_VERSION_RUN}" ]; then
+                SYSINFO_VERSION_PKG="`echo "$SYSINFO_VERSION_PKG" | cut -c 1-"${#SYSINFO_VERSION_RUN}"`"
+            else
+                SYSINFO_VERSION_RUN="`echo "$SYSINFO_VERSION_RUN" | cut -c 1-"${#SYSINFO_VERSION_PKG}"`"
+            fi
+            logmsg_info "Comparing SYSINFO_VERSION_PKG='$SYSINFO_VERSION_PKG' (binary package in OS) and SYSINFO_VERSION_RUN='$SYSINFO_VERSION_RUN' (running webserver)"
+            [ x"$SYSINFO_VERSION_PKG" = x"$SYSINFO_VERSION_RUN" ]
+            print_result -$?
+        fi
+
+        if [ -n "$SYSINFO_VERSION_TESTSUITE" ]; then
+            test_it "FYI:commitid-core-COMPARE-running_restapi-to-testsuite"
+            [ "${#SYSINFO_VERSION_TESTSUITE}" = "${#SYSINFO_VERSION_RUN}" ] || \
+            if [ "${#SYSINFO_VERSION_TESTSUITE}" -gt "${#SYSINFO_VERSION_RUN}" ]; then
+                SYSINFO_VERSION_TESTSUITE="`echo "$SYSINFO_VERSION_TESTSUITE" | cut -c 1-"${#SYSINFO_VERSION_RUN}"`"
+            else
+                SYSINFO_VERSION_RUN="`echo "$SYSINFO_VERSION_RUN" | cut -c 1-"${#SYSINFO_VERSION_TESTSUITE}"`"
+            fi
+            logmsg_info "Comparing SYSINFO_VERSION_TESTSUITE='$SYSINFO_VERSION_TESTSUITE' (test suite) and SYSINFO_VERSION_RUN='$SYSINFO_VERSION_RUN' (running webserver)"
+            [ x"$SYSINFO_VERSION_TESTSUITE" = x"$SYSINFO_VERSION_RUN" ]
+            print_result -$?
+        fi
+
     else
         logmsg_warn "REST API server has a non-default password"
     fi
