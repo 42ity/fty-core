@@ -206,6 +206,17 @@ loaddb_rack_power() {
     return 0
 }
 
+loaddb_dc_power_UC1() {
+    echo "CI-TESTLIB_DB - reset db: dc-power-UC1 -------------"
+    loaddb_initial || return $?
+    for data in "$DB_DC_POWER_UC1"; do
+        logmsg_info "Importing $data ..."
+        loaddb_file "$data" || return $?
+    done
+    logmsg_info "Database schema and data should have been initialized at this point: for dc-power-UC1 tests"
+    return 0
+}
+
 loaddb_dc_power() {
     echo "CI-TESTLIB_DB - reset db: dc-power ---------------"
     loaddb_initial || return $?
@@ -214,6 +225,17 @@ loaddb_dc_power() {
         loaddb_file "$data" || return $?
     done
     logmsg_info "Database schema and data should have been initialized at this point: for dc-power tests"
+    return 0
+}
+
+loaddb_averages() {
+    echo "CI-TESTLIB_DB - reset db: averages ---------------"
+    loaddb_sampledata || return $?
+    for data in "$DB_AVERAGES" "$DB_AVERAGES_RELATIVE"; do
+        logmsg_info "Importing $data ..."
+        loaddb_file "$data" || return $?
+    done
+    logmsg_info "Database schema and data should have been initialized at this point: for averages tests"
     return 0
 }
 
@@ -272,6 +294,26 @@ init_script_topo_loc(){
 
 init_script_topo_pow(){
     reloaddb_init_script_WRAPPER loaddb_topo_pow
+}
+
+init_script_rack_power(){
+    reloaddb_init_script_WRAPPER loaddb_rack_power
+}
+
+init_script_averages(){
+    reloaddb_init_script_WRAPPER loaddb_averages
+}
+
+init_script_current(){
+    reloaddb_init_script_WRAPPER loaddb_current
+}
+
+init_script_dc_power_UC1(){
+    reloaddb_init_script_WRAPPER loaddb_dc_power_UC1
+}
+
+init_script_dc_power(){
+    reloaddb_init_script_WRAPPER loaddb_dc_power
 }
 
 :
