@@ -46,9 +46,11 @@ table_diff(){
     do_dumpdb "${TABLE_NAME}" |grep "INSERT" > "${DB_DUMP_DIR}/${TABLE_NAME}.dmp"
     #if [ "z${TEST_ID}" != "z" ] && [ -f "${DB_RES_DIR}/${TABLE_NAME}${TEST_ID}.ptr" ] ; then
     if [ -f "${DB_RES_DIR}/${TABLE_NAME}${TEST_ID}.ptr" ] ; then
-        diff "${DB_DUMP_DIR}/${TABLE_NAME}.dmp" "${DB_RES_DIR}/${TABLE_NAME}${TEST_ID}.ptr" > /dev/null || RES_PART=1
+        DIFFOUT="$( diff "${DB_DUMP_DIR}/${TABLE_NAME}.dmp" "${DB_RES_DIR}/${TABLE_NAME}${TEST_ID}.ptr" )" || \
+            { RES_PART=1; logmsg_debug " * FAILED : MISMATCHED DIFF for table='${TABLE_NAME}' testid='${TEST_ID}'" "$DIFFOUT"; }
     else
-        diff "${DB_DUMP_DIR}/${TABLE_NAME}.dmp" "${DB_RES_DIR}/${TABLE_NAME}.ptr" > /dev/null || RES_PART=1
+        DIFFOUT="$( diff "${DB_DUMP_DIR}/${TABLE_NAME}.dmp" "${DB_RES_DIR}/${TABLE_NAME}.ptr" )" || \
+            { RES_PART=1; logmsg_debug " * FAILED : MISMATCHED DIFF for table='${TABLE_NAME}' (testid='${TEST_ID}' unused)" "$DIFFOUT"; }
     fi
     RES=$(expr ${RES} + ${RES_PART})
 }
