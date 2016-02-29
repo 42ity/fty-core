@@ -87,7 +87,7 @@ if isRemoteSUT ; then
         RESULT=0
         for d in malamute $SERVICES ; do
             echo -n "$d is currently "
-            if sut_run "/bin/systemctl status $d >/dev/null 2>&1" ; then
+            if sut_run "/bin/systemctl status $d" >/dev/null 2>&1 ; then
                 echo "running (remote)"
                 [ "$GOODSTATE" = started ] || RESULT=1
             else
@@ -409,4 +409,4 @@ case "$OPERATION" in
 esac
 
 # Unknown operation
-exit 1
+exit 255
