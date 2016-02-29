@@ -71,7 +71,14 @@ db_reply_t
         const char        *units,
         const char        *device_name);
 
-
+//return topic_id or 0 in case of issue
+m_msrmnt_tpc_id_t
+    prepare_topic(
+        tntdb::Connection &conn,
+        const char        *topic,
+        const char        *units,
+        const char        *device_name,
+        TopicCache& c);
 
 } //namespace persist
 
