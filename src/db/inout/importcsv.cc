@@ -89,15 +89,6 @@ static bool
         return true;
 }
 
-static bool
-    check_location_w_pos
-        (const std::string &s)
-{
-    if ( ( s == "left" ) || ( s == "right" ) )
-        return true;
-    else
-        return false;
-}
 
 static bool
     check_u_size
@@ -131,10 +122,6 @@ static bool
     {
         return check_location_u_pos(value);
     }
-    if ( key == "location_w_pos" )
-    {
-        return check_location_w_pos(value);
-    }
     if ( key == "u_size" )
     {
         return check_u_size(value);
@@ -149,71 +136,6 @@ static bool
 {
     static cxxtools::Regex regex{"(^warranty_end$|_date$)"};
     return regex.match (key);
-}
-
-int
-    get_pdu_epdu_info_location_w_pos
-        (tntdb::Connection &conn,
-         a_elmnt_id_t parent_id,
-         int &pdu_epdu_count,
-         std::string  &last_position,
-         a_elmnt_id_t &element_id)
-{
-    LOG_START;
-
-    if ( parent_id == 0 ) {
-        return 1;
-    }
-    db_reply <db_web_basic_element_t> parent = select_asset_element_web_byId
-        (conn, parent_id);
-    if ( parent.status == 0 ) {
-        return 2;
-    }
-    if ( parent.item.type_id != persist::asset_type::RACK ) {
-        return 1;
-    }
-
-    std::map<a_elmnt_id_t, a_elmnt_stp_id_t> devices{};
-    std::function<void(const tntdb::Row&)> func = \
-            [&devices](const tntdb::Row& row)
-            {
-                a_elmnt_id_t asset_id = 0;
-                row["asset_id"].get(asset_id);
-
-                a_elmnt_stp_id_t subtype_id = 0;
-                row["subtype_id"].get(subtype_id);
-
-                devices.emplace (asset_id, subtype_id);
-            };
-
-    auto rv = select_assets_by_container (conn, parent_id, func);
-    if ( rv != 0 )
-        return 3;
-    pdu_epdu_count = 0;
-    element_id = 0;
-    for (const auto &adevice : devices )
-    {
-        if ( ( adevice.second == persist::asset_subtype::PDU ) ||
-             ( adevice.second == persist::asset_subtype::EPDU ) )
-        {
-            pdu_epdu_count++;
-            db_reply <std::map <std::string, std::pair<std::string, bool> >>
-                ext_attributes = persist::select_ext_attributes (conn, adevice.first);
-            auto it = ext_attributes.item.find("location_w_pos");
-            if ( it != ext_attributes.item.cend() )
-            {
-                last_position = it->second.first;
-                element_id = adevice.first;
-            }
-            else
-            {
-                log_warning ("inconsistent state: epdu/pdu without location_w_pos, use 'right'");
-                last_position = "left";
-            }
-        }
-    }
-    LOG_END;
-    return 0;
 }
 
 /*
@@ -518,13 +440,6 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
                 continue;
             }
             zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
-        }
-        else
-        {
-            if ( ( ( subtype == "pdu" ) || ( subtype == "epdu" ) ) && ( key == "location_w_pos" ) )
-            {
-                bios_throw("request-param-bad", "location_w_pos", "<empty>", "left, right");
-            }
         }
     }
     // if the row represents group, the subtype represents a type
