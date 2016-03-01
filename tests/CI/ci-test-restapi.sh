@@ -375,6 +375,8 @@ done
 if [ $ONLYNEG = yes ]; then
     test_web_default -topology_power -asset_create -averages "$@" || RESULT_OVERALL=$?
     test_web_process || CODE=$? die "failed in test_web_process()"
+    [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && \
+        CODE=$RESULT_OVERALL die "Quickly aborting the test suite after failure, as requested"
     if [ "$SKIP_OBSOLETE_TESTS" = no ]; then
         if [[ "$*" =~ \-asset_create ]]; then
             logmsg_info "SKIPPED special test by request: asset_create"
@@ -392,17 +394,15 @@ if [ $ONLYNEG = yes ]; then
             fi
             test_web_process || CODE=$? die "failed in test_web_process()"
         fi
+        if [[ "$*" =~ \-averages ]] ; then
+            logmsg_info "SKIPPED special test by request: averages"
+        else
+            [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && \
+                CODE=$RESULT_OVERALL die "Quickly aborting the test suite after failure, as requested"
+            test_web_averages "$@" averages || RESULT_OVERALL=$?
+            test_web_process || CODE=$? die "failed in test_web_process()"
+        fi
     fi
-    if [[ "$*" =~ \-averages ]] ; then
-        logmsg_info "SKIPPED special test by request: averages"
-    else
-        [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && \
-            CODE=$RESULT_OVERALL die "Quickly aborting the test suite after failure, as requested"
-        test_web_averages "$@" averages || RESULT_OVERALL=$?
-        test_web_process || CODE=$? die "failed in test_web_process()"
-    fi
-    [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && \
-        CODE=$RESULT_OVERALL die "Quickly aborting the test suite after failure, as requested"
 else
     # selective test routine
     # Note we still support here the obsoleted tests,
