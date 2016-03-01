@@ -72,7 +72,8 @@ void insert_new_measurement( int device_id, int topic_id, persist::TopicCache &c
  * \param delay       - pause between each insertion (in ms), 0 means no delay 
  * \param num_device  - number of simulated device  
  * \param topic_per_device  - number of topic per device simulated  
- * \param periodic_display  - Each periodic_display seconds, output time; row; average
+ * \param periodic_display  - Each periodic_display seconds, output 
+ *                          time; total rows; row over since periodic_display s  ; average since periodic_display s
  * \param total_duration    - bench duration in minute, -1 means infinite loop
  */ 
 void bench(int delay=100, int num_device=100, int topic_per_device=100, int periodic_display=10, int total_duration=-1){
@@ -87,7 +88,7 @@ void bench(int delay=100, int num_device=100, int topic_per_device=100, int peri
     long begin_overall_ms = get_clock_ms();
     long begin_periodic_ms = get_clock_ms();
 
-    log_info("time;rows; mean over last %ds (row/s)",periodic_display);
+    log_info("time;total;rows; mean over last %ds (row/s)",periodic_display);
     while(!zsys_interrupted) {
         insert_new_measurement(rand() % num_device, rand() % topic_per_device, topic_cache);
         //count stat
@@ -99,7 +100,7 @@ void bench(int delay=100, int num_device=100, int topic_per_device=100, int peri
         long elapsed_periodic_ms = (now_ms - begin_periodic_ms);
         //every period seconds display current total row count and the trend over the last periodic_display second
         if(elapsed_periodic_ms > periodic_display * 1000 ){
-            log_info("%s;%d;%.2lf",get_clock_fmt(),stat_periodic_row,stat_periodic_row/(elapsed_periodic_ms/1000.0));
+            log_info("%s;%d;%d;%.2lf",get_clock_fmt(),stat_total_row,stat_periodic_row,stat_periodic_row/(elapsed_periodic_ms/1000.0));
             stat_periodic_row=0;
             begin_periodic_ms = now_ms;
         }
