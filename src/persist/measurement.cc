@@ -38,8 +38,7 @@
 
 namespace persist {
 
-//Notice for future developers - this functions is ugly and better to split to smaller
-//functions doing only one thing. Please try to avoid adding even more logic here, thanks
+
 db_reply_t
     insert_into_measurement(
         tntdb::Connection &conn,
