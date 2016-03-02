@@ -32,7 +32,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "topic_cache.h"
 
 namespace persist {
-
 /**
  * \brief Inserts measurements data into t_bios_measurement_topic, t_bios_measurement
  *
@@ -49,6 +48,20 @@ namespace persist {
  * \return db_reply_t with affected rows from t_bios_measurement insertion
  *                    or info about an error
  */
+db_reply_t
+    insert_into_measurement(
+        tntdb::Connection &conn,
+        const char        *topic,
+        m_msrmnt_value_t   value,
+        m_msrmnt_scale_t   scale,
+        int64_t            time,
+        const char        *units,
+        const char        *device_name,
+        TopicCache        &c,
+        std::list<std::string> &multiple_row, 
+        unsigned int insert_every);
+
+// backward compatible function for a case where no cache is required
 db_reply_t
     insert_into_measurement(
         tntdb::Connection &conn,

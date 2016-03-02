@@ -56,7 +56,9 @@ char *get_clock_fmt(){
 
 /* Insert one measurement on a random device, a random topic and a random value
  */
-void insert_new_measurement( int device_id, int topic_id, persist::TopicCache &cache){
+void insert_new_measurement( int device_id, int topic_id, 
+        persist::TopicCache &cache,std::list<std::string> &m,
+        int insert_every){
     char topic_name[32];
     char device_name[32];
     char value[16];
@@ -64,7 +66,7 @@ void insert_new_measurement( int device_id, int topic_id, persist::TopicCache &c
     sprintf(device_name,"bench.asset%d",device_id);
     sprintf(value,"%d",rand() % 999999 );
     zmsg_t *msg = bios_proto_encode_metric (NULL, topic_name, device_name, value, "%", time(NULL));
-    persist::process_measurement(&msg, cache);
+    persist::process_measurement(&msg, cache, m, insert_every);
     zmsg_destroy (&msg);
 }
 /*
@@ -76,10 +78,12 @@ void insert_new_measurement( int device_id, int topic_id, persist::TopicCache &c
  *                          time; total rows; row over since periodic_display s  ; average since periodic_display s
  * \param total_duration    - bench duration in minute, -1 means infinite loop
  */ 
-void bench(int delay=100, int num_device=100, int topic_per_device=100, int periodic_display=10, int total_duration=-1){
+void bench(int delay=100, int num_device=100, int topic_per_device=100, 
+        int periodic_display=10, int total_duration=-1, int insertion=10){
     log_info("delay=%dms periodic=%ds minute=%dm element=%d topic=%d", 
             delay,periodic_display,total_duration,num_device,topic_per_device);
     persist::TopicCache topic_cache{(size_t)(num_device*topic_per_device)};
+    std::list<std::string> m_cache;
     int stat_total_row=0; 
     int stat_periodic_row=0; 
     
@@ -90,7 +94,8 @@ void bench(int delay=100, int num_device=100, int topic_per_device=100, int peri
 
     log_info("time;total;rows; mean over last %ds (row/s)",periodic_display);
     while(!zsys_interrupted) {
-        insert_new_measurement(rand() % num_device, rand() % topic_per_device, topic_cache);
+        insert_new_measurement(rand() % num_device, rand() % topic_per_device,
+                topic_cache, m_cache, insertion);
         //count stat
         stat_total_row++; 
         stat_periodic_row++;
@@ -128,6 +133,7 @@ void usage ()
           "  -m|--minute           bench duration in minute, -1 means infinite loop [-1]\n"
           "  -e|--element          number of simulated elements [100]\n"
           "  -t|--topic            number of simulated topic per element [100]\n"
+          "  -i|--insert_every     do a multi row insertion on every X measurement[10]\n"
           "  -h|--help             print this information");
 }
 
@@ -142,6 +148,7 @@ int main(int argc, char** argv) {
     int minute=-1; //min
     int element=100;
     int topic=100;
+    int insert_every=10;
     
      // get options
     int c;
@@ -155,10 +162,11 @@ int main(int argc, char** argv) {
             {"minute",     required_argument, 0,'m'},
             {"element",    required_argument, 0,'e'},
             {"topic",      required_argument, 0,'t'}, 
+            {"insert_every",  required_argument, 0,'i'}, 
             {0, 0, 0, 0}
         };
         int option_index = 0;
-        c = getopt_long (argc, argv, "h:u:d:p:m:e:t:", long_options, &option_index);
+        c = getopt_long (argc, argv, "h:u:d:p:m:e:t:i:", long_options, &option_index);
         if (c == -1) break;
         switch (c) {
         case 'u':
@@ -179,6 +187,9 @@ int main(int argc, char** argv) {
         case 't':
             topic = atoi(optarg);
             break;
+        case 'i':
+            insert_every = atoi(optarg);
+            break;
         case 0:
             // just now walking trough some long opt
             break;
@@ -193,7 +204,7 @@ int main(int argc, char** argv) {
     log_open();
     log_debug("## bench started ##");
 
-    bench(delay,element, topic,  periodic, minute);
+    bench(delay,element, topic,  periodic, minute, insert_every);
     return 0;
 }
 

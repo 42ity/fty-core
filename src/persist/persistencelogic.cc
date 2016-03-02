@@ -51,12 +51,13 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 namespace persist {
 
 // used by src/agents/dbstore
-void process_measurement(zmsg_t **msg_p, TopicCache& c) {
+void process_measurement(zmsg_t **msg_p, 
+        TopicCache& c, std::list<std::string> &m_cache, unsigned int insert_every ) {
 
     if (!msg_p || !*msg_p)
         return;
 
-    log_debug("Processing measurement");
+    //log_debug("Processing measurement");
     int64_t tme = 0;
     _scoped_char *device_name = NULL;
     _scoped_char *quantity    = NULL;   // TODO: THA: what does this parameter mean?
@@ -107,7 +108,8 @@ void process_measurement(zmsg_t **msg_p, TopicCache& c) {
 
     units = strdup (bios_proto_unit (m));
     persist::insert_into_measurement(
-            conn, db_topic.c_str(), value, scale, _time, units, device_name, c);
+            conn, db_topic.c_str(), value, scale, _time,
+            units, device_name, c, m_cache, insert_every);
 free_mem_toto:
     //free resources
     errno = 0;

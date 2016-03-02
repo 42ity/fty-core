@@ -36,8 +36,8 @@
 #include "dbpath.h"
 #include "defs.h"
 
+using namespace std;
 namespace persist {
-
 
 db_reply_t
     insert_into_measurement(
@@ -48,7 +48,9 @@ db_reply_t
         int64_t            time,
         const char        *units,
         const char        *device_name,
-        TopicCache& c)
+        TopicCache        &c,
+        std::list<std::string> &multiple_row, 
+        unsigned int insert_every)
 {
     db_reply_t ret = db_reply_new();
     
@@ -86,20 +88,45 @@ db_reply_t
         
         m_msrmnt_tpc_id_t topic_id = prepare_topic(conn, topic, units, device_name, c);
         if(topic_id!=0){
-            st = conn.prepareCached (
-                    "INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) "
-                    "  VALUES (:time, :value, :scale, :topic_id)"
-                    "  ON DUPLICATE KEY UPDATE value = :value, scale = :scale");
-            ret.affected_rows = st.set("time",  time)
-                                  .set("value", value)
-                                  .set("scale", scale)
-                                  .set("topic_id", topic_id)
-                                  .execute();
+            if(insert_every>1){
+                //multiple raw insertion request
+                char _val[50];
+                sprintf(_val,"(%" PRIu64 ",%" PRIi32 ",%" PRIi16 ",%" PRIi16 ")",time,value,scale,topic_id );
+                multiple_row.push_back(_val);
+                if (multiple_row.size()==insert_every){
+                    std::string query= "INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ";
+                     for (std::list<string>::iterator value=multiple_row.begin(); value != multiple_row.end(); ){
+                         query += *value;
+                        if( ++value != multiple_row.end())query+=",";
+                    }
+                    query+="ON DUPLICATE KEY UPDATE value=VALUES(value),scale=VALUES(scale) ";
 
-            log_debug("[t_bios_measurement]: inserted %" PRIu64 " rows "\
-                       "value:%" PRIi32 " * 10^%" PRIi16 " %s "\
-                       "topic = '%s' topic_id=%" PRIi16 " time = %" PRIu64, 
-                       ret.affected_rows, value, scale, units, topic, topic_id, time);
+                    log_debug("query %s",query.c_str());
+                    st = conn.prepareCached (query.c_str());
+                    ret.affected_rows =st.execute();
+                    log_debug("[t_bios_measurement]: inserted %" PRIu64 " rows ",
+                            ret.affected_rows);
+                    multiple_row.clear();
+
+                }
+            }else{
+                //row by row insertion
+                st = conn.prepareCached (
+                        "INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) "
+                        "  VALUES (:time, :value, :scale, :topic_id)"
+                        "  ON DUPLICATE KEY UPDATE value = :value, scale = :scale");
+                ret.affected_rows = st.set("time",  time)
+                                      .set("value", value)
+                                      .set("scale", scale)
+                                      .set("topic_id", topic_id)
+                                      .execute();
+
+                log_debug("[t_bios_measurement]: inserted %" PRIu64 " rows "\
+                           "value:%" PRIi32 " * 10^%" PRIi16 " %s "\
+                           "topic = '%s' topic_id=%" PRIi16 " time = %" PRIu64, 
+                           ret.affected_rows, value, scale, units, topic, topic_id, time);
+            }
+
         }else{
             ret.status     = 0;
             ret.errtype    = DB_ERR;
@@ -140,7 +167,24 @@ db_reply_t
         const char        *device_name)
 {
     TopicCache c{};
-    return insert_into_measurement(conn, topic, value, scale, time, units, device_name, c);
+    std::list<std::string> multiple_row;
+    return insert_into_measurement(conn, topic, value, scale, time, units, device_name, c, multiple_row,1);
+}
+
+// backward compatible function for a case where no cache and no multiple_row are required
+db_reply_t
+    insert_into_measurement(
+        tntdb::Connection &conn,
+        const char        *topic,
+        m_msrmnt_value_t   value,
+        m_msrmnt_scale_t   scale,
+        int64_t            time,
+        const char        *units,
+        const char        *device_name,
+        TopicCache        &c)
+{
+    std::list<std::string> multiple_row;
+    return insert_into_measurement(conn, topic, value, scale, time, units, device_name, c, multiple_row,1);
 }
 
 /*
