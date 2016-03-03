@@ -408,7 +408,18 @@ do_start() {
     RESULT=0
     BGPIDS=""
     for d in $DAEMONS ; do
-        start_daemon $d &
+        case "$d" in
+            *agent-nut)
+                # TODO: Re-read the service ExecStart for a particular arglist?
+                if [ -s "$CHECKOUTDIR/src/agents/nut/mapping.conf" ]; then
+                    start_daemon $d "$CHECKOUTDIR/src/agents/nut/mapping.conf" &
+                else
+                    start_daemon $d "/usr/share/bios/agent-nut/mapping.conf" &
+                fi
+                ;;
+            *)
+                start_daemon $d & ;;
+        esac
         BGPIDS="$BGPIDS $!"
     done
 
