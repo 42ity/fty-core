@@ -554,7 +554,7 @@ do_select() {
 do_dumpdb() {
     # Unifies the call to get a dump of our database, either all (by default)
     # or some tables etc. via custom arguments that may be set by the caller.
-    logmsg_dumbdb \
+    logmsg_dumpdb \
         "do_dumpdb(): $@ ;" >&2
     if [ -z "${DBPASSWD-}" ]; then
         sut_run "mysqldump -u ${DBUSER} \"${DATABASE}\" $@"

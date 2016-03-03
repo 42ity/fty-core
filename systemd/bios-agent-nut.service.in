@@ -11,7 +11,7 @@ EnvironmentFile=-/usr/share/bios/etc/default/bios
 EnvironmentFile=-/usr/share/bios/etc/default/bios__%n.conf
 EnvironmentFile=-/etc/default/bios
 EnvironmentFile=-/etc/default/bios__%n.conf
-ExecStart=@libexecdir@/@PACKAGE@/agent-nut
+ExecStart=@libexecdir@/@PACKAGE@/agent-nut @datadir@/@PACKAGE@/agent-nut/mapping.conf
 
 [Install]
 WantedBy=bios.target
