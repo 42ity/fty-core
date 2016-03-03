@@ -180,7 +180,10 @@ void NUTAgent::advertiseInventory() {
 }
 
 int main(int argc, char *argv[]){
-    if( argc > 0 ) {}; // silence compiler warnings
+    if (argc < 2) {
+        zsys_error ("Need configuration for file as first command line argument!");
+        return EXIT_FAILURE;               
+    }
     
     int result = 1;
     log_open();
