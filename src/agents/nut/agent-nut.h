@@ -31,6 +31,7 @@ class NUTAgent : public BIOSAgent {
  public:
     explicit NUTAgent( const char *agentName ) :BIOSAgent( agentName ) {  };
     explicit NUTAgent( const std::string &agentName ) :BIOSAgent( agentName ) { };
+    void setConf (const char *path_to_file);
     void onPoll();
     void onStart();
  protected:
@@ -52,6 +53,7 @@ class NUTAgent : public BIOSAgent {
         { "power",       "W" },
         { "runtime",     "s" },
     };
+    std::string _conf;
 };
 
 #endif // SRC_AGENTS_NUT_NUT_AGENT_H__

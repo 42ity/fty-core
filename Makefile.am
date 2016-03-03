@@ -1031,6 +1031,28 @@ agent_dbstore_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/src/persist \
 			-I$(abs_top_srcdir)/src/persist
 
+bin_PROGRAMS +=                 dbstore_bench
+
+dbstore_bench_SOURCES =  src/agents/dbstore/dbstore_bench.cc
+
+dbstore_bench_LDFLAGS =  ${CXXTOOLS_LIBS} \
+                         -ltntdb ${LIBBIOSPROTO_LIBS}
+
+dbstore_bench_CPPFLAGS = $(AM_CPPFLAGS) \
+                        -I$(abs_top_builddir)/tools \
+                        -I$(abs_top_srcdir)/tools \
+                        -I$(abs_top_srcdir)/src/db \
+                        -I$(abs_top_builddir)/src/persist \
+                        -I$(abs_top_srcdir)/src/persist
+dbstore_bench_LDADD = \
+                        libpriv-db.la \
+                        libpriv-db-assets.la \
+                        libpriv-utils-ymsg.la \
+                        libpriv-log.la \
+                        libpriv-proto.la \
+                        libbiosapi.la \
+                        libpriv-defs.la
+
 EXTRA_DIST +=		$(top_srcdir)/tools/dbinit.h
 #			$(top_srcdir)/tools/db-init.in \
 #			$(top_srcdir)/tools/bios-passwd.in
@@ -1087,11 +1109,19 @@ agent_nut_LDADD = \
 			libpriv-log.la \
 			libpriv-proto.la \
 			libbiosapi.la \
-			libpriv-utils-ymsg.la
+			libpriv-utils-ymsg.la \
+			libpriv-utils-plusplus.la
 
 agent_nut_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS} -lbiosapi
 
 agent_nut_CPPFLAGS =	$(AM_CPPFLAGS)
+
+template_nutmappingdir = $(datadir)/$(PACKAGE)/agent-nut
+NUT_MAPPING = \
+		src/agents/nut/mapping.conf 
+
+template_nutmapping_DATA =	$(NUT_MAPPING)
+EXTRA_DIST +=		$(NUT_MAPPING)
 
 client_PROGRAMS +=	agent-autoconfig
 
