@@ -63,7 +63,7 @@ CREATE TABLE t_bios_measurement_topic(
     INDEX(device_id,topic,units),
     UNIQUE INDEX `UI_t_bios_measurement_topic` (`device_id`, `units`, `topic`  ASC)
 
-);
+) ENGINE=Aria;
 
 CREATE TABLE t_bios_measurement (
     id            BIGINT UNSIGNED     NOT NULL AUTO_INCREMENT,
