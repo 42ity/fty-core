@@ -272,7 +272,8 @@ loaddb_list() {
     return $LOADDB_RES
 }
 
-loaddb_initial() {
+loaddb_initial() (
+    # Sub-processed to avoid namespace clashes with other loaddb_something routines
     _DB_TXT="(re-)initializing"
     _DB_TAG="loaddb_initial"
     tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" && return $?
@@ -285,9 +286,9 @@ loaddb_initial() {
 
     tarballdb_fastsave "${_DB_TAG}"
     return $?
-}
+)
 
-loaddb_sampledata() {
+loaddb_sampledata() (
     _DB_TXT="loading default sample data"
     _DB_TAG="loaddb_sampledata"
     tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" "$DB_DATA" && return $?
@@ -299,9 +300,9 @@ loaddb_sampledata() {
 
     tarballdb_fastsave "${_DB_TAG}"
     return $?
-}
+)
 
-loaddb_default() {
+loaddb_default() (
     _DB_TXT="loading default REST API test data"
     _DB_TAG="loaddb_default"
     tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" "$DB_DATA" "$DB_DATA_TESTREST" && return $?
@@ -313,7 +314,7 @@ loaddb_default() {
 
     tarballdb_fastsave "${_DB_TAG}"
     return $?
-}
+)
 
 loaddb_topo_loc() {
     _DB_TXT="topo-location"
