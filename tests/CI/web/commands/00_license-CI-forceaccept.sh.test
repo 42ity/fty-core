@@ -135,11 +135,12 @@ else
         test_it "sysinfo_auth=2__parse__source_build_package__info"
         JPATH='"packages",[0-9]*$'
         RES=0
-        SYSINFO_VERSION_PKG="`echo "$SYSINFOA" | jsonsh_cli -x="$JPATH" | egrep '"package-name":"core".*"commit":"[a-f0-9-]+"'`" || \
+        SYSINFO_VERSION_PKG="`echo "$SYSINFOA" | jsonsh_cli -x="$JPATH" | egrep '"package-name":"core".*"commit":"[a-f0-9-]+"'`" && \
+            SYSINFO_VERSION_PKG="`echo "$SYSINFO_VERSION_PKG" | sed 's/.*commit":"\(.*\)".*/\1/'`" || \
             RES=$?
-        echo "=== SYSINFO_VERSION_PKG ($RES): `echo "$SYSINFO_VERSION_PKG" | sed 's/.*commit":"\(.*\)".*/\1/'`" >&2
+        echo "=== SYSINFO_VERSION_PKG ($RES): $SYSINFO_VERSION_PKG" >&2
         [ $RES = 0 -a -n "$SYSINFO_VERSION_PKG" -a \
-            x"$SYSINFO_VERSION_PKG" != x'""' ] || RES=$?
+            x"$SYSINFO_VERSION_PKG" != x'""' ] || { RES=$?; SYSINFO_VERSION_PKG=''; }
         print_result $RES || true
 
         test_it "sysinfo_auth=2__parse__source_build_running__info"
@@ -157,6 +158,9 @@ else
             if [ -n "$SYSINFO_VERSION_TESTSUITE" ]; then
                 echo "=== SYSINFO_VERSION_TESTSUITE: $SYSINFO_VERSION_TESTSUITE" >&2
             fi
+        else
+            # fresh checkout for VTE/SC/RC testing? Maybe call the script?
+            logmsg_info "'$BUILDSUBDIR/.git_details' not available"
         fi
 
         if [ -n "$SYSINFO_VERSION_PKG" -a x"$SYSINFO_VERSION_PKG" != "xN/A" ]; then
