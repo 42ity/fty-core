@@ -146,14 +146,14 @@ echo "********* asset_devices.sh ***********************************************
 echo "********* 12. no_devices_present ******************************************************************"
 echo "***************************************************************************************************"
 # delete all assets, no DC are present
-loaddb_initial
+init_script_initial
 
 test_it "no_devices_present"
 api_get_json /asset/devices >&5
 print_result $?
 
 #fill DB again
-loaddb_default
+init_script_default
 
 echo
 echo "###################################################################################################"
