@@ -352,7 +352,7 @@ loaddb_rack_power() {
     echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} ----------"
     loaddb_initial && \
     loaddb_list "$DB_RACK_POWER" || return $?
-    logmsg_info "Database schema and data should have been initialized at this point: for rack-power tests"
+    logmsg_debug "Database schema and data should have been initialized at this point: for rack-power tests"
 
     tarballdb_fastsave "${_DB_TAG}"
     return $?
@@ -366,7 +366,7 @@ loaddb_dc_power_UC1() {
     echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} ----------"
     loaddb_initial && \
     loaddb_list "$DB_DC_POWER_UC1" || return $?
-    logmsg_info "Database schema and data should have been initialized at this point: for dc-power-UC1 tests"
+    logmsg_debug "Database schema and data should have been initialized at this point: for dc-power-UC1 tests"
 
     tarballdb_fastsave "${_DB_TAG}"
     return $?
@@ -380,7 +380,7 @@ loaddb_dc_power() {
     echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} ----------"
     loaddb_initial && \
     loaddb_list "$DB_DC_POWER" || return $?
-    logmsg_info "Database schema and data should have been initialized at this point: for dc-power tests"
+    logmsg_debug "Database schema and data should have been initialized at this point: for dc-power tests"
 
     tarballdb_fastsave "${_DB_TAG}"
     return $?
@@ -394,7 +394,7 @@ loaddb_averages() {
     echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} ----------"
     loaddb_sampledata && \
     loaddb_list "$DB_AVERAGES" "$DB_AVERAGES_RELATIVE" || return $?
-    logmsg_info "Database schema and data should have been initialized at this point: for averages tests"
+    logmsg_debug "Database schema and data should have been initialized at this point: for averages tests"
 
     tarballdb_fastsave "${_DB_TAG}"
     return $?
