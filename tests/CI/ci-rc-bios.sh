@@ -325,13 +325,16 @@ stop() {
     done
     wait
 
-    # BIOS-1807: so far "bios-agent-autoconfig" service tends to hang... so kill it ruthlessly
+    # BIOS-1807: so far "bios-agent-autoconfig" service or its child process
+    # "nut-scanner" tends to hang when stopping... so kill them ruthlessly!
     case "$SERVICES" in
         *agent-autoconfig*)
-            d="agent-autoconfig"
-            /bin/systemctl stop $d &
+            s="agent-autoconfig"
+            /bin/systemctl stop $s &
             sleep 1
-            ( pidof $d >/dev/null 2>&1 && kill -KILL `pidof $d` 2>/dev/null && sleep 1 ) || true
+            for d in $s nut-scanner ; do
+                ( pidof $d >/dev/null 2>&1 && kill -KILL `pidof $d` 2>/dev/null && sleep 1 ) || true
+            done
             wait
             ;;
         *) ;; # Offender not running as a service, and was killed above if a daemon
