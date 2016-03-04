@@ -113,6 +113,7 @@ agent-cm
 bios-nutscan
 agent-tpower
 average
+dbstore_bench
 generate_measurement
 warranty-metric
 bios-csv
