@@ -46,7 +46,7 @@ config_defaults() {
     # our ARM cycles to build the latter; we have both builds on x86_64.
     [ -z "${ARCH-}" ] && ARCH="`uname -m`"
     [ -z "${IMGQALEVEL-}" ] && case "$ARCH" in
-        *arm*) IMGQALEVEL="pre-rc3" ;;
+        *arm*) IMGQALEVEL="pre-rc" ;;
         *86*)  IMGQALEVEL="master" ;;
         *)     IMGQALEVEL="master" ;;
     esac
