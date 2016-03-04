@@ -126,6 +126,28 @@ killdb() {
     return $KILLDB_RES
 }
 
+tarballdb_export() {
+    # Saves a tarball of the database files (/var/lib/mysql) under $DB_DUMP_DIR
+    # as "$1.tgz" file (fast gzip-1). The DB server should be stopped and FS
+    # synced by this time, to be provided externally (by caller).
+    # NOTE: It might be faster to pass traffic from ARM to X86 uncompressed,
+    # and pack it on the test-driver machine. Now the tested system compresses
+    # and network traffic is minimized (but ARM CPU is slower at this).
+    # TODO: Perhaps implement a smarter logic here that would consider both
+    # connectivity and (assumed) performance of the tested and testing systems.
+    sut_run "cd /var/lib && tar cf - -I'gzip -1' mysql/" > "$DB_DUMP_DIR/$1.tgz"
+}
+
+tarballdb_import() {
+    # Uses a tarball of the database files $DB_DUMP_DIR/$1.tgz to repopulate
+    # /var/lib/mysql. The DB server should be stopped and FS synced by this
+    # time, to be provided externally (by caller). Caller restarts server too.
+    # NOTE: We do 'sync' the writes here, so the database server startup does
+    # not time out because I/O is slow at that time. Testing showed that delays
+    # are the same whether we sync explicitly or absorb writes during restart.
+    sut_run "cd /var/lib && rm -rf mysql && tar xzf - && sync" < "$DB_DUMP_DIR/$1.tgz"
+}
+
 do_loaddb_list() {
     if [ $# = 0 ] ; then
         logmsg_error "do_loaddb_list() called without arguments"
