@@ -274,12 +274,12 @@ start_daemon(){
             *agent-nut)
                 # TODO: Re-read the service ExecStart for a particular arglist?
                 if [ -s "$CHECKOUTDIR/src/agents/nut/mapping.conf" ]; then
-                    nohup "${prefix}/${1}" "$CHECKOUTDIR/src/agents/nut/mapping.conf" > ${BUILDSUBDIR}/${1}.log 2>&1 & ;;
+                    nohup "${prefix}/${1}" "$CHECKOUTDIR/src/agents/nut/mapping.conf" > ${BUILDSUBDIR}/${1}.log 2>&1 &
                 elif [ -s "/usr/share/bios/agent-nut/mapping.conf" ]; then
-                    nohup "${prefix}/${1}" "/usr/share/bios/agent-nut/mapping.conf" > ${BUILDSUBDIR}/${1}.log 2>&1 & ;;
+                    nohup "${prefix}/${1}" "/usr/share/bios/agent-nut/mapping.conf" > ${BUILDSUBDIR}/${1}.log 2>&1 &
                 else
                     logmsg_warn "Starting 'agent-nut' with no arg would fail or even segfault"
-                    nohup "${prefix}/${1}" > ${BUILDSUBDIR}/${1}.log 2>&1 & ;;
+                    nohup "${prefix}/${1}" > ${BUILDSUBDIR}/${1}.log 2>&1 &
                 fi
                 ;;
             *)  nohup "${prefix}/${1}" > ${BUILDSUBDIR}/${1}.log 2>&1 & ;;
