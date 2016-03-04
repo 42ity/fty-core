@@ -89,6 +89,11 @@ export CSV_LOADDIR CSV_LOADDIR_TPOWER CSV_LOADDIR_ASSIMP CSV_LOADDIR_BAM
 ### so we can have regression testing (that the ultimate fix works forever).
 [ -z "${DB_KILL_CONNECTIONS-}" ] && DB_KILL_CONNECTIONS=no
 
+### By default, do we use tarballs or SQL to reinitialize the database?
+### See reloaddb_should_tarball() as the callable method for runtime check.
+[ -z "${LOADDB_SHOULD_TARBALL-}" ] && LOADDB_SHOULD_TARBALL=auto
+[ x"${LOADDB_SHOULD_TARBALL-}" = x- ] && LOADDB_SHOULD_TARBALL=auto
+
 do_killdb() {
     KILLDB_RES=0
     if [ -n "${DATABASE-}" ] ; then
@@ -187,12 +192,32 @@ tarballdb_newer() (
     return 0
 )
 
+reloaddb_should_tarball() {
+    # Unless explicitly set by user, guess if we should use tarballs (SUT is ARM)
+    # or it would be quicker to skip them (X86, nonzero return)
+    if [ "$LOADDB_SHOULD_TARBALL" = auto ] || [ x"$LOADDB_SHOULD_TARBALL" = x- ]; then
+        _SUT_ARCH="`sut_run 'uname -m'`" || _SUT_ARCH=""
+        case "$_SUT_ARCH" in
+            *arm*) LOADDB_SHOULD_TARBALL=yes ;;
+            *x86*) LOADDB_SHOULD_TARBALL=no ;;
+            *)     LOADDB_SHOULD_TARBALL=auto ;;
+        esac
+    fi
+    [ "$LOADDB_SHOULD_TARBALL" = yes ] && return 0
+    [ "$LOADDB_SHOULD_TARBALL" = no ] && return 1
+    LOADDB_SHOULD_TARBALL=auto
+    # To be on the safe side, while undecided, we cause proper SQL imports
+    return 2
+}
+
 tarballdb_fastload() (
     # If the database $2 was tarballed and newer than constituent SQLs $3..$N,
     # stop SQL, import the tarball, restartSQL.
     # Progress reported with short text in "$1"
     # If not existant, not newer, or import failed - return non-zero so usual
     # SQL import can take place in the caller.
+    reloaddb_should_tarball || return $?
+
     _DB_TXT="$1" ; shift
     _DB_TAG="$1" ; shift
     tarballdb_newer "${_DB_TAG}" "$@" || return $?
@@ -206,6 +231,8 @@ tarballdb_fastload() (
 
 tarballdb_fastsave() (
     # Wraps the stop SQL, export database tagged "$1", restart SQL
+    reloaddb_should_tarball || return 0
+
     _DB_TAG="$1" ; shift
 
     echo "CI-TESTLIB_DB - reset db: tarballing '${_DB_TAG}' into '$DB_DUMP_DIR/${_DB_TAG}.tgz' for future reference"
