@@ -192,6 +192,8 @@ tarballdb_newer() (
     return 0
 )
 
+# TODO: Properly wrap as a method routine
+_SUT_ARCH=""
 reloaddb_should_tarball() {
     # Unless explicitly set by user, guess if we should use tarballs (SUT is ARM)
     # or it would be quicker to skip them (X86, nonzero return)
@@ -219,7 +221,7 @@ tarballdb_fastload() (
     reloaddb_should_tarball || return $?
 
     _DB_TXT="$1" ; shift
-    _DB_TAG="$1" ; shift
+    _DB_TAG="$1-${_SUT_ARCH}" ; shift
     tarballdb_newer "${_DB_TAG}" "$@" || return $?
 
     echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} via tarball '$DB_DUMP_DIR/${_DB_TAG}.tgz' --------"
@@ -233,7 +235,7 @@ tarballdb_fastsave() (
     # Wraps the stop SQL, export database tagged "$1", restart SQL
     reloaddb_should_tarball || return 0
 
-    _DB_TAG="$1" ; shift
+    _DB_TAG="$1-${_SUT_ARCH}" ; shift
 
     echo "CI-TESTLIB_DB - reset db: tarballing '${_DB_TAG}' into '$DB_DUMP_DIR/${_DB_TAG}.tgz' for future reference"
     sut_run "/bin/systemctl stop mysql ; sync"
