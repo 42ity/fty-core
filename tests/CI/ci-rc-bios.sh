@@ -324,6 +324,19 @@ stop() {
        ( pidof $d lt-$d >/dev/null 2>&1 && kill -KILL `pidof $d lt-$d` 2>/dev/null && sleep 1 & ) || true
     done
     wait
+
+    # BIOS-1807: so far "bios-agent-autoconfig" service tends to hang... so kill it ruthlessly
+    case "$SERVICES" in
+        *agent-autoconfig*)
+            d="agent-autoconfig"
+            /bin/systemctl stop $d &
+            sleep 1
+            ( pidof $d >/dev/null 2>&1 && kill -KILL `pidof $d` 2>/dev/null && sleep 1 ) || true
+            wait
+            ;;
+        *) ;; # Offender not running as a service, and was killed above if a daemon
+    esac
+
     for s in $SERVICES ; do
         /bin/systemctl stop $s || true
     done
