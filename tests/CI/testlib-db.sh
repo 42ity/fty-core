@@ -148,6 +148,43 @@ tarballdb_import() {
     sut_run "cd /var/lib && rm -rf mysql && tar xzf - && sync" < "$DB_DUMP_DIR/$1.tgz"
 }
 
+tarballdb_newer() (
+    # Compares $DB_DUMP_DIR/$1.tgz timestamp to timestamps of SQL files listed
+    # in $2..$N (relative to $DB_LOADDIR or using explicit full paths).
+    # Returns 0 if the tarball exists and is newer than SQLs it was built from.
+    # Returns 1 if tarball is absent; 2 if any SQL is found to be newer than
+    # the tarball or the SQL files are not listed or at least one is not found
+    # in practice.
+    # Non-zero result means that tarball should be (re)created.
+    # Only errors like absent args or files are reported, not discrepancies.
+    _PWD="`pwd`"
+    SQLS=""
+    TGZ="$DB_DUMP_DIR/$1.tgz"
+    [ -s "$TGZ" ] || return 1
+    shift
+    [ $# -eq 0 ] && logmsg_error "tarballdb_newer(): got an empty argument" && return 2
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            "") logmsg_error "tarballdb_newer(): got an empty argument"; return 2 ;;
+            /*) SQLS="$SQLS $1" ;;
+            ./*|../*) SQLS="$SQLS $_PWD/$1" ;;
+            *)  # Short filename - assume relative to loaddir
+                [ -n "$DB_LOADDIR" ] && [ -d "$DB_LOADDIR" ] || logmsg_warn "DB_LOADDIR='$DB_LOADDIR' not found"
+                SQLS="$SQLS $DB_LOADDIR/$1"
+                ;;
+        esac
+        shift
+    done
+    [ -z "$SQLS" ] && logmsg_error "tarballdb_newer(): got no SQLs" && return 2
+    for F in $SQLS ; do
+        [ -s "$F" ] || { logmsg_error "tarballdb_newer(): SQL file '$F' not found"; return 2; }
+        OUT="`find "$F" -type f -newer "$TGZ"`" || return 2
+        [ -n "$OUT" ] && return 2
+    done
+    # TGZ exists, all (1+) SQLs exist/findable, and none is newer than the TGZ
+    return 0
+)
+
 do_loaddb_list() {
     if [ $# = 0 ] ; then
         logmsg_error "do_loaddb_list() called without arguments"
