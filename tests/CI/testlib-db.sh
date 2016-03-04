@@ -157,6 +157,8 @@ tarballdb_newer() (
     # in practice.
     # Non-zero result means that tarball should be (re)created.
     # Only errors like absent args or files are reported, not discrepancies.
+    # NOTE that both the tarball and SQL files are assumed to be on this host
+    # (the test-driving system).
     _PWD="`pwd`"
     SQLS=""
     TGZ="$DB_DUMP_DIR/$1.tgz"
@@ -183,6 +185,34 @@ tarballdb_newer() (
     done
     # TGZ exists, all (1+) SQLs exist/findable, and none is newer than the TGZ
     return 0
+)
+
+tarballdb_fastload() (
+    # If the database $2 was tarballed and newer than constituent SQLs $3..$N,
+    # stop SQL, import the tarball, restartSQL.
+    # Progress reported with short text in "$1"
+    # If not existant, not newer, or import failed - return non-zero so usual
+    # SQL import can take place in the caller.
+    _DB_TXT="$1" ; shift
+    _DB_TAG="$1" ; shift
+    tarballdb_newer "${_DB_TAG}" "$@" || return $?
+
+    echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} via tarball --------"
+    sut_run "/bin/systemctl stop mysql"
+    tarballdb_import "${_DB_TAG}" && \
+    sut_run "/bin/systemctl restart mysql"
+    return $?
+)
+
+tarballdb_fastsave() (
+    # Wraps the stop SQL, export database tagged "$1", restart SQL
+    _DB_TAG="$1" ; shift
+
+    echo "CI-TESTLIB_DB - reset db: tarballing '${_DB_TAG}' for future reference"
+    sut_run "/bin/systemctl stop mysql ; sync"
+    tarballdb_export "${_DB_TAG}" && \
+    sut_run "/bin/systemctl restart mysql"
+    return $?
 )
 
 do_loaddb_list() {
@@ -215,95 +245,144 @@ loaddb_list() {
 }
 
 loaddb_initial() {
+    _DB_TXT="(re-)initializing"
+    _DB_TAG="loaddb_initial"
+    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" && return $?
+
+    sut_run "/bin/systemctl start mysql"
     killdb || true      # Would fail the next step, probably
-    echo "CI-TESTLIB_DB - reset db: (re-)initializing --------"
+    echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} --------"
     loaddb_list "$DB_BASE" || return $?
     logmsg_debug "Database schema should have been initialized at this point: core schema file only"
-    return 0
+
+    tarballdb_fastsave "${_DB_TAG}"
+    return $?
 }
 
 loaddb_sampledata() {
+    _DB_TXT="loading default sample data"
+    _DB_TAG="loaddb_sampledata"
+    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" "$DB_DATA" && return $?
+
     loaddb_initial && \
-    echo "CI-TESTLIB_DB - reset db: loading default sample data ----" && \
+    echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} ----" && \
     loaddb_list "$DB_DATA" || return $?
     logmsg_debug "Database schema and data should have been initialized at this point: sample datacenter for tests"
-    return 0
+
+    tarballdb_fastsave "${_DB_TAG}"
+    return $?
 }
 
 loaddb_default() {
-    echo "CI-TESTLIB_DB - reset db: default REST API -------"
+    _DB_TXT="loading default REST API test data"
+    _DB_TAG="loaddb_default"
+    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" "$DB_DATA" "$DB_DATA_TESTREST" && return $?
+
+    echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} -------"
     loaddb_sampledata && \
     loaddb_list "$DB_DATA_TESTREST" || return $?
     logmsg_debug "Database schema and data should have been initialized at this point: for common REST API tests"
-    return 0
+
+    tarballdb_fastsave "${_DB_TAG}"
+    return $?
 }
 
 loaddb_topo_loc() {
-    echo "CI-TESTLIB_DB - reset db: topo-location ----------"
+    _DB_TXT="topo-location"
+    _DB_TAG="loaddb_topo_loc"
+    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" "$DB_DATA" "$DB_DATA_TESTREST" "$DB_TOPOL" && return $?
+
+    echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} ----------"
     loaddb_sampledata && \
     loaddb_list "$DB_TOPOL" || return $?
     logmsg_debug "Database schema and data should have been initialized at this point: for topology-location tests"
-    return 0
+
+    tarballdb_fastsave "${_DB_TAG}"
+    return $?
 }
 
 loaddb_topo_pow() {
-    echo "CI-TESTLIB_DB - reset db: topo-power -------------"
+    _DB_TXT="topo-power"
+    _DB_TAG="loaddb_topo_pow"
+    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" "$DB_DATA" "$DB_DATA_TESTREST" "$DB_TOPOP" && return $?
+
+    echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} ----------"
     loaddb_sampledata && \
     loaddb_list "$DB_TOPOP" || return $?
     logmsg_debug "Database schema and data should have been initialized at this point: for topology-power tests"
-    return 0
+
+    tarballdb_fastsave "${_DB_TAG}"
+    return $?
 }
 
 loaddb_rack_power() {
-    echo "CI-TESTLIB_DB - reset db: rack-power -------------"
-    loaddb_initial || return $?
-    for data in "$DB_RACK_POWER"; do
-        logmsg_info "Importing $data ..."
-        loaddb_file "$data" || return $?
-    done
+    _DB_TXT="rack-power"
+    _DB_TAG="loaddb_rack_power"
+    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" "$DB_RACK_POWER" && return $?
+
+    echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} ----------"
+    loaddb_initial && \
+    loaddb_list "$DB_RACK_POWER" || return $?
     logmsg_info "Database schema and data should have been initialized at this point: for rack-power tests"
-    return 0
+
+    tarballdb_fastsave "${_DB_TAG}"
+    return $?
 }
 
 loaddb_dc_power_UC1() {
-    echo "CI-TESTLIB_DB - reset db: dc-power-UC1 -------------"
-    loaddb_initial || return $?
-    for data in "$DB_DC_POWER_UC1"; do
-        logmsg_info "Importing $data ..."
-        loaddb_file "$data" || return $?
-    done
+    _DB_TXT="dc-power-UC1"
+    _DB_TAG="loaddb_dc_power_UC1"
+    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" "$DB_DC_POWER_UC1" && return $?
+
+    echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} ----------"
+    loaddb_initial && \
+    loaddb_list "$DB_DC_POWER_UC1" || return $?
     logmsg_info "Database schema and data should have been initialized at this point: for dc-power-UC1 tests"
-    return 0
+
+    tarballdb_fastsave "${_DB_TAG}"
+    return $?
 }
 
 loaddb_dc_power() {
-    echo "CI-TESTLIB_DB - reset db: dc-power ---------------"
-    loaddb_initial || return $?
-    for data in "$DB_DC_POWER"; do
-        logmsg_info "Importing $data ..."
-        loaddb_file "$data" || return $?
-    done
+    _DB_TXT="dc-power"
+    _DB_TAG="loaddb_dc_power"
+    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" "$DB_DC_POWER" && return $?
+
+    echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} ----------"
+    loaddb_initial && \
+    loaddb_list "$DB_DC_POWER" || return $?
     logmsg_info "Database schema and data should have been initialized at this point: for dc-power tests"
-    return 0
+
+    tarballdb_fastsave "${_DB_TAG}"
+    return $?
 }
 
 loaddb_averages() {
-    echo "CI-TESTLIB_DB - reset db: averages ---------------"
-    loaddb_sampledata || return $?
-    for data in "$DB_AVERAGES" "$DB_AVERAGES_RELATIVE"; do
-        logmsg_info "Importing $data ..."
-        loaddb_file "$data" || return $?
-    done
+    _DB_TXT="averages"
+    _DB_TAG="loaddb_averages"
+    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" "$DB_DATA" "$DB_DATA_TESTREST" "$DB_AVERAGES" "$DB_AVERAGES_RELATIVE" && return $?
+
+    echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} ----------"
+    loaddb_sampledata && \
+    loaddb_list "$DB_AVERAGES" "$DB_AVERAGES_RELATIVE" || return $?
     logmsg_info "Database schema and data should have been initialized at this point: for averages tests"
-    return 0
+
+    tarballdb_fastsave "${_DB_TAG}"
+    return $?
 }
 
 loaddb_current() {
-    echo "CI-TESTLIB_DB - reset db: current ----------------"
+    _DB_TXT="current"
+    _DB_TAG="loaddb_current"
+    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" "$DB_DATA_CURRENT" && return $?
+
+    echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} ----------"
     loaddb_initial && \
     loaddb_list "$DB_DATA_CURRENT" || return $?
     logmsg_debug "Database schema and data should have been initialized at this point: for current tests"
-    return 0
+
+    tarballdb_fastsave "${_DB_TAG}"
+    return $?
 }
 
 reloaddb_init_script_WRAPPER() {
@@ -312,20 +391,24 @@ reloaddb_init_script_WRAPPER() {
     # defined in weblib.sh at the moment.
     # As parameter(s) pass the loaddb_*() routine names to execute
     # while the database is down.
-    reloaddb_stops_BIOS && \
-    [ -x "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" ] && \
+    if reloaddb_stops_BIOS && \
+        [ -x "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" ] \
+    ; then
         echo "CI-TESTLIB_DB - reset db: stop BIOS ---------------" && \
         "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" --stop
+    fi
 
     while [ $# -gt 0 ]; do
         $1 || return $?
         shift
     done
 
-    reloaddb_stops_BIOS && \
-    [ -x "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" ] && \
+    if reloaddb_stops_BIOS && \
+        [ -x "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" ] \
+    ; then
         echo "CI-TESTLIB_DB - reset db: start BIOS ---------------" && \
         { "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" --start-quick || return $? ; }
+    fi
 
     # Some scripts only care about database and do not have weblib.sh included
     if type -t accept_license | grep -q 'shell function' ; then
