@@ -197,7 +197,7 @@ tarballdb_fastload() (
     _DB_TAG="$1" ; shift
     tarballdb_newer "${_DB_TAG}" "$@" || return $?
 
-    echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} via tarball --------"
+    echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} via tarball '$DB_DUMP_DIR/${_DB_TAG}.tgz' --------"
     sut_run "/bin/systemctl stop mysql"
     tarballdb_import "${_DB_TAG}" && \
     sut_run "/bin/systemctl restart mysql"
@@ -208,8 +208,9 @@ tarballdb_fastsave() (
     # Wraps the stop SQL, export database tagged "$1", restart SQL
     _DB_TAG="$1" ; shift
 
-    echo "CI-TESTLIB_DB - reset db: tarballing '${_DB_TAG}' for future reference"
+    echo "CI-TESTLIB_DB - reset db: tarballing '${_DB_TAG}' into '$DB_DUMP_DIR/${_DB_TAG}.tgz' for future reference"
     sut_run "/bin/systemctl stop mysql ; sync"
+    mkdir -p "$DB_DUMP_DIR"
     tarballdb_export "${_DB_TAG}" && \
     sut_run "/bin/systemctl restart mysql"
     return $?
