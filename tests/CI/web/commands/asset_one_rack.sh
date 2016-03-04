@@ -70,7 +70,7 @@ print_result -$RES2 "Until fixed in source, this returns HTTP-400 vs HTTP-404 on
 curlfail_pop
 
 test_it "rack_with_negative_id:400-or-404"
-[ "$RES1" = 0 -o "$RES2" = 0 ]
+[ "$RES1" = 0 -o "$RES2" = 0 ] && echo '{"errors":[{"message":"Parameter 'id' has bad value. Received -1. Expected id of asset","code":47}]}' >&5
 print_result $? "This test did not return either HTTP-400 or HTTP-404" || echo "$OUT1" >&5
 
 echo "********* asset_one_rack.sh ***********************************************************************"
