@@ -191,7 +191,7 @@ CURID="`id -u`" || CURID=""
 stop_malamute(){
     # NOTE: This likely needs execution via sudo if user is not root
     $RUNAS systemctl stop malamute || true
-    sleep 2
+    sleep 1
     pidof malamute >/dev/null 2>&1 && return 1
     echo "INFO: stop(): malamute is not running (OK)"
     return 0
@@ -247,7 +247,7 @@ mlm_server
             $RUNAS systemctl start malamute
             RESULT=$?
         fi
-        sleep 2
+        sleep 1
         pidof malamute || RESULT=$?
         # copy, start or pidof could fail by this point;
         # otherwise we have RESULT==0 from diff-clause or cp-execution
@@ -285,7 +285,7 @@ start_daemon(){
             *)  nohup "${prefix}/${1}" > ${BUILDSUBDIR}/${1}.log 2>&1 & ;;
         esac
 
-        sleep 5
+        sleep 1
         echo -n "${prefix}/$1 "
         pidof ${1} lt-${1}
         RESULT=$?
@@ -305,25 +305,25 @@ stop() {
     done
     sleep 1
     for d in $DAEMONS ; do
-       ( pidof $d lt-$d >/dev/null 2>&1 && pkill $d lt-$d 2>/dev/null ) || true
+       ( pidof $d lt-$d >/dev/null 2>&1 && pkill $d lt-$d 2>/dev/null && sleep 1 & ) || true
     done
-    sleep 1
+    wait
     for d in $DAEMONS ; do
-       ( pidof $d lt-$d >/dev/null 2>&1 && kill `pidof $d lt-$d` 2>/dev/null ) || true
+       ( pidof $d lt-$d >/dev/null 2>&1 && kill `pidof $d lt-$d` 2>/dev/null && sleep 1 & ) || true
     done
-    sleep 1
+    wait
     for d in $DAEMONS ; do
-       ( pidof $d lt-$d >/dev/null 2>&1 && killall -KILL $d lt-$d 2>/dev/null ) || true
+       ( pidof $d lt-$d >/dev/null 2>&1 && killall -KILL $d lt-$d 2>/dev/null && sleep 1 & ) || true
     done
-    sleep 1
+    wait
     for d in $DAEMONS ; do
-       ( pidof $d lt-$d >/dev/null 2>&1 && pkill -KILL $d lt-$d 2>/dev/null ) || true
+       ( pidof $d lt-$d >/dev/null 2>&1 && pkill -KILL $d lt-$d 2>/dev/null && sleep 1 & ) || true
     done
-    sleep 1
+    wait
     for d in $DAEMONS ; do
-       ( pidof $d lt-$d >/dev/null 2>&1 && kill -KILL `pidof $d lt-$d` 2>/dev/null ) || true
+       ( pidof $d lt-$d >/dev/null 2>&1 && kill -KILL `pidof $d lt-$d` 2>/dev/null && sleep 1 & ) || true
     done
-    sleep 1
+    wait
     for s in $SERVICES ; do
         /bin/systemctl stop $s || true
     done
