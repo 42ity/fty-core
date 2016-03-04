@@ -153,14 +153,19 @@ else
             x"$SYSINFO_VERSION_RUN" != x'""' ] || RES=$?
         print_result -$RES || true
 
+        SYSINFO_VERSION_TESTSUITE=""
         if [ -s "$BUILDSUBDIR/.git_details" ]; then
             SYSINFO_VERSION_TESTSUITE="$(. "$BUILDSUBDIR/.git_details" > /dev/null && echo "${PACKAGE_GIT_HASH_L-}")" || SYSINFO_VERSION_TESTSUITE=""
-            if [ -n "$SYSINFO_VERSION_TESTSUITE" ]; then
-                echo "=== SYSINFO_VERSION_TESTSUITE: $SYSINFO_VERSION_TESTSUITE" >&2
-            fi
         else
-            # fresh checkout for VTE/SC/RC testing? Maybe call the script?
-            logmsg_info "'$BUILDSUBDIR/.git_details' not available"
+            if [ -x "$CHECKOUTDIR/tools/git_details.sh" ]; then
+                SYSINFO_VERSION_TESTSUITE="$(eval `"$CHECKOUTDIR/tools/git_details.sh" 2>/dev/null | grep PACKAGE_GIT_HASH_L_ESCAPED=` && echo "${PACKAGE_GIT_HASH_L_ESCAPED-}")" || SYSINFO_VERSION_TESTSUITE=""
+            else
+                # fresh checkout for VTE/SC/RC testing?
+                logmsg_warn "'$BUILDSUBDIR/.git_details' not available"
+            fi
+        fi
+        if [ -n "$SYSINFO_VERSION_TESTSUITE" ]; then
+            echo "=== SYSINFO_VERSION_TESTSUITE: $SYSINFO_VERSION_TESTSUITE" >&2
         fi
 
         if [ -n "$SYSINFO_VERSION_PKG" -a x"$SYSINFO_VERSION_PKG" != "xN/A" ]; then
