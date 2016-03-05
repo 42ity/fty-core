@@ -133,6 +133,21 @@ if isRemoteSUT ; then
         exit $?
         ;;
     stop)
+
+        # BIOS-1807: so far "bios-agent-autoconfig" service or its child process
+        # "nut-scanner" tends to hang when stopping... so kill them ruthlessly!
+        case "$SERVICES" in
+            *agent-autoconfig*)
+                s="agent-autoconfig"
+                sut_run "/bin/systemctl stop bios-$s & sleep 1 ; \
+                for d in $s nut-scanner ; do
+                    ( pidof \$d >/dev/null 2>&1 && echo 'KILLING:\$d' && kill -KILL `pidof \$d` 2>/dev/null && sleep 1 ) || true
+                done
+                wait"
+                ;;
+            *) ;; # Offender not running as a service, and was killed above if a daemon
+        esac
+
         sut_run "/bin/systemctl $OPERATION bios.target $SERVICES malamute" && \
             statusSVC stopped
         exit $?
@@ -330,10 +345,10 @@ stop() {
     case "$SERVICES" in
         *agent-autoconfig*)
             s="agent-autoconfig"
-            /bin/systemctl stop $s &
+            /bin/systemctl stop bios-$s &
             sleep 1
             for d in $s nut-scanner ; do
-                ( pidof $d >/dev/null 2>&1 && kill -KILL `pidof $d` 2>/dev/null && sleep 1 ) || true
+                ( pidof $d >/dev/null 2>&1 && echo "KILLING:$d" && kill -KILL `pidof $d` 2>/dev/null && sleep 1 ) || true
             done
             wait
             ;;
