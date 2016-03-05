@@ -94,6 +94,22 @@ export CSV_LOADDIR CSV_LOADDIR_TPOWER CSV_LOADDIR_ASSIMP CSV_LOADDIR_BAM
 [ -z "${LOADDB_SHOULD_TARBALL-}" ] && LOADDB_SHOULD_TARBALL=auto
 [ x"${LOADDB_SHOULD_TARBALL-}" = x- ] && LOADDB_SHOULD_TARBALL=auto
 
+do_flushfs() {
+    sut_run "sync; [ -w /proc/sys/vm/drop_caches ] && echo 3 > /proc/sys/vm/drop_caches && sync" || \
+        logmsg_warn "Failed to FLUSH OS/VM CACHE"
+}
+
+do_flushdb() {
+    # Ensure database reaches the disk storage and quiesces so we can do stuff
+    # This also reduces chance of mysql service timeout to stop...
+    DATABASE=mysql do_select "RESET QUERY CACHE" || \
+        logmsg_warn "Failed to RESET QUERY CACHE"
+    DATABASE=mysql do_select "FLUSH QUERY CACHE" || \
+        logmsg_warn "Failed to FLUSH QUERY CACHE"
+    sut_run "mysqladmin refresh" || \
+        logmsg_warn "Failed to MYSQLADMIN REFRESH"
+}
+
 do_killdb() {
     KILLDB_RES=0
     if [ -n "${DATABASE-}" ] ; then
@@ -108,12 +124,8 @@ do_killdb() {
     else
         logmsg_warn "The DATABASE variable is not set, nothing known to DROP"
     fi
-    DATABASE=mysql do_select "RESET QUERY CACHE" || \
-        logmsg_warn "Failed to RESET QUERY CACHE"
-    DATABASE=mysql do_select "FLUSH QUERY CACHE" || \
-        logmsg_warn "Failed to FLUSH QUERY CACHE"
-    sut_run "mysqladmin refresh ; sync; [ -w /proc/sys/vm/drop_caches ] && echo 3 > /proc/sys/vm/drop_caches && sync" || \
-        logmsg_warn "Failed to FLUSH OS/VM CACHE"
+    do_flushdb
+    do_flushfs
     return $KILLDB_RES
 }
 
@@ -225,10 +237,13 @@ tarballdb_fastload() (
     tarballdb_newer "${_DB_TAG}" "$@" || return $?
 
     echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} via tarball '$DB_DUMP_DIR/${_DB_TAG}.tgz' --------"
-    sut_run "/bin/systemctl stop mysql"
+    do_flushdb || true
+    sut_run "/bin/systemctl stop mysql || /bin/systemctl stop mysql" && \
     tarballdb_import "${_DB_TAG}" && \
     sut_run "/bin/systemctl restart mysql"
-    return $?
+    RES=$?
+    [ $RES != 0 ] && logmsg_error "FAILED to un-tarball and/or restart the database!"
+    return $RES
 )
 
 tarballdb_fastsave() (
@@ -238,11 +253,15 @@ tarballdb_fastsave() (
     _DB_TAG="$1-${_SUT_ARCH}" ; shift
 
     echo "CI-TESTLIB_DB - reset db: tarballing '${_DB_TAG}' into '$DB_DUMP_DIR/${_DB_TAG}.tgz' for future reference"
-    sut_run "/bin/systemctl stop mysql ; sync"
+    do_flushdb || true
+    do_flushfs || true
     mkdir -p "$DB_DUMP_DIR"
+    sut_run "/bin/systemctl stop mysql || /bin/systemctl stop mysql" && \
     tarballdb_export "${_DB_TAG}" && \
     sut_run "/bin/systemctl restart mysql"
-    return $?
+    RES=$?
+    [ $RES != 0 ] && logmsg_error "FAILED to tarball and/or restart the database!"
+    return $RES
 )
 
 do_loaddb_list() {
