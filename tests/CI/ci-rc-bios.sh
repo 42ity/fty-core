@@ -141,7 +141,7 @@ if isRemoteSUT ; then
                 s="agent-autoconfig"
                 sut_run "/bin/systemctl stop bios-$s & sleep 1 ; \
                 for d in $s nut-scanner ; do
-                    ( pidof \$d >/dev/null 2>&1 && echo 'KILLING:\$d' && kill -KILL `pidof \$d` 2>/dev/null && sleep 1 ) || true
+                    ( pidof \$d >/dev/null 2>&1 && echo 'KILLING:$d' && kill -KILL `pidof \$d` 2>/dev/null && sleep 1 ) || true
                 done
                 wait"
                 ;;
