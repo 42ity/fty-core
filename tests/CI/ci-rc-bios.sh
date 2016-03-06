@@ -138,12 +138,9 @@ if isRemoteSUT ; then
         # "nut-scanner" tends to hang when stopping... so kill them ruthlessly!
         case "$SERVICES" in
             *agent-autoconfig*)
-                s="agent-autoconfig"
-                sut_run "/bin/systemctl stop bios-$s & sleep 1 ; \
-                for d in $s nut-scanner ; do
-                    ( pidof \$d >/dev/null 2>&1 && echo 'KILLING:$d' && kill -KILL `pidof \$d` 2>/dev/null && sleep 1 ) || true
-                done
-                wait"
+                sut_run '/bin/systemctl stop bios-agent-autoconfig & sleep 1 ; \
+                ( pidof agent-autoconfig nut-scanner >/dev/null 2>&1 && echo "KILLING: agent-autoconfig nut-scanner" && kill -KILL `pidof agent-autoconfig nut-scanner` 2>/dev/null && sleep 1 ) || true
+                wait'
                 ;;
             *) ;; # Offender not running as a service, and was killed above if a daemon
         esac
@@ -347,9 +344,7 @@ stop() {
             s="agent-autoconfig"
             /bin/systemctl stop bios-$s &
             sleep 1
-            for d in $s nut-scanner ; do
-                ( pidof $d >/dev/null 2>&1 && echo "KILLING:$d" && kill -KILL `pidof $d` 2>/dev/null && sleep 1 ) || true
-            done
+            ( pidof agent-autoconfig nut-scanner >/dev/null 2>&1 && echo "KILLING: agent-autoconfig nut-scanner" && kill -KILL `pidof agent-autoconfig nut-scanner` 2>/dev/null && sleep 1 ) || true
             wait
             ;;
         *) ;; # Offender not running as a service, and was killed above if a daemon
