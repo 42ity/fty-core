@@ -128,7 +128,7 @@ if isRemoteSUT ; then
     case "$OPERATION" in
     start|restart|startQ)
         [ "$OPERATION" = startQ ] && OPERATION=start
-        sut_run "/bin/systemctl $OPERATION malamute $SERVICES bios.target" && \
+        sut_run "/bin/systemctl $OPERATION malamute bios.target $SERVICES" && \
             statusSVC started
         exit $?
         ;;
@@ -145,9 +145,14 @@ if isRemoteSUT ; then
             *) ;; # Offender not running as a service, and was killed above if a daemon
         esac
 
-        sut_run "/bin/systemctl $OPERATION bios.target $SERVICES malamute" && \
-            statusSVC stopped
-        exit $?
+        for i in $(seq 1 5) ; do
+            sut_run "/bin/systemctl $OPERATION bios.target $SERVICES malamute" && \
+                statusSVC stopped
+            RES=$?
+            [ "$RES" = 0 ] && exit $RES
+            echo "Retrying to stop BIOS services (did #$i attepmts so far)..." >&2
+        done
+        exit $RES
         ;;
     status)  # Good if all services are started
         statusSVC started
@@ -311,7 +316,7 @@ start_daemon(){
     fi
 }
 
-stop() {
+do_stop() {
     for d in $DAEMONS ; do
        ( pidof $d lt-$d >/dev/null 2>&1 && killall $d lt-$d 2>/dev/null ) || true
     done
@@ -366,6 +371,16 @@ stop() {
     [ "$RESULT" = 0 ] && \
         echo "INFO: stop() OK: none of the DAEMONS (`echo $DAEMONS | tr '\n' ' '`) and SERVICES ($SERVICES) are running"
     return $RESULT
+}
+
+stop() {
+    for i in $(seq 1 5) ; do
+        do_stop
+        RES=$?
+        [ "$RES" = 0 ] && return $RES
+        echo "Retrying to stop BIOS services (did #$i attepmts so far)..." >&2
+    done
+    return $RES
 }
 
 do_status() {
