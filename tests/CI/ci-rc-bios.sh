@@ -151,13 +151,15 @@ if isRemoteSUT ; then
             *) ;; # Offender not running as a service, and was killed above if a daemon
         esac
 
+        RES=255
         for i in $(seq 1 5) ; do
+            [ "$i" -gt 1 ] && echo "Retrying to stop BIOS services (did #`expr $i - 1` attepmts so far)..." >&2
             sut_run "/bin/systemctl $OPERATION bios.target $SERVICES malamute" && \
                 statusSVC stoppedOrCrashed
             RES=$?
             [ "$RES" = 0 ] && exit $RES
-            echo "Retrying to stop BIOS services (did #$i attepmts so far)..." >&2
         done
+        echo "FAILED($RES) to stop BIOS services after $i attempts!" >&2
         exit $RES
         ;;
     status)  # Good if all services are started
@@ -384,12 +386,14 @@ do_stop() {
 }
 
 stop() {
+    RES=255
     for i in $(seq 1 5) ; do
+        [ "$i" -gt 1 ] && echo "Retrying to stop BIOS services (did #`expr $i - 1` attepmts so far)..." >&2
         do_stop
         RES=$?
         [ "$RES" = 0 ] && return $RES
-        echo "Retrying to stop BIOS services (did #$i attepmts so far)..." >&2
     done
+    echo "FAILED($RES) to stop BIOS services after $i attempts!" >&2
     return $RES
 }
 
