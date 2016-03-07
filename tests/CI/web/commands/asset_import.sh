@@ -90,7 +90,7 @@ echo "********* asset_import.sh ************************************************
 echo "********* 1. Import universal tab 16LE ************************************************************"
 echo "***************************************************************************************************"
 test_it "Import_universal_tab_16LE"
-loaddb_initial
+init_script_initial
 RES=0
 # The file is imported, dumped tables and compared with pattern files
 csv_import "universal_asset_tab_16LE.csv"
@@ -115,7 +115,7 @@ echo "**************************************************************************
 # Exported and filtered file "imp_exp_uni_tab_16LE.csv" is imported
 # the dumped tables are compared with original pattern files.
 test_it "Import_exported_file_without_ids"
-loaddb_initial
+init_script_initial
 RES=0
 csv_import "imp_exp_uni_tab_16LE.csv"
 print_result $RES
@@ -125,7 +125,7 @@ echo "********* 4. Import universal tab 8 **************************************
 echo "***************************************************************************************************"
 # the same like in previous tc's used tab delimiter UTF-8 encoding csv source file
 test_it "Import_universal_tab_8"
-loaddb_initial
+init_script_initial
 RES=0
 csv_import "universal_asset_tab_8.csv"
 print_result $RES
@@ -143,7 +143,7 @@ echo "********* asset_import.sh ************************************************
 echo "********* 6. Import exported file without ids *****************************************************"
 echo "***************************************************************************************************"
 test_it "Import_exported_file_without_ids"
-loaddb_initial
+init_script_initial
 RES=0
 csv_import "imp_exp_uni_tab_8.csv"
 print_result $RES
@@ -153,7 +153,7 @@ echo "********* 7. Import universal comma 16LE *********************************
 echo "***************************************************************************************************"
 # the same like in previous tc's used comma delimiter UTF-16LE encoding csv source file
 test_it "Import_universal_comma_16LE"
-loaddb_initial
+init_script_initial
 RES=0
 csv_import "universal_asset_comma_16LE.csv"
 print_result $RES
@@ -171,7 +171,7 @@ echo "********* asset_import.sh ************************************************
 echo "********* 9. Import exported file without ids *****************************************************"
 echo "***************************************************************************************************"
 test_it "Import_exported_file_without_ids"
-loaddb_initial
+init_script_initial
 RES=0
 csv_import "imp_exp_uni_comma_16LE.csv"
 #echo "RES5=$RES"
@@ -182,7 +182,7 @@ echo "********* 10. Import universal comma 8 ***********************************
 echo "***************************************************************************************************"
 # the same like in previous tc's used comma delimiter UTF-8 encoding csv source file
 test_it "Import_universal_comma_8"
-loaddb_initial
+init_script_initial
 RES=0
 csv_import "universal_asset_comma_8.csv"
 print_result $RES
@@ -200,7 +200,7 @@ echo "********* asset_import.sh ************************************************
 echo "********* 12. Import exported file without ids ****************************************************"
 echo "***************************************************************************************************"
 test_it "Import_exported_file_without_ids"
-loaddb_initial
+init_script_initial
 RES=0
 csv_import "imp_exp_uni_comma_8.csv"
 print_result $RES
@@ -210,7 +210,7 @@ echo "********* 13. Import universal asset comma 16LE with BOM *****************
 echo "***************************************************************************************************"
 # the same like in previous tc's used comma delimiter UTF-16LE encoding csv source file with BOM
 test_it "universal_asset_comma_16LE_with_BOM"
-loaddb_initial
+init_script_initial
 RES=0
 csv_import "universal_asset_comma_16LE_with_BOM.csv"
 print_result $RES
@@ -220,7 +220,7 @@ echo "********* 14. Case insensitive *******************************************
 echo "***************************************************************************************************"
 # test of case insensivity off headers and some values inside csv file 
 test_it "Case_insensitive"
-loaddb_initial
+init_script_initial
 RES=0
 csv_import "universal_asset_comma_insensitive_8.csv" "_case_insensitive"
 print_result $RES
@@ -230,7 +230,7 @@ echo "********* 15. Asset link *************************************************
 echo "***************************************************************************************************"
 # test of the all links possible in t_bios_asset_link table
 test_it "Asset link"
-loaddb_initial
+init_script_initial
 RES=0
 csv_import "universal_asset_comma_8_asset_link.csv" "_asset_link"
 print_result $RES
