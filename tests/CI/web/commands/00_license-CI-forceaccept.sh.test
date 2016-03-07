@@ -135,11 +135,12 @@ else
         test_it "sysinfo_auth=2__parse__source_build_package__info"
         JPATH='"packages",[0-9]*$'
         RES=0
-        SYSINFO_VERSION_PKG="`echo "$SYSINFOA" | jsonsh_cli -x="$JPATH" | egrep '"package-name":"core".*"commit":"[a-f0-9-]+"'`" || \
+        SYSINFO_VERSION_PKG="`echo "$SYSINFOA" | jsonsh_cli -x="$JPATH" | egrep '"package-name":"core".*"commit":"[a-f0-9-]+"'`" && \
+            SYSINFO_VERSION_PKG="`echo "$SYSINFO_VERSION_PKG" | sed 's/.*commit":"\(.*\)".*/\1/'`" || \
             RES=$?
-        echo "=== SYSINFO_VERSION_PKG ($RES): `echo "$SYSINFO_VERSION_PKG" | sed 's/.*commit":"\(.*\)".*/\1/'`" >&2
+        echo "=== SYSINFO_VERSION_PKG ($RES): $SYSINFO_VERSION_PKG" >&2
         [ $RES = 0 -a -n "$SYSINFO_VERSION_PKG" -a \
-            x"$SYSINFO_VERSION_PKG" != x'""' ] || RES=$?
+            x"$SYSINFO_VERSION_PKG" != x'""' ] || { RES=$?; SYSINFO_VERSION_PKG=''; }
         print_result $RES || true
 
         test_it "sysinfo_auth=2__parse__source_build_running__info"
@@ -152,11 +153,19 @@ else
             x"$SYSINFO_VERSION_RUN" != x'""' ] || RES=$?
         print_result -$RES || true
 
+        SYSINFO_VERSION_TESTSUITE=""
         if [ -s "$BUILDSUBDIR/.git_details" ]; then
             SYSINFO_VERSION_TESTSUITE="$(. "$BUILDSUBDIR/.git_details" > /dev/null && echo "${PACKAGE_GIT_HASH_L-}")" || SYSINFO_VERSION_TESTSUITE=""
-            if [ -n "$SYSINFO_VERSION_TESTSUITE" ]; then
-                echo "=== SYSINFO_VERSION_TESTSUITE: $SYSINFO_VERSION_TESTSUITE" >&2
+        else
+            if [ -x "$CHECKOUTDIR/tools/git_details.sh" ]; then
+                SYSINFO_VERSION_TESTSUITE="$(eval `"$CHECKOUTDIR/tools/git_details.sh" 2>/dev/null | grep PACKAGE_GIT_HASH_L_ESCAPED=` && echo "${PACKAGE_GIT_HASH_L_ESCAPED-}")" || SYSINFO_VERSION_TESTSUITE=""
+            else
+                # fresh checkout for VTE/SC/RC testing?
+                logmsg_warn "'$BUILDSUBDIR/.git_details' not available"
             fi
+        fi
+        if [ -n "$SYSINFO_VERSION_TESTSUITE" ]; then
+            echo "=== SYSINFO_VERSION_TESTSUITE: $SYSINFO_VERSION_TESTSUITE" >&2
         fi
 
         if [ -n "$SYSINFO_VERSION_PKG" -a x"$SYSINFO_VERSION_PKG" != "xN/A" ]; then
