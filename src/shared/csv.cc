@@ -160,12 +160,32 @@ findDelimiter(
     return '\x0';
 }
 
+bool
+hasApostrof(
+        std::istream& i)
+{
+    for (std::size_t pos = 0; i.good() && !i.eof(); pos++) {
+        i.seekg(pos);
+        char ret = i.peek();
+        if (ret == '\'') {
+            i.seekg(0);
+            return true;
+        }
+    }
+    return false;
+}
 CsvMap
 CsvMap_from_istream(
         std::istream& in)
 {
     std::vector <std::vector<cxxtools::String> > data;
     cxxtools::CsvDeserializer deserializer(in);
+    if ( hasApostrof(in) ) {
+        const char* msg = "CSV file contains ' (apostrof), please remove it";
+        log_error("%s\n", msg);
+        LOG_END;
+        throw std::invalid_argument (msg);
+    }
     char delimiter = findDelimiter(in);
     if (delimiter == '\x0') {
         const char* msg = "Cannot detect the delimiter, use comma (,) semicolon (;) or tabulator";

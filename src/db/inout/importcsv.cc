@@ -564,6 +564,12 @@ void
 
     std::vector <std::vector<cxxtools::String> > data;
     cxxtools::CsvDeserializer deserializer(input);
+    if ( hasApostrof(input) ) {
+        const char* msg = "CSV file contains ' (apostrof), please remove it";
+        log_error("%s\n", msg);
+        LOG_END;
+        bios_throw("bad-request-document", msg);
+    }
     char delimiter = findDelimiter(input);
     if (delimiter == '\x0') {
         std::string msg{"Cannot detect the delimiter, use comma (,) semicolon (;) or tabulator"};
