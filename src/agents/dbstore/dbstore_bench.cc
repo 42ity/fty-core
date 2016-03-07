@@ -94,7 +94,7 @@ void bench(
             delay,periodic_display,total_duration,num_device,topic_per_device,insertion);
     
     persist::TopicCache topic_cache{(size_t)(num_device*topic_per_device)};
-    persist::MultiRowCache multi_row = persist::MultiRowCache(); //insertion,10
+    persist::MultiRowCache multi_row = persist::MultiRowCache(insertion,10);
     
     int stat_total_row=0; 
     int stat_periodic_row=0; 
