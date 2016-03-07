@@ -157,6 +157,7 @@ findDelimiter(
             return ret;
         }
     }
+    i.seekg(0);
     return '\x0';
 }
 
@@ -172,6 +173,7 @@ hasApostrof(
             return true;
         }
     }
+    i.seekg(0);
     return false;
 }
 CsvMap

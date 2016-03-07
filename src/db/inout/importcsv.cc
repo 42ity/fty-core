@@ -565,10 +565,10 @@ void
     std::vector <std::vector<cxxtools::String> > data;
     cxxtools::CsvDeserializer deserializer(input);
     if ( hasApostrof(input) ) {
-        const char* msg = "CSV file contains ' (apostrof), please remove it";
-        log_error("%s\n", msg);
+        std::string msg = "CSV file contains ' (apostrof), please remove it";
+        log_error("%s\n", msg.c_str());
         LOG_END;
-        bios_throw("bad-request-document", msg);
+        bios_throw("bad-request-document", msg.c_str());
     }
     char delimiter = findDelimiter(input);
     if (delimiter == '\x0') {
