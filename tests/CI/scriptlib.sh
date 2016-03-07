@@ -193,6 +193,7 @@ default_posval CI_DEBUGLEVEL_PIPESNIFFER $CI_DEBUGLEVEL_DEBUG
 
 # Semihack used below to enable "set -x" by very large debug level
 default_posval CI_DEBUGLEVEL_TRACEEXEC  200
+default_posval CI_DEBUGLEVEL_TIME_SUT_RUN 99
 
 ### Default debugging/info/warning level for this lifetime of the script
 ### Messages are printed if their assigned level is at least CI_DEBUG
@@ -508,19 +509,20 @@ sut_run() {
             "sut_run()::ssh(${SUT_HOST}:${SUT_SSH_PORT}): $@" >&2
         SSH_TERMINAL_REQUEST=""
         [ "$1" = "-t" ] && shift && SSH_TERMINAL_REQUEST="-t -t" #" -o RequestTTY=true"
+        # TODO: Currently this is No-op for sut_run over SSH usecase :(
         [ "$CI_DEBUG" -ge "$CI_DEBUGLEVEL_RUN" ] 2>/dev/null && \
-            REMCMD="bash -x -c \"$@\"" ||
-            REMCMD="bash -c \"$@\""
-        ssh $SSH_TERMINAL_REQUEST -p "${SUT_SSH_PORT}" -l "${SUT_USER}" "${SUT_HOST}" "$@"
+            REMCMD="bash -x -c " || \
+            REMCMD="bash -c "
+        $TIME_SUT_RUN ssh $SSH_TERMINAL_REQUEST -p "${SUT_SSH_PORT}" -l "${SUT_USER}" "${SUT_HOST}" "$@"
         return $?
     else
         [ "$1" = "-t" ] && shift        # Ignore for local host
         logmsg_sut_run \
             "sut_run()::local: $@" >&2
         if [ "$CI_DEBUG" -ge "$CI_DEBUGLEVEL_RUN" ] 2>/dev/null ; then
-            bash -x -c "$@"
+            $TIME_SUT_RUN bash -x -c "$@"
         else
-            bash -c "$@"
+            $TIME_SUT_RUN bash -c "$@"
         fi
         return $?
     fi
@@ -802,6 +804,29 @@ exit ${ERRCODE-};' \
               ;;
     esac
 }
+
+# Allow to togle sut_run timing in CI-driven builds more easily
+# Alas, ATM this worked only with an external "time" but not a built-in
+# Also note that "eval time" is very toxic for sut_run() ;)
+case "${TIME_SUT_RUN-}" in
+    *time*) TIME_SUT_RUN="$TIME_SUT_RUN" ;;
+    yes|on) (which time 2>/dev/null) && TIME_SUT_RUN="time" || { TIME_SUT_RUN=""; logmsg_warn "'time' not found in PATH"; } ;;
+    no|off) TIME_SUT_RUN="" ;;
+    *|auto|-|"") TIME_SUT_RUN="auto" ;;
+esac
+
+[ "$TIME_SUT_RUN" = auto ] && \
+if [ "$CI_DEBUG" -ge "$CI_DEBUGLEVEL_TIME_SUT_RUN" ] ; then
+    logmsg_info "CI_DEBUG is $CI_DEBUG >= $CI_DEBUGLEVEL_TIME_SUT_RUN : enabling timing of sut_run()!" >&2
+    if [ -x "`which time 2>/dev/null`" ]; then
+        TIME_SUT_RUN="time"
+    else
+        logmsg_warn "'time' not found in PATH"
+        TIME_SUT_RUN=""
+    fi
+else
+    TIME_SUT_RUN=""
+fi
 
 # Allow to togle shell-tracing in CI-driven builds more easily
 if [ "$CI_DEBUG" -ge "$CI_DEBUGLEVEL_TRACEEXEC" ] ; then
