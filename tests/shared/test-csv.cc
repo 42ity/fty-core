@@ -251,7 +251,7 @@ TEST_CASE("CSV map apostrof", "[csv]") {
 }
 
 
-TEST_CASE("CSV map apostrof", "[csv]") {
+TEST_CASE("CSV map apostrof2", "[csv]") {
 
     std::stringstream buf;
 
