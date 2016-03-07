@@ -149,6 +149,16 @@ findDelimiter(
         std::istream& i,
         std::size_t max_pos = 60);
 
+/**
+ * \brief check apostrofs
+ *
+ * \param i istream, which is analyzed
+ *
+ * \return true if there is at leas one apostrof
+ */
+bool
+hasApostrof(
+        std::istream& i);
 
 /**
  *  \brief read the data from istream

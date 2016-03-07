@@ -54,7 +54,7 @@ TEST_CASE("CSV map basic get test", "[csv]") {
 
     shared::CsvMap cm{data};
     cm.deserialize();
-    
+
     // an access to headers
     REQUIRE(cm.get(0, "Name") == "Name");
     REQUIRE(cm.get(0, "name") == "Name");
@@ -63,7 +63,7 @@ TEST_CASE("CSV map basic get test", "[csv]") {
     // an access to data
     REQUIRE(cm.get(1, "Name") == "RACK-01");
     REQUIRE(cm.get(2, "Name") == "RACK-02");
-    
+
     // an access to data
     REQUIRE(cm.get(1, "Type") == "rack");
     REQUIRE(cm.get(2, "tYpe") == "rack");
@@ -101,7 +101,7 @@ TEST_CASE("CSV multiple field names", "[csv]") {
 
     shared::CsvMap cm{data};
     REQUIRE_THROWS_AS(cm.deserialize(), std::invalid_argument);
-    
+
 }
 
 inline std::string to_utf8(const cxxtools::String& ws) {
@@ -236,4 +236,28 @@ TEST_CASE("CSV from_json", "[csv][si]")
         REQUIRE(map.hasTitle(title));
         REQUIRE(map.get(1, title) == EXP[1][i++]);
     }
+}
+
+
+TEST_CASE("CSV map apostrof", "[csv]") {
+
+    std::stringstream buf;
+
+    buf << "Name, Type, Group.1, group.2,description\n";
+    buf << "RACK-01,rack,GR-01,GR-02,\"just,my',dc\"\n";
+    buf << "RACK-02,rack,GR-01,GR-02,\"just\tmy\nrack\"\n";
+
+    REQUIRE_THROWS ( shared::CsvMap cm = CsvMap_from_istream(buf));
+}
+
+
+TEST_CASE("CSV map apostrof2", "[csv]") {
+
+    std::stringstream buf;
+
+    buf << "Name, Type, Group.1, group.2,description\n";
+    buf << "RACK'-01,rack,GR-01,GR-02,\"just,my',dc\"\n";
+    buf << "RACK-02,rack,GR-01,GR-02,\"just\tmy\nrack\"\n";
+
+    REQUIRE_THROWS ( shared::CsvMap cm = CsvMap_from_istream(buf));
 }
