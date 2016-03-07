@@ -36,6 +36,7 @@
 #include "dbpath.h"
 #include "defs.h"
 
+
 using namespace std;
 namespace persist {
 
@@ -49,8 +50,7 @@ db_reply_t
         const char        *units,
         const char        *device_name,
         TopicCache        &c,
-        std::list<std::string> &multiple_row, 
-        unsigned int insert_every)
+        MultiRowCache     &m)
 {
     db_reply_t ret = db_reply_new();
     
@@ -87,30 +87,21 @@ db_reply_t
         tntdb::Statement st;
         
         m_msrmnt_tpc_id_t topic_id = prepare_topic(conn, topic, units, device_name, c);
+        
         if(topic_id!=0){
-            if(insert_every>1){
-                //multiple raw insertion request
-                char _val[50];
-                sprintf(_val,"(%" PRIu64 ",%" PRIi32 ",%" PRIi16 ",%" PRIi16 ")",time,value,scale,topic_id );
-                multiple_row.push_back(_val);
-                if (multiple_row.size()==insert_every){
-                    std::string query= "INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ";
-                     for (std::list<string>::iterator value=multiple_row.begin(); value != multiple_row.end(); ){
-                         query += *value;
-                        if( ++value != multiple_row.end())query+=",";
-                    }
-                    query+="ON DUPLICATE KEY UPDATE value=VALUES(value),scale=VALUES(scale) ";
-
-                    log_debug("query %s",query.c_str());
-                    st = conn.prepareCached (query.c_str());
-                    ret.affected_rows =st.execute();
+            if(m.get_max_row()>1 ){
+                //multiple row insertion request
+                m.push_back(time,value,scale,topic_id);
+                if (m.is_ready_for_insert()){
+                    string query = m.get_insert_query();
+                    st = conn.prepare(query.c_str());
+                    ret.affected_rows = st.execute();
                     log_debug("[t_bios_measurement]: inserted %" PRIu64 " rows ",
                             ret.affected_rows);
-                    multiple_row.clear();
-
+                    m.clear();
                 }
             }else{
-                //row by row insertion
+                //row by row insertion (old compatibility)
                 st = conn.prepareCached (
                         "INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) "
                         "  VALUES (:time, :value, :scale, :topic_id)"
@@ -167,8 +158,8 @@ db_reply_t
         const char        *device_name)
 {
     TopicCache c{};
-    std::list<std::string> multiple_row;
-    return insert_into_measurement(conn, topic, value, scale, time, units, device_name, c, multiple_row,1);
+    MultiRowCache m = MultiRowCache(1,0);
+    return insert_into_measurement(conn, topic, value, scale, time, units, device_name, c, m);
 }
 
 // backward compatible function for a case where no cache and no multiple_row are required
@@ -183,8 +174,38 @@ db_reply_t
         const char        *device_name,
         TopicCache        &c)
 {
-    std::list<std::string> multiple_row;
-    return insert_into_measurement(conn, topic, value, scale, time, units, device_name, c, multiple_row,1);
+    MultiRowCache m=MultiRowCache(1,0);
+    return insert_into_measurement(conn, topic, value, scale, time, units, device_name, c, m);
+}
+
+db_reply_t
+    flush_measurement(
+        tntdb::Connection &conn,
+        MultiRowCache& m ) {
+    db_reply_t ret = db_reply_new();
+    ret.status = 1;
+    try {
+        tntdb::Statement st;
+        string query = m.get_insert_query();
+        if(query.length()==0)return ret;
+        st = conn.prepare(query.c_str());
+        ret.affected_rows = st.execute();
+        log_debug("[t_bios_measurement]: flush last measurements in cache, inserted %" PRIu64 " rows ",
+                ret.affected_rows);
+        m.clear();
+        ret.rowid = conn.lastInsertId();
+        return ret;
+    } catch(const std::exception &e) {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_INTERNAL;
+        ret.msg        = e.what();
+        log_error ("Abnormal flush termination");
+        LOG_END_ABNORMAL(e);
+        return ret;
+    }
+
+    
 }
 
 /*

@@ -26,6 +26,7 @@
 #include "dbpath.h"
 #include "log.h"
 #include "persistencelogic.h"
+#include "multi_row.h"
 #include <getopt.h>
 #include <bios_proto.h>
 #include <ctime>
@@ -56,9 +57,11 @@ char *get_clock_fmt(){
 
 /* Insert one measurement on a random device, a random topic and a random value
  */
-void insert_new_measurement( int device_id, int topic_id, 
-        persist::TopicCache &cache,std::list<std::string> &m,
-        int insert_every){
+void insert_new_measurement( 
+        int device_id, 
+        int topic_id, 
+        persist::TopicCache &cache,
+        persist::MultiRowCache &multi_row){
     char topic_name[32];
     char device_name[32];
     char value[16];
@@ -66,7 +69,7 @@ void insert_new_measurement( int device_id, int topic_id,
     sprintf(device_name,"bench.asset%d",device_id);
     sprintf(value,"%d",rand() % 999999 );
     zmsg_t *msg = bios_proto_encode_metric (NULL, topic_name, device_name, value, "%", time(NULL));
-    persist::process_measurement(&msg, cache, m, insert_every);
+    persist::process_measurement(&msg, cache, multi_row);
     zmsg_destroy (&msg);
 }
 /*
@@ -74,16 +77,25 @@ void insert_new_measurement( int device_id, int topic_id,
  * \param delay       - pause between each insertion (in ms), 0 means no delay 
  * \param num_device  - number of simulated device  
  * \param topic_per_device  - number of topic per device simulated  
- * \param periodic_display  - Each periodic_display seconds, output 
- *                          time; total rows; row over since periodic_display s  ; average since periodic_display s
  * \param total_duration    - bench duration in minute, -1 means infinite loop
+ * \param insertion         - number of maximum row before inserting in multi-row
+ * \param periodic_display  - Each periodic_display seconds, output 
+ *  time; total rows; row over since periodic_display s  ; average since periodic_display s
  */ 
-void bench(int delay=100, int num_device=100, int topic_per_device=100, 
-        int periodic_display=10, int total_duration=-1, int insertion=10){
-    log_info("delay=%dms periodic=%ds minute=%dm element=%d topic=%d", 
-            delay,periodic_display,total_duration,num_device,topic_per_device);
+void bench(
+        int delay=100, 
+        int num_device=100, 
+        int topic_per_device=100, 
+        int periodic_display=10, 
+        int total_duration=-1, 
+        int insertion=10){
+    
+    log_info("delay=%dms periodic=%ds minute=%dm element=%d topic=%d insert_every=%d", 
+            delay,periodic_display,total_duration,num_device,topic_per_device,insertion);
+    
     persist::TopicCache topic_cache{(size_t)(num_device*topic_per_device)};
-    std::list<std::string> m_cache;
+    persist::MultiRowCache multi_row = persist::MultiRowCache(); //insertion,10
+    
     int stat_total_row=0; 
     int stat_periodic_row=0; 
     
@@ -95,7 +107,7 @@ void bench(int delay=100, int num_device=100, int topic_per_device=100,
     log_info("time;total;rows; mean over last %ds (row/s)",periodic_display);
     while(!zsys_interrupted) {
         insert_new_measurement(rand() % num_device, rand() % topic_per_device,
-                topic_cache, m_cache, insertion);
+                topic_cache, multi_row);
         //count stat
         stat_total_row++; 
         stat_periodic_row++;
@@ -114,6 +126,8 @@ void bench(int delay=100, int num_device=100, int topic_per_device=100,
         //sleep before loop
         if(delay>0)usleep(delay*1000);
     }
+    persist::flush_measurement(multi_row);
+
     
 exit:
     long elapsed_overall_ms = (get_clock_ms() - begin_overall_ms);

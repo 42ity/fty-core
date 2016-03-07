@@ -30,6 +30,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "dbhelpers.h"
 #include "topic_cache.h"
+#include "multi_row.h"
 
 namespace persist {
 /**
@@ -58,8 +59,7 @@ db_reply_t
         const char        *units,
         const char        *device_name,
         TopicCache        &c,
-        std::list<std::string> &multiple_row, 
-        unsigned int insert_every);
+        MultiRowCache     &m);
 
 // backward compatible function for a case where no cache is required
 db_reply_t
@@ -83,6 +83,11 @@ db_reply_t
         int64_t            time,
         const char        *units,
         const char        *device_name);
+
+db_reply_t
+    flush_measurement(
+        tntdb::Connection &conn,
+        MultiRowCache& m );
 
 //return topic_id or 0 in case of issue
 m_msrmnt_tpc_id_t
