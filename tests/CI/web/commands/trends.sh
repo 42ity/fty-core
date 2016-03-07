@@ -57,7 +57,7 @@ measurement() {
 }
 
 db_initiate(){
-    LOADDB_FILE_REMOTE_SLEEP=3 loaddb_current || return $?
+    init_script_current || return $?
     echo "use ${DATABASE};" > "${DB_TMPSQL_FILE_CURRENT}"
     sqlline="INSERT INTO t_bios_discovered_device (id_discovered_device,name,id_device_type) VALUES (NULL, 'DC-LAB', 1);"
     echo "$sqlline" >> "${DB_TMPSQL_FILE_CURRENT}"

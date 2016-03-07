@@ -67,7 +67,7 @@ while [ $# -gt 0 ] ; do
             BIOS_USER="$2"
             shift 2
             ;;
-        --passwd|-p|--password|--bios-password)
+        --passwd|--bios-passwd|-p|--password|--bios-password)
             BIOS_PASSWD="$2"
             shift 2
             ;;
@@ -85,9 +85,6 @@ while [ $# -gt 0 ] ; do
             ;;
     esac
 done
-
-set -u
-#set -e
 
 test_web_port() {
     netstat -tan | grep -w "${SUT_WEB_PORT}" | egrep 'LISTEN' >/dev/null
@@ -134,15 +131,19 @@ test_web() {
 
 test_web_default() {
     init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_default() $*" || true
-    init_script_default && \
+    test_it "init_script_default"
+    init_script_default
+    print_result $? && \
     test_web "$@" || return $?
     return 0
 }
 
 test_web_topo_p() {
     init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_p() $*" || true
+    test_it "init_script_topo_pow"
     echo "----------- reset db: topology : power -----------"
-    init_script_topo_pow && \
+    init_script_topo_pow
+    print_result $? && \
     test_web "$@" || return $?
     return 0
 }
@@ -150,27 +151,37 @@ test_web_topo_p() {
 test_web_topo_l() {
 # NOTE: This piece of legacy code is still here, but no usecase below calls it
     init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_l() $*" || true
+    test_it "init_script_topo_loc"
     echo "---------- reset db: topology : location ---------"
-    init_script_topo_loc && \
+    init_script_topo_loc
+    print_result $? && \
     test_web "$@" || return $?
     return 0
 }
 
 test_web_asset_create() {
     init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_asset_create() $*" || true
+    test_it "init_script_sampledata"
     echo "---------- reset db: asset : create ---------"
-    init_script_sampledata && \
+    init_script_sampledata
+    print_result $? && \
     test_web "$@" || return $?
     return 0
 }
 
 test_web_averages() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_averages() $*"
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_averages() $*" || true
+
+    test_it "generate_averages"
     echo "----------- Re-generating averages sql files -----------"
     CI_TEST_AVERAGES_DATA="`$DB_LOADDIR/generate_averages.sh "$DB_LOADDIR"`"
+    print_result $?
     export CI_TEST_AVERAGES_DATA
+
+    test_it "init_script_averages"
     echo "----------- reset db: averages -----------"
-    init_script_averages && \
+    init_script_averages
+    print_result $? && \
     test_web "$@" || return $?
     return 0
 }
@@ -220,7 +231,7 @@ trap_cleanup(){
               echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY"
         fi
     else
-        logmsg_error "Overall test suite result: FAILED ($RESULT_OVERALL) seek details above"
+        logmsg_error "Overall test suite result: FAILED ($RESULT_OVERALL), seek details above"
         if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
             { logmsg_error "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}' test suite: FAILED ($RESULT_OVERALL)"; \
           echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY" 2>&1
@@ -262,6 +273,9 @@ trap_cleanup(){
 }
 
 # prepare environment
+  set -u
+  #set -e
+
   # Ensure that no processes remain dangling when test completes
   # The ERRCODE is defined by settraps() as the program exitcode
   # as it enters the trap
@@ -345,7 +359,8 @@ trap_cleanup(){
   sleep 5
   test_web_process || CODE=$? die "failed in test_web_process()"
 
-
+[ x"${SKIP_LICENSE_FORCEACCEPT-}" = xyes ] && \
+logmsg_warn "SKIP_LICENSE_FORCEACCEPT=$SKIP_LICENSE_FORCEACCEPT so not running '00_license-CI-forceaccept.sh.test' first" || \
 case "$*" in
     *license*) # We are specifically testing license stuff
         logmsg_warn "The tests requested on command line explicitly include 'license', so $0 will not interfere by running '00_license-CI-forceaccept.sh.test' first"
