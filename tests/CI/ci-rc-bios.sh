@@ -145,6 +145,7 @@ if isRemoteSUT ; then
         case "$SERVICES" in
             *agent-autoconfig*)
                 sut_run '/bin/systemctl stop bios-agent-autoconfig & sleep 1 ; \
+                ( pidof agent-autoconfig nut-scanner >/dev/null 2>&1 && echo "TERMING: agent-autoconfig nut-scanner" && kill -TERM `pidof agent-autoconfig nut-scanner` 2>/dev/null && sleep 3 ) || true
                 ( pidof agent-autoconfig nut-scanner >/dev/null 2>&1 && echo "KILLING: agent-autoconfig nut-scanner" && kill -KILL `pidof agent-autoconfig nut-scanner` 2>/dev/null && sleep 1 ) || true
                 wait'
                 ;;
@@ -361,6 +362,7 @@ do_stop() {
             s="agent-autoconfig"
             /bin/systemctl stop bios-$s &
             sleep 1
+            ( pidof agent-autoconfig nut-scanner >/dev/null 2>&1 && echo "TERMING: agent-autoconfig nut-scanner" && kill -TERM `pidof agent-autoconfig nut-scanner` 2>/dev/null && sleep 3 ) || true
             ( pidof agent-autoconfig nut-scanner >/dev/null 2>&1 && echo "KILLING: agent-autoconfig nut-scanner" && kill -KILL `pidof agent-autoconfig nut-scanner` 2>/dev/null && sleep 1 ) || true
             wait
             ;;
