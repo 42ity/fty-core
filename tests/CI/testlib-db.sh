@@ -444,7 +444,7 @@ reloaddb_init_script_WRAPPER() {
     if reloaddb_stops_BIOS && \
         [ -x "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" ] \
     ; then
-        echo "CI-TESTLIB_DB - reset db: stop BIOS ---------------" && \
+        echo "CI-TESTLIB_DB - reset db: stop BIOS ---------------"
         "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" --stop
     fi
 
@@ -456,14 +456,16 @@ reloaddb_init_script_WRAPPER() {
     if reloaddb_stops_BIOS && \
         [ -x "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" ] \
     ; then
-        echo "CI-TESTLIB_DB - reset db: start BIOS ---------------" && \
-        { "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" --start-quick || return $? ; }
+        echo "CI-TESTLIB_DB - reset db: start BIOS ---------------"
+        "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" --start-quick || return $?
     fi
 
     # Some scripts only care about database and do not have weblib.sh included
     if type -t accept_license | grep -q 'shell function' ; then
         accept_license
         return $?
+    else
+        echo "CI-TESTLIB_DB - reset db: accept_license() not applicable to this script"
     fi
     return 0
 }
