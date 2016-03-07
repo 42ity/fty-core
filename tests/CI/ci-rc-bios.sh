@@ -128,14 +128,31 @@ if isRemoteSUT ; then
     case "$OPERATION" in
     start|restart|startQ)
         [ "$OPERATION" = startQ ] && OPERATION=start
-        sut_run "/bin/systemctl $OPERATION malamute $SERVICES bios.target" && \
+        sut_run "/bin/systemctl $OPERATION malamute bios.target $SERVICES" && \
             statusSVC started
         exit $?
         ;;
     stop)
-        sut_run "/bin/systemctl $OPERATION bios.target $SERVICES malamute" && \
-            statusSVC stopped
-        exit $?
+
+        # BIOS-1807: so far "bios-agent-autoconfig" service or its child process
+        # "nut-scanner" tends to hang when stopping... so kill them ruthlessly!
+        case "$SERVICES" in
+            *agent-autoconfig*)
+                sut_run '/bin/systemctl stop bios-agent-autoconfig & sleep 1 ; \
+                ( pidof agent-autoconfig nut-scanner >/dev/null 2>&1 && echo "KILLING: agent-autoconfig nut-scanner" && kill -KILL `pidof agent-autoconfig nut-scanner` 2>/dev/null && sleep 1 ) || true
+                wait'
+                ;;
+            *) ;; # Offender not running as a service, and was killed above if a daemon
+        esac
+
+        for i in $(seq 1 5) ; do
+            sut_run "/bin/systemctl $OPERATION bios.target $SERVICES malamute" && \
+                statusSVC stopped
+            RES=$?
+            [ "$RES" = 0 ] && exit $RES
+            echo "Retrying to stop BIOS services (did #$i attepmts so far)..." >&2
+        done
+        exit $RES
         ;;
     status)  # Good if all services are started
         statusSVC started
@@ -191,7 +208,7 @@ CURID="`id -u`" || CURID=""
 stop_malamute(){
     # NOTE: This likely needs execution via sudo if user is not root
     $RUNAS systemctl stop malamute || true
-    sleep 2
+    sleep 1
     pidof malamute >/dev/null 2>&1 && return 1
     echo "INFO: stop(): malamute is not running (OK)"
     return 0
@@ -247,7 +264,7 @@ mlm_server
             $RUNAS systemctl start malamute
             RESULT=$?
         fi
-        sleep 2
+        sleep 1
         pidof malamute || RESULT=$?
         # copy, start or pidof could fail by this point;
         # otherwise we have RESULT==0 from diff-clause or cp-execution
@@ -270,8 +287,22 @@ start_daemon(){
 
     if [ -x "${prefix}/${1}" ] ; then
         /bin/rm -rf ${BUILDSUBDIR}/${1}.log
-        nohup "${prefix}/${1}" > ${BUILDSUBDIR}/${1}.log 2>&1 &
-        sleep 5
+        case "${1}" in
+            *agent-nut)
+                # TODO: Re-read the service ExecStart for a particular arglist?
+                if [ -s "$CHECKOUTDIR/src/agents/nut/mapping.conf" ]; then
+                    nohup "${prefix}/${1}" "$CHECKOUTDIR/src/agents/nut/mapping.conf" > ${BUILDSUBDIR}/${1}.log 2>&1 &
+                elif [ -s "/usr/share/bios/agent-nut/mapping.conf" ]; then
+                    nohup "${prefix}/${1}" "/usr/share/bios/agent-nut/mapping.conf" > ${BUILDSUBDIR}/${1}.log 2>&1 &
+                else
+                    logmsg_warn "Starting 'agent-nut' with no arg would fail or even segfault"
+                    nohup "${prefix}/${1}" > ${BUILDSUBDIR}/${1}.log 2>&1 &
+                fi
+                ;;
+            *)  nohup "${prefix}/${1}" > ${BUILDSUBDIR}/${1}.log 2>&1 & ;;
+        esac
+
+        sleep 1
         echo -n "${prefix}/$1 "
         pidof ${1} lt-${1}
         RESULT=$?
@@ -285,31 +316,45 @@ start_daemon(){
     fi
 }
 
-stop() {
+do_stop() {
     for d in $DAEMONS ; do
        ( pidof $d lt-$d >/dev/null 2>&1 && killall $d lt-$d 2>/dev/null ) || true
     done
     sleep 1
     for d in $DAEMONS ; do
-       ( pidof $d lt-$d >/dev/null 2>&1 && pkill $d lt-$d 2>/dev/null ) || true
+       ( pidof $d lt-$d >/dev/null 2>&1 && pkill $d lt-$d 2>/dev/null && sleep 1 & ) || true
     done
-    sleep 1
+    wait
     for d in $DAEMONS ; do
-       ( pidof $d lt-$d >/dev/null 2>&1 && kill `pidof $d lt-$d` 2>/dev/null ) || true
+       ( pidof $d lt-$d >/dev/null 2>&1 && kill `pidof $d lt-$d` 2>/dev/null && sleep 1 & ) || true
     done
-    sleep 1
+    wait
     for d in $DAEMONS ; do
-       ( pidof $d lt-$d >/dev/null 2>&1 && killall -KILL $d lt-$d 2>/dev/null ) || true
+       ( pidof $d lt-$d >/dev/null 2>&1 && killall -KILL $d lt-$d 2>/dev/null && sleep 1 & ) || true
     done
-    sleep 1
+    wait
     for d in $DAEMONS ; do
-       ( pidof $d lt-$d >/dev/null 2>&1 && pkill -KILL $d lt-$d 2>/dev/null ) || true
+       ( pidof $d lt-$d >/dev/null 2>&1 && pkill -KILL $d lt-$d 2>/dev/null && sleep 1 & ) || true
     done
-    sleep 1
+    wait
     for d in $DAEMONS ; do
-       ( pidof $d lt-$d >/dev/null 2>&1 && kill -KILL `pidof $d lt-$d` 2>/dev/null ) || true
+       ( pidof $d lt-$d >/dev/null 2>&1 && kill -KILL `pidof $d lt-$d` 2>/dev/null && sleep 1 & ) || true
     done
-    sleep 1
+    wait
+
+    # BIOS-1807: so far "bios-agent-autoconfig" service or its child process
+    # "nut-scanner" tends to hang when stopping... so kill them ruthlessly!
+    case "$SERVICES" in
+        *agent-autoconfig*)
+            s="agent-autoconfig"
+            /bin/systemctl stop bios-$s &
+            sleep 1
+            ( pidof agent-autoconfig nut-scanner >/dev/null 2>&1 && echo "KILLING: agent-autoconfig nut-scanner" && kill -KILL `pidof agent-autoconfig nut-scanner` 2>/dev/null && sleep 1 ) || true
+            wait
+            ;;
+        *) ;; # Offender not running as a service, and was killed above if a daemon
+    esac
+
     for s in $SERVICES ; do
         /bin/systemctl stop $s || true
     done
@@ -326,6 +371,16 @@ stop() {
     [ "$RESULT" = 0 ] && \
         echo "INFO: stop() OK: none of the DAEMONS (`echo $DAEMONS | tr '\n' ' '`) and SERVICES ($SERVICES) are running"
     return $RESULT
+}
+
+stop() {
+    for i in $(seq 1 5) ; do
+        do_stop
+        RES=$?
+        [ "$RES" = 0 ] && return $RES
+        echo "Retrying to stop BIOS services (did #$i attepmts so far)..." >&2
+    done
+    return $RES
 }
 
 do_status() {
