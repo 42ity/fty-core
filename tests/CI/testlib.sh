@@ -123,10 +123,10 @@ export TESTLIB_PROFILE_TESTDURATION TESTLIB_PROFILE_TESTDURATION_TOP
 # Do not export these local variables...
 [ -z "${TESTLIB_TIMESTAMP_TESTSTART-}" ] && TESTLIB_TIMESTAMP_TESTSTART=0
 [ -z "${TESTLIB_TIMESTAMP_TESTFINISH-}" ] && TESTLIB_TIMESTAMP_TESTFINISH=0
-[ -z "${TESTLIB_TIME_INTESTS-}" ] && TESTLIB_TIME_INTESTS=0
-[ -z "${TESTLIB_TIME_BEFORETESTS-}" ] && TESTLIB_TIME_BEFORETESTS=0
-[ -z "${TESTLIB_TIME_AFTERTESTS-}" ] && TESTLIB_TIME_AFTERTESTS=0
-[ -z "${TESTLIB_TIME_BETWEENTESTS-}" ] && TESTLIB_TIME_BETWEENTESTS=0
+[ -z "${TESTLIB_TIME_INTESTS-}" ] && TESTLIB_TIME_INTESTS=-1
+[ -z "${TESTLIB_TIME_BEFORETESTS-}" ] && TESTLIB_TIME_BEFORETESTS=-1
+[ -z "${TESTLIB_TIME_AFTERTESTS-}" ] && TESTLIB_TIME_AFTERTESTS=-1
+[ -z "${TESTLIB_TIME_BETWEENTESTS-}" ] && TESTLIB_TIME_BETWEENTESTS=-1
 
 # We do not want to be spammed by profiling reports if overhead is negligible
 # Note these are printed with logmsg_debug() anyway
@@ -193,7 +193,7 @@ print_result() {
         TESTLIB_TESTDURATION_TEXT=""
 
     if [ "$TESTLIB_TESTDURATION" -gt 0 ] 2>/dev/null ; then
-        [ "$TESTLIB_TIME_INTESTS" -eq 0 ] && TESTLIB_TIME_INTESTS="$TESTLIB_TESTDURATION" || \
+        [ "$TESTLIB_TIME_INTESTS" -le 0 ] && TESTLIB_TIME_INTESTS="$TESTLIB_TESTDURATION" || \
             TESTLIB_TIME_INTESTS="`expr $TESTLIB_TIME_INTESTS + $TESTLIB_TESTDURATION`"
     fi
 
@@ -301,6 +301,9 @@ print_result() {
 }
 
 account_time_between() {
+    # This accounts the time spent between last TESTLIB_TIMESTAMP_TESTFINISH
+    # (seeded to negative value of "NOW" at the time this library is included)
+    # and the "NOW" at the moment of this accounting function execution.
     _ACCT_FLAG="${1-}"     # May be "after" when used from exit-handler
     if [ "$TESTLIB_PROFILE_TESTDURATION" = yes ] && [ "$TESTLIB_TIMESTAMP_TESTFINISH" -ne 0 ]; then
         _TESTLIB_TIMESTAMP_PRESTART="`date -u +%s 2>/dev/null`" \
@@ -309,32 +312,32 @@ account_time_between() {
         if [ "$TESTLIB_TIMESTAMP_TESTFINISH" -lt 0 ]; then
             [ x"${_ACCT_FLAG}" != xafter ] && _ACCT_FLAG="before"
             TESTLIB_TIMESTAMP_TESTFINISH="`expr $TESTLIB_TIMESTAMP_TESTFINISH \* -1`"
-            logmsg_debug "This is the first test in the set after inclusion of testlib.sh; usable below is the set-up overhead"
+            # logmsg_debug "This is the first test in the set after inclusion of testlib.sh; usable below is the set-up overhead"
         fi
 
         _TESTLIB_SPENT_BETWEEN="-1"
-        if [ "$_TESTLIB_TIMESTAMP_PRESTART" -gt 0 ] 2>/dev/null \
+        if [ "${_TESTLIB_TIMESTAMP_PRESTART}" -gt 0 ] 2>/dev/null \
         ; then
             if [ x"$TESTLIB_TIMESTAMP_TESTFINISH" = x"${_TESTLIB_TIMESTAMP_PRESTART}" ]; then
                 _TESTLIB_SPENT_BETWEEN=0
             else
                 _TESTLIB_SPENT_BETWEEN="`expr $TESTLIB_TIMESTAMP_TESTFINISH - ${_TESTLIB_TIMESTAMP_PRESTART}`" && \
-                [ "$_TESTLIB_SPENT_BETWEEN" -ge 0 ] \
+                [ "${_TESTLIB_SPENT_BETWEEN}" -ge 0 ] \
                 || _TESTLIB_SPENT_BETWEEN="-1"
             fi
         fi
 
-        case "$_ACCT_FLAG" in
-            before) [ "${_TESTLIB_SPENT_BETWEEN}" -ge "$TESTLIB_SPENT_BETWEENTESTS_REPORT" ] && \
+        case "${_ACCT_FLAG}" in
+            before) #[ "${_TESTLIB_SPENT_BETWEEN}" -ge "$TESTLIB_SPENT_BETWEENTESTS_REPORT" ] && \
                         logmsg_debug "${_TESTLIB_SPENT_BETWEEN} seconds were spent between inclusion of testlib.sh and first test"
                     TESTLIB_TIME_BEFORETESTS="${_TESTLIB_SPENT_BETWEEN}" ;;
-            after)  [ "${_TESTLIB_SPENT_BETWEEN}" -ge "$TESTLIB_SPENT_BETWEENTESTS_REPORT" ] && \
+            after)  #[ "${_TESTLIB_SPENT_BETWEEN}" -ge "$TESTLIB_SPENT_BETWEENTESTS_REPORT" ] && \
                         logmsg_debug "${_TESTLIB_SPENT_BETWEEN} seconds were spent between last test and this exit-handler"
                     TESTLIB_TIME_AFTERTESTS="${_TESTLIB_SPENT_BETWEEN}" ;;
             *)      [ "${_TESTLIB_SPENT_BETWEEN}" -ge "$TESTLIB_SPENT_BETWEENTESTS_REPORT" ] && \
                         logmsg_debug "${_TESTLIB_SPENT_BETWEEN} seconds were spent between now and last test"
                     if [ "${_TESTLIB_SPENT_BETWEEN}" -gt 0 ] 2>/dev/null ; then
-                        [ "$TESTLIB_TIME_BETWEENTESTS" -eq 0 ] && TESTLIB_TIME_BETWEENTESTS="${_TESTLIB_SPENT_BETWEEN}" || \
+                        [ "$TESTLIB_TIME_BETWEENTESTS" -le 0 ] && TESTLIB_TIME_BETWEENTESTS="${_TESTLIB_SPENT_BETWEEN}" || \
                             TESTLIB_TIME_BETWEENTESTS="`expr $TESTLIB_TIME_BETWEENTESTS + ${_TESTLIB_SPENT_BETWEEN}`"
                     fi
                     ;;
@@ -539,21 +542,21 @@ echo_summarizeTestlibResults() {
 
     account_time_between "after"
     if [ "$TESTLIB_DURATION_TESTSUITE" -ge 0 ] 2>/dev/null ; then
-        logmsg_info "This test suite took $TESTLIB_DURATION_TESTSUITE seconds to complete (counting from import of testlib.sh)"
+        logmsg_info "This test suite took $TESTLIB_DURATION_TESTSUITE full seconds to complete (counting from import of testlib.sh)"
 
-        [ "$TESTLIB_TIME_BEFORETESTS" -gt 0 ] 2>/dev/null && \
-            echo " ** $TESTLIB_TIME_BEFORETESTS seconds are known to be spent before the first test set"
+        [ "$TESTLIB_TIME_BEFORETESTS" -ge 0 ] 2>/dev/null && \
+            echo " ** $TESTLIB_TIME_BEFORETESTS full seconds are known to be spent before the first test set"
 
-        [ "$TESTLIB_TIME_INTESTS" -gt 0 ] 2>/dev/null && \
-            echo " ** $TESTLIB_TIME_INTESTS seconds are known to be spent inside the test sets"
+        [ "$TESTLIB_TIME_INTESTS" -ge 0 ] 2>/dev/null && \
+            echo " ** $TESTLIB_TIME_INTESTS full seconds are known to be spent inside the test sets"
 
-        [ "$TESTLIB_TIME_BETWEENTESTS" -gt 0 ] 2>/dev/null && \
-            echo " ** $TESTLIB_TIME_BETWEENTESTS seconds are known to be spent between test sets"
-
-        [ "$TESTLIB_TIME_AFTERTESTS" -gt 0 ] 2>/dev/null && \
-            echo " ** $TESTLIB_TIME_AFTERTESTS seconds are known to be spent after the last test set"
+        [ "$TESTLIB_TIME_BETWEENTESTS" -ge 0 ] 2>/dev/null && \
+            echo " ** $TESTLIB_TIME_BETWEENTESTS full seconds are known to be spent between test sets"
 
         echo " ** NOTE: $TESTLIB_COUNT_TOTAL tests might add up to almost as many incomplete seconds in-between accounted as zeroes"
+
+        [ "$TESTLIB_TIME_AFTERTESTS" -ge 0 ] 2>/dev/null && \
+            echo " ** $TESTLIB_TIME_AFTERTESTS full seconds are known to be spent after the last test set up till this moment"
     fi
 
     echo
