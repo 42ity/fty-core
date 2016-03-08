@@ -143,6 +143,65 @@ killdb() {
     return $KILLDB_RES
 }
 
+wipedb() (
+    # This routine deletes all data except "dictionaries" via SQL
+    # Intimate code snatched from continuous-integration/rest-py/biosrestapi/biosdatabase.py
+    WIPEDB_RES=255
+    if [ -n "${DATABASE-}" ] ; then
+        WIPEDB_RES=0
+        echo "CI-TESTLIB_DB - reset db: wipe database contents ---"
+        for TABLE in \
+                "t_bios_monitor_asset_relation" \
+                "t_bios_asset_ext_attributes" \
+                "t_bios_asset_link" \
+                "t_bios_asset_group_relation" \
+        ; do do_select "DELETE FROM $TABLE ; ALTER TABLE $TABLE AUTO_INCREMENT=0 ;" || WIPEDB_RES=$? ; done
+
+        # Loop over nested assets until we've wiped them all
+        ITER=1
+        COUNT=-1
+        PREVCOUNT=-2
+        while [ "$COUNT" != "$PREVCOUNT" ] && [ "$COUNT" -ge -1 ] ; do
+            PREVCOUNT="$COUNT"
+            logmsg_debug "Deleting assets: round #$ITER"
+            COUNT="`do_select 'select count(*) as cnt from t_bios_asset_element'`" || { WIPEDB_RES=$?; COUNT=-9; }
+            [ "$COUNT" = 0 ] && break
+            ITER="`expr $ITER + 1`"
+            # Note: selecting and deleting must be done as separate SQL queries
+            IDS=""
+            IDLIST="`do_select 'SELECT id_asset_element FROM t_bios_asset_element WHERE id_asset_element NOT IN ( SELECT id_parent FROM t_bios_asset_element WHERE id_parent IS NOT NULL)'`" || { WIPEDB_RES=$?; IDLIST=""; COUNT=-9; }
+            [ -n "$IDLIST" ] && for i in $IDLIST ; do
+                [ -z "$IDS" ] && IDS="$i" || IDS="$IDS,$i"
+            done
+            [ -n "$IDS" ] && \
+                do_select 'DELETE FROM t_bios_asset_element WHERE id_asset_element IN ( '"$IDS"' )' || WIPEDB_RES=$?
+        done
+        case "$COUNT" in
+            0) logmsg_debug "Deleted all assets (0 left) after $ITER round(s)" ;;
+            -*) logmsg_error "Something went wrong, could not delete all assets (code $COUNT) after $ITER round(s)" ;;
+            *) logmsg_warn "Something went wrong, could not delete all assets ($COUNT were left) after $ITER round(s)" ;;
+        esac
+
+        for TABLE in \
+                "t_bios_asset_element" \
+                "t_bios_agent_info" \
+                "t_bios_alert_device" \
+                "t_bios_alert" \
+                "t_bios_discovered_device" \
+                "t_bios_measurement" \
+                "t_bios_measurement_topic" \
+        ; do do_select "DELETE FROM $TABLE ; ALTER TABLE $TABLE AUTO_INCREMENT=0 ;" || WIPEDB_RES=$? ; done
+
+        [ "$WIPEDB_RES" != 0 ] && logmsg_error "Failed to WIPE DATABASE"
+
+        do_flushdb
+#       do_flushfs
+    else
+        logmsg_warn "The DATABASE variable is not set, nothing known to WIPE"
+    fi
+    return $WIPEDB_RES
+)
+
 tarballdb_export() {
     # Saves a tarball of the database files (/var/lib/mysql) under $DB_DUMP_DIR
     # as "$1.tgz" file (fast gzip-1). The DB server should be stopped and FS
@@ -458,6 +517,41 @@ reloaddb_init_script_WRAPPER() {
     ; then
         echo "CI-TESTLIB_DB - reset db: start BIOS ---------------"
         "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" --start-quick || return $?
+    fi
+
+    # Some scripts only care about database and do not have weblib.sh included
+    if type -t accept_license | grep -q 'function' ; then
+        accept_license
+        return $?
+    else
+        echo "CI-TESTLIB_DB - reset db: accept_license() not applicable to this script"
+    fi
+    return 0
+}
+
+init_script_wipedb(){
+    # This requires the database schema initialized and mysql running
+    if reloaddb_stops_BIOS ; then
+        echo "CI-TESTLIB_DB - reset db: stop BIOS-DB-INIT -------"
+        sut_run "systemctl stop bios-db-init" || \
+        sut_run "systemctl stop bios-db-init" || \
+        logmsg_error "Can not stop bios-db-init (and depending services)"
+    fi
+
+    wipedb || { logmsg_error "Could not wipe DB"; return 1; }
+
+    if reloaddb_stops_BIOS ; then
+        echo "CI-TESTLIB_DB - reset db: start BIOS-DB-INIT -------"
+        if isRemoteSUT ; then
+            sut_run "systemctl start bios-db-init" && \
+            sut_run "systemctl start tntnet@bios" || \
+            { logmsg_error "Can not start bios-db-init (and depending services)"; return 1; }
+        fi
+
+        if [ -x "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" ] ; then
+            echo "CI-TESTLIB_DB - reset db: start BIOS ---------------"
+            "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" --start-quick || return $?
+        fi
     fi
 
     # Some scripts only care about database and do not have weblib.sh included
