@@ -25,6 +25,9 @@ echo "********* asset_import.sh ************************** START ***************
 echo "###################################################################################################"
 echo
 
+### So far wiping does not work because autocounters are not reset to
+### static values - test should be changed to count its expectations
+### from LAST_INSERT_ID() value rather than "1" - saved in PTR files.
 #INIT_SCRIPT_ROUTINE=init_script_wipedb
 INIT_SCRIPT_ROUTINE=init_script_initial
 
