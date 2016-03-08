@@ -25,8 +25,9 @@ echo "********* asset_import_err.sh ********************** START ***************
 echo "###################################################################################################"
 echo
 
-#INIT_SCRIPT_ROUTINE=init_script_wipedb
-INIT_SCRIPT_ROUTINE=init_script_initial
+### Wiping is ok for asset_import_err
+INIT_SCRIPT_ROUTINE=init_script_wipedb
+#INIT_SCRIPT_ROUTINE=init_script_initial
 
 echo "***************************************************************************************************"
 echo "********* Prerequisites ***************************************************************************"
