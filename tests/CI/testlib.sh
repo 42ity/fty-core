@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2014-2015 Eaton
+# Copyright (C) 2014-2016 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -132,7 +132,7 @@ export TESTLIB_PROFILE_TESTDURATION TESTLIB_PROFILE_TESTDURATION_TOP
 # Note these are printed with logmsg_debug() anyway
 [ x"${TESTLIB_SPENT_BETWEENTESTS_REPORT-}" = x- ] && TESTLIB_SPENT_BETWEENTESTS_REPORT=""
 [ -z "${TESTLIB_SPENT_BETWEENTESTS_REPORT-}" ] && \
-    if [ -n "${CI_DEBUG-}" ] && [ -n "${CI_DEBUGLEVEL_DEBUG-}" ] && [ "$CI_DEBUG" -ge "$CI_DEBUGLEVEL_DEBUG" ]; then
+    if [ -n "${CI_DEBUG-}" ] && [ -n "${CI_DEBUGLEVEL_DEBUG-}" ] && [ "$CI_DEBUG" -gt "$CI_DEBUGLEVEL_DEBUG" ]; then
         TESTLIB_SPENT_BETWEENTESTS_REPORT=0
     else
         TESTLIB_SPENT_BETWEENTESTS_REPORT=3
