@@ -543,25 +543,28 @@ echo_summarizeTestlibResults() {
     account_time_between "after"
     if [ "$TESTLIB_DURATION_TESTSUITE" -ge 0 ] 2>/dev/null ; then
         logmsg_info "This test suite took $TESTLIB_DURATION_TESTSUITE full seconds to complete (counting from import of testlib.sh)"
-        TESTLIB_DURATION_ACCOUNTED=0
 
-        [ "$TESTLIB_TIME_BEFORETESTS" -ge 0 ] 2>/dev/null && \
-            echo " ** $TESTLIB_TIME_BEFORETESTS full seconds are known to be spent before the first test set" && \
-            TESTLIB_DURATION_ACCOUNTED="`expr $TESTLIB_DURATION_ACCOUNTED + $TESTLIB_TIME_BEFORETESTS`"
+        if [ "$TESTLIB_PROFILE_TESTDURATION" = yes ] ; then
+            TESTLIB_DURATION_ACCOUNTED=0
+            [ "$TESTLIB_TIME_BEFORETESTS" -ge 0 ] 2>/dev/null && \
+                echo " ** $TESTLIB_TIME_BEFORETESTS full seconds are known to be spent before the first test set" && \
+                TESTLIB_DURATION_ACCOUNTED="`expr $TESTLIB_DURATION_ACCOUNTED + $TESTLIB_TIME_BEFORETESTS`"
 
-        [ "$TESTLIB_TIME_INTESTS" -ge 0 ] 2>/dev/null && \
-            echo " ** $TESTLIB_TIME_INTESTS full seconds are known to be spent inside the test sets" && \
-            TESTLIB_DURATION_ACCOUNTED="`expr $TESTLIB_DURATION_ACCOUNTED + $TESTLIB_TIME_INTESTS`"
+            [ "$TESTLIB_TIME_INTESTS" -ge 0 ] 2>/dev/null && \
+                echo " ** $TESTLIB_TIME_INTESTS full seconds are known to be spent inside the test sets" && \
+                TESTLIB_DURATION_ACCOUNTED="`expr $TESTLIB_DURATION_ACCOUNTED + $TESTLIB_TIME_INTESTS`"
 
-        [ "$TESTLIB_TIME_BETWEENTESTS" -ge 0 ] 2>/dev/null && \
-            echo " ** $TESTLIB_TIME_BETWEENTESTS full seconds are known to be spent between test sets" && \
-            TESTLIB_DURATION_ACCOUNTED="`expr $TESTLIB_DURATION_ACCOUNTED + $TESTLIB_TIME_BETWEENTESTS`"
+            [ "$TESTLIB_TIME_BETWEENTESTS" -ge 0 ] 2>/dev/null && \
+                echo " ** $TESTLIB_TIME_BETWEENTESTS full seconds are known to be spent between test sets" && \
+                TESTLIB_DURATION_ACCOUNTED="`expr $TESTLIB_DURATION_ACCOUNTED + $TESTLIB_TIME_BETWEENTESTS`"
 
-        [ "$TESTLIB_TIME_AFTERTESTS" -ge 0 ] 2>/dev/null && \
-            echo " ** $TESTLIB_TIME_AFTERTESTS full seconds are known to be spent after the last test set up till this moment" && \
-            TESTLIB_DURATION_ACCOUNTED="`expr $TESTLIB_DURATION_ACCOUNTED + $TESTLIB_TIME_AFTERTESTS`"
+            [ "$TESTLIB_TIME_AFTERTESTS" -ge 0 ] 2>/dev/null && \
+                echo " ** $TESTLIB_TIME_AFTERTESTS full seconds are known to be spent after the last test set up till this moment" && \
+                TESTLIB_DURATION_ACCOUNTED="`expr $TESTLIB_DURATION_ACCOUNTED + $TESTLIB_TIME_AFTERTESTS`"
 
-        echo " * ACCT: $TESTLIB_DURATION_ACCOUNTED full seconds are accounted for"
+            echo " * ACCT: $TESTLIB_DURATION_ACCOUNTED full seconds are accounted for in detail"
+        fi
+
         echo " * NOTE: $TESTLIB_COUNT_TOTAL tests might add up to almost as many incomplete seconds in-between accounted as zeroes"
     fi
 
