@@ -552,6 +552,8 @@ echo_summarizeTestlibResults() {
 
         [ "$TESTLIB_TIME_AFTERTESTS" -gt 0 ] 2>/dev/null && \
             echo " ** $TESTLIB_TIME_AFTERTESTS seconds are known to be spent after the last test set"
+
+        echo " ** NOTE: $TESTLIB_COUNT_TOTAL tests might add up to almost as many incomplete seconds in-between accounted as zeroes"
     fi
 
     echo
