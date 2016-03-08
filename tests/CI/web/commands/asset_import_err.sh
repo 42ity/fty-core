@@ -77,6 +77,7 @@ echo "********* 1. No utf csv file *********************************************
 echo "***************************************************************************************************"
 #*#*#*#*#*#*# TODO : No utf csv file : Really should PASS not allowed format? SOLVED!
 test_it "No_utf_csv_file"
+# Here we do want init to ensure pristine database
 init_script_initial
 REZ=0
 test_tables "universal_asset_comma_no_utf.csv" 48 "ERROR"
@@ -87,7 +88,7 @@ echo "********* 2. Method is not allowed ***************************************
 echo "***************************************************************************************************"
 test_it "Method_is_not_allowed"
 curlfail_push_expect_405
-init_script_initial
+init_script_wipedb
 REZ=0
 ASSET="$CSV_LOADDIR_ASSIMP/universal_asset_semicolon_16LE.csv"
 # Params do not really matter as this should fail
@@ -101,7 +102,7 @@ echo "********* 3. Too big file ************************************************
 echo "***************************************************************************************************"
 test_it "Too_big_file"
 curlfail_push_expect_413
-init_script_initial
+init_script_wipedb
 REZ=0
 test_tables "very_long_asset_tab_16LE.csv" 48 "ERROR"
 curlfail_pop
@@ -115,7 +116,7 @@ echo "**************************************************************************
 test_it "File_assets_is_missing"
 DATASWITCH=1
 curlfail_push_expect_400
-init_script_initial
+init_script_wipedb
 REZ=0
 test_tables "missing_file.csv" 48 "ERROR"
 curlfail_pop
@@ -127,7 +128,7 @@ echo "********* 5. Missing mandatory name header *******************************
 echo "***************************************************************************************************"
 test_it "Missing_mandatory_name_header"
 curlfail_push_expect_400
-init_script_initial
+init_script_wipedb
 REZ=0
 test_tables "universal_asset_tab_8_no_name_header.csv" 48 "ERROR"
 test_tables "universal_asset_tab_8_no_type_header.csv" 48 "ERROR"
@@ -144,7 +145,7 @@ echo "**************************************************************************
 test_it "Bad_separator"
 #*#*#*#*#*#*# TODO : Bad separator : the code 48 received is not expected : 47??? SOLVED!! 48 - OK
 curlfail_push_expect_400
-init_script_initial
+init_script_wipedb
 REZ=0
 test_tables "universal_asset_comma_16LE_bad_separator.csv" 48 "ERROR"
 curlfail_pop
@@ -155,7 +156,7 @@ echo "********* 7. 16BE - BIG ENDIAN *******************************************
 echo "***************************************************************************************************"
 test_it "16BE_-_BIG_ENDIAN"
 curlfail_push_expect_400
-init_script_initial
+init_script_wipedb
 REZ=0
 test_tables "universal_asset_comma_16BE.csv" 48 "ERROR"
 test_tables "universal_asset_semicolon_16BE.csv" 48 "ERROR"
@@ -169,7 +170,7 @@ echo "**************************************************************************
 test_it "Not_so_long"
 #*#*#*#*#*#*# TODO : Not so long : 128kB is 131072 byte : the not_so_long_asset_tab_16LE.csv has size 130860: Is planned!!!
 curlfail_push_expect_413
-init_script_initial
+init_script_wipedb
 REZ=0
 test_tables "not_so_long_asset_tab_16LE.csv" 48 "ERROR"
 curlfail_pop
@@ -180,7 +181,7 @@ echo "********* 9. Too long keytag *********************************************
 echo "***************************************************************************************************"
 if [ x"$TEST_BIOS_1516" = xyes ] ; then
 test_it "Too_long_keytag"
-init_script_initial
+init_script_wipedb
 REZ=0
 test_tables "universal_asset_tab_8_too_long_keytag.csv" 48 "ERROR"
 # Expected output:
@@ -193,7 +194,7 @@ echo "********* asset_import_err.sh ********************************************
 echo "********* 10. Not proper sequence *****************************************************************"
 echo "***************************************************************************************************"
 test_it "Not_proper_sequence"
-init_script_initial
+init_script_wipedb
 REZ=0
 test_tables "universal_asset_tab_16LE_DC001A.csv" 47 "ERROR" "_not_proper_sequence"
 #csv_import "$CSV_FILE_NAME" "t_bios_asset_element" 0 "$FILENAME_PREFIX"
@@ -203,7 +204,7 @@ echo "********* asset_import_err.sh ********************************************
 echo "********* 11. Double records **********************************************************************"
 echo "***************************************************************************************************"
 test_it "Double_records"
-init_script_initial
+init_script_wipedb
 REZ=0
 test_tables "universal_asset_tab_16LE_DC001B.csv" 48 "ERROR"
 print_result $REZ
@@ -213,7 +214,7 @@ echo "********* 12. Comma semicolon mix ****************************************
 echo "***************************************************************************************************"
 #*#*#*#*#*# TODO : Comma semicolon mix : should be stopped and give some message?
 test_it "Comma_semicolon_mix"
-init_script_initial
+init_script_wipedb
 REZ=0
 test_tables "universal_asset_mix_comma_semicolon__8.csv" 48 "ERROR"
 print_result $REZ
@@ -224,7 +225,7 @@ echo "********* 13. Tab comma mix **********************************************
 echo "***************************************************************************************************"
 #*#*#*#*#*# TODO : Tab comma mix : should be stopped and give some message?
 test_it "Tab_comma_mix"
-init_script_initial
+init_script_wipedb
 REZ=0
 test_tables "universal_asset_mix_tab_comma_8.csv" 48 "ERROR"
 print_result $REZ
@@ -234,7 +235,7 @@ echo "********* 14. Wrong maximum number of racks ******************************
 echo "***************************************************************************************************"
 test_it "Wrong_maximum_number_of_racks"
 #*#*#*#*#*#*# TODO : Wrong_maximum_number_of_racks : allow 10q and from u10 makes 10
-init_script_initial
+init_script_wipedb
 REZ=0
 test_tables "universal_asset_semicolon_max_num_rack_wrong_8.csv" 48 "ERROR" "_max_num_rack"
 print_result $REZ
@@ -243,7 +244,7 @@ echo "********* asset_import_err.sh ********************************************
 echo "********* 15. Wrong u_size ************************************************************************"
 echo "***************************************************************************************************"
 test_it "Wrong_u_size"
-init_script_initial
+init_script_wipedb
 REZ=0
 test_tables "universal_asset_semicolon_u_size_wrong_8.csv" 48 "ERROR" "_u_size"
 print_result $REZ
@@ -253,7 +254,7 @@ echo "********* 16. Runtime ****************************************************
 echo "***************************************************************************************************"
 test_it "Runtime"
 #*#*#*#*#*#*# TODO : Runtime : for sub_type non-genset MUST be ommited, must be integer, both is not
-init_script_initial
+init_script_wipedb
 REZ=0
 test_tables "universal_asset_semicolon_runtime_8.csv" 48 "ERROR" "_runtime"
 print_result $REZ
@@ -263,7 +264,7 @@ echo "********* 17. Phase ******************************************************
 echo "***************************************************************************************************"
 test_it "Phase"
 #*#*#*#*#*#*# TODO : Phase : for sub_type non-feed MUST be ommited, must be 1,2 or 3, both is not
-init_script_initial
+init_script_wipedb
 REZ=0
 test_tables "universal_asset_semicolon_phase_8.csv" 48 "ERROR" "_phase"
 print_result $REZ
@@ -273,7 +274,7 @@ echo "********* 18. Email ******************************************************
 echo "***************************************************************************************************"
 test_it "Email"
 #*#*#*#*#*#*# TODO : Email : When the mail address (or any CSV content at the moment) contains " or ', Internal error is returned, the ` are allowed, addr itself is NOT checked for "email validity"
-init_script_initial
+init_script_wipedb
 REZ=0
 test_tables "universal_asset_semicolon_email_8.csv" 48 "ERROR" "_email"
 print_result $REZ
@@ -282,7 +283,7 @@ echo "********* asset_import_err.sh ********************************************
 echo "********* 19. Not consequently ********************************************************************"
 echo "***************************************************************************************************"
 test_it "Not_consequently"
-init_script_initial
+init_script_wipedb
 REZ=0
 test_tables "universal_asset_semicolon_not_consequently_8.csv" 48 "ERROR" "_phase"
 print_result $REZ
@@ -291,7 +292,7 @@ echo "********* asset_import_err.sh ********************************************
 echo "********* 20. Double name 1 ***********************************************************************"
 echo "***************************************************************************************************"
 test_it "Double_name_1"
-init_script_initial
+init_script_wipedb
 REZ=0
 curlfail_push_expect_500
 test_tables "universal_asset_comma_8_double_name_1.csv" 48 "ERROR" "_double_name_1"
@@ -302,7 +303,7 @@ echo "********* asset_import_err.sh ********************************************
 echo "********* 21. Double name 2 ***********************************************************************"
 echo "***************************************************************************************************"
 test_it "Double_name_2"
-init_script_initial
+init_script_wipedb
 REZ=0
 curlfail_push_expect_500
 test_tables "universal_asset_comma_8_double_name_2.csv" 48 "ERROR" "_double_name_2"
@@ -314,7 +315,7 @@ echo "********* 22. Duplicate name value ***************************************
 echo "***************************************************************************************************"
 test_it "Duplicate_name_value"
 #*#*#*#*#*#*# TODO : Duplicate_name_value : There should not be code 200 OK
-init_script_initial
+init_script_wipedb
 REZ=0
 ASSET="$CSV_LOADDIR_ASSIMP/universal_asset_comma_8.csv"
 # Not JSON, not to >&5 :
@@ -328,7 +329,7 @@ echo "********* 23. Duplicate ipx **********************************************
 echo "***************************************************************************************************"
 test_it "Duplicate_ipx"
 #*#*#*#*#*#*# TODO : Duplicate_ipx : is it allowed?
-init_script_initial
+init_script_wipedb
 REZ=0
 test_tables "universal_asset_comma_8_duplicate_ipx.csv" 48 "ERROR" "_duplicate_ipx"
 print_result $REZ
@@ -337,7 +338,7 @@ echo "********* asset_import_err.sh ********************************************
 echo "********* 24. w_pos *******************************************************************************"
 echo "***************************************************************************************************"
 test_it "w_pos"
-init_script_initial
+init_script_wipedb
 REZ=0
 test_tables "universal_asset_comma_8_wpos.csv" 48 "ERROR" "_w_pos"
 print_result $REZ
@@ -346,7 +347,7 @@ echo "********* asset_import_err.sh ********************************************
 echo "********* 25. Not unique serial No ****************************************************************"
 echo "***************************************************************************************************"
 test_it "Not_unique_serial_No"
-init_script_initial
+init_script_wipedb
 REZ=0
 test_tables "universal_asset_comma_8_serial_no.csv" 48 "ERROR" "_serial_no"
 print_result $REZ
@@ -355,7 +356,7 @@ echo "********* asset_import_err.sh ********************************************
 echo "********* 26. Subtype_&_status_values *************************************************************"
 echo "***************************************************************************************************"
 test_it "Subtype & status values"
-init_script_initial
+init_script_wipedb
 REZ=0
 test_tables "universal_asset_comma_8_subtype_status_values.csv" 48 "ERROR" "_subtype_status_values"
 print_result $REZ
@@ -365,7 +366,7 @@ echo "********* 27. Asset tag values *******************************************
 echo "***************************************************************************************************"
 test_it "Asset_tag_values"
 #*#*#*#*#*#*# TODO : error msg contais "to long", should "too long"
-init_script_initial
+init_script_wipedb
 REZ=0
 test_tables "universal_asset_comma_8_asset_tag.csv" 48 "ERROR" "_asset_tag"
 print_result $REZ
