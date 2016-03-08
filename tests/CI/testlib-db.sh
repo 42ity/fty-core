@@ -461,7 +461,7 @@ reloaddb_init_script_WRAPPER() {
     fi
 
     # Some scripts only care about database and do not have weblib.sh included
-    if type -t accept_license | grep -q 'shell function' ; then
+    if type -t accept_license | grep -q 'function' ; then
         accept_license
         return $?
     else
