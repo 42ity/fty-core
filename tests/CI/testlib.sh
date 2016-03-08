@@ -321,7 +321,7 @@ account_time_between() {
             if [ x"$TESTLIB_TIMESTAMP_TESTFINISH" = x"${_TESTLIB_TIMESTAMP_PRESTART}" ]; then
                 _TESTLIB_SPENT_BETWEEN=0
             else
-                _TESTLIB_SPENT_BETWEEN="`expr $TESTLIB_TIMESTAMP_TESTFINISH - ${_TESTLIB_TIMESTAMP_PRESTART}`" && \
+                _TESTLIB_SPENT_BETWEEN="`expr ${_TESTLIB_TIMESTAMP_PRESTART} - $TESTLIB_TIMESTAMP_TESTFINISH`" && \
                 [ "${_TESTLIB_SPENT_BETWEEN}" -ge 0 ] \
                 || _TESTLIB_SPENT_BETWEEN="-1"
             fi
