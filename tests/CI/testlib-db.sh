@@ -494,6 +494,17 @@ loaddb_current() {
     return $?
 }
 
+accept_license_WRAPPER() {
+    # Some scripts only care about database and do not have weblib.sh included
+    if type -t accept_license | grep -q 'function' ; then
+        accept_license
+        return $?
+    else
+        echo "CI-TESTLIB_DB - reset db: accept_license() not applicable to this script"
+    fi
+    return 0
+}
+
 reloaddb_init_script_WRAPPER() {
     # Prepare sandbox for the test: ensure the database is freshly made
     # and licenses to not interfere; the accept_license() routine is
@@ -519,14 +530,8 @@ reloaddb_init_script_WRAPPER() {
         "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" --start-quick || return $?
     fi
 
-    # Some scripts only care about database and do not have weblib.sh included
-    if type -t accept_license | grep -q 'function' ; then
-        accept_license
-        return $?
-    else
-        echo "CI-TESTLIB_DB - reset db: accept_license() not applicable to this script"
-    fi
-    return 0
+    accept_license_WRAPPER
+    return $?
 }
 
 init_script_wipedb(){
@@ -554,14 +559,8 @@ init_script_wipedb(){
         fi
     fi
 
-    # Some scripts only care about database and do not have weblib.sh included
-    if type -t accept_license | grep -q 'function' ; then
-        accept_license
-        return $?
-    else
-        echo "CI-TESTLIB_DB - reset db: accept_license() not applicable to this script"
-    fi
-    return 0
+    accept_license_WRAPPER
+    return $?
 }
 
 init_script_initial(){
