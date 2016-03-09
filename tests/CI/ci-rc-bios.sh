@@ -104,7 +104,10 @@ if isRemoteSUT ; then
                 sut_run "/bin/systemctl is-failed $s" >/dev/null 2>&1 && \
                     { [ "$GOODSTATE" = stoppedOrCrashed ] && \
                         { echo "and crashed [-WARN-]"; RESULT=0; } || \
-                        { echo "and crashed [-FAIL-]"; RESULT=3; } ; } || \
+                        { case "$s" in
+                            *kpi-uptime*) "and crashed [IGNORE]"; RESULT=0;; # BIOS-1910
+                            *) echo "and crashed [-FAIL-]"; RESULT=3;;
+                          esac; } ; } || \
                     { [ "$GOODSTATE" = stopped -o "$GOODSTATE" = stoppedOrCrashed ] && \
                         echo "[--OK--]" || { echo "[-FAIL-]"; RESULT=1; } ; }
                 ;;
@@ -430,7 +433,10 @@ do_status() {
             /bin/systemctl is-failed $s >/dev/null 2>&1 && \
                 { [ "$GOODSTATE" = stoppedOrCrashed ] && \
                     { echo "and crashed [-WARN-]"; RESULT=0; } || \
-                    { echo "and crashed [-FAIL-]"; RESULT=3; } ; } || \
+                    { case "$s" in
+                        *kpi-uptime*) "and crashed [IGNORE]"; RESULT=0;; # BIOS-1910
+                        *) echo "and crashed [-FAIL-]"; RESULT=3;;
+                      esac; } ; } || \
                 { [ "$GOODSTATE" = stopped -o "$GOODSTATE" = stoppedOrCrashed ] && \
                     echo "[--OK--]" || { echo "[-FAIL-]"; RESULT=1; } ; }
             ;;
