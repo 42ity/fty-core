@@ -535,6 +535,17 @@ reloaddb_init_script_WRAPPER() {
 }
 
 init_script_wipedb(){
+    # This routine just wipes the database (twice) with agents running
+    # This requires the database schema initialized and mysql running
+    logmsg_debug "`wipedb 2>&1`"
+    # Retry just in case some running agent barged in to add data
+    wipedb || { logmsg_error "Could not wipe DB"; return 1; }
+    accept_license_WRAPPER
+    return $?
+}
+
+init_script_wipedb_restart(){
+    # This routine stops BIOS services that rely on DB, wipes DB and restarts
     # This requires the database schema initialized and mysql running
     if reloaddb_stops_BIOS ; then
         echo "CI-TESTLIB_DB - reset db: stop BIOS-DB-INIT -------"
