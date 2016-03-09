@@ -758,6 +758,7 @@ settraps() {
     if [ "${SCRIPTLIB_TRAPWRAP_PRINT_STACKTRACE-}" = yes ] && [ -n "${BASH-}" ]; then
         _DO_PRINT_STACKTRACE=yes
     fi
+    ERRSIGNAL="'"$P$S"'"
     if [ "${ERRCODE-}" = 0 ]; then
         _DO_PRINT_STACKTRACE=no
         if [ "${SCRIPTLIB_TRAPWRAP_PRINT_EXIT0-}" = yes ] || \
