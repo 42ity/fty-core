@@ -421,6 +421,9 @@ s_ping_process (UNUSED_PARAM zloop_t *loop, UNUSED_PARAM int timer_id, void *arg
     assert (loop); //remove compiler warning
     struct sbp_info_t *i = (struct sbp_info_t*) args;
 
+    if (zsys_interrupted)   // end the loop when signal is delivered
+        return -1;
+
     i->proc_p->poll ();
     if (!i->proc_p->isRunning ())
         return -1;
