@@ -32,7 +32,8 @@ Options:
     --stop       stop BIOS processes
     --start      start BIOS processes (does restart if BIOS is running)
     --status     check whether all processes are running
-    --statusX    check whether all processes are stopped
+    --statusX    check whether all processes are stopped properly
+    --statusXX   check whether all processes are stopped or crashed at least
     --update-compiled   when using custom compiled code (rather than packaged)
                  use this option to ensure needed programs are up-to-date
                  (invoked automatically before a start)
@@ -63,6 +64,9 @@ while [ $# -gt 0 ] ; do
             ;;
         --statusX)
             OPERATION=statusX
+            ;;
+        --statusXX)
+            OPERATION=statusXX
             ;;
         --update-compiled)
             OPERATION=update_compiled
@@ -98,13 +102,18 @@ if isRemoteSUT ; then
                # Ordinary service requested to stop and not running as well
                 echo -n "stopped "
                 sut_run "/bin/systemctl is-failed $s" >/dev/null 2>&1 && \
-                    { echo "and crashed [-FAIL-]"; RESULT=1; } || \
-                    { [ "$GOODSTATE" = stopped ] && \
+                    { [ "$GOODSTATE" = stoppedOrCrashed ] && \
+                        { echo "and crashed [-WARN-]"; RESULT=0; } || \
+                        { case "$s" in
+                            *kpi-uptime*) "and crashed [IGNORE]"; RESULT=0;; # BIOS-1910
+                            *) echo "and crashed [-FAIL-]"; RESULT=3;;
+                          esac; } ; } || \
+                    { [ "$GOODSTATE" = stopped -o "$GOODSTATE" = stoppedOrCrashed ] && \
                         echo "[--OK--]" || { echo "[-FAIL-]"; RESULT=1; } ; }
                 ;;
             1|*) # Is not running or other error
                 echo -n "stopped "
-                [ "$GOODSTATE" = stopped ] && \
+                [ "$GOODSTATE" = stopped -o "$GOODSTATE" = stoppedOrCrashed ] && \
                     echo "[--OK--]" || { echo "[-FAIL-]"; RESULT=1; }
                 ;;
             esac
@@ -139,26 +148,33 @@ if isRemoteSUT ; then
         case "$SERVICES" in
             *agent-autoconfig*)
                 sut_run '/bin/systemctl stop bios-agent-autoconfig & sleep 1 ; \
+                ( pidof agent-autoconfig nut-scanner >/dev/null 2>&1 && echo "TERMING: agent-autoconfig nut-scanner" && kill -TERM `pidof agent-autoconfig nut-scanner` 2>/dev/null && sleep 3 ) || true
                 ( pidof agent-autoconfig nut-scanner >/dev/null 2>&1 && echo "KILLING: agent-autoconfig nut-scanner" && kill -KILL `pidof agent-autoconfig nut-scanner` 2>/dev/null && sleep 1 ) || true
                 wait'
                 ;;
             *) ;; # Offender not running as a service, and was killed above if a daemon
         esac
 
+        RES=255
         for i in $(seq 1 5) ; do
+            [ "$i" -gt 1 ] && echo "Retrying to stop BIOS services (did #`expr $i - 1` attepmts so far)..." >&2
             sut_run "/bin/systemctl $OPERATION bios.target $SERVICES malamute" && \
-                statusSVC stopped
+                statusSVC stoppedOrCrashed
             RES=$?
             [ "$RES" = 0 ] && exit $RES
-            echo "Retrying to stop BIOS services (did #$i attepmts so far)..." >&2
         done
+        echo "FAILED($RES) to stop BIOS services after $i attempts!" >&2
         exit $RES
         ;;
     status)  # Good if all services are started
         statusSVC started
         exit
         ;;
-    statusX)  # Good if all services are stopped
+    statusXX)  # Good if all services are stopped one way or another
+        statusSVC stoppedOrCrashed
+        exit
+        ;;
+    statusX)  # Good if all services are stopped properly
         statusSVC stopped
         exit
         ;;
@@ -349,6 +365,7 @@ do_stop() {
             s="agent-autoconfig"
             /bin/systemctl stop bios-$s &
             sleep 1
+            ( pidof agent-autoconfig nut-scanner >/dev/null 2>&1 && echo "TERMING: agent-autoconfig nut-scanner" && kill -TERM `pidof agent-autoconfig nut-scanner` 2>/dev/null && sleep 3 ) || true
             ( pidof agent-autoconfig nut-scanner >/dev/null 2>&1 && echo "KILLING: agent-autoconfig nut-scanner" && kill -KILL `pidof agent-autoconfig nut-scanner` 2>/dev/null && sleep 1 ) || true
             wait
             ;;
@@ -374,12 +391,14 @@ do_stop() {
 }
 
 stop() {
+    RES=255
     for i in $(seq 1 5) ; do
+        [ "$i" -gt 1 ] && echo "Retrying to stop BIOS services (did #`expr $i - 1` attepmts so far)..." >&2
         do_stop
         RES=$?
         [ "$RES" = 0 ] && return $RES
-        echo "Retrying to stop BIOS services (did #$i attepmts so far)..." >&2
     done
+    echo "FAILED($RES) to stop BIOS services after $i attempts!" >&2
     return $RES
 }
 
@@ -395,7 +414,7 @@ do_status() {
                 echo "[--OK--]" || { echo "[-FAIL-]"; RESULT=1; }
         else
             echo -n "stopped "
-            [ "$GOODSTATE" = stopped ] && \
+            [ "$GOODSTATE" = stopped -o "$GOODSTATE" = stoppedOrCrashed ] && \
                 echo "[--OK--]" || { echo "[-FAIL-]"; RESULT=1; }
         fi
     done
@@ -412,13 +431,18 @@ do_status() {
            # Ordinary service requested to stop and not running as well
             echo -n "stopped "
             /bin/systemctl is-failed $s >/dev/null 2>&1 && \
-                { echo "and crashed [-FAIL-]"; RESULT=1; } || \
-                { [ "$GOODSTATE" = stopped ] && \
+                { [ "$GOODSTATE" = stoppedOrCrashed ] && \
+                    { echo "and crashed [-WARN-]"; RESULT=0; } || \
+                    { case "$s" in
+                        *kpi-uptime*) "and crashed [IGNORE]"; RESULT=0;; # BIOS-1910
+                        *) echo "and crashed [-FAIL-]"; RESULT=3;;
+                      esac; } ; } || \
+                { [ "$GOODSTATE" = stopped -o "$GOODSTATE" = stoppedOrCrashed ] && \
                     echo "[--OK--]" || { echo "[-FAIL-]"; RESULT=1; } ; }
             ;;
         1) # Is not running or some other error
             echo -n "stopped "
-            [ "$GOODSTATE" = stopped ] && \
+            [ "$GOODSTATE" = stopped -o "$GOODSTATE" = stoppedOrCrashed ] && \
                 echo "[--OK--]" || { echo "[-FAIL-]"; RESULT=1; }
             ;;
         esac
@@ -507,7 +531,7 @@ case "$OPERATION" in
         RESULT=0
         stop || RESULT=$?
         stop_malamute || RESULT=$?
-        status stopped || \
+        status stoppedOrCrashed || \
             { echo "ERROR: Some daemons are still running" >&2 ; RESULT=1; }
         exit $RESULT
         ;;
@@ -517,6 +541,10 @@ case "$OPERATION" in
         ;;
     statusX)
         status stopped
+        exit
+        ;;
+    statusXX)
+        status stoppedOrCrashed
         exit
         ;;
     update_compiled)
