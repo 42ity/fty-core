@@ -155,7 +155,7 @@ fi
 test_web() {
     echo "==== Calling vte-test_web.sh ==============================="
     RES_TW=0
-    test_it "vte-test-restapi::test_web::$@"
+    test_it "vte-test-restapi::test_web::$*"
     /bin/bash "${CHECKOUTDIR}"/tests/CI/vte-test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" \
         -s "$SASL_SERVICE" -sh "$SUT_HOST" -su "$SUT_USER" -sp "$SUT_SSH_PORT" "$@" || \
         RES_TW=$?
