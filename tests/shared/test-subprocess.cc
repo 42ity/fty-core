@@ -391,3 +391,21 @@ TEST_CASE ("subprocess-test-timeout2", "[subprocess][output]")
     CHECK (e.empty());
     CHECK ((stop - start) >= 4000); // it's hard to tell how long the delay was, but it must be at least 4 secs
 }
+
+// test if s_ping_process really works
+TEST_CASE ("subprocess-test-timeout3", "[subprocess][output]")
+{
+    Argv args {"/bin/sleep", "2"};
+    auto start = zclock_mono ();
+    std::string o;
+    std::string e;
+    int r = output (args, o, e, 5);
+    auto stop = zclock_mono ();
+
+    CHECK (r == 0);   //killed by SIGTERM
+    CHECK (o.empty ());
+    CHECK (e.empty());
+
+    auto delta = stop - start;
+    CHECK ((delta >= 2000 && delta < 5000)); // it's hard to tell how long the delay was, but it must be between 2 and 5 secs
+}
