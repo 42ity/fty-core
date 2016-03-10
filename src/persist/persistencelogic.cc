@@ -60,7 +60,7 @@ void process_measurement(
         return;
 
     //log_debug("Processing measurement");
-    int64_t tme = 0;
+    uint64_t tme = 0;
     _scoped_char *device_name = NULL;
     _scoped_char *quantity    = NULL;   // TODO: THA: what does this parameter mean?
     _scoped_char *units       = NULL;
@@ -86,8 +86,6 @@ void process_measurement(
     }
 
     tme = bios_proto_time (m);
-    if(tme < 1)
-        tme = ::time(NULL);
 
     quantity = strdup (bios_proto_type (m));
     device_name = strdup (bios_proto_element_src (m));
