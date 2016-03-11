@@ -30,9 +30,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "dbhelpers.h"
 #include "topic_cache.h"
+#include "multi_row.h"
 
 namespace persist {
-
 /**
  * \brief Inserts measurements data into t_bios_measurement_topic, t_bios_measurement
  *
@@ -58,6 +58,19 @@ db_reply_t
         int64_t            time,
         const char        *units,
         const char        *device_name,
+        TopicCache        &c,
+        MultiRowCache     &m);
+
+// backward compatible function for a case where no cache is required
+db_reply_t
+    insert_into_measurement(
+        tntdb::Connection &conn,
+        const char        *topic,
+        m_msrmnt_value_t   value,
+        m_msrmnt_scale_t   scale,
+        int64_t            time,
+        const char        *units,
+        const char        *device_name,
         TopicCache        &c);
 
 // backward compatible function for a case where no cache is required
@@ -70,6 +83,11 @@ db_reply_t
         int64_t            time,
         const char        *units,
         const char        *device_name);
+
+db_reply_t
+    flush_measurement(
+        tntdb::Connection &conn,
+        MultiRowCache& m );
 
 //return topic_id or 0 in case of issue
 m_msrmnt_tpc_id_t

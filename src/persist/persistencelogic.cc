@@ -51,12 +51,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 namespace persist {
 
 // used by src/agents/dbstore
-void process_measurement(zmsg_t **msg_p, TopicCache& c) {
+void process_measurement(
+        zmsg_t **msg_p, 
+        TopicCache& c, 
+        MultiRowCache& multi_row ) {
 
     if (!msg_p || !*msg_p)
         return;
 
-    log_debug("Processing measurement");
+    //log_debug("Processing measurement");
     uint64_t tme = 0;
     _scoped_char *device_name = NULL;
     _scoped_char *quantity    = NULL;   // TODO: THA: what does this parameter mean?
@@ -105,7 +108,8 @@ void process_measurement(zmsg_t **msg_p, TopicCache& c) {
 
     units = strdup (bios_proto_unit (m));
     persist::insert_into_measurement(
-            conn, db_topic.c_str(), value, scale, _time, units, device_name, c);
+            conn, db_topic.c_str(), value, scale, _time,
+            units, device_name, c, multi_row);
 free_mem_toto:
     //free resources
     errno = 0;
@@ -116,6 +120,18 @@ free_mem_toto:
     FREE0 (units)
 }
 
+void flush_measurement(MultiRowCache& multi_row ) {
+    tntdb::Connection conn;
+    try {
+        conn = tntdb::connectCached(url);
+        conn.ping();
+    } catch (const std::exception &e) {
+        log_error("Can't connect to the database");
+        return;
+    }
+    persist::flush_measurement(conn,multi_row);
+    
+}
 
 /**
  * \brief Processes message of type ymsg_t delivered as MAILBOX DELIVER

@@ -57,7 +57,9 @@ s_metric_store(zsock_t *pipe, void* args)
 {
     char* endpoint = (char*) args;
 
-    persist::TopicCache topic_cache{8*1024};
+    persist::TopicCache topic_cache{10*1024};
+    persist::MultiRowCache multi_row;
+    
     cxxtools::Regex warranty_subject{"^end_warranty_date@.*$"};
 
     mlm_client_t *client = mlm_client_new ();
@@ -82,10 +84,11 @@ s_metric_store(zsock_t *pipe, void* args)
             continue;
         }
 
-        persist::process_measurement(&msg, topic_cache);
+        persist::process_measurement(&msg, topic_cache,multi_row);
 
         zmsg_destroy (&msg);
     }
+    persist::flush_measurement(multi_row);
 
     zpoller_destroy (&poller);
     mlm_client_destroy (&client);

@@ -36,8 +36,9 @@
 #include "dbpath.h"
 #include "defs.h"
 
-namespace persist {
 
+using namespace std;
+namespace persist {
 
 db_reply_t
     insert_into_measurement(
@@ -48,7 +49,8 @@ db_reply_t
         int64_t            time,
         const char        *units,
         const char        *device_name,
-        TopicCache& c)
+        TopicCache        &c,
+        MultiRowCache     &m)
 {
     db_reply_t ret = db_reply_new();
     
@@ -85,21 +87,37 @@ db_reply_t
         tntdb::Statement st;
         
         m_msrmnt_tpc_id_t topic_id = prepare_topic(conn, topic, units, device_name, c);
+        
         if(topic_id!=0){
-            st = conn.prepareCached (
-                    "INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) "
-                    "  VALUES (:time, :value, :scale, :topic_id)"
-                    "  ON DUPLICATE KEY UPDATE value = :value, scale = :scale");
-            ret.affected_rows = st.set("time",  time)
-                                  .set("value", value)
-                                  .set("scale", scale)
-                                  .set("topic_id", topic_id)
-                                  .execute();
+            if(m.get_max_row()>1 ){
+                //multiple row insertion request
+                m.push_back(time,value,scale,topic_id);
+                if (m.is_ready_for_insert()){
+                    string query = m.get_insert_query();
+                    st = conn.prepare(query.c_str());
+                    ret.affected_rows = st.execute();
+                    log_debug("[t_bios_measurement]: inserted %" PRIu64 " rows ",
+                            ret.affected_rows);
+                    m.clear();
+                }
+            }else{
+                //row by row insertion (old compatibility)
+                st = conn.prepareCached (
+                        "INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) "
+                        "  VALUES (:time, :value, :scale, :topic_id)"
+                        "  ON DUPLICATE KEY UPDATE value = :value, scale = :scale");
+                ret.affected_rows = st.set("time",  time)
+                                      .set("value", value)
+                                      .set("scale", scale)
+                                      .set("topic_id", topic_id)
+                                      .execute();
 
-            log_debug("[t_bios_measurement]: inserted %" PRIu64 " rows "\
-                       "value:%" PRIi32 " * 10^%" PRIi16 " %s "\
-                       "topic = '%s' topic_id=%" PRIi16 " time = %" PRIu64, 
-                       ret.affected_rows, value, scale, units, topic, topic_id, time);
+                log_debug("[t_bios_measurement]: inserted %" PRIu64 " rows "\
+                           "value:%" PRIi32 " * 10^%" PRIi16 " %s "\
+                           "topic = '%s' topic_id=%" PRIi16 " time = %" PRIu64, 
+                           ret.affected_rows, value, scale, units, topic, topic_id, time);
+            }
+
         }else{
             ret.status     = 0;
             ret.errtype    = DB_ERR;
@@ -140,7 +158,54 @@ db_reply_t
         const char        *device_name)
 {
     TopicCache c{};
-    return insert_into_measurement(conn, topic, value, scale, time, units, device_name, c);
+    MultiRowCache m = MultiRowCache(1,0);
+    return insert_into_measurement(conn, topic, value, scale, time, units, device_name, c, m);
+}
+
+// backward compatible function for a case where no cache and no multiple_row are required
+db_reply_t
+    insert_into_measurement(
+        tntdb::Connection &conn,
+        const char        *topic,
+        m_msrmnt_value_t   value,
+        m_msrmnt_scale_t   scale,
+        int64_t            time,
+        const char        *units,
+        const char        *device_name,
+        TopicCache        &c)
+{
+    MultiRowCache m=MultiRowCache(1,0);
+    return insert_into_measurement(conn, topic, value, scale, time, units, device_name, c, m);
+}
+
+db_reply_t
+    flush_measurement(
+        tntdb::Connection &conn,
+        MultiRowCache& m ) {
+    db_reply_t ret = db_reply_new();
+    ret.status = 1;
+    try {
+        tntdb::Statement st;
+        string query = m.get_insert_query();
+        if(query.length()==0)return ret;
+        st = conn.prepare(query.c_str());
+        ret.affected_rows = st.execute();
+        log_debug("[t_bios_measurement]: flush last measurements in cache, inserted %" PRIu64 " rows ",
+                ret.affected_rows);
+        m.clear();
+        ret.rowid = conn.lastInsertId();
+        return ret;
+    } catch(const std::exception &e) {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_INTERNAL;
+        ret.msg        = e.what();
+        log_error ("Abnormal flush termination");
+        LOG_END_ABNORMAL(e);
+        return ret;
+    }
+
+    
 }
 
 /*
