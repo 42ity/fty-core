@@ -18,6 +18,7 @@
 #
 #! \file   db-init(.in)
 #  \brief  Inits the BIOS database schema on factory-default installations
+#           or do an apropriate update of database scheme after reboot
 #  \author Karol Hrdina <KarolHrdina@Eaton.com>
 #  \author Alena Chernikava <AlenaChernikava@Eaton.com>
 #  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
@@ -129,6 +130,7 @@ EOF
 }
 
 SQLINSTALL_TIMESTAMP="t=`date -u '+%Y%m%dT%H%M%SZ'`"
+
 install_sql_file() {
 	# Currently we allow to install all SQLs at once. But later we can add
 	# a way to install additional schemas in standard manner - this is it.
@@ -182,11 +184,14 @@ generate_database() {
 }
 
 upgrade_database() {
-	# Parameters: $1 refers to full filename of new SQL schema(/data) file
-	local INITSQL="$1"
-	[ -z "$INITSQL" ] && INITSQL="$INITSQL_FIRST"
-	local INITSQL_BASENAME="`basename "$INITSQL"`"
-	[ x"$INITSQL" = x"$INITSQL_BASENAME" ] && INITSQL="$INITSQL_DIR/$INITSQL_BASENAME"
+    # Parameters: $1 refers to full filename of new SQL data file
+	local SQL_FILE="$1"
+    # If there is no parameter, use first initialization sql script
+	[ -z "$SQL_FILE" ] && SQL_FILE="$INITSQL_FIRST"
+    # Get file base name without the path
+	local SQL_FILE_BASENAME="`basename "$SQL_FILE"`"
+    # If we got only basename of the file, we will SUPPOSE that it is in the default directory
+	[ x"$SQL_FILE" = x"$SQL_FILE_BASENAME" ] && SQL_FILE="$INITSQL_DIR/$SQL_FILE_BASENAME"
 
 	if [ -s "${UPGRADE_POLICY_FILE}" ]; then
 		# TODO: Maybe later parse per-schema "sqlbasename: policy"
@@ -200,20 +205,17 @@ upgrade_database() {
 		return 0
 	fi
 
-	# Try an upgrade ant return 0 if succeeded - TODO...
-	# The method may depend on "${UPGRADE_POLICY}" ...
-	echo "Error: Database upgrade for '$INITSQL' not currently implemented (TODO), but was required (see above)!" >&2
-	echo "Consider running 'BIOS_DB_INIT=init $0' to flush and reinitialize the database" >&2
+    # TODO The method may depend on "${UPGRADE_POLICY}" ...
+    install_sql_file "$SQL_FILE" "applying patch '${SQL_FILE}'" || return $?
 
-
-	# Currently we prohibit service startup with inconsistent database,
-	# so exit at this point and force a human to take a look at it
+    # Currently we prohibit service startup with inconsistent database,
+    # so exit at this point and force a human to take a look at it
 	if [ "${UPGRADE_POLICY}" = not-required ]; then
 		echo "WARNING: Database upgrade failed, but policy is '$UPGRADE_POLICY' and so we proceed..." >&2
 		return 0
 	fi
 
-	exit 1
+	return 0
 }
 
 grep_sql_version() {
