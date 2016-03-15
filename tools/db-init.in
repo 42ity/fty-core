@@ -277,17 +277,18 @@ verify_schema_version() {
 	local SQL_FILE_BASENAME="`basename "$SQL_FILE"`"
 	[ x"$SQL_FILE" = x"$SQL_FILE_BASENAME" ] && SQL_FILE="$INITSQL_DIR/$SQL_FILE_BASENAME"
 
-	# Verify that our SQL file has the information about it's version
+	# Verify that our SQL file has the information about its version
     # So verify, if this file fulfills the ASSUMPTION
 	local SCHEMA_VERSION_SQL=""
 	if [ -r "$SQL_FILE" ] && [ -s "$SQL_FILE" ] \
 	; then
-		SCHEMA_VERSION_SQL="`grep_sql_version < "$SQL_FILE"`"
+		SCHEMA_VERSION_SQL="`grep_sql_version < "$SQL_FILE"`" \
+            || SCHEMA_VERSION_SQL=""
     fi
 	if [ -z "$SCHEMA_VERSION_SQL" ]; then
 		echo "ERROR: File '$SQL_FILE' is in the inconsistent state, because it doesn't contain the string 'SET @bios_db_schema_version = 'YYYYMMDD' '" >&2
         # this error should not appear on the customer side, unless someone touch sql files
-        # abort immidiately
+        # abort immediately
         exit 2
     fi
 
@@ -302,7 +303,8 @@ verify_schema_version() {
 	   [ x"$SCHEMA_VERSION_DB_2" = x"finish-NA" ] \
 	; then
 		echo "ERROR: 1. Mysql is not running or 2. There are problems with t_bios_schema_version table. Fix them manually" >&2
-		return 2
+        # abort immediately
+		exit 2
     fi
 
     # Verify if this particular file wasn't imported yet at all
@@ -319,7 +321,7 @@ verify_schema_version() {
        [ -z "$SCHEMA_VERSION_DB_1" ] || [ -z "$SCHEMA_VERSION_DB_2" ] \
     ; then
         echo "Error: Schema version for '$SQL_FILE' is not consistent in the database ('$SCHEMA_VERSION_DB_1' vs '$SCHEMA_VERSION_DB_2'). Investigate and fix it manually" >&2
-        # abort immidiately
+        # abort immediately
         exit 2
 	fi
 
@@ -327,7 +329,7 @@ verify_schema_version() {
 	if [ x"$SCHEMA_VERSION_DB_2" != x"$SCHEMA_VERSION_SQL" ]; then
 		echo "Error: Schema version for '$SQL_FILE' in the database is not the same as in current SQL schema file ('$SCHEMA_VERSION_DB_2' vs '$SCHEMA_VERSION_SQL')" >&2
         echo "NOT IMPLEMENTED"
-        # abort immidiately
+        # abort immediately
         exit 2
 	fi
 
