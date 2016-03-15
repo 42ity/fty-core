@@ -684,6 +684,7 @@ cp -r --preserve /etc/ssh/*_key /etc/ssh/*.pub "../rootfs/$VM/etc/ssh"
 
 logmsg_info "Copy root's ~/.oscrc from the host OS"
 cp --preserve ~/.oscrc "../rootfs/$VM/root/"
+cp --preserve -r ~/.config "../rootfs/$VM/root/"
 
 logmsg_info "Copy environment settings from the host OS"
 cp /etc/profile.d/* ../rootfs/$VM/etc/profile.d/
