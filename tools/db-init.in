@@ -26,6 +26,8 @@
 #  \details Caller may export BIOS_DB_INIT envvar set to 'initialize' or
 #           'upgrade' to trigger the corresponding function and exit.
 #
+# In order to recreate the database (all data would be lost) export the
+# BIOS_DB_INIT envvar set to "init".
 
 prefix="@prefix@"
 DATABASE=box_utf8
