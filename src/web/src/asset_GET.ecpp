@@ -152,7 +152,8 @@ if ( tmp.item.basic.type_id == persist::asset_type::DEVICE )
         for ( auto &oneLink : tmp.item.powers )
         {
 </%cpp>
-{"src_uri":"/api/v1/asset/device/<$$ oneLink.src_id $>"
+{"src_id":"<$$ oneLink.src_id $>",
+{"src_name":"<$$ oneLink.src_name $>"
 <%cpp>
             if ( !oneLink.src_socket.empty() )
             {

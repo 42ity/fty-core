@@ -59,6 +59,7 @@ struct db_web_basic_element_t {
 struct db_tmp_link_t {
     a_elmnt_id_t     src_id;
     a_elmnt_id_t     dest_id;
+    std::string      src_name;
     std::string      src_socket;
     std::string      dest_socket;
 };
