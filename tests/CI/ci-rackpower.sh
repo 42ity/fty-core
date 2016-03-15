@@ -163,6 +163,7 @@ AGPWRPID=""
 AGLEGMETPID=""
 DBNGPID=""
 kill_daemons() {
+    # Stops and cleans up the CI variant
     set +e
     if [ -n "$WEBTESTPID" -a -d "/proc/$WEBTESTPID" ]; then
         logmsg_info "Killing make web-test PID $WEBTESTPID to exit"
@@ -198,14 +199,17 @@ kill_daemons() {
     return 0
 }
 
-# ***** INIT *****
+LOCKFILE=""
 function cleanup {
+    # Stops and cleans up the VTE/SC/RC variant
     set +e
-    rm -f "$LOCKFILE"
+    [ -n "$LOCKFILE" ] && rm -f "$LOCKFILE"
 }
 
-# Ensure that no processes remain dangling when test completes
-if isRemoteSUT ; then
+# ***** INIT *****
+function startup() {
+    # Ensure that no processes remain dangling when test completes
+    if isRemoteSUT ; then
         # *** create lockfile name ***
         LOCKFILE="`echo "/tmp/ci-test-rackpower-vte__${SUT_USER}@${SUT_HOST}:${SUT_SSH_PORT}:${SUT_WEB_PORT}.lock" | sed 's, ,__,g'`"
         settraps "cleanup; exit_summarizeTestlibResults"
@@ -224,14 +228,12 @@ if isRemoteSUT ; then
         sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-agent-nut bios-agent-inventory bios-agent-cm bios_agent_tpower; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done;exit $R' || \
                 die "Some required services are not running on the VTE"
 
-        # TODO: The different contents (2ci vs 3vte files to be revised)
         # *** write power rack base test data to DB on SUT
         # These are defined in testlib-db.sh
         test_it "initialize_db_rackpower"
         init_script_rack_power
-        # && LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE"
         print_result $? || CODE=$? die "Could not prepare database"
-else
+    else
         settraps "kill_daemons; exit_summarizeTestlibResults"
 
         logmsg_info "Ensuring that the tested programs have been built and up-to-date"
@@ -270,6 +272,7 @@ else
         [ $? = 0 ] || CODE=$? die "Could not spawn agent-dbstore"
         DBNGPID=$!
 
+        # NOTE: Now a CLI argument is required for agent-nut
         logmsg_info "Spawning the agent-nut service in the background..."
         ${BUILDSUBDIR}/agent-nut "$CHECKOUTDIR/src/agents/nut/mapping.conf" &
         [ $? = 0 ] || CODE=$? die "Could not spawn agent-nut"
@@ -280,16 +283,28 @@ else
         ${BUILDSUBDIR}/agent-tpower &
         [ $? = 0 ] || CODE=$? die "Could not spawn agent-tpower"
         AGPWRPID=$!
-fi
 
-# Let the webserver settle
-sleep 5
-accept_license
+        sleep 3
+        test_it "verify_running_daemons"
+        for P in AGLEGMETPID WEBTESTPID DBNGPID AGNUTPID AGPWRPID ; do
+            eval PN="\$$P"
+            [ -n "$PN" ] && [ -d "/proc/$PN" ] || { \
+                print_result $? "Process ID for $P ($PN) not found to be running!"; die; }
+        done
+        print_result 0
+    fi
 
-if isRemoteSUT ; then
-        sut_run 'systemctl restart bios_agent_tpower'
+    # Let the webserver settle
+    sleep 5
+    test_it "accept_license"
+    accept_license
+    print_result $?
+
+    if isRemoteSUT ; then
+        sut_run 'systemctl restart bios-agent-tpower'
         sut_run 'systemctl restart bios-agent-dbstore'
-fi
+    fi
+}
 
 #
 # only one parameter - ups.realpower for ups or outlet.realpower for epdu
@@ -373,7 +388,8 @@ testcase() {
             fi
             test_it "configure_total_power_nut:$RACK:$DEV:$SAMPLECURSOR"
             if [[ "$TYPE" = "epdu" ]]; then
-                set_value_in_ups "$DEV" "$PARAM_REALPOWER_UPS" 0 0 || logmsg_info "Note: ePDU can fail to set ups.realpower, it is OK"
+                set_value_in_ups "$DEV" "$PARAM_REALPOWER_UPS" 0 0 || \
+                    logmsg_info "Note: ePDU can fail to set ups.realpower, it is OK"
                 set_value_in_ups "$DEV" "$PARAM_REALPOWER_EPDU" "$NEWVALUE"
                 print_result $?
             else
@@ -416,6 +432,8 @@ testcase() {
         done
     done
 }
+
+startup
 
 echo "+++++++++++++++++++++++++++++++++++"
 echo "Test 1"
