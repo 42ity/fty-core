@@ -239,9 +239,9 @@ db_reply <std::vector <db_tmp_link_t>>
         // Can return more than one row
         tntdb::Statement st_pow = conn.prepareCached(
             " SELECT"
-            "   v.id_asset_element_src, v.src_out, v.dest_in"
+            "   v.id_asset_element_src, v.src_out, v.dest_in, v.src_name"
             " FROM"
-            "   v_bios_asset_link v"
+            "   v_web_asset_link v"
             " WHERE"
             "   v.id_asset_element_dest = :iddevice AND"
             "   v.id_asset_link_type = :idlinktype"
@@ -255,10 +255,11 @@ db_reply <std::vector <db_tmp_link_t>>
         // Go through the selected links
         for ( auto &row: result )
         {
-            db_tmp_link_t m{0, element_id, "", ""};
+            db_tmp_link_t m{0, element_id, "", "", ""};
             row[0].get(m.src_id);
             row[1].get(m.src_socket);
             row[2].get(m.dest_socket);
+            row[3].get(m.src_name);
 
             ret.item.push_back (m);
         }
