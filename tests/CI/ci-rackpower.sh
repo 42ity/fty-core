@@ -56,6 +56,8 @@
 # closer the possible repetitions or possibilities for common code usage
 # (e.g. lock-files, trap code)
 
+echo "=================== CI-RACKPOWER : START ============================="
+
 case "`basename "$0"`" in
     vte*) SUT_IS_REMOTE=yes ;; # Unconditionally remote
     *) [ -z "${SUT_IS_REMOTE-}" ] && SUT_IS_REMOTE="" ;;
@@ -191,6 +193,8 @@ kill_daemons() {
         logmsg_error "At least one of: tntnet, bios-agent-legacy-metrics, agent-dbstore, agent-nut, agent-tpower still alive, trying SIGKILL" && \
         { killall -KILL tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut bios_agent_tpower lt-bios_agent_tpower agent-dbstore lt-agent-dbstore 2>/dev/null ; exit 1; }
 
+    echo "=================== CI-RACKPOWER : END ==============================="
+    echo ""
     return 0
 }
 
