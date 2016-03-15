@@ -534,6 +534,8 @@ loaddb_current() {
 
 accept_license_WRAPPER() {
     # Some scripts only care about database and do not have weblib.sh included
+    # Also some scripts know their webserver is not yet started ;)
+    [ x"${ACCEPT_LICENSE-}" = xno ] || \
     if type -t accept_license | grep -q 'function' ; then
         accept_license
         return $?
