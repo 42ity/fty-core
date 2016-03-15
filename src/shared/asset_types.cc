@@ -109,6 +109,12 @@ a_elmnt_stp_id_t
     else if (st == "vm") {
         return asset_subtype::VIRTUAL;
     }
+    else if (st == "router") {
+        return asset_subtype::ROUTER;
+    }
+    else if (st == "rack controller") {
+        return asset_subtype::RACKCONTROLLER;
+    }
     else if(st == "N_A") {
         return asset_subtype::N_A;
     }
@@ -142,6 +148,10 @@ std::string
             return "server";
         case asset_subtype::SWITCH:
             return "switch";
+        case asset_subtype::ROUTER:
+            return "router";
+        case asset_subtype::RACKCONTROLLER:
+            return "rack controller";
         case asset_subtype::VIRTUAL:
             return "vm";
         case asset_subtype::N_A:
