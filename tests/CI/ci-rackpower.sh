@@ -295,8 +295,8 @@ fi
 # only one parameter - ups.realpower for ups or outlet.realpower for epdu
 # is used for the total rack power value counting
 #
-PARAM1="ups.realpower"
-PARAM2="outlet.realpower"
+PARAM_REALPOWER_UPS="ups.realpower"
+PARAM_REALPOWER_EPDU="outlet.realpower"
 
 custom_create_ups_dev_file() {
     FILE="$1"
@@ -340,47 +340,53 @@ create_device_definition_file() {
 }
 
 testcase() {
-    UPS1="$1"
-    UPS2="$2"
+    DEV1="$1"
+    DEV2="$2"
     SAMPLES="$3"
     RACK="$4"
     PARAM=""
-    logmsg_info "Starting the testcase for power devices '$UPS1' and '$UPS2' in rack '$RACK' ..."
+    logmsg_info "Starting the testcase for power devices '$DEV1' and '$DEV2' in rack '$RACK' ..."
+    # In our power consumption accounting, for a single rack - the closest
+    # active device to consumer (direct UPS, or ePDU - not dumb PDU) wins.
+    # Total power consumed in a rack is thus the sum of known consumers.
+    # For different racks it is more complicated (e.g. UPS in one, ePDUs
+    # from it in several others) - the other racks are accounted by their
+    # ePDUs while the core rack locally consumes UPS-sum(other_ePDUs)...
 
     SAMPLESCNT="$((${#SAMPLES[*]} - 1))" # sample counter begins from 0
     LASTPOW=(0 0)
-    for UPS in $UPS1 $UPS2 ; do
+    for DEV in $DEV1 $DEV2 ; do
         # count expected value of total power
         for SAMPLECURSOR in $(seq 0 $SAMPLESCNT); do
             # set values
             NEWVALUE="${SAMPLES[$SAMPLECURSOR]}"
 
-            case "$UPS" in
-            	ups*)  TYPE="ups";;
-            	pdu*)  TYPE="pdu";;
-            	epdu*) TYPE="epdu";;
-            	*) die "Unknown device name pattern: '$UPS'" ;;
+            case "$DEV" in
+                ups*)  TYPE="ups";;
+                pdu*)  TYPE="pdu";;
+                epdu*) TYPE="epdu";;
+                *) die "Unknown device name pattern: '$DEV'" ;;
             esac
-### It makes sense that a dumb PDU has no measurements...
+            # It makes sense that a dumb PDU has no measurements...
             if [[ "$TYPE" = "pdu" ]]; then
                NEWVALUE=0
             fi
-            test_it "configure_total_power_nut:$RACK:$UPS:$SAMPLECURSOR"
+            test_it "configure_total_power_nut:$RACK:$DEV:$SAMPLECURSOR"
             if [[ "$TYPE" = "epdu" ]]; then
-                set_value_in_ups "$UPS" "$PARAM1" 0 0 || logmsg_info "Note: ePDU can fail to set ups.realpower, it is OK"
-                set_value_in_ups "$UPS" "$PARAM2" "$NEWVALUE"
+                set_value_in_ups "$DEV" "$PARAM_REALPOWER_UPS" 0 0 || logmsg_info "Note: ePDU can fail to set ups.realpower, it is OK"
+                set_value_in_ups "$DEV" "$PARAM_REALPOWER_EPDU" "$NEWVALUE"
                 print_result $?
             else
-                set_value_in_ups "$UPS" "$PARAM1" "$NEWVALUE" 0 && \
-                set_value_in_ups "$UPS" "$PARAM2" 0
+                set_value_in_ups "$DEV" "$PARAM_REALPOWER_UPS" "$NEWVALUE" 0 && \
+                set_value_in_ups "$DEV" "$PARAM_REALPOWER_EPDU" 0
                 print_result $?
             fi
 
-            case "$UPS" in
-            "$UPS1")
+            case "$DEV" in
+            "$DEV1")
                 LASTPOW[0]="$NEWVALUE"
                 ;;
-            "$UPS2")
+            "$DEV2")
                 LASTPOW[1]="$NEWVALUE"
                 ;;
             esac
@@ -389,7 +395,8 @@ testcase() {
             sleep 8  # 8s is max time for propagating into DB (poll ever 5s in nut actor + some time to process)
             logmsg_debug "Sleep time is over!"
 
-            test_it "verify_total_power_restapi:$RACK:$UPS:$SAMPLECURSOR"
+            test_it "verify_total_power_restapi:$RACK:$DEV:$SAMPLECURSOR"
+            # Math with decimal points... shell and expr can not do it
             TP="$(awk -vX=${LASTPOW[0]} -vY=${LASTPOW[1]} 'BEGIN{ print X + Y; }')"
             # send restAPI request to find generated value of total power
             URL="/metric/computed/rack_total?arg1=${RACK}&arg2=total_power"
