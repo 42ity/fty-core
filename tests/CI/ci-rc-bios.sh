@@ -105,7 +105,7 @@ if isRemoteSUT ; then
                     { [ "$GOODSTATE" = stoppedOrCrashed ] && \
                         { echo "and crashed [-WARN-]"; RESULT=0; } || \
                         { case "$s" in
-                            *kpi-uptime*) "and crashed [IGNORE]"; RESULT=0;; # BIOS-1910
+#                            *kpi-uptime*) "and crashed [IGNORE]"; RESULT=0;; # BIOS-1910
                             *) echo "and crashed [-FAIL-]"; RESULT=3;;
                           esac; } ; } || \
                     { [ "$GOODSTATE" = stopped -o "$GOODSTATE" = stoppedOrCrashed ] && \
@@ -434,7 +434,7 @@ do_status() {
                 { [ "$GOODSTATE" = stoppedOrCrashed ] && \
                     { echo "and crashed [-WARN-]"; RESULT=0; } || \
                     { case "$s" in
-                        *kpi-uptime*) "and crashed [IGNORE]"; RESULT=0;; # BIOS-1910
+#                        *kpi-uptime*) "and crashed [IGNORE]"; RESULT=0;; # BIOS-1910
                         *) echo "and crashed [-FAIL-]"; RESULT=3;;
                       esac; } ; } || \
                 { [ "$GOODSTATE" = stopped -o "$GOODSTATE" = stoppedOrCrashed ] && \
