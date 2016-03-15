@@ -249,7 +249,7 @@ else
 
         # These are defined in testlib-db.sh
         test_it "initialize_db_rackpower"
-        init_script_rack_power
+        ACCEPT_LICENSE=no init_script_rack_power
         print_result $? || CODE=$? die "Could not prepare database"
 
         # This program is delivered by another repo, should "just exist" in container
