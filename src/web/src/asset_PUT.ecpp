@@ -54,25 +54,29 @@
         LOG_END_ABNORMAL(e);
         http_die("bad-request-document", e.what());
     }
-
+    shared::CsvMap cm;
     try{
-        shared::CsvMap cm = shared::CsvMap_from_serialization_info(si, id);
+        cm = shared::CsvMap_from_serialization_info(si, id);
+    }
+    catch (const std::invalid_argument &e) {
+        log_error (e.what());
+        http_die("bad-request-document", e.what());
+    }
 
-        // PUT /asset is currently used to update an existing device (only asset_element and ext_attributes)
-        //      for EMC4J.
-        // empty document
-        if (cm.cols() == 0 || cm.rows() == 0)
-            http_die("bad-request-document", "Cannot import empty document.");
-        if (!cm.hasTitle("type"))
-            http_die("request-param-required", "type");
-        if ( cm.get(1, "type") != "device" && cm.get(1, "type") != "datacenter")
-            http_die("request-param-bad", "type", cm.get(1, "type").empty() ? "<empty>" : cm.get(1, "type").c_str(), "device|datacenter");
-        // currently we do not need to support updatein these elements
-        if ( cm.hasTitle("powers") )
-            bios_throw("bad-request-document", "key 'powers' is not supported");
-        if ( cm.hasTitle("groups") )
-            bios_throw("bad-request-document", "key 'groups' is not supported");
-        log_debug ("starting load");
+    // PUT /asset is currently used to update an existing device (only asset_element and ext_attributes)
+    //      for EMC4J.
+    // empty document
+    if (cm.cols() == 0 || cm.rows() == 0)
+        http_die("bad-request-document", "Cannot import empty document.");
+    if (!cm.hasTitle("type"))
+        http_die("request-param-required", "type");
+    if ( cm.get(1, "type") != "device" && cm.get(1, "type") != "datacenter")
+        http_die("request-param-bad", "type", cm.get(1, "type").empty() ? "<empty>" : cm.get(1, "type").c_str(), "device|datacenter");
+    // currently we do not need to support updatein these elements
+    if ( cm.hasTitle("groups") )
+        http_die("bad-request-document", "key 'groups' is not supported");
+    log_debug ("starting load");
+    try {
         // actual update - throws exceptions
         auto row = persist::process_one_asset (cm);
 

@@ -223,6 +223,43 @@ s_read_si(
             continue;
         }
 
+        if ( name == "powers" ) {
+            auto powers_si = si.getMember("powers");
+            if ( powers_si.category () != cxxtools::SerializationInfo::Array ) {
+                throw std::invalid_argument("Key 'powers' should be an array");
+            }
+            // we need a counter for fields
+            int i = 1;
+            for ( const auto &oneElement : powers_si ) { // iterate through the array
+                // src_name is mandatory
+                if (  oneElement.findMember("src_name") == NULL ) {
+                    throw std::invalid_argument("Key 'src_name' in the key 'powers' is mandatory");
+                }
+
+                cxxtools::String src_name{};
+                oneElement.getMember("src_name") >>= src_name;
+                data[0].push_back (cxxtools::String("power_source." + std::to_string(i)));
+                data[1].push_back (src_name);
+                // src_outlet is optimal
+                if ( oneElement.findMember("src_socket") != NULL ) {
+                    cxxtools::String src_socket{};
+                    oneElement.getMember("src_socket") >>= src_socket;
+                    data[0].push_back (cxxtools::String("power_plug_src." + std::to_string(i)));
+                    data[1].push_back (src_socket);
+                }
+                // dest_outlet is optional
+                if ( oneElement.findMember("dest_socket") != NULL ) {
+                    cxxtools::String dest_socket{};
+                    oneElement.getMember("dest_socket") >>= dest_socket;
+                    data[0].push_back (cxxtools::String ("power_input." + std::to_string(i)));
+                    data[1].push_back (dest_socket);
+                }
+                // src_id is there, but here it is ignored
+                // because id and name can be in the conflict.
+                // src_name is mutable, but src_id is just an informational field
+                i++;
+            }
+        }
         cxxtools::String value;
         it->getValue(value);
         data[0].push_back(name);
