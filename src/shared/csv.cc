@@ -259,6 +259,7 @@ s_read_si(
                 // src_name is mutable, but src_id is just an informational field
                 i++;
             }
+            continue;
         }
         cxxtools::String value;
         it->getValue(value);
