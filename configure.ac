@@ -396,7 +396,17 @@ AC_TRY_LINK([#include <string.h>], [char *s; s = strdup("123"); if (s) {;}],
 		[AC_DEFINE([HAVE_STRDUP], [1], [Define to 1 if you have the `strdup' function.])
 		 AC_MSG_RESULT([yes])],
 		[AC_MSG_RESULT([no])
-		 AC_MSG_ERROR([cannot find strdup(), not even with -D_GNU_SOURCE])])]
+		 AC_MSG_CHECKING([strdup() with -D__EXTENSIONS__])
+		 my_CFLAGS="$my_CFLAGS -D__EXTENSIONS__"
+		 my_CPPFLAGS="$my_CPPFLAGS -D__EXTENSIONS__"
+		 my_CXXFLAGS="$my_CXXFLAGS -D__EXTENSIONS__"
+		 AC_DEFINE([__EXTENSIONS__], [1], [Define this if needed to compile POSIX code])
+		 AC_TRY_LINK([#include <string.h>], [char *s; s = strdup("123"); if (s) {;}],
+			[AC_DEFINE([HAVE_STRDUP], [1], [Define to 1 if you have the `strdup' function.])
+			 AC_MSG_RESULT([yes])],
+			[AC_MSG_RESULT([no])
+			 AC_MSG_ERROR([cannot find strdup(), not even with -D__EXTENSIONS__])])]
+		)]
 	)
 AS_IF([test -n "$_CC_ORIG"], [
 	CC="$_CC_ORIG"
