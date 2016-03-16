@@ -77,6 +77,14 @@ namespace shared {
             {};
 
             /**
+             * \brief Creates an empty CsvMap instance
+             */
+            CsvMap(void) :
+                _data{},
+                _title_to_index{}
+            {};
+
+            /**
              * \brief Creates new CsvMap instance with data inside
              */
             CsvMap(const CxxData& data);
