@@ -29,6 +29,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <tntdb/connect.h>
 #include <cxxtools/regex.h>
 #include <cxxtools/join.h>
+#include <cxxtools/trim.h>
 
 #include "db/inout.h"
 
@@ -239,11 +240,23 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
         }
     }
     unused_columns.erase("location");
+    
+    // Business requirement: be able to write 'rack controller', 'RC', 'rc' as subtype == 'rack controller'
+    std::map<std::string,int> local_SUBTYPES = SUBTYPES;
+    int rack_controller_id = SUBTYPES.find ("rack controller")->second;
 
-    auto subtype = cm.get_strip(row_i, "sub_type");
+    local_SUBTYPES.emplace (std::make_pair ("rackcontroller", rack_controller_id));
+    local_SUBTYPES.emplace (std::make_pair ("rc", rack_controller_id));
+    local_SUBTYPES.emplace (std::make_pair ("RC", rack_controller_id));
+    local_SUBTYPES.emplace (std::make_pair ("RC3", rack_controller_id));
+
+    auto subtype = cm.get (row_i, "sub_type");
+    cxxtools::ltrim (subtype);
+    cxxtools::rtrim (subtype);
+
     log_debug ("subtype = '%s'", subtype.c_str());
     if ( ( type == "device" ) &&
-         ( SUBTYPES.find(subtype) == SUBTYPES.cend() ) ) {
+         ( local_SUBTYPES.find(subtype) == local_SUBTYPES.cend() ) ) {
         bios_throw("request-param-bad", "subtype", subtype.empty() ? "<empty>" : subtype.c_str(), utils::join_keys_map(SUBTYPES, ", ").c_str());
     }
 
@@ -256,7 +269,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
         bios_throw("request-param-required", "subtype (for type group)");
     }
 
-    auto subtype_id = SUBTYPES.find(subtype)->second;
+    auto subtype_id = local_SUBTYPES.find(subtype)->second;
     unused_columns.erase("sub_type");
 
     // now we have read all basic information about element
