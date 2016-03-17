@@ -365,7 +365,8 @@ db_reply_t
         return reply_insert5;
     }
 
-    auto reply_select = select_monitor_device_type_id (conn, asset_device_type_name);
+    // BIOS-1962: we do not use this classification. So ignore it.
+    auto reply_select = select_monitor_device_type_id (conn, "not_classified");
     if ( reply_select.status == 1 )
     {
         auto reply_insert6 = insert_into_monitor_device
