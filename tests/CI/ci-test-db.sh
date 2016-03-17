@@ -101,6 +101,7 @@ sleep 1
 echo "-------------------- test-db-asset-crud-----"
 test_it "db_prepare_crud"
 loaddb_file "$DB_BASE" \
+&& loaddb_file "$DB_BASE_PATCH0001" \
 && loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" \
 && loaddb_file "$DB_CRUD"
 CITEST_QUICKFAIL=yes print_result $? "Can not prepare the database"
@@ -118,6 +119,7 @@ for T in location power ; do
     echo "-------------------- test-dbtopology $T --------------------"
     test_it "db_prepare_topology_$T"
     loaddb_file "$DB_BASE" \
+    && loaddb_file "$DB_BASE_PATCH0001" \
     && loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" \
     && loaddb_file "$P"
     CITEST_QUICKFAIL=yes print_result $? "Can not prepare the database"
@@ -136,6 +138,7 @@ for T in rack dc ; do
     echo "-------------------- test-total-power for $T ---------------"
     test_it "db_prepare_totalpower_$T"
     loaddb_file "$DB_BASE" \
+    && loaddb_file "$DB_BASE_PATCH0001" \
     && loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" \
     && loaddb_file "$P"
     CITEST_QUICKFAIL=yes print_result $? "Can not prepare the database"
