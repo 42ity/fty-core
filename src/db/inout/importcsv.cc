@@ -29,6 +29,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <tntdb/connect.h>
 #include <cxxtools/regex.h>
 #include <cxxtools/join.h>
+#include <cxxtools/trim.h>
 
 #include "db/inout.h"
 
@@ -239,8 +240,19 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
         }
     }
     unused_columns.erase("location");
+    
+    // Business requirement: be able to write 'rack controller', 'RC', 'rc' as subtype == 'rack controller'
+    auto rack_cotroller_id = SUBTYPES.find ("rack controller")->second;
 
-    auto subtype = cm.get_strip(row_i, "sub_type");
+    SUBTYPES.emplace (std::make_pair ("rackcontroller", rack_controller_id));
+    SUBTYPES.emplace (std::make_pair ("rc", rack_controller_id));
+    SUBTYPES.emplace (std::make_pair ("RC", rack_controller_id));
+    SUBTYPES.emplace (std::make_pair ("RC3", rack_controller_id));
+
+    auto subtype = cm.get (row_i, "sub_type");
+    cxxtools::ltrim (subtype);
+    cxxtools::rtrim (subtype);
+
     log_debug ("subtype = '%s'", subtype.c_str());
     if ( ( type == "device" ) &&
          ( SUBTYPES.find(subtype) == SUBTYPES.cend() ) ) {
