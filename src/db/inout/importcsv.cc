@@ -242,12 +242,13 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     unused_columns.erase("location");
     
     // Business requirement: be able to write 'rack controller', 'RC', 'rc' as subtype == 'rack controller'
-    auto rack_cotroller_id = SUBTYPES.find ("rack controller")->second;
+    std::map<std::string,int> local_SUBTYPES = SUBTYPES;
+    int rack_controller_id = SUBTYPES.find ("rack controller")->second;
 
-    SUBTYPES.emplace (std::make_pair ("rackcontroller", rack_controller_id));
-    SUBTYPES.emplace (std::make_pair ("rc", rack_controller_id));
-    SUBTYPES.emplace (std::make_pair ("RC", rack_controller_id));
-    SUBTYPES.emplace (std::make_pair ("RC3", rack_controller_id));
+    local_SUBTYPES.emplace (std::make_pair ("rackcontroller", rack_controller_id));
+    local_SUBTYPES.emplace (std::make_pair ("rc", rack_controller_id));
+    local_SUBTYPES.emplace (std::make_pair ("RC", rack_controller_id));
+    local_SUBTYPES.emplace (std::make_pair ("RC3", rack_controller_id));
 
     auto subtype = cm.get (row_i, "sub_type");
     cxxtools::ltrim (subtype);
@@ -255,7 +256,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
 
     log_debug ("subtype = '%s'", subtype.c_str());
     if ( ( type == "device" ) &&
-         ( SUBTYPES.find(subtype) == SUBTYPES.cend() ) ) {
+         ( local_SUBTYPES.find(subtype) == local_SUBTYPES.cend() ) ) {
         bios_throw("request-param-bad", "subtype", subtype.empty() ? "<empty>" : subtype.c_str(), utils::join_keys_map(SUBTYPES, ", ").c_str());
     }
 
@@ -268,7 +269,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
         bios_throw("request-param-required", "subtype (for type group)");
     }
 
-    auto subtype_id = SUBTYPES.find(subtype)->second;
+    auto subtype_id = local_SUBTYPES.find(subtype)->second;
     unused_columns.erase("sub_type");
 
     // now we have read all basic information about element
