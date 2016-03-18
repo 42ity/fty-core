@@ -134,19 +134,17 @@ std::string feed_by;
         if (!check_element_identifier ("feed_by", feed_by, feed_by_id, errors)) {
             http_die_error (errors);
         }
-        auto tmp = asset_mgr.get_item1(feed_by);
+        auto tmp = asset_mgr.get_item1(feed_by_id);
         if ( tmp.status == 0 )
         {
             switch ( tmp.errsubtype )
             {
                 case DB_ERROR_NOTFOUND:
-                    http_die("element-not-found", feed_by.c_str());
+                    http_die("element-not-found", tmp.msg.c_str());
                 case DB_ERROR_BADINPUT:
-                    http_die("request-param-bad", "feed_by", feed_by.c_str(), "be integer value");
                 case DB_ERROR_INTERNAL:
-                    http_die("internal-error", "error in converting 'feed_by' to integer");
                 default:
-                    http_die("internal-error", "error in converting 'feed_by' to integer");
+                    http_die("internal-error", tmp.msg.c_str());
             }
         }
         if ( tmp.item.basic.type_id != persist::asset_type::DEVICE )

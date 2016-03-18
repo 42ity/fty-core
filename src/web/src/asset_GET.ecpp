@@ -32,6 +32,7 @@
 #include "defs.h"
 #include "utils_web.h"
 #include "asset_computed_impl.h"
+#include "helpers.h"
 </%pre>
 
 <%thread scope="global">
@@ -47,8 +48,13 @@ std::string id = request.getArg("id");
 if ( id.empty() ) {
     http_die("request-param-required", "id");
 }
+uint32_t real_id = 0;
+http_errors_t errors;
+if (!check_element_identifier ("id", id, real_id, errors)) {
+    http_die_error (errors);
+}
 
-auto tmp = asset_mgr.get_item1(id);
+auto tmp = asset_mgr.get_item1(real_id);
 if ( tmp.status == 0 )
 {
     switch ( tmp.errsubtype )
@@ -56,11 +62,9 @@ if ( tmp.status == 0 )
         case DB_ERROR_NOTFOUND:
             http_die("element-not-found", id.c_str());
         case DB_ERROR_BADINPUT:
-            http_die("request-param-bad", "id", id.c_str(), "id of asset");
         case DB_ERROR_INTERNAL:
-            http_die("internal-error", "Internal database error");
         default:
-            http_die("internal-error");
+            http_die("internal-error", "Internal database error");
     }
 }
 if ( !typeNameArg.empty() &&

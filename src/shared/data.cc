@@ -66,41 +66,15 @@ int
 
 db_reply <db_web_element_t>
     asset_manager::get_item1
-        (const std::string &id)
+        (uint32_t id)
 {
     db_reply <db_web_element_t> ret;
-
-    unsigned long real_id_l = 0;
-    try {
-        real_id_l = std::stoul (id);
-    }
-    catch (const std::out_of_range& e) {
-        ret.status        = 0;
-        ret.errtype       = DB_ERR;
-        ret.errsubtype    = DB_ERROR_BADINPUT;
-        return ret;
-    }
-    catch (const std::invalid_argument& e) {
-        ret.status        = 0;
-        ret.errtype       = DB_ERR;
-        ret.errsubtype    = DB_ERROR_BADINPUT;
-        return ret;
-    }
-
-    if (real_id_l == 0 || real_id_l > UINT_MAX) {
-        ret.status        = 0;
-        ret.errtype       = DB_ERR;
-        ret.errsubtype    = DB_ERROR_BADINPUT;
-        return ret;
-    }
-    uint32_t real_id = static_cast<uint32_t> (real_id_l);
-    log_debug ("id converted successfully");
 
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
         log_debug ("connection was successful");
 
-        auto basic_ret = persist::select_asset_element_web_byId(conn, real_id);
+        auto basic_ret = persist::select_asset_element_web_byId(conn, id);
         log_debug ("1/4 basic select is done");
 
         if ( basic_ret.status == 0 )
@@ -115,7 +89,7 @@ db_reply <db_web_element_t>
         log_debug ("    1/4 no errors");
         ret.item.basic = basic_ret.item;
 
-        auto ext_ret = persist::select_ext_attributes(conn, real_id);
+        auto ext_ret = persist::select_ext_attributes(conn, id);
         log_debug ("2/4 ext select is done");
 
         if ( ext_ret.status == 0 )
@@ -130,7 +104,7 @@ db_reply <db_web_element_t>
         log_debug ("    2/4 no errors");
         ret.item.ext = ext_ret.item;
 
-        auto group_ret = persist::select_asset_element_groups(conn, real_id);
+        auto group_ret = persist::select_asset_element_groups(conn, id);
         log_debug ("3/4 groups select is done, but next one is only for devices");
 
         if ( group_ret.status == 0 )
@@ -147,7 +121,7 @@ db_reply <db_web_element_t>
 
         if ( ret.item.basic.type_id == persist::asset_type::DEVICE )
         {
-            auto powers = persist::select_asset_device_links_to (conn, real_id, INPUT_POWER_CHAIN);
+            auto powers = persist::select_asset_device_links_to (conn, id, INPUT_POWER_CHAIN);
             log_debug ("4/4 powers select is done");
 
             if ( powers.status == 0 )
