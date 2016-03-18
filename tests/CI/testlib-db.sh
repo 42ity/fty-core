@@ -407,28 +407,56 @@ loaddb_default() (
 )
 
 loaddb_topo_loc() {
-    _DB_TXT="topo-location"
+    _DB_TXT="raw-topo-location"
     _DB_TAG="loaddb_topo_loc"
-    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" $DB_BASE_PATCHES "$DB_DATA" "$DB_DATA_TESTREST" "$DB_TOPOL" && return $?
+    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" $DB_BASE_PATCHES "$DB_TOPOL" && return $?
 
     echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} ----------"
-    loaddb_sampledata && \
+    loaddb_initial && \
     loaddb_list "$DB_TOPOL" || return $?
-    logmsg_debug "Database schema and data should have been initialized at this point: for topology-location tests"
+    logmsg_debug "Database schema and data should have been initialized at this point: for raw topology-location tests"
 
     tarballdb_fastsave "${_DB_TAG}"
     return $?
 }
 
 loaddb_topo_pow() {
-    _DB_TXT="topo-power"
+    _DB_TXT="raw-topo-power"
     _DB_TAG="loaddb_topo_pow"
+    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" $DB_BASE_PATCHES "$DB_TOPOP" && return $?
+
+    echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} ----------"
+    loaddb_initial && \
+    loaddb_list "$DB_TOPOP" || return $?
+    logmsg_debug "Database schema and data should have been initialized at this point: for raw topology-power tests"
+
+    tarballdb_fastsave "${_DB_TAG}"
+    return $?
+}
+
+loaddb_sampledata_topo_loc() {
+    _DB_TXT="sampledata-topo-location"
+    _DB_TAG="loaddb_sampledata_topo_loc"
+    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" $DB_BASE_PATCHES "$DB_DATA" "$DB_DATA_TESTREST" "$DB_TOPOL" && return $?
+
+    echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} ----------"
+    loaddb_sampledata && \
+    loaddb_list "$DB_TOPOL" || return $?
+    logmsg_debug "Database schema and data should have been initialized at this point: for topology-location tests with sample data"
+
+    tarballdb_fastsave "${_DB_TAG}"
+    return $?
+}
+
+loaddb_sampledata_topo_pow() {
+    _DB_TXT="sampledata-topo-power"
+    _DB_TAG="loaddb_sampledata_topo_pow"
     tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" $DB_BASE_PATCHES "$DB_DATA" "$DB_DATA_TESTREST" "$DB_TOPOP" && return $?
 
     echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} ----------"
     loaddb_sampledata && \
     loaddb_list "$DB_TOPOP" || return $?
-    logmsg_debug "Database schema and data should have been initialized at this point: for topology-power tests"
+    logmsg_debug "Database schema and data should have been initialized at this point: for topology-power tests with sample data"
 
     tarballdb_fastsave "${_DB_TAG}"
     return $?
@@ -607,6 +635,14 @@ init_script_topo_loc(){
 
 init_script_topo_pow(){
     reloaddb_init_script_WRAPPER loaddb_topo_pow
+}
+
+init_script_sampledata_topo_loc(){
+    reloaddb_init_script_WRAPPER loaddb_sampledata_topo_loc
+}
+
+init_script_sampledata_topo_pow(){
+    reloaddb_init_script_WRAPPER loaddb_sampledata_topo_pow
 }
 
 init_script_rack_power(){
