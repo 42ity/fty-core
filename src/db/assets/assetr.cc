@@ -46,7 +46,7 @@ db_reply <db_web_basic_element_t>
     log_debug ("element_id = %" PRIi32, element_id);
 
     // TODO write function new
-    db_web_basic_element_t item {0, "", "", 0, 0, "", 0, 0, 0, "",""};
+    db_web_basic_element_t item {0, "", "", 0, 0, "", 0, 0, 0, "","",""};
     db_reply <db_web_basic_element_t> ret = db_reply_new(item);
 
     try{
@@ -56,7 +56,7 @@ db_reply <db_web_basic_element_t>
             "   v.id, v.name, v.id_type, v.type_name,"
             "   v.subtype_id, v.id_parent,"
             "   v.id_parent_type, v.status,"
-            "   v.priority, v.asset_tag"
+            "   v.priority, v.asset_tag, v.parent_name "
             " FROM"
             "   v_web_element v"
             " WHERE :id = v.id"
@@ -76,6 +76,7 @@ db_reply <db_web_basic_element_t>
         row[7].get(ret.item.status);
         row[8].get(ret.item.priority);
         row[9].get(ret.item.asset_tag);
+        row[10].get(ret.item.parent_name);
 
         // QWER: attempt to remove db dictionaries
         ret.item.subtype_name = subtypeid_to_subtype (ret.item.subtype_id);
@@ -107,16 +108,16 @@ db_reply <db_web_basic_element_t>
         (tntdb::Connection &conn,
          const char *element_name) {
     // TODO write function new
-    db_web_basic_element_t item {0, "", "", 0, 0, "", 0, 0, 0, "",""};
+    db_web_basic_element_t item {0, "", "", 0, 0, "", 0, 0, 0, "","",""};
     db_reply <db_web_basic_element_t> ret = db_reply_new(item);
 
     try {
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
             "   v.id, v.name, v.id_type, v.type_name,"
-            "   v.subtype_id, v.subtype_name, v.id_parent,"
+            "   v.subtype_id, v.id_parent,"
             "   v.id_parent_type, v.status,"
-            "   v.priority, v.asset_tag"
+            "   v.priority, v.asset_tag, v.parent_name "
             " FROM"
             "   v_web_element v"
             " WHERE :name = v.name"
@@ -129,12 +130,15 @@ db_reply <db_web_basic_element_t>
         row[2].get(ret.item.type_id);
         row[3].get(ret.item.type_name);
         row[4].get(ret.item.subtype_id);
-        row[5].get(ret.item.subtype_name);
-        row[6].get(ret.item.parent_id);
-        row[7].get(ret.item.parent_type_id);
-        row[8].get(ret.item.status);
-        row[9].get(ret.item.priority);
-        row[10].get(ret.item.asset_tag);
+        row[5].get(ret.item.parent_id);
+        row[6].get(ret.item.parent_type_id);
+        row[7].get(ret.item.status);
+        row[8].get(ret.item.priority);
+        row[9].get(ret.item.asset_tag);
+        row[10].get(ret.item.parent_name);
+
+        // QWER: attempt to remove db dictionaries
+        ret.item.subtype_name = subtypeid_to_subtype (ret.item.subtype_id);
 
         ret.status = 1;
         return ret;

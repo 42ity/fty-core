@@ -51,6 +51,7 @@ struct db_web_basic_element_t {
     // TODO location
     std::string      subtype_name;
     std::string      asset_tag;
+    std::string      parent_name;
 };
 
 /**
