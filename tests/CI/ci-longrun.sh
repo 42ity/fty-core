@@ -278,9 +278,7 @@ case "$ACTION" in
         # Not wrapped with testlib-db routines - this test is in full control
         "$SCRIPTDIR/"ci-rc-bios.sh --stop
         create_nut_config "ups103_1 ups103_2" "epdu101_1 epdu101_2"
-        "$SCRIPTDIR/"ci-empty-db.sh
-        loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE"
-        loaddb_file "$DB_RACK_POWER"
+        loaddb_rack_power
         "$SCRIPTDIR/"ci-rc-bios.sh --start
         produce_events
         "$SCRIPTDIR/"ci-rc-bios.sh --stop
