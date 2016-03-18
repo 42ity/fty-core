@@ -37,7 +37,7 @@
 class asset_manager {
     public:
         // new functionality
-        db_reply <db_web_element_t>  get_item1(const std::string &id);
+        db_reply <db_web_element_t>  get_item1(uint32_t id);
         db_reply <std::map <uint32_t, std::string> > get_items1(
             const std::string &typeName,
             const std::string &subtypeName);
