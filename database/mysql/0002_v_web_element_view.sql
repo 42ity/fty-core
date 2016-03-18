@@ -1,6 +1,6 @@
 /* For details on schema version support see the main initdb.sql */
 SET @bios_db_schema_version = '201603180001' ;
-SET @bios_db_schema_filename = '0002_v_web_element_view_update.sql' ;
+SET @bios_db_schema_filename = '0002_v_web_element_view.sql' ;
 
 use box_utf8;
 
