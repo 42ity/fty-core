@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2014-2015 Eaton
+# Copyright (C) 2014-2016 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -39,11 +39,17 @@ DB_LOADDIR="$CHECKOUTDIR/database/mysql"
 # loaded along with initdb.sql wherever the empty structure is needed
 DB_BASE="$DB_LOADDIR/initdb.sql"
 DB_BASE_PATCH0001="$DB_LOADDIR/0001_device_type_extension.sql"
+DB_BASE_PATCH0002="$DB_LOADDIR/0002_v_web_element_view_update.sql"
+# Note: This approach requires whitespace-free DB_LOADDIR value
+# TODO: Generate the list with `ls` or asterisk?
+DB_BASE_PATCHES="$DB_BASE_PATCH0001 $DB_BASE_PATCH0002"
+export DB_LOADDIR DB_BASE DB_BASE_PATCHES
+
 # Sample data sets for some tests
 DB_DATA="$DB_LOADDIR/load_data.sql"
 DB_DATA_CURRENT="$DB_LOADDIR/current_data.sql"
 DB_DATA_TESTREST="$DB_LOADDIR/load_data_test_restapi.sql"
-export DB_LOADDIR DB_BASE DB_BASE_PATCH0001 DB_DATA
+export DB_DATA
 
 DB_TOPOP_NAME="power_topology.sql"
 DB_TOPOP="$DB_LOADDIR/$DB_TOPOP_NAME"
@@ -360,12 +366,12 @@ loaddb_initial() (
     # Sub-processed to avoid namespace clashes with other loaddb_something routines
     _DB_TXT="(re-)initializing"
     _DB_TAG="loaddb_initial"
-    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" "$DB_BASE_PATCH0001" && return $?
+    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" $DB_BASE_PATCHES && return $?
 
     sut_run "/bin/systemctl start mysql"
     killdb || true      # Would fail the next step, probably
     echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} --------"
-    loaddb_list "$DB_BASE" "$DB_BASE_PATCH0001" || return $?
+    loaddb_list "$DB_BASE" $DB_BASE_PATCHES || return $?
     logmsg_debug "Database schema should have been initialized at this point: core schema file only"
 
     tarballdb_fastsave "${_DB_TAG}"
@@ -375,7 +381,7 @@ loaddb_initial() (
 loaddb_sampledata() (
     _DB_TXT="loading default sample data"
     _DB_TAG="loaddb_sampledata"
-    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" "$DB_BASE_PATCH0001" "$DB_DATA" && return $?
+    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" $DB_BASE_PATCHES "$DB_DATA" && return $?
 
     loaddb_initial && \
     echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} ----" && \
@@ -389,7 +395,7 @@ loaddb_sampledata() (
 loaddb_default() (
     _DB_TXT="loading default REST API test data"
     _DB_TAG="loaddb_default"
-    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" "$DB_BASE_PATCH0001" "$DB_DATA" "$DB_DATA_TESTREST" && return $?
+    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" $DB_BASE_PATCHES "$DB_DATA" "$DB_DATA_TESTREST" && return $?
 
     echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} -------"
     loaddb_sampledata && \
@@ -403,7 +409,7 @@ loaddb_default() (
 loaddb_topo_loc() {
     _DB_TXT="topo-location"
     _DB_TAG="loaddb_topo_loc"
-    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" "$DB_BASE_PATCH0001" "$DB_DATA" "$DB_DATA_TESTREST" "$DB_TOPOL" && return $?
+    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" $DB_BASE_PATCHES "$DB_DATA" "$DB_DATA_TESTREST" "$DB_TOPOL" && return $?
 
     echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} ----------"
     loaddb_sampledata && \
@@ -417,7 +423,7 @@ loaddb_topo_loc() {
 loaddb_topo_pow() {
     _DB_TXT="topo-power"
     _DB_TAG="loaddb_topo_pow"
-    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" "$DB_BASE_PATCH0001" "$DB_DATA" "$DB_DATA_TESTREST" "$DB_TOPOP" && return $?
+    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" $DB_BASE_PATCHES "$DB_DATA" "$DB_DATA_TESTREST" "$DB_TOPOP" && return $?
 
     echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} ----------"
     loaddb_sampledata && \
@@ -431,7 +437,7 @@ loaddb_topo_pow() {
 loaddb_rack_power() {
     _DB_TXT="rack-power"
     _DB_TAG="loaddb_rack_power"
-    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" "$DB_BASE_PATCH0001" "$DB_RACK_POWER" && return $?
+    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" $DB_BASE_PATCHES "$DB_RACK_POWER" && return $?
 
     echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} ----------"
     loaddb_initial && \
@@ -445,7 +451,7 @@ loaddb_rack_power() {
 loaddb_dc_power_UC1() {
     _DB_TXT="dc-power-UC1"
     _DB_TAG="loaddb_dc_power_UC1"
-    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" "$DB_BASE_PATCH0001" "$DB_DC_POWER_UC1" && return $?
+    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" $DB_BASE_PATCHES "$DB_DC_POWER_UC1" && return $?
 
     echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} ----------"
     loaddb_initial && \
@@ -459,7 +465,7 @@ loaddb_dc_power_UC1() {
 loaddb_dc_power() {
     _DB_TXT="dc-power"
     _DB_TAG="loaddb_dc_power"
-    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" "$DB_BASE_PATCH0001" "$DB_DC_POWER" && return $?
+    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" $DB_BASE_PATCHES "$DB_DC_POWER" && return $?
 
     echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} ----------"
     loaddb_initial && \
@@ -473,7 +479,7 @@ loaddb_dc_power() {
 loaddb_averages() {
     _DB_TXT="averages"
     _DB_TAG="loaddb_averages"
-    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" "$DB_BASE_PATCH0001" "$DB_DATA" "$DB_DATA_TESTREST" "$DB_AVERAGES" "$DB_AVERAGES_RELATIVE" && return $?
+    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" $DB_BASE_PATCHES "$DB_DATA" "$DB_DATA_TESTREST" "$DB_AVERAGES" "$DB_AVERAGES_RELATIVE" && return $?
 
     echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} ----------"
     loaddb_sampledata && \
@@ -487,7 +493,7 @@ loaddb_averages() {
 loaddb_current() {
     _DB_TXT="current"
     _DB_TAG="loaddb_current"
-    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" "$DB_BASE_PATCH0001" "$DB_DATA_CURRENT" && return $?
+    tarballdb_fastload "${_DB_TXT}" "${_DB_TAG}" "$DB_BASE" $DB_BASE_PATCHES "$DB_DATA_CURRENT" && return $?
 
     echo "CI-TESTLIB_DB - reset db: ${_DB_TXT} ----------"
     loaddb_initial && \
