@@ -71,20 +71,28 @@ if ( !typeNameArg.empty() &&
 // Prepare the reply
 </%cpp>
 {
-"id": "<$$ tmp.item.basic.id $>"
-, "name": "<$$ tmp.item.basic.name $>"
-, "status": "<$$ tmp.item.basic.status $>"
-, "priority": "P<$$ tmp.item.basic.priority $>"
-, "type": "<$$ tmp.item.basic.type_name $>"
+    "id": "<$$ tmp.item.basic.id $>"
+    , "name": "<$$ tmp.item.basic.name $>"
+    , "status": "<$$ tmp.item.basic.status $>"
+    , "priority": "P<$$ tmp.item.basic.priority $>"
+    , "type": "<$$ tmp.item.basic.type_name $>"
 <%cpp>
 // if element is located, then show the location
-if ( tmp.item.basic.parent_id != 0 )
-{
+if ( tmp.item.basic.parent_id != 0 ) {
 </%cpp>
-, "location_uri":"<$$ "/api/v1/asset/" +
+    , "location_uri":"<$$ "/api/v1/asset/" +
            persist::typeid_to_type(tmp.item.basic.parent_type_id) + "/" +
            std::to_string (tmp.item.basic.parent_id) $>"
-%       }
+    , "location_id":"<$$ tmp.item.basic.parent_id $>"
+    , "location":"<$$ tmp.item.basic.parent_name $>"
+<%cpp>
+}
+else {
+</%cpp>
+    , "location":""
+<%cpp>
+}
+</%cpp>
 , "groups": [
 <%cpp>
 // every element (except groups) can be placed in some group
