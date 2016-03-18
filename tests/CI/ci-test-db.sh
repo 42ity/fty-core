@@ -81,16 +81,9 @@ logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the database tests"
 # Tests below have their failsafes
 set +e
 
-echo "------------- empty the db before tests ----------"
-test_it "db_prepare_empty"
-${CHECKOUTDIR}/tests/CI/ci-empty-db.sh
-CITEST_QUICKFAIL=yes print_result $? "Can not prepare the database"
-sleep 1
-
 echo "-------------------- test-db2 --------------------"
-test_it "db_prepare_data"
-#done by script above# loaddb_file "$DB_BASE"
-loaddb_file "$DB_DATA"
+test_it "db_prepare_sample_data"
+loaddb_sampledata
 CITEST_QUICKFAIL=yes print_result $? "Can not prepare the database"
 
 test_it test-db2
@@ -100,9 +93,7 @@ sleep 1
 
 echo "-------------------- test-db-asset-crud-----"
 test_it "db_prepare_crud"
-loaddb_file "$DB_BASE" \
-&& loaddb_file "$DB_BASE_PATCH0001" \
-&& loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" \
+loaddb_initial \
 && loaddb_file "$DB_CRUD"
 CITEST_QUICKFAIL=yes print_result $? "Can not prepare the database"
 
@@ -113,15 +104,13 @@ sleep 1
 
 for T in location power ; do
     case "$T" in
-        power) P="$DB_TOPOP" ;;
-        location) P="$DB_TOPOL" ;;
+        power) P="$DB_TOPOP" ; F=loaddb_topo_pow ;;
+        location) P="$DB_TOPOL" ; F=loaddb_topo_loc ;;
+        *) continue ;;
     esac
     echo "-------------------- test-dbtopology $T --------------------"
     test_it "db_prepare_topology_$T"
-    loaddb_file "$DB_BASE" \
-    && loaddb_file "$DB_BASE_PATCH0001" \
-    && loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" \
-    && loaddb_file "$P"
+    eval $F
     CITEST_QUICKFAIL=yes print_result $? "Can not prepare the database"
 
     test_it "test-dbtopology::$T"
@@ -132,15 +121,13 @@ done
 
 for T in rack dc ; do
     case "$T" in
-        rack) P="$DB_RACK_POWER" ;;
-        dc) P="$DB_DC_POWER" ;;
+        rack) P="$DB_RACK_POWER" ; F=loaddb_rack_power ;;
+        dc) P="$DB_DC_POWER" ; F=loaddb_dc_power ;;
+        *) continue ;;
     esac
     echo "-------------------- test-total-power for $T ---------------"
     test_it "db_prepare_totalpower_$T"
-    loaddb_file "$DB_BASE" \
-    && loaddb_file "$DB_BASE_PATCH0001" \
-    && loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" \
-    && loaddb_file "$P"
+    eval $F
     CITEST_QUICKFAIL=yes print_result $? "Can not prepare the database"
 
     test_it "test-totalpower::$T"
