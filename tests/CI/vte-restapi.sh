@@ -179,9 +179,9 @@ test_web_default() {
     # *** start the power topology set of TC
 test_web_topo_p() {
     init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_p() $*" || true
-    test_it "init_script_topo_pow"
+    test_it "init_script_sampledata_topo_pow"
     echo "----------- reset db: topology : power -----------"
-    init_script_topo_pow
+    init_script_sampledata_topo_pow
     print_result $? && \
     test_web "$@" || return $?
     return 0
@@ -191,9 +191,9 @@ test_web_topo_p() {
     # *** start the location topology set of TC
 test_web_topo_l() {
     init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_l() $*" || true
-    test_it "init_script_topo_loc"
+    test_it "init_script_sampledata_topo_loc"
     echo "---------- reset db: topology : location ---------"
-    init_script_topo_loc
+    init_script_sampledata_topo_loc
     print_result $? && \
     test_web "$@" || return $?
     return 0
