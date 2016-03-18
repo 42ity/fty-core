@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2014 Eaton
+# Copyright (C) 2014-2016 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -38,12 +38,6 @@ settraps 'exit_summarizeTestlibResults'
 set -u
 #set -e
 #set -x
-
-#DB_LOADDIR="$CHECKOUTDIR/database/mysql"
-#DB1="$DB_LOADDIR/initdb.sql"
-#DB2="$DB_LOADDIR/load_data.sql"
-#loaddb_file "$DB1"
-#loaddb_file "$DB2"
 
 # Not wrapped with testlib-db init_script* routines - this test is often
 # a quick-run component of tests that are in control, or via the CI suite
