@@ -85,7 +85,7 @@ echo "********* asset_one_room.sh **********************************************
 echo "********* 6. request_to_not_valid_id **************************************************************"
 echo "***************************************************************************************************"
 test_it "request_to_not_valid_id"
-curlfail_push_expect_404
+curlfail_push_expect_400
 api_get_json /asset/room/123456x78901234567890 >&5
 print_result $?
 curlfail_pop
