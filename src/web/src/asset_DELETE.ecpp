@@ -29,6 +29,7 @@
 #include "configure_inform.h"
 #include "defs.h"
 #include "utils_web.h"
+#include "helpers.h"
 </%pre>
 
 <%thread scope="global">
@@ -41,8 +42,15 @@ std::string id = request.getArg("id");
 if ( id.empty() ) {
     http_die("request-param-required", "id");
 }
+
+uint32_t real_id = 0;
+http_errors_t errors;
+if (!check_element_identifier ("id", id, real_id, errors)) {
+    http_die_error (errors);
+}
+
 db_a_elmnt_t row;
-auto ret = asset_mgr.delete_item(id, row);
+auto ret = asset_mgr.delete_item(real_id, row);
 if ( ret.status == 0 )
 {
     if ( ret.errsubtype == DB_ERROR_NOTFOUND )
