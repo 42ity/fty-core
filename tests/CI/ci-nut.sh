@@ -186,7 +186,7 @@ ${BUILDSUBDIR}/agent-dbstore &
 DBNGPID=$!
 
 logmsg_info "Spawning the agent-nut server in the background..."
-${BUILDSUBDIR}/agent-nut &
+${BUILDSUBDIR}/agent-nut "$CHECKOUTDIR/src/agents/nut/mapping.conf" &
 [ $? = 0 ] || CODE=$? die "Could not spawn agent-nut"
 AGNUTPID=$!
 
