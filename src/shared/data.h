@@ -47,7 +47,7 @@ class asset_manager {
 
         db_reply_t
             delete_item(
-                const std::string &id,
+                uint32_t id,
                 db_a_elmnt_t &element_info);
 };
 

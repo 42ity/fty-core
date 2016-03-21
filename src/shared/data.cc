@@ -212,23 +212,10 @@ db_reply <std::map <uint32_t, std::string> >
 
 db_reply_t
     asset_manager::delete_item(
-        const std::string &id,
+        uint32_t id,
         db_a_elmnt_t &element_info)
 {
     db_reply_t ret = db_reply_new();
-
-    // TODO add better converter
-    uint32_t real_id = atoi(id.c_str());
-    if ( real_id == 0 )
-    {
-        ret.status        = 0;
-        ret.errtype       = DB_ERR;
-        ret.errsubtype    = DB_ERROR_NOTFOUND;
-        ret.msg           = "cannot convert an id";
-        log_warning (ret.msg.c_str());
-        return ret;
-    }
-    log_debug ("id converted successfully");
 
     // As different types should be deleted in differenct way ->
     // find out the type of the element.
@@ -239,7 +226,7 @@ db_reply_t
         tntdb::Connection conn = tntdb::connectCached(url);
 
         db_reply <db_web_basic_element_t> basic_info =
-            persist::select_asset_element_web_byId(conn, real_id);
+            persist::select_asset_element_web_byId(conn, id);
 
         if ( basic_info.status == 0 )
         {
@@ -261,17 +248,17 @@ db_reply_t
             case persist::asset_type::ROOM:
             case persist::asset_type::RACK:
             {
-                ret = persist::delete_dc_room_row_rack(conn, real_id);
+                ret = persist::delete_dc_room_row_rack(conn, id);
                 break;
             }
             case persist::asset_type::GROUP:
             {
-                ret = persist::delete_group(conn, real_id);
+                ret = persist::delete_group(conn, id);
                 break;
             }
             case persist::asset_type::DEVICE:
             {
-                ret = persist::delete_device(conn, real_id);
+                ret = persist::delete_device(conn, id);
                 break;
             }
             default:
