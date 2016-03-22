@@ -73,6 +73,7 @@ void CsvMap::deserialize() {
     size_t i = 0;
     for (const std::string& title_name : _data[0]) {
         // TODO hotfix ! remove later!!!
+        // BIOS-1428
         if ( title_name.empty() )
             continue;
 
@@ -225,6 +226,13 @@ s_read_si(
             has_ext = true;
             continue;
         }
+        // these fields are just for the information in the REPRESENTATION
+        // may be we can remove them earlier, but for now it is HERE
+        // TODO: BIOS-1428
+        if ( name == "location_id" )
+            continue;
+        if ( name == "location_uri" )
+            continue;
 
         if ( name == "powers" ) {
             auto powers_si = si.getMember("powers");
