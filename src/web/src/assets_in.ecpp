@@ -34,8 +34,15 @@
 #include "dbpath.h"
 #include "asset_types.h"
 #include "db/assets.h"
+#include "helpers.h"
 
-std::string assets_in_container(tntdb::Connection &connection, a_elmnt_id_t container, const std::vector<a_elmnt_tp_id_t> &types, const std::vector<a_elmnt_stp_id_t> &subtypes)
+std::string
+    assets_in_container(
+        tntdb::Connection &connection,
+        a_elmnt_id_t container,
+        const std::vector<a_elmnt_tp_id_t> &types,
+        const std::vector<a_elmnt_stp_id_t> &subtypes
+    )
 {
     std::string result;
     auto func = [&result](const tntdb::Row& row) {
@@ -43,7 +50,7 @@ std::string assets_in_container(tntdb::Connection &connection, a_elmnt_id_t cont
             "{\"id\":\"" + row.getValue("asset_id").getString() + "\",\n" +
             "\"name\":\"" + row.getValue("name").getString() + "\",\n" +
             "\"type\":\"" + persist::typeid_to_type (row.getValue("type_id").getInt()) + "\",\n" +
-            "\"subtype\":\"" + row.getValue("subtype_name").getString() + "\"\n"
+            "\"sub_type\":\"" + row.getValue("subtype_name").getString() + "\"\n"
             "},";
     };
     persist::select_assets_by_container(connection, container, types, subtypes, func);
@@ -54,7 +61,7 @@ std::string assets_in_container(tntdb::Connection &connection, a_elmnt_id_t cont
 <%args>
 std::string in;
 std::string type;
-std::string subtype;
+std::string sub_type;
 </%args>
 <%cpp>
 {
@@ -64,20 +71,20 @@ std::string subtype;
     }
     // check if mandatory parameters are present
     if (in.empty()) http_die ("request-param-required", "in");
-    if (type.empty() && subtype.empty()) http_die ("request-param-required", "type' or 'subtype");
-    if ( !type.empty() && !subtype.empty()) http_die ("request-param-bad", "type and subtype", "both", "only one of them");
+    if (type.empty() && sub_type.empty()) http_die ("request-param-required", "type' or 'sub_type");
+    if ( !type.empty() && !sub_type.empty()) http_die ("request-param-bad", "type and sub_type", "both", "only one of them");
 
     std::vector<a_elmnt_stp_id_t> subtypes;
     std::vector<a_elmnt_tp_id_t> types;
-    if( ! subtype.empty() ) {
+    if( ! sub_type.empty() ) {
         std::vector<std::string> items;
-        cxxtools::split(',', subtype, std::back_inserter(items));
+        cxxtools::split(',', sub_type, std::back_inserter(items));
         for( auto &it : items ) {
-            a_elmnt_stp_id_t subtype = persist::subtype_to_subtypeid(it);
-            if (subtype == persist::asset_subtype::SUNKNOWN) {
-                http_die ("request-param-bad", "subtype", it.c_str(), "valid subtype like feed, ups, etc...");
+            a_elmnt_stp_id_t sub_type = persist::subtype_to_subtypeid(it);
+            if (sub_type == persist::asset_subtype::SUNKNOWN) {
+                http_die ("request-param-bad", "sub_type", it.c_str(), "valid sub_type like feed, ups, etc...");
             }
-            subtypes.push_back(subtype);
+            subtypes.push_back(sub_type);
         }
     } else {
         std::vector<std::string> items;
@@ -85,12 +92,18 @@ std::string subtype;
         for( auto &it : items ) {
             a_elmnt_stp_id_t type = persist::type_to_typeid(it);
             if (type == persist::asset_type::TUNKNOWN) {
-                http_die ("request-param-bad", "type", it.c_str(), "valid subtype like datacenter");
+                http_die ("request-param-bad", "type", it.c_str(), "valid sub_type like datacenter");
             }
             types.push_back(type);
         }
     }
-    
+    // convert the id from string to number
+    a_elmnt_id_t real_id = 0;
+    http_errors_t errors;
+    if (!check_element_identifier ("in", in, real_id, errors)) {
+        http_die_error (errors);
+    }
+    // create a database connection
     tntdb::Connection connection;
     try {
         connection = tntdb::connectCached (url);
@@ -100,10 +113,10 @@ std::string subtype;
         http_die ("internal-error", "Connecting to database failed.");
     }
     catch (const std::exception& e) {
-    log_error ("Exception caught: '%s'.", e.what ());
+        log_error ("Exception caught: '%s'.", e.what ());
         http_die ("internal-error", e.what ());
     }
-
+    // do the stuff
 </%cpp>
-[<$$ assets_in_container(connection, std::stoi(in), types, subtypes) $>]
+[<$$ assets_in_container(connection, real_id, types, subtypes) $>]
 %}
