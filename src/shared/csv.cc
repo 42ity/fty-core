@@ -72,6 +72,9 @@ void CsvMap::deserialize() {
 
     size_t i = 0;
     for (const std::string& title_name : _data[0]) {
+        // TODO hotfix ! remove later!!!
+        if ( title_name.empty() )
+            continue;
 
         std::string title = _ci_strip(title_name);
 
