@@ -282,6 +282,28 @@ int
          a_elmnt_id_t element_id,
          std::function<void(const tntdb::Row&)> cb);
 
+ /**
+ * \brief select all assets inside the asset-container (all 4 level down)
+ *
+ * \param[in] conn       - db connection
+ * \param[in] element_id - id of the asset-container
+ * \param[in] types      - vector of types we are interested in, empty vector means all types
+ * \param[in] subtype    - vector of subtypes we are interested in, empty vector means all subtypes.         
+ * \param[in] cb         - callback to be called with every selected row.
+ *
+ *  Every selected row has the following columns:
+ *      name, asset_id, subtype_id, subtype_name, type_id
+ *
+ * \return 0 on success (even if nothing was found)
+ */
+int
+    select_assets_by_container
+        (tntdb::Connection &conn,
+         a_elmnt_id_t element_id,
+         std::vector<a_elmnt_tp_id_t> types,
+         std::vector<a_elmnt_stp_id_t> subtypes,
+         std::function<void(const tntdb::Row&)> cb);
+
 
 /**
  * \brief read particular asset ext property of device[s]
