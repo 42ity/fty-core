@@ -287,7 +287,8 @@ int
  *
  * \param[in] conn       - db connection
  * \param[in] element_id - id of the asset-container
- * \param[in] subtypes   - vector of subtypes we are interested in, empty vector means all subtypes.         
+ * \param[in] types      - vector of types we are interested in, empty vector means all types
+ * \param[in] subtype    - vector of subtypes we are interested in, empty vector means all subtypes.         
  * \param[in] cb         - callback to be called with every selected row.
  *
  *  Every selected row has the following columns:
