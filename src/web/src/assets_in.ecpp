@@ -23,7 +23,6 @@
  * \brief  Implementation for short list of assets in container
  */
  #><%pre>
-        //#include "assets_in_impl.cc"
 #include <vector>
 #include <string>
 #include <exception>
@@ -59,24 +58,10 @@ std::string subtype;
 </%args>
 <%cpp>
 {
-    tntdb::Connection connection;
-    try {
-        connection = tntdb::connectCached (url);
-    }
-    catch (const tntdb::Error& e) {
-        log_error ("tntdb::connectCached (url = '%s') failed: %s.", url.c_str (), e.what ());
-        http_die ("internal-error", "Connecting to database failed.");
-    }
-    catch (const std::exception& e) {
-    log_error ("Exception caught: '%s'.", e.what ());
-        http_die ("internal-error", e.what ());
-    }
     // check if method is allowed
     if (!request.isMethodGET()) {
         http_die ("method-not-allowed", request.getMethod().c_str());
     }
-    log_debug (" type = '%s'", type.c_str());
-    log_debug (" container = '%s'", in.c_str());
     // check if mandatory parameters are present
     if (in.empty()) http_die ("request-param-required", "in");
     if (type.empty() && subtype.empty()) http_die ("request-param-required", "type' or 'subtype");
@@ -105,6 +90,20 @@ std::string subtype;
             types.push_back(type);
         }
     }
+    
+    tntdb::Connection connection;
+    try {
+        connection = tntdb::connectCached (url);
+    }
+    catch (const tntdb::Error& e) {
+        log_error ("tntdb::connectCached (url = '%s') failed: %s.", url.c_str (), e.what ());
+        http_die ("internal-error", "Connecting to database failed.");
+    }
+    catch (const std::exception& e) {
+    log_error ("Exception caught: '%s'.", e.what ());
+        http_die ("internal-error", e.what ());
+    }
+
 </%cpp>
-{ "assets" : [<$$ assets_in_container(connection, std::stoi(in), types, subtypes) $>] }
+[<$$ assets_in_container(connection, std::stoi(in), types, subtypes) $>]
 %}
