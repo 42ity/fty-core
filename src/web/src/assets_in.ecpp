@@ -43,7 +43,8 @@ std::string assets_in_container(tntdb::Connection &connection, a_elmnt_id_t cont
         result +=
             "{\"id\":\"" + row.getValue("asset_id").getString() + "\",\n" +
             "\"name\":\"" + row.getValue("name").getString() + "\",\n" +
-            "\"type\":\"" + row.getValue("subtype_name").getString() + "\"\n" +
+        "\"type\":\"" + persist::typeid_to_type (row.getValue("type_id").getInt()) + "\",\n" +
+            "\"subtype\":\"" + row.getValue("subtype_name").getString() + "\"\n"
             "},";
     };
     persist::select_assets_by_container(connection, container, types, subtypes, func);
@@ -105,5 +106,5 @@ std::string subtype;
         }
     }
 </%cpp>
-[<$$ assets_in_container(connection, std::stoi(in), types, subtypes) $>]
+{ "assets" : [<$$ assets_in_container(connection, std::stoi(in), types, subtypes) $>] }
 %}
