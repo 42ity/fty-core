@@ -23,18 +23,53 @@
  * \brief  Implementation for short list of assets in container
  */
  #><%pre>
+        //#include "assets_in_impl.cc"
+#include <vector>
+#include <string>
+#include <exception>
+#include <tntdb/connect.h>
+#include <tntdb/error.h>
 #include <cxxtools/split.h>
-#include "data.h"
 #include "log.h"
-#include "assetcrud.h"
 #include "utils_web.h"
+#include "dbpath.h"
+#include "asset_types.h"
+#include "db/assets.h"
+
+std::string assets_in_container(tntdb::Connection &connection, a_elmnt_id_t container, const std::vector<a_elmnt_tp_id_t> &types, const std::vector<a_elmnt_stp_id_t> &subtypes)
+{
+    std::string result;
+    auto func = [&result](const tntdb::Row& row) {
+        result +=
+            "{\"id\":\"" + row.getValue("asset_id").getString() + "\",\n" +
+            "\"name\":\"" + row.getValue("name").getString() + "\",\n" +
+            "\"type\":\"" + row.getValue("subtype_name").getString() + "\"\n" +
+            "},";
+    };
+    persist::select_assets_by_container(connection, container, types, subtypes, func);
+    return result.substr(0, result.size()-1);
+}
+
 </%pre>
 <%args>
 std::string in;
 std::string type;
+std::string subtype;
 </%args>
 <%cpp>
 {
+    tntdb::Connection connection;
+    try {
+        connection = tntdb::connectCached (url);
+    }
+    catch (const tntdb::Error& e) {
+        log_error ("tntdb::connectCached (url = '%s') failed: %s.", url.c_str (), e.what ());
+        http_die ("internal-error", "Connecting to database failed.");
+    }
+    catch (const std::exception& e) {
+    log_error ("Exception caught: '%s'.", e.what ());
+        http_die ("internal-error", e.what ());
+    }
     // check if method is allowed
     if (!request.isMethodGET()) {
         http_die ("method-not-allowed", request.getMethod().c_str());
@@ -43,8 +78,32 @@ std::string type;
     log_debug (" container = '%s'", in.c_str());
     // check if mandatory parameters are present
     if (in.empty()) http_die ("request-param-required", "in");
-    if (type.empty()) http_die ("request-param-required", "type");
-    std::string result =  "{}";
+    if (type.empty() && subtype.empty()) http_die ("request-param-required", "type' or 'subtype");
+    if ( !type.empty() && !subtype.empty()) http_die ("request-param-bad", "type and subtype", "both", "only one of them");
+
+    std::vector<a_elmnt_stp_id_t> subtypes;
+    std::vector<a_elmnt_tp_id_t> types;
+    if( ! subtype.empty() ) {
+        std::vector<std::string> items;
+        cxxtools::split(',', subtype, std::back_inserter(items));
+        for( auto &it : items ) {
+            a_elmnt_stp_id_t subtype = persist::subtype_to_subtypeid(it);
+            if (subtype == persist::asset_subtype::SUNKNOWN) {
+                http_die ("request-param-bad", "subtype", it.c_str(), "valid subtype like feed, ups, etc...");
+            }
+            subtypes.push_back(subtype);
+        }
+    } else {
+        std::vector<std::string> items;
+        cxxtools::split(',', type, std::back_inserter(items));
+        for( auto &it : items ) {
+            a_elmnt_stp_id_t type = persist::type_to_typeid(it);
+            if (type == persist::asset_type::TUNKNOWN) {
+                http_die ("request-param-bad", "type", it.c_str(), "valid subtype like datacenter");
+            }
+            types.push_back(type);
+        }
+    }
 </%cpp>
-<$$ result $>
+[<$$ assets_in_container(connection, std::stoi(in), types, subtypes) $>]
 %}

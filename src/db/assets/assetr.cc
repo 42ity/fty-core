@@ -844,6 +844,7 @@ int
     }
 }
 
+
 int
     select_assets_by_container
         (tntdb::Connection &conn,
@@ -851,12 +852,23 @@ int
          std::function<void(const tntdb::Row&)> cb
          )
 {
+    return select_assets_by_container(conn, element_id, {}, {}, cb);
+}
+
+int
+    select_assets_by_container
+        (tntdb::Connection &conn,
+         a_elmnt_id_t element_id,
+         std::vector<a_elmnt_tp_id_t> types,
+         std::vector<a_elmnt_stp_id_t> subtypes,
+         std::function<void(const tntdb::Row&)> cb
+         )
+{
     LOG_START;
     log_debug ("container element_id = %" PRIu32, element_id);
 
     try {
-        // Can return more than one row.
-        tntdb::Statement st = conn.prepareCached(
+        std::string select =
             " SELECT "
             "   v.name, "
             "   v.id_asset_element as asset_id, "
@@ -866,8 +878,19 @@ int
             " FROM "
             "   v_bios_asset_element_super_parent v "
             " WHERE "
-            "   :containerid in (v.id_parent1, v.id_parent2, v.id_parent3, v.id_parent4, v.id_parent5)"
-        );
+            "   :containerid in (v.id_parent1, v.id_parent2, v.id_parent3, v.id_parent4, v.id_parent5)";
+        if (!subtypes.empty()) {
+            std::string list;
+            for( auto &id: subtypes) list += std::to_string(id) + ",";
+            select += " and v.id_asset_device_type in (" + list.substr(0,list.size()-1) + ")"; 
+        }
+        if (!types.empty()) {
+            std::string list;
+            for( auto &id: types) list += std::to_string(id) + ",";
+            select += " and v.id_type in (" + list.substr(0,list.size()-1) + ")"; 
+        }
+        // Can return more than one row.
+        tntdb::Statement st = conn.prepareCached (select);
 
         tntdb::Result result = st.set("containerid", element_id).
                                   select();
