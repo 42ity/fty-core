@@ -26,6 +26,7 @@
  * \brief Implementation of GET operation on any asset
  */
  #><%pre>
+#include <cxxtools/regex.h>
 
 #include "data.h"
 #include "asset_types.h"
@@ -33,6 +34,25 @@
 #include "utils_web.h"
 #include "asset_computed_impl.h"
 #include "helpers.h"
+
+    struct Outlet {
+        std::string label;
+        bool label_r;
+        std::string type;
+        bool type_r;
+        std::string group;
+        bool group_r;
+    };
+
+std::string getOutletNumber (const std::string &extAttributeName)
+{
+    auto dot1 = extAttributeName.find_first_of(".");
+    std::string oNumber = extAttributeName.substr(dot1 + 1);
+    auto dot2 = oNumber.find_first_of(".");
+    oNumber = oNumber.substr(0, dot2);
+    return oNumber;
+}
+
 </%pre>
 
 <%thread scope="global">
@@ -208,24 +228,78 @@ else {
 , "ext" : [
 {"asset_tag": "<$$ tmp.item.basic.asset_tag $>", "read_only": true }
 <%cpp>
+std::map<std::string, Outlet> outlets;
 if ( !tmp.item.ext.empty() )
 {
-    // this , is in JSON!!!!
-</%cpp>
-,
-<%cpp>
-    uint32_t ext_count = tmp.item.ext.size();
-    uint32_t i = 1;
+    // TODO get outlet count
+
+    // TODO escape the DOT ????
+    static cxxtools::Regex outlet_label("^outlets\.[0-9][0-9]*\.label$");
+    static cxxtools::Regex outlet_group("^outlets\.[0-9][0-9]*\.group$");
+    static cxxtools::Regex outlet_type("^outlets\.[0-9][0-9]*\.type$");
     for ( auto &oneExt : tmp.item.ext )
     {
+        auto &attrName = oneExt.first;
+        auto &attrValue = oneExt.second.first;
+        auto isReadOnly= oneExt.second.second;
+        if ( outlet_label.match(attrName) ) {
+            auto oNumber = getOutletNumber(attrName);
+            auto it = outlets.find(oNumber);
+            if ( it == outlets.cend() ) {
+                auto r = outlets.emplace(oNumber,Outlet());
+                it = r.first;
+            }
+            it->second.label = attrValue;
+            it->second.label_r = isReadOnly;
+            continue;
+        }
+        else if ( outlet_group.match(attrName) ) {
+            auto oNumber = getOutletNumber(attrName);
+            auto it = outlets.find(oNumber);
+            if ( it == outlets.cend() ) {
+                auto r = outlets.emplace(oNumber,Outlet());
+                it = r.first;
+            }
+            it->second.group = attrValue;
+            it->second.group_r = isReadOnly;
+            continue;
+        }
+        else if ( outlet_type.match(attrName) ) {
+            auto oNumber = getOutletNumber(attrName);
+            auto it = outlets.find(oNumber);
+            if ( it == outlets.cend() ) {
+                auto r = outlets.emplace(oNumber,Outlet());
+                it = r.first;
+            }
+            it->second.type = attrValue;
+            it->second.type_r = isReadOnly;
+            continue;
+        }
 </%cpp>
-{"<$$ oneExt.first $>":"<$$ oneExt.second.first $>","read_only": <$$ oneExt.second.second? "true":"false" $> }<? i != ext_count ? "," ?>
+,{"<$$ oneExt.first $>":"<$$ oneExt.second.first $>","read_only": <$$ oneExt.second.second? "true":"false" $> }
 <%cpp>
-        i++;
     }
+
 }
 </%cpp>
 ]
+%    if ( !outlets.empty() )// TODO print OUTLETS structure
+%    {
+,
+    "outlets": {
+%        int i = 1;
+%        int max_size = outlets.size();
+%        for ( auto &oneOutlet : outlets ) {
+            "<$$ oneOutlet.first$>" : [
+                { "label": "<$$ oneOutlet.second.label $>" , "read_only":<$$ oneOutlet.second.label_r ? "true":"false" $> },
+                { "group": "<$$ oneOutlet.second.group $>" , "read_only":<$$ oneOutlet.second.group_r ? "true":"false" $> },
+                { "type": "<$$ oneOutlet.second.type $>" , "read_only":<$$ oneOutlet.second.type_r ? "true":"false" $> }
+            ]<$$ max_size == i ? "":"," $>
+%           i++;
+%        }
+    }
+%    }
+
 , "computed" : {
 %       if (persist::is_rack(tmp.item.basic.type_id)) {
 %           int freeusize = free_u_size(tmp.item.basic.id);

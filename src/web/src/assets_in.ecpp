@@ -34,8 +34,15 @@
 #include "dbpath.h"
 #include "asset_types.h"
 #include "db/assets.h"
+#include "helpers.h"
 
-std::string assets_in_container(tntdb::Connection &connection, a_elmnt_id_t container, const std::vector<a_elmnt_tp_id_t> &types, const std::vector<a_elmnt_stp_id_t> &subtypes)
+std::string
+    assets_in_container(
+        tntdb::Connection &connection,
+        a_elmnt_id_t container,
+        const std::vector<a_elmnt_tp_id_t> &types,
+        const std::vector<a_elmnt_stp_id_t> &subtypes
+    )
 {
     std::string result;
     auto func = [&result](const tntdb::Row& row) {
@@ -90,7 +97,13 @@ std::string subtype;
             types.push_back(type);
         }
     }
-    
+    // convert the id from string to number
+    a_elmnt_id_t real_id = 0;
+    http_errors_t errors;
+    if (!check_element_identifier ("in", in, real_id, errors)) {
+        http_die_error (errors);
+    }
+    // create a database connection
     tntdb::Connection connection;
     try {
         connection = tntdb::connectCached (url);
@@ -100,10 +113,10 @@ std::string subtype;
         http_die ("internal-error", "Connecting to database failed.");
     }
     catch (const std::exception& e) {
-    log_error ("Exception caught: '%s'.", e.what ());
+        log_error ("Exception caught: '%s'.", e.what ());
         http_die ("internal-error", e.what ());
     }
-
+    // do the stuff
 </%cpp>
-[<$$ assets_in_container(connection, std::stoi(in), types, subtypes) $>]
+[<$$ assets_in_container(connection, real_id, types, subtypes) $>]
 %}
