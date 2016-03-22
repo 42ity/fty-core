@@ -183,7 +183,6 @@
     <mapping>
       <target>assets_in@bios_web</target>
       <url>^/api/v1/assets$</url>
-      <method>GET</method>
     </mapping>
 
     <mapping>
