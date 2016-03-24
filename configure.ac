@@ -418,11 +418,10 @@ AS_IF([test -n "$_CC_ORIG"], [
 
 # Checks for the header files
 AC_CHECK_HEADERS([magic.h], [], AC_MSG_ERROR([libmagic: cannot find required header magic.h]))
-AC_MSG_CHECKING([basic libmagic operations])
 AC_CHECK_LIB(
              [magic],
              [magic_open],
-             [AC_MSG_RESULT([ok])],
+             [],
              [AC_MSG_ERROR([function magic_open() is not available, this is not the libmagic we are looking for])]
              )
 SAVE_LIBS="$LIBS"
