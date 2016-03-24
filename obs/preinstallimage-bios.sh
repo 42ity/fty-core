@@ -303,7 +303,7 @@ EnvironmentFile=-/etc/default/bios-db-rw
 PrivateTmp=true
 ExecStartPre=/usr/share/bios/scripts/ssl-create.sh
 ExecStartPre=/usr/share/bios/scripts/xml-cat.sh /etc/tntnet/%i.d /etc/tntnet/%i.xml
-ExecStartPre="/bin/sh -c 'F=/etc/default/bios; [ -f ${F} ] || touch ${F}; chown www-data: ${F}; chmod 0644 ${F}'"
+ExecStartPre="/bin/sh -c 'F=/etc/default/bios; [ -f \${F} ] || touch \${F}; chown www-data: \${F}; chmod 0644 \${F}'"
 ExecStart=/usr/bin/tntnet -c /etc/tntnet/%i.xml
 Restart=on-failure
 
