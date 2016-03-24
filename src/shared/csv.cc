@@ -72,13 +72,7 @@ void CsvMap::deserialize() {
 
     size_t i = 0;
     for (const std::string& title_name : _data[0]) {
-        // TODO hotfix ! remove later!!!
-        // BIOS-1428
-        if ( title_name.empty() )
-            continue;
-
         std::string title = _ci_strip(title_name);
-
         if (_title_to_index.count(title) == 1) {
             std::ostringstream buf;
             buf << "duplicate title name '" << title << "'";
@@ -208,6 +202,7 @@ CsvMap_from_istream(
     return cm;
 }
 
+
 static void
     process_powers_key(
         const cxxtools::SerializationInfo &powers_si,
@@ -222,7 +217,6 @@ static void
     for ( const auto &oneElement : powers_si ) { // iterate through the array
         // src_name is mandatory
         if (  oneElement.findMember("src_name") == NULL ) {
-        LOG_END;
             throw std::invalid_argument("Key 'src_name' in the key 'powers' is mandatory");
         }
 
@@ -250,6 +244,50 @@ static void
         i++;
     }
 }
+
+
+static void
+    process_oneOutlet(
+        const cxxtools::SerializationInfo &outlet_si,
+        std::vector <std::vector<cxxtools::String> > &data
+    )
+{
+    if ( outlet_si.category () != cxxtools::SerializationInfo::Array ) {
+        throw std::invalid_argument("Key '" + outlet_si.name() +"' should be an array");
+    }
+    std::string name;
+    std::string value;
+    bool isReadOnly = false;
+    for ( const auto &oneOutletAttr : outlet_si ) { // iterate through the outletAttributes
+        try {
+            oneOutletAttr.getMember("name").getValue(name);
+            oneOutletAttr.getMember("value").getValue(value);
+            oneOutletAttr.getMember("read_only").getValue(isReadOnly);
+        }
+        catch (...) {
+            throw std::invalid_argument("In outlet object key 'name/value/read_only' is missing");
+        }
+        data[0].push_back(cxxtools::String ("outlet." + outlet_si.name() + "." + name));
+        data[1].push_back(cxxtools::String (value));
+    }
+}
+
+
+static void
+    process_outlets_key(
+        const cxxtools::SerializationInfo &outlets_si,
+        std::vector <std::vector<cxxtools::String> > &data
+    )
+{
+    if ( outlets_si.category () != cxxtools::SerializationInfo::Object ) {
+        throw std::invalid_argument("Key 'outlets' should be an object");
+    }
+    for ( const auto &oneOutlet : outlets_si ) { // iterate through the object
+        process_oneOutlet (oneOutlet, data);
+    }
+}
+
+
 
 // forward declaration
 static void
@@ -291,7 +329,6 @@ static void
     else {
         throw std::invalid_argument("Key 'ext' should be an Array or Object");
     }
-    LOG_END;
 }
 
 static void
@@ -322,6 +359,12 @@ s_read_si(
             process_powers_key (si.getMember("powers"), data);
             continue;
         }
+
+        if ( name == "outlets" ) {
+            process_outlets_key (si.getMember("outlets"), data);
+            continue;
+        }
+
         std::string value;
         it->getValue(value);
         data[0].push_back(name);

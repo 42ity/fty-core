@@ -57,6 +57,10 @@
         log_error (e.what());
         http_die("bad-request-document", e.what());
     }
+    catch (const std::exception& e) {
+        LOG_END_ABNORMAL(e);
+        http_die("internal-error", "See logs for more details");
+    }
 
     // POST /asset is currently used to insert new datacenter from wizard
     //      and devices for EMC4J. Inserting devices is rectricted only for existing use case
