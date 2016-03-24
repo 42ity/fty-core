@@ -351,6 +351,17 @@ CsvMap_from_serialization_info(
 {
     std::vector <std::vector<cxxtools::String> > data = {{}, {}};
     s_read_si(si, data);
+    // serializationInfo don't have a functionality to "remove" a member
+    // so, the requested document can have "id" column
+    // BIOS-1985 start
+    for ( unsigned int i = 0 ; i < data.at(0).size() ; i++ ) {
+        if ( data.at(0).at(i) == "id" ) {
+            // remove it from the vector if it was there
+            data.at(0).erase(data.at(0).begin() + i);
+            data.at(1).erase(data.at(1).begin() + i);
+        }
+    }
+    // BIOS-1985 end
 
     cxxtools::SerializationInfo si_id;
     si_id.setTypeName("id_si");
