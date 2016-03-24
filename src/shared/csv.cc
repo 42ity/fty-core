@@ -209,21 +209,105 @@ CsvMap_from_istream(
 }
 
 static void
+    process_powers_key(
+        const cxxtools::SerializationInfo &powers_si,
+        std::vector <std::vector<cxxtools::String> > &data
+    )
+{
+    if ( powers_si.category () != cxxtools::SerializationInfo::Array ) {
+        throw std::invalid_argument("Key 'powers' should be an array");
+    }
+    // we need a counter for fields
+    int i = 1;
+    for ( const auto &oneElement : powers_si ) { // iterate through the array
+        // src_name is mandatory
+        if (  oneElement.findMember("src_name") == NULL ) {
+        LOG_END;
+            throw std::invalid_argument("Key 'src_name' in the key 'powers' is mandatory");
+        }
+
+        cxxtools::String src_name{};
+        oneElement.getMember("src_name") >>= src_name;
+        data[0].push_back (cxxtools::String("power_source." + std::to_string(i)));
+        data[1].push_back (src_name);
+        // src_outlet is optimal
+        if ( oneElement.findMember("src_socket") != NULL ) {
+            cxxtools::String src_socket{};
+            oneElement.getMember("src_socket") >>= src_socket;
+            data[0].push_back (cxxtools::String("power_plug_src." + std::to_string(i)));
+            data[1].push_back (src_socket);
+        }
+        // dest_outlet is optional
+        if ( oneElement.findMember("dest_socket") != NULL ) {
+            cxxtools::String dest_socket{};
+            oneElement.getMember("dest_socket") >>= dest_socket;
+            data[0].push_back (cxxtools::String ("power_input." + std::to_string(i)));
+            data[1].push_back (dest_socket);
+        }
+        // src_id is there, but here it is ignored
+        // because id and name can be in the conflict.
+        // src_name is mutable, but src_id is just an informational field
+        i++;
+    }
+}
+
+// forward declaration
+static void
+s_read_si(
+        const cxxtools::SerializationInfo& si,
+        std::vector <std::vector<cxxtools::String> >& data);
+
+static void
+    process_ext_key(
+        const cxxtools::SerializationInfo &ext_si,
+        std::vector <std::vector<cxxtools::String> > &data
+    )
+{
+    if ( ext_si.category () == cxxtools::SerializationInfo::Array ) {
+        log_debug ("it is GET format");
+        // this information in GET format
+        for ( const auto &oneAttrEl : ext_si ) { // iterate through the array
+            // ASSUMPTION: oneAttr has 2 fields:
+            // "read_only" - this is an information only
+            // "some_unknown_name"
+            for ( unsigned int i = 0 ; i < 2 ; ++i) {
+                auto &oneAttr = oneAttrEl.getMember(i);
+                auto &name = oneAttr.name();
+                if ( name == "read_only" ) {
+                    continue;
+                }
+                std::string value;
+                oneAttr.getValue(value);
+                data[0].push_back(cxxtools::String(name));
+                data[1].push_back(cxxtools::String(value));
+            }
+        }
+    }
+    else if ( ext_si.category () == cxxtools::SerializationInfo::Object ) {
+        // this information in PUT POST format
+        log_debug ("it is PUT/POST format");
+        s_read_si(ext_si, data);
+    }
+    else {
+        throw std::invalid_argument("Key 'ext' should be an Array or Object");
+    }
+    LOG_END;
+}
+
+static void
 s_read_si(
         const cxxtools::SerializationInfo& si,
         std::vector <std::vector<cxxtools::String> >& data)
 {
-    if (data.size() != 2)
+    if ( data.size() != 2 ) {
         throw std::invalid_argument("Expected two items in array, got " + std::to_string(data.size()));
-
-    bool has_ext;
+    }
 
     for (auto it = si.begin();
                     it != si.end(); ++it) {
         const cxxtools::String name = cxxtools::convert<cxxtools::String>(it->name());
-
-        if (name == "ext") {
-            has_ext = true;
+        if ( name == "ext" ) {
+            process_ext_key (si.getMember("ext"), data);
             continue;
         }
         // these fields are just for the information in the REPRESENTATION
@@ -235,56 +319,14 @@ s_read_si(
             continue;
 
         if ( name == "powers" ) {
-            auto powers_si = si.getMember("powers");
-            if ( powers_si.category () != cxxtools::SerializationInfo::Array ) {
-                throw std::invalid_argument("Key 'powers' should be an array");
-            }
-            // we need a counter for fields
-            int i = 1;
-            for ( const auto &oneElement : powers_si ) { // iterate through the array
-                // src_name is mandatory
-                if (  oneElement.findMember("src_name") == NULL ) {
-                    throw std::invalid_argument("Key 'src_name' in the key 'powers' is mandatory");
-                }
-
-                cxxtools::String src_name{};
-                oneElement.getMember("src_name") >>= src_name;
-                data[0].push_back (cxxtools::String("power_source." + std::to_string(i)));
-                data[1].push_back (src_name);
-                // src_outlet is optimal
-                if ( oneElement.findMember("src_socket") != NULL ) {
-                    cxxtools::String src_socket{};
-                    oneElement.getMember("src_socket") >>= src_socket;
-                    data[0].push_back (cxxtools::String("power_plug_src." + std::to_string(i)));
-                    data[1].push_back (src_socket);
-                }
-                // dest_outlet is optional
-                if ( oneElement.findMember("dest_socket") != NULL ) {
-                    cxxtools::String dest_socket{};
-                    oneElement.getMember("dest_socket") >>= dest_socket;
-                    data[0].push_back (cxxtools::String ("power_input." + std::to_string(i)));
-                    data[1].push_back (dest_socket);
-                }
-                // src_id is there, but here it is ignored
-                // because id and name can be in the conflict.
-                // src_name is mutable, but src_id is just an informational field
-                i++;
-            }
+            process_powers_key (si.getMember("powers"), data);
             continue;
         }
-        cxxtools::String value;
+        std::string value;
         it->getValue(value);
         data[0].push_back(name);
-        data[1].push_back(value);
+        data[1].push_back(cxxtools::String(value));
     }
-
-    if (!has_ext)
-        return;
-
-    const cxxtools::SerializationInfo* ext_si_p = si.findMember("ext");
-    if (!ext_si_p)
-        return;
-    s_read_si(*ext_si_p, data);
 }
 
 CsvMap
@@ -293,6 +335,10 @@ CsvMap_from_serialization_info(
 {
     std::vector <std::vector<cxxtools::String> > data = {{}, {}};
     s_read_si(si, data);
+    // print the data
+    //for ( unsigned int i = 0; i < data.size(); i++ ) {
+    //    log_debug ("%s = %s", (cxxtools::convert<std::string> (data.at(0).at(i)) ).c_str(), (cxxtools::convert<std::string> (data.at(1).at(i))).c_str());
+    // }
     CsvMap cm{data};
     cm.deserialize();
     return cm;
@@ -310,6 +356,10 @@ CsvMap_from_serialization_info(
     si_id.setTypeName("id_si");
     si_id.addMember("id") <<= id;
     s_read_si(si_id, data);
+    //log_debug ("size=%u", data.size());
+    //for ( unsigned int i = 0; i < data.size(); i++ ) {
+    //    log_debug ("%s = %s", (cxxtools::convert<std::string> (data.at(0).at(i)) ).c_str(), (cxxtools::convert<std::string> (data.at(1).at(i))).c_str());
+    // }
 
     CsvMap cm{data};
     cm.deserialize();
