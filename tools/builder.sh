@@ -144,8 +144,15 @@ fi
 [ x"$BUILDSUBDIR" = x ] && BUILDSUBDIR="build-${BLDARCH}"
 
 # Set up the parallel make with reasonable limits, using several ways to
-# gather and calculate this information
-[ x"$NCPUS" = x ] && { NCPUS="`/usr/bin/getconf _NPROCESSORS_ONLN`" || NCPUS="`/usr/bin/getconf NPROCESSORS_ONLN`" || NCPUS="`cat /proc/cpuinfo | grep -wc processor`" || NCPUS=1; } 2>/dev/null
+# gather and calculate this information. Note that "psrinfo" count is not
+# an honest approach (there may be limits of current CPU set etc.) but is
+# a better upper bound than nothing...
+[ x"$NCPUS" = x ] && { \
+    NCPUS="`/usr/bin/getconf _NPROCESSORS_ONLN`" || \
+    NCPUS="`/usr/bin/getconf NPROCESSORS_ONLN`" || \
+    NCPUS="`cat /proc/cpuinfo | grep -wc processor`" || \
+    { [ -x /usr/sbin/psrinfo ] && NCPUS="`/usr/sbin/psrinfo | wc -l`"; } \
+    || NCPUS=1; } 2>/dev/null
 [ x"$NCPUS" != x -a "$NCPUS" -ge 1 ] || NCPUS=1
 [ x"$NPARMAKES" = x ] && { NPARMAKES="`do_math "$NCPUS" '*' 2`" || NPARMAKES=2; }
 [ x"$NPARMAKES" != x -a "$NPARMAKES" -ge 1 ] || NPARMAKES=2
