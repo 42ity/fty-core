@@ -194,6 +194,7 @@ src/web/src/auth-require.cpp
 src/web/src/augtool.cpp
 src/web/src/auth.cpp
 src/web/src/asset_*.cpp
+src/web/src/assets_*.cpp
 src/web/src/agent.cpp
 src/web/src/alerts.cpp
 src/web/src/average.cpp
