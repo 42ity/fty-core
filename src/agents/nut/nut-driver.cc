@@ -416,6 +416,12 @@ std::string NUTDevice::property(const std::string& name) const {
     return property(name.c_str());
 }
 
+void NUTDevice::NUTSetIfNotPresent( std::map< std::string,std::vector<std::string> > &vars, const std::string &dst, const std::string &src ) {
+    if (vars.find(dst) == vars.cend()) {
+        const auto &it = vars.find(src);
+        if (it != vars.cend()) vars[dst] = it->second;
+    }
+}
 
 void NUTDevice::NUTValuesTransformation( std::map< std::string,std::vector<std::string> > &vars ) {
     if( vars.empty() ) return ;
@@ -436,7 +442,21 @@ void NUTDevice::NUTValuesTransformation( std::map< std::string,std::vector<std::
             if( ! it->second.empty() && it->second[0] == "pdu" ) it->second[0] = "epdu";
         }
     }
-};
+    // variables, that differs from ups to ups
+    NUTSetIfNotPresent (vars, "ups.realpower", "input.realpower");
+    NUTSetIfNotPresent (vars, "ups.realpower", "outlet.realpower");
+    NUTSetIfNotPresent (vars, "input.L1.realpower", "input.realpower");
+    NUTSetIfNotPresent (vars, "input.L1.realpower", "ups.realpower");
+    NUTSetIfNotPresent (vars, "output.L1.realpower", "output.realpower");
+    // take input realpower and present it as output if output is not present
+    // and also the opposite way
+    for( const auto &variable: {"realpower", "L1.realpower", "L2.realpower", "L3.realpower"} ) {
+        std::string outvar = "output."; outvar.append (variable);
+        std::string invar = "input."; invar.append(variable);
+        NUTSetIfNotPresent (vars, outvar, invar);
+        NUTSetIfNotPresent (vars, invar, outvar);
+    }
+}
 
 void NUTDevice::clear() {
     if( ! _inventory.empty() || ! _physics.empty() ) {
