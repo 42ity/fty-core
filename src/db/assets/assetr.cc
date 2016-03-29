@@ -283,7 +283,7 @@ db_reply <std::vector <db_tmp_link_t>>
 }
 
 
-db_reply <std::vector <a_elmnt_id_t> >
+db_reply <std::map <a_elmnt_id_t, std::string> >
     select_asset_element_groups
         (tntdb::Connection &conn,
          a_elmnt_id_t element_id)
@@ -291,21 +291,23 @@ db_reply <std::vector <a_elmnt_id_t> >
     LOG_START;
     log_debug ("element_id = %" PRIi32, element_id);
 
-    std::vector <a_elmnt_id_t> item{};
-    db_reply <std::vector <a_elmnt_id_t> > ret = db_reply_new(item);
+    std::map <a_elmnt_id_t, std::string> item{};
+    db_reply <std::map <a_elmnt_id_t, std::string> > ret = db_reply_new(item);
 
     try {
         // Get information about the groups element belongs to
         // Can return more than one row
         tntdb::Statement st_gr = conn.prepareCached(
-            " SELECT"
-            "   v.id_asset_group"
-            " FROM"
-            "   v_bios_asset_group_relation v"
-            " WHERE v.id_asset_element = :idelement"
+            " SELECT "
+            "   v1.id_asset_group, v.name "
+            " FROM "
+            "   v_bios_asset_group_relation v1, "
+            "   v_bios_asset_element v "
+            " WHERE "
+            "   v1.id_asset_element = :idelement AND "
+            "   v.id = v1.id_asset_element "  
         );
 
-        // TODO set
         tntdb::Result result = st_gr.set("idelement", element_id).
                                      select();
 
@@ -315,8 +317,11 @@ db_reply <std::vector <a_elmnt_id_t> >
         {
             // group_id, required
             a_elmnt_id_t group_id = 0;
-            row[0].get(group_id);
-            ret.item.push_back(group_id);
+            row["id_asset_group"].get(group_id);
+
+            std::string group_name;
+            row["name"].get(group_name);
+            ret.item.emplace(group_id, group_name);
         }
         ret.status = 1;
         LOG_END;
