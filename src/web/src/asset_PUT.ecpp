@@ -49,10 +49,6 @@
         std::stringstream input (request.getBody (), std::ios_base::in);
         cxxtools::JsonDeserializer deserializer (input);
         deserializer.deserialize (si);
-        deserializer.deserialize (si);
-        if ( si.findMember("groups") ) {
-            http_die("bad-request-document", "key 'groups' is not supported");
-        }
     }
     catch (const std::exception& e) {
         LOG_END_ABNORMAL(e);

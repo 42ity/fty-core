@@ -127,7 +127,10 @@ if ( !tmp.item.groups.empty() )
     for ( auto &oneGroup : tmp.item.groups )
     {
 </%cpp>
-"/api/v1/asset/group/<$$ oneGroup.first $>"<? i != group_count ? "," ?>
+{
+    "id"  : "<$$ oneGroup.first $>",
+    "name": "<$$ oneGroup.second $>"
+} <? i != group_count ? "," ?>
 <%cpp>
         i++;
     }
