@@ -247,6 +247,34 @@ static void
 
 
 static void
+    process_groups_key(
+        const cxxtools::SerializationInfo &groups_si,
+        std::vector <std::vector<cxxtools::String> > &data
+    )
+{
+    if ( groups_si.category () != cxxtools::SerializationInfo::Array ) {
+        throw std::invalid_argument("Key 'groups' should be an array");
+    }
+    // we need a counter for fields
+    int i = 1;
+    for ( const auto &oneElement : groups_si ) { // iterate through the array
+        // id is just an informational field, ignore it here
+        // name is mandatory
+        if (  oneElement.findMember("name") == NULL ) {
+            throw std::invalid_argument("Key 'name' in the key 'groups' is mandatory");
+        }
+        else {
+            cxxtools::String group_name{};
+            oneElement.getMember("name") >>= group_name;
+            data[0].push_back (cxxtools::String ("group." + std::to_string(i)));
+            data[1].push_back (group_name);
+        }
+        i++;
+    }
+}
+
+
+static void
     process_oneOutlet(
         const cxxtools::SerializationInfo &outlet_si,
         std::vector <std::vector<cxxtools::String> > &data
@@ -350,16 +378,21 @@ s_read_si(
         // these fields are just for the information in the REPRESENTATION
         // may be we can remove them earlier, but for now it is HERE
         // TODO: BIOS-1428
-        if ( name == "location_id" )
+        if ( name == "location_id" ) {
             continue;
-        if ( name == "location_uri" )
+        }
+        if ( name == "location_uri" ) {
             continue;
+        }
 
         if ( name == "powers" ) {
             process_powers_key (si.getMember("powers"), data);
             continue;
         }
-
+        if ( name == "groups" ) {
+            process_groups_key (si.getMember("groups"), data);
+            continue;
+        }
         if ( name == "outlets" ) {
             process_outlets_key (si.getMember("outlets"), data);
             continue;
