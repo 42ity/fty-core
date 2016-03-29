@@ -231,10 +231,9 @@ else {
 std::map<std::string, Outlet> outlets;
 if ( !tmp.item.ext.empty() )
 {
-    // TODO escape the DOT ????
-    static cxxtools::Regex outlet_label("^outlet\.[0-9][0-9]*\.label$");
-    static cxxtools::Regex outlet_group("^outlet\.[0-9][0-9]*\.group$");
-    static cxxtools::Regex outlet_type("^outlet\.[0-9][0-9]*\.type$");
+    static cxxtools::Regex outlet_label("^outlet\\.[0-9][0-9]*\\.label$");
+    static cxxtools::Regex outlet_group("^outlet\\.[0-9][0-9]*\\.group$");
+    static cxxtools::Regex outlet_type("^outlet\\.[0-9][0-9]*\\.type$");
     for ( auto &oneExt : tmp.item.ext )
     {
         auto &attrName = oneExt.first;
