@@ -305,7 +305,7 @@ db_reply <std::map <a_elmnt_id_t, std::string> >
             "   v_bios_asset_element v "
             " WHERE "
             "   v1.id_asset_element = :idelement AND "
-            "   v.id = v1.id_asset_element "  
+            "   v.id = v1.id_asset_group "  
         );
 
         tntdb::Result result = st_gr.set("idelement", element_id).
