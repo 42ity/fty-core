@@ -70,13 +70,13 @@ kill_daemons() {
         kill -INT "$DBNGPID"
     fi
 
-    killall -INT bios-agent-legacy-metrics agent-tpower lt-agent-tpower agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
-    killall      bios-agent-legacy-metrics agent-tpower lt-agent-tpower agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
+    killall -INT bios-agent-legacy-metrics bios_agent_tpower lt-bios_agent_tpower agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
+    killall      bios-agent-legacy-metrics bios_agent_tpower lt-bios_agent_tpower agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
 
     ps -ef | grep -v grep | egrep "agent-(nut|dbstore|tpower)|legacy-metrics" | egrep "^`id -u -n` " && \
         ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
-        logmsg_error "At least one of: bios-agent-legacy-metrics, agent-nut, agent-tpower, agent-dbstore still alive, trying SIGKILL" && \
-        { killall -KILL bios-agent-legacy-metrics agent-tpower lt-agent-tpower agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null ; exit 1; }
+        logmsg_error "At least one of: bios-agent-legacy-metrics, agent-nut, bios-agent-tpower, agent-dbstore still alive, trying SIGKILL" && \
+        { killall -KILL bios-agent-legacy-metrics bios_agent_tpower lt-bios_agent_tpower agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null ; exit 1; }
 
     return 0
 }
@@ -165,7 +165,8 @@ if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
     print_result $? || CODE=$? die "Could not prepare binaries"
 fi
 test_it "make-deps"
-./autogen.sh ${AUTOGEN_ACTION_MAKE} agent-dbstore agent-nut agent-tpower
+./autogen.sh ${AUTOGEN_ACTION_MAKE} agent-dbstore agent-nut
+# TODO: JIM please fix me :)
 print_result $? || CODE=$? die "Could not prepare binaries"
 
 # These are defined in testlib-db.sh
@@ -191,6 +192,7 @@ ${BUILDSUBDIR}/agent-nut "$CHECKOUTDIR/src/agents/nut/mapping.conf" &
 AGNUTPID=$!
 
 logmsg_info "Spawning the agent-tpower service in the background..."
+#TODO JIM please fix me!
 ${BUILDSUBDIR}/agent-tpower &
 [ $? = 0 ] || CODE=$? die "Could not spawn agent-tpower"
 AGPWRPID=$!
