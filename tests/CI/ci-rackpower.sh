@@ -183,13 +183,13 @@ kill_daemons() {
         kill -INT "$DBNGPID"
     fi
 
-    killall -INT tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut agent-tpower lt-agent-tpower agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
-    killall      tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut agent-tpower lt-agent-tpower agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
+    killall -INT tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut bios_agent_tpower lt-bios_agent_tpower agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
+    killall      tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut bios_agent_tpower lt-bios_agent_tpower agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
 
     ps -ef | grep -v grep | egrep "tntnet|agent-(nut|dbstore|tpower)|legacy-metrics" | egrep "^`id -u -n` " && \
         ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
         logmsg_error "At least one of: tntnet, bios-agent-legacy-metrics, agent-dbstore, agent-nut, agent-tpower still alive, trying SIGKILL" && \
-        { killall -KILL tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut agent-tpower lt-agent-tpower agent-dbstore lt-agent-dbstore 2>/dev/null ; exit 1; }
+        { killall -KILL tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut bios_agent_tpower lt-bios_agent_tpower agent-dbstore lt-agent-dbstore 2>/dev/null ; exit 1; }
 
     return 0
 }
@@ -215,9 +215,9 @@ if isRemoteSUT ; then
 
         # TODO: replace by calls to proper rc-bios script
         logmsg_info "Ensuring that needed remote daemons are running on VTE"
-        sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-agent-nut bios-agent-inventory bios-agent-cm bios-agent-tpower; do systemctl start $SVC ; done'
+        sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-agent-nut bios-agent-inventory bios-agent-cm bios_agent_tpower; do systemctl start $SVC ; done'
         sleep 5
-        sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-agent-nut bios-agent-inventory bios-agent-cm bios-agent-tpower; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done;exit $R' || \
+        sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-agent-nut bios-agent-inventory bios-agent-cm bios_agent_tpower; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done;exit $R' || \
                 die "Some required services are not running on the VTE"
 
         # TODO: The different contents (2ci vs 3vte files to be revised)
@@ -239,7 +239,8 @@ else
                 print_result $? || CODE=$? die "Could not prepare binaries"
         fi
         test_it "make-deps"
-        ./autogen.sh ${AUTOGEN_ACTION_MAKE} web-test-deps agent-dbstore agent-nut agent-tpower
+        ./autogen.sh ${AUTOGEN_ACTION_MAKE} web-test-deps agent-dbstore agent-nut
+#TODO JIM fix me
         print_result $? || CODE=$? die "Could not prepare binaries"
 
         # These are defined in testlib-db.sh
@@ -270,6 +271,7 @@ else
         [ $? = 0 ] || CODE=$? die "Could not spawn agent-nut"
         AGNUTPID=$!
 
+#TODO JIM fix me
         logmsg_info "Spawning the agent-tpower service in the background..."
         ${BUILDSUBDIR}/agent-tpower &
         [ $? = 0 ] || CODE=$? die "Could not spawn agent-tpower"
@@ -281,7 +283,7 @@ sleep 5
 accept_license
 
 if isRemoteSUT ; then
-        sut_run 'systemctl restart bios-agent-tpower'
+        sut_run 'systemctl restart bios_agent_tpower'
         sut_run 'systemctl restart bios-agent-dbstore'
 fi
 
