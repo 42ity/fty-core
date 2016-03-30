@@ -471,6 +471,9 @@ s_read_si(
         if ( name == "location_uri" ) {
             continue;
         }
+        if ( name == "power_devices_in_uri" ) {
+            continue;
+        }
 
         if ( name == "powers" ) {
             process_powers_key (si.getMember("powers"), data);
