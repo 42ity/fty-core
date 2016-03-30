@@ -402,8 +402,6 @@ libpriv_db_la_SOURCES = \
 			src/persist/persistencelogic.h \
 			src/persist/monitor.cc \
 			src/persist/monitor.h \
-			src/persist/calc_power.cc \
-			src/persist/calc_power.h \
 			src/persist/dbhelpers.cc \
 			src/db/dbhelpers.h \
 			src/persist/measurement.h \
@@ -1241,27 +1239,6 @@ agent_cm_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/tools
 
 
-client_PROGRAMS +=	agent-tpower
-
-agent_tpower_SOURCES = \
-			src/agents/tpower/agent-tpower.cc \
-			src/agents/tpower/tp-unit.cc \
-			src/agents/tpower/measurement.cc
-
-agent_tpower_LDADD = \
-			libpriv-log.la \
-			libpriv-db.la \
-			libpriv-proto.la \
-			libbiosapi.la \
-			libpriv-utils-ymsg.la
-
-agent_tpower_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -ltntdb -lbiosapi
-
-agent_tpower_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/src/db \
-			-I$(abs_top_srcdir)/tools
-
 client_PROGRAMS += average
 
 average_SOURCES = src/average/average.cc \
@@ -1551,8 +1528,7 @@ SYSTEMD_UNITS_TARGET_BIOS += \
                         bios-agent-cm.service \
                         bios-agent-dbstore.service \
                         bios-agent-inventory.service \
-                        bios-agent-nut.service \
-                        bios-agent-tpower.service
+                        bios-agent-nut.service
 
 # Here we list the actual service-definition files that should be compiled
 # Enabled as part of BIOS presets
