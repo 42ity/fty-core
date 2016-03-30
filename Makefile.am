@@ -402,8 +402,6 @@ libpriv_db_la_SOURCES = \
 			src/persist/persistencelogic.h \
 			src/persist/monitor.cc \
 			src/persist/monitor.h \
-			src/persist/calc_power.cc \
-			src/persist/calc_power.h \
 			src/persist/dbhelpers.cc \
 			src/db/dbhelpers.h \
 			src/persist/measurement.h \
@@ -1064,20 +1062,6 @@ dist_noinst_HEADERS += \
 			src/shared/asset_types.h \
 			src/agents/nut/nut-driver.h
 
-#FIXME: dshell is not supposed to be in /usr/lib/bios/ - create specific group
-bin_PROGRAMS += 	dshell
-
-dshell_SOURCES =	tools/dshell.cc
-
-dshell_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS}
-
-dshell_LDADD = \
-			libpriv-proto.la \
-			libpriv-defs.la
-
-dshell_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(top_srcdir)/src/include
-
 client_SCRIPTS +=	tools/systemctl tools/testpass.sh tools/update-rc3
 EXTRA_DIST +=		tools/systemctl tools/testpass.sh tools/update-rc3
 
@@ -1255,27 +1239,6 @@ agent_cm_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/tools
 
 
-client_PROGRAMS +=	agent-tpower
-
-agent_tpower_SOURCES = \
-			src/agents/tpower/agent-tpower.cc \
-			src/agents/tpower/tp-unit.cc \
-			src/agents/tpower/measurement.cc
-
-agent_tpower_LDADD = \
-			libpriv-log.la \
-			libpriv-db.la \
-			libpriv-proto.la \
-			libbiosapi.la \
-			libpriv-utils-ymsg.la
-
-agent_tpower_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -ltntdb -lbiosapi
-
-agent_tpower_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/src/db \
-			-I$(abs_top_srcdir)/tools
-
 client_PROGRAMS += average
 
 average_SOURCES = src/average/average.cc \
@@ -1357,7 +1320,8 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/config.cpp src/web/src/alert_rules_list.cpp \
                       src/web/src/alert_rules_detail.cpp src/web/src/alert_rules.cpp \
                       src/web/src/alert_ack.cpp \
-                      src/web/src/alert_list.cpp
+                      src/web/src/alert_list.cpp \
+                      src/web/src/assets_in.cpp
 
 # Track real-git and nodist (generated) sources SEPARATELY
 nodist_bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)
@@ -1564,8 +1528,7 @@ SYSTEMD_UNITS_TARGET_BIOS += \
                         bios-agent-cm.service \
                         bios-agent-dbstore.service \
                         bios-agent-inventory.service \
-                        bios-agent-nut.service \
-                        bios-agent-tpower.service
+                        bios-agent-nut.service
 
 # Here we list the actual service-definition files that should be compiled
 # Enabled as part of BIOS presets
