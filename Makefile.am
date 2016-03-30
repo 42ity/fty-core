@@ -1062,20 +1062,6 @@ dist_noinst_HEADERS += \
 			src/shared/asset_types.h \
 			src/agents/nut/nut-driver.h
 
-#FIXME: dshell is not supposed to be in /usr/lib/bios/ - create specific group
-bin_PROGRAMS += 	dshell
-
-dshell_SOURCES =	tools/dshell.cc
-
-dshell_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS}
-
-dshell_LDADD = \
-			libpriv-proto.la \
-			libpriv-defs.la
-
-dshell_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(top_srcdir)/src/include
-
 client_SCRIPTS +=	tools/systemctl tools/testpass.sh tools/update-rc3
 EXTRA_DIST +=		tools/systemctl tools/testpass.sh tools/update-rc3
 
