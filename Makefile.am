@@ -402,8 +402,6 @@ libpriv_db_la_SOURCES = \
 			src/persist/persistencelogic.h \
 			src/persist/monitor.cc \
 			src/persist/monitor.h \
-			src/persist/calc_power.cc \
-			src/persist/calc_power.h \
 			src/persist/dbhelpers.cc \
 			src/db/dbhelpers.h \
 			src/persist/measurement.h \
