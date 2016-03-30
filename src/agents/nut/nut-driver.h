@@ -243,6 +243,12 @@ class NUTDevice {
                  bool forceUpdate = false );
 
     /**
+     * \brief Set variable dst with value from src if dst not present and src is
+     *
+     * This method is used to normalize the NUT output from different drivers/devices.
+     */
+    void NUTSetIfNotPresent( std::map< std::string,std::vector<std::string> > &vars, const std::string &dst, const std::string &src );
+    /**
      * \brief Commit chages for changed calculated by updatePhysics.
      */
     void commitChanges();
