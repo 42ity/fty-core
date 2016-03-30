@@ -111,7 +111,6 @@ agent-nut
 agent-autoconfig
 agent-cm
 bios-nutscan
-agent-tpower
 average
 dbstore_bench
 generate_measurement
@@ -161,8 +160,6 @@ systemd/bios-agent-inventory.service
 systemd/bios-agent-nut.service
 !systemd/bios-agent-dbstore.service.in
 systemd/bios-agent-dbstore.service
-!systemd/bios-agent-tpower.service.in
-systemd/bios-agent-tpower.service
 !systemd/bios-agent-autoconfig.service.in
 systemd/bios-agent-autoconfig.service
 systemd/bios-reset-button.service
