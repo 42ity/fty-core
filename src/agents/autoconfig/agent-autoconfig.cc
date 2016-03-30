@@ -212,6 +212,8 @@ void Autoconfig::onPoll( )
 
         bool device_configured = true;
         for (const auto& configurator : ConfiguratorFactory::getConfigurator (it.second)) {
+            if (zsys_interrupted)
+                return;
             device_configured &= configurator->configure (it.first, it.second, client ());
         }
         if (device_configured) {

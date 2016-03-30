@@ -35,14 +35,14 @@
 #include "asset_computed_impl.h"
 #include "helpers.h"
 
-    struct Outlet {
-        std::string label;
-        bool label_r;
-        std::string type;
-        bool type_r;
-        std::string group;
-        bool group_r;
-    };
+struct Outlet {
+    std::string label;
+    bool label_r;
+    std::string type;
+    bool type_r;
+    std::string group;
+    bool group_r;
+};
 
 std::string getOutletNumber (const std::string &extAttributeName)
 {
@@ -95,7 +95,8 @@ if ( !typeNameArg.empty() &&
 // Prepare the reply
 </%cpp>
 {
-    "id": "<$$ tmp.item.basic.id $>"
+      "id": "<$$ tmp.item.basic.id $>"
+    , "power_devices_in_uri": "/api/v1/assets?in=<$$ tmp.item.basic.id $>&sub_type=epdu,pdu,feed,genset,ups"
     , "name": "<$$ tmp.item.basic.name $>"
     , "status": "<$$ tmp.item.basic.status $>"
     , "priority": "P<$$ tmp.item.basic.priority $>"

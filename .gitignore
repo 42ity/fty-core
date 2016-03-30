@@ -42,8 +42,6 @@ Makefile.in
 Makefile
 !Makefile.am
 bios_web.la
-dshell
-!tools/dshell
 
 *.o
 *.lo
