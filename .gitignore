@@ -42,8 +42,6 @@ Makefile.in
 Makefile
 !Makefile.am
 bios_web.la
-dshell
-!tools/dshell
 
 *.o
 *.lo
@@ -111,7 +109,6 @@ agent-nut
 agent-autoconfig
 agent-cm
 bios-nutscan
-agent-tpower
 average
 dbstore_bench
 generate_measurement
@@ -161,8 +158,6 @@ systemd/bios-agent-inventory.service
 systemd/bios-agent-nut.service
 !systemd/bios-agent-dbstore.service.in
 systemd/bios-agent-dbstore.service
-!systemd/bios-agent-tpower.service.in
-systemd/bios-agent-tpower.service
 !systemd/bios-agent-autoconfig.service.in
 systemd/bios-agent-autoconfig.service
 systemd/bios-reset-button.service
@@ -194,6 +189,7 @@ src/web/src/auth-require.cpp
 src/web/src/augtool.cpp
 src/web/src/auth.cpp
 src/web/src/asset_*.cpp
+src/web/src/assets_*.cpp
 src/web/src/agent.cpp
 src/web/src/alerts.cpp
 src/web/src/average.cpp
