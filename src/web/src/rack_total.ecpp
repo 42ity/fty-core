@@ -34,7 +34,6 @@
 
 #include "assetcrud.h"
 #include "data.h"
-#include "calc_power.h"
 #include "dbpath.h"
 #include "db/measurements.h"
 #include "cleanup.h"
