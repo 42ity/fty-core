@@ -275,6 +275,93 @@ static void
 
 
 static void
+    process_ips_key(
+        const cxxtools::SerializationInfo &si,
+        std::vector <std::vector<cxxtools::String> > &data
+    )
+{
+    LOG_START;
+    if ( si.category () != cxxtools::SerializationInfo::Array ) {
+        throw std::invalid_argument("Key 'ips' should be an array");
+    }
+    // we need a counter for fields
+    int i = 1;
+    for ( const auto &oneElement : si ) { // iterate through the array
+        std::string value;
+        oneElement.getValue(value);
+        data[0].push_back (cxxtools::String ("ip." + std::to_string(i)));
+        data[1].push_back (cxxtools::String (value));
+        i++;
+    }
+}
+
+
+static void
+    process_macs_key(
+        const cxxtools::SerializationInfo &si,
+        std::vector <std::vector<cxxtools::String> > &data
+    )
+{
+    LOG_START;
+    if ( si.category () != cxxtools::SerializationInfo::Array ) {
+        throw std::invalid_argument("Key 'macs' should be an array");
+    }
+    // we need a counter for fields
+    int i = 1;
+    for ( const auto &oneElement : si ) { // iterate through the array
+        std::string value;
+        oneElement.getValue(value);
+        data[0].push_back (cxxtools::String ("mac." + std::to_string(i)));
+        data[1].push_back (cxxtools::String (value));
+        i++;
+    }
+}
+
+
+static void
+    process_hostnames_key(
+        const cxxtools::SerializationInfo &si,
+        std::vector <std::vector<cxxtools::String> > &data
+    )
+{
+    LOG_START;
+    if ( si.category () != cxxtools::SerializationInfo::Array ) {
+        throw std::invalid_argument("Key 'hostnames' should be an array");
+    }
+    // we need a counter for fields
+    int i = 1;
+    for ( const auto &oneElement : si ) { // iterate through the array
+        std::string value;
+        oneElement.getValue(value);
+        data[0].push_back (cxxtools::String ("hostname." + std::to_string(i)));
+        data[1].push_back (cxxtools::String (value));
+        i++;
+    }
+}
+
+
+static void
+    process_fqdns_key(
+        const cxxtools::SerializationInfo &si,
+        std::vector <std::vector<cxxtools::String> > &data
+    )
+{
+    LOG_START;
+    if ( si.category () != cxxtools::SerializationInfo::Array ) {
+        throw std::invalid_argument("Key 'fqdns' should be an array");
+    }
+    // we need a counter for fields
+    int i = 1;
+    for ( const auto &oneElement : si ) { // iterate through the array
+        std::string value;
+        oneElement.getValue(value);
+        data[0].push_back (cxxtools::String ("fqdn." + std::to_string(i)));
+        data[1].push_back (cxxtools::String (value));
+        i++;
+    }
+}
+
+static void
     process_oneOutlet(
         const cxxtools::SerializationInfo &outlet_si,
         std::vector <std::vector<cxxtools::String> > &data
@@ -397,7 +484,22 @@ s_read_si(
             process_outlets_key (si.getMember("outlets"), data);
             continue;
         }
-
+        if ( name == "ips" ) {
+            process_ips_key (si.getMember("ips"), data);
+            continue;
+        }
+        if ( name == "macs" ) {
+            process_macs_key (si.getMember("macs"), data);
+            continue;
+        }
+        if ( name == "hostnames" ) {
+            process_hostnames_key (si.getMember("hostnames"), data);
+            continue;
+        }
+        if ( name == "fqdns" ) {
+            process_fqdns_key (si.getMember("fqdns"), data);
+            continue;
+        }
         std::string value;
         it->getValue(value);
         data[0].push_back(name);
