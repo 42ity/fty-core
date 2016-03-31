@@ -557,7 +557,7 @@ esac
     echo "WARNING: Do not have /usr/share/bios/.git_details"
 
 # Timestamp the end of OS image generation
-LANG=C date -u > /usr/share/bios-web/image-version.txt || \
+echo "OSimage:tarball-ts: `LANG=C date -R -u`" > /usr/share/bios-web/image-version.txt || \
     echo "WARNING: Could not record OBS image-building timestamp"
 
 # Get rid of static qemu binaries needed for crossinstallation
