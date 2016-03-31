@@ -328,6 +328,7 @@ if ( !tmp.item.ext.empty() )
 %        int i = 1;
 %        int max_size = outlets.size();
 %        for ( auto &oneOutlet : outlets ) {
+%           bool isCommaNeeded = false;
             "<$$ oneOutlet.first$>" : [
 %           if ( !oneOutlet.second.label.empty() ) {
                 {
@@ -335,9 +336,10 @@ if ( !tmp.item.ext.empty() )
                     "value": "<$$ oneOutlet.second.label $>" ,
                     "read_only":<$$ oneOutlet.second.label_r ? "true":"false" $>
                 }
+%               isCommaNeeded = true;
 %           }
 %           if ( !oneOutlet.second.group.empty() ) {
-%                if ( !oneOutlet.second.label.empty() ) {
+%                if ( isCommaNeeded ) {
                     ,
 %                }
                 {
@@ -345,9 +347,10 @@ if ( !tmp.item.ext.empty() )
                     "value": "<$$ oneOutlet.second.group $>",
                     "read_only":<$$ oneOutlet.second.group_r ? "true":"false" $>
                 }
+%               isCommaNeeded = true;
 %           }
 %           if ( !oneOutlet.second.type.empty() ) {
-%                if ( !oneOutlet.second.label.empty() || !oneOutlet.second.group.empty() ) {
+%                if ( isCommaNeeded ) {
                     ,
 %                }
                 {
