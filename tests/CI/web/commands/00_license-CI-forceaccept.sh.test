@@ -135,22 +135,65 @@ else
         test_it "sysinfo_auth=2__parse__source_build_package__info"
         JPATH='"packages",[0-9]*$'
         RES=0
-        SYSINFO_VERSION="`echo "$SYSINFOA" | jsonsh_cli -x="$JPATH" | egrep '"package-name":"core".*"commit":"[a-f0-9-]+"'`" || \
+        SYSINFO_VERSION_PKG="`echo "$SYSINFOA" | jsonsh_cli -x="$JPATH" | egrep '"package-name":"core".*"commit":"[a-f0-9-]+"'`" && \
+            SYSINFO_VERSION_PKG="`echo "$SYSINFO_VERSION_PKG" | sed 's/.*commit":"\(.*\)".*/\1/'`" || \
             RES=$?
-        echo "=== SYSINFO_VERSION_PKG ($RES): `echo "$SYSINFO_VERSION" | sed 's/.*commit":"\(.*\)".*/\1/'`" >&2
-        [ $RES = 0 -a -n "$SYSINFO_VERSION" -a \
-            x"$SYSINFO_VERSION" != x'""' ] || RES=$?
+        echo "=== SYSINFO_VERSION_PKG ($RES): $SYSINFO_VERSION_PKG" >&2
+        [ $RES = 0 -a -n "$SYSINFO_VERSION_PKG" -a \
+            x"$SYSINFO_VERSION_PKG" != x'""' ] || { RES=$?; SYSINFO_VERSION_PKG=''; }
         print_result $RES || true
 
         test_it "sysinfo_auth=2__parse__source_build_running__info"
         JPATH='^"restapi-metadata","source-repo","commit"$'
         RES=0
-        SYSINFO_VERSION_R="`echo "$SYSINFOA" | jsonsh_cli -x="$JPATH" | sed 's,^.*\t"\(.*\)",\1,'`" || \
+        SYSINFO_VERSION_RUN="`echo "$SYSINFOA" | jsonsh_cli -x="$JPATH" | sed 's,^.*\t"\(.*\)",\1,'`" || \
             RES=$?
-        echo "=== SYSINFO_VERSION_RUN ($RES): $SYSINFO_VERSION_R" >&2
-        [ $RES = 0 -a -n "$SYSINFO_VERSION_R" -a \
-            x"$SYSINFO_VERSION_R" != x'""' ] || RES=$?
+        echo "=== SYSINFO_VERSION_RUN ($RES): $SYSINFO_VERSION_RUN" >&2
+        [ $RES = 0 -a -n "$SYSINFO_VERSION_RUN" -a \
+            x"$SYSINFO_VERSION_RUN" != x'""' ] || RES=$?
         print_result -$RES || true
+
+        SYSINFO_VERSION_TESTSUITE=""
+        if [ -s "$BUILDSUBDIR/.git_details" ]; then
+            SYSINFO_VERSION_TESTSUITE="$(. "$BUILDSUBDIR/.git_details" > /dev/null && echo "${PACKAGE_GIT_HASH_L-}")" || SYSINFO_VERSION_TESTSUITE=""
+        else
+            if [ -x "$CHECKOUTDIR/tools/git_details.sh" ]; then
+                SYSINFO_VERSION_TESTSUITE="$(eval `"$CHECKOUTDIR/tools/git_details.sh" 2>/dev/null | grep PACKAGE_GIT_HASH_L_ESCAPED=` && echo "${PACKAGE_GIT_HASH_L_ESCAPED-}")" || SYSINFO_VERSION_TESTSUITE=""
+            else
+                # fresh checkout for VTE/SC/RC testing?
+                logmsg_warn "'$BUILDSUBDIR/.git_details' not available"
+            fi
+        fi
+        if [ -n "$SYSINFO_VERSION_TESTSUITE" ]; then
+            echo "=== SYSINFO_VERSION_TESTSUITE: $SYSINFO_VERSION_TESTSUITE" >&2
+        fi
+
+        if [ -n "$SYSINFO_VERSION_PKG" -a x"$SYSINFO_VERSION_PKG" != "xN/A" ]; then
+            test_it "FYI:commitid-core-COMPARE-running_restapi-to-package"
+            # Align the lengths of commit hashes - full or short
+            [ "${#SYSINFO_VERSION_PKG}" = "${#SYSINFO_VERSION_RUN}" ] || \
+            if [ "${#SYSINFO_VERSION_PKG}" -gt "${#SYSINFO_VERSION_RUN}" ]; then
+                SYSINFO_VERSION_PKG="`echo "$SYSINFO_VERSION_PKG" | cut -c 1-"${#SYSINFO_VERSION_RUN}"`"
+            else
+                SYSINFO_VERSION_RUN="`echo "$SYSINFO_VERSION_RUN" | cut -c 1-"${#SYSINFO_VERSION_PKG}"`"
+            fi
+            logmsg_info "Comparing SYSINFO_VERSION_PKG='$SYSINFO_VERSION_PKG' (binary package in OS) and SYSINFO_VERSION_RUN='$SYSINFO_VERSION_RUN' (running webserver)"
+            [ x"$SYSINFO_VERSION_PKG" = x"$SYSINFO_VERSION_RUN" ]
+            print_result -$?
+        fi
+
+        if [ -n "$SYSINFO_VERSION_TESTSUITE" ]; then
+            test_it "FYI:commitid-core-COMPARE-running_restapi-to-testsuite"
+            [ "${#SYSINFO_VERSION_TESTSUITE}" = "${#SYSINFO_VERSION_RUN}" ] || \
+            if [ "${#SYSINFO_VERSION_TESTSUITE}" -gt "${#SYSINFO_VERSION_RUN}" ]; then
+                SYSINFO_VERSION_TESTSUITE="`echo "$SYSINFO_VERSION_TESTSUITE" | cut -c 1-"${#SYSINFO_VERSION_RUN}"`"
+            else
+                SYSINFO_VERSION_RUN="`echo "$SYSINFO_VERSION_RUN" | cut -c 1-"${#SYSINFO_VERSION_TESTSUITE}"`"
+            fi
+            logmsg_info "Comparing SYSINFO_VERSION_TESTSUITE='$SYSINFO_VERSION_TESTSUITE' (test suite) and SYSINFO_VERSION_RUN='$SYSINFO_VERSION_RUN' (running webserver)"
+            [ x"$SYSINFO_VERSION_TESTSUITE" = x"$SYSINFO_VERSION_RUN" ]
+            print_result -$?
+        fi
 
     else
         logmsg_warn "REST API server has a non-default password"

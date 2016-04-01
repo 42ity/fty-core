@@ -68,7 +68,7 @@ while [ $# -gt 0 ]; do
             BIOS_USER="$2"
             shift 2
             ;;
-        -p|--passwd|--bios-passwd)
+        -p|--passwd|--bios-passwd|--password|--bios-password)
             BIOS_PASSWD="$2"
             shift 2
             ;;
@@ -115,9 +115,9 @@ cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 [ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
 
 logmsg_info "Ensuring that needed remote daemons are running on VTE"
-sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent  bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
+sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
 sleep 5
-sut_run 'R=0; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent  bios-agent-nut bios-agent-inventory ; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
+sut_run 'R=0; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-agent-nut bios-agent-inventory ; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
     die "Some required services are not running on the VTE"
 
 LOGFILE_MAIN="$BUILDSUBDIR/vte-tab-DC008-${_SCRIPT_NAME}.log"
@@ -127,7 +127,7 @@ LOGFILE_LOADDB="$BUILDSUBDIR/vte-tab-DC008-import-${_SCRIPT_NAME}.log"
     # *** write power rack base test data to DB on SUT
 set -o pipefail 2>/dev/null || true
 set -e
-loaddb_file "$DB_BASE" 2>&1 | tee "${LOGFILE_LOADDB}"
+init_script_initial 2>&1 | tee "${LOGFILE_LOADDB}"
 
 # NOTE: This test verifies that with our standard configuration of the VTE
 # and its database we can import our assets, so we do not apply hacks like

@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2014 Eaton
+# Copyright (C) 2014-2016 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,11 +22,11 @@
 # TODO: This is very much oriented on one test on a single host -
 # rewrite to generalize and make this reusable!
 
-SUT_HOST="127.0.0.1"
-SUT_WEB_PORT=8000
-[ x"${SUT_WEB_SCHEMA-}" = x- ] && SUT_WEB_SCHEMA=""
+[ -z "${SUT_HOST-}" ] && SUT_HOST="127.0.0.1"
+[ -z "${SUT_WEB_PORT-}" ] && SUT_WEB_PORT=8000
+[ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA=""
 [ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA=http
-SUT_IS_REMOTE=no
+[ -z "${SUT_IS_REMOTE-}" ] && SUT_IS_REMOTE=no
 BASE_URL="${SUT_WEB_SCHEMA}://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 
 
@@ -56,11 +56,13 @@ set -u
 #do_select 'delete from t_bios_asset_device_type'
 #do_select 'delete from t_bios_asset_link_type'
 
-loaddb_file "$DB_BASE"
+init_script_initial
 
 case "$1" in
     bam*)
         ASSET="$CSV_LOADDIR_BAM/$1" ;;
+    /*) ASSET="$1" ;;
+    ./*|../*) ASSET="`pwd`/$1" ;;
     *)  ASSET="$CSV_LOADDIR/$1" ;; # tpower/* asset_import/*
 esac
 

@@ -76,10 +76,7 @@ SKIPPED_NONSH_TESTS=0
 [ x"${SKIP_SANITY-}" = x- ] && SKIP_SANITY=""
 [ -z "$SKIP_SANITY" ] && SKIP_SANITY=no
 
-[ x"${SUT_WEB_SCHEMA-}" = x- ] && SUT_WEB_SCHEMA=""
-[ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="https"
-
-    # *** read parameters if present
+# *** read parameters if present
 while [ $# -gt 0 ]; do
     case "$1" in
         --port-ssh|--sut-port-ssh|-sp)
@@ -96,7 +93,7 @@ while [ $# -gt 0 ]; do
             shift
             ;;
         --use-https|--sut-web-https)	SUT_WEB_SCHEMA="https"; export SUT_WEB_SCHEMA;;
-        --use-http|--sut-web-http)		SUT_WEB_SCHEMA="http"; export SUT_WEB_SCHEMA;;
+        --use-http|--sut-web-http)	SUT_WEB_SCHEMA="http"; export SUT_WEB_SCHEMA;;
         --sut-user|-su)
             SUT_USER="$2"
             SUT_IS_REMOTE=yes
@@ -106,7 +103,7 @@ while [ $# -gt 0 ]; do
             BIOS_USER="$2"
             shift
             ;;
-        -p|--passwd|--bios-passwd)
+        -p|--passwd|--bios-passwd|--password|--bios-password)
             BIOS_PASSWD="$2"
             shift
             ;;
@@ -123,26 +120,34 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-if [ "${SUT_IS_REMOTE}" = yes ]; then
-	# default values:
-	[ -z "${SUT_USER-}" ] && SUT_USER="root"
-	[ -z "${SUT_HOST-}" ] && SUT_HOST="debian.roz53.lab.etn.com"
-	# port used for ssh requests:
-	[ -z "${SUT_SSH_PORT-}" ] && SUT_SSH_PORT="2206"
-	# port used for REST API requests:
-	if [ -z "${SUT_WEB_PORT-}" ]; then
-		if [ -n "${BIOS_PORT-}" ]; then
-		    SUT_WEB_PORT="$BIOS_PORT"
-		else
-		    SUT_WEB_PORT=$(expr $SUT_SSH_PORT + 8000)
-		    [ "${SUT_SSH_PORT-}" -ge 2200 ] && \
-		        SUT_WEB_PORT=$(expr $SUT_WEB_PORT - 2200)
-		fi
-	fi
-
-	# unconditionally calculated values for current setup
-	BASE_URL="${SUT_WEB_SCHEMA}://$SUT_HOST:$SUT_WEB_PORT/api/v1"
-fi
+[ x"${SUT_WEB_SCHEMA-}" = x- ] && SUT_WEB_SCHEMA=""
+# *** default connection parameters values:
+case "${SUT_IS_REMOTE}" in
+no)
+        [ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="http"
+        ;;
+yes)
+        # default values:
+        [ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="https"
+        # default values:
+        [ -z "${SUT_USER-}" ] && SUT_USER="root"
+        [ -z "${SUT_HOST-}" ] && SUT_HOST="debian.roz53.lab.etn.com"
+        # port used for ssh requests:
+        [ -z "${SUT_SSH_PORT-}" ] && SUT_SSH_PORT="2206"
+        # port used for REST API requests:
+        if [ -z "${SUT_WEB_PORT-}" ]; then
+                if [ -n "${BIOS_PORT-}" ]; then
+                        SUT_WEB_PORT="$BIOS_PORT"
+                else
+                        SUT_WEB_PORT=$(expr $SUT_SSH_PORT + 8000)
+                        [ "${SUT_SSH_PORT-}" -ge 2200 ] && \
+                                SUT_WEB_PORT=$(expr $SUT_WEB_PORT - 2200)
+                fi
+        fi
+        # unconditionally calculated values for current setup
+        BASE_URL="${SUT_WEB_SCHEMA}://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+#auto|""|*) ;; ### Defaulted in the script libraries below
+esac
 
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
@@ -189,27 +194,24 @@ else
         logmsg_error "mysqld is not running (on SUT), you may need to start it first!"
     fi
 
-	# is bios user present?
+    # is bios user present?
     # Check the user account in system
     # We expect SASL uses Linux PAM, therefore getent will tell us all we need
-	LINE="$(sut_run "getent passwd '$BIOS_USER'")"
-	if [ $? != 0 -o -z "$LINE" ]; then
-    	logmsg_error "User $BIOS_USER is not known to system administrative database"
-		[ "$SUT_IS_REMOTE" = yes ] && \
-    		echo "at $SUT_HOST:$SUT_SSH_PORT." || \
-    		echo "at the local system."
-	    logmsg_info "To add it locally on the SUT, run: "
-	    echo "    sudo /usr/sbin/useradd --comment 'BIOS REST API testing user' --groups nobody,sasl --no-create-home --no-user-group $BIOS_USER"
-	    echo "and don't forget the password '$BIOS_PASSWD'"
-	    CODE=2 die "BIOS_USER absent on system under test"
+    LINE="$(sut_run "getent passwd '$BIOS_USER'")"
+    if [ $? != 0 -o -z "$LINE" ]; then
+        logmsg_error "User $BIOS_USER is not known to system administrative database"
+        isRemoteSUT && \
+            echo "at $SUT_HOST:$SUT_SSH_PORT." || \
+            echo "at the local system."
+        logmsg_info "To add it locally on the SUT, run: "
+        echo "    sudo /usr/sbin/useradd --comment 'BIOS REST API testing user' --groups nobody,sasl --no-create-home --no-user-group $BIOS_USER"
+        echo "and don't forget the password '$BIOS_PASSWD'"
+        CODE=2 die "BIOS_USER absent on system under test"
     fi >&2
 
     # is bios access to sasl correct?
-    SASLTEST="`which testsaslauthd`"
-    [ -x "$SASLTEST" ] || SASLTEST="/usr/sbin/testsaslauthd"
-    [ -x "$SASLTEST" ] || SASLTEST="/sbin/testsaslauthd"
-
-    LINE="$($SASLTEST -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE")"
+    SASLTEST=$(sut_run 'SASLTEST="`which testsaslauthd`" && [ -n "$SASLTEST" ] && [ -x "$SASLTEST" ] || SASLTEST=""; if [ -z "$SASLTEST" ]; then for S in /usr/sbin/testsaslauthd /sbin/testsaslauthd; do [ -x "$S" ] && SASLTEST="$S"; break; done; fi; echo "$SASLTEST"; [ -n "$SASLTEST" ]') && \
+    LINE="$(sut_run "$SASLTEST -u '$BIOS_USER' -p '$BIOS_PASSWD' -s '$SASL_SERVICE'")"
     if [ $? != 0 -o -z "$LINE" ]; then
         CODE=3 die "SASL autentication for user '$BIOS_USER' has failed." \
             "Please check the existence of /etc/pam.d/bios (and maybe" \
@@ -355,7 +357,7 @@ for i in $POSITIVE; do
     ### Default value for logging the test items
     TNAME="$NAME"
 
-	# start testcase $NAME and put the result to $NAME.log
+    # start testcase $NAME and put the result to $NAME.log
     STACKED_HTTPERRORS_COUNT_BEFORE="${STACKED_HTTPERRORS_COUNT-}"
     . ./"$NAME" 5>"$REALLIFE_RESULT"
     RES=$?

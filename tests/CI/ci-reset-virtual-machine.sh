@@ -166,8 +166,14 @@ VM="latest"
 ### and the image filename (at the moment, at least, applies to both)
 [ -z "$IMGTYPE_PREFIX" ] && IMGTYPE_PREFIX=""
 [ -z "$IMGTYPE_SUFFIX" ] && IMGTYPE_SUFFIX="-image"
+
+### "master" is the initial stage for X86 testing, no longer built on ARM
+### "pre-rc" is what's tested by Jenkins (on ARM too)
+### "rc" is what passed the tests by Jenkins
 [ -z "$IMGQALEVEL" ] && IMGQALEVEL="master"
 #[ -z "$IMGQALEVEL" ] && IMGQALEVEL="pre-rc"
+#[ -z "$IMGQALEVEL" ] && IMGQALEVEL="rc"
+
 [ -z "$OBS_IMAGES" ] && OBS_IMAGES="http://tomcat.roz.lab.etn.com/images/"
 #[ -z "$OBS_IMAGES" ] && OBS_IMAGES="http://obs.roz.lab.etn.com/images/"
 [ -z "$APT_PROXY" ] && APT_PROXY='http://thunderbolt.roz.lab.etn.com:3142'
@@ -681,6 +687,10 @@ sed -r -i "s/^127\.0\.0\.1/127.0.0.1 $VM /" "../rootfs/$VM/etc/hosts"
 logmsg_info "Copy root's ~/.ssh from the host OS"
 cp -r --preserve ~/.ssh "../rootfs/$VM/root/"
 cp -r --preserve /etc/ssh/*_key /etc/ssh/*.pub "../rootfs/$VM/etc/ssh"
+
+logmsg_info "Copy root's ~/.oscrc from the host OS"
+cp --preserve ~/.oscrc "../rootfs/$VM/root/"
+cp --preserve -r ~/.config "../rootfs/$VM/root/"
 
 logmsg_info "Copy environment settings from the host OS"
 cp /etc/profile.d/* ../rootfs/$VM/etc/profile.d/
