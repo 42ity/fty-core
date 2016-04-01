@@ -180,7 +180,7 @@ cleanup() {
 #   script is called as root
 
 # Previous executions should execute successfully first
-[ -s "$LOCKFILE" ] && exit 0
+[ -s "$LOCKFILE" ] && CODE=0 die "LOCKFILE='$LOCKFILE' already exists"
 init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log"
 settraps "cleanup"
 touch "$LOCKFILE" && echo "$$" > "$LOCKFILE" || die "Could not initialize LOCKFILE='$LOCKFILE'"
