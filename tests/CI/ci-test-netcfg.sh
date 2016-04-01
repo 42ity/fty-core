@@ -50,6 +50,9 @@ cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the `basename $0` REST API webserver"
 
+CMPJSON_SH="$CHECKOUTDIR/tests/CI/cmpjson.sh"
+[ -x "$CMPJSON_SH" ] || die "Unusable CMPJSON_SH='$CMPJSON_SH'"
+
 PATH="$BUILDSUBDIR/tools:$CHECKOUTDIR/tools:${DESTDIR:-/root}/libexec/bios:/usr/lib/ccache:/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
 export PATH
 
