@@ -334,7 +334,7 @@ for i in 1 2 3 4 5; do
     print_result $? "Test case '$TEST_CASE'#$i failed. Expected and returned json do not match"
 done
 curlfail_pop
-logmsg_info "Test case '$TEST_CASE' : SUCCESS"
+logmsg_info "Test case '$TEST_CASE' : FINISHED"
 
 ########################
 ### Netcfgs_Read_002 ###
@@ -352,9 +352,11 @@ i=${INITIAL_IFACE_NAMES[0]}
     perl -pi -e "s/^auto\s*\n*$//gs" "${IFACES_PATH}/${IFACES_FILE}"
     perl -pi -e "s/^[\s\n]*\Z//gs" "${IFACES_PATH}/${IFACES_FILE}"
 
+    # Here we want to use simple_get_json_code because HTTP code should match
+    # up with the diff outcome, and this is the most simple approach to use.
     test_it "$TEST_CASE::netcfgs::$i"
     simple_get_json_code "${REST_NETCFGS}" tmp HTTP_CODE
-    print_result $? "'api_get_json ${REST_NETCFGS}' failed." || CODE=$? die
+    print_result $? "'api_get_json ${REST_NETCFGS}' failed"
 
     echo "$tmp" > "${TMP_DIR}/${JSON_RECEIVED_FILE}"
     # File "${TMP_DIR}/${JSON_EXPECTED_FILE}" is present and correctly set from previous 'Netcfgs_Read_001' test execution
@@ -365,44 +367,42 @@ i=${INITIAL_IFACE_NAMES[0]}
     if ! diff -Naru "${IFACES_PATH}/${IFACES_FILE}" "${TMP_DIR}/${IFACES_FILE_LOOPBACK}"; then
         test_it "$TEST_CASE::cmpjson::$i"
         "$CMPJSON_SH" -f "${TMP_DIR}/${JSON_EXPECTED_FILE}" "${TMP_DIR}/${JSON_RECEIVED_FILE}"
-        print_result $? "Test case '$TEST_CASE' failed. Expected and returned json do not match." || CODE=$? die
+        print_result $? "Test case '$TEST_CASE' failed. Expected and returned json do not match"
 
         test_it "$TEST_CASE::http-code::$i"
         [ $HTTP_CODE -eq 200 ]
-        print_result $? "Test case '$TEST_CASE' failed. Expected HTTP return code: 200, received: $HTTP_CODE." || CODE=$? die
+        print_result $? "Test case '$TEST_CASE' failed. Expected HTTP return code: 200, received: $HTTP_CODE"
     else
         # if /etc/network/interfaces contains only loopback interface names then 404 expected
         test_it "$TEST_CASE::http-code::$i"
         [ $HTTP_CODE -eq 404 ]
-        print_result $? "Test case '$TEST_CASE' failed. Expected HTTP return code: 404, received: $HTTP_CODE." || CODE=$? die
+        print_result $? "Test case '$TEST_CASE' failed. Expected HTTP return code: 404, received: $HTTP_CODE"
     fi
 #done
 
 test_it "$TEST_CASE::restore_config"
 restore_config "$IFACES_FILE"
-print_result $? "Restoring '$IFACES_FILE' failed." || CODE=$? die
+print_result $? "Restoring '$IFACES_FILE' failed"
 
 # Sanity check
 test_it "$TEST_CASE::restore_config::sanity-check"
 diff -s "${IFACES_PATH}/${IFACES_FILE}" "${TMP_DIR}/${IFACES_FILE_INITIAL}"
-print_result $? "Restore of '${IFACES_PATH}/${IFACES_FILE}' failed." || CODE=$? die
+print_result $? "Restore of '${IFACES_PATH}/${IFACES_FILE}' failed"
 
-logmsg_info "Test case '$TEST_CASE' : SUCCESS"
+logmsg_info "Test case '$TEST_CASE' : FINISHED"
 
 ########################
 ### Netcfgs_Read_003 ###
 ########################
 TEST_CASE="Netcfgs_Read_003"
 
-test_it "$TEST_CASE::netcfgs"
-simple_get_json_code "${REST_NETCFGS}/advdwsqwe234?=345" tmp HTTP_CODE
-print_result $? "'api_get_json ${REST_NETCFGS}' failed." || CODE=$? die
+curlfail_push "expect" 'HTTP/[^ ]+ 40[13]'
+test_it "$TEST_CASE::netcfgs::bad_request"
+api_get "${REST_NETCFGS}/advdwsqwe234?=345"
+print_result $? "'api_get ${REST_NETCFGS}' failed."
+curlfail_pop
 
-test_it "$TEST_CASE::http-code::$i"
-[ $HTTP_CODE -eq 403 -o $HTTP_CODE -eq 401 ]
-print_result $? "Test case '$TEST_CASE' failed. Expected HTTP return code: 403 or 401, received: $HTTP_CODE." || CODE=$? die
-
-logmsg_info "Test case '$TEST_CASE' : SUCCESS"
+logmsg_info "Test case '$TEST_CASE' : FINISHED"
 
 #######################
 ### Netcfg_Read_001 ###
@@ -467,7 +467,7 @@ for i in ${INITIAL_IFACE_NAMES[@]}; do
 
 done
 
-logmsg_info "Test case '$TEST_CASE' : SUCCESS"
+logmsg_info "Test case '$TEST_CASE' : FINISHED"
 
 #######################
 ### Netcfg_Read_002 ###
@@ -563,7 +563,7 @@ test_it "$TEST_CASE::http-code::$i"
 [[ $HTTP_CODE -eq $HTTP_EXPECTED ]]
 print_result $? "Test case '$TEST_CASE' failed. Expected HTTP return code: $HTTP_EXPECTED, received: $HTTP_CODE." || CODE=$? die
 
-logmsg_info "Test case '$TEST_CASE' : SUCCESS"
+logmsg_info "Test case '$TEST_CASE' : FINISHED"
 
 #########################
 ### Netcfg_Update_001 ###
