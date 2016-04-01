@@ -695,7 +695,7 @@ if [ "${ERRIGNORE-}" = no ]; then
     ERRFILE="${_SCRIPT_NAME-}"; ERRFUNC=""
     if [ -n "${BASH-}" ] 2>/dev/null; then
         [ -n "${FUNCNAME-}" -o -n "${FUNCNAME[0]-}" ] && ERRFUNC="${FUNCNAME[0]-}" || ERRFUNC=""
-        ERRLINE="${BASH_LINENO[0]-}" || ERRLINE=0
+        ERRLINE="${BASH_LINENO[0]-}" && [ -n "$ERRLINE" ] || ERRLINE=0
         [ "$ERRLINE" -eq 0 ] && ERRLINE="${LINENO-}"
         [ -n "$ERRLINE" ] && [ "$ERRLINE" -gt 1 ] || ERRLINE=""
         ERRFILE="${BASH_SOURCE[0]-}"
