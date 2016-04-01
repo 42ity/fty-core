@@ -402,22 +402,18 @@ libpriv_db_la_SOURCES = \
 			src/persist/persistencelogic.h \
 			src/persist/monitor.cc \
 			src/persist/monitor.h \
-			src/persist/calc_power.cc \
-			src/persist/calc_power.h \
 			src/persist/dbhelpers.cc \
 			src/db/dbhelpers.h \
 			src/persist/measurement.h \
 			src/persist/measurement.cc \
+			src/persist/multi_row.h \
+			src/persist/multi_row.cc \
 			src/persist/ymsg-asset.h \
 			src/persist/ymsg-asset.cc \
 			src/db/agentstate/agentstate.cc \
 			src/db/agentstate/agentstate.h \
 			src/db/agentstate.h \
-			tools/dbpath.cc
-
-noinst_LTLIBRARIES += 		libpriv-enums.la
-
-libpriv_enums_la_SOURCES = \
+			tools/dbpath.cc \
 			src/shared/asset_types.cc \
 			src/shared/asset_types.h \
 			src/shared/dbtypes.h
@@ -675,7 +671,7 @@ test_subprocess_LDADD = 		libpriv-subprocess.la \
 					libpriv-test-run.la
 test_subprocess_CPPFLAGS =		$(AM_CPPFLAGS) \
 					-I$(abs_top_srcdir)/tests/include/
-test_subprocess_LDFLAGS =		${CXXTOOLS_LIBS} -lcidr
+test_subprocess_LDFLAGS =		${CXXTOOLS_LIBS} -lczmq
 
 check_PROGRAMS += 	test-cidr
 test_cidr_SOURCES = 	src/shared/cidr.cc \
@@ -964,7 +960,7 @@ bios_nutscan_LDADD = \
 			libpriv-nutscan.la \
 			libpriv-subprocess.la
 
-bios_nutscan_LDFLAGS = $(CXXTOOLS_LIBS) -lcidr $(LIBNUTSCAN_LIBS)
+bios_nutscan_LDFLAGS = $(CXXTOOLS_LIBS) -lcidr $(LIBNUTSCAN_LIBS) -lczmq
 
 # Do we build and install CI programs by default? (see configure)
 cibin_programs_list := $(cibin_programs)
@@ -998,19 +994,6 @@ TESTS += $(check_SCRIPTS)
 #------------------------------~/bin/$1----------------------------------------
 #                        binaries
 #----------------------------------------------------------------------
-
-client_PROGRAMS += 	server-agent
-
-server_agent_SOURCES =	src/agents/server-agent/server-agent.cc src/shared/sample_agent.cc
-
-server_agent_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS} -lbiosapi
-
-server_agent_LDADD = \
-			 libpriv-proto.la \
-			 libpriv-log.la \
-			 libpriv-defs.la
-
-server_agent_CPPFLAGS =	$(AM_CPPFLAGS)
 
 bin_PROGRAMS += 		generate_measurement
 
@@ -1048,6 +1031,28 @@ agent_dbstore_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/src/persist \
 			-I$(abs_top_srcdir)/src/persist
 
+bin_PROGRAMS +=                 dbstore_bench
+
+dbstore_bench_SOURCES =  src/agents/dbstore/dbstore_bench.cc
+
+dbstore_bench_LDFLAGS =  ${CXXTOOLS_LIBS} \
+                         -ltntdb ${LIBBIOSPROTO_LIBS}
+
+dbstore_bench_CPPFLAGS = $(AM_CPPFLAGS) \
+                        -I$(abs_top_builddir)/tools \
+                        -I$(abs_top_srcdir)/tools \
+                        -I$(abs_top_srcdir)/src/db \
+                        -I$(abs_top_builddir)/src/persist \
+                        -I$(abs_top_srcdir)/src/persist
+dbstore_bench_LDADD = \
+                        libpriv-db.la \
+                        libpriv-db-assets.la \
+                        libpriv-utils-ymsg.la \
+                        libpriv-log.la \
+                        libpriv-proto.la \
+                        libbiosapi.la \
+                        libpriv-defs.la
+
 EXTRA_DIST +=		$(top_srcdir)/tools/dbinit.h
 #			$(top_srcdir)/tools/db-init.in \
 #			$(top_srcdir)/tools/bios-passwd.in
@@ -1056,20 +1061,6 @@ dist_noinst_HEADERS += \
 			src/msg/asset_msg.h \
 			src/shared/asset_types.h \
 			src/agents/nut/nut-driver.h
-
-#FIXME: dshell is not supposed to be in /usr/lib/bios/ - create specific group
-bin_PROGRAMS += 	dshell
-
-dshell_SOURCES =	tools/dshell.cc
-
-dshell_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS}
-
-dshell_LDADD = \
-			libpriv-proto.la \
-			libpriv-defs.la
-
-dshell_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(top_srcdir)/src/include
 
 client_SCRIPTS +=	tools/systemctl tools/testpass.sh tools/update-rc3
 EXTRA_DIST +=		tools/systemctl tools/testpass.sh tools/update-rc3
@@ -1104,11 +1095,19 @@ agent_nut_LDADD = \
 			libpriv-log.la \
 			libpriv-proto.la \
 			libbiosapi.la \
-			libpriv-utils-ymsg.la
+			libpriv-utils-ymsg.la \
+			libpriv-utils-plusplus.la
 
 agent_nut_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS} -lbiosapi
 
 agent_nut_CPPFLAGS =	$(AM_CPPFLAGS)
+
+template_nutmappingdir = $(datadir)/$(PACKAGE)/agent-nut
+NUT_MAPPING = \
+		src/agents/nut/mapping.conf 
+
+template_nutmapping_DATA =	$(NUT_MAPPING)
+EXTRA_DIST +=		$(NUT_MAPPING)
 
 client_PROGRAMS +=	agent-autoconfig
 
@@ -1143,8 +1142,7 @@ agent_autoconfig_LDADD = \
 			libpriv-subprocess.la \
 			libpriv-utils-ymsg.la \
 			libpriv-utils-web.la \
-			libpriv-utils-plusplus.la \
-			libpriv-enums.la 
+			libpriv-utils-plusplus.la
 
 # FIXME remove utils ymsg
 
@@ -1164,27 +1162,26 @@ template_ruledir = $(datadir)/$(PACKAGE)/agent-autoconfig
 RULE_TEMPLATES = \
 			src/agents/autoconfig/rule_templates/average.humidity@__datacenter__.rule \
 			src/agents/autoconfig/rule_templates/average.temperature@__datacenter__.rule \
-			src/agents/autoconfig/rule_templates/realpower.default_1phase@__datacenter__.rule \
-			src/agents/autoconfig/rule_templates/realpower.default_3phase@__datacenter__.rule \
-			src/agents/autoconfig/rule_templates/phase_imbalance@__datacenter__.rule \
-			src/agents/autoconfig/rule_templates/realpower.default_1phase@__rack__.rule \
-			src/agents/autoconfig/rule_templates/realpower.default_3phase@__rack__.rule \
-			src/agents/autoconfig/rule_templates/phase_imbalance@__rack__.rule \
-			src/agents/autoconfig/rule_templates/load.default@__device_ups__.rule \
-			src/agents/autoconfig/rule_templates/lowbattery@__device_ups__.rule \
-			src/agents/autoconfig/rule_templates/onbypass@__device_ups__.rule \
-			src/agents/autoconfig/rule_templates/onbattery@__device_ups__.rule \
-			src/agents/autoconfig/rule_templates/phase_imbalance@__device_ups__.rule \
-			src/agents/autoconfig/rule_templates/temperature.default@__device_ups__.rule \
-			src/agents/autoconfig/rule_templates/voltage.input_1phase@__device_ups__.rule \
-			src/agents/autoconfig/rule_templates/voltage.input_3phase@__device_ups__.rule \
 			src/agents/autoconfig/rule_templates/charge.battery@__device_ups__.rule \
-			src/agents/autoconfig/rule_templates/voltage.input_1phase@__device_epdu__.rule \
-			src/agents/autoconfig/rule_templates/voltage.input_3phase@__device_epdu__.rule \
+			src/agents/autoconfig/rule_templates/load.default@__device_ups__.rule \
 			src/agents/autoconfig/rule_templates/load.input_1phase@__device_epdu__.rule \
 			src/agents/autoconfig/rule_templates/load.input_3phase@__device_epdu__.rule \
+			src/agents/autoconfig/rule_templates/lowbattery@__device_ups__.rule \
+			src/agents/autoconfig/rule_templates/onbattery@__device_ups__.rule \
+			src/agents/autoconfig/rule_templates/onbypass@__device_ups__.rule \
+			src/agents/autoconfig/rule_templates/phase_imbalance@__datacenter__.rule \
 			src/agents/autoconfig/rule_templates/phase_imbalance@__device_epdu__.rule \
-			src/agents/autoconfig/rule_templates/section_load@__device_epdu__.rule
+			src/agents/autoconfig/rule_templates/phase_imbalance@__device_ups__.rule \
+			src/agents/autoconfig/rule_templates/phase_imbalance@__rack__.rule \
+			src/agents/autoconfig/rule_templates/realpower.default_1phase@__rack__.rule \
+			src/agents/autoconfig/rule_templates/realpower.default_3phase@__rack__.rule \
+			src/agents/autoconfig/rule_templates/realpower.default@__datacenter__.rule \
+			src/agents/autoconfig/rule_templates/section_load@__device_epdu__.rule \
+			src/agents/autoconfig/rule_templates/temperature.default@__device_ups__.rule \
+			src/agents/autoconfig/rule_templates/voltage.input_1phase@__device_epdu__.rule \
+			src/agents/autoconfig/rule_templates/voltage.input_1phase@__device_ups__.rule \
+			src/agents/autoconfig/rule_templates/voltage.input_3phase@__device_epdu__.rule \
+			src/agents/autoconfig/rule_templates/voltage.input_3phase@__device_ups__.rule
 
 template_rule_DATA =	$(RULE_TEMPLATES)
 EXTRA_DIST +=		$(RULE_TEMPLATES)
@@ -1241,27 +1238,6 @@ agent_cm_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
 
-
-client_PROGRAMS +=	agent-tpower
-
-agent_tpower_SOURCES = \
-			src/agents/tpower/agent-tpower.cc \
-			src/agents/tpower/tp-unit.cc \
-			src/agents/tpower/alert-measurement.cc
-
-agent_tpower_LDADD = \
-			libpriv-log.la \
-			libpriv-db.la \
-			libpriv-proto.la \
-			libbiosapi.la \
-			libpriv-utils-ymsg.la
-
-agent_tpower_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -ltntdb -lbiosapi
-
-agent_tpower_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/src/db \
-			-I$(abs_top_srcdir)/tools
 
 client_PROGRAMS += average
 
@@ -1344,7 +1320,8 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/config.cpp src/web/src/alert_rules_list.cpp \
                       src/web/src/alert_rules_detail.cpp src/web/src/alert_rules.cpp \
                       src/web/src/alert_ack.cpp \
-                      src/web/src/alert_list.cpp
+                      src/web/src/alert_list.cpp \
+                      src/web/src/assets_in.cpp
 
 # Track real-git and nodist (generated) sources SEPARATELY
 nodist_bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)
@@ -1393,8 +1370,7 @@ bios_web_la_LIBADD = \
 			libpriv-db-measurements.la \
 			libpriv-magic.la \
 			libpriv-configure-inform.la \
-			libpriv-utils-web.la \
-			libpriv-enums.la
+			libpriv-utils-web.la
 
 dist_noinst_HEADERS += \
 			src/shared/data.h \
@@ -1552,9 +1528,7 @@ SYSTEMD_UNITS_TARGET_BIOS += \
                         bios-agent-cm.service \
                         bios-agent-dbstore.service \
                         bios-agent-inventory.service \
-                        bios-agent-nut.service \
-                        bios-agent-tpower.service \
-                        bios-server-agent.service
+                        bios-agent-nut.service
 
 # Here we list the actual service-definition files that should be compiled
 # Enabled as part of BIOS presets

@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#   Copyright (c) 2014-2015 Eaton
+#   Copyright (c) 2014-2016 Eaton
 #
 #   This file is part of the Eaton $BIOS project.
 #
@@ -96,6 +96,7 @@ EOF
 chmod a+rx /etc/profile.d/*
 
 # BIOS configuration file
+mkdir -p /etc/default
 touch /etc/default/bios
 chown www-data /etc/default/bios
 chmod a+r /etc/default/bios
@@ -161,14 +162,14 @@ cat > /etc/apt/sources.list.d/debian.list <<EOF
 deb http://ftp.debian.org/debian jessie main contrib non-free
 deb http://ftp.debian.org/debian jessie-updates main contrib non-free
 deb http://security.debian.org   jessie/updates main contrib non-free
-deb http://obs.roz53.lab.etn.com:82/Pool:/master/Debian_8.0 /
-deb http://obs.roz53.lab.etn.com:82/Pool:/master:/proprietary/Debian_8.0 /
+deb http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0 /
+deb http://obs.roz.lab.etn.com:82/Pool:/master:/proprietary/Debian_8.0 /
 EOF
 
 mkdir -p /etc/apt/preferences.d
 cat > /etc/apt/preferences.d/bios <<EOF
 Package: *
-Pin: origin "obs.roz53.lab.etn.com"
+Pin: origin "obs.roz.lab.etn.com"
 Pin-Priority: 9999
 EOF
 
@@ -280,6 +281,13 @@ fi
 /bin/systemctl enable bios-agent-legacy-metrics
 /bin/systemctl enable bios-agent-alert-generator
 
+# post Alpha services - the conditional allows is to use same script for alpha and post-alpha
+[[ -f /usr/lib/systemd/system/bios-agent-asset.service ]] && systemctl enable bios-agent-asset.service
+[[ -f /usr/lib/systemd/system/bios-agent-smtp.service ]] && systemctl enable bios-agent-smtp.service
+
+# Ensure mysql is owned correctly after upgrades and other OS image changes
+sed -e 's,^\(Type=.*\)$,\1\nExecPreStart=/bin/dash -c "[ -d /var/lib/mysql ] \&\& /bin/chown -R mysql:mysql /var/lib/mysql",' -i /usr/lib/systemd/system/mysql.service
+
 # Our tntnet unit
 cat > /etc/systemd/system/tntnet@.service <<EOF
 [Unit]
@@ -290,14 +298,15 @@ PartOf=bios.target
 
 [Service]
 Type=simple
+EnvironmentFile=-/usr/share/bios/etc/default/bios
+EnvironmentFile=-/usr/share/bios/etc/default/bios__%n.conf
 EnvironmentFile=-/etc/default/bios
-EnvironmentFile=-/etc/sysconfig/bios
 EnvironmentFile=-/etc/default/bios__%n.conf
-EnvironmentFile=-/etc/sysconfig/bios__%n.conf
 EnvironmentFile=-/etc/default/bios-db-rw
 PrivateTmp=true
 ExecStartPre=/usr/share/bios/scripts/ssl-create.sh
 ExecStartPre=/usr/share/bios/scripts/xml-cat.sh /etc/tntnet/%i.d /etc/tntnet/%i.xml
+ExecStartPre="/bin/dash -c 'F=/etc/default/bios; [ -f \${F} ] || touch \${F}; chown www-data: \${F}; chmod 0644 \${F}'"
 ExecStart=/usr/bin/tntnet -c /etc/tntnet/%i.xml
 Restart=on-failure
 
@@ -333,15 +342,15 @@ rm -f /etc/tntnet/bios.d/20_core.xml
 find / -name systemd-logind.service -delete
 
 # Disable expensive debug logging by default on non-devel images
-mkdir -p /etc/default/
+mkdir -p /usr/share/bios/etc/default
 if [ "$IMGTYPE" = devel ] ; then
-    echo "BIOS_LOG_LEVEL=LOG_DEBUG" > /etc/default/bios
+    echo "BIOS_LOG_LEVEL=LOG_DEBUG" > /usr/share/bios/etc/default/bios
 else
-    echo "BIOS_LOG_LEVEL=LOG_INFO" > /etc/default/bios
+    echo "BIOS_LOG_LEVEL=LOG_INFO" > /usr/share/bios/etc/default/bios
     sed -i 's|.*MaxLevelStore.*|MaxLevelStore=info|'                  /etc/systemd/journald.conf
 fi
 # set path to our libexec directory
-echo "PATH=/usr/libexec/bios:/bin:/usr/bin:/sbin:/usr/sbin" >>/etc/default/bios
+echo "PATH=/usr/libexec/bios:/bin:/usr/bin:/sbin:/usr/sbin" >>/usr/share/bios/etc/default/bios
 
 # Setup some busybox commands
 for i in vi tftp wget; do
@@ -365,7 +374,7 @@ EOF
 # TODO: revise the list of BIOS services here
 if [ -f /usr/bin/zabbix_agent ]; then
 for i in mysql tntnet@bios malamute \
-    bios-db bios-server-agent bios-agent-inventory bios-agent-nut bios-driver-netmon \
+    bios-db bios-agent-inventory bios-agent-nut bios-driver-netmon \
     nut-driver nut-monitor systemd-journald \
 ; do
    find /lib /usr -name "$i".service | while read file; do
@@ -373,7 +382,7 @@ for i in mysql tntnet@bios malamute \
    done
 done
 
-sed -i 's|127.0.0.1|greyhound.roz53.lab.etn.com|' /etc/zabbix/zabbix_agentd.conf
+sed -i 's|127.0.0.1|greyhound.roz.lab.etn.com|' /etc/zabbix/zabbix_agentd.conf
 sed -i 's|^Hostname|#\ Hostname|' /etc/zabbix/zabbix_agentd.conf
 # Our network sucks, use longer timeouts
 sed -i 's|#\ Timeout.*|Timeout=15|' /etc/zabbix/zabbix_agentd.conf
@@ -551,8 +560,11 @@ esac
     echo "WARNING: Do not have /usr/share/bios/.git_details"
 
 # Timestamp the end of OS image generation
-LANG=C date -u > /usr/share/bios-web/image-version.txt || \
-    echo "WARNING: Could not record OBS image-building timestamp"
+# NOTE: This value and markup are consumed by bios-core::sysinfo.ecpp
+# REST API and by bios-boot::init script.
+echo "OSimage:build-ts: `LANG=C date -R -u`
+OSimage:img-type: $IMGTYPE" > /usr/share/bios-web/image-version.txt || \
+    echo "WARNING: Could not record OBS image-building timestamp and type"
 
 # Get rid of static qemu binaries needed for crossinstallation
 # TODO: Integrate this better into build-recipe-preinstallimage/init_buildsystem

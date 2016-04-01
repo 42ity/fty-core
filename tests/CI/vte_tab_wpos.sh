@@ -73,7 +73,7 @@ while [ $# -gt 0 ]; do
             BIOS_USER="$2"
             shift 2
             ;;
-        -p|--passwd|--bios-passwd)
+        -p|--passwd|--bios-passwd|--password|--bios-password)
             BIOS_PASSWD="$2"
             shift 2
             ;;
@@ -112,6 +112,7 @@ SUT_IS_REMOTE=yes
 # Include our standard web routines for CI scripts
 NEED_TESTLIB=yes
 . "`dirname $0`"/weblib.sh || die "Can not include web script library"
+# This should have pulled also testlib.sh and testlib-db.sh
 
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
 
@@ -125,9 +126,9 @@ init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRI
 settraps 'exit_summarizeTestlibResults'
 
 logmsg_info "Ensuring that needed remote daemons are running on VTE"
-sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent bios-agent-nut bios-agent-inventory bios-agent-cm; do systemctl start $SVC ; done'
+sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-agent-nut bios-agent-inventory bios-agent-cm; do systemctl start $SVC ; done'
 sleep 3
-sut_run 'R=0; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent bios-agent-nut bios-agent-inventory bios-agent-cm; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
+sut_run 'R=0; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-agent-nut bios-agent-inventory bios-agent-cm; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
     die "Some required services are not running on the VTE"
 
 LOGFILE_LOADDB="$BUILDSUBDIR/vte-tab-loaddb-${_SCRIPT_NAME}.log"
@@ -140,7 +141,7 @@ subtest_matcher() {
     # Returns: equality result (0 ok, 1+ bad)
     N_RESULT=0
     N_EXPECT="`egrep -c "$2" "${LOGFILE_IMPORT}"`" || N_RESULT=$?
-    echo "N_EXPECT = $1 (got $N_EXPECT)"
+    echo "N_EXPECT = $1 (got $N_EXPECT hits looking for regex '$2')"
     [ "$N_EXPECT" -eq "$1" ] || N_RESULT=$?
     return $N_RESULT
 }
@@ -149,8 +150,9 @@ subtest() {
     # ***** INIT DB *****
     # *** write power rack base test data to DB on SUT
     test_it "re-initialize database"
-    loaddb_file "$DB_BASE" 2>&1 | tee "${LOGFILE_LOADDB}"
-    LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" 2>&1 | tee -a "${LOGFILE_LOADDB}"
+#    loaddb_file "$DB_BASE" 2>&1 | tee "${LOGFILE_LOADDB}"
+#    LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" 2>&1 | tee -a "${LOGFILE_LOADDB}"
+    init_script_initial 2>&1 | tee -a "${LOGFILE_LOADDB}"
     print_result $?
 
     # ***** POST THE CSV FILE *****

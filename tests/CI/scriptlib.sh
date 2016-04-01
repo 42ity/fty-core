@@ -1,6 +1,6 @@
 # shell include file: scriptlib.sh
 #
-# Copyright (C) 2014-2015 Eaton
+# Copyright (C) 2014-2016 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -78,7 +78,13 @@ if [ "${SUT_WEB_PORT-}" -eq 443 ]; then
     SUT_WEB_SCHEMA="https"
 fi
 [ -z "${BASE_URL-}" ] && BASE_URL="${SUT_WEB_SCHEMA}://$SUT_HOST:$SUT_WEB_PORT/api/v1"
-export SUT_IS_REMOTE SUT_USER SUT_HOST SUT_SSH_PORT SUT_WEB_PORT SUT_WEB_SCHEMA BASE_URL
+
+### By default, do we stop BIOS services before re-initializing the database?
+### See reloaddb_stops_BIOS() as the callable method
+[ -z "${LOADDB_RESTART_BIOS-}" ] && LOADDB_RESTART_BIOS=auto
+[ x"${LOADDB_RESTART_BIOS-}" = x- ] && LOADDB_RESTART_BIOS=auto
+
+export SUT_IS_REMOTE LOADDB_RESTART_BIOS SUT_USER SUT_HOST SUT_SSH_PORT SUT_WEB_PORT SUT_WEB_SCHEMA BASE_URL
 
 ### Should the test suite break upon first failed test?
 [ x"${CITEST_QUICKFAIL-}" = x- ] && CITEST_QUICKFAIL=""
@@ -88,7 +94,7 @@ export CITEST_QUICKFAIL
 ### For remote tests and general database initalization, we want some quiet
 ### time after initializing the database. For tests that loop with uploads
 ### of small DB snippets, we want to minimize such sleeps!
-[ -z "${LOADDB_FILE_REMOTE_SLEEP-}" ] && LOADDB_FILE_REMOTE_SLEEP=5
+[ -z "${LOADDB_FILE_REMOTE_SLEEP-}" ] && LOADDB_FILE_REMOTE_SLEEP=0
 export LOADDB_FILE_REMOTE_SLEEP
 
 ### Set the default language (e.g. for CI apt-get to stop complaining)
@@ -185,6 +191,10 @@ default_posval CI_DEBUGLEVEL_DUMPDB     $CI_DEBUGLEVEL_RUN
 default_posval CI_DEBUGLEVEL_SELECT     $CI_DEBUGLEVEL_RUN
 default_posval CI_DEBUGLEVEL_PIPESNIFFER $CI_DEBUGLEVEL_DEBUG
 
+# Semihack used below to enable "set -x" by very large debug level
+default_posval CI_DEBUGLEVEL_TRACEEXEC  200
+default_posval CI_DEBUGLEVEL_TIME_SUT_RUN 99
+
 ### Default debugging/info/warning level for this lifetime of the script
 ### Messages are printed if their assigned level is at least CI_DEBUG
 ### The default of "3" allows INFO messages to be printed or easily
@@ -274,6 +284,54 @@ logmsg_trace() {
     fi
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
     echo_E "${LOGMSG_PREFIX}TRACE: ${_SCRIPT_PATH}:" "$@" >&2
+    :
+}
+
+logmsg_sut_run() {
+    WANT_DEBUG_LEVEL=$CI_DEBUGLEVEL_RUN
+    if [ "$1" -ge 0 ] 2>/dev/null; then
+        WANT_DEBUG_LEVEL="$1"
+        shift
+    else if [ x"$1" = x"" ] && [ $# -gt 0 ]; then shift; fi
+    fi
+    [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
+    echo_E "${LOGMSG_PREFIX}TRACE-SUT_RUN: ${_SCRIPT_PATH}:" "$@" >&2
+    :
+}
+
+logmsg_loaddb() {
+    WANT_DEBUG_LEVEL=$CI_DEBUGLEVEL_LOADDB
+    if [ "$1" -ge 0 ] 2>/dev/null; then
+        WANT_DEBUG_LEVEL="$1"
+        shift
+    else if [ x"$1" = x"" ] && [ $# -gt 0 ]; then shift; fi
+    fi
+    [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
+    echo_E "${LOGMSG_PREFIX}TRACE-LOADDB: ${_SCRIPT_PATH}:" "$@" >&2
+    :
+}
+
+logmsg_dumpdb() {
+    WANT_DEBUG_LEVEL=$CI_DEBUGLEVEL_DUMPDB
+    if [ "$1" -ge 0 ] 2>/dev/null; then
+        WANT_DEBUG_LEVEL="$1"
+        shift
+    else if [ x"$1" = x"" ] && [ $# -gt 0 ]; then shift; fi
+    fi
+    [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
+    echo_E "${LOGMSG_PREFIX}TRACE-DUMPDB: ${_SCRIPT_PATH}:" "$@" >&2
+    :
+}
+
+logmsg_do_select() {
+    WANT_DEBUG_LEVEL=$CI_DEBUGLEVEL_SELECT
+    if [ "$1" -ge 0 ] 2>/dev/null; then
+        WANT_DEBUG_LEVEL="$1"
+        shift
+    else if [ x"$1" = x"" ] && [ $# -gt 0 ]; then shift; fi
+    fi
+    [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
+    echo_E "${LOGMSG_PREFIX}TRACE-DO_SELECT: ${_SCRIPT_PATH}:" "$@" >&2
     :
 }
 
@@ -400,25 +458,44 @@ determineDirs_default() {
 }
 
 isRemoteSUT() {
-    if [ "${SUT_IS_REMOTE-}" = yes ]; then
-        ### Yes, we are testing a remote box or a VTE,
-        ### and have a cached decision or explicit setting
-        return 0
-    else
-        ### No, test is local
-        return 1
-    fi
+    case "${SUT_IS_REMOTE-}" in
+        yes)
+            ### Yes, we are testing a remote box or a VTE,
+            ### and have a cached decision or explicit setting
+            return 0 ;;
+        no) ### No, the test is known local
+            return 1 ;;
+    esac
 
-    if  [ -z "$SUT_IS_REMOTE" -o x"$SUT_IS_REMOTE" = xauto ] && \
-        [ -n "$SUT_HOST" -a -n "$SUT_SSH_PORT" ] && \
-        [ x"$SUT_HOST" != xlocalhost -a x"$SUT_HOST" != x127.0.0.1 ] \
+    if  [ -z "${SUT_IS_REMOTE-}" -o x"${SUT_IS_REMOTE-}" = xauto -o x"${SUT_IS_REMOTE-}" = x- ] && \
+        [ -n "${SUT_HOST-}" -a -n "${SUT_SSH_PORT-}" ] && \
+        [ x"${SUT_HOST-}" != xlocalhost -a x"${SUT_HOST-}" != x127.0.0.1 ] \
     ; then
         ### TODO: Maybe a better test is needed e.g. "localhost and port==22"
         SUT_IS_REMOTE=yes
         return 0
-        ### NOTE: No automatic decision for "no" since the needed variables
-        ### may become defined later.
     fi
+
+    ### No, test is local as far as we currently know
+    ### NOTE: No automatic caching of decision for "maybe-no" since the needed
+    ### variables may become defined later.
+    return 2
+}
+
+reloaddb_stops_BIOS() {
+    if [ "$LOADDB_RESTART_BIOS" = auto ] || [ x"$LOADDB_RESTART_BIOS" = x- ]; then
+        isRemoteSUT
+        case $? in
+            0) LOADDB_RESTART_BIOS=yes ;;
+            1) LOADDB_RESTART_BIOS=no ;;
+            *) LOADDB_RESTART_BIOS=auto ;;
+        esac
+    fi
+    [ "$LOADDB_RESTART_BIOS" = yes ] && return 0
+    [ "$LOADDB_RESTART_BIOS" = no ] && return 1
+    LOADDB_RESTART_BIOS=auto
+    # To be on the safe side, we cause service restart while undecided
+    return 0
 }
 
 sut_run() {
@@ -428,23 +505,24 @@ sut_run() {
     ### NOTE: By current construction this may fail for parameters that are
     ### not one token aka "$1".
     if isRemoteSUT ; then
-        logmsg_info "$CI_DEBUGLEVEL_RUN" \
+        logmsg_sut_run \
             "sut_run()::ssh(${SUT_HOST}:${SUT_SSH_PORT}): $@" >&2
         SSH_TERMINAL_REQUEST=""
         [ "$1" = "-t" ] && shift && SSH_TERMINAL_REQUEST="-t -t" #" -o RequestTTY=true"
+        # TODO: Currently this is No-op for sut_run over SSH usecase :(
         [ "$CI_DEBUG" -ge "$CI_DEBUGLEVEL_RUN" ] 2>/dev/null && \
-            REMCMD="bash -x -c \"$@\"" ||
-            REMCMD="bash -c \"$@\""
-        ssh $SSH_TERMINAL_REQUEST -p "${SUT_SSH_PORT}" -l "${SUT_USER}" "${SUT_HOST}" "$@"
+            REMCMD="bash -x -c " || \
+            REMCMD="bash -c "
+        $TIME_SUT_RUN ssh $SSH_TERMINAL_REQUEST -p "${SUT_SSH_PORT}" -l "${SUT_USER}" "${SUT_HOST}" "$@"
         return $?
     else
         [ "$1" = "-t" ] && shift        # Ignore for local host
-        logmsg_info "$CI_DEBUGLEVEL_RUN" \
+        logmsg_sut_run \
             "sut_run()::local: $@" >&2
         if [ "$CI_DEBUG" -ge "$CI_DEBUGLEVEL_RUN" ] 2>/dev/null ; then
-            bash -x -c "$@"
+            $TIME_SUT_RUN bash -x -c "$@"
         else
-            bash -c "$@"
+            $TIME_SUT_RUN bash -c "$@"
         fi
         return $?
     fi
@@ -461,7 +539,7 @@ do_select() {
     ### followed by results, as our tail is chopped below).
     ### Note2: As verified on version 10.0.17-MariaDB, the amount of trailing
     ### semicolons does not matter for such non-interactive mysql client use.
-    logmsg_info "$CI_DEBUGLEVEL_SELECT" \
+    logmsg_do_select \
         "do_select(): $1 ;" >&2
     if [ -z "${DBPASSWD-}" ]; then
         echo "$1" | sut_run "mysql -u ${DBUSER} -D ${DATABASE} -N -s"
@@ -478,7 +556,7 @@ do_select() {
 do_dumpdb() {
     # Unifies the call to get a dump of our database, either all (by default)
     # or some tables etc. via custom arguments that may be set by the caller.
-    logmsg_info "$CI_DEBUGLEVEL_DUMPDB" \
+    logmsg_dumpdb \
         "do_dumpdb(): $@ ;" >&2
     if [ -z "${DBPASSWD-}" ]; then
         sut_run "mysqldump -u ${DBUSER} \"${DATABASE}\" $@"
@@ -496,6 +574,9 @@ loaddb_file() {
     ### Note: The input (file or stdin) MUST specify 'use ${DATABASE};' in order
     ### to upload data into the database the caller wants (including creation of
     ### one, so it can not be specified as command-line argument)
+    ### Note: To avoid race-conditions, CI test scripts generally should not
+    ### call this routine directly, but rather use wrappers from testlib-db.sh
+    ### to stop database consumers before reinitializing it to avoid surprises.
     DBFILE="$1"
     if [ $# -gt 0 ] && [ x"$1" = x ] ; then
         die "loaddb_file() was called with a present but empty filename argument, check your scripts!"
@@ -506,16 +587,16 @@ loaddb_file() {
     ### Due to comments currently don't converge to sut_run(), maybe TODO later
     if isRemoteSUT ; then
         ### Push local SQL file contents to remote system and sleep a bit
-        logmsg_info "$CI_DEBUGLEVEL_LOADDB" \
+        logmsg_loaddb \
             "loaddb_file()::ssh(${SUT_HOST}:${SUT_SSH_PORT}): $DBFILE" >&2
         ( sut_run "systemctl start mysql"
           REMCMD="mysql -u ${DBUSER}"
           eval sut_run "${REMCMD}" "<$DBFILE" && \
           { [ "$LOADDB_FILE_REMOTE_SLEEP" -gt 0 ] 2>/dev/null && sleep ${LOADDB_FILE_REMOTE_SLEEP} || true; } && \
-          logmsg_info "Updated DB on remote system $SUT_HOST:$SUT_SSH_PORT: $DBFILE" ) || \
+          logmsg_loaddb "Updated DB on remote system $SUT_HOST:$SUT_SSH_PORT: $DBFILE" ) || \
           CODE=$? die "Could not load database file to remote system $SUT_HOST:$SUT_SSH_PORT: $DBFILE"
     else
-        logmsg_info "$CI_DEBUGLEVEL_LOADDB" \
+        logmsg_loaddb \
             "loaddb_file()::local: $DBFILE" >&2
         eval mysql -u "${DBUSER}" "<$DBFILE" > /dev/null || \
             CODE=$? die "Could not load database file: $DBFILE"
@@ -537,7 +618,7 @@ loaddb_file_params() {
     local DBFILE="$1"
     shift
 
-    logmsg_info "$CI_DEBUGLEVEL_LOADDB" \
+    logmsg_loaddb \
         "loaddb_file_params()::local: $DBFILE $@" >&2
 
     local E=
@@ -708,7 +789,7 @@ settraps() {
         printf "\n"
         i=0
         while [ "$i" -lt "$FUNCDEPTH" ] ; do
-            echo "  ($i)	-> in ${FUNCNAME[$i]-}() at ${BASH_SOURCE[$i+1]-}:${BASH_LINENO[$i]-}"
+            echo "  ($i)	-> in ${FUNCNAME[$i]-}() called at ${BASH_SOURCE[$i+1]-}:${BASH_LINENO[$i]-}"
             i=$(($i+1))
         done
         echo "	~> in ${ERRFUNC:-main-script-body}() at ${ERRFILE-}:${ERRLINE-}"
@@ -723,3 +804,35 @@ exit ${ERRCODE-};' \
               ;;
     esac
 }
+
+# Allow to togle sut_run timing in CI-driven builds more easily
+# Alas, ATM this worked only with an external "time" but not a built-in
+# Also note that "eval time" is very toxic for sut_run() ;)
+case "${TIME_SUT_RUN-}" in
+    *time*) TIME_SUT_RUN="$TIME_SUT_RUN" ;;
+    yes|on) (which time 2>/dev/null) && TIME_SUT_RUN="time" || { TIME_SUT_RUN=""; logmsg_warn "'time' not found in PATH"; } ;;
+    no|off) TIME_SUT_RUN="" ;;
+    *|auto|-|"") TIME_SUT_RUN="auto" ;;
+esac
+
+[ "$TIME_SUT_RUN" = auto ] && \
+if [ "$CI_DEBUG" -ge "$CI_DEBUGLEVEL_TIME_SUT_RUN" ] ; then
+    logmsg_info "CI_DEBUG is $CI_DEBUG >= $CI_DEBUGLEVEL_TIME_SUT_RUN : enabling timing of sut_run()!" >&2
+    if [ -x "`which time 2>/dev/null`" ]; then
+        TIME_SUT_RUN="time"
+    else
+        logmsg_warn "'time' not found in PATH"
+        TIME_SUT_RUN=""
+    fi
+else
+    TIME_SUT_RUN=""
+fi
+
+# Allow to togle shell-tracing in CI-driven builds more easily
+if [ "$CI_DEBUG" -ge "$CI_DEBUGLEVEL_TRACEEXEC" ] ; then
+    logmsg_info "CI_DEBUG is $CI_DEBUG >= $CI_DEBUGLEVEL_TRACEEXEC : enabling source-code tracing!" >&2
+    set -x
+fi
+
+:
+
