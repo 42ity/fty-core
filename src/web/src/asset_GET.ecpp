@@ -195,7 +195,11 @@ else {
 }
 </%cpp>
 , "ext" : [
+% bool isExtCommaNeeded = false;
+% if ( !tmp.item.basic.asset_tag.empty() ) {
 {"asset_tag": "<$$ tmp.item.basic.asset_tag $>", "read_only": true }
+% isExtCommaNeeded = true;
+%}
 <%cpp>
 std::map<std::string, Outlet> outlets{};
 std::vector<std::string> ips{};
@@ -271,7 +275,7 @@ if ( !tmp.item.ext.empty() )
         }
         // If we are here -> then this attribute is not special and should be returned as "ext"
 </%cpp>
-,{"<$$ oneExt.first $>":"<$$ oneExt.second.first $>","read_only": <$$ oneExt.second.second? "true":"false" $> }
+<$$ isExtCommaNeeded ? "," :""$> {"<$$ oneExt.first $>":"<$$ oneExt.second.first $>","read_only": <$$ oneExt.second.second? "true":"false" $> }
 <%cpp>
     } // end of for each loop for ext attribute
 
