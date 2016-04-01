@@ -259,6 +259,12 @@ curlfail_push_expect_noerrors() {
     curlfail_push "expect" 'HTTP/[^ ]+ [123][0-9][0-9]'
 }
 
+curlfail_push_expect_200() {
+    ### Preconfigured push that resets current values to specifically
+    ### expect HTTP 200 OK (and fail for other results)
+    curlfail_push "expect" 'HTTP/[^ ]+ 200'
+}
+
 curlfail_push_expect_4xx5xx() {
     ### Preconfigured push that resets current values to
     ### expect any HTTP error (and fail for other results)
