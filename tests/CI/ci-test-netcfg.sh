@@ -28,7 +28,6 @@
 # Todos:
 #   flock - http://stackoverflow.com/questions/169964/how-to-prevent-a-script-from-running-simultaneously
 #   netcfg PUT tests - license issue
-#   code was updated to testlib framework, now use the pop/push for expected HTTP codes and refactor the URL/cmpjson/httpcode units
 
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
@@ -397,9 +396,9 @@ logmsg_info "Test case '$TEST_CASE' : FINISHED"
 TEST_CASE="Netcfgs_Read_003"
 
 curlfail_push "expect" 'HTTP/[^ ]+ 40[13]'
-test_it "$TEST_CASE::netcfgs::bad_request"
-api_get "${REST_NETCFGS}/advdwsqwe234?=345"
-print_result $? "'api_get ${REST_NETCFGS}' failed."
+test_it "$TEST_CASE::netcfgs::forbidden_request"
+api_get_json "${REST_NETCFGS}/advdwsqwe234?=345"
+print_result $? "'api_get ${REST_NETCFGS}' failed: $OUT_CURL"
 curlfail_pop
 
 logmsg_info "Test case '$TEST_CASE' : FINISHED"
@@ -445,26 +444,22 @@ for i in ${INITIAL_IFACE_NAMES[@]}; do
     done < "${TMP_DIR}/${RESOLV_FILE_INITIAL}"
 
     template="$TEMPLATE"
-    template=${template/\#\#IFACE\#\#/$i}
-    template=${template/\#\#METHOD\#\#/$method}
-    template=${template/\#\#NAMESERVERS\#\#/$nameservers}
-    template=${template/\#\#ADDITIONAL\#\#/$additional}
-    echo "$template" > "${TMP_DIR}/${JSON_EXPECTED_FILE}"
+    template="${template/\#\#IFACE\#\#/$i}"
+    template="${template/\#\#METHOD\#\#/$method}"
+    template="${template/\#\#NAMESERVERS\#\#/$nameservers}"
+    template="${template/\#\#ADDITIONAL\#\#/$additional}"
+    echo "$template" | jsonsh_cli -N > "${TMP_DIR}/${JSON_EXPECTED_FILE}"
 
-    test_it "$TEST_CASE::netcfgs::$i"
-    simple_get_json_code "${REST_NETCFG}/${i}" tmp HTTP_CODE
-    print_result $? "'simple_get_json_code ${REST_NETCFG}/${i}' failed." || CODE=$? die
+    curlfail_push_expect_200
+    test_it "$TEST_CASE::netcfg::$i"
+    api_get_json "${REST_NETCFG}/${i}"
+    print_result $? "'api_get_json ${REST_NETCFG}/${i}' failed"
+    curlfail_pop
 
     test_it "$TEST_CASE::cmpjson::$i"
-    echo "$tmp" > "${TMP_DIR}/${JSON_RECEIVED_FILE}"
+    echo "$OUT_CURL" > "${TMP_DIR}/${JSON_RECEIVED_FILE}"
     "$CMPJSON_SH" -f "${TMP_DIR}/${JSON_EXPECTED_FILE}" "${TMP_DIR}/${JSON_RECEIVED_FILE}"
-    print_result $? "Test case '$TEST_CASE' failed. Expected and returned json do not match." || CODE=$? die
-
-    test_it "$TEST_CASE::http-code::$i"
-    HTTP_EXPECTED=200
-    [[ $HTTP_CODE -eq $HTTP_EXPECTED ]]
-    print_result $? "Test case '$TEST_CASE' failed. Expected HTTP return code: $HTTP_EXPECTED, received: $HTTP_CODE." || CODE=$? die
-
+    print_result $? "Test case '$TEST_CASE' failed. Expected and returned json do not match"
 done
 
 logmsg_info "Test case '$TEST_CASE' : FINISHED"
@@ -479,89 +474,69 @@ i=0
 bad_name=$(mktemp -u XXXX)
 bad_name="${bad_name}1"
 
-# Request non-existing interface
+logmsg_info "Request non-existing interface"
 # Implementation returns 404 or 400 depending on the iface name
-i=$(($i+1))
-test_it "$TEST_CASE::netcfgs::$i"
-simple_get_json_code "${REST_NETCFG}/${bad_name}" tmp HTTP_CODE
-print_result $? "'simple_get_json_code ${REST_NETCFG}/${bad_name}' failed." || CODE=$? die
-test_it "$TEST_CASE::http-code::$i"
-[ $HTTP_CODE -eq 404 -o  $HTTP_CODE -eq 400 ]
-print_result $? "Test case '$TEST_CASE' failed. Expected HTTP return code: 404 or 400, received: $HTTP_CODE." || CODE=$? die
-
-# api/v1/admin/netcfg/<non_existing_interface>?<junk>
-i=$(($i+1))
-test_it "$TEST_CASE::netcfgs::$i"
-simple_get_json_code "${REST_NETCFG}/${bad_name}?gnsfd=f23sfd+sf4fw4=\?" tmp HTTP_CODE
-print_result $? "'simple_get_json_code ${REST_NETCFG}/${bad_name}?gnsfd=f23sfd+sf4fw4=\?' failed." || CODE=$? die
-test_it "$TEST_CASE::http-code::$i"
-[ $HTTP_CODE -eq 404 -o  $HTTP_CODE -eq 400 ]
-print_result $? "Test case '$TEST_CASE' failed. Expected HTTP return code: 404 or 400, received: $HTTP_CODE." || CODE=$? die
-# TODO: Remove any existing interface and the request it. 
-
-# api/v1/admin/netcfg/<junk_here>
-HTTP_EXPECTED=400
+curlfail_push "expect" 'HTTP/[^ ]+ 40[04]'
 
 i=$(($i+1))
-test_it "$TEST_CASE::netcfgs::$i"
-simple_get_json_code "${REST_NETCFG}/fas40+_245625%20_=345" tmp HTTP_CODE
-print_result $? "'simple_get_json_code ${REST_NETCFG}/fas40+_245625%20_=345' failed." || CODE=$? die
-test_it "$TEST_CASE::http-code::$i"
-[[ $HTTP_CODE -eq $HTTP_EXPECTED ]]
-print_result $? "Test case '$TEST_CASE' failed. Expected HTTP return code: $HTTP_EXPECTED, received: $HTTP_CODE." || CODE=$? die
+test_it "$TEST_CASE::netcfg::$i"
+api_get_json "${REST_NETCFG}/${bad_name}"
+print_result $? "'api_get_json ${REST_NETCFG}/${bad_name}' failed"
+
+logmsg_info 'api/v1/admin/netcfg/<non_existing_interface>?<junk>'
+i=$(($i+1))
+test_it "$TEST_CASE::netcfg::$i"
+api_get_json "${REST_NETCFG}/${bad_name}?gnsfd=f23sfd+sf4fw4=\?"
+print_result $? "'api_get_json ${REST_NETCFG}/${bad_name}?gnsfd=f23sfd+sf4fw4=\?' failed"
+
+# TODO: Remove any existing interface and the request it.
+curlfail_pop
+
+logmsg_info 'api/v1/admin/netcfg/<junk_here>'
+curlfail_push_expect_404
 
 i=$(($i+1))
-test_it "$TEST_CASE::netcfgs::$i"
-simple_get_json_code "${REST_NETCFG}/40245625%20345f4f34" tmp HTTP_CODE
-print_result $? "'simple_get_json_code ${REST_NETCFG}/40245625%20345f4f34' failed." || CODE=$? die
-test_it "$TEST_CASE::http-code::$i"
-[[ $HTTP_CODE -eq $HTTP_EXPECTED ]]
-print_result $? "Test case '$TEST_CASE' failed. Expected HTTP return code: $HTTP_EXPECTED, received: $HTTP_CODE." || CODE=$? die
+test_it "$TEST_CASE::netcfg::$i"
+api_get_json "${REST_NETCFG}/fas40+_245625%20_=345"
+print_result $? "'api_get_json ${REST_NETCFG}/fas40+_245625%20_=345' failed"
 
 i=$(($i+1))
-test_it "$TEST_CASE::netcfgs::$i"
-simple_get_json_code "${REST_NETCFG}/asdf%2520%2Bsdf+%25" tmp HTTP_CODE
-print_result $? "'simple_get_json_code ${REST_NETCFG}/asdf%2520%2Bsdf+%25' failed." || CODE=$? die
-test_it "$TEST_CASE::http-code::$i"
-[[ $HTTP_CODE -eq $HTTP_EXPECTED ]]
-print_result $? "Test case '$TEST_CASE' failed. Expected HTTP return code: $HTTP_EXPECTED, received: $HTTP_CODE." || CODE=$? die
+test_it "$TEST_CASE::netcfg::$i"
+api_get_json "${REST_NETCFG}/40245625%20345f4f34"
+print_result $? "'api_get_json ${REST_NETCFG}/40245625%20345f4f34' failed"
 
 i=$(($i+1))
-test_it "$TEST_CASE::netcfgs::$i"
-simple_get_json_code "${REST_NETCFG}/eth\ 0\/asdf%2520%2Bsdf+%25" tmp HTTP_CODE
-print_result $? "'simple_get_json_code ${REST_NETCFG}/eth\ 0\/asdf%2520%2Bsdf+%25' failed." || CODE=$? die
-test_it "$TEST_CASE::http-code::$i"
-[[ $HTTP_CODE -eq $HTTP_EXPECTED ]]
-print_result $? "Test case '$TEST_CASE' failed. Expected HTTP return code: $HTTP_EXPECTED, received: $HTTP_CODE." || CODE=$? die
+test_it "$TEST_CASE::netcfg::$i"
+api_get_json "${REST_NETCFG}/asdf%2520%2Bsdf+%25"
+print_result $? "'api_get_json ${REST_NETCFG}/asdf%2520%2Bsdf+%25' failed"
 
-# api/v1/admin/netcfg/<existing_interface>?<junk>
+i=$(($i+1))
+test_it "$TEST_CASE::netcfg::$i"
+api_get_json "${REST_NETCFG}/eth\ 0\/asdf%2520%2Bsdf+%25"
+print_result $? "'api_get_json ${REST_NETCFG}/eth\ 0\/asdf%2520%2Bsdf+%25' failed"
+
+curlfail_pop
+
+
+logmsg_info 'api/v1/admin/netcfg/<existing_interface>?<junk>'
+curlfail_push_expect_200
 last_name="${INITIAL_IFACE_NAMES[-1]}"
 
-HTTP_EXPECTED=200
+i=$(($i+1))
+test_it "$TEST_CASE::netcfg::$i::$last_name"
+api_get_json "${REST_NETCFG}/${last_name}?asdf%2520%2Bsdf+%25=20'"
+print_result $? "'api_get_json ${REST_NETCFG}/${last_name}?asdf%2520%2Bsdf+%25=20' failed"
 
 i=$(($i+1))
-test_it "$TEST_CASE::netcfgs::$i::$last_name"
-simple_get_json_code "${REST_NETCFG}/${last_name}?asdf%2520%2Bsdf+%25=20'" tmp HTTP_CODE
-print_result $? "'simple_get_json_code ${REST_NETCFG}/${last_name}?asdf%2520%2Bsdf+%25=20' failed." || CODE=$? die
-test_it "$TEST_CASE::http-code::$i"
-[[ $HTTP_CODE -eq $HTTP_EXPECTED ]]
-print_result $? "Test case '$TEST_CASE' failed. Expected HTTP return code: $HTTP_EXPECTED, received: $HTTP_CODE." || CODE=$? die
+test_it "$TEST_CASE::netcfg::$i::$last_name"
+api_get_json "${REST_NETCFG}/${last_name}?asdf%2520%2Bsdf+%25=20+ \ "
+print_result $? "'api_get_json ${REST_NETCFG}/${last_name}?asdf%2520%2Bsdf+%25=20+ \ ' failed"
 
 i=$(($i+1))
-test_it "$TEST_CASE::netcfgs::$i::$last_name"
-simple_get_json_code "${REST_NETCFG}/${last_name}?asdf%2520%2Bsdf+%25=20+ \ " tmp HTTP_CODE
-print_result $? "'simple_get_json_code ${REST_NETCFG}/${last_name}?asdf%2520%2Bsdf+%25=20+ \ ' failed." || CODE=$? die
-test_it "$TEST_CASE::http-code::$i"
-[[ $HTTP_CODE -eq $HTTP_EXPECTED ]]
-print_result $? "Test case '$TEST_CASE' failed. Expected HTTP return code: $HTTP_EXPECTED, received: $HTTP_CODE." || CODE=$? die
-
-i=$(($i+1))
-test_it "$TEST_CASE::netcfgs::$i::$last_name"
-simple_get_json_code "${REST_NETCFG}/${last_name}?asdf%2520%2Bsdf\ \++%25i \ " tmp HTTP_CODE
-print_result $? "'simple_get_json_code ${REST_NETCFG}/${last_name}?asdf%2520%2Bsdf\ \++%25i \ ' failed." || CODE=$? die
-test_it "$TEST_CASE::http-code::$i"
-[[ $HTTP_CODE -eq $HTTP_EXPECTED ]]
-print_result $? "Test case '$TEST_CASE' failed. Expected HTTP return code: $HTTP_EXPECTED, received: $HTTP_CODE." || CODE=$? die
+test_it "$TEST_CASE::netcfg::$i::$last_name"
+api_get_json "${REST_NETCFG}/${last_name}?asdf%2520%2Bsdf\ \++%25i \ " tmp HTTP_CODE
+print_result $? "'api_get_json ${REST_NETCFG}/${last_name}?asdf%2520%2Bsdf\ \++%25i \ ' failed"
+curlfail_pop
 
 logmsg_info "Test case '$TEST_CASE' : FINISHED"
 
