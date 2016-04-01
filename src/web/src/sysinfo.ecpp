@@ -361,6 +361,7 @@ std::string debug_trace;
                     std::string line;
                     cxxtools::RegexSMatch smatch;
                     cxxtools::Regex rex_img_ts("^OSimage:build-ts:\\s+(\\S+)\\s*$");
+                    cxxtools::Regex rex_img_type("^OSimage:img-type:\\s+(\\S+)\\s*$");
                     // cxxtools::Regex rex_date_R("^\\s*(\\S{3})\\,\\s+(\\d{1,2})\\s+(\\S{3})\\s+(\\d{4})\\s+(\\d{2}):(\\d{2}):(\\d{2})\\s+([\\+\\-]\\d{4})\\s*$");
                     std::ifstream input(BIOS_IMAGE_VERSION_FILE);
                     while( std::getline( input, line ) ) {
@@ -383,7 +384,16 @@ std::string debug_trace;
                                 }
                                 leadingComma=',';
                             }
-                        }
+                        } // rex_img_ts.match
+
+                        if (rex_img_type.match (line, smatch)) {
+                            std::string rmatch = smatch.get(1);
+</%cpp>
+<$ leadingComma $>   <$$ utils::json::jsonify ("osimage-img-type", rmatch.c_str()) $>
+<%cpp>
+                            leadingComma=',';
+                        } // rex_img_type.match
+
                     }
                 } else {
                     log_error("Found '%s' but it is only %" PRIu64 " bytes long - ignoring the file\n",
