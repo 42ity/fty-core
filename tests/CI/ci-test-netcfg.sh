@@ -227,7 +227,7 @@ MAKEPID=$!
 wait_for_web || die "Web-server is NOT responsive!"
 sleep 5
 test_web_process || die "test_web_process() failed."
-accept_license
+### Note: we accept_license() later after certain tests
 
 ### Script starts here ###
 
@@ -396,8 +396,31 @@ logmsg_info "Test case '$TEST_CASE' : FINISHED"
 ########################
 TEST_CASE="Netcfgs_Read_003"
 
+curlfail_push "expect" 'HTTP/[^ ]+ 40[134]'
+test_it "$TEST_CASE::netcfgs::forbidden_request__or__not_found"
+api_get_json "${REST_NETCFGS}/advdwsqwe234?=345"
+print_result $? "'api_get ${REST_NETCFGS}' failed: $OUT_CURL"
+curlfail_pop
+
+logmsg_info "Removing the license file before test, if exists: license becomes not-accepted"
+if isRemoteSUT ; then
+    ( ALTROOT=/ . "$CHECKOUTDIR/tests/CI/run_tntnet_packaged.env" && [ -n "$DATADIR" ] && \
+      sut_run "rm -f '${DATADIR}/license'" ) || true
+else
+    ( . "$BUILDSUBDIR/tests/CI/run_tntnet_make.env" && [ -n "$DATADIR" ] && \
+      rm -f "${DATADIR}"/license ) || true
+fi
+
 curlfail_push "expect" 'HTTP/[^ ]+ 40[13]'
 test_it "$TEST_CASE::netcfgs::forbidden_request"
+api_get_json "${REST_NETCFGS}/advdwsqwe234?=345"
+print_result $? "'api_get ${REST_NETCFGS}' failed: $OUT_CURL"
+curlfail_pop
+
+accept_license
+
+curlfail_push "expect" 'HTTP/[^ ]+ 404'
+test_it "$TEST_CASE::netcfgs::notfound"
 api_get_json "${REST_NETCFGS}/advdwsqwe234?=345"
 print_result $? "'api_get ${REST_NETCFGS}' failed: $OUT_CURL"
 curlfail_pop
