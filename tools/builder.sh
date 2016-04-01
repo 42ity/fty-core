@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 #
-#   Copyright (c) 2014-2015 Eaton
+#   Copyright (c) 2014-2016 Eaton
 #
 #   This file is part of the Eaton $BIOS project.
 #
@@ -144,8 +144,15 @@ fi
 [ x"$BUILDSUBDIR" = x ] && BUILDSUBDIR="build-${BLDARCH}"
 
 # Set up the parallel make with reasonable limits, using several ways to
-# gather and calculate this information
-[ x"$NCPUS" = x ] && { NCPUS="`/usr/bin/getconf _NPROCESSORS_ONLN`" || NCPUS="`/usr/bin/getconf NPROCESSORS_ONLN`" || NCPUS="`cat /proc/cpuinfo | grep -wc processor`" || NCPUS=1; }
+# gather and calculate this information. Note that "psrinfo" count is not
+# an honest approach (there may be limits of current CPU set etc.) but is
+# a better upper bound than nothing...
+[ x"$NCPUS" = x ] && { \
+    NCPUS="`/usr/bin/getconf _NPROCESSORS_ONLN`" || \
+    NCPUS="`/usr/bin/getconf NPROCESSORS_ONLN`" || \
+    NCPUS="`cat /proc/cpuinfo | grep -wc processor`" || \
+    { [ -x /usr/sbin/psrinfo ] && NCPUS="`/usr/sbin/psrinfo | wc -l`"; } \
+    || NCPUS=1; } 2>/dev/null
 [ x"$NCPUS" != x -a "$NCPUS" -ge 1 ] || NCPUS=1
 [ x"$NPARMAKES" = x ] && { NPARMAKES="`do_math "$NCPUS" '*' 2`" || NPARMAKES=2; }
 [ x"$NPARMAKES" != x -a "$NPARMAKES" -ge 1 ] || NPARMAKES=2
@@ -154,6 +161,11 @@ fi
     echo "INFO: Detected or requested NPARMAKES=$NPARMAKES," \
         "however a limit of MAXPARMAKES=$MAXPARMAKES was configured" && \
     NPARMAKES="$MAXPARMAKES"
+
+# GNU make allows to limit spawning of jobs by load average of the host,
+# where LA is (roughly) the average amount over the last {timeframe} of
+# queued processes that are ready to compute but must wait for CPU.
+[ x"$PARMAKE_LA_LIMIT" = x ] && PARMAKE_LA_LIMIT=4.0
 
 # Just make sure this variable is defined
 [ -z "$CONFIGURE_FLAGS" ] && CONFIGURE_FLAGS=""
@@ -295,10 +307,10 @@ do_build() {
 	    echo "=== PARMAKE[$$] (fast first pass which is allowed to fail): $MAKE_OPTS_PAR $MAKE_OPTS $@"
 	    case " $MAKE_OPTS_PAR $MAKE_OPTS $*" in
 		*\ V=*|*\ --trace*)
-		    do_make $MAKE_OPTS_PAR $MAKE_OPTS -j $NPARMAKES -k "$@"
+		    do_make $MAKE_OPTS_PAR $MAKE_OPTS -j $NPARMAKES -k -l $PARMAKE_LA_LIMIT "$@"
 		    MRES=$? ;;
 		*)
-		    do_make V=0 $MAKE_OPTS_PAR -j $NPARMAKES -k "$@"
+		    do_make V=0 $MAKE_OPTS_PAR -j $NPARMAKES -k -l $PARMAKE_LA_LIMIT "$@"
 		    MRES=$? ;;
 	    esac
 	    MRES_P="$MRES"
@@ -382,7 +394,7 @@ usage() {
 	echo ""
 	echo "Usage: $0 [--warnless-unused] [--warn-fatal|-Werror] \ "
 	echo "    [--disable-parallel-make|--disable-sequential-make|--disable-distclean] \ "
-	echo "    [--optional-sequential-make [yes|no|auto] ] \ "
+	echo "    [--optional-sequential-make [yes|no|auto] ] [--parmake-la-limit X.Y] \ "
 	echo "    [--show-timing|--show-timing-make|--show-timing-conf] \ "
 	echo "    [--show-repository-metadata] [--verbose] \ "
 	echo "    [--show-builder-flags] [--configure-flags '...'] \ "
@@ -403,6 +415,8 @@ usage() {
 	echo "The '--optional-sequential-make' (silent default: 'auto'; implicit value if"
 	echo "only the flag was specified: 'yes') skips a seqmake if parmake succeeded;"
 	echo "where 'auto' is like 'yes' only for some tasks like check or dist."
+	echo "The '--parmake-la-limit' allows to set a floating-point limit of load average"
+	echo "where parallel gmake would stop spawning jobs on this host (default: 4.0)"
 	echo ""
 	echo "Some special uses without further parameters (--options above are accepted):"
 	echo "Usage: $0 distcheck [<list of configure flags>]"
@@ -474,6 +488,7 @@ showBuilderFlags() {
 	NOPARMAKE toggle:	$NOPARMAKE	(* 'yes' == sequential only, if enabled)
 	 NCPUS (private var):	$NCPUS
 	 NPARMAKES jobs:	$NPARMAKES
+	 PARMAKE_LA_LIMIT:	$PARMAKE_LA_LIMIT
 	NODISTCLEAN toggle:	$NODISTCLEAN
 	WARNLESS_UNUSED:	$WARNLESS_UNUSED	(* 'yes' == skip warnings about unused)
 	WARN_FATAL:		$WARN_FATAL"
@@ -549,6 +564,10 @@ while [ $# -gt 0 ]; do
 	    --parmake|--enable-parallel-make)
 		NOPARMAKE=no
 		shift
+		;;
+	    --parmake-la-limit)
+		PARMAKE_LA_LIMIT="$2"
+		shift 2
 		;;
 	    --noseqmake|--disable-sequential-make|--no-seqmake)
 		NOSEQMAKE=yes
