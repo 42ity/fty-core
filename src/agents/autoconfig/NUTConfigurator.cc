@@ -147,8 +147,10 @@ bool NUTConfigurator::v_configure (UNUSED_PARAM const std::string &name, const A
             std::string IP = ipit->second;
 
             std::vector<std::string> configs;
-            shared::nut_scan_snmp( name, shared::CIDRAddress(IP), configs );
-            shared::nut_scan_xml_http( name, shared::CIDRAddress(IP), configs );
+            if (!zsys_interrupted)
+                shared::nut_scan_snmp( name, shared::CIDRAddress(IP), configs );
+            if (!zsys_interrupted)
+                shared::nut_scan_xml_http( name, shared::CIDRAddress(IP), configs );
 
             auto it = selectBest( configs );
             if( it == configs.end() ) {

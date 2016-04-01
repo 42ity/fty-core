@@ -36,78 +36,13 @@
 #include "log.h"
 #include "asset_types.h"
 #include "dbpath.h"
-#include "monitor.h"
-#include "upsstatus.h"
 #include "defs.h"
 
 #include "asset_general.h"
 #include "utils.h"
 #include "measurements.h"
 
-#include "db/agentstate.h"
-
 typedef std::string (*MapValuesTransformation)(std::string);
-
-
-static std::string s_scale(const std::string& val, int8_t scale) {
-// TODO: Refactor away multiple calls to val.size(),
-// they seem redundant (val does not change here?)
-    assert(val != "");
-// The string.size() is a size_t (unsigned int or larger), and
-// our scale is a signed byte; make sure they fit each other
-    assert(val.size() <= SCHAR_MAX);
-
-    std::string ret{val};
-
-    //1. no scale, nothing to do
-    if (!scale)
-        return ret;
-
-    //2. positive scale, simply append things
-    if (scale > 0) {
-        while (scale > 0) {
-            ret.append("0");
-            scale--;
-        }
-        return ret;
-    }
-
-    //3. scale is "bigger" than size of string,
-    if (-scale >= (int8_t)val.size()) {
-        //3a. prepend zeroes
-        while (-scale != (int8_t)val.size()) {
-            ret.insert(0, "0");
-            scale++;
-        }
-
-        //3b and prepend 0.
-        ret.insert(0, "0.");
-        return ret;
-    }
-
-    //4. just find the right place for dot
-    ret.insert(val.size() + scale, ".");
-    return ret;
-
-}
-
-std::string measures_manager::apply_scale(const std::string &val, const std::string &scale)
-{
-    int scale_num = std::stoi (scale, nullptr, 10);
-    return s_scale(val, scale_num);
-}
-
-std::string measures_manager::map_values(std::string name, std::string value) {
-    static std::map<std::string, MapValuesTransformation > map = {
-        { "status.ups", &shared::upsstatus_to_string }
-    };
-    
-    auto it = map.find(name);
-    if(it != map.end()) {
-        return "\"" + it->second(value) + "\"";
-    }
-    return value;
-}
 
 int
     measures_manager::get_last_10minute_measurement(
@@ -131,41 +66,15 @@ int
 
 db_reply <db_web_element_t>
     asset_manager::get_item1
-        (const std::string &id)
+        (uint32_t id)
 {
     db_reply <db_web_element_t> ret;
-
-    unsigned long real_id_l = 0;
-    try {
-        real_id_l = std::stoul (id);
-    }
-    catch (const std::out_of_range& e) {
-        ret.status        = 0;
-        ret.errtype       = DB_ERR;
-        ret.errsubtype    = DB_ERROR_BADINPUT;
-        return ret;
-    }
-    catch (const std::invalid_argument& e) {
-        ret.status        = 0;
-        ret.errtype       = DB_ERR;
-        ret.errsubtype    = DB_ERROR_BADINPUT;
-        return ret;
-    }
-
-    if (real_id_l == 0 || real_id_l > UINT_MAX) {
-        ret.status        = 0;
-        ret.errtype       = DB_ERR;
-        ret.errsubtype    = DB_ERROR_BADINPUT;
-        return ret;
-    }
-    uint32_t real_id = static_cast<uint32_t> (real_id_l);
-    log_debug ("id converted successfully");
 
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
         log_debug ("connection was successful");
 
-        auto basic_ret = persist::select_asset_element_web_byId(conn, real_id);
+        auto basic_ret = persist::select_asset_element_web_byId(conn, id);
         log_debug ("1/4 basic select is done");
 
         if ( basic_ret.status == 0 )
@@ -180,7 +89,7 @@ db_reply <db_web_element_t>
         log_debug ("    1/4 no errors");
         ret.item.basic = basic_ret.item;
 
-        auto ext_ret = persist::select_ext_attributes(conn, real_id);
+        auto ext_ret = persist::select_ext_attributes(conn, id);
         log_debug ("2/4 ext select is done");
 
         if ( ext_ret.status == 0 )
@@ -195,7 +104,7 @@ db_reply <db_web_element_t>
         log_debug ("    2/4 no errors");
         ret.item.ext = ext_ret.item;
 
-        auto group_ret = persist::select_asset_element_groups(conn, real_id);
+        auto group_ret = persist::select_asset_element_groups(conn, id);
         log_debug ("3/4 groups select is done, but next one is only for devices");
 
         if ( group_ret.status == 0 )
@@ -212,7 +121,7 @@ db_reply <db_web_element_t>
 
         if ( ret.item.basic.type_id == persist::asset_type::DEVICE )
         {
-            auto powers = persist::select_asset_device_links_to (conn, real_id, INPUT_POWER_CHAIN);
+            auto powers = persist::select_asset_device_links_to (conn, id, INPUT_POWER_CHAIN);
             log_debug ("4/4 powers select is done");
 
             if ( powers.status == 0 )
@@ -303,23 +212,10 @@ db_reply <std::map <uint32_t, std::string> >
 
 db_reply_t
     asset_manager::delete_item(
-        const std::string &id,
+        uint32_t id,
         db_a_elmnt_t &element_info)
 {
     db_reply_t ret = db_reply_new();
-
-    // TODO add better converter
-    uint32_t real_id = atoi(id.c_str());
-    if ( real_id == 0 )
-    {
-        ret.status        = 0;
-        ret.errtype       = DB_ERR;
-        ret.errsubtype    = DB_ERROR_NOTFOUND;
-        ret.msg           = "cannot convert an id";
-        log_warning (ret.msg.c_str());
-        return ret;
-    }
-    log_debug ("id converted successfully");
 
     // As different types should be deleted in differenct way ->
     // find out the type of the element.
@@ -330,7 +226,7 @@ db_reply_t
         tntdb::Connection conn = tntdb::connectCached(url);
 
         db_reply <db_web_basic_element_t> basic_info =
-            persist::select_asset_element_web_byId(conn, real_id);
+            persist::select_asset_element_web_byId(conn, id);
 
         if ( basic_info.status == 0 )
         {
@@ -352,17 +248,17 @@ db_reply_t
             case persist::asset_type::ROOM:
             case persist::asset_type::RACK:
             {
-                ret = persist::delete_dc_room_row_rack(conn, real_id);
+                ret = persist::delete_dc_room_row_rack(conn, id);
                 break;
             }
             case persist::asset_type::GROUP:
             {
-                ret = persist::delete_group(conn, real_id);
+                ret = persist::delete_group(conn, id);
                 break;
             }
             case persist::asset_type::DEVICE:
             {
-                ret = persist::delete_device(conn, real_id);
+                ret = persist::delete_device(conn, id);
                 break;
             }
             default:

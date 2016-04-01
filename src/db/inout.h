@@ -36,6 +36,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "dbhelpers.h"
 namespace persist {
 
+typedef std::function<void(void)> touch_cb_t;
+
 /*
  * \brief Converts the string priority to number
  *
@@ -80,7 +82,8 @@ void
     load_asset_csv
         (std::istream& input,
          std::vector <std::pair<db_a_elmnt_t,persist::asset_operation>> &okRows,
-         std::map <int, std::string> &failRows);
+         std::map <int, std::string> &failRows,
+         touch_cb_t touch_fn);
 
 /*
  * \brief Processes a csv map
@@ -95,7 +98,8 @@ void
     load_asset_csv
         (const shared::CsvMap& cm,
          std::vector <std::pair<db_a_elmnt_t,persist::asset_operation>> &okRows,
-         std::map <int, std::string> &failRows);
+         std::map <int, std::string> &failRows,
+         touch_cb_t touch_fn);
 
 /** \brief export csv file and write result to output stream
  *

@@ -798,6 +798,7 @@ simple_get_json_code_sed() {
 
 # license accept (note: no password change)
 accept_license(){
+    curlfail_push_expect_noerrors
     if CITEST_QUICKFAIL=no WEBLIB_QUICKFAIL=no WEBLIB_CURLFAIL=no api_get_json '/admin/license/status' | grep "accepted_at"; then
         echo 'WEBLIB::accept_license(): license already accepted'
     else
@@ -818,4 +819,8 @@ accept_license(){
                 fi
         fi
     fi
+    curlfail_pop
 }
+
+:
+

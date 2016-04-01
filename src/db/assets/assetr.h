@@ -51,6 +51,7 @@ struct db_web_basic_element_t {
     // TODO location
     std::string      subtype_name;
     std::string      asset_tag;
+    std::string      parent_name;
 };
 
 /**
@@ -59,13 +60,14 @@ struct db_web_basic_element_t {
 struct db_tmp_link_t {
     a_elmnt_id_t     src_id;
     a_elmnt_id_t     dest_id;
+    std::string      src_name;
     std::string      src_socket;
     std::string      dest_socket;
 };
 
 struct db_web_element_t{
     db_web_basic_element_t basic;
-    std::vector <a_elmnt_id_t> groups;
+    std::map <a_elmnt_id_t, std::string> groups;
     std::vector <db_tmp_link_t> powers;
     std::map <std::string, std::pair<std::string, bool> > ext;
 };
@@ -100,7 +102,7 @@ db_reply <std::vector <db_tmp_link_t> >
          a_elmnt_id_t element_id,
          a_lnk_tp_id_t link_type_id);
 
-db_reply <std::vector <a_elmnt_id_t> >
+db_reply <std::map <a_elmnt_id_t, std::string> >
     select_asset_element_groups
         (tntdb::Connection &conn,
          a_elmnt_id_t element_id);
@@ -208,7 +210,8 @@ int
 max_number_of_power_links(
         tntdb::Connection& conn);
 
-/** \brief how many times is gived id as id_asset_device_src in v_bios_asset_link
+/** \brief how many times is gived id as id_asset_device_src
+ *          in v_bios_asset_link
  *
  *  \param[in] conn is tntdb connection
  *  \param[in] id is the asset id of the device
@@ -280,6 +283,30 @@ int
          a_elmnt_id_t element_id,
          std::function<void(const tntdb::Row&)> cb);
 
+ /**
+ * \brief select all assets inside the asset-container (all 4 level down)
+ *
+ * \param[in] conn       - db connection
+ * \param[in] element_id - id of the asset-container
+ * \param[in] types      - vector of types we are interested in, empty vector
+ *                          means all types.
+ * \param[in] subtype    - vector of subtypes we are interested in, empty vector
+ *                          means all subtypes.
+ * \param[in] cb         - callback to be called with every selected row.
+ *
+ *  Every selected row has the following columns:
+ *      name, asset_id, subtype_id, subtype_name, type_id
+ *
+ * \return 0 on success (even if nothing was found)
+ */
+int
+    select_assets_by_container
+        (tntdb::Connection &conn,
+         a_elmnt_id_t element_id,
+         std::vector<a_elmnt_tp_id_t> types,
+         std::vector<a_elmnt_stp_id_t> subtypes,
+         std::function<void(const tntdb::Row&)> cb);
+
 
 /**
  * \brief read particular asset ext property of device[s]
@@ -304,7 +331,8 @@ int
         std::function< void( const tntdb::Row& ) > &cb);
 
 /**
- * \brief select all devices (name, warranty_end) which have warranty_end argument
+ * \brief select all devices (name, warranty_end) which have warranty_end
+ *          argument
  *
  * \param[in] conn        - db connection
  * \param[in] keytag      - asset ext attribute name like "u_size"

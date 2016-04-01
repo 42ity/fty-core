@@ -37,7 +37,7 @@
 class asset_manager {
     public:
         // new functionality
-        db_reply <db_web_element_t>  get_item1(const std::string &id);
+        db_reply <db_web_element_t>  get_item1(uint32_t id);
         db_reply <std::map <uint32_t, std::string> > get_items1(
             const std::string &typeName,
             const std::string &subtypeName);
@@ -47,15 +47,13 @@ class asset_manager {
 
         db_reply_t
             delete_item(
-                const std::string &id,
+                uint32_t id,
                 db_a_elmnt_t &element_info);
 };
 
 class measures_manager {
     public:
         std::string map_names(std::string name);
-        std::string map_values(std::string name, std::string value);
-        std::string apply_scale(const std::string &val, const std::string &scale);
         int
             get_last_10minute_measurement(
                 const std::string &source,

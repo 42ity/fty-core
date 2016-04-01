@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2014 Eaton
+# Copyright (C) 2014-2016 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,9 +16,10 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-#! \file   ci-fill-db.sh
+#! \file   ci-make-all-targets.sh
 #  \brief  installs dependencies and compiles the project
 #  \author Tomas Halman <TomasHalman@Eaton.com>
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 
 CPPCHECK=$(which cppcheck)
 
@@ -31,15 +32,22 @@ cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 set -o pipefail || true
 set -e
 
+PATH="/usr/lib/ccache:/usr/lib64/ccache:/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
+
 # NOTE: with this job we want everything wiped and rebuilt in the workspace
 # "make all-buildproducts" builds all possible binaries and libs
 # "make check" runs some of them to execute certain unit-tests, etc.
 # "make dist" makes sure a source tarball can be made (?)
 # "make distcheck" does all of the above in an out-of-tree builddir
-echo "=========== auto-configure and rebuild all =================="
+echo "====== distclean, auto-configure and rebuild all ============"
 ./autogen.sh --install-dir / --configure-flags \
     "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux --enable-ci-tests" \
     ${AUTOGEN_ACTION_BUILD} all-buildproducts 2>&1 | tee ${MAKELOG}
+
+if [ x"${1-}" = x"--build-only" ] ; then
+    logmsg_info "Requested to only configure and build all products, this has succeeded"
+    exit 0
+fi
 
 echo "========================= cppcheck =========================="
 CPPCHECK_RES=0

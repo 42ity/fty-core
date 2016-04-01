@@ -11,10 +11,10 @@
             {"high_warning"  : "0"},
             {"high_critical" : "0"} ],
         "results"       :   [
-            {"low_critical"  : { "action" : ["EMAIL","SMS"], "severity" : "high", "description" : "Input load (3 phase) in device __name__ is critically low" }},
-            {"low_warning"  :  { "action" : ["EMAIL","SMS"], "severity" : "low",  "description" : "Input load (3 phase) in device __name__ is low" }},
-            {"high_warning"  : { "action" : ["EMAIL","SMS"], "severity" : "low",  "description" : "Input load (3 phase) in device __name__ is hight" }},
-            {"high_critical" : { "action" : ["EMAIL","SMS"], "severity" : "high", "description" : "Input load (3 phase) in device __name__ is critically high" }} ],
+            {"low_critical"  : { "action" : ["EMAIL","SMS"], "severity" : "CRITICAL", "description" : "Input load (3 phase) in device __name__ is critically low" }},
+            {"low_warning"  :  { "action" : ["EMAIL","SMS"], "severity" : "WARNING",  "description" : "Input load (3 phase) in device __name__ is low" }},
+            {"high_warning"  : { "action" : ["EMAIL","SMS"], "severity" : "WARNING",  "description" : "Input load (3 phase) in device __name__ is hight" }},
+            {"high_critical" : { "action" : ["EMAIL","SMS"], "severity" : "CRITICAL", "description" : "Input load (3 phase) in device __name__ is critically high" }} ],
         "evaluation" : "function main(v1,v2,v3) if (v1 > high_critical or v2 > high_critical or v3 > high_critical) then return HIGH_CRITICAL end; if (v1 > high_warning or v2 > high_warning or v3 > high_warning) then return HIGH_WARNING end; if (v1 < low_critical or v2 < low_critical or v3 < low_critical) then return LOW_CRITICAL end; if (v1 < low_warning or v2 < low_warning or v3 < low_warning) then return LOW_WARNING end; return OK; end"
     }
 }

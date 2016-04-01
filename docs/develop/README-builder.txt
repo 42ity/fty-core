@@ -77,6 +77,10 @@ was provided. The effect of 'yes' is to skip the sequential build phase
 iff the parallel build phase succeeded, which may be acceptable for certain
 targets ('auto' changes into a 'yes' if the selected actions or targets
 match a predefined pattern).
+ * '--parmake-la-limit' -- this sets 'PARMAKE_LA_LIMIT' to the next provided
+value that is expected to be a positive integer or floating-point number and
+defines a limit of OS load average where parallel gmake would stop spawning
+jobs on this build host (default: 4.0)
  * '--show-builder-flags' -- before executing an action, display the
 setup of `builder.sh` for this run
  * '--show-repository-metadata' -- before executing an action, display
@@ -384,7 +388,7 @@ The `builder.sh` script tries several methods to detect the number of
 CPUs on the system, or defaults to "1" upon errors.
 
 
-=== 'NPARMAKES' count and 'MAXPARMAKES' limiter
+=== 'NPARMAKES' count, 'PARMAKE_LA_LIMIT' and 'MAXPARMAKES' limiters
 The 'NPARMAKES' variable contains the number of `make` processes that
 should be run in parallel on the first pass (if not disabled with the
 'NOPARMAKE' toggle).
@@ -395,8 +399,15 @@ one is actively compiling and another is waiting for disk I/O), or
 to "2" upon errors.
 
 If the enviroment defines a non-negative 'MAXPARMAKES' value (e.g. set
-by Jenkins), and if the automatically detected or explicitly requestsd
+by Jenkins), and if the automatically detected or explicitly requested
 'NPARMAKES' value exceeds that limit, then 'NPARMAKES' is reduced to
 match the required 'MAXPARMAKES'.
 
+Additionally, the 'PARMAKE_LA_LIMIT' (defaults to 4.0, can be set via
+the environment or command-line argument '--parmake-la-limit') should
+forbid `make` to spawn additional jobs (second or more) if the system
+load average currently exceeds the specified value. Depending on the OS,
+this value roughly means the average length of the queue of processes
+that are ready for execution and are waiting for an available CPU, over
+the past "short stretch of time" (usually one or a few seconds).
 

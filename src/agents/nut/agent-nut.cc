@@ -37,10 +37,16 @@
 #include "cleanup.h"
 #include "defs.h"
 
+
 void NUTAgent::onStart( ) {
     _timeout = NUT_POLLING_INTERVAL;
+    _deviceList.load_mapping (_conf.c_str ());
 }
 
+void NUTAgent::setConf (const char *path_to_file)
+{
+    _conf = path_to_file;
+}
 
 void NUTAgent::onPoll() {
     advertisePhysics();
@@ -110,6 +116,33 @@ void NUTAgent::advertisePhysics() {
                     device.second.setChanged("status.ups",false);
                 }
             }
+            //MVY: send also epdu status as bitmap
+            for (int i = 1; i != 100; i++) {
+                std::string property = "status.outlet." + std::to_string(i);
+                // assumption, if outlet.10 does not exists, outlet.11 does not as well
+                if (!device.second.hasProperty(property))
+                    break;
+                if( device.second.hasProperty(property) && ( advertise || device.second.changed(property) ) ) {
+                    topic = "measurement.status.outlet." + std::to_string(i) + "@" + device.second.name();
+                    std::string status_s = device.second.property(property);
+                    uint16_t    status_i = status_s == "on" ? 42 : 0;
+                    _scoped_ymsg_t *msg = bios_measurement_encode(
+                        device.second.name().c_str(),
+                        property.c_str(),
+                        "",
+                        status_i, 0, std::time(0));
+                    if( msg ) {
+                        log_debug("sending new status for %s %s, value %i (%s)",
+                                property.c_str (),
+                                device.second.name().c_str(),
+                                status_i,
+                                status_s.c_str() );
+                        send( topic.c_str(), &msg );
+                        ymsg_destroy(&msg);
+                        device.second.setChanged(property,false);
+                }
+            }
+            }
         }
     }
 }
@@ -147,13 +180,16 @@ void NUTAgent::advertiseInventory() {
 }
 
 int main(int argc, char *argv[]){
-    if( argc > 0 ) {}; // silence compiler warnings
-    if( argv ) {};  // silence compiler warnings
+    if (argc < 2) {
+        zsys_error ("Need configuration for file as first command line argument!");
+        return EXIT_FAILURE;               
+    }
     
     int result = 1;
     log_open();
     log_info ("nut agent started");
     NUTAgent agent("NUT");
+    agent.setConf (argv[1]);
     if( agent.connect("ipc://@/malamute", bios_get_stream_main(), NULL) ) {
         result = agent.run();
     }

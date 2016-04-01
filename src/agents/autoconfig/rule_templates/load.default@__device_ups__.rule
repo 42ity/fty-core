@@ -11,9 +11,9 @@
             {"high_warning"  : "0"},
             {"high_critical" : "0"} ],
         "results" :   [
-            { "low_critical"  : { "action" : ["EMAIL","SMS"], "severity" : "high", "description" : "Default load in ups __name__ is critically low" }},
-            { "low_warning"   : { "action" : ["EMAIL","SMS"], "severity" : "low", "description" : "Default load in ups __name__ is low" }},
-            { "high_warning"  : { "action" : ["EMAIL","SMS"], "severity" : "low", "description" : "Default load in ups __name__ is high" }},
-            { "high_critical" : { "action" : ["EMAIL","SMS"], "severity" : "high", "description" : "Default load in ups __name__ is critically high" }} ]
+            { "low_critical"  : { "action" : ["EMAIL","SMS"], "severity" : "CRITICAL", "description" : "Default load in ups __name__ is critically low" }},
+            { "low_warning"   : { "action" : ["EMAIL","SMS"], "severity" : "WARNING", "description" : "Default load in ups __name__ is low" }},
+            { "high_warning"  : { "action" : ["EMAIL","SMS"], "severity" : "WARNING", "description" : "Default load in ups __name__ is high" }},
+            { "high_critical" : { "action" : ["EMAIL","SMS"], "severity" : "CRITICAL", "description" : "Default load in ups __name__ is critically high" }} ]
     }
 }

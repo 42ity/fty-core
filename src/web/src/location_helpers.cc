@@ -40,11 +40,16 @@ int asset_location_r(asset_msg_t** asset_msg, std::string& json) {
     std::string type_name = asset_msg_type_name(*asset_msg);
 
 
-    json += "{"; 
+    json += "{";
     json += "\"name\" : \"" + name + "\", ";
-    json += "\"id\" : \"" + std::to_string(element_id) + "\"";
-    if (type_id == persist::asset_type::DEVICE || type_id == persist::asset_type::GROUP) { 
-        json += ", \"type\" : \"" + type_name + "\"";
+    json += "\"id\" : \"" + std::to_string(element_id) + "\",";
+    json += "\"type\" : \"" + persist::typeid_to_type(type_id) + "\",";
+    if ( (type_id == persist::asset_type::DEVICE ) ||
+         (type_id == persist::asset_type::GROUP) ) {
+        json += "\"sub_type\" : \"" + type_name + "\"";
+    }
+    else {
+        json += "\"sub_type\" : \"N_A\"";
     }
 
     std::list<zframe_t *> frames;

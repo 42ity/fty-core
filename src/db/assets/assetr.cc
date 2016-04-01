@@ -46,7 +46,7 @@ db_reply <db_web_basic_element_t>
     log_debug ("element_id = %" PRIi32, element_id);
 
     // TODO write function new
-    db_web_basic_element_t item {0, "", "", 0, 0, "", 0, 0, 0, "",""};
+    db_web_basic_element_t item {0, "", "", 0, 0, "", 0, 0, 0, "","",""};
     db_reply <db_web_basic_element_t> ret = db_reply_new(item);
 
     try{
@@ -54,9 +54,9 @@ db_reply <db_web_basic_element_t>
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
             "   v.id, v.name, v.id_type, v.type_name,"
-            "   v.subtype_id, v.subtype_name, v.id_parent,"
+            "   v.subtype_id, v.id_parent,"
             "   v.id_parent_type, v.status,"
-            "   v.priority, v.asset_tag"
+            "   v.priority, v.asset_tag, v.parent_name "
             " FROM"
             "   v_web_element v"
             " WHERE :id = v.id"
@@ -71,12 +71,15 @@ db_reply <db_web_basic_element_t>
         row[2].get(ret.item.type_id);
         row[3].get(ret.item.type_name);
         row[4].get(ret.item.subtype_id);
-        row[5].get(ret.item.subtype_name);
-        row[6].get(ret.item.parent_id);
-        row[7].get(ret.item.parent_type_id);
-        row[8].get(ret.item.status);
-        row[9].get(ret.item.priority);
-        row[10].get(ret.item.asset_tag);
+        row[5].get(ret.item.parent_id);
+        row[6].get(ret.item.parent_type_id);
+        row[7].get(ret.item.status);
+        row[8].get(ret.item.priority);
+        row[9].get(ret.item.asset_tag);
+        row[10].get(ret.item.parent_name);
+
+        // QWER: attempt to remove db dictionaries
+        ret.item.subtype_name = subtypeid_to_subtype (ret.item.subtype_id);
 
         ret.status = 1;
         LOG_END;
@@ -105,16 +108,16 @@ db_reply <db_web_basic_element_t>
         (tntdb::Connection &conn,
          const char *element_name) {
     // TODO write function new
-    db_web_basic_element_t item {0, "", "", 0, 0, "", 0, 0, 0, "",""};
+    db_web_basic_element_t item {0, "", "", 0, 0, "", 0, 0, 0, "","",""};
     db_reply <db_web_basic_element_t> ret = db_reply_new(item);
 
     try {
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
             "   v.id, v.name, v.id_type, v.type_name,"
-            "   v.subtype_id, v.subtype_name, v.id_parent,"
+            "   v.subtype_id, v.id_parent,"
             "   v.id_parent_type, v.status,"
-            "   v.priority, v.asset_tag"
+            "   v.priority, v.asset_tag, v.parent_name "
             " FROM"
             "   v_web_element v"
             " WHERE :name = v.name"
@@ -127,12 +130,15 @@ db_reply <db_web_basic_element_t>
         row[2].get(ret.item.type_id);
         row[3].get(ret.item.type_name);
         row[4].get(ret.item.subtype_id);
-        row[5].get(ret.item.subtype_name);
-        row[6].get(ret.item.parent_id);
-        row[7].get(ret.item.parent_type_id);
-        row[8].get(ret.item.status);
-        row[9].get(ret.item.priority);
-        row[10].get(ret.item.asset_tag);
+        row[5].get(ret.item.parent_id);
+        row[6].get(ret.item.parent_type_id);
+        row[7].get(ret.item.status);
+        row[8].get(ret.item.priority);
+        row[9].get(ret.item.asset_tag);
+        row[10].get(ret.item.parent_name);
+
+        // QWER: attempt to remove db dictionaries
+        ret.item.subtype_name = subtypeid_to_subtype (ret.item.subtype_id);
 
         ret.status = 1;
         return ret;
@@ -237,9 +243,9 @@ db_reply <std::vector <db_tmp_link_t>>
         // Can return more than one row
         tntdb::Statement st_pow = conn.prepareCached(
             " SELECT"
-            "   v.id_asset_element_src, v.src_out, v.dest_in"
+            "   v.id_asset_element_src, v.src_out, v.dest_in, v.src_name"
             " FROM"
-            "   v_bios_asset_link v"
+            "   v_web_asset_link v"
             " WHERE"
             "   v.id_asset_element_dest = :iddevice AND"
             "   v.id_asset_link_type = :idlinktype"
@@ -253,10 +259,11 @@ db_reply <std::vector <db_tmp_link_t>>
         // Go through the selected links
         for ( auto &row: result )
         {
-            db_tmp_link_t m{0, element_id, "", ""};
+            db_tmp_link_t m{0, element_id, "", "", ""};
             row[0].get(m.src_id);
             row[1].get(m.src_socket);
             row[2].get(m.dest_socket);
+            row[3].get(m.src_name);
 
             ret.item.push_back (m);
         }
@@ -276,7 +283,7 @@ db_reply <std::vector <db_tmp_link_t>>
 }
 
 
-db_reply <std::vector <a_elmnt_id_t> >
+db_reply <std::map <a_elmnt_id_t, std::string> >
     select_asset_element_groups
         (tntdb::Connection &conn,
          a_elmnt_id_t element_id)
@@ -284,21 +291,23 @@ db_reply <std::vector <a_elmnt_id_t> >
     LOG_START;
     log_debug ("element_id = %" PRIi32, element_id);
 
-    std::vector <a_elmnt_id_t> item{};
-    db_reply <std::vector <a_elmnt_id_t> > ret = db_reply_new(item);
+    std::map <a_elmnt_id_t, std::string> item{};
+    db_reply <std::map <a_elmnt_id_t, std::string> > ret = db_reply_new(item);
 
     try {
         // Get information about the groups element belongs to
         // Can return more than one row
         tntdb::Statement st_gr = conn.prepareCached(
-            " SELECT"
-            "   v.id_asset_group"
-            " FROM"
-            "   v_bios_asset_group_relation v"
-            " WHERE v.id_asset_element = :idelement"
+            " SELECT "
+            "   v1.id_asset_group, v.name "
+            " FROM "
+            "   v_bios_asset_group_relation v1, "
+            "   v_bios_asset_element v "
+            " WHERE "
+            "   v1.id_asset_element = :idelement AND "
+            "   v.id = v1.id_asset_group "  
         );
 
-        // TODO set
         tntdb::Result result = st_gr.set("idelement", element_id).
                                      select();
 
@@ -308,8 +317,11 @@ db_reply <std::vector <a_elmnt_id_t> >
         {
             // group_id, required
             a_elmnt_id_t group_id = 0;
-            row[0].get(group_id);
-            ret.item.push_back(group_id);
+            row["id_asset_group"].get(group_id);
+
+            std::string group_name;
+            row["name"].get(group_name);
+            ret.item.emplace(group_id, group_name);
         }
         ret.status = 1;
         LOG_END;
@@ -837,6 +849,7 @@ int
     }
 }
 
+
 int
     select_assets_by_container
         (tntdb::Connection &conn,
@@ -844,12 +857,23 @@ int
          std::function<void(const tntdb::Row&)> cb
          )
 {
+    return select_assets_by_container(conn, element_id, {}, {}, cb);
+}
+
+int
+    select_assets_by_container
+        (tntdb::Connection &conn,
+         a_elmnt_id_t element_id,
+         std::vector<a_elmnt_tp_id_t> types,
+         std::vector<a_elmnt_stp_id_t> subtypes,
+         std::function<void(const tntdb::Row&)> cb
+         )
+{
     LOG_START;
     log_debug ("container element_id = %" PRIu32, element_id);
 
     try {
-        // Can return more than one row.
-        tntdb::Statement st = conn.prepareCached(
+        std::string select =
             " SELECT "
             "   v.name, "
             "   v.id_asset_element as asset_id, "
@@ -859,8 +883,19 @@ int
             " FROM "
             "   v_bios_asset_element_super_parent v "
             " WHERE "
-            "   :containerid in (v.id_parent1, v.id_parent2, v.id_parent3, v.id_parent4, v.id_parent5)"
-        );
+            "   :containerid in (v.id_parent1, v.id_parent2, v.id_parent3, v.id_parent4, v.id_parent5)";
+        if (!subtypes.empty()) {
+            std::string list;
+            for( auto &id: subtypes) list += std::to_string(id) + ",";
+            select += " and v.id_asset_device_type in (" + list.substr(0,list.size()-1) + ")"; 
+        }
+        if (!types.empty()) {
+            std::string list;
+            for( auto &id: types) list += std::to_string(id) + ",";
+            select += " and v.id_type in (" + list.substr(0,list.size()-1) + ")"; 
+        }
+        // Can return more than one row.
+        tntdb::Statement st = conn.prepareCached (select);
 
         tntdb::Result result = st.set("containerid", element_id).
                                   select();

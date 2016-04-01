@@ -23,7 +23,6 @@
  * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
  * \author Karol Hrdina <KarolHrdina@Eaton.com>
- * \author    unknown <  unknown@Eaton.com>
  * \brief Not yet documented file
  */
 #include <catch.hpp>
@@ -202,8 +201,7 @@ TEST_CASE("helper functions: convert_asset_to_monitor_old", "[db][convert_to_mon
 
     st = conn.prepareCached (
        "select id_discovered_device from t_bios_discovered_device "
-       "where name = 'select_device' AND id_device_type = "
-       "(select id_device_type from t_bios_device_type where name = 'not_classified')"
+       "where name = 'select_device'"
     );
     REQUIRE_NOTHROW (val = st.selectValue ());
     REQUIRE_NOTHROW (val.get (id_monitor));
@@ -221,8 +219,7 @@ TEST_CASE("helper functions: convert_monitor_to_asset", "[db][convert_to_asset]"
 
     tntdb::Statement st = conn.prepareCached (
        "select id_discovered_device from t_bios_discovered_device "
-       "where name = 'select_device' AND id_device_type = "
-       "(select id_device_type from t_bios_device_type where name = 'not_classified')"
+       "where name = 'select_device'"
     );
     REQUIRE_NOTHROW (val = st.selectValue ());
     REQUIRE_NOTHROW (val.get (id_monitor));
@@ -236,61 +233,4 @@ TEST_CASE("helper functions: convert_monitor_to_asset", "[db][convert_to_asset]"
 
     id_monitor = 65530;
     REQUIRE_THROWS_AS ( convert_monitor_to_asset (url.c_str(), id_monitor),  bios::NotFound );
-}
-
-
-TEST_CASE("get_last_measurements", "[db][get][lastmeasurements]")
-{
-    //TODO
-    //SUCCESS
- /*   tntdb::Connection conn;
-    REQUIRE_NOTHROW (conn = tntdb::connectCached(url));
-    tntdb::Value val;
-    uint32_t id = 0;
-
-    tntdb::Statement st = conn.prepareCached (
-       "select id_asset_element from t_bios_asset_element where name = 'ups'"
-    );
-    REQUIRE_NOTHROW (val = st.selectValue ());
-    REQUIRE_NOTHROW (val.get (id));
-
-    _scoped_zmsg_t* getlastmeasurements = common_msg_encode_get_last_measurements (id);
-    _scoped_common_msg_t* glm = common_msg_decode (&getlastmeasurements);
-    common_msg_print (glm);
-    _scoped_zmsg_t* returnmeasurements = _get_last_measurements (url.c_str(), glm);
-    common_msg_print (glm);
-    REQUIRE ( returnmeasurements );
-
-    REQUIRE ( is_common_msg (returnmeasurements) );
-    common_msg_destroy (&glm);
-
-    glm = common_msg_decode (&returnmeasurements);
-    REQUIRE ( common_msg_id (glm) == COMMON_MSG_RETURN_LAST_MEASUREMENTS );
-    REQUIRE ( common_msg_device_id (glm) == id );
-    _scoped_zlist_t* measurements = common_msg_get_measurements (glm);
-    
-    REQUIRE (zlist_size(measurements) == EXP.size());
-    std::set<std::string> results;
-    for (char* s = (char*) zlist_first(measurements); s != NULL; s = (char*) zlist_next(measurements)) {
-        results.insert(s);
-    }
-    REQUIRE (results == EXP);
-    
-    zlist_destroy (&measurements);
-    common_msg_destroy (&glm);
-
-    //FAIL
-    id = 65531;
-    getlastmeasurements = common_msg_encode_get_last_measurements (id);
-    glm = common_msg_decode (&getlastmeasurements);
-    returnmeasurements = _get_last_measurements (url.c_str(), glm);
-    REQUIRE ( returnmeasurements );
-    REQUIRE ( is_common_msg (returnmeasurements) );
-    common_msg_destroy (&glm);
-
-    glm = common_msg_decode (&returnmeasurements);
-    REQUIRE ( common_msg_id (glm) == COMMON_MSG_FAIL );
-    REQUIRE ( common_msg_errorno (glm) == DB_ERROR_NOTFOUND );
-    common_msg_destroy (&glm);
-*/
 }

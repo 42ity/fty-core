@@ -37,7 +37,7 @@ class ConfiguratorFactory
                                                                                             //       template parameter Configurator*
 
     ConfiguratorFactory (const ConfiguratorFactory&) = delete;
-    void operator= (const ConfiguratorFactory&)      = delete;
+    ConfiguratorFactory & operator= (const ConfiguratorFactory&)      = delete;
 
  private:
     ConfiguratorFactory () {};

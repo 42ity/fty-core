@@ -41,7 +41,9 @@ logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to build, and BUILDSUBDIR='$BUILDS
     WEBLIB_CURLFAIL=no
 [ -z "$SKIP_NONSH_TESTS" ] && \
     SKIP_NONSH_TESTS=yes
-export WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT WEBLIB_CURLFAIL SKIP_NONSH_TESTS
+[ -z "${SKIP_OBSOLETE_TESTS-}" ] && \
+    SKIP_OBSOLETE_TESTS=yes
+export WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT WEBLIB_CURLFAIL SKIP_NONSH_TESTS SKIP_OBSOLETE_TESTS
 
 PATH="$BUILDSUBDIR/tools:$CHECKOUTDIR/tools:${DESTDIR:-/root}/libexec/bios:/usr/lib/ccache:/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
 export PATH
@@ -61,11 +63,11 @@ usage(){
 
 while [ $# -gt 0 ] ; do
     case "$1" in
-        --user|-u)
+        --user|-u|--bios-user)
             BIOS_USER="$2"
             shift 2
             ;;
-        --passwd|-p)
+        --passwd|--bios-passwd|-p|--password|--bios-password)
             BIOS_PASSWD="$2"
             shift 2
             ;;
@@ -83,9 +85,6 @@ while [ $# -gt 0 ] ; do
             ;;
     esac
 done
-
-set -u
-#set -e
 
 test_web_port() {
     netstat -tan | grep -w "${SUT_WEB_PORT}" | egrep 'LISTEN' >/dev/null
@@ -120,35 +119,31 @@ wait_for_web() {
 test_web() {
     echo "==== Calling test_web.sh ==================================="
     RES_TW=0
-    test_it "ci-test-restapi::test_web::$@"
+    test_it "ci-test-restapi::test_web::$*"
     /bin/bash "${CHECKOUTDIR}"/tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" "$@" || \
         RES_TW=$?
     print_result $RES_TW
     echo "==== test_web RESULT: ($RES_TW) =================================="
+    echo ""
+    echo ""
     return $RES_TW
-}
-
-ci_loaddb_default() {
-    echo "--------------- reset db: default ----------------"
-    for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
-        loaddb_file "$data" || CODE=$? die "failed in loaddb_file($data)"
-    done
-    return 0
 }
 
 test_web_default() {
     init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_default() $*" || true
-    ci_loaddb_default && \
+    test_it "init_script_default"
+    init_script_default
+    print_result $? && \
     test_web "$@" || return $?
     return 0
 }
 
 test_web_topo_p() {
     init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_p() $*" || true
+    test_it "init_script_sampledata_topo_pow"
     echo "----------- reset db: topology : power -----------"
-    for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOP"; do
-        loaddb_file "$data" || CODE=$? die "failed in loaddb_file($data)"
-    done
+    init_script_sampledata_topo_pow
+    print_result $? && \
     test_web "$@" || return $?
     return 0
 }
@@ -156,33 +151,37 @@ test_web_topo_p() {
 test_web_topo_l() {
 # NOTE: This piece of legacy code is still here, but no usecase below calls it
     init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_l() $*" || true
+    test_it "init_script_sampledata_topo_loc"
     echo "---------- reset db: topology : location ---------"
-    for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOL"; do
-        loaddb_file "$data" || CODE=$? die "failed in loaddb_file($data)"
-    done
+    init_script_sampledata_topo_loc
+    print_result $? && \
     test_web "$@" || return $?
     return 0
 }
 
 test_web_asset_create() {
     init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_asset_create() $*" || true
+    test_it "init_script_sampledata"
     echo "---------- reset db: asset : create ---------"
-    for data in "$DB_BASE" "$DB_DATA"; do
-          loaddb_file "$data" || CODE=$? die "failed in loaddb_file($data)"
-    done
+    init_script_sampledata
+    print_result $? && \
     test_web "$@" || return $?
     return 0
 }
 
 test_web_averages() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_averages() $*"
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_averages() $*" || true
+
+    test_it "generate_averages"
     echo "----------- Re-generating averages sql files -----------"
     CI_TEST_AVERAGES_DATA="`$DB_LOADDIR/generate_averages.sh "$DB_LOADDIR"`"
+    print_result $?
     export CI_TEST_AVERAGES_DATA
+
+    test_it "init_script_averages"
     echo "----------- reset db: averages -----------"
-    for data in "$DB_BASE" "$DB_DATA" "$DB_AVERAGES" "$DB_AVERAGES_RELATIVE"; do
-        loaddb_file "$data" || CODE=$? die "failed in loaddb_file($data)"
-    done
+    init_script_averages
+    print_result $? && \
     test_web "$@" || return $?
     return 0
 }
@@ -223,7 +222,7 @@ trap_cleanup(){
     [ "$cleanTRAP_RES" != 0 ] && [ "$RESULT_OVERALL" = 0 ] && RESULT_OVERALL="$cleanTRAP_RES"
 
     kill_daemons || cleanTRAP_RES=$?
-    ci_loaddb_default || cleanTRAP_RES=$?
+    init_script_default || cleanTRAP_RES=$?
 
     if [ "$RESULT_OVERALL" = 0 ]; then
         logmsg_info "Overall test suite result: SUCCESS"
@@ -232,7 +231,7 @@ trap_cleanup(){
               echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY"
         fi
     else
-        logmsg_error "Overall test suite result: FAILED ($RESULT_OVERALL) seek details above"
+        logmsg_error "Overall test suite result: FAILED ($RESULT_OVERALL), seek details above"
         if [ -n "$TESTLIB_LOG_SUMMARY" ] ; then
             { logmsg_error "`date -u`: Finished '${_SCRIPT_NAME} ${_SCRIPT_ARGS}' test suite: FAILED ($RESULT_OVERALL)"; \
           echo ""; echo ""; } >> "$TESTLIB_LOG_SUMMARY" 2>&1
@@ -274,6 +273,9 @@ trap_cleanup(){
 }
 
 # prepare environment
+  set -u
+  #set -e
+
   # Ensure that no processes remain dangling when test completes
   # The ERRCODE is defined by settraps() as the program exitcode
   # as it enters the trap
@@ -287,7 +289,7 @@ trap_cleanup(){
     die "Port ${SUT_WEB_PORT} is in LISTEN state when it should be free"
 
   # make sure sasl is running
-  if ! $RUNAS systemctl is-active --quiet saslauthd; then
+  if ! $RUNAS systemctl is-active saslauthd --quiet; then
     logmsg_info "Starting saslauthd..."
     $RUNAS systemctl start saslauthd || \
       [ x"$RUNAS" = x ] || \
@@ -301,7 +303,7 @@ trap_cleanup(){
     logmsg_error "saslauthd is NOT responsive or not configured!" >&2
 
   # make sure message bus is running
-  if ! $RUNAS systemctl is-active --quiet malamute; then
+  if ! $RUNAS systemctl is-active malamute --quiet; then
     logmsg_info "Starting malamute..."
     $RUNAS systemctl start malamute || \
       [ x"$RUNAS" = x ] || \
@@ -310,7 +312,7 @@ trap_cleanup(){
   fi
 
   # make sure database is running
-  if ! $RUNAS systemctl is-active --quiet mysql; then
+  if ! $RUNAS systemctl is-active mysql --quiet; then
     logmsg_info "Starting mysql..."
     $RUNAS systemctl start mysql || \
       [ x"$RUNAS" = x ] || \
@@ -357,7 +359,8 @@ trap_cleanup(){
   sleep 5
   test_web_process || CODE=$? die "failed in test_web_process()"
 
-
+[ x"${SKIP_LICENSE_FORCEACCEPT-}" = xyes ] && \
+logmsg_warn "SKIP_LICENSE_FORCEACCEPT=$SKIP_LICENSE_FORCEACCEPT so not running '00_license-CI-forceaccept.sh.test' first" || \
 case "$*" in
     *license*) # We are specifically testing license stuff
         logmsg_warn "The tests requested on command line explicitly include 'license', so $0 will not interfere by running '00_license-CI-forceaccept.sh.test' first"
@@ -375,25 +378,50 @@ esac
 
 # do the test
 set +e
-if [ $# = 0 ]; then
-    test_web_default -topology_power -asset_create -averages || RESULT_OVERALL=$?
-    test_web_process || CODE=$? die "failed in test_web_process()"
-    if [ "$RESULT_OVERALL" -eq 0 ] || [ x"$CITEST_QUICKFAIL" = xno ]; then
-        test_web_asset_create asset_create || RESULT_OVERALL=$?
-    fi
-    test_web_process || CODE=$? die "failed in test_web_process()"
-    if [ "$RESULT_OVERALL" -eq 0 ] || [ x"$CITEST_QUICKFAIL" = xno ]; then
-        test_web_topo_p topology_power || RESULT_OVERALL=$?
-    fi
-    test_web_process || CODE=$? die "failed in test_web_process()"
-    [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && \
-        CODE=$RESULT_OVERALL die "Quickly aborting the test suite after failure, as requested"
-    test_web_averages averages || RESULT_OVERALL=$?
+ONLYNEG=yes # Also yes for zero args
+[ $# -gt 0 ] && \
+for ARG in "$@" ; do
+    case "$ARG" in
+        -*) ;; # Still a negative argument
+        *) ONLYNEG=no;;
+    esac
+done
+
+if [ $ONLYNEG = yes ]; then
+    test_web_default -topology_power -asset_create -averages "$@" || RESULT_OVERALL=$?
     test_web_process || CODE=$? die "failed in test_web_process()"
     [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && \
         CODE=$RESULT_OVERALL die "Quickly aborting the test suite after failure, as requested"
+    if [ "$SKIP_OBSOLETE_TESTS" = no ]; then
+        if [[ "$*" =~ \-asset_create ]]; then
+            logmsg_info "SKIPPED special test by request: asset_create"
+        else
+            if [ "$RESULT_OVERALL" -eq 0 ] || [ x"$CITEST_QUICKFAIL" = xno ]; then
+                test_web_asset_create "$@" asset_create || RESULT_OVERALL=$?
+            fi
+            test_web_process || CODE=$? die "failed in test_web_process()"
+        fi
+        if [[ "$*" =~ \-topology_power ]] || [[ "$*" =~ \-topology ]]; then
+            logmsg_info "SKIPPED special test by request: topology_power"
+        else
+            if [ "$RESULT_OVERALL" -eq 0 ] || [ x"$CITEST_QUICKFAIL" = xno ]; then
+                test_web_topo_p "$@" topology_power || RESULT_OVERALL=$?
+            fi
+            test_web_process || CODE=$? die "failed in test_web_process()"
+        fi
+        if [[ "$*" =~ \-averages ]] ; then
+            logmsg_info "SKIPPED special test by request: averages"
+        else
+            [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && \
+                CODE=$RESULT_OVERALL die "Quickly aborting the test suite after failure, as requested"
+            test_web_averages "$@" averages || RESULT_OVERALL=$?
+            test_web_process || CODE=$? die "failed in test_web_process()"
+        fi
+    fi
 else
     # selective test routine
+    # Note we still support here the obsoleted tests,
+    # just in case someone runs them explicitly
     while [ $# -gt 0 ]; do
         case "$1" in
             topology_power*)

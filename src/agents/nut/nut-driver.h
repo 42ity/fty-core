@@ -28,6 +28,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include <map>
 #include <vector>
+#include <functional>
 #include <nutclient.h>
 #include <czmq.h>
 
@@ -237,8 +238,16 @@ class NUTDevice {
     /**
      * \brief Updates all values from NUT.
      */
-    void update(std::map<std::string,std::vector<std::string>> vars, bool forceUpdate = false );
+    void update (std::map<std::string,std::vector<std::string>> vars,
+                 std::function <const std::map <std::string, std::string>&(const char *)> mapping,
+                 bool forceUpdate = false );
 
+    /**
+     * \brief Set variable dst with value from src if dst not present and src is
+     *
+     * This method is used to normalize the NUT output from different drivers/devices.
+     */
+    void NUTSetIfNotPresent( std::map< std::string,std::vector<std::string> > &vars, const std::string &dst, const std::string &src );
     /**
      * \brief Commit chages for changed calculated by updatePhysics.
      */
@@ -271,6 +280,18 @@ class NUTDeviceList {
     NUTDeviceList();
 
     /**
+     * \brief Loads mapping from configuration file 'path_to_file' 
+     *
+     * Overwrites old values on successfull deserialization from json configuration file
+     */
+    void load_mapping (const char *path_to_file);
+
+    /**
+     * \brief Returns requested mapping 
+     */
+    const std::map <std::string, std::string>& get_mapping (const char *mapping);
+
+    /**
      * \brief Reads status information from NUT daemon.
      *
      * Method reads values from NUT and updates information of particular
@@ -297,7 +318,12 @@ class NUTDeviceList {
     std::map<std::string, NUTDevice>::iterator end();
 
     ~NUTDeviceList();
- private:
+
+ private:    
+    // see http://www.networkupstools.org/docs/user-manual.chunked/apcs01.html
+    std::map <std::string, std::string> _physicsMapping; //!< physics mapping
+    std::map <std::string, std::string> _inventoryMapping; //!< inventory mapping
+    
     //! \brief Connection to NUT daemon
     nutclient::TcpClient nutClient;
 

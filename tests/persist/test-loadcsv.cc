@@ -80,21 +80,23 @@ TEST_CASE("CSV multiple field names", "[csv]") {
     static std::string exp = to_utf8(cxxtools::String(L"Lab DC(тест)"));
     REQUIRE_NOTHROW(get_dc_lab_description() == exp);
 
+    auto void_fn = []() {return;};
+
     // test coma separated values format
     std::fstream csv_buf{csv};
-    REQUIRE_NOTHROW(load_asset_csv(csv_buf, okRows, failRows ));
+    REQUIRE_NOTHROW(load_asset_csv(csv_buf, okRows, failRows, void_fn ));
 
     // test tab separated values
     std::fstream tsv_buf{tsv};
-    REQUIRE_NOTHROW(load_asset_csv(tsv_buf, okRows, failRows ));
+    REQUIRE_NOTHROW(load_asset_csv(tsv_buf, okRows, failRows, void_fn ));
 
     // test semicolon separated values
     std::fstream ssv_buf{ssv};
-    REQUIRE_NOTHROW(load_asset_csv(ssv_buf, okRows, failRows ));
+    REQUIRE_NOTHROW(load_asset_csv(ssv_buf, okRows, failRows, void_fn ));
 
     // test underscore separated values
     std::fstream usv_buf{usv};
-    REQUIRE_THROWS_AS (load_asset_csv(usv_buf, okRows, failRows ), std::invalid_argument);
+    REQUIRE_THROWS_AS (load_asset_csv(usv_buf, okRows, failRows, void_fn ), std::invalid_argument);
 }
 
 TEST_CASE("CSV bug 661 - segfault with quote in name", "[csv]") {
@@ -104,8 +106,10 @@ TEST_CASE("CSV bug 661 - segfault with quote in name", "[csv]") {
     std::vector <std::pair<db_a_elmnt_t,persist::asset_operation>> okRows;
     std::map <int, std::string> failRows;
 
+    auto void_fn = []() {return;};
+
     std::fstream csv_buf{csv};
-    REQUIRE_THROWS_AS(load_asset_csv(csv_buf, okRows, failRows), std::out_of_range);
+    REQUIRE_THROWS_AS(load_asset_csv(csv_buf, okRows, failRows, void_fn), std::out_of_range);
 }
 
 TEST_CASE("CSV bug 661 - segfault on csv without mandatory columns", "[csv]") {
@@ -115,8 +119,9 @@ TEST_CASE("CSV bug 661 - segfault on csv without mandatory columns", "[csv]") {
     std::vector <std::pair<db_a_elmnt_t,persist::asset_operation>> okRows;
     std::map <int, std::string> failRows;
 
+    auto void_fn = []() {return;};
     std::fstream csv_buf{csv};
-    REQUIRE_THROWS_AS(load_asset_csv(csv_buf, okRows, failRows), std::invalid_argument);
+    REQUIRE_THROWS_AS(load_asset_csv(csv_buf, okRows, failRows, void_fn), std::invalid_argument);
 }
 
 TEST_CASE("CSV bug 661 - segfault ...", "[csv]") {
@@ -126,6 +131,7 @@ TEST_CASE("CSV bug 661 - segfault ...", "[csv]") {
     std::vector <std::pair<db_a_elmnt_t,persist::asset_operation>> okRows;
     std::map <int, std::string> failRows;
 
+    auto void_fn = []() {return;};
     std::fstream csv_buf{csv};
-    REQUIRE_NOTHROW(load_asset_csv(csv_buf, okRows, failRows));
+    REQUIRE_NOTHROW(load_asset_csv(csv_buf, okRows, failRows, void_fn));
 }

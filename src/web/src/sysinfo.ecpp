@@ -32,12 +32,16 @@
  */
  #><%pre>
 #include <vector>
+#include <string>
+#include <iostream>
 #include <fstream>
 #include <stdexcept>
 #include <sys/utsname.h>
 #include <tntdb/connect.h>
 #include <cxxtools/split.h>
 #include <cxxtools/regex.h>
+#include <cxxtools/jsonserializer.h>
+#include <cxxtools/jsondeserializer.h>
 #include "auth_levels.h"
 #include "utils_web.h"
 #include "subprocess.h"
@@ -86,7 +90,6 @@ std::string debug_trace;
 // Certain strings returned to caller in some cases
     static const std::string UNKNOWN = "unknown";
     static const std::string UNAUTHORIZED = "unauthorized";
-    static const std::string AVAILABLE = "available";
     static const std::string NOTAVAILABLE = "N/A";
     static const std::string NOTLICENSEDYET = "License not accepted yet";
 
@@ -161,11 +164,11 @@ std::string debug_trace;
       , <$$ utils::json::jsonify ("installation-date", installation_date) $>
 <%cpp>
     std::string location = "N/A - Error retrieving location";
-    bool do_break = false;
     try {
         tntdb::Connection conn = tntdb::connectCached(url);
         db_reply <std::map <uint32_t, std::string>>
         elements = persist::select_short_elements (conn, persist::asset_type::DATACENTER, persist::asset_subtype::N_A);
+        bool do_break = false;
         for (std::map<uint32_t, std::string>::const_iterator it = elements.item.cbegin(); it != elements.item.cend(); ++it) {
             // it->first is element_id
             std::map <std::string, std::pair<std::string, bool>> ext;
@@ -265,6 +268,250 @@ std::string debug_trace;
 <%cpp>
 # endif // HAVE_PACKAGE_BUILD_*: HOST and/or TSTAMP
     } // if (access_auth_level>=AUTH_LEVEL_POWERUSER)
+
+    {
+/*
+ * This block optionally prints the "bios-release" object with as much info
+ * as possible about the installed firmware, OS image, REST API and Web-UI
+ * versions for field support, development, validation and similar inquiries.
+ * Primary supported mode of operation is on RC3, where the bios-boot::init
+ * script manages the system startup and generates a "/etc/bios-release.json"
+ * file with the information it has found about the low-level environment,
+ * including versions, timestamps and checksums of firmware components.
+ * If this file is present, and if it contains valid JSON of non-trivial
+ * length, it is published verbatim "as is".
+ * Fallback mode for systems with older uImage and for X86 containers is to
+ * pick up partial information from the "/usr/share/bios-web/*version.txt"
+ * files that are generated during compilation of Web-UI and of OS image.
+ * Changes in parsing of these "*version.txt" files should be coordinated with
+ * producers in bios-infra::compile_web and bios-core::obs_preinstall scripts,
+ * as well as the bios-boot::init script which also generates such JSON.
+ * The definitive format should correspond to latest RFC-11.
+ */
+
+        static const std::string BIOS_RELEASE_JSON_FILE = "/etc/bios-release.json";
+        static const std::string BIOS_IMAGE_VERSION_FILE = "/usr/share/bios-web/image-version.txt";
+        static const std::string BIOS_WEBUI_VERSION_FILE = "/usr/share/bios-web/version.txt";
+        FILE* fptr = fopen(BIOS_RELEASE_JSON_FILE.c_str(), "r");
+        bool gotPreparedJson = false;
+        if (fptr != NULL) {
+            // The file is generated on RC3 during boot and contains its
+            // firmware image details, parsing of image-version.txt and
+            // version.txt in the present image, etc.
+
+            size_t fsize = 0;
+            fseek(fptr, 0, SEEK_END);
+            fsize = ftell(fptr);
+            fseek(fptr, 0, SEEK_SET);
+
+            // Pre-generated file should have some non-trivial contents
+            if (fsize>32) {
+                char *ftxt = (char*) malloc (fsize * sizeof (char) + 1);
+                if (ftxt) {
+                    memset ((void*) ftxt, '\0', fsize * sizeof (char) + 1);
+
+                    size_t r = fread((void*) ftxt, 1, fsize, fptr);
+                    if (r == fsize) {
+                        gotPreparedJson = true;
+                        ftxt[fsize]='\0';
+
+                        // Validate that JSON was valid
+                        try {
+                            std::stringstream input (ftxt, std::ios_base::in);
+                            cxxtools::JsonDeserializer deserializer (input);
+                            cxxtools::SerializationInfo si;
+                            deserializer.deserialize (si);
+                        }
+                        catch (const std::exception& e) {
+                            gotPreparedJson = false;
+                            log_error("Read %" PRIu64 " bytes from '%s' but got no valid JSON markup - ignoring the file\n",
+                                (uint64_t)fsize, BIOS_RELEASE_JSON_FILE.c_str());
+                        }
+
+                        if (gotPreparedJson == true) {
+                            if ( (ftxt[0]=='{' && ftxt[fsize-1]=='}') ||
+                                 (ftxt[0]=='[' && ftxt[fsize-1]==']')
+                            ) {
+                                ftxt[0]=' ';
+                                ftxt[fsize-1]=' ';
+                            }
+</%cpp>
+,       <$ ftxt $>
+<%cpp>
+                        }
+                    } else {
+                        log_error("Read only %" PRIu64 " out of %" PRIu64 " bytes from '%s' - ignoring the file\n",
+                            (uint64_t)r, (uint64_t)fsize, BIOS_RELEASE_JSON_FILE.c_str());
+                    }
+                    free(ftxt);
+                } else {
+                    log_error("Could not malloc %" PRIu64 " bytes to read '%s' - ignoring the file\n",
+                        (uint64_t)(fsize * sizeof (char) + 1), BIOS_RELEASE_JSON_FILE.c_str());
+                }
+            } else {
+                log_error("Found '%s' but it is only %" PRIu64 " bytes long - ignoring the file\n",
+                    BIOS_RELEASE_JSON_FILE.c_str(), (uint64_t)fsize);
+            }
+            fclose(fptr);
+        }
+
+        if (gotPreparedJson == false) {
+            // If the RC3 file is not present or got some other error, try
+            // to build a subset of that info from other sources at run-time...
+</%cpp>
+,       "bios-release": {
+<%cpp>
+            char leadingComma=' ';
+            struct tm tm;
+            char tmbuf[255];
+
+            memset(&tm, 0, sizeof(struct tm));
+            fptr = fopen(BIOS_IMAGE_VERSION_FILE.c_str(), "r");
+            if (fptr != NULL) {
+                size_t fsize = 0;
+                fseek(fptr, 0, SEEK_END);
+                fsize = ftell(fptr);
+                fseek(fptr, 0, SEEK_SET);
+                fclose(fptr);       // Here we'll read lines via C++ interfaces
+
+                // Pre-generated file should have some non-trivial contents like:
+                // OSimage:tarball-ts: Thu, 31 Mar 2016 15:11:24 +0000
+                if (fsize>32) {
+                    std::string line;
+                    cxxtools::RegexSMatch smatch;
+                    cxxtools::Regex rex_img_ts("^OSimage:build-ts:\\s+(\\S.*\\S)\\s*$");
+                    cxxtools::Regex rex_img_type("^OSimage:img-type:\\s+(\\S+)\\s*$");
+                    // cxxtools::Regex rex_date_R("^\\s*(\\S{3})\\,\\s+(\\d{1,2})\\s+(\\S{3})\\s+(\\d{4})\\s+(\\d{2}):(\\d{2}):(\\d{2})\\s+([\\+\\-]\\d{4})\\s*$");
+                    std::ifstream input(BIOS_IMAGE_VERSION_FILE);
+                    while( std::getline( input, line ) ) {
+                        if (rex_img_ts.match (line, smatch)) {
+                            // TODO: These routines are locale-dependent, and
+                            // changing a process' locale is not thread-safe!
+                            // So far we assume LANG=C LC_ALL=C TZ=UTC from env
+                            std::string rmatch = smatch.get(1);
+                            if (strptime(rmatch.c_str(), "%a, %d %b %Y %T %z", &tm) &&
+                                strftime(tmbuf, sizeof(tmbuf), "%Y%m%dT%H%M%SZ", &tm) ) {
+</%cpp>
+<$ leadingComma $>   <$$ utils::json::jsonify ("osimage-build-ts", tmbuf) $>
+<%cpp>
+                                    tmbuf[0]='\0';
+                                    memset(&tm, 0, sizeof(struct tm));
+                            } else {
+</%cpp>
+<$ leadingComma $>   <$$ utils::json::jsonify ("osimage-build-ts", rmatch.c_str()) $>
+<%cpp>
+                            } // if time converted
+                            leadingComma=',';
+                        } // rex_img_ts.match
+
+                        if (rex_img_type.match (line, smatch)) {
+                            std::string rmatch = smatch.get(1);
+</%cpp>
+<$ leadingComma $>   <$$ utils::json::jsonify ("osimage-img-type", rmatch.c_str()) $>
+<%cpp>
+                            leadingComma=',';
+                        } // rex_img_type.match
+                    } // while
+                } else {
+                    log_error("Found '%s' but it is only %" PRIu64 " bytes long - ignoring the file\n",
+                        BIOS_IMAGE_VERSION_FILE.c_str(), (uint64_t)fsize);
+                } // if fsize
+            } else {
+                log_error("Can not access '%s' - ignoring the file\n",
+                    BIOS_IMAGE_VERSION_FILE.c_str());
+            } // if fptr
+
+# ifdef HAVE_PACKAGE_GIT
+</%cpp>
+<$ leadingComma $>   <$$ utils::json::jsonify ("bios-core-commit-id", PACKAGE_GIT_HASH_L_ESCAPED) $>
+,          <$$ utils::json::jsonify ("bios-core-commit-ts", PACKAGE_GIT_TSTAMP_ISO8601_ESCAPED) $>
+<%cpp>
+            leadingComma=',';
+# endif // HAVE_PACKAGE_GIT
+
+            fptr = fopen(BIOS_WEBUI_VERSION_FILE.c_str(), "r");
+            if (fptr != NULL) {
+                size_t fsize = 0;
+                fseek(fptr, 0, SEEK_END);
+                fsize = ftell(fptr);
+                fseek(fptr, 0, SEEK_SET);
+                fclose(fptr);       // Here we'll read lines via C++ interfaces
+
+                // Pre-generated file should have some non-trivial contents like:
+                // bios-web:commit-ts:  Thu, 24 Mar 2016 15:36:31 +0000
+                // bios-web:commit-id:  a10faf566b36771e20e91f0cb82ab1267aa1c108
+                // bios-web:tarball-ts: Wed, 30 Mar 2016 17:33:19 +0000
+                if (fsize>32) {
+                    std::string line;
+                    cxxtools::RegexSMatch smatch;
+                    cxxtools::Regex rex_img_ts("^bios-web:build-ts:\\s+(\\S.*\\S)\\s*$");
+                    cxxtools::Regex rex_git_ts("^bios-web:commit-ts:\\s+(\\S.*\\S)\\s*$");
+                    cxxtools::Regex rex_git_id("^bios-web:commit-id:\\s+(\\S+)\\s*$");
+                    std::ifstream input(BIOS_WEBUI_VERSION_FILE);
+                    while( std::getline( input, line ) ) {
+                        if (rex_img_ts.match (line, smatch)) {
+                            // TODO: These routines are locale-dependent, and
+                            // changing a process' locale is not thread-safe!
+                            // So far we assume LANG=C LC_ALL=C TZ=UTC from env
+                            std::string rmatch = smatch.get(1);
+                            if (strptime(rmatch.c_str(), "%a, %d %b %Y %T %z", &tm) &&
+                                strftime(tmbuf, sizeof(tmbuf), "%Y%m%dT%H%M%SZ", &tm) ) {
+</%cpp>
+<$ leadingComma $>   <$$ utils::json::jsonify ("bios-web-build-ts", tmbuf) $>
+<%cpp>
+                                    tmbuf[0]='\0';
+                                    memset(&tm, 0, sizeof(struct tm));
+                            } else {
+</%cpp>
+<$ leadingComma $>   <$$ utils::json::jsonify ("bios-web-build-ts", rmatch.c_str()) $>
+<%cpp>
+                            } // if time converted
+                            leadingComma=',';
+                        } // rex_img_ts.match
+
+                        if (rex_git_ts.match (line, smatch)) {
+                            // TODO: These routines are locale-dependent, and
+                            // changing a process' locale is not thread-safe!
+                            // So far we assume LANG=C LC_ALL=C TZ=UTC from env
+                            std::string rmatch = smatch.get(1);
+                            if (strptime(rmatch.c_str(), "%a, %d %b %Y %T %z", &tm) &&
+                                strftime(tmbuf, sizeof(tmbuf), "%Y%m%dT%H%M%SZ", &tm) ) {
+</%cpp>
+<$ leadingComma $>   <$$ utils::json::jsonify ("bios-web-commit-ts", tmbuf) $>
+<%cpp>
+                                    tmbuf[0]='\0';
+                                    memset(&tm, 0, sizeof(struct tm));
+                            } else {
+</%cpp>
+<$ leadingComma $>   <$$ utils::json::jsonify ("bios-web-commit-ts", rmatch.c_str()) $>
+<%cpp>
+                            } // if time converted
+                            leadingComma=',';
+                        } // rex_git_ts.match
+
+                        if (rex_git_id.match (line, smatch)) {
+                            std::string rmatch = smatch.get(1);
+</%cpp>
+<$ leadingComma $>   <$$ utils::json::jsonify ("bios-web-commit-id", rmatch.c_str()) $>
+<%cpp>
+                            leadingComma=',';
+                        } // rex_git_id.match
+                    } // while
+                } else {
+                    log_error("Found '%s' but it is only %" PRIu64 " bytes long - ignoring the file\n",
+                        BIOS_WEBUI_VERSION_FILE.c_str(), (uint64_t)fsize);
+                } // if fsize
+            } else {
+                log_error("Can not access '%s' - ignoring the file\n",
+                    BIOS_WEBUI_VERSION_FILE.c_str());
+            } // if fptr
+
+</%cpp>
+        }
+<%cpp>
+        }
+    } // scope for fopen(bios-release.json and *version.txt files)
+
 </%cpp>
     }
 <%cpp>

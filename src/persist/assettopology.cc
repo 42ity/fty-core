@@ -664,7 +664,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg, a_elmnt_i
     _scoped_zframe_t* racks   = NULL;
     _scoped_zframe_t* devices = NULL;
     _scoped_zframe_t* grps    = NULL;
-    
+
     std::string name = "";
     std::string dtype_name = "";
 
@@ -676,39 +676,38 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg, a_elmnt_i
             tntdb::Connection conn = tntdb::connectCached(url);
             tntdb::Statement st = conn.prepareCached(
                 " SELECT"
-                "    v.name, v1.name as dtype_name, v.id_type"
+                "    v.name, v.id_subtype, v.id_type"
                 " FROM v_bios_asset_element v"
-                "    LEFT JOIN v_bios_asset_device v1"
-                "      ON (v.id = v1.id_asset_element)"
                 " WHERE v.id = :id"
             );
-    
+
             tntdb::Row row = st.set("id", element_id).
                                 selectRow();
-            
+
             row[0].get(name);
             assert ( !name.empty() );
-
-            row[1].get(dtype_name);
-            // assert (dtype_name != "" if type_id == DEVICE
+            a_elmnt_stp_id_t subtype_id = 0;
+            row[1].get(subtype_id);
+            // QWER: use c++ dictionary instead of db dictionary
+            dtype_name = persist::subtypeid_to_subtype (subtype_id);
             row[2].get(type_id);
             assert ( type_id );
-   
+
         }
         catch (const tntdb::NotFound &e) {
             // element with specified id was not found
             log_warning ("abort select element with err = '%s'", e.what());
-            return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
+            return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND,
                                                         e.what(), NULL);
         }
         catch (const std::exception &e) {
             // internal error in database
             log_warning ("abort select element with err = '%s'", e.what());
-            return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
+            return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL,
                                                         e.what(), NULL);
         }
 
-        if ( type_id == persist::asset_type::GROUP ) 
+        if ( type_id == persist::asset_type::GROUP )
         {
             try{
                 tntdb::Connection conn = tntdb::connectCached(url);
@@ -1790,7 +1789,7 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
             "   v.id_asset_element, v.name,"
-            "   v.type_name, v.id_asset_device_type"
+            "   v.id_asset_device_type"
             " FROM"
             "   v_bios_asset_element_super_parent v"
             " WHERE :dcid IN (v.id_parent1, v.id_parent2 ,v.id_parent3,"
@@ -1816,15 +1815,11 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
             row[1].get(device_name);
             assert ( !device_name.empty() );
 
-            // device_type_name, required
-            std::string device_type_name = "";
-            row[2].get(device_type_name);
-            assert ( !device_type_name.empty() );
-
             // device_type_id, required
             a_dvc_tp_id_t device_type_id = 0;
-            row[3].get(device_type_id);
+            row[2].get(device_type_id);
             assert ( device_type_id );
+            std::string device_type_name = persist::subtypeid_to_subtype (device_type_id);
 
             log_debug ("for");
             log_debug ("device_name = %s", device_name.c_str());

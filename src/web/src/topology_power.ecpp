@@ -212,7 +212,7 @@ std::string filter_group;
                     }
                     json.append("{ \"name\" : \"").append(asset_msg_name (item)).append("\",");
                     json.append("\"id\" : \"").append(std::to_string(asset_msg_element_id (item))).append("\",");
-                    json.append("\"type\" : \"").append(asset_msg_type_name (item)).append("\"}");
+                    json.append("\"sub_type\" : \"").append(asset_msg_type_name (item)).append("\"}");
 
                     asset_msg_destroy (&item);
                 }

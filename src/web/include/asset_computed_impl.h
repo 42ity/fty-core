@@ -19,15 +19,14 @@
  */
 
 /*!
- * \file dci_impl.h
+ * \file  asset_computed_impl.h
  * \author Tomas Halman <TomasHalman@Eaton.com>
- * \brief Not yet documented file
+ * \brief Helper functions for computed values for assets
  */
-#ifndef SRC_WEB_SRC_ASSET_COMPUTED_IMPL_H
-#define SRC_WEB_SRC_ASSET_COMPUTED_IMPL_H
+#ifndef SRC_WEB_INCLUDE_ASSET_COMPUTED_IMPL_H
+#define SRC_WEB_INCLUDE_ASSET_COMPUTED_IMPL_H
 
 #include <string>
-#include <functional>
 #include <map>
 
 int free_u_size( uint32_t elementId);
@@ -37,4 +36,4 @@ rack_outlets_available(
         uint32_t elementId,
         std::map<std::string, int> &res);
 
-#endif // SRC_WEB_SRC_ASSET_COMPUTED_IMPL_H
+#endif // SRC_WEB_INCLUDE_ASSET_COMPUTED_IMPL_H
