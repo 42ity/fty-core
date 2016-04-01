@@ -388,9 +388,9 @@ AC_TRY_LINK([#include <string.h>], [char *s; s = strdup("123"); if (s) {;}],
 	 AC_DEFINE([HAVE_STRDUP], [1], [Define to 1 if you have the `strdup' function.])],
 	[AC_MSG_RESULT([no])
 	 AC_MSG_CHECKING([strdup() with -D_GNU_SOURCE])
-	 my_save_cflags="$my_CFLAGS"
-	 my_save_cppflags="$my_CPPFLAGS"
-	 my_save_cxxflags="$my_CXXFLAGS"
+	 my_save_CFLAGS="$my_CFLAGS"
+	 my_save_CPPFLAGS="$my_CPPFLAGS"
+	 my_save_CXXFLAGS="$my_CXXFLAGS"
 	 my_CFLAGS="$my_save_CFLAGS -D_GNU_SOURCE"
 	 my_CPPFLAGS="$my_save_CPPFLAGS -D_GNU_SOURCE"
 	 my_CXXFLAGS="$my_save_CXXFLAGS -D_GNU_SOURCE"
