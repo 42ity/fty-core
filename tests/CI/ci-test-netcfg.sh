@@ -42,6 +42,7 @@ export BASE_URL="${SUT_WEB_SCHEMA}://${SUT_HOST}:${SUT_WEB_PORT}/api/v1"
 # Include our standard web routines for CI scripts, also pulls testlib
 . "`dirname $0`"/weblib.sh || \
     { echo "FATAL: $0: Could not include web script library" >&2; exit 1; }
+[ x"${JSONSH_CLI_DEFINED-}" = xyes ] || CODE=127 die "jsonsh_cli() not defined"
 
 # Setting BUILDSUBDIR and CHECKOUTDIR
 NEED_BUILDSUBDIR=no determineDirs_default || true
@@ -51,7 +52,6 @@ logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the `basename $0` REST API 
 
 PATH="$BUILDSUBDIR/tools:$CHECKOUTDIR/tools:${DESTDIR:-/root}/libexec/bios:/usr/lib/ccache:/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
 export PATH
-
 
 declare -r REST_NETCFGS="/admin/netcfgs"
 declare -r REST_NETCFG="/admin/netcfg"
@@ -308,31 +308,29 @@ for i in ${INITIAL_IFACE_NAMES[@]}; do
     tmp="${tmp}, \"${i}\""
 done
 tmp="${tmp} ] }"
-echo "$tmp" > "${TMP_DIR}/${JSON_EXPECTED_FILE}"
-HTTP_CODE=
-simple_get_json_code "${REST_NETCFGS}" tmp HTTP_CODE
-print_result $? "'api_get_json ${REST_NETCFGS}' failed." || CODE=$? die
+echo "$tmp" | jsonsh_cli -N > "${TMP_DIR}/${JSON_EXPECTED_FILE}"
+
+curlfail_push_expect_200
+api_get_json "${REST_NETCFGS}"
+print_result $? "'api_get_json ${REST_NETCFGS}' failed"
 
 test_it "$TEST_CASE::cmpjson::0"
-echo "$tmp" > "${TMP_DIR}/${JSON_RECEIVED_FILE}"
-bash "${CHECKOUTDIR}/tests/CI/cmpjson.sh" -f "${TMP_DIR}/${JSON_EXPECTED_FILE}" "${TMP_DIR}/${JSON_RECEIVED_FILE}"
-print_result $? "Test case '$TEST_CASE' failed. Expected and returned json do not match." || CODE=$? die
+echo "$OUT_CURL" > "${TMP_DIR}/${JSON_RECEIVED_FILE}"
+"$CMPJSON_SH" -f "${TMP_DIR}/${JSON_EXPECTED_FILE}" "${TMP_DIR}/${JSON_RECEIVED_FILE}"
+print_result $? "Test case '$TEST_CASE' failed. Expected and returned json do not match"
 
 logmsg_info "Try repeated requests"
 for i in 1 2 3 4 5; do
     test_it "$TEST_CASE::netcfgs::$i"
-    simple_get_json_code "${REST_NETCFGS}" tmp HTTP_CODE
-    print_result $? "'api_get_json ${REST_NETCFGS}' failed." || CODE=$? die
+    api_get_json "${REST_NETCFGS}"
+    print_result $? "'api_get_json ${REST_NETCFGS}' failed."
 
     test_it "$TEST_CASE::cmpjson::$i"
-    echo "$tmp" > "${TMP_DIR}/${JSON_RECEIVED_FILE}"
-    bash "${CHECKOUTDIR}/tests/CI/cmpjson.sh" -f "${TMP_DIR}/${JSON_EXPECTED_FILE}" "${TMP_DIR}/${JSON_RECEIVED_FILE}"
-    print_result $? "Test case '$TEST_CASE' failed. Expected and returned json do not match." || CODE=$? die
-
-    test_it "$TEST_CASE::http-code::$i"
-    [[ $HTTP_CODE -eq 200 ]]
-    print_result $? "Test case '$TEST_CASE' failed. Expected HTTP return code: 200, received: $HTTP_CODE." || CODE=$? die
+    echo "$OUT_CURL" > "${TMP_DIR}/${JSON_RECEIVED_FILE}"
+    "$CMPJSON_SH" -f "${TMP_DIR}/${JSON_EXPECTED_FILE}" "${TMP_DIR}/${JSON_RECEIVED_FILE}"
+    print_result $? "Test case '$TEST_CASE'#$i failed. Expected and returned json do not match"
 done
+curlfail_pop
 logmsg_info "Test case '$TEST_CASE' : SUCCESS"
 
 ########################
@@ -363,7 +361,7 @@ i=${INITIAL_IFACE_NAMES[0]}
 
     if ! diff -Naru "${IFACES_PATH}/${IFACES_FILE}" "${TMP_DIR}/${IFACES_FILE_LOOPBACK}"; then
         test_it "$TEST_CASE::cmpjson::$i"
-        bash "${CHECKOUTDIR}/tests/CI/cmpjson.sh" -f "${TMP_DIR}/${JSON_EXPECTED_FILE}" "${TMP_DIR}/${JSON_RECEIVED_FILE}"
+        "$CMPJSON_SH" -f "${TMP_DIR}/${JSON_EXPECTED_FILE}" "${TMP_DIR}/${JSON_RECEIVED_FILE}"
         print_result $? "Test case '$TEST_CASE' failed. Expected and returned json do not match." || CODE=$? die
 
         test_it "$TEST_CASE::http-code::$i"
@@ -456,7 +454,7 @@ for i in ${INITIAL_IFACE_NAMES[@]}; do
 
     test_it "$TEST_CASE::cmpjson::$i"
     echo "$tmp" > "${TMP_DIR}/${JSON_RECEIVED_FILE}"
-    bash "${CHECKOUTDIR}/tests/CI/cmpjson.sh" -f "${TMP_DIR}/${JSON_EXPECTED_FILE}" "${TMP_DIR}/${JSON_RECEIVED_FILE}"
+    "$CMPJSON_SH" -f "${TMP_DIR}/${JSON_EXPECTED_FILE}" "${TMP_DIR}/${JSON_RECEIVED_FILE}"
     print_result $? "Test case '$TEST_CASE' failed. Expected and returned json do not match." || CODE=$? die
 
     test_it "$TEST_CASE::http-code::$i"
