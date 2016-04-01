@@ -166,8 +166,7 @@ trap_break_weblib() {
 
     exit $RES_CURL
 }
-trap "trap_break_weblib" SIGUSR1 || \
-trap "trap_break_weblib" USR1
+TRAP_SIGNALS=USR1 settraps "trap_break_weblib"
 
 STACKED_HTTPERRORS_ACTIONS=""
 STACKED_HTTPERRORS_REGEX=""
