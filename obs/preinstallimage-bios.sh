@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#   Copyright (c) 2014-2015 Eaton
+#   Copyright (c) 2014-2016 Eaton
 #
 #   This file is part of the Eaton $BIOS project.
 #
@@ -557,8 +557,9 @@ esac
     echo "WARNING: Do not have /usr/share/bios/.git_details"
 
 # Timestamp the end of OS image generation
-echo "OSimage:build-ts: `LANG=C date -R -u`" > /usr/share/bios-web/image-version.txt || \
-    echo "WARNING: Could not record OBS image-building timestamp"
+echo "OSimage:build-ts: `LANG=C date -R -u`
+OSimage:img-type: $IMGTYPE" > /usr/share/bios-web/image-version.txt || \
+    echo "WARNING: Could not record OBS image-building timestamp and type"
 
 # Get rid of static qemu binaries needed for crossinstallation
 # TODO: Integrate this better into build-recipe-preinstallimage/init_buildsystem
