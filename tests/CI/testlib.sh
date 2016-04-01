@@ -390,7 +390,7 @@ trap_break_testlib() {
 #    exit $1
     return 1
 }
-trap "trap_break_testlib" SIGUSR2
+TRAP_SIGNALS=USR2 settraps "trap_break_testlib"
 
 # If the TESTLIB_LOG_SUMMARY is set, appends the beginning of the current run.
 # Note: the path will be absolutized and the variable will be exported so child
