@@ -377,13 +377,12 @@ std::string debug_trace;
 <%cpp>
                                     tmbuf[0]='\0';
                                     memset(&tm, 0, sizeof(struct tm));
-                                } else {
+                            } else {
 </%cpp>
 <$ leadingComma $>   <$$ utils::json::jsonify ("osimage-build-ts", rmatch.c_str()) $>
 <%cpp>
-                                }
-                                leadingComma=',';
-                            }
+                            } // if time converted
+                            leadingComma=',';
                         } // rex_img_ts.match
 
                         if (rex_img_type.match (line, smatch)) {
@@ -393,16 +392,15 @@ std::string debug_trace;
 <%cpp>
                             leadingComma=',';
                         } // rex_img_type.match
-
-                    }
+                    } // while
                 } else {
                     log_error("Found '%s' but it is only %" PRIu64 " bytes long - ignoring the file\n",
                         BIOS_IMAGE_VERSION_FILE.c_str(), (uint64_t)fsize);
-                }
+                } // if fsize
             } else {
                 log_error("Can not access '%s' - ignoring the file\n",
                     BIOS_IMAGE_VERSION_FILE.c_str());
-            }
+            } // if fptr
 
             fptr = fopen(BIOS_WEBUI_VERSION_FILE.c_str(), "r");
             if (fptr != NULL) {
@@ -436,13 +434,12 @@ std::string debug_trace;
 <%cpp>
                                     tmbuf[0]='\0';
                                     memset(&tm, 0, sizeof(struct tm));
-                                } else {
+                            } else {
 </%cpp>
 <$ leadingComma $>   <$$ utils::json::jsonify ("bios-web-build-ts", rmatch.c_str()) $>
 <%cpp>
-                                }
-                                leadingComma=',';
-                            }
+                            } // if time converted
+                            leadingComma=',';
                         } // rex_img_ts.match
 
                         if (rex_git_ts.match (line, smatch)) {
@@ -457,13 +454,12 @@ std::string debug_trace;
 <%cpp>
                                     tmbuf[0]='\0';
                                     memset(&tm, 0, sizeof(struct tm));
-                                } else {
+                            } else {
 </%cpp>
 <$ leadingComma $>   <$$ utils::json::jsonify ("bios-web-commit-ts", rmatch.c_str()) $>
 <%cpp>
-                                }
-                                leadingComma=',';
-                            }
+                            } // if time converted
+                            leadingComma=',';
                         } // rex_git_ts.match
 
                         if (rex_git_id.match (line, smatch)) {
@@ -473,15 +469,15 @@ std::string debug_trace;
 <%cpp>
                             leadingComma=',';
                         } // rex_git_id.match
-                    }
+                    } // while
                 } else {
                     log_error("Found '%s' but it is only %" PRIu64 " bytes long - ignoring the file\n",
                         BIOS_WEBUI_VERSION_FILE.c_str(), (uint64_t)fsize);
-                }
+                } // if fsize
             } else {
                 log_error("Can not access '%s' - ignoring the file\n",
                     BIOS_WEBUI_VERSION_FILE.c_str());
-            }
+            } // if fptr
 
 </%cpp>
         }
