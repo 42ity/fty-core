@@ -195,7 +195,9 @@ else {
 }
 </%cpp>
 , "ext" : [
+% if ( !tmp.item.basic.asset_tag.empty() ) {
 {"asset_tag": "<$$ tmp.item.basic.asset_tag $>", "read_only": true }
+%}
 <%cpp>
 std::map<std::string, Outlet> outlets{};
 std::vector<std::string> ips{};
