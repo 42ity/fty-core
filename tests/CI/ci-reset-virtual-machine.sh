@@ -166,8 +166,14 @@ VM="latest"
 ### and the image filename (at the moment, at least, applies to both)
 [ -z "$IMGTYPE_PREFIX" ] && IMGTYPE_PREFIX=""
 [ -z "$IMGTYPE_SUFFIX" ] && IMGTYPE_SUFFIX="-image"
+
+### "master" is the initial stage for X86 testing, no longer built on ARM
+### "pre-rc" is what's tested by Jenkins (on ARM too)
+### "rc" is what passed the tests by Jenkins
 [ -z "$IMGQALEVEL" ] && IMGQALEVEL="master"
 #[ -z "$IMGQALEVEL" ] && IMGQALEVEL="pre-rc"
+#[ -z "$IMGQALEVEL" ] && IMGQALEVEL="rc"
+
 [ -z "$OBS_IMAGES" ] && OBS_IMAGES="http://tomcat.roz.lab.etn.com/images/"
 #[ -z "$OBS_IMAGES" ] && OBS_IMAGES="http://obs.roz.lab.etn.com/images/"
 [ -z "$APT_PROXY" ] && APT_PROXY='http://thunderbolt.roz.lab.etn.com:3142'
