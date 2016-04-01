@@ -93,7 +93,7 @@ while [ $# -gt 0 ]; do
             shift
             ;;
         --use-https|--sut-web-https)	SUT_WEB_SCHEMA="https"; export SUT_WEB_SCHEMA;;
-        --use-http|--sut-web-http)	SUT_WEB_SCHEMA="http"; export SUT_WEB_SCHEMA;;
+        --use-http|--sut-web-http)  	SUT_WEB_SCHEMA="http"; export SUT_WEB_SCHEMA;;
         --sut-user|-su)
             SUT_USER="$2"
             SUT_IS_REMOTE=yes
