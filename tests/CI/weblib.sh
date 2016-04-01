@@ -161,10 +161,16 @@ trap_break_weblib() {
         echo "CI-WEBLIB-ERROR-WEB: curl program failed, aborting test suite" >&2 && RES_CURL=126 || \
         echo "CI-WEBLIB-ERROR-WEB: curl program failed ($RES_CURL), aborting test suite" >&2
     TESTLIB_FORCEABORT=yes
-    [ -n "$_PID_TESTER" ] && \
-    kill -SIGUSR2 $_PID_TESTER $$ >/dev/null 2>&1
+    if [ -n "$_PID_TESTER" ] ; then
+        echo "CI-WEBLIB-ERROR-WEB: Killing the test suite: kill -SIGUSR2 $_PID_TESTER $$" >&2
+        kill -n 12 $_PID_TESTER $$
+#        kill -SIGUSR2 $_PID_TESTER $$
+    else
+        echo "CI-WEBLIB-ERROR-WEB: exiting ($RES_CURL)" >&2
+        exit $RES_CURL
+    fi
 
-    exit $RES_CURL
+    return $RES_CURL
 }
 TRAP_SIGNALS=USR1 settraps "trap_break_weblib"
 
