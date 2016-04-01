@@ -420,9 +420,9 @@ accept_license
 
 curlfail_push "expect" 'HTTP/[^ ]+ 404'
 test_it "$TEST_CASE::netcfgs::not_found"
-# Note (TODO?): we get HTML markup here, not JSON error structures
-api_get "${REST_NETCFGS}/advdwsqwe234?=345"
-print_result $? "'api_get ${REST_NETCFGS}' failed: $OUT_CURL"
+api_get_json "${REST_NETCFGS}/advdwsqwe234?=345"
+print_result -$? "'api_get ${REST_NETCFGS}' failed to see JSON here: $OUT_CURL" || \
+    logmsg_warn "Note (TODO?): Did we get HTML markup here, not JSON error structures?"
 curlfail_pop
 
 logmsg_info "Test case '$TEST_CASE' : FINISHED"
@@ -549,14 +549,14 @@ api_get_json "${REST_NETCFG}/asdf%2520%2Bsdf+%25"
 print_result $? "'api_get_json ${REST_NETCFG}/asdf%2520%2Bsdf+%25' failed"
 curlfail_pop
 
-# NOTE: This unescaped space may seem like separator for invalid HTTP verb
-# Note (TODO?): we get HTML markup here, not JSON error structures
 #curlfail_push_expect_400
 curlfail_push "expect" 'HTTP/[^ ]+ 40[04]'
 i=$(($i+1))
 test_it "$TEST_CASE::netcfg::$i"
-api_get "${REST_NETCFG}/eth\ 0\/asdf%2520%2Bsdf+%25"
-print_result $? "'api_get ${REST_NETCFG}/eth\ 0\/asdf%2520%2Bsdf+%25' failed"
+# NOTE: This unescaped space may seem like separator for invalid HTTP verb
+api_get_json "${REST_NETCFG}/eth\ 0\/asdf%2520%2Bsdf+%25"
+print_result -$? "'api_get_json ${REST_NETCFG}/eth\ 0\/asdf%2520%2Bsdf+%25' failed to see JSON here: $OUT_CURL" || \
+    logmsg_warn "Note (TODO?): Did we get HTML markup here, not JSON error structures?"
 curlfail_pop
 
 
