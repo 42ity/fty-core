@@ -405,7 +405,7 @@ std::string debug_trace;
 # ifdef HAVE_PACKAGE_GIT
 </%cpp>
 <$ leadingComma $>   <$$ utils::json::jsonify ("bios-core-commit-id", PACKAGE_GIT_HASH_L_ESCAPED) $>
-,          <$$ utils::json::jsonify ("bios-core-commit-ts", PACKAGE_GIT_TSTAMP_ISO8601_ESCAPED $>
+,          <$$ utils::json::jsonify ("bios-core-commit-ts", PACKAGE_GIT_TSTAMP_ISO8601_ESCAPED) $>
 <%cpp>
             leadingComma=',';
 # endif // HAVE_PACKAGE_GIT
