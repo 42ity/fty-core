@@ -40,6 +40,8 @@
 #include <tntdb/connect.h>
 #include <cxxtools/split.h>
 #include <cxxtools/regex.h>
+#include <cxxtools/jsonserializer.h>
+#include <cxxtools/jsondeserializer.h>
 #include "auth_levels.h"
 #include "utils_web.h"
 #include "subprocess.h"
@@ -271,7 +273,7 @@ std::string debug_trace;
         static const std::string BIOS_RELEASE_JSON_FILE = "/etc/bios-release.json";
         static const std::string BIOS_IMAGE_VERSION_FILE = "/usr/share/bios-web/image-version.txt";
         static const std::string BIOS_WEBUI_VERSION_FILE = "/usr/share/bios-web/version.txt";
-        FILE* fptr = fopen(BIOS_RELEASE_JSON_FILE, "r");
+        FILE* fptr = fopen(BIOS_RELEASE_JSON_FILE.c_str(), "r");
         bool gotPreparedJson = false;
         if (fptr != NULL) {
             // The file is generated on RC3 during boot and contains its
@@ -345,7 +347,7 @@ std::string debug_trace;
             char tmbuf[255];
 
             memset(&tm, 0, sizeof(struct tm));
-            fptr = fopen(BIOS_IMAGE_VERSION_FILE, "r");
+            fptr = fopen(BIOS_IMAGE_VERSION_FILE.c_str(), "r");
             if (fptr != NULL) {
                 size_t fsize = 0;
                 fseek(fptr, 0, SEEK_END);
@@ -392,7 +394,7 @@ std::string debug_trace;
                     BIOS_IMAGE_VERSION_FILE.c_str());
             }
 
-            fptr = fopen(BIOS_WEBUI_VERSION_FILE, "r");
+            fptr = fopen(BIOS_WEBUI_VERSION_FILE.c_str(), "r");
             if (fptr != NULL) {
                 size_t fsize = 0;
                 fseek(fptr, 0, SEEK_END);
@@ -455,9 +457,6 @@ std::string debug_trace;
                         } // rex_git_ts.match
 
                         if (rex_git_id.match (line, smatch)) {
-                            // TODO: These routines are locale-dependent, and
-                            // changing a process' locale is not thread-safe!
-                            // So far we assume LANG=C LC_ALL=C TZ=UTC from env
                             std::string rmatch = smatch.get(1);
 </%cpp>
 <$ leadingComma $>   <$$ utils::json::jsonify ("bios-web-commit-id", rmatch.c_str()) $>
@@ -478,7 +477,7 @@ std::string debug_trace;
         }
 <%cpp>
         }
-    } // scope for fopen(bios-release.json)
+    } // scope for fopen(bios-release.json and *version.txt files)
 
 </%cpp>
     }
