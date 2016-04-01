@@ -227,6 +227,7 @@ MAKEPID=$!
 wait_for_web || die "Web-server is NOT responsive!"
 sleep 5
 test_web_process || die "test_web_process() failed."
+accept_license
 
 ### Script starts here ###
 
@@ -490,33 +491,41 @@ api_get_json "${REST_NETCFG}/${bad_name}?gnsfd=f23sfd+sf4fw4=\?"
 print_result $? "'api_get_json ${REST_NETCFG}/${bad_name}?gnsfd=f23sfd+sf4fw4=\?' failed"
 
 # TODO: Remove any existing interface and the request it.
-#curlfail_pop
+curlfail_pop
 
 logmsg_info 'api/v1/admin/netcfg/<junk_here>'
 
 #curlfail_push_expect_400
+curlfail_push "expect" 'HTTP/[^ ]+ 40[04]'
 i=$(($i+1))
 test_it "$TEST_CASE::netcfg::$i"
 api_get_json "${REST_NETCFG}/fas40+_245625%20_=345"
 print_result $? "'api_get_json ${REST_NETCFG}/fas40+_245625%20_=345' failed"
-#curlfail_pop
+curlfail_pop
 
-#curlfail_push_expect_404
+#curlfail_push_expect_400
+curlfail_push "expect" 'HTTP/[^ ]+ 40[04]'
 i=$(($i+1))
 test_it "$TEST_CASE::netcfg::$i"
 api_get_json "${REST_NETCFG}/40245625%20345f4f34"
 print_result $? "'api_get_json ${REST_NETCFG}/40245625%20345f4f34' failed"
+curlfail_pop
 
+#curlfail_push_expect_400
+curlfail_push "expect" 'HTTP/[^ ]+ 40[04]'
 i=$(($i+1))
 test_it "$TEST_CASE::netcfg::$i"
 api_get_json "${REST_NETCFG}/asdf%2520%2Bsdf+%25"
 print_result $? "'api_get_json ${REST_NETCFG}/asdf%2520%2Bsdf+%25' failed"
+curlfail_pop
 
+# NOTE: This unescaped space may seem like separator for invalid HTTP verb
+#curlfail_push_expect_400
+curlfail_push "expect" 'HTTP/[^ ]+ 40[04]'
 i=$(($i+1))
 test_it "$TEST_CASE::netcfg::$i"
-api_get_json "${REST_NETCFG}/eth\ 0\/asdf%2520%2Bsdf+%25"
-print_result $? "'api_get_json ${REST_NETCFG}/eth\ 0\/asdf%2520%2Bsdf+%25' failed"
-
+api_get "${REST_NETCFG}/eth\ 0\/asdf%2520%2Bsdf+%25"
+print_result $? "'api_get ${REST_NETCFG}/eth\ 0\/asdf%2520%2Bsdf+%25' failed"
 curlfail_pop
 
 
