@@ -663,7 +663,7 @@ Summary:
         doxygen:                 ${DOXYGEN:-none}
         ecppc:                   ${ECPPC:-none}
 
-	ENABLE_CI_TESTS:         ${ci_tests}
+        ENABLE_CI_TESTS:         ${ci_tests}
 
         CFLAGS:                  ${my_CFLAGS} ${CFLAGS}
         CXXFLAGS:                ${my_CXXFLAGS} ${CXXFLAGS}
