@@ -490,16 +490,18 @@ api_get_json "${REST_NETCFG}/${bad_name}?gnsfd=f23sfd+sf4fw4=\?"
 print_result $? "'api_get_json ${REST_NETCFG}/${bad_name}?gnsfd=f23sfd+sf4fw4=\?' failed"
 
 # TODO: Remove any existing interface and the request it.
-curlfail_pop
+#curlfail_pop
 
 logmsg_info 'api/v1/admin/netcfg/<junk_here>'
-curlfail_push_expect_404
 
+#curlfail_push_expect_400
 i=$(($i+1))
 test_it "$TEST_CASE::netcfg::$i"
 api_get_json "${REST_NETCFG}/fas40+_245625%20_=345"
 print_result $? "'api_get_json ${REST_NETCFG}/fas40+_245625%20_=345' failed"
+#curlfail_pop
 
+#curlfail_push_expect_404
 i=$(($i+1))
 test_it "$TEST_CASE::netcfg::$i"
 api_get_json "${REST_NETCFG}/40245625%20345f4f34"
