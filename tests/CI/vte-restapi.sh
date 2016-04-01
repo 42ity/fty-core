@@ -39,6 +39,7 @@ usage(){
     echo "options:"
     echo "  -u|--user   username for SASL (Default: '$BIOS_USER')"
     echo "  -p|--passwd password for SASL (Default: '$BIOS_PASSWD')"
+    echo "  -s|--service service for SASL/PAM (Default: '$SASL_SERVICE')"
 }
 
 [ x"${SUT_WEB_SCHEMA-}" = x- ] && SUT_WEB_SCHEMA=""
@@ -65,15 +66,15 @@ while [ $# -gt 0 ]; do
             SUT_USER="$2"
             shift 2
             ;;
-        -u|--user|--bios-user)
+        --user|-u|--bios-user)
             BIOS_USER="$2"
             shift 2
             ;;
-        -p|--passwd|--bios-passwd)
+        --passwd|--bios-passwd|-p|--password|--bios-password)
             BIOS_PASSWD="$2"
             shift 2
             ;;
-        -s|--service)
+        --service|-s)
             SASL_SERVICE="$2"
             shift 2
             ;;
@@ -81,7 +82,8 @@ while [ $# -gt 0 ]; do
             usage
             exit 1
             ;;
-        *)  # fall through
+        *)  # Assume that list of test names follows
+            # (positive or negative, see test_web.sh)
             break
             ;;
     esac
@@ -128,21 +130,111 @@ RESULT=0
     WEBLIB_CURLFAIL=no
 [ -z "$SKIP_NONSH_TESTS" ] && \
     SKIP_NONSH_TESTS=yes
-export WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT WEBLIB_CURLFAIL SKIP_NONSH_TESTS
+[ -z "${SKIP_OBSOLETE_TESTS-}" ] && \
+    SKIP_OBSOLETE_TESTS=yes
+export WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT WEBLIB_CURLFAIL SKIP_NONSH_TESTS SKIP_OBSOLETE_TESTS
 
 PATH=/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH
 export PATH
 
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
 
+# TODO. TOHLE PREDELAT, ZATIM MOZNO VYNECHAT
+# zacatek vynechavky ********************************
+if [ 1 = 2 ]; then
+# NETSTAT ZAVOLAT PRES SSH
+# KONTROLOVAT PORT 80 PROCESS TNTNET A STAV LISTEN
+test_web_port() {
+    netstat -tan | grep -w "${SUT_WEB_PORT}" | egrep 'LISTEN' >/dev/null
+}
+fi
+# konec vynechavky **********************************
+
+# ***** FUNCTIONS *****
+    # *** starting the testcases
+test_web() {
+    echo "==== Calling vte-test_web.sh ==============================="
+    RES_TW=0
+    test_it "vte-test-restapi::test_web::$*"
+    /bin/bash "${CHECKOUTDIR}"/tests/CI/vte-test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" \
+        -s "$SASL_SERVICE" -sh "$SUT_HOST" -su "$SUT_USER" -sp "$SUT_SSH_PORT" "$@" || \
+        RES_TW=$?
+    print_result $RES_TW
+    echo "==== test_web RESULT: ($RES_TW) =================================="
+    echo ""
+    echo ""
+    return $RES_TW
+}
+
+    # *** start the default set of TC
+test_web_default() {
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_default() $*" || true
+    test_it "init_script_default"
+    init_script_default
+    print_result $? && \
+    test_web "$@" || return $?
+    return 0
+}
+
+    # *** start the power topology set of TC
+test_web_topo_p() {
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_p() $*" || true
+    test_it "init_script_sampledata_topo_pow"
+    echo "----------- reset db: topology : power -----------"
+    init_script_sampledata_topo_pow
+    print_result $? && \
+    test_web "$@" || return $?
+    return 0
+
+}
+
+    # *** start the location topology set of TC
+test_web_topo_l() {
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_l() $*" || true
+    test_it "init_script_sampledata_topo_loc"
+    echo "---------- reset db: topology : location ---------"
+    init_script_sampledata_topo_loc
+    print_result $? && \
+    test_web "$@" || return $?
+    return 0
+}
+
+test_web_asset_create() {
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_asset_create() $*" || true
+    test_it "init_script_sampledata"
+    echo "---------- reset db: asset : create ---------"
+    init_script_sampledata
+    print_result $? && \
+    test_web "$@" || return $?
+    return 0
+}
+
+test_web_averages() {
+    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_averages() $*" || true
+
+    test_it "generate_averages"
+    echo "----------- Re-generating averages sql files -----------"
+    CI_TEST_AVERAGES_DATA="`$DB_LOADDIR/generate_averages.sh "$DB_LOADDIR"`"
+    print_result $?
+    export CI_TEST_AVERAGES_DATA
+
+    test_it "init_script_averages"
+    echo "----------- reset db: averages -----------"
+    init_script_averages
+    print_result $? && \
+    test_web "$@" || return $?
+    return 0
+}
+
 RESULT_OVERALL=0
 trap_cleanup(){
     cleanTRAP_RES="${1-}"
+    logmsg_debug "trap_cleanup(): initial cleanTRAP_RES='$cleanTRAP_RES' RESULT_OVERALL='$RESULT_OVERALL'"
     [ -n "$cleanTRAP_RES" ] || cleanTRAP_RES=0
     [ "$cleanTRAP_RES" = 0 ] && [ "$RESULT_OVERALL" != 0 ] && cleanTRAP_RES="$RESULT_OVERALL"
     [ "$cleanTRAP_RES" != 0 ] && [ "$RESULT_OVERALL" = 0 ] && RESULT_OVERALL="$cleanTRAP_RES"
 
-    ci_loaddb_default || cleanTRAP_RES=$?
+    init_script_default || cleanTRAP_RES=$?
     # ***** RESULTS *****
     if [ "$RESULT_OVERALL" = 0 ]; then
         logmsg_info "Overall test suite result: SUCCESS"
@@ -188,95 +280,8 @@ trap_cleanup(){
         echo "###########################################################"
     fi
 
-    exit $RESULT_OVERALL
-}
-
-# TODO. TOHLE PREDELAT, ZATIM MOZNO VYNECHAT
-# zacatek vynechavky ********************************
-if [ 1 = 2 ]; then
-# NETSTAT ZAVOLAT PRES SSH
-# KONTROLOVAT PORT 80 PROCESS TNTNET A STAV LISTEN
-test_web_port() {
-    netstat -tan | grep -w "${SUT_WEB_PORT}" | egrep 'LISTEN' >/dev/null
-}
-fi
-# konec vynechavky **********************************
-
-# ***** FUNCTIONS *****
-    # *** starting the testcases
-test_web() {
-    echo "==== Calling vte-test_web.sh ==============================="
-    RES_TW=0
-    test_it "vte-test-restapi::test_web::$@"
-    /bin/bash "${CHECKOUTDIR}"/tests/CI/vte-test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" \
-        -s "$SASL_SERVICE" -sh "$SUT_HOST" -su "$SUT_USER" -sp "$SUT_SSH_PORT" "$@" || \
-        RES_TW=$?
-    print_result $RES_TW
-    echo "==== test_web RESULT: ($RES_TW) =================================="
-    return $RES_TW
-}
-
-    # *** load default db setting
-ci_loaddb_default() {
-    echo "--------------- reset db: default ----------------"
-    loaddb_file "$DB_BASE" && \
-    LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
-    loaddb_file "$DB_DATA" && \
-    loaddb_file "$DB_DATA_TESTREST" || return $?
-    return 0
-}
-    # *** start the default set of TC
-test_web_default() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_default() $*" || true
-    ci_loaddb_default && \
-    test_web "$@" || return $?
-    return 0
-}
-
-test_web_asset_create() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_asset_create() $*" || true
-    echo "---------- reset db: asset : create ---------"
-    for data in "$DB_BASE" "$DB_DATA"; do
-          loaddb_file "$data" || exit $?
-    done
-    test_web "$@" || return $?
-    return 0
-}
-
-    # *** start the power topology set of TC
-test_web_topo_p() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_p() $*" || true
-    echo "----------- reset db: topology : power -----------"
-    loaddb_file "$DB_BASE" && \
-    LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
-    loaddb_file "$DB_TOPOP" && \
-    test_web "$@" || return $?
-    return 0
-
-}
-
-    # *** start the location topology set of TC
-test_web_topo_l() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_topo_l() $*" || true
-    echo "---------- reset db: topology : location ---------"
-    loaddb_file "$DB_BASE" && \
-    LOADDB_FILE_REMOTE_SLEEP=1 loaddb_file "$DB_ASSET_TAG_NOT_UNIQUE" && \
-    loaddb_file "$DB_TOPOL" && \
-    test_web "$@" || return $?
-    return 0
-}
-
-test_web_averages() {
-    init_summarizeTestlibResults "${BUILDSUBDIR}/tests/CI/web/log/`basename "${_SCRIPT_NAME}" .sh`.log" "test_web_averages() $*" || true
-    echo "----------- Re-generating averages sql files -----------"
-    CI_TEST_AVERAGES_DATA="`$DB_LOADDIR/generate_averages.sh "$DB_LOADDIR"`"
-    export CI_TEST_AVERAGES_DATA
-    echo "----------- reset db: averages -----------"
-    for data in "$DB_BASE" "$DB_DATA" "$DB_AVERAGES" "$DB_AVERAGES_RELATIVE"; do
-        loaddb_file "$data" || exit $?
-    done
-    test_web "$@" || return $?
-    return 0
+    logmsg_debug "trap_cleanup(): final cleanTRAP_RES='$cleanTRAP_RES' RESULT_OVERALL='$RESULT_OVERALL'"
+    return $cleanTRAP_RES
 }
 
 # ************** Prepare the test suite ***
@@ -290,9 +295,9 @@ settraps '[ "$ERRCODE" = 0 ] && ERRCODE=123; trap_cleanup $ERRCODE'
 TRAP_SIGNALS=EXIT settraps 'trap_cleanup $ERRCODE'
 
 logmsg_info "Ensuring that needed remote daemons are running on VTE"
-sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-cm bios-agent-dbstore bios-server-agent  bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
+sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-cm bios-agent-dbstore bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
 sleep 5
-sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-cm bios-agent-dbstore bios-server-agent  bios-agent-nut bios-agent-inventory ; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
+sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-cm bios-agent-dbstore bios-agent-nut bios-agent-inventory ; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
     die "Some required services are not running on the VTE"
 
 # ***** AUTHENTICATION ISSUES *****
@@ -322,28 +327,64 @@ esac
 
 # ***** PERFORM THE TESTCASES *****
 set +e
+ONLYNEG=yes # Also yes for zero args
+[ $# -gt 0 ] && \
+for ARG in "$@" ; do
+    case "$ARG" in
+        -*) ;; # Still a negative argument
+        *) ONLYNEG=no;;
+    esac
+done
 
 
 # do the test
 set +e
-if [ $# = 0 ]; then
+if [ $ONLYNEG = yes ]; then
     # *** start the default TC's instead of subsequent topology tests
-    test_web_default -topology -asset_create -averages || RESULT_OVERALL=$?
-    # *** start the asset_create TC's
-    if [ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] ; then
-        test_web_asset_create asset_create || RESULT_OVERALL=$?
-    fi
-    # *** start power topology TC's
-    if [ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] ; then
-        test_web_topo_p topology_power || RESULT_OVERALL=$?
-    fi
-    # *** start location topology TC's
-    if [ "$RESULT_OVERALL" = 0 -o x"$CITEST_QUICKFAIL" = xno ] ; then
-        test_web_topo_l topology_location || RESULT_OVERALL=$?
-    fi
-    test_web_averages averages || RESULT_OVERALL=$?
+    test_web_default -topology_power -topology_location -asset_create -averages "$@" || RESULT_OVERALL=$?
+    [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && \
+        CODE=$RESULT_OVERALL die "Quickly aborting the test suite after failure, as requested"
+
+    if [ "$SKIP_OBSOLETE_TESTS" = no ]; then
+	    # *** start the asset_create TC's
+        if [[ "$*" =~ \-asset_create ]]; then
+            logmsg_info "SKIPPED special test by request: asset_create"
+        else
+		    test_web_asset_create asset_create || RESULT_OVERALL=$?
+		    [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && \
+		        CODE=$RESULT_OVERALL die "Quickly aborting the test suite after failure, as requested"
+		fi
+
+	    # *** start power topology TC's
+        if [[ "$*" =~ \-topology_power ]] || [[ "$*" =~ \-topology ]]; then
+            logmsg_info "SKIPPED special test by request: topology_power"
+        else
+		    test_web_topo_p topology_power || RESULT_OVERALL=$?
+		    [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && \
+		        CODE=$RESULT_OVERALL die "Quickly aborting the test suite after failure, as requested"
+		fi
+
+	    # *** start location topology TC's
+        if [[ "$*" =~ \-topology_power ]] || [[ "$*" =~ \-topology ]]; then
+            logmsg_info "SKIPPED special test by request: topology_power"
+        else
+		    test_web_topo_l topology_location || RESULT_OVERALL=$?
+		    [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && \
+		        CODE=$RESULT_OVERALL die "Quickly aborting the test suite after failure, as requested"
+		fi
+
+        if [[ "$*" =~ \-averages ]] ; then
+            logmsg_info "SKIPPED special test by request: averages"
+        else
+		    test_web_averages "$@" averages || RESULT_OVERALL=$?
+		    [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && \
+		        CODE=$RESULT_OVERALL die "Quickly aborting the test suite after failure, as requested"
+		fi
+	fi
 else
     # selective test routine
+    # Note we still support here the obsoleted tests,
+    # just in case someone runs them explicitly
     while [ $# -gt 0 ]; do
         case "$1" in
             topology_power*)
@@ -362,9 +403,11 @@ else
                 RESULT_OVERALL=$? ;;
         esac
         shift
-        [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && break
+        [ "$RESULT_OVERALL" != 0 ] && [ x"$CITEST_QUICKFAIL" = xyes ] && \
+            CODE=$RESULT_OVERALL die "Quickly aborting the test suite after failure, as requested"
     done
 fi
 
 # trap_cleanup() should handle the cleanup and final logging
+logmsg_debug "Got to the end of $0 with RESULT_OVERALL='$RESULT_OVERALL'"
 exit $RESULT_OVERALL

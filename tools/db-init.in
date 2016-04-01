@@ -18,6 +18,7 @@
 #
 #! \file   db-init(.in)
 #  \brief  Inits the BIOS database schema on factory-default installations
+#           or do an appropriate update of database schema after reboot
 #  \author Karol Hrdina <KarolHrdina@Eaton.com>
 #  \author Alena Chernikava <AlenaChernikava@Eaton.com>
 #  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
@@ -25,6 +26,8 @@
 #  \details Caller may export BIOS_DB_INIT envvar set to 'initialize' or
 #           'upgrade' to trigger the corresponding function and exit.
 #
+# In order to recreate the database (all data would be lost) export the
+# BIOS_DB_INIT envvar set to "init".
 
 prefix="@prefix@"
 DATABASE=box_utf8
@@ -129,6 +132,7 @@ EOF
 }
 
 SQLINSTALL_TIMESTAMP="t=`date -u '+%Y%m%dT%H%M%SZ'`"
+
 install_sql_file() {
 	# Currently we allow to install all SQLs at once. But later we can add
 	# a way to install additional schemas in standard manner - this is it.
@@ -182,11 +186,14 @@ generate_database() {
 }
 
 upgrade_database() {
-	# Parameters: $1 refers to full filename of new SQL schema(/data) file
-	local INITSQL="$1"
-	[ -z "$INITSQL" ] && INITSQL="$INITSQL_FIRST"
-	local INITSQL_BASENAME="`basename "$INITSQL"`"
-	[ x"$INITSQL" = x"$INITSQL_BASENAME" ] && INITSQL="$INITSQL_DIR/$INITSQL_BASENAME"
+    # Parameters: $1 refers to full filename of new SQL data file
+	local SQL_FILE="$1"
+    # If there is no parameter, use first initialization sql script
+	[ -z "$SQL_FILE" ] && SQL_FILE="$INITSQL_FIRST"
+    # Get file base name without the path
+	local SQL_FILE_BASENAME="`basename "$SQL_FILE"`"
+    # If we got only basename of the file, we will SUPPOSE that it is in the default directory
+	[ x"$SQL_FILE" = x"$SQL_FILE_BASENAME" ] && SQL_FILE="$INITSQL_DIR/$SQL_FILE_BASENAME"
 
 	if [ -s "${UPGRADE_POLICY_FILE}" ]; then
 		# TODO: Maybe later parse per-schema "sqlbasename: policy"
@@ -200,24 +207,22 @@ upgrade_database() {
 		return 0
 	fi
 
-	# Try an upgrade ant return 0 if succeeded - TODO...
-	# The method may depend on "${UPGRADE_POLICY}" ...
-	echo "Error: Database upgrade for '$INITSQL' not currently implemented (TODO), but was required (see above)!" >&2
-	echo "Consider running 'BIOS_DB_INIT=init $0' to flush and reinitialize the database" >&2
+    # TODO The method may depend on "${UPGRADE_POLICY}" ...
+    install_sql_file "$SQL_FILE" "applying patch '${SQL_FILE}'" || return $?
 
-
-	# Currently we prohibit service startup with inconsistent database,
-	# so exit at this point and force a human to take a look at it
+    # Currently we prohibit service startup with inconsistent database,
+    # so exit at this point and force a human to take a look at it
 	if [ "${UPGRADE_POLICY}" = not-required ]; then
 		echo "WARNING: Database upgrade failed, but policy is '$UPGRADE_POLICY' and so we proceed..." >&2
 		return 0
 	fi
 
-	exit 1
+	return 0
 }
 
 grep_sql_version() {
 	# Prints e.g. 20151015 from stddin that contains
+    # ASSUMPTION: every sql file SHOULD contain the string according the following TEMPLATE
 	# SET @bios_db_schema_version = '20151015' ;
 	egrep -i '^[ \t]*set[ \t]+@bios_db_schema_version[ \t]*=' | head -1 | \
 	sed -e 's,^.*[ \t]*=[ \t]*\(.*\)[ \t]*;$,\1,' \
@@ -269,53 +274,69 @@ verify_schema_version() {
 	# against the version specified in the SQL file itself
 	# If "$1" is just a short name (e.g. coming from database) and is
 	# missing in INITSQL_DIR we do not compare against in-file version.
-	local INITSQL="$1"
-	[ -z "$INITSQL" ] && INITSQL="$INITSQL_FIRST"
-	local INITSQL_BASENAME="`basename "$INITSQL"`"
-	[ x"$INITSQL" = x"$INITSQL_BASENAME" ] && INITSQL="$INITSQL_DIR/$INITSQL_BASENAME"
+	local SQL_FILE="$1"
+	[ -z "$SQL_FILE" ] && SQL_FILE="$INITSQL_FIRST"
+	local SQL_FILE_BASENAME="`basename "$SQL_FILE"`"
+	[ x"$SQL_FILE" = x"$SQL_FILE_BASENAME" ] && SQL_FILE="$INITSQL_DIR/$SQL_FILE_BASENAME"
+
+	# Verify that our SQL file has the information about its version
+    # So verify, if this file fulfills the ASSUMPTION
+	local SCHEMA_VERSION_SQL=""
+	if [ -r "$SQL_FILE" ] && [ -s "$SQL_FILE" ] \
+	; then
+		SCHEMA_VERSION_SQL="`grep_sql_version < "$SQL_FILE"`" \
+            || SCHEMA_VERSION_SQL=""
+    fi
+	if [ -z "$SCHEMA_VERSION_SQL" ]; then
+		echo "ERROR: File '$SQL_FILE' is in the inconsistent state, because it doesn't contain the string 'SET @bios_db_schema_version = 'YYYYMMDD' '" >&2
+        # this error should not appear on the customer side, unless someone touch sql files
+        # abort immediately
+        exit 2
+    fi
+
+    # Select import tags from database
+	local SCHEMA_VERSION_DB_1=$(exec_sql_db "SELECT version FROM t_bios_schema_version WHERE tag='begin-import' AND filename='$SQL_FILE_BASENAME' ORDER BY id DESC LIMIT 1;") || \
+		SCHEMA_VERSION_DB_1="begin-NA"
+	local SCHEMA_VERSION_DB_2=$(exec_sql_db "SELECT version FROM t_bios_schema_version WHERE tag='finish-import' AND filename='$SQL_FILE_BASENAME' ORDER BY id DESC LIMIT 1;") || \
+		SCHEMA_VERSION_DB_2="finish-NA"
+
+    # Verify if this database and version information are available
+	if [ x"$SCHEMA_VERSION_DB_1" = x"begin-NA" ] || \
+	   [ x"$SCHEMA_VERSION_DB_2" = x"finish-NA" ] \
+	; then
+		echo "ERROR: 1. Mysql is not running or 2. There are problems with t_bios_schema_version table. Fix them manually" >&2
+        # abort immediately
+		exit 2
+    fi
+
+    # Verify if this particular file wasn't imported yet at all
+	if [ -z "$SCHEMA_VERSION_DB_1" ] && \
+	   [ -z "$SCHEMA_VERSION_DB_2" ] \
+	; then
+		echo "File '$SQL_FILE' wasn't imported yet, import it now"
+		upgrade_database "$SQL_FILE"
+		return $?
+    fi
 
 	# Verify that begin-import and finish-import version tags are the same
-	BIOS_SCHEMA_VERSION_DB_1=$(exec_sql_db "SELECT version FROM t_bios_schema_version WHERE tag='begin-import' AND filename='$INITSQL_BASENAME' ORDER BY id DESC LIMIT 1;") || \
-		BIOS_SCHEMA_VERSION_DB_1="begin-NA"
-	BIOS_SCHEMA_VERSION_DB_2=$(exec_sql_db "SELECT version FROM t_bios_schema_version WHERE tag='finish-import' AND filename='$INITSQL_BASENAME' ORDER BY id DESC LIMIT 1;") || \
-		BIOS_SCHEMA_VERSION_DB_2="finish-NA"
-
-	if [ x"$BIOS_SCHEMA_VERSION_DB_1" = x"begin-NA" ] && \
-	   [ x"$BIOS_SCHEMA_VERSION_DB_2" = x"finish-NA" ] \
-	; then
-		echo "Error: Schema version for '$INITSQL_BASENAME' is not available in BIOS database" >&2
-		upgrade_database "$INITSQL"        # DB is too old or import failed VERY early
-		exit $?
-	else
-		if [ x"$BIOS_SCHEMA_VERSION_DB_1" != x"$BIOS_SCHEMA_VERSION_DB_2" ] || \
-		   [ -z "$BIOS_SCHEMA_VERSION_DB_1" ] || [ -z "$BIOS_SCHEMA_VERSION_DB_2" ] \
-		; then
-			echo "Error: Schema version for '$INITSQL_BASENAME' is not consistent in BIOS database ('$BIOS_SCHEMA_VERSION_DB_1' vs '$BIOS_SCHEMA_VERSION_DB_2')" >&2
-			upgrade_database "$INITSQL"        # DB initialization crashed mid-way
-			exit $?
-		fi
+    if [ x"$SCHEMA_VERSION_DB_1" != x"$SCHEMA_VERSION_DB_2" ] || \
+       [ -z "$SCHEMA_VERSION_DB_1" ] || [ -z "$SCHEMA_VERSION_DB_2" ] \
+    ; then
+        echo "Error: Schema version for '$SQL_FILE' is not consistent in the database ('$SCHEMA_VERSION_DB_1' vs '$SCHEMA_VERSION_DB_2'). Investigate and fix it manually" >&2
+        # abort immediately
+        exit 2
 	fi
 
-	# Verify that our SQL file has the same schema version as the database
-	if [ -r "$INITSQL" ] && [ -s "$INITSQL" ] && \
-		BIOS_SCHEMA_VERSION_SQL="`grep_sql_version < "$INITSQL"`" \
-	; then
-		if [ -z "$BIOS_SCHEMA_VERSION_SQL" ]; then
-			echo "Warning: Can't find BIOS database schema version in '$INITSQL', but some BIOS database is available with version '$BIOS_SCHEMA_VERSION_DB_2'; skipping the test for need of upgrades" >&2
-		else
-			# Database version is consistent and not empty; what about SQL file version?
-			if [ x"$BIOS_SCHEMA_VERSION_DB_2" != x"$BIOS_SCHEMA_VERSION_SQL" ]; then
-				echo "Error: Schema version for '$INITSQL_BASENAME' in BIOS database is not the same as in current SQL schema file ('$BIOS_SCHEMA_VERSION_DB_2' vs '$BIOS_SCHEMA_VERSION_SQL')" >&2
-				upgrade_database "$INITSQL"  # DB is older/different than the SQL file
-				exit $?
-			fi
-		fi
-	else
-		echo "Warning: Can't read '$INITSQL' but some BIOS database is available;" \
-		    "not verifying database schema version vs. initialization SQL file" >&2
+    # Verify if version of the file is the same as version of the file in the database
+	if [ x"$SCHEMA_VERSION_DB_2" != x"$SCHEMA_VERSION_SQL" ]; then
+		echo "Error: Schema version for '$SQL_FILE' in the database is not the same as in current SQL schema file ('$SCHEMA_VERSION_DB_2' vs '$SCHEMA_VERSION_SQL')" >&2
+        echo "NOT IMPLEMENTED"
+        # abort immediately
+        exit 2
 	fi
 
-	echo "Database for BIOS - schema component '$INITSQL_BASENAME' version '$BIOS_SCHEMA_VERSION_DB_2' is up-to-date"
+	echo "Schema component '$SQL_FILE' version '$SCHEMA_VERSION_DB_2' is up-to-date"
+    return 0
 }
 
 ensure_root_password || exit $?

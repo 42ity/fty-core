@@ -57,7 +57,7 @@ measurement() {
 }
 
 db_initiate(){
-    LOADDB_FILE_REMOTE_SLEEP=3 loaddb_current || return $?
+    init_script_current || return $?
     echo "use ${DATABASE};" > "${DB_TMPSQL_FILE_CURRENT}"
     sqlline="INSERT INTO t_bios_discovered_device (id_discovered_device,name,id_device_type) VALUES (NULL, 'DC-LAB', 1);"
     echo "$sqlline" >> "${DB_TMPSQL_FILE_CURRENT}"
@@ -127,9 +127,17 @@ api_get_json_ntstp(){
 echo "***************************************************************************************************"
 echo "********* Prerequisites ***************************************************************************"
 echo "***************************************************************************************************"
+test_it "trends.sh::Prerequisites"
 init_script
+print_result $?
+
+test_it "trends.sh::db_initiate"
 db_initiate
+print_result $?
+
+test_it "trends.sh::db_measure"
 db_measure
+print_result $?
 
 echo
 echo "********* trends.sh *******************************************************************************"
@@ -245,3 +253,8 @@ api_get_json_ntstp '/metric/computed/datacenter_indicators?arg1=19&arg2=trend_pw
 print_result $RES;RES=0
 curlfail_pop
 
+echo
+echo "###################################################################################################"
+echo "********* trends.sh ********************************* END *****************************************"
+echo "###################################################################################################"
+echo

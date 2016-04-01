@@ -129,7 +129,7 @@ install_package_set_dev() {
         install \
         devscripts sudo doxygen curl git python-mysqldb \
         cppcheck msmtp libtool cpp gcc autoconf automake m4 pkg-config equivs dh-make \
-	cracklib-runtime
+	cracklib-runtime osc
 }
 
 install_package_set_biosdeps() {

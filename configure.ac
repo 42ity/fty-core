@@ -388,15 +388,28 @@ AC_TRY_LINK([#include <string.h>], [char *s; s = strdup("123"); if (s) {;}],
 	 AC_DEFINE([HAVE_STRDUP], [1], [Define to 1 if you have the `strdup' function.])],
 	[AC_MSG_RESULT([no])
 	 AC_MSG_CHECKING([strdup() with -D_GNU_SOURCE])
-	 my_CFLAGS="$my_CFLAGS -D_GNU_SOURCE"
-	 my_CPPFLAGS="$my_CPPFLAGS -D_GNU_SOURCE"
-	 my_CXXFLAGS="$my_CXXFLAGS -D_GNU_SOURCE"
+	 my_save_CFLAGS="$my_CFLAGS"
+	 my_save_CPPFLAGS="$my_CPPFLAGS"
+	 my_save_CXXFLAGS="$my_CXXFLAGS"
+	 my_CFLAGS="$my_save_CFLAGS -D_GNU_SOURCE"
+	 my_CPPFLAGS="$my_save_CPPFLAGS -D_GNU_SOURCE"
+	 my_CXXFLAGS="$my_save_CXXFLAGS -D_GNU_SOURCE"
 	 AC_DEFINE([_GNU_SOURCE], [1], [Define this if needed to compile POSIX code])
 	 AC_TRY_LINK([#include <string.h>], [char *s; s = strdup("123"); if (s) {;}],
 		[AC_DEFINE([HAVE_STRDUP], [1], [Define to 1 if you have the `strdup' function.])
 		 AC_MSG_RESULT([yes])],
 		[AC_MSG_RESULT([no])
-		 AC_MSG_ERROR([cannot find strdup(), not even with -D_GNU_SOURCE])])]
+		 AC_MSG_CHECKING([strdup() with -D__EXTENSIONS__])
+		 my_CFLAGS="$my_save_CFLAGS -D_GNU_SOURCE"
+		 my_CPPFLAGS="$my_save_CPPFLAGS -D_GNU_SOURCE"
+		 my_CXXFLAGS="$my_save_CXXFLAGS -D_GNU_SOURCE"
+		 AC_DEFINE([__EXTENSIONS__], [1], [Define this if needed to compile POSIX code])
+		 AC_TRY_LINK([#include <string.h>], [char *s; s = strdup("123"); if (s) {;}],
+			[AC_DEFINE([HAVE_STRDUP], [1], [Define to 1 if you have the `strdup' function.])
+			 AC_MSG_RESULT([yes])],
+			[AC_MSG_RESULT([no])
+			 AC_MSG_ERROR([cannot find strdup(), not even with -D__EXTENSIONS__])])]
+		)]
 	)
 AS_IF([test -n "$_CC_ORIG"], [
 	CC="$_CC_ORIG"
@@ -404,7 +417,21 @@ AS_IF([test -n "$_CC_ORIG"], [
 	AC_MSG_NOTICE([NOTE: Restored default compiler settings: $CC])])
 
 # Checks for the header files
-AC_CHECK_HEADERS([magic.h], [], AC_MSG_ERROR([cannot find required header magic.h]))
+AC_CHECK_HEADERS([magic.h], [], AC_MSG_ERROR([libmagic: cannot find required header magic.h]))
+AC_CHECK_LIB(
+             [magic],
+             [magic_open],
+             [],
+             [AC_MSG_ERROR([function magic_open() is not available, this is not the libmagic we are looking for])]
+             )
+SAVE_LIBS="$LIBS"
+LIBS="$LIBS -lmagic"
+AC_MSG_CHECKING([linkability with libmagic])
+AC_TRY_LINK([#include <magic.h>], [magic_t magic_cookie = magic_open(MAGIC_NONE); if (!magic_cookie) {;}; magic_close(magic_cookie);],
+             [AC_MSG_RESULT([ok])],
+             [AC_MSG_ERROR([function magic_open() is not available, this is not the libmagic we are looking for])]
+             )
+LIBS="$SAVE_LIBS"
 
 AC_LANG_PUSH([C++])
 AC_CHECK_HEADERS([tntdb.h],
@@ -412,15 +439,15 @@ AC_CHECK_HEADERS([tntdb.h],
                  AC_MSG_ERROR([cannot find required header tntdb.h]))
 AC_CHECK_HEADER([tnt/tntnet.h], , AC_MSG_ERROR([tntnet headers not found]))
 AC_LANG_POP([C++])
-PKG_CHECK_MODULES([LIBZMQ], [libzmq >= 3.0], [], [AC_MSG_ERROR([cannot find libzmq version 3])])
 PKG_CHECK_MODULES([LIBCIDR], [libcidr], [], [AC_MSG_ERROR([cannot find libcidr])])
-PKG_CHECK_MODULES([LIBCZMQ], [libczmq >= 3.0], [], [AC_MSG_ERROR([cannot find libczmq 3.0 (git snapshot)])])
+PKG_CHECK_MODULES([CXXTOOLS], [cxxtools >= 2.2.0], [], [AC_MSG_ERROR([cannot find cxxtools >= 2.2.0])])
+PKG_CHECK_MODULES([LIBSASL2], [libsasl2 >= 2.1.0], [], [AC_MSG_ERROR([cannot find sasl 2 library >= 2.1.0])])
+PKG_CHECK_MODULES([LIBSODIUM], [libsodium >= 0.7.0], [], [AC_MSG_ERROR([cannot find libsodium >= 0.7.0])])
+PKG_CHECK_MODULES([LIBZMQ], [libzmq >= 3.0], [], [AC_MSG_ERROR([cannot find libzmq version >= 3])])
+PKG_CHECK_MODULES([LIBCZMQ], [libczmq >= 3.0], [], [AC_MSG_ERROR([cannot find libczmq version >= 3])])
+PKG_CHECK_MODULES([LIBMLM], [libmlm >= 0.1.0], [], [AC_MSG_ERROR([cannot find malamute library >= 0.1.0])])
 PKG_CHECK_MODULES([LIBNUTCLIENT], [libnutclient >= 0.27], [], [AC_MSG_ERROR([cannot find libnutclient >= 0.27])])
 PKG_CHECK_MODULES([LIBNUTSCAN], [libnutscan >= 2.7.2], [], [AC_MSG_ERROR([cannot find libnutscan >= 2.7.2])])
-PKG_CHECK_MODULES([CXXTOOLS], [cxxtools >= 2.2.0], [], [AC_MSG_ERROR([cannot find cxxtools >= 2.2.0])])
-PKG_CHECK_MODULES([LIBSODIUM], [libsodium >= 0.7.0], [], [AC_MSG_ERROR([cannot find libsodium >= 0.7.0])])
-PKG_CHECK_MODULES([LIBSASL2], [libsasl2 >= 2.1.0], [], [AC_MSG_ERROR([cannot find sasl 2 library >= 2.1.0])])
-PKG_CHECK_MODULES([LIBMLM], [libmlm >= 0.1.0], [], [AC_MSG_ERROR([cannot find malamute library >= 0.1.0])])
 PKG_CHECK_MODULES([LIBBIOSPROTO], [libbiosproto >= 0.1.0], [], AC_MSG_ERROR([cannot find libbiosproto library >= 0.1.0]))
 
 AC_MSG_CHECKING([presence of augtool])
@@ -636,7 +663,7 @@ Summary:
         doxygen:                 ${DOXYGEN:-none}
         ecppc:                   ${ECPPC:-none}
 
-	ENABLE_CI_TESTS:         ${ci_tests}
+        ENABLE_CI_TESTS:         ${ci_tests}
 
         CFLAGS:                  ${my_CFLAGS} ${CFLAGS}
         CXXFLAGS:                ${my_CXXFLAGS} ${CXXFLAGS}

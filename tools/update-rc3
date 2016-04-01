@@ -42,9 +42,15 @@ config_defaults() {
 
     # We have several rounds of QA in the CI system; if the IMGQALEVEL is
     # defined then this sub-path including a slash is added into the URL.
-    # Currently defined values include "master" and "pre-rc"
-    [ -z "${IMGQALEVEL-}" ] && IMGQALEVEL="master"
+    # Currently defined values include "master", "pre-rc" and finally "rc".
+    # We only spend our ARM cycles to build the latter two; we have all
+    # builds available on x86_64.
     [ -z "${ARCH-}" ] && ARCH="`uname -m`"
+    [ -z "${IMGQALEVEL-}" ] && case "$ARCH" in
+        *arm*) IMGQALEVEL="rc" ;;
+        *86*)  IMGQALEVEL="master" ;;
+        *)     IMGQALEVEL="master" ;;
+    esac
     # The RC3 base OS ensures support for squashfs and overlay(fs)
     [ -z "${EXT-}" ] && EXT="squashfs"
     [ -z "${CHECKSUM_ALGO_DEFAULT-}" ] && CHECKSUM_ALGO_DEFAULT="md5"

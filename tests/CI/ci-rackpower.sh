@@ -16,11 +16,33 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-#! \file   ci-rackpower.sh
+#! \file   ci-rackpower.sh aliased as vte-rackpower.sh
 #  \brief  tests the total rack power
 #  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 #
-# requirements:
+# ***** ABBREVIATIONS *****
+    # *** SUT - System Under Test - remote server with BIOS
+    # *** MS - Management Station - local server with this script
+    # *** TRP - Total Rack Power
+
+# ***** DESCRIPTION *****
+    # *** The new topology is assets
+    # *** test creates defined messages through nut using dummy nut driver
+    # *** data contained in the messages pass through nut into DB
+    # *** restAPI req. for TRP (arg1="$RACK"'&'arg2=total_power) is sent
+    # *** expected value of TRP is compared with the one get from restapi req.
+    # *** this way it contains also smoke test of the chain nut->DB->restAPI
+
+# ***** PREREQUISITES for remote VTE/SUT testing *****
+    # *** SUT_SSH_PORT should be passed as parameter --port <value>
+    # *** it is currently from interval <2206;2209>, for restAPI reguests are generated ports from <8006;8009>
+    # *** must run as root without using password 
+    # *** BIOS image must be installed and running on SUT 
+    # *** upsd.conf, upssched.conf and upsmon.conf are present on SUT in the /etc/nut dir 
+    # *** tools directory containing tools/initdb.sql database/mysql/rack_power.sql present on MS for assets
+    # *** tests/CI directory (on MS) contains weblib.sh (api_get_json and CURL functions needed) and scriptlib.sh
+#
+# ***** requirements for local (ci/dev) testing: *****
 #   Must run as root (nut configuration)
 #   bios must be running
 #   nut must be installed
@@ -30,6 +52,93 @@
 # TODO: somehow use ci-test-restapi.sh (include? merge? rewrite this to
 # be a test_web.sh scriptlet?) otherwise there is lots of duplicated code
 # that may differ in nuances
+# TODO: now that CI and VTE versions are combined back into one body, review
+# closer the possible repetitions or possibilities for common code usage
+# (e.g. lock-files, trap code)
+
+echo "=================== CI-RACKPOWER : START ============================="
+
+case "`basename "$0"`" in
+    vte*) SUT_IS_REMOTE=yes ;; # Unconditionally remote
+    *) [ -z "${SUT_IS_REMOTE-}" ] && SUT_IS_REMOTE="" ;;
+          # Determine default SUT_IS_REMOTE when we include script libs
+          # or assign SUT-related CLI settings
+esac
+
+# Set to "yes" to un-block tests that currently fail (to develop them)
+[ -z "${CI_RACKPOWER_NONTRIVIAL-}" ] && CI_RACKPOWER_NONTRIVIAL="no"
+
+# *** read parameters if present
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --port-ssh|--sut-port-ssh|-sp)
+            SUT_SSH_PORT="$2"
+            SUT_IS_REMOTE=yes
+            shift
+            ;;
+        --port-web|--sut-port-web|-wp)
+            SUT_WEB_PORT="$2"
+            shift
+            ;;
+        --host|--machine|-sh|--sut|--sut-host)
+            SUT_HOST="$2"
+            shift
+            ;;
+        --use-https|--sut-web-https)    SUT_WEB_SCHEMA="https"; export SUT_WEB_SCHEMA;;
+        --use-http|--sut-web-http)      SUT_WEB_SCHEMA="http"; export SUT_WEB_SCHEMA;;
+        --sut-user|-su)
+            SUT_USER="$2"
+            SUT_IS_REMOTE=yes
+            shift
+            ;;
+        -u|--user|--bios-user)
+            BIOS_USER="$2"
+            shift
+            ;;
+        -p|--passwd|--bios-passwd|--password|--bios-password)
+            BIOS_PASSWD="$2"
+            shift
+            ;;
+        -s|--service)
+            SASL_SERVICE="$2"
+            shift
+            ;;
+        *)  echo "$0: Unknown param and all after it are ignored: $@"
+            break
+            ;;
+    esac
+    shift
+done
+
+[ x"${SUT_WEB_SCHEMA-}" = x- ] && SUT_WEB_SCHEMA=""
+    # *** default connection parameters values:
+case "${SUT_IS_REMOTE}" in
+no)
+    [ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="http"
+    ;;
+yes)
+    # default values:
+    [ -z "${SUT_WEB_SCHEMA-}" ] && SUT_WEB_SCHEMA="https"
+    [ -z "${SUT_USER-}" ] && SUT_USER="root"
+    [ -z "${SUT_HOST-}" ] && SUT_HOST="debian.roz53.lab.etn.com"
+    # port used for ssh requests:
+    [ -z "${SUT_SSH_PORT-}" ] && SUT_SSH_PORT="2206"
+    # port used for REST API requests:
+    if [ -z "${SUT_WEB_PORT-}" ]; then
+        if [ -n "${BIOS_PORT-}" ]; then
+            SUT_WEB_PORT="$BIOS_PORT"
+        else
+            SUT_WEB_PORT=$(expr $SUT_SSH_PORT + 8000)
+            [ "${SUT_SSH_PORT-}" -ge 2200 ] && \
+                SUT_WEB_PORT=$(expr $SUT_WEB_PORT - 2200)
+        fi
+    fi
+
+    # unconditionally calculated values for current setup
+    BASE_URL="${SUT_WEB_SCHEMA}://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+    ;;
+#auto|""|*) ;; ### Defaulted in the script libraries below
+esac
 
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
@@ -41,6 +150,7 @@ NEED_BUILDSUBDIR=no determineDirs_default || true
 cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR' (it may be empty but should exist)"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 [ -d "$DB_LOADDIR" ] && [ -n "$DB_RACK_POWER" ] || die "Unusable DB_LOADDIR='$DB_LOADDIR' or testlib-db.sh not loaded"
+[ -d "$CSV_LOADDIR_BAM" ] || die "Unusable CSV_LOADDIR_BAM='$CSV_LOADDIR_BAM'"
 logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to build, and BUILDSUBDIR='$BUILDSUBDIR' to run"
 detect_nut_cfg_dir || CODE=$? die "NUT config dir not found"
 
@@ -53,6 +163,7 @@ AGPWRPID=""
 AGLEGMETPID=""
 DBNGPID=""
 kill_daemons() {
+    # Stops and cleans up the CI variant
     set +e
     if [ -n "$WEBTESTPID" -a -d "/proc/$WEBTESTPID" ]; then
         logmsg_info "Killing make web-test PID $WEBTESTPID to exit"
@@ -75,76 +186,132 @@ kill_daemons() {
         kill -INT "$DBNGPID"
     fi
 
-    killall -INT tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut agent-tpower lt-agent-tpower agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
-    killall      tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut agent-tpower lt-agent-tpower agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
+    killall -INT tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut bios_agent_tpower lt-bios_agent_tpower agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
+    killall      tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut bios_agent_tpower lt-bios_agent_tpower agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
 
     ps -ef | grep -v grep | egrep "tntnet|agent-(nut|dbstore|tpower)|legacy-metrics" | egrep "^`id -u -n` " && \
         ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
         logmsg_error "At least one of: tntnet, bios-agent-legacy-metrics, agent-dbstore, agent-nut, agent-tpower still alive, trying SIGKILL" && \
-        { killall -KILL tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut agent-tpower lt-agent-tpower agent-dbstore lt-agent-dbstore 2>/dev/null ; exit 1; }
+        { killall -KILL tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut bios_agent_tpower lt-bios_agent_tpower agent-dbstore lt-agent-dbstore 2>/dev/null ; exit 1; }
 
+    echo "=================== CI-RACKPOWER : END ==============================="
+    echo ""
     return 0
 }
 
-# Ensure that no processes remain dangling when test completes
-settraps "kill_daemons; exit_summarizeTestlibResults"
+LOCKFILE=""
+function cleanup {
+    # Stops and cleans up the VTE/SC/RC variant
+    set +e
+    [ -n "$LOCKFILE" ] && rm -f "$LOCKFILE"
+}
 
-logmsg_info "Ensuring that the tested programs have been built and up-to-date"
-if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
-    test_it "config-deps"
-    ./autogen.sh --nodistclean --configure-flags \
-        "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
-        ${AUTOGEN_ACTION_CONFIG}
-    print_result $? || CODE=$? die "Could not prepare binaries"
-fi
-test_it "make-deps"
-./autogen.sh ${AUTOGEN_ACTION_MAKE} web-test-deps agent-dbstore agent-nut agent-tpower
-print_result $? || CODE=$? die "Could not prepare binaries"
+# ***** INIT *****
+function startup() {
+    # Ensure that no processes remain dangling when test completes
+    if isRemoteSUT ; then
+        # *** create lockfile name ***
+        LOCKFILE="`echo "/tmp/ci-test-rackpower-vte__${SUT_USER}@${SUT_HOST}:${SUT_SSH_PORT}:${SUT_WEB_PORT}.lock" | sed 's, ,__,g'`"
+        settraps "cleanup; exit_summarizeTestlibResults"
+        # *** is system running?
+        if [ -f "$LOCKFILE" ]; then
+                ls -la "$LOCKFILE" >&2
+                die "Script already running. Aborting."
+        fi
+        # *** lock the script with creating $LOCKFILE
+        echo $$ > "$LOCKFILE"
 
-# These are defined in testlib-db.sh
-test_it "initialize_db_rackpower"
-loaddb_file "$DB_BASE" && \
-loaddb_file "$DB_RACK_POWER"
-print_result $? || CODE=$? die "Could not prepare database"
+        # TODO: replace by calls to proper rc-bios script
+        logmsg_info "Ensuring that needed remote daemons are running on VTE"
+        sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-agent-nut bios-agent-inventory bios-agent-cm bios_agent_tpower; do systemctl start $SVC ; done'
+        sleep 5
+        sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-agent-nut bios-agent-inventory bios-agent-cm bios_agent_tpower; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done;exit $R' || \
+                die "Some required services are not running on the VTE"
 
-# This program is delivered by another repo, should "just exist" in container
-logmsg_info "Spawning the bios-agent-legacy-metrics service in the background..."
-bios-agent-legacy-metrics ipc://@/malamute legacy-metrics bios METRICS &
-[ $? = 0 ] || CODE=$? die "Could not spawn bios-agent-legacy-metrics"
-AGLEGMETPID=$!
+        # *** write power rack base test data to DB on SUT
+        # These are defined in testlib-db.sh
+        test_it "initialize_db_rackpower"
+        init_script_rack_power
+        print_result $? || CODE=$? die "Could not prepare database"
+    else
+        settraps "kill_daemons; exit_summarizeTestlibResults"
 
-logmsg_info "Spawning the tntnet web server in the background..."
-./autogen.sh --noparmake ${AUTOGEN_ACTION_MAKE} web-test \
-    >> ${BUILDSUBDIR}/web-test.log 2>&1 &
-[ $? = 0 ] || CODE=$? die "Could not spawn tntnet"
-WEBTESTPID=$!
+        logmsg_info "Ensuring that the tested programs have been built and up-to-date"
+        if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
+                test_it "config-deps"
+                ./autogen.sh --nodistclean --configure-flags \
+                    "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
+                    ${AUTOGEN_ACTION_CONFIG}
+                print_result $? || CODE=$? die "Could not prepare binaries"
+        fi
+        test_it "make-deps"
+        ./autogen.sh ${AUTOGEN_ACTION_MAKE} web-test-deps agent-dbstore agent-nut
+#TODO JIM fix me
+        print_result $? || CODE=$? die "Could not prepare binaries"
 
-# TODO: this requirement should later become the REST AGENT
-logmsg_info "Spawning the agent-dbstore server in the background..."
-${BUILDSUBDIR}/agent-dbstore &
-[ $? = 0 ] || CODE=$? die "Could not spawn agent-dbstore"
-DBNGPID=$!
+        # These are defined in testlib-db.sh
+        test_it "initialize_db_rackpower"
+        ACCEPT_LICENSE=no init_script_rack_power
+        print_result $? || CODE=$? die "Could not prepare database"
 
-logmsg_info "Spawning the agent-nut service in the background..."
-${BUILDSUBDIR}/agent-nut &
-[ $? = 0 ] || CODE=$? die "Could not spawn agent-nut"
-AGNUTPID=$!
+        # This program is delivered by another repo, should "just exist" in container
+        logmsg_info "Spawning the bios-agent-legacy-metrics service in the background..."
+        bios-agent-legacy-metrics ipc://@/malamute legacy-metrics bios METRICS &
+        [ $? = 0 ] || CODE=$? die "Could not spawn bios-agent-legacy-metrics"
+        AGLEGMETPID=$!
 
-logmsg_info "Spawning the agent-tpower service in the background..."
-${BUILDSUBDIR}/agent-tpower &
-[ $? = 0 ] || CODE=$? die "Could not spawn agent-tpower"
-AGPWRPID=$!
+        logmsg_info "Spawning the tntnet web server in the background..."
+        ./autogen.sh --noparmake ${AUTOGEN_ACTION_MAKE} web-test \
+                >> ${BUILDSUBDIR}/web-test.log 2>&1 &
+        [ $? = 0 ] || CODE=$? die "Could not spawn tntnet"
+        WEBTESTPID=$!
 
-# Let the webserver settle
-sleep 5
-accept_license
+        # TODO: this requirement should later become the REST AGENT
+        logmsg_info "Spawning the agent-dbstore server in the background..."
+        ${BUILDSUBDIR}/agent-dbstore &
+        [ $? = 0 ] || CODE=$? die "Could not spawn agent-dbstore"
+        DBNGPID=$!
+
+        # NOTE: Now a CLI argument is required for agent-nut
+        logmsg_info "Spawning the agent-nut service in the background..."
+        ${BUILDSUBDIR}/agent-nut "$CHECKOUTDIR/src/agents/nut/mapping.conf" &
+        [ $? = 0 ] || CODE=$? die "Could not spawn agent-nut"
+        AGNUTPID=$!
+
+#TODO JIM fix me
+        logmsg_info "Spawning the agent-tpower service in the background..."
+        ${BUILDSUBDIR}/agent-tpower &
+        [ $? = 0 ] || CODE=$? die "Could not spawn agent-tpower"
+        AGPWRPID=$!
+
+        sleep 3
+        test_it "verify_running_daemons"
+        for P in AGLEGMETPID WEBTESTPID DBNGPID AGNUTPID AGPWRPID ; do
+            eval PN="\$$P"
+            [ -n "$PN" ] && [ -d "/proc/$PN" ] || { \
+                print_result $? "Process ID for $P ($PN) not found to be running!"; die; }
+        done
+        print_result 0
+    fi
+
+    # Let the webserver settle
+    sleep 5
+    test_it "accept_license"
+    accept_license
+    print_result $?
+
+    if isRemoteSUT ; then
+        sut_run 'systemctl restart bios-agent-tpower'
+        sut_run 'systemctl restart bios-agent-dbstore'
+    fi
+}
 
 #
 # only one parameter - ups.realpower for ups or outlet.realpower for epdu
 # is used for the total rack power value counting
 #
-PARAM1="ups.realpower"
-PARAM2="outlet.realpower"
+PARAM_REALPOWER_UPS="ups.realpower"
+PARAM_REALPOWER_EPDU="outlet.realpower"
 
 custom_create_ups_dev_file() {
     FILE="$1"
@@ -188,71 +355,85 @@ create_device_definition_file() {
 }
 
 testcase() {
-    UPS1="$1"
-    UPS2="$2"
+    DEV1="$1"
+    DEV2="$2"
     SAMPLES="$3"
     RACK="$4"
     PARAM=""
-    logmsg_info "Starting the testcase for $UPS1 and $UPS2 in rack $RACK ..."
+    logmsg_info "Starting the testcase for power devices '$DEV1' and '$DEV2' in rack '$RACK' ..."
+    # In our power consumption accounting, for a single rack - the closest
+    # active device to consumer (direct UPS, or ePDU - not dumb PDU) wins.
+    # Total power consumed in a rack is thus the sum of known consumers.
+    # For different racks it is more complicated (e.g. UPS in one, ePDUs
+    # from it in several others) - the other racks are accounted by their
+    # ePDUs while the core rack locally consumes UPS-sum(other_ePDUs)...
 
     SAMPLESCNT="$((${#SAMPLES[*]} - 1))" # sample counter begins from 0
     LASTPOW=(0 0)
-    for UPS in $UPS1 $UPS2 ; do
+    for DEV in $DEV1 $DEV2 ; do
+        # count expected value of total power
         for SAMPLECURSOR in $(seq 0 $SAMPLESCNT); do
             # set values
             NEWVALUE="${SAMPLES[$SAMPLECURSOR]}"
-            TYPE="$(echo "$UPS"|egrep '^pdu'|wc -l)"
-            #echo "TYPE = " $TYPE
-            if [[ "$TYPE" -eq 1 ]]; then
+
+            case "$DEV" in
+                ups*)  TYPE="ups";;
+                pdu*)  TYPE="pdu";;
+                epdu*) TYPE="epdu";;
+                *) die "Unknown device name pattern: '$DEV'" ;;
+            esac
+            # It makes sense that a dumb PDU has no measurements...
+            if [[ "$TYPE" = "pdu" ]]; then
                NEWVALUE=0
             fi
-            TYPE2="$(echo "$UPS"|egrep '^epdu'|wc -l)"
-            test_it "configure_total_power_nut:$RACK:$UPS:$SAMPLECURSOR"
-            if [[ "$TYPE2" -eq 1 ]]; then
-                set_value_in_ups "$UPS" "$PARAM1" 0 0 || logmsg_info "Note: ePDU can fail to set ups.realpower, it is OK"
-                set_value_in_ups "$UPS" "$PARAM2" "$NEWVALUE"
+            test_it "configure_total_power_nut:$RACK:$DEV:$SAMPLECURSOR"
+            if [[ "$TYPE" = "epdu" ]]; then
+                set_value_in_ups "$DEV" "$PARAM_REALPOWER_UPS" 0 0 || \
+                    logmsg_info "Note: ePDU can fail to set ups.realpower, it is OK"
+                set_value_in_ups "$DEV" "$PARAM_REALPOWER_EPDU" "$NEWVALUE"
                 print_result $?
             else
-                set_value_in_ups "$UPS" "$PARAM1" "$NEWVALUE" 0 && \
-                set_value_in_ups "$UPS" "$PARAM2" 0
+                set_value_in_ups "$DEV" "$PARAM_REALPOWER_UPS" "$NEWVALUE" 0 && \
+                set_value_in_ups "$DEV" "$PARAM_REALPOWER_EPDU" 0
                 print_result $?
             fi
-            logmsg_debug "Sleeping 8sec to propagate measurements..."
-            sleep 8  # 8s is max time for propagating into DB (poll ever 5s in nut actor + some time to process)
-            logmsg_debug "Sleep time is over!"
 
-            NEWVALUE="${SAMPLES[$SAMPLECURSOR]}"
-            case "$UPS" in
-            "$UPS1")
-                if [[ "$TYPE" -eq 1 ]]; then
-                   NEWVALUE=0
-                fi
+            case "$DEV" in
+            "$DEV1")
                 LASTPOW[0]="$NEWVALUE"
                 ;;
-            "$UPS2")
-                if [[ "$TYPE" -eq 1 ]]; then
-                   NEWVALUE=0
-                fi
+            "$DEV2")
                 LASTPOW[1]="$NEWVALUE"
                 ;;
             esac
 
-            test_it "verify_total_power_restapi:$RACK:$UPS:$SAMPLECURSOR"
+            logmsg_debug "Sleeping 8sec to propagate measurements..."
+            sleep 8  # 8s is max time for propagating into DB (poll ever 5s in nut actor + some time to process)
+            logmsg_debug "Sleep time is over!"
+
+            test_it "verify_total_power_restapi:$RACK:$DEV:$SAMPLECURSOR"
+            # Math with decimal points... shell and expr can not do it
             TP="$(awk -vX=${LASTPOW[0]} -vY=${LASTPOW[1]} 'BEGIN{ print X + Y; }')"
-            URL="/metric/computed/rack_total?arg1=$RACK&arg2=total_power"
-            POWER="$(api_get "$URL" >/dev/null && echo "$OUT_CURL" | awk '/total_power/{ print $NF; }')"
+            # send restAPI request to find generated value of total power
+            URL="/metric/computed/rack_total?arg1=${RACK}&arg2=total_power"
+            POWER="$(api_get "$URL" >/dev/null && echo "$OUT_CURL" | awk '/total_power/{ print $NF; }')" || { print_result $? "REST API call failed"; continue; }
+            # synchronize format of the expected and generated values of total power
             STR1="$(printf "%f" "$TP")"  # this returns "2000000.000000"
             STR2="$(printf "%f" "$POWER")"  # also returns "2000000.000000"
+            # round both numbers and compare them to
+            # decide if the test is successfull or failed
             DEL="$(awk -vX=${STR1} -vY=${STR2} 'BEGIN{ print int( 10*(X - Y) - 0.5 ); }')"
             if [[ "$DEL" -eq 0 ]]; then
-                logmsg_info "The total power on rack $RACK has an expected value: $TP = $POWER"
+                logmsg_info "The total power on rack $RACK has an expected value: '$TP' = '$POWER'"
                 print_result 0
             else
-                print_result 1 "Total power on rack $RACK does not equal expected value: $TP <> $POWER"
+                print_result 1 "Total power on rack $RACK does not equal expected value: exp '$TP' <> api '$POWER'"
             fi
         done
     done
 }
+
+startup
 
 echo "+++++++++++++++++++++++++++++++++++"
 echo "Test 1"
@@ -280,11 +461,11 @@ SAMPLES=(
 UPS1="epdu102_1"
 UPS2="epdu102_2"
 RACK="8108"
-if false; then
+if [ "$CI_RACKPOWER_NONTRIVIAL" = yes ]; then
     create_nut_config "ups102_1" "$UPS1 $UPS2"
     testcase "$UPS1" "$UPS2" "$SAMPLES" "$RACK"
 else
-    logmsg_warn "Test skipped: topology too complex for now"
+    logmsg_warn "Test skipped: topology too complex for now"; echo ""
 fi
 
 echo "+++++++++++++++++++++++++++++++++++"
@@ -298,11 +479,11 @@ SAMPLES=(
 UPS1="ups103_1"
 UPS2="ups103_2"
 RACK="8116"
-if false; then
+if [ "$CI_RACKPOWER_NONTRIVIAL" = yes ]; then
     create_nut_config "$UPS1 $UPS2" "pdu103_1 pdu103_2"
     testcase "$UPS1" "$UPS2" "$SAMPLES" "$RACK"
 else
-    logmsg_warn "Test skipped: topology too complex for now"
+    logmsg_warn "Test skipped: topology too complex for now"; echo ""
 fi
 
 
@@ -332,11 +513,11 @@ SAMPLES=(
 UPS1="ups106_1"
 UPS2="pdu106_2"
 RACK="8141"
-if false; then
+if [ "$CI_RACKPOWER_NONTRIVIAL" = yes ]; then
     create_nut_config "$UPS1" "$UPS2 pdu106_1"
     testcase "$UPS1" "$UPS2" "$SAMPLES" "$RACK"
 else
-    logmsg_warn "Test skipped: topology too complex for now"
+    logmsg_warn "Test skipped: topology too complex for now"; echo ""
 fi
 
 
