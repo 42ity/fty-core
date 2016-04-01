@@ -560,6 +560,8 @@ esac
     echo "WARNING: Do not have /usr/share/bios/.git_details"
 
 # Timestamp the end of OS image generation
+# NOTE: This value and markup are consumed by bios-core::sysinfo.ecpp
+# REST API and by bios-boot::init script.
 echo "OSimage:build-ts: `LANG=C date -R -u`
 OSimage:img-type: $IMGTYPE" > /usr/share/bios-web/image-version.txt || \
     echo "WARNING: Could not record OBS image-building timestamp and type"
