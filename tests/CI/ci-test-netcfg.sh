@@ -476,8 +476,15 @@ for i in ${INITIAL_IFACE_NAMES[@]}; do
 
     curlfail_push_expect_200
     test_it "$TEST_CASE::netcfg::$i"
-    api_get_json "${REST_NETCFG}/${i}"
-    print_result $? "'api_get_json ${REST_NETCFG}/${i}' failed"
+    # Note/TODO(?): initial request sometimes errors out, maybe timeout?
+    # First time do not consider this fatal...
+    CITEST_QUICKFAIL=no WEBLIB_CURLFAIL=no api_get_json "${REST_NETCFG}/${i}"
+    print_result -$? "'api_get_json ${REST_NETCFG}/${i}' failed" || \
+    { sleep 3
+      test_it "$TEST_CASE::netcfg::$i::retry"
+      api_get_json "${REST_NETCFG}/${i}"
+      print_result $? "'api_get_json ${REST_NETCFG}/${i}' failed"
+    }
     curlfail_pop
 
     test_it "$TEST_CASE::cmpjson::$i"
