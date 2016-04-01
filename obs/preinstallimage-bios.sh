@@ -285,6 +285,9 @@ fi
 [[ -f /usr/lib/systemd/system/bios-agent-asset.service ]] && systemctl enable bios-agent-asset.service
 [[ -f /usr/lib/systemd/system/bios-agent-smtp.service ]] && systemctl enable bios-agent-smtp.service
 
+# Ensure mysql is owned correctly after upgrades and other OS image changes
+sed -e 's,^\(Type=.*\)$,\1\nExecPreStart=/bin/dash -c "[ -d /var/lib/mysql ] \&\& /usr/bin/chown -R mysql:mysql /var/lib/mysql",' -i /usr/lib/systemd/system/mysql.service
+
 # Our tntnet unit
 cat > /etc/systemd/system/tntnet@.service <<EOF
 [Unit]
