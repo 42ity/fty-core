@@ -371,7 +371,7 @@ std::string debug_trace;
                             // So far we assume LANG=C LC_ALL=C TZ=UTC from env
                             std::string rmatch = smatch.get(1);
                             if (strptime(rmatch.c_str(), "%a, %d %b %Y %T %z", &tm) &&
-                                strftime(tmbuf, sizeof(tmbuf), "%Y%m%DT%H%M%SZ", &tm) ) {
+                                strftime(tmbuf, sizeof(tmbuf), "%Y%m%dT%H%M%SZ", &tm) ) {
 </%cpp>
 <$ leadingComma $>   <$$ utils::json::jsonify ("osimage-build-ts", tmbuf) $>
 <%cpp>
@@ -428,7 +428,7 @@ std::string debug_trace;
                             // So far we assume LANG=C LC_ALL=C TZ=UTC from env
                             std::string rmatch = smatch.get(1);
                             if (strptime(rmatch.c_str(), "%a, %d %b %Y %T %z", &tm) &&
-                                strftime(tmbuf, sizeof(tmbuf), "%Y%m%DT%H%M%SZ", &tm) ) {
+                                strftime(tmbuf, sizeof(tmbuf), "%Y%m%dT%H%M%SZ", &tm) ) {
 </%cpp>
 <$ leadingComma $>   <$$ utils::json::jsonify ("bios-web-build-ts", tmbuf) $>
 <%cpp>
@@ -448,7 +448,7 @@ std::string debug_trace;
                             // So far we assume LANG=C LC_ALL=C TZ=UTC from env
                             std::string rmatch = smatch.get(1);
                             if (strptime(rmatch.c_str(), "%a, %d %b %Y %T %z", &tm) &&
-                                strftime(tmbuf, sizeof(tmbuf), "%Y%m%DT%H%M%SZ", &tm) ) {
+                                strftime(tmbuf, sizeof(tmbuf), "%Y%m%dT%H%M%SZ", &tm) ) {
 </%cpp>
 <$ leadingComma $>   <$$ utils::json::jsonify ("bios-web-commit-ts", tmbuf) $>
 <%cpp>
