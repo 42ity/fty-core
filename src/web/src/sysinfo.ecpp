@@ -270,6 +270,25 @@ std::string debug_trace;
     } // if (access_auth_level>=AUTH_LEVEL_POWERUSER)
 
     {
+/*
+ * This block optionally prints the "bios-release" object with as much info
+ * as possible about the installed firmware, OS image, REST API and Web-UI
+ * versions for field support, development, validation and similar inquiries.
+ * Primary supported mode of operation is on RC3, where the bios-boot::init
+ * script manages the system startup and generates a "/etc/bios-release.json"
+ * file with the information it has found about the low-level environment,
+ * including versions, timestamps and checksums of firmware components.
+ * If this file is present, and if it contains valid JSON of non-trivial
+ * length, it is published verbatim "as is".
+ * Fallback mode for systems with older uImage and for X86 containers is to
+ * pick up partial information from the "/usr/share/bios-web/*version.txt"
+ * files that are generated during compilation of Web-UI and of OS image.
+ * Changes in parsing of these "*version.txt" files should be coordinated with
+ * producers in bios-infra::compile_web and bios-core::obs_preinstall scripts,
+ * as well as the bios-boot::init script which also generates such JSON.
+ * The definitive format should correspond to latest RFC-11.
+ */
+
         static const std::string BIOS_RELEASE_JSON_FILE = "/etc/bios-release.json";
         static const std::string BIOS_IMAGE_VERSION_FILE = "/usr/share/bios-web/image-version.txt";
         static const std::string BIOS_WEBUI_VERSION_FILE = "/usr/share/bios-web/version.txt";
