@@ -146,10 +146,9 @@ restore_config() {
 
 TMP_DIR=""
 MAKEPID=""
-LOCKFILE=""
 cleanup() {
     local __exit=$?
-    [ -n "$LOCKFILE" ] && rm -f "$LOCKFILE"
+    [ -s "$LOCKFILE" ] && rm -f "$LOCKFILE"
     if [[ -n "$TMP_DIR" && -e "$TMP_DIR" ]]; then
         if [ $__exit -ne 0 ]; then
             logmsg_error "Test failed => no cleanup; so it's possible to look at files."
@@ -420,8 +419,9 @@ curlfail_pop
 accept_license
 
 curlfail_push "expect" 'HTTP/[^ ]+ 404'
-test_it "$TEST_CASE::netcfgs::notfound"
-api_get_json "${REST_NETCFGS}/advdwsqwe234?=345"
+test_it "$TEST_CASE::netcfgs::not_found"
+# Note (TODO?): we het HTML markup here, not JSON error structures
+api_get "${REST_NETCFGS}/advdwsqwe234?=345"
 print_result $? "'api_get ${REST_NETCFGS}' failed: $OUT_CURL"
 curlfail_pop
 
