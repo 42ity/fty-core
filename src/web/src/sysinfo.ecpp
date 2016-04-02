@@ -281,7 +281,7 @@ std::string debug_trace;
  * If this file is present, and if it contains valid JSON of non-trivial
  * length, it is published verbatim "as is".
  * Fallback mode for systems with older uImage and for X86 containers is to
- * pick up partial information from the "/usr/share/bios-web/*version.txt"
+ * pick up partial information from the "/usr/share/bios-web/version.txt"
  * files that are generated during compilation of Web-UI and of OS image.
  * Changes in parsing of these "*version.txt" files should be coordinated with
  * producers in bios-infra::compile_web and bios-core::obs_preinstall scripts,
