@@ -269,7 +269,7 @@ std::string debug_trace;
 # endif // HAVE_PACKAGE_BUILD_*: HOST and/or TSTAMP
     } // if (access_auth_level>=AUTH_LEVEL_POWERUSER)
 
-    {
+    { // scope for work with external files
 /*
  * This block optionally prints the "bios-release" object with as much info
  * as possible about the installed firmware, OS image, REST API and Web-UI
@@ -336,7 +336,7 @@ std::string debug_trace;
                                 ftxt[fsize-1]=' ';
                             }
 </%cpp>
-,       <$ ftxt $>
+,       <$$ ftxt $>
 <%cpp>
                         }
                     } else {
@@ -511,6 +511,8 @@ std::string debug_trace;
 <%cpp>
         }
     } // scope for fopen(bios-release.json and *version.txt files)
+
+    } // if (access_auth_level>=AUTH_LEVEL_POWERUSER)
 
 </%cpp>
     }
