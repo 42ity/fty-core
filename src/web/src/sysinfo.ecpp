@@ -75,17 +75,21 @@ int8_t access_auth_level;
 // this is available in non-DEBUG builds too for now...
 std::string debug_trace;
 </%args>
-{
-    "operating-system" : {
+
 <%cpp>
-    std::string output, cmderr;
     bool b_debug_trace = false;
-    if ( !debug_trace.empty() && debug_trace == "yes" ) {
+    if ( debug_trace == "yes" ) {
         b_debug_trace = true;
     }
 #ifdef DEBUG
     log_debug("SYSINFO TRACING: ARG debug_trace='%s'  BOOL b_debug_trace='%i'", debug_trace.c_str(), b_debug_trace);
 #endif
+
+    // let's check this first, as we can "die" here
+    struct utsname u;
+    if (uname (&u) == -1) {
+        http_die ("internal-error", "uname() failed.");
+    }
 
 // Certain strings returned to caller in some cases
     static const std::string UNKNOWN = "unknown";
@@ -93,39 +97,33 @@ std::string debug_trace;
     static const std::string NOTAVAILABLE = "N/A";
     static const std::string NOTLICENSEDYET = "License not accepted yet";
 
-    int rv = shared::output ({"/usr/bin/systemd-detect-virt", "-c"}, output, cmderr);
-    { //scoping
-        size_t output_len = output.length();
+    std::string cmderr{};
+    std::string container_info{};
+    {
+        int rv = shared::output ({"/usr/bin/systemd-detect-virt", "-c"}, container_info, cmderr);
+        size_t output_len = container_info.length();
         if (rv != 0 && output_len<2) {
-            output = NOTAVAILABLE;
-        } else {
-            if (output_len>0 && output[output_len-1] == '\n') {
-                output[output_len-1] = '\0';
-            }
+            container_info = NOTAVAILABLE;
+        } else if (output_len>0 && container_info[output_len-1] == '\n') {
+            container_info[output_len-1] = '\0';
+        }
+    }
+
+    std::string hypervisor_info{};
+    {
+        int rv = shared::output ({"/usr/bin/systemd-detect-virt", "-v"}, hypervisor_info, cmderr);
+        size_t output_len = hypervisor_info.length();
+        if (rv != 0 && output_len<2) {
+            hypervisor_info = NOTAVAILABLE;
+        } else if (output_len>0 && hypervisor_info[output_len-1] == '\n') {
+            hypervisor_info[output_len-1] = '\0';
         }
     }
 </%cpp>
-        <$$ utils::json::jsonify ("container", output.c_str()) $>,
-<%cpp>
-    rv = shared::output ({"/usr/bin/systemd-detect-virt", "-v"}, output, cmderr);
-    { //scoping
-        size_t output_len = output.length();
-        if (rv != 0 && output_len<2) {
-            output = NOTAVAILABLE;
-        } else {
-            if (output_len>0 && output[output_len-1] == '\n') {
-                output[output_len-1] = '\0';
-            }
-        }
-    }
-</%cpp>
-        <$$ utils::json::jsonify ("hypervisor", output.c_str()) $>,
-<%cpp>
-    struct utsname u;
-    if (uname (&u) == -1) {
-        http_die ("internal-error", "uname() failed.");
-    }
-</%cpp>
+{
+    "operating-system" : {
+        <$$ utils::json::jsonify ("container", container_info.c_str()) $>,
+        <$$ utils::json::jsonify ("hypervisor", hypervisor_info.c_str()) $>,
         "uname": {
             <$$ utils::json::jsonify ("sysname", (char*) u.sysname) $>,
             <$$ utils::json::jsonify ("nodename", (char*) u.nodename) $>,
@@ -519,7 +517,8 @@ std::string debug_trace;
     // End of "restapi-metadata" which may differ from installed packages
 
     if (access_auth_level >= AUTH_LEVEL_POWERUSER) {
-        rv = shared::output ({"dpkg", "--list"}, output, cmderr);
+        std::string output{};
+        int rv = shared::output ({"dpkg", "--list"}, output, cmderr);
         if (b_debug_trace) {
             if (!cmderr.empty()) {
                 log_error("Calling 'dpkg --list' got exit-code %i and this stderr:\n-----\n%s-----\n\n", rv, cmderr.c_str());
