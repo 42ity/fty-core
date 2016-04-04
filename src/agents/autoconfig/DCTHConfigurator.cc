@@ -29,16 +29,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "bits.h"
 #include "DCTHConfigurator.h"
 
-static bool
-    s_is_rc (const AutoConfigurationInfo &info)
-{
-    // Form ID from hostname and agent name
-    char hostname[HOST_NAME_MAX];
-    ::gethostname(hostname, HOST_NAME_MAX);
-    return (info.attributes.count("hostname.1") == 1 && info.attributes.at("hostname.1") == hostname);
-}
-
-
 bool DCTHConfigurator::v_configure (UNUSED_PARAM const std::string& name, const AutoConfigurationInfo& info, UNUSED_PARAM mlm_client_t *client)
 {
     log_debug ("DCTHConfigurator::v_configure (name = '%s', info.type = '%" PRIi32"', info.subtype = '%" PRIi32"')",
@@ -66,7 +56,8 @@ bool DCTHConfigurator::v_configure (UNUSED_PARAM const std::string& name, const 
 
 bool DCTHConfigurator::isApplicable (const AutoConfigurationInfo& info)
 {
-    if (info.type == persist::asset_type::DATACENTER || s_is_rc (info)) {
+    if (info.type == persist::asset_type::DEVICE &&
+        info.type == persist::asset_subtype::RACKCONTROLLER) {
         return true;
     }
     return false;
