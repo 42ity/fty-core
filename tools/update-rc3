@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2015 Eaton
+# Copyright (C) 2015-2016 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -171,6 +171,7 @@ usage() {
     echo "                   If download-image of this type was requested and successful,"
     echo "                   or if download was not requested at all, remove all but the"
     echo "                   newest (alphabetcally) image file from the recovery location"
+    echo "                   NOTE: For flat namespace, removes all 'other' image types!"
     echo "  --(no-)remove-files       Skip removing image files deemed corrupt or obsolete"
     echo "  --(no-)flatten-filenames  Skip renaming image files to include ARCH and TYPE"
     echo "                            for easier differentiation in the flat storage dirs"
@@ -833,7 +834,12 @@ removeold_osimage() (
     #       flattened or original filenames inside
     VICTIMS=0
     if [ x"$FLAG_FLATTEN_FILENAMES" = xyes ] ; then
-        for F in `ls -1d *__${ARCH}__${IMGTYPE}.${EXT} 2>/dev/null | head -n -1` ; do
+        # For flattened filenames, the "other" image types can block automated
+        # updates after reboot (e.g. `devel` is always alphabetically "newer"
+        # than `deploy`).
+        for F in `ls -1d *__${ARCH}__${IMGTYPE}.${EXT} 2>/dev/null | head -n -1` \
+            `ls -1d *__${ARCH}__*.${EXT} 2>/dev/null | grep -v "__${ARCH}__${IMGTYPE}.${EXT}"` \
+        ; do
             logmsg_info "Removing older OS image: '`pwd`/$F' and its checksum(s)"
             remove_image "$F"
             VICTIMS=$(($VICTIMS+1))
