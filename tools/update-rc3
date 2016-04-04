@@ -59,8 +59,9 @@ config_defaults() {
     # hosts and the ultimate devices. Most of the logic is the same, but there are
     # a few differences. File and directory naming is one of them :
     # Our CI farm deployments mimic the build farm paths - with IMGTYPE/ARCH/filename.ext
-    # The RC3 units expect a flat directory structure rootfs/filename.ext so the
-    # details (especially IMGTYPE) should end up in the flat filename - ...__${ARCH}__${IMGTYPE}.${EXT}.
+    # The RC3 units expect a flat directory structure rootfs/filename.ext so
+    # the details (especially IMGTYPE) should end up in the flat filename - as
+    # ...__${ARCH}__${IMGTYPE}.${EXT} or ${IMGTYPE}..._${ARCH}.${EXT}
     # (rc3/virthost) If set to "no", use original filenames from the source server
     # FLAG_FLATTEN_FILENAMES is overridable by CLI option "--(no-)flatten-filenames"
     # The base filename pattern for an OS image as a shell glob, without the extension
@@ -702,7 +703,7 @@ download_osimage() (
     # We rename the incoming image to include the type in flat directory space
     rTGT_FILE="${rIMAGE_URL_BASENAME_EXT}"
     case "${rIMAGE_URL_BASENAME}" in
-        *__${ARCH}__${IMGTYPE}) # Already good and flat
+        *__${ARCH}__${IMGTYPE}|*${IMGTYPE}*-*_${ARCH}) # Already good and flat
             ;;
         *)  if [ x"$FLAG_FLATTEN_FILENAMES" = xyes ]; then
                 rTGT_FILE="${rIMAGE_URL_BASENAME}__${ARCH}__${IMGTYPE}${EXT:+.$EXT}" && \
@@ -833,18 +834,7 @@ removeold_osimage() (
     # TODO: add support for hierarchical namespace (container hosts) with
     #       flattened or original filenames inside
     VICTIMS=0
-    if [ x"$FLAG_FLATTEN_FILENAMES" = xyes ] ; then
-        # For flattened filenames, the "other" image types can block automated
-        # updates after reboot (e.g. `devel` is always alphabetically "newer"
-        # than `deploy`).
-        for F in `ls -1d *__${ARCH}__${IMGTYPE}.${EXT} 2>/dev/null | head -n -1` \
-            `ls -1d *__${ARCH}__*.${EXT} 2>/dev/null | grep -v "__${ARCH}__${IMGTYPE}.${EXT}"` \
-        ; do
-            logmsg_info "Removing older OS image: '`pwd`/$F' and its checksum(s)"
-            remove_image "$F"
-            VICTIMS=$(($VICTIMS+1))
-        done
-    else
+    if [ x"$FLAG_FLATTEN_FILENAMES" = xno ] ; then
         [ -d "./$IMGTYPE/$ARCH" ] && cd "./$IMGTYPE/$ARCH"
         for F in `ls -1d *.${EXT} 2>/dev/null | grep -v _ | head -n -1` ; do
             logmsg_info "Removing older OS image: '`pwd`/$F' and its checksum(s)"
@@ -852,6 +842,21 @@ removeold_osimage() (
             VICTIMS=$(($VICTIMS+1))
         done
     fi
+
+    # For flattened filenames, including those fetched like this from the build
+    # server, the "other" image types can block automated updates after reboot
+    # (e.g. `devel` always begins alphabetically "newer" than `deploy`).
+    # Here we choose the file to keep by timestamp (from the source server).
+    for F in \
+        `ls -1dt *__${ARCH}__${IMGTYPE}.${EXT} ${IMGTYPE}-*_${ARCH}.${EXT} 2>/dev/null | tail -n +2` \
+        `ls -1d *__${ARCH}__*.${EXT} 2>/dev/null | grep -v "__${ARCH}__${IMGTYPE}.${EXT}"` \
+        `ls -1d *_${ARCH}.${EXT} 2>/dev/null | grep -v "${IMGTYPE}-.*_${ARCH}.${EXT}"` \
+    ; do
+        logmsg_info "Removing older OS image: '`pwd`/$F' and its checksum(s)"
+        remove_image "$F"
+        VICTIMS=$(($VICTIMS+1))
+    done
+
     [ "$VICTIMS" -eq 0 ] && logmsg_info "removeold_osimage() had nothing to remove" || \
         logmsg_info "removeold_osimage() requested to remove $VICTIMS file(s)"
     return 0
