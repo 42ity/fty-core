@@ -70,6 +70,10 @@
         log_error (e.what());
         http_die("bad-request-document", e.what());
     }
+    catch (const std::exception& e) {
+        LOG_END_ABNORMAL(e);
+        http_die("internal-error", "See log for more details");
+    }
 
     // PUT /asset is currently used to update an existing device (only asset_element and ext_attributes)
     //      for EMC4J.
