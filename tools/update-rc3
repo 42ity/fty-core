@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2015 Eaton
+# Copyright (C) 2015-2016 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -59,8 +59,9 @@ config_defaults() {
     # hosts and the ultimate devices. Most of the logic is the same, but there are
     # a few differences. File and directory naming is one of them :
     # Our CI farm deployments mimic the build farm paths - with IMGTYPE/ARCH/filename.ext
-    # The RC3 units expect a flat directory structure rootfs/filename.ext so the
-    # details (especially IMGTYPE) should end up in the flat filename - ...__${ARCH}__${IMGTYPE}.${EXT}.
+    # The RC3 units expect a flat directory structure rootfs/filename.ext so
+    # the details (especially IMGTYPE) should end up in the flat filename - as
+    # ...__${ARCH}__${IMGTYPE}.${EXT} or ${IMGTYPE}..._${ARCH}.${EXT}
     # (rc3/virthost) If set to "no", use original filenames from the source server
     # FLAG_FLATTEN_FILENAMES is overridable by CLI option "--(no-)flatten-filenames"
     # The base filename pattern for an OS image as a shell glob, without the extension
@@ -171,6 +172,7 @@ usage() {
     echo "                   If download-image of this type was requested and successful,"
     echo "                   or if download was not requested at all, remove all but the"
     echo "                   newest (alphabetcally) image file from the recovery location"
+    echo "                   NOTE: For flat namespace, removes all 'other' image types!"
     echo "  --(no-)remove-files       Skip removing image files deemed corrupt or obsolete"
     echo "  --(no-)flatten-filenames  Skip renaming image files to include ARCH and TYPE"
     echo "                            for easier differentiation in the flat storage dirs"
@@ -701,7 +703,7 @@ download_osimage() (
     # We rename the incoming image to include the type in flat directory space
     rTGT_FILE="${rIMAGE_URL_BASENAME_EXT}"
     case "${rIMAGE_URL_BASENAME}" in
-        *__${ARCH}__${IMGTYPE}) # Already good and flat
+        *__${ARCH}__${IMGTYPE}|*${IMGTYPE}*-*_${ARCH}) # Already good and flat
             ;;
         *)  if [ x"$FLAG_FLATTEN_FILENAMES" = xyes ]; then
                 rTGT_FILE="${rIMAGE_URL_BASENAME}__${ARCH}__${IMGTYPE}${EXT:+.$EXT}" && \
@@ -745,7 +747,8 @@ download_osimage() (
                 FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
                     "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE}" \
                     "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE_CSOLD}" \
-                    "${aTGT_FILE_CSNEW}" && return 0
+                    "${aTGT_FILE_CSNEW}" \
+                && { echo "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE}" > "$DOWNLOADROOT_OSIMAGE/.newest-osimage"; return 0; }
             fi
         fi
         logmsg_info "Verifying if we have this checksum and corresponding file under flat name of data and original name of checksum file..."
@@ -755,24 +758,28 @@ download_osimage() (
             FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
                 "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE}" \
                 "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE_CSOLD}" \
-                "${aIMAGE_CSNEW}" && return 0
+                "${aIMAGE_CSNEW}" \
+                && { echo "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE}" > "$DOWNLOADROOT_OSIMAGE/.newest-osimage"; return 0; }
         fi
     fi
 
     # Then try unmodified filenames in local directories (e.g. USB download)
     logmsg_info "Verifying if we have this checksum and corresponding file under original name in base dir..."
-    verify_threeway_checksum "${IMAGE_URL}" "${rIMAGE_URL_BASENAME_EXT}" "${rIMAGE_CSOLD}" "${aIMAGE_CSNEW}" && return 0
+    verify_threeway_checksum "${IMAGE_URL}" "${rIMAGE_URL_BASENAME_EXT}" "${rIMAGE_CSOLD}" "${aIMAGE_CSNEW}" \
+    && { echo "${rIMAGE_URL_BASENAME_EXT}" > "$DOWNLOADROOT_OSIMAGE/.newest-osimage"; return 0; }
     if [ -d "${DEPLOYMENTROOT_OSIMAGE}" ] ; then
         # Do not remove deployed files!
         FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
             "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_URL_BASENAME_EXT}" \
             "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_CSOLD}" \
-            "${aIMAGE_CSNEW}" && return 0
+            "${aIMAGE_CSNEW}" \
+        && { echo "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_URL_BASENAME_EXT}" > "$DOWNLOADROOT_OSIMAGE/.newest-osimage"; return 0; }
     fi
     if [ -d "./$IMGTYPE/$ARCH" ]; then
         # Bit of support for container hosts
         logmsg_info "Verifying if we have this checksum and corresponding file under original name in hierarchy..."
-        verify_threeway_checksum "${IMAGE_URL}" "./$IMGTYPE/$ARCH/${rIMAGE_URL_BASENAME_EXT}" "./$IMGTYPE/$ARCH/${rIMAGE_CSOLD}" "${aIMAGE_CSNEW}" && return 0
+        verify_threeway_checksum "${IMAGE_URL}" "./$IMGTYPE/$ARCH/${rIMAGE_URL_BASENAME_EXT}" "./$IMGTYPE/$ARCH/${rIMAGE_CSOLD}" "${aIMAGE_CSNEW}" \
+        && { echo "`pwd`/$IMGTYPE/$ARCH/${rIMAGE_URL_BASENAME_EXT}" > "$DOWNLOADROOT_OSIMAGE/.newest-osimage"; return 0; }
     fi
 
     if [ x"${CHECK_ONLY-}" = xyes ]; then
@@ -822,7 +829,8 @@ download_osimage() (
     logmsg_info "Got OS image OK:" && \
     ls -ld "${aTGT_FILE}" "${aTGT_FILE_CSOLD}" && \
     cat "${aTGT_FILE_CSOLD}" && \
-    return 42
+    { echo "${aTGT_FILE}" > "$DOWNLOADROOT_OSIMAGE/.newest-osimage";
+      return 42; }
 )
 
 removeold_osimage() (
@@ -832,20 +840,42 @@ removeold_osimage() (
     # TODO: add support for hierarchical namespace (container hosts) with
     #       flattened or original filenames inside
     VICTIMS=0
-    if [ x"$FLAG_FLATTEN_FILENAMES" = xyes ] ; then
-        for F in `ls -1d *__${ARCH}__${IMGTYPE}.${EXT} 2>/dev/null | head -n -1` ; do
-            logmsg_info "Removing older OS image: '`pwd`/$F' and its checksum(s)"
-            remove_image "$F"
-            VICTIMS=$(($VICTIMS+1))
-        done
-    else
+    if [ x"$FLAG_FLATTEN_FILENAMES" = xno ] ; then
         [ -d "./$IMGTYPE/$ARCH" ] && cd "./$IMGTYPE/$ARCH"
+        # Alphabetic sort, per timestamps from the builder host
         for F in `ls -1d *.${EXT} 2>/dev/null | grep -v _ | head -n -1` ; do
-            logmsg_info "Removing older OS image: '`pwd`/$F' and its checksum(s)"
-            remove_image "$F"
-            VICTIMS=$(($VICTIMS+1))
+            [ -n "$F" ] && [ -f "$F" ] && \
+            logmsg_info "Removing older OS image: '`pwd`/$F' and its checksum(s)" && \
+            if [ -n "$DOWNLOADED_OS_IMAGE" ] && [ -s "$DOWNLOADED_OS_IMAGE" ] && \
+                [ "$F" = "`basename "$DOWNLOADED_OS_IMAGE"`" ]; then
+                    logmsg_info "Keeping the just-downloaded OS image: '$DOWNLOADED_OS_IMAGE'"
+            else
+                remove_image "$F"
+                VICTIMS=$(($VICTIMS+1))
+            fi
         done
     fi
+
+    # For flattened filenames, including those fetched like this from the build
+    # server, the "other" image types can block automated updates after reboot
+    # (e.g. `devel` always begins alphabetically "newer" than `deploy`).
+    # Here we choose the file to keep by timestamp (from the source server).
+    for F in \
+        `ls -1dt *__${ARCH}__${IMGTYPE}.${EXT} ${IMGTYPE}-*_${ARCH}.${EXT} 2>/dev/null | tail -n +2` \
+        `ls -1d *__${ARCH}__*.${EXT} 2>/dev/null | grep -v "__${ARCH}__${IMGTYPE}.${EXT}"` \
+        `ls -1d *_${ARCH}.${EXT} 2>/dev/null | grep -v "${IMGTYPE}-.*_${ARCH}.${EXT}"` \
+    ; do
+        [ -n "$F" ] && [ -f "$F" ] && \
+        logmsg_info "Removing older OS image: '`pwd`/$F' and its checksum(s)" && \
+        if [ -n "$DOWNLOADED_OS_IMAGE" ] && [ -s "$DOWNLOADED_OS_IMAGE" ] && \
+            [ "$F" = "`basename "$DOWNLOADED_OS_IMAGE"`" ]; then
+                logmsg_info "Keeping the just-downloaded OS image: '$DOWNLOADED_OS_IMAGE'"
+        else
+            remove_image "$F"
+            VICTIMS=$(($VICTIMS+1))
+        fi
+    done
+
     [ "$VICTIMS" -eq 0 ] && logmsg_info "removeold_osimage() had nothing to remove" || \
         logmsg_info "removeold_osimage() requested to remove $VICTIMS file(s)"
     return 0
@@ -1367,6 +1397,9 @@ ACTION_REMOVEOLD_FWIMAGE="no"
 # Ultimate exit code of the script
 ACTION_RESULT=0
 
+# Exclude this (base) filename from removeold_osimage() hit-list
+DOWNLOADED_OS_IMAGE=""
+
 while [ $# -gt 0 ]; do
         case "${1-}" in
                 -h|--help|-help)        usage; exit 0 ;;
@@ -1523,16 +1556,23 @@ fi
 
 RESULT_ACTION_DOWNLOAD_OSIMAGE=0
 if [ "$ACTION_DOWNLOAD_OSIMAGE" = yes ]; then
+        rm -f "$DOWNLOADROOT_OSIMAGE/.newest-osimage"
         download_osimage $URL_DOWNLOAD_OSIMAGE
         RESULT_ACTION_DOWNLOAD_OSIMAGE=$?
+
         # If there was indeed a successful download, we have code=42 from the
         # routine; however the script succeeded - so overall exitcode stays 0
-        [ "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -gt 0 -a "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -ne 42 ] && \
+        if [ "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -gt 0 -a "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -ne 42 ] ; then
             ACTION_RESULT=$RESULT_ACTION_DOWNLOAD_OSIMAGE && \
             if [ "$ACTION_REMOVEOLD_OSIMAGE" = yes ] ; then
                 logmsg_warn "New OS image was not downloaded successfully, so old ones are not purged"
                 ACTION_REMOVEOLD_OSIMAGE=no_BadDownload
             fi
+        else
+            [ -s "$DOWNLOADROOT_OSIMAGE/.newest-osimage" ] && \
+                DOWNLOADED_OS_IMAGE="`cat "$DOWNLOADROOT_OSIMAGE/.newest-osimage"`" || \
+                DOWNLOADED_OS_IMAGE=""
+        fi
 fi
 
 case "$FLAG_ERASE_FACTORYRESET" in
