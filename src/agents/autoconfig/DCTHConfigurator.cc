@@ -57,7 +57,7 @@ bool DCTHConfigurator::v_configure (UNUSED_PARAM const std::string& name, const 
 bool DCTHConfigurator::isApplicable (const AutoConfigurationInfo& info)
 {
     if (info.type == persist::asset_type::DEVICE &&
-        info.type == persist::asset_subtype::RACKCONTROLLER) {
+        info.subtype == persist::asset_subtype::RACKCONTROLLER) {
         return true;
     }
     return false;
