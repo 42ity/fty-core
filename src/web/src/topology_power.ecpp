@@ -141,8 +141,7 @@ std::string filter_group;
             LOG_END;
             switch(common_msg_errorno(common_msg)) {
                 case(DB_ERROR_BADINPUT):
-                    log_error ("This should never happen");
-                    http_die("request-param-bad", parameter_name.c_str(), id.c_str(), "integer value");
+                    http_die("request-param-bad", parameter_name.c_str(), "id of the asset, that is not a device", "id of the asset, that is a device");
                 case(DB_ERROR_NOTFOUND):
                     http_die("element-not-found", id.c_str());
                 default:
