@@ -1606,7 +1606,7 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
     catch (const std::exception &e) {
         // unexpected error
         log_warning ("abort with err = '%s'", e.what());
-        return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_UNKNOWN, 
+        return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                         e.what(), NULL);
     }
 
