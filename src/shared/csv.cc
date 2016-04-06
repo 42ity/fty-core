@@ -420,6 +420,9 @@ static void
         log_debug ("it is GET format");
         // this information in GET format
         for ( const auto &oneAttrEl : ext_si ) { // iterate through the array
+            if ( oneAttrEl.memberCount() != 2 ) {
+                throw std::invalid_argument("Expected two properties per each ext attribute");
+            }
             // ASSUMPTION: oneAttr has 2 fields:
             // "read_only" - this is an information only
             // "some_unknown_name"
