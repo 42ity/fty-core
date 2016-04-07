@@ -171,7 +171,7 @@ int main(int argc, char **argv) {
         http_die_error (errors);
     }
 
-    std::string agent_name (BIOS_AGENT_PREFIX_REST);
+    std::string agent_name ("average.cc.");
     agent_name.append (std::to_string (static_cast<int> (getpid ()))).append (".").append (std::to_string ( syscall(SYS_gettid) ));
 
     _scoped_bios_agent_t *agent = bios_agent_new (MLM_ENDPOINT, agent_name.c_str ());

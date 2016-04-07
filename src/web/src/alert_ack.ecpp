@@ -88,7 +88,7 @@ if (!client) {
     http_die ("internal-error", "mlm_client_new() failed.");
 }
 
-std::string client_name ("alert_ack.");
+std::string client_name ("web.alert_ack.");
 client_name.append (std::to_string (getpid ())).append (".").append (std::to_string (syscall (SYS_gettid)));
 log_debug ("malamute client name = '%s'.", client_name.c_str ());
 
