@@ -7,6 +7,8 @@ Summary:        BIOS project
 Url:            https://github.com/eaton-bob
 Group:          Development/Libraries/C and C++
 Source0:        %{name}-%{version}.tar.gz
+#REST API /admin/netcfg /admin/netcfgs is closely tied to Debian - on rpm distros those would return HTTP 501 Not Implemented error
+Patch0:         0001-disable-admin-network.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 BuildRequires:  zeromq-devel >= 4.2
 BuildRequires:  libsodium-devel
@@ -48,8 +50,7 @@ Development files (headers, pkgconfig, cmake) for %{name}.
 
 %prep
 %setup -q
-# Ugly hack as we don't have fresh enough nut but we don't need ti for development
-sed -i 's|libnutscan >= 2.7.2|libnutscan >= 2.7.1|' configure.ac
+%patch0 -p1
 
 %build
 export SUSE_ASNEEDED=0
