@@ -101,7 +101,7 @@
 
         // this code can be executed in multiple threads -> agent's name should
         // be unique at the every moment
-        std::string agent_name("TEMP_CONFIGURE_INFORM_AGENT");
+        std::string agent_name("web.asset_put.");
         agent_name.append (std::to_string ( static_cast<int> (getpid ()) ))
                   .append (".")
                   .append (std::to_string ( syscall(SYS_gettid) ));

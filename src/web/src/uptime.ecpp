@@ -85,7 +85,7 @@ asset_manager asset_mgr;
         if (!client)
             throw std::runtime_error ("Can't allocate malamute client");
 
-        std::string name = "ui." + std::to_string (::getpid ()) + "." + std::to_string (::syscall (SYS_gettid));
+        std::string name = "web.uptime." + std::to_string (::getpid ()) + "." + std::to_string (::syscall (SYS_gettid));
         mlm_client_connect (client, "ipc://@/malamute", 1000, name.c_str());
 
         json << "{\n\t\"outage\": [\n";
