@@ -310,7 +310,7 @@ ExecStartPre=/usr/share/bios/scripts/ssl-create.sh
 ExecStartPre=/usr/share/bios/scripts/xml-cat.sh /etc/tntnet/%i.d /etc/tntnet/%i.xml
 ExecStartPre="/bin/dash -c 'F=/etc/default/bios; [ -f \${F} ] || touch \${F}; chown www-data: \${F}; chmod 0644 \${F}'"
 ExecStart=/usr/bin/tntnet -c /etc/tntnet/%i.xml
-Restart=on-failure
+Restart=always
 
 [Install]
 WantedBy=bios.target
@@ -369,7 +369,6 @@ EOF
 # BIOS emulator script which can fake some of the curl behaviour with wget
 [ ! -x /usr/bin/curl ] && [ -x /usr/share/bios/scripts/curlbbwget.sh ] && \
     install -m 0755 /usr/share/bios/scripts/curlbbwget.sh /usr/bin/curl
-
 
 #########################################################################
 # Setup zabbix
@@ -546,7 +545,7 @@ rm -f ./pkg-list.log
 case "$IMGTYPE" in
     devel)
         [ -x /usr/sbin/update-ccache-symlinks ] && \
-		/usr/sbin/update-ccache-symlinks || true
+            /usr/sbin/update-ccache-symlinks || true
         # If this image ends up on an RC3, avoid polluting NAND with ccache
         mkdir -p /home/admin/.ccache
         chown -R admin /home/admin/.ccache
@@ -556,7 +555,18 @@ case "$IMGTYPE" in
         ;;
 esac
 
-# Prepate the source-code details excerpt, if available
+# Require that services we need hop back up if they were started and then died
+for i in mysql tntnet@bios malamute \
+; do
+    find /lib/systemd /usr/lib/systemd -name "$i".service | while read file; do
+        egrep '^Restart=' "$file" >/dev/null || \
+            sed -e 's,^\(ExecStart=.*\)$,\1\nRestart=always,' -i "$file"
+    done
+done
+
+/bin/systemctl daemon-reload
+
+# Prepare the source-code details excerpt, if available
 [ -s "/usr/share/bios/.git_details" ] && \
     grep ESCAPE "/usr/share/bios/.git_details" > /usr/share/bios-web/git_details.txt || \
     echo "WARNING: Do not have /usr/share/bios/.git_details"
