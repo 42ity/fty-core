@@ -14,6 +14,8 @@ EnvironmentFile=-/etc/default/bios__%n.conf
 EnvironmentFile=-/etc/default/bios-db-ro
 PermissionsStartOnly=true
 ExecStart=@libexecdir@/@PACKAGE@/warranty-metric
+# TODO: Is it really a timer or an ordinary service? What is it intended to be?
+#Restart=always
 
 [Install]
 WantedBy=bios.target
