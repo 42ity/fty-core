@@ -439,6 +439,8 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
 
         if ( match_ext_attr (value, key) )
         {
+            // ACE: temporary disabled
+            /*
             if ( key == "serial_no" )
             {
 
@@ -450,6 +452,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
                 }
                 continue;
             }
+            */
             zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
         }
     }
