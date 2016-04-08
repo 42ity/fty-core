@@ -59,7 +59,7 @@ s_metric_store(zsock_t *pipe, void* args)
 
     persist::TopicCache topic_cache{10*1024};
     persist::MultiRowCache multi_row;
-    
+
     cxxtools::Regex warranty_subject{"^end_warranty_date@.*$"};
 
     mlm_client_t *client = mlm_client_new ();
@@ -83,8 +83,15 @@ s_metric_store(zsock_t *pipe, void* args)
             zmsg_destroy (&msg);
             continue;
         }
-
-        persist::process_measurement(&msg, topic_cache,multi_row);
+        if ( ( strncmp(mlm_client_subject(client), "inventory", 9) == 0 ) ||
+             ( strncmp(mlm_client_subject(client), "configure", 9) == 0 ) )
+        {
+            // do nothing, as these messages are not actually metrics
+        }
+        else {
+            // process metric
+            persist::process_measurement(&msg, topic_cache,multi_row);
+        }
 
         zmsg_destroy (&msg);
     }
@@ -120,8 +127,7 @@ int main (int argc, char *argv []) {
         log_error ("agent-dbstore: error bios_agent_new ()");
         return 1;
     }
-
-    bios_agent_set_consumer(client, bios_get_stream_main(), ".*");
+    // this part handles only mailbox messages, metrics are handled in the actor
     while(!zsys_interrupted) {
 
         _scoped_ymsg_t *in = bios_agent_recv(client);
@@ -156,25 +162,8 @@ int main (int argc, char *argv []) {
             ymsg_destroy(&out);
             free(out_subj);
         }
-        // stream deliver
-        else if (streq (command, "STREAM DELIVER")) {
-
-            if (strncmp(bios_agent_subject(client), "inventory", 9) == 0 ) {
-                log_debug ("inventory message recieved, ignoring it. In future this should never happen");
-            }
-            else if (strncmp(bios_agent_subject(client), "configure", 9) == 0 ) {
-                log_debug ("configure message recieved, ignoring it. In future this should never happen");
-            }
-            else {
-                /* TODO: Previously everything not specified above was
-                 * ignored silently. Now it is loud. No idea if anything
-                 * SHOULD be done about such messages. //Jim 2016-01-26 */
-                log_debug ("%s STREAM DELIVERed message recieved, ignoring it", bios_agent_subject(client));
-            }
-        }
-
         else {
-                log_warning("Unsupported command '%s'", command);
+            log_warning("Unsupported command '%s'", command);
         }
         ymsg_destroy (&in);
     }
