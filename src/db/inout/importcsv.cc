@@ -440,6 +440,10 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
         if ( match_ext_attr (value, key) )
         {
             // ACE: temporary disabled
+            // for testing purposes for rabobank usecase
+            // IMHO: There is no sense to check it at all
+            //   * as we cannot guarantee that manufacturers in the whole world use UNIQUE serial numbers
+            //   * not unique serial number of the device should not forbid users to monitor their devices
             /*
             if ( key == "serial_no" )
             {
