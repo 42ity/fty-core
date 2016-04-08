@@ -8,7 +8,7 @@ ExecStartPre=/usr/bin/ssh-keygen -A
 ExecStart=/usr/sbin/sshd -D $SSHD_OPTS -p 4222
 ExecReload=/bin/kill -HUP $MAINPID
 KillMode=process
-Restart=on-failure
+Restart=always
 
 [Install]
 WantedBy=multi-user.target
