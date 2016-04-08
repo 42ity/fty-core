@@ -16,6 +16,7 @@ EnvironmentFile=-/etc/default/bios__%n.conf
 #
 EnvironmentFile=-/etc/default/bios-db-ro
 ExecStart=@libexecdir@/@PACKAGE@/agent-cm
+Restart=always
 
 [Install]
 WantedBy=bios.target
