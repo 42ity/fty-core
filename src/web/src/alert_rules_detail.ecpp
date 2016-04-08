@@ -83,11 +83,30 @@ if (mlm_client_sendto (client, BIOS_AGENT_NAME_ALERT_AGENT, "rfc-evaluator-rules
 }
 
 zmsg_t *recv_msg = NULL;
-// TODO: blocking mlm_client_recv
+zsock_t *pipe = mlm_client_msgpipe (client);
+if (!pipe) {
+    log_critical ("mlm_client_msgpipe() failed.");
+    http_die ("internal-error", "mlm_client_msgpipe() failed.");
+}
+zpoller_t *poller = zpoller_new (pipe, NULL);
+if (!poller) {
+    log_critical ("zpoller_new() failed.");
+    http_die ("internal-error", "zpoller_new() failed.");
+}
 while (true) {
-    recv_msg = mlm_client_recv (client);
+    zsock_t *which = (zsock_t *) zpoller_wait (poller, 5000);
+    if (which) {
+        recv_msg = mlm_client_recv (client);
+    }
     if (!recv_msg) {
+        if (zpoller_expired (poller)) {
+            log_error ("zpoller_wait(timeout = 5000) timed out waiting for message.");
+            mlm_client_destroy (&client);
+            zpoller_destroy (&poller);
+            http_die ("internal-error", "Timed out waiting for message.");
+        }
         log_error ("mlm_client_recv() failed.");
+        zpoller_destroy (&poller);
         mlm_client_destroy (&client);
         http_die ("internal-error", "mlm_client_recv() failed.");
     }
