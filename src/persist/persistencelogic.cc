@@ -89,7 +89,7 @@ void process_measurement(
 
     quantity = strdup (bios_proto_type (m));
     device_name = strdup (bios_proto_element_src (m));
-    db_topic = std::string (quantity) + "@" + device_name;
+    db_topic = std::string (quantity) + "@" + std::string(device_name);
     _time = (time_t) tme;
 
     if (!strstr (bios_proto_value (m), ".")) {
