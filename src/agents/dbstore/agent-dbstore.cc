@@ -83,15 +83,8 @@ s_metric_store(zsock_t *pipe, void* args)
             zmsg_destroy (&msg);
             continue;
         }
-        if ( ( strncmp(mlm_client_subject(client), "inventory", 9) == 0 ) ||
-             ( strncmp(mlm_client_subject(client), "configure", 9) == 0 ) )
-        {
-            // do nothing, as these messages are not actually metrics
-        }
-        else {
-            // process metric
-            persist::process_measurement(&msg, topic_cache,multi_row);
-        }
+        // process metric
+        persist::process_measurement(&msg, topic_cache,multi_row);
 
         zmsg_destroy (&msg);
     }
