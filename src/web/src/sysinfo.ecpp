@@ -1,6 +1,6 @@
 <#
  #
- # Copyright (C) 2015 Eaton
+ # Copyright (C) 2015-2016 Eaton
  #
  # This program is free software; you can redistribute it and/or modify
  # it under the terms of the GNU General Public License as published by
@@ -326,15 +326,32 @@ std::string debug_trace;
                         }
 
                         if (gotPreparedJson == true) {
-                            if ( (ftxt[0]=='{' && ftxt[fsize-1]=='}') ||
-                                 (ftxt[0]=='[' && ftxt[fsize-1]==']')
-                            ) {
-                                ftxt[0]=' ';
-                                ftxt[fsize-1]=' ';
+                        /* After JSON validation above, we can be certain that
+                         * the object in the file is surrounded by brackets...
+                         * which we don't need for this output! */
+                            size_t o=0, c=0;
+                            for (c=fsize; c>0; c--) {
+                                if ( ftxt[c] == '}' || ftxt[c] == ']' ) { break; }
                             }
+
+                            for (o=0; o<c; o++ ) {
+                                if ( ftxt[o] == '{' || ftxt[o] == '[' ) { break; }
+                            }
+
+                            if ( c>o && (
+                                 (ftxt[o]=='{' && ftxt[c]=='}') ||
+                                 (ftxt[o]=='[' && ftxt[c]==']')
+                            ) ) {
+                                ftxt[o]=' ';
+                                ftxt[c]=' ';
 </%cpp>
 ,       <$$ ftxt $>
 <%cpp>
+                            } else {
+                                gotPreparedJson = false;
+                                log_error("Did not find matching brackets to remove from '%s' - invalid JSON markup, ignoring the file\n",
+                                    BIOS_RELEASE_JSON_FILE.c_str());
+                            }
                         }
                     } else {
                         log_error("Read only %" PRIu64 " out of %" PRIu64 " bytes from '%s' - ignoring the file\n",
