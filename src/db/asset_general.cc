@@ -60,7 +60,7 @@ int
         return 1;
     }
 
-    auto ret2 = delete_asset_ext_attributes
+    auto ret2 = delete_asset_ext_attributes_all
         (conn, element_id);
     if ( ret2.status == 0 )
     {
@@ -139,7 +139,7 @@ int
         return 1;
     }
 
-    auto ret2 = delete_asset_ext_attributes
+    auto ret2 = delete_asset_ext_attributes_all
         (conn, element_id);
     if ( ret2.status == 0 )
     {
@@ -411,7 +411,7 @@ db_reply_t
     LOG_START;
     tntdb::Transaction trans(conn);
 
-    auto reply_delete1 = delete_asset_ext_attributes (conn, element_id);
+    auto reply_delete1 = delete_asset_ext_attributes_all (conn, element_id);
     if ( reply_delete1.status == 0 )
     {
         trans.rollback();
@@ -533,7 +533,7 @@ db_reply_t
     LOG_START;
     tntdb::Transaction trans(conn);
 
-    auto reply_delete1 = delete_asset_ext_attributes (conn, element_id);
+    auto reply_delete1 = delete_asset_ext_attributes_all (conn, element_id);
     if ( reply_delete1.status == 0 )
     {
         trans.rollback();
@@ -571,7 +571,7 @@ db_reply_t
     LOG_START;
     tntdb::Transaction trans(conn);
 
-    auto reply_delete1 = delete_asset_ext_attributes (conn, element_id);
+    auto reply_delete1 = delete_asset_ext_attributes_all (conn, element_id);
     if ( reply_delete1.status == 0 )
     {
         trans.rollback();
