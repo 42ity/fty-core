@@ -479,9 +479,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             auto ret = update_dc_room_row_rack_group
                 (conn, m.id, name.c_str(), type_id, parent_id,
                  extattributes, status.c_str(), priority, groups, asset_tag, errmsg);
-            if ( ( ret ) || ( !errmsg.empty() ) )
-            {
-                //TODO: redo the update_dc_room_row_rack_group
+            if ( ( ret ) || ( !errmsg.empty() ) ) {
                 throw std::invalid_argument(errmsg);
             }
         }
@@ -490,13 +488,10 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             auto ret = update_device
                 (conn, m.id, name.c_str(), type_id, parent_id,
                  extattributes, status.c_str(), priority, groups, links, asset_tag, errmsg);
-            if ( ( ret ) || ( !errmsg.empty() ) )
-            {
-                //TODO: redo the update_dc_room_row_rack_group
+            if ( ( ret ) || ( !errmsg.empty() ) ) {
                 throw std::invalid_argument(errmsg);
             }
         }
-
     }
     else
     {
@@ -506,8 +501,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             auto ret = insert_dc_room_row_rack_group
                 (conn, name.c_str(), type_id, parent_id,
                  extattributes, status.c_str(), priority, groups, asset_tag);
-            if ( ret.status != 1 )
-            {
+            if ( ret.status != 1 ) {
                 throw BiosError(ret.rowid, ret.msg);
             }
             m.id = ret.rowid;
@@ -518,8 +512,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             auto ret = insert_device (conn, links, groups, name.c_str(),
                     parent_id, extattributes, subtype_id, subtype.c_str(), status.c_str(),
                     priority, asset_tag);
-            if ( ret.status != 1 )
-            {
+            if ( ret.status != 1 ) {
                 throw BiosError(ret.rowid, ret.msg);
             }
             m.id = ret.rowid;
