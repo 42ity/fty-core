@@ -175,26 +175,28 @@ init_script_rack_power
 print_result $? || CODE=$? die "Could not prepare database"
 
 # This program is delivered by another repo, should "just exist" in container
-logmsg_info "Spawning the bios-agent-legacy-metrics service in the background..."
+logmsg_info "Spawning the bios-agent-legacy-metrics daemon in the background..."
+/bin/systemctl stop bios-agent-legacy-metrics || true
 bios-agent-legacy-metrics ipc://@/malamute legacy-metrics bios METRICS &
 [ $? = 0 ] || CODE=$? die "Could not spawn bios-agent-legacy-metrics"
 AGLEGMETPID=$!
 
 # TODO: this requirement should later become the REST AGENT
-logmsg_info "Spawning the agent-dbstore server in the background..."
+logmsg_info "Spawning the agent-dbstore daemon in the background..."
 ${BUILDSUBDIR}/agent-dbstore &
 [ $? = 0 ] || CODE=$? die "Could not spawn agent-dbstore"
 DBNGPID=$!
 
-logmsg_info "Spawning the agent-nut server in the background..."
+logmsg_info "Spawning the agent-nut daemon in the background..."
 ${BUILDSUBDIR}/agent-nut "$CHECKOUTDIR/src/agents/nut/mapping.conf" &
 [ $? = 0 ] || CODE=$? die "Could not spawn agent-nut"
 AGNUTPID=$!
 
-logmsg_info "Spawning the agent-tpower service in the background..."
-#TODO JIM please fix me!
-${BUILDSUBDIR}/agent-tpower &
-[ $? = 0 ] || CODE=$? die "Could not spawn agent-tpower"
+# This program is delivered by another repo, should "just exist" in container
+logmsg_info "Spawning the bios_agent_tpower daemon in the background..."
+/bin/systemctl stop bios_agent_tpower || true
+bios_agent_tpower &
+[ $? = 0 ] || CODE=$? die "Could not spawn bios_agent_tpower"
 AGPWRPID=$!
 
 
