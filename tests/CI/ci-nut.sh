@@ -51,6 +51,30 @@ AGNUTPID=""
 AGPWRPID=""
 AGLEGMETPID=""
 DBNGPID=""
+stop_dbstore() {
+#    if isRemoteSUT ; then
+#        sut_run "systemctl stop bios-agent-dbstore"
+#    else
+        if [ -n "$DBNGPID" -a -d "/proc/$DBNGPID" ]; then
+            logmsg_info "Killing agent-dbstore PID $DBNGPID to flush and exit"
+            kill -INT "$DBNGPID"
+        fi
+        DBNGPID=""
+#    fi
+}
+
+start_dbstore() {
+#    if isRemoteSUT ; then
+#        sut_run "systemctl start bios-agent-dbstore"
+#    else
+        # TODO: this requirement should later become the REST AGENT
+        logmsg_info "Spawning the agent-dbstore daemon in the background..."
+        ${BUILDSUBDIR}/agent-dbstore &
+        [ $? = 0 ] || CODE=$? die "Could not spawn agent-dbstore"
+        DBNGPID=$!
+#    fi
+}
+
 kill_daemons() {
     set +e
     if [ -n "$AGNUTPID" -a -d "/proc/$AGNUTPID" ]; then
@@ -65,10 +89,7 @@ kill_daemons() {
         logmsg_info "Killing bios-agent-legacy-metrics PID $AGLEGMETPID to exit"
         kill -INT "$AGLEGMETPID"
     fi
-    if [ -n "$DBNGPID" -a -d "/proc/$DBNGPID" ]; then
-        logmsg_info "Killing agent-dbstore PID $DBNGPID to exit"
-        kill -INT "$DBNGPID"
-    fi
+    stop_dbstore
 
     killall -INT bios-agent-legacy-metrics bios_agent_tpower lt-bios_agent_tpower agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
     killall      bios-agent-legacy-metrics bios_agent_tpower lt-bios_agent_tpower agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
@@ -181,11 +202,7 @@ bios-agent-legacy-metrics ipc://@/malamute legacy-metrics bios METRICS &
 [ $? = 0 ] || CODE=$? die "Could not spawn bios-agent-legacy-metrics"
 AGLEGMETPID=$!
 
-# TODO: this requirement should later become the REST AGENT
-logmsg_info "Spawning the agent-dbstore daemon in the background..."
-${BUILDSUBDIR}/agent-dbstore &
-[ $? = 0 ] || CODE=$? die "Could not spawn agent-dbstore"
-DBNGPID=$!
+start_dbstore
 
 logmsg_info "Spawning the agent-nut daemon in the background..."
 ${BUILDSUBDIR}/agent-nut "$CHECKOUTDIR/src/agents/nut/mapping.conf" &
@@ -237,9 +254,14 @@ for UPS in $UPS1 $UPS2 ; do
                 print_result 1 "Failed to see that we could set $PARAM value to $NEWVALUE in NUT dummy driver"
             fi
         done
-        logmsg_debug "`date`: Sleeping 68sec to propagate measurements..."
-        sleep 68  # some time for propagating into DB (poll every 5s in nut actor + some time to process), and agent-dbstore can have its own delays to queue up writes (30+ sec)
-        logmsg_debug "`date`: Sleeping time is over!"
+
+        logmsg_debug "`date`: Sleeping some time and restarting agent-dbstore to propagate measurements and flush database..."
+        sleep 18  # some time for propagating into DB (poll every 5s in nut actor + some time to process), and agent-dbstore can have its own delays to queue up writes (10 sec by default)
+        stop_dbstore
+        sleep 8
+        start_dbstore
+        sleep 8
+        logmsg_debug "`date`: Sleep time is over!"
 
         for i in $(seq 0 $PARAMSCNT); do
             PARAM="${PARAMS[$i]}"
