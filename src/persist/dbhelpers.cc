@@ -219,16 +219,30 @@ sql_plac(
     return "item" + std::to_string(i) + "_" + std::to_string(j);
 }
 
+// for backward compatibility
 std::string
-multi_insert_string(
+    multi_insert_string(
         const std::string& sql_header,
         size_t tuple_len,
-        size_t items_len)
+        size_t items_len
+)
+{
+    return multi_insert_string(sql_header,tuple_len,items_len, "");
+}
+
+
+std::string
+    multi_insert_string(
+        const std::string& sql_header,
+        size_t tuple_len,
+        size_t items_len,
+        const std::string& sql_postfix
+)
 {
     std::stringstream s{};
 
     s << sql_header;
-    s << "\nVALUES";
+    s << "\nVALUES ";
     for (size_t i = 0; i != items_len; i++) {
         s << "(";
         for (size_t j = 0; j != tuple_len; j++) {
@@ -241,7 +255,7 @@ multi_insert_string(
         else
             s << ")\n";
     }
-
+    s << sql_postfix;
     return s.str();
 }
 

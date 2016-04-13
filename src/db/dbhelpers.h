@@ -366,7 +366,24 @@ sql_plac(
 /**
  * \brief Generate the SQL string for multivalue insert
  *
- * multi_insert_string("INSERT INTO t_bios_foo", 2, 3) ->
+ * multi_insert_string("INSERT INTO t_bios_foo", 2, 3, "ON DUPLICATE KEY ....") ->
+ * 'INSERT INTO t_bios_foo (foo, bar)
+ * VALUES(:item0_0, :item0_1),
+ * (:item1_0, :item1_1),
+ * (:item2_0, :item2_1)
+ *  ON DUPLICATE KEY UPDATE ...'
+*/
+std::string
+multi_insert_string(
+        const std::string& sql_header,
+        size_t tuple_len,
+        size_t items_len,
+        const std::string& sql_postfix);
+
+/**
+ * \brief Generate the SQL string for multivalue insert
+ *
+ * multi_insert_string("INSERT INTO t_bios_foo", 2, 3, "ON DUPLICATE KEY ....") ->
  * 'INSERT INTO t_bios_foo (foo, bar)
  * VALUES(:item0_0, :item0_1),
  * (:item1_0, :item1_1),
