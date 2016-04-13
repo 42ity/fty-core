@@ -53,7 +53,6 @@ db_reply_t
         MultiRowCache     &m)
 {
     db_reply_t ret = db_reply_new();
-    
 
     if ( !units ) {
         ret.status     = 0;
@@ -69,6 +68,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "NULL or malformed value of topic is not allowed";
+        log_error("NULL or malformed value of topic is not allowed: got '%s'", topic ? topic : "<NULL>" );
         log_error("end: %s", ret.msg.c_str());
         return ret;
     }
@@ -82,12 +82,12 @@ db_reply_t
         log_error("end: %s", ret.msg.c_str());
         return ret;
     }
-    
+
     try {
         tntdb::Statement st;
-        
+
         m_msrmnt_tpc_id_t topic_id = prepare_topic(conn, topic, units, device_name, c);
-        
+
         if(topic_id!=0){
             if(m.get_max_row()>1 ){
                 //multiple row insertion request
