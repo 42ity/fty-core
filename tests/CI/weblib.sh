@@ -430,7 +430,8 @@ _api_get_token() {
     _RES_=0
     if [ -z "$_TOKEN_" ]; then
         AUTH_URL="/oauth2/token"
-        AUTH_DATA="username=${BIOS_USER}&password=${BIOS_PASSWD}&grant_type=password"
+#        AUTH_DATA="username=${BIOS_USER}&password=${BIOS_PASSWD}&grant_type=password"
+        AUTH_DATA="{\"username\":\"`jsonsh_cli -QQ "${BIOS_USER}"`\",\"password\":\"`jsonsh_cli -QQ "${BIOS_PASSWD}"`\",\"grant_type\":\"password\"}"
         [ x"$WEBLIB_CURLFAIL_GETTOKEN" = xprotected ] && \
             curlfail_push_expect_noerrors
         _TOKEN_RAW_="`set +x; api_post "$AUTH_URL" "$AUTH_DATA"`" || _RES_=$?
