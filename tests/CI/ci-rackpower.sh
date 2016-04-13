@@ -410,8 +410,8 @@ testcase() {
                 ;;
             esac
 
-            logmsg_debug "Sleeping 8sec to propagate measurements..."
-            sleep 8  # 8s is max time for propagating into DB (poll ever 5s in nut actor + some time to process)
+            logmsg_debug "Sleeping 68sec to propagate measurements..."
+            sleep 68  # some time for propagating into DB (poll every 5s in nut actor + some time to process), and agent-dbstore can have its own delays to queue up writes (30+ sec)
             logmsg_debug "Sleep time is over!"
 
             test_it "verify_total_power_restapi:$RACK:$DEV:$SAMPLECURSOR"
