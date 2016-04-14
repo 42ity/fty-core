@@ -125,7 +125,7 @@ else
 
         test_it "sysinfo_get_auth=2"
         RES=0
-        SYSINFOA="`api_auth_get_json '/admin/sysinfo'`" || \
+        SYSINFOA="`api_auth_get_json '/admin/sysinfo?detail=yes'`" || \
             RES=$?
         #echo "=== SYSINFOA ($RES):" >&2
         #echo "$SYSINFOA" >&2
