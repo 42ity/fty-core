@@ -73,19 +73,24 @@ s_metric_store(zsock_t *pipe, void* args)
     while (!zsys_interrupted) {
 
         void * which = zpoller_wait (poller, 1000);
-
-        if (!which){
-            //check timeout to see if we need to flush 
+        if ( ( which == NULL ) && (zpoller_expired (poller) ) ) {
+            // timeout
             if(multi_row.is_ready_for_insert()){
                 persist::flush_measurement(multi_row);
             }
             continue;
         }
-        if (which == pipe){
-            //zsys_interrupted now
+        if ( ( which == NULL ) && ( zpoller_terminated (poller) ) ) {
+            zsys_info ("zpoller was terminated, I am going to shut down");
+            // terminated !!!
             break;
         }
-        
+
+        if (which == pipe){
+            zsys_info ("unexpected command on pipe, I am going to shut down");
+            // we do not expect any command through the pipe
+            break;
+        }
         zmsg_t *msg = mlm_client_recv (client);
 
         if (warranty_subject.match (mlm_client_subject (client))) {
