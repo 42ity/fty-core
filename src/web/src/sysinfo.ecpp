@@ -450,7 +450,6 @@ void sysinfo_plain (std::string& output) {
     "\t\"restapi-metadata\" : {\n"
     "\t\t\"core-package\" : {\n";
 
-    output += ",\t\t\t";
     output += utils::json::jsonify ("package-version", PACKAGE_VERSION);
     output += "\n";
 
