@@ -55,7 +55,7 @@ curlfail_pop
 
 # Check setting time as privileged user
 # NOTE: Doesn't work within lxc
-SYSINFO="`api_get_json '/admin/sysinfo'`"
+SYSINFO="`api_get_json '/admin/sysinfo?detail=yes'`"
 RES=$?
 JPATH='"operating-system","container"'
 SYSINFO_CONTAINER="`echo "$SYSINFO" | jsonsh_cli -x="$JPATH"`" || RES=$?
