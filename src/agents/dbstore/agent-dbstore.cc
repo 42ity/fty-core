@@ -72,11 +72,20 @@ s_metric_store(zsock_t *pipe, void* args)
 
     while (!zsys_interrupted) {
 
-        void * which = zpoller_wait (poller, -1);
+        void * which = zpoller_wait (poller, 1000);
 
-        if (!which || which == pipe)
+        if (!which){
+            //check timeout to see if we need to flush 
+            if(multi_row.is_ready_for_insert()){
+                persist::flush_measurement(multi_row);
+            }
+            continue;
+        }
+        if (which == pipe){
+            //zsys_interrupted now
             break;
-
+        }
+        
         zmsg_t *msg = mlm_client_recv (client);
 
         if (warranty_subject.match (mlm_client_subject (client))) {

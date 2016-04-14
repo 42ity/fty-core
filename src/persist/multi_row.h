@@ -41,8 +41,8 @@ class MultiRowCache {
         MultiRowCache ();
         MultiRowCache ( const int32_t max_row,const int32_t max_delay_s )
         {
-            _max_row=max_row;
-            _max_delay_s=max_delay_s;
+            _max_row = max_row;
+            _max_delay_s = max_delay_s;
         }
         
 
@@ -61,7 +61,8 @@ class MultiRowCache {
         
         string get_insert_query();
         
-        void clear(){_row_cache.clear();}
+        void clear(){_row_cache.clear(); reset_clock();}
+        void reset_clock(){_first_ms = get_clock_ms();}
         
         uint32_t get_max_row(){return _max_row;}
         
@@ -74,7 +75,7 @@ class MultiRowCache {
         uint32_t _max_row;
         
         long get_clock_ms();
-        long _first_ms;
+        long _first_ms = get_clock_ms();;
 };
 
 }
