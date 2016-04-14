@@ -24,6 +24,12 @@
  * \brief Validates and manages license acceptance
  */
  #><%pre>
+
+/** The GNU version of basename allocate the memory, while POSIX modify input
+ * buffer. While POSIX behavior is weird, is already expected. This line tries
+ * to avoid usage of GNU version of basename */
+#undef _GNU_SOURCE
+
 #include <unistd.h>
 #include <iostream>
 #include <stdio.h>
@@ -86,6 +92,9 @@ if(rex_lic.match(request.getUrl())) {
 				log_debug("Error reading license version number from symlink name '%s' (got empty buffer)", current_license);
 			http_die("internal-error", "Error saving license acceptance or getting license version, check integrity of storage.");
 		}
+
+        /* We're interested only on version (eg. the filename) there - there's a difference between rhel and Debian, so lets make it explicitelly */
+        basename (buff);
 
 		/* Identify user */
 		char *user = NULL;
