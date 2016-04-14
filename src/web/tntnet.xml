@@ -61,7 +61,7 @@
     <!-- Implementation tests (int)access_auth_level variable to limit visibility of some data -->
     <mapping>
       <target>sysinfo@bios_web</target>
-      <url>^/api/v1/admin/sysinfo$</url>
+      <url>^/api/v1/admin/sysinfo(/?|\?.+=.+)$</url>
     </mapping>
 
     <!-- Token revocation -->

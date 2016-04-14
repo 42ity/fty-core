@@ -119,9 +119,9 @@ void get_installation_date (const std::string& file, std::string& installation_d
     catch (const std::exception& e) {
         log_error ("Exception caught: %s", e.what ());
     }
-} 
+}
 
-void sysinfo_detail (std::string& output, tnt::HttpRequest& request) {
+void sysinfo_detail (std::string& output, tnt::HttpRequest& request, int8_t access_auth_level) {
     output.clear ();
 
 
@@ -134,7 +134,7 @@ void sysinfo_detail (std::string& output, tnt::HttpRequest& request) {
     output += "{\n"
     "\t\"operating-system\" : {\n";
 
-    std::string container_info;    
+    std::string container_info;
     {
         log_debug ("shared::output2 (args = '{\"/usr/bin/systemd-detect-virt\", \"-c\"}') starting");
         int rv = shared::output2 ({"/usr/bin/systemd-detect-virt", "-c"}, container_info, 0, 100);
@@ -168,7 +168,7 @@ void sysinfo_detail (std::string& output, tnt::HttpRequest& request) {
             hypervisor_info[output_len-1] = '\0';
         }
     }
-    output += ",\t\t";   
+    output += ",\t\t";
     output += utils::json::jsonify ("hypervisor", hypervisor_info.c_str());
     output += "\n";
 
@@ -190,17 +190,17 @@ void sysinfo_detail (std::string& output, tnt::HttpRequest& request) {
         output += "\n";
 
         output += ",\t\t\t";
-        output += utils::json::jsonify ("release", u.release);
+        output += utils::json::jsonify ("release", (access_auth_level<=AUTH_LEVEL_ANONYMOUS) ? UNAUTHORIZED : u.release );
         output += "\n";
 
         output += ",\t\t\t";
-        output += utils::json::jsonify ("version", u.version);
+        output += utils::json::jsonify ("version", (access_auth_level<=AUTH_LEVEL_ANONYMOUS) ? UNAUTHORIZED : u.version );
         output += "\n";
 
         output += ",\t\t\t";
         output += utils::json::jsonify ("machine", u.machine);
         output += "\n";
-        
+
         output += "\t\t}\n"; // "uname" closing bracket
     }
 
@@ -212,17 +212,17 @@ void sysinfo_detail (std::string& output, tnt::HttpRequest& request) {
         accepted_license = NULL;
     }
 
-    output += ",\t\t";   
+    output += ",\t\t";
     output += utils::json::jsonify ("installation-date", installation_date);
     output += "\n";
- 
+
     std::string location = "N/A - Error retrieving location";
-    get_location (location);  
+    get_location (location);
 
     output += ",\t\t";
     output += utils::json::jsonify ("location", location);
     output += "\n";
-    
+
     output += "\t}\n"; // "operating-system" closing bracket
 
     output += ",\t\"restapi-metadata\" : {\n";
@@ -254,194 +254,198 @@ void sysinfo_detail (std::string& output, tnt::HttpRequest& request) {
 
     output += "\t}\n"; // "core-package" closing bracket
 
+    if (access_auth_level >= AUTH_LEVEL_POWERUSER) {
 #ifdef HAVE_PACKAGE_GIT
-    output += ",\t\"source-repo\" : {\n";
+        output += ",\t\"source-repo\" : {\n";
 
-    output += "\t\t";
-    output += utils::json::jsonify ("scm", "git");
-    output += "\n";
+        output += "\t\t";
+        output += utils::json::jsonify ("scm", "git");
+        output += "\n";
 
-    output += ",\t\t";
-    output.append ("\"origin\" : \"").append (PACKAGE_GIT_ORIGIN_ESCAPED).append ("\"");
-    output += "\n";
+        output += ",\t\t";
+        output.append ("\"origin\" : \"").append (PACKAGE_GIT_ORIGIN_ESCAPED).append ("\"");
+        output += "\n";
 
-    output += ",\t\t";
-    output.append ("\"branch\" : \"").append (PACKAGE_GIT_BRANCH_ESCAPED).append ("\"");
-    output += "\n";
+        output += ",\t\t";
+        output.append ("\"branch\" : \"").append (PACKAGE_GIT_BRANCH_ESCAPED).append ("\"");
+        output += "\n";
 
-    output += ",\t\t";
-    output.append ("\"commit\" : \"").append (PACKAGE_GIT_HASH_L_ESCAPED).append ("\"");
-    output += "\n";
+        output += ",\t\t";
+        output.append ("\"commit\" : \"").append (PACKAGE_GIT_HASH_L_ESCAPED).append ("\"");
+        output += "\n";
 
-    output += ",\t\t";
-    output.append ("\"commit-timestamp\" : \"").append (PACKAGE_GIT_TSTAMP_ESCAPED).append ("\"");
-    output += "\n";
+        output += ",\t\t";
+        output.append ("\"commit-timestamp\" : \"").append (PACKAGE_GIT_TSTAMP_ESCAPED).append ("\"");
+        output += "\n";
 
-    output += ",\t\t";
-    output.append ("\"commit-timestamp-iso8601\" : \"").append (PACKAGE_GIT_TSTAMP_ISO8601_ESCAPED).append ("\"");
-    output += "\n";
+        output += ",\t\t";
+        output.append ("\"commit-timestamp-iso8601\" : \"").append (PACKAGE_GIT_TSTAMP_ISO8601_ESCAPED).append ("\"");
+        output += "\n";
 
-    output += ",\t\t";
-    output.append ("\"status\" : \"").append (PACKAGE_GIT_STATUS_ESCAPED).append ("\"");
-    output += "\n";
+        output += ",\t\t";
+        output.append ("\"status\" : \"").append (PACKAGE_GIT_STATUS_ESCAPED).append ("\"");
+        output += "\n";
 
-    output += "\t}\n"; // "source-repo" closing bracket
+        output += "\t}\n"; // "source-repo" closing bracket
 
 # endif // HAVE_PACKAGE_GIT
 
 #if defined(HAVE_PACKAGE_BUILD_HOST) || defined(HAVE_PACKAGE_BUILD_TSTAMP)
-    output += ",\t\"build-info\" : {\n";
+        output += ",\t\"build-info\" : {\n";
 #ifdef HAVE_PACKAGE_BUILD_HOST
-    output += "\t\t";
-    output.append ("\"build-host-name\" : \"").append (PACKAGE_BUILD_HOST_NAME_ESCAPED).append ("\"");
-    output += "\n";
+        output += "\t\t";
+        output.append ("\"build-host-name\" : \"").append (PACKAGE_BUILD_HOST_NAME_ESCAPED).append ("\"");
+        output += "\n";
 
-    output += ",\t\t";
-    output.append ("\"build-host-os\" : \"").append (PACKAGE_BUILD_HOST_OS_ESCAPED).append ("\"");
-    output += "\n";
+        output += ",\t\t";
+        output.append ("\"build-host-os\" : \"").append (PACKAGE_BUILD_HOST_OS_ESCAPED).append ("\"");
+        output += "\n";
 
-    output += ",\t\t";
-    output.append ("\"build-host-uname\" : \"").append (PACKAGE_BUILD_HOST_UNAME_ESCAPED).append ("\"");
-    output += "\n";
+        output += ",\t\t";
+        output.append ("\"build-host-uname\" : \"").append (PACKAGE_BUILD_HOST_UNAME_ESCAPED).append ("\"");
+        output += "\n";
 #ifdef HAVE_PACKAGE_BUILD_TSTAMP
-    output += ",";
+        output += ",";
 #endif
 #endif // HAVE_PACKAGE_BUILD_HOST
 
 #ifdef HAVE_PACKAGE_BUILD_TSTAMP
-    output += "\t\t";
-    output.append ("\"build-timestamp\" : \"").append (PACKAGE_BUILD_TSTAMP_ESCAPED).append ("\"");
-    output += "\n";
+        output += "\t\t";
+        output.append ("\"build-timestamp\" : \"").append (PACKAGE_BUILD_TSTAMP_ESCAPED).append ("\"");
+        output += "\n";
 
-    output += ",\t\t";
-    output.append ("\"build-timestamp-iso8601\" : \"").append (PACKAGE_BUILD_TSTAMP_ISO8601_ESCAPED).append ("\"");
-    output += "\n";
+        output += ",\t\t";
+        output.append ("\"build-timestamp-iso8601\" : \"").append (PACKAGE_BUILD_TSTAMP_ISO8601_ESCAPED).append ("\"");
+        output += "\n";
 #endif // HAVE_PACKAGE_BUILD_TSTAMP
-    output += "\t}\n"; // "build-info" closing bracket
+        output += "\t}\n"; // "build-info" closing bracket
 # endif // HAVE_PACKAGE_BUILD_*: HOST and/or TSTAMP
 
-    static const std::string BIOS_RELEASE_JSON_FILE = "/etc/bios-release.json";
-    static const std::string BIOS_IMAGE_VERSION_FILE = "/usr/share/bios-web/image-version.txt";
-    static const std::string BIOS_WEBUI_VERSION_FILE = "/usr/share/bios-web/version.txt";
+        static const std::string BIOS_RELEASE_JSON_FILE = "/etc/bios-release.json";
+        static const std::string BIOS_IMAGE_VERSION_FILE = "/usr/share/bios-web/image-version.txt";
+        static const std::string BIOS_WEBUI_VERSION_FILE = "/usr/share/bios-web/version.txt";
 
-    try {
-        std::ifstream in (BIOS_RELEASE_JSON_FILE, std::ios::in | std::ios::binary);
-        if (!in) {
-            throw std::runtime_error ("Could not open file.");
-        }
+        try {
+            std::ifstream in (BIOS_RELEASE_JSON_FILE, std::ios::in | std::ios::binary);
+            if (!in) {
+                throw std::runtime_error ("Could not open file.");
+            }
 
-        std::ostringstream tmp;
-        tmp << in.rdbuf();
-        in.close(); // 
-        std::string bios_release (tmp.str ());
+            std::ostringstream tmp;
+            tmp << in.rdbuf();
+            in.close();
+            std::string bios_release (tmp.str ());
 
-        std::stringstream input (bios_release, std::ios_base::in);
-        cxxtools::JsonDeserializer deserializer (input);
-        cxxtools::SerializationInfo si;
-        deserializer.deserialize (si);
+            std::stringstream input (bios_release, std::ios_base::in);
+            cxxtools::JsonDeserializer deserializer (input);
+            cxxtools::SerializationInfo si;
+            deserializer.deserialize (si);
 
-        if (si.category () != cxxtools::SerializationInfo::Category::Object) {
-            throw std::runtime_error ("Document root type is not Json Object.");
-        }
+            if (si.category () != cxxtools::SerializationInfo::Category::Object) {
+                throw std::runtime_error ("Document root type is not Json Object.");
+            }
 
-        if (si.memberCount () == 0) {
-            throw std::runtime_error ("Root json object is empty.");
+            if (si.memberCount () == 0) {
+                throw std::runtime_error ("Root json object is empty.");
+            }
+            std::size_t index = bios_release.find_first_of ("{");
+            if (index != std::string::npos) {
+                bios_release.erase (index, 1);
+            }
+            index =  bios_release.find_last_of ("}");
+            if (index != std::string::npos) {
+                bios_release.erase (index, 1);
+            }
+            output += ", ";
+            output += bios_release;
         }
-        std::size_t index = bios_release.find_first_of ("{");
-        if (index != std::string::npos) {
-            bios_release.erase (index, 1);
+        catch (const std::exception& e) {
+            log_warning (
+                "Could not display 'bios-release' section of 'restapi-metadata' that is read from file '%s' "
+                "because the following error happened: '%s'",
+                BIOS_RELEASE_JSON_FILE.c_str(), e.what ());
         }
-        index =  bios_release.find_last_of ("}");
-        if (index != std::string::npos) {
-            bios_release.erase (index, 1);
-        }
-        output += ", ";
-        output += bios_release;
-    }
-    catch (const std::exception& e) {
-        log_warning (
-            "Could not display 'bios-release' section of 'restapi-metadata' that is read from file '%s' "
-            "because the following error happened: '%s'",
-            BIOS_RELEASE_JSON_FILE.c_str(), e.what ());
-    }
+    } // if (access_auth_level >= AUTH_LEVEL_POWERUSER) clause closing bracket
 
     output += "\t}\n"; // "restapi-metadata" closing bracket
 
-    std::string dpkg_output;
-    {
-        log_debug ("shared::output2 (args = '{\"dpkg\", \"--list\"}') starting");
-        int rv = shared::output2 ({"dpkg", "--list"}, dpkg_output, 0, 100);
-        log_debug ("shared::output2 () finished with return value == '%" PRIi32"'", rv);
-        if (rv != 0) {
-            log_error (
-                "shared::output2 (args = '{\"dpkg\", \"--list\"}') failed; "
-                "return code == '%" PRIi32"'", rv);
-            dpkg_output.clear ();
-        }        
-    }
-    if (!dpkg_output.empty ()) {
-        output += ",\t\"packages\" : [\n";
-
-        std::vector<std::string> tokens;
-        cxxtools::split ("\n", dpkg_output, std::back_inserter (tokens));
-        // Strip first DPKG__LIST__STRIP_HEADER lines
-        for (int i = 0; i < DPKG__LIST__STRIP_HEADER; i++) {
-            tokens.erase (tokens.begin ());
+    if (access_auth_level >= AUTH_LEVEL_POWERUSER) {
+        std::string dpkg_output;
+        {
+            log_debug ("shared::output2 (args = '{\"dpkg\", \"--list\"}') starting");
+            int rv = shared::output2 ({"dpkg", "--list"}, dpkg_output, 0, 100);
+            log_debug ("shared::output2 () finished with return value == '%" PRIi32"'", rv);
+            if (rv != 0) {
+                log_error (
+                    "shared::output2 (args = '{\"dpkg\", \"--list\"}') failed; "
+                    "return code == '%" PRIi32"'", rv);
+                dpkg_output.clear ();
+            }
         }
+        if (!dpkg_output.empty ()) {
+            output += ",\t\"packages\" : [\n";
 
-        bool first = true;
-        for (const auto& item : tokens) {
-            request.touch(); // Reset the deadman timer while in a loop WTF?!
-            if (item.empty ())
-                continue;
+            std::vector<std::string> tokens;
+            cxxtools::split ("\n", dpkg_output, std::back_inserter (tokens));
+            // Strip first DPKG__LIST__STRIP_HEADER lines
+            for (int i = 0; i < DPKG__LIST__STRIP_HEADER; i++) {
+                tokens.erase (tokens.begin ());
+            }
 
-            std::vector <std::string> line_tokens;
-            cxxtools::split (cxxtools::Regex("[ \t]+"), item, std::back_inserter (line_tokens));
+            bool first = true;
+            for (const auto& item : tokens) {
+                request.touch(); // Reset the deadman timer while in a loop WTF?!
+                if (item.empty ())
+                    continue;
 
-            std::string pkgname, version, commit;
-            pkgname = line_tokens.at (DPKG__LIST__COLUMN_PKGNAME);
+                std::vector <std::string> line_tokens;
+                cxxtools::split (cxxtools::Regex("[ \t]+"), item, std::back_inserter (line_tokens));
 
-            auto pos = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION).find ("~");
-            if (pos != std::string::npos) {
-                version = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION).substr (0, pos);
-                commit = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION).substr (pos+1);
-                auto pos2 = commit.find ("-");
-                if (pos2 != std::string::npos) {
-                    version += commit.substr (pos2);
-                    commit = commit.substr (0, pos2);
+                std::string pkgname, version, commit;
+                pkgname = line_tokens.at (DPKG__LIST__COLUMN_PKGNAME);
+
+                auto pos = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION).find ("~");
+                if (pos != std::string::npos) {
+                    version = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION).substr (0, pos);
+                    commit = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION).substr (pos+1);
+                    auto pos2 = commit.find ("-");
+                    if (pos2 != std::string::npos) {
+                        version += commit.substr (pos2);
+                        commit = commit.substr (0, pos2);
+                    }
                 }
-            }
-            else {
-                version = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION);
-            }
-            if (first) {
-                first = false;
-                output += "\t{\n";
-            }
-            else {
-                output += ",\t{\n";
-            }
+                else {
+                    version = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION);
+                }
+                if (first) {
+                    first = false;
+                    output += "\t{\n";
+                }
+                else {
+                    output += ",\t{\n";
+                }
 
-            output += "\t\t";
-            output += utils::json::jsonify ("package-name", pkgname);
-            output += "\n";
-            
-            output += ",\t\t";
-            output += utils::json::jsonify ("package-version", version);
-            output += "\n";
-
-            if (pos != std::string::npos) {
-                output += ",\t\t";
-                output += utils::json::jsonify ("commit", commit);
+                output += "\t\t";
+                output += utils::json::jsonify ("package-name", pkgname);
                 output += "\n";
+
+                output += ",\t\t";
+                output += utils::json::jsonify ("package-version", version);
+                output += "\n";
+
+                if (pos != std::string::npos) {
+                    output += ",\t\t";
+                    output += utils::json::jsonify ("commit", commit);
+                    output += "\n";
+                }
+                output += "\t}\n";
             }
-            output += "\t}\n";
+            output += "\t]\n"; // "packages" closing bracket
         }
-        output += "\t]\n"; // "packages" closing bracket
-    }
+    } // if (access_auth_level >= AUTH_LEVEL_POWERUSER) clause closing bracket
     output += "}"; // closing json bracket
 
-} 
+}
 
 void sysinfo_plain (std::string& output) {
     output.clear ();
@@ -468,10 +472,7 @@ std::string detail;
 <%cpp>
     std::string output;
     if (detail == "yes") {
-        if (access_auth_level < AUTH_LEVEL_POWERUSER) {
-            http_die ("not-authorized");
-        }
-        sysinfo_detail (output, request);
+        sysinfo_detail (output, request, access_auth_level);
     }
     else {
         sysinfo_plain (output);
