@@ -36,7 +36,7 @@ echo "********* 1. sysinfo_get_auth=0_raw **************************************
 echo "***************************************************************************************************"
 
 test_it "unauthorized sysinfo"
-OUTPUT="`api_get_json /admin/sysinfo?debug_trace=yes`"
+OUTPUT="`api_get_json /admin/sysinfo?detail=yes`"
 [ $? -eq 0 -a -n "$OUTPUT" ]
 print_result $?
 
@@ -63,15 +63,17 @@ echo "********* 2. sysinfo_get_auth=2_raw **************************************
 echo "***************************************************************************************************"
 
 test_it "authorized sysinfo"
-OUTPUT="`api_auth_get_json /admin/sysinfo?debug_trace=yes`"
+OUTPUT="`api_auth_get_json /admin/sysinfo?detail=yes`"
 [ $? -eq 0 -a -n "$OUTPUT" ]
 print_result $?
 
+if false ; then
 test_it "authorized sysinfo - processes"
 JPATH='"processes",[0-9]+$'
 SYSINFO_PARSED="`echo "$OUTPUT" | jsonsh_cli -x="$JPATH"`"
 [ $? -eq 0 -a -n "$SYSINFO_PARSED" ]
 print_result $?
+fi
 
 test_it "authorized sysinfo - commitid-core-package"
 RES=0
