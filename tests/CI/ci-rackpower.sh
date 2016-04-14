@@ -162,6 +162,30 @@ AGNUTPID=""
 AGPWRPID=""
 AGLEGMETPID=""
 DBNGPID=""
+stop_dbstore() {
+    if isRemoteSUT ; then
+        sut_run "systemctl stop bios-agent-dbstore"
+    else
+        if [ -n "$DBNGPID" -a -d "/proc/$DBNGPID" ]; then
+            logmsg_info "Killing agent-dbstore PID $DBNGPID to flush and exit"
+            kill -INT "$DBNGPID"
+        fi
+        DBNGPID=""
+    fi
+}
+
+start_dbstore() {
+    if isRemoteSUT ; then
+        sut_run "systemctl start bios-agent-dbstore"
+    else
+        # TODO: this requirement should later become the REST AGENT
+        logmsg_info "Spawning the agent-dbstore daemon in the background..."
+        ${BUILDSUBDIR}/agent-dbstore &
+        [ $? = 0 ] || CODE=$? die "Could not spawn agent-dbstore"
+        DBNGPID=$!
+    fi
+}
+
 kill_daemons() {
     # Stops and cleans up the CI variant
     set +e
@@ -181,10 +205,7 @@ kill_daemons() {
         logmsg_info "Killing bios-agent-legacy-metrics PID $AGLEGMETPID to exit"
         kill -INT "$AGLEGMETPID"
     fi
-    if [ -n "$DBNGPID" -a -d "/proc/$DBNGPID" ]; then
-        logmsg_info "Killing agent-dbstore PID $DBNGPID to exit"
-        kill -INT "$DBNGPID"
-    fi
+    stop_dbstore
 
     killall -INT tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut bios_agent_tpower lt-bios_agent_tpower agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
     killall      tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut bios_agent_tpower lt-bios_agent_tpower agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
@@ -255,7 +276,8 @@ function startup() {
         print_result $? || CODE=$? die "Could not prepare database"
 
         # This program is delivered by another repo, should "just exist" in container
-        logmsg_info "Spawning the bios-agent-legacy-metrics service in the background..."
+        logmsg_info "Spawning the bios-agent-legacy-metrics daemon in the background..."
+        /bin/systemctl stop bios-agent-legacy-metrics || true
         bios-agent-legacy-metrics ipc://@/malamute legacy-metrics bios METRICS &
         [ $? = 0 ] || CODE=$? die "Could not spawn bios-agent-legacy-metrics"
         AGLEGMETPID=$!
@@ -266,22 +288,19 @@ function startup() {
         [ $? = 0 ] || CODE=$? die "Could not spawn tntnet"
         WEBTESTPID=$!
 
-        # TODO: this requirement should later become the REST AGENT
-        logmsg_info "Spawning the agent-dbstore server in the background..."
-        ${BUILDSUBDIR}/agent-dbstore &
-        [ $? = 0 ] || CODE=$? die "Could not spawn agent-dbstore"
-        DBNGPID=$!
+        start_dbstore
 
         # NOTE: Now a CLI argument is required for agent-nut
-        logmsg_info "Spawning the agent-nut service in the background..."
+        logmsg_info "Spawning the agent-nut daemon in the background..."
         ${BUILDSUBDIR}/agent-nut "$CHECKOUTDIR/src/agents/nut/mapping.conf" &
         [ $? = 0 ] || CODE=$? die "Could not spawn agent-nut"
         AGNUTPID=$!
 
-#TODO JIM fix me
-        logmsg_info "Spawning the agent-tpower service in the background..."
-        ${BUILDSUBDIR}/agent-tpower &
-        [ $? = 0 ] || CODE=$? die "Could not spawn agent-tpower"
+        # This program is delivered by another repo, should "just exist" in container
+        logmsg_info "Spawning the bios_agent_tpower daemon in the background..."
+        /bin/systemctl stop bios_agent_tpower || true
+        bios_agent_tpower &
+        [ $? = 0 ] || CODE=$? die "Could not spawn bios_agent_tpower"
         AGPWRPID=$!
 
         sleep 3
@@ -301,7 +320,7 @@ function startup() {
     print_result $?
 
     if isRemoteSUT ; then
-        sut_run 'systemctl restart bios-agent-tpower'
+        sut_run 'systemctl restart bios_agent_tpower'
         sut_run 'systemctl restart bios-agent-dbstore'
     fi
 }
@@ -407,9 +426,13 @@ testcase() {
                 ;;
             esac
 
-            logmsg_debug "Sleeping 8sec to propagate measurements..."
-            sleep 8  # 8s is max time for propagating into DB (poll ever 5s in nut actor + some time to process)
-            logmsg_debug "Sleep time is over!"
+            logmsg_debug "`date`: Sleeping some time and restarting agent-dbstore to propagate measurements and flush database..."
+            sleep 18  # some time for propagating into DB (poll every 5s in nut actor + some time to process), and agent-dbstore can have its own delays to queue up writes (10 sec by default)
+            stop_dbstore
+            sleep 8
+            start_dbstore
+            sleep 8
+            logmsg_debug "`date`: Sleep time is over!"
 
             test_it "verify_total_power_restapi:$RACK:$DEV:$SAMPLECURSOR"
             # Math with decimal points... shell and expr can not do it
