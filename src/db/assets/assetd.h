@@ -64,9 +64,15 @@ db_reply_t
          a_elmnt_id_t  asset_element_id);
 
 db_reply_t
-    delete_asset_ext_attributes
+    delete_asset_ext_attributes_all
         (tntdb::Connection &conn,
          a_elmnt_id_t asset_element_id);
+
+db_reply_t
+    delete_asset_ext_attributes_with_ro
+        (tntdb::Connection &conn,
+         a_elmnt_id_t asset_element_id,
+         bool read_only);
 
 db_reply_t
     delete_asset_element
