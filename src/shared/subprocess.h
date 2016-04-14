@@ -131,7 +131,7 @@ class SubProcess {
         //  @return positive return value of a process
         //          negative is a number of a signal which terminates process
         int wait(unsigned int timeout);
-        
+
         //! \brief no hanging variant of /see wait
         int poll() {  return wait(true); }
 
@@ -150,7 +150,7 @@ class SubProcess {
         int terminate();
 
         const char* state() const;
-    
+
     protected:
 
         enum class SubProcessState {
@@ -199,10 +199,11 @@ int call(const Argv& args);
 // @param o reference to variable will contain stdout
 // @param e reference to variable will contain stderr
 // @param timeout - maximum timeout in seconds (0 means wait forewer)
+// @param timestep - how often to pool buffer for subproces output (msecs)
 // @return see \SubProcess.wait for meaning
 //
 // \warning use internal reactor, so it regularly reads from stdout and stderr
- int output(const Argv& args, std::string& o, std::string& e, uint64_t timeout = 0);
+ int output(const Argv& args, std::string& o, std::string& e, uint64_t timeout = 0, size_t timestep = 500);
 
 // \brief Run command with arguments and input on stdin and return its output as a string.
 //
@@ -211,6 +212,7 @@ int call(const Argv& args);
 // @param e reference to variable will contain stderr
 // @param i const reference to variable will contain stdin
 // @param timeout - maximum timeout in seconds (0 means wait forewer)
+// @param timestep - how often to pool buffer for subproces output (msecs)
 // @return see \SubProcess.wait for meaning
 //
 // \warning use internal reactor, so it regularly reads from stdout and stderr
@@ -219,7 +221,7 @@ output(
     const Argv& args,
     std::string& o,
     std::string& e,
-    const std::string& i, uint64_t timeout = 0);
+    const std::string& i, uint64_t timeout = 0, size_t timestep = 500);
 
 } //namespace shared
 

@@ -60,8 +60,8 @@ int
         return 1;
     }
 
-    auto ret2 = delete_asset_ext_attributes
-        (conn, element_id);
+    auto ret2 = delete_asset_ext_attributes_with_ro
+        (conn, element_id, false);
     if ( ret2.status == 0 )
     {
         trans.rollback();
@@ -71,11 +71,10 @@ int
     }
 
     auto ret3 = insert_into_asset_ext_attributes
-        (conn, extattributes, element_id, false); // false means not read only
-    if ( ret3.status == 0 )
+        (conn, element_id, extattributes, false, errmsg);
+    if ( ret3 != 0 )
     {
         trans.rollback();
-        errmsg = "cannot insert all ext attributes";
         log_error ("end: %s", errmsg.c_str());
         return 3;
     }
@@ -139,8 +138,8 @@ int
         return 1;
     }
 
-    auto ret2 = delete_asset_ext_attributes
-        (conn, element_id);
+    auto ret2 = delete_asset_ext_attributes_with_ro
+        (conn, element_id, false);
     if ( ret2.status == 0 )
     {
         trans.rollback();
@@ -150,11 +149,10 @@ int
     }
 
     auto ret3 = insert_into_asset_ext_attributes
-        (conn, extattributes, element_id, false);
-    if ( ret3.status == 0 )
+        (conn, element_id, extattributes, false, errmsg);
+    if ( ret3 != 0 )
     {
         trans.rollback();
-        errmsg = "cannot insert all ext attributes";
         log_error ("end: %s", errmsg.c_str());
         return 3;
     }
@@ -411,7 +409,7 @@ db_reply_t
     LOG_START;
     tntdb::Transaction trans(conn);
 
-    auto reply_delete1 = delete_asset_ext_attributes (conn, element_id);
+    auto reply_delete1 = delete_asset_ext_attributes_all (conn, element_id);
     if ( reply_delete1.status == 0 )
     {
         trans.rollback();
@@ -533,7 +531,7 @@ db_reply_t
     LOG_START;
     tntdb::Transaction trans(conn);
 
-    auto reply_delete1 = delete_asset_ext_attributes (conn, element_id);
+    auto reply_delete1 = delete_asset_ext_attributes_all (conn, element_id);
     if ( reply_delete1.status == 0 )
     {
         trans.rollback();
@@ -571,7 +569,7 @@ db_reply_t
     LOG_START;
     tntdb::Transaction trans(conn);
 
-    auto reply_delete1 = delete_asset_ext_attributes (conn, element_id);
+    auto reply_delete1 = delete_asset_ext_attributes_all (conn, element_id);
     if ( reply_delete1.status == 0 )
     {
         trans.rollback();

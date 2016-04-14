@@ -49,7 +49,7 @@ struct sbp_info_t {
 char * const * _mk_argv(const Argv& vec);
 void _free_argv(char * const * argv);
 std::size_t _argv_hash(Argv args);
-static int s_output(SubProcess& p, std::string& o, std::string& e, uint64_t timeout);
+static int s_output(SubProcess& p, std::string& o, std::string& e, uint64_t timeout, size_t timestep);
 
 
 SubProcess::SubProcess(Argv cxx_argv, int flags) :
@@ -280,18 +280,18 @@ int call(const Argv& args) {
     return p.wait();
 }
 
-int output(const Argv& args, std::string& o, std::string& e, uint64_t timeout) {
+int output(const Argv& args, std::string& o, std::string& e, uint64_t timeout, size_t timestep) {
     SubProcess p(args, SubProcess::STDOUT_PIPE | SubProcess::STDERR_PIPE);
-    return s_output (p, o, e, timeout);
+    return s_output (p, o, e, timeout, timestep);
 }
 
-int output(const Argv& args, std::string& o, std::string& e, const std::string& i, uint64_t timeout) {
+int output(const Argv& args, std::string& o, std::string& e, const std::string& i, uint64_t timeout, size_t timestep) {
     SubProcess p(args, SubProcess::STDOUT_PIPE | SubProcess::STDERR_PIPE| SubProcess::STDIN_PIPE);
     p.run();
     ::write(p.getStdin(), i.c_str(), i.size());
     ::fsync(p.getStdin());
     ::close(p.getStdin());
-    return s_output (p, o, e, timeout);
+    return s_output (p, o, e, timeout, timestep);
 }
 
 std::string wait_read_all(int fd) {
@@ -437,7 +437,7 @@ s_end_loop (UNUSED_PARAM zloop_t *loop, UNUSED_PARAM int timer_id, UNUSED_PARAM 
     return -1;
 }
 
-static int s_output(SubProcess& p, std::string& o, std::string& e, uint64_t timeout)
+static int s_output(SubProcess& p, std::string& o, std::string& e, uint64_t timeout, size_t timestep)
 {
     std::stringstream out;
     std::stringstream err;
@@ -452,7 +452,7 @@ static int s_output(SubProcess& p, std::string& o, std::string& e, uint64_t time
 
     if (timeout != 0)
         zloop_timer (loop, timeout * 1000, 1, s_end_loop, NULL);
-    zloop_timer (loop, 500, 0, s_ping_process, &out_info);
+    zloop_timer (loop, timestep, 0, s_ping_process, &out_info);
     xzloop_add_fd (loop, p.getStdout (), s_handler, &out_info);
     xzloop_add_fd (loop, p.getStderr (), s_handler, &err_info);
     zloop_start (loop);

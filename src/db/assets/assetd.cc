@@ -359,7 +359,59 @@ db_reply_t
 
 //=============================================================================
 db_reply_t
-    delete_asset_ext_attributes
+    delete_asset_ext_attributes_with_ro
+        (tntdb::Connection &conn,
+         a_elmnt_id_t asset_element_id,
+         bool read_only)
+{
+    LOG_START;
+    log_debug ("read_only = %i, asset_element_id = %" PRIu32, read_only, asset_element_id);
+
+    db_reply_t ret = db_reply_new();
+
+    // input parameters control
+    if ( asset_element_id == 0 )
+    {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_BADINPUT;
+        ret.msg        = "0 value of asset_element_id is not allowed";
+        log_error ("end: %s, %s", "ignore delete", ret.msg.c_str());
+        return ret;
+    }
+    log_debug ("input parameters are correct");
+
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " DELETE FROM"
+            "   t_bios_asset_ext_attributes"
+            " WHERE"
+            "   id_asset_element = :element AND "
+            "   read_only = :ro "
+        );
+
+        ret.affected_rows = st.set("element", asset_element_id).
+                               set("ro", read_only).
+                               execute();
+        log_debug("[t_bios_asset_ext_attributes]: was deleted %"
+                                PRIu64 " rows", ret.affected_rows);
+        ret.status = 1;
+        LOG_END;
+        return ret;
+    }
+    catch (const std::exception &e) {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_INTERNAL;
+        ret.msg        = e.what();
+        LOG_END_ABNORMAL(e);
+        return ret;
+    }
+}
+
+//=============================================================================
+db_reply_t
+    delete_asset_ext_attributes_all
         (tntdb::Connection &conn,
          a_elmnt_id_t asset_element_id)
 {

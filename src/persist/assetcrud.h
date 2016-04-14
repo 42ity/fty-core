@@ -37,30 +37,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // ===============================================================
 
 
-/**
- * \brief Gets data about groups the specifeid element belongs to.
- *
- * Get only a list of group IDs the element belongs to.
- *
- * \param url        - the connection to database.
- * \param element_id - the id of the element (from 
- *                     t_bios_asset_element) we search groups for.
- *
- * \return NULL                   if internal database error occurs.
- *         empty object zlist_t   if the specified element doesn't 
- *                                belong to any group.
- *         filled object zlist_t  if the specified element belongs to 
- *                                some groups.
- */
-zlist_t* select_asset_element_groups(const char* url,
-                                   a_elmnt_id_t element_id);
-
-db_reply_t delete_asset_ext_attributes(tntdb::Connection &conn,
-                                   a_elmnt_id_t  asset_element_id);
-
-db_reply_t delete_asset_ext_attribute(tntdb::Connection &conn,
-                                   const char   *keytag,
-                                   a_elmnt_id_t  asset_element_id);
 db_reply_t
     process_insert_inventory
         (tntdb::Connection &conn, const char *device_name, zhash_t *ext_attributes);

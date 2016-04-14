@@ -277,6 +277,7 @@ if ( !tmp.item.ext.empty() )
 </%cpp>
 <$$ isExtCommaNeeded ? "," :""$> {"<$$ oneExt.first $>":"<$$ oneExt.second.first $>","read_only": <$$ oneExt.second.second? "true":"false" $> }
 <%cpp>
+        isExtCommaNeeded = true;
     } // end of for each loop for ext attribute
 
 }

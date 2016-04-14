@@ -348,15 +348,6 @@ test_tables "universal_asset_comma_8_wpos.csv" 48 "ERROR" "_w_pos"
 print_result $REZ
 
 echo "********* asset_import_err.sh *********************************************************************"
-echo "********* 25. Not unique serial No ****************************************************************"
-echo "***************************************************************************************************"
-test_it "Not_unique_serial_No"
-$INIT_SCRIPT_ROUTINE
-REZ=0
-test_tables "universal_asset_comma_8_serial_no.csv" 48 "ERROR" "_serial_no"
-print_result $REZ
-
-echo "********* asset_import_err.sh *********************************************************************"
 echo "********* 26. Subtype_&_status_values *************************************************************"
 echo "***************************************************************************************************"
 test_it "Subtype & status values"
