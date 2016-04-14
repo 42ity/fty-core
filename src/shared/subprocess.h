@@ -193,7 +193,7 @@ std::string wait_read_all(int fd);
 // @return see \SubProcess.wait
 int call(const Argv& args);
 
-// \brief Run command with arguments and return its output as a string.
+// \brief Run command with arguments and return its outputs (stdout, stderr) as a string.
 //
 // @param args list of command line arguments
 // @param o reference to variable will contain stdout
@@ -203,7 +203,10 @@ int call(const Argv& args);
 // @return see \SubProcess.wait for meaning
 //
 // \warning use internal reactor, so it regularly reads from stdout and stderr
- int output(const Argv& args, std::string& o, std::string& e, uint64_t timeout = 0, size_t timestep = 500);
+int output(const Argv& args, std::string& o, std::string& e, uint64_t timeout = 0, size_t timestep = 500);
+
+// \brief Run command with arguments and return just stdout (no stderr) as a string.
+int output2(const Argv& args, std::string& o, uint64_t timeout = 0, size_t timestep = 500);
 
 // \brief Run command with arguments and input on stdin and return its output as a string.
 //
