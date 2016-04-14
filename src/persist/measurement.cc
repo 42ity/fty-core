@@ -187,10 +187,14 @@ db_reply_t
     try {
         tntdb::Statement st;
         string query = m.get_insert_query();
-        if(query.length()==0)return ret;
+        if(query.length()==0){
+            m.reset_clock();
+            return ret;
+        }
+            
         st = conn.prepare(query.c_str());
         ret.affected_rows = st.execute();
-        log_debug("[t_bios_measurement]: flush last measurements in cache, inserted %" PRIu64 " rows ",
+        log_debug("[t_bios_measurement]: flush  measurements from cache, inserted %" PRIu64 " rows ",
                 ret.affected_rows);
         m.clear();
         ret.rowid = conn.lastInsertId();
