@@ -50,6 +50,7 @@ char * const * _mk_argv(const Argv& vec);
 void _free_argv(char * const * argv);
 std::size_t _argv_hash(Argv args);
 static int s_output(SubProcess& p, std::string& o, std::string& e, uint64_t timeout, size_t timestep);
+static int s_output2(SubProcess& p, std::string& o, uint64_t timeout, size_t timestep);
 
 
 SubProcess::SubProcess(Argv cxx_argv, int flags) :
@@ -285,6 +286,11 @@ int output(const Argv& args, std::string& o, std::string& e, uint64_t timeout, s
     return s_output (p, o, e, timeout, timestep);
 }
 
+int output2(const Argv& args, std::string& o, uint64_t timeout, size_t timestep) {
+    SubProcess p(args, SubProcess::STDOUT_PIPE);
+    return s_output2 (p, o, timeout, timestep);
+}
+
 int output(const Argv& args, std::string& o, std::string& e, const std::string& i, uint64_t timeout, size_t timestep) {
     SubProcess p(args, SubProcess::STDOUT_PIPE | SubProcess::STDERR_PIPE| SubProcess::STDIN_PIPE);
     p.run();
@@ -478,5 +484,40 @@ static int s_output(SubProcess& p, std::string& o, std::string& e, uint64_t time
     return r;
 }
 
+static int s_output2(SubProcess& p, std::string& o, uint64_t timeout, size_t timestep)
+{
+    std::stringstream out;
+
+    sbp_info_t out_info {timeout * 1000, (uint64_t) zclock_mono (), &p, out};
+
+    p.run();
+
+    zloop_t *loop = zloop_new ();
+    assert (loop);
+
+    if (timeout != 0)
+        zloop_timer (loop, timeout * 1000, 1, s_end_loop, NULL);
+    zloop_timer (loop, timestep, 0, s_ping_process, &out_info);
+    xzloop_add_fd (loop, p.getStdout (), s_handler, &out_info);
+    zloop_start (loop);
+
+    zloop_destroy (&loop);
+
+    int r = p.poll ();
+    if (p.isRunning ()) {
+        p.kill ();
+        r = p.poll ();
+        if (p.isRunning ()) {
+            zclock_sleep (2000);
+            p.terminate ();
+            r = p.poll ();
+        }
+    }
+
+    out << read_all (p.getStdin ());
+
+    o.assign(out.str ());
+    return r;
+}
 } //namespace shared
 

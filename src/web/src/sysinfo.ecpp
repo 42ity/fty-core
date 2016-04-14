@@ -131,15 +131,14 @@ void sysinfo_detail (std::string& output, tnt::HttpRequest& request) {
     static const std::string NOTAVAILABLE = "N/A";
     static const std::string NOTLICENSEDYET = "License not accepted yet";
 
-    std::string cmderr;
     output += "{\n"
     "\t\"operating-system\" : {\n";
 
     std::string container_info;    
     {
-        log_debug ("shared::output (args = '{\"/usr/bin/systemd-detect-virt\", \"-c\"}') starting");
-        int rv = shared::output ({"/usr/bin/systemd-detect-virt", "-c"}, container_info, cmderr, 0, 5);
-        log_debug ("shared::output finished with return value == '%" PRIi32"'", rv);
+        log_debug ("shared::output2 (args = '{\"/usr/bin/systemd-detect-virt\", \"-c\"}') starting");
+        int rv = shared::output2 ({"/usr/bin/systemd-detect-virt", "-c"}, container_info, 0, 100);
+        log_debug ("shared::output2 finished with return value == '%" PRIi32"'", rv);
 
         size_t output_len = container_info.length();
         if (rv != 0 && output_len<2) {
@@ -156,9 +155,9 @@ void sysinfo_detail (std::string& output, tnt::HttpRequest& request) {
 
     std::string hypervisor_info;
     {
-        log_debug ("shared::output (args = '{\"/usr/bin/systemd-detect-virt\", \"-v\"}') starting");
-        int rv = shared::output ({"/usr/bin/systemd-detect-virt", "-v"}, hypervisor_info, cmderr, 0, 5);
-        log_debug ("shared::output () finished with return value == '%" PRIi32"'", rv);
+        log_debug ("shared::output2 (args = '{\"/usr/bin/systemd-detect-virt\", \"-v\"}') starting");
+        int rv = shared::output2 ({"/usr/bin/systemd-detect-virt", "-v"}, hypervisor_info, 0, 100);
+        log_debug ("shared::output2 () finished with return value == '%" PRIi32"'", rv);
 
         size_t output_len = hypervisor_info.length();
         if (rv != 0 && output_len<2) {
@@ -370,13 +369,13 @@ void sysinfo_detail (std::string& output, tnt::HttpRequest& request) {
 
     std::string dpkg_output;
     {
-        log_debug ("shared::output (args = '{\"dpkg\", \"--list\"}') starting");
-        int rv = shared::output ({"dpkg", "--list"}, dpkg_output, cmderr);
-        log_debug ("shared::output () finished with return value == '%" PRIi32"'", rv);
+        log_debug ("shared::output2 (args = '{\"dpkg\", \"--list\"}') starting");
+        int rv = shared::output2 ({"dpkg", "--list"}, dpkg_output, 0, 100);
+        log_debug ("shared::output2 () finished with return value == '%" PRIi32"'", rv);
         if (rv != 0) {
             log_error (
-                "shared::output (args = '{\"dpkg\", \"--list\"}') failed; "
-                "return code == '%" PRIi32"'; stderr == '%s'", rv, cmderr.c_str ());
+                "shared::output2 (args = '{\"dpkg\", \"--list\"}') failed; "
+                "return code == '%" PRIi32"'", rv);
             dpkg_output.clear ();
         }        
     }
