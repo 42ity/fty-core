@@ -270,12 +270,17 @@ static tntdb::Statement
         bool read_only,
         zhash_t* attributes)
 {
-    static const std::string sql_header = "INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only)";
-
+    static const std::string sql_header =
+        "INSERT INTO "
+        "   t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) ";
+    static const std::string sql_postfix =
+        " ON DUPLICATE KEY "
+        "   UPDATE "
+        "       id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute) ";
     auto sql = multi_insert_string(
             sql_header,
             4,
-            zhash_size(attributes));
+            zhash_size(attributes), sql_postfix);
 
     log_debug("sql: '%s'", sql.c_str());
     auto st = conn.prepare(sql);
