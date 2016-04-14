@@ -65,116 +65,25 @@
 #define DPKG__LIST__COLUMN_PKGVERSION 2
 #endif
 
-</%pre>
-<%request scope="global">
-int8_t access_auth_level;
-</%request>
-<%args>
-// Tracing this call is quite noisy, so we only enable this
-// option in sysinfo REST API tests. For support purposes,
-// this is available in non-DEBUG builds too for now...
-std::string debug_trace;
-</%args>
-
-<%cpp>
-    bool b_debug_trace = false;
-    if ( debug_trace == "yes" ) {
-        b_debug_trace = true;
-    }
-#ifdef DEBUG
-    log_debug("SYSINFO TRACING: ARG debug_trace='%s'  BOOL b_debug_trace='%i'", debug_trace.c_str(), b_debug_trace);
-#endif
-
-    // let's check this first, as we can "die" here
-    struct utsname u;
-    if (uname (&u) == -1) {
-        http_die ("internal-error", "uname() failed.");
-    }
-
-// Certain strings returned to caller in some cases
-    static const std::string UNKNOWN = "unknown";
-    static const std::string UNAUTHORIZED = "unauthorized";
-    static const std::string NOTAVAILABLE = "N/A";
-    static const std::string NOTLICENSEDYET = "License not accepted yet";
-
-    std::string cmderr{};
-    std::string container_info{};
-    {
-        int rv = shared::output ({"/usr/bin/systemd-detect-virt", "-c"}, container_info, cmderr);
-        size_t output_len = container_info.length();
-        if (rv != 0 && output_len<2) {
-            container_info = NOTAVAILABLE;
-        } else if (output_len>0 && container_info[output_len-1] == '\n') {
-            container_info[output_len-1] = '\0';
-        }
-    }
-
-    std::string hypervisor_info{};
-    {
-        int rv = shared::output ({"/usr/bin/systemd-detect-virt", "-v"}, hypervisor_info, cmderr);
-        size_t output_len = hypervisor_info.length();
-        if (rv != 0 && output_len<2) {
-            hypervisor_info = NOTAVAILABLE;
-        } else if (output_len>0 && hypervisor_info[output_len-1] == '\n') {
-            hypervisor_info[output_len-1] = '\0';
-        }
-    }
-</%cpp>
-{
-    "operating-system" : {
-        <$$ utils::json::jsonify ("container", container_info.c_str()) $>,
-        <$$ utils::json::jsonify ("hypervisor", hypervisor_info.c_str()) $>,
-        "uname": {
-            <$$ utils::json::jsonify ("sysname", (char*) u.sysname) $>,
-            <$$ utils::json::jsonify ("nodename", (char*) u.nodename) $>,
-            <$$ utils::json::jsonify ("release", (access_auth_level<=AUTH_LEVEL_ANONYMOUS) ? UNAUTHORIZED : (char*) u.release) $>,
-            <$$ utils::json::jsonify ("version", (access_auth_level<=AUTH_LEVEL_ANONYMOUS) ? UNAUTHORIZED : (char*) u.version) $>,
-            <$$ utils::json::jsonify ("machine", (char*) u.machine) $>
-        }
-<%cpp>
-    std::string installation_date = NOTLICENSEDYET;
-    char *accepted_license = accepted_license_file ();
-    if (accepted_license) {
-        try {
-            std::ifstream finput (accepted_license);
-            if (finput.is_open () && finput.good ()) {
-                // We assume the second line is license acceptance unix time
-                std::getline (finput, installation_date);
-                std::getline (finput, installation_date);
-                int64_t i64 = std::stoll (installation_date);
-                // TODO: we should probably check for time_t max/min, but hey!... ;)
-                char chtmp[64];
-                if (calendar_to_datetime ((time_t) i64, chtmp, 64) == -1) {
-                    installation_date = "N/A - Error retrieveing installation date";
-                    throw std::runtime_error ("calendar_to_datetime () failed.");
-                }
-                installation_date.assign (chtmp);
-            }
-            else {
-                installation_date = NOTLICENSEDYET;
-            }
-        } catch (const std::exception& e) {
-            log_error ("Exception caught: %s", e.what ());
-        }
-        free (accepted_license); accepted_license = NULL;
-    }
-</%cpp>
-      , <$$ utils::json::jsonify ("installation-date", installation_date) $>
-<%cpp>
-    std::string location = "N/A - Error retrieving location";
+void get_location (std::string& location) {
     try {
-        tntdb::Connection conn = tntdb::connectCached(url);
-        db_reply <std::map <uint32_t, std::string>>
-        elements = persist::select_short_elements (conn, persist::asset_type::DATACENTER, persist::asset_subtype::N_A);
+        tntdb::Connection conn = tntdb::connectCached (url);
+        log_debug ("tntdb::connectCached (url = '%s') successfull", url.c_str ());
+        db_reply <std::map <uint32_t, std::string>> elements =
+            persist::select_short_elements (
+                                    conn,
+                                    persist::asset_type::DATACENTER,
+                                    persist::asset_subtype::N_A);
+        log_debug ("persist::select_short_elements () successfull");
         bool do_break = false;
-        for (std::map<uint32_t, std::string>::const_iterator it = elements.item.cbegin(); it != elements.item.cend(); ++it) {
+        for (auto it = elements.item.cbegin(); it != elements.item.cend(); ++it) {
             // it->first is element_id
             std::map <std::string, std::pair<std::string, bool>> ext;
             int rv = persist::select_ext_attributes (conn, it->first, ext);
             if (rv == -1) {
                 continue;
             }
-            for (std::map <std::string, std::pair<std::string, bool>>::const_iterator it2 = ext.cbegin(); it2 != ext.cend (); ++it2) {
+            for (auto it2 = ext.cbegin(); it2 != ext.cend (); ++it2) {
                 if (it2->first.compare ("address") == 0) {
                     location = it2->second.first;
                     do_break = true;
@@ -184,423 +93,382 @@ std::string debug_trace;
             if (do_break)
                 break;
         }
-    } catch (const std::exception& e) {
+    }
+    catch (const std::exception& e) {
         log_error ("Exception caught: %s", e.what ());
     }
-</%cpp>
-      , <$$ utils::json::jsonify ("location", location) $>
+}
+
+void get_installation_date (const std::string& file, std::string& installation_date) {
+    try {
+        std::ifstream finput (file);
+        if (finput.is_open () && finput.good ()) {
+            // We assume the second line is license acceptance unix time
+            std::getline (finput, installation_date);
+            std::getline (finput, installation_date);
+            int64_t i64 = std::stoll (installation_date);
+            // TODO: we should probably check for time_t max/min, but hey!... ;)
+            char chtmp[64];
+            if (calendar_to_datetime ((time_t) i64, chtmp, 64) == -1) {
+                installation_date = "N/A - Error retrieveing installation date";
+                throw std::runtime_error ("calendar_to_datetime () failed.");
+            }
+            installation_date.assign (chtmp);
+        }
     }
-<%cpp>
+    catch (const std::exception& e) {
+        log_error ("Exception caught: %s", e.what ());
+    }
+} 
 
-// To aid developers, show some data about this binary (library) for
-// the REST API, because installed packages may be irrelevant and not
-// really used vs. what is actually running
-</%cpp>
-,   "restapi-metadata": {
-        "core-package": {
-          "package-name": "<$ PACKAGE $>",
-          "package-version": "<$ PACKAGE_VERSION $>",
-          "package-bugreport": "<$ PACKAGE_BUGREPORT $>",
-          "package-url": "<$ PACKAGE_URL $>",
-<%cpp>
-# ifdef PACKAGE_VENDOR
-      /* Note that PACKAGE_VENDOR is NOT an automake default variable,
-       * we define it locally in our project configuration. */
-</%cpp>
-          "vendor": "<$ PACKAGE_VENDOR $>"
-<%cpp>
-# else
-</%cpp>
-          "vendor": ""
-<%cpp>
-# endif
-</%cpp>
-        }
-<%cpp>
+void sysinfo_detail (std::string& output, tnt::HttpRequest& request) {
+    output.clear ();
 
-    if (access_auth_level >= AUTH_LEVEL_POWERUSER) {
-# ifdef HAVE_PACKAGE_GIT
-</%cpp>
-,       "source-repo" : {
-          "scm": "git",
-          "origin": "<$ PACKAGE_GIT_ORIGIN_ESCAPED $>",
-          "branch": "<$ PACKAGE_GIT_BRANCH_ESCAPED $>",
-          "commit": "<$ PACKAGE_GIT_HASH_L_ESCAPED $>",
-          "commit-timestamp": "<$ PACKAGE_GIT_TSTAMP_ESCAPED $>",
-          "commit-timestamp-iso8601": "<$ PACKAGE_GIT_TSTAMP_ISO8601_ESCAPED $>",
-          "status": "<$$ PACKAGE_GIT_STATUS_ESCAPED $>"
+
+    // Certain strings returned to caller in some cases
+    static const std::string UNKNOWN = "unknown";
+    static const std::string UNAUTHORIZED = "unauthorized";
+    static const std::string NOTAVAILABLE = "N/A";
+    static const std::string NOTLICENSEDYET = "License not accepted yet";
+
+    std::string cmderr;
+    output += "{\n"
+    "\t\"operating-system\" : {\n";
+
+    std::string container_info;    
+    {
+        log_debug ("shared::output (args = '{\"/usr/bin/systemd-detect-virt\", \"-c\"}') starting");
+        int rv = shared::output ({"/usr/bin/systemd-detect-virt", "-c"}, container_info, cmderr);
+        log_debug ("shared::output finished with return value == '%" PRIi32"'", rv);
+        size_t output_len = container_info.length();
+        if (rv != 0 && output_len<2) {
+            container_info = NOTAVAILABLE;
         }
-<%cpp>
+        else
+        if (output_len>0 && container_info[output_len-1] == '\n') {
+            container_info[output_len-1] = '\0';
+        }
+    }
+    output += "\t\t";
+    output += utils::json::jsonify ("container", container_info.c_str());
+    output += "\n";
+
+    std::string hypervisor_info;
+    {
+        log_debug ("shared::output (args = '{\"/usr/bin/systemd-detect-virt\", \"-v\"}') starting");
+        int rv = shared::output ({"/usr/bin/systemd-detect-virt", "-v"}, hypervisor_info, cmderr);
+        log_debug ("shared::output () finished with return value == '%" PRIi32"'", rv);
+        size_t output_len = hypervisor_info.length();
+        if (rv != 0 && output_len<2) {
+            hypervisor_info = NOTAVAILABLE;
+        }
+        else
+        if (output_len>0 && hypervisor_info[output_len-1] == '\n') {
+            hypervisor_info[output_len-1] = '\0';
+        }
+    }
+    output += ",\t\t";   
+    output += utils::json::jsonify ("hypervisor", hypervisor_info.c_str());
+    output += "\n";
+
+    // let's check this first, as we can "die" here
+    struct utsname u;
+    if (uname (&u) == -1) {
+        log_error ("uname() failed: '%s'", strerror (errno));
+    }
+    else {
+        output += ",\t\t";
+        output += "\"uname\" : {\n";
+
+        output += "\t\t\t";
+        output +=  utils::json::jsonify ("sysname", u.sysname);
+        output += "\n";
+
+        output += ",\t\t\t";
+        output += utils::json::jsonify ("nodename", u.nodename);
+        output += "\n";
+
+        output += ",\t\t\t";
+        output += utils::json::jsonify ("release", u.release);
+        output += "\n";
+
+        output += ",\t\t\t";
+        output += utils::json::jsonify ("version", u.version);
+        output += "\n";
+
+        output += ",\t\t\t";
+        output += utils::json::jsonify ("machine", u.machine);
+        output += "\n";
+        
+        output += "\t\t}\n"; // "uname" closing bracket
+    }
+
+    std::string installation_date = NOTLICENSEDYET;
+    char *accepted_license = accepted_license_file ();
+    if (accepted_license) {
+        get_installation_date (accepted_license, installation_date);
+        free (accepted_license);
+        accepted_license = NULL;
+    }
+
+    output += ",\t\t";   
+    output += utils::json::jsonify ("installation-date", installation_date);
+    output += "\n";
+ 
+    std::string location = "N/A - Error retrieving location";
+    get_location (location);  
+
+    output += ",\t\t";
+    output += utils::json::jsonify ("location", location);
+    output += "\n";
+    
+    output += "\t}\n"; // "operating-system" closing bracket
+
+    output += ",\t\"restapi-metadata\" : {\n";
+    output += "\t\t\"core-package\" : {\n";
+
+    output += "\t\t\t";
+    output += utils::json::jsonify ("package-name", PACKAGE);
+    output += "\n";
+
+    output += ",\t\t\t";
+    output += utils::json::jsonify ("package-version", PACKAGE_VERSION);
+    output += "\n";
+
+    output += ",\t\t\t";
+    output += utils::json::jsonify ("package-bugreport", PACKAGE_BUGREPORT);
+    output += "\n";
+
+    output += ",\t\t\t";
+    output += utils::json::jsonify ("package-url", PACKAGE_URL);
+    output += "\n";
+
+    // Note that PACKAGE_VENDOR is NOT an automake default variable,
+    // we define it locally in our project configuration.
+#ifdef PACKAGE_VENDOR
+    output += ",\t\t\t";
+    output += utils::json::jsonify ("vendor", PACKAGE_VENDOR);
+    output += "\n";
+#endif
+
+    output += "\t}\n"; // "core-package" closing bracket
+
+#ifdef HAVE_PACKAGE_GIT
+    output += ",\t\"source-repo\" : {\n";
+
+    output += "\t\t";
+    output += utils::json::jsonify ("scm", "git");
+    output += "\n";
+
+    output += ",\t\t";
+    output.append ("\"origin\" : \"").append (PACKAGE_GIT_ORIGIN_ESCAPED).append ("\"");
+    output += "\n";
+
+    output += ",\t\t";
+    output.append ("\"branch\" : \"").append (PACKAGE_GIT_BRANCH_ESCAPED).append ("\"");
+    output += "\n";
+
+    output += ",\t\t";
+    output.append ("\"commit\" : \"").append (PACKAGE_GIT_HASH_L_ESCAPED).append ("\"");
+    output += "\n";
+
+    output += ",\t\t";
+    output.append ("\"commit-timestamp\" : \"").append (PACKAGE_GIT_TSTAMP_ESCAPED).append ("\"");
+    output += "\n";
+
+    output += ",\t\t";
+    output.append ("\"commit-timestamp-iso8601\" : \"").append (PACKAGE_GIT_TSTAMP_ISO8601_ESCAPED).append ("\"");
+    output += "\n";
+
+    output += ",\t\t";
+    output.append ("\"status\" : \"").append (PACKAGE_GIT_STATUS_ESCAPED).append ("\"");
+    output += "\n";
+
+    output += "\t}\n"; // "source-repo" closing bracket
+
 # endif // HAVE_PACKAGE_GIT
 
-# if defined(HAVE_PACKAGE_BUILD_HOST) || defined(HAVE_PACKAGE_BUILD_TSTAMP)
-</%cpp>
-,       "build-info": {
-<%cpp>
-#  ifdef HAVE_PACKAGE_BUILD_HOST
-// Note the trailing comma is needed and okay
-</%cpp>
-          "build-host-name": "<$ PACKAGE_BUILD_HOST_NAME_ESCAPED $>",
-          "build-host-os": "<$ PACKAGE_BUILD_HOST_OS_ESCAPED $>",
-          "build-host-uname": "<$ PACKAGE_BUILD_HOST_UNAME_ESCAPED $>",
-<%cpp>
-#  endif // HAVE_PACKAGE_BUILD_HOST
+#if defined(HAVE_PACKAGE_BUILD_HOST) || defined(HAVE_PACKAGE_BUILD_TSTAMP)
+    output += ",\t\"build-info\" : {\n";
+#ifdef HAVE_PACKAGE_BUILD_HOST
+    output += "\t\t";
+    output.append ("\"build-host-name\" : \"").append (PACKAGE_BUILD_HOST_NAME_ESCAPED).append ("\"");
+    output += "\n";
 
-    std::string BTS = "", BTS_ISO = "";
-#  ifdef HAVE_PACKAGE_BUILD_TSTAMP
-    BTS = PACKAGE_BUILD_TSTAMP_ESCAPED;
-    BTS_ISO = PACKAGE_BUILD_TSTAMP_ISO8601_ESCAPED;
-#  endif // HAVE_PACKAGE_BUILD_TSTAMP
-    if (BTS=="") {
-        BTS = UNKNOWN;
-    }
-    if (BTS_ISO=="") {
-        BTS_ISO = UNKNOWN;
-    }
-// Note the code below always has something to print, so the previous optional
-// block ends with trailing comma
-</%cpp>
-          "build-timestamp": "<$ BTS $>",
-          "build-timestamp-iso8601": "<$ BTS_ISO $>"
-        }
-<%cpp>
+    output += ",\t\t";
+    output.append ("\"build-host-os\" : \"").append (PACKAGE_BUILD_HOST_OS_ESCAPED).append ("\"");
+    output += "\n";
+
+    output += ",\t\t";
+    output.append ("\"build-host-uname\" : \"").append (PACKAGE_BUILD_HOST_UNAME_ESCAPED).append ("\"");
+    output += "\n";
+#ifdef HAVE_PACKAGE_BUILD_TSTAMP
+    output += ",";
+#endif
+#endif // HAVE_PACKAGE_BUILD_HOST
+
+#ifdef HAVE_PACKAGE_BUILD_TSTAMP
+    output += "\t\t";
+    output.append ("\"build-timestamp\" : \"").append (PACKAGE_BUILD_TSTAMP_ESCAPED).append ("\"");
+    output += "\n";
+
+    output += ",\t\t";
+    output.append ("\"build-timestamp-iso8601\" : \"").append (PACKAGE_BUILD_TSTAMP_ISO8601_ESCAPED).append ("\"");
+    output += "\n";
+#endif // HAVE_PACKAGE_BUILD_TSTAMP
+    output += "\t}\n"; // "build-info" closing bracket
 # endif // HAVE_PACKAGE_BUILD_*: HOST and/or TSTAMP
 
-    { // scope for work with external files
-/*
- * This block optionally prints the "bios-release" object with as much info
- * as possible about the installed firmware, OS image, REST API and Web-UI
- * versions for field support, development, validation and similar inquiries.
- * Primary supported mode of operation is on RC3, where the bios-boot::init
- * script manages the system startup and generates a "/etc/bios-release.json"
- * file with the information it has found about the low-level environment,
- * including versions, timestamps and checksums of firmware components.
- * If this file is present, and if it contains valid JSON of non-trivial
- * length, it is published verbatim "as is".
- * Fallback mode for systems with older uImage and for X86 containers is to
- * pick up partial information from the "/usr/share/bios-web/version.txt"
- * files that are generated during compilation of Web-UI and of OS image.
- * Changes in parsing of these "*version.txt" files should be coordinated with
- * producers in bios-infra::compile_web and bios-core::obs_preinstall scripts,
- * as well as the bios-boot::init script which also generates such JSON.
- * The definitive format should correspond to latest RFC-11.
- */
+    static const std::string BIOS_RELEASE_JSON_FILE = "/etc/bios-release.json";
+    static const std::string BIOS_IMAGE_VERSION_FILE = "/usr/share/bios-web/image-version.txt";
+    static const std::string BIOS_WEBUI_VERSION_FILE = "/usr/share/bios-web/version.txt";
 
-        static const std::string BIOS_RELEASE_JSON_FILE = "/etc/bios-release.json";
-        static const std::string BIOS_IMAGE_VERSION_FILE = "/usr/share/bios-web/image-version.txt";
-        static const std::string BIOS_WEBUI_VERSION_FILE = "/usr/share/bios-web/version.txt";
-        FILE* fptr = fopen(BIOS_RELEASE_JSON_FILE.c_str(), "r");
-        bool gotPreparedJson = false;
-        if (fptr != NULL) {
-            // The file is generated on RC3 during boot and contains its
-            // firmware image details, parsing of image-version.txt and
-            // version.txt in the present image, etc.
-
-            size_t fsize = 0;
-            fseek(fptr, 0, SEEK_END);
-            fsize = ftell(fptr);
-            fseek(fptr, 0, SEEK_SET);
-
-            // Pre-generated file should have some non-trivial contents
-            if (fsize>32) {
-                char *ftxt = (char*) malloc (fsize * sizeof (char) + 1);
-                if (ftxt) {
-                    memset ((void*) ftxt, '\0', fsize * sizeof (char) + 1);
-
-                    size_t r = fread((void*) ftxt, 1, fsize, fptr);
-                    if (r == fsize) {
-                        gotPreparedJson = true;
-                        ftxt[fsize]='\0';
-
-                        // Validate that JSON was valid
-                        try {
-                            std::stringstream input (ftxt, std::ios_base::in);
-                            cxxtools::JsonDeserializer deserializer (input);
-                            cxxtools::SerializationInfo si;
-                            deserializer.deserialize (si);
-                        }
-                        catch (const std::exception& e) {
-                            gotPreparedJson = false;
-                            log_error("Read %" PRIu64 " bytes from '%s' but got no valid JSON markup - ignoring the file\n",
-                                (uint64_t)fsize, BIOS_RELEASE_JSON_FILE.c_str());
-                        }
-
-                        if (gotPreparedJson == true) {
-                            if ( (ftxt[0]=='{' && ftxt[fsize-1]=='}') ||
-                                 (ftxt[0]=='[' && ftxt[fsize-1]==']')
-                            ) {
-                                ftxt[0]=' ';
-                                ftxt[fsize-1]=' ';
-                            }
-</%cpp>
-,       <$$ ftxt $>
-<%cpp>
-                        }
-                    } else {
-                        log_error("Read only %" PRIu64 " out of %" PRIu64 " bytes from '%s' - ignoring the file\n",
-                            (uint64_t)r, (uint64_t)fsize, BIOS_RELEASE_JSON_FILE.c_str());
-                    }
-                    free(ftxt);
-                } else {
-                    log_error("Could not malloc %" PRIu64 " bytes to read '%s' - ignoring the file\n",
-                        (uint64_t)(fsize * sizeof (char) + 1), BIOS_RELEASE_JSON_FILE.c_str());
-                }
-            } else {
-                log_error("Found '%s' but it is only %" PRIu64 " bytes long - ignoring the file\n",
-                    BIOS_RELEASE_JSON_FILE.c_str(), (uint64_t)fsize);
-            }
-            fclose(fptr);
+    std::string bios_release;    
+    try {
+        std::ifstream in (BIOS_RELEASE_JSON_FILE, std::ios::in | std::ios::binary);
+        if (!in) {
+            throw std::runtime_error ("Could not open file.");
         }
 
-        if (gotPreparedJson == false) {
-            // If the RC3 file is not present or got some other error, try
-            // to build a subset of that info from other sources at run-time...
-</%cpp>
-,       "bios-release": {
-<%cpp>
-            char leadingComma=' ';
-            struct tm tm;
-            char tmbuf[255];
+        std::ostringstream tmp;
+        tmp << in.rdbuf();
+        in.close(); // 
+        bios_release.assign (tmp.str ());
 
-            memset(&tm, 0, sizeof(struct tm));
-            fptr = fopen(BIOS_IMAGE_VERSION_FILE.c_str(), "r");
-            if (fptr != NULL) {
-                size_t fsize = 0;
-                fseek(fptr, 0, SEEK_END);
-                fsize = ftell(fptr);
-                fseek(fptr, 0, SEEK_SET);
-                fclose(fptr);       // Here we'll read lines via C++ interfaces
+        std::stringstream input (bios_release, std::ios_base::in);
+        cxxtools::JsonDeserializer deserializer (input);
+        cxxtools::SerializationInfo si;
+        deserializer.deserialize (si);
 
-                // Pre-generated file should have some non-trivial contents like:
-                // OSimage:tarball-ts: Thu, 31 Mar 2016 15:11:24 +0000
-                if (fsize>32) {
-                    std::string line;
-                    cxxtools::RegexSMatch smatch;
-                    cxxtools::Regex rex_img_ts("^OSimage:build-ts:\\s+(\\S.*\\S)\\s*$");
-                    cxxtools::Regex rex_img_type("^OSimage:img-type:\\s+(\\S+)\\s*$");
-                    // cxxtools::Regex rex_date_R("^\\s*(\\S{3})\\,\\s+(\\d{1,2})\\s+(\\S{3})\\s+(\\d{4})\\s+(\\d{2}):(\\d{2}):(\\d{2})\\s+([\\+\\-]\\d{4})\\s*$");
-                    std::ifstream input(BIOS_IMAGE_VERSION_FILE);
-                    while( std::getline( input, line ) ) {
-                        if (rex_img_ts.match (line, smatch)) {
-                            // TODO: These routines are locale-dependent, and
-                            // changing a process' locale is not thread-safe!
-                            // So far we assume LANG=C LC_ALL=C TZ=UTC from env
-                            std::string rmatch = smatch.get(1);
-                            if (strptime(rmatch.c_str(), "%a, %d %b %Y %T %z", &tm) &&
-                                strftime(tmbuf, sizeof(tmbuf), "%Y%m%dT%H%M%SZ", &tm) ) {
-</%cpp>
-<$ leadingComma $>   <$$ utils::json::jsonify ("osimage-build-ts", tmbuf) $>
-<%cpp>
-                                    tmbuf[0]='\0';
-                                    memset(&tm, 0, sizeof(struct tm));
-                            } else {
-</%cpp>
-<$ leadingComma $>   <$$ utils::json::jsonify ("osimage-build-ts", rmatch.c_str()) $>
-<%cpp>
-                            } // if time converted
-                            leadingComma=',';
-                        } // rex_img_ts.match
-
-                        if (rex_img_type.match (line, smatch)) {
-                            std::string rmatch = smatch.get(1);
-</%cpp>
-<$ leadingComma $>   <$$ utils::json::jsonify ("osimage-img-type", rmatch.c_str()) $>
-<%cpp>
-                            leadingComma=',';
-                        } // rex_img_type.match
-                    } // while
-                } else {
-                    log_error("Found '%s' but it is only %" PRIu64 " bytes long - ignoring the file\n",
-                        BIOS_IMAGE_VERSION_FILE.c_str(), (uint64_t)fsize);
-                } // if fsize
-            } else {
-                log_error("Can not access '%s' - ignoring the file\n",
-                    BIOS_IMAGE_VERSION_FILE.c_str());
-            } // if fptr
-
-# ifdef HAVE_PACKAGE_GIT
-</%cpp>
-<$ leadingComma $>   <$$ utils::json::jsonify ("bios-core-commit-id", PACKAGE_GIT_HASH_S_ESCAPED) $>
-,          <$$ utils::json::jsonify ("bios-core-commit-ts", PACKAGE_GIT_TSTAMP_ISO8601_ESCAPED) $>
-<%cpp>
-            leadingComma=',';
-# endif // HAVE_PACKAGE_GIT
-
-            fptr = fopen(BIOS_WEBUI_VERSION_FILE.c_str(), "r");
-            if (fptr != NULL) {
-                size_t fsize = 0;
-                fseek(fptr, 0, SEEK_END);
-                fsize = ftell(fptr);
-                fseek(fptr, 0, SEEK_SET);
-                fclose(fptr);       // Here we'll read lines via C++ interfaces
-
-                // Pre-generated file should have some non-trivial contents like:
-                // bios-web:commit-ts:  Thu, 24 Mar 2016 15:36:31 +0000
-                // bios-web:commit-id:  a10faf566b36771e20e91f0cb82ab1267aa1c108
-                // bios-web:tarball-ts: Wed, 30 Mar 2016 17:33:19 +0000
-                if (fsize>32) {
-                    std::string line;
-                    cxxtools::RegexSMatch smatch;
-                    cxxtools::Regex rex_img_ts("^bios-web:build-ts:\\s+(\\S.*\\S)\\s*$");
-                    cxxtools::Regex rex_git_ts("^bios-web:commit-ts:\\s+(\\S.*\\S)\\s*$");
-                    cxxtools::Regex rex_git_id("^bios-web:commit-id:\\s+(\\S+)\\s*$");
-                    std::ifstream input(BIOS_WEBUI_VERSION_FILE);
-                    while( std::getline( input, line ) ) {
-                        if (rex_img_ts.match (line, smatch)) {
-                            // TODO: These routines are locale-dependent, and
-                            // changing a process' locale is not thread-safe!
-                            // So far we assume LANG=C LC_ALL=C TZ=UTC from env
-                            std::string rmatch = smatch.get(1);
-                            if (strptime(rmatch.c_str(), "%a, %d %b %Y %T %z", &tm) &&
-                                strftime(tmbuf, sizeof(tmbuf), "%Y%m%dT%H%M%SZ", &tm) ) {
-</%cpp>
-<$ leadingComma $>   <$$ utils::json::jsonify ("bios-web-build-ts", tmbuf) $>
-<%cpp>
-                                    tmbuf[0]='\0';
-                                    memset(&tm, 0, sizeof(struct tm));
-                            } else {
-</%cpp>
-<$ leadingComma $>   <$$ utils::json::jsonify ("bios-web-build-ts", rmatch.c_str()) $>
-<%cpp>
-                            } // if time converted
-                            leadingComma=',';
-                        } // rex_img_ts.match
-
-                        if (rex_git_ts.match (line, smatch)) {
-                            // TODO: These routines are locale-dependent, and
-                            // changing a process' locale is not thread-safe!
-                            // So far we assume LANG=C LC_ALL=C TZ=UTC from env
-                            std::string rmatch = smatch.get(1);
-                            if (strptime(rmatch.c_str(), "%a, %d %b %Y %T %z", &tm) &&
-                                strftime(tmbuf, sizeof(tmbuf), "%Y%m%dT%H%M%SZ", &tm) ) {
-</%cpp>
-<$ leadingComma $>   <$$ utils::json::jsonify ("bios-web-commit-ts", tmbuf) $>
-<%cpp>
-                                    tmbuf[0]='\0';
-                                    memset(&tm, 0, sizeof(struct tm));
-                            } else {
-</%cpp>
-<$ leadingComma $>   <$$ utils::json::jsonify ("bios-web-commit-ts", rmatch.c_str()) $>
-<%cpp>
-                            } // if time converted
-                            leadingComma=',';
-                        } // rex_git_ts.match
-
-                        if (rex_git_id.match (line, smatch)) {
-                            std::string rmatch = smatch.get(1);
-</%cpp>
-<$ leadingComma $>   <$$ utils::json::jsonify ("bios-web-commit-id", rmatch.c_str()) $>
-<%cpp>
-                            leadingComma=',';
-                        } // rex_git_id.match
-                    } // while
-                } else {
-                    log_error("Found '%s' but it is only %" PRIu64 " bytes long - ignoring the file\n",
-                        BIOS_WEBUI_VERSION_FILE.c_str(), (uint64_t)fsize);
-                } // if fsize
-            } else {
-                log_error("Can not access '%s' - ignoring the file\n",
-                    BIOS_WEBUI_VERSION_FILE.c_str());
-            } // if fptr
-
-</%cpp>
+        if (si.category () != cxxtools::SerializationInfo::Category::Object) {
+            throw std::runtime_error ("Document root type is not Json Object.");
         }
-<%cpp>
+
+        if (si.memberCount () == 0) {
+            throw std::runtime_error ("Root json object is empty.");
         }
-    } // scope for fopen(bios-release.json and *version.txt files)
 
-    } // if (access_auth_level>=AUTH_LEVEL_POWERUSER)
-
-</%cpp>
+        // TODO: remove { } 
     }
-<%cpp>
-    // End of "restapi-metadata" which may differ from installed packages
+    catch (const std::exception& e) {
+        log_warning (
+            "Could not display 'bios-release' section of 'restapi-metadata' that is read from file '%s' "
+            "because the following error happened: '%s'",
+            BIOS_RELEASE_JSON_FILE.c_str(), e.what ());
+        // TODO: display error 'bios-release' section
+    }
 
-    if (access_auth_level >= AUTH_LEVEL_POWERUSER) {
-        std::string output{};
-        int rv = shared::output ({"dpkg", "--list"}, output, cmderr);
-        if (b_debug_trace) {
-            if (!cmderr.empty()) {
-                log_error("Calling 'dpkg --list' got exit-code %i and this stderr:\n-----\n%s-----\n\n", rv, cmderr.c_str());
-            }
-#ifdef DEBUG
-            log_debug("Calling 'dpkg --list' got exit-code %i and this stdout:\n-----\n%s-----\n\n", rv, output.c_str());
-#endif
+    output += "\t}\n"; // "restapi-metadata" closing bracket
+
+    std::string dpkg_output;
+    {
+        log_debug ("shared::output (args = '{\"dpkg\", \"--list\"}') starting");
+        int rv = shared::output ({"dpkg", "--list"}, dpkg_output, cmderr);
+        log_debug ("shared::output () finished with return value == '%" PRIi32"'", rv);
+        if (rv != 0) {
+            log_error (
+                "shared::output (args = '{\"dpkg\", \"--list\"}') failed; "
+                "return code == '%" PRIi32"'; stderr == '%s'", rv, cmderr.c_str ());
+            dpkg_output.clear ();
+        }        
+    }
+    if (!dpkg_output.empty ()) {
+        output += ",\t\"packages\" : [\n";
+
+        std::vector<std::string> tokens;
+        cxxtools::split ("\n", output, std::back_inserter (tokens));
+        // Strip first DPKG__LIST__STRIP_HEADER lines
+        for (int i = 0; i < DPKG__LIST__STRIP_HEADER; i++) {
+            tokens.erase (tokens.begin ());
         }
 
-        if (rv == 0 && !output.empty()) {
-</%cpp>
-,   "packages" : [
-<%cpp>
-            std::vector<std::string> tokens;
-            cxxtools::split ("\n", output, std::back_inserter (tokens));
-            // Strip first 5 lines
-            for (int i = 0; i < DPKG__LIST__STRIP_HEADER; i++)
-                tokens.erase (tokens.begin ());
-            bool first = true;
-            for (auto const& item : tokens) {
-                request.touch(); // Reset the deadman timer while in a loop
-                if (item.empty ())
-                    continue;
-                std::vector <std::string> line_tokens;
-                cxxtools::split (cxxtools::Regex("[ \t]+"), item, std::back_inserter (line_tokens));
-                std::string pkgname, version, commit;
-                pkgname = line_tokens.at (DPKG__LIST__COLUMN_PKGNAME);
-                auto pos = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION).find ("~");
-                if (pos != std::string::npos) {
-                    version = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION).substr (0, pos);
-                    commit = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION).substr (pos+1);
-                    auto pos2 = commit.find ("-");
-                    if (pos2 != std::string::npos) {
-                        version += commit.substr (pos2);
-                        commit = commit.substr (0, pos2);
-                    }
-                }
-                else {
-                    version = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION);
-                }
-// Note: Shall we desire maintainers name etc...
-//                rv = shared::output ({"dpkg", "status", pkgname.c_str ()}, output, cmderr);
-//                if (rv == 0 && !output.empty()) {
-//                      Parse `dpkg status <pkgname>` here
-//                }
-</%cpp>
-%               if (first) {
-            {
-%                   first = false;
-%               }
-%               else {
-          , {
-%               }
-                <$$ utils::json::jsonify ("package-name", pkgname) $>,
-                <$$ utils::json::jsonify ("package-version", version) $>
-%               if (pos != std::string::npos) {
-              , <$$ utils::json::jsonify ("commit", commit) $>
-%               }
-            }
-%           }
-    ]
-%       }
-<%cpp>
-// Note: Commands and unit names are constrained in tools/systemctl and web/systemctl.ecpp
-// No arguments to our custom "list-json" causes fallback to try and list all
-// allowed units and a constrained list of fields and so be quite quick;
-// adding "--all" would show all fields... over time...
-        rv = shared::output ({"sudo", "systemctl", "list-json"}, output, cmderr, 120);
-        if (b_debug_trace) {
-            if (!cmderr.empty()) {
-                log_error("Calling 'systemctl list-json' got exit-code %i and this stderr:\n-----\n%s-----\n\n", rv, cmderr.c_str());
-            }
-#ifdef DEBUG
-            log_debug("Calling 'systemctl list-json' got exit-code %i and this stdout:\n-----\n%s-----\n\n", rv, output.c_str());
-#endif
-        }
+        bool first = true;
+        for (const auto& item : tokens) {
+            request.touch(); // Reset the deadman timer while in a loop WTF?!
+            if (item.empty ())
+                continue;
 
-        if (rv == 0 && !output.empty()) {
-</%cpp>
-,   "processes" : <$$ output.c_str() $>
-<%cpp>
-        } // if (systemctl list-json) rv == 0
-    } // if (access_auth_level >= AUTH_LEVEL_POWERUSER)
-</%cpp>
+            std::vector <std::string> line_tokens;
+            cxxtools::split (cxxtools::Regex("[ \t]+"), item, std::back_inserter (line_tokens));
+
+            std::string pkgname, version, commit;
+            pkgname = line_tokens.at (DPKG__LIST__COLUMN_PKGNAME);
+
+            auto pos = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION).find ("~");
+            if (pos != std::string::npos) {
+                version = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION).substr (0, pos);
+                commit = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION).substr (pos+1);
+                auto pos2 = commit.find ("-");
+                if (pos2 != std::string::npos) {
+                    version += commit.substr (pos2);
+                    commit = commit.substr (0, pos2);
+                }
+            }
+            else {
+                version = line_tokens.at (DPKG__LIST__COLUMN_PKGVERSION);
+            }
+            if (first) {
+                first = false;
+                output += "\t{\n";
+            }
+            else {
+                output += ",\t{\n";
+            }
+
+            output += "\t\t";
+            output += utils::json::jsonify ("package-name", pkgname);
+            output += "\n";
+            
+            output += ",\t\t";
+            output += utils::json::jsonify ("package-version", version);
+            output += "\n";
+
+            if (pos != std::string::npos) {
+                output += ",\t\t";
+                output += utils::json::jsonify ("commit", commit);
+                output += "\n";
+            }
+            output += "\t}\n";
+        }
+        output += "\t]\n"; // "packages" closing bracket
+    }
+    output += "}"; // closing json bracket
+
+} 
+
+void sysinfo_plain (std::string& output) {
+    output.clear ();
+
+    output += "{\n"
+    "\t\"restapi-metadata\" : {\n"
+    "\t\t\"core-package\" : {\n";
+
+    output += ",\t\t\t";
+    output += utils::json::jsonify ("package-version", PACKAGE_VERSION);
+    output += "\n";
+
+    output += "\t\t}\n"
+    "\t}\n"
+    "}";
 }
+
+</%pre>
+<%request scope="global">
+int8_t access_auth_level;
+</%request>
+<%args>
+std::string detail;
+</%args>
+<%cpp>
+    std::string output;
+    if (detail == "yes") {
+        if (access_auth_level < AUTH_LEVEL_POWERUSER) {
+            http_die ("not-authorized");
+        }
+        sysinfo_detail (output, request);
+    }
+    else {
+        sysinfo_plain (output);
+    }
+</%cpp>
+<$$ output $>
