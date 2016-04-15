@@ -78,7 +78,7 @@ expect "Retype new password:" {
     }
 EOF
     }
-elif [[ x${NAME} == "xDebian GNU/Linux" ]]; then
+else
     do_passwd() {
         local user old_passwd new_passwd
         user=${1}
@@ -86,10 +86,6 @@ elif [[ x${NAME} == "xDebian GNU/Linux" ]]; then
         new_passwd=${3}
         /usr/bin/printf "%s\n%s" "${new_passwd}" "${new_passwd}" | /usr/bin/passwd "${user}"
     }
-else
-    do_passwd() {
-        die "You need either /usr/bin/expect installed, either installation of Debian GNU/Linux with passwd accepting passwords from stdin, to continue"
-}
 fi
 
 if [[ $(/usr/bin/id -u) != 0 ]]; then
