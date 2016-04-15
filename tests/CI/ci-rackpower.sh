@@ -426,8 +426,9 @@ testcase() {
                 ;;
             esac
 
-            logmsg_debug "`date`: Sleeping some time and restarting agent-dbstore to propagate measurements and flush database..."
+            logmsg_debug "`date`: Sleeping some time to let propagate measurements and flush database..."
             sleep 18  # some time for propagating into DB (poll every 5s in nut actor + some time to process), and agent-dbstore can have its own delays to queue up writes (10 sec by default)
+            #logmsg_debug "`date`: restarting agent-dbstore to flush database..."
             #stop_dbstore
             #sleep 8
             #start_dbstore
