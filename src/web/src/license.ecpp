@@ -52,6 +52,20 @@
 
 #define RETURN return
 
+// drop the last / in a developer friendly way
+// this is intended to fix issue we've on rhel
+// "version" : "/usr/share/bios/license/1.0"
+// if there's no / in inp, then it's noop
+// if so, then it returns character AFTER last /
+static const char*
+basename2 (const char *inp)
+{
+    const char *sep = strrchr (inp, '/');
+    if (!sep)
+        return inp;
+    return sep+1;
+}
+
 </%pre>
 <%request scope="global">
 long int uid = 0;
@@ -92,9 +106,6 @@ if(rex_lic.match(request.getUrl())) {
 				log_debug("Error reading license version number from symlink name '%s' (got empty buffer)", current_license);
 			http_die("internal-error", "Error saving license acceptance or getting license version, check integrity of storage.");
 		}
-
-        /* We're interested only on version (eg. the filename) there - there's a difference between rhel and Debian, so lets make it explicitelly */
-        basename (buff);
 
 		/* Identify user */
 		char *user = NULL;
@@ -159,9 +170,9 @@ if(rex_st.match(request.getUrl())) {
 </%cpp>
 {
   "accepted" : "<$ (buff_a == NULL || strcmp(buff_a, buff_r) != 0) ? "no" : "yes" $>"
-, "version" : "<$ buff_r $>"
+, "version" : "<$ basename2 (buff_r) $>"
 % if(buff_a != NULL) {
-, "accepted_version" : "<$ buff_a $>"
+, "accepted_version" : "<$ basename2 (buff_a) $>"
 , "accepted_at" : "<$ tme $>"
 % }
 % if(user != NULL) {
