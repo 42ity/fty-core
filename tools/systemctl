@@ -47,7 +47,7 @@ SYSTEMCTL_UNITS_COMMON="mariadb mysql mysqld ntp ntpd ntpdate sntp bios \
                  bios-agent-autoconfig bios-agent-cm                    \
                  bios-agent-dbstore bios-agent-inventory bios-agent-nut \
                  bios-agent-asset bios-agent-legacy-metrics kpi-uptime  \
-                 agent-th bios_agent_tpower bios-db-init                \
+                 agent-th bios-agent-tpower bios-db-init                \
                  dc_th                                \
                  biostimer-warranty-metric biostimer-graphs-prefetch    \
                  malamute saslauthd networking network bios-networking  \
