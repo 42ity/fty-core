@@ -91,13 +91,13 @@ kill_daemons() {
     fi
     stop_dbstore
 
-    killall -INT bios-agent-legacy-metrics bios_agent_tpower lt-bios_agent_tpower agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
-    killall      bios-agent-legacy-metrics bios_agent_tpower lt-bios_agent_tpower agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
+    killall -INT bios-agent-legacy-metrics bios-agent-tpower lt-bios_agent_tpower agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
+    killall      bios-agent-legacy-metrics bios-agent-tpower lt-bios_agent_tpower agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
 
     ps -ef | grep -v grep | egrep "agent-(nut|dbstore|tpower)|legacy-metrics" | egrep "^`id -u -n` " && \
         ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
         logmsg_error "At least one of: bios-agent-legacy-metrics, agent-nut, bios-agent-tpower, agent-dbstore still alive, trying SIGKILL" && \
-        { killall -KILL bios-agent-legacy-metrics bios_agent_tpower lt-bios_agent_tpower agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null ; exit 1; }
+        { killall -KILL bios-agent-legacy-metrics bios-agent-tpower lt-bios_agent_tpower agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null ; exit 1; }
 
     return 0
 }
@@ -210,10 +210,10 @@ ${BUILDSUBDIR}/agent-nut "$CHECKOUTDIR/src/agents/nut/mapping.conf" &
 AGNUTPID=$!
 
 # This program is delivered by another repo, should "just exist" in container
-logmsg_info "Spawning the bios_agent_tpower daemon in the background..."
-/bin/systemctl stop bios_agent_tpower || true
-bios_agent_tpower &
-[ $? = 0 ] || CODE=$? die "Could not spawn bios_agent_tpower"
+logmsg_info "Spawning the bios-agent-tpower daemon in the background..."
+/bin/systemctl stop bios-agent-tpower || true
+bios-agent-tpower &
+[ $? = 0 ] || CODE=$? die "Could not spawn bios-agent-tpower"
 AGPWRPID=$!
 
 
