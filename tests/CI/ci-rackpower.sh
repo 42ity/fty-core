@@ -207,13 +207,13 @@ kill_daemons() {
     fi
     stop_dbstore
 
-    killall -INT tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut bios_agent_tpower lt-bios_agent_tpower agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
-    killall      tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut bios_agent_tpower lt-bios_agent_tpower agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
+    killall -INT tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut bios-agent-tpower lt-bios_agent_tpower agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
+    killall      tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut bios-agent-tpower lt-bios_agent_tpower agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
 
     ps -ef | grep -v grep | egrep "tntnet|agent-(nut|dbstore|tpower)|legacy-metrics" | egrep "^`id -u -n` " && \
         ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
         logmsg_error "At least one of: tntnet, bios-agent-legacy-metrics, agent-dbstore, agent-nut, agent-tpower still alive, trying SIGKILL" && \
-        { killall -KILL tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut bios_agent_tpower lt-bios_agent_tpower agent-dbstore lt-agent-dbstore 2>/dev/null ; exit 1; }
+        { killall -KILL tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut bios-agent-tpower lt-bios_agent_tpower agent-dbstore lt-agent-dbstore 2>/dev/null ; exit 1; }
 
     echo "=================== CI-RACKPOWER : END ==============================="
     echo ""
@@ -244,9 +244,9 @@ function startup() {
 
         # TODO: replace by calls to proper rc-bios script
         logmsg_info "Ensuring that needed remote daemons are running on VTE"
-        sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-agent-nut bios-agent-inventory bios-agent-cm bios_agent_tpower; do systemctl start $SVC ; done'
+        sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-agent-nut bios-agent-inventory bios-agent-cm bios-agent-tpower; do systemctl start $SVC ; done'
         sleep 5
-        sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-agent-nut bios-agent-inventory bios-agent-cm bios_agent_tpower; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done;exit $R' || \
+        sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-agent-nut bios-agent-inventory bios-agent-cm bios-agent-tpower; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done;exit $R' || \
                 die "Some required services are not running on the VTE"
 
         # *** write power rack base test data to DB on SUT
@@ -297,10 +297,10 @@ function startup() {
         AGNUTPID=$!
 
         # This program is delivered by another repo, should "just exist" in container
-        logmsg_info "Spawning the bios_agent_tpower daemon in the background..."
-        /bin/systemctl stop bios_agent_tpower || true
-        bios_agent_tpower &
-        [ $? = 0 ] || CODE=$? die "Could not spawn bios_agent_tpower"
+        logmsg_info "Spawning the bios-agent-tpower daemon in the background..."
+        /bin/systemctl stop bios-agent-tpower || true
+        bios-agent-tpower &
+        [ $? = 0 ] || CODE=$? die "Could not spawn bios-agent-tpower"
         AGPWRPID=$!
 
         sleep 3
@@ -320,7 +320,7 @@ function startup() {
     print_result $?
 
     if isRemoteSUT ; then
-        sut_run 'systemctl restart bios_agent_tpower'
+        sut_run 'systemctl restart bios-agent-tpower'
         sut_run 'systemctl restart bios-agent-dbstore'
     fi
 }
