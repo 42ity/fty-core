@@ -88,7 +88,7 @@ void NUTAgent::advertisePhysics() {
                     device.second.name().c_str(),
                     measurement.first.c_str(),
                     units.c_str(),
-                    measurement.second, -2, std::time(0));
+                    measurement.second, -2, 600);
                 if( msg ) {
                     log_debug("sending new measurement for ups %s, type %s, value %" PRIi32,
                               device.second.name().c_str(),
@@ -108,7 +108,7 @@ void NUTAgent::advertisePhysics() {
                     device.second.name().c_str(),
                     "status.ups",
                     "",
-                    status_i, 0, std::time(0));
+                    status_i, 0, 600);
                 if( msg ) {
                     log_debug("sending new status for ups %s, value %i (%s)", device.second.name().c_str(), status_i, status_s.c_str() );
                     send( topic.c_str(), &msg );
@@ -130,7 +130,7 @@ void NUTAgent::advertisePhysics() {
                         device.second.name().c_str(),
                         property.c_str(),
                         "",
-                        status_i, 0, std::time(0));
+                        status_i, 0, 600);
                     if( msg ) {
                         log_debug("sending new status for %s %s, value %i (%s)",
                                 property.c_str (),
