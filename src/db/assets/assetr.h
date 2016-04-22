@@ -129,13 +129,13 @@ int
             tntdb::Connection& conn,
             std::function<void(const tntdb::Row&)>& cb);
 
-/**\brief select all stored keytag names from v_bios_asset_ext_attributes
+/**\brief select all read-write stored keytag names from v_bios_asset_ext_attributes
  *
  * \param[in]   tntdb connection
  * \param[in]   callback function to operate on result row
  */
 int
-    select_ext_attributes_keytags(
+    select_ext_rw_attributes_keytags(
             tntdb::Connection& conn,
             std::function<void(
                 const tntdb::Row&
