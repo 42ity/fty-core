@@ -525,7 +525,7 @@ int
 }
 
 int
-    select_ext_attributes_keytags(
+    select_ext_rw_attributes_keytags(
             tntdb::Connection& conn,
             std::function<void(
                 const tntdb::Row&
@@ -538,6 +538,8 @@ int
             "   DISTINCT(keytag)"
             " FROM"
             "   v_bios_asset_ext_attributes"
+            " WHERE "
+            "   read_only = 0"
         );
 
         tntdb::Result res = st.select();

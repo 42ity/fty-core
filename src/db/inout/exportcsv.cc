@@ -60,7 +60,7 @@ s_update_keytags(
                 s.push_back(keytag);
         };
 
-    select_ext_attributes_keytags(
+    select_ext_rw_attributes_keytags(
             conn,
             foo);
 }
