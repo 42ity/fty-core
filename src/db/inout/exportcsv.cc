@@ -60,7 +60,7 @@ s_update_keytags(
                 s.push_back(keytag);
         };
 
-    select_ext_attributes_keytags(
+    select_ext_rw_attributes_keytags(
             conn,
             foo);
 }
@@ -288,9 +288,10 @@ void
             lcs.add(input);
         }
 
-        // 2.5.3        extended attributes
+        // 2.5.3        read-write (!read_only) extended attributes
         for (const auto& k : KEYTAGS) {
-            if (ext_attrs.count(k) == 1)
+            if (ext_attrs.count(k) == 1 &&
+                !ext_attrs[k].second)
                 lcs.add(ext_attrs[k].first);
             else
                 lcs.add("");
