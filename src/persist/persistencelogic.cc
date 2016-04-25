@@ -86,7 +86,7 @@ void process_measurement(
 
     // now represents time to live! bios_proto_time (m);
     // time is a time when message was received
-    uint64_t _time = ::time(NULL);
+    uint64_t _time = bios_proto_aux_number(m, "time", ::time(NULL));
     persist::insert_into_measurement(
             conn, db_topic.c_str(), value, scale, _time,
             bios_proto_unit (m), bios_proto_element_src (m), c, multi_row);
