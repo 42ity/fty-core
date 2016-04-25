@@ -517,8 +517,12 @@ verify_threeway_checksum() {
 
     [ -n "$CSNEW" ] && \
     if verify_checksum "$FILE_DATA" "$FILE_CSNEW" ; then
-        logmsg_info "Remote checksum is good for '$FILE_CSNEW', local copy was corrupted or missing - replacing checksum file"
-        mv -f "$FILE_CSNEW" "$FILE_CSOLD" && \
+        if [ x"${REPLACE_MISSING_CHECKSUM-}" = xno ] && [ ! -f "$FILE_CSOLD" ] ; then
+            logmsg_info "Remote checksum is good for '$FILE_CSNEW' and local copy was missing - not installing new checksum file"
+        else
+            logmsg_info "Remote checksum is good for '$FILE_CSNEW', local copy was corrupted or missing - replacing checksum file"
+            mv -f "$FILE_CSNEW" "$FILE_CSOLD"
+        fi && \
             logmsg_info "The newest available remote image is '$IMAGE_URL' and we already have a good copy (as '$FILE_DATA')"
         return $?
     else
@@ -972,13 +976,13 @@ download_rawfwimage_uboot() (
     verify_threeway_checksum "${IMAGE_URL}" "${rIMAGE_URL_BASENAME}" "${rIMAGE_CSOLD}" "${aIMAGE_CSNEW}" && return 0
     if [ -s "${aIMAGE_CSNEW_PADDED}" ] && [ -c "/dev/mtd$UBOOT_MTD" ]; then
         logmsg_info "Verify padded checksum against a raw u-Boot loader partition with flashed bits here ..."
-        FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+        REPLACE_MISSING_CHECKSUM="no" FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
             "/dev/mtd$UBOOT_MTD" \
             "${DEPLOYMENTROOTFW_UBOOT}/${rIMAGE_CSOLD_PADDED}" \
             "${aIMAGE_CSNEW_PADDED}" && return 0
     fi
     logmsg_info "Verify non-padded checksum against a raw u-Boot loader partition with flashed bits here ..."
-    FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+    REPLACE_MISSING_CHECKSUM="no" FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
             "/dev/mtd$UBOOT_MTD" \
             "${DEPLOYMENTROOTFW_UBOOT}/${rIMAGE_CSOLD}" \
             "${aIMAGE_CSNEW}" && return 0
@@ -1131,13 +1135,13 @@ download_rawfwimage_uimage() (
     verify_threeway_checksum "${IMAGE_URL}" "${rIMAGE_URL_BASENAME}" "${rIMAGE_CSOLD}" "${aIMAGE_CSNEW}" && return 0
     if [ -s "${aIMAGE_CSNEW_PADDED}" ] && [ -c "/dev/mtd$KERNEL_MTD" ]; then
         logmsg_info "Verify padded checksum against a raw kernel uImage partition with flashed bits here ..."
-        FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+        REPLACE_MISSING_CHECKSUM="no" FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
             "/dev/mtd$KERNEL_MTD" \
             "${DEPLOYMENTROOTFW_UIMAGE}/${rIMAGE_CSOLD_PADDED}" \
             "${aIMAGE_CSNEW_PADDED}" && return 0
     fi
     logmsg_info "Verify non-padded checksum against a raw kernel uImage partition with flashed bits here ..."
-    FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+    REPLACE_MISSING_CHECKSUM="no" FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
             "/dev/mtd$KERNEL_MTD" \
             "${DEPLOYMENTROOTFW_UIMAGE}/${rIMAGE_CSOLD}" \
             "${aIMAGE_CSNEW}" && return 0
