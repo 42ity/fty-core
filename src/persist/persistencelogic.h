@@ -26,9 +26,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef SRC_PERSIST_PERSISTENCELOGIC_H_
 #define SRC_PERSIST_PERSISTENCELOGIC_H_
 
-#include <czmq.h>
-#include <zmq.h>
-
 // To be deleted - we should be fine with just zmsg_t
 #include "ymsg.h"
 #include "measurement.h"
@@ -52,11 +49,6 @@ void process_measurement(zmsg_t **msg_p, TopicCache& c, MultiRowCache &multi_row
 
 /* \brief flush last measurements in Multi row cache */
 void flush_measurement(MultiRowCache& multi_row );
-
-/* \brief process message on networks stream */
-void
-process_networks(
-        ymsg_t** in_p);
 
 void process_inventory (ymsg_t **msg);
 

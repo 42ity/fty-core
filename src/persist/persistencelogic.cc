@@ -16,59 +16,38 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include <assert.h>
-#include <czmq.h>
 #include <tntdb/connect.h>
 #include <tntdb/error.h>
 #include <time.h>
+#include <biosproto.h>
 
-#include <zmq.h>
-#include <czmq.h>
-
-
-#include "defs.h"
-#include "bios_agent.h"
-#include "preproc.h"
 #include "assetcrud.h"
-#include "cidr.h"
 #include "persistencelogic.h"
-#include "monitor.h"
 #include "log.h"
 #include "dbpath.h"
-#include "measurement.h"
-#include "agents.h"
 #include "cleanup.h"
 #include "utils.h"
 #include "utils++.h"
 #include "ymsg-asset.h"
 
-#include <biosproto.h>
-
-#define NETHISTORY_AUTO_CMD     'a'
-#define NETHISTORY_MAN_CMD      'm'
-#define NETHISTORY_EXCL_CMD     'e'
-
 namespace persist {
 
 // used by src/agents/dbstore
 void process_measurement(
-        zmsg_t **msg_p, 
-        TopicCache& c, 
-        MultiRowCache& multi_row ) {
-
-    if (!msg_p || !*msg_p)
+        zmsg_t **msg_p,
+        TopicCache& c,
+        MultiRowCache& multi_row )
+{
+    if (!msg_p || !*msg_p) {
         return;
+    }
 
-    //log_debug("Processing measurement");
-    uint64_t tme = 0;
-    _scoped_char *device_name = NULL;
-    _scoped_char *quantity    = NULL;   // TODO: THA: what does this parameter mean?
-    _scoped_char *units       = NULL;
-    m_msrmnt_value_t value = 0;
-    m_msrmnt_scale_t scale = 0;
-    std::string db_topic;
-    time_t _time;
-    bios_proto_t *m = NULL;
+    bios_proto_t *m = bios_proto_decode (msg_p);
+    if ( !m ) {
+        log_error("Can't decode the biosproto, ignore it");
+        zmsg_destroy(msg_p);
+        return;
+    }
 
     tntdb::Connection conn;
     try {
@@ -76,48 +55,43 @@ void process_measurement(
         conn.ping();
     } catch (const std::exception &e) {
         log_error("Can't connect to the database");
-        goto free_mem_toto;
+        zmsg_destroy(msg_p);
+        return;
     }
 
-    m = bios_proto_decode (msg_p);
-    if ( !m ) {
-        log_error("Can't decode the biosproto, ignore it");
-        goto free_mem_toto;
-    }
+    std::string db_topic = std::string (bios_proto_type (m)) + "@" + std::string(bios_proto_element_src (m));
 
-    tme = bios_proto_time (m);
-
-    quantity = strdup (bios_proto_type (m));
-    device_name = strdup (bios_proto_element_src (m));
-    db_topic = std::string (quantity) + "@" + std::string(device_name);
-    _time = (time_t) tme;
-
+    m_msrmnt_value_t value = 0;
+    m_msrmnt_scale_t scale = 0;
     if (!strstr (bios_proto_value (m), ".")) {
         value = string_to_int64 (bios_proto_value (m));
-        if (errno != 0)
-            goto free_mem_toto;
+        if (errno != 0) {
+            errno = 0;
+            bios_proto_destroy (&m);
+            zmsg_destroy(msg_p);
+            return;
+        }
     }
     else {
         int8_t lscale = 0;
         int32_t integer = 0;
-        if (!utils::math::stobiosf (bios_proto_value (m), integer, lscale))
-            goto free_mem_toto;
+        if (!utils::math::stobiosf (bios_proto_value (m), integer, lscale)) {
+            bios_proto_destroy (&m);
+            zmsg_destroy(msg_p);
+            return;
+        }
         value = integer;
         scale = lscale;
     }
 
-    units = strdup (bios_proto_unit (m));
+    // now represents time to live! bios_proto_time (m);
+    // time is a time when message was received
+    uint64_t _time = ::time(NULL);
     persist::insert_into_measurement(
             conn, db_topic.c_str(), value, scale, _time,
-            units, device_name, c, multi_row);
-free_mem_toto:
-    //free resources
-    errno = 0;
+            bios_proto_unit (m), bios_proto_element_src (m), c, multi_row);
     bios_proto_destroy (&m);
     zmsg_destroy(msg_p);
-    FREE0 (device_name)
-    FREE0 (quantity)
-    FREE0 (units)
 }
 
 void flush_measurement(MultiRowCache& multi_row ) {
@@ -130,7 +104,6 @@ void flush_measurement(MultiRowCache& multi_row ) {
         return;
     }
     persist::flush_measurement(conn,multi_row);
-    
 }
 
 /**
