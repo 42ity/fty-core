@@ -654,7 +654,16 @@ download_osimage() (
     # found on this local system, then the routine just returns code "42"
     # instead of downloading this detected new image otherwise.
     # A successful download of an image (consistent non-empty file) is 42 too
-    cd "${DOWNLOADROOT_OSIMAGE}" || die "Can not use DOWNLOADROOT_OSIMAGE='$DOWNLOADROOT_OSIMAGE'"
+
+    # We do not download OS images into NAND (like FW image fallback),
+    # not by easy default at least
+    cd "${DOWNLOADROOT_OSIMAGE}" || {
+        if [ x"${CHECK_ONLY-}" = xyes ]; then
+            cd "${DOWNLOADROOTFW_OSIMAGE}" || die "Can not use DOWNLOADROOT_OSIMAGE='$DOWNLOADROOT_OSIMAGE' or DOWNLOADROOTFW_OSIMAGE='$DOWNLOADROOTFW_OSIMAGE'"
+        else
+            die "Can not use DOWNLOADROOT_OSIMAGE='$DOWNLOADROOT_OSIMAGE'"
+        fi
+    }
 
     case "${1-}" in
             *://*)
@@ -897,7 +906,8 @@ findnewest_rawfwimage_uboot() (
 )
 
 download_rawfwimage_uboot() (
-    cd "${DOWNLOADROOTFW_UBOOT}" || die "Can not use DOWNLOADROOTFW_UBOOT='$DOWNLOADROOTFW_UBOOT'"
+    cd "${DOWNLOADROOTFW_UBOOT}" || \
+    cd "${DEPLOYMENTROOTFW_UBOOT}" || die "Can not use DOWNLOADROOTFW_UBOOT='$DOWNLOADROOTFW_UBOOT' nor DEPLOYMENTROOTFW_UBOOT='$DEPLOYMENTROOTFW_UBOOT'"
 
     case "${1-}" in
             *://*)
@@ -1062,7 +1072,8 @@ findnewest_rawfwimage_uimage() (
 )
 
 download_rawfwimage_uimage() (
-    cd "${DOWNLOADROOTFW_UIMAGE}" || die "Can not use DOWNLOADROOTFW_UIMAGE='$DOWNLOADROOTFW_UIMAGE'"
+    cd "${DOWNLOADROOTFW_UIMAGE}" || \
+    cd "${DEPLOYMENTROOTFW_UIMAGE}" || die "Can not use DOWNLOADROOTFW_UIMAGE='$DOWNLOADROOTFW_UIMAGE' nor DEPLOYMENTROOTFW_UIMAGE='$DEPLOYMENTROOTFW_UIMAGE'"
 
     case "${1-}" in
             *://*)
@@ -1226,7 +1237,8 @@ findnewest_rawfwimage_modules() (
 )
 
 download_rawfwimage_modules() (
-    cd "${DOWNLOADROOTFW_MODULES}" || die "Can not use DOWNLOADROOTFW_MODULES='$DOWNLOADROOTFW_MODULES'"
+    cd "${DOWNLOADROOTFW_MODULES}" || \
+    cd "${DEPLOYMENTROOTFW_MODULES}" || die "Can not use DOWNLOADROOTFW_MODULES='$DOWNLOADROOTFW_MODULES' nor DEPLOYMENTROOTFW_MODULES='$DEPLOYMENTROOTFW_MODULES'"
 
     case "${1-}" in
             *://*)
