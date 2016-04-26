@@ -66,10 +66,10 @@ int main (UNUSED_PARAM int argc, UNUSED_PARAM char **argv) {
         return EXIT_FAILURE;
     }
 
-    int rv = bios_agent_set_producer (agent, bios_get_stream_main ());    
+    int rv = bios_agent_set_producer (agent, "METRICS");
     if (rv != 0) {
-        log_critical ("bios_agent_set_producer (stream = '%s') failed.", bios_get_stream_main ());
-        bios_agent_destroy (&agent);       
+        log_critical ("bios_agent_set_producer (stream = '%s') failed.", "METRICS");
+        bios_agent_destroy (&agent);
         return EXIT_FAILURE;
     }
 

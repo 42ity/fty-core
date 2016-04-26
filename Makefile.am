@@ -748,7 +748,7 @@ test_computation_CPPFLAGS = \
 			-I$(abs_top_builddir)/tools \
 			-I$(abs_top_srcdir)/src
 
-test_computation_LDFLAGS = ${CXXTOOLS_LIBS} ${LIBCZMQ_LIBS} -ltntdb
+test_computation_LDFLAGS = ${CXXTOOLS_LIBS} ${LIBCZMQ_LIBS} -ltntdb -lbiosproto
 
 ### The unit-tester for some routines from libbiosapi
 check_PROGRAMS +=		test-libbiosapiut
@@ -1230,7 +1230,7 @@ agent_cm_LDADD = \
 			libpriv-utils-plusplus.la \
 			libpriv-defs.la
 
-agent_cm_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi -ltntdb
+agent_cm_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi -ltntdb -lbiosproto
 
 agent_cm_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src \
