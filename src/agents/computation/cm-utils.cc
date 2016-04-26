@@ -429,6 +429,7 @@ publish_measurement
 
     uint32_t ttl = s_get_ttl_by_step (step);
     zhash_t *aux = zhash_new();
+    zhash_autofree(aux);
     zhash_insert(aux, "time", (char *) std::to_string(timestamp).c_str());
     zmsg_t *msg = bios_proto_encode_metric (
             aux,
