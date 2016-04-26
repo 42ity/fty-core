@@ -442,7 +442,7 @@ publish_measurement
     int rv = bios_agent_send_proto_metric (agent, topic.c_str (), &msg); // msg is destroyed
     zhash_destroy (&aux); 
     if (rv == 0) {
-        log_debug ("Publishing message on stream '%s' with subject '%s':\n \tsource=%s\n \tasset=%s\n \tvalue=%s\n \tunit=%s\n \tttl=%s\n \taux_time=%s", "METRICS", topic.c_str (), quantity.c_str(), device_name, std::to_string(value).c_str(), unit, std::to_string(ttl).c_str() );
+        log_debug ("Publishing message on stream '%s' with subject '%s':\n \tsource=%s\n \tasset=%s\n \tvalue=%s\n \tunit=%s\n \tttl=%s\n \taux_time=%s", "METRICS", topic.c_str (), quantity.c_str(), device_name, std::to_string(value).c_str(), unit, std::to_string(ttl).c_str(),  std::to_string(timestamp).c_str() );
     } else {
         log_error ("bios_agent_send_proto_metric (subject = '%s') failed.", topic.c_str ());
     } 
