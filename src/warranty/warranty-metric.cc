@@ -81,9 +81,9 @@ int main()
         exit (EXIT_FAILURE);
     }
 
-    r = mlm_client_set_producer (client, "ALERTS");
+    r = mlm_client_set_producer (client, "METRICS");
     if (r == -1) {
-        log_error ("Can't set producer to ALERTS stream");
+        log_error ("Can't set producer to METRICS stream");
         exit (EXIT_FAILURE);
     }
 
