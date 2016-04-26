@@ -127,6 +127,17 @@ bios_agent_send (bios_agent_t *self, const char *subject, ymsg_t **msg_p) {
 }
 
 int
+bios_agent_send_proto_metric (bios_agent_t *self, const char *subject, zmsg_t **msg_p) {
+    if (!self || !subject || !msg_p || !(*msg_p)) {
+        return -2;
+    }
+    int rc = mlm_client_send (self->client, subject, msg_p);
+    // FIXME: remove sleep as soon as malamute is fixed
+    zclock_sleep(1);
+    return rc;
+}
+
+int
 bios_agent_sendto (bios_agent_t *self, const char *address, const char *subject, ymsg_t **send_p) {
     if (!self || !address || !subject || !send_p || !(*send_p) || ymsg_id (*send_p) != YMSG_SEND) {
         return -2;

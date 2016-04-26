@@ -1230,7 +1230,7 @@ agent_cm_LDADD = \
 			libpriv-utils-plusplus.la \
 			libpriv-defs.la
 
-agent_cm_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi -ltntdb
+agent_cm_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi -ltntdb -lbiosproto
 
 agent_cm_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src \

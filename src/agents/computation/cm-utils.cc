@@ -22,6 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <cxxtools/jsondeserializer.h>
 #include <cxxtools/serializationerror.h>
 
+#include <bios_proto.h>
 #include "defs.h"
 #include "str_defs.h"
 #include "log.h"
@@ -388,6 +389,23 @@ request_sampled(
 
 } // namespace web
 
+
+static uint32_t
+    s_get_ttl_by_step(
+        const char *step)
+{
+    // ACE
+    //
+    static std::map<std::string, uint32_t> mymap= {{"15m", 15*60},
+    {"30m", 30*60},
+    {"1h", 60*60},
+    {"8h", 60*60*8},
+    {"24h", 24*60*60},
+    {"7d", 7*24*60*60},
+    {"30d", 30*24*60*60}};
+    return mymap.find(step)->second;
+}
+
 void
 publish_measurement
 (bios_agent_t *agent, const char *device_name, const char *source, const char *type, const char *step, const char *unit, double value, int64_t timestamp) {
@@ -409,24 +427,24 @@ publish_measurement
     topic.assign ("measurement.").append (quantity).append ("@").append (device_name);
     log_debug ("topic: '%s'", topic.c_str ());
 
-    // Note: precision is currently hardcoded for 2 floating point places
-
-
-    _scoped_ymsg_t *published_measurement =
-        bios_measurement_encode (device_name, quantity.c_str(), unit, (int32_t) std::round (value * 100), -2, timestamp); // TODO: propagae this upwards....
-    if (!published_measurement) {
-        log_error (
-        "bios_measurement_encode (device = '%s', source = '%s', type = '%s', step = '%s', value = '%f', timestamp = '%" PRId64"') failed.",
-        device_name, source, type, step, value, timestamp);
-        return;
-    }
-    std::string formatted_msg;
-    ymsg_format (published_measurement, formatted_msg);
-    int rv = bios_agent_send (agent, topic.c_str (), &published_measurement); // published_measurement destroyed 
+    uint32_t ttl = s_get_ttl_by_step (step);
+    zhash_t *aux = zhash_new();
+    zhash_insert(aux, "time", (char *) std::to_string(timestamp).c_str());
+    zmsg_t *msg = bios_proto_encode_metric (
+            aux,
+            quantity.c_str(),
+            device_name,
+            std::to_string(value).c_str(),
+            unit,
+            ttl);
+    
+//    std::string formatted_msg = " \tsource=%s\n \tasset=%s\n \tvalue=%s\n \tunit=%s\n \tttl=%s\n \taux_time=%s";
+    int rv = bios_agent_send_proto_metric (agent, topic.c_str (), &msg); // msg is destroyed
+    zhash_destroy (&aux); 
     if (rv == 0) {
-        log_debug ("Publishing message on stream '%s' with subject '%s':\n%s", bios_get_stream_main (), topic.c_str (), formatted_msg.c_str());
+        log_debug ("Publishing message on stream '%s' with subject '%s':\n \tsource=%s\n \tasset=%s\n \tvalue=%s\n \tunit=%s\n \tttl=%s\n \taux_time=%s", "METRICS", topic.c_str (), quantity.c_str(), device_name, std::to_string(value).c_str(), unit, std::to_string(ttl).c_str() );
     } else {
-        log_error ("bios_agent_send (subject = '%s') failed.", topic.c_str ());
+        log_error ("bios_agent_send_proto_metric (subject = '%s') failed.", topic.c_str ());
     } 
 }
 
