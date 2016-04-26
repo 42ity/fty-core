@@ -688,9 +688,15 @@ logmsg_info "Copy root's ~/.ssh from the host OS"
 cp -r --preserve ~/.ssh "../rootfs/$VM/root/"
 cp -r --preserve /etc/ssh/*_key /etc/ssh/*.pub "../rootfs/$VM/etc/ssh"
 
-logmsg_info "Copy root's ~/.oscrc from the host OS"
-cp --preserve ~/.oscrc "../rootfs/$VM/root/"
-cp --preserve -r ~/.config "../rootfs/$VM/root/"
+if [ -f ~/.oscrc ]; then
+	logmsg_info "Copy root's ~/.oscrc from the host OS"
+	cp --preserve ~/.oscrc "../rootfs/$VM/root/"
+fi
+
+if [ -f ~/.config ]; then
+	logmsg_info "Copy root's ~/.config from the host OS"
+	cp --preserve -r ~/.config "../rootfs/$VM/root/"
+fi
 
 logmsg_info "Copy environment settings from the host OS"
 cp /etc/profile.d/* ../rootfs/$VM/etc/profile.d/
@@ -703,7 +709,7 @@ fi
 
 mkdir -p "../rootfs/$VM/etc/apt/apt.conf.d/"
 # setup debian proxy
-[ -n "$APT_PROXY" ] && \
+[ -n "$APT_PROXY" ] && [ -d "../rootfs/$VM/etc/apt/apt.conf.d" ] && \
 	logmsg_info "Set up APT proxy configuration" && \
 	echo 'Acquire::http::Proxy "'"$APT_PROXY"'";' > \
 		"../rootfs/$VM/etc/apt/apt.conf.d/01proxy-apt-cacher"
