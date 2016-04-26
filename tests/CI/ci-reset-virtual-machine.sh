@@ -693,8 +693,8 @@ if [ -f ~/.oscrc ]; then
 	cp --preserve ~/.oscrc "../rootfs/$VM/root/"
 fi
 
-if [ -f ~/.config ]; then
-	logmsg_info "Copy root's ~/.config from the host OS"
+if [ -d ~/.config ]; then
+	logmsg_info "Copy root's ~/.config/ from the host OS"
 	cp --preserve -r ~/.config "../rootfs/$VM/root/"
 fi
 
