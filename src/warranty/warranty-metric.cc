@@ -42,7 +42,7 @@
  *  SUBJECT: end_warranty_date@device
  *           value now() - end_warranty_date
  */
-
+uint32_t TTL = 24*60*60;//[s]
 int main()
 {
     log_open ();
@@ -63,71 +63,16 @@ int main()
             row["date"].get(date);
 
             log_debug ("name: %s, keytag: %s, date: %s", name.c_str(), keytag.c_str(), date.c_str());
-
-            int day_diff;
-            {
-                struct tm tm_ewd;
-                struct tm *tm_now_p;
-                ::memset (&tm_ewd, 0, sizeof(struct tm));
-
-                char* ret = ::strptime (date.c_str(), "%Y-%m-%d", &tm_ewd);
-                if (ret == NULL) {
-                    log_error ("Cannot convert %s to date, skipping", date.c_str());
-                    return;
-                }
-
-                time_t ewd = ::mktime (&tm_ewd);
-                time_t now = ::time (NULL);
-
-                tm_now_p = ::gmtime (&now);
-                tm_now_p->tm_hour = 0;
-                tm_now_p->tm_min = 0;
-                tm_now_p->tm_sec = 0;
-                now = ::mktime (tm_now_p);
-
-                // end_warranty_date (s) - now (s) -> to days
-                day_diff = std::ceil ((ewd - now) / (60*60*24));
-                log_debug ("day_diff: %d", day_diff);
-            }
-
-            std::string rule_name = "warranty";
-
-            const char* severity = NULL;
-            const char* state = "ACTIVE";
-            if (day_diff <= 10)
-                severity = "CRITICAL";
-            else
-            if (day_diff <= 60)
-                severity = "WARNING";
-
-            if (!severity)
-                state = "RESOLVED";
-
-            zmsg_t *msg = bios_proto_encode_alert (
-                    NULL,
-                    rule_name.c_str(),
-                    name.c_str(),
-                    state,
-                    severity,
-                    "Warranty date is going to expire",
-                    ::time (NULL),
-                    "EMAIL");
-
-            std::string subject = rule_name.append ("@").append (name);
-            mlm_client_send (client, subject.c_str (), &msg);
-
-            /* HOTFIX: let it send alerts for a while, unless pattern rules in alert generator will be fixed
             zmsg_t *msg = bios_proto_encode_metric (
                     NULL,
                     keytag.c_str(),
                     name.c_str (),
                     date.c_str (),
                     "day",
-                    -1);
+                    TTL);
             assert (msg);
             std::string subject = keytag.append ("@").append (name);
             mlm_client_send (client, subject.c_str (), &msg);
-            */
         };
 
     int r = mlm_client_connect (client, "ipc://@/malamute", 1000, "warranty-metric");
