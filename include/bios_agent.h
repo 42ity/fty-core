@@ -281,6 +281,10 @@ BIOS_EXPORT void
 BIOS_EXPORT mlm_client_t *
     bios_agent_client (bios_agent_t *self);
 
+// ACE: there is a need to send new metrics from core
+BIOS_EXPORT int
+    bios_agent_send_proto_metric (bios_agent_t *self, const char *subject, zmsg_t **msg_p);
+ 
 // TODO (miska): please change for utils_ymsg.h functions
 BIOS_EXPORT const char * ymsg_get_string(ymsg_t* msg, const char *key);
 BIOS_EXPORT int32_t ymsg_get_int32(ymsg_t* msg, const char *key);

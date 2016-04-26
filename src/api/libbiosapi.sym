@@ -65,6 +65,7 @@ global:
         bios_get_stream_assets;
         bios_get_streams;
         bios_agent_seq;
+        bios_agent_send_proto_metric;
 
         ymsg_is_ok;
         ymsg_set_status;
