@@ -219,6 +219,11 @@ cp /usr/share/bios/examples/config/pam.d/* /etc/pam.d
 RULES="`sed -n 's|.*pam_cracklib.so||p' /etc/pam.d/bios`"
 [ "$IMGTYPE" = devel ] || sed -i "s|\\(.*pam_cracklib.so\\).*|\1$RULES|" /etc/pam.d/common-password
 
+# Force creation of cracklib dictionary
+if [ ! -f /var/cache/cracklib/cracklib_dict.pwd ]; then
+    /usr/sbin/update-cracklib
+fi
+
 sed -i 's|\(secure_path="\)|\1/usr/libexec/bios:|' /etc/sudoers
 
 mkdir -p /etc/sudoers.d
