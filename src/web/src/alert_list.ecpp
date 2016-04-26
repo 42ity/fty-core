@@ -20,7 +20,6 @@
 /*!
  \file alert_list.ecpp
  \author Karol Hrdina <KarolHrdina@Eaton.com>
- \brief Implementation of REST API call for PUT alerts/list/<rule_name>/<element_name
 */
 #><%pre>
 #include <exception>
@@ -45,17 +44,46 @@
 
 #define RFC_ALERTS_LIST "rfc-alerts-list"
 
-static
-int state_valid (const char *state) {
-    assert (state);
-    if (streq (state, "ALL") ||
+
+
+static int
+is_alertstate (const char *state) {
+    if (!state)
+        return 0;
+    if (streq (state, "ACTIVE") ||
         streq (state, "ACK-WIP") ||
         streq (state, "ACK-IGNORE") ||
         streq (state, "ACK-PAUSE") ||
         streq (state, "ACK-SILENCE") ||
-        streq (state, "ACTIVE"))
+        streq (state, "RESOLVED")) {
         return 1;
+    }
     return 0;
+}
+
+static int
+is_requeststate (const char *state) {
+    if (!state)
+        return 0;
+    if (streq (state, "ALL") ||
+        streq (state, "ALL-ACTIVE")) {
+        return 1;
+    }
+    return is_alertstate (state);
+}
+
+static int
+is_state_included (const char *request, const char *alert) {
+    if (!is_requeststate (request))
+        return 0;
+    if (!is_alertstate (alert))
+        return 0;
+
+    if (streq (request, "ALL"))
+        return 1;
+    if (streq (request, "ALL-ACTIVE") && !str_eq (alert, "RESOLVED"))
+        return 1;
+    return streq (request, alert);
 }
 
 </%pre>
@@ -75,12 +103,13 @@ log_debug ("Request parameters - Initial values received:\n\tstate = '%s'\n\tass
 
 // Check 'state' parameter
 if (state.empty ()) {
-    state = "ALL";
+    state = "ALL-ACTIVE";
 }
-else if (!state_valid (state.c_str ())) {
+else
+if (!is_requeststate (state.c_str ())) {
     log_error ("state = '%s' is not a valid alert state.", state.c_str ());
     http_die ("request-param-bad", "state", std::string ("value '").append (state).append ("'").c_str (),
-        std::string ("one of the following values [ ACTIVE | ACK-WIP | ACK-IGNORE | ACK-PAUSE | ACK-SILENCE ]").c_str ());
+        std::string ("one of the following values [ ALL | ALL-ACTIVE | ACTIVE | ACK-WIP | ACK-IGNORE | ACK-PAUSE | ACK-SILENCE | RESOLVED ]").c_str ());
 }
 
 // Check 'recursive' parameter
@@ -101,7 +130,8 @@ if (!asset.empty ()) {
     }
 }
 
-log_debug ("Request parameters - default values applied:\n\tstate = '%s'\n\tasset = '%s'\n\trecursive = '%s'\n",
+log_debug ("Request parameters - default values applied:\n"
+           "\tstate = '%s'\n\tasset = '%s'\n\trecursive = '%s'\n",
             state.c_str (), asset.c_str (), recursive.c_str ());
 
 std::map<std::string, int> desired_elements;
@@ -148,7 +178,7 @@ if (!asset.empty ()) {
     }
 }
 
-log_debug ("=== These elements are in topologically under element id: '%" PRIu32"' ===", element_id);
+log_debug ("=== These elements are topologically under element id: '%" PRIu32"' ===", element_id);
 for (auto const& item : desired_elements) {
     log_debug ("%s", item.first.c_str ());
 }
@@ -173,7 +203,7 @@ if (rv == -1) {
     http_die ("internal-error", "mlm_client_connect() failed.");
 }
 
-// prepare rfc-alerts-list ADD message
+// prepare rfc-alerts-list LIST message
 zmsg_t *send_msg = zmsg_new ();
 if (!send_msg) {
     log_critical ("zmsg_new() failed.");
@@ -290,7 +320,7 @@ if (streq (part, "LIST")) {
 %       frame = zmsg_pop (recv_msg);
 %       continue;
 %   }
-%   if (state.compare("ALL") != 0 && !streq (bios_proto_state (decoded), state.c_str ())) {
+%   if (!is_state_included (state.c_str (), bios_proto_state (decoded))) {
 %       log_debug ("skipping due to state '%s' not being requested", bios_proto_state (decoded));
 %       bios_proto_destroy (&decoded);
 %       frame = zmsg_pop (recv_msg);
@@ -304,6 +334,7 @@ if (streq (part, "LIST")) {
 %       frame = zmsg_pop (recv_msg);
 %       continue;
 %   }
+%   log_debug ("persist::select_asset_element_web_byName ('%s')", bios_proto_element_src (decoded));
 %   auto asset_element = persist::select_asset_element_web_byName (connection, bios_proto_element_src (decoded));
 %   if (asset_element.status != 1) {
 %       log_error ("%s", asset_element.msg.c_str ());
@@ -370,7 +401,6 @@ if (streq (part, "ERROR")) {
     zmsg_destroy (&recv_msg);
     mlm_client_destroy (&client);
     http_die ("internal-error", std::string ("Error while requesting list of alerts: ").append (reason).c_str ());
-
 }
 // Message does not conform to protocol
 log_error ("Unexptected reply from  '%s'. Does not conform to '%s' protocol.",
