@@ -59,28 +59,42 @@ set_value_in_ups() {
     local RES=0
 
     logmsg_debug "set_value_in_ups('$UPS' '$PARAM' '$VALUE')..."
-    sut_run "egrep '^$PARAM *:' <'$NUTCFGDIR/$UPS.dev' >/dev/null" || \
-        logmsg_warn "Parameter '$PARAM' is not set in file '$NUTCFGDIR/$UPS.dev'"
-
-    sut_run "sed -r -e 's/^$PARAM *:.+\$/$PARAM: $VALUE/i' <'$NUTCFGDIR/$UPS.dev' >'$NUTCFGDIR/$UPS.new'" && \
-    sut_run "egrep '^$PARAM *: *$VALUE *\$' <'$NUTCFGDIR/$UPS.new' >/dev/null" && \
-    sut_run "cat '$NUTCFGDIR/$UPS.new' > '$NUTCFGDIR/$UPS.dev' && rm -rf '$NUTCFGDIR/$UPS.new'" || \
-        { RES=$?; logmsg_error "set_value_from_ups() could not generate '$NUTCFGDIR/$UPS.dev' with new '$PARAM=$VALUE' setting"; }
 
     case "$UPS" in
-        ""|@*) logmsg_error "set_value_from_ups() got no reasonable UPS parameter ('$UPS')"; return 1 ;;
+        *[Pp][Dd][Uu]*) case "$PARAM" in
+                *[Uu][Pp][Ss].*) logmsg_warn "set_value_in_ups() tries to set an UPS parameter on a PDU device - this may fail below" ;;
+               esac ;;
+    esac
+
+    if sut_run "egrep '^$PARAM *:' <'$NUTCFGDIR/$UPS.dev' >/dev/null" ; then
+        sut_run "sed -r -e 's/^$PARAM *:.+\$/$PARAM: $VALUE/i' <'$NUTCFGDIR/$UPS.dev' >'$NUTCFGDIR/$UPS.new'" && \
+        sut_run "egrep '^$PARAM *: *$VALUE *\$' <'$NUTCFGDIR/$UPS.new' >/dev/null" && \
+        sut_run "cat '$NUTCFGDIR/$UPS.new' > '$NUTCFGDIR/$UPS.dev' && rm -rf '$NUTCFGDIR/$UPS.new'" || \
+            { RES=$?; logmsg_error "set_value_in_ups() could not generate '$NUTCFGDIR/$UPS.dev' with new '$PARAM=$VALUE' setting"; }
+    else
+        logmsg_warn "Parameter '$PARAM' is not set in file '$NUTCFGDIR/$UPS.dev' - can not replace it with desired value"
+    fi
+
+    case "$UPS" in
+        ""|@*) logmsg_error "set_value_in_ups() got no reasonable UPS parameter ('$UPS') - can not call upsrw"; return 1 ;;
         *@*) ;;
         *)   UPS="$UPS@localhost" ;;
     esac
 
-    sut_run "upsrw -s '$PARAM=$VALUE' -u '$NUTUSER' -p '$NUTPASSWORD' '$UPS' >/dev/null" || \
-        { logmsg_warn "set_value_from_ups() could not upsrw the '$PARAM=$VALUE' setting onto '$UPS' in real-time";
-          [ "$RES" = 0 ] && [ "$SLEEP" -gt 0 ] 2>/dev/null && \
-            { logmsg_debug "Waiting for a while after applying new parameter via '$UPS.dev' file..." ; sleep 2; } ; }
+    if sut_run "upsrw -s '$PARAM=$VALUE' -u '$NUTUSER' -p '$NUTPASSWORD' '$UPS' >/dev/null" ; then
+        logmsg_debug "set_value_in_ups() succeeded to upsrw the '$PARAM=$VALUE' setting onto '$UPS' in real-time"
+    else
+        logmsg_warn "set_value_in_ups() could not upsrw the '$PARAM=$VALUE' setting onto '$UPS' in real-time"
+        [ "$RES" = 0 ] && [ "$SLEEP" -gt 0 ] 2>/dev/null && \
+            { logmsg_debug "Waiting for a while after applying new parameter via '$UPS.dev' file..." ; sleep $SLEEP; }
         # The "sleep" above allows dummy-ups to roll around the end of file
         # and propagate the setting, if it is available in that config file
+    fi
+
     [ "$RES" = 0 ] && \
-         logmsg_debug "set_value_in_ups('$UPS' '$PARAM' '$VALUE') - OK"
+         logmsg_debug "set_value_in_ups('$UPS' '$PARAM' '$VALUE') - OK" || \
+         logmsg_debug "set_value_in_ups('$UPS' '$PARAM' '$VALUE') - FAILED ($RES)"
+
     return $RES
 }
 
