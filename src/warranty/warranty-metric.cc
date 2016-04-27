@@ -61,13 +61,38 @@ int main()
 
             std::string date;
             row["date"].get(date);
+            
+            int day_diff;
+            {
+                struct tm tm_ewd;
+                ::memset (&tm_ewd, 0, sizeof(struct tm));
 
+                char* ret = ::strptime (date.c_str(), "%Y-%m-%d", &tm_ewd);
+                if (ret == NULL) {
+                    log_error ("Cannot convert %s to date, skipping", date.c_str());
+                    return;
+                }
+
+                time_t ewd = ::mktime (&tm_ewd);
+                time_t now = ::time (NULL);
+
+                struct tm *tm_now_p;
+                tm_now_p = ::gmtime (&now);
+                tm_now_p->tm_hour = 0;
+                tm_now_p->tm_min = 0;
+                tm_now_p->tm_sec = 0;
+                now = ::mktime (tm_now_p);
+
+                // end_warranty_date (s) - now (s) -> to days
+                day_diff = std::ceil ((ewd - now) / (60*60*24));
+                log_debug ("day_diff: %d", day_diff);
+            }
             log_debug ("name: %s, keytag: %s, date: %s", name.c_str(), keytag.c_str(), date.c_str());
             zmsg_t *msg = bios_proto_encode_metric (
                     NULL,
                     keytag.c_str(),
                     name.c_str (),
-                    date.c_str (),
+                    std::to_string (day_diff).c_str(),
                     "day",
                     TTL);
             assert (msg);
