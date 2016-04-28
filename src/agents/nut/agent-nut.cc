@@ -94,7 +94,8 @@ void NUTAgent::advertisePhysics() {
                               device.second.name().c_str(),
                               measurement.first.c_str(),
                               measurement.second );
-                    send( topic.c_str(), &msg );
+                    int r = send(topic.c_str(), &msg);
+                    if( r != 0 ) log_error("failed to send measurement %s result %" PRIi32, topic.c_str(), r);
                     ymsg_destroy(&msg);
                     device.second.setChanged(measurement.first,false);
                 }
@@ -111,7 +112,8 @@ void NUTAgent::advertisePhysics() {
                     status_i, 0, 600);
                 if( msg ) {
                     log_debug("sending new status for ups %s, value %i (%s)", device.second.name().c_str(), status_i, status_s.c_str() );
-                    send( topic.c_str(), &msg );
+                    int r = send(topic.c_str(), &msg);
+                    if( r != 0 ) log_error("failed to send measurement %s result %" PRIi32, topic.c_str(), r);
                     ymsg_destroy(&msg);
                     device.second.setChanged("status.ups",false);
                 }
@@ -137,7 +139,8 @@ void NUTAgent::advertisePhysics() {
                                 device.second.name().c_str(),
                                 status_i,
                                 status_s.c_str() );
-                        send( topic.c_str(), &msg );
+                        int r = send(topic.c_str(), &msg);
+                        if( r != 0 ) log_error("failed to send measurement %s result %" PRIi32, topic.c_str(), r);
                         ymsg_destroy(&msg);
                         device.second.setChanged(property,false);
                 }
@@ -171,7 +174,8 @@ void NUTAgent::advertiseInventory() {
                 "inventory" );
             if( message ) {
                 log_debug( "new inventory message %s: %s", topic.c_str(), log.c_str() );
-                bios_agent_send( _bios_agent, topic.c_str(), &message );
+                int r = send(topic.c_str(), &message);
+                if( r != 0 ) log_error("failed to send measurement %s result %" PRIi32, topic.c_str(), r);
                 ymsg_destroy( &message );
             }
         }
