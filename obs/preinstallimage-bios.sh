@@ -71,12 +71,16 @@ groupadd -g 8002 bios-poweruser
 groupadd -g 8001 bios-user
 groupadd -g 8000 bios-guest
 groupadd bios-infra
+
 useradd -m bios -N -g bios-infra -G dialout -s /bin/bash
+mkdir -p /home/bios && chown bios:bios-infra /home/bios
+
 useradd -m admin -G sasl -N -g bios-admin -s /bin/bash
 passwd admin <<EOF
 admin
 admin
 EOF
+mkdir -p /home/admin && chown admin:bios-admin /home/admin
 
 # Workplace for the webserver and graph daemons
 mkdir -p /var/lib/bios
