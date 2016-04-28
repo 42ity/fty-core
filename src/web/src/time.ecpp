@@ -1,6 +1,6 @@
 <#
  #
- # Copyright (C) 2015 Eaton
+ # Copyright (C) 2015-2016 Eaton
  #
  # This program is free software; you can redistribute it and/or modify
  # it under the terms of the GNU General Public License as published by
@@ -34,57 +34,57 @@
 
 </%pre>
 <%cpp>
-	augtool* augeas = augtool::get_instance();
+    augtool* augeas = augtool::get_instance();
 
     if(!request.isMethodGET()) {
-		std::stringstream input(request.getBody(), std::ios_base::in);
-		cxxtools::SerializationInfo si;
-		cxxtools::JsonDeserializer deserializer(input);
-		try {
-			deserializer.deserialize(si);
-		} catch (const std::exception& e) {
+        std::stringstream input(request.getBody(), std::ios_base::in);
+        cxxtools::SerializationInfo si;
+        cxxtools::JsonDeserializer deserializer(input);
+        try {
+            deserializer.deserialize(si);
+        } catch (const std::exception& e) {
             http_die ("bad-request-document", std::string("Expecting valid json document: ").append (e.what ()).c_str ());
-		}
+        }
 
-		std::string time;
-		try {
-			si.getMember("time") >>= time;
-		} catch (const std::exception& e) {
-			time = "";
-		}
+        std::string time;
+        try {
+            si.getMember("time") >>= time;
+        } catch (const std::exception& e) {
+            time = "";
+        }
 
-		std::string ntp;
-		try {
-			si.getMember("ntp") >>= ntp;
-		} catch (const std::exception& e) {
-			ntp = "";
-		}
+        std::string ntp;
+        try {
+            si.getMember("ntp") >>= ntp;
+        } catch (const std::exception& e) {
+            ntp = "";
+        }
 
-	    if (time.empty() && ntp.empty()) {
+        if (time.empty() && ntp.empty()) {
             http_die ("request-param-required", "time' or 'ntp");
-		}
+        }
 
-	    static cxxtools::Regex t_rex("^[1-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]T[0-2][0-9]:[0-6][0-9]:[0-6][0-9]Z$");
-	    if(!time.empty()) {
+        static cxxtools::Regex t_rex("^[1-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]T[0-2][0-9]:[0-6][0-9]:[0-6][0-9]Z$");
+        if(!time.empty()) {
             if (!t_rex.match (time)) {
                 http_die ("request-param-bad", "time", time.c_str (), "format <YYYY>-<MM>-<DD>T<hh>:<mm>:<ss>Z (ISO 8601).");
             }
             // Run command with arguments.  Wait for complete and return the return value.
             shared::Argv proc_cmd {"sudo", "date", "-s", time};
-		    if ( shared::call(proc_cmd) != 0 ) {
+            if ( shared::call(proc_cmd) != 0 ) {
                 http_die ("internal-error", "Can't set requested time.");
-			}
-			if ( system("sudo systemctl stop ntp") != 0 ) {
+            }
+            if ( system("sudo systemctl stop ntp") != 0 ) {
                 http_die ("internal-error", "Cannot stop ntp service");
             }
-			if ( system("sudo systemctl disable ntp") != 0 ) {
+            if ( system("sudo systemctl disable ntp") != 0 ) {
                 http_die ("internal-error", "Cannot disable ntp service");
             }
-	    }
+        }
 
-	    static cxxtools::Regex n_rex("^[0-9a-z_.-]*$");
-	    if(!ntp.empty()) {
-		    if(!n_rex.match (ntp)) {
+        static cxxtools::Regex n_rex("^[0-9a-z_.-]*$");
+        if(!ntp.empty()) {
+            if(!n_rex.match (ntp)) {
                 http_die ("request-param-bad", "ntp", ntp.c_str (), "any combination of alphanumeric characters, underscore (_), dot (.) and hyphen (-).");
             }
 
@@ -96,7 +96,7 @@
             if ( system("sudo systemctl restart ntp") != 0 ) {
                 http_die ("internal-error", "Cannot start ntp service");
             }
-	    }
+        }
     }
 
     char buff[32];
