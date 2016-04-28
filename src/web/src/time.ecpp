@@ -69,24 +69,33 @@
             if (!t_rex.match (time)) {
                 http_die ("request-param-bad", "time", time.c_str (), "format <YYYY>-<MM>-<DD>T<hh>:<mm>:<ss>Z (ISO 8601).");
             }
-
-		    if ( system((std::string("sudo date -s ") + time).c_str()) != 0) {
+            // Run command with arguments.  Wait for complete and return the return value.
+            shared::Argv proc_cmd {"sudo", "date", "-s", time};
+		    if ( shared::call(proc_cmd) != 0 ) {
                 http_die ("internal-error", "Can't set requested time.");
 			}
-			system("sudo systemctl stop ntp");
-			system("sudo systemctl disable ntp");
+			if ( system("sudo systemctl stop ntp") != 0 ) {
+                http_die ("internal-error", "Cannot stop ntp service");
+            }
+			if ( system("sudo systemctl disable ntp") != 0 ) {
+                http_die ("internal-error", "Cannot disable ntp service");
+            }
 	    }
 
 	    static cxxtools::Regex n_rex("^[0-9a-z_.-]*$");
 	    if(!ntp.empty()) {
 		    if(!n_rex.match (ntp)) {
-                http_die ("request-param-bad", "time", ntp.c_str (), "any combination of alphanumeric characters, underscore (_), dot (.) and hyphen (-).");
+                http_die ("request-param-bad", "ntp", ntp.c_str (), "any combination of alphanumeric characters, underscore (_), dot (.) and hyphen (-).");
             }
 
             augeas->run_cmd("set /files/etc/ntp.conf/server[1] " + ntp);
             augeas->save();
-            system("sudo systemctl enable ntp");
-            system("sudo systemctl restart ntp");
+            if ( system("sudo systemctl enable ntp") != 0 ) {
+                http_die ("internal-error", "Cannot enable ntp service");
+            }
+            if ( system("sudo systemctl restart ntp") != 0 ) {
+                http_die ("internal-error", "Cannot start ntp service");
+            }
 	    }
     }
 
