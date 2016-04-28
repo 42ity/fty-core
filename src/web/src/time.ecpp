@@ -69,8 +69,9 @@
             if (!t_rex.match (time)) {
                 http_die ("request-param-bad", "time", time.c_str (), "format <YYYY>-<MM>-<DD>T<hh>:<mm>:<ss>Z (ISO 8601).");
             }
-            // TODO fix
-		    if ( system((std::string("sudo date -s ") + time).c_str()) != 0) {
+            // Run command with arguments.  Wait for complete and return the return value.
+            shared::Argv proc_cmd {"sudo", "date", "-s", time};
+		    if ( shared::call(proc_cmd) != 0 ) {
                 http_die ("internal-error", "Can't set requested time.");
 			}
 			if ( system("sudo systemctl stop ntp") != 0 ) {
