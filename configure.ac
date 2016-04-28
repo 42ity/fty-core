@@ -223,10 +223,11 @@ AS_IF([test -d "$_srcdir_abs/.git"],
 			 )],
 			[AC_MSG_NOTICE([Got new workspace metadata and had no old stashed away, using freely])
 			 mv -f "$_curdir_abs/.git_details.tmp" "$_curdir_abs/.git_details"])
-		], [AC_MSG_NOTICE([No GIT metadata was detected (empty output)])
+		 ], [AC_MSG_NOTICE([No Git metadata was detected (empty output)])
 		    rm -f "$_curdir_abs/.git_details.tmp"])
-	], [AC_MSG_NOTICE([No GIT metadata was detected (script errored out)])
-	    rm -f "$_curdir_abs/.git_details.tmp"])
+	        ], [AC_MSG_NOTICE([No Git metadata was detected (script errored out)])
+	            rm -f "$_curdir_abs/.git_details.tmp"])
+	], [AC_MSG_NOTICE([No Git workspace was detected ($_srcdir_abs/.git directory missing)])
 ])
 
 # From old copy or a new generation, we may have the file with metadata...
@@ -234,9 +235,10 @@ AS_IF([test -d "$_srcdir_abs/.git"],
 # obsolete quickly during development. Rather, the build products that
 # need (test, display) this information should use or convert the file.
 # The Makefile takes care to keep it current as long as possible.
-# Also, for display in te end of execution, try to "source" the values.
+# Also, for display in the end of execution, try to "source" the values.
 AS_IF([test -s "$_curdir_abs/.git_details"],
-	[source "$_curdir_abs/.git_details" && for V in \
+	[AC_MSG_NOTICE([Getting Git details into PACKAGE_\* macros...])
+	 source "$_curdir_abs/.git_details" && for V in \
 		PACKAGE_GIT_ORIGIN PACKAGE_GIT_BRANCH PACKAGE_GIT_TAGGED \
 		PACKAGE_GIT_TSTAMP PACKAGE_GIT_HASH_S PACKAGE_GIT_HASH_L \
 		PACKAGE_GIT_STATUS PACKAGE_BUILD_TSTAMP \
@@ -258,6 +260,7 @@ AS_IF([test -s "$_curdir_abs/.git_details"],
 		 #VERSION="$VERSION.$PACKAGE_GIT_TSTAMP~$PACKAGE_GIT_HASH_S"
 		 #_FIX_VERSION=y
 	 ])
+	], [AC_MSG_NOTICE([No Git details detected ($_curdir_abs/.git_details file missing), they will be missing from REST API and other reports])
 ])
 
 ### Allow to revise the packaging strings in config.h
