@@ -31,7 +31,8 @@ set -e
 
 case "$2" in
 up)
-        /sbin/ifup $1
+        /sbin/ifup $1 || \
+	/sbin/ifup --force $1
         ;;
 down)
         /sbin/ifdown $1 || \
