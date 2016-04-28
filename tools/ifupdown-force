@@ -19,7 +19,7 @@
 #
 
 
-#! \file   element_to_topic.sh
+#! \file   ifupdown-force
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \author Based on Debian 8 packaged init-scripts
 #  \brief  Stronger replacement for system ifupdown script
