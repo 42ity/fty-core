@@ -452,7 +452,10 @@ echo 'export LANG="C"' > /etc/profile.d/lang.sh
 for V in LANG LANGUAGE LC_ALL ; do echo "$V="'"C"'; done > /etc/default/locale
 
 # logout from /bin/bash after 600s/10m of inactivity
-echo 'export TMOUT=600' > /etc/profile.d/tmout.sh
+case "$IMGTYPE" in
+    devel) echo "Not tweaking TMOUT in devel image" ;;
+    *) echo 'export TMOUT=600' > /etc/profile.d/tmout.sh ;;
+esac
 
 # Help ifup and ifplugd do the right job
 install -m 0755 /usr/share/bios/scripts/ethtool-static-nolink /etc/network/if-pre-up.d
