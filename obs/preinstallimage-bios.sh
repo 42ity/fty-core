@@ -469,8 +469,8 @@ echo '[ -s /usr/share/bios/scripts/udhcpc-ntp.sh ] && . /usr/share/bios/scripts/
 ## startup script
 cat >/etc/network/if-pre-up.d/iptables-up <<[eof]
 #!/bin/sh
-test -r /etc/default/iptables && iptables-restore < /etc/default/iptables
-test -r /etc/default/ip6tables && ip6tables-restore < /etc/default/ip6tables
+test -r /etc/default/iptables && iptables-restore < /etc/default/iptables || true
+test -r /etc/default/ip6tables && ip6tables-restore < /etc/default/ip6tables || true
 [eof]
 chmod 755 /etc/network/if-pre-up.d/iptables-up
 
