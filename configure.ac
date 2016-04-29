@@ -237,7 +237,7 @@ AS_IF([test -d "$_srcdir_abs/.git"],
 # The Makefile takes care to keep it current as long as possible.
 # Also, for display in the end of execution, try to "source" the values.
 AS_IF([test -s "$_curdir_abs/.git_details"],
-	[AC_MSG_NOTICE([Getting Git details into PACKAGE_\* macros...])
+	[AC_MSG_NOTICE([Getting Git details into PACKAGE_* macros...])
 	 source "$_curdir_abs/.git_details" && for V in \
 		PACKAGE_GIT_ORIGIN PACKAGE_GIT_BRANCH PACKAGE_GIT_TAGGED \
 		PACKAGE_GIT_TSTAMP PACKAGE_GIT_HASH_S PACKAGE_GIT_HASH_L \
