@@ -287,12 +287,6 @@ while [ $# -gt 0 ] ; do
     esac
 done
 
-[ x"$INSTALL_DEV_PKGS" = xauto ] && \
-case "$IMGTYPE" in
-    *devel*) INSTALL_DEV_PKGS=yes ;;
-    *) INSTALL_DEV_PKGS=no ;;
-esac
-
 #
 # check if VM exists
 #
@@ -335,6 +329,12 @@ if [ -n "$VM" ] && [ -s "`pwd`/$VM.config-reset-vm" ]; then
 		logmsg_warn "Found configuration file for the '$VM', but it is ignored because ALLOW_CONFIG_FILE='$ALLOW_CONFIG_FILE'"
 	fi
 fi
+
+[ x"$INSTALL_DEV_PKGS" = xauto ] && \
+case "$IMGTYPE" in
+    *devel*) INSTALL_DEV_PKGS=yes ;;
+    *) INSTALL_DEV_PKGS=no ;;
+esac
 
 mkdir -p "/srv/libvirt/snapshots/$IMGTYPE/$ARCH"
 
