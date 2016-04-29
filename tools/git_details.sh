@@ -235,9 +235,11 @@ reportGitInfo() {
 
         ### Ported from bios-infra::obs-service_git_nas.sh
         PACKAGE_GIT_TAGGED="$($GIT describe --tags 2>/dev/null)"
-        # kill the v or t from version or tag
-        PACKAGE_GIT_TAGGED="${PACKAGE_GIT_TAGGED/-[tv]/-}"
-        PACKAGE_GIT_TAGGED="${PACKAGE_GIT_TAGGED//-/~}"
+        ### TODO: is this still needed? The pattern ported from git_nas
+        ### is absent nowadays... maybe it was even never implemented...
+        ### Kill the "v" or "t" from version or tag
+        #PACKAGE_GIT_TAGGED="${PACKAGE_GIT_TAGGED/-[tv]/-}"
+        #PACKAGE_GIT_TAGGED="${PACKAGE_GIT_TAGGED//-/\~}"
     fi
 
     if [ "$GIT_ERRORED" = no -o x"$GIT_DETAILS_BLANK" = xyes ]; then
