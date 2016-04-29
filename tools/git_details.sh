@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#   Copyright (c) 2014 Eaton
+#   Copyright (c) 2014-2016 Eaton
 #
 #   This file is part of the Eaton $BIOS project.
 #
@@ -22,8 +22,8 @@
 #  \brief   Print the details of the current repository
 #  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \details Print the details of the current repository, if any,
-#           and of build-host and curent build-timestamp, to the stdout
-#           as a shell-includable markup.
+#           and of build-host and current build-timestamp, to the
+#           stdout as a shell-includable markup.
 #
 
 # Establish standard environment
@@ -179,8 +179,18 @@ reportGitInfo() {
             if [ -d ".git" -a -f ".git/FETCH_HEAD" -a\
                  -n "$PACKAGE_GIT_HASH_L" ]; then
                 echo "GIT_DETAILS-INFO: Looking for PACKAGE_GIT_BRANCH in .git/FETCH_HEAD..." >&2
-                _B="`grep "$PACKAGE_GIT_HASH_L" .git/FETCH_HEAD | sed 's,^[^ ]* *branch '"'"'\(.*\)'"'"' of .*$,\1,'`"
+                _B="`grep "$PACKAGE_GIT_HASH_L" .git/FETCH_HEAD | grep -w branch | sed 's,^[^ ]* *branch '"'"'\(.*\)'"'"' of .*$,\1,'`" && [ -n "$_B" ]
                 _B_RES=$?
+                if [ $_B_RES = 0 ] && [ "`echo "$_B" | wc -l`" -gt 1 ] ; then
+                    # Note: pedantically, this rule can also be hit if a branch
+                    # is branched and no commits are added to either one - both
+                    # HEADs are same commit id then... and then we have little
+                    # reason to choose or reject either one. Maybe `|head -1` ?
+                    echo "GIT_DETAILS-WARN: Looking for PACKAGE_GIT_BRANCH in .git/FETCH_HEAD returned more than one line (octopus, shoo!) :" >&2
+                    echo "$_B" >&2
+                    _B=""
+                    _B_RES=1
+                fi
             fi
 
             [ $_B_RES != 0 -o -z "$_B" ] && \
