@@ -81,6 +81,8 @@ usage() {
     echo "    -m|--machine name    virtual machine libvirt-name (Default: '$VM')"
     echo "    -b|--baseline type   basic image type to use (Default: '$IMGTYPE')"
     echo "                         see OBS repository for supported types (deploy, devel)"
+    echo "    -qa|--qa-level type  image QA level to use (Default: '$IMGQALEVEL')"
+    echo "                         see Jenkins and OBS for supported types (master, pre-rc, rc)"
     echo "    -r|--repository URL  OBS image repo ('$OBS_IMAGES')"
     echo "    -hp|--http-proxy URL the http_proxy override to access OBS ('$http_proxy')"
     echo "    -ap|--apt-proxy URL  the http_proxy to access external APT images ('$APT_PROXY')"
@@ -212,6 +214,10 @@ while [ $# -gt 0 ] ; do
 	    ;;
 	-b|--baseline)
 	    IMGTYPE="$2"
+	    shift 2
+	    ;;
+	-qa|--qa-level)
+	    IMGQALEVEL="$2"
 	    shift 2
 	    ;;
 	-r|--repository)
