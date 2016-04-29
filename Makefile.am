@@ -2202,7 +2202,8 @@ CLEANFILES +=		src/include/git_details_override.c \
 $(abs_top_builddir)/.git_details: .PHONY_GIT
 	@echo "INFO: Checking that '$@' is up-to-date..."
 	@/bin/rm -f "$@.tmp"
-	@if ( cd $(abs_top_srcdir) && ./tools/git_details.sh ) > "$@.tmp" && \
+	@if test -d $(abs_top_srcdir)/.git && \
+	    ( cd $(abs_top_srcdir) && ./tools/git_details.sh > "$@.tmp" ) && \
 	    [ -s "$@.tmp" ]; then \
 	    if [ ! -s "$@" ] || diff -bu "$@" "$@.tmp" | \
 	        egrep -v '^(\-\-\-|\+\+\+|[ @]|[\+\-]PACKAGE_BUILD_TSTAMP)' >/dev/null; then \
@@ -2220,7 +2221,7 @@ $(abs_top_builddir)/.git_details: .PHONY_GIT
 	      [ x"$(abs_top_srcdir)/.git_details" != x"$@" ] && \
 	      echo "INFO: Reusing existing '$(abs_top_srcdir)/.git_details':" && \
 	      ls -la "$(abs_top_srcdir)/.git_details" && \
-              cp -f "$(abs_top_srcdir)/.git_details" "$@" ; \
+	      cp -f "$(abs_top_srcdir)/.git_details" "$@" ; \
 	    else \
 	      if [ -f "$@" ]; then echo "WARNING: '$@' is empty already"; else \
 	      echo "WARNING: Overriding absent '$@' with empty file to satisfy 'make'"; \
