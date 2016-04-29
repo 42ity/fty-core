@@ -214,19 +214,19 @@ AS_IF([test -d "$_srcdir_abs/.git"],
 		[AS_IF([test -s "$_curdir_abs/.git_details.tmp"],
 		 [AS_IF([test -s "$_curdir_abs/.git_details"],
 			[AS_IF([diff -bu "$_curdir_abs/.git_details" \
-			                 "$_curdir_abs/.git_details.tmp" | \
-			        egrep -v '^(\-\-\-|\+\+\+|[ @]|[\+\-]PACKAGE_BUILD_TSTAMP)' \
-			        >/dev/null 2>&1],
-			    [AC_MSG_NOTICE([Got new workspace metadata to replace the old copy])
-			     mv -f "$_curdir_abs/.git_details.tmp" "$_curdir_abs/.git_details"],
-			    [AC_MSG_NOTICE([Got new workspace metadata but no significant changes against the old copy])]
+				             "$_curdir_abs/.git_details.tmp" | \
+				    egrep -v '^(\-\-\-|\+\+\+|[ @]|[\+\-]PACKAGE_BUILD_TSTAMP)' \
+				    >/dev/null 2>&1],
+				[AC_MSG_NOTICE([Got new workspace metadata to replace the old copy])
+				 mv -f "$_curdir_abs/.git_details.tmp" "$_curdir_abs/.git_details"],
+				[AC_MSG_NOTICE([Got new workspace metadata but no significant changes against the old copy])]
 			 )],
 			[AC_MSG_NOTICE([Got new workspace metadata and had no old stashed away, using freely])
 			 mv -f "$_curdir_abs/.git_details.tmp" "$_curdir_abs/.git_details"])
 		 ], [AC_MSG_NOTICE([No Git metadata was detected (empty output)])
-		    rm -f "$_curdir_abs/.git_details.tmp"])
-	        ], [AC_MSG_NOTICE([No Git metadata was detected (script errored out)])
-	            rm -f "$_curdir_abs/.git_details.tmp"])
+			 rm -f "$_curdir_abs/.git_details.tmp"])
+			], [AC_MSG_NOTICE([No Git metadata was detected (script errored out)])
+				rm -f "$_curdir_abs/.git_details.tmp"])
 	], [AC_MSG_NOTICE([No Git workspace was detected ($_srcdir_abs/.git directory missing)])
 ])
 
