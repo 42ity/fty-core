@@ -176,6 +176,7 @@ reportGitInfo() {
                 _B_RES=?
             fi
 
+            _B_FETCH_HEAD=""
             [ $_B_RES != 0 -o -z "$_B" ] && \
             if [ -d ".git" -a -f ".git/FETCH_HEAD" -a\
                  -n "$PACKAGE_GIT_HASH_L" ]; then
@@ -187,8 +188,10 @@ reportGitInfo() {
                     # is branched and no commits are added to either one - both
                     # HEADs are same commit id then... and then we have little
                     # reason to choose or reject either one. Maybe `|head -1` ?
+                    # We fall-back to this in the end of this test suite.
                     echo "GIT_DETAILS-WARN: Looking for PACKAGE_GIT_BRANCH in .git/FETCH_HEAD returned more than one line (octopus, shoo!) :" >&2
                     echo "$_B" >&2
+                    _B_FETCH_HEAD="$_B"
                     _B=""
                     _B_RES=1
                 fi
@@ -209,10 +212,19 @@ reportGitInfo() {
                 _B_RES=$?
             fi
 
+            [ $_B_RES != 0 -o -z "$_B" ] && \
+            if [ -n "$_B_FETCH_HEAD" ]; then \
+                echo "GIT_DETAILS-INFO: Fall back to the first hit from .git/FETCH_HEAD as the PACKAGE_GIT_BRANCH..." >&2
+                _B="`echo "$_B_FETCH_HEAD" | head -1`"
+                _B_RES=$?
+            fi
+
             [ $_B_RES = 0 -a -n "$_B" ] && \
                 echo "GIT_DETAILS-INFO: This workspace is a 'detached HEAD'," \
                     "but its commit-id matches the head of known branch '$_B'" >&2 && \
                 PACKAGE_GIT_BRANCH="$_B"
+
+            unset _B_FETCH_HEAD
         fi
         unset _B _B_RES
 
