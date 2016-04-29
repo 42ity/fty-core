@@ -87,6 +87,7 @@ usage() {
     echo "    -hp|--http-proxy URL the http_proxy override to access OBS ('$http_proxy')"
     echo "    -ap|--apt-proxy URL  the http_proxy to access external APT images ('$APT_PROXY')"
     echo "    --install-dev        run ci-setup-test-machine.sh (if available) to install packages"
+    echo "    --no-install-dev     do not run ci-setup-test-machine.sh, even on IMGTYPE=devel"
     echo "    --no-overlayfs       enforce use of tarballs, even if overlayfs is supported by host"
     echo "    --with-overlayfs     enforce use of overlayfs, fail if not supported by host"
     echo "    --download-only      end the script after downloading the newest image file"
@@ -201,7 +202,7 @@ DOTDOMAINNAME=""
 [ -z "$STOPONLY" ] && STOPONLY=no
 [ -z "$DOWNLOADONLY" ] && DOWNLOADONLY=no
 [ -z "$DEPLOYONLY" ] && DEPLOYONLY=no
-[ -z "$INSTALL_DEV_PKGS" ] && INSTALL_DEV_PKGS=no
+[ -z "$INSTALL_DEV_PKGS" ] && INSTALL_DEV_PKGS=auto
 [ -z "$ATTEMPT_DOWNLOAD" ] && ATTEMPT_DOWNLOAD=auto
 [ -z "$ALLOW_CONFIG_FILE" ] && ALLOW_CONFIG_FILE=yes
 [ -z "${OVERLAYFS-}" ] && OVERLAYFS="auto"
@@ -264,6 +265,10 @@ while [ $# -gt 0 ] ; do
 	    INSTALL_DEV_PKGS=yes
 	    shift
 	    ;;
+	--no-install-dev|--no-install-dev-pkgs)
+	    INSTALL_DEV_PKGS=no
+	    shift
+	    ;;
 	--copy-host-users)
 	    COPYHOST_USERS="$2"; shift 2;;
 	--copy-host-groups)
@@ -281,6 +286,12 @@ while [ $# -gt 0 ] ; do
 	    ;;
     esac
 done
+
+[ x"$INSTALL_DEV_PKGS" = xauto ] && \
+case "$IMGTYPE" in
+    *devel*) INSTALL_DEV_PKGS=yes ;;
+    *) INSTALL_DEV_PKGS=no ;;
+esac
 
 #
 # check if VM exists
