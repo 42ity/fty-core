@@ -74,10 +74,10 @@ std::string feed_by;
     // recursive
     int is_recursive = 0;
     std::transform (recursive.begin(), recursive.end(), recursive.begin(), ::tolower);
-    if (recursive == "yes") {
+    if (recursive == "true") {
         is_recursive = 1;
-    } else if (!recursive.empty() && recursive != "no") {
-        http_die("request-param-bad", "recursive", recursive.c_str(), "'yes'/'no'");
+    } else if (!recursive.empty() && recursive != "false") {
+        http_die("request-param-bad", "recursive", recursive.c_str(), "'true'/'false'");
     }
 
     // filter_type
