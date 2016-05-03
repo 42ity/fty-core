@@ -696,8 +696,12 @@ if mkdir -p "../rootfs/$VM/root/.ccache" ; then
 	mount -o rbind "/root/.ccache" "../rootfs/$VM/root/.ccache"
 fi
 
-logmsg_info "Set up initial name resolution from the host OS"
-cp -pf /etc/hosts /etc/resolv.conf /etc/nsswitch.conf "../rootfs/$VM/etc/"
+if [ "$INSTALL_DEV_PKGS" = yes ]; then
+	logmsg_info "Set up initial name resolution from the host OS to facilitate apt-get for dev package installation"
+	cp -pf "../rootfs/$VM/etc/"resolv.conf "../rootfs/$VM/etc/"resolv.conf.bak-devpkg || true
+	cp -pf "../rootfs/$VM/etc/"nsswitch.conf "../rootfs/$VM/etc/"nsswitch.conf.bak-devpkg || true
+	cp -pf /etc/hosts /etc/resolv.conf /etc/nsswitch.conf "../rootfs/$VM/etc/"
+fi
 
 logmsg_info "Setup virtual hostname"
 echo "$VM" > "../rootfs/$VM/etc/hostname"
@@ -819,19 +823,29 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 		fi
 	fi
 	if [ -n "$INSTALLER" ] ; then
-		echo "Will now update and install a predefined development package set using $INSTALLER"
-		echo "Sleeping 30 sec to let VM startup settle down first..."
+		logmsg_info "Will now update and install a predefined development package set using $INSTALLER"
+		logmsg_info "Sleeping 30 sec to let VM startup settle down first..."
 		sleep 30
-		echo "Running $INSTALLER against the VM '$VM' (via chroot)..."
+		logmsg_info "Running $INSTALLER against the VM '$VM' (via chroot into '`cd ../rootfs/$VM/ && pwd`')..."
 		set +e
-		chroot ../rootfs/$VM/ /bin/bash < "$INSTALLER"
-		echo "Result of installer script: $?"
+		chroot "../rootfs/$VM/" /bin/bash < "$INSTALLER"
+		logmsg_info "Result of installer script: $?"
 		set -e
 	else
-		echo "WARNING: Got request to update and install a predefined" \
+		logmsg_warn "Got request to update and install a predefined" \
 			"development package set, but got no ci-setup-test-machine.sh" \
 			"around - action skipped"
 	fi
+
+	set +e
+	logmsg_info "Restore /etc/hosts and /etc/resolv.conf in the VM to the default baseline"
+	LOCALHOSTLINE="`grep '127.0.0.1' "../rootfs/$VM/etc/hosts"`" && \
+		[ -n "$LOCALHOSTLINE" ] && ( echo "$LOCALHOSTLINE" > "../rootfs/$VM/etc/hosts" )
+	cp -pf "../rootfs/$VM/etc/resolv.conf.bak-devenv" "../rootfs/$VM/etc/resolv.conf"
+	cp -pf "../rootfs/$VM/etc/nsswitch.conf.bak-devenv" "../rootfs/$VM/etc/nsswitch.conf"
+	logmsg_info "Restart networking in the VM chroot to refresh virtual network settings"
+	chroot "../rootfs/$VM/" /bin/systemctl restart bios-networking
+	set -e
 fi
 
 logmsg_info "Preparation and startup of the virtual machine '$VM'" \
