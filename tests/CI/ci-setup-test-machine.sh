@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2014 Eaton
+# Copyright (C) 2014-2016 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 #! \file   ci-setup-test-machine.sh
 #  \brief  installs basic components we need
 #  \author Tomas Halman <TomasHalman@Eaton.com>
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \note   This script may be standalone, so we do not depend it on scriptlib.sh
 
 SCRIPTDIR=$(dirname $0)
