@@ -696,6 +696,9 @@ if mkdir -p "../rootfs/$VM/root/.ccache" ; then
 	mount -o rbind "/root/.ccache" "../rootfs/$VM/root/.ccache"
 fi
 
+logmsg_info "Set up initial name resolution from the host OS"
+cp -pf /etc/hosts /etc/resolv.conf /etc/nsswitch.conf "../rootfs/$VM/etc/"
+
 logmsg_info "Setup virtual hostname"
 echo "$VM" > "../rootfs/$VM/etc/hostname"
 logmsg_info "Put virtual hostname in /etc/hosts"
