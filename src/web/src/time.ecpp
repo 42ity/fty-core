@@ -70,14 +70,20 @@
                 http_die ("request-param-bad", "time", time.c_str (), "format <YYYY>-<MM>-<DD>T<hh>:<mm>:<ss>Z (ISO 8601).");
             }
             // Run command with arguments.  Wait for complete and return the return value.
-            shared::Argv proc_cmd {"sudo", "date", "-s", time};
-            if ( shared::call(proc_cmd) != 0 ) {
-                http_die ("internal-error", "Can't set requested time.");
+            shared::Argv proc_cmd_dateset {"sudo", "date", "-s", time};
+            if ( shared::call(proc_cmd_dateset) != 0 ) {
+                http_die ("internal-error", "Can't set requested OS time.");
             }
-            if ( system("sudo systemctl stop ntp") != 0 ) {
+            shared::Argv proc_cmd_hwclock {"sudo", "hwclock", "--systohc"};
+            if ( shared::call(proc_cmd_hwclock) != 0 ) {
+                http_die ("internal-error", "Can't set requested HW time.");
+            }
+            shared::Argv proc_cmd_ntp1 {"sudo", "systemctl", "stop", "ntp"};
+            if ( shared::call(proc_cmd_ntp1) != 0 ) {
                 http_die ("internal-error", "Cannot stop ntp service");
             }
-            if ( system("sudo systemctl disable ntp") != 0 ) {
+            shared::Argv proc_cmd_ntp2 {"sudo", "systemctl", "disable", "ntp"};
+            if ( shared::call(proc_cmd_ntp2) != 0 ) {
                 http_die ("internal-error", "Cannot disable ntp service");
             }
         }
@@ -90,10 +96,12 @@
 
             augeas->run_cmd("set /files/etc/ntp.conf/server[1] " + ntp);
             augeas->save();
-            if ( system("sudo systemctl enable ntp") != 0 ) {
+            shared::Argv proc_cmd_ntp1 {"sudo", "systemctl", "enable", "ntp"};
+            if ( shared::call(proc_cmd_ntp1) != 0 ) {
                 http_die ("internal-error", "Cannot enable ntp service");
             }
-            if ( system("sudo systemctl restart ntp") != 0 ) {
+            shared::Argv proc_cmd_ntp2 {"sudo", "systemctl", "restart", "ntp"};
+            if ( shared::call(proc_cmd_ntp2) != 0 ) {
                 http_die ("internal-error", "Cannot start ntp service");
             }
         }
