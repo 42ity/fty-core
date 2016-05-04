@@ -127,8 +127,7 @@ else
         RES=0
         SYSINFOA="`api_auth_get_json '/admin/sysinfo?detail=yes'`" || \
             RES=$?
-        #echo "=== SYSINFOA ($RES):" >&2
-        #echo "$SYSINFOA" >&2
+        logmsg_debug "=== SYSINFOA ($RES):" "$SYSINFOA"
         [ $RES = 0 -a -n "$SYSINFOA" ] || RES=$?
         print_result $RES || true
 
@@ -138,10 +137,13 @@ else
         SYSINFO_VERSION_PKG="`echo "$SYSINFOA" | jsonsh_cli -x="$JPATH" | egrep '"package-name":"core".*"commit":"[a-f0-9-]+"'`" && \
             SYSINFO_VERSION_PKG="`echo "$SYSINFO_VERSION_PKG" | sed 's/.*commit":"\(.*\)".*/\1/'`" || \
             RES=$?
-        echo "=== SYSINFO_VERSION_PKG ($RES): $SYSINFO_VERSION_PKG" >&2
+        echo "=== SYSINFO_VERSION_PKG ($RES): '$SYSINFO_VERSION_PKG'" >&2
         [ $RES = 0 -a -n "$SYSINFO_VERSION_PKG" -a \
-            x"$SYSINFO_VERSION_PKG" != x'""' ] || { RES=$?; SYSINFO_VERSION_PKG=''; }
-        print_result $RES || true
+            x"$SYSINFO_VERSION_PKG" != x'""' ] || \
+            {   RES=$?;
+                logmsg_warn "Could not get and validate SYSINFO_VERSION_PKG";
+                SYSINFO_VERSION_PKG=''; }
+        print_result -$RES || true
 
         test_it "sysinfo_auth=2__parse__source_build_running__info"
         JPATH='^"restapi-metadata","source-repo","commit"$'
