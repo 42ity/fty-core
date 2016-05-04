@@ -70,7 +70,7 @@ SUBDIRS =	$(myMANDIR) docs/examples tools database/mysql
 # For many of the scripts here, you also want to update "client_SCRIPTS" below
 GENERATEDSCRIPTS = tools/run-test-doc.sh tools/db-init tools/bios-passwd \
 	tools/bios-networking tools/bios-nutconfig tools/verify-fs \
-	tools/biostimer-graphs-prefetch.sh
+	tools/biostimer-graphs-prefetch.sh tools/tntnet-ExecStartPre.sh
 
 # Subdir-distributed file is also generated
 GENERATEDDATA =	docs/examples/sudoers.d/bios_00_base
@@ -1283,6 +1283,7 @@ client_SCRIPTS +=	tools/bios-passwd \
 			tools/fake-th \
 			tools/bios-nutconfig \
 			tools/biostimer-graphs-prefetch.sh \
+			tools/tntnet-ExecStartPre.sh \
 			tools/verify-fs
 
 EXTRA_DIST +=		tools/fake-th
