@@ -72,7 +72,11 @@
             // Run command with arguments.  Wait for complete and return the return value.
             shared::Argv proc_cmd {"sudo", "date", "-s", time};
             if ( shared::call(proc_cmd) != 0 ) {
-                http_die ("internal-error", "Can't set requested time.");
+                http_die ("internal-error", "Can't set requested OS time.");
+            }
+            shared::Argv proc_cmd {"sudo", "hwclock", "--systohc", time};
+            if ( shared::call(proc_cmd) != 0 ) {
+                http_die ("internal-error", "Can't set requested HW time.");
             }
             if ( system("sudo systemctl stop ntp") != 0 ) {
                 http_die ("internal-error", "Cannot stop ntp service");
