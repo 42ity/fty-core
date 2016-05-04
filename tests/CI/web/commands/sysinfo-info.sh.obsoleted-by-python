@@ -82,7 +82,7 @@ PKG_NUM="`echo "$OUTPUT" | jsonsh_cli -x="$JPATH" | awk -F'\t' '$2 ~ /\"core\"/ 
 PKG_COMMIT="N/A"
 if [ $? -eq 0 -a -n "$PKG_NUM" ]; then
     JPATH='^"packages",'"${PKG_NUM}"',"commit"$'
-    PKG_COMMIT="`echo "$OUTPUT" | jsonsh_cli -x="$JPATH" | awk -F'\t' '{ print $2 }' | sed -e 's,^\"\(.*\)\"$,\1,' -e 's,\-.*$,,' | tr '[A-Z]' '[a-z]'`"
+    PKG_COMMIT="`echo "$OUTPUT" | jsonsh_cli -x="$JPATH" | awk -F'\t' '{ print $2 }' | sed -e 's,^\"\(.*\)\"$,\1,' -e 's,\-.*$,,' -e 's,^git,,' | tr '[A-Z]' '[a-z]'`"
     [ $? -eq 0 -a -n "$PKG_COMMIT" ]
     RES=$?
 else
