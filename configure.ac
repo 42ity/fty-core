@@ -449,8 +449,6 @@ PKG_CHECK_MODULES([LIBSODIUM], [libsodium >= 0.7.0], [], [AC_MSG_ERROR([cannot f
 PKG_CHECK_MODULES([LIBZMQ], [libzmq >= 3.0], [], [AC_MSG_ERROR([cannot find libzmq version >= 3])])
 PKG_CHECK_MODULES([LIBCZMQ], [libczmq >= 3.0], [], [AC_MSG_ERROR([cannot find libczmq version >= 3])])
 PKG_CHECK_MODULES([LIBMLM], [libmlm >= 0.1.0], [], [AC_MSG_ERROR([cannot find malamute library >= 0.1.0])])
-PKG_CHECK_MODULES([LIBNUTCLIENT], [libnutclient >= 0.27], [], [AC_MSG_ERROR([cannot find libnutclient >= 0.27])])
-PKG_CHECK_MODULES([LIBNUTSCAN], [libnutscan >= 2.7.2], [], [AC_MSG_ERROR([cannot find libnutscan >= 2.7.2])])
 PKG_CHECK_MODULES([LIBBIOSPROTO], [libbiosproto >= 0.1.0], [], AC_MSG_ERROR([cannot find libbiosproto library >= 0.1.0]))
 
 AC_MSG_CHECKING([presence of augtool])
@@ -479,13 +477,6 @@ AC_TYPE_UINT8_T
 # Checks for library functions.
 AC_FUNC_MALLOC
 AC_CHECK_FUNCS([gettimeofday memset socket])
-
-AC_CHECK_LIB(
-             [nutscan],
-             [ETN_nutscan_scan_xml_http],
-             [AC_DEFINE([HAVE_ETN_NUTSCAN_SCAN_XML_HTTP], [1], [Do we have non standard ETN_nutscan_scan_xml_http function or not])],
-             [AC_MSG_WARN([function ETN_nutscan_scan_xml_http is not available, XML HTTP protocol not supported by agent-autoconfig])]
-             )
 
 dnl--- end of the section suggested by autoscan
 
