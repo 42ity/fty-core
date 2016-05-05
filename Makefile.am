@@ -42,8 +42,10 @@ CLEANFILES =
 DISTCLEANFILES =
 DISTCLEANDIRS =
 # autoconf does not allow pkglib_PROGRAMS for some reason
-clientdir = ${pkglibexecdir}
+clientdir       = ${pkglibexecdir}
 client_PROGRAMS =
+helperdir       = $(datadir)/@PACKAGE@/scripts
+helper_SCRIPTS  =
 
 # test programs executed by CI scripts
 # lower-case var with actual list (so targets can be built by explicit request)
@@ -1283,8 +1285,9 @@ client_SCRIPTS +=	tools/bios-passwd \
 			tools/fake-th \
 			tools/bios-nutconfig \
 			tools/biostimer-graphs-prefetch.sh \
-			tools/tntnet-ExecStartPre.sh \
 			tools/verify-fs
+
+helper_SCRIPTS +=	tools/tntnet-ExecStartPre.sh
 
 EXTRA_DIST +=		tools/fake-th
 
