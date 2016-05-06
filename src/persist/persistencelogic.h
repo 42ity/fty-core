@@ -50,7 +50,6 @@ void process_measurement(zmsg_t **msg_p, TopicCache& c, MultiRowCache &multi_row
 /* \brief flush last measurements in Multi row cache */
 void flush_measurement(MultiRowCache& multi_row );
 
-void process_inventory (ymsg_t **msg);
 
 //#################### OLD PROTOCOL TO BE REMOVED! ####################
 
