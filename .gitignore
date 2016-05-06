@@ -105,7 +105,6 @@ test-db-asset-crud
 test-autoconfig
 agent-inventory
 agent-dbstore
-agent-nut
 agent-autoconfig
 agent-cm
 bios-nutscan
@@ -154,8 +153,6 @@ systemd/bios-db-init.service
 systemd/bios-agent-cm.service
 !systemd/bios-agent-inventory.service.in
 systemd/bios-agent-inventory.service
-!systemd/bios-agent-nut.service.in
-systemd/bios-agent-nut.service
 !systemd/bios-agent-dbstore.service.in
 systemd/bios-agent-dbstore.service
 !systemd/bios-agent-autoconfig.service.in
