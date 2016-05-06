@@ -14,7 +14,6 @@ BuildRequires:  zeromq-devel >= 4.2
 BuildRequires:  libsodium-devel
 BuildRequires:  czmq-devel >= 3.0
 BuildRequires:  pkg-config
-BuildRequires:  nut-devel
 BuildRequires:  libcidr-devel
 BuildRequires:  gcc-c++
 BuildRequires:  libtool
