@@ -205,7 +205,7 @@ cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 # Services of interest are those that are provided by BIOS packages
 # built from non-"core" repositories, and not by "bios-core" itself.
 DAEMONS="`sed -n 's|ExecStart=@libexecdir@/@PACKAGE@/||p' "$CHECKOUTDIR"/systemd/bios-*.service.in | sed -e 's|^\([^ ]*\)\([ \t].*\)$|\1|' | egrep -v 'db-init|bios-networking'`"
-SERVICES="$(ls -1 /etc/systemd/system/bios.target.wants/*.service | egrep -v 'biostimer-|malamute|dc_th|db-init|bios-networking' | while read F ; do BF="`basename "$F"`"; [ -s "$CHECKOUTDIR/systemd/$BF.in" ] || echo "$BF"; done | tr '\n' ' ')"
+SERVICES="$(ls -1 /etc/systemd/system/bios.target.wants/*.service | egrep -v 'biostimer-|malamute|dc_th|db-init|bios-networking|bios-agent-nut' | while read F ; do BF="`basename "$F"`"; [ -s "$CHECKOUTDIR/systemd/$BF.in" ] || echo "$BF"; done | tr '\n' ' ')"
 
 if [ ! -x "$BUILDSUBDIR/config.status" ]; then
     echo "Cannot find $BUILDSUBDIR/config.status, using preinstalled system binaries..."
