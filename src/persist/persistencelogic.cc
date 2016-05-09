@@ -125,51 +125,5 @@ void process_mailbox_deliver(ymsg_t** out, char** out_subj, ymsg_t* in, const ch
     }
 }
 
-// should process destroy ymsg?
-//
-// TODO do we want to have void here?
-// used by src/agents/inventory
-void process_inventory (ymsg_t **msg)
-{
-    // TODO need to analyse the repeat key
-    LOG_START;
-    if ( msg == NULL ) {
-        log_error ("NULL pointer to ymsg");
-        return;
-    }
-
-    _scoped_char *device_name    = NULL;
-    _scoped_char *module_name    = NULL;
-    _scoped_zhash_t    *ext_attributes = NULL;
-
-    int rv = bios_inventory_decode 
-                (msg, &device_name, &ext_attributes, &module_name);
-    
-    if  ( rv != 0 )
-    {
-        // TODO: should we log whole message ?
-        log_error ("ignore msg: Malformed content of request message");
-        return;
-    }
-
-    tntdb::Connection conn;
-    try {
-        conn = tntdb::connectCached(url);
-        conn.ping();
-        process_insert_inventory (conn, device_name, ext_attributes);
-
-        // RESULT is unimportant, because pub/sub.
-        //
-        // for REQ/REP write other wrapper
-        // TODO should be analysed result
-    } catch (const std::exception &e) {
-        log_error("ignore msg: Can't connect to the database");
-        return;
-    }
-
-      
-    
-    // TODO result        
-}
 
 } // namespace persist

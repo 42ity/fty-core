@@ -26,19 +26,17 @@
  */
 #include <string>
 #include <ctime>
+#include <biosproto.h>
+#include <tntdb/connect.h>
+#include <tntdb/error.h>
+
 #include "bios_agent.h"
 #include "defs.h"
 #include "log.h"
 #include "dbpath.h"
-#include "persistencelogic.h"
+#include "assetcrud.h"
 #include "cleanup.h"
-#include <biosproto.h>
 
-/**
- * \brief main inventory actor loop.
- *
- * Listens on 'main' stream for subject (regex) "^inventory@.+"
- */
 int main (int argc, char *argv[])
 {
     // ASSUMPTION:
@@ -60,11 +58,9 @@ int main (int argc, char *argv[])
     }
 
     // Create an agent
-    //_scoped_bios_agent_t *agent = bios_agent_new (addr, BIOS_AGENT_NAME_DB_INVENTORY);
     mlm_client_t *agent = mlm_client_new();
-    
-    if ( !agent ) {
-        log_error ("mlm_client_new() failed.");
+    if (!agent) {
+        log_error ("mlm_client_new () failed.");
         return EXIT_FAILURE;
     }
     int rv = mlm_client_connect(agent, MLM_ENDPOINT, 1000, addr);
@@ -75,23 +71,17 @@ int main (int argc, char *argv[])
     }
     
     // listen on inventory messages
-    //bios_agent_set_consumer (agent, bios_get_stream_main (), "^inventory@.+"); 
-    mlm_client_set_consumer(agent, BIOS_PROTO_STREAM_ASSETS, ".*");
+    mlm_client_set_consumer (agent, BIOS_PROTO_STREAM_ASSETS, ".*");
 
-    while ( !zsys_interrupted )
-    {
-        // ASSUMPTION:
-        //  messages will never be lost, so no need to manage a queue
-        //  of sended messages
-        
-        zmsg_t *new_msg = mlm_client_recv(agent);
-	if (!new_msg) {
+    while (!zsys_interrupted) {
+       
+        zmsg_t *new_msg = mlm_client_recv (agent);
+	if (!new_msg)
 	      break;
-	}
 	
 	if (!is_bios_proto (new_msg)) {
-	     log_warning ("not a bios proto message sender == '%s', subject == '%s",
-	       mlm_client_sender (agent), mlm_client_subject (agent));
+	     log_warning ("not a bios proto message sender == '%s', subject == '%s', command = '%s'",
+	       mlm_client_sender (agent), mlm_client_subject (agent), mlm_client_command (agent));
 	     continue;
 	}
 	  
@@ -102,26 +92,32 @@ int main (int argc, char *argv[])
 	}
 	
 	// WIP
-        bios_proto_print(proto);
+	zsys_debug ("Printing message");
+        bios_proto_print (proto);
+	zsys_debug ("\n");
+
+	const char *device_name = bios_proto_name (proto);
+	assert (device_name);
+	zhash_t *ext = bios_proto_ext (proto);
+	assert (ext);
 	
-/*        
-        log_info ("Command is '%s'", mlm_client_command (agent));
+	const char *operation = bios_proto_operation(proto);
 	
-        // from stream we can recieve only one type of messages
-        if ( streq (mlm_client_command (agent), "STREAM DELIVER") )
-        // TODO use some constants
-        {           
-            persist::process_inventory (&new_msg);
-            // TODO process ret_value
-        }
-        else
-        {
-            // for now we don't support any direct messages
-            // TODO: should we log whole message ?
-            log_error ("recieved non STREAM deliver, ignore it");
-        }
-*/        
-        // we should destroy the message
+	if(operation&&(!streq (operation, "inventory")))
+	  continue;  
+	
+	try {
+        	tntdb::Connection conn = tntdb::connectCached (url);
+		process_insert_inventory (
+			conn,
+			device_name,
+			ext);
+	}
+	catch (const std::exception& e) {
+		zsys_error ("tntdb::connectCached () failed: %s", e.what ());
+		break;
+	}
+	
         bios_proto_destroy (&proto);
     }
 
