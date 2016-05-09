@@ -40,8 +40,7 @@ int state_valid (const char *state) {
     if (streq (state, "ACK-WIP") ||
         streq (state, "ACK-IGNORE") ||
         streq (state, "ACK-PAUSE") ||
-        streq (state, "ACK-SILENCE") ||
-        streq (state, "ACTIVE"))
+        streq (state, "ACK-SILENCE"))
         return 1;
     return 0;
 }
@@ -111,7 +110,7 @@ zmsg_addstr (send_msg, element_name.c_str ());
 zmsg_addstr (send_msg, state.c_str ());
 
 // send it
-if (mlm_client_sendto (client, BIOS_AGENT_NAME_ALERT_AGENT, "rfc-alerts-acknowledge", NULL, 1000, &send_msg) != 0) {
+if (mlm_client_sendto (client, ALERTS_LIST_AGENT, "rfc-alerts-acknowledge", NULL, 1000, &send_msg) != 0) {
     log_debug ("mlm_client_sendto (address = '%s', subject = '%s', tracker = NULL, timeout = '%d') failed.",
         BIOS_AGENT_NAME_ALERT_AGENT, "rfc-alerts-acknowledge", 1000);
     zmsg_destroy (&send_msg);

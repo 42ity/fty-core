@@ -26,6 +26,7 @@
 #ifndef SRC_INCLUDE_STR_DEFS_H__
 #define SRC_INCLUDE_STR_DEFS_H__
 
+#define ALERTS_LIST_AGENT "ALERTS-LIST" 
 // bios malamute endpoint
 extern const char* MLM_ENDPOINT;
 
