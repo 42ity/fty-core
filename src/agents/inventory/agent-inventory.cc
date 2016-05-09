@@ -39,85 +39,85 @@
 
 int main (int argc, char *argv[])
 {
-    // ASSUMPTION:
-    //  this agent is already registred in DB
     log_open();
     log_info ("%s started.", BIOS_AGENT_NAME_DB_INVENTORY);
     
     // Basic settings
-    if ( argc > 3 )
-    {
+    if (argc > 3) {
         printf ("syntax: db-inventory [ <endpoint> | <endpoint> <mysql:db="
                 "bios;user=bios;password=test> ]\n");
-        return 1;
+        return EXIT_FAILURE;
     }
     const char *addr = (argc == 1) ? MLM_ENDPOINT : argv[1];
-    if ( argc > 2 )
-    {
+    if (argc > 2) {
         url = argv[2];
     }
 
     // Create an agent
-    mlm_client_t *agent = mlm_client_new();
+    mlm_client_t *agent = mlm_client_new ();
     if (!agent) {
         log_error ("mlm_client_new () failed.");
         return EXIT_FAILURE;
     }
-    int rv = mlm_client_connect(agent, MLM_ENDPOINT, 1000, addr);
+
+    int rv = mlm_client_connect (agent, MLM_ENDPOINT, 1000, addr);
     if (rv != 0) {
         log_error ("mlm_client_connect () failed.");
-	mlm_client_destroy (&agent);
-	return EXIT_FAILURE;
+        mlm_client_destroy (&agent);
+        return EXIT_FAILURE;
     }
-    
+
     // listen on inventory messages
-    mlm_client_set_consumer (agent, BIOS_PROTO_STREAM_ASSETS, ".*");
+    rv = mlm_client_set_consumer (agent, BIOS_PROTO_STREAM_ASSETS, ".*");
+    if (rv == -1) {
+        log_error ("mlm_client_set_consumer () failed");
+        mlm_client_destroy (&agent);
+        return EXIT_FAILURE;
+    }
 
     while (!zsys_interrupted) {
-       
-        zmsg_t *new_msg = mlm_client_recv (agent);
-	if (!new_msg)
-	      break;
-	
-	if (!is_bios_proto (new_msg)) {
-	     log_warning ("not a bios proto message sender == '%s', subject == '%s', command = '%s'",
-	       mlm_client_sender (agent), mlm_client_subject (agent), mlm_client_command (agent));
-	     continue;
-	}
-	  
-	bios_proto_t *proto = bios_proto_decode (&new_msg);
-	if (!proto) {
-	    log_critical ("bios_proto_decode () failed");
-	    break;
-	}
-	
-	// WIP
-	zsys_debug ("Printing message");
-        bios_proto_print (proto);
-	zsys_debug ("\n");
 
-	const char *device_name = bios_proto_name (proto);
-	assert (device_name);
-	zhash_t *ext = bios_proto_ext (proto);
-	assert (ext);
+        zmsg_t *new_msg = mlm_client_recv (agent);
+        if (!new_msg)
+              break;
 	
-	const char *operation = bios_proto_operation(proto);
+        if (!is_bios_proto (new_msg)) {
+             log_warning ("not a bios proto message sender == '%s', subject == '%s', command = '%s'",
+                     mlm_client_sender (agent), mlm_client_subject (agent), mlm_client_command (agent));
+             zmsg_destroy (&new_msg);
+             continue;
+        }
+          
+        bios_proto_t *proto = bios_proto_decode (&new_msg);
+        if (!proto) {
+            log_critical ("bios_proto_decode () failed");
+            break;
+        }
 	
-	if(operation&&(!streq (operation, "inventory")))
-	  continue;  
+        const char *device_name = bios_proto_name (proto);
+        assert (device_name);
+        zhash_t *ext = bios_proto_ext (proto);
+        assert (ext);
+	    const char *operation = bios_proto_operation(proto);
+        assert (operation);
+
+        if (!streq (operation, "inventory")) {
+            bios_proto_destroy (&proto);
+            continue;  
+        }
 	
-	try {
-        	tntdb::Connection conn = tntdb::connectCached (url);
-		process_insert_inventory (
-			conn,
-			device_name,
-			ext);
-	}
-	catch (const std::exception& e) {
-		zsys_error ("tntdb::connectCached () failed: %s", e.what ());
-		break;
-	}
-	
+        try {
+            tntdb::Connection conn = tntdb::connectCached (url);
+            process_insert_inventory (
+                    conn,
+                    device_name,
+                    ext);
+        }
+        catch (const std::exception& e) {
+            bios_proto_destroy (&proto);
+            zsys_error ("tntdb::connectCached () failed: %s", e.what ());
+            break;
+        }
         bios_proto_destroy (&proto);
     }
 
