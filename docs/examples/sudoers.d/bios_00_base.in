@@ -20,7 +20,7 @@
 # globs generally) which we may be interested in:
 
 ### Change date on this device:
-Cmnd_Alias DATE	            = /usr/bin/date,/bin/date
+Cmnd_Alias DATE	            = /usr/bin/date,/bin/date,/sbin/hwclock
 ### TODO: Remove hardcoded path both here and in the sources
 Cmnd_Alias AUGTOOL          = /usr/bin/augtool -S -I/usr/share/bios/lenses -e
 Cmnd_Alias BIOS_PASSWD      = @libexecdir@/@PACKAGE@/bios-passwd
