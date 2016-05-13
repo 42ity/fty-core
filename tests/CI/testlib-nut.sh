@@ -33,6 +33,11 @@
 # * Caller must define a `custom_create_ups_dev_file()` that would
 #   accept UPS (path)name as "$1" and echo a dummy-ups config snippet;
 #   likewise caller must define `custom_create_epdu_dev_file()`.
+#   NOTE that the dummy-ups driver sleeps a second or two and then loops
+#   when it hits end of file, so it can "forget" values set dynamically.
+#   To avoid this situation (so you can rely on `upsrw`) add `TIMER: 300`
+#   (value may vary according to test logic) in the end of your custom
+#   routines that prepare content for dummy-ups dev_files.
 #
 
 # NUT options
