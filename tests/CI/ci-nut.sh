@@ -144,7 +144,8 @@ custom_create_ups_dev_file() {
         "\noutlet.1.voltage: 220" \
         "\noutlet.2.voltage: 220" \
         "\nups.load: 10" \
-        "\nups.status: OL"
+        "\nups.status: OL" \
+        "\nTIMER: 1800"
 }
 
 expected_db_value() {

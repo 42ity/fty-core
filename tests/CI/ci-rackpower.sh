@@ -347,6 +347,7 @@ outlet.realpower: 0
 #outlet.1.voltage: 220
 #outlet.2.voltage: 220
 #outlet.3.voltage: 220
+TIMER: 300
 "
     else
         echo "# ups power sequence file
@@ -358,6 +359,7 @@ ups.model: `basename "$FILE" .dev`
 ups.realpower: 0
 outlet.realpower: 0
 #battery.charge: 90
+TIMER: 300
 "
     fi
 }

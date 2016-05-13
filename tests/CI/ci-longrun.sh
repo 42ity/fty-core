@@ -71,7 +71,8 @@ custom_create_epdu_dev_file() {
         "\noutlet.3.voltage: 230" \
         "\noutlet.4.current: 1.3" \
         "\noutlet.4.realpower: 25" \
-        "\noutlet.4.voltage: 230"
+        "\noutlet.4.voltage: 230" \
+        "\nTIMER: 1800"
 }
 
 custom_create_ups_dev_file() {
@@ -91,7 +92,8 @@ custom_create_ups_dev_file() {
         "\nups.temperature: 25" \
         "\noutlet.realpower: 20" \
         "\nups.load: 10" \
-        "\nups.status: OL"
+        "\nups.status: OL" \
+        "\nTIMER: 1800"
 }
 
 random_thing(){

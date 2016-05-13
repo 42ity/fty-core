@@ -82,6 +82,7 @@ ups.status: OL
 outlet.1.voltage: 230
 outlet.2.voltage: 230
 outlet.3.voltage: 230
+TIMER: 300
 "
 }
 
