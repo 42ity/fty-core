@@ -23,7 +23,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #ifndef SRC_DB_ASSETS_ASSETDEFS_H_
 #define SRC_DB_ASSETS_ASSETDEFS_H_
-
+#include "asset_types.h"
 typedef struct _asset_link
 {
     a_elmnt_id_t    src;     //!< id of src element
