@@ -39,26 +39,26 @@
 
 #include "utils.h"
 #include "utils++.h"
-#include "bios_agent.h"
-#include "agents.h"
-#include "ymsg.h"
 #include "log.h"
 #include "str_defs.h"
 #include "utils_ymsg.h"
 #include "cleanup.h"
 #include "utils_web.h"
 #include "helpers.h"
+#include <tntdb.h>
+#include "dbpath.h"
+#include "assets.h"
 
 // Check if value of parameter 'relative' is supported:
 //  * No - return false, value of unixtime is not changed
-//  * Yes - return true; value of unixtime contains now - (relative expressed in seconds) 
+//  * Yes - return true; value of unixtime contains now - (relative expressed in seconds)
 //
 // Currently supported values of relative: 24h, 7d, 30d
 // Expects string relative converted to lowercase.
 
-bool relative_to_unixtime (const std::string& relative, int64_t now, int64_t& unixtime) { 
+bool relative_to_unixtime (const std::string& relative, int64_t now, int64_t& unixtime) {
     if (relative.compare ("24h") == 0) {
-        unixtime = now - 86400;        
+        unixtime = now - 86400;
         return true;
     }
     else if (relative.compare ("7d") == 0) {
@@ -103,7 +103,7 @@ bool relative_to_unixtime (const std::string& relative, int64_t now, int64_t& un
         if (end == -1) {
             http_die ("request-param-bad", "end_ts", std::string ("'").append (end_ts).append ("'").c_str (), "format 'YYYYMMDDhhmmssZ");
         }
-       
+
         // check that start_ts < end_ts
         if (end <= st) {
             http_die ("parameter-conflict",
@@ -113,11 +113,11 @@ bool relative_to_unixtime (const std::string& relative, int64_t now, int64_t& un
     else {
         // check value of relative parameter
         std::transform (relative.begin(), relative.end(), relative.begin(), ::tolower);
-        int64_t now = (int64_t) time (NULL); 
+        int64_t now = (int64_t) time (NULL);
         if (!relative_to_unixtime (relative, now, st)) {
             http_die ("request-param-bad", "relative", std::string ("'").append (relative).append ("'").c_str (),
                       "one of the following values: '24h', '7d', '30d'.");
-        } 
+        }
         end = (int64_t) time (NULL);
     }
 
@@ -133,10 +133,10 @@ bool relative_to_unixtime (const std::string& relative, int64_t now, int64_t& un
             std::string ("one of the following values: [").append (utils::join (AVG_TYPES, AVG_TYPES_SIZE, ", ")).append("].").c_str ());
     }
 
-    // step 
+    // step
     if (step.empty ()) {
         http_die ("request-param-required", "step");
-    } 
+    }
     if (!is_average_step_supported (step.c_str ())) {
         http_die ("request-param-bad", "step",
             std::string ("'").append (step).append ("'").c_str (),
@@ -155,46 +155,123 @@ bool relative_to_unixtime (const std::string& relative, int64_t now, int64_t& un
     if (!check_element_identifier ("element_id", element_id, eid, errors)) {
         http_die_error (errors);
     }
+    std::string element_name;
+    try{
+        tntdb::Connection conn = tntdb::connectCached(url);
 
+        auto basic_ret = persist::select_asset_element_web_byId(conn, eid);
+        if ( basic_ret.status == 0 ) {
+            http_die ("element-not-found");
+        }
+        element_name = basic_ret.item.name;
+    }
+    catch (const  std::exception &e ) {
+        http_die ("internal-error", e.what());
+    }
     std::string agent_name ("web.average.");
     agent_name.append (std::to_string (static_cast<int> (getpid ()))).append (".").append (std::to_string ( syscall(SYS_gettid) ));
 
-    _scoped_bios_agent_t *agent = bios_agent_new (MLM_ENDPOINT, agent_name.c_str ());
-    if (agent == NULL) {
-        http_die ("internal-error", "bios_agent_new () failed.");
+    mlm_client_t *client = mlm_client_new();
+    int rv = mlm_client_connect (client, MLM_ENDPOINT, 1000, agent_name.c_str());
+    if ( rv == -1 ) {
+        mlm_client_destroy (&client);
+        http_die ("internal-error", "Cannot connect to malamute");
     }
 
-    _scoped_ymsg_t *msg = bios_web_average_request_encode (st, end, type.c_str(), step.c_str(), eid, source.c_str ());
-    if (msg == NULL) {
-        bios_agent_destroy (&agent);
-        http_die ("internal-error", "bios_web_average_request_encode() failed.");
+
+    zmsg_t *msg = zmsg_new();
+    zmsg_addstr (msg, "GET");
+    zmsg_addstr (msg, element_name.c_str());
+    zmsg_addstr (msg, source.c_str());
+    zmsg_addstr (msg, step.c_str());
+    zmsg_addstr (msg, type.c_str());
+    zmsg_addstr (msg, std::to_string(st).c_str());
+    zmsg_addstr (msg, std::to_string(end).c_str());
+
+    mlm_client_sendto (client, "agent-ms", "aggregated data", NULL, 1000, &msg);
+
+    // wait for the right message or time-out
+    zmsg_t *recv_msg = NULL;
+    zpoller_t *poller = zpoller_new (mlm_client_msgpipe (client), NULL);
+    if (!poller) {
+        log_critical ("zpoller_new() failed.");
+        mlm_client_destroy (&client);
+        http_die ("internal-error", "zpoller_new() failed.");
     }
 
-    int rv = bios_agent_sendto (agent, BIOS_AGENT_NAME_COMPUTATION, "metric/computed/average", &msg);
-    if (rv != 0) {
-        bios_agent_destroy (&agent);
-        http_die ("internal-error", "bios_web_average_send_to() failed.");
+    zsock_t *which = (zsock_t *) zpoller_wait (poller, 10000);
+    if (which != NULL) {
+        recv_msg = mlm_client_recv (client);
     }
+    if (!recv_msg) {
+        if (zpoller_expired (poller) || zpoller_terminated (poller)) {
+            log_error ("zpoller_wait(timeout = 5000) timed out waiting for message.");
+            zpoller_destroy (&poller);
+            mlm_client_destroy (&client);
+            http_die ("internal-error", "Timed out waiting for message.");
+        }
+        log_error ("mlm_client_recv() failed.");
+        zpoller_destroy (&poller);
+        mlm_client_destroy (&client);
+        http_die ("internal-error", "mlm_client_recv() failed.");
+    }
+    zpoller_destroy (&poller);
 
-    msg = bios_agent_recv (agent);
-    if (msg == NULL) {
-        bios_agent_destroy (&agent);
-        http_die ("internal-error", "Computation module didn't reply.");
+    char *frame = zmsg_popstr (recv_msg);
+    if ( streq(frame, "ERROR") ) {
+        zstr_free (&frame);
+        frame = zmsg_popstr(recv_msg); // not it is reason
+        // TODO memory leak in reason, HOW to fix????
+        zmsg_destroy (&recv_msg);
+        mlm_client_destroy (&client);
+        http_die ("internal-error", frame);
     }
-
-    if (!ymsg_is_ok (msg)) {
-        ymsg_destroy (&msg);
-        bios_agent_destroy (&agent);
-        http_die ("internal-error", ymsg_errmsg (msg) ? ymsg_errmsg (msg) : "Error requesting average data." );
-    }
-
-    _scoped_char *json = NULL;
-    rv = bios_web_average_reply_extract (msg, &json);
-    ymsg_destroy (&msg);
-    if (rv != 0) {
-        bios_agent_destroy (&agent);
-        http_die ("internal-error", "Reply from computation module incorrect.");
-    }
-    bios_agent_destroy (&agent);
+    if ( streq(frame, "OK") ) {
+        // now we are going to set up the head of the response
+        char *element_rep = zmsg_popstr (recv_msg);
+        char *source_rep = zmsg_popstr (recv_msg);
+        char *step_rep = zmsg_popstr (recv_msg);
+        char *type_rep = zmsg_popstr (recv_msg);
+        char *start_date_rep = zmsg_popstr (recv_msg);
+        char *end_date_rep = zmsg_popstr (recv_msg);
+        char *units_rep = zmsg_popstr (recv_msg);
 </%cpp>
-<$$ json $>
+{
+        <$$ utils::json::jsonify ("units", units_rep) $>,
+        <$$ utils::json::jsonify ("source", source_rep) $>,
+        <$$ utils::json::jsonify ("step", step_rep) $>,
+        <$$ utils::json::jsonify ("type", type_rep) $>,
+        <$$ utils::json::jsonify ("element_id", eid) $>,
+        <$$ utils::json::jsonify ("start_ts", start_date_rep) $>,
+        <$$ utils::json::jsonify ("end_ts", end_date_rep) $>,
+        "data":[
+<%cpp>
+        // first of all, need to clean up
+        zstr_free (&element_rep);
+        zstr_free (&source_rep);
+        zstr_free (&step_rep);
+        zstr_free (&type_rep);
+        zstr_free (&start_date_rep);
+        zstr_free (&units_rep);
+        // now we are going to fill in data
+        while  ( zmsg_size (recv_msg) >= 2 ) {
+            char *timestamp = zmsg_popstr (recv_msg);
+            char *value = zmsg_popstr (recv_msg);
+            </%cpp>
+{
+    "value": <$$ value $>,
+    "timestamp": <$$ timestamp $>,
+    "scale": 0
+} <$$ zmsg_size (recv_msg) != 0 ? "," : "" $>
+            <%cpp>
+            zstr_free (&value);
+            zstr_free (&timestamp);
+        }
+</%cpp>
+        ]
+}
+<%cpp>
+    }
+    zmsg_destroy (&recv_msg);
+    mlm_client_destroy (&client);
+</%cpp>

@@ -26,6 +26,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include <tntdb/connect.h>
 #include "db/assetdef.h"
+#include "dbhelpers.h"
+#include "asset_types.h"
 
 namespace persist {
 
