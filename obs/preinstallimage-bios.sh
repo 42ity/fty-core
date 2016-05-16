@@ -296,7 +296,7 @@ fi
 
 # Ensure mysql is owned correctly after upgrades and other OS image changes
 [[ -s /usr/lib/systemd/system/mysql.service ]] && \
-    sed -e 's,^\(Type=.*\)$,\1\nExecStartPre=/bin/dash -c "[ -d /var/lib/mysql ] \&\& /bin/chown -R mysql:mysql /var/lib/mysql",' \
+    sed -e 's,^\(Type=.*\)$,\1\nExecStartPre=/bin/dash -c "if [ -d /var/lib/mysql ] ; then /bin/chown -R mysql:mysql /var/lib/mysql ; fi",' \
         -i /usr/lib/systemd/system/mysql.service
 
 # Our tntnet unit
