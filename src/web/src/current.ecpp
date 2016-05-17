@@ -136,8 +136,8 @@ s_rt_encode_GET (const char* name)
 
     zmsg_pushmem (msg, zuuid_data (uuid), zuuid_size (uuid));
     zuuid_destroy (&uuid);
-    zmsg_pushstr (msg, method);
-    zmsg_pushstr (msg, name);
+    zmsg_addstr (msg, method);
+    zmsg_addstr (msg, name);
     return msg;
 }
 
@@ -182,8 +182,6 @@ std::string dev;
         http_die ("internal-error", "mlm_client_new() failed.");
     }
 
-    zpoller_t *poller = zpoller_new (mlm_client_msgpipe (client), NULL);
-
     std::string client_name ("web.metric_current.");
     client_name.append (std::to_string (getpid ())).append (".").append (std::to_string (syscall (SYS_gettid)));
     log_debug ("malamute client name = '%s'.", client_name.c_str ());
@@ -225,7 +223,6 @@ std::string dev;
         //TODO: this intentionally wait forewer, to be fixed by proper client pool
         zmsg_t *msg = mlm_client_recv (client);
         if (!msg) {
-            zmsg_destroy (&msg);
             mlm_client_destroy (&client);
             http_die ("internal-error", "No reply from broker");
         }
@@ -233,6 +230,7 @@ std::string dev;
         //TODO: check if we have right uuid, to be fixed by proper client pool
         char *uuid = zmsg_popstr (msg);
         zstr_free (&uuid);
+
         char *result = zmsg_popstr (msg);
         if (!streq (result, "OK")) {
             log_warning ("Error reply for device '%s', result=%s", asset.item.name.c_str (), result);
@@ -240,10 +238,11 @@ std::string dev;
             zmsg_destroy (&msg);
             continue;
         }
+
         char *element = zmsg_popstr (msg);
-        if (!element) {
-            log_warning ("Empty element name in reply");
-            zstr_free (&result);
+        if (!streq (element, asset.item.name.c_str ())) {
+            log_warning ("element name (%s) from message differs from requested one (%s), ignoring", element, asset.item.name.c_str ());
+            zstr_free (&element);
             zmsg_destroy (&msg);
             continue;
         }
@@ -263,6 +262,8 @@ std::string dev;
                 std::stod (bios_proto_value (bmsg), NULL)));
 
             bios_proto_destroy (&bmsg);
+            
+            data = zmsg_popmsg (msg);
         }
         zmsg_destroy (&msg);
 
@@ -357,7 +358,6 @@ std::string dev;
         big_json += ",";
     }
 
-    zpoller_destroy (&poller);
     mlm_client_destroy (&client);
 
     // remove last ","
