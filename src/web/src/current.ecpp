@@ -36,14 +36,19 @@
 #include <string>
 #include <cmath>
 
+#include <biosproto.h>
+
+#include <sys/types.h>
+#include <sys/syscall.h>
+
 #include "upsstatus.h"
 #include "data.h"
-#include "db/measurements.h"
 #include "log.h"
 #include "dbpath.h" // temporary
 #include "utils_web.h"
 #include "asset_types.h"
 #include "helpers.h"
+#include "str_defs.h"
 
 static std::string
 s_os2string(
@@ -120,6 +125,22 @@ struct OutletProperties {
 
 };
 
+// encode metric GET request
+static zmsg_t*
+s_rt_encode_GET (const char* name)
+{
+    static const char* method = "GET";
+
+    zuuid_t *uuid = zuuid_new ();
+    zmsg_t *msg = zmsg_new ();
+
+    zmsg_pushmem (msg, zuuid_data (uuid), zuuid_size (uuid));
+    zuuid_destroy (&uuid);
+    zmsg_pushstr (msg, method);
+    zmsg_pushstr (msg, name);
+    return msg;
+}
+
 </%pre>
 
 <%args>
@@ -141,6 +162,40 @@ std::string dev;
         http_die("request-param-required", "dev");
     }
 
+    // Temporary add connection here
+    tntdb::Connection conn;
+    try{
+        conn = tntdb::connectCached(url);
+    }
+    catch (const std::exception &e)
+    {
+        LOG_END_ABNORMAL(e);
+        http_die("internal-error", "Cannot connect to the database");
+    }
+
+
+    // connect to malamute
+    // copy & paste from alert_ack.ecpp
+    mlm_client_t *client = mlm_client_new ();
+    if (!client) {
+        log_critical ("mlm_client_new() failed.");
+        http_die ("internal-error", "mlm_client_new() failed.");
+    }
+
+    zpoller_t *poller = zpoller_new (mlm_client_msgpipe (client), NULL);
+
+    std::string client_name ("web.metric_current.");
+    client_name.append (std::to_string (getpid ())).append (".").append (std::to_string (syscall (SYS_gettid)));
+    log_debug ("malamute client name = '%s'.", client_name.c_str ());
+
+    int rv = mlm_client_connect (client, MLM_ENDPOINT, 1000, client_name.c_str ());
+    if (rv == -1) {
+        log_critical ("mlm_client_connect (endpoint = '%s', timeout = '%d', address = '%s') failed.",
+                        MLM_ENDPOINT, 1000, client_name.c_str ());
+        mlm_client_destroy (&client);
+        http_die ("internal-error", "mlm_client_connect() failed.");
+    }
+
     // Go through all passed ids
     std::string big_json{};
     for ( auto asset_id : asset_ids)
@@ -154,17 +209,6 @@ std::string dev;
             continue;
         }
 
-        // Temporary add connection here
-        tntdb::Connection conn;
-        try{
-            conn = tntdb::connectCached(url);
-        }
-        catch (const std::exception &e)
-        {
-            LOG_END_ABNORMAL(e);
-            http_die("internal-error", "Cannot connect to the database");
-        }
-
         // check if the element really exists, read its name
         auto asset = persist::select_asset_element_web_byId (conn, id);
         if ( asset.status == 0 )
@@ -173,47 +217,54 @@ std::string dev;
             continue;
         }
 
-        // definition of the function, that would process the
-        // returned array of measurements
         std::map <std::string, double> measurements{};
-        row_cb_f foo = \
-                        [&measurements](const tntdb::Row& r)
-                        {
-                            std::string topic = "";
-                            r["topic"].get(topic);
 
-                            // real topic consists of two parts,
-                            // but need to return only first
-                            std::vector <std::string> topic_parts{};
-                            cxxtools::split("@", topic,
-                                    std::back_inserter(topic_parts));
-                            if ( topic_parts.size() == 2 )
-                            {
-                                m_msrmnt_value_t value = 0;
-                                r["value"].get(value);
+        zmsg_t *request = s_rt_encode_GET (asset.item.name.c_str ());
+        mlm_client_sendto (client, "agent-rt", "latest-rt-data", NULL, 1000, &request);
 
-                                m_msrmnt_scale_t scale = 0;
-                                r["scale"].get(scale);
-                                bool inserted;
-                                std::map <std::string, double> ::iterator it;
-                                std::tie (it, inserted) = measurements.emplace
-                                (
-                                    topic_parts[0],
-                                    value * std::pow (10, scale)
-                                );
-                                if ( !inserted )
-                                    log_error ("in the list of returned measurements at least two have the same measurement_source");
-                            }
-                            else
-                            {
-                                // Don't know what is it, ignore it
-                                log_warning (" topic = '%s' is malformed",
-                                               topic.c_str());
-                           }
-                        };
-        // selects measurements
-        int rv = persist::select_current_measurement_by_element
-                    (conn, id, foo);
+        //TODO: this intentionally wait forewer, to be fixed by proper client pool
+        zmsg_t *msg = mlm_client_recv (client);
+        if (!msg) {
+            zmsg_destroy (&msg);
+            mlm_client_destroy (&client);
+            http_die ("internal-error", "No reply from broker");
+        }
+
+        //TODO: check if we have right uuid, to be fixed by proper client pool
+        char *uuid = zmsg_popstr (msg);
+        zstr_free (&uuid);
+        char *result = zmsg_popstr (msg);
+        if (!streq (result, "OK")) {
+            log_warning ("Error reply for device '%s', result=%s", asset.item.name.c_str (), result);
+            zstr_free (&result);
+            zmsg_destroy (&msg);
+            continue;
+        }
+        char *element = zmsg_popstr (msg);
+        if (!element) {
+            log_warning ("Empty element name in reply");
+            zstr_free (&result);
+            zmsg_destroy (&msg);
+            continue;
+        }
+        zstr_free (&element);
+
+        zmsg_t *data = zmsg_popmsg (msg);
+        while (data) {
+            bios_proto_t *bmsg = bios_proto_decode (&data);
+            if (!bmsg) {
+                log_warning ("decoding bios_proto_t failed");
+                continue;
+            }
+
+            // TODO: non double values are not (yet) supported
+            measurements.emplace (std::make_pair (
+                bios_proto_type (bmsg),
+                std::stod (bios_proto_value (bmsg), NULL)));
+
+            bios_proto_destroy (&bmsg);
+        }
+        zmsg_destroy (&msg);
 
         // add mandatory keys if not in DB
         if ( persist::is_rack(asset.item.type_id) || persist::is_dc(asset.item.type_id) ) {
@@ -305,6 +356,10 @@ std::string dev;
         big_json += json;
         big_json += ",";
     }
+
+    zpoller_destroy (&poller);
+    mlm_client_destroy (&client);
+
     // remove last ","
     if (!big_json.empty())
         big_json.pop_back();
