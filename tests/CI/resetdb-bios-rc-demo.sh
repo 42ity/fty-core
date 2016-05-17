@@ -52,7 +52,6 @@ echo "INFO: Got the database dump, starting destructive actions"
 
 echo "Stopping services..."
 /bin/systemctl stop bios-db-init malamute tntnet@bios.service mysql 'biostimer*.timer'
-rm -f /var/lib/bios/agent-cm/biostimer-graphs-prefetch*.time
 
 echo "Starting mysql..."
 /bin/systemctl start mysql 
@@ -71,10 +70,7 @@ echo "Restarting services so they pick up dependencies well"
 
 sleep 5
 
-echo "Restarting prefetchers..."
 /bin/systemctl restart \
-	biostimer-graphs-prefetch@15m::realpower.default.service \
-	biostimer-graphs-prefetch@24h::realpower.default.service \
 	biostimer-outage.service
 
 echo "Status check:"
