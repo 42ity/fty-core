@@ -72,7 +72,7 @@ SUBDIRS =	$(myMANDIR) docs/examples tools database/mysql
 # For many of the scripts here, you also want to update "client_SCRIPTS" below
 GENERATEDSCRIPTS = tools/run-test-doc.sh tools/db-init tools/bios-passwd \
 	tools/bios-networking tools/verify-fs \
-	tools/biostimer-graphs-prefetch.sh tools/tntnet-ExecStartPre.sh
+	tools/tntnet-ExecStartPre.sh
 
 # Subdir-distributed file is also generated
 GENERATEDDATA =	docs/examples/sudoers.d/bios_00_base
@@ -721,33 +721,6 @@ test_agents_CPPFLAGS = \
 test_agents_LDFLAGS = \
 			${CXXTOOLS_LIBS} ${LIBCZMQ_LIBS}
 
-check_PROGRAMS += 	test-computation
-
-test_computation_SOURCES = \
-			tests/agents/cm/test-cm-utils.cc \
-			src/agents/computation/cm-utils.h \
-			src/agents/computation/cm-utils.cc
-
-test_computation_LDADD = \
-			libpriv-test-run.la \
-			libpriv-log.la \
-			libpriv-utils.la \
-			libpriv-defs.la \
-			libbiosapi.la \
-			libpriv-db-measurements.la \
-			libpriv-utils-ymsg.la
-
-test_computation_CPPFLAGS = \
-			$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/tests/include/ \
-			-I$(abs_top_srcdir)/src/agents/computation \
-			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_srcdir)/src/db \
-			-I$(abs_top_builddir)/tools \
-			-I$(abs_top_srcdir)/src
-
-test_computation_LDFLAGS = ${CXXTOOLS_LIBS} ${LIBCZMQ_LIBS} -ltntdb -lbiosproto
-
 ### The unit-tester for some routines from libbiosapi
 check_PROGRAMS +=		test-libbiosapiut
 test_libbiosapiut_SOURCES =	tests/api/test-libbiosapiut.cc
@@ -1162,33 +1135,6 @@ agent_inventory_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_srcdir)/src/persist
 
-client_PROGRAMS +=	agent-cm
-
-agent_cm_SOURCES = \
-			src/agents/computation/agent-cm.cc \
-			src/agents/computation/cm-web.cc \
-			src/agents/computation/cm-web.h \
-			src/agents/computation/cm-utils.h \
-			src/agents/computation/cm-utils.cc
-
-agent_cm_LDADD = \
-			libpriv-db.la \
-			libpriv-log.la \
-			libbiosapi.la \
-			libpriv-utils-ymsg.la \
-			libpriv-db-measurements.la \
-			libpriv-utils-plusplus.la \
-			libpriv-defs.la
-
-agent_cm_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi -ltntdb -lbiosproto
-
-agent_cm_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/src \
-			-I$(abs_top_srcdir)/src/db \
-			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_builddir)/tools
-
-
 client_PROGRAMS += average
 
 average_SOURCES = src/average/average.cc \
@@ -1231,7 +1177,6 @@ warranty_metric_CPPFLAGS =	$(AM_CPPFLAGS) \
 client_SCRIPTS +=	tools/bios-passwd \
 			tools/bios-networking \
 			tools/fake-th \
-			tools/biostimer-graphs-prefetch.sh \
 			tools/verify-fs
 
 helper_SCRIPTS +=	tools/tntnet-ExecStartPre.sh
@@ -1363,7 +1308,7 @@ dist_noinst_DATA +=	tntnet.xml $(top_srcdir)/src/web/tntnet.xml
 CLEANFILES +=		tntnet.xml tntnet.xml.example tests/CI/tntnet.xml
 
 # Make sure needed files are up-to-date to test web-server for $BIOS REST API
-web-test-deps: tntnet.xml bios_web.la web-link-test agent-dbstore agent-cm
+web-test-deps: tntnet.xml bios_web.la web-link-test agent-dbstore
 
 # TODO (BIOS-1262): the "install-ci_helperSCRIPTS" recipe installs one script
 # into "@libexecdir@/@PACKAGE@/bios-passwd" because this is hardcoded in
@@ -1476,7 +1421,6 @@ SYSTEMD_UNITS_LOWLEVEL += \
 SYSTEMD_UNITS_TARGET_BIOS += \
                         bios-db-init.service \
                         bios-agent-autoconfig.service \
-                        bios-agent-cm.service \
                         bios-agent-dbstore.service \
                         bios-agent-inventory.service
 
@@ -1498,7 +1442,6 @@ SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL += \
                         biostimer-verify-fs.service
 
 SYSTEMD_UNITS_TIMERIMPL_TARGET_BIOS += \
-                        biostimer-graphs-prefetch@.service \
                         biostimer-warranty-metric.service
 
 SYSTEMD_UNITS_TIMERIMPL += $(SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL) $(SYSTEMD_UNITS_TIMERIMPL_TARGET_BIOS)
@@ -1509,16 +1452,6 @@ SYSTEMD_TIMERS_LOWLEVEL += \
                         biostimer-verify-fs.timer
 
 SYSTEMD_TIMERS_TARGET_BIOS += \
-                        biostimer-graphs-prefetch__realpower.default@15m.timer \
-                        biostimer-graphs-prefetch__realpower.default@7d.timer \
-                        biostimer-graphs-prefetch__realpower.default@30d.timer \
-                        biostimer-graphs-prefetch__average.temperature@24h.timer \
-                        biostimer-graphs-prefetch__average.temperature@7d.timer \
-                        biostimer-graphs-prefetch__average.temperature@30d.timer \
-                        biostimer-graphs-prefetch__average.humidity@24h.timer \
-                        biostimer-graphs-prefetch__average.humidity@7d.timer \
-                        biostimer-graphs-prefetch__average.humidity@30d.timer \
-                        biostimer-graphs-prefetch__realpower.default@24h.timer \
                         biostimer-warranty-metric.timer
 
 SYSTEMD_TIMERS += $(SYSTEMD_TIMERS_LOWLEVEL) $(SYSTEMD_TIMERS_TARGET_BIOS)
