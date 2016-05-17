@@ -91,7 +91,7 @@ int main (int argc, char *argv[])
         bios_proto_t *proto = bios_proto_decode (&new_msg);
         if (!proto) {
             log_critical ("bios_proto_decode () failed");
-            break;
+            continue;
         }
 	
         const char *device_name = bios_proto_name (proto);
