@@ -60,7 +60,7 @@ int main (int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    int rv = mlm_client_connect (agent, MLM_ENDPOINT, 1000, addr);
+    int rv = mlm_client_connect (agent, MLM_ENDPOINT, 1000, BIOS_AGENT_NAME_DB_INVENTORY);
     if (rv != 0) {
         log_error ("mlm_client_connect () failed.");
         mlm_client_destroy (&agent);
