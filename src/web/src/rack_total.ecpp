@@ -71,8 +71,8 @@ s_rt_encode_GET (const char* name)
     return msg;
 }
 
-float
-total_rack_power(
+static double
+s_total_rack_power(
     mlm_client_t *client,
     const std::string& src,
     const std::string& name)
@@ -239,7 +239,7 @@ asset_manager asset_mgr;
             for(size_t P = 0; P < requestedParams.size(); P++ ) {
                 const std::string& key = requestedParams[P];
                 const std::string& val = PARAM_TO_SRC.at(key);   //XXX: operator[] does not work here!
-                json << "\t\t\t\"" << key << "\": "<< total_rack_power (client, val, rackNames[R]);
+                json << "\t\t\t\"" << key << "\": "<< s_total_rack_power (client, val, rackNames[R]);
                 json << ((P < requestedParams.size() - 1) ? "," : "" ) << "\n";
             };
             json << "\t\t}" << ( (R < racks.size() - 1) ? "," : "" ) << " \n";

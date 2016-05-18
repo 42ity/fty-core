@@ -35,6 +35,12 @@
 #include "asset_computed_impl.h"
 #include "helpers.h"
 
+#include "log.h"
+#include <biosproto.h>
+
+#include <sys/types.h>
+#include <sys/syscall.h>
+
 struct Outlet {
     std::string label;
     bool label_r;
@@ -53,11 +59,85 @@ std::string getOutletNumber (const std::string &extAttributeName)
     return oNumber;
 }
 
+// encode metric GET request
+static zmsg_t*
+s_rt_encode_GET (const char* name)
+{
+    static const char* method = "GET";
+
+    zuuid_t *uuid = zuuid_new ();
+    zmsg_t *msg = zmsg_new ();
+
+    zmsg_pushmem (msg, zuuid_data (uuid), zuuid_size (uuid));
+    zuuid_destroy (&uuid);
+    zmsg_addstr (msg, method);
+    zmsg_addstr (msg, name);
+    return msg;
+}
+
+static double
+s_rack_realpower_nominal (
+    mlm_client_t *client,
+    const std::string& name)
+{
+    double ret = 0.0f;
+
+    zmsg_t *request = s_rt_encode_GET (name.c_str());
+    mlm_client_sendto (client, "agent-rt", "latest-rt-data", NULL, 1000, &request);
+
+    //TODO: this intentionally wait forewer, to be fixed by proper client pool
+    zmsg_t *msg = mlm_client_recv (client);
+    if (!msg)
+        throw std::runtime_error ("no reply from broker!");
+
+    //TODO: check if we have right uuid, to be fixed by proper client pool
+    char *uuid = zmsg_popstr (msg);
+    zstr_free (&uuid);
+
+    char *result = zmsg_popstr (msg);
+    if (!streq (result, "OK")) {
+        log_warning ("Error reply for device '%s', result=%s", name.c_str (), result);
+        zstr_free (&result);
+        zmsg_destroy (&msg);
+        return ret;
+    }
+
+    char *element = zmsg_popstr (msg);
+    if (!streq (element, name.c_str ())) {
+        log_warning ("element name (%s) from message differs from requested one (%s), ignoring", element, name.c_str ());
+        zstr_free (&element);
+        zmsg_destroy (&msg);
+        return ret;
+    }
+    zstr_free (&element);
+
+    zmsg_t *data = zmsg_popmsg (msg);
+    while (data) {
+        bios_proto_t *bmsg = bios_proto_decode (&data);
+        if (!bmsg) {
+            log_warning ("decoding bios_proto_t failed");
+            continue;
+        }
+
+        if (!streq (bios_proto_type (bmsg), "realpower.nominal")) {
+            bios_proto_destroy (&bmsg);
+            data = zmsg_popmsg (msg);
+            continue;
+        }
+        else {
+            ret = std::stod (bios_proto_value (bmsg));
+            bios_proto_destroy (&bmsg);
+            break;
+        }
+    }
+    zmsg_destroy (&msg);
+    return ret;
+}
+
 </%pre>
 
 <%thread scope="global">
 asset_manager     asset_mgr;
-measures_manager  measures_mgr;
 </%thread>
 
 <%cpp>
@@ -92,6 +172,29 @@ if ( !typeNameArg.empty() &&
 {
     http_die("request-param-bad", "type", typeNameArg.c_str(), tmp.item.basic.type_name.c_str());
 }
+
+    // ##################################################
+    // connect to malamute
+    // copy & paste from alert_ack.ecpp
+    mlm_client_t *client = mlm_client_new ();
+    if (!client) {
+        log_critical ("mlm_client_new() failed.");
+        http_die ("internal-error", "mlm_client_new() failed.");
+    }
+
+    std::string client_name ("web.metric_current.");
+    client_name.append (std::to_string (getpid ())).append (".").append (std::to_string (syscall (SYS_gettid)));
+    log_debug ("malamute client name = '%s'.", client_name.c_str ());
+
+    int rv = mlm_client_connect (client, MLM_ENDPOINT, 1000, client_name.c_str ());
+    if (rv == -1) {
+        log_critical ("mlm_client_connect (endpoint = '%s', timeout = '%d', address = '%s') failed.",
+                        MLM_ENDPOINT, 1000, client_name.c_str ());
+        mlm_client_destroy (&client);
+        http_die ("internal-error", "mlm_client_connect() failed.");
+    }
+    // ##################################################
+
 // Prepare the reply
 </%cpp>
 {
@@ -374,12 +477,9 @@ if ( !tmp.item.ext.empty() )
 , "computed" : {
 %       if (persist::is_rack(tmp.item.basic.type_id)) {
 %           int freeusize = free_u_size(tmp.item.basic.id);
-%           m_msrmnt_value_t value = 0;
-%           m_msrmnt_scale_t scale = 0;
-%           int rv = measures_mgr.get_last_10minute_measurement
-%               ("realpower.nominal", tmp.item.basic.name, value, scale);
+%           double realpower_nominal = s_rack_realpower_nominal (client, tmp.item.basic.name.c_str ());
     "freeusize" : <$ freeusize >= 0 ? std::to_string(freeusize) : "null" $>,
-    "realpower.nominal" : <$ rv == 0 ? std::to_string(value * std::pow (10, scale)) : "null" $>,
+    "realpower.nominal" : <$ realpower_nominal != NAN ? std::to_string(realpower_nominal) : "null" $>,
     "outlet.available" : {
 %           std::map<std::string, int> res;
 %           rack_outlets_available(tmp.item.basic.id, res);
@@ -391,5 +491,6 @@ if ( !tmp.item.ext.empty() )
 %           } // for it : res
     }
 %       }   // rack
+%   mlm_client_destroy (&client);
 }
 }
