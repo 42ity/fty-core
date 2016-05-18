@@ -339,7 +339,6 @@ asset_manager asset_mgr;
             zstr_free (&status);
             zstr_free (&uuid_new);
             zmsg_destroy (&mreply);
-            zpoller_destroy (&poller);
             mlm_client_destroy (&client);
             http_die ("internal-error", "See log for more detail");
         }
@@ -374,6 +373,7 @@ asset_manager asset_mgr;
             }
         }
     }
+            mlm_client_destroy (&client);
 
     // So we finally have all values in "dataDc"
     // no http_die is expected
