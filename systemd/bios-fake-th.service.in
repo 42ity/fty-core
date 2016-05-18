@@ -1,7 +1,6 @@
 [Unit]
 Description=Generates fake temperature and humidity readings
-After=bios-agent-dbstore.service
-Requires=bios-agent-dbstore.service
+After=malamute.service
 PartOf=bios.target
 
 [Service]
