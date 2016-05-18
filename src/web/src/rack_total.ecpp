@@ -1,6 +1,6 @@
 <#
  #
- # Copyright (C) 2015 Eaton
+ # Copyright (C) 2015,2016 Eaton
  #
  # This program is free software; you can redistribute it and/or modify
  # it under the terms of the GNU General Public License as published by
@@ -26,11 +26,15 @@
  * \brief Not yet documented file
  */
  #><%pre>
-#include <czmq.h>
 #include <cxxtools/split.h>
 #include <tntdb/error.h>
 #include <exception>
 #include <limits.h>
+
+#include <biosproto.h>
+
+#include <sys/types.h>
+#include <sys/syscall.h>
 
 #include "assetcrud.h"
 #include "data.h"
@@ -46,29 +50,88 @@
 static const std::map<std::string, const std::string> PARAM_TO_SRC = {
     {"total_power", "realpower.default"},
     {"avg_power_last_day", "realpower.default_arithmetic_mean_24h"},
-    {"avg_power_last_week", "<zero>"},
-    {"avg_power_last_month", "<zero>"},
+    {"avg_power_last_week", "realpower.default_arithmetic_mean_7d"},
+    {"avg_power_last_month", "realpower.default_arithmetic_mean_30d"},
     {"avg_power_last_year", "<zero>"}
 };
 
+// encode metric GET request
+static zmsg_t*
+s_rt_encode_GET (const char* name)
+{
+    static const char* method = "GET";
+
+    zuuid_t *uuid = zuuid_new ();
+    zmsg_t *msg = zmsg_new ();
+
+    zmsg_pushmem (msg, zuuid_data (uuid), zuuid_size (uuid));
+    zuuid_destroy (&uuid);
+    zmsg_addstr (msg, method);
+    zmsg_addstr (msg, name);
+    return msg;
+}
+
 float
 total_rack_power(
-    tntdb::Connection& conn,
+    mlm_client_t *client,
     const std::string& src,
-    a_elmnt_id_t id)
+    const std::string& name)
 {
+    double ret = 0.0f;
 
     if (src == "<zero>")
-        return 0.0f;
+        return ret;
 
-    m_msrmnt_value_t value;
-    m_msrmnt_scale_t scale;
-    auto reply = persist::select_measurement_last_web_byElementId(conn, src, id, value, scale);
+    zmsg_t *request = s_rt_encode_GET (name.c_str());
+    mlm_client_sendto (client, "agent-rt", "latest-rt-data", NULL, 1000, &request);
 
-    if (reply.rv != 0)
-        return 0.0f;
+    //TODO: this intentionally wait forewer, to be fixed by proper client pool
+    zmsg_t *msg = mlm_client_recv (client);
+    if (!msg)
+        throw std::runtime_error ("no reply from broker!");
 
-    return value * pow(10,scale);
+    //TODO: check if we have right uuid, to be fixed by proper client pool
+    char *uuid = zmsg_popstr (msg);
+    zstr_free (&uuid);
+
+    char *result = zmsg_popstr (msg);
+    if (!streq (result, "OK")) {
+        log_warning ("Error reply for device '%s', result=%s", name.c_str (), result);
+        zstr_free (&result);
+        zmsg_destroy (&msg);
+        return ret;
+    }
+
+    char *element = zmsg_popstr (msg);
+    if (!streq (element, name.c_str ())) {
+        log_warning ("element name (%s) from message differs from requested one (%s), ignoring", element, name.c_str ());
+        zstr_free (&element);
+        zmsg_destroy (&msg);
+        return ret;
+    }
+    zstr_free (&element);
+
+    zmsg_t *data = zmsg_popmsg (msg);
+    while (data) {
+        bios_proto_t *bmsg = bios_proto_decode (&data);
+        if (!bmsg) {
+            log_warning ("decoding bios_proto_t failed");
+            continue;
+        }
+
+        if (!streq (bios_proto_type (bmsg), src.c_str ())) {
+            bios_proto_destroy (&bmsg);
+            data = zmsg_popmsg (msg);
+            continue;
+        }
+        else {
+            ret = std::stod (bios_proto_value (bmsg));
+            bios_proto_destroy (&bmsg);
+            break;
+        }
+    }
+    zmsg_destroy (&msg);
+    return ret;
 }
 
 static bool
@@ -114,9 +177,32 @@ asset_manager asset_mgr;
     std::vector<std::string> rackNames;
     cxxtools::split(",", arg1, std::back_inserter(racks));
 
+    // ##################################################
+    // connect to malamute
+    // copy & paste from alert_ack.ecpp
+    mlm_client_t *client = mlm_client_new ();
+    if (!client) {
+        log_critical ("mlm_client_new() failed.");
+        http_die ("internal-error", "mlm_client_new() failed.");
+    }
+
+    std::string client_name ("web.metric_current.");
+    client_name.append (std::to_string (getpid ())).append (".").append (std::to_string (syscall (SYS_gettid)));
+    log_debug ("malamute client name = '%s'.", client_name.c_str ());
+
+    int rv = mlm_client_connect (client, MLM_ENDPOINT, 1000, client_name.c_str ());
+    if (rv == -1) {
+        log_critical ("mlm_client_connect (endpoint = '%s', timeout = '%d', address = '%s') failed.",
+                        MLM_ENDPOINT, 1000, client_name.c_str ());
+        mlm_client_destroy (&client);
+        http_die ("internal-error", "mlm_client_connect() failed.");
+    }
+    // ##################################################
+
     // check that racks exists
     auto allRacksShort = asset_mgr.get_items1("rack", "");
     if ( allRacksShort.status == 0 ) {
+        mlm_client_destroy (&client);
         http_die ("internal-error", "Error while retrieving information about racks."); 
     }
 
@@ -130,6 +216,7 @@ asset_manager asset_mgr;
 
         auto it = allRacksShort.item.find(real_id);
         if (it == allRacksShort.item.end()) {
+            mlm_client_destroy (&client);
             http_die ("element-not-found", item.c_str ());
         }
         rackNames.push_back (it->second);
@@ -152,7 +239,7 @@ asset_manager asset_mgr;
             for(size_t P = 0; P < requestedParams.size(); P++ ) {
                 const std::string& key = requestedParams[P];
                 const std::string& val = PARAM_TO_SRC.at(key);   //XXX: operator[] does not work here!
-                json << "\t\t\t\"" << key << "\": "<< total_rack_power (conn, val, std::stoi (racks[R]));
+                json << "\t\t\t\"" << key << "\": "<< total_rack_power (client, val, rackNames[R]);
                 json << ((P < requestedParams.size() - 1) ? "," : "" ) << "\n";
             };
             json << "\t\t}" << ( (R < racks.size() - 1) ? "," : "" ) << " \n";
@@ -162,10 +249,18 @@ asset_manager asset_mgr;
     catch (const tntdb::Error& e) {
         log_error ("%s", e.what ());
         http_die ("internal-error", "Database related error.");
+        mlm_client_destroy (&client);
+    }
+    catch (const std::runtime_error &e) {
+        log_error ("%s", e.what ());
+        http_die ("internal-error", e.what ());
+        mlm_client_destroy (&client);
     }
     catch (const std::exception& e) {
         log_error ("%s", e.what ());
         http_die ("internal-error", "Exception caught.");
+        mlm_client_destroy (&client);
     }
+    mlm_client_destroy (&client);
 </%cpp>
 <$$ json.str() $>
