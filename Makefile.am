@@ -1084,30 +1084,6 @@ agent_inventory_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_srcdir)/src/persist
 
-client_PROGRAMS += average
-
-average_SOURCES = src/average/average.cc \
-				  src/web/include/helpers.h \
-				  src/web/src/helpers.cc
-
-average_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS}
-
-average_LDADD = \
-			libpriv-log.la \
-			libpriv-utils.la \
-			libpriv-utils-plusplus.la \
-			libpriv-utils-ymsg.la \
-			libbiosapi.la \
-			libpriv-utils-web.la
-
-average_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/src \
-			-I$(abs_top_srcdir)/src/include \
-			-I$(abs_top_srcdir)/src/web/include \
-			-I$(abs_top_srcdir)/src/shared \
-			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_builddir)/tools
-
 client_PROGRAMS += warranty-metric
 
 warranty_metric_SOURCES = src/warranty/warranty-metric.cc
