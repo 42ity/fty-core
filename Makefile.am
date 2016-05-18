@@ -400,8 +400,6 @@ libpriv_db_la_SOURCES = \
 			src/persist/assettopology.h \
 			src/persist/persist_error.cc \
 			src/persist/persist_error.h \
-			src/persist/persistencelogic.cc \
-			src/persist/persistencelogic.h \
 			src/persist/monitor.cc \
 			src/persist/monitor.h \
 			src/persist/dbhelpers.cc \
@@ -956,54 +954,6 @@ generate_measurement_CPPFLAGS =	$(AM_CPPFLAGS)
 
 client_SCRIPTS +=	tools/db-init
 
-client_PROGRAMS +=	agent-dbstore
-
-agent_dbstore_SOURCES =		src/agents/dbstore/agent-dbstore.cc \
-			tools/dbpath.h
-
-agent_dbstore_LDFLAGS =		${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} \
-			${LIBMLM_LIBS} -ltntdb -lcidr ${LIBBIOSPROTO_LIBS}
-
-agent_dbstore_LDADD = \
-			libpriv-db.la \
-			libpriv-db-assets.la \
-			libpriv-utils-ymsg.la \
-			libpriv-cidr.la \
-			libpriv-log.la \
-			libpriv-proto.la \
-			libbiosapi.la \
-			libpriv-defs.la
-
-
-agent_dbstore_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(abs_top_builddir)/tools \
-			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_srcdir)/src/db \
-			-I$(abs_top_builddir)/src/persist \
-			-I$(abs_top_srcdir)/src/persist
-
-bin_PROGRAMS +=                 dbstore_bench
-
-dbstore_bench_SOURCES =  src/agents/dbstore/dbstore_bench.cc
-
-dbstore_bench_LDFLAGS =  ${CXXTOOLS_LIBS} \
-                         -ltntdb ${LIBBIOSPROTO_LIBS}
-
-dbstore_bench_CPPFLAGS = $(AM_CPPFLAGS) \
-                        -I$(abs_top_builddir)/tools \
-                        -I$(abs_top_srcdir)/tools \
-                        -I$(abs_top_srcdir)/src/db \
-                        -I$(abs_top_builddir)/src/persist \
-                        -I$(abs_top_srcdir)/src/persist
-dbstore_bench_LDADD = \
-                        libpriv-db.la \
-                        libpriv-db-assets.la \
-                        libpriv-utils-ymsg.la \
-                        libpriv-log.la \
-                        libpriv-proto.la \
-                        libbiosapi.la \
-                        libpriv-defs.la
-
 EXTRA_DIST +=		$(top_srcdir)/tools/dbinit.h
 #			$(top_srcdir)/tools/db-init.in \
 #			$(top_srcdir)/tools/bios-passwd.in
@@ -1308,7 +1258,7 @@ dist_noinst_DATA +=	tntnet.xml $(top_srcdir)/src/web/tntnet.xml
 CLEANFILES +=		tntnet.xml tntnet.xml.example tests/CI/tntnet.xml
 
 # Make sure needed files are up-to-date to test web-server for $BIOS REST API
-web-test-deps: tntnet.xml bios_web.la web-link-test agent-dbstore
+web-test-deps: tntnet.xml bios_web.la web-link-test
 
 # TODO (BIOS-1262): the "install-ci_helperSCRIPTS" recipe installs one script
 # into "@libexecdir@/@PACKAGE@/bios-passwd" because this is hardcoded in
@@ -1421,7 +1371,6 @@ SYSTEMD_UNITS_LOWLEVEL += \
 SYSTEMD_UNITS_TARGET_BIOS += \
                         bios-db-init.service \
                         bios-agent-autoconfig.service \
-                        bios-agent-dbstore.service \
                         bios-agent-inventory.service
 
 # Here we list the actual service-definition files that should be compiled
