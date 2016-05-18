@@ -288,7 +288,7 @@ asset_manager asset_mgr;
         zmsg_t *request = s_rt_encode_GET (aDc.c_str());
 
         // send message
-        rv = mlm_client_sendto (client, RT_SUBJECT, RT_PROVIDER_PEER, NULL,  1000, &request);
+        rv = mlm_client_sendto (client, RT_PROVIDER_PEER, RT_SUBJECT, NULL,  1000, &request);
         if ( rv != 0 ) {
             log_error ("Cannot send message to malamute");
             mlm_client_destroy (&client);
@@ -319,6 +319,7 @@ asset_manager asset_mgr;
                     break;
                 }
                 // no it is trash, wait a bit more
+                log_error ("not expected sender!! going for loop");
                 zmsg_destroy (&mreply);
             }
             // no message was received
