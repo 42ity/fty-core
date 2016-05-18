@@ -23,21 +23,190 @@
  * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \author Karol Hrdina <KarolHrdina@Eaton.com>
  * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
- * \brief  returns general information about datacenter
+ * \brief  returns Current values of some metrics for datacenters
  */
  #><%pre>
-#include <czmq.h>
-#include <cxxtools/split.h>
-#include <tntdb/error.h>
+#include <sys/syscall.h>
 #include <stdexcept>
+#include <cxxtools/split.h>
+#include <malamute.h>
+#include <bios_proto.h>
 
 #include "data.h"
-#include "dbpath.h"
 #include "utils_web.h"
 #include "log.h"
 #include "helpers.h"
 
-#include "src/web/src/dci_impl.h"
+#include "utils++.h"
+
+#define RT_PROVIDER_PEER "agent-rt"
+#define RT_SUBJECT "latest-rt-data"
+#define MLM_ENDPOINT "ipc://@/malamute"
+
+
+
+// ATTENTION!!! for trends:
+//  first one should be average, second one is raw measurement
+static const std::map<std::string, const std::string> PARAM_TO_SRC {
+    {"power", "realpower.default"},
+    {"avg_power_last_day", "realpower.default_arithmetic_mean_24h"},
+    {"avg_power_last_week", "realpower.default_arithmetic_mean_7d"},
+    {"avg_power_last_month", "realpower.default_arithmetic_mean_30d"},
+
+    {"min_power_last_day", "realpower.default_min_24h"},
+    {"min_power_last_week", "realpower.default_min_7d"},
+    {"min_power_last_month", "realpower.default_min_30d"},
+
+    {"max_power_last_day", "realpower.default_max_24h"},
+    {"max_power_last_week", "realpower.default_max_7d"},
+    {"max_power_last_month", "realpower.default_max_30d"},
+
+    {"trend_power_last_day", "realpower.default_arithmetic_mean_24h/realpower.default"},
+    {"trend_power_last_week", "realpower.default_arithmetic_mean_7d/realpower.default"},
+    {"trend_power_last_month", "realpower.default_arithmetic_mean_30d/realpower.default"},
+
+    {"temperature", "average.temperature"},
+    {"avg_temperature_last_day",  "average.temperature_arithmetic_mean_24h"},
+    {"avg_temperature_last_week", "average.temperature_arithmetic_mean_7d"},
+    {"avg_temperature_last_month", "average.temperature_arithmetic_mean_30d"},
+
+    {"min_temperature_last_day",  "average.temperature_min_24h"},
+    {"min_temperature_last_week", "average.temperature_min_7d"},
+    {"min_temperature_last_month", "average.temperature_min_30d"},
+
+    {"max_temperature_last_day",  "average.temperature_max_24h"},
+    {"max_temperature_last_week", "average.temperature_max_7d"},
+    {"max_temperature_last_month", "average.temperature_max_30d"},
+
+    {"trend_temperature_last_day",  "average.temperature_arithmetic_mean_24h/average.temperature"},
+    {"trend_temperature_last_week", "average.temperature_arithmetic_mean_7d/average.temperature"},
+    {"trend_temperature_last_month", "average.temperature_arithmetic_mean_30d/average.temperature"},
+
+    {"humidity", "average.humidity"},
+    {"avg_humidity_last_day", "average.humidity_arithmetic_mean_24h"},
+    {"avg_humidity_last_week", "average.humidity_arithmetic_mean_7d"},
+    {"avg_humidity_last_month", "average.humidity_arithmetic_mean_30d"},
+
+    {"min_humidity_last_day", "average.humidity_min_24h"},
+    {"min_humidity_last_week", "average.humidity_min_7d"},
+    {"min_humidity_last_month", "average.humidity_min_30d"},
+
+    {"max_humidity_last_day", "average.humidity_max_24h"},
+    {"max_humidity_last_week", "average.humidity_max_7d"},
+    {"max_humidity_last_month", "average.humidity_max_30d"},
+
+    {"trend_humidity_last_day", "average.humidity_arithmetic_mean_24h/average.humidity"},
+    {"trend_humidity_last_week", "average.humidity_arithmetic_mean_7d/average.humidity"},
+    {"trend_humidity_last_month", "average.humidity_arithmetic_mean_30d/average.humidity"},
+};
+
+
+
+const std::set<std::string> interesting_sources{
+"realpower.default",
+"realpower.default_arithmetic_mean_24h",
+"realpower.default_arithmetic_mean_7d",
+"realpower.default_arithmetic_mean_30d",
+"realpower.default_min_24h",
+"realpower.default_min_7d",
+"realpower.default_min_30d",
+"realpower.default_max_24h",
+"realpower.default_max_7d",
+"realpower.default_max_30d",
+"realpower.default_arithmetic_mean_24h",
+"realpower.default_arithmetic_mean_7d",
+"realpower.default_arithmetic_mean_30d",
+"average.temperature_arithmetic_mean_24h",
+"average.temperature_arithmetic_mean_7d",
+"average.temperature_arithmetic_mean_30d",
+"average.temperature_min_24h",
+"average.temperature_min_7d",
+"average.temperature_min_30d",
+"average.temperature_max_24h",
+"average.temperature_max_7d",
+"average.temperature_max_30d",
+"average.temperature_arithmetic_mean_24h",
+"average.temperature_arithmetic_mean_7d",
+"average.temperature_arithmetic_mean_30d",
+"average.humidity_arithmetic_mean_24h",
+"average.humidity_arithmetic_mean_7d",
+"average.humidity_arithmetic_mean_30d",
+"average.humidity_min_24h",
+"average.humidity_min_7d",
+"average.humidity_min_30d",
+"average.humidity_max_24h",
+"average.humidity_max_7d",
+"average.humidity_max_30d",
+"average.humidity_arithmetic_mean_24h",
+"average.humidity_arithmetic_mean_7d",
+"average.humidity_arithmetic_mean_30d"};
+
+
+static double
+    get_trend_value (
+        const std::map<std::string, std::string> &dataDc,
+        const std::string &source
+    )
+{
+    std::vector<std::string> items;
+    cxxtools::split('/', source, std::back_inserter(items));
+    if( items.size() != 2 ) {
+        return 0.0f;
+    }
+
+    double value_actual = 0.0f;
+    auto it = dataDc.find(items.at(1));
+    if ( it != dataDc.cend() ) {
+        value_actual = std::stod (it->second);
+    }
+
+    double value_average = 0.0f;
+    it = dataDc.find(items.at(0));
+    if ( it != dataDc.cend() ) {
+        value_average = std::stod (it->second);
+    }
+
+    double val = 0.0f;
+    if ( value_average != 0 ) {
+        val = round( (value_actual - value_average ) / ( value_average ) * 1000.0f ) / 10.0f ;
+    }
+    return val;
+}
+
+static bool
+s_is_valid_param(const std::string& p)
+{
+    return PARAM_TO_SRC.count(p) != 0;
+}
+
+static std::string
+s_get_valid_param (void)
+{
+    return utils::join_keys_map (PARAM_TO_SRC, ", ");
+}
+
+static bool
+    isTrend (const std::string &key)
+{
+    return ( key.substr(0,5) == "trend" );
+}
+
+// encode metric GET request
+static zmsg_t*
+s_rt_encode_GET (const char* name)
+{
+    static const char* method = "GET";
+
+    zuuid_t *uuid = zuuid_new ();
+    zmsg_t *msg = zmsg_new ();
+
+    zmsg_pushmem (msg, zuuid_data (uuid), zuuid_size (uuid));
+    zuuid_destroy (&uuid);
+    zmsg_pushstr (msg, method);
+    zmsg_pushstr (msg, name);
+    return msg;
+}
+
 </%pre>
 <%args>
 std::string arg1;
@@ -46,7 +215,10 @@ std::string arg2;
 <%thread scope="global">
 asset_manager asset_mgr;
 </%thread>
+
+
 <%cpp>
+{
     // Input arguments checks
 
     // arg1, arg2 are both mandatory
@@ -58,6 +230,18 @@ asset_manager asset_mgr;
         http_die ("request-param-required", "arg2");
     }
 
+    // arg2 is a single value OR a comma-separated list formed from a list of permissible values (PARAM_TO_SRC)
+    std::vector<std::string> requestedParams;
+    cxxtools::split(",", arg2, std::back_inserter(requestedParams));
+
+    for (const std::string& param: requestedParams) {
+        if (!s_is_valid_param (param) ) {
+            http_die ("request-param-bad", "arg2",
+                std::string ("value '").append (param).append ("'").c_str (),
+                std::string ("one of the following values: [").append (s_get_valid_param ()).append ("].").c_str ());
+        }
+    }
+
     // arg1 is a single value OR a comma-separated list of element identifiers
     std::vector<std::string> DCs;
     cxxtools::split(",", arg1, std::back_inserter(DCs));
@@ -67,7 +251,6 @@ asset_manager asset_mgr;
     if (allDcsShort.status == 0) {
         http_die ("internal-error", "Error while retrieving information about datacenters.");
     }
-
     std::vector<std::string> DCNames;
     for (auto const& item : DCs) {
         http_errors_t errors;
@@ -84,46 +267,141 @@ asset_manager asset_mgr;
         DCNames.push_back (it->second);
     }
 
-    // arg2 is a single value OR a comma-separated list formed from a list of permissible values (PARAM_TO_SRC)
-    std::vector<std::string> requestedParams;
-    cxxtools::split(",", arg2, std::back_inserter(requestedParams));
+    std::map<std::string, std::map<std::string, std::string>> dataDc{};
 
-    for (const std::string& param: requestedParams) {
-        if (!s_is_valid_param (param) ) {
-            http_die ("request-param-bad", "arg2",
-                std::string ("value '").append (param).append ("'").c_str (),
-                std::string ("one of the following values: [").append (s_get_valid_param ()).append ("].").c_str ());
-        }
+    // create mlm client
+    mlm_client_t *client = mlm_client_new ();
+    std::string agent_name("web.dc_indicators.");
+    agent_name.append (std::to_string ( static_cast<int> (getpid ()) ))
+              .append (".")
+              .append (std::to_string ( syscall(SYS_gettid) ));
+
+    int rv = mlm_client_connect (client, MLM_ENDPOINT, 1000, agent_name.c_str());
+    if ( rv != 0 ) {
+        log_error ("%s: Cannot connect to malamute", agent_name.c_str());
+        mlm_client_destroy (&client);
+        http_die ("internal-error", "Cannot connect to malamute");
     }
+    // get current data for all DCs
+    for ( const auto &aDc : DCNames ) {
+        // fill the request message according the protocol
+        zmsg_t *request = s_rt_encode_GET (aDc.c_str());
 
-    std::map<const std::string, double> SRC_TO_VALUE{};
+        // send message
+        rv = mlm_client_sendto (client, RT_SUBJECT, RT_PROVIDER_PEER, NULL,  1000, &request);
+        if ( rv != 0 ) {
+            log_error ("Cannot send message to malamute");
+            mlm_client_destroy (&client);
+            http_die ("internal-error", "Cannot send message to malamute.");
+        }
 
-    std::stringstream json;
-    try {
-        tntdb::Connection conn = tntdb::connectCached (url);
-        json << "{\n\t\"datacenter_indicators\": [\n";
-        for( size_t D = 0 ; D < DCs.size(); D++ ) {
-            json << "\t\t{\n"
-                << "\t\t\t\"id\": \"" << DCs[D] << "\",\n"
-                 << "\t\t\t\"name\": \"" << DCNames[D] << "\",\n";
-            for(size_t P = 0; P < requestedParams.size(); P++ ) {
-                const std::string& key = requestedParams[P];
-                double val = get_dc_indicator(conn, key, atoi( DCs[D].c_str() ), SRC_TO_VALUE );
-                SRC_TO_VALUE.insert(std::make_pair(key,val));
-                json  << "\t\t\t\"" << key << "\": "<< val;
-                json <<  ( ( P < requestedParams.size() - 1 ) ? "," : "" ) << "\n";
+        // wait for the reply
+        zpoller_t *poller = zpoller_new (mlm_client_msgpipe (client), NULL);
+        if (!poller) {
+            log_error ("zpoller_new() failed.");
+            mlm_client_destroy (&client);
+            http_die ("internal-error", "zpoller_new() failed.");
+        }
+        zmsg_t *mreply = NULL;
+        while (true) {
+            zsock_t *which = (zsock_t *) zpoller_wait (poller, 5000);
+            if (which == mlm_client_msgpipe (client)) {
+                mreply = mlm_client_recv (client);
+                if (!mreply) {
+                    log_error ("mlm_client_recv() failed.");
+                    zpoller_destroy (&poller);
+                    mlm_client_destroy (&client);
+                    http_die ("internal-error", "mlm_client_recv() failed.");
+                }
+                // check if we receive the expected message
+                if ( streq (mlm_client_sender (client), RT_PROVIDER_PEER)) {
+                    // yes, this is our reply
+                    break;
+                }
+                // no it is trash, wait a bit more
+                zmsg_destroy (&mreply);
             }
-            json << "\t\t}" << (  D < DCs.size() -1 ? ",\n" : "\n" );
+            // no message was received
+            if ( zpoller_expired (poller) || zpoller_terminated (poller) ) {
+                log_error ("zpoller_wait(timeout = 5000) timed out waiting for message.");
+                zpoller_destroy (&poller);
+                mlm_client_destroy (&client);
+                http_die ("internal-error", "Timed out waiting for message.");
+            }
         }
-        json << "\t]\n}\n";
+        zpoller_destroy (&poller);
+
+        // filter dataDc
+        char *uuid_new = zmsg_popstr (mreply);
+        char *status = zmsg_popstr (mreply);
+        if ( !streq (status, "OK") ) {
+            // clean it up
+            zstr_free (&status);
+            zstr_free (&uuid_new);
+            zmsg_destroy (&mreply);
+            zpoller_destroy (&poller);
+            mlm_client_destroy (&client);
+            http_die ("internal-error", "See log for more detail");
+        }
+        zstr_free (&status);
+        zstr_free (&uuid_new);
+        // here we are, if we got "OK" response
+        // go through all messages and select quantities we are interested in
+        char *element = zmsg_popstr (mreply);
+        zstr_free (&element);
+        while  ( zmsg_size (mreply) > 0 ) {
+            zmsg_t *encoded_metric = zmsg_popmsg (mreply);
+            bios_proto_t *metric = bios_proto_decode (&encoded_metric);
+            if ( !metric || bios_proto_id (metric) != BIOS_PROTO_METRIC ) {
+                log_error ("Cannot decode some part of the reply, skip it");
+                zmsg_destroy (&mreply);
+                continue;
+            }
+            if ( interesting_sources.count ( bios_proto_type (metric)) != 0 ) {
+                dataDc.at(aDc).emplace (bios_proto_type (metric), bios_proto_value (metric) );
+            }
+            bios_proto_destroy (&metric);
+        }
+
+        for( size_t P = 0; P < requestedParams.size(); P++ ) {
+            const std::string& key = requestedParams[P];
+            // key:value
+            if ( dataDc.at(aDc).count(key) == 0 ) {
+                if ( isTrend (key) ) {
+                    double value = get_trend_value(dataDc.at(aDc), key);
+                    dataDc.at(aDc).emplace (key, std::to_string (value));
+                }
+            }
+        }
     }
-    catch (const tntdb::Error& e) {
-        log_error ("%s", e.what ());
-        http_die ("internal-error", "Database related error.");
+
+    // So we finally have all values in "dataDc"
+    // no http_die is expected
+    // lets just  print them
+    std::string json;
+    json += "{\"datacenter_indicators\": [";
+    for( size_t D = 0 ; D < DCs.size(); D++ ) {
+        json += "{";
+        json += "\"id\": \"";
+        json += DCs[D];
+        json += "\",";
+        json += "\"name\": \"";
+        json += DCNames[D];
+        json += "\",";
+        json += "\"data\": {";
+
+        for ( const auto &row : dataDc.at(DCNames[D]) ) {
+            json += "\"" + row.first + "\":" + row.second;
+            json += ",";
+        }
+        json.back() = ' ' ;
+        json += "}"; // "dataDc" object in JSON is finished
+        json += "}"; // DC object is finished
+        json += ( D < DCs.size() -1) ? "," : "";
     }
-    catch (const std::exception& e) {
-        log_error ("%s", e.what ());
-        http_die ("internal-error");
-    }
+    json += "]}"; // close the main object
 </%cpp>
-<$$ json.str() $>
+<$$ json $>
+<%cpp>
+}
+</%cpp>
