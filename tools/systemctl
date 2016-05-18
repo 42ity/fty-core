@@ -45,11 +45,11 @@ SYSTEMCTL_UNITS_COMMON="mariadb mysql mysqld ntp ntpd ntpdate sntp bios \
                  bios-reset-button tntnet@bios bios-agent-smtp          \
                  bios-agent-alert-generator agent-alerts-list           \
                  bios-agent-autoconfig bios-agent-cm                    \
-                 bios-agent-dbstore bios-agent-inventory bios-agent-nut \
+                 bios-agent-inventory bios-agent-nut \
                  bios-agent-asset bios-agent-legacy-metrics kpi-uptime  \
                  agent-th bios-agent-tpower bios-db-init                \
                  dc_th bios-agent-tr bios-agent-ms                      \
-                 biostimer-warranty-metric biostimer-graphs-prefetch    \
+                 biostimer-warranty-metric \
                  malamute saslauthd networking network bios-networking  \
                  nut-driver nut-monitor nut-server"
 

@@ -55,11 +55,11 @@ static const char *list[] =
     "bios-reset-button", "tntnet@bios", "bios-agent-smtp",
     "bios-agent-alert-generator", "agent-alerts-list",
     "bios-agent-autoconfig", "bios-agent-cm",
-    "bios-agent-dbstore", "bios-agent-inventory", "bios-agent-nut",
+    "bios-agent-inventory", "bios-agent-nut",
     "bios-agent-asset", "bios-agent-legacy-metrics", "kpi-uptime",
     "agent-th", "bios-agent-tpower", "bios-db-init",
     "dc_th", "bios-agent-rt", "bios-agent-ms",
-    "biostimer-warranty-metric", "biostimer-graphs-prefetch",
+    "biostimer-warranty-metric",
 // TODO: Wildcard services, e.g. instances defined at run-time
 // NUT services
     "nut-driver", "nut-monitor", "nut-server",
