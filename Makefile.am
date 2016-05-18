@@ -806,7 +806,6 @@ cibin_programs += 	test-db2
 
 test_db2_SOURCES = \
 			tests/persist/test-monitor.cc \
-			tests/persist/test-measurement.cc \
 			tests/persist/test-realdatamonitor.cc
 
 test_db2_LDADD = \
