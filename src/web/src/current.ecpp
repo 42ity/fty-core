@@ -292,6 +292,7 @@ std::string dev;
 
         if ( rv != 0 )
         {
+            mlm_client_destroy (&client);
             http_die("internal-error");
         }
 
