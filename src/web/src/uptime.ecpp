@@ -54,7 +54,6 @@ asset_manager asset_mgr;
     }
 
     std::vector<std::string> DCs;
-    std::vector<std::string> DCNames;
     cxxtools::split(",", arg1, std::back_inserter(DCs));
 
     // check that DC exists
@@ -63,6 +62,7 @@ asset_manager asset_mgr;
         http_die ("internal-error", "Error while retrieving information about datacenters.");
     }
 
+    std::vector<std::string> DCNames;
     for (auto const& item : DCs) {
         http_errors_t errors;
         uint32_t real_id = 0;
@@ -102,6 +102,7 @@ asset_manager asset_mgr;
                 NULL);
             int r;
             char *subject, *command, *total, *offline;
+            // blocking!!!
             r = mlm_client_recvx (client, &subject, &command, &total, &offline, NULL);
             if (r == -1)
                 throw std::runtime_error ("Can't send the request");
