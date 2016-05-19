@@ -711,6 +711,19 @@ sed -r -i "s/^127\.0\.0\.1/127.0.0.1 $VM /" "../rootfs/$VM/etc/hosts"
 logmsg_info "Copy root's ~/.ssh from the host OS"
 cp -r --preserve ~/.ssh "../rootfs/$VM/root/"
 cp -r --preserve /etc/ssh/*_key /etc/ssh/*.pub "../rootfs/$VM/etc/ssh"
+if [ -d "../rootfs/$VM/home/admin" ] && \
+   [ ! -d "../rootfs/$VM/home/admin/.ssh" ] \
+; then
+	logmsg_info "Copy root's ~/.ssh from the host OS into guest ~admin/.ssh"
+	cp -r --preserve ~/.ssh/ "../rootfs/$VM/home/admin/.ssh/"
+	if _P="$(egrep '^admin:' "../rootfs/$VM/etc/passwd")" \
+	&& [ -n "$_P" ]; then
+		_UG="`echo "$_P" | awk -F: '{print $3":"$4}'`" && \
+		[ -n "$_UG" ] && \
+		logmsg_info "Chowning guest ~admin/.ssh to $_UG" && \
+		chown -R "$_UG" "../rootfs/$VM/home/admin/.ssh/"
+	fi
+fi
 
 if [ -f ~/.oscrc ]; then
 	logmsg_info "Copy root's ~/.oscrc from the host OS"
@@ -731,8 +744,8 @@ if [ -d /lib/terminfo/x ] ; then
 	cp -prf /lib/terminfo/x/xterm* ../rootfs/$VM/lib/terminfo/x
 fi
 
-mkdir -p "../rootfs/$VM/etc/apt/apt.conf.d/"
 # setup debian proxy
+mkdir -p "../rootfs/$VM/etc/apt/apt.conf.d/"
 [ -n "$APT_PROXY" ] && [ -d "../rootfs/$VM/etc/apt/apt.conf.d" ] && \
 	logmsg_info "Set up APT proxy configuration" && \
 	echo 'Acquire::http::Proxy "'"$APT_PROXY"'";' > \
