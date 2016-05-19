@@ -366,13 +366,16 @@ asset_manager asset_mgr;
         for( size_t P = 0; P < requestedParams.size(); P++ ) {
             const std::string& key = requestedParams[P];
             // key:value
-            if ( dataDc.at(aDc).count(key) == 0 ) {
+            if ( dataDc.at(aDc).count(PARAM_TO_SRC.at(key)) == 0 ) {
                 if ( isTrend (key) ) {
                     double value = get_trend_value(dataDc.at(aDc), key);
                     dataDc.at(aDc).emplace (key, std::to_string (value));
                 } else {
                     dataDc.at(aDc).emplace (key, "0");
                 }
+            }
+            else {
+                dataDc.at(aDc).emplace(key, dataDc.at(aDc).at(PARAM_TO_SRC.at(key)));
             }
         }
     }
@@ -394,8 +397,11 @@ asset_manager asset_mgr;
         json += "\"data\": {";
 
         for ( const auto &row : dataDc.at(DCNames[D]) ) {
-            json += "\"" + row.first + "\":" + row.second;
-            json += ",";
+            // data contains topics and it aliases, but we need to print only aliases
+            if ( PARAM_TO_SRC.count(row.first) == 1 ) {
+                json += "\"" + row.first + "\":" + row.second;
+                json += ",";
+            }
         }
         json.back() = ' ' ;
         json += "}"; // "dataDc" object in JSON is finished
