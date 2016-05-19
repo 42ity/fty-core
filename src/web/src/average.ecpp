@@ -224,6 +224,10 @@ bool relative_to_unixtime (const std::string& relative, int64_t now, int64_t& un
         // TODO memory leak in reason, HOW to fix????
         zmsg_destroy (&recv_msg);
         mlm_client_destroy (&client);
+        if ( frame == "BAD_REQUEST" ) {
+            zstr_free (&frame);
+            http_die ("parameter-conflict", "Requested information is not monitored by the system");
+        }
         http_die ("internal-error", frame);
     }
     if ( streq(frame, "OK") ) {
