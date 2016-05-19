@@ -370,7 +370,11 @@ asset_manager asset_mgr;
                 if ( isTrend (key) ) {
                     double value = get_trend_value(dataDc.at(aDc), key);
                     dataDc.at(aDc).emplace (key, std::to_string (value));
+                } else {
+                    dataDc.at(aDc).emplace (key, "0");
                 }
+            } else {
+                dataDc.at(aDc).emplace (key, dataDc.at(aDc).at(key));
             }
         }
     }
