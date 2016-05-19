@@ -202,8 +202,8 @@ s_rt_encode_GET (const char* name)
 
     zmsg_pushmem (msg, zuuid_data (uuid), zuuid_size (uuid));
     zuuid_destroy (&uuid);
-    zmsg_pushstr (msg, method);
-    zmsg_pushstr (msg, name);
+    zmsg_addstr (msg, method);
+    zmsg_addstr (msg, name);
     return msg;
 }
 
@@ -373,8 +373,6 @@ asset_manager asset_mgr;
                 } else {
                     dataDc.at(aDc).emplace (key, "0");
                 }
-            } else {
-                dataDc.at(aDc).emplace (key, dataDc.at(aDc).at(key));
             }
         }
     }
