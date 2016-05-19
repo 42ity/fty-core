@@ -854,6 +854,7 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 	logmsg_info "Restore /etc/hosts and /etc/resolv.conf in the VM to the default baseline"
 	LOCALHOSTLINE="`grep '127.0.0.1' "../rootfs/$VM/etc/hosts"`" && \
 		[ -n "$LOCALHOSTLINE" ] && ( echo "$LOCALHOSTLINE" > "../rootfs/$VM/etc/hosts" )
+	grep "8.8.8.8" "../rootfs/$VM/etc/resolv.conf.bak-devpkg" >/dev/null || \
 	cp -pf "../rootfs/$VM/etc/resolv.conf.bak-devpkg" "../rootfs/$VM/etc/resolv.conf"
 	cp -pf "../rootfs/$VM/etc/nsswitch.conf.bak-devpkg" "../rootfs/$VM/etc/nsswitch.conf"
 	logmsg_info "Restart networking in the VM chroot to refresh virtual network settings"
