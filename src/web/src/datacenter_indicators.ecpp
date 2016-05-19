@@ -394,8 +394,6 @@ asset_manager asset_mgr;
         json += "\"name\": \"";
         json += DCNames[D];
         json += "\",";
-        json += "\"data\": {";
-
         for ( const auto &row : dataDc.at(DCNames[D]) ) {
             // data contains topics and it aliases, but we need to print only aliases
             if ( PARAM_TO_SRC.count(row.first) == 1 ) {
@@ -404,7 +402,6 @@ asset_manager asset_mgr;
             }
         }
         json.back() = ' ' ;
-        json += "}"; // "dataDc" object in JSON is finished
         json += "}"; // DC object is finished
         json += ( D < DCs.size() -1) ? "," : "";
     }
