@@ -116,6 +116,7 @@ const std::set<std::string> interesting_sources{
 "realpower.default_arithmetic_mean_24h",
 "realpower.default_arithmetic_mean_7d",
 "realpower.default_arithmetic_mean_30d",
+"average.temperature",
 "average.temperature_arithmetic_mean_24h",
 "average.temperature_arithmetic_mean_7d",
 "average.temperature_arithmetic_mean_30d",
@@ -131,6 +132,7 @@ const std::set<std::string> interesting_sources{
 "average.humidity_arithmetic_mean_24h",
 "average.humidity_arithmetic_mean_7d",
 "average.humidity_arithmetic_mean_30d",
+"average.humidity",
 "average.humidity_min_24h",
 "average.humidity_min_7d",
 "average.humidity_min_30d",
@@ -202,8 +204,8 @@ s_rt_encode_GET (const char* name)
 
     zmsg_pushmem (msg, zuuid_data (uuid), zuuid_size (uuid));
     zuuid_destroy (&uuid);
-    zmsg_pushstr (msg, method);
-    zmsg_pushstr (msg, name);
+    zmsg_addstr (msg, method);
+    zmsg_addstr (msg, name);
     return msg;
 }
 
@@ -366,15 +368,16 @@ asset_manager asset_mgr;
         for( size_t P = 0; P < requestedParams.size(); P++ ) {
             const std::string& key = requestedParams[P];
             // key:value
-            if ( dataDc.at(aDc).count(key) == 0 ) {
+            if ( dataDc.at(aDc).count(PARAM_TO_SRC.at(key)) == 0 ) {
                 if ( isTrend (key) ) {
                     double value = get_trend_value(dataDc.at(aDc), key);
                     dataDc.at(aDc).emplace (key, std::to_string (value));
                 } else {
                     dataDc.at(aDc).emplace (key, "0");
                 }
-            } else {
-                dataDc.at(aDc).emplace (key, dataDc.at(aDc).at(key));
+            }
+            else {
+                dataDc.at(aDc).emplace(key, dataDc.at(aDc).at(PARAM_TO_SRC.at(key)));
             }
         }
     }
@@ -393,14 +396,14 @@ asset_manager asset_mgr;
         json += "\"name\": \"";
         json += DCNames[D];
         json += "\",";
-        json += "\"data\": {";
-
         for ( const auto &row : dataDc.at(DCNames[D]) ) {
-            json += "\"" + row.first + "\":" + row.second;
-            json += ",";
+            // data contains topics and it aliases, but we need to print only aliases
+            if ( PARAM_TO_SRC.count(row.first) == 1 ) {
+                json += "\"" + row.first + "\":" + row.second;
+                json += ",";
+            }
         }
         json.back() = ' ' ;
-        json += "}"; // "dataDc" object in JSON is finished
         json += "}"; // DC object is finished
         json += ( D < DCs.size() -1) ? "," : "";
     }
