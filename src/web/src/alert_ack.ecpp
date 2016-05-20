@@ -37,7 +37,8 @@
 static
 int state_valid (const char *state) {
     assert (state);
-    if (streq (state, "ACK-WIP") ||
+    if (streq (state, "ACTIVE") ||
+        streq (state, "ACK-WIP") ||
         streq (state, "ACK-IGNORE") ||
         streq (state, "ACK-PAUSE") ||
         streq (state, "ACK-SILENCE"))
