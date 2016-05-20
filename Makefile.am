@@ -1228,7 +1228,6 @@ bios_web_la_SOURCES = \
                       src/web/src/tokens.cc             \
                       src/shared/data.cc                \
                       src/shared/upsstatus.cc           \
-                      src/web/src/dci_impl.h            \
                       src/web/src/asset_computed_impl.cc \
                       src/web/src/helpers.cc
 
