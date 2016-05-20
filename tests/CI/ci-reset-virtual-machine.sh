@@ -711,6 +711,19 @@ sed -r -i "s/^127\.0\.0\.1/127.0.0.1 $VM /" "../rootfs/$VM/etc/hosts"
 logmsg_info "Copy root's ~/.ssh from the host OS"
 cp -r --preserve ~/.ssh "../rootfs/$VM/root/"
 cp -r --preserve /etc/ssh/*_key /etc/ssh/*.pub "../rootfs/$VM/etc/ssh"
+if [ -d "../rootfs/$VM/home/admin" ] && \
+   [ ! -d "../rootfs/$VM/home/admin/.ssh" ] \
+; then
+	logmsg_info "Copy root's ~/.ssh from the host OS into guest ~admin/.ssh"
+	cp -r --preserve ~/.ssh/ "../rootfs/$VM/home/admin/.ssh/"
+	if _P="$(egrep '^admin:' "../rootfs/$VM/etc/passwd")" \
+	&& [ -n "$_P" ]; then
+		_UG="`echo "$_P" | awk -F: '{print $3":"$4}'`" && \
+		[ -n "$_UG" ] && \
+		logmsg_info "Chowning guest ~admin/.ssh to $_UG" && \
+		chown -R "$_UG" "../rootfs/$VM/home/admin/.ssh/"
+	fi
+fi
 
 if [ -f ~/.oscrc ]; then
 	logmsg_info "Copy root's ~/.oscrc from the host OS"
@@ -731,8 +744,8 @@ if [ -d /lib/terminfo/x ] ; then
 	cp -prf /lib/terminfo/x/xterm* ../rootfs/$VM/lib/terminfo/x
 fi
 
-mkdir -p "../rootfs/$VM/etc/apt/apt.conf.d/"
 # setup debian proxy
+mkdir -p "../rootfs/$VM/etc/apt/apt.conf.d/"
 [ -n "$APT_PROXY" ] && [ -d "../rootfs/$VM/etc/apt/apt.conf.d" ] && \
 	logmsg_info "Set up APT proxy configuration" && \
 	echo 'Acquire::http::Proxy "'"$APT_PROXY"'";' > \
@@ -841,6 +854,7 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 	logmsg_info "Restore /etc/hosts and /etc/resolv.conf in the VM to the default baseline"
 	LOCALHOSTLINE="`grep '127.0.0.1' "../rootfs/$VM/etc/hosts"`" && \
 		[ -n "$LOCALHOSTLINE" ] && ( echo "$LOCALHOSTLINE" > "../rootfs/$VM/etc/hosts" )
+	grep "8.8.8.8" "../rootfs/$VM/etc/resolv.conf.bak-devpkg" >/dev/null || \
 	cp -pf "../rootfs/$VM/etc/resolv.conf.bak-devpkg" "../rootfs/$VM/etc/resolv.conf"
 	cp -pf "../rootfs/$VM/etc/nsswitch.conf.bak-devpkg" "../rootfs/$VM/etc/nsswitch.conf"
 	logmsg_info "Restart networking in the VM chroot to refresh virtual network settings"
