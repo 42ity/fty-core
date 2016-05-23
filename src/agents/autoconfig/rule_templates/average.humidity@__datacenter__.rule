@@ -2,6 +2,7 @@
     "threshold" : {
         "rule_name"     :   "average.humidity@__name__",
         "rule_desc"     :   "Humidity",
+        "rule class"    :   "Environment: Humidity",
         "target"        :   "average.humidity@__name__",
         "element"       :   "__name__",
         "values_unit"   :   "%",

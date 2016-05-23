@@ -2,6 +2,7 @@
     "threshold" : {
         "rule_name"     :   "voltage.input_3phase@__name__",
         "rule_desc"     :   "Input voltage 3 phase for epdu __name__",
+        "rule_class"    :   "Input Voltage",
         "target"        :   [ "voltage.input.L1@__name__", "voltage.input.L2@__name__", "voltage.input.L3@__name__" ],
         "element"       :   "__name__",
         "values_unit"   :   "V",

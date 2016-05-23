@@ -2,6 +2,7 @@
     "threshold" : {
         "rule_name"     :   "charge.battery@__name__",
         "rule_desc"     :   "Battery Level",
+        "rule_class"    :   "UPS: Battery Level",
         "target"        :   "charge.battery@__name__",
         "element"       :   "__name__",
         "values_unit"   :   "%",

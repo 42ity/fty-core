@@ -2,6 +2,7 @@
 	"threshold": {
 		"rule_name": "phase_imbalance@__name__",
 		"rule_desc": "Rack __name__ phase imbalance",
+		"rule_class": "phase imbalance",
 		"target": [ "realpower.output.L1@__name__", "realpower.output.L2@__name__", "realpower.output.L3@__name__" ],
 		"element": "__name__",
 		"values_unit": "%",

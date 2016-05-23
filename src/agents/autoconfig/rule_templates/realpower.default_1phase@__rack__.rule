@@ -2,6 +2,7 @@
     "threshold" : {
         "rule_name"     :   "realpower.default_1phase@__name__",
         "rule_desc"     :   "Rack __name__ total power 1 phase",
+		"rule_class"    :   "Rack: totalpower",
         "target"        :   "realpower.input.L1@__name__",
         "element"       :   "__name__",
         "values_unit"   :   "W",
