@@ -2,7 +2,7 @@
     "threshold" : {
         "rule_name"     :   "load.input_3phase@__name__",
         "rule_desc"     :   "input load 3 phase for epdu __name__",
-        "rule_class"    :   "phase imbalance",
+        "rule_class"    :   "Input load (3 phase) in PDU",
         "target"        :   [ "load.input.L1@__name__", "load.input.L2@__name__", "load.input.L3@__name__" ],
         "element"       :   "__name__",
         "values_unit"   :   "V",
