@@ -2,6 +2,7 @@
     "threshold" : {
         "rule_name"     :   "voltage.input_1phase@__name__",
         "rule_desc"     :   "Input voltage 1 phase for ups __name__",
+        "rule_class"    :   "Input Voltage",
         "target"        :   "voltage.input.L1@__name__",
         "element"       :   "__name__",
         "values_unit"   :   "V",

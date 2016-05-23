@@ -2,6 +2,7 @@
     "threshold" : {
         "rule_name"     :   "realpower.default@__name__",
         "rule_desc"     :   "Total Power in datacenter",
+        "rule_class"    :   "DC: totalpower",
         "target"        :   "realpower.default@__name__",
         "element"       :   "__name__",
         "values_unit"   :   "W",
