@@ -37,6 +37,7 @@
 </%pre>
 <%args>
 std::string type;
+std::string rule_class;
 </%args>
 <%cpp>
 // sanity check
@@ -77,6 +78,7 @@ if (!send_msg) {
 }
 zmsg_addstr (send_msg, "LIST");
 zmsg_addstr (send_msg, type.c_str ());
+zmsg_addstr (send_msg, rule_class.c_str ());
 
 // send it
 if (mlm_client_sendto (client, BIOS_AGENT_NAME_ALERT_AGENT, "rfc-evaluator-rules", NULL, 1000, &send_msg) != 0) {
