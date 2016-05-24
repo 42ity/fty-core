@@ -104,12 +104,8 @@ test-libbiosapiut
 test-db-asset-crud
 test-autoconfig
 agent-inventory
-agent-dbstore
 agent-autoconfig
-agent-cm
-bios-nutscan
 average
-dbstore_bench
 generate_measurement
 warranty-metric
 bios-csv
@@ -153,18 +149,10 @@ systemd/bios-db-init.service
 systemd/bios-agent-cm.service
 !systemd/bios-agent-inventory.service.in
 systemd/bios-agent-inventory.service
-!systemd/bios-agent-dbstore.service.in
-systemd/bios-agent-dbstore.service
 !systemd/bios-agent-autoconfig.service.in
 systemd/bios-agent-autoconfig.service
 systemd/bios-reset-button.service
 !systemd/bios-reset-button.service.in
-!systemd/biostimer-graphs-prefetch.service.in
-systemd/biostimer-graphs-prefetch.service
-!systemd/biostimer-graphs-prefetch@.service.in
-systemd/biostimer-graphs-prefetch@.service
-!systemd/biostimer-graphs-prefetch__realpower.default@.service.in
-systemd/biostimer-graphs-prefetch__realpower.default@.service
 !systemd/biostimer-warranty-metric.service.in
 systemd/biostimer-warranty-metric.service
 !systemd/ifplug-dhcp-autoconf.service.in
@@ -230,7 +218,6 @@ tntnet.xml
 tests/CI/run_tntnet_make.env
 
 !src/agents
-!src/agents/dbstore
 !src/agents/nut
 !src/agents/th
 

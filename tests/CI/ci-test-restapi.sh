@@ -187,29 +187,24 @@ test_web_averages() {
 }
 
 MAKEPID=""
-DBNGPID=""
 CMPID=""
 kill_daemons() {
     if [ -n "$MAKEPID" -a -d "/proc/$MAKEPID" ]; then
         logmsg_info "Killing make web-test PID $MAKEPID to exit"
         kill -INT "$MAKEPID"
     fi
-    if [ -n "$DBNGPID" -a -d "/proc/$DBNGPID" ]; then
-        logmsg_info "Killing agent-dbstore PID $DBNGPID to exit"
-        kill -INT "$DBNGPID"
-    fi
     if [ -n "$CMPID" -a -d "/proc/$CMPID" ]; then
         logmsg_info "Killing agent-cm PID $CMPID to exit"
         kill -INT "$CMPID"
     fi
 
-    killall -INT tntnet agent-dbstore lt-agent-dbstore agent-cm lt-agent-cm 2>/dev/null || true; sleep 1
-    killall      tntnet agent-dbstore lt-agent-dbstore agent-cm lt-agent-cm 2>/dev/null || true; sleep 1
+    killall -INT tntnet agent-cm lt-agent-cm 2>/dev/null || true; sleep 1
+    killall      tntnet agent-cm lt-agent-cm 2>/dev/null || true; sleep 1
 
-    ps -ef | grep -v grep | egrep "tntnet|agent-dbstore|agent-cm" | egrep "^`id -u -n` " && \
+    ps -ef | grep -v grep | egrep "tntnet|agent-cm" | egrep "^`id -u -n` " && \
         ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
-        logmsg_error "tntnet and/or agent-dbstore, agent-cm still alive, trying SIGKILL" && \
-        { killall -KILL tntnet agent-dbstore lt-agent-dbstore agent-cm lt-agent-cm 2>/dev/null ; return 1; }
+        logmsg_error "tntnet and/or agent-cm still alive, trying SIGKILL" && \
+        { killall -KILL tntnet agent-cm lt-agent-cm 2>/dev/null ; return 1; }
     return 0
 }
 
@@ -339,12 +334,6 @@ trap_cleanup(){
   logmsg_info "Spawning the web-server in the background..."
   ./autogen.sh --noparmake ${AUTOGEN_ACTION_MAKE} web-test &
   MAKEPID=$!
-
-  # TODO: this requirement should later become the REST AGENT
-  logmsg_info "Spawning agent-dbstore in the background..."
-  ${BUILDSUBDIR}/agent-dbstore &
-  DBNGPID=$!
-  logmsg_info "PID of agent-dbstore is '${DBNGPID}'"
 
   logmsg_info "Spawning agent-cm in the background..."
   ${BUILDSUBDIR}/agent-cm &
