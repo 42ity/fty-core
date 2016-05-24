@@ -1,7 +1,7 @@
 {
 	"threshold": {
 		"rule_name": "phase_imbalance@__name__",
-		"rule_class": "phase imbalance",
+		"rule_class": "phase imbalance in PDU",
 		"rule_desc": "Phase Imbalance for epdu __name__",
 		"target": [ "realpower.output.L1@__name__", "realpower.output.L2@__name__", "realpower.output.L3@__name__" ],
 		"element": "__name__",
