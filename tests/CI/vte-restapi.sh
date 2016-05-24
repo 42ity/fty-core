@@ -295,9 +295,9 @@ settraps '[ "$ERRCODE" = 0 ] && ERRCODE=123; trap_cleanup $ERRCODE'
 TRAP_SIGNALS=EXIT settraps 'trap_cleanup $ERRCODE'
 
 logmsg_info "Ensuring that needed remote daemons are running on VTE"
-sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-cm bios-agent-dbstore bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
+sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-cm bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
 sleep 5
-sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-cm bios-agent-dbstore bios-agent-nut bios-agent-inventory ; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
+sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-cm bios-agent-nut bios-agent-inventory ; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
     die "Some required services are not running on the VTE"
 
 # ***** AUTHENTICATION ISSUES *****
