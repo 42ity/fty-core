@@ -305,6 +305,12 @@ EXTRA_DIST += tools/bios_agent++.h.sh tools/bios_agent++.h.in
 # Some of our code is arranged into private libraries used during
 # build, but not published or distributed outside the build-tree.
 
+noinst_LTLIBRARIES += 		libpriv-tntnet-mlm.la
+
+libpriv_tntnet_mlm_la_SOURCES = \
+					src/shared/tntmlm.h \
+					src/shared/tntmlm.cc
+
 noinst_LTLIBRARIES += 		libpriv-utils-web.la
 
 libpriv_utils_web_la_SOURCES = \
@@ -616,6 +622,25 @@ test_utils_web_CPPFLAGS = \
 test_utils_web_LDFLAGS =	${CXXTOOLS_LIBS}
 
 ###
+check_PROGRAMS +=	test-tntmlm	
+
+test_tntmlm_SOURCES = \
+			src/shared/tntmlm.h \
+			src/shared/tntmlm.cc \
+			tests/shared/test-tntmlm.cc
+
+test_tntmlm_LDADD = \
+			libpriv-utils-plusplus.la \
+			libpriv-log.la \
+			libpriv-test-run.la
+
+test_tntmlm_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/shared/
+
+test_tntmlm_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS}
+
 check_PROGRAMS +=	test-utils-plusplus	
 
 test_utils_plusplus_SOURCES = \
