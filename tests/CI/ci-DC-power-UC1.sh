@@ -102,7 +102,8 @@ fill_database(){
 
 # stop all processes launched in the script
 stop_bios_daemons(){
-    for d in agent-dbstore agent-nut ; do
+    # TODO: CLI syntax and paths changed - other repo now
+    for d in agent-nut ; do
         killall -KILL $d lt-$d || true
     done
 }
@@ -119,7 +120,8 @@ stop_processes(){
 # start built daemons as a subprocess
 start_bios_daemons(){
     stop_bios_daemons
-    for d in agent-dbstore agent-nut ; do
+    # TODO: CLI syntax and paths changed - other repo now
+    for d in agent-nut ; do
         test_it "start_bios_daemons:$d"
         if [ -x "$INSTALLDIR/usr/local/bin/$d" ] ; then
             "$INSTALLDIR/usr/local/bin/$d" &
