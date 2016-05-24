@@ -50,30 +50,6 @@ export PATH
 AGNUTPID=""
 AGPWRPID=""
 AGLEGMETPID=""
-DBNGPID=""
-stop_dbstore() {
-#    if isRemoteSUT ; then
-#        sut_run "systemctl stop bios-agent-dbstore"
-#    else
-        if [ -n "$DBNGPID" -a -d "/proc/$DBNGPID" ]; then
-            logmsg_info "Killing agent-dbstore PID $DBNGPID to flush and exit"
-            kill -INT "$DBNGPID"
-        fi
-        DBNGPID=""
-#    fi
-}
-
-start_dbstore() {
-#    if isRemoteSUT ; then
-#        sut_run "systemctl start bios-agent-dbstore"
-#    else
-        # TODO: this requirement should later become the REST AGENT
-        logmsg_info "Spawning the agent-dbstore daemon in the background..."
-        ${BUILDSUBDIR}/agent-dbstore &
-        [ $? = 0 ] || CODE=$? die "Could not spawn agent-dbstore"
-        DBNGPID=$!
-#    fi
-}
 
 kill_daemons() {
     set +e
@@ -89,15 +65,14 @@ kill_daemons() {
         logmsg_info "Killing bios-agent-legacy-metrics PID $AGLEGMETPID to exit"
         kill -INT "$AGLEGMETPID"
     fi
-    stop_dbstore
 
-    killall -INT bios-agent-legacy-metrics bios-agent-tpower lt-bios_agent_tpower agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
-    killall      bios-agent-legacy-metrics bios-agent-tpower lt-bios_agent_tpower agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
+    killall -INT bios-agent-legacy-metrics bios-agent-tpower lt-bios_agent_tpower agent-nut lt-agent-nut 2>/dev/null || true; sleep 1
+    killall      bios-agent-legacy-metrics bios-agent-tpower lt-bios_agent_tpower agent-nut lt-agent-nut 2>/dev/null || true; sleep 1
 
-    ps -ef | grep -v grep | egrep "agent-(nut|dbstore|tpower)|legacy-metrics" | egrep "^`id -u -n` " && \
+    ps -ef | grep -v grep | egrep "agent-(nut|tpower)|legacy-metrics" | egrep "^`id -u -n` " && \
         ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
-        logmsg_error "At least one of: bios-agent-legacy-metrics, agent-nut, bios-agent-tpower, agent-dbstore still alive, trying SIGKILL" && \
-        { killall -KILL bios-agent-legacy-metrics bios-agent-tpower lt-bios_agent_tpower agent-nut lt-agent-nut agent-dbstore lt-agent-dbstore 2>/dev/null ; exit 1; }
+        logmsg_error "At least one of: bios-agent-legacy-metrics, agent-nut, bios-agent-tpower still alive, trying SIGKILL" && \
+        { killall -KILL bios-agent-legacy-metrics bios-agent-tpower lt-bios_agent_tpower agent-nut lt-agent-nut 2>/dev/null ; exit 1; }
 
     return 0
 }
@@ -187,8 +162,7 @@ if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
     print_result $? || CODE=$? die "Could not prepare binaries"
 fi
 test_it "make-deps"
-./autogen.sh ${AUTOGEN_ACTION_MAKE} agent-dbstore agent-nut
-# TODO: JIM please fix me :)
+./autogen.sh ${AUTOGEN_ACTION_MAKE}
 print_result $? || CODE=$? die "Could not prepare binaries"
 
 # These are defined in testlib-db.sh
@@ -203,8 +177,7 @@ bios-agent-legacy-metrics ipc://@/malamute legacy-metrics bios METRICS &
 [ $? = 0 ] || CODE=$? die "Could not spawn bios-agent-legacy-metrics"
 AGLEGMETPID=$!
 
-start_dbstore
-
+# TODO: CLI syntax and paths changed - other repo now
 logmsg_info "Spawning the agent-nut daemon in the background..."
 ${BUILDSUBDIR}/agent-nut "$CHECKOUTDIR/src/agents/nut/mapping.conf" &
 [ $? = 0 ] || CODE=$? die "Could not spawn agent-nut"
@@ -256,18 +229,15 @@ for UPS in $UPS1 $UPS2 ; do
             fi
         done
 
-        logmsg_debug "`date`: Sleeping some time to let propagate measurements and flush database..."
-        sleep 18  # some time for propagating into DB (poll every 5s in nut actor + some time to process), and agent-dbstore can have its own delays to queue up writes (10 sec by default)
-        #logmsg_debug "`date`: restarting agent-dbstore to flush database..."
-        #stop_dbstore
-        #sleep 8
-        #start_dbstore
-        #sleep 8
+        logmsg_debug "`date`: Sleeping some time to let propagate measurements..."
+        sleep 18  # some time for propagating into agents (poll every 5s in nut actor, etc.)
         logmsg_debug "`date`: Sleep time is over!"
 
         for i in $(seq 0 $PARAMSCNT); do
             PARAM="${PARAMS[$i]}"
             NEWVALUE="${SAMPLES[$SAMPLECURSOR+$i]}"
+            # TODO: This will fail because readings should now be asked from REST API, not DB anymore
+            # See e.g. ci-rackpower for ideas
             test_it "verify_value_in_db:$TIMENUM:$UPS:$PARAM:$NEWVALUE"
             SELECT='select count(*) from t_bios_measurement where timestamp >= '"UNIX_TIMESTAMP('$TIME') and CAST( ((0.0 + value)*(pow(10,scale))) AS DECIMAL(50,6)) = $(expected_db_value "$PARAM" "$NEWVALUE")"
             # NOTE: The comparison above requires that numbers match up at
