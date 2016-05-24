@@ -142,7 +142,17 @@ if (streq (part, "LIST")) {
         free (part);
         zmsg_destroy (&recv_msg);
         mlm_client_destroy (&client);
-        http_die ("internal-error", "Bad message.");
+        http_die ("internal-error", "Received type != expected one!");
+    }
+    part = zmsg_popstr (recv_msg);
+    // class received must be equal to type requested
+    if (rule_class.compare (part) != 0) {
+        log_error ("Unexpected reply from '%s'. rule_class expected = '%s', received = '%s' . Protocol: rfc-evaluator-rules; message: 1) LIST.",
+            mlm_client_sender (client), rule_class.c_str (), part);
+        free (part);
+        zmsg_destroy (&recv_msg);
+        mlm_client_destroy (&client);
+        http_die ("internal-error", "Received rule_class != expected one!");
     }
     free (part);
     part = zmsg_popstr (recv_msg);

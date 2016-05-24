@@ -6,7 +6,8 @@ Connects USER peer to EVALUATOR peer.
 The USER peer sends one of the following messages using MAILBOX SEND to
 EVALUATOR peer:
 
-1) LIST/type - request list of rule names of specified 'type'
+1) LIST/type/class - request list of rule names of specified 'type'. Class
+   can be empty string ("") for all classes.
 2) GET/name - request detail of rule 'name'
 3) ADD/json[/old_name] - create new rule or update existing rule. If optional
 part 'old_name' is specified, perform additional rename of rule name
@@ -22,7 +23,7 @@ The EVALUATOR peer MUST send the appropriate message back to USER peer
 using MAILBOX SEND.
 
 For message 1) EVALUTATOR peer MUST respond with one of the following messages:
-a) LIST/type/rule_1[/rule_2]...[/rule_N]
+a) LIST/type/class/classrule_1[/rule_2]...[/rule_N]
 c) ERROR/reason
 
 For messages 2) and 3) EVALUATOR peer MUST respond with one of the following messages:
