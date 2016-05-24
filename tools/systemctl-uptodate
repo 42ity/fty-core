@@ -21,7 +21,7 @@ FAILEDNA=""
 FAILEDNUv=""
 FAILEDNAv=""
 ls -1d {../,../../}{./,*/,*/*/}{src,systemd}/*.{service,timer,target}* 2>/dev/null | \
-grep -v "core-" | \
+egrep -v "core-|\.conf" | \
 sort | uniq | \
 { while read F ; do
 #    echo "=== $F"
