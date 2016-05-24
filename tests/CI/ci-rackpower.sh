@@ -161,30 +161,6 @@ WEBTESTPID=""
 AGNUTPID=""
 AGPWRPID=""
 AGLEGMETPID=""
-DBNGPID=""
-stop_dbstore() {
-    if isRemoteSUT ; then
-        sut_run "systemctl stop bios-agent-dbstore"
-    else
-        if [ -n "$DBNGPID" -a -d "/proc/$DBNGPID" ]; then
-            logmsg_info "Killing agent-dbstore PID $DBNGPID to flush and exit"
-            kill -INT "$DBNGPID"
-        fi
-        DBNGPID=""
-    fi
-}
-
-start_dbstore() {
-    if isRemoteSUT ; then
-        sut_run "systemctl start bios-agent-dbstore"
-    else
-        # TODO: this requirement should later become the REST AGENT
-        logmsg_info "Spawning the agent-dbstore daemon in the background..."
-        ${BUILDSUBDIR}/agent-dbstore &
-        [ $? = 0 ] || CODE=$? die "Could not spawn agent-dbstore"
-        DBNGPID=$!
-    fi
-}
 
 kill_daemons() {
     # Stops and cleans up the CI variant
@@ -205,15 +181,14 @@ kill_daemons() {
         logmsg_info "Killing bios-agent-legacy-metrics PID $AGLEGMETPID to exit"
         kill -INT "$AGLEGMETPID"
     fi
-    stop_dbstore
 
-    killall -INT tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut bios-agent-tpower lt-bios_agent_tpower agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
-    killall      tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut bios-agent-tpower lt-bios_agent_tpower agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
+    killall -INT tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut bios-agent-tpower lt-bios_agent_tpower 2>/dev/null || true; sleep 1
+    killall      tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut bios-agent-tpower lt-bios_agent_tpower 2>/dev/null || true; sleep 1
 
-    ps -ef | grep -v grep | egrep "tntnet|agent-(nut|dbstore|tpower)|legacy-metrics" | egrep "^`id -u -n` " && \
+    ps -ef | grep -v grep | egrep "tntnet|agent-(nut|tpower)|legacy-metrics" | egrep "^`id -u -n` " && \
         ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
-        logmsg_error "At least one of: tntnet, bios-agent-legacy-metrics, agent-dbstore, agent-nut, agent-tpower still alive, trying SIGKILL" && \
-        { killall -KILL tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut bios-agent-tpower lt-bios_agent_tpower agent-dbstore lt-agent-dbstore 2>/dev/null ; exit 1; }
+        logmsg_error "At least one of: tntnet, bios-agent-legacy-metrics, agent-nut, agent-tpower still alive, trying SIGKILL" && \
+        { killall -KILL tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut bios-agent-tpower lt-bios_agent_tpower 2>/dev/null ; exit 1; }
 
     echo "=================== CI-RACKPOWER : END ==============================="
     echo ""
@@ -244,9 +219,9 @@ function startup() {
 
         # TODO: replace by calls to proper rc-bios script
         logmsg_info "Ensuring that needed remote daemons are running on VTE"
-        sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-agent-nut bios-agent-inventory bios-agent-cm bios-agent-tpower; do systemctl start $SVC ; done'
+        sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-nut bios-agent-inventory bios-agent-cm bios-agent-tpower; do systemctl start $SVC ; done'
         sleep 5
-        sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-agent-nut bios-agent-inventory bios-agent-cm bios-agent-tpower; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done;exit $R' || \
+        sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-nut bios-agent-inventory bios-agent-cm bios-agent-tpower; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done;exit $R' || \
                 die "Some required services are not running on the VTE"
 
         # *** write power rack base test data to DB on SUT
@@ -266,8 +241,7 @@ function startup() {
                 print_result $? || CODE=$? die "Could not prepare binaries"
         fi
         test_it "make-deps"
-        ./autogen.sh ${AUTOGEN_ACTION_MAKE} web-test-deps agent-dbstore agent-nut
-#TODO JIM fix me
+        ./autogen.sh ${AUTOGEN_ACTION_MAKE} web-test-deps
         print_result $? || CODE=$? die "Could not prepare binaries"
 
         # These are defined in testlib-db.sh
@@ -288,9 +262,8 @@ function startup() {
         [ $? = 0 ] || CODE=$? die "Could not spawn tntnet"
         WEBTESTPID=$!
 
-        start_dbstore
-
         # NOTE: Now a CLI argument is required for agent-nut
+        # TODO: CLI syntax and paths changed - other repo now
         logmsg_info "Spawning the agent-nut daemon in the background..."
         ${BUILDSUBDIR}/agent-nut "$CHECKOUTDIR/src/agents/nut/mapping.conf" &
         [ $? = 0 ] || CODE=$? die "Could not spawn agent-nut"
@@ -305,7 +278,7 @@ function startup() {
 
         sleep 3
         test_it "verify_running_daemons"
-        for P in AGLEGMETPID WEBTESTPID DBNGPID AGNUTPID AGPWRPID ; do
+        for P in AGLEGMETPID WEBTESTPID AGNUTPID AGPWRPID ; do
             eval PN="\$$P"
             [ -n "$PN" ] && [ -d "/proc/$PN" ] || { \
                 print_result $? "Process ID for $P ($PN) not found to be running!"; die; }
@@ -321,7 +294,6 @@ function startup() {
 
     if isRemoteSUT ; then
         sut_run 'systemctl restart bios-agent-tpower'
-        sut_run 'systemctl restart bios-agent-dbstore'
     fi
 }
 
@@ -428,13 +400,8 @@ testcase() {
                 ;;
             esac
 
-            logmsg_debug "`date`: Sleeping some time to let propagate measurements and flush database..."
-            sleep 18  # some time for propagating into DB (poll every 5s in nut actor + some time to process), and agent-dbstore can have its own delays to queue up writes (10 sec by default)
-            #logmsg_debug "`date`: restarting agent-dbstore to flush database..."
-            #stop_dbstore
-            #sleep 8
-            #start_dbstore
-            #sleep 8
+            logmsg_debug "`date`: Sleeping some time to let propagate measurements..."
+            sleep 18  # some time for propagating into other agents (poll every 5s in nut actor, etc.)
             logmsg_debug "`date`: Sleep time is over!"
 
             test_it "verify_total_power_restapi:$RACK:$DEV:$SAMPLECURSOR"
