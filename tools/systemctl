@@ -42,14 +42,15 @@ SYSTEMCTL_COMMANDS="show start stop restart enable disable daemon-reload status 
 # service named "bios-networking".
 # NOTE-DEV: Validate that this filter is still valid with "systemctl-uptodate"
 SYSTEMCTL_UNITS_COMMON="mariadb mysql mysqld ntp ntpd ntpdate sntp bios \
-                 bios-reset-button tntnet@bios bios-agent-smtp          \
+                 bios-reset-button tntnet@bios bios-db-init             \
                  bios-agent-alert-generator agent-alerts-list           \
                  bios-agent-autoconfig bios-agent-cm                    \
-                 bios-agent-inventory bios-agent-nut \
+                 bios-agent-inventory                                   \
+                 bios-agent-nut bios-agent-nut-configurator             \
                  bios-agent-asset bios-agent-legacy-metrics kpi-uptime  \
-                 agent-th bios-agent-tpower bios-db-init                \
-                 dc_th bios-agent-tr bios-agent-ms                      \
-                 biostimer-warranty-metric \
+                 agent-th dc_th bios-agent-outage bios-agent-smtp       \
+                 bios-agent-tpower bios-agent-rt bios-agent-ms          \
+                 biostimer-warranty-metric biostimer-agent-ms-cleaner   \
                  malamute saslauthd networking network bios-networking  \
                  nut-driver nut-monitor nut-server"
 
