@@ -49,6 +49,7 @@
 #include "asset_types.h"
 #include "helpers.h"
 #include "str_defs.h"
+#include "tntmlm.h"
 
 static std::string
 s_os2string(
@@ -127,15 +128,14 @@ struct OutletProperties {
 
 // encode metric GET request
 static zmsg_t*
-s_rt_encode_GET (const char* name)
+s_rt_encode_GET (const char* name, zuuid_t *uuid)
 {
+    assert (uuid);
+
     static const char* method = "GET";
 
-    zuuid_t *uuid = zuuid_new ();
     zmsg_t *msg = zmsg_new ();
-
-    zmsg_pushmem (msg, zuuid_data (uuid), zuuid_size (uuid));
-    zuuid_destroy (&uuid);
+    zmsg_addstr (msg, zuuid_str_canonical (uuid));
     zmsg_addstr (msg, method);
     zmsg_addstr (msg, name);
     return msg;
@@ -175,23 +175,10 @@ std::string dev;
 
 
     // connect to malamute
-    // copy & paste from alert_ack.ecpp
-    mlm_client_t *client = mlm_client_new ();
-    if (!client) {
-        log_critical ("mlm_client_new() failed.");
-        http_die ("internal-error", "mlm_client_new() failed.");
-    }
-
-    std::string client_name ("web.metric_current.");
-    client_name.append (std::to_string (getpid ())).append (".").append (std::to_string (syscall (SYS_gettid)));
-    log_debug ("malamute client name = '%s'.", client_name.c_str ());
-
-    int rv = mlm_client_connect (client, MLM_ENDPOINT, 1000, client_name.c_str ());
-    if (rv == -1) {
-        log_critical ("mlm_client_connect (endpoint = '%s', timeout = '%d', address = '%s') failed.",
-                        MLM_ENDPOINT, 1000, client_name.c_str ());
-        mlm_client_destroy (&client);
-        http_die ("internal-error", "mlm_client_connect() failed.");
+    MlmClientPool::Ptr client = mlm_pool.get ();
+    if (!client.getPointer ()) {
+        log_critical ("mlm_pool.get () failed.");
+        http_die ("internal-error", "mlm_pool.get () failed.");
     }
 
     // Go through all passed ids
@@ -217,19 +204,24 @@ std::string dev;
 
         std::map <std::string, double> measurements{};
 
-        zmsg_t *request = s_rt_encode_GET (asset.item.name.c_str ());
-        mlm_client_sendto (client, "agent-rt", "latest-rt-data", NULL, 1000, &request);
+        zuuid_t *uuid = zuuid_new ();
+        zmsg_t *request = s_rt_encode_GET (asset.item.name.c_str (), uuid);
 
-        //TODO: this intentionally wait forewer, to be fixed by proper client pool
-        zmsg_t *msg = mlm_client_recv (client);
-        if (!msg) {
-            mlm_client_destroy (&client);
-            http_die ("internal-error", "No reply from broker");
+        int rv = client->sendto ("agent-rt", "latest-rt-data", 1000, &request);
+        if (rv == -1) {
+            zuuid_destroy (&uuid);
+            log_critical (
+                    "client->sendto (address = '%s', subject = '%s', timeout = 1000) failed.",
+                    "agent-rt", "latest-rt-data");
+            http_die ("internal-error", "client->sendto () failed");
         }
 
-        //TODO: check if we have right uuid, to be fixed by proper client pool
-        char *uuid = zmsg_popstr (msg);
-        zstr_free (&uuid);
+        zmsg_t *msg = client->recv (zuuid_str_canonical (uuid), 5);
+        zuuid_destroy (&uuid);
+        if (!msg) {
+            log_critical ("client->recv (timeout = '5') returned NULL");
+            http_die ("internal-error", "client->recv () returned NULL");
+        }
 
         char *result = zmsg_popstr (msg);
         if (!streq (result, "OK")) {
@@ -292,7 +284,6 @@ std::string dev;
 
         if ( rv != 0 )
         {
-            mlm_client_destroy (&client);
             http_die("internal-error");
         }
 
@@ -359,7 +350,6 @@ std::string dev;
         big_json += ",";
     }
 
-    mlm_client_destroy (&client);
 
     // remove last ","
     if (!big_json.empty())
