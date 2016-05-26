@@ -410,10 +410,6 @@ libpriv_db_la_SOURCES = \
 			src/persist/monitor.h \
 			src/persist/dbhelpers.cc \
 			src/db/dbhelpers.h \
-			src/persist/measurement.h \
-			src/persist/measurement.cc \
-			src/persist/multi_row.h \
-			src/persist/multi_row.cc \
 			src/persist/ymsg-asset.h \
 			src/persist/ymsg-asset.cc \
 			src/db/agentstate/agentstate.cc \
