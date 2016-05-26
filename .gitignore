@@ -87,7 +87,6 @@ cppcheck.xml
 test-agents
 test-api
 test-cidr
-test-computation
 test-csv
 test-loadcsv
 test-db2
@@ -97,7 +96,6 @@ test-utils
 test-utils-plusplus
 test-utils-web
 test-dbtopology
-test-totalpower
 test-web
 test-web-helpers
 test-libbiosapiut
@@ -105,7 +103,6 @@ test-db-asset-crud
 test-autoconfig
 agent-inventory
 agent-autoconfig
-average
 generate_measurement
 warranty-metric
 bios-csv
@@ -166,8 +163,6 @@ systemd/bios-fake-th.service
 !systemd/biostimer-verify-fs.service.in
 systemd/biostimer-verify-fs.service
 
-!tools/biostimer-graphs-prefetch.sh.in
-tools/biostimer-graphs-prefetch.sh
 !tools/tntnet-ExecStartPre.sh.in
 tools/tntnet-ExecStartPre.sh
 
@@ -218,8 +213,6 @@ tntnet.xml
 tests/CI/run_tntnet_make.env
 
 !src/agents
-!src/agents/nut
-!src/agents/th
 
 src/api/libbiosapi.pc
 !src/api/libbiosapi.pc.in
