@@ -1215,6 +1215,7 @@ bios_web_la_LIBADD = \
 			libpriv-db-measurements.la \
 			libpriv-magic.la \
 			libpriv-configure-inform.la \
+			libpriv-tntnet-mlm.la \
 			libpriv-utils-web.la
 
 dist_noinst_HEADERS += \
