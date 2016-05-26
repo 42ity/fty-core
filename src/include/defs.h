@@ -85,12 +85,6 @@ enum internal_err {
 };
 
 
-//! ip address version
-enum ipaddr_version {
-    IP_VERSION_4,
-    IP_VERSION_6
-};
-
 // TODO: Make the following 5 values configurable
 #define NUT_MEASUREMENT_REPEAT_AFTER    300     //!< (once in 5 minutes now (300s))
 #define NUT_INVENTORY_REPEAT_AFTER      3600    //!< (every hour now (3600s))
