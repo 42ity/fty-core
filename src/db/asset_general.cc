@@ -21,7 +21,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <tntdb/transaction.h>
 
 #include "log.h"
-#include "measurements.h"
 #include "asset_types.h"
 #include "defs.h"
 
@@ -426,51 +425,6 @@ db_reply_t
         return reply_delete2;
     }
 
-    { // need to delete all measurements
-        // select all topic_id for the element
-        std::set <m_msrmnt_tpc_id_t> out{};
-        row_cb_f foo = \
-                       [&out](const tntdb::Row& r)
-                       {
-                           m_msrmnt_tpc_id_t id = 0;
-                           r["id"].get(id);
-                           out.insert(id);
-                       };
-
-
-        int rv = select_for_element_topics_all(
-                conn, element_id, foo);
-        if ( rv != 0 )
-        {
-            db_reply_t ret = db_reply_new();
-            ret.status = 0;
-            ret.errtype = rv;
-            ret.errsubtype = rv;
-            log_error ("error during topics selecting");
-            return ret;
-        }
-        // delete all measurements for topic and topic itself
-        rv = delete_measurements(conn, out);
-        if ( rv != 0 )
-        {
-            db_reply_t ret = db_reply_new();
-            ret.status = 0;
-            ret.errtype = rv;
-            ret.errsubtype = rv;
-            log_error ("error during measurements deleting");
-            return ret;
-        }
-        rv = delete_measurement_topics(conn, out);
-        if ( rv != 0 )
-        {
-            db_reply_t ret = db_reply_new();
-            ret.status = 0;
-            ret.errtype = rv;
-            ret.errsubtype = rv;
-            log_error ("error during topic deleting");
-            return ret;
-        }
-    }
     m_dvc_id_t monitor_element_id = 0;
     {
         // find monitor counterpart
@@ -495,20 +449,7 @@ db_reply_t
         return reply_delete3;
     }
     m_dvc_id_t affected_rows1 = 0;
-    if ( monitor_element_id != 0 )
-    {
-        // if it was in counterpart
-        int rv = delete_disc_device(conn, monitor_element_id, affected_rows1);
-        if ( rv != 0 )
-        {
-            db_reply_t ret = db_reply_new();
-            ret.status = 0;
-            ret.errtype = rv;
-            ret.errsubtype = rv;
-            log_error ("error during monitor device deleting");
-            return ret;
-        }
-    }
+
     auto reply_delete4 = delete_asset_element (conn, element_id);
     if ( reply_delete4.status == 0 )
     {
@@ -593,51 +534,6 @@ db_reply_t
         return reply_delete3;
     }
 
-    { // need to delete all measurements
-        // select all topic_id for the element
-        std::set <m_msrmnt_tpc_id_t> out{};
-        row_cb_f foo = \
-                       [&out](const tntdb::Row& r)
-                       {
-                           m_msrmnt_tpc_id_t id = 0;
-                           r["id"].get(id);
-                           out.insert(id);
-                       };
-
-
-        int rv = select_for_element_topics_all(
-                conn, element_id, foo);
-        if ( rv != 0 )
-        {
-            db_reply_t ret = db_reply_new();
-            ret.status = 0;
-            ret.errtype = rv;
-            ret.errsubtype = rv;
-            log_error ("error during topics selecting");
-            return ret;
-        }
-        // delete all measurements for topic and topic itself
-        rv = delete_measurements(conn, out);
-        if ( rv != 0 )
-        {
-            db_reply_t ret = db_reply_new();
-            ret.status = 0;
-            ret.errtype = rv;
-            ret.errsubtype = rv;
-            log_error ("error during measurements deleting");
-            return ret;
-        }
-        rv = delete_measurement_topics(conn, out);
-        if ( rv != 0 )
-        {
-            db_reply_t ret = db_reply_new();
-            ret.status = 0;
-            ret.errtype = rv;
-            ret.errsubtype = rv;
-            log_error ("error during topic deleting");
-            return ret;
-        }
-    }
     m_dvc_id_t monitor_element_id = 0;
     auto reply_delete5 = delete_monitor_asset_relation_by_a
                                                 (conn, element_id);
@@ -646,21 +542,6 @@ db_reply_t
         trans.rollback();
         log_info ("end: error occured during removing ma relation");
         return reply_delete5;
-    }
-    if ( monitor_element_id != 0 )
-    {
-        // if it was in counterpart
-        m_dvc_id_t affected_rows1 = 0;
-        int rv = delete_disc_device(conn, monitor_element_id, affected_rows1);
-        if ( rv != 0 )
-        {
-            db_reply_t ret = db_reply_new();
-            ret.status = 0;
-            ret.errtype = rv;
-            ret.errsubtype = rv;
-            log_error ("error during monitor device deleting");
-            return ret;
-        }
     }
 
     auto reply_delete6 = delete_asset_element (conn, element_id);
