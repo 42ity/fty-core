@@ -39,30 +39,6 @@
 #include "defs.h"
 
 #include "asset_general.h"
-#include "utils.h"
-#include "measurements.h"
-
-typedef std::string (*MapValuesTransformation)(std::string);
-
-int
-    measures_manager::get_last_10minute_measurement(
-        const std::string &source,
-        const std::string &device_name,
-        m_msrmnt_value_t  &value,
-        m_msrmnt_scale_t  &scale)
-{
-    std::string topic = source + "@" + device_name;
-    try{
-        tntdb::Connection conn = tntdb::connectCached(url);
-        reply_t ret = persist::select_measurement_last_web_byTopic (conn, topic, value, scale);
-        return ret.rv;
-    }
-    catch (const std::exception &e) {
-        LOG_END_ABNORMAL(e);
-        return -1;
-    }
-}
-
 
 db_reply <db_web_element_t>
     asset_manager::get_item1

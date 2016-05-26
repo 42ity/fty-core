@@ -412,38 +412,6 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
     int rv = persist::convert_asset_to_monitor(conn, rowid, monitor_element_id);
     REQUIRE ( rv == 0 );
 
-    // insert topics
-    const std::string topic1 = "mydevice_test_topic1";
-    const std::string topic2 = "mydevice_test_topic2";
-    m_msrmnt_tpc_id_t topic1_id = 0;
-    m_msrmnt_tpc_id_t topic2_id = 0;
-    rv = persist::insert_into_measurement_topic
-        (conn, monitor_element_id, topic1, "WW", topic1_id);
-    REQUIRE ( rv == 0 );
-    rv = persist::insert_into_measurement_topic
-        (conn, monitor_element_id, topic2, "WW", topic2_id);
-    REQUIRE ( rv == 0 );
-
-    // insert 4 measurement
-    int64_t start_timestamp = 1433769783;
-    int64_t end_timestamp = 1433769787;
-    m_msrmnt_id_t rowid1 = 0;
-    rv = persist::insert_into_measurement_pure(conn, 1231, -1, topic1_id, start_timestamp, rowid1);
-    REQUIRE ( rv == 0 );
-    REQUIRE ( rowid1 != 0 );
-    m_msrmnt_id_t rowid2 = 0;
-    rv = persist::insert_into_measurement_pure(conn, 1232, -1, topic1_id, end_timestamp, rowid2);
-    REQUIRE ( rv == 0 );
-    REQUIRE ( rowid2 != 0 );
-    m_msrmnt_id_t rowid3 = 0;
-    rv = persist::insert_into_measurement_pure(conn, 1233, -1, topic2_id, start_timestamp, rowid3);
-    REQUIRE ( rv == 0 );
-    REQUIRE ( rowid3 != 0 );
-    m_msrmnt_id_t rowid4 = 0;
-    rv = persist::insert_into_measurement_pure(conn, 1234, -1, topic2_id, end_timestamp, rowid4);
-    REQUIRE ( rv == 0 );
-    REQUIRE ( rowid4 != 0 );
-
     // second insert
     reply_insert = persist::insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
             ext_attributes, status, priority, groups, UGLY_ASSET_TAG);
@@ -459,33 +427,6 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
     REQUIRE (reply_select.status == 0);
     REQUIRE (reply_select.errtype == BIOS_ERROR_DB);
     REQUIRE (reply_select.errsubtype == DB_ERROR_NOTFOUND);
-
-    // check topics
-    bool out1 = false;
-    row_cb_f foo1 = \
-                    [&out1, &topic1_id, &topic2_id](const tntdb::Row& r)
-                    {
-                        a_elmnt_id_t id = 0;
-                        r["id"].get(id);
-                        if  ( ( id == topic1_id ) || ( id == topic2_id ) )
-                            out1 = true;
-                    };
-    rv = persist::select_for_element_topics_all(conn, rowid, foo1);
-    REQUIRE ( out1 == false );
-
-    // check measurements
-    bool out2 = false;
-    row_cb_f foo2 = \
-                    [&out2](const tntdb::Row& r)
-                    {
-                        out2 = true;
-                    };
-    rv = persist::select_measurements_by_topic_id (conn, topic1_id,
-                start_timestamp, end_timestamp, true, true, foo2);
-    REQUIRE ( out2 == false );
-    rv = persist::select_measurements_by_topic_id (conn, topic2_id,
-                start_timestamp, end_timestamp, true, true, foo2);
-    REQUIRE ( out2 == false );
 
     reply_delete = persist::delete_dc_room_row_rack (conn, rowid);
     REQUIRE ( reply_delete.affected_rows == 0 );
@@ -702,38 +643,6 @@ TEST_CASE("rack unlockated INSERT/DELETE #persist::asset_subtype::N_A","[db][CRU
     int rv = persist::convert_asset_to_monitor(conn, rowid, monitor_element_id);
     REQUIRE ( rv == 0 );
 
-    // insert topics
-    const std::string topic1 = "mydevice_test_topic1";
-    const std::string topic2 = "mydevice_test_topic2";
-    m_msrmnt_tpc_id_t topic1_id = 0;
-    m_msrmnt_tpc_id_t topic2_id = 0;
-    rv = persist::insert_into_measurement_topic
-        (conn, monitor_element_id, topic1, "WW", topic1_id);
-    REQUIRE ( rv == 0 );
-    rv = persist::insert_into_measurement_topic
-        (conn, monitor_element_id, topic2, "WW", topic2_id);
-    REQUIRE ( rv == 0 );
-
-    // insert 4 measurement
-    int64_t start_timestamp = 1433769783;
-    int64_t end_timestamp = 1433769787;
-    m_msrmnt_id_t rowid1 = 0;
-    rv = persist::insert_into_measurement_pure(conn, 1231, -1, topic1_id, start_timestamp, rowid1);
-    REQUIRE ( rv == 0 );
-    REQUIRE ( rowid1 != 0 );
-    m_msrmnt_id_t rowid2 = 0;
-    rv = persist::insert_into_measurement_pure(conn, 1232, -1, topic1_id, end_timestamp, rowid2);
-    REQUIRE ( rv == 0 );
-    REQUIRE ( rowid2 != 0 );
-    m_msrmnt_id_t rowid3 = 0;
-    rv = persist::insert_into_measurement_pure(conn, 1233, -1, topic2_id, start_timestamp, rowid3);
-    REQUIRE ( rv == 0 );
-    REQUIRE ( rowid3 != 0 );
-    m_msrmnt_id_t rowid4 = 0;
-    rv = persist::insert_into_measurement_pure(conn, 1234, -1, topic2_id, end_timestamp, rowid4);
-    REQUIRE ( rv == 0 );
-    REQUIRE ( rowid4 != 0 );
-
     // second insert
     reply_insert = persist::insert_dc_room_row_rack_group (conn, name, element_type_id,
             parent_id, ext_attributes, status, priority, groups,
@@ -745,32 +654,6 @@ TEST_CASE("rack unlockated INSERT/DELETE #persist::asset_subtype::N_A","[db][CRU
     auto reply_delete = persist::delete_dc_room_row_rack (conn, rowid);
     REQUIRE ( reply_delete.affected_rows == 1 );
     REQUIRE ( reply_delete.status == 1 );
-    // check topics
-    bool out1 = false;
-    row_cb_f foo1 = \
-                    [&out1, &topic1_id, &topic2_id](const tntdb::Row& r)
-                    {
-                        a_elmnt_id_t id = 0;
-                        r["id"].get(id);
-                        if  ( ( id == topic1_id ) || ( id == topic2_id ) )
-                            out1 = true;
-                    };
-    rv = persist::select_for_element_topics_all(conn, rowid, foo1);
-    REQUIRE ( out1 == false );
-
-    // check measurements
-    bool out2 = false;
-    row_cb_f foo2 = \
-                    [&out2](const tntdb::Row& r)
-                    {
-                        out2 = true;
-                    };
-    rv = persist::select_measurements_by_topic_id (conn, topic1_id,
-                start_timestamp, end_timestamp, true, true, foo2);
-    REQUIRE ( out2 == false );
-    rv = persist::select_measurements_by_topic_id (conn, topic2_id,
-                start_timestamp, end_timestamp, true, true, foo2);
-    REQUIRE ( out2 == false );
 
     // check select element
     reply_select = persist::select_asset_element_web_byId(conn, rowid);
@@ -923,38 +806,6 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
     int rv = persist::convert_asset_to_monitor(conn, rowid, monitor_element_id);
     REQUIRE ( rv == 0 );
 
-    // insert topics
-    const std::string topic1 = "mydevice_test_topic1";
-    const std::string topic2 = "mydevice_test_topic2";
-    m_msrmnt_tpc_id_t topic1_id = 0;
-    m_msrmnt_tpc_id_t topic2_id = 0;
-    rv = persist::insert_into_measurement_topic
-        (conn, monitor_element_id, topic1, "WW", topic1_id);
-    REQUIRE ( rv == 0 );
-    rv = persist::insert_into_measurement_topic
-        (conn, monitor_element_id, topic2, "WW", topic2_id);
-    REQUIRE ( rv == 0 );
-
-    // insert 4 measurement
-    int64_t start_timestamp = 1433769783;
-    int64_t end_timestamp = 1433769787;
-    m_msrmnt_id_t rowid1 = 0;
-    rv = persist::insert_into_measurement_pure(conn, 1231, -1, topic1_id, start_timestamp, rowid1);
-    REQUIRE ( rv == 0 );
-    REQUIRE ( rowid1 != 0 );
-    m_msrmnt_id_t rowid2 = 0;
-    rv = persist::insert_into_measurement_pure(conn, 1232, -1, topic1_id, end_timestamp, rowid2);
-    REQUIRE ( rv == 0 );
-    REQUIRE ( rowid2 != 0 );
-    m_msrmnt_id_t rowid3 = 0;
-    rv = persist::insert_into_measurement_pure(conn, 1233, -1, topic2_id, start_timestamp, rowid3);
-    REQUIRE ( rv == 0 );
-    REQUIRE ( rowid3 != 0 );
-    m_msrmnt_id_t rowid4 = 0;
-    rv = persist::insert_into_measurement_pure(conn, 1234, -1, topic2_id, end_timestamp, rowid4);
-    REQUIRE ( rv == 0 );
-    REQUIRE ( rowid4 != 0 );
-
     // second insert
     reply_insert = persist::insert_device (conn, links, groups, name, parent_id,
                             ext_attributes, asset_device_type_id,
@@ -967,32 +818,6 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
     auto reply_delete = persist::delete_device (conn, rowid);
     REQUIRE ( reply_delete.affected_rows == 1 );
     REQUIRE ( reply_delete.status == 1 );
-    // check topics
-    bool out1 = false;
-    row_cb_f foo1 = \
-                    [&out1, &topic1_id, &topic2_id](const tntdb::Row& r)
-                    {
-                        a_elmnt_id_t id = 0;
-                        r["id"].get(id);
-                        if  ( ( id == topic1_id ) || ( id == topic2_id ) )
-                            out1 = true;
-                    };
-    rv = persist::select_for_element_topics_all(conn, rowid, foo1);
-    REQUIRE ( out1 == false );
-
-    // check measurements
-    bool out2 = false;
-    row_cb_f foo2 = \
-                    [&out2](const tntdb::Row& r)
-                    {
-                        out2 = true;
-                    };
-    rv = persist::select_measurements_by_topic_id (conn, topic1_id,
-                start_timestamp, end_timestamp, true, true, foo2);
-    REQUIRE ( out2 == false );
-    rv = persist::select_measurements_by_topic_id (conn, topic2_id,
-                start_timestamp, end_timestamp, true, true, foo2);
-    REQUIRE ( out2 == false );
 
     reply_select = persist::select_asset_element_web_byId(conn, rowid);
     REQUIRE (reply_select.status == 0);

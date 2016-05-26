@@ -51,16 +51,5 @@ class asset_manager {
                 db_a_elmnt_t &element_info);
 };
 
-class measures_manager {
-    public:
-        std::string map_names(std::string name);
-        int
-            get_last_10minute_measurement(
-                const std::string &source,
-                const std::string &device_name,
-                m_msrmnt_value_t  &value,
-                m_msrmnt_scale_t  &scale);
-};
-
 
 #endif // SRC_SHARED_DATA_H

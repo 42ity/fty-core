@@ -84,55 +84,6 @@ BIOS_EXPORT int
                              int32_t *value,
                              int32_t *scale,
                              int64_t *time);
-/*
- \brief Encode request message TODO
- \note You are responsible for destroying the returned encoded message
- \return encoded message on success, NULL on failure
-*/
-BIOS_EXPORT ymsg_t *
-    bios_web_average_request_encode (int64_t start_timestamp, int64_t end_timestamp, const char *type, const char *step, uint64_t element_id, const char *source);
-
-//!0 on success, -1 or failure
-BIOS_EXPORT int
-    bios_web_average_request_extract (ymsg_t *self, int64_t *start_timestamp, int64_t *end_timestamp, char **type, char **step, uint64_t *element_id, char **source);
-
-/*!
- \brief Encode reply message TODO
- \note You are responsible for destroying the returned encoded message
- \return encoded message on success, NULL on failure
-*/
-BIOS_EXPORT ymsg_t *
-    bios_web_average_reply_encode (const char *json);
-
-//! 0 on success, -1 or failure
-BIOS_EXPORT int
-    bios_web_average_reply_extract (ymsg_t *self, char **json);
-
-/*!
- \brief Encode request message TODO
- \note You are responsible for destroying the returned encoded message
- \note You are responsible for freeing `subject` on success
- \return Encoded message on success, NULL on failure
-*/
-BIOS_EXPORT ymsg_t *
-    bios_db_measurements_read_request_encode (int64_t start_timestamp, int64_t end_timestamp, uint64_t element_id, const char *source, char **subject);
-
-//! 0 on success, -1 or failure
-BIOS_EXPORT int
-    bios_db_measurements_read_request_extract (ymsg_t *self, int64_t *start_timestamp, int64_t  *end_timestamp, uint64_t *element_id, char **source);
-
-/*!
- \brief Encode request message TODO
- \note You are responsible for destroying the returned encoded message
- \return Encoded message on success, NULL on failure
-*/
-BIOS_EXPORT ymsg_t *
-    bios_db_measurements_read_reply_encode (const char *json);
-
-//! 0 on success, -1 or failure
-BIOS_EXPORT int
-    bios_db_measurements_read_reply_extract (ymsg_t *self, char **json);
-
 
 /**
  * \brief extract extended asset message
