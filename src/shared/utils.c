@@ -95,20 +95,6 @@ int64_t average_step_seconds (const char *step) {
     return (int64_t) (number * multiplier);
 }
 
-int64_t average_extend_left_margin (int64_t start_timestamp, const char *step) {
-    if (!is_average_step_supported (step))
-        return -1;
-    int64_t step_sec = average_step_seconds (step);
-    unsigned int overlap = start_timestamp % step_sec;
-    int64_t result;
-    if (overlap == 0)
-        result =  (int64_t) start_timestamp - step_sec - AGENT_NUT_REPEAT_INTERVAL_SEC;
-    else
-        result =  (int64_t) start_timestamp - overlap - AGENT_NUT_REPEAT_INTERVAL_SEC;
-    return result;
-}
-
-
 int64_t datetime_to_calendar (const char *datetime) {
     if (!datetime || strlen (datetime) != DATETIME_FORMAT_LENGTH)
         return -1;
