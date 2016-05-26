@@ -108,15 +108,6 @@ int64_t average_extend_left_margin (int64_t start_timestamp, const char *step) {
     return result;
 }
 
-int64_t average_first_since (int64_t timestamp, const char *step) {
-    if (!is_average_step_supported (step) || timestamp < 0)
-        return -1;
-    int64_t step_sec = average_step_seconds (step);
-    int64_t mod = timestamp % step_sec;
-    if (mod == 0)
-        return timestamp + step_sec;
-    return timestamp + (step_sec - mod);
-}
 
 int64_t datetime_to_calendar (const char *datetime) {
     if (!datetime || strlen (datetime) != DATETIME_FORMAT_LENGTH)

@@ -115,15 +115,6 @@ enum ipaddr_version {
 #define KEY_ERROR_MSG      "error_msg"
 #define KEY_ROWID          "rowid"
 
-// web component
-// average.ecpp
-#define WEB_AVERAGE_KEY_START_TS    "start_ts"
-#define WEB_AVERAGE_KEY_END_TS      "end_ts"
-#define WEB_AVERAGE_KEY_TYPE        "type"
-#define WEB_AVERAGE_KEY_STEP        "step"
-#define WEB_AVERAGE_KEY_ELEMENT_ID  "element_id"
-#define WEB_AVERAGE_KEY_SOURCE      "source"
-
 // asset_extra message
 #define KEY_ASSET_TYPE_ID   "__type_id"
 #define KEY_ASSET_SUBTYPE_ID   "__subtype_id"
