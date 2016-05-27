@@ -14,7 +14,7 @@
         "results"       :   [
             {"low_critical"  : { "action" : ["EMAIL","SMS"], "severity" : "CRITICAL", "description" : "Input voltage (1 phase) in device is critically low" }},
             {"low_warning"  :  { "action" : ["EMAIL","SMS"], "severity" : "WARNING",  "description" : "Input voltage (1 phase) in device is low" }},
-            {"high_warning"  : { "action" : ["EMAIL","SMS"], "severity" : "WARNING",  "description" : "Input voltage (1 phase) in device is hight" }},
+            {"high_warning"  : { "action" : ["EMAIL","SMS"], "severity" : "WARNING",  "description" : "Input voltage (1 phase) in device is high" }},
             {"high_critical" : { "action" : ["EMAIL","SMS"], "severity" : "CRITICAL", "description" : "Input voltage (1 phase) in device is critically high" }} ]
     }
 }
