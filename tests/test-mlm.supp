@@ -1,0 +1,127 @@
+{
+   <socketcall_sendto>
+   Memcheck:Param
+   socketcall.sendto(msg)
+   fun:send
+   ...
+}
+{
+   <socketcall_sendto>
+   Memcheck:Param
+   socketcall.send(msg)
+   fun:send
+   ...
+}
+{
+   <cxxtools_locale_init_01>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:_Znwm
+   fun:_ZN8cxxtools10InitLocaleC1Ev
+   fun:__static_initialization_and_destruction_0
+   fun:_GLOBAL__sub_I__Z14test_availablePKc
+   fun:__libc_csu_init
+   fun:(below main)
+}
+{
+   <cxxtools_locale_init_02>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:_Znam
+   fun:_ZNSt6locale5_ImplC1ERKS0_m
+   fun:_ZNSt6localeC1ISt7num_putIN8cxxtools4CharESt19ostreambuf_iteratorIS3_St11char_traitsIS3_EEEEERKS_PT_
+   fun:_ZN8cxxtools10InitLocaleC1Ev
+   fun:__static_initialization_and_destruction_0
+   fun:_GLOBAL__sub_I__Z14test_availablePKc
+   fun:__libc_csu_init
+   fun:(below main)
+}
+{
+    <cxxtools_locale_init_03>
+    Memcheck:Leak
+    match-leak-kinds: reachable
+    fun:_Znwm
+    fun:_ZNSt6localeC1ISt7num_putIN8cxxtools4CharESt19ostreambuf_iteratorIS3_St11char_traitsIS3_EEEEERKS_PT_
+    fun:_ZN8cxxtools10InitLocaleC1Ev
+    fun:__static_initialization_and_destruction_0
+    fun:_GLOBAL__sub_I__Z14test_availablePKc
+    fun:__libc_csu_init
+    fun:(below main)
+}
+{
+   <cxxtools_locale_init_04>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:_Znwm
+   fun:_ZN8cxxtools10InitLocaleC1Ev
+   fun:_GLOBAL__sub_I_xmlwriter.cpp
+   fun:call_init.part.0
+   fun:call_init
+   fun:_dl_init
+   obj:/lib64/ld-2.19.so
+}
+{
+   <cxxtools_locale_init_05>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:_Znwm
+   fun:_ZNSt6localeC1ISt7num_putIN8cxxtools4CharESt19ostreambuf_iteratorIS3_St11char_traitsIS3_EEEEERKS_PT_
+   fun:_ZN8cxxtools10InitLocaleC1Ev
+   fun:_GLOBAL__sub_I_xmlwriter.cpp
+   fun:call_init.part.0
+   fun:call_init
+   fun:_dl_init
+   ...
+}
+{
+   <cxxtools_locale_init_06>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:_Znam
+   fun:_ZNSt6locale5_ImplC1ERKS0_m
+   fun:_ZNSt6localeC1ISt7num_putIN8cxxtools4CharESt19ostreambuf_iteratorIS3_St11char_traitsIS3_EEEEERKS_PT_
+   fun:_ZN8cxxtools10InitLocaleC1Ev
+   fun:_GLOBAL__sub_I_xmlwriter.cpp
+   fun:call_init.part.0
+   fun:call_init
+   fun:_dl_init
+   ...
+}
+{
+   <catch001>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:_Znam
+   fun:_ZNSt16__numpunct_cacheIcE8_M_cacheERKSt6locale
+   fun:operator()
+   fun:_ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE13_M_insert_intIlEES3_S3_RSt8ios_basecT_
+   fun:_ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_RSt8ios_basecl
+   fun:put
+   fun:_ZNSo9_M_insertIlEERSoT_
+   fun:_ZN5Catch8toStringEi
+   fun:captureExpression<(Catch::Internal::Operator)0u, int>
+   ...
+}
+{
+   <catch002>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:_Znwm
+   fun:operator()
+   fun:_ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE13_M_insert_intIlEES3_S3_RSt8ios_basecT_
+   fun:_ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_RSt8ios_basecl
+   fun:put
+   fun:_ZNSo9_M_insertIlEERSoT_
+   fun:_ZN5Catch8toStringEi
+   fun:captureExpression<(Catch::Internal::Operator)0u, int>
+   fun:operator==<int>
+   ...
+}
+{
+   <libgcrypt01>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:malloc
+   obj:/usr/lib64/libgcrypt.so.20.0.1
+   ...
+}
