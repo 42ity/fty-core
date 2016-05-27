@@ -24,142 +24,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef SRC_PERSIST_MONITOR_H_
 #define SRC_PERSIST_MONITOR_H_
 
-#include <string>
-
-#include "common_msg.h"
 #include <tntdb/connect.h>
-#include "dbtypes.h"
 #include "dbhelpers.h"
-
-#define GEN_MEASUREMENTS_MAX 10
-
-// !!!!!!!!!                ATTENTION           !!!!!!!!!!!!!!!!!!
-// Date is always UTC time as UNIX_TIMESTAMP.
-
-void generate_measurements (const char         *url, 
-                            m_dvc_id_t         device_id, 
-                            uint32_t           max_seconds, 
-                            m_msrmnt_value_t   last_value);
-
-// ===============================================================
-// Helper common functions
-// ===============================================================
-
-/**
- * \brief Generates a COMMON_MSG_FAIL message.
- * 
- * Generates a COMMON_MSG_FAIL with error type BIOS_ERROR_DB , with 
- * a specified code, errormessage and optional parameters.
- * 
- * If the parameter errmsg was NULL, then result error message would be "".
- *
- * \param errorid - an id of the error.
- * \param errmsg  - a detailed message about the error.
- * \param erraux  - optional information.
- *
- * \return a COMMON_MSG_FAIL message.
- */
-common_msg_t* generate_db_fail(uint32_t errorid, const char* errmsg, 
-                               zhash_t** erraux);
-
-
-/**
- * \brief Generates an COMMON_MSG_DB_OK message and specifies an id 
- * of the row that was processed.
- *
- * \param rowid - an id of the processed row.
- *
- * \return a COMMON_MSG_DB_OK message.
- */
-common_msg_t* generate_ok(uint64_t rowid, zhash_t **aux);
-
 
 // ===============================================================
 // DEVICE
 // ===============================================================
 
-
 db_reply_t 
     select_device (tntdb::Connection &conn, 
                    const char* device_name);
-
-
-// ===============================================================
-// MEASUREMENT
-// ===============================================================
-
-
-/**
- * \brief A helper function analogue for 
- *                              common_msg_return_last_measurements_encode.
- *
- * But instead of zmsg_t returns common_msg_t.
- *
- * It does destroy the "measurements" message.
- *
- * \param device_id    - an id_asset_element for the device.
- * \param measurements - last measurements for the specified device.
- *
- * \return - a COMMON_MSG_RETURN_LAST_MEASUREMENTS message.
- */
-common_msg_t* generate_return_last_measurements (a_elmnt_id_t device_id, 
-                                                zlist_t** measurements);
-
-
-/**
- * \brief Takes all last measurements of the specified device.
- *
- * Device is specified by its t_bios_discovered_device.id_discovered_device.
- *
- * Returns a list of strings. One string for one measurement.
- * Every string has the followng format: "keytag_id:subkeytag_id:value:scale".
- *
- * \param[in]  url         - connection url to database.
- * \param[in]  device_id   - id of the monitor device that was measured.
- * \param[out] device_name - name of measured device.
- *
- * \return NULL            in case of errors.
- *         empty zlist_t   in case of nothing was found.
- *         filled zlist_t  in case of succcess.
- */
-zlist_t* select_last_measurements(tntdb::Connection &conn, m_dvc_id_t device_id,
-                                                std::string &device);
-
-
-/**
- * \brief This function processes the COMMON_MSG_GET_LAST_MEASUREMENTS 
- * message.
- *
- * For the correct message processing all message fields should be set up 
- * according specification.
- * 
- * In case of success it generates COMMON_MSG_RETURN_LAST_MEASUREMENTS 
- * message. 
- * In case of failure returns COMMON_MSG_FAIL message.
- * 
- * It doesn't destroy the "getmsg" message.
- *
- * \param url    - the connection to database.
- * \param getmsg - the message of the type COMMON_MSG_GET_LAST_MEASUREMENTS 
- *                  we would like to process.
- *
- * \return zmsg_t - an encoded COMMON_MSG_FAIL or
- *                       COMMON_MSG_RETURN_LAST_MEASUREMENTS message.
- */
-zmsg_t* _get_last_measurements(const char* url, common_msg_t* getmsg);
-
-
-/**
- * \brief A wrapper for _get_last_measurements.
- *
- * It does destroy the "getmsg" message.
- *
- * \param getmsg - a filled COMMON_MSG_GET_LAST_MEASUREMENTS message.
- *
- * \return zmsg_t - an encoded COMMON_MSG_FAIL or
- *                       COMMON_MSG_RETURN_LAST_MEASUREMENTS message.
- */
-zmsg_t* get_last_measurements(zmsg_t** getmsg);
-
-
 #endif // SRC_PERSIST_MONITOR_H_

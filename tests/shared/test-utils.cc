@@ -84,29 +84,6 @@ TEST_CASE ("average_step_seconds", "[average_step_seconds][utils][average]") {
     }
 }
 
-TEST_CASE ("average_extend_left_margin", "[utils][average][time]") {
-// TODO: Very important, make other types, unusual and corner cases
-    SECTION ("8h") {
-        CHECK ( average_extend_left_margin (1426611600, "8h") == 1426607700 ); // 2015-03-17 17:00:00 overlap => 2015-03-17 15:55:00
-        CHECK ( average_extend_left_margin (1426618800, "8h") == 1426607700 ); // 2015-03-17 19:00:00 overlap => 2015-03-17 15:55:00
-        CHECK ( average_extend_left_margin (1426593600, "8h") == 1426578900 ); // 2015-03-17 12:00:00 overlap => 2015-03-17 07:55:00
-        CHECK ( average_extend_left_margin (1426622400, "8h") == 1426607700 ); // 2015-03-17 20:00:00 overlap => 2015-03-17 15:55:00
-        CHECK ( average_extend_left_margin (1426608000, "8h") == 1426578900 ); // 2015-03-17 16:00:00         => 2015-03-17 07:55:00
-        CHECK ( average_extend_left_margin (1426550400, "8h") == 1426521300 ); // 2015-03-17 00:00:00         => 2015-03-16 15:55:00
-
-        CHECK ( average_extend_left_margin (1426554015, "8h") == 1426550100 ); // 2015-03-17 01:00:15         => 2015-03-16 23:55:00
-        CHECK ( average_extend_left_margin (1426608115, "8h") == 1426607700 ); // 2015-03-17 16:01:55
-        CHECK ( average_extend_left_margin (1426636799, "8h") == 1426607700 ); // 2015-03-17 23:59:59
-
-        CHECK ( average_extend_left_margin (1426266000, "8h") == 1426262100 ); // 2015-03-13 17:00:00
-    }
-    SECTION ("15m") {
-        CHECK ( average_extend_left_margin (951865200, "15m") == 951864000 ); // 2000-02-29 23:00:00
-        CHECK ( average_extend_left_margin (951865380, "15m") == 951864900 ); // 2000-02-29 23:03:00 overlap
-        CHECK ( average_extend_left_margin (951869063, "15m") == 951868500 ); // 2000-03-01 00:04:23 overlap
-    }
-}
-
 TEST_CASE ("datetime_to_calendar", "[utils][time]") {
     SECTION ("bad arguments") {
         CHECK ( datetime_to_calendar (NULL) == -1 );

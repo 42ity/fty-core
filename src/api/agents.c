@@ -30,86 +30,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "cleanup.h"
 
 ymsg_t *
-    bios_inventory_encode
-        (const char *device_name, zhash_t **ext_attributes, const char *module_name)
-{
-    ymsg_t *message = ymsg_new (YMSG_SEND);
-    if ( !message )
-        return NULL;
-   
-    _scoped_app_t *request = app_new (APP_MODULE);
-    // module name
-    app_set_name (request, module_name);
-    
-    // device name
-    _scoped_zlist_t *paramslist = zlist_new ();
-    zlist_autofree (paramslist);
-    zlist_append (paramslist, (void *)device_name);
-    app_set_params (request, &paramslist); 
-    zlist_destroy (&paramslist);
-    
-    // ext attributes
-    app_set_args (request, ext_attributes);
-    zhash_destroy (ext_attributes);
-
-    _scoped_zmsg_t *request_encoded = app_encode (&request);
-    _scoped_byte *buffer = NULL;
-    size_t sz = zmsg_encode (request_encoded, &buffer);
-    zmsg_destroy(&request_encoded);
-
-    _scoped_zchunk_t *request_chunk = zchunk_new (buffer, sz);
-    FREE0 (buffer)
-
-    ymsg_set_request (message, &request_chunk);
-    return message; 
-}
-
-int
-bios_inventory_decode (ymsg_t **self_p, char **device_name, zhash_t **ext_attributes, char **module_name)
-{
-    if ( !self_p || !device_name || !ext_attributes )
-        return -1;
-    if ( ymsg_id (*self_p) != YMSG_SEND ) 
-        return -6;
-
-    if ( *self_p )
-    {
-        ymsg_t *self = *self_p;
-       
-        _scoped_zchunk_t *request = ymsg_get_request (self);
-        if ( !request )
-                return -2;  // no chunk to decode        
-        _scoped_zmsg_t *zmsg = zmsg_decode (zchunk_data (request), zchunk_size (request));
-        zchunk_destroy (&request);
-        
-        if ( !zmsg )
-            return -2; // zmsg decode fail
-
-        _scoped_app_t *app_msg = app_decode (&zmsg);
-    
-        if ( !app_msg )
-            return -3; // malformed app_msg
-
-        _scoped_zlist_t *param = app_get_params (app_msg);
-        if ( zlist_size (param) != 1 )
-        {
-            zlist_destroy (&param);
-            return -4; // unexpected data inside app_msg
-        }
-        *ext_attributes = app_get_args (app_msg);
-        *module_name = strdup (app_name (app_msg));
-        *device_name = strdup (zlist_first (param));
-        
-        zlist_destroy (&param);
-        ymsg_destroy (self_p);
-        app_destroy (&app_msg);
-        return 0;
-    }
-    return -5; 
-}
-
-
-ymsg_t *
 bios_measurement_encode (const char *device_name,
                          const char *quantity,
                          const char *units,
@@ -233,13 +153,13 @@ bios_asset_extra_encode(const char *name,
     // Set the request field, transferring ownership from caller
     ymsg_set_request (message, &chunk);
 
-    ymsg_aux_insert (message, "name", "%s", name);    
-    ymsg_aux_insert (message, "type_id", "%" PRIu32, type_id);    
-    ymsg_aux_insert (message, "subtype_id", "%" PRIu32, subtype_id);    
-    ymsg_aux_insert (message, "parent_id", "%" PRIu32, parent_id);    
-    ymsg_aux_insert (message, "status", "%s", status);    
-    ymsg_aux_insert (message, "priority", "%" PRIu8, priority);    
-    ymsg_aux_insert (message, "operation", "%" PRIi8, operation);    
+    ymsg_aux_insert (message, "name", "%s", name);
+    ymsg_aux_insert (message, "type_id", "%" PRIu32, type_id);
+    ymsg_aux_insert (message, "subtype_id", "%" PRIu32, subtype_id);
+    ymsg_aux_insert (message, "parent_id", "%" PRIu32, parent_id);
+    ymsg_aux_insert (message, "status", "%s", status);
+    ymsg_aux_insert (message, "priority", "%" PRIu8, priority);
+    ymsg_aux_insert (message, "operation", "%" PRIi8, operation);
 
     return message;
 }
@@ -311,6 +231,5 @@ bios_asset_extra_extract(ymsg_t *message,
     if (operation)
         *operation = (int8_t) atoi (ymsg_aux_string (message, "operation", "0"));
 
-    return 0;    
-   
+    return 0;
 }

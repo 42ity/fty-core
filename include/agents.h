@@ -33,14 +33,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 extern "C" {
 #endif
 
-BIOS_EXPORT ymsg_t *
-    bios_inventory_encode (const char *device_name, zhash_t **ext_attributes, const char *module_name);
-
-
-// on -1 (error) does not destroy *self_p
-BIOS_EXPORT int
-    bios_inventory_decode (ymsg_t **self_p, char **device_name, zhash_t **ext_attributes, char **module_name);
-
 /**
  * \brief encode measurement message
  *
