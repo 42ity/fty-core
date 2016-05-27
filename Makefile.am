@@ -1906,7 +1906,8 @@ cibin_programs: $(cibin_programs_list)
 # Run compile/link tests defined in this Makefile
 # Note that check-gitignore should be the last target
 check-local: web-link-test test-sdk \
-        check-gitignore
+        check-gitignore \
+		test-pool
 
 # If git repo details are not available, or git program does not exist,
 # or if everything is properly GitIgnored - then succeed
@@ -1939,6 +1940,12 @@ test-sdk: sdk sdk-tests
 #----------------------------------------------------------------------
 #                        clean, what was not removed automatically
 #----------------------------------------------------------------------
+
+#----------------------------------------------------------------------
+#                        Test mlm client pool via make check
+#----------------------------------------------------------------------
+test-pool: test-tntmlm
+	(valgrind --leak-check=full --show-reachable=yes --error-exitcode=1 --suppressions=$(abs_top_srcdir)/tests/test-mlm.supp $(abs_top_builddir)/test-tntmlm)
 
 clean-junit:
 	/bin/rm -rf $(abs_top_builddir)/tests/junit
