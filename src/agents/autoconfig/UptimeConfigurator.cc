@@ -39,27 +39,29 @@ bool UptimeConfigurator::sendMessage (std::map <std::string, std::vector <std::s
     if (!client)
         return false;
 
-    zmsg_t *msg = zmsg_new ();
-    if (!msg) {
-        log_error ("zmsg_new () failed.");
-        return false;
-    }
-    
-    zmsg_addstrf (msg, "%s", "SET");
+    // as we have multiple DCs -> we should send multiple messages!!!!!
+    bool result = true;
     for (const auto& it : dc_upses) {
+        zmsg_t *msg = zmsg_new ();
+        if (!msg) {
+            log_error ("zmsg_new () failed.");
+            return false;
+        }
+
+        zmsg_addstrf (msg, "%s", "SET");
         zmsg_addstrf (msg, "%s", it.first.c_str());
         for (const auto& it2 : it.second) {
             zmsg_addstrf (msg, "%s", it2.c_str());
         }
+        int r = mlm_client_sendto (client, "uptime", "UPTIME", NULL, 1000, &msg);
+        if ( r != 0 ) {
+            zmsg_destroy (&msg);
+            log_error ("mlm_client_sendto (address = '%s', subject = '%s', timeout = '1000') failed.",
+                    "uptime", "UPTIME");
+            result = false;
+        }
     }
-
-    if (mlm_client_sendto (client, "uptime", "UPTIME", NULL, 1000, &msg) != 0) {
-        zmsg_destroy (&msg);
-        log_error ("mlm_client_sendto (address = '%s', subject = '%s', timeout = '1000') failed.",
-            "uptime", "UPTIME");
-        return false;
-    }
-    return true;
+    return result;
 }
 
 bool UptimeConfigurator::obtainData (std::map <std::string, std::vector <std::string>>& dc_upses)
