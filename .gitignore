@@ -101,6 +101,8 @@ test-web-helpers
 test-libbiosapiut
 test-db-asset-crud
 test-autoconfig
+test-tntmlm
+test-totalpower
 agent-inventory
 agent-autoconfig
 generate_measurement
