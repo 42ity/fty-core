@@ -295,7 +295,7 @@ DISTCLEANFILES +=		src/api/libbiosapi.pc
 pkginclude_HEADERS += 		$(libbiosapi_la_HEADERS_noinst)
 dist_noinst_HEADERS +=		$(libbiosapi_la_HEADERS_noinst)
 
-include/bios_agent++.h: tools/bios_agent++.h.sh tools/bios_agent++.h.in
+include/bios_agent++.h: tools/bios_agent++.h.sh tools/bios_agent++.h.in include/bios_agent.h
 	abs_top_srcdir=$(abs_top_srcdir) abs_top_builddir=$(abs_top_builddir) "$<"
 
 BUILT_SOURCES += include/bios_agent++.h
