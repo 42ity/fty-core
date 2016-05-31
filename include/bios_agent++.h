@@ -37,8 +37,7 @@ class BIOSAgent {
     explicit BIOSAgent(const char *agentName) { _agentName = agentName; };
     explicit BIOSAgent(const std::string &agentName) { _agentName = agentName; };
     virtual ~BIOSAgent() { bios_agent_destroy( &_bios_agent ); };
-    // ACE: there is a need to send new metrics from core
-    int send_proto_metric (const char *subject, zmsg_t **msg_p) {return bios_agent_send_proto_metric(_bios_agent, subject, msg_p);};
+
     int send( const char *subject, ymsg_t **msg_p ) { return bios_agent_send( _bios_agent, subject, msg_p ); };
     int sendto( const char *address, const char *subject, ymsg_t **send_p ) { return bios_agent_sendto( _bios_agent, address, subject, send_p ); };
     int replyto( const char *address, const char *subject, ymsg_t **reply_p, ymsg_t *send ) { return bios_agent_replyto( _bios_agent, address, subject, reply_p, send ); };
@@ -58,6 +57,7 @@ class BIOSAgent {
     zsock_t * msgpipe( ) { return bios_agent_msgpipe( _bios_agent ); };
     uint16_t seq( ) { return bios_agent_seq( _bios_agent ); };
     mlm_client_t * client( ) { return bios_agent_client( _bios_agent ); };
+    int send_proto_metric( const char *subject, zmsg_t **msg_p ) { return bios_agent_send_proto_metric( _bios_agent, subject, msg_p ); };
 
     void timeout(const int timeoutms) { _timeout = timeoutms; };
     int timeout() { return _timeout; };
