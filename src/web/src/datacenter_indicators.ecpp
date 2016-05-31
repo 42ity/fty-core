@@ -32,6 +32,7 @@
 #include <malamute.h>
 #include <bios_proto.h>
 
+#include <math.h>
 #include "data.h"
 #include "utils_web.h"
 #include "log.h"
@@ -399,7 +400,12 @@ asset_manager asset_mgr;
         for ( const auto &row : dataDc.at(DCNames[D]) ) {
             // data contains topics and it aliases, but we need to print only aliases
             if ( PARAM_TO_SRC.count(row.first) == 1 ) {
-                json += "\"" + row.first + "\":" + row.second;
+                // ACE: "nan" should never appear, but system doesn't agree with us
+                // If double value is "nan" -> then actually we do not have value
+                // JSON do not accept "nan", but "null"
+                std::string data = row.second;
+                std::transform(data.begin(), data.end(), data.begin(), ::tolower); // who know if it would be NaN or nan or ...
+                json += "\"" + row.first + "\":" + ( data == "nan" ? "null" : row.second );
                 json += ",";
             }
         }
