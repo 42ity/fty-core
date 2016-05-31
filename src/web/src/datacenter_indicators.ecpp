@@ -152,7 +152,7 @@ static double
     )
 {
     std::vector<std::string> items;
-    cxxtools::split('/', source, std::back_inserter(items));
+    cxxtools::split('/', PARAM_TO_SRC.at(source), std::back_inserter(items));
     if( items.size() != 2 ) {
         return 0.0f;
     }
