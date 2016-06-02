@@ -66,10 +66,10 @@ kill_daemons() {
         kill -INT "$AGLEGMETPID"
     fi
 
-    killall -INT bios-agent-legacy-metrics bios-agent-tpower lt-bios_agent_tpower agent-nut lt-agent-nut 2>/dev/null || true; sleep 1
-    killall      bios-agent-legacy-metrics bios-agent-tpower lt-bios_agent_tpower agent-nut lt-agent-nut 2>/dev/null || true; sleep 1
+    killall -INT bios-agent-legacy-metrics bios-agent-tpower lt-bios_agent_tpower bios-agent-nut agent-nut lt-agent-nut 2>/dev/null || true; sleep 1
+    killall      bios-agent-legacy-metrics bios-agent-tpower lt-bios_agent_tpower bios-agent-nut agent-nut lt-agent-nut 2>/dev/null || true; sleep 1
 
-    ps -ef | grep -v grep | egrep "agent-(nut|tpower)|legacy-metrics" | egrep "^`id -u -n` " && \
+    ps -ef | grep -v grep | egrep "agent-(nut|tpower)|legacy-metrics" | egrep -v 'bios-agent-nut-configurator' | egrep "^`id -u -n` " && \
         ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
         logmsg_error "At least one of: bios-agent-legacy-metrics, agent-nut, bios-agent-tpower still alive, trying SIGKILL" && \
         { killall -KILL bios-agent-legacy-metrics bios-agent-tpower lt-bios_agent_tpower agent-nut lt-agent-nut 2>/dev/null ; exit 1; }
@@ -176,12 +176,18 @@ logmsg_info "Spawning the bios-agent-legacy-metrics daemon in the background..."
 bios-agent-legacy-metrics ipc://@/malamute legacy-metrics bios METRICS &
 [ $? = 0 ] || CODE=$? die "Could not spawn bios-agent-legacy-metrics"
 AGLEGMETPID=$!
+sleep 3
+[ -n "$AGLEGMETPID" ] && [ -d "/proc/$AGLEGMETPID" ] || CODE=$? die "Could not spawn bios-agent-legacy-metrics"
 
-# TODO: CLI syntax and paths changed - other repo now
-logmsg_info "Spawning the agent-nut daemon in the background..."
-${BUILDSUBDIR}/agent-nut "$CHECKOUTDIR/src/agents/nut/mapping.conf" &
-[ $? = 0 ] || CODE=$? die "Could not spawn agent-nut"
+# This program is delivered by another repo, should "just exist" in container
+logmsg_info "Spawning the bios-agent-nut daemon in the background..."
+/bin/systemctl stop bios-agent-nut || true
+[ -s "/usr/share/agent-nut/mapping.conf" ] && \
+    bios-agent-nut --mapping-file "/usr/share/agent-nut/mapping.conf" &
+[ $? = 0 ] || CODE=$? die "Could not spawn bios-agent-nut"
 AGNUTPID=$!
+sleep 3
+[ -n "$AGNUTPID" ] && [ -d "/proc/$AGNUTPID" ] || CODE=$? die "Could not spawn bios-agent-nut"
 
 # This program is delivered by another repo, should "just exist" in container
 logmsg_info "Spawning the bios-agent-tpower daemon in the background..."
@@ -189,7 +195,8 @@ logmsg_info "Spawning the bios-agent-tpower daemon in the background..."
 bios-agent-tpower &
 [ $? = 0 ] || CODE=$? die "Could not spawn bios-agent-tpower"
 AGPWRPID=$!
-
+sleep 3
+[ -n "$AGPWRPID" ] && [ -d "/proc/$AGPWRPID" ] || CODE=$? die "Could not spawn bios-agent-tpower"
 
 NPAR="${#PARAMS[*]}"
 NSAM="${#SAMPLES[*]}"
@@ -251,7 +258,7 @@ for UPS in $UPS1 $UPS2 ; do
             if [[ $? = 0 ]] && [[ "$OUT" -eq 1 ]]; then
                 print_result 0
             else
-                print_result 2 "Looking for exactly one result failed: got '$OUT' for query: $SELECT"
+                print_result 2 "TODO:DATABASE_NO_LONGER_HOLDS_THE_ANSWER: Looking for exactly one result failed: got '$OUT' for query: $SELECT"
             fi
         done
     done
