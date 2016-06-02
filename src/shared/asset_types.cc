@@ -115,6 +115,9 @@ a_elmnt_stp_id_t
     else if (st == "rack controller") {
         return asset_subtype::RACKCONTROLLER;
     }
+    else if (st == "sensor") {
+        return asset_subtype::SENSOR;
+    }
     else if(st == "n_a") {
         return asset_subtype::N_A;
     }
@@ -152,6 +155,8 @@ std::string
             return "router";
         case asset_subtype::RACKCONTROLLER:
             return "rack controller";
+        case asset_subtype::SENSOR:
+            return "sensor";
         case asset_subtype::VIRTUAL:
             return "vm";
         case asset_subtype::N_A:
