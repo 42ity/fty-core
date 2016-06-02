@@ -24,6 +24,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "cleanup.h"
 #include "str_defs.h"
 #include "agents.h"
+#include "bios_proto.h"
 
 static zhash_t*
 s_map2zhash (const std::map<std::string, std::string>& m)
@@ -41,31 +42,58 @@ void
         const std::vector <std::pair<db_a_elmnt_t,persist::asset_operation>> &rows,
         const std::string &agent_name)
 {
-    bios_agent_t *agent = bios_agent_new (MLM_ENDPOINT, agent_name.c_str ());
-    if ( agent == NULL )
-        throw std::runtime_error(" bios_agent_new () failed.");
+    mlm_client_t *client = mlm_client_new();
+    
+    if ( client == NULL ) {
+        throw std::runtime_error(" mlm_client_new () failed.");
+    }
+    int r = mlm_client_connect (client, MLM_ENDPOINT, 1000, agent_name.c_str ());
+    if ( r == -1 ) {
+        mlm_client_destroy (&client);
+        throw std::runtime_error(" mlm_client_connect () failed.");
+    }
 
-    bios_agent_set_producer (agent, bios_get_stream_main());
-    for ( auto &oneRow : rows )
-    {
+    r = mlm_client_set_producer (client, BIOS_PROTO_STREAM_ASSETS);
+    if ( r == -1 ) {
+        mlm_client_destroy (&client);
+        throw std::runtime_error(" mlm_client_set_producer () failed.");
+    }
+    for ( const  auto &oneRow : rows ) {
+        
+        char *s_priority, *s_parent;
+        r = asprintf (&s_priority, "%u", (unsigned)  oneRow.first.priority);
+        assert (r != -1);
+        r = asprintf (&s_parent, "%lu", (long) oneRow.first.parent_id);
+        assert (r != -1);
+
+        char *subject;
+        r = asprintf (&subject, "%s.%s@%s", persist::typeid_to_type (oneRow.first.type_id).c_str(), persist::subtypeid_to_subtype (oneRow.first.subtype_id).c_str(), oneRow.first.name.c_str());
+        assert ( r != -1);
+
+        zhash_t *aux = zhash_new ();
+        zhash_insert (aux, "priority", (void*) s_priority);
+        zhash_insert (aux, "type", (void*) persist::typeid_to_type (oneRow.first.type_id).c_str());
+        zhash_insert (aux, "subtype", (void*) persist::subtypeid_to_subtype (oneRow.first.subtype_id).c_str());
+        zhash_insert (aux, "parent", (void*) s_parent);
+        zhash_insert (aux, "status", (void*) oneRow.first.status.c_str());
+
         zhash_t *ext = s_map2zhash (oneRow.first.ext);
-        ymsg_t *msg = bios_asset_extra_encode (oneRow.first.name.c_str(), &ext, oneRow.first.type_id,
-		oneRow.first.subtype_id, oneRow.first.parent_id, oneRow.first.status.c_str(),
-		oneRow.first.priority, static_cast<int8_t>(oneRow.second));
-        if ( msg == NULL )
-        {
-            bios_agent_destroy (&agent);
-            throw std::runtime_error("bios_asset_encode () failed.");
-        }
-        const std::string topic = "configure@" + oneRow.first.name;
-        int rv = bios_agent_send (agent, topic.c_str(), &msg);
-        if ( rv != 0 )
-        {
-            bios_agent_destroy (&agent);
-            throw std::runtime_error("bios_agent_send () failed.");
+
+        zmsg_t *msg = bios_proto_encode_asset (
+                aux,
+                oneRow.first.name.c_str(),
+                operation2str (oneRow.second).c_str(),
+                ext);
+        r = mlm_client_send (client, subject, &msg);
+        zhash_destroy (&ext);
+        zhash_destroy (&aux);
+        if ( r != 0 ) {
+            mlm_client_destroy (&client);
+            throw std::runtime_error("mlm_client_send () failed.");
         }
     }
-    bios_agent_destroy (&agent);
+    sleep (500); // ensure that everything was send before we destroy the client
+    mlm_client_destroy (&client);
 }
 
 void

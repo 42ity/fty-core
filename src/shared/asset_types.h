@@ -68,8 +68,13 @@ enum asset_operation
     DELETE,
     UPDATE,
     GET,
-    RETIRE
+    RETIRE,
+    INVENTORY
 };
+
+std::string
+    operation2str
+        (asset_operation operation);
 
 a_elmnt_tp_id_t
     type_to_typeid
