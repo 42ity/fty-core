@@ -115,7 +115,7 @@ a_elmnt_stp_id_t
     else if (st == "rack controller") {
         return asset_subtype::RACKCONTROLLER;
     }
-    else if(st == "N_A") {
+    else if(st == "n_a") {
         return asset_subtype::N_A;
     }
     else if(st == "") {
@@ -160,6 +160,29 @@ std::string
             return "unknown";
     }
 }
+
+std::string
+    operation2str
+        (asset_operation operation)
+{
+    switch(operation) {
+        case asset_operation::INSERT:
+            return "create";
+        case asset_operation::DELETE:
+            return "delete";
+        case asset_operation::UPDATE:
+            return "update";
+        case asset_operation::GET:
+            return "get";
+        case asset_operation::RETIRE:
+            return "retire";
+        case asset_operation::INVENTORY:
+            return "inventory";
+        default:
+            return "unknown";
+    }
+}
+
 
 bool
 is_epdu(int x) {

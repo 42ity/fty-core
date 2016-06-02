@@ -49,6 +49,7 @@ bool TemplateRuleConfigurator::v_configure (const std::string& name, const AutoC
         case persist::asset_operation::UPDATE:
         case persist::asset_operation::DELETE:
         case persist::asset_operation::RETIRE:
+        case persist::asset_operation::INVENTORY:
         {
             break;
         }
@@ -84,7 +85,6 @@ std::vector <std::string> TemplateRuleConfigurator::loadTemplates(uint32_t type,
         }
     }
     return templates;
-    
 }
 
 bool TemplateRuleConfigurator::checkTemplate(uint32_t type, uint32_t subtype){
@@ -100,7 +100,6 @@ bool TemplateRuleConfigurator::checkTemplate(uint32_t type, uint32_t subtype){
         }
     }
     return false;
-    
 }
 
 std::string TemplateRuleConfigurator::convertTypeSubType2Name(uint32_t type, uint32_t subtype){
@@ -113,7 +112,6 @@ std::string TemplateRuleConfigurator::convertTypeSubType2Name(uint32_t type, uin
     log_debug("convertTypeSubType2Name(info.type = '%" PRIi32"', info.subtype = '%" PRIi32"' = '%s')",
             type, subtype,name.c_str());
     return name;
-    
 }
 
 std::string TemplateRuleConfigurator::replaceTokens( const std::string &text, const std::string &pattern, const std::string &replacement) const{
