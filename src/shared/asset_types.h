@@ -59,7 +59,8 @@ enum asset_subtype {
     N_A = 11,
     /* ATTENTION: don't change N_A id. It is used as default value in initdb.sql for types, that don't have N_A */
     ROUTER,
-    RACKCONTROLLER
+    RACKCONTROLLER,
+    SENSOR
 };
 
 enum asset_operation
