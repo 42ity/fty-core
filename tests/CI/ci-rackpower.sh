@@ -402,7 +402,7 @@ testcase() {
             esac
 
             logmsg_debug "`date`: Sleeping some time to let propagate measurements..."
-            sleep 18  # some time for propagating into other agents (poll every 5s in nut actor, etc.)
+            sleep 58  # some time for propagating into other agents (poll every 5s in nut actor, etc.)
             logmsg_debug "`date`: Sleep time is over!"
 
             test_it "verify_total_power_restapi:$RACK:$DEV:$SAMPLECURSOR"
@@ -410,7 +410,8 @@ testcase() {
             TP="$(awk -vX=${LASTPOW[0]} -vY=${LASTPOW[1]} 'BEGIN{ print X + Y; }')"
             # send restAPI request to find generated value of total power
             URL="/metric/computed/rack_total?arg1=${RACK}&arg2=total_power"
-            POWER="$(api_get "$URL" >/dev/null && echo "$OUT_CURL" | awk '/total_power/{ print $NF; }')" || { print_result $? "REST API call failed"; continue; }
+            POWER="$(api_get "$URL" >/dev/null && echo "$OUT_CURL" | awk '/total_power/{ print $NF; }')" \
+                || { print_result $? "REST API call failed"; continue; }
             # synchronize format of the expected and generated values of total power
             STR1="$(printf "%f" "$TP")"  # this returns "2000000.000000"
             STR2="$(printf "%f" "$POWER")"  # also returns "2000000.000000"
