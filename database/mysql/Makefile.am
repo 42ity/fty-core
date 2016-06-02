@@ -2,7 +2,7 @@
 EXTRA_DIST =
 
 mysqldir	= $(datadir)/@PACKAGE@/sql/mysql
-mysql_DATA	= initdb.sql 0001_device_type_extension.sql 0002_v_web_element_view.sql
+mysql_DATA	= initdb.sql 0001_device_type_extension.sql 0002_v_web_element_view.sql 0003_device_type_extension.sql
 
 mysqlexdir	= $(datadir)/@PACKAGE@/examples/sql/mysql
 mysqlex_DATA	= \
