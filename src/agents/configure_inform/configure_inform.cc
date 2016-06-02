@@ -89,7 +89,7 @@ void
             throw std::runtime_error("mlm_client_send () failed.");
         }
     }
-    sleep (500); // ensure that everything was send before we destroy the client
+    zclock_sleep (500); // ensure that everything was send before we destroy the client
     mlm_client_destroy (&client);
 }
 
