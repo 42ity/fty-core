@@ -182,10 +182,10 @@ kill_daemons() {
         kill -INT "$AGLEGMETPID"
     fi
 
-    killall -INT tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut bios-agent-tpower lt-bios_agent_tpower 2>/dev/null || true; sleep 1
-    killall      tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut bios-agent-tpower lt-bios_agent_tpower 2>/dev/null || true; sleep 1
+    killall -INT tntnet bios-agent-legacy-metrics bios-agent-nut agent-nut lt-agent-nut bios-agent-tpower lt-bios_agent_tpower 2>/dev/null || true; sleep 1
+    killall      tntnet bios-agent-legacy-metrics bios-agent-nut agent-nut lt-agent-nut bios-agent-tpower lt-bios_agent_tpower 2>/dev/null || true; sleep 1
 
-    ps -ef | grep -v grep | egrep "tntnet|agent-(nut|tpower)|legacy-metrics" | egrep "^`id -u -n` " && \
+    ps -ef | grep -v grep | egrep "tntnet|agent-(nut|tpower)|legacy-metrics" | egrep -v 'bios-agent-nut-configurator' | egrep "^`id -u -n` " && \
         ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
         logmsg_error "At least one of: tntnet, bios-agent-legacy-metrics, agent-nut, agent-tpower still alive, trying SIGKILL" && \
         { killall -KILL tntnet bios-agent-legacy-metrics agent-nut lt-agent-nut bios-agent-tpower lt-bios_agent_tpower 2>/dev/null ; exit 1; }
@@ -263,10 +263,11 @@ function startup() {
         WEBTESTPID=$!
 
         # NOTE: Now a CLI argument is required for agent-nut
-        # TODO: CLI syntax and paths changed - other repo now
-        logmsg_info "Spawning the agent-nut daemon in the background..."
-        ${BUILDSUBDIR}/agent-nut "$CHECKOUTDIR/src/agents/nut/mapping.conf" &
-        [ $? = 0 ] || CODE=$? die "Could not spawn agent-nut"
+        logmsg_info "Spawning the bios-agent-nut daemon in the background..."
+        /bin/systemctl stop bios-agent-nut || true
+        [ -s "/usr/share/agent-nut/mapping.conf" ] && \
+            bios-agent-nut --mapping-file "/usr/share/agent-nut/mapping.conf" &
+        [ $? = 0 ] || CODE=$? die "Could not spawn bios-agent-nut"
         AGNUTPID=$!
 
         # This program is delivered by another repo, should "just exist" in container
