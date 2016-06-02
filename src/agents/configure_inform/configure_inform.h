@@ -28,7 +28,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "dbhelpers.h"
 #include "asset_types.h"
-#include "log.h"
 
 void
     send_configure (

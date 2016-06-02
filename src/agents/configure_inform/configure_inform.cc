@@ -18,14 +18,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "configure_inform.h"
 
+#include <malamute.h>
 #include <stdexcept>
 
-#include "bios_agent.h"
-#include "cleanup.h"
+#include <bios_proto.h>
 #include "str_defs.h"
-#include "agents.h"
-#include "bios_proto.h"
-
 static zhash_t*
 s_map2zhash (const std::map<std::string, std::string>& m)
 {
