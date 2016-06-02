@@ -1947,6 +1947,8 @@ test-sdk: sdk sdk-tests
 test-pool: test-tntmlm
 	(valgrind --leak-check=full --show-reachable=yes --error-exitcode=1 --suppressions=$(abs_top_srcdir)/tests/test-mlm.supp $(abs_top_builddir)/test-tntmlm)
 
+EXTRA_DIST += $(top_srcdir)/tests/test-mlm.supp
+
 clean-junit:
 	/bin/rm -rf $(abs_top_builddir)/tests/junit
 
