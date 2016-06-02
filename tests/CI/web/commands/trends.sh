@@ -28,6 +28,7 @@ echo
 # Add the first line of the sql file and create it
 DB_TMPSQL_FILE_CURRENT="${DB_TMPSQL_DIR}/tmp-current-$$.sql"
 
+# TODO: The measurements should be fed not into database now, see BIOS-2284
 echo "use ${DATABASE};" > "${DB_TMPSQL_FILE_CURRENT}"
 
 # Function definition - Add the measurement chosen from the SAMPLES variable
