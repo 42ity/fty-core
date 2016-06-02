@@ -170,6 +170,7 @@ create_random_samples() {
 }
 
 produce_events(){
+    # TODO: Instead of DB, ask REST API
     MEASUREMENTS="`do_select 'select count(*) from t_bios_measurement'`"
     LASTCHECK="$(date +%s)"
     NUMLINE=0
@@ -188,11 +189,12 @@ produce_events(){
             # 5 min since last check
             # check measurement flow
             test_it "check_measurement_flow_since_last_check:line=$NUMLINE:now=$NOW"
+            # TODO: Instead of DB, ask REST API
             NEWCNT="`do_select 'select count(*) from t_bios_measurement'`"
             if [[ "$NEWCNT" -eq "$MEASUREMENTS" ]] ; then
                 # no data flow
                 logmsg_error "nothing appeared in measurement table since last check ($NEWCNT lines in table)"
-                print_result 5
+                print_result 5 "TODO:DATABASE_NO_LONGER_HOLDS_THE_ANSWER"
             else
                 logmsg_info "OK: new measurements ($NEWCNT lines in table)"
                 print_result 0
@@ -202,11 +204,12 @@ produce_events(){
             # check last 5 min data
             TS6MINAGO="`date '+%s' --date '6 minutes ago'`"
             test_it "check_measurement_flow_for_last_6min:line=$NUMLINE:now=$NOW"
+            # TODO: Instead of DB, ask REST API
             CNT6MIN="`do_select 'select count(*) from t_bios_measurement where timestamp > ( '"${TS6MINAGO}"' )'`"
             if [[ "$CNT6MIN" -eq "0" ]] ; then
                 # no data flow
                 logmsg_error "nothing appeared in measurement table in last 6 minutes"
-                print_result 6
+                print_result 6 "TODO:DATABASE_NO_LONGER_HOLDS_THE_ANSWER"
             else
                 logmsg_info "OK: $CNT6MIN new measurements in last 6 minutes"
                 print_result 0
