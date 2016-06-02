@@ -115,7 +115,7 @@ a_elmnt_stp_id_t
     else if (st == "rack controller") {
         return asset_subtype::RACKCONTROLLER;
     }
-    else if(st == "N_A") {
+    else if(st == "n_a") {
         return asset_subtype::N_A;
     }
     else if(st == "") {
@@ -167,7 +167,7 @@ std::string
 {
     switch(operation) {
         case asset_operation::INSERT:
-            return "insert";
+            return "create";
         case asset_operation::DELETE:
             return "delete";
         case asset_operation::UPDATE:
