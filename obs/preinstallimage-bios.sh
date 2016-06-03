@@ -206,7 +206,7 @@ wscGBRaOr9hO4FqPjem8H6s=
 EOF
 
 # Uninstall various packages that are not needed
-for i in sysvinit ncurses-common libicu52 lsb-release; do
+for i in $(dpkg -l | grep perl) apt fakeroot ncurses-base ncurses-bin diffutils sysvinit ncurses-common libicu52 lsb-release; do
     case "$IMGTYPE" in
         devel)
             echo dpkg -P --force-all $i
