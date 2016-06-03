@@ -206,7 +206,8 @@ wscGBRaOr9hO4FqPjem8H6s=
 EOF
 
 # Uninstall various packages that are not needed
-for i in $(dpkg -l | grep perl) apt fakeroot ncurses-base ncurses-bin diffutils sysvinit ncurses-common libicu52 lsb-release; do
+# Note: We restore "/bin/diff" and "/bin/*grep" via busybox, below
+for i in $(dpkg -l | grep perl) apt fakeroot ncurses-base ncurses-bin diffutils grep sysvinit ncurses-common libicu52 lsb-release; do
     case "$IMGTYPE" in
         devel)
             echo dpkg -P --force-all $i
@@ -362,8 +363,8 @@ fi
 echo "PATH=/usr/libexec/bios:/bin:/usr/bin:/sbin:/usr/sbin" >>/usr/share/bios/etc/default/bios
 
 # Setup some busybox commands
-for i in vi tftp wget; do
-   ln -s busybox /bin/$i
+for i in vi tftp wget diff strings telnet egrep fgrep grep; do
+   [ -x "/bin/$i" ] || ln -s busybox "/bin/$i"
 done
 
 # Simplify ntp.conf
