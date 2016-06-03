@@ -221,13 +221,22 @@ then
     cmd="$1"
     SYSTEMCTL_UNIT="$2"
     SYSTEMCTL_ARGS=""
+    ABORT=no
     shift 2
     while [ $# -gt 0 ]; do
         case "$1" in
             --all|-a|--full|-l|--quiet)
                 SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
-            *) echo "Action not allowed" >&2; exit 1;;
+            -n) if [ "$cmd" = status ] && [ -n "$2" ] && [ "$2" -gt 0 ]; then
+                    SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1 $2"
+                    shift
+                else
+                    ABORT=yes
+                fi
+                ;;
+            *)  ABORT=yes ;;
         esac
+        [ "$ABORT" = yes ] && echo "Action not allowed" >&2 && exit 1
         shift
     done
     exec $SYSTEMCTL "$cmd" "$SYSTEMCTL_UNIT" $SYSTEMCTL_ARGS
