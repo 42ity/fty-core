@@ -68,6 +68,7 @@ void
         assert ( r != -1);
 
         zhash_t *aux = zhash_new ();
+        zhash_autofree (aux);
         zhash_insert (aux, "priority", (void*) s_priority);
         zhash_insert (aux, "type", (void*) persist::typeid_to_type (oneRow.first.type_id).c_str());
         zhash_insert (aux, "subtype", (void*) persist::subtypeid_to_subtype (oneRow.first.subtype_id).c_str());
