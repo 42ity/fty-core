@@ -1619,6 +1619,16 @@ else
         logmsg_info "Not purging old OS images because ACTION_REMOVEOLD_OSIMAGE=$ACTION_REMOVEOLD_OSIMAGE"
 fi
 
+echo ""
+echo "===================================================================="
+echo ""
+
+if [ -n "$DOWNLOADED_OS_IMAGE" ] && [ -s "$DOWNLOADED_OS_IMAGE" ]; then
+	logmsg_info "NOTE: Downloaded an OS image during this run:" \
+		"'$DOWNLOADED_OS_IMAGE'" \
+		"`ls -lad "$DOWNLOADED_OS_IMAGE"`"
+fi
+
 if [ -f "$DEPLOYMENTROOT/factory_reset" ] || [ -f "$DOWNLOADROOT/factory_reset" ]; then
 	logmsg_warn "NOTE: a FACTORY RESET was requested and will be done during reboot"
 fi
