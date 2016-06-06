@@ -23,10 +23,13 @@
 Cmnd_Alias BIOS_SYSTEMCTL_CI1   = /root/project/tools/systemctl
 Cmnd_Alias BIOS_SYSTEMCTL_CI2   = /root/project/tools/build-InSubDir/systemctl
 Cmnd_Alias BIOS_SYSTEMCTL_CI3   = /root/libexec/bios/systemctl
+Cmnd_Alias BIOS_JOURNALCTL_CI1   = /root/project/tools/journalctl
+Cmnd_Alias BIOS_JOURNALCTL_CI2   = /root/project/tools/build-InSubDir/journalctl
+Cmnd_Alias BIOS_JOURNALCTL_CI3   = /root/libexec/bios/journalctl
 
 # Overall, what is currently allowed with different privileges?
 #Cmnd_Alias BIOS_TEST_PROGS	= SASLD,MALAMUTED,MYSQLD,TNTNETD
-Cmnd_Alias BIOS_TEST_SYSTEMCTL	= BIOS_SYSTEMCTL_CI1,BIOS_SYSTEMCTL_CI2,BIOS_SYSTEMCTL_CI3
+Cmnd_Alias BIOS_TEST_SYSTEMCTL	= BIOS_SYSTEMCTL_CI1,BIOS_SYSTEMCTL_CI2,BIOS_SYSTEMCTL_CI3,BIOS_JOURNALCTL_CI1,BIOS_JOURNALCTL_CI2,BIOS_JOURNALCTL_CI3
 
 #BIOS_USERS ALL=(BIOS_RUNAS) NOPASSWD:BIOS_TEST_PROGS
 BIOS_USERS ALL=(BIOS_RUNAS) NOPASSWD:BIOS_TEST_SYSTEMCTL

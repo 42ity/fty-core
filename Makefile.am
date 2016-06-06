@@ -1265,6 +1265,11 @@ web-test-deps: tntnet.xml bios_web.la web-link-test
 ci_helper_SCRIPTS =	tools/bios-passwd tools/db-init tools/testpass.sh tools/systemctl
 ci_helperdir =	        $(clientdir)
 
+# This wrapper now comes with two faces
+ci_helper_SCRIPTS +=    tools/journalctl
+tools/journalctl: tools/systemctl
+	rm -f $@; ln -s ./$(<F) $@
+
 # TODO: the "tools/testpass.sh" should be invoked via TESTPASS envvar used
 # and exported in RUN_TNTNET - but this does not work for bios-passwd :(
 web-test-deps-inst: install-ci_helperSCRIPTS
