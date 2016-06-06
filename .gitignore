@@ -129,6 +129,7 @@ bios-*.*.tar.?z
 bios-*.deb
 
 src/utils/messages/json_schemas.h
+tools/journalctl
 tools/run-test-doc.sh
 tools/run-test-doc.sh.log
 tools/run-test-doc.sh.trs

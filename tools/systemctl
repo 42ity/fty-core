@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2015 Eaton
+# Copyright (C) 2015-2016 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,10 +21,12 @@
 #  \author  Michal Hrusecky <MichalHrusecky@Eaton.com>
 #  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \details Helper script for REST API /admin/systemctl and /admin/sysinfo
+#           as well as command-line usage via "sudo" for non-root users.
 #           Wraps the OS-provided /bin/systemctl to apply filters and allow
 #           only those actions over those objects as needed for our project.
 #           Also adds a "list-json" command to display some details on units
 #           we are allowed to see through the filter.
+#           Similarly, wraps /bin/journalctl with same unit filters.
 #
 
 if [ -n "${BASH-}" ]; then
@@ -33,7 +35,14 @@ else
     echo "systemctl: WARNING: It seems you execute '$0' not with 'bash' - this can fail!" >&2
 fi
 
+# We can filter-wrap these programs
+SYSTEMCTL="/bin/systemctl"
+JOURNALCTL="/bin/journalctl"
+
 SYSTEMCTL_COMMANDS="show start stop restart enable disable daemon-reload status is-active"
+# NOTE: We do not support "--unit=UNITNAME" because it is too much hassle here
+# NOTE: We also support "-n NUMBER" below
+JOURNALCTL_COMMANDS="-f --follow -l -u -fl -lf -fu -uf -lu -ul -flu -ful -luf -lfu -ulf -ufl -a --all --no-pager -r --reverse -k --dmesg"
 
 # TODO: Match this up with web/systemctl.ecpp and maybe the Makefile variables
 # List of fixed strings that are good both for "case" and regexp matching
@@ -59,8 +68,6 @@ SYSTEMCTL_UNITS_REGEX='(nut-driver|composite-metrics|biostimer-graphs-prefetch|b
 # Same for "case" matching
 SYSTEMCTL_UNITS_GLOBS='nut-driver@* composite-metrics@* biostimer-graphs-prefetch@* biostimer-graphs-prefetch__*@*'
 
-SYSTEMCTL="/bin/systemctl"
-
 # Note: The matching code seems a bit overcomplicated, but it evolved
 # to be almost 30x faster than the original simple-looking case ;)
 SYSTEMCTL_UNITS_REGEX_SINGLE=""
@@ -72,17 +79,30 @@ for unit in ${SYSTEMCTL_UNITS_COMMON} ${SYSTEMCTL_UNITS_REGEX}; do
 done
 SYSTEMCTL_UNITS_REGEX_SINGLE='^('"${SYSTEMCTL_UNITS_REGEX_SINGLE}"')($|\.(service|timer|target))$'
 
+die_ACTION_NOT_ALLOWED() {
+    # NOTE: These stderr-string and exit-code are expected by some clients
+    # like CI tests or maybe even web-GUI
+    # Do not change without good reason and inspection of other code!
+    echo "Action not allowed" >&2
+    exit 1
+}
+
+die_INTERNAL_ERROR() {
+    echo "Internal error" >&2
+    exit 2
+}
+
 isAllowed_Unit() {
     # $1 is a specific unit name, at most basename without an extension
     # We test if it matches one of the regexps listed in SYSTEMCTL_UNITS
     [[ -z "$1" ]] && return 2
-    # NOTE: bash regex matching requires the regex to be not quoted, slashed etc
+    # NOTE: bash regex matching requires the regex to be NOT quoted, slashed etc
     [[ "$1" =~ $SYSTEMCTL_UNITS_REGEX_SINGLE ]] > /dev/null && return 0
 #    echo "$1" | egrep "$SYSTEMCTL_UNITS_REGEX_SINGLE" > /dev/null && return 0
     return 1
 }
 
-isAllowed_Cmd() {
+isAllowed_Cmd_systemctl() {
     [[ -z "$1" ]] && return 2
     for cmd in ${SYSTEMCTL_COMMANDS}; do
         if [[ "x$cmd" = "x$1" ]] ; then
@@ -92,27 +112,23 @@ isAllowed_Cmd() {
     return 1
 }
 
-case "$1" in
-    list-units|--all|-a)
-        SYSTEMCTL_ARGS=""
-        while [ $# -gt 0 ]; do
-            case "$1" in
-                list-units|--all|-a|--full|-l)
-                    SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
-                *) echo "Action not allowed" >&2; exit 1;;
-            esac
-            shift
-        done
-        exec $SYSTEMCTL $SYSTEMCTL_ARGS
-        # Should not get to this line
-        ;;
-    list-json)
+isAllowed_Cmd_journalctl() {
+    [[ -z "$1" ]] && return 2
+    for cmd in ${JOURNALCTL_COMMANDS}; do
+        if [[ "x$cmd" = "x$1" ]] ; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+systemctl_list_json() {
+	# This is our custom feature to speed up the "sysinfo" REST API.
         # TODO: List of "interesting" fields is currently hardcoded here and in
         # the two "case"s below, and in variable mapping too; there is quite a
         # bit to rewrite should we want this to be anyhow dynamic/on-request.
         SYSTEMCTL_ATTRS="-p Id -p SubState -p ActiveState -p UnitFileState -p LoadState"
         SYSTEMCTL_UNITS=""  # If empty, default of 'all allowed' will be used
-        shift
         while [ $# -gt 0 ]; do
             case "$1" in
                 --all|-a)
@@ -121,7 +137,7 @@ case "$1" in
                 *)  if isAllowed_Unit "$1" ; then
                         SYSTEMCTL_UNITS="$SYSTEMCTL_UNITS $1"
                     else
-                        echo "Action not allowed" >&2; exit 1
+                        die_ACTION_NOT_ALLOWED
                     fi;;
             esac
             shift
@@ -138,11 +154,11 @@ case "$1" in
             if [ -n "${BASH-}" ]; then
                 . "$JSONSH"
             else
-                echo "systemctl: Will fork to use JSON.sh from '$JSONSH' to cook strings" >&2
+                logmsg_info "systemctl: Will fork to use JSON.sh from '$JSONSH' to cook strings"
                 cook_a_string_arg() { "$JSONSH" -QQ "$1"; }
             fi
         else
-            echo "systemctl: FAILED to use JSON.sh from '$JSONSH'; will not cook strings" >&2 && JSONSH=""
+            logmsg_warn "systemctl: FAILED to use JSON.sh from '$JSONSH'; will not cook strings" && JSONSH=""
             cook_a_string_arg() { echo "$*"; }
         fi
 
@@ -211,37 +227,104 @@ $lOTHER"
                 [[ x"$FIRST" = xyes ]] && printf ' %s\n' "$LINE" || printf ',%s\n' "$LINE"
                 FIRST=no
             done; echo "]"; }
-        exit $?
-        ;;
-esac
+}
 
-if  isAllowed_Cmd "$1" && \
-    isAllowed_Unit "$2"
-then
-    cmd="$1"
-    SYSTEMCTL_UNIT="$2"
-    SYSTEMCTL_ARGS=""
+process_CLI_systemctl() {
+    # Quick support for specific commands
+    case "$1" in
+        list-units|--all|-a)
+            SYSTEMCTL_ARGS=""
+            while [ $# -gt 0 ]; do
+                case "$1" in
+                    list-units|--all|-a|--full|-l)
+                        # NOTE: This allows to list ALL units, not just our filter
+                        SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
+                    *) die_ACTION_NOT_ALLOWED ;;
+                esac
+                shift
+            done
+            exec $SYSTEMCTL $SYSTEMCTL_ARGS
+            # Should not get to this line
+            die_INTERNAL_ERROR
+            ;;
+        list-json)
+            shift
+            systemctl_list_json "$@"
+            exit $?
+            ;;
+    esac
+
+    # Patch through some commands we allow over objects we allow
+    if  isAllowed_Cmd_systemctl "$1" && \
+        isAllowed_Unit "$2"
+    then
+        cmd="$1"
+        SYSTEMCTL_UNIT="$2"
+        SYSTEMCTL_ARGS=""
+        ABORT=no
+        shift 2
+        while [ $# -gt 0 ]; do
+            case "$1" in
+                --all|-a|--full|-l|--quiet)
+                    SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
+                -n) if [ "$cmd" = status ] && [ -n "$2" ] && [ "$2" -gt 0 ]; then
+                        SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1 $2"
+                        shift
+                    else
+                        ABORT=yes
+                    fi
+                    ;;
+                *)  ABORT=yes ;;
+            esac
+            [ "$ABORT" = yes ] && die_ACTION_NOT_ALLOWED
+            shift
+        done
+        exec $SYSTEMCTL "$cmd" "$SYSTEMCTL_UNIT" $SYSTEMCTL_ARGS
+        # Should not get to this commented line
+        die_INTERNAL_ERROR
+    fi
+
+    # Command and/or object were not among permitted ones
+    die_ACTION_NOT_ALLOWED
+}
+
+process_CLI_journalctl() {
+    # Patch through some commands we allow over objects we allow
     ABORT=no
-    shift 2
+    JOURNALCTL_ARGS=""
+
     while [ $# -gt 0 ]; do
         case "$1" in
-            --all|-a|--full|-l|--quiet)
-                SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
-            -n) if [ "$cmd" = status ] && [ -n "$2" ] && [ "$2" -gt 0 ]; then
-                    SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1 $2"
+            -n) if [ -n "$2" ] && [ "$2" -gt 0 ]; then
+                    JOURNALCTL_ARGS="$JOURNALCTL_ARGS $1 $2"
+                    shift 2
+                else
+                    ABORT=yes
+                fi
+                ;;
+            *)
+                if  isAllowed_Cmd_journalctl "$1" || \
+                    isAllowed_Unit "$1"
+                then
+                    JOURNALCTL_ARGS="$JOURNALCTL_ARGS $1"
                     shift
                 else
                     ABORT=yes
                 fi
                 ;;
-            *)  ABORT=yes ;;
         esac
-        [ "$ABORT" = yes ] && echo "Action not allowed" >&2 && exit 1
-        shift
+        [ "$ABORT" = yes ] && die_ACTION_NOT_ALLOWED
     done
-    exec $SYSTEMCTL "$cmd" "$SYSTEMCTL_UNIT" $SYSTEMCTL_ARGS
-    # Should not get to this line
-fi
+    [ -z "$JOURNALCTL_ARGS" ] && die_ACTION_NOT_ALLOWED
+    exec $JOURNALCTL $JOURNALCTL_ARGS
+    # Should not get to and beyond this commented line
+    die_INTERNAL_ERROR
+}
 
-echo "Action not allowed" >&2
-exit 1
+case "`basename $0`" in
+    systemctl) process_CLI_systemctl "$@"; exit $? ;;
+    journalctl) process_CLI_journalctl "$@"; exit $? ;;
+esac
+
+# Basename was not what this script wraps
+die_ACTION_NOT_ALLOWED
