@@ -35,6 +35,11 @@ else
     echo "systemctl: WARNING: It seems you execute '$0' not with 'bash' - this can fail!" >&2
 fi
 
+LANG=C
+LC_ALL=C
+TZ=UTC
+export LANG LC_ALL TZ
+
 # We can filter-wrap these programs
 SYSTEMCTL="/bin/systemctl"
 JOURNALCTL="/bin/journalctl"
