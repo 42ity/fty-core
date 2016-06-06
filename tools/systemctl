@@ -49,39 +49,71 @@ SYSTEMCTL_COMMANDS="show start stop restart enable disable daemon-reload status 
 # NOTE: We also support "-n NUMBER" below
 JOURNALCTL_COMMANDS="-f --follow -l -u -fl -lf -fu -uf -lu -ul -flu -ful -luf -lfu -ulf -ufl -a --all --no-pager -r --reverse -k --dmesg"
 
-# TODO: Match this up with web/systemctl.ecpp and maybe the Makefile variables
 # List of fixed strings that are good both for "case" and regexp matching
+# TODO: Match this up with web/systemctl.ecpp and maybe the Makefile variables
 # NOTE: The web/systemctl.ecpp implementation maps "restart" requests for
 # service name "networking" to be actually implemented by calling our own
 # service named "bios-networking".
 # NOTE-DEV: Validate that this filter is still valid with "systemctl-uptodate"
-SYSTEMCTL_UNITS_COMMON="mariadb mysql mysqld ntp ntpd ntpdate sntp bios \
-                 bios-reset-button tntnet@bios bios-db-init             \
+# SYSTEMCTL_UNITS_COMMON_EXTERNAL is a list of third-party services we rely on
+SYSTEMCTL_UNITS_COMMON_EXTERNAL="mariadb mysql mysqld                   \
+                 ntp ntpd ntpdate sntp                                  \
+                 networking network                                     \
+                 nut-driver nut-monitor nut-server                      \
+                 malamute saslauthd"
+# SYSTEMCTL_UNITS_COMMON_INTERNAL lists the services delivered by our project
+SYSTEMCTL_UNITS_COMMON_INTERNAL="bios tntnet@bios bios-db-init          \
                  bios-agent-alert-generator agent-alerts-list           \
-                 bios-agent-autoconfig bios-agent-cm                    \
-                 bios-agent-inventory                                   \
+                 bios-agent-autoconfig bios-agent-cm bios-networking    \
+                 bios-agent-inventory bios-reset-button                 \
                  bios-agent-nut bios-agent-nut-configurator             \
                  bios-agent-asset bios-agent-legacy-metrics kpi-uptime  \
                  agent-th dc_th bios-agent-outage bios-agent-smtp       \
                  bios-agent-tpower bios-agent-rt bios-agent-ms          \
-                 biostimer-warranty-metric biostimer-agent-ms-cleaner   \
-                 malamute saslauthd networking network bios-networking  \
-                 nut-driver nut-monitor nut-server"
+                 biostimer-warranty-metric biostimer-agent-ms-cleaner   "
 
-# For regexp matching
-SYSTEMCTL_UNITS_REGEX='(nut-driver|composite-metrics|biostimer-graphs-prefetch|biostimer-graphs-prefetch__.+)@[^[:blank:]]*'
-# Same for "case" matching
-SYSTEMCTL_UNITS_GLOBS='nut-driver@* composite-metrics@* biostimer-graphs-prefetch@* biostimer-graphs-prefetch__*@*'
+SYSTEMCTL_UNITS_COMMON="$SYSTEMCTL_UNITS_COMMON_EXTERNAL $SYSTEMCTL_UNITS_COMMON_INTERNAL"
+
+# For regexp matching of multi-instance services (a pipe-separated list)
+SYSTEMCTL_UNITS_REGEX_EXTERNAL_LIST='nut-driver'
+SYSTEMCTL_UNITS_REGEX_INTERNAL_LIST='composite-metrics'
+SYSTEMCTL_UNITS_REGEX_EXTERNAL="($SYSTEMCTL_UNITS_REGEX_EXTERNAL_LIST)"'@[^[:blank:]]*'
+SYSTEMCTL_UNITS_REGEX_INTERNAL="($SYSTEMCTL_UNITS_REGEX_INTERNAL_LIST)"'@[^[:blank:]]*'
+SYSTEMCTL_UNITS_REGEX="($SYSTEMCTL_UNITS_REGEX_EXTERNAL_LIST|$SYSTEMCTL_UNITS_REGEX_INTERNAL_LIST)"'@[^[:blank:]]*'
+# SAME data for "case" matching of multi-instance services
+SYSTEMCTL_UNITS_GLOBS_EXTERNAL='nut-driver@*'
+SYSTEMCTL_UNITS_GLOBS_INTERNAL='composite-metrics@*'
+SYSTEMCTL_UNITS_GLOBS="$SYSTEMCTL_UNITS_GLOBS_EXTERNAL $SYSTEMCTL_UNITS_GLOBS_INTERNAL"
 
 # Note: The matching code seems a bit overcomplicated, but it evolved
 # to be almost 30x faster than the original simple-looking case ;)
 SYSTEMCTL_UNITS_REGEX_SINGLE=""
+SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL=""
+SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL=""
+
 FIRST=yes
-for unit in ${SYSTEMCTL_UNITS_COMMON} ${SYSTEMCTL_UNITS_REGEX}; do
-    [[ "$FIRST" = yes ]] && SYSTEMCTL_UNITS_REGEX_SINGLE="$unit" || \
-        SYSTEMCTL_UNITS_REGEX_SINGLE="$SYSTEMCTL_UNITS_REGEX_SINGLE|$unit"
+for unit in ${SYSTEMCTL_UNITS_COMMON_EXTERNAL} ${SYSTEMCTL_UNITS_REGEX_EXTERNAL}; do
+    [[ "$FIRST" = yes ]] && SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL="$unit" || \
+        SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL="$SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL|$unit"
     FIRST=no
 done
+
+FIRST=yes
+for unit in ${SYSTEMCTL_UNITS_COMMON_INTERNAL} ${SYSTEMCTL_UNITS_REGEX_INTERNAL}; do
+    [[ "$FIRST" = yes ]] && SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL="$unit" || \
+        SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL="$SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL|$unit"
+    FIRST=no
+done
+
+SYSTEMCTL_UNITS_REGEX_SINGLE="$SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL"
+if [[ -n "$SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL" ]]; then
+    [[ -n "$SYSTEMCTL_UNITS_REGEX_SINGLE" ]] \
+        && SYSTEMCTL_UNITS_REGEX_SINGLE="$SYSTEMCTL_UNITS_REGEX_SINGLE|$SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL" \
+        || SYSTEMCTL_UNITS_REGEX_SINGLE="$SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL"
+fi
+
+SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL='^('"${SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL}"')($|\.(service|timer|target))$'
+SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL='^('"${SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL}"')($|\.(service|timer|target))$'
 SYSTEMCTL_UNITS_REGEX_SINGLE='^('"${SYSTEMCTL_UNITS_REGEX_SINGLE}"')($|\.(service|timer|target))$'
 
 die_ACTION_NOT_ALLOWED() {
