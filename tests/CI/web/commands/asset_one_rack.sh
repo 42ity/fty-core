@@ -115,6 +115,8 @@ api_get_json /asset/rack/${ID_RACK_2} >&5
 print_result $?
 curlfail_pop
 
+logmsg_warn "This test can fail with zero vs. null values, see http://jira.mbt.lab.etn.com/browse/BIOS-2283 in this case"
+
 echo
 echo "###################################################################################################"
 echo "********* asset_one_rack.sh ************************ END ******************************************"
