@@ -206,15 +206,24 @@ export CHECKOUTDIR BUILDSUBDIR
 export LANG LANGUAGE LC_ALL TZ
 
 logmsg_info() {
-    echo "${LOGMSG_PREFIX}INFO:" "$@"
+    echo "${LOGMSG_PREFIX}INFO:" "$1"
+    shift
+    for L in "$@" ; do echo "$L"; done
+    return 0
 }
 
 logmsg_warn() {
-    echo "${LOGMSG_PREFIX}WARN:" "$@" >&2
+    echo "${LOGMSG_PREFIX}WARN:" "$1" >&2
+    shift
+    for L in "$@" ; do echo "$L"; done >&2
+    return 0
 }
 
 logmsg_error() {
-    echo "${LOGMSG_PREFIX}ERROR:" "$@" >&2
+    echo "${LOGMSG_PREFIX}ERROR:" "$1" >&2
+    shift
+    for L in "$@" ; do echo "$L"; done >&2
+    return 0
 }
 
 die() {
