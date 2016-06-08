@@ -206,15 +206,24 @@ export CHECKOUTDIR BUILDSUBDIR
 export LANG LANGUAGE LC_ALL TZ
 
 logmsg_info() {
-    echo "${LOGMSG_PREFIX}INFO:" "$@"
+    echo "${LOGMSG_PREFIX}INFO:" "$1"
+    shift
+    for L in "$@" ; do echo "$L"; done
+    return 0
 }
 
 logmsg_warn() {
-    echo "${LOGMSG_PREFIX}WARN:" "$@" >&2
+    echo "${LOGMSG_PREFIX}WARN:" "$1" >&2
+    shift
+    for L in "$@" ; do echo "$L"; done >&2
+    return 0
 }
 
 logmsg_error() {
-    echo "${LOGMSG_PREFIX}ERROR:" "$@" >&2
+    echo "${LOGMSG_PREFIX}ERROR:" "$1" >&2
+    shift
+    for L in "$@" ; do echo "$L"; done >&2
+    return 0
 }
 
 die() {
@@ -1608,6 +1617,16 @@ if [ "$ACTION_REMOVEOLD_OSIMAGE" = yes ]; then
         removeold_osimage || ACTION_RESULT=$?
 else
         logmsg_info "Not purging old OS images because ACTION_REMOVEOLD_OSIMAGE=$ACTION_REMOVEOLD_OSIMAGE"
+fi
+
+echo ""
+echo "===================================================================="
+echo ""
+
+if [ -n "$DOWNLOADED_OS_IMAGE" ] && [ -s "$DOWNLOADED_OS_IMAGE" ]; then
+	logmsg_info "NOTE: Downloaded an OS image during this run:" \
+		"'$DOWNLOADED_OS_IMAGE'" \
+		"`ls -lad "$DOWNLOADED_OS_IMAGE"`"
 fi
 
 if [ -f "$DEPLOYMENTROOT/factory_reset" ] || [ -f "$DOWNLOADROOT/factory_reset" ]; then
