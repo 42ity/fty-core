@@ -10,6 +10,8 @@ Type=oneshot
 RemainAfterExit=yes
 ExecStart=/bin/systemctl start bios.target
 ExecStop=/bin/systemctl stop bios.target
+# Make sure this runs, even if there is an unclean startup/shutdown of the unit
+ExecStopPost=/bin/systemctl stop bios.target
 
 [Install]
 WantedBy=multi-user.target
