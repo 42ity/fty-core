@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2015 Eaton
+# Copyright (C) 2015-2016 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,10 +21,12 @@
 #  \author  Michal Hrusecky <MichalHrusecky@Eaton.com>
 #  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \details Helper script for REST API /admin/systemctl and /admin/sysinfo
+#           as well as command-line usage via "sudo" for non-root users.
 #           Wraps the OS-provided /bin/systemctl to apply filters and allow
 #           only those actions over those objects as needed for our project.
 #           Also adds a "list-json" command to display some details on units
 #           we are allowed to see through the filter.
+#           Similarly, wraps /bin/journalctl with same unit filters.
 #
 
 if [ -n "${BASH-}" ]; then
@@ -33,56 +35,111 @@ else
     echo "systemctl: WARNING: It seems you execute '$0' not with 'bash' - this can fail!" >&2
 fi
 
-SYSTEMCTL_COMMANDS="show start stop restart enable disable daemon-reload status is-active"
+LANG=C
+LC_ALL=C
+TZ=UTC
+export LANG LC_ALL TZ
 
-# TODO: Match this up with web/systemctl.ecpp and maybe the Makefile variables
+# We can filter-wrap these programs
+SYSTEMCTL="/bin/systemctl"
+JOURNALCTL="/bin/journalctl"
+
+SYSTEMCTL_COMMANDS="show start stop restart enable disable daemon-reload status is-active"
+# NOTE: We do not support "--unit=UNITNAME" because it is too much hassle here
+# NOTE: We also support "-n NUMBER" below
+JOURNALCTL_COMMANDS="-f --follow -l -u -fl -lf -fu -uf -lu -ul -flu -ful -luf -lfu -ulf -ufl -a --all --no-pager -r --reverse -k --dmesg"
+
 # List of fixed strings that are good both for "case" and regexp matching
+# TODO: Match this up with web/systemctl.ecpp and maybe the Makefile variables
 # NOTE: The web/systemctl.ecpp implementation maps "restart" requests for
 # service name "networking" to be actually implemented by calling our own
 # service named "bios-networking".
 # NOTE-DEV: Validate that this filter is still valid with "systemctl-uptodate"
-SYSTEMCTL_UNITS_COMMON="mariadb mysql mysqld ntp ntpd ntpdate sntp bios \
-                 bios-reset-button tntnet@bios bios-db-init             \
+# SYSTEMCTL_UNITS_COMMON_EXTERNAL is a list of third-party services we rely on
+SYSTEMCTL_UNITS_COMMON_EXTERNAL="mariadb mysql mysqld                   \
+                 ntp ntpd ntpdate sntp                                  \
+                 networking network                                     \
+                 nut-driver nut-monitor nut-server                      \
+                 malamute saslauthd"
+# SYSTEMCTL_UNITS_COMMON_INTERNAL lists the services delivered by our project
+SYSTEMCTL_UNITS_COMMON_INTERNAL="bios tntnet@bios bios-db-init          \
                  bios-agent-alert-generator agent-alerts-list           \
-                 bios-agent-autoconfig bios-agent-cm                    \
-                 bios-agent-inventory                                   \
+                 bios-agent-autoconfig bios-agent-cm bios-networking    \
+                 bios-agent-inventory bios-reset-button                 \
                  bios-agent-nut bios-agent-nut-configurator             \
                  bios-agent-asset bios-agent-legacy-metrics kpi-uptime  \
                  agent-th dc_th bios-agent-outage bios-agent-smtp       \
                  bios-agent-tpower bios-agent-rt bios-agent-ms          \
-                 biostimer-warranty-metric biostimer-agent-ms-cleaner   \
-                 malamute saslauthd networking network bios-networking  \
-                 nut-driver nut-monitor nut-server"
+                 biostimer-warranty-metric biostimer-agent-ms-cleaner   "
 
-# For regexp matching
-SYSTEMCTL_UNITS_REGEX='(nut-driver|composite-metrics|biostimer-graphs-prefetch|biostimer-graphs-prefetch__.+)@[^[:blank:]]*'
-# Same for "case" matching
-SYSTEMCTL_UNITS_GLOBS='nut-driver@* composite-metrics@* biostimer-graphs-prefetch@* biostimer-graphs-prefetch__*@*'
+SYSTEMCTL_UNITS_COMMON="$SYSTEMCTL_UNITS_COMMON_EXTERNAL $SYSTEMCTL_UNITS_COMMON_INTERNAL"
 
-SYSTEMCTL="/bin/systemctl"
+# For regexp matching of multi-instance services (a pipe-separated list)
+SYSTEMCTL_UNITS_REGEX_EXTERNAL_LIST='nut-driver'
+SYSTEMCTL_UNITS_REGEX_INTERNAL_LIST='composite-metrics'
+SYSTEMCTL_UNITS_REGEX_EXTERNAL="($SYSTEMCTL_UNITS_REGEX_EXTERNAL_LIST)"'@[^[:blank:]]*'
+SYSTEMCTL_UNITS_REGEX_INTERNAL="($SYSTEMCTL_UNITS_REGEX_INTERNAL_LIST)"'@[^[:blank:]]*'
+SYSTEMCTL_UNITS_REGEX="($SYSTEMCTL_UNITS_REGEX_EXTERNAL_LIST|$SYSTEMCTL_UNITS_REGEX_INTERNAL_LIST)"'@[^[:blank:]]*'
+# SAME data for "case" matching of multi-instance services
+SYSTEMCTL_UNITS_GLOBS_EXTERNAL='nut-driver@*'
+SYSTEMCTL_UNITS_GLOBS_INTERNAL='composite-metrics@*'
+SYSTEMCTL_UNITS_GLOBS="$SYSTEMCTL_UNITS_GLOBS_EXTERNAL $SYSTEMCTL_UNITS_GLOBS_INTERNAL"
 
 # Note: The matching code seems a bit overcomplicated, but it evolved
 # to be almost 30x faster than the original simple-looking case ;)
 SYSTEMCTL_UNITS_REGEX_SINGLE=""
+SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL=""
+SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL=""
+
 FIRST=yes
-for unit in ${SYSTEMCTL_UNITS_COMMON} ${SYSTEMCTL_UNITS_REGEX}; do
-    [[ "$FIRST" = yes ]] && SYSTEMCTL_UNITS_REGEX_SINGLE="$unit" || \
-        SYSTEMCTL_UNITS_REGEX_SINGLE="$SYSTEMCTL_UNITS_REGEX_SINGLE|$unit"
+for unit in ${SYSTEMCTL_UNITS_COMMON_EXTERNAL} ${SYSTEMCTL_UNITS_REGEX_EXTERNAL}; do
+    [[ "$FIRST" = yes ]] && SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL="$unit" || \
+        SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL="$SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL|$unit"
     FIRST=no
 done
+
+FIRST=yes
+for unit in ${SYSTEMCTL_UNITS_COMMON_INTERNAL} ${SYSTEMCTL_UNITS_REGEX_INTERNAL}; do
+    [[ "$FIRST" = yes ]] && SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL="$unit" || \
+        SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL="$SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL|$unit"
+    FIRST=no
+done
+
+SYSTEMCTL_UNITS_REGEX_SINGLE="$SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL"
+if [[ -n "$SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL" ]]; then
+    [[ -n "$SYSTEMCTL_UNITS_REGEX_SINGLE" ]] \
+        && SYSTEMCTL_UNITS_REGEX_SINGLE="$SYSTEMCTL_UNITS_REGEX_SINGLE|$SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL" \
+        || SYSTEMCTL_UNITS_REGEX_SINGLE="$SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL"
+fi
+
+SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL='^('"${SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL}"')($|\.(service|timer|target))$'
+SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL='^('"${SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL}"')($|\.(service|timer|target))$'
 SYSTEMCTL_UNITS_REGEX_SINGLE='^('"${SYSTEMCTL_UNITS_REGEX_SINGLE}"')($|\.(service|timer|target))$'
+
+die_ACTION_NOT_ALLOWED() {
+    # NOTE: These stderr-string and exit-code are expected by some clients
+    # like CI tests or maybe even web-GUI
+    # Do not change without good reason and inspection of other code!
+    echo "Action not allowed" >&2
+    exit 1
+}
+
+die_INTERNAL_ERROR() {
+    echo "Internal error" >&2
+    exit 2
+}
 
 isAllowed_Unit() {
     # $1 is a specific unit name, at most basename without an extension
     # We test if it matches one of the regexps listed in SYSTEMCTL_UNITS
     [[ -z "$1" ]] && return 2
-    # NOTE: bash regex matching requires the regex to be not quoted, slashed etc
+    # NOTE: bash regex matching requires the regex to be NOT quoted, slashed etc
     [[ "$1" =~ $SYSTEMCTL_UNITS_REGEX_SINGLE ]] > /dev/null && return 0
 #    echo "$1" | egrep "$SYSTEMCTL_UNITS_REGEX_SINGLE" > /dev/null && return 0
     return 1
 }
 
-isAllowed_Cmd() {
+isAllowed_Cmd_systemctl() {
     [[ -z "$1" ]] && return 2
     for cmd in ${SYSTEMCTL_COMMANDS}; do
         if [[ "x$cmd" = "x$1" ]] ; then
@@ -92,27 +149,23 @@ isAllowed_Cmd() {
     return 1
 }
 
-case "$1" in
-    list-units|--all|-a)
-        SYSTEMCTL_ARGS=""
-        while [ $# -gt 0 ]; do
-            case "$1" in
-                list-units|--all|-a|--full|-l)
-                    SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
-                *) echo "Action not allowed" >&2; exit 1;;
-            esac
-            shift
-        done
-        exec $SYSTEMCTL $SYSTEMCTL_ARGS
-        # Should not get to this line
-        ;;
-    list-json)
+isAllowed_Cmd_journalctl() {
+    [[ -z "$1" ]] && return 2
+    for cmd in ${JOURNALCTL_COMMANDS}; do
+        if [[ "x$cmd" = "x$1" ]] ; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+systemctl_list_json() {
+	# This is our custom feature to speed up the "sysinfo" REST API.
         # TODO: List of "interesting" fields is currently hardcoded here and in
         # the two "case"s below, and in variable mapping too; there is quite a
         # bit to rewrite should we want this to be anyhow dynamic/on-request.
         SYSTEMCTL_ATTRS="-p Id -p SubState -p ActiveState -p UnitFileState -p LoadState"
         SYSTEMCTL_UNITS=""  # If empty, default of 'all allowed' will be used
-        shift
         while [ $# -gt 0 ]; do
             case "$1" in
                 --all|-a)
@@ -121,7 +174,7 @@ case "$1" in
                 *)  if isAllowed_Unit "$1" ; then
                         SYSTEMCTL_UNITS="$SYSTEMCTL_UNITS $1"
                     else
-                        echo "Action not allowed" >&2; exit 1
+                        die_ACTION_NOT_ALLOWED
                     fi;;
             esac
             shift
@@ -138,11 +191,11 @@ case "$1" in
             if [ -n "${BASH-}" ]; then
                 . "$JSONSH"
             else
-                echo "systemctl: Will fork to use JSON.sh from '$JSONSH' to cook strings" >&2
+                logmsg_info "systemctl: Will fork to use JSON.sh from '$JSONSH' to cook strings"
                 cook_a_string_arg() { "$JSONSH" -QQ "$1"; }
             fi
         else
-            echo "systemctl: FAILED to use JSON.sh from '$JSONSH'; will not cook strings" >&2 && JSONSH=""
+            logmsg_warn "systemctl: FAILED to use JSON.sh from '$JSONSH'; will not cook strings" && JSONSH=""
             cook_a_string_arg() { echo "$*"; }
         fi
 
@@ -211,28 +264,330 @@ $lOTHER"
                 [[ x"$FIRST" = xyes ]] && printf ' %s\n' "$LINE" || printf ',%s\n' "$LINE"
                 FIRST=no
             done; echo "]"; }
-        exit $?
-        ;;
-esac
+}
 
-if  isAllowed_Cmd "$1" && \
-    isAllowed_Unit "$2"
-then
-    cmd="$1"
-    SYSTEMCTL_UNIT="$2"
-    SYSTEMCTL_ARGS=""
-    shift 2
+list_known_unit_files() {
+    find {/usr/lib,/lib,/etc,/var/run}/systemd/system /var/run/systemd/generator.late -type f -or -type l
+}
+
+list_known_ipm_unit_files() (
+    # NOTE: This prints pathnames, so there may be several hits per unit, e.g.
+    # with a packaged implementation, local customization and "/etc/...wants"
+    # For mass-matching sed+egrep are more efficient than multiple shell calls
+    # ...by about 45 times over 35 unit matches in test...
+    ###list_known_unit_files | while read F ; do isAllowed_Unit "`basename "$F"`" && echo "$F" ; done
+    SYSTEMCTL_UNITS_REGEX_SINGLE_BY_BASENAME="`echo "$SYSTEMCTL_UNITS_REGEX_SINGLE" | sed 's,^\^,(^|/),'`"
+    list_known_unit_files | egrep "$SYSTEMCTL_UNITS_REGEX_SINGLE_BY_BASENAME"
+)
+
+list_known_ipm_units() {
+    # NOTE: This prints just sorted unique basenames
+    # Piping directly from list_known_unit_files() is just marginally faster
+    list_known_ipm_unit_files | sed 's,^.*/\([^/]*\)$,\1,' | sort | uniq
+}
+
+systemctl_list_ipm_units() (
+    # This routine is our custom feature to speed up field support.
+    # It lists units whose files are installed (or defined, for svc@instances)
+    # locally, and can filter by certain states. It does not pollute the output
+    # with unit names that are NOT INSTALLED.
+    # We support listing of "--missing" units explicitly for non-regex names.
+    LIST_UNITS=""
+    LIST_STATES=""
+    LIST_MISSING="no"
+
     while [ $# -gt 0 ]; do
         case "$1" in
-            --all|-a|--full|-l|--quiet)
-                SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
-            *) echo "Action not allowed" >&2; exit 1;;
+            --ipm-installed|--internal) LIST_UNITS="$LIST_UNITS ORIGIN:INTERNAL" ;;
+            --ipm-deps|--external) LIST_UNITS="$LIST_UNITS ORIGIN:EXTERNAL" ;;
+            --active) LIST_STATES="$LIST_STATES STATE:ACTIVE" ;;
+            --inactive|--not-active) LIST_STATES="$LIST_STATES STATE:INACTIVE" ;;
+            --enabled) LIST_STATES="$LIST_STATES STATE:ENABLED" ;;
+            --disabled|--not-enabled) LIST_STATES="$LIST_STATES STATE:DISABLED" ;;
+            --missing) LIST_MISSING="yes" ;;
+            *) die_ACTION_NOT_ALLOWED ;;
         esac
         shift
     done
-    exec $SYSTEMCTL "$cmd" "$SYSTEMCTL_UNIT" $SYSTEMCTL_ARGS
-    # Should not get to this line
-fi
 
-echo "Action not allowed" >&2
-exit 1
+    # Mutually exclusive options effectively mean we want everything...
+    # Also note they are alphabetically pre-sorted ;)
+    [[ -n "$LIST_UNITS" ]] && \
+    LIST_UNITS="`for T in $LIST_UNITS ; do echo "$T" ; done | sort | uniq | tr '\n' " "`" && \
+    [[ "$LIST_UNITS" =~ ORIGIN:EXTERNAL.*ORIGIN:INTERNAL ]] && LIST_UNITS=""
+
+    # If caller wants missing units, they have no systemd state to care about
+    [[ x"$LIST_MISSING" = x"yes" ]] && LIST_STATES=""
+    [[ -n "$LIST_STATES" ]] && \
+    LIST_STATES="`for T in $LIST_STATES ; do echo "$T" ; done | sort | uniq | tr '\n' " "`" && \
+    [[ "$LIST_STATES" =~ (STATE:ACTIVE.*STATE:INACTIVE|STATE:DISABLED.*STATE:ENABLED) ]] && LIST_STATES=""
+
+    [[ -z "$LIST_UNITS" ]] && LIST_UNITS="ORIGIN:ANY"
+    [[ -z "$LIST_STATES" ]] && LIST_STATES="STATE:ANY"
+
+    # List of unique unit filenames known to the system that match our filter
+    ALL_KNOWN_UNITS="`list_known_ipm_units`"
+    SYSTEMCTL_UNITS=""
+
+    [[ -n "$ALL_KNOWN_UNITS" ]] && \
+    if [[ "$LIST_UNITS" = "ORIGIN:ANY" ]]; then
+        # Avoid two loops of regex over the same data
+        SYSTEMCTL_UNITS="$ALL_KNOWN_UNITS"
+    else
+        # NOTE/TODO: Potentially support more than these two types later on
+        # NOTE: "egrep" is a bit faster than bash while+regex here, but it
+        # relies on unit entries being one per line
+        SYSTEMCTL_UNITS_INTERNAL=""
+        SYSTEMCTL_UNITS_EXTERNAL=""
+        if [[ "$LIST_UNITS" =~ ORIGIN:INTERNAL ]] > /dev/null ; then
+            #SYSTEMCTL_UNITS_INTERNAL="`echo "$ALL_KNOWN_UNITS" | while read F ; do [[ "$F" =~ $SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL ]] > /dev/null && echo "$F"; done`"
+            SYSTEMCTL_UNITS_INTERNAL="`echo "$ALL_KNOWN_UNITS" | egrep "$SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL"`"
+        fi
+        if [[ "$LIST_UNITS" =~ ORIGIN:EXTERNAL ]] > /dev/null ; then
+            #SYSTEMCTL_UNITS_EXTERNAL="`echo "$ALL_KNOWN_UNITS" | while read F ; do [[ "$F" =~ $SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL ]] > /dev/null && echo "$F"; done`"
+            SYSTEMCTL_UNITS_EXTERNAL="`echo "$ALL_KNOWN_UNITS" | egrep "$SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL"`"
+        fi
+
+        SYSTEMCTL_UNITS="$SYSTEMCTL_UNITS_INTERNAL"
+        if [[ -n "$SYSTEMCTL_UNITS_EXTERNAL" ]] ; then
+            [[ -z "$SYSTEMCTL_UNITS" ]] \
+                && SYSTEMCTL_UNITS="$SYSTEMCTL_UNITS_EXTERNAL" \
+                || SYSTEMCTL_UNITS="$SYSTEMCTL_UNITS
+$SYSTEMCTL_UNITS_EXTERNAL"
+        fi
+    fi
+
+    if [[ x"$LIST_MISSING" = x"yes" ]] ; then
+        # NOTE: This mode lists something or nothing and exits, always
+        SHOW_UNITS=""
+        if [[ -z "$SYSTEMCTL_UNITS" ]] ; then
+            SHOW_UNITS="`echo "$SYSTEMCTL_UNITS_COMMON $SYSTEMCTL_UNITS_GLOBS" | tr ' ' '\n'`"
+        else
+            for U in $SYSTEMCTL_UNITS_COMMON ; do
+                echo "$SYSTEMCTL_UNITS" | \
+                egrep "^$U"'($|\.(service|timer|target))$' > /dev/null \
+                || SHOW_UNITS="$SHOW_UNITS
+$U"
+            done
+            for U in `echo "$SYSTEMCTL_UNITS_GLOBS" | sed 's,@\*$,,'` ; do
+                echo "$SYSTEMCTL_UNITS" | \
+                egrep "^$U"'@[^[:blank:]]+($|\.(service|timer|target))$' > /dev/null \
+                || SHOW_UNITS="$SHOW_UNITS
+$U"
+            done
+        fi
+
+        [[ -n "$SHOW_UNITS" ]] && echo "$SHOW_UNITS" | egrep -v '^$' && return 0
+
+        echo "No installed units match your selection: $LIST_UNITS STATE:MISSING" | sed 's,  , ,g' >&2
+        return 3
+    fi
+
+    [[ -n "$SYSTEMCTL_UNITS" ]] && \
+    if [ "$LIST_STATES" != "STATE:ANY" ]; then
+        # Logic borrowed from ""--list-json" and simplified since we have all
+        # the unit-naming data pre-filtered already
+        SHOW_UNITS=""
+        SYSTEMCTL_ATTRS="-p Id -p SubState -p ActiveState -p UnitFileState -p LoadState"
+        SYSTEMCTL_INFO="$( vID=""; vSS=""; vLS=""; vAS=""; vUFS=""; \
+        ($SYSTEMCTL show --full $SYSTEMCTL_ATTRS `echo "$SYSTEMCTL_UNITS" | sed 's,\@\.,@.*\\.,g'` && echo "") | \
+        while IFS='=' read -r KEY VALUE; do
+            case "$KEY" in
+                "") if [ -n "$vID" ] ; then
+                        printf '%s\tL:%s\tA:%s\tU:%s\tS:%s\t\n' "$vID" "$vLS" "$vAS" "$vUFS" "$vSS"
+                    fi
+                    vID=""; vSS=""; vLS=""; vAS=""; vUFS=""
+                    ;;
+                Id)
+                    vID="$VALUE";;
+                UnitFileState)
+                    vUFS="$VALUE";;
+                ActiveState)
+                    vAS="$VALUE";;
+                LoadState)
+                    vLS="$VALUE";;
+                SubState)
+                    vSS="$VALUE";;
+                *) # Fallback for different casing, separate to optimize
+                    case "$KEY" in
+                    [Ii][Dd])
+                        vID="$VALUE";;
+                    [Uu][Nn][Ii][Tt][Ff][Ii][Ll][Ss][Tt][Aa][Tt][Ee])
+                        vUFS="$VALUE";;
+                    [Aa][Cc][Tt][Ii][Vv][Ee][Ss][Tt][Aa][Tt][Ee])
+                        vAS="$VALUE";;
+                    [Ll][Oo][Aa][Dd][Ss][Tt][Aa][Tt][Ee])
+                        vLS="$VALUE";;
+                    [Ss][Uu][Bb][Ss][Tt][Aa][Tt][Ee])
+                        vSS="$VALUE";;
+                    esac;;
+            esac
+        done | sort | uniq )" || SYSTEMCTL_INFO=""
+
+        if [ "$DEBUG_SYSTEMCTL" = yes ]; then
+            echo "$SYSTEMCTL_INFO" >&2
+        fi
+
+        [[ -n "$SYSTEMCTL_INFO" ]] && \
+        for U in $SYSTEMCTL_UNITS ; do
+            SHOW_THIS_UNIT=no # Match something below to show up
+            I="`echo "$SYSTEMCTL_INFO" | egrep '^'"$U"`" || I=""
+            if [[ -n "$I" ]]; then
+                ( # Subshell to simplify exit code passing and to limit shopt
+                # TODO: More research into evaluated strings is desirable here
+                shopt -s nocasematch
+                case "$LIST_STATES" in
+                    *STATE:ENABLED*)
+                        case "$I" in
+                            *L:not-loaded*|U:disabled*) SHOW_THIS_UNIT=no ;;
+                            *L:loaded*|U:enabled*|*U:static*|*U:"	"S:*) SHOW_THIS_UNIT=yes ;;
+                            *) SHOW_THIS_UNIT=no ;;
+                        esac
+                        ;;
+                    *STATE:DISABLED*)
+                        case "$I" in
+                            *L:loaded*|U:enabled*|*U:static*|*U:"	"S:*) SHOW_THIS_UNIT=no ;;
+                            *) SHOW_THIS_UNIT=yes ;;
+                        esac
+                        ;;
+                esac
+                case "$LIST_STATES" in
+                    *STATE:ACTIVE*)
+                        case "$I" in
+                            *[AS]:failed*|*A:inactive*|*S:dead*|*S:exited*) SHOW_THIS_UNIT=no ;;
+                            *A:active*|*S:running*|*S:waiting*) SHOW_THIS_UNIT=yes ;;
+                            *) SHOW_THIS_UNIT=no ;;
+                        esac
+                        ;;
+                    *STATE:INACTIVE*)
+                        case "$I" in
+                            *[AS]:failed*|*A:inactive*|*S:dead*|*S:exited*) SHOW_THIS_UNIT=yes ;;
+                            *) SHOW_THIS_UNIT=no ;;
+                        esac
+                        ;;
+                esac
+                [[ "$SHOW_THIS_UNIT" = "yes" ]] # Return this test's exitcode
+                ) && SHOW_THIS_UNIT=yes
+            fi
+            if [[ "$SHOW_THIS_UNIT" = yes ]] ; then
+                if [[ "$DEBUG_SYSTEMCTL" = yes ]] ; then
+                    echo "D: $I" >&2
+                fi
+                [[ -z "$SHOW_UNITS" ]] && SHOW_UNITS="$U" || SHOW_UNITS="$SHOW_UNITS
+$U"
+            fi
+        done
+        SYSTEMCTL_UNITS="$SHOW_UNITS"
+    fi
+
+    [[ -z "$SYSTEMCTL_UNITS" ]] && \
+        echo "No installed units match your selection: $LIST_UNITS $LIST_STATES" | sed 's,  , ,g' >&2 && \
+        return 3
+
+    echo "$SYSTEMCTL_UNITS"
+)
+
+process_CLI_systemctl() {
+    # Quick support for specific commands
+    case "$1" in
+        list-units|--all|-a)
+            SYSTEMCTL_ARGS=""
+            while [ $# -gt 0 ]; do
+                case "$1" in
+                    list-units|--all|-a|--full|-l)
+                        # NOTE: This allows to list ALL units, not just our filter
+                        SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
+                    *) die_ACTION_NOT_ALLOWED ;;
+                esac
+                shift
+            done
+            exec $SYSTEMCTL $SYSTEMCTL_ARGS
+            # Should not get to this line
+            die_INTERNAL_ERROR
+            ;;
+        list-json)
+            shift
+            systemctl_list_json "$@"
+            exit $?
+            ;;
+        list-ipm-units)
+            shift
+            systemctl_list_ipm_units "$@"
+            exit $?
+            ;;
+    esac
+
+    # Patch through some commands we allow over objects we allow
+    if  isAllowed_Cmd_systemctl "$1" && \
+        isAllowed_Unit "$2"
+    then
+        cmd="$1"
+        SYSTEMCTL_UNIT="$2"
+        SYSTEMCTL_ARGS=""
+        ABORT=no
+        shift 2
+        while [ $# -gt 0 ]; do
+            case "$1" in
+                --all|-a|--full|-l|--quiet)
+                    SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
+                -n) if [ "$cmd" = status ] && [ -n "$2" ] && [ "$2" -gt 0 ]; then
+                        SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1 $2"
+                        shift
+                    else
+                        ABORT=yes
+                    fi
+                    ;;
+                *)  ABORT=yes ;;
+            esac
+            [ "$ABORT" = yes ] && die_ACTION_NOT_ALLOWED
+            shift
+        done
+        exec $SYSTEMCTL "$cmd" "$SYSTEMCTL_UNIT" $SYSTEMCTL_ARGS
+        # Should not get to this commented line
+        die_INTERNAL_ERROR
+    fi
+
+    # Command and/or object were not among permitted ones
+    die_ACTION_NOT_ALLOWED
+}
+
+process_CLI_journalctl() {
+    # Patch through some commands we allow over objects we allow
+    ABORT=no
+    JOURNALCTL_ARGS=""
+
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            -n) if [ -n "$2" ] && [ "$2" -gt 0 ]; then
+                    JOURNALCTL_ARGS="$JOURNALCTL_ARGS $1 $2"
+                    shift 2
+                else
+                    ABORT=yes
+                fi
+                ;;
+            *)
+                if  isAllowed_Cmd_journalctl "$1" || \
+                    isAllowed_Unit "$1"
+                then
+                    JOURNALCTL_ARGS="$JOURNALCTL_ARGS $1"
+                    shift
+                else
+                    ABORT=yes
+                fi
+                ;;
+        esac
+        [ "$ABORT" = yes ] && die_ACTION_NOT_ALLOWED
+    done
+    [ -z "$JOURNALCTL_ARGS" ] && die_ACTION_NOT_ALLOWED
+    exec $JOURNALCTL $JOURNALCTL_ARGS
+    # Should not get to and beyond this commented line
+    die_INTERNAL_ERROR
+}
+
+case "`basename $0`" in
+    systemctl) process_CLI_systemctl "$@"; exit $? ;;
+    journalctl) process_CLI_journalctl "$@"; exit $? ;;
+esac
+
+# Basename was not what this script wraps
+die_ACTION_NOT_ALLOWED
