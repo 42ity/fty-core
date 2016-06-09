@@ -206,7 +206,8 @@ wscGBRaOr9hO4FqPjem8H6s=
 EOF
 
 # Uninstall various packages that are not needed
-for i in sysvinit ncurses-common libicu52 lsb-release; do
+# Note: We restore "/bin/diff" and "/bin/*grep" via busybox, below
+for i in $(dpkg -l | awk '/-perl/{ print $2; }') apt fakeroot ncurses-bin diffutils grep sysvinit ncurses-common libicu52 lsb-release; do
     case "$IMGTYPE" in
         devel)
             echo dpkg -P --force-all $i
@@ -275,8 +276,10 @@ if [ "`uname -m`" = x86_64 ]; then
     /bin/systemctl disable agent-th
     /bin/systemctl disable lcd-boot-display
     /bin/systemctl disable lcd-net-display
+    /bin/systemctl disable lcd-shutdown-display || true
     /bin/systemctl mask lcd-boot-display
     /bin/systemctl mask lcd-net-display
+    /bin/systemctl mask lcd-shutdown-display || true
     /bin/systemctl disable bios-reset-button
     /bin/systemctl mask bios-reset-button
 else
@@ -284,6 +287,7 @@ else
     /bin/systemctl mask bios-fake-th
     /bin/systemctl enable lcd-boot-display
     /bin/systemctl enable lcd-net-display
+    /bin/systemctl enable lcd-shutdown-display || true
     #sed -i 's|PathChanged=/etc|PathChanged=/mnt/nand/overlay/etc|' /usr/lib/systemd/system/composite-metrics\@.path
 fi
 # Services not part of core
@@ -362,8 +366,8 @@ fi
 echo "PATH=/usr/libexec/bios:/bin:/usr/bin:/sbin:/usr/sbin" >>/usr/share/bios/etc/default/bios
 
 # Setup some busybox commands
-for i in vi tftp wget; do
-   ln -s busybox /bin/$i
+for i in vi tftp wget diff strings telnet egrep fgrep grep; do
+   [ -x "/bin/$i" ] || ln -s busybox "/bin/$i"
 done
 
 # Simplify ntp.conf

@@ -39,6 +39,8 @@ test_it "asset_rack_computed4"
 api_get_json /asset/4 >&5
 print_result $?
 
+logmsg_warn "This test can fail with zero vs. null values, see http://jira.mbt.lab.etn.com/browse/BIOS-2283 in this case"
+
 echo
 echo "###################################################################################################"
 echo "********* asset_rack_computed4.sh ******************* END *****************************************"

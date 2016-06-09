@@ -264,5 +264,7 @@ for UPS in $UPS1 $UPS2 ; do
     done
 done
 
+logmsg_warn "This test can fail with data verification errors, see http://jira.mbt.lab.etn.com/browse/BIOS-2285 in this case"
+
 # The trap-handler should display the summary (if any)
 exit

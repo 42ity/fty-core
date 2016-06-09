@@ -254,6 +254,8 @@ api_get_json_ntstp '/metric/computed/datacenter_indicators?arg1=19&arg2=trend_pw
 print_result $RES;RES=0
 curlfail_pop
 
+logmsg_warn "This test can fail with zero values, see http://jira.mbt.lab.etn.com/browse/BIOS-2284 in this case"
+
 echo
 echo "###################################################################################################"
 echo "********* trends.sh ********************************* END *****************************************"
