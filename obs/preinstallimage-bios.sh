@@ -70,7 +70,7 @@ groupadd -g 8003 bios-admin
 groupadd -g 8002 bios-poweruser
 groupadd -g 8001 bios-user
 groupadd -g 8000 bios-guest
-groupadd bios-infra
+groupadd -g 8004 bios-infra
 
 useradd -m bios -N -g bios-infra -G dialout -s /bin/bash
 mkdir -p /home/bios && chown bios:bios-infra /home/bios
