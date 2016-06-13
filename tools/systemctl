@@ -464,38 +464,41 @@ $U"
             if [[ -n "$I" ]]; then
                 ( # Subshell to simplify exit code passing and to limit shopt
                 # TODO: More research into evaluated strings is desirable here
+                SHOW1=""
+                SHOW2=""
                 shopt -s nocasematch
                 case "$LIST_STATES" in
                     *STATE:ENABLED*)
                         case "$I" in
-                            *L:not-loaded*|U:disabled*) SHOW_THIS_UNIT=no ;;
-                            *L:loaded*|U:enabled*|*U:static*|*U:"	"S:*) SHOW_THIS_UNIT=yes ;;
-                            *) SHOW_THIS_UNIT=no ;;
+                            *L:not-loaded*|U:disabled*) SHOW1=no ;;
+                            *L:loaded*|U:enabled*|*U:static*|*U:"	"S:*) SHOW1=yes ;; # NOTE: It is a TAB character after U:
+                            *) SHOW1=no ;;
                         esac
                         ;;
                     *STATE:DISABLED*)
                         case "$I" in
-                            *L:loaded*|U:enabled*|*U:static*|*U:"	"S:*) SHOW_THIS_UNIT=no ;;
-                            *) SHOW_THIS_UNIT=yes ;;
+                            *L:loaded*|U:enabled*|*U:static*|*U:"	"S:*) SHOW1=no ;;
+                            *) SHOW1=yes ;;
                         esac
                         ;;
                 esac
                 case "$LIST_STATES" in
                     *STATE:ACTIVE*)
                         case "$I" in
-                            *[AS]:failed*|*A:inactive*|*S:dead*|*S:exited*) SHOW_THIS_UNIT=no ;;
-                            *A:active*|*S:running*|*S:waiting*) SHOW_THIS_UNIT=yes ;;
-                            *) SHOW_THIS_UNIT=no ;;
+                            *[AS]:failed*|*A:inactive*|*S:dead*|*S:exited*) SHOW2=no ;;
+                            *A:active*|*S:running*|*S:waiting*) SHOW2=yes ;;
+                            *) SHOW2=no ;;
                         esac
                         ;;
                     *STATE:INACTIVE*)
                         case "$I" in
-                            *[AS]:failed*|*A:inactive*|*S:dead*|*S:exited*) SHOW_THIS_UNIT=yes ;;
-                            *) SHOW_THIS_UNIT=no ;;
+                            *[AS]:failed*|*A:inactive*|*S:dead*|*S:exited*) SHOW2=yes ;;
+                            *) SHOW2=no ;;
                         esac
                         ;;
                 esac
-                [[ "$SHOW_THIS_UNIT" = "yes" ]] # Return this test's exitcode
+                # We show units not filtered away by requirements listed on CLI
+                [[ x"$SHOW1" != xno ]] && [[ x"$SHOW2" != xno ]] # Return this test's exitcode
                 ) && SHOW_THIS_UNIT=yes
             fi
             if [[ "$SHOW_THIS_UNIT" = yes ]] ; then
