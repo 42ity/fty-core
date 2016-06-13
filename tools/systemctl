@@ -296,6 +296,7 @@ systemctl_list_ipm_units() (
     LIST_UNITS=""
     LIST_STATES=""
     LIST_MISSING="no"
+    SHOW_DETAILS="no"
 
     while [ $# -gt 0 ]; do
         case "$1" in
@@ -306,6 +307,8 @@ systemctl_list_ipm_units() (
             --enabled) LIST_STATES="$LIST_STATES STATE:ENABLED" ;;
             --disabled|--not-enabled) LIST_STATES="$LIST_STATES STATE:DISABLED" ;;
             --missing) LIST_MISSING="yes" ;;
+            --detailed|--details|--long|-l) SHOW_DETAILS="yes" ;;
+                # TODO: [BUG] Currently details are only shown if we request specific states
             *) die_ACTION_NOT_ALLOWED ;;
         esac
         shift
@@ -505,8 +508,13 @@ $U"
                 if [[ "$DEBUG_SYSTEMCTL" = yes ]] ; then
                     echo "D: $I" >&2
                 fi
-                [[ -z "$SHOW_UNITS" ]] && SHOW_UNITS="$U" || SHOW_UNITS="$SHOW_UNITS
+                if [[ "$SHOW_DETAILS" = yes ]]; then
+                    [[ -z "$SHOW_UNITS" ]] && SHOW_UNITS="$I" || SHOW_UNITS="$SHOW_UNITS
+$I"
+                else
+                    [[ -z "$SHOW_UNITS" ]] && SHOW_UNITS="$U" || SHOW_UNITS="$SHOW_UNITS
 $U"
+                fi
             fi
         done
         SYSTEMCTL_UNITS="$SHOW_UNITS"
