@@ -29,7 +29,7 @@
 #           Similarly, wraps /bin/journalctl with same unit filters.
 #
 
-if [ -n "${BASH-}" ]; then
+if [ -n "${BASH-}" ] && [[ doublebracket = doublebracket ]]; then
     set -o pipefail 2>/dev/null || true
 else
     echo "systemctl: WARNING: It seems you execute '$0' not with 'bash' - this can fail!" >&2
@@ -166,7 +166,7 @@ systemctl_list_json() {
         # bit to rewrite should we want this to be anyhow dynamic/on-request.
         SYSTEMCTL_ATTRS="-p Id -p SubState -p ActiveState -p UnitFileState -p LoadState"
         SYSTEMCTL_UNITS=""  # If empty, default of 'all allowed' will be used
-        while [ $# -gt 0 ]; do
+        while [[ $# -gt 0 ]]; do
             case "$1" in
                 --all|-a)
                         SYSTEMCTL_ATTRS="--all" ;;
@@ -182,13 +182,13 @@ systemctl_list_json() {
 
         # We need to convert a potentially multi-line or quoted values into an
         # escaped single-line token for valid markup; our JSON.sh can do that.
-        [ -n "$JSONSH" ] && [ -s "$JSONSH" ] && [ -x "$JSONSH" ] || \
+        [[ -n "$JSONSH" ]] && [[ -s "$JSONSH" ]] && [[ -x "$JSONSH" ]] || \
         for F in "`dirname $0`/JSON.sh" "/usr/share/bios/scripts/JSON.sh" \
             "$CHECKOUTDIR/tools/JSON.sh"; do
-                [ -x "$F" -a -s "$F" ] && JSONSH="$F" && break
+                [[ -x "$F" ]] && [[ -s "$F" ]] && JSONSH="$F" && break
         done
-        if [ -x "$JSONSH" ] ; then
-            if [ -n "${BASH-}" ]; then
+        if [[ -x "$JSONSH" ]] ; then
+            if [[ -n "${BASH-}" ]]; then
                 . "$JSONSH"
             else
                 logmsg_info "systemctl: Will fork to use JSON.sh from '$JSONSH' to cook strings"
@@ -208,7 +208,7 @@ systemctl_list_json() {
         # So we make single-lines of markup and follow up with sort|uniq and the
         # comma-adder in the end (possible loophole: case-sensitive matching).
 
-        if [ "$DEBUG_SYSTEMCTL" = yes ]; then
+        if [[ "$DEBUG_SYSTEMCTL" = yes ]]; then
             SYSTEMCTL="time $SYSTEMCTL"
             echo "$SYSTEMCTL show --full $SYSTEMCTL_ATTRS ${SYSTEMCTL_UNITS:-'*' $SYSTEMCTL_UNITS_COMMON $SYSTEMCTL_UNITS_GLOBS}" >&2
         fi
@@ -217,7 +217,7 @@ systemctl_list_json() {
           ${SYSTEMCTL_UNITS:-'*' $SYSTEMCTL_UNITS_COMMON $SYSTEMCTL_UNITS_GLOBS} && echo "" ) | \
         while IFS='=' read -r KEY VALUE; do
             case "$KEY" in
-                "") if [ -n "$vID" ] && [ x"$vID" != x".skip.$$" ]; then
+                "") if [[ -n "$vID" ]] && [[ x"$vID" != x".skip.$$" ]]; then
                         sOTHER=""
                         if [[ x"$SYSTEMCTL_ATTRS" = 'x--all' ]] && [[ -n "$lOTHER" ]]; then
                             sOTHER="$(echo "$lOTHER" | while IFS== read K V; do printf ',"%s":"%s"' "`cook_a_string_arg "$K"`" "`cook_a_string_arg "$V"`" ; done )"
@@ -239,7 +239,7 @@ systemctl_list_json() {
                     vSS="$VALUE";;
                 *) # Fallback for different casing, separate to optimize
                    # Do not waste time if the ID is known bad; empty is OK here
-                    [ x"$vID" != x".skip.$$" ] && \
+                    [[ x"$vID" != x".skip.$$" ]] && \
                     case "$KEY" in
                     [Ii][Dd])
                         isAllowed_Unit "$VALUE" && vID="$VALUE" || vID=".skip.$$" ;;
@@ -267,6 +267,7 @@ $lOTHER"
 }
 
 list_known_unit_files() {
+    # This lists ALL unit file pathnames (in locations we care about, at least)
     find {/usr/lib,/lib,/etc,/var/run}/systemd/system /var/run/systemd/generator.late -type f -or -type l
 }
 
@@ -295,8 +296,9 @@ systemctl_list_ipm_units() (
     LIST_UNITS=""
     LIST_STATES=""
     LIST_MISSING="no"
+    SHOW_DETAILS="no"
 
-    while [ $# -gt 0 ]; do
+    while [[ $# -gt 0 ]]; do
         case "$1" in
             --ipm-installed|--internal) LIST_UNITS="$LIST_UNITS ORIGIN:INTERNAL" ;;
             --ipm-deps|--external) LIST_UNITS="$LIST_UNITS ORIGIN:EXTERNAL" ;;
@@ -305,6 +307,7 @@ systemctl_list_ipm_units() (
             --enabled) LIST_STATES="$LIST_STATES STATE:ENABLED" ;;
             --disabled|--not-enabled) LIST_STATES="$LIST_STATES STATE:DISABLED" ;;
             --missing) LIST_MISSING="yes" ;;
+            --detailed|--details|--long|-l) SHOW_DETAILS="yes" ;;
             *) die_ACTION_NOT_ALLOWED ;;
         esac
         shift
@@ -326,10 +329,16 @@ systemctl_list_ipm_units() (
     [[ -z "$LIST_STATES" ]] && LIST_STATES="STATE:ANY"
 
     # List of unique unit filenames known to the system that match our filter
-    ALL_KNOWN_UNITS="`list_known_ipm_units`"
+    ALL_KNOWN_UNITS="`list_known_ipm_units`" || ALL_KNOWN_UNITS=""
     SYSTEMCTL_UNITS=""
 
-    [[ -n "$ALL_KNOWN_UNITS" ]] && \
+    [[ -z "$ALL_KNOWN_UNITS" ]] && \
+    { if [[ x"$LIST_MISSING" != x"yes" ]] ; then
+        # Handle the list-missing report uniformly below
+        echo "No installed units match the filter" >&2
+        return 3
+      fi
+    } || \
     if [[ "$LIST_UNITS" = "ORIGIN:ANY" ]]; then
         # Avoid two loops of regex over the same data
         SYSTEMCTL_UNITS="$ALL_KNOWN_UNITS"
@@ -361,15 +370,36 @@ $SYSTEMCTL_UNITS_EXTERNAL"
         # NOTE: This mode lists something or nothing and exits, always
         SHOW_UNITS=""
         if [[ -z "$SYSTEMCTL_UNITS" ]] ; then
+            # Nothing found == all missing
             SHOW_UNITS="`echo "$SYSTEMCTL_UNITS_COMMON $SYSTEMCTL_UNITS_GLOBS" | tr ' ' '\n'`"
         else
-            for U in $SYSTEMCTL_UNITS_COMMON ; do
+            _SYSTEMCTL_UNITS_COMMON=""
+            _SYSTEMCTL_UNITS_GLOBS=""
+            if [[ "$LIST_UNITS" = "ORIGIN:ANY" ]]; then
+                _SYSTEMCTL_UNITS_COMMON="$SYSTEMCTL_UNITS_COMMON"
+                _SYSTEMCTL_UNITS_GLOBS="$SYSTEMCTL_UNITS_GLOBS"
+            else
+                # NOTE/TODO: Potentially support more than these two types later on
+                if [[ "$LIST_UNITS" =~ ORIGIN:INTERNAL ]] > /dev/null ; then
+                    _SYSTEMCTL_UNITS_COMMON="${_SYSTEMCTL_UNITS_COMMON} $SYSTEMCTL_UNITS_COMMON_INTERNAL"
+                    _SYSTEMCTL_UNITS_GLOBS="${_SYSTEMCTL_UNITS_GLOBS} $SYSTEMCTL_UNITS_GLOBS_INTERNAL"
+                fi
+                if [[ "$LIST_UNITS" =~ ORIGIN:EXTERNAL ]] > /dev/null ; then
+                    _SYSTEMCTL_UNITS_COMMON="${_SYSTEMCTL_UNITS_COMMON} $SYSTEMCTL_UNITS_COMMON_EXTERNAL"
+                    _SYSTEMCTL_UNITS_GLOBS="${_SYSTEMCTL_UNITS_GLOBS} $SYSTEMCTL_UNITS_GLOBS_EXTERNAL"
+                fi
+            fi
+
+            [[ -n "${_SYSTEMCTL_UNITS_COMMON}" ]] && \
+            for U in ${_SYSTEMCTL_UNITS_COMMON} ; do
                 echo "$SYSTEMCTL_UNITS" | \
                 egrep "^$U"'($|\.(service|timer|target))$' > /dev/null \
                 || SHOW_UNITS="$SHOW_UNITS
 $U"
             done
-            for U in `echo "$SYSTEMCTL_UNITS_GLOBS" | sed 's,@\*$,,'` ; do
+
+            [[ -n "${_SYSTEMCTL_UNITS_GLOBS}" ]] && \
+            for U in `echo "${_SYSTEMCTL_UNITS_GLOBS}" | sed 's,@\*$,,'` ; do
                 echo "$SYSTEMCTL_UNITS" | \
                 egrep "^$U"'@[^[:blank:]]+($|\.(service|timer|target))$' > /dev/null \
                 || SHOW_UNITS="$SHOW_UNITS
@@ -377,23 +407,23 @@ $U"
             done
         fi
 
-        [[ -n "$SHOW_UNITS" ]] && echo "$SHOW_UNITS" | egrep -v '^$' && return 0
+        [[ -n "$SHOW_UNITS" ]] && echo "$SHOW_UNITS" | egrep -v '^$' | sort | uniq && return 0
 
         echo "No installed units match your selection: $LIST_UNITS STATE:MISSING" | sed 's,  , ,g' >&2
         return 3
     fi
 
     [[ -n "$SYSTEMCTL_UNITS" ]] && \
-    if [ "$LIST_STATES" != "STATE:ANY" ]; then
-        # Logic borrowed from ""--list-json" and simplified since we have all
-        # the unit-naming data pre-filtered already
+    if [[ "$LIST_STATES" != "STATE:ANY" ]] || [[ "$SHOW_DETAILS" = yes ]]; then
+        # Logic borrowed from "--list-json" feature and simplified since
+        # we have all the unit-naming data pre-filtered already
         SHOW_UNITS=""
         SYSTEMCTL_ATTRS="-p Id -p SubState -p ActiveState -p UnitFileState -p LoadState"
         SYSTEMCTL_INFO="$( vID=""; vSS=""; vLS=""; vAS=""; vUFS=""; \
         ($SYSTEMCTL show --full $SYSTEMCTL_ATTRS `echo "$SYSTEMCTL_UNITS" | sed 's,\@\.,@.*\\.,g'` && echo "") | \
         while IFS='=' read -r KEY VALUE; do
             case "$KEY" in
-                "") if [ -n "$vID" ] ; then
+                "") if [[ -n "$vID" ]] ; then
                         printf '%s\tL:%s\tA:%s\tU:%s\tS:%s\t\n' "$vID" "$vLS" "$vAS" "$vUFS" "$vSS"
                     fi
                     vID=""; vSS=""; vLS=""; vAS=""; vUFS=""
@@ -424,60 +454,77 @@ $U"
             esac
         done | sort | uniq )" || SYSTEMCTL_INFO=""
 
-        if [ "$DEBUG_SYSTEMCTL" = yes ]; then
-            echo "$SYSTEMCTL_INFO" >&2
-        fi
+        if [[ "$DEBUG_SYSTEMCTL" = yes ]] ; then
+            echo "$SYSTEMCTL_INFO"
+        fi >&2
 
         [[ -n "$SYSTEMCTL_INFO" ]] && \
-        for U in $SYSTEMCTL_UNITS ; do
-            SHOW_THIS_UNIT=no # Match something below to show up
-            I="`echo "$SYSTEMCTL_INFO" | egrep '^'"$U"`" || I=""
-            if [[ -n "$I" ]]; then
-                ( # Subshell to simplify exit code passing and to limit shopt
-                # TODO: More research into evaluated strings is desirable here
-                shopt -s nocasematch
-                case "$LIST_STATES" in
-                    *STATE:ENABLED*)
-                        case "$I" in
-                            *L:not-loaded*|U:disabled*) SHOW_THIS_UNIT=no ;;
-                            *L:loaded*|U:enabled*|*U:static*|*U:"	"S:*) SHOW_THIS_UNIT=yes ;;
-                            *) SHOW_THIS_UNIT=no ;;
-                        esac
-                        ;;
-                    *STATE:DISABLED*)
-                        case "$I" in
-                            *L:loaded*|U:enabled*|*U:static*|*U:"	"S:*) SHOW_THIS_UNIT=no ;;
-                            *) SHOW_THIS_UNIT=yes ;;
-                        esac
-                        ;;
-                esac
-                case "$LIST_STATES" in
-                    *STATE:ACTIVE*)
-                        case "$I" in
-                            *[AS]:failed*|*A:inactive*|*S:dead*|*S:exited*) SHOW_THIS_UNIT=no ;;
-                            *A:active*|*S:running*|*S:waiting*) SHOW_THIS_UNIT=yes ;;
-                            *) SHOW_THIS_UNIT=no ;;
-                        esac
-                        ;;
-                    *STATE:INACTIVE*)
-                        case "$I" in
-                            *[AS]:failed*|*A:inactive*|*S:dead*|*S:exited*) SHOW_THIS_UNIT=yes ;;
-                            *) SHOW_THIS_UNIT=no ;;
-                        esac
-                        ;;
-                esac
-                [[ "$SHOW_THIS_UNIT" = "yes" ]] # Return this test's exitcode
-                ) && SHOW_THIS_UNIT=yes
-            fi
-            if [[ "$SHOW_THIS_UNIT" = yes ]] ; then
-                if [[ "$DEBUG_SYSTEMCTL" = yes ]] ; then
-                    echo "D: $I" >&2
+        if [[ "$LIST_STATES" == "STATE:ANY" ]] && [[ "$SHOW_DETAILS" = yes ]]; then
+            SYSTEMCTL_UNITS="$SYSTEMCTL_INFO"
+        else
+            for U in $SYSTEMCTL_UNITS ; do
+                SHOW_THIS_UNIT=no # Match something below to show up
+                # TODO: This egrep would be cleaner with '^'"$U"'[\t\ ]' - but for some reason that does not match our units
+                I="`echo "$SYSTEMCTL_INFO" | egrep '^'"$U"`" || I=""
+                if [[ -n "$I" ]]; then
+                    ( # Subshell to simplify exit code passing and to limit shopt
+                    # TODO: More research into evaluated strings is desirable here
+                    SHOW1=""
+                    SHOW2=""
+                    shopt -s nocasematch
+                    case "$LIST_STATES" in
+                        *STATE:ENABLED*)
+                            case "$I" in
+                                *L:not-loaded*|U:disabled*) SHOW1=no ;;
+                                *L:loaded*|U:enabled*|*U:static*|*U:"	"S:*) SHOW1=yes ;; # NOTE: It is a TAB character after U:
+                                *) SHOW1=no ;;
+                            esac
+                            ;;
+                        *STATE:DISABLED*)
+                            case "$I" in
+                                *L:loaded*|U:enabled*|*U:static*|*U:"	"S:*) SHOW1=no ;;
+                                *) SHOW1=yes ;;
+                            esac
+                            ;;
+                    esac
+
+                    # NOTE: One-shot services can be "active" and "exited" if they ran OK
+                    case "$LIST_STATES" in
+                        *STATE:ACTIVE*)
+                            case "$I" in
+                                *[AS]:failed*|*A:inactive*|*S:dead*) SHOW2=no ;;
+                                *A:active*|*S:running*|*S:waiting*) SHOW2=yes ;;
+                                *S:exited*) SHOW2=no ;;
+                                *) SHOW2=no ;;
+                            esac
+                            ;;
+                        *STATE:INACTIVE*)
+                            case "$I" in
+                                *A:active*|*S:running*|*S:waiting*) SHOW2=no ;;
+                                *[AS]:failed*|*A:inactive*|*S:dead*|*S:exited*) SHOW2=yes ;;
+                                *) SHOW2=no ;;
+                            esac
+                            ;;
+                    esac
+                    # We show units not filtered away by requirements listed on CLI
+                    [[ x"$SHOW1" != xno ]] && [[ x"$SHOW2" != xno ]] # Return this test's exitcode
+                    ) && SHOW_THIS_UNIT=yes
                 fi
-                [[ -z "$SHOW_UNITS" ]] && SHOW_UNITS="$U" || SHOW_UNITS="$SHOW_UNITS
+                if [[ "$SHOW_THIS_UNIT" = yes ]] ; then
+                    if [[ "$DEBUG_SYSTEMCTL" = yes ]] ; then
+                        echo "D: $I"
+                    fi >&2
+                    if [[ "$SHOW_DETAILS" = yes ]]; then
+                        [[ -z "$SHOW_UNITS" ]] && SHOW_UNITS="$I" || SHOW_UNITS="$SHOW_UNITS
+$I"
+                    else
+                        [[ -z "$SHOW_UNITS" ]] && SHOW_UNITS="$U" || SHOW_UNITS="$SHOW_UNITS
 $U"
-            fi
-        done
-        SYSTEMCTL_UNITS="$SHOW_UNITS"
+                    fi
+                fi
+            done
+            SYSTEMCTL_UNITS="$SHOW_UNITS"
+        fi
     fi
 
     [[ -z "$SYSTEMCTL_UNITS" ]] && \
@@ -492,7 +539,7 @@ process_CLI_systemctl() {
     case "$1" in
         list-units|--all|-a)
             SYSTEMCTL_ARGS=""
-            while [ $# -gt 0 ]; do
+            while [[ $# -gt 0 ]]; do
                 case "$1" in
                     list-units|--all|-a|--full|-l)
                         # NOTE: This allows to list ALL units, not just our filter
@@ -526,11 +573,11 @@ process_CLI_systemctl() {
         SYSTEMCTL_ARGS=""
         ABORT=no
         shift 2
-        while [ $# -gt 0 ]; do
+        while [[ $# -gt 0 ]]; do
             case "$1" in
                 --all|-a|--full|-l|--quiet)
                     SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
-                -n) if [ "$cmd" = status ] && [ -n "$2" ] && [ "$2" -gt 0 ]; then
+                -n) if [[ "$cmd" = status ]] && [[ -n "$2" ]] && [[ "$2" -gt 0 ]]; then
                         SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1 $2"
                         shift
                     else
@@ -539,7 +586,7 @@ process_CLI_systemctl() {
                     ;;
                 *)  ABORT=yes ;;
             esac
-            [ "$ABORT" = yes ] && die_ACTION_NOT_ALLOWED
+            [[ "$ABORT" = yes ]] && die_ACTION_NOT_ALLOWED
             shift
         done
         exec $SYSTEMCTL "$cmd" "$SYSTEMCTL_UNIT" $SYSTEMCTL_ARGS
@@ -556,9 +603,9 @@ process_CLI_journalctl() {
     ABORT=no
     JOURNALCTL_ARGS=""
 
-    while [ $# -gt 0 ]; do
+    while [[ $# -gt 0 ]]; do
         case "$1" in
-            -n) if [ -n "$2" ] && [ "$2" -gt 0 ]; then
+            -n) if [[ -n "$2" ]] && [[ "$2" -gt 0 ]]; then
                     JOURNALCTL_ARGS="$JOURNALCTL_ARGS $1 $2"
                     shift 2
                 else
@@ -576,9 +623,9 @@ process_CLI_journalctl() {
                 fi
                 ;;
         esac
-        [ "$ABORT" = yes ] && die_ACTION_NOT_ALLOWED
+        [[ "$ABORT" = yes ]] && die_ACTION_NOT_ALLOWED
     done
-    [ -z "$JOURNALCTL_ARGS" ] && die_ACTION_NOT_ALLOWED
+    [[ -z "$JOURNALCTL_ARGS" ]] && die_ACTION_NOT_ALLOWED
     exec $JOURNALCTL $JOURNALCTL_ARGS
     # Should not get to and beyond this commented line
     die_INTERNAL_ERROR
