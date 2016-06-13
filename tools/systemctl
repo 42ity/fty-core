@@ -44,6 +44,9 @@ export LANG LC_ALL TZ
 SYSTEMCTL="/bin/systemctl"
 JOURNALCTL="/bin/journalctl"
 
+# Use syslog if "logger" is available
+LOGGER="$(which logger)" 2>/dev/null || LOGGER=""
+
 SYSTEMCTL_COMMANDS="show start stop restart enable disable daemon-reload status is-active"
 # NOTE: We do not support "--unit=UNITNAME" because it is too much hassle here
 # NOTE: We also support "-n NUMBER" below
@@ -116,16 +119,51 @@ SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL='^('"${SYSTEMCTL_UNITS_REGEX_SINGLE_INTERN
 SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL='^('"${SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL}"')($|\.(service|timer|target))$'
 SYSTEMCTL_UNITS_REGEX_SINGLE='^('"${SYSTEMCTL_UNITS_REGEX_SINGLE}"')($|\.(service|timer|target))$'
 
+write_syslog() {
+    # TODO: Extend with config files and/or BIOS_* variables to point
+    # logging directly to remote servers. etc?
+    if [[ $# -gt 0 ]]; then
+        if [[ -n "$LOGGER" ]] && [[ -x "$LOGGER" ]] ; then
+            USER_PREFIX=""
+            [[ -n "${SUDO_USER-}" ]] && \
+                USER_PREFIX="sudo ${SUDO_USER-} (${SUDO_UID-}:${SUDO_GID-})"
+            [[ -n "${USER-}" ]] && \
+                USER_PREFIX="${USER_PREFIX:+$USER_PREFIX as }$USER (${UID-}/${EUID-}:${GID-})"
+            [[ -n "$USER_PREFIX" ]] && USER_PREFIX="$USER_PREFIX:"
+            $LOGGER -p auth.notice -t "`basename $0`-wrapper" --id="$$" "$USER_PREFIX" "$@" || true
+        fi
+        echo "$@" >&2
+    fi
+    return 0
+}
+
+DIED=no
+MAINPID="$$"
+trap_exit() {
+    EXITCODE=$?
+    if [[ "$DEBUG_SYSTEMCTL" = yes ]]; then
+        echo "TRAPPED EXIT: DIED='$DIED' EXITCODE='$EXITCODE'" >&2
+    fi
+    if [[ "$DIED" = no ]]; then
+        [[ "$EXITCODE" = 0 ]] && \
+            write_syslog "Completed OK" || \
+            write_syslog "Completed with code $EXITCODE"
+    fi >/dev/null 2>&1
+    exit $EXITCODE
+}
+
 die_ACTION_NOT_ALLOWED() {
     # NOTE: These stderr-string and exit-code are expected by some clients
     # like CI tests or maybe even web-GUI
     # Do not change without good reason and inspection of other code!
-    echo "Action not allowed" >&2
+    write_syslog "Action not allowed"
+    [[ -n "$MAINPID" ]] && [[ -d "/proc/$MAINPID" ]] && kill -SIGUSR1 "$MAINPID"
     exit 1
 }
 
 die_INTERNAL_ERROR() {
-    echo "Internal error" >&2
+    write_syslog "Internal error"
+    [[ -n "$MAINPID" ]] && [[ -d "/proc/$MAINPID" ]] && kill -SIGUSR1 "$MAINPID"
     exit 2
 }
 
@@ -548,7 +586,8 @@ process_CLI_systemctl() {
                 esac
                 shift
             done
-            exec $SYSTEMCTL $SYSTEMCTL_ARGS
+            $SYSTEMCTL $SYSTEMCTL_ARGS
+            exit $?
             # Should not get to this line
             die_INTERNAL_ERROR
             ;;
@@ -589,7 +628,8 @@ process_CLI_systemctl() {
             [[ "$ABORT" = yes ]] && die_ACTION_NOT_ALLOWED
             shift
         done
-        exec $SYSTEMCTL "$cmd" "$SYSTEMCTL_UNIT" $SYSTEMCTL_ARGS
+        $SYSTEMCTL "$cmd" "$SYSTEMCTL_UNIT" $SYSTEMCTL_ARGS
+        exit $?
         # Should not get to this commented line
         die_INTERNAL_ERROR
     fi
@@ -626,11 +666,17 @@ process_CLI_journalctl() {
         [[ "$ABORT" = yes ]] && die_ACTION_NOT_ALLOWED
     done
     [[ -z "$JOURNALCTL_ARGS" ]] && die_ACTION_NOT_ALLOWED
-    exec $JOURNALCTL $JOURNALCTL_ARGS
+    $JOURNALCTL $JOURNALCTL_ARGS
+    exit $?
     # Should not get to and beyond this commented line
     die_INTERNAL_ERROR
 }
 
+# Set up exit-traps
+trap "DIED=yes" SIGUSR1 # May be signalled by child processes
+trap "trap_exit" EXIT SIGHUP SIGINT SIGABRT SIGQUIT SIGTERM
+
+write_syslog "Starting $0 $*" >/dev/null 2>&1
 case "`basename $0`" in
     systemctl) process_CLI_systemctl "$@"; exit $? ;;
     journalctl) process_CLI_journalctl "$@"; exit $? ;;
