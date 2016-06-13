@@ -145,11 +145,9 @@ trap_exit() {
     if [[ "$DEBUG_SYSTEMCTL" = yes ]]; then
         echo "TRAPPED EXIT: '$MAINARGS' DIED='$DIED' EXITCODE='$EXITCODE'" >&2
     fi
-    if [[ "$DIED" = no ]]; then
-        [[ "$EXITCODE" = 0 ]] && \
-            write_syslog "Completed OK" || \
-            write_syslog "Completed with code $EXITCODE"
-    fi >/dev/null 2>&1
+    { [[ "$EXITCODE" = 0 ]] && \
+        write_syslog "Completed OK" || \
+        write_syslog "Completed with code $EXITCODE" ; } >/dev/null 2>&1
     exit $EXITCODE
 }
 
