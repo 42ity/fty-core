@@ -327,10 +327,16 @@ systemctl_list_ipm_units() (
     [[ -z "$LIST_STATES" ]] && LIST_STATES="STATE:ANY"
 
     # List of unique unit filenames known to the system that match our filter
-    ALL_KNOWN_UNITS="`list_known_ipm_units`"
+    ALL_KNOWN_UNITS="`list_known_ipm_units`" || ALL_KNOWN_UNITS=""
     SYSTEMCTL_UNITS=""
 
-    [[ -n "$ALL_KNOWN_UNITS" ]] && \
+    [[ -z "$ALL_KNOWN_UNITS" ]] && \
+    { if [[ x"$LIST_MISSING" != x"yes" ]] ; then
+        # Handle the list-missing report uniformly below
+        echo "No installed units match the filter" >&2
+        return 3
+      fi
+    } || \
     if [[ "$LIST_UNITS" = "ORIGIN:ANY" ]]; then
         # Avoid two loops of regex over the same data
         SYSTEMCTL_UNITS="$ALL_KNOWN_UNITS"
@@ -360,19 +366,38 @@ $SYSTEMCTL_UNITS_EXTERNAL"
 
     if [[ x"$LIST_MISSING" = x"yes" ]] ; then
         # NOTE: This mode lists something or nothing and exits, always
-        # TODO: [BUG] --missing --internal also lists external units as missing
         SHOW_UNITS=""
         if [[ -z "$SYSTEMCTL_UNITS" ]] ; then
             # Nothing found == all missing
             SHOW_UNITS="`echo "$SYSTEMCTL_UNITS_COMMON $SYSTEMCTL_UNITS_GLOBS" | tr ' ' '\n'`"
         else
-            for U in $SYSTEMCTL_UNITS_COMMON ; do
+            _SYSTEMCTL_UNITS_COMMON=""
+            _SYSTEMCTL_UNITS_GLOBS=""
+            if [[ "$LIST_UNITS" = "ORIGIN:ANY" ]]; then
+                _SYSTEMCTL_UNITS_COMMON="$SYSTEMCTL_UNITS_COMMON"
+                _SYSTEMCTL_UNITS_GLOBS="$SYSTEMCTL_UNITS_GLOBS"
+            else
+                # NOTE/TODO: Potentially support more than these two types later on
+                if [[ "$LIST_UNITS" =~ ORIGIN:INTERNAL ]] > /dev/null ; then
+                    _SYSTEMCTL_UNITS_COMMON="${_SYSTEMCTL_UNITS_COMMON} $SYSTEMCTL_UNITS_COMMON_INTERNAL"
+                    _SYSTEMCTL_UNITS_GLOBS="${_SYSTEMCTL_UNITS_GLOBS} $SYSTEMCTL_UNITS_GLOBS_INTERNAL"
+                fi
+                if [[ "$LIST_UNITS" =~ ORIGIN:EXTERNAL ]] > /dev/null ; then
+                    _SYSTEMCTL_UNITS_COMMON="${_SYSTEMCTL_UNITS_COMMON} $SYSTEMCTL_UNITS_COMMON_EXTERNAL"
+                    _SYSTEMCTL_UNITS_GLOBS="${_SYSTEMCTL_UNITS_GLOBS} $SYSTEMCTL_UNITS_GLOBS_EXTERNAL"
+                fi
+            fi
+
+            [[ -n "${_SYSTEMCTL_UNITS_COMMON}" ]] && \
+            for U in ${_SYSTEMCTL_UNITS_COMMON} ; do
                 echo "$SYSTEMCTL_UNITS" | \
                 egrep "^$U"'($|\.(service|timer|target))$' > /dev/null \
                 || SHOW_UNITS="$SHOW_UNITS
 $U"
             done
-            for U in `echo "$SYSTEMCTL_UNITS_GLOBS" | sed 's,@\*$,,'` ; do
+
+            [[ -n "${_SYSTEMCTL_UNITS_GLOBS}" ]] && \
+            for U in `echo "${_SYSTEMCTL_UNITS_GLOBS}" | sed 's,@\*$,,'` ; do
                 echo "$SYSTEMCTL_UNITS" | \
                 egrep "^$U"'@[^[:blank:]]+($|\.(service|timer|target))$' > /dev/null \
                 || SHOW_UNITS="$SHOW_UNITS
@@ -380,7 +405,7 @@ $U"
             done
         fi
 
-        [[ -n "$SHOW_UNITS" ]] && echo "$SHOW_UNITS" | egrep -v '^$' && return 0
+        [[ -n "$SHOW_UNITS" ]] && echo "$SHOW_UNITS" | egrep -v '^$' | sort | uniq && return 0
 
         echo "No installed units match your selection: $LIST_UNITS STATE:MISSING" | sed 's,  , ,g' >&2
         return 3
