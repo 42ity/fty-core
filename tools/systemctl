@@ -139,10 +139,11 @@ write_syslog() {
 
 DIED=no
 MAINPID="$$"
+MAINARGS="$0 $*"
 trap_exit() {
     EXITCODE=$?
     if [[ "$DEBUG_SYSTEMCTL" = yes ]]; then
-        echo "TRAPPED EXIT: DIED='$DIED' EXITCODE='$EXITCODE'" >&2
+        echo "TRAPPED EXIT: '$MAINARGS' DIED='$DIED' EXITCODE='$EXITCODE'" >&2
     fi
     if [[ "$DIED" = no ]]; then
         [[ "$EXITCODE" = 0 ]] && \
@@ -676,7 +677,12 @@ process_CLI_journalctl() {
 trap "DIED=yes" SIGUSR1 # May be signalled by child processes
 trap "trap_exit" EXIT SIGHUP SIGINT SIGABRT SIGQUIT SIGTERM
 
-write_syslog "Starting $0 $*" >/dev/null 2>&1
+if [[ "$DEBUG_SYSTEMCTL" = yes ]]; then
+    write_syslog "Starting $0 $*"
+else
+    write_syslog "Starting $0 $*" >/dev/null 2>&1
+fi
+
 case "`basename $0`" in
     systemctl) process_CLI_systemctl "$@"; exit $? ;;
     journalctl) process_CLI_journalctl "$@"; exit $? ;;
