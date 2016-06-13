@@ -130,7 +130,7 @@ write_syslog() {
             [[ -n "${USER-}" ]] && \
                 USER_PREFIX="${USER_PREFIX:+$USER_PREFIX as }$USER (${UID-}/${EUID-}:${GID-})"
             [[ -n "$USER_PREFIX" ]] && USER_PREFIX="$USER_PREFIX:"
-            $LOGGER -p auth.notice -t "`basename $0`-wrapper" --id="$$" "$USER_PREFIX" "$@" || true
+            $LOGGER -p auth.notice -t "`basename $0`-wrapper[$$]" "$USER_PREFIX" "$@" || true
         fi
         echo "$@" >&2
     fi
