@@ -267,6 +267,7 @@ $lOTHER"
 }
 
 list_known_unit_files() {
+    # This lists ALL unit file pathnames (in locations we care about, at least)
     find {/usr/lib,/lib,/etc,/var/run}/systemd/system /var/run/systemd/generator.late -type f -or -type l
 }
 
@@ -359,8 +360,10 @@ $SYSTEMCTL_UNITS_EXTERNAL"
 
     if [[ x"$LIST_MISSING" = x"yes" ]] ; then
         # NOTE: This mode lists something or nothing and exits, always
+        # TODO: [BUG] --missing --internal also lists external units as missing
         SHOW_UNITS=""
         if [[ -z "$SYSTEMCTL_UNITS" ]] ; then
+            # Nothing found == all missing
             SHOW_UNITS="`echo "$SYSTEMCTL_UNITS_COMMON $SYSTEMCTL_UNITS_GLOBS" | tr ' ' '\n'`"
         else
             for U in $SYSTEMCTL_UNITS_COMMON ; do
@@ -385,8 +388,8 @@ $U"
 
     [[ -n "$SYSTEMCTL_UNITS" ]] && \
     if [ "$LIST_STATES" != "STATE:ANY" ]; then
-        # Logic borrowed from ""--list-json" and simplified since we have all
-        # the unit-naming data pre-filtered already
+        # Logic borrowed from "--list-json" feature and simplified since
+        # we have all the unit-naming data pre-filtered already
         SHOW_UNITS=""
         SYSTEMCTL_ATTRS="-p Id -p SubState -p ActiveState -p UnitFileState -p LoadState"
         SYSTEMCTL_INFO="$( vID=""; vSS=""; vLS=""; vAS=""; vUFS=""; \
@@ -424,13 +427,14 @@ $U"
             esac
         done | sort | uniq )" || SYSTEMCTL_INFO=""
 
-        if [ "$DEBUG_SYSTEMCTL" = yes ]; then
-            echo "$SYSTEMCTL_INFO" >&2
-        fi
+        if [[ "$DEBUG_SYSTEMCTL" = yes ]] ; then
+            echo "$SYSTEMCTL_INFO"
+        fi >&2
 
         [[ -n "$SYSTEMCTL_INFO" ]] && \
         for U in $SYSTEMCTL_UNITS ; do
             SHOW_THIS_UNIT=no # Match something below to show up
+            # TODO: This egrep would be cleaner with '^'"$U"'[\t\ ]' - but for some reason that does not match our units
             I="`echo "$SYSTEMCTL_INFO" | egrep '^'"$U"`" || I=""
             if [[ -n "$I" ]]; then
                 ( # Subshell to simplify exit code passing and to limit shopt
