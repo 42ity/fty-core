@@ -207,7 +207,7 @@ EOF
 
 # Uninstall various packages that are not needed
 # Note: We restore "/bin/diff" and "/bin/*grep" via busybox, below
-for i in $(dpkg -l | awk '/-perl/{ print $2; }') apt fakeroot ncurses-bin diffutils grep sysvinit ncurses-common libicu52 lsb-release; do
+for i in $(dpkg -l | grep perl) apt fakeroot ncurses-bin diffutils grep sysvinit ncurses-common libicu52 lsb-release; do
     case "$IMGTYPE" in
         devel)
             echo dpkg -P --force-all $i
@@ -238,7 +238,25 @@ cp /usr/share/bios/examples/config/sudoers.d/bios_*_*agent* /etc/sudoers.d || tr
 
 mkdir -p /etc/security
 cp /usr/share/bios/examples/config/security/* /etc/security
+
+# Problem: Debian patched systemctl crashes on enable if perl is not installed
+# Solution: provide systemd unit to not invoke the update-rc.d Perl script
 sed -i 's|START=no|START=yes|' /etc/default/saslauthd
+rm -f /etc/inint.d/saslauthd
+cat <<EOF > /lib/systemd/system/saslauthd.service
+[Unit]
+Description=SASL Authentication Daemon
+
+[Service]
+Type=forking
+EnvironmentFile=/etc/default/saslauthd
+ExecStart=/usr/sbin/saslauthd -a \$MECHANISMS \$MECH_OPTIONS \$OPTIONS -n \$THREADS
+ExecStop=/bin/kill -15 \$MAINPID
+PIDFile=/var/run/saslauthd/saslauthd.pid
+
+[Install]
+WantedBy=multi-user.target
+EOF
 /bin/systemctl enable saslauthd
 
 mkdir -p /etc/update-rc3.d
