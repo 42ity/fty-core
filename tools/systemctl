@@ -308,7 +308,6 @@ systemctl_list_ipm_units() (
             --disabled|--not-enabled) LIST_STATES="$LIST_STATES STATE:DISABLED" ;;
             --missing) LIST_MISSING="yes" ;;
             --detailed|--details|--long|-l) SHOW_DETAILS="yes" ;;
-                # TODO: [BUG] Currently details are only shown if we request specific states
             *) die_ACTION_NOT_ALLOWED ;;
         esac
         shift
@@ -415,7 +414,7 @@ $U"
     fi
 
     [[ -n "$SYSTEMCTL_UNITS" ]] && \
-    if [[ "$LIST_STATES" != "STATE:ANY" ]]; then
+    if [[ "$LIST_STATES" != "STATE:ANY" ]] || [[ "$SHOW_DETAILS" = yes ]]; then
         # Logic borrowed from "--list-json" feature and simplified since
         # we have all the unit-naming data pre-filtered already
         SHOW_UNITS=""
@@ -460,64 +459,72 @@ $U"
         fi >&2
 
         [[ -n "$SYSTEMCTL_INFO" ]] && \
-        for U in $SYSTEMCTL_UNITS ; do
-            SHOW_THIS_UNIT=no # Match something below to show up
-            # TODO: This egrep would be cleaner with '^'"$U"'[\t\ ]' - but for some reason that does not match our units
-            I="`echo "$SYSTEMCTL_INFO" | egrep '^'"$U"`" || I=""
-            if [[ -n "$I" ]]; then
-                ( # Subshell to simplify exit code passing and to limit shopt
-                # TODO: More research into evaluated strings is desirable here
-                SHOW1=""
-                SHOW2=""
-                shopt -s nocasematch
-                case "$LIST_STATES" in
-                    *STATE:ENABLED*)
-                        case "$I" in
-                            *L:not-loaded*|U:disabled*) SHOW1=no ;;
-                            *L:loaded*|U:enabled*|*U:static*|*U:"	"S:*) SHOW1=yes ;; # NOTE: It is a TAB character after U:
-                            *) SHOW1=no ;;
-                        esac
-                        ;;
-                    *STATE:DISABLED*)
-                        case "$I" in
-                            *L:loaded*|U:enabled*|*U:static*|*U:"	"S:*) SHOW1=no ;;
-                            *) SHOW1=yes ;;
-                        esac
-                        ;;
-                esac
-                case "$LIST_STATES" in
-                    *STATE:ACTIVE*)
-                        case "$I" in
-                            *[AS]:failed*|*A:inactive*|*S:dead*|*S:exited*) SHOW2=no ;;
-                            *A:active*|*S:running*|*S:waiting*) SHOW2=yes ;;
-                            *) SHOW2=no ;;
-                        esac
-                        ;;
-                    *STATE:INACTIVE*)
-                        case "$I" in
-                            *[AS]:failed*|*A:inactive*|*S:dead*|*S:exited*) SHOW2=yes ;;
-                            *) SHOW2=no ;;
-                        esac
-                        ;;
-                esac
-                # We show units not filtered away by requirements listed on CLI
-                [[ x"$SHOW1" != xno ]] && [[ x"$SHOW2" != xno ]] # Return this test's exitcode
-                ) && SHOW_THIS_UNIT=yes
-            fi
-            if [[ "$SHOW_THIS_UNIT" = yes ]] ; then
-                if [[ "$DEBUG_SYSTEMCTL" = yes ]] ; then
-                    echo "D: $I"
-                fi >&2
-                if [[ "$SHOW_DETAILS" = yes ]]; then
-                    [[ -z "$SHOW_UNITS" ]] && SHOW_UNITS="$I" || SHOW_UNITS="$SHOW_UNITS
-$I"
-                else
-                    [[ -z "$SHOW_UNITS" ]] && SHOW_UNITS="$U" || SHOW_UNITS="$SHOW_UNITS
-$U"
+        if [[ "$LIST_STATES" == "STATE:ANY" ]] && [[ "$SHOW_DETAILS" = yes ]]; then
+            SYSTEMCTL_UNITS="$SYSTEMCTL_INFO"
+        else
+            for U in $SYSTEMCTL_UNITS ; do
+                SHOW_THIS_UNIT=no # Match something below to show up
+                # TODO: This egrep would be cleaner with '^'"$U"'[\t\ ]' - but for some reason that does not match our units
+                I="`echo "$SYSTEMCTL_INFO" | egrep '^'"$U"`" || I=""
+                if [[ -n "$I" ]]; then
+                    ( # Subshell to simplify exit code passing and to limit shopt
+                    # TODO: More research into evaluated strings is desirable here
+                    SHOW1=""
+                    SHOW2=""
+                    shopt -s nocasematch
+                    case "$LIST_STATES" in
+                        *STATE:ENABLED*)
+                            case "$I" in
+                                *L:not-loaded*|U:disabled*) SHOW1=no ;;
+                                *L:loaded*|U:enabled*|*U:static*|*U:"	"S:*) SHOW1=yes ;; # NOTE: It is a TAB character after U:
+                                *) SHOW1=no ;;
+                            esac
+                            ;;
+                        *STATE:DISABLED*)
+                            case "$I" in
+                                *L:loaded*|U:enabled*|*U:static*|*U:"	"S:*) SHOW1=no ;;
+                                *) SHOW1=yes ;;
+                            esac
+                            ;;
+                    esac
+
+                    # NOTE: One-shot services can be "active" and "exited" if they ran OK
+                    case "$LIST_STATES" in
+                        *STATE:ACTIVE*)
+                            case "$I" in
+                                *[AS]:failed*|*A:inactive*|*S:dead*) SHOW2=no ;;
+                                *A:active*|*S:running*|*S:waiting*) SHOW2=yes ;;
+                                *S:exited*) SHOW2=no ;;
+                                *) SHOW2=no ;;
+                            esac
+                            ;;
+                        *STATE:INACTIVE*)
+                            case "$I" in
+                                *A:active*|*S:running*|*S:waiting*) SHOW2=no ;;
+                                *[AS]:failed*|*A:inactive*|*S:dead*|*S:exited*) SHOW2=yes ;;
+                                *) SHOW2=no ;;
+                            esac
+                            ;;
+                    esac
+                    # We show units not filtered away by requirements listed on CLI
+                    [[ x"$SHOW1" != xno ]] && [[ x"$SHOW2" != xno ]] # Return this test's exitcode
+                    ) && SHOW_THIS_UNIT=yes
                 fi
-            fi
-        done
-        SYSTEMCTL_UNITS="$SHOW_UNITS"
+                if [[ "$SHOW_THIS_UNIT" = yes ]] ; then
+                    if [[ "$DEBUG_SYSTEMCTL" = yes ]] ; then
+                        echo "D: $I"
+                    fi >&2
+                    if [[ "$SHOW_DETAILS" = yes ]]; then
+                        [[ -z "$SHOW_UNITS" ]] && SHOW_UNITS="$I" || SHOW_UNITS="$SHOW_UNITS
+$I"
+                    else
+                        [[ -z "$SHOW_UNITS" ]] && SHOW_UNITS="$U" || SHOW_UNITS="$SHOW_UNITS
+$U"
+                    fi
+                fi
+            done
+            SYSTEMCTL_UNITS="$SHOW_UNITS"
+        fi
     fi
 
     [[ -z "$SYSTEMCTL_UNITS" ]] && \
