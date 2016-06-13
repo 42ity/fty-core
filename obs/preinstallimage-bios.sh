@@ -242,7 +242,7 @@ cp /usr/share/bios/examples/config/security/* /etc/security
 # Problem: Debian patched systemctl crashes on enable if perl is not installed
 # Solution: provide systemd unit to not invoke the update-rc.d Perl script
 sed -i 's|START=no|START=yes|' /etc/default/saslauthd
-rm -f /etc/inint.d/saslauthd
+rm -f /etc/init.d/saslauthd
 cat <<EOF > /lib/systemd/system/saslauthd.service
 [Unit]
 Description=SASL Authentication Daemon
