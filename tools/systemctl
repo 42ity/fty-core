@@ -130,7 +130,7 @@ write_syslog() {
             [[ -n "${USER-}" ]] && \
                 USER_PREFIX="${USER_PREFIX:+$USER_PREFIX as }$USER (${UID-}/${EUID-}:${GID-})"
             [[ -n "$USER_PREFIX" ]] && USER_PREFIX="$USER_PREFIX:"
-            $LOGGER -p auth.notice -t "`basename $0`-wrapper" --id="$$" "$USER_PREFIX" "$@" || true
+            $LOGGER -p auth.notice -t "`basename $0`-wrapper[$$]" "$USER_PREFIX" "$@" || true
         fi
         echo "$@" >&2
     fi
@@ -139,16 +139,15 @@ write_syslog() {
 
 DIED=no
 MAINPID="$$"
+MAINARGS="$0 $*"
 trap_exit() {
     EXITCODE=$?
     if [[ "$DEBUG_SYSTEMCTL" = yes ]]; then
-        echo "TRAPPED EXIT: DIED='$DIED' EXITCODE='$EXITCODE'" >&2
+        echo "TRAPPED EXIT: '$MAINARGS' DIED='$DIED' EXITCODE='$EXITCODE'" >&2
     fi
-    if [[ "$DIED" = no ]]; then
-        [[ "$EXITCODE" = 0 ]] && \
-            write_syslog "Completed OK" || \
-            write_syslog "Completed with code $EXITCODE"
-    fi >/dev/null 2>&1
+    { [[ "$EXITCODE" = 0 ]] && \
+        write_syslog "Completed OK" || \
+        write_syslog "Completed with code $EXITCODE" ; } >/dev/null 2>&1
     exit $EXITCODE
 }
 
@@ -591,6 +590,10 @@ process_CLI_systemctl() {
             # Should not get to this line
             die_INTERNAL_ERROR
             ;;
+        daemon-reload)
+            $SYSTEMCTL "$1"
+            exit $?
+            ;;
         list-json)
             shift
             systemctl_list_json "$@"
@@ -676,7 +679,12 @@ process_CLI_journalctl() {
 trap "DIED=yes" SIGUSR1 # May be signalled by child processes
 trap "trap_exit" EXIT SIGHUP SIGINT SIGABRT SIGQUIT SIGTERM
 
-write_syslog "Starting $0 $*" >/dev/null 2>&1
+if [[ "$DEBUG_SYSTEMCTL" = yes ]]; then
+    write_syslog "Starting $0 $*"
+else
+    write_syslog "Starting $0 $*" >/dev/null 2>&1
+fi
+
 case "`basename $0`" in
     systemctl) process_CLI_systemctl "$@"; exit $? ;;
     journalctl) process_CLI_journalctl "$@"; exit $? ;;
