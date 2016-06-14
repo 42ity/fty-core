@@ -244,6 +244,8 @@ cp /usr/share/bios/examples/config/security/* /etc/security
 
 # Problem: Debian patched systemctl crashes on enable if perl is not installed
 # Solution: provide systemd unit to not invoke the update-rc.d Perl script
+# Note: now we provide our own shell re-implementation of that script, but
+# if we have a native systemd unit - better keep it if it works, right? ;)
 sed -i 's|START=no|START=yes|' /etc/default/saslauthd
 rm -f /etc/init.d/saslauthd
 cat <<EOF > /lib/systemd/system/saslauthd.service
@@ -271,8 +273,6 @@ cp /usr/share/bios/examples/config/update-rc3.d/* /etc/update-rc3.d
 /bin/systemctl enable mysql
 
 # Enable ssh
-# with no perl installed, script update-rc.d causes systemctl crash
-rm -f /etc/init.d/ssh
 echo "UseDNS no" >> /etc/ssh/sshd_config
 rm /etc/ssh/*key*
 mkdir -p /etc/systemd/system
@@ -410,6 +410,11 @@ EOF
 # BIOS emulator script which can fake some of the curl behaviour with wget
 [ ! -x /usr/bin/curl ] && [ -x /usr/share/bios/scripts/curlbbwget.sh ] && \
     install -m 0755 /usr/share/bios/scripts/curlbbwget.sh /usr/bin/curl
+
+if [ ! -x /usr/bin/perl ] && [ -x /usr/share/bios/scripts/update-rc.d.sh ] ; then
+    rm -f /usr/sbin/update-rc.d || true
+    install -m 0755 /usr/share/bios/scripts/update-rc.d.sh /usr/sbin/update-rc.d
+fi
 
 #########################################################################
 # Setup zabbix
