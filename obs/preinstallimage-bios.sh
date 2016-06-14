@@ -392,6 +392,14 @@ echo "PATH=/usr/libexec/bios:/bin:/usr/bin:/sbin:/usr/sbin" >>/usr/share/bios/et
 # Setup all the busybox commands, if they're not provided by different package
 busybox --install -s
 
+if [ ! -x "/usr/bin/man" -a ! -x "/bin/man" ] ; then
+    echo "MAN program not available, killing manpages to save some space" >&2
+    # Localizations - kill whole; leave standard mandirs in place but empty
+    # NOTE: Not using '-exec rm -rf ...' because then 'find' complains it cannot proceed inspecting the directory
+    find "/usr/share/man" -type d \! -name 'man*' | while read D ; do rm -rf "$D" ; done
+    find "/usr/share/man" -type f -exec rm -f '{}' \;
+fi
+
 # Simplify ntp.conf
 augtool -S -I/usr/share/bios/lenses << EOF
 rm /files/etc/ntp.conf/server
