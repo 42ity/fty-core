@@ -1,0 +1,35 @@
+#!/bin/sh
+#
+#   Copyright (c) 2016 Eaton
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License along
+#   with this program; if not, write to the Free Software Foundation, Inc.,
+#   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+# \file logrotate
+# \brief Rotate the persistent log, keep 4 compressed backups maximum
+# \author Michal Vyskocil <michalvyskocil@eaton.com>
+# \details simple log rorating script, executed by rsyslog via outchannel directive
+#          see /etc/rsyslog.d/00-ipc.conf
+
+rm -f /var/log/messages.5
+
+for i in `seq 4 -1 1`; do
+    # note: $((i+1)) works under dash!
+    [ -f /var/log/messages.${i}.bz2 ] || continue
+    mv -f /var/log/messages.${i}.bz2 /var/log/messages.$((i+1)).bz2
+done
+
+[ -f /var/log/messages ] || exit 0
+mv -f /var/log/messages /var/log/messages.1
+bzip2 -9 /var/log/messages.1

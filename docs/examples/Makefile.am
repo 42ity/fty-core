@@ -26,4 +26,7 @@ examplecfgupdate_DATA	= \
                         update-rc3.d/30-image-uboot.etn.conf \
                         update-rc3.d/90-local-paths.rc3.conf
 
-EXTRA_DIST += $(examplecfgsudo_DATA) $(examplecfgpam_DATA) $(examplecfgsec_DATA) $(examplecfgupdate_DATA)
+examplecfgrsyslogddir	= $(datarootdir)/@PACKAGE@/examples/config/rsyslog.d
+examplecfgrsyslogd_DATA	= rsyslog.d/10-ipc.conf
+
+EXTRA_DIST += $(examplecfgsudo_DATA) $(examplecfgpam_DATA) $(examplecfgsec_DATA) $(examplecfgupdate_DATA) $(examplecfgrsyslogd_DATA)
