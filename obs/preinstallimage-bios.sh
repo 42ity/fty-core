@@ -120,6 +120,9 @@ echo '/dev/mtd3 0x00000 0x40000 0x40000' > /etc/fw_env.config
 sed -i 's|.*RuntimeMaxFileSize.*|RuntimeMaxFileSize=10M|' /etc/systemd/journald.conf
 sed -i 's|.*Storage.*|Storage=volatile|'                  /etc/systemd/journald.conf
 
+# rsyslogd setup
+cp /usr/share/bios/examples/config/rsyslog.d/10-ipc.conf /etc/rsyslog.d/
+
 # Basic network setup
 mkdir -p /etc/network
 
@@ -384,10 +387,8 @@ fi
 # set path to our libexec directory
 echo "PATH=/usr/libexec/bios:/bin:/usr/bin:/sbin:/usr/sbin" >>/usr/share/bios/etc/default/bios
 
-# Setup some busybox commands
-for i in vi tftp wget diff strings telnet egrep fgrep grep; do
-   [ -x "/bin/$i" ] || ln -s busybox "/bin/$i"
-done
+# Setup all the busybox commands, if they're not provided by different package
+busybox --install -s
 
 # Simplify ntp.conf
 augtool -S -I/usr/share/bios/lenses << EOF
