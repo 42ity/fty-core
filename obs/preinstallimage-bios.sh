@@ -271,6 +271,8 @@ cp /usr/share/bios/examples/config/update-rc3.d/* /etc/update-rc3.d
 /bin/systemctl enable mysql
 
 # Enable ssh
+# with no perl installed, script update-rc.d causes systemctl crash
+rm -f /etc/init.d/ssh
 echo "UseDNS no" >> /etc/ssh/sshd_config
 rm /etc/ssh/*key*
 mkdir -p /etc/systemd/system
