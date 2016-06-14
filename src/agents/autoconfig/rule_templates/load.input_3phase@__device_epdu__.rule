@@ -5,7 +5,7 @@
         "rule_class"    :   "Input load (3 phase) in PDU",
         "target"        :   [ "load.input.L1@__name__", "load.input.L2@__name__", "load.input.L3@__name__" ],
         "element"       :   "__name__",
-        "values_unit"   :   "V",
+        "values_unit"   :   "W",
         "values"        :   [
             {"low_critical"  : "0"},
             {"low_warning"   : "0"},

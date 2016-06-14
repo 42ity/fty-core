@@ -5,7 +5,7 @@
         "rule_class"     :   Input load (1 phase) in PDU",
         "target"        :   "load.input.L1@__name__",
         "element"       :   "__name__",
-        "values_unit"   :   "V",
+        "values_unit"   :   "W",
         "values"        :   [ {"low_warning"   : "0"},
                               {"low_critical"  : "0"},
                               {"high_warning"  : "0"},
