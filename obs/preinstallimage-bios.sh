@@ -275,6 +275,7 @@ cp /usr/share/bios/examples/config/update-rc3.d/* /etc/update-rc3.d
 /bin/systemctl enable mysql
 
 # Enable ssh
+rm /etc/init.d/ssh*
 echo "UseDNS no" >> /etc/ssh/sshd_config
 rm /etc/ssh/*key*
 mkdir -p /etc/systemd/system
