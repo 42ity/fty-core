@@ -122,6 +122,8 @@ sed -i 's|.*Storage.*|Storage=volatile|'                  /etc/systemd/journald.
 
 # rsyslogd setup
 cp /usr/share/bios/examples/config/rsyslog.d/10-ipc.conf /etc/rsyslog.d/
+awk '{ print $0; } /^\$IncludeConfig/{ exit; }' </etc/rsyslog.conf >/etc/rsyslog.conf.tmp &&
+mv /etc/rsyslog.conf.tmp /etc/rsyslog.conf
 
 # Basic network setup
 mkdir -p /etc/network
