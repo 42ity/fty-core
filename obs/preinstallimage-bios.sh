@@ -121,6 +121,7 @@ sed -i 's|.*RuntimeMaxFileSize.*|RuntimeMaxFileSize=10M|' /etc/systemd/journald.
 sed -i 's|.*Storage.*|Storage=volatile|'                  /etc/systemd/journald.conf
 
 # rsyslogd setup
+mkdir -p /etc/rsyslog.d
 cp /usr/share/bios/examples/config/rsyslog.d/10-ipc.conf /etc/rsyslog.d/
 awk '{ print $0; } /^\$IncludeConfig/{ exit; }' </etc/rsyslog.conf >/etc/rsyslog.conf.tmp &&
 mv /etc/rsyslog.conf.tmp /etc/rsyslog.conf
@@ -501,6 +502,46 @@ case "$IMGTYPE" in
     devel) echo "Not tweaking TMOUT in devel image" ;;
     *) echo 'export TMOUT=600' > /etc/profile.d/tmout.sh ;;
 esac
+
+cat > /etc/profile.d/bash_history.sh <<EOF
+# Set up history tracking and syslogging for BASH
+# Partially inspired by
+#   http://www.pointsoftware.ch/howto-bash-audit-command-logger/
+if [ -n "\${BASH-}" ]; then
+    # 'history' options
+    declare -rx HISTFILE="\$HOME/.bash_history"
+    declare -rx HISTSIZE=500000       #nbr of cmds in memory
+    declare -rx HISTFILESIZE=500000   #nbr of cmds on file
+    declare -rx HISTCONTROL=""        #does not ignore spaces or duplicates
+    declare -rx HISTIGNORE=""         #does not ignore patterns
+    declare -rx HISTCMD               #history line number
+    #history -r                       #to reload history from file if a prior HISTSIZE has truncated it
+
+    chattr +a "\$HISTFILE" || true    #set append-only
+
+    shopt -s histappend
+    shopt -s cmdhist
+    set -o history
+
+    #history substitution ask for a confirmation
+    shopt -s histverify
+
+    #http://askubuntu.com/questions/93566/how-to-log-all-bash-commands-by-all-users-on-a-server
+    # Only log different history entries (e.g. pressing "enter" also triggers this activity)
+    _LAST_LOGGED=""
+    for _LOGGER in /usr/bin/logger /bin/logger ; do
+        [ -x "\$_LOGGER" ] && \\
+        export PROMPT_COMMAND='RETRN_VAL=\$?; [ "\$(fc -ln -0)" = "\$(fc -ln -1)" -o "\$(fc -ln -0)" = "\$_LAST_LOGGED" ] || { _LAST_LOGGED="\$(fc -ln -0)"; '"\${_LOGGER}"' -p local6.debug -t "bash[\$\$]" "\$(whoami)(\$USER \${UID-}/\${EUID-}:\${GID-}):" "`echo \$_LAST_LOGGED`" "[\$RETRN_VAL]"; }' \\
+        && break
+    done
+    unset _LOGGER
+fi
+EOF
+
+echo 'local6.debug    /var/log/commands.log' > /etc/rsyslog.d/05-bash.conf
+
+# Legality requires this notice
+{ echo ""; echo "WARNING: All shell activity on this system is logged!"; echo ""; } >> /etc/motd
 
 # Help ifup and ifplugd do the right job
 install -m 0755 /usr/share/bios/scripts/ethtool-static-nolink /etc/network/if-pre-up.d
