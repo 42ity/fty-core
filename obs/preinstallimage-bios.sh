@@ -639,4 +639,11 @@ OSimage:img-type: $IMGTYPE" > /usr/share/bios-web/image-version.txt || \
 # TODO: Integrate this better into build-recipe-preinstallimage/init_buildsystem
 rm -f /usr/bin/qemu*
 
+# Some of our packaging cleanup could leave the OS image unable to manage
+# user passwords... block such OS images from appearing at all!
+if [ ! -f /var/cache/cracklib/cracklib_dict.pwd ]; then
+    echo "cracklib dict is missing"
+    exit 1
+fi
+
 echo "INFO: successfully reached the end of script: $0 $@"
