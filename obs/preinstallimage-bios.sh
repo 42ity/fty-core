@@ -228,7 +228,7 @@ done
 # Replace it with our shell equivalent if Perl is not available, so that the
 # Debian systemd can cover services still implemented via /etc/init.d scripts.
 if [ ! -x /usr/bin/perl ] && [ -x /usr/share/bios/scripts/update-rc.d.sh ] && \
-    head -1 /usr/sbin/update-rc.d | grep perl >/dev/null && \
+    head -1 /usr/sbin/update-rc.d | grep perl >/dev/null \
 ; then
     rm -f /usr/sbin/update-rc.d || true
     install -m 0755 /usr/share/bios/scripts/update-rc.d.sh /usr/sbin/update-rc.d
