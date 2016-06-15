@@ -223,6 +223,16 @@ for i in $(dpkg -l | awk '/perl/{ print $2; }') apt fakeroot ncurses-bin diffuti
     esac
 done
 
+# Original Debian /usr/sbin/update-rc.d tool is a script implemented in Perl.
+# Replace it with our shell equivalent if Perl is not available, so that the
+# Debian systemd can cover services still implemented via /etc/init.d scripts.
+if [ ! -x /usr/bin/perl ] && [ -x /usr/share/bios/scripts/update-rc.d.sh ] && \
+    head -1 /usr/sbin/update-rc.d | grep perl >/dev/null && \
+; then
+    rm -f /usr/sbin/update-rc.d || true
+    install -m 0755 /usr/share/bios/scripts/update-rc.d.sh /usr/sbin/update-rc.d
+fi
+
 # Setup bios security
 mkdir -p /etc/pam.d
 cp /usr/share/bios/examples/config/pam.d/* /etc/pam.d
@@ -413,11 +423,6 @@ EOF
 # BIOS emulator script which can fake some of the curl behaviour with wget
 [ ! -x /usr/bin/curl ] && [ -x /usr/share/bios/scripts/curlbbwget.sh ] && \
     install -m 0755 /usr/share/bios/scripts/curlbbwget.sh /usr/bin/curl
-
-if [ ! -x /usr/bin/perl ] && [ -x /usr/share/bios/scripts/update-rc.d.sh ] ; then
-    rm -f /usr/sbin/update-rc.d || true
-    install -m 0755 /usr/share/bios/scripts/update-rc.d.sh /usr/sbin/update-rc.d
-fi
 
 #########################################################################
 # Setup zabbix
