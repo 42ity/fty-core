@@ -108,8 +108,10 @@ std::string token;
     if ( grant_type != "password" ) {
         http_die ("request-param-bad", "grant_type", grant_type.c_str(), "password");
     }
+    log_info ("request POST oauth2: username %s, grant_type %s", username.c_str (), grant_type.c_str ());
 
     if ( !authenticate(username.c_str(), password.c_str()) ) {
+        log_error ("request POST oauth2: username %s, grant_type %s authentication FAILED", username.c_str (), grant_type.c_str ());
         http_die ("request-param-bad", "(user|passwd)", "<invalid user or password>", "<valid user and password>");
     }
 </%cpp>
