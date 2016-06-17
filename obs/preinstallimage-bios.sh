@@ -75,7 +75,8 @@ groupadd -g 8004 bios-infra
 useradd -m bios -N -g bios-infra -G dialout -s /bin/bash
 mkdir -p /home/bios && chown bios:bios-infra /home/bios
 
-useradd -m admin -G sasl -N -g bios-admin -s /bin/bash
+# add an access to sasl, adm (for /var/log/messages) and systemd journal
+useradd -m admin -G sasl -G adm -G systemd-journal -N -g bios-admin -s /bin/bash
 passwd admin <<EOF
 admin
 admin
@@ -122,9 +123,17 @@ sed -i 's|.*Storage.*|Storage=volatile|'                  /etc/systemd/journald.
 
 # rsyslogd setup
 mkdir -p /etc/rsyslog.d
+## remove conflicting Debian defaults
+awk '{ print $0; } /^\$IncludeConfig/{ exit; }' </etc/rsyslog.conf >/etc/rsyslog.conf.tmp && \
+mv -f /etc/rsyslog.conf.tmp /etc/rsyslog.conf
+
+## normal logging
 cp /usr/share/bios/examples/config/rsyslog.d/10-ipc.conf /etc/rsyslog.d/
-awk '{ print $0; } /^\$IncludeConfig/{ exit; }' </etc/rsyslog.conf >/etc/rsyslog.conf.tmp &&
-mv /etc/rsyslog.conf.tmp /etc/rsyslog.conf
+
+## remote logging template
+cp /usr/share/bios/examples/config/rsyslog.d/10-ipc-remote.conf /etc/rsyslog.d/
+chown root:bios-admin /etc/rsyslog.d/10-ipc-remote.conf
+chmod 0660 /etc/rsyslog.d/10-ipc-remote.conf
 
 # Basic network setup
 mkdir -p /etc/network
@@ -679,6 +688,17 @@ OSimage:img-type: $IMGTYPE" > /usr/share/bios-web/image-version.txt || \
 # Get rid of static qemu binaries needed for crossinstallation
 # TODO: Integrate this better into build-recipe-preinstallimage/init_buildsystem
 rm -f /usr/bin/qemu*
+
+# Make sure we have no cruft in the image (NFS-based builds on ARM farm may lag)
+echo "Syncing OS image filesystem..."
+sync; sync; sleep 3; sync
+find / -type f -mount -name '\.nfs????????????????????????' -exec rm -f '{}' \; 2>/dev/null
+# Sanitize the OS image from some more build-system cruft
+rm -f /.guessed_dist
+rm -rf /.reorder
+#[ "$IMGTYPE" = deploy ] && \
+    rm -rf /.preinstallimage
+sync
 
 # Some of our packaging cleanup could leave the OS image unable to manage
 # user passwords... block such OS images from appearing at all!
