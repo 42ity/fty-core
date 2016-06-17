@@ -226,7 +226,8 @@ bool relative_to_unixtime (const std::string& relative, int64_t now, int64_t& un
         mlm_client_destroy (&client);
         if ( streq(frame, "BAD_REQUEST") ) {
             zstr_free (&frame);
-            http_die ("parameter-conflict", "Requested information is not monitored by the system");
+            std::string die = "Data for type = '" + type + "', step = '" + step + "', source = '" + source + "', element_id = '" + element_id + "' ";
+            http_die ("not-found", die.c_str ());
         }
         http_die ("internal-error", frame);
     }
