@@ -60,6 +60,13 @@ if true; then
     sed -i 's|.*DumpCore=.*|DumpCore=yes|' /etc/systemd/system.conf
 fi
 
+# We set bash HISTORY in /etc/profile.d (see below) and mark it readonly
+# Note: This must be done before user accouts (and homes) are created
+sed -e 's/^\([ \t]*HIST.*=.*\)$/###\1/' \
+    -e 's/^\([ \t]*set -o hist.*\)$/###\1/' \
+    -e 's/^\([ \t]*shopt.* hist.*\)$/###\1/' \
+    -i /etc/skel/.bashrc -i /root/.bashrc
+
 # Create user and set root password
 passwd <<EOF
 nosoup4u
@@ -526,7 +533,7 @@ if [ -n "\${BASH-}" ]; then
     declare -rx HISTCMD               #history line number
     #history -r                       #to reload history from file if a prior HISTSIZE has truncated it
 
-    chattr +a "\$HISTFILE" || true    #set append-only
+    [ "\${USER-}" = root ] && chattr +a "\$HISTFILE" || true    #set append-only
 
     shopt -s histappend
     shopt -s cmdhist
