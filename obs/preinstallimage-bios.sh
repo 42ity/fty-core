@@ -124,8 +124,8 @@ sed -i 's|.*Storage.*|Storage=volatile|'                  /etc/systemd/journald.
 # rsyslogd setup
 mkdir -p /etc/rsyslog.d
 ## remove conflicting Debian defaults
-awk '{ print $0; } /^\$IncludeConfig/{ exit; }' </etc/rsyslog.conf >/etc/rsyslog.conf.tmp &&
-mv /etc/rsyslog.conf.tmp /etc/rsyslog.conf
+awk '{ print $0; } /^\$IncludeConfig/{ exit; }' </etc/rsyslog.conf >/etc/rsyslog.conf.tmp && \
+mv -f /etc/rsyslog.conf.tmp /etc/rsyslog.conf
 
 ## normal logging
 cp /usr/share/bios/examples/config/rsyslog.d/10-ipc.conf /etc/rsyslog.d/
@@ -133,7 +133,7 @@ cp /usr/share/bios/examples/config/rsyslog.d/10-ipc.conf /etc/rsyslog.d/
 ## remote logging template
 cp /usr/share/bios/examples/config/rsyslog.d/10-ipc-remote.conf /etc/rsyslog.d/
 chown root:bios-admin /etc/rsyslog.d/10-ipc-remote.conf
-chmod 0770 /etc/rsyslog.d/10-ipc-remote.conf
+chmod 0660 /etc/rsyslog.d/10-ipc-remote.conf
 
 # Basic network setup
 mkdir -p /etc/network
