@@ -75,7 +75,8 @@ groupadd -g 8004 bios-infra
 useradd -m bios -N -g bios-infra -G dialout -s /bin/bash
 mkdir -p /home/bios && chown bios:bios-infra /home/bios
 
-useradd -m admin -G sasl -N -g bios-admin -s /bin/bash
+# add an access to sasl, adm (for /var/log/messages) and systemd journal
+useradd -m admin -G sasl -G adm -g systemd-journal -N -g bios-admin -s /bin/bash
 passwd admin <<EOF
 admin
 admin
