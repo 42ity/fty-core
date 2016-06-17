@@ -27,6 +27,7 @@ examplecfgupdate_DATA	= \
                         update-rc3.d/90-local-paths.rc3.conf
 
 examplecfgrsyslogddir	= $(datarootdir)/@PACKAGE@/examples/config/rsyslog.d
-examplecfgrsyslogd_DATA	= rsyslog.d/10-ipc.conf
+examplecfgrsyslogd_DATA	= rsyslog.d/10-ipc.conf \
+						  rsyslog.d/10-ipc-remote.conf
 
 EXTRA_DIST += $(examplecfgsudo_DATA) $(examplecfgpam_DATA) $(examplecfgsec_DATA) $(examplecfgupdate_DATA) $(examplecfgrsyslogd_DATA)
