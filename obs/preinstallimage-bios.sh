@@ -692,7 +692,11 @@ rm -f /usr/bin/qemu*
 # Make sure we have no cruft in the image (NFS-based builds on ARM farm may lag)
 echo "Syncing OS image filesystem..."
 sync; sync; sleep 3; sync
-find / -type f -name '\.nfs????????????????????????' -exec rm -f '{}' \;
+find / -type f -mount -name '\.nfs????????????????????????' -exec rm -f '{}' \; 2>/dev/null
+rm -f \
+    /.preinstallimage \
+    /.guessed_dist \
+    /.reorder
 sync
 
 # Some of our packaging cleanup could leave the OS image unable to manage
