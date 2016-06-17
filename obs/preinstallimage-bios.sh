@@ -689,6 +689,12 @@ OSimage:img-type: $IMGTYPE" > /usr/share/bios-web/image-version.txt || \
 # TODO: Integrate this better into build-recipe-preinstallimage/init_buildsystem
 rm -f /usr/bin/qemu*
 
+# Make sure we have no cruft in the image (NFS-based builds on ARM farm may lag)
+echo "Syncing OS image filesystem..."
+sync; sync; sleep 3; sync
+find / -type f -name '\.nfs????????????????????????' -exec rm -f '{}' \;
+sync
+
 # Some of our packaging cleanup could leave the OS image unable to manage
 # user passwords... block such OS images from appearing at all!
 if [ ! -f /var/cache/cracklib/cracklib_dict.pwd ]; then
