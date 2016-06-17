@@ -133,7 +133,7 @@ cp /usr/share/bios/examples/config/rsyslog.d/10-ipc.conf /etc/rsyslog.d/
 ## remote logging template
 cp /usr/share/bios/examples/config/rsyslog.d/10-ipc-remote.conf /etc/rsyslog.d/
 chown root:bios-admin /etc/rsyslog.d/10-ipc-remote.conf
-chown g+w /etc/rsyslog.d/10-ipc-remote.conf
+chmod 0770 /etc/rsyslog.d/10-ipc-remote.conf
 
 # Basic network setup
 mkdir -p /etc/network
