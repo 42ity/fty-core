@@ -693,10 +693,9 @@ rm -f /usr/bin/qemu*
 echo "Syncing OS image filesystem..."
 sync; sync; sleep 3; sync
 find / -type f -mount -name '\.nfs????????????????????????' -exec rm -f '{}' \; 2>/dev/null
-rm -f \
-    /.preinstallimage \
-    /.guessed_dist \
-    /.reorder
+# Sanitize the OS image from some more build-system cruft
+rm -f /.preinstallimage /.guessed_dist
+rm -rf /.reorder
 sync
 
 # Some of our packaging cleanup could leave the OS image unable to manage
