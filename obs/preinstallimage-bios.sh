@@ -240,6 +240,9 @@ for i in $(dpkg -l | awk '/perl/{ print $2; }') apt fakeroot ncurses-bin diffuti
     esac
 done
 
+# Setup all the busybox commands, if they're not provided by different package
+busybox --install -s
+
 # Original Debian /usr/sbin/update-rc.d tool is a script implemented in Perl.
 # Replace it with our shell equivalent if Perl is not available, so that the
 # Debian systemd can cover services still implemented via /etc/init.d scripts.
@@ -421,9 +424,6 @@ else
 fi
 # set path to our libexec directory
 echo "PATH=/usr/libexec/bios:/bin:/usr/bin:/sbin:/usr/sbin" >>/usr/share/bios/etc/default/bios
-
-# Setup all the busybox commands, if they're not provided by different package
-busybox --install -s
 
 if [ ! -x "/usr/bin/man" -a ! -x "/bin/man" ] ; then
     echo "MAN program not available, killing manpages to save some space" >&2
