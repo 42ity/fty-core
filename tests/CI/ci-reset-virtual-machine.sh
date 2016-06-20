@@ -599,6 +599,9 @@ fusermount -u -z  "../rootfs/$VM" 2> /dev/null > /dev/null || true
 # or if it is not used at all; not shielding by "$OVERLAYFS" check just in case
 umount -fl "../rootfs/${IMAGE_FLAT}-ro" 2> /dev/null > /dev/null || true
 
+# root bash history may be protected by chattr to be append-only
+chattr -a "../rootfs/$VM/root/.bash_history" || true
+
 # Destroy the overlay-rw half of the old running container, if any
 if [ -d "../overlays/${IMAGE_FLAT}__${VM}" ]; then
 	logmsg_info "Removing RW directory of the stopped VM:" \
