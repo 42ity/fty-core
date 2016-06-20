@@ -246,8 +246,11 @@ done
 if [ ! -x /usr/bin/perl ] && [ -x /usr/share/bios/scripts/update-rc.d.sh ] && \
     head -1 /usr/sbin/update-rc.d | grep perl >/dev/null \
 ; then
+    echo "Replacing perl version of /usr/sbin/update-rc.d with a shell implementation" >&2
     rm -f /usr/sbin/update-rc.d || true
     install -m 0755 /usr/share/bios/scripts/update-rc.d.sh /usr/sbin/update-rc.d
+else
+    echo "NOTE: Keeping the perl version of /usr/sbin/update-rc.d in place" >&2
 fi
 
 # Setup bios security
