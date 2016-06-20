@@ -257,9 +257,14 @@ while [ $# -gt 0 ] ; do
 	--attempt-download)
 	    shift
 	    case "$1" in
-		yes|no|auto) ATTEMPT_DOWNLOAD="$1"; shift ;;
+		yes|no|auto|pretend) ATTEMPT_DOWNLOAD="$1"; shift ;;
 		*) ATTEMPT_DOWNLOAD=yes ;;
 	    esac
+	    ;;
+	--dry-run|-n)
+	    ATTEMPT_DOWNLOAD=pretend
+	    DOWNLOADONLY=yes
+	    shift
 	    ;;
 	--install-dev|--install-dev-pkgs)
 	    INSTALL_DEV_PKGS=yes
@@ -444,6 +449,14 @@ if [ "$ATTEMPT_DOWNLOAD" != no ] ; then
 	IMAGE="`basename "$IMAGE_URL"`"
         [ $? = 0 ] && [ -n "$IMAGE" ] || die "Could not detect remote IMAGE_URL at '$OBS_IMAGES/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}/' (looking for regex '${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}')!"
 
+	if [ "$ATTEMPT_DOWNLOAD" = pretend ] ; then
+		logmsg_info "Detected '$IMAGE_URL' as the newest available remote OS image for IMGTYPE='$IMGTYPE' and IMGQALEVEL='$IMGQALEVEL'"
+		[ -s "$IMAGE" ] \
+			&& logmsg_info "'`pwd`/$IMAGE' is locally available already" \
+			|| logmsg_warn "'`pwd`/$IMAGE' is not yet locally available"
+		CODE=0 die "Dry-run done"
+	fi
+
 	# Set up sleeping
 	MAXSLEEP=240
 	SLEEPONCE=5
@@ -585,6 +598,9 @@ fusermount -u -z  "../rootfs/$VM" 2> /dev/null > /dev/null || true
 # This unmount can fail if for example several containers use the same RO image
 # or if it is not used at all; not shielding by "$OVERLAYFS" check just in case
 umount -fl "../rootfs/${IMAGE_FLAT}-ro" 2> /dev/null > /dev/null || true
+
+# root bash history may be protected by chattr to be append-only
+chattr -a "../rootfs/$VM/root/.bash_history" || true
 
 # Destroy the overlay-rw half of the old running container, if any
 if [ -d "../overlays/${IMAGE_FLAT}__${VM}" ]; then
