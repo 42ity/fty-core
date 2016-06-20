@@ -1122,6 +1122,7 @@ warranty_metric_CPPFLAGS =	$(AM_CPPFLAGS) \
 client_SCRIPTS +=	tools/bios-passwd \
 			tools/bios-networking \
 			tools/fake-th \
+			tools/compress-logs \
 			tools/verify-fs
 
 helper_SCRIPTS +=	tools/tntnet-ExecStartPre.sh
@@ -1388,6 +1389,7 @@ SYSTEMD_UNITS_NOTPRESET += $(SYSTEMD_UNITS_NOTPRESET_LOWLEVEL) $(SYSTEMD_UNITS_N
 
 # These unit files are compiled, but are not enabled via BIOS presets
 SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL += \
+                        biostimer-compress-logs.service \
                         biostimer-verify-fs.service
 
 SYSTEMD_UNITS_TIMERIMPL_TARGET_BIOS += \
@@ -1398,6 +1400,7 @@ SYSTEMD_UNITS_TIMERIMPL += $(SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL) $(SYSTEMD_UNITS_T
 # These files need no processing, delivered verbatim
 # Enabled as part of BIOS presets
 SYSTEMD_TIMERS_LOWLEVEL += \
+                        biostimer-compress-logs.timer \
                         biostimer-verify-fs.timer
 
 SYSTEMD_TIMERS_TARGET_BIOS += \

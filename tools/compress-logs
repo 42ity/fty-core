@@ -1,0 +1,85 @@
+#!/bin/bash
+
+#
+# Copyright (C) 2016 Eaton
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+
+#! \file verify-fs.sh
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \brief  Compress the previously rotated logs under LOGDIR
+#
+
+LANG=C
+LC_ALL=C
+TZ=UTC
+export LANG LC_ALL TZ
+
+# TODO: Should these be settable via service envvars (/etc/default/bios*)?
+LOGDIR="/var/log"
+EXTWIP="__WRITING__"
+EXTARCH="bz2"
+CMDARCH="bzip2 -c -9"
+
+set -o pipefail || true
+
+cd "$LOGDIR" || exit $?
+echo "`date`: $0 starting in `pwd`" >&2
+
+COUNT_OK=0
+COUNT_FAIL=0
+COUNT_WIP_KEEP=0
+COUNT_WIP_WIPE=0
+COUNT_WIP_WIPE_FAIL=0
+
+find . -type f -name '*.'"$EXTWIP" | while read F ; do
+    [ -f "$F" ] && [ -s "$F" ] || continue
+
+    echo "`date`: Checking if $F is abandoned: `ls -lad "$F"`" >&2
+    # Fuser returns 1 if the file is not opened by anyone,
+    # and prints PIDs and returns 0 if the file is accessed ATM
+    if fuser "$F" ; then
+        echo "`date`: Keeping $F" >&2
+        COUNT_WIP_KEEP=$(($COUNT_WIP_KEEP+1))
+    else
+        echo "`date`: Wiping $F as not-accessed partial write" >&2
+        rm -f "$F" \
+            && COUNT_WIP_WIPE=$(($COUNT_WIP_WIPE+1)) \
+            || COUNT_WIP_WIPE_FAIL=$(($COUNT_WIP_WIPE_FAIL+1))
+    fi
+done
+
+find . -type f -name '*.?' | while read F ; do
+    [ -f "$F" ] && [ -s "$F" ] || continue
+
+    echo "`date`: Compressing $F: `ls -lad "$F"`" >&2
+    time $CMDARCH < "$F" > "$F.$EXTARCH.$EXTWIP" && \
+    mv -f "$F.$EXTARCH.$EXTWIP" "$F.$EXTARCH" && \
+    rm -f "$F"
+    RES=$?
+
+    if [ "$RES" = 0 ]; then
+        echo "`date`: [--OK--] : Compressing $F: `ls -lad "$F.$EXTARCH"`" >&2
+        COUNT_OK=$(($COUNT_OK+1))
+    else
+        echo "`date`: [-FAIL-] ($RES): Compressing $F: `ls -lad "$F.$EXTARCH"*`" >&2
+        COUNT_FAIL=$(($COUNT_FAIL+1))
+    fi
+done
+
+echo "`date`: $0 Done; compressed $COUNT_OK files; failed to compress $COUNT_FAIL files" >&2
+echo "Old abandoned writes: $COUNT_WIP_KEEP kept as accessed, $COUNT_WIP_WIPE removed and $COUNT_WIP_WIPE_FAIL failed to remove" >&2
+# TOTHINK: Should we fail the service or not, if COUNT_FAIL>0?
