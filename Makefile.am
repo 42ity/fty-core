@@ -1910,7 +1910,8 @@ cibin_programs: $(cibin_programs_list)
 
 # Run compile/link tests defined in this Makefile
 # Note that check-gitignore should be the last target
-check-local: web-link-test test-sdk \
+# FIXME: "check-pool" temporarily not included into "check-local", see below
+check-local: web-link-test check-sdk \
         check-gitignore
 
 # If git repo details are not available, or git program does not exist,
@@ -1938,7 +1939,7 @@ sdk-link-test: sdk test-libbiosapiut
 
 sdk-tests: sdk sdk-link-test
 
-test-sdk: sdk sdk-tests
+check-sdk: sdk sdk-tests
 	cd $(abs_top_builddir) && ./test-libbiosapiut
 
 #----------------------------------------------------------------------
@@ -1948,8 +1949,8 @@ test-sdk: sdk sdk-tests
 #----------------------------------------------------------------------
 #                        Test mlm client pool via make check
 #----------------------------------------------------------------------
-# FIXME: temporary disabled as it started to fail in about 10% of runs
-test-pool: test-tntmlm
+# FIXME: temporarily disabled as it started to fail in about 10% of runs
+check-pool: test-tntmlm
 	(valgrind --leak-check=full --show-reachable=yes --error-exitcode=1 --suppressions=$(abs_top_srcdir)/tests/test-mlm.supp $(abs_top_builddir)/test-tntmlm)
 
 EXTRA_DIST += $(top_srcdir)/tests/test-mlm.supp
