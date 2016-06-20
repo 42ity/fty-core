@@ -512,8 +512,15 @@ fi
 # End of setup of zabbix
 #########################################################################
 
-# Set lang
-echo 'export LANG="C"' > /etc/profile.d/lang.sh
+# Set lang, timezone, etc.
+{ for V in LANG LANGUAGE LC_ALL ; do
+    echo "$V='C'"
+    echo "export $V"
+  done
+  echo "TZ='UTC'"
+  echo "export TZ"
+} > /etc/profile.d/lang.sh
+
 for V in LANG LANGUAGE LC_ALL ; do echo "$V="'"C"'; done > /etc/default/locale
 
 # logout from /bin/bash after 600s/10m of inactivity
