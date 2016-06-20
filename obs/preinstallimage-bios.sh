@@ -565,8 +565,6 @@ if [ -n "\${BASH-}" ]; then
 fi
 EOF
 
-echo 'local6.debug    /var/log/commands.log' > /etc/rsyslog.d/05-bash.conf
-
 # Legality requires this notice
 { echo ""; echo "WARNING: All shell activity on this system is logged!"; echo ""; } >> /etc/motd
 
