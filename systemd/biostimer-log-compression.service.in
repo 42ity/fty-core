@@ -1,0 +1,10 @@
+[Unit]
+Description=BIOS-Timer service that compresses older log files
+Conflicts=shutdown.target
+
+[Service]
+Type=simple
+ExecStart=@libexecdir@/@PACKAGE@/compress-logs
+
+[Install]
+WantedBy=multi-user.target
