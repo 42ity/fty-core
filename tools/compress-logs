@@ -41,6 +41,7 @@ echo "`date`: $0 starting in `pwd`" >&2
 
 COUNT_OK=0
 COUNT_FAIL=0
+COUNT_USED=0
 COUNT_WIP_KEEP=0
 COUNT_WIP_WIPE=0
 COUNT_WIP_WIPE_FAIL=0
@@ -65,6 +66,13 @@ done
 find . -type f -name '*.?' | while read F ; do
     [ -f "$F" ] && [ -s "$F" ] || continue
 
+    echo "`date`: Checking if $F is abandoned: `ls -lad "$F"`" >&2
+    if fuser "$F" ; then
+        echo "`date`: Keeping $F for now" >&2
+        COUNT_USED=$(($COUNT_USED+1))
+        continue
+    fi
+
     echo "`date`: Compressing $F: `ls -lad "$F"`" >&2
     time $CMDARCH < "$F" > "$F.$EXTARCH.$EXTWIP" && \
     mv -f "$F.$EXTARCH.$EXTWIP" "$F.$EXTARCH" && \
@@ -80,6 +88,6 @@ find . -type f -name '*.?' | while read F ; do
     fi
 done
 
-echo "`date`: $0 Done; compressed $COUNT_OK files; failed to compress $COUNT_FAIL files" >&2
+echo "`date`: $0 Done; compressed $COUNT_OK files; failed to compress $COUNT_FAIL files; did not compress $COUNT_USED files due to being used" >&2
 echo "Old abandoned writes: $COUNT_WIP_KEEP kept as accessed, $COUNT_WIP_WIPE removed and $COUNT_WIP_WIPE_FAIL failed to remove" >&2
 # TOTHINK: Should we fail the service or not, if COUNT_FAIL>0?
