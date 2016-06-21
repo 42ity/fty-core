@@ -659,6 +659,7 @@ findnewest_osimage() (
         [ x"`basename "$IMAGE_URL" .${EXT}`" != x ] && \
         echo "$IMAGE_URL" && return 0
     fi
+    logmsg_error "Error looking up remote file: Make sure your settings (including proxy if needed) are correct."
     return 1
 )
 
@@ -915,6 +916,7 @@ findnewest_rawfwimage_uboot() (
             echo "$IMAGE_URL" && return 0
         fi
     done
+    logmsg_error "Error looking up remote file: Make sure your settings (including proxy if needed) are correct."
     return 1
 )
 
@@ -1074,6 +1076,7 @@ findnewest_rawfwimage_uimage() (
     if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
         echo "$IMAGE_URL" && return 0
     fi
+    logmsg_error "Error looking up remote file: Make sure your settings (including proxy if needed) are correct."
     return 1
 )
 
@@ -1232,6 +1235,7 @@ findnewest_rawfwimage_modules() (
     if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
         echo "$IMAGE_URL" && return 0
     fi
+    logmsg_error "Error looking up remote file: Make sure your settings (including proxy if needed) are correct."
     return 1
 )
 
