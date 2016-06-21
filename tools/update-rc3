@@ -165,6 +165,7 @@ usage() {
     echo "                   Only check the source location if new images are available"
     echo "                   and exit, whatever the outcome (returns 0 if nothing found,"
     echo "                   42 if there is something to download)"
+    echo "  --dry-run | -n            Alias to --check-images (check both OS and FW)"
     echo "  --(no-)download-image-os  Enable or disable downloading of OS images"
     echo "  --(no-)download-image-fw  Likewise for downloading of uBoot, uImage+modules"
     echo "  --(no-)download-images    Enable or disable downloading of all image types"
@@ -1472,7 +1473,8 @@ while [ $# -gt 0 ]; do
                 --no-download-images)   ACTION_DOWNLOAD_OSIMAGE="no"; ACTION_DOWNLOAD_FWIMAGE="no";;
                 --check-image-os)       ACTION_CHECK_OSIMAGE="yes";;
                 --check-image-fw)       ACTION_CHECK_FWIMAGE="yes";;
-                --check-images)         ACTION_CHECK_OSIMAGE="yes"; ACTION_CHECK_FWIMAGE="yes";;
+                --check-images|-n|--dry-run)
+                                        ACTION_CHECK_OSIMAGE="yes"; ACTION_CHECK_FWIMAGE="yes";;
                 --no-check-image-os)    ACTION_CHECK_OSIMAGE="no";;
                 --no-check-image-fw)    ACTION_CHECK_FWIMAGE="no";;
                 --no-check-images)      ACTION_CHECK_OSIMAGE="no"; ACTION_CHECK_FWIMAGE="no";;
