@@ -115,9 +115,12 @@ config_defaults() {
     [ -z "${DEPLOYMENTROOTFW_MODULES-}" ] && DEPLOYMENTROOTFW_MODULES="$DEPLOYMENTROOTFW_UIMAGE/modules"
 
     [ -z "${http_proxy-}" -o x"${http_proxy-}" = x- ] && http_proxy=""
-    [ -z "${https_proxy-}" -o x"${https_proxy-}" = x- ] && https_proxy=""
-    [ -z "${ftp_proxy-}" -o x"${ftp_proxy-}" = x- ] && ftp_proxy=""
-    [ -z "${ftps_proxy-}" -o x"${ftps_proxy-}" = x- ] && ftps_proxy=""
+    [ -z "${https_proxy-}" ] && https_proxy="$http_proxy"
+    [ -z "${ftp_proxy-}" ]   && ftp_proxy="$http_proxy"
+    [ -z "${ftps_proxy-}" ]  && ftps_proxy="$http_proxy"
+    [ x"${https_proxy-}" = x- ] && https_proxy=""
+    [ x"${ftp_proxy-}" = x- ]   && ftp_proxy=""
+    [ x"${ftps_proxy-}" = x- ]  && ftps_proxy=""
     export http_proxy https_proxy ftp_proxy ftps_proxy
 
     # The RC3 SPI flash partitioning determines these sizes, value hardcoded in the
@@ -186,6 +189,8 @@ usage() {
     echo "                   the control file so 'init' does a factory reset after reboot"
     echo "  --(no-)erase-all           If a new OS image downloaded successfully, then"
     echo "                   request a factory reset + NAND format after reboot"
+    echo "For HTTP(S) or FTP(S) based delivery, do not forget to set http_proxy URL as"
+    echo "applicable for your environment. Current value is '$http_proxy'."
 # TODO(recurring) Maintain usage() as CLI options get added to the script
 }
 
