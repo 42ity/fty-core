@@ -543,7 +543,9 @@ if [ -n "\${BASH-}" ]; then
     declare -rx HISTCMD               #history line number
     #history -r                       #to reload history from file if a prior HISTSIZE has truncated it
 
-    [ "\${USER-}" = root ] && chattr +a "\$HISTFILE" || true    #set append-only
+    # Ensure the file exists (even if empty), as we use it with "fc" below
+    # Secure the file to minimize leak of sensitive data (mis-pasted passwords etc.)
+    [ -f "\$HISTFILE" ] || { touch "\$HISTFILE" ; chmod 600 "\$HISTFILE"; }
 
     shopt -s histappend
     shopt -s cmdhist
@@ -564,8 +566,6 @@ if [ -n "\${BASH-}" ]; then
     unset _LOGGER
 fi
 EOF
-
-echo 'local6.debug    /var/log/commands.log' > /etc/rsyslog.d/05-bash.conf
 
 # Legality requires this notice
 { echo ""; echo "WARNING: All shell activity on this system is logged!"; echo ""; } >> /etc/motd

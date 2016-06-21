@@ -16,22 +16,35 @@
 #   with this program; if not, write to the Free Software Foundation, Inc.,
 #   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-# \file logrotate
+# \file logrotate-rsyslog
 # \brief Rotate the persistent log, keep 4 compressed backups maximum
-# \author Michal Vyskocil <michalvyskocil@eaton.com>
+# \author Michal Vyskocil <MichalVyskocil@eaton.com>
+# \author Jim Klimov <EvgenyKlimov@Eaton.com>
 # \details simple log rorating script, executed by rsyslog via outchannel directive
 #          see /etc/rsyslog.d/00-ipc.conf
+#          Note: This script should be atomically fast (rsyslog blocks until
+#          the log-rotation handler returns). Anything expensive, such as
+#          compression of the old log files, should be done separately (via
+#          timer unit in this case); also this ensures the file is closed
+#          and not written to by the logger before we start to compress it.
 
-rm -f /var/log/messages.5
+LOGFILE="$1"
+[ -z "$LOGFILE" ] && LOGFILE="/var/log/messages"
+EXTARCH="bz2"
+
+# Files may be compressed or not yet...
+rm -f "$LOGFILE".5 "$LOGFILE.5.$EXTARCH"
 
 for i in `seq 4 -1 1`; do
     # note: $((i+1)) works under dash!
-    [ -s /var/log/messages.${i}.bz2 ] || continue
-    mv -f /var/log/messages.${i}.bz2 /var/log/messages.$((i+1)).bz2
+    [ -s "$LOGFILE.${i}" -o -s "$LOGFILE.${i}.$EXTARCH" || continue
+    [ -s "$LOGFILE.${i}" ] && mv -f "$LOGFILE.${i}" "$LOGFILE.$((i+1))"
+    [ -s "$LOGFILE.${i}.$EXTARCH" ] && mv -f "$LOGFILE.${i}.$EXTARCH" "$LOGFILE.$((i+1)).$EXTARCH"
 done
 
-[ -f /var/log/messages ] || exit 0
-mv -f /var/log/messages /var/log/messages.1
+[ -f "$LOGFILE" ] && [ -s "$LOGFILE" ] || exit 0
+mv -f "$LOGFILE" "$LOGFILE.1"
 
-bzip2 -c -9 < /var/log/messages.1 > /var/log/messages.1.__WRITING__ && \
-mv -f /var/log/messages.1.__WRITING__ /var/log/messages.1
+# Tickle the service to start compressing immediately (but asynchronously),
+# if an instance of it is not yet running already
+/bin/systemctl start biostimer-compress-logs || true
