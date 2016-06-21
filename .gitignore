@@ -165,6 +165,8 @@ systemd/bios-networking.service
 systemd/bios-fake-th.service
 !systemd/biostimer-verify-fs.service.in
 systemd/biostimer-verify-fs.service
+!systemd/biostimer-compress-logs.service.in
+systemd/biostimer-compress-logs.service
 
 !tools/tntnet-ExecStartPre.sh.in
 tools/tntnet-ExecStartPre.sh
