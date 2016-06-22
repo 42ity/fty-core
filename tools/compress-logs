@@ -63,7 +63,8 @@ find . -type f -name '*.'"$EXTWIP" | while read F ; do
     fi
 done
 
-find . -type f -name '*.?' | while read F ; do
+# Assumption: no whitespace in filenames
+for F in `find . -type f -name '*.?'`; do
     [ -f "$F" ] && [ -s "$F" ] || continue
 
     echo "`date`: Checking if $F is abandoned: `ls -lad "$F"`" >&2
