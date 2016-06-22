@@ -115,9 +115,12 @@ config_defaults() {
     [ -z "${DEPLOYMENTROOTFW_MODULES-}" ] && DEPLOYMENTROOTFW_MODULES="$DEPLOYMENTROOTFW_UIMAGE/modules"
 
     [ -z "${http_proxy-}" -o x"${http_proxy-}" = x- ] && http_proxy=""
-    [ -z "${https_proxy-}" -o x"${https_proxy-}" = x- ] && https_proxy=""
-    [ -z "${ftp_proxy-}" -o x"${ftp_proxy-}" = x- ] && ftp_proxy=""
-    [ -z "${ftps_proxy-}" -o x"${ftps_proxy-}" = x- ] && ftps_proxy=""
+    [ -z "${https_proxy-}" ] && https_proxy="$http_proxy"
+    [ -z "${ftp_proxy-}" ]   && ftp_proxy="$http_proxy"
+    [ -z "${ftps_proxy-}" ]  && ftps_proxy="$http_proxy"
+    [ x"${https_proxy-}" = x- ] && https_proxy=""
+    [ x"${ftp_proxy-}" = x- ]   && ftp_proxy=""
+    [ x"${ftps_proxy-}" = x- ]  && ftps_proxy=""
     export http_proxy https_proxy ftp_proxy ftps_proxy
 
     # The RC3 SPI flash partitioning determines these sizes, value hardcoded in the
@@ -165,9 +168,12 @@ usage() {
     echo "                   Only check the source location if new images are available"
     echo "                   and exit, whatever the outcome (returns 0 if nothing found,"
     echo "                   42 if there is something to download)"
+    echo "  --dry-run | -n            Alias to --check-images (check both OS and FW)"
     echo "  --(no-)download-image-os  Enable or disable downloading of OS images"
     echo "  --(no-)download-image-fw  Likewise for downloading of uBoot, uImage+modules"
     echo "  --(no-)download-images    Enable or disable downloading of all image types"
+    echo "  --fw-only                 Alias to --no-download-image-os --download-image-fw"
+    echo "  --os-only                 Alias to --download-image-os --no-download-image-fw"
     echo "  --(no-)removeold-image-os, --(no-)removeold-image-fw, --(no-)removeold-images"
     echo "                   If download-image of this type was requested and successful,"
     echo "                   or if download was not requested at all, remove all but the"
@@ -185,6 +191,8 @@ usage() {
     echo "                   the control file so 'init' does a factory reset after reboot"
     echo "  --(no-)erase-all           If a new OS image downloaded successfully, then"
     echo "                   request a factory reset + NAND format after reboot"
+    echo "For HTTP(S) or FTP(S) based delivery, do not forget to set http_proxy URL as"
+    echo "applicable for your environment. Current value is '$http_proxy'."
 # TODO(recurring) Maintain usage() as CLI options get added to the script
 }
 
@@ -659,6 +667,7 @@ findnewest_osimage() (
         [ x"`basename "$IMAGE_URL" .${EXT}`" != x ] && \
         echo "$IMAGE_URL" && return 0
     fi
+    logmsg_error "Error looking up remote file: Make sure your settings (including proxy if needed) are correct."
     return 1
 )
 
@@ -915,6 +924,7 @@ findnewest_rawfwimage_uboot() (
             echo "$IMAGE_URL" && return 0
         fi
     done
+    logmsg_error "Error looking up remote file: Make sure your settings (including proxy if needed) are correct."
     return 1
 )
 
@@ -1074,6 +1084,7 @@ findnewest_rawfwimage_uimage() (
     if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
         echo "$IMAGE_URL" && return 0
     fi
+    logmsg_error "Error looking up remote file: Make sure your settings (including proxy if needed) are correct."
     return 1
 )
 
@@ -1232,6 +1243,7 @@ findnewest_rawfwimage_modules() (
     if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
         echo "$IMAGE_URL" && return 0
     fi
+    logmsg_error "Error looking up remote file: Make sure your settings (including proxy if needed) are correct."
     return 1
 )
 
@@ -1466,9 +1478,12 @@ while [ $# -gt 0 ]; do
                 --no-download-image-os) ACTION_DOWNLOAD_OSIMAGE="no";;
                 --no-download-image-fw) ACTION_DOWNLOAD_FWIMAGE="no";;
                 --no-download-images)   ACTION_DOWNLOAD_OSIMAGE="no"; ACTION_DOWNLOAD_FWIMAGE="no";;
+                --fw-only)              ACTION_DOWNLOAD_OSIMAGE="no"; ACTION_DOWNLOAD_FWIMAGE="yes";;
+                --os-only)              ACTION_DOWNLOAD_OSIMAGE="yes"; ACTION_DOWNLOAD_FWIMAGE="no";;
                 --check-image-os)       ACTION_CHECK_OSIMAGE="yes";;
                 --check-image-fw)       ACTION_CHECK_FWIMAGE="yes";;
-                --check-images)         ACTION_CHECK_OSIMAGE="yes"; ACTION_CHECK_FWIMAGE="yes";;
+                --check-images|-n|--dry-run)
+                                        ACTION_CHECK_OSIMAGE="yes"; ACTION_CHECK_FWIMAGE="yes";;
                 --no-check-image-os)    ACTION_CHECK_OSIMAGE="no";;
                 --no-check-image-fw)    ACTION_CHECK_FWIMAGE="no";;
                 --no-check-images)      ACTION_CHECK_OSIMAGE="no"; ACTION_CHECK_FWIMAGE="no";;
