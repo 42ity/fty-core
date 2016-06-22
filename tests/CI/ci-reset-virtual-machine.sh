@@ -832,6 +832,11 @@ if [ -s "../rootfs/$VM/usr/share/bios-web/git_details.txt" ]; then
 		"$(cat "../rootfs/$VM/usr/share/bios-web/git_details.txt")"
 fi
 
+if [ -d "../rootfs/$VM.saved/" ] && [ "$NO_RESTORE_SAVED" != yes ]; then
+	logmsg_info "Restore custom configuration from `../rootfs/$VM.saved/ && pwd`" && \
+	( cd "../rootfs/$VM.saved/" && tar cf - ) | ( cd "../rootfs/$VM/" && tar xvf - )
+fi
+
 logmsg_info "Pre-configuration of VM '$VM' ($IMGTYPE/$ARCH) is completed"
 if [ x"$DEPLOYONLY" = xyes ]; then
 	logmsg_info "DEPLOYONLY was requested, so ending" \
@@ -873,20 +878,22 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 	fi
 
 	set +e
+	# TODO: There may be funny interaction with saved-config if it contains
+	# files that are to be "restored" below; fix if it ever gets practical
 	logmsg_info "Restore /etc/hosts and /etc/resolv.conf in the VM to the default baseline"
 	LOCALHOSTLINE="`grep '127.0.0.1' "../rootfs/$VM/etc/hosts"`" && \
 		[ -n "$LOCALHOSTLINE" ] && ( echo "$LOCALHOSTLINE" > "../rootfs/$VM/etc/hosts" )
 	grep "8.8.8.8" "../rootfs/$VM/etc/resolv.conf.bak-devpkg" >/dev/null || \
 	cp -pf "../rootfs/$VM/etc/resolv.conf.bak-devpkg" "../rootfs/$VM/etc/resolv.conf"
 	cp -pf "../rootfs/$VM/etc/nsswitch.conf.bak-devpkg" "../rootfs/$VM/etc/nsswitch.conf"
-	logmsg_info "Restart networking in the VM chroot to refresh virtual network settings"
-	chroot "../rootfs/$VM/" /bin/systemctl restart bios-networking
+#	logmsg_info "Restart networking in the VM chroot to refresh virtual network settings"
+#	chroot "../rootfs/$VM/" /bin/systemctl restart bios-networking
 	set -e
-fi
 
-if [ -d "../rootfs/$VM.saved/" ] && [ "$NO_RESTORE_SAVED" != yes ]; then
-	logmsg_info "Restore custom configuration from `../rootfs/$VM.saved/ && pwd`" && \
-	( cd "../rootfs/$VM.saved/" && tar cf - ) | ( cd "../rootfs/$VM/" && tar xvf - )
+        logmsg_info "Restart the virtual machine $VM"
+        virsh -c lxc:// reboot "$VM" || die "Can't reboot the virtual machine $VM"
+	logmsg_info "Sleeping 30 sec to let VM startup settle down..."
+	sleep 30
 fi
 
 logmsg_info "Preparation and startup of the virtual machine '$VM'" \
