@@ -834,7 +834,7 @@ fi
 
 if [ -d "../rootfs/$VM.saved/" ] && [ "$NO_RESTORE_SAVED" != yes ]; then
 	logmsg_info "Restore custom configuration from `../rootfs/$VM.saved/ && pwd`" && \
-	( cd "../rootfs/$VM.saved/" && tar cf - ) | ( cd "../rootfs/$VM/" && tar xvf - )
+	( cd "../rootfs/$VM.saved/" && tar cf - . ) | ( cd "../rootfs/$VM/" && tar xvf - )
 fi
 
 logmsg_info "Pre-configuration of VM '$VM' ($IMGTYPE/$ARCH) is completed"
