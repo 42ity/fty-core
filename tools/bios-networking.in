@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (C) 2015 Eaton
+# Copyright (C) 2015-2016 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,14 +20,20 @@
 #  \brief   Helper script for networking part of REST API /admin/systemctl
 #  \author  Michal Vyskocil <MichalVyskocil@Eaton.com>
 #  \details Helper script for networking part of REST API /admin/systemctl
-#           calling networking services synchronously is not possible as
-#           changes in network config tends to close connection, therefor the
-#           REST API call never reply to caller. This script is called by systemd,
-#           thus not running in webserver context, which can reply success using
-#           old connection.
+#           Really calling networking services synchronously is not possible
+#           as changes in network config tends to close connection, therefore
+#           the REST API call would never reply to caller.
+#           This script is called by systemd via "bios-networking.service",
+#           thus not running in webserver context, which can report success
+#           using the old HTTP(S) connection.
 
-# to ensure REST API call at least reply before actually changing the network
+# to ensure REST API call at least replies before actually changing the network
 sleep 3
-for L in 1 2 3 ; do ( ifdown --force LAN$L ; sleep 5; ifup --force LAN$L ) & done ; wait
+# On production boxes we have 2 or 3 renamed LAN interfaces
+for L in 1 2 3 ; do ( ifdown --force LAN$L ; sleep 5; ifup --force LAN$L ) & done
+# Support not-remapped devices, including those in a container environment
+# and/or hot-plugged devices in USB ports
+for L in 0 1 2 3 ; do ( ifdown --force eth$L ; sleep 5; ifup --force eth$L ) & done
+wait
 /bin/systemctl restart networking.service
 /bin/systemctl restart ifplugd.service
