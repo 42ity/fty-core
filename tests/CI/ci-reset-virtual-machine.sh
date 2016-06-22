@@ -88,6 +88,7 @@ usage() {
     echo "    -ap|--apt-proxy URL  the http_proxy to access external APT images ('$APT_PROXY')"
     echo "    --install-dev        run ci-setup-test-machine.sh (if available) to install packages"
     echo "    --no-install-dev     do not run ci-setup-test-machine.sh, even on IMGTYPE=devel"
+    echo "    --no-restore-saved   do not copy stashed custom configs from a VMNAME.saved/ dir"
     echo "    --no-overlayfs       enforce use of tarballs, even if overlayfs is supported by host"
     echo "    --with-overlayfs     enforce use of overlayfs, fail if not supported by host"
     echo "    --download-only      end the script after downloading the newest image file"
@@ -206,6 +207,7 @@ DOTDOMAINNAME=""
 [ -z "$ATTEMPT_DOWNLOAD" ] && ATTEMPT_DOWNLOAD=auto
 [ -z "$ALLOW_CONFIG_FILE" ] && ALLOW_CONFIG_FILE=yes
 [ -z "${OVERLAYFS-}" ] && OVERLAYFS="auto"
+[ -z "${NO_RESTORE_SAVED-}" ] && NO_RESTORE_SAVED=no
 
 while [ $# -gt 0 ] ; do
     case "$1" in
@@ -240,6 +242,10 @@ while [ $# -gt 0 ] ; do
 	    ;;
 	--no-overlayfs)
 	    OVERLAYFS=no
+	    shift
+	    ;;
+	--no-restore-saved)
+	    NO_RESTORE_SAVED=yes
 	    shift
 	    ;;
 	--with-overlayfs)
@@ -876,6 +882,11 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 	logmsg_info "Restart networking in the VM chroot to refresh virtual network settings"
 	chroot "../rootfs/$VM/" /bin/systemctl restart bios-networking
 	set -e
+fi
+
+if [ -d "../rootfs/$VM.saved/" ] && [ "$NO_RESTORE_SAVED" != yes ]; then
+	logmsg_info "Restore custom configuration from `../rootfs/$VM.saved/ && pwd`" && \
+	( cd "../rootfs/$VM.saved/" && tar cf - ) | ( cd "../rootfs/$VM/" && tar xvf - )
 fi
 
 logmsg_info "Preparation and startup of the virtual machine '$VM'" \
