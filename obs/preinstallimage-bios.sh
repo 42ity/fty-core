@@ -67,6 +67,9 @@ sed -e 's/^\([ \t]*HIST.*=.*\)$/###\1/' \
     -e 's/^\([ \t]*shopt.* hist.*\)$/###\1/' \
     -i /etc/skel/.bashrc -i /root/.bashrc
 
+cat /dev/null > /etc/skel/.bash_history
+chmod 600 /etc/skel/.bash_history
+
 # Create user and set root password
 passwd <<EOF
 nosoup4u
@@ -93,6 +96,11 @@ mkdir -p /home/admin && chown admin:bios-admin /home/admin
 # Workplace for the webserver and graph daemons
 mkdir -p /var/lib/bios
 chown -R www-data /var/lib/bios
+
+cat > /etc/issue < EOF
+\S{NAME} \S{VERSION_ID} \n \l@\b
+Current IP: \4{eth0} \4{eth1} \4{eth2} \4{eth3} \4{LAN1} \4{LAN2} \4{LAN3}
+EOF
 
 # A few helper aliases
 cat > /etc/profile.d/bios_aliases.sh << EOF
