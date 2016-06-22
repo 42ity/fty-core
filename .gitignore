@@ -137,8 +137,6 @@ tools/db-init
 !tools/db-init.in
 tools/bios-passwd
 !tools/bios-passwd.in
-tools/bios-networking
-!tools/bios-networking.in
 tools/bios-nutconfig
 !tools/bios-nutconfig.in
 
