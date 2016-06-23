@@ -28,6 +28,7 @@ examplecfgupdate_DATA	= \
 
 examplecfgrsyslogddir	= $(datarootdir)/@PACKAGE@/examples/config/rsyslog.d
 examplecfgrsyslogd_DATA	= rsyslog.d/10-ipc.conf \
-						  rsyslog.d/10-ipc-remote.conf
+			  rsyslog.d/05-bash.conf \
+			  rsyslog.d/10-ipc-remote.conf
 
 EXTRA_DIST += $(examplecfgsudo_DATA) $(examplecfgpam_DATA) $(examplecfgsec_DATA) $(examplecfgupdate_DATA) $(examplecfgrsyslogd_DATA)
