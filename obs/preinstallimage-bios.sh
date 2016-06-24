@@ -523,6 +523,11 @@ esac
 install -m 0755 /usr/share/bios/examples/config/profile.d/bash_history.sh /etc/profile.d/bash_history.sh
 install -m 0755 /usr/share/bios/examples/config/profile.d/bash_syslog.sh /etc/profile.d/bash_syslog.sh
 
+if [ -s "/lib/snoopy.so" ] && [ -z "`grep /lib/snoopy.so /etc/ld.so.preload`" ]; then
+    echo "Installing LIBSNOOPY into common LD_PRELOAD"
+    echo "/lib/snoopy.so" >> /etc/ld.so.preload
+fi
+
 # Legality requires this notice
 { echo ""; echo "WARNING: All shell activity on this system is logged!"; echo ""; } >> /etc/motd
 
