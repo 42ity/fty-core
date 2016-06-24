@@ -61,7 +61,7 @@ if true; then
 fi
 
 # We set bash HISTORY in /etc/profile.d (see below) and mark it readonly
-# Note: This must be done before user accouts (and homes) are created
+# Note: This must be done before user accounts (and homes) are created
 mkdir -p /etc/profile.d
 sed -e 's/^\([ \t]*HIST.*=.*\)$/###\1/' \
     -e 's/^\([ \t]*set -o hist.*\)$/###\1/' \
