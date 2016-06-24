@@ -126,10 +126,15 @@ sed -i 's|.*RuntimeMaxFileSize.*|RuntimeMaxFileSize=10M|' /etc/systemd/journald.
 sed -i 's|.*Storage.*|Storage=volatile|'                  /etc/systemd/journald.conf
 
 # rsyslogd setup
-mkdir -p /etc/rsyslog.d
+mkdir -p /etc/rsyslog.d /etc/rsyslog.d-early
 ## remove conflicting Debian defaults
-awk '{ print $0; } /^\$IncludeConfig/{ exit; }' </etc/rsyslog.conf >/etc/rsyslog.conf.tmp && \
+echo '$IncludeConfig /etc/rsyslog.d-early/*.conf' > /etc/rsyslog.conf.tmp
+awk '{ print $0; } /^\$IncludeConfig/{ exit; }' </etc/rsyslog.conf >>/etc/rsyslog.conf.tmp && \
 mv -f /etc/rsyslog.conf.tmp /etc/rsyslog.conf
+
+## avoid "localhost" as the original host ID in logs
+## this may need to be set before loading modules, so it is "early"
+echo '$PreserveFQDN on' > /etc/rsyslog.d-early/00-PreserveFQDN.conf
 
 ## normal logging
 cp /usr/share/bios/examples/config/rsyslog.d/10-ipc.conf /etc/rsyslog.d/
