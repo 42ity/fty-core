@@ -531,6 +531,14 @@ install -m 0755 /usr/share/bios/examples/config/profile.d/bash_syslog.sh /etc/pr
 if [ -s "/lib/snoopy.so" ] && [ -z "`grep /lib/snoopy.so /etc/ld.so.preload`" ]; then
     echo "Installing LIBSNOOPY into common LD_PRELOAD"
     echo "/lib/snoopy.so" >> /etc/ld.so.preload
+
+    if [ -d "/etc/logcheck" ]; then
+        mkdir -p /etc/logcheck/ignore.d.server && \
+        echo '^\w{3} [ :0-9]{11} [._[:alnum:]-]+ snoopy.*' > /etc/logcheck/ignore.d.server/snoopy
+
+        mkdir -p /etc/logcheck/violations.ignore.d && \
+        echo '^\w{3} [ :0-9]{11} [._[:alnum:]-]+ snoopy.*' > /etc/logcheck/violations.ignore.d/snoopy
+    fi
 fi
 
 # Legality requires this notice
