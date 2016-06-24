@@ -736,6 +736,8 @@ fi
 logmsg_info "Setup virtual hostname"
 echo "$VM" > "../rootfs/$VM/etc/hostname"
 logmsg_info "Put virtual hostname in /etc/hosts"
+# Apparently, the first token for a locally available IP address is
+# treated as the `hostname --fqdn` if no other ideas are available.
 sed -r -i "s/^127\.0\.0\.1/127.0.0.1 $VM /" "../rootfs/$VM/etc/hosts"
 
 logmsg_info "Copy root's ~/.ssh from the host OS"
