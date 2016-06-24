@@ -61,7 +61,7 @@ if true; then
 fi
 
 # We set bash HISTORY in /etc/profile.d (see below) and mark it readonly
-# Note: This must be done before user accouts (and homes) are created
+# Note: This must be done before user accounts (and homes) are created
 mkdir -p /etc/profile.d
 sed -e 's/^\([ \t]*HIST.*=.*\)$/###\1/' \
     -e 's/^\([ \t]*set -o hist.*\)$/###\1/' \
@@ -69,7 +69,8 @@ sed -e 's/^\([ \t]*HIST.*=.*\)$/###\1/' \
     -i /etc/skel/.bashrc -i /root/.bashrc
 
 cat /dev/null > /etc/skel/.bash_history
-chmod 600 /etc/skel/.bash_history
+touch /root/.bash_history
+chmod 600 /etc/skel/.bash_history /root/.bash_history
 
 # Create user and set root password
 passwd <<EOF
@@ -522,6 +523,11 @@ esac
 install -m 0755 /usr/share/bios/examples/config/profile.d/bash_history.sh /etc/profile.d/bash_history.sh
 install -m 0755 /usr/share/bios/examples/config/profile.d/bash_syslog.sh /etc/profile.d/bash_syslog.sh
 
+if [ -s "/lib/snoopy.so" ] && [ -z "`grep /lib/snoopy.so /etc/ld.so.preload`" ]; then
+    echo "Installing LIBSNOOPY into common LD_PRELOAD"
+    echo "/lib/snoopy.so" >> /etc/ld.so.preload
+fi
+
 # Legality requires this notice
 { echo ""; echo "WARNING: All shell activity on this system is logged!"; echo ""; } >> /etc/motd
 
@@ -689,4 +695,8 @@ if [ ! -f /var/cache/cracklib/cracklib_dict.pwd ]; then
     exit 1
 fi
 
+echo "WIPE OS image log file contents"
+find /var/log -type f | while read F; do cat /dev/null > "$F"; done
+
+sync
 echo "INFO: successfully reached the end of script: $0 $@"
