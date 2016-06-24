@@ -99,9 +99,9 @@ mkdir -p /home/admin && chown admin:bios-admin /home/admin
 mkdir -p /var/lib/bios
 chown -R www-data /var/lib/bios
 
+# The bios-boot::init script assumes only the first line of /etc/issue to be useful
 cat > /etc/issue << EOF
-\S{NAME} \S{VERSION_ID} \n \l@\b
-Current IP(s): \4{eth0} \4{eth1} \4{eth2} \4{eth3} \4{LAN1} \4{LAN2} \4{LAN3}
+\S{NAME} \S{VERSION_ID} \n \l@\b ; Current IP(s): \4{eth0} \4{eth1} \4{eth2} \4{eth3} \4{LAN1} \4{LAN2} \4{LAN3}
 EOF
 
 # BIOS configuration file
