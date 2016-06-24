@@ -671,7 +671,14 @@ done
 
 # clean up VM space
 logmsg_info "Removing VM rootfs from '`pwd`/../rootfs/$VM'"
-/bin/rm -rf "../rootfs/$VM"
+/bin/rm -rf "../rootfs/$VM" || \
+{ logmsg_error "FAILED to remove '../rootfs/$VM'"
+  logmsg_info "Checking if blocked by any processes?.."
+  fuser "../rootfs/$VM" "../rootfs/$VM"/*
+  fuser -c "../rootfs/$VM" "../rootfs/$VM"/*
+  fuser -m "../rootfs/$VM" "../rootfs/$VM"/*
+  die "Can not manipulate '../rootfs/$VM' at this time"
+}
 
 if [ x"$STOPONLY" = xyes ]; then
 	logmsg_info "STOPONLY was requested, so ending" \
@@ -833,7 +840,7 @@ if [ -s "../rootfs/$VM/usr/share/bios-web/git_details.txt" ]; then
 fi
 
 if [ -d "../rootfs/$VM.saved/" ] && [ "$NO_RESTORE_SAVED" != yes ]; then
-	logmsg_info "Restore custom configuration from `../rootfs/$VM.saved/ && pwd`" && \
+	logmsg_info "Restoring custom configuration from '`cd ../rootfs/$VM.saved/ && pwd`':" && \
 	( cd "../rootfs/$VM.saved/" && tar cf - . ) | ( cd "../rootfs/$VM/" && tar xvf - )
 fi
 
@@ -864,6 +871,8 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 	fi
 	if [ -n "$INSTALLER" ] ; then
 		logmsg_info "Will now update and install a predefined development package set using $INSTALLER"
+		logmsg_info "../rootfs/$VM/etc/resolv.conf is:"
+		cat "../rootfs/$VM/etc/resolv.conf"
 		logmsg_info "Sleeping 30 sec to let VM startup settle down first..."
 		sleep 30
 		logmsg_info "Running $INSTALLER against the VM '$VM' (via chroot into '`cd ../rootfs/$VM/ && pwd`')..."
