@@ -586,7 +586,8 @@ logmsg_info "Will use IMAGE='$IMAGE' for further VM set-up (flattened to '$IMAGE
 [ -z "$VM" ] && die "Downloads and verifications are completed, at this point I need a definite VM value to work on!"
 
 # Destroy whatever was running, if anything
-virsh -c lxc:// destroy "$VM" 2> /dev/null > /dev/null || \
+logmsg_info "Destroying VM '$VM' instance (if any was running)..."
+virsh -c lxc:// destroy "$VM" || \
 	logmsg_warn "Could not destroy old instance of '$VM'"
 # may be wait for slow box
 sleep 5
@@ -871,12 +872,13 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 	fi
 	if [ -n "$INSTALLER" ] ; then
 		logmsg_info "Will now update and install a predefined development package set using $INSTALLER"
-		logmsg_info "../rootfs/$VM/etc/resolv.conf is:"
-		cat "../rootfs/$VM/etc/resolv.conf"
 		logmsg_info "Sleeping 30 sec to let VM startup settle down first..."
 		sleep 30
 		logmsg_info "Running $INSTALLER against the VM '$VM' (via chroot into '`cd ../rootfs/$VM/ && pwd`')..."
 		set +e
+		# The DHCP client in the container may wipe the resolv.conf if it found nothing on DHCP line
+		#[ -s "../rootfs/$VM/etc/resolv.conf" ] || \
+		cp -pf /etc/resolv.conf "../rootfs/$VM/etc/"
 		chroot "../rootfs/$VM/" /bin/bash < "$INSTALLER"
 		logmsg_info "Result of installer script: $?"
 		set -e
@@ -900,7 +902,8 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 	set -e
 
         logmsg_info "Restart the virtual machine $VM"
-        virsh -c lxc:// reboot "$VM" || die "Can't reboot the virtual machine $VM"
+        virsh -c lxc:// destroy "$VM" && sleep 5 && \
+        virsh -c lxc:// start "$VM" || die "Can't reboot the virtual machine $VM"
 	logmsg_info "Sleeping 30 sec to let VM startup settle down..."
 	sleep 30
 fi
