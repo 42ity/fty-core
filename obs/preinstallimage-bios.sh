@@ -710,6 +710,9 @@ fi
 
 echo "WIPE OS image log file contents"
 find /var/log -type f | while read F; do cat /dev/null > "$F"; done
+touch /var/log/messages /var/log/commands.log
+chmod 640 /var/log/messages || true
+chmod 640 /var/log/commands.log || true
 
 sync
 echo "INFO: successfully reached the end of script: $0 $@"
