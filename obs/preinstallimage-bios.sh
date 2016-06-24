@@ -62,6 +62,7 @@ fi
 
 # We set bash HISTORY in /etc/profile.d (see below) and mark it readonly
 # Note: This must be done before user accouts (and homes) are created
+mkdir -p /etc/profile.d
 sed -e 's/^\([ \t]*HIST.*=.*\)$/###\1/' \
     -e 's/^\([ \t]*set -o hist.*\)$/###\1/' \
     -e 's/^\([ \t]*shopt.* hist.*\)$/###\1/' \
@@ -97,23 +98,10 @@ mkdir -p /home/admin && chown admin:bios-admin /home/admin
 mkdir -p /var/lib/bios
 chown -R www-data /var/lib/bios
 
-cat > /etc/issue < EOF
+cat > /etc/issue << EOF
 \S{NAME} \S{VERSION_ID} \n \l@\b
-Current IP: \4{eth0} \4{eth1} \4{eth2} \4{eth3} \4{LAN1} \4{LAN2} \4{LAN3}
+Current IP(s): \4{eth0} \4{eth1} \4{eth2} \4{eth3} \4{LAN1} \4{LAN2} \4{LAN3}
 EOF
-
-# A few helper aliases
-cat > /etc/profile.d/bios_aliases.sh << EOF
-alias dbb='mysql -u root box_utf8 -t'
-alias la='ls -la'
-EOF
-
-# BIOS PATH
-cat > /etc/profile.d/bios_path.sh << EOF
-export PATH="/usr/libexec/bios:\$PATH"
-EOF
-
-chmod a+rx /etc/profile.d/*
 
 # BIOS configuration file
 mkdir -p /etc/default
@@ -521,14 +509,7 @@ fi
 #########################################################################
 
 # Set lang, timezone, etc.
-{ for V in LANG LANGUAGE LC_ALL ; do
-    echo "$V='C'"
-    echo "export $V"
-  done
-  echo "TZ='UTC'"
-  echo "export TZ"
-} > /etc/profile.d/lang.sh
-
+install -m 0755 /usr/share/bios/examples/config/profile.d/lang.sh /etc/profile.d/lang.sh
 for V in LANG LANGUAGE LC_ALL ; do echo "$V="'"C"'; done > /etc/default/locale
 
 # logout from /bin/bash after 600s/10m of inactivity
@@ -537,46 +518,18 @@ case "$IMGTYPE" in
     *) echo 'export TMOUT=600' > /etc/profile.d/tmout.sh ;;
 esac
 
-cat > /etc/profile.d/bash_history.sh <<EOF
 # Set up history tracking and syslogging for BASH
-# Partially inspired by
-#   http://www.pointsoftware.ch/howto-bash-audit-command-logger/
-if [ -n "\${BASH-}" ]; then
-    # 'history' options
-    declare -rx HISTFILE="\$HOME/.bash_history"
-    declare -rx HISTSIZE=500000       #nbr of cmds in memory
-    declare -rx HISTFILESIZE=500000   #nbr of cmds on file
-    declare -rx HISTCONTROL=""        #does not ignore spaces or duplicates
-    declare -rx HISTIGNORE=""         #does not ignore patterns
-    declare -rx HISTCMD               #history line number
-    #history -r                       #to reload history from file if a prior HISTSIZE has truncated it
-
-    # Ensure the file exists (even if empty), as we use it with "fc" below
-    # Secure the file to minimize leak of sensitive data (mis-pasted passwords etc.)
-    [ -f "\$HISTFILE" ] || { touch "\$HISTFILE" ; chmod 600 "\$HISTFILE"; }
-
-    shopt -s histappend
-    shopt -s cmdhist
-    set -o history
-
-    #history substitution ask for a confirmation
-    shopt -s histverify
-
-    #http://askubuntu.com/questions/93566/how-to-log-all-bash-commands-by-all-users-on-a-server
-    # Only log different history entries (e.g. pressing "enter" also triggers this activity)
-    # We use 'echo _LAST_LOGGED' without quotes to quickly chomp surrounding whitespaces
-    _LAST_LOGGED=""
-    for _LOGGER in /usr/bin/logger /bin/logger ; do
-        [ -x "\$_LOGGER" ] && \\
-        export PROMPT_COMMAND='RETRN_VAL=\$?; [ "\$(fc -ln -0)" = "\$(fc -ln -1)" -o "\$(fc -ln -0)" = "\$_LAST_LOGGED" ] || { _LAST_LOGGED="\$(fc -ln -0)"; '"\${_LOGGER}"' -p local6.debug -t "bash[\$\$]" "\$(whoami)(\$USER \${UID-}/\${EUID-}:\${GID-}):" "\`echo \$_LAST_LOGGED\`" "[\$RETRN_VAL]"; }' \\
-        && break
-    done
-    unset _LOGGER
-fi
-EOF
+install -m 0755 /usr/share/bios/examples/config/profile.d/bash_history.sh /etc/profile.d/bash_history.sh
+install -m 0755 /usr/share/bios/examples/config/profile.d/bash_syslog.sh /etc/profile.d/bash_syslog.sh
 
 # Legality requires this notice
 { echo ""; echo "WARNING: All shell activity on this system is logged!"; echo ""; } >> /etc/motd
+
+# A few helper aliases
+install -m 0755 /usr/share/bios/examples/config/profile.d/bios_aliases.sh /etc/profile.d/bios_aliases.sh
+
+# BIOS PATH
+install -m 0755 /usr/share/bios/examples/config/profile.d/bios_path.sh /etc/profile.d/bios_path.sh
 
 # Help ifup and ifplugd do the right job
 install -m 0755 /usr/share/bios/scripts/ethtool-static-nolink /etc/network/if-pre-up.d
@@ -725,6 +678,9 @@ rm -rf /.reorder
 #[ "$IMGTYPE" = deploy ] && \
     rm -rf /.preinstallimage
 sync
+
+# Some shells want these bits
+chmod a+rx /etc/profile.d/*
 
 # Some of our packaging cleanup could leave the OS image unable to manage
 # user passwords... block such OS images from appearing at all!
