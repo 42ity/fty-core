@@ -695,4 +695,8 @@ if [ ! -f /var/cache/cracklib/cracklib_dict.pwd ]; then
     exit 1
 fi
 
+echo "WIPE OS image log file contents"
+find /var/log -type f | while read F; do cat /dev/null > "$F"; done
+
+sync
 echo "INFO: successfully reached the end of script: $0 $@"
