@@ -74,7 +74,7 @@ for F in `find . -type f -name '*.?'`; do
         continue
     fi
 
-    echo "`date`: Compressing $F ...`" >&2
+    echo "`date`: Compressing $F ..." >&2
     time $CMDARCH < "$F" > "$F.$EXTARCH.$EXTWIP" && \
     mv -f "$F.$EXTARCH.$EXTWIP" "$F.$EXTARCH" && \
     rm -f "$F"
