@@ -68,8 +68,8 @@ sed -e 's/^\([ \t]*HIST.*=.*\)$/###\1/' \
     -e 's/^\([ \t]*shopt.* hist.*\)$/###\1/' \
     -i /etc/skel/.bashrc -i /root/.bashrc
 
-cat /dev/null > /etc/skel/.bash_history
-touch /root/.bash_history
+echo "" > /etc/skel/.bash_history
+[ -s /root/.bash_history ] || echo "" > /root/.bash_history
 chmod 600 /etc/skel/.bash_history /root/.bash_history
 
 # Create user and set root password
