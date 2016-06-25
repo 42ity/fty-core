@@ -586,7 +586,9 @@ logmsg_info "Will use IMAGE='$IMAGE' for further VM set-up (flattened to '$IMAGE
 [ -z "$VM" ] && die "Downloads and verifications are completed, at this point I need a definite VM value to work on!"
 
 # Destroy whatever was running, if anything
+# Try graceful shutdown first, to avoid remaining processes that hold up FS
 logmsg_info "Destroying VM '$VM' instance (if any was running)..."
+virsh -c lxc:// shutdown "$VM" || true
 virsh -c lxc:// destroy "$VM" || \
 	logmsg_warn "Could not destroy old instance of '$VM'"
 # may be wait for slow box
@@ -904,6 +906,7 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 	set -e
 
         logmsg_info "Restart the virtual machine $VM"
+	virsh -c lxc:// shutdown "$VM" || true
         virsh -c lxc:// destroy "$VM" && sleep 5 && \
         virsh -c lxc:// start "$VM" || die "Can't reboot the virtual machine $VM"
 	logmsg_info "Sleeping 30 sec to let VM startup settle down..."
