@@ -11,8 +11,8 @@
 # http://www.rsyslog.com/doc/v8-stable/tutorials/log_rotation_fix_size.html
 
 # Log system auth stuff and (below) other important messages here:
-$outchannel log_rotation_messages,/var/log/messages, 10485760,/usr/share/bios/scripts/logrotate-rsyslog /var/log/messages
-$outchannel log_rotation_commands,/var/log/commands.log, 10485760,/usr/share/bios/scripts/logrotate-rsyslog /var/log/commands.log
+$outchannel log_rotation_messages,/var/log/messages, 10485760,@datadir@/@PACKAGE@/scripts/logrotate-rsyslog /var/log/messages
+$outchannel log_rotation_commands,/var/log/commands.log, 10485760,@datadir@/@PACKAGE@/scripts/logrotate-rsyslog /var/log/commands.log
 
 # snoopy logging is quite verbose, so put it separately
 # NOTE that it can supposedly be configured with an /etc/snoopy.ini
