@@ -3,11 +3,11 @@
 #   http://www.pointsoftware.ch/howto-bash-audit-command-logger/
 if [ -n "${BASH-}" ]; then
     # 'history' options
-    declare -rx HISTFILE="$HOME/.bash_history"
-    declare -rx HISTSIZE=500000       #nbr of cmds in memory
-    declare -rx HISTFILESIZE=500000   #nbr of cmds on file
-    declare -rx HISTCONTROL=""        #does not ignore spaces or duplicates
-    declare -rx HISTIGNORE=""         #does not ignore patterns
+    HISTFILE="$HOME/.bash_history"
+    HISTSIZE=5000          #nbr of cmds in memory
+    HISTFILESIZE=5000      #nbr of cmds on file
+    HISTCONTROL=""        #does not ignore spaces or duplicates
+    HISTIGNORE=""         #does not ignore patterns
     declare -rx HISTCMD               #history line number
     #history -r                       #to reload history from file if a prior HISTSIZE has truncated it
 
