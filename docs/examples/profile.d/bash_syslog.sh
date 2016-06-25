@@ -8,8 +8,8 @@ if [ -n "${BASH-}" ]; then
     _LAST_LOGGED=""
     for _LOGGER in /usr/bin/logger /bin/logger ; do
         [ -x "${_LOGGER}" ] && \
-        export PROMPT_COMMAND='RETRN_VAL=$?; [ "$(fc -ln -0)" = "$(fc -ln -1)" -o "$(fc -ln -0)" = "${_LAST_LOGGED}" ] || { _LAST_LOGGED="$(fc -ln -0)"; '"${_LOGGER}"' -p local6.debug -t "bash[$$]" "$(whoami)($USER ${UID-}/${EUID-}:${GID-}):" "`echo $_LAST_LOGGED`" "[$RETRN_VAL]"; }' \
-        && break
+        declare -rx PROMPT_COMMAND='RETRN_VAL=$?; [ "$(fc -ln -0)" = "$(fc -ln -1)" -o "$(fc -ln -0)" = "${_LAST_LOGGED}" ] 2>/dev/null || { _LAST_LOGGED="$(fc -ln -0)"; '"${_LOGGER}"' -p local6.debug -t "bash[$$]" "$(whoami)($USER ${UID-}/${EUID-}:${GID-}):" "`echo $_LAST_LOGGED`" "[$RETRN_VAL]"; }' \
+        && export PROMPT_COMMAND && break
     done
     unset _LOGGER
 fi
