@@ -1127,7 +1127,9 @@ client_SCRIPTS +=	tools/bios-passwd \
 
 helper_SCRIPTS +=	tools/tntnet-ExecStartPre.sh
 
-EXTRA_DIST +=		tools/fake-th
+EXTRA_DIST +=		tools/fake-th \
+			tools/bios-networking \
+			tools/compress-logs
 
 # Recipe needed to fulfill ci-rc-bios.sh logic
 fake-th: tools/fake-th

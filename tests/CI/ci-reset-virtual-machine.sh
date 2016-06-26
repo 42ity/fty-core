@@ -586,7 +586,10 @@ logmsg_info "Will use IMAGE='$IMAGE' for further VM set-up (flattened to '$IMAGE
 [ -z "$VM" ] && die "Downloads and verifications are completed, at this point I need a definite VM value to work on!"
 
 # Destroy whatever was running, if anything
-virsh -c lxc:// destroy "$VM" 2> /dev/null > /dev/null || \
+# Try graceful shutdown first, to avoid remaining processes that hold up FS
+logmsg_info "Destroying VM '$VM' instance (if any was running)..."
+virsh -c lxc:// shutdown "$VM" || true
+virsh -c lxc:// destroy "$VM" || \
 	logmsg_warn "Could not destroy old instance of '$VM'"
 # may be wait for slow box
 sleep 5
@@ -671,7 +674,14 @@ done
 
 # clean up VM space
 logmsg_info "Removing VM rootfs from '`pwd`/../rootfs/$VM'"
-/bin/rm -rf "../rootfs/$VM"
+/bin/rm -rf "../rootfs/$VM" || \
+{ logmsg_error "FAILED to remove '../rootfs/$VM'"
+  logmsg_info "Checking if blocked by any processes?.."
+  fuser "../rootfs/$VM" "../rootfs/$VM"/*
+  fuser -c "../rootfs/$VM" "../rootfs/$VM"/*
+  fuser -m "../rootfs/$VM" "../rootfs/$VM"/*
+  die "Can not manipulate '../rootfs/$VM' at this time"
+}
 
 if [ x"$STOPONLY" = xyes ]; then
 	logmsg_info "STOPONLY was requested, so ending" \
@@ -728,6 +738,8 @@ fi
 logmsg_info "Setup virtual hostname"
 echo "$VM" > "../rootfs/$VM/etc/hostname"
 logmsg_info "Put virtual hostname in /etc/hosts"
+# Apparently, the first token for a locally available IP address is
+# treated as the `hostname --fqdn` if no other ideas are available.
 sed -r -i "s/^127\.0\.0\.1/127.0.0.1 $VM /" "../rootfs/$VM/etc/hosts"
 
 logmsg_info "Copy root's ~/.ssh from the host OS"
@@ -833,7 +845,7 @@ if [ -s "../rootfs/$VM/usr/share/bios-web/git_details.txt" ]; then
 fi
 
 if [ -d "../rootfs/$VM.saved/" ] && [ "$NO_RESTORE_SAVED" != yes ]; then
-	logmsg_info "Restore custom configuration from `../rootfs/$VM.saved/ && pwd`" && \
+	logmsg_info "Restoring custom configuration from '`cd ../rootfs/$VM.saved/ && pwd`':" && \
 	( cd "../rootfs/$VM.saved/" && tar cf - . ) | ( cd "../rootfs/$VM/" && tar xvf - )
 fi
 
@@ -868,6 +880,9 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 		sleep 30
 		logmsg_info "Running $INSTALLER against the VM '$VM' (via chroot into '`cd ../rootfs/$VM/ && pwd`')..."
 		set +e
+		# The DHCP client in the container may wipe the resolv.conf if it found nothing on DHCP line
+		#[ -s "../rootfs/$VM/etc/resolv.conf" ] || \
+		cp -pf /etc/resolv.conf "../rootfs/$VM/etc/"
 		chroot "../rootfs/$VM/" /bin/bash < "$INSTALLER"
 		logmsg_info "Result of installer script: $?"
 		set -e
@@ -891,7 +906,9 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 	set -e
 
         logmsg_info "Restart the virtual machine $VM"
-        virsh -c lxc:// reboot "$VM" || die "Can't reboot the virtual machine $VM"
+	virsh -c lxc:// shutdown "$VM" || true
+        virsh -c lxc:// destroy "$VM" && sleep 5 && \
+        virsh -c lxc:// start "$VM" || die "Can't reboot the virtual machine $VM"
 	logmsg_info "Sleeping 30 sec to let VM startup settle down..."
 	sleep 30
 fi

@@ -28,6 +28,15 @@ examplecfgupdate_DATA	= \
 
 examplecfgrsyslogddir	= $(datarootdir)/@PACKAGE@/examples/config/rsyslog.d
 examplecfgrsyslogd_DATA	= rsyslog.d/10-ipc.conf \
-						  rsyslog.d/10-ipc-remote.conf
+			  rsyslog.d/05-bash.conf \
+			  rsyslog.d/10-ipc-remote.conf
 
-EXTRA_DIST += $(examplecfgsudo_DATA) $(examplecfgpam_DATA) $(examplecfgsec_DATA) $(examplecfgupdate_DATA) $(examplecfgrsyslogd_DATA)
+exampleprofiledir	= $(datarootdir)/@PACKAGE@/examples/config/profile.d
+exampleprofile_DATA     = \
+			profile.d/bash_history.sh \
+			profile.d/bash_syslog.sh \
+			profile.d/bios_aliases.sh \
+			profile.d/bios_path.sh \
+			profile.d/lang.sh
+
+EXTRA_DIST += $(examplecfgsudo_DATA) $(examplecfgpam_DATA) $(examplecfgsec_DATA) $(examplecfgupdate_DATA) $(examplecfgrsyslogd_DATA) $(exampleprofile_DATA)
