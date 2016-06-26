@@ -23,6 +23,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include <bios_proto.h>
 #include "str_defs.h"
+#include "assets.h"
+#include "dbpath.h"
+
 static zhash_t*
 s_map2zhash (const std::map<std::string, std::string>& m)
 {
@@ -55,6 +58,7 @@ void
         mlm_client_destroy (&client);
         throw std::runtime_error(" mlm_client_set_producer () failed.");
     }
+    tntdb::Connection conn = tntdb::connectCached (url);
     for ( const  auto &oneRow : rows ) {
         
         char *s_priority, *s_parent;
@@ -67,6 +71,10 @@ void
         r = asprintf (&subject, "%s.%s@%s", persist::typeid_to_type (oneRow.first.type_id).c_str(), persist::subtypeid_to_subtype (oneRow.first.subtype_id).c_str(), oneRow.first.name.c_str());
         assert ( r != -1);
 
+        // db_reply <db_web_basic_element_t>
+        if (oneRow.first.parent_id != 0) { 
+        }
+
         zhash_t *aux = zhash_new ();
         zhash_autofree (aux);
         zhash_insert (aux, "priority", (void*) s_priority);
@@ -74,6 +82,15 @@ void
         zhash_insert (aux, "subtype", (void*) persist::subtypeid_to_subtype (oneRow.first.subtype_id).c_str());
         zhash_insert (aux, "parent", (void*) s_parent);
         zhash_insert (aux, "status", (void*) oneRow.first.status.c_str());
+        if (oneRow.first.parent_id != 0) {
+            auto parent_reply  = persist::select_asset_element_web_byId (conn, oneRow.first.parent_id);
+            if (parent_reply.status != 1) {
+                zhash_destroy (&aux);
+                mlm_client_destroy (&client);
+                throw std::runtime_error ("persist::select_asset_element_web_byId () failed.");
+            }
+            zhash_insert (aux, "parent_name", (void *) parent_reply.item.name.c_str ());
+        }
 
         zhash_t *ext = s_map2zhash (oneRow.first.ext);
 
