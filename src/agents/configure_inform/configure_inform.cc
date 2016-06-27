@@ -71,10 +71,6 @@ void
         r = asprintf (&subject, "%s.%s@%s", persist::typeid_to_type (oneRow.first.type_id).c_str(), persist::subtypeid_to_subtype (oneRow.first.subtype_id).c_str(), oneRow.first.name.c_str());
         assert ( r != -1);
 
-        // db_reply <db_web_basic_element_t>
-        if (oneRow.first.parent_id != 0) { 
-        }
-
         zhash_t *aux = zhash_new ();
         zhash_autofree (aux);
         zhash_insert (aux, "priority", (void*) s_priority);
