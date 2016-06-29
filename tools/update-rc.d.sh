@@ -456,7 +456,8 @@ insserv_toggle() {
               warning "Falling back to rm($cur_lnk, $new_lnk)+ln($lsb_header, $new_lnk)"
               rm -f "$new_lnk" ; rm -f "$cur_lnk"
               # Note: rm might fail or not; we care about result of ln in the end
-              ln -s -r "$lsb_header" "$new_lnk"; } || \
+              ln -s -r "$lsb_header" "$new_lnk" || \
+              ln -s "../../$lsb_header" "$new_lnk"; } || \
             error "Could not rename SK symlink"
     done
 
