@@ -453,7 +453,7 @@ insserv_toggle() {
         mv -f "$cur_lnk" "$new_lnk" || \
             { warning "Failed to rename($cur_lnk, $new_lnk)"
               warning "`ls -lad "$new_lnk" "$cur_lnk" 2>/dev/null`"
-              warning "Falling back to rm($cur_lnk, $new_lnk)+ln($lsb_header,$new_lnk)"
+              warning "Falling back to rm($cur_lnk, $new_lnk)+ln($lsb_header, $new_lnk)"
               rm -f "$new_lnk" ; rm -f "$cur_lnk"
               # Note: rm might fail or not; we care about result of ln in the end
               ln -s -r "$lsb_header" "$new_lnk"; } || \
