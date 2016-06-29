@@ -443,7 +443,21 @@ insserv_toggle() {
             continue
         fi
 
-        mv -f "$cur_lnk" "$new_lnk" || error "Could not rename SK symlink"
+        # Note: At least once (maybe due to FS error) a move failed in testing.
+        # However we could remove and create the symlink. So fall back to this.
+        # Consider alternate-root environments, so make the link relative.
+        # Also note that while an "mv" might retain a customized symlink that
+        # actually points somewhere other than the LSB-located script, we chose
+        # to not parse the symlink content in re-creation, but forced pointing
+        # at the actual current correct location of the script.
+        mv -f "$cur_lnk" "$new_lnk" || \
+            { warning "Failed to rename($cur_lnk, $new_lnk)"
+              warning "`ls -lad "$new_lnk" "$cur_lnk" 2>/dev/null`"
+              warning "Falling back to rm($cur_lnk, $new_lnk)+ln($lsb_header,$new_lnk)"
+              rm -f "$new_lnk" ; rm -f "$cur_lnk"
+              # Note: rm might fail or not; we care about result of ln in the end
+              ln -s -r "$lsb_header" "$new_lnk"; } || \
+            error "Could not rename SK symlink"
     done
 
     return 0
