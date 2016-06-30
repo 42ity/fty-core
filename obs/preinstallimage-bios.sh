@@ -144,6 +144,11 @@ cp /usr/share/bios/examples/config/rsyslog.d/10-ipc-remote.conf /etc/rsyslog.d/
 chown root:bios-admin /etc/rsyslog.d/10-ipc-remote.conf
 chmod 0660 /etc/rsyslog.d/10-ipc-remote.conf
 
+## Removable media mounting point for bios-admin group
+mkdir -p /mnt/USB
+chown root:bios-admin /mnt/USB
+chmod 0770 /mnt/USB
+
 # Basic network setup
 mkdir -p /etc/network
 
