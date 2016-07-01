@@ -93,12 +93,20 @@ is_state_included (const char *request, const char *alert) {
     std::string recursive;
 </%args>
 <%cpp>
+
+// un-tainted request parameters
+std::string checked_state;
+std::string checked_asset;
+std::string checked_recursive;
+a_elmnt_id_t element_id = 0;
+
+{
 // sanity check
 if (request.getMethod () != "GET") {
     http_die ("method-not-allowed", request.getMethod ().c_str ());
 }
 
-log_debug ("Request parameters - Initial values received:\n\tstate = '%s'\n\tasset = '%s'\n\trecursive = '%s'\n",
+log_debug ("Request parameters - Initial tainted values received:\n\tstate = '%s'\n\tasset = '%s'\n\trecursive = '%s'\n",
             state.c_str (), asset.c_str (), recursive.c_str ());
 
 // Check 'state' parameter
@@ -122,7 +130,6 @@ else if (recursive.compare ("true") != 0 && recursive.compare ("false") != 0) {
         std::string ("one of the following values [ true | false ]").c_str ());
 }
 
-a_elmnt_id_t element_id = 0;
 if (!asset.empty ()) {
     http_errors_t errors;
     if (!check_element_identifier ("asset", asset, element_id, errors)) {
@@ -130,9 +137,19 @@ if (!asset.empty ()) {
     }
 }
 
-log_debug ("Request parameters - default values applied:\n"
+checked_state = state;
+checked_asset = asset;
+checked_recursive = recursive;
+
+log_debug ("Request parameters - un-tainted values applied:\n"
            "\tstate = '%s'\n\tasset = '%s'\n\trecursive = '%s'\n",
             state.c_str (), asset.c_str (), recursive.c_str ());
+}
+
+// "cleanup" the tainted variables from a scope
+#define state TAINTED
+#define asset TAINTED
+#define recursive TAINTED
 
 std::map<std::string, int> desired_elements;
 
@@ -150,14 +167,14 @@ catch (const std::exception& e) {
 }
 log_debug ("Asset element id = '%" PRIu32 "'.", element_id);
 
-if (!asset.empty ()) {
+if (!checked_asset.empty ()) {
     auto asset_element = persist::select_asset_element_web_byId (connection, element_id);
     if (asset_element.status != 1)
         http_die ("internal-error", asset_element.msg.c_str ());
     log_debug ("Asset element name = '%s'.", asset_element.item.name.c_str ());
     desired_elements.emplace (std::make_pair (asset_element.item.name, 5));
 
-    if (recursive.compare ("true") == 0) {
+    if (checked_recursive.compare ("true") == 0) {
         try {
             int rv = persist::select_assets_by_container (
                 connection,
@@ -210,7 +227,7 @@ if (!send_msg) {
     http_die ("internal-error", "zmsg_new() failed.");
 }
 zmsg_addstr (send_msg, "LIST");
-zmsg_addstr (send_msg, state.c_str ());
+zmsg_addstr (send_msg, checked_state.c_str ());
 
 // send it
 if (mlm_client_sendto (client, "ALERTS-LIST", RFC_ALERTS_LIST, NULL, 1000, &send_msg) != 0) {
@@ -277,7 +294,7 @@ if (streq (part, "LIST")) {
     log_debug ("First frame == LIST ... OK");
     free (part); part = NULL;
     part = zmsg_popstr (recv_msg);
-    if (!part || !streq (part, state.c_str ())) {
+    if (!part || !streq (part, checked_state.c_str ())) {
         log_error ("Unexpected reply from '%s'. Expected OK/state[/alert_1]...[/alert_N]. Got OK/(null).", mlm_client_sender (client));
         zmsg_destroy (&recv_msg);
         mlm_client_destroy (&client);
@@ -314,13 +331,13 @@ if (streq (part, "LIST")) {
 %       frame = zmsg_pop (recv_msg);
 %       continue;
 %   }
-%   if ((!asset.empty () && desired_elements.find (bios_proto_element_src (decoded)) == desired_elements.end ())) {
+%   if ((!checked_asset.empty () && desired_elements.find (bios_proto_element_src (decoded)) == desired_elements.end ())) {
 %       log_debug ("skipping due to element_src '%s' not being in the list", bios_proto_element_src (decoded));
 %       bios_proto_destroy (&decoded);
 %       frame = zmsg_pop (recv_msg);
 %       continue;
 %   }
-%   if (!is_state_included (state.c_str (), bios_proto_state (decoded))) {
+%   if (!is_state_included (checked_state.c_str (), bios_proto_state (decoded))) {
 %       log_debug ("skipping due to state '%s' not being requested", bios_proto_state (decoded));
 %       bios_proto_destroy (&decoded);
 %       frame = zmsg_pop (recv_msg);
@@ -390,10 +407,10 @@ if (streq (part, "ERROR")) {
     }
     if (streq (part, "NOT_FOUND")) {
         free (part);
-        log_error ("State = '%s' does not exist.", state.c_str ());
+        log_error ("State = '%s' does not exist.", checked_state.c_str ());
         zmsg_destroy (&recv_msg);
         mlm_client_destroy (&client);
-        http_die ("not-found", std::string ("State '").append (state).append ("'").c_str ());
+        http_die ("not-found", std::string ("State '").append (checked_state).append ("'").c_str ());
     }
     log_error ("%s", part);
     std::string reason = part;
