@@ -379,19 +379,17 @@ TEST_CASE ("subprocess-test-timeout", "[subprocess][output]")
 
 TEST_CASE ("subprocess-test-timeout2", "[subprocess][output]")
 {
-    Argv args {"/bin/ping", "127.0.0.1"};
+// We have a few choices for an indefinitely-running program
+// "ping" may require permissions (setuid) that are not always there
+// and e.g. for busybox applet we can not really set them for non-roots
+//    Argv args {"/bin/ping", "127.0.0.1"};
+//    Argv args {"/bin/cat", "/dev/urandom"};
+    Argv args {"/usr/bin/yes", "TEST"};
     auto start = zclock_mono ();
     std::string o;
     std::string e;
     int r = output (args, o, e, 4);
     auto stop = zclock_mono ();
-
-    // the ping started to fail once CI was switched off the root user because ping can't be executed
-    // /bin/ping 127.0.0.1
-    // ping: icmp open socket: Operation not permitted
-    // therefor if return code is >1, skip the tests
-    if (r > 0)
-        return;
 
     CHECK (r == -15);   //killed by SIGTERM
     CHECK (!o.empty ());
