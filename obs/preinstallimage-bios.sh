@@ -126,7 +126,9 @@ sed -i 's|.*RuntimeMaxFileSize.*|RuntimeMaxFileSize=10M|' /etc/systemd/journald.
 sed -i 's|.*Storage.*|Storage=volatile|'                  /etc/systemd/journald.conf
 
 # rsyslogd setup
-mkdir -p /etc/rsyslog.d /etc/rsyslog.d-early
+mkdir -p /etc/rsyslog.d /etc/rsyslog.d-early /var/spool/rsyslog
+# the rsyslogd.conf "$WorkDirectory"
+chmod 700 /var/spool/rsyslog
 ## remove conflicting Debian defaults
 echo '$IncludeConfig /etc/rsyslog.d-early/*.conf' > /etc/rsyslog.conf.tmp
 awk '{ print $0; } /^\$IncludeConfig/{ exit; }' </etc/rsyslog.conf >>/etc/rsyslog.conf.tmp && \
