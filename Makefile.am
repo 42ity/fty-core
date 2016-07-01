@@ -24,6 +24,7 @@ client_SCRIPTS =
 noinst_LTLIBRARIES =
 pkglib_LTLIBRARIES =
 check_SCRIPTS =
+noinst_PROGRAMS =
 noinst_SCRIPTS =
 dist_noinst_DATA =
 # http://www.gnu.org/software/automake/manual/html_node/Built-Sources-Example.html
@@ -680,7 +681,7 @@ test_log_LDADD = 	libpriv-log.la \
 test_log_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/
 
-check_PROGRAMS += 			test-subprocess
+noinst_PROGRAMS += 			test-subprocess
 test_subprocess_SOURCES = 		src/shared/subprocess.h \
 					tests/shared/test-subprocess.cc
 test_subprocess_LDADD = 		libpriv-subprocess.la \
@@ -1917,7 +1918,7 @@ cibin_programs: $(cibin_programs_list)
 # Note that check-gitignore should be the last target
 # FIXME: "check-pool" temporarily not included into "check-local", see below
 check-local: web-link-test check-sdk \
-        check-gitignore
+        check-gitignore run-test-subprocess
 
 # If git repo details are not available, or git program does not exist,
 # or if everything is properly GitIgnored - then succeed
@@ -1946,6 +1947,9 @@ sdk-tests: sdk sdk-link-test
 
 check-sdk: sdk sdk-tests
 	cd $(abs_top_builddir) && ./test-libbiosapiut
+
+run-test-subprocess: test-subprocess
+	cd $(abs_top_builddir) && ./test-subprocess
 
 #----------------------------------------------------------------------
 #                        clean, what was not removed automatically
