@@ -88,27 +88,35 @@ is_state_included (const char *request, const char *alert) {
 
 </%pre>
 <%args>
-    std::string state;
-    std::string asset;
-    std::string recursive;
+    std::string tainted_state;
+    std::string tainted_asset;
+    std::string tainted_recursive;
 </%args>
 <%cpp>
+
+// un-tainted request parameters
+std::string state;
+std::string asset;
+std::string recursive;
+a_elmnt_id_t element_id = 0;
+
+{
 // sanity check
 if (request.getMethod () != "GET") {
     http_die ("method-not-allowed", request.getMethod ().c_str ());
 }
 
-log_debug ("Request parameters - Initial values received:\n\tstate = '%s'\n\tasset = '%s'\n\trecursive = '%s'\n",
-            state.c_str (), asset.c_str (), recursive.c_str ());
+log_debug ("Request parameters - Initial tainted values received:\n\tstate = '%s'\n\tasset = '%s'\n\trecursive = '%s'\n",
+            tainted_state.c_str (), tainted_asset.c_str (), tainted_recursive.c_str ());
 
 // Check 'state' parameter
-if (state.empty ()) {
-    state = "ALL-ACTIVE";
+if (tainted_state.empty ()) {
+    tainted_state = "ALL-ACTIVE";
 }
 else
-if (!is_requeststate (state.c_str ())) {
-    log_error ("state = '%s' is not a valid alert state.", state.c_str ());
-    http_die ("request-param-bad", "state", std::string ("value '").append (state).append ("'").c_str (),
+if (!is_requeststate (tainted_state.c_str ())) {
+    log_error ("state = '%s' is not a valid alert state.", tainted_state.c_str ());
+    http_die ("request-param-bad", "state", std::string ("value '").append (tainted_state).append ("'").c_str (),
         std::string ("one of the following values [ ALL | ALL-ACTIVE | ACTIVE | ACK-WIP | ACK-IGNORE | ACK-PAUSE | ACK-SILENCE | RESOLVED ]").c_str ());
 }
 
@@ -118,11 +126,10 @@ if (recursive.empty ()) {
 }
 else if (recursive.compare ("true") != 0 && recursive.compare ("false") != 0) {
     log_error ("recursive = '%s' is not a valid value.", recursive.c_str ());
-    http_die ("request-param-bad", "recursive", std::string ("value '").append (state).append ("'").c_str (),
+    http_die ("request-param-bad", "recursive", std::string ("value '").append (tainted_state).append ("'").c_str (),
         std::string ("one of the following values [ true | false ]").c_str ());
 }
 
-a_elmnt_id_t element_id = 0;
 if (!asset.empty ()) {
     http_errors_t errors;
     if (!check_element_identifier ("asset", asset, element_id, errors)) {
@@ -130,9 +137,19 @@ if (!asset.empty ()) {
     }
 }
 
-log_debug ("Request parameters - default values applied:\n"
+state = tainted_state;
+asset = tainted_asset;
+recursive = tainted_recursive;
+
+// cleanup the tainted variables from a scope
+#define tainted_state TAINTED
+#define tainted_asset TAINTED
+#define tainted_recursive TAINTED
+
+log_debug ("Request parameters - un-tainted values applied:\n"
            "\tstate = '%s'\n\tasset = '%s'\n\trecursive = '%s'\n",
             state.c_str (), asset.c_str (), recursive.c_str ());
+}
 
 std::map<std::string, int> desired_elements;
 
