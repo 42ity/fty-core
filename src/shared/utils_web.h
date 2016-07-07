@@ -323,6 +323,22 @@ struct is_iterable<std::list <T,Alloc> > {
 namespace utils {
 
 /*!
+ \brief Check valid asset name
+
+ \throws std::invalid_argument  When 'name' does not represent a valid asset name
+ \return element name or throws
+*/
+std::string check_asset_name (const std::string& name);
+
+/*!
+ \brief Check valid rule name
+
+ \throws std::invalid_argument  When 'name' does not represent a valid asset name
+ \return element name or throws
+*/
+std::string check_alert_rule_name (const std::string& name);
+
+/*!
  \brief Convert string to element identifier
 
  \throws std::out_of_range      When number represented by 'string' is out of <1, UINT_MAX> range

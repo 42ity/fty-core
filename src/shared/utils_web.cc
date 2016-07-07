@@ -22,10 +22,35 @@
 #include <limits>
 #include <cxxtools/jsonformatter.h>
 #include <cxxtools/convert.h>
+#include <cxxtools/regex.h>
 
 #include "utils_web.h"
 
 namespace utils {
+
+//TODO: define better
+// # define ASSET_NAME_RE_STR "^[a-zA-Z+0-9.-\\ ]+$"
+#define ASSET_NAME_RE_STR "^.*$"
+static const cxxtools::Regex ASSET_NAME_RE {ASSET_NAME_RE_STR};
+
+std::string check_asset_name (const std::string& name) {
+    if (!ASSET_NAME_RE.match (name)) {
+        throw std::invalid_argument ("Invalid asset name, must pass " ASSET_NAME_RE_STR);
+    }
+    return name;
+}
+
+//TODO: define better
+// # define ASSET_NAME_RE_STR "^[a-zA-Z+0-9.-\\ ]+$"
+#define ALERT_RULE_NAME_RE_STR "^.*$"
+static const cxxtools::Regex ALERT_RULE_NAME_RE {ALERT_RULE_NAME_RE_STR};
+
+std::string check_alert_rule_name (const std::string& name) {
+    if (!ALERT_RULE_NAME_RE.match (name)) {
+        throw std::invalid_argument ("Invalid rule name, must pass " ALERT_RULE_NAME_RE_STR);
+    }
+    return name;
+}
 
 uint32_t
 string_to_element_id (const std::string& string) {
