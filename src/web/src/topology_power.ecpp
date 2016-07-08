@@ -41,87 +41,84 @@
 #include "cleanup.h"
 #include "helpers.h"
 </%pre>
-<%args>
-std::string from;
-std::string to;
-std::string filter_dc;
-std::string filter_group;
-</%args>
+
 <%cpp>
 {
-    if (from.empty() && to.empty() && filter_dc.empty() && filter_group.empty()) {
-        http_die("request-param-required", "from/to/filter_dc/filter_group");
-    }
-
-    _scoped_asset_msg_t *input_msg = NULL;
-    std::string id;
+    // checked parameters
+    a_elmnt_id_t checked_id = 0;
+    int request_type = 0;
     std::string parameter_name;
-////////////////////////
-//      FROM
-////////////////////////
-    if (!from.empty()) {
-        if (!to.empty() || !filter_dc.empty() || !filter_group.empty()) {
-            http_die("parameter-conflict", "Only one parameter can be specified at once: 'from' or 'to' or 'filter_dc' or 'filter_group'");
+
+    // ##################################################
+    // BLOCK 1
+    // Sanity parameter check
+    {
+        std::string from = qparam.param("from");
+        std::string to = qparam.param("to");
+        std::string filter_dc = qparam.param("filter_dc");
+        std::string filter_group = qparam.param("filter_group");
+
+        std::string asset_id;
+        if ( from.empty() && to.empty() && filter_dc.empty() && filter_group.empty() ) {
+            http_die("request-param-required", "from/to/filter_dc/filter_group");
         }
-        input_msg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
-        assert (input_msg);
-        id = from;
-        parameter_name = "from";
-    }
 
-//////////////////
-//      TO
-//////////////////
-     if (!to.empty()) {
-        if ( !filter_dc.empty() || !filter_group.empty() || !from.empty() ) {
-            http_die("parameter-conflict", "Only one parameter can be specified at once: 'from' or 'to' or 'filter_dc' or 'filter_group'");
+
+        if (!from.empty()) {
+            if (!to.empty() || !filter_dc.empty() || !filter_group.empty()) {
+                http_die("parameter-conflict", "Only one parameter can be specified at once: 'from' or 'to' or 'filter_dc' or 'filter_group'");
+            }
+            request_type = ASSET_MSG_GET_POWER_FROM;
+            asset_id = from;
+            parameter_name = "from";
         }
-        input_msg = asset_msg_new (ASSET_MSG_GET_POWER_TO);
-        assert (input_msg);
-        id = to;
-        parameter_name = "to";
-    }
 
-//////////////////////
-//      FILTER_DC
-//////////////////////
-    if (!filter_dc.empty()) {
-        if (!filter_group.empty() || !to.empty() || !from.empty()) {
-            http_die("parameter-conflict", "Only one parameter can be specified at once: 'from' or 'to' or 'filter_dc' or 'filter_group'");
+        if (!to.empty()) {
+            if ( !filter_dc.empty() || !filter_group.empty() || !from.empty() ) {
+                http_die("parameter-conflict", "Only one parameter can be specified at once: 'from' or 'to' or 'filter_dc' or 'filter_group'");
+            }
+            request_type = ASSET_MSG_GET_POWER_TO;
+            asset_id = to;
+            parameter_name = "to";
         }
-        input_msg = asset_msg_new (ASSET_MSG_GET_POWER_DATACENTER);
-        assert (input_msg);
-        id = filter_dc;
-        parameter_name = "filter_dc";
-    }
 
-//////////////////////
-//      FILTER_GROUP
-//////////////////////
-    if (!filter_group.empty()) {
-        if (!to.empty() || !from.empty() || !filter_dc.empty()) {
-            http_die("parameter-conflict", "Only one parameter can be specified at once: 'from' or 'to' or 'filter_dc' or 'filter_group'");
+        if (!filter_dc.empty()) {
+            if (!filter_group.empty() || !to.empty() || !from.empty()) {
+                http_die("parameter-conflict", "Only one parameter can be specified at once: 'from' or 'to' or 'filter_dc' or 'filter_group'");
+            }
+            request_type = ASSET_MSG_GET_POWER_DATACENTER;
+            asset_id = filter_dc;
+            parameter_name = "filter_dc";
         }
-        input_msg = asset_msg_new (ASSET_MSG_GET_POWER_GROUP);
-        assert (input_msg);
-        id = filter_group;
-        parameter_name = "filter_group";
+
+        if (!filter_group.empty()) {
+            if (!to.empty() || !from.empty() || !filter_dc.empty()) {
+                http_die("parameter-conflict", "Only one parameter can be specified at once: 'from' or 'to' or 'filter_dc' or 'filter_group'");
+            }
+            request_type = ASSET_MSG_GET_POWER_GROUP;
+            asset_id = filter_group;
+            parameter_name = "filter_group";
+        }
+
+        http_errors_t errors;
+        if (!check_element_identifier (parameter_name.c_str (), asset_id, checked_id, errors)) {
+            http_die_error (errors);
+        }
     }
+    // Sanity check end
 
-    // convert string to number
-    http_errors_t errors;
-    a_elmnt_id_t element_id = 0;
-
-    if (!check_element_identifier (parameter_name.c_str (), id, element_id, errors)) {
-        http_die_error (errors);
+    // ##################################################
+    // BLOCK 2
+    _scoped_asset_msg_t *input_msg = asset_msg_new (request_type);
+    if ( !input_msg ) {
+        http_die ("internal-error", "Cannot allocate memory");
     }
 
    // Call persistence layer
-    asset_msg_set_element_id (input_msg,  element_id);
+    asset_msg_set_element_id (input_msg,  checked_id);
     _scoped_zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg);
     if (return_msg == NULL) {
         log_error ("Function process_assettopology() returned a null pointer");
-        LOG_END;
         http_die("internal-error");
     }
 
@@ -132,25 +129,22 @@ std::string filter_group;
                 zmsg_destroy (&return_msg);
             }
             log_error ("common_msg_decode() failed");
-            LOG_END;
             http_die("internal-error");
         }
 
         if (common_msg_id (common_msg) == COMMON_MSG_FAIL) {
             log_error ("common_msg is COMMON_MSG_FAIL");
-            LOG_END;
             switch(common_msg_errorno(common_msg)) {
                 case(DB_ERROR_BADINPUT):
                     http_die("request-param-bad", parameter_name.c_str(), "id of the asset, that is not a device", "id of the asset, that is a device");
                 case(DB_ERROR_NOTFOUND):
-                    http_die("element-not-found", id.c_str());
+                    http_die("element-not-found", std::to_string (checked_id).c_str());
                 default:
                     http_die("internal-error", "");
             }
         }
         else {
             log_error ("Unexpected common_msg received. ID = %" PRIu32 , common_msg_id (common_msg));
-            LOG_END;
             http_die("internal-error", "");
         }
     }
@@ -162,7 +156,6 @@ std::string filter_group;
                 zmsg_destroy (&return_msg);
             }
             log_error ("asset_msg_decode() failed");
-            LOG_END;
             http_die("internal-error");
         }
 
@@ -179,7 +172,6 @@ std::string filter_group;
                 if (zmsg == NULL || !zmsg_is (zmsg)) {
                     zframe_destroy (&devices);
                     log_error ("zmsg_decode() failed");
-                    LOG_END;
                     http_die("internal-error");
                 }
                 zframe_destroy (&devices);
@@ -191,7 +183,6 @@ std::string filter_group;
                     if (!is_asset_msg (pop)) {
                         zmsg_destroy (&zmsg);
                         log_error ("malformed internal structure of returned message");
-                        LOG_END;
                         http_die("internal-error");
                     }
                     _scoped_asset_msg_t *item = asset_msg_decode (&pop); // _scoped_zmsg_t is freed
@@ -200,7 +191,6 @@ std::string filter_group;
                             zmsg_destroy (&pop);
                         }
                         log_error ("asset_smg_decode() failed for internal messages");
-                        LOG_END;
                         http_die("internal-error");
                     }
 
@@ -261,7 +251,6 @@ std::string filter_group;
         }
         else {
             log_error ("Unexpected asset_msg received. ID = %" PRIu32 , asset_msg_id (asset_msg));
-            LOG_END;
             http_die("internal-error", "");
         }
     }
