@@ -122,6 +122,7 @@
         return HTTP_OK;
     }
     catch (const BiosError& e) {
+        LOG_END_ABNORMAL(e);
         http_die_idx(e.idx, e.what());
     }
     catch (const std::exception& e) {

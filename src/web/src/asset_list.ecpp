@@ -30,27 +30,38 @@
 #include "assetcrud.h"
 #include "utils_web.h"
 </%pre>
-<%args>
-std::string subtype;
-</%args>
 <%thread scope="global">
 asset_manager asset_mgr;
 </%thread>
 <%cpp>
 {
     // check if method is allowed
-    if ( !request.isMethodGET() )
-    {
+    if ( !request.isMethodGET() ) {
         http_die ("method-not-allowed", request.getMethod().c_str());
     }
-    log_debug (" type = '%s'", request.getArg("type").c_str());
-    log_debug (" subtype = '%s'", subtype.c_str());
-
-    // we want to support multiple subtype selection
     std::vector<std::string> asset_subtypes;
-    cxxtools::split(",", subtype, std::back_inserter(asset_subtypes));
+    std::string checked_type;
+    // sanity checks
+    {
+        std::string type = request.getArg("type");
+        std::string subtypes = qparam.param("sub_type");
 
-    std::string json = "{\"" + request.getArg("type");
+        // we want to support multiple subtype selection
+        cxxtools::split(",", subtypes, std::back_inserter(asset_subtypes));
+        // TODO
+        // for all subtypes
+
+        // check type
+        if ( !persist::type_to_typeid (type) ) {
+            http_die ("request-param-bad", "type", "datacenter/room/row/rack/device");
+        }
+        for ( const auto &subtype: asset_subtypes ) {
+            if ( !persist::subtype_to_subtypeid (subtype) ) {
+                http_die ("request-param-bad", "subtype", "See RFC-11 for possible values");
+            }
+        }
+    }
+    std::string json = "{\"" + checked_type;
     json +=  "s\":[ "; // attention. This space need to be there! for empty list!
     for ( const auto &asset_subtype: asset_subtypes )
     {
