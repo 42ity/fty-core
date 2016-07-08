@@ -34,58 +34,60 @@
 #include "defs.h"
 #include "dbpath.h"
 #include "data.h"
-#include "common_msg.h"
 #include "location_helpers.h"
-#include "asset_msg.h"
 #include "asset_types.h"
 #include "assettopology.h"
 #include "utils_web.h"
 #include "cleanup.h"
 #include "helpers.h"
 </%pre>
-<%args>
-std::string to;
-std::string recursive;
-std::string filter;
-std::string feed_by;
-</%args>
+
 <%cpp>
 {
-    log_open ();
+    // checked parameters
+    a_elmnt_id_t checked_to = 0;
 
-    if ( to.empty() )
+    // ##################################################
+    // BLOCK 1
+    // Sanity parameter check
     {
-        // At least one parametr should be specified
-        http_die("request-param-required", "from/to");
-    }
+        std::string to = qparam.param("to");
+        std::string recursive = qparam.param("recursive");
+        std::string filter = qparam.param("filter");
+        std::string feed_by = qparam.param("feed_by");
 
-    // 1. 'Recursive' parameter cannot be specified with 'to'
-    if (!recursive.empty())
-    {
-        http_die("parameter-conflict", "Parameter 'recursive' can not be specified with parameter 'to'.");
-    }
-    // 2. 'Filter' parameter cannot be specified with 'to'
-    if (!filter.empty())
-    {
-        http_die("parameter-conflict", "Parameter 'filter' can not be specified with parameter 'to'.");
-    }
-    // 3. 'feed_by' parameter cannot be specified with 'to'
-    if (!feed_by.empty())
-    {
-        http_die("parameter-conflict", "Parameter 'feed-by' can not be specified with parameter 'to'.");
-    }
+        if ( to.empty() ) {
+            // At least one parametr should be specified
+            http_die("request-param-required", "from/to");
+        }
 
-    // Try to convert string to number
-    http_errors_t errors;
-    a_elmnt_id_t element_id = 0;
-    if (!check_element_identifier ("to", to, element_id, errors)) {
-        http_die_error (errors);
-    }
+        // 1. 'recursive' cannot be specified with 'to'
+        if ( !recursive.empty() ) {
+            http_die("parameter-conflict", "Parameter 'recursive' can not be specified with parameter 'to'.");
+        }
+        // 2. 'filter' cannot be specified with 'to'
+        if ( !filter.empty() ) {
+            http_die("parameter-conflict", "Parameter 'filter' can not be specified with parameter 'to'.");
+        }
+        // 3. 'feed_by' cannot be specified with 'to'
+        if ( !feed_by.empty() ) {
+            http_die("parameter-conflict", "Parameter 'feed_by' can not be specified with parameter 'to'.");
+        }
 
+        // Try to convert string to number
+        http_errors_t errors;
+        if (!check_element_identifier ("to", to, checked_to, errors)) {
+            http_die_error (errors);
+        }
+    }
+    // Sanity check end
+
+    // ##################################################
+    // BLOCK 2
     // Call persistence layer
     _scoped_asset_msg_t *input_msg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
     assert (input_msg);
-    asset_msg_set_element_id (input_msg, element_id);
+    asset_msg_set_element_id (input_msg, checked_to);
 
     _scoped_zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg);
     if (return_msg == NULL) {
@@ -110,10 +112,9 @@ std::string feed_by;
             log_error ("common_msg is COMMON_MSG_FAIL");
             LOG_END;
             switch(common_msg_errorno(common_msg)) {
-                case(DB_ERROR_BADINPUT):
-                    http_die("request-param-bad", "to", to.c_str(), "integer value");
                 case(DB_ERROR_NOTFOUND):
-                    http_die("element-not-found", to.c_str());
+                    http_die("element-not-found", std::to_string(checked_to).c_str());
+                case(DB_ERROR_BADINPUT):
                 default:
                     http_die("internal-error");
             }
@@ -135,18 +136,18 @@ std::string feed_by;
             http_die("internal-error");
         }
 
-        // <element_id, type, contains, name, type_name>
+        // <checked_to, type, contains, name, type_name>
         std::stack<std::tuple <int, int, std::string, std::string, std::string>> stack;
         std::string contains;
 
         if (asset_msg_id (asset_msg) == ASSET_MSG_RETURN_LOCATION_TO) {
             bool go = true;
             do {
-                element_id = asset_msg_element_id (asset_msg);
+                checked_to = asset_msg_element_id (asset_msg);
                 int type_id = asset_msg_type (asset_msg);
                 std::string name = asset_msg_name (asset_msg);
                 std::string type_name = asset_msg_type_name (asset_msg);
-                stack.push (make_tuple(element_id, type_id, contains, name, type_name));
+                stack.push (make_tuple(checked_to, type_id, contains, name, type_name));
                 // I deliberately didn't want to use asset manager (unknown / ""; suffix s)
                 // TODO use special function
                 switch (type_id) {
@@ -215,7 +216,7 @@ std::string feed_by;
             std::string json = "{\n";
 
             while ( !stack.empty() ) {
-                // <element_id, type, contains, name, type_name>
+                // <checked_to, type, contains, name, type_name>
                 std::tuple<int, int, std::string, std::string, std::string> row = stack.top();
                 stack.pop();
 
