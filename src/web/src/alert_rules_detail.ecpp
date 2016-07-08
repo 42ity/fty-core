@@ -33,19 +33,27 @@
 #include "log.h"
 #include "utils_web.h"
 #include "str_defs.h"
+#include "helpers.h"
+
 </%pre>
 <%cpp>
-// sanity check
-if (!request.isMethodGET ())
-    http_die ("method-not-allowed", request.getMethod ().c_str ());
+std::string checked_name;
+{
+    // sanity check
+    if (!request.isMethodGET ())
+        http_die ("method-not-allowed", request.getMethod ().c_str ());
 
-std::string name = request.getArg ("name");
-if (name.empty ())
-    http_die ("request-param-bad", "name", "empty string",
-        "non-empty valid rule name. For a list of all available rule "
-        "names please perform GET alerts/rules.");
+    std::string name = request.getArg ("name");
+    http_errors_t errors;
+    if (check_regex_text ("name", name.c_str(), "^[-_.a-z0-9]{1,255}$", errors)) {
+        checked_name = name;
+    } else {
+        http_die_error (errors);
+    }
+    // sanity check end
+}
 
-log_debug ("requested rule name = '%s'.", name.c_str ());
+log_debug ("requested rule name = '%s'.", checked_name.c_str ());
 // connect to malamute
 mlm_client_t *client = mlm_client_new ();
 if (!client) {
@@ -71,7 +79,7 @@ if (!send_msg) {
     http_die ("internal-error", "zmsg_new() failed.");
 }
 zmsg_addstr (send_msg, "GET");
-zmsg_addstr (send_msg, name.c_str ());
+zmsg_addstr (send_msg, checked_name.c_str ());
 
 // send it
 if (mlm_client_sendto (client, BIOS_AGENT_NAME_ALERT_AGENT, "rfc-evaluator-rules", NULL, 1000, &send_msg) != 0) {
@@ -154,10 +162,10 @@ if (streq (part, "ERROR")) {
     }
     if (streq (part, "NOT_FOUND")) {
         free (part);
-        log_error ("Rule name '%s' does not exist.", name.c_str ());
+        log_error ("Rule name '%s' does not exist.", checked_name.c_str ());
         zmsg_destroy (&recv_msg);
         mlm_client_destroy (&client);
-        http_die ("not-found", std::string ("Rule name '").append (name).append ("'").c_str ());
+        http_die ("not-found", std::string ("Rule name '").append (checked_name).append ("'").c_str ());
     }
     log_error ("%s", part);
     std::string reason = part;
@@ -165,7 +173,7 @@ if (streq (part, "ERROR")) {
     zmsg_destroy (&recv_msg);
     mlm_client_destroy (&client);
     http_die ("internal-error",
-        std::string ("Error while retrieving details of rule name = '").append (name).append ("': ").
+        std::string ("Error while retrieving details of rule name = '").append (checked_name).append ("': ").
         append (reason).append(".").c_str ());
 }
 // Message does not conform to protocol
