@@ -162,7 +162,7 @@ asset_manager     asset_mgr;
             http_die_error (errors);
         }
 
-        if ( !persist::type_to_typeid (type) ) {
+        if ( !type.empty() && !persist::type_to_typeid (type) ) {
             http_die("request-param-bad", "type", type.c_str(), "one of datacenter/room/row/rack/group/device");
         }
         else {
@@ -184,7 +184,7 @@ asset_manager     asset_mgr;
         switch ( tmp.errsubtype )
         {
             case DB_ERROR_NOTFOUND:
-                http_die("element-not-found", "%d", checked_id);
+                http_die("element-not-found", std::to_string (checked_id).c_str());
             case DB_ERROR_BADINPUT:
             case DB_ERROR_INTERNAL:
             default:
