@@ -162,7 +162,7 @@ asset_manager     asset_mgr;
             http_die_error (errors);
         }
 
-        if ( persist::type_to_typeid (type) ) {
+        if ( !persist::type_to_typeid (type) ) {
             http_die("request-param-bad", "type", type.c_str(), "one of datacenter/room/row/rack/group/device");
         }
         else {
