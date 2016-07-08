@@ -88,56 +88,54 @@ s_passwd(
 
 </%pre>
 <%cpp>
-    std::stringstream input(request.getBody(), std::ios_base::in);
-    cxxtools::SerializationInfo si;
-    cxxtools::JsonDeserializer deserializer(input);
-    std::string user;
-    std::string old_passwd;
-    std::string new_passwd;
-
     std::string checked_user;
     std::string checked_old_passwd;
     std::string checked_new_passwd;
-    http_errors_t errors;
-    bool bad_request = false;
-    try {
-        deserializer.deserialize(si);
-        si.getMember("user") >>= user;
-        si.getMember("old_passwd") >>= old_passwd;
-        si.getMember("new_passwd") >>= new_passwd;
-    } catch (const std::exception& e) {
-        bad_request = true;
-    }
+    { // sanity check
+        std::stringstream input(request.getBody(), std::ios_base::in);
+        cxxtools::SerializationInfo si;
+        cxxtools::JsonDeserializer deserializer(input);
+        std::string user;
+        std::string old_passwd;
+        std::string new_passwd;
+    
+        http_errors_t errors;
 
-    // sanity checking
-    if (bad_request)
-        http_die("bad-request-document");
+        bool bad_request = false;
+        try {
+            deserializer.deserialize(si);
+            si.getMember("user") >>= user;
+            si.getMember("old_passwd") >>= old_passwd;
+            si.getMember("new_passwd") >>= new_passwd;
+        } catch (const std::exception& e) {
+            bad_request = true;
+        }
+        
+        if (bad_request)
+            http_die("bad-request-document");
 
-    if (check_alnumplus_text ("user", user, errors)) {
-        checked_user = user;
-    } else {
-        http_die_error(errors);
-    }
-    if (user == "root") {
-        http_die("request-param-bad", "user", user.c_str(), "<user name other than 'root'>");
-    }
-#   define user TAINTED
+        if (check_regex_text ("user", user, "^[-_a-z0-9]{1,50}$", errors)) {
+            checked_user = user;
+        } else {
+            http_die_error(errors);
+        }
+        if (user == "root") {
+            http_die("request-param-bad", "user", user.c_str(), "<user name other than 'root'>");
+        }
 
-    if (old_passwd.empty()) {
-        http_die("request-param-bad", "old_passwd", "<empty>", "<password>");
-    } else {
-        checked_old_passwd = old_passwd;
-    }
-#   define old_password TAINTED
+        if (old_passwd.empty()) {
+            http_die("request-param-bad", "old_passwd", "<empty>", "<password>");
+        } else {
+            checked_old_passwd = old_passwd;
+        }
 
-    if (new_passwd.empty()) {
-        http_die("request-param-bad", "new_passwd", "<empty>", "<password>");
-    } else {
-        checked_new_passwd = new_passwd;
-    }
-#   define new_password TAINTED
+        if (new_passwd.empty()) {
+            http_die("request-param-bad", "new_passwd", "<empty>", "<password>");
+        } else {
+            checked_new_passwd = new_passwd;
+        }
 
-    // sanity checking end
+    } // sanity checking end
 
     if (!authenticate(checked_user.c_str(), checked_old_passwd.c_str()))
         http_die("request-param-bad", "(user|old_passwd)", "<invalid user or password>", "<valid user and password>");

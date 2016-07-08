@@ -120,5 +120,22 @@ TEST_CASE ("check_element_identifier", "[helpers]") {
         CHECK ( errors.errors.size () == 0 );
         CHECK ( element_id == 1321 );
     }
+
+    SECTION ("text check") {
+        errors.errors.clear (); value = "This-is_valid01.rule"; element_id = 0; res = false;
+        CHECK_NOTHROW ( res = check_regex_text ("hey", value , "^[-._a-z0-9]{1,255}$", errors) );
+        CHECK ( res == true );
+        CHECK ( errors.errors.size () == 0 );
+
+        errors.errors.clear ();
+        CHECK_NOTHROW ( res = check_regex_text ("hey", value, "^[-._a-z0-9]{100,255}$" , errors) );
+        CHECK ( res == false );
+        CHECK ( errors.errors.size () == 1 );
+
+        errors.errors.clear ();
+        CHECK_NOTHROW ( res = check_regex_text ("hey", value, "^[-._a-z0-9]{1,2}$" , errors) );
+        CHECK ( res == false );
+        CHECK ( errors.errors.size () == 1 );
+    }
 }
 

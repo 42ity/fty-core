@@ -44,16 +44,10 @@ bool
 check_element_identifier (const char *param_name, const std::string& param_value, uint32_t& element_id, http_errors_t& errors);
 
 /*!
-  \brief Check whether string contains only [-_a-zA-Z0-9] and has expected length.
+  \brief Check whether string matches regexp (case insensitive, extended regexp).
 */
 bool
-check_alnumplus_text (const char *param_name, const std::string& param_value, http_errors_t& errors, size_t minlen=1, size_t maxlen=255);
-
-/*!
-  \brief Check whether string contains only printable ascii characters and has expected length.
-*/
-bool
-check_printable_text (const char *param_name, const std::string& param_value, http_errors_t& errors, size_t minlen=1, size_t maxlen=255);
+check_regex_text (const char *param_name, const std::string& param_value, const std::string& regex, http_errors_t& errors);
 
 #endif // SRC_WEB_INCLUDE_HELPERS_H_
 
