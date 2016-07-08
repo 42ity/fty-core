@@ -39,7 +39,6 @@
 #include "data.h"
 #include "common_msg.h"
 #include "location_helpers.h"
-#include "asset_msg.h"
 #include "asset_types.h"
 #include "assettopology.h"
 #include "utils_web.h"
@@ -49,120 +48,119 @@
 <%thread scope="global">
 asset_manager asset_mgr;
 </%thread>
-<%args>
-std::string from;
-std::string to;
-std::string recursive;
-std::string filter;
-std::string feed_by;
-</%args>
+
 <%cpp>
 {
-    log_open ();
-
-    // Check url validity
-    // 1. Exactly one variable has to be specified: 'from' or 'to'
-    if (!from.empty() && !to.empty())
-    {
-        http_die("parameter-conflict", "Only one parameter can be specified at once: 'from' or 'to'");
-    }
-    // 2. At least one parametr should be specified
-    if (from.empty() && to.empty())
-    {
-        http_die("request-param-required", "from/to");
-    }
-    // recursive
-    int is_recursive = 0;
-    std::transform (recursive.begin(), recursive.end(), recursive.begin(), ::tolower);
-    if (recursive == "true") {
-        is_recursive = 1;
-    } else if (!recursive.empty() && recursive != "false") {
-        http_die("request-param-bad", "recursive", recursive.c_str(), "'true'/'false'");
-    }
-
-    // filter_type
-    std::transform (filter.begin(), filter.end(), filter.begin(), ::tolower);
-    int filter_type = 0;
-    if (filter.empty()) {
-        filter_type = 7;
-    } else if (filter == "rooms") {
-        filter_type = persist::asset_type::ROOM;
-    } else if (filter == "rows") {
-        filter_type = persist::asset_type::ROW;
-    } else if (filter == "racks") {
-        filter_type = persist::asset_type::RACK;
-    } else if (filter == "devices") {
-        filter_type = persist::asset_type::DEVICE;
-    } else if (filter == "groups") {
-        filter_type = persist::asset_type::GROUP;
-    } else {
-        // Note: datacenter is not a valid filter parameter according to rfc-11 4.1.13
-        http_die("request-param-bad","filter", filter.c_str(), "'rooms'/'rows'/'racks'/'groups'/'devices'");
-    }
+    // checked parameters
+    a_elmnt_id_t checked_from = 0;
+    int checked_recursive = 0;
+    int checked_filter = 0;
+    a_elmnt_id_t checked_feed_by = 0;
     
-    // feed_by
-    if ( !feed_by.empty() )
+    // ##################################################
+    // BLOCK 1
+    // Sanity parameter check
     {
-        if ( filter_type != persist::asset_type::DEVICE )
-        {
-            http_die("parameter-conflict", "With variable 'feed_by' can be specified only 'filter=devices'");
-        }
-        if ( from == "none" )
-        {
-            http_die("parameter-conflict", "With variable 'feed_by' variable 'from' can not be 'none'");
-        }
-    }
-    
-    // parameters are ok
-    if ( from.empty() )
-    {
-        // pass control to to next file in the chain
-        return DECLINED;
-    }
-    
-    // element_id
-    http_errors_t errors;
-    a_elmnt_id_t element_id = 0;
+        // dirty parameters
+        // Arguments parsed from URL: -> request.getArg("agrgumentName")
+        // Real parameters  in URL (after '?': -> qparam.param("parameterName")
+        std::string from = qparam.param("from");
+        std::string to = qparam.param("to");
+        std::string recursive = qparam.param("recursive");
+        std::string filter = qparam.param("filter");
+        std::string feed_by = qparam.param("feed_by");
 
-    if (from != "none" &&
-        !check_element_identifier ("from", from, element_id, errors)) {
-        http_die_error (errors);
-    }
-
-    a_elmnt_id_t feed_by_id = 0;
-    if (!feed_by.empty()) {
-        if (!check_element_identifier ("feed_by", feed_by, feed_by_id, errors)) {
-            http_die_error (errors);
+        // Check url validity
+        // 1. Exactly one parameter has to be specified: 'from' or 'to'
+        if (!from.empty() && !to.empty()) {
+            http_die("parameter-conflict", "Only one parameter can be specified at once: 'from' or 'to'");
         }
-        auto tmp = asset_mgr.get_item1(feed_by_id);
-        if ( tmp.status == 0 )
-        {
-            switch ( tmp.errsubtype )
-            {
-                case DB_ERROR_NOTFOUND:
-                    http_die("element-not-found", tmp.msg.c_str());
-                case DB_ERROR_BADINPUT:
-                case DB_ERROR_INTERNAL:
-                default:
-                    http_die("internal-error", tmp.msg.c_str());
+        // 2. At least one parameter should be specified
+        if (from.empty() && to.empty()) {
+            http_die("request-param-required", "from/to");
+        }
+        // 3. Check values of 'recursive'
+        std::transform (recursive.begin(), recursive.end(), recursive.begin(), ::tolower);
+        if (recursive == "true") {
+            checked_recursive = 1;
+        } else if (!recursive.empty() && recursive != "false") {
+            http_die("request-param-bad", "recursive", recursive.c_str(), "'true'/'false'");
+        }
+        // 4. Check values of 'filter'
+        std::transform (filter.begin(), filter.end(), filter.begin(), ::tolower);
+        if (filter.empty()) {
+            checked_filter = 7;
+        } else if (filter == "rooms") {
+            checked_filter = persist::asset_type::ROOM;
+        } else if (filter == "rows") {
+            checked_filter = persist::asset_type::ROW;
+        } else if (filter == "racks") {
+            checked_filter = persist::asset_type::RACK;
+        } else if (filter == "devices") {
+            checked_filter = persist::asset_type::DEVICE;
+        } else if (filter == "groups") {
+            checked_filter = persist::asset_type::GROUP;
+        } else {
+            // Note: datacenter is not a valid filter parameter according to rfc-11 4.1.13
+            http_die("request-param-bad","filter", filter.c_str(), "'rooms'/'rows'/'racks'/'groups'/'devices'");
+        }
+    
+        // 5. Check if 'feed_by' is allowed
+        if ( !feed_by.empty() ) {
+            if ( checked_filter != persist::asset_type::DEVICE ) {
+                http_die("parameter-conflict", "With variable 'feed_by' can be specified only 'filter=devices'");
+            }
+            if ( from == "none" ) {
+                http_die("parameter-conflict", "With variable 'feed_by' variable 'from' can not be 'none'");
             }
         }
-        if ( tmp.item.basic.type_id != persist::asset_type::DEVICE )
-        {
-            http_die("request-param-bad", "feed_by", feed_by.c_str(), "be a device");
+        // 6. if it is not 'from' request, process it as 'to' request in another ecpp file
+        if ( from.empty() ) {
+            // pass control to to next file in the chain
+            return DECLINED;
+        }
+        // From now on, we are sure, that we are qoing to respond on "location_from" request
+
+        // 6. Check if 'from' has valid asset id
+        http_errors_t errors;
+        if ( from != "none" &&
+                !check_element_identifier ("from", from, checked_from, errors) ) {
+            http_die_error (errors);
+        }
+
+        if ( !feed_by.empty() ) {
+            if ( !check_element_identifier ("feed_by", feed_by, checked_feed_by, errors) ) {
+                http_die_error (errors);
+            }
+            auto tmp = asset_mgr.get_item1 (checked_feed_by);
+            if ( tmp.status == 0 ) {
+                switch ( tmp.errsubtype ) {
+                    case DB_ERROR_NOTFOUND:
+                        http_die("element-not-found", std::to_string(checked_feed_by).c_str());
+                    case DB_ERROR_BADINPUT:
+                    case DB_ERROR_INTERNAL:
+                    default:
+                        http_die("internal-error", tmp.msg.c_str());
+                }
+            }
+            if ( tmp.item.basic.type_id != persist::asset_type::DEVICE ) {
+                http_die("request-param-bad", "feed_by", feed_by.c_str(), "be a device");
+            }
         }
     }
-
+    // Sanity check end
+ 
+    // ##################################################
+    // BLOCK 2
     // Call persistence layer
     _scoped_asset_msg_t *input_msg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert (input_msg);
-    asset_msg_set_element_id (input_msg, (uint32_t) element_id);
-    asset_msg_set_recursive (input_msg, (byte) is_recursive);
-    asset_msg_set_filter_type (input_msg, (byte) filter_type);
+    asset_msg_set_element_id (input_msg, (uint32_t) checked_from);
+    asset_msg_set_recursive (input_msg, (byte) checked_recursive);
+    asset_msg_set_filter_type (input_msg, (byte) checked_filter);
 
-    _scoped_zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg, feed_by_id);
-    if (return_msg == NULL)
-    {
+    _scoped_zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg, checked_feed_by);
+    if (return_msg == NULL) {
         log_error ("Function process_assettopology() returned a null pointer");
         LOG_END;
         http_die("internal-error");
@@ -183,10 +181,9 @@ std::string feed_by;
             log_error ("common_msg is COMMON_MSG_FAIL");
             LOG_END;
             switch(common_msg_errorno(common_msg)) {
-                case(DB_ERROR_BADINPUT):
-                    http_die("request-param-bad", "from", from.c_str(), "integer value");
                 case(DB_ERROR_NOTFOUND):
-                    http_die("element-not-found", from.c_str());
+                    http_die("element-not-found", std::to_string(checked_from).c_str());
+                case(DB_ERROR_BADINPUT): // this should never be returned
                 default:
                     http_die("internal-error", "");
             }
