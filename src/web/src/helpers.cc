@@ -56,3 +56,46 @@ check_element_identifier (const char *param_name, const std::string& param_value
     element_id = eid;
     return true;
 }
+
+typedef int (t_check_func)(int letter);
+
+bool
+check_func_text (const char *param_name, const std::string& param_value, http_errors_t& errors,  size_t minlen, size_t maxlen, t_check_func func) {
+    if (param_value.size () < minlen) {
+        http_add_error (errors, "request-param-bad", param_name,
+                        std::string ("value '").append (param_value).append ("'").append (" is too short").c_str (),
+                        std::string ("string from ").append (std::to_string (minlen)).append (" to ").append (std::to_string(maxlen)).append (" characters.").c_str ());
+        return false;
+    }
+    if (param_value.size () > maxlen) {
+        http_add_error (errors, "request-param-bad", param_name,
+                        std::string ("value '").append (param_value).append ("'").append (" is too long").c_str (),
+                        std::string ("string from ").append (std::to_string (minlen)).append (" to ").append (std::to_string(maxlen)).append (" characters.").c_str ());
+        return false;
+    }
+    for (const auto letter : param_value) {
+        if (!func (letter)) {
+        http_add_error (errors, "request-param-bad", param_name,
+                        std::string ("value '").append (param_value).append ("'").append (" contains invalid characters").c_str (),
+                        "valid string");
+        return false;
+
+        }
+
+    }
+    return true;
+}
+
+int isalnumdash (int c) {
+    return isalnum (c) || c == '-' || c == '_'; 
+}
+
+bool
+check_alnumplus_text (const char *param_name, const std::string& param_value, http_errors_t& errors, size_t minlen, size_t maxlen) {
+    return check_func_text (param_name, param_value, errors, minlen, maxlen, isalnumdash);
+}
+
+bool
+check_printable_text (const char *param_name, const std::string& param_value, http_errors_t& errors, size_t minlen, size_t maxlen) {
+    return check_func_text (param_name, param_value, errors, minlen, maxlen, isprint);
+}

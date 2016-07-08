@@ -37,6 +37,7 @@
 #include "sasl.h"
 #include "filesystem.h"
 #include "utils_web.h"
+#include "helpers.h"
 
 #define SSH_NOT_TO_BE_RUN "/etc/ssh/sshd_not_to_be_run"
 using namespace shared;
@@ -93,6 +94,11 @@ s_passwd(
     std::string user;
     std::string old_passwd;
     std::string new_passwd;
+
+    std::string checked_user;
+    std::string checked_old_passwd;
+    std::string checked_new_passwd;
+    http_errors_t errors;
     bool bad_request = false;
     try {
         deserializer.deserialize(si);
@@ -106,20 +112,39 @@ s_passwd(
     // sanity checking
     if (bad_request)
         http_die("bad-request-document");
-    else if (user.empty())
-        http_die("request-param-bad", "user", "<empty>", "<user name>");
-    else if (old_passwd.empty())
-        http_die("request-param-bad", "old_passwd", "<empty>", "<password>");
-    else if (new_passwd.empty())
-        http_die("request-param-bad", "new_passwd", "<empty>", "<password>");
-    else if (user == "root")
+
+    if (check_alnumplus_text ("user", user, errors)) {
+        checked_user = user;
+    } else {
+        http_die_error(errors);
+    }
+    if (user == "root") {
         http_die("request-param-bad", "user", user.c_str(), "<user name other than 'root'>");
-    else if (!authenticate(user.c_str(), old_passwd.c_str()))
+    }
+#   define user TAINTED
+
+    if (old_passwd.empty()) {
+        http_die("request-param-bad", "old_passwd", "<empty>", "<password>");
+    } else {
+        checked_old_passwd = old_passwd;
+    }
+#   define old_password TAINTED
+
+    if (new_passwd.empty()) {
+        http_die("request-param-bad", "new_passwd", "<empty>", "<password>");
+    } else {
+        checked_new_passwd = new_passwd;
+    }
+#   define new_password TAINTED
+
+    // sanity checking end
+
+    if (!authenticate(checked_user.c_str(), checked_old_passwd.c_str()))
         http_die("request-param-bad", "(user|old_passwd)", "<invalid user or password>", "<valid user and password>");
 
     std::string reason;
     std::string received;
-    int r = s_passwd(user, old_passwd, new_passwd, reason);
+    int r = s_passwd(checked_user, checked_old_passwd, checked_new_passwd, reason);
     if (r != 0) {
         if (!reason.empty())
             received = "password with problems: " + reason;
@@ -134,7 +159,7 @@ s_passwd(
     }
 
     /* Verify the new password and so flush the SASLAUTHD cache that trusts the old one still */
-    if (!authenticate(user.c_str(), new_passwd.c_str()))
+    if (!authenticate(checked_user.c_str(), checked_new_passwd.c_str()))
         http_die("internal-error", "Can't authenticate user with new password, saslauthd service failed");
 </%cpp>
-{ "passwd" : "<$$ "password for '" + user + "' changed" $>" }
+{ "passwd" : "<$$ "password for '" + checked_user + "' changed" $>" }
