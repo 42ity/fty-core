@@ -33,6 +33,7 @@
 #include "log.h"
 #include "utils_web.h"
 #include "str_defs.h"
+#include "helpers.h"
 
 </%pre>
 <%args>
@@ -40,17 +41,33 @@ std::string type;
 std::string rule_class;
 </%args>
 <%cpp>
-// sanity check
-if (!request.isMethodGET ())
-    http_die ("method-not-allowed", request.getMethod ().c_str ());
+std::string checked_type;
+std::string checked_rule_class;
+{
+    // sanity check
+    if (!request.isMethodGET ())
+        http_die ("method-not-allowed", request.getMethod ().c_str ());
 
-if (type.empty ()) {
-    type = "all";
+    // type
+    if (type.empty ()) {
+        type = "all";
+    }
+    if (type != "threshold" && type != "single" && type != "pattern" && type != "all") { // unknown parameter 'type'
+        http_die ("request-param-bad", "type", std::string ("'").append (type).append ("'").c_str (),
+                  "one of the following values [ 'threshold', 'single', 'pattern', 'all' ] or empty");  
+    }
+    checked_type = type;
+
+    // rule_class
+    http_errors_t errors;
+    if (check_regex_text ("rule_class", rule_class, "^.{0,100}$", errors)) {
+        checked_rule_class = rule_class;
+    } else {
+        http_die_error (errors);
+    }
 }
-if (type != "threshold" && type != "single" && type != "pattern" && type != "all") { // unknown parameter 'type'
-    http_die ("request-param-bad", "type", std::string ("'").append (type).append ("'").c_str (),
-              "one of the following values [ 'threshold', 'single', 'pattern', 'all' ] or empty");
-}
+#define type TAINTED
+#define rule_class TAINTED
 
 // connect to malamute
 mlm_client_t *client = mlm_client_new ();
@@ -77,8 +94,8 @@ if (!send_msg) {
     http_die ("internal-error", "zmsg_new() failed.");
 }
 zmsg_addstr (send_msg, "LIST");
-zmsg_addstr (send_msg, type.c_str ());
-zmsg_addstr (send_msg, rule_class.c_str ());
+zmsg_addstr (send_msg, checked_type.c_str ());
+zmsg_addstr (send_msg, checked_rule_class.c_str ());
 
 // send it
 if (mlm_client_sendto (client, BIOS_AGENT_NAME_ALERT_AGENT, "rfc-evaluator-rules", NULL, 1000, &send_msg) != 0) {
@@ -136,9 +153,9 @@ if (streq (part, "LIST")) {
     free (part);
     part = zmsg_popstr (recv_msg);
     // type received must be equal to type requested
-    if (type.compare (part) != 0) {
+    if (checked_type.compare (part) != 0) {
         log_error ("Unexpected reply from '%s'. Type expected = '%s', received = '%s' . Protocol: rfc-evaluator-rules; message: 1) LIST.",
-            mlm_client_sender (client), type.c_str (), part);
+            mlm_client_sender (client), checked_type.c_str (), part);
         free (part);
         zmsg_destroy (&recv_msg);
         mlm_client_destroy (&client);
@@ -146,9 +163,9 @@ if (streq (part, "LIST")) {
     }
     part = zmsg_popstr (recv_msg);
     // class received must be equal to type requested
-    if (rule_class.compare (part) != 0) {
+    if (checked_rule_class.compare (part) != 0) {
         log_error ("Unexpected reply from '%s'. rule_class expected = '%s', received = '%s' . Protocol: rfc-evaluator-rules; message: 1) LIST.",
-            mlm_client_sender (client), rule_class.c_str (), part);
+            mlm_client_sender (client), checked_rule_class.c_str (), part);
         free (part);
         zmsg_destroy (&recv_msg);
         mlm_client_destroy (&client);
@@ -187,10 +204,10 @@ if (streq (part, "ERROR")) {
     }
     if (streq (part, "NOT_FOUND")) {
         free (part);
-        log_error ("Rule type '%s' does not exist.", type.c_str ());
+        log_error ("Rule type '%s' does not exist.", checked_type.c_str ());
         zmsg_destroy (&recv_msg);
         mlm_client_destroy (&client);
-        http_die ("request-param-bad", "type", std::string ("'").append (type).append ("'").c_str (),
+        http_die ("request-param-bad", "type", std::string ("'").append (checked_type).append ("'").c_str (),
                   "one of the following values [ 'threshold', 'single', 'pattern', 'all' ] or empty");
     }
     log_error ("%s", part);
@@ -199,7 +216,7 @@ if (streq (part, "ERROR")) {
     zmsg_destroy (&recv_msg);
     mlm_client_destroy (&client);
     http_die ("internal-error", 
-        std::string ("Error while retrieving list of rules with type = '").append (type).append ("': ").
+        std::string ("Error while retrieving list of rules with type = '").append (checked_type).append ("': ").
         append (reason).append(".").c_str ());
 }
 // Message does not conform to protocol
