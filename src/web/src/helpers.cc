@@ -76,8 +76,8 @@ check_func_text (const char *param_name, const std::string& param_value, http_er
     for (const auto letter : param_value) {
         if (!func (letter)) {
         http_add_error (errors, "request-param-bad", param_name,
-                        std::string ("value '").append (param_value).append ("'").append (" is too long").c_str (),
-                        std::string ("string from ").append (std::to_string (minlen)).append (" to ").append (std::to_string(maxlen)).append (" characters.").c_str ());
+                        std::string ("value '").append (param_value).append ("'").append (" contains invalid characters").c_str (),
+                        "valid string");
         return false;
 
         }
