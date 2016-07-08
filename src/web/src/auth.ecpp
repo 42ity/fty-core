@@ -28,6 +28,7 @@
 #include "tokens.h"
 #include "log.h"
 #include "utils_web.h"
+#include "helpers.h"
 #include <string>
 #include <iostream>
 #include <cxxtools/regex.h>
@@ -48,7 +49,23 @@ std::string password;
 std::string token;
 </%args>
 <%cpp>
+std::string checked_grant_type;
+std::string checked_username;
+std::string checked_password;
+std::string checked_token;
 {
+    // sanitize check token
+    http_errors_t errors;
+    if (check_regex_text ("token", token, "^[-/._~+/a-z0-9]{0,255}={0,10}$", errors)) {
+        checked_token = token;
+    } else {
+        http_die_error (errors);
+    }
+    // sanitize check token end
+}
+#define token TAINTED
+
+  {
     std::string method = request.getMethod();
     // Check if it is a revoke
     static cxxtools::Regex rex_rev("^.*/revoke$");
@@ -57,10 +74,11 @@ std::string token;
         if ( method != "POST" ) {
             http_die ("method-not-allowed");
         }
-        if(token.empty()) {
+        http_errors_t errors;
+        if(checked_token.empty()) {
             http_die("request-param-required", "'token'");
         }
-        tokens::get_instance()->revoke(token);
+        tokens::get_instance()->revoke(checked_token);
 </%cpp>
 { "success": "Everything went well" }
 <%cpp>
@@ -101,22 +119,47 @@ std::string token;
         http_die ("method-not-allowed");
     }
 
+{
+    // sanitize other params
+    http_errors_t errors;
+    if (check_regex_text ("username", username, "^[-_.a-z0-9]{0,50}$", errors)) {
+        checked_username = username;
+    } else {
+        http_die_error (errors);
+    }
+    if (check_regex_text ("username", password, "^.{0,150}$", errors)) {
+        checked_password = password;
+    } else {
+        http_die_error (errors);
+    }
+    if (check_regex_text ("grant_type", grant_type, "^(password|)$", errors)) {
+        checked_grant_type = grant_type;
+    } else {
+        http_die_error (errors);
+    }
+    // sanitize other params end
+}
+#define username TAINTED
+#define password TAINTED
+#define grant_type TAINTED
+  
+
     int valid = VALID_FOR;
 
 
     // with grant_type argument client wants to get new oauth2 token
-    if ( grant_type != "password" ) {
-        http_die ("request-param-bad", "grant_type", grant_type.c_str(), "password");
+    if ( checked_grant_type != "password" ) {
+        http_die ("request-param-bad", "grant_type", checked_grant_type.c_str(), "password");
     }
-    log_info ("request POST oauth2: username %s, grant_type %s", username.c_str (), grant_type.c_str ());
+    log_info ("request POST oauth2: username %s, grant_type %s", checked_username.c_str (), checked_grant_type.c_str ());
 
-    if ( !authenticate(username.c_str(), password.c_str()) ) {
-        log_error ("request POST oauth2: username %s, grant_type %s authentication FAILED", username.c_str (), grant_type.c_str ());
+    if ( !authenticate(checked_username.c_str(), checked_password.c_str()) ) {
+        log_error ("request POST oauth2: username %s, grant_type %s authentication FAILED", checked_username.c_str (), checked_grant_type.c_str ());
         http_die ("request-param-bad", "(user|passwd)", "<invalid user or password>", "<valid user and password>");
     }
 </%cpp>
 {
-    "access_token":"<$$ tokens::get_instance()->gen_token(valid, username.c_str()) $>",
+    "access_token":"<$$ tokens::get_instance()->gen_token(valid, checked_username.c_str()) $>",
     "token_type":"bearer",
     "expires_in":<$ valid $>
 }
