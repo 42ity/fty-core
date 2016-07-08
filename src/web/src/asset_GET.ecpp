@@ -141,39 +141,67 @@ asset_manager     asset_mgr;
 </%thread>
 
 <%cpp>
-// Check URL validity
-std::string typeNameArg = request.getArg("type");
-std::string id = request.getArg("id");
-
-if ( id.empty() ) {
-    http_die("request-param-required", "id");
-}
-uint32_t real_id = 0;
-http_errors_t errors;
-if (!check_element_identifier ("id", id, real_id, errors)) {
-    http_die_error (errors);
-}
-
-auto tmp = asset_mgr.get_item1(real_id);
-if ( tmp.status == 0 )
-{
-    switch ( tmp.errsubtype )
-    {
-        case DB_ERROR_NOTFOUND:
-            http_die("element-not-found", id.c_str());
-        case DB_ERROR_BADINPUT:
-        case DB_ERROR_INTERNAL:
-        default:
-            http_die("internal-error", "Internal database error");
-    }
-}
-if ( !typeNameArg.empty() &&
-    (tmp.item.basic.type_id != persist::type_to_typeid(typeNameArg) ) )
-{
-    http_die("request-param-bad", "type", typeNameArg.c_str(), tmp.item.basic.type_name.c_str());
-}
+    // checked parameters
+    uint32_t checked_id = 0;
+    std::string checked_type;
 
     // ##################################################
+    // BLOCK 1
+    // Sanity parameter check
+    {
+        // dirty parameters
+        // Arguments parsed from URL: -> request.getArg("agrgumentName")
+        // Real parameters  in URL (after '?': -> qparam.param("parameterName")
+        std::string id = request.getArg("id");
+        std::string type = request.getArg("type");
+        log_debug ("Request parameters - Initial tainted values received:\n\tid = '%s'\n\ttype = '%s'\n",
+                id.c_str (), type.c_str ());
+
+        http_errors_t errors;
+        if (!check_element_identifier ("id", id, checked_id, errors)) {
+            http_die_error (errors);
+        }
+
+        if ( !type.empty() && !persist::type_to_typeid (type) ) {
+            http_die("request-param-bad", "type", type.c_str(), "one of datacenter/room/row/rack/group/device");
+        }
+        else {
+            checked_type = type;
+        }
+    }
+    // Sanity check end
+
+    // ##################################################
+    // BLOCK 2
+    // Receive data and check arguments
+    if ( checked_id == 0 ) {
+        http_die("request-param-required", "id");
+    }
+
+    auto tmp = asset_mgr.get_item1 (checked_id);
+    if ( tmp.status == 0 )
+    {
+        switch ( tmp.errsubtype )
+        {
+            case DB_ERROR_NOTFOUND:
+                http_die("element-not-found", std::to_string (checked_id).c_str());
+            case DB_ERROR_BADINPUT:
+            case DB_ERROR_INTERNAL:
+            default:
+                http_die("internal-error", "Internal database error");
+        }
+    }
+    // TODO: the call /asset/type/id is deprecated. This check should be removed soon
+    if ( !checked_type.empty() &&
+            (tmp.item.basic.type_id != persist::type_to_typeid (checked_type) ) )
+    {
+        http_die("request-param-bad", "type", checked_type.c_str(), tmp.item.basic.type_name.c_str());
+    }
+    // end argument check
+
+
+    // ##################################################
+    // BLOCK 3
     // connect to malamute
     // copy & paste from alert_ack.ecpp
     mlm_client_t *client = mlm_client_new ();
@@ -182,7 +210,7 @@ if ( !typeNameArg.empty() &&
         http_die ("internal-error", "mlm_client_new() failed.");
     }
 
-    std::string client_name ("web.metric_current.");
+    std::string client_name ("web.asset_get.");
     client_name.append (std::to_string (getpid ())).append (".").append (std::to_string (syscall (SYS_gettid)));
     log_debug ("malamute client name = '%s'.", client_name.c_str ());
 
@@ -193,7 +221,7 @@ if ( !typeNameArg.empty() &&
         mlm_client_destroy (&client);
         http_die ("internal-error", "mlm_client_connect() failed.");
     }
-    // ##################################################
+    // end connect to malamute
 
 // Prepare the reply
 </%cpp>
