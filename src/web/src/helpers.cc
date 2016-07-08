@@ -19,6 +19,7 @@
  */
 
 #include <cassert>
+#include <cxxtools/regex.h>
 
 #include "helpers.h"
 
@@ -86,16 +87,15 @@ check_func_text (const char *param_name, const std::string& param_value, http_er
     return true;
 }
 
-int isalnumdash (int c) {
-    return isalnum (c) || c == '-' || c == '_'; 
-}
-
 bool
-check_alnumplus_text (const char *param_name, const std::string& param_value, http_errors_t& errors, size_t minlen, size_t maxlen) {
-    return check_func_text (param_name, param_value, errors, minlen, maxlen, isalnumdash);
-}
-
-bool
-check_printable_text (const char *param_name, const std::string& param_value, http_errors_t& errors, size_t minlen, size_t maxlen) {
-    return check_func_text (param_name, param_value, errors, minlen, maxlen, isprint);
+check_regex_text (const char *param_name, const std::string& param_value, const std::string& regex, http_errors_t& errors)
+{
+    cxxtools::Regex R (regex, REG_EXTENDED | REG_ICASE);
+    if (! R.match (param_value)) {
+        http_add_error (errors, "request-param-bad", param_name,
+                        std::string ("value '").append (param_value).append ("'").append (" is not valid").c_str (),
+                        std::string ("string matching ").append (regex).append (" regular expression").c_str ());
+        return false;
+    }
+    return true;
 }
