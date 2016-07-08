@@ -37,53 +37,55 @@ asset_manager     asset_mgr;
 </%thread>
 
 <%cpp>
-std::string id = request.getArg("id");
-
-if ( id.empty() ) {
-    http_die("request-param-required", "id");
-}
-
-uint32_t real_id = 0;
-http_errors_t errors;
-if (!check_element_identifier ("id", id, real_id, errors)) {
-    http_die_error (errors);
-}
-
-db_a_elmnt_t row;
-auto ret = asset_mgr.delete_item(real_id, row);
-if ( ret.status == 0 )
 {
-    if ( ret.errsubtype == DB_ERROR_NOTFOUND )
-    {
-        http_die("element-not-found", id.c_str());
-    }
-    else
-    {
-        http_die("data-conflict", id.c_str(), "Asset has elements inside, DELETE them first!");
-    }
-}
-// here we are -> delete was successful
-// ATTENTION:  1. sending messages is "hidden functionality" from user
-//             2. if any error would occur during the sending message,
-//                user will never know if element was actually deleted
-//                or not
+    std::string id = request.getArg("id");
 
-// this code can be executed in multiple threads -> agent's name should
-// be unique at the every moment
-std::string agent_name("web.asset_delete.");
-agent_name.append (std::to_string ( static_cast<int> (getpid ()) ))
-          .append (".")
-          .append (std::to_string ( syscall(SYS_gettid) ));
-try{
-    send_configure (row, persist::asset_operation::DELETE, agent_name);
-</%cpp>
-{}
-<%cpp>
-    return HTTP_OK;
-}
-catch (const std::runtime_error &e) {
-    log_error (e.what());
-    std::string msg = "Error during configuration sending of asset change notification. Consult system log.";
-    http_die("internal-error", msg.c_str());
+    if ( id.empty() ) {
+        http_die("request-param-required", "id");
+    }
+
+    uint32_t real_id = 0;
+    http_errors_t errors;
+    if (!check_element_identifier ("id", id, real_id, errors)) {
+        http_die_error (errors);
+    }
+
+    db_a_elmnt_t row;
+    auto ret = asset_mgr.delete_item(real_id, row);
+    if ( ret.status == 0 )
+    {
+        if ( ret.errsubtype == DB_ERROR_NOTFOUND )
+        {
+            http_die("element-not-found", id.c_str());
+        }
+        else
+        {
+            http_die("data-conflict", id.c_str(), "Asset has elements inside, DELETE them first!");
+        }
+    }
+    // here we are -> delete was successful
+    // ATTENTION:  1. sending messages is "hidden functionality" from user
+    //             2. if any error would occur during the sending message,
+    //                user will never know if element was actually deleted
+    //                or not
+
+    // this code can be executed in multiple threads -> agent's name should
+    // be unique at the every moment
+    std::string agent_name("web.asset_delete.");
+    agent_name.append (std::to_string ( static_cast<int> (getpid ()) ))
+        .append (".")
+        .append (std::to_string ( syscall(SYS_gettid) ));
+    try{
+        send_configure (row, persist::asset_operation::DELETE, agent_name);
+        </%cpp>
+        {}
+        <%cpp>
+            return HTTP_OK;
+    }
+    catch (const std::runtime_error &e) {
+        log_error (e.what());
+        std::string msg = "Error during configuration sending of asset change notification. Consult system log.";
+        http_die("internal-error", msg.c_str());
+    }
 }
 </%cpp>
