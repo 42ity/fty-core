@@ -30,6 +30,7 @@
 #include <tnt/httpmessage.h>
 #include <tnt/httpheader.h>
 #include "utils_web.h"
+#include "helpers.h"
 
 #ifdef DEBUG
 #include <iostream>
@@ -48,21 +49,32 @@ long int uid = 0;
 long int gid = -1;
 </%request>
 <%cpp>
-if(request.hasHeader(tnt::httpheader::authorization)) {
-	/* Auth header overrides GET/POST parameters even if header is wrong */
-	access_token = request.getHeader(tnt::httpheader::authorization);
-
-	if(access_token.compare(0,7,"Bearer ")) {
-		access_token = "";
-	} else {
-		access_token = access_token.substr(7);
-	}
-
+std::string checked_access_token;
+{
+    // sanitize check
+    if(request.hasHeader(tnt::httpheader::authorization)) {
+        /* Auth header overrides GET/POST parameters even if header is wrong */
+        access_token = request.getHeader(tnt::httpheader::authorization);
+        
+        if(access_token.compare(0,7,"Bearer ")) {
+            access_token = "";
+        } else {
+            access_token = access_token.substr(7);
+        }
+    }
+    http_errors_t errors;
+    if (check_regex_text ("access_token", access_token, "^[-/._~+/a-z0-9]{0,255}={0,10}$", errors)) {
+        checked_access_token = access_token;
+    } else {
+        http_die_error (errors);
+    }
+    // sanitize check end
 }
+#define access_token TAINTED
 
 /* We can get the token from header, or from GET or POST request args */
-if(!access_token.empty()) {
-	if(tokens::get_instance()->verify_token(access_token, &uid, &gid)) {
+if(!checked_access_token.empty()) {
+	if(tokens::get_instance()->verify_token(checked_access_token, &uid, &gid)) {
 		access_auth_level=gid - 8000;
 	} else {
         http_die("not-authorized");
@@ -71,7 +83,7 @@ if(!access_token.empty()) {
 
 #ifdef DEBUG
 	reply.setHeader( (std::string)"X-Auth-Token-Presented: ",
-                "\"" + access_token + "\"" );
+                "\"" + checked_access_token + "\"" );
 
 	std::ostringstream os;
 	os << "access_auth_level=\"" << (int)access_auth_level << "\"";
