@@ -237,7 +237,7 @@ asset_manager asset_mgr;
         }
         
         check_regex_text_or_die ("arg1", arg1, checked_arg1, "^[,0-9]+$");
-        check_regex_text_or_die ("arg2", arg1, checked_arg1, "^[_,a-z]+$");
+        check_regex_text_or_die ("arg2", arg2, checked_arg2, "^[_,a-z]+$");
         // sanitize params end
     }
 
