@@ -37,46 +37,51 @@
 
 </%pre>
 
-<%args>
-std::string arg1;
-</%args>
-
 <%thread scope="global">
 asset_manager asset_mgr;
 </%thread>
 
 <%cpp>
-    // Input arguments checks
 
-    // arg1 is mandatory
-    if (arg1.empty ()) {
-        http_die ("request-param-required", "arg1");
-    }
-
-    std::vector<std::string> DCs;
-    cxxtools::split(",", arg1, std::back_inserter(DCs));
-
-    // check that DC exists
-    auto allDcsShort = asset_mgr.get_items1 ("datacenter", "");
-    if (allDcsShort.status == 0) {
-        http_die ("internal-error", "Error while retrieving information about datacenters.");
-    }
-
+    // checked (processed) parameters
     std::vector<std::string> DCNames;
-    for (auto const& item : DCs) {
-        http_errors_t errors;
-        uint32_t real_id = 0;
+    std::vector<std::string> DCs;
 
-        if (!check_element_identifier ("element_id", item, real_id, errors)) {
-            http_die_error (errors);
+    // ##################################################
+    // BLOCK 1
+    // Sanity parameter check
+    {
+    
+        std::string arg1 = request.getArg ("arg1");
+        // arg1 is mandatory
+        if (arg1.empty ()) {
+            http_die ("request-param-required", "arg1");
         }
 
-        auto it = allDcsShort.item.find(real_id);
-        if (it == allDcsShort.item.end()) {
-            http_die ("element-not-found", item.c_str ());
+        cxxtools::split(",", arg1, std::back_inserter(DCs));
+
+        // check that DC exists
+        auto allDcsShort = asset_mgr.get_items1 ("datacenter", "");
+        if (allDcsShort.status == 0) {
+            http_die ("internal-error", "Error while retrieving information about datacenters.");
         }
-        DCNames.push_back(it->second);
+
+        for (auto const& item : DCs) {
+            http_errors_t errors;
+            uint32_t real_id = 0;
+
+            if (!check_element_identifier ("element_id", item, real_id, errors)) {
+                http_die_error (errors);
+            }
+
+            auto it = allDcsShort.item.find(real_id);
+            if (it == allDcsShort.item.end()) {
+                http_die ("element-not-found", item.c_str ());
+            }
+            DCNames.push_back(it->second);
+        }
     }
+    // Sanity check end
 
     std::stringstream json;
     mlm_client_t *client;
