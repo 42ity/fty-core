@@ -47,12 +47,13 @@
 
 #include "log.h"
 #include "utils_web.h"
+#include "helpers.h"
 
 struct iface {
    std::vector<std::string> ip;
    std::vector<std::string> netmask;
    std::string state;
-    std::string gateway;
+   std::string gateway;
    std::string cable;
    std::string mac;
 };
@@ -149,14 +150,20 @@ if(rex.match(request.getUrl())) {
     return HTTP_OK;
 }
 
-std::string iface = request.getArg("iface");
-if (iface.empty ()) {
-    http_die ("request-param-required", "iface");
+std::string checked_iface;
+
+{
+    std::string iface = request.getArg("iface");
+    if (iface.empty ()) {
+        http_die ("request-param-required", "iface");
+    }
+    check_regex_text_or_die ("iface", iface, checked_iface, "^[a-z][a-z0-9]{0,14}$");
 }
-auto dta = get_iface(iface);
+
+auto dta = get_iface(checked_iface);
 if(dta.mac.empty()) {
     http_die ("request-param-bad", "iface_name",
-        std::string ("value that does not exist '").append (iface).append ("'").c_str (),
+        std::string ("value that does not exist '").append (checked_iface).append ("'").c_str (),
         "one of valid interface names that can be obtained using GET 'admin/ifaces'.");
 }
 
@@ -224,7 +231,7 @@ try {
 // Print out the result
 </%cpp>
 {
-    "<$ iface $>": {
+    "<$ checked_iface $>": {
         "state": "<$ dta.state $>",
         "ip": <$$ ipaddrs $>,
         "gateway": "<$ gateway $>",
