@@ -47,73 +47,67 @@ int state_valid (const char *state) {
 }
 
 </%pre>
-<%args>
-std::string rule_name;
-std::string element_name;
-</%args>
 <%cpp>
 
+// checked input arguments
 std::string checked_rule_name;
 std::string checked_element_name;
 std::string checked_state;
 
-// sanity check
+// ##################################################
+// BLOCK 1
+// Sanity parameter check
 {
-if (request.getMethod () != "PUT") {
-    http_die ("method-not-allowed", request.getMethod ().c_str ());
-}
-
-std::string rule_name = request.getArg ("rule_name");
-std::string element_name = request.getArg ("element_name");
-log_debug ("Request parameters - Initial tainted values received:\n\trule_name = '%s'\n\telement_name = '%s'\n",
-            rule_name.c_str (), element_name.c_str ());
-
-// Let's take a look at payload
-std::string state;
-cxxtools::SerializationInfo si;
-try {
-    std::stringstream input (request.getBody(), std::ios_base::in); 
-    cxxtools::JsonDeserializer deserializer (input);
-    deserializer.deserialize (si);
-    si.getMember ("state") >>= state;
-    if (state.empty ())
-        throw std::runtime_error ("property 'state' has empty value");
-}
-catch (const std::exception& e) {
-    log_debug ("Bad request document - invalid json: %s", e.what ());
-    http_die ("bad-request-document", "Please check RFC-11 for valid json schema description.");
-}
-log_debug ("state = '%s'", state.c_str ());
-
-if (!state_valid (state.c_str ())) {
-    log_debug ("State is not a recognized valid alert state.");
-    http_die ("request-param-bad", "state", std::string ("'").append (state).append ("'").c_str (),
-        "one of the following values [ ACTIVE | ACK-WIP | ACK-IGNORE | ACK-PAUSE | ACK-SILENCE ].");
-}
-else {
-    checked_state = state;
-}
-
-{
-    http_errors_t errors;
-    if (! check_asset_name ("element_name", element_name, errors)) {
-        http_die_error (errors);
+    if (request.getMethod () != "PUT") {
+        http_die ("method-not-allowed", request.getMethod ().c_str ());
     }
-    checked_element_name = element_name;
-}
 
-{
-    http_errors_t errors;
-    if (! check_alert_rule_name ("rule_name", rule_name, errors)) {
-        http_die_error (errors);
+    std::string rule_name = request.getArg ("rule_name");
+    std::string element_name = request.getArg ("element_name");
+    log_debug ("Request parameters - Initial tainted values received:\n\trule_name = '%s'\n\telement_name = '%s'\n",
+                rule_name.c_str (), element_name.c_str ());
+
+    // Let's take a look at payload
+    std::string state;
+    cxxtools::SerializationInfo si;
+    try {
+        std::stringstream input (request.getBody(), std::ios_base::in); 
+        cxxtools::JsonDeserializer deserializer (input);
+        deserializer.deserialize (si);
+        si.getMember ("state") >>= state;
+        if (state.empty ())
+            throw std::runtime_error ("property 'state' has empty value");
     }
-    checked_rule_name = rule_name;
-}
+    catch (const std::exception& e) {
+        log_debug ("Bad request document - invalid json: %s", e.what ());
+        http_die ("bad-request-document", "Please check RFC-11 for valid json schema description.");
+    }
+    log_debug ("state = '%s'", state.c_str ());
 
-#define element_name TAINTED
-#define rule_name TAINTED
-#define state TAINTED
+    if (!state_valid (state.c_str ())) {
+        log_debug ("State is not a recognized valid alert state.");
+        http_die ("request-param-bad", "state", std::string ("'").append (state).append ("'").c_str (),
+            "one of the following values [ ACTIVE | ACK-WIP | ACK-IGNORE | ACK-PAUSE | ACK-SILENCE ].");
+    }
+    else {
+        checked_state = state;
+    }
 
+    {
+        http_errors_t errors;
+        if (! check_asset_name ("element_name", element_name, errors)) {
+            http_die_error (errors);
+        }
+        checked_element_name = element_name;
+    }
+
+    {
+        http_errors_t errors;
+        if (! check_alert_rule_name ("rule_name", rule_name, errors)) {
+            http_die_error (errors);
+        }
+        checked_rule_name = rule_name;
+    }
 }
 
 
