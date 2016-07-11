@@ -37,8 +37,7 @@
 #include "utils_web.h"
 #include "log.h"
 
-#define PROPERTIES_FILE "/home/achernikava/work/continuous-integration/xx.xx"
-//#define PROPERTIES_FILE "/etc/default/bios"
+#define PROPERTIES_FILE "/etc/default/bios"
 #define MSG_METHOD_NOT_ALLOWED "Following HTTP methods are supported for 'admin/config': GET, POST."
 
 void replace_all (std::string& string, const char* subject, const char* replacement) {
