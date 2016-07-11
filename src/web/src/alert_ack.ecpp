@@ -31,7 +31,7 @@
 #include <sys/syscall.h>
 
 #include "log.h"
-#include "utils_web.h"
+#include "helpers.h"
 #include "str_defs.h"
 
 static
@@ -94,20 +94,20 @@ else {
     checked_state = state;
 }
 
-try {
-    checked_element_name = utils::check_asset_name (element_name);
-}
-catch (const std::invalid_argument& e) {
-    log_debug ("Invalid argument - %s", e.what ());
-    http_die ("request-param-bad", "element_name", element_name.c_str (), "valid asset name");
+{
+    http_errors_t errors;
+    if (! check_asset_name ("element_name", element_name, errors)) {
+        http_die_error (errors);
+    }
+    checked_element_name = element_name;
 }
 
-try {
-    checked_rule_name = utils::check_alert_rule_name (rule_name);
-}
-catch (const std::invalid_argument& e) {
-    log_debug ("Invalid argument - %s", e.what ());
-    http_die ("request-param-bad", "rule_name", rule_name.c_str (), "valid rule name");
+{
+    http_errors_t errors;
+    if (! check_alert_rule_name ("rule_name", rule_name, errors)) {
+        http_die_error (errors);
+    }
+    checked_rule_name = rule_name;
 }
 
 #define element_name TAINTED
