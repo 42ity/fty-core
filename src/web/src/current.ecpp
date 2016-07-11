@@ -210,7 +210,7 @@ std::vector<a_elmnt_id_t> asset_ids;
         auto asset = persist::select_asset_element_web_byId (conn, asset_id);
         if ( asset.status == 0 )
         {
-            log_warning("Element id '%d' is not in DB, skipping", asset_id);
+            log_warning("Element id '%" PRIu32 "' is not in DB, skipping", asset_id);
             continue;
         }
 
