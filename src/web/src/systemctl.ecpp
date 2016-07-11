@@ -66,6 +66,9 @@ static const char *list[] =
     NULL
 };
 
+static std::set<std::string> get_operations {"list", "status"};
+static std::set<std::string> post_operations {"start", "stop", "restart", "enable", "disable"};
+
 bool service_name_valid (const char *service_name) {
     int i = 0;
     while (list[i] != NULL) {
@@ -115,76 +118,64 @@ parse_systemctl_status
     return true;
 }
 
-unsigned int process_get (
-        tnt::HttpReply& reply,
-        const std::string& operation,
-        const std::string& service_name)
+unsigned int process_get_list (
+        tnt::HttpReply& reply)
 {
     std::string message;
 
-    ////////////////
-    //    LIST    //
-    ////////////////
-    if (operation.compare ("list") == 0) {
-        message.assign (
+    message.assign (
 "{\n"
 "\t\"systemctl_services\" : [\n");
-        bool last = false;
-        int i = 0;
-        while (list[i] != NULL) {
-            if (list [i+1] == NULL)
-                last = true;
-            message.append ("\t\t\"").append (list[i]).append (last ? "\"\n" : "\",\n");
-            i++;
-        }
-        message.append (
+    bool last = false;
+    int i = 0;
+    while (list[i] != NULL) {
+        if (list [i+1] == NULL)
+            last = true;
+        message.append ("\t\t\"").append (list[i]).append (last ? "\"\n" : "\",\n");
+        i++;
+    }
+    message.append (
 "\t]\n"
 "}");
-        reply.out() << message;
-        return HTTP_OK;
+    reply.out() << message;
+    return HTTP_OK;
+}
+
+unsigned int process_get_status (
+        tnt::HttpReply& reply,
+        const std::string& service_name)
+{
+    // ASSUMPTION: service name is valid
+    std::string message;
+
+    shared::Argv proc_cmd {"sudo", "systemctl", "show", service_name};
+    std::string proc_out, proc_err;
+    int proc_rv = shared::output (proc_cmd, proc_out, proc_err);
+
+    if ( proc_rv != 0 ) {
+        message = "shared::output (command = 'sudo systemctl show " + service_name +
+            "') failed. Return value = '" + std::to_string (proc_rv) + "', stderr = '" + proc_err + "'.";
+        log_error (message.c_str ());
+        http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
     }
 
-    //////////////////////
-    //      STATUS      //
-    //////////////////////
-    if (operation.compare ("status") == 0) {
-        if (service_name_valid (service_name.c_str ())) {
-            shared::Argv proc_cmd {"sudo", "systemctl", "show", service_name};
-            std::string proc_out, proc_err;
-            int proc_rv = shared::output (proc_cmd, proc_out, proc_err);
-
-            if (proc_rv != 0) {
-                message = "shared::output (command = 'sudo systemctl show " + service_name +
-                          "') failed. Return value = '" + std::to_string (proc_rv) + "', stderr = '" + proc_err + "'.";
-                log_error (message.c_str ());
-                http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
-            }
-
-            std::string active_state, sub_state, load_state, unit_file_state;
-            if (!parse_systemctl_status (proc_out, active_state, sub_state, load_state, unit_file_state)) {
-                log_error ("Could not parse output of `systemctl show` due to different expected output format.");
-                http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
-            }
-
-            message.assign (
-"{\n"
-"\t\"" + service_name + "\" : {\n" +
-"\t\t\"ActiveState\"\t:\t\"" + active_state  + "\",\n"
-"\t\t\"SubState\"\t:\t\"" + sub_state + "\",\n"
-"\t\t\"LoadState\"\t:\t\"" + load_state + "\",\n"
-"\t\t\"UnitFileState\"\t:\t\"" + unit_file_state + "\"\n"
-"\t}\n"
-"}");
-            reply.out() << message;
-            return HTTP_OK;
-        }
-        http_die( "element-not-found", service_name.c_str() );
+    std::string active_state, sub_state, load_state, unit_file_state;
+    if ( !parse_systemctl_status (proc_out, active_state, sub_state, load_state, unit_file_state) ) {
+        log_error ("Could not parse output of `systemctl show` due to different expected output format.");
+        http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
     }
 
-    //////////////////////////////////
-    //      BAD: empty / unknown    //
-    //////////////////////////////////
-    http_die("request-param-required", "operation");
+    message.assign (
+            "{\n"
+            "\t\"" + service_name + "\" : {\n" +
+            "\t\t\"ActiveState\"\t:\t\"" + active_state  + "\",\n"
+            "\t\t\"SubState\"\t:\t\"" + sub_state + "\",\n"
+            "\t\t\"LoadState\"\t:\t\"" + load_state + "\",\n"
+            "\t\t\"UnitFileState\"\t:\t\"" + unit_file_state + "\"\n"
+            "\t}\n"
+            "}");
+    reply.out() << message;
+    return HTTP_OK;
 }
 
 unsigned int process_post (
@@ -292,18 +283,36 @@ unsigned int process_post (
 </%pre>
 <%cpp>
 {
-    std::string operation = request.getArg("operation");
-    std::string service_name = request.getArg("service_name");
-
-    // convert to lower case; 'admin/systemctl/list' request is equivalent to 'admin/systemctl/LIST' request
-    std::transform (operation.begin(), operation.end(), operation.begin(), ::tolower);
-    std::transform (service_name.begin(), service_name.end(), service_name.begin(), ::tolower);
-
-    if (request.getMethod() == "GET") {
-        return process_get (reply, operation, service_name);
+    std::string checked_operation;
+    std::string checked_service_name;
+    // sanity checks
+    {
+        std::string operation = request.getArg("operation");
+        std::string service_name = request.getArg("service_name");
+        // convert to lower case; 'admin/systemctl/list' request is equivalent to 'admin/systemctl/LIST' request
+        std::transform (operation.begin(), operation.end(), operation.begin(), ::tolower);
+        std::transform (service_name.begin(), service_name.end(), service_name.begin(), ::tolower);
+        if ( get_operations.count(operation) == 0 && post_operations.count(operation) == 0 ) {
+            http_die ("request-param-bad", "operation");
+        }
+        if ( !service_name_valid (service_name.c_str ()) ) {
+            http_die ("request-param-bad", "service_name");
+        }
+        checked_operation = std::move (operation);
+        checked_service_name = std::move (service_name);
     }
-    if (request.getMethod() == "POST") {
-        return process_post (reply, operation, request.getBody() );
+
+    if ( request.getMethod() == "GET" ) {
+        if ( checked_operation == "list" ) {
+            return process_get_list (reply);
+        }
+        else if ( checked_operation == "status" ) {
+            return process_get_status (reply, checked_service_name);
+        }
+        http_die ("request-param-bad", "operation", checked_operation.c_str(), "operation allowed for GET method");
+    }
+    if ( request.getMethod() == "POST" ) {
+        return process_post (reply, checked_operation, request.getBody() );
     }
     http_die("method-not-allowed", request.getMethod().c_str() );
 }
