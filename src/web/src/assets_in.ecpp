@@ -54,7 +54,7 @@ static std::string
             "},";
     };
     persist::select_assets_by_container(connection, container, types, subtypes, func);
-    return result.substr(0, result.size()-1);
+    return result.substr(0, result.size() - 1); // need to get ri of the last ','
 }
 
 </%pre>
