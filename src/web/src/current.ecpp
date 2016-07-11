@@ -162,7 +162,7 @@ std::vector<a_elmnt_id_t> asset_ids;
     std::vector<std::string> foo;
     cxxtools::split(",", dev, std::back_inserter(foo));
     
-    for ( auto asset_id : foo) {
+    for ( auto asset_id : foo ) {
         http_errors_t errors;
         a_elmnt_id_t id = 0;
 
@@ -171,8 +171,6 @@ std::vector<a_elmnt_id_t> asset_ids;
         }
         asset_ids.push_back(id);
     }
-
-    
 }
 
   
