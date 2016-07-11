@@ -30,39 +30,48 @@
 #include "assetcrud.h"
 #include "utils_web.h"
 </%pre>
-<%args>
-std::string subtype;
-</%args>
 <%thread scope="global">
 asset_manager asset_mgr;
 </%thread>
 <%cpp>
 {
     // check if method is allowed
-    if ( !request.isMethodGET() )
-    {
+    if ( !request.isMethodGET() ) {
         http_die ("method-not-allowed", request.getMethod().c_str());
     }
-    log_debug (" type = '%s'", request.getArg("type").c_str());
-    log_debug (" subtype = '%s'", subtype.c_str());
+    std::vector<std::string> checked_subtypes;
+    std::string checked_type;
+    // sanity checks
+    {
+        std::string type = request.getArg("type");
+        // TODO make name of the parameter consistent with other REST API calls
+        std::string subtypes = qparam.param("subtype");
 
-    // we want to support multiple subtype selection
-    std::vector<std::string> asset_subtypes;
-    cxxtools::split(",", subtype, std::back_inserter(asset_subtypes));
+        // we want to support multiple subtype selection
+        cxxtools::split(",", subtypes, std::back_inserter(checked_subtypes));
 
-    std::string json = "{\"" + request.getArg("type");
+        // check type
+        if ( !persist::type_to_typeid (type) ) {
+            http_die ("request-param-bad", "type", "datacenter/room/row/rack/device");
+        }
+        checked_type = type;
+        for ( const auto &subtype: checked_subtypes ) {
+            if ( !persist::subtype_to_subtypeid (subtype) ) {
+                http_die ("request-param-bad", "subtype", "See RFC-11 for possible values");
+            }
+        }
+    }
+    std::string json = "{\"" + checked_type;
     json +=  "s\":[ "; // attention. This space need to be there! for empty list!
-    for ( const auto &asset_subtype: asset_subtypes )
+    for ( const auto &asset_subtype: checked_subtypes )
     {
         // Get data
-        auto allAssetsShort = asset_mgr.get_items1 (request.getArg("type"), asset_subtype);
-        if ( allAssetsShort.status == 0 )
-        {
+        auto allAssetsShort = asset_mgr.get_items1 (checked_type, asset_subtype);
+        if ( allAssetsShort.status == 0 ) {
             http_die_idx(allAssetsShort.rowid, allAssetsShort.msg);
         }
 
-        for ( auto &oneAsset : allAssetsShort.item )
-        {
+        for ( auto &oneAsset : allAssetsShort.item ) {
             json += "{";
             json += utils::json::jsonify ("id", std::to_string(oneAsset.first));
             json += ",";
