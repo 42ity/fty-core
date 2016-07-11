@@ -36,6 +36,11 @@
 <%cpp>
     augtool* augeas = augtool::get_instance();
 
+    // BLOCK 1
+    // input argument sanitization
+    std::string checked_time;
+    std::string checked_ntp;
+
     if(!request.isMethodGET()) {
         std::stringstream input(request.getBody(), std::ios_base::in);
         cxxtools::SerializationInfo si;
@@ -63,14 +68,31 @@
         if (time.empty() && ntp.empty()) {
             http_die ("request-param-required", "time' or 'ntp");
         }
-
+        
         static cxxtools::Regex t_rex("^[1-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]T[0-2][0-9]:[0-6][0-9]:[0-6][0-9]Z$");
         if(!time.empty()) {
             if (!t_rex.match (time)) {
                 http_die ("request-param-bad", "time", time.c_str (), "format <YYYY>-<MM>-<DD>T<hh>:<mm>:<ss>Z (ISO 8601).");
             }
+        }
+
+        static cxxtools::Regex n_rex("^[0-9a-z_.-]*$");
+        if(!ntp.empty()) {
+            if(!n_rex.match (ntp)) {
+                http_die ("request-param-bad", "ntp", ntp.c_str (), "any combination of alphanumeric characters, underscore (_), dot (.) and hyphen (-).");
+            }
+        }
+
+        checked_time = time;
+        checked_ntp = ntp;
+    }
+    // input arguments sanitization end
+
+    if (!request.isMethodGET ()) {
+
+        if (!checked_time.empty ()) {
             // Run command with arguments.  Wait for complete and return the return value.
-            shared::Argv proc_cmd_dateset {"sudo", "date", "-s", time};
+            shared::Argv proc_cmd_dateset {"sudo", "date", "-s", checked_time};
             if ( shared::call(proc_cmd_dateset) != 0 ) {
                 http_die ("internal-error", "Can't set requested OS time.");
             }
@@ -88,13 +110,9 @@
             }
         }
 
-        static cxxtools::Regex n_rex("^[0-9a-z_.-]*$");
-        if(!ntp.empty()) {
-            if(!n_rex.match (ntp)) {
-                http_die ("request-param-bad", "ntp", ntp.c_str (), "any combination of alphanumeric characters, underscore (_), dot (.) and hyphen (-).");
-            }
+        if(!checked_ntp.empty()) {
 
-            augeas->run_cmd("set /files/etc/ntp.conf/server[1] " + ntp);
+            augeas->run_cmd("set /files/etc/ntp.conf/server[1] " + checked_ntp);
             augeas->save();
             shared::Argv proc_cmd_ntp1 {"sudo", "systemctl", "enable", "ntp"};
             if ( shared::call(proc_cmd_ntp1) != 0 ) {
@@ -111,9 +129,9 @@
     if (calendar_to_datetime (time (NULL), buff, 32) == -1) {
         http_die ("internal-error", "calendar_to_datetime () failed.");
     }
-    std::string ntp = augeas->get_cmd_out("get /files/etc/ntp.conf/server[1]");
+    std::string ntp_out = augeas->get_cmd_out("get /files/etc/ntp.conf/server[1]");
 </%cpp>
 {
     <$$ utils::json::jsonify ("time", buff) $>,
-    <$$ utils::json::jsonify ("ntp", ntp) $>
+    <$$ utils::json::jsonify ("ntp", ntp_out) $>
 }
