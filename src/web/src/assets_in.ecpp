@@ -36,7 +36,7 @@
 #include "db/assets.h"
 #include "helpers.h"
 
-std::string
+static std::string
     assets_in_container(
         tntdb::Connection &connection,
         a_elmnt_id_t container,
