@@ -66,13 +66,19 @@ std::string sub_type;
 <%cpp>
 {
     // check if method is allowed
-    if (!request.isMethodGET()) {
+    if ( !request.isMethodGET() ) {
         http_die ("method-not-allowed", request.getMethod().c_str());
     }
     // check if mandatory parameters are present
-    if (in.empty()) http_die ("request-param-required", "in");
-    if (type.empty() && sub_type.empty()) http_die ("request-param-required", "type' or 'sub_type");
-    if ( !type.empty() && !sub_type.empty()) http_die ("request-param-bad", "type and sub_type", "both", "only one of them");
+    if ( in.empty() ) {
+        http_die ("request-param-required", "in");
+    }
+    if ( type.empty() && sub_type.empty() ) {
+        http_die ("request-param-required", "type' or 'sub_type");
+    }
+    if ( !type.empty() && !sub_type.empty() ) {
+        http_die ("request-param-bad", "type and sub_type", "both", "only one of them");
+    }
 
     std::vector<a_elmnt_stp_id_t> subtypes;
     std::vector<a_elmnt_tp_id_t> types;
