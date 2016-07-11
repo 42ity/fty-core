@@ -143,21 +143,31 @@ s_rt_encode_GET (const char* name, zuuid_t *uuid)
 
 </%pre>
 
-<%args>
-std::string dev;
-</%args>
 
 <%cpp>
+
+// checked parameters
+std::vector<std::string> asset_ids;
+
 {
-    cxxtools::Regex outlet_properties_re {"(realpower|current|voltage|status).(outlet).([0-9]+)"};
+      
+    std::string dev = request.getArg("dev");
+    log_debug ("Request parameters - Initial tainted values received:\n\tdev = '%s'\n",
+                dev.c_str ());
 
     if (dev.empty()) {
         http_die("request-param-required", "dev");
     }
-
-    std::vector<std::string> asset_ids;
+    
     cxxtools::split(",", dev, std::back_inserter(asset_ids));
 
+}
+
+  
+{
+    cxxtools::Regex outlet_properties_re {"(realpower|current|voltage|status).(outlet).([0-9]+)"};
+
+        
     if (asset_ids.empty()) {
         http_die("request-param-required", "dev");
     }
