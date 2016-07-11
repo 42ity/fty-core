@@ -44,10 +44,43 @@ bool
 check_element_identifier (const char *param_name, const std::string& param_value, uint32_t& element_id, http_errors_t& errors);
 
 /*!
+  \brief macro for typical usage of check_element_identifier. Webserver dies with bad-param if
+         the check fails
+  \param[in]     name            name of the parameter from rest api call
+  \param[in]     fromuser        variable containing string comming from user/network
+  \param[out]    checked         variable fo be assigned with checked content
+*/
+#define check_element_identifier_or_die(name, fromuser, checked) \
+{  \
+    http_errors_t errors; \
+    if (! check_element_identifier (name, fromuser, checked, errors)) { \
+        http_die_error (errors); \
+    } \
+}
+
+/*!
   \brief Check whether string matches regexp (case insensitive, extended regexp).
 */
 bool
 check_regex_text (const char *param_name, const std::string& param_value, const std::string& regex, http_errors_t& errors);
+
+/*!
+  \brief macro for typical usage of check_regex_text. Webserver dies with bad-param if
+         the check fails
+  \param[in]     name            name of the parameter from rest api call
+  \param[in]     fromuser        variable containing string comming from user/network
+  \param[out]    checked         variable fo be assigned with checked content
+  \param[in]     regex           regex (extended|icase) for variable checking
+*/
+#define check_regex_text_or_die(name, fromuser, checked, regexp) \
+{  \
+    http_errors_t errors; \
+    if (check_regex_text (name, fromuser, regexp, errors)) { \
+        checked = fromuser; \
+    } else { \
+        http_die_error (errors); \
+    } \
+}
 
 /*!
  \brief Check valid asset name
@@ -72,6 +105,7 @@ bool check_asset_name (const std::string& param_name, const std::string& name, h
 
 */
 bool check_alert_rule_name (const std::string& param_name, const std::string& name, http_errors_t &errors);
+
 
 #endif // SRC_WEB_INCLUDE_HELPERS_H_
 
