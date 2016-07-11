@@ -358,7 +358,8 @@ else
     #sed -i 's|PathChanged=/etc|PathChanged=/mnt/nand/overlay/etc|' /usr/lib/systemd/system/composite-metrics\@.path
 fi
 # Services not part of core
-/bin/systemctl enable bios-agent-legacy-metrics
+# XXX: legacy-metrics to be removed, don't fail if it can't be enabled
+/bin/systemctl enable bios-agent-legacy-metrics || :
 /bin/systemctl enable bios-agent-alert-generator
 
 # post Alpha services - the conditional allows is to use same script for alpha and post-alpha
