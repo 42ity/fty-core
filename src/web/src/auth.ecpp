@@ -42,28 +42,18 @@
 #endif //VALID_FOR
 
 </%pre>
-<%args>
-std::string grant_type;
-std::string username;
-std::string password;
-std::string token;
-</%args>
 <%cpp>
 std::string checked_grant_type;
 std::string checked_username;
 std::string checked_password;
 std::string checked_token;
 {
-    // sanitize check token
-    http_errors_t errors;
-    if (check_regex_text ("token", token, "^[-/._~+/a-z0-9]{0,255}={0,10}$", errors)) {
-        checked_token = token;
-    } else {
-        http_die_error (errors);
-    }
-    // sanitize check token end
+    // sanitize token
+    std::string token = qparam.param("token");
+    check_regex_text_or_die ("token", token, checked_token, "^[-/._~+/a-z0-9]{0,255}={0,10}$");
+    // sanitize token end
 }
-#define token TAINTED
+
 
   {
     std::string method = request.getMethod();
@@ -84,6 +74,12 @@ std::string checked_token;
 <%cpp>
         return HTTP_OK;
     }
+
+{
+    // sanitize other params
+    std::string grant_type = qparam.param ("grant_type");
+    std::string username = qparam.param ("username");
+    std::string password = qparam.param ("password");
 
     // it is a request for token
     if ( method == "GET" ) {
@@ -119,30 +115,11 @@ std::string checked_token;
         http_die ("method-not-allowed");
     }
 
-{
-    // sanitize other params
-    http_errors_t errors;
-    if (check_regex_text ("username", username, "^[-_.a-z0-9]{0,50}$", errors)) {
-        checked_username = username;
-    } else {
-        http_die_error (errors);
-    }
-    if (check_regex_text ("username", password, "^.{0,150}$", errors)) {
-        checked_password = password;
-    } else {
-        http_die_error (errors);
-    }
-    if (check_regex_text ("grant_type", grant_type, "^(password|)$", errors)) {
-        checked_grant_type = grant_type;
-    } else {
-        http_die_error (errors);
-    }
+    check_regex_text_or_die ("username", username, checked_username, "^[-_.a-z0-9]{0,50}$");
+    check_regex_text_or_die ("password", password, checked_password, "^.{0,150}$");
+    check_regex_text_or_die ("grant_type", grant_type, checked_grant_type, "^(password|)$");
     // sanitize other params end
 }
-#define username TAINTED
-#define password TAINTED
-#define grant_type TAINTED
-  
 
     int valid = VALID_FOR;
 
