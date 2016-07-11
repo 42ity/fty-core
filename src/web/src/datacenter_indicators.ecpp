@@ -226,7 +226,7 @@ asset_manager asset_mgr;
     {
         // sanitize params
         std::string arg1 = qparam.param ("arg1");
-        std::string arg2 = qparam.param ("arg1");
+        std::string arg2 = qparam.param ("arg2");
         
         if (arg1.empty ()) {
             http_die ("request-param-required", "arg1");
@@ -236,8 +236,8 @@ asset_manager asset_mgr;
             http_die ("request-param-required", "arg2");
         }
         
-        check_regex_text_or_die ("arg1", arg1, checked_arg1, "^[,0-9]+$");
-        check_regex_text_or_die ("arg2", arg2, checked_arg2, "^[_,a-z]+$");
+        check_regex_text_or_die ("arg1", arg1, checked_arg1, "^[,0-9]{1,255}$");
+        check_regex_text_or_die ("arg2", arg2, checked_arg2, "^[_,a-z]{1,255}$");
         // sanitize params end
     }
 
