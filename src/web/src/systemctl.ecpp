@@ -291,22 +291,22 @@ unsigned int process_post (
 
 </%pre>
 <%cpp>
+{
+    std::string operation = request.getArg("operation");
+    std::string service_name = request.getArg("service_name");
 
-std::string operation = request.getArg("operation");
-std::string service_name = request.getArg("service_name");
+    // convert to lower case; 'admin/systemctl/list' request is equivalent to 'admin/systemctl/LIST' request
+    std::transform (operation.begin(), operation.end(), operation.begin(), ::tolower);
+    std::transform (service_name.begin(), service_name.end(), service_name.begin(), ::tolower);
 
-// convert to lower case; 'admin/systemctl/list' request is equivalent to 'admin/systemctl/LIST' request
-std::transform (operation.begin(), operation.end(), operation.begin(), ::tolower);
-std::transform (service_name.begin(), service_name.end(), service_name.begin(), ::tolower);
-
-if (request.getMethod() == "GET") {
-    return process_get (reply, operation, service_name);
+    if (request.getMethod() == "GET") {
+        return process_get (reply, operation, service_name);
+    }
+    if (request.getMethod() == "POST") {
+        return process_post (reply, operation, request.getBody() );
+    }
+    http_die("method-not-allowed", request.getMethod().c_str() );
 }
-if (request.getMethod() == "POST") {
-    return process_post (reply, operation, request.getBody() );
-}
-http_die("method-not-allowed", request.getMethod().c_str() );
-
 </%cpp>
 
 
