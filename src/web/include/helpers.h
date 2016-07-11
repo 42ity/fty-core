@@ -43,11 +43,29 @@
 bool 
 check_element_identifier (const char *param_name, const std::string& param_value, uint32_t& element_id, http_errors_t& errors);
 
+#define check_element_identifier_or_die(name, fromuser, checked) \
+{  \
+    http_errors_t errors; \
+    if (! check_element_identifier (name, fromuser, checked, errors)) { \
+        http_die_error (errors); \
+    } \
+}
+
 /*!
   \brief Check whether string matches regexp (case insensitive, extended regexp).
 */
 bool
 check_regex_text (const char *param_name, const std::string& param_value, const std::string& regex, http_errors_t& errors);
+
+#define check_regex_text_or_die(name, fromuser, checked, regexp) \
+{  \
+    http_errors_t errors; \
+    if (check_regex_text (name, fromuser, regexp, errors)) { \
+        checked = fromuser; \
+    } else { \
+        http_die_error (errors); \
+    } \
+}
 
 #endif // SRC_WEB_INCLUDE_HELPERS_H_
 
