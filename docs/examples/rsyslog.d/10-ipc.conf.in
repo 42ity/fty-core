@@ -1,55 +1,80 @@
-# Integration with rsyslog journald for $BIOS project
+# Main integration logic for rsyslog with journald for $BIOS project
+#
+# To send the same subset of log entries (while not everything aka *.*)
+# to a remote syslog server, populate the "$.remote_syslog_targets"
+# variable in another config file (with higher alphabetic priority,
+# such as the "08-ipc-remote.conf"), e.g.
+#   set $.remote_syslog_targets = [ "@udpsink", "@@tcpsink:10514" ]
+#
+# To set up more complicated remote logging scenarios (e.g. with gTLS)
+# see suggestions in 08-ipc-remote.conf and the rsyslog documentation.
 
 # General keyword and structure docs
 # http://www.rsyslog.com/doc/master/configuration/basic_structure.html
-# http://www.rsyslog.com/doc/v8-stable/configuration/filters.html
+# http://www.rsyslog.com/doc/master/configuration/filters.html
 # http://www.rsyslog.com/doc/master/rainerscript/control_structures.html
 # http://www.rsyslog.com/tag/if-then/
 # http://www.rsyslog.com/filter-optimization-with-arrays/
 
-# Log roration
+# Log roration (via outchannel keyword)
 # http://www.rsyslog.com/doc/v8-stable/tutorials/log_rotation_fix_size.html
 
 # Log system auth stuff and (below) other important messages here:
 $outchannel log_rotation_messages,/var/log/messages, 10485760,@datadir@/@PACKAGE@/scripts/logrotate-rsyslog /var/log/messages
+# Log many exec() commands caught by libsnoopy here:
 $outchannel log_rotation_commands,/var/log/commands.log, 10485760,@datadir@/@PACKAGE@/scripts/logrotate-rsyslog /var/log/commands.log
-
-# snoopy logging is quite verbose, so put it separately
-# NOTE that it can supposedly be configured with an /etc/snoopy.ini
-# https://github.com/a2o/snoopy/blob/master/etc/snoopy.ini.in
-if ($programname == 'snoopy') then
-    if ($msg contains [ 'whoami', 'logger' ] ) then stop else
-        :omfile:$log_rotation_commands
-
-#  activate the channel and log auth facility to it
-auth.* :omfile:$log_rotation_messages
-# Log the BASH commands here too (facility predefined via profile.d):
-local6.debug :omfile:$log_rotation_messages
 
 # Systemd integration
 #	https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/System_Administrators_Guide/s1-interaction_of_rsyslog_and_journal.html
+#       https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/System_Administrators_Guide/s1-structured_logging_with_rsyslog.html
 # Note: imxsock may log a warning if already enabled by another config file
 # upon service startup (e.g. by default cfg in debian) - this is harmless.
 $ModLoad imuxsock
 $OmitLocalLogging off
 $SystemLogSocketName /run/systemd/journal/syslog
 
-# see https://en.wikipedia.org/wiki/Syslog#Facility for facility -> number mapping
+# see https://en.wikipedia.org/wiki/Syslog#Facility for facility -> number mapping (RFC-3164)
+# (0)kern.*,(4)auth.*,(5)syslog.*,(10)authpriv.*,(13)logaudit.*,(14)logalert.* /var/log/messages
+# + tntnet messages if they contain PUT/POST/DELETE
 #
-# kern.*syslog.*,authpriv.*,(log audit).*,(log alert).* /var/log/messages
-# + tntnet messages if they contains PUT/POST/DELETE
-# note that auth is logged via log_rotation_messages directive
-# unfortunatelly there is a clash between old and new syntax
-if  $syslogfacility == 0  or
-    $syslogfacility == 5  or
-    $syslogfacility == 10 or
-    $syslogfacility == 13 or
-    $syslogfacility == 14 or
-    ($programname == 'tntnet' and
-     $msg contains [ 'PUT', 'POST', 'DELETE' ]
-    )
+# snoopy logging is quite verbose, so we store it separately
+# also we do not let snoopy spam with our interactive bash-session syslogger
+# NOTE that it can supposedly be configured with an /etc/snoopy.ini (but we did not look at that yet)
+# https://github.com/a2o/snoopy/blob/master/etc/snoopy.ini.in
+if ($programname == 'snoopy') then
+{
+    if ($msg contains [ 'whoami', 'logger' ] ) then stop else
+        :omfile:$log_rotation_commands
+#        if ( $.netconsole_host != "" ) then {
+#            if ( $.netconsole_port == "" ) then set $.netconsole_port = "6666";
+#            action(type="omfwd" Target="$.netconsole_host" Port="$.netconsole_port" Protocol="udp")
+#        }
+#        foreach ($.remote in $.remote_syslog_targets) do {
+#            *.*	$.remote
+#        }
+        stop
+} else {
+    # Note: This syntax is faster but available only in later rsyslogd versions
+    #    if  ($syslogfacility == [ 0, 4, 5, 10, 13, 14 ])
+    if ($syslogfacility == 0  or
+        $syslogfacility == 4  or
+        $syslogfacility == 5  or
+        $syslogfacility == 10 or
+        $syslogfacility == 13 or
+        $syslogfacility == 14 )
+    or ($programname == 'tntnet' and $msg contains [ 'PUT', 'POST', 'DELETE' ])
     then {
-        if $programname == 'snoopy' then stop else
-            :omfile:$log_rotation_messages
+        :omfile:$log_rotation_messages
+        foreach ($.remote in $.remote_syslog_targets) do {
+            *.*	$.remote
+        }
+        stop
     }
+}
 
+# Log BASH interactive session commands along with other messages
+# (logging mechanism and facility are predefined via profile.d):
+local6.debug :omfile:$log_rotation_messages
+foreach ($.remote in $.remote_syslog_targets) do {
+    local6.debug	$.remote
+}
