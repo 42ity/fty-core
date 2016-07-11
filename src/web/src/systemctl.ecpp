@@ -56,6 +56,7 @@ static const char *list[] =
     "bios-agent-alert-generator", "agent-alerts-list",
     "bios-agent-autoconfig", "bios-agent-cm",
     "bios-agent-inventory", "bios-agent-nut",
+//TODO: legacy-metrics to be removed
     "bios-agent-asset", "bios-agent-legacy-metrics", "kpi-uptime",
     "agent-th", "bios-agent-tpower", "bios-db-init",
     "dc_th", "bios-agent-rt", "bios-agent-ms",
