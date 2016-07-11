@@ -78,14 +78,15 @@ void transform_for_conf (std::string& string) {
     }
 }
 </%pre>
-<%args>
-    std::string key;
-</%args>
 <%application scope="page">
     std::mutex config_mux;
 </%application>
 <%cpp>
 {
+    // key restrictions
+    std::string key_format_string = "^[.-_a-zA-Z0-9]+$";
+    cxxtools::Regex key_format(key_format_string);
+
     // DISCLAIMER!!! PLEASE READ!!!
     //
     // Current status:
@@ -117,16 +118,26 @@ void transform_for_conf (std::string& string) {
     ///     GET     ///
     ///////////////////
     if (request.isMethodGET ()) {
+        // sanity check
+        std::string checked_key;
+        {
+            std::string key = qparam.param ("key");
+            if (!key_format.match (key)) {
+                std::string errmsg = "key doesn't satisfy format " + key_format_string;
+                http_die ("request-param-bad", errmsg.c_str() );
+            }
+            checked_key = std::move (key);
+        } // end sanity check
         std::string value;
-        if ( !si.getMember (key, value)) {
-            http_die("element-not-found", key.c_str());
+        if ( !si.getMember (checked_key, value)) {
+            http_die("element-not-found", checked_key.c_str());
         }
         // key is found
         transform_for_json (value);
 </%cpp>
 {
     "config": {
-        "key" : "<$ key $>",
+        "key" : "<$ checked_key $>",
         "value" : "<$ value $>"
     }
 }
