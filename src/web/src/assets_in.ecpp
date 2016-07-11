@@ -58,57 +58,69 @@ static std::string
 }
 
 </%pre>
-<%args>
-std::string in;
-std::string type;
-std::string sub_type;
-</%args>
 <%cpp>
 {
     // check if method is allowed
     if ( !request.isMethodGET() ) {
         http_die ("method-not-allowed", request.getMethod().c_str());
     }
-    // check if mandatory parameters are present
-    if ( in.empty() ) {
-        http_die ("request-param-required", "in");
-    }
-    if ( type.empty() && sub_type.empty() ) {
-        http_die ("request-param-required", "type' or 'sub_type");
-    }
-    if ( !type.empty() && !sub_type.empty() ) {
-        http_die ("request-param-bad", "type and sub_type", "both", "only one of them");
+
+    // checked parameters
+    std::vector<a_elmnt_stp_id_t> checked_subtypes;
+    std::vector<a_elmnt_tp_id_t> checked_types;
+    a_elmnt_id_t checked_id = 0;
+
+    // ##################################################
+    // BLOCK 1
+    // Sanity parameter check
+    {
+        // dirty parameters
+        // Arguments parsed from URL: -> request.getArg("agrgumentName")
+        // Real parameters  in URL (after '?': -> qparam.param("parameterName")
+        std::string in = qparam.param("in");
+        std::string type = qparam.param("type");
+        std::string sub_type = qparam.param("sub_type");
+
+        // check if mandatory parameters are present
+        if ( in.empty() ) {
+            http_die ("request-param-required", "in");
+        }
+        if ( type.empty() && sub_type.empty() ) {
+            http_die ("request-param-required", "type' or 'sub_type");
+        }
+        if ( !type.empty() && !sub_type.empty() ) {
+            http_die ("request-param-bad", "type and sub_type", "both", "only one of them");
+        }
+
+        // checked subtypes/types
+        if( ! sub_type.empty() ) {
+            std::vector<std::string> items;
+            cxxtools::split(',', sub_type, std::back_inserter(items));
+            for( const auto &it : items ) {
+                a_elmnt_stp_id_t sub_type_id = persist::subtype_to_subtypeid(it);
+                if ( sub_type_id == persist::asset_subtype::SUNKNOWN ) {
+                    http_die ("request-param-bad", "sub_type", it.c_str(), "valid sub_type like feed, ups, etc...");
+                }
+                checked_subtypes.push_back(sub_type_id);
+            }
+        } else {
+            std::vector<std::string> items;
+            cxxtools::split(',', type, std::back_inserter(items));
+            for( const auto &it : items ) {
+                a_elmnt_stp_id_t type_id = persist::type_to_typeid(it);
+                if ( type_id == persist::asset_type::TUNKNOWN ) {
+                    http_die ("request-param-bad", "type", it.c_str(), "valid sub_type like datacenter");
+                }
+                checked_types.push_back(type_id);
+            }
+        }
+        // convert the id from string to number
+        http_errors_t errors;
+        if ( !check_element_identifier ("in", in, checked_id, errors) ) {
+            http_die_error (errors);
+        }
     }
 
-    std::vector<a_elmnt_stp_id_t> subtypes;
-    std::vector<a_elmnt_tp_id_t> types;
-    if( ! sub_type.empty() ) {
-        std::vector<std::string> items;
-        cxxtools::split(',', sub_type, std::back_inserter(items));
-        for( auto &it : items ) {
-            a_elmnt_stp_id_t sub_type = persist::subtype_to_subtypeid(it);
-            if (sub_type == persist::asset_subtype::SUNKNOWN) {
-                http_die ("request-param-bad", "sub_type", it.c_str(), "valid sub_type like feed, ups, etc...");
-            }
-            subtypes.push_back(sub_type);
-        }
-    } else {
-        std::vector<std::string> items;
-        cxxtools::split(',', type, std::back_inserter(items));
-        for( auto &it : items ) {
-            a_elmnt_stp_id_t type = persist::type_to_typeid(it);
-            if (type == persist::asset_type::TUNKNOWN) {
-                http_die ("request-param-bad", "type", it.c_str(), "valid sub_type like datacenter");
-            }
-            types.push_back(type);
-        }
-    }
-    // convert the id from string to number
-    a_elmnt_id_t real_id = 0;
-    http_errors_t errors;
-    if (!check_element_identifier ("in", in, real_id, errors)) {
-        http_die_error (errors);
-    }
     // create a database connection
     tntdb::Connection connection;
     try {
@@ -124,5 +136,5 @@ std::string sub_type;
     }
     // do the stuff
 </%cpp>
-[<$$ assets_in_container(connection, real_id, types, subtypes) $>]
+[<$$ assets_in_container(connection, checked_id, checked_types, checked_subtypes) $>]
 %}
