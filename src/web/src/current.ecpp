@@ -151,7 +151,7 @@ std::vector<std::string> asset_ids;
 
 {
       
-    std::string dev = request.getArg("dev");
+    std::string dev = qparam.param("dev");
     log_debug ("Request parameters - Initial tainted values received:\n\tdev = '%s'\n",
                 dev.c_str ());
 
