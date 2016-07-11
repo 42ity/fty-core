@@ -74,48 +74,62 @@ bool relative_to_unixtime (const std::string& relative, int64_t now, int64_t& un
 
 
 </%pre>
-<%args>
-    std::string start_ts;
-    std::string end_ts;
-    std::string type;
-    std::string step;
-    std::string source;
-    std::string element_id;
-    std::string relative;
-</%args>
 <%cpp>
     // Input arguments checking
+    std::string checked_start_ts;
+    std::string checked_end_ts;
+    std::string checked_type;
+    std::string checked_step;
+    std::string checked_source;
+    uint32_t checked_element_id;
+    std::string checked_relative;
+    {
+        std::string start_ts = qparam.param("start_ts");
+        std::string end_ts = qparam.param("end_ts");
+        std::string type = qparam.param("type");
+        std::string step = qparam.param("step");
+        std::string source = qparam.param("source");
+        std::string element_id = qparam.param("element_id");
+        std::string relative = qparam.param("relative");
 
+        check_regex_text_or_die ("start_ts", start_ts, checked_start_ts, "^([0-9]{14}Z|)$");
+        check_regex_text_or_die ("end_ts", end_ts, checked_end_ts, "^([0-9]{14}Z|)$");
+        check_regex_text_or_die ("type", type, checked_type, "^(arithmetic_mean|min|max|)$");
+        check_regex_text_or_die ("step", step, checked_step, "^([0-9]{1,2}[a-z]|)$");
+        check_regex_text_or_die ("source", source, checked_source, "^$");
+        check_regex_text_or_die ("relative", relative, checked_relative, "^([0-9]{1,2}[a-z]|)$");
+        check_element_identifier_or_die ("element_id", element_id, checked_element_id);
+    }
     int64_t st = -1, end = -1;
-    if (relative.empty ()) {
+    if (checked_relative.empty ()) {
         // check both start_ts and end_ts
-        if (start_ts.empty ()) {
+        if (checked_start_ts.empty ()) {
             http_die ("request-param-required", "start_ts");
         }
-        st = datetime_to_calendar (start_ts.c_str ());
+        st = datetime_to_calendar (checked_start_ts.c_str ());
         if (st == -1) {
-            http_die ("request-param-bad", "start_ts", std::string ("'").append (start_ts).append ("'").c_str (), "format 'YYYYMMDDhhmmssZ");
+            http_die ("request-param-bad", "start_ts", std::string ("'").append (checked_start_ts).append ("'").c_str (), "format 'YYYYMMDDhhmmssZ");
         }
-        if (end_ts.empty ()) {
+        if (checked_end_ts.empty ()) {
             http_die ("request-param-required", "end_ts");
         }
-        end = datetime_to_calendar (end_ts.c_str ());
+        end = datetime_to_calendar (checked_end_ts.c_str ());
         if (end == -1) {
-            http_die ("request-param-bad", "end_ts", std::string ("'").append (end_ts).append ("'").c_str (), "format 'YYYYMMDDhhmmssZ");
+            http_die ("request-param-bad", "end_ts", std::string ("'").append (checked_end_ts).append ("'").c_str (), "format 'YYYYMMDDhhmmssZ");
         }
 
         // check that start_ts < end_ts
         if (end <= st) {
             http_die ("parameter-conflict",
-                std::string ("Start timestamp '").append (start_ts).append ("' is greater than end timestamp '").append (end_ts).append ("'.").c_str ());
+                std::string ("Start timestamp '").append (checked_start_ts).append ("' is greater than end timestamp '").append (checked_end_ts).append ("'.").c_str ());
         }
     }
     else {
         // check value of relative parameter
-        std::transform (relative.begin(), relative.end(), relative.begin(), ::tolower);
+        std::transform (checked_relative.begin(), checked_relative.end(), checked_relative.begin(), ::tolower);
         int64_t now = (int64_t) time (NULL);
-        if (!relative_to_unixtime (relative, now, st)) {
-            http_die ("request-param-bad", "relative", std::string ("'").append (relative).append ("'").c_str (),
+        if (!relative_to_unixtime (checked_relative, now, st)) {
+            http_die ("request-param-bad", "relative", std::string ("'").append (checked_relative).append ("'").c_str (),
                       "one of the following values: '24h', '7d', '30d'.");
         }
         end = (int64_t) time (NULL);
@@ -124,42 +138,35 @@ bool relative_to_unixtime (const std::string& relative, int64_t now, int64_t& un
     log_debug ("st = '%" PRIi64"', end = '%" PRIi64"'", st, end);
 
     // type is optional, default type is arithmetic average
-    if (type.empty ()) {
-        type.assign (AVG_TYPES[0]);
+    if (checked_type.empty ()) {
+        checked_type.assign (AVG_TYPES[0]);
     }
-    else if (!is_average_type_supported (type.c_str ())) {
+    else if (!is_average_type_supported (checked_type.c_str ())) {
         http_die ("request-param-bad", "type",
-            std::string ("'").append (type).append ("'").c_str (),
+            std::string ("'").append (checked_type).append ("'").c_str (),
             std::string ("one of the following values: [").append (utils::join (AVG_TYPES, AVG_TYPES_SIZE, ", ")).append("].").c_str ());
     }
 
     // step
-    if (step.empty ()) {
+    if (checked_step.empty ()) {
         http_die ("request-param-required", "step");
     }
-    if (!is_average_step_supported (step.c_str ())) {
+    if (!is_average_step_supported (checked_step.c_str ())) {
         http_die ("request-param-bad", "step",
-            std::string ("'").append (step).append ("'").c_str (),
+            std::string ("'").append (checked_step).append ("'").c_str (),
             std::string ("one of the following values: [").append (utils::join (AVG_STEPS, AVG_STEPS_SIZE, ", ")).append("].").c_str ());
     }
 
     // source
-    if (source.empty()) {
+    if (checked_source.empty()) {
         http_die ("request-param-required", "source");
     }
 
-    // element_id
-    http_errors_t errors;
-    uint32_t eid = 0;
-
-    if (!check_element_identifier ("element_id", element_id, eid, errors)) {
-        http_die_error (errors);
-    }
     std::string element_name;
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
 
-        auto basic_ret = persist::select_asset_element_web_byId(conn, eid);
+        auto basic_ret = persist::select_asset_element_web_byId(conn, checked_element_id);
         if ( basic_ret.status == 0 ) {
             http_die ("element-not-found");
         }
@@ -182,9 +189,9 @@ bool relative_to_unixtime (const std::string& relative, int64_t now, int64_t& un
     zmsg_t *msg = zmsg_new();
     zmsg_addstr (msg, "GET");
     zmsg_addstr (msg, element_name.c_str());
-    zmsg_addstr (msg, source.c_str());
-    zmsg_addstr (msg, step.c_str());
-    zmsg_addstr (msg, type.c_str());
+    zmsg_addstr (msg, checked_source.c_str());
+    zmsg_addstr (msg, checked_step.c_str());
+    zmsg_addstr (msg, checked_type.c_str());
     zmsg_addstr (msg, std::to_string(st).c_str());
     zmsg_addstr (msg, std::to_string(end).c_str());
 
@@ -226,7 +233,7 @@ bool relative_to_unixtime (const std::string& relative, int64_t now, int64_t& un
         mlm_client_destroy (&client);
         if ( streq(frame, "BAD_REQUEST") ) {
             zstr_free (&frame);
-            std::string die = "Data for type = '" + type + "', step = '" + step + "', source = '" + source + "', element_id = '" + element_id + "' ";
+            std::string die = "Data for type = '" + checked_type + "', step = '" + checked_step + "', source = '" + checked_source + "', element_id = '" + std::to_string (checked_element_id) + "' ";
             http_die ("not-found", die.c_str ());
         }
         http_die ("internal-error", frame);
@@ -246,7 +253,7 @@ bool relative_to_unixtime (const std::string& relative, int64_t now, int64_t& un
         <$$ utils::json::jsonify ("source", source_rep) $>,
         <$$ utils::json::jsonify ("step", step_rep) $>,
         <$$ utils::json::jsonify ("type", type_rep) $>,
-        <$$ utils::json::jsonify ("element_id", eid) $>,
+        <$$ utils::json::jsonify ("element_id", checked_element_id) $>,
         <$$ utils::json::jsonify ("start_ts", start_date_rep) $>,
         <$$ utils::json::jsonify ("end_ts", end_date_rep) $>,
         "data":[
