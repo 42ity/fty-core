@@ -154,8 +154,8 @@ asset_manager asset_mgr;
 std::string checked_arg1;
 std::string checked_arg2;
 {
-    std::string arg1 = request.getArg("arg1");
-    std::string arg2 = request.getArg("arg2");
+    std::string arg1 = qparam.param ("arg1");
+    std::string arg2 = qparam.param ("arg2");
     
    // arg1 is mandatory
     if (arg1.empty ()) {
