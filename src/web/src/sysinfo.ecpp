@@ -463,12 +463,17 @@ void sysinfo_plain (std::string& output) {
 <%request scope="global">
 int8_t access_auth_level;
 </%request>
-<%args>
-std::string detail;
-</%args>
 <%cpp>
+
+    bool detail = false;
+    // argument checking
+    {
+        std::string sdetail = qparam.param ("detail");
+        detail = sdetail == "yes";
+    }
+
     std::string output;
-    if (detail == "yes") {
+    if (detail) {
         sysinfo_detail (output, request, access_auth_level);
     }
     else {
