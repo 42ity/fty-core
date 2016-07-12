@@ -85,7 +85,9 @@ void transform_for_conf (std::string& string) {
 {
     // key restrictions
     std::string key_format_string = "^[.-_a-zA-Z0-9]+$";
+    std::string value_format_string = "^[.-_a-zA-Z0-9]*$";
     cxxtools::Regex key_format(key_format_string);
+    cxxtools::Regex value_format(value_format_string);
 
     // DISCLAIMER!!! PLEASE READ!!!
     //
@@ -177,8 +179,8 @@ void transform_for_conf (std::string& string) {
                 http_die ("request-param-bad", errmsg.c_str() );
             }
             // There are some restrictions regarding format
-            if (!key_format.match (value)) {
-                std::string errmsg = "value doesn't satisfy format " + key_format_string;
+            if (!value_format.match (value)) {
+                std::string errmsg = "value doesn't satisfy format " + value_format_string;
                 http_die ("request-param-bad", errmsg.c_str() );
             }
             checked_key = std::move (key);
