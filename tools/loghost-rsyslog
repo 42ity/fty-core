@@ -1,0 +1,341 @@
+#!/bin/bash
+# NOTE: Bash syntax is used in "case"s below
+#
+#   Copyright (c) 2016 Eaton
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License along
+#   with this program; if not, write to the Free Software Foundation, Inc.,
+#   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+# \file loghost-rsyslog
+# \brief   Manage the "loghost" entry in /etc/hosts and toggle remote logging
+#          in our rsyslog presets, and provide integration for netconsole
+# \author  Jim Klimov <EvgenyKlimov@Eaton.com>
+
+HOSTSFILE="/etc/hosts"
+HOSTSFENCE='### Entry managed by loghost-rsyslog.sh ###'
+
+RSYSLOG_TOGGLE_FILE="/etc/rsyslog.d-early/10-ipc-remote-loghost.conf"
+
+# The hostname hardcoded in our rsyslog pre-configuration as the remote sink
+RSYSLOG_LOGHOST="loghost"
+
+usage() {
+    cat <<EOF
+This script manages remote logging to "$RSYSLOG_LOGHOST" by maintaining an entry
+in $HOSTSFILE and toggling the preset block in rsyslog configuration.
+Note that these are independent, e.g. an organization may have a "$RSYSLOG_LOGHOST"
+defined in the default local DNS domain.
+Also note that this configuration assumes that the name-service switching
+prefers local $HOSTSFILE over remote naming databases like DNS, NIS, LDAP, etc.
+
+Usages:
+    $0 {-q|--query} [ loghost | toggle ]
+    $0 --set-loghost IP-ADDRESS
+    $0 --del-loghost
+    $0 --toggle-rsyslog { LAST_STATE | DEFAULT = ON | ipc-audit | all | off }
+    $0 --netconsole
+
+    -q|--query          Report current status of the configuration files
+                        Optionally query just one of these files
+    --set-loghost IP-ADDRESS   Set IP address as the "loghost" in $HOSTSFILE
+                        (if the entry is absent or is managed by us)
+    --del-loghost       Remove the value (if managed by us)
+    --{SET,DEL}-loghost Do the above even if local value was managed not by us
+    --toggle-rsyslog VAL       Sets the configuration variable for rsyslog
+                        to one of the supported values, or to the last state
+                        used (if a backup or old config file is found), and
+                        restarts the rsyslog service to enable the change.
+                        The "off" state renames the present config (if any)
+                        to the backup file, to disable the pre-integrated
+                        remote logging.
+                        The default is LAST_STATE if present, or 'ipc-audit'.
+    --netconsole        Follows the dynamic (configfs) setup of netconsole.
+                        If there is an enabled entry ("default" is preferred)
+                        then use the first one found as the current "loghost"
+                        and toggle rsyslog (as with DEFAULT).
+                        If no entries are found, toggle rsyslog flag to "off"
+                        and try to do the --del-loghost activities.
+EOF
+}
+
+isIPv4() {
+    # Lazily check if "$1" is an IPv4 address, including legal zero fields
+    # or leading zeroes; no numeric check that components are <= 255.
+    echo "$1" | egrep '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$' > /dev/null
+}
+
+isIPv6() {
+    # Lazily check if "$1" is an IPv6 address
+    echo "$1" | egrep '^[0-9a-fA-F\:]+$' > /dev/null
+}
+
+isIPaddr() {
+    if isIPv4 "$1" || isIPv6 "$1" ; then
+        return 0
+    fi
+    echo "ERROR: '$1' is not an IPv4 nor IPv6 address" >&2
+    return 1
+}
+
+query_loghost_name() {
+    # Prints the loghost IP address and returns the status of "loghost"
+    # resolution:
+    # 22        Hostname currently not found anywhere
+    # 53        Local value not present but resolution succeeded (DNS?)
+    # 0         Managed by this script (value present and fenced in /etc/hosts)
+    # 1         Local value present, but not managed by this script (no fence)
+    getent hosts "$RSYSLOG_LOGHOST" 2>/dev/null || return 22
+    G="`egrep -A1 -B1 '^[[:blank:]]*[0-9a-fA-F:].*[[:blank:]]'"$RSYSLOG_LOGHOST"'([[:blank:]]|$)' "$HOSTSFILE"`" || return 53
+    [ "`echo "$G" | fgrep -c "$HOSTSFENCE"`" -eq 2 ] && return 0
+    return 1
+}
+
+query_rsyslog_toggle() {
+    # Prints the content of active or backup configuration file and
+    # returnes exitcode values:
+    # 0         Active config file was present and printed
+    # 1         Backup config file was present and printed
+    # 22        Neither file was found or other errors happened
+    [ -s "$RSYSLOG_TOGGLE_FILE" ] && cat "$RSYSLOG_TOGGLE_FILE" && return 0
+    [ -s "$RSYSLOG_TOGGLE_FILE.laststate" ] && cat "$RSYSLOG_TOGGLE_FILE.laststate" && return 1
+    return 22
+}
+
+remove_loghost_name() {
+    # This removes an entry with "loghost" (and our fencing) from
+    # the /etc/hosts file.
+    # NOTE: Any matching entry, fenced or not. Use query() to make
+    # sure you call this routine only when you deem fit.
+    [ -n "$1" ] && isIPaddr "$1" \
+        && PAT_IPADDR="$1" && echo "INFO: Removing only loghost entries for IP $PAT_IPADDR" >&2 \
+        || PAT_IPADDR='[0-9a-fA-F:]'
+    G="`cat "$HOSTSFILE" | egrep -v '^[[:blank:]]*'"$PAT_IPADDR"'.*[[:blank:]]'"$RSYSLOG_LOGHOST"'([[:blank:]]|$)' | fgrep -v "$HOSTSFENCE"`"
+    [ -n "$G" ] && echo "$G" | grep -w localhost > /dev/null || return 1
+    echo "$G" > "$HOSTSFILE"
+}
+
+process_action_query() {
+    RES=255
+    if [ "$VALUE_QUERY" = all -o "$VALUE_QUERY" = toggle ] ; then
+        query_rsyslog_toggle
+        RES=$?
+        case $RES in
+            0)  echo "INFO: The rsyslog toggle above was found in ACTIVE config file" >&2 ;;
+            1)  echo "INFO: The rsyslog toggle above was found in BACKUP config file" >&2 ;;
+            22|*)  echo "INFO: The rsyslog toggle was not found in active or backup config files" >&2 ;;
+        esac
+        echo "" >&2
+    fi
+    if [ "$VALUE_QUERY" = all -o "$VALUE_QUERY" = loghost ] ; then
+        query_loghost_name
+        RES=$?
+        case $RES in
+            0)  echo "INFO: The hostname above was resolved in local $HOSTSFILE and is managed by us" >&2 ;;
+            1)  echo "INFO: The hostname above was resolved in local $HOSTSFILE but is managed by someone else" >&2 ;;
+            53)  echo "INFO: The hostname above was resolved in a remote naming service" >&2 ;;
+            22|*)  echo "INFO: The $RSYSLOG_LOGHOST hostname was not resolved" >&2 ;;
+        esac
+        echo "" >&2
+    fi
+    return $RES
+}
+
+process_action_hosts() {
+    case "$ACTION_HOSTS" in
+        none) return 0 ;;
+        tryset|forceset)
+            query_loghost_name >/dev/null
+            RES=$?
+            case "$RES" in
+                1)  if [ "$ACTION_HOSTS" = tryset ]; then
+                        echo "WARN: Will not change $RSYSLOG_LOGHOST in $HOSTSFILE because it is not managed by us" >&2
+                        return 1
+                    else
+                        echo "WARN: Forced to change $RSYSLOG_LOGHOST in $HOSTSFILE which was not managed by us" >&2
+                    fi
+                    ;&
+                0) # We manage this name locally
+                    [ "$RES" = 0 ] && [ -n "$VALUE_HOSTS" ] && \
+                        egrep '^[[:blank:]]*'"$VALUE_HOSTS"'[[:blank:]]+(.*[[:blank:]]+|)'"$RSYSLOG_LOGHOST"'([[:blank:]]+.*|[[:blank:]]*)$' "$HOSTSFILE" >/dev/null && \
+                        echo "INFO: $RSYSLOG_LOGHOST in $HOSTSFILE is already up-to-date and managed by this script, got nothing to do" >&2 && \
+                        return 0
+                    remove_loghost_name
+                    ;& # BASH: Fall through to next block
+                22|53) # This name is absent locally - can add
+                    ( echo "$HOSTSFENCE"; echo "$VALUE_HOSTS	$RSYSLOG_LOGHOST"; echo "$HOSTSFENCE" ) >> "$HOSTSFILE"
+                    return $?
+                    ;;
+                *)  echo "ERROR: Unknown result for hostname resolution" >&2
+                    return 22
+                    ;;
+            esac
+            ;;
+        trydel|forcedel)
+            query_loghost_name >/dev/null
+            RES=$?
+            case "$RES" in
+                22|53) return 0 ;; # This name is absent locally - nothing to do
+                1)  if [ "$ACTION_HOSTS" = trydel ]; then
+                        echo "WARN: Will not change $RSYSLOG_LOGHOST in $HOSTSFILE because it is not managed by us" >&2
+                        return 1
+                    else
+                        echo "WARN: Forced to change $RSYSLOG_LOGHOST in $HOSTSFILE which was not managed by us" >&2
+                    fi
+                    ;&
+                0) # We manage this name locally
+                    [ "$RES" = 0 ] && [ -n "$VALUE_HOSTS" ] && \
+                        if egrep '^[[:blank:]]*'"$VALUE_HOSTS"'[[:blank:]]+(.*[[:blank:]]+|)'"$RSYSLOG_LOGHOST"'([[:blank:]]+.*|[[:blank:]]*)$' "$HOSTSFILE" >/dev/null \
+                        ; then : ; else \
+                            echo "INFO: $RSYSLOG_LOGHOST in $HOSTSFILE has no mappings to IP address $VALUE_HOSTS, got nothing to do" >&2 && \
+                            return 0
+                        fi
+
+                    remove_loghost_name "$VALUE_HOSTS"
+                    return $?
+                    ;;
+                *)  echo "ERROR: Unknown result for hostname resolution" >&2
+                    return 22
+                    ;;
+            esac
+            ;;
+    esac
+    return 255
+}
+
+process_action_toggle() {
+    TICKLE=no
+    case "$ACTION_TOGGLE" in
+        none) return 0 ;;
+        enable-backup)
+            [ -s "$RSYSLOG_TOGGLE_FILE" ] && return 0
+            [ -s "$RSYSLOG_TOGGLE_FILE.laststate" ] && \
+                mv -f "$RSYSLOG_TOGGLE_FILE.laststate" "$RSYSLOG_TOGGLE_FILE" && \
+                TICKLE=yes || \
+                case "$VALUE_TOGGLE" in
+                    LAST_STATE) echo "WARN: No last state found to re-enable!" >&2; return 1;;
+                    DEFAULT|on|ON) VALUE_TOGGLE='ipc-audit' ;;
+                esac
+            ;& # BASH fall through
+        enable)
+            if [ "$TICKLE" = no ]; then
+                NEWVAL='set $.use_remote_logsink = "'"$VALUE_TOGGLE"'";'
+                [ -s "$RSYSLOG_TOGGLE_FILE" ] && \
+                    fgrep "$NEWVAL" "$RSYSLOG_TOGGLE_FILE" >/dev/null && \
+                        echo "INFO: $RSYSLOG_TOGGLE_FILE is already up-to-date and managed by this script, got nothing to do" >&2 && \
+                        return 0
+
+                ( echo "$HOSTSFENCE"; echo "$NEWVAL"; echo "$HOSTSFENCE" ) > "$RSYSLOG_TOGGLE_FILE" && \
+                    TICKLE=yes
+            fi
+            ;;
+        disable)
+            [ -s "$RSYSLOG_TOGGLE_FILE" ] && \
+                mv -f "$RSYSLOG_TOGGLE_FILE" "$RSYSLOG_TOGGLE_FILE.laststate" && \
+                TICKLE=yes
+            ;;
+        *)  return 255 ;;
+    esac
+
+    if [ "$TICKLE" = yes ]; then
+        /bin/systemctl restart rsyslog
+        return $?
+    fi
+
+    # Should not get here if there were changes to enable
+    return 1
+}
+
+# Process CLI args
+[ $# = 0 ] && echo "ERROR: Argument required!" >&2 && usage && exit 1
+
+ACTION_HOSTS=none
+VALUE_HOSTS=""
+ACTION_TOGGLE=none
+VALUE_TOGGLE=""
+ACTION_QUERY=none
+VALUE_QUERY=""
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -q|--query)     ACTION_QUERY=yes
+            case "$2" in
+                loghost|toggle)
+                    VALUE_QUERY="$2"
+                    shift ;;
+                *)  VALUE_QUERY="all" ;;
+            esac
+            ;;
+        --del-loghost)  VALUE_HOSTS=""
+                        isIPaddr "$2" >/dev/null 2>&1 && VALUE_HOSTS="$2" && shift
+                        ACTION_HOSTS=trydel
+                        ;;
+        --set-loghost)  isIPaddr "$2" || exit $?
+                        VALUE_HOSTS="$2"; ACTION_HOSTS=tryset; shift;;
+        --DEL-loghost)  VALUE_HOSTS=""
+                        isIPaddr "$2" >/dev/null 2>&1 && VALUE_HOSTS="$2" && shift
+                        ACTION_HOSTS=forcedel
+                        ;;
+        --SET-loghost)  isIPaddr "$2" || exit $?
+                        VALUE_HOSTS="$2"; ACTION_HOSTS=forceset; shift;;
+        --toggle-rsyslog)
+            case "$2" in
+                off|OFF) ACTION_TOGGLE="disable"; VALUE_TOGGLE="" ;;
+                LAST_STATE|DEFAULT|on|ON) ACTION_TOGGLE="enable-backup"; VALUE_TOGGLE="$2" ;;
+                ipc-audit|all) ACTION_TOGGLE="enable"; VALUE_TOGGLE="$2" ;;
+                *) echo "ERROR: Unknown toggle state requested: '$2'" >&2
+                    usage; exit 1 ;;
+            esac
+            shift
+            ;;
+        --netconsole)
+            if [ -d "/sys/kernel/config/netconsole" ]; then
+                VALUE_HOSTS=""
+                for F in /sys/kernel/config/netconsole/{default,*}/remote_ip ; do
+                    [ -s "$F" ] || continue
+                    D="`dirname "$F"`"
+                    [ -s "$D"/enabled ] || continue
+                    [ "`cat "$D"/enabled`" = 1 ] || continue
+                    VALUE_HOSTS="`cat "$F"`" && break
+                done
+                if [ -n "$VALUE_HOSTS" ] && isIPaddr "$VALUE_HOSTS" ; then
+                    echo "INFO: Will try to enable netconsole remote IP '$VALUE_HOSTS' as loghost" >&2
+                    ACTION_HOSTS=tryset
+                    ACTION_TOGGLE="enable-backup"; VALUE_TOGGLE="DEFAULT"
+                else
+                    echo "INFO: Will try to disable loghost because there is no enabled netconsole remote IP" >&2
+                    VALUE_HOSTS=""; ACTION_HOSTS=trydel
+                    ACTION_TOGGLE="disable"; VALUE_TOGGLE=""
+                fi
+            else
+                echo "WARN: Netconsole configfs node not found; doing nothing at this time" >&2
+                exit 1
+                # TODO: Inspect and parse /proc/cmdline for "static" configs
+            fi
+            ;;
+        -h|--help|-help) usage; exit 0 ;;
+        *)  echo "ERROR: Unknown argument: '$1'" >&2
+            usage
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+if [ "$ACTION_QUERY" = yes ]; then
+    process_action_query
+    exit $?
+fi
+
+process_action_hosts
+process_action_toggle
