@@ -126,7 +126,9 @@ sed -i 's|.*RuntimeMaxFileSize.*|RuntimeMaxFileSize=10M|' /etc/systemd/journald.
 sed -i 's|.*Storage.*|Storage=volatile|'                  /etc/systemd/journald.conf
 
 # rsyslogd setup
-mkdir -p /etc/rsyslog.d /etc/rsyslog.d-early
+mkdir -p /etc/rsyslog.d /etc/rsyslog.d-early /var/spool/rsyslog
+# the rsyslogd.conf "$WorkDirectory"
+chmod 700 /var/spool/rsyslog
 ## remove conflicting Debian defaults
 echo '$IncludeConfig /etc/rsyslog.d-early/*.conf' > /etc/rsyslog.conf.tmp
 awk '{ print $0; } /^\$IncludeConfig/{ exit; }' </etc/rsyslog.conf >>/etc/rsyslog.conf.tmp && \
@@ -139,10 +141,10 @@ echo '$PreserveFQDN on' > /etc/rsyslog.d-early/00-PreserveFQDN.conf
 ## normal logging
 cp /usr/share/bios/examples/config/rsyslog.d/10-ipc.conf /etc/rsyslog.d/
 
-## remote logging template
-cp /usr/share/bios/examples/config/rsyslog.d/10-ipc-remote.conf /etc/rsyslog.d/
-chown root:bios-admin /etc/rsyslog.d/10-ipc-remote.conf
-chmod 0660 /etc/rsyslog.d/10-ipc-remote.conf
+## remote logging template - changeable by end-user admins
+cp /usr/share/bios/examples/config/rsyslog.d/08-ipc-remote.conf /etc/rsyslog.d/
+chown root:bios-admin /etc/rsyslog.d/08-ipc-remote.conf
+chmod 0660 /etc/rsyslog.d/08-ipc-remote.conf
 
 ## Removable media mounting point for bios-admin group
 mkdir -p /mnt/USB
