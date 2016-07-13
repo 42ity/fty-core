@@ -44,14 +44,14 @@ Also note that this configuration assumes that the name-service switching
 prefers local $HOSTSFILE over remote naming databases like DNS, NIS, LDAP, etc.
 
 Usages:
-    $0 {-q|--query} [ loghost | toggle ]
+    $0 {-q|--query} [ loghost | toggle | netconsole ]
     $0 --set-loghost IP-ADDRESS
     $0 --del-loghost
     $0 --toggle-rsyslog { LAST_STATE | DEFAULT = ON | ipc-audit | all | off }
     $0 --netconsole
 
-    -q|--query          Report current status of the configuration files
-                        Optionally query just one of these files
+    -q|--query          Report current status of the configuration data.
+                        Optionally query just one/some of these items.
     --set-loghost IP-ADDRESS   Set IP address as the "loghost" in $HOSTSFILE
                         (if the entry is absent or is managed by us)
     --del-loghost       Remove the value (if managed by us)
@@ -127,32 +127,6 @@ remove_loghost_name() {
     G="`cat "$HOSTSFILE" | egrep -v '^[[:blank:]]*'"$PAT_IPADDR"'.*[[:blank:]]'"$RSYSLOG_LOGHOST"'([[:blank:]]|$)' | fgrep -v "$HOSTSFENCE"`"
     [ -n "$G" ] && echo "$G" | grep -w localhost > /dev/null || return 1
     echo "$G" > "$HOSTSFILE"
-}
-
-process_action_query() {
-    RES=255
-    if [ "$VALUE_QUERY" = all -o "$VALUE_QUERY" = toggle ] ; then
-        query_rsyslog_toggle
-        RES=$?
-        case $RES in
-            0)  echo "INFO: The rsyslog toggle above was found in ACTIVE config file" >&2 ;;
-            1)  echo "INFO: The rsyslog toggle above was found in BACKUP config file" >&2 ;;
-            22|*)  echo "INFO: The rsyslog toggle was not found in active or backup config files" >&2 ;;
-        esac
-        echo "" >&2
-    fi
-    if [ "$VALUE_QUERY" = all -o "$VALUE_QUERY" = loghost ] ; then
-        query_loghost_name
-        RES=$?
-        case $RES in
-            0)  echo "INFO: The hostname above was resolved in local $HOSTSFILE and is managed by us" >&2 ;;
-            1)  echo "INFO: The hostname above was resolved in local $HOSTSFILE but is managed by someone else" >&2 ;;
-            53)  echo "INFO: The hostname above was resolved in a remote naming service" >&2 ;;
-            22|*)  echo "INFO: The $RSYSLOG_LOGHOST hostname was not resolved" >&2 ;;
-        esac
-        echo "" >&2
-    fi
-    return $RES
 }
 
 process_action_hosts() {
@@ -447,6 +421,56 @@ parse_netconsole_kernelarg() {
     echo "INFO: Netconsole: got the following settings after parsing kernel bootargs (merged with fallbacks if needed):" "`set | grep NETCONSOLE_`" >&2
 }
 
+process_action_query() {
+    RES=255
+    if echo "$VALUE_QUERY" | grep -w all >/dev/null || \
+       echo "$VALUE_QUERY" | grep -w toggle >/dev/null \
+    ; then
+        query_rsyslog_toggle
+        RES=$?
+        case $RES in
+            0)  echo "INFO: The rsyslog toggle above was found in ACTIVE config file" >&2 ;;
+            1)  echo "INFO: The rsyslog toggle above was found in BACKUP config file" >&2 ;;
+            22|*)  echo "INFO: The rsyslog toggle was NOT FOUND in active or backup config files" >&2 ;;
+        esac
+        echo "" >&2
+    fi
+
+    if echo "$VALUE_QUERY" | grep -w all >/dev/null || \
+       echo "$VALUE_QUERY" | grep -w loghost >/dev/null \
+    ; then
+        query_loghost_name
+        RES=$?
+        case $RES in
+            0)  echo "INFO: The hostname above was resolved in local $HOSTSFILE and is managed BY US" >&2 ;;
+            1)  echo "INFO: The hostname above was resolved in local $HOSTSFILE but is managed BY SOMEONE ELSE" >&2 ;;
+            53)  echo "INFO: The hostname above was resolved in a REMOTE naming service" >&2 ;;
+            22|*)  echo "INFO: The $RSYSLOG_LOGHOST hostname was NOT RESOLVED" >&2 ;;
+        esac
+        echo "" >&2
+    fi
+
+    if echo "$VALUE_QUERY" | grep -w all >/dev/null || \
+       echo "$VALUE_QUERY" | grep -w netconsole >/dev/null \
+    ; then
+        get_netconsole_kernelarg && parse_netconsole_kernelarg && \
+           [ -n "$NETCONSOLE_REMOTE_IP" ] && isIPaddr "$NETCONSOLE_REMOTE_IP" && \
+            echo "INFO: Got kernel netconsole module args above" >&2 || \
+            echo "INFO: Kernel netconsole module args were NOT FOUND" >&2
+
+        [ -d "$CONFIGFS_NETCONSOLE" ] || \
+            echo "INFO: A dynamic netconsole module configfs node was NOT FOUND" >&2
+
+        parse_netconsole_dynamic -a && \
+            echo "INFO: Got dynamic netconsole module settings above" >&2 || \
+            echo "INFO: Dynamic netconsole module settings was NOT FOUND" >&2
+
+        echo "" >&2
+    fi
+
+    return $RES
+}
+
 ###########################################################################
 # Process CLI args
 [ $# = 0 ] && echo "ERROR: Argument required!" >&2 && usage && exit 1
@@ -462,8 +486,8 @@ while [ $# -gt 0 ]; do
     case "$1" in
         -q|--query)     ACTION_QUERY=yes
             case "$2" in
-                loghost|toggle)
-                    VALUE_QUERY="$2"
+                loghost|toggle|netconsole)
+                    VALUE_QUERY="$VALUE_QUERY $2"
                     shift ;;
                 *)  VALUE_QUERY="all" ;;
             esac
