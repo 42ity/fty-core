@@ -150,6 +150,7 @@ chmod 0660 /etc/rsyslog.d/08-ipc-remote.conf
 mkdir -p /mnt/USB
 chown root:bios-admin /mnt/USB
 chmod 0770 /mnt/USB
+ln -s mount_usb /usr/libexec/bios/umount_usb
 
 # Basic network setup
 mkdir -p /etc/network
