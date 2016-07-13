@@ -260,6 +260,194 @@ process_action_toggle() {
     return 1
 }
 
+###########################################################################
+# Parse the actual kernel-formatted "netconsole" argument, if provided
+# netconsole=[src-port]@[src-ip]/[<dev>],[tgt-port]@<tgt-ip>/[tgt-macaddr]
+# Note: we do not support syntax for a list of netconsole sink targets
+NETCONSOLE_LOCAL_PORT=""
+NETCONSOLE_LOCAL_IP=""
+NETCONSOLE_LOCAL_DEV=""
+NETCONSOLE_REMOTE_PORT=""
+NETCONSOLE_REMOTE_IP=""
+NETCONSOLE_REMOTE_MAC=""
+# House-keeping variables:
+NETCONSOLE_CONFIG=""
+NETCONSOLE_ENABLED="no"
+NETCONSOLE_KERNELARG=""
+NETCONSOLE_KERNELARG_RAW=""
+
+reactivate_netconsole() {
+    # Initial activation of a configfs setup for dynamic netconsole,
+    # or a change to existing previous such setup.
+    [ -n "$1" ] && NETCONSOLE_CONFIG="$1" || NETCONSOLE_CONFIG="default"
+    if [ "$NETCONSOLE_ENABLED" = yes ] && \
+       [ -d "$CONFIGFS_NETCONSOLE" ] && \
+       [ -n "$NETCONSOLE_LOCAL_DEV" ] \
+    ; then
+        D="$CONFIGFS_NETCONSOLE/$NETCONSOLE_CONFIG"
+        [ -d "$D" ] && \
+            echo "INFO: Netconsole: replacing the following old settings in $D/:"  "`cd "$D" && for F in * ; do [ -f "$F" ] && echo "=== $F :" && cat "$F"; done`" >&2
+        mkdir -p "$D"
+        [ -f "$D/enabled" ] && [ x"`cat "$D/enabled"`" = x1 ] && \
+            echo 0 > "$D/enabled"
+        echo "INFO: Netconsole: activating the following new settings in $D/:" "`set | grep NETCONSOLE_`" >&2
+        [ -n "$NETCONSOLE_LOCAL_PORT" ] && \
+            echo "$NETCONSOLE_LOCAL_PORT" > "$D/local_port"
+        [ -n "$NETCONSOLE_LOCAL_IP" ] && \
+            echo "$NETCONSOLE_LOCAL_IP" > "$D/local_ip"
+        [ -n "$NETCONSOLE_LOCAL_DEV" ] && \
+            echo "$NETCONSOLE_LOCAL_DEV" > "$D/dev_name"
+        [ -n "$NETCONSOLE_REMOTE_PORT" ] && \
+            echo "$NETCONSOLE_REMOTE_PORT" > "$D/remote_port"
+        [ -n "$NETCONSOLE_REMOTE_IP" ] && \
+            echo "$NETCONSOLE_REMOTE_IP" > "$D/remote_ip"
+        [ -n "$NETCONSOLE_REMOTE_MAC" ] && \
+            echo "$NETCONSOLE_REMOTE_MAC" > "$D/remote_mac"
+
+        echo 1 > "$D/enabled" && \
+        sleep 3 && \
+        echo "INFO: Netconsole: activated for logging to `cat "$D/remote_ip"`:`cat "$D/remote_port"`/UDP (using MAC `cat "$D/remote_mac"`)" >&2
+        # This echo may seem like a bit of tautology, but this may be
+        # the first thing seen in remote logs of dynamic netconsole
+    fi
+}
+
+deactivate_netconsole() {
+    [ -n "$1" ] && NETCONSOLE_CONFIG="$1" || NETCONSOLE_CONFIG="default"
+    if [ "$NETCONSOLE_ENABLED" = yes ] && \
+       [ -d "$CONFIGFS_NETCONSOLE" ] && \
+       [ -n "$NETCONSOLE_LOCAL_DEV" ] \
+    ; then
+        D="$CONFIGFS_NETCONSOLE/$NETCONSOLE_CONFIG"
+        mkdir -p "$D"
+        [ -f "$D/enabled" ] && \
+            v_echo "Netconsole: consider de-activating the following settings in $D/:" "`cd "$D" && for F in * ; do [ -f "$F" ] && echo "=== $F :" && cat "$F"; done`" && \
+            [ x"`cat "$D/enabled"`" = x1 ] && \
+            echo 0 > "$D/enabled"
+        rmdir "$D" || true
+    fi
+}
+
+get_netconsole_kernelarg() {
+    for KERNELARG in `cat /proc/cmdline` ; do
+        case "$KERNELARG" in
+            netconsole=*@*/*|delayed_netconsole=*@*/*)
+                # Minimal valid syntax contains "@/"
+                # You can not dynamically change netconsole settings
+                # passed as kernel/module args - so we can fake delayed
+                NETCONSOLE_ENABLED=yes
+                NETCONSOLE_KERNELARG_RAW="$KERNELARG"
+                NETCONSOLE_KERNELARG="`echo "$KERNELARG" | sed 's/^delayed_//'`"
+                return 0 # Assume only one config
+                ;;
+        esac
+    done
+    return 1
+}
+
+UBOOTCFG_MTD=3
+fw_printenv() {
+    [ -x /usr/bin/fw_printenv ] && { /usr/bin/fw_printenv "$@"; return $?; }
+    [ -c "/dev/mtd$UBOOTCFG_MTD" -o -b "/dev/mtd$UBOOTCFG_MTD" ] || return 22
+    [ -n "$1" ] && MATCH="^$1=" || MATCH="="
+    tr '\000' '\n' < "/dev/mtd$UBOOTCFG_MTD" | dd skip=4 bs=1 2>/dev/null | egrep "$MATCH"
+}
+
+FW_PRINTENV=""
+fw_printenv_cached() {
+    # Print the value of specified key, if already cached
+    [ -n "$FW_PRINTENV" ] && [ -n "$1" ] && \
+        TMPVAL="`echo "$FW_PRINTENV" | egrep '^'"$1"'=' | sed 's,^.*=,,'`" || return $?
+    echo "$TMPVAL"
+    unset TMPVAL
+}
+
+parse_netconsole_dynamic() {
+    # Read the dynamic netconfig, if any
+    [ -n "$1" ] && NETCONSOLE_CONFIG="$1" || NETCONSOLE_CONFIG="{default,*}"
+    if [ "$NETCONSOLE_ENABLED" = yes ] && \
+       [ -d "$CONFIGFS_NETCONSOLE" ] && \
+       [ -n "$NETCONSOLE_LOCAL_DEV" ] \
+    ; then
+        for F in "$CONFIGFS_NETCONSOLE"/$NETCONSOLE_CONFIG/dev_name ; do
+            D="`dirname "$F"`"
+            [ -f "$F" ] && [ -d "$D" ] && [ -f "$D/enabled" ] || continue
+            echo "INFO: Inspecting netconsole settings under $D/" >&2
+            NETCONSOLE_LOCAL_PORT="`cat "$D/local_port"`"
+            NETCONSOLE_LOCAL_IP="`cat "$D/local_ip"`"
+            NETCONSOLE_LOCAL_DEV="`cat "$D/dev_name"`"
+            NETCONSOLE_REMOTE_PORT="`cat "$D/remote_port"`"
+            NETCONSOLE_REMOTE_IP="`cat "$D/remote_ip"`"
+            NETCONSOLE_REMOTE_MAC="`cat "$D/remote_mac"`"
+            NETCONSOLE_CONFIG="`basename "$D"`"
+            echo "INFO: Netconsole: got the following settings under $D/:" "`set | grep NETCONSOLE_`" >&2
+            [ -n "$NETCONSOLE_LOCAL_PORT$NETCONSOLE_LOCAL_IP$NETCONSOLE_LOCAL_DEV$NETCONSOLE_REMOTE_PORT$NETCONSOLE_REMOTE_IP$NETCONSOLE_REMOTE_MAC" ] && \
+                return 0
+        done
+    fi
+    return 1
+}
+
+parse_netconsole_kernelarg() {
+    # Parses the string in $NETCONSOLE_KERNELARG as the current netconsole setup
+    # including common Linux kernel defaults for values not specified explicitly
+    # This string may come from get_netconsole_kernelarg() or from caller/user.
+    [ -z "$NETCONSOLE_KERNELARG" ] && return 1
+
+    echo "INFO: Inspecting netconsole default/FW settings as a fallback" >&2
+    # Defaults for netconsole setup as set in kernel or FW
+    NETCONSOLE_LOCAL_IP="`fw_printenv_cached ipaddr`" \
+        && [ -n "$NETCONSOLE_LOCAL_IP" ] \
+        || NETCONSOLE_LOCAL_IP="255.255.255.255"
+
+    case "`uname -m`" in
+        armv7l) # Assume one of IPC3000 (RC3) models - with 2/3 ports visible
+            if [ "`ip a s | egrep -c '^.*:[[:blank:]]+(LAN|eth)[0-9]+[^0-9].*$'`" -gt 2 ]; then
+                IF_OFFSET=2
+            else
+                IF_OFFSET=0
+            fi
+            ;;
+        *)  IF_OFFSET=0 ;;
+    esac
+
+    NETCONSOLE_LOCAL_DEV="`fw_printenv_cached ethact | sed 's,^egiga,,'`" \
+        && [ -n "$NETCONSOLE_LOCAL_DEV" ] \
+        && [ "$NETCONSOLE_LOCAL_DEV" -ge 0 ] \
+        && NETCONSOLE_LOCAL_DEV="eth`expr \( $NETCONSOLE_LOCAL_DEV + $IF_OFFSET \) % 3 + 1`" \
+        || NETCONSOLE_LOCAL_DEV="eth0"
+    NETCONSOLE_LOCAL_PORT="6666"
+
+    NETCONSOLE_REMOTE_IP="`fw_printenv_cached ncip`" \
+        && [ -n "$NETCONSOLE_REMOTE_IP" ] \
+        || NETCONSOLE_REMOTE_IP="`fw_printenv_cached serverip`"
+    NETCONSOLE_REMOTE_IP="`fw_printenv_cached serverip`" || NETCONSOLE_REMOTE_IP=""
+    [ -n "$NETCONSOLE_REMOTE_IP" ] || NETCONSOLE_REMOTE_IP="255.255.255.255"
+    NETCONSOLE_REMOTE_PORT="6666"
+    NETCONSOLE_REMOTE_MAC="ff:ff:ff:ff:ff:ff"
+    #echo "INFO: Netconsole: got the following settings as fallback:" "`set | grep NETCONSOLE_`" >&2
+
+    # netconsole=[+][src-port]@[src-ip]/[<dev>],[tgt-port]@<tgt-ip>/[tgt-macaddr]
+    echo "INFO: Inspecting netconsole settings from kernel-args format string: '$NETCONSOLE_KERNELARG'" >&2
+    TMPSED='^netconsole=\([\+]*\)\([0-9]*\)@\([0-9\.]*\)/\([^,]*\),\([0-9]*\)@\([0-9\.]*\)/\([a-fA-F0-9\:]*\)$'
+    TMPVAL="`echo "$NETCONSOLE_KERNELARG" | sed "s|$TMPSED|\2|"`" && \
+        [ -n "$TMPVAL" ] && NETCONSOLE_LOCAL_PORT="$TMPVAL"
+    TMPVAL="`echo "$NETCONSOLE_KERNELARG" | sed "s|$TMPSED|\3|"`" && \
+        [ -n "$TMPVAL" ] && NETCONSOLE_LOCAL_IP="$TMPVAL"
+    TMPVAL="`echo "$NETCONSOLE_KERNELARG" | sed "s|$TMPSED|\4|"`" && \
+        [ -n "$TMPVAL" ] && NETCONSOLE_LOCAL_DEV="$TMPVAL"
+
+    TMPVAL="`echo "$NETCONSOLE_KERNELARG" | sed "s|$TMPSED|\5|"`" && \
+        [ -n "$TMPVAL" ] && NETCONSOLE_REMOTE_PORT="$TMPVAL"
+    TMPVAL="`echo "$NETCONSOLE_KERNELARG" | sed "s|$TMPSED|\6|"`" && \
+        [ -n "$TMPVAL" ] && NETCONSOLE_REMOTE_IP="$TMPVAL"
+    TMPVAL="`echo "$NETCONSOLE_KERNELARG" | sed "s|$TMPSED|\7|"`" && \
+        [ -n "$TMPVAL" ] && NETCONSOLE_REMOTE_MAC="$TMPVAL"
+    unset TMPVAL TMPSED
+    echo "INFO: Netconsole: got the following settings after parsing kernel bootargs (merged with fallbacks if needed):" "`set | grep NETCONSOLE_`" >&2
+}
+
+###########################################################################
 # Process CLI args
 [ $# = 0 ] && echo "ERROR: Argument required!" >&2 && usage && exit 1
 
@@ -326,9 +514,17 @@ while [ $# -gt 0 ]; do
                     ACTION_TOGGLE="disable"; VALUE_TOGGLE=""
                 fi
             else
-                echo "WARN: Netconsole configfs node not found; doing nothing at this time" >&2
-                exit 1
-                # TODO: Inspect and parse /proc/cmdline for "static" configs
+                echo "WARN: Netconsole configfs node not found; inspecting kernel args (if any)" >&2
+                if get_netconsole_kernelarg && parse_netconsole_kernelarg && \
+                   [ -n "$NETCONSOLE_REMOTE_IP" ] && isIPaddr "$NETCONSOLE_REMOTE_IP" \
+                ; then
+                    echo "INFO: Will try to enable netconsole remote IP '$NETCONSOLE_REMOTE_IP' as loghost" >&2
+                    ACTION_HOSTS=tryset; VALUE_HOSTS="$NETCONSOLE_REMOTE_IP"
+                    ACTION_TOGGLE="enable-backup"; VALUE_TOGGLE="DEFAULT"
+                else
+                    echo "WARN: Neither netconsole configfs node nor kernel args were found; doing nothing at this time" >&2
+                    exit 1
+                fi
             fi
             ;;
         -h|--help|-help) usage; exit 0 ;;
