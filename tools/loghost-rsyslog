@@ -31,6 +31,9 @@ RSYSLOG_TOGGLE_FILE_BACKUP="$RSYSLOG_TOGGLE_FILE_ACTIVE.laststate"
 # The hostname hardcoded in our rsyslog pre-configuration as the remote sink
 RSYSLOG_LOGHOST="loghost"
 
+CONFIGFS_ROOT="/sys/kernel/config"
+CONFIGFS_NETCONSOLE="$CONFIGFS_ROOT/netconsole"
+
 usage() {
     cat <<EOF
 This script manages remote logging to "$RSYSLOG_LOGHOST" by maintaining an entry
@@ -300,9 +303,13 @@ while [ $# -gt 0 ]; do
             shift
             ;;
         --netconsole)
-            if [ -d "/sys/kernel/config/netconsole" ]; then
+            # The directory is not present if configfs is not mounted and/or
+            # the netconsole module (or kernel built-in copy) is not loaded.
+            # In particular, the builtin witout bootarg is still loaded and
+            # ready for dynamic reconfiguration. Here we inspect ACTIVE cfgs.
+            if [ -d "$CONFIGFS_NETCONSOLE" ]; then
                 VALUE_HOSTS=""
-                for F in /sys/kernel/config/netconsole/{default,*}/remote_ip ; do
+                for F in "$CONFIGFS_NETCONSOLE"/{default,*}/remote_ip ; do
                     [ -s "$F" ] || continue
                     D="`dirname "$F"`"
                     [ -s "$D"/enabled ] || continue
