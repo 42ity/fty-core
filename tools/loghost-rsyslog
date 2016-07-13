@@ -341,6 +341,7 @@ parse_netconsole_dynamic() {
     # Can also be used to list dynamic netconfigs (-a) - but then it returns
     # zero code if at least one valid setup was found - but then that is not
     # necessarily the latest inspected configuration that populated the vars.
+    # (You can check by testing non-empty NETCONSOLE_CONFIG variable value).
     [ -n "$1" ] && [ "$1" != "-a" ] \
         && NETCONSOLE_CONFIG_="$1" \
         || NETCONSOLE_CONFIG_="{default,*}"
@@ -361,8 +362,12 @@ parse_netconsole_dynamic() {
             NETCONSOLE_REMOTE_MAC="`cat "$D/remote_mac"`"
             NETCONSOLE_CONFIG="`basename "$D"`"
             echo "INFO: Netconsole: got the following settings under $D/:" "`set | grep NETCONSOLE_`" >&2
-            [ -n "$NETCONSOLE_LOCAL_PORT$NETCONSOLE_LOCAL_IP$NETCONSOLE_LOCAL_DEV$NETCONSOLE_REMOTE_PORT$NETCONSOLE_REMOTE_IP$NETCONSOLE_REMOTE_MAC" ] && \
-                RES=0 && [ "$1" != "-a" ] && return $RES
+            if [ -n "$NETCONSOLE_LOCAL_PORT$NETCONSOLE_LOCAL_IP$NETCONSOLE_LOCAL_DEV$NETCONSOLE_REMOTE_PORT$NETCONSOLE_REMOTE_IP$NETCONSOLE_REMOTE_MAC" ] ; then
+                RES=0
+                [ "$1" != "-a" ] && return $RES
+            else
+                NETCONSOLE_CONFIG=""
+            fi
         done
     fi
     return $RES
