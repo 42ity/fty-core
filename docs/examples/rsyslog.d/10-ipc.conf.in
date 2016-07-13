@@ -27,7 +27,7 @@ if ($.use_remote_logsink == 'all') then @loghost:514
 # http://www.rsyslog.com/tag/if-then/
 # http://www.rsyslog.com/filter-optimization-with-arrays/
 
-# Log roration (via outchannel keyword)
+# Log rotation (via outchannel keyword)
 # http://www.rsyslog.com/doc/v8-stable/tutorials/log_rotation_fix_size.html
 
 # Log system auth stuff and (below) other important messages here:
