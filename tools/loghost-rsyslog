@@ -253,12 +253,12 @@ NETCONSOLE_KERNELARG_RAW=""
 reactivate_netconsole() {
     # Initial activation of a configfs setup for dynamic netconsole,
     # or a change to existing previous such setup.
-    [ -n "$1" ] && NETCONSOLE_CONFIG="$1" || NETCONSOLE_CONFIG="default"
+    [ -n "$1" ] && NETCONSOLE_CONFIG_="$1" || NETCONSOLE_CONFIG_="default"
     if [ "$NETCONSOLE_ENABLED" = yes ] && \
        [ -d "$CONFIGFS_NETCONSOLE" ] && \
        [ -n "$NETCONSOLE_LOCAL_DEV" ] \
     ; then
-        D="$CONFIGFS_NETCONSOLE/$NETCONSOLE_CONFIG"
+        D="$CONFIGFS_NETCONSOLE/$NETCONSOLE_CONFIG_"
         [ -d "$D" ] && \
             echo "INFO: Netconsole: replacing the following old settings in $D/:"  "`cd "$D" && for F in * ; do [ -f "$F" ] && echo "=== $F :" && cat "$F"; done`" >&2
         mkdir -p "$D"
@@ -287,12 +287,12 @@ reactivate_netconsole() {
 }
 
 deactivate_netconsole() {
-    [ -n "$1" ] && NETCONSOLE_CONFIG="$1" || NETCONSOLE_CONFIG="default"
+    [ -n "$1" ] && NETCONSOLE_CONFIG_="$1" || NETCONSOLE_CONFIG_="default"
     if [ "$NETCONSOLE_ENABLED" = yes ] && \
        [ -d "$CONFIGFS_NETCONSOLE" ] && \
        [ -n "$NETCONSOLE_LOCAL_DEV" ] \
     ; then
-        D="$CONFIGFS_NETCONSOLE/$NETCONSOLE_CONFIG"
+        D="$CONFIGFS_NETCONSOLE/$NETCONSOLE_CONFIG_"
         mkdir -p "$D"
         [ -f "$D/enabled" ] && \
             v_echo "Netconsole: consider de-activating the following settings in $D/:" "`cd "$D" && for F in * ; do [ -f "$F" ] && echo "=== $F :" && cat "$F"; done`" && \
@@ -337,15 +337,21 @@ fw_printenv_cached() {
 }
 
 parse_netconsole_dynamic() {
-    # Read the dynamic netconfig, if any
-    [ -n "$1" ] && NETCONSOLE_CONFIG="$1" || NETCONSOLE_CONFIG="{default,*}"
-    if [ "$NETCONSOLE_ENABLED" = yes ] && \
-       [ -d "$CONFIGFS_NETCONSOLE" ] && \
-       [ -n "$NETCONSOLE_LOCAL_DEV" ] \
-    ; then
-        for F in "$CONFIGFS_NETCONSOLE"/$NETCONSOLE_CONFIG/dev_name ; do
+    # Read the dynamic netconfig, if any - default or any first match.
+    # Can also be used to list dynamic netconfigs (-a) - but then it returns
+    # zero code if at least one valid setup was found - but then that is not
+    # necessarily the latest inspected configuration that populated the vars.
+    [ -n "$1" ] && [ "$1" != "-a" ] \
+        && NETCONSOLE_CONFIG_="$1" \
+        || NETCONSOLE_CONFIG_="{default,*}"
+    RES=1
+    if [ -d "$CONFIGFS_NETCONSOLE" ] ; then
+        for F in "$CONFIGFS_NETCONSOLE"/$NETCONSOLE_CONFIG_/dev_name ; do
             D="`dirname "$F"`"
             [ -f "$F" ] && [ -d "$D" ] && [ -f "$D/enabled" ] || continue
+            if [ "$REQUIRE_DYNAMIC_NETCONSOLE_ACTIVE" = yes ] ; then
+                [ "`cat "$D/enabled"`" = 1 ] || continue
+            fi
             echo "INFO: Inspecting netconsole settings under $D/" >&2
             NETCONSOLE_LOCAL_PORT="`cat "$D/local_port"`"
             NETCONSOLE_LOCAL_IP="`cat "$D/local_ip"`"
@@ -356,10 +362,10 @@ parse_netconsole_dynamic() {
             NETCONSOLE_CONFIG="`basename "$D"`"
             echo "INFO: Netconsole: got the following settings under $D/:" "`set | grep NETCONSOLE_`" >&2
             [ -n "$NETCONSOLE_LOCAL_PORT$NETCONSOLE_LOCAL_IP$NETCONSOLE_LOCAL_DEV$NETCONSOLE_REMOTE_PORT$NETCONSOLE_REMOTE_IP$NETCONSOLE_REMOTE_MAC" ] && \
-                return 0
+                RES=0 && [ "$1" != "-a" ] && return $RES
         done
     fi
-    return 1
+    return $RES
 }
 
 parse_netconsole_kernelarg() {
