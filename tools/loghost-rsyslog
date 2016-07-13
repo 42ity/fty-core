@@ -264,7 +264,7 @@ reactivate_netconsole() {
         mkdir -p "$D"
         [ -f "$D/enabled" ] && [ x"`cat "$D/enabled"`" = x1 ] && \
             echo 0 > "$D/enabled"
-        echo "INFO: Netconsole: activating the following new settings in $D/:" "`set | grep NETCONSOLE_`" >&2
+        echo "INFO: Netconsole: activating the following new settings in $D/:" "`set | egrep '^NETCONSOLE_'`" >&2
         [ -n "$NETCONSOLE_LOCAL_PORT" ] && \
             echo "$NETCONSOLE_LOCAL_PORT" > "$D/local_port"
         [ -n "$NETCONSOLE_LOCAL_IP" ] && \
@@ -361,7 +361,7 @@ parse_netconsole_dynamic() {
             NETCONSOLE_REMOTE_IP="`cat "$D/remote_ip"`"
             NETCONSOLE_REMOTE_MAC="`cat "$D/remote_mac"`"
             NETCONSOLE_CONFIG="`basename "$D"`"
-            echo "INFO: Netconsole: got the following settings under $D/:" "`set | grep NETCONSOLE_`" >&2
+            echo "INFO: Netconsole: got the following settings under $D/:" "`set | egrep '^NETCONSOLE_'`" >&2
             if [ -n "$NETCONSOLE_LOCAL_PORT$NETCONSOLE_LOCAL_IP$NETCONSOLE_LOCAL_DEV$NETCONSOLE_REMOTE_PORT$NETCONSOLE_REMOTE_IP$NETCONSOLE_REMOTE_MAC" ] ; then
                 RES=0
                 [ "$1" != "-a" ] && return $RES
@@ -410,7 +410,7 @@ parse_netconsole_kernelarg() {
     [ -n "$NETCONSOLE_REMOTE_IP" ] || NETCONSOLE_REMOTE_IP="255.255.255.255"
     NETCONSOLE_REMOTE_PORT="6666"
     NETCONSOLE_REMOTE_MAC="ff:ff:ff:ff:ff:ff"
-    #echo "INFO: Netconsole: got the following settings as fallback:" "`set | grep NETCONSOLE_`" >&2
+    #echo "INFO: Netconsole: got the following settings as fallback:" "`set | egrep '^NETCONSOLE_'`" >&2
 
     # netconsole=[+][src-port]@[src-ip]/[<dev>],[tgt-port]@<tgt-ip>/[tgt-macaddr]
     echo "INFO: Inspecting netconsole settings from kernel-args format string: '$NETCONSOLE_KERNELARG'" >&2
@@ -429,7 +429,7 @@ parse_netconsole_kernelarg() {
     TMPVAL="`echo "$NETCONSOLE_KERNELARG" | sed "s|$TMPSED|\7|"`" && \
         [ -n "$TMPVAL" ] && NETCONSOLE_REMOTE_MAC="$TMPVAL"
     unset TMPVAL TMPSED
-    echo "INFO: Netconsole: got the following settings after parsing kernel bootargs (merged with fallbacks if needed):" "`set | grep NETCONSOLE_`" >&2
+    echo "INFO: Netconsole: got the following settings after parsing kernel bootargs (merged with fallbacks if needed):" "`set | egrep '^NETCONSOLE_'`" >&2
 }
 
 process_action_query() {
