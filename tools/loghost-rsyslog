@@ -284,6 +284,7 @@ reactivate_netconsole() {
         # This echo may seem like a bit of tautology, but this may be
         # the first thing seen in remote logs of dynamic netconsole
     fi
+    unset NETCONSOLE_CONFIG_
 }
 
 deactivate_netconsole() {
@@ -300,6 +301,7 @@ deactivate_netconsole() {
             echo 0 > "$D/enabled"
         rmdir "$D" || true
     fi
+    unset NETCONSOLE_CONFIG_
 }
 
 get_netconsole_kernelarg() {
@@ -364,12 +366,13 @@ parse_netconsole_dynamic() {
             echo "INFO: Netconsole: got the following settings under $D/:" "`set | egrep '^NETCONSOLE_'`" >&2
             if [ -n "$NETCONSOLE_LOCAL_PORT$NETCONSOLE_LOCAL_IP$NETCONSOLE_LOCAL_DEV$NETCONSOLE_REMOTE_PORT$NETCONSOLE_REMOTE_IP$NETCONSOLE_REMOTE_MAC" ] ; then
                 RES=0
-                [ "$1" != "-a" ] && return $RES
+                [ "$1" != "-a" ] && break
             else
                 NETCONSOLE_CONFIG=""
             fi
         done
     fi
+    unset NETCONSOLE_CONFIG_
     return $RES
 }
 
