@@ -349,8 +349,14 @@ parse_netconsole_dynamic() {
         || NETCONSOLE_CONFIG_="{default,*}"
     RES=1
     if [ -d "$CONFIGFS_NETCONSOLE" ] ; then
-        for F in "$CONFIGFS_NETCONSOLE"/$NETCONSOLE_CONFIG_/dev_name ; do
+        DEFAULT_SHOWN=no
+        for F in `eval ls -1d "$CONFIGFS_NETCONSOLE"/$NETCONSOLE_CONFIG_/dev_name 2>/dev/null` ; do
             D="`dirname "$F"`"
+            NETCONSOLE_CONFIG="`basename "$D"`"
+            if [ "$NETCONSOLE_CONFIG" = "default" ] ; then
+                [ "$DEFAULT_SHOWN" = yes ] && continue
+                DEFAULT_SHOWN=yes
+            fi
             [ -f "$F" ] && [ -d "$D" ] && [ -f "$D/enabled" ] || continue
             if [ "$REQUIRE_DYNAMIC_NETCONSOLE_ACTIVE" = yes ] ; then
                 [ "`cat "$D/enabled"`" = 1 ] || continue
@@ -362,7 +368,6 @@ parse_netconsole_dynamic() {
             NETCONSOLE_REMOTE_PORT="`cat "$D/remote_port"`"
             NETCONSOLE_REMOTE_IP="`cat "$D/remote_ip"`"
             NETCONSOLE_REMOTE_MAC="`cat "$D/remote_mac"`"
-            NETCONSOLE_CONFIG="`basename "$D"`"
             echo "INFO: Netconsole: got the following settings under $D/:" "`set | egrep '^NETCONSOLE_'`" >&2
             if [ -n "$NETCONSOLE_LOCAL_PORT$NETCONSOLE_LOCAL_IP$NETCONSOLE_LOCAL_DEV$NETCONSOLE_REMOTE_PORT$NETCONSOLE_REMOTE_IP$NETCONSOLE_REMOTE_MAC" ] ; then
                 RES=0
@@ -533,9 +538,10 @@ while [ $# -gt 0 ]; do
             # the netconsole module (or kernel built-in copy) is not loaded.
             # In particular, the builtin witout bootarg is still loaded and
             # ready for dynamic reconfiguration. Here we inspect ACTIVE cfgs.
+            # TODO: Refactor to use REQUIRE_DYNAMIC_NETCONSOLE_ACTIVE=yes parse_netconsole_dynamic() here
             if [ -d "$CONFIGFS_NETCONSOLE" ]; then
                 VALUE_HOSTS=""
-                for F in "$CONFIGFS_NETCONSOLE"/{default,*}/remote_ip ; do
+                for F in `ls -1d "$CONFIGFS_NETCONSOLE"/{default,*}/remote_ip 2>/dev/null` ; do
                     [ -s "$F" ] || continue
                     D="`dirname "$F"`"
                     [ -s "$D"/enabled ] || continue
