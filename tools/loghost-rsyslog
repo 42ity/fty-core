@@ -25,7 +25,8 @@
 HOSTSFILE="/etc/hosts"
 HOSTSFENCE='### Entry managed by loghost-rsyslog.sh ###'
 
-RSYSLOG_TOGGLE_FILE="/etc/rsyslog.d-early/10-ipc-remote-loghost.conf"
+RSYSLOG_TOGGLE_FILE_ACTIVE="/etc/rsyslog.d-early/10-ipc-remote-loghost.conf"
+RSYSLOG_TOGGLE_FILE_BACKUP="$RSYSLOG_TOGGLE_FILE_ACTIVE.laststate"
 
 # The hostname hardcoded in our rsyslog pre-configuration as the remote sink
 RSYSLOG_LOGHOST="loghost"
@@ -107,8 +108,8 @@ query_rsyslog_toggle() {
     # 0         Active config file was present and printed
     # 1         Backup config file was present and printed
     # 22        Neither file was found or other errors happened
-    [ -s "$RSYSLOG_TOGGLE_FILE" ] && cat "$RSYSLOG_TOGGLE_FILE" && return 0
-    [ -s "$RSYSLOG_TOGGLE_FILE.laststate" ] && cat "$RSYSLOG_TOGGLE_FILE.laststate" && return 1
+    [ -s "$RSYSLOG_TOGGLE_FILE_ACTIVE" ] && cat "$RSYSLOG_TOGGLE_FILE_ACTIVE" && return 0
+    [ -s "$RSYSLOG_TOGGLE_FILE_BACKUP" ] && cat "$RSYSLOG_TOGGLE_FILE_BACKUP" && return 1
     return 22
 }
 
@@ -218,9 +219,9 @@ process_action_toggle() {
     case "$ACTION_TOGGLE" in
         none) return 0 ;;
         enable-backup)
-            [ -s "$RSYSLOG_TOGGLE_FILE" ] && return 0
-            [ -s "$RSYSLOG_TOGGLE_FILE.laststate" ] && \
-                mv -f "$RSYSLOG_TOGGLE_FILE.laststate" "$RSYSLOG_TOGGLE_FILE" && \
+            [ -s "$RSYSLOG_TOGGLE_FILE_ACTIVE" ] && return 0
+            [ -s "$RSYSLOG_TOGGLE_FILE_BACKUP" ] && \
+                mv -f "$RSYSLOG_TOGGLE_FILE_BACKUP" "$RSYSLOG_TOGGLE_FILE_ACTIVE" && \
                 TICKLE=yes || \
                 case "$VALUE_TOGGLE" in
                     LAST_STATE) echo "WARN: No last state found to re-enable!" >&2; return 1;;
@@ -230,18 +231,18 @@ process_action_toggle() {
         enable)
             if [ "$TICKLE" = no ]; then
                 NEWVAL='set $.use_remote_logsink = "'"$VALUE_TOGGLE"'";'
-                [ -s "$RSYSLOG_TOGGLE_FILE" ] && \
-                    fgrep "$NEWVAL" "$RSYSLOG_TOGGLE_FILE" >/dev/null && \
-                        echo "INFO: $RSYSLOG_TOGGLE_FILE is already up-to-date and managed by this script, got nothing to do" >&2 && \
+                [ -s "$RSYSLOG_TOGGLE_FILE_ACTIVE" ] && \
+                    fgrep "$NEWVAL" "$RSYSLOG_TOGGLE_FILE_ACTIVE" >/dev/null && \
+                        echo "INFO: $RSYSLOG_TOGGLE_FILE_ACTIVE is already up-to-date and managed by this script, got nothing to do" >&2 && \
                         return 0
 
-                ( echo "$HOSTSFENCE"; echo "$NEWVAL"; echo "$HOSTSFENCE" ) > "$RSYSLOG_TOGGLE_FILE" && \
+                ( echo "$HOSTSFENCE"; echo "$NEWVAL"; echo "$HOSTSFENCE" ) > "$RSYSLOG_TOGGLE_FILE_ACTIVE" && \
                     TICKLE=yes
             fi
             ;;
         disable)
-            [ -s "$RSYSLOG_TOGGLE_FILE" ] && \
-                mv -f "$RSYSLOG_TOGGLE_FILE" "$RSYSLOG_TOGGLE_FILE.laststate" && \
+            [ -s "$RSYSLOG_TOGGLE_FILE_ACTIVE" ] && \
+                mv -f "$RSYSLOG_TOGGLE_FILE_ACTIVE" "$RSYSLOG_TOGGLE_FILE_BACKUP" && \
                 TICKLE=yes
             ;;
         *)  return 255 ;;
