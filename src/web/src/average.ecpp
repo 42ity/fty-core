@@ -201,6 +201,7 @@ bool relative_to_unixtime (const std::string& relative, int64_t now, int64_t& un
     zmsg_addstr (msg, checked_type.c_str());
     zmsg_addstr (msg, std::to_string(st).c_str());
     zmsg_addstr (msg, std::to_string(end).c_str());
+    zmsg_addstr (msg, (checked_ordered ? "1" : "0") );
 
     mlm_client_sendto (client, "agent-ms", "aggregated data", NULL, 1000, &msg);
 
@@ -254,6 +255,7 @@ bool relative_to_unixtime (const std::string& relative, int64_t now, int64_t& un
         char *start_date_rep = zmsg_popstr (recv_msg);
         char *end_date_rep = zmsg_popstr (recv_msg);
         char *units_rep = zmsg_popstr (recv_msg);
+        char *ordered = zmsg_popstr (recv_msg);
 </%cpp>
 {
         <$$ utils::json::jsonify ("units", units_rep) $>,
@@ -272,6 +274,7 @@ bool relative_to_unixtime (const std::string& relative, int64_t now, int64_t& un
         zstr_free (&type_rep);
         zstr_free (&start_date_rep);
         zstr_free (&units_rep);
+        zstr_free (&ordered);
         // now we are going to fill in data
         while  ( zmsg_size (recv_msg) >= 2 ) {
             char *timestamp = zmsg_popstr (recv_msg);
