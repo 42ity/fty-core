@@ -186,10 +186,12 @@ void Autoconfig::onSend (ymsg_t **message)
     char *device_name = NULL;
 
     zhash_t *extAttributes = NULL;
-
-    if (bios_asset_extra_extract (*message, &device_name, &extAttributes, &info.type, &info.subtype, NULL, NULL, NULL, &info.operation) != 0) {
+    int rv = bios_asset_extra_extract (*message, &device_name, &extAttributes, &info.type, &info.subtype, NULL, NULL, NULL, &info.operation);
+    if ( rv != 0) {
         log_debug("bios_asset_extra_extract () failed.");
         FREE0(device_name);
+        zhash_destroy (&extAttributes);
+        ymsg_destroy (message);
         return;
     }
     log_debug("Decoded asset message - device name = '%s', type = '%" PRIu32 "', subtype = '%" PRIu32"', operation = '%" PRIi8"'",
@@ -198,7 +200,9 @@ void Autoconfig::onSend (ymsg_t **message)
     _configurableDevices.emplace (std::make_pair (device_name, info));
     saveState ();
     setPollingInterval();
+    zhash_destroy (&extAttributes);
     FREE0(device_name);
+    ymsg_destroy (message);
 }
 
 void Autoconfig::onPoll( )
@@ -262,13 +266,12 @@ void Autoconfig::loadState()
     if ( rv != 0 || json.empty() )
         return;
 
-    std::istringstream in(json);
-
     try {
+        std::istringstream in(json);
         _configurableDevices.clear();
         cxxtools::JsonDeserializer deserializer(in);
         deserializer.deserialize(_configurableDevices);
-    } catch( std::exception &e ) {
+    } catch(const std::exception &e ) {
         log_error( "can't parse state: %s", e.what() );
     }
 }
