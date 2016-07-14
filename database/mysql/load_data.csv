@@ -1,0 +1,36 @@
+name,type,sub_type,location,status,priority,asset_tag,power_source.1,power_plug_src.1,power_input.1,power_source.2,power_plug_src.2,power_input.2,description,ip.1,company,site_name,region,country,address,contact_name,contact_email,contact_phone,maximum_number_racks,u_size,manufacturer,model,serial_no,runtime,phase,installation_date,maintenance_date,maintenance_due,service_contact_name,service_contact_mail,service_contact_phone,location_front_pos,location_rear_pos,location_u_pos,location_w_pos,location_d_pos,end_warranty_date,battery_type,battery_installation_date,battery_maintenance_date,hostname.1,http_link.1,battery_warranty_expiration_date,creator,floor,flowers,fqdn.1,full_hostname.1,phases.output,site,total_facility_load,warranty_expiration_date,group.1
+DC1,datacenter,,,nonactive,P5,myasset1,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+ROOM1,room,,,nonactive,P5,myasset2,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+ROW1,row,,,nonactive,P5,myasset3,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+RACK1,rack,,,nonactive,P5,myasset4,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+serv1,device,server,,nonactive,P5,myasset5,epdu,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+epdu,device,epdu,,nonactive,P5,myasset6,ups,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,DC1
+ups,device,ups,,nonactive,P5,myasset7,feed,1,2,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,DC1
+feed,device,feed,,nonactive,P5,myasset8,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,DC1
+group1,group,power_chain,,nonactive,P5,myasset9,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+DC2,datacenter,,,nonactive,P5,myasset10,,,,,,,,,,,,,,Mike Ekim,mike@nn.com,555-2323,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,2,,
+ROOM2,room,,,nonactive,P5,myasset11,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+ROOM3,room,,,nonactive,P5,myasset12,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+ROOM4,room,,,nonactive,P5,myasset13,,,,,,,room is very cute,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,"yes, in this room there are only flowers",,,,,,,
+ROW4,row,,,nonactive,P5,myasset14,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+ROW2,row,,,nonactive,P5,myasset15,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+ROW3,row,,,nonactive,P5,myasset16,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+ROW5,row,,,nonactive,P5,myasset17,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+ROW6,row,,,nonactive,P5,myasset18,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+DC-LAB,datacenter,,,active,P1,myasset19,,,,,,,EATON Montobonnot Datacenter (тест),,EATON,,,France,"110 Rue Blaise Pascal, 38330 Montbonnot-Saint-Martin",John Smith,john.smith@eaton.com,+33 (0)4 42 42 42 42,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,Montbonnot,,,
+ROOM1-LAB,room,,,active,P1,myasset20,,,,,,,Lab Room,,,,,,,John Smith,john.smith@eaton.com,+33 (0)4 42 42 42 42,,,,,,,,,,,,,,,,,,,,,,,,,,,0,,,,,,,,
+RACK1-LAB,rack,,,active,P1,myasset21,,,,,,,,,,,,,,John Smith,john.smith@eaton.com,+33 (0)4 42 42 42 42,,27,Cooper,RESSPU4210KB 600mm x 1000mm - 42U Rack,21545212HGFV2,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+UPS1-LAB,device,ups,,active,P1,myasset22,UPS3PH-LAB,,,,,,UPS1 9PX 6kVA,10.130.9.1,,,,,,Inspecteur Clouseau,clouseau@the-pink-panter.movie,+33 (0)4 42 42 42 42,,3,EATON,,,,,2014-11-12,,,,,,,,0,,,2018-12-31,,2014-11-12,2016-11-12,9PX-BiosDown,,2019-11-12,,,,9PX-BiosDown.Bios.Labo.Kalif.com,,,,,2020-12-31,
+UPS2-LAB,device,ups,,active,P1,myasset23,UPS3PH-LAB,,,,,,UPS2 9PX 6kVA,10.130.9.1,,,,,,Inspecteur Clouseau,clouseau@the-pink-panter.movie,+33 (0)4 42 42 42 42,,3,EATON,,,,,2014-11-12,,,,,,,,3,,,2018-12-31,,2014-11-12,2016-11-12,9PX-BiosUp,,2019-11-12,,,,9PX-BiosUp.Bios.Labo.Kalif.com,,,,,2020-12-31,
+ePDU1-LAB,device,epdu,,active,P1,myasset24,UPS2-LAB,,,,,,ePDU1 eMAA10,10.130.9.1,,,,,,Hercule Poirot,hercule@poirot.com,+32-2-555-42-42,,,EATON,,,,,,,,,,,,,,left,,,,,,MApdu-BiosLeft,,,,,,MApdu-BiosLeft.Bios.Labo.Kalif.com,,,,,,
+ePDU2-LAB,device,epdu,,active,P1,myasset25,UPS1-LAB,,,,,,ePDU2 eMAA10,10.130.9.1,,,,,,Jean-Luc Picard,captain@ssenterprise.mil,555-4242,,,EATON,,,,,,,,,,,,,,right,,,,,,MApdu-BiosRight,,,,,,MApdu-BiosRight.Bios.Labo.Kalif.com,,,,,,
+SRV1-LAB,device,server,,active,P1,myasset26,ePDU1-LAB,13,1,ePDU2-LAB,13,1,SRV1 PRIMERGY RX100 G8,,,,,,,Tintin,tintin+srv1-lab@tinint.net,+32-2-555-42-42,,1,Fujitsu,,,,,,,,,,,,,6,,,,,,,vesxi09,,,,,,,,,,,,
+SRV2-LAB,device,server,,active,P1,myasset27,ePDU1-LAB,12,1,ePDU2-LAB,12,2,SRV2 PRIMERGY RX100 G8,,,,,,,Athos,athos@mousquetaires.defense.gouv.fr,+33 (0)4 42 42 42 42,,1,Fujitsu,,,,,,,,,,,,,7,,,,,,,vesxi10,,,,,,vesxi10.mbt.lab.etn.com,,,,,,
+KAROL-LAB,device,server,,nonactive,P5,myasset28,,,,,,,Server for Karols average testing data,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,Vaporware,,,,,,,,,
+FEED-LAB,device,feed,,active,P1,myasset29,,,,,,,FEED 3Ph 240V,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,3,,,,GROUP1-LAB
+GROUP1-LAB,group,input_power,,active,P1,myasset30,,,,,,,input power chain,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+SRV3-LAB,device,server,,active,P1,myasset50,ePDU1-LAB,9,1,ePDU2-LAB,9,2,SRV3 DL320e G8,,,,,,,Porthos,porthos@mousquetaires.defense.gouv.fr,+33 (0)4 42 42 42 42,,1,HP,,,,,,,,,,,,,8,,,,,,,,,,,,,,,,,,,
+SRV4-LAB,device,server,,active,P1,myasset31,ePDU1-LAB,8,1,ePDU2-LAB,8,2,SRV4 DL320e G8,,,,,,,Aramis,aramis@mousquetaires.defense.gouv.fr,+33 (0)4 42 42 42 42,,1,HP,,,,,,,,,,,,,9,,,,,,,,,,,,,,,,,,,
+SRV5-LAB,device,server,,active,P1,myasset32,ePDU1-LAB,7,1,ePDU2-LAB,7,2,SRV5 PowerEdge R320,,,,,,,D Artagnan,dartagnan@mousquetaires.defense.gouv.fr,+33 (0)4 42 42 42 42,,1,Dell,,,,,,,,,,,,,11,,,,,,,,,,,,,,,,,,,
+SRV6-LAB,device,server,,active,P1,myasset33,ePDU1-LAB,5,1,ePDU2-LAB,5,2,SRV6 System x 3530 M4,,,,,,,Prince Dakkar,nemo@nautilus.defense.gouv.fr,+33 (0)4 42 42 42 42,,1,IBM,,,,,,,,,,,,,13,,,,,,,,,,,,,,,,,,,
+UPS3PH-LAB,device,ups,,active,P1,_myasset22,FEED-LAB,,,,,,PXGX UPS + EATON Parallel BladeUPS,10.130.36.13,,,,,,Stephane,stephane@the-pink-panter.movie,+33 (0)4 42 42 42 42,,40,EATON,,,,,2014-11-12,,,,,,,,0,,,2018-12-31,,2014-11-12,2016-11-12,,,2019-11-12,,,,,10.130.36.13,,,,2020-12-31,GROUP1-LAB
