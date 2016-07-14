@@ -1015,8 +1015,6 @@ agent_autoconfig_SOURCES = \
 			src/agents/autoconfig/Configurator.h \
 			src/agents/autoconfig/ConfiguratorFactory.h \
 			src/agents/autoconfig/ConfiguratorFactory.cc \
-			src/agents/autoconfig/DCTHConfigurator.cc \
-			src/agents/autoconfig/DCTHConfigurator.h \
 			src/agents/autoconfig/RuleConfigurator.h \
 			src/agents/autoconfig/RuleConfigurator.cc \
 			src/agents/autoconfig/UptimeConfigurator.h \
