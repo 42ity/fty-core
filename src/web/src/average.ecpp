@@ -81,6 +81,7 @@ bool relative_to_unixtime (const std::string& relative, int64_t now, int64_t& un
     std::string checked_type;
     std::string checked_step;
     std::string checked_source;
+    bool checked_ordered = false;
     uint32_t checked_element_id;
     std::string checked_relative;
     {
@@ -91,6 +92,7 @@ bool relative_to_unixtime (const std::string& relative, int64_t now, int64_t& un
         std::string source = qparam.param("source");
         std::string element_id = qparam.param("element_id");
         std::string relative = qparam.param("relative");
+        std::string ordered = qparam.param("ordered");
 
         check_regex_text_or_die ("start_ts", start_ts, checked_start_ts, "^([0-9]{14}Z|)$");
         check_regex_text_or_die ("end_ts", end_ts, checked_end_ts, "^([0-9]{14}Z|)$");
@@ -99,6 +101,11 @@ bool relative_to_unixtime (const std::string& relative, int64_t now, int64_t& un
         check_regex_text_or_die ("source", source, checked_source, "^[-_.@a-z0-9]{0,255}$");
         check_regex_text_or_die ("relative", relative, checked_relative, "^([0-9]{1,2}[a-z]|)$");
         check_element_identifier_or_die ("element_id", element_id, checked_element_id);
+
+        check_regex_text_or_die ("ordered", ordered, ordered, "^(true|false|)$");
+        if ( ordered == "true" ) {
+            checked_ordered = true;
+        }
     }
     int64_t st = -1, end = -1;
     if (checked_relative.empty ()) {
