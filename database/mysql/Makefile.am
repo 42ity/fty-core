@@ -8,7 +8,7 @@ mysqlexdir	= $(datadir)/@PACKAGE@/examples/sql/mysql
 mysqlex_DATA	= \
 		    load_data.sql ci-DC-power-UC1.sql location_topology.sql \
 		    power_topology.sql rack_power.sql load_ROZLAB.sql \
-		    load_data_test_restapi.sql
+		    load_data_test_restapi.sql load_data.csv
 
 EXTRA_DIST += $(mysql_DATA) $(mysqlex_DATA)
 
