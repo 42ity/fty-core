@@ -450,7 +450,7 @@ IMAGE_SKIP=""
 
 if [ "$ATTEMPT_DOWNLOAD" != no ] ; then
 	logmsg_info "Get the latest operating environment image prepared for us by OBS"
-	IMAGE_URL="`wget -O - "$OBS_IMAGES/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}/" 2> /dev/null | sed -n 's|.*href="\(.*'"${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}"'\.'"$EXT"'\)".*|'"$OBS_IMAGES/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}"'/\1|p' | sort | tail -n 1 | sed 's,\([^:]\)//,\1/,g'`"
+	IMAGE_URL="`wget -O - "$OBS_IMAGES/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}/" 2> /dev/null | sed -n 's|.*href="\(.*'"${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}"'\.'"$EXT"'\)".*|'"$OBS_IMAGES/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}"'/\1|p' | sort -n | tail -n 1 | sed 's,\([^:]\)//,\1/,g'`"
         [ $? = 0 ] && [ -n "$IMAGE_URL" ] || die "Could not detect remote IMAGE_URL at '$OBS_IMAGES/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}/' (looking for regex '${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}')!"
 	IMAGE="`basename "$IMAGE_URL"`"
         [ $? = 0 ] && [ -n "$IMAGE" ] || die "Could not detect remote IMAGE_URL at '$OBS_IMAGES/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}/' (looking for regex '${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}')!"

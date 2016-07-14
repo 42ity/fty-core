@@ -662,7 +662,7 @@ lsdir_http_pattern() {
 findnewest_osimage() (
     # Echo the URL to the newest OS image file found on remote resource, if any
     # Note: currently expects certain filename patterns and http-dir listing markup
-    IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOT_OSIMAGE}" "${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}.${EXT}" | tail -1`"
+    IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOT_OSIMAGE}" "${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}.${EXT}" | sort -n | tail -1`"
     if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
         [ x"`basename "$IMAGE_URL" .${EXT}`" != x ] && \
         echo "$IMAGE_URL" && return 0
