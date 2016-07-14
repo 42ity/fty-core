@@ -1123,6 +1123,7 @@ warranty_metric_CPPFLAGS =	$(AM_CPPFLAGS) \
 client_SCRIPTS +=	tools/bios-passwd \
 			tools/bios-networking \
 			tools/fake-th \
+			tools/loghost-rsyslog \
 			tools/compress-logs \
 			tools/verify-fs
 
@@ -1130,6 +1131,7 @@ helper_SCRIPTS +=	tools/tntnet-ExecStartPre.sh
 
 EXTRA_DIST +=		tools/fake-th \
 			tools/bios-networking \
+			tools/loghost-rsyslog \
 			tools/compress-logs
 
 # Recipe needed to fulfill ci-rc-bios.sh logic
@@ -1392,6 +1394,7 @@ SYSTEMD_UNITS_NOTPRESET += $(SYSTEMD_UNITS_NOTPRESET_LOWLEVEL) $(SYSTEMD_UNITS_N
 
 # These unit files are compiled, but are not enabled via BIOS presets
 SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL += \
+                        biostimer-loghost-rsyslog-netconsole.service \
                         biostimer-compress-logs.service \
                         biostimer-verify-fs.service
 
@@ -1403,6 +1406,7 @@ SYSTEMD_UNITS_TIMERIMPL += $(SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL) $(SYSTEMD_UNITS_T
 # These files need no processing, delivered verbatim
 # Enabled as part of BIOS presets
 SYSTEMD_TIMERS_LOWLEVEL += \
+                        biostimer-loghost-rsyslog-netconsole.timer \
                         biostimer-compress-logs.timer \
                         biostimer-verify-fs.timer
 
