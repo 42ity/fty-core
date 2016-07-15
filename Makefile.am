@@ -761,9 +761,7 @@ check_PROGRAMS += 	test-autoconfig
 test_autoconfig_SOURCES = tests/agents/autoconfig/test-autoconfig.cc \
 						  src/agents/autoconfig/Configurator.h \
 						  src/agents/autoconfig/RuleConfigurator.h \
-						  src/agents/autoconfig/RuleConfigurator.cc \
-		         		  src/agents/autoconfig/bits.cc \
-						  src/agents/autoconfig/bits.h
+						  src/agents/autoconfig/RuleConfigurator.cc
 
 
 test_autoconfig_LDADD = \
@@ -1010,8 +1008,6 @@ client_PROGRAMS +=	agent-autoconfig
 agent_autoconfig_SOURCES = \
 			src/agents/autoconfig/agent-autoconfig.cc \
 			src/agents/autoconfig/agent-autoconfig.h \
-			src/agents/autoconfig/bits.cc \
-			src/agents/autoconfig/bits.h \
 			src/agents/autoconfig/Configurator.h \
 			src/agents/autoconfig/ConfiguratorFactory.h \
 			src/agents/autoconfig/ConfiguratorFactory.cc \
