@@ -25,14 +25,14 @@ Cmnd_Alias DATE	            = /usr/bin/date,/bin/date,/sbin/hwclock
 Cmnd_Alias AUGTOOL          = /usr/bin/augtool -S -I/usr/share/bios/lenses -e
 Cmnd_Alias BIOS_PASSWD      = @libexecdir@/@PACKAGE@/bios-passwd
 Cmnd_Alias BIOS_SYSTEMCTL   = @libexecdir@/@PACKAGE@/systemctl
-Cmnd_Alias BIOS_JOURNALCTL   = @libexecdir@/@PACKAGE@/journalctl
-Cmnd_Alias BIOS_UPDATE_RC3   = @libexecdir@/@PACKAGE@/update-rc3
+Cmnd_Alias BIOS_JOURNALCTL  = @libexecdir@/@PACKAGE@/journalctl
+Cmnd_Alias BIOS_UPDATE_RC3  = @libexecdir@/@PACKAGE@/update-rc3
+Cmnd_Alias BIOS_MOUNT_USB   = @libexecdir@/@PACKAGE@/mount_usb
+Cmnd_Alias BIOS_UMOUNT_USB  = @libexecdir@/@PACKAGE@/umount_usb
 Cmnd_Alias BIOS_LOGHOST_RSYSLOG   = @libexecdir@/@PACKAGE@/loghost-rsyslog
-Cmnd_Alias BIOS_MOUNT = /bin/mount /dev/sd[a-z]* /mnt/USB
-Cmnd_Alias BIOS_UMOUNT = /bin/umount
 
 # Overall, what is currently allowed with different privileges?
-Cmnd_Alias BIOS_PROGS	= DATE,AUGTOOL,BIOS_PASSWD,BIOS_SYSTEMCTL,BIOS_JOURNALCTL,BIOS_NUTCONFIG,BIOS_UPDATE_RC3,BIOS_LOGHOST_RSYSLOG,BIOS_MOUNT,BIOS_UMOUNT
+Cmnd_Alias BIOS_PROGS	= DATE,AUGTOOL,BIOS_PASSWD,BIOS_SYSTEMCTL,BIOS_JOURNALCTL,BIOS_NUTCONFIG,BIOS_UPDATE_RC3,BIOS_MOUNT_USB,BIOS_UMOUNT_USB,BIOS_LOGHOST_RSYSLOG
 
 # Who is allowed to elevate?
 User_Alias BIOS_USERS	= %bios-admin,www-data,%bios-infra
