@@ -1117,6 +1117,7 @@ warranty_metric_CPPFLAGS =	$(AM_CPPFLAGS) \
 client_SCRIPTS +=	tools/bios-passwd \
 			tools/bios-networking \
 			tools/fake-th \
+			tools/mount_usb \
 			tools/loghost-rsyslog \
 			tools/compress-logs \
 			tools/verify-fs
@@ -1125,6 +1126,7 @@ helper_SCRIPTS +=	tools/tntnet-ExecStartPre.sh
 
 EXTRA_DIST +=		tools/fake-th \
 			tools/bios-networking \
+			tools/mount_usb \
 			tools/loghost-rsyslog \
 			tools/compress-logs
 
