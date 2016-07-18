@@ -1,0 +1,104 @@
+#!/bin/bash
+#
+# Copyright (C) 2016 Eaton
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+#! \file    mount_usb | umount_usb
+#  \brief   Helper script for (un-)mounting devices
+#  \author  Michal Vyskocil <MichalVyskocil@Eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \details Helper script for mounting and unmounting the USB devices securely
+#
+
+export PATH=/bin:/sbin:/usr/bin
+
+# Use syslog if "logger" is available
+LOGGER="$(which logger)" 2>/dev/null || LOGGER=""
+
+write_syslog() {
+    # TODO: Extend with config files and/or BIOS_* variables to point
+    # logging directly to remote servers. etc?
+    if [[ $# -gt 0 ]]; then
+        if [[ -n "$LOGGER" ]] && [[ -x "$LOGGER" ]] ; then
+            USER_PREFIX=""
+            [[ -n "${SUDO_USER-}" ]] && \
+                USER_PREFIX="sudo ${SUDO_USER-} (${SUDO_UID-}:${SUDO_GID-})"
+            [[ -n "${USER-}" ]] && \
+                USER_PREFIX="${USER_PREFIX:+$USER_PREFIX as }$USER (${UID-}/${EUID-}:${GID-})"
+            [[ -n "$USER_PREFIX" ]] && USER_PREFIX="$USER_PREFIX:"
+            $LOGGER -p auth.notice -t "`basename $0`-wrapper[$$]" "$USER_PREFIX" -- "$@" || true
+        fi
+        echo "$@" >&2
+    fi
+    return 0
+}
+
+die_ACTION_NOT_ALLOWED() {
+    write_syslog "Action not allowed"
+    exit 1
+}
+
+# We only support one flash stick here, but in any port
+MNT_DIR=/mnt/USB
+case "$1" in
+    -h|-help|--help)
+        cat << EOF
+Usage: mount_usb [-t FSTYPE] /dev/sdXY
+Usage: umount_usb [ /dev/sdXY | $MNT_DIR ]
+EOF
+        exit 0
+        ;;
+esac
+
+case "`basename $0`" in
+    umount_usb)
+        case "$1" in
+            "") /bin/umount ${MNT_DIR} ; exit $? ;;
+            /dev/sd[a-z]*)
+                /bin/umount "$1" ; exit $? ;;
+            *)  die_ACTION_NOT_ALLOWED;;
+        esac
+        ;;
+    mount_usb)
+        MNT_GID="`getent group bios-admin | cut -d ':' -f 3`" || MNT_GID=""
+        MNT_DEV="${1}"
+
+        # TODO: those are arguments only for non-Linux native FS,
+        # however as we assume 99.9% of users will have usb stick
+        # formated to vfat, this is not a big deal imo
+        MOUNT_OPTS="umask=0002,nodev,noexec,noatime,nodiratime,sync,nosuid,rw"
+        [ -n "$MNT_GID" ] && MOUNT_OPTS="gid=${MNT_GID},$MOUNT_OPTS"
+        MOUNT_ARGS="-o ${MOUNT_OPTS}"
+        mkdir -p "$MNT_DIR"
+        chown root:bios-admin "$MNT_DIR"
+        chmod 0770 "$MNT_DIR"
+
+        if [ "x${MNT_DEV}" = "x-t" ]; then
+            MOUNT_ARGS="${MOUNT_ARGS} -t ${2}"
+            MNT_DEV="${3}"
+        fi
+
+        case "$MNT_DEV" in
+            /dev/sd[a-z]*)
+                write_syslog /bin/mount ${MOUNT_ARGS} ${MNT_DEV} ${MNT_DIR}
+                /bin/mount $MOUNT_ARGS ${MNT_DEV} ${MNT_DIR}
+                exit $?
+                ;;
+            *)  die_ACTION_NOT_ALLOWED;;
+        esac
+        ;;
+    *)  die_ACTION_NOT_ALLOWED;;
+esac
