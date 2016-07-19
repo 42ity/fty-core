@@ -538,24 +538,24 @@ install -m 0755 /usr/share/bios/examples/config/profile.d/bash_history.sh /etc/p
 install -m 0755 /usr/share/bios/examples/config/profile.d/bash_syslog.sh /etc/profile.d/bash_syslog.sh
 
 # MVY:
-# snoopy is NOT compatible with systemd!!!
+# original debian8 snoopy (v1.8.0) is NOT compatible with systemd!!!
 #   https://bugs.freedesktop.org/show_bug.cgi?id=90364
 #   BIOS-2423
 # so the integration to the system must exclude systemd itself
-# turn it off now
+# we customly deliver a newer version (should be 2.2.6+) in our repos
 
-#if [ -s "/lib/snoopy.so" ] && [ -z "`grep /lib/snoopy.so /etc/ld.so.preload`" ]; then
-#    echo "Installing LIBSNOOPY into common LD_PRELOAD"
-#    echo "/lib/snoopy.so" >> /etc/ld.so.preload
-#
-#    if [ -d "/etc/logcheck" ]; then
-#        mkdir -p /etc/logcheck/ignore.d.server && \
-#        echo '^\w{3} [ :0-9]{11} [._[:alnum:]-]+ snoopy.*' > /etc/logcheck/ignore.d.server/snoopy
-#
-#        mkdir -p /etc/logcheck/violations.ignore.d && \
-#        echo '^\w{3} [ :0-9]{11} [._[:alnum:]-]+ snoopy.*' > /etc/logcheck/violations.ignore.d/snoopy
-#    fi
-#fi
+if [ -s "/lib/snoopy.so" ] && [ -z "`grep /lib/snoopy.so /etc/ld.so.preload`" ]; then
+    echo "Installing LIBSNOOPY into common LD_PRELOAD"
+    echo "/lib/snoopy.so" >> /etc/ld.so.preload
+
+    if [ -d "/etc/logcheck" ]; then
+        mkdir -p /etc/logcheck/ignore.d.server && \
+        echo '^\w{3} [ :0-9]{11} [._[:alnum:]-]+ snoopy.*' > /etc/logcheck/ignore.d.server/snoopy
+
+        mkdir -p /etc/logcheck/violations.ignore.d && \
+        echo '^\w{3} [ :0-9]{11} [._[:alnum:]-]+ snoopy.*' > /etc/logcheck/violations.ignore.d/snoopy
+    fi
+fi
 
 # Legality requires this notice
 { echo ""; echo "WARNING: All shell activity on this system is logged!"; echo ""; } >> /etc/motd
