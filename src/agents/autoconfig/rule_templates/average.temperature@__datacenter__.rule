@@ -3,7 +3,7 @@
         "rule_name"     :   "average.temperature@__name__",
         "rule_desc"     :   "Temperature",
         "rule_class"    :   "Temperature in datacenter",
-        "rule_hierarchy":   "env.temperature.dc",
+        "rule_hierarchy":   "environment.temperature.dc",
         "target"        :   "average.temperature@__name__",
         "element"       :   "__name__",
         "values_unit"   :   "C",
