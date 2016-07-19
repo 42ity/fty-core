@@ -2,6 +2,7 @@
     "single" : {
         "rule_name"     :   "onbattery@__name__",
         "rule_class"    :   "UPS running on battery",
+        "rule_hierarchy":   "power.onbattery.ups",
         "target"        :   ["status.ups@__name__"],
         "element"       :   "__name__",
         "values"        :   [ ],

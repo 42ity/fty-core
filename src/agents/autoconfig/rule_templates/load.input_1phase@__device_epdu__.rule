@@ -2,7 +2,8 @@
     "threshold" : {
         "rule_name"     :   "load.input_1phase@__name__",
         "rule_desc"     :   "Input load",
-        "rule_class"     :   Input load (1 phase) in PDU",
+        "rule_class"    :   "Input load (1 phase) in PDU",
+        "rule_hierarchy":   "power.load.input.1phase.epdu",
         "target"        :   "load.input.L1@__name__",
         "element"       :   "__name__",
         "values_unit"   :   "W",

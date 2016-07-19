@@ -3,6 +3,7 @@
         "rule_name"     :   "realpower.default@__name__",
         "rule_desc"     :   "Total Power in datacenter",
         "rule_class"    :   "Total power in data center",
+        "rule_hierarchy":   "power.realpower.default.dc",
         "target"        :   "realpower.default@__name__",
         "element"       :   "__name__",
         "values_unit"   :   "W",
