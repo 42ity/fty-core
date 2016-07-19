@@ -166,6 +166,9 @@ process_action_hosts() {
                         [ "$ACTION_HOSTS" = tryset ] && \
                         echo "WARN: $RSYSLOG_LOGHOST in $HOSTSFILE is set by user, not overriding with netconsole" >&2 && \
                         return 1
+                    [ "$RES" = 2 ] && [ "$HOSTSFENCE" = "$HOSTSFENCE_MANUAL" ] && \
+                        [ "$ACTION_HOSTS" = tryset ] && \
+                        echo "WARN: $RSYSLOG_LOGHOST in $HOSTSFILE was set by netconsole; overriding with manual setting" >&2
                     remove_loghost_name
                     ;& # BASH: Fall through to next block
                 22|53) # This name is absent locally - can add freely
