@@ -3,6 +3,7 @@
         "rule_name"     :   "voltage.input_1phase@__name__",
         "rule_desc"     :   "Input Voltage",
         "rule_class"    :   "Input voltage (1 phase) in PDU",
+        "rule_hierarchy":   "internal.input.voltage.1phase.epdu",
         "target"        :   "voltage.input.L1@__name__",
         "element"       :   "__name__",
         "values_unit"   :   "V",
