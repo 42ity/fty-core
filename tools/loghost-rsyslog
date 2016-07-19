@@ -23,7 +23,11 @@
 # \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 
 HOSTSFILE="/etc/hosts"
-HOSTSFENCE='### Entry managed by loghost-rsyslog.sh ###'
+# This is for entries set by user explicitly - highest priority for things
+# this script would manage (not-fenced manual settings are even higher).
+HOSTSFENCE_MANUAL='### Entry managed by loghost-rsyslog.sh ###'
+# This is for entries set by dynamic netconsole setup (e.g. via timer unit)
+HOSTSFENCE_NETCONSOLE='### Entry managed by loghost-rsyslog.sh for dynamic netconsole setup ###'
 
 RSYSLOG_TOGGLE_FILE_ACTIVE="/etc/rsyslog.d-early/10-ipc-remote-loghost.conf"
 RSYSLOG_TOGGLE_FILE_BACKUP="$RSYSLOG_TOGGLE_FILE_ACTIVE.laststate"
@@ -33,6 +37,8 @@ RSYSLOG_LOGHOST="loghost"
 
 CONFIGFS_ROOT="/sys/kernel/config"
 CONFIGFS_NETCONSOLE="$CONFIGFS_ROOT/netconsole"
+
+LOCKFILE="/tmp/.`basename $0`.lock"
 
 usage() {
     cat <<EOF
@@ -47,7 +53,7 @@ Usages:
     $0 {-q|--query} [ loghost | toggle | netconsole ]
     $0 --set-loghost IP-ADDRESS
     $0 --del-loghost
-    $0 --toggle-rsyslog { LAST_STATE | DEFAULT = ON | ipc-audit | all | off }
+    $0 --toggle-rsyslog { LAST_STATE | DEFAULT = ON | off | ipc-audit | all | none }
     $0 --netconsole
 
     -q|--query          Report current status of the configuration data.
@@ -62,7 +68,9 @@ Usages:
                         restarts the rsyslog service to enable the change.
                         The "off" state renames the present config (if any)
                         to the backup file, to disable the pre-integrated
-                        remote logging.
+                        remote logging. "none" is a flag value that is set
+                        into the active config, e.g. to forbid --netconsole
+                        from re-enabling the logging when you don't want it.
                         The default is LAST_STATE if present, or 'ipc-audit'.
     --netconsole        Follows the dynamic (configfs) setup of netconsole.
                         If there is an enabled entry ("default" is preferred)
@@ -70,6 +78,8 @@ Usages:
                         and toggle rsyslog (as with DEFAULT).
                         If no entries are found, toggle rsyslog flag to "off"
                         and try to do the --del-loghost activities.
+                        Both activities with netconsole have lower precedence
+                        than actions done explicitly by using the flags above.
 EOF
 }
 
@@ -97,11 +107,13 @@ query_loghost_name() {
     # resolution:
     # 22        Hostname currently not found anywhere
     # 53        Local value not present but resolution succeeded (DNS?)
-    # 0         Managed by this script (value present and fenced in /etc/hosts)
+    # 0         Managed by this script (value present and fenced in /etc/hosts) as a manual setting
+    # 2         Managed by this script (value present and fenced in /etc/hosts) as a dynamic netconsole setting
     # 1         Local value present, but not managed by this script (no fence)
     getent hosts "$RSYSLOG_LOGHOST" 2>/dev/null || return 22
     G="`egrep -A1 -B1 '^[[:blank:]]*[0-9a-fA-F:].*[[:blank:]]'"$RSYSLOG_LOGHOST"'([[:blank:]]|$)' "$HOSTSFILE"`" || return 53
-    [ "`echo "$G" | fgrep -c "$HOSTSFENCE"`" -eq 2 ] && return 0
+    [ "`echo "$G" | fgrep -c "$HOSTSFENCE_MANUAL"`" -eq 2 ] && return 0
+    [ "`echo "$G" | fgrep -c "$HOSTSFENCE_NETCONSOLE"`" -eq 2 ] && return 2
     return 1
 }
 
@@ -124,14 +136,16 @@ remove_loghost_name() {
     [ -n "$1" ] && isIPaddr "$1" \
         && PAT_IPADDR="$1" && echo "INFO: Removing only loghost entries for IP $PAT_IPADDR" >&2 \
         || PAT_IPADDR='[0-9a-fA-F:]'
-    G="`cat "$HOSTSFILE" | egrep -v '^[[:blank:]]*'"$PAT_IPADDR"'.*[[:blank:]]'"$RSYSLOG_LOGHOST"'([[:blank:]]|$)' | fgrep -v "$HOSTSFENCE"`"
+    G="`cat "$HOSTSFILE" | egrep -v '^[[:blank:]]*'"$PAT_IPADDR"'.*[[:blank:]]'"$RSYSLOG_LOGHOST"'([[:blank:]]|$)' | fgrep -v "$HOSTSFENCE_MANUAL" | fgrep -v "$HOSTSFENCE_NETCONSOLE"`"
     [ -n "$G" ] && echo "$G" | grep -w localhost > /dev/null || return 1
     echo "$G" > "$HOSTSFILE"
 }
 
 process_action_hosts() {
+    # Caller should set HOSTSFENCE to either $HOSTSFENCE_MANUAL
+    # or $HOSTSFENCE_NETCONSOLE according to situation.
     case "$ACTION_HOSTS" in
-        none) return 0 ;;
+        _SKIP_) return 0 ;;
         tryset|forceset)
             query_loghost_name >/dev/null
             RES=$?
@@ -142,15 +156,24 @@ process_action_hosts() {
                     else
                         echo "WARN: Forced to change $RSYSLOG_LOGHOST in $HOSTSFILE which was not managed by us" >&2
                     fi
-                    ;&
-                0) # We manage this name locally
-                    [ "$RES" = 0 ] && [ -n "$VALUE_HOSTS" ] && \
+                    ;& # BASH: Fall through to next block
+                0|2) # We manage this name locally:
+                     # 0: as end-user's manual setting
+                     # 2: as dynamic netconsole setting
+                    [ "$RES" != 1 ] && [ -n "$VALUE_HOSTS" ] && \
                         egrep '^[[:blank:]]*'"$VALUE_HOSTS"'[[:blank:]]+(.*[[:blank:]]+|)'"$RSYSLOG_LOGHOST"'([[:blank:]]+.*|[[:blank:]]*)$' "$HOSTSFILE" >/dev/null && \
                         echo "INFO: $RSYSLOG_LOGHOST in $HOSTSFILE is already up-to-date and managed by this script, got nothing to do" >&2 && \
                         return 0
+                    [ "$RES" = 0 ] && [ "$HOSTSFENCE" = "$HOSTSFENCE_NETCONSOLE" ] && \
+                        [ "$ACTION_HOSTS" = tryset ] && \
+                        echo "WARN: $RSYSLOG_LOGHOST in $HOSTSFILE is set by user, not overriding with netconsole" >&2 && \
+                        return 1
+                    [ "$RES" = 2 ] && [ "$HOSTSFENCE" = "$HOSTSFENCE_MANUAL" ] && \
+                        [ "$ACTION_HOSTS" = tryset ] && \
+                        echo "WARN: $RSYSLOG_LOGHOST in $HOSTSFILE was set by netconsole; overriding with manual setting" >&2
                     remove_loghost_name
                     ;& # BASH: Fall through to next block
-                22|53) # This name is absent locally - can add
+                22|53) # This name is absent locally - can add freely
                     ( echo "$HOSTSFENCE"; echo "$VALUE_HOSTS	$RSYSLOG_LOGHOST"; echo "$HOSTSFENCE" ) >> "$HOSTSFILE"
                     return $?
                     ;;
@@ -171,14 +194,19 @@ process_action_hosts() {
                         echo "WARN: Forced to change $RSYSLOG_LOGHOST in $HOSTSFILE which was not managed by us" >&2
                     fi
                     ;&
-                0) # We manage this name locally
-                    [ "$RES" = 0 ] && [ -n "$VALUE_HOSTS" ] && \
+                0|2) # We manage this name locally:
+                     # 0: as end-user's manual setting
+                     # 2: as dynamic netconsole setting
+                    [ "$RES" != 1 ] && [ -n "$VALUE_HOSTS" ] && \
                         if egrep '^[[:blank:]]*'"$VALUE_HOSTS"'[[:blank:]]+(.*[[:blank:]]+|)'"$RSYSLOG_LOGHOST"'([[:blank:]]+.*|[[:blank:]]*)$' "$HOSTSFILE" >/dev/null \
                         ; then : ; else \
                             echo "INFO: $RSYSLOG_LOGHOST in $HOSTSFILE has no mappings to IP address $VALUE_HOSTS, got nothing to do" >&2 && \
                             return 0
                         fi
-
+                    [ "$RES" = 0 ] && [ "$HOSTSFENCE" = "$HOSTSFENCE_NETCONSOLE" ] && \
+                        [ "$ACTION_HOSTS" = trydel ] && \
+                        echo "WARN: $RSYSLOG_LOGHOST in $HOSTSFILE is set by user, not overriding with netconsole" >&2 && \
+                        return 1
                     remove_loghost_name "$VALUE_HOSTS"
                     return $?
                     ;;
@@ -194,9 +222,10 @@ process_action_hosts() {
 process_action_toggle() {
     TICKLE=no
     case "$ACTION_TOGGLE" in
-        none) return 0 ;;
+        _SKIP_) return 0 ;;
         enable-backup)
-            [ -s "$RSYSLOG_TOGGLE_FILE_ACTIVE" ] && return 0
+            [ -s "$RSYSLOG_TOGGLE_FILE_ACTIVE" ] && \
+                return 0
             [ -s "$RSYSLOG_TOGGLE_FILE_BACKUP" ] && \
                 mv -f "$RSYSLOG_TOGGLE_FILE_BACKUP" "$RSYSLOG_TOGGLE_FILE_ACTIVE" && \
                 TICKLE=yes || \
@@ -208,19 +237,32 @@ process_action_toggle() {
         enable)
             if [ "$TICKLE" = no ]; then
                 NEWVAL='set $.use_remote_logsink = "'"$VALUE_TOGGLE"'";'
-                [ -s "$RSYSLOG_TOGGLE_FILE_ACTIVE" ] && \
+                if [ -s "$RSYSLOG_TOGGLE_FILE_ACTIVE" ] ; then
                     fgrep "$NEWVAL" "$RSYSLOG_TOGGLE_FILE_ACTIVE" >/dev/null && \
                         echo "INFO: $RSYSLOG_TOGGLE_FILE_ACTIVE is already up-to-date and managed by this script, got nothing to do" >&2 && \
                         return 0
+
+                    [ "$HOSTSFENCE" = "$HOSTSFENCE_NETCONSOLE" ] && \
+                        fgrep "$HOSTSFENCE_MANUAL" "$RSYSLOG_TOGGLE_FILE_ACTIVE" && \
+                        echo "WARN: $RSYSLOG_TOGGLE_FILE_ACTIVE was enabled by user with a different mode, not overriding with netconsole" >&2 && \
+                        return 1
+                fi
 
                 ( echo "$HOSTSFENCE"; echo "$NEWVAL"; echo "$HOSTSFENCE" ) > "$RSYSLOG_TOGGLE_FILE_ACTIVE" && \
                     TICKLE=yes
             fi
             ;;
         disable)
-            [ -s "$RSYSLOG_TOGGLE_FILE_ACTIVE" ] && \
+            if [ -s "$RSYSLOG_TOGGLE_FILE_ACTIVE" ] ; then
+                if [ "$HOSTSFENCE" = "$HOSTSFENCE_NETCONSOLE" ] && \
+                    fgrep "$HOSTSFENCE_MANUAL" "$RSYSLOG_TOGGLE_FILE_ACTIVE" >/dev/null \
+                ; then
+                    echo "WARN: $RSYSLOG_TOGGLE_FILE_ACTIVE was enabled by user, not overriding with netconsole" >&2
+                    return 1
+                fi
                 mv -f "$RSYSLOG_TOGGLE_FILE_ACTIVE" "$RSYSLOG_TOGGLE_FILE_BACKUP" && \
                 TICKLE=yes
+            fi
             ;;
         *)  return 255 ;;
     esac
@@ -494,12 +536,15 @@ process_action_query() {
 # Process CLI args
 [ $# = 0 ] && echo "ERROR: Argument required!" >&2 && usage && exit 1
 
-ACTION_HOSTS=none
+ACTION_HOSTS=_SKIP_
 VALUE_HOSTS=""
-ACTION_TOGGLE=none
+ACTION_TOGGLE=_SKIP_
 VALUE_TOGGLE=""
-ACTION_QUERY=none
+ACTION_QUERY=_SKIP_
 VALUE_QUERY=""
+
+# Use this one by default:
+HOSTSFENCE="$HOSTSFENCE_MANUAL"
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -527,7 +572,7 @@ while [ $# -gt 0 ]; do
             case "$2" in
                 off|OFF) ACTION_TOGGLE="disable"; VALUE_TOGGLE="" ;;
                 LAST_STATE|DEFAULT|on|ON) ACTION_TOGGLE="enable-backup"; VALUE_TOGGLE="$2" ;;
-                ipc-audit|all) ACTION_TOGGLE="enable"; VALUE_TOGGLE="$2" ;;
+                ipc-audit|all|none) ACTION_TOGGLE="enable"; VALUE_TOGGLE="$2" ;;
                 *) echo "ERROR: Unknown toggle state requested: '$2'" >&2
                     usage; exit 1 ;;
             esac
@@ -539,6 +584,7 @@ while [ $# -gt 0 ]; do
             # In particular, the builtin witout bootarg is still loaded and
             # ready for dynamic reconfiguration. Here we inspect ACTIVE cfgs.
             # TODO: Refactor to use REQUIRE_DYNAMIC_NETCONSOLE_ACTIVE=yes parse_netconsole_dynamic() here
+            HOSTSFENCE="$HOSTSFENCE_NETCONSOLE"
             if [ -d "$CONFIGFS_NETCONSOLE" ]; then
                 VALUE_HOSTS=""
                 for F in `ls -1d "$CONFIGFS_NETCONSOLE"/{default,*}/remote_ip 2>/dev/null` ; do
@@ -550,11 +596,11 @@ while [ $# -gt 0 ]; do
                 done
                 if [ -n "$VALUE_HOSTS" ] && isIPaddr "$VALUE_HOSTS" ; then
                     echo "INFO: Will try to enable netconsole remote IP '$VALUE_HOSTS' as loghost" >&2
-                    ACTION_HOSTS=tryset
+                    ACTION_HOSTS=tryset # VALUE_HOSTS is available per above
                     ACTION_TOGGLE="enable-backup"; VALUE_TOGGLE="DEFAULT"
                 else
                     echo "INFO: Will try to disable loghost because there is no enabled netconsole remote IP" >&2
-                    VALUE_HOSTS=""; ACTION_HOSTS=trydel
+                    ACTION_HOSTS=trydel; VALUE_HOSTS=""
                     ACTION_TOGGLE="disable"; VALUE_TOGGLE=""
                 fi
             else
@@ -586,6 +632,17 @@ if [ "$ACTION_QUERY" = yes ]; then
     process_action_query
     exit $?
 fi
+
+if [ -f "$LOCKFILE" ]; then
+    echo -e "WARN: Another instance of this script is modifying the system, waiting for it to be gone\c"
+    while [ -f "$LOCKFILE" ] ; do
+        sleep 1
+        echo -e '.\c'
+    done
+    echo " OK to proceed"
+fi >&2
+echo "$$" > "$LOCKFILE"
+trap 'rm "$LOCKFILE"' 0 1 2 3 15
 
 process_action_hosts
 process_action_toggle
