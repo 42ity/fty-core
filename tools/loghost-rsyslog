@@ -38,6 +38,8 @@ RSYSLOG_LOGHOST="loghost"
 CONFIGFS_ROOT="/sys/kernel/config"
 CONFIGFS_NETCONSOLE="$CONFIGFS_ROOT/netconsole"
 
+LOCKFILE="/tmp/.`basename $0`.lock"
+
 usage() {
     cat <<EOF
 This script manages remote logging to "$RSYSLOG_LOGHOST" by maintaining an entry
@@ -630,6 +632,17 @@ if [ "$ACTION_QUERY" = yes ]; then
     process_action_query
     exit $?
 fi
+
+if [ -f "$LOCKFILE" ]; then
+    echo -e "WARN: Another instance of this script is modifying the system, waiting for it to be gone\c"
+    while [ -f "$LOCKFILE" ] ; do
+        sleep 1
+        echo -e '.\c'
+    done
+    echo " OK to proceed"
+fi >&2
+echo "$$" > "$LOCKFILE"
+trap 'rm "$LOCKFILE"' 0 1 2 3 15
 
 process_action_hosts
 process_action_toggle
