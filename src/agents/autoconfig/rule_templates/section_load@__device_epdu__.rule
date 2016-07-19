@@ -3,6 +3,7 @@
         "rule_name"     :   "section_load@__name__",
         "rule_desc"     :   "Section Load",
         "rule_class"    :   "Section Load in PDU",
+        "rule_hierarchy":   "power.load.section.epdu",
         "target"        :   "load.outlet.group.1@__name__",
         "element"       :   "__name__",
         "values_unit"   :   "%",
