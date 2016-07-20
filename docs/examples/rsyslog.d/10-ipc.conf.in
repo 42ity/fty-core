@@ -18,8 +18,6 @@
 # Mind the rsyslog package version in your OS image - the project is under
 # quite active development and supported syntax varies greatly.
 
-if ($.use_remote_logsink == 'all') then @loghost:514
-
 # General keyword and structure docs
 # http://www.rsyslog.com/doc/master/configuration/basic_structure.html
 # http://www.rsyslog.com/doc/master/configuration/filters.html
@@ -55,6 +53,8 @@ $SystemLogSocketName /run/systemd/journal/syslog
 # also we do not let snoopy spam with our interactive bash-session syslogger
 # NOTE that it can supposedly be configured with an /etc/snoopy.ini (but we did not look at that yet)
 # https://github.com/a2o/snoopy/blob/master/etc/snoopy.ini.in
+
+if ($.use_remote_logsink == 'all') then @loghost:514
 
 if ($programname == 'snoopy') then
 {
