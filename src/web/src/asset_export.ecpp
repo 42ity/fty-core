@@ -39,7 +39,7 @@
     char *T = strstr(buf, "T");
     if (T)
         *T = 0x00; // fill the T
-	reply.setHeader(tnt::httpheader::contentDisposition, "asset_export" + std::string{buf} + ".csv");
+	reply.setHeader(tnt::httpheader::contentDisposition, "attachment; filename=\"asset_export" + std::string{buf} + ".csv\"");
     try {
         persist::export_asset_csv(reply.out());
     }
