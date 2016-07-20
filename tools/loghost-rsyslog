@@ -471,6 +471,8 @@ parse_netconsole_kernelarg() {
         [ -n "$TMPVAL" ] && NETCONSOLE_LOCAL_IP="$TMPVAL"
     TMPVAL="`echo "$NETCONSOLE_KERNELARG" | sed "s|$TMPSED|\4|"`" && \
         [ -n "$TMPVAL" ] && NETCONSOLE_LOCAL_DEV="$TMPVAL"
+    # TODO: Post-parse NETCONSOLE_LOCAL_DEV to cater for "(egiga|eth)$I"
+    # and "LAN$LI" like in the uImage::init script logic
 
     TMPVAL="`echo "$NETCONSOLE_KERNELARG" | sed "s|$TMPSED|\5|"`" && \
         [ -n "$TMPVAL" ] && NETCONSOLE_REMOTE_PORT="$TMPVAL"
