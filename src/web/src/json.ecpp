@@ -49,13 +49,21 @@
 	// Silence the warning about unused "request" variable
 	request.keepAlive();
 
-	// No matter what, we are speaking JSON for most of the URLs
-	static cxxtools::Regex rex_GET_text_plain("^/api/v1(/asset/export|/admin/license)$");
-	if(request.getMethod() == "GET" && rex_GET_text_plain.match(request.getUrl())) {
+    // XXX: this is supposed to simplify the application, but as it gets more and more branches
+    //      and states, consider setting the content-type for response in each ecpp file
+    //      instead
+
+	static cxxtools::Regex rex_GET_text_plain("^/api/v1/admin/license$");
+    static cxxtools::Regex rex_GET_text_csv ("^/api/v1/asset/export$");
+
+	if(request.getMethod() == "GET" && rex_GET_text_plain.match(request.getUrl()))
 		reply.setContentType("text/plain;charset=UTF-8");
-	} else {
+    else
+	if(request.getMethod() == "GET" && rex_GET_text_csv.match(request.getUrl()))
+		reply.setContentType("text/plain;charset=UTF-8");
+	else
 		reply.setContentType("application/json;charset=UTF-8");
-	}
+
 	reply.setHeader(tnt::httpheader::cacheControl, "no-store");
 	reply.setHeader(tnt::httpheader::pragma, "no-cache");
 

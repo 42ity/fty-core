@@ -34,11 +34,24 @@
 </%pre>
 <%cpp>
 {
-    char buf[16] = {0x00};
-    calendar_to_datetime(time(NULL), buf, 16);
-    char *T = strstr(buf, "T");
-    if (T)
-        *T = 0x00; // fill the T
+    // Silence the warning about unused "request" variable
+    request.keepAlive();
+
+    char buf[21] = {0x00};
+    int r = calendar_to_datetime(time(NULL), buf, 21);
+    if (r != 0)
+        http_die ("internal-error", "Cannot get system time");
+
+    // replace colons ':' by dash '-'
+    // prevents http://latkin.org/blog/2016/07/20/git-for-windows-accidentally-creates-ntfs-alternate-data-streams/
+    // for our Windows users
+    for (char* c = strchr (buf, ':');
+               c != NULL;
+               c = strchr (c, ':'))
+    {
+        *c = '-';
+    }
+
 	reply.setHeader(tnt::httpheader::contentDisposition, "attachment; filename=\"asset_export" + std::string{buf} + ".csv\"");
     try {
         persist::export_asset_csv(reply.out());
