@@ -1,0 +1,20 @@
+{
+    "threshold" : {
+        "rule_name"     :   "average.humidity@__name__",
+        "rule_desc"     :   "Humidity",
+        "rule_class"    :   "Humidity in row",
+        "rule_hierarchy" :   "environment.humidity.row",
+        "target"        :   "average.humidity@__name__",
+        "element"       :   "__name__",
+        "values_unit"   :   "%",
+        "values"        :   [ {"low_warning"   : "40"},
+                              {"low_critical"  : "30"},
+                              {"high_warning"  : "60"},
+                              {"high_critical" : "70"} ],
+        "results"       :   [
+            { "low_warning"   : { "action" : ["EMAIL","SMS"], "severity" : "WARNING", "description" : "Humidity in row is low" }},
+            { "low_critical"  : { "action" : ["EMAIL","SMS"], "severity" : "CRITICAL", "description" : "Humidity in row is critically low" }},
+            { "high_warning"  : { "action" : ["EMAIL","SMS"], "severity" : "WARNING", "description" : "Humidity in row is high" }},
+            { "high_critical" : { "action" : ["EMAIL","SMS"], "severity" : "CRITICAL", "description" : "Humidity in row is critically high" }} ]
+    }
+}
