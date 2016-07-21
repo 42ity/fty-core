@@ -262,7 +262,7 @@ bool relative_to_unixtime (const std::string& relative, int64_t now, int64_t& un
         <$$ utils::json::jsonify ("source", source_rep) $>,
         <$$ utils::json::jsonify ("step", step_rep) $>,
         <$$ utils::json::jsonify ("type", type_rep) $>,
-        <$$ utils::json::jsonify ("element_id", checked_element_id) $>,
+        <$$ utils::json::jsonify ("element_id", std::to_string(checked_element_id)) $>,
         <$$ utils::json::jsonify ("start_ts", start_date_rep) $>,
         <$$ utils::json::jsonify ("end_ts", end_date_rep) $>,
         "data":[
