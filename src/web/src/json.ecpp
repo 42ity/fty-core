@@ -60,7 +60,7 @@
 		reply.setContentType("text/plain;charset=UTF-8");
     else
 	if(request.getMethod() == "GET" && rex_GET_text_csv.match(request.getUrl()))
-		reply.setContentType("text/plain;charset=UTF-8");
+		reply.setContentType("text/csv;charset=UTF-8");
 	else
 		reply.setContentType("application/json;charset=UTF-8");
 
