@@ -35,6 +35,7 @@ bool TemplateRuleConfigurator::v_configure (const std::string& name, const AutoC
             name.c_str(), info.type, info.subtype);
     switch (info.operation) {
         case persist::asset_operation::INSERT:
+        case persist::asset_operation::UPDATE:
         {
             bool result = true;
             std::vector <std::string> templates = loadTemplates(info.type, info.subtype);
@@ -46,7 +47,6 @@ bool TemplateRuleConfigurator::v_configure (const std::string& name, const AutoC
 
             return result;
         }
-        case persist::asset_operation::UPDATE:
         case persist::asset_operation::DELETE:
         case persist::asset_operation::RETIRE:
         case persist::asset_operation::INVENTORY:
