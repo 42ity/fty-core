@@ -34,10 +34,6 @@
 
 </%pre>
 <%cpp>
-    augtool* augeas = augtool::get_instance();
-    if (!augeas)
-        http_die ("internal-error", "Cannot communicate with augtool. Is it installed or properly configured?");
-
     // BLOCK 1
     // input argument sanitization
     std::string checked_time;
@@ -71,7 +67,7 @@
             http_die ("request-param-required", "time' or 'ntp");
         }
 
-        static cxxtools::Regex t_rex("^[1-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]T[0-2][0-9]:[0-5][0-9]:[0-5][0-9]Z$");
+        static cxxtools::Regex t_rex("^[1-9][0-9][0-9][0-9]-(0[1-9]|10|11|12)-([0-2][0-9]|30|31)T([0-1][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]Z$");
         if(!time.empty()) {
             if (!t_rex.match (time)) {
                 http_die ("request-param-bad", "time", time.c_str (), "format <YYYY>-<MM>-<DD>T<hh>:<mm>:<ss>Z (ISO 8601).");
@@ -89,6 +85,10 @@
         checked_ntp = ntp;
     }
     // input arguments sanitization end
+
+    augtool* augeas = augtool::get_instance();
+    if (!augeas)
+        http_die ("internal-error", "Cannot communicate with augtool. Is it installed or properly configured?");
 
     if (!request.isMethodGET ()) {
 
