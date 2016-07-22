@@ -1049,6 +1049,10 @@ template_ruledir = $(datadir)/$(PACKAGE)/agent-autoconfig
 RULE_TEMPLATES = \
 			src/agents/autoconfig/rule_templates/average.humidity@__datacenter__.rule \
 			src/agents/autoconfig/rule_templates/average.temperature@__datacenter__.rule \
+			src/agents/autoconfig/rule_templates/average.humidity@__rack__.rule \
+			src/agents/autoconfig/rule_templates/average.temperature@__rack__.rule \
+			src/agents/autoconfig/rule_templates/average.humidity@__row__.rule \
+			src/agents/autoconfig/rule_templates/average.temperature@__row__.rule \
 			src/agents/autoconfig/rule_templates/charge.battery@__device_ups__.rule \
 			src/agents/autoconfig/rule_templates/load.default@__device_ups__.rule \
 			src/agents/autoconfig/rule_templates/load.input_1phase@__device_epdu__.rule \
