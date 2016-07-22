@@ -5,10 +5,13 @@
 # /etc/hosts file, using the classic unprotected 514/UDP syslog protocol.
 # This preset logging can be enabled by defining certain variable values:
 # * To send the same subset of log entries (while not everything aka *.*)
-#   to the remote syslog server, set the "$.use_remote_logsink" = "subset"
+#   to the remote syslog server, set the "$.use_remote_logsink" = "<subset>"
 #   variable in another config file (with higher alphabetic priority,
 #   such as the "08-ipc-remote.conf", or even in /etc/rsyslog.d-early), e.g.
 #       set $.use_remote_logsink = "ipc-audit";
+# * The 'ipc-audit' intentionally does not replicate the "snoopy" messages
+#   as it is rather noisy and low-level information. You can explicitly use
+#   the 'ipc-audit+snoopy' value to get really the same filter contents.
 # * To send everything (*.*) to the remote loghost, set this value to "all".
 # ** Note that if you use the Linux netconsole, the integration scripts in
 #    your OS image may dynamically rewrite "loghost" mapping in /etc/hosts.
@@ -60,7 +63,7 @@ if ($programname == 'snoopy') then
 {
     if ($msg contains [ 'whoami', 'logger' ] ) then stop else {
         :omfile:$log_rotation_commands
-        if ($.use_remote_logsink == 'ipc-audit') then @loghost:514
+        if ($.use_remote_logsink == 'ipc-audit+snoopy') then @loghost:514
         stop
     }
 } else {
@@ -68,7 +71,7 @@ if ($programname == 'snoopy') then
     or ($programname == 'tntnet' and $msg contains [ 'PUT', 'POST', 'DELETE' ])
     then {
         :omfile:$log_rotation_messages
-        if ($.use_remote_logsink == 'ipc-audit') then @loghost:514
+        if ($.use_remote_logsink == [ 'ipc-audit', 'ipc-audit+snoopy' ] ) then @loghost:514
         stop
     }
 }
@@ -77,5 +80,5 @@ if ($programname == 'snoopy') then
 # (logging mechanism and facility are predefined via profile.d):
 if ($syslogfacility-text == 'local6' and $syslogseverity-text == 'debug') then {
     :omfile:$log_rotation_messages
-    if ($.use_remote_logsink == 'ipc-audit') then @loghost:514
+    if ($.use_remote_logsink == [ 'ipc-audit', 'ipc-audit+snoopy' ] ) then @loghost:514
 }
