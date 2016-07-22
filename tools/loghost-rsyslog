@@ -54,7 +54,7 @@ Usages:
 
     $0 --set-loghost IP-ADDRESS
     $0 --del-loghost
-    $0 --toggle-rsyslog { LAST_STATE | DEFAULT = ON | off | ipc-audit | all | none }
+    $0 --toggle-rsyslog { LAST_STATE | DEFAULT = ON | off | ipc-audit | ipc-audit+snoopy | all | none }
 Note: You may specify both a loghost and a toggle-rsyslog command on the same
 line, e.g. "loghost-rsyslog --del-loghost --toggle-rsyslog none" to disable the
 sending of logs off-host in one blow (and block --netconsole intergation timer
@@ -607,7 +607,7 @@ while [ $# -gt 0 ]; do
             case "$2" in
                 off|OFF) ACTION_TOGGLE="disable"; VALUE_TOGGLE="" ;;
                 LAST_STATE|DEFAULT|on|ON) ACTION_TOGGLE="enable-backup"; VALUE_TOGGLE="$2" ;;
-                ipc-audit|all|none) ACTION_TOGGLE="enable"; VALUE_TOGGLE="$2" ;;
+                ipc-audit|ipc-audit+snoopy|all|none) ACTION_TOGGLE="enable"; VALUE_TOGGLE="$2" ;;
                 *) echo "ERROR: Unknown toggle state requested: '$2'" >&2
                     usage; exit 1 ;;
             esac
