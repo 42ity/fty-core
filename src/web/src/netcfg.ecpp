@@ -43,6 +43,8 @@ using namespace shared;
 </%pre>
 <%cpp>
 augtool* augeas = augtool::get_instance();
+if (!augeas)
+    http_die ("internal-error", "Cannot communicate with augtool. Is it installed or properly configured?");
 std::string nil;
 
 // Make sure we have data that works
