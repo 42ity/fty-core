@@ -180,6 +180,7 @@ process_action_hosts() {
                     remove_loghost_name
                     ;& # BASH: Fall through to next block
                 22|53) # This name is absent locally - can add freely
+                    RESTART_RSYSLOGD=yes
                     ( echo "$HOSTSFENCE"; echo "$VALUE_HOSTS	$RSYSLOG_LOGHOST"; echo "$HOSTSFENCE" ) >> "$HOSTSFILE"
                     return $?
                     ;;
@@ -213,6 +214,7 @@ process_action_hosts() {
                         [ "$ACTION_HOSTS" = trydel ] && \
                         echo "WARN: $RSYSLOG_LOGHOST in $HOSTSFILE is set by user, not overriding with netconsole" >&2 && \
                         return 1
+                    RESTART_RSYSLOGD=yes
                     remove_loghost_name "$VALUE_HOSTS"
                     return $?
                     ;;
@@ -226,7 +228,7 @@ process_action_hosts() {
 }
 
 process_action_toggle() {
-    TICKLE=no
+    [ -n "$RESTART_RSYSLOGD" ] || RESTART_RSYSLOGD=no
     case "$ACTION_TOGGLE" in
         _SKIP_) return 0 ;;
         enable-backup)
@@ -234,14 +236,14 @@ process_action_toggle() {
                 return 0
             [ -s "$RSYSLOG_TOGGLE_FILE_BACKUP" ] && \
                 mv -f "$RSYSLOG_TOGGLE_FILE_BACKUP" "$RSYSLOG_TOGGLE_FILE_ACTIVE" && \
-                TICKLE=yes || \
+                RESTART_RSYSLOGD=yes || \
                 case "$VALUE_TOGGLE" in
                     LAST_STATE) echo "WARN: No last state found to re-enable!" >&2; return 1;;
                     DEFAULT|on|ON) VALUE_TOGGLE='ipc-audit' ;;
                 esac
             ;& # BASH fall through
         enable)
-            if [ "$TICKLE" = no ]; then
+            if [ "$RESTART_RSYSLOGD" = no ]; then
                 NEWVAL='set $.use_remote_logsink = "'"$VALUE_TOGGLE"'";'
                 if [ -s "$RSYSLOG_TOGGLE_FILE_ACTIVE" ] ; then
                     fgrep "$NEWVAL" "$RSYSLOG_TOGGLE_FILE_ACTIVE" >/dev/null && \
@@ -255,7 +257,7 @@ process_action_toggle() {
                 fi
 
                 ( echo "$HOSTSFENCE"; echo "$NEWVAL"; echo "$HOSTSFENCE" ) > "$RSYSLOG_TOGGLE_FILE_ACTIVE" && \
-                    TICKLE=yes
+                    RESTART_RSYSLOGD=yes
             fi
             ;;
         disable)
@@ -267,18 +269,21 @@ process_action_toggle() {
                     return 1
                 fi
                 mv -f "$RSYSLOG_TOGGLE_FILE_ACTIVE" "$RSYSLOG_TOGGLE_FILE_BACKUP" && \
-                TICKLE=yes
+                RESTART_RSYSLOGD=yes
             fi
             ;;
         *)  return 255 ;;
     esac
 
-    if [ "$TICKLE" = yes ]; then
+    if [ "$RESTART_RSYSLOGD" = yes ]; then
+        unset RESTART_RSYSLOGD
+        echo "INFO: Restarting the rsyslog service for new settings to take effect" >&2
         /bin/systemctl restart rsyslog
         return $?
     fi
 
     # Should not get here if there were changes to enable
+    unset RESTART_RSYSLOGD
     return 1
 }
 
