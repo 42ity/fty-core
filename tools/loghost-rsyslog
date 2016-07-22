@@ -1,5 +1,5 @@
 #!/bin/bash
-# NOTE: Bash syntax is used in "case"s below
+# NOTE: Bash-specific syntax is used in "case"s below
 #
 #   Copyright (c) 2016 Eaton
 #
@@ -51,9 +51,15 @@ prefers local $HOSTSFILE over remote naming databases like DNS, NIS, LDAP, etc.
 
 Usages:
     $0 {-q|--query} [ loghost | toggle | netconsole ]
+
     $0 --set-loghost IP-ADDRESS
     $0 --del-loghost
     $0 --toggle-rsyslog { LAST_STATE | DEFAULT = ON | off | ipc-audit | all | none }
+Note: You may specify both a loghost and a toggle-rsyslog command on the same
+line, e.g. "loghost-rsyslog --del-loghost --toggle-rsyslog none" to disable the
+sending of logs off-host in one blow (and block --netconsole intergation timer
+from reviving it).
+
     $0 --netconsole
 
     -q|--query          Report current status of the configuration data.
