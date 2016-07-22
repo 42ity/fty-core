@@ -35,6 +35,8 @@
 </%pre>
 <%cpp>
     augtool* augeas = augtool::get_instance();
+    if (!augeas)
+        http_die ("internal-error", "Cannot communicate with augtool. Is it installed or properly configured?");
 
     // BLOCK 1
     // input argument sanitization
