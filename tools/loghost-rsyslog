@@ -1,5 +1,5 @@
 #!/bin/bash
-# NOTE: Bash syntax is used in "case"s below
+# NOTE: Bash-specific syntax is used in "case"s below
 #
 #   Copyright (c) 2016 Eaton
 #
@@ -51,9 +51,15 @@ prefers local $HOSTSFILE over remote naming databases like DNS, NIS, LDAP, etc.
 
 Usages:
     $0 {-q|--query} [ loghost | toggle | netconsole ]
+
     $0 --set-loghost IP-ADDRESS
     $0 --del-loghost
     $0 --toggle-rsyslog { LAST_STATE | DEFAULT = ON | off | ipc-audit | all | none }
+Note: You may specify both a loghost and a toggle-rsyslog command on the same
+line, e.g. "loghost-rsyslog --del-loghost --toggle-rsyslog none" to disable the
+sending of logs off-host in one blow (and block --netconsole intergation timer
+from reviving it).
+
     $0 --netconsole
 
     -q|--query          Report current status of the configuration data.
@@ -128,6 +134,10 @@ query_rsyslog_toggle() {
     return 22
 }
 
+get_active_rsyslog_toggle() {
+    egrep '^set \$.use_remote_logsink = ' "$RSYSLOG_TOGGLE_FILE_ACTIVE" | sed 's,^set \$.use_remote_logsink *= *\"\(.*\)\" *;$,\1,'
+}
+
 remove_loghost_name() {
     # This removes an entry with "loghost" (and our fencing) from
     # the /etc/hosts file.
@@ -174,6 +184,7 @@ process_action_hosts() {
                     remove_loghost_name
                     ;& # BASH: Fall through to next block
                 22|53) # This name is absent locally - can add freely
+                    RESTART_RSYSLOGD=yes_if_active
                     ( echo "$HOSTSFENCE"; echo "$VALUE_HOSTS	$RSYSLOG_LOGHOST"; echo "$HOSTSFENCE" ) >> "$HOSTSFILE"
                     return $?
                     ;;
@@ -207,6 +218,7 @@ process_action_hosts() {
                         [ "$ACTION_HOSTS" = trydel ] && \
                         echo "WARN: $RSYSLOG_LOGHOST in $HOSTSFILE is set by user, not overriding with netconsole" >&2 && \
                         return 1
+                    RESTART_RSYSLOGD=yes_if_active
                     remove_loghost_name "$VALUE_HOSTS"
                     return $?
                     ;;
@@ -220,22 +232,22 @@ process_action_hosts() {
 }
 
 process_action_toggle() {
-    TICKLE=no
+    [ -n "$RESTART_RSYSLOGD" ] || RESTART_RSYSLOGD=no
     case "$ACTION_TOGGLE" in
-        _SKIP_) return 0 ;;
+        _SKIP_) return 0;;
         enable-backup)
             [ -s "$RSYSLOG_TOGGLE_FILE_ACTIVE" ] && \
                 return 0
             [ -s "$RSYSLOG_TOGGLE_FILE_BACKUP" ] && \
                 mv -f "$RSYSLOG_TOGGLE_FILE_BACKUP" "$RSYSLOG_TOGGLE_FILE_ACTIVE" && \
-                TICKLE=yes || \
+                RESTART_RSYSLOGD=yes || \
                 case "$VALUE_TOGGLE" in
                     LAST_STATE) echo "WARN: No last state found to re-enable!" >&2; return 1;;
                     DEFAULT|on|ON) VALUE_TOGGLE='ipc-audit' ;;
                 esac
             ;& # BASH fall through
         enable)
-            if [ "$TICKLE" = no ]; then
+            if [ "$RESTART_RSYSLOGD" != yes ]; then
                 NEWVAL='set $.use_remote_logsink = "'"$VALUE_TOGGLE"'";'
                 if [ -s "$RSYSLOG_TOGGLE_FILE_ACTIVE" ] ; then
                     fgrep "$NEWVAL" "$RSYSLOG_TOGGLE_FILE_ACTIVE" >/dev/null && \
@@ -249,8 +261,10 @@ process_action_toggle() {
                 fi
 
                 ( echo "$HOSTSFENCE"; echo "$NEWVAL"; echo "$HOSTSFENCE" ) > "$RSYSLOG_TOGGLE_FILE_ACTIVE" && \
-                    TICKLE=yes
+                    RESTART_RSYSLOGD=yes
             fi
+            [ "$RESTART_RSYSLOGD" = yes ]
+            return $? # if flag == yes, config was definitively changed
             ;;
         disable)
             if [ -s "$RSYSLOG_TOGGLE_FILE_ACTIVE" ] ; then
@@ -261,18 +275,37 @@ process_action_toggle() {
                     return 1
                 fi
                 mv -f "$RSYSLOG_TOGGLE_FILE_ACTIVE" "$RSYSLOG_TOGGLE_FILE_BACKUP" && \
-                TICKLE=yes
+                RESTART_RSYSLOGD=yes
             fi
             ;;
         *)  return 255 ;;
     esac
 
-    if [ "$TICKLE" = yes ]; then
+    # Should not get here if there were changes to enable
+    return 1
+}
+
+optional_restart_rsyslogd() {
+    if [ "$RESTART_RSYSLOGD" = yes_if_active ]; then
+        # No changes done because of toggle, but hostname was redefined
+        # We only need to restart rsyslogd if off-host logging is active
+        if [ -s "$RSYSLOG_TOGGLE_FILE_ACTIVE" ] ; then
+            OLDVAL="`get_active_rsyslog_toggle`" || OLDVAL=""
+            if [ -n "$OLDVAL" ] && [ "$OLDVAL" != none ]; then
+                RESTART_RSYSLOGD=yes
+            fi
+        fi
+    fi
+
+    if [ "$RESTART_RSYSLOGD" = yes ]; then
+        unset RESTART_RSYSLOGD
+        echo "INFO: Restarting the rsyslog service for new settings to take effect" >&2
         /bin/systemctl restart rsyslog
         return $?
     fi
 
     # Should not get here if there were changes to enable
+    unset RESTART_RSYSLOGD
     return 1
 }
 
@@ -648,3 +681,4 @@ trap 'rm "$LOCKFILE"' 0 1 2 3 15
 
 process_action_hosts
 process_action_toggle
+optional_restart_rsyslogd
