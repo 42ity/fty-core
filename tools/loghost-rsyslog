@@ -527,7 +527,8 @@ process_action_query() {
         case $RES in
             0)  echo "INFO: The rsyslog toggle above was found in ACTIVE config file" >&2 ;;
             1)  echo "INFO: The rsyslog toggle above was found in BACKUP config file" >&2 ;;
-            22|*)  echo "INFO: The rsyslog toggle was NOT FOUND in active or backup config files" >&2 ;;
+            22) echo "INFO: The rsyslog toggle was NOT FOUND in active or backup config files" >&2 ;;
+            *)  echo "INFO: The rsyslog toggle inspection returned an UNEXPECTED CODE ($RES)" >&2 ;;
         esac
         echo "" >&2
     fi
@@ -541,7 +542,8 @@ process_action_query() {
             0)  echo "INFO: The hostname above was resolved in local $HOSTSFILE and is managed BY US" >&2 ;;
             1)  echo "INFO: The hostname above was resolved in local $HOSTSFILE but is managed BY SOMEONE ELSE" >&2 ;;
             53)  echo "INFO: The hostname above was resolved in a REMOTE naming service" >&2 ;;
-            22|*)  echo "INFO: The $RSYSLOG_LOGHOST hostname was NOT RESOLVED" >&2 ;;
+            22)  echo "INFO: The $RSYSLOG_LOGHOST hostname was NOT RESOLVED" >&2 ;;
+            *)  echo "INFO: The $RSYSLOG_LOGHOST hostname resolution returned an UNEXPECTED CODE ($RES)" >&2 ;;
         esac
         echo "" >&2
     fi
@@ -559,7 +561,7 @@ process_action_query() {
 
         parse_netconsole_dynamic -a && \
             echo "INFO: Got dynamic netconsole module settings above" >&2 || \
-            echo "INFO: Dynamic netconsole module settings was NOT FOUND" >&2
+            echo "INFO: Dynamic netconsole module settings were NOT FOUND ($?)" >&2
 
         echo "" >&2
     fi
