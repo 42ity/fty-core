@@ -326,6 +326,12 @@
         <url>^/api/v1/admin/config.*$</url>
     </mapping>
 
+    <!-- not found error  -->
+    <mapping>
+        <target>not_found@bios_web</target>
+        <url>^/api/v1/*.*$</url>
+    </mapping>
+
  </mappings>
 
   <!-- listen to a port (empty string means any local interface) -->

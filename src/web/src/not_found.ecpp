@@ -1,0 +1,18 @@
+<%pre>
+    #include "utils_web.h"
+    #include <stdlib.h>
+</%pre>
+
+<%cpp>
+    const std::string url =  request.getUrl();
+    http_die("not-found", url.c_str());
+
+</%cpp>
+
+
+
+
+
+
+
+
