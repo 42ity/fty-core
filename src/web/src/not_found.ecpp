@@ -5,7 +5,9 @@
 
 <%cpp>
     const std::string url =  request.getUrl();
-    http_die("not-found", url.c_str());
+    const std::string meth = request.getMethod ();
+    std::string msg = url + " " + meth;
+    http_die("not-found", msg.c_str());
 
 </%cpp>
 
