@@ -71,6 +71,7 @@ config_defaults() {
     # [ -z "${FLAG_FLATTEN_FILENAMES-}" ] && FLAG_FLATTEN_FILENAMES="yes"
 
     # Apparently, the new smarter build-names do not require flattery.
+    # See findnewest_osimage() for subsequent filter over indexed filenames.
     [ -z "${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN-}" ] && SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN="${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}"'-*_'"${ARCH}"
     [ -z "${FLAG_FLATTEN_FILENAMES-}" ] && FLAG_FLATTEN_FILENAMES="no"
 
@@ -189,6 +190,7 @@ usage() {
     echo "  --url-image-fw-raw-uboot --url-image-fw-raw-uimage --url-image-fw-raw-modules"
     echo "  --(no-)erase-factory-reset If a new OS image downloaded successfully, touch"
     echo "                   the control file so 'init' does a factory reset after reboot"
+    echo "  --touch-factory-reset      Alias to force --erase-factory-reset for next boot"
     echo "  --(no-)erase-all           If a new OS image downloaded successfully, then"
     echo "                   request a factory reset + NAND format after reboot"
     echo "For HTTP(S) or FTP(S) based delivery, do not forget to set http_proxy URL as"
@@ -659,10 +661,24 @@ lsdir_http_pattern() {
 
 ##################################################
 
+sort_osimage_names() {
+    # ASSUMPTION: we don't have over 999 rebuilds of the same baseline image ;)
+    # ASSUMPTION2: all image builds have a rebuild-index suffix for the same
+    # baseline, or there is one old image for a baseline without a suffix.
+    ### sort
+    ### sort -n
+    sed -e 's,-\([[:digit:]][[:digit:]]\.[[:digit:]][[:digit:]]\.[[:digit:]][[:digit:]]\)_,-\1-0_,' \
+        -e 's,-\([[:digit:]]\)_,-0\1_,' \
+        -e 's,-\([[:digit:]][[:digit:]]\)_,-0\1_,' \
+    | sort -n | \
+    sed -e 's,-0*\([123456789][[:digit:]]*\)_,-\1_,' \
+        -e 's,-00*_,_,'
+}
+
 findnewest_osimage() (
     # Echo the URL to the newest OS image file found on remote resource, if any
     # Note: currently expects certain filename patterns and http-dir listing markup
-    IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOT_OSIMAGE}" "${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}.${EXT}" | tail -1`"
+    IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOT_OSIMAGE}" "${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}.${EXT}" | sort_osimage_names | tail -1`"
     if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
         [ x"`basename "$IMAGE_URL" .${EXT}`" != x ] && \
         echo "$IMAGE_URL" && return 0
@@ -874,7 +890,8 @@ removeold_osimage() (
     if [ x"$FLAG_FLATTEN_FILENAMES" = xno ] ; then
         [ -d "./$IMGTYPE/$ARCH" ] && cd "./$IMGTYPE/$ARCH"
         # Alphabetic sort, per timestamps from the builder host
-        for F in `ls -1d *.${EXT} 2>/dev/null | grep -v _ | head -n -1` ; do
+        # but considering the rebuild-suffixes of same baseline
+        for F in `ls -1d *.${EXT} 2>/dev/null | grep -v _ | sort_osimage_names | head -n -1` ; do
             [ -n "$F" ] && [ -f "$F" ] && \
             logmsg_info "Removing older OS image: '`pwd`/$F' and its checksum(s)" && \
             if [ -n "$DOWNLOADED_OS_IMAGE" ] && [ -s "$DOWNLOADED_OS_IMAGE" ] && \
@@ -1441,6 +1458,7 @@ while [ $# -gt 0 ]; do
 			lsdir_http_pattern "${SOURCESITEROOTFW_MODULES}" "*[0-9].[0-9]*.${EXT}*" \
 				| egrep -v '\.(md5'"$CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT"')$' || RES=$?
 			lsdir_http_pattern "${SOURCESITEROOT_OSIMAGE}" "${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}.${EXT}*" \
+				| sort_osimage_names \
 				| egrep -v '\.(md5'"$CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT"')$' || RES=$?
 
 			summarize_check() {
@@ -1502,7 +1520,8 @@ while [ $# -gt 0 ]; do
                 --no-removeold-image-os)ACTION_REMOVEOLD_OSIMAGE="no";;
                 --no-removeold-image-fw)ACTION_REMOVEOLD_FWIMAGE="no";;
                 --no-removeold-images)  ACTION_REMOVEOLD_OSIMAGE="no"; ACTION_REMOVEOLD_FWIMAGE="no";;
-                --erase-factory-reset)  FLAG_ERASE_FACTORYRESET="yes" ;;
+                --erase-factory-reset|--touch-factory-reset|--force-factory-reset)
+                                        FLAG_ERASE_FACTORYRESET="yes" ;;
                 --no-erase-factory-reset)  FLAG_ERASE_FACTORYRESET="no" ;;
                 --erase-all)            FLAG_ERASE_ALL="yes" ;;
                 --no-erase-all)         FLAG_ERASE_ALL="no" ;;

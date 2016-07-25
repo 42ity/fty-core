@@ -761,9 +761,7 @@ check_PROGRAMS += 	test-autoconfig
 test_autoconfig_SOURCES = tests/agents/autoconfig/test-autoconfig.cc \
 						  src/agents/autoconfig/Configurator.h \
 						  src/agents/autoconfig/RuleConfigurator.h \
-						  src/agents/autoconfig/RuleConfigurator.cc \
-		         		  src/agents/autoconfig/bits.cc \
-						  src/agents/autoconfig/bits.h
+						  src/agents/autoconfig/RuleConfigurator.cc
 
 
 test_autoconfig_LDADD = \
@@ -1010,13 +1008,9 @@ client_PROGRAMS +=	agent-autoconfig
 agent_autoconfig_SOURCES = \
 			src/agents/autoconfig/agent-autoconfig.cc \
 			src/agents/autoconfig/agent-autoconfig.h \
-			src/agents/autoconfig/bits.cc \
-			src/agents/autoconfig/bits.h \
 			src/agents/autoconfig/Configurator.h \
 			src/agents/autoconfig/ConfiguratorFactory.h \
 			src/agents/autoconfig/ConfiguratorFactory.cc \
-			src/agents/autoconfig/DCTHConfigurator.cc \
-			src/agents/autoconfig/DCTHConfigurator.h \
 			src/agents/autoconfig/RuleConfigurator.h \
 			src/agents/autoconfig/RuleConfigurator.cc \
 			src/agents/autoconfig/UptimeConfigurator.h \
@@ -1055,6 +1049,10 @@ template_ruledir = $(datadir)/$(PACKAGE)/agent-autoconfig
 RULE_TEMPLATES = \
 			src/agents/autoconfig/rule_templates/average.humidity@__datacenter__.rule \
 			src/agents/autoconfig/rule_templates/average.temperature@__datacenter__.rule \
+			src/agents/autoconfig/rule_templates/average.humidity@__rack__.rule \
+			src/agents/autoconfig/rule_templates/average.temperature@__rack__.rule \
+			src/agents/autoconfig/rule_templates/average.humidity@__row__.rule \
+			src/agents/autoconfig/rule_templates/average.temperature@__row__.rule \
 			src/agents/autoconfig/rule_templates/charge.battery@__device_ups__.rule \
 			src/agents/autoconfig/rule_templates/load.default@__device_ups__.rule \
 			src/agents/autoconfig/rule_templates/load.input_1phase@__device_epdu__.rule \
@@ -1123,6 +1121,8 @@ warranty_metric_CPPFLAGS =	$(AM_CPPFLAGS) \
 client_SCRIPTS +=	tools/bios-passwd \
 			tools/bios-networking \
 			tools/fake-th \
+			tools/mount_usb \
+			tools/loghost-rsyslog \
 			tools/compress-logs \
 			tools/verify-fs
 
@@ -1130,6 +1130,8 @@ helper_SCRIPTS +=	tools/tntnet-ExecStartPre.sh
 
 EXTRA_DIST +=		tools/fake-th \
 			tools/bios-networking \
+			tools/mount_usb \
+			tools/loghost-rsyslog \
 			tools/compress-logs
 
 # Recipe needed to fulfill ci-rc-bios.sh logic
@@ -1393,6 +1395,7 @@ SYSTEMD_UNITS_NOTPRESET += $(SYSTEMD_UNITS_NOTPRESET_LOWLEVEL) $(SYSTEMD_UNITS_N
 
 # These unit files are compiled, but are not enabled via BIOS presets
 SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL += \
+                        biostimer-loghost-rsyslog-netconsole.service \
                         biostimer-compress-logs.service \
                         biostimer-verify-fs.service
 
@@ -1404,6 +1407,7 @@ SYSTEMD_UNITS_TIMERIMPL += $(SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL) $(SYSTEMD_UNITS_T
 # These files need no processing, delivered verbatim
 # Enabled as part of BIOS presets
 SYSTEMD_TIMERS_LOWLEVEL += \
+                        biostimer-loghost-rsyslog-netconsole.timer \
                         biostimer-compress-logs.timer \
                         biostimer-verify-fs.timer
 
