@@ -126,7 +126,9 @@ sed -i 's|.*RuntimeMaxFileSize.*|RuntimeMaxFileSize=10M|' /etc/systemd/journald.
 sed -i 's|.*Storage.*|Storage=volatile|'                  /etc/systemd/journald.conf
 
 # rsyslogd setup
-mkdir -p /etc/rsyslog.d /etc/rsyslog.d-early
+mkdir -p /etc/rsyslog.d /etc/rsyslog.d-early /var/spool/rsyslog
+# the rsyslogd.conf "$WorkDirectory"
+chmod 700 /var/spool/rsyslog
 ## remove conflicting Debian defaults
 echo '$IncludeConfig /etc/rsyslog.d-early/*.conf' > /etc/rsyslog.conf.tmp
 awk '{ print $0; } /^\$IncludeConfig/{ exit; }' </etc/rsyslog.conf >>/etc/rsyslog.conf.tmp && \
@@ -139,15 +141,16 @@ echo '$PreserveFQDN on' > /etc/rsyslog.d-early/00-PreserveFQDN.conf
 ## normal logging
 cp /usr/share/bios/examples/config/rsyslog.d/10-ipc.conf /etc/rsyslog.d/
 
-## remote logging template
-cp /usr/share/bios/examples/config/rsyslog.d/10-ipc-remote.conf /etc/rsyslog.d/
-chown root:bios-admin /etc/rsyslog.d/10-ipc-remote.conf
-chmod 0660 /etc/rsyslog.d/10-ipc-remote.conf
+## remote logging template - changeable by end-user admins
+cp /usr/share/bios/examples/config/rsyslog.d/08-ipc-remote.conf /etc/rsyslog.d/
+chown root:bios-admin /etc/rsyslog.d/08-ipc-remote.conf
+chmod 0660 /etc/rsyslog.d/08-ipc-remote.conf
 
 ## Removable media mounting point for bios-admin group
 mkdir -p /mnt/USB
 chown root:bios-admin /mnt/USB
 chmod 0770 /mnt/USB
+ln -s mount_usb /usr/libexec/bios/umount_usb
 
 # Basic network setup
 mkdir -p /etc/network
@@ -358,7 +361,8 @@ else
     #sed -i 's|PathChanged=/etc|PathChanged=/mnt/nand/overlay/etc|' /usr/lib/systemd/system/composite-metrics\@.path
 fi
 # Services not part of core
-/bin/systemctl enable bios-agent-legacy-metrics
+# XXX: legacy-metrics to be removed, don't fail if it can't be enabled
+/bin/systemctl enable bios-agent-legacy-metrics || :
 /bin/systemctl enable bios-agent-alert-generator
 
 # post Alpha services - the conditional allows is to use same script for alpha and post-alpha
@@ -532,6 +536,13 @@ esac
 # Set up history tracking and syslogging for BASH
 install -m 0755 /usr/share/bios/examples/config/profile.d/bash_history.sh /etc/profile.d/bash_history.sh
 install -m 0755 /usr/share/bios/examples/config/profile.d/bash_syslog.sh /etc/profile.d/bash_syslog.sh
+
+# MVY:
+# original debian8 snoopy (v1.8.0) is NOT compatible with systemd!!!
+#   https://bugs.freedesktop.org/show_bug.cgi?id=90364
+#   BIOS-2423
+# so the integration to the system must exclude systemd itself
+# we customly deliver a newer version (should be 2.2.6+) in our repos
 
 if [ -s "/lib/snoopy.so" ] && [ -z "`grep /lib/snoopy.so /etc/ld.so.preload`" ]; then
     echo "Installing LIBSNOOPY into common LD_PRELOAD"
