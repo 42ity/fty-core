@@ -1166,7 +1166,8 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/alert_rules_detail.cpp src/web/src/alert_rules.cpp \
                       src/web/src/alert_ack.cpp \
                       src/web/src/alert_list.cpp \
-                      src/web/src/assets_in.cpp
+                      src/web/src/assets_in.cpp \
+		      src/web/src/not_found.cpp 
 
 # Track real-git and nodist (generated) sources SEPARATELY
 nodist_bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)
