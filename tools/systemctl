@@ -74,7 +74,8 @@ SYSTEMCTL_UNITS_COMMON_INTERNAL="bios tntnet@bios bios-db-init          \
                  bios-agent-asset bios-agent-legacy-metrics kpi-uptime  \
                  agent-th dc_th bios-agent-outage bios-agent-smtp       \
                  bios-agent-tpower bios-agent-rt bios-agent-ms          \
-                 biostimer-warranty-metric biostimer-agent-ms-cleaner   "
+                 biostimer-warranty-metric biostimer-agent-ms-cleaner   \
+                 composite-metrics-configurator "
 
 SYSTEMCTL_UNITS_COMMON="$SYSTEMCTL_UNITS_COMMON_EXTERNAL $SYSTEMCTL_UNITS_COMMON_INTERNAL"
 
