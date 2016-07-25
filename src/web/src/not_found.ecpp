@@ -20,6 +20,7 @@
 /*!
  * \file not_found.ecpp
  * \author Barbora Stepankova <BarboraStepankova@Eaton.com>
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>     
  * \brief Handling of incorrect URLs
  */
  #><%pre>
