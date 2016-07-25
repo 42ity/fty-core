@@ -36,12 +36,15 @@
 #include "augtool.h"
 #include "cidr.h"
 #include "utils_web.h"
+#include "helpers.h"
 
 using namespace shared;
 
 </%pre>
 <%cpp>
 augtool* augeas = augtool::get_instance();
+if (!augeas)
+    http_die ("internal-error", "Cannot communicate with augtool. Is it installed or properly configured?");
 std::string nil;
 
 // Make sure we have data that works
@@ -75,19 +78,22 @@ if(rex_ncfg.match(request.getUrl())) {
 }
 
 // We are discussing interface configuration, are we asked about real interface?
-std::string iface = request.getArg("iface");
-static cxxtools::Regex rex_anum("^[a-z0-9A-Z]+$");
-if(!rex_anum.match(iface)) {
-    http_die ("request-param-bad", "iface", std::string ("'").append (iface).append ("'").c_str (), "Valid interface name"); // TODO better message
+std::string checked_iface;
+{
+    std::string iface = request.getArg("iface");
+    if (iface.empty ()) {
+        http_die ("request-param-required", "iface");
+    }
+    check_regex_text_or_die ("iface", iface, checked_iface, "^[a-z][a-z0-9]{0,14}$");
 }
 
 // Where is the tree reflecting the interface?
 std::string address = augeas->get_cmd_out(
-                      "match /files/etc/network/interfaces/iface[*] " + iface,
+                      "match /files/etc/network/interfaces/iface[*] " + checked_iface,
 					  false);
 if(address.empty()) {
     // Not perfect, but bad enough to create another message?
-    http_die ("element-not-found", iface.c_str ());
+    http_die ("element-not-found", checked_iface.c_str ());
 }
 
 #define AUG_GET(NAME, VAL) \
@@ -110,9 +116,9 @@ if(request.getMethod() == "PUT") {
     }
 
     try {
-        rsi = si.getMember(iface);
+        rsi = si.getMember(checked_iface);
     } catch(const std::exception& e) {
-        http_die ("bad-request-document", std::string ("No configuration for interface '").append (iface).append ("'provided.").c_str ());
+        http_die ("bad-request-document", std::string ("No configuration for interface '").append (checked_iface).append ("'provided.").c_str ());
     }
 
 
@@ -186,7 +192,7 @@ AUG_GET("gateway", gateway);
 dns = augeas->get_cmd_out("match /files/etc/resolv.conf/nameserver", true, "\", \"");
 
 </%cpp>
-{ "<$ iface $>":
+{ "<$ checked_iface $>":
     {
         "method": "<$ method $>"
 % if(!ip.empty()) {

@@ -78,14 +78,17 @@ void transform_for_conf (std::string& string) {
     }
 }
 </%pre>
-<%args>
-    std::string key;
-</%args>
 <%application scope="page">
     std::mutex config_mux;
 </%application>
 <%cpp>
 {
+    // key restrictions
+    std::string key_format_string = "^[.-_a-zA-Z0-9]+$";
+    std::string value_format_string = "^[.-_a-zA-Z0-9]*$";
+    cxxtools::Regex key_format(key_format_string);
+    cxxtools::Regex value_format(value_format_string);
+
     // DISCLAIMER!!! PLEASE READ!!!
     //
     // Current status:
@@ -117,16 +120,26 @@ void transform_for_conf (std::string& string) {
     ///     GET     ///
     ///////////////////
     if (request.isMethodGET ()) {
+        // sanity check
+        std::string checked_key;
+        {
+            std::string key = qparam.param ("key");
+            if (!key_format.match (key)) {
+                std::string errmsg = "key doesn't satisfy format " + key_format_string;
+                http_die ("request-param-bad", errmsg.c_str() );
+            }
+            checked_key = std::move (key);
+        } // end sanity check
         std::string value;
-        if ( !si.getMember (key, value)) {
-            http_die("element-not-found", key.c_str());
+        if ( !si.getMember (checked_key, value)) {
+            http_die("element-not-found", checked_key.c_str());
         }
         // key is found
         transform_for_json (value);
 </%cpp>
 {
     "config": {
-        "key" : "<$ key $>",
+        "key" : "<$ checked_key $>",
         "value" : "<$ value $>"
     }
 }
@@ -138,38 +151,49 @@ void transform_for_conf (std::string& string) {
     ///     POST      //
     ////////////////////
     if (request.isMethodPOST ()) {
-        std::string rd_key, rd_value;
-        try {
-            std::stringstream input (request.getBody (), std::ios_base::in);
-            cxxtools::JsonDeserializer deserializer (input);
-            cxxtools::SerializationInfo request_doc;
-            deserializer.deserialize (request_doc);
-            if (request_doc.category () != cxxtools::SerializationInfo::Object) {
-                http_die("bad-request-document", "Root of json request document must be an object with property 'config'.");
+        std::string checked_key;
+        std::string checked_value;
+        // sanity checks
+        {
+            std::string key;
+            std::string value;
+            try {
+                std::stringstream input (request.getBody (), std::ios_base::in);
+                cxxtools::JsonDeserializer deserializer (input);
+                cxxtools::SerializationInfo request_doc;
+                deserializer.deserialize (request_doc);
+                if (request_doc.category () != cxxtools::SerializationInfo::Object) {
+                    http_die("bad-request-document", "Root of json request document must be an object with property 'config'.");
+                }
+                request_doc.getMember("config").getMember("key") >>= key;
+                request_doc.getMember("config").getMember("value") >>= value;
             }
-            request_doc.getMember("config").getMember("key") >>= rd_key;
-            request_doc.getMember("config").getMember("value") >>= rd_value;
+            catch (const std::exception& e) {
+                LOG_END_ABNORMAL(e);
+                http_die("bad-request-document", e.what());
+            }
+            log_debug ("key='%s',value='%s'\n", key.c_str(), value.c_str());
+            // There are some restrictions regarding format
+            if (!key_format.match (key)) {
+                std::string errmsg = "key doesn't satisfy format " + key_format_string;
+                http_die ("request-param-bad", errmsg.c_str() );
+            }
+            // There are some restrictions regarding format
+            if (!value_format.match (value)) {
+                std::string errmsg = "value doesn't satisfy format " + value_format_string;
+                http_die ("request-param-bad", errmsg.c_str() );
+            }
+            checked_key = std::move (key);
+            checked_value = std::move (value);
         }
-        catch (const std::exception& e) {
-            LOG_END_ABNORMAL(e);
-            http_die("bad-request-document", e.what());
-        }
-
-        // There are some restrictions regarding key format
-        std::string key_format_string = "^[.-_a-zA-Z0-9]+$";
-        static cxxtools::Regex key_format(key_format_string);
-        if (!key_format.match (rd_key)) {
-            std::string errmsg = "key doesn't satisfy format " + key_format_string;
-            http_die ("request-param-bad", errmsg.c_str() );
-        }
-
+        // sanity checks end
         try {
-            auto p_si = si.findMember (rd_key);
-            if (!p_si) {
-                si.addValue (rd_key, rd_value);
+            auto p_si = si.findMember (checked_key);
+            if ( !p_si ) {
+                si.addValue (checked_key, checked_value);
             }
             else {
-                p_si->setValue (rd_value);
+                p_si->setValue (checked_value);
             }
             std::lock_guard<std::mutex> lock(config_mux);
             std::ofstream foutput (PROPERTIES_FILE);

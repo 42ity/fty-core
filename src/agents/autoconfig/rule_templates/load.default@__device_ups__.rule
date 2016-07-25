@@ -3,6 +3,7 @@
         "rule_name"     :   "load.default@__name__",
         "rule_desc"     :   "Load percentage for ups __name__",
         "rule_class"    :   "Default load in UPS",
+        "rule_hierarchy":   "power.load.ups",
         "target"        :   "load.default@__name__",
         "element"       :   "__name__",
         "values_unit"   :   "%",

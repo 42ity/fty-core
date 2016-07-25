@@ -93,7 +93,7 @@ try{
     ::unlink(path_p.c_str());
 
     log_debug ("ok size is %zu", okRows.size());
-    log_debug ("fail size is %lu", failRows.size());
+    log_debug ("fail size is %zu", failRows.size());
 
     // ACE: TODO
     // ATTENTION:  1. sending messages is "hidden functionality" from user

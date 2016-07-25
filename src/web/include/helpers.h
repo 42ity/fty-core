@@ -82,6 +82,24 @@ check_regex_text (const char *param_name, const std::string& param_value, const 
     } \
 }
 
+#define _ALERT_RULE_NAME_RE_STR "^[-_.a-z0-9@]{1,255}$"
+/*!
+  \brief macro to check the alert name
+  \param[in]     name            name of the parameter from rest api call
+  \param[in]     fromuser        variable containing string comming from user/network
+  \param[out]    checked         variable fo be assigned with checked content
+*/
+#define check_alert_rule_name_or_die(name, fromuser, checked) \
+{  \
+    http_errors_t errors; \
+    if (check_regex_text (name, fromuser, _ALERT_RULE_NAME_RE_STR, errors)) { \
+        checked = fromuser; \
+    } else { \
+        http_die_error (errors); \
+    } \
+}
+
+
 /*!
  \brief Check valid asset name
  \param[in]     param_name      name of the parameter from rest api call
@@ -93,19 +111,6 @@ check_regex_text (const char *param_name, const std::string& param_value, const 
 
 */
 bool check_asset_name (const std::string& param_name, const std::string& name, http_errors_t &errors);
-
-/*!
- \brief Check valid rule name
- \param[in]     param_name      name of the parameter from rest api call
- \param[in]     name            given name of rule
- \param[out]    errors          errors structure for storing conversion errors
- \return
-    true on success
-    false on failure, errors are updated (exactly one item is added to structure)
-
-*/
-bool check_alert_rule_name (const std::string& param_name, const std::string& name, http_errors_t &errors);
-
 
 #endif // SRC_WEB_INCLUDE_HELPERS_H_
 

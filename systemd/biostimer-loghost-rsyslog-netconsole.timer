@@ -1,0 +1,17 @@
+[Unit]
+Description=BIOS-Timer to regularly review remote logging to current netconsole sink
+PartOf=timers.target
+ConditionPathIsDirectory=/sys/kernel/config/netconsole
+
+[Timer]
+# Time to wait after booting before we run first time
+OnBootSec=5
+# Regular re-runs
+OnUnitActiveSec=60
+# Run instantly if last run was skipped (e.g. system powered off)
+Persistent=true
+# Do not record last-execution times
+Persistent=false
+
+[Install]
+WantedBy=timers.target

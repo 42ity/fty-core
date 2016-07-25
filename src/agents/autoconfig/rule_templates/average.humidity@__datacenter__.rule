@@ -2,7 +2,8 @@
     "threshold" : {
         "rule_name"     :   "average.humidity@__name__",
         "rule_desc"     :   "Humidity",
-        "rule class"    :   "Humidity in data center",
+        "rule_class"    :   "Humidity in data center",
+        "rule_hierarchy" :   "environment.humidity.dc",
         "target"        :   "average.humidity@__name__",
         "element"       :   "__name__",
         "values_unit"   :   "%",

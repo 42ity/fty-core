@@ -3,6 +3,7 @@
         "rule_name"     :   "temperature.default@__name__",
         "rule_desc"     :   "Internal temperature for ups __name__",
         "rule_class"    :   "Internal temperature in UPS",
+        "rule_hierarchy":   "internal.temperature.ups",
         "target"        :   "temperature.default@__name__",
         "element"       :   "__name__",
         "values_unit"   :   "C",
