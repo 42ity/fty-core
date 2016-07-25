@@ -539,8 +539,9 @@ process_action_query() {
         query_loghost_name
         RES=$?
         case $RES in
-            0)  echo "INFO: The hostname above was resolved in local $HOSTSFILE and is managed BY US" >&2 ;;
+            0)  echo "INFO: The hostname above was resolved in local $HOSTSFILE and is managed BY US as a MANUAL setting" >&2 ;;
             1)  echo "INFO: The hostname above was resolved in local $HOSTSFILE but is managed BY SOMEONE ELSE" >&2 ;;
+            2)  echo "INFO: The hostname above was resolved in local $HOSTSFILE and is managed BY US as a DYNAMIC NETCONSOLE setting" >&2 ;;
             53)  echo "INFO: The hostname above was resolved in a REMOTE naming service" >&2 ;;
             22)  echo "INFO: The $RSYSLOG_LOGHOST hostname was NOT RESOLVED" >&2 ;;
             *)  echo "INFO: The $RSYSLOG_LOGHOST hostname resolution returned an UNEXPECTED CODE ($RES)" >&2 ;;
