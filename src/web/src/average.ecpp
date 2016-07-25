@@ -254,8 +254,8 @@ bool relative_to_unixtime (const std::string& relative, int64_t now, int64_t& un
         char *type_rep = zmsg_popstr (recv_msg);
         char *start_date_rep = zmsg_popstr (recv_msg);
         char *end_date_rep = zmsg_popstr (recv_msg);
-        char *units_rep = zmsg_popstr (recv_msg);
         char *ordered = zmsg_popstr (recv_msg);
+        char *units_rep = zmsg_popstr (recv_msg);
 </%cpp>
 {
         <$$ utils::json::jsonify ("units", units_rep) $>,
