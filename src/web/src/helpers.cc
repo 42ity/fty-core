@@ -113,17 +113,3 @@ bool check_asset_name (const std::string& param_name, const std::string& name, h
     }
     return true;
 }
-
-//TODO: define better
-// # define ASSET_NAME_RE_STR "^[a-zA-Z+0-9.-\\ ]+$"
-#define ALERT_RULE_NAME_RE_STR "^.*$"
-static const cxxtools::Regex ALERT_RULE_NAME_RE {ALERT_RULE_NAME_RE_STR};
-
-bool check_alert_rule_name (const std::string& param_name, const std::string& name, http_errors_t &errors) {
-    if (!ALERT_RULE_NAME_RE.match (name)) {
-        http_add_error (errors, "request-param-bad", param_name.c_str (), name.c_str (), "valid asset name (" ALERT_RULE_NAME_RE_STR ")");
-        return false;
-    }
-    return true;
-}
-

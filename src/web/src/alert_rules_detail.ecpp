@@ -44,7 +44,7 @@ std::string checked_name;
         http_die ("method-not-allowed", request.getMethod ().c_str ());
 
     std::string name = request.getArg ("name");
-    check_regex_text_or_die ("name", name, checked_name, "^[-_.a-z0-9]{1,255}$");
+    check_alert_rule_name_or_die ("name", name, checked_name);
 
     // sanity check end
 }
