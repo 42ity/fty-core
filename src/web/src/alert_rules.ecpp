@@ -47,7 +47,7 @@ std::string checked_name;
 
     std::string name = request.getArg ("name");
     
-    check_regex_text_or_die ("name", name, checked_name, "^[-_.a-z0-9]{0,255}$");
+    check_alert_rule_name_or_die ("name", name, checked_name);
 
     if (request.getMethod () == "PUT" && name.empty() ) {
         http_die ("request-param-bad", "name", "<empty>", "<non_empty_name>");
