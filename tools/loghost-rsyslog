@@ -657,6 +657,7 @@ while [ $# -gt 0 ]; do
             ;;
 # TODO: Setting the (delayed_)netconsole FW parameter so it is applied at boot
 # TODO: Adding/changing/removing the current dynamic netconsole settings (e.g. local IP changes synced with NIC-up/down events or DHCP re-leases)
+# TODO: Facilitate changes of target MAC address - of loghost if in this subnet, or relevant next-hop router if in another subnet
         -h|--help|-help) usage; exit 0 ;;
         *)  echo "ERROR: Unknown argument: '$1'" >&2
             usage
