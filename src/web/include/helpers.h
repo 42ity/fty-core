@@ -72,7 +72,7 @@ class UserInfo {
         void gid (long int gid) {_gid = gid;}
         
         std::string login () const {return _login;}
-        void login (long int login) {_login = login;}
+        void login (std::string login) {_login = login;}
         
     protected:
         BiosProfile _profile;
