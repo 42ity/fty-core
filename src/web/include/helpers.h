@@ -45,6 +45,39 @@ enum struct BiosProfile {
 };
 
 /*!
+ \brief UserInfo class
+
+ stores various information about User
+
+*/
+class UserInfo {
+
+    public:
+        /*!\brief default constructor for UserInfo
+        */
+        UserInfo ():
+            _profile {BiosProfile::Anonymous},
+            _uid {-1},
+            _gid {-1}
+        {};
+
+        BiosProfile profile () const {return _profile;}
+        void profile (BiosProfile profile) {_profile = profile;}
+
+        long int uid () const {return _uid;}
+        void uid (long int uid) {_uid = uid;}
+
+        long int gid () const {return _gid;}
+        void gid (long int gid) {_gid = gid;}
+
+    protected:
+        BiosProfile _profile;
+        long int _uid;
+        long int _gid;
+};
+
+
+/*!
  \brief Perform error checking and extraction of element identifier from std::string
 
  \param[in]     param_name      name of the parameter from rest api call
