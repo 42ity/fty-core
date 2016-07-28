@@ -42,8 +42,7 @@
 #include <cxxtools/regex.h>
 #include <cxxtools/jsonserializer.h>
 #include <cxxtools/jsondeserializer.h>
-#include "auth_levels.h"
-#include "utils_web.h"
+#include "helpers.h"
 #include "subprocess.h"
 #include "log.h"
 #include "dbpath.h"
@@ -121,7 +120,7 @@ void get_installation_date (const std::string& file, std::string& installation_d
     }
 }
 
-void sysinfo_detail (std::string& output, tnt::HttpRequest& request, int8_t access_auth_level) {
+void sysinfo_detail (std::string& output, tnt::HttpRequest& request, BiosProfile &profile) {
     output.clear ();
 
 
@@ -189,11 +188,11 @@ void sysinfo_detail (std::string& output, tnt::HttpRequest& request, int8_t acce
         output += "\n";
 
         output += ",\t\t\t";
-        output += utils::json::jsonify ("release", (access_auth_level<=AUTH_LEVEL_ANONYMOUS) ? UNAUTHORIZED : u.release );
+        output += utils::json::jsonify ("release", (profile != BiosProfile::Admin) ? UNAUTHORIZED : u.release );
         output += "\n";
 
         output += ",\t\t\t";
-        output += utils::json::jsonify ("version", (access_auth_level<=AUTH_LEVEL_ANONYMOUS) ? UNAUTHORIZED : u.version );
+        output += utils::json::jsonify ("version", (profile != BiosProfile::Admin) ? UNAUTHORIZED : u.version );
         output += "\n";
 
         output += ",\t\t\t";
@@ -253,7 +252,7 @@ void sysinfo_detail (std::string& output, tnt::HttpRequest& request, int8_t acce
 
     output += "\t}\n"; // "core-package" closing bracket
 
-    if (access_auth_level >= AUTH_LEVEL_POWERUSER) {
+    if (profile == BiosProfile::Admin) {
 #ifdef HAVE_PACKAGE_GIT
         output += ",\t\"source-repo\" : {\n";
 
@@ -362,11 +361,11 @@ void sysinfo_detail (std::string& output, tnt::HttpRequest& request, int8_t acce
                 "because the following error happened: '%s'",
                 BIOS_RELEASE_JSON_FILE.c_str(), e.what ());
         }
-    } // if (access_auth_level >= AUTH_LEVEL_POWERUSER) clause closing bracket
+    } // profile == BiosProfile::Admin
 
     output += "\t}\n"; // "restapi-metadata" closing bracket
 
-    if (access_auth_level >= AUTH_LEVEL_POWERUSER) {
+    if (profile == BiosProfile::Admin) {
         std::string dpkg_output;
         {
             log_debug ("shared::output2 (args = '{\"dpkg\", \"--list\"}') starting");
@@ -439,7 +438,7 @@ void sysinfo_detail (std::string& output, tnt::HttpRequest& request, int8_t acce
             }
             output += "\t]\n"; // "packages" closing bracket
         }
-    } // if (access_auth_level >= AUTH_LEVEL_POWERUSER) clause closing bracket
+    } // if (profile BiosProfile::Admin) clause closing bracket
     output += "}"; // closing json bracket
 
 }
@@ -461,7 +460,7 @@ void sysinfo_plain (std::string& output) {
 
 </%pre>
 <%request scope="global">
-int8_t access_auth_level;
+BiosProfile profile;
 </%request>
 <%cpp>
 
@@ -474,7 +473,7 @@ int8_t access_auth_level;
 
     std::string output;
     if (detail) {
-        sysinfo_detail (output, request, access_auth_level);
+        sysinfo_detail (output, request, profile);
     }
     else {
         sysinfo_plain (output);

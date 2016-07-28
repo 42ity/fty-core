@@ -33,7 +33,6 @@
 #include <cstring>
 #include <algorithm>
 
-#include "auth_levels.h"
 #include "subprocess.h"
 #include "utils_web.h"
 
