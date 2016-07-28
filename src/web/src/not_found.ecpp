@@ -27,15 +27,10 @@
     #include "helpers.h"
     #include <stdlib.h>
 </%pre>
-<%request scope="global">
-UserInfo user;
-</%request>
-
 <%cpp>
     const std::string url =  request.getUrl();
     const std::string meth = request.getMethod ();
     std::string msg = url + " " + meth;
-    msg += ", uid=" + std::to_string (user.uid ());
 
     http_die("not-found", msg.c_str());
 
