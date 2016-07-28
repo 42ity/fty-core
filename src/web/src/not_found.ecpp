@@ -20,18 +20,18 @@
 /*!
  * \file not_found.ecpp
  * \author Barbora Stepankova <BarboraStepankova@Eaton.com>
- * \author Michal Vyskocil <MichalVyskocil@Eaton.com>     
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
  * \brief Handling of incorrect URLs
  */
  #><%pre>
-    #include "utils_web.h"
+    #include "helpers.h"
     #include <stdlib.h>
 </%pre>
-
 <%cpp>
     const std::string url =  request.getUrl();
     const std::string meth = request.getMethod ();
     std::string msg = url + " " + meth;
+
     http_die("not-found", msg.c_str());
 
 </%cpp>

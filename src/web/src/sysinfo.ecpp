@@ -120,7 +120,7 @@ void get_installation_date (const std::string& file, std::string& installation_d
     }
 }
 
-void sysinfo_detail (std::string& output, tnt::HttpRequest& request, BiosProfile &profile) {
+void sysinfo_detail (std::string& output, tnt::HttpRequest& request, BiosProfile profile) {
     output.clear ();
 
 
@@ -460,7 +460,7 @@ void sysinfo_plain (std::string& output) {
 
 </%pre>
 <%request scope="global">
-BiosProfile profile;
+UserInfo user;
 </%request>
 <%cpp>
 
@@ -473,7 +473,7 @@ BiosProfile profile;
 
     std::string output;
     if (detail) {
-        sysinfo_detail (output, request, profile);
+        sysinfo_detail (output, request, user.profile ());
     }
     else {
         sysinfo_plain (output);
