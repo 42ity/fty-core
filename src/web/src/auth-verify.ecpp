@@ -25,7 +25,6 @@
  */
  #><%pre>
 #include "tokens.h"
-#include "auth_levels.h"
 #include "rights.h"
 #include <tnt/httpmessage.h>
 #include <tnt/httpheader.h>
@@ -41,7 +40,7 @@
 
 </%pre>
 <%request scope="global">
-int8_t access_auth_level = -1;
+BiosProfile profile = BiosProfile::Anonymous;
 long int uid = 0;
 long int gid = -1;
 </%request>
@@ -68,7 +67,7 @@ std::string checked_access_token;
 /* We can get the token from header, or from GET or POST request args */
 if(!checked_access_token.empty()) {
 	if(tokens::get_instance()->verify_token(checked_access_token, &uid, &gid)) {
-		access_auth_level=gid - 8000;
+        profile = static_cast<BiosProfile> (gid - 8000);
 	} else {
         http_die("not-authorized");
 	}
@@ -79,7 +78,7 @@ if(!checked_access_token.empty()) {
                 "\"" + checked_access_token + "\"" );
 
 	std::ostringstream os;
-	os << "access_auth_level=\"" << (int)access_auth_level << "\"";
+	os << "access_auth_level=\"" << static_cast<int> (profile) << "\"";
 	reply.setHeader( (std::string)"X-Auth-Verify: ", os.str() );
 #endif // DEBUG
 
@@ -90,7 +89,7 @@ auto it = rights_management.upper_bound(test_url);
 if(!rights_management.empty() && it != rights_management.begin()) {
 	it--;
 	if(test_url.find(it->first) != std::string::npos) {
-		if(it->second <= access_auth_level) {
+		if(it->second <= static_cast<int> (profile)) {
 			return DECLINED;
 		} else {
 			http_die("not-authorized");

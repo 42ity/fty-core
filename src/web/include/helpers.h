@@ -21,13 +21,28 @@
 /*!
  * \file   helpers.h
  * \author Karol Hrdina <KarolHrdina@Eaton.com>
- * \brief  
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \brief  REST helpers
  */
 #ifndef SRC_WEB_INCLUDE_HELPERS_H_
 #define SRC_WEB_INCLUDE_HELPERS_H_
 
 #include <string>
 #include "utils_web.h"
+
+/*!
+ \brief BiosProfile enum - defines levels of permissions
+
+    XXX: note that casting to int does not make a sense here as "higher" profile is
+    supposed to be a superset of a "lower" one. This is for compatibility reason
+    and the best is to assign meaningless constants here.
+
+*/
+enum struct BiosProfile {
+    Anonymous = -1,             // Not authorized users
+    Dashboard = 0,              // Dashboard profile
+    Admin = 3                   // Admin profile
+};
 
 /*!
  \brief Perform error checking and extraction of element identifier from std::string

@@ -47,8 +47,9 @@
       <target>auth@bios_web</target>
       <url>^/api/v1/oauth2/token$</url>
     </mapping>
-    <!-- Set (int)access_auth_level variable if the request is authenticated
+    <!-- Set BiosProfile profile variable if the request is authenticated
          and validate rights are sufficient.
+         Defaults to BiosProfile::Anonymous
       -->
     <mapping>
       <target>auth-verify@bios_web</target>
@@ -58,7 +59,7 @@
 
 
     <!-- SysInfo mapping -->
-    <!-- Implementation tests (int)access_auth_level variable to limit visibility of some data -->
+    <!-- Implementation tests BiosProfile profile variable to limit visibility of some data -->
     <mapping>
       <target>sysinfo@bios_web</target>
       <url>^/api/v1/admin/sysinfo(/?|\?.+=.+)$</url>
