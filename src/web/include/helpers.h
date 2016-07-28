@@ -58,7 +58,8 @@ class UserInfo {
         UserInfo ():
             _profile {BiosProfile::Anonymous},
             _uid {-1},
-            _gid {-1}
+            _gid {-1},
+            _login {"toto"}    
         {};
 
         BiosProfile profile () const {return _profile;}
@@ -69,11 +70,15 @@ class UserInfo {
 
         long int gid () const {return _gid;}
         void gid (long int gid) {_gid = gid;}
-
+        
+        std::string login () const {return _login;}
+        void login (long int login) {_login = login;}
+        
     protected:
         BiosProfile _profile;
         long int _uid;
         long int _gid;
+        std::string _login;
 };
 
 
