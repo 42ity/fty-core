@@ -54,7 +54,7 @@ die_ACTION_NOT_ALLOWED() {
 # We only support one flash stick here, but in any port
 MNT_DIR=/mnt/USB
 case "$1" in
-    -h|-help|--help)
+    -h|help|-help|--help)
         cat << EOF
 Usage: mount_usb [-t FSTYPE] /dev/sdXY
 Usage: umount_usb [ /dev/sdXY | $MNT_DIR ]
@@ -66,13 +66,17 @@ esac
 case "`basename $0`" in
     umount_usb)
         case "$1" in
-            "") /bin/umount ${MNT_DIR} ; exit $? ;;
+            ""|${MNT_DIR}) /bin/umount ${MNT_DIR} ; exit $? ;;
             /dev/sd[a-z]*)
                 /bin/umount "$1" ; exit $? ;;
             *)  die_ACTION_NOT_ALLOWED;;
         esac
         ;;
     mount_usb)
+	# NOTE: At this time we do not allow to specify arbitrary MNT_DIR,
+	# so only one removable storage can be mounted at the same time.
+	# TODO: Verify that the MNT_DIR and/or MNT_DEV are not already used
+	# in mounting, to avoid conflicts and overlaying an existing tree.
         MNT_GID="`getent group bios-admin | cut -d ':' -f 3`" || MNT_GID=""
         MNT_DEV="${1}"
 
