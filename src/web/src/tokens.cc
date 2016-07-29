@@ -41,6 +41,8 @@
 //! Maximum tokens per key
 #define MAX_USE 256
 
+const uint16_t tokens::MESSAGE_LEN =  (3 * sizeof (long int)) + sizeof (int) + 32;
+
 static time_t mono_time(time_t *o_time) {
 #if defined(_POSIX_TIMERS) && defined(_POSIX_MONOTONIC_CLOCK)
   struct timespec monoTime;
@@ -114,7 +116,7 @@ std::string tokens::gen_token(int& valid, const char* user, bool do_round) {
     number = (number + 1) % MAX_USE;
     mtx.unlock();
 
-    snprintf(buff, MESSAGE_LEN, "%ld %ld %ld %d", tme, uid, gid, my_number);
+    snprintf(buff, MESSAGE_LEN, "%ld %ld %ld %d %.32s", tme, uid, gid, my_number, user);
 
     crypto_secretbox_easy(ciphertext, (unsigned char *)buff, strlen(buff),
                           tmp.nonce, tmp.key);
@@ -177,21 +179,31 @@ void tokens::revoke(const std::string token) {
     revoked_queue.insert(std::make_pair(tme, token));
 }
 
-bool tokens::verify_token(const std::string token, long int* uid, long int* gid) {
+bool tokens::verify_token(const std::string token, long int* uid, long int* gid, char **user_name) {
     char buff[MESSAGE_LEN + 1];
-    long int tme = 0;
+    long int tme = 0, l_uid = 0, l_gid = 0;
+    int l_my_number = 0;
+
     clean_revoked();
     if(revoked.find(token) != revoked.end())
         return false;
     decode_token(buff, token);
-    if(uid != NULL) {
-        if(gid != NULL) {
-            sscanf(buff, "%ld %ld %ld", &tme, uid, gid);
-        } else {
-            sscanf(buff, "%ld %ld", &tme, uid);
+    
+    if (user_name) {
+        *user_name = (char *) malloc (33 * sizeof (char));
+        if (user_name == NULL) {
+            return false;
         }
-    } else {
-        sscanf(buff, "%ld", &tme);
+        sscanf (buff, "%ld %ld %ld %d %s", &tme, &l_uid, &l_gid, &l_my_number, *user_name);
     }
+    else {
+        sscanf (buff, "%ld %ld %ld", &tme, &l_uid, &l_gid);
+    }
+
+    if (uid)
+        *uid = l_uid;
+    if (gid)
+        *gid = l_gid;
+
     return tme > mono_time(NULL);
 }

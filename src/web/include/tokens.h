@@ -37,7 +37,8 @@
 #include <deque>
 
 //! Maximum length of the message stored in the token
-#define MESSAGE_LEN 32
+//#define MESSAGE_LEN (3 * sizeof (long int) + sizeof (int) + 32)
+
 //! Round timestamps to this many seconds
 #define ROUND 60
 //! Length of the ciphertext
@@ -58,6 +59,7 @@ private:
     std::multimap<long int, std::string> revoked_queue;
     void clean_revoked();
     void regen_keys();
+    static const uint16_t MESSAGE_LEN;
 public:
     //! Singleton get_instance method
     static tokens* get_instance();
@@ -71,7 +73,7 @@ public:
     /**
      * \brief Verifies whether supplied token is valid
      */
-    bool verify_token(const std::string token, long int* uid = NULL, long int* gid = NULL);
+    bool verify_token(const std::string token, long int* uid = NULL, long int* gid = NULL, char **user_name = NULL);
     //! Invalidates selected token
     void revoke(const std::string token);
     /**
