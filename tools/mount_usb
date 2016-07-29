@@ -73,10 +73,10 @@ case "`basename $0`" in
         esac
         ;;
     mount_usb)
-	# NOTE: At this time we do not allow to specify arbitrary MNT_DIR,
-	# so only one removable storage can be mounted at the same time.
-	# TODO: Verify that the MNT_DIR and/or MNT_DEV are not already used
-	# in mounting, to avoid conflicts and overlaying an existing tree.
+        # NOTE: At this time we do not allow to specify arbitrary MNT_DIR,
+        # so only one removable storage can be mounted at the same time.
+        # TODO: Verify that the MNT_DIR and/or MNT_DEV are not already used
+        # in mounting, to avoid conflicts and overlaying an existing tree.
         MNT_GID="`getent group bios-admin | cut -d ':' -f 3`" || MNT_GID=""
         MNT_DEV="${1}"
 
@@ -91,6 +91,10 @@ case "`basename $0`" in
         chmod 0770 "$MNT_DIR"
 
         if [ "x${MNT_DEV}" = "x-t" ]; then
+            # TODO: Verify that ${2} is a single-word token and perhaps present
+            # in /proc/filesystems (and not a "nodev"), and certainly without
+            # any whitespace, semicolons, etc. so extra args can not sneak into
+            # this elevated command-line.
             MOUNT_ARGS="${MOUNT_ARGS} -t ${2}"
             MNT_DEV="${3}"
         fi
