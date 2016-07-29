@@ -78,6 +78,8 @@ passwd <<EOF
 @PASSWORD@
 EOF
 
+# NOTE: This is the name in debian; for other distros it may be different
+SASL_GROUP=sasl
 groupadd -g 8003 bios-admin
 groupadd -g 8002 bios-poweruser
 groupadd -g 8001 bios-user
@@ -88,12 +90,23 @@ useradd -m bios -N -g bios-infra -G dialout -s /bin/bash
 mkdir -p /home/bios && chown bios:bios-infra /home/bios
 
 # add an access to sasl, adm (for /var/log/messages) and systemd journal
-useradd -m admin -G sasl -G adm -G systemd-journal -N -g bios-admin -s /bin/bash
+useradd -m admin -G "${SASL_GROUP}" -G adm -G systemd-journal -N -g bios-admin -s /bin/bash
 passwd admin <<EOF
 admin
 admin
 EOF
 mkdir -p /home/admin && chown admin:bios-admin /home/admin
+
+# TODO: See if "sudo"able tasks that this account may have to do can be done
+# with another shell like /bin/nologin or /bin/false - and then secure it...
+if ! getent passwd dashboard ; then
+    useradd -m dashboard -G "$SASL_GROUP" -N -g bios-dash -s /bin/bash
+    passwd dashboard <<EOF
+dashboard
+dashboard
+EOF
+fi
+mkdir -p /home/dashboard && chown dashboard:bios-dash /home/dashboard
 
 # Workplace for the webserver and graph daemons
 mkdir -p /var/lib/bios
@@ -409,7 +422,7 @@ mkdir -p /etc/tntnet/bios.d
 cp /usr/share/bios/examples/tntnet.xml.* /etc/tntnet/bios.xml
 mkdir -p /usr/share/core-0.1/web/static
 sed -i 's|<!--.*<user>.*|<user>www-data</user>|' /etc/tntnet/bios.xml
-sed -i 's|<!--.*<group>.*|<group>sasl</group>|' /etc/tntnet/bios.xml
+sed -i 's|<!--.*<group>.*|<group>'"${SASL_GROUP}"'</group>|' /etc/tntnet/bios.xml
 sed -i 's|.*<daemon>.*|<daemon>0</daemon>|' /etc/tntnet/bios.xml
 sed -i 's|\(.*\)<dir>.*|\1<dir>/usr/share/bios-web/</dir>|' /etc/tntnet/bios.xml
 sed -n '1,/<mappings>/ p' /etc/tntnet/bios.xml  > /etc/tntnet/bios.d/00_start.xml
