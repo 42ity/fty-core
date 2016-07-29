@@ -29,6 +29,7 @@
 
 #include <string>
 #include "utils_web.h"
+#include <tnt/httprequest.h>
 
 /*!
  \brief BiosProfile enum - defines levels of permissions
@@ -75,7 +76,6 @@ class UserInfo {
         long int _uid;
         long int _gid;
 };
-
 
 /*!
  \brief Perform error checking and extraction of element identifier from std::string
@@ -159,6 +159,47 @@ check_regex_text (const char *param_name, const std::string& param_value, const 
 
 */
 bool check_asset_name (const std::string& param_name, const std::string& name, http_errors_t &errors);
+
+/*!
+ * \brief Check user permissions
+ *
+ * \param [in]  user            request variable user
+ * \param [in]  request         http request
+ * \param [in]  permissions     maps permissions with profile
+ *
+ * Permissions is map of BiosProfile and string encoding available permissions,
+ * where
+ *  "C" means Create / POST method
+ *  "R" means Read / GET method
+ *  "U" means Update / PUT method
+ *  "D" means Delete / DELETE method
+ *  "E" means Execute / POST method
+ *
+ *  other strings are silently ignored
+ *
+ * Example:
+ *
+ * check_user_permissions (user, request, {
+ *      {BiosProfile::Anonymous, "R"},
+ *      {BiosProfile::Dashboard, "CR"},
+ *      {BiosProfile::Admin, "CRUDE"}
+ * });
+ *
+ */
+void check_user_permissions (
+        const UserInfo &user,
+        const tnt::HttpRequest &request,
+        const std::map <BiosProfile, std::string> &permissions,
+        http_errors_t &errors
+        );
+
+#define CHECK_USER_PERMISSIONS_OR_DIE(p) \
+    do { \
+        http_errors_t errors; \
+        check_user_permissions (user, request, p, errors);\
+        if (errors.http_code != HTTP_OK) \
+            http_die_error (errors);\
+    } while (0)
 
 #endif // SRC_WEB_INCLUDE_HELPERS_H_
 

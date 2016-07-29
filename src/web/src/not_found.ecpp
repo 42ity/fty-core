@@ -27,7 +27,19 @@
     #include "helpers.h"
     #include <stdlib.h>
 </%pre>
+<%request scope="global">
+UserInfo user;
+</%request>
 <%cpp>
+
+    // an example of macro usage
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Anonymous, "CRUDE"},
+            {BiosProfile::Dashboard, "CRUDE"},
+            {BiosProfile::Admin,     "CRUDE"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
+
     const std::string url =  request.getUrl();
     const std::string meth = request.getMethod ();
     std::string msg = url + " " + meth;
