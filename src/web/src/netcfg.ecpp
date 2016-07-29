@@ -41,7 +41,16 @@
 using namespace shared;
 
 </%pre>
+<%request scope="global">
+UserInfo user;
+</%request>
 <%cpp>
+    // check user permissions
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Admin,     "E"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
+
 augtool* augeas = augtool::get_instance();
 if (!augeas)
     http_die ("internal-error", "Cannot communicate with augtool. Is it installed or properly configured?");

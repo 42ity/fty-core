@@ -32,7 +32,7 @@ UserInfo user;
 </%request>
 <%cpp>
 
-    // an example of macro usage
+    // check user permissions
     static const std::map <BiosProfile, std::string> PERMISSIONS = {
             {BiosProfile::Anonymous, "CRUDE"},
             {BiosProfile::Dashboard, "CRUDE"},

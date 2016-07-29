@@ -464,6 +464,14 @@ UserInfo user;
 </%request>
 <%cpp>
 
+    // permission check
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Anonymous, "R"},
+            {BiosProfile::Dashboard, "R"},
+            {BiosProfile::Admin,     "R"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
+
     bool detail = false;
     // argument checking
     {

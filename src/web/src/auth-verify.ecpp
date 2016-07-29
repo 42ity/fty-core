@@ -45,6 +45,10 @@ UserInfo user;
 <%cpp>
 std::string checked_access_token;
 {
+    // NOTE: auth_verify is not limited by CHECK_USER_PERMISSIONS_OR_DIE
+    //       this is where the token is actually verified and user info
+    //       fill'ed
+
     // sanitize check
     std::string access_token = qparam.param ("access_token");
 

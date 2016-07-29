@@ -30,10 +30,21 @@
 #include "db/inout.h"
 #include "utils.h"
 #include "log.h"
-#include "utils_web.h"
+#include "helpers.h"
 </%pre>
+<%request scope="global">
+UserInfo user;
+</%request>
 <%cpp>
 {
+    // check user permissions
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Anonymous, "R"},
+            {BiosProfile::Dashboard, "R"},
+            {BiosProfile::Admin,     "R"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
+
     // Silence the warning about unused "request" variable
     request.keepAlive();
 

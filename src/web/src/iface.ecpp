@@ -133,7 +133,15 @@ iface get_iface(std::string iface) {
    return ret;
 }
 </%pre>
+<%request scope="global">
+UserInfo user;
+</%request>
 <%cpp>
+    // check user permissions
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Admin,     "E"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
 
 // Are we asked to just list possible configurations?
 cxxtools::Regex rex("^.*/ifaces$");

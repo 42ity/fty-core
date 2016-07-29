@@ -34,7 +34,7 @@
 #include <algorithm>
 
 #include "subprocess.h"
-#include "utils_web.h"
+#include "helpers.h"
 
 #define LoadState       "LoadState"     // loaded/
 #define ActiveState     "ActiveState"   // active/
@@ -240,8 +240,18 @@ unsigned int process_post (
 }
 
 </%pre>
+<%request scope="global">
+UserInfo user;
+</%request>
 <%cpp>
 {
+    // check user permissions
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Dashboard, "R"},
+            {BiosProfile::Admin,     "RE"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
+
     std::string checked_operation;
     std::string checked_service_name;
     // sanity checks

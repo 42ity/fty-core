@@ -148,7 +148,17 @@ s_is_valid_param(const std::string& p)
 <%thread scope="global">
 asset_manager asset_mgr;
 </%thread>
+<%request scope="global">
+UserInfo user;
+</%request>
 <%cpp>
+    // an example of macro usage
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Anonymous, "R"},
+            {BiosProfile::Dashboard, "R"},
+            {BiosProfile::Admin,     "R"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
 
 // checked parameters
 std::string checked_arg1;
