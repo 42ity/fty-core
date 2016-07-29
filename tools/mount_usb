@@ -51,16 +51,20 @@ die_ACTION_NOT_ALLOWED() {
     exit 1
 }
 
+usage() {
+        cat << EOF
+Usage: mount_usb [-t FSTYPE] /dev/sdXY
+Usage: umount_usb [ /dev/sdXY | $MNT_DIR ]
+EOF
+}
+
 # We only support one flash stick here, but in any port
 MNT_DIR=/mnt/USB
 RIGHTEOUS_GID=bios-admin
 
 case "$1" in
     -h|help|-help|--help)
-        cat << EOF
-Usage: mount_usb [-t FSTYPE] /dev/sdXY
-Usage: umount_usb [ /dev/sdXY | $MNT_DIR ]
-EOF
+        usage
         exit 0
         ;;
 esac
@@ -101,6 +105,13 @@ case "`basename $0`" in
         # NOTE/TODO: At this time we do not allow to specify arbitrary MNT_DIR,
         # so only one removable storage can be mounted at the same time.
 
+        case "$MNT_DEV" in
+            /dev/sd[a-z]*) ;; # OK, pass to later steps
+            "") echo "ERROR: Bad arguments" >&2
+                usage; exit 1 ;;
+            *)  die_ACTION_NOT_ALLOWED ;;
+        esac
+
         # Verify that the MNT_DIR and/or MNT_DEV are not already used in
         # mounting, to avoid conflicts and overlaying an existing tree.
         /bin/mount | egrep "^${MNT_DEV} " > /dev/null && \
@@ -111,23 +122,18 @@ case "`basename $0`" in
             { echo "ERROR: there is something already mounted into directory '${MNT_DIR}'" >&2; \
               die_ACTION_NOT_ALLOWED; }
 
-        case "$MNT_DEV" in
-            /dev/sd[a-z]*)
-                mkdir -p "$MNT_DIR"
-                chown root "$MNT_DIR"
-                [ -n "$MNT_GID" ] && chgrp "${MNT_GID}" "$MNT_DIR"
-                chmod 0770 "$MNT_DIR"
+        mkdir -p "$MNT_DIR"
+        chown root "$MNT_DIR"
+        [ -n "$MNT_GID" ] && chgrp "${MNT_GID}" "$MNT_DIR"
+        chmod 0770 "$MNT_DIR"
 
-                # We leave it to the system to check if the device is present
-                # (maybe it has to probe some modules first, so in that case
-                # the [ -f "$MNT_DEV" ] alone would not be a correct check.
-                # Likewise, absense of $MNT_DIR is best checked by that prog.
-                write_syslog /bin/mount ${MOUNT_ARGS} ${MNT_DEV} ${MNT_DIR}
-                /bin/mount $MOUNT_ARGS ${MNT_DEV} ${MNT_DIR}
-                exit $?
-                ;;
-            *)  die_ACTION_NOT_ALLOWED;;
-        esac
+        # We leave it to the system to check if the device is present
+        # (maybe it has to probe some modules first, so in that case
+        # the [ -f "$MNT_DEV" ] alone would not be a correct check.
+        # Likewise, absense of $MNT_DIR is best checked by that prog.
+        write_syslog /bin/mount ${MOUNT_ARGS} ${MNT_DEV} ${MNT_DIR}
+        /bin/mount $MOUNT_ARGS ${MNT_DEV} ${MNT_DIR}
+        exit $?
         ;;
     *)  die_ACTION_NOT_ALLOWED;;
 esac
