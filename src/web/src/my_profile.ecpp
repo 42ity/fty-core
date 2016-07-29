@@ -30,25 +30,44 @@
 <%request scope="global">
     UserInfo user;
 </%request>  
+<%cpp>
+    std:: string change_pwd = " ";
+    int timeout = 99;
+  
+   // GET 
+    if (request.isMethodGET()) {
+        
+        if (user.profile() == BiosProfile:: Admin) {
+            change_pwd = "Yes";
+            timeout = 10;
+        }
+        if (user.profile() == BiosProfile:: Dashboard) {
+            change_pwd = "No";
+            timeout = 0;
+        }
+    
+</%cpp>  
 
-%// GET - /my/profile
-%if (request.isMethodGET()) {
 {
 "login" : "<$ user.login() $>",
-"must_change_pwd" : "no",
-"timeout" : 10,
-"profiles" : ["Administrator"],
+"must_change_pwd" : "<$ change_pwd $>",
+"timeout" : "<$ timeout $>",
+"profile" : "<$ user.toString() $>",
 "preferences" : {"date":"DDMMYYYY", "temperature":"C", "language":"en_US", "time":"24h"}
 }
-%}
+
+%} // if get
+  
 <%cpp>
-   // PUT - /my/profile  
+    
+   // PUT 
 
     std::string temp_unit;
     std::string method = request.getMethod();
   
     if (method == "PUT" ){
-        temp_unit = "unit";       
+        temp_unit = "unit";
+        
 </%cpp>
 {
 "preferences" : {
