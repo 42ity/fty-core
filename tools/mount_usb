@@ -66,7 +66,7 @@ esac
 case "`basename $0`" in
     umount_usb)
         case "$1" in
-            ""|${MNT_DIR}) /bin/umount ${MNT_DIR} ; exit $? ;;
+            ""|"${MNT_DIR}") /bin/umount "${MNT_DIR}" ; exit $? ;;
             /dev/sd[a-z]*)
                 /bin/umount "$1" ; exit $? ;;
             *)  die_ACTION_NOT_ALLOWED;;
@@ -91,16 +91,24 @@ case "`basename $0`" in
         chmod 0770 "$MNT_DIR"
 
         if [ "x${MNT_DEV}" = "x-t" ]; then
-            # TODO: Verify that ${2} is a single-word token and perhaps present
-            # in /proc/filesystems (and not a "nodev"), and certainly without
+            # Verify that ${2} is a single-word token which is present in the
+            # /proc/filesystems list (and not a "nodev"), and certainly without
             # any whitespace, semicolons, etc. so extra args can not sneak into
             # this elevated command-line.
+            grep -vw nodev /proc/filesystems | sed -e 's,^[\ \t]*,,' -e 's,[\ \t]*$,,' | \
+                egrep '^'"${2}"'$' | egrep '^[a-zA-Z0-9\-\.\_]*$' >/dev/null || \
+                { echo "ERROR: fstype '$2' is not supported by this kernel" >&2; \
+                  die_ACTION_NOT_ALLOWED; }
             MOUNT_ARGS="${MOUNT_ARGS} -t ${2}"
             MNT_DEV="${3}"
         fi
 
         case "$MNT_DEV" in
             /dev/sd[a-z]*)
+                # We leave it to the system to check if the device is present
+                # (maybe it has to probe some modules first, so in that case
+                # the [ -f "$MNT_DEV" ] alone would not be a correct check.
+                # Likewise, absense of $MNT_DIR is best checked by that prog.
                 write_syslog /bin/mount ${MOUNT_ARGS} ${MNT_DEV} ${MNT_DIR}
                 /bin/mount $MOUNT_ARGS ${MNT_DEV} ${MNT_DIR}
                 exit $?
