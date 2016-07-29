@@ -73,13 +73,13 @@ if(!checked_access_token.empty()) {
 	if(tokens::get_instance()->verify_token(checked_access_token, &uid, &gid)) {
 
         auto foo = (gid - 8000);
-        if (foo != BiosProfile::Anonymous \
-         || foo != BiosProfile::Dashboard \
-         || foo != BiosProfile::Admin) {
+        if (foo != static_cast<int> (BiosProfile::Anonymous) \
+         || foo != static_cast<int> (BiosProfile::Dashboard) \
+         || foo != static_cast<int> (BiosProfile::Admin)) {
             http_die ("internal-error", "Cannot map gid=%ld to user profile", gid);
         }
 
-        user.profile (static_cast<BiosProfile> foo);
+        user.profile (static_cast<BiosProfile> (foo));
         user.uid (uid);
         user.gid (gid);
 	} else {
