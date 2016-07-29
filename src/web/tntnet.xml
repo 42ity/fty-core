@@ -327,11 +327,27 @@
         <url>^/api/v1/admin/config.*$</url>
     </mapping>
 
+    <!-- my/profile GET -->
+    <mapping>
+      <target>my_profile@bios_web</target>
+      <method>GET</method>
+      <url>^/api/v1/my/profile$</url>
+    </mapping>
+
+    <!-- my/profile PUT -->
+    <mapping>
+      <target>my_profile@bios_web</target>
+      <method>PUT</method>
+      <url>^/api/v1/my/profile$</url>
+    </mapping>
+
+
     <!-- not found error  -->
     <mapping>
         <target>not_found@bios_web</target>
         <url>^/api/v1/*.*$</url>
     </mapping>
+
 
  </mappings>
 
