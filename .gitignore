@@ -201,6 +201,7 @@ src/web/src/ssl-redirect.cpp
 src/web/src/ui_properties.cpp
 src/web/src/alerts.cpp
 src/web/src/uptime.cpp
+src/web/src/my_profile.cpp
 src/web/src/not_found.cpp
 src/web/src/asset_export.cpp
 src/web/src/admin_passwd.cpp
