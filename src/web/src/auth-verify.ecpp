@@ -25,7 +25,6 @@
  */
  #><%pre>
 #include "tokens.h"
-#include "rights.h"
 #include <tnt/httpmessage.h>
 #include <tnt/httpheader.h>
 #include "utils_web.h"
@@ -84,21 +83,6 @@ if(!checked_access_token.empty()) {
 	os << "access_auth_level=\"" << static_cast<int> (user.profile ()) << "\"";
 	reply.setHeader( (std::string)"X-Auth-Verify: ", os.str() );
 #endif // DEBUG
-
-std::string test_url = request.isMethodGET() ? "R" : "W";
-test_url += request.getQuery();
-
-auto it = rights_management.upper_bound(test_url);
-if(!rights_management.empty() && it != rights_management.begin()) {
-	it--;
-	if(test_url.find(it->first) != std::string::npos) {
-		if(it->second <= static_cast<int> (user.profile ())) {
-			return DECLINED;
-		} else {
-			http_die("not-authorized");
-		}
-	}
-}
 
 /* Go on to next module in tntnet.xml */
 return DECLINED;
