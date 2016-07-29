@@ -92,9 +92,7 @@ UserInfo user;
     if (!cm.hasTitle("type")) {
         http_die("request-param-required", "type");
     }
-    if ( cm.get(1, "type") != "device" && cm.get(1, "type") != "datacenter") {
-        http_die("request-param-bad", "type", cm.get(1, "type").empty() ? "<empty>" : cm.get(1, "type").c_str(), "device|datacenter");
-    }
+
     // currently we do not need to support updatein these elements
     log_debug ("starting load");
     try {
