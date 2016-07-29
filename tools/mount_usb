@@ -53,6 +53,8 @@ die_ACTION_NOT_ALLOWED() {
 
 # We only support one flash stick here, but in any port
 MNT_DIR=/mnt/USB
+RIGHTEOUS_GID=bios-admin
+
 case "$1" in
     -h|help|-help|--help)
         cat << EOF
@@ -73,11 +75,7 @@ case "`basename $0`" in
         esac
         ;;
     mount_usb)
-        # NOTE: At this time we do not allow to specify arbitrary MNT_DIR,
-        # so only one removable storage can be mounted at the same time.
-        # TODO: Verify that the MNT_DIR and/or MNT_DEV are not already used
-        # in mounting, to avoid conflicts and overlaying an existing tree.
-        MNT_GID="`getent group bios-admin | cut -d ':' -f 3`" || MNT_GID=""
+        MNT_GID="`getent group "${RIGHTEOUS_GID}" | cut -d ':' -f 3`" || MNT_GID=""
         MNT_DEV="${1}"
 
         # TODO: those are arguments only for non-Linux native FS,
@@ -86,9 +84,6 @@ case "`basename $0`" in
         MOUNT_OPTS="umask=0002,nodev,noexec,noatime,nodiratime,sync,nosuid,rw"
         [ -n "$MNT_GID" ] && MOUNT_OPTS="gid=${MNT_GID},$MOUNT_OPTS"
         MOUNT_ARGS="-o ${MOUNT_OPTS}"
-        mkdir -p "$MNT_DIR"
-        chown root:bios-admin "$MNT_DIR"
-        chmod 0770 "$MNT_DIR"
 
         if [ "x${MNT_DEV}" = "x-t" ]; then
             # Verify that ${2} is a single-word token which is present in the
@@ -103,8 +98,26 @@ case "`basename $0`" in
             MNT_DEV="${3}"
         fi
 
+        # NOTE/TODO: At this time we do not allow to specify arbitrary MNT_DIR,
+        # so only one removable storage can be mounted at the same time.
+
+        # Verify that the MNT_DIR and/or MNT_DEV are not already used in
+        # mounting, to avoid conflicts and overlaying an existing tree.
+        /bin/mount | egrep "^${MNT_DEV} " > /dev/null && \
+            { echo "ERROR: device '${MNT_DEV}' is already mounted" >&2; \
+              die_ACTION_NOT_ALLOWED; }
+
+        [ -d "$MNT_DIR" ] && /bin/mount | egrep " on ${MNT_DIR} " > /dev/null && \
+            { echo "ERROR: there is something already mounted into directory '${MNT_DIR}'" >&2; \
+              die_ACTION_NOT_ALLOWED; }
+
         case "$MNT_DEV" in
             /dev/sd[a-z]*)
+                mkdir -p "$MNT_DIR"
+                chown root "$MNT_DIR"
+                [ -n "$MNT_GID" ] && chgrp "${MNT_GID}" "$MNT_DIR"
+                chmod 0770 "$MNT_DIR"
+
                 # We leave it to the system to check if the device is present
                 # (maybe it has to probe some modules first, so in that case
                 # the [ -f "$MNT_DEV" ] alone would not be a correct check.
