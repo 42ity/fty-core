@@ -27,7 +27,6 @@
 #include "log.h"
 
 const char* UserInfo::toString() {
-    log_debug("profile=%d",_profile);
     switch (_profile) {
         case  BiosProfile::Dashboard: return "Dashboard ";
         case  BiosProfile::Admin: return "Administrator";
