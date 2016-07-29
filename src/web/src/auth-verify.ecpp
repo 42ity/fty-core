@@ -76,7 +76,9 @@ if(!checked_access_token.empty()) {
         if (foo != static_cast<int> (BiosProfile::Anonymous) \
          || foo != static_cast<int> (BiosProfile::Dashboard) \
          || foo != static_cast<int> (BiosProfile::Admin)) {
-            http_die ("internal-error", "Cannot map gid=%ld to user profile", gid);
+            std::string msg {"Cannot map gid="};
+            msg += std::to_string (gid) + " to user profile";
+            http_die ("internal-error", msg.c_str ());
         }
 
         user.profile (static_cast<BiosProfile> (foo));
