@@ -33,6 +33,12 @@ const char* UserInfo::toString() {
         case  BiosProfile::Admin: return "Administrator";
         case  BiosProfile::Anonymous: return "Anonymous";
     }
+    /* Currently one use-case is to return a string in profiles.
+       This routine could reasonably return NULL as an error here,
+       but it should not reach this point anyway (return is here
+       mostly for syntax purposes and to quiesce compiler warnings.
+     */
+    return "N/A";
 }
 
 
