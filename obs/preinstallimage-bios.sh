@@ -99,14 +99,14 @@ mkdir -p /home/admin && chown admin:bios-admin /home/admin
 
 # TODO: See if "sudo"able tasks that this account may have to do can be done
 # with another shell like /bin/nologin or /bin/false - and then secure it...
-if ! getent passwd dashboard ; then
-    useradd -m dashboard -G "$SASL_GROUP" -N -g bios-dash -s /bin/bash
-    passwd dashboard <<EOF
-dashboard
-dashboard
+if ! getent passwd monitor ; then
+    useradd -m monitor -G "$SASL_GROUP" -N -g bios-dash -s /bin/bash
+    passwd monitor <<EOF
+monitor
+monitor
 EOF
 fi
-mkdir -p /home/dashboard && chown dashboard:bios-dash /home/dashboard
+mkdir -p /home/monitor && chown monitor:bios-dash /home/monitor
 
 # Workplace for the webserver and graph daemons
 mkdir -p /var/lib/bios
