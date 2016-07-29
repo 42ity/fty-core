@@ -21,6 +21,7 @@
 #include <cassert>
 #include <cxxtools/regex.h>
 
+#include "utils_web.h"
 #include "helpers.h"
 
 #include "log.h"
@@ -112,4 +113,54 @@ bool check_asset_name (const std::string& param_name, const std::string& name, h
         return false;
     }
     return true;
+}
+
+static bool
+s_isDELETE (const tnt::HttpRequest &request)
+{
+    return request.getMethod () == "DELETE";
+}
+
+static bool
+s_isPUT (const tnt::HttpRequest &request)
+{
+    return request.getMethod () == "PUT";
+}
+
+static bool
+s_in (const std::string &haystack, char needle)
+{
+    return haystack.find (needle) != std::string::npos;
+}
+
+void
+check_user_permissions (
+        const UserInfo &user,
+        const tnt::HttpRequest &request,
+        const std::map <BiosProfile, std::string> &permissions,
+        http_errors_t &errors
+        )
+{
+    http_errors_t error;
+
+    if (permissions.count (user.profile ()) != 1) {
+        log_error ("Permission not defined for given profile");
+        http_add_error (errors, "not-authorized");
+        return;
+    }
+
+    const std::string perm = permissions.at (user.profile ());
+
+    if (  (request.isMethodGET  () && s_in (perm, 'R'))
+        ||(request.isMethodPOST () && (s_in (perm, 'C') || s_in (perm, 'E')))
+        ||(s_isPUT (request)       && s_in (perm, 'U'))
+        ||(s_isDELETE (request)    && s_in (perm, 'D'))
+       )
+    {
+        errors.http_code = HTTP_OK;
+        return;
+    }
+
+    http_add_error (errors, "not-authorized");
+    return;
 }
