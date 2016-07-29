@@ -13,6 +13,11 @@ EVALUATOR peer:
 part 'old_name' is specified, perform additional rename of rule name
 'old_name' to name specified in json property "rule_name" : "<new_name>".
 
+The USER peer sends one of the following messages on the _METRIC_UNAVAILABLE
+stream with subject "UNAVAILABLE":
+4) METRICUNAVAILABLE/[metric_topic_1]/.../[metric_topic_N] - indicates, that
+this metric in the system would not present any more.
+
 where '/' indicates a multipart string message, 'json' is valid json
 document(1), 'type' is one of [ all | threshold | pattern | single ], 'name',
 'old_name' is rule name and 'subject' of the message is
