@@ -168,7 +168,7 @@ if(dta.mac.empty()) {
 }
 
 if (dta.ip.size () != dta.netmask.size ()) {
-    http_die ("internal-error", 
+    http_die ("internal-error",
         std::string ("Number of ip addresses '").append (std::to_string (dta.ip.size ())).append ("' do not match number of netmasks '").
         append (std::to_string (dta.netmask.size ())).append ("'.").c_str ());
 }
@@ -198,7 +198,7 @@ try {
         if (rex2.match (fline, smatch)) {
             nameservers.append (first ? " " : ", ").append ("\"").append (smatch.get (1)).append ("\"");
             first = false;
-        } 
+        }
     }
     nameservers.append (" ]");
     // No need to close ifstream.
@@ -215,7 +215,7 @@ try {
         if (fgets (buffer, 256, pipe) != NULL)
             result += buffer;
     }
-    pclose(pipe);    
+    pclose(pipe);
     cxxtools::Regex rex3("default\\s+via\\s+(\\S+)");
     if (rex3.match (result, smatch)) {
         gateway.assign (smatch.get (1));

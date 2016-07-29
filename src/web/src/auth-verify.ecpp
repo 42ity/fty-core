@@ -48,11 +48,11 @@ std::string checked_access_token;
 {
     // sanitize check
     std::string access_token = qparam.param ("access_token");
-    
+
     if(request.hasHeader(tnt::httpheader::authorization)) {
         /* Auth header overrides GET/POST parameters even if header is wrong */
         access_token = request.getHeader(tnt::httpheader::authorization);
-        
+
         if(access_token.compare(0,7,"Bearer ")) {
             access_token = "";
         } else {

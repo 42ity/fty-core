@@ -51,7 +51,7 @@ asset_manager asset_mgr;
     // BLOCK 1
     // Sanity parameter check
     {
-    
+
         std::string arg1 = qparam.param ("arg1");
         // arg1 is mandatory
         if (arg1.empty ()) {

@@ -222,12 +222,12 @@ asset_manager asset_mgr;
     // arg1, arg2 are both mandatory
     std::string checked_arg1;
     std::string checked_arg2;
-    
+
     {
         // sanitize params
         std::string arg1 = qparam.param ("arg1");
         std::string arg2 = qparam.param ("arg2");
-        
+
         if (arg1.empty ()) {
             http_die ("request-param-required", "arg1");
         }
@@ -235,7 +235,7 @@ asset_manager asset_mgr;
         if (arg2.empty ()) {
             http_die ("request-param-required", "arg2");
         }
-        
+
         check_regex_text_or_die ("arg1", arg1, checked_arg1, "^[,0-9]{1,255}$");
         check_regex_text_or_die ("arg2", arg2, checked_arg2, "^[_,a-z]{1,255}$");
         // sanitize params end
@@ -244,7 +244,7 @@ asset_manager asset_mgr;
     // arg2 is a single value OR a comma-separated list formed from a list of permissible values (PARAM_TO_SRC)
     std::vector<std::string> requestedParams;
     cxxtools::split(",", checked_arg2, std::back_inserter(requestedParams));
-    
+
     for (const std::string& param: requestedParams) {
         if (!s_is_valid_param (param) ) {
             http_die ("request-param-bad", "arg2",

@@ -98,7 +98,7 @@ s_passwd(
         std::string user;
         std::string old_passwd;
         std::string new_passwd;
-    
+
         http_errors_t errors;
 
         bool bad_request = false;
@@ -110,7 +110,7 @@ s_passwd(
         } catch (const std::exception& e) {
             bad_request = true;
         }
-        
+
         if (bad_request)
             http_die("bad-request-document");
 

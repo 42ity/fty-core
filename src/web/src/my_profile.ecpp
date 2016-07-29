@@ -20,7 +20,7 @@
 /*!
  * \file   my_profile.ecpp
  * \author Barbora <Stepankova@Eaton.com>
- * \brief  
+ * \brief
  */
 #><%pre>
     #include "utils_web.h"
@@ -29,14 +29,14 @@
 </%pre>
 <%request scope="global">
     UserInfo user;
-</%request>  
+</%request>
 <%cpp>
     std:: string change_pwd = " ";
     int timeout = 99;
-  
-   // GET 
+
+   // GET
     if (request.isMethodGET()) {
-        
+
         if (user.profile() == BiosProfile:: Admin) {
             change_pwd = "Yes";
             timeout = 10;
@@ -45,8 +45,8 @@
             change_pwd = "No";
             timeout = 0;
         }
-    
-</%cpp>  
+
+</%cpp>
 
 {
 "login" : "<$ user.login() $>",
@@ -57,17 +57,17 @@
 }
 
 %} // if get
-  
+
 <%cpp>
-    
-   // PUT 
+
+   // PUT
 
     std::string temp_unit;
     std::string method = request.getMethod();
-  
+
     if (method == "PUT" ){
         temp_unit = "unit";
-        
+
 </%cpp>
 {
 "preferences" : {
@@ -76,11 +76,11 @@
     "language" : "<lang>",
     "time" : "<time>"
     }
-} 
+}
 <%cpp>
-          
+
     } else {
-        temp_unit = "empty";       
+        temp_unit = "empty";
     } // if PUT
 </%cpp>
-          
+

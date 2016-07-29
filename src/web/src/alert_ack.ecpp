@@ -71,7 +71,7 @@ std::string checked_state;
     std::string state;
     cxxtools::SerializationInfo si;
     try {
-        std::stringstream input (request.getBody(), std::ios_base::in); 
+        std::stringstream input (request.getBody(), std::ios_base::in);
         cxxtools::JsonDeserializer deserializer (input);
         deserializer.deserialize (si);
         si.getMember ("state") >>= state;

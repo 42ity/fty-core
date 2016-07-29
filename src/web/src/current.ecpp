@@ -150,7 +150,7 @@ s_rt_encode_GET (const char* name, zuuid_t *uuid)
 std::vector<a_elmnt_id_t> asset_ids;
 
 {
-      
+
     std::string dev = qparam.param("dev");
     log_debug ("Request parameters - Initial tainted values received:\n\tdev = '%s'\n",
                 dev.c_str ());
@@ -161,7 +161,7 @@ std::vector<a_elmnt_id_t> asset_ids;
     }
     std::vector<std::string> foo;
     cxxtools::split(",", dev, std::back_inserter(foo));
-    
+
     for ( auto asset_id : foo ) {
         http_errors_t errors;
         a_elmnt_id_t id = 0;
@@ -173,11 +173,11 @@ std::vector<a_elmnt_id_t> asset_ids;
     }
 }
 
-  
+
 {
     cxxtools::Regex outlet_properties_re {"(realpower|current|voltage|status).(outlet).([0-9]+)"};
 
-        
+
     if (asset_ids.empty()) {
         http_die("request-param-required", "dev");
     }
@@ -266,7 +266,7 @@ std::vector<a_elmnt_id_t> asset_ids;
                 std::stod (bios_proto_value (bmsg), NULL)));
 
             bios_proto_destroy (&bmsg);
-            
+
             data = zmsg_popmsg (msg);
         }
         zmsg_destroy (&msg);

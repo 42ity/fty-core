@@ -23,8 +23,8 @@
  * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \brief  process location topology requests (from)
- *  
- * It is the first file in the chain. Here would be done the complete 
+ *
+ * It is the first file in the chain. Here would be done the complete
  * parameter check. If parameters are ok, but it is not "from" but "to"
  * request control would be delegated to the topology_location_to.ecpp.
  */
@@ -56,7 +56,7 @@ asset_manager asset_mgr;
     int checked_recursive = 0;
     int checked_filter = 0;
     a_elmnt_id_t checked_feed_by = 0;
-    
+
     // ##################################################
     // BLOCK 1
     // Sanity parameter check
@@ -104,7 +104,7 @@ asset_manager asset_mgr;
             // Note: datacenter is not a valid filter parameter according to rfc-11 4.1.13
             http_die("request-param-bad","filter", filter.c_str(), "'rooms'/'rows'/'racks'/'groups'/'devices'");
         }
-    
+
         // 5. Check if 'feed_by' is allowed
         if ( !feed_by.empty() ) {
             if ( checked_filter != persist::asset_type::DEVICE ) {
@@ -149,7 +149,7 @@ asset_manager asset_mgr;
         }
     }
     // Sanity check end
- 
+
     // ##################################################
     // BLOCK 2
     // Call persistence layer

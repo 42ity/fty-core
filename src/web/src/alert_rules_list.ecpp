@@ -54,7 +54,7 @@ std::string checked_rule_class;
     }
     if (type != "threshold" && type != "single" && type != "pattern" && type != "all") { // unknown parameter 'type'
         http_die ("request-param-bad", "type", std::string ("'").append (type).append ("'").c_str (),
-                  "one of the following values [ 'threshold', 'single', 'pattern', 'all' ] or empty");  
+                  "one of the following values [ 'threshold', 'single', 'pattern', 'all' ] or empty");
     }
     checked_type = type;
 
@@ -178,7 +178,7 @@ if (streq (part, "LIST")) {
 [
 % while (part) {
 %   if (first) {
-    <$$ part $> 
+    <$$ part $>
 %     first = false;
 %   }
 %   else {
@@ -215,7 +215,7 @@ if (streq (part, "ERROR")) {
     free (part);
     zmsg_destroy (&recv_msg);
     mlm_client_destroy (&client);
-    http_die ("internal-error", 
+    http_die ("internal-error",
         std::string ("Error while retrieving list of rules with type = '").append (checked_type).append ("': ").
         append (reason).append(".").c_str ());
 }
