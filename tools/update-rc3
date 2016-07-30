@@ -794,6 +794,7 @@ download_osimage() (
             verify_threeway_checksum "${IMAGE_URL}" "${rTGT_FILE}" "${rTGT_FILE_CSOLD}" "${aTGT_FILE_CSNEW}" && return 0
             if [ -d "${DEPLOYMENTROOT_OSIMAGE}" ] ; then
                 # Do not remove deployed files!
+                logmsg_info "Verifying if we have this checksum and corresponding file already deployed..."
                 FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
                     "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE}" \
                     "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE_CSOLD}" \
@@ -805,6 +806,7 @@ download_osimage() (
         verify_threeway_checksum "${IMAGE_URL}" "${rTGT_FILE}" "${rTGT_FILE_CSOLD}" "${aIMAGE_CSNEW}" && return 0
         if [ -d "${DEPLOYMENTROOT_OSIMAGE}" ] ; then
             # Do not remove deployed files!
+            logmsg_info "Verifying if we have this checksum and corresponding file already deployed..."
             FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
                 "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE}" \
                 "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE_CSOLD}" \
@@ -819,6 +821,7 @@ download_osimage() (
     && { echo "${rIMAGE_URL_BASENAME_EXT}" > "$DOWNLOADROOT_OSIMAGE/.newest-osimage"; return 0; }
     if [ -d "${DEPLOYMENTROOT_OSIMAGE}" ] ; then
         # Do not remove deployed files!
+        logmsg_info "Verifying if we have this checksum and corresponding file already deployed..."
         FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
             "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_URL_BASENAME_EXT}" \
             "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_CSOLD}" \
@@ -1336,8 +1339,18 @@ download_rawfwimage_modules() (
     logmsg_info "Verifying if we have this checksum and corresponding file under original name in base dir..."
     verify_threeway_checksum "${IMAGE_URL}" "${rIMAGE_URL_BASENAME}" "${rIMAGE_CSOLD}" "${aIMAGE_CSNEW}" && return 0
 
+    if [ -d "${DEPLOYMENTROOT_MODULES}" ] ; then
+        # Do not remove deployed files!
+        logmsg_info "Verifying if we have this checksum and corresponding file already deployed..."
+        FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+            "${DEPLOYMENTROOT_MODULES}/${rIMAGE_URL_BASENAME}" \
+            "${DEPLOYMENTROOT_MODULES}/${rIMAGE_CSOLD}" \
+            "${aIMAGE_CSNEW}" \
+        && return 0
+    fi
+
     if [ x"${CHECK_ONLY-}" = xyes ]; then
-        logmsg_info "According to checksums, the remote resource '$IMAGE_URL' points to an kernel modules archive we do not have on this system"
+        logmsg_info "According to checksums, the remote resource '$IMAGE_URL' points to a kernel modules archive we do not have on this system"
         return 42
     fi
 
