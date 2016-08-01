@@ -135,12 +135,21 @@ s_rack_realpower_nominal (
 }
 
 </%pre>
-
 <%thread scope="global">
 asset_manager     asset_mgr;
 </%thread>
-
+<%request scope="global">
+UserInfo user;
+</%request>
 <%cpp>
+    // check user permissions
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Anonymous, "R"},
+            {BiosProfile::Dashboard, "R"},
+            {BiosProfile::Admin,     "R"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
+
     // checked parameters
     uint32_t checked_id = 0;
     std::string checked_type;

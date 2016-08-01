@@ -74,7 +74,18 @@ bool relative_to_unixtime (const std::string& relative, int64_t now, int64_t& un
 
 
 </%pre>
+<%request scope="global">
+UserInfo user;
+</%request>
 <%cpp>
+    // check user permissions
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Anonymous, "R"},
+            {BiosProfile::Dashboard, "R"},
+            {BiosProfile::Admin,     "R"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
+
     // Input arguments checking
     std::string checked_start_ts;
     std::string checked_end_ts;

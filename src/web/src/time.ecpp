@@ -30,10 +30,21 @@
 #include <cxxtools/jsondeserializer.h>
 #include "augtool.h"
 #include "utils.h"
-#include "utils_web.h"
+#include "helpers.h"
 
 </%pre>
+<%request scope="global">
+UserInfo user;
+</%request>
 <%cpp>
+    // check user permissions
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Anonymous, "R"},
+            {BiosProfile::Dashboard, "R"},
+            {BiosProfile::Admin,     "RE"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
+
     // BLOCK 1
     // input argument sanitization
     std::string checked_time;

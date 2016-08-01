@@ -25,7 +25,6 @@
  */
  #><%pre>
 #include "tokens.h"
-#include "rights.h"
 #include <tnt/httpmessage.h>
 #include <tnt/httpheader.h>
 #include "utils_web.h"
@@ -46,6 +45,10 @@ UserInfo user;
 <%cpp>
 std::string checked_access_token;
 {
+    // NOTE: auth_verify is not limited by CHECK_USER_PERMISSIONS_OR_DIE
+    //       this is where the token is actually verified and user info
+    //       fill'ed
+
     // sanitize check
     std::string access_token = qparam.param ("access_token");
 
@@ -68,7 +71,17 @@ if(!checked_access_token.empty()) {
     long int uid;
     long int gid;
 	if(tokens::get_instance()->verify_token(checked_access_token, &uid, &gid)) {
-        user.profile (static_cast<BiosProfile> (gid - 8000));
+
+        long int foo = (gid - 8000);
+        if (foo != static_cast<long int> (BiosProfile::Anonymous) \
+         && foo != static_cast<long int> (BiosProfile::Dashboard) \
+         && foo != static_cast<long int> (BiosProfile::Admin)) {
+            std::string msg {"Cannot map gid="};
+            msg += std::to_string (gid) + " to user profile";
+            http_die ("internal-error", msg.c_str ());
+        }
+
+        user.profile (static_cast<BiosProfile> (foo));
         user.uid (uid);
         user.gid (gid);
 	} else {
@@ -84,21 +97,6 @@ if(!checked_access_token.empty()) {
 	os << "access_auth_level=\"" << static_cast<int> (user.profile ()) << "\"";
 	reply.setHeader( (std::string)"X-Auth-Verify: ", os.str() );
 #endif // DEBUG
-
-std::string test_url = request.isMethodGET() ? "R" : "W";
-test_url += request.getQuery();
-
-auto it = rights_management.upper_bound(test_url);
-if(!rights_management.empty() && it != rights_management.begin()) {
-	it--;
-	if(test_url.find(it->first) != std::string::npos) {
-		if(it->second <= static_cast<int> (user.profile ())) {
-			return DECLINED;
-		} else {
-			http_die("not-authorized");
-		}
-	}
-}
 
 /* Go on to next module in tntnet.xml */
 return DECLINED;

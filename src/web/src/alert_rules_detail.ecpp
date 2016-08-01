@@ -36,9 +36,20 @@
 #include "helpers.h"
 
 </%pre>
+<%request scope="global">
+UserInfo user;
+</%request>
 <%cpp>
 std::string checked_name;
 {
+    // check user permissions
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Anonymous, "R"},
+            {BiosProfile::Dashboard, "R"},
+            {BiosProfile::Admin,     "R"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
+
     // sanity check
     if (!request.isMethodGET ())
         http_die ("method-not-allowed", request.getMethod ().c_str ());

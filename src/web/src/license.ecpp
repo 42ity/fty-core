@@ -47,7 +47,7 @@
 #include "config.h"
 #include "utils.h"
 #include "cleanup.h"
-#include "utils_web.h"
+#include "helpers.h"
 #include "log.h"
 
 #define RETURN return
@@ -69,9 +69,18 @@ basename2 (const char *inp)
 </%pre>
 <%request scope="global">
 long int uid = 0;
+UserInfo user;
 </%request>
 <%cpp>
 // Basic operations
+    // check user permissions
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Anonymous, "R"},
+            {BiosProfile::Dashboard, "R"},
+            {BiosProfile::Admin,     "CR"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
+
 
 _scoped_char *current_license = current_license_file ();
 _scoped_char *accepted_license = accepted_license_file ();
@@ -107,16 +116,16 @@ if(rex_lic.match(request.getUrl())) {
 			http_die("internal-error", "Error saving license acceptance or getting license version, check integrity of storage.");
 		}
 
-		/* Identify user */
-		char *user = NULL;
+		/* Identify license-user */
+		char *luser = NULL;
 		static std::mutex pw_lock;
 		pw_lock.lock();
 		struct passwd *pw = getpwuid(uid);
 		if(pw != NULL) {
-			user = strdup(pw->pw_name);
+			luser = strdup(pw->pw_name);
 		}
 		pw_lock.unlock();
-		if(user == NULL) {
+		if(luser == NULL) {
 			std::string msg = "Can't get username for user with id " + std::to_string(uid);
 			log_debug("Error: %s", msg.c_str());
 			http_die("internal-error", msg.c_str());
@@ -127,7 +136,7 @@ if(rex_lic.match(request.getUrl())) {
 		uint64_t tme = time(NULL);
 		int dpdest = -42;
 		if(dest > 0)
-			dpdest = dprintf(dest, "%s\n%" PRIu64 "\n%s\n", buff, tme, user);
+			dpdest = dprintf(dest, "%s\n%" PRIu64 "\n%s\n", buff, tme, luser);
 		if(dest < 0 || dpdest < 4) {
 			if (dest < 0)
 				log_debug("Error opening license acceptance file '%s': got FD dest=%i", accepted_license, dest);
@@ -135,8 +144,8 @@ if(rex_lic.match(request.getUrl())) {
 				log_debug("Error saving license acceptance into file '%s': got dpdest=%i bytes written",
 				accepted_license, dpdest);
 #ifdef DEBUG
-			log_debug("FYI: Tried to write version buff='%s', tme='%" PRIu64 "', user='%s' (uid='%li')",
-				buff, tme, user, uid);
+			log_debug("FYI: Tried to write version buff='%s', tme='%" PRIu64 "', luser='%s' (uid='%li')",
+				buff, tme, luser, uid);
 #endif
 			if(dest > 0)
 				close(dest);
@@ -153,14 +162,14 @@ if(rex_lic.match(request.getUrl())) {
 }
 
 _scoped_char *buff_a = NULL;
-_scoped_char *user = NULL;
+_scoped_char *luser = NULL;
 char buff_r[512];
 memset(buff_r, 0, sizeof(buff_r));
 uint64_t tme;
 readlink(current_license, buff_r, sizeof(buff_r));
 FILE* src = fopen(accepted_license, "r");
 if(src != NULL) {
-	fscanf(src,"%ms\n%" SCNu64 "\n%ms", &buff_a, &tme, &user);
+	fscanf(src,"%ms\n%" SCNu64 "\n%ms", &buff_a, &tme, &luser);
 	fclose(src);
 }
 static cxxtools::Regex rex_st("^.*/license/status$");
@@ -175,13 +184,13 @@ if(rex_st.match(request.getUrl())) {
 , "accepted_version" : "<$ basename2 (buff_a) $>"
 , "accepted_at" : "<$ tme $>"
 % }
-% if(user != NULL) {
-, "accepted_by" : "<$ user $>"
+% if(luser != NULL) {
+, "accepted_by" : "<$ luser $>"
 % }
 }
 <%cpp>
 	FREE0(buff_a);
-	FREE0(user);
+	FREE0(luser);
 	RETURN HTTP_OK;
 }
 if(buff_a == NULL || strcmp(buff_a, buff_r) != 0) {
@@ -190,12 +199,12 @@ if(buff_a == NULL || strcmp(buff_a, buff_r) != 0) {
   } else {
 	std::string msg = std::string{"License version changed (new is "} + buff_r + ", accepted is " + buff_a + "). Please accept new license first";
 	FREE0(buff_a);
-	FREE0(user);
+	FREE0(luser);
 	http_die("action-forbidden", "REST API call", msg.c_str());
   }
 } else {
 	FREE0(buff_a);
-	FREE0(user);
+	FREE0(luser);
 	RETURN DECLINED;
 }
 </%cpp>
