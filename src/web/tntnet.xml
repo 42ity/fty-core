@@ -154,11 +154,11 @@
       </args>
     </mapping>
     <mapping>
-      <target>iface@bios_web</target>
+      <target>admin_ifaces@bios_web</target>
       <url>^/api/v1/admin/ifaces$</url>
     </mapping>
     <mapping>
-      <target>iface@bios_web</target>
+      <target>admin_iface@bios_web</target>
       <url>^/api/v1/admin/iface/(.*)$</url>
       <args>
         <iface>$1</iface>

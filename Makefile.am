@@ -1160,8 +1160,10 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/topology_location_to.cpp                    \
                       src/web/src/datacenter_indicators.cpp                   \
                       src/web/src/average.cpp src/web/src/asset_import.cpp    \
-                      src/web/src/netcfg.cpp           \
-                      src/web/src/uptime.cpp src/web/src/iface.cpp            \
+                      src/web/src/netcfg.cpp            \
+                      src/web/src/uptime.cpp            \
+                      src/web/src/admin_iface.cpp       \
+                      src/web/src/admin_ifaces.cpp      \
                       src/web/src/license.cpp src/web/src/asset_export.cpp    \
                       src/web/src/admin_passwd.cpp src/web/src/systemctl.cpp  \
                       src/web/src/config.cpp src/web/src/alert_rules_list.cpp \
@@ -1169,8 +1171,8 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/alert_ack.cpp \
                       src/web/src/alert_list.cpp \
                       src/web/src/assets_in.cpp \
-		      src/web/src/not_found.cpp \
-		      src/web/src/my_profile.cpp
+                      src/web/src/not_found.cpp \
+                      src/web/src/my_profile.cpp
 
 # Track real-git and nodist (generated) sources SEPARATELY
 nodist_bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)
@@ -1182,7 +1184,8 @@ bios_web_la_SOURCES = \
                       src/shared/data.cc                \
                       src/shared/upsstatus.cc           \
                       src/web/src/asset_computed_impl.cc \
-                      src/web/src/helpers.cc
+                      src/web/src/helpers.cc             \
+                      src/web/src/iface.cc
 
 # Ensure these files are auto-made before others
 BUILT_SOURCES +=	$(BUILT_SOURCES_bios_web_la)

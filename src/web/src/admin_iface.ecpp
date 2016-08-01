@@ -1,0 +1,134 @@
+<#
+ #
+ # Copyright (C) 2015 Eaton
+ #
+ # This program is free software; you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+ # the Free Software Foundation; either version 2 of the License, or
+ # (at your option) any later version.
+ #
+ # This program is distributed in the hope that it will be useful,
+ # but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+ #
+ # You should have received a copy of the GNU General Public License along
+ # with this program; if not, write to the Free Software Foundation, Inc.,
+ # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ #
+ #><#
+/*!
+ * \file iface.ecpp
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+ * \brief Not yet documented file
+ */
+ #><%pre>
+#include <fstream>
+#include <cxxtools/regex.h>
+
+#include "log.h"
+#include "helpers.h"
+#include "iface.h"
+
+</%pre>
+<%request scope="global">
+UserInfo user;
+</%request>
+<%cpp>
+    // check user permissions
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Admin,     "E"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
+
+    std::string checked_iface;
+
+    {
+        std::string iface = request.getArg("iface");
+        if (iface.empty ()) {
+            http_die ("request-param-required", "iface");
+        }
+        check_regex_text_or_die ("iface", iface, checked_iface, "^[a-z][a-z0-9]{0,14}$");
+    }
+
+    auto dta = get_iface(checked_iface);
+    if(dta.mac.empty()) {
+        http_die ("request-param-bad", "iface_name",
+                std::string ("value that does not exist '").append (checked_iface).append ("'").c_str (),
+                "one of valid interface names that can be obtained using GET 'admin/ifaces'.");
+    }
+
+    if (dta.ip.size () != dta.netmask.size ()) {
+        http_die ("internal-error",
+                std::string ("Number of ip addresses '").append (std::to_string (dta.ip.size ())).append ("' do not match number of netmasks '").
+                append (std::to_string (dta.netmask.size ())).append ("'.").c_str ());
+    }
+
+    bool first = true;
+    std::string nameservers, gateway, ipaddrs;
+    // IP addresses
+    ipaddrs.assign ("[");
+    for (std::vector<std::string>::size_type i = 0; i < dta.ip.size (); ++i) {
+        ipaddrs.append (first ? " " : ", ").append ("{ \"address\" : \"").append (dta.ip.at (i)).
+            append ("\", \"netmask\" : \"").append (dta.netmask.at (i)).append ("\" }");
+        first = false;
+    }
+    ipaddrs.append (" ]");
+
+    try {
+        // Nameservers
+        cxxtools::RegexSMatch smatch;
+        cxxtools::Regex rex2("^\\s*nameserver\\s+(\\S+).*$");
+
+        std::ifstream infile("/etc/resolv.conf");
+        std::string fline;
+        first = true;
+        nameservers.assign ("[");
+        while (std::getline(infile, fline))
+        {
+            if (rex2.match (fline, smatch)) {
+                nameservers.append (first ? " " : ", ").append ("\"").append (smatch.get (1)).append ("\"");
+                first = false;
+            }
+        }
+        nameservers.append (" ]");
+        // No need to close ifstream.
+
+        // Gateway
+        FILE* pipe = popen ("ip route show", "r");
+        if (!pipe) {
+            throw std::runtime_error ("popen ('ip route show', 'r') failed.");
+        }
+        char buffer[256];
+        std::string result;
+
+        while (!feof (pipe)) {
+            if (fgets (buffer, 256, pipe) != NULL)
+                result += buffer;
+        }
+        pclose(pipe);
+        cxxtools::Regex rex3("default\\s+via\\s+(\\S+)");
+        if (rex3.match (result, smatch)) {
+            gateway.assign (smatch.get (1));
+        }
+        else {
+            throw std::runtime_error ("Could not match default gateway from `ip route show`.");
+        }
+    } catch (const std::exception& e) {
+        log_error ("Exception caught: %s", e.what ());
+        http_die ("internal-error", "Exception caught." );
+    }
+
+// Print out the result
+</%cpp>
+{
+    "<$ checked_iface $>": {
+        "state": "<$ dta.state $>",
+        "ip": <$$ ipaddrs $>,
+        "gateway": "<$ gateway $>",
+        "link": "<$ dta.cable $>",
+        "mac" : "<$ dta.mac $>",
+        "nameservers" : <$$ nameservers $>
+    }
+}

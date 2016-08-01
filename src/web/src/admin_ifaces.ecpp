@@ -1,0 +1,53 @@
+<#
+ #
+ # Copyright (C) 2015-2016 Eaton
+ #
+ # This program is free software; you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+ # the Free Software Foundation; either version 2 of the License, or
+ # (at your option) any later version.
+ #
+ # This program is distributed in the hope that it will be useful,
+ # but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+ #
+ # You should have received a copy of the GNU General Public License along
+ # with this program; if not, write to the Free Software Foundation, Inc.,
+ # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ #
+ #><#
+/*!
+ * \file iface.ecpp
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \brief Function for accessing network interfaces on Linux
+ */
+ #><%pre>
+
+#include "log.h"
+#include "helpers.h"
+#include "iface.h"
+
+</%pre>
+<%request scope="global">
+UserInfo user;
+</%request>
+<%cpp>
+    // check user permissions
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Anonymous,     "R"},
+            {BiosProfile::Dashboard,     "R"},
+            {BiosProfile::Admin,         "R"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
+
+    bool first = true;
+</%cpp>
+{ "ifaces": [
+%   for(auto i: get_ifaces()) {
+    <$ first ? "  " : ", " $>"<$ i $>"
+%       first = false;
+%   }
+] }
