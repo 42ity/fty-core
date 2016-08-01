@@ -42,7 +42,9 @@ UserInfo user;
     // check user permissions
     // This is DEPRECATED CALL, will be replaced with my_profile.ecpp
     static const std::map <BiosProfile, std::string> PERMISSIONS = {
-            {BiosProfile::Admin,     "RU"}
+            {BiosProfile::Anonymous,     "R"},
+            {BiosProfile::Dashboard,     "R"},
+            {BiosProfile::Admin,         "RU"}
             };
     CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
 
