@@ -259,20 +259,6 @@ settraps() {
 }
 
 ##############################################################################
-remove_image() {
-    # Remove the image file "$1" and its possible checksum patterns,
-    # and the optional explicit checksum filename that can be in "$2"
-    # If the RETAIN_FILE variable is set, keep this file (downloaded new CS)
-    [ x"${FLAG_CAN_REMOVE_IMAGES-}" = xno ] && \
-        logmsg_info "FLAG_CAN_REMOVE_IMAGES=$FLAG_CAN_REMOVE_IMAGES so do not remove_image($*)" && \
-        return 0
-    [ -n "$RETAIN_FILE" ] && [ -s "$RETAIN_FILE" ] && \
-        logmsg_info "Retaining '$RETAIN_FILE' during remove_image($*)" && \
-        mv -f "$RETAIN_FILE" "$RETAIN_FILE.$$"
-    rm -f "$1"{,.md5,.sha,.sha1,.sha224,.sha256,.sha384,.sha512}{,-padded}{,.tmp} ${2:+"$2"}
-    [ -n "$RETAIN_FILE" ] && [ -s "$RETAIN_FILE.$$" ] && mv -f "$RETAIN_FILE.$$" "$RETAIN_FILE"
-}
-
 get_csalgo_from_filename() {
     # Parse (extensions of) the filename in "$1" to retrieve the
     # checksum algo (if any); set of supported algos and extensions
@@ -330,14 +316,14 @@ find_checksum_cache() {
     # Finds from the cache the entry with given pathname $3 and algo $2 and length $1
     [ $# != 3 ] && return 22
     [ -z "${CHECKSUM_CACHE}" ] && return 1
-    echo "$CHECKSUM_CACHE" | egrep '^[^:]+'":$1:$2:$3"'$' | awk -F: '{print $1}'
+    echo "$CHECKSUM_CACHE" | egrep '^[^\:]+'":$1:$2:$3"'$' | awk -F: '{print $1}'
 }
 
 remove_checksum_cache() {
     # Removes from the cache the entry with given pathname $3 and algo $2 and length $1
     [ $# != 3 ] && return 22
     [ -z "${CHECKSUM_CACHE}" ] && return 0
-    CHECKSUM_CACHE="`echo "$CHECKSUM_CACHE" | egrep -v '^[^:]+'"$1:$2:$3"'$'`"
+    CHECKSUM_CACHE="`echo "$CHECKSUM_CACHE" | egrep -v '^[^\:]+'"$1:$2:$3"'$'`"
 }
 
 add_checksum_cache() {
@@ -348,9 +334,25 @@ add_checksum_cache() {
     if [ -z "${CHECKSUM_CACHE}" ]; then
         CHECKSUM_CACHE="$1:$2:$3:$4"
     else
-        CHECKSUM_CACHE="`echo "$CHECKSUM_CACHE" | egrep -v '^[^:]+'":$2:$3:$4"'$'`
+        CHECKSUM_CACHE="`echo "$CHECKSUM_CACHE" | egrep -v '^[^\:]+'":$2:$3:$4"'$'`
 $1:$2:$3:$4"
     fi
+}
+
+remove_image() {
+    # Remove the image file "$1" and its possible checksum patterns,
+    # and the optional explicit checksum filename that can be in "$2"
+    # If the RETAIN_FILE variable is set, keep this file (downloaded new CS)
+    [ x"${FLAG_CAN_REMOVE_IMAGES-}" = xno ] && \
+        logmsg_info "FLAG_CAN_REMOVE_IMAGES=$FLAG_CAN_REMOVE_IMAGES so do not remove_image($*)" && \
+        return 0
+    [ -n "$RETAIN_FILE" ] && [ -s "$RETAIN_FILE" ] && \
+        logmsg_info "Retaining '$RETAIN_FILE' during remove_image($*)" && \
+        mv -f "$RETAIN_FILE" "$RETAIN_FILE.$$"
+    remove_checksum_cache '[^\:]*' '[^\:]*' "$1"
+    remove_checksum_cache '[^\:]*' '[^\:]*' "$1"'\.[^\:]*'
+    rm -f "$1"{,.md5,.sha,.sha1,.sha224,.sha256,.sha384,.sha512}{,-padded}{,.tmp} ${2:+"$2"}
+    [ -n "$RETAIN_FILE" ] && [ -s "$RETAIN_FILE.$$" ] && mv -f "$RETAIN_FILE.$$" "$RETAIN_FILE"
 }
 
 verify_checksum() {
@@ -538,16 +540,16 @@ verify_threeway_checksum() {
     [ -n "$CSNEW" ] && \
     if verify_checksum "$FILE_DATA" "$FILE_CSNEW" ; then
         if [ x"${REPLACE_MISSING_CHECKSUM-}" = xno ] && [ ! -f "$FILE_CSOLD" ] ; then
-            logmsg_info "Remote checksum is good for '$FILE_CSNEW' and local copy was missing - not installing new checksum file"
+            logmsg_info "Remote checksum is good in '$FILE_CSNEW' and local copy was missing - not installing new checksum file"
         else
-            logmsg_info "Remote checksum is good for '$FILE_CSNEW', local copy was corrupted or missing - replacing checksum file"
+            logmsg_info "Remote checksum is good in '$FILE_CSNEW', local copy was corrupted or missing - replacing checksum file"
             mv -f "$FILE_CSNEW" "$FILE_CSOLD"
         fi && \
             logmsg_info "The newest available remote image is '$IMAGE_URL' and we already have a good copy (as '$FILE_DATA')"
         return $?
     else
         # In-place changes are not nice but can happen e.g. for FW images
-        logmsg_info "Remote checksum is not good for '$FILE_CSNEW', local file is corrupted or obsolete and should be re-downloaded from '$IMAGE_URL'"
+        logmsg_info "Remote checksum in '$FILE_CSNEW' is not good for '$FILE_DATA', local file is corrupted or obsolete and should be re-downloaded from '$IMAGE_URL'"
         if [ ! -c "$FILE_DATA" ] && [ ! -b "$FILE_DATA" ] ; then
             RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
         fi
@@ -792,6 +794,7 @@ download_osimage() (
             verify_threeway_checksum "${IMAGE_URL}" "${rTGT_FILE}" "${rTGT_FILE_CSOLD}" "${aTGT_FILE_CSNEW}" && return 0
             if [ -d "${DEPLOYMENTROOT_OSIMAGE}" ] ; then
                 # Do not remove deployed files!
+                logmsg_info "Verifying if we have this checksum and corresponding file already deployed..."
                 FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
                     "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE}" \
                     "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE_CSOLD}" \
@@ -803,6 +806,7 @@ download_osimage() (
         verify_threeway_checksum "${IMAGE_URL}" "${rTGT_FILE}" "${rTGT_FILE_CSOLD}" "${aIMAGE_CSNEW}" && return 0
         if [ -d "${DEPLOYMENTROOT_OSIMAGE}" ] ; then
             # Do not remove deployed files!
+            logmsg_info "Verifying if we have this checksum and corresponding file already deployed..."
             FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
                 "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE}" \
                 "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE_CSOLD}" \
@@ -817,6 +821,7 @@ download_osimage() (
     && { echo "${rIMAGE_URL_BASENAME_EXT}" > "$DOWNLOADROOT_OSIMAGE/.newest-osimage"; return 0; }
     if [ -d "${DEPLOYMENTROOT_OSIMAGE}" ] ; then
         # Do not remove deployed files!
+        logmsg_info "Verifying if we have this checksum and corresponding file already deployed..."
         FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
             "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_URL_BASENAME_EXT}" \
             "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_CSOLD}" \
@@ -855,14 +860,15 @@ download_osimage() (
     fi
 
     if [ ! -s "${aTGT_FILE_CSOLD}" ]; then
-        [ -s "${aIMAGE_CSNEW}" ] && mv -f "${aIMAGE_CSNEW}" "${aTGT_FILE_CSOLD}"
-        [ -s "${aTGT_FILE_CSNEW}" ] && mv -f "${aTGT_FILE_CSNEW}" "${aTGT_FILE_CSOLD}"
+        [ -s "${aIMAGE_CSNEW}" ] && cp -f "${aIMAGE_CSNEW}" "${aTGT_FILE_CSOLD}"
+        [ -s "${aTGT_FILE_CSNEW}" ] && cp -f "${aTGT_FILE_CSNEW}" "${aTGT_FILE_CSOLD}"
     fi
 
     logmsg_info "Downloading '$IMAGE_URL' into '$aTGT_FILE'..."
     rm -f "${aTGT_FILE}"
     wget -O "${aTGT_FILE}" "$IMAGE_URL" && [ -s "$aTGT_FILE" ] || \
         { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
+    remove_checksum_cache '[^\:]*' '[^\:]*' "${aTGT_FILE}"
 
     if [ -s "${aTGT_FILE_CSOLD}" ]; then
         ensure_checksum "${aTGT_FILE}" "${aTGT_FILE_CSOLD}" || return $?
@@ -1037,17 +1043,18 @@ download_rawfwimage_uboot() (
     aIMAGE_CSOLD_PADDED="`pwd`/${rIMAGE_CSOLD_PADDED}"
 
     if [ ! -s "${aIMAGE_CSOLD}" ]; then
-        [ -s "${aIMAGE_CSNEW}" ] && mv -f "${aIMAGE_CSNEW}" "${aIMAGE_CSOLD}"
+        [ -s "${aIMAGE_CSNEW}" ] && cp -f "${aIMAGE_CSNEW}" "${aIMAGE_CSOLD}"
     fi
 
     if [ ! -s "${aIMAGE_CSOLD_PADDED}" ]; then
-        [ -s "${aIMAGE_CSNEW_PADDED}" ] && mv -f "${aIMAGE_CSNEW_PADDED}" "${aIMAGE_CSOLD_PADDED}"
+        [ -s "${aIMAGE_CSNEW_PADDED}" ] && cp -f "${aIMAGE_CSNEW_PADDED}" "${aIMAGE_CSOLD_PADDED}"
     fi
 
     logmsg_info "Downloading '$IMAGE_URL' into '$aTGT_FILE'..."
     rm -f "${aTGT_FILE}"
     wget -O "${aTGT_FILE}" "$IMAGE_URL" && [ -s "$aTGT_FILE" ] || \
         { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
+    remove_checksum_cache '[^\:]*' '[^\:]*' "${aTGT_FILE}"
 
     lsdir_http_pattern "${SOURCESITEROOTFW_UBOOT}" "`basename ${IMAGE_URL}`"'*' | egrep "^${IMAGE_URL}\." | \
         egrep -v "^(${IMAGE_CSURL}|${IMAGE_CSURL_PADDED})"'$' | \
@@ -1060,8 +1067,15 @@ download_rawfwimage_uboot() (
             wget -O "${aBU}" "$U" || logmsg_error "Could not download the additional '$U'"
         done
 
-    if [ -s "${aIMAGE_CSOLD}" ]; then
-        ensure_checksum "${aTGT_FILE}" "${aIMAGE_CSOLD}" || return $?
+    if [ -s "${aIMAGE_CSOLD}" ] || [ -s "${aIMAGE_CSNEW}" ] || [ -s "${DEPLOYMENTROOTFW_UBOOT}/${rIMAGE_CSOLD}" ]; then
+        FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+            "${aTGT_FILE}" \
+            "${aIMAGE_CSOLD}" \
+            "${DEPLOYMENTROOTFW_UBOOT}/${rIMAGE_CSOLD}" || \
+        verify_threeway_checksum "${IMAGE_URL}" \
+            "${aTGT_FILE}" \
+            "${aIMAGE_CSOLD}" \
+            "${aIMAGE_CSNEW}" || return $?
     else
         logmsg_warn "Generating '${aIMAGE_CSOLD}' because there was none at the source..."
         echo "`calculate_stream_checksum "${IMAGE_CSALGO}" < "$aTGT_FILE"`  `basename "$aTGT_FILE"`" > "${aIMAGE_CSOLD}" || \
@@ -1197,17 +1211,18 @@ download_rawfwimage_uimage() (
     aIMAGE_CSOLD_PADDED="`pwd`/${rIMAGE_CSOLD_PADDED}"
 
     if [ ! -s "${aIMAGE_CSOLD}" ]; then
-        [ -s "${aIMAGE_CSNEW}" ] && mv -f "${aIMAGE_CSNEW}" "${aIMAGE_CSOLD}"
+        [ -s "${aIMAGE_CSNEW}" ] && cp -f "${aIMAGE_CSNEW}" "${aIMAGE_CSOLD}"
     fi
 
     if [ ! -s "${aIMAGE_CSOLD_PADDED}" ]; then
-        [ -s "${aIMAGE_CSNEW_PADDED}" ] && mv -f "${aIMAGE_CSNEW_PADDED}" "${aIMAGE_CSOLD_PADDED}"
+        [ -s "${aIMAGE_CSNEW_PADDED}" ] && cp -f "${aIMAGE_CSNEW_PADDED}" "${aIMAGE_CSOLD_PADDED}"
     fi
 
     logmsg_info "Downloading '$IMAGE_URL' into '$aTGT_FILE'..."
     rm -f "${aTGT_FILE}"
     wget -O "${aTGT_FILE}" "$IMAGE_URL" && [ -s "$aTGT_FILE" ] || \
         { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
+    remove_checksum_cache '[^\:]*' '[^\:]*' "${aTGT_FILE}"
 
     lsdir_http_pattern "${SOURCESITEROOTFW_UIMAGE}" "`basename ${IMAGE_URL}`"'*' | egrep "^${IMAGE_URL}\." | \
         egrep -v "^(${IMAGE_CSURL}|${IMAGE_CSURL_PADDED})"'$' | \
@@ -1220,8 +1235,15 @@ download_rawfwimage_uimage() (
             wget -O "${aBU}" "$U" || logmsg_error "Could not download the additional '$U'"
         done
 
-    if [ -s "${aIMAGE_CSOLD}" ]; then
-        ensure_checksum "${aTGT_FILE}" "${aIMAGE_CSOLD}" || return $?
+    if [ -s "${aIMAGE_CSOLD}" ] || [ -s "${aIMAGE_CSNEW}" ] || [ -s "${DEPLOYMENTROOTFW_UIMAGE}/${rIMAGE_CSOLD}" ]; then
+        FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+            "${aTGT_FILE}" \
+            "${aIMAGE_CSOLD}" \
+            "${DEPLOYMENTROOTFW_UIMAGE}/${rIMAGE_CSOLD}" || \
+        verify_threeway_checksum "${IMAGE_URL}" \
+            "${aTGT_FILE}" \
+            "${aIMAGE_CSOLD}" \
+            "${aIMAGE_CSNEW}" || return $?
     else
         logmsg_warn "Generating '${aIMAGE_CSOLD}' because there was none at the source..."
         echo "`calculate_stream_checksum "${IMAGE_CSALGO}" < "$aTGT_FILE"`  `basename "$aTGT_FILE"`" > "${aIMAGE_CSOLD}" || \
@@ -1317,8 +1339,18 @@ download_rawfwimage_modules() (
     logmsg_info "Verifying if we have this checksum and corresponding file under original name in base dir..."
     verify_threeway_checksum "${IMAGE_URL}" "${rIMAGE_URL_BASENAME}" "${rIMAGE_CSOLD}" "${aIMAGE_CSNEW}" && return 0
 
+    if [ -d "${DEPLOYMENTROOT_MODULES}" ] ; then
+        # Do not remove deployed files!
+        logmsg_info "Verifying if we have this checksum and corresponding file already deployed..."
+        FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+            "${DEPLOYMENTROOT_MODULES}/${rIMAGE_URL_BASENAME}" \
+            "${DEPLOYMENTROOT_MODULES}/${rIMAGE_CSOLD}" \
+            "${aIMAGE_CSNEW}" \
+        && return 0
+    fi
+
     if [ x"${CHECK_ONLY-}" = xyes ]; then
-        logmsg_info "According to checksums, the remote resource '$IMAGE_URL' points to an kernel modules archive we do not have on this system"
+        logmsg_info "According to checksums, the remote resource '$IMAGE_URL' points to a kernel modules archive we do not have on this system"
         return 42
     fi
 
@@ -1328,13 +1360,14 @@ download_rawfwimage_modules() (
     aIMAGE_CSOLD="`pwd`/${rIMAGE_CSOLD}"
 
     if [ ! -s "${aIMAGE_CSOLD}" ]; then
-        [ -s "${aIMAGE_CSNEW}" ] && mv -f "${aIMAGE_CSNEW}" "${aIMAGE_CSOLD}"
+        [ -s "${aIMAGE_CSNEW}" ] && cp -f "${aIMAGE_CSNEW}" "${aIMAGE_CSOLD}"
     fi
 
     logmsg_info "Downloading '$IMAGE_URL' into '$aTGT_FILE'..."
     rm -f "${aTGT_FILE}"
     wget -O "${aTGT_FILE}" "$IMAGE_URL" && [ -s "$aTGT_FILE" ] || \
         { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
+    remove_checksum_cache '[^\:]*' '[^\:]*' "${aTGT_FILE}"
 
     lsdir_http_pattern "${SOURCESITEROOTFW_MODULES}" "`basename ${IMAGE_URL}`"'*' | egrep "^${IMAGE_URL}\." | \
         egrep -v "^${IMAGE_CSURL}"'$' | \
@@ -1347,8 +1380,15 @@ download_rawfwimage_modules() (
             wget -O "${aBU}" "$U" || logmsg_error "Could not download the additional '$U'"
         done
 
-    if [ -s "${aIMAGE_CSOLD}" ]; then
-        ensure_checksum "${aTGT_FILE}" "${aIMAGE_CSOLD}" || return $?
+    if [ -s "${aIMAGE_CSOLD}" ] || [ -s "${aIMAGE_CSNEW}" ] || [ -s "${DEPLOYMENTROOTFW_MODULES}/${rIMAGE_CSOLD}" ]; then
+        FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+            "${aTGT_FILE}" \
+            "${aIMAGE_CSOLD}" \
+            "${DEPLOYMENTROOTFW_MODULES}/${rIMAGE_CSOLD}" || \
+        verify_threeway_checksum "${IMAGE_URL}" \
+            "${aTGT_FILE}" \
+            "${aIMAGE_CSOLD}" \
+            "${aIMAGE_CSNEW}" || return $?
     else
         logmsg_warn "Generating '${aIMAGE_CSOLD}' because there was none at the source..."
         echo "`calculate_stream_checksum "${IMAGE_CSALGO}" < "$aTGT_FILE"`  `basename "$aTGT_FILE"`" > "${aIMAGE_CSOLD}" || \
