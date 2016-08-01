@@ -15,7 +15,7 @@ part 'old_name' is specified, perform additional rename of rule name
 
 The USER peer sends one of the following messages on the _METRIC_UNAVAILABLE
 stream with subject "metric_topic":
-4) METRICUNAVAILABLE/metric_topic - indicates, that
+4) _METRICS_UNAVAILABLE/metric_topic - indicates, that
 this metric in the system would not present any more.
 
 where '/' indicates a multipart string message, 'json' is valid json
