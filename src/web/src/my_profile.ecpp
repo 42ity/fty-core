@@ -19,13 +19,17 @@
  #/#><#
 /*!
  * \file   my_profile.ecpp
- * \author Barbora <Stepankova@Eaton.com>
+ * \author Barbora Stepankova <BarboraStepankova@Eaton.com>
  * \brief  
  */
 #><%pre>
     #include "utils_web.h"
     #include <stdlib.h>
     #include "helpers.h"
+    #include <sstream>
+    #include <cxxtools/jsondeserializer.h>
+    #include "log.h"
+    #include "agentstate.h"
 </%pre>
 <%request scope="global">
     UserInfo user;
@@ -33,6 +37,7 @@
 <%cpp>
     std:: string change_pwd = " ";
     int timeout = 99;
+    std::string preferences = "";
   
    // GET 
     if (request.isMethodGET()) {
@@ -45,42 +50,61 @@
             change_pwd = "No";
             timeout = 0;
         }
-    
+                
+        std::string uid = std::to_string(user.uid());
+        int rv = persist::load_agent_info(uid, preferences);
+        if ( rv != 0 ) {
+            http_die("internal-error");
+        }
+        //mitigate the situation DB content is empty - most of the json parsers don't deal well with empty strings
+        if (preferences.empty()) {
+            preferences = "\"preferences\" :  {\"email\" : \" \", \"telephone\" : \" \", \"organization\" : \" \", \"date\":\"DDMMYYYY\", \"temperature\":\"C\", \"language\":\"en_US\", \"time\":\"24h\"}";
+        } else {
+            int str_size = preferences.size();
+            preferences = preferences.substr(1,str_size-2);
+        }
 </%cpp>  
-
 {
 "login" : "<$ user.login() $>",
 "must_change_pwd" : "<$ change_pwd $>",
 "timeout" : "<$ timeout $>",
 "profile" : "<$ user.toString() $>",
-"preferences" : {"date":"DDMMYYYY", "temperature":"C", "language":"en_US", "time":"24h"}
+<$$preferences$>
 }
-
 %} // if get
-  
-<%cpp>
-    
-   // PUT 
 
-    std::string temp_unit;
+<%cpp>
+    // PUT 
+    std::string uid = std::to_string(user.uid());
     std::string method = request.getMethod();
+
   
     if (method == "PUT" ){
-        temp_unit = "unit";
-        
+        preferences = request.getBody();
+        int str_size = preferences.size();
+        preferences = preferences.substr(1,str_size-2);
+
+        std::stringstream input(preferences, std::ios_base::in);
+        cxxtools::SerializationInfo si;
+        cxxtools::JsonDeserializer deserializer(input);
+        log_debug("user preferences: '''%s'''", input.str().c_str());
+
+        // check, if we got a correct JSON
+        try {
+            deserializer.deserialize(si);
+        } catch (const std::exception& e) {
+            LOG_END_ABNORMAL(e);
+            http_die("bad-request-document");
+        }
+        // JSON is correct, try to save it
+        int rv = persist::save_agent_info (uid, request.getBody());
+        if ( rv != 0 ) {
+            //come error occured
+            http_die("internal-error");
+        }
+    }    // if PUT                    
 </%cpp>
-{
-"preferences" : {
-    "date" : "<date>",
-    "temperature" : "<$ temp_unit $>",
-    "language" : "<lang>",
-    "time" : "<time>"
-    }
-} 
-<%cpp>
-          
-    } else {
-        temp_unit = "empty";       
-    } // if PUT
-</%cpp>
+
+
+
           
