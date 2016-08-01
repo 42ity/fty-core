@@ -41,9 +41,19 @@
 #include "cleanup.h"
 #include "helpers.h"
 </%pre>
-
+<%request scope="global">
+UserInfo user;
+</%request>
 <%cpp>
 {
+    // check user permissions
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Anonymous, "R"},
+            {BiosProfile::Dashboard, "R"},
+            {BiosProfile::Admin,     "R"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
+
     // checked parameters
     a_elmnt_id_t checked_to = 0;
 

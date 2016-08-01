@@ -40,8 +40,17 @@
 <%thread scope="global">
 asset_manager asset_mgr;
 </%thread>
-
+<%request scope="global">
+UserInfo user;
+</%request>
 <%cpp>
+    // check user permissions
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Anonymous, "R"},
+            {BiosProfile::Dashboard, "R"},
+            {BiosProfile::Admin,     "R"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
 
     // checked (processed) parameters
     std::vector<std::string> DCNames;
@@ -51,7 +60,7 @@ asset_manager asset_mgr;
     // BLOCK 1
     // Sanity parameter check
     {
-    
+
         std::string arg1 = qparam.param ("arg1");
         // arg1 is mandatory
         if (arg1.empty ()) {

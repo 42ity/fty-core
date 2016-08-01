@@ -33,7 +33,7 @@
 </%pre>
 <%request scope="global">
     UserInfo user;
-</%request>  
+</%request>
 <%cpp>
     std:: string change_pwd = " ";
     int timeout = 99;
@@ -41,7 +41,7 @@
   
    // GET 
     if (request.isMethodGET()) {
-        
+
         if (user.profile() == BiosProfile:: Admin) {
             change_pwd = "Yes";
             timeout = 10;
@@ -72,13 +72,11 @@
 <$$preferences$>
 }
 %} // if get
-
 <%cpp>
     // PUT 
     std::string uid = std::to_string(user.uid());
     std::string method = request.getMethod();
 
-  
     if (method == "PUT" ){
         preferences = request.getBody();
         int str_size = preferences.size();
@@ -105,6 +103,3 @@
     }    // if PUT                    
 </%cpp>
 
-
-
-          

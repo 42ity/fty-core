@@ -148,7 +148,17 @@ s_is_valid_param(const std::string& p)
 <%thread scope="global">
 asset_manager asset_mgr;
 </%thread>
+<%request scope="global">
+UserInfo user;
+</%request>
 <%cpp>
+    // an example of macro usage
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Anonymous, "R"},
+            {BiosProfile::Dashboard, "R"},
+            {BiosProfile::Admin,     "R"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
 
 // checked parameters
 std::string checked_arg1;
@@ -156,7 +166,7 @@ std::string checked_arg2;
 {
     std::string arg1 = qparam.param ("arg1");
     std::string arg2 = qparam.param ("arg2");
-    
+
    // arg1 is mandatory
     if (arg1.empty ()) {
         http_die ("request-param-required", "arg1");
@@ -172,7 +182,7 @@ std::string checked_arg2;
     }
 
 } // end of parameters checking
-    
+
     // arg2 is a single value OR a comma-separated list formed from a list of permissible values (PARAM_TO_SRC)
     std::vector <std::string> requestedParams;
     cxxtools::split (",", checked_arg2, std::back_inserter (requestedParams));
@@ -189,10 +199,10 @@ std::string checked_arg2;
     std::vector<std::string> racks; // list of ids of racks from argument string
     std::vector<std::string> rackNames;
     cxxtools::split(",", checked_arg1, std::back_inserter(racks));
-    
 
 
-  
+
+
     // ##################################################
     // connect to malamute
     MlmClientPool::Ptr client = mlm_pool.get ();

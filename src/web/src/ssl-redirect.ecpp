@@ -1,4 +1,6 @@
 <%cpp>
+    // NOTE: ssl-redirect is not limited by CHECK_USER_PERMISSIONS_OR_DIE
+    //       we ton't have user info in this stage anyway
 char * no_ssl = getenv("NO_SSL");
 if(request.isSsl() || (no_ssl != NULL && (strcmp(no_ssl, "1")==0)) || request.getPeerIp() == "127.0.0.1")
 	return DECLINED;

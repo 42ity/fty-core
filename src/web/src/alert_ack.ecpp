@@ -47,7 +47,16 @@ int state_valid (const char *state) {
 }
 
 </%pre>
+<%request scope="global">
+UserInfo user;
+</%request>
 <%cpp>
+
+    // permission check
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Admin,     "RU"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
 
 // checked input arguments
 std::string checked_rule_name;
@@ -71,7 +80,7 @@ std::string checked_state;
     std::string state;
     cxxtools::SerializationInfo si;
     try {
-        std::stringstream input (request.getBody(), std::ios_base::in); 
+        std::stringstream input (request.getBody(), std::ios_base::in);
         cxxtools::JsonDeserializer deserializer (input);
         deserializer.deserialize (si);
         si.getMember ("state") >>= state;

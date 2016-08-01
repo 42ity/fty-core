@@ -30,12 +30,24 @@
 
 #include "log.h"
 #include "agentstate.h"
-#include "utils_web.h"
+#include "helpers.h"
 
 #define UI_PROPERTIES "UI_PROPERTIES"
 </%pre>
+<%request scope="global">
+UserInfo user;
+</%request>
 <%cpp>
 {
+    // check user permissions
+    // This is DEPRECATED CALL, will be replaced with my_profile.ecpp
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Anonymous,     "R"},
+            {BiosProfile::Dashboard,     "R"},
+            {BiosProfile::Admin,         "RU"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
+
     std::string method = request.getMethod();
 
     if ( method == "GET") {

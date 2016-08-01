@@ -29,12 +29,21 @@
 #include <cxxtools/jsondeserializer.h>
 #include <cxxtools/serializationinfo.h>
 #include "configure_inform.h"
-#include "utils_web.h"
+#include "helpers.h"
 #include "inout.h"
 #include "log.h"
 </%pre>
+<%request scope="global">
+UserInfo user;
+</%request>
 <%cpp>
 {
+    // check user permissions
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Admin,     "C"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
+
     // Read json, transform to csv, use existing functionality
     cxxtools::SerializationInfo si;
     // read json a deserialize it

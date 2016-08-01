@@ -34,7 +34,7 @@
 #include <cxxtools/jsondeserializer.h>
 #include <cxxtools/serializationinfo.h>
 #include <cxxtools/regex.h>
-#include "utils_web.h"
+#include "helpers.h"
 #include "log.h"
 
 #define PROPERTIES_FILE "/etc/default/bios"
@@ -81,8 +81,19 @@ void transform_for_conf (std::string& string) {
 <%application scope="page">
     std::mutex config_mux;
 </%application>
+<%request scope="global">
+UserInfo user;
+</%request>
 <%cpp>
 {
+    // check user permissions
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Anonymous, "R"},
+            {BiosProfile::Dashboard, "R"},
+            {BiosProfile::Admin,     "CR"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
+
     // key restrictions
     std::string key_format_string = "^[.-_a-zA-Z0-9]+$";
     std::string value_format_string = "^[.-_a-zA-Z0-9]*$";

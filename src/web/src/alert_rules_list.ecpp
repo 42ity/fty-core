@@ -40,10 +40,19 @@
 std::string type;
 std::string rule_class;
 </%args>
+<%request scope="global">
+UserInfo user;
+</%request>
 <%cpp>
 std::string checked_type;
 std::string checked_rule_class;
 {
+    // check user permissions
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Admin,     "R"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
+
     // sanity check
     if (!request.isMethodGET ())
         http_die ("method-not-allowed", request.getMethod ().c_str ());
@@ -54,7 +63,7 @@ std::string checked_rule_class;
     }
     if (type != "threshold" && type != "single" && type != "pattern" && type != "all") { // unknown parameter 'type'
         http_die ("request-param-bad", "type", std::string ("'").append (type).append ("'").c_str (),
-                  "one of the following values [ 'threshold', 'single', 'pattern', 'all' ] or empty");  
+                  "one of the following values [ 'threshold', 'single', 'pattern', 'all' ] or empty");
     }
     checked_type = type;
 
@@ -178,7 +187,7 @@ if (streq (part, "LIST")) {
 [
 % while (part) {
 %   if (first) {
-    <$$ part $> 
+    <$$ part $>
 %     first = false;
 %   }
 %   else {
@@ -215,7 +224,7 @@ if (streq (part, "ERROR")) {
     free (part);
     zmsg_destroy (&recv_msg);
     mlm_client_destroy (&client);
-    http_die ("internal-error", 
+    http_die ("internal-error",
         std::string ("Error while retrieving list of rules with type = '").append (checked_type).append ("': ").
         append (reason).append(".").c_str ());
 }

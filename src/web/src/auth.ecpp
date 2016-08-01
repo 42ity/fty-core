@@ -40,9 +40,12 @@
 #ifndef VALID_FOR
 #define VALID_FOR 3600
 #endif //VALID_FOR
-
 </%pre>
 <%cpp>
+
+    // NOTE: /api/v1/oauth2/token is not limited by CHECK_USER_PERMISSIONS_OR_DIE
+    //       this is the start of authentication machinery
+
 std::string checked_grant_type;
 std::string checked_username;
 std::string checked_password;
@@ -53,7 +56,6 @@ std::string checked_token;
     check_regex_text_or_die ("token", token, checked_token, "^[-/._~+/a-z0-9]{0,255}={0,10}$");
     // sanitize token end
 }
-
 
   {
     std::string method = request.getMethod();

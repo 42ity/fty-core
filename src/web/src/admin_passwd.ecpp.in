@@ -18,9 +18,9 @@
  #
  #><#
 /*!
- * \file agent.ecpp
+ * \file admin_passwd.ecpp
  * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
- * \brief Not yet documented file
+ * \brief Change password of a system
  */
 #><%pre>
 #include <string>
@@ -36,7 +36,6 @@
 #include "cidr.h"
 #include "sasl.h"
 #include "filesystem.h"
-#include "utils_web.h"
 #include "helpers.h"
 
 #define SSH_NOT_TO_BE_RUN "/etc/ssh/sshd_not_to_be_run"
@@ -87,7 +86,18 @@ s_passwd(
 }
 
 </%pre>
+<%request scope="global">
+UserInfo user;
+</%request>
 <%cpp>
+
+    // check user permissions
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Dashboard, "C"},
+            {BiosProfile::Admin,     "C"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
+
     std::string checked_user;
     std::string checked_old_passwd;
     std::string checked_new_passwd;
@@ -98,7 +108,7 @@ s_passwd(
         std::string user;
         std::string old_passwd;
         std::string new_passwd;
-    
+
         http_errors_t errors;
 
         bool bad_request = false;
@@ -110,7 +120,7 @@ s_passwd(
         } catch (const std::exception& e) {
             bad_request = true;
         }
-        
+
         if (bad_request)
             http_die("bad-request-document");
 
@@ -136,6 +146,13 @@ s_passwd(
         }
 
     } // sanity checking end
+
+    // only Admin can change login of all users
+    // otherwise you can change only your own
+    if (user.profile () != BiosProfile::Admin) {
+        if (user.login () != checked_user)
+            http_die ("not-authorized");
+    }
 
     if (!authenticate(checked_user.c_str(), checked_old_passwd.c_str()))
         http_die("request-param-bad", "(user|old_passwd)", "<invalid user or password>", "<valid user and password>");

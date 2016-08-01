@@ -37,16 +37,25 @@
 #include "helpers.h"
 
 </%pre>
+<%request scope="global">
+UserInfo user;
+</%request>
 <%cpp>
 std::string checked_name;
 {
+    // check user permissions
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Admin,     "CU"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
+
     // sanity check
     if (request.getMethod () != "POST" && request.getMethod () != "PUT") {
         http_die ("method-not-allowed", request.getMethod ().c_str ());
     }
 
     std::string name = request.getArg ("name");
-    
+
     check_alert_rule_name_or_die ("name", name, checked_name);
 
     if (request.getMethod () == "PUT" && name.empty() ) {

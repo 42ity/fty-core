@@ -27,13 +27,17 @@
 #include "log.h"
 
 const char* UserInfo::toString() {
-    log_debug("profile=%d",_profile);
     switch (_profile) {
-        
         case  BiosProfile::Dashboard: return "Dashboard ";
         case  BiosProfile::Admin: return "Administrator";
-        case  BiosProfile::Anonymous: return "Anonymous";            
+        case  BiosProfile::Anonymous: return "Anonymous";
     }
+    /* Currently one use-case is to return a string in profiles.
+       This routine could reasonably return NULL as an error here,
+       but it should not reach this point anyway (return is here
+       mostly for syntax purposes and to quiesce compiler warnings.
+     */
+    return "N/A";
 }
 
 

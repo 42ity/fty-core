@@ -31,6 +31,9 @@
 #include "log.h"
 </%pre>
 <%cpp>
+    // NOTE: json.ecpp is not limited by CHECK_USER_PERMISSIONS_OR_DIE
+    //       this file do some basic setup of response
+
 	// Get rid of locales
 	setenv("LANG", "C", 1);
 	setlocale(LC_ALL, "C");

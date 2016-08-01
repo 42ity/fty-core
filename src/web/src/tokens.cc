@@ -188,7 +188,7 @@ bool tokens::verify_token(const std::string token, long int* uid, long int* gid,
     if(revoked.find(token) != revoked.end())
         return false;
     decode_token(buff, token);
-    
+
     if (user_name) {
         *user_name = (char *) malloc (33 * sizeof (char));
         if (user_name == NULL) {
