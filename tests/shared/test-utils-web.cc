@@ -340,14 +340,14 @@ TEST_CASE ("utils::json::create_error_json","[utils::json::create_error_json][js
 "{\n\t\"errors\": [\n\t\t{\n\t\t\t\"message\": \"One and two \\nthree and \\\"four\\\".\",\n\t\t\t\"code\": 56\n\t\t}\n\t]\n}\n"
 ) == 0);
 
-    std::vector <std::pair<uint32_t, std::string>> v;
-    v.push_back (std::make_pair (1, "On\ne"));
-    v.push_back (std::make_pair (10, "Tw\"o"));
+    std::vector <std::tuple<uint32_t, std::string, std::string>> v;
+    v.push_back (std::make_tuple (1, "On\ne", ""));
+    v.push_back (std::make_tuple (10, "Tw\"o", ""));
 
     v.clear ();
-    v.push_back (std::make_pair (47, "Received value 'abc'."));
-    v.push_back (std::make_pair (47, "Received value 'def'."));
-    v.push_back (std::make_pair (47, "Received value 'ghi'."));
+    v.push_back (std::make_tuple (47, "Received value 'abc'.", ""));
+    v.push_back (std::make_tuple (47, "Received value 'def'.", ""));
+    v.push_back (std::make_tuple (47, "Received value 'ghi'.", ""));
     x = utils::json::create_error_json (v);
     CAPTURE (x); 
     CHECK ( x.compare (
