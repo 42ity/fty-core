@@ -256,7 +256,7 @@
     <!-- License management -->
     <mapping>
       <target>license_text@bios_web</target>
-      <url>^/api/v1/admin/license</url>
+      <url>^/api/v1/admin/license$</url>
       <method>GET</method>
     </mapping>
 
