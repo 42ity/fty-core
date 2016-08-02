@@ -255,10 +255,15 @@
 
     <!-- License management -->
     <mapping>
+      <target>license_text@bios_web</target>
+      <url>^/api/v1/admin/license$</url>
+      <method>GET</method>
+    </mapping>
+
+    <mapping>
       <target>license@bios_web</target>
       <url>^/api/v1/.*</url>
     </mapping>
-
     <!-- API itself -->
 
     <!-- topology/location -->
