@@ -141,37 +141,54 @@ create_error_json (const std::string& message, uint32_t code) {
 }
 
 std::string
-create_error_json (std::vector <std::pair<uint32_t, std::string>> messages) {
+create_error_json (const std::string& message, uint32_t code, const std::string& debug) {
+    return std::string (
+"{\n"
+"\t\"errors\": [\n"
+"\t\t{\n"
+"\t\t\t\"message\": ").append (jsonify (message)).append (",\n"
+"\t\t\t\"debug\": ").append (jsonify (debug)).append (",\n"
+"\t\t\t\"code\": ").append (jsonify (code)).append ("\n"
+"\t\t}\n"
+"\t]\n"
+"}\n"
+);
+}
+
+std::string
+create_error_json (std::vector <std::tuple<uint32_t, std::string, std::string>> messages) {
     std::string result =
 "{\n"
 "\t\"errors\": [\n";
 
-    std::vector <std::pair<uint32_t, std::string>>::const_iterator it;
-    for (it = messages.cbegin (); it != --messages.cend (); ++it) {
+    for (const auto &it : messages) {
         result.append (
 "\t\t{\n"
-"\t\t\t\"message\": "                
+"\t\t\t\"message\": "
         );
-        result.append (jsonify (it->second)).append (
-",\n"
+        result.append (jsonify (std::get<1>(it))).append (
+",\n");
+        if (std::get<2>(it) != "") {
+        result.append (
+"\t\t\t\"debug\": "
+        );
+        result.append (jsonify (std::get<2>(it))).append (
+",\n");
+        }
+        result.append (
 "\t\t\t\"code\": "
         );
-        result.append (jsonify (it->first)).append (
+        result.append (jsonify (std::get<0>(it))).append (
 "\n"
 "\t\t},\n"
         );
     }
+    // remove ,\n
+    result.pop_back ();
+    result.pop_back ();
+
     result.append (
-"\t\t{\n"
-"\t\t\t\"message\": "
-    );
-    result.append (jsonify (it->second)).append (
-",\n"
-"\t\t\t\"code\": ");
-    result.append (jsonify (it->first)).append (
-"\n"
-"\t\t}\n"
-"\t]\n"
+"\n\t]\n"
 "}\n"
 );
     return result;
