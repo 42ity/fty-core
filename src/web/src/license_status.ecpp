@@ -18,28 +18,15 @@
  #
  #><#
 /*!
- * \file license.ecpp
- * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
- * \author Jim Klimov <EvgenyKlimov@Eaton.com>
- * \brief Validates and manages license acceptance
+ * \file license_status.ecpp
+ * \author Alena Chernikava <alenachernikava@Eaton.com>
+ * \brief Provide information about currently accepted license
  */
  #><%pre>
-
-/** The GNU version of basename allocate the memory, while POSIX modify input
- * buffer. While POSIX behavior is weird, is already expected. This line tries
- * to avoid usage of GNU version of basename */
-#undef _GNU_SOURCE
-
-#include <unistd.h>
-#include <iostream>
 #include <stdio.h>
 #include <fstream>
-#include <cxxtools/regex.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <string.h>
 #include <czmq.h> // streq
-
 #include "helpers.h"
 #include "log.h"
 #include "str_defs.h" // EV_LICENSE_DIR, EV_DATA_DIR

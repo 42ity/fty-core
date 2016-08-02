@@ -31,7 +31,7 @@
 #include "str_defs.h" // EV_LICENSE_DIR
 
 static
-char *current_license_file (void) {
+char *get_current_license_file (void) {
     char *current_license = NULL;
     char *env = getenv (EV_LICENSE_DIR);
 
@@ -55,7 +55,7 @@ UserInfo user;
             };
     CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
 
-    char *license_file = current_license_file ();
+    char *license_file = get_current_license_file ();
 	log_debug("license_file='%s'", license_file);
     std::ifstream source(license_file, std::ios::binary);
     if ( !source.good() ) {
