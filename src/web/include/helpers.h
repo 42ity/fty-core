@@ -172,6 +172,7 @@ bool check_asset_name (const std::string& param_name, const std::string& name, h
  * \param [in]  user            request variable user
  * \param [in]  request         http request
  * \param [in]  permissions     maps permissions with profile
+ * \param [in]  debug           user provided "debug" object for JSON
  *
  * Permissions is map of BiosProfile and string encoding available permissions,
  * where
@@ -196,13 +197,19 @@ void check_user_permissions (
         const UserInfo &user,
         const tnt::HttpRequest &request,
         const std::map <BiosProfile, std::string> &permissions,
+        const std::string debug,
         http_errors_t &errors
         );
 
 #define CHECK_USER_PERMISSIONS_OR_DIE(p) \
     do { \
         http_errors_t errors; \
-        check_user_permissions (user, request, p, errors);\
+        std::string __http_die__debug__ {""}; \
+        if (::getenv ("BIOS_LOG_LEVEL") && !strcmp (::getenv ("BIOS_LOG_LEVEL"), "LOG_DEBUG")) { \
+            __http_die__debug__ = {__FILE__}; \
+            __http_die__debug__ += ": " + std::to_string (__LINE__); \
+        } \
+        check_user_permissions (user, request, p, __http_die__debug__, errors);\
         if (errors.http_code != HTTP_OK) \
             http_die_error (errors);\
     } while (0)

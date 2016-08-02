@@ -33,9 +33,11 @@
 #include <list>
 #include <utility>
 #include <array>
+#include <tuple>
 #include <stdarg.h>
 #include <cmath>
 #include <climits>
+#include "log.h"
 
 #include <tnt/http.h>
 
@@ -142,7 +144,13 @@ _die_asprintf(
         static_assert(__http_die__key_idx__ != 0, "Can't find '" key "' in list of error messages. Either add new one either fix the typo in key"); \
         char *__http_die__error_message__ = NULL; \
         _die_asprintf(&__http_die__error_message__, _errors.at(__http_die__key_idx__).message, ##__VA_ARGS__, "", "", "", "", "" ); \
-        reply.out() << utils::json::create_error_json(__http_die__error_message__, _errors.at(__http_die__key_idx__).err_code); \
+        if (::getenv ("BIOS_LOG_LEVEL") && !strcmp (::getenv ("BIOS_LOG_LEVEL"), "LOG_DEBUG")) { \
+            std::string __http_die__debug__ = {__FILE__}; \
+            __http_die__debug__ += ": " + std::to_string (__LINE__); \
+            reply.out() << utils::json::create_error_json(__http_die__error_message__, _errors.at(__http_die__key_idx__).err_code, __http_die__debug__); \
+        } \
+        else \
+            reply.out() << utils::json::create_error_json(__http_die__error_message__, _errors.at(__http_die__key_idx__).err_code); \
         free(__http_die__error_message__); \
         return _errors.at(__http_die__key_idx__).http_code;\
     } \
@@ -168,17 +176,23 @@ do { \
     if (_idx < 0) _idx = _idx * -1; \
     if (_idx >= (int64_t)_WSErrorsCOUNT) _idx = 0; \
     if (_idx == 0) log_error("TEAPOT");\
-    reply.out() << utils::json::create_error_json(msg, _errors.at(_idx).err_code);\
+    if (::getenv ("BIOS_LOG_LEVEL") && !strcmp (::getenv ("BIOS_LOG_LEVEL"), "LOG_DEBUG")) { \
+        std::string __http_die__debug__ = {__FILE__}; \
+        __http_die__debug__ += ": " + std::to_string (__LINE__); \
+        reply.out() << utils::json::create_error_json(msg, _errors.at(_idx).err_code, __http_die__debug__);\
+    } \
+    else \
+        reply.out() << utils::json::create_error_json(msg, _errors.at(_idx).err_code);\
     return _errors.at(_idx).http_code;\
 } \
 while (0)
 
 typedef struct _http_errors_t {
     uint32_t http_code;
-    std::vector <std::pair <uint32_t, std::string>> errors;
+    std::vector <std::tuple <uint32_t, std::string, std::string>> errors;
 } http_errors_t;
 
-#define http_add_error(errors, key, ...) \
+#define http_add_error(debug, errors, key, ...) \
 do { \
     static_assert (std::is_same <decltype (errors), http_errors_t&>::value, "'errors' argument in macro http_add_error must be a http_errors_t."); \
     constexpr size_t __http_die__key_idx__ = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
@@ -186,7 +200,7 @@ do { \
     (errors).http_code = _errors.at (__http_die__key_idx__).http_code; \
     char *__http_die__error_message__ = NULL; \
     _die_asprintf(&__http_die__error_message__, _errors.at(__http_die__key_idx__).message, ##__VA_ARGS__, "", "", "", "", "" ); \
-    (errors).errors.push_back (std::make_pair (_errors.at (__http_die__key_idx__).err_code, __http_die__error_message__)); \
+    (errors).errors.push_back (std::make_tuple (_errors.at (__http_die__key_idx__).err_code, __http_die__error_message__, (debug))); \
     free (__http_die__error_message__); \
 } \
 while (0)
@@ -444,7 +458,10 @@ std::string
 create_error_json (const std::string& message, uint32_t code);
 
 std::string
-create_error_json (std::vector <std::pair<uint32_t, std::string>> messages);
+create_error_json (const std::string& message, uint32_t code, const std::string& debug);
+
+std::string
+create_error_json (std::vector <std::tuple<uint32_t, std::string, std::string>> messages);
 
 } // namespace utils::json
 } // namespace utils
