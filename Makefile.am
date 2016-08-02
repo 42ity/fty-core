@@ -1172,6 +1172,7 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/alert_list.cpp \
                       src/web/src/assets_in.cpp \
                       src/web/src/not_found.cpp \
+                      src/web/src/license_text.cpp \
                       src/web/src/my_profile.cpp
 
 # Track real-git and nodist (generated) sources SEPARATELY
