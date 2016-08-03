@@ -63,7 +63,7 @@ char* get_current_license_version (const char* license_file)
 
     char *buff = (char *) malloc (sizeof(char)*512);
     memset(buff, 0, sizeof(char)*512);
-    int rv = readlink (license_file, buff, sizeof(buff));
+    int rv = readlink (license_file, buff, sizeof(char)*512);
     //
     // On success, these calls return the number of bytes placed in buf.
     // On error, -1 is returned and errno is set to indicate the error.
