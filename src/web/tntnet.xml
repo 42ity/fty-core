@@ -261,6 +261,12 @@
     </mapping>
 
     <mapping>
+      <target>license_POST@bios_web</target>
+      <url>^/api/v1/admin/license$</url>
+      <method>POST</method>
+    </mapping>
+
+    <mapping>
       <target>license_status@bios_web</target>
       <url>^/api/v1/admin/license/status$</url>
       <method>GET</method>
