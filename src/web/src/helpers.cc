@@ -23,6 +23,7 @@
 
 #include "utils_web.h"
 #include "helpers.h"
+#include "str_defs.h" // EV_LICENSE_DIR, EV_DATA_DIR
 
 #include "log.h"
 
@@ -178,4 +179,72 @@ check_user_permissions (
 
     http_add_error (errors, "not-authorized");
     return;
+}
+
+char*
+get_current_license_file (void)
+{
+    char *current_license = NULL;
+    char *env = getenv (EV_LICENSE_DIR);
+
+    int rv = asprintf (&current_license, "%s/current", env ? env : "/usr/share/bios/license");
+    if ( rv == -1 ) {
+        return NULL;
+    }
+    return current_license;
+}
+
+char*
+get_accepted_license_file (void)
+{
+    char *accepted_license = NULL;
+    char *env = getenv (EV_DATA_DIR);
+
+    if (asprintf (&accepted_license, "%s/license", env ? env : "/var/lib/bios" ) == -1) {
+        return NULL;
+    }
+    return accepted_license;
+}
+char*
+get_current_license_version (const char* license_file)
+{
+    // ASSUMPTION: the symlink to the text of the licence is: /XXX
+    // $ ls -l /XXX
+    // lrwxrwxrwx. 1 achernikava achernikava 3 Sep 25  2015 /XXX -> 1.0
+    //
+    // FYI:
+    // readlink() places the contents of the symbolic link pathname in the
+    // buffer buf, which has size bufsiz.  readlink() does not append a null
+    // byte to buf.  It will truncate the contents (to a length of bufsiz
+    // characters), in case the buffer is too small to hold all of the
+    // contents.
+    //
+    // ssize_t readlink(const char *pathname, char *buf, size_t bufsiz);
+
+    char *buff = (char *) malloc (sizeof(char)*512);
+    memset(buff, 0, sizeof(char)*512);
+    int rv = readlink (license_file, buff, sizeof(char)*512);
+    //
+    // On success, these calls return the number of bytes placed in buf.
+    // On error, -1 is returned and errno is set to indicate the error.
+    //
+    if ( rv == -1 ) {
+        log_error ("Cannot read symlink for license");
+        return NULL;
+    }
+    buff[rv] = '\0';
+    return buff;
+}
+// drop the last / in a developer friendly way
+// this is intended to fix issue we've on rhel
+// "version" : "/usr/share/bios/license/1.0"
+// if there's no / in inp, then it's noop
+// if so, then it returns character AFTER last /
+const char* 
+basename2 (const char *inp)
+{
+    const char *sep = strrchr (inp, '/');
+    if (!sep)
+        return inp;
+    return sep + 1;
 }

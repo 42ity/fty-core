@@ -209,3 +209,8 @@ void check_user_permissions (
 
 #endif // SRC_WEB_INCLUDE_HELPERS_H_
 
+// Helper function to work with license
+char* get_current_license_file (void);
+char* get_accepted_license_file (void);
+char* get_current_license_version (const char* license_file);
+const char* basename2 (const char *inp);

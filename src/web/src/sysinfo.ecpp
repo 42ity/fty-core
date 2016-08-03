@@ -203,7 +203,7 @@ void sysinfo_detail (std::string& output, tnt::HttpRequest& request, BiosProfile
     }
 
     std::string installation_date = NOTLICENSEDYET;
-    char *accepted_license = accepted_license_file ();
+    char *accepted_license = get_accepted_license_file ();
     if (accepted_license) {
         get_installation_date (accepted_license, installation_date);
         free (accepted_license);
