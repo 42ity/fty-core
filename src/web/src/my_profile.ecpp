@@ -39,7 +39,7 @@
 <%cpp>
 
     static const std::map <BiosProfile, std::string> PERMISSIONS = {
-            {BiosProfile::Anonymous, "RU"},
+            {BiosProfile::Anonymous, "R"},
             {BiosProfile::Dashboard, "RU"},
             {BiosProfile::Admin,     "RU"}
             };
@@ -79,9 +79,11 @@
 "profile" : "<$ user.toString() $>",
 <$$preferences$>
 }
-%   } // if get
 <%cpp>
-    else if (method == "PUT" ) {
+    } // if get
+    return HTTP_OK;
+
+    if (method == "PUT" ) {
         std::string profile = request.getBody();
         log_debug ("user profile: '''%s'''", profile.c_str());
 
@@ -113,8 +115,6 @@
             LOG_END_ABNORMAL(e);
             http_die("bad-request-document", e.what());
         }
-
 </%cpp>
 {}
 %} // if PUT
-

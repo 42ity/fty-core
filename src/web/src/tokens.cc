@@ -36,6 +36,8 @@
 
 #include "tokens.h"
 
+#include "log.h"
+
 //! Max time key is alive
 #define MAX_LIVE 24*3600
 //! Maximum tokens per key
@@ -116,7 +118,11 @@ std::string tokens::gen_token(int& valid, const char* user, bool do_round) {
     number = (number + 1) % MAX_USE;
     mtx.unlock();
 
-    snprintf(buff, MESSAGE_LEN, "%ld %ld %ld %d %.32s", tme, uid, gid, my_number, user);
+    size_t len = strlen (user);
+    // username will be truncated to 32+NULL byte by snprintf
+    if (len > 32)
+        len = 32;
+    snprintf(buff, MESSAGE_LEN, "%ld %ld %ld %d %zu%.32s", tme, uid, gid, my_number, len, user);
 
     crypto_secretbox_easy(ciphertext, (unsigned char *)buff, strlen(buff),
                           tmp.nonce, tmp.key);
@@ -189,21 +195,42 @@ bool tokens::verify_token(const std::string token, long int* uid, long int* gid,
         return false;
     decode_token(buff, token);
 
-    if (user_name) {
-        *user_name = (char *) malloc (33 * sizeof (char));
-        if (user_name == NULL) {
-            return false;
-        }
-        sscanf (buff, "%ld %ld %ld %d %s", &tme, &l_uid, &l_gid, &l_my_number, *user_name);
-    }
-    else {
-        sscanf (buff, "%ld %ld %ld", &tme, &l_uid, &l_gid);
+    int r = sscanf (buff, "%ld %ld %ld", &tme, &l_uid, &l_gid);
+    if (r != 3) {
+        log_debug ("verify_token: sscanf read of tme, uid, gid, failed: %m");
+        return false;
     }
 
     if (uid)
         *uid = l_uid;
     if (gid)
         *gid = l_gid;
+
+    if (user_name) {
+        char *foo = NULL;
+        size_t foo_len;
+        // find 4th space
+        char *buff2 = buff;
+        for (int i = 0; i != 4; i++) {
+            buff2 = strchr (buff2, ' ');
+            buff2++;
+        }
+        log_debug ("buff=%s, buff=%s", buff, buff2);
+        r = sscanf (buff2, " %zu%ms", &foo_len, &foo);
+        if (r != 2) {
+            log_debug ("verify_token: read of username failed: %m");
+            if (foo)
+                free (foo);
+            return false;
+        }
+        if (foo_len > strlen (foo)) {
+            log_debug ("verify_token: read username len %zu is bigger than actual string size %zu, data corruption", foo_len, strlen (foo));
+            free (foo);
+            return false;
+        }
+        foo [foo_len] = '\0';
+        *user_name = foo;
+    }
 
     return tme > mono_time(NULL);
 }
