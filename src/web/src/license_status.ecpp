@@ -88,6 +88,7 @@ char *get_current_license_file (void) {
     return current_license;
 }
 
+static
 char *get_accepted_license_file (void) {
     char *accepted_license = NULL;
     char *env = getenv (EV_DATA_DIR);
