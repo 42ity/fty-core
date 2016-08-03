@@ -1173,6 +1173,7 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/assets_in.cpp \
                       src/web/src/not_found.cpp \
                       src/web/src/license_text.cpp \
+                      src/web/src/license_POST.cpp \
                       src/web/src/license_status.cpp \
                       src/web/src/my_profile.cpp
 
