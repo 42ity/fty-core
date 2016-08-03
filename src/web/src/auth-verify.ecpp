@@ -70,7 +70,8 @@ std::string checked_access_token;
 if(!checked_access_token.empty()) {
     long int uid;
     long int gid;
-	if(tokens::get_instance()->verify_token(checked_access_token, &uid, &gid)) {
+    char *user_name;
+	if(tokens::get_instance()->verify_token(checked_access_token, &uid, &gid, &user_name)) {
 
         long int foo = (gid - 8000);
         if (foo != static_cast<long int> (BiosProfile::Anonymous) \
@@ -84,6 +85,8 @@ if(!checked_access_token.empty()) {
         user.profile (static_cast<BiosProfile> (foo));
         user.uid (uid);
         user.gid (gid);
+        user.login (user_name);
+        free (user_name); user_name = NULL;
 	} else {
         http_die("not-authorized");
 	}
