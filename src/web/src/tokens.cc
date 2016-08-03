@@ -118,7 +118,11 @@ std::string tokens::gen_token(int& valid, const char* user, bool do_round) {
     number = (number + 1) % MAX_USE;
     mtx.unlock();
 
-    snprintf(buff, MESSAGE_LEN, "%ld %ld %ld %d %zu%.32s", tme, uid, gid, my_number, strlen(user), user);
+    size_t len = strlen (user);
+    // username will be truncated to 32+NULL byte by snprintf
+    if (len > 32)
+        len = 32;
+    snprintf(buff, MESSAGE_LEN, "%ld %ld %ld %d %zu%.32s", tme, uid, gid, my_number, len, user);
 
     crypto_secretbox_easy(ciphertext, (unsigned char *)buff, strlen(buff),
                           tmp.nonce, tmp.key);
@@ -217,6 +221,11 @@ bool tokens::verify_token(const std::string token, long int* uid, long int* gid,
             log_debug ("verify_token: read of username failed: %m");
             if (foo)
                 free (foo);
+            return false;
+        }
+        if (foo_len > strlen (foo)) {
+            log_debug ("verify_token: read username len %zu is bigger than actual string size %zu, data corruption", foo_len, strlen (foo));
+            free (foo);
             return false;
         }
         foo [foo_len] = '\0';
