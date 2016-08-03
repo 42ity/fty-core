@@ -391,8 +391,8 @@ fi
 cat > /etc/systemd/system/tntnet@.service <<EOF
 [Unit]
 Description=Tntnet web server using /etc/tntnet/%I.xml
-After=network.target bios-db-init.service
-Requires=bios-db-init.service
+After=network.target bios-db-init.service malamute.service
+Requires=bios-db-init.service malamute.service
 PartOf=bios.target
 
 [Service]
