@@ -21,190 +21,98 @@
  * \file license.ecpp
  * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \author Jim Klimov <EvgenyKlimov@Eaton.com>
- * \brief Validates and manages license acceptance
+ * \author Alena Chernikava <alenachernikava@Eaton.com>
+ * \brief Check if license was accepted or not. If license was not accepted return with http_die
  */
  #><%pre>
-
-/** The GNU version of basename allocate the memory, while POSIX modify input
- * buffer. While POSIX behavior is weird, is already expected. This line tries
- * to avoid usage of GNU version of basename */
-#undef _GNU_SOURCE
-
-#include <unistd.h>
 #include <iostream>
 #include <stdio.h>
 #include <fstream>
-#include <cxxtools/regex.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <inttypes.h>
 #include <string.h>
 #include <stdlib.h>
-#include <pwd.h>
-#include <mutex>
 
-#include "config.h"
 #include "utils.h"
-#include "cleanup.h"
 #include "helpers.h"
 #include "log.h"
+#include "str_defs.h" // EV_LICENSE_DIR, EV_DATA_DIR
+static
+char *get_current_license_file (void) {
+    char *current_license = NULL;
+    char *env = getenv (EV_LICENSE_DIR);
 
-#define RETURN return
-
-// drop the last / in a developer friendly way
-// this is intended to fix issue we've on rhel
-// "version" : "/usr/share/bios/license/1.0"
-// if there's no / in inp, then it's noop
-// if so, then it returns character AFTER last /
-static const char*
-basename2 (const char *inp)
-{
-    const char *sep = strrchr (inp, '/');
-    if (!sep)
-        return inp;
-    return sep+1;
+    int rv = asprintf (&current_license, "%s/current", env ? env : "/usr/share/bios/license");
+    if ( rv == -1 ) {
+        return NULL;
+    }
+    return current_license;
 }
 
+static
+char *get_accepted_license_file (void) {
+    char *accepted_license = NULL;
+    char *env = getenv (EV_DATA_DIR);
+
+    if (asprintf (&accepted_license, "%s/license", env ? env : "/var/lib/bios" ) == -1) {
+        return NULL;
+    }
+    return accepted_license;
+}
+static
+char* get_current_license_version (const char* license_file)
+{
+    // ASSUMPTION: the symlink to the text of the licence is: /XXX
+    // $ ls -l /XXX
+    // lrwxrwxrwx. 1 achernikava achernikava 3 Sep 25  2015 /XXX -> 1.0
+    //
+    // FYI:
+    // readlink() places the contents of the symbolic link pathname in the
+    // buffer buf, which has size bufsiz.  readlink() does not append a null
+    // byte to buf.  It will truncate the contents (to a length of bufsiz
+    // characters), in case the buffer is too small to hold all of the
+    // contents.
+    //
+    // ssize_t readlink(const char *pathname, char *buf, size_t bufsiz);
+
+    char *buff = (char *) malloc (sizeof(char)*512);
+    memset(buff, 0, sizeof(char)*512);
+    int rv = readlink (license_file, buff, sizeof(char)*512);
+    //
+    // On success, these calls return the number of bytes placed in buf.
+    // On error, -1 is returned and errno is set to indicate the error.
+    //
+    if ( rv == -1 ) {
+        log_error ("Cannot read symlink for license");
+        return NULL;
+    }
+    buff[rv] = '\0';
+    return buff;
+}
 </%pre>
-<%request scope="global">
-long int uid = 0;
-UserInfo user;
-</%request>
 <%cpp>
-// Basic operations
-    // check user permissions
-    static const std::map <BiosProfile, std::string> PERMISSIONS = {
-            {BiosProfile::Anonymous, "R"},
-            {BiosProfile::Dashboard, "R"},
-            {BiosProfile::Admin,     "CR"}
-            };
-    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
-
-
-_scoped_char *current_license = current_license_file ();
-_scoped_char *accepted_license = accepted_license_file ();
-#ifdef DEBUG
-	log_debug("FYI:  current_license='%s'  accepted_license='%s'", current_license, accepted_license);
-#endif
-static cxxtools::Regex rex_lic("^.*/license$");
-if(rex_lic.match(request.getUrl())) {
-	if(request.isMethodGET()) {
-		std::ifstream source(current_license, std::ios::binary);
-		if(!source.good()) {
-			log_debug("Error reading license acceptance from file '%s'", current_license);
-			http_die("internal-error", "Error reading license file, check integrity of storage.");
-		}
-		reply.out() << source.rdbuf();
-		RETURN HTTP_OK;
-	}
-	if(request.isMethodPOST()) {
-		/* Read symlink, get license version number */
-		char buff[512];
-		memset(buff, 0, sizeof(buff));
-		ssize_t reslink = readlink(current_license, buff, sizeof(buff)-1);
-		if (reslink < 0 || buff[0] == 0) {
-			if (reslink < 0) {
-				char errbuff[512];
-				memset(errbuff, 0, sizeof(errbuff));
-				log_debug("Error reading symlink '%s' (%li), got errno=%i (%s)",
-					current_license, (long)reslink, (int)errno,
-					(char *)strerror_r(errno, errbuff, sizeof(errbuff)-1) );
-			}
-			if (buff[0] == 0)
-				log_debug("Error reading license version number from symlink name '%s' (got empty buffer)", current_license);
-			http_die("internal-error", "Error saving license acceptance or getting license version, check integrity of storage.");
-		}
-
-		/* Identify license-user */
-		char *luser = NULL;
-		static std::mutex pw_lock;
-		pw_lock.lock();
-		struct passwd *pw = getpwuid(uid);
-		if(pw != NULL) {
-			luser = strdup(pw->pw_name);
-		}
-		pw_lock.unlock();
-		if(luser == NULL) {
-			std::string msg = "Can't get username for user with id " + std::to_string(uid);
-			log_debug("Error: %s", msg.c_str());
-			http_die("internal-error", msg.c_str());
-		}
-
-		/* Try to write license-acceptance file data */
-		int dest = open(accepted_license, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-		uint64_t tme = time(NULL);
-		int dpdest = -42;
-		if(dest > 0)
-			dpdest = dprintf(dest, "%s\n%" PRIu64 "\n%s\n", buff, tme, luser);
-		if(dest < 0 || dpdest < 4) {
-			if (dest < 0)
-				log_debug("Error opening license acceptance file '%s': got FD dest=%i", accepted_license, dest);
-			if (dpdest < 4 && dpdest != -42)
-				log_debug("Error saving license acceptance into file '%s': got dpdest=%i bytes written",
-				accepted_license, dpdest);
-#ifdef DEBUG
-			log_debug("FYI: Tried to write version buff='%s', tme='%" PRIu64 "', luser='%s' (uid='%li')",
-				buff, tme, luser, uid);
-#endif
-			if(dest > 0)
-				close(dest);
-			http_die("internal-error", "Error saving license acceptance or getting license version, check integrity of storage.");
-		} else {
-</%cpp>
-{ "success" : "License version <$ buff $> accepted." }
-<%cpp>
-			close(dest);
-			RETURN HTTP_OK;
-		}
-	}
-	http_die("method-not-allowed", request.getMethod().c_str());
-}
-
-_scoped_char *buff_a = NULL;
-_scoped_char *luser = NULL;
-char buff_r[512];
-memset(buff_r, 0, sizeof(buff_r));
-uint64_t tme;
-readlink(current_license, buff_r, sizeof(buff_r));
-FILE* src = fopen(accepted_license, "r");
-if(src != NULL) {
-	fscanf(src,"%ms\n%" SCNu64 "\n%ms", &buff_a, &tme, &luser);
-	fclose(src);
-}
-static cxxtools::Regex rex_st("^.*/license/status$");
-if(rex_st.match(request.getUrl())) {
-	if(!request.isMethodGET())
-		http_die("method-not-allowed", request.getMethod().c_str());
-</%cpp>
 {
-  "accepted" : "<$ (buff_a == NULL || strcmp(buff_a, buff_r) != 0) ? "no" : "yes" $>"
-, "version" : "<$ basename2 (buff_r) $>"
-% if(buff_a != NULL) {
-, "accepted_version" : "<$ basename2 (buff_a) $>"
-, "accepted_at" : "<$ tme $>"
-% }
-% if(luser != NULL) {
-, "accepted_by" : "<$ luser $>"
-% }
-}
-<%cpp>
-	FREE0(buff_a);
-	FREE0(luser);
-	RETURN HTTP_OK;
-}
-if(buff_a == NULL || strcmp(buff_a, buff_r) != 0) {
-  if(buff_a == NULL) {
-	http_die("action-forbidden", "REST API call", "Please accept license first.");
-  } else {
-	std::string msg = std::string{"License version changed (new is "} + buff_r + ", accepted is " + buff_a + "). Please accept new license first";
-	FREE0(buff_a);
-	FREE0(luser);
-	http_die("action-forbidden", "REST API call", msg.c_str());
-  }
-} else {
-	FREE0(buff_a);
-	FREE0(luser);
-	RETURN DECLINED;
+    // check user permissions is intentionally removed, as this part should be
+    // checked for any USER any URL and any METHOD
+    char *license_file = get_current_license_file ();
+	log_debug("license_file='%s'", license_file);
+    char *current_license_version = get_current_license_version (license_file);
+
+    char *accepted_license_version = NULL;
+    char *accepted_license_user = NULL;
+    uint64_t accepted_license_time = 0;
+    char *accepted_license_file = get_accepted_license_file ();
+	log_debug("accepted_license_file='%s'", accepted_license_file);
+    FILE* src = fopen(accepted_license_file, "r");
+    if ( src != NULL ) {
+        fscanf(src,"%ms\n%" SCNu64 "\n%ms", &accepted_license_version, &accepted_license_time, &accepted_license_user);
+        fclose(src);
+    }
+    if ( accepted_license_version == NULL )
+        http_die("action-forbidden", "REST API call", "Please accept license first.");
+    if ( !streq(accepted_license_version, current_license_version) ) {
+        std::string msg = std::string{"License version changed (new is "} + current_license_version + ", accepted is " + accepted_license_version + "). Please accept new license first";
+        http_die("action-forbidden", "REST API call", msg.c_str());
+    } else {
+        return DECLINED;
+    }
 }
 </%cpp>

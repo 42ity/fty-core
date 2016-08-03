@@ -114,14 +114,14 @@ UserInfo user;
 
 
     char *license_file = get_current_license_file ();
+    log_debug("license_file='%s'", license_file);
     char *current_license_version = get_current_license_version (license_file);
 
     char *accepted_license_version = NULL;
     char *accepted_license_user = NULL;
     uint64_t accepted_license_time = 0;
     char *accepted_license_file = get_accepted_license_file ();
-	log_debug("license_file='%s'", license_file);
-	log_debug("accepted_license_file='%s'", accepted_license_file);
+    log_debug("accepted_license_file='%s'", accepted_license_file);
     FILE* src = fopen(accepted_license_file, "r");
     if ( src != NULL ) {
         fscanf(src,"%ms\n%" SCNu64 "\n%ms", &accepted_license_version, &accepted_license_time, &accepted_license_user);
