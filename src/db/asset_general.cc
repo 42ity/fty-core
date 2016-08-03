@@ -448,7 +448,6 @@ db_reply_t
         log_info ("end: error occured during removing ma relation");
         return reply_delete3;
     }
-    m_dvc_id_t affected_rows1 = 0;
 
     auto reply_delete4 = delete_asset_element (conn, element_id);
     if ( reply_delete4.status == 0 )
@@ -534,7 +533,6 @@ db_reply_t
         return reply_delete3;
     }
 
-    m_dvc_id_t monitor_element_id = 0;
     auto reply_delete5 = delete_monitor_asset_relation_by_a
                                                 (conn, element_id);
     if ( reply_delete5.status == 0 )

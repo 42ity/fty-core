@@ -188,7 +188,6 @@ void tokens::revoke(const std::string token) {
 bool tokens::verify_token(const std::string token, long int* uid, long int* gid, char **user_name) {
     char buff[MESSAGE_LEN + 1];
     long int tme = 0, l_uid = 0, l_gid = 0;
-    int l_my_number = 0;
 
     clean_revoked();
     if(revoked.find(token) != revoked.end())

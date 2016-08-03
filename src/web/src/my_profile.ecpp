@@ -47,20 +47,21 @@
 
     std::string method = request.getMethod();
     std::string uid = std::to_string(user.uid());
-
+    // ==========================================
+    // information, that cannot be changed by user
+    std:: string change_pwd = " ";
+    int timeout = 99;
+    if (user.profile() == BiosProfile:: Admin) {
+        change_pwd = "Yes";
+        timeout = 10;
+    }
+    if (user.profile() == BiosProfile:: Dashboard) {
+        change_pwd = "No";
+        timeout = 0;
+    }
+    // ==========================================
     // GET
     if (method == "GET") {
-        std:: string change_pwd = " ";
-        int timeout = 99;
-        if (user.profile() == BiosProfile:: Admin) {
-            change_pwd = "Yes";
-            timeout = 10;
-        }
-        if (user.profile() == BiosProfile:: Dashboard) {
-            change_pwd = "No";
-            timeout = 0;
-        }
-
         std::string preferences = "";
         int rv = persist::load_agent_info(uid, preferences);
         if ( rv != 0 ) {
@@ -91,6 +92,7 @@
         cxxtools::SerializationInfo si;
         cxxtools::JsonDeserializer deserializer(input);
 
+        std::string preferences = "";
         // check, if we got a correct JSON
         try {
             deserializer.deserialize(si);
@@ -106,7 +108,8 @@
                 cxxtools::JsonSerializer js (s);
                 js.beautify (false);
                 js.serialize (*preferences_si).finish();
-                int rv = persist::save_agent_info (uid, s.str());
+                preferences = s.str();
+                int rv = persist::save_agent_info (uid, preferences);
                 if ( rv != 0 ) {
                     http_die("internal-error", "Cannot save changes");
                 }
@@ -116,5 +119,11 @@
             http_die("bad-request-document", e.what());
         }
 </%cpp>
-{}
+{
+"login" : "<$ user.login() $>",
+"must_change_pwd" : "<$ change_pwd $>",
+"timeout" : "<$ timeout $>",
+"profile" : "<$ user.toString() $>",
+<$$preferences$>
+}
 %} // if PUT
