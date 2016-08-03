@@ -478,7 +478,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             // check, that this value is "double"
             std::size_t pos = 0;
             try {
-                double valueDouble = std::stod (value, &pos);
+                std::stod (value, &pos);
                 if  ( pos != value.length() ) {
                     log_error ("Value '%s' is not double", value.c_str());
                     bios_throw ("request-param-bad", key.c_str(), value.c_str(), "Value should be double");
