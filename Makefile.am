@@ -593,7 +593,8 @@ test_web_helpers_SOURCES = 	tests/web/src/test-helpers.cc \
 
 test_web_helpers_LDADD =    libpriv-test-run.la \
 				            libpriv-log.la \
-				            libpriv-utils-web.la
+				            libpriv-utils-web.la \
+							libpriv-defs.la
 
 test_web_helpers_CPPFLAGS =	$(AM_CPPFLAGS) \
 							-I$(abs_top_srcdir)/tests/include/ \
@@ -602,7 +603,7 @@ test_web_helpers_CPPFLAGS =	$(AM_CPPFLAGS) \
 test_web_helpers_LDFLAGS =	-ltntnet ${CXXTOOLS_LIBS} $(LIBCZMQ_LIBS)
 
 ###
-check_PROGRAMS +=	test-utils-web	
+check_PROGRAMS +=	test-utils-web
 
 test_utils_web_SOURCES = \
 			src/shared/utils_web.h \
