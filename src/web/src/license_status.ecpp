@@ -143,10 +143,10 @@ UserInfo user;
 %   }
 }
 <%cpp>
-    free (accepted_license_user);
-    free (accepted_license_version);
-    free (accepted_license_file);
-    free (current_license_version);
-    free (license_file);
+    free (accepted_license_user); accepted_license_user = NULL;
+    free (accepted_license_version); accepted_license_version = NULL;
+    free (accepted_license_file); accepted_license_file = NULL;
+    free (current_license_version); current_license_version = NULL;
+    free (license_file); license_file = NULL;
 }
 </%cpp>

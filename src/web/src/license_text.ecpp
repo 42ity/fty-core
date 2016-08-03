@@ -60,10 +60,10 @@ UserInfo user;
     std::ifstream source(license_file, std::ios::binary);
     if ( !source.good() ) {
         log_debug("Error reading license textfrom file '%s'", license_file);
-        free (license_file);
+        free (license_file); license_file = NULL;
         http_die("internal-error", "Error reading license file, check integrity of storage.");
     }
     reply.out() << source.rdbuf();
-    free (license_file);
+    free (license_file); license_file = NULL;
 }
 </%cpp>
