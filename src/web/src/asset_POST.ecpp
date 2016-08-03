@@ -69,19 +69,12 @@ UserInfo user;
         http_die("internal-error", "See logs for more details");
     }
 
-    // POST /asset is currently used to insert new datacenter from wizard
-    //      and devices for EMC4J. Inserting devices is rectricted only for existing use case
-    // all you need when implementing POST for other types is to support structured error handling
-    // empty document
     if (cm.cols() == 0 || cm.rows() == 0) {
         http_die("bad-request-document", "Cannot import empty document.");
     }
     // in underlying functions like update_device
     if (!cm.hasTitle("type")) {
         http_die("request-param-required", "type");
-    }
-    if ( ( cm.get(1, "type") != "datacenter" ) && ( cm.get(1, "type") != "device" ) ) {
-        http_die("request-param-bad", "type", cm.get(1, "type").empty() ? "<empty>" : cm.get(1, "type").c_str(), "datacenter or device");
     }
     if (cm.hasTitle("id")) {
         http_die("bad-request-document", "key 'id' is forbidden to be used");
