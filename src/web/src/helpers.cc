@@ -221,8 +221,8 @@ get_current_license_version (const char* license_file)
     //
     // ssize_t readlink(const char *pathname, char *buf, size_t bufsiz);
 
-    char *buff = (char *) malloc (sizeof(char)*512);
-    memset(buff, 0, sizeof(char)*512);
+    char *buff = (char *) malloc (sizeof(char)*513);
+    memset(buff, 0, sizeof(char)*513);
     int rv = readlink (license_file, buff, sizeof(char)*512);
     //
     // On success, these calls return the number of bytes placed in buf.
