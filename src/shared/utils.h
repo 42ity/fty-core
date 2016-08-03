@@ -193,18 +193,6 @@ get_mac(
         size_t len);
 
 /*!
- \brief Get location of current license file. Caller must free the returned string.
- \return Newly allocated string or NULL
-*/
-char *current_license_file (void);
-
-/*!
- \brief Get location of accepted license file. Caller must free the returned string.
- \return Newly allocated string or NULL
-*/
-char *accepted_license_file (void);
-
-/*!
  \brief sanitize input date (ISO, European day.month.year, day month year, US month/day/year)
  \return NULL or freshly allocated string with ISO format
  */

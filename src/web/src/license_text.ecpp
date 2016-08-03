@@ -28,19 +28,7 @@
 #include <map>
 #include "helpers.h"
 #include "log.h"
-#include "str_defs.h" // EV_LICENSE_DIR
 
-static
-char *get_current_license_file (void) {
-    char *current_license = NULL;
-    char *env = getenv (EV_LICENSE_DIR);
-
-    int rv = asprintf (&current_license, "%s/current", env ? env : "/usr/share/bios/license");
-    if ( rv == -1 ) {
-        return NULL;
-    }
-    return current_license;
-}
 </%pre>
 <%request scope="global">
 UserInfo user;
@@ -56,6 +44,9 @@ UserInfo user;
     CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
 
     char *license_file = get_current_license_file ();
+    if ( license_file == NULL ) {
+        http_die ("internal-error", "Cannot get the path to the text of the current license");
+    }
 	log_debug("license_file='%s'", license_file);
     std::ifstream source(license_file, std::ios::binary);
     if ( !source.good() ) {
