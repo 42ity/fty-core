@@ -113,5 +113,8 @@
             LOG_END_ABNORMAL(e);
             http_die("bad-request-document", e.what());
         }
-    } // if PUT
+
 </%cpp>
+{}
+%} // if PUT
+
