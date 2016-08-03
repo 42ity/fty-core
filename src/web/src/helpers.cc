@@ -45,7 +45,7 @@ bool
 check_element_identifier (const char *param_name, const std::string& param_value, uint32_t& element_id, http_errors_t& errors) {
     assert (param_name);
     if (param_value.empty ()) {
-        http_add_error (errors,"request-param-required", param_name);
+        http_add_error ("", errors,"request-param-required", param_name);
         return false;
     }
 
@@ -54,20 +54,20 @@ check_element_identifier (const char *param_name, const std::string& param_value
         eid = utils::string_to_element_id (param_value);
     }
     catch (const std::invalid_argument& e) {
-        http_add_error (errors, "request-param-bad", param_name,
+        http_add_error ("", errors, "request-param-bad", param_name,
             std::string ("value '").append (param_value).append ("'").append (" is not an element identifier").c_str (),
             std::string ("an unsigned integer in range 1 to ").append (std::to_string (UINT_MAX)).append (".").c_str ());
         return false;
     }
     catch (const std::out_of_range& e) {
-        http_add_error (errors, "request-param-bad", param_name,
+        http_add_error ("", errors, "request-param-bad", param_name,
             std::string ("value '").append (param_value).append ("'").append (" is out of range").c_str (),
             std::string ("value in range 1 to ").append (std::to_string (UINT_MAX)).append (".").c_str ());
         return false;
     }
     catch (const std::exception& e) {
         log_error ("std::exception caught: %s", e.what ());
-        http_add_error (errors, "internal-error");
+        http_add_error ("", errors, "internal-error");
         return false;
     }
     element_id = eid;
@@ -79,20 +79,20 @@ typedef int (t_check_func)(int letter);
 bool
 check_func_text (const char *param_name, const std::string& param_value, http_errors_t& errors,  size_t minlen, size_t maxlen, t_check_func func) {
     if (param_value.size () < minlen) {
-        http_add_error (errors, "request-param-bad", param_name,
+        http_add_error ("", errors, "request-param-bad", param_name,
                         std::string ("value '").append (param_value).append ("'").append (" is too short").c_str (),
                         std::string ("string from ").append (std::to_string (minlen)).append (" to ").append (std::to_string(maxlen)).append (" characters.").c_str ());
         return false;
     }
     if (param_value.size () > maxlen) {
-        http_add_error (errors, "request-param-bad", param_name,
+        http_add_error ("", errors, "request-param-bad", param_name,
                         std::string ("value '").append (param_value).append ("'").append (" is too long").c_str (),
                         std::string ("string from ").append (std::to_string (minlen)).append (" to ").append (std::to_string(maxlen)).append (" characters.").c_str ());
         return false;
     }
     for (const auto letter : param_value) {
         if (!func (letter)) {
-        http_add_error (errors, "request-param-bad", param_name,
+        http_add_error ("", errors, "request-param-bad", param_name,
                         std::string ("value '").append (param_value).append ("'").append (" contains invalid characters").c_str (),
                         "valid string");
         return false;
@@ -108,7 +108,7 @@ check_regex_text (const char *param_name, const std::string& param_value, const 
 {
     cxxtools::Regex R (regex, REG_EXTENDED | REG_ICASE);
     if (! R.match (param_value)) {
-        http_add_error (errors, "request-param-bad", param_name,
+        http_add_error ("", errors, "request-param-bad", param_name,
                         std::string ("value '").append (param_value).append ("'").append (" is not valid").c_str (),
                         std::string ("string matching ").append (regex).append (" regular expression").c_str ());
         return false;
@@ -124,7 +124,7 @@ static const cxxtools::Regex ASSET_NAME_RE {ASSET_NAME_RE_STR};
 
 bool check_asset_name (const std::string& param_name, const std::string& name, http_errors_t &errors) {
     if (!ASSET_NAME_RE.match (name)) {
-        http_add_error (errors, "request-param-bad", param_name.c_str (), name.c_str (), "valid asset name (" ASSET_NAME_RE_STR ")");
+        http_add_error ("", errors, "request-param-bad", param_name.c_str (), name.c_str (), "valid asset name (" ASSET_NAME_RE_STR ")");
         return false;
     }
     return true;
@@ -153,6 +153,7 @@ check_user_permissions (
         const UserInfo &user,
         const tnt::HttpRequest &request,
         const std::map <BiosProfile, std::string> &permissions,
+        const std::string debug,
         http_errors_t &errors
         )
 {
@@ -160,7 +161,7 @@ check_user_permissions (
 
     if (permissions.count (user.profile ()) != 1) {
         log_error ("Permission not defined for given profile");
-        http_add_error (errors, "not-authorized");
+        http_add_error (debug, errors, "not-authorized");
         return;
     }
 
@@ -176,6 +177,6 @@ check_user_permissions (
         return;
     }
 
-    http_add_error (errors, "not-authorized");
+    http_add_error (debug, errors, "not-authorized");
     return;
 }

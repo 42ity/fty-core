@@ -292,7 +292,6 @@ UserInfo user;
         std::transform (operation.begin(), operation.end(), operation.begin(), ::tolower);
         std::transform (service_name.begin(), service_name.end(), service_name.begin(), ::tolower);
 
-        log_debug ("operation='%s', service_name='%s'");
         if ( get_operations.count(operation) == 0 && post_operations.count(operation) == 0 ) {
             http_die ("request-param-bad", "operation");
         }
