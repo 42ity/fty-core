@@ -88,8 +88,6 @@ UserInfo user;
 {
     // check user permissions
     static const std::map <BiosProfile, std::string> PERMISSIONS = {
-            {BiosProfile::Anonymous, "R"},
-            {BiosProfile::Dashboard, "R"},
             {BiosProfile::Admin,     "CR"}
             };
     CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
