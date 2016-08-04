@@ -20,7 +20,7 @@
 
 #include <cassert>
 #include <cxxtools/regex.h>
-
+#include <unistd.h> // make "readlink" available on ARM
 #include "utils_web.h"
 #include "helpers.h"
 #include "str_defs.h" // EV_LICENSE_DIR, EV_DATA_DIR
