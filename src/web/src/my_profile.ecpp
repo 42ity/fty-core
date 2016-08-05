@@ -39,7 +39,6 @@
 <%cpp>
 
     static const std::map <BiosProfile, std::string> PERMISSIONS = {
-            {BiosProfile::Anonymous, "R"},
             {BiosProfile::Dashboard, "RU"},
             {BiosProfile::Admin,     "RU"}
             };
@@ -100,6 +99,7 @@
             cxxtools::SerializationInfo *preferences_si = si.findMember("preferences");
             if ( preferences_si == NULL ) {
                 int rv = persist::save_agent_info (uid, DEFAULT_PREFERENCES);
+                
                 if ( rv != 0 ) {
                     http_die("internal-error", "Cannot save changes (default)");
                 }
