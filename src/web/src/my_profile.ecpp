@@ -80,8 +80,8 @@
 <$$preferences$>
 }
 <%cpp>
-    } // if get
     return HTTP_OK;
+    } // if get
 
     if (method == "PUT" ) {
         std::string profile = request.getBody();
