@@ -47,7 +47,7 @@ UserInfo user;
 <%cpp>
     // check user permissions
     static const std::map <BiosProfile, std::string> PERMISSIONS = {
-            {BiosProfile::Admin,     "E"}
+            {BiosProfile::Admin,     "RE"}
             };
     CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
 
