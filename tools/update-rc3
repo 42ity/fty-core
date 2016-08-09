@@ -321,15 +321,20 @@ find_checksum_cache() {
 
 remove_checksum_cache() {
     # Removes from the cache the entry with given pathname $3 and algo $2 and length $1
+    #logmsg_warn "Consider removing from checksum cache: path='$3' len='$1' algo='$2'"
     [ $# != 3 ] && return 22
     [ -z "${CHECKSUM_CACHE}" ] && return 0
-    CHECKSUM_CACHE="`echo "$CHECKSUM_CACHE" | egrep -v '^[^\:]+'"$1:$2:$3"'$'`"
+    CHECKSUM_CACHE1="`echo "$CHECKSUM_CACHE" | egrep -v '^[^\:]+'":$1:$2:$3"'$'`"
+    [ x"$CHECKSUM_CACHE1" != x"$CHECKSUM_CACHE" ] && \
+        logmsg_info "Removed item from checksum cache: path='$3' len='$1' algo='$2'"
+    CHECKSUM_CACHE="$CHECKSUM_CACHE1"
+    unset CHECKSUM_CACHE1
 }
 
 add_checksum_cache() {
     # Adds to the cache if the given pathname and algo and length are missing
     # If a value exists, it is replaced
-    # Arguments $1..$4 are same as in CHECKSUM_CACHE above
+    # Arguments $1..$4 are same as in CHECKSUM_CACHE definition above
     [ $# != 4 ] && return 22
     if [ -z "${CHECKSUM_CACHE}" ]; then
         CHECKSUM_CACHE="$1:$2:$3:$4"
