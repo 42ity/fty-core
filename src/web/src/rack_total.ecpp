@@ -23,7 +23,7 @@
  * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
  * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \author Karol Hrdina <KarolHrdina@Eaton.com>
- * \brief Not yet documented file
+ * \brief  Provides some metric about realpower consumption for racks
  */
  #><%pre>
 #include <cxxtools/split.h>

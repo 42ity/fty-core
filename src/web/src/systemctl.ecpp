@@ -20,7 +20,7 @@
 /*!
  * \file systemctl.ecpp
  * \author Karol Hrdina <KarolHrdina@Eaton.com>
- * \brief Not yet documented file
+ * \brief  Provide Users ability to manipulate with some specified services
  */
  #><%pre>
 #include <cxxtools/serializationinfo.h>

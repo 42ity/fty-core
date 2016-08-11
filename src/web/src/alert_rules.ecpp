@@ -18,9 +18,9 @@
  #
  #><#
 /*!
- \file alert_rules_detail.ecpp
+ \file alert_rules.ecpp
  \author Karol Hrdina <KarolHrdina@Eaton.com>
- \brief Implementation of REST API call for alerts/rules/<name>
+ \brief  Create or updates specified alert rule
 */
 #><%pre>
 #include <exception>

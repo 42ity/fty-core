@@ -21,7 +21,7 @@
  * \file asset_POST.ecpp
  * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
- * \brief Implementation of POST operation on any asset
+ * \brief Implementation of POST(create) operation on any asset
  */
  #><%pre>
 #include <sys/syscall.h>

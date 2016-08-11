@@ -21,7 +21,7 @@
  * \file auth-verify.ecpp
  * \author Jim Klimov <EvgenyKlimov@Eaton.com>
  * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
- * \brief Not yet documented file
+ * \brief  Check if token is valid or not
  */
  #><%pre>
 #include "tokens.h"

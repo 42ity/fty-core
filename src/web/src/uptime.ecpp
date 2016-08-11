@@ -20,10 +20,9 @@
 /*!
  * \file uptime.ecpp
  * \author Alena Chernikava <AlenaChernikava@Eaton.com>
- * \brief Not yet documented file
+ * \brief Return uptime/outage time of the Rack controller
  */
  #><%pre>
-
 #include <malamute.h>
 #include <sys/types.h>
 #include <sys/syscall.h>
@@ -34,7 +33,6 @@
 #include "utils_web.h"
 #include "log.h"
 #include "helpers.h"
-
 </%pre>
 
 <%thread scope="global">
