@@ -20,7 +20,7 @@
 /*!
  \file alert_ack.ecpp
  \author Karol Hrdina <KarolHrdina@Eaton.com>
- \brief Implementation of REST API call for PUT alerts/ack/<rule_name>/<element_name
+ \brief Implementation of REST API call for PUT alerts/ack/<rule_name>/<element_name>
 */
 #><%pre>
 #include <exception>

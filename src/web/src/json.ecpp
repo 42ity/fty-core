@@ -21,7 +21,7 @@
  * \file json.ecpp
  * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \author Jim Klimov <EvgenyKlimov@Eaton.com>
- * \brief Not yet documented file
+ * \brief  Set up the ContentType header and some other parameters for reply
  */
  #><%pre>
 #include <locale.h>

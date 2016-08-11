@@ -20,7 +20,7 @@
 /*!
  \file alert_rules_list.ecpp
  \author Karol Hrdina <KarolHrdina@Eaton.com>
- \brief Implementation of REST API call for alerts/rules
+ \brief  Returns a list of alert rules according specified parameters
 */
 #><%pre>
 #include <cxxtools/jsondeserializer.h>

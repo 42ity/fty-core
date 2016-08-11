@@ -20,6 +20,7 @@
 /*!
  \file alert_list.ecpp
  \author Karol Hrdina <KarolHrdina@Eaton.com>
+ \brief Retrieves a list of alerts known to the system according specified parameters
 */
 #><%pre>
 #include <exception>
@@ -43,8 +44,6 @@
 #include "helpers.h"
 
 #define RFC_ALERTS_LIST "rfc-alerts-list"
-
-
 
 static int
 is_alertstate (const char *state) {

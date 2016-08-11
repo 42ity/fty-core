@@ -21,7 +21,9 @@
  * \file auth.ecpp
  * \author Jim Klimov <EvgenyKlimov@Eaton.com>
  * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
- * \brief Not yet documented file
+ * \brief  Implementation of:
+            * revoke token
+            * get poken
  */
  #><%pre>
 #include "sasl.h"
