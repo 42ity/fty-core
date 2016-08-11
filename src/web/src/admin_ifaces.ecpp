@@ -18,18 +18,16 @@
  #
  #><#
 /*!
- * \file iface.ecpp
+ * \file admin_ifaceS.ecpp
  * \author Karol Hrdina <KarolHrdina@Eaton.com>
  * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
  * \brief Function for accessing network interfaces on Linux
  */
  #><%pre>
-
 #include "log.h"
 #include "helpers.h"
 #include "iface.h"
-
 </%pre>
 <%request scope="global">
 UserInfo user;
