@@ -21,7 +21,7 @@
  * \file time.ecpp
  * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \author Karol Hrdina <KarolHrdina@Eaton.com>
- * \brief  manipulating with time service
+ * \brief  manipulating with system time (manual setup and ntp)
  */
  #><%pre>
 #include <iostream>
@@ -31,12 +31,14 @@
 #include "augtool.h"
 #include "utils.h"
 #include "helpers.h"
-
 </%pre>
 <%request scope="global">
 UserInfo user;
 </%request>
 <%cpp>
+    // ASSUMPTION: in tntnet.xml methods are set up properly
+    // and here only methods allowed there are implemented!
+
     // check user permissions
     static const std::map <BiosProfile, std::string> PERMISSIONS = {
             {BiosProfile::Anonymous, "R"},
@@ -101,7 +103,7 @@ UserInfo user;
     if (!augeas)
         http_die ("internal-error", "Cannot communicate with augtool. Is it installed or properly configured?");
 
-    if (!request.isMethodGET ()) {
+    if (request.isMethodPOST ()) {
 
         if (!checked_time.empty ()) {
             // Run command with arguments.  Wait for complete and return the return value.
