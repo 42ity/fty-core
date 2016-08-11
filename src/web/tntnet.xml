@@ -168,7 +168,7 @@
     <!-- Time settings -->
     <mapping>
       <target>time@bios_web</target>
-      <method>(GET|PUT|POST)</method>
+      <method>(GET|POST)</method>
       <url>^/api/v1/admin/time.*$</url>
     </mapping>
 
