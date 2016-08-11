@@ -41,9 +41,10 @@ DB_BASE="$DB_LOADDIR/initdb.sql"
 DB_BASE_PATCH0001="$DB_LOADDIR/0001_device_type_extension.sql"
 DB_BASE_PATCH0002="$DB_LOADDIR/0002_v_web_element_view.sql"
 DB_BASE_PATCH0003="$DB_LOADDIR/0003_device_type_extension.sql"
+DB_BASE_PATCH0004="$DB_LOADDIR/0004_ext_cascade.sql"
 # Note: This approach requires whitespace-free DB_LOADDIR value
 # TODO: Generate the list with `ls` or asterisk?
-DB_BASE_PATCHES="$DB_BASE_PATCH0001 $DB_BASE_PATCH0002 $DB_BASE_PATCH0003"
+DB_BASE_PATCHES="$DB_BASE_PATCH0001 $DB_BASE_PATCH0002 $DB_BASE_PATCH0003 $DB_BASE_PARCH0004"
 export DB_LOADDIR DB_BASE DB_BASE_PATCHES
 
 # Sample data sets for some tests
