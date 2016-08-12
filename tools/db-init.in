@@ -143,16 +143,16 @@ install_sql_file() {
 
 	case "$INSTSQL_DIR" in
 		/*) [ -d "$INSTSQL_DIR" ] || { \
-			echo "Creating INSTSQL_DIR='$INSTSQL_DIR' to save copies of applied SQL files..."; \
-			mkdir -p "$INSTSQL_DIR"; }
-		    [ ! -d "$INSTSQL_DIR" -o ! -w "$INSTSQL_DIR" ] && \
-			echo "WARNING: Can not use INSTSQL_DIR='$INSTSQL_DIR', copies of applied SQL files will not be stashed" && \
+				echo "Creating INSTSQL_DIR='$INSTSQL_DIR' to save copies of applied SQL files..."; \
+				mkdir -p "$INSTSQL_DIR" && chown bios:root "$INSTSQL_DIR" && chmod 750 "$INSTSQL_DIR"; }
+			[ ! -d "$INSTSQL_DIR" -o ! -w "$INSTSQL_DIR" ] && \
+				echo "WARNING: Can not use INSTSQL_DIR='$INSTSQL_DIR', copies of applied SQL files will not be stashed" >&2 && \
+				INSTSQL_DIR=""
+			;;
+		"") echo "WARNING: Empty INSTSQL_DIR provided, copies of applied SQL files will not be stashed" >&2 ;;
+		*)  echo "ERROR: Non-absolute INSTSQL_DIR='$INSTSQL_DIR' provided, copies of applied SQL files will not be stashed" >&2
 			INSTSQL_DIR=""
-		    ;;
-		"") echo "WARNING: Empty INSTSQL_DIR provided, copies of applied SQL files will not be stashed" ;;
-		*)  echo "ERROR: Non-absolute INSTSQL_DIR='$INSTSQL_DIR' provided, copies of applied SQL files will not be stashed"
-		    INSTSQL_DIR=""
-		    ;;
+			;;
 	esac
 
 	if  [ -r "$INITSQL" ] && \
