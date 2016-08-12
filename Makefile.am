@@ -1428,7 +1428,9 @@ SYSTEMD_TIMERS += $(SYSTEMD_TIMERS_LOWLEVEL) $(SYSTEMD_TIMERS_TARGET_BIOS)
 # (except those in SYSTEMD_UNITS_NOTPRESET list)
 SYSTEMD_PRESETS +=      42-bios-systemd.preset
 
-SYSTEMD_TMPFILES +=	bios-agent-autoconfig.conf
+SYSTEMD_TMPFILES += \
+                        bios-agent-autoconfig.conf \
+                        bios-db-init.conf
 
 ### TODO? Add the build info (git commit, timestamp) to the header comment?
 $(SYSTEMD_SUBDIR)/42-bios-systemd.preset: Makefile
