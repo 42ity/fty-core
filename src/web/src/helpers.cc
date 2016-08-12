@@ -231,6 +231,7 @@ get_current_license_version (const char* license_file)
     //
     if ( rv == -1 ) {
         log_error ("Cannot read symlink for license");
+        free (buff);
         return NULL;
     }
     buff[rv] = '\0';
@@ -241,7 +242,7 @@ get_current_license_version (const char* license_file)
 // "version" : "/usr/share/bios/license/1.0"
 // if there's no / in inp, then it's noop
 // if so, then it returns character AFTER last /
-const char* 
+const char*
 basename2 (const char *inp)
 {
     const char *sep = strrchr (inp, '/');
