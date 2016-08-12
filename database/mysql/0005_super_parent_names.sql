@@ -1,5 +1,5 @@
 /* For details on schema version support see the main initdb.sql */
-SET @bios_db_schema_version = '2016080120001' ;
+SET @bios_db_schema_version = '201608120001' ;
 SET @bios_db_schema_filename = '0005_super_parent_names.sql' ;
 
 use box_utf8;
