@@ -309,6 +309,8 @@ int main( UNUSED_PARAM int argc, UNUSED_PARAM char *argv[] )
     Autoconfig agent( AUTOCONFIG );
     if( agent.connect( MLM_ENDPOINT, bios_get_stream_main(), "^configure@" ) ) {
         result = agent.run();
+    } else {
+        log_error ("autoconfig agent could not connect to message bus");
     }
     log_info ("autoconfig agent exited with code %i\n", result);
     return result;
