@@ -85,7 +85,7 @@ void
                 mlm_client_destroy (&client);
                 throw std::runtime_error ("persist::select_asset_element_web_byId () failed.");
             }
-            zhash_insert (aux, "parent_name", (void *) parent_reply.item.name.c_str ());
+            zhash_insert (aux, "parent_name1", (void *) parent_reply.item.name.c_str ());
         }
 
         zhash_t *ext = s_map2zhash (oneRow.first.ext);
