@@ -4,6 +4,12 @@ SET @bios_db_schema_filename = '0005_super_parent_names.sql' ;
 
 use box_utf8;
 
+/* This should be the first action in the SQL file */
+START TRANSACTION;
+INSERT INTO t_bios_schema_version (tag,timestamp,filename,version) VALUES('begin-import', UTC_TIMESTAMP() + 0, @bios_db_schema_filename, @bios_db_schema_version);
+/* Report the value */
+SELECT * FROM t_bios_schema_version WHERE tag = 'begin-import' order by id desc limit 1;
+COMMIT;
 
 DROP VIEW IF EXISTS v_bios_asset_element;
 CREATE VIEW v_bios_asset_element AS
