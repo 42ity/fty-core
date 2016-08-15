@@ -408,14 +408,6 @@ db_reply_t
     LOG_START;
     tntdb::Transaction trans(conn);
 
-    auto reply_delete1 = delete_asset_ext_attributes_all (conn, element_id);
-    if ( reply_delete1.status == 0 )
-    {
-        trans.rollback();
-        log_info ("end: error occured during deleting ext attributes");
-        return reply_delete1;
-    }
-
     auto reply_delete2 = delete_asset_element_from_asset_groups
                                                         (conn, element_id);
     if ( reply_delete2.status == 0 )
@@ -471,14 +463,6 @@ db_reply_t
     LOG_START;
     tntdb::Transaction trans(conn);
 
-    auto reply_delete1 = delete_asset_ext_attributes_all (conn, element_id);
-    if ( reply_delete1.status == 0 )
-    {
-        trans.rollback();
-        log_info ("end: error occured during deleting ext attributes");
-        return reply_delete1;
-    }
-
     auto reply_delete2 = delete_asset_group_links (conn, element_id);
     if ( reply_delete2.status == 0 )
     {
@@ -508,14 +492,6 @@ db_reply_t
 {
     LOG_START;
     tntdb::Transaction trans(conn);
-
-    auto reply_delete1 = delete_asset_ext_attributes_all (conn, element_id);
-    if ( reply_delete1.status == 0 )
-    {
-        trans.rollback();
-        log_info ("end: error occured during deleting ext attributes");
-        return reply_delete1;
-    }
 
     auto reply_delete2 = delete_asset_element_from_asset_groups (conn, element_id);
     if ( reply_delete2.status == 0 )
