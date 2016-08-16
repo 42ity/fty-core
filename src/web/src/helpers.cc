@@ -29,7 +29,7 @@
 
 const char* UserInfo::toString() {
     switch (_profile) {
-        case  BiosProfile::Dashboard: return "Dashboard ";
+        case  BiosProfile::Dashboard: return "Dashboard";
         case  BiosProfile::Admin: return "Administrator";
         case  BiosProfile::Anonymous: return "Anonymous";
     }
