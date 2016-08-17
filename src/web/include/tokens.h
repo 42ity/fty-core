@@ -46,7 +46,7 @@
 //! Length of the ciphertext
 #define CIPHERTEXT_LEN (crypto_secretbox_MACBYTES + MESSAGE_LEN)
 
-struct cipher {
+struct Cipher {
     long int valid_until;
     int used;
     unsigned char nonce[crypto_secretbox_NONCEBYTES];

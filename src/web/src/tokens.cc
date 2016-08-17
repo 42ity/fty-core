@@ -79,7 +79,7 @@ void tokens::regen_keys() {
         keys.pop_front();
     if(keys.empty() || keys.back().used > MAX_USE ||
                        keys.back().valid_until < mono_time(NULL) - MAX_LIVE) {
-        cipher new_cipher;
+        Cipher new_cipher;
         randombytes_buf(new_cipher.nonce, sizeof(new_cipher.nonce));
         randombytes_buf(new_cipher.key, sizeof(new_cipher.key));
         new_cipher.valid_until = mono_time(NULL);
@@ -134,7 +134,7 @@ BiosProfile tokens::gen_token(int& valid, const char* user, std::string& token) 
     static std::mutex mtx;
     mtx.lock();
     regen_keys();
-    cipher tmp = keys.back();
+    Cipher tmp = keys.back();
     keys.back().used++;
     my_number = number;
     number = (number + 1) % MAX_USE;
