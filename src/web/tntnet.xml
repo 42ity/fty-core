@@ -255,6 +255,17 @@
       <url>^/api/v1/ui/properties.*$</url>
     </mapping>
 
+    <!-- admin/myuser GET
+        to distinguish user's profile before login wizard runs
+        this MUST be allowed before license is accepted
+    -->
+    <mapping>
+      <target>my_profile@bios_web</target>
+      <method>GET</method>
+      <url>^/api/v1/admin/myuser$</url>
+    </mapping>
+
+
     <!-- License management -->
     <mapping>
       <target>license_text@bios_web</target>
@@ -344,13 +355,6 @@
     <mapping>
         <target>config@bios_web</target>
         <url>^/api/v1/admin/config.*$</url>
-    </mapping>
-
-    <!-- admin/myuser GET -->
-    <mapping>
-      <target>my_profile@bios_web</target>
-      <method>GET</method>
-      <url>^/api/v1/admin/myuser$</url>
     </mapping>
 
     <!-- admin/myuser PUT -->
