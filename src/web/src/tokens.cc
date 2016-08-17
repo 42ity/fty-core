@@ -73,7 +73,6 @@ s_bios_profile (long int gid) {
     }
 }
 
-
 void tokens::regen_keys() {
     while(!keys.empty() && keys.front().valid_until < mono_time(NULL))
         keys.pop_front();
@@ -100,9 +99,10 @@ tokens *tokens::get_instance() {
     return inst;
 }
 
-BiosProfile tokens::gen_token(int& valid, const char* user, std::string& token) {
+BiosProfile tokens::gen_token(const char* user, std::string& token, long int* expires_in) {
     unsigned char ciphertext[CIPHERTEXT_LEN];
     char buff[MESSAGE_LEN + 1];
+    static long int valid = 600;        //FIXME: drop this!!!!
     long int tme = ((long int)mono_time(NULL) + std::min((long int)valid, (long int)MAX_LIVE));
     static int number = random() % MAX_USE;
     int my_number;
@@ -129,6 +129,17 @@ BiosProfile tokens::gen_token(int& valid, const char* user, std::string& token) 
     if (user && profile == BiosProfile::Anonymous) {
         log_warning ("Cannot map gid %ld to BiosProfile", gid);
         return BiosProfile::Anonymous;
+    }
+
+    switch (profile) {
+        case BiosProfile::Admin:
+            *expires_in = 600l;
+            break;
+        case BiosProfile::Dashboard:
+            *expires_in = -1l;
+            break;
+        default:
+            return BiosProfile::Anonymous;
     }
 
     static std::mutex mtx;

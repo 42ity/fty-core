@@ -56,7 +56,7 @@ struct Cipher {
 //! Class to generate and verify tokens
 class tokens {
 private:
-    std::deque<cipher> keys;
+    std::deque<Cipher> keys;
     std::set<std::string> revoked;
     std::multimap<long int, std::string> revoked_queue;
     void clean_revoked();
@@ -71,7 +71,7 @@ public:
      * @param valid How long should be token valid
      * @return BiosProfile - Anonymous only if generation of token fails
      */
-    BiosProfile gen_token(int& valid, const char* user, std::string& token);
+    BiosProfile gen_token(const char* user, std::string& token, long int* expires_in);
     /**
      * \brief Verifies whether supplied token is valid
      *

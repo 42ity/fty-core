@@ -125,9 +125,6 @@ std::string checked_token;
     // sanitize other params end
 }
 
-    int valid = VALID_FOR;
-
-
     // with grant_type argument client wants to get new oauth2 token
     if ( checked_grant_type != "password" ) {
         http_die ("request-param-bad", "grant_type", checked_grant_type.c_str(), "password");
@@ -139,14 +136,15 @@ std::string checked_token;
         http_die ("request-param-bad", "(user|passwd)", "<invalid user or password>", "<valid user and password>");
     }
     std::string access_token;
-    BiosProfile profile = tokens::get_instance()->gen_token(valid, checked_username.c_str(), access_token);
+    long int expires_in;
+    BiosProfile profile = tokens::get_instance()->gen_token(checked_username.c_str(), access_token, &expires_in);
     if (profile == BiosProfile::Anonymous)
         http_die ("internal-error", "Cannot map use group id to bios profile!");
 </%cpp>
 {
     "access_token":"<$$ access_token $>",
 %if (profile == BiosProfile::Admin) {
-    "expires_in":<$ valid $>,
+    "expires_in":<$ expires_in $>,
 %}
     "token_type":"bearer"
 }
