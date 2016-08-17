@@ -95,7 +95,7 @@ void
         if (r == -1) {
             zhash_destroy (&aux);
             mlm_client_destroy (&client);
-            throw std::runtime_error ("persist::select_asset_element_web_byId () failed.");
+            throw std::runtime_error ("persist::select_asset_element_super_parent () failed.");
         }
 
         zhash_t *ext = s_map2zhash (oneRow.first.ext);
