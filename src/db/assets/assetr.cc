@@ -983,4 +983,54 @@ int
     }
 }
 
+int
+    select_asset_element_super_parent (
+            tntdb::Connection& conn,
+            a_elmnt_id_t id,
+            std::function<void(
+                const tntdb::Row&
+                )>& cb)
+{
+    LOG_START;
+
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT "
+            "   v.id_asset_element as id, "
+            "   v.id_parent1 as id_parent1, "
+            "   v.id_parent2 as id_parent2, "
+            "   v.id_parent3 as id_parent3, "
+            "   v.id_parent4 as id_parent4, "
+            "   v.id_parent5 as id_parent5, "
+            "   v.name_parent1 as parent_name1, "
+            "   v.name_parent2 as parent_name2, "
+            "   v.name_parent3 as parent_name3, "
+            "   v.name_parent4 as parent_name4, "
+            "   v.name_parent5 as parent_name5, "
+            "   v.name as name, "
+            "   v.type_name as type_name, "
+            "   v.id_asset_device_type as device_type, "
+            "   v.status as status, "
+            "   v.asset_tag as asset_tag, "
+            "   v.priority as priority, "
+            "   v.id_type as id_type "
+            " FROM v_bios_asset_element_super_parent v "
+            " WHERE "
+            "   v.id_asset_element = :id "
+            );
+
+        tntdb::Result res = st.set ("id", id).select ();
+
+        for (const auto& r: res) {
+            cb(r);
+        }
+        LOG_END;
+        return 0;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
+}
+
 } // namespace end

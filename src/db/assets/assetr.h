@@ -352,5 +352,24 @@ int
             std::function<void(
                 const tntdb::Row&
                 )>& cb);
+/**
+ * \brief select asset element super parent
+ *
+ * \param[in] conn        - db connection
+ * \param[in] element_id  - element_id
+ * \param[in] cb          - callback to be called with every selected row.
+ *
+ *  Every selected row has the following columns:
+ *      id, id_parent1-id_parent5, parent_name1-parent_name5, name, type_name, device_type, status, asset_tag, priority, id_type
+ *
+ * \return 0 on success (even if nothing was found)
+ */
+int
+    select_asset_element_super_parent (
+            tntdb::Connection& conn,
+            a_elmnt_id_t id,
+            std::function<void(
+                const tntdb::Row&
+                )>& cb);
 } //namespace end
 #endif // SRC_DB_ASSETS_ASSETR_H
