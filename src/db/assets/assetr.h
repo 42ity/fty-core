@@ -360,7 +360,7 @@ int
  * \param[in] cb          - callback to be called with every selected row.
  *
  *  Every selected row has the following columns:
- *      id, id_parent1-id_parent5, parent_name.1-parent_name.5, name, type_name, device_type, status, asset_tag, priority, id_type
+ *      id, id_parent1-id_parent5, parent_name1-parent_name5, name, type_name, device_type, status, asset_tag, priority, id_type
  *
  * \return 0 on success (even if nothing was found)
  */
