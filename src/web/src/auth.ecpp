@@ -40,7 +40,7 @@
 #include <stdio.h>
 
 #ifndef VALID_FOR
-#define VALID_FOR 3600
+#define VALID_FOR 600
 #endif //VALID_FOR
 </%pre>
 <%cpp>
@@ -138,10 +138,16 @@ std::string checked_token;
         log_error ("request POST oauth2: username %s, grant_type %s authentication FAILED", checked_username.c_str (), checked_grant_type.c_str ());
         http_die ("request-param-bad", "(user|passwd)", "<invalid user or password>", "<valid user and password>");
     }
+    std::string access_token;
+    BiosProfile profile = tokens::get_instance()->gen_token(valid, checked_username.c_str(), access_token);
+    if (profile == BiosProfile::Anonymous)
+        http_die ("internal-error", "Cannot map use group id to bios profile!");
 </%cpp>
 {
-    "access_token":"<$$ tokens::get_instance()->gen_token(valid, checked_username.c_str()) $>",
-    "token_type":"bearer",
-    "expires_in":<$ valid $>
+    "access_token":"<$$ access_token $>",
+%if (profile == BiosProfile::Admin) {
+    "expires_in":<$ valid $>,
+%}
+    "token_type":"bearer"
 }
 %}

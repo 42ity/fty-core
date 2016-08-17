@@ -58,6 +58,22 @@ static time_t mono_time(time_t *o_time) {
     return time(o_time);
 }
 
+static BiosProfile
+s_bios_profile (long int gid) {
+    long int foo = (gid - 8000);
+
+    if (foo == static_cast<long int> (BiosProfile::Dashboard))
+        return BiosProfile::Dashboard;
+    else
+    if (foo == static_cast<long int> (BiosProfile::Admin))
+        return BiosProfile::Admin;
+    else {
+        log_warning ("Cannot map gid %ld to BiosProfile", gid);
+        return BiosProfile::Anonymous;
+    }
+}
+
+
 void tokens::regen_keys() {
     while(!keys.empty() && keys.front().valid_until < mono_time(NULL))
         keys.pop_front();
@@ -84,7 +100,7 @@ tokens *tokens::get_instance() {
     return inst;
 }
 
-std::string tokens::gen_token(int& valid, const char* user, bool do_round) {
+BiosProfile tokens::gen_token(int& valid, const char* user, std::string& token) {
     unsigned char ciphertext[CIPHERTEXT_LEN];
     char buff[MESSAGE_LEN + 1];
     long int tme = ((long int)mono_time(NULL) + std::min((long int)valid, (long int)MAX_LIVE));
@@ -92,11 +108,11 @@ std::string tokens::gen_token(int& valid, const char* user, bool do_round) {
     int my_number;
     long int uid = -1;
     long int gid = -1;
-    if (do_round) {
-        tme /= ROUND;
-        tme *= ROUND;
-        valid = (tme - mono_time(NULL));
-    }
+    tme /= ROUND;
+    tme *= ROUND;
+    valid = (tme - mono_time(NULL));
+
+    BiosProfile profile = BiosProfile::Anonymous;
 
     if(user != NULL) {
         static std::mutex pwnam_lock;
@@ -105,8 +121,14 @@ std::string tokens::gen_token(int& valid, const char* user, bool do_round) {
         if(pwd != NULL) {
             uid = pwd->pw_uid;
             gid = pwd->pw_gid;
+            profile = s_bios_profile (gid);
         }
         pwnam_lock.unlock();
+    }
+
+    if (user && profile == BiosProfile::Anonymous) {
+        log_warning ("Cannot map gid %ld to BiosProfile", gid);
+        return BiosProfile::Anonymous;
     }
 
     static std::mutex mtx;
@@ -135,7 +157,8 @@ std::string tokens::gen_token(int& valid, const char* user, bool do_round) {
         if(i == '/')
             i = '-';
     }
-    return ret;
+    token = ret;
+    return profile;
 }
 
 void tokens::decode_token(char *buff, std::string token) {
@@ -183,20 +206,6 @@ void tokens::revoke(const std::string token) {
         return;
     revoked.insert(token);
     revoked_queue.insert(std::make_pair(tme, token));
-}
-
-static BiosProfile
-s_bios_profile (long int gid) {
-    long int foo = (gid - 8000);
-    if (static_cast<long int> (BiosProfile::Dashboard) == foo)
-        return BiosProfile::Dashboard;
-    else
-    if (static_cast<long int> (BiosProfile::Admin) == foo)
-        return BiosProfile::Admin;
-    else {
-        log_warning ("Cannot map gid %ld to BiosProfile", gid);
-        return BiosProfile::Anonymous;
-    }
 }
 
 BiosProfile tokens::verify_token(const std::string token, long int* uid, long int* gid, char **user_name) {

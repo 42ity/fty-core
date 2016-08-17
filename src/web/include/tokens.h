@@ -69,9 +69,9 @@ public:
      * \brief Generates new token
      *
      * @param valid How long should be token valid
-     * @return Token
+     * @return BiosProfile - Anonymous only if generation of token fails
      */
-    std::string gen_token(int& valid, const char* user, bool do_round = true);
+    BiosProfile gen_token(int& valid, const char* user, std::string& token);
     /**
      * \brief Verifies whether supplied token is valid
      *
