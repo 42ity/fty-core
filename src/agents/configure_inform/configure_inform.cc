@@ -61,22 +61,22 @@ void
     tntdb::Connection conn = tntdb::connectCached (url);
     for ( const  auto &oneRow : rows ) {
 
-        char *s_priority, *s_parent;
-        r = asprintf (&s_priority, "%u", (unsigned)  oneRow.first.priority);
-        assert (r != -1);
-        r = asprintf (&s_parent, "%lu", (long) oneRow.first.parent_id);
-        assert (r != -1);
+        std::string s_priority = std::to_string (oneRow.first.priority);
+        std::string s_parent = std::to_string (oneRow.first.parent_id);
 
-        char *subject;
-        r = asprintf (&subject, "%s.%s@%s", persist::typeid_to_type (oneRow.first.type_id).c_str(), persist::subtypeid_to_subtype (oneRow.first.subtype_id).c_str(), oneRow.first.name.c_str());
-        assert ( r != -1);
+        std::string subject;
+        subject = persist::typeid_to_type (oneRow.first.type_id);
+        subject.append (".");
+        subject.append (persist::subtypeid_to_subtype (oneRow.first.subtype_id));
+        subject.append ("@");
+        subject.append (oneRow.first.name);
 
         zhash_t *aux = zhash_new ();
         zhash_autofree (aux);
-        zhash_insert (aux, "priority", (void*) s_priority);
+        zhash_insert (aux, "priority", (void*) s_priority.c_str ());
         zhash_insert (aux, "type", (void*) persist::typeid_to_type (oneRow.first.type_id).c_str());
         zhash_insert (aux, "subtype", (void*) persist::subtypeid_to_subtype (oneRow.first.subtype_id).c_str());
-        zhash_insert (aux, "parent", (void*) s_parent);
+        zhash_insert (aux, "parent", (void*) s_parent.c_str ());
         zhash_insert (aux, "status", (void*) oneRow.first.status.c_str());
 
         std::function<void(const tntdb::Row&)> cb = \
@@ -105,7 +105,7 @@ void
                 oneRow.first.name.c_str(),
                 operation2str (oneRow.second).c_str(),
                 ext);
-        r = mlm_client_send (client, subject, &msg);
+        r = mlm_client_send (client, subject.c_str (), &msg);
         zhash_destroy (&ext);
         zhash_destroy (&aux);
         if ( r != 0 ) {
