@@ -185,19 +185,33 @@ void tokens::revoke(const std::string token) {
     revoked_queue.insert(std::make_pair(tme, token));
 }
 
-bool tokens::verify_token(const std::string token, long int* uid, long int* gid, char **user_name) {
+static BiosProfile
+s_bios_profile (long int gid) {
+    long int foo = (gid - 8000);
+    if (static_cast<long int> (BiosProfile::Dashboard) == foo)
+        return BiosProfile::Dashboard;
+    else
+    if (static_cast<long int> (BiosProfile::Admin) == foo)
+        return BiosProfile::Admin;
+    else {
+        log_warning ("Cannot map gid %ld to BiosProfile", gid);
+        return BiosProfile::Anonymous;
+    }
+}
+
+BiosProfile tokens::verify_token(const std::string token, long int* uid, long int* gid, char **user_name) {
     char buff[MESSAGE_LEN + 1];
     long int tme = 0, l_uid = 0, l_gid = 0;
 
     clean_revoked();
     if(revoked.find(token) != revoked.end())
-        return false;
+        return BiosProfile::Anonymous;
     decode_token(buff, token);
 
     int r = sscanf (buff, "%ld %ld %ld", &tme, &l_uid, &l_gid);
     if (r != 3) {
         log_debug ("verify_token: sscanf read of tme, uid, gid, failed: %m");
-        return false;
+        return BiosProfile::Anonymous;
     }
 
     if (uid)
@@ -220,16 +234,16 @@ bool tokens::verify_token(const std::string token, long int* uid, long int* gid,
             log_debug ("verify_token: read of username failed: %m");
             if (foo)
                 free (foo);
-            return false;
+            return BiosProfile::Anonymous;
         }
         if (foo_len > strlen (foo)) {
             log_debug ("verify_token: read username len %zu is bigger than actual string size %zu, data corruption", foo_len, strlen (foo));
             free (foo);
-            return false;
+            return BiosProfile::Anonymous;
         }
         foo [foo_len] = '\0';
         *user_name = foo;
     }
 
-    return tme > mono_time(NULL);
+    return s_bios_profile (*gid);
 }

@@ -1,6 +1,6 @@
 /*
  *
- * Copyright (C) 2015 Eaton
+ * Copyright (C) 2015-2016 Eaton
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
  * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \author Jim Klimov <EvgenyKlimov@Eaton.com>
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
  * \brief Header file for token manipulation class
  *
  */
@@ -35,6 +36,7 @@
 #include <set>
 #include <map>
 #include <deque>
+#include "helpers.h"
 
 //! Maximum length of the message stored in the token
 //#define MESSAGE_LEN (3 * sizeof (long int) + sizeof (int) + 32)
@@ -72,8 +74,10 @@ public:
     std::string gen_token(int& valid, const char* user, bool do_round = true);
     /**
      * \brief Verifies whether supplied token is valid
+     *
+     * \return BiosProfile enum, where BiosProfile::Anonymous means verification failed
      */
-    bool verify_token(const std::string token, long int* uid = NULL, long int* gid = NULL, char **user_name = NULL);
+    BiosProfile verify_token(const std::string token, long int* uid = NULL, long int* gid = NULL, char **user_name = NULL);
     //! Invalidates selected token
     void revoke(const std::string token);
     /**
