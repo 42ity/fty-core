@@ -177,10 +177,21 @@ bool is_ok_element_type (a_elmnt_tp_id_t element_type_id)
 bool is_ok_name (const char* name)
 {
     size_t length = strlen (name);
-    if ( length == 0 )
+    if ( length == 0)
         return false;
-    else 
-        return true;
+
+    bool is_number = true;
+    for (size_t i = 0; i != length; i++) {
+        if (!isdigit (name [i])) {
+            is_number = false;
+            break;
+        }
+    }
+
+    if (is_number)
+        return false;
+
+    return true;
 }
 
 bool is_ok_keytag (const char *keytag)
