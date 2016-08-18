@@ -342,10 +342,14 @@ sed -i 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/bios/license\nConditionP
 /bin/systemctl enable ssh.socket
 
 # Workaround nutscanner's ldopen
-ln -sr /usr/lib/*/libnetsnmp.so.*.* /usr/lib/libnetsnmp.so
-ln -sr /lib/*/libupsclient.so.*.*   /lib/libupsclient.so
-ln -sr /lib/*/libusb-*.so.*.*       /lib/libusb.so
-ln -sr /usr/lib/libneon.so.*.*      /usr/lib/libneon.so
+[ -s /usr/lib/libnetsnmp.so ] || \
+    ln -sfr /usr/lib/*/libnetsnmp.so.*.* /usr/lib/libnetsnmp.so
+[ -s /usr/lib/libupsclient.so ] || \
+    ln -sfr /lib/*/libupsclient.so.*.*   /lib/libupsclient.so
+[ -s /usr/lib/libusb.so ] || \
+    ln -sfr /lib/*/libusb-*.so.*.*       /lib/libusb.so
+[ -s /usr/lib/libneon.so ] || \
+    ln -sfr /usr/lib/libneon.so.*.*      /usr/lib/libneon.so
 
 # Enable malamute with BIOS configuration
 mkdir -p /etc/malamute
