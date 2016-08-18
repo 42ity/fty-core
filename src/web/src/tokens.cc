@@ -73,15 +73,21 @@ s_bios_profile (long int gid) {
     }
 }
 
-void tokens::regen_keys() {
-    while(!keys.empty() && keys.front().valid_until < mono_time(NULL))
+void tokens::regen_keys (long int expires_in) {
+    // drop all old keys
+    auto now = mono_time (NULL);
+    while (!  keys.empty() \
+           && keys.front().valid_until < now)
         keys.pop_front();
-    if(keys.empty() || keys.back().used > MAX_USE ||
-                       keys.back().valid_until < mono_time(NULL) - MAX_LIVE) {
+
+    if (   keys.empty() \
+        || keys.back().used > MAX_USE
+        || keys.back().valid_until < (now + expires_in - MAX_LIVE))
+    {
         Cipher new_cipher;
         randombytes_buf(new_cipher.nonce, sizeof(new_cipher.nonce));
         randombytes_buf(new_cipher.key, sizeof(new_cipher.key));
-        new_cipher.valid_until = mono_time(NULL);
+        new_cipher.valid_until = now;
         new_cipher.valid_until += 2*MAX_LIVE;
         new_cipher.used = 0;
         keys.push_back(new_cipher);
@@ -136,7 +142,7 @@ BiosProfile tokens::gen_token(const char* user, std::string& token, long int* ex
             *expires_in = 600l;
             break;
         case BiosProfile::Dashboard:
-            *expires_in = -1l;
+            *expires_in = 3600l;
             break;
         default:
             return BiosProfile::Anonymous;
@@ -144,8 +150,9 @@ BiosProfile tokens::gen_token(const char* user, std::string& token, long int* ex
 
     static std::mutex mtx;
     mtx.lock();
-    regen_keys();
+    regen_keys(*expires_in);
     Cipher tmp = keys.back();
+    log_debug ("Cipher {key=%s, nonce=%s, valid_until=%ld}", tmp.key, tmp.nonce, tmp.valid_until);
     keys.back().used++;
     my_number = number;
     number = (number + 1) % MAX_USE;

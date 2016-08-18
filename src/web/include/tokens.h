@@ -60,7 +60,7 @@ private:
     std::set<std::string> revoked;
     std::multimap<long int, std::string> revoked_queue;
     void clean_revoked();
-    void regen_keys();
+    void regen_keys (long int expires_in);
     static const uint16_t MESSAGE_LEN;
 public:
     //! Singleton get_instance method
