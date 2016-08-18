@@ -31,7 +31,7 @@
     #include <cxxtools/jsonserializer.h>
     #include "log.h"
     #include "agentstate.h"
-#define DEFAULT_PREFERENCES "\"preferences\":{\"email\" : \" \", \"telephone\" : \" \", \"organization\" : \" \", \"date\":\"DDMMYYYY\", \"temperature\":\"C\", \"language\":\"en_US\", \"time\":\"24h\"}"
+#define DEFAULT_PREFERENCES "\"preferences\":{\"email\" : \" \", \"telephone\" : \" \", \"organization\" : \" \", \"date\":\"DDMMYYYY\", \"temperature\":\"C\", \"language\":\"en-us\", \"time\":\"24h\"}"
 </%pre>
 <%request scope="global">
     UserInfo user;
