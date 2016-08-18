@@ -36,7 +36,6 @@ UserInfo user;
 <%cpp>
     // check user permissions
     static const std::map <BiosProfile, std::string> PERMISSIONS = {
-            {BiosProfile::Anonymous, "R"},
             {BiosProfile::Dashboard, "R"},
             {BiosProfile::Admin,     "R"}
             };

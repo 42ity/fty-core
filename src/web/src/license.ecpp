@@ -37,7 +37,7 @@
 </%pre>
 <%cpp>
 {
-    // check user permissions is intentionally removed, as this part should be
+    // CHECK_USER_PERMISSIONS_OR_DIE is intentionally not used, as this part should be
     // checked for any USER any URL and any METHOD
     char *license_file = get_current_license_file ();
     if ( license_file == NULL ) {

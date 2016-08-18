@@ -36,12 +36,9 @@
 UserInfo user;
 </%request>
 <%cpp>
-    // ASSUMPTION: in tntnet.xml methods are set up properly
-    // and here only methods allowed there are implemented!
 
     // check user permissions
     static const std::map <BiosProfile, std::string> PERMISSIONS = {
-            {BiosProfile::Anonymous, "R"},
             {BiosProfile::Dashboard, "R"},
             {BiosProfile::Admin,     "RE"}
             };
