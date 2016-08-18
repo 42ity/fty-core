@@ -214,7 +214,12 @@ UserInfo user;
     zmsg_addstr (msg, std::to_string(end).c_str());
     zmsg_addstr (msg, (checked_ordered ? "1" : "0") );
 
-    mlm_client_sendto (client, "agent-ms", "aggregated data", NULL, 1000, &msg);
+    rv = mlm_client_sendto (client, "agent-ms", "aggregated data", NULL, 1000, &msg);
+    if ( rv != 0 ) {
+        log_critical ("Cannot send message to agent-ms");
+        mlm_client_destroy (&client);
+        http_die ("internal-error", "mlm_client_sendto failed.");
+    }
 
     // wait for the right message or time-out
     zmsg_t *recv_msg = NULL;
@@ -231,7 +236,7 @@ UserInfo user;
     }
     if (!recv_msg) {
         if (zpoller_expired (poller) || zpoller_terminated (poller)) {
-            log_error ("zpoller_wait(timeout = 5000) timed out waiting for message.");
+            log_error ("zpoller_wait(timeout = 10000) timed out waiting for message.");
             zpoller_destroy (&poller);
             mlm_client_destroy (&client);
             http_die ("internal-error", "Timed out waiting for message.");
