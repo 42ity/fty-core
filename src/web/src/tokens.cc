@@ -105,18 +105,14 @@ tokens *tokens::get_instance() {
     return inst;
 }
 
-BiosProfile tokens::gen_token(const char* user, std::string& token, long int* expires_in) {
+BiosProfile tokens::gen_token(const char* user, std::string& token, long int* expires_in)
+{
+    static int number = random() % MAX_USE;
+
     unsigned char ciphertext[CIPHERTEXT_LEN];
     char buff[MESSAGE_LEN + 1];
-    static long int valid = 600;        //FIXME: drop this!!!!
-    long int tme = ((long int)mono_time(NULL) + std::min((long int)valid, (long int)MAX_LIVE));
-    static int number = random() % MAX_USE;
-    int my_number;
     long int uid = -1;
     long int gid = -1;
-    tme /= ROUND;
-    tme *= ROUND;
-    valid = (tme - mono_time(NULL));
 
     BiosProfile profile = BiosProfile::Anonymous;
 
@@ -130,6 +126,10 @@ BiosProfile tokens::gen_token(const char* user, std::string& token, long int* ex
             profile = s_bios_profile (gid);
         }
         pwnam_lock.unlock();
+        if (!pwd) {
+            log_error ("Cannnot get uid for user %s: %m", user);
+            return BiosProfile::Anonymous;
+        }
     }
 
     if (user && profile == BiosProfile::Anonymous) {
@@ -148,13 +148,17 @@ BiosProfile tokens::gen_token(const char* user, std::string& token, long int* ex
             return BiosProfile::Anonymous;
     }
 
+    long int tme = (long int)mono_time(NULL) + *expires_in;
+    tme /= ROUND;
+    tme *= ROUND;
+
     static std::mutex mtx;
     mtx.lock();
     regen_keys(*expires_in);
     Cipher tmp = keys.back();
     log_debug ("Cipher {key=%s, nonce=%s, valid_until=%ld}", tmp.key, tmp.nonce, tmp.valid_until);
     keys.back().used++;
-    my_number = number;
+    int my_number = number;
     number = (number + 1) % MAX_USE;
     mtx.unlock();
 

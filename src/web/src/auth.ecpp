@@ -138,10 +138,8 @@ std::string checked_token;
         http_die ("internal-error", "Cannot map use group id to bios profile!");
 </%cpp>
 {
-    "access_token":"<$$ access_token $>",
-%if (profile == BiosProfile::Admin) {
-    "expires_in":<$ expires_in $>,
-%}
-    "token_type":"bearer"
+    "access_token" : "<$$ access_token $>",
+    "token_type" : "bearer",
+    "expires_in" : <$ expires_in $>
 }
 %}
