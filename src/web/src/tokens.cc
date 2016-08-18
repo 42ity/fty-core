@@ -58,15 +58,36 @@ static time_t mono_time(time_t *o_time) {
     return time(o_time);
 }
 
-void tokens::regen_keys() {
-    while(!keys.empty() && keys.front().valid_until < mono_time(NULL))
+static BiosProfile
+s_bios_profile (long int gid) {
+    long int foo = (gid - 8000);
+
+    if (foo == static_cast<long int> (BiosProfile::Dashboard))
+        return BiosProfile::Dashboard;
+    else
+    if (foo == static_cast<long int> (BiosProfile::Admin))
+        return BiosProfile::Admin;
+    else {
+        log_warning ("Cannot map gid %ld to BiosProfile", gid);
+        return BiosProfile::Anonymous;
+    }
+}
+
+void tokens::regen_keys (long int expires_in) {
+    // drop all old keys
+    auto now = mono_time (NULL);
+    while (!  keys.empty() \
+           && keys.front().valid_until < now)
         keys.pop_front();
-    if(keys.empty() || keys.back().used > MAX_USE ||
-                       keys.back().valid_until < mono_time(NULL) - MAX_LIVE) {
-        cipher new_cipher;
+
+    if (   keys.empty() \
+        || keys.back().used > MAX_USE
+        || keys.back().valid_until < (now + expires_in - MAX_LIVE))
+    {
+        Cipher new_cipher;
         randombytes_buf(new_cipher.nonce, sizeof(new_cipher.nonce));
         randombytes_buf(new_cipher.key, sizeof(new_cipher.key));
-        new_cipher.valid_until = mono_time(NULL);
+        new_cipher.valid_until = now;
         new_cipher.valid_until += 2*MAX_LIVE;
         new_cipher.used = 0;
         keys.push_back(new_cipher);
@@ -84,19 +105,16 @@ tokens *tokens::get_instance() {
     return inst;
 }
 
-std::string tokens::gen_token(int& valid, const char* user, bool do_round) {
+BiosProfile tokens::gen_token(const char* user, std::string& token, long int* expires_in)
+{
+    static int number = random() % MAX_USE;
+
     unsigned char ciphertext[CIPHERTEXT_LEN];
     char buff[MESSAGE_LEN + 1];
-    long int tme = ((long int)mono_time(NULL) + std::min((long int)valid, (long int)MAX_LIVE));
-    static int number = random() % MAX_USE;
-    int my_number;
     long int uid = -1;
     long int gid = -1;
-    if (do_round) {
-        tme /= ROUND;
-        tme *= ROUND;
-        valid = (tme - mono_time(NULL));
-    }
+
+    BiosProfile profile = BiosProfile::Anonymous;
 
     if(user != NULL) {
         static std::mutex pwnam_lock;
@@ -105,16 +123,42 @@ std::string tokens::gen_token(int& valid, const char* user, bool do_round) {
         if(pwd != NULL) {
             uid = pwd->pw_uid;
             gid = pwd->pw_gid;
+            profile = s_bios_profile (gid);
         }
         pwnam_lock.unlock();
+        if (!pwd) {
+            log_error ("Cannnot get uid for user %s: %m", user);
+            return BiosProfile::Anonymous;
+        }
     }
+
+    if (user && profile == BiosProfile::Anonymous) {
+        log_warning ("Cannot map gid %ld to BiosProfile", gid);
+        return BiosProfile::Anonymous;
+    }
+
+    switch (profile) {
+        case BiosProfile::Admin:
+            *expires_in = 600l;
+            break;
+        case BiosProfile::Dashboard:
+            *expires_in = 3600l;
+            break;
+        default:
+            return BiosProfile::Anonymous;
+    }
+
+    long int tme = (long int)mono_time(NULL) + *expires_in;
+    tme /= ROUND;
+    tme *= ROUND;
 
     static std::mutex mtx;
     mtx.lock();
-    regen_keys();
-    cipher tmp = keys.back();
+    regen_keys(*expires_in);
+    Cipher tmp = keys.back();
+    log_debug ("Cipher {key=%s, nonce=%s, valid_until=%ld}", tmp.key, tmp.nonce, tmp.valid_until);
     keys.back().used++;
-    my_number = number;
+    int my_number = number;
     number = (number + 1) % MAX_USE;
     mtx.unlock();
 
@@ -135,7 +179,8 @@ std::string tokens::gen_token(int& valid, const char* user, bool do_round) {
         if(i == '/')
             i = '-';
     }
-    return ret;
+    token = ret;
+    return profile;
 }
 
 void tokens::decode_token(char *buff, std::string token) {
@@ -185,25 +230,32 @@ void tokens::revoke(const std::string token) {
     revoked_queue.insert(std::make_pair(tme, token));
 }
 
-bool tokens::verify_token(const std::string token, long int* uid, long int* gid, char **user_name) {
+BiosProfile tokens::verify_token(const std::string token, long int* uid, long int* gid, char **user_name) {
     char buff[MESSAGE_LEN + 1];
     long int tme = 0, l_uid = 0, l_gid = 0;
 
     clean_revoked();
-    if(revoked.find(token) != revoked.end())
-        return false;
+    if(revoked.find(token) != revoked.end()) {
+        log_info ("verify_token: token is revoked, authentication failed!");
+        return BiosProfile::Anonymous;
+    }
     decode_token(buff, token);
 
     int r = sscanf (buff, "%ld %ld %ld", &tme, &l_uid, &l_gid);
     if (r != 3) {
         log_debug ("verify_token: sscanf read of tme, uid, gid, failed: %m");
-        return false;
+        return BiosProfile::Anonymous;
     }
 
     if (uid)
         *uid = l_uid;
     if (gid)
         *gid = l_gid;
+
+    if (mono_time (NULL) > tme) {
+        log_info ("verify_token: expired token for uid/gid %ld/%ld, authentication failed!", l_uid, l_gid);
+        return BiosProfile::Anonymous;
+    }
 
     if (user_name) {
         char *foo = NULL;
@@ -220,16 +272,16 @@ bool tokens::verify_token(const std::string token, long int* uid, long int* gid,
             log_debug ("verify_token: read of username failed: %m");
             if (foo)
                 free (foo);
-            return false;
+            return BiosProfile::Anonymous;
         }
         if (foo_len > strlen (foo)) {
             log_debug ("verify_token: read username len %zu is bigger than actual string size %zu, data corruption", foo_len, strlen (foo));
             free (foo);
-            return false;
+            return BiosProfile::Anonymous;
         }
         foo [foo_len] = '\0';
         *user_name = foo;
     }
 
-    return tme > mono_time(NULL);
+    return s_bios_profile (*gid);
 }

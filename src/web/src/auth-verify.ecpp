@@ -71,18 +71,10 @@ if(!checked_access_token.empty()) {
     long int uid;
     long int gid;
     char *user_name;
-	if(tokens::get_instance()->verify_token(checked_access_token, &uid, &gid, &user_name)) {
+    BiosProfile profile = tokens::get_instance()->verify_token(checked_access_token, &uid, &gid, &user_name);
 
-        long int foo = (gid - 8000);
-        if (foo != static_cast<long int> (BiosProfile::Anonymous) \
-         && foo != static_cast<long int> (BiosProfile::Dashboard) \
-         && foo != static_cast<long int> (BiosProfile::Admin)) {
-            std::string msg {"Cannot map gid="};
-            msg += std::to_string (gid) + " to user profile";
-            http_die ("internal-error", msg.c_str ());
-        }
-
-        user.profile (static_cast<BiosProfile> (foo));
+    if (profile != BiosProfile::Anonymous) {
+        user.profile (profile);
         user.uid (uid);
         user.gid (gid);
         user.login (user_name);

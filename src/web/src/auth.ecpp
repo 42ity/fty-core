@@ -38,10 +38,6 @@
 #include <tnt/httpheader.h>
 #include <cxxtools/jsondeserializer.h>
 #include <stdio.h>
-
-#ifndef VALID_FOR
-#define VALID_FOR 3600
-#endif //VALID_FOR
 </%pre>
 <%cpp>
 
@@ -125,9 +121,6 @@ std::string checked_token;
     // sanitize other params end
 }
 
-    int valid = VALID_FOR;
-
-
     // with grant_type argument client wants to get new oauth2 token
     if ( checked_grant_type != "password" ) {
         http_die ("request-param-bad", "grant_type", checked_grant_type.c_str(), "password");
@@ -138,10 +131,15 @@ std::string checked_token;
         log_error ("request POST oauth2: username %s, grant_type %s authentication FAILED", checked_username.c_str (), checked_grant_type.c_str ());
         http_die ("request-param-bad", "(user|passwd)", "<invalid user or password>", "<valid user and password>");
     }
+    std::string access_token;
+    long int expires_in;
+    BiosProfile profile = tokens::get_instance()->gen_token(checked_username.c_str(), access_token, &expires_in);
+    if (profile == BiosProfile::Anonymous)
+        http_die ("internal-error", "Cannot map use group id to bios profile!");
 </%cpp>
 {
-    "access_token":"<$$ tokens::get_instance()->gen_token(valid, checked_username.c_str()) $>",
-    "token_type":"bearer",
-    "expires_in":<$ valid $>
+    "access_token" : "<$$ access_token $>",
+    "token_type" : "bearer",
+    "expires_in" : <$ expires_in $>
 }
 %}

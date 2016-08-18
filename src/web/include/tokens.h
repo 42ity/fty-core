@@ -1,6 +1,6 @@
 /*
  *
- * Copyright (C) 2015 Eaton
+ * Copyright (C) 2015-2016 Eaton
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
  * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \author Jim Klimov <EvgenyKlimov@Eaton.com>
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
  * \brief Header file for token manipulation class
  *
  */
@@ -35,6 +36,7 @@
 #include <set>
 #include <map>
 #include <deque>
+#include "helpers.h"
 
 //! Maximum length of the message stored in the token
 //#define MESSAGE_LEN (3 * sizeof (long int) + sizeof (int) + 32)
@@ -44,7 +46,7 @@
 //! Length of the ciphertext
 #define CIPHERTEXT_LEN (crypto_secretbox_MACBYTES + MESSAGE_LEN)
 
-struct cipher {
+struct Cipher {
     long int valid_until;
     int used;
     unsigned char nonce[crypto_secretbox_NONCEBYTES];
@@ -54,11 +56,11 @@ struct cipher {
 //! Class to generate and verify tokens
 class tokens {
 private:
-    std::deque<cipher> keys;
+    std::deque<Cipher> keys;
     std::set<std::string> revoked;
     std::multimap<long int, std::string> revoked_queue;
     void clean_revoked();
-    void regen_keys();
+    void regen_keys (long int expires_in);
     static const uint16_t MESSAGE_LEN;
 public:
     //! Singleton get_instance method
@@ -67,13 +69,15 @@ public:
      * \brief Generates new token
      *
      * @param valid How long should be token valid
-     * @return Token
+     * @return BiosProfile - Anonymous only if generation of token fails
      */
-    std::string gen_token(int& valid, const char* user, bool do_round = true);
+    BiosProfile gen_token(const char* user, std::string& token, long int* expires_in);
     /**
      * \brief Verifies whether supplied token is valid
+     *
+     * \return BiosProfile enum, where BiosProfile::Anonymous means verification failed
      */
-    bool verify_token(const std::string token, long int* uid = NULL, long int* gid = NULL, char **user_name = NULL);
+    BiosProfile verify_token(const std::string token, long int* uid = NULL, long int* gid = NULL, char **user_name = NULL);
     //! Invalidates selected token
     void revoke(const std::string token);
     /**
