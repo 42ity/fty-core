@@ -108,8 +108,6 @@ tokens *tokens::get_instance() {
 
 BiosProfile tokens::gen_token(const char* user, std::string& token, long int* expires_in)
 {
-    static int number = random() % MAX_USE;
-
     unsigned char ciphertext[CIPHERTEXT_LEN];
     char buff[MESSAGE_LEN + 1];
     long int uid = -1;
@@ -159,15 +157,13 @@ BiosProfile tokens::gen_token(const char* user, std::string& token, long int* ex
     Cipher tmp = keys.back();
     log_debug ("Cipher {key=%s, nonce=%s, valid_until=%ld}", tmp.key, tmp.nonce, tmp.valid_until);
     keys.back().used++;
-    int my_number = number;
-    number = (number + 1) % MAX_USE;
     mtx.unlock();
 
     size_t len = strlen (user);
     // username will be truncated to 32+NULL byte by snprintf
     if (len > 32)
         len = 32;
-    snprintf(buff, MESSAGE_LEN, "%ld %ld %ld %d %zu%.32s", tme, uid, gid, my_number, len, user);
+    snprintf(buff, MESSAGE_LEN, "%ld %ld %ld %zu%.32s", tme, uid, gid, len, user);
 
     crypto_secretbox_easy(ciphertext, (unsigned char *)buff, strlen(buff),
                           tmp.nonce, tmp.key);

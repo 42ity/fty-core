@@ -40,7 +40,7 @@
  * 4.) Generate new key (using libsodium's routines, so secure enough)
  * 5.) Obtain last key in queue
  * 6.) Generate buffer with token as
- *     snprintf(buff, MESSAGE_LEN, "%ld %ld %ld %d %zu%.32s", tme, uid, gid, my_number, len, user);
+ *     snprintf(buff, MESSAGE_LEN, "%ld %ld %ld %zu%.32s", tme, uid, gid, len, user);
  *     tme - time until when is token valid
  *     uid, gid - unix user permissions
  *     len - strlen of user name
