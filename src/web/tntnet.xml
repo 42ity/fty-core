@@ -265,6 +265,12 @@
       <url>^/api/v1/admin/myuser$</url>
     </mapping>
 
+    <!-- admin/myuser PUT -->
+    <mapping>
+      <target>my_profile@bios_web</target>
+      <method>PUT</method>
+      <url>^/api/v1/admin/myuser$</url>
+    </mapping>
 
     <!-- License management -->
     <mapping>
@@ -355,13 +361,6 @@
     <mapping>
         <target>config@bios_web</target>
         <url>^/api/v1/admin/config.*$</url>
-    </mapping>
-
-    <!-- admin/myuser PUT -->
-    <mapping>
-      <target>my_profile@bios_web</target>
-      <method>PUT</method>
-      <url>^/api/v1/admin/myuser$</url>
     </mapping>
 
     <!-- not found error  -->
