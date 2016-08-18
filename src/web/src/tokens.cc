@@ -235,8 +235,10 @@ BiosProfile tokens::verify_token(const std::string token, long int* uid, long in
     long int tme = 0, l_uid = 0, l_gid = 0;
 
     clean_revoked();
-    if(revoked.find(token) != revoked.end())
+    if(revoked.find(token) != revoked.end()) {
+        log_info ("verify_token: token is revoked, authentication failed!");
         return BiosProfile::Anonymous;
+    }
     decode_token(buff, token);
 
     int r = sscanf (buff, "%ld %ld %ld", &tme, &l_uid, &l_gid);
@@ -249,6 +251,11 @@ BiosProfile tokens::verify_token(const std::string token, long int* uid, long in
         *uid = l_uid;
     if (gid)
         *gid = l_gid;
+
+    if (mono_time (NULL) > tme) {
+        log_info ("verify_token: expired token for uid/gid %ld/%ld, authentication failed!", l_uid, l_gid);
+        return BiosProfile::Anonymous;
+    }
 
     if (user_name) {
         char *foo = NULL;
