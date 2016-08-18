@@ -1,6 +1,6 @@
 /*
  *
- * Copyright (C) 2015 Eaton
+ * Copyright (C) 2015-2016 Eaton
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +22,8 @@
  * \file tokens.cc
  * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \author Jim Klimov <EvgenyKlimov@Eaton.com>
- * \brief Not yet documented file
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \brief Maintain the OAuth2 access_tokens
  */
 #include <stdio.h>
 #include <time.h>
