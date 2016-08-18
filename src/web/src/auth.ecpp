@@ -38,10 +38,6 @@
 #include <tnt/httpheader.h>
 #include <cxxtools/jsondeserializer.h>
 #include <stdio.h>
-
-#ifndef VALID_FOR
-#define VALID_FOR 600
-#endif //VALID_FOR
 </%pre>
 <%cpp>
 
