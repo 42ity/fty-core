@@ -51,11 +51,11 @@
     std:: string change_pwd = " ";
     int timeout = 99;
     if (user.profile() == BiosProfile:: Admin) {
-        change_pwd = "Yes";
+        change_pwd = "true";
         timeout = 10;
     }
     if (user.profile() == BiosProfile:: Dashboard) {
-        change_pwd = "No";
+        change_pwd = "false";
         timeout = 0;
     }
     // ==========================================
@@ -74,7 +74,7 @@
 </%cpp>
 {
 "login" : "<$ user.login() $>",
-"must_change_pwd" : "<$ change_pwd $>",
+"must_change_pwd" : <$ change_pwd $>,
 "timeout" : "<$ timeout $>",
 "profile" : "<$ user.toString() $>",
 <$$preferences$>
