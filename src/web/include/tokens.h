@@ -26,6 +26,33 @@
  * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
  * \brief Header file for token manipulation class
  *
+ * How it works
+ * ============
+ *
+ * Server maintain set of private keys (see Cipher struct), which are used to encrypt
+ * access_tokens sent to user. Each key is valid for one hour and can encrypt 255 tokens.
+ * After that new private key is generated.
+ *
+ * How new access token is generated
+ * 1.) If there is no Cipher
+ * 2.) OR if the maximum use is bigger than 256
+ * 3.) OR if the token will expire after the key
+ * 4.) Generate new key (using libsodium's routines, so secure enough)
+ * 5.) Obtain last key in queue
+ * 6.) Generate buffer with token as
+ *     snprintf(buff, MESSAGE_LEN, "%ld %ld %ld %zu%.32s", tme, uid, gid, len, user);
+ *     tme - time until when is token valid
+ *     uid, gid - unix user permissions
+ *     len - strlen of user name
+ *     user - user name (max 32 bytes)
+ *
+ * How to token is verified
+ * 1.) is checked if it's not already revoked - if so, verification fails
+ * 2.) token is decoded using all available private keys
+ * 3.) All values are scanned from the token
+ * 4.) If token is too old, is rejected
+ * 5.) Otherwise all the information are returned back to the end user
+ *
  */
 
 #ifndef SRC_WEB_INCLUDE_TOKENS_H
