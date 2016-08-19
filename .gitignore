@@ -137,8 +137,6 @@ tools/db-init
 !tools/db-init.in
 tools/bios-passwd
 !tools/bios-passwd.in
-tools/bios-nutconfig
-!tools/bios-nutconfig.in
 
 systemd/42-bios-systemd.preset
 !systemd/bios-db-init.service.in
