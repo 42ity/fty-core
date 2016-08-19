@@ -140,7 +140,7 @@ BiosProfile tokens::gen_token(const char* user, std::string& token, long int* ex
 
     switch (profile) {
         case BiosProfile::Admin:
-            *expires_in = 600l;
+            *expires_in = 3600l;
             break;
         case BiosProfile::Dashboard:
             *expires_in = 3600l;
