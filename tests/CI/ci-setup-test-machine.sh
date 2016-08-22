@@ -164,15 +164,17 @@ restore_ssh_service() {
 }
 
 update_system() {
-    update_pkg_keys
-    update_pkg_metadata
-    limit_packages_recommends
-    limit_packages_paths
-    install_packages_missing
-    limit_packages_docs
-    install_package_set_dev
-    install_package_set_biosdeps
-    limit_packages_forceremove
+    if [[ -n "${FORCE_RUN_APT}" ]]; then
+        update_pkg_keys
+        update_pkg_metadata
+        limit_packages_recommends
+        limit_packages_paths
+        install_packages_missing
+        limit_packages_docs
+        install_package_set_dev
+        install_package_set_biosdeps
+        limit_packages_forceremove
+    fi
     restore_ssh_service
 }
 
