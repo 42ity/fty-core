@@ -138,6 +138,7 @@ config_defaults() {
     UBOOTCFG_MTD=3
     UBOOT_MTD=2
 
+    [ -z "${WANT_REBOOT-}" ] && WANT_REBOOT=no
 
     PATH="/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
     export PATH
@@ -193,6 +194,8 @@ usage() {
     echo "  --(no-)erase-all           If a new OS image downloaded successfully, then"
     echo "                   request a factory reset + NAND format after reboot"
     echo "  --touch-erase-all          Enforce a factory reset + NAND format next boot"
+    echo "  --reboot | -r              If a new image (OS, FW) downloaded successfully"
+    echo "                   request an immediate reboot as part of this script"
     echo "For HTTP(S) or FTP(S) based delivery, do not forget to set http_proxy URL as"
     echo "applicable for your environment. Current value is '$http_proxy'."
     echo "RETURN CODES: This script returns 0 if no newer images were found to download"
@@ -1578,6 +1581,7 @@ while [ $# -gt 0 ]; do
 		--touch-erase-all|--force-erase-all)
 		                        FLAG_ERASE_ALL="force" ;;
 		--no-erase-all)         FLAG_ERASE_ALL="no" ;;
+		--reboot|-r)            WANT_REBOOT="yes" ;;
 		*)  die "Aborting due to unknown command-line argument(s): $*" ;;
 	esac
 	shift
@@ -1739,6 +1743,7 @@ logmsg_info "Syncing to ensure all writes are done..."
 time sync || true
 
 ACTION_RESULT_STR="seek errors above"
+DO_REBOOT="no"
 case "$ACTION_RESULT" in
 	0|42)	ACTION_RESULT_STR="new files were available"
 		[ "$ACTION_RESULT" = 0 ] && ACTION_RESULT_STR="no $ACTION_RESULT_STR"
@@ -1749,9 +1754,16 @@ case "$ACTION_RESULT" in
 		; then
 			ACTION_RESULT=42
 			ACTION_RESULT_STR="new files were downloaded successfully, you can reboot now to apply the updates"
+			[ "${WANT_REBOOT-}" = yes ] && DO_REBOOT=yes
 		fi
 		;;
 esac
 
 logmsg_info "Completed '$_SCRIPT_NAME $_SCRIPT_ARGS' with result $ACTION_RESULT ($ACTION_RESULT_STR)"
+
+if [ "${DO_REBOOT-}" = yes ]; then
+	logmsg_warn "Got new files and was asked to reboot in this case... trying to do so..."
+	reboot
+fi
+
 exit $ACTION_RESULT
