@@ -1300,17 +1300,17 @@ download_rawfwimage_modules() (
     cd "${DEPLOYMENTROOTFW_MODULES}" || die "Can not use DOWNLOADROOTFW_MODULES='$DOWNLOADROOTFW_MODULES' nor DEPLOYMENTROOTFW_MODULES='$DEPLOYMENTROOTFW_MODULES'"
 
     case "${1-}" in
-            *://*)
-                logmsg_info "download_rawfwimage_modules() was asked to try downloading '$1' as the raw kernel modules archive"
-                IMAGE_URL="$1" ;;
-            "")
-                logmsg_info "Fetching newest remote filename for the raw kernel modules archive..."
-                IMAGE_URL="`findnewest_rawfwimage_modules`" && [ -n "$IMAGE_URL" ] \
-                && logmsg_info "download_rawfwimage_modules() detected '$IMAGE_URL' as the newest remote raw kernel modules archive" \
-                || { logmsg_error "Could not find any remote raw kernel modules archive"; IMAGE_URL="";} ;;
-            *)  logmsg_error "download_rawfwimage_modules() got an unsupported argument: $*"
-                IMAGE_URL=""
-                ;;
+        *://*)
+            logmsg_info "download_rawfwimage_modules() was asked to try downloading '$1' as the raw kernel modules archive"
+            IMAGE_URL="$1" ;;
+        "")
+            logmsg_info "Fetching newest remote filename for the raw kernel modules archive..."
+            IMAGE_URL="`findnewest_rawfwimage_modules`" && [ -n "$IMAGE_URL" ] \
+            && logmsg_info "download_rawfwimage_modules() detected '$IMAGE_URL' as the newest remote raw kernel modules archive" \
+            || { logmsg_error "Could not find any remote raw kernel modules archive"; IMAGE_URL="";} ;;
+        *)  logmsg_error "download_rawfwimage_modules() got an unsupported argument: $*"
+            IMAGE_URL=""
+            ;;
     esac
 
     [ -n "$IMAGE_URL" ] && \
@@ -1434,17 +1434,17 @@ removeold_rawfwimage_modules() (
 logmsg_info "`date`: Starting ${_SCRIPT_PATH} ${_SCRIPT_ARGS}"
 
 case "$*" in
-    *--no-config-file*) logmsg_info "NOT sourcing configs from /etc/update-rc3.d/" ;;
-    *)
-        if [ -d "/etc/update-rc3.d/" ]; then
-            for F in "/etc/update-rc3.d/"*.conf ; do
-                if [ -s "$F" ] && [ -r "$F" ] ; then
-                    logmsg_info "Sourcing configuration file: '$F' ..."
-                    . "$F" || logmsg_error "Possibly got an error sourcing '$F', see above..."
-                fi
-            done
-        fi
-        ;;
+	*--no-config-file*) logmsg_info "NOT sourcing configs from /etc/update-rc3.d/" ;;
+	*)
+		if [ -d "/etc/update-rc3.d/" ]; then
+			for F in "/etc/update-rc3.d/"*.conf ; do
+				if [ -s "$F" ] && [ -r "$F" ] ; then
+					logmsg_info "Sourcing configuration file: '$F' ..."
+					. "$F" || logmsg_error "Possibly got an error sourcing '$F', see above..."
+				fi
+			done
+		fi
+		;;
 esac
 config_defaults
 
@@ -1457,8 +1457,8 @@ config_defaults
 
 ACTION_DOWNLOAD_OSIMAGE="yes"
 case "$ARCH" in
-    *arm*)  ACTION_DOWNLOAD_FWIMAGE="yes" ;;
-    *)      ACTION_DOWNLOAD_FWIMAGE="no" ;;
+	*arm*)  ACTION_DOWNLOAD_FWIMAGE="yes" ;;
+	*)      ACTION_DOWNLOAD_FWIMAGE="no" ;;
 esac
 
 ACTION_CHECK_OSIMAGE="no"
@@ -1483,19 +1483,19 @@ ACTION_RESULT=0
 DOWNLOADED_OS_IMAGE=""
 
 while [ $# -gt 0 ]; do
-        case "${1-}" in
-                -h|--help|-help)        usage; exit 0 ;;
-                --debug-calls|--debug-calls-x)
-                    if [ $# -eq 1 ]; then
-                        die "The '$1' option requires further arguments"
-                    fi
-                    [ "$1" = "--debug-calls" ] && shift || { shift; set -xv; }
-                    "$@" ; exit $? ;;
-                -c|--config) [ -n "$2" ] && [ -s "$2" ] && [ -r "$2" ] && \
-                        logmsg_info "Sourcing configuration file: '$2' ..." && \
-                        . "$2" || die "Possibly got an error sourcing '$2', see above..."
-                    shift ;;
-                --no-config-file) ;; # Processed above
+	case "${1-}" in
+		-h|--help|-help)        usage; exit 0 ;;
+		--debug-calls|--debug-calls-x)
+		    if [ $# -eq 1 ]; then
+		        die "The '$1' option requires further arguments"
+		    fi
+		    [ "$1" = "--debug-calls" ] && shift || { shift; set -xv; }
+		    "$@" ; exit $? ;;
+		-c|--config) [ -n "$2" ] && [ -s "$2" ] && [ -r "$2" ] && \
+		        logmsg_info "Sourcing configuration file: '$2' ..." && \
+		        . "$2" || die "Possibly got an error sourcing '$2', see above..."
+		    shift ;;
+		--no-config-file) ;; # Processed above
 		-ls)
 			RES=0
 			lsdir_http_pattern "${SOURCESITEROOTFW_UBOOT}" "uBoot*" \
@@ -1535,72 +1535,72 @@ while [ $# -gt 0 ]; do
 			wait || RES=$?
 			exit $RES
 			;;
-                --remove-files)         FLAG_CAN_REMOVE_IMAGES="yes";;
-                --no-remove-files)      FLAG_CAN_REMOVE_IMAGES="no";;
-                --flatten-filenames)    FLAG_FLATTEN_FILENAMES="yes";;
-                --no-flatten-filenames) FLAG_FLATTEN_FILENAMES="no";;
-                --download-image-os)    ACTION_DOWNLOAD_OSIMAGE="yes";;
-                --download-image-fw)    ACTION_DOWNLOAD_FWIMAGE="yes";;
-                --download-images)      ACTION_DOWNLOAD_OSIMAGE="yes"; ACTION_DOWNLOAD_FWIMAGE="yes";;
-                --no-download-image-os) ACTION_DOWNLOAD_OSIMAGE="no";;
-                --no-download-image-fw) ACTION_DOWNLOAD_FWIMAGE="no";;
-                --no-download-images)   ACTION_DOWNLOAD_OSIMAGE="no"; ACTION_DOWNLOAD_FWIMAGE="no";;
-                --fw-only)              ACTION_DOWNLOAD_OSIMAGE="no"; ACTION_DOWNLOAD_FWIMAGE="yes";;
-                --os-only)              ACTION_DOWNLOAD_OSIMAGE="yes"; ACTION_DOWNLOAD_FWIMAGE="no";;
-                --check-image-os)       ACTION_CHECK_OSIMAGE="yes";;
-                --check-image-fw)       ACTION_CHECK_FWIMAGE="yes";;
-                --check-images|-n|--dry-run)
-                                        ACTION_CHECK_OSIMAGE="yes"; ACTION_CHECK_FWIMAGE="yes";;
-                --no-check-image-os)    ACTION_CHECK_OSIMAGE="no";;
-                --no-check-image-fw)    ACTION_CHECK_FWIMAGE="no";;
-                --no-check-images)      ACTION_CHECK_OSIMAGE="no"; ACTION_CHECK_FWIMAGE="no";;
-                --url-image-*)
-                    [ $# -eq 1 ] && die "The '$1' option requires a further argument"
-                    case "${1-}" in
-                        --url-image-os)             URL_DOWNLOAD_OSIMAGE="$2"; shift;;
-                        --url-image-fw-raw-uboot)   URL_DOWNLOAD_FWIMAGE_RAW_UBOOT="$2"; shift;;
-                        --url-image-fw-raw-uimage)  URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE="$2"; shift;;
-                        --url-image-fw-raw-modules) URL_DOWNLOAD_FWIMAGE_RAW_MODULES="$2"; shift;;
-                        *)  die "Aborting due to unknown command-line argument(s): $*" ;;
-                    esac ;;
-                --removeold-image-os)   ACTION_REMOVEOLD_OSIMAGE="yes";;
-                --removeold-image-fw)   ACTION_REMOVEOLD_FWIMAGE="yes";;
-                --removeold-images)     ACTION_REMOVEOLD_OSIMAGE="yes"; ACTION_REMOVEOLD_FWIMAGE="yes";;
-                --no-removeold-image-os)ACTION_REMOVEOLD_OSIMAGE="no";;
-                --no-removeold-image-fw)ACTION_REMOVEOLD_FWIMAGE="no";;
-                --no-removeold-images)  ACTION_REMOVEOLD_OSIMAGE="no"; ACTION_REMOVEOLD_FWIMAGE="no";;
-                --erase-factory-reset)
-                                        FLAG_ERASE_FACTORYRESET="yes" ;;
-                --touch-factory-reset|--force-factory-reset)
-                                        FLAG_ERASE_FACTORYRESET="force" ;;
-                --no-erase-factory-reset)  FLAG_ERASE_FACTORYRESET="no" ;;
-                --erase-all)            FLAG_ERASE_ALL="yes" ;;
-                --touch-erase-all|--force-erase-all)
-                                        FLAG_ERASE_ALL="force" ;;
-                --no-erase-all)         FLAG_ERASE_ALL="no" ;;
-                *)  die "Aborting due to unknown command-line argument(s): $*" ;;
-        esac
-        shift
+		--remove-files)         FLAG_CAN_REMOVE_IMAGES="yes";;
+		--no-remove-files)      FLAG_CAN_REMOVE_IMAGES="no";;
+		--flatten-filenames)    FLAG_FLATTEN_FILENAMES="yes";;
+		--no-flatten-filenames) FLAG_FLATTEN_FILENAMES="no";;
+		--download-image-os)    ACTION_DOWNLOAD_OSIMAGE="yes";;
+		--download-image-fw)    ACTION_DOWNLOAD_FWIMAGE="yes";;
+		--download-images)      ACTION_DOWNLOAD_OSIMAGE="yes"; ACTION_DOWNLOAD_FWIMAGE="yes";;
+		--no-download-image-os) ACTION_DOWNLOAD_OSIMAGE="no";;
+		--no-download-image-fw) ACTION_DOWNLOAD_FWIMAGE="no";;
+		--no-download-images)   ACTION_DOWNLOAD_OSIMAGE="no"; ACTION_DOWNLOAD_FWIMAGE="no";;
+		--fw-only)              ACTION_DOWNLOAD_OSIMAGE="no"; ACTION_DOWNLOAD_FWIMAGE="yes";;
+		--os-only)              ACTION_DOWNLOAD_OSIMAGE="yes"; ACTION_DOWNLOAD_FWIMAGE="no";;
+		--check-image-os)       ACTION_CHECK_OSIMAGE="yes";;
+		--check-image-fw)       ACTION_CHECK_FWIMAGE="yes";;
+		--check-images|-n|--dry-run)
+		                        ACTION_CHECK_OSIMAGE="yes"; ACTION_CHECK_FWIMAGE="yes";;
+		--no-check-image-os)    ACTION_CHECK_OSIMAGE="no";;
+		--no-check-image-fw)    ACTION_CHECK_FWIMAGE="no";;
+		--no-check-images)      ACTION_CHECK_OSIMAGE="no"; ACTION_CHECK_FWIMAGE="no";;
+		--url-image-*)
+		    [ $# -eq 1 ] && die "The '$1' option requires a further argument"
+		    case "${1-}" in
+		        --url-image-os)             URL_DOWNLOAD_OSIMAGE="$2"; shift;;
+		        --url-image-fw-raw-uboot)   URL_DOWNLOAD_FWIMAGE_RAW_UBOOT="$2"; shift;;
+		        --url-image-fw-raw-uimage)  URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE="$2"; shift;;
+		        --url-image-fw-raw-modules) URL_DOWNLOAD_FWIMAGE_RAW_MODULES="$2"; shift;;
+		        *)  die "Aborting due to unknown command-line argument(s): $*" ;;
+		    esac ;;
+		--removeold-image-os)   ACTION_REMOVEOLD_OSIMAGE="yes";;
+		--removeold-image-fw)   ACTION_REMOVEOLD_FWIMAGE="yes";;
+		--removeold-images)     ACTION_REMOVEOLD_OSIMAGE="yes"; ACTION_REMOVEOLD_FWIMAGE="yes";;
+		--no-removeold-image-os)ACTION_REMOVEOLD_OSIMAGE="no";;
+		--no-removeold-image-fw)ACTION_REMOVEOLD_FWIMAGE="no";;
+		--no-removeold-images)  ACTION_REMOVEOLD_OSIMAGE="no"; ACTION_REMOVEOLD_FWIMAGE="no";;
+		--erase-factory-reset)
+		                        FLAG_ERASE_FACTORYRESET="yes" ;;
+		--touch-factory-reset|--force-factory-reset)
+		                        FLAG_ERASE_FACTORYRESET="force" ;;
+		--no-erase-factory-reset)  FLAG_ERASE_FACTORYRESET="no" ;;
+		--erase-all)            FLAG_ERASE_ALL="yes" ;;
+		--touch-erase-all|--force-erase-all)
+		                        FLAG_ERASE_ALL="force" ;;
+		--no-erase-all)         FLAG_ERASE_ALL="no" ;;
+		*)  die "Aborting due to unknown command-line argument(s): $*" ;;
+	esac
+	shift
 done
 
 # Checks are special - after we do all which were requested (if any), we exit
 if [ x"$ACTION_CHECK_OSIMAGE" = xyes ] || [ x"$ACTION_CHECK_FWIMAGE" = xyes ]; then
-    RESULT_ACTION_CHECK_ANYIMAGE=0
-    if [ x"$ACTION_CHECK_OSIMAGE" = xyes ]; then
-        CHECK_ONLY=yes download_osimage $URL_DOWNLOAD_OSIMAGE || RESULT_ACTION_CHECK_ANYIMAGE=$?
-    fi
-    if [ x"$ACTION_CHECK_FWIMAGE" = xyes ]; then
-        CHECK_ONLY=yes download_rawfwimage_uboot   $URL_DOWNLOAD_FWIMAGE_RAW_UBOOT   || RESULT_ACTION_CHECK_ANYIMAGE=$?
-        CHECK_ONLY=yes download_rawfwimage_uimage  $URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE  || RESULT_ACTION_CHECK_ANYIMAGE=$?
-        CHECK_ONLY=yes download_rawfwimage_modules $URL_DOWNLOAD_FWIMAGE_RAW_MODULES || RESULT_ACTION_CHECK_ANYIMAGE=$?
-    fi
-    RES_STR="$RESULT_ACTION_CHECK_ANYIMAGE"
-    case "$RESULT_ACTION_CHECK_ANYIMAGE" in
-        0)  RES_STR="$RESULT_ACTION_CHECK_ANYIMAGE = Local files are OK, but there is nothing new to download" ;;
-        42) RES_STR="$RESULT_ACTION_CHECK_ANYIMAGE = Should download something different from what we have locally" ;;
-    esac
-    logmsg_info "Exiting after completion of requested --check-* operations ($RES_STR)"
-    exit $RESULT_ACTION_CHECK_ANYIMAGE
+	RESULT_ACTION_CHECK_ANYIMAGE=0
+	if [ x"$ACTION_CHECK_OSIMAGE" = xyes ]; then
+		CHECK_ONLY=yes download_osimage $URL_DOWNLOAD_OSIMAGE || RESULT_ACTION_CHECK_ANYIMAGE=$?
+	fi
+	if [ x"$ACTION_CHECK_FWIMAGE" = xyes ]; then
+		CHECK_ONLY=yes download_rawfwimage_uboot   $URL_DOWNLOAD_FWIMAGE_RAW_UBOOT   || RESULT_ACTION_CHECK_ANYIMAGE=$?
+		CHECK_ONLY=yes download_rawfwimage_uimage  $URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE  || RESULT_ACTION_CHECK_ANYIMAGE=$?
+		CHECK_ONLY=yes download_rawfwimage_modules $URL_DOWNLOAD_FWIMAGE_RAW_MODULES || RESULT_ACTION_CHECK_ANYIMAGE=$?
+	fi
+	RES_STR="$RESULT_ACTION_CHECK_ANYIMAGE"
+	case "$RESULT_ACTION_CHECK_ANYIMAGE" in
+		0)  RES_STR="$RESULT_ACTION_CHECK_ANYIMAGE = Local files are OK, but there is nothing new to download" ;;
+		42) RES_STR="$RESULT_ACTION_CHECK_ANYIMAGE = Should download something different from what we have locally" ;;
+	esac
+	logmsg_info "Exiting after completion of requested --check-* operations ($RES_STR)"
+	exit $RESULT_ACTION_CHECK_ANYIMAGE
 fi
 
 RESULT_ACTION_DOWNLOAD_FWIMAGE=0
@@ -1608,62 +1608,62 @@ RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT=0
 RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE=0
 RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES=0
 if [ "$ACTION_DOWNLOAD_FWIMAGE" = yes ]; then
-        download_rawfwimage_uboot $URL_DOWNLOAD_FWIMAGE_RAW_UBOOT
-        RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT=$?
-        download_rawfwimage_uimage $URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE
-        RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE=$?
-        download_rawfwimage_modules $URL_DOWNLOAD_FWIMAGE_RAW_MODULES
-        RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES=$?
+	download_rawfwimage_uboot $URL_DOWNLOAD_FWIMAGE_RAW_UBOOT
+	RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT=$?
+	download_rawfwimage_uimage $URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE
+	RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE=$?
+	download_rawfwimage_modules $URL_DOWNLOAD_FWIMAGE_RAW_MODULES
+	RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES=$?
 
-        [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT" -gt 0 ] && \
-            ACTION_RESULT=$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT && \
-            if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] ; then
-                logmsg_warn "New u-Boot image was not downloaded successfully, so old ones are not purged"
-                ACTION_REMOVEOLD_FWIMAGE=no_BadDownload
-            fi
+	[ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT" -gt 0 ] && \
+		ACTION_RESULT=$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT && \
+		if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] ; then
+			logmsg_warn "New u-Boot image was not downloaded successfully, so old ones are not purged"
+			ACTION_REMOVEOLD_FWIMAGE=no_BadDownload
+		fi
 
-        [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE" -gt 0 ] && \
-            ACTION_RESULT=$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE && \
-            if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] ; then
-                logmsg_warn "New kernel uImage was not downloaded successfully, so old ones are not purged"
-                ACTION_REMOVEOLD_FWIMAGE=no_BadDownload
-            fi
+	[ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE" -gt 0 ] && \
+		ACTION_RESULT=$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE && \
+		if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] ; then
+			logmsg_warn "New kernel uImage was not downloaded successfully, so old ones are not purged"
+			ACTION_REMOVEOLD_FWIMAGE=no_BadDownload
+		fi
 
-        [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES" -gt 0 ] && \
-            ACTION_RESULT=$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES && \
-            if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] ; then
-                logmsg_warn "New modules archive was not downloaded successfully, so old ones are not purged"
-                ACTION_REMOVEOLD_FWIMAGE=no_BadDownload
-            fi
+	[ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES" -gt 0 ] && \
+		ACTION_RESULT=$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES && \
+		if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] ; then
+			logmsg_warn "New modules archive was not downloaded successfully, so old ones are not purged"
+			ACTION_REMOVEOLD_FWIMAGE=no_BadDownload
+		fi
 fi
 
 if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ]; then
-        removeold_rawfwimage_modules || ACTION_RESULT=$?
-        removeold_rawfwimage_uimage || ACTION_RESULT=$?
-        removeold_rawfwimage_uboot || ACTION_RESULT=$?
+	removeold_rawfwimage_modules || ACTION_RESULT=$?
+	removeold_rawfwimage_uimage || ACTION_RESULT=$?
+	removeold_rawfwimage_uboot || ACTION_RESULT=$?
 else
-        logmsg_info "Not purging old FW images because ACTION_REMOVEOLD_FWIMAGE=$ACTION_REMOVEOLD_FWIMAGE"
+	logmsg_info "Not purging old FW images because ACTION_REMOVEOLD_FWIMAGE=$ACTION_REMOVEOLD_FWIMAGE"
 fi
 
 RESULT_ACTION_DOWNLOAD_OSIMAGE=0
 if [ "$ACTION_DOWNLOAD_OSIMAGE" = yes ]; then
-        rm -f "$DOWNLOADROOT_OSIMAGE/.newest-osimage"
-        download_osimage $URL_DOWNLOAD_OSIMAGE
-        RESULT_ACTION_DOWNLOAD_OSIMAGE=$?
+	rm -f "$DOWNLOADROOT_OSIMAGE/.newest-osimage"
+	download_osimage $URL_DOWNLOAD_OSIMAGE
+	RESULT_ACTION_DOWNLOAD_OSIMAGE=$?
 
-        # If there was indeed a successful download, we have code=42 from the
-        # routine; however the script succeeded - so overall exitcode stays 0
-        if [ "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -gt 0 -a "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -ne 42 ] ; then
-            ACTION_RESULT=$RESULT_ACTION_DOWNLOAD_OSIMAGE && \
-            if [ "$ACTION_REMOVEOLD_OSIMAGE" = yes ] ; then
-                logmsg_warn "New OS image was not downloaded successfully, so old ones are not purged"
-                ACTION_REMOVEOLD_OSIMAGE=no_BadDownload
-            fi
-        else
-            [ -s "$DOWNLOADROOT_OSIMAGE/.newest-osimage" ] && \
-                DOWNLOADED_OS_IMAGE="`cat "$DOWNLOADROOT_OSIMAGE/.newest-osimage"`" || \
-                DOWNLOADED_OS_IMAGE=""
-        fi
+	# If there was indeed a successful download, we have code=42 from the
+	# routine; however the script succeeded - so overall exitcode stays 0
+	if [ "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -gt 0 -a "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -ne 42 ] ; then
+		ACTION_RESULT=$RESULT_ACTION_DOWNLOAD_OSIMAGE && \
+		if [ "$ACTION_REMOVEOLD_OSIMAGE" = yes ] ; then
+			logmsg_warn "New OS image was not downloaded successfully, so old ones are not purged"
+			ACTION_REMOVEOLD_OSIMAGE=no_BadDownload
+		fi
+	else
+		[ -s "$DOWNLOADROOT_OSIMAGE/.newest-osimage" ] && \
+			DOWNLOADED_OS_IMAGE="`cat "$DOWNLOADROOT_OSIMAGE/.newest-osimage"`" || \
+			DOWNLOADED_OS_IMAGE=""
+	fi
 fi
 
 case "$FLAG_ERASE_FACTORYRESET" in
