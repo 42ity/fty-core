@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#   Copyright (c) 2014-2015 Eaton
+#   Copyright (c) 2014-2016 Eaton
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -19,17 +19,36 @@
 #! \file   reset-button.sh
 #  \brief  Simple button handling script to provide reset and factory reset features.
 #  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 
-RESET_DOWN="AQBUAAEAAAA="
-RESET_UP="AQBUAAAAAAA="
 EVENT_IN="/dev/input/event0"
 
-log() {
-    echo "$1" >&2
-    logger -p daemon.notice "$1"
-}
+# The one button this service is currently interested in
+RESET_DOWN="AQBUAAEAAAA="
+RESET_UP="AQBUAAAAAAA="
 
+# Seconds of consecutive keypress to cause factory-reset
 [ -n "$LONG_PRESS_TIME" ] || LONG_PRESS_TIME=5
+
+# Other buttons, not currently used by this daemon
+BACK_DOWN="AQABAAEAAAA="
+BACK_UP="AQABAAAAAAA="
+BTNOK_DOWN="AQAcAAEAAAA="
+BTNOK_UP="AQAcAAAAAAA="
+ARROWUP_DOWN="AQBIAAEAAAA="
+ARROWUP_UP="AQBIAAAAAAA="
+ARROWDOWN_DOWN="AQBQAAEAAAA="
+ARROWDOWN_UP="AQBQAAAAAAA="
+
+log() {
+    if [ "$1" = "-c" ]; then
+        shift
+#        [ -c /dev/kmsg ] && \
+        echo "$1" > /dev/kmsg
+    fi
+    echo "$1" >&2
+    logger -p daemon.crit "$1"
+}
 
 if [ ! -r "$EVENT_IN" ]; then
     log "Event input device $EVENT_IN is not available, aborting service!"
@@ -38,29 +57,42 @@ if [ ! -r "$EVENT_IN" ]; then
     exit 127
 fi
 
+log "Begin monitoring Event input device $EVENT_IN for button presses"
 while true; do
     key="`head -c 16 "$EVENT_IN" | tail -c 8 | base64`"
+    NOW_S="`date -u +%s`"
+    NOW="`date -d @${NOW_S}`"
+    BTN=""
+    for B in ARROWUP ARROWDOWN BTNOK BACK; do for S in DOWN UP; do
+        eval BTNSTR='$'"${B}_${S}" 2>/dev/null || true
+        if [ "$BTNSTR" = "$key" ]; then
+            BTN="${B}_${S}"
+            [ "$S" = "DOWN" ] && echo "[@$NOW_S] $NOW: User pressed $B" || echo "[@$NOW_S] $NOW: User released $B"
+            break
+        fi
+    done; done
+
     case "$key" in
     "$RESET_DOWN")
-        echo "Asked for factory reset"
-        RESET_ST="`date -u +%s`"
+        log -c "$NOW: User asked for a reboot or factory reset (if held pressed longer than $LONG_PRESS_TIME seconds)"
+        RESET_ST="$NOW_S"
         ;;
     "$RESET_UP")
         echo "Checking time interval"
-        RESET_END="`date -u +%s`"
+        RESET_END="$NOW_S"
         [ -n "$RESET_ST" ] || continue
         RESET_REAL_TIME="`expr $RESET_END - $RESET_ST`"
         if [ "$RESET_REAL_TIME" -gt "$LONG_PRESS_TIME" ]; then
-            log "Long reset button press - doing factory reset"
+            log -c "$NOW: Long reset button press - doing factory reset"
             touch /mnt/nand/factory_reset
         else
-            log "Short reset button press - doing normal reset"
+            log -c "$NOW: Short reset button press - doing normal reset"
         fi
         reboot
         RESET_ST=""
         ;;
     *)
-        echo "Unhandled command $key"
+        echo "Unhandled event $key $BTN"
         ;;
     esac
 done
