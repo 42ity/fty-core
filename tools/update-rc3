@@ -1616,6 +1616,7 @@ if [ "$ACTION_DOWNLOAD_FWIMAGE" = yes ]; then
 	RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES=$?
 
 	[ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT" -gt 0 ] && \
+	[ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT" -ne 42 ] && \
 		ACTION_RESULT=$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT && \
 		if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] ; then
 			logmsg_warn "New u-Boot image was not downloaded successfully, so old ones are not purged"
@@ -1623,6 +1624,7 @@ if [ "$ACTION_DOWNLOAD_FWIMAGE" = yes ]; then
 		fi
 
 	[ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE" -gt 0 ] && \
+	[ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE" -ne 42 ] && \
 		ACTION_RESULT=$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE && \
 		if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] ; then
 			logmsg_warn "New kernel uImage was not downloaded successfully, so old ones are not purged"
@@ -1630,6 +1632,7 @@ if [ "$ACTION_DOWNLOAD_FWIMAGE" = yes ]; then
 		fi
 
 	[ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES" -gt 0 ] && \
+	[ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES" -ne 42 ] && \
 		ACTION_RESULT=$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES && \
 		if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] ; then
 			logmsg_warn "New modules archive was not downloaded successfully, so old ones are not purged"
@@ -1737,16 +1740,17 @@ time sync || true
 
 ACTION_RESULT_STR="seek errors above"
 case "$ACTION_RESULT" in
-	42)	ACTION_RESULT_STR="new files were available"
+	0|42)	ACTION_RESULT_STR="new files were available"
+		[ "$ACTION_RESULT" = 0 ] && ACTION_RESULT_STR="no $ACTION_RESULT_STR"
 		if [ "$RESULT_ACTION_DOWNLOAD_OSIMAGE" = 42 ] \
 		|| [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT" = 42 ] \
 		|| [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE" = 42 ] \
 		|| [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES" = 42 ] \
 		; then
+			ACTION_RESULT=42
 			ACTION_RESULT_STR="new files were downloaded successfully, you can reboot now to apply the updates"
 		fi
 		;;
-	0)	ACTION_RESULT_STR="no new files were available" ;;
 esac
 
 logmsg_info "Completed '$_SCRIPT_NAME $_SCRIPT_ARGS' with result $ACTION_RESULT ($ACTION_RESULT_STR)"
