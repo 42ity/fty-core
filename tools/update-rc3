@@ -1735,5 +1735,19 @@ fi
 logmsg_info "Syncing to ensure all writes are done..."
 time sync || true
 
-logmsg_info "Completed '$_SCRIPT_NAME $_SCRIPT_ARGS' with result $ACTION_RESULT"
+ACTION_RESULT_STR="seek errors above"
+case "$ACTION_RESULT" in
+	42)	ACTION_RESULT_STR="new files were available"
+		if [ "$RESULT_ACTION_DOWNLOAD_OSIMAGE" = 42 ] \
+		|| [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT" = 42 ] \
+		|| [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE" = 42 ] \
+		|| [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES" = 42 ] \
+		; then
+			ACTION_RESULT_STR="new files were downloaded successfully, you can reboot now to apply the updates"
+		fi
+		;;
+	0)	ACTION_RESULT_STR="no new files were available" ;;
+esac
+
+logmsg_info "Completed '$_SCRIPT_NAME $_SCRIPT_ARGS' with result $ACTION_RESULT ($ACTION_RESULT_STR)"
 exit $ACTION_RESULT
