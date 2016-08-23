@@ -301,6 +301,7 @@ UserInfo user;
         checked_operation = std::move (operation);
         checked_service_name = std::move (service_name);
     }
+    log_info ("service_name: %s", checked_service_name.c_str());
 
     if ( request.getMethod() == "GET" ) {
         if ( checked_operation == "list" ) {
