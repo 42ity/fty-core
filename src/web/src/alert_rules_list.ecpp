@@ -29,55 +29,47 @@
 #include <malamute.h>
 #include <sys/types.h>
 #include <sys/syscall.h>
-
 #include "log.h"
 #include "utils_web.h"
 #include "str_defs.h"
 #include "helpers.h"
-
 </%pre>
-<%args>
-std::string type;
-std::string rule_class;
-</%args>
 <%request scope="global">
 UserInfo user;
 </%request>
 <%cpp>
-std::string checked_type;
-std::string checked_rule_class;
-{
+
     // check user permissions
     static const std::map <BiosProfile, std::string> PERMISSIONS = {
-            {BiosProfile::Dashboard, "R"},
-            {BiosProfile::Admin,     "R"}
-            };
+        {BiosProfile::Dashboard, "R"},
+        {BiosProfile::Admin,     "R"}
+    };
     CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
 
-    // sanity check
-    if (!request.isMethodGET ())
-        http_die ("method-not-allowed", request.getMethod ().c_str ());
+    std::string checked_type;
+    std::string checked_rule_class;
+    {
+        std::string type = qparam.param("type");
+        std::string rule_class = qparam.param("rule_class");
 
-    // type
-    if (type.empty ()) {
-        type = "all";
-    }
-    if (type != "threshold" && type != "single" && type != "pattern" && type != "all") { // unknown parameter 'type'
-        http_die ("request-param-bad", "type", std::string ("'").append (type).append ("'").c_str (),
-                  "one of the following values [ 'threshold', 'single', 'pattern', 'all' ] or empty");
-    }
-    checked_type = type;
+        // type
+        if (type.empty ()) {
+            type = "all";
+        }
+        if (type != "threshold" && type != "single" && type != "pattern" && type != "all") { // unknown parameter 'type'
+            http_die ("request-param-bad", "type", std::string ("'").append (type).append ("'").c_str (),
+                    "one of the following values ['threshold', 'single', 'pattern', 'all']");
+        }
+        checked_type = type;
 
-    // rule_class
-    http_errors_t errors;
-    if (check_regex_text ("rule_class", rule_class, "^.{0,100}$", errors)) {
-        checked_rule_class = rule_class;
-    } else {
-        http_die_error (errors);
+        // rule_class
+        http_errors_t errors;
+        if (check_regex_text ("rule_class", rule_class, "^.{0,100}$", errors)) {
+            checked_rule_class = rule_class;
+        } else {
+            http_die_error (errors);
+        }
     }
-}
-#define type TAINTED
-#define rule_class TAINTED
 
 // connect to malamute
 mlm_client_t *client = mlm_client_new ();
