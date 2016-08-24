@@ -32,13 +32,8 @@ UserInfo user;
 </%request>
 <%cpp>
 
-    // check user permissions
-    static const std::map <BiosProfile, std::string> PERMISSIONS = {
-            {BiosProfile::Anonymous, "CRUDE"},
-            {BiosProfile::Dashboard, "CRUDE"},
-            {BiosProfile::Admin,     "CRUDE"}
-            };
-    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
+    // check user permissions is intentionally removed, as this part should be
+    // checked for any USER any URL and any METHOD
 
     const std::string url =  request.getUrl();
     const std::string meth = request.getMethod ();
