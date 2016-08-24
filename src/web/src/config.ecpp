@@ -134,8 +134,8 @@ UserInfo user;
         {
             std::string key = qparam.param ("key");
             if (!key_format.match (key)) {
-                std::string errmsg = "key doesn't satisfy format " + key_format_string;
-                http_die ("request-param-bad", errmsg.c_str() );
+                std::string msg = "satisfy format " + key_format_string;
+                http_die ("request-param-bad", "key", key.c_str(), msg.c_str() );
             }
             checked_key = std::move (key);
         } // end sanity check
