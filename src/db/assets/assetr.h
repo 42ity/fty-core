@@ -70,6 +70,7 @@ struct db_web_element_t{
     std::map <a_elmnt_id_t, std::string> groups;
     std::vector <db_tmp_link_t> powers;
     std::map <std::string, std::pair<std::string, bool> > ext;
+    std::vector <std::pair <a_elmnt_id_t, std::string>> parents;        // list of parents (id, name)
 };
 
 

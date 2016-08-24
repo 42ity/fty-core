@@ -40,6 +40,13 @@
 
 #include "asset_general.h"
 
+static std::vector<std::pair <a_elmnt_id_t, std::string>>
+s_get_parents (tntdb::Connection &conn)
+{
+    return {{1, "DC007"}, {2, "Room007"}, {3, "Row007"}, {4, "Rack007"}};
+}
+
+
 db_reply <db_web_element_t>
     asset_manager::get_item1
         (uint32_t id)
@@ -112,6 +119,11 @@ db_reply <db_web_element_t>
             log_debug ("    4/4 no errors");
             ret.item.powers = powers.item;
         }
+
+        // parents select
+        log_debug ("5/4 parents select");
+        ret.item.parents = s_get_parents (conn);
+        log_debug ("     5/4 no errors");
 
         ret.status = 1;
         return ret;
