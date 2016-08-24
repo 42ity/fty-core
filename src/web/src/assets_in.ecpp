@@ -120,7 +120,7 @@ UserInfo user;
             for( const auto &it : items ) {
                 a_elmnt_stp_id_t type_id = persist::type_to_typeid(it);
                 if ( type_id == persist::asset_type::TUNKNOWN ) {
-                    http_die ("request-param-bad", "type", it.c_str(), "valid sub_type like datacenter");
+                    http_die ("request-param-bad", "type", it.c_str(), "valid type like datacenter, room, etc...");
                 }
                 checked_types.push_back(type_id);
             }

@@ -122,7 +122,11 @@ UserInfo user;
     if (checked_relative.empty ()) {
         // check both start_ts and end_ts
         if (checked_start_ts.empty ()) {
-            http_die ("request-param-required", "start_ts");
+            // The message looks strange, but both 'relative' and 'start_ts'
+            // parameters are empty here!
+            // possible compinations:
+            //      ( relative != "" ) XOR ( start_ts != "" AND end_ts != "" )
+            http_die ("request-param-required", "start_ts or relative");
         }
         st = datetime_to_calendar (checked_start_ts.c_str ());
         if (st == -1) {
