@@ -64,7 +64,7 @@ std::string checked_rule_class;
     }
     if (type != "threshold" && type != "single" && type != "pattern" && type != "all") { // unknown parameter 'type'
         http_die ("request-param-bad", "type", std::string ("'").append (type).append ("'").c_str (),
-                  "one of the following values [ 'threshold', 'single', 'pattern', 'all' ] or empty");
+                  "one of the following values ['threshold', 'single', 'pattern', 'all']");
     }
     checked_type = type;
 
