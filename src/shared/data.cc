@@ -41,11 +41,42 @@
 #include "asset_general.h"
 
 static std::vector<std::pair <a_elmnt_id_t, std::string>>
-s_get_parents (tntdb::Connection &conn)
+s_get_parents (tntdb::Connection &conn, a_elmnt_id_t id)
 {
-    return {{1, "DC007"}, {2, "Room007"}, {3, "Row007"}, {4, "Rack007"}};
-}
 
+    std::vector<std::pair <a_elmnt_id_t, std::string>> ret {};
+
+    std::function<void(const tntdb::Row&)> cb = \
+        [&ret, &NAMES](const tntdb::Row &row) {
+
+            // C++ is c r a z y!! Having static initializer in lambda function made
+            // my life easier here, but I did not expected this will work!!
+            static const std::vector <std::pair <std::string, std::string>> NAMES = {\
+                {"id_parent1", "parent_name1"},
+                {"id_parent2", "parent_name2"},
+                {"id_parent3", "parent_name3"},
+                {"id_parent4", "parent_name4"},
+                {"id_parent5", "parent_name5"},
+            };
+
+            for (const auto& it: NAMES) {
+                a_elmnt_id_t id;
+                row [it.first].get (id);
+                std::string name;
+                row [it.second].get (name);
+                if (!name.empty ())
+                    ret.push_back (std::make_pair (id, name));
+            }
+    };
+
+    int r = persist::select_asset_element_super_parent (conn, id, cb);
+    if (r == -1) {
+        log_error ("select_asset_element_super_parent failed");
+        throw std::runtime_error ("persist::select_asset_element_super_parent () failed.");
+    }
+
+    return ret;
+}
 
 db_reply <db_web_element_t>
     asset_manager::get_item1
@@ -122,7 +153,7 @@ db_reply <db_web_element_t>
 
         // parents select
         log_debug ("5/4 parents select");
-        ret.item.parents = s_get_parents (conn);
+        ret.item.parents = s_get_parents (conn, id);
         log_debug ("     5/4 no errors");
 
         ret.status = 1;
