@@ -47,7 +47,7 @@ s_get_parents (tntdb::Connection &conn, a_elmnt_id_t id)
     std::vector<std::pair <a_elmnt_id_t, std::string>> ret {};
 
     std::function<void(const tntdb::Row&)> cb = \
-        [&ret, &NAMES](const tntdb::Row &row) {
+        [&ret](const tntdb::Row &row) {
 
             // C++ is c r a z y!! Having static initializer in lambda function made
             // my life easier here, but I did not expected this will work!!
