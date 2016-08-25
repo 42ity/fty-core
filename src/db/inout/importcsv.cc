@@ -195,7 +195,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     auto name = cm.get(row_i, "name");
     log_debug ("name = '%s'", name.c_str());
     if ( !is_ok_name(name.c_str()) ) {
-        bios_throw("request-param-bad", "name", name.empty() ? "<empty>" : name.c_str(), "<unique and non empty value>");
+        bios_throw("request-param-bad", "name", name.empty() ? "<empty>" : name.c_str(), "<unique, non empty and not number value>");
     }
     unused_columns.erase("name");
 
