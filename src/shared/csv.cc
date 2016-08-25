@@ -477,6 +477,10 @@ s_read_si(
         if ( name == "power_devices_in_uri" ) {
             continue;
         }
+        // BIOS-1101
+        if (name == "parents" ) {
+            continue;
+        }
 
         if ( name == "powers" ) {
             process_powers_key (si.getMember("powers"), data);
