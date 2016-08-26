@@ -90,7 +90,7 @@ useradd -m bios -N -g bios-infra -G dialout -s /bin/bash
 mkdir -p /home/bios && chown bios:bios-infra /home/bios
 
 # add an access to sasl, adm (for /var/log/messages) and systemd journal
-useradd -m admin -G "${SASL_GROUP}" -G adm -G systemd-journal -N -g bios-admin -s /bin/bash
+useradd -m admin -G "${SASL_GROUP}",adm,systemd-journal -N -g bios-admin -s /bin/bash
 passwd admin <<EOF
 admin
 admin
