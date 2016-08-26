@@ -7,7 +7,8 @@ mysql_DATA	= initdb.sql \
 			0002_v_web_element_view.sql \
 			0003_device_type_extension.sql \
 			0004_ext_cascade.sql \
-			0005_super_parent_names.sql
+			0005_super_parent_names.sql \
+			0006_super_parent_names.sql
 
 mysqlexdir	= $(datadir)/@PACKAGE@/examples/sql/mysql
 mysqlex_DATA	= \
