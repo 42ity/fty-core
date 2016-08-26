@@ -40,32 +40,41 @@
 
 #include "asset_general.h"
 
-static std::vector<std::pair <a_elmnt_id_t, std::string>>
+static std::vector<std::tuple <a_elmnt_id_t, std::string, std::string, std::string>>
 s_get_parents (tntdb::Connection &conn, a_elmnt_id_t id)
 {
 
-    std::vector<std::pair <a_elmnt_id_t, std::string>> ret {};
+    std::vector<std::tuple <a_elmnt_id_t, std::string, std::string, std::string>> ret {};
 
     std::function<void(const tntdb::Row&)> cb = \
         [&ret](const tntdb::Row &row) {
 
             // C++ is c r a z y!! Having static initializer in lambda function made
             // my life easier here, but I did not expected this will work!!
-            static const std::vector <std::pair <std::string, std::string>> NAMES = {\
-                {"id_parent1", "parent_name1"},
-                {"id_parent2", "parent_name2"},
-                {"id_parent3", "parent_name3"},
-                {"id_parent4", "parent_name4"},
-                {"id_parent5", "parent_name5"},
+            static const std::vector <std::tuple <std::string, std::string, std::string, std::string>> NAMES = {\
+                std::make_tuple ("id_parent1", "parent_name1", "id_type_parent1", "id_subtype_parent1"),
+                std::make_tuple ("id_parent2", "parent_name2", "id_type_parent2", "id_subtype_parent2"),
+                std::make_tuple ("id_parent3", "parent_name3", "id_type_parent3", "id_subtype_parent3"),
+                std::make_tuple ("id_parent4", "parent_name4", "id_type_parent4", "id_subtype_parent4"),
+                std::make_tuple ("id_parent5", "parent_name5", "id_type_parent5", "id_subtype_parent5"),
             };
 
             for (const auto& it: NAMES) {
-                a_elmnt_id_t id;
-                row [it.first].get (id);
+                a_elmnt_id_t id = 0;
+                row [std::get<0> (it)].get (id);
                 std::string name;
-                row [it.second].get (name);
+                row [std::get<1> (it)].get (name);
+                a_elmnt_tp_id_t id_type = 0;
+                row [std::get<2> (it)].get (id_type);
+                a_elmnt_stp_id_t id_subtype = 0;
+                row [std::get<3> (it)].get (id_subtype);
                 if (!name.empty ())
-                    ret.push_back (std::make_pair (id, name));
+                    ret.push_back (std::make_tuple (
+                        id,
+                        name,
+                        persist::typeid_to_type (id_type),
+                        persist::subtypeid_to_subtype (id_subtype)
+                    ));
             }
     };
 

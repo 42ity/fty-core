@@ -335,7 +335,12 @@ else {
 %size_t i = 1;
 %for (const auto& it: tmp.item.parents) {
 %   char comma = i != tmp.item.parents.size () ? ',' : ' ';
-    { "id" : <$$ it.first $>, "name" : "<$$ it.second $>" }<$$ comma $>
+    {
+        "id" : <$$ std::get<0> (it) $>,
+        "name" : "<$$ std::get<1> (it) $>",
+        "type" : "<$$ std::get<2> (it) $>",
+        "sub_type" : "<$$ std::get<3> (it) $>"
+    }<$$ comma $>
 %   i++;
 %}
 ]
