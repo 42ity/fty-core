@@ -263,13 +263,14 @@ UserInfo user;
         if ( get_operations.count(operation) == 0 && post_operations.count(operation) == 0 ) {
             http_die ("request-param-bad", "operation", operation.c_str(), "status/list/enable/disable/start/stop/restart");
         }
-
-        if ( request.getMethod() == "GET"  && ( get_operations.count (checked_operation) == 0 ) )  {
-            http_die ("request-param-bad", "operation", checked_operation.c_str(), "operation allowed for GET method");
+        log_debug ("%d", get_operations.count (checked_operation) );
+        if ( request.getMethod() == "GET"  && ( get_operations.count (operation) == 0 ) )  {
+            http_die ("request-param-bad", "operation", operation.c_str(), "operation allowed for GET method");
         }
-        if ( request.getMethod() == "POST" && ( post_operations.count (checked_operation) == 0 ) ) {
-            http_die ("request-param-bad", "operation", checked_operation.c_str(), "operation allowed for POST method");
+        if ( request.getMethod() == "POST" && ( post_operations.count (operation) == 0 ) ) {
+            http_die ("request-param-bad", "operation", operation.c_str(), "operation allowed for POST method");
         }
+        checked_operation = std::move (operation);
 
         // get user-input
         std::string service_name;
@@ -306,7 +307,6 @@ UserInfo user;
         if ( ( checked_operation != "list" ) && !service_name_valid (service_name.c_str ()) ) {
             http_die ("request-param-bad", "service_name", service_name.c_str(), "one of service names that can be obtained through systemctl/list call");
         }
-        checked_operation = std::move (operation);
         checked_service_name = std::move (service_name);
     }
     log_info ("service_name: %s", checked_service_name.c_str());
