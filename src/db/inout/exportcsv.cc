@@ -149,7 +149,7 @@ void
     std::vector<std::string> KEYTAGS = {
         "description", "ip.1", "company", "site_name", "region", "country", "address",
         "contact_name", "contact_email", "contact_phone", "maximum_number_racks", "u_size",
-        "manufacturer", "model", "serial_no", "runtime", "phase", "installation_date",
+        "manufacturer", "model", "serial_no", "runtime", "installation_date",
         "maintenance_date", "maintenance_due", "service_contact_name", "service_contact_mail",
         "service_contact_phone", "location_front_pos", "location_rear_pos", "location_u_pos",
         "location_w_pos", "location_d_pos", "end_warranty_date", "battery_type",
