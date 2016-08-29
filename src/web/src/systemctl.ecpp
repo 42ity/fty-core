@@ -293,10 +293,10 @@ UserInfo user;
         std::transform (service_name.begin(), service_name.end(), service_name.begin(), ::tolower);
 
         if ( get_operations.count(operation) == 0 && post_operations.count(operation) == 0 ) {
-            http_die ("request-param-bad", "operation");
+            http_die ("request-param-bad", "operation", operation.c_str(), "status/list/enable/disable/start/stop/restart");
         }
-        if ( !service_name_valid (service_name.c_str ()) ) {
-            http_die ("request-param-bad", "service_name");
+        if ( ( checked_operation != "list" ) && !service_name_valid (service_name.c_str ()) ) {
+            http_die ("request-param-bad", "service_name", service_name.c_str(), "one of service names that can be obtained through systemctl/list call");
         }
         checked_operation = std::move (operation);
         checked_service_name = std::move (service_name);
