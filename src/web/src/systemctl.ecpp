@@ -263,7 +263,7 @@ UserInfo user;
         if ( get_operations.count(operation) == 0 && post_operations.count(operation) == 0 ) {
             http_die ("request-param-bad", "operation", operation.c_str(), "status/list/enable/disable/start/stop/restart");
         }
-        log_debug ("%d", get_operations.count (checked_operation) );
+        log_debug ("%zu", get_operations.count (checked_operation) );
         if ( request.getMethod() == "GET"  && ( get_operations.count (operation) == 0 ) )  {
             http_die ("request-param-bad", "operation", operation.c_str(), "operation allowed for GET method");
         }
