@@ -151,8 +151,7 @@ void
         "contact_name", "contact_email", "contact_phone", "maximum_number_racks", "u_size",
         "manufacturer", "model", "serial_no", "runtime", "installation_date",
         "maintenance_date", "maintenance_due", "service_contact_name",
-        "location_front_pos", "location_rear_pos", "location_u_pos",
-        "location_w_pos", "location_d_pos", "end_warranty_date", "battery_type",
+        "location_u_pos", "location_w_pos", "end_warranty_date", "battery_type",
         "battery_installation_date", "battery_maintenance_date", "hostname.1", "http_link.1"
     };
 
