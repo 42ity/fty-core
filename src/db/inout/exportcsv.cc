@@ -148,7 +148,7 @@ void
     // TODO: move somewhere else
     std::vector<std::string> KEYTAGS = {
         "description", "ip.1", "company", "site_name", "region", "country", "address",
-        "contact_name", "contact_email", "contact_phone", "maximum_number_racks", "u_size",
+        "contact_name", "contact_email", "contact_phone", "u_size",
         "manufacturer", "model", "serial_no", "runtime", "installation_date",
         "maintenance_date", "maintenance_due", "service_contact_name",
         "location_u_pos", "location_w_pos", "end_warranty_date", "battery_type",
