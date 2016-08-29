@@ -151,8 +151,7 @@ void
         "contact_name", "contact_email", "contact_phone", "u_size",
         "manufacturer", "model", "serial_no", "runtime", "installation_date",
         "maintenance_date", "maintenance_due", "service_contact_name",
-        "location_u_pos", "location_w_pos", "end_warranty_date", "battery_type",
-        "battery_installation_date", "battery_maintenance_date", "hostname.1", "http_link.1"
+        "location_u_pos", "location_w_pos", "end_warranty_date", "hostname.1", "http_link.1"
     };
 
     uint32_t max_power_links = max_number_of_power_links(conn);
