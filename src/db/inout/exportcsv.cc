@@ -148,12 +148,10 @@ void
     // TODO: move somewhere else
     std::vector<std::string> KEYTAGS = {
         "description", "ip.1", "company", "site_name", "region", "country", "address",
-        "contact_name", "contact_email", "contact_phone", "maximum_number_racks", "u_size",
-        "manufacturer", "model", "serial_no", "runtime", "phase", "installation_date",
-        "maintenance_date", "maintenance_due", "service_contact_name", "service_contact_mail",
-        "service_contact_phone", "location_front_pos", "location_rear_pos", "location_u_pos",
-        "location_w_pos", "location_d_pos", "end_warranty_date", "battery_type",
-        "battery_installation_date", "battery_maintenance_date", "hostname.1", "http_link.1"
+        "contact_name", "contact_email", "contact_phone", "u_size",
+        "manufacturer", "model", "serial_no", "runtime", "installation_date",
+        "maintenance_date", "maintenance_due",
+        "location_u_pos", "location_w_pos", "end_warranty_date", "hostname.1", "http_link.1"
     };
 
     uint32_t max_power_links = max_number_of_power_links(conn);
