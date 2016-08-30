@@ -256,9 +256,24 @@ UserInfo user;
     std::string checked_service_name;
     // sanity checks
     {
+        // get user-input
         std::string operation = request.getArg("operation");
-        std::string service_name;
+        // convert to lower case; 'admin/systemctl/list' request is equivalent to 'admin/systemctl/LIST' request
+        std::transform (operation.begin(), operation.end(), operation.begin(), ::tolower);
+        if ( get_operations.count(operation) == 0 && post_operations.count(operation) == 0 ) {
+            http_die ("request-param-bad", "operation", operation.c_str(), "status/list/enable/disable/start/stop/restart");
+        }
+        log_debug ("%zu", get_operations.count (checked_operation) );
+        if ( request.getMethod() == "GET"  && ( get_operations.count (operation) == 0 ) )  {
+            http_die ("request-param-bad", "operation", operation.c_str(), "operation allowed for GET method");
+        }
+        if ( request.getMethod() == "POST" && ( post_operations.count (operation) == 0 ) ) {
+            http_die ("request-param-bad", "operation", operation.c_str(), "operation allowed for POST method");
+        }
+        checked_operation = std::move (operation);
 
+        // get user-input
+        std::string service_name;
         if ( request.getMethod() == "POST" ) {
             if ( request.getBody().empty() ) {
                 http_die("bad-request-document", "Expected json document  { \"service_name\" : \"<service_name>\" }. Received empty request document.");
@@ -288,17 +303,10 @@ UserInfo user;
         } else {
             service_name = request.getArg("service_name");
         }
-        // convert to lower case; 'admin/systemctl/list' request is equivalent to 'admin/systemctl/LIST' request
-        std::transform (operation.begin(), operation.end(), operation.begin(), ::tolower);
         std::transform (service_name.begin(), service_name.end(), service_name.begin(), ::tolower);
-
-        if ( get_operations.count(operation) == 0 && post_operations.count(operation) == 0 ) {
-            http_die ("request-param-bad", "operation", operation.c_str(), "status/list/enable/disable/start/stop/restart");
-        }
         if ( ( checked_operation != "list" ) && !service_name_valid (service_name.c_str ()) ) {
             http_die ("request-param-bad", "service_name", service_name.c_str(), "one of service names that can be obtained through systemctl/list call");
         }
-        checked_operation = std::move (operation);
         checked_service_name = std::move (service_name);
     }
     log_info ("service_name: %s", checked_service_name.c_str());
@@ -310,15 +318,10 @@ UserInfo user;
         else if ( checked_operation == "status" ) {
             return process_get_status (reply, checked_service_name);
         }
-        http_die ("request-param-bad", "operation", checked_operation.c_str(), "operation allowed for GET method");
     }
     if ( request.getMethod() == "POST" ) {
-        if ( post_operations.count (checked_operation) != 0 ) {
-            return process_post (reply, checked_operation, checked_service_name);
-        }
-        http_die ("request-param-bad", "operation", checked_operation.c_str(), "operation allowed for POST method");
+        return process_post (reply, checked_operation, checked_service_name);
     }
-    http_die("method-not-allowed", request.getMethod().c_str() );
 }
 </%cpp>
 
