@@ -150,7 +150,7 @@ void
         "description", "ip.1", "company", "site_name", "region", "country", "address",
         "contact_name", "contact_email", "contact_phone", "u_size",
         "manufacturer", "model", "serial_no", "runtime", "installation_date",
-        "maintenance_date", "maintenance_due", "service_contact_name",
+        "maintenance_date", "maintenance_due",
         "location_u_pos", "location_w_pos", "end_warranty_date", "hostname.1", "http_link.1"
     };
 
