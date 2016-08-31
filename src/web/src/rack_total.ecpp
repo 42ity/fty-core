@@ -154,7 +154,6 @@ UserInfo user;
 <%cpp>
     // an example of macro usage
     static const std::map <BiosProfile, std::string> PERMISSIONS = {
-            {BiosProfile::Anonymous, "R"},
             {BiosProfile::Dashboard, "R"},
             {BiosProfile::Admin,     "R"}
             };
