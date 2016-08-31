@@ -184,13 +184,13 @@ UserInfo user;
             log_debug ("key='%s',value='%s'\n", key.c_str(), value.c_str());
             // There are some restrictions regarding format
             if (!key_format.match (key)) {
-                std::string errmsg = "key doesn't satisfy format " + key_format_string;
-                http_die ("request-param-bad", errmsg.c_str() );
+                std::string msg = "satisfy format " + key_format_string;
+                http_die ("request-param-bad", "key", key.c_str(), msg.c_str() );
             }
             // There are some restrictions regarding format
             if (!value_format.match (value)) {
-                std::string errmsg = "value doesn't satisfy format " + value_format_string;
-                http_die ("request-param-bad", errmsg.c_str() );
+                std::string msg = "satisfy format " + value_format_string;
+                http_die ("request-param-bad", "value", value.c_str(), msg.c_str() );
             }
             checked_key = std::move (key);
             checked_value = std::move (value);
