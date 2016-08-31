@@ -74,7 +74,7 @@ catch (const std::logic_error &e) {
     LOG_END_ABNORMAL(e);
     if (!path_p.empty())
         ::unlink(path_p.c_str());
-    http_die("request-param-bad", e.what());
+    http_die("bad-request-document", e.what());
 }
 catch (const std::runtime_error &e) {
     LOG_END_ABNORMAL(e);
@@ -86,7 +86,7 @@ catch (const std::exception &e) {
     LOG_END_ABNORMAL(e);
     if (!path_p.empty())
         ::unlink(path_p.c_str());
-    http_die("internal-error");
+    http_die("internal-error", e.what());
 }
 
 try{
@@ -141,6 +141,6 @@ catch (const std::exception &e) {
     LOG_END_ABNORMAL(e);
     if (!path_p.empty())
         ::unlink(path_p.c_str());
-    http_die("internal-error");
+    http_die("internal-error", e.what());
 }
 </%cpp>
