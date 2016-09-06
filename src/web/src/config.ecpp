@@ -93,8 +93,8 @@ UserInfo user;
     CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
 
     // key restrictions
-    std::string key_format_string = "^[.-_a-zA-Z0-9]+$";
-    std::string value_format_string = "^[.-_@#a-zA-Z0-9]*$";
+    std::string key_format_string = "^[-._a-zA-Z0-9]+$";
+    std::string value_format_string = "^[-._@#a-zA-Z0-9]*$";
     cxxtools::Regex key_format(key_format_string);
     cxxtools::Regex value_format(value_format_string);
 
