@@ -94,7 +94,7 @@ UserInfo user;
 
     // key restrictions
     std::string key_format_string = "^[-._a-zA-Z0-9]+$";
-    std::string value_format_string = "^[-._@#a-zA-Z0-9]*$";
+    std::string value_format_string = "^[[:alnum:][:punct:]]*$";
     cxxtools::Regex key_format(key_format_string);
     cxxtools::Regex value_format(value_format_string);
 

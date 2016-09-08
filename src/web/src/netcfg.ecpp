@@ -93,7 +93,7 @@ std::string checked_iface;
     if (iface.empty ()) {
         http_die ("request-param-required", "iface");
     }
-    check_regex_text_or_die ("iface", iface, checked_iface, "^[a-z][a-z0-9]{0,14}$");
+    check_regex_text_or_die ("iface", iface, checked_iface, "^[[:alpha:]][[:alnum:]]{0,14}$");
 }
 
 // Where is the tree reflecting the interface?
