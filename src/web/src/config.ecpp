@@ -66,7 +66,7 @@ void transform_for_json (std::string& string) {
 
 void transform_for_conf (std::string& string) {
     // This is not perfect but for the moment it's ok
-    replace_all (string, "\"", "");
+    replace_all (string, "\"", "\\\"");
     // <quote>A line ending with a backslash will be concatenated with the following one, allowing multiline variable definitions</quote>
     replace_all (string, "\n", "\\\n");
     // 1. empty string must be enclosed in ""
@@ -94,7 +94,7 @@ UserInfo user;
 
     // key restrictions
     std::string key_format_string = "^[-._a-zA-Z0-9]+$";
-    std::string value_format_string = "^[[:alnum:][:punct:]]*$";
+    std::string value_format_string = "^[[:blank:][:alnum:][:punct:]]*$";
     cxxtools::Regex key_format(key_format_string);
     cxxtools::Regex value_format(value_format_string);
 
@@ -217,7 +217,7 @@ UserInfo user;
                 std::string name_value;
                 it->getValue (name_value);
                 transform_for_conf (name_value);
-                foutput << name  << "=" << name_value  << "\n";
+                foutput << name  << "= \"" << name_value  << "\"\n";
             }
             foutput.flush ();
             foutput.close ();
