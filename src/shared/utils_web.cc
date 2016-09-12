@@ -91,7 +91,7 @@ std::string escape (const char *string) {
             after.append ("\\\\t");
         }
         else if (c == '\\') {
-            after.append ("\\\\\\");
+            after.append ("\\\\");
         }
         else if (static_cast<unsigned char>(c) >= 0x80 || static_cast<unsigned char>(c) < 0x20) {
             // Code below this comment is taken from
