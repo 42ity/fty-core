@@ -145,6 +145,8 @@ UserInfo user;
         }
         // key is found
         transform_for_json (value);
+        if (value == "\"\"")
+            value = "";
 </%cpp>
 {
     "config": {
