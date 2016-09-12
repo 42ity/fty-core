@@ -76,22 +76,22 @@ std::string escape (const char *string) {
             after.append ("\\\"");
         }
         else if (c =='\b') {
-            after.append ("\\\\b");
+            after.append ("\\b");
         }
         else if (c =='\f') {
-            after.append ("\\\\f");
+            after.append ("\\f");
         }
         else if (c == '\n') {
-            after.append ("\\\\n");
+            after.append ("\\n");
         }
         else if (c == '\r') {
-            after.append ("\\\\r");
+            after.append ("\\r");
         }
         else if (c == '\t') {
-            after.append ("\\\\t");
+            after.append ("\\t");
         }
         else if (c == '\\') {
-            after.append ("\\\\\\");
+            after.append ("\\\\");
         }
         else if (static_cast<unsigned char>(c) >= 0x80 || static_cast<unsigned char>(c) < 0x20) {
             // Code below this comment is taken from
