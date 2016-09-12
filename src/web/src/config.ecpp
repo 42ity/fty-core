@@ -149,7 +149,7 @@ UserInfo user;
 {
     "config": {
         "key" : "<$ checked_key $>",
-        "value" : "<$ value $>"
+        "value" : "<$$ value $>"
     }
 }
 <%cpp>
