@@ -62,6 +62,7 @@ void transform_for_json (std::string& string) {
     // <quote>A line ending with a backslash will be concatenated with the following one, allowing multiline variable definitions.</quote>
     // We need to revert this replacing each 2 consecutive characters '\' and '\n' in text with a single character '\n'
     replace_all (string, "\\\n", "\n");
+    replace_all (string, "\"", "\\\"");
 }
 
 void transform_for_conf (std::string& string) {
@@ -145,6 +146,8 @@ UserInfo user;
         }
         // key is found
         transform_for_json (value);
+        if (value == "\"\"")
+            value = "";
 </%cpp>
 {
     "config": {
