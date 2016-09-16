@@ -384,7 +384,7 @@ TEST_CASE ("subprocess-test-timeout2", "[subprocess][output]")
 // and e.g. for busybox applet we can not really set them for non-roots
 //    Argv args {"/bin/ping", "127.0.0.1"};
 //    Argv args {"/bin/cat", "/dev/urandom"};
-    Argv args {"/usr/bin/yes", "TEST"};
+    Argv args {"/usr/bin/yes", "T"};
     auto start = zclock_mono ();
     std::string o;
     std::string e;
