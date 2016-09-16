@@ -86,11 +86,6 @@ is_state_included (const char *request, const char *alert) {
 }
 
 </%pre>
-<%args>
-    std::string state;
-    std::string asset;
-    std::string recursive;
-</%args>
 <%request scope="global">
 UserInfo user;
 </%request>
@@ -103,62 +98,56 @@ UserInfo user;
             };
     CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
 
-// un-tainted request parameters
-std::string checked_state;
-std::string checked_asset;
-std::string checked_recursive;
-a_elmnt_id_t element_id = 0;
+    // sanity checks
+    std::string checked_state;
+    std::string checked_asset;
+    std::string checked_recursive;
+    a_elmnt_id_t element_id = 0;
 
-{
-// sanity check
-if (request.getMethod () != "GET") {
-    http_die ("method-not-allowed", request.getMethod ().c_str ());
-}
+    {
+        std::string state = qparam.param("state");
+        std::string asset = qparam.param("asset");
+        std::string recursive = qparam.param("recursive");
+        log_debug ("Request parameters - Initial tainted values received:\n\tstate = '%s'\n\tasset = '%s'\n\trecursive = '%s'\n",
+                state.c_str (), asset.c_str (), recursive.c_str ());
 
-log_debug ("Request parameters - Initial tainted values received:\n\tstate = '%s'\n\tasset = '%s'\n\trecursive = '%s'\n",
-            state.c_str (), asset.c_str (), recursive.c_str ());
+        // Check 'state' parameter
+        if (state.empty ()) {
+            state = "ALL-ACTIVE";
+        }
+        else
+            if (!is_requeststate (state.c_str ())) {
+                log_error ("state = '%s' is not a valid alert state.", state.c_str ());
+                http_die ("request-param-bad", "state", std::string ("value '").append (state).append ("'").c_str (),
+                        std::string ("one of the following values [ ALL | ALL-ACTIVE | ACTIVE | ACK-WIP | ACK-IGNORE | ACK-PAUSE | ACK-SILENCE | RESOLVED ]").c_str ());
+            }
 
-// Check 'state' parameter
-if (state.empty ()) {
-    state = "ALL-ACTIVE";
-}
-else
-if (!is_requeststate (state.c_str ())) {
-    log_error ("state = '%s' is not a valid alert state.", state.c_str ());
-    http_die ("request-param-bad", "state", std::string ("value '").append (state).append ("'").c_str (),
-        std::string ("one of the following values [ ALL | ALL-ACTIVE | ACTIVE | ACK-WIP | ACK-IGNORE | ACK-PAUSE | ACK-SILENCE | RESOLVED ]").c_str ());
-}
+        // Check 'recursive' parameter
+        if (recursive.empty ()) {
+            recursive = "false";
+        }
+        else
+            if (recursive.compare ("true") != 0 && recursive.compare ("false") != 0) {
+                log_error ("recursive = '%s' is not a valid value.", recursive.c_str ());
+                http_die ("request-param-bad", "recursive", std::string ("value '").append (state).append ("'").c_str (),
+                        std::string ("one of the following values [ true | false ]").c_str ());
+            }
 
-// Check 'recursive' parameter
-if (recursive.empty ()) {
-    recursive = "false";
-}
-else if (recursive.compare ("true") != 0 && recursive.compare ("false") != 0) {
-    log_error ("recursive = '%s' is not a valid value.", recursive.c_str ());
-    http_die ("request-param-bad", "recursive", std::string ("value '").append (state).append ("'").c_str (),
-        std::string ("one of the following values [ true | false ]").c_str ());
-}
+        if (!asset.empty ()) {
+            http_errors_t errors;
+            if (!check_element_identifier ("asset", asset, element_id, errors)) {
+                http_die_error (errors);
+            }
+        }
 
-if (!asset.empty ()) {
-    http_errors_t errors;
-    if (!check_element_identifier ("asset", asset, element_id, errors)) {
-        http_die_error (errors);
+        checked_state = state;
+        checked_asset = asset;
+        checked_recursive = recursive;
+
+        log_debug ("Request parameters - un-tainted values applied:\n"
+                "\tstate = '%s'\n\tasset = '%s'\n\trecursive = '%s'\n",
+                state.c_str (), asset.c_str (), recursive.c_str ());
     }
-}
-
-checked_state = state;
-checked_asset = asset;
-checked_recursive = recursive;
-
-log_debug ("Request parameters - un-tainted values applied:\n"
-           "\tstate = '%s'\n\tasset = '%s'\n\trecursive = '%s'\n",
-            state.c_str (), asset.c_str (), recursive.c_str ());
-}
-
-// "cleanup" the tainted variables from a scope
-#define state TAINTED
-#define asset TAINTED
-#define recursive TAINTED
 
 std::map<std::string, int> desired_elements;
 
@@ -189,8 +178,8 @@ if (!checked_asset.empty ()) {
                 connection,
                 element_id,
                 [&desired_elements](const tntdb::Row& row) -> void {
-                    std::string name; 
-                    row[0].get (name); 
+                    std::string name;
+                    row[0].get (name);
                     desired_elements.emplace (std::make_pair (name, 5));
                 });
             if (rv != 0) { http_die ("internal-error", "persist::select_assets_by_container () failed."); }
@@ -276,7 +265,7 @@ while (true) {
         }
         log_error ("mlm_client_recv() failed.");
         zpoller_destroy (&poller);
-        mlm_client_destroy (&client); 
+        mlm_client_destroy (&client);
         http_die ("internal-error", "mlm_client_recv() failed.");
     }
     if (streq (mlm_client_sender (client), "ALERTS-LIST"))
