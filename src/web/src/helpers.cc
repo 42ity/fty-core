@@ -161,7 +161,8 @@ check_user_permissions (
     http_errors_t error;
 
     if (permissions.count (user.profile ()) != 1) {
-        log_error ("Permission not defined for given profile");
+        // actually it is not an error :)
+        log_info ("Permission not defined for given profile");
         http_add_error (debug, errors, "not-authorized");
         return;
     }
