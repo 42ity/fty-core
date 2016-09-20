@@ -86,7 +86,7 @@ get_config_path (const std::string& key)
         return "/etc/agent-nut/bios-agent-nut.cfg";
     }
     // general config file
-    return "/etc/bios/general.cfg";
+    return "/etc/default/bios.cfg";
 }
 
 
