@@ -121,6 +121,14 @@ EOF
 mkdir -p /etc/default
 touch /etc/default/bios
 chown www-data /etc/default/bios
+touch /etc/default/bios.cfg
+chown www-data /etc/default/bios.cfg
+# workaround - wee need to change agents configuration from REST API config call
+# so let tntnet touch the files
+for cfg in $(find /etc/ -maxdepth 2 -name '*.cfg' | xargs grep 'verbose =' | cut -d ':' -f1 | sort -u | grep -v malamute); do
+    chown www-data "${cfg}"
+done
+
 chmod a+r /etc/default/bios
 mkdir -p /etc/bios/nut/devices
 chown -R bios:bios-infra /etc/bios
