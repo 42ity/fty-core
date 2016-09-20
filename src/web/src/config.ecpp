@@ -133,7 +133,7 @@ void operator<<= (cxxtools::SerializationInfo& si, const Value& value)
 }
 
 zconfig_t *
-load_config_file (const std::string& key) 
+load_config_file (const std::string& key)
 {
     std::string file = get_config_path (key);
     zconfig_t *config = zconfig_load (file.c_str ());
@@ -191,7 +191,7 @@ UserInfo user;
 
         const char *config_key = get_config_mapping (checked_key);
         zconfig_t *item = zconfig_locate (root, config_key);
-        if (!item) { 
+        if (!item) {
             zconfig_destroy (&root);
             http_die("element-not-found", checked_key.c_str ());
         }
@@ -213,7 +213,7 @@ UserInfo user;
 
         cxxtools::JsonSerializer serializer (reply.out ());
         serializer.beautify (true);
- 
+
         if (is_array) {
             Array json;
             json.config.key = checked_key;
@@ -248,7 +248,7 @@ UserInfo user;
                 http_die ("bad-request-document", "Root of json request document must be an object with property 'config'.");
             }
 
-            std::string key;               
+            std::string key;
             request_doc.getMember("config").getMember("key") >>= key;
             if (!key_format.match (key)) {
                 std::string msg = "satisfy format " + key_format_string;
@@ -279,7 +279,7 @@ UserInfo user;
                     checked_values.push_back (i);
                 }
             }
-            else 
+            else
             {
                 http_die ("bad-request-document", "Value of property 'value' must be string or array of strings.");
             }
@@ -301,7 +301,7 @@ UserInfo user;
                 for (const auto& i : checked_values)  {
                     zconfig_put (root, std::string (config_key).append ("/").append (std::to_string (counter)).c_str (), i.c_str ());
                     counter++;
-                }            
+                }
             }
             else {
                 zconfig_t *item = zconfig_locate (root, config_key);
@@ -314,16 +314,18 @@ UserInfo user;
                 }
                 zconfig_put (root, config_key, checked_value.c_str ());
             }
-            int rv = zconfig_save (root, get_config_path (checked_key));
+            const char *config_file_name = get_config_path (checked_key);
+            int rv = zconfig_save (root, config_file_name);
             zconfig_destroy (&root);
             if (rv == -1) {
-                http_die ("internal-error", "...tbd...");
+                std::string msg = "Cannot save config file " + std::string(config_file_name);
+                http_die ("internal-error", msg.c_str());
             }
         }
 
         cxxtools::JsonSerializer serializer(reply.out ());
         serializer.beautify (true);
- 
+
         if (is_array) {
             Array json;
             json.config.key = checked_key;
