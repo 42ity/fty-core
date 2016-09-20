@@ -437,29 +437,6 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
         }
         // BIOS-1564 -- end
 
-        if ( match_ext_attr (value, key) )
-        {
-            // ACE: temporary disabled
-            // for testing purposes for rabobank usecase
-            // IMHO: There is no sense to check it at all
-            //   * as we cannot guarantee that manufacturers in the whole world use UNIQUE serial numbers
-            //   * not unique serial number of the device should not forbid users to monitor their devices
-            /*
-            if ( key == "serial_no" )
-            {
-
-                if  ( unique_keytag (conn, key, value, id) == 0 )
-                    zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
-                else
-                {
-                    bios_throw("request-param-bad", "serial_no", value.c_str(), "<unique string>");
-                }
-                continue;
-            }
-            */
-            zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
-        }
-
         // BIOS-2302: Check some attributes for sensors
         if ( key == "logical_asset" && !value.empty() ) {
             // check, that this asset exists
@@ -488,6 +465,29 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
                 zsys_error ("Value '%s' is not double", value.c_str());
                 bios_throw ("request-param-bad", key.c_str(), value.c_str(), "Value should be double");
             }
+        }
+
+        if ( match_ext_attr (value, key) )
+        {
+            // ACE: temporary disabled
+            // for testing purposes for rabobank usecase
+            // IMHO: There is no sense to check it at all
+            //   * as we cannot guarantee that manufacturers in the whole world use UNIQUE serial numbers
+            //   * not unique serial number of the device should not forbid users to monitor their devices
+            /*
+            if ( key == "serial_no" )
+            {
+
+                if  ( unique_keytag (conn, key, value, id) == 0 )
+                    zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
+                else
+                {
+                    bios_throw("request-param-bad", "serial_no", value.c_str(), "<unique string>");
+                }
+                continue;
+            }
+            */
+            zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
         }
     }
     // if the row represents group, the subtype represents a type
