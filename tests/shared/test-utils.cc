@@ -314,4 +314,13 @@ TEST_CASE("sanitize_date", "[utils][sanitize_date]") {
     CHECK (streq (r, "2010-02-15"));
     zstr_free (&r);
 
+    // Date provided by Yves
+    r = sanitize_date ("20-09-2016");
+    CHECK (r != NULL);
+    CHECK (streq (r, "2016-09-20"));
+
+    //reject date where we can't disntiguish order
+    r = sanitize_date ("20-09-16");
+    CHECK (r == NULL);
+
 }

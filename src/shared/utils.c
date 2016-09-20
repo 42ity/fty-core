@@ -341,21 +341,62 @@ fail:
     return ret;
 }
 
+#define START_IDX 0
+#define ISO_IDX 1
+#define EXCELL_IDX 2
+#define NO_DASH_IDX 3
+
+static const char* FORMATS[] = {
+    "%d-%m-%Y",
+    "%Y-%m-%d",
+    "%d-%b-%y",
+    "%d.%m.%Y",
+    "%d %m %Y",
+    "%m/%d/%Y",
+    NULL
+};
+
+// this function analyze input date to distinguish
+// 1) no -, return NO_DASH_IDX
+// 2) 4 characters before dash, return ISO IDX
+// 3) non digit in between, return EXCELL_IDX
+// 4) last 4 characters, return START_IDX for mm-dd-YYYY
+// 5) return -1 otherwise
+static ssize_t
+starting_idx (const char *inp)
+{
+    if (!strchr (inp, '-'))
+        return NO_DASH_IDX;
+
+    if (strchr (inp, '-') - inp == 4)
+        return ISO_IDX;
+
+    inp = strchr (inp, '-') + 1;
+    if (!inp)
+        return -1;
+
+    if (! isdigit (inp[0]))
+        return EXCELL_IDX;
+
+    inp = strchr (inp, '-') + 1;
+    if (!inp)
+        return -1;
+    if (strlen (inp) == 4)
+        return START_IDX;
+
+    return -1;
+}
+
 char*
     sanitize_date (const char* inp)
 {
     assert (inp);
 
-    static const char* FORMATS[] = {
-        "%Y-%m-%d",
-        "%d-%b-%y",
-        "%d.%m.%Y",
-        "%d %m %Y",
-        "%m/%d/%Y",
-        NULL
-    };
+    ssize_t start = starting_idx (inp);
+    if (start <= -1)
+        return NULL;
 
-    for (size_t i = 0; FORMATS[i] != NULL; i++)
+    for (size_t i = (size_t) start; FORMATS[i] != NULL; i++)
     {
         struct tm tm;
         char *r = strptime (inp, FORMATS[i], &tm);
@@ -363,11 +404,16 @@ char*
         if (!r)
             continue;
 
-        char *buf = (char*) malloc (11); //buffer for ISO date
-        strftime (buf, 11, FORMATS[0], &tm);
+        char *buf = (char*) calloc (1, 11); //buffer for ISO date
+        strftime (buf, 11, FORMATS[ISO_IDX], &tm);
         return buf;
     }
 
     return NULL;
 
 }
+
+#undef START_IDX
+#undef ISO_IDX
+#undef EXCELL_IDX
+#undef NO_DASH_IDX
