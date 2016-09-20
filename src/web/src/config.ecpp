@@ -186,8 +186,10 @@ UserInfo user;
         std::lock_guard<std::mutex> lock (config_mux);
         const char *config_file_name = get_config_path (checked_key);
         zconfig_t *root = zconfig_load (config_file_name);
-        if (!root)
-            http_die("internal-error", "Error loading configuration file '%s' for key '%s'.", config_file_name, checked_key.c_str());
+        if (!root) {
+            std::string msg = "Error loading configuration file " + std::string(config_file_name) + " for key " + checked_key;
+            http_die("internal-error", msg.c_str());
+        }
 
         const char *config_key = get_config_mapping (checked_key);
         zconfig_t *item = zconfig_locate (root, config_key);
