@@ -26,7 +26,8 @@
 #include "helpers.h"
 #include "tntmlm.h"
 #include <stdlib.h>
-
+#include <sys/types.h>
+#include <sys/syscall.h>
         
 // encode GET message for smtp agent         
 static zmsg_t*
@@ -36,8 +37,8 @@ s_smtp_GET_message (const char* email)
         
     zmsg_t *msg = zmsg_new ();
     zmsg_addstr(msg, email);
-    zmsg_addstr (msg, "Test email");                // email subject
-    zmsg_addstr(msg, "This is email test.");        // body
+    zmsg_addstr (msg, "Test email");                              // email subject
+    zmsg_addstr(msg, "This is email test. Do not reply.");        // body
     return msg;
 }
       
@@ -49,7 +50,7 @@ s_smtp_GET_message (const char* email)
     // connect to mlm client
     MlmClientPool::Ptr client = mlm_pool.get ();
     if (!client.getPointer ()) {
-        log_critical ("mlm_pool.get () failed.");
+        log_critical ("Error: mlm_pool.get () failed.");
         http_die ("internal-error", "mlm_pool.get () failed.");
     }
 
@@ -59,34 +60,59 @@ s_smtp_GET_message (const char* email)
 
     if (rv == -1)
     {
-        // errors
+        log_critical (
+                    "Error: client->sendto (address = '%s', subject = '%s', timeout = 1000) failed.",
+                        "agent-smtp", "SENDMAIL");
+        http_die ("internal-error", "client->sendto () failed");
     }
 
-    // recive message  
-    zmsg_t *recieve = client->recv (NULL , 5);
+    // recive message
+    std::string uuid = std::to_string(getpid ()).append (".").append (std::to_string (syscall (SYS_gettid)));
+
+    zmsg_t *recieve = client->recv (uuid , 5);
     if (!recieve)
     {
-        log_critical ("client->recv (timeout = '5') returned NULL");
+        log_critical ("Error: client->recv (timeout = '5') returned NULL");
         http_die ("internal-error", "client->recv () returned NULL");
     }
 
-    char *result = zmsg_popstr (recieve);
-    if (streq (result, "SENDMAIL-ERR"))
-    {
+    char *err_code = zmsg_popstr (recieve);
+    char *err_message = zmsg_popstr (recieve);
+    const char *msg_subject = client->subject();
+    std::string status;
   
-    } else
-    if (streq (result, "SENDMAIL-OK"))
-        return HTTP_OK;
+    if (streq (msg_subject, "SENDMAIL-OK"))
+     {
+         status = "Succeeded"; 
+         return HTTP_OK;
+     }   
     else
+    if (streq (msg_subject, "SENDMAIL-ERR"))
     {
-        log_critical ("Error: invalid reply message recieved.");
-        http_die ("internal-error", "client->recv () returned NULL");
+        status = "Failed"; 
+        log_critical ("Error: client->recv (timeout = '5') returned error. code %s, msg %s.", err_code,err_message);
+        http_die ("internal-error", "client->recv () returned error");
+    } else
+    {
+        status = "Failed";
+        log_critical ("Error: message recieved with invalid subject.");
+        http_die ("internal-error", "client->recv () invalid message subject");
     }
-
-    zstr_free(&result);
+  
     zmsg_destroy(&recieve);
     zmsg_destroy(&send);
-  
+    free(&msg_subject);
+</%cpp>
+"test_status:"
+{
+    "status" : <$ status $>,
+    "error_code" : <$ err_code $>,
+    "reason" : <$ err_message $>
+}
+<%cpp>
+
+    zstr_free(&err_code);
+    zstr_free(&err_message);
 </%cpp>
 
 
