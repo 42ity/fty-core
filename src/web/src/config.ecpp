@@ -36,6 +36,60 @@
 #include "helpers.h"
 #include "log.h"
 
+const char *
+get_config_mapping (const std::string& key)
+{
+    const static std::map <const std::string, const std::string> config_mapping = {
+        // general
+        {"BIOS_SNMP_COMMUNITY_NAME",    "snmp/community"},
+        // nut
+        {"BIOS_NUT_POLLING_INTERVAL",   "nut/polling_interval"},
+        // agent-smtp
+        {"BIOS_SMTP_SERVER",            "smtp/server"},
+        {"BIOS_SMTP_PORT",              "smtp/port"},
+        {"BIOS_SMTP_ENCRYPT",           "smtp/encryption"},
+        {"BIOS_SMTP_VERIFY_CA",         "smtp/verify_ca"},
+        {"BIOS_SMTP_USER",              "smtp/user"},
+        {"BIOS_SMTP_PASSWD",            "smtp/passwd"},
+        {"BIOS_SMTP_FROM",              "smtp/from"},
+        {"BIOS_SMTP_SMS_GATEWAY",       "smtp/smsgateway"},
+        // agent-ms
+        {"BIOS_METRIC_STORE_AGE_RT",    "store/rt"},
+        {"BIOS_METRIC_STORE_AGE_15m",   "store/15m"},
+        {"BIOS_METRIC_STORE_AGE_30m",   "store/30m"},
+        {"BIOS_METRIC_STORE_AGE_1h",    "store/1h"},
+        {"BIOS_METRIC_STORE_AGE_8h",    "store/8h"},
+        {"BIOS_METRIC_STORE_AGE_24h",   "store/24h"},
+        {"BIOS_METRIC_STORE_AGE_7d",    "store/7d"},
+        {"BIOS_METRIC_STORE_AGE_30d",   "store/30d"}
+    };
+    if (config_mapping.find (key) == config_mapping.end ())
+        return key.c_str ();
+    return config_mapping.at (key).c_str (); 
+}
+
+const char *
+get_config_path (const std::string& key)
+{
+    if (key.find ("BIOS_SMTP_") == 0) 
+    {
+        return "/etc/agent-smtp/bios-agent-smtp.cfg";
+    }
+    else
+    if (key.find ("BIOS_METRIC_STORE_") == 0)
+    {
+        return "/etc/bios-agent-ms/bios-agent-ms.cfg";
+    }
+    else
+    if (key.find ("BIOS_NUT_") == 0)
+    {
+        return "/etc/agent-nut/bios-agent-nut.cfg";
+    }
+    // general config file
+    return "/etc/default/bios.cfg";
+}
+
+
 // define json serialization objects
 struct Array
 {
@@ -78,29 +132,8 @@ void operator<<= (cxxtools::SerializationInfo& si, const Value& value)
     si.addMember("config") <<= value.config;
 }
 
-const char *
-get_config_path (const std::string& key)
-{
-    if (key.find ("BIOS_SMTP_") == 0) 
-    {
-        return "/var/lib/bios/agent-smtp/bios-agent-smtp.cfg";
-    }
-    else
-    if (key.find ("BIOS_METRIC_STORE_") == 0)
-    {
-        return "/var/lib/bios/bios-agent-ms/bios-agent-ms.cfg";
-    }
-    else
-    if (key.find ("BIOS_NUT_") == 0)
-    {
-        return "/var/lib/bios/nut/bios-agent-nut.cfg";
-    }
-    // general config file
-    return "/var/lib/bios/general.cfg";
-}
-
 zconfig_t *
-load_config_file (const std::string& key) 
+load_config_file (const std::string& key)
 {
     std::string file = get_config_path (key);
     zconfig_t *config = zconfig_load (file.c_str ());
@@ -152,11 +185,13 @@ UserInfo user;
 
         std::lock_guard<std::mutex> lock (config_mux);
         zconfig_t *root = zconfig_load (get_config_path (checked_key));
-        if (!root)
-            http_die("internal-error", "Error loading configuration file.");
+        if (!root) {
+            http_die ("element-not-found", checked_key.c_str ());
+        }
 
-        zconfig_t *item = zconfig_locate (root, checked_key.c_str ());
-        if (!item) { 
+        const char *config_key = get_config_mapping (checked_key);
+        zconfig_t *item = zconfig_locate (root, config_key);
+        if (!item) {
             zconfig_destroy (&root);
             http_die("element-not-found", checked_key.c_str ());
         }
@@ -178,7 +213,7 @@ UserInfo user;
 
         cxxtools::JsonSerializer serializer (reply.out ());
         serializer.beautify (true);
- 
+
         if (is_array) {
             Array json;
             json.config.key = checked_key;
@@ -213,7 +248,7 @@ UserInfo user;
                 http_die ("bad-request-document", "Root of json request document must be an object with property 'config'.");
             }
 
-            std::string key;               
+            std::string key;
             request_doc.getMember("config").getMember("key") >>= key;
             if (!key_format.match (key)) {
                 std::string msg = "satisfy format " + key_format_string;
@@ -244,7 +279,7 @@ UserInfo user;
                     checked_values.push_back (i);
                 }
             }
-            else 
+            else
             {
                 http_die ("bad-request-document", "Value of property 'value' must be string or array of strings.");
             }
@@ -258,16 +293,18 @@ UserInfo user;
             zconfig_t *root = load_config_file (checked_key);
             if (!root)
                 http_die ("internal-error", "...tbd...");
+
+            const char *config_key = get_config_mapping (checked_key);
             if (is_array) {
-                zconfig_put (root, checked_key.c_str (), NULL);
+                zconfig_put (root, config_key, NULL);
                 int counter = 0;
                 for (const auto& i : checked_values)  {
-                    zconfig_put (root, std::string (checked_key).append ("/").append (std::to_string (counter)).c_str (), i.c_str ());
+                    zconfig_put (root, std::string (config_key).append ("/").append (std::to_string (counter)).c_str (), i.c_str ());
                     counter++;
-                }            
+                }
             }
             else {
-                zconfig_t *item = zconfig_locate (root, checked_key.c_str ());
+                zconfig_t *item = zconfig_locate (root, config_key);
                 if (item && zconfig_child (item)) {
                     zconfig_t *child = zconfig_child (item);
                     while (child) {
@@ -275,18 +312,20 @@ UserInfo user;
                         child = zconfig_next (child);
                     }
                 }
-                zconfig_put (root, checked_key.c_str (), checked_value.c_str ());
+                zconfig_put (root, config_key, checked_value.c_str ());
             }
-            int rv = zconfig_save (root, get_config_path (checked_key));
+            const char *config_file_name = get_config_path (checked_key);
+            int rv = zconfig_save (root, config_file_name);
             zconfig_destroy (&root);
             if (rv == -1) {
-                http_die ("internal-error", "...tbd...");
+                std::string msg = "Cannot save config file " + std::string(config_file_name);
+                http_die ("internal-error", msg.c_str());
             }
         }
 
         cxxtools::JsonSerializer serializer(reply.out ());
         serializer.beautify (true);
- 
+
         if (is_array) {
             Array json;
             json.config.key = checked_key;
