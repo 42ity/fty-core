@@ -316,10 +316,12 @@ UserInfo user;
                 }
                 zconfig_put (root, config_key, checked_value.c_str ());
             }
-            int rv = zconfig_save (root, get_config_path (checked_key));
+            const char *config_file_name = get_config_path (checked_key);
+            int rv = zconfig_save (root, config_file_name);
             zconfig_destroy (&root);
             if (rv == -1) {
-                http_die ("internal-error", "...tbd...");
+                std::string msg = "Cannot save config file " + std::string(config_file_name);
+                http_die ("internal-error", msg.c_str());
             }
         }
 
