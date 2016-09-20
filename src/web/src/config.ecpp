@@ -185,8 +185,9 @@ UserInfo user;
 
         std::lock_guard<std::mutex> lock (config_mux);
         zconfig_t *root = zconfig_load (get_config_path (checked_key));
-        if (!root)
-            http_die("internal-error", "Error loading configuration file.");
+        if (!root) {
+            http_die ("element-not-found", checked_key.c_str ());
+        }
 
         const char *config_key = get_config_mapping (checked_key);
         zconfig_t *item = zconfig_locate (root, config_key);
