@@ -449,7 +449,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             }
         }
         else
-        if ( ( key == "calibration_offset_t" || key == "calibration_offset_h" )
+        if ( ( key == "calibration_offset_t" || key == "calibration_offset_h" || key == "max_current" || key == "max_power" )
            && !value.empty() )
         {
             // check, that this value is "double"
