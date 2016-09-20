@@ -437,6 +437,36 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
         }
         // BIOS-1564 -- end
 
+        // BIOS-2302: Check some attributes for sensors
+        if ( key == "logical_asset" && !value.empty() ) {
+            // check, that this asset exists
+            auto ret = select_asset_element_by_name
+                (conn, value.c_str());
+            if ( ret.status == 0 ) {
+                log_warning ("logical_asset '%s' does not present in DB, rejected",
+                    value.c_str());
+                bios_throw("element-not-found", value.c_str());
+            }
+        }
+        else
+        if ( ( key == "calibration_offset_t" || key == "calibration_offset_h" || key == "max_current" || key == "max_power" )
+           && !value.empty() )
+        {
+            // check, that this value is "double"
+            std::size_t pos = 0;
+            try {
+                std::stod (value, &pos);
+                if  ( pos != value.length() ) {
+                    log_error ("Value '%s' is not double", value.c_str());
+                    bios_throw ("request-param-bad", key.c_str(), value.c_str(), "Value should be double");
+                }
+            }
+            catch (const std::exception &e ) {
+                zsys_error ("Value '%s' is not double", value.c_str());
+                bios_throw ("request-param-bad", key.c_str(), value.c_str(), "Value should be double");
+            }
+        }
+
         if ( match_ext_attr (value, key) )
         {
             // ACE: temporary disabled
@@ -458,36 +488,6 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             }
             */
             zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
-        }
-
-        // BIOS-2302: Check some attributes for sensors
-        if ( key == "logical_asset" && !value.empty() ) {
-            // check, that this asset exists
-            auto ret = select_asset_element_by_name
-                (conn, value.c_str());
-            if ( ret.status == 0 ) {
-                log_warning ("logical_asset '%s' does not present in DB, rejected",
-                    value.c_str());
-                bios_throw("element-not-found", value.c_str());
-            }
-        }
-        else
-        if ( ( key == "calibration_offset_t" || key == "calibration_offset_h" )
-           && !value.empty() )
-        {
-            // check, that this value is "double"
-            std::size_t pos = 0;
-            try {
-                std::stod (value, &pos);
-                if  ( pos != value.length() ) {
-                    log_error ("Value '%s' is not double", value.c_str());
-                    bios_throw ("request-param-bad", key.c_str(), value.c_str(), "Value should be double");
-                }
-            }
-            catch (const std::exception &e ) {
-                zsys_error ("Value '%s' is not double", value.c_str());
-                bios_throw ("request-param-bad", key.c_str(), value.c_str(), "Value should be double");
-            }
         }
     }
     // if the row represents group, the subtype represents a type
