@@ -295,8 +295,10 @@ UserInfo user;
                 http_die ("internal-error", "...tbd...");
 
             const char *config_key = get_config_mapping (checked_key);
+            zconfig_t *item = zconfig_locate (root, config_key);
             if (is_array) {
-                zconfig_put (root, config_key, NULL);
+                if (item)
+                    zconfig_set_value (item, NULL); 
                 int counter = 0;
                 for (const auto& i : checked_values)  {
                     zconfig_put (root, std::string (config_key).append ("/").append (std::to_string (counter)).c_str (), i.c_str ());
@@ -304,7 +306,6 @@ UserInfo user;
                 }
             }
             else {
-                zconfig_t *item = zconfig_locate (root, config_key);
                 if (item && zconfig_child (item)) {
                     zconfig_t *child = zconfig_child (item);
                     while (child) {
