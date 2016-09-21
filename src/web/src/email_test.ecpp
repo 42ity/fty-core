@@ -43,10 +43,29 @@ s_smtp_GET_message (const char* email)
 }
       
 </%pre>
-
+<%request scope="global">
+UserInfo user;
+</%request>
 <%cpp>
-    const std::string email;
-  
+    // check user permissions
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Admin,     "C"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
+
+    std::string checked_email;
+    {
+        std::string email = qparam.param ("email");
+
+        if (email.empty ())
+            http_die ("request-param-required", "from");
+
+        if (email.find ('@', 0) == std::string::npos)
+            http_die ("request-param-bad", "email", email.c_str (), "valid email address");
+
+        checked_email = email;
+    }
+
     // connect to mlm client
     MlmClientPool::Ptr client = mlm_pool.get ();
     if (!client.getPointer ()) {
@@ -55,7 +74,7 @@ s_smtp_GET_message (const char* email)
     }
 
     // send message
-    zmsg_t *send = s_smtp_GET_message (email.c_str());
+    zmsg_t *send = s_smtp_GET_message (checked_email.c_str());
     int rv = client->sendto ("agent-smtp", "SENDMAIL", 1000, &send);
 
     if (rv == -1)
