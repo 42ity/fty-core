@@ -240,6 +240,46 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     }
     unused_columns.erase("location");
 
+
+    std::string location_u_pos;
+    try {
+        location_u_pos= cm.get (row_i, "location_u_pos");
+    }
+    catch (const std::exception& e) {
+    }
+    if (!location_u_pos.empty ()) {
+        log_debug ("location_u_pos == '%s'", location_u_pos.c_str ());
+        unsigned long ul = 0; 
+        try {
+            ul = std::stoul (location_u_pos);
+        }
+        catch (const std::exception& e) {
+            bios_throw ("request-param-bad", "location_u_pos", location_u_pos.c_str (), "value must be an unsigned integer");
+        }
+        if (ul == 0 || ul > 52)
+            bios_throw ("request-param-bad", "location_u_pos", location_u_pos.c_str (), "value must be between <1, rack size>, where rack size must be <= 52.");
+    }
+
+    std::string u_size;
+    try {
+        u_size = cm.get (row_i, "u_size");
+    }
+    catch (const std::exception& e) {
+    }
+    if (!u_size.empty ()) {
+        log_debug ("u_size == '%s'", u_size.c_str ());
+        unsigned long ul = 0; 
+        try {
+            ul = std::stoul (u_size);
+        }
+        catch (const std::exception& e) {
+            bios_throw ("request-param-bad", "u_size", u_size.c_str (), "value must be an unsigned integer");
+        }
+        if (ul == 0 || ul > 52)
+            bios_throw ("request-param-bad", "u_size", u_size.c_str (), "value must be between <1, rack size>, where rack size must be <= 52.");
+    }
+
+
     // Business requirement: be able to write 'rack controller', 'RC', 'rc' as subtype == 'rack controller'
     std::map<std::string,int> local_SUBTYPES = SUBTYPES;
     int rack_controller_id = SUBTYPES.find ("rack controller")->second;
