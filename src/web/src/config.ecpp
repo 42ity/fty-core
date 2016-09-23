@@ -224,7 +224,10 @@ UserInfo user;
         {
             Value json;
             json.config.key = checked_key;
-            json.config.value = value;
+            if (value == "true" || value == "false")
+                json.config.value = (value == "true" ? true : false);
+            else
+                json.config.value = value;
             serializer.serialize (json).finish ();
         }
         return HTTP_OK;
@@ -258,13 +261,20 @@ UserInfo user;
             log_debug ("key='%s'", checked_key.c_str());
 
             if (request_doc.getMember ("config").getMember ("value").category () == cxxtools::SerializationInfo::Category::Value) {
-                std::string value;
-                request_doc.getMember ("config").getMember ("value") >>= value;
-                if (!value_format.match (value)) {
-                    std::string msg = "satisfy format " + value_format_string;
-                    http_die ("request-param-bad", "value", value.c_str(), msg.c_str() );
+                if (request_doc.getMember ("config").getMember ("value").isBool ()) {
+                    bool bvalue;
+                    request_doc.getMember ("config").getMember ("value") >>= bvalue;
+                    checked_value = bvalue ? "true" : "false";
                 }
-                checked_value = std::move (value);
+                else {
+                    std::string value;
+                    request_doc.getMember ("config").getMember ("value") >>= value;
+                    if (!value_format.match (value)) {
+                        std::string msg = "satisfy format " + value_format_string;
+                        http_die ("request-param-bad", "value", value.c_str(), msg.c_str() );
+                    }
+                    checked_value = std::move (value);
+                }
             }
             else
             if (request_doc.getMember ("config").getMember ("value").category () == cxxtools::SerializationInfo::Category::Array) {
