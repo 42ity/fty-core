@@ -240,7 +240,13 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     }
     unused_columns.erase("location");
 
-    std::string location_u_pos = cm.get (row_i, "location_u_pos");
+
+    std::string location_u_pos;
+    try {
+        location_u_pos= cm.get (row_i, "location_u_pos");
+    }
+    catch (const std::exception& e) {
+    }
     if (!location_u_pos.empty ()) {
         log_debug ("location_u_pos == '%s'", location_u_pos.c_str ());
         unsigned long ul = 0; 
@@ -254,7 +260,12 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             bios_throw ("request-param-bad", "location_u_pos", location_u_pos.c_str (), "value must be between <1, rack size>, where rack size must be <= 52.");
     }
 
-    std::string u_size = cm.get (row_i, "u_size");
+    std::string u_size;
+    try {
+        u_size = cm.get (row_i, "u_size");
+    }
+    catch (const std::exception& e) {
+    }
     if (!u_size.empty ()) {
         log_debug ("u_size == '%s'", u_size.c_str ());
         unsigned long ul = 0; 
