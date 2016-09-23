@@ -364,7 +364,7 @@
         <url>^/api/v1/admin/config.*$</url>
     </mapping>
 
-    <!-- GET admin/email_test -->
+    <!-- POST admin/email_test -->
     <mapping>
         <target>email_test@bios_web</target>
         <url>^/api/v1/admin/email_test.*$</url>
