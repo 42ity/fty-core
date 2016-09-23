@@ -457,13 +457,13 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             try {
                 std::stod (value, &pos);
                 if  ( pos != value.length() ) {
-                    log_error ("Value '%s' is not double", value.c_str());
-                    bios_throw ("request-param-bad", key.c_str(), value.c_str(), "Value should be double");
+                    log_error ("Extattribute: %s='%s' is not double", key.c_str(), value.c_str());
+                    bios_throw ("request-param-bad", key.c_str(), ("'" + value + "'").c_str(), "value should be a number");
                 }
             }
             catch (const std::exception &e ) {
-                zsys_error ("Value '%s' is not double", value.c_str());
-                bios_throw ("request-param-bad", key.c_str(), value.c_str(), "Value should be double");
+                log_error ("Extattribute: %s='%s' is not double", key.c_str(), value.c_str());
+                bios_throw ("request-param-bad", key.c_str(), ("'" + value + "'").c_str(), "value should be a number");
             }
         }
 
