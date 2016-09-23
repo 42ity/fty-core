@@ -96,7 +96,6 @@ UserInfo user;
     }
 
     char *err_code = zmsg_popstr (recieve);
-    char *err_code = zmsg_popstr (recieve);
     char *err_message = zmsg_popstr (recieve);
     const char *msg_subject = client->subject();
     std::string status;
