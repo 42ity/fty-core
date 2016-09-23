@@ -25,7 +25,6 @@
  * \brief  Implementation of REST API call average/min/max
  */
  #><%pre>
-#include "tntmlm.h"
 #include <iostream>
 #include <sstream>
 #include <string>
