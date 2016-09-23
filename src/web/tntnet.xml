@@ -368,7 +368,7 @@
     <mapping>
         <target>email_test@bios_web</target>
         <url>^/api/v1/admin/email_test.*$</url>
-	<method>(POST)</method>
+	<method>POST</method>
     </mapping>
 
 
