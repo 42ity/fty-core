@@ -145,11 +145,12 @@
     <mapping>
       <target>netcfg@bios_web</target>
       <url>^/api/v1/admin/netcfgs$</url>
+      <method>GET</method>
     </mapping>
     <mapping>
       <target>netcfg@bios_web</target>
       <url>^/api/v1/admin/netcfg/(.*)$</url>
-      <method>GET</method>
+      <method>(GET|PUT)</method>
       <args>
         <iface>$1</iface>
       </args>
