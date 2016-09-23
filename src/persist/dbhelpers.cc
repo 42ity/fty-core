@@ -191,6 +191,12 @@ bool is_ok_name (const char* name)
     if (is_number)
         return false;
 
+    // Bad characters _ % @
+    if (strchr (name, '_') != NULL ||
+        strchr (name, '%') != NULL ||
+        strchr (name, '@') != NULL)
+       return false; 
+
     return true;
 }
 
