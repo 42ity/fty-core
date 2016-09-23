@@ -31,11 +31,12 @@
         
 // encode GET message for smtp agent         
 static zmsg_t*
-s_smtp_GET_message (const char* email)
+s_smtp_GET_message (const char* email, zuuid_t *uuid)
 {
     assert(email);
         
     zmsg_t *msg = zmsg_new ();
+    zmsg_addstr (msg, zuuid_str_canonical (uuid));
     zmsg_addstr(msg, email);
     zmsg_addstr (msg, "Test email");                              // email subject
     zmsg_addstr(msg, "This is email test. Do not reply.");        // body
@@ -74,7 +75,8 @@ UserInfo user;
     }
 
     // send message
-    zmsg_t *send = s_smtp_GET_message (checked_email.c_str());
+    zuuid_t *uuid = zuuid_new ();
+    zmsg_t *send = s_smtp_GET_message (checked_email.c_str(), uuid);
     int rv = client->sendto ("agent-smtp", "SENDMAIL", 1000, &send);
 
     if (rv == -1)
@@ -85,16 +87,15 @@ UserInfo user;
         http_die ("internal-error", "client->sendto () failed");
     }
 
-    // recive message
-    std::string uuid = std::to_string(getpid ()).append (".").append (std::to_string (syscall (SYS_gettid)));
-
-    zmsg_t *recieve = client->recv (uuid , 5);
+    zmsg_t *recieve = client->recv (zuuid_str_canonical (uuid) , 5);
+    zuuid_destroy (&uuid);
     if (!recieve)
     {
         log_critical ("Error: client->recv (timeout = '5') returned NULL");
         http_die ("internal-error", "client->recv () returned NULL");
     }
 
+    char *err_code = zmsg_popstr (recieve);
     char *err_code = zmsg_popstr (recieve);
     char *err_message = zmsg_popstr (recieve);
     const char *msg_subject = client->subject();
