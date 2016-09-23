@@ -160,7 +160,7 @@ usage() {
     echo "Usage: ${_SCRIPT_NAME} [options...]"
     echo "Options:"
     echo "  --help | -help | -h       Display this hep and exit"
-    echo "  --config | -c             Source an additional config file (beside looking in"
+    echo "  --config | -c {path}      Source an additional config file (beside looking in"
     echo "                            standard locations e.g. '/etc/update-rc3.d/*.conf')"
     echo '  --no-config-file          Do not source default /etc/update-rc3.d/*.conf files'
     echo "  -ls              List remote images (except standard checksum files) and do an"
@@ -190,7 +190,9 @@ usage() {
     echo "  --url-image-fw-raw-uboot --url-image-fw-raw-uimage --url-image-fw-raw-modules"
     echo "  --(no-)erase-factory-reset If a new OS image downloaded successfully, touch"
     echo "                   the control file so 'init' does a factory reset after reboot"
-    echo "  --touch-factory-reset      Enforce a factory-reset for next boot"
+    echo "                   Note: '-NR' alias to --no-erase-factory-reset can cancel a"
+    echo "                   previously-requested factory reset if you changed your mind"
+    echo "  --touch-factory-reset|-FR  Enforce a factory-reset to be during next boot"
     echo "  --(no-)erase-all           If a new OS image downloaded successfully, then"
     echo "                   request a factory reset + NAND format after reboot"
     echo "  --touch-erase-all          Enforce a factory reset + NAND format next boot"
@@ -1574,9 +1576,9 @@ while [ $# -gt 0 ]; do
 		--no-removeold-images)  ACTION_REMOVEOLD_OSIMAGE="no"; ACTION_REMOVEOLD_FWIMAGE="no";;
 		--erase-factory-reset)
 		                        FLAG_ERASE_FACTORYRESET="yes" ;;
-		--touch-factory-reset|--force-factory-reset)
+		--touch-factory-reset|--force-factory-reset|-FR)
 		                        FLAG_ERASE_FACTORYRESET="force" ;;
-		--no-erase-factory-reset)  FLAG_ERASE_FACTORYRESET="no" ;;
+		--no-erase-factory-reset|-NR)  FLAG_ERASE_FACTORYRESET="no" ;;
 		--erase-all)            FLAG_ERASE_ALL="yes" ;;
 		--touch-erase-all|--force-erase-all)
 		                        FLAG_ERASE_ALL="force" ;;
