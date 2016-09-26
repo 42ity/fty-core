@@ -478,6 +478,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
         // BIOS-1564 -- end
 
         // BIOS-2302: Check some attributes for sensors
+        // BIOS-2784: Check max_current, max_power
         if ( key == "logical_asset" && !value.empty() ) {
             // check, that this asset exists
             auto ret = select_asset_element_by_name
