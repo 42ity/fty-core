@@ -457,8 +457,8 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
            && !value.empty() )
         {
             // check, that this value is "double"
-            std::size_t pos = 0;
             try {
+                std::size_t pos = 0;
                 std::stod (value, &pos);
                 if  ( pos != value.length() ) {
                     log_info ("Extattribute: %s='%s' is not double", key.c_str(), value.c_str());
@@ -474,7 +474,12 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
         if ( key == "location_u_pos" && !value.empty() ) {
             unsigned long ul = 0;
             try {
+                std::size_t pos = 0;
                 ul = std::stoul (value);
+                if  ( pos != value.length() ) {
+                    log_info ("Extattribute: %s='%s' is not unsigned integer", key.c_str(), value.c_str());
+                    bios_throw ("request-param-bad", key.c_str(), ("'" + value + "'").c_str(), "value must be an unsigned integer");
+                }
             }
             catch (const std::exception& e) {
                 log_info ("Extattribute: %s='%s' is not unsigned integer", key.c_str(), value.c_str());
@@ -487,7 +492,12 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
         if ( key == "u_size" && !value.empty() ) {
             unsigned long ul = 0;
             try {
+                std::size_t pos = 0;
                 ul = std::stoul (value);
+                if  ( pos != value.length() ) {
+                    log_info ("Extattribute: %s='%s' is not unsigned integer", key.c_str(), value.c_str());
+                    bios_throw ("request-param-bad", key.c_str(), ("'" + value + "'").c_str(), "value must be an unsigned integer");
+                }
             }
             catch (const std::exception& e) {
                 log_info ("Extattribute: %s='%s' is not unsigned integer", key.c_str(), value.c_str());
