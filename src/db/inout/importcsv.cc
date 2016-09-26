@@ -79,18 +79,6 @@ static std::map<std::string,int>
 }
 
 static bool
-    check_location_u_pos
-        (const std::string &s)
-{
-    cxxtools::Regex regex("^[0-9][0-9]?([uU][rR]|[uU])?$");
-    if ( !regex.match(s) )
-        return false;
-    else
-        return true;
-}
-
-
-static bool
     check_u_size
         (std::string &s)
 {
@@ -118,10 +106,6 @@ static bool
     match_ext_attr
         (std::string &value, const std::string &key)
 {
-    if ( key == "location_u_pos" )
-    {
-        return check_location_u_pos(value);
-    }
     if ( key == "u_size" )
     {
         return check_u_size(value);
@@ -138,6 +122,25 @@ static bool
     return regex.match (key);
 }
 
+static double
+sanitize_value_double(
+    const std::string &key,
+    const std::string &value)
+{
+    try {
+        std::size_t pos = 0;
+        double d_value = std::stod (value, &pos);
+        if  ( pos != value.length() ) {
+            log_info ("Extattribute: %s='%s' is not double", key.c_str(), value.c_str());
+            bios_throw ("request-param-bad", key.c_str(), ("'" + value + "'").c_str(), "value should be a number");
+        }
+        return d_value;
+    }
+    catch (const std::exception &e ) {
+        log_info ("Extattribute: %s='%s' is not double", key.c_str(), value.c_str());
+        bios_throw ("request-param-bad", key.c_str(), ("'" + value + "'").c_str(), "value should be a number");
+    }
+}
 /*
  * \brief Processes a single row from csv file
  *
@@ -453,21 +456,21 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             }
         }
         else
-        if ( ( key == "calibration_offset_t" || key == "calibration_offset_h" || key == "max_current" || key == "max_power" )
-           && !value.empty() )
+        if (    ( key == "calibration_offset_t" || key == "calibration_offset_h" )
+             &&   !value.empty() )
         {
-            // check, that this value is "double"
-            try {
-                std::size_t pos = 0;
-                std::stod (value, &pos);
-                if  ( pos != value.length() ) {
-                    log_info ("Extattribute: %s='%s' is not double", key.c_str(), value.c_str());
-                    bios_throw ("request-param-bad", key.c_str(), ("'" + value + "'").c_str(), "value should be a number");
-                }
-            }
-            catch (const std::exception &e ) {
-                log_info ("Extattribute: %s='%s' is not double", key.c_str(), value.c_str());
-                bios_throw ("request-param-bad", key.c_str(), ("'" + value + "'").c_str(), "value should be a number");
+            // we want exceptions to propagate to upper layer
+            sanitize_value_double (key, value);
+        }
+        else
+        if (    ( key == "max_current" || key == "max_power" )
+             &&   !value.empty() )
+        {
+            // we want exceptions to propagate to upper layer
+            double d_value = sanitize_value_double (key, value);
+            if ( d_value < 0 ) {
+                log_info ("Extattribute: %s='%s' is neither positive not zero", key.c_str(), value.c_str());
+                bios_throw ("request-param-bad", key.c_str(), ("'" + value + "'").c_str(), "value must be a not negative number");
             }
         }
         // BIOS-2781
