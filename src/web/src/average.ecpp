@@ -48,6 +48,7 @@
 #include <tntdb.h>
 #include "dbpath.h"
 #include "assets.h"
+#include "tntmlm.h"
 
 // Check if value of parameter 'relative' is supported:
 //  * No - return false, value of unixtime is not changed
@@ -196,18 +197,16 @@ UserInfo user;
     catch (const  std::exception &e ) {
         http_die ("internal-error", e.what());
     }
-    std::string agent_name ("web.average.");
-    agent_name.append (std::to_string (static_cast<int> (getpid ()))).append (".").append (std::to_string ( syscall(SYS_gettid) ));
-
-    mlm_client_t *client = mlm_client_new();
-    int rv = mlm_client_connect (client, MLM_ENDPOINT, 1000, agent_name.c_str());
-    if ( rv == -1 ) {
-        mlm_client_destroy (&client);
-        http_die ("internal-error", "Cannot connect to malamute");
+    // connect to malamute
+    MlmClientPool::Ptr client = mlm_pool.get ();
+    if (!client.getPointer ()) {
+        log_critical ("mlm_pool.get () failed.");
+        http_die ("internal-error", "mlm_pool.get () failed.");
     }
 
-
+    zuuid_t *uuid = zuuid_new ();
     zmsg_t *msg = zmsg_new();
+    zmsg_addstr (msg, zuuid_str_canonical (uuid));
     zmsg_addstr (msg, "GET");
     zmsg_addstr (msg, element_name.c_str());
     zmsg_addstr (msg, checked_source.c_str());
@@ -217,55 +216,42 @@ UserInfo user;
     zmsg_addstr (msg, std::to_string(end).c_str());
     zmsg_addstr (msg, (checked_ordered ? "1" : "0") );
 
-    rv = mlm_client_sendto (client, "agent-ms", "aggregated data", NULL, 1000, &msg);
-    if ( rv != 0 ) {
+    rv = client->sendto ("agent-ms", "aggregated data", 1000, &msg);
+    if (rv == -1) {
+        zuuid_destroy (&uuid);
         log_critical ("Cannot send message to agent-ms");
         mlm_client_destroy (&client);
         http_die ("internal-error", "mlm_client_sendto failed.");
-    }
+    }    
 
-    // wait for the right message or time-out
-    zmsg_t *recv_msg = NULL;
-    zpoller_t *poller = zpoller_new (mlm_client_msgpipe (client), NULL);
-    if (!poller) {
-        log_critical ("zpoller_new() failed.");
-        mlm_client_destroy (&client);
-        http_die ("internal-error", "zpoller_new() failed.");
+    zmsg_t *recv_msg = client->recv (zuuid_str_canonical (uuid), 5);
+    zuuid_destroy (&uuid);
+    if (!msg) {
+        log_critical ("client->recv (timeout = '5') returned NULL");
+        http_die ("internal-error", "client->recv () returned NULL");
     }
-
-    zsock_t *which = (zsock_t *) zpoller_wait (poller, 10000);
-    if (which != NULL) {
-        recv_msg = mlm_client_recv (client);
-    }
-    if (!recv_msg) {
-        if (zpoller_expired (poller) || zpoller_terminated (poller)) {
-            log_error ("zpoller_wait(timeout = 10000) timed out waiting for message.");
-            zpoller_destroy (&poller);
-            mlm_client_destroy (&client);
-            http_die ("internal-error", "Timed out waiting for message.");
-        }
-        log_error ("mlm_client_recv() failed.");
-        zpoller_destroy (&poller);
-        mlm_client_destroy (&client);
-        http_die ("internal-error", "mlm_client_recv() failed.");
-    }
-    zpoller_destroy (&poller);
 
     char *frame = zmsg_popstr (recv_msg);
-    if ( streq(frame, "ERROR") ) {
+    if (streq (frame, "ERROR")) {
         zstr_free (&frame);
-        frame = zmsg_popstr(recv_msg); // not it is reason
-        // TODO memory leak in reason, HOW to fix????
+        frame = zmsg_popstr (recv_msg);
         zmsg_destroy (&recv_msg);
-        mlm_client_destroy (&client);
-        if ( streq(frame, "BAD_REQUEST") ) {
-            zstr_free (&frame);
-            std::string die = "Data for type = '" + checked_type + "', step = '" + checked_step + "', source = '" + checked_source + "', element_id = '" + std::to_string (checked_element_id) + "' ";
-            http_die ("not-found", die.c_str ());
+        if (frame) {
+            if (streq (frame, "BAD_REQUEST")) {
+                zstr_free (&frame);
+                std::string die = "Data for type = '" + checked_type + "', step = '" + checked_step +
+                "', source = '" + checked_source + "', element_id = '" + std::to_string (checked_element_id) + "' ";
+                http_die ("not-found", die.c_str ());
+            }
+            log_info ("error frame == '%s'", frame);
+            http_die ("internal-error", frame);
         }
-        http_die ("internal-error", frame);
+        else
+            http_die ("internal-error");
     }
-    if ( streq(frame, "OK") ) {
+
+    if (streq (frame, "OK")) {
+        zstr_free (&frame); 
         // now we are going to set up the head of the response
         char *element_rep = zmsg_popstr (recv_msg);
         char *source_rep = zmsg_popstr (recv_msg);
@@ -314,5 +300,4 @@ UserInfo user;
 <%cpp>
     }
     zmsg_destroy (&recv_msg);
-    mlm_client_destroy (&client);
 </%cpp>
