@@ -241,43 +241,6 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
     unused_columns.erase("location");
 
 
-    std::string location_u_pos;
-    try {
-        location_u_pos= cm.get (row_i, "location_u_pos");
-    }
-    catch (const std::exception& e) {
-    }
-    if (!location_u_pos.empty ()) {
-        log_debug ("location_u_pos == '%s'", location_u_pos.c_str ());
-        unsigned long ul = 0; 
-        try {
-            ul = std::stoul (location_u_pos);
-        }
-        catch (const std::exception& e) {
-            bios_throw ("request-param-bad", "location_u_pos", location_u_pos.c_str (), "value must be an unsigned integer");
-        }
-        if (ul == 0 || ul > 52)
-            bios_throw ("request-param-bad", "location_u_pos", location_u_pos.c_str (), "value must be between <1, rack size>, where rack size must be <= 52.");
-    }
-
-    std::string u_size;
-    try {
-        u_size = cm.get (row_i, "u_size");
-    }
-    catch (const std::exception& e) {
-    }
-    if (!u_size.empty ()) {
-        log_debug ("u_size == '%s'", u_size.c_str ());
-        unsigned long ul = 0; 
-        try {
-            ul = std::stoul (u_size);
-        }
-        catch (const std::exception& e) {
-            bios_throw ("request-param-bad", "u_size", u_size.c_str (), "value must be an unsigned integer");
-        }
-        if (ul == 0 || ul > 52)
-            bios_throw ("request-param-bad", "u_size", u_size.c_str (), "value must be between <1, rack size>, where rack size must be <= 52.");
-    }
 
 
     // Business requirement: be able to write 'rack controller', 'RC', 'rc' as subtype == 'rack controller'
@@ -469,7 +432,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
         if (is_date (key) && !value.empty()) {
             char *date = sanitize_date (value.c_str());
             if (!date) {
-                log_error ("Cannot sanitize %s '%s' for device '%s'", key.c_str(), value.c_str(), name.c_str());
+                log_info ("Cannot sanitize %s '%s' for device '%s'", key.c_str(), value.c_str(), name.c_str());
                 bios_throw("request-param-bad", key.c_str(), value.c_str(), "ISO date");
             }
             value = date;
@@ -478,12 +441,13 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
         // BIOS-1564 -- end
 
         // BIOS-2302: Check some attributes for sensors
+        // BIOS-2784: Check max_current, max_power
         if ( key == "logical_asset" && !value.empty() ) {
             // check, that this asset exists
             auto ret = select_asset_element_by_name
                 (conn, value.c_str());
             if ( ret.status == 0 ) {
-                log_warning ("logical_asset '%s' does not present in DB, rejected",
+                log_info ("logical_asset '%s' does not present in DB, rejected",
                     value.c_str());
                 bios_throw("element-not-found", value.c_str());
             }
@@ -493,18 +457,54 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
            && !value.empty() )
         {
             // check, that this value is "double"
-            std::size_t pos = 0;
             try {
+                std::size_t pos = 0;
                 std::stod (value, &pos);
                 if  ( pos != value.length() ) {
-                    log_error ("Extattribute: %s='%s' is not double", key.c_str(), value.c_str());
+                    log_info ("Extattribute: %s='%s' is not double", key.c_str(), value.c_str());
                     bios_throw ("request-param-bad", key.c_str(), ("'" + value + "'").c_str(), "value should be a number");
                 }
             }
             catch (const std::exception &e ) {
-                log_error ("Extattribute: %s='%s' is not double", key.c_str(), value.c_str());
+                log_info ("Extattribute: %s='%s' is not double", key.c_str(), value.c_str());
                 bios_throw ("request-param-bad", key.c_str(), ("'" + value + "'").c_str(), "value should be a number");
             }
+        }
+        // BIOS-2781
+        if ( key == "location_u_pos" && !value.empty() ) {
+            unsigned long ul = 0;
+            try {
+                std::size_t pos = 0;
+                ul = std::stoul (value, &pos);
+                if  ( pos != value.length() ) {
+                    log_info ("Extattribute: %s='%s' is not unsigned integer", key.c_str(), value.c_str());
+                    bios_throw ("request-param-bad", key.c_str(), ("'" + value + "'").c_str(), "value must be an unsigned integer");
+                }
+            }
+            catch (const std::exception& e) {
+                log_info ("Extattribute: %s='%s' is not unsigned integer", key.c_str(), value.c_str());
+                bios_throw ("request-param-bad", "location_u_pos", ("'" + value + "'").c_str (), "value must be an unsigned integer");
+            }
+            if (ul == 0 || ul > 52)
+                bios_throw ("request-param-bad", "location_u_pos", ("'" + value + "'").c_str (), "value must be between <1, rack size>, where rack size must be <= 52.");
+        }
+        // BIOS-2799
+        if ( key == "u_size" && !value.empty() ) {
+            unsigned long ul = 0;
+            try {
+                std::size_t pos = 0;
+                ul = std::stoul (value, &pos);
+                if  ( pos != value.length() ) {
+                    log_info ("Extattribute: %s='%s' is not unsigned integer", key.c_str(), value.c_str());
+                    bios_throw ("request-param-bad", key.c_str(), ("'" + value + "'").c_str(), "value must be an unsigned integer");
+                }
+            }
+            catch (const std::exception& e) {
+                log_info ("Extattribute: %s='%s' is not unsigned integer", key.c_str(), value.c_str());
+                bios_throw ("request-param-bad", "u_size", ("'" + value + "'").c_str (), "value must be an unsigned integer");
+            }
+            if (ul == 0 || ul > 52)
+                bios_throw ("request-param-bad", "u_size", ("'" + value + "'").c_str (), "value must be between <1, rack size>, where rack size must be <= 52.");
         }
 
         if ( match_ext_attr (value, key) )
