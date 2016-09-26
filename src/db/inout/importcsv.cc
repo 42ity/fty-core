@@ -432,7 +432,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
         if (is_date (key) && !value.empty()) {
             char *date = sanitize_date (value.c_str());
             if (!date) {
-                log_error ("Cannot sanitize %s '%s' for device '%s'", key.c_str(), value.c_str(), name.c_str());
+                log_info ("Cannot sanitize %s '%s' for device '%s'", key.c_str(), value.c_str(), name.c_str());
                 bios_throw("request-param-bad", key.c_str(), value.c_str(), "ISO date");
             }
             value = date;
@@ -447,7 +447,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             auto ret = select_asset_element_by_name
                 (conn, value.c_str());
             if ( ret.status == 0 ) {
-                log_warning ("logical_asset '%s' does not present in DB, rejected",
+                log_info ("logical_asset '%s' does not present in DB, rejected",
                     value.c_str());
                 bios_throw("element-not-found", value.c_str());
             }
@@ -461,12 +461,12 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             try {
                 std::stod (value, &pos);
                 if  ( pos != value.length() ) {
-                    log_error ("Extattribute: %s='%s' is not double", key.c_str(), value.c_str());
+                    log_info ("Extattribute: %s='%s' is not double", key.c_str(), value.c_str());
                     bios_throw ("request-param-bad", key.c_str(), ("'" + value + "'").c_str(), "value should be a number");
                 }
             }
             catch (const std::exception &e ) {
-                log_error ("Extattribute: %s='%s' is not double", key.c_str(), value.c_str());
+                log_info ("Extattribute: %s='%s' is not double", key.c_str(), value.c_str());
                 bios_throw ("request-param-bad", key.c_str(), ("'" + value + "'").c_str(), "value should be a number");
             }
         }
@@ -477,10 +477,11 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
                 ul = std::stoul (value);
             }
             catch (const std::exception& e) {
-                bios_throw ("request-param-bad", "location_u_pos", value.c_str (), "value must be an unsigned integer");
+                log_info ("Extattribute: %s='%s' is not unsigned integer", key.c_str(), value.c_str());
+                bios_throw ("request-param-bad", "location_u_pos", ("'" + value + "'").c_str (), "value must be an unsigned integer");
             }
             if (ul == 0 || ul > 52)
-                bios_throw ("request-param-bad", "location_u_pos", value.c_str (), "value must be between <1, rack size>, where rack size must be <= 52.");
+                bios_throw ("request-param-bad", "location_u_pos", ("'" + value + "'").c_str (), "value must be between <1, rack size>, where rack size must be <= 52.");
         }
         // BIOS-2799
         if ( key == "u_size" && !value.empty() ) {
@@ -489,10 +490,11 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
                 ul = std::stoul (value);
             }
             catch (const std::exception& e) {
-                bios_throw ("request-param-bad", "u_size", value.c_str (), "value must be an unsigned integer");
+                log_info ("Extattribute: %s='%s' is not unsigned integer", key.c_str(), value.c_str());
+                bios_throw ("request-param-bad", "u_size", ("'" + value + "'").c_str (), "value must be an unsigned integer");
             }
             if (ul == 0 || ul > 52)
-                bios_throw ("request-param-bad", "u_size", value.c_str (), "value must be between <1, rack size>, where rack size must be <= 52.");
+                bios_throw ("request-param-bad", "u_size", ("'" + value + "'").c_str (), "value must be between <1, rack size>, where rack size must be <= 52.");
         }
 
         if ( match_ext_attr (value, key) )
