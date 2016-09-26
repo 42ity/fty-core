@@ -475,7 +475,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             unsigned long ul = 0;
             try {
                 std::size_t pos = 0;
-                ul = std::stoul (value);
+                ul = std::stoul (value, &pos);
                 if  ( pos != value.length() ) {
                     log_info ("Extattribute: %s='%s' is not unsigned integer", key.c_str(), value.c_str());
                     bios_throw ("request-param-bad", key.c_str(), ("'" + value + "'").c_str(), "value must be an unsigned integer");
@@ -493,7 +493,7 @@ static std::pair<db_a_elmnt_t, persist::asset_operation>
             unsigned long ul = 0;
             try {
                 std::size_t pos = 0;
-                ul = std::stoul (value);
+                ul = std::stoul (value, &pos);
                 if  ( pos != value.length() ) {
                     log_info ("Extattribute: %s='%s' is not unsigned integer", key.c_str(), value.c_str());
                     bios_throw ("request-param-bad", key.c_str(), ("'" + value + "'").c_str(), "value must be an unsigned integer");
