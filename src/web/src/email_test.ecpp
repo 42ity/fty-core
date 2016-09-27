@@ -55,16 +55,26 @@ UserInfo user;
     CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
 
     std::string checked_email;
+    unsigned _timeout = 60;
     {
         std::string email = qparam.param ("email");
 
         if (email.empty ())
-            http_die ("request-param-required", "from");
+            http_die ("request-param-required", "email");
 
         if (email.find ('@', 0) == std::string::npos)
             http_die ("request-param-bad", "email", email.c_str (), "valid email address");
 
         checked_email = email;
+
+        std::string _stimeout = qparam.param ("_timeout");
+
+        try {
+            _timeout = std::stoi (_stimeout);
+        }
+        catch (const std::exception& e) {
+            //pass
+        }
     }
 
     // connect to mlm client
@@ -87,12 +97,13 @@ UserInfo user;
         http_die ("internal-error", "client->sendto () failed");
     }
 
-    zmsg_t *recieve = client->recv (zuuid_str_canonical (uuid) , 60);
+    zmsg_t *recieve = client->recv (zuuid_str_canonical (uuid) , _timeout);
     zuuid_destroy (&uuid);
     if (!recieve)
     {
-        log_critical ("Error: client->recv (timeout = '60') returned NULL");
-        http_die ("internal-error", "client->recv (timeout = '60') returned NULL");
+        std::string msg = "Error: client->recv (timeout = '" + std::to_string (_timeout) + "') returned NULL";
+        log_error (msg.c_str ());
+        http_die ("internal-error", msg.c_str ());
     }
 
     char *err_code = zmsg_popstr (recieve);
@@ -101,10 +112,10 @@ UserInfo user;
     std::string status;
   
     if (streq (msg_subject, "SENDMAIL-OK"))
-     {
+    {
          status = "Succeeded"; 
          return HTTP_OK;
-     }   
+    }   
     else
     if (streq (msg_subject, "SENDMAIL-ERR"))
     {
