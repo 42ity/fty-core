@@ -216,11 +216,10 @@ UserInfo user;
     zmsg_addstr (msg, std::to_string(end).c_str());
     zmsg_addstr (msg, (checked_ordered ? "1" : "0") );
 
-    rv = client->sendto ("agent-ms", "aggregated data", 1000, &msg);
+    int rv = client->sendto ("agent-ms", "aggregated data", 1000, &msg);
     if (rv == -1) {
         zuuid_destroy (&uuid);
         log_critical ("Cannot send message to agent-ms");
-        mlm_client_destroy (&client);
         http_die ("internal-error", "mlm_client_sendto failed.");
     }    
 
