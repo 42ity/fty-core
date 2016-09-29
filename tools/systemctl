@@ -333,7 +333,9 @@ isAllowed_Cmd_journalctl() {
 }
 
 systemctl_list_json() {
-	# This is our custom feature to speed up the "sysinfo" REST API.
+        # This is our custom feature to speed up the "sysinfo" REST API.
+        # TODO: The listing of units that do NOT exist on this system works
+        # on systemd version in IPM (215?) but fails on newer one (e.g. 231).
         # TODO: List of "interesting" fields is currently hardcoded here and in
         # the two "case"s below, and in variable mapping too; there is quite a
         # bit to rewrite should we want this to be anyhow dynamic/on-request.
