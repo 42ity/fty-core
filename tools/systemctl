@@ -159,11 +159,19 @@ cat_uniq() (
         if [[ -z "$OUT" ]]; then
             OUT="$LINE"
         else
-            # TODO: Add a mode to strip leading/trailing whitespace and
-            # so only compare not-empty payloads
-            if echo "$OUT" | ( while IFS= read OUTLINE; do [[ "$OUTLINE" = "$LINE" ]] && exit 1 ; done ; exit 0 ); then
-                OUT="$OUT
+            if [[ "$1" = "ignore_whitespace_around" ]] ; then
+                # A mode to strip leading/trailing whitespace and
+                # so only compare the not-empty payloads
+                LINES="`echo "$LINE" | sed -e 's,^[ \t]*,,' -e 's,[ \t]*$,,'`"
+                if echo "$OUT" | sed -e 's,^[ \t]*,,' -e 's,[ \t]*$,,' | ( while IFS= read OUTLINES; do [[ "$OUTLINES" = "$LINES" ]] && exit 1 ; done ; exit 0 ); then
+                    OUT="$OUT
 $LINE"
+                fi
+            else
+                if echo "$OUT" | ( while IFS= read OUTLINE; do [[ "$OUTLINE" = "$LINE" ]] && exit 1 ; done ; exit 0 ); then
+                    OUT="$OUT
+$LINE"
+                fi
             fi
         fi
     done
