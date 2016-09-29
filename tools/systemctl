@@ -221,7 +221,8 @@ Usage: ${SCRIPT_BASENAME} list-ipm-units [modifiers] [unitnames]
     Defaults are to print one unit name per line (without further details),
     and to only print those units which are defined on this system, coming
     from any origin and having any state. By default all units in the filter
-    are listed, however the caller may specify particular unit basenames.
+    are listed, however the caller may specify particular unit basenames
+    (this is ignored in "--missing" mode).
 
 Usage: ${SCRIPT_BASENAME} list-dependencies <modifiers or unit names>
     List the systemd units which have a defined dependency relation to the
@@ -533,7 +534,7 @@ systemctl_list_ipm_units() (
     [[ -z "$LIST_STATES" ]] && LIST_STATES="STATE:ANY"
 
     # List of unique unit filenames known to the system that match our filter
-    if [[ -z "$REQUESTED_UNITS_REGEX" ]]; then
+    if [[ -z "$REQUESTED_UNITS_REGEX" ]] || [[ "$LIST_MISSING" = yes ]]; then
         ALL_KNOWN_UNITS="`list_known_ipm_units`" || ALL_KNOWN_UNITS=""
     else
         REQUESTED_UNITS_REGEX_EXT='^[ \t]*('"$REQUESTED_UNITS_REGEX"')($|\.(service|timer|target))[ \t]*$'
