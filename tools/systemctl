@@ -208,7 +208,7 @@ Usage: ${SCRIPT_BASENAME} list-ipm-units [modifiers]
       --disabled|--not-enabled    List units with state "disabled" defined as:
         if "LoadState" is "loaded" or if "UnitFileState" is "enabled" or
         "static" or empty - skip this unit; otherwise show it
-      --missing                   Also list unitnames that are in the filter
+      --missing                   ONLY list unitnames that are in the filter
                                   but files are not installed in this system
       --detailed|--details|--long|-l  List more than just the unit names
                                   (same data as JSON, but a TSV markup)
@@ -543,6 +543,7 @@ $SYSTEMCTL_UNITS_EXTERNAL"
 
     if [[ x"$LIST_MISSING" = x"yes" ]] ; then
         # NOTE: This mode lists something or nothing and exits, always
+        # It only lists missing unit names, there are no details to show etc.
         SHOW_UNITS=""
         if [[ -z "$SYSTEMCTL_UNITS" ]] ; then
             # Nothing found == all missing
@@ -592,6 +593,8 @@ $U"
     if [[ "$LIST_STATES" != "STATE:ANY" ]] || [[ "$SHOW_DETAILS" = yes ]]; then
         # Logic borrowed from "--list-json" feature and simplified since
         # we have all the unit-naming data pre-filtered already
+        # TODO: same issue as above that newer systemctl (v231) aborts
+        # when trying to list units not defined on the local system.
         SHOW_UNITS=""
         SYSTEMCTL_ATTRS="-p Id -p SubState -p ActiveState -p UnitFileState -p LoadState"
         SYSTEMCTL_INFO="$( vID=""; vSS=""; vLS=""; vAS=""; vUFS=""; \
@@ -633,7 +636,8 @@ $U"
             echo "$SYSTEMCTL_INFO"
         fi >&2
 
-        [[ -n "$SYSTEMCTL_INFO" ]] && \
+        [[ -z "$SYSTEMCTL_INFO" ]] && \
+            echo "ERROR: No detailed information was collected from systemctl, will only print unit names" >&2 || \
         if [[ "$LIST_STATES" == "STATE:ANY" ]] && [[ "$SHOW_DETAILS" = yes ]]; then
             SYSTEMCTL_UNITS="$SYSTEMCTL_INFO"
         else
