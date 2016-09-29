@@ -145,16 +145,108 @@ write_syslog() {
     return 0
 }
 
+print_item_list() {
+    { [ -n "$1" ] && [ "$1" -gt 10 ] && MAXLEN="$1" && shift || MAXLEN="73" ; } 2>/dev/null
+    LL=0
+    UL=0
+    for U in "$@" ; do
+        UL="${#U}"
+        if [ "$LL" = 0 ]; then
+            printf '  %s' "$U"
+            LL="$((2+$UL))"
+        else
+            if [ "$(($LL+$UL))" -gt "$MAXLEN" ] ; then
+                printf ' \\\n  %s' "$U"
+                LL="$((2+$UL))"
+            else
+                printf ' %s' "$U"
+                LL="$(($LL+1+$UL))"
+            fi
+        fi
+    done
+    echo""; echo ""
+    unset LL UL U MAXLEN
+}
+
 usage_systemctl() {
     cat << EOF
-Usage: ${SCRIPT_BASENAME}
+Usage: ${SCRIPT_BASENAME} {list-units|--all|-a} [--full|-l]
+    List the unit states for all units on this system (not filtered),
+    optionally with full-length lines (by default truncated to terminal).
+
+Usage: ${SCRIPT_BASENAME} list-json [modifiers] [list of units]
+    List states of the units allowed by filter in JSON representation as
+    expected by REST API calls, including the following systemd attributes:
+      Id SubState ActiveState UnitFileState LoadState
+    An optional "[-l|--full]" modifier is accepted and silently ignored.
+    An optional "--all" modifier causes the script to list states of all
+    units on this system in JSON format for REST API (may take obscene
+    amount of time to parse this all - mode not intended for production).
+    An empty list of units means to display all unit names that match the
+    filter; otherwise the allowed unit names must be specified (whether they
+    exist on this system or not) or an "Action not allowed" error will occur.
+
+Usage: ${SCRIPT_BASENAME} list-ipm-units [modifiers]
+    List names or some more details of the units allowed by filter.
+    The listing may be further tuned for the following modifiers:
+      --ipm-installed|--internal  List units developed as part of IPM
+      --ipm-deps|--external       List units installed as dependencies for IPM
+      --active                    List units with state "active" defined as:
+        if "ActiveState" is "failed" or "inactive", or if "SubState" is
+        "failed" or "dead" - skip this unit; else if "ActiveState" is
+        "active" or if "SubState" is "running" or "waiting" - show this unit;
+        otherwise skip it
+      --inactive|--not-active     List units with state "inactive" defined as:
+        if "ActiveState" is "active" or if "SubState" is "running" or "waiting"
+        then skip this unit; else if "ActiveState" is "failed" or "inactive",
+        or if "SubState" is "failed" or "dead" or "exited" - show his unit;
+        otherwise skip it
+      --enabled                   List units with state "enabled" defined as:
+        if "LoadState" is "not-loaded" or if "UnitFileState" is "disabled"
+        then skip this unit; else if "LoadState" is "loaded" or "UnitFileState"
+        is "enabled" or "static" or empty - show this unit; otherwise skip
+      --disabled|--not-enabled    List units with state "disabled" defined as:
+        if "LoadState" is "loaded" or if "UnitFileState" is "enabled" or
+        "static" or empty - skip this unit; otherwise show it
+      --missing                   Also list unitnames that are in the filter
+                                  but files are not installed in this system
+      --detailed|--details|--long|-l  List more than just the unit names
+                                  (same data as JSON, but a TSV markup)
+    Specifying all origins (e.g. "--internal --external") or all states means
+    to disable output filtering by these criteria, which is the default setup.
+    Defaults are to print one unit name per line (without further details),
+    and to only print those units which are defined on this system, coming
+    from any origin and having any state.
+
+TODO subcmds
+
+Usage: ${SCRIPT_BASENAME} <certain allowed actions> <unitname> <modifiers>
+    This wrapper allows certain standard actions to be done, against one of
+    the units allowed by the filter (one at a time) if this is a unit action:
+EOF
+print_item_list ${SYSTEMCTL_COMMANDS}
+    cat << EOF
+    The "daemon-reload" action is passed without any further arguments.
+    Actions that accept the [--all|-a|--full|-l|--quiet] modifiers will
+    get them. The "status" action may additionally use [-n POSITIVENUMBER]
+    modifier (Number of journal entries to show).
 EOF
 }
 
 usage_journalctl() {
     cat << EOF
-Usage: ${SCRIPT_BASENAME}
+Usage: ${SCRIPT_BASENAME} <allowed keywords or unitname>
+    This wrapper allows certain standard actions and their combinations (as
+    listed below) to be done, against the units allowed by the filter:
 EOF
+print_item_list "{-n POSITIVENUMBER}" ${JOURNALCTL_COMMANDS}
+
+    cat << EOF
+    These arguments may be specified in any order acceptable to the standard
+    ${SCRIPT_BASENAME} program; its general usage follows:
+EOF
+
+    PAGER="" ${JOURNALCTL} --help
 }
 
 usage() {
@@ -165,7 +257,18 @@ the web-server process, and adds some custom actions that the standard utility
 does not have. A "root" system administrator might want to use the original
 "/bin/${SCRIPT_BASENAME}" program for standard functionality (but without our project
 extensions).
+
+This wrapper only allows actions against following unit basenames (with no
+extension as defaulted by systemd, or any one from these three - .service,
+.timer or .target):
 EOF
+print_item_list ${SYSTEMCTL_UNITS_COMMON} ${SYSTEMCTL_UNITS_GLOBS}
+    cat << EOF
+Using any actions or targets not allowed by the filters will result in
+a fatal error (non-zero exit code) and an "Action not allowed" message.
+
+EOF
+
 case "${SCRIPT_BASENAME}" in
     systemctl) usage_systemctl "$@";;
     journalctl) usage_journalctl "$@" ;;
