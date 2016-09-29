@@ -145,6 +145,33 @@ write_syslog() {
     return 0
 }
 
+usage_systemctl() {
+    cat << EOF
+Usage: ${SCRIPT_BASENAME}
+EOF
+}
+
+usage_journalctl() {
+    cat << EOF
+Usage: ${SCRIPT_BASENAME}
+EOF
+}
+
+usage() {
+    cat << EOF
+This ${SCRIPT_BASENAME} is a wrapper for same-named system utility which limits the
+scope of actions and targets available for a privilege-elevated user such as
+the web-server process, and adds some custom actions that the standard utility
+does not have. A "root" system administrator might want to use the original
+"/bin/${SCRIPT_BASENAME}" program for standard functionality (but without our project
+extensions).
+EOF
+case "${SCRIPT_BASENAME}" in
+    systemctl) usage_systemctl "$@";;
+    journalctl) usage_journalctl "$@" ;;
+esac
+}
+
 DIED=no
 trap_exit() {
     EXITCODE=$?
@@ -580,6 +607,7 @@ $U"
 process_CLI_systemctl() {
     # Quick support for specific commands
     case "$1" in
+        help|-h|-help|--help) usage; exit 1 ;;
         list-units|--all|-a)
             SYSTEMCTL_ARGS=""
             while [[ $# -gt 0 ]]; do
@@ -623,6 +651,7 @@ process_CLI_systemctl() {
         shift 2
         while [[ $# -gt 0 ]]; do
             case "$1" in
+                help|-h|-help|--help) usage; exit 1 ;;
                 --all|-a|--full|-l|--quiet)
                     SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
                 -n) if [[ "$cmd" = status ]] && [[ -n "$2" ]] && [[ "$2" -gt 0 ]]; then
@@ -654,6 +683,7 @@ process_CLI_journalctl() {
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
+            help|-h|-help|--help) usage; exit 1 ;;
             -n) if [[ -n "$2" ]] && [[ "$2" -gt 0 ]]; then
                     JOURNALCTL_ARGS="$JOURNALCTL_ARGS $1 $2"
                     shift 2
