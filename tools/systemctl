@@ -278,7 +278,8 @@ Usage: ${SCRIPT_BASENAME} list-requires [--recursive|-r] [--uniq] <unit names>
     recurse. Either way, the output is filtered by the defined list and
     with "--uniq" each unit name is only printed once (on first hit).
     The "--json" and "--detailed" modifiers explained above are also supported
-    and enable "--uniq" mode as well.
+    and enable "--uniq" mode as well. If no units are specified, lists all
+    units allowed by filter, starting with tntnet@bios and bios service+target.
     The recursion stops at leaf units that have no direct requirements on
     further units that match the filter (so e.g. the "network{,ing}.service"
     hidden a few system hops away (e.g. behind a "basic.target") would not
