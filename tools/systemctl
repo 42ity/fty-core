@@ -261,7 +261,7 @@ Usage: ${SCRIPT_BASENAME} list-ipm-units [modifiers] [unitnames]
 
 Usage: ${SCRIPT_BASENAME} list-dependencies <modifiers or unit names>
     List the systemd units which have a defined dependency relation to the
-    named unit(s) ("bios.service" by default), filtered by allowed unit names.
+    named unit(s) ("bios.target" by default), filtered by allowed unit names.
     The default mode is to show the "required" and "wanted" units of the
     specified unit (these should run for the specified one to begin starting).
     This mode accepts standard modifiers "--reverse", "--after" and "--before";
@@ -920,7 +920,7 @@ systemctl_list_dependencies() (
         [[ "$ABORT" = yes ]] && die_ACTION_NOT_ALLOWED
         shift
     done
-    [[ -n "$SYSTEMCTL_UNITS" ]] || SYSTEMCTL_UNITS="bios.service"
+    [[ -n "$SYSTEMCTL_UNITS" ]] || SYSTEMCTL_UNITS="bios.target"
     if [[ -z "$FILTER" ]] ; then
         do_systemctl_list_dependencies $SYSTEMCTL_ARGS $SYSTEMCTL_UNITS
         return $?
