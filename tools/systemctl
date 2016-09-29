@@ -178,6 +178,12 @@ $LINE"
     echo "$OUT"
 )
 
+echo_indent() {
+    [[ -z "${ECHO_INDENT_DEPTH-}" ]] && ECHO_INDENT_DEPTH="0" # Negative is ok = left-align
+    [[ -z "${ECHO_INDENT_TEXT-}" ]] && ECHO_INDENT_TEXT="" # empty is ok
+    printf "%${ECHO_INDENT_DEPTH}s%s\n" "$ECHO_INDENT_TEXT" "$*"
+}
+
 print_item_list() {
     { [[ -n "$1" ]] && [[ "$1" -gt 10 ]] && MAXLEN="$1" && shift || MAXLEN="73" ; } 2>/dev/null
     LL=0
@@ -266,6 +272,10 @@ Usage: ${SCRIPT_BASENAME} list-dependencies <modifiers or unit names>
 Usage: ${SCRIPT_BASENAME} list-dependents <modifiers or unit names>
     A shortcut for "list-dependencies --reverse --before" to display those
     units which require the named one to run.
+Usage: ${SCRIPT_BASENAME} list-requires [--recursive|-r] <unit names>
+    A custom option to list units that the named one(s) "Requires" or "Wants"
+    in order to run. By default lists direct requirements, optionally can
+    recurse. Either way the output is filtered by the defined list.
 
 Usage: ${SCRIPT_BASENAME} <certain allowed actions> <unitname> <modifiers>
     This wrapper allows certain standard actions to be done, against one of
@@ -782,6 +792,67 @@ $U"
     echo "$SYSTEMCTL_UNITS"
 )
 
+do_systemctl_list_requires_filtered() (
+    # This routine just calls systemctl and filters output.
+    # The input checking is in systemctl_list_dependencies() below.
+    for R in `$SYSTEMCTL show -p Requires -p Wants "$@" | sed 's,^.*=,,'` \
+    ; do echo "$R" ; done | \
+    egrep '^[ \t\*]*'"$SYSTEMCTL_UNITS_REGEX_SINGLE_EXT"'[ \t]*$'
+)
+
+do_systemctl_list_requires() {
+    # This routine just calls systemctl and filters output.
+    # The input checking is in systemctl_list_dependencies() below.
+    for S in `$SYSTEMCTL show -p Id "$@" | sed 's,^.*=,,'` ; do
+        echo_indent "$S"
+        ECHO_INDENT_DEPTH_PREV="$ECHO_INDENT_DEPTH"
+        ECHO_INDENT_DEPTH="$(($ECHO_INDENT_DEPTH+1))"
+        RLIST="`do_systemctl_list_requires_filtered "$S"`"
+        if [[ "$RECURSIVE" = yes ]]; then
+            for R in $RLIST ; do do_systemctl_list_requires "$R"; done
+        else
+            for R in $RLIST ; do echo_indent "$R"; done
+        fi
+        ECHO_INDENT_DEPTH="$ECHO_INDENT_DEPTH"
+    done | \
+    cat_uniq ignore_whitespace_around
+}
+
+systemctl_list_requires() (
+    RECURSIVE="no"
+    SYSTEMCTL_UNITS=""
+    FILTER=""
+    ABORT=no
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --plain) ;;
+            --recursive|-r)
+                RECURSIVE=yes ;;
+            --all|-a)
+                SYSTEMCTL_UNITS="$SYSTEMCTL_UNITS --all" ;;
+            --detailed|--details|--long|-l) FILTER="systemctl_list_ipm_units $1" ;;
+            --json) FILTER="systemctl_list_json" ;;
+            *)  if isAllowed_Unit "$1" ; then
+                    SYSTEMCTL_UNITS="$SYSTEMCTL_UNITS $1"
+                else
+                    ABORT=yes
+                fi
+                ;;
+        esac
+        [[ "$ABORT" = yes ]] && die_ACTION_NOT_ALLOWED
+        shift
+    done
+    [[ -n "$SYSTEMCTL_UNITS" ]] || SYSTEMCTL_UNITS="bios.target"
+    export RECURSIVE
+    if [[ -z "$FILTER" ]] ; then
+        do_systemctl_list_requires $SYSTEMCTL_UNITS
+        return $?
+    else
+        $FILTER `do_systemctl_list_requires $SYSTEMCTL_UNITS`
+        return $?
+    fi
+)
+
 do_systemctl_list_dependencies() {
     # This routine just calls systemctl and filters output.
     # The input checking is in systemctl_list_dependencies() below.
@@ -857,6 +928,11 @@ process_CLI_systemctl() {
         list-dependents)
             shift
             systemctl_list_dependencies --before --reverse "$@"
+            exit $?
+            ;;
+        list-requires)
+            shift
+            systemctl_list_requires "$@"
             exit $?
             ;;
         list-json)
