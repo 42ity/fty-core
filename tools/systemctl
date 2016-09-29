@@ -756,7 +756,7 @@ $U"
 do_systemctl_list_dependencies() {
     # This routine just calls systemctl and filters output.
     # The input checking is in systemctl_list_dependencies() below.
-    $SYSTEMCTL list-dependencies "$@" | egrep '^[ \t]*'"$SYSTEMCTL_UNITS_REGEX_SINGLE_EXT"'[ \t]*$'
+    $SYSTEMCTL list-dependencies "$@" | egrep '^[ \t\*]*'"$SYSTEMCTL_UNITS_REGEX_SINGLE_EXT"'[ \t]*$' | sed 's,^\*, ,g'
 }
 
 systemctl_list_dependencies() (
