@@ -52,7 +52,7 @@ MAINARGS="$0 $*"
 # Use syslog if "logger" is available
 LOGGER="$(which logger)" 2>/dev/null || LOGGER=""
 
-SYSTEMCTL_COMMANDS="show start stop restart enable disable daemon-reload status is-active"
+SYSTEMCTL_COMMANDS="show start stop restart enable disable daemon-reload status is-active list-dependencies"
 # NOTE: We do not support "--unit=UNITNAME" because it is too much hassle here
 # NOTE: We also support "-n NUMBER" below
 JOURNALCTL_COMMANDS="-f --follow -l -u -fl -lf -fu -uf -lu -ul -flu -ful -luf -lfu -ulf -ufl -a --all --no-pager -r --reverse -k --dmesg"
@@ -123,9 +123,13 @@ if [[ -n "$SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL" ]]; then
         || SYSTEMCTL_UNITS_REGEX_SINGLE="$SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL"
 fi
 
-SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL='^('"${SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL}"')($|\.(service|timer|target))$'
-SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL='^('"${SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL}"')($|\.(service|timer|target))$'
-SYSTEMCTL_UNITS_REGEX_SINGLE='^('"${SYSTEMCTL_UNITS_REGEX_SINGLE}"')($|\.(service|timer|target))$'
+SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL_EXT='('"${SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL}"')($|\.(service|timer|target))'
+SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL_EXT='('"${SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL}"')($|\.(service|timer|target))'
+SYSTEMCTL_UNITS_REGEX_SINGLE_EXT='('"${SYSTEMCTL_UNITS_REGEX_SINGLE}"')($|\.(service|timer|target))'
+
+SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL='^'"${SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL_EXT}"'$'
+SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL='^'"${SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL_EXT}"'$'
+SYSTEMCTL_UNITS_REGEX_SINGLE='^'"${SYSTEMCTL_UNITS_REGEX_SINGLE_EXT}"'$'
 
 write_syslog() {
     # TODO: Extend with config files and/or BIOS_* variables to point
@@ -218,6 +222,20 @@ Usage: ${SCRIPT_BASENAME} list-ipm-units [modifiers] [unitnames]
     and to only print those units which are defined on this system, coming
     from any origin and having any state. By default all units in the filter
     are listed, however the caller may specify particular unit basenames.
+
+Usage: ${SCRIPT_BASENAME} list-dependencies <modifiers or unit names>
+    List the systemd units which have a defined dependency relation to the
+    named unit(s) ("bios.target" by default), filtered by allowed unit names.
+    The default mode is to show the "required" and "wanted" units of the
+    specified unit (these should run for the specified one to begin starting).
+    This mode accepts standard modifiers "--reverse", "--after" and "--before";
+    the "--plain" representation for standard output is enforced. Acceptable
+    non-standard modifiers are "--json" for same markup and data selection as
+    list-json action (JSON for REST API), and "--detailed|--details|--long|-l"
+    for same markup as "list-ipm-units --detailed".
+Usage: ${SCRIPT_BASENAME} list-dependents <modifiers or unit names>
+    A shortcut for "list-dependencies --reverse --before" to display those
+    units which require the named one to run.
 
 Usage: ${SCRIPT_BASENAME} <certain allowed actions> <unitname> <modifiers>
     This wrapper allows certain standard actions to be done, against one of
@@ -727,6 +745,46 @@ $U"
     echo "$SYSTEMCTL_UNITS"
 )
 
+do_systemctl_list_dependencies() {
+    # This routine just calls systemctl and filters output.
+    # The input checking is in systemctl_list_dependencies() below.
+    $SYSTEMCTL list-dependencies "$@" | egrep '^[ \t]*'"$SYSTEMCTL_UNITS_REGEX_SINGLE_EXT"'[ \t]*$'
+}
+
+systemctl_list_dependencies() (
+    SYSTEMCTL_ARGS="--plain"
+    SYSTEMCTL_UNITS=""
+    FILTER=""
+    ABORT=no
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --plain) ;;
+            --reverse|--before|--after)
+                SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
+            --all|-a)
+                SYSTEMCTL_UNITS="$SYSTEMCTL_UNITS --all" ;;
+            --detailed|--details|--long|-l) FILTER="systemctl_list_ipm_units $1" ;;
+            --json) FILTER="systemctl_list_json" ;;
+            *)  if isAllowed_Unit "$1" ; then
+                    SYSTEMCTL_UNITS="$SYSTEMCTL_UNITS $1"
+                else
+                    ABORT=yes
+                fi
+                ;;
+        esac
+        [[ "$ABORT" = yes ]] && die_ACTION_NOT_ALLOWED
+        shift
+    done
+    [[ -n "$SYSTEMCTL_UNITS" ]] || SYSTEMCTL_UNITS="bios.target"
+    if [[ -z "$FILTER" ]] ; then
+        do_systemctl_list_dependencies $SYSTEMCTL_ARGS $SYSTEMCTL_UNITS
+        return $?
+    else
+        $FILTER `do_systemctl_list_dependencies $SYSTEMCTL_ARGS $SYSTEMCTL_UNITS`
+        return $?
+    fi
+)
+
 process_CLI_systemctl() {
     # Quick support for specific commands
     case "$1" in
@@ -749,6 +807,16 @@ process_CLI_systemctl() {
             ;;
         daemon-reload)
             $SYSTEMCTL "$1"
+            exit $?
+            ;;
+        list-dependencies)
+            shift
+            systemctl_list_dependencies "$@"
+            exit $?
+            ;;
+        list-dependents)
+            shift
+            systemctl_list_dependencies --before --reverse "$@"
             exit $?
             ;;
         list-json)
