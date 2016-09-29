@@ -819,22 +819,27 @@ do_systemctl_list_requires_all() {
 do_systemctl_list_requires_filtered() {
     # This routine just calls systemctl and filters output.
     # The input checking is in systemctl_list_requires() below.
-    for R in `echo "$SYSTEMCTL_DEPS_CACHED" | egrep '^'"$1"'[ \t	]' | sed 's,^.*\t,,'` \
-    ; do echo "$R" ; done | \
+    local RR
+    for RR in `echo "$SYSTEMCTL_DEPS_CACHED" | egrep '^'"$1"'[ \t	]' | sed 's,^.*\t,,'` \
+    ; do echo "$RR" ; done | \
     egrep '^[ \t\*]*'"$SYSTEMCTL_UNITS_REGEX_SINGLE_EXT"'[ \t]*$'
 }
 
 do_systemctl_list_requires() {
     # This routine just calls systemctl and filters output.
     # The input checking is in systemctl_list_dependencies() below.
+    local S
+    local R
+    local RLIST
+    local ECHO_INDENT_DEPTH_PREV
     for S in "$@" ; do
         echo_indent "$S"
         RLIST="`do_systemctl_list_requires_filtered "$S"`"
         if [[ -n "$RLIST" ]] ; then
-            local ECHO_INDENT_DEPTH_PREV="$ECHO_INDENT_DEPTH"
+            ECHO_INDENT_DEPTH_PREV="$ECHO_INDENT_DEPTH"
             ECHO_INDENT_DEPTH="$(($ECHO_INDENT_DEPTH+1))"
             if [[ "$RECURSIVE" = yes ]]; then
-                for R in $RLIST ; do do_systemctl_list_requires "$R"; done
+                do_systemctl_list_requires $RLIST
             else
                 for R in $RLIST ; do echo_indent "$R"; done
             fi
