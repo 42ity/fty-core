@@ -261,7 +261,7 @@ Usage: ${SCRIPT_BASENAME} list-ipm-units [modifiers] [unitnames]
 
 Usage: ${SCRIPT_BASENAME} list-dependencies <modifiers or unit names>
     List the systemd units which have a defined dependency relation to the
-    named unit(s) ("bios.target" by default), filtered by allowed unit names.
+    named unit(s) ("bios.service" by default), filtered by allowed unit names.
     The default mode is to show the "required" and "wanted" units of the
     specified unit (these should run for the specified one to begin starting).
     This mode accepts standard modifiers "--reverse", "--after" and "--before";
@@ -272,14 +272,17 @@ Usage: ${SCRIPT_BASENAME} list-dependencies <modifiers or unit names>
 Usage: ${SCRIPT_BASENAME} list-dependents <modifiers or unit names>
     A shortcut for "list-dependencies --reverse --before" to display those
     units which require the named one to run.
-Usage: ${SCRIPT_BASENAME} list-requires [--recursive|-r] <unit names>
+Usage: ${SCRIPT_BASENAME} list-requires [--recursive|-r] [--uniq] <unit names>
     A custom option to list units that the named one(s) "Requires" or "Wants"
     in order to run. By default lists direct requirements, optionally can
     recurse. Either way, the output is filtered by the defined list and
-    each unit name is only printed once. Recursion stops at leaf units that
-    have no direct requirements on further units that match the filter
-    (so e.g. the "network{,ing}.service" hidden a few system hops away
-    would not show up - use "list-dependencies" if those are needed).
+    with "--uniq" each unit name is only printed once (on first hit).
+    The "--json" and "--detailed" modifiers explained above are also supported
+    and enable "--uniq" mode as well.
+    The recursion stops at leaf units that have no direct requirements on
+    further units that match the filter (so e.g. the "network{,ing}.service"
+    hidden a few system hops away (e.g. behind a "basic.target") would not
+    show up - use "list-dependencies" if those are needed).
 
 Usage: ${SCRIPT_BASENAME} <certain allowed actions> <unitname> <modifiers>
     This wrapper allows certain standard actions to be done, against one of
@@ -796,36 +799,55 @@ $U"
     echo "$SYSTEMCTL_UNITS"
 )
 
-do_systemctl_list_requires_filtered() (
+do_systemctl_list_requires_all() {
+    # Prepare cached content in one shot
+    ( $SYSTEMCTL show -p Id -p Requires -p Wants --all '*' '*.service' '*.target' '*.timer' ; echo "" ) | \
+    ( _ID=""
+      _RQ=""
+      while IFS='=' read K V ; do
+        case "$K" in
+            Id) _ID="$V" ;;
+            Requires|Wants) _RQ="$_RQ $V" ;;
+            "") [[ -n "$_ID" ]] && printf '%s\t%s\n' "$_ID" "$_RQ"
+                _ID=""; _RQ="" ;;
+            *) ;;
+        esac
+      done
+    ) | sort | uniq
+}
+
+do_systemctl_list_requires_filtered() {
     # This routine just calls systemctl and filters output.
-    # The input checking is in systemctl_list_dependencies() below.
-    for R in `$SYSTEMCTL show -p Requires -p Wants "$@" | sed 's,^.*=,,'` \
+    # The input checking is in systemctl_list_requires() below.
+    for R in `echo "$SYSTEMCTL_DEPS_CACHED" | egrep '^'"$1"'[ \t	]' | sed 's,^.*\t,,'` \
     ; do echo "$R" ; done | \
     egrep '^[ \t\*]*'"$SYSTEMCTL_UNITS_REGEX_SINGLE_EXT"'[ \t]*$'
-)
+}
 
 do_systemctl_list_requires() {
     # This routine just calls systemctl and filters output.
     # The input checking is in systemctl_list_dependencies() below.
-    for S in `$SYSTEMCTL show -p Id "$@" | sed 's,^.*=,,'` ; do
+    for S in "$@" ; do
         echo_indent "$S"
-        ECHO_INDENT_DEPTH_PREV="$ECHO_INDENT_DEPTH"
-        ECHO_INDENT_DEPTH="$(($ECHO_INDENT_DEPTH+1))"
         RLIST="`do_systemctl_list_requires_filtered "$S"`"
-        if [[ "$RECURSIVE" = yes ]]; then
-            for R in $RLIST ; do do_systemctl_list_requires "$R"; done
-        else
-            for R in $RLIST ; do echo_indent "$R"; done
+        if [[ -n "$RLIST" ]] ; then
+            local ECHO_INDENT_DEPTH_PREV="$ECHO_INDENT_DEPTH"
+            ECHO_INDENT_DEPTH="$(($ECHO_INDENT_DEPTH+1))"
+            if [[ "$RECURSIVE" = yes ]]; then
+                for R in $RLIST ; do do_systemctl_list_requires "$R"; done
+            else
+                for R in $RLIST ; do echo_indent "$R"; done
+            fi
+            ECHO_INDENT_DEPTH="$ECHO_INDENT_DEPTH_PREV"
         fi
-        ECHO_INDENT_DEPTH="$ECHO_INDENT_DEPTH"
-    done | \
-    cat_uniq ignore_whitespace_around
+    done
 }
 
 systemctl_list_requires() (
     RECURSIVE="no"
     SYSTEMCTL_UNITS=""
     FILTER=""
+    UNIQ=no
     ABORT=no
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -834,6 +856,7 @@ systemctl_list_requires() (
                 RECURSIVE=yes ;;
             --all|-a)
                 SYSTEMCTL_UNITS="$SYSTEMCTL_UNITS --all" ;;
+            --uniq) UNIQ=yes ;;
             --detailed|--details|--long|-l) FILTER="systemctl_list_ipm_units $1" ;;
             --json) FILTER="systemctl_list_json" ;;
             *)  if isAllowed_Unit "$1" ; then
@@ -846,15 +869,22 @@ systemctl_list_requires() (
         [[ "$ABORT" = yes ]] && die_ACTION_NOT_ALLOWED
         shift
     done
-    [[ -n "$SYSTEMCTL_UNITS" ]] || SYSTEMCTL_UNITS="bios.target"
+    if [[ -n "$SYSTEMCTL_UNITS" ]] ; then
+        SYSTEMCTL_UNITS="`$SYSTEMCTL show -p Id $SYSTEMCTL_UNITS | sed 's,^.*=,,'`"
+    else
+        SYSTEMCTL_UNITS="tntnet@bios.service bios.service bios.target `list_known_ipm_units | egrep -v 'tntnet@bios.service|bios.service|bios.target'`"
+    fi
     export RECURSIVE
+    SYSTEMCTL_DEPS_CACHED="`do_systemctl_list_requires_all`"
+    export SYSTEMCTL_DEPS_CACHED
     if [[ -z "$FILTER" ]] ; then
         do_systemctl_list_requires $SYSTEMCTL_UNITS
-        return $?
     else
         $FILTER `do_systemctl_list_requires $SYSTEMCTL_UNITS`
-        return $?
-    fi
+    fi | \
+    if [[ "$UNIQ" = yes ]] || [[ -n "$FILTER" ]]; then
+        cat_uniq ignore_whitespace_around
+    else cat ; fi
 )
 
 do_systemctl_list_dependencies() {
@@ -890,7 +920,7 @@ systemctl_list_dependencies() (
         [[ "$ABORT" = yes ]] && die_ACTION_NOT_ALLOWED
         shift
     done
-    [[ -n "$SYSTEMCTL_UNITS" ]] || SYSTEMCTL_UNITS="bios.target"
+    [[ -n "$SYSTEMCTL_UNITS" ]] || SYSTEMCTL_UNITS="bios.service"
     if [[ -z "$FILTER" ]] ; then
         do_systemctl_list_dependencies $SYSTEMCTL_ARGS $SYSTEMCTL_UNITS
         return $?
