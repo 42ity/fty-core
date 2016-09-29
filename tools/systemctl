@@ -149,6 +149,27 @@ write_syslog() {
     return 0
 }
 
+cat_uniq() (
+    # This prints input to output line by line, skipping lines that were
+    # already printed (not necessarily in immediately previous line as uniq
+    # requires). Note that a sort|uniq is still faster ATM (where keeping
+    # the original line ordering does not matter).
+    OUT=""
+    while IFS= read LINE ; do
+        if [[ -z "$OUT" ]]; then
+            OUT="$LINE"
+        else
+            # TODO: Add a mode to strip leading/trailing whitespace and
+            # so only compare not-empty payloads
+            if echo "$OUT" | ( while IFS= read OUTLINE; do [[ "$OUTLINE" = "$LINE" ]] && exit 1 ; done ; exit 0 ); then
+                OUT="$OUT
+$LINE"
+            fi
+        fi
+    done
+    echo "$OUT"
+)
+
 print_item_list() {
     { [[ -n "$1" ]] && [[ "$1" -gt 10 ]] && MAXLEN="$1" && shift || MAXLEN="73" ; } 2>/dev/null
     LL=0
