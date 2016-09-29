@@ -275,7 +275,11 @@ Usage: ${SCRIPT_BASENAME} list-dependents <modifiers or unit names>
 Usage: ${SCRIPT_BASENAME} list-requires [--recursive|-r] <unit names>
     A custom option to list units that the named one(s) "Requires" or "Wants"
     in order to run. By default lists direct requirements, optionally can
-    recurse. Either way the output is filtered by the defined list.
+    recurse. Either way, the output is filtered by the defined list and
+    each unit name is only printed once. Recursion stops at leaf units that
+    have no direct requirements on further units that match the filter
+    (so e.g. the "network{,ing}.service" hidden a few system hops away
+    would not show up - use "list-dependencies" if those are needed).
 
 Usage: ${SCRIPT_BASENAME} <certain allowed actions> <unitname> <modifiers>
     This wrapper allows certain standard actions to be done, against one of
