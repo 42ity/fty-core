@@ -150,7 +150,7 @@ write_syslog() {
 }
 
 print_item_list() {
-    { [ -n "$1" ] && [ "$1" -gt 10 ] && MAXLEN="$1" && shift || MAXLEN="73" ; } 2>/dev/null
+    { [[ -n "$1" ]] && [[ "$1" -gt 10 ]] && MAXLEN="$1" && shift || MAXLEN="73" ; } 2>/dev/null
     LL=0
     UL=0
     for U in "$@" ; do
