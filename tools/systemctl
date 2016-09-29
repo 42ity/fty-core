@@ -186,7 +186,7 @@ Usage: ${SCRIPT_BASENAME} list-json [modifiers] [list of units]
     filter; otherwise the allowed unit names must be specified (whether they
     exist on this system or not) or an "Action not allowed" error will occur.
 
-Usage: ${SCRIPT_BASENAME} list-ipm-units [modifiers]
+Usage: ${SCRIPT_BASENAME} list-ipm-units [modifiers] [unitnames]
     List names or some more details of the units allowed by filter.
     The listing may be further tuned for the following modifiers:
       --ipm-installed|--internal  List units developed as part of IPM
@@ -216,9 +216,8 @@ Usage: ${SCRIPT_BASENAME} list-ipm-units [modifiers]
     to disable output filtering by these criteria, which is the default setup.
     Defaults are to print one unit name per line (without further details),
     and to only print those units which are defined on this system, coming
-    from any origin and having any state.
-
-TODO subcmds
+    from any origin and having any state. By default all units in the filter
+    are listed, however the caller may specify particular unit basenames.
 
 Usage: ${SCRIPT_BASENAME} <certain allowed actions> <unitname> <modifiers>
     This wrapper allows certain standard actions to be done, against one of
@@ -472,6 +471,9 @@ systemctl_list_ipm_units() (
     LIST_STATES=""
     LIST_MISSING="no"
     SHOW_DETAILS="no"
+    SYSTEMCTL_UNITS=""
+    ALL_KNOWN_UNITS=""
+    REQUESTED_UNITS_REGEX=""
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -483,7 +485,14 @@ systemctl_list_ipm_units() (
             --disabled|--not-enabled) LIST_STATES="$LIST_STATES STATE:DISABLED" ;;
             --missing) LIST_MISSING="yes" ;;
             --detailed|--details|--long|-l) SHOW_DETAILS="yes" ;;
-            *) die_ACTION_NOT_ALLOWED ;;
+            *)  if isAllowed_Unit "$1" ; then
+                    [[ -z "$REQUESTED_UNITS_REGEX" ]] && \
+                        REQUESTED_UNITS_REGEX="$1" || \
+                        REQUESTED_UNITS_REGEX="$REQUESTED_UNITS_REGEX|$1"
+                else
+                    die_ACTION_NOT_ALLOWED
+                fi
+                ;;
         esac
         shift
     done
@@ -504,8 +513,13 @@ systemctl_list_ipm_units() (
     [[ -z "$LIST_STATES" ]] && LIST_STATES="STATE:ANY"
 
     # List of unique unit filenames known to the system that match our filter
-    ALL_KNOWN_UNITS="`list_known_ipm_units`" || ALL_KNOWN_UNITS=""
-    SYSTEMCTL_UNITS=""
+    if [[ -z "$REQUESTED_UNITS_REGEX" ]]; then
+        ALL_KNOWN_UNITS="`list_known_ipm_units`" || ALL_KNOWN_UNITS=""
+    else
+        REQUESTED_UNITS_REGEX='^[ \t]*('"$REQUESTED_UNITS_REGEX"')($|\.(service|timer|target))[ \t]*$'
+        ALL_KNOWN_UNITS="`list_known_ipm_units | egrep "$REQUESTED_UNITS_REGEX"`" || ALL_KNOWN_UNITS=""
+    fi
+    unset REQUESTED_UNITS_REGEX
 
     [[ -z "$ALL_KNOWN_UNITS" ]] && \
     { if [[ x"$LIST_MISSING" != x"yes" ]] ; then
