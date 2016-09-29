@@ -492,6 +492,7 @@ systemctl_list_ipm_units() (
     SYSTEMCTL_UNITS=""
     ALL_KNOWN_UNITS=""
     REQUESTED_UNITS_REGEX=""
+    REQUESTED_UNITS=""
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -504,6 +505,7 @@ systemctl_list_ipm_units() (
             --missing) LIST_MISSING="yes" ;;
             --detailed|--details|--long|-l) SHOW_DETAILS="yes" ;;
             *)  if isAllowed_Unit "$1" ; then
+                    REQUESTED_UNITS="$REQUESTED_UNITS $1"
                     [[ -z "$REQUESTED_UNITS_REGEX" ]] && \
                         REQUESTED_UNITS_REGEX="$1" || \
                         REQUESTED_UNITS_REGEX="$REQUESTED_UNITS_REGEX|$1"
@@ -534,10 +536,15 @@ systemctl_list_ipm_units() (
     if [[ -z "$REQUESTED_UNITS_REGEX" ]]; then
         ALL_KNOWN_UNITS="`list_known_ipm_units`" || ALL_KNOWN_UNITS=""
     else
-        REQUESTED_UNITS_REGEX='^[ \t]*('"$REQUESTED_UNITS_REGEX"')($|\.(service|timer|target))[ \t]*$'
-        ALL_KNOWN_UNITS="`list_known_ipm_units | egrep "$REQUESTED_UNITS_REGEX"`" || ALL_KNOWN_UNITS=""
+        REQUESTED_UNITS_REGEX_EXT='^[ \t]*('"$REQUESTED_UNITS_REGEX"')($|\.(service|timer|target))[ \t]*$'
+        ALL_KNOWN_UNITS="`list_known_ipm_units | egrep "$REQUESTED_UNITS_REGEX_EXT"`" || ALL_KNOWN_UNITS=""
+        if [[ -n "$ALL_KNOWN_UNITS" ]] && [[ -n "$REQUESTED_UNITS" ]] ; then
+            # Keep the caller's order of unit names, not necessarily alphabetic
+            SORTED_ALL_KNOWN_UNITS="$(for U in $REQUESTED_UNITS ; do echo "$ALL_KNOWN_UNITS" | egrep '^[ \t]*('"$U"')($|\.(service|timer|target))[ \t]*$' ; done)"
+            ALL_KNOWN_UNITS="$SORTED_ALL_KNOWN_UNITS"
+        fi
     fi
-    unset REQUESTED_UNITS_REGEX
+    unset REQUESTED_UNITS_REGEX REQUESTED_UNITS_REGEX_EXT
 
     [[ -z "$ALL_KNOWN_UNITS" ]] && \
     { if [[ x"$LIST_MISSING" != x"yes" ]] ; then
@@ -662,7 +669,7 @@ $U"
                         vSS="$VALUE";;
                     esac;;
             esac
-        done | sort | uniq )" || SYSTEMCTL_INFO=""
+        done )" || SYSTEMCTL_INFO=""
 
         if [[ "$DEBUG_SYSTEMCTL" = yes ]] ; then
             echo "$SYSTEMCTL_INFO"
