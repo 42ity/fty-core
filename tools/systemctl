@@ -780,13 +780,13 @@ $U"
                     case "$LIST_STATES" in
                         *STATE:FAILED*)
                             case "$I" in
-                                *[AS]:failed*|*:active*:dead*) SHOW3=yes ;;
+                                *[AS]:failed*|*:active*:dead*|*:enabled*:dead*) SHOW3=yes ;;
                                 *) SHOW3=no ;;
                             esac
                             ;;
                         *STATE:NOTFAILED*)
                             case "$I" in
-                                *[AS]:failed*|*:active*:dead*) SHOW3=no ;;
+                                *[AS]:failed*|*:active*:dead*|*:enabled*:dead*) SHOW3=no ;;
                                 *) SHOW3=yes ;;
                             esac
                             ;;
