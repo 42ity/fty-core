@@ -1,6 +1,6 @@
 <#
  #
- # Copyright (C) 2015 Eaton
+ # Copyright (C) 2015-2016 Eaton
  #
  # This program is free software; you can redistribute it and/or modify
  # it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 /*!
  * \file systemctl.ecpp
  * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \author Jim Klimov <EvgenyKlimov@Eaton.com>
  * \brief  Provide Users ability to manipulate with some specified services
  */
  #><%pre>
@@ -200,6 +201,21 @@ unsigned int process_post (
             service_name_op = "bios-networking";
         }
     }
+    // TODO: The hardcoded check below should call
+    // "sudo systemctl list-requires tntnet@bios.service"
+    // and inspect that run-time list of services
+    if ( (operation == "restart" || operation == "stop" || operation == "disable" ) &&
+       (service_name == "bios" || service_name == "bios.target" ||
+        service_name == "bios.service" ||
+        service_name == "mysql" || service_name == "mysql.service" ||
+        service_name == "bios-db-init" || service_name == "bios-db-init.service" ||
+        service_name == "malamute" || service_name == "malamute.service" ||
+        service_name == "saslauthd" || service_name == "saslauthd.service" ||
+        service_name == "tntnet@bios" || service_name == "tntnet@bios.service" )
+    ) {
+        message = "'sudo systemctl " + operation + " " + service_name_op + "' can impact the web-server unit 'tntnet@bios.service'";
+        log_warning (message.c_str ());
+    }
     shared::Argv proc_cmd {"sudo", "systemctl", operation, service_name_op};
 
     std::string proc_out, proc_err;
@@ -324,5 +340,3 @@ UserInfo user;
     }
 }
 </%cpp>
-
-
