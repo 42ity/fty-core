@@ -182,10 +182,7 @@ UserInfo user;
         {
             Value json;
             json.config.key = checked_key;
-            if (value == "true" || value == "false")
-                json.config.value = (value == "true" ? true : false);
-            else
-                json.config.value = value;
+            json.config.value = value;
             serializer.serialize (json).finish ();
         }
         return HTTP_OK;
