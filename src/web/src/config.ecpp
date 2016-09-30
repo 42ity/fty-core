@@ -204,7 +204,6 @@ UserInfo user;
             deserializer.deserialize (request_doc);
         {
             std::lock_guard<std::mutex> lock (config_mux);
-
             utils::config::json2zpl (roots, request_doc, lock);
 
             for (const auto &it : roots) {
@@ -226,6 +225,9 @@ UserInfo user;
         catch (const BiosError &e) {
             s_roots_destroy (roots);
             http_die_idx(e.idx, e.what());
+        }
+        catch (const std::exception &e) {
+            http_die ("bad-request-document", e.what ());
         }
     }
 }
