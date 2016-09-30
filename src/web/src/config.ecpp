@@ -35,59 +35,7 @@
 #include <cxxtools/regex.h>
 #include "helpers.h"
 #include "log.h"
-
-const char *
-get_config_mapping (const std::string& key)
-{
-    const static std::map <const std::string, const std::string> config_mapping = {
-        // general
-        {"BIOS_SNMP_COMMUNITY_NAME",    "snmp/community"},
-        // nut
-        {"BIOS_NUT_POLLING_INTERVAL",   "nut/polling_interval"},
-        // agent-smtp
-        {"BIOS_SMTP_SERVER",            "smtp/server"},
-        {"BIOS_SMTP_PORT",              "smtp/port"},
-        {"BIOS_SMTP_ENCRYPT",           "smtp/encryption"},
-        {"BIOS_SMTP_VERIFY_CA",         "smtp/verify_ca"},
-        {"BIOS_SMTP_USER",              "smtp/user"},
-        {"BIOS_SMTP_PASSWD",            "smtp/passwd"},
-        {"BIOS_SMTP_FROM",              "smtp/from"},
-        {"BIOS_SMTP_SMS_GATEWAY",       "smtp/smsgateway"},
-        // agent-ms
-        {"BIOS_METRIC_STORE_AGE_RT",    "store/rt"},
-        {"BIOS_METRIC_STORE_AGE_15m",   "store/15m"},
-        {"BIOS_METRIC_STORE_AGE_30m",   "store/30m"},
-        {"BIOS_METRIC_STORE_AGE_1h",    "store/1h"},
-        {"BIOS_METRIC_STORE_AGE_8h",    "store/8h"},
-        {"BIOS_METRIC_STORE_AGE_24h",   "store/24h"},
-        {"BIOS_METRIC_STORE_AGE_7d",    "store/7d"},
-        {"BIOS_METRIC_STORE_AGE_30d",   "store/30d"}
-    };
-    if (config_mapping.find (key) == config_mapping.end ())
-        return key.c_str ();
-    return config_mapping.at (key).c_str (); 
-}
-
-const char *
-get_config_path (const std::string& key)
-{
-    if (key.find ("BIOS_SMTP_") == 0) 
-    {
-        return "/etc/agent-smtp/bios-agent-smtp.cfg";
-    }
-    else
-    if (key.find ("BIOS_METRIC_STORE_") == 0)
-    {
-        return "/etc/bios-agent-ms/bios-agent-ms.cfg";
-    }
-    else
-    if (key.find ("BIOS_NUT_") == 0)
-    {
-        return "/etc/agent-nut/bios-agent-nut.cfg";
-    }
-    // general config file
-    return "/etc/default/bios.cfg";
-}
+#include "utils_web.h"
 
 
 // define json serialization objects
@@ -135,7 +83,7 @@ void operator<<= (cxxtools::SerializationInfo& si, const Value& value)
 zconfig_t *
 load_config_file (const std::string& key)
 {
-    std::string file = get_config_path (key);
+    std::string file = utils::config::get_path (key);
     zconfig_t *config = zconfig_load (file.c_str ());
     if (!config) {
         std::size_t last_slash = file.find_last_of ("/");
@@ -184,12 +132,12 @@ UserInfo user;
         }
 
         std::lock_guard<std::mutex> lock (config_mux);
-        zconfig_t *root = zconfig_load (get_config_path (checked_key));
+        zconfig_t *root = zconfig_load (utils::config::get_path (checked_key));
         if (!root) {
             http_die ("element-not-found", checked_key.c_str ());
         }
 
-        const char *config_key = get_config_mapping (checked_key);
+        const char *config_key = utils::config::get_mapping (checked_key);
         zconfig_t *item = zconfig_locate (root, config_key);
         if (!item) {
             zconfig_destroy (&root);
@@ -304,7 +252,7 @@ UserInfo user;
             if (!root)
                 http_die ("internal-error", "...tbd...");
 
-            const char *config_key = get_config_mapping (checked_key);
+            const char *config_key = utils::config::get_mapping (checked_key);
             zconfig_t *item = zconfig_locate (root, config_key);
             if (is_array) {
                 if (item)
@@ -325,7 +273,7 @@ UserInfo user;
                 }
                 zconfig_put (root, config_key, checked_value.c_str ());
             }
-            const char *config_file_name = get_config_path (checked_key);
+            const char *config_file_name = utils::config::get_path (checked_key);
             int rv = zconfig_save (root, config_file_name);
             zconfig_destroy (&root);
             if (rv == -1) {

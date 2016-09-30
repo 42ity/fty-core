@@ -354,3 +354,75 @@ TEST_CASE ("utils::string_to_element_id", "[utils]") {
     }
 }
 
+TEST_CASE ("utils::config") {
+    std::string JSON =
+        "{"
+        "\"BIOS_SMTP_VERIFY_CA\" : true,"
+        "\"BIOS_SMTP_SERVER\" : \"string\","
+        "\"BIOS_SMTP_PORT\" : 42,"
+        "\"BIOS_SNMP_COMMUNITY_NAME\" : [\"foo\", \"bar\"],"
+        "\"config\" : {\"key\" : \"old_array\", \"value\" : [\"old_value1\", \"old_value2\"]}"
+        "}";
+
+    std::stringstream input {JSON};
+    cxxtools::JsonDeserializer deserializer (input);
+    cxxtools::SerializationInfo request_doc;
+    deserializer.deserialize (request_doc);
+
+    zconfig_t *config = zconfig_new ("root", NULL);
+    config = utils::config::json2zpl (config, request_doc);
+    zconfig_print (config);
+
+    CHECK (streq (zconfig_get (config, "smtp/verify_ca", "false"), "true"));
+    CHECK (streq (zconfig_get (config, "snmp/community/0", "NULL"), "foo"));
+    CHECK (streq (zconfig_get (config, "snmp/community/1", "NULL"), "bar"));
+
+    // legacy_path
+    CHECK (!zconfig_get (config, "old_array", NULL));
+    CHECK (zconfig_locate (config, "old_array") != NULL);
+
+    CHECK (streq (zconfig_get (config, "old_array/0", "NULL"), "old_value1"));
+    CHECK (streq (zconfig_get (config, "old_array/1", "NULL"), "old_value2"));
+
+    // change value
+    std::string JSON2 =
+        "{"
+        "\"BIOS_SMTP_VERIFY_CA\" : true,"
+        "\"BIOS_SNMP_COMMUNITY_NAME\" : [\"ham\", \"spam\"],"
+        "\"config\" : {\"key\" : \"old_array\", \"value\" : [\"new_value42\", \"new_value44\"]}"
+        "}";
+
+    std::stringstream input2 {JSON2};
+    cxxtools::JsonDeserializer deserializer2 (input2);
+    cxxtools::SerializationInfo request_doc2;
+    deserializer2.deserialize (request_doc2);
+
+    config = utils::config::json2zpl (config, request_doc2);
+
+    CHECK (streq (zconfig_get (config, "smtp/verify_ca", "false"), "true"));
+    CHECK (streq (zconfig_get (config, "snmp/community/0", "NULL"), "ham"));
+    CHECK (streq (zconfig_get (config, "snmp/community/1", "NULL"), "spam"));
+
+    // legacy_path
+    CHECK (!zconfig_get (config, "old_array", NULL));
+    CHECK (zconfig_locate (config, "old_array") != NULL);
+
+    CHECK (streq (zconfig_get (config, "old_array/0", "NULL"), "new_value42"));
+    CHECK (streq (zconfig_get (config, "old_array/1", "NULL"), "new_value44"));
+
+    //legacy_path single value
+    std::string JSON3 =
+        "{ \"config\" : "
+        "{\"key\" : \"BIOS_SMTP_VERIFY_CA\", \"value\" : false}"
+        "}";
+
+    std::stringstream input3 {JSON3};
+    cxxtools::JsonDeserializer deserializer3 (input3);
+    cxxtools::SerializationInfo request_doc3;
+    deserializer3.deserialize (request_doc3);
+
+    config = utils::config::json2zpl (config, request_doc3);
+    CHECK (streq (zconfig_get (config, "smtp/verify_ca", "true"), "false"));
+
+    zconfig_destroy (&config);
+}
