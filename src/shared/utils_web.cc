@@ -251,7 +251,8 @@ get_path (const std::string& key)
         return "/etc/bios-agent-ms/bios-agent-ms.cfg";
     }
     else
-    if (key.find ("BIOS_NUT_") == 0)
+    if (   key.find ("BIOS_NUT_") == 0
+        || key.find ("BIOS_SNMP_") == 0)
     {
         return "/etc/agent-nut/bios-agent-nut.cfg";
     }
