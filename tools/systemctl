@@ -245,6 +245,8 @@ Usage: ${SCRIPT_BASENAME} list-ipm-units [modifiers] [unitnames]
       --disabled|--not-enabled    List units with state "disabled" defined as:
         if "LoadState" is "loaded" or if "UnitFileState" is "enabled" or
         "static" or empty - skip this unit; otherwise show it
+      --failed or --not-failed    List units that are in "failed" state or
+                                  those that are running as expected
       --missing                   ONLY list unitnames that are in the filter
                                   but files are not installed in this system
       --detailed|--details|--long|-l  List more than just the unit names
@@ -548,6 +550,8 @@ systemctl_list_ipm_units() (
             --inactive|--not-active) LIST_STATES="$LIST_STATES STATE:INACTIVE" ;;
             --enabled) LIST_STATES="$LIST_STATES STATE:ENABLED" ;;
             --disabled|--not-enabled) LIST_STATES="$LIST_STATES STATE:DISABLED" ;;
+            --failed) LIST_STATES="$LIST_STATES STATE:FAILED" ;;
+            --not-failed) LIST_STATES="$LIST_STATES STATE:NOTFAILED" ;;
             --missing) LIST_MISSING="yes" ;;
             --detailed|--details|--long|-l) SHOW_DETAILS="yes" ;;
             *)  if isAllowed_Unit "$1" ; then
@@ -573,7 +577,7 @@ systemctl_list_ipm_units() (
     [[ x"$LIST_MISSING" = x"yes" ]] && LIST_STATES=""
     [[ -n "$LIST_STATES" ]] && \
     LIST_STATES="`for T in $LIST_STATES ; do echo "$T" ; done | sort | uniq | tr '\n' " "`" && \
-    [[ "$LIST_STATES" =~ (STATE:ACTIVE.*STATE:INACTIVE|STATE:DISABLED.*STATE:ENABLED) ]] && LIST_STATES=""
+    [[ "$LIST_STATES" =~ (STATE:ACTIVE.*STATE:INACTIVE|STATE:DISABLED.*STATE:ENABLED|STATE:FAILED.*STATE:NOTFAILED) ]] && LIST_STATES=""
 
     [[ -z "$LIST_UNITS" ]] && LIST_UNITS="ORIGIN:ANY"
     [[ -z "$LIST_STATES" ]] && LIST_STATES="STATE:ANY"
@@ -735,6 +739,7 @@ $U"
                     # TODO: More research into evaluated strings is desirable here
                     SHOW1=""
                     SHOW2=""
+                    SHOW3=""
                     shopt -s nocasematch
                     case "$LIST_STATES" in
                         *STATE:ENABLED*)
@@ -771,8 +776,24 @@ $U"
                             esac
                             ;;
                     esac
+
+                    case "$LIST_STATES" in
+                        *STATE:FAILED*)
+                            case "$I" in
+                                *[AS]:failed*|*:active*:dead*) SHOW3=yes ;;
+                                *) SHOW3=no ;;
+                            esac
+                            ;;
+                        *STATE:NOTFAILED*)
+                            case "$I" in
+                                *[AS]:failed*|*:active*:dead*) SHOW3=no ;;
+                                *) SHOW3=yes ;;
+                            esac
+                            ;;
+                    esac
+
                     # We show units not filtered away by requirements listed on CLI
-                    [[ x"$SHOW1" != xno ]] && [[ x"$SHOW2" != xno ]] # Return this test's exitcode
+                    [[ x"$SHOW1" != xno ]] && [[ x"$SHOW2" != xno ]] && [[ x"$SHOW3" != xno ]] # Return this test's exitcode
                     ) && SHOW_THIS_UNIT=yes
                 fi
                 if [[ "$SHOW_THIS_UNIT" = yes ]] ; then
