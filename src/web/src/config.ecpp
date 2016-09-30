@@ -96,6 +96,16 @@ load_config_file (const std::string& key)
     }
     return config;
 }
+
+static void
+s_roots_destroy (const std::map <std::string, zconfig_t*>& roots)
+{
+    for (const auto &it: roots)
+    {
+        zconfig_t *cfg = it.second;
+        zconfig_destroy (&cfg);
+    }
+}
 </%pre>
 <%application scope="page">
     std::mutex config_mux;
@@ -172,10 +182,7 @@ UserInfo user;
         {
             Value json;
             json.config.key = checked_key;
-            if (value == "true" || value == "false")
-                json.config.value = (value == "true" ? true : false);
-            else
-                json.config.value = value;
+            json.config.value = value;
             serializer.serialize (json).finish ();
         }
         return HTTP_OK;
@@ -188,118 +195,40 @@ UserInfo user;
         std::string checked_key;
         std::string checked_value;
         std::vector <std::string> checked_values;
-        bool is_array = false;
 
+        std::map <std::string, zconfig_t*> roots;
         try {
             std::stringstream input (request.getBody (), std::ios_base::in);
             cxxtools::JsonDeserializer deserializer (input);
             cxxtools::SerializationInfo request_doc;
             deserializer.deserialize (request_doc);
-            if (request_doc.category () != cxxtools::SerializationInfo::Object) {
-                http_die ("bad-request-document", "Root of json request document must be an object with property 'config'.");
-            }
-
-            std::string key;
-            request_doc.getMember("config").getMember("key") >>= key;
-            if (!key_format.match (key)) {
-                std::string msg = "satisfy format " + key_format_string;
-                http_die ("request-param-bad", "key", key.c_str(), msg.c_str() );
-            }
-            checked_key = std::move (key);
-            log_debug ("key='%s'", checked_key.c_str());
-
-            if (request_doc.getMember ("config").getMember ("value").category () == cxxtools::SerializationInfo::Category::Value) {
-                if (request_doc.getMember ("config").getMember ("value").isBool ()) {
-                    bool bvalue;
-                    request_doc.getMember ("config").getMember ("value") >>= bvalue;
-                    checked_value = bvalue ? "true" : "false";
-                }
-                else {
-                    std::string value;
-                    request_doc.getMember ("config").getMember ("value") >>= value;
-                    if (!value_format.match (value)) {
-                        std::string msg = "satisfy format " + value_format_string;
-                        http_die ("request-param-bad", "value", value.c_str(), msg.c_str() );
-                    }
-                    checked_value = std::move (value);
-                }
-            }
-            else
-            if (request_doc.getMember ("config").getMember ("value").category () == cxxtools::SerializationInfo::Category::Array) {
-                is_array = true;
-                std::vector<std::string> values;
-                request_doc.getMember ("config").getMember ("value") >>= values;
-                for (const auto& i : values)  {
-                    if (!value_format.match (i)) {
-                        std::string msg = "satisfy format " + value_format_string;
-                        http_die ("request-param-bad", "value", i.c_str(), msg.c_str() );
-                    }
-                    checked_values.push_back (i);
-                }
-            }
-            else
-            {
-                http_die ("bad-request-document", "Value of property 'value' must be string or array of strings.");
-            }
-        }
-        catch (const std::exception& e) {
-            http_die ("bad-request-document", e.what ());
-        }
-
         {
             std::lock_guard<std::mutex> lock (config_mux);
-            zconfig_t *root = load_config_file (checked_key);
-            if (!root)
-                http_die ("internal-error", "...tbd...");
+            utils::config::json2zpl (roots, request_doc, lock);
 
-            const char *config_key = utils::config::get_mapping (checked_key);
-            zconfig_t *item = zconfig_locate (root, config_key);
-            if (is_array) {
-                if (item)
-                    zconfig_set_value (item, NULL); 
-                int counter = 0;
-                for (const auto& i : checked_values)  {
-                    zconfig_put (root, std::string (config_key).append ("/").append (std::to_string (counter)).c_str (), i.c_str ());
-                    counter++;
+            for (const auto &it : roots) {
+                zconfig_t *config = it.second;
+                int rv = zconfig_save (config, it.first.c_str ());
+                if (rv == -1) {
+                    s_roots_destroy (roots);
+                    std::string msg = "Cannot save config file " + it.first;
+                    http_die ("internal-error", msg.c_str());
                 }
             }
-            else {
-                if (item && zconfig_child (item)) {
-                    zconfig_t *child = zconfig_child (item);
-                    while (child) {
-                        zconfig_set_value (child, NULL);
-                        child = zconfig_next (child);
-                    }
-                }
-                zconfig_put (root, config_key, checked_value.c_str ());
-            }
-            const char *config_file_name = utils::config::get_path (checked_key);
-            int rv = zconfig_save (root, config_file_name);
-            zconfig_destroy (&root);
-            if (rv == -1) {
-                std::string msg = "Cannot save config file " + std::string(config_file_name);
-                http_die ("internal-error", msg.c_str());
-            }
-        }
-
-        cxxtools::JsonSerializer serializer(reply.out ());
-        serializer.beautify (true);
-
-        if (is_array) {
-            Array json;
-            json.config.key = checked_key;
-            json.config.value = std::move (checked_values);
-            serializer.serialize (json).finish ();
-        }
-        else
-        {
-            Value json;
-            json.config.key = checked_key;
-            json.config.value = checked_value;
-            serializer.serialize (json).finish ();
-        }
+        }   // unlock the guard
+</%cpp>
+{}
+<%cpp>
+        s_roots_destroy (roots);
         return HTTP_OK;
+        }
+        catch (const BiosError &e) {
+            s_roots_destroy (roots);
+            http_die_idx(e.idx, e.what());
+        }
+        catch (const std::exception &e) {
+            http_die ("bad-request-document", e.what ());
+        }
     }
-    http_die ("method-not-allowed");
 }
 </%cpp>

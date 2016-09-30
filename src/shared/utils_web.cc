@@ -20,6 +20,7 @@
 #include <cstring>
 #include <ostream>
 #include <limits>
+#include <mutex>
 #include <cxxtools/jsonformatter.h>
 #include <cxxtools/convert.h>
 #include <cxxtools/regex.h>
@@ -308,26 +309,26 @@ assert_value (const std::string& key, const std::string& value)
 
 }
 
-zconfig_t*
+void
 json2zpl (
-        zconfig_t *root,
-        const cxxtools::SerializationInfo &si)
+        std::map <std::string, zconfig_t*> &roots,
+        const cxxtools::SerializationInfo &si,
+        std::lock_guard <std::mutex> &lock,
+        bool _allow_missing_zconfig)
 {
-    assert (root);
+    static const std::string slash {"/"};
+
+    if (si.category () != cxxtools::SerializationInfo::Object)
+        bios_throw ("bad-request-document", "Root of json request document must be an object");
 
     for (const auto& it: si) {
 
         assert_key (it.name ());
 
-        bool legacy_path = it.name () == "config"
-                        && it.category () == cxxtools::SerializationInfo::Category::Object;
-
-        zconfig_t *cfg;
-        if (!legacy_path)
-            cfg = s_zconfig_put (root, get_mapping (it.name ()), NULL);
-
         // this is a support for legacy input document, please drop it
-        if (legacy_path)
+        bool legacy_format = it.name () == "config"
+                        && it.category () == cxxtools::SerializationInfo::Category::Object;
+        if (legacy_format)
         {
             cxxtools::SerializationInfo fake_si;
             cxxtools::SerializationInfo fake_value = si.getMember ("config"). getMember ("value");
@@ -353,16 +354,34 @@ json2zpl (
                 std::string msg = "Value of " + name + " must be string or array of strings.";
                 bios_throw ("bad-request-document", msg.c_str ());
             }
-            json2zpl (root, fake_si);
+            json2zpl (roots, fake_si, lock);
             continue;
         }
-        else
+
+        std::string key;
+        key = it.name ();
+
+        std::string file_path = get_path (key);
+        if (roots.count (file_path) == 0) {
+            zconfig_t *root = zconfig_load (file_path.c_str ());
+            if (!root) {
+                if (_allow_missing_zconfig)
+                    root = zconfig_new ("root", NULL);
+                else {
+                    std::string msg = "Cannot load file " + file_path + " for key " + key;
+                    bios_throw ("internal-error", msg.c_str ());
+                }
+            }
+            roots [file_path] = root;
+        }
+
+        zconfig_t *cfg = roots [file_path];
+
         if (it.category () == cxxtools::SerializationInfo::Category::Value)
         {
             std::string value;
             it.getValue (value);
-            assert_value (it.name (), value);
-            zconfig_set_value (cfg, value.c_str ());
+            s_zconfig_put (cfg, get_mapping (it.name ()), value.c_str ());
         }
         else
         if (it.category () == cxxtools::SerializationInfo::Category::Array)
@@ -372,7 +391,9 @@ json2zpl (
             size_t i = 0;
             for (const auto& value : values) {
                 assert_value (it.name (), value);
-                s_zconfig_put (cfg, std::to_string (i).c_str (), value.c_str ());
+                std::string name =
+                    get_mapping (it.name ()) + slash + std::to_string(i);
+                s_zconfig_put (cfg, name.c_str (), value.c_str ());
                 i++;
             }
         }
@@ -381,9 +402,8 @@ json2zpl (
             bios_throw ("bad-request-document", msg.c_str ());
         }
     }
-
-    return root;
 }
+
 } // namespace utils::config
 
 } // namespace utils
