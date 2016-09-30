@@ -259,6 +259,10 @@ get_path (const std::string& key)
     return "/etc/default/bios.cfg";
 }
 
+// put new value to zconfig_t - if key has / inside, it create the
+// hierarchy automatically.
+//
+// If c_value is NULL, it simply create hierarchy
 static zconfig_t*
 s_zconfig_put (zconfig_t *config, const std::string& key, const char* c_value)
 {
@@ -280,12 +284,40 @@ s_zconfig_put (zconfig_t *config, const std::string& key, const char* c_value)
     return cfg;
 }
 
+static void
+assert_key (const std::string& key)
+{
+    static std::string key_format_string = "^[-._a-zA-Z0-9/]+$";
+    static cxxtools::Regex key_format(key_format_string);
+    if (!key_format.match (key)) {
+        std::string msg = "to satisfy format " + key_format_string;
+        bios_throw ("request-param-bad", key.c_str (), key.c_str (), msg.c_str ());
+    }
+
+}
+
+static void
+assert_value (const std::string& key, const std::string& value)
+{
+    static std::string value_format_string = "^[[:blank:][:alnum:][:punct:]]*$";
+    static cxxtools::Regex value_format(value_format_string);
+    if (!value_format.match (value)) {
+        std::string msg2 = "to satisfy format " + value_format_string;
+        bios_throw ("request-param-bad", key.c_str (), value.c_str (), msg2.c_str ());
+    }
+
+}
+
 zconfig_t*
 json2zpl (
         zconfig_t *root,
         const cxxtools::SerializationInfo &si)
 {
+    assert (root);
+
     for (const auto& it: si) {
+
+        assert_key (it.name ());
 
         bool legacy_path = it.name () == "config"
                         && it.category () == cxxtools::SerializationInfo::Category::Object;
@@ -316,6 +348,11 @@ json2zpl (
                 fake_value >>= values;
                 fake_si.addMember (name) <<= values;
             }
+            else
+            {
+                std::string msg = "Value of " + name + " must be string or array of strings.";
+                bios_throw ("bad-request-document", msg.c_str ());
+            }
             json2zpl (root, fake_si);
             continue;
         }
@@ -324,6 +361,7 @@ json2zpl (
         {
             std::string value;
             it.getValue (value);
+            assert_value (it.name (), value);
             zconfig_set_value (cfg, value.c_str ());
         }
         else
@@ -333,9 +371,14 @@ json2zpl (
             it >>= values;
             size_t i = 0;
             for (const auto& value : values) {
-                 s_zconfig_put (cfg, std::to_string (i).c_str (), value.c_str ());
-                 i++;
+                assert_value (it.name (), value);
+                s_zconfig_put (cfg, std::to_string (i).c_str (), value.c_str ());
+                i++;
             }
+        }
+        else {
+            std::string msg = "Value of " + it.name () + " must be string or array of strings.";
+            bios_throw ("bad-request-document", msg.c_str ());
         }
     }
 
