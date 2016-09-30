@@ -611,13 +611,14 @@ test_utils_web_SOURCES = \
 
 test_utils_web_LDADD = \
 			libpriv-utils-web.la \
+			libpriv-log.la \
 			libpriv-test-run.la
 
 test_utils_web_CPPFLAGS = \
 			$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/
 
-test_utils_web_LDFLAGS =	${CXXTOOLS_LIBS}
+test_utils_web_LDFLAGS =	${CXXTOOLS_LIBS} -lczmq
 
 ###
 check_PROGRAMS +=	test-tntmlm	
