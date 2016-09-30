@@ -155,28 +155,25 @@ cat_uniq() (
     # already printed (not necessarily in immediately previous line as uniq
     # requires). Note that a sort|uniq is still faster ATM (where keeping
     # the original line ordering does not matter).
-    OUT=""
+    local LINE=""
+    local LINES=""
+    declare -A OUTARR   # Assoc.array to track printed lines
     while IFS= read LINE ; do
-        if [[ -z "$OUT" ]]; then
-            OUT="$LINE"
+        # A mode to strip leading/trailing whitespace and
+        # so only compare the not-empty payloads
+        if [[ "$1" = "ignore_whitespace_around" ]] ; then
+            LINES="`echo "$LINE" | ( IFS=" 	" read LINES ; echo "$LINES" )`"
+            if [[ "${OUTARR["$LINES"]}" = 1 ]]; then : ; else
+                echo "$LINE"
+                OUTARR["$LINES"]=1
+            fi
         else
-            if [[ "$1" = "ignore_whitespace_around" ]] ; then
-                # A mode to strip leading/trailing whitespace and
-                # so only compare the not-empty payloads
-                LINES="`echo "$LINE" | sed -e 's,^[ \t]*,,' -e 's,[ \t]*$,,'`"
-                if echo "$OUT" | sed -e 's,^[ \t]*,,' -e 's,[ \t]*$,,' | ( while IFS= read OUTLINES; do [[ "$OUTLINES" = "$LINES" ]] && exit 1 ; done ; exit 0 ); then
-                    OUT="$OUT
-$LINE"
-                fi
-            else
-                if echo "$OUT" | ( while IFS= read OUTLINE; do [[ "$OUTLINE" = "$LINE" ]] && exit 1 ; done ; exit 0 ); then
-                    OUT="$OUT
-$LINE"
-                fi
+            if [[ "${OUTARR["$LINE"]}" = 1 ]]; then : ; else
+                echo "$LINE"
+                OUTARR["$LINE"]=1
             fi
         fi
     done
-    echo "$OUT"
 )
 
 echo_indent() {
