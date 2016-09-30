@@ -355,6 +355,10 @@ TEST_CASE ("utils::string_to_element_id", "[utils]") {
 }
 
 TEST_CASE ("utils::config") {
+
+    std::mutex test_mutex {};
+    std::lock_guard<std::mutex> test_lock {test_mutex};
+
     std::string JSON =
         "{"
         "\"BIOS_SMTP_VERIFY_CA\" : true,"
@@ -369,15 +373,18 @@ TEST_CASE ("utils::config") {
     cxxtools::SerializationInfo request_doc;
     deserializer.deserialize (request_doc);
 
-    zconfig_t *config = zconfig_new ("root", NULL);
-    config = utils::config::json2zpl (config, request_doc);
-    zconfig_print (config);
+    std::map <std::string, zconfig_t*> roots;
+    utils::config::json2zpl (roots, request_doc, test_lock, true);
 
+    zconfig_t *config = roots [utils::config::get_path ("BIOS_SMTP_VERIFY_CA")];
     CHECK (streq (zconfig_get (config, "smtp/verify_ca", "false"), "true"));
+
+    config = roots [utils::config::get_path ("BIOS_SNMP_COMMUNITY_NAME")];
     CHECK (streq (zconfig_get (config, "snmp/community/0", "NULL"), "foo"));
     CHECK (streq (zconfig_get (config, "snmp/community/1", "NULL"), "bar"));
 
     // legacy_path
+    config = roots [utils::config::get_path ("old_array")];
     CHECK (!zconfig_get (config, "old_array", NULL));
     CHECK (zconfig_locate (config, "old_array") != NULL);
 
@@ -387,7 +394,7 @@ TEST_CASE ("utils::config") {
     // change value
     std::string JSON2 =
         "{"
-        "\"BIOS_SMTP_VERIFY_CA\" : true,"
+        "\"BIOS_SMTP_VERIFY_CA\" : false,"
         "\"BIOS_SNMP_COMMUNITY_NAME\" : [\"ham\", \"spam\"],"
         "\"config\" : {\"key\" : \"old_array\", \"value\" : [\"new_value42\", \"new_value44\"]}"
         "}";
@@ -397,13 +404,16 @@ TEST_CASE ("utils::config") {
     cxxtools::SerializationInfo request_doc2;
     deserializer2.deserialize (request_doc2);
 
-    config = utils::config::json2zpl (config, request_doc2);
+    utils::config::json2zpl (roots, request_doc2, test_lock, true);
 
-    CHECK (streq (zconfig_get (config, "smtp/verify_ca", "false"), "true"));
+    config = roots [utils::config::get_path ("BIOS_SMTP_VERIFY_CA")];
+    CHECK (streq (zconfig_get (config, "smtp/verify_ca", "true"), "false"));
+    config = roots [utils::config::get_path ("BIOS_SNMP_COMMUNITY_NAME")];
     CHECK (streq (zconfig_get (config, "snmp/community/0", "NULL"), "ham"));
     CHECK (streq (zconfig_get (config, "snmp/community/1", "NULL"), "spam"));
 
     // legacy_path
+    config = roots [utils::config::get_path ("old_array")];
     CHECK (!zconfig_get (config, "old_array", NULL));
     CHECK (zconfig_locate (config, "old_array") != NULL);
 
@@ -421,7 +431,9 @@ TEST_CASE ("utils::config") {
     cxxtools::SerializationInfo request_doc3;
     deserializer3.deserialize (request_doc3);
 
-    config = utils::config::json2zpl (config, request_doc3);
+    utils::config::json2zpl (roots, request_doc3, test_lock, true);
+
+    config = roots [utils::config::get_path ("BIOS_SMTP_VERIFY_CA")];
     CHECK (streq (zconfig_get (config, "smtp/verify_ca", "true"), "false"));
 
     zconfig_destroy (&config);

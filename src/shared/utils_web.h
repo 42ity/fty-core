@@ -31,6 +31,7 @@
 #include <czmq.h>
 #include <string>
 #include <vector>
+#include <mutex>
 #include <list>
 #include <utility>
 #include <array>
@@ -475,10 +476,21 @@ get_mapping (const std::string& key);
 const char *
 get_path (const std::string& key);
 
-zconfig_t*
+/*!
+ \brief Convert json for config call to respective zpl structure
+
+ \param [out] roots - map of file_path to zconfig with updated values
+ \param [in]  si - parser JSON document
+ \param [in]  lock - the guard to ensure this function runs only once
+ \param [in]  _allow_missing_zconfig - for unit tests, one can ignore errors about missing file
+ \throws BiosError if input parameters are wrong
+*/
+void
 json2zpl (
-        zconfig_t *root,
-        const cxxtools::SerializationInfo &si);
+        std::map <std::string, zconfig_t*> &roots,
+        const cxxtools::SerializationInfo &si,
+        std::lock_guard <std::mutex> &lock,
+        bool _allow_missing_zconfig=false);
 
 } // namespace utils::config
 
