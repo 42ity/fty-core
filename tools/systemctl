@@ -1,4 +1,5 @@
 #!/bin/bash
+# WARNING: bash syntax and capabilities are used intensively in code below!
 #
 # Copyright (C) 2015-2016 Eaton
 #
@@ -800,6 +801,9 @@ $U"
     echo "$SYSTEMCTL_UNITS"
 )
 
+# Associative array used for caching the service requirements/wants
+# Populated in systemctl_list_requires() by calling this routine:
+declare -A SYSTEMCTL_DEPS_CACHED
 do_systemctl_list_requires_all() {
     # Prepare cached content in one shot
     ( $SYSTEMCTL show -p Id -p Requires -p Wants --all '*' '*.service' '*.target' '*.timer' ; echo "" ) | \
@@ -824,15 +828,9 @@ do_systemctl_list_requires_filtered() {
     local _ID
     local _RV
 
-    echo "$SYSTEMCTL_DEPS_CACHED" | \
-    while read _ID _RV ; do
-        if [[ "$_ID" = "$1" ]] ; then
-            [[ -n "$_RV" ]] && \
-            for RR in $_RV ; do
-                [[ "$RR" =~ $SYSTEMCTL_UNITS_REGEX_SINGLE ]] > /dev/null && echo "$RR"
-            done
-            break
-        fi
+    [[ -n "$1" ]] && \
+    for RR in ${SYSTEMCTL_DEPS_CACHED["$1"]} ; do
+        [[ "$RR" =~ $SYSTEMCTL_UNITS_REGEX_SINGLE ]] > /dev/null && echo "$RR"
     done
 }
 
@@ -891,8 +889,18 @@ systemctl_list_requires() (
         SYSTEMCTL_UNITS="tntnet@bios.service bios.service bios.target `list_known_ipm_units | egrep -v 'tntnet@bios.service|bios.service|bios.target'`"
     fi
     export RECURSIVE
-    SYSTEMCTL_DEPS_CACHED="`do_systemctl_list_requires_all`"
+
     export SYSTEMCTL_DEPS_CACHED
+    SYSTEMCTL_DEPS_CACHED_STRING="`do_systemctl_list_requires_all`"
+    while read _ID _RV ; do
+#        echo "SYSTEMCTL_DEPS_CACHED[${_ID}]='$_RV'" >&2
+        [[ -z "${_ID}" ]] && continue
+        SYSTEMCTL_DEPS_CACHED[${_ID}]="$_RV"
+    done << EOF
+"$SYSTEMCTL_DEPS_CACHED_STRING"
+EOF
+    unset SYSTEMCTL_DEPS_CACHED_STRING
+
     if [[ -z "$FILTER" ]] ; then
         do_systemctl_list_requires $SYSTEMCTL_UNITS
     else
