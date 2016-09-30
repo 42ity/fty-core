@@ -611,6 +611,7 @@ test_utils_web_SOURCES = \
 
 test_utils_web_LDADD = \
 			libpriv-utils-web.la \
+			libpriv-log.la \
 			libpriv-test-run.la
 
 test_utils_web_CPPFLAGS = \
