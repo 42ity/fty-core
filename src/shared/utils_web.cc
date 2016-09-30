@@ -23,6 +23,8 @@
 #include <cxxtools/jsonformatter.h>
 #include <cxxtools/convert.h>
 #include <cxxtools/regex.h>
+#include <cxxtools/serializationinfo.h>
+#include <cxxtools/split.h>
 
 #include "utils_web.h"
 
@@ -202,5 +204,144 @@ std::string jsonify (double t)
 }
 
 } // namespace utils::json
+
+namespace config {
+const char *
+get_mapping (const std::string& key)
+{
+    const static std::map <const std::string, const std::string> config_mapping = {
+        // general
+        {"BIOS_SNMP_COMMUNITY_NAME",    "snmp/community"},
+        // nut
+        {"BIOS_NUT_POLLING_INTERVAL",   "nut/polling_interval"},
+        // agent-smtp
+        {"BIOS_SMTP_SERVER",            "smtp/server"},
+        {"BIOS_SMTP_PORT",              "smtp/port"},
+        {"BIOS_SMTP_ENCRYPT",           "smtp/encryption"},
+        {"BIOS_SMTP_VERIFY_CA",         "smtp/verify_ca"},
+        {"BIOS_SMTP_USER",              "smtp/user"},
+        {"BIOS_SMTP_PASSWD",            "smtp/passwd"},
+        {"BIOS_SMTP_FROM",              "smtp/from"},
+        {"BIOS_SMTP_SMS_GATEWAY",       "smtp/smsgateway"},
+        // agent-ms
+        {"BIOS_METRIC_STORE_AGE_RT",    "store/rt"},
+        {"BIOS_METRIC_STORE_AGE_15m",   "store/15m"},
+        {"BIOS_METRIC_STORE_AGE_30m",   "store/30m"},
+        {"BIOS_METRIC_STORE_AGE_1h",    "store/1h"},
+        {"BIOS_METRIC_STORE_AGE_8h",    "store/8h"},
+        {"BIOS_METRIC_STORE_AGE_24h",   "store/24h"},
+        {"BIOS_METRIC_STORE_AGE_7d",    "store/7d"},
+        {"BIOS_METRIC_STORE_AGE_30d",   "store/30d"}
+    };
+    if (config_mapping.find (key) == config_mapping.end ())
+        return key.c_str ();
+    return config_mapping.at (key).c_str (); 
+}
+
+const char *
+get_path (const std::string& key)
+{
+    if (key.find ("BIOS_SMTP_") == 0) 
+    {
+        return "/etc/agent-smtp/bios-agent-smtp.cfg";
+    }
+    else
+    if (key.find ("BIOS_METRIC_STORE_") == 0)
+    {
+        return "/etc/bios-agent-ms/bios-agent-ms.cfg";
+    }
+    else
+    if (key.find ("BIOS_NUT_") == 0)
+    {
+        return "/etc/agent-nut/bios-agent-nut.cfg";
+    }
+    // general config file
+    return "/etc/default/bios.cfg";
+}
+
+static zconfig_t*
+s_zconfig_put (zconfig_t *config, const std::string& key, const char* c_value)
+{
+    std::vector <std::string> keys;
+    cxxtools::split ('/', key, std::back_inserter (keys));
+
+    zconfig_t *cfg = config;
+    for (const std::string& k: keys)
+    {
+        if (!zconfig_locate (cfg, k.c_str ()))
+            cfg = zconfig_new (k.c_str (), cfg);
+        else
+            cfg = zconfig_locate (cfg, k.c_str ());
+    }
+
+    if (c_value)
+        zconfig_set_value (cfg, c_value);
+
+    return cfg;
+}
+
+zconfig_t*
+json2zpl (
+        zconfig_t *root,
+        const cxxtools::SerializationInfo &si)
+{
+    for (const auto& it: si) {
+
+        bool legacy_path = it.name () == "config"
+                        && it.category () == cxxtools::SerializationInfo::Category::Object;
+
+        zconfig_t *cfg;
+        if (!legacy_path)
+            cfg = s_zconfig_put (root, get_mapping (it.name ()), NULL);
+
+        // this is a support for legacy input document, please drop it
+        if (legacy_path)
+        {
+            cxxtools::SerializationInfo fake_si;
+            cxxtools::SerializationInfo fake_value = si.getMember ("config"). getMember ("value");
+            std::string name;
+            si.getMember ("config"). getMember ("key"). getValue (name);
+            name = get_mapping (name);
+
+            if (fake_value.category () == cxxtools::SerializationInfo::Category::Value)
+            {
+                std::string value;
+                fake_value.getValue (value);
+                fake_si.addMember (name) <<= value;
+            }
+            else
+            if (fake_value.category () == cxxtools::SerializationInfo::Category::Array)
+            {
+                std::vector <std::string> values;
+                fake_value >>= values;
+                fake_si.addMember (name) <<= values;
+            }
+            json2zpl (root, fake_si);
+            continue;
+        }
+        else
+        if (it.category () == cxxtools::SerializationInfo::Category::Value)
+        {
+            std::string value;
+            it.getValue (value);
+            zconfig_set_value (cfg, value.c_str ());
+        }
+        else
+        if (it.category () == cxxtools::SerializationInfo::Category::Array)
+        {
+            std::vector <std::string> values;
+            it >>= values;
+            size_t i = 0;
+            for (const auto& value : values) {
+                 s_zconfig_put (cfg, std::to_string (i).c_str (), value.c_str ());
+                 i++;
+            }
+        }
+    }
+
+    return root;
+}
+} // namespace utils::config
+
 } // namespace utils
 

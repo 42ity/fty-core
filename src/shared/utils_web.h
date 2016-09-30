@@ -28,6 +28,7 @@
 #ifndef SRC_SHARED_WEB_UTILS_H_
 #define SRC_SHARED_WEB_UTILS_H_
 
+#include <czmq.h>
 #include <string>
 #include <vector>
 #include <list>
@@ -37,6 +38,7 @@
 #include <stdarg.h>
 #include <cmath>
 #include <climits>
+#include <cxxtools/serializationinfo.h>
 #include "log.h"
 
 #include <tnt/http.h>
@@ -464,6 +466,22 @@ std::string
 create_error_json (std::vector <std::tuple<uint32_t, std::string, std::string>> messages);
 
 } // namespace utils::json
+
+namespace config {
+
+const char *
+get_mapping (const std::string& key);
+
+const char *
+get_path (const std::string& key);
+
+zconfig_t*
+json2zpl (
+        zconfig_t *root,
+        const cxxtools::SerializationInfo &si);
+
+} // namespace utils::config
+
 } // namespace utils
 
 #endif // SRC_SHARED_WEB_UTILS_H_
