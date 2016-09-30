@@ -245,8 +245,8 @@ Usage: ${SCRIPT_BASENAME} list-ipm-units [modifiers] [unitnames]
       --disabled|--not-enabled    List units with state "disabled" defined as:
         if "LoadState" is "loaded" or if "UnitFileState" is "enabled" or
         "static" or empty - skip this unit; otherwise show it
-      --failed or --not-failed    List units that are in "failed" state or
-                                  those that are running as expected
+      --failed or --not-failed    List units that are in "failed" state vs.
+                                  those that are running (or not) as expected
       --missing                   ONLY list unitnames that are in the filter
                                   but files are not installed in this system
       --detailed|--details|--long|-l  List more than just the unit names
