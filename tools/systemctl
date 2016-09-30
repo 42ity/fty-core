@@ -44,10 +44,15 @@ export LANG LC_ALL TZ
 SYSTEMCTL="/bin/systemctl"
 JOURNALCTL="/bin/journalctl"
 
+SCRIPT_BASENAME="`basename "$0"`"
+SCRIPT_DIRNAME="`dirname "$0"`"
+MAINPID="$$"
+MAINARGS="$0 $*"
+
 # Use syslog if "logger" is available
 LOGGER="$(which logger)" 2>/dev/null || LOGGER=""
 
-SYSTEMCTL_COMMANDS="show start stop restart enable disable daemon-reload status is-active"
+SYSTEMCTL_COMMANDS="show start stop restart enable disable daemon-reload status is-active list-dependencies"
 # NOTE: We do not support "--unit=UNITNAME" because it is too much hassle here
 # NOTE: We also support "-n NUMBER" below
 JOURNALCTL_COMMANDS="-f --follow -l -u -fl -lf -fu -uf -lu -ul -flu -ful -luf -lfu -ulf -ufl -a --all --no-pager -r --reverse -k --dmesg"
@@ -118,9 +123,13 @@ if [[ -n "$SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL" ]]; then
         || SYSTEMCTL_UNITS_REGEX_SINGLE="$SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL"
 fi
 
-SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL='^('"${SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL}"')($|\.(service|timer|target))$'
-SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL='^('"${SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL}"')($|\.(service|timer|target))$'
-SYSTEMCTL_UNITS_REGEX_SINGLE='^('"${SYSTEMCTL_UNITS_REGEX_SINGLE}"')($|\.(service|timer|target))$'
+SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL_EXT='('"${SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL}"')($|\.(service|timer|target))'
+SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL_EXT='('"${SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL}"')($|\.(service|timer|target))'
+SYSTEMCTL_UNITS_REGEX_SINGLE_EXT='('"${SYSTEMCTL_UNITS_REGEX_SINGLE}"')($|\.(service|timer|target))'
+
+SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL='^'"${SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL_EXT}"'$'
+SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL='^'"${SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL_EXT}"'$'
+SYSTEMCTL_UNITS_REGEX_SINGLE='^'"${SYSTEMCTL_UNITS_REGEX_SINGLE_EXT}"'$'
 
 write_syslog() {
     # TODO: Extend with config files and/or BIOS_* variables to point
@@ -133,16 +142,204 @@ write_syslog() {
             [[ -n "${USER-}" ]] && \
                 USER_PREFIX="${USER_PREFIX:+$USER_PREFIX as }$USER (${UID-}/${EUID-}:${GID-})"
             [[ -n "$USER_PREFIX" ]] && USER_PREFIX="$USER_PREFIX:"
-            $LOGGER -p auth.notice -t "`basename $0`-wrapper[$$]" "$USER_PREFIX" "$@" || true
+            $LOGGER -p auth.notice -t "${SCRIPT_BASENAME}-wrapper[$$]" "$USER_PREFIX" "$@" || true
         fi
         echo "$@" >&2
     fi
     return 0
 }
 
+cat_uniq() (
+    # This prints input to output line by line, skipping lines that were
+    # already printed (not necessarily in immediately previous line as uniq
+    # requires). Note that a sort|uniq is still faster ATM (where keeping
+    # the original line ordering does not matter).
+    OUT=""
+    while IFS= read LINE ; do
+        if [[ -z "$OUT" ]]; then
+            OUT="$LINE"
+        else
+            if [[ "$1" = "ignore_whitespace_around" ]] ; then
+                # A mode to strip leading/trailing whitespace and
+                # so only compare the not-empty payloads
+                LINES="`echo "$LINE" | sed -e 's,^[ \t]*,,' -e 's,[ \t]*$,,'`"
+                if echo "$OUT" | sed -e 's,^[ \t]*,,' -e 's,[ \t]*$,,' | ( while IFS= read OUTLINES; do [[ "$OUTLINES" = "$LINES" ]] && exit 1 ; done ; exit 0 ); then
+                    OUT="$OUT
+$LINE"
+                fi
+            else
+                if echo "$OUT" | ( while IFS= read OUTLINE; do [[ "$OUTLINE" = "$LINE" ]] && exit 1 ; done ; exit 0 ); then
+                    OUT="$OUT
+$LINE"
+                fi
+            fi
+        fi
+    done
+    echo "$OUT"
+)
+
+echo_indent() {
+    [[ -z "${ECHO_INDENT_DEPTH-}" ]] && ECHO_INDENT_DEPTH="0" # Negative is ok = left-align
+    [[ -z "${ECHO_INDENT_TEXT-}" ]] && ECHO_INDENT_TEXT="" # empty is ok
+    printf "%${ECHO_INDENT_DEPTH}s%s\n" "$ECHO_INDENT_TEXT" "$*"
+}
+
+print_item_list() {
+    { [[ -n "$1" ]] && [[ "$1" -gt 10 ]] && MAXLEN="$1" && shift || MAXLEN="73" ; } 2>/dev/null
+    LL=0
+    UL=0
+    for U in "$@" ; do
+        UL="${#U}"
+        if [ "$LL" = 0 ]; then
+            printf '  %s' "$U"
+            LL="$((2+$UL))"
+        else
+            if [ "$(($LL+$UL))" -gt "$MAXLEN" ] ; then
+                printf ' \\\n  %s' "$U"
+                LL="$((2+$UL))"
+            else
+                printf ' %s' "$U"
+                LL="$(($LL+1+$UL))"
+            fi
+        fi
+    done
+    echo""; echo ""
+    unset LL UL U MAXLEN
+}
+
+usage_systemctl() {
+    cat << EOF
+Usage: ${SCRIPT_BASENAME} {list-units|--all|-a} [--full|-l]
+    List the unit states for all units on this system (not filtered),
+    optionally with full-length lines (by default truncated to terminal).
+
+Usage: ${SCRIPT_BASENAME} list-json [modifiers] [list of units]
+    List states of the units allowed by filter in JSON representation as
+    expected by REST API calls, including the following systemd attributes:
+      Id SubState ActiveState UnitFileState LoadState
+    An optional "[-l|--full]" modifier is accepted and silently ignored.
+    An optional "--all" modifier causes the script to list states of all
+    units on this system in JSON format for REST API (may take obscene
+    amount of time to parse this all - mode not intended for production).
+    An empty list of units means to display all unit names that match the
+    filter; otherwise the allowed unit names must be specified (whether they
+    exist on this system or not) or an "Action not allowed" error will occur.
+
+Usage: ${SCRIPT_BASENAME} list-ipm-units [modifiers] [unitnames]
+    List names or some more details of the units allowed by filter.
+    The listing may be further tuned for the following modifiers:
+      --ipm-installed|--internal  List units developed as part of IPM
+      --ipm-deps|--external       List units installed as dependencies for IPM
+      --active                    List units with state "active" defined as:
+        if "ActiveState" is "failed" or "inactive", or if "SubState" is
+        "failed" or "dead" - skip this unit; else if "ActiveState" is
+        "active" or if "SubState" is "running" or "waiting" - show this unit;
+        otherwise skip it
+      --inactive|--not-active     List units with state "inactive" defined as:
+        if "ActiveState" is "active" or if "SubState" is "running" or "waiting"
+        then skip this unit; else if "ActiveState" is "failed" or "inactive",
+        or if "SubState" is "failed" or "dead" or "exited" - show his unit;
+        otherwise skip it
+      --enabled                   List units with state "enabled" defined as:
+        if "LoadState" is "not-loaded" or if "UnitFileState" is "disabled"
+        then skip this unit; else if "LoadState" is "loaded" or "UnitFileState"
+        is "enabled" or "static" or empty - show this unit; otherwise skip
+      --disabled|--not-enabled    List units with state "disabled" defined as:
+        if "LoadState" is "loaded" or if "UnitFileState" is "enabled" or
+        "static" or empty - skip this unit; otherwise show it
+      --missing                   ONLY list unitnames that are in the filter
+                                  but files are not installed in this system
+      --detailed|--details|--long|-l  List more than just the unit names
+                                  (same data as JSON, but a TSV markup)
+    Specifying all origins (e.g. "--internal --external") or all states means
+    to disable output filtering by these criteria, which is the default setup.
+    Defaults are to print one unit name per line (without further details),
+    and to only print those units which are defined on this system, coming
+    from any origin and having any state. By default all units in the filter
+    are listed, however the caller may specify particular unit basenames
+    (this is ignored in "--missing" mode).
+
+Usage: ${SCRIPT_BASENAME} list-dependencies <modifiers or unit names>
+    List the systemd units which have a defined dependency relation to the
+    named unit(s) ("bios.target" by default), filtered by allowed unit names.
+    The default mode is to show the "required" and "wanted" units of the
+    specified unit (these should run for the specified one to begin starting).
+    This mode accepts standard modifiers "--reverse", "--after" and "--before";
+    the "--plain" representation for standard output is enforced. Acceptable
+    non-standard modifiers are "--json" for same markup and data selection as
+    list-json action (JSON for REST API), and "--detailed|--details|--long|-l"
+    for same markup as "list-ipm-units --detailed".
+Usage: ${SCRIPT_BASENAME} list-dependents <modifiers or unit names>
+    A shortcut for "list-dependencies --reverse --before" to display those
+    units which require the named one to run.
+Usage: ${SCRIPT_BASENAME} list-requires [--recursive|-r] [--uniq] <unit names>
+    A custom option to list units that the named one(s) "Requires" or "Wants"
+    in order to run. By default lists direct requirements, optionally can
+    recurse. Either way, the output is filtered by the defined list and
+    with "--uniq" each unit name is only printed once (on first hit).
+    The "--json" and "--detailed" modifiers explained above are also supported
+    and enable "--uniq" mode as well.
+    The recursion stops at leaf units that have no direct requirements on
+    further units that match the filter (so e.g. the "network{,ing}.service"
+    hidden a few system hops away (e.g. behind a "basic.target") would not
+    show up - use "list-dependencies" if those are needed).
+
+Usage: ${SCRIPT_BASENAME} <certain allowed actions> <unitname> <modifiers>
+    This wrapper allows certain standard actions to be done, against one of
+    the units allowed by the filter (one at a time) if this is a unit action:
+EOF
+print_item_list ${SYSTEMCTL_COMMANDS}
+    cat << EOF
+    The "daemon-reload" action is passed without any further arguments.
+    Actions that accept the [--all|-a|--full|-l|--quiet] modifiers will
+    get them. The "status" action may additionally use [-n POSITIVENUMBER]
+    modifier (Number of journal entries to show).
+EOF
+}
+
+usage_journalctl() {
+    cat << EOF
+Usage: ${SCRIPT_BASENAME} <allowed keywords or unitname>
+    This wrapper allows certain standard actions and their combinations (as
+    listed below) to be done, against the units allowed by the filter:
+EOF
+print_item_list "{-n POSITIVENUMBER}" ${JOURNALCTL_COMMANDS}
+
+    cat << EOF
+    These arguments may be specified in any order acceptable to the standard
+    ${SCRIPT_BASENAME} program; its general usage follows:
+EOF
+
+    PAGER="" ${JOURNALCTL} --help
+}
+
+usage() {
+    cat << EOF
+This ${SCRIPT_BASENAME} is a wrapper for same-named system utility which limits the
+scope of actions and targets available for a privilege-elevated user such as
+the web-server process, and adds some custom actions that the standard utility
+does not have. A "root" system administrator might want to use the original
+"/bin/${SCRIPT_BASENAME}" program for standard functionality (but without our project
+extensions).
+
+This wrapper only allows actions against following unit basenames (with no
+extension as defaulted by systemd, or any one from these three - .service,
+.timer or .target):
+EOF
+print_item_list ${SYSTEMCTL_UNITS_COMMON} ${SYSTEMCTL_UNITS_GLOBS}
+    cat << EOF
+Using any actions or targets not allowed by the filters will result in
+a fatal error (non-zero exit code) and an "Action not allowed" message.
+
+EOF
+
+case "${SCRIPT_BASENAME}" in
+    systemctl) usage_systemctl "$@";;
+    journalctl) usage_journalctl "$@" ;;
+esac
+}
+
 DIED=no
-MAINPID="$$"
-MAINARGS="$0 $*"
 trap_exit() {
     EXITCODE=$?
     if [[ "$DEBUG_SYSTEMCTL" = yes ]]; then
@@ -200,7 +397,9 @@ isAllowed_Cmd_journalctl() {
 }
 
 systemctl_list_json() {
-	# This is our custom feature to speed up the "sysinfo" REST API.
+        # This is our custom feature to speed up the "sysinfo" REST API.
+        # TODO: The listing of units that do NOT exist on this system works
+        # on systemd version in IPM (215?) but fails on newer one (e.g. 231).
         # TODO: List of "interesting" fields is currently hardcoded here and in
         # the two "case"s below, and in variable mapping too; there is quite a
         # bit to rewrite should we want this to be anyhow dynamic/on-request.
@@ -223,7 +422,7 @@ systemctl_list_json() {
         # We need to convert a potentially multi-line or quoted values into an
         # escaped single-line token for valid markup; our JSON.sh can do that.
         [[ -n "$JSONSH" ]] && [[ -s "$JSONSH" ]] && [[ -x "$JSONSH" ]] || \
-        for F in "`dirname $0`/JSON.sh" "/usr/share/bios/scripts/JSON.sh" \
+        for F in "${SCRIPT_DIRNAME}/JSON.sh" "/usr/share/bios/scripts/JSON.sh" \
             "$CHECKOUTDIR/tools/JSON.sh"; do
                 [[ -x "$F" ]] && [[ -s "$F" ]] && JSONSH="$F" && break
         done
@@ -337,6 +536,10 @@ systemctl_list_ipm_units() (
     LIST_STATES=""
     LIST_MISSING="no"
     SHOW_DETAILS="no"
+    SYSTEMCTL_UNITS=""
+    ALL_KNOWN_UNITS=""
+    REQUESTED_UNITS_REGEX=""
+    REQUESTED_UNITS=""
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -348,7 +551,15 @@ systemctl_list_ipm_units() (
             --disabled|--not-enabled) LIST_STATES="$LIST_STATES STATE:DISABLED" ;;
             --missing) LIST_MISSING="yes" ;;
             --detailed|--details|--long|-l) SHOW_DETAILS="yes" ;;
-            *) die_ACTION_NOT_ALLOWED ;;
+            *)  if isAllowed_Unit "$1" ; then
+                    REQUESTED_UNITS="$REQUESTED_UNITS $1"
+                    [[ -z "$REQUESTED_UNITS_REGEX" ]] && \
+                        REQUESTED_UNITS_REGEX="$1" || \
+                        REQUESTED_UNITS_REGEX="$REQUESTED_UNITS_REGEX|$1"
+                else
+                    die_ACTION_NOT_ALLOWED
+                fi
+                ;;
         esac
         shift
     done
@@ -369,8 +580,18 @@ systemctl_list_ipm_units() (
     [[ -z "$LIST_STATES" ]] && LIST_STATES="STATE:ANY"
 
     # List of unique unit filenames known to the system that match our filter
-    ALL_KNOWN_UNITS="`list_known_ipm_units`" || ALL_KNOWN_UNITS=""
-    SYSTEMCTL_UNITS=""
+    if [[ -z "$REQUESTED_UNITS_REGEX" ]] || [[ "$LIST_MISSING" = yes ]]; then
+        ALL_KNOWN_UNITS="`list_known_ipm_units`" || ALL_KNOWN_UNITS=""
+    else
+        REQUESTED_UNITS_REGEX_EXT='^[ \t]*('"$REQUESTED_UNITS_REGEX"')($|\.(service|timer|target))[ \t]*$'
+        ALL_KNOWN_UNITS="`list_known_ipm_units | egrep "$REQUESTED_UNITS_REGEX_EXT"`" || ALL_KNOWN_UNITS=""
+        if [[ -n "$ALL_KNOWN_UNITS" ]] && [[ -n "$REQUESTED_UNITS" ]] ; then
+            # Keep the caller's order of unit names, not necessarily alphabetic
+            SORTED_ALL_KNOWN_UNITS="$(for U in $REQUESTED_UNITS ; do echo "$ALL_KNOWN_UNITS" | egrep '^[ \t]*('"$U"')($|\.(service|timer|target))[ \t]*$' ; done)"
+            ALL_KNOWN_UNITS="$SORTED_ALL_KNOWN_UNITS"
+        fi
+    fi
+    unset REQUESTED_UNITS_REGEX REQUESTED_UNITS_REGEX_EXT
 
     [[ -z "$ALL_KNOWN_UNITS" ]] && \
     { if [[ x"$LIST_MISSING" != x"yes" ]] ; then
@@ -408,6 +629,7 @@ $SYSTEMCTL_UNITS_EXTERNAL"
 
     if [[ x"$LIST_MISSING" = x"yes" ]] ; then
         # NOTE: This mode lists something or nothing and exits, always
+        # It only lists missing unit names, there are no details to show etc.
         SHOW_UNITS=""
         if [[ -z "$SYSTEMCTL_UNITS" ]] ; then
             # Nothing found == all missing
@@ -457,6 +679,8 @@ $U"
     if [[ "$LIST_STATES" != "STATE:ANY" ]] || [[ "$SHOW_DETAILS" = yes ]]; then
         # Logic borrowed from "--list-json" feature and simplified since
         # we have all the unit-naming data pre-filtered already
+        # TODO: same issue as above that newer systemctl (v231) aborts
+        # when trying to list units not defined on the local system.
         SHOW_UNITS=""
         SYSTEMCTL_ATTRS="-p Id -p SubState -p ActiveState -p UnitFileState -p LoadState"
         SYSTEMCTL_INFO="$( vID=""; vSS=""; vLS=""; vAS=""; vUFS=""; \
@@ -492,13 +716,14 @@ $U"
                         vSS="$VALUE";;
                     esac;;
             esac
-        done | sort | uniq )" || SYSTEMCTL_INFO=""
+        done )" || SYSTEMCTL_INFO=""
 
         if [[ "$DEBUG_SYSTEMCTL" = yes ]] ; then
             echo "$SYSTEMCTL_INFO"
         fi >&2
 
-        [[ -n "$SYSTEMCTL_INFO" ]] && \
+        [[ -z "$SYSTEMCTL_INFO" ]] && \
+            echo "ERROR: No detailed information was collected from systemctl, will only print unit names" >&2 || \
         if [[ "$LIST_STATES" == "STATE:ANY" ]] && [[ "$SHOW_DETAILS" = yes ]]; then
             SYSTEMCTL_UNITS="$SYSTEMCTL_INFO"
         else
@@ -574,9 +799,141 @@ $U"
     echo "$SYSTEMCTL_UNITS"
 )
 
+do_systemctl_list_requires_all() {
+    # Prepare cached content in one shot
+    ( $SYSTEMCTL show -p Id -p Requires -p Wants --all '*' '*.service' '*.target' '*.timer' ; echo "" ) | \
+    ( _ID=""
+      _RQ=""
+      while IFS='=' read K V ; do
+        case "$K" in
+            Id) _ID="$V" ;;
+            Requires|Wants) _RQ="$_RQ $V" ;;
+            "") [[ -n "$_ID" ]] && printf '%s\t%s\n' "$_ID" "$_RQ"
+                _ID=""; _RQ="" ;;
+            *) ;;
+        esac
+      done
+    ) | sort | uniq
+}
+
+do_systemctl_list_requires_filtered() {
+    # This routine just calls systemctl and filters output.
+    # The input checking is in systemctl_list_requires() below.
+    for R in `echo "$SYSTEMCTL_DEPS_CACHED" | egrep '^'"$1"'[ \t	]' | sed 's,^.*\t,,'` \
+    ; do echo "$R" ; done | \
+    egrep '^[ \t\*]*'"$SYSTEMCTL_UNITS_REGEX_SINGLE_EXT"'[ \t]*$'
+}
+
+do_systemctl_list_requires() {
+    # This routine just calls systemctl and filters output.
+    # The input checking is in systemctl_list_dependencies() below.
+    for S in "$@" ; do
+        echo_indent "$S"
+        RLIST="`do_systemctl_list_requires_filtered "$S"`"
+        if [[ -n "$RLIST" ]] ; then
+            local ECHO_INDENT_DEPTH_PREV="$ECHO_INDENT_DEPTH"
+            ECHO_INDENT_DEPTH="$(($ECHO_INDENT_DEPTH+1))"
+            if [[ "$RECURSIVE" = yes ]]; then
+                for R in $RLIST ; do do_systemctl_list_requires "$R"; done
+            else
+                for R in $RLIST ; do echo_indent "$R"; done
+            fi
+            ECHO_INDENT_DEPTH="$ECHO_INDENT_DEPTH_PREV"
+        fi
+    done
+}
+
+systemctl_list_requires() (
+    RECURSIVE="no"
+    SYSTEMCTL_UNITS=""
+    FILTER=""
+    UNIQ=no
+    ABORT=no
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --plain) ;;
+            --recursive|-r)
+                RECURSIVE=yes ;;
+            --all|-a)
+                SYSTEMCTL_UNITS="$SYSTEMCTL_UNITS --all" ;;
+            --uniq) UNIQ=yes ;;
+            --detailed|--details|--long|-l) FILTER="systemctl_list_ipm_units $1" ;;
+            --json) FILTER="systemctl_list_json" ;;
+            *)  if isAllowed_Unit "$1" ; then
+                    SYSTEMCTL_UNITS="$SYSTEMCTL_UNITS $1"
+                else
+                    ABORT=yes
+                fi
+                ;;
+        esac
+        [[ "$ABORT" = yes ]] && die_ACTION_NOT_ALLOWED
+        shift
+    done
+    if [[ -n "$SYSTEMCTL_UNITS" ]] ; then
+        SYSTEMCTL_UNITS="`$SYSTEMCTL show -p Id $SYSTEMCTL_UNITS | sed 's,^.*=,,'`"
+    else
+        SYSTEMCTL_UNITS="tntnet@bios.service bios.service bios.target `list_known_ipm_units | egrep -v 'tntnet@bios.service|bios.service|bios.target'`"
+    fi
+    export RECURSIVE
+    SYSTEMCTL_DEPS_CACHED="`do_systemctl_list_requires_all`"
+    export SYSTEMCTL_DEPS_CACHED
+    if [[ -z "$FILTER" ]] ; then
+        do_systemctl_list_requires $SYSTEMCTL_UNITS
+    else
+        $FILTER `do_systemctl_list_requires $SYSTEMCTL_UNITS`
+    fi | \
+    if [[ "$UNIQ" = yes ]] || [[ -n "$FILTER" ]]; then
+        cat_uniq ignore_whitespace_around
+    else cat ; fi
+)
+
+do_systemctl_list_dependencies() {
+    # This routine just calls systemctl and filters output.
+    # The input checking is in systemctl_list_dependencies() below.
+    $SYSTEMCTL list-dependencies "$@" | \
+    egrep '^[ \t\*]*'"$SYSTEMCTL_UNITS_REGEX_SINGLE_EXT"'[ \t]*$' | \
+    sed 's,^\*, ,g' | \
+    cat_uniq ignore_whitespace_around
+}
+
+systemctl_list_dependencies() (
+    SYSTEMCTL_ARGS="--plain"
+    SYSTEMCTL_UNITS=""
+    FILTER=""
+    ABORT=no
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --plain) ;;
+            --reverse|--before|--after)
+                SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
+            --all|-a)
+                SYSTEMCTL_UNITS="$SYSTEMCTL_UNITS --all" ;;
+            --detailed|--details|--long|-l) FILTER="systemctl_list_ipm_units $1" ;;
+            --json) FILTER="systemctl_list_json" ;;
+            *)  if isAllowed_Unit "$1" ; then
+                    SYSTEMCTL_UNITS="$SYSTEMCTL_UNITS $1"
+                else
+                    ABORT=yes
+                fi
+                ;;
+        esac
+        [[ "$ABORT" = yes ]] && die_ACTION_NOT_ALLOWED
+        shift
+    done
+    [[ -n "$SYSTEMCTL_UNITS" ]] || SYSTEMCTL_UNITS="bios.target"
+    if [[ -z "$FILTER" ]] ; then
+        do_systemctl_list_dependencies $SYSTEMCTL_ARGS $SYSTEMCTL_UNITS
+        return $?
+    else
+        $FILTER `do_systemctl_list_dependencies $SYSTEMCTL_ARGS $SYSTEMCTL_UNITS`
+        return $?
+    fi
+)
+
 process_CLI_systemctl() {
     # Quick support for specific commands
     case "$1" in
+        help|-h|-help|--help) usage; exit 1 ;;
         list-units|--all|-a)
             SYSTEMCTL_ARGS=""
             while [[ $# -gt 0 ]]; do
@@ -595,6 +952,21 @@ process_CLI_systemctl() {
             ;;
         daemon-reload)
             $SYSTEMCTL "$1"
+            exit $?
+            ;;
+        list-dependencies)
+            shift
+            systemctl_list_dependencies "$@"
+            exit $?
+            ;;
+        list-dependents)
+            shift
+            systemctl_list_dependencies --before --reverse "$@"
+            exit $?
+            ;;
+        list-requires)
+            shift
+            systemctl_list_requires "$@"
             exit $?
             ;;
         list-json)
@@ -620,6 +992,7 @@ process_CLI_systemctl() {
         shift 2
         while [[ $# -gt 0 ]]; do
             case "$1" in
+                help|-h|-help|--help) usage; exit 1 ;;
                 --all|-a|--full|-l|--quiet)
                     SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
                 -n) if [[ "$cmd" = status ]] && [[ -n "$2" ]] && [[ "$2" -gt 0 ]]; then
@@ -651,6 +1024,7 @@ process_CLI_journalctl() {
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
+            help|-h|-help|--help) usage; exit 1 ;;
             -n) if [[ -n "$2" ]] && [[ "$2" -gt 0 ]]; then
                     JOURNALCTL_ARGS="$JOURNALCTL_ARGS $1 $2"
                     shift 2
@@ -688,7 +1062,7 @@ else
     write_syslog "Starting $0 $*" >/dev/null 2>&1
 fi
 
-case "`basename $0`" in
+case "${SCRIPT_BASENAME}" in
     systemctl) process_CLI_systemctl "$@"; exit $? ;;
     journalctl) process_CLI_journalctl "$@"; exit $? ;;
 esac
