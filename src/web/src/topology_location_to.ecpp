@@ -236,7 +236,7 @@ UserInfo user;
                         json.append ("\t");
                     }
                     json.append("\"name\" : \"")
-                        .append(std::get<3>(row))
+                        .append(utils::json::escape (std::get<3>(row)))
                         .append("\",\n");
                     for (int i = 0; i < indent; i++) {
                         json.append ("\t");
@@ -263,7 +263,7 @@ UserInfo user;
                         json.append ("\t");
                     }
                     json.append("\"name\" : \"")
-                        .append(std::get<3>(row))
+                        .append(utils::json::escape (std::get<3>(row)))
                         .append("\",\n");
                     for (int i = 0; i < indent; i++) {
                         json.append ("\t");
