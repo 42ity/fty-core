@@ -739,14 +739,15 @@ $U"
                     case "$LIST_STATES" in
                         *STATE:ENABLED*)
                             case "$I" in
-                                *L:not-loaded*|U:disabled*) SHOW1=no ;;
+                                *L:not-loaded*|*L:masked*|*U:disabled*|*U:bad*) SHOW1=no ;;
                                 *L:loaded*|U:enabled*|*U:static*|*U:"	"S:*) SHOW1=yes ;; # NOTE: It is a TAB character after U:
                                 *) SHOW1=no ;;
                             esac
                             ;;
                         *STATE:DISABLED*)
                             case "$I" in
-                                *L:loaded*|U:enabled*|*U:static*|*U:"	"S:*) SHOW1=no ;;
+                                *L:not-loaded*|*L:masked*|*U:disabled*|*U:bad*) SHOW1=yes ;;
+                                *L:loaded*|*U:enabled*|*U:static*|*U:"	"S:*) SHOW1=no ;;
                                 *) SHOW1=yes ;;
                             esac
                             ;;
