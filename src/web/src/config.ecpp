@@ -213,7 +213,6 @@ UserInfo user;
             for (const auto &it : roots) {
                 zconfig_t *config = it.second;
                 int rv = zconfig_save (config, it.first.c_str ());
-                zconfig_destroy (&config);
                 if (rv == -1) {
                     s_roots_destroy (roots);
                     std::string msg = "Cannot save config file " + it.first;
