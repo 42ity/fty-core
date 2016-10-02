@@ -272,18 +272,29 @@ Usage: ${SCRIPT_BASENAME} list-dependencies <modifiers or unit names>
 Usage: ${SCRIPT_BASENAME} list-dependents <modifiers or unit names>
     A shortcut for "list-dependencies --reverse --before" to display those
     units which require the named one to run.
+
+    Several custom options are available in the area of unit depenedcies:
 Usage: ${SCRIPT_BASENAME} list-requires [--recursive|-r] [--uniq] <unit names>
-    A custom option to list units that the named one(s) "Requires" or "Wants"
-    in order to run. By default lists direct requirements, optionally can
-    recurse. Either way, the output is filtered by the defined list and
-    with "--uniq" each unit name is only printed once (on first hit).
-    The "--json" and "--detailed" modifiers explained above are also supported
-    and enable "--uniq" mode as well. If no units are specified, lists all
-    units allowed by filter, starting with tntnet@bios and bios service+target.
+Usage: ${SCRIPT_BASENAME} list-requiredby [--recursive|-r] [--uniq] <unit names>
+Usage: ${SCRIPT_BASENAME} list-wants [--recursive|-r] [--uniq] <unit names>
+Usage: ${SCRIPT_BASENAME} list-wantedby [--recursive|-r] [--uniq] <unit names>
+Usage: ${SCRIPT_BASENAME} list-partof [--recursive|-r] [--uniq] <unit names>
+    Walk the tree of standard unit attributes (just for this unit or recurse.
     The recursion stops at leaf units that have no direct requirements on
     further units that match the filter (so e.g. the "network{,ing}.service"
     hidden a few system hops away (e.g. behind a "basic.target") would not
     show up - use "list-dependencies" if those are needed).
+    The output is filtered by the defined list of allowed IPM units, and with
+    "--uniq" in place each unit name is only printed once (on first hit).
+    The "--json" and "--detailed" modifiers explained above are also supported
+    and enable "--uniq" mode as well. If no units are specified, lists all
+    units allowed by filter, starting with tntnet@bios and bios service+target.
+Usage: ${SCRIPT_BASENAME} list-depends-on [--recursive|-r] [--uniq] <unit names>
+    A custom option to list units that the named one(s) "Requires" or "Wants"
+    in order to run. Modifiers same as above.
+Usage: ${SCRIPT_BASENAME} list-needed-by [--recursive|-r] [--uniq] <unit names>
+    A custom option to list units for which the named one(s) are "RequiredBy",
+    "WantedBy" or "PartOf" needed for those units run. Modifiers same as above.
 
 Usage: ${SCRIPT_BASENAME} <certain allowed actions> <unitname> <modifiers>
     This wrapper allows certain standard actions to be done, against one of
@@ -820,40 +831,104 @@ $U"
     echo "$SYSTEMCTL_UNITS"
 )
 
-# Associative array used for caching the service requirements/wants
-# Populated in systemctl_list_requires() by calling this routine:
-declare -A SYSTEMCTL_DEPS_CACHED
-do_systemctl_list_requires_all() {
+# Associative arrays used for caching the service requirements/wants
+# Populated in systemctl_list_needs() by calling this routine:
+declare -A SYSTEMCTL_DEPS_CACHED_REQUIRES
+declare -A SYSTEMCTL_DEPS_CACHED_REQUIREDBY
+declare -A SYSTEMCTL_DEPS_CACHED_WANTS
+declare -A SYSTEMCTL_DEPS_CACHED_WANTEDBY
+declare -A SYSTEMCTL_DEPS_CACHED_PARTOF
+do_systemctl_list_deps_all() {
     # Prepare cached content in one shot
-    ( $SYSTEMCTL show -p Id -p Requires -p Wants --all '*' '*.service' '*.target' '*.timer' ; echo "" ) | \
-    ( _ID=""
-      _RQ=""
-      while IFS='=' read K V ; do
+    local ALL_DEPS
+    local _ID
+    ALL_DEPS="$($SYSTEMCTL show -p Id -p Requires -p Wants -p RequiredBy -p WantedBy -p PartOf --all '*' '*.service' '*.target' '*.timer' ; echo "")"
+
+    _ID=""
+    while IFS='=' read K V ; do
         case "$K" in
             Id) _ID="$V" ;;
-            Requires|Wants) _RQ="$_RQ $V" ;;
-            "") [[ -n "$_ID" ]] && printf '%s\t%s\n' "$_ID" "$_RQ"
-                _ID=""; _RQ="" ;;
+            Requires) [[ -n "$_ID" ]] && SYSTEMCTL_DEPS_CACHED_REQUIRES["$_ID"]="$V" ;;
+            RequiredBy) [[ -n "$_ID" ]] && SYSTEMCTL_DEPS_CACHED_REQUIREDBY["$_ID"]="$V" ;;
+            Wants) [[ -n "$_ID" ]] && SYSTEMCTL_DEPS_CACHED_WANTS["$_ID"]="$V" ;;
+            WantedBy) [[ -n "$_ID" ]] && SYSTEMCTL_DEPS_CACHED_WANTEDBY["$_ID"]="$V" ;;
+            PartOf) [[ -n "$_ID" ]] && SYSTEMCTL_DEPS_CACHED_PARTOF["$_ID"]="$V" ;;
+            "") _ID="" ;;
             *) ;;
         esac
-      done
-    ) | sort | uniq
+    done << EOF
+"$ALL_DEPS"
+EOF
 }
 
+# The following routines just call systemctl and filters output.
+# The input checking is in systemctl_list_needs() below.
+# The dispatcher variable allows run-time code to call one of these routines.
+dispatch_systemctl_list_deps_filtered=""
 do_systemctl_list_requires_filtered() {
-    # This routine just calls systemctl and filters output.
-    # The input checking is in systemctl_list_requires() below.
     local RR
-    local _ID
-    local _RV
 
     [[ -n "$1" ]] && \
-    for RR in ${SYSTEMCTL_DEPS_CACHED["$1"]} ; do
+    for RR in ${SYSTEMCTL_DEPS_CACHED_REQUIRES["$1"]} ; do
         [[ "$RR" =~ $SYSTEMCTL_UNITS_REGEX_SINGLE ]] > /dev/null && echo "$RR"
     done
 }
 
-do_systemctl_list_requires() {
+do_systemctl_list_requiredby_filtered() {
+    local RR
+
+    [[ -n "$1" ]] && \
+    for RR in ${SYSTEMCTL_DEPS_CACHED_REQUIREDBY["$1"]} ; do
+        [[ "$RR" =~ $SYSTEMCTL_UNITS_REGEX_SINGLE ]] > /dev/null && echo "$RR"
+    done
+}
+
+do_systemctl_list_wants_filtered() {
+    local RR
+
+    [[ -n "$1" ]] && \
+    for RR in ${SYSTEMCTL_DEPS_CACHED_WANTS["$1"]} ; do
+        [[ "$RR" =~ $SYSTEMCTL_UNITS_REGEX_SINGLE ]] > /dev/null && echo "$RR"
+    done
+}
+
+do_systemctl_list_wantedby_filtered() {
+    local RR
+
+    [[ -n "$1" ]] && \
+    for RR in ${SYSTEMCTL_DEPS_CACHED_WANTEDBY["$1"]} ; do
+        [[ "$RR" =~ $SYSTEMCTL_UNITS_REGEX_SINGLE ]] > /dev/null && echo "$RR"
+    done
+}
+
+do_systemctl_list_partof_filtered() {
+    local RR
+
+    [[ -n "$1" ]] && \
+    for RR in ${SYSTEMCTL_DEPS_CACHED_PARTOF["$1"]} ; do
+        [[ "$RR" =~ $SYSTEMCTL_UNITS_REGEX_SINGLE ]] > /dev/null && echo "$RR"
+    done
+}
+
+do_systemctl_list_dependson_filtered() {
+    local RR
+
+    [[ -n "$1" ]] && \
+    for RR in ${SYSTEMCTL_DEPS_CACHED_REQUIRES["$1"]} ${SYSTEMCTL_DEPS_CACHED_WANTS["$1"]} ; do
+        [[ "$RR" =~ $SYSTEMCTL_UNITS_REGEX_SINGLE ]] > /dev/null && echo "$RR"
+    done
+}
+
+do_systemctl_list_neededby_filtered() {
+    local RR
+
+    [[ -n "$1" ]] && \
+    for RR in ${SYSTEMCTL_DEPS_CACHED_REQUIREDBY["$1"]} ${SYSTEMCTL_DEPS_CACHED_WANTEDBY["$1"]} ${SYSTEMCTL_DEPS_CACHED_PARTOF["$1"]} ; do
+        [[ "$RR" =~ $SYSTEMCTL_UNITS_REGEX_SINGLE ]] > /dev/null && echo "$RR"
+    done
+}
+
+do_systemctl_list_needs() {
     # This routine just calls systemctl and filters output.
     # The input checking is in systemctl_list_dependencies() below.
     local S
@@ -862,12 +937,12 @@ do_systemctl_list_requires() {
     local ECHO_INDENT_DEPTH_PREV
     for S in "$@" ; do
         echo_indent "$S"
-        RLIST="`do_systemctl_list_requires_filtered "$S"`"
+        RLIST="`$dispatch_systemctl_list_deps_filtered "$S"`"
         if [[ -n "$RLIST" ]] ; then
             ECHO_INDENT_DEPTH_PREV="$ECHO_INDENT_DEPTH"
             ECHO_INDENT_DEPTH="$(($ECHO_INDENT_DEPTH+1))"
             if [[ "$RECURSIVE" = yes ]]; then
-                do_systemctl_list_requires $RLIST
+                do_systemctl_list_needs $RLIST
             else
                 for R in $RLIST ; do echo_indent "$R"; done
             fi
@@ -876,7 +951,10 @@ do_systemctl_list_requires() {
     done
 }
 
-systemctl_list_requires() (
+systemctl_list_needs() (
+    if [[ -z "$dispatch_systemctl_list_deps_filtered" ]]; then
+        die_ACTION_NOT_ALLOWED
+    fi
     RECURSIVE="no"
     SYSTEMCTL_UNITS=""
     FILTER=""
@@ -909,21 +987,12 @@ systemctl_list_requires() (
     fi
     export RECURSIVE
 
-    export SYSTEMCTL_DEPS_CACHED
-    SYSTEMCTL_DEPS_CACHED_STRING="`do_systemctl_list_requires_all`"
-    while read _ID _RV ; do
-#        echo "SYSTEMCTL_DEPS_CACHED[${_ID}]='$_RV'" >&2
-        [[ -z "${_ID}" ]] && continue
-        SYSTEMCTL_DEPS_CACHED[${_ID}]="$_RV"
-    done << EOF
-"$SYSTEMCTL_DEPS_CACHED_STRING"
-EOF
-    unset SYSTEMCTL_DEPS_CACHED_STRING
+    do_systemctl_list_deps_all
 
     if [[ -z "$FILTER" ]] ; then
-        do_systemctl_list_requires $SYSTEMCTL_UNITS
+        do_systemctl_list_needs $SYSTEMCTL_UNITS
     else
-        $FILTER `do_systemctl_list_requires $SYSTEMCTL_UNITS`
+        $FILTER `do_systemctl_list_needs $SYSTEMCTL_UNITS`
     fi | \
     if [[ "$UNIQ" = yes ]] || [[ -n "$FILTER" ]]; then
         cat_uniq ignore_whitespace_around
@@ -1009,7 +1078,44 @@ process_CLI_systemctl() {
             ;;
         list-requires)
             shift
-            systemctl_list_requires "$@"
+            dispatch_systemctl_list_deps_filtered="do_systemctl_list_requires_filtered"
+            systemctl_list_needs "$@"
+            exit $?
+            ;;
+        list-requiredby)
+            shift
+            dispatch_systemctl_list_deps_filtered="do_systemctl_list_requiredby_filtered"
+            systemctl_list_needs "$@"
+            exit $?
+            ;;
+        list-wants)
+            shift
+            dispatch_systemctl_list_deps_filtered="do_systemctl_list_wants_filtered"
+            systemctl_list_needs "$@"
+            exit $?
+            ;;
+        list-wantedby)
+            shift
+            dispatch_systemctl_list_deps_filtered="do_systemctl_list_wantedby_filtered"
+            systemctl_list_needs "$@"
+            exit $?
+            ;;
+        list-partof)
+            shift
+            dispatch_systemctl_list_deps_filtered="do_systemctl_list_partof_filtered"
+            systemctl_list_needs "$@"
+            exit $?
+            ;;
+        list-depends-on)
+            shift
+            dispatch_systemctl_list_deps_filtered="do_systemctl_list_dependson_filtered"
+            systemctl_list_needs "$@"
+            exit $?
+            ;;
+        list-needed-by)
+            shift
+            dispatch_systemctl_list_deps_filtered="do_systemctl_list_neededby_filtered"
+            systemctl_list_needs "$@"
             exit $?
             ;;
         list-json)
