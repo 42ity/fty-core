@@ -215,6 +215,7 @@ unsigned int process_post (
     ) {
         message = "'sudo systemctl " + operation + " " + service_name_op + "' can impact the web-server unit 'tntnet@bios.service'";
         log_warning (message.c_str ());
+        // TODO: call systemctl --no-block in these cases
     }
     shared::Argv proc_cmd {"sudo", "systemctl", operation, service_name_op};
 
