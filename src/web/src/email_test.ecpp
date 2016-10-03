@@ -119,10 +119,9 @@ UserInfo user;
     else
     if (streq (msg_subject, "SENDMAIL-ERR"))
     {
-        status = "Failed"; 
-        log_critical ("Error: client->recv (timeout = '5') returned error. code %s, msg %s.", err_code,err_message);
-        http_die ("internal-error", "client->recv () returned error");
-    } else
+        status = "Failed";
+    }
+    else
     {
         status = "Failed";
         log_critical ("Error: message recieved with invalid subject.");
