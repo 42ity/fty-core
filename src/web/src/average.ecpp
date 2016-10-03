@@ -223,10 +223,10 @@ UserInfo user;
         http_die ("internal-error", "mlm_client_sendto failed.");
     }
 
-    zmsg_t *recv_msg = client->recv (zuuid_str_canonical (uuid), 5);
+    zmsg_t *recv_msg = client->recv (zuuid_str_canonical (uuid), 30);
     zuuid_destroy (&uuid);
     if (!recv_msg) {
-        log_critical ("client->recv (timeout = '5') returned NULL");
+        log_critical ("client->recv (timeout = '30') returned NULL");
         http_die ("internal-error", "client->recv () returned NULL");
     }
 
