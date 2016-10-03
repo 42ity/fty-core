@@ -1,1 +1,0 @@
-{"id":"13","name":"ROOM4","type":"room","sub_type":"N_A","status":"nonactive","priority":"P5","groups":[],"ext":[{"asset_tag":"myasset13","read_only":true},{"description":"room is very cute","read_only":false},{"flowers":"yes, in this room there are only flowers","read_only":false}],"computed":{}}

@@ -1,7 +1,0 @@
-{"errors":[{"message":"Parameter 'id' has bad value. Received value '0' is out of range. Expected value in range 1 to 4294967295.","code":47}]}
-{"errors":[{"message":"Element '100' not found.","code":44}]}
-{"errors":[{"message":"Parameter 'id' has bad value. Received -1. Expected id of asset","code":47}]}
-{"errors":[{"message":"Parameter 'id' is required.","code":46}]}
-{"errors":[{"message":"Parameter 'id' has bad value. Received value 'abcd' is not an element identifier. Expected an unsigned integer in range 1 to 4294967295.","code":47}]}
-{"errors":[{"message":"Parameter 'type' has bad value. Received rack. Expected datacenter","code":47}]}
-{"id":"21","power_devices_in_uri":"/api/v1/assets?in=21&sub_type=epdu,pdu,feed,genset,ups","name":"RACK1-LAB","status":"active","priority":"P1","type":"rack","location_uri":"/api/v1/asset/room/20","location_id":"20","location":"ROOM1-LAB","groups":[],"sub_type":"N_A","ext":[{"asset_tag":"myasset21","read_only":true},{"asset_tag":"EATON123456","read_only":false},{"contact_email":"john.smith@eaton.com","read_only":false},{"contact_name":"John Smith","read_only":false},{"contact_phone":"+33 (0)4 42 42 42 42","read_only":false},{"manufacturer":"Cooper","read_only":false},{"model":"RESSPU4210KB 600mm x 1000mm - 42U Rack","read_only":false},{"serial_no":"21545212HGFV2","read_only":false},{"u_size":"27","read_only":false}],"computed":{"freeusize":15,"realpower.nominal":null,"outlet.available":{"24":null,"25":null,"sum":null}}}
