@@ -236,7 +236,7 @@ UserInfo user;
 {
       "id": "<$$ tmp.item.basic.id $>"
     , "power_devices_in_uri": "/api/v1/assets?in=<$$ tmp.item.basic.id $>&sub_type=epdu,pdu,feed,genset,ups"
-    , "name": "<$$ tmp.item.basic.name $>"
+    , "name": "<$$ utils::json::escape (tmp.item.basic.name) $>"
     , "status": "<$$ tmp.item.basic.status $>"
     , "priority": "P<$$ tmp.item.basic.priority $>"
     , "type": "<$$ tmp.item.basic.type_name $>"
@@ -248,7 +248,7 @@ if ( tmp.item.basic.parent_id != 0 ) {
            persist::typeid_to_type(tmp.item.basic.parent_type_id) + "/" +
            std::to_string (tmp.item.basic.parent_id) $>"
     , "location_id":"<$$ tmp.item.basic.parent_id $>"
-    , "location":"<$$ tmp.item.basic.parent_name $>"
+    , "location":"<$$ utils::json::escape (tmp.item.basic.parent_name) $>"
 <%cpp>
 }
 else {
@@ -293,7 +293,7 @@ if ( tmp.item.basic.type_id == persist::asset_type::DEVICE )
         {
 </%cpp>
 {"src_id":"<$$ oneLink.src_id $>",
- "src_name":"<$$ oneLink.src_name $>"
+ "src_name":"<$$ utils::json::escape (oneLink.src_name) $>"
 <%cpp>
             if ( !oneLink.src_socket.empty() )
             {
@@ -336,7 +336,7 @@ else {
 %   char comma = i != tmp.item.parents.size () ? ',' : ' ';
     {
         "id" : <$$ std::get<0> (it) $>,
-        "name" : "<$$ std::get<1> (it) $>",
+        "name" : "<$$ utils::json::escape (std::get<1> (it)) $>",
         "type" : "<$$ std::get<2> (it) $>",
         "sub_type" : "<$$ std::get<3> (it) $>"
     }<$$ comma $>
