@@ -681,7 +681,7 @@ if [ -f "$LOCKFILE" ]; then
     echo " OK to proceed"
 fi >&2
 echo "$$" > "$LOCKFILE"
-trap 'rm "$LOCKFILE"' 0 1 2 3 15
+trap '_EXITCODE=$? ; rm -f "$LOCKFILE" ; exit ${_EXITCODE}' 0 1 2 3 15
 
 process_action_hosts
 process_action_toggle
