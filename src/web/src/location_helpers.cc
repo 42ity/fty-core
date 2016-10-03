@@ -32,6 +32,7 @@
 
 #include "asset_types.h"
 #include "cleanup.h"
+#include "utils_web.h"
 
 int asset_location_r(asset_msg_t** asset_msg, std::string& json) {
     int element_id = asset_msg_element_id(*asset_msg);
@@ -41,7 +42,7 @@ int asset_location_r(asset_msg_t** asset_msg, std::string& json) {
 
 
     json += "{";
-    json += "\"name\" : \"" + name + "\", ";
+    json += "\"name\" : \"" + utils::json::escape (name) + "\", ";
     json += "\"id\" : \"" + std::to_string(element_id) + "\",";
     json += "\"type\" : \"" + persist::typeid_to_type(type_id) + "\",";
     if ( (type_id == persist::asset_type::DEVICE ) ||
@@ -106,7 +107,7 @@ int asset_location_r(asset_msg_t** asset_msg, std::string& json) {
                     first_contains = false;
                     json += ", \"contains\" : { ";
                 }
-                json += "\"" + name_it + "\" : [";
+                json += "\"" + utils::json::escape (name_it) + "\" : [";
                 first = false;
             }
             if(asset_location_r(&item, json) != HTTP_OK)
