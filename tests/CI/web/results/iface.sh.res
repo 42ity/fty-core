@@ -1,1 +1,0 @@
-{"errors":[{"message":"Parameter 'iface_name' has bad value. Received value that does not exist 'foobar'. Expected one of valid interface names that can be obtained using GET 'admin/ifaces'.","code":47}]}
