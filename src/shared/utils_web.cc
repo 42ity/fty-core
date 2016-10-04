@@ -334,7 +334,6 @@ json2zpl (
             cxxtools::SerializationInfo fake_value = si.getMember ("config"). getMember ("value");
             std::string name;
             si.getMember ("config"). getMember ("key"). getValue (name);
-            name = get_mapping (name);
 
             if (fake_value.category () == cxxtools::SerializationInfo::Category::Value)
             {
