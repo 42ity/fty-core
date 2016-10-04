@@ -130,7 +130,6 @@ UserInfo user;
   
     zmsg_destroy(&recieve);
     zmsg_destroy(&send);
-    free(&msg_subject);
 </%cpp>
 "test_status:"
 {
