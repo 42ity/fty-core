@@ -133,9 +133,9 @@ UserInfo user;
 </%cpp>
 "test_status:"
 {
-    "status" : <$ status $>,
+    "status" : "<$ status $>",
     "error_code" : <$ err_code $>,
-    "reason" : <$ err_message $>
+    "reason" : "<$ err_message $>"
 }
 <%cpp>
 
