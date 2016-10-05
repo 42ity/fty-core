@@ -1586,7 +1586,6 @@ TXT_DOCS_PLAINTEXT =
 MAPPED_TXT_DOCS_PLAINTEXT = 
 
 MAPPED_TXT_DOCS_ASCIIDOC = \
-	tests/CI/web/README.txt:$(myDEVDOCDIR)/README-web-tests-ciAutomation.txt \
 	src/web/README.txt:$(myDEVDOCDIR)/README-web-tests-generalInfo.txt
 
 #################################################################
