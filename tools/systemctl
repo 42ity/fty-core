@@ -1050,7 +1050,7 @@ process_CLI_systemctl() {
             SYSTEMCTL_ARGS=""
             while [[ $# -gt 0 ]]; do
                 case "$1" in
-                    list-units|--all|-a|--full|-l)
+                    list-units|--all|-a|--full|-l|--no-block)
                         # NOTE: This allows to list ALL units, not just our filter
                         SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
                     *) die_ACTION_NOT_ALLOWED ;;
@@ -1142,7 +1142,7 @@ process_CLI_systemctl() {
         while [[ $# -gt 0 ]]; do
             case "$1" in
                 help|-h|-help|--help) usage; exit 1 ;;
-                --all|-a|--full|-l|--quiet)
+                --all|-a|--full|-l|--quiet|--no-block)
                     SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
                 -n) if [[ "$cmd" = status ]] && [[ -n "$2" ]] && [[ "$2" -gt 0 ]]; then
                         SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1 $2"
