@@ -249,13 +249,6 @@
       <method>POST</method>
     </mapping>
 
-    <!-- UI/properties -->
-    <mapping>
-      <target>ui_properties@bios_web</target>
-      <method>(GET|PUT)</method>
-      <url>^/api/v1/ui/properties.*$</url>
-    </mapping>
-
     <!-- admin/myuser GET
         to distinguish user's profile before login wizard runs
         this MUST be allowed before license is accepted
