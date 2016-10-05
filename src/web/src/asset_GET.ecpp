@@ -34,7 +34,7 @@
 #include "utils_web.h"
 #include "asset_computed_impl.h"
 #include "helpers.h"
-
+        
 #include "log.h"
 #include <biosproto.h>
 
@@ -426,8 +426,10 @@ if ( !tmp.item.ext.empty() )
             continue;
         }
         // If we are here -> then this attribute is not special and should be returned as "ext"
+        std::string extKey = utils::json::escape(oneExt.first);
+        std::string extVal = utils::json::escape(oneExt.second.first);
 </%cpp>
-<$$ isExtCommaNeeded ? "," :""$> {"<$$ oneExt.first $>":"<$$ oneExt.second.first $>","read_only": <$$ oneExt.second.second? "true":"false" $> }
+<$$ isExtCommaNeeded ? "," :""$> {"<$$ extKey $>":"<$$ extVal $>","read_only": <$$ oneExt.second.second? "true":"false" $> }
 <%cpp>
         isExtCommaNeeded = true;
     } // end of for each loop for ext attribute
@@ -488,9 +490,10 @@ if ( !tmp.item.ext.empty() )
 %           bool isCommaNeeded = false;
             "<$$ oneOutlet.first$>" : [
 %           if ( !oneOutlet.second.label.empty() ) {
+%               std::string outletLabel = utils::json::escape(oneOutlet.second.label);                  
                 {
                     "name":"label",
-                    "value": "<$$ oneOutlet.second.label $>" ,
+                    "value": "<$$ outletLabel $>" ,
                     "read_only":<$$ oneOutlet.second.label_r ? "true":"false" $>
                 }
 %               isCommaNeeded = true;
