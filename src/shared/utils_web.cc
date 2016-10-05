@@ -221,7 +221,7 @@ get_mapping (const std::string& key)
         {"BIOS_SMTP_ENCRYPT",           "smtp/encryption"},
         {"BIOS_SMTP_VERIFY_CA",         "smtp/verify_ca"},
         {"BIOS_SMTP_USER",              "smtp/user"},
-        {"BIOS_SMTP_PASSWD",            "smtp/passwd"},
+        {"BIOS_SMTP_PASSWD",            "smtp/password"},
         {"BIOS_SMTP_FROM",              "smtp/from"},
         {"BIOS_SMTP_SMS_GATEWAY",       "smtp/smsgateway"},
         // agent-ms
@@ -334,7 +334,6 @@ json2zpl (
             cxxtools::SerializationInfo fake_value = si.getMember ("config"). getMember ("value");
             std::string name;
             si.getMember ("config"). getMember ("key"). getValue (name);
-            name = get_mapping (name);
 
             if (fake_value.category () == cxxtools::SerializationInfo::Category::Value)
             {
