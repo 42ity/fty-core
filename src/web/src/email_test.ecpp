@@ -136,7 +136,7 @@ UserInfo user;
     {
         "status" : "<$ status $>",
         "error_code" : <$ err_code $>,
-        "reason" : "<$ err_message $>"
+        "reason" : "<$ utils::json::escape (err_message) $>"
     }
 }
 <%cpp>
