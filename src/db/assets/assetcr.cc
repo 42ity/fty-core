@@ -691,117 +691,81 @@ db_reply_t
 {
     LOG_START;
     log_debug ("  element_name = '%s'", element_name);
-    if ( subtype_id == 0 ) {
+    if (subtype_id == 0)
         subtype_id = asset_subtype::N_A;
-    }
 
-    db_reply_t ret = db_reply_new();
+    db_reply_t ret = db_reply_new ();
 
     // input parameters control
-    if ( !is_ok_name (element_name) )
+    if (!is_ok_name (element_name))
     {
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
-        bios_error_idx(ret.rowid, ret.msg, "request-param-bad", "name", element_name, "<valid and unique asset name>");
-        log_error ("end: %s, %s", "ignore insert", ret.msg.c_str());
+        bios_error_idx (ret.rowid, ret.msg, "request-param-bad", "name", element_name, "<valid and unique asset name>");
+        log_error ("end: %s, %s", "ignore insert", ret.msg.c_str ());
         return ret;
     }
-    if ( !is_ok_element_type (element_type_id) )
+
+    if (!is_ok_element_type (element_type_id))
     {
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of element_type_id is not allowed";
-        bios_error_idx(ret.rowid, ret.msg, "request-param-bad", "element_type_id", element_type_id, "<valid element type id>");
-        log_error ("end: %s, %s", "ignore insert", ret.msg.c_str());
+        bios_error_idx (ret.rowid, ret.msg, "request-param-bad", "element_type_id", element_type_id, "<valid element type id>");
+        log_error ("end: %s, %s", "ignore insert", ret.msg.c_str ());
         return ret;
     }
+
     // ASSUMPTION: all datacenters are unlockated elements
-    if ( ( element_type_id == asset_type::DATACENTER ) &&
-         ( parent_id != 0 ) )
+    if (element_type_id == asset_type::DATACENTER && parent_id != 0)
     {
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
-        bios_error_idx(ret.rowid, ret.msg, "request-param-bad", "location", parent_id, "<nothing for type datacenter>");
+        bios_error_idx (ret.rowid, ret.msg, "request-param-bad", "location", parent_id, "<nothing for type datacenter>");
         return ret;
     }
-    // TODO:should we add more checks here???
     log_debug ("input parameters are correct");
 
-    try{
-        tntdb::Statement st;
-        if ( parent_id == 0 )
-        {
-            st = conn.prepareCached(
-                " INSERT INTO"
-                "   t_bios_asset_element"
-                "   (name, id_type, id_parent, status, priority,"
-                "    id_subtype, asset_tag)"
-                " SELECT"
-                "   :name, :type, NULL, :status, :priority,"
-                "   :subtype, :assettag"
-                " FROM"
-                "   t_empty"
-                " WHERE NOT EXISTS"
-                "   ("
-                "       SELECT"
-                "         id_type"
-                "       FROM"
-                "         t_bios_asset_element"
-                "       WHERE"
-                "         name = :name AND"
-                "         id_type = :type AND"
-                "         id_parent is NULL"
-                "   )"
-            );
+    try {
+        tntdb::Statement statement = conn.prepareCached (
+            "INSERT INTO t_bios_asset_element "
+            "(name, id_type, id_subtype, id_parent, status, priority, asset_tag) "
+            "VALUES "
+            "(:name, :id_type, :id_subtype, :id_parent, :status, :priority, :asset_tag) "
+            "ON DUPLICATE KEY UPDATE name = :name"
+        );
 
-            ret.affected_rows = st.set("name", element_name).
-                                   set("type", element_type_id).
-                                   set("status", status).
-                                   set("priority", priority).
-                                   set("subtype", subtype_id).
-                                   set("assettag", asset_tag).
-                                   execute();
+        if (parent_id == 0)
+        {
+            ret.affected_rows = statement.
+                set ("name", element_name).
+                set ("id_type", element_type_id).
+                set ("id_subtype", subtype_id).
+                setNull ("id_parent"). 
+                set ("status", status).
+                set ("priority", priority).
+                set ("asset_tag", asset_tag).
+                execute();
         }
         else
         {
-            st = conn.prepareCached(
-                " INSERT INTO"
-                "   t_bios_asset_element"
-                "   (name, id_type, id_parent, status, priority,"
-                "    id_subtype, asset_tag)"
-                " SELECT"
-                "   :name, :type, :parent, :status, :priority,"
-                "   :subtype, :assettag"
-                " FROM"
-                "   t_empty"
-                " WHERE NOT EXISTS"
-                "   ("
-                "       SELECT"
-                "         id_type"
-                "       FROM"
-                "         t_bios_asset_element"
-                "       WHERE"
-                "         name = :name AND"
-                "         id_type = :type AND"
-                "         id_parent = :parent"
-                "   )"
-            );
-            ret.affected_rows = st.set("name", element_name).
-                                   set("type", element_type_id).
-                                   set("parent", parent_id).
-                                   set("status", status).
-                                   set("priority", priority).
-                                   set("subtype", subtype_id).
-                                   set("assettag", asset_tag).
-                                   execute();
+            ret.affected_rows = statement.
+                set ("name", element_name).
+                set ("id_type", element_type_id).
+                set ("id_subtype", subtype_id).
+                set ("id_parent", parent_id). 
+                set ("status", status).
+                set ("priority", priority).
+                set ("asset_tag", asset_tag).
+                execute();
         }
-        ret.rowid = conn.lastInsertId();
-        log_debug ("[t_bios_asset_element]: was inserted %"
-                                        PRIu64 " rows", ret.affected_rows);
-        if ( ret.affected_rows == 0 ) {
+
+        ret.rowid = conn.lastInsertId ();
+        log_debug ("[t_bios_asset_element]: was inserted %" PRIu64 " rows", ret.affected_rows);
+        if (ret.affected_rows == 0) {
             ret.status = 0;
             //TODO: rework to bad param
             bios_error_idx(ret.rowid, ret.msg, "data-conflict", element_name, "Most likely duplicate entry.");
