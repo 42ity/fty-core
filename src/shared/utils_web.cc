@@ -224,6 +224,7 @@ get_mapping (const std::string& key)
         {"BIOS_SMTP_PASSWD",            "smtp/password"},
         {"BIOS_SMTP_FROM",              "smtp/from"},
         {"BIOS_SMTP_SMS_GATEWAY",       "smtp/smsgateway"},
+        {"BIOS_SMTP_USE_AUTHENTICATION", "smtp/use_auth"},
         // agent-ms
         {"BIOS_METRIC_STORE_AGE_RT",    "store/rt"},
         {"BIOS_METRIC_STORE_AGE_15m",   "store/15m"},
