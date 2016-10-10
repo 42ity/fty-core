@@ -82,7 +82,7 @@ CLEANFILES +=	$(GENERATEDSCRIPTS) $(GENERATEDDATA)
 
 # Test data are also part of sources to redistribute
 # The COPYING file is symlinked to from the license fixtures
-EXTRA_DIST +=	tests/fixtures tests/CI/web/results COPYING
+EXTRA_DIST +=	tests/fixtures COPYING
 
 # How to run tntnet from Makefile
 RUN_TNTNET_ENVFILE = $(abs_top_builddir)/tests/CI/run_tntnet_make.env
@@ -1156,7 +1156,7 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/asset_DELETE.cpp src/web/src/asset_POST.cpp \
                       src/web/src/json.cpp  src/web/src/asset_list.cpp        \
                       src/web/src/time.cpp  src/web/src/sysinfo.cpp           \
-                      src/web/src/current.cpp src/web/src/ui_properties.cpp   \
+                      src/web/src/current.cpp \
                       src/web/src/rack_total.cpp                              \
                       src/web/src/topology_location_from.cpp                  \
                       src/web/src/topology_location_to.cpp                    \
