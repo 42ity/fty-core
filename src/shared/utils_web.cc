@@ -382,6 +382,17 @@ json2zpl (
             std::vector <std::string> values;
             it >>= values;
             size_t i = 0;
+
+            zconfig_t *array_root = zconfig_locate (cfg, get_mapping (it.name ().c_str ()));
+            if (array_root) {
+                zconfig_print (array_root);
+                zconfig_t *i = zconfig_child (array_root);
+                while (i) {
+                    zconfig_set_value (i, NULL);
+                    i = zconfig_next (i);
+                }
+            }
+
             for (const auto& value : values) {
                 assert_value (it.name (), value);
                 std::string name =
