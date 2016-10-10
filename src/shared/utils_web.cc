@@ -385,7 +385,6 @@ json2zpl (
 
             zconfig_t *array_root = zconfig_locate (cfg, get_mapping (it.name ().c_str ()));
             if (array_root) {
-                zconfig_print (array_root);
                 zconfig_t *i = zconfig_child (array_root);
                 while (i) {
                     zconfig_set_value (i, NULL);
