@@ -314,8 +314,7 @@ void
 json2zpl (
         std::map <std::string, zconfig_t*> &roots,
         const cxxtools::SerializationInfo &si,
-        std::lock_guard <std::mutex> &lock,
-        bool _allow_missing_zconfig)
+        std::lock_guard <std::mutex> &lock)
 {
     static const std::string slash {"/"};
 
