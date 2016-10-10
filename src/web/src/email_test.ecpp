@@ -132,11 +132,11 @@ UserInfo user;
     zmsg_destroy(&send);
 </%cpp>
 {
-    "test_status:"
+    "test_status" :
     {
         "status" : "<$ status $>",
         "error_code" : <$ err_code $>,
-        "reason" : "<$ err_message $>"
+        "reason" : "<$ utils::json::escape (err_message) $>"
     }
 }
 <%cpp>
