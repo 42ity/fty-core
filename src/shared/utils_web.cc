@@ -314,8 +314,7 @@ void
 json2zpl (
         std::map <std::string, zconfig_t*> &roots,
         const cxxtools::SerializationInfo &si,
-        std::lock_guard <std::mutex> &lock,
-        bool _allow_missing_zconfig)
+        std::lock_guard <std::mutex> &lock)
 {
     static const std::string slash {"/"};
 
@@ -364,14 +363,8 @@ json2zpl (
         std::string file_path = get_path (key);
         if (roots.count (file_path) == 0) {
             zconfig_t *root = zconfig_load (file_path.c_str ());
-            if (!root) {
-                if (_allow_missing_zconfig)
-                    root = zconfig_new ("root", NULL);
-                else {
-                    std::string msg = "Cannot load file " + file_path + " for key " + key;
-                    bios_throw ("internal-error", msg.c_str ());
-                }
-            }
+            if (!root)
+                root = zconfig_new ("root", NULL);
             roots [file_path] = root;
         }
 
