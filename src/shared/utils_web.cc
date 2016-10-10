@@ -365,6 +365,8 @@ json2zpl (
             zconfig_t *root = zconfig_load (file_path.c_str ());
             if (!root)
                 root = zconfig_new ("root", NULL);
+            if (!root)
+                bios_throw ("internal-error", "zconfig_new () failed.");
             roots [file_path] = root;
         }
 
