@@ -374,7 +374,7 @@ TEST_CASE ("utils::config") {
     deserializer.deserialize (request_doc);
 
     std::map <std::string, zconfig_t*> roots;
-    utils::config::json2zpl (roots, request_doc, test_lock, true);
+    utils::config::json2zpl (roots, request_doc, test_lock);
 
     zconfig_t *config = roots [utils::config::get_path ("BIOS_SMTP_VERIFY_CA")];
     CHECK (streq (zconfig_get (config, "smtp/verify_ca", "false"), "true"));
@@ -404,7 +404,7 @@ TEST_CASE ("utils::config") {
     cxxtools::SerializationInfo request_doc2;
     deserializer2.deserialize (request_doc2);
 
-    utils::config::json2zpl (roots, request_doc2, test_lock, true);
+    utils::config::json2zpl (roots, request_doc2, test_lock);
 
     config = roots [utils::config::get_path ("BIOS_SMTP_VERIFY_CA")];
     CHECK (streq (zconfig_get (config, "smtp/verify_ca", "true"), "false"));
@@ -431,7 +431,7 @@ TEST_CASE ("utils::config") {
     cxxtools::SerializationInfo request_doc3;
     deserializer3.deserialize (request_doc3);
 
-    utils::config::json2zpl (roots, request_doc3, test_lock, true);
+    utils::config::json2zpl (roots, request_doc3, test_lock);
 
     config = roots [utils::config::get_path ("BIOS_SMTP_VERIFY_CA")];
     CHECK (streq (zconfig_get (config, "smtp/verify_ca", "true"), "false"));
