@@ -224,6 +224,7 @@ get_mapping (const std::string& key)
         {"BIOS_SMTP_PASSWD",            "smtp/password"},
         {"BIOS_SMTP_FROM",              "smtp/from"},
         {"BIOS_SMTP_SMS_GATEWAY",       "smtp/smsgateway"},
+        {"BIOS_SMTP_USE_AUTHENTICATION", "smtp/use_auth"},
         // agent-ms
         {"BIOS_METRIC_STORE_AGE_RT",    "store/rt"},
         {"BIOS_METRIC_STORE_AGE_15m",   "store/15m"},
@@ -313,8 +314,7 @@ void
 json2zpl (
         std::map <std::string, zconfig_t*> &roots,
         const cxxtools::SerializationInfo &si,
-        std::lock_guard <std::mutex> &lock,
-        bool _allow_missing_zconfig)
+        std::lock_guard <std::mutex> &lock)
 {
     static const std::string slash {"/"};
 
@@ -363,14 +363,10 @@ json2zpl (
         std::string file_path = get_path (key);
         if (roots.count (file_path) == 0) {
             zconfig_t *root = zconfig_load (file_path.c_str ());
-            if (!root) {
-                if (_allow_missing_zconfig)
-                    root = zconfig_new ("root", NULL);
-                else {
-                    std::string msg = "Cannot load file " + file_path + " for key " + key;
-                    bios_throw ("internal-error", msg.c_str ());
-                }
-            }
+            if (!root)
+                root = zconfig_new ("root", NULL);
+            if (!root)
+                bios_throw ("internal-error", "zconfig_new () failed.");
             roots [file_path] = root;
         }
 
@@ -388,6 +384,16 @@ json2zpl (
             std::vector <std::string> values;
             it >>= values;
             size_t i = 0;
+
+            zconfig_t *array_root = zconfig_locate (cfg, get_mapping (it.name ().c_str ()));
+            if (array_root) {
+                zconfig_t *i = zconfig_child (array_root);
+                while (i) {
+                    zconfig_set_value (i, NULL);
+                    i = zconfig_next (i);
+                }
+            }
+
             for (const auto& value : values) {
                 assert_value (it.name (), value);
                 std::string name =
