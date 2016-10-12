@@ -1178,7 +1178,8 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/license_POST.cpp \
                       src/web/src/license_status.cpp \
                       src/web/src/my_profile.cpp \
- 		      src/web/src/email_test.cpp	
+ 		      src/web/src/email_test.cpp \
+		      src/web/src/input_power_chain.cpp	
 
 # Track real-git and nodist (generated) sources SEPARATELY
 nodist_bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)
