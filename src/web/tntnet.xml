@@ -229,9 +229,6 @@
       <target>asset_DELETE@bios_web</target>
       <url>^/api/v1/asset/(.*)$</url>
       <method>DELETE</method>
-      <args>
-        <id>$1</id>
-      </args>
     </mapping>
 
     <mapping>
@@ -309,6 +306,16 @@
       <target>topology_power@bios_web</target>
       <url>^/api/v1/topology/power.*$</url>
       <method>GET</method>
+    </mapping>
+
+    <!-- Get input power chain -->
+    <mapping>
+      <target>input_power_chain@bios_web</target>
+      <method>GET</method>
+      <url>^/api/v1/topology/input_power_chain/([0-9])$</url>
+      <args>
+        <id>$1</id>
+      </args>
     </mapping>
 
     <!-- Current meassurements -->
