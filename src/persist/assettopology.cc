@@ -45,9 +45,43 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MAX_RECURSION_DEPTH 6
 #define INPUT_POWER_CHAIN 1
 
+// >0 group id, 0 does not exist,  -1 error
+int
+get_input_power_group
+    (const std::string& url,
+     uint32_t datacenter_id)
+{
+    try {
+        tntdb::Connection connection = tntdb::connectCached (url);
+        tntdb::Statement statement = connection.prepareCached (
+            " SELECT id_asset_element "
+            " FROM t_bios_asset_ext_attributes "
+            " WHERE keytag = 'type' "
+            " AND value = 'input_power' "
+            " AND id_asset_element "
+            "   IN (SELECT id_asset_element FROM v_bios_asset_element_super_parent WHERE :dc_id in (id_parent1, id_parent2, id_parent3, id_parent4, id_parent5)) "
+        );
+        tntdb::Result result = statement.set ("dc_id", datacenter_id).select ();
+        log_debug ("Number of input_power groups under datacenter id '%" PRIu32"' == '%" PRIu32"'.", datacenter_id, result.size ());
+        if (result.size () == 0)
+            return 0;
+        if (result.size () > 1)
+            log_warning ("Selecting the first one.");
+        
+        uint32_t id = 0;
+        result[0][0].get (id);
+        return id;        
+    }
+    catch (const std::exception& e)
+    {
+        log_error ("Exception caught %s", e.what ());
+        return -1;
+    }
+    return 0;
+}
 
 int
-get_return_input_power_group
+construct_input_power_group
     (const std::string& url,
      uint32_t datacenter_id,
      std::map <std::string, std::pair <std::string, std::string>>& devices,
