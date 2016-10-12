@@ -315,7 +315,7 @@
     <mapping>
       <target>input_power_chain@bios_web</target>
       <method>GET</method>
-      <url>^/api/v1/topology/input_power_chain/([0-9])$</url>
+      <url>^/api/v1/topology/input_power_chain/([0-9]+)$</url>
       <args>
         <id>$1</id>
       </args>
