@@ -229,6 +229,9 @@
       <target>asset_DELETE@bios_web</target>
       <url>^/api/v1/asset/(.*)$</url>
       <method>DELETE</method>
+      <args>
+        <id>$1</id>
+      </args>
     </mapping>
 
     <mapping>
