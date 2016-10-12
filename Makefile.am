@@ -82,7 +82,7 @@ CLEANFILES +=	$(GENERATEDSCRIPTS) $(GENERATEDDATA)
 
 # Test data are also part of sources to redistribute
 # The COPYING file is symlinked to from the license fixtures
-EXTRA_DIST +=	tests/fixtures tests/CI/web/results COPYING
+EXTRA_DIST +=	tests/fixtures COPYING
 
 # How to run tntnet from Makefile
 RUN_TNTNET_ENVFILE = $(abs_top_builddir)/tests/CI/run_tntnet_make.env
