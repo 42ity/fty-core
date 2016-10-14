@@ -51,7 +51,7 @@ struct SystemdUnitState {
 std::map<std::string, struct SystemdUnitState> allowed_unit_list{};
 
 /* List of allowed REST API operations for services and other supported units. */
-static std::set<std::string> get_operations {"list", "status", "show"};
+static std::set<std::string> get_operations {"list", "status"};
 static std::set<std::string> post_operations {"start", "stop", "restart", "enable", "disable", "show"};
 
 /* TODO: Somehow pass or detect at runtime - if we are under systemd at all,
@@ -379,10 +379,10 @@ UserInfo user;
         }
         log_debug ("%zu", get_operations.count (checked_operation) );
         if ( request.getMethod() == "GET"  && ( get_operations.count (operation) == 0 ) )  {
-            http_die ("request-param-bad", "operation", operation.c_str(), "operation allowed for GET method");
+            http_die ("request-param-bad", "operation", operation.c_str(), "an operation allowed for GET method");
         }
         if ( request.getMethod() == "POST" && ( post_operations.count (operation) == 0 ) ) {
-            http_die ("request-param-bad", "operation", operation.c_str(), "operation allowed for POST method");
+            http_die ("request-param-bad", "operation", operation.c_str(), "an operation allowed for POST method");
         }
         checked_operation = std::move (operation);
 
