@@ -177,6 +177,10 @@ cat_uniq() (
 )
 
 echo_indent() {
+    if [[ "${ECHO_INDENT-}" = no ]] ; then
+        printf '%s\n' "$*"
+        return $?
+    fi
     [[ -z "${ECHO_INDENT_DEPTH-}" ]] && ECHO_INDENT_DEPTH="0" # Negative is ok = left-align
     [[ -z "${ECHO_INDENT_TEXT-}" ]] && ECHO_INDENT_TEXT="" # empty is ok
     printf "%${ECHO_INDENT_DEPTH}s%s\n" "$ECHO_INDENT_TEXT" "$*"
@@ -265,7 +269,8 @@ Usage: ${SCRIPT_BASENAME} list-dependencies <modifiers or unit names>
     The default mode is to show the "required" and "wanted" units of the
     specified unit (these should run for the specified one to begin starting).
     This mode accepts standard modifiers "--reverse", "--after" and "--before";
-    the "--plain" representation for standard output is enforced. Acceptable
+    the "--plain" representation for standard output is enforced, though this
+    command-line argument also disables indentation in recursion. Acceptable
     non-standard modifiers are "--json" for same markup and data selection as
     list-json action (JSON for REST API), and "--detailed|--details|--long|-l"
     for same markup as "list-ipm-units --detailed".
@@ -962,7 +967,7 @@ systemctl_list_needs() (
     ABORT=no
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --plain) ;;
+            --plain) ECHO_INDENT=no ;;
             --recursive|-r)
                 RECURSIVE=yes ;;
             --all|-a)
