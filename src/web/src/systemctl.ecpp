@@ -37,86 +37,156 @@
 #include "subprocess.h"
 #include "helpers.h"
 
-#define LoadState       "LoadState"     // loaded/
-#define ActiveState     "ActiveState"   // active/
-#define UnitFileState   "UnitFileState" // enabled/disabled
-#define SubState        "SubState"      // running/
-
-// List of hardcoded services that we allow to be manipulated through REST API
-// TODO: Match this up with tools/systemctl and maybe the Makefile variables
-static const char *list[] =
-{
-// SYSTEM services as named in Debian 8:
-    "networking", "mysql", "ntp", "saslauthd", "malamute",
-// SYSTEM services as named in some non-Debian OSes:
-    "network", "mysqld", "mariadb", "ntpd", "ntpdate", "sntp",
-// BIOS services
-    "bios-networking",
-    "bios-reset-button", "tntnet@bios", "bios-agent-smtp",
-    "bios-agent-alert-generator", "agent-alerts-list",
-    "bios-agent-autoconfig", "bios-agent-cm",
-    "bios-agent-inventory", "bios-agent-nut",
-//TODO: legacy-metrics to be removed
-    "bios-agent-asset", "bios-agent-legacy-metrics", "kpi-uptime",
-    "agent-th", "bios-agent-tpower", "bios-db-init",
-    "dc_th", "bios-agent-rt", "bios-agent-ms",
-    "biostimer-warranty-metric",
-// TODO: Wildcard services, e.g. instances defined at run-time
-// NUT services
-    "nut-driver", "nut-monitor", "nut-server",
-    NULL
+struct SystemdUnitState {
+    std::string LoadState;     // loaded/
+    std::string ActiveState;   // active/
+    std::string UnitFileState; // enabled/disabled
+    std::string SubState;      // running/
 };
 
+/* List of services and other systemd units that we know at runtime as allowed
+ * to be manipulated through REST API (as deemed by systemctl wrapper script)
+ * and their current states.
+ */
+std::map<std::string, struct SystemdUnitState> allowed_unit_list{};
+
+// List of allowed REST API operations for services and other supported units.
 static std::set<std::string> get_operations {"list", "status"};
 static std::set<std::string> post_operations {"start", "stop", "restart", "enable", "disable"};
 
-bool service_name_valid (const char *service_name) {
-    int i = 0;
-    while (list[i] != NULL) {
-        if (strcmp (list[i], service_name) == 0)
-            return true;
-        i++;
-    }
-    return false;
+int call_systemctl(shared::Argv proc_cmd_systemctl_args, std::string &proc_out, std::string &proc_err, std::map<std::string, struct SystemdUnitState> &discovered_unit_list) {
+    /* This routine finds unit names or further details according to
+     * passed argument list and saves into the map provided by caller */
+    return -1;
 }
 
-bool
-parse_systemctl_status
-(const std::string& in, std::string& active_state, std::string& sub_state, std::string& load_state, std::string& unit_file_state) {
-    // Expected `systemctl show` format is:
-    //      key=value
-    //      ...
-    //      key=value
-    if (in.empty ())
-        return false;
 
-    std::vector<std::string> tokens;
-    cxxtools::split("\n", in, std::back_inserter(tokens));
-    for (auto&& i : tokens) {
+int learn_allowed_units(const char *service_name) {
+    /* If the provided service_name is NULL, list details for all known BIOS
+     * services; otherwise list the service name only.
+     */
+    /* TODO REVIEW: Is this code shared in threads? Should changes be mutexed?
+     * Then - How? :)
+     */
+    if (allowed_unit_list.size() != 0)
+        allowed_unit_list.clear();
+
+    shared::Argv proc_cmd {"sudo", "systemctl", "list-ipm-units", "--detailed"};
+    if (service_name != NULL) {
+        proc_cmd.push_back(service_name);
+    }
+
+    std::string proc_out, proc_err;
+    int proc_rv = shared::output (proc_cmd, proc_out, proc_err);
+
+    if ( proc_rv != 0 ) {
+        std::string message =
+            "shared::output (command = 'sudo systemctl list-ipm-units --detailed') failed. "
+            "Return value = '" + std::to_string (proc_rv) + "', stderr = '" + proc_err + "'.";
+        log_error (message.c_str ());
+        return -1; // http_die() needs the reply object, so caller would die instead
+    }
+
+    if (proc_out.empty ()) {
+        log_error ("shared::output (command = 'sudo systemctl list-ipm-units --detailed') succeeded, "
+            "but returned empty output. Is host OS misconfigured (lack of registered units)?" );
+        return 0;
+    }
+
+    /* An example of `systemctl list-ipm-units --detailed` format is:
+     *   malamute.service	L:loaded	A:inactive	U:disabled	S:dead
+     * TAB-separated sequence of "<Id>\tL:<LoadState>\tA:<ActiveState>\tU:<UnitFileState>\tS:<SubState>\n"
+     * The unit Id is not-empty; any state can be empty or single-word token.
+     * This command returns only the installed units that pass the filter
+     * defined in systemctl wrapper script as the components of our project,
+     * so unrelated services can not be manipulated by end-user over REST API
+     * (nor CLI sudo).
+     */
+
+    std::vector<std::string> line_tokens;
+    cxxtools::split("\n", proc_out, std::back_inserter(line_tokens));
+    for (auto&& i : line_tokens) {
         if (i.empty ()) {
             continue;
         }
-        std::size_t found = i.find ("=");
-        if (found == std::string::npos) {
-            return false;
-        }
-        std::string key = i.substr (0, found);
-        std::string value  = i.substr (found+1, std::string::npos);
 
-        if (key.compare (LoadState) == 0) {
-            load_state = value;
+        std::string unit_name;
+        SystemdUnitState sus; // std::strings inside are initialized to empty
+
+        std::vector<std::string> sub_tokens;
+        cxxtools::split("\t", i, std::back_inserter(sub_tokens));
+        for (auto&& j : sub_tokens) {
+            if (j.empty ()) {
+                continue;
+            }
+
+            if (unit_name.empty ()) {
+                unit_name = j;  /* The first sub-token in the string */
+            } else {
+                std::string key = j.substr (0, 2);
+                if (j.size() > 2) { /* else keep the original empty value */
+                    std::string value = j.substr (2, std::string::npos);
+                    if (key.compare("L:") == 0) {
+                        sus.LoadState = value;
+                    } else if (key.compare("A:") == 0) {
+                        sus.ActiveState = value;
+                    } else if (key.compare("U:") == 0) {
+                        sus.UnitFileState = value;
+                    } else if (key.compare("S:") == 0) {
+                        sus.SubState = value;
+                    }
+                }
+            }
         }
-        else if (key.compare (ActiveState) == 0) {
-            active_state = value;
-        }
-        else if (key.compare (UnitFileState) == 0) {
-            unit_file_state = value;
-        }
-        else if (key.compare (SubState) == 0) {
-            sub_state = value;
+
+        if (unit_name.empty()) {
+            log_error ("Could not parse output of `sudo systemctl list-ipm-units --detailed` due to different expected output format.");
+            return -2;
+        } else {
+            allowed_unit_list[unit_name] = sus;
         }
     }
-    return true;
+
+    if (allowed_unit_list.size() == 0) {
+        log_error ("Could not parse output of `sudo systemctl list-ipm-units --detailed` due to different expected output format or lack of registered units.");
+    }
+
+    return allowed_unit_list.size();
+}
+
+bool service_name_valid (std::string &service_name) {
+    /* NOTE: The service_name reference is intentionally not const,
+     * this routine can change it (e.g. convert a short-name unit
+     * into a full-name one as locally detected at run-time. */
+    if (allowed_unit_list.size() == 0)
+        return false;
+
+    std::map<std::string, SystemdUnitState>::iterator it;
+
+    it = allowed_unit_list.find(service_name);
+    if (it != allowed_unit_list.end())
+        return true;
+
+    /* TODO: Refactor the supported extension parsing into a loop with one piece of code */
+    it = allowed_unit_list.find(service_name + ".service");
+    if (it != allowed_unit_list.end()) {
+        service_name += ".service";
+        return true;
+    }
+
+    it = allowed_unit_list.find(service_name + ".target");
+    if (it != allowed_unit_list.end()) {
+        service_name += ".target";
+        return true;
+    }
+
+    it = allowed_unit_list.find(service_name + ".timer");
+    if (it != allowed_unit_list.end()) {
+        service_name += ".timer";
+        return true;
+    }
+
+    return false;
 }
 
 unsigned int process_get_list (
@@ -127,14 +197,19 @@ unsigned int process_get_list (
     message.assign (
 "{\n"
 "\t\"systemctl_services\" : [\n");
-    bool last = false;
-    int i = 0;
-    while (list[i] != NULL) {
-        if (list [i+1] == NULL)
-            last = true;
-        message.append ("\t\t\"").append (list[i]).append (last ? "\"\n" : "\",\n");
-        i++;
+    bool first = true;
+    for (auto& element : allowed_unit_list) {
+        if (element.first.empty())
+            continue;
+
+        message.append (first ? "\t\t\"" : ",\t\t\"").
+                append (element.first).
+                append ("\"\n");
+
+        if (first)
+            first = false;
     }
+
     message.append (
 "\t]\n"
 "}");
@@ -146,33 +221,22 @@ unsigned int process_get_status (
         tnt::HttpReply& reply,
         const std::string& service_name)
 {
-    // ASSUMPTION: service name is valid
     std::string message;
-
-    shared::Argv proc_cmd {"sudo", "systemctl", "show", service_name};
-    std::string proc_out, proc_err;
-    int proc_rv = shared::output (proc_cmd, proc_out, proc_err);
-
-    if ( proc_rv != 0 ) {
-        message = "shared::output (command = 'sudo systemctl show " + service_name +
-            "') failed. Return value = '" + std::to_string (proc_rv) + "', stderr = '" + proc_err + "'.";
+    std::map<std::string, SystemdUnitState>::iterator it = allowed_unit_list.find(service_name);
+    if ( it == allowed_unit_list.end()) {
+        message = "Denying request for systemd unit not among those allowed by filter: '" + service_name +"'.";
         log_error (message.c_str ());
-        http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
+        http_die ("request-param-bad", "service_name", service_name.c_str(), "one of service names that can be obtained through systemctl/list call");
     }
 
-    std::string active_state, sub_state, load_state, unit_file_state;
-    if ( !parse_systemctl_status (proc_out, active_state, sub_state, load_state, unit_file_state) ) {
-        log_error ("Could not parse output of `systemctl show` due to different expected output format.");
-        http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
-    }
-
+    /* TODO: Maybe use `systemctl list-json` for flexibility with supported attributes etc. instead? */
     message.assign (
             "{\n"
-            "\t\"" + service_name + "\" : {\n" +
-            "\t\t\"ActiveState\"\t:\t\"" + active_state  + "\",\n"
-            "\t\t\"SubState\"\t:\t\"" + sub_state + "\",\n"
-            "\t\t\"LoadState\"\t:\t\"" + load_state + "\",\n"
-            "\t\t\"UnitFileState\"\t:\t\"" + unit_file_state + "\"\n"
+            "\t\"" + it->first + "\" : {\n" +
+            "\t\t\"ActiveState\"\t:\t\"" + it->second.ActiveState + "\",\n"
+            "\t\t\"SubState\"\t:\t\"" + it->second.SubState + "\",\n"
+            "\t\t\"LoadState\"\t:\t\"" + it->second.LoadState + "\",\n"
+            "\t\t\"UnitFileState\"\t:\t\"" + it->second.UnitFileState + "\"\n"
             "\t}\n"
             "}");
     reply.out() << message;
@@ -186,9 +250,11 @@ unsigned int process_post (
 {
     std::string message;
 
-    // as for some services, we can do the real operation with another name
+    // for some services, we can do the real operation with another name
     std::string service_name_op = service_name;
+
     // networking is different animal, treat differently
+    // FIXME: There is no "show" operation in our allowed list... typo "stop"?
     if (service_name == "networking") {
         if (operation != "restart" && operation != "show") {
             http_die("request-param-bad",
@@ -201,6 +267,7 @@ unsigned int process_post (
             service_name_op = "bios-networking";
         }
     }
+
     // TODO: The hardcoded check below should call
     // "sudo systemctl list-requires tntnet@bios.service"
     // and inspect that run-time list of services
@@ -239,10 +306,13 @@ unsigned int process_post (
     }
 
     std::string active_state, sub_state, load_state, unit_file_state;
+/*
     if (!parse_systemctl_status (proc_out, active_state, sub_state, load_state, unit_file_state)) {
         log_error ("Could not parse output of `systemctl show` due to different expected output format.");
         http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
     }
+*/
+
     message.assign (
 "{\n"
 "\t\"" + service_name + "\" : {\n" +
@@ -320,10 +390,22 @@ UserInfo user;
         } else {
             service_name = request.getArg("service_name");
         }
-        std::transform (service_name.begin(), service_name.end(), service_name.begin(), ::tolower);
-        if ( ( checked_operation != "list" ) && !service_name_valid (service_name.c_str ()) ) {
-            http_die ("request-param-bad", "service_name", service_name.c_str(), "one of service names that can be obtained through systemctl/list call");
+
+        if ( checked_operation == "list" ) {
+            if ( learn_allowed_units(NULL) <= 0 ) {
+                /* The error is logged in detail by the function */
+                http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
+            }
+        } else {
+            if ( (learn_allowed_units(service_name.c_str()) <= 0 ) ||
+                 (!service_name_valid (service_name) )
+            ) { /* In case of wildcards or short names, the service_name
+                 * value can get changed by the call above; e.g. a
+                 * "tntnet@bios" would become "tntnet@bios.service" */
+                http_die ("request-param-bad", "service_name", service_name.c_str(), "one of service names that can be obtained through systemctl/list call (case-sensitive!)");
+            }
         }
+
         checked_service_name = std::move (service_name);
     }
     log_info ("service_name: %s", checked_service_name.c_str());
@@ -336,6 +418,7 @@ UserInfo user;
             return process_get_status (reply, checked_service_name);
         }
     }
+
     if ( request.getMethod() == "POST" ) {
         return process_post (reply, checked_operation, checked_service_name);
     }
