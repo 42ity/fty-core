@@ -29,16 +29,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "dbtypes.h"
 #include "dbhelpers.h"
 
-
-// >0 group id, 0 does not exist,  -1 error
-int
-get_input_power_group
-    (const std::string& url,
-     uint32_t datacenter_id);
-
 // 0 ok, -1 error
 int
-construct_input_power_group
+input_power_group_response
     (const std::string& url,
      uint32_t datacenter_id,
      //         device_id -> (device name, device subtype)

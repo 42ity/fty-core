@@ -45,14 +45,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MAX_RECURSION_DEPTH 6
 #define INPUT_POWER_CHAIN 1
 
+// return first input power group (i.e. group with extended attribute type == input_power)
 // >0 group id, 0 does not exist,  -1 error
-int
-get_input_power_group
-    (const std::string& url,
+static int
+get_input_power_group_id
+    (tntdb::Connection& connection,
      uint32_t datacenter_id)
 {
     try {
-        tntdb::Connection connection = tntdb::connectCached (url);
         tntdb::Statement statement = connection.prepareCached (
             " SELECT id_asset_element "
             " FROM t_bios_asset_ext_attributes "
@@ -66,11 +66,11 @@ get_input_power_group
         if (result.size () == 0)
             return 0;
         if (result.size () > 1)
-            log_warning ("Selecting the first one.");
-        
+            log_debug ("Selecting the first one.\n");
+
         uint32_t id = 0;
         result[0][0].get (id);
-        return id;        
+        return id;
     }
     catch (const std::exception& e)
     {
@@ -80,71 +80,48 @@ get_input_power_group
     return 0;
 }
 
-int
-construct_input_power_group
-    (const std::string& url,
-     uint32_t datacenter_id,
+// 0 ok, -1 error
+static int
+get_power_topology_group
+    (tntdb::Connection& connection,
+     uint32_t group_id,
      std::map <std::string, std::pair <std::string, std::string>>& devices,
      std::vector <std::tuple <std::string, std::string, std::string, std::string>>& powerchains)
 {
     try {
-        tntdb::Connection connection = tntdb::connectCached (url);
         tntdb::Statement statement = connection.prepareCached (
-            " SELECT id_asset_device_src "
-            " FROM t_bios_asset_link as a "
-            " LEFT JOIN t_bios_asset_element as b ON a.id_asset_device_src=b.id_asset_element "
+            " SELECT id_asset_device_src as src_id, src_out as src_socket, a.name as src_name, c.name as src_subtype, "
+            "        id_asset_device_dest as dest_id, dest_in as dest_socket, b.name as dest_name, d.name as dest_subtype "
+            " FROM t_bios_asset_link "
+            " LEFT JOIN "
+            "   (t_bios_asset_element as a LEFT JOIN t_bios_asset_device_type as c ON a.id_subtype =c.id_asset_device_type) "
+            " ON id_asset_device_src=a.id_asset_element "
+            " LEFT JOIN "
+            "   (t_bios_asset_element as b LEFT JOIN t_bios_asset_device_type as d ON b.id_subtype =d.id_asset_device_type) "
+            " ON id_asset_device_dest=b.id_asset_element "
             " WHERE "
-            " id_asset_device_src "
-            "   in (SELECT id_asset_element FROM v_bios_asset_element_super_parent WHERE :dc_id in (id_parent1, id_parent2, id_parent3, id_parent4, id_parent5)) "
-            " AND "
-            " id_type "
-            "   = (select id_asset_element_type from t_bios_asset_element_type where name = 'device') "
-            " AND "
-            " id_subtype "
-            "   in (select id_asset_device_type from t_bios_asset_device_type where name = 'feed' OR name = 'genset' OR name = 'sts') "
+            " id_asset_device_src AND id_asset_device_dest "
+            "   IN (SELECT id_asset_element FROM t_bios_asset_group_relation WHERE id_asset_group = :group_id) "
         );
-        tntdb::Result result = statement.set ("dc_id", datacenter_id).select ();
-        log_debug ("Number of (feed, sts, genset) devices under datacenter id '%" PRIu32"' == '%" PRIu32"'.", datacenter_id, result.size ());
+        tntdb::Result result = statement.set ("group_id", group_id).select ();
         for (const auto& row : result) {
-            uint32_t id = 0;
-            row [0].get (id);
-
-            statement = connection.prepareCached (
-                " SELECT id_asset_device_src, src_out, id_asset_device_dest, dest_in, b.name, c.name "
-                " FROM t_bios_asset_link as a "
-                " LEFT JOIN t_bios_asset_element as b ON a.id_asset_device_dest=b.id_asset_element "
-                " LEFT JOIN t_bios_asset_device_type as c ON id_subtype = c.id_asset_device_type "
-                " WHERE "
-                " id_type "
-                "   = (select id_asset_element_type from t_bios_asset_element_type where name = 'device') "
-                " AND "
-                " id_subtype "
-                "   in (select id_asset_device_type from t_bios_asset_device_type "
-                "       where name = 'ups'      OR "
-                "             name = 'epdu'     OR "
-                "             name = 'pdu'      OR "
-                "             name = 'router'   OR "
-                "             name = 'server'   OR "
-                "             name = 'switch'   OR "
-                "             name = 'rack controller') "
-                " AND "
-                " id_asset_device_src = :input_power_device "
-            );
-            tntdb::Result chains = statement.set ("input_power_device", id).select ();
-            log_debug ("Number of power chains for device id '%" PRIu32"' "
-                       " -> any device of type (ups, epdu, pdu, router, server, switch, RC3) == '%" PRIu32, id, chains.size ());
-            for (const auto& chain : chains) {
-                std::string device, device_socket, source, source_socket, name, subtype;
-                chain [0].get (source);
-                chain [1].get (source_socket);
-                chain [2].get (device);
-                chain [3].get (device_socket);
-                chain [4].get (name);
-                chain [5].get (subtype);
-                devices.emplace (std::make_pair (device, std::make_pair (name, subtype)));
-                powerchains.push_back (std::make_tuple (device, device_socket, source, source_socket));
+            std::string source_id, source_name, source_subtype, source_socket;
+            std::string dest_id, dest_name, dest_subtype, dest_socket;
+            row [0].get (source_id);
+            row [1].get (source_socket);
+            row [2].get (source_name);
+            row [3].get (source_subtype);
+            row [4].get (dest_id);
+            row [5].get (dest_socket);
+            row [6].get (dest_name);
+            row [3].get (dest_subtype);
+            if (devices.find (source_id) == devices.end ()) {
+                devices.emplace (std::make_pair (source_id, std::make_pair (source_name, source_subtype)));
             }
-
+            if (devices.find (dest_id) == devices.end ()) {
+                devices.emplace (std::make_pair (dest_id, std::make_pair (dest_name, dest_subtype)));
+            }
+            powerchains.push_back (std::make_tuple (dest_id, dest_socket, source_id, source_socket));
         }
     }
     catch (const std::exception& e)
@@ -155,6 +132,100 @@ construct_input_power_group
     return 0;
 }
 
+static int
+construct_input_power_group
+    (tntdb::Connection& connection,
+     uint32_t datacenter_id,
+     std::map <std::string, std::pair <std::string, std::string>>& devices,
+     std::vector <std::tuple <std::string, std::string, std::string, std::string>>& powerchains)
+{
+    try {
+        tntdb::Statement statement = connection.prepareCached (
+            " SELECT "
+            "   id_asset_device_src as src_id, "
+            "   src_out as src_socket, "
+            "   b.name as src_name, "
+            "   c.name as src_subtype, "
+            "   id_asset_device_dest as dest_id, "
+            "   dest_in as dest_socket, "
+            "   d.name as dest_name, "
+            "   e.name as dest_subtype "
+            " FROM "
+            "   t_bios_asset_link AS a "
+            "   LEFT JOIN "
+            "       (t_bios_asset_element AS b LEFT JOIN t_bios_asset_device_type AS c ON b.id_subtype=c.id_asset_device_type) "
+            "       ON id_asset_device_src=b.id_asset_element "
+            "   LEFT JOIN "
+            "       (t_bios_asset_element AS d LEFT JOIN t_bios_asset_device_type AS e ON d.id_subtype=e.id_asset_device_type) "
+            "       ON id_asset_device_dest=d.id_asset_element "
+            " WHERE "
+            "   id_asset_device_src AND id_asset_device_dest "
+            "       IN (SELECT id_asset_element FROM v_bios_asset_element_super_parent WHERE :dc_id in (id_parent1, id_parent2, id_parent3, id_parent4, id_parent5)) "
+            " AND "
+            "   (c.name = 'sts' OR c.name = 'feed' OR c.name = 'genset') "
+            " AND "
+            "   (e.name = 'ups' OR e.name = 'epdu' OR e.name = 'pdu' OR e.name = 'router' OR e.name = 'server' OR e.name = 'switch' OR e.name = 'rack controller' OR "
+            "    e.name = 'sts' OR e.name = 'feed' OR e.name = 'genset') "
+        );
+        tntdb::Result result = statement.set ("dc_id", datacenter_id).select ();
+        for (const auto& row : result) {
+            std::string source_id, source_name, source_subtype, source_socket;
+            std::string dest_id, dest_name, dest_subtype, dest_socket;
+            row [0].get (source_id);
+            row [1].get (source_socket);
+            row [2].get (source_name);
+            row [3].get (source_subtype);
+            row [4].get (dest_id);
+            row [5].get (dest_socket);
+            row [6].get (dest_name);
+            row [3].get (dest_subtype);
+            if (devices.find (source_id) == devices.end ()) {
+                devices.emplace (std::make_pair (source_id, std::make_pair (source_name, source_subtype)));
+            }
+            if (devices.find (dest_id) == devices.end ()) {
+                devices.emplace (std::make_pair (dest_id, std::make_pair (dest_name, dest_subtype)));
+            }
+            powerchains.push_back (std::make_tuple (dest_id, dest_socket, source_id, source_socket));
+        }
+    }
+    catch (const std::exception& e)
+    {
+        log_error ("Exception caught %s", e.what ());
+        return -1;
+    }
+    return 0;
+}
+
+// 0 ok, -1 error
+int
+input_power_group_response
+    (const std::string& url,
+     uint32_t datacenter_id,
+     //         device_id -> (device name, device subtype)
+     std::map <std::string, std::pair <std::string, std::string>>& devices,
+     //                       dst-id,      dst-socket,  src-id,      src-socket
+     std::vector <std::tuple <std::string, std::string, std::string, std::string>>& powerchains)
+{
+    try {
+        tntdb::Connection connection = tntdb::connectCached (url);
+        int group_id = get_input_power_group_id (connection, datacenter_id);
+        if (group_id == -1)
+            return -1;
+
+        if (group_id > 0) {
+            return get_power_topology_group (connection, group_id, devices, powerchains);            
+        }
+        else {
+            return construct_input_power_group (connection, datacenter_id, devices, powerchains); 
+        }
+    }
+    catch (const std::exception& e)
+    {
+        log_error ("Exception caught %s", e.what ());
+        return -1;
+    }
+    return 0;
+}
 
 // too complex to add new parametr it to the message
 // and messages are going to be deleted, so add it as normal parameter.
