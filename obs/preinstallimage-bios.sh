@@ -754,6 +754,13 @@ if [ ! -f /var/cache/cracklib/cracklib_dict.pwd ]; then
     exit 1
 fi
 
+# /usr/share/misc/file is a symlink on Debian 8 (jessie)
+# and magic_load (_magic, NULL) fails. Pass the correct location
+# as MAGIC variable to tntnet and bios-agent-smtp
+if [[ -d /usr/share/file/magic ]]; then
+    echo "MAGIC=/usr/share/file/magic" >> /usr/share/bios/etc/default/bios
+fi
+
 echo "WIPE OS image log file contents"
 find /var/log -type f | while read F; do cat /dev/null > "$F"; done
 touch /var/log/messages /var/log/commands.log
