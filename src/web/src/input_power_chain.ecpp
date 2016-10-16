@@ -1,0 +1,164 @@
+<#
+ #
+ # Copyright (C) 2016 Eaton
+ #
+ # This program is free software; you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+ # the Free Software Foundation; either version 2 of the License, or
+ # (at your option) any later version.
+ #
+ # This program is distributed in the hope that it will be useful,
+ # but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+ #
+ # You should have received a copy of the GNU General Public License along
+ # with this program; if not, write to the Free Software Foundation, Inc.,
+ # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ #
+ #><#
+/*!
+ * \file input_power_chain.ecpp
+ * \author Barbora Stepankova <BarboraStepankova@Eaton.com>
+ * \brief Returns input power chain. 
+ */
+ #><%pre>
+#include <string>
+#include <iostream>
+#include <utility>
+#include <cxxtools/jsonserializer.h>
+#include <cxxtools/serializationinfo.h>
+#include "helpers.h"
+
+        
+// struct for array "devices"     
+struct Array_devices
+{
+    std::string name;
+    std::string id;
+    std::string sub_type;
+};
+
+// struct for array "powerchains"
+struct Array_power_chain
+{
+    std::string src_id;
+    std::string dst_id;
+    std::string src_socket;
+    std::string dst_socket;    
+};
+
+// main structure for json response
+struct Topology
+{
+    std::vector <Array_devices> devices;
+    std::vector <Array_power_chain> power_chains;
+};
+
+// that's how main structure is serialized 
+void operator<<= (cxxtools::SerializationInfo& si, const Topology& input_power)
+{
+    si.addMember("devices") <<= input_power.devices;
+    si.addMember("powerchains") <<= input_power.power_chains;
+}
+
+// that's how "devices" array is serialized
+void operator<<= (cxxtools::SerializationInfo& si, const Array_devices& array_devices)
+{
+    si.addMember("name") <<= array_devices.name;
+    si.addMember("id") <<= array_devices.id;
+    si.addMember("sub_type") <<= array_devices.sub_type;
+}
+        
+// that's how "powerchains" array is serialized
+void operator<<= (cxxtools::SerializationInfo& si, const Array_power_chain& array_power_chain)
+{
+    // getting rid of empty sockets     
+    if (array_power_chain.src_socket != "")    
+        si.addMember("src-socket") <<= array_power_chain.src_socket;
+    if (array_power_chain.dst_socket != "")        
+        si.addMember("dst-socket") <<= array_power_chain.dst_socket;
+
+    si.addMember("src-id") <<= array_power_chain.src_id;
+    si.addMember("dst-id") <<= array_power_chain.dst_id;        
+}
+        
+Array_devices
+fill_devices (std::map <std::string, std::pair <std::string, std::string>> devices)
+{
+    Array_devices ar_dev;
+    for (const auto& device : devices)
+    {
+        ar_dev.name = device.first.c_str();
+        ar_dev.id = device.second.first.c_str();
+        ar_dev.sub_type = device.second.second.c_str();                     
+    }
+    return ar_dev;
+}
+        
+Array_power_chain
+fill_powerchain (std::vector <std::tuple <std::string, std::string, std::string, std::string>> powerchains)
+{
+    Array_power_chain ar_powch;
+    for (const auto& chain : powerchains)
+    {
+        ar_powch.dst_id = std::get <0> (chain).c_str();
+        ar_powch.dst_socket = std::get <1> (chain).c_str();
+        ar_powch.src_id = std::get <2> (chain).c_str();
+        ar_powch.src_socket = std::get <3> (chain).c_str();       
+    }    
+    return ar_powch;
+}        
+</%pre>
+<%request scope="global">
+    UserInfo user;
+</%request>
+<%cpp>
+
+    // check user permissions
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Admin,         "R"},
+            {BiosProfile::Dashboard,     "R"}
+    };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
+
+    // id of datacenter from url
+    std::string dc_id = request.getArg("id");
+    log_debug ("Requested parameter:  dc_id=%s\n", dc_id.c_str());
+
+    Topology topo;
+    std::vector <Array_power_chain> power_chains_;
+    std::vector <Array_devices> devices_;
+
+    Array_devices ar_dev;
+    Array_power_chain ar_powch;
+  
+  // TEST -- delete /////
+    // test data for powerchains
+    std::vector <std::tuple <std::string, std::string, std::string, std::string>> powerchains;
+  //powerchains.push_back(std::make_tuple("1","12","2",""));
+    //  test data for devices
+    std::map <std::string, std::pair <std::string, std::string>> devices;
+  //  devices.emplace (std::make_pair ("name_val", std::make_pair("id_val","syb_type_val")));
+  // TEST -- delete ////
+  
+    ar_powch = fill_powerchain (powerchains);
+    ar_dev = fill_devices(devices);
+
+    // feed "powerchains" and "devices" arrays
+    power_chains_.push_back (ar_powch);
+    devices_.push_back (ar_dev);
+    topo.devices = std::move (devices_);
+    topo.power_chains = std::move (power_chains_); 
+
+    cxxtools::JsonSerializer serializer (reply.out ());
+    serializer.beautify(true);
+    serializer.serialize(topo).finish();
+         
+    return HTTP_OK;                          
+    
+</%cpp>
+
+
+
+

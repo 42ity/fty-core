@@ -29,6 +29,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "dbtypes.h"
 #include "dbhelpers.h"
 
+// 0 ok, -1 error
+int
+input_power_group_response
+    (const std::string& url,
+     uint32_t datacenter_id,
+     //         device_id -> (device name, device subtype)
+     std::map <std::string, std::pair <std::string, std::string>>& devices,
+     //                       dst-id,      dst-socket,  src-id,      src-socket
+     std::vector <std::tuple <std::string, std::string, std::string, std::string>>& powerchains);
 
 // ===============================================================
 // Functions for processing a special message type
