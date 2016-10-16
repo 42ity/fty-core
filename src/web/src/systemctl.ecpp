@@ -317,7 +317,7 @@ unsigned int process_post (
     if (operation == "restart" || operation == "stop" || operation == "disable" ) {
         /* Check if the service manipulation would impact this webserver */
         std::map<std::string, struct SystemdUnitState> required_by_tntnet_unit_list{};
-        shared::Argv proc_cmd_systemctl_args {"list-requires", "--plain", tntnet_unit};
+        shared::Argv proc_cmd_systemctl_args {"list-requires", "--plain", "--recursive", tntnet_unit};
 
         message = "Got operation '" + operation +"' for unit '" + service_name + "'; inspecting dependencies";
         log_info(message.c_str());
