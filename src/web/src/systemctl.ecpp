@@ -364,11 +364,9 @@ unsigned int process_post (
     return process_get_status (reply, service_name);
 }
 
-</%pre>
-<%request scope="global">
+</%pre><%request scope="global">
 UserInfo user;
-</%request>
-<%cpp>
+</%request><%cpp>
 {
     // check user permissions
     static const std::map <BiosProfile, std::string> PERMISSIONS = {
