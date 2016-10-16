@@ -356,6 +356,11 @@ unsigned int process_post (
         http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
     }
 
+    /* Note: if we restart a dependency of the webserver, the status of the
+     * restart-target unit returned here is misleading: the webserver must die
+     * before that unit begins to stop (and so webserver can not report that
+     * unit's state other than CURERNTLY it is STILL "running"). This should
+     * not be an issue with other "unrelated" services. */
     return process_get_status (reply, service_name);
 }
 
