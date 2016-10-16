@@ -54,9 +54,10 @@ std::map<std::string, struct SystemdUnitState> allowed_unit_list{};
 static std::set<std::string> get_operations {"list", "status"};
 static std::set<std::string> post_operations {"start", "stop", "restart", "enable", "disable", "show"};
 
-/* TODO: Somehow pass or detect at runtime - if we are under systemd at all,
- * and as what unit instance name. */
-#define tntnet_unit "tntnet@bios.service"
+/* Detect at runtime - if we are under systemd at all (the envvar below is our
+ * project extension), with what unit instance name: "tntnet@bios.service" */
+/* TODO REVIEW : Should this be mutexed, or can this be const/static? (is the variable shared by threads here?) */
+char * tntnet_unit = getenv("SYSTEMD_UNIT_FULLNAME"); /* If NULL - no envvar, not uder systemd */
 
 int call_systemctl(shared::Argv proc_cmd_systemctl_args, std::string &proc_out, std::string &proc_err, int &proc_rv, std::map<std::string, struct SystemdUnitState> *discovered_unit_list) {
     /* This routine finds unit names or further details according to
@@ -315,30 +316,35 @@ unsigned int process_post (
     shared::Argv proc_cmd_systemctl_args_op {operation, service_name_op};
 
     if (operation == "restart" || operation == "stop" || operation == "disable" ) {
-        /* Check if the service manipulation would impact this webserver */
-        std::map<std::string, struct SystemdUnitState> required_by_tntnet_unit_list{};
-        shared::Argv proc_cmd_systemctl_args {"list-requires", "--plain", "--recursive", tntnet_unit};
+        if (tntnet_unit == NULL) {
+            message = "Got command = 'sudo systemctl " + operation + " " + service_name_op + "' which can potentially impact the tntnet web-server unit; however the current webserver seems to run outside of systemd care... broken connections etc. can appear after this action.";
+            log_warning (message.c_str ());
+        } else {
+            /* Check if the service manipulation would impact this webserver */
+            std::map<std::string, struct SystemdUnitState> required_by_tntnet_unit_list{};
+            shared::Argv proc_cmd_systemctl_args {"list-requires", "--plain", "--recursive", tntnet_unit};
 
-        message = "Got operation '" + operation +"' for unit '" + service_name + "'; inspecting dependencies";
-        log_info(message.c_str());
+            message = "Got operation '" + operation +"' for unit '" + service_name + "'; inspecting dependencies";
+            log_info(message.c_str());
 
-        int counter = call_systemctl(proc_cmd_systemctl_args, &required_by_tntnet_unit_list);
-        if ( counter < 0 ) {
-            http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
-        }
+            int counter = call_systemctl(proc_cmd_systemctl_args, &required_by_tntnet_unit_list);
+            if ( counter < 0 ) {
+                http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
+            }
 
-        assert (counter == (int)required_by_tntnet_unit_list.size());
+            assert (counter == (int)required_by_tntnet_unit_list.size());
 
-        if ( counter > 0 ) {
-            std::map<std::string, SystemdUnitState>::iterator it = required_by_tntnet_unit_list.find(service_name);
-            if ( it != required_by_tntnet_unit_list.end()) {
-                message = "command = 'sudo systemctl " + operation + " " + service_name_op + "' can impact the web-server unit '" + tntnet_unit +"'";
-                log_warning (message.c_str ());
-                /* Do not wait for "systemctl" to complete, because this
-                 * webserver will be restarted and that systemctl would
-                 * be killed and we end up with false-alarms of errors
-                 * in the logs */
-                proc_cmd_systemctl_args_op.push_back("--no-block");
+            if ( counter > 0 ) {
+                std::map<std::string, SystemdUnitState>::iterator it = required_by_tntnet_unit_list.find(service_name);
+                if ( it != required_by_tntnet_unit_list.end()) {
+                    message = "command = 'sudo systemctl " + operation + " " + service_name_op + "' can impact the web-server unit '" + tntnet_unit +"'";
+                    log_warning (message.c_str ());
+                    /* Do not wait for "systemctl" to complete, because this
+                     * webserver will be restarted and that systemctl would
+                     * be killed and we end up with false-alarms of errors
+                     * in the logs */ /* TODO: Timer unit to restart stuff */
+                    proc_cmd_systemctl_args_op.push_back("--no-block");
+                }
             }
         }
     }
