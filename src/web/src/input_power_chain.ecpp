@@ -126,7 +126,6 @@ void operator<<= (cxxtools::SerializationInfo& si, const Array_power_chain& arra
     if (dc_id.empty ())
         http_die ("request-param-bad", dc_id.c_str ());
 
-  // -------------------------
     int rv = input_power_group_response (url, atoi (dc_id.c_str ()), devices_data, powerchains_data);
   
     if (rv == -1)    
