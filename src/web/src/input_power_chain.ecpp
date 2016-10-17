@@ -70,10 +70,9 @@ void operator<<= (cxxtools::SerializationInfo& si, const Array_devices& array_de
 {
     for (const auto& device : array_devices.devices)
     {
-        si.addMember ("name") <<= device.first.c_str();
-        si.addMember ("id") <<= device.second.first.c_str();
+        si.addMember ("id") <<= device.first.c_str();
+        si.addMember ("name") <<= device.second.first.c_str();
         si.addMember ("syb_type") <<= device.second.second.c_str();
-        // has to be c_str???
     }
 }
 
@@ -114,9 +113,11 @@ void operator<<= (cxxtools::SerializationInfo& si, const Array_power_chain& arra
   
     // test data for powerchains -- dst-id, dst-socket, src-id, src-socket
     std::vector <std::tuple <std::string, std::string, std::string, std::string>> powerchains_data;
-    //powerchains_data.push_back(std::make_tuple("1","12","2",""));
+    powerchains_data.push_back(std::make_tuple("","","",""));
+  
     std::map <std::string, std::pair <std::string, std::string>> devices_data;
-    //devices_data.emplace (std::make_pair ("name_val", std::make_pair("id_val","syb_type_val")));
+    devices_data.emplace (std::make_pair ("", std::make_pair("","")));
+    devices_data.emplace (std::make_pair ("", std::make_pair("","")));
 
     // id of datacenter retrieved from url
     std::string dc_id = request.getArg ("id");
@@ -125,24 +126,21 @@ void operator<<= (cxxtools::SerializationInfo& si, const Array_power_chain& arra
     if (dc_id.empty ())
         http_die ("request-param-bad", dc_id.c_str ());
 
+  // -------------------------
     int rv = input_power_group_response (url, atoi (dc_id.c_str ()), devices_data, powerchains_data);
-  //int rv = input_power_group_response (url, atoi (dc_id.c_str ()), devices_item.devices, powerchains_item.powerchains);
   
     if (rv == -1)    
     {    
         log_debug ("input_power_group_response = '%i'", rv);
         //http_die ("request-param-bad", rv);
     }
-  
+
     devices_item.devices = devices_data;
     powerchains_item.powerchains = powerchains_data;
          
     // feed "powerchains" and "devices" arrays
     powerchains_vector.push_back(powerchains_item);
-    powerchains_vector.push_back(powerchains_item);
     devices_vector.push_back (devices_item);
-    devices_vector.push_back (devices_item);
-         
     topo.devices = std::move (devices_vector);
     topo.powerchains = std::move (powerchains_vector);
 
