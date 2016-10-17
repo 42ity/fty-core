@@ -120,7 +120,7 @@ parse_systemctl_status
 }
 
 unsigned int process_get_list (
-        tnt::HttpReply& reply)
+        tnt::HttpReply& replyx)
 {
     std::string message;
 
@@ -138,12 +138,14 @@ unsigned int process_get_list (
     message.append (
 "\t]\n"
 "}");
-    reply.out() << message;
+    replyx.out() << message;
     return HTTP_OK;
 }
 
-unsigned int process_get_status (
-        tnt::HttpReply& reply,
+// -1 error
+// >0 http status
+int process_get_status (
+        tnt::HttpReply& replyx,
         const std::string& service_name)
 {
     // ASSUMPTION: service name is valid
@@ -157,13 +159,13 @@ unsigned int process_get_status (
         message = "shared::output (command = 'sudo systemctl show " + service_name +
             "') failed. Return value = '" + std::to_string (proc_rv) + "', stderr = '" + proc_err + "'.";
         log_error (message.c_str ());
-        http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
+        return -1;
     }
 
     std::string active_state, sub_state, load_state, unit_file_state;
     if ( !parse_systemctl_status (proc_out, active_state, sub_state, load_state, unit_file_state) ) {
         log_error ("Could not parse output of `systemctl show` due to different expected output format.");
-        http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
+        return -1;
     }
 
     message.assign (
@@ -175,12 +177,14 @@ unsigned int process_get_status (
             "\t\t\"UnitFileState\"\t:\t\"" + unit_file_state + "\"\n"
             "\t}\n"
             "}");
-    reply.out() << message;
+    replyx.out() << message;
     return HTTP_OK;
 }
 
-unsigned int process_post (
-        tnt::HttpReply& reply,
+// -1 request-bad-param
+// -2 internat-error
+int process_post (
+        tnt::HttpReply& replyx,
         const std::string& operation,
         const std::string& service_name)
 {
@@ -191,10 +195,8 @@ unsigned int process_post (
     // networking is different animal, treat differently
     if (service_name == "networking") {
         if (operation != "restart" && operation != "show") {
-            http_die("request-param-bad",
-                    "operation",
-                    operation.c_str(),
-                    "'show' or 'restart'");
+            return -1;
+//            http_die("request-param-bad", "operation", operation.c_str(), "'show' or 'restart'");
         }
         // restart is done using special script
         if (operation == "restart") {
@@ -225,7 +227,8 @@ unsigned int process_post (
         message = "shared::output (command = 'sudo systemctl " + operation + " " + service_name_op + "') failed. Return value = '"
             + std::to_string (proc_rv) + "', stderr = '" + proc_err + "'.";
         log_error (message.c_str ());
-        http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
+        return -2;
+//        http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
     }
 
     shared::Argv proc_cmd2 {"sudo", "systemctl", "show", service_name};
@@ -235,13 +238,15 @@ unsigned int process_post (
         message = "shared::output (command = 'sudo systemctl show " + service_name + "') failed. Return value = '"
             + std::to_string (proc_rv) + "', stderr = '" + proc_err + "'.";
         log_error (message.c_str ());
-        http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
+        return -2;
+//        http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
     }
 
     std::string active_state, sub_state, load_state, unit_file_state;
     if (!parse_systemctl_status (proc_out, active_state, sub_state, load_state, unit_file_state)) {
         log_error ("Could not parse output of `systemctl show` due to different expected output format.");
-        http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
+        return -2;
+//        http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
     }
     message.assign (
 "{\n"
@@ -252,7 +257,7 @@ unsigned int process_post (
 "\t\t\"UnitFileState\"\t:\t\"" + unit_file_state + "\"\n"
 "\t}\n"
 "}");
-    reply.out() << message;
+    replyx.out() << message;
     return HTTP_OK;
 }
 
@@ -333,11 +338,22 @@ UserInfo user;
             return process_get_list (reply);
         }
         else if ( checked_operation == "status" ) {
-            return process_get_status (reply, checked_service_name);
+            int pgs_rv = process_get_status (reply, checked_service_name);
+            if (pgs_rv == -1)
+                http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
+            else
+                return pgs_rv;
         }
     }
     if ( request.getMethod() == "POST" ) {
-        return process_post (reply, checked_operation, checked_service_name);
+        int pp_rv = process_post (reply, checked_operation, checked_service_name);
+        if (pp_rv >= 0)
+            return pp_rv;
+        else
+        if (pp_rv == -1)
+            http_die("request-param-bad", "operation", checked_operation.c_str(), "'show' or 'restart'");
+        else
+            http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
     }
 }
 </%cpp>
