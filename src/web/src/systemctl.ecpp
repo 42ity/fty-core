@@ -44,6 +44,17 @@ struct SystemdUnitState {
     std::string SubState;      // running/
 };
 
+enum SystemctlOperationState {
+    SYSTEMCTL_ERROR_EXEC = -2,
+        /* system exec errors, systemctl errors (Action not allowed etc.),
+         * as well as incompatible markup for parsing - either way, the called
+         * program output was useless. */
+    SYSTEMCTL_ERROR_PARAM = -1,
+        /* this REST API servlet logic detected invalid input. */
+    SYSTEMCTL_HTTP_OK = 200,
+    SYSTEMCTL_HTTP_NOTFOUND = 404
+};
+
 /* List of services and other systemd units that we know at runtime as allowed
  * to be manipulated through REST API (as deemed by systemctl wrapper script)
  * and their current states.
@@ -75,7 +86,7 @@ call_systemctl (
      * to look for, etc.) and saves into the map provided by caller.
      * The caller also gets a copy of the called process stdout, stderr
      * and exitcode into provided reference variables.
-     * Returns the amount of added or updated entries, or a negative
+     * Returns the amount of added or updated entries (0+), or a negative
      * number for errors (note that http_die() needs the "reply" object,
      * so caller would die properly instead of a helper routine like this).
      * If (discovered_unit_list==NULL) then the routine only calls systemctl
@@ -106,7 +117,7 @@ call_systemctl (
             "Return value = '" + std::to_string (proc_rv) + "', stderr = '" +
             ( ( std::string::npos == endpos ) ? proc_err : proc_err.substr( 0, endpos+1 ) ) + "'.";
         log_error (message.c_str ());
-        return -1;
+        return SYSTEMCTL_ERROR_EXEC;
     }
 
     if (discovered_unit_list == NULL)
@@ -168,7 +179,7 @@ call_systemctl (
         if (unit_name.empty()) {
             std::string message = "Could not parse output of command = '" + proc_cmd_str + "', perhaps due to different expected output format.";
             log_error (message.c_str ());
-            return -2;
+            return SYSTEMCTL_ERROR_EXEC;
         } else {
             (*discovered_unit_list)[unit_name] = sus;
             counter++;
@@ -304,7 +315,7 @@ process_get_status (
     const std::string& service_name)
 {
     /* Return values:
-     * -1   param error => caller context should http_die("request-param-bad",...)
+     * -1   SYSTEMCTL_ERROR_PARAM => caller context should http_die("request-param-bad",...)
      * >0   http status
      */
 
@@ -313,7 +324,7 @@ process_get_status (
     if ( it == allowed_unit_list.end()) {
         message = "Denying request for systemd unit not among those allowed by filter: '" + service_name +"'.";
         log_error (message.c_str ());
-        return -1;
+        return SYSTEMCTL_ERROR_PARAM;
     }
 
     /* TODO: Maybe use `systemctl list-json` for flexibility with supported attributes etc. instead? */
@@ -336,8 +347,8 @@ int process_post (
     const std::string& service_name)
 {
     /* Return values:
-     * -2   exec error => caller context should http_die("internal-error",...)
-     * -1   param error => caller context should http_die("request-param-bad",...)
+     * -2   SYSTEMCTL_ERROR_EXEC => caller context should http_die("internal-error",...)
+     * -1   SYSTEMCTL_ERROR_PARAM => caller context should http_die("request-param-bad",...)
      * >0   http status
      */
 
@@ -349,7 +360,7 @@ int process_post (
     // networking is different animal, treat differently
     if (service_name == "networking") {
         if (operation != "restart" && operation != "show") {
-            return -1;
+            return SYSTEMCTL_ERROR_PARAM;
         }
         // restart is done using special script
         if (operation == "restart") {
@@ -376,7 +387,7 @@ int process_post (
 
             int counter = call_systemctl(proc_cmd_systemctl_args, &required_by_tntnet_unit_list);
             if ( counter < 0 ) {
-                return -2;
+                return SYSTEMCTL_ERROR_EXEC;
             }
 
             assert (counter == (int)required_by_tntnet_unit_list.size());
@@ -404,7 +415,7 @@ int process_post (
     counter = call_systemctl(proc_cmd_systemctl_args_op, NULL);
     /* TODO MAYBE: For --no-block case, sleep several sec here? */
     if ( counter < 0 ) {
-        return -2;
+        return SYSTEMCTL_ERROR_EXEC;
     }
 
     /* Refresh the service status after systemctl has completed */
@@ -412,7 +423,7 @@ int process_post (
     if ( counter <= 0 ) {
         /* Note that "==0" is an error too - we do not expect the unit
          * definitions to vanish (masked/disabled are also "defined") */
-        return -2;
+        return SYSTEMCTL_ERROR_EXEC;
     }
 
     /* Note: if we restart a dependency of the webserver, the status of the
@@ -517,10 +528,17 @@ UserInfo user;
         }
         else if ( checked_operation == "status" ) {
             int pgs_rv = process_get_status (reply, checked_service_name);
-            if (pgs_rv == -1)
-                http_die ("request-param-bad", "service_name", checked_service_name.c_str(), "one of service names that can be obtained through systemctl/list call");
-            else
+            if (pgs_rv >= 0)
                 return pgs_rv;
+            else
+                switch (pgs_rv) {
+                    case SYSTEMCTL_ERROR_PARAM:
+                        http_die ("request-param-bad", "service_name", checked_service_name.c_str(), "one of service names that can be obtained through systemctl/list call");
+                        break;
+                    default:
+                        http_die("internal-error", "Processing of the systemctl operation failed with unexpected status. Please check logs for more details.");
+                        break;
+                }
         }
     }
 
@@ -529,10 +547,17 @@ UserInfo user;
         if (pp_rv >= 0)
             return pp_rv;
         else
-        if (pp_rv == -1)
-            http_die("request-param-bad", "operation", checked_operation.c_str(), "'show' or 'restart'");
-        else
-            http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
+            switch (pp_rv) {
+                case SYSTEMCTL_ERROR_PARAM:
+                    http_die("request-param-bad", "operation", checked_operation.c_str(), "'show' or 'restart'");
+                    break;
+                case SYSTEMCTL_ERROR_EXEC:
+                    http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
+                    break;
+                default:
+                    http_die("internal-error", "Processing of the systemctl operation failed with unexpected status. Please check logs for more details.");
+                    break;
+            }
     }
 }
 </%cpp>
