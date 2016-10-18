@@ -4,7 +4,7 @@
         "rule_desc"     :   "Rack __name__ total power 1 phase",
 		"rule_class"    :   "Total power (1 phase) in rack",
         "rule_hierarchy":   "power.realpower.default.1phase.rack",
-        "target"        :   "realpower.input.L1@__name__",
+        "target"        :   "realpower.nominal@__name__",
         "element"       :   "__name__",
         "values_unit"   :   "W",
         "values"        :   [
