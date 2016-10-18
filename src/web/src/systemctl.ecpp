@@ -407,6 +407,14 @@ int process_post (
         return -2;
     }
 
+    /* Refresh the service status after systemctl has completed */
+    counter = learn_allowed_units_details(service_name.c_str());
+    if ( counter <= 0 ) {
+        /* Note that "==0" is an error too - we do not expect the unit
+         * definitions to vanish (masked/disabled are also "defined") */
+        return -2;
+    }
+
     /* Note: if we restart a dependency of the webserver, the status of the
      * restart-target unit returned here is misleading: the webserver must die
      * before that unit begins to stop (and so webserver can not report that
