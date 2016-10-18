@@ -358,6 +358,7 @@ int process_post (
     }
 
     shared::Argv proc_cmd_systemctl_args_op {operation, service_name_op};
+    bool changing_tntnet_dependency = false;
 
     if (operation == "restart" || operation == "stop" || operation == "disable" ) {
         if (tntnet_unit == NULL) {
@@ -383,21 +384,25 @@ int process_post (
             if ( counter > 0 ) {
                 std::map<std::string, SystemdUnitState>::iterator it = required_by_tntnet_unit_list.find(service_name);
                 if ( it != required_by_tntnet_unit_list.end()) {
-                    message = "command = 'sudo systemctl " + operation + " " + service_name_op + "' can impact the web-server unit '" + tntnet_unit +"'";
-                    log_warning (message.c_str ());
-                    /* Do not wait for "systemctl" to complete, because this
-                     * webserver will be restarted and that systemctl would
-                     * be killed and we end up with false-alarms of errors
-                     * in the logs. */
-                    proc_cmd_systemctl_args_op.push_back("--no-block");
+                    changing_tntnet_dependency = true;
                 }
             }
         }
     }
 
+    if (changing_tntnet_dependency) {
+        message = "command = 'sudo systemctl " + operation + " " + service_name_op + "' can impact the web-server unit '" + tntnet_unit +"'";
+        log_warning (message.c_str ());
+        /* Do not wait for "systemctl" to complete, because this
+         * webserver will be restarted and that systemctl would
+         * be killed and we end up with false-alarms of errors
+         * in the logs. */
+        proc_cmd_systemctl_args_op.push_back("--no-block");
+    }
+
     int counter;
     counter = call_systemctl(proc_cmd_systemctl_args_op, NULL);
-    /* TODO: For --no-block case, sleep several sec here */
+    /* TODO MAYBE: For --no-block case, sleep several sec here? */
     if ( counter < 0 ) {
         return -2;
     }
@@ -407,6 +412,11 @@ int process_post (
      * before that unit begins to stop (and so webserver can not report that
      * unit state other than CURRENTLY it is STILL "running"). This should
      * not be an issue with other "unrelated" services. */
+    if (changing_tntnet_dependency) {
+        message = "The post-systemctl service status of '" + service_name_op + "' reported below is probably not useful because this web-server unit '" + tntnet_unit +"' should stop before that service begins to '" + operation + "'";
+        log_warning (message.c_str ());
+    }
+
     return process_get_status (replyx, service_name);
 }
 </%pre>
