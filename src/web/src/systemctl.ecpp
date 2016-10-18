@@ -187,7 +187,7 @@ call_systemctl (
     }
 
     if (counter == 0) {
-        std::string message = "Could not parse output of command = '" + proc_cmd_str + "' due to different expected output format or lack of registered units.";
+        std::string message = "Could not find anything in output of command = '" + proc_cmd_str + "' due to different expected format or lack of matching registered units.";
         log_error (message.c_str ());
     }
 
@@ -245,7 +245,9 @@ service_name_valid (
 {
     /* NOTE: The service_name reference is intentionally not const,
      * this routine can change it (e.g. convert a short-name unit
-     * into a full-name one as locally detected at run-time). */
+     * into a full-name one as locally detected at run-time - in
+     * this case, the first match wins - as can be important for
+     * e.g. the "bios.service" vs. "bios.target" units). */
 
     if (allowed_unit_list.size() == 0)
         return false;
