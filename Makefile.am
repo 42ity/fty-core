@@ -1067,7 +1067,6 @@ RULE_TEMPLATES = \
 			src/agents/autoconfig/rule_templates/phase_imbalance@__device_ups__.rule \
 			src/agents/autoconfig/rule_templates/phase_imbalance@__rack__.rule \
 			src/agents/autoconfig/rule_templates/realpower.default_1phase@__rack__.rule \
-			src/agents/autoconfig/rule_templates/realpower.default_3phase@__rack__.rule \
 			src/agents/autoconfig/rule_templates/realpower.default@__datacenter__.rule \
 			src/agents/autoconfig/rule_templates/section_load@__device_epdu__.rule \
 			src/agents/autoconfig/rule_templates/temperature.default@__device_ups__.rule \
