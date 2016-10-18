@@ -201,7 +201,7 @@ call_systemctl (
 }
 
 int
-learn_allowed_units (
+learn_allowed_units_details (
     const char *service_name)
 {
     /* If the provided service_name is NULL, request details for all known
@@ -475,12 +475,12 @@ UserInfo user;
         }
 
         if ( checked_operation == "list" ) {
-            if ( learn_allowed_units(NULL) <= 0 ) {
+            if ( learn_allowed_units_details(NULL) <= 0 ) {
                 /* The error is logged in detail by the function */
                 http_die("internal-error", "Executing systemctl failed. Please check logs for more details.");
             }
         } else {
-            if ( (learn_allowed_units(service_name.c_str()) <= 0 ) ||
+            if ( (learn_allowed_units_details(service_name.c_str()) <= 0 ) ||
                  (!service_name_valid (service_name) )
             ) { /* In case of wildcards or short names, the service_name
                  * value can get changed by the call above; e.g. a
