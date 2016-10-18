@@ -360,13 +360,17 @@ int process_post (
     std::string service_name_op = service_name;
 
     // networking is different animal, treat differently
-    if (service_name == "networking") {
+    if (service_name == "networking" || service_name == "networking.service" ||
+        service_name == "bios-networking" || service_name == "bios-networking.service"
+    ) {
         if (operation != "restart" && operation != "show") {
+            message = "For the '" + service_name + "' service only the 'restart' and 'show' operations are supported; the requested '" + operation + "' is invalid here.";
+            log_error (message.c_str ());
             return SYSTEMCTL_ERROR_PARAM;
         }
         // restart is done using special script
         if (operation == "restart") {
-            service_name_op = "bios-networking";
+            service_name_op = "bios-networking.service";
         }
     }
 
