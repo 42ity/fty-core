@@ -32,24 +32,22 @@
 #include "helpers.h"
 #include "dbpath.h"
 #include "assettopology.h"
-        
-// struct for "devices" array    
+
+// struc for "devices" array    
 struct Array_devices
 {
-    std::map <std::string,
-              std::pair
-                    <std::string,
-                     std::string>> devices;
+    std::string name;
+    std::string id;
+    std::string sub_type;
 };
 
-// struct for "powerchains" array        
+// struc for "powerchains" array        
 struct Array_power_chain
 {
-    std::vector <std::tuple
-                          <std::string,
-                           std::string,
-                           std::string,
-                           std::string>> powerchains;        
+    std::string src_id;
+    std::string dst_id;
+    std::string src_socket;
+    std::string dst_socket;
 };
 
 // main json structure for json response
@@ -69,31 +67,62 @@ void operator<<= (cxxtools::SerializationInfo& si, const Topology& input_power)
 // that's how "devices" array is serialized
 void operator<<= (cxxtools::SerializationInfo& si, const Array_devices& array_devices)
 {
-    for (const auto& device : array_devices.devices)
-    {
-        si.addMember ("id") <<= device.first.c_str();
-        si.addMember ("name") <<= device.second.first.c_str();
-        si.addMember ("syb_type") <<= device.second.second.c_str();
-        
-    }
+    si.addMember("name") <<= array_devices.name;
+    si.addMember("id") <<= array_devices.id;
+    si.addMember("sub_type") <<= array_devices.sub_type;
 }
 
 // that's how "powerchains" array is serialized
 void operator<<= (cxxtools::SerializationInfo& si, const Array_power_chain& array_power_chain)
 {
-    for (const auto& chain : array_power_chain.powerchains)
-    {
-        if (std::get <3> (chain) != "")
-            si.addMember ("src-socket") <<= std::get <3> (chain).c_str();
-        
-        if (std::get <1> (chain) != "")        
-            si.addMember ("dst-socket") <<= std::get <1> (chain).c_str();
-
-        si.addMember ("src-id") <<= std::get <2> (chain);
-        si.addMember ("dst-id") <<= std::get <0> (chain);
-    }
+    si.addMember("src-id") <<= array_power_chain.src_id;
+    si.addMember("dst-id") <<= array_power_chain.dst_id;
+    
+    if (array_power_chain.src_socket != "")
+       si.addMember("src-socket") <<= array_power_chain.src_socket;
+    if (array_power_chain.dst_socket != "")
+        si.addMember("dst-socket") <<= array_power_chain.dst_socket;
 }
+
+    
+void
+fill_array_devices (const std::map <std::string,
+                          std::pair <std::string,
+                                     std::string>> map_devices,
+                          std::vector <Array_devices>& devices_vector)
+{
+    Array_devices array_devices;
+    for (const auto& device : map_devices)
+    {
+        array_devices.id = device.first;
+        array_devices.name = device.second.first;
+        array_devices.sub_type = device.second.second;
         
+        devices_vector.push_back(array_devices);
+    }
+    
+}
+
+void
+fill_array_powerchains (std::vector <std::tuple
+                                         <std::string,
+                                          std::string,
+                                          std::string,
+                                          std::string>> vector_powerchains,
+                        std::vector <Array_power_chain>&  powerchains_vector )
+{
+        Array_power_chain array_powerchains;
+        for (const auto& chain : vector_powerchains)
+        {
+            
+            array_powerchains.src_socket = std::get <3> (chain).c_str();
+            array_powerchains.dst_socket = std::get <1> (chain).c_str();
+            array_powerchains.src_id = std::get <2> (chain);
+            array_powerchains.dst_id = std::get <0> (chain);
+            
+            powerchains_vector.push_back (array_powerchains);
+        }
+}        
 </%pre>
 <%request scope="global">
     UserInfo user;
@@ -128,19 +157,13 @@ void operator<<= (cxxtools::SerializationInfo& si, const Array_power_chain& arra
   
     if (rv == -1)    
     {    
-        log_debug ("input_power_group_response = '%i'", rv);
-        //http_die ("request-param-bad", rv);
+        log_debug ("input_power_group_response = %i", rv);
+        http_die ("internal-error", "input_power_group_response");
     }
-
-    if (!devices_data.empty () || powerchains_data.empty ())
-    {
-        devices_item.devices = devices_data;
-        powerchains_item.powerchains = powerchains_data;
-         
-        // feed "powerchains" and "devices" arrays
-        powerchains_vector.push_back (powerchains_item);
-        devices_vector.push_back (devices_item);
-    }
+  
+    fill_array_devices (devices_data, devices_vector);
+    fill_array_powerchains (powerchains_data, powerchains_vector);
+  
   
     topo.devices = std::move (devices_vector);
     topo.powerchains = std::move (powerchains_vector);
