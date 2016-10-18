@@ -123,6 +123,21 @@ get_power_topology_group
             }
             powerchains.push_back (std::make_tuple (dest_id, dest_socket, source_id, source_socket));
         }
+        statement = connection.prepareCached (
+            " SELECT c.id_asset_element, a.name, b.name AS sub_type "
+            " FROM t_bios_asset_group_relation c, t_bios_asset_element a, v_bios_asset_device b "
+            " WHERE c.id_asset_group = :group_id AND a.id_asset_element = c.id_asset_element AND b.id_asset_element = c.id_asset_element "
+        );
+        result = statement.set ("group_id", group_id).select ();
+        for (const auto& row : result) {
+            std::string id, name, subtype;
+            row [0].get (id);
+            row [1].get (name);
+            row [2].get (subtype);
+            if (devices.find (id) == devices.end ()) {
+                devices.emplace (std::make_pair (id, std::make_pair (name, subtype)));
+            }
+        }        
     }
     catch (const std::exception& e)
     {
