@@ -114,7 +114,7 @@ get_power_topology_group
             row [4].get (dest_id);
             row [5].get (dest_socket);
             row [6].get (dest_name);
-            row [3].get (dest_subtype);
+            row [7].get (dest_subtype);
             if (devices.find (source_id) == devices.end ()) {
                 devices.emplace (std::make_pair (source_id, std::make_pair (source_name, source_subtype)));
             }
