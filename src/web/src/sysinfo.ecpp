@@ -64,6 +64,9 @@
 #define DPKG__LIST__COLUMN_PKGVERSION 2
 #endif
 
+/* If OSIMAGE_BASENAME==NULL - no envvar, tntnet is not running under systemd */
+const char * OSIMAGE_BASENAME = ( getenv("OSIMAGE_BASENAME") ? getenv("OSIMAGE_BASENAME") : "OS image name is not available" );
+
 void
 get_location (
     std::string& location)
@@ -471,9 +474,9 @@ sysinfo_plain (
 
     output += "{\n"
     "\t\"restapi-metadata\" : {\n"
-    "\t\t\"core-package\" : {\n";
+    "\t\t\"bios-release\" : {\n";
 
-    output += utils::json::jsonify ("package-version", PACKAGE_VERSION);
+    output += utils::json::jsonify ("osimage-name", OSIMAGE_BASENAME);
     output += "\n";
 
     output += "\t\t}\n"
