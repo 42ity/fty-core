@@ -64,16 +64,22 @@
 #define DPKG__LIST__COLUMN_PKGVERSION 2
 #endif
 
-void get_location (std::string& location) {
+void
+get_location (
+    std::string& location)
+{
+    /* This retrieves the location (address) of the datacenter */
+    /* NOTE ASSUMPTION: this returns the first DC with an address,
+     * assuming it is the only one available */
     try {
         tntdb::Connection conn = tntdb::connectCached (url);
-        log_debug ("tntdb::connectCached (url = '%s') successfull", url.c_str ());
+        log_debug ("tntdb::connectCached (url = '%s') successful", url.c_str ());
         db_reply <std::map <uint32_t, std::string>> elements =
             persist::select_short_elements (
                                     conn,
                                     persist::asset_type::DATACENTER,
                                     persist::asset_subtype::N_A);
-        log_debug ("persist::select_short_elements () successfull");
+        log_debug ("persist::select_short_elements () successful");
         bool do_break = false;
         for (auto it = elements.item.cbegin(); it != elements.item.cend(); ++it) {
             // it->first is element_id
@@ -92,13 +98,19 @@ void get_location (std::string& location) {
             if (do_break)
                 break;
         }
+        if (!do_break)
+            log_debug ("get_location() did not find any 'datacenter' asset with an 'address'");
     }
     catch (const std::exception& e) {
         log_error ("Exception caught: %s", e.what ());
     }
 }
 
-void get_installation_date (const std::string& file, std::string& installation_date) {
+void
+get_installation_date (
+    const std::string& file,
+    std::string& installation_date)
+{
     try {
         std::ifstream finput (file);
         if (finput.is_open () && finput.good ()) {
@@ -120,9 +132,15 @@ void get_installation_date (const std::string& file, std::string& installation_d
     }
 }
 
-void sysinfo_detail (std::string& output, tnt::HttpRequest& request, BiosProfile profile) {
+void
+sysinfo_detail (
+    std::string& output,
+    tnt::HttpRequest& request,
+    BiosProfile profile)
+{
+    /* This is the detailed output which prints as much info as we reasonably
+     * can, as needed for the support and quick troubleshooting purposes. */
     output.clear ();
-
 
     // Certain strings returned to caller in some cases
     static const std::string UNAUTHORIZED = "unauthorized";
@@ -443,7 +461,12 @@ void sysinfo_detail (std::string& output, tnt::HttpRequest& request, BiosProfile
 
 }
 
-void sysinfo_plain (std::string& output) {
+void
+sysinfo_plain (
+    std::string& output)
+{
+    /* This is the short output which prints as little info as needed for the
+     * web-GUI footer (should be fast and non-disclosing for security). */
     output.clear ();
 
     output += "{\n"
