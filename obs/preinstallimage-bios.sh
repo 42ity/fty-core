@@ -414,9 +414,10 @@ EnvironmentFile=-/usr/share/bios/etc/default/bios__%n.conf
 EnvironmentFile=-/etc/default/bios
 EnvironmentFile=-/etc/default/bios__%n.conf
 EnvironmentFile=-/etc/default/bios-db-rw
-Environment='SYSTEMD_UNIT_FULLNAME=%N'
+Environment='SYSTEMD_UNIT_FULLNAME=%n'
 PrivateTmp=true
 ExecStartPre=/usr/share/bios/scripts/tntnet-ExecStartPre.sh %i
+EnvironmentFile=-/run/tntnet-%i.env
 ExecStart=/usr/bin/tntnet -c /etc/tntnet/%i.xml
 Restart=always
 
