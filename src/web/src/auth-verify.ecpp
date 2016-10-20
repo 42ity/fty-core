@@ -80,18 +80,18 @@ if(!checked_access_token.empty()) {
         user.gid (gid);
         user.login (user_name);
         free (user_name); user_name = NULL;
-	} else {
+    } else {
         http_die("not-authorized");
-	}
+    }
 }
 
 #ifdef DEBUG
-	reply.setHeader( (std::string)"X-Auth-Token-Presented: ",
+    reply.setHeader( (std::string)"X-Auth-Token-Presented: ",
                 "\"" + checked_access_token + "\"" );
 
-	std::ostringstream os;
-	os << "access_auth_level=\"" << static_cast<int> (user.profile ()) << "\"";
-	reply.setHeader( (std::string)"X-Auth-Verify: ", os.str() );
+    std::ostringstream os;
+    os << "access_auth_level=\"" << static_cast<int> (user.profile ()) << "\"";
+    reply.setHeader( (std::string)"X-Auth-Verify: ", os.str() );
 #endif // DEBUG
 
 /* Go on to next module in tntnet.xml */
