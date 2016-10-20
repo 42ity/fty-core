@@ -744,21 +744,29 @@ void
 
     auto SUBTYPES = read_device_types (conn);
 
+    // BIOS-2506
     std::set<a_elmnt_id_t> ids{};
-    for (size_t row_i = 1; row_i != cm.rows(); row_i++)
-    {
-        try{
-            auto ret = process_row(conn, cm, row_i, TYPES, SUBTYPES, ids);
-            touch_fn ();
-            okRows.push_back (ret);
-            log_info ("row %zu was imported successfully", row_i);
-        }
-        catch ( const std::invalid_argument &e)
+    uint okRows_total = 0;
+    uint okRows_iter = 0;
+    do {
+        okRows_iter = 0;
+        for (size_t row_i = 1; row_i != cm.rows(); row_i++)
         {
-            failRows.insert(std::make_pair(row_i + 1, e.what()));
-            log_error ("row %zu not imported: %s", row_i, e.what());
+            try{
+                auto ret = process_row(conn, cm, row_i, TYPES, SUBTYPES, ids);
+                touch_fn ();
+                okRows.push_back (ret);
+                okRows_total++;
+                okRows_iter++;
+                log_info ("row %zu was imported successfully", row_i);
+            }
+            catch ( const std::invalid_argument &e)
+            {
+                failRows.insert(std::make_pair(row_i + 1, e.what()));
+                log_error ("row %zu not imported: %s", row_i, e.what());
+            }
         }
-    }
+    } while ((okRows_total != cm.rows()) || (okRows_iter != 0));
     LOG_END;
 }
 
