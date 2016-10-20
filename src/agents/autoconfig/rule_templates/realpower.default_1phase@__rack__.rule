@@ -1,10 +1,10 @@
 {
     "threshold" : {
-        "rule_name"     :   "realpower.default_1phase@__name__",
-        "rule_desc"     :   "Rack __name__ total power 1 phase",
-		"rule_class"    :   "Total power (1 phase) in rack",
-        "rule_hierarchy":   "power.realpower.default.1phase.rack",
-        "target"        :   "realpower.nominal@__name__",
+        "rule_name"     :   "realpower.default@__name__",
+        "rule_desc"     :   "Rack __name__ total power",
+		"rule_class"    :   "Total power in rack",
+        "rule_hierarchy":   "power.realpower.default.rack",
+        "target"        :   "realpower.default@__name__",
         "element"       :   "__name__",
         "values_unit"   :   "W",
         "values"        :   [
@@ -13,9 +13,9 @@
             { "high_warning"    : "0" },
             { "high_critical"   : "0" } ],
         "results"       :   [
-            {"low_critical"  : { "action" : ["EMAIL","SMS"], "severity" : "CRITICAL", "description" : "Total power (1 phase) in rack is critically low" }},
-            {"low_warning"   : { "action" : ["EMAIL"], "severity" : "WARNING", "description" : "Total power (1 phase) in rack is low" }},
-            {"high_warning"  : { "action" : ["EMAIL"], "severity" : "WARNING", "description" : "Total power (1 phase) in rack is high" }},
-            {"high_critical" : { "action" : ["EMAIL","SMS"], "severity" : "CRITICAL", "description" : "Total power (1 phase) in rack is critically high" }} ]
+            {"low_critical"  : { "action" : ["EMAIL","SMS"], "severity" : "CRITICAL", "description" : "Total power in rack is critically low" }},
+            {"low_warning"   : { "action" : ["EMAIL"], "severity" : "WARNING", "description" : "Total power in rack is low" }},
+            {"high_warning"  : { "action" : ["EMAIL"], "severity" : "WARNING", "description" : "Total power in rack is high" }},
+            {"high_critical" : { "action" : ["EMAIL","SMS"], "severity" : "CRITICAL", "description" : "Total power in rack is critically high" }} ]
     }
 }
