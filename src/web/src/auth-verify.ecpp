@@ -51,7 +51,16 @@ std::string checked_access_token;
     //       fill'ed
 
     // sanitize check
-    std::string access_token = qparam.param ("access_token");
+    std::string access_token;
+
+    access_token = qparam.param ("access_token");
+
+    if (access_token.empty() || access_token == "null") /* GET/POST params override a cookie, if any */
+        if (request.hasCookie("eaton_token")) {
+            access_token = request.getCookie("eaton_token").getValue();
+            if (access_token == "null") /* Avoid set but invalid cookies */
+                access_token = "";
+        }
 
     if(request.hasHeader(tnt::httpheader::authorization)) {
         /* Auth header overrides GET/POST parameters even if header is wrong */
