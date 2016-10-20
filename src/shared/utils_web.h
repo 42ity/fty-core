@@ -141,6 +141,22 @@ _die_asprintf(
  *
  */
 
+/* If there is a codepath that did not choose a particular Content-Type yet,
+ * make sure it is JSON (e.g. die on bad permissions for getlog action) */
+#define http_die_contenttype_graceful(_replyobj) \
+    do { \
+        if (_replyobj.getContentType() == std::string("")) { \
+            _replyobj.setContentType("application/json;charset=UTF-8"); \
+        } \
+    } \
+    while(0)
+
+#define http_die_contenttype(_replyobj) \
+    do { \
+        _replyobj.setContentType("application/json;charset=UTF-8"); \
+    } \
+    while(0)
+
 #define http_die(key, ...) \
     do { \
         constexpr size_t __http_die__key_idx__ = _die_idx<_WSErrorsCOUNT-1>((const char*)key); \
@@ -155,6 +171,7 @@ _die_asprintf(
         else \
             reply.out() << utils::json::create_error_json(__http_die__error_message__, _errors.at(__http_die__key_idx__).err_code); \
         free(__http_die__error_message__); \
+        http_die_contenttype(reply); \
         return _errors.at(__http_die__key_idx__).http_code;\
     } \
     while(0)
@@ -186,6 +203,7 @@ do { \
     } \
     else \
         reply.out() << utils::json::create_error_json(msg, _errors.at(_idx).err_code);\
+    http_die_contenttype(reply); \
     return _errors.at(_idx).http_code;\
 } \
 while (0)
@@ -212,6 +230,7 @@ while (0)
 do { \
     static_assert (std::is_same <decltype (errors), http_errors_t>::value, "'errors' argument in macro http_add_error must be a http_errors_t."); \
     reply.out() << utils::json::create_error_json ((errors).errors); \
+    http_die_contenttype(reply); \
     return (errors).http_code; \
 } \
 while (0)
