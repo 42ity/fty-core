@@ -1,6 +1,6 @@
 <#
  #
- # Copyright (C) 2015 Eaton
+ # Copyright (C) 2015 - 2016 Eaton
  #
  # This program is free software; you can redistribute it and/or modify
  # it under the terms of the GNU General Public License as published by
@@ -31,8 +31,8 @@
 #include "log.h"
 </%pre>
 <%cpp>
-    // NOTE: json.ecpp is not limited by CHECK_USER_PERMISSIONS_OR_DIE
-    //       this file do some basic setup of response
+	// NOTE: json.ecpp is not limited by CHECK_USER_PERMISSIONS_OR_DIE
+	//       this file do some basic setup of response
 
 	// Get rid of locales
 	setenv("LANG", "C", 1);
@@ -46,25 +46,33 @@
 	// Do not let zeromq took away our signals
 	setenv("ZSYS_SIGHANDLER", "false", 1);
 
-    // setup BIOS logging
-    log_open ();
+	// setup BIOS logging
+	log_open ();
 
 	// Silence the warning about unused "request" variable
 	request.keepAlive();
 
-    // XXX: this is supposed to simplify the application, but as it gets more and more branches
-    //      and states, consider setting the content-type for response in each ecpp file
-    //      instead
+	// XXX: this is supposed to simplify the application, but as it gets more and more branches
+	//      and states, consider setting the content-type for response in each ecpp file
+	//      instead
 
 	static cxxtools::Regex rex_GET_text_plain("^/api/v1/admin/license$");
-    static cxxtools::Regex rex_GET_text_csv ("^/api/v1/asset/export$");
+	static cxxtools::Regex rex_GET_text_csv ("^/api/v1/asset/export$");
+	static cxxtools::Regex rex_GET_undecided("^/api/v1/admin/getlog$");
 
-	if(request.getMethod() == "GET" && rex_GET_text_plain.match(request.getUrl()))
-		reply.setContentType("text/plain;charset=UTF-8");
-    else
-	if(request.getMethod() == "GET" && rex_GET_text_csv.match(request.getUrl()))
-		reply.setContentType("text/csv;charset=UTF-8");
-	else
+	if(request.getMethod() == "GET") {
+		log_debug( ("GetURL==" + request.getUrl()).c_str() );
+
+		if(rex_GET_text_plain.match(request.getUrl()))
+			reply.setContentType("text/plain;charset=UTF-8");
+		else if(rex_GET_text_csv.match(request.getUrl()))
+			reply.setContentType("text/csv;charset=UTF-8");
+		else
+		if(rex_GET_undecided.match(request.getUrl()))
+			log_debug("Will decide on Content-Type later");
+		else
+			reply.setContentType("application/json;charset=UTF-8");
+	} else
 		reply.setContentType("application/json;charset=UTF-8");
 
 	reply.setHeader(tnt::httpheader::cacheControl, "no-store");
