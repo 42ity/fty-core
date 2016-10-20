@@ -291,6 +291,27 @@
     </mapping>
     <!-- API itself -->
 
+    <!-- Enforce processing of supported extensions by using this order: -->
+    <mapping>
+      <target>getlog_GET@bios_web</target>
+      <url>^/api/v1/admin/getlog/(.*)\.(gz)$</url>
+      <method>GET</method>
+      <args>
+        <logname_base>$1</logname_base>
+        <logname_ext>.$2</logname_ext>
+      </args>
+    </mapping>
+
+    <mapping>
+      <target>getlog_GET@bios_web</target>
+      <url>^/api/v1/admin/getlog/(.*)$</url>
+      <method>GET</method>
+      <args>
+        <logname_base>$1</logname_base>
+        <logname_ext></logname_ext>
+      </args>
+    </mapping>
+
     <!-- topology/location -->
     <mapping>
       <target>topology_location_from@bios_web</target>

@@ -58,7 +58,7 @@
 
 	static cxxtools::Regex rex_GET_text_plain("^/api/v1/admin/license$");
 	static cxxtools::Regex rex_GET_text_csv ("^/api/v1/asset/export$");
-	static cxxtools::Regex rex_GET_undecided("^/api/v1/admin/getlog$");
+	static cxxtools::Regex rex_GET_undecided("^/api/v1/admin/getlog/.*$");
 
 	if(request.getMethod() == "GET") {
 		log_debug( ("GetURL==" + request.getUrl()).c_str() );

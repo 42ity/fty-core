@@ -1,0 +1,117 @@
+<#
+ #
+ # Copyright (C) 2016 Eaton
+ #
+ # This program is free software; you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+ # the Free Software Foundation; either version 2 of the License, or
+ # (at your option) any later version.
+ #
+ # This program is distributed in the hope that it will be useful,
+ # but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+ #
+ # You should have received a copy of the GNU General Public License along
+ # with this program; if not, write to the Free Software Foundation, Inc.,
+ # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ #
+ #><#
+/*!
+ * \file    getlog_GET.ecpp
+ * \author  Jim Klimov <EvgenyKlimov@Eaton.com>
+ * \brief   This REST API call returns logfile contents (optionally compressed)
+ */
+ #><%pre>
+#include <vector>
+#include <string>
+#include <iostream>
+#include <fstream>
+#include <stdexcept>
+#include <sys/utsname.h>
+#include <tntdb/connect.h>
+#include <tnt/mimedb.h>
+#include "helpers.h"
+#include "subprocess.h"
+#include "log.h"
+#include "utils.h"
+
+</%pre>
+<%request scope="global">
+UserInfo user;
+</%request>
+<%cpp>
+
+    // permission check
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Admin,     "R"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
+    /* Note: the http_die() family does its own
+     *  reply.setContentType("application/json;charset=UTF-8");
+     * rituals if needed, so undecided callers like this one do not */
+
+    /* NOTE: At a later stage we might do other logs than pre-existing files -
+     * e.g. exports from journalctl, so logNAME and logFILE are logically and
+     * maybe functionally different beasts below... */
+    std::string logfile; /* Full path as set for supported logfiles below */
+    std::string logname_ext;
+    std::string logname_base;
+    std::string message;
+
+    /* argument checking */
+    {
+        std::string slogname_base = request.getArg ("logname_base");
+        std::string slogname_ext = request.getArg ("logname_ext");
+
+        message = "getlog_GET got args: logname_base='" + slogname_base + "' logname_ext='" + slogname_ext + "'";
+        log_debug( message.c_str() );
+
+        if ( (slogname_base == "messages") &&
+             (slogname_ext == "" || slogname_ext == ".gz")
+        ) {
+            logname_ext = slogname_ext;
+            logname_base = slogname_base;
+
+            if (logname_base == "messages")
+                logfile = "/var/log/" + logname_base;
+        }
+
+        if (logfile == "") {
+            log_error("Authorized request to download an unsupported log file was denied");
+            http_die("request-param-bad", "logname", ("'" + slogname_base + slogname_ext + "'").c_str(), "'messages' optionally with '.gz' extension");
+        }
+    }
+
+    /* We have a definite officially supported request, try to fulfill it */
+    try {
+        log_debug( ("Posting logfile extension '" + logname_ext + "' (MIME type '" + reply.getContentType() + "') - initial").c_str() );
+        if (logname_ext == "") {
+            std::ifstream in( logfile.c_str() );
+            if (!in)
+                throw std::runtime_error("Could not open requested logfile: " + logfile);
+
+            reply.out() << in.rdbuf();
+            in.close();
+            reply.setContentType("text/plain;charset=UTF-8");
+                /* TODO: Is it ASCII? Check rsyslog */
+            log_debug( ("Posting logfile extension '" + logname_ext + "' (MIME type '" + reply.getContentType() + "') - done").c_str() );
+            return HTTP_OK;
+        } else {
+            tnt::MimeDb mimeDb("/etc/mime.types");
+            reply.setContentType(mimeDb.getMimetype(logname_base + logname_ext));
+
+            throw std::runtime_error("Sorry, logfile extension '" + logname_ext + "' (MIME type '" + reply.getContentType() + "') is currently unsupported");
+        }
+    }
+    catch (const std::exception& e) {
+        /* TODO: In case of errors, this may conflict with Content-Type header
+         * value set above; we ASSUME this has negligible probability as we set
+         * it in the end. */
+        reply.resetContent();
+        message.assign ("Exception caught: ").append (e.what ());
+        log_error (message.c_str ());
+        http_die( "internal-error", "Exception caught. Please check logs for more details.");
+    }
+
+</%cpp>
