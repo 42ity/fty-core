@@ -37,6 +37,252 @@
 #include "log.h"
 #include "utils.h"
 
+/* Code snatched and adapted from TNTNET source codebase including :
+ *     tntnet-sources/framework/common/httpreply.cpp
+ * and tntnet-sources/framework/common/tnt/cstream.h
+ * and tntnet-sources/framework/common/cstream.cpp
+ * ... perhaps it all should be better exposed in the upstream project.
+ * For now it is renamed to avoid conflicts, and log_debug()s are away... */
+#include <tnt/deflatestream.h>
+
+class _clonedcode_cstreambuf : public std::streambuf
+{
+    typedef std::vector<char*> _chunks_type;
+    unsigned _chunksize;
+    _chunks_type _chunks;
+
+  public:
+    typedef _chunks_type::size_type size_type;
+
+    explicit _clonedcode_cstreambuf(unsigned chunksize = 32768)
+    : _chunksize(chunksize)
+    { }
+
+    ~_clonedcode_cstreambuf();
+
+    size_type chunkcount() const
+    { return _chunks.size(); }
+
+    size_type size() const
+    { return _chunks.size() == 0 ? 0
+           : (_chunks.size() - 1) * _chunksize + pptr() - _chunks.back(); }
+
+    size_type chunksize(size_type n) const
+    {
+      return _chunks.size() == 0 ? 0
+           : n + 1  < _chunks.size() ? _chunksize
+           : n + 1 == _chunks.size() ? static_cast<size_type>(pptr() - _chunks.back())
+           : 0;
+    }
+
+    const char* chunk(size_type n) const
+    { return _chunks[n]; }
+
+    void rollback(size_type n);
+
+    void makeEmpty();
+
+  private:
+    std::streambuf::int_type overflow(std::streambuf::int_type ch);
+    std::streambuf::int_type underflow();
+    int sync();
+};
+
+class _clonedcode_ocstream : public std::ostream
+{
+    _clonedcode_cstreambuf _streambuf;
+
+  public:
+    typedef _clonedcode_cstreambuf::size_type size_type;
+
+    explicit _clonedcode_ocstream(unsigned chunksize = 32768)
+      : std::ostream(0),
+        _streambuf(chunksize)
+    {
+      init(&_streambuf);
+    }
+
+    size_type chunkcount() const
+    { return _streambuf.chunkcount(); }
+
+    const char* chunk(size_type n) const
+    { return _streambuf.chunk(n); }
+
+    size_type chunksize(size_type n) const
+    { return _streambuf.chunksize(n); }
+
+    size_type size() const
+    { return _streambuf.size(); }
+
+    void rollback(size_type n)
+    { _streambuf.rollback(n); }
+
+    void makeEmpty()
+    { _streambuf.makeEmpty(); }
+
+    std::string str() const;
+
+    void output(std::ostream& out) const;
+};
+
+_clonedcode_cstreambuf::~_clonedcode_cstreambuf()
+{
+//  log_debug(static_cast<const void*>(this) << " delete " << _chunks.size() << " chunks (dtor)");
+  for (size_type n = 0; n < _chunks.size(); ++n)
+    delete[] _chunks[n];
+}
+
+void _clonedcode_cstreambuf::makeEmpty()
+{
+//  log_debug(static_cast<const void*>(this) << " makeEmpty; " << _chunks.size() << " chunks");
+
+  if (_chunks.size() > 0)
+  {
+    if (_chunks.size() > 1)
+    {
+      for (size_type n = 1; n < _chunks.size(); ++n)
+      {
+//        log_debug(static_cast<const void*>(this) << " delete chunk " << n);
+        delete[] _chunks[n];
+      }
+      _chunks.resize(1);
+    }
+
+    setp(_chunks[0], _chunks[0] + _chunksize);
+  }
+}
+
+std::streambuf::int_type _clonedcode_cstreambuf::overflow(std::streambuf::int_type ch)
+{
+  char* chunk = new char[_chunksize];
+//  log_debug(static_cast<const void*>(this) << " new chunk " << static_cast<const void*>(chunk));
+  _chunks.push_back(chunk);
+  setp(_chunks.back(), _chunks.back() + _chunksize);
+
+  if (ch != traits_type::eof())
+    sputc(traits_type::to_char_type(ch));
+
+  return 0;
+}
+
+std::streambuf::int_type _clonedcode_cstreambuf::underflow()
+{
+  return traits_type::eof();
+}
+
+int _clonedcode_cstreambuf::sync()
+{
+  return 0;
+}
+
+void _clonedcode_cstreambuf::rollback(size_type n)
+{
+  if (n == 0)
+  {
+    makeEmpty();
+  }
+  else
+  {
+    size_type c = (n-1) / _chunksize;
+
+    for (size_type cc = c + 1; cc < _chunks.size(); ++cc)
+    {
+//      log_debug(static_cast<const void*>(this) << " delete chunk " << cc);
+      delete[] _chunks[cc];
+    }
+
+    _chunks.resize(c + 1);
+
+    setp(_chunks[c], _chunks[c] + _chunksize);
+    pbump(n % _chunksize);
+  }
+}
+
+std::string _clonedcode_ocstream::str() const
+{
+  std::string ret;
+  ret.reserve(size());
+  for (unsigned n = 0; n < chunkcount(); ++n)
+    ret.append(chunk(n), chunksize(n));
+  return ret;
+}
+
+void _clonedcode_ocstream::output(std::ostream& out) const
+{
+  for (unsigned n = 0; n < chunkcount(); ++n)
+    out.write(chunk(n), chunksize(n));
+}
+
+class _clonedcode_Compressor
+{
+        _clonedcode_ocstream _zbody;
+        tnt::DeflateStream _deflator;
+        uLong _crc;
+        unsigned _size;
+
+      public:
+        _clonedcode_Compressor()
+          : _deflator(_zbody),
+            _crc(0),
+            _size(0)
+        {
+        }
+
+        void init()
+        {
+          static const char f[] =
+               "\x1f\x8b\x08\x00"
+               "\x00\x00\x00\x00"
+               "\x04\x03";
+          _zbody.write(f, sizeof(f) - 1);
+        }
+
+        void compress(const char* d, unsigned s)
+        {
+          _deflator.write(d, s);
+          _size += s;
+          _crc = crc32(_crc, reinterpret_cast<const Bytef*>(d), s);
+        }
+
+        void finalize()
+        {
+          _deflator.end();
+
+          uint32_t u = _crc;
+          _zbody.put(static_cast<char>(u & 0xFF));
+          _zbody.put(static_cast<char>((u >>= 8) & 0xFF));
+          _zbody.put(static_cast<char>((u >>= 8) & 0xFF));
+          _zbody.put(static_cast<char>((u >>= 8) & 0xFF));
+
+          u = _size;
+          _zbody.put(static_cast<char>(u & 0xFF));
+          _zbody.put(static_cast<char>((u >>= 8) & 0xFF));
+          _zbody.put(static_cast<char>((u >>= 8) & 0xFF));
+          _zbody.put(static_cast<char>((u >>= 8) & 0xFF));
+        }
+
+        std::string::size_type uncompressedSize()
+        { return _size; }
+
+        std::string::size_type zsize()
+        { return _zbody.size(); }
+
+        std::string str() const
+        { return _zbody.str(); }
+
+        void output(std::ostream& out)
+        { _zbody.output(out); }
+
+        void clear()
+        {
+          _zbody.makeEmpty();
+          /* This is in newer codebase : _deflator.reinitialize(); which does "deflateReset(&_stream)" */
+          _crc = 0;
+          _size = 0;
+        }
+}; // class _clonedcode_Compressor
+
+
 </%pre>
 <%request scope="global">
 UserInfo user;
@@ -134,10 +380,10 @@ UserInfo user;
             }
         }
 
-        if (logname_ext == "")
+        if (logname_ext == "" || logname_ext == ".txt")
             content_filename += ".txt";
         else
-            content_filename += logname_ext;
+            content_filename += ".txt" + logname_ext; /* e.g. "messages*.txt.gz" */
 
         if (logname_ext == "" || logname_ext == ".txt") {
             std::ifstream in( logfile.c_str() );
@@ -156,9 +402,31 @@ UserInfo user;
             tnt::MimeDb mimeDb("/etc/mime.types");
             reply.setContentType(mimeDb.getMimetype(logname_base + logname_ext));
 
-            if (logname_ext == ".no-op") {
-                // ...
-                reply.setHeader(tnt::httpheader::contentDisposition, content_disposition + "; filename=\" + content_filename + \"", true);
+            if (logname_ext == ".gz") {
+                /* Compressor requires the data length in advance */
+                std::ifstream in( logfile.c_str() );
+                if (!in)
+                    throw std::runtime_error("Could not open requested logfile: " + logfile);
+
+                /* TODO: Can this be optimized to reduce pouring from one to another? */
+                std::ostringstream tmp;
+                tmp << in.rdbuf();
+                in.close();
+                std::string body = tmp.str ();
+
+                _clonedcode_Compressor compressor;
+                compressor.init();
+                compressor.compress(body.data(), body.size());
+                compressor.finalize();
+                std::ostringstream omessage;
+                std::ostringstream ozsize;
+                ozsize << compressor.zsize();
+                omessage << "gzipped '" << logname_base << "' body " << body.size() << " bytes to " << ozsize << " bytes";
+                log_debug( omessage.str().c_str() );
+
+                reply.out() << compressor.str();
+                reply.setHeader(tnt::httpheader::contentLength, ozsize.str(), true);
+                reply.setHeader(tnt::httpheader::contentDisposition, content_disposition + "; filename=\"" + content_filename + "\"", true);
                 log_debug( ("Posting logfile extension '" + logname_ext + "' (MIME type '" + reply.getContentType() + "') in mode " + reply.getHeader(tnt::httpheader::contentDisposition) + " - done").c_str() );
                 return HTTP_OK;
             } else {
