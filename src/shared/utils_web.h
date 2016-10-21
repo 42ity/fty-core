@@ -151,11 +151,15 @@ _die_asprintf(
     } \
     while(0)
 
-#define http_die_contenttype(_replyobj) \
+#define http_die_contenttype_brutal(_replyobj) \
     do { \
         _replyobj.setContentType("application/json;charset=UTF-8"); \
     } \
     while(0)
+
+/* By default use this variant - our version of tntnet seems VERY BAD at
+ * replacing headers in practice, so we should only add one if not present */
+#define http_die_contenttype    http_die_contenttype_graceful
 
 #define http_die(key, ...) \
     do { \
