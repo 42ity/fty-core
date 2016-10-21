@@ -29,6 +29,7 @@
 #include <fstream>
 #include <stdexcept>
 #include <sys/utsname.h>
+#include <time.h>
 #include <tntdb/connect.h>
 #include <tnt/mimedb.h>
 #include "helpers.h"
@@ -68,7 +69,7 @@ UserInfo user;
         log_debug( message.c_str() );
 
         if ( (slogname_base == "messages") &&
-             (slogname_ext == "" || slogname_ext == ".gz")
+             (slogname_ext == "" || slogname_ext == ".gz" || slogname_ext == ".txt" )
         ) {
             logname_ext = slogname_ext;
             logname_base = slogname_base;
@@ -86,7 +87,59 @@ UserInfo user;
     /* We have a definite officially supported request, try to fulfill it */
     try {
         log_debug( ("Posting logfile extension '" + logname_ext + "' (MIME type '" + reply.getContentType() + "') - initial").c_str() );
-        if (logname_ext == "") {
+
+        /* Prepare strings for Content-Disposition: header */
+        /* Requests with a valid extension are downloads; without - plaintext shown in browser */
+        std::string content_disposition = "inline";
+        if (!logname_ext.empty())
+            content_disposition = "attachment";
+        std::string content_filename = logname_base;
+
+        { /* Scope away some temporary variables */
+            struct utsname u;
+            time_t t;
+
+            if (uname (&u) == -1) {
+                log_error ("uname() failed: '%s'", strerror (errno));
+            } else {
+                content_filename += "_";
+                content_filename += u.nodename;
+            }
+
+            t = time(NULL);
+            if ( t == (time_t)-1 ) {
+                log_error ("time(NULL) failed: '%s'", strerror (errno));
+            } else {
+                /* ASSUMPTION: time_t is an integer type (usually is long int)
+                 * or otherwise can convert to std::string */
+
+                char buf[21] = {0x00};
+                int r = calendar_to_datetime(time(NULL), buf, 21);
+                if (r != 0) {
+                    log_error ("Failed to convert timestamp");
+                } else {
+                    // replace colons ':' by dash '-'
+                    // prevents http://latkin.org/blog/2016/07/20/git-for-windows-accidentally-creates-ntfs-alternate-data-streams/
+                    // for our Windows users
+                    for (char* c = strchr (buf, ':');
+                        c != NULL;
+                        c = strchr (c, ':'))
+                    {
+                        *c = '-';
+                    }
+
+                    content_filename.append("_");
+                    content_filename.append(buf);
+                }
+            }
+        }
+
+        if (logname_ext == "")
+            content_filename += ".txt";
+        else
+            content_filename += logname_ext;
+
+        if (logname_ext == "" || logname_ext == ".txt") {
             std::ifstream in( logfile.c_str() );
             if (!in)
                 throw std::runtime_error("Could not open requested logfile: " + logfile);
@@ -95,13 +148,22 @@ UserInfo user;
             in.close();
             reply.setContentType("text/plain;charset=UTF-8");
                 /* TODO: Is it ASCII? Check rsyslog */
-            log_debug( ("Posting logfile extension '" + logname_ext + "' (MIME type '" + reply.getContentType() + "') - done").c_str() );
+
+            reply.setHeader(tnt::httpheader::contentDisposition, content_disposition + "; filename=\"" + content_filename + "\"", true);
+            log_debug( ("Posting logfile extension '" + logname_ext + "' (MIME type '" + reply.getContentType() + "') in mode " + reply.getHeader(tnt::httpheader::contentDisposition) + " - done").c_str() );
             return HTTP_OK;
         } else {
             tnt::MimeDb mimeDb("/etc/mime.types");
             reply.setContentType(mimeDb.getMimetype(logname_base + logname_ext));
 
-            throw std::runtime_error("Sorry, logfile extension '" + logname_ext + "' (MIME type '" + reply.getContentType() + "') is currently unsupported");
+            if (logname_ext == ".no-op") {
+                // ...
+                reply.setHeader(tnt::httpheader::contentDisposition, content_disposition + "; filename=\" + content_filename + \"", true);
+                log_debug( ("Posting logfile extension '" + logname_ext + "' (MIME type '" + reply.getContentType() + "') in mode " + reply.getHeader(tnt::httpheader::contentDisposition) + " - done").c_str() );
+                return HTTP_OK;
+            } else {
+                throw std::runtime_error("Sorry, logfile extension '" + logname_ext + "' (MIME type '" + reply.getContentType() + "') is currently unsupported");
+            }
         }
     }
     catch (const std::exception& e) {

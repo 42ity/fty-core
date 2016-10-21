@@ -292,9 +292,10 @@
     <!-- API itself -->
 
     <!-- Enforce processing of supported extensions by using this order: -->
+    <!-- Download as... (attachment with a filename) -->
     <mapping>
       <target>getlog_GET@bios_web</target>
-      <url>^/api/v1/admin/getlog/(.*)\.(gz)$</url>
+      <url>^/api/v1/admin/getlog/(.*)\.(gz|txt)$</url>
       <method>GET</method>
       <args>
         <logname_base>$1</logname_base>
@@ -302,6 +303,7 @@
       </args>
     </mapping>
 
+    <!-- Display log raw in the browser -->
     <mapping>
       <target>getlog_GET@bios_web</target>
       <url>^/api/v1/admin/getlog/(.*)$</url>
