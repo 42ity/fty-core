@@ -745,20 +745,28 @@ void
     auto SUBTYPES = read_device_types (conn);
 
     std::set<a_elmnt_id_t> ids{};
-    for (size_t row_i = 1; row_i != cm.rows(); row_i++)
-    {
-        try{
-            auto ret = process_row(conn, cm, row_i, TYPES, SUBTYPES, ids);
-            touch_fn ();
-            okRows.push_back (ret);
-            log_info ("row %zu was imported successfully", row_i);
+
+    std::set<size_t> processedRows;
+    bool somethingProcessed;
+    do {
+        somethingProcessed = false;
+        failRows.clear ();
+        for (size_t row_i = 1; row_i != cm.rows(); row_i++) {
+            if (processedRows.find (row_i) != processedRows.end ()) continue;
+            try{
+                auto ret = process_row(conn, cm, row_i, TYPES, SUBTYPES, ids);
+                touch_fn ();
+                okRows.push_back (ret);
+                log_info ("row %zu was imported successfully", row_i);
+                somethingProcessed = true;
+                processedRows.insert (row_i);
+            }
+            catch (const std::invalid_argument &e) {
+                failRows.insert(std::make_pair(row_i + 1, e.what()));
+                log_error ("row %zu not imported: %s", row_i, e.what());
+            }
         }
-        catch ( const std::invalid_argument &e)
-        {
-            failRows.insert(std::make_pair(row_i + 1, e.what()));
-            log_error ("row %zu not imported: %s", row_i, e.what());
-        }
-    }
+    } while (somethingProcessed);
     LOG_END;
 }
 
