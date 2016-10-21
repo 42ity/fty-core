@@ -49,10 +49,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // >0 group id, 0 does not exist,  -1 error
 static int
 get_input_power_group_id
-    (tntdb::Connection& connection,
+    (const std::string& url,
      uint32_t datacenter_id)
 {
     try {
+        tntdb::Connection connection = tntdb::connectCached (url);
         tntdb::Statement statement = connection.prepareCached (
             " SELECT id_asset_element "
             " FROM t_bios_asset_ext_attributes "
@@ -83,12 +84,13 @@ get_input_power_group_id
 // 0 ok, -1 error
 static int
 get_power_topology_group
-    (tntdb::Connection& connection,
+    (const std::string& url,
      uint32_t group_id,
      std::map <std::string, std::pair <std::string, std::string>>& devices,
      std::vector <std::tuple <std::string, std::string, std::string, std::string>>& powerchains)
 {
     try {
+        tntdb::Connection connection = tntdb::connectCached (url);
         tntdb::Statement statement = connection.prepareCached (
             " SELECT id_asset_device_src as src_id, src_out as src_socket, a.name as src_name, c.name as src_subtype, "
             "        id_asset_device_dest as dest_id, dest_in as dest_socket, b.name as dest_name, d.name as dest_subtype "
@@ -149,12 +151,13 @@ get_power_topology_group
 
 static int
 construct_input_power_group
-    (tntdb::Connection& connection,
+    (const std::string& url,
      uint32_t datacenter_id,
      std::map <std::string, std::pair <std::string, std::string>>& devices,
      std::vector <std::tuple <std::string, std::string, std::string, std::string>>& powerchains)
 {
     try {
+        tntdb::Connection connection = tntdb::connectCached (url);
         tntdb::Statement statement = connection.prepareCached (
             " SELECT "
             "   id_asset_device_src as src_id, "
@@ -223,15 +226,15 @@ input_power_group_response
 {
     try {
         tntdb::Connection connection = tntdb::connectCached (url);
-        int group_id = get_input_power_group_id (connection, datacenter_id);
+        int group_id = get_input_power_group_id (url, datacenter_id);
         if (group_id == -1)
             return -1;
 
         if (group_id > 0) {
-            return get_power_topology_group (connection, group_id, devices, powerchains);            
+            return get_power_topology_group (url, group_id, devices, powerchains);            
         }
         else {
-            return construct_input_power_group (connection, datacenter_id, devices, powerchains); 
+            return construct_input_power_group (url, datacenter_id, devices, powerchains); 
         }
     }
     catch (const std::exception& e)
