@@ -342,6 +342,14 @@ sysinfo_detail (
 
         static const std::string BIOS_RELEASE_JSON_FILE = "/etc/bios-release.json";
 
+        /* TODO : After completion of BIOS-2887 subtasks, these data and
+         * subtree name will be merged into BIOS_RELEASE_JSON_FILE contents */
+        output += ",\t\t\"release-details\" : {\n";
+        output += "\t\t\t";
+        output += utils::json::jsonify ("osimage-name", OSIMAGE_BASENAME);
+        output += "\n";
+        output += "\t\t}\n"
+
         try {
             std::ifstream in (BIOS_RELEASE_JSON_FILE, std::ios::in | std::ios::binary);
             if (!in) {
@@ -474,8 +482,9 @@ sysinfo_plain (
 
     output += "{\n"
     "\t\"restapi-metadata\" : {\n"
-    "\t\t\"bios-release\" : {\n";
+    "\t\t\"release-details\" : {\n";
 
+    output += "\t\t\t";
     output += utils::json::jsonify ("osimage-name", OSIMAGE_BASENAME);
     output += "\n";
 
