@@ -1220,7 +1220,7 @@ bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 			${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
 			${LIBBIOSPROTO_LIBS} \
 			$(LDFLAGS_NO_UNDEFS) \
-			-module -lm -ltntdb -ltntnet -lcidr -lmagic -lbiosapi
+			-module -lm -ltntdb -ltntnet -lcidr -lmagic -lbiosapi -lz
 
 bios_web_la_LIBADD = \
 			libpriv-db.la libpriv-cidr.la libpriv-proto.la \
