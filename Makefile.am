@@ -6,6 +6,9 @@ ACLOCAL_AMFLAGS =	-I m4 ${ACLOCAL_FLAGS}
 AUTOMAKE_OPTIONS =	color-tests parallel-tests
 LDFLAGS_NO_UNDEFS =	-Wl,--no-undefined
 
+# success of the build depends on the value of the variable GREP_OPTIONS; so ignore it
+unexport GREP_OPTIONS
+
 # http://www.gnu.org/software/automake/manual/html_node/Basics-of-Distribution.html
 # NOTE: "dist" is not "install": The dist rule in the Makefile can be used to
 # generate a gzipped tar file and other flavors of archive for distribution.
