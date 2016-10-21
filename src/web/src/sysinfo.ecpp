@@ -474,8 +474,9 @@ sysinfo_plain (
 
     output += "{\n"
     "\t\"restapi-metadata\" : {\n"
-    "\t\t\"bios-release\" : {\n";
+    "\t\t\"release-details\" : {\n";
 
+    output += "\t\t\t";
     output += utils::json::jsonify ("osimage-name", OSIMAGE_BASENAME);
     output += "\n";
 
