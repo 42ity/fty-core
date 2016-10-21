@@ -348,7 +348,7 @@ sysinfo_detail (
         output += "\t\t\t";
         output += utils::json::jsonify ("osimage-name", OSIMAGE_BASENAME);
         output += "\n";
-        output += "\t\t}\n"
+        output += "\t\t}\n";
 
         try {
             std::ifstream in (BIOS_RELEASE_JSON_FILE, std::ios::in | std::ios::binary);
