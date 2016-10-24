@@ -1,0 +1,221 @@
+<#
+ #
+ # Copyright (C) 2016 Eaton
+ #
+ # This program is free software; you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+ # the Free Software Foundation; either version 2 of the License, or
+ # (at your option) any later version.
+ #
+ # This program is distributed in the hope that it will be useful,
+ # but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+ #
+ # You should have received a copy of the GNU General Public License along
+ # with this program; if not, write to the Free Software Foundation, Inc.,
+ # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ #
+ #><#
+/*!
+ * \file email_test.ecpp
+ * \author Barbora Stepankova <BarboraStepankova@Eaton.com>
+ * \brief Sends test email. 
+ */
+ #><%pre>
+#include "helpers.h"
+#include "tntmlm.h"
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/syscall.h>
+#include <fstream>
+        
+// encode GET message for smtp agent         
+static zmsg_t*
+s_smtp_GET_message (
+        const char* reply,
+        const char* message,
+        const char* context,
+        bool attach_system_state,
+        zuuid_t *uuid)
+{
+    zmsg_t *msg = zmsg_new ();
+    zmsg_addstr (msg, zuuid_str_canonical (uuid));
+    zmsg_addstr(msg, "EatonProductFeedback@eaton.com");
+    char *subject = zsys_sprintf ("IPC feedback context=%s, uuid=%s", context, zuuid_str_canonical (uuid));
+    zmsg_addstr (msg, subject);
+    zstr_free (&subject);
+    zmsg_addstr(msg, message);
+
+    zhash_t *headers = zhash_new ();
+    zhash_insert (headers, "Reply-To", (void*) reply);
+    zframe_t *frame = zhash_pack (headers);
+    zmsg_add (msg, frame);
+    zframe_destroy (&frame);
+    zhash_destroy (&headers);
+
+    //TODO attach_system_state is not yet implemented!!!
+    return msg;
+}
+
+static void
+s_rm_rf (const std::vector <std::string>& paths)
+{
+    for (const auto& path : paths)
+        unlink (path.c_str ());
+}
+      
+</%pre>
+<%request scope="global">
+UserInfo user;
+</%request>
+<%cpp>
+    // check user permissions
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Admin,     "C"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
+
+    std::string checked_reply;
+    std::string checked_message;
+    std::string checked_context;
+    bool attach_system_state = false;
+    unsigned _timeout = 60;
+    {
+        std::string _reply = qparam.param ("reply");
+
+        if (_reply.empty ())
+            http_die ("request-param-required", "reply");
+
+        if (_reply.find ('@', 0) == std::string::npos)
+            http_die ("request-param-bad", "to", _reply.c_str (), "valid email address");
+
+        checked_reply = _reply;
+
+        std::string message = qparam.param ("message");
+        if (message.empty ())
+            http_die ("request-param-required", "message");
+
+        checked_message = message;
+
+        std::string context = qparam.param ("message");
+        if (context.empty ())
+            http_die ("request-param-required", "context");
+
+        checked_context = context;
+
+        std::string sys_state = qparam.param ("attach_system_state");
+        if (sys_state == "yes")
+            attach_system_state = true;
+
+        std::string _stimeout = qparam.param ("_timeout");
+
+        try {
+            _timeout = std::stoi (_stimeout);
+        }
+        catch (const std::exception& e) {
+            //pass
+        }
+    }
+    
+    // send message
+    zuuid_t *uuid = zuuid_new ();
+    zmsg_t *send = s_smtp_GET_message (
+            checked_reply.c_str (),
+            checked_message.c_str (),
+            checked_context.c_str (),
+            attach_system_state,
+            uuid);
+
+    char *temp_dir = mkdtemp (strdup ("/tmp/email_feedback.XXXXXX"));
+    if (!temp_dir)
+        http_die ("internal-error", "Can't create temporary directory: %s", strerror (errno));
+
+    // http://www.tntnet.org/howto/upload-howto.html
+    const tnt::Multipart& mp = request.getMultipart();
+    std::vector <std::string> paths {};
+    for (const auto& it: mp) {
+
+        std::string path = temp_dir + it.getFilename();
+
+        std::ofstream out_file (path);
+        
+        // more efficient is the use of iterators:
+        for (tnt::Part::const_iterator pi = it.getBodyBegin(); pi != it.getBodyEnd(); ++pi)
+            out_file << *pi;
+
+        zmsg_addstr (send, path.c_str ());
+        paths.push_back (path);
+    }
+    zstr_free (&temp_dir);
+
+    // connect to mlm client
+    MlmClientPool::Ptr client = mlm_pool.get ();
+    if (!client.getPointer ()) {
+        log_critical ("Error: mlm_pool.get () failed.");
+        s_rm_rf (paths);
+        http_die ("internal-error", "mlm_pool.get () failed.");
+    }
+
+    int rv = client->sendto ("agent-smtp", "SENDMAIL", 1000, &send);
+
+    if (rv == -1)
+    {
+        log_critical (
+                    "Error: client->sendto (address = '%s', subject = '%s', timeout = 1000) failed.",
+                        "agent-smtp", "SENDMAIL");
+        s_rm_rf (paths);
+        http_die ("internal-error", "client->sendto () failed");
+    }
+
+    zmsg_t *recieve = client->recv (zuuid_str_canonical (uuid) , _timeout);
+    zuuid_destroy (&uuid);
+    if (!recieve)
+    {
+        std::string msg = "Error: client->recv (timeout = '" + std::to_string (_timeout) + "') returned NULL";
+        log_error (msg.c_str ());
+        s_rm_rf (paths);
+        http_die ("internal-error", msg.c_str ());
+    }
+
+    char *err_code = zmsg_popstr (recieve);
+    char *err_message = zmsg_popstr (recieve);
+    const char *msg_subject = client->subject();
+    std::string status;
+    s_rm_rf (paths);
+  
+    if (streq (msg_subject, "SENDMAIL-OK"))
+    {
+         status = "Succeeded"; 
+         return HTTP_OK;
+    }   
+    else
+    if (streq (msg_subject, "SENDMAIL-ERR"))
+    {
+        status = "Failed";
+    }
+    else
+    {
+        status = "Failed";
+        log_critical ("Error: message recieved with invalid subject.");
+        http_die ("internal-error", "client->recv () invalid message subject");
+    }
+  
+    zmsg_destroy(&recieve);
+    zmsg_destroy(&send);
+</%cpp>
+{
+    "test_status" :
+    {
+        "status" : "<$ status $>",
+        "error_code" : <$ err_code $>,
+        "reason" : "<$ utils::json::escape (err_message) $>"
+    }
+}
+<%cpp>
+
+    zstr_free(&err_code);
+    zstr_free(&err_message);
+</%cpp>
+
+
