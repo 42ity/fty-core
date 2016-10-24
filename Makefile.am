@@ -1130,7 +1130,7 @@ client_SCRIPTS +=	tools/bios-passwd \
 			tools/compress-logs \
 			tools/verify-fs
 
-helper_SCRIPTS +=	tools/tntnet-ExecStartPre.sh
+helper_SCRIPTS +=	tools/tntnet-ExecStartPre.sh tools/generate-release-details.sh
 
 EXTRA_DIST +=		tools/fake-th \
 			tools/bios-networking \
