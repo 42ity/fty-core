@@ -181,6 +181,7 @@ src/web/src/average.cpp
 src/web/src/config.cpp
 src/web/src/json.cpp
 src/web/src/asset_list.cpp
+src/web/src/getlog_GET.cpp
 src/web/src/netcfg.cpp
 src/web/src/iface.cpp
 src/web/src/license.cpp
@@ -216,6 +217,8 @@ src/web/src/alert_rules_detail.cpp
 src/web/src/alert_rules.cpp
 src/web/src/alert_ack.cpp
 src/web/src/alert_list.cpp
+src/web/src/email_test.cpp
+src/web/src/input_power_chain.cpp
 
 tntnet.xml.example
 !src/web/tntnet.xml
