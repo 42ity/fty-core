@@ -35,9 +35,9 @@ MlmClient::MlmClient ()
 
 MlmClient::~MlmClient ()
 {
-    mlm_client_destroy (&_client);
-    zpoller_destroy (&_poller);
     zuuid_destroy (&_uuid);
+    zpoller_destroy (&_poller);
+    mlm_client_destroy (&_client);
 }
 
 zmsg_t*
