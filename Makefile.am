@@ -1158,7 +1158,7 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/asset_DELETE.cpp src/web/src/asset_POST.cpp \
                       src/web/src/json.cpp  src/web/src/asset_list.cpp        \
                       src/web/src/time.cpp  src/web/src/sysinfo.cpp           \
-                      src/web/src/current.cpp \
+                      src/web/src/current.cpp src/web/src/getlog_GET.cpp      \
                       src/web/src/rack_total.cpp                              \
                       src/web/src/topology_location_from.cpp                  \
                       src/web/src/topology_location_to.cpp                    \
@@ -1220,7 +1220,7 @@ bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 			${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
 			${LIBBIOSPROTO_LIBS} \
 			$(LDFLAGS_NO_UNDEFS) \
-			-module -lm -ltntdb -ltntnet -lcidr -lmagic -lbiosapi
+			-module -lm -ltntdb -ltntnet -lcidr -lmagic -lbiosapi -lz
 
 bios_web_la_LIBADD = \
 			libpriv-db.la libpriv-cidr.la libpriv-proto.la \
