@@ -370,7 +370,7 @@
     <!-- POST admin/email_test -->
     <mapping>
         <target>email_test@bios_web</target>
-        <url>^/api/v1/admin/email_test.*$</url>
+        <url>^/api/v1/admin/email[/_]test.*$</url>
 	<method>POST</method>
     </mapping>
 
