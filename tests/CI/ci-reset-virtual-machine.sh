@@ -96,6 +96,7 @@ usage() {
 	echo "                         (default: auto; default if only the option is specified: yes)"
 	echo "    --no-download        Alias to '--attempt-download no' to redeploy an existing image"
 	echo "    --stop-only          end the script after stopping the VM and cleaning up"
+	echo "    --destroy-only       end the script after stopping the VM (container 'destroy')"
 	echo "    --deploy-only        end the script just before it would start the VM (skips apt-get too)"
 	echo "    --copy-host-users 'a b c'    Copies specified user or group account definitions"
 	echo "    --copy-host-groups 'a b c'   (e.g. for bind-mounted homes from host into the VM)"
@@ -201,7 +202,8 @@ DOTDOMAINNAME="`domainname | grep -v '('`" || \
 DOTDOMAINNAME=""
 [ -n "$DOTDOMAINNAME" ] && DOTDOMAINNAME=".$DOTDOMAINNAME"
 
-[ -z "$STOPONLY" ] && STOPONLY=no
+[ -z "$DESTROYONLY" ] && DESTROYONLY=no	# LXC destroy == domain stopped
+[ -z "$STOPONLY" ] && STOPONLY=no		# domain stopped and rootfs wiped (legacy misnomer)
 [ -z "$DOWNLOADONLY" ] && DOWNLOADONLY=no
 [ -z "$DEPLOYONLY" ] && DEPLOYONLY=no
 [ -z "$INSTALL_DEV_PKGS" ] && INSTALL_DEV_PKGS=auto
@@ -239,6 +241,10 @@ while [ $# -gt 0 ] ; do
 		;;
 	--stop-only)
 		STOPONLY=yes
+		shift
+		;;
+	--destroy-only)
+		DESTROYONLY=yes
 		shift
 		;;
 	--no-overlayfs)
@@ -631,6 +637,12 @@ umount -fl "../rootfs/${IMAGE_FLAT}-ro" 2> /dev/null > /dev/null || true
 # root bash history may be protected by chattr to be append-only
 chattr -a "${ALTROOT}/root/.bash_history" || true
 
+if [ x"$DESTROYONLY" = xyes ]; then
+	logmsg_info "DESTROYONLY was requested, so ending" \
+		"'${_SCRIPT_PATH} ${_SCRIPT_ARGS}' now, after just stopping" >&2
+	exit 0
+fi
+
 # Destroy the overlay-rw half of the old running container, if any
 if [ -d "../overlays/${IMAGE_FLAT}__${VM}" ]; then
 	logmsg_info "Removing RW directory of the stopped VM:" \
@@ -704,7 +716,7 @@ fi
 
 if [ x"$STOPONLY" = xyes ]; then
 	logmsg_info "STOPONLY was requested, so ending" \
-		"'${_SCRIPT_PATH} ${_SCRIPT_ARGS}' now" >&2
+		"'${_SCRIPT_PATH} ${_SCRIPT_ARGS}' now, after stopping and wiping" >&2
 	exit 0
 fi
 
