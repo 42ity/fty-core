@@ -61,10 +61,17 @@ s_smtp_GET_message (
 }
 
 static void
-s_rm_rf (const std::vector <std::string>& paths)
+s_rm_rf (const std::vector <std::string>& paths, char **dir_p)
 {
     for (const auto& path : paths)
         unlink (path.c_str ());
+
+    if (*dir_p) {
+        char *dir = *dir_p;
+        rmdir (dir);
+        zstr_free (&dir_p);
+        *dir_p = NULL;
+    }
 }
       
 </%pre>
@@ -149,13 +156,12 @@ UserInfo user;
         zmsg_addstr (send, path.c_str ());
         paths.push_back (path);
     }
-    zstr_free (&temp_dir);
 
     // connect to mlm client
     MlmClientPool::Ptr client = mlm_pool.get ();
     if (!client.getPointer ()) {
         log_critical ("Error: mlm_pool.get () failed.");
-        s_rm_rf (paths);
+        s_rm_rf (paths, &temp_dir);
         http_die ("internal-error", "mlm_pool.get () failed.");
     }
 
@@ -166,7 +172,7 @@ UserInfo user;
         log_critical (
                     "Error: client->sendto (address = '%s', subject = '%s', timeout = 1000) failed.",
                         "agent-smtp", "SENDMAIL");
-        s_rm_rf (paths);
+        s_rm_rf (paths, &temp_dir);
         http_die ("internal-error", "client->sendto () failed");
     }
 
@@ -176,7 +182,7 @@ UserInfo user;
     {
         std::string msg = "Error: client->recv (timeout = '" + std::to_string (_timeout) + "') returned NULL";
         log_error (msg.c_str ());
-        s_rm_rf (paths);
+        s_rm_rf (paths, &temp_dir);
         http_die ("internal-error", msg.c_str ());
     }
 
@@ -184,7 +190,7 @@ UserInfo user;
     char *err_message = zmsg_popstr (recieve);
     const char *msg_subject = client->subject();
     std::string status;
-    s_rm_rf (paths);
+    s_rm_rf (paths, &temp_dir);
   
     if (streq (msg_subject, "SENDMAIL-OK"))
     {
