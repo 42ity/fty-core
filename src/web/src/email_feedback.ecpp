@@ -18,9 +18,10 @@
  #
  #><#
 /*!
- * \file email_test.ecpp
+ * \file email_feedback.ecpp
  * \author Barbora Stepankova <BarboraStepankova@Eaton.com>
- * \brief Sends test email. 
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \brief Sends feedback email. 
  */
  #><%pre>
 #include "helpers.h"
@@ -41,7 +42,12 @@ s_smtp_GET_message (
 {
     zmsg_t *msg = zmsg_new ();
     zmsg_addstr (msg, zuuid_str_canonical (uuid));
-    zmsg_addstr(msg, "EatonProductFeedback@eaton.com");
+
+    const char* email = getenv ("BIOS_FEEDBACK_EMAIL");
+    if (!email)
+        email = "EatonProductFeedback@Eaton.com";
+
+    zmsg_addstr(msg, email);
     char *subject = zsys_sprintf ("IPC feedback context=%s, uuid=%s", context, zuuid_str_canonical (uuid));
     zmsg_addstr (msg, subject);
     zstr_free (&subject);
@@ -69,7 +75,7 @@ s_rm_rf (const std::vector <std::string>& paths, char **dir_p)
     if (*dir_p) {
         char *dir = *dir_p;
         rmdir (dir);
-        zstr_free (&dir_p);
+        zstr_free (&dir);
         *dir_p = NULL;
     }
 }
@@ -81,7 +87,8 @@ UserInfo user;
 <%cpp>
     // check user permissions
     static const std::map <BiosProfile, std::string> PERMISSIONS = {
-            {BiosProfile::Admin,     "C"}
+            {BiosProfile::Admin,         "C"},
+            {BiosProfile::Dashboard,     "C"}
             };
     CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
 
