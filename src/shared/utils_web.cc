@@ -96,20 +96,6 @@ std::string escape (const char *string) {
         else if (c == '\\') {
             after.append ("\\\\");
         }
-        else if (static_cast<unsigned char>(c) >= 0x80 || static_cast<unsigned char>(c) < 0x20) {
-            // Code below this comment is taken from
-            //      https://github.com/maekitalo/cxxtools
-            //      JsonFormatter::stringOut(const std::string& str) {}
-            //      Author: Tommi Mäkitalo (tommi@tntnet.org)
-            after.append("\\u");
-            static const char hex[] = "0123456789abcdef";
-            uint32_t v = static_cast<unsigned char>(c);
-
-            for (uint32_t s = 16; s > 0; s -= 4)
-            {
-                after += hex[(v >> (s - 4)) & 0xf];
-            }
-        }
         else {
             after += c;
         }
