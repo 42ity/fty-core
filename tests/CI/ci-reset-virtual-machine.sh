@@ -744,6 +744,17 @@ else
 	|| die "Can't un-tar the rw directory"
 fi
 
+case "$IMAGE" in
+	/*) OSIMAGE_FILENAME="$IMAGE" ;;
+	*)  OSIMAGE_FILENAME="$(cd `dirname "$IMAGE"` && pwd)/$(basename "$IMAGE")"
+esac
+OSIMAGE_LSINFO="`ls -lad "$OSIMAGE_FILENAME"`" || OSIMAGE_LSINFO=""
+if [ -s "$OSIMAGE_FILENAME.md5" ]; then
+	OSIMAGE_CKSUM="`cat "$OSIMAGE_FILENAME.md5" | awk '{print $1}'`"
+else
+	OSIMAGE_CKSUM="`md5sum < "$OSIMAGE_FILENAME" | awk '{print $1}'`"
+fi
+
 logmsg_info "Bind-mount kernel modules from the host OS"
 mkdir -p "${ALTROOT}/lib/modules"
 mount -o rbind "/lib/modules" "${ALTROOT}/lib/modules"
@@ -892,6 +903,7 @@ fi
 logmsg_info "Start the virtual machine $VM"
 virsh -c lxc:// start "$VM" || die "Can't start the virtual machine $VM"
 
+VM_SHOULD_RESTART=no
 if [ "$INSTALL_DEV_PKGS" = yes ]; then
 	INSTALLER=""
 	if [ -s "$SCRIPTPWD/ci-setup-test-machine.sh" ] ; then
@@ -935,7 +947,31 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 #	logmsg_info "Restart networking in the VM chroot to refresh virtual network settings"
 #	chroot "${ALTROOT}/" /bin/systemctl restart bios-networking
 	set -e
+	VM_SHOULD_RESTART=yes
+fi
 
+if [ -s "${ALTROOT}/usr/share/bios/scripts/generate-release-details.sh" \
+  -a -x "${ALTROOT}/usr/share/bios/scripts/generate-release-details.sh" \
+]; then (
+	export ALTROOT
+	export OSIMAGE_FILENAME OSIMAGE_LSINFO OSIMAGE_CKSUM
+	# Note: The variables below are not populated on non-target hardware
+	# But for tests they might be set in e.g. the container custom config
+	# file like  /srv/libvirt/rootfs/bios-deploy.config-reset-vm
+	export MODIMAGE_FILENAME MODIMAGE_LSINFO MODIMAGE_CKSUM
+	export BIOSINFO_UBOOT_ID_ETN   BIOSINFO_UBOOT_ID_OG    BIOSINFO_UBOOT_TSS
+	export BIOSINFO_UIMAGE_ID_ETN  BIOSINFO_UIMAGE_ID_OG   BIOSINFO_UIMAGE_TSS
+	export FW_UBOOTPART_CSDEV      FW_UBOOTPART_BYTES
+	export FW_UBOOTPART_CSDEVPAD   FW_UBOOTPART_SIZE
+	export FW_UIMAGEPART_CSDEV     FW_UIMAGEPART_BYTES
+	export FW_UIMAGEPART_CSDEVPAD  FW_UIMAGEPART_SIZE
+	export HWD_CATALOG_NB  HWD_REV HWD_SERIAL_NB
+
+	logmsg_info "Generating the release details file(s) with the script in OS image"
+	"${ALTROOT}/usr/share/bios/scripts/generate-release-details.sh"
+) ; fi
+
+if [ "$VM_SHOULD_RESTART" = yes ]; then
 	logmsg_info "Restart the virtual machine $VM"
 	virsh -c lxc:// shutdown "$VM" || true
 	virsh -c lxc:// destroy "$VM" && sleep 5 && \
