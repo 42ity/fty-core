@@ -510,10 +510,10 @@ s_read_si(
             process_fqdns_key (si.getMember("fqdns"), data);
             continue;
         }
-        std::string value;
+        std::basic_string <cxxtools::Char> value;
         it->getValue(value);
         data[0].push_back(name);
-        data[1].push_back(cxxtools::String(value));
+        data[1].push_back(value);
     }
 }
 
