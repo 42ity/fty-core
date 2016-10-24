@@ -94,6 +94,7 @@ usage() {
     echo "    --download-only      end the script after downloading the newest image file"
     echo "    --attempt-download [auto|yes|no] Should an OS image download be attempted at all?"
     echo "                         (default: auto; default if only the option is specified: yes)"
+    echo "    --no-download        Alias to '--attempt-download no' to redeploy an existing image"
     echo "    --stop-only          end the script after stopping the VM and cleaning up"
     echo "    --deploy-only        end the script just before it would start the VM (skips apt-get too)"
     echo "    --copy-host-users 'a b c'    Copies specified user or group account definitions"
@@ -266,6 +267,10 @@ while [ $# -gt 0 ] ; do
 		yes|no|auto|pretend) ATTEMPT_DOWNLOAD="$1"; shift ;;
 		*) ATTEMPT_DOWNLOAD=yes ;;
 	    esac
+	    ;;
+	--no-download)
+	    shift
+	    ATTEMPT_DOWNLOAD=no
 	    ;;
 	--dry-run|-n)
 	    ATTEMPT_DOWNLOAD=pretend
