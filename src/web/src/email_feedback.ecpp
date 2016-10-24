@@ -104,7 +104,7 @@ UserInfo user;
             http_die ("request-param-required", "reply");
 
         if (_reply.find ('@', 0) == std::string::npos)
-            http_die ("request-param-bad", "to", _reply.c_str (), "valid email address");
+            http_die ("request-param-bad", "reply", _reply.c_str (), "valid email address");
 
         checked_reply = _reply;
 
@@ -114,7 +114,7 @@ UserInfo user;
 
         checked_message = message;
 
-        std::string context = qparam.param ("message");
+        std::string context = qparam.param ("context");
         if (context.empty ())
             http_die ("request-param-required", "context");
 
