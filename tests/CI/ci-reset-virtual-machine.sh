@@ -614,21 +614,22 @@ virsh -c lxc:// destroy "$VM" || \
 sleep 5
 
 # Cleanup of the rootfs
+ALTROOT="$(cd "`pwd`/../rootfs/$VM" && pwd)" || die "Could not determine the container ALTROOT"
 logmsg_info "Unmounting paths related to VM '$VM':" \
-	"'`pwd`/../rootfs/$VM/lib/modules', '`pwd`../rootfs/$VM/root/.ccache'" \
-	"'`pwd`/../rootfs/$VM'/proc, `pwd`/../rootfs/$VM', '`pwd`/../rootfs/${IMAGE_FLAT}-ro'"
-umount -fl "../rootfs/$VM/lib/modules" 2> /dev/null > /dev/null || true
-umount -fl "../rootfs/$VM/root/.ccache" 2> /dev/null > /dev/null || true
-umount -fl "../rootfs/$VM/proc" 2> /dev/null > /dev/null || true
-umount -fl "../rootfs/$VM" 2> /dev/null > /dev/null || true
-fusermount -u -z  "../rootfs/$VM" 2> /dev/null > /dev/null || true
+	"'${ALTROOT}/lib/modules', '${ALTROOT}/root/.ccache'" \
+	"'${ALTROOT}/proc', '${ALTROOT}', '`pwd`/../rootfs/${IMAGE_FLAT}-ro'"
+umount -fl "${ALTROOT}/lib/modules" 2> /dev/null > /dev/null || true
+umount -fl "${ALTROOT}/root/.ccache" 2> /dev/null > /dev/null || true
+umount -fl "${ALTROOT}/proc" 2> /dev/null > /dev/null || true
+umount -fl "${ALTROOT}" 2> /dev/null > /dev/null || true
+fusermount -u -z "${ALTROOT}" 2> /dev/null > /dev/null || true
 
 # This unmount can fail if for example several containers use the same RO image
 # or if it is not used at all; not shielding by "$OVERLAYFS" check just in case
 umount -fl "../rootfs/${IMAGE_FLAT}-ro" 2> /dev/null > /dev/null || true
 
 # root bash history may be protected by chattr to be append-only
-chattr -a "../rootfs/$VM/root/.bash_history" || true
+chattr -a "${ALTROOT}/root/.bash_history" || true
 
 # Destroy the overlay-rw half of the old running container, if any
 if [ -d "../overlays/${IMAGE_FLAT}__${VM}" ]; then
@@ -691,15 +692,15 @@ for D in ../rootfs/*-ro/ ; do
 done
 
 # clean up VM space
-logmsg_info "Removing VM rootfs from '`pwd`/../rootfs/$VM'"
-/bin/rm -rf "../rootfs/$VM" || \
-{ logmsg_error "FAILED to remove '../rootfs/$VM'"
-  logmsg_info "Checking if blocked by any processes?.."
-  fuser "../rootfs/$VM" "../rootfs/$VM"/*
-  fuser -c "../rootfs/$VM" "../rootfs/$VM"/*
-  fuser -m "../rootfs/$VM" "../rootfs/$VM"/*
-  die "Can not manipulate '../rootfs/$VM' at this time"
-}
+logmsg_info "Removing VM rootfs from '${ALTROOT}'"
+if ! /bin/rm -rf "${ALTROOT}" ; then
+	logmsg_error "FAILED to remove '${ALTROOT}'"
+	logmsg_info "Checking if blocked by any processes?.."
+	fuser "${ALTROOT}" "${ALTROOT}"/*
+	fuser -c "${ALTROOT}" "${ALTROOT}"/*
+	fuser -m "${ALTROOT}" "${ALTROOT}"/*
+	die "Can not manipulate '${ALTROOT}' at this time"
+fi
 
 if [ x"$STOPONLY" = xyes ]; then
 	logmsg_info "STOPONLY was requested, so ending" \
@@ -707,8 +708,8 @@ if [ x"$STOPONLY" = xyes ]; then
 	exit 0
 fi
 
-logmsg_info "Creating a new VM rootfs at '`pwd`/../rootfs/$VM'"
-mkdir -p "../rootfs/$VM"
+logmsg_info "Creating a new VM rootfs at '${ALTROOT}'"
+mkdir -p "${ALTROOT}"
 if [ x"$OVERLAYFS" = xyes ]; then
 	logmsg_info "Mount the common RO squashfs at '`pwd`/../rootfs/${IMAGE_FLAT}-ro'"
 	mkdir -p "../rootfs/${IMAGE_FLAT}-ro"
@@ -717,98 +718,98 @@ if [ x"$OVERLAYFS" = xyes ]; then
 
 	logmsg_info "Use the individual RW component" \
 		"located in '`pwd`/../overlays/${IMAGE_FLAT}__${VM}'" \
-		"for an overlay-mount united at '`pwd`/../rootfs/$VM'"
+		"for an overlay-mount united at '${ALTROOT}'"
 	mkdir -p "../overlays/${IMAGE_FLAT}__${VM}" \
 		"../overlays/${IMAGE_FLAT}__${VM}.tmp"
 	mount -t ${OVERLAYFS_TYPE} \
 		-o lowerdir="../rootfs/${IMAGE_FLAT}-ro",upperdir="../overlays/${IMAGE_FLAT}__${VM}",workdir="../overlays/${IMAGE_FLAT}__${VM}.tmp" \
-		${OVERLAYFS_TYPE} "../rootfs/$VM" \
+		${OVERLAYFS_TYPE} "${ALTROOT}" \
 	|| die "Can't overlay-mount rw directory"
 else
 	logmsg_info "Unpack the full individual RW copy of the image" \
-		"'$IMAGE' at '`pwd`/../rootfs/$VM'"
-	tar -C "../rootfs/$VM" -xzf "$IMAGE" \
+		"'$IMAGE' at '${ALTROOT}'"
+	tar -C "${ALTROOT}" -xzf "$IMAGE" \
 	|| die "Can't un-tar the rw directory"
 fi
 
 logmsg_info "Bind-mount kernel modules from the host OS"
-mkdir -p "../rootfs/$VM/lib/modules"
-mount -o rbind "/lib/modules" "../rootfs/$VM/lib/modules"
-mount -o remount,ro,rbind "../rootfs/$VM/lib/modules"
+mkdir -p "${ALTROOT}/lib/modules"
+mount -o rbind "/lib/modules" "${ALTROOT}/lib/modules"
+mount -o remount,ro,rbind "${ALTROOT}/lib/modules"
 
 logmsg_info "Bind-mount ccache directory from the host OS"
-umount -fl "../rootfs/$VM/root/.ccache" 2> /dev/null > /dev/null || true
+umount -fl "${ALTROOT}/root/.ccache" 2> /dev/null > /dev/null || true
 # The devel-image can make this a symlink to user homedir, so kill it:
-[ -h "../rootfs/$VM/root/.ccache" ] && rm -f "../rootfs/$VM/root/.ccache"
+[ -h "${ALTROOT}/root/.ccache" ] && rm -f "${ALTROOT}/root/.ccache"
 # On some systems this may fail due to strange implementation of overlayfs:
-if mkdir -p "../rootfs/$VM/root/.ccache" ; then
+if mkdir -p "${ALTROOT}/root/.ccache" ; then
 	[ -d "/root/.ccache" ] || mkdir -p "/root/.ccache"
-	mount -o rbind "/root/.ccache" "../rootfs/$VM/root/.ccache"
+	mount -o rbind "/root/.ccache" "${ALTROOT}/root/.ccache"
 fi
 
 if [ "$INSTALL_DEV_PKGS" = yes ]; then
 	logmsg_info "Set up initial name resolution from the host OS to facilitate apt-get for dev package installation"
-	cp -pf "../rootfs/$VM/etc/"resolv.conf "../rootfs/$VM/etc/"resolv.conf.bak-devpkg || true
-	cp -pf "../rootfs/$VM/etc/"nsswitch.conf "../rootfs/$VM/etc/"nsswitch.conf.bak-devpkg || true
-	cp -pf /etc/hosts /etc/resolv.conf /etc/nsswitch.conf "../rootfs/$VM/etc/"
+	cp -pf "${ALTROOT}/etc/"resolv.conf "${ALTROOT}/etc/"resolv.conf.bak-devpkg || true
+	cp -pf "${ALTROOT}/etc/"nsswitch.conf "${ALTROOT}/etc/"nsswitch.conf.bak-devpkg || true
+	cp -pf /etc/hosts /etc/resolv.conf /etc/nsswitch.conf "${ALTROOT}/etc/"
 fi
 
 logmsg_info "Setup virtual hostname"
-echo "$VM" > "../rootfs/$VM/etc/hostname"
+echo "$VM" > "${ALTROOT}/etc/hostname"
 logmsg_info "Put virtual hostname in /etc/hosts"
 # Apparently, the first token for a locally available IP address is
 # treated as the `hostname --fqdn` if no other ideas are available.
-sed -r -i "s/^127\.0\.0\.1/127.0.0.1 $VM /" "../rootfs/$VM/etc/hosts"
+sed -r -i "s/^127\.0\.0\.1/127.0.0.1 $VM /" "${ALTROOT}/etc/hosts"
 
 logmsg_info "Copy root's ~/.ssh from the host OS"
-cp -r --preserve ~/.ssh "../rootfs/$VM/root/"
-cp -r --preserve /etc/ssh/*_key /etc/ssh/*.pub "../rootfs/$VM/etc/ssh"
-if [ -d "../rootfs/$VM/home/admin" ] && \
-   [ ! -d "../rootfs/$VM/home/admin/.ssh" ] \
+cp -r --preserve ~/.ssh "${ALTROOT}/root/"
+cp -r --preserve /etc/ssh/*_key /etc/ssh/*.pub "${ALTROOT}/etc/ssh"
+if [ -d "${ALTROOT}/home/admin" ] && \
+   [ ! -d "${ALTROOT}/home/admin/.ssh" ] \
 ; then
 	logmsg_info "Copy root's ~/.ssh from the host OS into guest ~admin/.ssh"
-	cp -r --preserve ~/.ssh/ "../rootfs/$VM/home/admin/.ssh/"
-	if _P="$(egrep '^admin:' "../rootfs/$VM/etc/passwd")" \
+	cp -r --preserve ~/.ssh/ "${ALTROOT}/home/admin/.ssh/"
+	if _P="$(egrep '^admin:' "${ALTROOT}/etc/passwd")" \
 	&& [ -n "$_P" ]; then
 		_UG="`echo "$_P" | awk -F: '{print $3":"$4}'`" && \
 		[ -n "$_UG" ] && \
 		logmsg_info "Chowning guest ~admin/.ssh to $_UG" && \
-		chown -R "$_UG" "../rootfs/$VM/home/admin/.ssh/"
+		chown -R "$_UG" "${ALTROOT}/home/admin/.ssh/"
 	fi
 fi
 
 if [ -f ~/.oscrc ]; then
 	logmsg_info "Copy root's ~/.oscrc from the host OS"
-	cp --preserve ~/.oscrc "../rootfs/$VM/root/"
+	cp --preserve ~/.oscrc "${ALTROOT}/root/"
 fi
 
 if [ -d ~/.config ]; then
 	logmsg_info "Copy root's ~/.config/ from the host OS"
-	cp --preserve -r ~/.config "../rootfs/$VM/root/"
+	cp --preserve -r ~/.config "${ALTROOT}/root/"
 fi
 
 logmsg_info "Copy environment settings from the host OS"
-cp /etc/profile.d/* ../rootfs/$VM/etc/profile.d/
+cp /etc/profile.d/* ${ALTROOT}/etc/profile.d/
 
 if [ -d /lib/terminfo/x ] ; then
 	logmsg_info "Add xterm terminfo from the host OS"
-	mkdir -p ../rootfs/$VM/lib/terminfo/x
-	cp -prf /lib/terminfo/x/xterm* ../rootfs/$VM/lib/terminfo/x
+	mkdir -p ${ALTROOT}/lib/terminfo/x
+	cp -prf /lib/terminfo/x/xterm* ${ALTROOT}/lib/terminfo/x
 fi
 
 # setup debian proxy
-mkdir -p "../rootfs/$VM/etc/apt/apt.conf.d/"
-[ -n "$APT_PROXY" ] && [ -d "../rootfs/$VM/etc/apt/apt.conf.d" ] && \
+mkdir -p "${ALTROOT}/etc/apt/apt.conf.d/"
+[ -n "$APT_PROXY" ] && [ -d "${ALTROOT}/etc/apt/apt.conf.d" ] && \
 	logmsg_info "Set up APT proxy configuration" && \
 	echo 'Acquire::http::Proxy "'"$APT_PROXY"'";' > \
-		"../rootfs/$VM/etc/apt/apt.conf.d/01proxy-apt-cacher"
+		"${ALTROOT}/etc/apt/apt.conf.d/01proxy-apt-cacher"
 
-if [ ! -d "../rootfs/$VM/var/lib/mysql/mysql" ] && \
-   [ ! -s "../rootfs/$VM/root/.my.cnf" ] && \
+if [ ! -d "${ALTROOT}/var/lib/mysql/mysql" ] && \
+   [ ! -s "${ALTROOT}/root/.my.cnf" ] && \
    [ -s ~root/.my.cnf ] \
 ; then
 	logmsg_info "Copying MySQL root password from the host into VM"
-	cp -pf ~root/.my.cnf "../rootfs/$VM/root/.my.cnf"
+	cp -pf ~root/.my.cnf "${ALTROOT}/root/.my.cnf"
 fi
 
 if [ -n "${COPYHOST_GROUPS-}" ]; then
@@ -817,13 +818,13 @@ if [ -n "${COPYHOST_GROUPS-}" ]; then
 			die "Can not replicate unknown group '$G' from the host!"
 
 		logmsg_info "Defining group account '$_G' from host to VM"
-		if egrep "^$G:" "../rootfs/$VM/etc/group" >/dev/null ; then
-			egrep -v "^$G:" < "../rootfs/$VM/etc/group" > "../rootfs/$VM/etc/group.tmp" && \
-			echo "$_G" >> "../rootfs/$VM/etc/group.tmp" && \
-			cat "../rootfs/$VM/etc/group.tmp" > "../rootfs/$VM/etc/group"
-			rm -f "../rootfs/$VM/etc/group.tmp"
+		if egrep "^$G:" "${ALTROOT}/etc/group" >/dev/null ; then
+			egrep -v "^$G:" < "${ALTROOT}/etc/group" > "${ALTROOT}/etc/group.tmp" && \
+			echo "$_G" >> "${ALTROOT}/etc/group.tmp" && \
+			cat "${ALTROOT}/etc/group.tmp" > "${ALTROOT}/etc/group"
+			rm -f "${ALTROOT}/etc/group.tmp"
 		else
-			echo "$_G" >> "../rootfs/$VM/etc/group"
+			echo "$_G" >> "${ALTROOT}/etc/group"
 		fi
 	done
 fi
@@ -837,34 +838,34 @@ if [ -n "${COPYHOST_USERS-}" ]; then
 			_S="$U:*:16231:0:99999:7:::"
 
 		logmsg_info "Defining user account '$_P' from host to VM"
-		if egrep "^$U:" "../rootfs/$VM/etc/passwd" >/dev/null ; then
-			egrep -v "^$U:" < "../rootfs/$VM/etc/passwd" > "../rootfs/$VM/etc/passwd.tmp" && \
-			echo "$_P" >> "../rootfs/$VM/etc/passwd.tmp" && \
-			cat "../rootfs/$VM/etc/passwd.tmp" > "../rootfs/$VM/etc/passwd"
-			rm -f "../rootfs/$VM/etc/passwd.tmp"
+		if egrep "^$U:" "${ALTROOT}/etc/passwd" >/dev/null ; then
+			egrep -v "^$U:" < "${ALTROOT}/etc/passwd" > "${ALTROOT}/etc/passwd.tmp" && \
+			echo "$_P" >> "${ALTROOT}/etc/passwd.tmp" && \
+			cat "${ALTROOT}/etc/passwd.tmp" > "${ALTROOT}/etc/passwd"
+			rm -f "${ALTROOT}/etc/passwd.tmp"
 		else
-			echo "$_P" >> "../rootfs/$VM/etc/passwd"
+			echo "$_P" >> "${ALTROOT}/etc/passwd"
 		fi
 
-		if egrep "^$U:" "../rootfs/$VM/etc/shadow" >/dev/null ; then
-			egrep -v "^$U:" < "../rootfs/$VM/etc/shadow" > "../rootfs/$VM/etc/shadow.tmp" && \
-			echo "$_S" >> "../rootfs/$VM/etc/shadow.tmp" && \
-			cat "../rootfs/$VM/etc/shadow.tmp" > "../rootfs/$VM/etc/shadow"
-			rm -f "../rootfs/$VM/etc/shadow.tmp"
+		if egrep "^$U:" "${ALTROOT}/etc/shadow" >/dev/null ; then
+			egrep -v "^$U:" < "${ALTROOT}/etc/shadow" > "${ALTROOT}/etc/shadow.tmp" && \
+			echo "$_S" >> "${ALTROOT}/etc/shadow.tmp" && \
+			cat "${ALTROOT}/etc/shadow.tmp" > "${ALTROOT}/etc/shadow"
+			rm -f "${ALTROOT}/etc/shadow.tmp"
 		else
-			echo "$_S" >> "../rootfs/$VM/etc/shadow"
+			echo "$_S" >> "${ALTROOT}/etc/shadow"
 		fi
 	done
 fi
 
-if [ -s "../rootfs/$VM/usr/share/bios-web/git_details.txt" ]; then
+if [ -s "${ALTROOT}/usr/share/bios-web/git_details.txt" ]; then
 	logmsg_info "GIT details of 'bios-core' preinstalled as a package in '$VM':" \
-		"$(cat "../rootfs/$VM/usr/share/bios-web/git_details.txt")"
+		"$(cat "${ALTROOT}/usr/share/bios-web/git_details.txt")"
 fi
 
-if [ -d "../rootfs/$VM.saved/" ] && [ "$NO_RESTORE_SAVED" != yes ]; then
-	logmsg_info "Restoring custom configuration from '`cd ../rootfs/$VM.saved/ && pwd`':" && \
-	( cd "../rootfs/$VM.saved/" && tar cf - . ) | ( cd "../rootfs/$VM/" && tar xvf - )
+if [ -d "${ALTROOT}.saved/" ] && [ "$NO_RESTORE_SAVED" != yes ]; then
+	logmsg_info "Restoring custom configuration from '`cd ${ALTROOT}.saved/ && pwd`':" && \
+	( cd "${ALTROOT}.saved/" && tar cf - . ) | ( cd "${ALTROOT}/" && tar xvf - )
 fi
 
 logmsg_info "Pre-configuration of VM '$VM' ($IMGTYPE/$ARCH) is completed"
@@ -896,12 +897,12 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 		logmsg_info "Will now update and install a predefined development package set using $INSTALLER"
 		logmsg_info "Sleeping 30 sec to let VM startup settle down first..."
 		sleep 30
-		logmsg_info "Running $INSTALLER against the VM '$VM' (via chroot into '`cd ../rootfs/$VM/ && pwd`')..."
+		logmsg_info "Running $INSTALLER against the VM '$VM' (via chroot into '`cd ${ALTROOT}/ && pwd`')..."
 		set +e
 		# The DHCP client in the container may wipe the resolv.conf if it found nothing on DHCP line
-		#[ -s "../rootfs/$VM/etc/resolv.conf" ] || \
-		cp -pf /etc/resolv.conf "../rootfs/$VM/etc/"
-		chroot "../rootfs/$VM/" /bin/bash < "$INSTALLER"
+		#[ -s "${ALTROOT}/etc/resolv.conf" ] || \
+		cp -pf /etc/resolv.conf "${ALTROOT}/etc/"
+		chroot "${ALTROOT}/" /bin/bash < "$INSTALLER"
 		logmsg_info "Result of installer script: $?"
 		set -e
 	else
@@ -914,13 +915,13 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 	# TODO: There may be funny interaction with saved-config if it contains
 	# files that are to be "restored" below; fix if it ever gets practical
 	logmsg_info "Restore /etc/hosts and /etc/resolv.conf in the VM to the default baseline"
-	LOCALHOSTLINE="`grep '127.0.0.1' "../rootfs/$VM/etc/hosts"`" && \
-		[ -n "$LOCALHOSTLINE" ] && ( echo "$LOCALHOSTLINE" > "../rootfs/$VM/etc/hosts" )
-	grep "8.8.8.8" "../rootfs/$VM/etc/resolv.conf.bak-devpkg" >/dev/null || \
-	cp -pf "../rootfs/$VM/etc/resolv.conf.bak-devpkg" "../rootfs/$VM/etc/resolv.conf"
-	cp -pf "../rootfs/$VM/etc/nsswitch.conf.bak-devpkg" "../rootfs/$VM/etc/nsswitch.conf"
+	LOCALHOSTLINE="`grep '127.0.0.1' "${ALTROOT}/etc/hosts"`" && \
+		[ -n "$LOCALHOSTLINE" ] && ( echo "$LOCALHOSTLINE" > "${ALTROOT}/etc/hosts" )
+	grep "8.8.8.8" "${ALTROOT}/etc/resolv.conf.bak-devpkg" >/dev/null || \
+	cp -pf "${ALTROOT}/etc/resolv.conf.bak-devpkg" "${ALTROOT}/etc/resolv.conf"
+	cp -pf "${ALTROOT}/etc/nsswitch.conf.bak-devpkg" "${ALTROOT}/etc/nsswitch.conf"
 #	logmsg_info "Restart networking in the VM chroot to refresh virtual network settings"
-#	chroot "../rootfs/$VM/" /bin/systemctl restart bios-networking
+#	chroot "${ALTROOT}/" /bin/systemctl restart bios-networking
 	set -e
 
 	logmsg_info "Restart the virtual machine $VM"
