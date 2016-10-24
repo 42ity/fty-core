@@ -55,52 +55,52 @@ export CHECKOUTDIR BUILDSUBDIR
 export LANG LANGUAGE LC_ALL TZ
 
 logmsg_info() {
-    echo "${LOGMSG_PREFIX}INFO: ${_SCRIPT_PATH}:" "$@"
+	echo "${LOGMSG_PREFIX}INFO: ${_SCRIPT_PATH}:" "$@"
 }
 
 logmsg_warn() {
-    echo "${LOGMSG_PREFIX}WARN: ${_SCRIPT_PATH}:" "$@" >&2
+	echo "${LOGMSG_PREFIX}WARN: ${_SCRIPT_PATH}:" "$@" >&2
 }
 
 logmsg_error() {
-    echo "${LOGMSG_PREFIX}ERROR: ${_SCRIPT_PATH}:" "$@" >&2
+	echo "${LOGMSG_PREFIX}ERROR: ${_SCRIPT_PATH}:" "$@" >&2
 }
 
 die() {
-    CODE="${CODE-1}"
-    [ "$CODE" -ge 0 ] 2>/dev/null || CODE=1
-    for LINE in "$@" ; do
-	echo "${LOGMSG_PREFIX}FATAL: ${_SCRIPT_PATH}:" "$LINE" >&2
-    done
-    exit $CODE
+	CODE="${CODE-1}"
+	[ "$CODE" -ge 0 ] 2>/dev/null || CODE=1
+	for LINE in "$@" ; do
+		echo "${LOGMSG_PREFIX}FATAL: ${_SCRIPT_PATH}:" "$LINE" >&2
+	done
+	exit $CODE
 }
 
 usage() {
-    echo "Usage: ${_SCRIPT_NAME} [options...]"
-    echo "options:"
-    echo "    -m|--machine name    virtual machine libvirt-name (Default: '$VM')"
-    echo "    -b|--baseline type   basic image type to use (Default: '$IMGTYPE')"
-    echo "                         see OBS repository for supported types (deploy, devel)"
-    echo "    -qa|--qa-level type  image QA level to use (Default: '$IMGQALEVEL')"
-    echo "                         see Jenkins and OBS for supported types (master, pre-rc, rc)"
-    echo "    -r|--repository URL  OBS image repo ('$OBS_IMAGES')"
-    echo "    -hp|--http-proxy URL the http_proxy override to access OBS ('$http_proxy')"
-    echo "    -ap|--apt-proxy URL  the http_proxy to access external APT images ('$APT_PROXY')"
-    echo "    --install-dev        run ci-setup-test-machine.sh (if available) to install packages"
-    echo "    --no-install-dev     do not run ci-setup-test-machine.sh, even on IMGTYPE=devel"
-    echo "    --no-restore-saved   do not copy stashed custom configs from a VMNAME.saved/ dir"
-    echo "    --no-overlayfs       enforce use of tarballs, even if overlayfs is supported by host"
-    echo "    --with-overlayfs     enforce use of overlayfs, fail if not supported by host"
-    echo "    --download-only      end the script after downloading the newest image file"
-    echo "    --attempt-download [auto|yes|no] Should an OS image download be attempted at all?"
-    echo "                         (default: auto; default if only the option is specified: yes)"
-    echo "    --no-download        Alias to '--attempt-download no' to redeploy an existing image"
-    echo "    --stop-only          end the script after stopping the VM and cleaning up"
-    echo "    --deploy-only        end the script just before it would start the VM (skips apt-get too)"
-    echo "    --copy-host-users 'a b c'    Copies specified user or group account definitions"
-    echo "    --copy-host-groups 'a b c'   (e.g. for bind-mounted homes from host into the VM)"
-    echo "    --no-config-file     Forbid use in this run of a per-VM config file if one is found"
-    echo "    -h|--help            print this help"
+	echo "Usage: ${_SCRIPT_NAME} [options...]"
+	echo "options:"
+	echo "    -m|--machine name    virtual machine libvirt-name (Default: '$VM')"
+	echo "    -b|--baseline type   basic image type to use (Default: '$IMGTYPE')"
+	echo "                         see OBS repository for supported types (deploy, devel)"
+	echo "    -qa|--qa-level type  image QA level to use (Default: '$IMGQALEVEL')"
+	echo "                         see Jenkins and OBS for supported types (master, pre-rc, rc)"
+	echo "    -r|--repository URL  OBS image repo ('$OBS_IMAGES')"
+	echo "    -hp|--http-proxy URL the http_proxy override to access OBS ('$http_proxy')"
+	echo "    -ap|--apt-proxy URL  the http_proxy to access external APT images ('$APT_PROXY')"
+	echo "    --install-dev        run ci-setup-test-machine.sh (if available) to install packages"
+	echo "    --no-install-dev     do not run ci-setup-test-machine.sh, even on IMGTYPE=devel"
+	echo "    --no-restore-saved   do not copy stashed custom configs from a VMNAME.saved/ dir"
+	echo "    --no-overlayfs       enforce use of tarballs, even if overlayfs is supported by host"
+	echo "    --with-overlayfs     enforce use of overlayfs, fail if not supported by host"
+	echo "    --download-only      end the script after downloading the newest image file"
+	echo "    --attempt-download [auto|yes|no] Should an OS image download be attempted at all?"
+	echo "                         (default: auto; default if only the option is specified: yes)"
+	echo "    --no-download        Alias to '--attempt-download no' to redeploy an existing image"
+	echo "    --stop-only          end the script after stopping the VM and cleaning up"
+	echo "    --deploy-only        end the script just before it would start the VM (skips apt-get too)"
+	echo "    --copy-host-users 'a b c'    Copies specified user or group account definitions"
+	echo "    --copy-host-groups 'a b c'   (e.g. for bind-mounted homes from host into the VM)"
+	echo "    --no-config-file     Forbid use in this run of a per-VM config file if one is found"
+	echo "    -h|--help            print this help"
 }
 
 check_md5sum() {
@@ -211,96 +211,96 @@ DOTDOMAINNAME=""
 [ -z "${NO_RESTORE_SAVED-}" ] && NO_RESTORE_SAVED=no
 
 while [ $# -gt 0 ] ; do
-    case "$1" in
+	case "$1" in
 	-m|--machine)
-	    VM="`echo "$2" | tr '/' '\!'`"
-	    shift 2
-	    ;;
+		VM="`echo "$2" | tr '/' '\!'`"
+		shift 2
+		;;
 	-b|--baseline)
-	    IMGTYPE="$2"
-	    shift 2
-	    ;;
+		IMGTYPE="$2"
+		shift 2
+		;;
 	-qa|--qa-level)
-	    IMGQALEVEL="$2"
-	    shift 2
-	    ;;
+		IMGQALEVEL="$2"
+		shift 2
+		;;
 	-r|--repository)
-	    OBS_IMAGES="$2"
-	    shift 2
-	    ;;
+		OBS_IMAGES="$2"
+		shift 2
+		;;
 	-hp|--http-proxy)
-	    http_proxy="$2"
-	    export http_proxy
-	    shift 2
-	    ;;
+		http_proxy="$2"
+		export http_proxy
+		shift 2
+		;;
 	-ap|--apt-proxy)
-	    [ -z "$2" ] && APT_PROXY="-" || APT_PROXY="$2"
-	    shift 2
-	    ;;
+		[ -z "$2" ] && APT_PROXY="-" || APT_PROXY="$2"
+		shift 2
+		;;
 	--stop-only)
-	    STOPONLY=yes
-	    shift
-	    ;;
+		STOPONLY=yes
+		shift
+		;;
 	--no-overlayfs)
-	    OVERLAYFS=no
-	    shift
-	    ;;
+		OVERLAYFS=no
+		shift
+		;;
 	--no-restore-saved)
-	    NO_RESTORE_SAVED=yes
-	    shift
-	    ;;
+		NO_RESTORE_SAVED=yes
+		shift
+		;;
 	--with-overlayfs)
-	    OVERLAYFS=yes
-	    shift
-	    ;;
+		OVERLAYFS=yes
+		shift
+		;;
 	--download-only)
-	    DOWNLOADONLY=yes
-	    shift
-	    ;;
+		DOWNLOADONLY=yes
+		shift
+		;;
 	--deploy-only)
-	    DEPLOYONLY=yes
-	    shift
-	    ;;
+		DEPLOYONLY=yes
+		shift
+		;;
 	--attempt-download)
-	    shift
-	    case "$1" in
-		yes|no|auto|pretend) ATTEMPT_DOWNLOAD="$1"; shift ;;
-		*) ATTEMPT_DOWNLOAD=yes ;;
-	    esac
-	    ;;
+		shift
+		case "$1" in
+			yes|no|auto|pretend) ATTEMPT_DOWNLOAD="$1"; shift ;;
+			*) ATTEMPT_DOWNLOAD=yes ;;
+		esac
+		;;
 	--no-download)
-	    shift
-	    ATTEMPT_DOWNLOAD=no
-	    ;;
+		shift
+		ATTEMPT_DOWNLOAD=no
+		;;
 	--dry-run|-n)
-	    ATTEMPT_DOWNLOAD=pretend
-	    DOWNLOADONLY=yes
-	    shift
-	    ;;
+		ATTEMPT_DOWNLOAD=pretend
+		DOWNLOADONLY=yes
+		shift
+		;;
 	--install-dev|--install-dev-pkgs)
-	    INSTALL_DEV_PKGS=yes
-	    shift
-	    ;;
+		INSTALL_DEV_PKGS=yes
+		shift
+		;;
 	--no-install-dev|--no-install-dev-pkgs)
-	    INSTALL_DEV_PKGS=no
-	    shift
-	    ;;
+		INSTALL_DEV_PKGS=no
+		shift
+		;;
 	--copy-host-users)
-	    COPYHOST_USERS="$2"; shift 2;;
+		COPYHOST_USERS="$2"; shift 2;;
 	--copy-host-groups)
-	    COPYHOST_GROUPS="$2"; shift 2;;
+		COPYHOST_GROUPS="$2"; shift 2;;
 	--no-config-file)
-	    ALLOW_CONFIG_FILE=no; shift ;;
+		ALLOW_CONFIG_FILE=no; shift ;;
 	-h|--help)
-	    usage
-	    exit 1
-	    ;;
+		usage
+		exit 1
+		;;
 	*)
-	    logmsg_error "Invalid switch $1"
-	    usage
-	    exit 1
-	    ;;
-    esac
+		logmsg_error "Invalid switch $1"
+		usage
+		exit 1
+		;;
+	esac
 done
 
 #
@@ -312,12 +312,12 @@ done
 if [ -n "$VM" ]; then
 	RESULT=$(virsh -c lxc:// list --all | awk '/^ *[0-9-]+ +'"$VM"' / {print $2}' | wc -l)
 	if [ $RESULT = 0 ] ; then
-	    die "VM $VM does not exist"
+		die "VM $VM does not exist"
 	fi
 	if [ $RESULT -gt 1 ] ; then
-	    ### Should not get here via CI
-	    die "VM pattern '$VM' matches too much ($RESULT)"
-	    ### TODO: spawn many child-shells with same parameters, for each VM?
+		### Should not get here via CI
+		die "VM pattern '$VM' matches too much ($RESULT)"
+		### TODO: spawn many child-shells with same parameters, for each VM?
 	fi
 fi
 # If $VM is not empty here, it is trustworthy
@@ -348,8 +348,8 @@ fi
 
 [ x"$INSTALL_DEV_PKGS" = xauto ] && \
 case "$IMGTYPE" in
-    *devel*) INSTALL_DEV_PKGS=yes ;;
-    *) INSTALL_DEV_PKGS=no ;;
+	*devel*) INSTALL_DEV_PKGS=yes ;;
+	*) INSTALL_DEV_PKGS=no ;;
 esac
 
 mkdir -p "/srv/libvirt/snapshots/$IMGTYPE/$ARCH"
@@ -383,8 +383,8 @@ case x"$OVERLAYFS" in
 xyes)
 	EXT="squashfs"
 	logmsg_info "Detected support of OVERLAYFS on the host" \
-	    "`hostname`${DOTDOMAINNAME}, so will mount a .$EXT file" \
-	    "as an RO base and overlay the RW changes"
+		"`hostname`${DOTDOMAINNAME}, so will mount a .$EXT file" \
+		"as an RO base and overlay the RW changes"
 	modprobe squashfs
 	for OVERLAYFS_TYPE in overlay overlayfs ; do
 		modprobe ${OVERLAYFS_TYPE} && break
@@ -394,8 +394,8 @@ xno)
 	EXT="tar.gz"
 	OVERLAYFS_TYPE=""
 	logmsg_info "Detected no support of OVERLAYFS on the host" \
-	    "`hostname`${DOTDOMAINNAME}, so will unpack a .$EXT file" \
-	    "into a dedicated full RW directory"
+		"`hostname`${DOTDOMAINNAME}, so will unpack a .$EXT file" \
+		"into a dedicated full RW directory"
 	;;
 esac
 
@@ -454,25 +454,25 @@ IMAGE=""
 IMAGE_SKIP=""
 
 sort_osimage_names() {
-    # ASSUMPTION: we don't have over 999 rebuilds of the same baseline image ;)
-    # ASSUMPTION2: all image builds have a rebuild-index suffix for the same
-    # baseline, or there is one old image for a baseline without a suffix.
-    ### sort
-    ### sort -n
-    sed -e 's,-\([[:digit:]][[:digit:]]\.[[:digit:]][[:digit:]]\.[[:digit:]][[:digit:]]\)_,-\1-0_,' \
-        -e 's,-\([[:digit:]]\)_,-0\1_,' \
-        -e 's,-\([[:digit:]][[:digit:]]\)_,-0\1_,' \
-    | sort -n | \
-    sed -e 's,-0*\([123456789][[:digit:]]*\)_,-\1_,' \
-        -e 's,-00*_,_,'
+	# ASSUMPTION: we don't have over 999 rebuilds of the same baseline image ;)
+	# ASSUMPTION2: all image builds have a rebuild-index suffix for the same
+	# baseline, or there is one old image for a baseline without a suffix.
+	### sort
+	### sort -n
+	sed -e 's,-\([[:digit:]][[:digit:]]\.[[:digit:]][[:digit:]]\.[[:digit:]][[:digit:]]\)_,-\1-0_,' \
+	    -e 's,-\([[:digit:]]\)_,-0\1_,' \
+	    -e 's,-\([[:digit:]][[:digit:]]\)_,-0\1_,' \
+	| sort -n | \
+	sed -e 's,-0*\([123456789][[:digit:]]*\)_,-\1_,' \
+	    -e 's,-00*_,_,'
 }
 
 if [ "$ATTEMPT_DOWNLOAD" != no ] ; then
 	logmsg_info "Get the latest operating environment image prepared for us by OBS"
 	IMAGE_URL="`wget -O - "$OBS_IMAGES/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}/" 2> /dev/null | sed -n 's|.*href="\(.*'"${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}"'\.'"$EXT"'\)".*|'"$OBS_IMAGES/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}"'/\1|p' | sed 's,\([^:]\)//,\1/,g' | sort_osimage_names | tail -n 1`"
-        [ $? = 0 ] && [ -n "$IMAGE_URL" ] || die "Could not detect remote IMAGE_URL at '$OBS_IMAGES/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}/' (looking for regex '${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}')!"
+	[ $? = 0 ] && [ -n "$IMAGE_URL" ] || die "Could not detect remote IMAGE_URL at '$OBS_IMAGES/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}/' (looking for regex '${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}')!"
 	IMAGE="`basename "$IMAGE_URL"`"
-        [ $? = 0 ] && [ -n "$IMAGE" ] || die "Could not detect remote IMAGE_URL at '$OBS_IMAGES/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}/' (looking for regex '${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}')!"
+	[ $? = 0 ] && [ -n "$IMAGE" ] || die "Could not detect remote IMAGE_URL at '$OBS_IMAGES/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}/' (looking for regex '${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}')!"
 
 	if [ "$ATTEMPT_DOWNLOAD" = pretend ] ; then
 		logmsg_info "Detected '$IMAGE_URL' as the newest available remote OS image for IMGTYPE='$IMGTYPE' and IMGQALEVEL='$IMGQALEVEL'"
@@ -676,12 +676,12 @@ for D in ../rootfs/*-ro/ ; do
 			# This is a directory, and it is empty
 			# Just in case, re-check the mountpoint activity
 			FD="`cd "$D" && pwd`" && \
-			    [ x"`mount | grep ' on '${FD}' type '`" != x ] && \
-			    logmsg_warn "Old RO mountpoint '$FD' seems still used" && \
-			    continue
+				[ x"`mount | grep ' on '${FD}' type '`" != x ] && \
+				logmsg_warn "Old RO mountpoint '$FD' seems still used" && \
+				continue
 
 			logmsg_warn "Obsolete RO mountpoint for this IMAGE was found," \
-			    "removing '`pwd`/$D':"
+				"removing '`pwd`/$D':"
 			ls -lad "$D"; ls -la "$D"
 			umount -fl "$D" 2> /dev/null > /dev/null || true
 			rm -rf "$D"
@@ -689,7 +689,6 @@ for D in ../rootfs/*-ro/ ; do
 		fi
 	fi
 done
-
 
 # clean up VM space
 logmsg_info "Removing VM rootfs from '`pwd`/../rootfs/$VM'"
@@ -722,8 +721,8 @@ if [ x"$OVERLAYFS" = xyes ]; then
 	mkdir -p "../overlays/${IMAGE_FLAT}__${VM}" \
 		"../overlays/${IMAGE_FLAT}__${VM}.tmp"
 	mount -t ${OVERLAYFS_TYPE} \
-	    -o lowerdir="../rootfs/${IMAGE_FLAT}-ro",upperdir="../overlays/${IMAGE_FLAT}__${VM}",workdir="../overlays/${IMAGE_FLAT}__${VM}.tmp" \
-	    ${OVERLAYFS_TYPE} "../rootfs/$VM" \
+		-o lowerdir="../rootfs/${IMAGE_FLAT}-ro",upperdir="../overlays/${IMAGE_FLAT}__${VM}",workdir="../overlays/${IMAGE_FLAT}__${VM}.tmp" \
+		${OVERLAYFS_TYPE} "../rootfs/$VM" \
 	|| die "Can't overlay-mount rw directory"
 else
 	logmsg_info "Unpack the full individual RW copy of the image" \
@@ -924,10 +923,10 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 #	chroot "../rootfs/$VM/" /bin/systemctl restart bios-networking
 	set -e
 
-        logmsg_info "Restart the virtual machine $VM"
+	logmsg_info "Restart the virtual machine $VM"
 	virsh -c lxc:// shutdown "$VM" || true
-        virsh -c lxc:// destroy "$VM" && sleep 5 && \
-        virsh -c lxc:// start "$VM" || die "Can't reboot the virtual machine $VM"
+	virsh -c lxc:// destroy "$VM" && sleep 5 && \
+	virsh -c lxc:// start "$VM" || die "Can't reboot the virtual machine $VM"
 	logmsg_info "Sleeping 30 sec to let VM startup settle down..."
 	sleep 30
 fi
