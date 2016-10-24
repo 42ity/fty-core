@@ -340,15 +340,7 @@ sysinfo_detail (
         output += "\t}\n"; // "build-info" closing bracket
 # endif // HAVE_PACKAGE_BUILD_*: HOST and/or TSTAMP
 
-        static const std::string BIOS_RELEASE_JSON_FILE = "/etc/bios-release.json";
-
-        /* TODO : After completion of BIOS-2887 subtasks, these data and
-         * subtree name will be merged into BIOS_RELEASE_JSON_FILE contents */
-        output += ",\t\t\"release-details\" : {\n";
-        output += "\t\t\t";
-        output += utils::json::jsonify ("osimage-name", OSIMAGE_BASENAME);
-        output += "\n";
-        output += "\t\t}\n";
+        static const std::string BIOS_RELEASE_JSON_FILE = "/etc/release-details.json";
 
         try {
             std::ifstream in (BIOS_RELEASE_JSON_FILE, std::ios::in | std::ios::binary);
@@ -386,7 +378,7 @@ sysinfo_detail (
         }
         catch (const std::exception& e) {
             log_warning (
-                "Could not display 'bios-release' section of 'restapi-metadata' that is read from file '%s' "
+                "Could not display 'release-details' section of 'restapi-metadata' that is read from file '%s' "
                 "because the following error happened: '%s'",
                 BIOS_RELEASE_JSON_FILE.c_str(), e.what ());
         }
