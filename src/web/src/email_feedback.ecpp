@@ -49,6 +49,8 @@ s_smtp_GET_message (
 
     zhash_t *headers = zhash_new ();
     zhash_insert (headers, "Reply-To", (void*) reply);
+    zhash_insert (headers, "X-Eaton-IPC-uuid", (void*) zuuid_str_canonical (uuid));
+    zhash_insert (headers, "X-Eaton-IPC-context", (void*) context);
     zframe_t *frame = zhash_pack (headers);
     zmsg_add (msg, frame);
     zframe_destroy (&frame);
