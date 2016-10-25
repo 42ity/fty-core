@@ -43,7 +43,7 @@ chown www-data: ${F}
 chmod 0644 ${F}
 
 F="/run/tntnet-${INST}.env"
-J="/etc/bios-release.json"
+J="/etc/release-details.json"
 echo "Make sure the current OS image name is populated into '$F'..."
 JSONSH="@datadir@/@PACKAGE@/scripts/JSON.sh"
 OSIMAGE_BASENAME="OS image name is not available"
@@ -56,8 +56,8 @@ if [[ -x "$JSONSH" ]] ; then
         logmsg_info "systemctl: Will fork to use JSON.sh from '$JSONSH' to cook strings"
         get_a_string_arg() { "$JSONSH" -x "$1" | (IFS="`printf '\t'`" read K V; echo "$V") | sed 's,^"\(.*\)",\1,' ; }
     fi
-    TMPSTR="$(get_a_string_arg '"bios-release","osimage-name"' < "$J")" && [[ -n "$TMPSTR" ]] || \
-    { TMPSTR="$(get_a_string_arg '"bios-release","osimage-filename"' < "$J")" && [[ -n "$TMPSTR" ]] && \
+    TMPSTR="$(get_a_string_arg '"release-details","osimage-name"' < "$J")" && [[ -n "$TMPSTR" ]] || \
+    { TMPSTR="$(get_a_string_arg '"release-details","osimage-filename"' < "$J")" && [[ -n "$TMPSTR" ]] && \
         TMPSTR="`basename "$TMPSTR" | sed 's/\.\(squashfs\|tar\|tar\..*\|tgz\|tbz2\|txz\)$//'`" ; } || \
         TMPSTR=""
     [[ -n "$TMPSTR" ]] && OSIMAGE_BASENAME="$TMPSTR"
