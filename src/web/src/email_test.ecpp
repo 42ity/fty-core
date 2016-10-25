@@ -57,13 +57,16 @@ UserInfo user;
     std::string checked_email;
     unsigned _timeout = 60;
     {
-        std::string email = qparam.param ("email");
+        std::string email = qparam.param ("to");
 
         if (email.empty ())
-            http_die ("request-param-required", "email");
+            email = qparam.param ("email");
+
+        if (email.empty ())
+            http_die ("request-param-required", "to");
 
         if (email.find ('@', 0) == std::string::npos)
-            http_die ("request-param-bad", "email", email.c_str (), "valid email address");
+            http_die ("request-param-bad", "to", email.c_str (), "valid email address");
 
         checked_email = email;
 

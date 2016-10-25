@@ -291,6 +291,29 @@
     </mapping>
     <!-- API itself -->
 
+    <!-- Enforce processing of supported extensions by using this order: -->
+    <!-- Download as... (attachment with a filename) -->
+    <mapping>
+      <target>getlog_GET@bios_web</target>
+      <url>^/api/v1/admin/getlog/(.*)\.(gz|txt)$</url>
+      <method>GET</method>
+      <args>
+        <logname_base>$1</logname_base>
+        <logname_ext>.$2</logname_ext>
+      </args>
+    </mapping>
+
+    <!-- Display log raw in the browser -->
+    <mapping>
+      <target>getlog_GET@bios_web</target>
+      <url>^/api/v1/admin/getlog/(.*)$</url>
+      <method>GET</method>
+      <args>
+        <logname_base>$1</logname_base>
+        <logname_ext></logname_ext>
+      </args>
+    </mapping>
+
     <!-- topology/location -->
     <mapping>
       <target>topology_location_from@bios_web</target>
@@ -367,13 +390,19 @@
         <url>^/api/v1/admin/config.*$</url>
     </mapping>
 
-    <!-- POST admin/email_test -->
+    <!-- POST admin/email/test -->
     <mapping>
         <target>email_test@bios_web</target>
-        <url>^/api/v1/admin/email_test.*$</url>
+        <url>^/api/v1/admin/email[/_]test.*$</url>
 	<method>POST</method>
     </mapping>
 
+    <!-- POST admin/email/feedback -->
+    <mapping>
+        <target>email_feedback@bios_web</target>
+        <url>^/api/v1/admin/email/feedback.*$</url>
+	<method>POST</method>
+    </mapping>
 
     <!-- not found error  -->
     <mapping>

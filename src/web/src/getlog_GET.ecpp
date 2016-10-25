@@ -1,0 +1,447 @@
+<#
+ #
+ # Copyright (C) 2016 Eaton
+ #
+ # This program is free software; you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+ # the Free Software Foundation; either version 2 of the License, or
+ # (at your option) any later version.
+ #
+ # This program is distributed in the hope that it will be useful,
+ # but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+ #
+ # You should have received a copy of the GNU General Public License along
+ # with this program; if not, write to the Free Software Foundation, Inc.,
+ # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ #
+ #><#
+/*!
+ * \file    getlog_GET.ecpp
+ * \author  Jim Klimov <EvgenyKlimov@Eaton.com>
+ * \brief   This REST API call returns logfile contents (optionally compressed)
+ */
+ #><%pre>
+#include <vector>
+#include <string>
+#include <iostream>
+#include <fstream>
+#include <stdexcept>
+#include <sys/utsname.h>
+#include <time.h>
+#include <tntdb/connect.h>
+#include <tnt/mimedb.h>
+#include "helpers.h"
+#include "subprocess.h"
+#include "log.h"
+#include "utils.h"
+
+/* Code snatched and adapted from TNTNET source codebase including :
+ *     tntnet-sources/framework/common/httpreply.cpp
+ * and tntnet-sources/framework/common/tnt/cstream.h
+ * and tntnet-sources/framework/common/cstream.cpp
+ * ... perhaps it all should be better exposed in the upstream project.
+ * For now it is renamed to avoid conflicts, and log_debug()s are away... */
+#include <tnt/deflatestream.h>
+
+class _clonedcode_cstreambuf : public std::streambuf
+{
+    typedef std::vector<char*> _chunks_type;
+    unsigned _chunksize;
+    _chunks_type _chunks;
+
+  public:
+    typedef _chunks_type::size_type size_type;
+
+    explicit _clonedcode_cstreambuf(unsigned chunksize = 32768)
+    : _chunksize(chunksize)
+    { }
+
+    ~_clonedcode_cstreambuf();
+
+    size_type chunkcount() const
+    { return _chunks.size(); }
+
+    size_type size() const
+    { return _chunks.size() == 0 ? 0
+           : (_chunks.size() - 1) * _chunksize + pptr() - _chunks.back(); }
+
+    size_type chunksize(size_type n) const
+    {
+      return _chunks.size() == 0 ? 0
+           : n + 1  < _chunks.size() ? _chunksize
+           : n + 1 == _chunks.size() ? static_cast<size_type>(pptr() - _chunks.back())
+           : 0;
+    }
+
+    const char* chunk(size_type n) const
+    { return _chunks[n]; }
+
+    void rollback(size_type n);
+
+    void makeEmpty();
+
+  private:
+    std::streambuf::int_type overflow(std::streambuf::int_type ch);
+    std::streambuf::int_type underflow();
+    int sync();
+};
+
+class _clonedcode_ocstream : public std::ostream
+{
+    _clonedcode_cstreambuf _streambuf;
+
+  public:
+    typedef _clonedcode_cstreambuf::size_type size_type;
+
+    explicit _clonedcode_ocstream(unsigned chunksize = 32768)
+      : std::ostream(0),
+        _streambuf(chunksize)
+    {
+      init(&_streambuf);
+    }
+
+    size_type chunkcount() const
+    { return _streambuf.chunkcount(); }
+
+    const char* chunk(size_type n) const
+    { return _streambuf.chunk(n); }
+
+    size_type chunksize(size_type n) const
+    { return _streambuf.chunksize(n); }
+
+    size_type size() const
+    { return _streambuf.size(); }
+
+    void rollback(size_type n)
+    { _streambuf.rollback(n); }
+
+    void makeEmpty()
+    { _streambuf.makeEmpty(); }
+
+    std::string str() const;
+
+    void output(std::ostream& out) const;
+};
+
+_clonedcode_cstreambuf::~_clonedcode_cstreambuf()
+{
+//  log_debug(static_cast<const void*>(this) << " delete " << _chunks.size() << " chunks (dtor)");
+  for (size_type n = 0; n < _chunks.size(); ++n)
+    delete[] _chunks[n];
+}
+
+void _clonedcode_cstreambuf::makeEmpty()
+{
+//  log_debug(static_cast<const void*>(this) << " makeEmpty; " << _chunks.size() << " chunks");
+
+  if (_chunks.size() > 0)
+  {
+    if (_chunks.size() > 1)
+    {
+      for (size_type n = 1; n < _chunks.size(); ++n)
+      {
+//        log_debug(static_cast<const void*>(this) << " delete chunk " << n);
+        delete[] _chunks[n];
+      }
+      _chunks.resize(1);
+    }
+
+    setp(_chunks[0], _chunks[0] + _chunksize);
+  }
+}
+
+std::streambuf::int_type _clonedcode_cstreambuf::overflow(std::streambuf::int_type ch)
+{
+  char* chunk = new char[_chunksize];
+//  log_debug(static_cast<const void*>(this) << " new chunk " << static_cast<const void*>(chunk));
+  _chunks.push_back(chunk);
+  setp(_chunks.back(), _chunks.back() + _chunksize);
+
+  if (ch != traits_type::eof())
+    sputc(traits_type::to_char_type(ch));
+
+  return 0;
+}
+
+std::streambuf::int_type _clonedcode_cstreambuf::underflow()
+{
+  return traits_type::eof();
+}
+
+int _clonedcode_cstreambuf::sync()
+{
+  return 0;
+}
+
+void _clonedcode_cstreambuf::rollback(size_type n)
+{
+  if (n == 0)
+  {
+    makeEmpty();
+  }
+  else
+  {
+    size_type c = (n-1) / _chunksize;
+
+    for (size_type cc = c + 1; cc < _chunks.size(); ++cc)
+    {
+//      log_debug(static_cast<const void*>(this) << " delete chunk " << cc);
+      delete[] _chunks[cc];
+    }
+
+    _chunks.resize(c + 1);
+
+    setp(_chunks[c], _chunks[c] + _chunksize);
+    pbump(n % _chunksize);
+  }
+}
+
+std::string _clonedcode_ocstream::str() const
+{
+  std::string ret;
+  ret.reserve(size());
+  for (unsigned n = 0; n < chunkcount(); ++n)
+    ret.append(chunk(n), chunksize(n));
+  return ret;
+}
+
+void _clonedcode_ocstream::output(std::ostream& out) const
+{
+  for (unsigned n = 0; n < chunkcount(); ++n)
+    out.write(chunk(n), chunksize(n));
+}
+
+class _clonedcode_Compressor
+{
+        _clonedcode_ocstream _zbody;
+        tnt::DeflateStream _deflator;
+        uLong _crc;
+        unsigned _size;
+
+      public:
+        _clonedcode_Compressor()
+          : _deflator(_zbody),
+            _crc(0),
+            _size(0)
+        {
+        }
+
+        void init()
+        {
+          static const char f[] =
+               "\x1f\x8b\x08\x00"
+               "\x00\x00\x00\x00"
+               "\x04\x03";
+          _zbody.write(f, sizeof(f) - 1);
+        }
+
+        void compress(const char* d, unsigned s)
+        {
+          _deflator.write(d, s);
+          _size += s;
+          _crc = crc32(_crc, reinterpret_cast<const Bytef*>(d), s);
+        }
+
+        void finalize()
+        {
+          _deflator.end();
+
+          uint32_t u = _crc;
+          _zbody.put(static_cast<char>(u & 0xFF));
+          _zbody.put(static_cast<char>((u >>= 8) & 0xFF));
+          _zbody.put(static_cast<char>((u >>= 8) & 0xFF));
+          _zbody.put(static_cast<char>((u >>= 8) & 0xFF));
+
+          u = _size;
+          _zbody.put(static_cast<char>(u & 0xFF));
+          _zbody.put(static_cast<char>((u >>= 8) & 0xFF));
+          _zbody.put(static_cast<char>((u >>= 8) & 0xFF));
+          _zbody.put(static_cast<char>((u >>= 8) & 0xFF));
+        }
+
+        std::string::size_type uncompressedSize()
+        { return _size; }
+
+        std::string::size_type zsize()
+        { return _zbody.size(); }
+
+        std::string str() const
+        { return _zbody.str(); }
+
+        void output(std::ostream& out)
+        { _zbody.output(out); }
+
+        void clear()
+        {
+          _zbody.makeEmpty();
+          /* This is in newer codebase : _deflator.reinitialize(); which does "deflateReset(&_stream)" */
+          _crc = 0;
+          _size = 0;
+        }
+}; // class _clonedcode_Compressor
+
+
+</%pre>
+<%request scope="global">
+UserInfo user;
+</%request>
+<%cpp>
+
+    // permission check
+    static const std::map <BiosProfile, std::string> PERMISSIONS = {
+            {BiosProfile::Admin,     "R"}
+            };
+    CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
+    /* Note: the http_die() family does its own
+     *  reply.setContentType("application/json;charset=UTF-8");
+     * rituals if needed, so undecided callers like this one do not */
+
+    /* NOTE: At a later stage we might do other logs than pre-existing files -
+     * e.g. exports from journalctl, so logNAME and logFILE are logically and
+     * maybe functionally different beasts below... */
+    std::string logfile; /* Full path as set for supported logfiles below */
+    std::string logname_ext;
+    std::string logname_base;
+    std::string message;
+
+    /* argument checking */
+    {
+        std::string slogname_base = request.getArg ("logname_base");
+        std::string slogname_ext = request.getArg ("logname_ext");
+
+        message = "getlog_GET got args: logname_base='" + slogname_base + "' logname_ext='" + slogname_ext + "'";
+        log_debug( message.c_str() );
+
+        if ( (slogname_base == "messages") &&
+             (slogname_ext == "" || slogname_ext == ".gz" || slogname_ext == ".txt" )
+        ) {
+            logname_ext = slogname_ext;
+            logname_base = slogname_base;
+
+            if (logname_base == "messages")
+                logfile = "/var/log/" + logname_base;
+        }
+
+        if (logfile == "") {
+            log_error("Authorized request to download an unsupported log file was denied");
+            http_die("request-param-bad", "logname", ("'" + slogname_base + slogname_ext + "'").c_str(), "'messages' optionally with '.gz' extension");
+        }
+    }
+
+    /* We have a definite officially supported request, try to fulfill it */
+    try {
+        log_debug( ("Posting logfile extension '" + logname_ext + "' (MIME type '" + reply.getContentType() + "') - initial").c_str() );
+
+        /* Prepare strings for Content-Disposition: header */
+        /* Requests with a valid extension are downloads; without - plaintext shown in browser */
+        std::string content_disposition = "inline";
+        if (!logname_ext.empty())
+            content_disposition = "attachment";
+        std::string content_filename = logname_base;
+
+        { /* Scope away some temporary variables */
+            struct utsname u;
+            time_t t;
+
+            if (uname (&u) == -1) {
+                log_error ("uname() failed: '%s'", strerror (errno));
+            } else {
+                content_filename += "_";
+                content_filename += u.nodename;
+            }
+
+            t = time(NULL);
+            if ( t == (time_t)-1 ) {
+                log_error ("time(NULL) failed: '%s'", strerror (errno));
+            } else {
+                /* ASSUMPTION: time_t is an integer type (usually is long int)
+                 * or otherwise can convert to std::string */
+
+                char buf[21] = {0x00};
+                int r = calendar_to_datetime(time(NULL), buf, 21);
+                if (r != 0) {
+                    log_error ("Failed to convert timestamp");
+                } else {
+                    // replace colons ':' by dash '-'
+                    // prevents http://latkin.org/blog/2016/07/20/git-for-windows-accidentally-creates-ntfs-alternate-data-streams/
+                    // for our Windows users
+                    for (char* c = strchr (buf, ':');
+                        c != NULL;
+                        c = strchr (c, ':'))
+                    {
+                        *c = '-';
+                    }
+
+                    content_filename.append("_");
+                    content_filename.append(buf);
+                }
+            }
+        }
+
+        if (logname_ext == "" || logname_ext == ".txt")
+            content_filename += ".txt";
+        else
+            content_filename += ".txt" + logname_ext; /* e.g. "messages*.txt.gz" */
+
+        if (logname_ext == "" || logname_ext == ".txt") {
+            std::ifstream in( logfile.c_str() );
+            if (!in)
+                throw std::runtime_error("Could not open requested logfile: " + logfile);
+
+            reply.out() << in.rdbuf();
+            in.close();
+            reply.setContentType("text/plain;charset=UTF-8");
+                /* TODO: Is it ASCII? Check rsyslog */
+
+            reply.setHeader(tnt::httpheader::contentDisposition, content_disposition + "; filename=\"" + content_filename + "\"", true);
+            log_debug( ("Posting logfile extension '" + logname_ext + "' (MIME type '" + reply.getContentType() + "') in mode " + reply.getHeader(tnt::httpheader::contentDisposition) + " - done").c_str() );
+            return HTTP_OK;
+        } else {
+            tnt::MimeDb mimeDb("/etc/mime.types");
+            reply.setContentType(mimeDb.getMimetype(logname_base + logname_ext));
+
+            if (logname_ext == ".gz") {
+                /* Compressor requires the data length in advance */
+                std::ifstream in( logfile.c_str() );
+                if (!in)
+                    throw std::runtime_error("Could not open requested logfile: " + logfile);
+
+                /* TODO: Can this be optimized to reduce pouring from one to another? */
+                std::ostringstream tmp;
+                tmp << in.rdbuf();
+                in.close();
+                std::string body = tmp.str ();
+
+                _clonedcode_Compressor compressor;
+                compressor.init();
+                compressor.compress(body.data(), body.size());
+                compressor.finalize();
+                std::ostringstream omessage;
+                std::ostringstream ozsize;
+                ozsize << compressor.zsize();
+                omessage << "gzipped '" << logname_base << "' body " << body.size() << " bytes to " << ozsize << " bytes";
+                log_debug( omessage.str().c_str() );
+
+                reply.out() << compressor.str();
+                reply.setHeader(tnt::httpheader::contentLength, ozsize.str(), true);
+                reply.setHeader(tnt::httpheader::contentDisposition, content_disposition + "; filename=\"" + content_filename + "\"", true);
+                log_debug( ("Posting logfile extension '" + logname_ext + "' (MIME type '" + reply.getContentType() + "') in mode " + reply.getHeader(tnt::httpheader::contentDisposition) + " - done").c_str() );
+                return HTTP_OK;
+            } else {
+                throw std::runtime_error("Sorry, logfile extension '" + logname_ext + "' (MIME type '" + reply.getContentType() + "') is currently unsupported");
+            }
+        }
+    }
+    catch (const std::exception& e) {
+        /* TODO: In case of errors, this may conflict with Content-Type header
+         * value set above; we ASSUME this has negligible probability as we set
+         * it in the end. */
+        reply.resetContent();
+        message.assign ("Exception caught: ").append (e.what ());
+        log_error (message.c_str ());
+        http_die( "internal-error", "Exception caught. Please check logs for more details.");
+    }
+
+</%cpp>
