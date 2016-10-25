@@ -30,6 +30,7 @@
 #include <sys/types.h>
 #include <sys/syscall.h>
 #include <fstream>
+#include <libgen.h> //POSIX version of basename!!
         
 // encode GET message for smtp agent         
 static zmsg_t*
@@ -152,7 +153,9 @@ UserInfo user;
     std::vector <std::string> paths {};
     for (const auto& it: mp) {
 
-        std::string path = temp_dir + it.getFilename();
+        char * filename = strdup (it.getFilename ().c_str ());
+        std::string path = temp_dir + std::string (basename (filename));
+        zstr_free (&filename);
 
         std::ofstream out_file (path);
         
