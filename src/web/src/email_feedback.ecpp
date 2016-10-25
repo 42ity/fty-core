@@ -26,11 +26,22 @@
  #><%pre>
 #include "helpers.h"
 #include "tntmlm.h"
+#include "subprocess.h"
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/syscall.h>
 #include <fstream>
 #include <libgen.h> //POSIX version of basename!!
+
+std::string
+s_read_all (const char* filename) {
+    int fd = open (filename, O_RDONLY);
+    if (fd <= -1)
+        return std::string {};
+    std::string ret = shared::read_all (fd);
+    close (fd);
+    return ret;
+}
         
 // encode GET message for smtp agent         
 static zmsg_t*
@@ -58,6 +69,11 @@ s_smtp_GET_message (
     zhash_insert (headers, "Reply-To", (void*) reply);
     zhash_insert (headers, "X-Eaton-IPC-uuid", (void*) zuuid_str_canonical (uuid));
     zhash_insert (headers, "X-Eaton-IPC-context", (void*) context);
+
+    std::string machine_id = s_read_all ("/etc/machine-id");
+    if (!machine_id.empty ())
+        zhash_insert (headers, "X-Eaton-IPC-machine-id", (void*) machine_id.c_str ());
+
     zframe_t *frame = zhash_pack (headers);
     zmsg_add (msg, frame);
     zframe_destroy (&frame);
@@ -80,7 +96,7 @@ s_rm_rf (const std::vector <std::string>& paths, char **dir_p)
         *dir_p = NULL;
     }
 }
-      
+
 </%pre>
 <%request scope="global">
 UserInfo user;
