@@ -33,7 +33,7 @@
 #include <fstream>
 #include <libgen.h> //POSIX version of basename!!
 
-std::string
+static std::string
 s_read_all (const char* filename) {
     int fd = open (filename, O_RDONLY);
     if (fd <= -1)
