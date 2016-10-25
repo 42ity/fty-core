@@ -404,6 +404,13 @@
 	<method>POST</method>
     </mapping>
 
+    <!-- POST admin/email/cpre -->
+    <mapping>
+        <target>email_vote@bios_web</target>
+        <url>^/api/v1/admin/email/vote.*$</url>
+	<method>POST</method>
+    </mapping>
+
     <!-- not found error  -->
     <mapping>
         <target>not_found@bios_web</target>
