@@ -79,7 +79,9 @@ s_smtp_GET_message (
     zframe_destroy (&frame);
     zhash_destroy (&headers);
 
-    //TODO attach_system_state is not yet implemented!!!
+    if (attach_system_state) {
+        log_info ("there's no tool to produce system state report, don't do anything yet");
+    }
     return msg;
 }
 
