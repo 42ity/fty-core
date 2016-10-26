@@ -1411,7 +1411,7 @@ SYSTEMD_UNITS_NOTPRESET += $(SYSTEMD_UNITS_NOTPRESET_LOWLEVEL) $(SYSTEMD_UNITS_N
 # These unit files are compiled, but are not enabled via BIOS presets
 SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL += \
                         biostimer-loghost-rsyslog-netconsole.service \
-                        biostimer-compress-logs.service \
+						biospath-compress-logs.service \
                         biostimer-verify-fs.service
 
 SYSTEMD_UNITS_TIMERIMPL_TARGET_BIOS += \
@@ -1423,7 +1423,7 @@ SYSTEMD_UNITS_TIMERIMPL += $(SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL) $(SYSTEMD_UNITS_T
 # Enabled as part of BIOS presets
 SYSTEMD_TIMERS_LOWLEVEL += \
                         biostimer-loghost-rsyslog-netconsole.timer \
-                        biostimer-compress-logs.timer \
+                        biospath-compress-logs.path \
                         biostimer-verify-fs.timer
 
 SYSTEMD_TIMERS_TARGET_BIOS += \
