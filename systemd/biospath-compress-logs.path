@@ -1,0 +1,9 @@
+[Unit]
+Description=BIOS path to asynchronously compress logs
+PartOf=multi-user.target
+
+[Path]
+PathChanged=/var/log/messages.1
+
+[Install]
+WantedBy=multi-user.target
