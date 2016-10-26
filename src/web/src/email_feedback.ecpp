@@ -76,7 +76,6 @@ s_smtp_GET_message (
 
     zframe_t *frame = zhash_pack (headers);
     zmsg_add (msg, frame);
-    zframe_destroy (&frame);
     zhash_destroy (&headers);
 
     if (attach_system_state) {
