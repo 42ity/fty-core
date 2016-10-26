@@ -1412,6 +1412,7 @@ SYSTEMD_UNITS_NOTPRESET += $(SYSTEMD_UNITS_NOTPRESET_LOWLEVEL) $(SYSTEMD_UNITS_N
 SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL += \
                         biostimer-loghost-rsyslog-netconsole.service \
 						biospath-compress-logs.service \
+						biospath-messages.service \
                         biostimer-verify-fs.service
 
 SYSTEMD_UNITS_TIMERIMPL_TARGET_BIOS += \
@@ -1424,6 +1425,7 @@ SYSTEMD_UNITS_TIMERIMPL += $(SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL) $(SYSTEMD_UNITS_T
 SYSTEMD_TIMERS_LOWLEVEL += \
                         biostimer-loghost-rsyslog-netconsole.timer \
                         biospath-compress-logs.path \
+                        biospath-messages.path \
                         biostimer-verify-fs.timer
 
 SYSTEMD_TIMERS_TARGET_BIOS += \
