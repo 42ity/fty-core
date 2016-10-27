@@ -55,23 +55,35 @@ get_input_power_group_id
     try {
         tntdb::Connection connection = tntdb::connectCached (url);
         tntdb::Statement statement = connection.prepareCached (
-            " SELECT id_asset_element "
-            " FROM t_bios_asset_ext_attributes "
-            " WHERE keytag = 'type' "
-            " AND value = 'input_power' "
-            " AND id_asset_element "
-            "   IN (SELECT id_asset_element FROM v_bios_asset_element_super_parent WHERE :dc_id in (id_parent1, id_parent2, id_parent3, id_parent4, id_parent5)) "
+            " SELECT a.id_asset_element "
+            " FROM t_bios_asset_element as a "
+            " LEFT JOIN t_bios_asset_element_type as b ON a.id_type=b.id_asset_element_type "
+            " WHERE b.name='group' "
+            " AND id_parent = :dc_id "
         );
         tntdb::Result result = statement.set ("dc_id", datacenter_id).select ();
-        log_debug ("Number of input_power groups under datacenter id '%" PRIu32"' == '%" PRIu32"'.", datacenter_id, result.size ());
-        if (result.size () == 0)
-            return 0;
-        if (result.size () > 1)
-            log_debug ("Selecting the first one.\n");
-
-        uint32_t id = 0;
-        result[0][0].get (id);
-        return id;
+    	std::vector <std::string> group_candidates;
+        for (const auto& row : result) {
+        	std::string group_id;
+        	row [0].get (group_id);
+		    group_candidates.push_back (group_id);	
+	    }
+    	for (const auto& group_candidate : group_candidates) {
+            statement = connection.prepareCached (
+                " SELECT id_asset_element "
+                " FROM t_bios_asset_ext_attributes "
+                " WHERE id_asset_element= :group_id "
+                " AND keytag='type' "
+                " AND value='input_power' "
+            );
+            result = statement.set ("group_id", group_candidate).select ();
+            if (result.size () == 0)
+                continue;
+            uint32_t id = 0;
+            result[0][0].get (id);
+            return id;
+        }
+    	return 0;
     }
     catch (const std::exception& e)
     {
