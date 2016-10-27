@@ -46,6 +46,7 @@ s_read_all (const char* filename) {
 // encode GET message for smtp agent         
 static zmsg_t*
 s_smtp_GET_message (
+        const char* to,
         int vote,
         const char* context,
         bool attach_system_state,
@@ -54,11 +55,7 @@ s_smtp_GET_message (
     zmsg_t *msg = zmsg_new ();
     zmsg_addstr (msg, zuuid_str_canonical (uuid));
 
-    const char* email = getenv ("BIOS_FEEDBACK_EMAIL");
-    if (!email)
-        email = "EatonProductFeedback@Eaton.com";
-
-    zmsg_addstr(msg, email);
+    zmsg_addstr(msg, to);
     char *subject = zsys_sprintf ("IPC vote context=%s, uuid=%s", context, zuuid_str_canonical (uuid));
     zmsg_addstr (msg, subject);
     zstr_free (&subject);
@@ -105,11 +102,24 @@ UserInfo user;
             };
     CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
 
+    std::string checked_to;
     unsigned vote = 0;
     std::string checked_context;
     bool attach_system_state = false;
     unsigned _timeout = 60;
     {
+        std::string to = qparam.param ("to");
+        if (to.empty ()) {
+            const char* c_to = getenv ("BIOS_FEEDBACK_EMAIL");
+            if (c_to)
+                to = std::string {c_to};
+            else
+                to = std::string {"EatonProductFeedback@Eaton.com"};
+        }
+        checked_to = to;
+
+        if (to.find ('@', 0) == std::string::npos)
+            http_die ("request-param-bad", "to", to.c_str (), "valid email address");
         std::string value = qparam.param ("value");
         if (value.empty ())
             http_die ("request-param-required", "value");
@@ -144,6 +154,7 @@ UserInfo user;
     // send message
     zuuid_t *uuid = zuuid_new ();
     zmsg_t *send = s_smtp_GET_message (
+            checked_to.c_str (),
             vote,
             checked_context.c_str (),
             attach_system_state,
