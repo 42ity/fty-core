@@ -114,7 +114,10 @@ get_power_topology_group
             "   (t_bios_asset_element as b LEFT JOIN t_bios_asset_device_type as d ON b.id_subtype =d.id_asset_device_type) "
             " ON id_asset_device_dest=b.id_asset_element "
             " WHERE "
-            " id_asset_device_src AND id_asset_device_dest "
+            " id_asset_device_src "
+            "   IN (SELECT id_asset_element FROM t_bios_asset_group_relation WHERE id_asset_group = :group_id) "
+            " AND "
+            " id_asset_device_dest "
             "   IN (SELECT id_asset_element FROM t_bios_asset_group_relation WHERE id_asset_group = :group_id) "
         );
         tntdb::Result result = statement.set ("group_id", group_id).select ();
