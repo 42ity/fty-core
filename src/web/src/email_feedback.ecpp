@@ -222,7 +222,6 @@ UserInfo user;
     if (streq (msg_subject, "SENDMAIL-OK"))
     {
          status = "Succeeded"; 
-         return HTTP_OK;
     }   
     else
     if (streq (msg_subject, "SENDMAIL-ERR"))
