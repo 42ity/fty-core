@@ -185,7 +185,7 @@ UserInfo user;
     for (const auto& it: mp) {
 
         char * filename = strdup (it.getFilename ().c_str ());
-        std::string path = temp_dir + std::string (basename (filename));
+        std::string path = temp_dir + std::string ("/") + std::string (basename (filename));
         zstr_free (&filename);
 
         std::ofstream out_file (path);
