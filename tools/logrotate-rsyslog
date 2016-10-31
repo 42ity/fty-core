@@ -32,19 +32,13 @@ LOGFILE="$1"
 [ -z "$LOGFILE" ] && LOGFILE="/var/log/messages"
 EXTARCH="bz2"
 
-# Files may be compressed or not yet...
-rm -f "$LOGFILE".5 "$LOGFILE.5.$EXTARCH"
-
-for i in `seq 4 -1 1`; do
-    # note: $((i+1)) works under dash!
-    [ -s "$LOGFILE.${i}" -o -s "$LOGFILE.${i}.$EXTARCH" || continue
-    [ -s "$LOGFILE.${i}" ] && mv -f "$LOGFILE.${i}" "$LOGFILE.$((i+1))"
-    [ -s "$LOGFILE.${i}.$EXTARCH" ] && mv -f "$LOGFILE.${i}.$EXTARCH" "$LOGFILE.$((i+1)).$EXTARCH"
-done
-
-[ -f "$LOGFILE" ] && [ -s "$LOGFILE" ] || exit 0
-mv -f "$LOGFILE" "$LOGFILE.1"
-
 # Tickle the service to start compressing immediately (but asynchronously),
 # if an instance of it is not yet running already
-/bin/systemctl start biostimer-compress-logs || true
+/bin/systemctl start biospath-compress-logs.path || true
+
+[ -f "$LOGFILE" ] && [ -s "$LOGFILE" ] || exit 0
+(
+    flock -w 10 -x 200 || die "Can't aquire lock /run/biospath-compress-logs.logs"
+mv -f "$LOGFILE" "$LOGFILE.1"
+
+) 200>/run/biospath-compress-logs.lock
