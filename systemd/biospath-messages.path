@@ -1,0 +1,9 @@
+[Unit]
+Description=BIOS path to fix persmission of /var/log/messages
+PartOf=multi-user.target
+
+[Path]
+PathExists=/var/log/messages
+
+[Install]
+WantedBy=multi-user.target

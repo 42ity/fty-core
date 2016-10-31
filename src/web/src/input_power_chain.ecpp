@@ -153,23 +153,27 @@ fill_array_powerchains (std::vector <std::tuple
     if (dc_id.empty ())
         http_die ("request-param-bad", dc_id.c_str ());
 
-    int rv = input_power_group_response (url, atoi (dc_id.c_str ()), devices_data, powerchains_data);
+    int rv = -1;
+    rv = input_power_group_response (url, atoi (dc_id.c_str ()), devices_data, powerchains_data);
   
     if (rv == -1)    
     {    
         log_debug ("input_power_group_response = %i", rv);
         http_die ("internal-error", "input_power_group_response");
     }
+
+    if (devices_data.size () == 0)
+        log_debug ("devices_data.size () == 0");
+    if (powerchains_data.size () == 0)
+        log_debug ("powerchains_data.size () == 0");
   
     fill_array_devices (devices_data, devices_vector);
     fill_array_powerchains (powerchains_data, powerchains_vector);
-  
   
     topo.devices = std::move (devices_vector);
     topo.powerchains = std::move (powerchains_vector);
 
     cxxtools::JsonSerializer serializer (reply.out ());
-    serializer.beautify(true);
     serializer.serialize(topo).finish(); 
 
     return HTTP_OK;

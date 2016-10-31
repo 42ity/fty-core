@@ -33,7 +33,7 @@
 #include <fstream>
 #include <libgen.h> //POSIX version of basename!!
 
-std::string
+static std::string
 s_read_all (const char* filename) {
     int fd = open (filename, O_RDONLY);
     if (fd <= -1)
@@ -46,6 +46,7 @@ s_read_all (const char* filename) {
 // encode GET message for smtp agent         
 static zmsg_t*
 s_smtp_GET_message (
+        const char* to,
         const char* reply,
         const char* message,
         const char* context,
@@ -55,11 +56,7 @@ s_smtp_GET_message (
     zmsg_t *msg = zmsg_new ();
     zmsg_addstr (msg, zuuid_str_canonical (uuid));
 
-    const char* email = getenv ("BIOS_FEEDBACK_EMAIL");
-    if (!email)
-        email = "EatonProductFeedback@Eaton.com";
-
-    zmsg_addstr(msg, email);
+    zmsg_addstr(msg, to);
     char *subject = zsys_sprintf ("IPC feedback context=%s, uuid=%s", context, zuuid_str_canonical (uuid));
     zmsg_addstr (msg, subject);
     zstr_free (&subject);
@@ -76,7 +73,6 @@ s_smtp_GET_message (
 
     zframe_t *frame = zhash_pack (headers);
     zmsg_add (msg, frame);
-    zframe_destroy (&frame);
     zhash_destroy (&headers);
 
     if (attach_system_state) {
@@ -111,12 +107,28 @@ UserInfo user;
             };
     CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
 
+    std::string checked_to;
     std::string checked_reply;
     std::string checked_message;
     std::string checked_context;
     bool attach_system_state = false;
     unsigned _timeout = 60;
     {
+
+        std::string to = qparam.param ("to");
+        if (to.empty ()) {
+            const char* c_to = getenv ("BIOS_FEEDBACK_EMAIL");
+            if (c_to)
+                to = std::string {c_to};
+            else
+                to = std::string {"EatonProductFeedback@Eaton.com"};
+        }
+
+        if (to.find ('@', 0) == std::string::npos)
+            http_die ("request-param-bad", "to", to.c_str (), "valid email address");
+
+        checked_to = to;
+
         std::string _reply = qparam.param ("reply");
 
         if (_reply.empty ())
@@ -156,6 +168,7 @@ UserInfo user;
     // send message
     zuuid_t *uuid = zuuid_new ();
     zmsg_t *send = s_smtp_GET_message (
+            checked_to.c_str (),
             checked_reply.c_str (),
             checked_message.c_str (),
             checked_context.c_str (),
@@ -223,7 +236,6 @@ UserInfo user;
     if (streq (msg_subject, "SENDMAIL-OK"))
     {
          status = "Succeeded"; 
-         return HTTP_OK;
     }   
     else
     if (streq (msg_subject, "SENDMAIL-ERR"))

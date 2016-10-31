@@ -18,31 +18,78 @@
  #
  #><#
 /*!
- * \file email_test.ecpp
+ * \file email_vote.ecpp
  * \author Barbora Stepankova <BarboraStepankova@Eaton.com>
- * \brief Sends test email. 
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \brief Sends voting email.
  */
  #><%pre>
 #include "helpers.h"
 #include "tntmlm.h"
+#include "subprocess.h"
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/syscall.h>
-        
+#include <fstream>
+#include <libgen.h> //POSIX version of basename!!
+
+static std::string
+s_read_all (const char* filename) {
+    int fd = open (filename, O_RDONLY);
+    if (fd <= -1)
+        return std::string {};
+    std::string ret = shared::read_all (fd);
+    close (fd);
+    return ret;
+}
+
 // encode GET message for smtp agent         
 static zmsg_t*
-s_smtp_GET_message (const char* email, zuuid_t *uuid)
+s_smtp_GET_message (
+        const char* to,
+        int vote,
+        const char* context,
+        bool attach_system_state,
+        zuuid_t *uuid)
 {
-    assert(email);
-        
     zmsg_t *msg = zmsg_new ();
     zmsg_addstr (msg, zuuid_str_canonical (uuid));
-    zmsg_addstr(msg, email);
-    zmsg_addstr (msg, "Test email");                              // email subject
-    zmsg_addstr(msg, "This is email test. Do not reply.");        // body
+
+    zmsg_addstr(msg, to);
+    char *subject = zsys_sprintf ("IPC vote context=%s, uuid=%s", context, zuuid_str_canonical (uuid));
+    zmsg_addstr (msg, subject);
+    zstr_free (&subject);
+
+    std::string message = "Hi,\nthis product is ";
+    if (vote == 0)
+        message += "ugly";
+    else
+    if (vote == 1)
+        message += "medicore";
+    else
+        message += "amazing";
+    message += "\n\nSincerelly your customer";
+    zmsg_addstr(msg, message.c_str ());
+
+    zhash_t *headers = zhash_new ();
+    zhash_insert (headers, "X-Eaton-IPC-uuid", (void*) zuuid_str_canonical (uuid));
+    zhash_insert (headers, "X-Eaton-IPC-context", (void*) context);
+    zhash_insert (headers, "X-Eaton-IPC-vote", (void*) std::to_string (vote).c_str ());
+
+    std::string machine_id = s_read_all ("/etc/machine-id");
+    if (!machine_id.empty ())
+        zhash_insert (headers, "X-Eaton-IPC-machine-id", (void*) machine_id.c_str ());
+
+    zframe_t *frame = zhash_pack (headers);
+    zmsg_add (msg, frame);
+    zhash_destroy (&headers);
+
+    if (attach_system_state) {
+        log_info ("there's no tool to produce system state report, don't do anything yet");
+    }
     return msg;
 }
-      
+
 </%pre>
 <%request scope="global">
 UserInfo user;
@@ -50,25 +97,49 @@ UserInfo user;
 <%cpp>
     // check user permissions
     static const std::map <BiosProfile, std::string> PERMISSIONS = {
-            {BiosProfile::Admin,     "C"}
+            {BiosProfile::Admin,         "C"},
+            {BiosProfile::Dashboard,     "C"}
             };
     CHECK_USER_PERMISSIONS_OR_DIE (PERMISSIONS);
 
-    std::string checked_email;
+    std::string checked_to;
+    unsigned vote = 0;
+    std::string checked_context;
+    bool attach_system_state = false;
     unsigned _timeout = 60;
     {
-        std::string email = qparam.param ("to");
+        std::string to = qparam.param ("to");
+        if (to.empty ()) {
+            const char* c_to = getenv ("BIOS_FEEDBACK_EMAIL");
+            if (c_to)
+                to = std::string {c_to};
+            else
+                to = std::string {"EatonProductFeedback@Eaton.com"};
+        }
+        checked_to = to;
 
-        if (email.empty ())
-            email = qparam.param ("email");
+        if (to.find ('@', 0) == std::string::npos)
+            http_die ("request-param-bad", "to", to.c_str (), "valid email address");
+        std::string value = qparam.param ("value");
+        if (value.empty ())
+            http_die ("request-param-required", "value");
 
-        if (email.empty ())
-            http_die ("request-param-required", "to");
+        try {
+            vote = std::stoi (value);
+        }
+        catch (const std::exception& e) {
+            http_die ("request-param-bad", "value", value.c_str (), "number 1-3");
+        }
 
-        if (email.find ('@', 0) == std::string::npos)
-            http_die ("request-param-bad", "to", email.c_str (), "valid email address");
+        std::string context = qparam.param ("context");
+        if (context.empty ())
+            http_die ("request-param-required", "context");
 
-        checked_email = email;
+        checked_context = context;
+
+        std::string sys_state = qparam.param ("attach_system_state");
+        if (sys_state == "yes")
+            attach_system_state = true;
 
         std::string _stimeout = qparam.param ("_timeout");
 
@@ -79,6 +150,15 @@ UserInfo user;
             //pass
         }
     }
+    
+    // send message
+    zuuid_t *uuid = zuuid_new ();
+    zmsg_t *send = s_smtp_GET_message (
+            checked_to.c_str (),
+            vote,
+            checked_context.c_str (),
+            attach_system_state,
+            uuid);
 
     // connect to mlm client
     MlmClientPool::Ptr client = mlm_pool.get ();
@@ -87,9 +167,6 @@ UserInfo user;
         http_die ("internal-error", "mlm_pool.get () failed.");
     }
 
-    // send message
-    zuuid_t *uuid = zuuid_new ();
-    zmsg_t *send = s_smtp_GET_message (checked_email.c_str(), uuid);
     int rv = client->sendto ("agent-smtp", "SENDMAIL", 1000, &send);
 
     if (rv == -1)

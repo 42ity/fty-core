@@ -55,23 +55,35 @@ get_input_power_group_id
     try {
         tntdb::Connection connection = tntdb::connectCached (url);
         tntdb::Statement statement = connection.prepareCached (
-            " SELECT id_asset_element "
-            " FROM t_bios_asset_ext_attributes "
-            " WHERE keytag = 'type' "
-            " AND value = 'input_power' "
-            " AND id_asset_element "
-            "   IN (SELECT id_asset_element FROM v_bios_asset_element_super_parent WHERE :dc_id in (id_parent1, id_parent2, id_parent3, id_parent4, id_parent5)) "
+            " SELECT a.id_asset_element "
+            " FROM t_bios_asset_element as a "
+            " LEFT JOIN t_bios_asset_element_type as b ON a.id_type=b.id_asset_element_type "
+            " WHERE b.name='group' "
+            " AND id_parent = :dc_id "
         );
         tntdb::Result result = statement.set ("dc_id", datacenter_id).select ();
-        log_debug ("Number of input_power groups under datacenter id '%" PRIu32"' == '%" PRIu32"'.", datacenter_id, result.size ());
-        if (result.size () == 0)
-            return 0;
-        if (result.size () > 1)
-            log_debug ("Selecting the first one.\n");
-
-        uint32_t id = 0;
-        result[0][0].get (id);
-        return id;
+    	std::vector <std::string> group_candidates;
+        for (const auto& row : result) {
+        	std::string group_id;
+        	row [0].get (group_id);
+		    group_candidates.push_back (group_id);	
+	    }
+    	for (const auto& group_candidate : group_candidates) {
+            statement = connection.prepareCached (
+                " SELECT id_asset_element "
+                " FROM t_bios_asset_ext_attributes "
+                " WHERE id_asset_element= :group_id "
+                " AND keytag='type' "
+                " AND value='input_power' "
+            );
+            result = statement.set ("group_id", group_candidate).select ();
+            if (result.size () == 0)
+                continue;
+            uint32_t id = 0;
+            result[0][0].get (id);
+            return id;
+        }
+    	return 0;
     }
     catch (const std::exception& e)
     {
@@ -102,7 +114,10 @@ get_power_topology_group
             "   (t_bios_asset_element as b LEFT JOIN t_bios_asset_device_type as d ON b.id_subtype =d.id_asset_device_type) "
             " ON id_asset_device_dest=b.id_asset_element "
             " WHERE "
-            " id_asset_device_src AND id_asset_device_dest "
+            " id_asset_device_src "
+            "   IN (SELECT id_asset_element FROM t_bios_asset_group_relation WHERE id_asset_group = :group_id) "
+            " AND "
+            " id_asset_device_dest "
             "   IN (SELECT id_asset_element FROM t_bios_asset_group_relation WHERE id_asset_group = :group_id) "
         );
         tntdb::Result result = statement.set ("group_id", group_id).select ();
@@ -159,6 +174,20 @@ construct_input_power_group
     try {
         tntdb::Connection connection = tntdb::connectCached (url);
         tntdb::Statement statement = connection.prepareCached (
+            " SELECT id_asset_element "
+            " FROM v_bios_asset_element_super_parent "
+            " WHERE :dc_id "
+            "       in (id_parent1, id_parent2, id_parent3, id_parent4, id_parent5) "
+        );
+        tntdb::Result result = statement.set ("dc_id", datacenter_id).select ();
+        std::map <std::string, bool> devices_of_dc;
+        for (const auto& row : result) {
+                std::string device_of_dc;
+                row [0].get (device_of_dc);
+                devices_of_dc.emplace (std::make_pair (device_of_dc, true));
+        }
+
+        statement = connection.prepareCached (
             " SELECT "
             "   id_asset_device_src as src_id, "
             "   src_out as src_socket, "
@@ -177,15 +206,12 @@ construct_input_power_group
             "       (t_bios_asset_element AS d LEFT JOIN t_bios_asset_device_type AS e ON d.id_subtype=e.id_asset_device_type) "
             "       ON id_asset_device_dest=d.id_asset_element "
             " WHERE "
-            "   id_asset_device_src AND id_asset_device_dest "
-            "       IN (SELECT id_asset_element FROM v_bios_asset_element_super_parent WHERE :dc_id in (id_parent1, id_parent2, id_parent3, id_parent4, id_parent5)) "
-            " AND "
             "   (c.name = 'sts' OR c.name = 'feed' OR c.name = 'genset') "
             " AND "
             "   (e.name = 'ups' OR e.name = 'epdu' OR e.name = 'pdu' OR e.name = 'router' OR e.name = 'server' OR e.name = 'switch' OR e.name = 'rack controller' OR "
             "    e.name = 'sts' OR e.name = 'feed' OR e.name = 'genset') "
         );
-        tntdb::Result result = statement.set ("dc_id", datacenter_id).select ();
+        result = statement.select ();
         for (const auto& row : result) {
             std::string source_id, source_name, source_subtype, source_socket;
             std::string dest_id, dest_name, dest_subtype, dest_socket;
@@ -197,6 +223,14 @@ construct_input_power_group
             row [5].get (dest_socket);
             row [6].get (dest_name);
             row [3].get (dest_subtype);
+            // guard agains devices in other dc OR across dc's
+            auto search = devices_of_dc.find (source_id);
+            if (search == devices_of_dc.end ())
+                continue;
+            search = devices_of_dc.find (dest_id);
+            if (search == devices_of_dc.end ())
+                continue;
+
             if (devices.find (source_id) == devices.end ()) {
                 devices.emplace (std::make_pair (source_id, std::make_pair (source_name, source_subtype)));
             }
