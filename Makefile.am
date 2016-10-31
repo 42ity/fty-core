@@ -1182,7 +1182,8 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/my_profile.cpp \
  		      src/web/src/email_test.cpp \
 		      src/web/src/input_power_chain.cpp	\
-			  src/web/src/email_feedback.cpp
+			  src/web/src/email_feedback.cpp \
+			  src/web/src/email_vote.cpp
 
 # Track real-git and nodist (generated) sources SEPARATELY
 nodist_bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)
@@ -1410,7 +1411,8 @@ SYSTEMD_UNITS_NOTPRESET += $(SYSTEMD_UNITS_NOTPRESET_LOWLEVEL) $(SYSTEMD_UNITS_N
 # These unit files are compiled, but are not enabled via BIOS presets
 SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL += \
                         biostimer-loghost-rsyslog-netconsole.service \
-                        biostimer-compress-logs.service \
+						biospath-compress-logs.service \
+						biospath-messages.service \
                         biostimer-verify-fs.service
 
 SYSTEMD_UNITS_TIMERIMPL_TARGET_BIOS += \
@@ -1422,7 +1424,8 @@ SYSTEMD_UNITS_TIMERIMPL += $(SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL) $(SYSTEMD_UNITS_T
 # Enabled as part of BIOS presets
 SYSTEMD_TIMERS_LOWLEVEL += \
                         biostimer-loghost-rsyslog-netconsole.timer \
-                        biostimer-compress-logs.timer \
+                        biospath-compress-logs.path \
+                        biospath-messages.path \
                         biostimer-verify-fs.timer
 
 SYSTEMD_TIMERS_TARGET_BIOS += \
