@@ -120,7 +120,8 @@ check_regex_text (const char *param_name, const std::string& param_value, const 
 
 //TODO: define better
 // # define ASSET_NAME_RE_STR "^[a-zA-Z+0-9.-\\ ]+$"
-#define ASSET_NAME_RE_STR "^[[:alpha:]][-_.=\\ [:alnum:]]+$"
+//#define ASSET_NAME_RE_STR "^[[:alpha:]][-_.=\\ [:alnum:]]+$"
+#define ASSET_NAME_RE_STR ".*"
 static const cxxtools::Regex ASSET_NAME_RE {ASSET_NAME_RE_STR};
 
 bool check_asset_name (const std::string& param_name, const std::string& name, http_errors_t &errors) {
