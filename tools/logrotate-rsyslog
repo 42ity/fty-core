@@ -22,9 +22,9 @@
 # \author Jim Klimov <EvgenyKlimov@Eaton.com>
 # \details simple log rorating script, executed by rsyslog via outchannel directive
 #          see /etc/rsyslog.d/00-ipc.conf
-#          Note: This script should be atomically fast (rsyslog blocks until
+#          Note: This script MUST be atomically fast (rsyslog blocks until
 #          the log-rotation handler returns). Anything expensive, such as
-#          compression of the old log files, should be done separately (via
+#          compression of the old log files, MUST be done separately (via
 #          timer unit in this case); also this ensures the file is closed
 #          and not written to by the logger before we start to compress it.
 
@@ -43,8 +43,28 @@ for i in `seq 4 -1 1`; do
 done
 
 [ -f "$LOGFILE" ] && [ -s "$LOGFILE" ] || exit 0
+
+trap 'echo "BREAK IGNORED inside critical segment"' 1 2 3 15
 mv -f "$LOGFILE" "$LOGFILE.1"
+touch "$LOGFILE"
+
+if [ -f "$LOGFILE" -a ! -s "$LOGFILE" ] ; then
+    # Only fix up access rights on a new (empty) log file
+    RIGHTS_DEFAULT=yes
+    if [ -f "$LOGFILE.1" ]; then
+        /bin/chmod --reference "$LOGFILE.1" "$LOGFILE" && \
+        /bin/chown --reference "$LOGFILE.1" "$LOGFILE" && \
+        RIGHTS_DEFAULT=no
+    fi
+    if [ "$RIGHTS_DEFAULT" = yes ]; then
+        chmod 640 "$LOGFILE"
+        chown root:adm "$LOGFILE"
+    fi
+fi
+trap '-' 1 2 3 15
 
 # Tickle the service to start compressing immediately (but asynchronously),
 # if an instance of it is not yet running already
+# Try the non-blocking mode first, if it is supported in this systemd version
+/bin/systemctl start --no-block biostimer-compress-logs || \
 /bin/systemctl start biostimer-compress-logs || true
