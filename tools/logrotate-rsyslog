@@ -37,8 +37,5 @@ EXTARCH="bz2"
 /bin/systemctl start biospath-compress-logs.path || true
 
 [ -f "$LOGFILE" ] && [ -s "$LOGFILE" ] || exit 0
-(
-    flock -w 10 -x 200 || die "Can't aquire lock /run/biospath-compress-logs.logs"
 mv -f "$LOGFILE" "$LOGFILE.1"
 
-) 200>/run/biospath-compress-logs.lock
