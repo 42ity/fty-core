@@ -28,8 +28,30 @@ LC_ALL=C
 TZ=UTC
 export LANG LC_ALL TZ
 
-# TODO: Should these be settable via service envvars (/etc/default/bios*)?
-LOGDIR="/var/log"
+# By default we compress all not-compressed logs with a single-char suffix
+# LOGFILE_BASENAME (or rather CLI arg #1) allows to do it for just one log
+# file family, e.g. "messages" or "/var/log/commands.log"
+# TODO: Should defaults be settable via service envvars (/etc/default/bios*)?
+LOGFILE_BASENAME="${1-}"
+[ -z "$LOGFILE_BASENAME" ] && LOGFILE_BASENAME='/var/log/*'
+
+LOGDIR="`dirname "$LOGFILE_BASENAME"`" || LOGDIR=""
+[ -n "$LOGDIR" ] && [ x"$LOGDIR" != x"." ] && [ x"$LOGDIR" != x"./" ] || \
+    LOGDIR="/var/log"
+LOGDIR="`cd "$LOGDIR" && pwd`" || exit 1
+
+LOGFILE_BASENAME="`basename "$LOGFILE_BASENAME"`"
+[ -z "$LOGFILE_BASENAME" ] && LOGFILE_BASENAME='*'
+
+# The script does potentially dangerous things at location that can be
+# specified by the caller, so limit its impact
+case "$LOGDIR" in
+    /var/log|/var/log/*|/var/adm|/var/adm/*|/tmp|/tmp/*|/var/tmp|/var/tmp/*|/home/*) ;; # OK
+    *)  echo "ERROR: The log compression should be targeted to a system log directory ('$LOGDIR' is not acceptable)" >&2
+        exit 1
+        ;;
+esac
+
 EXTWIP="__WRITING__"
 EXTARCH="bz2"
 CMDARCH="bzip2 -c -9"
@@ -46,13 +68,16 @@ COUNT_WIP_KEEP=0
 COUNT_WIP_WIPE=0
 COUNT_WIP_WIPE_FAIL=0
 
-find . -type f -name '*.'"$EXTWIP" | while read F ; do
+find . -type f -name "$LOGFILE_BASENAME.$EXTWIP" | while read F ; do
     [ -f "$F" ] && [ -s "$F" ] || continue
 
     echo "`date`: Checking if $F is abandoned: `ls -lad "$F"`" >&2
-    # Fuser returns 1 if the file is not opened by anyone,
-    # and prints PIDs and returns 0 if the file is accessed ATM
-    if fuser "$F" ; then
+    # Linux Fuser returns 1 if the file is not opened by anyone,
+    # and prints PIDs and returns 0 if the file is accessed ATM.
+    # On other OSes and/or other implementation may return 0 if
+    # the file/dir just exists, and the difference is if stdout
+    # is empty (nobody accesses it) or not empty. This is portable.
+    if [ -n "`fuser "$F" 2>/dev/null`" ]; then
         echo "`date`: Keeping $F" >&2
         COUNT_WIP_KEEP=$(($COUNT_WIP_KEEP+1))
     else
@@ -64,17 +89,31 @@ find . -type f -name '*.'"$EXTWIP" | while read F ; do
 done
 
 # Assumption: no whitespace in filenames
-for F in `find . -type f -name '*.?'`; do
+for F in `find . -type f -name "$LOGFILE_BASENAME"'.?'`; do
     [ -f "$F" ] && [ -s "$F" ] || continue
 
     echo "`date`: Checking if $F is abandoned: `ls -lad "$F"`" >&2
-    if fuser "$F" ; then
+    if [ -n "`fuser "$F" 2>/dev/null`" ]; then
         echo "`date`: Keeping $F for now" >&2
         COUNT_USED=$(($COUNT_USED+1))
         continue
     fi
 
     echo "`date`: Compressing $F ..." >&2
+    rm -f "$F.$EXTARCH.$EXTWIP" || continue
+        # skip this file if we can't remove its temporary for some reason
+        # note that for 'rm -f' absence of the file should not be a problem
+    RIGHTS_DEFAULT=yes
+    # This is the GNU chmod/chown feature; others might not have it (for
+    # portability can work around by e.g. parsing "ls -lan" output if needed)
+    /bin/chmod --reference "$F" "$F.$EXTARCH.$EXTWIP" && \
+    /bin/chown --reference "$F" "$F.$EXTARCH.$EXTWIP" && \
+        RIGHTS_DEFAULT=no
+    if [ "$RIGHTS_DEFAULT" = yes ]; then
+        chmod 640 "$F.$EXTARCH.$EXTWIP"
+        chown root:adm "$F.$EXTARCH.$EXTWIP"
+    fi
+
     time $CMDARCH < "$F" > "$F.$EXTARCH.$EXTWIP" && \
     mv -f "$F.$EXTARCH.$EXTWIP" "$F.$EXTARCH" && \
     rm -f "$F"

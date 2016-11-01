@@ -52,6 +52,9 @@ if [ -f "$LOGFILE" -a ! -s "$LOGFILE" ] ; then
     # Only fix up access rights on a new (empty) log file
     RIGHTS_DEFAULT=yes
     if [ -f "$LOGFILE.1" ]; then
+        # This is the GNU chmod/chown feature; others might not have it
+        # (for portability can work around by e.g. parsing "ls -lan" output,
+        # if needed later)
         /bin/chmod --reference "$LOGFILE.1" "$LOGFILE" && \
         /bin/chown --reference "$LOGFILE.1" "$LOGFILE" && \
         RIGHTS_DEFAULT=no
