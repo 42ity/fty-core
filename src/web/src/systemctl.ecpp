@@ -277,6 +277,12 @@ service_name_valid (
         return true;
     }
 
+    it = allowed_unit_list.find(service_name + ".path");
+    if (it != allowed_unit_list.end()) {
+        service_name += ".path";
+        return true;
+    }
+
     return false;
 }
 
