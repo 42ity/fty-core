@@ -175,7 +175,10 @@ UserInfo user;
             attach_system_state,
             uuid);
 
-    char *temp_dir = mkdtemp (strdup ("/tmp/email_feedback.XXXXXX"));
+    char *temp_dir = zsys_sprintf ("%s.XXXXXX",
+            getenv ("SPOOL_DIR") ? getenv ("SPOOL_DIR") : "/tmp");
+    temp_dir = mkdtemp (temp_dir);
+    chmod (temp_dir, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
     if (!temp_dir)
         http_die ("internal-error", "Can't create temporary directory: %s", strerror (errno));
 
@@ -188,11 +191,21 @@ UserInfo user;
         std::string path = temp_dir + std::string ("/") + std::string (basename (filename));
         zstr_free (&filename);
 
+        {
         std::ofstream out_file (path);
+        if (!out_file) {
+            s_rm_rf (paths, &temp_dir);
+            http_die ("internal-error", "Cannot process attachment: %s", strerror (errno));
+        }
         
         // more efficient is the use of iterators:
         for (tnt::Part::const_iterator pi = it.getBodyBegin(); pi != it.getBodyEnd(); ++pi)
             out_file << *pi;
+
+        out_file.flush ();
+        out_file.close ();
+        chmod (path.c_str (), S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+        }
 
         zmsg_addstr (send, path.c_str ());
         paths.push_back (path);

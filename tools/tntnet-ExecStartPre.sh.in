@@ -42,6 +42,12 @@ test -f "${F}" || touch ${F}
 chown www-data: ${F}
 chmod 0644 ${F}
 
+# files to be passed from REST (like email attachments)
+SPOOL=/run/tntnet-${INST}
+rm -rf "${SPOOL}"
+mkdir -p "${SPOOL}"
+chown www-data: "${SPOOL}"
+
 F="/run/tntnet-${INST}.env"
 J="/etc/release-details.json"
 JO="/etc/bios-release.json" # Backwards compatibility
@@ -72,5 +78,6 @@ if [[ -x "$JSONSH" ]] ; then
     unset TMPSTR
 fi
 echo "OSIMAGE_BASENAME='$OSIMAGE_BASENAME'" > "$F"
+echo "SPOOL_DIR='${SPOOL}'" >> "$F"
 
 echo "OK"
