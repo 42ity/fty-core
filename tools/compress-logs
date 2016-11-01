@@ -72,9 +72,12 @@ find . -type f -name "$LOGFILE_BASENAME.$EXTWIP" | while read F ; do
     [ -f "$F" ] && [ -s "$F" ] || continue
 
     echo "`date`: Checking if $F is abandoned: `ls -lad "$F"`" >&2
-    # Fuser returns 1 if the file is not opened by anyone,
-    # and prints PIDs and returns 0 if the file is accessed ATM
-    if fuser "$F" ; then
+    # Linux Fuser returns 1 if the file is not opened by anyone,
+    # and prints PIDs and returns 0 if the file is accessed ATM.
+    # On other OSes and/or other implementation may return 0 if
+    # the file/dir just exists, and the difference is if stdout
+    # is empty (nobody accesses it) or not empty. This is portable.
+    if [ -n "`fuser "$F" 2>/dev/null`" ]; then
         echo "`date`: Keeping $F" >&2
         COUNT_WIP_KEEP=$(($COUNT_WIP_KEEP+1))
     else
@@ -90,7 +93,7 @@ for F in `find . -type f -name "$LOGFILE_BASENAME"'.?'`; do
     [ -f "$F" ] && [ -s "$F" ] || continue
 
     echo "`date`: Checking if $F is abandoned: `ls -lad "$F"`" >&2
-    if fuser "$F" ; then
+    if [ -n "`fuser "$F" 2>/dev/null`" ]; then
         echo "`date`: Keeping $F for now" >&2
         COUNT_USED=$(($COUNT_USED+1))
         continue
@@ -101,6 +104,8 @@ for F in `find . -type f -name "$LOGFILE_BASENAME"'.?'`; do
         # skip this file if we can't remove its temporary for some reason
         # note that for 'rm -f' absence of the file should not be a problem
     RIGHTS_DEFAULT=yes
+    # This is the GNU chmod/chown feature; others might not have it (for
+    # portability can work around by e.g. parsing "ls -lan" output if needed)
     /bin/chmod --reference "$F" "$F.$EXTARCH.$EXTWIP" && \
     /bin/chown --reference "$F" "$F.$EXTARCH.$EXTWIP" && \
         RIGHTS_DEFAULT=no
