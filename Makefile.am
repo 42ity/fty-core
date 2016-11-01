@@ -1437,6 +1437,7 @@ SYSTEMD_PRESETS +=      42-bios-systemd.preset
 
 SYSTEMD_TMPFILES += \
                         bios-agent-autoconfig.conf \
+                        logfiles-rights.conf \
                         bios-db-init.conf
 
 ### TODO? Add the build info (git commit, timestamp) to the header comment?
