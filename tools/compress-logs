@@ -20,21 +20,13 @@
 
 #! \file verify-fs.sh
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
-#  \author Michal Vyskocil <MichalVyskocil@Eaton.com>
 #  \brief  Compress the previously rotated logs under LOGDIR
 #
-
-die ()
-{
-    echo "E: `date`: ${@}"
-    exit 1
-}
 
 LANG=C
 LC_ALL=C
 TZ=UTC
 export LANG LC_ALL TZ
-umask -S 0027
 
 # TODO: Should these be settable via service envvars (/etc/default/bios*)?
 LOGDIR="/var/log"
@@ -47,20 +39,57 @@ set -o pipefail || true
 cd "$LOGDIR" || exit $?
 echo "`date`: $0 starting in `pwd`" >&2
 
-(
-    flock -w 30 -x 200 || die "Can't aquire lock /run/biospath-compress-logs.logs"
+COUNT_OK=0
+COUNT_FAIL=0
+COUNT_USED=0
+COUNT_WIP_KEEP=0
+COUNT_WIP_WIPE=0
+COUNT_WIP_WIPE_FAIL=0
 
-    # move commpressed files
-    rm -f messages.5.${EXTARCH}
-    for i in $(seq 4 -1 1); do
-        [[ -f messages.${i}.${EXTARCH} ]] || continue
-        mv  messages.${i}.${EXTARCH} \
-            messages.$((i+1)).${EXTARCH}
-        chown root:adm messages.$((i+1)).${EXTARCH}
-        chmod 0640 messages.$((i+1)).${EXTARCH}
-    done
+find . -type f -name '*.'"$EXTWIP" | while read F ; do
+    [ -f "$F" ] && [ -s "$F" ] || continue
 
-    ${CMDARCH} messages.1 > messages.1.${EXTARCH}
-    chown root:adm messages.1.${EXTARCH}
-    chmod 0640 messages.1.${EXTARCH}
-) 200>/run/biospath-compress-logs.lock
+    echo "`date`: Checking if $F is abandoned: `ls -lad "$F"`" >&2
+    # Fuser returns 1 if the file is not opened by anyone,
+    # and prints PIDs and returns 0 if the file is accessed ATM
+    if fuser "$F" ; then
+        echo "`date`: Keeping $F" >&2
+        COUNT_WIP_KEEP=$(($COUNT_WIP_KEEP+1))
+    else
+        echo "`date`: Wiping $F as not-accessed partial write" >&2
+        rm -f "$F" \
+            && COUNT_WIP_WIPE=$(($COUNT_WIP_WIPE+1)) \
+            || COUNT_WIP_WIPE_FAIL=$(($COUNT_WIP_WIPE_FAIL+1))
+    fi
+done
+
+# Assumption: no whitespace in filenames
+for F in `find . -type f -name '*.?'`; do
+    [ -f "$F" ] && [ -s "$F" ] || continue
+
+    echo "`date`: Checking if $F is abandoned: `ls -lad "$F"`" >&2
+    if fuser "$F" ; then
+        echo "`date`: Keeping $F for now" >&2
+        COUNT_USED=$(($COUNT_USED+1))
+        continue
+    fi
+
+    echo "`date`: Compressing $F ..." >&2
+    time $CMDARCH < "$F" > "$F.$EXTARCH.$EXTWIP" && \
+    mv -f "$F.$EXTARCH.$EXTWIP" "$F.$EXTARCH" && \
+    rm -f "$F"
+    RES=$?
+
+    if [ "$RES" = 0 ]; then
+        echo "`date`: [--OK--] : Compressed $F: `ls -lad "$F.$EXTARCH"`" >&2
+        COUNT_OK=$(($COUNT_OK+1))
+    else
+        echo "`date`: [-FAIL-] ($RES): Not compressed $F: `ls -lad "$F"*`" >&2
+        COUNT_FAIL=$(($COUNT_FAIL+1))
+    fi
+done
+
+echo "Compressed $COUNT_OK files; failed to compress $COUNT_FAIL files; did not compress $COUNT_USED files due to being used" >&2
+echo "Old abandoned writes: $COUNT_WIP_KEEP kept as accessed, $COUNT_WIP_WIPE removed and $COUNT_WIP_WIPE_FAIL failed to remove" >&2
+echo "`date`: $0 Done"
+# TOTHINK: Should we fail the service or not, if COUNT_FAIL>0?
