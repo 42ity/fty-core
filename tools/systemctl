@@ -83,10 +83,7 @@ SYSTEMCTL_UNITS_COMMON_INTERNAL="bios tntnet@bios bios-db-init          \
                  bios-agent-tpower bios-agent-rt bios-agent-ms          \
                  biostimer-warranty-metric biostimer-agent-ms-cleaner   \
                  biostimer-loghost-rsyslog-netconsole                   \
-                 composite-metrics-configurator                         \
-                 biospath-compress-logs                                 \
-                 biospath-messages                                      \
-                 "
+                 composite-metrics-configurator "
 
 SYSTEMCTL_UNITS_COMMON="$SYSTEMCTL_UNITS_COMMON_EXTERNAL $SYSTEMCTL_UNITS_COMMON_INTERNAL"
 
@@ -128,9 +125,9 @@ if [[ -n "$SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL" ]]; then
         || SYSTEMCTL_UNITS_REGEX_SINGLE="$SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL"
 fi
 
-SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL_EXT='('"${SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL}"')($|\.(service|timer|target|path))'
-SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL_EXT='('"${SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL}"')($|\.(service|timer|target|path))'
-SYSTEMCTL_UNITS_REGEX_SINGLE_EXT='('"${SYSTEMCTL_UNITS_REGEX_SINGLE}"')($|\.(service|timer|target|path))'
+SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL_EXT='('"${SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL}"')($|\.(service|timer|path|target))'
+SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL_EXT='('"${SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL}"')($|\.(service|timer|path|target))'
+SYSTEMCTL_UNITS_REGEX_SINGLE_EXT='('"${SYSTEMCTL_UNITS_REGEX_SINGLE}"')($|\.(service|timer|path|target))'
 
 SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL='^'"${SYSTEMCTL_UNITS_REGEX_SINGLE_INTERNAL_EXT}"'$'
 SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL='^'"${SYSTEMCTL_UNITS_REGEX_SINGLE_EXTERNAL_EXT}"'$'
@@ -345,7 +342,7 @@ extensions).
 
 This wrapper only allows actions against following unit basenames (with no
 extension as defaulted by systemd, or any one from these three - .service,
-.timer or .target):
+.timer, .path or .target):
 EOF
 print_item_list ${SYSTEMCTL_UNITS_COMMON} ${SYSTEMCTL_UNITS_GLOBS}
     cat << EOF
@@ -606,11 +603,11 @@ systemctl_list_ipm_units() (
     if [[ -z "$REQUESTED_UNITS_REGEX" ]] || [[ "$LIST_MISSING" = yes ]]; then
         ALL_KNOWN_UNITS="`list_known_ipm_units`" || ALL_KNOWN_UNITS=""
     else
-        REQUESTED_UNITS_REGEX_EXT='^[ \t]*('"$REQUESTED_UNITS_REGEX"')($|\.(service|timer|target))[ \t]*$'
+        REQUESTED_UNITS_REGEX_EXT='^[ \t]*('"$REQUESTED_UNITS_REGEX"')($|\.(service|timer|path|target))[ \t]*$'
         ALL_KNOWN_UNITS="`list_known_ipm_units | egrep "$REQUESTED_UNITS_REGEX_EXT"`" || ALL_KNOWN_UNITS=""
         if [[ -n "$ALL_KNOWN_UNITS" ]] && [[ -n "$REQUESTED_UNITS" ]] ; then
             # Keep the caller's order of unit names, not necessarily alphabetic
-            SORTED_ALL_KNOWN_UNITS="$(for U in $REQUESTED_UNITS ; do echo "$ALL_KNOWN_UNITS" | egrep '^[ \t]*('"$U"')($|\.(service|timer|target))[ \t]*$' ; done)"
+            SORTED_ALL_KNOWN_UNITS="$(for U in $REQUESTED_UNITS ; do echo "$ALL_KNOWN_UNITS" | egrep '^[ \t]*('"$U"')($|\.(service|timer|path|target))[ \t]*$' ; done)"
             ALL_KNOWN_UNITS="$SORTED_ALL_KNOWN_UNITS"
         fi
     fi
@@ -678,7 +675,7 @@ $SYSTEMCTL_UNITS_EXTERNAL"
             [[ -n "${_SYSTEMCTL_UNITS_COMMON}" ]] && \
             for U in ${_SYSTEMCTL_UNITS_COMMON} ; do
                 echo "$SYSTEMCTL_UNITS" | \
-                egrep "^$U"'($|\.(service|timer|target))$' > /dev/null \
+                egrep "^$U"'($|\.(service|timer|path|target))$' > /dev/null \
                 || SHOW_UNITS="$SHOW_UNITS
 $U"
             done
@@ -686,7 +683,7 @@ $U"
             [[ -n "${_SYSTEMCTL_UNITS_GLOBS}" ]] && \
             for U in `echo "${_SYSTEMCTL_UNITS_GLOBS}" | sed 's,@\*$,,'` ; do
                 echo "$SYSTEMCTL_UNITS" | \
-                egrep "^$U"'@[^[:blank:]]+($|\.(service|timer|target))$' > /dev/null \
+                egrep "^$U"'@[^[:blank:]]+($|\.(service|timer|path|target))$' > /dev/null \
                 || SHOW_UNITS="$SHOW_UNITS
 $U"
             done
@@ -851,7 +848,7 @@ do_systemctl_list_deps_all() {
     # Prepare cached content in one shot
     local ALL_DEPS
     local _ID
-    ALL_DEPS="$($SYSTEMCTL show -p Id -p Requires -p Wants -p RequiredBy -p WantedBy -p PartOf --all '*' '*.service' '*.target' '*.timer' ; echo "")"
+    ALL_DEPS="$($SYSTEMCTL show -p Id -p Requires -p Wants -p RequiredBy -p WantedBy -p PartOf --all '*' '*.service' '*.target' '*.timer' '*.path' ; echo "")"
 
     _ID=""
     while IFS='=' read K V ; do

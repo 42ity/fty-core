@@ -42,12 +42,19 @@ test -f "${F}" || touch ${F}
 chown www-data: ${F}
 chmod 0644 ${F}
 
+# files to be passed from REST (like email attachments)
+SPOOL=/run/tntnet-${INST}
+rm -rf "${SPOOL}"
+mkdir -p "${SPOOL}"
+chown www-data: "${SPOOL}"
+
 F="/run/tntnet-${INST}.env"
 J="/etc/release-details.json"
+JO="/etc/bios-release.json" # Backwards compatibility
 echo "Make sure the current OS image name is populated into '$F'..."
 JSONSH="@datadir@/@PACKAGE@/scripts/JSON.sh"
 OSIMAGE_BASENAME="OS image name is not available"
-[[ -s "$J" ]] && \
+{ [[ -s "$J" ]] || [[ -s "$JO" ]] ; } && \
 if [[ -x "$JSONSH" ]] ; then
     if [[ -n "${BASH-}" ]]; then
         . "$JSONSH"
@@ -60,9 +67,17 @@ if [[ -x "$JSONSH" ]] ; then
     { TMPSTR="$(get_a_string_arg '"release-details","osimage-filename"' < "$J")" && [[ -n "$TMPSTR" ]] && \
         TMPSTR="`basename "$TMPSTR" | sed 's/\.\(squashfs\|tar\|tar\..*\|tgz\|tbz2\|txz\)$//'`" ; } || \
         TMPSTR=""
+    if [[ -z "$TMPSTR" ]] && [[ ! -s "$J" ]] && [[ -s "$JO" ]] ; then
+        # Legacy fallback: new OS image, old uImage - no release-details yet
+        TMPSTR="$(get_a_string_arg '"bios-release","osimage-name"' < "$JO")" && [[ -n "$TMPSTR" ]] || \
+        { TMPSTR="$(get_a_string_arg '"bios-release","osimage-filename"' < "$JO")" && [[ -n "$TMPSTR" ]] && \
+            TMPSTR="`basename "$TMPSTR" | sed 's/\.\(squashfs\|tar\|tar\..*\|tgz\|tbz2\|txz\)$//'`" ; } || \
+            TMPSTR=""
+    fi
     [[ -n "$TMPSTR" ]] && OSIMAGE_BASENAME="$TMPSTR"
     unset TMPSTR
 fi
 echo "OSIMAGE_BASENAME='$OSIMAGE_BASENAME'" > "$F"
+echo "SPOOL_DIR='${SPOOL}'" >> "$F"
 
 echo "OK"
