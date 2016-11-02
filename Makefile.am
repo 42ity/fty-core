@@ -1411,8 +1411,7 @@ SYSTEMD_UNITS_NOTPRESET += $(SYSTEMD_UNITS_NOTPRESET_LOWLEVEL) $(SYSTEMD_UNITS_N
 # These unit files are compiled, but are not enabled via BIOS presets
 SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL += \
                         biostimer-loghost-rsyslog-netconsole.service \
-						biospath-compress-logs.service \
-						biospath-messages.service \
+                        biostimer-compress-logs.service \
                         biostimer-verify-fs.service
 
 SYSTEMD_UNITS_TIMERIMPL_TARGET_BIOS += \
@@ -1424,8 +1423,7 @@ SYSTEMD_UNITS_TIMERIMPL += $(SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL) $(SYSTEMD_UNITS_T
 # Enabled as part of BIOS presets
 SYSTEMD_TIMERS_LOWLEVEL += \
                         biostimer-loghost-rsyslog-netconsole.timer \
-                        biospath-compress-logs.path \
-                        biospath-messages.path \
+                        biostimer-compress-logs.timer \
                         biostimer-verify-fs.timer
 
 SYSTEMD_TIMERS_TARGET_BIOS += \
@@ -1439,6 +1437,7 @@ SYSTEMD_PRESETS +=      42-bios-systemd.preset
 
 SYSTEMD_TMPFILES += \
                         bios-agent-autoconfig.conf \
+                        logfiles-rights.conf \
                         bios-db-init.conf
 
 ### TODO? Add the build info (git commit, timestamp) to the header comment?
