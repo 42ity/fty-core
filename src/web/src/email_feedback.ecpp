@@ -68,6 +68,8 @@ s_smtp_GET_message (
     zhash_insert (headers, "X-Eaton-IPC-uuid", (void*) zuuid_str_canonical (uuid));
     zhash_insert (headers, "X-Eaton-IPC-context", (void*) context);
     zhash_insert (headers, "X-Eaton-IPC-participate-in-feedback", (void*) (participate ? "yes" : "no"));
+    zhash_insert (headers, "X-Eaton-IPC-image-version",
+        (void*) (getenv ("OSIMAGE_BASENAME") ? getenv ("OSIMAGE_BASENAME") : "unknown"));
 
     std::string machine_id = s_read_all ("/etc/machine-id");
     if (!machine_id.empty ())
