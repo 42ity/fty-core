@@ -22,9 +22,9 @@
 # \author Jim Klimov <EvgenyKlimov@Eaton.com>
 # \details simple log rorating script, executed by rsyslog via outchannel directive
 #          see /etc/rsyslog.d/00-ipc.conf
-#          Note: This script should be atomically fast (rsyslog blocks until
+#          Note: This script MUST be atomically fast (rsyslog blocks until
 #          the log-rotation handler returns). Anything expensive, such as
-#          compression of the old log files, should be done separately (via
+#          compression of the old log files, MUST be done separately (via
 #          timer unit in this case); also this ensures the file is closed
 #          and not written to by the logger before we start to compress it.
 
@@ -32,13 +32,42 @@ LOGFILE="$1"
 [ -z "$LOGFILE" ] && LOGFILE="/var/log/messages"
 EXTARCH="bz2"
 
-# Tickle the service to start compressing immediately (but asynchronously),
-# if an instance of it is not yet running already
-/bin/systemctl start biospath-compress-logs.path || true
+# Files may be compressed or not yet...
+rm -f "$LOGFILE".5 "$LOGFILE.5.$EXTARCH"
+
+for i in `seq 4 -1 1`; do
+    # note: $((i+1)) works under dash!
+    [ -s "$LOGFILE.${i}" -o -s "$LOGFILE.${i}.$EXTARCH" || continue
+    [ -s "$LOGFILE.${i}" ] && mv -f "$LOGFILE.${i}" "$LOGFILE.$((i+1))"
+    [ -s "$LOGFILE.${i}.$EXTARCH" ] && mv -f "$LOGFILE.${i}.$EXTARCH" "$LOGFILE.$((i+1)).$EXTARCH"
+done
 
 [ -f "$LOGFILE" ] && [ -s "$LOGFILE" ] || exit 0
-(
-    flock -w 10 -x 200 || die "Can't aquire lock /run/biospath-compress-logs.logs"
-mv -f "$LOGFILE" "$LOGFILE.1"
 
-) 200>/run/biospath-compress-logs.lock
+trap 'echo "BREAK IGNORED inside critical segment"' 1 2 3 15
+mv -f "$LOGFILE" "$LOGFILE.1"
+touch "$LOGFILE"
+
+if [ -f "$LOGFILE" -a ! -s "$LOGFILE" ] ; then
+    # Only fix up access rights on a new (empty) log file
+    RIGHTS_DEFAULT=yes
+    if [ -f "$LOGFILE.1" ]; then
+        # This is the GNU chmod/chown feature; others might not have it
+        # (for portability can work around by e.g. parsing "ls -lan" output,
+        # if needed later)
+        /bin/chmod --reference "$LOGFILE.1" "$LOGFILE" && \
+        /bin/chown --reference "$LOGFILE.1" "$LOGFILE" && \
+        RIGHTS_DEFAULT=no
+    fi
+    if [ "$RIGHTS_DEFAULT" = yes ]; then
+        chmod 640 "$LOGFILE"
+        chown root:adm "$LOGFILE"
+    fi
+fi
+trap '-' 1 2 3 15
+
+# Tickle the service to start compressing immediately (but asynchronously),
+# if an instance of it is not yet running already
+# Try the non-blocking mode first, if it is supported in this systemd version
+/bin/systemctl start --no-block biostimer-compress-logs || \
+/bin/systemctl start biostimer-compress-logs || true
