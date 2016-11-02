@@ -51,6 +51,7 @@ s_smtp_GET_message (
         const char* message,
         const char* context,
         bool attach_system_state,
+        bool participate,
         zuuid_t *uuid)
 {
     zmsg_t *msg = zmsg_new ();
@@ -66,6 +67,9 @@ s_smtp_GET_message (
     zhash_insert (headers, "Reply-To", (void*) reply);
     zhash_insert (headers, "X-Eaton-IPC-uuid", (void*) zuuid_str_canonical (uuid));
     zhash_insert (headers, "X-Eaton-IPC-context", (void*) context);
+    zhash_insert (headers, "X-Eaton-IPC-participate-in-feedback", (void*) (participate ? "yes" : "no"));
+    zhash_insert (headers, "X-Eaton-IPC-image-version",
+        (void*) (getenv ("OSIMAGE_BASENAME") ? getenv ("OSIMAGE_BASENAME") : "unknown"));
 
     std::string machine_id = s_read_all ("/etc/machine-id");
     if (!machine_id.empty ())
@@ -112,6 +116,7 @@ UserInfo user;
     std::string checked_message;
     std::string checked_context;
     bool attach_system_state = false;
+    bool participate = false;
     unsigned _timeout = 60;
     {
 
@@ -155,6 +160,11 @@ UserInfo user;
         if (sys_state == "yes")
             attach_system_state = true;
 
+        std::string sys_participate = qparam.param ("participate");
+        if (sys_participate == "yes")
+            participate = true;
+
+
         std::string _stimeout = qparam.param ("_timeout");
 
         try {
@@ -173,6 +183,7 @@ UserInfo user;
             checked_message.c_str (),
             checked_context.c_str (),
             attach_system_state,
+            participate,
             uuid);
 
     char *temp_dir = zsys_sprintf ("%s.XXXXXX",
