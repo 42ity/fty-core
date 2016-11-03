@@ -56,7 +56,7 @@ s_smtp_GET_message (
     zmsg_addstr (msg, zuuid_str_canonical (uuid));
 
     zmsg_addstr(msg, to);
-    char *subject = zsys_sprintf ("IPC vote context=%s, uuid=%s", context, zuuid_str_canonical (uuid));
+    char *subject = zsys_sprintf ("IPC vote context=%s", context);
     zmsg_addstr (msg, subject);
     zstr_free (&subject);
 
