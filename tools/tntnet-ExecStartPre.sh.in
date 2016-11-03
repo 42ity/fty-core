@@ -54,6 +54,9 @@ JO="/etc/bios-release.json" # Backwards compatibility
 echo "Make sure the current OS image name is populated into '$F'..."
 JSONSH="@datadir@/@PACKAGE@/scripts/JSON.sh"
 OSIMAGE_BASENAME="OS image name is not available"
+HARDWARE_CATALOG_NUMBER="Hardware catalog number is not available"
+HARDWARE_SPEC_REVISION="Hardware spec revision is not available"
+HARDWARE_SERIAL_NUMBER="Hardware serial number is not available"
 { [[ -s "$J" ]] || [[ -s "$JO" ]] ; } && \
 if [[ -x "$JSONSH" ]] ; then
     if [[ -n "${BASH-}" ]]; then
@@ -75,9 +78,19 @@ if [[ -x "$JSONSH" ]] ; then
             TMPSTR=""
     fi
     [[ -n "$TMPSTR" ]] && OSIMAGE_BASENAME="$TMPSTR"
+
+    TMPSTR="$(get_a_string_arg '"release-details","hardware-catalog-number"' < "$J")"
+    [[ -n "$TMPSTR" ]] && HARDWARE_CATALOG_NUMBER="$TMPSTR"
+    TMPSTR="$(get_a_string_arg '"release-details","hardware-spec-revision"' < "$J")"
+    [[ -n "$TMPSTR" ]] && HARDWARE_SPEC_REVISION="$TMPSTR"
+    TMPSTR="$(get_a_string_arg '"release-details","hardware-serial-number"' < "$J")"
+    [[ -n "$TMPSTR" ]] && HARDWARE_SERIAL_NUMBER="$TMPSTR"
     unset TMPSTR
 fi
 echo "OSIMAGE_BASENAME='$OSIMAGE_BASENAME'" > "$F"
 echo "SPOOL_DIR='${SPOOL}'" >> "$F"
+echo "HARDWARE_CATALOG_NUMBER='${HARDWARE_CATALOG_NUMBER}'" >> "$F"
+echo "HARDWARE_SPEC_REVISION='${HARDWARE_SPEC_REVISION}'" >> "$F"
+echo "HARDWARE_SERIAL_NUMBER='${HARDWARE_SERIAL_NUMBER}'" >> "$F"
 
 echo "OK"
