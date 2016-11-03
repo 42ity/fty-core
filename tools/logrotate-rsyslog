@@ -61,7 +61,7 @@ if [ -f "$LOGFILE" -a ! -s "$LOGFILE" ] ; then
     fi
     if [ "$RIGHTS_DEFAULT" = yes ]; then
         chmod 640 "$LOGFILE"
-        chown root:adm "$LOGFILE"
+        chown root:bios-logread "$LOGFILE"
     fi
 fi
 trap '-' 1 2 3 15
