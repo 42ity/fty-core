@@ -111,7 +111,7 @@ for F in `find . -type f -name "$LOGFILE_BASENAME"'.?'`; do
         RIGHTS_DEFAULT=no
     if [ "$RIGHTS_DEFAULT" = yes ]; then
         chmod 640 "$F.$EXTARCH.$EXTWIP"
-        chown root:adm "$F.$EXTARCH.$EXTWIP"
+        chown root:bios-logread "$F.$EXTARCH.$EXTWIP"
     fi
 
     time $CMDARCH < "$F" > "$F.$EXTARCH.$EXTWIP" && \
