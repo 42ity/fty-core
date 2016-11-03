@@ -307,7 +307,7 @@ UserInfo user;
     std::string message;
 
     /* argument checking */
-    {
+    try {
         std::string slogname_base = request.getArg ("logname_base");
         std::string slogname_ext = request.getArg ("logname_ext");
 
@@ -320,18 +320,19 @@ UserInfo user;
             logname_ext = slogname_ext;
             logname_base = slogname_base;
 
-            if (logname_base == "messages")
+            if (logname_base == "messages") {
                 logfile = "/var/log/" + logname_base;
+            } else {
+                throw std::runtime_error("Sorry, logname '" + logname_base + "' support is currently not implemented");
+            }
         }
 
         if (logfile == "") {
             log_error("Authorized request to download an unsupported log file was denied");
-            http_die("request-param-bad", "logname", ("'" + slogname_base + slogname_ext + "'").c_str(), "'messages' optionally with '.gz' extension");
+            http_die("request-param-bad", "logname", ("'" + slogname_base + slogname_ext + "'").c_str(), "'messages' optionally with '.gz' or '.txt' extension");
         }
-    }
 
-    /* We have a definite officially supported request, try to fulfill it */
-    try {
+        /* We have a definite officially supported request, try to fulfill it */
         log_debug( ("Posting logfile extension '" + logname_ext + "' (MIME type '" + reply.getContentType() + "') - initial").c_str() );
 
         /* Prepare strings for Content-Disposition: header */
@@ -430,7 +431,7 @@ UserInfo user;
                 log_debug( ("Posting logfile extension '" + logname_ext + "' (MIME type '" + reply.getContentType() + "') in mode " + reply.getHeader(tnt::httpheader::contentDisposition) + " - done").c_str() );
                 return HTTP_OK;
             } else {
-                throw std::runtime_error("Sorry, logfile extension '" + logname_ext + "' (MIME type '" + reply.getContentType() + "') is currently unsupported");
+                throw std::runtime_error("Sorry, logfile extension '" + logname_ext + "' (MIME type '" + reply.getContentType() + "') support is currently not implemented");
             }
         }
     }
