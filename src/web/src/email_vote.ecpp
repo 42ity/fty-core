@@ -33,16 +33,6 @@
 #include <fstream>
 #include <libgen.h> //POSIX version of basename!!
 
-static std::string
-s_read_all (const char* filename) {
-    int fd = open (filename, O_RDONLY);
-    if (fd <= -1)
-        return std::string {};
-    std::string ret = shared::read_all (fd);
-    close (fd);
-    return ret;
-}
-
 // encode GET message for smtp agent         
 static zmsg_t*
 s_smtp_GET_message (
@@ -75,12 +65,7 @@ s_smtp_GET_message (
     zhash_insert (headers, "X-Eaton-IPC-uuid", (void*) zuuid_str_canonical (uuid));
     zhash_insert (headers, "X-Eaton-IPC-context", (void*) context);
     zhash_insert (headers, "X-Eaton-IPC-vote", (void*) std::to_string (vote).c_str ());
-    zhash_insert (headers, "X-Eaton-IPC-image-version",
-        (void*) (getenv ("OSIMAGE_BASENAME") ? getenv ("OSIMAGE_BASENAME") : "unknown"));
-
-    std::string machine_id = s_read_all ("/etc/machine-id");
-    if (!machine_id.empty ())
-        zhash_insert (headers, "X-Eaton-IPC-machine-id", (void*) machine_id.c_str ());
+    utils::email::x_headers (headers);
 
     zframe_t *frame = zhash_pack (headers);
     zmsg_add (msg, frame);

@@ -1031,9 +1031,9 @@ agent_autoconfig_LDADD = \
 			libpriv-log.la \
 			libpriv-cidr.la \
 			libpriv-defs.la \
+			libpriv-utils-web.la \
 			libpriv-subprocess.la \
 			libpriv-utils-ymsg.la \
-			libpriv-utils-web.la \
 			libpriv-utils-plusplus.la
 
 # FIXME remove utils ymsg
