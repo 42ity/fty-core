@@ -597,6 +597,7 @@ test_web_helpers_SOURCES = 	tests/web/src/test-helpers.cc \
 test_web_helpers_LDADD =    libpriv-test-run.la \
 				            libpriv-log.la \
 				            libpriv-utils-web.la \
+							libpriv-subprocess.la \
 							libpriv-defs.la
 
 test_web_helpers_CPPFLAGS =	$(AM_CPPFLAGS) \
@@ -615,6 +616,7 @@ test_utils_web_SOURCES = \
 test_utils_web_LDADD = \
 			libpriv-utils-web.la \
 			libpriv-log.la \
+			libpriv-subprocess.la \
 			libpriv-test-run.la
 
 test_utils_web_CPPFLAGS = \
@@ -773,9 +775,9 @@ test_autoconfig_LDADD = \
 			libpriv-defs.la \
 			libpriv-log.la \
 			libpriv-test-run.la \
-			libpriv-subprocess.la \
 			libpriv-utils.la \
 			libpriv-utils-web.la \
+			libpriv-subprocess.la \
 			libpriv-utils-plusplus.la
 
 test_autoconfig_LDFLAGS = $(LIBCZMQ_LIBS) $(CXXTOOLS_LIBS) ${LIBMLM_LIBS} -lbiosapi -ltntdb
@@ -1031,9 +1033,9 @@ agent_autoconfig_LDADD = \
 			libpriv-log.la \
 			libpriv-cidr.la \
 			libpriv-defs.la \
+			libpriv-utils-web.la \
 			libpriv-subprocess.la \
 			libpriv-utils-ymsg.la \
-			libpriv-utils-web.la \
 			libpriv-utils-plusplus.la
 
 # FIXME remove utils ymsg

@@ -26,6 +26,7 @@
 #include <cxxtools/regex.h>
 #include <cxxtools/serializationinfo.h>
 #include <cxxtools/split.h>
+#include "subprocess.h"
 
 #include "utils_web.h"
 
@@ -396,6 +397,45 @@ json2zpl (
 }
 
 } // namespace utils::config
+
+namespace email {
+
+static char*
+s_getenv (const char* name, const char* dfl)
+{
+    char* ret = getenv (name);
+    if (!ret)
+        return (char*) dfl;
+    return ret;
+}
+
+static std::string
+s_read_all (const char* filename) {
+    int fd = open (filename, O_RDONLY);
+    if (fd <= -1)
+        return std::string {};
+    std::string ret = shared::read_all (fd);
+    close (fd);
+    return ret;
+}
+
+void
+x_headers (zhash_t *headers)
+{
+    zhash_insert (headers, "X-Eaton-IPC-image-version",
+        (void*) (s_getenv ("OSIMAGE_BASENAME", "unknown")));
+    zhash_insert (headers, "X-Eaton-IPC-hardware-catalog-number",
+        (void*) (s_getenv ("HARDWARE_CATALOG_NUMBER", "unknown")));
+    zhash_insert (headers, "X-Eaton-IPC-hardware-spec-revision",
+        (void*) (s_getenv ("HARDWARE_SPEC_REVISION", "unknown")));
+    zhash_insert (headers, "X-Eaton-IPC-hardware-serial-number",
+        (void*) (s_getenv ("HARDWARE_SERIAL_NUMBER", "unknown")));
+
+    std::string machine_id = s_read_all ("/etc/machine-id");
+    if (!machine_id.empty ())
+        zhash_insert (headers, "X-Eaton-IPC-machine-id", (void*) machine_id.c_str ());
+}
+} // namespace utils::email
 
 } // namespace utils
 
