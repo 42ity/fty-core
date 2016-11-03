@@ -186,7 +186,7 @@ UserInfo user;
             participate,
             uuid);
 
-    char *temp_dir = zsys_sprintf ("%s.XXXXXX",
+    char *temp_dir = zsys_sprintf ("%s/.XXXXXX",
             getenv ("SPOOL_DIR") ? getenv ("SPOOL_DIR") : "/tmp");
     temp_dir = mkdtemp (temp_dir);
     chmod (temp_dir, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
