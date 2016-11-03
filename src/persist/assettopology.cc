@@ -219,7 +219,7 @@ construct_input_power_group
             row [4].get (dest_id);
             row [5].get (dest_socket);
             row [6].get (dest_name);
-            row [3].get (dest_subtype);
+            row [7].get (dest_subtype);
             
             // guard agains devices in other dc OR across dc's
             auto search = devices_of_dc.find (source_id);
