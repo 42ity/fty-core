@@ -320,7 +320,7 @@ UserInfo user;
             logname_ext = slogname_ext;
             logname_base = slogname_base;
 
-            if (logname_base == "messages")
+            if (logname_base == "messages") {
                 logfile = "/var/log/" + logname_base;
             } else {
                 throw std::runtime_error("Sorry, logname '" + logname_base + "' support is currently not implemented");
