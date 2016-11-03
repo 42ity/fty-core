@@ -191,7 +191,7 @@ UserInfo user;
     temp_dir = mkdtemp (temp_dir);
     chmod (temp_dir, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
     if (!temp_dir)
-        http_die ("internal-error", "Can't create temporary directory: %s", strerror (errno));
+        http_die ("internal-error", "Can't create temporary directory");
 
     // http://www.tntnet.org/howto/upload-howto.html
     const tnt::Multipart& mp = request.getMultipart();
@@ -206,7 +206,7 @@ UserInfo user;
         std::ofstream out_file (path);
         if (!out_file) {
             s_rm_rf (paths, &temp_dir);
-            http_die ("internal-error", "Cannot process attachment: %s", strerror (errno));
+            http_die ("internal-error", "Cannot process attachment");
         }
         
         // more efficient is the use of iterators:
