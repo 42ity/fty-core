@@ -24,7 +24,7 @@
 #  \brief  Not yet documented file
 
 [ -n "$1" ] || { echo "ERROR: instance name required (suffix after tntnet@ in systemd) as the first argument" >&2; exit 1; }
-INST="$1"
+INST="`basename "$1" .service`"
 
 echo "Check requirements of tntnet@$INST instance for BIOS"
 
@@ -66,25 +66,32 @@ if [[ -x "$JSONSH" ]] ; then
         logmsg_info "systemctl: Will fork to use JSON.sh from '$JSONSH' to cook strings"
         get_a_string_arg() { "$JSONSH" -x "$1" | (IFS="`printf '\t'`" read K V; echo "$V") | sed 's,^"\(.*\)",\1,' ; }
     fi
-    TMPSTR="$(get_a_string_arg '"release-details","osimage-name"' < "$J")" && [[ -n "$TMPSTR" ]] || \
-    { TMPSTR="$(get_a_string_arg '"release-details","osimage-filename"' < "$J")" && [[ -n "$TMPSTR" ]] && \
-        TMPSTR="`basename "$TMPSTR" | sed 's/\.\(squashfs\|tar\|tar\..*\|tgz\|tbz2\|txz\)$//'`" ; } || \
-        TMPSTR=""
-    if [[ -z "$TMPSTR" ]] && [[ ! -s "$J" ]] && [[ -s "$JO" ]] ; then
-        # Legacy fallback: new OS image, old uImage - no release-details yet
-        TMPSTR="$(get_a_string_arg '"bios-release","osimage-name"' < "$JO")" && [[ -n "$TMPSTR" ]] || \
-        { TMPSTR="$(get_a_string_arg '"bios-release","osimage-filename"' < "$JO")" && [[ -n "$TMPSTR" ]] && \
-            TMPSTR="`basename "$TMPSTR" | sed 's/\.\(squashfs\|tar\|tar\..*\|tgz\|tbz2\|txz\)$//'`" ; } || \
-            TMPSTR=""
-    fi
-    [[ -n "$TMPSTR" ]] && OSIMAGE_BASENAME="$TMPSTR"
+    get_detail() {
+        local _TMPSTR=""
+        [[ -s "$J" ]] && \
+            _TMPSTR="$(get_a_string_arg '"release-details","'"$1"'"' < "$J")" && [[ -n "${_TMPSTR}" ]] || \
+            _TMPSTR=""
+        if [[ -z "${_TMPSTR}" ]] && [[ ! -s "$J" ]] && [[ -s "$JO" ]] ; then
+            # Legacy fallback: new OS image, old uImage - no release-details yet
+            _TMPSTR="$(get_a_string_arg '"bios-release","'"$1"'"' < "$JO")" && [[ -n "${_TMPSTR}" ]] || \
+                _TMPSTR=""
+        fi
+        echo "${_TMPSTR}"
+        if [[ -n "${_TMPSTR}" ]] ; then return 0 ; else return 1; fi
+    }
 
-    TMPSTR="$(get_a_string_arg '"release-details","hardware-catalog-number"' < "$J")"
-    [[ -n "$TMPSTR" ]] && HARDWARE_CATALOG_NUMBER="$TMPSTR"
-    TMPSTR="$(get_a_string_arg '"release-details","hardware-spec-revision"' < "$J")"
-    [[ -n "$TMPSTR" ]] && HARDWARE_SPEC_REVISION="$TMPSTR"
-    TMPSTR="$(get_a_string_arg '"release-details","hardware-serial-number"' < "$J")"
-    [[ -n "$TMPSTR" ]] && HARDWARE_SERIAL_NUMBER="$TMPSTR"
+    TMPSTR="$(get_detail "osimage-name")" || \
+    { TMPSTR="$(get_detail "osimage-filename")" && \
+        TMPSTR="`basename "$TMPSTR" | sed 's/\.\(squashfs\|tar\|tar\..*\|tgz\|tbz2\|txz\)$//'`" ; } || \
+    TMPSTR=""
+    [[ -n "$TMPSTR" ]] && OSIMAGE_BASENAME="$TMPSTR" || true
+
+    TMPSTR="$(get_detail "hardware-catalog-number")" && \
+        HARDWARE_CATALOG_NUMBER="$TMPSTR" || true
+    TMPSTR="$(get_detail "hardware-spec-revision")" && \
+        HARDWARE_SPEC_REVISION="$TMPSTR" || true
+    TMPSTR="$(get_detail "hardware-serial-number")" && \
+        HARDWARE_SERIAL_NUMBER="$TMPSTR" || true
     unset TMPSTR
 fi
 echo "OSIMAGE_BASENAME='$OSIMAGE_BASENAME'" > "$F"
