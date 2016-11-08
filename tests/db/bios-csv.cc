@@ -41,6 +41,11 @@ s_usage()
     std::cerr << "Usage: bios-cli [export|compare]" << std::endl;
     std::cerr << "       export     export csv file from current DB" << std::endl;
     std::cerr << "       compare    sourcefile_1 exportedfile_2  return exportedfile_2 corresponds with sourcefile_1" << std::endl;
+    std::cerr << "Enviromental variables:" << std::endl;
+    std::cerr << "      DB_USER     name of database user" << std::endl;
+    std::cerr << "      DB_PASSWD   database password" << std::endl;
+    std::cerr << "Config files:" << std::endl;
+    std::cerr << "      ~/.my.cnf   read client/name, client/password if variables not specified" << std::endl;
 }
 
 static void
