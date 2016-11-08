@@ -60,6 +60,9 @@ export LANG LC_ALL TZ
 #                       Details about uImage miniroot for this system
 #   HWD_CATALOG_NB  HWD_REV HWD_SERIAL_NB
 #                       OEM details about hardware for this system
+# For now (code to be ported) we also expect pre-parsed markup in
+#   BIOSINFO_UBOOT          BIOSINFO_UIMAGE
+
 
 # Echo helper
 DEBUG_X=""
