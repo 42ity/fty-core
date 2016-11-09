@@ -468,7 +468,7 @@ sysinfo_detail (
             log_debug ("shared::output2 () finished with return value == '%" PRIi32"'", rv);
             if (rv != 0) {
                 std::string message =
-                    "shared::output2 (args = '{\"sudo\", \"systemctl\", \"list-json\"}') failed; "
+                    "shared::output2 (args = '{\"sudo\", \"systemctl\", \"list-json\"}') failed; " +
                     "return code == '" + rv + "'";
                 throw std::runtime_error (message);
             }
@@ -507,11 +507,11 @@ sysinfo_detail (
             std::string diskstate_output;
 
             log_debug ("shared::output2 (args = '{\"df\", \"-k\"}') starting");
-            int rv = shared::output2 ({"df", "-k"}, unitstate_output, 0, 100);
+            int rv = shared::output2 ({"df", "-k"}, diskstate_output, 0, 100);
             log_debug ("shared::output2 () finished with return value == '%" PRIi32"'", rv);
             if (rv != 0) {
                 std::string message =
-                    "shared::output2 (args = '{\"df\", \"-k\"}') failed; "
+                    "shared::output2 (args = '{\"df\", \"-k\"}') failed; " +
                     "return code == '" + rv + "'";
                 throw std::runtime_error (message);
             }
@@ -531,7 +531,7 @@ sysinfo_detail (
             std::string diskstate_output;
 
             log_debug ("shared::output2 (args = '{\"mount\"}') starting");
-            int rv = shared::output2 ({"mount"}, unitstate_output, 0, 100);
+            int rv = shared::output2 ({"mount"}, diskstate_output, 0, 100);
             log_debug ("shared::output2 () finished with return value == '%" PRIi32"'", rv);
             if (rv != 0) {
                 std::string message =
