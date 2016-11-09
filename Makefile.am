@@ -1130,7 +1130,8 @@ client_SCRIPTS +=	tools/bios-passwd \
 			tools/mount_usb \
 			tools/loghost-rsyslog \
 			tools/compress-logs \
-			tools/verify-fs
+			tools/verify-fs \
+			tools/diagnostic-information
 
 helper_SCRIPTS +=	tools/tntnet-ExecStartPre.sh tools/generate-release-details.sh
 
