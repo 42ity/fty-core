@@ -469,14 +469,16 @@ sysinfo_detail (
             if (rv != 0) {
                 std::string message =
                     "shared::output2 (args = '{\"sudo\", \"systemctl\", \"list-json\"}') failed; ";
-                message += "return code == '" + rv + "'";
+                message += "return code == '";
+                message += rv;
+                message += "'";
                 throw std::runtime_error (message);
             }
 
             if (unitstate_output.empty ()) {
                 throw std::runtime_error ("Returned document was empty.");
             }
-            std::stringstream input (unitstate_input, std::ios_base::in);
+            std::stringstream input (unitstate_output, std::ios_base::in);
             cxxtools::JsonDeserializer deserializer (input);
             cxxtools::SerializationInfo si;
             deserializer.deserialize (si);
@@ -512,7 +514,9 @@ sysinfo_detail (
             if (rv != 0) {
                 std::string message =
                     "shared::output2 (args = '{\"df\", \"-k\"}') failed; ";
-                message += "return code == '" + rv + "'";
+                message += "return code == '";
+                message += rv;
+                message += "'";
                 throw std::runtime_error (message);
             }
 
@@ -536,7 +540,9 @@ sysinfo_detail (
             if (rv != 0) {
                 std::string message =
                     "shared::output2 (args = '{\"mount\"}') failed; ";
-                message += "return code == '" + rv + "'";
+                message += "return code == '";
+                message += rv;
+                message += "'";
                 throw std::runtime_error (message);
             }
 
