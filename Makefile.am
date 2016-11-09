@@ -990,7 +990,7 @@ dist_noinst_HEADERS += \
 client_SCRIPTS +=	tools/systemctl tools/testpass.sh tools/update-rc3
 EXTRA_DIST +=		tools/systemctl tools/testpass.sh tools/update-rc3
 
-cibin_programs += bios-csv
+client_PROGRAMS += bios-csv
 bios_csv_SOURCES = tests/db/bios-csv.cc
 bios_csv_CPPFLAGS = \
 						  $(AM_CPPFLAGS) \
