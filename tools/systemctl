@@ -254,6 +254,9 @@ Usage: ${SCRIPT_BASENAME} list-ipm-units [modifiers] [unitnames]
                                   those that are running (or not) as expected
       --missing                   ONLY list unitnames that are in the filter
                                   but files are not installed in this system
+      --init-script|--not-init-script ONLY list unit names that are implemented
+                                  as init-script (or real units) based on an
+                                  empty or populated value of UnitFileState
       --detailed|--details|--long|-l  List more than just the unit names
                                   (same data as JSON, but a TSV markup)
     Specifying all origins (e.g. "--internal --external") or all states means
@@ -552,6 +555,7 @@ systemctl_list_ipm_units() (
     # We support listing of "--missing" units explicitly for non-regex names.
     LIST_UNITS=""
     LIST_STATES=""
+    LIST_UNITTYPES=""
     LIST_MISSING="no"
     SHOW_DETAILS="no"
     SYSTEMCTL_UNITS=""
@@ -569,6 +573,8 @@ systemctl_list_ipm_units() (
             --disabled|--not-enabled) LIST_STATES="$LIST_STATES STATE:DISABLED" ;;
             --failed) LIST_STATES="$LIST_STATES STATE:FAILED" ;;
             --not-failed) LIST_STATES="$LIST_STATES STATE:NOTFAILED" ;;
+            --init-script) LIST_UNITTYPES="$LIST_UNITTYPES UNITTYPE:INITSCRIPT" ;;
+            --not-init-script) LIST_UNITTYPES="$LIST_UNITTYPES UNITTYPE:REALUNIT" ;;
             --missing) LIST_MISSING="yes" ;;
             --detailed|--details|--long|-l) SHOW_DETAILS="yes" ;;
             *)  if isAllowed_Unit "$1" ; then
@@ -592,12 +598,18 @@ systemctl_list_ipm_units() (
 
     # If caller wants missing units, they have no systemd state to care about
     [[ x"$LIST_MISSING" = x"yes" ]] && LIST_STATES=""
+
     [[ -n "$LIST_STATES" ]] && \
     LIST_STATES="`for T in $LIST_STATES ; do echo "$T" ; done | sort | uniq | tr '\n' " "`" && \
     [[ "$LIST_STATES" =~ (STATE:ACTIVE.*STATE:INACTIVE|STATE:DISABLED.*STATE:ENABLED|STATE:FAILED.*STATE:NOTFAILED) ]] && LIST_STATES=""
 
+    [[ -n "$LIST_UNITTYPES" ]] && \
+    LIST_UNITTYPES="`for T in $LIST_UNITTYPES ; do echo "$T" ; done | sort | uniq | tr '\n' " "`" && \
+    [[ "$LIST_UNITTYPES" =~ (UNITTYPE:INITSCRIPT.*UNITTYPE:REALUNIT) ]] && LIST_UNITTYPES=""
+
     [[ -z "$LIST_UNITS" ]] && LIST_UNITS="ORIGIN:ANY"
     [[ -z "$LIST_STATES" ]] && LIST_STATES="STATE:ANY"
+    [[ -z "$LIST_UNITTYPES" ]] && LIST_UNITTYPES="UNITTYPE:ANY"
 
     # List of unique unit filenames known to the system that match our filter
     if [[ -z "$REQUESTED_UNITS_REGEX" ]] || [[ "$LIST_MISSING" = yes ]]; then
@@ -696,7 +708,7 @@ $U"
     fi
 
     [[ -n "$SYSTEMCTL_UNITS" ]] && \
-    if [[ "$LIST_STATES" != "STATE:ANY" ]] || [[ "$SHOW_DETAILS" = yes ]]; then
+    if [[ "$LIST_STATES" != "STATE:ANY" ]] || [[ "$LIST_UNITTYPES" != "UNITTYPE:ANY" ]] || [[ "$SHOW_DETAILS" = yes ]]; then
         # Logic borrowed from "--list-json" feature and simplified since
         # we have all the unit-naming data pre-filtered already
         # TODO: same issue as above that newer systemctl (v231) aborts
@@ -744,7 +756,11 @@ $U"
 
         [[ -z "$SYSTEMCTL_INFO" ]] && \
             echo "ERROR: No detailed information was collected from systemctl, will only print unit names" >&2 || \
-        if [[ "$LIST_STATES" == "STATE:ANY" ]] && [[ "$SHOW_DETAILS" = yes ]]; then
+        if [[ "$LIST_STATES" == "STATE:ANY" ]] \
+        && [[ "$LIST_UNITTYPES" == "UNITTYPE:ANY" ]] \
+        && [[ "$SHOW_DETAILS" = yes ]] \
+        ; then
+            # Shortcut : we want it all
             SYSTEMCTL_UNITS="$SYSTEMCTL_INFO"
         else
             for U in $SYSTEMCTL_UNITS ; do
@@ -757,19 +773,20 @@ $U"
                     SHOW1=""
                     SHOW2=""
                     SHOW3=""
+                    SHOW4=""
                     shopt -s nocasematch
                     case "$LIST_STATES" in
                         *STATE:ENABLED*)
                             case "$I" in
                                 *L:not-loaded*|*L:masked*|*U:disabled*|*U:bad*) SHOW1=no ;;
-                                *L:loaded*|U:enabled*|*U:static*|*U:"	"S:*) SHOW1=yes ;; # NOTE: It is a TAB character after U:
+                                *L:loaded*|U:enabled*|*U:static*|*U:"	"S:*|*U:generated*) SHOW1=yes ;; # NOTE: It is a TAB character after U:
                                 *) SHOW1=no ;;
                             esac
                             ;;
                         *STATE:DISABLED*)
                             case "$I" in
                                 *L:not-loaded*|*L:masked*|*U:disabled*|*U:bad*) SHOW1=yes ;;
-                                *L:loaded*|*U:enabled*|*U:static*|*U:"	"S:*) SHOW1=no ;;
+                                *L:loaded*|*U:enabled*|*U:static*|*U:"	"S:*|*U:generated*) SHOW1=no ;;
                                 *) SHOW1=yes ;;
                             esac
                             ;;
@@ -809,8 +826,23 @@ $U"
                             ;;
                     esac
 
+                    case "$LIST_UNITTYPES" in
+                        *UNITTYPE:INITSCRIPT*)
+                            case "$I" in
+                                *U:"	"S:*|*U:generated*) SHOW4=yes ;; # NOTE: It is a TAB character after U:
+                                *) SHOW4=no ;;
+                            esac
+                            ;;
+                        *UNITTYPE:REALUNIT*)
+                            case "$I" in
+                                *U:"	"S:*|*U:generated*) SHOW4=no ;;
+                                *) SHOW4=yes ;;
+                            esac
+                            ;;
+                    esac
+
                     # We show units not filtered away by requirements listed on CLI
-                    [[ x"$SHOW1" != xno ]] && [[ x"$SHOW2" != xno ]] && [[ x"$SHOW3" != xno ]] # Return this test's exitcode
+                    [[ x"$SHOW1" != xno ]] && [[ x"$SHOW2" != xno ]] && [[ x"$SHOW3" != xno ]] && [[ x"$SHOW4" != xno ]] # Return this test's exitcode
                     ) && SHOW_THIS_UNIT=yes
                 fi
                 if [[ "$SHOW_THIS_UNIT" = yes ]] ; then
@@ -831,7 +863,7 @@ $U"
     fi
 
     [[ -z "$SYSTEMCTL_UNITS" ]] && \
-        echo "No installed units match your selection: $LIST_UNITS $LIST_STATES" | sed 's,  , ,g' >&2 && \
+        echo "No installed units match your selection: $LIST_UNITS $LIST_STATES $LIST_UNITS" | sed 's,  , ,g' >&2 && \
         return 3
 
     echo "$SYSTEMCTL_UNITS"
