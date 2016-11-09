@@ -175,18 +175,24 @@ construct_input_power_group
     try {
         tntdb::Connection connection = tntdb::connectCached (url);
         tntdb::Statement statement = connection.prepareCached (
-            " SELECT id_asset_element "
-            " FROM v_bios_asset_element_super_parent "
+            " SELECT id_asset_element, a.name, c.name "
+            " FROM t_bios_asset_element as a "
+            " LEFT JOIN t_bios_asset_element_type as b "
+            "   ON a.id_type = b.id_asset_element_type "
+            " LEFT JOIN t_bios_asset_device_type as c "
+            "   ON a.id_subtype = c.id_asset_device_type "
             " WHERE "
-            "     (id_parent1=:dc_id AND "
-            "         id_asset_device_type IN (1,2,3,4,5,6,7,9,13))"   // only certain devices
+            " b.name = 'device' "
+            " AND "
+            " id_parent = :dc_id "
         );
         tntdb::Result result = statement.set ("dc_id", datacenter_id).select ();
-        std::map <std::string, bool> devices_of_dc;
         for (const auto& row : result) {
-                std::string device_of_dc_id;
-                row [0].get (device_of_dc_id);
-                devices_of_dc.emplace (std::make_pair (device_of_dc_id, true));
+                std::string device_id, device_name, device_subtype;
+                row [0].get (device_id);
+                row [1].get (device_name);
+                row [2].get (device_subtype);
+                devices.emplace (std::make_pair (device_id, std::make_pair (device_name, device_subtype)));
         }
 
         statement = connection.prepareCached (
@@ -221,20 +227,12 @@ construct_input_power_group
             row [6].get (dest_name);
             row [7].get (dest_subtype);
             
-            // guard agains devices in other dc OR across dc's
-            auto search = devices_of_dc.find (source_id);
-            if (search == devices_of_dc.end ())
+            // make sure we only inlcude powerchains between items in 'devices' map
+            if (devices.find (source_id) == devices.end ())
                 continue;
-            search = devices_of_dc.find (dest_id);
-            if (search == devices_of_dc.end ())
+            if (devices.find (dest_id) == devices.end ())
                 continue;
 
-            if (devices.find (source_id) == devices.end ()) {
-                devices.emplace (std::make_pair (source_id, std::make_pair (source_name, source_subtype)));
-            }
-            if (devices.find (dest_id) == devices.end ()) {
-                devices.emplace (std::make_pair (dest_id, std::make_pair (dest_name, dest_subtype)));
-            }
             powerchains.push_back (std::make_tuple (dest_id, dest_socket, source_id, source_socket));
         }
     }
