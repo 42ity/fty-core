@@ -468,16 +468,16 @@ sysinfo_detail (
             log_debug ("shared::output2 () finished with return value == '%" PRIi32"'", rv);
             if (rv != 0) {
                 std::string message =
-                    "shared::output2 (args = '{\"sudo\", \"systemctl\", \"list-json\"}') failed; " +
-                    "return code == '" + rv + "'";
+                    "shared::output2 (args = '{\"sudo\", \"systemctl\", \"list-json\"}') failed; ";
+                message += "return code == '" + rv + "'";
                 throw std::runtime_error (message);
             }
 
             if (unitstate_output.empty ()) {
                 throw std::runtime_error ("Returned document was empty.");
             }
-
-            cxxtools::JsonDeserializer deserializer (unitstate_output);
+            std::stringstream input (unitstate_input, std::ios_base::in);
+            cxxtools::JsonDeserializer deserializer (input);
             cxxtools::SerializationInfo si;
             deserializer.deserialize (si);
 
@@ -511,8 +511,8 @@ sysinfo_detail (
             log_debug ("shared::output2 () finished with return value == '%" PRIi32"'", rv);
             if (rv != 0) {
                 std::string message =
-                    "shared::output2 (args = '{\"df\", \"-k\"}') failed; " +
-                    "return code == '" + rv + "'";
+                    "shared::output2 (args = '{\"df\", \"-k\"}') failed; ";
+                message += "return code == '" + rv + "'";
                 throw std::runtime_error (message);
             }
 
@@ -535,8 +535,8 @@ sysinfo_detail (
             log_debug ("shared::output2 () finished with return value == '%" PRIi32"'", rv);
             if (rv != 0) {
                 std::string message =
-                    "shared::output2 (args = '{\"mount\"}') failed; "
-                    "return code == '" + rv + "'";
+                    "shared::output2 (args = '{\"mount\"}') failed; ";
+                message += "return code == '" + rv + "'";
                 throw std::runtime_error (message);
             }
 
