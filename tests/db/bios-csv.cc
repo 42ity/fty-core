@@ -29,6 +29,7 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <cxxtools/inifile.h>
 
 #include "db/inout.h"
 #include "log.h"
@@ -40,6 +41,11 @@ s_usage()
     std::cerr << "Usage: bios-cli [export|compare]" << std::endl;
     std::cerr << "       export     export csv file from current DB" << std::endl;
     std::cerr << "       compare    sourcefile_1 exportedfile_2  return exportedfile_2 corresponds with sourcefile_1" << std::endl;
+    std::cerr << "Enviromental variables:" << std::endl;
+    std::cerr << "      DB_USER     name of database user" << std::endl;
+    std::cerr << "      DB_PASSWD   database password" << std::endl;
+    std::cerr << "Config files:" << std::endl;
+    std::cerr << "      ~/.my.cnf   read client/name, client/password if variables not specified" << std::endl;
 }
 
 static void
@@ -137,10 +143,36 @@ s_compare(
     return true;
 }
 
+void
+s_load_name_password ()
+{
+    if (::getenv ("DB_USER") && ::getenv ("DB_PASSWD"))
+        return;
+
+    try {
+        struct passwd *pw = ::getpwuid (getuid ());
+        const char* home = pw->pw_dir;
+
+        cxxtools::IniFile inif {std::string {home} + ".my.cnf"};
+        std::string user = inif.getValue ("client", "user", "");
+        if (user != "")
+            ::setenv ("DB_USER", user.c_str (), 1);
+        std::string password = inif.getValue ("client", "password", "");
+        if (password != "")
+            ::setenv ("DB_PASSWD", password.c_str (), 1);
+
+    }
+    catch (const std::runtime_error &e) {
+        return;
+    }
+}
+
 int main(int argc, char** argv)
 {
     if (argc <= 1)
         s_die_usage();
+
+    s_load_name_password ();
 
     if (!strcmp(argv[1], "export"))
     {
