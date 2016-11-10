@@ -459,6 +459,7 @@
   <!-- <maxRequestSize>65536</maxRequestSize> -->
   <!-- <maxRequestTime>600</maxRequestTime> -->
   <!-- <user>tntnet</user> -->
+  <allUserGroups>yes</allUserGroups>
   <!-- <group>tntnet</group> -->
   <!-- <dir>/</dir> -->
   <!-- <documentRoot>/var/www</documentRoot> -->
