@@ -398,7 +398,7 @@ sysinfo_detail (
                     "return code == '%" PRIi32"'", rv);
                 dpkg_output.clear ();
             }
-        }
+        } // end of `dpkg` callout
         if (!dpkg_output.empty ()) {
             output += ",\t\"packages\" : [\n";
 
@@ -458,7 +458,104 @@ sysinfo_detail (
                 output += "\t}\n";
             }
             output += "\t]\n"; // "packages" closing bracket
+        } // end of 'packages' json listing
+
+        try {
+            std::string unitstate_output;
+
+            log_debug ("shared::output2 (args = '{\"sudo\", \"systemctl\", \"list-json\"}') starting");
+            int rv = shared::output2 ({"sudo", "systemctl", "list-json"}, unitstate_output, 0, 100);
+            log_debug ("shared::output2 () finished with return value == '%" PRIi32"'", rv);
+            if (rv != 0) {
+                std::string message =
+                    "shared::output2 (args = '{\"sudo\", \"systemctl\", \"list-json\"}') failed; ";
+                message += "return code == '";
+                message += rv;
+                message += "'";
+                throw std::runtime_error (message);
+            }
+
+            if (unitstate_output.empty ()) {
+                throw std::runtime_error ("Returned document was empty.");
+            }
+            std::stringstream input (unitstate_output, std::ios_base::in);
+            cxxtools::JsonDeserializer deserializer (input);
+            cxxtools::SerializationInfo si;
+            deserializer.deserialize (si);
+
+            if (si.category () != cxxtools::SerializationInfo::Category::Array) {
+                throw std::runtime_error ("Document root type is not Json Array.");
+            }
+
+            if (si.memberCount () == 0) {
+                throw std::runtime_error ("Root json array is empty.");
+            }
+
+            output += ",\t\"services\" :\n";
+            output += unitstate_output ; // includes the brackets
+
         }
+        catch (const std::exception& e) {
+            log_warning (
+                "Could not display 'services' section of sysinfo that is read from 'systemctl' wrapper "
+                "because the following error happened: '%s'", e.what ());
+        } // end of 'services' listing and `systemctl` callout
+
+        // Order of columns etc. in OS tools is distro-dependent.
+        // We have little machine-friendly use for these, but more
+        // for human reading - so passing the native text output
+        // is good enough here.
+        try {
+            std::string diskstate_output;
+
+            log_debug ("shared::output2 (args = '{\"df\", \"-k\"}') starting");
+            int rv = shared::output2 ({"df", "-k"}, diskstate_output, 0, 100);
+            log_debug ("shared::output2 () finished with return value == '%" PRIi32"'", rv);
+            if (rv != 0) {
+                std::string message =
+                    "shared::output2 (args = '{\"df\", \"-k\"}') failed; ";
+                message += "return code == '";
+                message += rv;
+                message += "'";
+                throw std::runtime_error (message);
+            }
+
+            output += ",\t\t";
+            output += utils::json::jsonify ("diskfree-raw", diskstate_output);
+            output += "\n";
+        }
+        catch (const std::exception& e) {
+            log_warning (
+                "Could not display 'diskfree-raw' section of sysinfo that is read from 'df -k' "
+                "because the following error happened: '%s'", e.what ());
+        } // end of 'diskfree-raw' listing and `df -k` callout
+
+        // Same comment as above regarding native output pass-through.
+        try {
+            std::string diskstate_output;
+
+            log_debug ("shared::output2 (args = '{\"mount\"}') starting");
+            int rv = shared::output2 ({"mount"}, diskstate_output, 0, 100);
+            log_debug ("shared::output2 () finished with return value == '%" PRIi32"'", rv);
+            if (rv != 0) {
+                std::string message =
+                    "shared::output2 (args = '{\"mount\"}') failed; ";
+                message += "return code == '";
+                message += rv;
+                message += "'";
+                throw std::runtime_error (message);
+            }
+
+            output += ",\t\t";
+            output += utils::json::jsonify ("mounts-raw", diskstate_output);
+            output += "\n";
+        }
+        catch (const std::exception& e) {
+            log_warning (
+                "Could not display 'mounts-raw' section of sysinfo that is read from 'mount' "
+                "because the following error happened: '%s'", e.what ());
+        } // end of 'mounts-raw' listing and `mount` callout
+
     } // if (profile BiosProfile::Admin) clause closing bracket
     output += "}"; // closing json bracket
 
