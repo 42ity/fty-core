@@ -86,12 +86,11 @@ s_rm_rf (const std::vector <std::string>& paths, char **dir_p)
 
 static off_t
 s_max_attachment_size () {
-    static const off_t default_max_size = 1024 * 1024;
+    off_t ret = 1024 * 1024;
     zconfig_t *config = zconfig_load ("/etc/agent-smtp/bios-agent-smtp.conf");
     if (!config)
-        return default_max_size;
+        return ret;
 
-    off_t ret = default_max_size;
     zconfig_t *smtp = zconfig_locate (config, "smtp");
     if (smtp && zconfig_get (smtp, "max_size", NULL)) {
         errno = 0;
@@ -102,7 +101,6 @@ s_max_attachment_size () {
         else
             ret = foo;
     }
-
     zconfig_destroy (&config);
     return ret;
 }
