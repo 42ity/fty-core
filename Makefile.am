@@ -1138,6 +1138,8 @@ helper_SCRIPTS +=	tools/tntnet-ExecStartPre.sh tools/generate-release-details.sh
 EXTRA_DIST +=		tools/fake-th \
 			tools/bios-networking \
 			tools/mount_usb \
+			tools/diagnostic-information \
+			tools/generate-release-details.sh \
 			tools/loghost-rsyslog \
 			tools/compress-logs
 
