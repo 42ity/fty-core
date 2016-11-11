@@ -138,6 +138,13 @@ UserInfo user;
         }
     }
     
+    // connect to mlm client
+    MlmClientPool::Ptr client = mlm_pool.get ();
+    if (!client.getPointer ()) {
+        log_critical ("Error: mlm_pool.get () failed.");
+        http_die ("internal-error", "mlm_pool.get () failed.");
+    }
+
     // send message
     zuuid_t *uuid = zuuid_new ();
     zmsg_t *send = s_smtp_GET_message (
@@ -146,14 +153,6 @@ UserInfo user;
             checked_context.c_str (),
             attach_system_state,
             uuid);
-
-    // connect to mlm client
-    MlmClientPool::Ptr client = mlm_pool.get ();
-    if (!client.getPointer ()) {
-        log_critical ("Error: mlm_pool.get () failed.");
-        http_die ("internal-error", "mlm_pool.get () failed.");
-    }
-
     int rv = client->sendto ("agent-smtp", "SENDMAIL", 1000, &send);
 
     if (rv == -1)
