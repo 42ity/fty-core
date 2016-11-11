@@ -37,6 +37,10 @@
 #include "log.h"
 #include "utils.h"
 
+// For debugging server credentials in error-reports below
+#include "grp.h"
+#include "pwd.h"
+
 /* Code snatched and adapted from TNTNET source codebase including :
  *     tntnet-sources/framework/common/httpreply.cpp
  * and tntnet-sources/framework/common/tnt/cstream.h
@@ -439,6 +443,54 @@ UserInfo user;
         /* TODO: In case of errors, this may conflict with Content-Type header
          * value set above; we ASSUME this has negligible probability as we set
          * it in the end. */
+
+        { // More debug, copied from `man getgrouplist` samples and my tntnet patch
+          struct group *gr;
+          gid_t curgid = getgid();
+          gid_t curegid = getegid();
+          uid_t curuid = getuid();
+          uid_t cureuid = geteuid();
+          message = "Current webserver runs as: UID=" + std::to_string(curuid) +
+                " (EUID=" + std::to_string(cureuid) + "), " +
+                " GID=" + std::to_string(curgid) +
+                " (EGID=" + std::to_string(curegid) + ")";
+          log_debug(message.c_str());
+
+          int ngroups = getgroups(0, NULL);
+          message = "Can not report about supplementary groups at the moment";
+          message += ": getgroups() returned ";
+          message += std::to_string(ngroups);
+          if (ngroups > 0) {
+            gid_t *groups = (gid_t *)malloc(ngroups * sizeof(gid_t));
+            if (groups != NULL) {
+                if ( (ngroups = getgroups(ngroups, groups)) > 0 ) {
+                    message = "Supplementary Groups (";
+                    message += std::to_string(ngroups);
+                    message += " total): [ ";
+                    int j;
+                    for (j = 0; j < ngroups; j++) {
+                        if (j>0)
+                            message.append(", ");
+                        message += std::to_string(groups[j]);
+                        gr = getgrgid(groups[j]);
+                        if (gr != NULL)
+                            message += " (";
+                            message += gr->gr_name;
+                            message += ")";
+                    }
+                    message.append("]");
+                } else {
+                    message += " but second getgroups() failed and returned ";
+                    message += std::to_string(ngroups);
+                }
+                free (groups);
+            } else {
+                message += " but malloc() failed";
+            }
+          }
+          log_debug(message.c_str());
+        }
+
         reply.resetContent();
         message.assign ("Exception caught: ").append (e.what ());
         log_error (message.c_str ());

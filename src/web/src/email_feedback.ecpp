@@ -84,6 +84,29 @@ s_rm_rf (const std::vector <std::string>& paths, char **dir_p)
     }
 }
 
+static off_t
+s_max_attachment_size () {
+    static const off_t default_max_size = 1024 * 1024;
+    zconfig_t *config = zconfig_load ("/etc/agent-smtp/bios-agent-smtp.conf");
+    if (!config)
+        return default_max_size;
+
+    off_t ret = default_max_size;
+    zconfig_t *smtp = zconfig_locate (config, "smtp");
+    if (smtp && zconfig_get (smtp, "max_size", NULL)) {
+        errno = 0;
+        char *endptr;
+        off_t foo = strtoll (zconfig_get (smtp, "max_size", NULL), &endptr, 10);
+        if (errno != 0)
+            zsys_warning ("smtp/max_size %s it not a number", zconfig_get (smtp, "max_size", NULL));
+        else
+            ret = foo;
+    }
+
+    zconfig_destroy (&config);
+    return ret;
+}
+
 </%pre>
 <%request scope="global">
 UserInfo user;
@@ -160,17 +183,6 @@ UserInfo user;
         }
     }
     
-    // send message
-    zuuid_t *uuid = zuuid_new ();
-    zmsg_t *send = s_smtp_GET_message (
-            checked_to.c_str (),
-            checked_reply.c_str (),
-            checked_message.c_str (),
-            checked_context.c_str (),
-            attach_system_state,
-            participate,
-            uuid);
-
     char *temp_dir = zsys_sprintf ("%s/.XXXXXX",
             getenv ("SPOOL_DIR") ? getenv ("SPOOL_DIR") : "/tmp");
     temp_dir = mkdtemp (temp_dir);
@@ -181,7 +193,20 @@ UserInfo user;
     // http://www.tntnet.org/howto/upload-howto.html
     const tnt::Multipart& mp = request.getMultipart();
     std::vector <std::string> paths {};
+    off_t current_size = 0;
+    off_t max_size = s_max_attachment_size ();
     for (const auto& it: mp) {
+
+        current_size += it.getSize ();
+        if (current_size > max_size) {
+            s_rm_rf (paths, &temp_dir);
+            http_die (
+                "internal-error",
+                "Attachment size limit (%jd) have been exceeded (%jd)",
+                (intmax_t) max_size,
+                (intmax_t) current_size
+                );
+        }
 
         char * filename = strdup (it.getFilename ().c_str ());
         std::string path = temp_dir + std::string ("/") + std::string (basename (filename));
@@ -202,8 +227,6 @@ UserInfo user;
         out_file.close ();
         chmod (path.c_str (), S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
         }
-
-        zmsg_addstr (send, path.c_str ());
         paths.push_back (path);
     }
 
@@ -215,6 +238,18 @@ UserInfo user;
         http_die ("internal-error", "mlm_pool.get () failed.");
     }
 
+    // send message
+    zuuid_t *uuid = zuuid_new ();
+    zmsg_t *send = s_smtp_GET_message (
+            checked_to.c_str (),
+            checked_reply.c_str (),
+            checked_message.c_str (),
+            checked_context.c_str (),
+            attach_system_state,
+            participate,
+            uuid);
+    for (const std::string& path: paths)
+        zmsg_addstr (send, path.c_str ());
     int rv = client->sendto ("agent-smtp", "SENDMAIL", 1000, &send);
 
     if (rv == -1)
