@@ -183,17 +183,6 @@ UserInfo user;
         }
     }
     
-    // send message
-    zuuid_t *uuid = zuuid_new ();
-    zmsg_t *send = s_smtp_GET_message (
-            checked_to.c_str (),
-            checked_reply.c_str (),
-            checked_message.c_str (),
-            checked_context.c_str (),
-            attach_system_state,
-            participate,
-            uuid);
-
     char *temp_dir = zsys_sprintf ("%s/.XXXXXX",
             getenv ("SPOOL_DIR") ? getenv ("SPOOL_DIR") : "/tmp");
     temp_dir = mkdtemp (temp_dir);
@@ -237,11 +226,7 @@ UserInfo user;
         out_file.flush ();
         out_file.close ();
         chmod (path.c_str (), S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-
-
         }
-
-        zmsg_addstr (send, path.c_str ());
         paths.push_back (path);
     }
 
@@ -253,6 +238,18 @@ UserInfo user;
         http_die ("internal-error", "mlm_pool.get () failed.");
     }
 
+    // send message
+    zuuid_t *uuid = zuuid_new ();
+    zmsg_t *send = s_smtp_GET_message (
+            checked_to.c_str (),
+            checked_reply.c_str (),
+            checked_message.c_str (),
+            checked_context.c_str (),
+            attach_system_state,
+            participate,
+            uuid);
+    for (const std::string& path: paths)
+        zmsg_addstr (send, path.c_str ());
     int rv = client->sendto ("agent-smtp", "SENDMAIL", 1000, &send);
 
     if (rv == -1)
