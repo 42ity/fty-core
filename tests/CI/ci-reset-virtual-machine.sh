@@ -977,6 +977,8 @@ if [ -s "${ALTROOT}/usr/share/bios/scripts/generate-release-details.sh" \
 	# Note: The variables below are not populated on non-target hardware
 	# But for tests they might be set in e.g. the container custom config
 	# file like  /srv/libvirt/rootfs/bios-deploy.config-reset-vm
+	# Note: We do this only *after* possibly installing/updating more
+	# packages which may include newer releases of our software components.
 	export MODIMAGE_FILENAME MODIMAGE_LSINFO MODIMAGE_CKSUM
 	export BIOSINFO_UBOOT_ID_ETN   BIOSINFO_UBOOT_ID_OG    BIOSINFO_UBOOT_TSS
 	export BIOSINFO_UIMAGE_ID_ETN  BIOSINFO_UIMAGE_ID_OG   BIOSINFO_UIMAGE_TSS
