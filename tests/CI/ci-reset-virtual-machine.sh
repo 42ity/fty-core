@@ -162,6 +162,24 @@ settraps() {
 	done; done
 }
 
+probe_mounts() {
+	# $1 = VM name
+	# For customized containers that might bind-mount directories provided
+	# by the host (and maybe network-backed directories with autofs timeouts
+	# involved), startup of a container can return errors like this:
+	#   error: internal error: guest failed to start:
+	#       Failure in libvirt_lxc startup:
+	#       Failed to bind mount directory X to Y:
+	#       Too many levels of symbolic links
+	# The next attempt usually succeeds. The recommended solution is to list
+	# their contents and so "prime" the autofs ability to serve them.
+	# This routine tries to read *all* configured directories and returns an
+	# error if *any* of them failed.
+	virsh dumpxml "$1" | \
+	grep '<source dir=' | sed "s|^.*<source dir='\(/[^\']*\)'[ /].*>.*$|\1|" | \
+	(RES=0 ; while read D ; do ls "$D/" > /dev/null || RES=$? ; done; exit $RES)
+}
+
 #
 # defaults
 #
@@ -901,6 +919,7 @@ if [ x"$DEPLOYONLY" = xyes ]; then
 fi
 
 logmsg_info "Start the virtual machine $VM"
+probe_mounts "$VM"
 virsh -c lxc:// start "$VM" || die "Can't start the virtual machine $VM"
 
 VM_SHOULD_RESTART=no
@@ -976,7 +995,7 @@ if [ "$VM_SHOULD_RESTART" = yes ]; then
 	logmsg_info "Restart the virtual machine $VM"
 	virsh -c lxc:// shutdown "$VM" || true
 	virsh -c lxc:// destroy "$VM" && sleep 5 && \
-	virsh -c lxc:// start "$VM" || die "Can't reboot the virtual machine $VM"
+	{ probe_mounts; virsh -c lxc:// start "$VM"; } || die "Can't reboot the virtual machine $VM"
 	logmsg_info "Sleeping 30 sec to let VM startup settle down..."
 	sleep 30
 fi
