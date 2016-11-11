@@ -164,11 +164,11 @@ create_diagnostic_archive() {
 }
 
 usb_device(){
-    if [ -c /dev/sda1 ] ; then
+    if [ -f /dev/sda1 ] ; then
         echo "/dev/sda1"
         return
     fi
-    if [ -c /dev/sda ] ; then
+    if [ -f /dev/sda ] ; then
         echo "/dev/sda"
         return
     fi
