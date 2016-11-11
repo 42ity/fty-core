@@ -1139,7 +1139,7 @@ EXTRA_DIST +=		tools/fake-th \
 			tools/bios-networking \
 			tools/mount_usb \
 			tools/diagnostic-information \
-			tools/generate-release-details.sh.in \
+			tools/generate-release-details.sh \
 			tools/loghost-rsyslog \
 			tools/compress-logs
 
