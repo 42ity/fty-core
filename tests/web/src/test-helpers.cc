@@ -26,6 +26,29 @@
 #include <catch.hpp>
 #include "helpers.h"
 
+TEST_CASE ("unicode related stuff", "[helpers]") {
+
+    static const std::vector <std::string> strings {
+        "Žluťou-čký kůň@",
+        "\u0441?sma__l \xf0\x90\x90\xa8@\ufe56",
+        "abcd-ef%",
+        "Žluťoučký kůň-"
+    };
+
+    std::vector <char> exclude {
+        '_',
+        '%',
+        '@'
+    }; 
+
+    SECTION ("utf8_contains_chars") {
+        CHECK ( utf8_contains_chars (strings[0], exclude) == 1 );
+        CHECK ( utf8_contains_chars (strings[1], exclude) == 1 );
+        CHECK ( utf8_contains_chars (strings[2], exclude) == 1 );
+        CHECK ( utf8_contains_chars (strings[3], exclude) == 0 );
+    }
+}
+
 TEST_CASE ("check_element_identifier", "[helpers]") {
 
     http_errors_t errors;
