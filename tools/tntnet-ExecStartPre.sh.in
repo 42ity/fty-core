@@ -24,7 +24,7 @@
 #  \brief  Not yet documented file
 
 [ -n "$1" ] || { echo "ERROR: instance name required (suffix after tntnet@ in systemd) as the first argument" >&2; exit 1; }
-INST="$1"
+INST="`basename "$1" .service`"
 
 echo "Check requirements of tntnet@$INST instance for BIOS"
 
@@ -42,12 +42,22 @@ test -f "${F}" || touch ${F}
 chown www-data: ${F}
 chmod 0644 ${F}
 
+# files to be passed from REST (like email attachments)
+SPOOL=/run/tntnet-${INST}
+rm -rf "${SPOOL}"
+mkdir -p "${SPOOL}"
+chown www-data: "${SPOOL}"
+
 F="/run/tntnet-${INST}.env"
 J="/etc/release-details.json"
+JO="/etc/bios-release.json" # Backwards compatibility
 echo "Make sure the current OS image name is populated into '$F'..."
 JSONSH="@datadir@/@PACKAGE@/scripts/JSON.sh"
 OSIMAGE_BASENAME="OS image name is not available"
-[[ -s "$J" ]] && \
+HARDWARE_CATALOG_NUMBER="Hardware catalog number is not available"
+HARDWARE_SPEC_REVISION="Hardware spec revision is not available"
+HARDWARE_SERIAL_NUMBER="Hardware serial number is not available"
+{ [[ -s "$J" ]] || [[ -s "$JO" ]] ; } && \
 if [[ -x "$JSONSH" ]] ; then
     if [[ -n "${BASH-}" ]]; then
         . "$JSONSH"
@@ -56,13 +66,38 @@ if [[ -x "$JSONSH" ]] ; then
         logmsg_info "systemctl: Will fork to use JSON.sh from '$JSONSH' to cook strings"
         get_a_string_arg() { "$JSONSH" -x "$1" | (IFS="`printf '\t'`" read K V; echo "$V") | sed 's,^"\(.*\)",\1,' ; }
     fi
-    TMPSTR="$(get_a_string_arg '"release-details","osimage-name"' < "$J")" && [[ -n "$TMPSTR" ]] || \
-    { TMPSTR="$(get_a_string_arg '"release-details","osimage-filename"' < "$J")" && [[ -n "$TMPSTR" ]] && \
+    get_detail() {
+        local _TMPSTR=""
+        [[ -s "$J" ]] && \
+            _TMPSTR="$(get_a_string_arg '"release-details","'"$1"'"' < "$J")" && [[ -n "${_TMPSTR}" ]] || \
+            _TMPSTR=""
+        if [[ -z "${_TMPSTR}" ]] && [[ ! -s "$J" ]] && [[ -s "$JO" ]] ; then
+            # Legacy fallback: new OS image, old uImage - no release-details yet
+            _TMPSTR="$(get_a_string_arg '"bios-release","'"$1"'"' < "$JO")" && [[ -n "${_TMPSTR}" ]] || \
+                _TMPSTR=""
+        fi
+        echo "${_TMPSTR}"
+        if [[ -n "${_TMPSTR}" ]] ; then return 0 ; else return 1; fi
+    }
+
+    TMPSTR="$(get_detail "osimage-name")" || \
+    { TMPSTR="$(get_detail "osimage-filename")" && \
         TMPSTR="`basename "$TMPSTR" | sed 's/\.\(squashfs\|tar\|tar\..*\|tgz\|tbz2\|txz\)$//'`" ; } || \
-        TMPSTR=""
-    [[ -n "$TMPSTR" ]] && OSIMAGE_BASENAME="$TMPSTR"
+    TMPSTR=""
+    [[ -n "$TMPSTR" ]] && OSIMAGE_BASENAME="$TMPSTR" || true
+
+    TMPSTR="$(get_detail "hardware-catalog-number")" && \
+        HARDWARE_CATALOG_NUMBER="$TMPSTR" || true
+    TMPSTR="$(get_detail "hardware-spec-revision")" && \
+        HARDWARE_SPEC_REVISION="$TMPSTR" || true
+    TMPSTR="$(get_detail "hardware-serial-number")" && \
+        HARDWARE_SERIAL_NUMBER="$TMPSTR" || true
     unset TMPSTR
 fi
 echo "OSIMAGE_BASENAME='$OSIMAGE_BASENAME'" > "$F"
+echo "SPOOL_DIR='${SPOOL}'" >> "$F"
+echo "HARDWARE_CATALOG_NUMBER='${HARDWARE_CATALOG_NUMBER}'" >> "$F"
+echo "HARDWARE_SPEC_REVISION='${HARDWARE_SPEC_REVISION}'" >> "$F"
+echo "HARDWARE_SERIAL_NUMBER='${HARDWARE_SERIAL_NUMBER}'" >> "$F"
 
 echo "OK"

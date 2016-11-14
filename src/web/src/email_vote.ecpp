@@ -33,16 +33,6 @@
 #include <fstream>
 #include <libgen.h> //POSIX version of basename!!
 
-static std::string
-s_read_all (const char* filename) {
-    int fd = open (filename, O_RDONLY);
-    if (fd <= -1)
-        return std::string {};
-    std::string ret = shared::read_all (fd);
-    close (fd);
-    return ret;
-}
-
 // encode GET message for smtp agent         
 static zmsg_t*
 s_smtp_GET_message (
@@ -56,7 +46,7 @@ s_smtp_GET_message (
     zmsg_addstr (msg, zuuid_str_canonical (uuid));
 
     zmsg_addstr(msg, to);
-    char *subject = zsys_sprintf ("IPC vote context=%s, uuid=%s", context, zuuid_str_canonical (uuid));
+    char *subject = zsys_sprintf ("IPC vote context=%s", context);
     zmsg_addstr (msg, subject);
     zstr_free (&subject);
 
@@ -75,10 +65,7 @@ s_smtp_GET_message (
     zhash_insert (headers, "X-Eaton-IPC-uuid", (void*) zuuid_str_canonical (uuid));
     zhash_insert (headers, "X-Eaton-IPC-context", (void*) context);
     zhash_insert (headers, "X-Eaton-IPC-vote", (void*) std::to_string (vote).c_str ());
-
-    std::string machine_id = s_read_all ("/etc/machine-id");
-    if (!machine_id.empty ())
-        zhash_insert (headers, "X-Eaton-IPC-machine-id", (void*) machine_id.c_str ());
+    utils::email::x_headers (headers);
 
     zframe_t *frame = zhash_pack (headers);
     zmsg_add (msg, frame);
@@ -151,6 +138,13 @@ UserInfo user;
         }
     }
     
+    // connect to mlm client
+    MlmClientPool::Ptr client = mlm_pool.get ();
+    if (!client.getPointer ()) {
+        log_critical ("Error: mlm_pool.get () failed.");
+        http_die ("internal-error", "mlm_pool.get () failed.");
+    }
+
     // send message
     zuuid_t *uuid = zuuid_new ();
     zmsg_t *send = s_smtp_GET_message (
@@ -159,14 +153,6 @@ UserInfo user;
             checked_context.c_str (),
             attach_system_state,
             uuid);
-
-    // connect to mlm client
-    MlmClientPool::Ptr client = mlm_pool.get ();
-    if (!client.getPointer ()) {
-        log_critical ("Error: mlm_pool.get () failed.");
-        http_die ("internal-error", "mlm_pool.get () failed.");
-    }
-
     int rv = client->sendto ("agent-smtp", "SENDMAIL", 1000, &send);
 
     if (rv == -1)

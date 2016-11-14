@@ -102,11 +102,16 @@ std::string checked_state;
         checked_state = state;
     }
 
+    
     {
         http_errors_t errors;
+        /* KHR: Temporarily disable to see if underlying funcitonality works
+         *      WIP to be replaced by iconv transliterate
+       
         if (! check_asset_name ("element_name", element_name, errors)) {
             http_die_error (errors);
         }
+        */
         checked_element_name = element_name;
     }
 

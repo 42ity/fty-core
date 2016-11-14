@@ -104,9 +104,12 @@ void
 /** \brief export csv file and write result to output stream
  *
  * \param[out] out - a reference to the standard output stream to which content will be written
+ * \param[in]      - generate BOM or not (default true)
  */
 void
     export_asset_csv
-        (std::ostream& out);
+        (std::ostream& out,
+         bool generate_bom = true
+        );
 }
 #endif

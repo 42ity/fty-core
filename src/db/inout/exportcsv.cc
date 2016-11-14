@@ -127,7 +127,9 @@ class LineCsvSerializer {
 
 void
     export_asset_csv
-        (std::ostream& out)
+        (std::ostream& out,
+         bool generate_bom
+        )
 {
     // 0.) tntdb connection
     tntdb::Connection conn;
@@ -142,6 +144,9 @@ void
         throw std::runtime_error(msg.c_str());
     }
     tntdb::Transaction transaction{conn, true};
+
+    if (generate_bom)
+        out << "\xef\xbb\xbf";
 
     LineCsvSerializer lcs{out};
 

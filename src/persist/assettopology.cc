@@ -120,6 +120,7 @@ get_power_topology_group
             " id_asset_device_dest "
             "   IN (SELECT id_asset_element FROM t_bios_asset_group_relation WHERE id_asset_group = :group_id) "
         );
+        
         tntdb::Result result = statement.set ("group_id", group_id).select ();
         for (const auto& row : result) {
             std::string source_id, source_name, source_subtype, source_socket;
@@ -174,17 +175,24 @@ construct_input_power_group
     try {
         tntdb::Connection connection = tntdb::connectCached (url);
         tntdb::Statement statement = connection.prepareCached (
-            " SELECT id_asset_element "
-            " FROM v_bios_asset_element_super_parent "
-            " WHERE :dc_id "
-            "       in (id_parent1, id_parent2, id_parent3, id_parent4, id_parent5) "
+            " SELECT id_asset_element, a.name, c.name "
+            " FROM t_bios_asset_element as a "
+            " LEFT JOIN t_bios_asset_element_type as b "
+            "   ON a.id_type = b.id_asset_element_type "
+            " LEFT JOIN t_bios_asset_device_type as c "
+            "   ON a.id_subtype = c.id_asset_device_type "
+            " WHERE "
+            " b.name = 'device' "
+            " AND "
+            " id_parent = :dc_id "
         );
         tntdb::Result result = statement.set ("dc_id", datacenter_id).select ();
-        std::map <std::string, bool> devices_of_dc;
         for (const auto& row : result) {
-                std::string device_of_dc;
-                row [0].get (device_of_dc);
-                devices_of_dc.emplace (std::make_pair (device_of_dc, true));
+                std::string device_id, device_name, device_subtype;
+                row [0].get (device_id);
+                row [1].get (device_name);
+                row [2].get (device_subtype);
+                devices.emplace (std::make_pair (device_id, std::make_pair (device_name, device_subtype)));
         }
 
         statement = connection.prepareCached (
@@ -205,11 +213,6 @@ construct_input_power_group
             "   LEFT JOIN "
             "       (t_bios_asset_element AS d LEFT JOIN t_bios_asset_device_type AS e ON d.id_subtype=e.id_asset_device_type) "
             "       ON id_asset_device_dest=d.id_asset_element "
-            " WHERE "
-            "   (c.name = 'sts' OR c.name = 'feed' OR c.name = 'genset') "
-            " AND "
-            "   (e.name = 'ups' OR e.name = 'epdu' OR e.name = 'pdu' OR e.name = 'router' OR e.name = 'server' OR e.name = 'switch' OR e.name = 'rack controller' OR "
-            "    e.name = 'sts' OR e.name = 'feed' OR e.name = 'genset') "
         );
         result = statement.select ();
         for (const auto& row : result) {
@@ -222,21 +225,14 @@ construct_input_power_group
             row [4].get (dest_id);
             row [5].get (dest_socket);
             row [6].get (dest_name);
-            row [3].get (dest_subtype);
-            // guard agains devices in other dc OR across dc's
-            auto search = devices_of_dc.find (source_id);
-            if (search == devices_of_dc.end ())
+            row [7].get (dest_subtype);
+            
+            // make sure we only inlcude powerchains between items in 'devices' map
+            if (devices.find (source_id) == devices.end ())
                 continue;
-            search = devices_of_dc.find (dest_id);
-            if (search == devices_of_dc.end ())
+            if (devices.find (dest_id) == devices.end ())
                 continue;
 
-            if (devices.find (source_id) == devices.end ()) {
-                devices.emplace (std::make_pair (source_id, std::make_pair (source_name, source_subtype)));
-            }
-            if (devices.find (dest_id) == devices.end ()) {
-                devices.emplace (std::make_pair (dest_id, std::make_pair (dest_name, dest_subtype)));
-            }
             powerchains.push_back (std::make_tuple (dest_id, dest_socket, source_id, source_socket));
         }
     }
