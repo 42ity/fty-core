@@ -85,17 +85,23 @@ groupadd -g 8002 bios-poweruser
 groupadd -g 8001 bios-user
 groupadd -g 8000 bios-dash
 groupadd -g 8004 bios-infra
+groupadd -g 7999 bios-logread
 
 useradd -m bios -N -g bios-infra -G dialout -s /bin/bash
 mkdir -p /home/bios && chown bios:bios-infra /home/bios
 
-# add an access to sasl, adm (for /var/log/messages) and systemd journal
-useradd -m admin -G "${SASL_GROUP}",adm,systemd-journal -N -g bios-admin -s /bin/bash
+# add an access to sasl, bios-logread (for /var/log/messages) and systemd journal
+# note that earlier OS images had custom logs owned by "adm" group, so we also
+# support it for admin account at this time (so that upgraders can read old logs)
+useradd -m admin -G "${SASL_GROUP}",adm,bios-logread,systemd-journal -N -g bios-admin -s /bin/bash
 passwd admin <<EOF
 admin
 admin
 EOF
 mkdir -p /home/admin && chown admin:bios-admin /home/admin
+
+# add an access to bios-logread (for /var/log/messages) to webserver
+usermod -G bios-logread www-data
 
 # TODO: See if "sudo"able tasks that this account may have to do can be done
 # with another shell like /bin/nologin or /bin/false - and then secure it...
@@ -153,6 +159,7 @@ chmod 700 /var/spool/rsyslog
 ## remove conflicting Debian defaults
 echo '$IncludeConfig /etc/rsyslog.d-early/*.conf' > /etc/rsyslog.conf.tmp
 awk '{ print $0; } /^\$IncludeConfig/{ exit; }' </etc/rsyslog.conf >>/etc/rsyslog.conf.tmp && \
+sed -i 's/^\$FileGroup.*$/\$FileGroup bios-logread/' /etc/rsyslog.conf.tmp && \
 mv -f /etc/rsyslog.conf.tmp /etc/rsyslog.conf
 
 ## avoid "localhost" as the original host ID in logs
@@ -437,6 +444,7 @@ cp /usr/share/bios/examples/tntnet.xml.* /etc/tntnet/bios.xml
 mkdir -p /usr/share/core-0.1/web/static
 sed -i 's|<!--.*<user>.*|<user>www-data</user>|' /etc/tntnet/bios.xml
 sed -i 's|<!--.*<group>.*|<group>'"${SASL_GROUP}"'</group>|' /etc/tntnet/bios.xml
+sed -i 's|.*<allUserGroups>.*|<allUserGroups>yes</allUserGroups>|' /etc/tntnet/bios.xml || true
 sed -i 's|.*<daemon>.*|<daemon>0</daemon>|' /etc/tntnet/bios.xml
 sed -i 's|\(.*\)<dir>.*|\1<dir>/usr/share/bios-web/</dir>|' /etc/tntnet/bios.xml
 sed -i 's|<!--.*<sslProtocols>.*|<sslProtocols>-TLSv1_0</sslProtocols>|' /etc/tntnet/bios.xml
@@ -765,9 +773,32 @@ fi
 
 echo "WIPE OS image log file contents"
 find /var/log -type f | while read F; do cat /dev/null > "$F"; done
+
+echo "Fix up OS image log file and directory access rights"
+find /var/log -group adm -exec chgrp 'bios-logread' '{}' \; || true
 touch /var/log/messages /var/log/commands.log
 chmod 640 /var/log/messages || true
+chgrp bios-logread /var/log/messages || true
 chmod 640 /var/log/commands.log || true
+chgrp bios-logread /var/log/commands.log || true
+
+# By default, when MySQL first starts it creates the log dir...
+# but one only accessible to itself:
+### $ ls -lad /var/log/mysql/ /var/log/mysql/error.log
+### drwxrwx--- 2 mysql mysql 4096 Oct 26 12:22 /var/log/mysql/
+### -rw-rw---- 1 mysql mysql 6066 Oct 31 09:10 /var/log/mysql/error.log
+# We want those logs to be visible to admin as well, at least by direct request
+# If we fail to set this up, leave things as they were (no initial directory)
+mkdir -p /var/log/mysql && \
+chown mysql:mysql /var/log/mysql && \
+chmod 771 /var/log/mysql && \
+touch /var/log/mysql/error.log && \
+chown mysql:bios-logread /var/log/mysql/error.log && \
+chmod 640 /var/log/mysql/error.log || \
+rm -rf /var/log/mysql
+
+find /var/log -group bios-logread -exec chmod go-w '{}' \; || true
+find /var/log -group bios-logread -exec chmod g+r '{}' \; || true
 
 sync
 echo "INFO: successfully reached the end of script: $0 $@"

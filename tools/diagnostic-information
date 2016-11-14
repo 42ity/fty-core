@@ -1,0 +1,256 @@
+#!/bin/bash -e
+#
+# Copyright (C) 2016 Eaton
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+#! \file    diagnostic-information
+#  \brief   Helper script for collecting diagnostic information
+#  \author  Tomas Halman <TomasHalman@Eaton.com>
+#
+
+if [ "$(id -u)" != "0" ] ; then
+    exec sudo "$0" "$@"
+fi
+
+WD="/tmp"
+TMPDIR="diagnostics-$(date "+%Y-%m-%d---%H-%M")-$$"
+DIAGNOSTICFILE="${TMPDIR}.tar.xz"
+MAIL="EatonProductFeedback@eaton.com"
+MOUNTPOINT="/mnt/USB"
+
+MYPATH="$(realpath "$0")"
+MYPATH="$(dirname "${MYPATH}")"
+SYSTEMCTL="${MYPATH}/systemctl"
+
+onerror() {
+    echo "Error: collecting diagnostic information failed" >&2
+    stack=$(expr ${#FUNCNAME[@]} - 2)
+    echo -n "Function "
+    for a in $(seq $stack) ; do
+        echo -n "${FUNCNAME[$a]}, called from " >&2
+    done
+    echo "main failed"
+    rm -rf ${WD}/${TMPDIR}*
+    exit 1
+}
+trap 'onerror' ERR
+
+title () {
+    echo "$2" | awk -vLEVEL="$1" '
+    BEGIN{ u = "~"; if(LEVEL == 1 || LEVEL == 0) { u = "-"; }; }
+    {
+       printf("%s\n", $0);
+       gsub (/./, u, $0);
+       printf("%s\n\n", $0);
+    }'
+}
+
+quote () {
+    awk '
+        BEGIN{ printf ("--------------------\n")}
+        { printf(" %s\n", $0)}
+        END{ printf ("--------------------\n\n"); }
+    '
+}
+
+image_version(){
+    title 1 "image version"
+    if [ -f /etc/release-details ] ; then
+        quote < /etc/release-details
+    else
+        echo -e "Error: Missing file /etc/release-details\n"
+    fi
+    if [ -f /etc/release-details.json ] ; then
+        quote < /etc/release-details.json
+    else
+        echo -e "Error: Missing file /etc/release-details.json\n"
+    fi
+}
+
+filesystem(){
+    title 1 "Filesystem"
+    df -h | quote
+}
+
+mounts(){
+    title 1 "Mountpoints"
+    mount | quote
+}
+
+running_processes() {
+    title 1 "Running processes"
+    ps auxww | quote | grep -v -e grep -e awk -e collect-information -e "ps aux"
+}
+
+ipm_services(){
+    title 1 "IPM services"
+    for unit in $("${SYSTEMCTL}" list-ipm-units | grep -v "@.service"); do
+        title 2 "$unit"
+        "${SYSTEMCTL}" status "$unit" | quote
+    done
+}
+
+system_logs() {
+    mkdir -p "${WD}/${TMPDIR}/logs"
+    cp /var/log/messages* "${WD}/${TMPDIR}/logs/"
+}
+
+core_dumps() {
+    mkdir -p "${WD}/${TMPDIR}/crash"
+    if [ "${OPERATION}" = "USB" ]; then
+        find /var/crash -type f -exec cp {} "${WD}/${TMPDIR}/crash/" \;
+    else
+        FILE="${WD}/${TMPDIR}/crash/list-of-coredumps.txt"
+        find /var/crash -type f >"${FILE}";
+        COUNT=$(wc -l <"${FILE}")
+        if [ "${COUNT}" = "0" ] ; then
+            echo "No coredumps in /var/crash" >"${FILE}"
+        fi
+    fi
+}
+
+etc_files() {
+    # explicitly list files form /etc to avoid keys
+    # and passwords copying
+    mkdir -p "${WD}/${TMPDIR}/etc"
+    cp -r /etc/nut "${WD}/${TMPDIR}/etc/"
+}
+
+usr_share_bios_files() {
+    cp -r /usr/share/bios "${WD}/${TMPDIR}/usr-share-bios"
+}
+
+csv_export() {
+    bios-csv export >"${WD}/${TMPDIR}/export.csv"
+}
+
+create_archive() {
+    tar -C "${WD}" -cJf "${WD}/${DIAGNOSTICFILE}" "${TMPDIR}"
+    rm -rf "${WD}/${TMPDIR}"
+}
+
+create_diagnostic_archive() {
+    REPORT="${WD}/${TMPDIR}/report.asciidoc"
+    rm -rf "${WD}/${TMPDIR}" 2>/dev/null || true
+    mkdir -p "${WD}/${TMPDIR}"
+
+    (
+        image_version
+        filesystem
+        mounts
+        running_processes
+        ipm_services
+    ) > ${REPORT}
+
+    system_logs
+    core_dumps
+    etc_files
+    usr_share_bios_files
+    csv_export
+    create_archive
+}
+
+usb_device(){
+    if [ -f /dev/sda1 ] ; then
+        echo "/dev/sda1"
+        return
+    fi
+    if [ -f /dev/sda ] ; then
+        echo "/dev/sda"
+        return
+    fi
+}
+
+usage() {
+    (
+    echo "usage: $(basename $0) [options]"
+    echo "  options are:"
+    echo "  -u|--usb  put diagnostic file on usb"
+    echo "  -m|--mail send email with diagnostic information"
+    echo "  -t|--to   email address to receive diagnostics (default $TO)"
+    echo "  -y|--yes  don't ask user for confirmation and assume yes"
+    echo ""
+    echo "You must specify either --usb or --mail option."
+    ) >&2
+}
+
+TO="${MAIL}"
+OPERATION=""
+AUTOCONFIRM="no"
+
+while [ $# -gt 0 ]; do
+    opt="$1"
+    shift
+    case "$opt" in
+        -m|--mail)
+            OPERATION="MAIL"
+            ;;
+        -t|--to)
+            MAIL="$1"
+            shift
+            ;;
+        -u|--usb)
+            OPERATION="USB"
+            ;;
+        -y|--yes)
+            AUTOCONFIRM="yes"
+            ;;
+        *)
+            echo "Unknown option $opt" >&2
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+if [ "${OPERATION}" == "" ]; then
+    usage
+    exit 1
+fi
+
+if [ "${AUTOCONFIRM}" != "yes" ]; then
+    if [ "${OPERATION}" == "MAIL" ]; then
+        echo "Diagnostic information will be collected and will be sent to ${MAIL}."
+    fi
+    if [ "${OPERATION}" == "USB" ]; then
+        echo "Diagnostic information will be collected and saved on the USB stick."
+    fi
+    echo "The archive can contain sensitive information such as asset information,"
+    echo "IP addresses, log files etc."
+    echo ""
+    echo "Press <Enter> to continue or <Ctrl-C> to cancel"
+    read
+fi
+
+case ${OPERATION} in
+    "USB")
+        USBDEVICE="$(usb_device)"
+        if [ "${USBDEVICE}" = "" ] ; then
+            echo "USB device not found!"
+            false
+        fi
+        mount "${USBDEVICE}" "${MOUNTPOINT}" && \
+            WD="${MOUNTPOINT}" create_diagnostic_archive && \
+            umount "${MOUNTPOINT}"
+        ;;
+    "MAIL")
+        create_diagnostic_archive
+        ( echo "See attached diagnostic information." | bios-sendmail -s "diagnostic information" -a "${WD}/${DIAGNOSTICFILE}" "${MAIL}" ) || \
+            ( echo "Failed to send email. Is mail-system configured?" >&2; false )
+        rm -f "${WD}/${DIAGNOSTICFILE}"
+        ;;
+esac
+
