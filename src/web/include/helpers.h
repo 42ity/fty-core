@@ -83,6 +83,12 @@ class UserInfo {
         std::string _login;
 };
 
+// 1    contains chars from 'exclude'
+// 0    does not
+// -1   error (not a utf8 string etc...)
+int
+utf8_contains_chars (const std::string& input, const std::vector <char>& exclude);
+
 /*!
  \brief Perform error checking and extraction of element identifier from std::string
 

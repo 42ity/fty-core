@@ -117,15 +117,74 @@ check_regex_text (const char *param_name, const std::string& param_value, const 
     return true;
 }
 
+// 1    contains chars from 'exclude'
+// 0    does not
+// -1   error (not a utf8 string etc...)
+int
+utf8_contains_chars (const std::string& input, const std::vector <char>& exclude)
+{
+    // for now works with (excludes) 1 byte (ascii) chars only (_@% etc...)
+    // easily extendable to exclude >1 byte characters (unicode chars) if needed
 
-//TODO: define better
-// # define ASSET_NAME_RE_STR "^[a-zA-Z+0-9.-\\ ]+$"
-#define ASSET_NAME_RE_STR "^[[:alpha:]][-_.=\\ [:alnum:]]+$"
-static const cxxtools::Regex ASSET_NAME_RE {ASSET_NAME_RE_STR};
+    unsigned int pos = 0;
+
+    while (pos < input.length ()) {        
+        const char c = input [pos];
+        if ((c & 0x80 ) == 0) {     // lead bit is zero, must be a single ascii
+            for (const auto& item : exclude)
+                if (c == item)
+                    return 1;
+            pos = pos + 1;
+        }
+        else
+        if ((c & 0xE0 ) == 0xC0 ) {  // 110x xxxx (2 octets)
+            pos = pos + 2;
+        }
+        else
+        if ((c & 0xF0 ) == 0xE0 ) { // 1110 xxxx (3 octets)
+            pos = pos + 3;
+        }
+        else
+        if ((c & 0xF8 ) == 0xF0 ) { // 1111 0xxx (4 octets)
+            pos = pos + 4;
+        }
+        else {
+            log_error ("Unrecognized utf8 lead byte '%x' in string '%s'", c, input.c_str ());
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+static const std::vector <char> single_byte_excludes = {
+    '\x00', '\x01', '\x02', '\x03', '\x04', '\x05', '\x06', '\x07', '\x08', '\x09',
+    '\x0a', '\x0b', '\x0c', '\x0d', '\x0e', '\x0e', '\x0f',
+    '\x22', // "
+    '\x24', // $
+    '\x25', // %
+    '\x27', // '
+    '\x28', // (
+    '\x29', // )
+    '\x2a', // *
+    '\x2f', // SOLIDUS
+    '\x40', // @
+    '\x5b', // [
+    '\x5c', // REVERSE SOLIDUS
+    '\x5d', // ]
+    '\x5e', // ^
+    '\x5f', // _
+    '\x60', // `
+    '\x7b', // {
+    '\x7c', // |
+    '\x7d', // }
+    '\x7e', // ~
+};
+
 
 bool check_asset_name (const std::string& param_name, const std::string& name, http_errors_t &errors) {
-    if (!ASSET_NAME_RE.match (name)) {
-        http_add_error ("", errors, "request-param-bad", param_name.c_str (), name.c_str (), "valid asset name (" ASSET_NAME_RE_STR ")");
+    if (utf8_contains_chars (name, single_byte_excludes) == 1) {
+        http_add_error ("", errors, "request-param-bad", param_name.c_str (), name.c_str (), "valid asset name (characters not allowed: \"$%'()*/@[\\]^_`{|}~)");
         return false;
     }
     return true;
