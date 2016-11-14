@@ -20,19 +20,20 @@
 #  \brief  Simple button handling script to provide reset and factory reset features.
 #  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \author Tomas Halman <TomasHalman@Eaton.com>
 
 EVENT_IN="/dev/input/event0"
 
-# The one button this service is currently interested in
+# The recognized buttons this service is currently interested in
 RESET_DOWN="AQBUAAEAAAA="
 RESET_UP="AQBUAAAAAAA="
+BACK_DOWN="AQABAAEAAAA="
+BACK_UP="AQABAAAAAAA="
 
 # Seconds of consecutive keypress to cause factory-reset
 [ -n "$LONG_PRESS_TIME" ] || LONG_PRESS_TIME=5
 
 # Other buttons, not currently used by this daemon
-BACK_DOWN="AQABAAEAAAA="
-BACK_UP="AQABAAAAAAA="
 BTNOK_DOWN="AQAcAAEAAAA="
 BTNOK_UP="AQAcAAAAAAA="
 ARROWUP_DOWN="AQBIAAEAAAA="
@@ -96,23 +97,23 @@ while true; do
         BACK_ST="$NOW_S"
         ;;
     "$BACK_UP")
-        echo "Checking time interval"
+        log -c "$NOW: Checking time interval"
         BACK_END="$NOW_S"
         [ -n "$BACK_ST" ] || continue
-        BACK_REAL_TIME="`expr $BACK_END - $BACK_ST`"
+        BACK_REAL_TIME="`expr $BACK_END - $BACK_ST`" || continue
         if [ "$BACK_REAL_TIME" -gt "$LONG_PRESS_TIME" ]; then
             log -c "$NOW: Long back button press - collecting diagnostic information"
-            DIAG_PROC_COUNT=`ps auxww | grep d[i]agnostic-information | wc -l`
+            DIAG_PROC_COUNT="`ps auxww | grep -v grep | grep diagnostic-information | wc -l`"
             if [ "$DIAG_PROC_COUNT" = "0" ]; then
                 DI=`which diagnostic-information`
                 if [ "$DI" = "" ] ; then
                     log -c "$NOW: diagnostic script not found"                    
                 else
-                    $DI -u -y &
+                    ($DI -u -y; RES=$?; log -c "`date -u`: diagnostic script finished ($RES)"; exit $RES) &
                 fi
             else
-                log -c "$NOW: other instance of diagnostic script is still running"
-            fi                
+                log -c "$NOW: another instance of diagnostic script is still running, button press ignored"
+            fi
         fi
         BACK_ST=""
         ;;
@@ -121,3 +122,7 @@ while true; do
         ;;
     esac
 done
+
+# Should not get here from our infinite loop
+log -c "`date -u`: Apparently, the infinite loop in $0 got aborted somehow"
+exit 1
