@@ -27,13 +27,20 @@ fi
 
 WD="/tmp"
 TMPDIR="diagnostics-$(date "+%Y-%m-%d---%H-%M")-$$"
-DIAGNOSTICFILE="${TMPDIR}.tar.xz"
+DIAGNOSTICFILE="${TMPDIR}.tar.gz"
 MAIL="EatonProductFeedback@eaton.com"
 MOUNTPOINT="/mnt/USB"
 
 MYPATH="$(realpath "$0")"
 MYPATH="$(dirname "${MYPATH}")"
 SYSTEMCTL="${MYPATH}/systemctl"
+VERBOSE="no"
+
+verbose(){
+    if [ "$VERBOSE" = "yes" ] ; then
+        echo "$@" >&2
+    fi
+}
 
 onerror() {
     echo "Error: collecting diagnostic information failed" >&2
@@ -47,6 +54,7 @@ onerror() {
     exit 1
 }
 trap 'onerror' ERR
+trap 'onerror' INT
 
 title () {
     echo "$2" | awk -vLEVEL="$1" '
@@ -67,6 +75,7 @@ quote () {
 }
 
 image_version(){
+    verbose "image version..."
     title 1 "image version"
     if [ -f /etc/release-details ] ; then
         quote < /etc/release-details
@@ -81,21 +90,25 @@ image_version(){
 }
 
 filesystem(){
+    verbose "filesystem..."
     title 1 "Filesystem"
     df -h | quote
 }
 
 mounts(){
+    verbose "mountpoints..."
     title 1 "Mountpoints"
     mount | quote
 }
 
 running_processes() {
+    verbose "processes..."
     title 1 "Running processes"
     ps auxww | quote | grep -v -e grep -e awk -e collect-information -e "ps aux"
 }
 
 ipm_services(){
+    verbose "ipm services..."
     title 1 "IPM services"
     for unit in $("${SYSTEMCTL}" list-ipm-units | grep -v "@.service"); do
         title 2 "$unit"
@@ -104,11 +117,13 @@ ipm_services(){
 }
 
 system_logs() {
+    verbose "system logs..."
     mkdir -p "${WD}/${TMPDIR}/logs"
     cp /var/log/messages* "${WD}/${TMPDIR}/logs/"
 }
 
 core_dumps() {
+    verbose "coredumps..."
     mkdir -p "${WD}/${TMPDIR}/crash"
     if [ "${OPERATION}" = "USB" ]; then
         find /var/crash -type f -exec cp {} "${WD}/${TMPDIR}/crash/" \;
@@ -125,20 +140,31 @@ core_dumps() {
 etc_files() {
     # explicitly list files form /etc to avoid keys
     # and passwords copying
+    verbose "etc..."
     mkdir -p "${WD}/${TMPDIR}/etc"
     cp -r /etc/nut "${WD}/${TMPDIR}/etc/"
 }
 
 usr_share_bios_files() {
+    verbose "/usr/share/bios..."
     cp -r /usr/share/bios "${WD}/${TMPDIR}/usr-share-bios"
 }
 
 csv_export() {
-    bios-csv export >"${WD}/${TMPDIR}/export.csv"
+    verbose "CSV export..."
+    bios-csv export >"${WD}/${TMPDIR}/export.csv" || (
+        echo "Can't create CSV export, is database running?" >&2
+        echo "Failed to create CSV" >"${WD}/${TMPDIR}/export.csv"
+    )
 }
 
 create_archive() {
-    tar -C "${WD}" -cJf "${WD}/${DIAGNOSTICFILE}" "${TMPDIR}"
+    verbose "creating archive..."
+    TAROPT=""
+    if [ "$VERBOSE" = "yes" ]; then
+        TAROPT="-v"
+    fi
+    tar -C "${WD}" ${TAROPT} -czf "${WD}/${DIAGNOSTICFILE}" "${TMPDIR}"
     rm -rf "${WD}/${TMPDIR}"
 }
 
@@ -164,11 +190,11 @@ create_diagnostic_archive() {
 }
 
 usb_device(){
-    if [ -f /dev/sda1 ] ; then
+    if [ -e /dev/sda1 ] ; then
         echo "/dev/sda1"
         return
     fi
-    if [ -f /dev/sda ] ; then
+    if [ -e /dev/sda ] ; then
         echo "/dev/sda"
         return
     fi
@@ -182,6 +208,8 @@ usage() {
     echo "  -m|--mail send email with diagnostic information"
     echo "  -t|--to   email address to receive diagnostics (default $TO)"
     echo "  -y|--yes  don't ask user for confirmation and assume yes"
+    echo "  -v|--verbose  print more information during run"
+    echo "  -h|--help print this help"
     echo ""
     echo "You must specify either --usb or --mail option."
     ) >&2
@@ -207,6 +235,13 @@ while [ $# -gt 0 ]; do
             ;;
         -y|--yes)
             AUTOCONFIRM="yes"
+            ;;
+        -v|--verbose)
+            VERBOSE="yes"
+            ;;
+        -h|--help)
+            usage
+            exit 1
             ;;
         *)
             echo "Unknown option $opt" >&2
@@ -248,9 +283,9 @@ case ${OPERATION} in
         ;;
     "MAIL")
         create_diagnostic_archive
-        ( echo "See attached diagnostic information." | bios-sendmail -s "diagnostic information" -a "${WD}/${DIAGNOSTICFILE}" "${MAIL}" ) || \
+        ( echo "See attached diagnostic information." | timeout 900 bios-sendmail -s "diagnostic information" -a "${WD}/${DIAGNOSTICFILE}" "${MAIL}" ) || \
             ( echo "Failed to send email. Is mail-system configured?" >&2; false )
         rm -f "${WD}/${DIAGNOSTICFILE}"
         ;;
 esac
-
+verbose "done"
