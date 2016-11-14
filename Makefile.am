@@ -597,6 +597,7 @@ test_web_helpers_SOURCES = 	tests/web/src/test-helpers.cc \
 test_web_helpers_LDADD =    libpriv-test-run.la \
 				            libpriv-log.la \
 				            libpriv-utils-web.la \
+							libpriv-subprocess.la \
 							libpriv-defs.la
 
 test_web_helpers_CPPFLAGS =	$(AM_CPPFLAGS) \
@@ -615,6 +616,7 @@ test_utils_web_SOURCES = \
 test_utils_web_LDADD = \
 			libpriv-utils-web.la \
 			libpriv-log.la \
+			libpriv-subprocess.la \
 			libpriv-test-run.la
 
 test_utils_web_CPPFLAGS = \
@@ -773,9 +775,9 @@ test_autoconfig_LDADD = \
 			libpriv-defs.la \
 			libpriv-log.la \
 			libpriv-test-run.la \
-			libpriv-subprocess.la \
 			libpriv-utils.la \
 			libpriv-utils-web.la \
+			libpriv-subprocess.la \
 			libpriv-utils-plusplus.la
 
 test_autoconfig_LDFLAGS = $(LIBCZMQ_LIBS) $(CXXTOOLS_LIBS) ${LIBMLM_LIBS} -lbiosapi -ltntdb
@@ -988,7 +990,7 @@ dist_noinst_HEADERS += \
 client_SCRIPTS +=	tools/systemctl tools/testpass.sh tools/update-rc3
 EXTRA_DIST +=		tools/systemctl tools/testpass.sh tools/update-rc3
 
-cibin_programs += bios-csv
+client_PROGRAMS += bios-csv
 bios_csv_SOURCES = tests/db/bios-csv.cc
 bios_csv_CPPFLAGS = \
 						  $(AM_CPPFLAGS) \
@@ -1031,9 +1033,9 @@ agent_autoconfig_LDADD = \
 			libpriv-log.la \
 			libpriv-cidr.la \
 			libpriv-defs.la \
+			libpriv-utils-web.la \
 			libpriv-subprocess.la \
 			libpriv-utils-ymsg.la \
-			libpriv-utils-web.la \
 			libpriv-utils-plusplus.la
 
 # FIXME remove utils ymsg
@@ -1128,13 +1130,16 @@ client_SCRIPTS +=	tools/bios-passwd \
 			tools/mount_usb \
 			tools/loghost-rsyslog \
 			tools/compress-logs \
-			tools/verify-fs
+			tools/verify-fs \
+			tools/diagnostic-information
 
 helper_SCRIPTS +=	tools/tntnet-ExecStartPre.sh tools/generate-release-details.sh
 
 EXTRA_DIST +=		tools/fake-th \
 			tools/bios-networking \
 			tools/mount_usb \
+			tools/diagnostic-information \
+			tools/generate-release-details.sh \
 			tools/loghost-rsyslog \
 			tools/compress-logs
 
@@ -1411,8 +1416,7 @@ SYSTEMD_UNITS_NOTPRESET += $(SYSTEMD_UNITS_NOTPRESET_LOWLEVEL) $(SYSTEMD_UNITS_N
 # These unit files are compiled, but are not enabled via BIOS presets
 SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL += \
                         biostimer-loghost-rsyslog-netconsole.service \
-						biospath-compress-logs.service \
-						biospath-messages.service \
+                        biostimer-compress-logs.service \
                         biostimer-verify-fs.service
 
 SYSTEMD_UNITS_TIMERIMPL_TARGET_BIOS += \
@@ -1424,8 +1428,7 @@ SYSTEMD_UNITS_TIMERIMPL += $(SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL) $(SYSTEMD_UNITS_T
 # Enabled as part of BIOS presets
 SYSTEMD_TIMERS_LOWLEVEL += \
                         biostimer-loghost-rsyslog-netconsole.timer \
-                        biospath-compress-logs.path \
-                        biospath-messages.path \
+                        biostimer-compress-logs.timer \
                         biostimer-verify-fs.timer
 
 SYSTEMD_TIMERS_TARGET_BIOS += \
@@ -1439,6 +1442,7 @@ SYSTEMD_PRESETS +=      42-bios-systemd.preset
 
 SYSTEMD_TMPFILES += \
                         bios-agent-autoconfig.conf \
+                        logfiles-rights.conf \
                         bios-db-init.conf
 
 ### TODO? Add the build info (git commit, timestamp) to the header comment?

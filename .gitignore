@@ -217,7 +217,9 @@ src/web/src/alert_rules_detail.cpp
 src/web/src/alert_rules.cpp
 src/web/src/alert_ack.cpp
 src/web/src/alert_list.cpp
+src/web/src/email_feedback.cpp
 src/web/src/email_test.cpp
+src/web/src/email_vote.cpp
 src/web/src/input_power_chain.cpp
 
 tntnet.xml.example

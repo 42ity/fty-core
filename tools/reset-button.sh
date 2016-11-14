@@ -91,6 +91,31 @@ while true; do
         reboot
         RESET_ST=""
         ;;
+    "$BACK_DOWN")
+        log -c "$NOW: User asked for diagnostic (if held pressed longer than $LONG_PRESS_TIME seconds)"
+        BACK_ST="$NOW_S"
+        ;;
+    "$BACK_UP")
+        echo "Checking time interval"
+        BACK_END="$NOW_S"
+        [ -n "$BACK_ST" ] || continue
+        BACK_REAL_TIME="`expr $BACK_END - $BACK_ST`"
+        if [ "$BACK_REAL_TIME" -gt "$LONG_PRESS_TIME" ]; then
+            log -c "$NOW: Long back button press - collecting diagnostic information"
+            DIAG_PROC_COUNT=`ps auxww | grep d[i]agnostic-information | wc -l`
+            if [ "$DIAG_PROC_COUNT" = "0" ]; then
+                DI=`which diagnostic-information`
+                if [ "$DI" = "" ] ; then
+                    log -c "$NOW: diagnostic script not found"                    
+                else
+                    $DI -u -y &
+                fi
+            else
+                log -c "$NOW: other instance of diagnostic script is still running"
+            fi                
+        fi
+        BACK_ST=""
+        ;;
     *)
         echo "Unhandled event $key $BTN"
         ;;
