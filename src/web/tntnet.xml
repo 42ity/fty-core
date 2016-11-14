@@ -303,6 +303,16 @@
       </args>
     </mapping>
 
+    <!-- List supported lognames and extensions at the base URL -->
+    <mapping>
+      <target>getlog_GET@bios_web</target>
+      <url>^/api/v1/admin/getlog$</url>
+      <method>GET</method>
+      <args>
+        <list_lognames>yes</list_lognames>
+      </args>
+    </mapping>
+
     <!-- Display log raw in the browser -->
     <mapping>
       <target>getlog_GET@bios_web</target>
