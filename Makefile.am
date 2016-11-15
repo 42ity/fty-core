@@ -1387,6 +1387,7 @@ SYSTEMD_TARGETS += bios.target bios.service
 # considered rather a part of the operating environment independent of
 # the BIOS high-level target groupings.
 SYSTEMD_UNITS_LOWLEVEL += \
+                        wd_keepalive@.service \
                         bios-reset-button.service \
                         ifplug-dhcp-autoconf.service \
                         bios-ssh-last-resort.service \
