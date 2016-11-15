@@ -158,6 +158,17 @@ csv_export() {
     )
 }
 
+database_error_log() {
+    verbose "database error log..."
+    local log="/var/log/mysql/error.log"
+    title 1 "Database error log"
+    if [ -e "${log}" ] ; then
+        quote < "${log}"
+    else
+        echo "Log file ${log} doesn't exist"
+    fi
+}
+
 create_archive() {
     verbose "creating archive..."
     TAROPT=""
@@ -179,6 +190,7 @@ create_diagnostic_archive() {
         mounts
         running_processes
         ipm_services
+        database_error_log
     ) > ${REPORT}
 
     system_logs
