@@ -306,6 +306,7 @@ UserInfo user;
      * e.g. exports from journalctl, so logNAME and logFILE are logically and
      * maybe functionally different beasts below... */
     std::string logfile; /* Full path as set for supported logfiles below */
+    std::string list_lognames = "no";
     std::string logname_ext;
     std::string logname_base;
     std::string message;
@@ -314,9 +315,27 @@ UserInfo user;
     try {
         std::string slogname_base = request.getArg ("logname_base");
         std::string slogname_ext = request.getArg ("logname_ext");
+        std::string slist_lognames = request.getArg ("list_lognames");
 
-        message = "getlog_GET got args: logname_base='" + slogname_base + "' logname_ext='" + slogname_ext + "'";
+        message = "getlog_GET got args: logname_base='" + slogname_base + "' logname_ext='" + slogname_ext + "' list_lognames='" + slist_lognames + "'";
         log_debug( message.c_str() );
+
+        if ( slist_lognames == "yes" ) {
+            list_lognames = "yes";
+        } else {
+            list_lognames = "no";
+        }
+
+        if ( list_lognames == "yes" ) {
+</%cpp>
+{ "getlog-supports": {
+    "logname_base": [ "messages" ],
+    "logname_ext": [ "", ".txt", ".gz" ]
+} }
+<%cpp>
+            log_debug("Honored an authorized request to list supported log names and extensions, our job is done here");
+            return HTTP_OK;
+        }
 
         if ( (slogname_base == "messages") &&
              (slogname_ext == "" || slogname_ext == ".gz" || slogname_ext == ".txt" )
