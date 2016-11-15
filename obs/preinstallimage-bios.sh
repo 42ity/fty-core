@@ -702,6 +702,17 @@ do
 done < ./pkg-list.log
 rm -f ./pkg-list.log
 
+# Promote DMF driver for devel images
+if [ -x /lib/nut/snmp-ups ] && [ -x /lib/nut/snmp-ups-dmf ] && \
+   [ ! -x /lib/nut/snmp-ups-old ] && [ ! -L /lib/nut/snmp-ups ] \
+; then
+    mv /lib/nut/snmp-ups /lib/nut/snmp-ups-old && \
+    case "$IMGTYPE" in
+    devel) ln -s snmp-ups-dmf /lib/nut/snmp-ups ;;
+    *)     ln -s snmp-ups-old /lib/nut/snmp-ups ;;
+    esac
+fi
+
 # Prepare the ccache (for development image type)
 case "$IMGTYPE" in
     devel)
