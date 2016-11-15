@@ -1349,6 +1349,7 @@ EXTRA_DIST	+= $(obs_SCRIPTS)
 
 # SystemD integrations files; if not enabled - variables remain empty
 SYSTEMD_UNITS_LOWLEVEL =
+SYSTEMD_UNITS_EXTRA =
 SYSTEMD_UNITS_TARGET_BIOS =
 SYSTEMD_UNITS =
 
@@ -1387,11 +1388,15 @@ SYSTEMD_TARGETS += bios.target bios.service
 # considered rather a part of the operating environment independent of
 # the BIOS high-level target groupings.
 SYSTEMD_UNITS_LOWLEVEL += \
-                        wd_keepalive@.service \
                         bios-reset-button.service \
                         ifplug-dhcp-autoconf.service \
                         bios-ssh-last-resort.service \
                         bios-networking.service
+
+# These are verbatim (not templated) additional units that wrap third-party
+# service instances for us. TODO: should tntnet@.service move here?
+SYSTEMD_UNITS_EXTRA += \
+                        wd_keepalive@.service
 
 # These service-units are PartOf and WantedBy the "bios.target"
 # And also "tntnet@.service" customized by obs/preinstall.sh
@@ -1467,11 +1472,11 @@ systemdtmpfiles_DATA =	$(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_TMPFILES))
 
 # auto-cleanup and dist targets
 CLEANFILES += $(systemdsystemunit_generated) $(systemdsystempreset_generated)
-EXTRA_DIST += $(addprefix $(top_srcdir)/$(SYSTEMD_SUBDIR)/,$(SYSTEMD_TIMERS) $(SYSTEMD_TARGETS) $(SYSTEMD_TMPFILES) $(addsuffix .in,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL) $(SYSTEMD_UNITS_NOTPRESET)))
+EXTRA_DIST += $(addprefix $(top_srcdir)/$(SYSTEMD_SUBDIR)/,$(SYSTEMD_TIMERS) $(SYSTEMD_TARGETS) $(SYSTEMD_TMPFILES) $(SYSTEMD_UNITS_EXTRA) $(addsuffix .in,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL) $(SYSTEMD_UNITS_NOTPRESET)))
 endif
 
 # Quick links to build the systemd files (if enabled)
-systemd-units: systemd-daemons systemd-timers systemd-presets systemd-targets systemd-tmpfiles
+systemd-units: systemd-daemons systemd-timers systemd-presets systemd-targets systemd-tmpfiles systemd-extra
 systemd-daemons: $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_NOTPRESET))
 systemd-timers:  $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_UNITS_TIMERIMPL))
 	if [ x"$(abs_top_builddir)/" = x"$(abs_top_srcdir)/" ] ; then true; else \
@@ -1482,6 +1487,7 @@ systemd-timers:  $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_UNITS_TIMERIMPL))
 systemd-presets: $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_PRESETS))
 systemd-targets: $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_TARGETS))
 systemd-tmpfiles: $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_TMPFILES))
+systemd-extra: $(addprefix $(SYSTEMD_SUBDIR)/,$( $(SYSTEMD_UNITS_EXTRA)))
 
 clean-systemd-units:
 	@if [ x"$(abs_top_builddir)/" != x"$(abs_top_srcdir)/" ] ; then \
