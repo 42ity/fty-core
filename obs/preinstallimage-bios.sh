@@ -462,6 +462,18 @@ rm -f /etc/tntnet/bios.d/20_core.xml
 /bin/systemctl disable systemd-logind
 find / -name systemd-logind.service -delete
 
+# Our watchdogs - disable system ones, enable our custom service
+# Note that actual service instances work or not based on presence of the
+# /dev/watchdogN nodes, so we do not care much about missing devices and
+# running in containers - so the services would fail (via unit Condition)
+/bin/systemctl disable watchdog.service
+/bin/systemctl disable wd_keepalive.service
+/bin/systemctl mask wd_keepalive.service
+/bin/systemctl enable wd_keepalive@watchdog0.service
+/bin/systemctl enable wd_keepalive@watchdog1.service
+/bin/systemctl enable wd_keepalive@watchdog2.service
+/bin/systemctl enable wd_keepalive@watchdog3.service
+
 # Disable expensive debug logging by default on non-devel images
 mkdir -p /usr/share/bios/etc/default
 if [ "$IMGTYPE" = devel ] ; then
