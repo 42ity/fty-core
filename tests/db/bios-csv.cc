@@ -191,12 +191,7 @@ int main(int argc, char** argv)
         if (!s_compare(file1, file2))
             exit(EXIT_FAILURE);
     }
-/*    else if (!strcmp(argv[1], "import"))
-    {
-        log_set_level(LOG_WARNING); //to suppress messages from src/db
-        persist::import_asset_csv(std::cout);
-    }
-  */  else
+    else
     {
         log_error("Unknown command '%s'", argv[1]);
         exit(EXIT_FAILURE);
