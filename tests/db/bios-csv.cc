@@ -174,32 +174,38 @@ int main(int argc, char** argv)
 
     s_load_name_password ();
 
-    if (!strcmp(argv[1], "export"))
-    {
-        log_set_level(LOG_WARNING); //to suppress messages from src/db
-        persist::export_asset_csv(std::cout);
-    }
-    else
-    if (!strcmp(argv[1], "compare"))
-    {
-        log_set_level(LOG_INFO);
-        if (argc < 4)
-            s_die_usage();
+    try {
 
-        const char* file1 = argv[2];
-        const char* file2 = argv[3];
-        if (!s_compare(file1, file2))
+        if (!strcmp(argv[1], "export"))
+        {
+            log_set_level(LOG_WARNING); //to suppress messages from src/db
+            persist::export_asset_csv(std::cout);
+        }
+        else
+        if (!strcmp(argv[1], "compare"))
+        {
+            log_set_level(LOG_INFO);
+            if (argc < 4)
+                s_die_usage();
+
+            const char* file1 = argv[2];
+            const char* file2 = argv[3];
+            if (!s_compare(file1, file2))
+                exit(EXIT_FAILURE);
+        }
+        else
+        {
+            log_error("Unknown command '%s'", argv[1]);
             exit(EXIT_FAILURE);
+        }
     }
-/*    else if (!strcmp(argv[1], "import"))
-    {
-        log_set_level(LOG_WARNING); //to suppress messages from src/db
-        persist::import_asset_csv(std::cout);
+    catch (const std::exception& e) {
+        log_error (e.what());
+        exit (EXIT_FAILURE);
     }
-  */  else
-    {
-        log_error("Unknown command '%s'", argv[1]);
-        exit(EXIT_FAILURE);
+    catch (...) {
+        log_error ("Unknown exception");
+        exit (EXIT_FAILURE);
     }
     exit(EXIT_SUCCESS);
 
