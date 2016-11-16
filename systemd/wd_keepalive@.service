@@ -1,0 +1,30 @@
+[Unit]
+Description=watchdog keepalive daemon for device /dev/%i
+# Initially based on the "watchdog" package "wd_keepalive" manifest
+# but with its own quirks. Still requires that daemon to run ;)
+Before=watchdog.service wd_keepalive.service shutdown.target
+# No real conflict with "watchdog" unless it tries to use same devices
+Conflicts=wd_keepalive.service shutdown.target
+ConditionPathExists=/dev/%i
+
+[Service]
+Type=forking
+User=root
+Restart=always
+RestartSec=3
+# We only need these configs for optional modules to probe
+# Otherwise we do not care much for that config in this simple
+# explicit-instance setup
+EnvironmentFile=-/etc/default/watchdog
+EnvironmentFile=-/etc/default/watchdog@%i
+ExecStartPre=-/bin/sh -c '[ -z "${watchdog_module}" ] || [ "${watchdog_module}" = "none" ] || /sbin/modprobe $watchdog_module'
+ExecStartPre=-/bin/systemctl reset-failed watchdog.service
+ExecStartPre=-/bin/systemctl reset-failed wd_keepalive.service
+# "KA_PIDFILE" is hardcoded during compilation, so we must dance a bit
+ExecStart=/bin/bash -c 'echo "watchdog-device = /dev/%i" > /var/run/wd_keepalive@%i.conf && /usr/sbin/wd_identify -c /var/run/wd_keepalive@%i.conf && ( flock -x -w 20 200 && /usr/sbin/wd_keepalive -c /var/run/wd_keepalive@%i.conf $watchdog_options && mv -f /var/run/wd_keepalive.pid /var/run/wd_keepalive@%i.pid ) 200>/var/run/wd_keepalive@.flock'
+ExecStartPost=/bin/sh -c 'rm -f /var/run/wd_keepalive@.flock'
+ExecStartPost=/bin/sh -c 'ln -s /var/run/wd_keepalive@%i.pid /run/sendsigs.omit.d/wd_keepalive@%i.pid'
+ExecStopPost=/bin/sh -c 'rm -f /run/sendsigs.omit.d/wd_keepalive@%i.pid'
+
+[Install]
+WantedBy=basic.target rescue.target emergency.target
