@@ -1464,7 +1464,7 @@ $(SYSTEMD_SUBDIR)/42-bios-systemd.preset: Makefile
 # externally by automake/autoconf; otherwise they are empty and should
 # effectively resolve to the top_builddir
 systemdsystemunit_generated =	$(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL) $(SYSTEMD_UNITS_NOTPRESET))
-systemdsystemunit_DATA =	$(systemdsystemunit_generated) $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_TIMERS) $(SYSTEMD_TARGETS))
+systemdsystemunit_DATA =	$(systemdsystemunit_generated) $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_TIMERS) $(SYSTEMD_TARGETS) $(SYSTEMD_UNITS_EXTRA))
 systemdsystempreset_generated =	$(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_PRESETS))
 systemdsystempreset_DATA =	$(systemdsystempreset_generated)
 # Nothing generated so far for TMPFILES
@@ -1476,8 +1476,8 @@ EXTRA_DIST += $(addprefix $(top_srcdir)/$(SYSTEMD_SUBDIR)/,$(SYSTEMD_TIMERS) $(S
 endif
 
 # Quick links to build the systemd files (if enabled)
-systemd-units: systemd-daemons systemd-timers systemd-presets systemd-targets systemd-tmpfiles systemd-extra
-systemd-daemons: $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_NOTPRESET))
+systemd-units: systemd-daemons systemd-timers systemd-presets systemd-targets systemd-tmpfiles
+systemd-daemons: $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_NOTPRESET) $(SYSTEMD_UNITS_EXTRA))
 systemd-timers:  $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_UNITS_TIMERIMPL))
 	if [ x"$(abs_top_builddir)/" = x"$(abs_top_srcdir)/" ] ; then true; else \
 	mkdir -p "$(abs_top_builddir)/$(SYSTEMD_SUBDIR)"; \
@@ -1487,7 +1487,6 @@ systemd-timers:  $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_UNITS_TIMERIMPL))
 systemd-presets: $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_PRESETS))
 systemd-targets: $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_TARGETS))
 systemd-tmpfiles: $(addprefix $(SYSTEMD_SUBDIR)/,$(SYSTEMD_TMPFILES))
-systemd-extra: $(addprefix $(SYSTEMD_SUBDIR)/,$( $(SYSTEMD_UNITS_EXTRA)))
 
 clean-systemd-units:
 	@if [ x"$(abs_top_builddir)/" != x"$(abs_top_srcdir)/" ] ; then \
