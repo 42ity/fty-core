@@ -10,8 +10,8 @@
         "values"        :   [
             {"low_critical"  : "0"},
             {"low_warning"   : "0"},
-            {"high_warning"  : "0"},
-            {"high_critical" : "0"} ],
+            {"high_warning"  : "45"},
+            {"high_critical" : "50"} ],
         "results" :   [
             { "low_critical"  : { "action" : ["EMAIL","SMS"], "severity" : "CRITICAL", "description" : "Internal temperature in ups is critically low" }},
             { "low_warning"   : { "action" : ["EMAIL","SMS"], "severity" : "WARNING", "description" : "Internal temperature in ups is low" }},
