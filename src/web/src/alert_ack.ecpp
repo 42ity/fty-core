@@ -101,7 +101,6 @@ std::string checked_state;
     else {
         checked_state = state;
     }
-
     
     {
         http_errors_t errors;
@@ -109,10 +108,7 @@ std::string checked_state;
             http_die_error (errors);
         }
         checked_element_name = element_name;
-    }
 
-    {
-        http_errors_t errors;
         if (!check_alert_rule_name ("rule_name", rule_name, errors)) {
             http_die_error (errors);
         }
