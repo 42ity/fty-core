@@ -956,7 +956,7 @@ findnewest_rawfwimage_uboot() (
     # uBoot image file found on remote resource, if any
     # Note: currently expects certain filename patterns and http-dir listing markup
     for P in 'u-Boot' 'uBoot' ; do
-        IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOTFW_UBOOT}" "$P"`"
+        IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOTFW_UBOOT}" "$P" | sort -n | tail -1`"
         if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
             echo "$IMAGE_URL" && return 0
         fi
@@ -1125,7 +1125,7 @@ findnewest_rawfwimage_uimage() (
     # Echo the URL to the newest "raw" (not tarballed, only one)
     # uImage image file found on remote resource, if any
     # Note: currently expects certain filename patterns and http-dir listing markup
-    IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOTFW_UIMAGE}" "uImage"`"
+    IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOTFW_UIMAGE}" "uImage" | sort -n | tail -1`"
     if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
         echo "$IMAGE_URL" && return 0
     fi
@@ -1288,11 +1288,37 @@ removeold_rawfwimage_uimage() (
 
 ##################################################
 
+sort_module_names() (
+    # ASSUMPTION: we don't have over 99999 positions in a kernel version number
+    # Alas, greedy-match does not work well when the two hits overlap (3.18.44
+    # with two two-digit hits), so we have to loop like below.
+    while IFS='' read INLINE ; do
+        LN="$INLINE"
+        LO=""
+        for RE in \
+            's,\([\.\-]\)\([[:digit:]][[:digit:]][[:digit:]][[:digit:]]\)\(\.\),\1_0\2_\3,g' \
+            's,\([\.\-]\)\([[:digit:]][[:digit:]][[:digit:]]\)\(\.\),\1_00\2_\3,g' \
+            's,\([\.\-]\)\([[:digit:]][[:digit:]]\)\(\.\),\1_000\2_\3,g' \
+            's,\([\.\-]\)\([[:digit:]]\)\(\.\),\1_0000\2_\3,g' \
+        ; do
+            LO=""
+            while [ x"$LN" != x"$LO" ]; do
+                LO="$LN"
+                LN="`echo "$LO" | sed "$RE"`"
+            done
+        done
+        echo "$LN"
+    done \
+    | sort -n | \
+    sed -e 's,\([\.\-]\)_0*\([123456789][[:digit:]]*\)_,\1\2,g' \
+        -e 's,\([\.\-]\)_00*_,\10,'
+)
+
 findnewest_rawfwimage_modules() (
     # Echo the URL to the newest "raw" (not tarballed, only one)
     # uImage image file found on remote resource, if any
     # Note: currently expects certain filename patterns and http-dir listing markup
-    IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOTFW_MODULES}" "*[0-9].[0-9]*.${EXT}"`"
+    IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOTFW_MODULES}" "*[0-9].[0-9]*.${EXT}" | sort_module_names | tail -1`"
     if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
         echo "$IMAGE_URL" && return 0
     fi
