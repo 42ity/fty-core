@@ -111,7 +111,13 @@ std::string checked_state;
         checked_element_name = element_name;
     }
 
-    check_alert_rule_name_or_die ("rule_name", rule_name, checked_rule_name);
+    {
+        http_errors_t errors;
+        if (!check_alert_rule_name ("rule_name", rule_name, errors)) {
+            http_die_error (errors);
+        }
+        checked_rule_name = rule_name;
+    }
 }
 
 
