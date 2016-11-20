@@ -106,7 +106,7 @@ std::string checked_state;
             http_die_error (errors);
         }
         checked_element_name = element_name;
-        if (! check_alert_just_rule_part ("rule_name", rule_name, errors)) {
+        if (! check_alert_rule_name ("rule_name", rule_name, errors)) {
             http_die_error (errors);
         }
         checked_rule_name = rule_name;
