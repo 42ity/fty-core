@@ -215,6 +215,16 @@ check_alert_rule_name (const std::string& param_name, const std::string& rule_na
     return true;
 }
 
+bool
+check_alert_just_rule_part (const std::string& param_name, const std::string& rule_name, http_errors_t& errors)
+{
+    bool is_rule = check_regex_text (param_name.c_str (), rule_name, _ALERT_RULE_NAME_RE_STR, errors);
+    if (!is_rule)
+        return false;
+
+    return true;
+}
+
 static bool
 s_isDELETE (const tnt::HttpRequest &request)
 {
