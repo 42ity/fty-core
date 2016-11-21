@@ -142,7 +142,7 @@ check_regex_text (const char *param_name, const std::string& param_value, const 
     } \
 }
 
-#define _ALERT_RULE_NAME_RE_STR "^[-_.a-z0-9@]{1,255}$"
+#define _ALERT_RULE_NAME_RE_STR "^[-_.a-z0-9]{1,255}$"
 /*!
   \brief macro to check the alert name
   \param[in]     name            name of the parameter from rest api call
@@ -160,7 +160,8 @@ check_regex_text (const char *param_name, const std::string& param_value, const 
     } \
 }
 
-// checks '<rule_name>@<asset_name>' format 
+// checks if it's       '<rule_name>@<asset_name>' format -> validates <asset_name> with regard to unicode
+//        if it's       just <rule_name>                  -> validates the old way (regex) 
 bool check_alert_rule_name (const std::string& param_name, const std::string& rule_name, http_errors_t& errors);
 
 // checks just rule name  
