@@ -27,7 +27,6 @@ fi
 
 WD="/tmp"
 TMPDIR="diagnostics-$(date "+%Y-%m-%d---%H-%M")-$$"
-DIAGNOSTICFILE="${TMPDIR}.tar.gz"
 MAIL="EatonProductFeedback@eaton.com"
 MOUNTPOINT="/mnt/USB"
 
@@ -35,6 +34,13 @@ MYPATH="$(realpath "$0")"
 MYPATH="$(dirname "${MYPATH}")"
 SYSTEMCTL="${MYPATH}/systemctl"
 VERBOSE="no"
+ZIP=`which 7z` || ZIP=`which 7za` || ZIP=""
+PASSWORD="EATON"
+if [ "$ZIP" = "" ] ; then
+    DIAGNOSTICFILE="${TMPDIR}.tar.gz"
+else
+    DIAGNOSTICFILE="${TMPDIR}.7z"
+fi
 
 verbose(){
     if [ "$VERBOSE" = "yes" ] ; then
@@ -158,13 +164,32 @@ csv_export() {
     )
 }
 
+database_error_log() {
+    verbose "database error log..."
+    local log="/var/log/mysql/error.log"
+    title 1 "Database error log"
+    if [ -e "${log}" ] ; then
+        quote < "${log}"
+    else
+        echo "Log file ${log} doesn't exist"
+    fi
+}
+
 create_archive() {
     verbose "creating archive..."
-    TAROPT=""
-    if [ "$VERBOSE" = "yes" ]; then
-        TAROPT="-v"
+    if [ "$ZIP" != "" ] ; then
+        if [ "$VERBOSE" = "yes" ]; then
+            "$ZIP" a "-p$PASSWORD" -r -y -ssc "${WD}/${DIAGNOSTICFILE}" "${WD}/${TMPDIR}"
+        else
+            "$ZIP" a "-p$PASSWORD" -r -y -ssc "${WD}/${DIAGNOSTICFILE}" "${WD}/${TMPDIR}" >/dev/null 2>&1
+        fi
+    else
+        TAROPT=""
+        if [ "$VERBOSE" = "yes" ]; then
+            TAROPT="-v"
+        fi
+        tar -C "${WD}" ${TAROPT} -czf "${WD}/${DIAGNOSTICFILE}" "${TMPDIR}"
     fi
-    tar -C "${WD}" ${TAROPT} -czf "${WD}/${DIAGNOSTICFILE}" "${TMPDIR}"
     rm -rf "${WD}/${TMPDIR}"
 }
 
@@ -179,6 +204,7 @@ create_diagnostic_archive() {
         mounts
         running_processes
         ipm_services
+        database_error_log
     ) > ${REPORT}
 
     system_logs
@@ -211,7 +237,10 @@ usage() {
     echo "  -v|--verbose  print more information during run"
     echo "  -h|--help print this help"
     echo ""
-    echo "You must specify either --usb or --mail option."
+    echo "You must specify either --usb or --mail option. If 7z is"
+    echo "installed, it is used for creating password protected archive."
+    echo "The password is \"$PASSWORD\". Purpose of encrypting is to pass"
+    echo "trough antispam services."
     ) >&2
 }
 
