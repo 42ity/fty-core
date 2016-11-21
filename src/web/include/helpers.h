@@ -163,6 +163,9 @@ check_regex_text (const char *param_name, const std::string& param_value, const 
 // checks '<rule_name>@<asset_name>' format 
 bool check_alert_rule_name (const std::string& param_name, const std::string& rule_name, http_errors_t& errors);
 
+// checks just rule name  
+bool check_alert_just_rule_part (const std::string& param_name, const std::string& rule_name, http_errors_t& errors);
+
 /*!
  \brief Check valid asset name
  \param[in]     param_name      name of the parameter from rest api call
