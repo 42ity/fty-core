@@ -190,6 +190,41 @@ bool check_asset_name (const std::string& param_name, const std::string& name, h
     return true;
 }
 
+bool
+check_alert_rule_name (const std::string& param_name, const std::string& rule_name, http_errors_t& errors)
+{
+    // assumption: rule name == rule_name@asset_name, where rule_name is always plain old ASCII
+    std::string::size_type index = rule_name.find ("@");
+    if (index == std::string::npos) {
+        http_add_error ("", errors, "request-param-bad", param_name.c_str (), rule_name.c_str (), "valid rule specification '<rule name>@<asset name>'.");
+        return false;
+    }
+
+    std::string rule = rule_name.substr (0, index);
+    log_debug ("rule == '%s'", rule.c_str ());
+    bool is_rule = check_regex_text (param_name.c_str (), rule, _ALERT_RULE_NAME_RE_STR, errors);
+    if (!is_rule)
+        return false;
+
+    std::string asset_name = rule_name.substr (index + 1, std::string::npos);
+    log_debug ("asset name == '%s'", asset_name.c_str ());
+    bool is_asset_name = check_asset_name (param_name, asset_name, errors);
+    if (!is_asset_name)
+        return false;
+
+    return true;
+}
+
+bool
+check_alert_just_rule_part (const std::string& param_name, const std::string& rule_name, http_errors_t& errors)
+{
+    bool is_rule = check_regex_text (param_name.c_str (), rule_name, _ALERT_RULE_NAME_RE_STR, errors);
+    if (!is_rule)
+        return false;
+
+    return true;
+}
+
 static bool
 s_isDELETE (const tnt::HttpRequest &request)
 {

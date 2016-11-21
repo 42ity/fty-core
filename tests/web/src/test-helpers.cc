@@ -47,6 +47,14 @@ TEST_CASE ("unicode related stuff", "[helpers]") {
         CHECK ( utf8_contains_chars (strings[2], exclude) == 1 );
         CHECK ( utf8_contains_chars (strings[3], exclude) == 0 );
     }
+
+    SECTION ("check_alert_rule_name") {
+        http_errors_t errors;
+        CHECK ( check_alert_rule_name ("name_of_web_param", std::string ("load.input_1phase@").append (strings [3]), errors) == true );
+        CHECK ( check_alert_rule_name ("name_of_web_param", std::string ("load.input_1phase").append (strings [3]), errors) == false ); // missing @
+        CHECK ( check_alert_rule_name ("name_of_web_param", std::string ("realpower.default@").append (strings [0]), errors) == false ); // bad asset name
+    }
+    
 }
 
 TEST_CASE ("check_element_identifier", "[helpers]") {

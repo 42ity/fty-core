@@ -171,36 +171,42 @@ int main(int argc, char** argv)
 {
     if (argc <= 1)
         s_die_usage();
+
+    s_load_name_password ();
+
     try {
-        s_load_name_password ();
-        
-        if (!strcmp(argv[1], "export")) {
+
+        if (!strcmp(argv[1], "export"))
+        {
             log_set_level(LOG_WARNING); //to suppress messages from src/db
             persist::export_asset_csv(std::cout);
         }
-        else if (!strcmp(argv[1], "compare")) {
+        else
+        if (!strcmp(argv[1], "compare"))
+        {
             log_set_level(LOG_INFO);
             if (argc < 4)
                 s_die_usage();
-            
+
             const char* file1 = argv[2];
             const char* file2 = argv[3];
             if (!s_compare(file1, file2))
                 exit(EXIT_FAILURE);
         }
-        /*    else if (!strcmp(argv[1], "import"))
-              {
-              log_set_level(LOG_WARNING); //to suppress messages from src/db
-              persist::import_asset_csv(std::cout);
-              }
-        */
-        else {
+        else
+        {
             log_error("Unknown command '%s'", argv[1]);
             exit(EXIT_FAILURE);
         }
-    } catch (std::exception& e) {
-        log_error ("Error: %s", e.what());
-        exit(EXIT_FAILURE);
+    }
+    catch (const std::exception& e) {
+        log_error (e.what());
+        exit (EXIT_FAILURE);
+    }
+    catch (...) {
+        log_error ("Unknown exception");
+        exit (EXIT_FAILURE);
     }
     exit(EXIT_SUCCESS);
+
 }
