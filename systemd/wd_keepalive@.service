@@ -11,7 +11,7 @@ ConditionPathExists=/dev/%i
 Type=forking
 User=root
 Restart=always
-RestartSec=3
+RestartSec=2
 # We only need these configs for optional modules to probe
 # Otherwise we do not care much for that config in this simple
 # explicit-instance setup
@@ -21,7 +21,7 @@ ExecStartPre=-/bin/sh -c '[ -z "${watchdog_module}" ] || [ "${watchdog_module}" 
 ExecStartPre=-/bin/systemctl reset-failed watchdog.service
 ExecStartPre=-/bin/systemctl reset-failed wd_keepalive.service
 # "KA_PIDFILE" is hardcoded during compilation, so we must dance a bit
-ExecStart=/bin/bash -c 'echo "watchdog-device = /dev/%i" > /var/run/wd_keepalive@%i.conf && /usr/sbin/wd_identify -c /var/run/wd_keepalive@%i.conf && ( flock -x -w 20 200 && /usr/sbin/wd_keepalive -c /var/run/wd_keepalive@%i.conf $watchdog_options && mv -f /var/run/wd_keepalive.pid /var/run/wd_keepalive@%i.pid ) 200>/var/run/wd_keepalive@.flock'
+ExecStart=/bin/bash -c 'echo "watchdog-device = /dev/%i" > /var/run/wd_keepalive@%i.conf && /usr/sbin/wd_identify -c /var/run/wd_keepalive@%i.conf && ( flock -x -w 5 200 && /usr/sbin/wd_keepalive -c /var/run/wd_keepalive@%i.conf $watchdog_options && mv -f /var/run/wd_keepalive.pid /var/run/wd_keepalive@%i.pid; RES=$?; flock -u 200; exit $RES; ) 200>/var/run/wd_keepalive@.flock'
 ExecStartPost=/bin/sh -c 'rm -f /var/run/wd_keepalive@.flock'
 ExecStartPost=/bin/sh -c 'ln -s /var/run/wd_keepalive@%i.pid /run/sendsigs.omit.d/wd_keepalive@%i.pid'
 ExecStopPost=/bin/sh -c 'rm -f /run/sendsigs.omit.d/wd_keepalive@%i.pid'
