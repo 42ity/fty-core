@@ -195,8 +195,10 @@ check_alert_rule_name (const std::string& param_name, const std::string& rule_na
     // assumption: rule name == rule_name@asset_name, where rule_name is always plain old ASCII
     std::string::size_type index = rule_name.find ("@");
     if (index == std::string::npos) {
-        http_add_error ("", errors, "request-param-bad", param_name.c_str (), rule_name.c_str (), "valid rule specification '<rule name>@<asset name>'.");
-        return false;
+        bool old_way = check_regex_text (param_name.c_str (), rule_name, _ALERT_RULE_NAME_RE_STR, errors);
+        if (!old_way)
+            return false;
+        return true;
     }
 
     std::string rule = rule_name.substr (0, index);
