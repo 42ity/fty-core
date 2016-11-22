@@ -181,7 +181,6 @@ static const std::vector <char> single_byte_excludes = {
     '\x7e', // ~
 };
 
-
 bool check_asset_name (const std::string& param_name, const std::string& name, http_errors_t &errors) {
     if (utf8_contains_chars (name, single_byte_excludes) == 1) {
         http_add_error ("", errors, "request-param-bad", param_name.c_str (), name.c_str (), "valid asset name (characters not allowed: \"$%'()*/@[\\]^_`{|}~)");

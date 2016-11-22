@@ -744,6 +744,7 @@ void
 
     auto SUBTYPES = read_device_types (conn);
 
+    // BIOS-2506
     std::set<a_elmnt_id_t> ids{};
 
     std::set<size_t> processedRows;
