@@ -346,7 +346,7 @@ cp /usr/share/bios/examples/config/update-rc3.d/* /etc/update-rc3.d
 /bin/systemctl enable mysql
 
 # Disable systemd-timesyncd - ntp is enough
-/bin/systemctl disable systemd-timesyncd.service
+/bin/systemctl mask systemd-timesyncd.service
 
 # Enable ssh
 rm /etc/init.d/ssh*
