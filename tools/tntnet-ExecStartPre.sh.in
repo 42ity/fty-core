@@ -36,6 +36,9 @@ echo "Make sure we have an SSL certificate..."
 echo "Make sure we have a config file..."
 @datadir@/@PACKAGE@/scripts/xml-cat.sh /etc/tntnet/"$INST".d /etc/tntnet/"$INST".xml
 
+echo "Make sure we have _bios-script password..."
+@datadir@/@PACKAGE@/scripts/_bios-script.sh
+
 F=/etc/default/bios
 echo "Make sure '$F' exists and is properly owned..."
 test -f "${F}" || touch ${F}
