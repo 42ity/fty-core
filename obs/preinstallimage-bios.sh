@@ -115,7 +115,7 @@ fi
 mkdir -p /home/monitor && chown monitor:bios-dash /home/monitor
 
 # _bios-script user - special user allowing us to call REST API from scripts
-useradd -m bios -N -g bios-infra -G dialout -s /usr/sbin/nologin
+useradd -m _bios-script -N -g bios-infra -G dialout -s /usr/sbin/nologin
 
 # Workplace for the webserver and graph daemons
 mkdir -p /var/lib/bios
