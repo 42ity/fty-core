@@ -44,6 +44,8 @@
 
 #include <tnt/http.h>
 
+#define BIOS_SCRIPT_USER "_bios-script"
+
 //  ###### THOSE DEFINITONS BELOW ARE PRIVATE TO http_die AND SHALL NOT BE ACCESSED DIRECTLY
 
 /* \brief helper WebService Error struct to store all important items*/

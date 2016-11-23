@@ -6,7 +6,7 @@ helper_SCRIPTS	= init-os-accounts.sh resolveip.sh JSON.sh rc-bios \
 		    ifplug-dhcp-autoconf.sh udhcpc-override.sh udhcpc-ntp.sh \
 		    ethtool-static-nolink ifupdown-force ssl-create.sh \
 		    reset-button.sh check_bios_license logrotate-rsyslog \
-		    update-rc.d.sh
+		    update-rc.d.sh _bios-script.sh
 helper_SCRIPTS	+= ../tests/CI/scriptlib.sh ../tests/CI/weblib.sh \
 		    ../tests/CI/restapi-request.sh ../tests/CI/curlbbwget.sh
 

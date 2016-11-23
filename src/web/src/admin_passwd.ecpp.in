@@ -132,6 +132,9 @@ UserInfo user;
         if (user == "root") {
             http_die("request-param-bad", "user", user.c_str(), "<user name other than 'root'>");
         }
+        if (user == BIOS_SCRIPT_USER) {
+            http_die("request-param-bad", "user", user.c_str(), "<user name other than this one>");
+        }
 
         if (old_passwd.empty()) {
             http_die("request-param-bad", "old_passwd", "<empty>", "<password>");
