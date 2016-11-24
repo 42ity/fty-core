@@ -54,8 +54,12 @@ std::string checked_name;
         http_die ("method-not-allowed", request.getMethod ().c_str ());
 
     std::string name = request.getArg ("name");
-    check_alert_rule_name_or_die ("name", name, checked_name);
 
+    http_errors_t errors;
+    if (!check_alert_rule_name ("name", name, errors)) {
+        http_die_error (errors);
+    }
+    checked_name = name;
     // sanity check end
 }
 
