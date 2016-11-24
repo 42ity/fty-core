@@ -28,7 +28,7 @@ random_password() {
 
 if [[ ! -f "${PASSWD}" ]]; then
     password=$(random_password)
-    printf 'BIOS_USER="%s"' "${password}" >"${PASSWD}" 
+    printf 'BIOS_USER="_bios-script"\nBIOS_PASSWD="%s"' "${password}" >"${PASSWD}" 
     chown root:bios-admin "${PASSWD}"
     chmod 0640 "${PASSWD}"
 
