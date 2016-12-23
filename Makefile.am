@@ -1083,17 +1083,17 @@ RULE_TEMPLATES = \
 template_rule_DATA =	$(RULE_TEMPLATES)
 EXTRA_DIST +=		$(RULE_TEMPLATES)
 
-client_PROGRAMS +=	agent-inventory
+client_PROGRAMS +=	fty-inventory
 
-agent_inventory_SOURCES = \
-			src/agents/inventory/agent-inventory.cc \
+fty_inventory_SOURCES = \
+			src/agents/inventory/fty-inventory.cc \
 			tools/dbpath.h
 
-agent_inventory_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} \
+fty_inventory_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} \
 							${LIBBIOSPROTO_LIBS} \
-							-ltntdb -lbiosapi -lcidr
+							-ltntdb -lbiosapi -lcidr -lfty_proto
 
-agent_inventory_LDADD = \
+fty_inventory_LDADD = \
 			libpriv-db.la \
 			libpriv-cidr.la \
 			libpriv-defs.la \
@@ -1102,7 +1102,7 @@ agent_inventory_LDADD = \
 			libbiosapi.la \
 			libpriv-utils-ymsg.la
 
-agent_inventory_CPPFLAGS =	$(AM_CPPFLAGS) \
+fty_inventory_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/tools \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/src/persist \
@@ -1113,7 +1113,7 @@ client_PROGRAMS += warranty-metric
 
 warranty_metric_SOURCES = src/warranty/warranty-metric.cc
 
-warranty_metric_LDFLAGS = ${CXXTOOLS_LIBS} -ltntdb -lbiosproto -lmlm
+warranty_metric_LDFLAGS = ${CXXTOOLS_LIBS} -ltntdb -lbiosproto -lfty_proto -lmlm
 
 warranty_metric_LDADD = \
 			libpriv-log.la \
@@ -1227,7 +1227,7 @@ bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 			${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
 			${LIBBIOSPROTO_LIBS} \
 			$(LDFLAGS_NO_UNDEFS) \
-			-module -lm -ltntdb -ltntnet -lcidr -lmagic -lbiosapi -lz
+			-module -lm -ltntdb -ltntnet -lcidr -lmagic -lbiosapi -lfty_proto -lz
 
 bios_web_la_LIBADD = \
 			libpriv-db.la libpriv-cidr.la libpriv-proto.la \
