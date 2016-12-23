@@ -25,7 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "log.h"
 #include <cxxtools/directory.h>
 #include "TemplateRuleConfigurator.h"
-#include "agent-autoconfig.h"
+#include "fty-autoconfig.h"
 #include "asset_types.h"
 
 

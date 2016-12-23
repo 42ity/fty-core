@@ -33,7 +33,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "utils_ymsg.h"
 #include "filesystem.h"
 
-#include "agent-autoconfig.h"
+#include "fty-autoconfig.h"
 
 #define AUTOCONFIG "AUTOCONFIG"
 
