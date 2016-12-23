@@ -26,7 +26,7 @@
  */
 #include <string>
 #include <ctime>
-#include <biosproto.h>
+#include <fty_proto.h>
 #include <tntdb/connect.h>
 #include <tntdb/error.h>
 
@@ -68,7 +68,7 @@ int main (int argc, char *argv[])
     }
 
     // listen on inventory messages
-    rv = mlm_client_set_consumer (agent, BIOS_PROTO_STREAM_ASSETS, ".*");
+    rv = mlm_client_set_consumer (agent, FTY_PROTO_STREAM_ASSETS, ".*");
     if (rv == -1) {
         log_error ("mlm_client_set_consumer () failed");
         mlm_client_destroy (&agent);
@@ -81,28 +81,28 @@ int main (int argc, char *argv[])
         if (!new_msg)
               break;
 	
-        if (!is_bios_proto (new_msg)) {
+        if (!is_fty_proto (new_msg)) {
              log_warning ("not a bios proto message sender == '%s', subject == '%s', command = '%s'",
                      mlm_client_sender (agent), mlm_client_subject (agent), mlm_client_command (agent));
              zmsg_destroy (&new_msg);
              continue;
         }
           
-        bios_proto_t *proto = bios_proto_decode (&new_msg);
+        fty_proto_t *proto = fty_proto_decode (&new_msg);
         if (!proto) {
-            log_critical ("bios_proto_decode () failed");
+            log_critical ("fty_proto_decode () failed");
             continue;
         }
 	
-        const char *device_name = bios_proto_name (proto);
+        const char *device_name = fty_proto_name (proto);
         assert (device_name);
-        zhash_t *ext = bios_proto_ext (proto);
+        zhash_t *ext = fty_proto_ext (proto);
         assert (ext);
-	    const char *operation = bios_proto_operation(proto);
+	    const char *operation = fty_proto_operation(proto);
         assert (operation);
 
         if (!streq (operation, "inventory")) {
-            bios_proto_destroy (&proto);
+            fty_proto_destroy (&proto);
             continue;  
         }
 	
@@ -114,11 +114,11 @@ int main (int argc, char *argv[])
                     ext);
         }
         catch (const std::exception& e) {
-            bios_proto_destroy (&proto);
+            fty_proto_destroy (&proto);
             zsys_error ("tntdb::connectCached () failed: %s", e.what ());
             break;
         }
-        bios_proto_destroy (&proto);
+        fty_proto_destroy (&proto);
     }
 
     mlm_client_destroy (&agent);
