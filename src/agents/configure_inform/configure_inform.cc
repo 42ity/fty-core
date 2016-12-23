@@ -21,7 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <malamute.h>
 #include <stdexcept>
 
-#include <bios_proto.h>
+#include <fty_proto.h>
 #include "str_defs.h"
 #include "assets.h"
 #include "dbpath.h"
@@ -53,7 +53,7 @@ void
         throw std::runtime_error(" mlm_client_connect () failed.");
     }
 
-    r = mlm_client_set_producer (client, BIOS_PROTO_STREAM_ASSETS);
+    r = mlm_client_set_producer (client, FTY_PROTO_STREAM_ASSETS);
     if ( r == -1 ) {
         mlm_client_destroy (&client);
         throw std::runtime_error(" mlm_client_set_producer () failed.");
@@ -100,7 +100,7 @@ void
 
         zhash_t *ext = s_map2zhash (oneRow.first.ext);
 
-        zmsg_t *msg = bios_proto_encode_asset (
+        zmsg_t *msg = fty_proto_encode_asset (
                 aux,
                 oneRow.first.name.c_str(),
                 operation2str (oneRow.second).c_str(),
