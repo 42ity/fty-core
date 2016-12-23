@@ -24,7 +24,8 @@
  * \brief  Send a warranty metric for all elements with element_date in the DB
  */
 
-#include <biosproto.h>
+#include <malamute.h>
+#include <fty_proto.h>
 #include <tntdb.h>
 
 #include "log.h"
@@ -88,7 +89,7 @@ int main()
                 log_debug ("day_diff: %d", day_diff);
             }
             log_debug ("name: %s, keytag: %s, date: %s", name.c_str(), keytag.c_str(), date.c_str());
-            zmsg_t *msg = bios_proto_encode_metric (
+            zmsg_t *msg = fty_proto_encode_metric (
                     NULL,
                     keytag.c_str(),
                     name.c_str (),
