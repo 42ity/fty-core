@@ -6,7 +6,7 @@ PACKAGE_VENDOR="Eaton"
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
 # Sub-makefiles: do not forget to update SUBDIRS list in root Makefile.am
-AC_CONFIG_FILES([Makefile docs/man/Makefile tools/Makefile docs/examples/Makefile database/mysql/Makefile])
+AC_CONFIG_FILES([Makefile tools/Makefile docs/examples/Makefile database/mysql/Makefile])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([foreign 1.11 -Wall -Wno-portability silent-rules tar-pax no-dist-gzip dist-xz subdir-objects])
 
@@ -178,29 +178,6 @@ AS_CASE(["x$srcdir"],
 		  [_srcdir_abs="`cd "$_srcdir_abs" && pwd || echo "$_srcdir_abs"`"])
 ])
 AC_MSG_NOTICE(AS_HELP_STRING([Value of _srcdir_abs:], ['$_srcdir_abs']))
-
-# This script is part of the sources, so we expect it to be available
-# We call it to prepare a file with Git workspace metadata, if available;
-# alternately a copy of the file may have been git-archive'd to tarball
-# with sources that so are not a Git workspace (repository clone) anymore.
-# This includes the case of "make dist(check)" where a copy of the file
-# is passed at some stage via Makefile's EXTRA_DIST.
-GDETAILSH="$_srcdir_abs/tools/git_details.sh"
-AS_IF([test -s "$GDETAILSH" -a -x "$GDETAILSH" -a -r "$GDETAILSH"],
-	[AC_MSG_NOTICE([Found git_details.sh: $GDETAILSH])],
-	[AC_MSG_ERROR([cannot find required git_details.sh])])
-
-# If we have an (older) .git_details file, and a clean out-of-tree build,
-# then prepopulate the build directory with a copy
-AS_IF([test x"$_srcdir_abs" != x"$_curdir_abs" -a \
-	  -s "$_srcdir_abs/.git_details" -a \
-	! -s "$_curdir_abs/.git_details"],
-	[AC_MSG_NOTICE([Pre-populating .git_details in the out-of-tree build area from source workspace...])
-	 cp -pf "$_srcdir_abs/.git_details" "$_curdir_abs/.git_details"
-])
-
-AS_IF([test -s "$_curdir_abs/.git_details.tmp"],
-	[rm -f "$_curdir_abs/.git_details.tmp"])
 
 AS_IF([test -d "$_srcdir_abs/.git"],
 	[AC_MSG_NOTICE([Getting current Git workspace attributes...])
