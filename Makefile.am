@@ -51,6 +51,8 @@ client_PROGRAMS =
 helperdir       = $(datadir)/@PACKAGE@/scripts
 helper_SCRIPTS  =
 
+install-data-local: all-docs
+
 # test programs executed by CI scripts
 # lower-case var with actual list (so targets can be built by explicit request)
 # upper-case var picked up by autotools, populated based on configure settings;
