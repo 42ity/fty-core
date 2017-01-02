@@ -27,6 +27,11 @@
  */
  #><%pre>
 #include <cxxtools/regex.h>
+#include <sys/types.h>
+#include <sys/syscall.h>
+
+#include <fty_proto.h>
+#include <malamute.h>
 
 #include "data.h"
 #include "asset_types.h"
@@ -36,10 +41,7 @@
 #include "helpers.h"
         
 #include "log.h"
-#include <biosproto.h>
 
-#include <sys/types.h>
-#include <sys/syscall.h>
 
 struct Outlet {
     std::string label;
@@ -83,7 +85,7 @@ s_rack_realpower_nominal (
     double ret = 0.0f;
 
     zmsg_t *request = s_rt_encode_GET (name.c_str());
-    mlm_client_sendto (client, "agent-rt", "latest-rt-data", NULL, 1000, &request);
+    mlm_client_sendto (client, "fty-metric-cache", "latest-rt-data", NULL, 1000, &request);
 
     //TODO: this intentionally wait forewer, to be fixed by proper client pool
     zmsg_t *msg = mlm_client_recv (client);
@@ -113,20 +115,20 @@ s_rack_realpower_nominal (
 
     zmsg_t *data = zmsg_popmsg (msg);
     while (data) {
-        bios_proto_t *bmsg = bios_proto_decode (&data);
+        fty_proto_t *bmsg = fty_proto_decode (&data);
         if (!bmsg) {
-            log_warning ("decoding bios_proto_t failed");
+            log_warning ("decoding fty_proto_t failed");
             continue;
         }
 
-        if (!streq (bios_proto_type (bmsg), "realpower.nominal")) {
-            bios_proto_destroy (&bmsg);
+        if (!streq (fty_proto_type (bmsg), "realpower.nominal")) {
+            fty_proto_destroy (&bmsg);
             data = zmsg_popmsg (msg);
             continue;
         }
         else {
-            ret = std::stod (bios_proto_value (bmsg));
-            bios_proto_destroy (&bmsg);
+            ret = std::stod (fty_proto_value (bmsg));
+            fty_proto_destroy (&bmsg);
             break;
         }
     }
