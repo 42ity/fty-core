@@ -1,5 +1,5 @@
 [Unit]
-Description=BIOS-Timer service to send metrics about warranty date
+Description=42ity-Timer service to send metrics about warranty date
 After=malamute.service bios-db-init.service
 Requires=malamute.service bios-db-init.service
 PartOf=bios.target

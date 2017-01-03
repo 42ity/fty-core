@@ -23,7 +23,7 @@
 #  \author Karol Hrdina <KarolHrdina@Eaton.com>
 #  \brief  Not yet documented file
 
-echo "Check requirements of environment for BIOS when cloning & building:"
+echo "Check requirements of environment for 42ity when cloning & building:"
 
 # Check no. 1:
 # We expect db to be in UTC time zone

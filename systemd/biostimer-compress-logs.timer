@@ -1,5 +1,5 @@
 [Unit]
-Description=BIOS-Timer to regularly compress logs
+Description=42ity-Timer to regularly compress logs
 PartOf=multi-user.target
 
 [Timer]

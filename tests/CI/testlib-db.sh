@@ -558,7 +558,7 @@ reloaddb_init_script_WRAPPER() {
     if reloaddb_stops_BIOS && \
         [ -x "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" ] \
     ; then
-        echo "CI-TESTLIB_DB - reset db: stop BIOS ---------------"
+        echo "CI-TESTLIB_DB - reset db: stop 42ity ---------------"
         "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" --stop
     fi
 
@@ -570,7 +570,7 @@ reloaddb_init_script_WRAPPER() {
     if reloaddb_stops_BIOS && \
         [ -x "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" ] \
     ; then
-        echo "CI-TESTLIB_DB - reset db: start BIOS ---------------"
+        echo "CI-TESTLIB_DB - reset db: start 42ity ---------------"
         "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" --start-quick || return $?
     fi
 
@@ -589,7 +589,7 @@ init_script_wipedb(){
 }
 
 init_script_wipedb_restart(){
-    # This routine stops BIOS services that rely on DB, wipes DB and restarts
+    # This routine stops 42ity services that rely on DB, wipes DB and restarts
     # This requires the database schema initialized and mysql running
     if reloaddb_stops_BIOS ; then
         echo "CI-TESTLIB_DB - reset db: stop BIOS-DB-INIT -------"

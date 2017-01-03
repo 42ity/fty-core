@@ -79,7 +79,7 @@ if [ "${SUT_WEB_PORT-}" -eq 443 ]; then
 fi
 [ -z "${BASE_URL-}" ] && BASE_URL="${SUT_WEB_SCHEMA}://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 
-### By default, do we stop BIOS services before re-initializing the database?
+### By default, do we stop 42ity services before re-initializing the database?
 ### See reloaddb_stops_BIOS() as the callable method
 [ -z "${LOADDB_RESTART_BIOS-}" ] && LOADDB_RESTART_BIOS=auto
 [ x"${LOADDB_RESTART_BIOS-}" = x- ] && LOADDB_RESTART_BIOS=auto
