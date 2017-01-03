@@ -1,5 +1,5 @@
 [Unit]
-Description=BIOS-Timer to regularly send warranty metrics
+Description=42ity-Timer to regularly send warranty metrics
 PartOf=bios.target
 
 [Timer]

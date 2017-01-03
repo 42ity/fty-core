@@ -2,7 +2,7 @@
 #
 #   Copyright (c) 2014-2016 Eaton
 #
-#   This file is part of the Eaton $BIOS project.
+#   This file is part of the Eaton 42ity project.
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -39,7 +39,7 @@
 #   internal dev-test deployments in Eaton network, at the moment.
 #
 #   This script is executed in the chroot'ed filesystem tree prepared
-#   by OBS installation of packages, including the BIOS core package.
+#   by OBS installation of packages, including the 42ity core package.
 #   It is called as the "%build" recipe implementation from the OBS
 #   specfile, with an IMGTYPE envvar pre-set to "devel" or "deploy".
 
@@ -126,7 +126,7 @@ cat > /etc/issue << EOF
 \S{NAME} \S{VERSION_ID} \n \l@\b ; Current IP(s): \4{eth0} \4{eth1} \4{eth2} \4{eth3} \4{LAN1} \4{LAN2} \4{LAN3}
 EOF
 
-# BIOS configuration file
+# 42ity configuration file
 mkdir -p /etc/default
 touch /etc/default/bios
 chown www-data /etc/default/bios
@@ -143,7 +143,7 @@ mkdir -p /etc/bios/nut/devices
 chown -R bios:bios-infra /etc/bios
 systemd-tmpfiles --create
 
-# Setup BIOS lenses
+# Setup 42ity lenses
 mkdir -p /usr/share/bios/lenses
 ln -sr /usr/share/augeas/lenses/dist/{build,ethers,interfaces,ntp,ntpd,pam,resolv,rx,sep,util,shellvars}.aug \
     /usr/share/bios/lenses
@@ -297,7 +297,7 @@ else
     echo "NOTE: Keeping the perl version of /usr/sbin/update-rc.d in place" >&2
 fi
 
-# Setup bios security
+# Setup 42ity security
 mkdir -p /etc/pam.d
 cp /usr/share/bios/examples/config/pam.d/* /etc/pam.d
 RULES="`sed -n 's|.*pam_cracklib.so||p' /etc/pam.d/bios`"
@@ -372,12 +372,12 @@ sed -i 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/bios/license\nConditionP
 [ -s /usr/lib/libneon.so ] || \
     ln -sfr /usr/lib/libneon.so.*.*      /usr/lib/libneon.so
 
-# Enable malamute with BIOS configuration
+# Enable malamute with 42ity configuration
 mkdir -p /etc/malamute
 cp /usr/share/bios/examples/config/malamute/malamute.cfg /etc/malamute
 /bin/systemctl enable malamute
 
-# Enable BIOS services (distributed as a systemd preset file)
+# Enable 42ity services (distributed as a systemd preset file)
 /bin/systemctl preset-all
 if [ "`uname -m`" = x86_64 ]; then
     /bin/systemctl enable bios-fake-th
@@ -506,13 +506,13 @@ set /files/etc/ntp.conf/server[1] pool.ntp.org
 save
 EOF
 
-# BIOS emulator script which can fake some of the curl behaviour with wget
+# 42ity emulator script which can fake some of the curl behaviour with wget
 [ ! -x /usr/bin/curl ] && [ -x /usr/share/bios/scripts/curlbbwget.sh ] && \
     install -m 0755 /usr/share/bios/scripts/curlbbwget.sh /usr/bin/curl
 
 #########################################################################
 # Setup zabbix
-# TODO: revise the list of BIOS services here
+# TODO: revise the list of 42ity services here
 if [ -f /usr/bin/zabbix_agent ]; then
 for i in mysql tntnet@bios malamute \
     bios-db bios-agent-inventory bios-agent-nut bios-driver-netmon \
@@ -618,7 +618,7 @@ fi
 # A few helper aliases
 install -m 0755 /usr/share/bios/examples/config/profile.d/bios_aliases.sh /etc/profile.d/bios_aliases.sh
 
-# BIOS PATH
+# 42ity PATH
 install -m 0755 /usr/share/bios/examples/config/profile.d/bios_path.sh /etc/profile.d/bios_path.sh
 
 # Help ifup and ifplugd do the right job

@@ -1,10 +1,10 @@
 #
 # Description:
-# The PAM 'bios' service configuration file for the Eaton $BIOS project.
+# The PAM 'bios' service configuration file for the Eaton 42ity project.
 # Note that this file must be named 'bios' to identify the service name.
 # This allows members of the groups listed in /etc/security/bios_groups.conf
 # (i.e. the 'bios' group by default) to PAM/SASL-authenticate to the daemons.
-# See also the script to generate these needed $BIOS accounts and groups:
+# See also the script to generate these needed 42ity accounts and groups:
 #    tools/init-os-accounts.sh
 #
 # Most of the PAM setup code below is relatively standard boilerplate,
@@ -33,7 +33,7 @@
 
 @include	common-account
 
-# The $BIOS requirements for password:
+# The 42ity requirements for password:
 #   8 characters, including one digit and one 'other' character
 #   flag 'enforce_for_root' is for 'bios-passwd' tool, which runs under root
     password	requisite	pam_cracklib.so enforce_for_root minlen=8 dcredit=-1 ocredit=-1 ucredit=0 lcredit=0

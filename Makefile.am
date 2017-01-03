@@ -1,4 +1,4 @@
-# Description: The Makefile (automake template) for the $BIOS project.
+# Description: The Makefile (automake template) for the 42ity project.
 # Note: relies on GNU make syntax and features, may fail to work in
 # other make programs.
 
@@ -167,7 +167,7 @@ AM_LDFLAGS = \
 		-Wl,--as-needed
 
 ########################################################################
-# (Shared) Public $BIOS API Library
+# (Shared) Public 42ity API Library
 # While this location in the Makefile hopefully ensures that this is
 # built before other objects, please do not neglect proper definition
 # of _DEPENDENCIES variables
@@ -363,7 +363,7 @@ EXTRA_DIST +=		$(exampleconf_DATA)
 
 CLEANFILES +=		tntnet.xml.example tests/CI/tntnet.xml
 
-# Make sure needed files are up-to-date to test web-server for $BIOS REST API
+# Make sure needed files are up-to-date to test web-server for 42ity REST API
 web-test-deps: tntnet.xml bios_web.la web-link-test
 
 # TODO (BIOS-1262): the "install-ci_helperSCRIPTS" recipe installs one script
@@ -385,7 +385,7 @@ tools/journalctl: tools/systemctl
 # and exported in RUN_TNTNET - but this does not work for bios-passwd :(
 web-test-deps-inst: install-ci_helperSCRIPTS
 
-### Execute the test web-server for $BIOS REST API
+### Execute the test web-server for 42ity REST API
 # LD_PRELOAD=/path/to/libasan.so is needed for fair play with external libs,
 # otherwise "new mlm_stuff; throw(exception)" breaks in ASA as a function
 # without a proper return code-path (un-instrumented delete/free involved).
@@ -463,14 +463,14 @@ SYSTEMD_SUBDIR = systemd
 # systemd integration enabled?
 if HAVE_SYSTEMD
 
-# These units allow to toggle the entirety of BIOS agents and other related
+# These units allow to toggle the entirety of 42ity agents and other related
 # services on and off (except a few chosen low-level services that remain
 # WantedBy=multi-user.target)
 SYSTEMD_TARGETS += bios.target bios.service
 
 # These units are not part of the common bios.target etc. but are to be
 # considered rather a part of the operating environment independent of
-# the BIOS high-level target groupings.
+# the 42ity high-level target groupings.
 SYSTEMD_UNITS_LOWLEVEL += \
                         bios-reset-button.service \
                         ifplug-dhcp-autoconf.service \
@@ -491,7 +491,7 @@ SYSTEMD_UNITS_TARGET_BIOS += \
                         bios-agent-inventory.service
 
 # Here we list the actual service-definition files that should be compiled
-# Enabled as part of BIOS presets
+# Enabled as part of 42ity presets
 SYSTEMD_UNITS += $(SYSTEMD_UNITS_TARGET_BIOS) $(SYSTEMD_UNITS_LOWLEVEL)
 
 # These units have unit files installed but are not enabled nor disabled
@@ -503,7 +503,7 @@ SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS += \
 
 SYSTEMD_UNITS_NOTPRESET += $(SYSTEMD_UNITS_NOTPRESET_LOWLEVEL) $(SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS)
 
-# These unit files are compiled, but are not enabled via BIOS presets
+# These unit files are compiled, but are not enabled via 42ity presets
 SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL += \
                         biostimer-loghost-rsyslog-netconsole.service \
                         biostimer-compress-logs.service \
@@ -515,7 +515,7 @@ SYSTEMD_UNITS_TIMERIMPL_TARGET_BIOS += \
 SYSTEMD_UNITS_TIMERIMPL += $(SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL) $(SYSTEMD_UNITS_TIMERIMPL_TARGET_BIOS)
 
 # These files need no processing, delivered verbatim
-# Enabled as part of BIOS presets
+# Enabled as part of 42ity presets
 SYSTEMD_TIMERS_LOWLEVEL += \
                         biostimer-loghost-rsyslog-netconsole.timer \
                         biostimer-compress-logs.timer \

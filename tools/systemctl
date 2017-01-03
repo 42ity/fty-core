@@ -60,7 +60,7 @@ JOURNALCTL_COMMANDS="-f --follow -l -u -fl -lf -fu -uf -lu -ul -flu -ful -luf -l
 
 # List of fixed strings that are good both for "case" and regexp matching
 # TODO: Provide here only the framework for listing (unique) unit names
-# which would be pulled from config snippets delivered by BIOS packages.
+# which would be pulled from config snippets delivered by 42ity packages.
 # NOTE: The web/systemctl.ecpp implementation maps "restart" requests for
 # service name "networking" to be actually implemented by calling our own
 # service named "bios-networking".

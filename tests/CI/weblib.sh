@@ -816,18 +816,18 @@ accept_license(){
     else
         if [ x"${SKIP_LICENSE_FORCEACCEPT-}" = xyes ] ; then
             echo "WEBLIB::accept_license(): SKIP_LICENSE_FORCEACCEPT=$SKIP_LICENSE_FORCEACCEPT so not running '00_license-CI-forceaccept.sh.test' first"
-            logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+            logmsg_warn "42ity license not accepted on the server, subsequent tests may fail"
         else
             ### Note: If CITEST_QUICKFAIL=yes then the license-acceptance can kill the test suite
-            echo "WEBLIB::accept_license(): Trying to accept the license via REST API on BIOS server '$BASE_URL'..."
+            echo "WEBLIB::accept_license(): Trying to accept the license via REST API on 42ity server '$BASE_URL'..."
             api_auth_post_json '/admin/license' "foobar" || \
             ( SKIP_SANITY=yes; WEBLIB_CURLFAIL=no; CITEST_QUICKFAIL=no; WEBLIB_QUICKFAIL=no
               export SKIP_SANITY WEBLIB_CURLFAIL CITEST_QUICKFAIL WEBLIB_QUICKFAIL
               . "$CHECKOUTDIR"/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
                 if [ x"$CITEST_QUICKFAIL" = xyes ] || [ x"$WEBLIB_QUICKFAIL" = xyes ] ; then
-                    die "BIOS license not accepted on the server, subsequent tests will fail"
+                    die "42ity license not accepted on the server, subsequent tests will fail"
                 else
-                    logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+                    logmsg_warn "42ity license not accepted on the server, subsequent tests may fail"
                 fi
         fi
     fi

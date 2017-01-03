@@ -2,13 +2,13 @@
 # and it contains definition of some command lines, list of
 # usernames and/or %groupnames allowed to elevate privileges,
 # and a list of usernames with whose credentials we can run as,
-# which is overall needed for the $BIOS project. This config
+# which is overall needed for the 42ity project. This config
 # was verified for Debian 8 "testing", but should be generally
 # portable among different moderately recent "sudo" releases.
 # To use, just copy this file into /etc/sudoers.d/ (note that
 # the filename should NOT contain "." dots) or append contents
 # to /etc/sudoers on older OSes, and maybe adapt if required.
-# See also the script to generate these needed $BIOS accounts:
+# See also the script to generate these needed 42ity accounts:
 #    tools/init-os-accounts.sh
 #
 # Author(s): Jim Klimov <EvgenyKlimov@eaton.com>

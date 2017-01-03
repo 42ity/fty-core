@@ -21,8 +21,8 @@
 #  \brief   NTP synchronization for udhcpc
 #  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \details Based on /etc/dhcp/dhclient-exit-hooks.d/ntp from Debian8 ntp
-#           package, adapted for the $BIOS project.
-#           Included from (patched) /etc/udhcpc/default.script for $BIOS project
+#           package, adapted for the 42ity project.
+#           Included from (patched) /etc/udhcpc/default.script for 42ity project
 
 NTP_CONF=/etc/ntp.conf
 NTP_DHCP_CONF=/var/lib/ntp/ntp.conf.dhcp

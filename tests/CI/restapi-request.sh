@@ -17,7 +17,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 #! \file   restapi-request.sh
-#  \brief  sets up the sandbox and runs the tests of REST API for the $BIOS project
+#  \brief  sets up the sandbox and runs the tests of REST API for the 42ity project
 #  \author Tomas Halman <TomasHalman@Eaton.com>
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 
@@ -48,7 +48,7 @@ usage(){
     echo "  --host NAME       REST API service host name [$SUT_HOST]"
     echo "  --port-web PORT   REST API service HTTP port (default: it depends)"
     echo "  --use-https|--use-http  Specify if REST API service requires HTTP(S)"
-    echo "  -q|--quick  skip sanity checks that the server serves BIOS REST API"
+    echo "  -q|--quick  skip sanity checks that the server serves 42ity REST API"
     echo "  -m|--method which routine to use from weblib.sh (Default: '$WEBLIB_FUNC')"
     echo "NOTE: RELATIVE_URL is under the BASE_URL (host:port/api/v1)"
 }
@@ -190,7 +190,7 @@ wait_for_web() {
       die "Web-server is NOT responsive!" >&2
     fi
 
-    # Validate the fundamental BIOS webserver capabilities
+    # Validate the fundamental 42ity webserver capabilities
     logmsg_info "Testing webserver ability to serve the REST API" >&2
     curlfail_push_expect_404
     if [ -n "`api_get "" 2>&1 | grep 'HTTP/.* 500'`" ] >/dev/null 2>&1 ; then

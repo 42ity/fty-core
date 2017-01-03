@@ -3,8 +3,8 @@ Name:           core
 Version:        0.1.0
 Release:        0
 License:        GPL-2.0+
-Summary:        BIOS project
-Url:            https://github.com/eaton-bob
+Summary:        42ity project
+Url:            https://github.com/42ity
 Group:          Development/Libraries/C and C++
 Source0:        %{name}-%{version}.tar.gz
 #REST API /admin/netcfg /admin/netcfgs is closely tied to Debian - on rpm distros those would return HTTP 501 Not Implemented error
@@ -24,7 +24,7 @@ BuildRequires:  tntnet-devel tntnet
 BuildRequires:  malamute-devel
 BuildRequires:  autoconf
 BuildRequires:  automake
-BuildRequires:  libbiosproto-devel
+BuildRequires:  libftyproto-devel
 # documentation
 BuildRequires:  asciidoc
 BuildRequires:  xmlto
@@ -37,7 +37,7 @@ Requires(postun):systemd-rpm-macros
 %endif
 
 %description
-The BIOS project
+The 42ity project
 
 %package devel
 Summary:    Devel files for %{name}
