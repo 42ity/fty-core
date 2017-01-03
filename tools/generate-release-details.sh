@@ -102,7 +102,7 @@ v_echo_ts() {
 # ? OSIMAGE_TYPE        IMGTYPE of OS image (can be found inside)
 
 BIOSINFO="Readonly base OS image: `basename "$OSIMAGE_FILENAME"`
-`. ${ALTROOT}/usr/share/bios/.git_details >/dev/null 2>&1 && echo "BIOS 'core' version:   $PACKAGE_GIT_HASH_S_ESCAPED @ $PACKAGE_GIT_TSTAMP_ISO8601_ESCAPED"`"
+`. ${ALTROOT}/usr/share/bios/.git_details >/dev/null 2>&1 && echo "42ity 'core' version:   $PACKAGE_GIT_HASH_S_ESCAPED @ $PACKAGE_GIT_TSTAMP_ISO8601_ESCAPED"`"
 
 OSIMAGE_BTS=""
 OSIMAGE_TYPE=""
@@ -160,7 +160,7 @@ if [ -s ${ALTROOT}/usr/share/bios-web/version.txt ]; then
         [ -z "$WEBUI_BTS" ] && WEBUI_BTS="timestamp:N/A"
 
         BIOSINFO="$BIOSINFO
-BIOS Web-UI version:   $WEBUI_ID @ $WEBUI_TS"
+42ity Web-UI version:   $WEBUI_ID @ $WEBUI_TS"
 fi
 
 [ -n "$BIOSINFO_UBOOT" ] && \
@@ -220,7 +220,7 @@ if [ $? = 0 ] ; then
         ln -s release-details.json ${ALTROOT}/etc/bios-release.json || true
     fi
 
-    v_echo_ts "Updated ${ALTROOT}/etc/release-details.json with OS image and BIOS build data"
+    v_echo_ts "Updated ${ALTROOT}/etc/release-details.json with OS image and 42ity build data"
 fi
 
 # Similar data in a more human-readable file
@@ -231,7 +231,7 @@ if printf "%s\n%s\n%s\n\n" "$OSIMAGE_LSINFO" "$MODIMAGE_LSINFO" "$BIOSINFO" \
         rm -f ${ALTROOT}/etc/bios-release || true
         ln -s release-details ${ALTROOT}/etc/bios-release || true
     fi
-    v_echo_ts "Updated ${ALTROOT}/etc/release-details with OS image and BIOS build data"
+    v_echo_ts "Updated ${ALTROOT}/etc/release-details with OS image and 42ity build data"
 fi
 
 # Post these identification data into file(s) of the installed OS RW root
@@ -244,6 +244,6 @@ for F in issue issue.net ; do
         # as if it were full of shell variables
         ORIGDATA="`head -1 "${ALTROOT}/etc/$F"`" && \
         printf "%s\n%s\n\n" "$ORIGDATA" "$BIOSINFO" > ${ALTROOT}/etc/"$F" && \
-            v_echo_ts "Updated ${ALTROOT}/etc/$F with OS image and BIOS build data"
+            v_echo_ts "Updated ${ALTROOT}/etc/$F with OS image and 42ity build data"
     fi
 done

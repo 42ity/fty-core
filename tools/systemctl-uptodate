@@ -4,7 +4,7 @@
 # definition permits the systemd units which our project family defines
 # Copyright (C) 2016 by Jim Klimov <EvgenyKlimov@Eaton.com>
 # Should be run in the tools/ directory, and expects that all our repos are
-# checked-out in the same directory as bios-core or one level deeper than that.
+# checked-out in the same directory as fty-core or one level deeper than that.
 
 # REGEX of unit basenames that we deliver but are to be NOT ALLOWED (filtered)
 # by the systemctl wrapper script.

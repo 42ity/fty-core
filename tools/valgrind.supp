@@ -1,8 +1,8 @@
-# valgrind suppression file for BIOS
+# valgrind suppression file for 42ity
 
 # actually the bug in libcidr, let's hide it from our results
 {
-   BIOS-CIDR-Value8
+   FTY-CIDR-Value8
    Memcheck:Value8
    fun:tolower
    fun:strcasecmp
@@ -10,7 +10,7 @@
 }
 
 {
-   BIOS-CIDR-Cond
+   FTY-CIDR-Cond
    Memcheck:Cond
    fun:tolower
    fun:strcasecmp
@@ -19,7 +19,7 @@
 
 # This is result of REQUIRE ( ymsg_encoded != NULL ); - seems like bug in catch actually
 {
-   BIOS-CATCH-1
+   FTY-CATCH-1
    Memcheck:Leak
    match-leak-kinds: reachable
    fun:_Znam
@@ -43,7 +43,7 @@
 }
 
 {
-   BIOS-CATCH-2
+   FTY-CATCH-2
    Memcheck:Leak
    match-leak-kinds: reachable
    fun:_Znwm
@@ -67,7 +67,7 @@
 
 #TODO: this may be bug in cxxtools - needs investigation
 {
-   BIOS-CXXTOOLS-1
+   FTY-CXXTOOLS-1
    Memcheck:Leak
    match-leak-kinds: reachable
    fun:_Znwm
@@ -81,7 +81,7 @@
 
 #TODO: this may be bug in cxxtools - needs investigation
 {
-   BIOS-CXXTOOLS-2
+   FTY-CXXTOOLS-2
    Memcheck:Leak
    match-leak-kinds: reachable
    fun:_Znwm
@@ -98,7 +98,7 @@
 
 #TODO: this may be bug in cxxtools - needs investigation
 {
-   BIOS-CXXTOOLS-3
+   FTY-CXXTOOLS-3
    Memcheck:Leak
    match-leak-kinds: reachable
    fun:_Znam
@@ -114,7 +114,7 @@
 }
 
 {
-   BIOS-CXXTOOLS-4
+   FTY-CXXTOOLS-4
    Memcheck:Leak
    match-leak-kinds: reachable
    fun:_Zn*m

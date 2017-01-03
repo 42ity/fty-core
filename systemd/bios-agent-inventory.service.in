@@ -1,5 +1,5 @@
 [Unit]
-Description=Inventory agent for BIOS project
+Description=Inventory agent for 42ity project
 After=malamute.service bios-db-init.service
 Requires=malamute.service bios-db-init.service
 PartOf=bios.target

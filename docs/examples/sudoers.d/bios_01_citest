@@ -1,8 +1,8 @@
 # Description: This OPTIONAL file is a configuration module
 # for "sudo" and it contains definition of some command lines
-# needed for (CI-driven or manual) testing of the $BIOS project.
+# needed for (CI-driven or manual) testing of the 42ity project.
 # It relies on values set in the sudoers.d/bios_00_base file.
-# See also the script to generate these needed $BIOS accounts:
+# See also the script to generate these needed 42ity accounts:
 #    tools/init-os-accounts.sh
 #
 # Author(s): Jim Klimov <EvgenyKlimov@eaton.com>
