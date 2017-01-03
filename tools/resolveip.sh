@@ -30,7 +30,7 @@ while [ $# -gt 0 ]; do
 	-s|--silent|--silent=[Tt][Rr][Uu][Ee])
 		SILENT=1 ;;
 	-V|--version)
-		echo "resolveip Ver 1.0, for \$BIOS Project (`uname -m`)"
+		echo "resolveip Ver 1.0, for 42ity Project (`uname -m`)"
 		exit 0
 		;;
 	-*)	;;	### Ignore, skip cycle

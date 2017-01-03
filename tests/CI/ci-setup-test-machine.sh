@@ -135,7 +135,7 @@ install_package_set_dev() {
 
 install_package_set_biosdeps() {
     if [ -n "$CHECKOUTDIR" ] && [ -d "$CHECKOUTDIR" ] && [ -s "$CHECKOUTDIR/obs/core.dsc" ]; then
-        echo "INFO: mk-build-deps: Installing dependencies for \$BIOS according to $CHECKOUTDIR/obs/core.dsc"
+        echo "INFO: mk-build-deps: Installing dependencies for 42ity according to $CHECKOUTDIR/obs/core.dsc"
         ( cd "$CHECKOUTDIR" && mk-build-deps "./obs/core.dsc" && \
           dpkg -i "$MKBD_DEB" && \
           apt-get -f -y --force-yes \
