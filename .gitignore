@@ -223,8 +223,8 @@ src/web/src/email_vote.cpp
 src/web/src/input_power_chain.cpp
 
 tntnet.xml.example
-!src/web/tntnet.xml
 tntnet.xml
+!tools/tntnet.xml
 tests/CI/run_tntnet_make.env
 
 !src/agents
