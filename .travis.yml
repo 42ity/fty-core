@@ -33,6 +33,11 @@ addons:
     - git
     - asciidoc
     - xmlto
+    - tntnet
+    - tntnet-runtime
+    - libtntnet-dev
+    - libtnt-dev
+    - libsasl2-dev
 
 before_install:
 - if [ $TRAVIS_OS_NAME == "osx" ] ; then brew update; brew install binutils valgrind ; fi
