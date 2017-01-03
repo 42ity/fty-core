@@ -229,7 +229,7 @@ install_sql_file() {
 	if  [ -r "$INITSQL" ] && \
 	    [ -s "$INITSQL" ] \
 	; then
-		echo "Database for BIOS initialization - importing $COMMENT `basename $INITSQL`..."
+		echo "Database for 42ity initialization - importing $COMMENT `basename $INITSQL`..."
 		do_mysql < "$INITSQL" || return 1
 		SQLINSTALL_SCHEMA_VERSION="v=`grep_sql_version < "$INITSQL"`." || BIOS_SCHEMA_VERSION_SQL=""
 		[ -n "$INSTSQL_DIR" ] && [ -d "$INSTSQL_DIR" ] && \
@@ -243,7 +243,7 @@ install_sql_file() {
 
 generate_database() {
 	local INITSQL=""
-	# Imports the BIOS database files, sets up and saves passwords
+	# Imports the 42ity database files, sets up and saves passwords
 	install_sql_file "$INITSQL_FIRST" "base schema" || return $?
 
 	secure_database
@@ -252,7 +252,7 @@ generate_database() {
 		install_sql_file "$INITSQL" "extra schema" || return $?
 	done
 
-	echo "Database for BIOS initialization - completed the schema import and password generation"
+	echo "Database for 42ity initialization - completed the schema import and password generation"
 	return 0
 }
 
@@ -306,7 +306,7 @@ ensure_root_password() {
 	else
 		if [ -s "${MYCNF_LEGACY}" ] && [ ! -L "${MYCNF_LEGACY}" ] && [ ! -s "${MYCNF}" ]; then
 			# Legacy is a real file, new standard does not exist, move it over
-			echo "Database for BIOS initialization - moving an existing password file MYCNF_LEGACY to MYCNF, and a symlink in its place pointing to the new location..." >&2 && \
+			echo "Database for 42ity initialization - moving an existing password file MYCNF_LEGACY to MYCNF, and a symlink in its place pointing to the new location..." >&2 && \
 			rm -f "${MYCNF}" && \
 			mv -f "${MYCNF_LEGACY}" "${MYCNF}" && \
 			ln -s "${MYCNF}" "${MYCNF_LEGACY}"
@@ -325,7 +325,7 @@ ensure_root_password() {
 				ln -s "${MYCNF}" "${MYCNF_LEGACY}"
 				chmod 600 "$MYCNF"
 				if echo "select 'working';" | do_mysql | grep -w working > /dev/null; then
-					echo "Database for BIOS initialization - created a symlink MYCNF_LEGACY pointing to valid password file MYCNF" >&2
+					echo "Database for 42ity initialization - created a symlink MYCNF_LEGACY pointing to valid password file MYCNF" >&2
 				else # Both data are invalid
 					rm -f "${MYCNF_LEGACY}" "${MYCNF}"
 				fi
@@ -355,7 +355,7 @@ ensure_root_password() {
 	if [ ! -s "$MYCNF" ] || [ ! -s "$MYCNF_LEGACY" ] || [ x"$MYSQL_ROOT_PASSWD_FLAG" = x"--password=" ]; then
 		# ~/.my.cnf missing or empty, or password was detected as empty
 		# Note this structure allows a .my.cnf to specify password=''
-		echo "Database for BIOS - generating MySQL root password instead of corrupt/empty value..."
+		echo "Database for 42ity - generating MySQL root password instead of corrupt/empty value..."
 		# Just in case, avoid weird chars in the password
 		ROOT_PW="`random_password`"
 		cat << EOF | do_mysql $MYSQL_ROOT_PASSWD_FLAG
@@ -370,11 +370,11 @@ EOF
 		rm -f "${MYCNF_LEGACY}"
 		ln -s "${MYCNF}" "${MYCNF_LEGACY}"
 	else
-		echo "Database for BIOS - not touching MySQL root password - previous value remains in place..."
+		echo "Database for 42ity - not touching MySQL root password - previous value remains in place..."
 	fi
 
 	if [ -z "`echo "select 'working';" | do_mysql | grep working`" ]; then
-		echo "Database for BIOS - final check for MySQL root password failed!" >&2
+		echo "Database for 42ity - final check for MySQL root password failed!" >&2
 		ls -la "${MYCNF}" "${MYCNF_LEGACY}" >&2
 		return 1
 	fi

@@ -9,7 +9,7 @@
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: Start and stop the $BIOS containers on CI hosts
-# Description:       Starts BIOS containers on CI hosts during boot
+# Description:       Starts 42ity containers on CI hosts during boot
 ### END INIT INFO
 #
 
