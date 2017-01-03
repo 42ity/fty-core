@@ -419,7 +419,6 @@ AC_CHECK_HEADERS([tntdb.h],
                  AC_MSG_ERROR([cannot find required header tntdb.h]))
 AC_CHECK_HEADER([tnt/tntnet.h], , AC_MSG_ERROR([tntnet headers not found]))
 AC_LANG_POP([C++])
-PKG_CHECK_MODULES([LIBCIDR], [libcidr], [], [AC_MSG_ERROR([cannot find libcidr])])
 PKG_CHECK_MODULES([CXXTOOLS], [cxxtools >= 2.2.0], [], [AC_MSG_ERROR([cannot find cxxtools >= 2.2.0])])
 PKG_CHECK_MODULES([LIBSASL2], [libsasl2 >= 2.1.0], [], [AC_MSG_ERROR([cannot find sasl 2 library >= 2.1.0])])
 PKG_CHECK_MODULES([LIBSODIUM], [libsodium >= 0.7.0], [], [AC_MSG_ERROR([cannot find libsodium >= 0.7.0])])
