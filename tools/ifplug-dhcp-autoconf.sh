@@ -39,7 +39,7 @@ export PATH
         . "$SCRIPTDIR"/../tests/CI/scriptlib.sh ; } || \
 { echo "FATAL: $0: Can not include script library" >&2; exit 1; }
 NEED_CHECKOUTDIR=no NEED_BUILDSUBDIR=no determineDirs_default || true
-LOGMSG_PREFIX="BIOS-IFPLUG-DHCP-"
+LOGMSG_PREFIX="FTY-IFPLUG-DHCP-"
 
 ( which augtool >/dev/null ) || die $?
 

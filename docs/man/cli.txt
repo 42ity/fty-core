@@ -56,4 +56,4 @@ Eaton <http://www.eaton.com>
 SEE ALSO
 --------
 
-BIOS project home page: http://$BIOS.noname.org
+42ity project home page: http://42ity.org

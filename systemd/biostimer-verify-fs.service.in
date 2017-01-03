@@ -1,5 +1,5 @@
 [Unit]
-Description=BIOS-Timer service that verify integrity of filesystem and reports issues to syslog
+Description=42ity-Timer service that verify integrity of filesystem and reports issues to syslog
 
 [Service]
 Type=simple
