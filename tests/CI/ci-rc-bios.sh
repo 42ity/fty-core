@@ -17,7 +17,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 #! \file   ci-rc-bios.sh
-#  \brief  starts or stops the $BIOS daemons installed in $HOME
+#  \brief  starts or stops the 42ity daemons installed in $HOME
 #  \author Tomas Halman <TomasHalman@Eaton.com>
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 
@@ -393,12 +393,12 @@ do_stop() {
 stop() {
     RES=255
     for i in $(seq 1 5) ; do
-        [ "$i" -gt 1 ] && echo "Retrying to stop BIOS services (did #`expr $i - 1` attepmts so far)..." >&2
+        [ "$i" -gt 1 ] && echo "Retrying to stop 42ity services (did #`expr $i - 1` attepmts so far)..." >&2
         do_stop
         RES=$?
         [ "$RES" = 0 ] && return $RES
     done
-    echo "FAILED($RES) to stop BIOS services after $i attempts!" >&2
+    echo "FAILED($RES) to stop 42ity services after $i attempts!" >&2
     return $RES
 }
 
@@ -458,8 +458,8 @@ status() {
     if [ $RES != 0 ] || [ "${CI_DEBUG-}" -ge "${CI_DEBUGLEVEL_RUN-}" ] 2>/dev/null ; then
         echo "$OUT"
     fi
-    [ "$RES" = 0 ] && echo "BIOS services: OK (all local $GOODSTATE)" || \
-        echo "BIOS services: FAILED (some local not $GOODSTATE)"
+    [ "$RES" = 0 ] && echo "42ity services: OK (all local $GOODSTATE)" || \
+        echo "42ity services: FAILED (some local not $GOODSTATE)"
     return $RES
 }
 
@@ -509,8 +509,8 @@ start() {
     if [ $RES != 0 ] || [ "${CI_DEBUG-}" -ge "${CI_DEBUGLEVEL_RUN-}" ] 2>/dev/null ; then
         echo "$OUT"
     fi
-    [ "$RES" = 0 ] && echo "BIOS services: OK (all local started)" || \
-        echo "BIOS services: FAILED (some local not started)"
+    [ "$RES" = 0 ] && echo "42ity services: OK (all local started)" || \
+        echo "42ity services: FAILED (some local not started)"
     return $RES
 }
 

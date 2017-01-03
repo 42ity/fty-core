@@ -10,8 +10,8 @@ Package: core
 Architecture: any
 Depends: ${misc:Depends}, ${shlibs:Depends} , augeas-tools, tntdb-mysql4, libcidr0, tntnet-runtime, malamute, libsnmp30, cracklib-runtime, ipc-data
 Recommends: msmtp, nut
-Description: BIOS core
- Core functionality implemented for BIOS.
+Description: 42ity core
+ Core functionality implemented for 42ity.
 
 Package: core-dbg
 Architecture: any
@@ -20,7 +20,7 @@ Priority: extra
 Depends:
     core (= ${binary:Version}),
     ${misc:Depends}
-Description: debugging symbols for BIOS core
+Description: debugging symbols for 42ity core
  This package contains the debugging symbols for core.
 
 Package: core-dev
@@ -34,5 +34,5 @@ Depends:
     libsodium-dev,
     libczmq-dev,
     libzmq4-dev
-Description: development files for BIOS core
+Description: development files for 42ity core
  This package contains the development files for core.

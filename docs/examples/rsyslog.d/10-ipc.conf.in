@@ -1,4 +1,4 @@
-# Main integration logic for rsyslog with journald for $BIOS project
+# Main integration logic for rsyslog with journald for 42ity project
 #
 # This configuration file has basic support for remote-logging to a host
 # named "loghost", resolvable in either the default DNS domain or local
