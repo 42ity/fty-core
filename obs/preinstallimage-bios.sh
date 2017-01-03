@@ -132,6 +132,7 @@ touch /etc/default/bios
 chown www-data /etc/default/bios
 touch /etc/default/bios.cfg
 chown www-data /etc/default/bios.cfg
+
 # workaround - wee need to change agents configuration from REST API config call
 # so let tntnet touch the files
 for cfg in $(find /etc/ -maxdepth 2 -name '*.cfg' | xargs grep 'verbose =' | cut -d ':' -f1 | sort -u | grep -v malamute); do
@@ -828,6 +829,18 @@ rm -rf /var/log/mysql
 
 find /var/log -group bios-logread -exec chmod go-w '{}' \; || true
 find /var/log -group bios-logread -exec chmod g+r '{}' \; || true
+
+#42ity renaming
+ln -sf /etc/default/bios /etc/default/fty
+ln -sf /etc/default/bios /etc/default/fty.cfg
+ln -sf /etc/bios /etc/fty
+ln -sf /etc/pam.d/bios /etc/pam.d/fty
+ln -sf /etc/tntnet/bios.d /etc/tntnet/fty.d
+ln -sf /usr/share/bios /usr/share/fty
+ln -sf /usr/share/bios/etc/default/bios /usr/share/fty/etc/default/fty
+ln -sf /usr/libexec/bios /usr/libexec/fty
+ln -sf /var/lib/bios /var/lib/fty
+
 
 sync
 echo "INFO: successfully reached the end of script: $0 $@"
