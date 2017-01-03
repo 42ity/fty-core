@@ -17,10 +17,10 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 #! \file    init-os-accounts.sh
-#  \brief   Initialize group and user accounts used by the $BIOS project
+#  \brief   Initialize group and user accounts used by the 42ity project
 #  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \details This script adds the group and user accounts used by
-#  the $BIOS project, and should work under relocated $ALTROOT dir too.
+#  the 42ity project, and should work under relocated $ALTROOT dir too.
 #  You can export ALTROOT_MAKEFAKE=Y to have the script prepare some
 #  files needed for the user management programs to perform (i.e. to
 #  generate the snippets in a temporary directory and later copy them
@@ -53,7 +53,7 @@ export LANG LC_ALL
 # Also note that (currently) specific numeric ID's are not enforced.
 [ x"$GROUP_NAME" = x ] &&	GROUP_NAME="bios"
 [ x"$USER_NAME" = x ] &&	USER_NAME="admin"
-[ x"$USER_GECOS" = x ] && 	USER_GECOS="User for BIOS processes"
+[ x"$USER_GECOS" = x ] && 	USER_GECOS="User for 42ity processes"
 [ x"$USER_SHELL" = x ] && 	USER_SHELL="/bin/sh"
 [ x"$USER_HOME" = x ] &&	USER_HOME="/home/$USER_NAME"
 [ x"$USER_PASS" = x -a x"$USER_PASS_HASH" = x ] && \

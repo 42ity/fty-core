@@ -17,7 +17,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 #! \file   db-init(.in)
-#  \brief  Inits the BIOS database schema on factory-default installations
+#  \brief  Inits the 42ity database schema on factory-default installations
 #           or do an appropriate update of database schema after reboot
 #  \author Karol Hrdina <KarolHrdina@Eaton.com>
 #  \author Alena Chernikava <AlenaChernikava@Eaton.com>
@@ -111,7 +111,7 @@ random_password() {
 }
 
 secure_database() {
-	# Make sure that credentials for R/O and R/W BIOS services are up to date
+	# Make sure that credentials for R/O and R/W 42ity services are up to date
 	# Also port legacy files from /etc locations to current store in /var,
 	# leaving only symlinks in the wake, if needed.
 	GOOD_BIOS_RW=no
@@ -170,7 +170,7 @@ secure_database() {
 	[ "$GOOD_BIOS_RO" = no ] && BIOS_RO_PASS="" && BIOS_RO_USER=""
 
 	if [ "$GOOD_BIOS_RW" = no ] || [ "$GOOD_BIOS_RO" = no ]; then
-		echo "Database for BIOS initialization - generating user passwords..."
+		echo "Database for 42ity initialization - generating user passwords..."
 
 		[ "$GOOD_BIOS_RW" = yes ] && \
 			[ -n "$BIOS_RW_PASS" ] || BIOS_RW_PASS="`random_password`"
@@ -191,7 +191,7 @@ EOF
 		chown bios "${BIOS_DB_RW}" "${BIOS_DB_RO}"
 		chmod 600 "${BIOS_DB_RW}" "${BIOS_DB_RO}"
 	else
-		echo "Database for BIOS - all existing user passwords are good"
+		echo "Database for 42ity - all existing user passwords are good"
 	fi
 
 	if [ -L "${BIOS_DB_RW_LEGACY}" ] && [ -s "${BIOS_DB_RW}" ] && diff -q "${BIOS_DB_RW_LEGACY}" "${BIOS_DB_RW}" ; then
@@ -507,5 +507,5 @@ for F in "$INITSQL_FIRST" \
 	verify_schema_version "$F" || exit $?
 done
 
-echo "Database for BIOS - found and deemed sufficient"
+echo "Database for 42ity - found and deemed sufficient"
 exit 0

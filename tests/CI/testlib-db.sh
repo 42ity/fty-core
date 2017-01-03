@@ -17,12 +17,12 @@
 #
 #! \file    testlib-db.sh
 #  \brief   library of functions and strings useful for database manipulation
-#           specifically in $BIOS testing
+#           specifically in 42ity testing
 #  \author  Michal Hrusecky <MichalHrusecky@Eaton.com>
 #  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \author  Karol Hrdina <KarolHrdina@Eaton.com>
 #  \author  Radomir Vrajik <RadomirVrajik@Eaton.com>
-#  \details This is library of functions useful for $BIOS testing related to
+#  \details This is library of functions useful for 42ity testing related to
 #           databases, which can be sourced to interactive shell.
 #           Generally it should not be included directly into a script because
 #           it is sourced by weblib.sh along with testlib.sh; if you do need it

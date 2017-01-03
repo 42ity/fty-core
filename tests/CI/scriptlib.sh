@@ -20,7 +20,7 @@
 #  \brief   Base library for scripts
 #  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \details Determine the directory name variables relevant for compiled
-#           workspace which is under test. Mainly for inclusion in $BIOS
+#           workspace which is under test. Mainly for inclusion in 42ity
 #           ./tests/CI scripts.
 #           The variable values may be set by caller or an earlier stage
 #           in script interpretation, otherwise they get defaulted here.
