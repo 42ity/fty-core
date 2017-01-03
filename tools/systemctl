@@ -85,7 +85,9 @@ SYSTEMCTL_UNITS_COMMON_INTERNAL="bios tntnet@bios bios-db-init          \
                  biostimer-loghost-rsyslog-netconsole                   \
                  composite-metrics-configurator "
 
-SYSTEMCTL_UNITS_COMMON="$SYSTEMCTL_UNITS_COMMON_EXTERNAL $SYSTEMCTL_UNITS_COMMON_INTERNAL"
+FTY="$(find /usr/lib/systemd/system /lib/systemd/system -name 'fty*' | basename | sed -E -e 's/.(service|timer|target|path|mount|device)//')"
+
+SYSTEMCTL_UNITS_COMMON="$SYSTEMCTL_UNITS_COMMON_EXTERNAL $SYSTEMCTL_UNITS_COMMON_INTERNAL $FTY"
 
 # For regexp matching of multi-instance services (a pipe-separated list)
 SYSTEMCTL_UNITS_REGEX_EXTERNAL_LIST='nut-driver'
