@@ -2,32 +2,28 @@ Installing the source-code for $BIOS
 ====================================
 
 This 'CONTRIBUTING' document is about receiving and properly managing
-the source code stored in a Git repository server based on Atlassian Stash
-for teamwork and collaboration with the Eaton $BIOS core project.
+the source code stored in a Git repository server based on GitHub
+for teamwork and collaboration with the Eaton 42ity core project.
 
 Get the source
 --------------
 If you are reading this file, you probably have _some_ version of the
-$BIOS core project source code already. It might not be the _most fresh_
+42ity core project source code already. It might not be the _most fresh_
 version, however, so to stay on the bleeding edge of development you
 might want to clone the source-code repository onto your development
 system.
 
-Alternately, if you don't have access to the project's Stash, you can copy
-a tarball of the repository (or do a `git clone`) from a fellow developer.
-
 Overview of the source-code tracking in the project
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The common baseline of the code is tracked in an 'upstream' repository,
-while each developer has at least one forked repository on the Stash
+while each developer has at least one forked repository on the GitHub
 and one or more branches there to track development on separate issues.
-Stash usually replicates the code-commits merged into the 'upstream'
-repository onto the personal forks derived from it. When a piece of
-work by a developer is baked enough for integration into the common
-code, the developer issues a "pull request" and the team can review
-and comment on these changes, and the developer follows up by adding
-some improvements... after some back-and-forth, such collectively
-reviewed and approved changesets are merged into the 'upstream'.
+When a piece of work by a developer is baked enough for integration
+into the common code, the developer issues a "pull request"
+and the team can review and comment on these changes, and the developer
+follows up by addingsome improvements... after some back-and-forth,
+such collectively reviewed and approved changesets are merged
+into the 'upstream'.
 
 Some changesets might mark an accomplishment worth remembering, such
 as a coherent set of source-code deemed ready for a wider release --
@@ -35,7 +31,7 @@ in this case `git tag` can be used to place a named mark useful for
 later reference (i.e. to retrieve the source code state "as of" some
 specific release).
 
-While the Stash server is used to centrally store, publish and help
+While the GitHub server is used to centrally store, publish and help
 cross-pollinate different lines of development, the actual work by
 developers, validators, build systems and so on, is done in local
 clones of the relevant 'origin' repository which are stored on the
@@ -49,7 +45,7 @@ every workspace for some particular work (i.e. for different branches
 that track development on different issues, for builds separate from
 coding, etc.) is a complete cloned repository, where a `git checkout`
 was done to select a particular branch. While complex hierarchies
-can be built, it is usually convenient to directly use the Stash'ed
+can be built, it is usually convenient to directly use the GitHub'ed
 personal fork as the 'origin' for all such working clones.
 
 Atlassian has published a good tutorial about Git for those who need
@@ -63,33 +59,28 @@ Checkout of the main 'upstream' repository itself is more of interest to
 those responsible for building the current project state into binaries
 for validation or redistribution. Code should not be "pushed" into this
 repository directly except after review by the source code gate-keepers.
-The 'upstream' $BIOS core project Git repository can be cloned with the
-command below (proper access to the project infrastructure server is
-required) over SSH (your keys should be uploaded to the user's Stash
+The 'upstream' 42ity core project Git repository can be cloned with the
+command below over SSH (your keys should be uploaded to the user's GitHub
 account first):
 ----
-:; git clone ssh://git@stash.mbt.lab.etn.com:7999/bios/core.git
+:; git clone git@github.com:42ity/fty-core.git
 ----
-...or over HTTP (plaintext password may be required which is not secure, and
-special characters may need URL percent-encoding which is inconvenient):
+...or over HTTPS:
 ----
-:; git clone http://E1234567:MyPass@stash.mbt.lab.etn.com/scm/bios/core.git
+:; git clone https://github.com/42ity/fty-core.git
 ----
 
 The project workflow for actual development implies that one should first
-"fork" the 'upstream' repository in the Stash web-interface into a private
-namespace (named like E1234567 below) with automatic application of updates
-from the 'upstream' repo, then `git clone` this private 'origin' repository
+"fork" the 'upstream' repository in the GitHub web-interface into a private
+namespace, then `git clone` this private 'origin' repository
 onto his or her PC for actual coding; it is convenient to also register the
 common 'upstream' repository as such, to facilitate comparisons and updates
 which were not resolved automatically (i.e. when several changes are applied
 to the same area in the tracked files and so are possibly conflicting):
 ----
-:; git clone \
-     ssh://git@stash.mbt.lab.etn.com:7999/~E1234567/core.git core-myfork && \
-   cd core-myfork/ && \
-   git remote add \
-     upstream ssh://git@stash.mbt.lab.etn.com:7999/bios/core.git && \
+:; git clone git@github.com:user/fty-core-myfork.git fty-core-myfork && \
+   cd fty-core-myfork/ && \
+   git remote add upstream git@github.com:42ity/fty-core.git && \
    git fetch --all --tags
 ----
 
@@ -105,11 +96,11 @@ Verify the local workspace (list the checked-out and available branches):
 
 Then the developer may create branches for working on individual issues
 and when some work is done -- push the code back to his personal fork
-on Stash for common review like this:
+on GitHub for common review like this:
 ----
 :; git add changedfiles* && git commit -m 'Meaningful text' && git push
 ----
-...and afterwards use the Stash web-interface to initiate a pull-request
+...and afterwards use the GitHub web-interface to initiate a pull-request
 for code review and ultimate merge of his or her changes into the common
 codebase by the gate-keepers.
 
