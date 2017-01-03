@@ -1,10 +1,10 @@
-The INSTALL document for $BIOS
+The INSTALL document for 42ity
 ==============================
 
 This INSTALL document is about building and installing prerequisites
-from source and/or as resulting packages for the Eaton $BIOS core project.
+from source and/or as resulting packages for the Eaton 42ity core project.
 
-Also keep in mind that the $BIOS core project auto-configuration procedure
+Also keep in mind that the 42ity core project auto-configuration procedure
 relies on `pkg-config` information (including the library versions), so
 it should be available (as the installed subsystem of the OS as well as
 the '*.pc' files as part of packaged or privately-built prerequisite
@@ -20,7 +20,7 @@ meaning for shells and can adversely influence copy-pasted commands).
 Get the source to build and/or develop
 --------------------------------------
 If you are reading this file, you probably have _some_ version of the
-$BIOS core project source code already. It might not be the _most fresh_
+42ity core project source code already. It might not be the _most fresh_
 version, however, so to stay on the bleeding edge of development you
 might want to clone the source-code repository onto your development
 system.
@@ -28,48 +28,29 @@ system.
 Sources for building
 ~~~~~~~~~~~~~~~~~~~~
 To just build the project, get a hold of its common 'upstream' repository.
-The 'upstream' $BIOS core project Git repository can be cloned with the
-command below (proper access to the project infrastructure server is
-required) over SSH (your keys should be uploaded to the user's Stash
+The 'upstream' 42ity core project Git repository can be cloned with the
+command below over SSH (your keys should be uploaded to the user's GitHub
 account first):
 ----
-:; git clone ssh://git@stash.mbt.lab.etn.com:7999/bios/core.git
+:; git clone git@github.com:42ity/fty-core.git
 ----
-...or over HTTP with common '~/.netrc' set up to store the cleartext login
-(note that 'machine', 'login' and 'password' are NETRC syntax keywords;
-google for details about further securing NETRC with GPG or chaining other
-storage methods with newer `git config --global credential.helper`):
+...or over HTTPS:
 ----
-:; echo "machine stash.mbt.lab.etn.com login E1234567 password p@ssW0rd!" >> ~/.netrc
-:; chmod 600 ~/.netrc
-:; git clone http://stash.mbt.lab.etn.com/scm/bios/core.git
+:; git clone https://github.com/42ity/fty-core.git
 ----
-...or over HTTP with explicit login information (plaintext password may
-be required which is not secure, and special characters may need URL
-percent-encoding which is inconvenient):
-----
-:; git clone http://E1234567:p%40ssW0rd%21@stash.mbt.lab.etn.com/scm/bios/core.git
-----
-
-Alternately, if you don't have access to the project's Stash, you can copy
-a tarball of the repository (or do a `git clone`) from a fellow developer.
 
 Sources for collaboration
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 If you also contribute to the project, the checkout procedure is similar,
 but there are more nuances to know and some general rules to follow.
 
-An overview of the source-code tracking in the $BIOS project and deeper
+An overview of the source-code tracking in the 42ity project and deeper
 details on code checkout are given in the 'CONTRIBUTING' document
-('link:CONTRIBUTING.html[]'). The short example below assumes you
-have enough access to check your your personal fork of the code as an
-'origin' from Stash, and reference the 'upstream' repository as well:
+('link:CONTRIBUTING.html[]'). The short example is below:
 ----
-:; git clone \
-     ssh://git@stash.mbt.lab.etn.com:7999/~E1234567/core.git core-myfork && \
-   cd core-myfork/ && \
-   git remote add \
-     upstream ssh://git@stash.mbt.lab.etn.com:7999/bios/core.git && \
+:; git clone git@github.com:user/fty-core-myfork.git fty-core-myfork && \
+   cd fty-core-myfork/ && \
+   git remote add upstream git@github.com:42ity/fty-core.git && \
    git fetch --all --tags
 ----
 
@@ -85,11 +66,11 @@ Verify the local workspace (list the checked-out and available branches):
 
 Then the developer may create branches for working on individual issues
 and when some work is done -- push the code back to his personal fork
-on Stash for common review like this:
+on GitHub for common review like this:
 ----
 :; git add changedfiles* && git commit -m 'Meaningful text' && git push
 ----
-...and afterwards use the Stash web-interface to initiate a pull-request
+...and afterwards use the GitHub web-interface to initiate a pull-request
 for code review and ultimate merge of his or her changes into the common
 codebase by the gate-keepers.
 
@@ -97,7 +78,7 @@ codebase by the gate-keepers.
 
 Configure package repositories of pre-built prerequisites for the project
 -------------------------------------------------------------------------
-Currently $BIOS relies on some Linux-specific features, so the code is
+Currently 42ity relies on some Linux-specific features, so the code is
 not expected to compile and work in other operating system platforms,
 at least not in its entirety. It is not currently a goal of the core
 development team to support deployment on more platforms than we can
@@ -113,7 +94,7 @@ Alternately, it is possible to rebuild and install the needed packages
 from latest sources, as will be detailed below. In particular, many of
 these are either absent or critically too-old in the general OS package
 repositories, and some projects are being developed in cooperation with
-our $BIOS project, so it is essential to use their bleeding-edge as well.
+our 42ity project, so it is essential to use their bleeding-edge as well.
 
 The software packages pre-built for the project can be located in our OBS
 build-results repositories, including the following Linux OS releases:
@@ -265,7 +246,7 @@ wget -l1 -np -nd -N -c -r --remove-listing \
 
 Installation of the build dependencies from packages
 ----------------------------------------------------
-While most of the prerequisite software needed to build or run the $BIOS
+While most of the prerequisite software needed to build or run the 42ity
 core can be compiled more or less easily, the project servers provide
 binary packages for most of the needed software which is either absent
 or obsolete in original OS repositories.
@@ -408,7 +389,7 @@ Network UPS Tools (NUT)
 ----
 :; apt-get install -y libupsclient-dev libnutclient-dev libnutscan-dev
 ----
- ** Note: specifically the $BIOS core project needs 'libnutclient' version
+ ** Note: specifically the 42ity core project needs 'libnutclient' version
 0.27 or newer, which is provided either by recent source of the Network
 UPS Tools, or by its very recent packaging (numbered 2.7.2-2 on OBS for
 Debian).
@@ -444,9 +425,9 @@ ZeroMQ and friends
 ----
 
  * On a rare system used to develop the ZMQ-based protocols involved 
-in the $BIOS code project (i.e. almost never) one might need 'zproto'
+in the 42ity code project (i.e. almost never) one might need 'zproto'
 and 'gsl' programs used to generate the C sources and headers further
-used by an application project like $BIOS. Both of these are available
+used by an application project like 42ity. Both of these are available
 on Git and are easy to compile followint their READMEs, but binary
 packages are not generally needed and are not provided. If required,
 refer to these projects directly for more details:
@@ -457,7 +438,7 @@ refer to these projects directly for more details:
 Install run-time dependencies
 -----------------------------
 Some third-party projects are required at run-time (to validate or
-actually use various components of the $BIOS project) rather than
+actually use various components of the 42ity project) rather than
 to just compile its code.
 
 Group and user accounts
@@ -466,7 +447,7 @@ For added security, the daemons run as unprivileged users. For those few
 known operations which require more privileges than are normally available,
 elevation is configured as detailed below.
 
-To create the local group and user accounts needed for $BIOS, run the script
+To create the local group and user accounts needed for 42ity, run the script
 `tools/init-os-accounts.sh` as 'root':
 ----
 :; CREATE_HOME=yes tools/init-os-accounts.sh
@@ -486,7 +467,7 @@ a different account, consider adding 'bios' as its secondary group:
 
 The SUDO program
 ~~~~~~~~~~~~~~~~
-The standard Unix `sudo` program is used to allow elevations for the $BIOS
+The standard Unix `sudo` program is used to allow elevations for the 42ity
 project accounts to execute many specific tasks.
 
 * Make sure it is available:
@@ -496,7 +477,7 @@ project accounts to execute many specific tasks.
 
 * Inspect and copy the sample $BIOS project configuration file into your
 'sudo' installation which defines a number of sudo'able commands needed
-for the $BIOS project daemons at run-time:
+for the 42ity project daemons at run-time:
 ----
 :; cp docs/examples/sudoers.d/bios_00_base /etc/sudoers.d/
 ----
@@ -513,7 +494,7 @@ group in your OS, a few more commands are needed, defined in an optional
 SASL2 daemon and PAM
 ~~~~~~~~~~~~~~~~~~~~
 The SASL daemon should be running in order for `test_web.sh` (and other cases
-of the REST API) to work with the $BIOS unprivileged user account(s).
+of the REST API) to work with the 42ity unprivileged user account(s).
 
  * Install the SASL daemon and additional PAM modules:
 ----
@@ -532,7 +513,7 @@ there.
 :; /etc/init.d/saslauthd restart
 ----
 
- * If SASL was installed after the initial creation of the $BIOS project
+ * If SASL was installed after the initial creation of the 42ity project
 user accounts, you need to explicitly add the 'bios' user account to the
 'sasl' group so it has access to the SASL configuration and database (it
 is needed for the client programs to work, and should be done as part of
@@ -574,7 +555,7 @@ by the OS.
 
 
 
-Configure and build the $BIOS project sources
+Configure and build the 42ity project sources
 ---------------------------------------------
 (Getting the project sources is covered above in this document).
 
@@ -601,7 +582,7 @@ sequential `make` while we are at it), possibly followed by `make install`.
 While our scripted extensions are made for developers' personal convenience
 as well as simplification and unification of automated testing scripts, and
 are provided with the project sources to help others, they are not currently
-endorsed nor prioritized by the official support of the $BIOS project.
+endorsed nor prioritized by the official support of the 42ity project.
 
 If no `configure` script is available yet (or if it needs to be rebuilt):
 
@@ -736,7 +717,7 @@ See also:
 
 Address, Leak and Thread Sanitizers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The $BIOS project supports builds under GCC4.8+ with included Google
+The 42ity project supports builds under GCC4.8+ with included Google
 Address Sanitizer and Leak Sanitizer (ASan+LSan) functionality. These
 are enabled by default if the currently produced build is a `DEBUG`
 one (currently this is the default mode; generally it is manageable
@@ -756,7 +737,7 @@ to disabled if TSan is requested. If both features are requested
 explicitly, the `configure` script will try to check if they can
 be enabled simultaneously, and should exit if not.
 
-NOTE: Thread Sanitizer support in $BIOS project is currently only
+NOTE: Thread Sanitizer support in 42ity project is currently only
 formally supported by the autoconf scaffolding. The produced files
 do not run well, claiming some internal conflicts, maybe with some
 of the other compiler options. This is a matter for some further
@@ -771,7 +752,7 @@ an exit from a function due to an exception would trigger the
 `__asan_handle_no_return` error handler and crash the program.
 
 
-Generic notes on testing the $BIOS project
+Generic notes on testing the 42ity project
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The 'Makefile' includes some targets for automated testing, such as:
 
