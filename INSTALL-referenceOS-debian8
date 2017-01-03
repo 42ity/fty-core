@@ -1,4 +1,4 @@
-Basic Debian8 system installation from scratch to build $BIOS core
+Basic Debian8 system installation from scratch to build 42ity core
 ==================================================================
 :Author:	Evgeny Klimov
 :Email:		<EvgenyKlimov@eaton.com>
@@ -8,7 +8,7 @@ only a handful of Linux distributions at the moment. Among these is
 Debian-8.0-amd64 ("testing" at the moment of this writing) that can
 work as a developer's working environment or a validator's sandbox.
 This document is a step-by step record of an installation of this OS
-with the aim of building, testing and developing the $BIOS project
+with the aim of building, testing and developing the 42ity project
 core (and probably its third-party prerequisites) in a VirtualBox VM.
 
 The minimal installation below was performed in VirtualBox with the
@@ -334,5 +334,5 @@ You may have to reboot to completely apply these VM optimizations.
 
 == Our Project...
 See the 'link:INSTALL.html[INSTALL]' document for details on installing
-the prerequisites, checking out the source code and building the $BIOS
+the prerequisites, checking out the source code and building the 42ity
 project core.

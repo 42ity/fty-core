@@ -1,5 +1,5 @@
 [Unit]
-Description=Ensure database schema exists for BIOS services
+Description=Ensure database schema exists for 42ity services
 After=mysql.service
 Requires=mysql.service
 Conflicts=shutdown.target

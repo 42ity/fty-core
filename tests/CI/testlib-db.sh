@@ -17,12 +17,12 @@
 #
 #! \file    testlib-db.sh
 #  \brief   library of functions and strings useful for database manipulation
-#           specifically in $BIOS testing
+#           specifically in 42ity testing
 #  \author  Michal Hrusecky <MichalHrusecky@Eaton.com>
 #  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \author  Karol Hrdina <KarolHrdina@Eaton.com>
 #  \author  Radomir Vrajik <RadomirVrajik@Eaton.com>
-#  \details This is library of functions useful for $BIOS testing related to
+#  \details This is library of functions useful for 42ity testing related to
 #           databases, which can be sourced to interactive shell.
 #           Generally it should not be included directly into a script because
 #           it is sourced by weblib.sh along with testlib.sh; if you do need it
@@ -558,7 +558,7 @@ reloaddb_init_script_WRAPPER() {
     if reloaddb_stops_BIOS && \
         [ -x "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" ] \
     ; then
-        echo "CI-TESTLIB_DB - reset db: stop BIOS ---------------"
+        echo "CI-TESTLIB_DB - reset db: stop 42ity ---------------"
         "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" --stop
     fi
 
@@ -570,7 +570,7 @@ reloaddb_init_script_WRAPPER() {
     if reloaddb_stops_BIOS && \
         [ -x "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" ] \
     ; then
-        echo "CI-TESTLIB_DB - reset db: start BIOS ---------------"
+        echo "CI-TESTLIB_DB - reset db: start 42ity ---------------"
         "$CHECKOUTDIR/tests/CI/ci-rc-bios.sh" --start-quick || return $?
     fi
 
@@ -589,7 +589,7 @@ init_script_wipedb(){
 }
 
 init_script_wipedb_restart(){
-    # This routine stops BIOS services that rely on DB, wipes DB and restarts
+    # This routine stops 42ity services that rely on DB, wipes DB and restarts
     # This requires the database schema initialized and mysql running
     if reloaddb_stops_BIOS ; then
         echo "CI-TESTLIB_DB - reset db: stop BIOS-DB-INIT -------"

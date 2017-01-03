@@ -41,12 +41,12 @@ BASE_PATH=`realpath ${BASE_PATH}/../`
 
 ### System-provided daemons (available as systemd units)
 DAEMONS_OS_SYSTEMD="malamute nut-client nut-driver nut-monitor mysql saslauthd"
-### $BIOS-provided daemons (available as systemd units)
+### 42ity-provided daemons (available as systemd units)
 DAEMONS_OUR_SYSTEMD="tntnet@bios bios-agent-inventory bios-agent-alert bios-agent-alert-smtp bios-agent-cm"
 
 # Simple check for whether sudo is needed for high-privilege tasks
 # We assume here that the non-privileged user running this command
-# does have "sudo" permissions set up per $BIOS documentation.
+# does have "sudo" permissions set up per 42ity documentation.
 RUNAS=""
 CURID="`id -u`" || CURID=""
 [ "$CURID" = 0 -o "$CURID" = root ] || RUNAS="sudo"

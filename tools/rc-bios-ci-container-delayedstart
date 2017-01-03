@@ -8,8 +8,8 @@
 # Should-Stop:       $network
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: Start and stop the $BIOS containers on CI hosts
-# Description:       Starts BIOS containers on CI hosts during boot
+# Short-Description: Start and stop the 42ity containers on CI hosts
+# Description:       Starts 42ity containers on CI hosts during boot
 ### END INIT INFO
 #
 
@@ -30,10 +30,10 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 #! \file    rc-bios-ci-container-delayedstart
-#  \brief   Auto-start wrapper for $BIOS containers delayed start up
+#  \brief   Auto-start wrapper for 42ity containers delayed start up
 #  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \details /etc/init.d/rc-bios-ci-container-delayedstart
-#           Auto-start wrapper for $BIOS containers to start up a bit
+#           Auto-start wrapper for 42ity containers to start up a bit
 #           after the host OS is up, so they can pull new images (if any).
 #           Intended for hosts involved in CI and test infrastructure.
 
@@ -47,7 +47,7 @@
 [ -z "$STARTDELAY" ] && STARTDELAY="3 min"
 [ -z "$DOWNLOAD_ROUTINE" ] && DOWNLOAD_ROUTINE=download_default
 
-# The real script is part of $BIOS CI suite
+# The real script is part of 42ity CI suite
 [ -z "$CI_RESET_VM" ] && CI_RESET_VM="/root/ci-reset-virtual-machine.sh"
 [ ! -x "$CI_RESET_VM" ] && echo "ERROR: CI_RESET_VM script not found at '$CI_RESET_VM'" && exit 1
 

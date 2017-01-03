@@ -75,7 +75,7 @@ if [ -z "$SERVICES" ]; then
     else
         SERVICES="$(ls -1 /etc/systemd/system/bios.target.wants/*.service | while read F ; do echo "`basename "$F"`"; done | tr "\n" " ")" || SERVICES=""
     fi
-    [ -z "$SERVICES" ] && die "Could not detect run-time list of BIOS services"
+    [ -z "$SERVICES" ] && die "Could not detect run-time list of 42ity services"
     print_result 0
     SERVICES="$SERVICES_EXT $SERVICES"
 fi

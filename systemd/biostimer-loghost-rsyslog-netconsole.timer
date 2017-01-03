@@ -1,5 +1,5 @@
 [Unit]
-Description=BIOS-Timer to regularly review remote logging to current netconsole sink
+Description=42ity-Timer to regularly review remote logging to current netconsole sink
 PartOf=timers.target
 ConditionPathIsDirectory=/sys/kernel/config/netconsole
 
