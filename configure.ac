@@ -656,7 +656,6 @@ Summary:
         LIBSASL2_LIBS:           ${LIBSASL2_LIBS}
         LIBMLM_CFLAGS:           ${LIBMLM_CFLAGS}
         LIBMLM_LIBS:             ${LIBMLM_LIBS}
-        LIBBIOSPROTO_LIBS:       ${LIBBIOSPROTO_LIBS}
         SASLAUTHD_MUX:           ${SASLAUTHD_MUX}
         PKG_CONFIG:              ${PKG_CONFIG}
         SYSTEMDSYSTEMUNITDIR:    ${systemdsystemunitdir}
