@@ -431,6 +431,10 @@ obs_SCRIPTS	=  obs/preinstallimage-bios.sh
 
 EXTRA_DIST	+= $(obs_SCRIPTS)
 
+ipc_meta_setupdir = $(datadir)/@PACKAGE@/setup/
+ipc_meta_setup_SCRIPTS = $(top_srcdir)/setup/*.sh
+EXTRA_DIST += $(ipc_meta_setup_SCRIPTS)
+
 # SystemD integrations files; if not enabled - variables remain empty
 SYSTEMD_UNITS_LOWLEVEL =
 SYSTEMD_UNITS_EXTRA =
@@ -475,7 +479,8 @@ SYSTEMD_UNITS_LOWLEVEL += \
                         bios-reset-button.service \
                         ifplug-dhcp-autoconf.service \
                         bios-ssh-last-resort.service \
-                        bios-networking.service
+                        bios-networking.service \
+						ipc-meta-setup.service
 
 # These are verbatim (not templated) additional units that wrap third-party
 # service instances for us. TODO: should tntnet@.service move here?
