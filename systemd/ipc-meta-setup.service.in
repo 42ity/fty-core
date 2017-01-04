@@ -1,0 +1,16 @@
+[Unit]
+Description = Initial IPC setup on target system
+DefaultDependencies=no
+After = local-fs.target
+Before = bios.target bios.service malamute.service sshd.service ssh.service ssh.socket systemd-logind.service network.target systemd-tmpfiles-setup.service systemd-tmpfiles-clean.service tntnet@bios.service mysql.service mariadb.service saslauthd.service
+Requires = bios.target bios.service
+
+[Service]
+Type = oneshot
+User = root
+ExecStart = /usr/share/bios/scripts/setup/ipc-meta-setup.sh
+RemainAfterExit = yes
+PrivateTmp = yes
+
+[Install]
+RequiredBy=network.target systemd-tmpfiles-setup.service
