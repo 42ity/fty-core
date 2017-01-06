@@ -37,6 +37,7 @@ addons:
     - tntnet-runtime
     - libtntnet-dev
     - libtnt-dev
+    - libsasl2-2
     - libsasl2-dev
 
 before_install:
