@@ -21,7 +21,7 @@ endif
 #prefix = /opt/eaton/noname/
 prefix = 
 #The DESTDIR Has To Be Exactly  /usr/src/packages/BUILD/debian/<nameOfPackage>
-buildroot = /usr/src/packages/BUILD/debian/core
+buildroot = /usr/src/packages/BUILD/debian/fty-core
 
 build: build-stamp
 build-stamp:
@@ -54,17 +54,17 @@ install: build
 
 	# Add here commands to install the package
 	# The DESTDIR Has To Be Exactly  /usr/src/packages/BUILD/debian/<nameOfPackage>
-	make install DESTDIR=/usr/src/packages/BUILD/debian/core
-	mkdir -p /usr/src/packages/BUILD/debian/core/var/lib/bios
+	make install DESTDIR=/usr/src/packages/BUILD/debian/fty-core
+	mkdir -p /usr/src/packages/BUILD/debian/fty-core/var/lib/bios
 	# -dev package
-	mkdir -p /usr/src/packages/BUILD/debian/core-dev/usr/lib
-	mkdir -p /usr/src/packages/BUILD/debian/core-dev/usr/include
-	mv /usr/src/packages/BUILD/debian/core/usr/include/bios \
-		/usr/src/packages/BUILD/debian/core-dev/usr/include/
-	mv /usr/src/packages/BUILD/debian/core/usr/lib/libbiosapi.so \
-		/usr/src/packages/BUILD/debian/core-dev/usr/lib/
-	mv /usr/src/packages/BUILD/debian/core/usr/lib/pkgconfig \
-		/usr/src/packages/BUILD/debian/core-dev/usr/lib/
+	mkdir -p /usr/src/packages/BUILD/debian/fty-core-dev/usr/lib
+	mkdir -p /usr/src/packages/BUILD/debian/fty-core-dev/usr/include
+	mv /usr/src/packages/BUILD/debian/fty-core/usr/include/bios \
+		/usr/src/packages/BUILD/debian/fty-core-dev/usr/include/
+	mv /usr/src/packages/BUILD/debian/fty-core/usr/lib/libbiosapi.so \
+		/usr/src/packages/BUILD/debian/fty-core-dev/usr/lib/
+	mv /usr/src/packages/BUILD/debian/fty-core/usr/lib/pkgconfig \
+		/usr/src/packages/BUILD/debian/fty-core-dev/usr/lib/
 	# --- end custom part for installing
 
 # Build architecture-independent files here.
@@ -90,7 +90,7 @@ binary-arch: build install
 #	dh_undocumented
 	dh_installchangelogs
 	dh_link
-	dh_strip --dbg-package=core-dbg
+	dh_strip --dbg-package=fty-core-dbg
 	dh_compress
 	dh_fixperms
 #	dh_makeshlibs
