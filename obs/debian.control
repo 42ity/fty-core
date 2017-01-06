@@ -1,19 +1,19 @@
-Source: core
+Source: fty-core
 Section: net
 Priority: optional
 Maintainer: Michal Hrusecky <MichalHrusecky@eaton.com>
 Uploaders: Michal Hrusecky <MichalHrusecky@eaton.com>
 Standards-Version: 3.9.5
-Build-Depends: bison, debhelper (>= 8), flex, iptables-dev, libatm1-dev, libdb-dev, libselinux1-dev, linux-libc-dev, linuxdoc-tools, lynx | lynx-cur, pkg-config, libzmq4-dev, automake, autoconf, libtool, libjsoncpp-dev, asciidoc, docbook-xsl-ns, docbook-xsl, docbook-xml, libxml2-utils, xsltproc, libcxxtools-dev, libtntdb-dev, libcidr0-dev, libczmq-dev, libtntnet-dev, tntnet-runtime, tntnet, libsasl2-dev, libsodium-dev, libmlm-dev, libmagic-dev, libbiosproto-dev
+Build-Depends: bison, debhelper (>= 8), flex, iptables-dev, libatm1-dev, libdb-dev, libselinux1-dev, linux-libc-dev, linuxdoc-tools, lynx | lynx-cur, pkg-config, libzmq4-dev, automake, autoconf, libtool, libjsoncpp-dev, asciidoc, docbook-xsl-ns, docbook-xsl, docbook-xml, libxml2-utils, xsltproc, libcxxtools-dev, libtntdb-dev, libcidr0-dev, libczmq-dev, libtntnet-dev, tntnet-runtime, tntnet, libsasl2-dev, libsodium-dev, libmlm-dev, libmagic-dev, libfty-proto-dev
 
-Package: core
+Package: fty-core
 Architecture: any
 Depends: ${misc:Depends}, ${shlibs:Depends} , augeas-tools, tntdb-mysql4, libcidr0, tntnet-runtime, malamute, libsnmp30, cracklib-runtime, ipc-data
 Recommends: msmtp, nut
 Description: 42ity core
  Core functionality implemented for 42ity.
 
-Package: core-dbg
+Package: fty-core-dbg
 Architecture: any
 Section: debug
 Priority: extra
@@ -23,7 +23,7 @@ Depends:
 Description: debugging symbols for 42ity core
  This package contains the debugging symbols for core.
 
-Package: core-dev
+Package: fty-core-dev
 Architecture: any
 Section: libdevel
 Depends:
