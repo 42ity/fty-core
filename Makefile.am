@@ -250,14 +250,6 @@ LOG_COMPILER =		$(abs_top_srcdir)/tools/run-test.sh
 # setup using AM_LOG_FLAGS see an example
 # AM_LOG_FLAGS = 				~[db]
 
-check_LTLIBRARIES += 			libpriv-test-run.la
-
-libpriv_test_run_la_SOURCES = 		tests/include/catch.hpp \
-					tests/test-run.cc
-
-libpriv_test_run_la_CPPFLAGS =		$(AM_CPPFLAGS) \
-					-I$(abs_top_srcdir)/tests/include/
-
 #----------------------------------------------------------------------
 #                        TNTnet
 #----------------------------------------------------------------------
