@@ -381,8 +381,6 @@ cp /usr/share/bios/examples/config/malamute/malamute.cfg /etc/malamute
 # Enable 42ity services (distributed as a systemd preset file)
 /bin/systemctl preset-all
 if [ "`uname -m`" = x86_64 ]; then
-    /bin/systemctl enable bios-fake-th
-    /bin/systemctl disable agent-th
     /bin/systemctl disable lcd-boot-display
     /bin/systemctl disable lcd-net-display
     /bin/systemctl disable lcd-shutdown-display || true
@@ -392,21 +390,17 @@ if [ "`uname -m`" = x86_64 ]; then
     /bin/systemctl disable bios-reset-button
     /bin/systemctl mask bios-reset-button
 else
-    /bin/systemctl disable bios-fake-th
-    /bin/systemctl mask bios-fake-th
     /bin/systemctl enable lcd-boot-display
     /bin/systemctl enable lcd-net-display
     /bin/systemctl enable lcd-shutdown-display || true
     #sed -i 's|PathChanged=/etc|PathChanged=/mnt/nand/overlay/etc|' /usr/lib/systemd/system/composite-metrics\@.path
 fi
-# Services not part of core
-# XXX: legacy-metrics to be removed, don't fail if it can't be enabled
-/bin/systemctl enable bios-agent-legacy-metrics || :
-/bin/systemctl enable bios-agent-alert-generator
 
-# post Alpha services - the conditional allows is to use same script for alpha and post-alpha
-[[ -f /usr/lib/systemd/system/bios-agent-asset.service ]] && systemctl enable bios-agent-asset.service
-[[ -f /usr/lib/systemd/system/bios-agent-smtp.service ]] && systemctl enable bios-agent-smtp.service
+# generaly enable everything fty-*
+for unit in $(systemctl list-unit-files | grep '^fty-*' | cut -d ' ' -f 1); do
+    /bin/systemctl enable ${unit}
+done
+
 
 # Ensure mysql is owned correctly after upgrades and other OS image changes
 [[ -s /usr/lib/systemd/system/mysql.service ]] && \
