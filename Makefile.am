@@ -250,14 +250,6 @@ LOG_COMPILER =		$(abs_top_srcdir)/tools/run-test.sh
 # setup using AM_LOG_FLAGS see an example
 # AM_LOG_FLAGS = 				~[db]
 
-check_LTLIBRARIES += 			libpriv-test-run.la
-
-libpriv_test_run_la_SOURCES = 		tests/include/catch.hpp \
-					tests/test-run.cc
-
-libpriv_test_run_la_CPPFLAGS =		$(AM_CPPFLAGS) \
-					-I$(abs_top_srcdir)/tests/include/
-
 #----------------------------------------------------------------------
 #                        TNTnet
 #----------------------------------------------------------------------
@@ -300,18 +292,6 @@ endif
 
 # These may be built explicitly, so should be removable in any case
 CLEANFILES += $(cibin_programs_list)
-
-### Verification that bios_web.so is in fact usable on binary level
-### Note that this creates no retainable output file
-web-link-test: bios_web.la
-			@$(CXX) $(AM_CPPFLAGS) $(AM_CXXFLAGS) -o /dev/null \
-			$(abs_top_srcdir)/tests/web-linking-test.cc \
-			${CXXTOOLS_LIBS} -ltntnet \
-			$(abs_top_builddir)/.libs/bios_web.so && \
-			echo "PASS: dynamic-link compilation test: everything for bios_web.so does link ok!" || \
-			( R=$$?; echo "FAIL ($$R): dynamic-link compilation test: bios_web.so unusable"; exit $$R; )
-
-EXTRA_DIST +=		tests/web-linking-test.cc
 
 TESTS += $(check_PROGRAMS)
 TESTS += $(check_SCRIPTS)
@@ -362,9 +342,6 @@ exampleconf_DATA =	tntnet.xml.example
 EXTRA_DIST +=		$(exampleconf_DATA)
 
 CLEANFILES +=		tntnet.xml.example tests/CI/tntnet.xml
-
-# Make sure needed files are up-to-date to test web-server for 42ity REST API
-web-test-deps: tntnet.xml bios_web.la web-link-test
 
 # TODO (BIOS-1262): the "install-ci_helperSCRIPTS" recipe installs one script
 # into "@libexecdir@/@PACKAGE@/bios-passwd" because this is hardcoded in
@@ -1030,8 +1007,7 @@ cibin_programs: $(cibin_programs_list)
 # Run compile/link tests defined in this Makefile
 # Note that check-gitignore should be the last target
 # FIXME: "check-pool" temporarily not included into "check-local", see below
-check-local: web-link-test check-sdk \
-        check-gitignore run-test-subprocess
+check-local: check-gitignore
 
 # If git repo details are not available, or git program does not exist,
 # or if everything is properly GitIgnored - then succeed
@@ -1047,35 +1023,6 @@ check-gitignore: all-buildproducts
 	    fi ; \
 	    echo "SKIP: $@ (no git)"; exit 0 ; \
 	  fi )
-
-#----------------------------------------------------------------------
-#                        SDK - currently it is the public API library
-#----------------------------------------------------------------------
-
-sdk: libbiosapi.la
-
-sdk-link-test: sdk test-libbiosapiut
-
-sdk-tests: sdk sdk-link-test
-
-check-sdk: sdk sdk-tests
-	cd $(abs_top_builddir) && ./test-libbiosapiut
-
-run-test-subprocess: test-subprocess
-	cd $(abs_top_builddir) && ./test-subprocess
-
-#----------------------------------------------------------------------
-#                        clean, what was not removed automatically
-#----------------------------------------------------------------------
-
-#----------------------------------------------------------------------
-#                        Test mlm client pool via make check
-#----------------------------------------------------------------------
-# FIXME: temporarily disabled as it started to fail in about 10% of runs
-check-pool: test-tntmlm
-	(valgrind --leak-check=full --show-reachable=yes --error-exitcode=1 --suppressions=$(abs_top_srcdir)/tests/test-mlm.supp $(abs_top_builddir)/test-tntmlm)
-
-EXTRA_DIST += $(top_srcdir)/tests/test-mlm.supp
 
 clean-junit:
 	/bin/rm -rf $(abs_top_builddir)/tests/junit
