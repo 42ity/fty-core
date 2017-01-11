@@ -79,7 +79,7 @@ SYSTEMCTL_UNITS_COMMON_INTERNAL="bios tntnet@bios fty-outage fty-metric-store   
                                 fty-email fty-metric-composite-configurator     \
                                 fty-metric-composite@ fty-metric-tpower         \
                                 bios-agent-autoconfig bios-agent-inventory      \
-                                bios-db-int bios-fake-th bios-networking        \
+                                bios-db-init bios-fake-th bios-networking        \
                                 bios-reset-button bios-ssh-last-resort          \
                                 biostimer-compress-logs biostimer-verify-fs     \
                                 biostimer-loghost-rsyslog-netconsole fty-nut    \
