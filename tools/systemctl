@@ -73,17 +73,20 @@ SYSTEMCTL_UNITS_COMMON_EXTERNAL="mariadb mysql mysqld                   \
                  malamute saslauthd rsyslog rsyslogd"
 # SYSTEMCTL_UNITS_COMMON_INTERNAL lists the services delivered by our project
 # TODO: legacy-metrics will be removed, drop it there
-SYSTEMCTL_UNITS_COMMON_INTERNAL="bios tntnet@bios bios-db-init          \
-                 bios-agent-alert-generator agent-alerts-list           \
-                 bios-agent-autoconfig bios-agent-cm bios-networking    \
-                 bios-agent-inventory bios-reset-button                 \
-                 bios-agent-nut bios-agent-nut-configurator             \
-                 bios-agent-asset bios-agent-legacy-metrics kpi-uptime  \
-                 agent-th dc_th bios-agent-outage bios-agent-smtp       \
-                 bios-agent-tpower bios-agent-rt bios-agent-ms          \
-                 biostimer-warranty-metric biostimer-agent-ms-cleaner   \
-                 biostimer-loghost-rsyslog-netconsole                   \
-                 composite-metrics-configurator "
+SYSTEMCTL_UNITS_COMMON_INTERNAL="bios tntnet@bios fty-outage fty-metric-store   \
+                                fty-kpi-power-uptime fty-alert-list fty-asset   \
+                                fty-metric-store-cleaner fty-alert-engine       \
+                                fty-email fty-metric-composite-configurator     \
+                                fty-metric-composite@ fty-metric-tpower         \
+                                bios-agent-autoconfig bios-agent-inventory      \
+                                bios-db-int bios-fake-th bios-networking        \
+                                bios-reset-button bios-ssh-last-resort          \
+                                biostimer-compress-logs biostimer-verify-fs     \
+                                biostimer-loghost-rsyslog-netconsole fty-nut    \
+                                biostimer-warranty-metric ifplug-dhcp-autoconf  \
+                                ipc-meta-setup legacy-asset fty-sensor-env      \
+                                fty-nut-configuator fty-metric-compute          \
+                                fty-metric-cache"
 
 FTY="$(find /usr/lib/systemd/system /lib/systemd/system -name 'fty*' | basename | sed -E -e 's/.(service|timer|target|path|mount|device)//')"
 
