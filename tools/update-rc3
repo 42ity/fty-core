@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2015-2016 Eaton
+# Copyright (C) 2015-2017 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,6 +26,19 @@
 # Important bashism
 set -o pipefail
 
+is_set() (
+    # NOTE: Bash-specific syntax may be in use below
+    # Verify that variable named in "$1" is defined (may be empty).
+    # Note that value of "$1" must be a single token (bash varname).
+    # Below, ${!varname} causes BASH to expand variable named "varname"
+    # and ${...+X} causes it to resolve to "X" only if the named variable
+    # was not set.
+    # TRUE if variable has a value, or is "set" and is NULL
+    # FALSE if empty and unset
+    [[ -n "${!1-}" ]] || \
+    [[ -z ${!1-} && ${!1+X} ]] 2>/dev/null >/dev/null
+)
+
 config_defaults() {
     # This routine sets variables required for the script to work
     # They can be set earlier by configuration files or caller's env
@@ -33,27 +46,27 @@ config_defaults() {
     # Default values matching Eaton internal (at the moment) resources
     # The actual RC3 should be reconfigured to refer some customer-local mirror
     # or an external Eaton resource, done by snippets in /etc/update-rc3.d/*.conf
-    [ -z "${IMGTYPE-}" ] && IMGTYPE="deploy"
+    is_set IMGTYPE || IMGTYPE="deploy"
 
     # Prefix and suffix around $IMGTYPE in the URL directory component
     # and the image filename (at the moment, at least, applies to both)
-    [ -z "$IMGTYPE_PREFIX" ] && IMGTYPE_PREFIX=""
-    [ -z "$IMGTYPE_SUFFIX" ] && IMGTYPE_SUFFIX="-image"
+    is_set IMGTYPE_PREFIX || IMGTYPE_PREFIX=""
+    is_set IMGTYPE_SUFFIX || IMGTYPE_SUFFIX="-image"
 
     # We have several rounds of QA in the CI system; if the IMGQALEVEL is
     # defined then this sub-path including a slash is added into the URL.
     # Currently defined values include "master", "pre-rc" and finally "rc".
     # We only spend our ARM cycles to build the latter two; we have all
     # builds available on x86_64.
-    [ -z "${ARCH-}" ] && ARCH="`uname -m`"
-    [ -z "${IMGQALEVEL-}" ] && case "$ARCH" in
+    is_set ARCH || ARCH="`uname -m`"
+    is_set IMGQALEVEL || case "$ARCH" in
         *arm*) IMGQALEVEL="rc" ;;
         *86*)  IMGQALEVEL="master" ;;
         *)     IMGQALEVEL="master" ;;
     esac
     # The RC3 base OS ensures support for squashfs and overlay(fs)
-    [ -z "${EXT-}" ] && EXT="squashfs"
-    [ -z "${CHECKSUM_ALGO_DEFAULT-}" ] && CHECKSUM_ALGO_DEFAULT="md5"
+    is_set EXT || EXT="squashfs"
+    is_set CHECKSUM_ALGO_DEFAULT || CHECKSUM_ALGO_DEFAULT="md5"
 
     # This script is intended as the downloader tool for both CI/dev-workstation
     # hosts and the ultimate devices. Most of the logic is the same, but there are
@@ -66,14 +79,14 @@ config_defaults() {
     # FLAG_FLATTEN_FILENAMES is overridable by CLI option "--(no-)flatten-filenames"
     # The base filename pattern for an OS image as a shell glob, without the extension
     # on the download server.
-    # [ -z "${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN-}" ] && SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN="*"
-    # [ -z "${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN-}" ] && SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN="simpleimage*"
-    # [ -z "${FLAG_FLATTEN_FILENAMES-}" ] && FLAG_FLATTEN_FILENAMES="yes"
+    # is_set SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN || SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN="*"
+    # is_set SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN || SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN="simpleimage*"
+    # is_set FLAG_FLATTEN_FILENAMES || FLAG_FLATTEN_FILENAMES="yes"
 
     # Apparently, the new smarter build-names do not require flattery.
     # See findnewest_osimage() for subsequent filter over indexed filenames.
-    [ -z "${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN-}" ] && SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN="${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}"'-*_'"${ARCH}"
-    [ -z "${FLAG_FLATTEN_FILENAMES-}" ] && FLAG_FLATTEN_FILENAMES="no"
+    is_set SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN || SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN="${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}"'-*_'"${ARCH}"
+    is_set FLAG_FLATTEN_FILENAMES || FLAG_FLATTEN_FILENAMES="no"
 
     ### Values below can be changed by command-line choices, and some defaults
     ### may be overridden by config files before CLI choices
@@ -81,39 +94,39 @@ config_defaults() {
     # Overridable by CLI option "--(no-)remove-files" which is somewhat different
     # from "--(no-)removeold-images" that only impacts old-image removal after a
     # successful download of new image(s)
-    [ -z "${FLAG_CAN_REMOVE_IMAGES-}" ] && FLAG_CAN_REMOVE_IMAGES="yes"
+    is_set FLAG_CAN_REMOVE_IMAGES || FLAG_CAN_REMOVE_IMAGES="yes"
 
     # Should we do a factory reset (erase all userdata)?
-    [ -z "${FLAG_ERASE_FACTORYRESET-}" ] && FLAG_ERASE_FACTORYRESET="unset"
+    is_set FLAG_ERASE_FACTORYRESET || FLAG_ERASE_FACTORYRESET="unset"
 
     # Should we do an erase_all (erase all userdata AND (re-)format /mnt/nand)?
-    [ -z "${FLAG_ERASE_ALL-}" ] && FLAG_ERASE_ALL="unset"
+    is_set FLAG_ERASE_ALL || FLAG_ERASE_ALL="unset"
 
     # TODO: TFTP support, busybox can do it
     # TODO: Test with https - can require custom CA trust configuration, etc.
     # TODO: Use our common requester as a wrapper for real/busybox wget/curl
     # TODO: Make a common routine to list remote directories (e.g. http-dir parsing, ftp, tftp, localfs...)
-    [ -z "${SOURCESITEROOT-}" ] && SOURCESITEROOT='http://obs.roz.lab.etn.com/images'
-    [ -z "${SOURCESITEROOT_OSIMAGE-}" ] && SOURCESITEROOT_OSIMAGE="$SOURCESITEROOT/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}$ARCH"
+    is_set SOURCESITEROOT || SOURCESITEROOT='http://obs.roz.lab.etn.com/images'
+    is_set SOURCESITEROOT_OSIMAGE || SOURCESITEROOT_OSIMAGE="$SOURCESITEROOT/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}$ARCH"
 
-    [ -z "${SOURCESITEROOTFW-}" ] && SOURCESITEROOTFW="http://obs.roz.lab.etn.com/flash-rc3/recovery"
-    [ -z "${SOURCESITEROOTFW_UBOOT-}" ] && SOURCESITEROOTFW_UBOOT="$SOURCESITEROOTFW"
-    [ -z "${SOURCESITEROOTFW_UIMAGE-}" ] && SOURCESITEROOTFW_UIMAGE="$SOURCESITEROOTFW"
-    [ -z "${SOURCESITEROOTFW_MODULES-}" ] && SOURCESITEROOTFW_MODULES="$SOURCESITEROOTFW/modules"
+    is_set SOURCESITEROOTFW || SOURCESITEROOTFW="http://obs.roz.lab.etn.com/flash-rc3/recovery"
+    is_set SOURCESITEROOTFW_UBOOT || SOURCESITEROOTFW_UBOOT="$SOURCESITEROOTFW"
+    is_set SOURCESITEROOTFW_UIMAGE || SOURCESITEROOTFW_UIMAGE="$SOURCESITEROOTFW"
+    is_set SOURCESITEROOTFW_MODULES || SOURCESITEROOTFW_MODULES="$SOURCESITEROOTFW/modules"
 
     # Recovery location (on MMC or mSATA) - for downloads
-    [ -z "${DOWNLOADROOT-}" ] && DOWNLOADROOT="/mnt/mmc/recovery"
-    [ -z "${DOWNLOADROOT_OSIMAGE-}" ] && DOWNLOADROOT_OSIMAGE="$DOWNLOADROOT/rootfs"
-    [ -z "${DOWNLOADROOTFW_UBOOT-}" ] && DOWNLOADROOTFW_UBOOT="$DOWNLOADROOT"
-    [ -z "${DOWNLOADROOTFW_UIMAGE-}" ] && DOWNLOADROOTFW_UIMAGE="$DOWNLOADROOT"
-    [ -z "${DOWNLOADROOTFW_MODULES-}" ] && DOWNLOADROOTFW_MODULES="$DOWNLOADROOTFW_UIMAGE/modules"
+    is_set DOWNLOADROOT || DOWNLOADROOT="/mnt/mmc/recovery"
+    is_set DOWNLOADROOT_OSIMAGE || DOWNLOADROOT_OSIMAGE="$DOWNLOADROOT/rootfs"
+    is_set DOWNLOADROOTFW_UBOOT || DOWNLOADROOTFW_UBOOT="$DOWNLOADROOT"
+    is_set DOWNLOADROOTFW_UIMAGE || DOWNLOADROOTFW_UIMAGE="$DOWNLOADROOT"
+    is_set DOWNLOADROOTFW_MODULES || DOWNLOADROOTFW_MODULES="$DOWNLOADROOTFW_UIMAGE/modules"
 
     # Deployment location (on SPI flash in production) - for boot-mounted OS image
-    [ -z "${DEPLOYMENTROOT-}" ] && DEPLOYMENTROOT="/mnt/nand"
-    [ -z "${DEPLOYMENTROOT_OSIMAGE-}" ] && DEPLOYMENTROOT_OSIMAGE="$DEPLOYMENTROOT/rootfs"
-    [ -z "${DEPLOYMENTROOTFW_UBOOT-}" ] && DEPLOYMENTROOTFW_UBOOT="$DEPLOYMENTROOT"
-    [ -z "${DEPLOYMENTROOTFW_UIMAGE-}" ] && DEPLOYMENTROOTFW_UIMAGE="$DEPLOYMENTROOT"
-    [ -z "${DEPLOYMENTROOTFW_MODULES-}" ] && DEPLOYMENTROOTFW_MODULES="$DEPLOYMENTROOTFW_UIMAGE/modules"
+    is_set DEPLOYMENTROOT || DEPLOYMENTROOT="/mnt/nand"
+    is_set DEPLOYMENTROOT_OSIMAGE || DEPLOYMENTROOT_OSIMAGE="$DEPLOYMENTROOT/rootfs"
+    is_set DEPLOYMENTROOTFW_UBOOT || DEPLOYMENTROOTFW_UBOOT="$DEPLOYMENTROOT"
+    is_set DEPLOYMENTROOTFW_UIMAGE || DEPLOYMENTROOTFW_UIMAGE="$DEPLOYMENTROOT"
+    is_set DEPLOYMENTROOTFW_MODULES || DEPLOYMENTROOTFW_MODULES="$DEPLOYMENTROOTFW_UIMAGE/modules"
 
     [ -z "${http_proxy-}" -o x"${http_proxy-}" = x- ] && http_proxy=""
     [ -z "${https_proxy-}" ] && https_proxy="$http_proxy"
@@ -129,8 +142,8 @@ config_defaults() {
     # These numbers are used for "padded" checksum calculations.
     UIMAGE_MAX_SIZE_RC3=3145728
     UBOOT_MAX_SIZE_RC3=1048576
-    [ -z "${UIMAGE_MAX_SIZE-}" ] && UIMAGE_MAX_SIZE="$UIMAGE_MAX_SIZE_RC3"
-    [ -z "${UBOOT_MAX_SIZE-}" ] && UBOOT_MAX_SIZE="$UBOOT_MAX_SIZE_RC3"
+    is_set UIMAGE_MAX_SIZE || UIMAGE_MAX_SIZE="$UIMAGE_MAX_SIZE_RC3"
+    is_set UBOOT_MAX_SIZE || UBOOT_MAX_SIZE="$UBOOT_MAX_SIZE_RC3"
 
     # /dev/mtdX numbers for RC3 partitions
     ROOT_MTD=5
@@ -138,7 +151,7 @@ config_defaults() {
     UBOOTCFG_MTD=3
     UBOOT_MTD=2
 
-    [ -z "${WANT_REBOOT-}" ] && WANT_REBOOT=no
+    is_set WANT_REBOOT || WANT_REBOOT=no
 
     PATH="/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
     export PATH
@@ -151,8 +164,8 @@ config_defaults() {
 LOGMSG_PREFIX="BIOS-UPDATE-RC3-"
 
 ### Store some important CLI values
-[ -z "$_SCRIPT_PATH" ] && _SCRIPT_PATH="$0"
-[ -z "$_SCRIPT_NAME" ] && _SCRIPT_NAME="`basename "${_SCRIPT_PATH}"`"
+is_set _SCRIPT_PATH || _SCRIPT_PATH="$0"
+is_set _SCRIPT_NAME || _SCRIPT_NAME="`basename "${_SCRIPT_PATH}"`"
 _SCRIPT_ARGS="$*"
 _SCRIPT_ARGC="$#"
 
@@ -215,13 +228,13 @@ if [ -z "$CHECKOUTDIR" ] ; then
         CHECKOUTDIR=$(cd "$SCRIPTDIR/../.." && pwd)
 fi
 [ "$CHECKOUTDIR" = / -o ! -d "$CHECKOUTDIR/tests/CI" ] && CHECKOUTDIR=""
-[ -z "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
+is_set BUILDSUBDIR || BUILDSUBDIR="$CHECKOUTDIR"
 export CHECKOUTDIR BUILDSUBDIR
 
-[ -z "$LANG" ] && LANG=C
-[ -z "$LANGUAGE" ] && LANGUAGE=C
-[ -z "$LC_ALL" ] && LC_ALL=C
-[ -z "$TZ" ] && TZ=UTC
+is_set LANG || LANG=C
+is_set LANGUAGE || LANGUAGE=C
+is_set LC_ALL || LC_ALL=C
+is_set TZ || TZ=UTC
 export LANG LANGUAGE LC_ALL TZ
 
 logmsg_info() {
