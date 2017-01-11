@@ -645,7 +645,10 @@ lshost_http() (
     REMOTE_ROOTURL="`echo "$REMOTE_DIR" | sed 's,^\(.*://[^/]*\)/.*$,\1,'`"
     # Hostname from the URL, without schema and port
     REMOTE_VIRTHOST="`echo "$REMOTE_DIR" | sed 's,^.*://\([^/:]*\)[/:].*$,\1,'`"
-    wget -q -O - "$REMOTE_DIR"/ | \
+    { wget -q -O - "$REMOTE_DIR"/ || \
+        { logmsg_error "lshost_http(): Could not request listing of URL ${REMOTE_DIR}"
+          return 22; }
+    } | \
         sed -n 's|.*href="\([^\"]*\)".*|\1|pg' | \
     while read URL ; do
 #        echo "DEBUG: lshost_http(): got URL='$URL'" >&2
@@ -664,7 +667,9 @@ lshost_http() (
             *)  # Assume relative URL under current dir
                 echo "${REMOTE_DIR}/${URL}" ;;
         esac
-    done | sed 's,\([^:]\)//,\1/,g'
+    done | sed 's,\([^:]\)//,\1/,g' || \
+        { logmsg_error "lshost_http(): Could not parse listing of URL ${REMOTE_DIR}"
+          return 23; }
 )
 
 lsdir_http() (
