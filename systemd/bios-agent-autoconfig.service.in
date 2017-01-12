@@ -12,7 +12,7 @@ EnvironmentFile=-/usr/share/bios/etc/default/bios__%n.conf
 EnvironmentFile=-/etc/default/bios
 EnvironmentFile=-/etc/default/bios__%n.conf
 EnvironmentFile=-/etc/default/bios-db-rw
-ExecStart=@libexecdir@/@PACKAGE@/agent-autoconfig
+ExecStart=@libexecdir@/@PACKAGE@/fty-autoconfig
 Restart=always
 # Workaround for BIOS-1807 :
 TimeoutStopSec=5s
