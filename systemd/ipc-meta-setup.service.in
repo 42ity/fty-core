@@ -8,7 +8,7 @@ Requires = bios.target bios.service
 [Service]
 Type = oneshot
 User = root
-ExecStart = /usr/share/bios/scripts/setup/ipc-meta-setup.sh
+ExecStart = /usr/share/bios/setup/ipc-meta-setup.sh
 RemainAfterExit = yes
 PrivateTmp = yes
 
