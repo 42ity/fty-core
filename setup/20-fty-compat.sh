@@ -42,10 +42,10 @@ mvln () {
 }
 
 mvln /etc/agent-smtp/bios-agent-smtp.cfg /etc/fty-email/fty-email.cfg
-chmod www-data: /etc/fty-email/fty-email.cfg
+chown www-data: /etc/fty-email/fty-email.cfg
 mvln /etc/agent-metric-store/bios-agent-ms.cfg /etc/fty-metric-store/fty-metric-store.cfg
-chmod www-data: /etc/fty-metric-store/fty-metric-store.cfg
+chown www-data: /etc/fty-metric-store/fty-metric-store.cfg
 mvln /etc/agent-nut/bios-agent-nut.cfg /etc/fty-nut/fty-nut.cfg
-chmod www-data: /etc/fty-nut/fty-nut.cfg
+chown www-data: /etc/fty-nut/fty-nut.cfg
 mvln /etc/default/bios.cfg /etc/default/fty.cfg
-chmod www-data: /etc/default/fty.cfg
+chown www-data: /etc/default/fty.cfg
