@@ -88,9 +88,7 @@ SYSTEMCTL_UNITS_COMMON_INTERNAL="bios tntnet@bios fty-outage fty-metric-store   
                                 fty-nut-configuator fty-metric-compute          \
                                 fty-metric-cache"
 
-FTY="$(find /usr/lib/systemd/system /lib/systemd/system -name 'fty*' | basename | sed -E -e 's/.(service|timer|target|path|mount|device)//')"
-
-SYSTEMCTL_UNITS_COMMON="$SYSTEMCTL_UNITS_COMMON_EXTERNAL $SYSTEMCTL_UNITS_COMMON_INTERNAL $FTY"
+SYSTEMCTL_UNITS_COMMON="$SYSTEMCTL_UNITS_COMMON_EXTERNAL $SYSTEMCTL_UNITS_COMMON_INTERNAL"
 
 # For regexp matching of multi-instance services (a pipe-separated list)
 SYSTEMCTL_UNITS_REGEX_EXTERNAL_LIST='nut-driver'
