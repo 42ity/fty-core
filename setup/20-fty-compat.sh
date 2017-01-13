@@ -35,10 +35,10 @@ mvln () {
     mkdir -p "${OLD_DIR}"
     mkdir -p "${NEW_DIR}"
 
-    if [[ -e "${OLD}" ]]; then
+    if [[ -f "${OLD}" ]]; then
         mv "${OLD}" "${NEW}"
-        ln -sf "${NEW}" "${OLD}"
     fi
+    ln -sf "${NEW}" "${OLD}"
 }
 
 mvln /etc/agent-smtp/bios-agent-smtp.cfg /etc/fty-email/fty-email.cfg
