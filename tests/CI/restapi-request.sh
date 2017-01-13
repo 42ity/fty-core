@@ -107,16 +107,37 @@ while [ $# -gt 0 ] ; do
     shift
 done
 
+test_web_port() {
+    if ! SUT_is_localhost ; then
+        logmsg_warn "test_web_port() skipped for non-localhost ($SUT_HOST:$SUT_WEB_PORT)"
+        return 0
+    fi
+
+    netstat -tan | grep -w "${SUT_WEB_PORT}" | egrep 'LISTEN' >/dev/null
+}
+
 if [ -z "$SUT_WEB_PORT" ]; then
-    SUT_is_localhost \
-    && SUT_WEB_PORT="8000" \
-    || SUT_WEB_PORT="443"
+    if SUT_is_localhost ; then
+        for SUT_WEB_PORT in 8000 80 443 ; do
+            # Note: scriptlib not included yet, so no logmsg_info
+            test_web_port && echo "Using port $SUT_WEB_PORT by default (it is listening on localhost)" && break
+        done
+    else
+        SUT_WEB_PORT="443"
+    fi
 fi
 
 if [ -z "$SUT_WEB_SCHEMA" ]; then
-    SUT_is_localhost \
-    && SUT_WEB_SCHEMA="http" \
-    || SUT_WEB_SCHEMA="https"
+    case "$SUT_WEB_PORT" in
+        *443*) SUT_WEB_SCHEMA="https" ;;
+        *80*)  SUT_WEB_SCHEMA="http" ;;
+        *)
+            if SUT_is_localhost ; then
+                SUT_WEB_SCHEMA="http"
+            else
+                SUT_WEB_SCHEMA="https"
+            fi ;;
+    esac
 fi
 
 # Include our standard routines for CI scripts
@@ -142,15 +163,6 @@ if [ -z "$RELATIVE_URL" ]; then
         die "No RELATIVE_URL was provided"
     fi
 fi
-
-test_web_port() {
-    if ! SUT_is_localhost ; then
-        logmsg_warn "test_web_port() skipped for non-localhost ($SUT_HOST:$SUT_WEB_PORT)"
-        return 0
-    fi
-
-    netstat -tan | grep -w "${SUT_WEB_PORT}" | egrep 'LISTEN' >/dev/null
-}
 
 wait_for_web() {
     for a in $(seq 60) ; do
@@ -187,7 +199,7 @@ wait_for_web() {
       SUT_is_localhost && \
       logmsg_info "Web-server is responsive!" >&2
     else
-      die "Web-server is NOT responsive!" >&2
+      die "Web-server at $BASE_URL is NOT responsive!" >&2
     fi
 
     # Validate the fundamental 42ity webserver capabilities
@@ -196,24 +208,24 @@ wait_for_web() {
     if [ -n "`api_get "" 2>&1 | grep 'HTTP/.* 500'`" ] >/dev/null 2>&1 ; then
         logmsg_error "api_get() returned an Internal Server Error:"
         api_get "" >&2
-        CODE=4 die "Webserver code is deeply broken (maybe missing libraries), please fix it first!"
+        CODE=4 die "Webserver code is deeply broken (maybe missing libraries), please fix it first at $BASE_URL!"
     fi
 
     if [ -z "`api_get "" 2>&1 | grep 'HTTP/.* 404 Not Found'`" ] >/dev/null 2>&1 ; then
         # We do expect an HTTP-404 on the API base URL
         logmsg_error "api_get() returned an error:"
         api_get "" >&2
-        CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
+        CODE=4 die "Webserver at $BASE_URL is not running or serving the REST API, please start it first!"
     fi
     curlfail_pop
 
     if [ "$SKIP_SANITY" != onlyerrors ]; then
         curlfail_push_expect_noerrors
-        if [ -z "`api_get '/admin/ifaces' 2>&1 | grep 'HTTP/.* 200 OK'`" ] >/dev/null 2>&1 ; then
+        if [ -z "`api_auth_get '/admin/ifaces' 2>&1 | grep 'HTTP/.* 200 OK'`" ] >/dev/null 2>&1 ; then
             # We expect that the login service responds
-            logmsg_error "api_get() returned an error:"
-            api_get "/admin/ifaces" >&2
-            CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
+            logmsg_error "api_auth_get() returned an error:"
+            api_auth_get "/admin/ifaces" >&2
+            CODE=4 die "Webserver at $BASE_URL is not running or serving the REST API (maybe login data is bad), please start it first!"
         fi
         curlfail_pop
     fi
