@@ -142,7 +142,10 @@ done
 chmod a+r /etc/default/bios
 mkdir -p /etc/bios/nut/devices
 chown -R bios:bios-infra /etc/bios
-systemd-tmpfiles --create
+
+for conf in $(find /usr/lib/systemd/tmpfiles.d/*.conf); do
+    systemd-tmpfiles --create "${conf}"
+done
 
 # Setup 42ity lenses
 mkdir -p /usr/share/bios/lenses
