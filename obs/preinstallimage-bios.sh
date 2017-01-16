@@ -837,7 +837,18 @@ ln -sf /usr/share/bios /usr/share/fty
 ln -sf /usr/share/bios/etc/default/bios /usr/share/fty/etc/default/fty
 ln -sf /usr/libexec/bios /usr/libexec/fty
 ln -sf /var/lib/bios /var/lib/fty
-## Backward compatibility for new (renamed) paths 
+## Create old directiories if they do not exist
+mkdir -p /var/lib/bios/bios-agent-cm
+mkdir -p /var/lib/bios/agent-alerts-list
+mkdir -p /var/lib/bios/agent-autoconfig
+mkdir -p /var/lib/bios/agent-outage
+mkdir -p /var/lib/bios/agent-smtp
+mkdir -p /var/lib/bios/alert_agent
+mkdir -p /var/lib/bios/bios-agent-rt
+mkdir -p /var/lib/bios/composite-metrics
+mkdir -p /var/lib/bios/nut
+mkdir -p /var/lib/bios/uptime
+## Backward compatibility for new (renamed) paths
 ln -sf /var/lib/bios/bios-agent-cm      /var/lib/fty/fty-metric-compute
 ln -sf /var/lib/bios/agent-alerts-list  /var/lib/fty/fty-alert-list
 ln -sf /var/lib/bios/agent-autoconfig   /var/lib/fty/fty-autoconfig
