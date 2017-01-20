@@ -1,19 +1,10 @@
 [Unit]
-Description=Inventory agent for 42ity project
-After=malamute.service bios-db-init.service
-Requires=malamute.service bios-db-init.service
-PartOf=bios.target
+Description=Testing agent for CI purposes only
 
 [Service]
 Type=simple
 User=bios
-EnvironmentFile=-/usr/share/bios/etc/default/bios
-EnvironmentFile=-/usr/share/bios/etc/default/bios__%n.conf
-EnvironmentFile=-/etc/default/bios
-EnvironmentFile=-/etc/default/bios__%n.conf
-EnvironmentFile=-/etc/default/bios-db-rw
-ExecStart=@libexecdir@/@PACKAGE@/fty-inventory
-Restart=always
+ExecStart=/bin/cat
 
 [Install]
 WantedBy=bios.target
