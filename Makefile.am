@@ -205,7 +205,7 @@ autopathedit = ${SED} \
 	-e 's|@libexecdir[@]|$(libexecdir)|g' \
 	-e 's|@libdir[@]|$(libdir)|g'
 
-define process-in-file =
+define process-in-file
 	echo "  SED      $(1) => $(2)"; rm -f $(2); mkdir -p "`dirname "$(2)"`"; $(autopathedit) < "$(1)" > "$(2)" || exit $$?
 endef
 
@@ -717,7 +717,7 @@ develdoc_DATA =
 #   http://blog.jgc.org/2012/01/using-gnu-makes-define-and-eval-to.html
 
 # Copies from "$1" to "$2", making the subdirectories as needed
-define copy-file-cp =
+define copy-file-cp
 	if test x"$(2)" != x"$(1)" ; then \
 	    { test -d "`dirname "$(2)"`" || mkdir -p "`dirname "$(2)"`"; } && \
 	    echo "Copy '$(1)' to '$(2)'" && \
@@ -728,19 +728,19 @@ define copy-file-cp =
 endef
 
 # Another way to skin the cat...
-define copy-file-install =
+define copy-file-install
 	$(INSTALL) -D -T -p -v -m 644 "$1" "$2"
 endef
 
 # Generalize the two solutions
-define copy-file =
+define copy-file
 	$(call copy-file-install,$1,$2) || $(call copy-file-cp,$1,$2)
 endef
 
 # This macro defines the dependencies and rules to copy the text file
 # into the build area. Also adds the filename into lists for install,
 # cleanup, ultimately used dependencies, etc.
-define depend-copy-file =
+define depend-copy-file
 $(eval override _MAP_SRC_REL :=	$(firstword $(subst :, ,$(1))) )
 $(eval override _MAP_DST_REL :=	$(word 2,$(subst :, ,$(1))) )
 $(eval override _MAP_SRC_ABS :=	$(addprefix $(abs_top_srcdir)/,$(_MAP_SRC_REL)) )
@@ -764,7 +764,7 @@ $(eval develdoc_DATA +=		$(_MAP_DST_REL) )
 $(eval EXTRA_DIST +=		$(_MAP_SRC_REL) )
 endef
 
-define canclean-txt-file =
+define canclean-txt-file
 $(eval override _MAP_SRC_REL :=	$(firstword $(subst :, ,$(1))) )
 $(eval override _MAP_DST_REL :=	$(word 2,$(subst :, ,$(1))) )
 
@@ -815,7 +815,7 @@ $(foreach m,$(MAPPED_TXT_DOCS_PLAINTEXT) $(MAPPED_TXT_DOCS_ASCIIDOC), \
 # Per dependencies, all the text files should be available in the
 # builddir/docs/develop/*.txt and the *.html will appear nearby
 
-define compile-asciidoc-to-html =
+define compile-asciidoc-to-html
 if HAVE_ASCIIDOC
 	@test -d "`dirname $(2)`" || mkdir -p "`dirname $(2)`"
 	$(ASCIIDOC) -b html -o $(2) $(1)
@@ -824,7 +824,7 @@ else
 endif
 endef
 
-define depend-txt-html =
+define depend-txt-html
 $(eval override _MAP_DST_REL :=		$(word 2,$(subst :, ,$(1))) )
 $(eval override _HTML_DST_REL :=	$(_MAP_DST_REL:%.txt=%.html) )
 $(eval override _MAP_DST_ABS :=		$(addprefix $(abs_top_builddir)/,$(_MAP_DST_REL)) )
