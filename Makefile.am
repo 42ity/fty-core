@@ -251,34 +251,6 @@ LOG_COMPILER =		$(abs_top_srcdir)/tools/run-test.sh
 # setup using AM_LOG_FLAGS see an example
 # AM_LOG_FLAGS = 				~[db]
 
-#----------------------------------------------------------------------
-#                        TNTnet
-#----------------------------------------------------------------------
-
-SUFFIXES=.ecpp .gif .jpg .css .js .cpp
-
-# Note that apparently "make dist(check)" adds all *.cpp files to its tarball
-# including those that are generated here. And does not add *.ecpp by default.
-# Not-including the build *.cpp into dist is tricky, but does not matter much.
-EXTRA_DIST +=				$(top_srcdir)/src/web/src/*.ecpp
-
-src/web/src/sysinfo.cpp: src/include/git_details_override.h
-
-.ecpp.cpp:
-	${ECPPC} ${ECPPFLAGS} ${ECPPFLAGS_CPP} -o $@ $<
-.gif.cpp:
-	${ECPPC} ${ECPPFLAGS} -m image/gif ${ECPPFLAGS_GIF} -b -o $@ $<
-.jpg.cpp:
-	${ECPPC} ${ECPPFLAGS} -m image/jpg ${ECPPFLAGS_JPG} -b -o $@ $<
-.png.cpp:
-	${ECPPC} ${ECPPFLAGS} -m image/png ${ECPPFLAGS_PNG} -b -o $@ $<
-.ico.cpp:
-	${ECPPC} ${ECPPFLAGS} -m image/x-icon ${ECPPFLAGS_ICO} -b -o $@ $<
-.css.cpp:
-	${ECPPC} ${ECPPFLAGS} -m text/css ${ECPPFLAGS_CSS} -b -o $@ $<
-.js.cpp:
-	${ECPPC} ${ECPPFLAGS} -m application/javascript ${ECPPFLAGS_JS} -b -o $@ $<
-
 
 # Do we build and install CI programs by default? (see configure)
 cibin_programs_list := $(cibin_programs)
@@ -387,13 +359,6 @@ endif
 
 EXTRA_DIST += \
 			$(top_srcdir)/tools/dbinit.h \
-			$(top_srcdir)/tools/dbpath.h \
-			$(top_srcdir)/include/*.h \
-			$(top_srcdir)/src/msg/*.xml \
-			$(top_srcdir)/src/include/*.h \
-			$(top_srcdir)/src/agents/*/*.h \
-			$(top_srcdir)/src/shared/*.h \
-			$(top_srcdir)/src/web/include/*.h \
 			$(top_srcdir)/tests/shared/test-csv.cc.*sv
 
 # add CI tests to dist
@@ -1024,7 +989,7 @@ check-gitignore: all-buildproducts
 clean-junit:
 	/bin/rm -rf $(abs_top_builddir)/tests/junit
 
-clean-local: clean-systemd-units
+clean-local: clean-systemd-units clean-junit
 
 # This may and should complain on non-empty dirs; "distclean-generic"
 # with proper list of DISTCLEANFILES should have taken care of that
