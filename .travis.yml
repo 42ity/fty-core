@@ -14,21 +14,21 @@ cache:
 
 env:
 - BUILD_TYPE=default
-- BUILD_TYPE=default-Werror
+#- BUILD_TYPE=default-Werror
 #- BUILD_TYPE=cmake
 #- BUILD_TYPE=android
 #- BUILD_TYPE=check-py
 
-matrix:
-  include:
-  - env: BUILD_TYPE=valgrind
-    os: linux
-    dist: trusty
-    sudo: required
-    addons:
-      apt:
-        packages:
-        - valgrind
+#matrix:
+#  include:
+#  - env: BUILD_TYPE=valgrind
+#    os: linux
+#    dist: trusty
+#    sudo: required
+#    addons:
+#      apt:
+#        packages:
+#        - valgrind
 
 addons:
   apt:
