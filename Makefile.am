@@ -183,6 +183,7 @@ LIBBIOSAPI_AGE=0
 # copy from autoconf manual, note single suffix rules can't be used there!!
 # NOTE: For non-Makefiles (e.g. for sources), .in conversions should be done in
 # the Makefiles so as to process all the dependencies as sources are updated!
+SED ?= sed
 autopathedit = ${SED} \
 	-e 's|@myDBpath[@]|$(myDBpath)|g' \
 	-e 's|@top_srcdir[@]|$(top_srcdir)|g' \
@@ -340,6 +341,7 @@ tntnet.xml.example: tools/tntnet.xml
 exampleconfdir =	$(datarootdir)/@PACKAGE@/examples
 exampleconf_DATA =	tntnet.xml.example
 EXTRA_DIST +=		$(exampleconf_DATA)
+dist_noinst_DATA +=	tools/tntnet.xml
 
 CLEANFILES +=		tntnet.xml.example tests/CI/tntnet.xml
 
@@ -457,7 +459,7 @@ SYSTEMD_UNITS_LOWLEVEL += \
                         ifplug-dhcp-autoconf.service \
                         bios-ssh-last-resort.service \
                         bios-networking.service \
-						ipc-meta-setup.service
+                        ipc-meta-setup.service
 
 # These are verbatim (not templated) additional units that wrap third-party
 # service instances for us. TODO: should tntnet@.service move here?
@@ -471,7 +473,7 @@ SYSTEMD_UNITS_TARGET_BIOS += \
                         bios-db-init.service \
                         bios-agent-autoconfig.service \
                         bios-agent-inventory.service \
-						legacy-asset.service
+                        legacy-asset.service
 
 # Here we list the actual service-definition files that should be compiled
 # Enabled as part of 42ity presets
@@ -989,7 +991,7 @@ clean-man:
 #----------------------------------------------------------------------
 
 # Try to build everything buildable, e.g. for further warning counters
-all-buildproducts: all
+all-buildproducts: all systemd-units
 
 # Note: variable cibin_PROGRAMS may be empty if not enabled via configure
 #   The variable cibin_programs holds the actual list of CI programs instead
@@ -1026,6 +1028,8 @@ check-gitignore: all-buildproducts
 
 clean-junit:
 	/bin/rm -rf $(abs_top_builddir)/tests/junit
+
+clean-local: clean-systemd-units
 
 # This may and should complain on non-empty dirs; "distclean-generic"
 # with proper list of DISTCLEANFILES should have taken care of that
@@ -1084,6 +1088,7 @@ gitdetaildir =	        $(datarootdir)/@PACKAGE@
 gitdetail_DATA =	.git_details
 
 EXTRA_DIST +=		.git_details \
+			tools/git_details.sh \
 			tools/JSON.sh
 
 CLEANFILES +=		src/include/git_details_override.c \
