@@ -820,12 +820,14 @@ endif
 #                One rule to generate and wipe documentation
 #----------------------------------------------------------------------
 
-all-docs: man-docs doxygen-docs html-docs txt-docs
+all-docs: html-docs txt-docs
+# man-docs doxygen-docs
 
 # alias for manual typing errors
 docs-all: all-docs
 
-clean-docs: clean-man clean-doxygen clean-html clean-txt
+clean-docs: clean-html clean-txt
+# clean-man clean-doxygen
 
 
 #----------------------------------------------------------------------
@@ -879,11 +881,11 @@ clean-html:
 # relative paths and be generated in a directory near the source code 
 #----------------------------------------------------------------------
 
-if HAVE_DOXYGEN
-EXTRA_DIST +=		$(top_srcdir)/${myDOXDIR}/html
-BUILT_SOURCES +=	$(top_srcdir)/${myDOXDIR}/html
-endif
-EXTRA_DIST +=		$(top_srcdir)/${myDOXDIR}/Doxyfile.in
+#if HAVE_DOXYGEN
+#EXTRA_DIST +=		$(top_srcdir)/${myDOXDIR}/html
+#BUILT_SOURCES +=	$(top_srcdir)/${myDOXDIR}/html
+#endif
+#EXTRA_DIST +=		$(top_srcdir)/${myDOXDIR}/Doxyfile.in
 
 CLEANFILES +=		$(top_srcdir)/${myDOXDIR}/doxygen_sqlite3.db \
 			$(top_srcdir)/${myDOXDIR}/${mydoxylog} \
@@ -891,60 +893,60 @@ CLEANFILES +=		$(top_srcdir)/${myDOXDIR}/doxygen_sqlite3.db \
 			${myDOXDIR}/Doxyfile \
 			${myDOXDIR}/${mydoxylog}
 
-$(top_srcdir)/${myDOXDIR}/html: $(abs_top_srcdir)/${myDOXDIR}/html
-doxygen-docs: $(abs_top_srcdir)/${myDOXDIR}/html
+#$(top_srcdir)/${myDOXDIR}/html: $(abs_top_srcdir)/${myDOXDIR}/html
+#doxygen-docs: $(abs_top_srcdir)/${myDOXDIR}/html
 
 # alias for manual typing errors
-docs-doxygen: doxygen-docs
+#docs-doxygen: doxygen-docs
 
 clean-doxygen:
 	( test -w $(abs_top_srcdir)/${myDOXDIR}/html && \
 	  /bin/rm -rf $(abs_top_srcdir)/${myDOXDIR}/html ) || /bin/true
 
 # Copy generated contents of "docs/doxygen/" into "/usr/share/core.../doxygen"
-develdocdoxygendir =	$(develdocdir)/doxygen
-develdocdoxygen: doxygen-docs
+#develdocdoxygendir =	$(develdocdir)/doxygen
+#develdocdoxygen: doxygen-docs
 
-if HAVE_DOXYGEN
-develdocdoxygen_DATA =	${myDOXDIR}/html/*
-
+#if HAVE_DOXYGEN
+#develdocdoxygen_DATA =	${myDOXDIR}/html/*
+#
 # Such-named target is required by the _DATA above, so have a rule to build it
-${myDOXDIR}/html/*: doxygen-docs
-$(abs_top_builddir)/${myDOXDIR}/Doxyfile: ${myDOXDIR}/Doxyfile $(abs_top_builddir)/Makefile
-
-$(abs_top_srcdir)/${myDOXDIR}/html: $(abs_top_builddir)/${myDOXDIR}/Doxyfile
-	@test -d $(abs_top_srcdir)/${myDOXDIR}/html || \
-	{ cd $(abs_top_srcdir)/ && \
-	  echo "INFO: Generating Doxygen docs in '`pwd`' according to '$<'" >&2 && \
-	  $(DOXYGEN) "$<"; }
-	@touch -r "$<" "$@" || true
-else
-develdocdoxygen_DATA =
-
-${myDOXDIR}/html/*: $(abs_top_srcdir)/${myDOXDIR}/html
-
-$(abs_top_srcdir)/${myDOXDIR}/html:
-	@echo "SKIP: Missing 'doxygen' program, sourcecode-documentation generation skipped!" >&2
-endif
+#${myDOXDIR}/html/*: doxygen-docs
+#$(abs_top_builddir)/${myDOXDIR}/Doxyfile: ${myDOXDIR}/Doxyfile $(abs_top_builddir)/Makefile
+#
+#$(abs_top_srcdir)/${myDOXDIR}/html: $(abs_top_builddir)/${myDOXDIR}/Doxyfile
+#	@test -d $(abs_top_srcdir)/${myDOXDIR}/html || \
+#	{ cd $(abs_top_srcdir)/ && \
+#	  echo "INFO: Generating Doxygen docs in '`pwd`' according to '$<'" >&2 && \
+#	  $(DOXYGEN) "$<"; }
+#	@touch -r "$<" "$@" || true
+#else
+#develdocdoxygen_DATA =
+#
+#${myDOXDIR}/html/*: $(abs_top_srcdir)/${myDOXDIR}/html
+#
+#$(abs_top_srcdir)/${myDOXDIR}/html:
+#	@echo "SKIP: Missing 'doxygen' program, sourcecode-documentation generation skipped!" >&2
+#endif
 
 #----------------------------------------------------------------------
 #                 manpage generation (delegated to sub-make)
 #----------------------------------------------------------------------
 
-EXTRA_DIST +=		$(top_srcdir)/${myMANDIR}/*.txt
-CLEANFILES +=		$(abs_top_builddir)/${myMANDIR}/*.?
+#EXTRA_DIST +=		$(top_srcdir)/${myMANDIR}/*.txt
+#CLEANFILES +=		$(abs_top_builddir)/${myMANDIR}/*.?
 
-man-docs:
-	( cd $(abs_top_builddir)/$(myMANDIR) && $(MAKE) all )
+#man-docs:
+#	( cd $(abs_top_builddir)/$(myMANDIR) && $(MAKE) all )
 
 # alias for manual typing errors
-docs-man: man-docs
+#docs-man: man-docs
 
-clean-man:
-	( cd $(abs_top_builddir)/$(myMANDIR) && \
-	  { $(MAKE) clean || /bin/true; } && \
-	  /bin/rm -f *.[123456789] *.xml *.html )
-	/bin/rm -f $(abs_top_builddir)/$(myMANDIR)/*.?
+#clean-man:
+#	( cd $(abs_top_builddir)/$(myMANDIR) && \
+#	  { $(MAKE) clean || /bin/true; } && \
+#	  /bin/rm -f *.[123456789] *.xml *.html )
+#	/bin/rm -f $(abs_top_builddir)/$(myMANDIR)/*.?
 
 #----------------------------------------------------------------------
 #                        hook for make all => generate files too
