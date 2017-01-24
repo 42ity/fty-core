@@ -62,6 +62,8 @@ if [ "$BUILD_TYPE" == "default" ] || [ "$BUILD_TYPE" == "default-Werror" ] ; the
     CONFIG_OPTS+=("--with-docs=no")
     CONFIG_OPTS+=("--quiet")
 
+    CONFIG_OPTS+=("--with-systemdtmpfilesdir=${BUILD_PREFIX}/usr/lib/tmpfiles.d")
+
     # Clone and build dependencies
     git clone --quiet --depth 1 https://github.com/zeromq/libzmq.git libzmq.git
     BASE_PWD=${PWD}
