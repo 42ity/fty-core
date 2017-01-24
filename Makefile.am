@@ -610,7 +610,8 @@ BASE_DOCS_PLAINTEXT +=	TODO
 # The following files are saved into proper subdirectories, have an
 # extension in the filename, and contain asciidoc markup.
 # Note these should have paths relative to project root dir.
-TXT_DOCS_ASCIIDOC = 	
+TXT_DOCS_ASCIIDOC = 	$(myDEVDOCDIR)/README-builder.txt \
+			$(myDEVDOCDIR)/README-init-os-accounts.txt
 
 # List of text files that are installed as is (none so far, but see
 # below for MAPPED_TXT_DOCS_ASCIIDOC and MAPPED_TXT_DOCS_PLAINTEXT)
