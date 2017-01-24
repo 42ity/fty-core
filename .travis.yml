@@ -9,6 +9,9 @@ sudo: false
 services:
 - docker
 
+cache:
+- ccache
+
 env:
 - BUILD_TYPE=default
 - BUILD_TYPE=default-Werror
