@@ -358,8 +358,7 @@ endif
 #----------------------------------------------------------------------
 
 EXTRA_DIST += \
-			$(top_srcdir)/tools/dbinit.h \
-			$(top_srcdir)/tests/shared/test-csv.cc.*sv
+			$(top_srcdir)/tools/dbinit.h
 
 # add CI tests to dist
 EXTRA_DIST +=		$(top_srcdir)/tests/CI
