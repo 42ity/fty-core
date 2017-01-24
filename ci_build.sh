@@ -7,11 +7,6 @@
 set -x
 set -e
 
-dpkg -l | grep -i make || true
-make --version || true
-make --help || true
-which make
-
 if [ "$BUILD_TYPE" == "default" ] || [ "$BUILD_TYPE" == "default-Werror" ] ; then
     if [ -d "./tmp" ]; then
         rm -rf ./tmp
