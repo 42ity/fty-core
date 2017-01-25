@@ -1,6 +1,8 @@
 # Travis CI script
 language: c
 
+cache: ccache
+
 os:
 - linux
 
@@ -9,36 +11,57 @@ sudo: false
 services:
 - docker
 
+# Set CI_TIME=true to enable build-step profiling in Travis
+# Set CI_TRACE=true to enable shell script tracing in Travis
+# Set CI_CONFIG_QUIET=true to enable "configure --quiet" (only report stderr)
 env:
-- BUILD_TYPE=default
-- BUILD_TYPE=default-Werror
-#- BUILD_TYPE=cmake
-#- BUILD_TYPE=android
-#- BUILD_TYPE=check-py
+  global:
+    - CI_TIME=false
+    - CI_TRACE=false
+    - CI_QUIET=true
+  matrix:
+    - BUILD_TYPE=default
+    - BUILD_TYPE=default-Werror
+#   - BUILD_TYPE=cmake
+#   - BUILD_TYPE=android
+#   - BUILD_TYPE=check-py
 
-matrix:
-  include:
-  - env: BUILD_TYPE=valgrind
-    os: linux
-    dist: trusty
-    sudo: required
-    addons:
-      apt:
-        packages:
-        - valgrind
+#matrix:
+#  include:
+#  - env: BUILD_TYPE=valgrind
+#    os: linux
+#    dist: trusty
+#    sudo: required
+#    addons:
+#      apt:
+#        packages:
+#        - valgrind
+#        - libmagic-dev
 
 addons:
+  sources:
+  - sourceline: 'deb http://download.opensuse.org/repositories/home:/zeromq:/git-draft/xUbuntu_12.04/ ./'
+    key_url: 'http://download.opensuse.org/repositories/home:/zeromq:/git-draft/xUbuntu_12.04/Release.key'
   apt:
     packages:
     - git
     - asciidoc
     - xmlto
+    - libmagic-dev
     - tntnet
     - tntnet-runtime
     - libtntnet-dev
     - libtnt-dev
     - libsasl2-2
     - libsasl2-dev
+# Not packaged yet, or wrong names for Travis repos, or wrong versions
+#    - libzmq3-dev
+#    - libczmq3-dev
+#    - libmlm-dev
+#    - libfty-proto-dev
+#    - libcidr0-dev
+#    - cxxtools-dev
+#    - libnutclient-dev
 
 before_install:
 - if [ $TRAVIS_OS_NAME == "osx" ] ; then brew update; brew install binutils valgrind ; fi

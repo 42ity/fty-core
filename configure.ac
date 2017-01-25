@@ -413,6 +413,9 @@ AC_TRY_LINK([#include <magic.h>], [magic_t magic_cookie = magic_open(MAGIC_NONE)
              )
 LIBS="$SAVE_LIBS"
 
+if false; then
+dnl # The core no longer includes C/C++ sources, so does not really REQUIRE
+dnl # those third-party packages; see fty-rest component for that.
 AC_LANG_PUSH([C++])
 AC_CHECK_HEADERS([tntdb.h],
                  [],
@@ -426,6 +429,7 @@ PKG_CHECK_MODULES([LIBZMQ], [libzmq >= 3.0], [], [AC_MSG_ERROR([cannot find libz
 PKG_CHECK_MODULES([LIBCZMQ], [libczmq >= 3.0], [], [AC_MSG_ERROR([cannot find libczmq version >= 3])])
 PKG_CHECK_MODULES([LIBMLM], [libmlm >= 0.1.0], [], [AC_MSG_ERROR([cannot find malamute library >= 0.1.0])])
 PKG_CHECK_MODULES([LIBFTYPROTO], [libfty_proto >= 1.0.0], [], AC_MSG_ERROR([cannot find libfty_proto library >= 1.0.0]))
+fi
 
 AC_MSG_CHECKING([presence of augtool])
 AS_IF([which augtool >/dev/null 2>&1], [AC_MSG_RESULT([yes])], [

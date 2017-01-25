@@ -21,8 +21,8 @@ if [ "$BUILD_TYPE" == "default" ]; then
     cd -
 elif [ "$BUILD_TYPE" == "bindings" ] && [ "$BINDING" == "jni" ]; then
     ( cd bindings/jni && TERM=dumb PKG_CONFIG_PATH=/tmp/lib/pkgconfig ./gradlew clean bintrayUpload )
-    cp bindings/jni/android/fty_asset-android.jar fty_asset-android-1.0.0.jar
-    export FTY_CORE_DEPLOYMENT=fty_asset-android-1.0.0.jar
+    cp bindings/jni/android/fty_core-android.jar fty_core-android-1.0.0.jar
+    export FTY_CORE_DEPLOYMENT=fty_core-android-1.0.0.jar
 else
     export FTY_CORE_DEPLOYMENT=""
 fi

@@ -165,6 +165,10 @@ systemd/biostimer-verify-fs.service
 systemd/biostimer-compress-logs.service
 !systemd/biostimer-loghost-rsyslog-netconsole.service.in
 systemd/biostimer-loghost-rsyslog-netconsole.service
+!systemd/ipc-meta-setup.service.in
+systemd/ipc-meta-setup.service
+!systemd/legacy-asset.service.in
+systemd/legacy-asset.service
 
 !tools/tntnet-ExecStartPre.sh.in
 tools/tntnet-ExecStartPre.sh
@@ -235,3 +239,6 @@ tools/verify-fs
 !tools/verify-fs.in
 
 database/mysql/test_averages_relative.sql
+
+*.git
+tmp
