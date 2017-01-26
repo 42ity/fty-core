@@ -174,6 +174,8 @@ update_system() {
         install_package_set_dev
         install_package_set_biosdeps
         limit_packages_forceremove
+    else
+        echo "SKIPPED: $0 update_system() : this action is not default anymore, and FORCE_RUN_APT is not set and exported by caller" >&2
     fi
     restore_ssh_service
 }
