@@ -1015,7 +1015,8 @@ distclean-local: distclean-local-dirs distclean-local-deps
 	    /bin/rm -f $(abs_top_builddir)/configure; \
 	fi >&2 || true
 	@if [ x"$(abs_top_builddir)/.git_details" != x"$(abs_top_srcdir)/.git_details" ]; then \
-	    /bin/rm -f $(abs_top_builddir)/.git_details; \
+	    /bin/rm -f $(abs_top_builddir)/.git_details \
+	        $(abs_top_builddir)/$(TXT_DOCS_ASCIIDOC); \
 	fi || true
 
 
