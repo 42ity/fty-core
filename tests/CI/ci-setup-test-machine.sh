@@ -128,9 +128,9 @@ install_package_set_dev() {
     apt-get -f -y --force-yes \
         -q -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" \
         install \
-        devscripts sudo doxygen curl git python-mysqldb \
-        cppcheck msmtp libtool cpp gcc autoconf automake m4 pkg-config equivs dh-make \
-	cracklib-runtime osc
+        devscripts sudo doxygen curl git python-mysqldb libmariadbclient-dev libmariadbd-dev \
+        cppcheck msmtp libtool cpp gcc autoconf automake m4 pkg-config equivs dh-make zip \
+        cracklib-runtime osc
 }
 
 install_package_set_biosdeps() {
@@ -174,6 +174,8 @@ update_system() {
         install_package_set_dev
         install_package_set_biosdeps
         limit_packages_forceremove
+    else
+        echo "SKIPPED: $0 update_system() : this action is not default anymore, and FORCE_RUN_APT is not set and exported by caller" >&2
     fi
     restore_ssh_service
 }

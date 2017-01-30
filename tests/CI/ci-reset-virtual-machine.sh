@@ -303,10 +303,17 @@ while [ $# -gt 0 ] ; do
 		;;
 	--install-dev|--install-dev-pkgs)
 		INSTALL_DEV_PKGS=yes
+		# This one is now defined by ci-setup-test-machine.sh
+		# since installing more files into DEV environments is
+		# no longer default.
+		FORCE_RUN_APT=yes
+		export FORCE_RUN_APT
 		shift
 		;;
 	--no-install-dev|--no-install-dev-pkgs)
 		INSTALL_DEV_PKGS=no
+		FORCE_RUN_APT=""
+		export FORCE_RUN_APT
 		shift
 		;;
 	--copy-host-users)
