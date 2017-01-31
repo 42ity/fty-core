@@ -271,8 +271,6 @@ TESTS += $(check_SCRIPTS)
 
 client_SCRIPTS +=	tools/db-init
 
-EXTRA_DIST +=		$(top_srcdir)/tools/dbinit.h
-
 client_SCRIPTS +=	tools/systemctl tools/update-rc3
 EXTRA_DIST +=		tools/systemctl tools/update-rc3
 
@@ -356,9 +354,6 @@ endif
 #----------------------------------------------------------------------
 #                        Extra files and sources
 #----------------------------------------------------------------------
-
-EXTRA_DIST += \
-			$(top_srcdir)/tools/dbinit.h
 
 # add CI tests to dist
 EXTRA_DIST +=		$(top_srcdir)/tests/CI
