@@ -98,6 +98,8 @@ config_defaults() {
 
     # Should we do a factory reset (erase all userdata)?
     is_set FLAG_ERASE_FACTORYRESET || FLAG_ERASE_FACTORYRESET="unset"
+    # Should we clear the flag about a previously failed factory reset (assuming admin took care of it now)?
+    is_set FLAG_ERASE_FACTORYRESETFAILED || FLAG_ERASE_FACTORYRESETFAILED="unset"
 
     # Should we do an erase_all (erase all userdata AND (re-)format /mnt/nand)?
     is_set FLAG_ERASE_ALL || FLAG_ERASE_ALL="unset"
@@ -205,9 +207,11 @@ usage() {
     echo "                   the control file so 'init' does a factory reset after reboot"
     echo "                   Note: '-NR' alias to --no-erase-factory-reset can cancel a"
     echo "                   previously-requested factory reset if you changed your mind"
-    echo "  --touch-factory-reset|-FR  Enforce a factory-reset to be during next boot"
+    echo "  --touch-factory-reset|-FR  Enforce a factory-reset to be done during next boot"
+    echo "  --clear-failed-factory-reset|-FFR  Clear the flag-file about a previously"
+    echo "                   failed factory-reset, after an admin has taken care of this"
     echo "  --(no-)erase-all           If a new OS image downloaded successfully, then"
-    echo "                   request a factory reset + NAND format after reboot"
+    echo "                   request a factory reset and(!) NAND format after reboot"
     echo "  --touch-erase-all          Enforce a factory reset + NAND format next boot"
     echo "  --reboot | -r              If a new image (OS, FW) downloaded successfully"
     echo "                   request an immediate reboot as part of this script"
@@ -1475,6 +1479,22 @@ removeold_rawfwimage_modules() (
     return 0
 )
 
+# Value discovered below, after all settings are slurped
+FACTORY_RESET_TTL_EXPIRED=""
+process_FACTORY_RESET_TTL_EXPIRED() {
+	# If files exist... report them or wipe...
+	if [ -n "$FACTORY_RESET_TTL_EXPIRED" ]; then
+		if [ "$FLAG_ERASE_FACTORYRESETFAILED" = yes ]; then
+			logmsg_info "Per administrative request, removing flag-file(s) about previously failed factory reset:" \
+				"`ls -la $FACTORY_RESET_TTL_EXPIRED 2>/dev/null`"
+			rm -f $FACTORY_RESET_TTL_EXPIRED
+		else
+			logmsg_warn "Found flag-file(s) about previously failed factory reset:" \
+				"`ls -la $FACTORY_RESET_TTL_EXPIRED 2>/dev/null`" \
+				"You can clear this warning with $0 --clear-failed-factory-reset"
+		fi
+	fi
+}
 
 ###########################################################################
 ### Start of application logic
@@ -1531,6 +1551,19 @@ ACTION_RESULT=0
 # Exclude this (base) filename from removeold_osimage() hit-list
 DOWNLOADED_OS_IMAGE=""
 
+# Note: /mnt/ext is in the list just in case rogue data is around.
+FACTORY_RESET_TTL_EXPIRED=""
+for F in \
+        /mnt/ext/recovery/factory_reset \
+        /mnt/nand/factory_reset \
+        /mnt/mmc/recovery/factory_reset \
+	"$DEPLOYMENTROOT/factory_reset" \
+	"$DOWNLOADROOT/factory_reset" \
+; do
+        [ -f "$F.ttl-expired" ] && FACTORY_RESET_TTL_EXPIRED="`echo "$F.ttl-expired
+$FACTORY_RESET_TTL_EXPIRED" | sort | uniq`"
+done
+
 while [ $# -gt 0 ]; do
 	case "${1-}" in
 		-h|--help|-help)        usage; exit 0 ;;
@@ -1582,6 +1615,7 @@ while [ $# -gt 0 ]; do
 			PID4=$!
 			for P in $PID1 $PID2 $PID3 $PID4 ; do wait $P || RES=$? ; done
 			wait || RES=$?
+			process_FACTORY_RESET_TTL_EXPIRED
 			exit $RES
 			;;
 		--remove-files)         FLAG_CAN_REMOVE_IMAGES="yes";;
@@ -1622,7 +1656,10 @@ while [ $# -gt 0 ]; do
 		                        FLAG_ERASE_FACTORYRESET="yes" ;;
 		--touch-factory-reset|--force-factory-reset|-FR)
 		                        FLAG_ERASE_FACTORYRESET="force" ;;
-		--no-erase-factory-reset|-NR)  FLAG_ERASE_FACTORYRESET="no" ;;
+		--no-erase-factory-reset|--clear-factory-reset|-NR)
+					FLAG_ERASE_FACTORYRESET="no" ;;
+		--clear-failed-factory-reset|-FFR)
+		                        FLAG_ERASE_FACTORYRESETFAILED="yes" ;;
 		--erase-all)            FLAG_ERASE_ALL="yes" ;;
 		--touch-erase-all|--force-erase-all)
 		                        FLAG_ERASE_ALL="force" ;;
@@ -1784,6 +1821,8 @@ fi
 if [ -f "$DEPLOYMENTROOT/erase_all" ] || [ -f "$DOWNLOADROOT/erase_all" ]; then
 	logmsg_warn "NOTE: a FACTORY RESET + NAND FORMAT was requested and will be done during reboot"
 fi
+
+process_FACTORY_RESET_TTL_EXPIRED
 
 logmsg_info "Syncing to ensure all writes are done..."
 time sync || true
