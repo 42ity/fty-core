@@ -77,9 +77,9 @@ SYSTEMCTL_UNITS_COMMON_INTERNAL="bios tntnet@bios fty-outage fty-metric-store   
                                 fty-kpi-power-uptime fty-alert-list fty-asset   \
                                 fty-metric-store-cleaner fty-alert-engine       \
                                 fty-email fty-metric-composite-configurator     \
-                                fty-metric-composite@ fty-metric-tpower         \
+                                fty-metric-tpower                               \
                                 bios-agent-autoconfig bios-agent-inventory      \
-                                bios-db-init bios-fake-th bios-networking        \
+                                bios-db-init bios-fake-th bios-networking       \
                                 bios-reset-button bios-ssh-last-resort          \
                                 biostimer-compress-logs biostimer-verify-fs     \
                                 biostimer-loghost-rsyslog-netconsole fty-nut    \
@@ -92,7 +92,7 @@ SYSTEMCTL_UNITS_COMMON="$SYSTEMCTL_UNITS_COMMON_EXTERNAL $SYSTEMCTL_UNITS_COMMON
 
 # For regexp matching of multi-instance services (a pipe-separated list)
 SYSTEMCTL_UNITS_REGEX_EXTERNAL_LIST='nut-driver'
-SYSTEMCTL_UNITS_REGEX_INTERNAL_LIST='composite-metrics'
+SYSTEMCTL_UNITS_REGEX_INTERNAL_LIST='composite-metrics|fty-metric-composite'
 SYSTEMCTL_UNITS_REGEX_EXTERNAL="($SYSTEMCTL_UNITS_REGEX_EXTERNAL_LIST)"'@[^[:blank:]]*'
 SYSTEMCTL_UNITS_REGEX_INTERNAL="($SYSTEMCTL_UNITS_REGEX_INTERNAL_LIST)"'@[^[:blank:]]*'
 SYSTEMCTL_UNITS_REGEX="($SYSTEMCTL_UNITS_REGEX_EXTERNAL_LIST|$SYSTEMCTL_UNITS_REGEX_INTERNAL_LIST)"'@[^[:blank:]]*'
