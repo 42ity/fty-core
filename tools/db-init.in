@@ -287,7 +287,6 @@ upgrade_database() {
 		echo "WARNING: Database upgrade failed, but policy is '$UPGRADE_POLICY' and so we proceed..." >&2
 		return 0
 	fi
-
 	return 0
 }
 
