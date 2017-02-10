@@ -276,7 +276,7 @@ EOF
 # Note: We restore "/bin/diff" and "/bin/*grep" via busybox, below
 for i in $(dpkg -l | awk '/perl/{ print $2; }') apt fakeroot ncurses-bin diffutils grep sysvinit ncurses-common libicu52 lsb-release; do
     case "$IMGTYPE" in
-        devel)
+        *devel*)
             echo dpkg -P --force-all $i
             ;;
         deploy|*)
@@ -305,7 +305,7 @@ fi
 mkdir -p /etc/pam.d
 cp /usr/share/bios/examples/config/pam.d/* /etc/pam.d
 RULES="`sed -n 's|.*pam_cracklib.so||p' /etc/pam.d/bios`"
-[ "$IMGTYPE" = devel ] || sed -i "s|\\(.*pam_cracklib.so\\).*|\1$RULES|" /etc/pam.d/common-password
+[[ "$IMGTYPE" =~ devel ]] || sed -i "s|\\(.*pam_cracklib.so\\).*|\1$RULES|" /etc/pam.d/common-password
 
 # Force creation of cracklib dictionary
 if [ ! -f /var/cache/cracklib/cracklib_dict.pwd ]; then
@@ -316,7 +316,7 @@ sed -i 's|\(secure_path="\)|\1/usr/libexec/bios:|' /etc/sudoers
 
 mkdir -p /etc/sudoers.d
 cp /usr/share/bios/examples/config/sudoers.d/bios_00_base /etc/sudoers.d
-[ "$IMGTYPE" = devel ] && cp /usr/share/bios/examples/config/sudoers.d/bios_01_citest /etc/sudoers.d
+[[ "$IMGTYPE" =~ devel ]] && cp /usr/share/bios/examples/config/sudoers.d/bios_01_citest /etc/sudoers.d
 cp /usr/share/bios/examples/config/sudoers.d/bios_*_*agent* /etc/sudoers.d || true
 
 mkdir -p /etc/security
@@ -480,7 +480,7 @@ find / -name systemd-logind.service -delete
 
 # Disable expensive debug logging by default on non-devel images
 mkdir -p /usr/share/bios/etc/default
-if [ "$IMGTYPE" = devel ] ; then
+if [[ "$IMGTYPE" =~ devel ]] ; then
     echo "BIOS_LOG_LEVEL=LOG_DEBUG" > /usr/share/bios/etc/default/bios
 else
     echo "BIOS_LOG_LEVEL=LOG_INFO" > /usr/share/bios/etc/default/bios
@@ -582,7 +582,7 @@ for V in LANG LANGUAGE LC_ALL ; do echo "$V="'"C"'; done > /etc/default/locale
 
 # logout from /bin/bash after 600s/10m of inactivity
 case "$IMGTYPE" in
-    devel) echo "Not tweaking TMOUT in devel image" ;;
+    *devel*) echo "Not tweaking TMOUT in devel image" ;;
     *) echo 'export TMOUT=600' > /etc/profile.d/tmout.sh ;;
 esac
 
