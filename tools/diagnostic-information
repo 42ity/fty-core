@@ -164,6 +164,14 @@ csv_export() {
     )
 }
 
+sqldump() {
+    verbose "sqldump..."
+    mysqldump box_utf8 >"${WD}/${TMPDIR}/dump.sql" || (
+        echo "Can't create SQL dump, is database running?" >&2
+        echo "Failed to create SQL dump" >"${WD}/${TMPDIR}/dump.sql"
+    )
+}
+
 database_error_log() {
     verbose "database error log..."
     local log="/var/log/mysql/error.log"
@@ -212,6 +220,7 @@ create_diagnostic_archive() {
     etc_files
     usr_share_bios_files
     csv_export
+    sqldump
     create_archive
 }
 
