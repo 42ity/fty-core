@@ -14,7 +14,7 @@ AM_INIT_AUTOMAKE([foreign 1.11 -Wall -Wno-portability silent-rules tar-pax no-di
 LT_PREREQ([2.2])
 LT_INIT([disable-static])
 
-AS_IF([test "x$enable_static" = "xyes"], [AC_MSG_ERROR([--enable-static is not supported by 42ITy fty-core core])])
+AS_IF([test "x$enable_static" = "xyes"], [AC_MSG_ERROR([--enable-static is not supported by 42ITy fty-core])])
 
 AC_ARG_WITH([package-vendor],
 	[AS_HELP_STRING([--with-package-vendor=ARG],
