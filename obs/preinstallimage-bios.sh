@@ -61,6 +61,8 @@ if [ -d /usr/share/fty ] ; then
     if [ -d /usr/share/bios ] ; then
         mv /usr/share/bios/* /usr/share/fty/ || true
         rm -rf /usr/share/bios
+    fi
+    if [ ! -e /usr/share/bios ] ; then
         ln -s fty /usr/share/bios
     fi
     if [ -d /usr/share/fty-core ] ; then
@@ -82,6 +84,8 @@ if [ -d /usr/libexec/fty ] ; then
     if [ -d /usr/libexec/bios ] ; then
         mv /usr/libexec/bios/* /usr/libexec/fty/ || true
         rm -rf /usr/libexec/bios
+    fi
+    if [ ! -e /usr/libexec/bios ] ; then
         ln -s fty /usr/libexec/bios
     fi
     if [ -d /usr/libexec/fty-core ] ; then
