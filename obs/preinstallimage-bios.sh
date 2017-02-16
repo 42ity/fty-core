@@ -91,7 +91,12 @@ if [ -d /usr/libexec/fty ] ; then
     if [ -d /usr/libexec/fty-core ] ; then
         mv /usr/libexec/fty-core/* /usr/libexec/fty/ || true
         rm -rf /usr/libexec/fty-core
-        ln -s fty-core /usr/libexec/bios
+        ln -s fty /usr/libexec/fty-core
+    fi
+    if [ -d /usr/libexec/fty-rest ] ; then
+        mv /usr/libexec/fty-rest/* /usr/libexec/fty/ || true
+        rm -rf /usr/libexec/fty-rest
+        ln -s fty /usr/libexec/fty-rest
     fi
 fi
 
