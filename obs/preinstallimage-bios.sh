@@ -70,6 +70,28 @@ if [ -d /usr/share/fty ] ; then
     fi
 fi
 
+# The same as above for libexec
+
+if [ -L /usr/libexec/fty ] ; then
+    rm /usr/libexec/fty
+fi
+if [ ! -e /usr/libexec/fty ] ; then
+    mkdir /usr/libexec/fty
+fi
+if [ -d /usr/libexec/fty ] ; then
+    if [ -d /usr/libexec/bios ] ; then
+        mv /usr/libexec/bios/* /usr/libexec/fty/ || true
+        rm -rf /usr/libexec/bios
+        ln -s fty /usr/libexec/bios
+    fi
+    if [ -d /usr/libexec/fty-core ] ; then
+        mv /usr/libexec/fty-core/* /usr/libexec/fty/ || true
+        rm -rf /usr/libexec/fty-core
+        ln -s fty-core /usr/libexec/bios
+    fi
+fi
+
+
 # Setup core dumps
 if true; then
     mkdir -p /var/crash
