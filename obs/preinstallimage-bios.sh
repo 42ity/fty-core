@@ -63,6 +63,11 @@ if [ -d /usr/share/fty ] ; then
         rm -rf /usr/share/bios
         ln -s fty /usr/share/bios
     fi
+    if [ -d /usr/share/fty-core ] ; then
+        mv /usr/share/fty-core/* /usr/share/fty/ || true
+        rm -rf /usr/share/fty-core
+        ln -s fty-core /usr/share/bios
+    fi
 fi
 
 # Setup core dumps
