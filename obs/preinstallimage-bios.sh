@@ -49,6 +49,22 @@ echo "    IMGTYPE='$IMGTYPE'"
 # Protect against errors... such as maybe running on a dev workstation
 set -e
 
+# bios to fty renaming dir
+# Move everything from bios dir to fty dir and create link bios to fty
+if [ -L /usr/share/fty ] ; then
+    rm /usr/share/fty
+fi
+if [ ! -e /usr/share/fty ] ; then
+    mkdir /usr/share/fty
+fi
+if [ -d /usr/share/fty ] ; then
+    if [ -d /usr/share/bios ] ; then
+        mv /usr/share/bios/* /usr/share/fty/ || true
+        rm -rf /usr/share/bios
+        ln -s fty /usr/share/bios
+    fi
+fi
+
 # Setup core dumps
 if true; then
     mkdir -p /var/crash
