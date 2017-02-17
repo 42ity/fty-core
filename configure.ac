@@ -1,6 +1,6 @@
 # autoconf/automake basis
 AC_PREREQ([2.5])
-AC_INIT([fty-core], [0.1.0], [EatonIPCOpensource@Eaton.com])
+AC_INIT([bios], [0.1.0], [EatonIPCOpensource@Eaton.com])
 PACKAGE_VENDOR="Eaton"
 
 AC_CONFIG_MACRO_DIR([m4])

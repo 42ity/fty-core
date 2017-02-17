@@ -49,58 +49,6 @@ echo "    IMGTYPE='$IMGTYPE'"
 # Protect against errors... such as maybe running on a dev workstation
 set -e
 
-# bios to fty renaming dir
-# Move everything from bios dir to fty dir and create link bios to fty
-if [ -L /usr/share/fty ] ; then
-    rm /usr/share/fty
-fi
-if [ ! -e /usr/share/fty ] ; then
-    mkdir /usr/share/fty
-fi
-if [ -d /usr/share/fty ] ; then
-    if [ -d /usr/share/bios ] ; then
-        mv /usr/share/bios/* /usr/share/fty/ || true
-        rm -rf /usr/share/bios
-    fi
-    if [ ! -e /usr/share/bios ] ; then
-        ln -s fty /usr/share/bios
-    fi
-    if [ -d /usr/share/fty-core ] ; then
-        mv /usr/share/fty-core/* /usr/share/fty/ || true
-        rm -rf /usr/share/fty-core
-        ln -s fty-core /usr/share/bios
-    fi
-fi
-
-# The same as above for libexec
-
-if [ -L /usr/libexec/fty ] ; then
-    rm /usr/libexec/fty
-fi
-if [ ! -e /usr/libexec/fty ] ; then
-    mkdir /usr/libexec/fty
-fi
-if [ -d /usr/libexec/fty ] ; then
-    if [ -d /usr/libexec/bios ] ; then
-        mv /usr/libexec/bios/* /usr/libexec/fty/ || true
-        rm -rf /usr/libexec/bios
-    fi
-    if [ ! -e /usr/libexec/bios ] ; then
-        ln -s fty /usr/libexec/bios
-    fi
-    if [ -d /usr/libexec/fty-core ] ; then
-        mv /usr/libexec/fty-core/* /usr/libexec/fty/ || true
-        rm -rf /usr/libexec/fty-core
-        ln -s fty /usr/libexec/fty-core
-    fi
-    if [ -d /usr/libexec/fty-rest ] ; then
-        mv /usr/libexec/fty-rest/* /usr/libexec/fty/ || true
-        rm -rf /usr/libexec/fty-rest
-        ln -s fty /usr/libexec/fty-rest
-    fi
-fi
-
-
 # Setup core dumps
 if true; then
     mkdir -p /var/crash
