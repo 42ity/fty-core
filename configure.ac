@@ -293,172 +293,10 @@ AC_DEFINE_UNQUOTED([PACKAGE_VENDOR],
 	    ["$PACKAGE_VENDOR"],
 	    [Packaging metadata: name of the entity which distributes this build of the package])
 
-# toolchain - after all those definitions and redefinitions that can be broken
-# verify that needed tools exist and work: at least for AC_PROG_CXX we had a
-# surprise that it did not fail a ./configure run if no C++ compiler was found
-unset _TMP_GCC
-unset _TMP_GXX
-
-AC_PROG_CC
-AS_IF([test -n "$CC"], [], AC_MSG_ERROR([cannot find C compiler ($CC)]))
-AC_PATH_PROGS([_TMP_GCC], [`basename $CC` gcc], [])
-AS_IF([test -n "$_TMP_GCC" -a -x "$_TMP_GCC"], [], AC_MSG_ERROR([cannot find C compiler]))
-
-AM_PROG_CC_C_O
-AC_PROG_CXX
-AS_IF([test -n "$CXX"], [], AC_MSG_ERROR([cannot find C++ compiler ($CXX)]))
-AC_PATH_PROGS([_TMP_GXX], [`basename $CXX` g++], [])
-AS_IF([test -n "$_TMP_GXX" -a -x "$_TMP_GXX"], [], AC_MSG_ERROR([cannot find C++ compiler]))
-
-AC_MSG_CHECKING([presence of ccache])
-AS_IF([which ccache >/dev/null 2>&1], [
-	AC_MSG_RESULT([yes])
-	AC_MSG_NOTICE([Detected presence of ccache in PATH])
-	AS_IF([diff "`which ccache`" "$_TMP_GCC"], [AC_MSG_NOTICE([The C compiler program ($_TMP_GCC) is a symlink to ccache])], [AC_MSG_WARN([The C compiler program ($_TMP_GCC) is not a symlink to ccache, you miss out on build speed])])
-	AS_IF([diff "`which ccache`" "$_TMP_GXX"], [AC_MSG_NOTICE([The C++ compiler program ($_TMP_GXX) is a symlink to ccache])], [AC_MSG_WARN([The C++ compiler program ($_TMP_GXX) is not a symlink to ccache, you miss out on build speed])])
-	],[AC_MSG_RESULT([no])])
-
-unset _TMP_GCC
-unset _TMP_GXX
 
 AC_PROG_INSTALL
 AC_PROG_LN_S
 PKG_PROG_PKG_CONFIG
-
-# set flags CFLAGS
-my_CFLAGS="$my_CFLAGS \
--std=c11 \
--Wall \
--Wextra \
--Wunused-function \
--fstack-protector \
--fstack-protector-all \
-"
-
-# set flags CXXFLAGS
-my_CXXFLAGS="$my_CXXFLAGS \
--std=c++11 \
--Wall \
--Wextra \
--Wunused-function \
--fstack-protector \
--fstack-protector-all \
-"
-
-# set flags CPPFLAGS
-#my_CPPFLAGS="$my_CPPFLAGS \
-#"
-
-# set flags LDFLAGS
-#my_LDFLAGS="$my_LDFLAGS \
-#"
-
-# Early checks for library functions that may be picky - optionally
-# enable macros that may be further needed for compilation of the project
-unset _CC_ORIG
-AS_CASE(["x$CC"],
-	[xgcc*], [_CC_ORIG="$CC"
-		CC="$CC -Werror $my_CFLAGS"]
-	)
-AS_IF([test -n "$_CC_ORIG"], [AC_MSG_NOTICE([NOTE: Temporarily made the compiler more picky: $CC])])
-AC_CHECK_HEADERS([string.h], [], AC_MSG_ERROR([cannot find required header string.h]))
-AC_MSG_CHECKING([strdup() with default env])
-AC_TRY_LINK([#include <string.h>], [char *s; s = strdup("123"); if (s) {;}],
-	[AC_MSG_RESULT([yes])
-	 AC_DEFINE([HAVE_STRDUP], [1], [Define to 1 if you have the `strdup' function.])],
-	[AC_MSG_RESULT([no])
-	 AC_MSG_CHECKING([strdup() with -D_GNU_SOURCE])
-	 my_save_CFLAGS="$my_CFLAGS"
-	 my_save_CPPFLAGS="$my_CPPFLAGS"
-	 my_save_CXXFLAGS="$my_CXXFLAGS"
-	 my_CFLAGS="$my_save_CFLAGS -D_GNU_SOURCE"
-	 my_CPPFLAGS="$my_save_CPPFLAGS -D_GNU_SOURCE"
-	 my_CXXFLAGS="$my_save_CXXFLAGS -D_GNU_SOURCE"
-	 AC_DEFINE([_GNU_SOURCE], [1], [Define this if needed to compile POSIX code])
-	 AC_TRY_LINK([#include <string.h>], [char *s; s = strdup("123"); if (s) {;}],
-		[AC_DEFINE([HAVE_STRDUP], [1], [Define to 1 if you have the `strdup' function.])
-		 AC_MSG_RESULT([yes])],
-		[AC_MSG_RESULT([no])
-		 AC_MSG_CHECKING([strdup() with -D__EXTENSIONS__])
-		 my_CFLAGS="$my_save_CFLAGS -D_GNU_SOURCE"
-		 my_CPPFLAGS="$my_save_CPPFLAGS -D_GNU_SOURCE"
-		 my_CXXFLAGS="$my_save_CXXFLAGS -D_GNU_SOURCE"
-		 AC_DEFINE([__EXTENSIONS__], [1], [Define this if needed to compile POSIX code])
-		 AC_TRY_LINK([#include <string.h>], [char *s; s = strdup("123"); if (s) {;}],
-			[AC_DEFINE([HAVE_STRDUP], [1], [Define to 1 if you have the `strdup' function.])
-			 AC_MSG_RESULT([yes])],
-			[AC_MSG_RESULT([no])
-			 AC_MSG_ERROR([cannot find strdup(), not even with -D__EXTENSIONS__])])]
-		)]
-	)
-AS_IF([test -n "$_CC_ORIG"], [
-	CC="$_CC_ORIG"
-	unset _CC_ORIG
-	AC_MSG_NOTICE([NOTE: Restored default compiler settings: $CC])])
-
-# Checks for the header files
-AC_CHECK_HEADERS([magic.h], [], AC_MSG_ERROR([libmagic: cannot find required header magic.h]))
-AC_CHECK_LIB(
-             [magic],
-             [magic_open],
-             [],
-             [AC_MSG_ERROR([function magic_open() is not available, this is not the libmagic we are looking for])]
-             )
-SAVE_LIBS="$LIBS"
-LIBS="$LIBS -lmagic"
-AC_MSG_CHECKING([linkability with libmagic])
-AC_TRY_LINK([#include <magic.h>], [magic_t magic_cookie = magic_open(MAGIC_NONE); if (!magic_cookie) {;}; magic_close(magic_cookie);],
-             [AC_MSG_RESULT([ok])],
-             [AC_MSG_ERROR([function magic_open() is not available, this is not the libmagic we are looking for])]
-             )
-LIBS="$SAVE_LIBS"
-
-if false; then
-dnl # The core no longer includes C/C++ sources, so does not really REQUIRE
-dnl # those third-party packages; see fty-rest component for that.
-AC_LANG_PUSH([C++])
-AC_CHECK_HEADERS([tntdb.h],
-                 [],
-                 AC_MSG_ERROR([cannot find required header tntdb.h]))
-AC_CHECK_HEADER([tnt/tntnet.h], , AC_MSG_ERROR([tntnet headers not found]))
-AC_LANG_POP([C++])
-PKG_CHECK_MODULES([CXXTOOLS], [cxxtools >= 2.2.0], [], [AC_MSG_ERROR([cannot find cxxtools >= 2.2.0])])
-PKG_CHECK_MODULES([LIBSASL2], [libsasl2 >= 2.1.0], [], [AC_MSG_ERROR([cannot find sasl 2 library >= 2.1.0])])
-PKG_CHECK_MODULES([LIBSODIUM], [libsodium >= 0.7.0], [], [AC_MSG_ERROR([cannot find libsodium >= 0.7.0])])
-PKG_CHECK_MODULES([LIBZMQ], [libzmq >= 3.0], [], [AC_MSG_ERROR([cannot find libzmq version >= 3])])
-PKG_CHECK_MODULES([LIBCZMQ], [libczmq >= 3.0], [], [AC_MSG_ERROR([cannot find libczmq version >= 3])])
-PKG_CHECK_MODULES([LIBMLM], [libmlm >= 0.1.0], [], [AC_MSG_ERROR([cannot find malamute library >= 0.1.0])])
-PKG_CHECK_MODULES([LIBFTYPROTO], [libfty_proto >= 1.0.0], [], AC_MSG_ERROR([cannot find libfty_proto library >= 1.0.0]))
-fi
-
-AC_MSG_CHECKING([presence of augtool])
-AS_IF([which augtool >/dev/null 2>&1], [AC_MSG_RESULT([yes])], [
-	AC_MSG_RESULT([no])
-	AC_MSG_WARN([some CI tests (inspection and modification of OS configuration) can fail on this host due to lack of augeas-tools; but this is not fatal for compilation itself])
-])
-
-dnl ------ it was suggested by autoscan
-dnl TODO  I am not sure whether we need this. TODO MVY Please look at this.
-dnl Checks for libraries.
-dnl FIXME: Replace `main' with a function in `-lzmq':
-dnl AC_CHECK_LIB([zmq], [main])
-
-
-AC_CHECK_HEADERS([arpa/inet.h fcntl.h limits.h netinet/in.h stdint.h stdlib.h sys/socket.h sys/time.h unistd.h])
-
-# Checks for typedefs, structures, and compiler characteristics.
-AC_CHECK_HEADER_STDBOOL
-AC_C_INLINE
-AC_TYPE_SIZE_T
-AC_TYPE_SSIZE_T
-AC_TYPE_UINT64_T
-AC_TYPE_UINT8_T
-
-# Checks for library functions.
-AC_FUNC_MALLOC
-AC_CHECK_FUNCS([gettimeofday memset socket])
-
-dnl--- end of the section suggested by autoscan
 
 # Checks for optional programs. 
 
@@ -511,17 +349,9 @@ AM_CONDITIONAL([HAVE_A2X],[test -n "$A2X"])
 
 # sed is great!
 AC_CHECK_PROGS([SED], [sed])
-# TNTnet preprocesor
-AC_CHECK_PROGS([ECPPC], [ecppc])
-# TNTnet
-AC_CHECK_PROGS([TNTNET], [tntnet])
-AS_IF([test -z "$TNTNET" -o -z "$ECPPC"],[
-  AC_MSG_ERROR([TNTnet not found!])
-])
 
 # sourced from an m4/*.m4 include file during configure script compilation
 gl_VISIBILITY
-BS_CHECK_SASLAUTHD_MUX
 
 # see daemon(7)
 AC_ARG_WITH([systemdsystemunitdir],
@@ -635,7 +465,6 @@ Summary:
         astyle:                  ${ASTYLE:-none}
         asciidoc:                ${ASCIIDOC:-none}
         doxygen:                 ${DOXYGEN:-none}
-        ecppc:                   ${ECPPC:-none}
 
         ENABLE_CI_TESTS:         ${ci_tests}
 
@@ -643,24 +472,6 @@ Summary:
         CXXFLAGS:                ${my_CXXFLAGS} ${CXXFLAGS}
         CPPFLAGS:                ${OUR_CPPFLAGS} ${CPPFLAGS}
         LDFLAGS:                 ${OUR_LDFLAGS} ${LDFLAGS}
-        LIBZMQ_CFLAGS:           ${LIBZMQL_CFLAGS}
-        LIBZMQ_LIBS:             ${LIBZMQ_LIBS}
-        LIBCZMQ_CFLAGS:          ${LIBCZMQ_CFLAGS}
-        LIBCZMQ_LIBS:            ${LIBCZMQ_LIBS}
-        LIBCIDR_CFLAGS:          ${LIBCIDR_CFLAGS}
-        LIBCIDR_LIBS:            ${LIBCIDR_LIBS}
-        LIBNUTCLIENT_CFLAGS:     ${LIBNUTCLIENT_CFLAGS}
-        LIBNUTCLIENT_LIBS:       ${LIBNUTCLIENT_LIBS}
-        CXXTOOLS_CFLAGS:         ${CXXTOOLS_CFLAGS}
-        CXXTOOLS_LIBS:           ${CXXTOOLS_LIBS}
-        LIBSODIUM_CFLAGS:        ${LIBSODIUM_CFLAGS}
-        LIBSODIUM_LIBS:          ${LIBSODIUM_LIBS}
-        LIBSASL2_CFLAGS:         ${LIBSASL2_CFLAGS}
-        LIBSASL2_LIBS:           ${LIBSASL2_LIBS}
-        LIBMLM_CFLAGS:           ${LIBMLM_CFLAGS}
-        LIBMLM_LIBS:             ${LIBMLM_LIBS}
-        LIBFTYPROTO_LIBS:       ${LIBFTYPROTO_LIBS}
-        SASLAUTHD_MUX:           ${SASLAUTHD_MUX}
         PKG_CONFIG:              ${PKG_CONFIG}
         SYSTEMDSYSTEMUNITDIR:    ${systemdsystemunitdir}
         SYSTEMDSYSTEMPRESETDIR:  ${systemdsystempresetdir}
