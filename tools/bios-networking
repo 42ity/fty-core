@@ -29,11 +29,22 @@
 
 # to ensure REST API call at least replies before actually changing the network
 sleep 3
-# On production boxes we have 2 or 3 renamed LAN interfaces
-for L in 1 2 3 ; do ( ifdown --force LAN$L ; sleep 5; ifup --force LAN$L ) & done
-# Support not-remapped devices, including those in a container environment
-# and/or hot-plugged devices in USB ports
-for L in 0 1 2 3 ; do ( ifdown --force eth$L ; sleep 5; ifup --force eth$L ) & done
+
+# restart all network interfaces except lo and kill dhcp client too
+for IFACE in `ls -1 /sys/class/net/`; do
+    [ "${IFACE}" -eq "lo" ] && continue
+
+    (
+    ifdown --force $IFACE ;\
+    if [ -f /run/udhcpc.${IFACE}.pid ]; then \
+        kill -9 `cat /run/udhcpc.${IFACE}.pid`; \
+        rm /run/udhcpc.${IFACE}.pid; \
+    fi ;\
+    sleep 5; \
+    ifup --force $IFACE; \
+    ) &
+done
+
 wait
 /bin/systemctl restart networking.service
 /bin/systemctl restart ifplugd.service
