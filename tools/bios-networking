@@ -32,7 +32,7 @@ sleep 3
 
 # restart all network interfaces except lo and kill dhcp client too
 for IFACE in `ls -1 /sys/class/net/`; do
-    [ "${IFACE}" -eq "lo" ] && continue
+    [ "${IFACE}" = "lo" ] && continue
 
     (
     ifdown --force $IFACE ;\
