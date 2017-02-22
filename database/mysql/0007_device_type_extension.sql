@@ -15,7 +15,7 @@ COMMIT;
 INSERT INTO t_bios_asset_device_type (id_asset_device_type, name) VALUES (15, "appliance");
 INSERT INTO t_bios_asset_device_type (id_asset_device_type, name) VALUES (16, "chassis");
 INSERT INTO t_bios_asset_device_type (id_asset_device_type, name) VALUES (17, "patch panel");
-INSERT INTO t_bios_asset_device_type (id_asset_device_type, name) VALUES (18, "other ");
+INSERT INTO t_bios_asset_device_type (id_asset_device_type, name) VALUES (18, "other");
 
 /* This must be the last line of the SQL file */
 START TRANSACTION;
