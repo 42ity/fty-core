@@ -365,8 +365,13 @@ obs_SCRIPTS	=  obs/preinstallimage-bios.sh
 EXTRA_DIST	+= $(obs_SCRIPTS)
 
 ipc_meta_setupdir = $(datadir)/@PACKAGE@/setup/
-ipc_meta_setup_SCRIPTS = $(top_srcdir)/setup/*.sh
-EXTRA_DIST += $(ipc_meta_setup_SCRIPTS)
+ipc_meta_setup_SCRIPTS = \
+	$(top_srcdir)/setup/20-fty-compat.sh \
+	$(top_srcdir)/setup/20-th-names.sh
+
+EXTRA_DIST += \
+	$(top_srcdir)/setup/20-fty-compat.sh \
+	$(top_srcdir)/setup/20-th-names.sh.in
 
 # SystemD integrations files; if not enabled - variables remain empty
 SYSTEMD_UNITS_LOWLEVEL =

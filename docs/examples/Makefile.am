@@ -40,4 +40,8 @@ exampleprofile_DATA     = \
 			profile.d/bios_path.sh \
 			profile.d/lang.sh
 
-EXTRA_DIST += $(examplecfgsudo_DATA) $(examplecfgpam_DATA) $(examplecfgsec_DATA) $(examplecfgupdate_DATA) $(examplecfgrsyslogd_DATA) $(exampleprofile_DATA)
+exampleudevrulesdir = $(datarootdir)/@PACKAGE@/examples/config/rules.d
+exampleudevrules_DATA = \
+			rules.d/90-ipc-persistent-th.rules
+
+EXTRA_DIST += $(examplecfgsudo_DATA) $(examplecfgpam_DATA) $(examplecfgsec_DATA) $(examplecfgupdate_DATA) $(examplecfgrsyslogd_DATA) $(exampleprofile_DATA) $(exampleudevrules_DATA)

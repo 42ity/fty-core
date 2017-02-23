@@ -1,0 +1,48 @@
+#!/bin/sh
+
+#
+#   Copyright (c) 2017 Eaton
+#
+#   This file is part of the Eaton 42ity project.
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License along
+#   with this program; if not, write to the Free Software Foundation, Inc.,
+#   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+#! \file    20-th-names.sh
+#  \brief   Change udev rules for HW revision 00
+#  \author  Michal Vyskocil <MichalVyskocil@Eaton.com>
+#
+
+# There were two HW revisions to consider
+# REVISION 00 with TH1-TH4 as /dev/ttyS13 - /dev/ttyS16
+# others with TH1-TH4 as /dev/ttyS9 - /dev/ttyS12
+# Installed udev rules belongs to newest revisions, so
+# 
+
+# copy&paste from tntnet-ExecStartPre.sh.in
+JSONSH="@datadir@/@PACKAGE@/scripts/JSON.sh"
+get_a_string_arg() { "$JSONSH" -x "$1" | (IFS="`printf '\t'`" read K V; echo "$V") | sed 's,^"\(.*\)",\1,' ; }
+J="/etc/release-details.json"
+R=`get_a_string_arg hardware-spec-revision < $J`
+
+# we don't need to change rules for revisions != 0
+[ $R = "00" ] || exit 0
+
+# 1. change udev rules
+sed -i -e 's/ttyS9/ttyS13/g;s/ttyS10/ttyS14/g;s/ttyS11/ttyS15/g;s/ttyS12/ttyS16/g' \
+    /lib/udev/rules.d/90-ipc-persistent-th.rules
+
+# 2. force udev to load and apply them
+udevadm control --reload-rules
+udevadm trigger --subsystem-match=tty
