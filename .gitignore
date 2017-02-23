@@ -242,3 +242,4 @@ database/mysql/test_averages_relative.sql
 
 *.git
 tmp
+setup/20-th-names.sh
