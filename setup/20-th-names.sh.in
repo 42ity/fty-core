@@ -34,10 +34,10 @@
 JSONSH="@datadir@/@PACKAGE@/scripts/JSON.sh"
 get_a_string_arg() { "$JSONSH" -x "$1" | (IFS="`printf '\t'`" read K V; echo "$V") | sed 's,^"\(.*\)",\1,' ; }
 J="/etc/release-details.json"
-R=`get_a_string_arg hardware-spec-revision < $J`
+R="$(get_a_string_arg hardware-spec-revision < $J)"
 
 # we don't need to change rules for revisions != 0
-[ $R = "00" ] || exit 0
+[ "$R" = "00" ] || exit 0
 
 # 1. change udev rules
 sed -i -e 's/ttyS9/ttyS13/g;s/ttyS10/ttyS14/g;s/ttyS11/ttyS15/g;s/ttyS12/ttyS16/g' \
