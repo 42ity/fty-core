@@ -77,7 +77,8 @@ SUBDIRS =	docs/examples tools database/mysql
 # For many of the scripts here, you also want to update "client_SCRIPTS" below
 GENERATEDSCRIPTS = tools/run-test-doc.sh tools/db-init \
 	tools/verify-fs \
-	tools/tntnet-ExecStartPre.sh
+	tools/tntnet-ExecStartPre.sh \
+	setup/20-th-names.sh
 
 # Subdir-distributed file is also generated
 GENERATEDDATA =	docs/examples/sudoers.d/bios_00_base
