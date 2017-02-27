@@ -425,7 +425,6 @@ SYSTEMD_UNITS_EXTRA += \
 # And also some of the timer units and implementations below
 SYSTEMD_UNITS_TARGET_BIOS += \
                         bios-db-init.service \
-                        bios-agent-autoconfig.service \
                         bios-agent-inventory.service \
                         legacy-asset.service
 
@@ -470,7 +469,6 @@ SYSTEMD_TIMERS += $(SYSTEMD_TIMERS_LOWLEVEL) $(SYSTEMD_TIMERS_TARGET_BIOS)
 SYSTEMD_PRESETS +=      42-bios-systemd.preset
 
 SYSTEMD_TMPFILES += \
-                        bios-agent-autoconfig.conf \
                         logfiles-rights.conf \
                         bios-db-init.conf
 

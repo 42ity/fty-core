@@ -145,8 +145,6 @@ systemd/bios-db-init.service
 systemd/bios-agent-cm.service
 !systemd/bios-agent-inventory.service.in
 systemd/bios-agent-inventory.service
-!systemd/bios-agent-autoconfig.service.in
-systemd/bios-agent-autoconfig.service
 systemd/bios-reset-button.service
 !systemd/bios-reset-button.service.in
 !systemd/biostimer-warranty-metric.service.in
