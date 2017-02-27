@@ -432,8 +432,7 @@ SYSTEMD_UNITS_EXTRA += \
 SYSTEMD_UNITS_TARGET_BIOS += \
                         bios-db-init.service \
                         bios-agent-autoconfig.service \
-                        bios-agent-inventory.service \
-                        legacy-asset.service
+                        bios-agent-inventory.service
 
 # Here we list the actual service-definition files that should be compiled
 # Enabled as part of 42ity presets
