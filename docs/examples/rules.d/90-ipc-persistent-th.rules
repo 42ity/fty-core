@@ -1,0 +1,7 @@
+# Configure stable temperature/humidity port names on IPC
+# software will understand TH1 and $port-number
+
+SUBSYSTEM=="tty", ENV{DEVNAME}=="/dev/ttyS9", SYMLINK+="ttySTH1"
+SUBSYSTEM=="tty", ENV{DEVNAME}=="/dev/ttyS10", SYMLINK+="ttySTH2"
+SUBSYSTEM=="tty", ENV{DEVNAME}=="/dev/ttyS11", SYMLINK+="ttySTH3"
+SUBSYSTEM=="tty", ENV{DEVNAME}=="/dev/ttyS12", SYMLINK+="ttySTH4"
