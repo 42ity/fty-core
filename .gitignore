@@ -165,8 +165,6 @@ systemd/biostimer-compress-logs.service
 systemd/biostimer-loghost-rsyslog-netconsole.service
 !systemd/ipc-meta-setup.service.in
 systemd/ipc-meta-setup.service
-!systemd/legacy-asset.service.in
-systemd/legacy-asset.service
 
 !tools/tntnet-ExecStartPre.sh.in
 tools/tntnet-ExecStartPre.sh
@@ -240,3 +238,4 @@ database/mysql/test_averages_relative.sql
 
 *.git
 tmp
+setup/20-th-names.sh

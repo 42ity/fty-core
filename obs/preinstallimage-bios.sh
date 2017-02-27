@@ -181,6 +181,9 @@ cp /usr/share/bios/examples/config/rsyslog.d/08-ipc-remote.conf /etc/rsyslog.d/
 chown root:bios-admin /etc/rsyslog.d/08-ipc-remote.conf
 chmod 0660 /etc/rsyslog.d/08-ipc-remote.conf
 
+# persistent TH naming
+cp /usr/share/bios/examples/config/rules.d/90-ipc-persistent-th.rules /lib/udev/rules.d/
+
 ## Removable media mounting point for bios-admin group
 mkdir -p /mnt/USB
 chown root:bios-admin /mnt/USB

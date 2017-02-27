@@ -77,7 +77,8 @@ SUBDIRS =	docs/examples tools database/mysql
 # For many of the scripts here, you also want to update "client_SCRIPTS" below
 GENERATEDSCRIPTS = tools/run-test-doc.sh tools/db-init \
 	tools/verify-fs \
-	tools/tntnet-ExecStartPre.sh
+	tools/tntnet-ExecStartPre.sh \
+	setup/20-th-names.sh
 
 # Subdir-distributed file is also generated
 GENERATEDDATA =	docs/examples/sudoers.d/bios_00_base
@@ -365,8 +366,13 @@ obs_SCRIPTS	=  obs/preinstallimage-bios.sh
 EXTRA_DIST	+= $(obs_SCRIPTS)
 
 ipc_meta_setupdir = $(datadir)/@PACKAGE@/setup/
-ipc_meta_setup_SCRIPTS = $(top_srcdir)/setup/*.sh
-EXTRA_DIST += $(ipc_meta_setup_SCRIPTS)
+ipc_meta_setup_SCRIPTS = \
+	$(top_srcdir)/setup/20-fty-compat.sh \
+	$(top_builddir)/setup/20-th-names.sh
+
+EXTRA_DIST += \
+	$(top_srcdir)/setup/20-fty-compat.sh \
+	$(top_srcdir)/setup/20-th-names.sh.in
 
 # SystemD integrations files; if not enabled - variables remain empty
 SYSTEMD_UNITS_LOWLEVEL =
@@ -426,7 +432,7 @@ SYSTEMD_UNITS_EXTRA += \
 SYSTEMD_UNITS_TARGET_BIOS += \
                         bios-db-init.service \
                         bios-agent-inventory.service \
-                        legacy-asset.service
+                        bios-agent-inventory.service
 
 # Here we list the actual service-definition files that should be compiled
 # Enabled as part of 42ity presets
