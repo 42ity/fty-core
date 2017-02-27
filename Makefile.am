@@ -431,7 +431,6 @@ SYSTEMD_UNITS_EXTRA += \
 # And also some of the timer units and implementations below
 SYSTEMD_UNITS_TARGET_BIOS += \
                         bios-db-init.service \
-                        bios-agent-inventory.service \
                         bios-agent-inventory.service
 
 # Here we list the actual service-definition files that should be compiled
