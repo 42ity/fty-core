@@ -506,8 +506,5 @@ for F in "$INITSQL_FIRST" \
 	verify_schema_version "$F" || exit $?
 done
 
-# move asset.name to ext["name"] if does not already exists
-exec_sql_db 'INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element) SELECT "name", asset.name, asset.id_asset_element FROM t_bios_asset_element AS asset WHERE asset.id_asset_element NOT in (SELECT id_asset_element FROM t_bios_asset_ext_attributes AS ext WHERE ext.keytag="name");'
-
 echo "Database for 42ity - found and deemed sufficient"
 exit 0
