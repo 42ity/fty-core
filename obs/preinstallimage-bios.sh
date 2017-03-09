@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#   Copyright (c) 2014-2016 Eaton
+#   Copyright (c) 2014-2017 Eaton
 #
 #   This file is part of the Eaton 42ity project.
 #
@@ -128,12 +128,14 @@ EOF
 
 # 42ity configuration file
 mkdir -p /etc/default
+# Common envvars for systemd services, primarly
 touch /etc/default/bios
 chown www-data /etc/default/bios
+# ZConfig default settings, if populated
 touch /etc/default/bios.cfg
 chown www-data /etc/default/bios.cfg
 
-# workaround - wee need to change agents configuration from REST API config call
+# workaround - we need to change agents configuration from REST API config call
 # so let tntnet touch the files
 for cfg in $(find /etc/ -maxdepth 2 -name '*.cfg' | xargs grep 'verbose =' | cut -d ':' -f1 | sort -u | grep -v malamute); do
     chown www-data "${cfg}"
@@ -831,26 +833,26 @@ find /var/log -group bios-logread -exec chmod go-w '{}' \; || true
 find /var/log -group bios-logread -exec chmod g+r '{}' \; || true
 
 # 42ity renaming
-ln -sf /etc/default/bios /etc/default/fty
-ln -sf /etc/default/bios /etc/default/fty.cfg
-ln -sf /etc/bios /etc/fty
-ln -sf /etc/pam.d/bios /etc/pam.d/fty
-ln -sf /etc/tntnet/bios.d /etc/tntnet/fty.d
-ln -sf /usr/share/bios /usr/share/fty
-ln -sf /usr/share/bios/etc/default/bios /usr/share/fty/etc/default/fty
-ln -sf /usr/libexec/bios /usr/libexec/fty
-ln -sf /var/lib/bios /var/lib/fty
-## Backward compatibility for new (renamed) paths 
-ln -sf /var/lib/bios/bios-agent-cm      /var/lib/fty/fty-metric-compute
-ln -sf /var/lib/bios/agent-alerts-list  /var/lib/fty/fty-alert-list
-ln -sf /var/lib/bios/agent-autoconfig   /var/lib/fty/fty-autoconfig
-ln -sf /var/lib/bios/agent-outage       /var/lib/fty/fty-outage
-ln -sf /var/lib/bios/agent-smtp         /var/lib/fty/fty-email
-ln -sf /var/lib/bios/alert_agent        /var/lib/fty/fty-alert-engine
-ln -sf /var/lib/bios/bios-agent-rt      /var/lib/fty/fty-metric-cache
-ln -sf /var/lib/bios/composite-metrics  /var/lib/fty/fty-metric-composite
-ln -sf /var/lib/bios/nut                /var/lib/fty/fty-nut
-ln -sf /var/lib/bios/uptime             /var/lib/fty/fty-kpi-power-uptime
+ln -srf /etc/default/bios /etc/default/fty
+ln -srf /etc/default/bios.cfg /etc/default/fty.cfg
+ln -srf /etc/bios /etc/fty
+ln -srf /etc/pam.d/bios /etc/pam.d/fty
+ln -srf /etc/tntnet/bios.d /etc/tntnet/fty.d
+ln -srf /usr/share/bios /usr/share/fty
+ln -srf /usr/share/bios/etc/default/bios /usr/share/fty/etc/default/fty
+ln -srf /usr/libexec/bios /usr/libexec/fty
+ln -srf /var/lib/bios /var/lib/fty
+## Backward compatibility for new (renamed) paths
+ln -srf /var/lib/bios/bios-agent-cm      /var/lib/fty/fty-metric-compute
+ln -srf /var/lib/bios/agent-alerts-list  /var/lib/fty/fty-alert-list
+ln -srf /var/lib/bios/agent-autoconfig   /var/lib/fty/fty-autoconfig
+ln -srf /var/lib/bios/agent-outage       /var/lib/fty/fty-outage
+ln -srf /var/lib/bios/agent-smtp         /var/lib/fty/fty-email
+ln -srf /var/lib/bios/alert_agent        /var/lib/fty/fty-alert-engine
+ln -srf /var/lib/bios/bios-agent-rt      /var/lib/fty/fty-metric-cache
+ln -srf /var/lib/bios/composite-metrics  /var/lib/fty/fty-metric-composite
+ln -srf /var/lib/bios/nut                /var/lib/fty/fty-nut
+ln -srf /var/lib/bios/uptime             /var/lib/fty/fty-kpi-power-uptime
 
 sync
 echo "INFO: successfully reached the end of script: $0 $@"
