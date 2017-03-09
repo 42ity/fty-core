@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (C) 2014-2016 Eaton
+# Copyright (C) 2014-2017 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -175,6 +175,26 @@ $BIOSINFO_UIMAGE"
         BIOSINFO="$BIOSINFO
 Hardware details: CatalogNumber:$HWD_CATALOG_NB HWSpecRevision:$HWD_REV SerialNumber:$HWD_SERIAL_NB"
 
+# The device/container/VM UUID may be provided by caller somehow, e.g.
+# it might come from virtualization infrastructure (plug /proc/cmdline?)
+# Otherwise we generate it from whatever unique data we have.
+if [ -z "${UUID_VALUE-}" ]; then
+    [ -n "${UUID_NAMESPACE-}" ] || UUID_NAMESPACE="933d6c80-dea9-8c6b-d111-8b3b46a181f1"
+    # printf 'genepi''bios''ipm_converge' | sha1sum | sed 's,^\(........\)\(....\)\(....\)\(....\)\(............\).*$,\1-\2-\3-\4\-\5,'
+
+    UUID_VALUE="00000000-0000-0000-0000-000000000000"
+    if (which uuid >/dev/null 2>&1 ) ; then
+        UUID_VALUE="$(uuid -v5 "$UUID_NAMESPACE" "EATON""$HWD_CATALOG_NB""$HWD_SERIAL_NB")" || \
+        UUID_VALUE="00000000-0000-0000-0000-000000000000"
+    else
+        echo "WARNING: the uuid program is not available" >&2
+    fi
+fi
+
+[ -n "$UUID_VALUE" ] && \
+        BIOSINFO="$BIOSINFO
+Device UUID: $UUID_VALUE"
+
 rm -f ${ALTROOT}/etc/release-details.json ${ALTROOT}/etc/release-details || true
 # Remove the legacy one only if a file - do not rewrite the symlink to new location needlessly
 [ -s ${ALTROOT}/etc/bios-release.json ] && rm -f ${ALTROOT}/etc/bios-release.json || true
@@ -212,6 +232,7 @@ cat <<EOF > ${ALTROOT}/etc/release-details.json
         "hardware-catalog-number":      "$HWD_CATALOG_NB",
         "hardware-spec-revision":       "$HWD_REV",
         "hardware-serial-number":       "$HWD_SERIAL_NB"
+        "hardware-uuid":        "$UUID_VALUE"
 } }
 EOF
 if [ $? = 0 ] ; then
