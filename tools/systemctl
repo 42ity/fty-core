@@ -1,7 +1,7 @@
 #!/bin/bash
 # WARNING: bash syntax and capabilities are used intensively in code below!
 #
-# Copyright (C) 2015-2016 Eaton
+# Copyright (C) 2015-2017 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -236,15 +236,15 @@ Usage: ${SCRIPT_BASENAME} list-ipm-units [modifiers] [unitnames]
       --ipm-installed|--internal  List units developed as part of IPM
       --ipm-deps|--external       List units installed as dependencies for IPM
       --active                    List units with state "active" defined as:
-        if "ActiveState" is "failed" or "inactive", or if "SubState" is
-        "failed" or "dead" - skip this unit; else if "ActiveState" is
+        if "ActiveState" is "failed", "inactive", "activating", or "SubState"
+        is "failed" or "dead" - skip this unit; else if "ActiveState" is
         "active" or if "SubState" is "running" or "waiting" - show this unit;
         otherwise skip it
       --inactive|--not-active     List units with state "inactive" defined as:
         if "ActiveState" is "active" or if "SubState" is "running" or "waiting"
-        then skip this unit; else if "ActiveState" is "failed" or "inactive",
-        or if "SubState" is "failed" or "dead" or "exited" - show his unit;
-        otherwise skip it
+        then skip this unit; else if "ActiveState" is "failed", "inactive", or
+        "activating", or if "SubState" is "failed" or "dead" or "exited" - show
+        this unit; otherwise skip it
       --enabled                   List units with state "enabled" defined as:
         if "LoadState" is "not-loaded" or if "UnitFileState" is "disabled"
         then skip this unit; else if "LoadState" is "loaded" or "UnitFileState"
@@ -254,6 +254,8 @@ Usage: ${SCRIPT_BASENAME} list-ipm-units [modifiers] [unitnames]
         "static" or empty - skip this unit; otherwise show it
       --failed or --not-failed    List units that are in "failed" state vs.
                                   those that are running (or not) as expected
+                                  Note that "activating" is "failed" for us
+                                  (e.g. broken DB can be activating for days)
       --missing                   ONLY list unitnames that are in the filter
                                   but files are not installed in this system
       --init-script|--not-init-script ONLY list unit names that are implemented
@@ -798,7 +800,7 @@ $U"
                     case "$LIST_STATES" in
                         *STATE:ACTIVE*)
                             case "$I" in
-                                *[AS]:failed*|*A:inactive*|*S:dead*) SHOW2=no ;;
+                                *[AS]:failed*|*A:inactive*|*A:activating*|*S:dead*) SHOW2=no ;;
                                 *A:active*|*S:running*|*S:waiting*) SHOW2=yes ;;
                                 *S:exited*) SHOW2=no ;;
                                 *) SHOW2=no ;;
@@ -807,7 +809,7 @@ $U"
                         *STATE:INACTIVE*)
                             case "$I" in
                                 *A:active*|*S:running*|*S:waiting*) SHOW2=no ;;
-                                *[AS]:failed*|*A:inactive*|*S:dead*|*S:exited*) SHOW2=yes ;;
+                                *[AS]:failed*|*A:inactive*|*A:activating*|*S:dead*|*S:exited*) SHOW2=yes ;;
                                 *) SHOW2=no ;;
                             esac
                             ;;
@@ -816,13 +818,13 @@ $U"
                     case "$LIST_STATES" in
                         *STATE:FAILED*)
                             case "$I" in
-                                *[AS]:failed*|*:active*:dead*|*:enabled*:dead*) SHOW3=yes ;;
+                                *[AS]:failed*|*:active*:dead*|*A:activating*|*:enabled*:dead*) SHOW3=yes ;;
                                 *) SHOW3=no ;;
                             esac
                             ;;
                         *STATE:NOTFAILED*)
                             case "$I" in
-                                *[AS]:failed*|*:active*:dead*|*:enabled*:dead*) SHOW3=no ;;
+                                *[AS]:failed*|*:active*:dead*|*A:activating*|*:enabled*:dead*) SHOW3=no ;;
                                 *) SHOW3=yes ;;
                             esac
                             ;;
