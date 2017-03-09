@@ -1848,7 +1848,8 @@ logmsg_info "Completed '$_SCRIPT_NAME $_SCRIPT_ARGS' with result $ACTION_RESULT 
 
 if [ "${DO_REBOOT-}" = yes ]; then
 	logmsg_warn "Got new files and was asked to reboot in this case... trying to do so..."
-	reboot
+	sync
+	init 6
 fi
 
 exit $ACTION_RESULT
