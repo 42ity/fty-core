@@ -232,7 +232,7 @@ cat <<EOF > ${ALTROOT}/etc/release-details.json
         "hardware-catalog-number":      "$HWD_CATALOG_NB",
         "hardware-spec-revision":       "$HWD_REV",
         "hardware-serial-number":       "$HWD_SERIAL_NB"
-        "hardware-uuid":        "$UUID_VALUE"
+        "uuid":        "$UUID_VALUE"
 } }
 EOF
 if [ $? = 0 ] ; then
