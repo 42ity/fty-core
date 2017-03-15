@@ -58,7 +58,7 @@ export LANG LC_ALL TZ
 #   FW_UIMAGEPART_CSDEV     FW_UIMAGEPART_BYTES
 #   FW_UIMAGEPART_CSDEVPAD  FW_UIMAGEPART_SIZE
 #                       Details about uImage miniroot for this system
-#   HWD_CATALOG_NB  HWD_REV HWD_SERIAL_NB
+#   HWD_VENDOR HWD_CATALOG_NB HWD_REV HWD_SERIAL_NB
 #                       OEM details about hardware for this system
 # For now (code to be ported) we also expect pre-parsed markup in
 #   BIOSINFO_UBOOT          BIOSINFO_UIMAGE
@@ -171,20 +171,20 @@ $BIOSINFO_UBOOT"
         BIOSINFO="$BIOSINFO
 $BIOSINFO_UIMAGE"
 
-[ -n "$HWD_CATALOG_NB$HWD_REV$HWD_SERIAL_NB" ] && \
+[ -n "$HWD_VENDOR$HWD_CATALOG_NB$HWD_REV$HWD_SERIAL_NB" ] && \
         BIOSINFO="$BIOSINFO
-Hardware details: CatalogNumber:$HWD_CATALOG_NB HWSpecRevision:$HWD_REV SerialNumber:$HWD_SERIAL_NB"
+Hardware details: Vendor:$HWD_VENDOR CatalogNumber:$HWD_CATALOG_NB HWSpecRevision:$HWD_REV SerialNumber:$HWD_SERIAL_NB"
 
 # The device/container/VM UUID may be provided by caller somehow, e.g.
 # it might come from virtualization infrastructure (plug /proc/cmdline?)
 # Otherwise we generate it from whatever unique data we have.
 if [ -z "${UUID_VALUE-}" ]; then
-    [ -n "${UUID_NAMESPACE-}" ] || UUID_NAMESPACE="933d6c80-dea9-8c6b-d111-8b3b46a181f1"
-    # printf 'genepi''bios''ipm_converge' | sha1sum | sed 's,^\(........\)\(....\)\(....\)\(....\)\(............\).*$,\1-\2-\3-\4\-\5,'
+    [ -n "${UUID_NAMESPACE-}" ] || UUID_NAMESPACE="3aac7e03-aa86-8b7e-dab6-7021ed8de397"
+    # printf '42ity' | sha1sum | sed 's,^\(........\)\(....\)\(....\)\(....\)\(............\).*$,\1-\2-\3-\4\-\5,'
 
     UUID_VALUE="00000000-0000-0000-0000-000000000000"
     if (which uuid >/dev/null 2>&1 ) ; then
-        UUID_VALUE="$(uuid -v5 "$UUID_NAMESPACE" "EATON""$HWD_CATALOG_NB""$HWD_SERIAL_NB")" || \
+        UUID_VALUE="$(uuid -v5 "$UUID_NAMESPACE" "$HWD_VENDOR""$HWD_CATALOG_NB""$HWD_SERIAL_NB")" || \
         UUID_VALUE="00000000-0000-0000-0000-000000000000"
     else
         echo "WARNING: the uuid program is not available" >&2
@@ -229,6 +229,7 @@ cat <<EOF > ${ALTROOT}/etc/release-details.json
         "uimage-part-bytes":    "$FW_UIMAGEPART_BYTES",
         "uimage-padded-cksum":  "$FW_UIMAGEPART_CSDEVPAD",
         "uimage-padded-bytes":  "$FW_UIMAGEPART_SIZE",
+        "hardware-vendor":      "$HWD_VENDOR",
         "hardware-catalog-number":      "$HWD_CATALOG_NB",
         "hardware-spec-revision":       "$HWD_REV",
         "hardware-serial-number":       "$HWD_SERIAL_NB"
