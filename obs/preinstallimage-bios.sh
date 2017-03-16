@@ -851,6 +851,7 @@ ln -srf /var/lib/bios/agent-smtp         /var/lib/fty/fty-email
 ln -srf /var/lib/bios/alert_agent        /var/lib/fty/fty-alert-engine
 ln -srf /var/lib/bios/bios-agent-rt      /var/lib/fty/fty-metric-cache
 ln -srf /var/lib/bios/composite-metrics  /var/lib/fty/fty-metric-composite
+ln -srf /var/lib/bios/composite-metrics  /var/lib/fty/fty-sensor-env
 ln -srf /var/lib/bios/nut                /var/lib/fty/fty-nut
 ln -srf /var/lib/bios/uptime             /var/lib/fty/fty-kpi-power-uptime
 
