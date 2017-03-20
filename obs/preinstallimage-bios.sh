@@ -145,7 +145,7 @@ chmod a+r /etc/default/bios
 mkdir -p /etc/bios/nut/devices
 chown -R bios:bios-infra /etc/bios
 
-for conf in $(find /usr/lib/systemd/tmpfiles.d/*.conf); do
+for conf in $(find /usr/lib/tmpfiles.d/*.conf); do
     systemd-tmpfiles --create "${conf}"
 done
 
