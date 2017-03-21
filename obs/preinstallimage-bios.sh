@@ -145,7 +145,10 @@ chmod a+r /etc/default/bios
 mkdir -p /etc/bios/nut/devices
 chown -R bios:bios-infra /etc/bios
 
-for conf in $(find /usr/lib/tmpfiles.d/*.conf); do
+# NOTE: /usr/lib/systemd/tmpfiles.d/ is a legacy fallback:
+# we used this location before, and some of our packages
+# still deliver their configs there until fixed/rebuilt.
+for conf in $(find /usr/lib/tmpfiles.d/*.conf) $(find /usr/lib/systemd/tmpfiles.d/*.conf || true); do
     systemd-tmpfiles --create "${conf}"
 done
 
