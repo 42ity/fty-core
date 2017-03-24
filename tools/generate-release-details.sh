@@ -183,8 +183,11 @@ if [ -z "${UUID_VALUE-}" ]; then
     # printf '42ity' | sha1sum | sed 's,^\(........\)\(....\)\(....\)\(....\)\(............\).*$,\1-\2-\3-\4\-\5,'
 
     UUID_VALUE="00000000-0000-0000-0000-000000000000"
-    if (which uuid >/dev/null 2>&1 ) ; then
-        UUID_VALUE="$(uuid -v5 "$UUID_NAMESPACE" "$HWD_VENDOR""$HWD_CATALOG_NB""$HWD_SERIAL_NB")" || \
+    for UUID_PROG in ${ALTROOT}/usr/bin/uuid "`which uuid >/dev/null 2>&1`" ; do
+        [ -x "$UUID_PROG" ] && break
+    done
+    if [ -n "$UUID_PROG" ] && [ -x "$UUID_PROG" ] ; then
+        UUID_VALUE="$($UUID_PROG -v5 "$UUID_NAMESPACE" "$HWD_VENDOR""$HWD_CATALOG_NB""$HWD_SERIAL_NB")" || \
         UUID_VALUE="00000000-0000-0000-0000-000000000000"
     else
         echo "WARNING: the uuid program is not available" >&2
