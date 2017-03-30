@@ -848,7 +848,6 @@ ln -srf /var/lib/bios /var/lib/fty
 ## Backward compatibility for new (renamed) paths
 ln -srf /var/lib/bios/bios-agent-cm      /var/lib/fty/fty-metric-compute
 ln -srf /var/lib/bios/agent-alerts-list  /var/lib/fty/fty-alert-list
-ln -srf /var/lib/bios/agent-autoconfig   /var/lib/fty/fty-autoconfig
 ln -srf /var/lib/bios/agent-outage       /var/lib/fty/fty-outage
 ln -srf /var/lib/bios/agent-smtp         /var/lib/fty/fty-email
 ln -srf /var/lib/bios/alert_agent        /var/lib/fty/fty-alert-engine
@@ -859,6 +858,14 @@ ln -srf /var/lib/bios/composite-metrics  /var/lib/fty/fty-metric-composite
 ln -srf /var/lib/bios/composite-metrics/agent_th  /var/lib/fty/fty-sensor-env/agent_th
 ln -srf /var/lib/bios/nut                /var/lib/fty/fty-nut
 ln -srf /var/lib/bios/uptime             /var/lib/fty/fty-kpi-power-uptime
+
+# make a state directory for fty agent
+mkftydir () {
+    mkdir "${1}" && chown bios:root "${1}" && chmod 0755 "${1}"
+}
+
+# Stop using tmpfiles.d et all - this repo is supposed to be system integration stuff
+mkftydir -p /var/lib/fty/fty-autoconfig
 
 sync
 echo "INFO: successfully reached the end of script: $0 $@"
