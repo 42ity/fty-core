@@ -861,11 +861,11 @@ ln -srf /var/lib/bios/uptime             /var/lib/fty/fty-kpi-power-uptime
 
 # make a state directory for fty agent
 mkftydir () {
-    mkdir "${1}" && chown bios:root "${1}" && chmod 0755 "${1}"
+    mkdir -p "${1}" && chown bios:root "${1}" && chmod 0755 "${1}"
 }
 
 # Stop using tmpfiles.d et all - this repo is supposed to be system integration stuff
-mkftydir -p /var/lib/fty/fty-autoconfig
+mkftydir /var/lib/fty/fty-autoconfig
 
 sync
 echo "INFO: successfully reached the end of script: $0 $@"
