@@ -240,7 +240,7 @@ cat <<EOF > ${ALTROOT}/etc/release-details.json
         "hardware-vendor":      "$HWD_VENDOR",
         "hardware-catalog-number":      "$HWD_CATALOG_NB",
         "hardware-spec-revision":       "$HWD_REV",
-        "hardware-serial-number":       "$HWD_SERIAL_NB"
+        "hardware-serial-number":       "$HWD_SERIAL_NB",
         "uuid":        "$UUID_VALUE"
 } }
 EOF
