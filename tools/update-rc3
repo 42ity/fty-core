@@ -213,8 +213,9 @@ usage() {
     echo "  --(no-)erase-all           If a new OS image downloaded successfully, then"
     echo "                   request a factory reset and(!) NAND format after reboot"
     echo "  --touch-erase-all          Enforce a factory reset + NAND format next boot"
-    echo "  --reboot | -r              If a new image (OS, FW) downloaded successfully"
+    echo "  --reboot | -r | -R         If a new image (OS, FW) downloaded successfully"
     echo "                   request an immediate reboot as part of this script"
+    echo "                   With '-R' this reboots the system in either non-error case"
     echo "For HTTP(S) or FTP(S) based delivery, do not forget to set http_proxy URL as"
     echo "applicable for your environment. Current value is '$http_proxy'."
     echo "RETURN CODES: This script returns 0 if no newer images were found to download"
@@ -1664,7 +1665,8 @@ while [ $# -gt 0 ]; do
 		--touch-erase-all|--force-erase-all)
 		                        FLAG_ERASE_ALL="force" ;;
 		--no-erase-all)         FLAG_ERASE_ALL="no" ;;
-		--reboot|-r)            WANT_REBOOT="yes" ;;
+		--reboot|-r)            WANT_REBOOT="yes" ;; # reboot if code 42 - got new files ok
+		-R)                     WANT_REBOOT="force" ;; # reboot if exitcode 0 or 42
 		*)  die "Aborting due to unknown command-line argument(s): $*" ;;
 	esac
 	shift
@@ -1839,7 +1841,12 @@ case "$ACTION_RESULT" in
 		; then
 			ACTION_RESULT=42
 			ACTION_RESULT_STR="new files were downloaded successfully, you can reboot now to apply the updates"
-			[ "${WANT_REBOOT-}" = yes ] && DO_REBOOT=yes
+			logmsg_warn "Got new files and was asked to reboot in this case"
+			[ "${WANT_REBOOT-}" = yes -o "${WANT_REBOOT-}" = force ] && DO_REBOOT=yes
+		fi
+		if [ "$ACTION_RESULT" = 0 ] ; then
+			logmsg_warn "Got new files or no updates - and no errors, and was asked to reboot in this case"
+			[ "${WANT_REBOOT-}" = force ] && DO_REBOOT=yes
 		fi
 		;;
 esac
@@ -1847,7 +1854,7 @@ esac
 logmsg_info "Completed '$_SCRIPT_NAME $_SCRIPT_ARGS' with result $ACTION_RESULT ($ACTION_RESULT_STR)"
 
 if [ "${DO_REBOOT-}" = yes ]; then
-	logmsg_warn "Got new files and was asked to reboot in this case... trying to do so..."
+	logmsg_warn "Was asked to reboot... trying to do so..."
 	sync
 	init 6
 fi
