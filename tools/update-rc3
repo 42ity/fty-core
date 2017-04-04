@@ -201,7 +201,7 @@ usage() {
     echo "For the check* and download* methods, you can specify a full URL to the image"
     echo "file which you want rather than trying to detect the newest one available, with"
     echo "the following arguments ('raw' firmwares are the non-tarballed singular files):"
-    echo "  --url-image-os {URL} (expected checksum patterns should still exist nearby)"
+    echo "  --url-image-os|-U {URL} (expected checksum patterns should still exist nearby)"
     echo "  --url-image-fw-raw-uboot --url-image-fw-raw-uimage --url-image-fw-raw-modules"
     echo "  --(no-)erase-factory-reset If a new OS image downloaded successfully, touch"
     echo "                   the control file so 'init' does a factory reset after reboot"
@@ -1637,10 +1637,10 @@ while [ $# -gt 0 ]; do
 		--no-check-image-os)    ACTION_CHECK_OSIMAGE="no";;
 		--no-check-image-fw)    ACTION_CHECK_FWIMAGE="no";;
 		--no-check-images)      ACTION_CHECK_OSIMAGE="no"; ACTION_CHECK_FWIMAGE="no";;
-		--url-image-*)
+		--url-image-*|-U)
 		    [ $# -eq 1 ] && die "The '$1' option requires a further argument"
 		    case "${1-}" in
-		        --url-image-os)             URL_DOWNLOAD_OSIMAGE="$2"; shift;;
+		        --url-image-os|-U)          URL_DOWNLOAD_OSIMAGE="$2"; shift;;
 		        --url-image-fw-raw-uboot)   URL_DOWNLOAD_FWIMAGE_RAW_UBOOT="$2"; shift;;
 		        --url-image-fw-raw-uimage)  URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE="$2"; shift;;
 		        --url-image-fw-raw-modules) URL_DOWNLOAD_FWIMAGE_RAW_MODULES="$2"; shift;;
