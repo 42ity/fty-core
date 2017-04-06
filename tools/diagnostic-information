@@ -321,7 +321,7 @@ case ${OPERATION} in
         ;;
     "MAIL")
         create_diagnostic_archive
-        ( echo "See attached diagnostic information." | timeout 900 bios-sendmail -s "diagnostic information" -a "${WD}/${DIAGNOSTICFILE}" "${MAIL}" ) || \
+        ( echo "See attached diagnostic information." | timeout 900 fty-sendmail -s "diagnostic information" -a "${WD}/${DIAGNOSTICFILE}" "${MAIL}" ) || \
             ( echo "Failed to send email. Is mail-system configured?" >&2; false )
         rm -f "${WD}/${DIAGNOSTICFILE}"
         ;;
