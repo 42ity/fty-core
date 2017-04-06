@@ -125,14 +125,14 @@ ipm_services(){
 system_logs() {
     verbose "system logs..."
     mkdir -p "${WD}/${TMPDIR}/logs"
-    cp /var/log/messages* "${WD}/${TMPDIR}/logs/"
+    cp -H -f /var/log/messages* "${WD}/${TMPDIR}/logs/"
 }
 
 core_dumps() {
     verbose "coredumps..."
     mkdir -p "${WD}/${TMPDIR}/crash"
     if [ "${OPERATION}" = "USB" ]; then
-        find /var/crash -type f -exec cp {} "${WD}/${TMPDIR}/crash/" \;
+        find /var/crash -type f -exec cp -H -f {} "${WD}/${TMPDIR}/crash/" \;
     else
         FILE="${WD}/${TMPDIR}/crash/list-of-coredumps.txt"
         find /var/crash -type f >"${FILE}";
@@ -148,12 +148,12 @@ etc_files() {
     # and passwords copying
     verbose "etc..."
     mkdir -p "${WD}/${TMPDIR}/etc"
-    cp -r /etc/nut "${WD}/${TMPDIR}/etc/"
+    cp -r -H -f /etc/nut "${WD}/${TMPDIR}/etc/"
 }
 
 usr_share_bios_files() {
     verbose "/usr/share/bios..."
-    cp -r /usr/share/bios "${WD}/${TMPDIR}/usr-share-bios"
+    cp -r -H -f /usr/share/bios "${WD}/${TMPDIR}/usr-share-bios"
 }
 
 csv_export() {
