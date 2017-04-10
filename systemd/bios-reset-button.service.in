@@ -1,14 +1,21 @@
 [Unit]
 Description=Handles events from reset button we have on our RC
+# Runs: always, no conflicts
 
 [Service]
 Type=simple
-EnvironmentFile=-/usr/share/bios/etc/default/bios
-EnvironmentFile=-/usr/share/bios/etc/default/bios__%n.conf
-EnvironmentFile=-/etc/default/bios
-EnvironmentFile=-/etc/default/bios__%n.conf
-ExecStart=@datadir@/@PACKAGE@/scripts/reset-button.sh
+User=root
 Restart=always
+EnvironmentFile=-@prefix@/share/bios/etc/default/bios
+EnvironmentFile=-@prefix@/share/bios/etc/default/bios__%n.conf
+EnvironmentFile=-@prefix@/share/fty/etc/default/fty
+EnvironmentFile=-@prefix@/share/fty/etc/default/fty__%n.conf
+EnvironmentFile=-@sysconfdir@/default/bios
+EnvironmentFile=-@sysconfdir@/default/bios__%n.conf
+EnvironmentFile=-@sysconfdir@/default/fty
+EnvironmentFile=-@sysconfdir@/default/fty__%n.conf
+Environment="prefix=@prefix@"
+ExecStart=@datadir@/@PACKAGE@/scripts/reset-button.sh
 
 [Install]
 WantedBy=multi-user.target

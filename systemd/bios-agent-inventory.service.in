@@ -3,7 +3,7 @@ Description=Testing agent for CI purposes only
 
 [Service]
 Type=simple
-User=bios
+User=nobody
 ExecStart=/bin/cat
 
 [Install]

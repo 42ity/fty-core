@@ -857,6 +857,7 @@ ln -srf /var/lib/bios/composite-metrics  /var/lib/fty/fty-metric-composite
 # But a legacy system may have an agent file of its own...
 ln -srf /var/lib/bios/composite-metrics/agent_th  /var/lib/fty/fty-sensor-env/agent_th
 ln -srf /var/lib/bios/nut                /var/lib/fty/fty-nut
+ln -srf /var/lib/bios/nut                /var/lib/fty/nut
 ln -srf /var/lib/bios/uptime             /var/lib/fty/fty-kpi-power-uptime
 
 # make a state directory for fty agent
