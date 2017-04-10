@@ -71,6 +71,8 @@ mvln () {
     fi
 }
 
+# Handle certain config files
+# FIXME: Ownership by "www-data" seems wrong for many of these
 mvln /etc/agent-smtp/bios-agent-smtp.cfg /etc/fty-email/fty-email.cfg www-data: ""
 
 mvln /etc/agent-metric-store/bios-agent-ms.cfg /etc/fty-metric-store/fty-metric-store.cfg www-data: ""
