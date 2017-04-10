@@ -24,10 +24,19 @@
 #  \author  Michal Vyskocil <MichalVyskocil@Eaton.com>
 #
 
-# Move file to new location and link it back
+# Move old file to new location (if it exists and is not a symlink)
+# and link it back for legacy compatibility purposes; optionally
+# set new ownership and access rights on the newly located file
 mvln () {
-    OLD="${1}"
-    NEW="${2}"
+    OLD="${1-}"
+    NEW="${2-}"
+    OWN="${3-}"
+    MOD="${4-}"
+
+    if [[ ! -s "${OLD}" ]] || [[ -L "${OLD}" ]] ; then
+        # Nothing to relocate
+        return 0
+    fi
 
     OLD_DIR=$(dirname "${OLD}")
     NEW_DIR=$(dirname "${NEW}")
@@ -39,19 +48,22 @@ mvln () {
         mv "${OLD}" "${NEW}"
     fi
     ln -srf "${NEW}" "${OLD}"
+
+    if [[ -n "${OWN}" ]] ; then
+        chown "${OWN}" "${NEW}"
+    fi
+
+    if [[ -n "${MOD}" ]] ; then
+        chmod "${MOD}" "${NEW}"
+    fi
 }
 
-mvln /etc/agent-smtp/bios-agent-smtp.cfg /etc/fty-email/fty-email.cfg
-chown www-data: /etc/fty-email/fty-email.cfg
+mvln /etc/agent-smtp/bios-agent-smtp.cfg /etc/fty-email/fty-email.cfg www-data: ""
 
-mvln /etc/agent-metric-store/bios-agent-ms.cfg /etc/fty-metric-store/fty-metric-store.cfg
-chown www-data: /etc/fty-metric-store/fty-metric-store.cfg
+mvln /etc/agent-metric-store/bios-agent-ms.cfg /etc/fty-metric-store/fty-metric-store.cfg www-data: ""
 
-mvln /etc/agent-nut/bios-agent-nut.cfg /etc/fty-nut/fty-nut.cfg
-chown www-data: /etc/fty-nut/fty-nut.cfg
+mvln /etc/agent-nut/bios-agent-nut.cfg /etc/fty-nut/fty-nut.cfg www-data: ""
 
-mvln /etc/default/bios.cfg /etc/default/fty.cfg
-chown www-data: /etc/default/fty.cfg
+mvln /etc/default/bios.cfg /etc/default/fty.cfg www-data: ""
 
-mvln /etc/default/bios /etc/default/fty
-chown www-data: /etc/default/fty
+mvln /etc/default/bios /etc/default/fty www-data: ""
