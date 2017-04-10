@@ -38,7 +38,7 @@ mvln () {
     if [[ -f "${OLD}" ]]; then
         mv "${OLD}" "${NEW}"
     fi
-    ln -sf "${NEW}" "${OLD}"
+    ln -srf "${NEW}" "${OLD}"
 }
 
 mvln /etc/agent-smtp/bios-agent-smtp.cfg /etc/fty-email/fty-email.cfg
