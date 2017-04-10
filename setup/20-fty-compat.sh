@@ -32,6 +32,7 @@ mvln () {
     NEW="${2-}"
     OWN="${3-}"
     MOD="${4-}"
+    RECURSE_FLAG=""
 
     if [[ ! -s "${OLD}" ]] || [[ -L "${OLD}" ]] ; then
         # Nothing to relocate
@@ -44,17 +45,29 @@ mvln () {
     mkdir -p "${OLD_DIR}"
     mkdir -p "${NEW_DIR}"
 
-    if [[ -f "${OLD}" ]]; then
-        mv "${OLD}" "${NEW}"
+    if [[ -d "${OLD}" ]]; then
+        # Create dirs, symlink files; chmod+chown later
+        ( cd "${OLD}" && find . | while read LINE ; do
+            mvln "${OLD}/${LINE}" "${NEW}/${LINE}" "" "" || exit
+          fi )
+        RECURSE_FLAG="-R"
+    else
+        if [[ -f "${OLD}" ]]; then
+            if [[ -e "${NEW}" ]]; then
+                mv "${OLD}" "${NEW}.old-bios"
+            else
+                mv "${OLD}" "${NEW}"
+            fi
+        fi
+        ln -srf "${NEW}" "${OLD}" # Do this even if expected NEW file is currently missing
     fi
-    ln -srf "${NEW}" "${OLD}"
 
-    if [[ -n "${OWN}" ]] ; then
-        chown "${OWN}" "${NEW}"
+    if [[ -n "${OWN}" ]] && [[ -e "${NEW}" ]] ; then
+        chown $RECURSE_FLAG "${OWN}" "${NEW}"
     fi
 
-    if [[ -n "${MOD}" ]] ; then
-        chmod "${MOD}" "${NEW}"
+    if [[ -n "${MOD}" ]] && [[ -e "${NEW}" ]] ; then
+        chmod $RECURSE_FLAG "${MOD}" "${NEW}"
     fi
 }
 
