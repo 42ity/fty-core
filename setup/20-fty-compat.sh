@@ -82,3 +82,6 @@ mvln /etc/agent-nut/bios-agent-nut.cfg /etc/fty-nut/fty-nut.cfg www-data: ""
 mvln /etc/default/bios.cfg /etc/default/fty.cfg www-data: ""
 
 mvln /etc/default/bios /etc/default/fty www-data: ""
+
+# Dirs with same content and access rights
+mvln /var/lib/fty/nut /var/lib/fty/fty-nut
