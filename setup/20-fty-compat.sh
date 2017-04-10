@@ -30,7 +30,7 @@ mvln () {
     NEW="${2}"
 
     OLD_DIR=$(dirname "${OLD}")
-    NEW_DIR=$(dirname "${NEW_}")
+    NEW_DIR=$(dirname "${NEW}")
 
     mkdir -p "${OLD_DIR}"
     mkdir -p "${NEW_DIR}"
