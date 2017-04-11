@@ -1,5 +1,5 @@
 [Unit]
-Description=Generates fake temperature and humidity readings
+Description=Generates fake temperature and humidity readings for CI
 Requires=malamute.service
 After=malamute.service
 PartOf=bios.target

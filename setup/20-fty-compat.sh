@@ -24,28 +24,64 @@
 #  \author  Michal Vyskocil <MichalVyskocil@Eaton.com>
 #
 
-# Move file to new location and link it back
+# Move old file to new location (if it exists and is not a symlink)
+# and link it back for legacy compatibility purposes; optionally
+# set new ownership and access rights on the newly located file
 mvln () {
-    OLD="${1}"
-    NEW="${2}"
+    OLD="${1-}"
+    NEW="${2-}"
+    OWN="${3-}"
+    MOD="${4-}"
+    RECURSE_FLAG=""
+
+    if [[ ! -s "${OLD}" ]] || [[ -L "${OLD}" ]] ; then
+        # Nothing to relocate
+        return 0
+    fi
 
     OLD_DIR=$(dirname "${OLD}")
-    NEW_DIR=$(dirname "${NEW_}")
+    NEW_DIR=$(dirname "${NEW}")
 
     mkdir -p "${OLD_DIR}"
     mkdir -p "${NEW_DIR}"
 
-    if [[ -f "${OLD}" ]]; then
-        mv "${OLD}" "${NEW}"
+    if [[ -d "${OLD}" ]]; then
+        # Create dirs, symlink files; chmod+chown later
+        ( cd "${OLD}" && find . | while read LINE ; do
+            mvln "${OLD}/${LINE}" "${NEW}/${LINE}" "" "" || exit
+          fi )
+        RECURSE_FLAG="-R"
+    else
+        if [[ -f "${OLD}" ]]; then
+            if [[ -e "${NEW}" ]]; then
+                mv "${OLD}" "${NEW}.old-bios"
+            else
+                mv "${OLD}" "${NEW}"
+            fi
+        fi
+        ln -srf "${NEW}" "${OLD}" # Do this even if expected NEW file is currently missing
     fi
-    ln -sf "${NEW}" "${OLD}"
+
+    if [[ -n "${OWN}" ]] && [[ -e "${NEW}" ]] ; then
+        chown $RECURSE_FLAG "${OWN}" "${NEW}"
+    fi
+
+    if [[ -n "${MOD}" ]] && [[ -e "${NEW}" ]] ; then
+        chmod $RECURSE_FLAG "${MOD}" "${NEW}"
+    fi
 }
 
-mvln /etc/agent-smtp/bios-agent-smtp.cfg /etc/fty-email/fty-email.cfg
-chown www-data: /etc/fty-email/fty-email.cfg
-mvln /etc/agent-metric-store/bios-agent-ms.cfg /etc/fty-metric-store/fty-metric-store.cfg
-chown www-data: /etc/fty-metric-store/fty-metric-store.cfg
-mvln /etc/agent-nut/bios-agent-nut.cfg /etc/fty-nut/fty-nut.cfg
-chown www-data: /etc/fty-nut/fty-nut.cfg
-mvln /etc/default/bios.cfg /etc/default/fty.cfg
-chown www-data: /etc/default/fty.cfg
+# Handle certain config files
+# FIXME: Ownership by "www-data" seems wrong for many of these
+mvln /etc/agent-smtp/bios-agent-smtp.cfg /etc/fty-email/fty-email.cfg www-data: ""
+
+mvln /etc/agent-metric-store/bios-agent-ms.cfg /etc/fty-metric-store/fty-metric-store.cfg www-data: ""
+
+mvln /etc/agent-nut/bios-agent-nut.cfg /etc/fty-nut/fty-nut.cfg www-data: ""
+
+mvln /etc/default/bios.cfg /etc/default/fty.cfg www-data: ""
+
+mvln /etc/default/bios /etc/default/fty www-data: ""
+
+# Dirs with same content and access rights
+mvln /var/lib/fty/nut /var/lib/fty/fty-nut
