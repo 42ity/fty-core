@@ -29,7 +29,7 @@
 # and link it back for legacy compatibility purposes; optionally
 # set new ownership and access rights on the newly located file.
 # If OLD filesystem object is a directory, recurse with mvln() for
-# each object found inside it.
+# each object found inside it. See mvlndir() for wholesale relocation.
 # Note: This assumes manipulations with files in deployment local
 # data and config directories (not packaged) - so if some target
 # filenames exist under FTY paths, we should not overwrite them with
@@ -80,6 +80,26 @@ mvln () {
     if [[ -n "${MOD}" ]] && [[ -e "${NEW}" ]] ; then
         chmod $RECURSE_FLAG "${MOD}" "${NEW}"
     fi
+}
+
+# Simply move a whole existing OLD directory to a NEW name, if NEW does not
+# yet exist, and add a legacy symlink with the OLD name pointing to the NEW
+# location.
+mvlndir() {
+    OLD="${1-}"
+    NEW="${2-}"
+
+    [[ -d "${NEW}" ]] && return 0
+
+    if [[ ! -d "${OLD}" ]] || [[ -e "${NEW}" ]] ; then
+        return 1
+    fi
+
+    NEW_DIR=$(dirname "${NEW}") && \
+    [[ -n "${NEW_DIR}" ]] && \
+    mkdir -p "${NEW_DIR}" && \
+    mv "${OLD}" "${NEW}" && \
+    ln -srf "${NEW}" "${OLD}"
 }
 
 # Handle certain config files
