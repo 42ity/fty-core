@@ -976,8 +976,15 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 	VM_SHOULD_RESTART=yes
 fi
 
-if [ -s "${ALTROOT}/usr/share/bios/scripts/generate-release-details.sh" \
-  -a -x "${ALTROOT}/usr/share/bios/scripts/generate-release-details.sh" \
+if [ -z "${GEN_REL_DETAILS-}" ] ; then
+    GEN_REL_DETAILS=""
+    for F in "${ALTROOT}/usr/share/fty/scripts/generate-release-details.sh" \
+        "${ALTROOT}/usr/share/bios/scripts/generate-release-details.sh" ; do
+            [ -s "$F" ] && [ -x "$F" ] && GEN_REL_DETAILS="$F" && break
+    done
+fi
+
+if [ -n "${GEN_REL_DETAILS}" -a -s "${GEN_REL_DETAILS}" -a -x "${GEN_REL_DETAILS}" \
 ]; then (
 	export ALTROOT
 	export OSIMAGE_FILENAME OSIMAGE_LSINFO OSIMAGE_CKSUM
@@ -996,8 +1003,8 @@ if [ -s "${ALTROOT}/usr/share/bios/scripts/generate-release-details.sh" \
 	export FW_UIMAGEPART_CSDEVPAD  FW_UIMAGEPART_SIZE
 	export HWD_CATALOG_NB  HWD_REV HWD_SERIAL_NB
 
-	logmsg_info "Generating the release details file(s) with the script in OS image"
-	"${ALTROOT}/usr/share/bios/scripts/generate-release-details.sh"
+	logmsg_info "Generating the release details file(s) with the ${GEN_REL_DETAILS} script in OS image"
+	"${GEN_REL_DETAILS}"
 ) ; fi
 
 if [ "$VM_SHOULD_RESTART" = yes ]; then

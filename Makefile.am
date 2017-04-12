@@ -81,7 +81,7 @@ GENERATEDSCRIPTS = tools/run-test-doc.sh tools/db-init \
 	setup/20-th-names.sh
 
 # Subdir-distributed file is also generated
-GENERATEDDATA =	docs/examples/sudoers.d/bios_00_base
+GENERATEDDATA =	docs/examples/sudoers.d/fty_00_base
 EXTRA_DIST +=	$(GENERATEDSCRIPTS) $(GENERATEDDATA)
 CLEANFILES +=	$(GENERATEDSCRIPTS) $(GENERATEDDATA)
 

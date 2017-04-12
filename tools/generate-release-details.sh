@@ -101,8 +101,15 @@ v_echo_ts() {
 # ? OSIMAGE_BTS         Build timestamp of OS image (can be found inside)
 # ? OSIMAGE_TYPE        IMGTYPE of OS image (can be found inside)
 
+if [ -z "${GIT_DETAILS_FILE-}" ]; then
+        for F in ${ALTROOT}/usr/share/fty/.git_details \
+            ${ALTROOT}/usr/share/bios/.git_details ; do
+                [ -s "$F" ] && GIT_DETAILS_FILE="$F" && break
+        done
+fi
+
 BIOSINFO="Readonly base OS image: `basename "$OSIMAGE_FILENAME"`
-`. ${ALTROOT}/usr/share/bios/.git_details >/dev/null 2>&1 && echo "42ity 'core' version:   $PACKAGE_GIT_HASH_S_ESCAPED @ $PACKAGE_GIT_TSTAMP_ISO8601_ESCAPED"`"
+`. ${GIT_DETAILS_FILE} >/dev/null 2>&1 && echo "42ity 'core' version:   $PACKAGE_GIT_HASH_S_ESCAPED @ $PACKAGE_GIT_TSTAMP_ISO8601_ESCAPED"`"
 
 OSIMAGE_BTS=""
 OSIMAGE_TYPE=""
@@ -219,7 +226,7 @@ cat <<EOF > ${ALTROOT}/etc/release-details.json
         "modimage-lsinfo":      "$MODIMAGE_LSINFO",
         "modimage-filename":    "$MODIMAGE_FILENAME",
         "modimage-cksum":       "$MODIMAGE_CKSUM",
-`. ${ALTROOT}/usr/share/bios/.git_details >/dev/null 2>&1 && printf '\t"bios-core-commit-id":\t"%s",\n\t"bios-core-commit-ts":\t"%s",\n' "$PACKAGE_GIT_HASH_S_ESCAPED" "$PACKAGE_GIT_TSTAMP_ISO8601_ESCAPED" `
+`. ${GIT_DETAILS_FILE} >/dev/null 2>&1 && printf '\t"bios-core-commit-id":\t"%s",\n\t"bios-core-commit-ts":\t"%s",\n' "$PACKAGE_GIT_HASH_S_ESCAPED" "$PACKAGE_GIT_TSTAMP_ISO8601_ESCAPED" `
         "bios-web-commit-id":   "$WEBUI_ID",
         "bios-web-commit-ts":   "$WEBUI_TS",
         "bios-web-build-ts":    "$WEBUI_BTS",

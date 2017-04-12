@@ -9,13 +9,13 @@ EXTRA_DIST =
 	cd ../.. && $(MAKE) `echo "$(CURDIR)/$@" | sed 's,^$(abs_top_builddir)/,,'`
 
 examplecfgsudodir	= $(datarootdir)/@PACKAGE@/examples/config/sudoers.d
-examplecfgsudo_DATA	= sudoers.d/bios_00_base sudoers.d/bios_01_citest
+examplecfgsudo_DATA	= sudoers.d/fty_00_base sudoers.d/fty_01_citest
 
 examplecfgpamdir	= $(datarootdir)/@PACKAGE@/examples/config/pam.d
-examplecfgpam_DATA	= pam.d/bios
+examplecfgpam_DATA	= pam.d/fty
 
 examplecfgsecdir	= $(datarootdir)/@PACKAGE@/examples/config/security
-examplecfgsec_DATA	= security/bios_groups.conf
+examplecfgsec_DATA	= security/fty_groups.conf
 
 examplecfgupdatedir	= $(datarootdir)/@PACKAGE@/examples/config/update-rc3.d
 examplecfgupdate_DATA	= \
@@ -36,8 +36,8 @@ exampleprofiledir	= $(datarootdir)/@PACKAGE@/examples/config/profile.d
 exampleprofile_DATA     = \
 			profile.d/bash_history.sh \
 			profile.d/bash_syslog.sh \
-			profile.d/bios_aliases.sh \
-			profile.d/bios_path.sh \
+			profile.d/fty_aliases.sh \
+			profile.d/fty_path.sh \
 			profile.d/lang.sh
 
 exampleudevrulesdir = $(datarootdir)/@PACKAGE@/examples/config/rules.d
