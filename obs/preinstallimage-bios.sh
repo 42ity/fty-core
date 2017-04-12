@@ -148,7 +148,7 @@ mkdir -p /etc/default
 # Common envvars for systemd services, primarily
 touch /etc/default/fty
 chown www-data /etc/default/fty
-chmod a+r /etc/default/fty
+chmod 644 /etc/default/fty
 # ZConfig default settings, if populated
 touch /etc/default/fty.cfg
 chown www-data /etc/default/fty.cfg

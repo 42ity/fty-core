@@ -39,7 +39,7 @@ echo "Make sure we have a config file..."
 echo "Make sure we have _bios-script password..."
 @datadir@/@PACKAGE@/scripts/_bios-script.sh
 
-F=/etc/default/bios
+F=/etc/default/fty
 echo "Make sure '$F' exists and is properly owned..."
 test -f "${F}" || touch ${F}
 chown www-data: ${F}
