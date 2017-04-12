@@ -41,7 +41,7 @@ mvln () {
     MOD="${4-}"
     RECURSE_FLAG=""
 
-    if [[ ! -s "${OLD}" ]] || [[ -L "${OLD}" ]] ; then
+    if [[ ! -e "${OLD}" ]] || [[ ! -s "${OLD}" ]] || [[ -L "${OLD}" ]] ; then
         # Nothing to relocate
         return 0
     fi
