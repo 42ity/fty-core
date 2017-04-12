@@ -22,11 +22,18 @@
 #! \file    20-fty-compat.sh
 #  \brief   Create compat symlinks
 #  \author  Michal Vyskocil <MichalVyskocil@Eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #
 
-# Move old file to new location (if it exists and is not a symlink)
+# Move an OLD file to NEW location (if it exists and is not a symlink)
 # and link it back for legacy compatibility purposes; optionally
-# set new ownership and access rights on the newly located file
+# set new ownership and access rights on the newly located file.
+# If OLD filesystem object is a directory, recurse with mvln() for
+# each object found inside it.
+# Note: This assumes manipulations with files in deployment local
+# data and config directories (not packaged) - so if some target
+# filenames exist under FTY paths, we should not overwrite them with
+# files from legacy BIOS paths.
 mvln () {
     OLD="${1-}"
     NEW="${2-}"
@@ -54,12 +61,16 @@ mvln () {
     else
         if [[ -f "${OLD}" ]]; then
             if [[ -e "${NEW}" ]]; then
+                # If new setup has a file in an unpackaged directory
+                # (so created by updated services), keep it in place.
                 mv "${OLD}" "${NEW}.old-bios"
             else
                 mv "${OLD}" "${NEW}"
             fi
         fi
-        ln -srf "${NEW}" "${OLD}" # Do this even if expected NEW file is currently missing
+
+        # Make this symlink even if expected NEW file is currently missing
+        ln -srf "${NEW}" "${OLD}"
     fi
 
     if [[ -n "${OWN}" ]] && [[ -e "${NEW}" ]] ; then
@@ -72,7 +83,8 @@ mvln () {
 }
 
 # Handle certain config files
-# FIXME: Ownership by "www-data" seems wrong for many of these
+# FIXME: Ownership by "www-data" seems wrong for many of these, unless
+# we deliberately want web-server to edit these files (may be true)?
 mvln /etc/agent-smtp/bios-agent-smtp.cfg /etc/fty-email/fty-email.cfg www-data: ""
 
 mvln /etc/agent-metric-store/bios-agent-ms.cfg /etc/fty-metric-store/fty-metric-store.cfg www-data: ""
