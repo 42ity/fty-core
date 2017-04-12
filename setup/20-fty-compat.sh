@@ -46,11 +46,11 @@ mvln () {
         return 0
     fi
 
-    OLD_DIR=$(dirname "${OLD}")
-    NEW_DIR=$(dirname "${NEW}")
+    OLD_DIR=$(dirname "${OLD}") && [[ -n "${OLD_DIR}" ]] || return
+    NEW_DIR=$(dirname "${NEW}") && [[ -n "${NEW_DIR}" ]] || return
 
-    mkdir -p "${OLD_DIR}"
-    mkdir -p "${NEW_DIR}"
+    mkdir -p "${OLD_DIR}" || return
+    mkdir -p "${NEW_DIR}" || return
 
     if [[ -d "${OLD}" ]]; then
         # Create dirs, symlink files; chmod+chown later
