@@ -256,6 +256,8 @@ EOF
 
 
 # Setup APT package sources
+# Note: do not change the 'Pool\:/master' reference below because it may be
+# substituted to corresponding actual repository during OBS image creation.
 mkdir -p /etc/apt/sources.list.d
 cat > /etc/apt/sources.list.d/debian.list <<EOF
 deb http://ftp.debian.org/debian jessie main contrib non-free
