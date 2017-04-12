@@ -58,7 +58,7 @@ mvln () {
         ( cd "${OLD}" && find . | while read LINE ; do
             case "${LINE}" in
                 ""|.|./) ;;
-                mvln "${OLD}/${LINE}" "${NEW}/${LINE}" "" "" || exit ;;
+                *) mvln "${OLD}/${LINE}" "${NEW}/${LINE}" "" "" || exit ;;
             esac
           done )
         RECURSE_FLAG="-R"
