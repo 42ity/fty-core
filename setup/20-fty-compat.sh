@@ -131,6 +131,7 @@ mvln /usr/share/bios /usr/share/fty
 mvlndir /usr/share/bios/etc/default/bios /usr/share/fty/etc/default/fty
 
 ## Backward compatibility for new (renamed) paths
+mvlndir /var/lib/bios/sql             /var/lib/fty/sql
 mvln /var/lib/bios/bios-agent-cm      /var/lib/fty/fty-metric-compute
 mvln /var/lib/bios/agent-alerts-list  /var/lib/fty/fty-alert-list
 mvln /var/lib/bios/agent-outage       /var/lib/fty/fty-outage
