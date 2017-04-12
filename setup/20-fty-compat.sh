@@ -84,7 +84,8 @@ mvln () {
 
 # Simply move a whole existing OLD directory to a NEW name, if NEW does not
 # yet exist, and add a legacy symlink with the OLD name pointing to the NEW
-# location.
+# location. Generally it is safer (but slower) to mvln() recursively, with
+# existence checks done for each object along the way.
 mvlndir() {
     OLD="${1-}"
     NEW="${2-}"
