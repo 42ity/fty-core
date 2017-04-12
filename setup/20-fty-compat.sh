@@ -117,4 +117,31 @@ mvln /etc/default/bios.cfg /etc/default/fty.cfg www-data: ""
 mvln /etc/default/bios /etc/default/fty www-data: ""
 
 # Dirs with same content and access rights
-mvln /var/lib/fty/nut /var/lib/fty/fty-nut
+mvlndir /var/lib/fty/nut /var/lib/fty/fty-nut
+
+# 42ity renaming
+mvln /etc/bios /etc/fty
+mvln /etc/pam.d/bios /etc/pam.d/fty
+mvln /etc/tntnet/bios.d /etc/tntnet/fty.d
+mvln /usr/libexec/bios /usr/libexec/fty
+mvln /var/lib/bios/license /var/lib/fty/license
+
+# Warning: order matters, somewhat
+mvln /usr/share/bios /usr/share/fty
+mvlndir /usr/share/bios/etc/default/bios /usr/share/fty/etc/default/fty
+
+## Backward compatibility for new (renamed) paths
+mvln /var/lib/bios/bios-agent-cm      /var/lib/fty/fty-metric-compute
+mvln /var/lib/bios/agent-alerts-list  /var/lib/fty/fty-alert-list
+mvln /var/lib/bios/agent-outage       /var/lib/fty/fty-outage
+mvln /var/lib/bios/agent-smtp         /var/lib/fty/fty-email
+mvln /var/lib/bios/alert_agent        /var/lib/fty/fty-alert-engine
+mvln /var/lib/bios/bios-agent-rt      /var/lib/fty/fty-metric-cache
+mvln /var/lib/bios/composite-metrics  /var/lib/fty/fty-metric-composite
+mvln /var/lib/bios/nut                /var/lib/fty/fty-nut
+mvln /var/lib/bios/nut                /var/lib/fty/nut
+mvln /var/lib/bios/uptime             /var/lib/fty/fty-kpi-power-uptime
+
+# The /var/lib/fty/fty-sensor-env should now be created via tmpfiles
+# But a legacy system may have an agent file of its own...
+mvln /var/lib/bios/composite-metrics/agent_th  /var/lib/fty/fty-sensor-env/agent_th
