@@ -71,8 +71,8 @@ docs/doxygen/html/
 docs/doxygen/doxygen_sqlite3.db
 docs/doxygen/*.tmp
 
-docs/examples/sudoers.d/bios_00_base
-!docs/examples/sudoers.d/bios_00_base.in
+docs/examples/sudoers.d/fty_00_base
+!docs/examples/sudoers.d/fty_00_base.in
 
 .test.log
 .test.trs

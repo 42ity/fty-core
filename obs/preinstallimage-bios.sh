@@ -118,8 +118,12 @@ mkdir -p /home/monitor && chown monitor:bios-dash /home/monitor
 useradd -m _bios-script -N -g bios-admin -G sasl -s /usr/sbin/nologin
 
 # Workplace for the webserver and graph daemons
-mkdir -p /var/lib/bios
-chown -R www-data /var/lib/bios
+if [ -d /var/lib/bios -a ! -d /var/lib/fty ]; then
+    mv /var/lib/bios /var/lib/fty && \
+    ln -sfr /var/lib/fty /var/lib/bios
+fi
+mkdir -p /var/lib/fty
+chown -R www-data /var/lib/fty
 
 # The bios-boot::init script assumes only the first line of /etc/issue to be useful
 cat > /etc/issue << EOF
@@ -128,22 +132,21 @@ EOF
 
 # 42ity configuration file
 mkdir -p /etc/default
-# Common envvars for systemd services, primarly
-touch /etc/default/bios
-chown www-data /etc/default/bios
+# Common envvars for systemd services, primarily
+touch /etc/default/fty
+chown www-data /etc/default/fty
+chmod a+r /etc/default/fty
 # ZConfig default settings, if populated
-touch /etc/default/bios.cfg
-chown www-data /etc/default/bios.cfg
+touch /etc/default/fty.cfg
+chown www-data /etc/default/fty.cfg
 
 # workaround - we need to change agents configuration from REST API config call
 # so let tntnet touch the files
+# FIXME: Limit this to specific pathnames or patterns, e.g.
+#   find ... | egrep 'bios|fty' | xargs ... ???
 for cfg in $(find /etc/ -maxdepth 2 -name '*.cfg' | xargs grep 'verbose =' | cut -d ':' -f1 | sort -u | grep -v malamute); do
     chown www-data "${cfg}"
 done
-
-chmod a+r /etc/default/bios
-mkdir -p /etc/bios/nut/devices
-chown -R bios:bios-infra /etc/bios
 
 # NOTE: /usr/lib/systemd/tmpfiles.d/ is a legacy fallback:
 # we used this location before, and some of our packages
@@ -152,10 +155,27 @@ for conf in $(find /usr/lib/tmpfiles.d/*.conf) $(find /usr/lib/systemd/tmpfiles.
     systemd-tmpfiles --create "${conf}"
 done
 
+# LEGACY PROBLEM NOTE: note that (older) uImage::init can reference
+# the legacy path too, so we create the symlink here regardless of
+# ipc-meta-setup.sh used for most of legacy links during first boot -
+# these particular paths we may need in RO OS image archives already.
+# Same problem holds for generate-release-details script and some other
+# paths; also the macro PACKAGE==bios is due to configure.ac currently
+# in both fty-core and fty-rest.
+if [ -d /usr/share/bios -a ! -d /usr/share/fty ] ; then
+    mv /usr/share/bios /usr/share/fty && \
+    ln -srf /usr/share/fty /usr/share/bios || true
+fi
+
+if [ -d /usr/libexec/bios -a ! -d /usr/libexec/fty ] ; then
+    mv /usr/libexec/bios /usr/libexec/fty && \
+    ln -srf /usr/libexec/fty /usr/libexec/bios || true
+fi
+
 # Setup 42ity lenses
-mkdir -p /usr/share/bios/lenses
+mkdir -p /usr/share/fty/lenses
 ln -sr /usr/share/augeas/lenses/dist/{build,ethers,interfaces,ntp,ntpd,pam,resolv,rx,sep,util,shellvars}.aug \
-    /usr/share/bios/lenses
+    /usr/share/fty/lenses
 
 # Setup u-Boot
 echo '/dev/mtd3 0x00000 0x40000 0x40000' > /etc/fw_env.config
@@ -179,21 +199,21 @@ mv -f /etc/rsyslog.conf.tmp /etc/rsyslog.conf
 echo '$PreserveFQDN on' > /etc/rsyslog.d-early/00-PreserveFQDN.conf
 
 ## normal logging
-cp /usr/share/bios/examples/config/rsyslog.d/10-ipc.conf /etc/rsyslog.d/
+cp /usr/share/fty/examples/config/rsyslog.d/10-ipc.conf /etc/rsyslog.d/
 
 ## remote logging template - changeable by end-user admins
-cp /usr/share/bios/examples/config/rsyslog.d/08-ipc-remote.conf /etc/rsyslog.d/
+cp /usr/share/fty/examples/config/rsyslog.d/08-ipc-remote.conf /etc/rsyslog.d/
 chown root:bios-admin /etc/rsyslog.d/08-ipc-remote.conf
 chmod 0660 /etc/rsyslog.d/08-ipc-remote.conf
 
 # persistent TH naming
-cp /usr/share/bios/examples/config/rules.d/90-ipc-persistent-th.rules /lib/udev/rules.d/
+cp /usr/share/fty/examples/config/rules.d/90-ipc-persistent-th.rules /lib/udev/rules.d/
 
 ## Removable media mounting point for bios-admin group
 mkdir -p /mnt/USB
 chown root:bios-admin /mnt/USB
 chmod 0770 /mnt/USB
-ln -s mount_usb /usr/libexec/bios/umount_usb
+ln -s mount_usb /usr/libexec/fty/umount_usb
 
 # Basic network setup
 mkdir -p /etc/network
@@ -299,20 +319,20 @@ busybox --install -s
 # Original Debian /usr/sbin/update-rc.d tool is a script implemented in Perl.
 # Replace it with our shell equivalent if Perl is not available, so that the
 # Debian systemd can cover services still implemented via /etc/init.d scripts.
-if [ ! -x /usr/bin/perl ] && [ -x /usr/share/bios/scripts/update-rc.d.sh ] && \
+if [ ! -x /usr/bin/perl ] && [ -x /usr/share/fty/scripts/update-rc.d.sh ] && \
     head -1 /usr/sbin/update-rc.d | grep perl >/dev/null \
 ; then
     echo "Replacing perl version of /usr/sbin/update-rc.d with a shell implementation" >&2
     rm -f /usr/sbin/update-rc.d || true
-    install -m 0755 /usr/share/bios/scripts/update-rc.d.sh /usr/sbin/update-rc.d
+    install -m 0755 /usr/share/fty/scripts/update-rc.d.sh /usr/sbin/update-rc.d
 else
     echo "NOTE: Keeping the perl version of /usr/sbin/update-rc.d in place" >&2
 fi
 
 # Setup 42ity security
 mkdir -p /etc/pam.d
-cp /usr/share/bios/examples/config/pam.d/* /etc/pam.d
-RULES="`sed -n 's|.*pam_cracklib.so||p' /etc/pam.d/bios`"
+cp /usr/share/fty/examples/config/pam.d/* /etc/pam.d
+RULES="`sed -n 's|.*pam_cracklib.so||p' /etc/pam.d/fty`"
 [[ "$IMGTYPE" =~ devel ]] || sed -i "s|\\(.*pam_cracklib.so\\).*|\1$RULES|" /etc/pam.d/common-password
 
 # Force creation of cracklib dictionary
@@ -320,15 +340,15 @@ if [ ! -f /var/cache/cracklib/cracklib_dict.pwd ]; then
     /usr/sbin/update-cracklib
 fi
 
-sed -i 's|\(secure_path="\)|\1/usr/libexec/bios:|' /etc/sudoers
+sed -i 's|\(secure_path="\)|\1/usr/libexec/fty:|' /etc/sudoers
 
 mkdir -p /etc/sudoers.d
-cp /usr/share/bios/examples/config/sudoers.d/bios_00_base /etc/sudoers.d
-[[ "$IMGTYPE" =~ devel ]] && cp /usr/share/bios/examples/config/sudoers.d/bios_01_citest /etc/sudoers.d
-cp /usr/share/bios/examples/config/sudoers.d/bios_*_*agent* /etc/sudoers.d || true
+cp /usr/share/fty/examples/config/sudoers.d/fty_00_base /etc/sudoers.d
+[[ "$IMGTYPE" =~ devel ]] && cp /usr/share/fty/examples/config/sudoers.d/fty_01_citest /etc/sudoers.d
+cp /usr/share/fty/examples/config/sudoers.d/fty_*_*agent* /etc/sudoers.d || true
 
 mkdir -p /etc/security
-cp /usr/share/bios/examples/config/security/* /etc/security
+cp /usr/share/fty/examples/config/security/* /etc/security
 
 # Problem: Debian patched systemctl crashes on enable if perl is not installed
 # Solution: provide systemd unit to not invoke the update-rc.d Perl script
@@ -353,7 +373,7 @@ EOF
 /bin/systemctl enable saslauthd
 
 mkdir -p /etc/update-rc3.d
-cp /usr/share/bios/examples/config/update-rc3.d/* /etc/update-rc3.d
+cp /usr/share/fty/examples/config/update-rc3.d/* /etc/update-rc3.d
 [ -n "$IMGTYPE" ] && \
     echo "IMGTYPE='$IMGTYPE'" > /etc/update-rc3.d/image-os-type.conf
 
@@ -369,7 +389,7 @@ echo "UseDNS no" >> /etc/ssh/sshd_config
 rm /etc/ssh/*key*
 mkdir -p /etc/systemd/system
 sed 's|\[Service\]|[Service]\nExecStartPre=/usr/bin/ssh-keygen -A|' /lib*/systemd/system/ssh@.service > /etc/systemd/system/ssh@.service
-sed -i 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/bios/license\nConditionPathExists=/mnt/nand/overlay/etc/shadow|' /etc/systemd/system/ssh@.service
+sed -i 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/fty/license\nConditionPathExists=/mnt/nand/overlay/etc/shadow|' /etc/systemd/system/ssh@.service
 /bin/systemctl disable ssh.service
 /bin/systemctl mask ssh.service
 /bin/systemctl enable ssh.socket
@@ -386,7 +406,7 @@ sed -i 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/bios/license\nConditionP
 
 # Enable malamute with 42ity configuration
 mkdir -p /etc/malamute
-cp /usr/share/bios/examples/config/malamute/malamute.cfg /etc/malamute
+cp /usr/share/fty/examples/config/malamute/malamute.cfg /etc/malamute
 /bin/systemctl enable malamute
 
 # Enable 42ity services (distributed as a systemd preset file)
@@ -428,31 +448,36 @@ PartOf=bios.target
 
 [Service]
 Type=simple
+Restart=always
 EnvironmentFile=-/usr/share/bios/etc/default/bios
 EnvironmentFile=-/usr/share/bios/etc/default/bios__%n.conf
+EnvironmentFile=-/usr/share/fty/etc/default/fty
+EnvironmentFile=-/usr/share/fty/etc/default/fty__%n.conf
 EnvironmentFile=-/etc/default/bios
 EnvironmentFile=-/etc/default/bios__%n.conf
+EnvironmentFile=-/etc/default/fty
+EnvironmentFile=-/etc/default/fty__%n.conf
 EnvironmentFile=-/etc/default/bios-db-rw
 Environment='SYSTEMD_UNIT_FULLNAME=%n'
 PrivateTmp=true
 ExecStartPre=/usr/share/bios/scripts/tntnet-ExecStartPre.sh %i
 EnvironmentFile=-/run/tntnet-%i.env
 ExecStart=/usr/bin/tntnet -c /etc/tntnet/%i.xml
-Restart=always
 
 [Install]
 WantedBy=bios.target
 EOF
-cat > /usr/share/bios/scripts/xml-cat.sh << EOF
+cat > /usr/share/fty/scripts/xml-cat.sh << EOF
 #!/bin/sh
 cat "\$1"/*.xml > "\$2"
 EOF
-chmod a+rx /usr/share/bios/scripts/xml-cat.sh
+chmod a+rx /usr/share/fty/scripts/xml-cat.sh
 rm -f /etc/init.d/tntnet
 
 # Enable REST API via tntnet
+# Note: for legacy reasons, we still maintain tntnet@bios.service (not @fty)
 mkdir -p /etc/tntnet/bios.d
-cp /usr/share/bios/examples/tntnet.xml.* /etc/tntnet/bios.xml
+cp /usr/share/fty/examples/tntnet.xml.* /etc/tntnet/bios.xml
 mkdir -p /usr/share/core-0.1/web/static
 sed -i 's|<!--.*<user>.*|<user>www-data</user>|' /etc/tntnet/bios.xml
 sed -i 's|<!--.*<group>.*|<group>'"${SASL_GROUP}"'</group>|' /etc/tntnet/bios.xml
@@ -487,15 +512,15 @@ find / -name systemd-logind.service -delete
 /bin/systemctl enable wd_keepalive@watchdog3.service
 
 # Disable expensive debug logging by default on non-devel images
-mkdir -p /usr/share/bios/etc/default
+mkdir -p /usr/share/fty/etc/default
 if [[ "$IMGTYPE" =~ devel ]] ; then
-    echo "BIOS_LOG_LEVEL=LOG_DEBUG" > /usr/share/bios/etc/default/bios
+    echo "BIOS_LOG_LEVEL=LOG_DEBUG" > /usr/share/fty/etc/default/fty
 else
-    echo "BIOS_LOG_LEVEL=LOG_INFO" > /usr/share/bios/etc/default/bios
+    echo "BIOS_LOG_LEVEL=LOG_INFO" > /usr/share/fty/etc/default/fty
     sed -i 's|.*MaxLevelStore.*|MaxLevelStore=info|'                  /etc/systemd/journald.conf
 fi
 # set path to our libexec directory
-echo "PATH=/usr/libexec/bios:/bin:/usr/bin:/sbin:/usr/sbin" >>/usr/share/bios/etc/default/bios
+echo "PATH=/usr/libexec/fty:/bin:/usr/bin:/sbin:/usr/sbin" >>/usr/share/fty/etc/default/fty
 
 if [ ! -x "/usr/bin/man" -a ! -x "/bin/man" ] ; then
     echo "MAN program not available, killing manpages to save some space" >&2
@@ -506,15 +531,15 @@ if [ ! -x "/usr/bin/man" -a ! -x "/bin/man" ] ; then
 fi
 
 # Simplify ntp.conf
-augtool -S -I/usr/share/bios/lenses << EOF
+augtool -S -I/usr/share/fty/lenses << EOF
 rm /files/etc/ntp.conf/server
 set /files/etc/ntp.conf/server[1] pool.ntp.org
 save
 EOF
 
 # 42ity emulator script which can fake some of the curl behaviour with wget
-[ ! -x /usr/bin/curl ] && [ -x /usr/share/bios/scripts/curlbbwget.sh ] && \
-    install -m 0755 /usr/share/bios/scripts/curlbbwget.sh /usr/bin/curl
+[ ! -x /usr/bin/curl ] && [ -x /usr/share/fty/scripts/curlbbwget.sh ] && \
+    install -m 0755 /usr/share/fty/scripts/curlbbwget.sh /usr/bin/curl
 
 #########################################################################
 # Setup zabbix
@@ -585,7 +610,7 @@ fi
 #########################################################################
 
 # Set lang, timezone, etc.
-install -m 0755 /usr/share/bios/examples/config/profile.d/lang.sh /etc/profile.d/lang.sh
+install -m 0755 /usr/share/fty/examples/config/profile.d/lang.sh /etc/profile.d/lang.sh
 for V in LANG LANGUAGE LC_ALL ; do echo "$V="'"C"'; done > /etc/default/locale
 
 # logout from /bin/bash after 600s/10m of inactivity
@@ -595,8 +620,8 @@ case "$IMGTYPE" in
 esac
 
 # Set up history tracking and syslogging for BASH
-install -m 0755 /usr/share/bios/examples/config/profile.d/bash_history.sh /etc/profile.d/bash_history.sh
-install -m 0755 /usr/share/bios/examples/config/profile.d/bash_syslog.sh /etc/profile.d/bash_syslog.sh
+install -m 0755 /usr/share/fty/examples/config/profile.d/bash_history.sh /etc/profile.d/bash_history.sh
+install -m 0755 /usr/share/fty/examples/config/profile.d/bash_syslog.sh /etc/profile.d/bash_syslog.sh
 
 # MVY:
 # original debian8 snoopy (v1.8.0) is NOT compatible with systemd!!!
@@ -622,16 +647,16 @@ fi
 { echo ""; echo "WARNING: All shell activity on this system is logged!"; echo ""; } >> /etc/motd
 
 # A few helper aliases
-install -m 0755 /usr/share/bios/examples/config/profile.d/bios_aliases.sh /etc/profile.d/bios_aliases.sh
+install -m 0755 /usr/share/fty/examples/config/profile.d/fty_aliases.sh /etc/profile.d/fty_aliases.sh
 
 # 42ity PATH
-install -m 0755 /usr/share/bios/examples/config/profile.d/bios_path.sh /etc/profile.d/bios_path.sh
+install -m 0755 /usr/share/fty/examples/config/profile.d/fty_path.sh /etc/profile.d/fty_path.sh
 
 # Help ifup and ifplugd do the right job
-install -m 0755 /usr/share/bios/scripts/ethtool-static-nolink /etc/network/if-pre-up.d
-install -m 0755 /usr/share/bios/scripts/ifupdown-force /etc/ifplugd/action.d/ifupdown-force
-install -m 0755 /usr/share/bios/scripts/udhcpc-override.sh /usr/local/sbin/udhcpc
-echo '[ -s /usr/share/bios/scripts/udhcpc-ntp.sh ] && . /usr/share/bios/scripts/udhcpc-ntp.sh' >> /etc/udhcpc/default.script
+install -m 0755 /usr/share/fty/scripts/ethtool-static-nolink /etc/network/if-pre-up.d
+install -m 0755 /usr/share/fty/scripts/ifupdown-force /etc/ifplugd/action.d/ifupdown-force
+install -m 0755 /usr/share/fty/scripts/udhcpc-override.sh /usr/local/sbin/udhcpc
+echo '[ -s /usr/share/fty/scripts/udhcpc-ntp.sh ] && . /usr/share/fty/scripts/udhcpc-ntp.sh' >> /etc/udhcpc/default.script
 
 #########################################################################
 # install iptables filtering
@@ -694,10 +719,10 @@ SPACERM="rm -rf"
 $SPACERM /usr/share/nmap/nmap-os-db /usr/bin/{aria_read_log,aria_dump_log,aria_ftdump,replace,resolveip,myisamlog,myisam_ftdump}
 case "$SPACERM" in
     rm|rm\ *) # Replace cleaned-up stuff
-        install -m 0755 /usr/share/bios/scripts/resolveip.sh /usr/bin/resolveip
+        install -m 0755 /usr/share/fty/scripts/resolveip.sh /usr/bin/resolveip
         ;;
 esac
-for i in /usr/share/mysql/* /usr/share/locale /usr/share/bios/{develop,obs}; do
+for i in /usr/share/mysql/* /usr/share/locale /usr/share/fty/{develop,obs}; do
    [ -f "$i" ] || \
    [ "$i" = /usr/share/mysql/charsets ] || \
    [ "$i" = /usr/share/mysql/english ] || \
@@ -763,9 +788,9 @@ done
 /bin/systemctl daemon-reload
 
 # Prepare the source-code details excerpt, if available
-[ -s "/usr/share/bios/.git_details" ] && \
-    grep ESCAPE "/usr/share/bios/.git_details" > /usr/share/bios-web/git_details.txt || \
-    echo "WARNING: Do not have /usr/share/bios/.git_details"
+[ -s "/usr/share/fty/.git_details" ] && \
+    grep ESCAPE "/usr/share/fty/.git_details" > /usr/share/bios-web/git_details.txt || \
+    echo "WARNING: Do not have /usr/share/fty/.git_details"
 
 # Timestamp the end of OS image generation
 # NOTE: This value and markup are consumed by bios-core::sysinfo.ecpp
@@ -803,7 +828,7 @@ fi
 # and magic_load (_magic, NULL) fails. Pass the correct location
 # as MAGIC variable to tntnet and bios-agent-smtp
 if [[ -d /usr/share/file/magic ]]; then
-    echo "MAGIC=/usr/share/file/magic" >> /usr/share/bios/etc/default/bios
+    echo "MAGIC=/usr/share/file/magic" >> /usr/share/fty/etc/default/fty
 fi
 
 echo "WIPE OS image log file contents"

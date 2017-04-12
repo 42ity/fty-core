@@ -81,7 +81,7 @@ if [ -z "$SERVICES" ]; then
 fi
 logmsg_debug "Will inspect these service names: $SERVICES"
 
-PATH="/usr/libexec/bios:/usr/share/bios/scripts:/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin"
+PATH="/usr/libexec/fty:/usr/share/fty/scripts:/usr/libexec/bios:/usr/share/bios/scripts:/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin"
 if ! isRemoteSUT ; then
     [ -n "$CHECKOUTDIR" ] && [ -d "$CHECKOUTDIR" ] && \
         PATH="$CHECKOUTDIR/tools:$PATH"

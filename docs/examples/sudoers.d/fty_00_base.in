@@ -22,7 +22,7 @@
 ### Change date on this device:
 Cmnd_Alias DATE	            = /usr/bin/date,/bin/date,/sbin/hwclock
 ### TODO: Remove hardcoded path both here and in the sources
-Cmnd_Alias AUGTOOL          = /usr/bin/augtool -S -I/usr/share/bios/lenses -e
+Cmnd_Alias AUGTOOL          = /usr/bin/augtool -S -I/usr/share/fty/lenses -e
 Cmnd_Alias BIOS_PASSWD      = @libexecdir@/@PACKAGE@/bios-passwd
 Cmnd_Alias BIOS_SYSTEMCTL   = @libexecdir@/@PACKAGE@/systemctl
 Cmnd_Alias BIOS_JOURNALCTL  = @libexecdir@/@PACKAGE@/journalctl
@@ -31,7 +31,7 @@ Cmnd_Alias BIOS_MOUNT_USB   = @libexecdir@/@PACKAGE@/mount_usb
 Cmnd_Alias BIOS_UMOUNT_USB  = @libexecdir@/@PACKAGE@/umount_usb
 Cmnd_Alias BIOS_DIAGNOSTIC  = @libexecdir@/@PACKAGE@/diagnostic-information
 Cmnd_Alias BIOS_LOGHOST_RSYSLOG   = @libexecdir@/@PACKAGE@/loghost-rsyslog
-Cmnd_Alias BIOS_MYSQLDUMP   = /usr/bin/mysqldump 
+Cmnd_Alias BIOS_MYSQLDUMP   = /usr/bin/mysqldump
 Cmnd_Alias BIOS_DMF         = /usr/bin/bios-dmf
 
 # Overall, what is currently allowed with different privileges?

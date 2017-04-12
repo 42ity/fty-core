@@ -447,7 +447,7 @@ systemctl_list_json() {
         # We need to convert a potentially multi-line or quoted values into an
         # escaped single-line token for valid markup; our JSON.sh can do that.
         [[ -n "$JSONSH" ]] && [[ -s "$JSONSH" ]] && [[ -x "$JSONSH" ]] || \
-        for F in "${SCRIPT_DIRNAME}/JSON.sh" "/usr/share/bios/scripts/JSON.sh" \
+        for F in "${SCRIPT_DIRNAME}/JSON.sh" "/usr/share/fty/scripts/JSON.sh" "/usr/share/bios/scripts/JSON.sh" \
             "$CHECKOUTDIR/tools/JSON.sh"; do
                 [[ -x "$F" ]] && [[ -s "$F" ]] && JSONSH="$F" && break
         done
