@@ -49,7 +49,7 @@ mvln () {
         # Create dirs, symlink files; chmod+chown later
         ( cd "${OLD}" && find . | while read LINE ; do
             mvln "${OLD}/${LINE}" "${NEW}/${LINE}" "" "" || exit
-          fi )
+          done )
         RECURSE_FLAG="-R"
     else
         if [[ -f "${OLD}" ]]; then
