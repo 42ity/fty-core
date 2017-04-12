@@ -134,6 +134,8 @@ mkdir -p /var/lib/fty
 # webserver needs to store license file, currently in root of /var/lib/fty
 chown www-data /var/lib/fty
 # Legacy link just in case
+# TODO: Verify on a rack controller that this can be overlaid by existing
+# directories (from older-version installations).
 ln -sfr /var/lib/fty /var/lib/bios
 
 # The bios-boot::init script assumes only the first line of /etc/issue to be useful
