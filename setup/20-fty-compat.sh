@@ -42,7 +42,7 @@ mvln () {
     RECURSE_FLAG=""
 
     if [[ ! -e "${OLD}" ]] || [[ ! -s "${OLD}" ]] || [[ -L "${OLD}" ]] ; then
-        # Nothing to relocate
+        echo "Nothing to relocate: No '$OLD'" >&2
         return 0
     fi
 
@@ -54,6 +54,7 @@ mvln () {
 
     if [[ -d "${OLD}" ]]; then
         # Create dirs, symlink files; chmod+chown later
+        echo "Recursing into directory: '$OLD'" >&2
         ( cd "${OLD}" && find . | while read LINE ; do
             case "${LINE}" in
                 ""|.|./) ;;
@@ -66,13 +67,16 @@ mvln () {
             if [[ -e "${NEW}" ]]; then
                 # If new setup has a file in an unpackaged directory
                 # (so created by updated services), keep it in place.
+                echo "Relocated as backup: '${OLD}' => '${NEW}.old-bios' because NEW file exists" >&2
                 mv "${OLD}" "${NEW}.old-bios"
             else
+                echo "Relocated: '${OLD}' => '${NEW}'" >&2
                 mv "${OLD}" "${NEW}"
             fi
         fi
 
         # Make this symlink even if expected NEW file is currently missing
+        echo "Symlink back: '${NEW}' => '${OLD}'" >&2
         ln -srf "${NEW}" "${OLD}"
     fi
 
@@ -96,8 +100,11 @@ mvlndir() {
     [[ -d "${NEW}" ]] && return 0
 
     if [[ ! -d "${OLD}" ]] || [[ -e "${NEW}" ]] ; then
+        echo "Not relocating dir: '${OLD}' => '${NEW}' because LD does not exist or is not a dir" >&2
         return 1
     fi
+
+    echo "Relocating dir: '${OLD}' => '${NEW}'" >&2
 
     NEW_DIR=$(dirname "${NEW}") && \
     [[ -n "${NEW_DIR}" ]] && \
