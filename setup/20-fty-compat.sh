@@ -42,7 +42,7 @@ mvln () {
     RECURSE_FLAG=""
 
     if [[ ! -e "${OLD}" ]] || [[ ! -s "${OLD}" ]] || [[ -L "${OLD}" ]] ; then
-        echo "Nothing to relocate: No '$OLD'" >&2
+        echo "Nothing to relocate: No '$OLD', or it is already a symlink" >&2
         return 0
     fi
 
@@ -53,14 +53,33 @@ mvln () {
     mkdir -p "${NEW_DIR}" || return
 
     if [[ -d "${OLD}" ]]; then
-        # Create dirs, symlink files; chmod+chown later
-        echo "Recursing into directory: '$OLD'" >&2
-        ( cd "${OLD}" && find . | while read LINE ; do
-            case "${LINE}" in
-                ""|.|./) ;;
-                *) mvln "${OLD}/${LINE}" "${NEW}/${LINE}" "" "" || exit ;;
-            esac
-          done )
+        NUMOBJ="$(cd "${OLD}" && find .)" || NUMOBJ=-1
+        if [[ "$NUMOBJ" -le 1 ]]; then
+            echo "Symlinking empty old directory: '$OLD' => '$NEW'" >&2
+            if [[ -d "${NEW}" ]] ; then
+                mv "${OLD}" "${OLD}.old-bios" && \
+                ln -srf "${NEW}" "${OLD}" && \
+                return $?
+                # Keep the NEW access rights
+            fi
+            if [[ -e "${NEW}" ]] ; then
+                echo "ERROR: '$NEW' already exists and is not a directory" >&2
+                return 1
+            fi
+            mv "${OLD}" "${NEW}" || \
+            mkdir -p "${NEW}" || return
+            ln -srf "${NEW}" "${OLD}"
+            # For empty NEW directory, fall through to optional resetting of access rights
+        else
+            # Create dirs, symlink files; chmod+chown later
+            echo "Recursing into directory: '$OLD'" >&2
+            ( cd "${OLD}" && find . | while read LINE ; do
+                case "${LINE}" in
+                    ""|.|./) ;;
+                    *) mvln "${OLD}/${LINE}" "${NEW}/${LINE}" "" "" || exit ;;
+                esac
+              done )
+        fi
         RECURSE_FLAG="-R"
     else
         if [[ -f "${OLD}" ]]; then
