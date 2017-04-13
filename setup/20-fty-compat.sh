@@ -151,9 +151,11 @@ mvlndir /var/lib/fty/nut /var/lib/fty/fty-nut
 # 42ity renaming
 mvln /etc/bios /etc/fty
 mvln /etc/pam.d/bios /etc/pam.d/fty
-mvln /etc/tntnet/bios.d /etc/tntnet/fty.d
 mvln /usr/libexec/bios /usr/libexec/fty
 mvln /var/lib/bios/license /var/lib/fty/license
+
+# Note: currently we do want to keep tntnet@bios, which relies on old pathnames
+#mvln /etc/tntnet/bios.d /etc/tntnet/fty.d
 
 # Warning: order matters, somewhat
 mvln /usr/share/bios /usr/share/fty
