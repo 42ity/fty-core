@@ -121,7 +121,7 @@ useradd -m _bios-script -N -g bios-admin -G sasl -s /usr/sbin/nologin
 if [ -d /var/lib/bios ]; then
     chown -R www-data /var/lib/bios || true
     if [ -d /var/lib/fty ]; then
-        NUMOBJ="$(cd /var/lib/bios && find .)" || NUMOBJ=-1
+        NUMOBJ="$(cd /var/lib/bios && find . | wc -l)" || NUMOBJ=-1
         if [ "$NUMOBJ" -gt 1 ]; then
             ( cd /var/lib/bios && mv -f `ls -1A` /var/lib/fty )
         fi

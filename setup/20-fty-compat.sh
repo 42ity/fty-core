@@ -53,7 +53,7 @@ mvln () {
     mkdir -p "${NEW_DIR}" || return
 
     if [[ -d "${OLD}" ]]; then
-        NUMOBJ="$(cd "${OLD}" && find .)" || NUMOBJ=-1
+        NUMOBJ="$(cd "${OLD}" && find . | wc -l)" || NUMOBJ=-1
         if [[ "$NUMOBJ" -le 1 ]]; then
             echo "Symlinking empty old directory: '$OLD' => '$NEW'" >&2
             if [[ -d "${NEW}" ]] ; then
