@@ -187,7 +187,7 @@ usage() {
     echo "  --dry-run | -n            Alias to --check-images (check both OS and FW)"
     echo "  --(no-)download-image-os  Enable or disable downloading of OS images"
     echo "  --(no-)download-image-fw  Likewise for downloading of uBoot, uImage+modules"
-    echo "  --(no-)download-images    Enable or disable downloading of all image types"
+    echo "  --(no-)download-images|-N Enable or disable downloading of all image types"
     echo "  --fw-only                 Alias to --no-download-image-os --download-image-fw"
     echo "  --os-only                 Alias to --download-image-os --no-download-image-fw"
     echo "  --(no-)removeold-image-os, --(no-)removeold-image-fw, --(no-)removeold-images"
@@ -1628,7 +1628,7 @@ while [ $# -gt 0 ]; do
 		--download-images)      ACTION_DOWNLOAD_OSIMAGE="yes"; ACTION_DOWNLOAD_FWIMAGE="yes";;
 		--no-download-image-os) ACTION_DOWNLOAD_OSIMAGE="no";;
 		--no-download-image-fw) ACTION_DOWNLOAD_FWIMAGE="no";;
-		--no-download-images)   ACTION_DOWNLOAD_OSIMAGE="no"; ACTION_DOWNLOAD_FWIMAGE="no";;
+		--no-download-images|-N)ACTION_DOWNLOAD_OSIMAGE="no"; ACTION_DOWNLOAD_FWIMAGE="no";;
 		--fw-only)              ACTION_DOWNLOAD_OSIMAGE="no"; ACTION_DOWNLOAD_FWIMAGE="yes";;
 		--os-only)              ACTION_DOWNLOAD_OSIMAGE="yes"; ACTION_DOWNLOAD_FWIMAGE="no";;
 		--check-image-os)       ACTION_CHECK_OSIMAGE="yes";;
