@@ -77,7 +77,8 @@ SYSTEMCTL_UNITS_COMMON_INTERNAL="bios tntnet@bios fty-outage fty-metric-store   
                                 fty-kpi-power-uptime fty-alert-list fty-asset   \
                                 fty-metric-store-cleaner fty-alert-engine       \
                                 fty-email fty-metric-composite-configurator     \
-                                fty-metric-tpower bios-agent-inventory  	    \
+                                fty-metric-tpower bios-agent-inventory          \
+                                fty-info fty-mdns-sd fty-metric-snmp            \
                                 bios-db-init bios-fake-th bios-networking       \
                                 bios-reset-button bios-ssh-last-resort          \
                                 biostimer-compress-logs biostimer-verify-fs     \
