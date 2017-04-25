@@ -216,6 +216,9 @@ usage() {
     echo "  --reboot | -r | -R         If a new image (OS, FW) downloaded successfully"
     echo "                   request an immediate reboot as part of this script"
     echo "                   With '-R' this reboots the system in either non-error case"
+    echo "For OEM factory procedures to complete in a standard manner, there is a flag:"
+    echo "  --oem-finish     Request a factory reset and MMCp1 reformat during next"
+    echo "                   boot, and power off the box gracefully"
     echo "For HTTP(S) or FTP(S) based delivery, do not forget to set http_proxy URL as"
     echo "applicable for your environment. Current value is '$http_proxy'."
     echo "RETURN CODES: This script returns 0 if no newer images were found to download"
@@ -1555,9 +1558,9 @@ DOWNLOADED_OS_IMAGE=""
 # Note: /mnt/ext is in the list just in case rogue data is around.
 FACTORY_RESET_TTL_EXPIRED=""
 for F in \
-        /mnt/ext/recovery/factory_reset \
-        /mnt/nand/factory_reset \
-        /mnt/mmc/recovery/factory_reset \
+	/mnt/ext/recovery/factory_reset \
+	/mnt/nand/factory_reset \
+	/mnt/mmc/recovery/factory_reset \
 	"$DEPLOYMENTROOT/factory_reset" \
 	"$DOWNLOADROOT/factory_reset" \
 ; do
@@ -1667,6 +1670,19 @@ while [ $# -gt 0 ]; do
 		--no-erase-all)         FLAG_ERASE_ALL="no" ;;
 		--reboot|-r)            WANT_REBOOT="yes" ;; # reboot if code 42 - got new files ok
 		-R)                     WANT_REBOOT="force" ;; # reboot if exitcode 0 or 42
+		--oem-finish)
+		    logmsg_warn "Preparing for an OEM finish, wiping this controller during next boot"
+		    echo "Press Ctrl+C within 5 seconds to abort!" >&2
+		    sleep 5
+		    logmsg_warn "Proceeding with an OEM finish, requesting to wipe this controller during next boot"
+		    touch "$DEPLOYMENTROOT/factory_reset"
+		    # Favor a quick badblocks search for the first user-facing bootup
+		    echo "yes-bb-ro" > "$DEPLOYMENTROOT/reformat-MMCp1"
+		    logmsg_warn "Was asked to shut down for power-off... trying to do so..."
+		    sync
+		    poweroff
+		    die "Should not get to this line after requesting power-off..."
+		    ;;
 		*)  die "Aborting due to unknown command-line argument(s): $*" ;;
 	esac
 	shift
