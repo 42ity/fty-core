@@ -71,7 +71,7 @@ INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_subtype, 
 /* GROUPS */
 
 INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7025, "inputpowergroup DC_LOC_01", @ae_group, 7000);
-INSERT INTO t_bios_asset_ext_attributes ( id_asset_ext_attribute, keytag, value, id_asset_element) VALUES (9000, "type", "happynewyear", 7025);
+INSERT INTO t_bios_asset_ext_attributes ( id_asset_ext_attribute, keytag, value, id_asset_element) VALUES (9000, "type", "N_A", 7025);
 
 INSERT INTO t_bios_asset_group_relation
     (id_asset_group, id_asset_element)
