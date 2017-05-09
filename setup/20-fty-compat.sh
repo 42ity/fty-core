@@ -153,6 +153,7 @@ mvln /etc/bios /etc/fty
 mvln /etc/pam.d/bios /etc/pam.d/fty
 mvln /usr/libexec/bios /usr/libexec/fty
 mvln /var/lib/bios/license /var/lib/fty/license
+chown www-data:sasl /var/lib/fty/license /var/lib/fty
 
 # Note: currently we do want to keep tntnet@bios, which relies on old pathnames
 #mvln /etc/tntnet/bios.d /etc/tntnet/fty.d
@@ -164,7 +165,6 @@ mvlndir /usr/share/bios/etc/default/bios /usr/share/fty/etc/default/fty
 ## Backward compatibility for new (renamed) paths
 mvlndir /var/lib/bios/sql             /var/lib/fty/sql
 mvln /var/lib/bios/bios-agent-cm      /var/lib/fty/fty-metric-compute
-mvln /var/lib/bios/agent-alerts-list  /var/lib/fty/fty-alert-list
 mvln /var/lib/bios/agent-outage       /var/lib/fty/fty-outage
 mvln /var/lib/bios/agent-smtp         /var/lib/fty/fty-email
 mvln /var/lib/bios/alert_agent        /var/lib/fty/fty-alert-engine
@@ -177,3 +177,14 @@ mvln /var/lib/bios/uptime             /var/lib/fty/fty-kpi-power-uptime
 # The /var/lib/fty/fty-sensor-env should now be created via tmpfiles
 # But a legacy system may have an agent file of its own...
 mvln /var/lib/bios/composite-metrics/agent_th  /var/lib/fty/fty-sensor-env/agent_th
+
+# alert list file must be converter, do it manually
+if [[ -e /var/lib/bios/agent-alerts-list/state_file ]]; then
+    mkdir -p /var/lib/fty/fty-alert-list
+    chown bios:root /var/lib/fty/fty-alert-list
+    /usr/bin/fty-alert-list-convert \
+        /var/lib/bios/agent-alerts-list/state_file \
+        /var/lib/fty/fty-alert-list/state_file && \
+    chown bios:bios-infra /var/lib/fty/fty-alert-list/state_file && \
+    rm -rf /var/lib/bios/agent-alerts-list
+fi
