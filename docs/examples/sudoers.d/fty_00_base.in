@@ -33,14 +33,17 @@ Cmnd_Alias BIOS_DIAGNOSTIC  = @libexecdir@/@PACKAGE@/diagnostic-information
 Cmnd_Alias BIOS_LOGHOST_RSYSLOG   = @libexecdir@/@PACKAGE@/loghost-rsyslog
 Cmnd_Alias BIOS_MYSQLDUMP   = /usr/bin/mysqldump
 Cmnd_Alias BIOS_DMF         = /usr/bin/bios-dmf
+Cmnd_Alias BIN_SYSTEMCTL    = /bin/systemctl
 
 # Overall, what is currently allowed with different privileges?
-Cmnd_Alias BIOS_PROGS	= DATE,AUGTOOL,BIOS_PASSWD,BIOS_SYSTEMCTL,BIOS_JOURNALCTL,BIOS_NUTCONFIG,BIOS_UPDATE_RC3,BIOS_MOUNT_USB,BIOS_UMOUNT_USB,BIOS_LOGHOST_RSYSLOG,BIOS_MYSQLDUMP,BIOS_DIAGNOSTIC,BIOS_DMF
+Cmnd_Alias BIOS_PROGS	= DATE,AUGTOOL,BIOS_PASSWD,BIOS_SYSTEMCTL,BIOS_JOURNALCTL,BIOS_NUTCONFIG,BIOS_UPDATE_RC3,BIOS_MOUNT_USB,BIOS_UMOUNT_USB,BIOS_LOGHOST_RSYSLOG,BIOS_MYSQLDUMP,BIOS_DIAGNOSTIC,BIOS_DMF,BIN_SYSTEMCTL
 
 # Who is allowed to elevate?
 User_Alias BIOS_USERS	= %bios-admin,www-data,%bios-infra
 # With whose privileges can this be executed?
 Runas_Alias BIOS_RUNAS	= root
+
+BIOS_USERS ALL=(BIOS_RUNAS) NOPASSWD:BIOS_PROGS
 
 BIOS_USERS ALL=(BIOS_RUNAS) NOPASSWD:BIOS_PROGS
 
