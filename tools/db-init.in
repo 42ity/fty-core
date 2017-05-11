@@ -201,6 +201,8 @@ EOF
 		echo "Database for BIOS initialization - creating BIOS_DB_RW_LEGACY symlink pointing to correct password file BIOS_DB_RW..." >&2 && \
 		rm -f "${BIOS_DB_RW_LEGACY}" && \
 		ln -s "${BIOS_DB_RW}" "${BIOS_DB_RW_LEGACY}"
+        chgrp www-data "${BIOS_DB_RW}"
+        chmod g+r "${BIOS_DB_RW}"
 	fi
 
 	if [ -L "${BIOS_DB_RO_LEGACY}" ] && [ -s "${BIOS_DB_RO}" ] && diff -q "${BIOS_DB_RO_LEGACY}" "${BIOS_DB_RO}" ; then
