@@ -472,6 +472,7 @@ EnvironmentFile=-/etc/default/bios
 EnvironmentFile=-/etc/default/bios__%n.conf
 EnvironmentFile=-/etc/default/fty
 EnvironmentFile=-/etc/default/fty__%n.conf
+EnvironmentFile=-/etc/default/bios-db-rw
 Environment='SYSTEMD_UNIT_FULLNAME=%n'
 PrivateTmp=true
 ExecStartPre=/usr/share/bios/scripts/tntnet-ExecStartPre.sh %i
