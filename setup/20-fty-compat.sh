@@ -181,8 +181,9 @@ if [[ -e /var/lib/bios/agent-alerts-list/state_file ]]; then
     mkdir -p /var/lib/fty/fty-alert-list
     chown bios:root /var/lib/fty/fty-alert-list
     /usr/bin/fty-alert-list-convert \
-        /var/lib/bios/agent-alerts-list/state_file \
-        /var/lib/fty/fty-alert-list/state_file && \
+        state_file \
+        /var/lib/bios/agent-alerts-list \
+        /var/lib/fty/fty-alert-list && \
     chown bios:bios-infra /var/lib/fty/fty-alert-list/state_file && \
     rm -rf /var/lib/bios/agent-alerts-list
 fi
