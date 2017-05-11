@@ -421,7 +421,8 @@ SYSTEMD_UNITS_LOWLEVEL += \
                         ifplug-dhcp-autoconf.service \
                         bios-ssh-last-resort.service \
                         bios-networking.service \
-                        ipc-meta-setup.service
+                        ipc-meta-setup.service \
+						fty-db-init.service
 
 # These are verbatim (not templated) additional units that wrap third-party
 # service instances for us. TODO: should tntnet@.service move here?
@@ -432,7 +433,6 @@ SYSTEMD_UNITS_EXTRA += \
 # And also "tntnet@.service" customized by obs/preinstall.sh
 # And also some of the timer units and implementations below
 SYSTEMD_UNITS_TARGET_BIOS += \
-                        bios-db-init.service \
                         bios-agent-inventory.service
 
 # Here we list the actual service-definition files that should be compiled
@@ -444,7 +444,8 @@ SYSTEMD_UNITS += $(SYSTEMD_UNITS_TARGET_BIOS) $(SYSTEMD_UNITS_LOWLEVEL)
 # script or during deployment's lifetime)
 #SYSTEMD_UNITS_NOTPRESET_LOWLEVEL +=
 SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS += \
-                        bios-fake-th.service
+                        bios-fake-th.service \
+						fty-db-upgrade.service
 
 SYSTEMD_UNITS_NOTPRESET += $(SYSTEMD_UNITS_NOTPRESET_LOWLEVEL) $(SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS)
 
@@ -477,7 +478,7 @@ SYSTEMD_PRESETS +=      42-bios-systemd.preset
 
 SYSTEMD_TMPFILES += \
                         logfiles-rights.conf \
-                        bios-db-init.conf
+                        fty-db-init.conf
 
 ### TODO? Add the build info (git commit, timestamp) to the header comment?
 $(SYSTEMD_SUBDIR)/42-bios-systemd.preset: Makefile

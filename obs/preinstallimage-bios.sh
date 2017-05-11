@@ -457,8 +457,8 @@ done
 cat > /etc/systemd/system/tntnet@.service <<EOF
 [Unit]
 Description=Tntnet web server using /etc/tntnet/%I.xml
-After=network.target bios-db-init.service saslauthd.service malamute.service
-Requires=bios-db-init.service saslauthd.service malamute.service
+After=network.target saslauthd.service malamute.service
+Requires=saslauthd.service malamute.service
 PartOf=bios.target
 
 [Service]
@@ -472,7 +472,6 @@ EnvironmentFile=-/etc/default/bios
 EnvironmentFile=-/etc/default/bios__%n.conf
 EnvironmentFile=-/etc/default/fty
 EnvironmentFile=-/etc/default/fty__%n.conf
-EnvironmentFile=-/etc/default/bios-db-rw
 Environment='SYSTEMD_UNIT_FULLNAME=%n'
 PrivateTmp=true
 ExecStartPre=/usr/share/bios/scripts/tntnet-ExecStartPre.sh %i
