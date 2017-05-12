@@ -30,4 +30,4 @@ ExecStart=@libexecdir@/@PACKAGE@/db-init
 
 [Install]
 WantedBy=bios.target
-Alias=bios-db-init
+Alias=bios-db-init.service
