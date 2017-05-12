@@ -5,13 +5,13 @@ Description=Initialize database schema for 42ity services
 #    fty-db-upgrade is skipped due ConditionPathExists there
 # 2. on other boots fty-db-upgrade runst firs and fty-db-init is skipped due
 #    ConditionPathExists, so it's a depenency for db dependent services
-After=mysql.service fty-db-upgrade
+After=mysql.service fty-db-upgrade.service
 Requires=mysql.service
 Conflicts=shutdown.target
-
-[Service]
 #do not run if database has been already initialized
 ConditionPathExists=!/var/lib/fty/sql/mysql/bios-db-rw
+
+[Service]
 # it is expected that the process has to exit before systemd starts follow-up units
 Type=oneshot
 User=root
