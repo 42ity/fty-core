@@ -282,7 +282,8 @@ client_SCRIPTS +=	 \
 			tools/loghost-rsyslog \
 			tools/compress-logs \
 			tools/verify-fs \
-			tools/diagnostic-information
+			tools/diagnostic-information \
+			tools/start-db-services
 
 helper_SCRIPTS +=	tools/tntnet-ExecStartPre.sh tools/generate-release-details.sh
 
