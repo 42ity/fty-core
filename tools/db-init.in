@@ -203,6 +203,8 @@ EOF
 		ln -s "${BIOS_DB_RW}" "${BIOS_DB_RW_LEGACY}"
         chgrp www-data "${BIOS_DB_RW}"
         chmod g+r "${BIOS_DB_RW}"
+        chgrp www-data "@datarootdir@/@PACKAGE@/sql"
+        chgrp www-data "@datarootdir@/@PACKAGE@/mysql"
 	fi
 
 	if [ -L "${BIOS_DB_RO_LEGACY}" ] && [ -s "${BIOS_DB_RO}" ] && diff -q "${BIOS_DB_RO_LEGACY}" "${BIOS_DB_RO}" ; then
