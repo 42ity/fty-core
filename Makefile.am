@@ -486,6 +486,7 @@ $(SYSTEMD_SUBDIR)/42-bios-systemd.preset: Makefile
 	@mkdir -p "$(abs_top_builddir)/$(SYSTEMD_SUBDIR)" "`dirname "$@"`" || true
 	@( echo "### This is a generated file with a list of all BIOS-related services with their default state"; \
 	  for F in $(SYSTEMD_TARGETS) $(SYSTEMD_UNITS) $(SYSTEMD_TIMERS) ; do echo "enable $$F" ; done ) > $@
+	@printf "disable %s\n" fty-db-upgrade >> $@
 
 # The rules to actually "compile" the service definition files
 # is part of catch-all %.in recipe above
