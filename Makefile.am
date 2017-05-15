@@ -483,11 +483,13 @@ SYSTEMD_TMPFILES += \
                         fty-db-init.conf
 
 ### TODO? Add the build info (git commit, timestamp) to the header comment?
+### NOTE: These lines are effectively applied in order, so it is safe although
+### sub-efficient to simply enable everything and disable exceptions.
 $(SYSTEMD_SUBDIR)/42-bios-systemd.preset: Makefile
 	@mkdir -p "$(abs_top_builddir)/$(SYSTEMD_SUBDIR)" "`dirname "$@"`" || true
 	@( echo "### This is a generated file with a list of all BIOS-related services with their default state"; \
 	  for F in $(SYSTEMD_TARGETS) $(SYSTEMD_UNITS) $(SYSTEMD_TIMERS) ; do echo "enable $$F" ; done ) > $@
-	@printf "disable %s\ndisable %s\ndisable mysql\n" fty-db-init fty-db-upgrade >> $@
+	@for F in fty-db-init fty-db-upgrade mysql ; do echo "disable $$F" ; done >> $@
 
 # The rules to actually "compile" the service definition files
 # is part of catch-all %.in recipe above
