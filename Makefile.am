@@ -422,8 +422,7 @@ SYSTEMD_UNITS_LOWLEVEL += \
                         ifplug-dhcp-autoconf.service \
                         bios-ssh-last-resort.service \
                         bios-networking.service \
-                        ipc-meta-setup.service \
-						fty-db-init.service
+                        ipc-meta-setup.service
 
 # These are verbatim (not templated) additional units that wrap third-party
 # service instances for us. TODO: should tntnet@.service move here?
@@ -446,7 +445,8 @@ SYSTEMD_UNITS += $(SYSTEMD_UNITS_TARGET_BIOS) $(SYSTEMD_UNITS_LOWLEVEL)
 #SYSTEMD_UNITS_NOTPRESET_LOWLEVEL +=
 SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS += \
                         bios-fake-th.service \
-						fty-db-upgrade.service
+						fty-db-upgrade.service \
+						fty-db-init.service
 
 SYSTEMD_UNITS_NOTPRESET += $(SYSTEMD_UNITS_NOTPRESET_LOWLEVEL) $(SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS)
 
@@ -486,7 +486,7 @@ $(SYSTEMD_SUBDIR)/42-bios-systemd.preset: Makefile
 	@mkdir -p "$(abs_top_builddir)/$(SYSTEMD_SUBDIR)" "`dirname "$@"`" || true
 	@( echo "### This is a generated file with a list of all BIOS-related services with their default state"; \
 	  for F in $(SYSTEMD_TARGETS) $(SYSTEMD_UNITS) $(SYSTEMD_TIMERS) ; do echo "enable $$F" ; done ) > $@
-	@printf "disable %s\n" fty-db-upgrade >> $@
+	@printf "disable %s\ndisable %s\ndisable mysql\n" fty-db-init fty-db-upgrade >> $@
 
 # The rules to actually "compile" the service definition files
 # is part of catch-all %.in recipe above
