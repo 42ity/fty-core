@@ -320,7 +320,8 @@ print_item_list ${SYSTEMCTL_COMMANDS}
     The "daemon-reload" action is passed without any further arguments.
     Actions that accept the [--all|-a|--full|-l|--quiet] modifiers will
     get them. The "status" action may additionally use [-n POSITIVENUMBER]
-    modifier (Number of journal entries to show).
+    modifier (Number of journal entries to show). The "show" action may
+    additionally use one or more [-p KeyName] modifiers to list specific data.
 EOF
 }
 
@@ -1194,6 +1195,13 @@ process_CLI_systemctl() {
                     NOBREAK=yes
                     SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
                 -n) if [[ "$cmd" = status ]] && [[ -n "$2" ]] && [[ "$2" -gt 0 ]]; then
+                        SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1 $2"
+                        shift
+                    else
+                        ABORT=yes
+                    fi
+                    ;;
+                -p) if [[ "$cmd" = show ]] && [[ -n "$2" ]] ; then
                         SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1 $2"
                         shift
                     else
