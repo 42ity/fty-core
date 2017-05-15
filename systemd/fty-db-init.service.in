@@ -1,15 +1,10 @@
 [Unit]
 Description=Initialize database schema for 42ity services
-# ordering of upgrade->init is weird, but makes a sense
-# 1. on a first bool fty-db-init is started when license is accepted and
-#    fty-db-upgrade is skipped due ConditionPathExists there
-# 2. on other boots fty-db-upgrade runst firs and fty-db-init is skipped due
-#    ConditionPathExists, so it's a depenency for db dependent services
-After=mysql.service fty-db-upgrade.service
+After=mysql.service
 Requires=mysql.service
 Conflicts=shutdown.target
-#do not run if database has been already initialized
-ConditionPathExists=!/var/lib/fty/sql/mysql/bios-db-rw
+#do not run if database was not yet initialized
+ConditionPathExists=/var/lib/fty/sql/mysql/bios-db-rw
 
 [Service]
 # it is expected that the process has to exit before systemd starts follow-up units

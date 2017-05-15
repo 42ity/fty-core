@@ -446,8 +446,8 @@ SYSTEMD_UNITS += $(SYSTEMD_UNITS_TARGET_BIOS) $(SYSTEMD_UNITS_LOWLEVEL)
 #SYSTEMD_UNITS_NOTPRESET_LOWLEVEL +=
 SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS += \
                         bios-fake-th.service \
-						fty-db-upgrade.service \
-						fty-db-init.service
+						fty-db-init.service \
+						fty-db-firstboot.service
 
 SYSTEMD_UNITS_NOTPRESET += $(SYSTEMD_UNITS_NOTPRESET_LOWLEVEL) $(SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS)
 
@@ -489,7 +489,7 @@ $(SYSTEMD_SUBDIR)/42-bios-systemd.preset: Makefile
 	@mkdir -p "$(abs_top_builddir)/$(SYSTEMD_SUBDIR)" "`dirname "$@"`" || true
 	@( echo "### This is a generated file with a list of all BIOS-related services with their default state"; \
 	  for F in $(SYSTEMD_TARGETS) $(SYSTEMD_UNITS) $(SYSTEMD_TIMERS) ; do echo "enable $$F" ; done ) > $@
-	@for F in fty-db-init.service fty-db-upgrade.service mysql.service ; do echo "disable $$F" ; done >> $@
+	@for F in fty-db-init.service bios-db-init.service fty-db-firstboot.service mysql.service ; do echo "disable $$F" ; done >> $@
 
 # The rules to actually "compile" the service definition files
 # is part of catch-all %.in recipe above
