@@ -44,6 +44,3 @@ User_Alias BIOS_USERS	= %bios-admin,www-data,%bios-infra
 Runas_Alias BIOS_RUNAS	= root
 
 BIOS_USERS ALL=(BIOS_RUNAS) NOPASSWD:BIOS_PROGS
-
-BIOS_USERS ALL=(BIOS_RUNAS) NOPASSWD:BIOS_PROGS
-
