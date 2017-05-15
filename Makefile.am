@@ -291,6 +291,7 @@ EXTRA_DIST +=		tools/fake-th \
 			tools/bios-networking \
 			tools/mount_usb \
 			tools/diagnostic-information \
+			tools/start-db-services \
 			tools/generate-release-details.sh \
 			tools/loghost-rsyslog \
 			tools/compress-logs
