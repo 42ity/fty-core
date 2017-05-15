@@ -1,10 +1,10 @@
 [Unit]
-Description=Upgrade database schema for 42ity services
+Description=First boot database schema initalization for 42ity services
 After=mysql.service
 Requires=mysql.service
 Conflicts=shutdown.target
-#do not run if database was not yet initialized
-ConditionPathExists=/var/lib/fty/sql/mysql/bios-db-rw
+#Run only if database was not initialized
+ConditionPathExists=!/var/lib/fty/sql/mysql/bios-db-rw
 
 [Service]
 # it is expected that the process has to exit before systemd starts follow-up units
@@ -21,7 +21,7 @@ EnvironmentFile=-@sysconfdir@/default/bios__%n.conf
 EnvironmentFile=-@sysconfdir@/default/fty
 EnvironmentFile=-@sysconfdir@/default/fty__%n.conf
 Environment="prefix=@prefix@"
-ExecStart=@libexecdir@/@PACKAGE@/db-init upgrade
+ExecStart=@libexecdir@/@PACKAGE@/db-init
 
 [Install]
 WantedBy=bios.target

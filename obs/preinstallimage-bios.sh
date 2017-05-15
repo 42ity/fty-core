@@ -395,7 +395,8 @@ cp /usr/share/fty/examples/config/update-rc3.d/* /etc/update-rc3.d
 # Disable mysql and db services, will be enabled during license_POST call
 /bin/systemctl disable mysql
 /bin/systemctl disable fty-db-init
-/bin/systemctl disable fty-db-upgrade
+/bin/systemctl disable bios-db-init
+/bin/systemctl disable fty-db-firstboot
 
 # Disable systemd-timesyncd - ntp is enough
 /bin/systemctl mask systemd-timesyncd.service
