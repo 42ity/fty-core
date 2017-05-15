@@ -172,6 +172,8 @@ systemd/fty-db-upgrade.service
 
 !tools/tntnet-ExecStartPre.sh.in
 tools/tntnet-ExecStartPre.sh
+!tools/start-db-services.in
+tools/start-db-services
 
 src/web/src/auth-verify.cpp
 src/web/src/auth-require.cpp
