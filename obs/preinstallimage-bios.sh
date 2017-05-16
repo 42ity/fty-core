@@ -452,8 +452,10 @@ done
 
 
 # Ensure mysql is owned correctly after upgrades and other OS image changes
+# but do not install and enable it as a part of multi-user.target
 [[ -s /usr/lib/systemd/system/mysql.service ]] && \
     sed -e 's,^\(Type=.*\)$,\1\nExecStartPre=/bin/dash -c "if [ -d /var/lib/mysql ] ; then /bin/chown -R mysql:mysql /var/lib/mysql ; fi",' \
+        -e '/\[Install\]/d;/^WantedBy.*/d' \
         -i /usr/lib/systemd/system/mysql.service
 
 # Our tntnet unit
