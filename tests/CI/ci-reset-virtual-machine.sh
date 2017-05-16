@@ -962,14 +962,36 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 	fi
 
 	set +e
-	# TODO: There may be funny interaction with saved-config if it contains
-	# files that are to be "restored" below; fix if it ever gets practical
 	logmsg_info "Restore /etc/hosts and /etc/resolv.conf in the VM to the default baseline"
-	LOCALHOSTLINE="`grep '127.0.0.1' "${ALTROOT}/etc/hosts"`" && \
-		[ -n "$LOCALHOSTLINE" ] && ( echo "$LOCALHOSTLINE" > "${ALTROOT}/etc/hosts" )
-	grep "8.8.8.8" "${ALTROOT}/etc/resolv.conf.bak-devpkg" >/dev/null || \
-	cp -pf "${ALTROOT}/etc/resolv.conf.bak-devpkg" "${ALTROOT}/etc/resolv.conf"
-	cp -pf "${ALTROOT}/etc/nsswitch.conf.bak-devpkg" "${ALTROOT}/etc/nsswitch.conf"
+	if [ -f "${ALTROOT}.saved/etc/hosts" ] && \
+	    diff "${ALTROOT}.saved/etc/hosts" "${ALTROOT}/etc/hosts" >/dev/null 2>&1 \
+	; then
+		logmsg_info "Keeping /etc/hosts in the VM from the 'saved' template"
+	else
+		LOCALHOSTLINE="`grep '127.0.0.1' "${ALTROOT}/etc/hosts"`" && \
+			[ -n "$LOCALHOSTLINE" ] && ( echo "$LOCALHOSTLINE $VM" > "${ALTROOT}/etc/hosts" )
+		logmsg_info "Restore /etc/hosts in the VM to the default baseline"
+	fi
+
+	if [ -f "${ALTROOT}.saved/etc/resolv.conf" ] && \
+	    diff "${ALTROOT}.saved/etc/resolv.conf" "${ALTROOT}/etc/resolv.conf" >/dev/null 2>&1 \
+	; then
+		logmsg_info "Keeping /etc/resolv.conf in the VM from the 'saved' template"
+	else
+		logmsg_info "Restore /etc/resolv.conf in the VM to the default baseline"
+		grep "8.8.8.8" "${ALTROOT}/etc/resolv.conf.bak-devpkg" >/dev/null || \
+			cp -pf "${ALTROOT}/etc/resolv.conf.bak-devpkg" "${ALTROOT}/etc/resolv.conf"
+	fi
+
+	if [ -f "${ALTROOT}.saved/etc/nsswitch.conf" ] && \
+	    diff "${ALTROOT}.saved/etc/nsswitch.conf" "${ALTROOT}/etc/nsswitch.conf" >/dev/null 2>&1 \
+	; then
+		logmsg_info "Keeping /etc/nsswitch.conf in the VM from the 'saved' template"
+	else
+		logmsg_info "Restore /etc/nsswitch.conf in the VM to the default baseline"
+		cp -pf "${ALTROOT}/etc/nsswitch.conf.bak-devpkg" "${ALTROOT}/etc/nsswitch.conf"
+	fi
+
 #	logmsg_info "Restart networking in the VM chroot to refresh virtual network settings"
 #	chroot "${ALTROOT}/" /bin/systemctl restart bios-networking
 	set -e
