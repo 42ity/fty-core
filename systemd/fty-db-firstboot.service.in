@@ -22,6 +22,3 @@ EnvironmentFile=-@sysconfdir@/default/fty
 EnvironmentFile=-@sysconfdir@/default/fty__%n.conf
 Environment="prefix=@prefix@"
 ExecStart=@libexecdir@/@PACKAGE@/db-init
-
-[Install]
-WantedBy=bios.target
