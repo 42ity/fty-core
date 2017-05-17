@@ -53,7 +53,7 @@ MAINARGS="$0 $*"
 # Use syslog if "logger" is available
 LOGGER="$(which logger)" 2>/dev/null || LOGGER=""
 
-SYSTEMCTL_COMMANDS="show start stop restart reload reload-or-restart try-reload-or-restart enable disable daemon-reload status is-active list-dependencies"
+SYSTEMCTL_COMMANDS="show start stop restart reload reload-or-restart try-reload-or-restart enable disable mask unmask daemon-reload status is-active list-dependencies"
 # NOTE: We do not support "--unit=UNITNAME" because it is too much hassle here
 # NOTE: We do also support the two-token "-n NUMBER" explicitly below
 JOURNALCTL_COMMANDS="-f --follow -l -u -fl -lf -fu -uf -lu -ul -flu -ful -luf -lfu -ulf -ufl -a --all --no-pager -r --reverse -k --dmesg"

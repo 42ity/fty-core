@@ -20,10 +20,9 @@
 #  \author Michal Vyskocil <MichalVyskocil@eaton.com>
 #  \author Jim Klimov <EvgenyKlimov@eaton.com>
 
-# we're using mask/unmask on mysql, not available in a wrapper
-SYSTEMCTL=/bin/systemctl
 ### Prefer to use our wrapper that limits impact to permitted targets
-#SYSTEMCTL=@libexecdir@/@PACKAGE@/systemctl
+#SYSTEMCTL=/bin/systemctl
+SYSTEMCTL=@libexecdir@/@PACKAGE@/systemctl
 
 die () {
     echo "ERROR: ${@}" >&2
