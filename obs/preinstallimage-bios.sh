@@ -451,9 +451,9 @@ done
         -i /usr/lib/systemd/system/mysql.service
 
 # Disable and mask mysql - it will be started after first boot
+# and wrapped by fty-db-engine anyway
 /bin/systemctl mask mysql
 /bin/systemctl disable mysql
-/bin/systemctl disable fty-db-firstboot
 
 # Our tntnet unit
 cat > /etc/systemd/system/tntnet@.service <<EOF
