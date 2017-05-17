@@ -455,14 +455,16 @@ done
 /bin/systemctl disable mysql
 /bin/systemctl disable fty-db-firstboot
 
-# Our tntnet unit
+# Our tntnet unit rocks, disable packaged default
 rm -f /etc/init.d/tntnet
 
 # Enable REST API via tntnet
 # Note: for legacy reasons, we still maintain tntnet@bios.service (not @fty)
 mkdir -p /etc/tntnet/bios.d
+# Note: Here we only expect one file, e.g. /usr/share/fty/examples/tntnet.xml.example :
 cp /usr/share/fty/examples/tntnet.xml.* /etc/tntnet/bios.xml
 mkdir -p /usr/share/core-0.1/web/static
+
 sed -i 's|<!--.*<user>.*|<user>www-data</user>|' /etc/tntnet/bios.xml
 sed -i 's|<!--.*<group>.*|<group>'"${SASL_GROUP}"'</group>|' /etc/tntnet/bios.xml
 sed -i 's|.*<allUserGroups>.*|<allUserGroups>yes</allUserGroups>|' /etc/tntnet/bios.xml || true
@@ -470,12 +472,15 @@ sed -i 's|.*<daemon>.*|<daemon>0</daemon>|' /etc/tntnet/bios.xml
 sed -i 's|\(.*\)<dir>.*|\1<dir>/usr/share/bios-web/</dir>|' /etc/tntnet/bios.xml
 sed -i 's|<!--.*<sslProtocols>.*|<sslProtocols>-TLSv1_0</sslProtocols>|' /etc/tntnet/bios.xml
 sed -i 's|<!--.*<sslCipherList>.*|<sslCipherList>HIGH:!aNULL:!3DES</sslCipherList>|' /etc/tntnet/bios.xml
+
 sed -n '1,/<mappings>/ p' /etc/tntnet/bios.xml  > /etc/tntnet/bios.d/00_start.xml
 sed -n '/<\/mappings>/,$ p' /etc/tntnet/bios.xml > /etc/tntnet/bios.d/99_end.xml
+
 sed '/<mappings>/,/<\/mappings>/!d; /mappings/ d' /etc/tntnet/bios.xml > /etc/tntnet/bios.d/20_core.xml
 sed '1,/<!-- Here starts the real API -->/!d; /<!-- Here starts the real API -->/ d' /etc/tntnet/bios.d/20_core.xml > /etc/tntnet/bios.d/10_common_basics.xml
 sed '/<!-- Here starts the real API -->/,$!d; /<!-- Here starts the real API -->/ d' /etc/tntnet/bios.d/20_core.xml > /etc/tntnet/bios.d/50_main_api.xml
 rm -f /etc/tntnet/bios.d/20_core.xml
+
 /bin/systemctl enable tntnet@bios
 /bin/systemctl enable tntnet@bios
 
