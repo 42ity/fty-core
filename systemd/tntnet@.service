@@ -1,0 +1,26 @@
+[Unit]
+Description=Tntnet web server instance using /etc/tntnet/%I.xml
+After=network.target saslauthd.service malamute.service
+Requires=saslauthd.service malamute.service
+PartOf=bios.target
+
+[Service]
+Type=simple
+Restart=always
+EnvironmentFile=-/usr/share/bios/etc/default/bios
+EnvironmentFile=-/usr/share/bios/etc/default/bios__%n.conf
+EnvironmentFile=-/usr/share/fty/etc/default/fty
+EnvironmentFile=-/usr/share/fty/etc/default/fty__%n.conf
+EnvironmentFile=-/etc/default/bios
+EnvironmentFile=-/etc/default/bios__%n.conf
+EnvironmentFile=-/etc/default/fty
+EnvironmentFile=-/etc/default/fty__%n.conf
+EnvironmentFile=-/etc/default/bios-db-rw
+Environment='SYSTEMD_UNIT_FULLNAME=%n'
+PrivateTmp=true
+ExecStartPre=/usr/share/bios/scripts/tntnet-ExecStartPre.sh %i
+EnvironmentFile=-/run/tntnet-%i.env
+ExecStart=/usr/bin/tntnet -c /etc/tntnet/%i.xml
+
+[Install]
+WantedBy=bios.target
