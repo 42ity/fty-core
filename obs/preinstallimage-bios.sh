@@ -392,12 +392,6 @@ cp /usr/share/fty/examples/config/update-rc3.d/* /etc/update-rc3.d
 [ -n "$IMGTYPE" ] && \
     echo "IMGTYPE='$IMGTYPE'" > /etc/update-rc3.d/image-os-type.conf
 
-# Disable mysql and db services, will be enabled during license_POST call
-/bin/systemctl disable mysql
-/bin/systemctl disable fty-db-init
-/bin/systemctl disable bios-db-init
-/bin/systemctl disable fty-db-firstboot
-
 # Disable systemd-timesyncd - ntp is enough
 /bin/systemctl mask systemd-timesyncd.service
 
@@ -452,11 +446,14 @@ done
 
 
 # Ensure mysql is owned correctly after upgrades and other OS image changes
-# but do not install and enable it as a part of multi-user.target
 [[ -s /usr/lib/systemd/system/mysql.service ]] && \
     sed -e 's,^\(Type=.*\)$,\1\nExecStartPre=/bin/dash -c "if [ -d /var/lib/mysql ] ; then /bin/chown -R mysql:mysql /var/lib/mysql ; fi",' \
-        -e '/\[Install\]/d;/^WantedBy.*/d' \
         -i /usr/lib/systemd/system/mysql.service
+
+# Disable and mask mysql - it will be started after first boot
+/bin/systemctl mask mysql
+/bin/systemctl disable mysql
+/bin/systemctl disable fty-db-firstboot
 
 # Our tntnet unit
 cat > /etc/systemd/system/tntnet@.service <<EOF
