@@ -120,6 +120,10 @@ var/
 build/
 build-*/
 
+bios-*.*/
+bios-*.*.tar.?z
+bios-*.deb
+
 core-*.*/
 core-*.*.tar.?z
 core-*.deb
