@@ -50,7 +50,7 @@ ls -1 "${BASEDIR}"/[0-9]*.sh | sort | while read SCRIPT; do
         echo "SKIP: ${SCRIPT_NAME} has already succeeded before"
     else
         echo "APPLY: running ${SCRIPT_NAME}..."
-        ./${SCRIPT} || die "${SCRIPT}"
+        ${SCRIPT} || die "${SCRIPT}"
         touch "${SETUPDIR}/${SCRIPT_NAME}.done"
     fi
 
