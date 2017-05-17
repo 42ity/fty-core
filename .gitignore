@@ -169,6 +169,8 @@ systemd/ipc-meta-setup.service
 systemd/fty-db-upgrade.service
 !systemd/fty-db-upgrade.service.in
 systemd/fty-db-upgrade.service
+!systemd/tntnet@.service.in
+systemd/tntnet@.service
 
 !tools/tntnet-ExecStartPre.sh.in
 tools/tntnet-ExecStartPre.sh
