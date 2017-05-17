@@ -413,7 +413,9 @@ if HAVE_SYSTEMD
 # These units allow to toggle the entirety of 42ity agents and other related
 # services on and off (except a few chosen low-level services that remain
 # WantedBy=multi-user.target)
-SYSTEMD_TARGETS += bios.target bios.service
+SYSTEMD_TARGETS += \
+                        fty-license-accepted.target \
+                        bios.target bios.service
 
 # These units are not part of the common bios.target etc. but are to be
 # considered rather a part of the operating environment independent of
@@ -435,7 +437,6 @@ SYSTEMD_UNITS_EXTRA += \
 # And also some of the timer units and implementations below
 SYSTEMD_UNITS_TARGET_BIOS += \
                         fty-db-engine.service \
-                        fty-license-accepted.target \
                         fty-db-init.service \
                         bios-agent-inventory.service
 
