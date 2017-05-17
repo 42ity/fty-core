@@ -9,7 +9,7 @@ Before = bios.target bios.service malamute.service sshd.service ssh.service ssh.
 [Service]
 Type = oneshot
 User = root
-ExecStart = /usr/share/fty/setup/ipc-meta-setup.sh
+ExecStart = @prefix@/share/fty/setup/ipc-meta-setup.sh
 RemainAfterExit = yes
 PrivateTmp = yes
 

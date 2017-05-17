@@ -455,60 +455,32 @@ done
 /bin/systemctl disable mysql
 /bin/systemctl disable fty-db-firstboot
 
-# Our tntnet unit
-cat > /etc/systemd/system/tntnet@.service <<EOF
-[Unit]
-Description=Tntnet web server using /etc/tntnet/%I.xml
-After=network.target saslauthd.service malamute.service
-Requires=saslauthd.service malamute.service
-PartOf=bios.target
-
-[Service]
-Type=simple
-Restart=always
-EnvironmentFile=-/usr/share/bios/etc/default/bios
-EnvironmentFile=-/usr/share/bios/etc/default/bios__%n.conf
-EnvironmentFile=-/usr/share/fty/etc/default/fty
-EnvironmentFile=-/usr/share/fty/etc/default/fty__%n.conf
-EnvironmentFile=-/etc/default/bios
-EnvironmentFile=-/etc/default/bios__%n.conf
-EnvironmentFile=-/etc/default/fty
-EnvironmentFile=-/etc/default/fty__%n.conf
-EnvironmentFile=-/etc/default/bios-db-rw
-Environment='SYSTEMD_UNIT_FULLNAME=%n'
-PrivateTmp=true
-ExecStartPre=/usr/share/bios/scripts/tntnet-ExecStartPre.sh %i
-EnvironmentFile=-/run/tntnet-%i.env
-ExecStart=/usr/bin/tntnet -c /etc/tntnet/%i.xml
-
-[Install]
-WantedBy=bios.target
-EOF
-cat > /usr/share/fty/scripts/xml-cat.sh << EOF
-#!/bin/sh
-cat "\$1"/*.xml > "\$2"
-EOF
-chmod a+rx /usr/share/fty/scripts/xml-cat.sh
+# Our tntnet unit rocks, disable packaged default
 rm -f /etc/init.d/tntnet
 
 # Enable REST API via tntnet
 # Note: for legacy reasons, we still maintain tntnet@bios.service (not @fty)
 mkdir -p /etc/tntnet/bios.d
+# Note: Here we only expect one file, e.g. /usr/share/fty/examples/tntnet.xml.example :
 cp /usr/share/fty/examples/tntnet.xml.* /etc/tntnet/bios.xml
-mkdir -p /usr/share/core-0.1/web/static
-sed -i 's|<!--.*<user>.*|<user>www-data</user>|' /etc/tntnet/bios.xml
-sed -i 's|<!--.*<group>.*|<group>'"${SASL_GROUP}"'</group>|' /etc/tntnet/bios.xml
+
 sed -i 's|.*<allUserGroups>.*|<allUserGroups>yes</allUserGroups>|' /etc/tntnet/bios.xml || true
-sed -i 's|.*<daemon>.*|<daemon>0</daemon>|' /etc/tntnet/bios.xml
-sed -i 's|\(.*\)<dir>.*|\1<dir>/usr/share/bios-web/</dir>|' /etc/tntnet/bios.xml
-sed -i 's|<!--.*<sslProtocols>.*|<sslProtocols>-TLSv1_0</sslProtocols>|' /etc/tntnet/bios.xml
-sed -i 's|<!--.*<sslCipherList>.*|<sslCipherList>HIGH:!aNULL:!3DES</sslCipherList>|' /etc/tntnet/bios.xml
+sed -e 's|<!--.*<user>.*|<user>www-data</user>|' \
+    -e 's|<!--.*<group>.*|<group>'"${SASL_GROUP}"'</group>|' \
+    -e 's|.*<daemon>.*|<daemon>0</daemon>|' \
+    -e 's|\(.*\)<dir>.*|\1<dir>/usr/share/bios-web/</dir>|' \
+    -e 's|<!--.*<sslProtocols>.*|<sslProtocols>-TLSv1_0</sslProtocols>|' \
+    -e 's|<!--.*<sslCipherList>.*|<sslCipherList>HIGH:!aNULL:!3DES</sslCipherList>|' \
+    -i /etc/tntnet/bios.xml
+
 sed -n '1,/<mappings>/ p' /etc/tntnet/bios.xml  > /etc/tntnet/bios.d/00_start.xml
 sed -n '/<\/mappings>/,$ p' /etc/tntnet/bios.xml > /etc/tntnet/bios.d/99_end.xml
+
 sed '/<mappings>/,/<\/mappings>/!d; /mappings/ d' /etc/tntnet/bios.xml > /etc/tntnet/bios.d/20_core.xml
 sed '1,/<!-- Here starts the real API -->/!d; /<!-- Here starts the real API -->/ d' /etc/tntnet/bios.d/20_core.xml > /etc/tntnet/bios.d/10_common_basics.xml
 sed '/<!-- Here starts the real API -->/,$!d; /<!-- Here starts the real API -->/ d' /etc/tntnet/bios.d/20_core.xml > /etc/tntnet/bios.d/50_main_api.xml
 rm -f /etc/tntnet/bios.d/20_core.xml
+
 /bin/systemctl enable tntnet@bios
 /bin/systemctl enable tntnet@bios
 
