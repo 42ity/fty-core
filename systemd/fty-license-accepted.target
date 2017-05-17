@@ -1,0 +1,11 @@
+[Unit]
+Description=Milestone for all 42ity-related services that should start after license is accepted
+Requires=multi-user.target network.target
+After=multi-user.target network.target
+Conflicts=rescue.target shutdown.target
+ConditionFileNotEmpty=|/var/lib/fty/license
+ConditionFileNotEmpty=|/var/lib/bios/license
+PartOf=bios.target
+
+[Install]
+WantedBy=bios.target

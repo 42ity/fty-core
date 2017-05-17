@@ -444,16 +444,11 @@ for unit in $(systemctl list-unit-files | grep '^fty-*' | cut -d ' ' -f 1); do
     /bin/systemctl enable ${unit}
 done
 
-
-# Ensure mysql is owned correctly after upgrades and other OS image changes
-[[ -s /usr/lib/systemd/system/mysql.service ]] && \
-    sed -e 's,^\(Type=.*\)$,\1\nExecStartPre=/bin/dash -c "if [ -d /var/lib/mysql ] ; then /bin/chown -R mysql:mysql /var/lib/mysql ; fi",' \
-        -i /usr/lib/systemd/system/mysql.service
-
-# Disable and mask mysql - it will be started after first boot
+# Disable and mask the vendor-packaged mysql services - the database will
+# be started after first boot and license acceptance, and wrapped by our
+# own fty-db-engine customized service anyway.
 /bin/systemctl mask mysql
 /bin/systemctl disable mysql
-/bin/systemctl disable fty-db-firstboot
 
 # Our tntnet unit rocks, disable packaged default
 rm -f /etc/init.d/tntnet

@@ -35,9 +35,23 @@ if [[ -f /etc/default/bios-db-rw ]]; then
     exit 0
 fi
 
-sudo ${SYSTEMCTL} unmask mysql || die "Unmasking mysql failed"
-sudo ${SYSTEMCTL} enable mysql || die "Enabling mysql failed"
-sudo ${SYSTEMCTL} start fty-db-firstboot || die "Starting fty-db-firstboot failed"
+# Just in case the service is disabled by preinstall or other means,
+# make it be active (as long as the license acceptance criteria are met).
+# Otherwise it should have come up as soon as the file(s) appeared, etc.
+sudo ${SYSTEMCTL} unmask fty-license-accepted || die "Unmasking fty-license-accepted failed"
+sudo ${SYSTEMCTL} enable fty-license-accepted || die "Enabling fty-license-accepted failed"
+sudo ${SYSTEMCTL} restart fty-license-accepted || die "Restarting fty-license-accepted failed"
+
+# Technically this all should not be needed, as the standard processing
+# of the now-active fty-license-accepted should trigger startup of the
+# database engine, then our schema, then the services which need it all.
+# But just in case, make sure they all are up before we return...
+sudo ${SYSTEMCTL} unmask fty-db-engine || die "Unmasking fty-db-engine failed"
+sudo ${SYSTEMCTL} enable fty-db-engine || die "Enabling fty-db-engine failed"
+sudo ${SYSTEMCTL} start fty-db-engine || die "Starting fty-db-engine failed"
+
+sudo ${SYSTEMCTL} enable fty-db-init || die "Enabling fty-db-init failed"
+sudo ${SYSTEMCTL} start fty-db-init || die "Starting fty-db-init failed"
 
 sleep 2
 if [[ ! -f /etc/default/bios-db-rw ]]; then
@@ -45,14 +59,12 @@ if [[ ! -f /etc/default/bios-db-rw ]]; then
     exit 1
 fi
 
-sudo ${SYSTEMCTL} enable fty-db-init || die "Enabling fty-db-init failed"
-
 for DIR in /lib/systemd/system /usr/lib/systemd/system /run/systemd/system /etc/systemd/system/; do
     if [[ ! -d "${DIR}" ]]; then
         continue
     fi
 
-    egrep 'Requires.*bios-db-init.service' "${DIR}"/*.service 2>/dev/null \
+    egrep 'Requires.*(fty|bios)-db-init.service' "${DIR}"/*.service 2>/dev/null \
     | cut -d ':' -f 1 \
     | xargs -L1 basename 2>/dev/null \
     | while read SERVICE; do

@@ -1,10 +1,9 @@
 [Unit]
-Description=Initialize database schema for 42ity services
-After=mysql.service
-Requires=mysql.service
+Description=Initialize or update database schema for 42ity services
+After=fty-db-engine.service
+Requires=fty-db-engine.service
 Conflicts=shutdown.target
-#do not run if database was not yet initialized
-ConditionPathExists=/var/lib/fty/sql/mysql/bios-db-rw
+PartOf=bios.target
 
 [Service]
 # it is expected that the process has to exit before systemd starts follow-up units

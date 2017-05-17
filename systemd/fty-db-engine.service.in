@@ -1,0 +1,30 @@
+# WARNING: This unit is intended for systems or containers dedicated as
+# 42ity execution environments. It disables any existing MySQL server.
+
+[Unit]
+Description=MySQL server for 42ity usage
+Conflicts=mysql.service mysqld.service mariadb.service
+Reqires=fty-license-accepted.target
+Wants=basic.target
+After=basic.target network.target fty-license-accepted.target
+PartOf=bios.target
+
+[Service]
+Type=forking
+ExecStartPre=-/bin/systemctl stop mysql.service
+ExecStartPre=-/bin/systemctl disable mysql.service
+ExecStartPre=-/bin/systemctl mask mysql.service
+ExecStartPre=-/bin/systemctl stop mysqld.service
+ExecStartPre=-/bin/systemctl disable mysqld.service
+ExecStartPre=-/bin/systemctl mask mysqld.service
+ExecStartPre=-/bin/systemctl stop mariadb.service
+ExecStartPre=-/bin/systemctl disable mariadb.service
+ExecStartPre=-/bin/systemctl mask mariadb.service
+ExecStartPre=/bin/dash -c "if [ -d /var/lib/mysql ] ; then /bin/chown -R mysql:mysql /var/lib/mysql ; fi"
+ExecStart=/usr/lib/mysql/rcmysql start
+ExecStop=/usr/lib/mysql/rcmysql stop
+TimeoutStartSec=0
+Restart=on-failure
+
+[Install]
+WantedBy=bios.target

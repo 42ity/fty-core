@@ -413,7 +413,9 @@ if HAVE_SYSTEMD
 # These units allow to toggle the entirety of 42ity agents and other related
 # services on and off (except a few chosen low-level services that remain
 # WantedBy=multi-user.target)
-SYSTEMD_TARGETS += bios.target bios.service
+SYSTEMD_TARGETS += \
+                        fty-license-accepted.target \
+                        bios.target bios.service
 
 # These units are not part of the common bios.target etc. but are to be
 # considered rather a part of the operating environment independent of
@@ -435,6 +437,8 @@ SYSTEMD_UNITS_EXTRA += \
 # to enable a "tntnet@bios.service" instance specifically.
 # And also some of the timer units and implementations below
 SYSTEMD_UNITS_TARGET_BIOS += \
+                        fty-db-engine.service \
+                        fty-db-init.service \
                         bios-agent-inventory.service
 
 # Here we list the actual service-definition files that should be compiled
@@ -447,9 +451,7 @@ SYSTEMD_UNITS += $(SYSTEMD_UNITS_TARGET_BIOS) $(SYSTEMD_UNITS_LOWLEVEL)
 #SYSTEMD_UNITS_NOTPRESET_LOWLEVEL +=
 SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS += \
                         tntnet@.service \
-                        bios-fake-th.service \
-						fty-db-init.service \
-						fty-db-firstboot.service
+                        bios-fake-th.service
 
 SYSTEMD_UNITS_NOTPRESET += $(SYSTEMD_UNITS_NOTPRESET_LOWLEVEL) $(SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS)
 
@@ -491,7 +493,6 @@ $(SYSTEMD_SUBDIR)/42-bios-systemd.preset: Makefile
 	@mkdir -p "$(abs_top_builddir)/$(SYSTEMD_SUBDIR)" "`dirname "$@"`" || true
 	@( echo "### This is a generated file with a list of all BIOS-related services with their default state"; \
 	  for F in $(SYSTEMD_TARGETS) $(SYSTEMD_UNITS) $(SYSTEMD_TIMERS) ; do echo "enable $$F" ; done ) > $@
-	@for F in fty-db-init.service bios-db-init.service fty-db-firstboot.service mysql.service ; do echo "disable $$F" ; done >> $@
 
 # The rules to actually "compile" the service definition files
 # is part of catch-all %.in recipe above

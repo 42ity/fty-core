@@ -120,6 +120,10 @@ var/
 build/
 build-*/
 
+bios-*.*/
+bios-*.*.tar.?z
+bios-*.deb
+
 core-*.*/
 core-*.*.tar.?z
 core-*.deb
@@ -165,10 +169,10 @@ systemd/biostimer-compress-logs.service
 systemd/biostimer-loghost-rsyslog-netconsole.service
 !systemd/ipc-meta-setup.service.in
 systemd/ipc-meta-setup.service
-!systemd/fty-db-upgrade.service.in
-systemd/fty-db-upgrade.service
-!systemd/fty-db-upgrade.service.in
-systemd/fty-db-upgrade.service
+!systemd/fty-db-init.service.in
+systemd/fty-db-init.service
+!systemd/fty-db-engine.service.in
+systemd/fty-db-engine.service
 !systemd/tntnet@.service.in
 systemd/tntnet@.service
 
