@@ -64,7 +64,7 @@ for DIR in /lib/systemd/system /usr/lib/systemd/system /run/systemd/system /etc/
         continue
     fi
 
-    egrep 'Requires.*bios-db-init.service' "${DIR}"/*.service 2>/dev/null \
+    egrep 'Requires.*(fty|bios)-db-init.service' "${DIR}"/*.service 2>/dev/null \
     | cut -d ':' -f 1 \
     | xargs -L1 basename 2>/dev/null \
     | while read SERVICE; do
