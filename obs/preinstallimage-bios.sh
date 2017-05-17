@@ -464,13 +464,14 @@ mkdir -p /etc/tntnet/bios.d
 # Note: Here we only expect one file, e.g. /usr/share/fty/examples/tntnet.xml.example :
 cp /usr/share/fty/examples/tntnet.xml.* /etc/tntnet/bios.xml
 
-sed -i 's|<!--.*<user>.*|<user>www-data</user>|' /etc/tntnet/bios.xml
-sed -i 's|<!--.*<group>.*|<group>'"${SASL_GROUP}"'</group>|' /etc/tntnet/bios.xml
 sed -i 's|.*<allUserGroups>.*|<allUserGroups>yes</allUserGroups>|' /etc/tntnet/bios.xml || true
-sed -i 's|.*<daemon>.*|<daemon>0</daemon>|' /etc/tntnet/bios.xml
-sed -i 's|\(.*\)<dir>.*|\1<dir>/usr/share/bios-web/</dir>|' /etc/tntnet/bios.xml
-sed -i 's|<!--.*<sslProtocols>.*|<sslProtocols>-TLSv1_0</sslProtocols>|' /etc/tntnet/bios.xml
-sed -i 's|<!--.*<sslCipherList>.*|<sslCipherList>HIGH:!aNULL:!3DES</sslCipherList>|' /etc/tntnet/bios.xml
+sed -e 's|<!--.*<user>.*|<user>www-data</user>|' \
+    -e 's|<!--.*<group>.*|<group>'"${SASL_GROUP}"'</group>|' \
+    -e 's|.*<daemon>.*|<daemon>0</daemon>|' \
+    -e 's|\(.*\)<dir>.*|\1<dir>/usr/share/bios-web/</dir>|' \
+    -e 's|<!--.*<sslProtocols>.*|<sslProtocols>-TLSv1_0</sslProtocols>|' \
+    -e 's|<!--.*<sslCipherList>.*|<sslCipherList>HIGH:!aNULL:!3DES</sslCipherList>|' \
+    -i /etc/tntnet/bios.xml
 
 sed -n '1,/<mappings>/ p' /etc/tntnet/bios.xml  > /etc/tntnet/bios.d/00_start.xml
 sed -n '/<\/mappings>/,$ p' /etc/tntnet/bios.xml > /etc/tntnet/bios.d/99_end.xml
