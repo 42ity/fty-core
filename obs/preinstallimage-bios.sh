@@ -463,7 +463,6 @@ rm -f /etc/init.d/tntnet
 mkdir -p /etc/tntnet/bios.d
 # Note: Here we only expect one file, e.g. /usr/share/fty/examples/tntnet.xml.example :
 cp /usr/share/fty/examples/tntnet.xml.* /etc/tntnet/bios.xml
-mkdir -p /usr/share/core-0.1/web/static
 
 sed -i 's|<!--.*<user>.*|<user>www-data</user>|' /etc/tntnet/bios.xml
 sed -i 's|<!--.*<group>.*|<group>'"${SASL_GROUP}"'</group>|' /etc/tntnet/bios.xml
