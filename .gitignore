@@ -165,10 +165,10 @@ systemd/biostimer-compress-logs.service
 systemd/biostimer-loghost-rsyslog-netconsole.service
 !systemd/ipc-meta-setup.service.in
 systemd/ipc-meta-setup.service
-!systemd/fty-db-upgrade.service.in
-systemd/fty-db-upgrade.service
-!systemd/fty-db-upgrade.service.in
-systemd/fty-db-upgrade.service
+!systemd/fty-db-init.service.in
+systemd/fty-db-init.service
+!systemd/fty-db-engine.service.in
+systemd/fty-db-engine.service
 
 !tools/tntnet-ExecStartPre.sh.in
 tools/tntnet-ExecStartPre.sh
