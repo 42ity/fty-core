@@ -1,7 +1,7 @@
 [Unit]
 Description=Initialize database schema for 42ity services
-After=mysql.service
-Requires=mysql.service
+After=fty-db-engine.service
+Requires=fty-db-engine.service
 Conflicts=shutdown.target
 #do not run if database was not yet initialized
 ConditionPathExists=/var/lib/fty/sql/mysql/bios-db-rw

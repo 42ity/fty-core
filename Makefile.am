@@ -434,6 +434,8 @@ SYSTEMD_UNITS_EXTRA += \
 # And also "tntnet@.service" customized by obs/preinstall.sh
 # And also some of the timer units and implementations below
 SYSTEMD_UNITS_TARGET_BIOS += \
+                        fty-db-engine.service \
+                        fty-license-accepted.target \
                         bios-agent-inventory.service
 
 # Here we list the actual service-definition files that should be compiled
@@ -446,8 +448,8 @@ SYSTEMD_UNITS += $(SYSTEMD_UNITS_TARGET_BIOS) $(SYSTEMD_UNITS_LOWLEVEL)
 #SYSTEMD_UNITS_NOTPRESET_LOWLEVEL +=
 SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS += \
                         bios-fake-th.service \
-						fty-db-init.service \
-						fty-db-firstboot.service
+                        fty-db-init.service \
+                        fty-db-firstboot.service
 
 SYSTEMD_UNITS_NOTPRESET += $(SYSTEMD_UNITS_NOTPRESET_LOWLEVEL) $(SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS)
 

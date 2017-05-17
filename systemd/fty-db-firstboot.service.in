@@ -1,9 +1,11 @@
 [Unit]
 Description=First boot database schema initalization for 42ity services
-After=mysql.service
-Requires=mysql.service
+After=fty-db-engine.service
+Requires=fty-db-engine.service
 Conflicts=shutdown.target
-#Run only if database was not initialized
+# Run only if database was not initialized with our schema yet.
+# Note that eventual schema upgrades are handled by fty-db-init
+# (maiden named bios-db-init) service separately.
 ConditionPathExists=!/var/lib/fty/sql/mysql/bios-db-rw
 
 [Service]

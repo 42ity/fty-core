@@ -35,8 +35,10 @@ if [[ -f /etc/default/bios-db-rw ]]; then
     exit 0
 fi
 
-sudo ${SYSTEMCTL} unmask mysql || die "Unmasking mysql failed"
-sudo ${SYSTEMCTL} enable mysql || die "Enabling mysql failed"
+sudo ${SYSTEMCTL} restart fty-license-accepted || die "Restarting fty-license-accepted failed"
+sudo ${SYSTEMCTL} unmask fty-db-engine || die "Unmasking fty-db-engine failed"
+sudo ${SYSTEMCTL} enable fty-db-engine || die "Enabling fty-db-engine failed"
+sudo ${SYSTEMCTL} start fty-db-engine || die "Starting fty-db-engine failed"
 sudo ${SYSTEMCTL} start fty-db-firstboot || die "Starting fty-db-firstboot failed"
 
 sleep 2
