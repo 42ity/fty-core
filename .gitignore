@@ -169,6 +169,8 @@ systemd/ipc-meta-setup.service
 systemd/fty-db-init.service
 !systemd/fty-db-engine.service.in
 systemd/fty-db-engine.service
+!systemd/tntnet@.service.in
+systemd/tntnet@.service
 
 !tools/tntnet-ExecStartPre.sh.in
 tools/tntnet-ExecStartPre.sh

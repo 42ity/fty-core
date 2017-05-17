@@ -434,6 +434,7 @@ SYSTEMD_UNITS_EXTRA += \
 
 # These service-units are PartOf and WantedBy the "bios.target"
 # And also "tntnet@.service" customized by obs/preinstall.sh
+# to enable a "tntnet@bios.service" instance specifically.
 # And also some of the timer units and implementations below
 SYSTEMD_UNITS_TARGET_BIOS += \
                         fty-db-engine.service \
@@ -449,6 +450,7 @@ SYSTEMD_UNITS += $(SYSTEMD_UNITS_TARGET_BIOS) $(SYSTEMD_UNITS_LOWLEVEL)
 # script or during deployment's lifetime)
 #SYSTEMD_UNITS_NOTPRESET_LOWLEVEL +=
 SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS += \
+                        tntnet@.service \
                         bios-fake-th.service
 
 SYSTEMD_UNITS_NOTPRESET += $(SYSTEMD_UNITS_NOTPRESET_LOWLEVEL) $(SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS)
