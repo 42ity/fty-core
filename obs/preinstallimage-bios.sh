@@ -456,11 +456,6 @@ done
 /bin/systemctl disable fty-db-firstboot
 
 # Our tntnet unit
-cat > /usr/share/fty/scripts/xml-cat.sh << EOF
-#!/bin/sh
-cat "\$1"/*.xml > "\$2"
-EOF
-chmod a+rx /usr/share/fty/scripts/xml-cat.sh
 rm -f /etc/init.d/tntnet
 
 # Enable REST API via tntnet
