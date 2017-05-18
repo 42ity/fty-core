@@ -40,6 +40,7 @@ fi
 sudo ${SYSTEMCTL} unmask fty-license-accepted.target || die "Unmasking fty-license-accepted failed"
 sudo ${SYSTEMCTL} enable fty-license-accepted.target || die "Enabling fty-license-accepted failed"
 sudo ${SYSTEMCTL} restart fty-license-accepted.target || die "Restarting fty-license-accepted failed"
+sudo ${SYSTEMCTL} start fty-license-accepted.target || die "Starting fty-license-accepted failed"
 
 # Technically this all should not be needed, as the standard processing
 # of the now-active fty-license-accepted should trigger startup of the
