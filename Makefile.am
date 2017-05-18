@@ -447,10 +447,12 @@ SYSTEMD_UNITS += $(SYSTEMD_UNITS_TARGET_BIOS) $(SYSTEMD_UNITS_LOWLEVEL)
 
 # These units have unit files installed but are not enabled nor disabled
 # by default via presets nor timers (may be enabled in OS image generation
-# script or during deployment's lifetime)
+# script or during deployment's lifetime).
+# Note: Due to conflict with "tntnet@.service" file from tntnet package,
+# we name ours differently here (and override during OS image generation).
 #SYSTEMD_UNITS_NOTPRESET_LOWLEVEL +=
 SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS += \
-                        tntnet@.service \
+                        fty-tntnet@.service \
                         bios-fake-th.service
 
 SYSTEMD_UNITS_NOTPRESET += $(SYSTEMD_UNITS_NOTPRESET_LOWLEVEL) $(SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS)

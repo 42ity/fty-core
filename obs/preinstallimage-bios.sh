@@ -452,6 +452,7 @@ done
 
 # Our tntnet unit rocks, disable packaged default
 rm -f /etc/init.d/tntnet
+cp -f /lib/systemd/system/fty-tntnet@.service /lib/systemd/system/tntnet@.service
 
 # Enable REST API via tntnet
 # Note: for legacy reasons, we still maintain tntnet@bios.service (not @fty)
