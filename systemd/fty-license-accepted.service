@@ -6,5 +6,12 @@ After=multi-user.target network.target
 Conflicts=rescue.target shutdown.target
 PartOf=bios.target
 
+[Service]
+Type=simple
+### the service shall be considered active even when all its processes exited
+RemainAfterExit=yes
+User=root
+ExecStart=/usr/bin/test -s /var/lib/fty/license
+
 [Install]
 WantedBy=bios.target

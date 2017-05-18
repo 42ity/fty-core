@@ -414,7 +414,7 @@ if HAVE_SYSTEMD
 # services on and off (except a few chosen low-level services that remain
 # WantedBy=multi-user.target)
 SYSTEMD_TARGETS += \
-                        fty-license-accepted.target \
+                        fty-license-accepted.service \
                         bios.target bios.service
 
 # These units are not part of the common bios.target etc. but are to be
