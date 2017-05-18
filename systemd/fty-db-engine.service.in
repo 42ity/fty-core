@@ -5,6 +5,7 @@
 Description=MySQL server for 42ity usage
 Conflicts=mysql.service mysqld.service mariadb.service
 Requires=fty-license-accepted.target
+ConditionFileNotEmpty=/var/lib/fty/license
 Wants=basic.target
 After=basic.target network.target fty-license-accepted.target
 PartOf=bios.target
