@@ -13,4 +13,4 @@ PathExists=/var/lib/fty/license
 Unit=fty-license-accepted.service
 
 [Install]
-WantedBy=bios.target fty-license-accepted.service
+RequiredBy=bios.target fty-license-accepted.service
