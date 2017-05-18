@@ -30,7 +30,7 @@ die () {
 }
 
 if [[ -f /etc/default/bios-db-rw ]]; then
-    echo "SKIPPED: /etc/default/bios-db-rw exists"
+    echo "SKIPPED: /etc/default/bios-db-rw exists" >&2
     exit 0
 fi
 
@@ -56,10 +56,7 @@ sudo ${SYSTEMCTL} enable fty-db-init || die "Enabling fty-db-init failed"
 sudo ${SYSTEMCTL} start fty-db-init || die "Starting fty-db-init failed"
 
 sleep 2
-if [[ ! -f /etc/default/bios-db-rw ]]; then
-    echo "ERROR: /etc/default/bios-db-rw is missing"
-    exit 1
-fi
+[[ -f /etc/default/bios-db-rw ]] || die "/etc/default/bios-db-rw is missing"
 
 for DIR in /lib/systemd/system /usr/lib/systemd/system /run/systemd/system /etc/systemd/system/; do
     if [[ ! -d "${DIR}" ]]; then
