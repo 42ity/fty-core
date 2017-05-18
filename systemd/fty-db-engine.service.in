@@ -4,7 +4,7 @@
 [Unit]
 Description=MySQL server for 42ity usage
 Conflicts=mysql.service mysqld.service mariadb.service
-Reqires=fty-license-accepted.target
+Requires=fty-license-accepted.target
 Wants=basic.target
 After=basic.target network.target fty-license-accepted.target
 PartOf=bios.target
