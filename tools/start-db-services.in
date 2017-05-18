@@ -34,6 +34,8 @@ if [[ -f /etc/default/bios-db-rw ]]; then
     exit 0
 fi
 
+[[ -s /var/lib/fty/license ]] || echo "WARNING: the /var/lib/fty/license file is missing or empty" >&2
+
 # Just in case the service is disabled by preinstall or other means,
 # make it be active (as long as the license acceptance criteria are met).
 # Otherwise it should have come up as soon as the file(s) appeared, etc.
