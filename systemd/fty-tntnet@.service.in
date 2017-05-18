@@ -1,5 +1,5 @@
 [Unit]
-Description=Tntnet web server instance for 42ity using @sysconfdir@/tntnet/%I.xml
+Description=Tntnet web server instance for 42ity using @sysconfdir@/tntnet/%i.xml
 After=network.target saslauthd.service malamute.service
 Requires=saslauthd.service malamute.service
 PartOf=bios.target
@@ -24,3 +24,4 @@ ExecStart=/usr/bin/tntnet -c @sysconfdir@/tntnet/%i.xml
 
 [Install]
 WantedBy=bios.target
+Alias=tntnet@%i.service
