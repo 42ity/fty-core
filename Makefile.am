@@ -437,6 +437,7 @@ SYSTEMD_UNITS_EXTRA += \
 # to enable a "tntnet@bios.service" instance specifically.
 # And also some of the timer units and implementations below
 SYSTEMD_UNITS_TARGET_BIOS += \
+                        fty-license-accepted.path \
                         fty-db-engine.service \
                         fty-db-init.service \
                         bios-agent-inventory.service
