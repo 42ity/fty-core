@@ -1,7 +1,8 @@
 [Unit]
 Description=Initialize or update database schema for 42ity services
 After=fty-db-engine.service
-Requisite=fty-db-engine.service
+# Not Requires, not Requisite... Wants and ExecStartPre hack, see https://github.com/systemd/systemd/issues/1312
+Wants=fty-db-engine.service
 Conflicts=shutdown.target
 PartOf=bios.target
 
@@ -20,6 +21,8 @@ EnvironmentFile=-@sysconfdir@/default/bios__%n.conf
 EnvironmentFile=-@sysconfdir@/default/fty
 EnvironmentFile=-@sysconfdir@/default/fty__%n.conf
 Environment="prefix=@prefix@"
+ExecStartPre=/bin/systemctl is-active fty-db-engine.service
+RestartSec=3
 ExecStart=@libexecdir@/@PACKAGE@/db-init
 
 [Install]
