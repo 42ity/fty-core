@@ -430,6 +430,7 @@ SYSTEMD_UNITS_LOWLEVEL += \
 # These are verbatim (not templated) additional units that wrap third-party
 # service instances for us. TODO: should tntnet@.service move here?
 SYSTEMD_UNITS_EXTRA += \
+                        fty-license-accepted.path \
                         wd_keepalive@.service
 
 # These service-units are PartOf and WantedBy the "bios.target"
@@ -437,7 +438,6 @@ SYSTEMD_UNITS_EXTRA += \
 # to enable a "tntnet@bios.service" instance specifically.
 # And also some of the timer units and implementations below
 SYSTEMD_UNITS_TARGET_BIOS += \
-                        fty-license-accepted.path \
                         fty-db-engine.service \
                         fty-db-init.service \
                         bios-agent-inventory.service
