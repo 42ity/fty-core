@@ -4,25 +4,15 @@
 [Unit]
 Description=MySQL server for 42ity usage
 Conflicts=mysql.service mysqld.service mariadb.service
-# Not Requires, not Requisite... Wants and ExecStartPre hack, see https://github.com/systemd/systemd/issues/1312
+# Not Requires, not Requisite... Wants and ExecStartPre is-active hack, see https://github.com/systemd/systemd/issues/1312
 Wants=basic.target network.target fty-license-accepted.service
 After=basic.target network.target fty-license-accepted.service
 PartOf=bios.target
 
 [Service]
 Type=forking
-#ExecStartPre=-/bin/systemctl stop mysql.service
-#ExecStartPre=-/bin/systemctl disable mysql.service
-#ExecStartPre=-/bin/systemctl mask mysql.service
-#ExecStartPre=-/bin/systemctl stop mysqld.service
-#ExecStartPre=-/bin/systemctl disable mysqld.service
-#ExecStartPre=-/bin/systemctl mask mysqld.service
-#ExecStartPre=-/bin/systemctl stop mariadb.service
-#ExecStartPre=-/bin/systemctl disable mariadb.service
-#ExecStartPre=-/bin/systemctl mask mariadb.service
+#ExecStartPre=/bin/dash -c "for S in mysql.service mysqld.service mariadb.service ; do for A in stop disable mask ; do /bin/systemctl $A $S || true ; done; done"
 ExecStartPre=/bin/dash -c "while ! /bin/systemctl is-active fty-license-accepted.service ; do sleep 3 ; done"
-#ExecStartPre=/bin/systemctl is-active fty-license-accepted.service
-#RestartSec=3
 ExecStartPre=/bin/dash -c "if [ -d /var/lib/mysql ] ; then /bin/chown -R mysql:mysql /var/lib/mysql ; fi"
 ExecStart=/usr/lib/mysql/rcmysql start
 ExecStop=/usr/lib/mysql/rcmysql stop
