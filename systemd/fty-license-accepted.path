@@ -1,0 +1,16 @@
+# This unit fires whenever the monitored pathname is written to, with its
+# action being to try enabling the target Unit. The latter can also start
+# by itself during subsequent boots, thanks to the file already existing.
+# The target Unit by itself also has a Condition on this file to be not empty.
+
+[Unit]
+Description=Tracker that the 42ity license is accepted
+PartOf=bios.target
+
+[Path]
+PathModified=/var/lib/fty/license
+PathExists=/var/lib/fty/license
+Unit=fty-license-accepted.service
+
+[Install]
+RequiredBy=bios.target fty-license-accepted.service

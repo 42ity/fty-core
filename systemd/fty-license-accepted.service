@@ -1,10 +1,18 @@
 [Unit]
 Description=Milestone for all 42ity-related services that should start after license is accepted
+ConditionFileNotEmpty=/var/lib/fty/license
 Requires=multi-user.target network.target
 After=multi-user.target network.target
 Conflicts=rescue.target shutdown.target
-ConditionFileNotEmpty=/var/lib/fty/license
 PartOf=bios.target
+
+[Service]
+Type=simple
+### the service shall be considered active even when all its processes exited
+RemainAfterExit=yes
+User=root
+ExecStartPre=/usr/bin/test -s /var/lib/fty/license
+ExecStart=-/bin/systemctl start bios.service
 
 [Install]
 WantedBy=bios.target

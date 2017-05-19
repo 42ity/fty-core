@@ -1029,7 +1029,7 @@ systemctl_list_needs() (
     if [[ -n "$SYSTEMCTL_UNITS" ]] ; then
         SYSTEMCTL_UNITS="`$SYSTEMCTL show -p Id $SYSTEMCTL_UNITS | sed 's,^.*=,,'`"
     else
-        SYSTEMCTL_UNITS="tntnet@bios.service bios.service bios.target fty-license-accepted.target `list_known_ipm_units | egrep -v 'tntnet@bios.service|bios.service|bios.target|fty-license-accepted.target'`"
+        SYSTEMCTL_UNITS="tntnet@bios.service bios.service bios.target fty-license-accepted.service `list_known_ipm_units | egrep -v 'tntnet@bios.service|bios.service|bios.target|fty-license-accepted.service'`"
     fi
     export RECURSIVE
 

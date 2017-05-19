@@ -414,7 +414,7 @@ if HAVE_SYSTEMD
 # services on and off (except a few chosen low-level services that remain
 # WantedBy=multi-user.target)
 SYSTEMD_TARGETS += \
-                        fty-license-accepted.target \
+                        fty-license-accepted.service \
                         bios.target bios.service
 
 # These units are not part of the common bios.target etc. but are to be
@@ -437,6 +437,7 @@ SYSTEMD_UNITS_EXTRA += \
 # to enable a "tntnet@bios.service" instance specifically.
 # And also some of the timer units and implementations below
 SYSTEMD_UNITS_TARGET_BIOS += \
+                        fty-license-accepted.path \
                         fty-db-engine.service \
                         fty-db-init.service \
                         bios-agent-inventory.service
