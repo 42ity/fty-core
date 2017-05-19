@@ -21,8 +21,7 @@ EnvironmentFile=-@sysconfdir@/default/bios__%n.conf
 EnvironmentFile=-@sysconfdir@/default/fty
 EnvironmentFile=-@sysconfdir@/default/fty__%n.conf
 Environment="prefix=@prefix@"
-ExecStartPre=/bin/systemctl is-active fty-db-engine.service
-RestartSec=3
+ExecStartPre=/bin/dash -c "while ! /bin/systemctl is-active fty-db-engine.service ; do sleep 3 ; done"
 ExecStart=@libexecdir@/@PACKAGE@/db-init
 
 [Install]
