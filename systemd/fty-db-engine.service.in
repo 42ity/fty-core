@@ -5,8 +5,7 @@
 Description=MySQL server for 42ity usage
 Conflicts=mysql.service mysqld.service mariadb.service
 # Not Requires, not Requisite... Wants and ExecStartPre hack, see https://github.com/systemd/systemd/issues/1312
-#Wants=basic.target network.target fty-license-accepted.service
-Requisite=basic.target network.target fty-license-accepted.service
+Wants=basic.target network.target fty-license-accepted.service
 After=basic.target network.target fty-license-accepted.service
 PartOf=bios.target
 

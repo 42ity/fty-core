@@ -2,8 +2,7 @@
 Description=Initialize or update database schema for 42ity services
 After=fty-db-engine.service
 # Not Requires, not Requisite... Wants and ExecStartPre hack, see https://github.com/systemd/systemd/issues/1312
-#Wants=fty-db-engine.service
-Requisite=fty-db-engine.service
+Wants=fty-db-engine.service
 Conflicts=shutdown.target
 PartOf=bios.target
 
