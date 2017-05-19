@@ -762,13 +762,17 @@ download_osimage() (
     case "$IMAGE_URL" in
             *"${IMGTYPE}"*) ;;
             "") ;; # This dies a bit below
-            *)  logmsg_warn "The IMAGE_URL='$IMAGE_URL' does not contain IMGTYPE='$IMGTYPE'!" ; sleep 5 ;;
+            *)  logmsg_warn "The string IMAGE_URL='$IMAGE_URL' does not contain IMGTYPE='$IMGTYPE'!" \
+                    "You may have explicitly requested to download something different from you are running or expecting..."
+                sleep 5 ;;
     esac
 
     case "$IMAGE_URL" in
             *"${ARCH}"*) ;;
             "") ;; # This dies a bit below
-            *)  logmsg_warn "The IMAGE_URL='$IMAGE_URL' does not contain ARCH='$ARCH'!" ; sleep 5 ;;
+            *)  logmsg_warn "The string IMAGE_URL='$IMAGE_URL' does not contain ARCH='$ARCH'!" \
+                    "You may have explicitly requested to download something different from you are running or expecting..."
+                sleep 5 ;;
     esac
 
     [ -n "$IMAGE_URL" ] && \
