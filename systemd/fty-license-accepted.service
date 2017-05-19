@@ -11,7 +11,8 @@ Type=simple
 ### the service shall be considered active even when all its processes exited
 RemainAfterExit=yes
 User=root
-ExecStart=/usr/bin/test -s /var/lib/fty/license
+ExecStartPre=/usr/bin/test -s /var/lib/fty/license
+ExecStart=-/bin/systemctl start bios.service
 
 [Install]
 WantedBy=bios.target
