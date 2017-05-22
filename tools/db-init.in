@@ -322,7 +322,7 @@ ensure_root_password() {
 	# Then fall back to a very legacy file if present
 	if [ -z "`echo "select 'working';" | do_mysql | grep working`" ]; then
 		if [ -z "`echo "select 'working';" | do_mysql --password='' | grep working`" ]; then
-			if [ -s "$MYCNF" ] && ! diff -q "$MYCNF" "$MYCNF_LEGACY" ]; then
+			if [ -s "$MYCNF" ] && ! diff -q "$MYCNF" "$MYCNF_LEGACY" ; then
 				# Data in the legacy location was verified to be invalid above
 				rm -f "${MYCNF_LEGACY}" && \
 				ln -s "${MYCNF}" "${MYCNF_LEGACY}"
