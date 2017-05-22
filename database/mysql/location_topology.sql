@@ -22,90 +22,90 @@ SELECT @device_genset := id_asset_device_type FROM t_bios_asset_device_type WHER
 
 /* DC */
 
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7000, "DC_LOC_01", @ae_datacenter, NULL);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7000, "DC-LOC-01", @ae_datacenter, NULL);
 
 /* ROOMS */
 
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7001, "ROOM_LOC_01", @ae_room, 7000);
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7002, "ROOM_LOC_02", @ae_room, 7000);
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7003, "ROOM_LOC_50", @ae_room, NULL);  /* unlockated */
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7001, "ROOM-LOC-01", @ae_room, 7000);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7002, "ROOM-LOC-02", @ae_room, 7000);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7003, "ROOM-LOC-50", @ae_room, NULL);  /* unlockated */
 
 /* ROWS */
 
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7004, "ROW_LOC_01", @ae_row, 7001);
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7005, "ROW_LOC_20", @ae_row, 7002);
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7006, "ROW_LOC_21", @ae_row, 7002);
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7007, "ROW_LOC_30", @ae_row, 7000);
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7008, "ROW_LOC_50", @ae_row, NULL);    /* unlockated */
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7004, "ROW-LOC-01", @ae_row, 7001);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7005, "ROW-LOC-20", @ae_row, 7002);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7006, "ROW-LOC-21", @ae_row, 7002);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7007, "ROW-LOC-30", @ae_row, 7000);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7008, "ROW-LOC-50", @ae_row, NULL);    /* unlockated */
 
 /* RACKS */
 
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7009, "RACK_LOC_010", @ae_rack, 7004);
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7010, "RACK_LOC_011", @ae_rack, 7004);
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7011, "RACK_LOC_20",  @ae_rack, 7005);
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7012, "RACK_LOC_21",  @ae_rack, 7006);
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7013, "RACK_LOC_30",  @ae_rack, 7000);
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7014, "RACK_LOC_1",   @ae_rack, 7001);
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7015, "RACK_LOC_50",  @ae_rack, NULL); /* unlockated */
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7009, "RACK-LOC-010", @ae_rack, 7004);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7010, "RACK-LOC-011", @ae_rack, 7004);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7011, "RACK-LOC-20",  @ae_rack, 7005);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7012, "RACK-LOC-21",  @ae_rack, 7006);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7013, "RACK-LOC-30",  @ae_rack, 7000);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7014, "RACK-LOC-1",   @ae_rack, 7001);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7015, "RACK-LOC-50",  @ae_rack, NULL); /* unlockated */
 
 /* DEVICES*/
 
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_subtype, id_parent) VALUES (7016, "feed_LOC_1", @ae_device, @device_feed, 7000);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_subtype, id_parent) VALUES (7016, "feed-LOC-1", @ae_device, @device_feed, 7000);
 
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_subtype, id_parent) VALUES (7017, "genset_LOC_1", @ae_device, @device_genset, 7000);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_subtype, id_parent) VALUES (7017, "genset-LOC-1", @ae_device, @device_genset, 7000);
 
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_subtype, id_parent) VALUES (7018, "ups_LOC_1", @ae_device, @device_ups, 7000);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_subtype, id_parent) VALUES (7018, "ups-LOC-1", @ae_device, @device_ups, 7000);
 
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_subtype, id_parent) VALUES (7019, "srv_LOC_40", @ae_device, @device_server, 7000);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_subtype, id_parent) VALUES (7019, "srv-LOC-40", @ae_device, @device_server, 7000);
 
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_subtype, id_parent) VALUES (7020, "srv_LOC_10", @ae_device, @device_server, 7009);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_subtype, id_parent) VALUES (7020, "srv-LOC-10", @ae_device, @device_server, 7009);
 
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_subtype, id_parent) VALUES (7021, "srv_LOC_11", @ae_device, @device_server, 7010);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_subtype, id_parent) VALUES (7021, "srv-LOC-11", @ae_device, @device_server, 7010);
 
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_subtype, id_parent) VALUES (7022, "ups_LOC_010", @ae_device, @device_ups, 7009);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_subtype, id_parent) VALUES (7022, "ups-LOC-010", @ae_device, @device_ups, 7009);
 
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_subtype, id_parent) VALUES (7023, "srv_LOC_50", @ae_device, @device_server, NULL); /* unlockated */
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_subtype, id_parent) VALUES (7023, "srv-LOC-50", @ae_device, @device_server, NULL); /* unlockated */
 
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_subtype, id_parent) VALUES (7024, "srv_LOC_51", @ae_device, @device_server, NULL); /* unlockated */
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_subtype, id_parent) VALUES (7024, "srv-LOC-51", @ae_device, @device_server, NULL); /* unlockated */
 
 /* GROUPS */
 
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7025, "inputpowergroup DC_LOC_01", @ae_group, 7000);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7025, "inputpowergroup DC-LOC-01", @ae_group, 7000);
 INSERT INTO t_bios_asset_ext_attributes ( id_asset_ext_attribute, keytag, value, id_asset_element) VALUES (9000, "type", "N_A", 7025);
 
 INSERT INTO t_bios_asset_group_relation
     (id_asset_group, id_asset_element)
 VALUES
 (
-    (SELECT id_asset_element FROM `t_bios_asset_element` WHERE name = "inputpowergroup DC_LOC_01"),
-    (SELECT id_asset_element FROM `t_bios_asset_element` WHERE name = 'feed_LOC_1')
+    (SELECT id_asset_element FROM `t_bios_asset_element` WHERE name = "inputpowergroup DC-LOC-01"),
+    (SELECT id_asset_element FROM `t_bios_asset_element` WHERE name = 'feed-LOC-1')
 );
 
 INSERT INTO t_bios_asset_group_relation
     (id_asset_group, id_asset_element)
 VALUES
 (
-    (SELECT id_asset_element FROM `t_bios_asset_element` WHERE name = 'inputpowergroup DC_LOC_01'),
-    (SELECT id_asset_element FROM `t_bios_asset_element` WHERE name = 'genset_LOC_1')
+    (SELECT id_asset_element FROM `t_bios_asset_element` WHERE name = 'inputpowergroup DC-LOC-01'),
+    (SELECT id_asset_element FROM `t_bios_asset_element` WHERE name = 'genset-LOC-1')
 );
 
 INSERT INTO t_bios_asset_group_relation
     (id_asset_group, id_asset_element)
 VALUES
 (
-    (SELECT id_asset_element FROM `t_bios_asset_element` WHERE name = 'inputpowergroup DC_LOC_01'),
-    (SELECT id_asset_element FROM `t_bios_asset_element` WHERE name = 'ups_LOC_1')
+    (SELECT id_asset_element FROM `t_bios_asset_element` WHERE name = 'inputpowergroup DC-LOC-01'),
+    (SELECT id_asset_element FROM `t_bios_asset_element` WHERE name = 'ups-LOC-1')
 );
 
 /* ----------------------------------------------DC 02 -----------------------------------------------------------------*/
 
 /* DC */
 
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7026, "DC_LOC_02", @ae_datacenter, NULL);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7026, "DC-LOC-02", @ae_datacenter, NULL);
 
 /* RACKS */
 
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7027, "RACK_LOC_6", @ae_rack, 7026);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7027, "RACK-LOC-6", @ae_rack, 7026);
 
 /* DEVICES*/
 
@@ -115,18 +115,19 @@ INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_subtype, 
 
 /* DC */
 
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7029, "DC_LOC_03", @ae_datacenter, NULL);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7029, "DC-LOC-03", @ae_datacenter, NULL);
 
 /* ROOMS */
 
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7030, "ROOM_LOC_6", @ae_room, 7029);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7030, "ROOM-LOC-6", @ae_room, 7029);
 
 /* ROWS*/
 
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7031, "ROW_LOC_6",  @ae_row, 7029);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7031, "ROW-LOC-6",  @ae_row, 7029);
 
 /* ---------------------------------------------- DC 04, empty ----------------------------------------------------------------*/
 
 /* DC */
 
-INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7032, "DC_LOC_04", @ae_datacenter, NULL);
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7032, "DC-LOC-04", @ae_datacenter, NULL);
+"""
