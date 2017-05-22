@@ -16,7 +16,7 @@ insert into t_bios_asset_link (id_link , id_asset_device_src , src_out , id_asse
 insert into t_bios_asset_link (id_link , id_asset_device_src , src_out , id_asset_device_dest , dest_in , id_asset_link_type ) values (NULL, 5004 , 8,5003 , NULL, 1);
 insert into t_bios_asset_link (id_link , id_asset_device_src , src_out , id_asset_device_dest , dest_in , id_asset_link_type ) values (NULL, 5005 , 9,5003 , NULL, 1);
 
-insert into t_bios_asset_element ( id_asset_element , name , id_type , id_parent ) values (4999, "power_inputgrp_test", 1, NULL);
+insert into t_bios_asset_element ( id_asset_element , name , id_type , id_parent ) values (4999, "power-inputgrp-test", 1, NULL);
 insert into t_bios_asset_group_relation (id_asset_group_relation , id_asset_group, id_asset_element) values (NULL, 4999, 5005);
 insert into t_bios_asset_group_relation (id_asset_group_relation , id_asset_group, id_asset_element) values (NULL, 4999, 5003);
 insert into t_bios_asset_group_relation (id_asset_group_relation , id_asset_group, id_asset_element) values (NULL, 4999, 5002);
@@ -308,7 +308,7 @@ INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_subtype, 
 
 /* GROUPS */
 INSERT INTO t_bios_asset_element ( id_asset_element, name , id_type, id_parent) VALUES (5088, "GROUP1-05", @ae_group, 5078);
-INSERT INTO t_bios_asset_ext_attributes ( id_asset_ext_attribute, keytag, value, id_asset_element) VALUES (9001, "type", "input power", 5078);
+INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element) VALUES ("type", "input power", 5088);
 
 INSERT INTO t_bios_asset_group_relation
     (id_asset_group, id_asset_element)
@@ -329,7 +329,7 @@ INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_d
 INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 5084, NULL, 5086, NULL, @id_link);
 
 /* New group */
-insert into t_bios_asset_element ( id_asset_element , name , id_type , id_parent ) values (4998, "power_inputgrp_empty", 1, NULL);
+insert into t_bios_asset_element ( id_asset_element , name , id_type , id_parent ) values (4998, "power-inputgrp-empty", 1, NULL);
 insert into t_bios_asset_element ( id_asset_element , name , id_type , id_parent ) values (5089, "POT", 1, NULL);
 
 /* New group relation */
