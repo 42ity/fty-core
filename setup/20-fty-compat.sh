@@ -176,7 +176,7 @@ mvln /var/lib/bios/uptime             /var/lib/fty/fty-kpi-power-uptime
 # But a legacy system may have an agent file of its own...
 mvln /var/lib/bios/composite-metrics/agent_th  /var/lib/fty/fty-sensor-env/agent_th
 
-# alert list file must be converter, do it manually
+# alert list file must be converted, do it manually
 if [[ -e /var/lib/bios/agent-alerts-list/state_file ]]; then
     mkdir -p /var/lib/fty/fty-alert-list
     chown bios:root /var/lib/fty/fty-alert-list
@@ -187,3 +187,11 @@ if [[ -e /var/lib/bios/agent-alerts-list/state_file ]]; then
     chown bios:bios-infra /var/lib/fty/fty-alert-list/state_file || :
     rm -rf /var/lib/bios/agent-alerts-list
 fi
+
+# Our web-server should be able to read these credentials,
+# at least per current implementation of license_POST
+CREDSQL_DIR="/var/lib/fty/sql/mysql"
+BIOS_DB_RW="$CREDSQL_DIR/bios-db-rw"
+chgrp www-data "${BIOS_DB_RW}"
+chmod g+r "${BIOS_DB_RW}"
+chgrp www-data "${CREDSQL_DIR}"
