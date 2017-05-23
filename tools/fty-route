@@ -20,6 +20,11 @@
 #  \brief   Helper script for route manipulation
 #  \author  Michal Vyskocil <MichalVyskocil@Eaton.com>
 
+# run fty-route as a root
+if [[ $(id -u) != 0 ]]; then
+    /usr/bin/sudo "${@}"
+fi
+
 die () {
     echo "FATAL: ${@}" >&2
     exit 1
@@ -29,17 +34,17 @@ die () {
 augtool () {
 
     if [[ "${1}" == "set" ]]; then
-        cat <<EOF | /usr/bin/sudo /usr/bin/augtool -S -I/usr/share/fty/lenses/
+        cat <<EOF | /usr/bin/augtool -S -I/usr/share/fty/lenses/
 "${1}" "${2}" "${3}"
 save
 EOF
     elif [[ "${1}" == "rm" ]]; then
-        cat <<EOF | /usr/bin/sudo /usr/bin/augtool -S -I/usr/share/fty/lenses/
+        cat <<EOF | /usr/bin/augtool -S -I/usr/share/fty/lenses/
 "${1}" "${2}"
 save
 EOF
     else
-        /usr/bin/sudo /usr/bin/augtool -S -I/usr/share/fty/lenses/ "${@}"
+        /usr/bin/augtool -S -I/usr/share/fty/lenses/ "${@}"
     fi
 }
 
