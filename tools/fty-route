@@ -70,8 +70,8 @@ case ${ARGS[0]} in
         /sbin/route
         ;;
     add)
+        route "${@}" || die "Command route ${@} failed"
         augtool "set" "${IFACE_PATH}/post-up[last()+1]" "route ${COMMAND}"
-        sudo /bin/systemctl restart bios-networking
         ;;
     del)
         POST_UP_PATH=$(ag_index "match ${IFACE_PATH}/post-up" "route ${COMMAND/del/add}")
@@ -83,8 +83,7 @@ case ${ARGS[0]} in
             augtool "rm" "${line}"
         done
         # delete routing info from kernel table
-        route ${COMMAND} || :
-        sudo /bin/systemctl restart bios-networking
+        route ${@} || die "Command route ${@} failed"
         ;;
     -h|--help|help)
         cat <<EOF >&2
