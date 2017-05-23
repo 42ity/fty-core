@@ -14,7 +14,20 @@ die () {
 
 # Execute augtool with given arguments
 augtool () {
-    /usr/bin/sudo /usr/bin/augtool -S -I/usr/share/fty/lenses/ "${@}"
+
+    if [[ "${1}" == "set" ]]; then
+        cat <<EOF | /usr/bin/sudo /usr/bin/augtool -S -I/usr/share/fty/lenses/
+"${1}" "${2}" "${3}"
+save
+EOF
+    elif [[ "${1}" == "rm" ]]; then
+        cat <<EOF | /usr/bin/sudo /usr/bin/augtool -S -I/usr/share/fty/lenses/
+"${1}" "${2}"
+save
+EOF
+    else
+        /usr/bin/sudo /usr/bin/augtool -S -I/usr/share/fty/lenses/ "${@}"
+    fi
 }
 
 # Return augeas index
@@ -33,7 +46,6 @@ LAST_IDX=$((${#} - 1))
 
 # TODO: check add/del commands
 
-echo "DEBUG: last_arg=${ARGS[$LAST_IDX]}"
 # put all routing to the default interface, unless (dev)? iface_name is specified
 # distinguish modes by checking last argument of post-up
 IFACE_PATH=$(ag_index "match /files/etc/network/interfaces/iface[*]" "${ARGS[${LAST_IDX}]}")
@@ -46,39 +58,17 @@ fi
 
 case ${ARGS[0]} in
     add)
-        augtool "set ${IFACE_PATH}/post-up[last()+1]" "route ${COMMAND}"
+        augtool "set" "${IFACE_PATH}/post-up[last()+1]" "route ${COMMAND}"
         ;;
     del)
-        POST_UP_PATH=$(ag_index "match ${IFACE_PATH}/post-up[*]" "route ${COMMAND}")
+        POST_UP_PATH=$(ag_index "match ${IFACE_PATH}/post-up" "route ${COMMAND/del/add}")
         if [ -z "${POST_UP_PATH}" ]; then
             die "Can't delete non existent route ${COMMAND} from ${IFACE_PATH}"
         fi
-        augtool "rm ${POST_UP_PATH}"
+        for line in ${POST_UP_PATH}; do
+            augtool "rm" "${line}"
+        done
         ;;
     *)
         die "Unknown command ${ARGS[0]}, use add/del"
 esac
-
-## get list of all interfaces
-#sudo augtool 
-#    match /files/etc/network/interfaces/iface[*]
-
-# /files/etc/network/interfaces/iface[1] = lo
-# /files/etc/network/interfaces/iface[2] = eth0
-# /files/etc/network/interfaces/iface[3] = LAN2
-# /files/etc/network/interfaces/iface[4] = LAN3
-
-
-## SET
-#set "/files/etc/network/interfaces/iface[4]/post-up[last()+1]" "route add -net 10.41.0.0/16 gw 192.168.0.1"
-
-## DEL
-#sudo augtool -S -I/usr/share/fty/lenses/ match /files/etc/network/interfaces/iface[4]/post-up
-# /files/etc/network/interfaces/iface[4]/post-up[1] = route add -host 10.1.2.51 LAN2
-# /files/etc/network/interfaces/iface[4]/post-up[2] = route add -net 10.41.0.0/16 gw 192.168.0.1
-
-#sudo augtool -S -I/usr/share/fty/lenses/ match /files/etc/network/interfaces/iface[4]/post-up
-#/files/etc/network/interfaces/iface[4]/post-up[1] = route add -host 10.1.2.51 LAN2
-#/files/etc/network/interfaces/iface[4]/post-up[2] = route add -net 10.41.0.0/16 gw 192.168.0.1
-
-#augtool -S -I/usr/share/fty/lenses/ rm /files/etc/network/interfaces/iface[4]/post-up[1]
