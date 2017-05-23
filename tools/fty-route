@@ -75,7 +75,7 @@ case ${ARGS[0]} in
         /sbin/route
         ;;
     add)
-        route "${@}" || die "Command route ${@} failed"
+        /sbin/route "${@}" || die "Command route ${@} failed"
         augtool "set" "${IFACE_PATH}/post-up[last()+1]" "route ${COMMAND}"
         ;;
     del)
@@ -88,7 +88,7 @@ case ${ARGS[0]} in
             augtool "rm" "${line}"
         done
         # delete routing info from kernel table
-        route ${@} || die "Command route ${@} failed"
+        /sbin/route ${@} || die "Command route ${@} failed"
         ;;
     -h|--help|help)
         cat <<EOF >&2
