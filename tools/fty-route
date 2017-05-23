@@ -92,7 +92,7 @@ case ${ARGS[0]} in
         ;;
     -h|--help|help)
         cat <<EOF >&2
-Usage: fty-rest [list|add|del] ... routing details
+Usage: fty-route [list|add|del] ... routing details
 
         Manipulates with routing table of network interfaces. It writes to
         /etc/network/interfaces, so all changes are persistent.
