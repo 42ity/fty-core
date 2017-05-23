@@ -71,15 +71,20 @@ case ${ARGS[0]} in
         ;;
     add)
         augtool "set" "${IFACE_PATH}/post-up[last()+1]" "route ${COMMAND}"
+        sudo /bin/systemctl restart bios-networking
         ;;
     del)
         POST_UP_PATH=$(ag_index "match ${IFACE_PATH}/post-up" "route ${COMMAND/del/add}")
         if [ -z "${POST_UP_PATH}" ]; then
             die "Can't delete non existent route ${COMMAND} from ${IFACE_PATH}"
         fi
+        # delete routing from persistent config
         for line in ${POST_UP_PATH}; do
             augtool "rm" "${line}"
         done
+        # delete routing info from kernel table
+        route ${COMMAND} || :
+        sudo /bin/systemctl restart bios-networking
         ;;
     -h|--help|help)
         cat <<EOF >&2
