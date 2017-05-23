@@ -39,7 +39,8 @@ skip() {
 [ -s "$AVAHI_CFG" ] || skip "This script does not apply on this OS: no avahi config file here ($AVAHI_CFG)"
 [ -r "$AVAHI_CFG" -a -w "$AVAHI_CFG" ] || die "Can not manipulate $AVAHI_CFG"
 
-case "`systemd-detect-virt -c`" in
+VIRTTYPE="`/usr/bin/systemd-detect-virt -c`" || VIRTTYPE="N/A"
+case "$VIRTTTYPE" in
     *lxc*)
         # remove 'rlimit-nproc = 3' from /etc/avahi/avahi-daemon.conf
         sed \
@@ -47,7 +48,7 @@ case "`systemd-detect-virt -c`" in
             -i "$AVAHI_CFG" || \
         die "Could not modify avahi config file"
         ;;
-    *)  skip "This script does not apply on this OS: not a linux container"
+    *)  skip "This script does not apply on this OS: not a linux container (VIRTTYPE='$VIRTTYPE')"
         exit 0
         ;;
 esac
