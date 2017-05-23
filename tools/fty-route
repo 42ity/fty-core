@@ -6,7 +6,6 @@
 # Author: Michal Vyskocil <michalvyskocil@eaton.com>
 #
 
-set -x
 die () {
     echo "FATAL: ${@}" >&2
     exit 1
@@ -57,6 +56,9 @@ fi
 #TODO: ^^^ tested until now!
 
 case ${ARGS[0]} in
+    list)
+        /sbin/route
+        ;;
     add)
         augtool "set" "${IFACE_PATH}/post-up[last()+1]" "route ${COMMAND}"
         ;;
@@ -68,6 +70,37 @@ case ${ARGS[0]} in
         for line in ${POST_UP_PATH}; do
             augtool "rm" "${line}"
         done
+        ;;
+    -h|--help|help)
+        cat <<EOF >&2
+Usage: fty-rest [list|add|del] ... routing details
+
+        Manipulates with routing table of network interfaces. It writes to
+        /etc/network/interfaces, so all changes are persistent.
+
+        list - print kernel routing table
+
+        add - add new route, by default to the first network device.
+        Last parameter can specify network device to use.
+
+        del - delete matching line from interfaces file
+        Last parameter can specify network device to use.
+
+EXAMPLES:
+        Add new route for first network device
+
+        fty-route add -net 10.41.0.0/16 gw 192.168.0.1
+
+        Add new route for specific device
+        fty-route add -net 10.41.0.0/16 gw 192.168.0.1 (dev)? LAN3
+
+        Remove route
+        fty-route del -net 10.41.0.0/16 gw 192.168.0.1
+
+        Remove route for specific device
+        fty-route del -net 10.41.0.0/16 gw 192.168.0.1 LAN3
+EOF
+        exit 1
         ;;
     *)
         die "Unknown command ${ARGS[0]}, use add/del"
