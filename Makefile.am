@@ -284,7 +284,8 @@ client_SCRIPTS +=	 \
 			tools/compress-logs \
 			tools/verify-fs \
 			tools/diagnostic-information \
-			tools/start-db-services
+			tools/start-db-services \
+			tools/fty-route
 
 helper_SCRIPTS +=	tools/tntnet-ExecStartPre.sh tools/generate-release-details.sh
 
@@ -294,7 +295,8 @@ EXTRA_DIST +=		tools/fake-th \
 			tools/diagnostic-information \
 			tools/generate-release-details.sh \
 			tools/loghost-rsyslog \
-			tools/compress-logs
+			tools/compress-logs \
+			tools/fty-route
 
 # Recipe needed to fulfill ci-rc-bios.sh logic
 fake-th: tools/fake-th
