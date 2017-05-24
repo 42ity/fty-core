@@ -40,7 +40,7 @@ skip() {
 [ -r "$AVAHI_CFG" -a -w "$AVAHI_CFG" ] || die "Can not manipulate $AVAHI_CFG"
 
 VIRTTYPE="`/usr/bin/systemd-detect-virt -c`" || VIRTTYPE="N/A"
-case "$VIRTTTYPE" in
+case "$VIRTTYPE" in
     *lxc*)
         # remove 'rlimit-nproc = 3' from /etc/avahi/avahi-daemon.conf
         sed \
