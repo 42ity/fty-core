@@ -1675,6 +1675,7 @@ while [ $# -gt 0 ]; do
 		--reboot|-r)            WANT_REBOOT="yes" ;; # reboot if code 42 - got new files ok
 		-R)                     WANT_REBOOT="force" ;; # reboot if exitcode 0 or 42
 		--oem-finish)
+		    [ "${WANT_REBOOT-}" = yes -o "${WANT_REBOOT-}" = force ] && DO_REBOOT=yes
 		    logmsg_warn "Preparing for an OEM finish, wiping this controller during next boot"
 		    echo "Press Ctrl+C within 5 seconds to abort!" >&2
 		    sleep 5
@@ -1682,9 +1683,15 @@ while [ $# -gt 0 ]; do
 		    touch "$DEPLOYMENTROOT/factory_reset"
 		    # Favor a quick badblocks search for the first user-facing bootup
 		    echo "yes-bb-ro" > "$DEPLOYMENTROOT/reformat-MMCp1"
-		    logmsg_warn "Was asked to shut down for power-off... trying to do so..."
-		    sync
-		    poweroff
+		    if [ "$DO_REBOOT" = yes ]; then
+		        logmsg_warn "Was asked to reboot... trying to do so..."
+		        sync
+		        init 6
+		    else
+		        logmsg_warn "Was asked to shut down for power-off... trying to do so..."
+		        sync
+		        poweroff
+		    fi
 		    die "Should not get to this line after requesting power-off..."
 		    ;;
 		*)  die "Aborting due to unknown command-line argument(s): $*" ;;
