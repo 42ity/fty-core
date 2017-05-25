@@ -1861,12 +1861,16 @@ case "$ACTION_RESULT" in
 		; then
 			ACTION_RESULT=42
 			ACTION_RESULT_STR="new files were downloaded successfully, you can reboot now to apply the updates"
-			logmsg_warn "Got new files and was asked to reboot in this case"
 			[ "${WANT_REBOOT-}" = yes -o "${WANT_REBOOT-}" = force ] && DO_REBOOT=yes
+			[ "${DO_REBOOT}" = yes ] && \
+				logmsg_warn "Got new files without errors - and was asked to reboot in this case" || \
+				logmsg_warn "Got new files without errors"
 		fi
 		if [ "$ACTION_RESULT" = 0 ] ; then
-			logmsg_warn "Got new files or no updates - and no errors, and was asked to reboot in this case"
 			[ "${WANT_REBOOT-}" = force ] && DO_REBOOT=yes
+			[ "${DO_REBOOT}" = yes ] && \
+				logmsg_warn "Got no errors - with new files or no updates - and was asked to reboot in this case" || \
+				logmsg_warn "Got no errors - with new files or no updates"
 		fi
 		;;
 esac
