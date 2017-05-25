@@ -1682,6 +1682,7 @@ while [ $# -gt 0 ]; do
 		    logmsg_warn "Proceeding with an OEM finish, requesting to wipe this controller during next boot"
 		    touch "$DEPLOYMENTROOT/factory_reset"
 		    # Favor a quick badblocks search for the first user-facing bootup
+		    # and reformat the MMC after all the transportation and storage
 		    echo "yes-bb-ro" > "$DEPLOYMENTROOT/reformat-MMCp1"
 		    if [ "$DO_REBOOT" = yes ]; then
 		        logmsg_warn "Was asked to reboot... trying to do so..."
