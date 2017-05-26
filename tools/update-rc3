@@ -1675,16 +1675,24 @@ while [ $# -gt 0 ]; do
 		--reboot|-r)            WANT_REBOOT="yes" ;; # reboot if code 42 - got new files ok
 		-R)                     WANT_REBOOT="force" ;; # reboot if exitcode 0 or 42
 		--oem-finish)
+		    [ "${WANT_REBOOT-}" = yes -o "${WANT_REBOOT-}" = force ] && DO_REBOOT=yes
 		    logmsg_warn "Preparing for an OEM finish, wiping this controller during next boot"
 		    echo "Press Ctrl+C within 5 seconds to abort!" >&2
 		    sleep 5
 		    logmsg_warn "Proceeding with an OEM finish, requesting to wipe this controller during next boot"
 		    touch "$DEPLOYMENTROOT/factory_reset"
 		    # Favor a quick badblocks search for the first user-facing bootup
+		    # and reformat the MMC after all the transportation and storage
 		    echo "yes-bb-ro" > "$DEPLOYMENTROOT/reformat-MMCp1"
-		    logmsg_warn "Was asked to shut down for power-off... trying to do so..."
-		    sync
-		    poweroff
+		    if [ "$DO_REBOOT" = yes ]; then
+		        logmsg_warn "Was asked to reboot... trying to do so..."
+		        sync
+		        init 6
+		    else
+		        logmsg_warn "Was asked to shut down for power-off... trying to do so..."
+		        sync
+		        poweroff
+		    fi
 		    die "Should not get to this line after requesting power-off..."
 		    ;;
 		*)  die "Aborting due to unknown command-line argument(s): $*" ;;
@@ -1861,12 +1869,16 @@ case "$ACTION_RESULT" in
 		; then
 			ACTION_RESULT=42
 			ACTION_RESULT_STR="new files were downloaded successfully, you can reboot now to apply the updates"
-			logmsg_warn "Got new files and was asked to reboot in this case"
 			[ "${WANT_REBOOT-}" = yes -o "${WANT_REBOOT-}" = force ] && DO_REBOOT=yes
+			[ "${DO_REBOOT}" = yes ] && \
+				logmsg_warn "Got new files without errors - and was asked to reboot in this case" || \
+				logmsg_warn "Got new files without errors"
 		fi
 		if [ "$ACTION_RESULT" = 0 ] ; then
-			logmsg_warn "Got new files or no updates - and no errors, and was asked to reboot in this case"
 			[ "${WANT_REBOOT-}" = force ] && DO_REBOOT=yes
+			[ "${DO_REBOOT}" = yes ] && \
+				logmsg_warn "Got no errors - with new files or no updates - and was asked to reboot in this case" || \
+				logmsg_warn "Got no errors - with new files or no updates"
 		fi
 		;;
 esac
