@@ -56,26 +56,26 @@ EOF
 # Return augeas index
 ag_index () {
     local cmd pattern
-    cmd=${1}
-    pattern=${2}
+    cmd="${1}"
+    pattern="${2}"
 
-    augtool "${cmd}" | grep "= ${pattern}$" | cut -d '=' -f 1 | sed 's/ //g'
+    augtool "${cmd}" | egrep "= ${pattern}"'$' | cut -d '=' -f 1 | sed 's/ //g'
 }
 
 ### MAIN ###
-COMMAND=${@}
+COMMAND="${@}"
 ARGS=("${@}")
 LAST_IDX=$((${#} - 1))
 
 # put all routing to the default interface, unless (dev)? iface_name is specified
 # distinguish modes by checking last argument of post-up
-IFACE_PATH=$(ag_index "match /files/etc/network/interfaces/iface[*]" "${ARGS[${LAST_IDX}]}")
+IFACE_PATH="$(ag_index "match /files/etc/network/interfaces/iface[*]" "${ARGS[${LAST_IDX}]}")"
 if [[ -z "${IFACE_PATH}" ]]; then
     # iface[0] is lo... TODO: assert that?
     IFACE_PATH="/files/etc/network/interfaces/iface[1]"
 fi
 
-case ${ARGS[0]} in
+case "${ARGS[0]}" in
     list)
         /sbin/route
         ;;
