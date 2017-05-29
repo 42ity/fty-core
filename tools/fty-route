@@ -34,19 +34,23 @@ die () {
 # and pre-selection of lenses to be bearably fast
 augtool () {
 
-    if [[ "${1}" == "set" ]]; then
+    case "${1}" in
+    set)
         cat <<EOF | /usr/bin/augtool -S -I/usr/share/fty/lenses/
 "${1}" "${2}" "${3}"
 save
 EOF
-    elif [[ "${1}" == "rm" ]]; then
+        ;;
+    rm)
         cat <<EOF | /usr/bin/augtool -S -I/usr/share/fty/lenses/
 "${1}" "${2}"
 save
 EOF
-    else
+        ;;
+    *)
         /usr/bin/augtool -S -I/usr/share/fty/lenses/ "${@}"
-    fi
+        ;;
+    esac
 }
 
 # Return augeas index
