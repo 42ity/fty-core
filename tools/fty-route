@@ -78,7 +78,11 @@ fi
 
 case "${ARGS[0]}" in
     list)
-        /sbin/route
+        if [[ "${ARGS[1]}" = "-n" ]] ; then
+            /sbin/route -n
+        else
+            /sbin/route
+        fi
         ;;
     add)
         /sbin/route "${@}" || die "Command route ${@} failed"
