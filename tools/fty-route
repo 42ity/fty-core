@@ -22,7 +22,8 @@
 
 # run fty-route as a root
 if [[ $(id -u) != 0 ]]; then
-    /usr/bin/sudo "${@}"
+    exec /usr/bin/sudo "${0}" "${@}"
+    die "Execed to sudo, should not have got here"
 fi
 
 die () {
@@ -30,47 +31,52 @@ die () {
     exit 1
 }
 
-# Execute augtool with given arguments
+# Execute augtool with given arguments and our settings
+# and pre-selection of lenses to be bearably fast
 augtool () {
 
-    if [[ "${1}" == "set" ]]; then
+    case "${1}" in
+    set)
         cat <<EOF | /usr/bin/augtool -S -I/usr/share/fty/lenses/
 "${1}" "${2}" "${3}"
 save
 EOF
-    elif [[ "${1}" == "rm" ]]; then
+        ;;
+    rm)
         cat <<EOF | /usr/bin/augtool -S -I/usr/share/fty/lenses/
 "${1}" "${2}"
 save
 EOF
-    else
+        ;;
+    *)
         /usr/bin/augtool -S -I/usr/share/fty/lenses/ "${@}"
-    fi
+        ;;
+    esac
 }
 
 # Return augeas index
 ag_index () {
     local cmd pattern
-    cmd=${1}
-    pattern=${2}
+    cmd="${1}"
+    pattern="${2}"
 
-    augtool "${cmd}" | grep "= ${pattern}$" | cut -d '=' -f 1 | sed 's/ //g'
+    augtool "${cmd}" | egrep "= ${pattern}"'$' | cut -d '=' -f 1 | sed 's/ //g'
 }
 
 ### MAIN ###
-COMMAND=${@}
+COMMAND="${@}"
 ARGS=("${@}")
 LAST_IDX=$((${#} - 1))
 
 # put all routing to the default interface, unless (dev)? iface_name is specified
 # distinguish modes by checking last argument of post-up
-IFACE_PATH=$(ag_index "match /files/etc/network/interfaces/iface[*]" "${ARGS[${LAST_IDX}]}")
+IFACE_PATH="$(ag_index "match /files/etc/network/interfaces/iface[*]" "${ARGS[${LAST_IDX}]}")"
 if [[ -z "${IFACE_PATH}" ]]; then
-    # iface[0] is lo
+    # iface[0] is lo... TODO: assert that?
     IFACE_PATH="/files/etc/network/interfaces/iface[1]"
 fi
 
-case ${ARGS[0]} in
+case "${ARGS[0]}" in
     list)
         /sbin/route
         ;;
@@ -94,7 +100,7 @@ case ${ARGS[0]} in
         cat <<EOF >&2
 Usage: fty-route [list|add|del] ... routing details
 
-        Manipulates with routing table of network interfaces. It writes to
+        Manipulates routing table of network interfaces. It writes to
         /etc/network/interfaces, so all changes are persistent.
 
         list - print kernel routing table
@@ -122,6 +128,6 @@ EOF
         exit 1
         ;;
     *)
-        die "Unknown command ${ARGS[0]}, use add/del"
+        die "Unknown command ${ARGS[0]}, use add/del/list"
         ;;
 esac
