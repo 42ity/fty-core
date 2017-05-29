@@ -22,7 +22,7 @@
 
 # run fty-route as a root
 if [[ $(id -u) != 0 ]]; then
-    /usr/bin/sudo "${@}"
+    /usr/bin/sudo "${0}" "${@}"
 fi
 
 die () {
