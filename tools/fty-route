@@ -72,8 +72,8 @@ LAST_IDX=$((${#} - 1))
 # distinguish modes by checking last argument of post-up
 IFACE_PATH="$(ag_index "match /files/etc/network/interfaces/iface[*]" "${ARGS[${LAST_IDX}]}")"
 if [[ -z "${IFACE_PATH}" ]]; then
-    # iface[0] is lo... TODO: assert that?
-    IFACE_PATH="/files/etc/network/interfaces/iface[1]"
+    # iface[1] is lo... TODO: assert that?
+    IFACE_PATH="/files/etc/network/interfaces/iface[2]"
 fi
 
 case "${ARGS[0]}" in
