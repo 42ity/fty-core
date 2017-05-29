@@ -127,6 +127,6 @@ EOF
         exit 1
         ;;
     *)
-        die "Unknown command ${ARGS[0]}, use add/del"
+        die "Unknown command ${ARGS[0]}, use add/del/list"
         ;;
 esac
