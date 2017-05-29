@@ -22,7 +22,8 @@
 
 # run fty-route as a root
 if [[ $(id -u) != 0 ]]; then
-    /usr/bin/sudo "${0}" "${@}"
+    exec /usr/bin/sudo "${0}" "${@}"
+    die "Execed to sudo, should not have got here"
 fi
 
 die () {
