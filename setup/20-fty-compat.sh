@@ -190,8 +190,12 @@ fi
 
 # Our web-server should be able to read these credentials,
 # at least per current implementation of license_POST
-CREDSQL_DIR="/var/lib/fty/sql/mysql"
-BIOS_DB_RW="$CREDSQL_DIR/bios-db-rw"
-chgrp www-data "${BIOS_DB_RW}"
-chmod g+r "${BIOS_DB_RW}"
-chgrp www-data "${CREDSQL_DIR}"
+# Note that on some systems these dirs are the same (so we
+# reapply the settings twice to the same FS object), but
+# on upgrades from legacy they can be different.
+for CREDSQL_DIR in "/var/lib/fty/sql/mysql" "/var/lib/bios/sql/mysql" ; do
+    BIOS_DB_RW="$CREDSQL_DIR/bios-db-rw"
+    chgrp www-data "${BIOS_DB_RW}"
+    chmod g+r "${BIOS_DB_RW}"
+    chgrp www-data "${CREDSQL_DIR}"
+done
