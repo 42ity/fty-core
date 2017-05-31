@@ -246,6 +246,7 @@ cat <<EOF > ${ALTROOT}/etc/release-details.json
         "uimage-padded-bytes":  "$FW_UIMAGEPART_SIZE",
         "hardware-vendor":      "$HWD_VENDOR",
         "hardware-catalog-number":      "$HWD_CATALOG_NB",
+        "hardware-part-number": "$HWD_PART_NB",
         "hardware-spec-revision":       "$HWD_REV",
         "hardware-serial-number":       "$HWD_SERIAL_NB",
         "uuid":        "$UUID_VALUE"
