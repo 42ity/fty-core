@@ -194,8 +194,11 @@ fi
 # reapply the settings twice to the same FS object), but
 # on upgrades from legacy they can be different.
 for CREDSQL_DIR in "/var/lib/fty/sql/mysql" "/var/lib/bios/sql/mysql" ; do
-    BIOS_DB_RW="$CREDSQL_DIR/bios-db-rw"
-    chgrp www-data "${BIOS_DB_RW}"
-    chmod g+r "${BIOS_DB_RW}"
+    mkdir -p "${CREDSQL_DIR}"
     chgrp www-data "${CREDSQL_DIR}"
+    BIOS_DB_RW="$CREDSQL_DIR/bios-db-rw"
+    if [[ -e "${BIOS_DB_RW}" ]] ; then
+        chgrp www-data "${BIOS_DB_RW}"
+        chmod g+r "${BIOS_DB_RW}"
+    fi
 done
