@@ -134,6 +134,15 @@ mvlndir() {
 
 # Handle certain config files
 mvln /etc/agent-smtp/bios-agent-smtp.cfg /etc/fty-email/fty-email.cfg www-data: ""
+if [ -s /etc/fty-email/fty-email.cfg.old-bios ]; then
+    cp -pf /etc/fty-email/fty-email.cfg /etc/fty-email/fty-email.cfg.new-default
+    cat /etc/fty-email/fty-email.cfg.old-bios | sed \
+        -e 's|/var/lib/bios|/var/lib/fty|g' \
+        -e 's|bios-agent-smtp|fty-email|' \
+        -e 's|agent-smtp|fty-email|' \
+    > /etc/fty-email/fty-email.cfg
+fi
+
 
 mvln /etc/agent-metric-store/bios-agent-ms.cfg /etc/fty-metric-store/fty-metric-store.cfg www-data: ""
 
