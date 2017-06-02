@@ -44,6 +44,9 @@ die () {
 
 mkdir -p "${SETUPDIR}"
 
+# Make sure scripts do not leave occasional traces in unexpected places
+cd /tmp || die "No /tmp!"
+
 ls -1 "${BASEDIR}"/[0-9]*.sh | sort | while read SCRIPT; do
 
     # We generally run scripts once, to set up a newly deployed system,
