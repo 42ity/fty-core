@@ -26,6 +26,7 @@
 #  \author  Tomas Halman <TomasHalman@Eaton.com>
 #
 
+# Ensure consistent alphabetic sorting of script names, etc.
 LC_ALL=C
 LANG=C
 TZ=UTC
@@ -45,6 +46,12 @@ mkdir -p "${SETUPDIR}"
 
 ls -1 "${BASEDIR}"/[0-9]*.sh | sort | while read SCRIPT; do
 
+    # We generally run scripts once, to set up a newly deployed system,
+    # or to update something after an upgrade to the new feature level.
+    # The component scripts are expected to deliver one set of changes
+    # and never change functionality across releases (similar to SQL
+    # schema update bit by bit), so they are marked for not re-running
+    # later.
     SCRIPT_NAME="$(basename "${SCRIPT}")"
     if [ -f "${SETUPDIR}/${SCRIPT_NAME}.done" ]; then
         echo "SKIP: ${SCRIPT_NAME} has already succeeded before"
