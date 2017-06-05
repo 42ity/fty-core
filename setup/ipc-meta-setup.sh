@@ -26,6 +26,7 @@
 #  \author  Tomas Halman <TomasHalman@Eaton.com>
 #
 
+# Ensure consistent alphabetic sorting of script names, etc.
 LC_ALL=C
 LANG=C
 TZ=UTC
@@ -43,15 +44,34 @@ die () {
 
 mkdir -p "${SETUPDIR}"
 
+# Make sure scripts do not leave occasional traces in unexpected places
+cd /tmp || die "No /tmp!"
+
 ls -1 "${BASEDIR}"/[0-9]*.sh | sort | while read SCRIPT; do
 
+    # We generally run scripts once, to set up a newly deployed system,
+    # or to update something after an upgrade to the new feature level.
+    # The component scripts are expected to deliver one set of changes
+    # and never change functionality across releases (similar to SQL
+    # schema update bit by bit), so they are marked for not re-running
+    # later. Aside from that we also have some scripts that we do run
+    # during every boot and they evaluate if they should act this time
+    # or quickly abort without error if there is nothing to do.
     SCRIPT_NAME="$(basename "${SCRIPT}")"
+    EVERY_TIME="no"
+    case "$SCRIPT_NAME" in
+        *.everytime.sh) EVERY_TIME="yes" ;;
+    esac
+
     if [ -f "${SETUPDIR}/${SCRIPT_NAME}.done" ]; then
-        echo "SKIP: ${SCRIPT_NAME} has already succeeded before"
-    else
-        echo "APPLY: running ${SCRIPT_NAME}..."
-        ${SCRIPT} || die "${SCRIPT}"
-        touch "${SETUPDIR}/${SCRIPT_NAME}.done"
+        ECHO_LABEL="SKIP"
+        [ "$EVERY_TIME" = "yes" ] && ECHO_LABEL="NOTE"
+        echo "${ECHO_LABEL}: ${SCRIPT_NAME} has already succeeded before"
+        [ "$EVERY_TIME" = "yes" ] || continue
     fi
+
+    echo "APPLY: running ${SCRIPT_NAME}..."
+    ${SCRIPT} || die "${SCRIPT} failed with exit-code $?, not proceeding with other scripts"
+    touch "${SETUPDIR}/${SCRIPT_NAME}.done"
 
 done

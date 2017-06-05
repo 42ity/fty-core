@@ -373,12 +373,14 @@ ipc_meta_setupdir = $(datadir)/@PACKAGE@/setup/
 # Note: use srcdir for verbatim scripts, builddir for templated .sh.in products
 ipc_meta_setup_SCRIPTS = \
 	$(top_srcdir)/setup/10-avahi-lxc.sh \
+	$(top_srcdir)/setup/15-dpkg-database.everytime.sh \
 	$(top_srcdir)/setup/20-fty-compat.sh \
 	$(top_builddir)/setup/20-th-names.sh \
 	$(top_srcdir)/setup/ipc-meta-setup.sh
 
 EXTRA_DIST += \
 	$(top_srcdir)/setup/10-avahi-lxc.sh \
+	$(top_srcdir)/setup/15-dpkg-database.everytime.sh \
 	$(top_srcdir)/setup/20-fty-compat.sh \
 	$(top_srcdir)/setup/20-th-names.sh.in \
 	$(top_srcdir)/setup/ipc-meta-setup.sh
