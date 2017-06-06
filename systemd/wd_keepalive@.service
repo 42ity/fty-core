@@ -5,6 +5,9 @@ Description=watchdog keepalive daemon for device /dev/%i
 Before=watchdog.service wd_keepalive.service shutdown.target
 # No real conflict with "watchdog" unless it tries to use same devices
 Conflicts=wd_keepalive.service shutdown.target
+# Trigger startup of tmpfiles and run afterwards if possible, but do not fret if that fails
+After=systemd-tmpfiles-setup.service
+Wants=systemd-tmpfiles-setup.service
 ConditionPathExists=/dev/%i
 
 [Service]
@@ -23,8 +26,8 @@ ExecStartPre=-/bin/systemctl reset-failed wd_keepalive.service
 # "KA_PIDFILE" is hardcoded during compilation, so we must dance a bit
 ExecStart=/bin/bash -c 'echo "watchdog-device = /dev/%i" > /var/run/wd_keepalive@%i.conf && /usr/sbin/wd_identify -c /var/run/wd_keepalive@%i.conf && ( flock -x -w 5 200 && /usr/sbin/wd_keepalive -c /var/run/wd_keepalive@%i.conf $watchdog_options && mv -f /var/run/wd_keepalive.pid /var/run/wd_keepalive@%i.pid; RES=$?; flock -u 200; exit $RES; ) 200>/var/run/wd_keepalive@.flock'
 ExecStartPost=/bin/sh -c 'rm -f /var/run/wd_keepalive@.flock'
-ExecStartPost=/bin/sh -c 'ln -s /var/run/wd_keepalive@%i.pid /run/sendsigs.omit.d/wd_keepalive@%i.pid'
-ExecStopPost=/bin/sh -c 'rm -f /run/sendsigs.omit.d/wd_keepalive@%i.pid'
+ExecStartPost=/bin/sh -c 'if [ -d /run/sendsigs.omit.d ] ; then ln -s /var/run/wd_keepalive@%i.pid /run/sendsigs.omit.d/wd_keepalive@%i.pid ; else echo "WARNING: systemd-tmpfiles-setup may have failed, expected directory is missing!" >&2; fi'
+ExecStopPost=/bin/sh -c 'if [ -d /run/sendsigs.omit.d ] ; then rm -f /run/sendsigs.omit.d/wd_keepalive@%i.pid ; else echo "WARNING: systemd-tmpfiles-setup may have failed, expected directory is missing!" >&2; fi'
 
 [Install]
 WantedBy=basic.target rescue.target emergency.target
