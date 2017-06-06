@@ -39,6 +39,7 @@ CONFIGFS_ROOT="/sys/kernel/config"
 CONFIGFS_NETCONSOLE="$CONFIGFS_ROOT/netconsole"
 
 LOCKFILE="/tmp/.`basename $0`.lock"
+RESTART_RSYSLOGD="auto"
 
 usage() {
     cat <<EOF
@@ -155,13 +156,16 @@ process_action_hosts() {
     # Caller should set HOSTSFENCE to either $HOSTSFENCE_MANUAL
     # or $HOSTSFENCE_NETCONSOLE according to situation.
     case "$ACTION_HOSTS" in
-        _SKIP_) return 0 ;;
+        _SKIP_)
+            if [ "$RESTART_RSYSLOGD" = auto ]; then RESTART_RSYSLOGD=no_changes; fi
+            return 0 ;;
         tryset|forceset)
             query_loghost_name >/dev/null
             RES=$?
             case "$RES" in
                 1)  if [ "$ACTION_HOSTS" = tryset ]; then
                         echo "WARN: Will not change $RSYSLOG_LOGHOST in $HOSTSFILE because it is not managed by us" >&2
+                        if [ "$RESTART_RSYSLOGD" = auto ]; then RESTART_RSYSLOGD=no_changes; fi
                         return 1
                     else
                         echo "WARN: Forced to change $RSYSLOG_LOGHOST in $HOSTSFILE which was not managed by us" >&2
@@ -173,6 +177,7 @@ process_action_hosts() {
                     [ "$RES" != 1 ] && [ -n "$VALUE_HOSTS" ] && \
                         egrep '^[[:blank:]]*'"$VALUE_HOSTS"'[[:blank:]]+(.*[[:blank:]]+|)'"$RSYSLOG_LOGHOST"'([[:blank:]]+.*|[[:blank:]]*)$' "$HOSTSFILE" >/dev/null && \
                         echo "INFO: $RSYSLOG_LOGHOST in $HOSTSFILE is already up-to-date and managed by this script, got nothing to do" >&2 && \
+                        { if [ "$RESTART_RSYSLOGD" = auto ]; then RESTART_RSYSLOGD=no_changes; fi; true; } && \
                         return 0
                     [ "$RES" = 0 ] && [ "$HOSTSFENCE" = "$HOSTSFENCE_NETCONSOLE" ] && \
                         [ "$ACTION_HOSTS" = tryset ] && \
@@ -197,9 +202,12 @@ process_action_hosts() {
             query_loghost_name >/dev/null
             RES=$?
             case "$RES" in
-                22|53) return 0 ;; # This name is absent locally - nothing to do
+                22|53)
+                    if [ "$RESTART_RSYSLOGD" = auto ]; then RESTART_RSYSLOGD=no_changes; fi
+                    return 0 ;; # This name is absent locally - nothing to do
                 1)  if [ "$ACTION_HOSTS" = trydel ]; then
                         echo "WARN: Will not change $RSYSLOG_LOGHOST in $HOSTSFILE because it is not managed by us" >&2
+                        if [ "$RESTART_RSYSLOGD" = auto ]; then RESTART_RSYSLOGD=no_changes; fi
                         return 1
                     else
                         echo "WARN: Forced to change $RSYSLOG_LOGHOST in $HOSTSFILE which was not managed by us" >&2
@@ -212,6 +220,7 @@ process_action_hosts() {
                         if egrep '^[[:blank:]]*'"$VALUE_HOSTS"'[[:blank:]]+(.*[[:blank:]]+|)'"$RSYSLOG_LOGHOST"'([[:blank:]]+.*|[[:blank:]]*)$' "$HOSTSFILE" >/dev/null \
                         ; then : ; else \
                             echo "INFO: $RSYSLOG_LOGHOST in $HOSTSFILE has no mappings to IP address $VALUE_HOSTS, got nothing to do" >&2 && \
+                            { if [ "$RESTART_RSYSLOGD" = auto ]; then RESTART_RSYSLOGD=no_changes; fi; true; } && \
                             return 0
                         fi
                     [ "$RES" = 0 ] && [ "$HOSTSFENCE" = "$HOSTSFENCE_NETCONSOLE" ] && \
@@ -233,8 +242,11 @@ process_action_hosts() {
 
 process_action_toggle() {
     [ -n "$RESTART_RSYSLOGD" ] || RESTART_RSYSLOGD=no
+    [ "$RESTART_RSYSLOGD" != auto ] || RESTART_RSYSLOGD=no
     case "$ACTION_TOGGLE" in
-        _SKIP_) return 0;;
+        _SKIP_)
+            if [ "$RESTART_RSYSLOGD" = auto ]; then RESTART_RSYSLOGD=no_changes; fi
+            return 0;;
         enable-backup)
             [ -s "$RSYSLOG_TOGGLE_FILE_ACTIVE" ] && \
                 return 0
@@ -252,6 +264,7 @@ process_action_toggle() {
                 if [ -s "$RSYSLOG_TOGGLE_FILE_ACTIVE" ] ; then
                     fgrep "$NEWVAL" "$RSYSLOG_TOGGLE_FILE_ACTIVE" >/dev/null && \
                         echo "INFO: $RSYSLOG_TOGGLE_FILE_ACTIVE is already up-to-date and managed by this script, got nothing to do" >&2 && \
+                        { if [ "$RESTART_RSYSLOGD" = auto ]; then RESTART_RSYSLOGD=no_changes; fi; true; } && \
                         return 0
 
                     [ "$HOSTSFENCE" = "$HOSTSFENCE_NETCONSOLE" ] && \
@@ -302,6 +315,11 @@ optional_restart_rsyslogd() {
         echo "INFO: Restarting the rsyslog service for new settings to take effect" >&2
         /bin/systemctl restart rsyslog
         return $?
+    fi
+
+    if [ "$RESTART_RSYSLOGD" = no_changes ]; then
+        unset RESTART_RSYSLOGD
+        return 0
     fi
 
     # Should not get here if there were changes to enable
