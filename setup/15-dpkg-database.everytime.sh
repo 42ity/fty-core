@@ -65,8 +65,16 @@ skip() {
     exit 0
 }
 
-[ -d "${RO_ROOT}" ] \
-|| skip "This script does not apply on this OS or HW: no read-only root filesystem to inspect"
+[ -n "${RO_ROOT}" ] && [ -d "${RO_ROOT}" ] \
+|| skip "This script does not apply on this OS or HW: no read-only root filesystem to inspect at '${RO_ROOT}'"
+
+if [ -n "${RW_ROOT}" ] ; then
+    # Note: This prefix may be empty in paths below,
+    # but otherwise it must be a valid directory...
+    # TODO: Should this die() as misconfig or just skip()?..
+    [ -d "${RW_ROOT}" ] \
+    || die "This script does not apply on this OS or HW: no alternate read-write root filesystem to manipulate at '${RW_ROOT}'"
+fi
 
 [ -d "${RO_ROOT}/${DPKG_DIR}" ] && [ -d "${RW_ROOT}/${DPKG_DIR}" ] \
 && [ -d "${RO_ROOT}/${DPKG_INFO_DIR}" ] && [ -d "${RW_ROOT}/${DPKG_INFO_DIR}" ] \
