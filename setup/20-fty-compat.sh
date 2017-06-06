@@ -179,7 +179,6 @@ mvln /var/lib/bios/bios-agent-rt      /var/lib/fty/fty-metric-cache
 mvln /var/lib/bios/composite-metrics  /var/lib/fty/fty-metric-composite
 mvln /var/lib/bios/nut                /var/lib/fty/fty-nut
 mvln /var/lib/bios/nut                /var/lib/fty/nut
-mvln /var/lib/bios/uptime             /var/lib/fty/fty-kpi-power-uptime
 
 # The /var/lib/fty/fty-sensor-env should now be created via tmpfiles
 # But a legacy system may have an agent file of its own...
@@ -195,6 +194,18 @@ if [[ -e /var/lib/bios/agent-alerts-list/state_file ]]; then
         /var/lib/fty/fty-alert-list
     chown bios:bios-infra /var/lib/fty/fty-alert-list/state_file || :
     rm -rf /var/lib/bios/agent-alerts-list
+fi
+
+# uptime file must be converted, do it manually
+if [[ -e /var/lib/bios/uptime/state ]]; then
+    mkdir -p /var/lib/fty/fty-kpi-power-uptime
+    chown bios:root /var/lib/fty/fty-kpi-power-uptime
+    /usr/bin/fty-kpi-power-uptime-convert \
+        state \
+        /var/lib/bios/uptime \
+        /var/lib/fty/fty-kpi-power-uptime
+    chown bios:bios-infra /var/lib/fty/fty-kpi-power-uptime/state || :
+    rm -rf /var/lib/bios/uptime
 fi
 
 # Our web-server should be able to read these credentials,
