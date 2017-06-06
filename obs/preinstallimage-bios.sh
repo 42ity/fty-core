@@ -668,6 +668,7 @@ cat > /etc/default/iptables <<[eof]
 -A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
 -A INPUT -p tcp -m tcp --dport 4222 -j ACCEPT
 -A INPUT -p udp -m udp --sport 4679 -j ACCEPT
+-A INPUT -p udp --dport 5353 -j ACCEPT
 -A INPUT -p icmp -j ACCEPT
 -A INPUT -j REJECT --reject-with icmp-port-unreachable
 -A FORWARD -j REJECT --reject-with icmp-port-unreachable
@@ -689,6 +690,7 @@ cat > /etc/default/ip6tables <<[eof]
 -A INPUT -p tcp -m tcp --dport 22 -j ACCEPT
 -A INPUT -p tcp -m tcp --dport 4222 -j ACCEPT
 -A INPUT -p udp -m udp --sport 4679 -j ACCEPT
+-A INPUT -p udp --dport 5353 -j ACCEPT
 -A INPUT -p icmpv6 -j ACCEPT
 -A INPUT -j REJECT --reject-with icmp6-port-unreachable
 -A FORWARD -j REJECT --reject-with icmp6-port-unreachable
