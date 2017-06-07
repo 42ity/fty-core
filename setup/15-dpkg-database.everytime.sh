@@ -168,7 +168,7 @@ case "$ACTION" in
         cp -prf "${RO_ROOT}${DPKG_DIR}" "${RW_ROOT}${DPKG_DIR}.new-${TIMESTAMP}" \
         && sync \
         && mv -f "${RW_ROOT}${DPKG_DIR}" "${RW_ROOT}${DPKG_DIR}.old-${TIMESTAMP}" \
-        && mv -f "${RW_ROOT}${DPKG_DIR}.new-${TIMESTAMP}" "${RW_ROOT}${DPKG_DIR}.${TIMESTAMP}" \
+        && mv -f "${RW_ROOT}${DPKG_DIR}.new-${TIMESTAMP}" "${RW_ROOT}${DPKG_DIR}" \
         && sync \
         && echo "SUCCEEDED replacing the live root database from updated read-only root" \
         || die "FAILED to replace the live root database from updated read-only root"
