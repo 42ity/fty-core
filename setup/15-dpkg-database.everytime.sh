@@ -92,14 +92,14 @@ if [ -n "${RW_ROOT}" ] ; then
 fi
 
 ### Expected dirs and files exist
-[ -d "${RO_ROOT}/${DPKG_DIR}" ] && [ -d "${RW_ROOT}/${DPKG_DIR}" ] \
-&& [ -d "${RO_ROOT}/${DPKG_INFO_DIR}" ] && [ -d "${RW_ROOT}/${DPKG_INFO_DIR}" ] \
-&& [ -s "${RO_ROOT}/${DPKG_STATE}" ] && [ -s "${RW_ROOT}/${DPKG_STATE}" ] \
+[ -d "${RO_ROOT}${DPKG_DIR}" ] && [ -d "${RW_ROOT}${DPKG_DIR}" ] \
+&& [ -d "${RO_ROOT}${DPKG_INFO_DIR}" ] && [ -d "${RW_ROOT}${DPKG_INFO_DIR}" ] \
+&& [ -s "${RO_ROOT}${DPKG_STATE}" ] && [ -s "${RW_ROOT}${DPKG_STATE}" ] \
 || skip "This script does not apply on this OS: no debian packaging database in live and/or or read-only root filesystem"
 
 ### Expected files can be manipulated
-[ -r "${RO_ROOT}/${DPKG_STATE}" ] && [ -r "${RW_ROOT}/${DPKG_STATE}" ] && [ -w "${RW_ROOT}/${DPKG_STATE}" ] \
-&& [ -w "${RW_ROOT}/${DPKG_DIR}" ] && [ -w "${RW_ROOT}/${DPKG_DIR}/.." ] \
+[ -r "${RO_ROOT}${DPKG_STATE}" ] && [ -r "${RW_ROOT}${DPKG_STATE}" ] && [ -w "${RW_ROOT}${DPKG_STATE}" ] \
+&& [ -w "${RW_ROOT}${DPKG_DIR}" ] && [ -w "${RW_ROOT}${DPKG_DIR}/.." ] \
 || skip "This script does not apply on this OS: insufficient access to manipulate the debian packaging database"
 
 # First make sure we save the copy of current OS image's data, if it is missing
@@ -112,24 +112,24 @@ TIMESTAMP="$(date -u '+%Y%m%dT%H%M%SZ')" || TIMESTAMP="$(date -u '+%s')" || TIME
 [ -n "$TIMESTAMP" ] || TIMESTAMP="$$"
 TIMESTAMP_START="${TIMESTAMP}"
 
-while [ -d "${RW_ROOT}/${DPKG_DIR}.old-${TIMESTAMP}" ] || [ -d "${RW_ROOT}/${DPKG_DIR}.lastroot-${TIMESTAMP}" ] ; do
+while [ -d "${RW_ROOT}${DPKG_DIR}.old-${TIMESTAMP}" ] || [ -d "${RW_ROOT}${DPKG_DIR}.lastroot-${TIMESTAMP}" ] ; do
     TIMESTAMP="${TIMESTAMP_START}-$(head -c 16 /dev/random | base64 | sed 's,[^A-Za-z0-9]*,,g')"
 done
 
-if [ -d "${RW_ROOT}/${DPKG_DIR}.lastroot" ]; then
-    diff -qr "${RO_ROOT}/${DPKG_DIR}" "${RW_ROOT}/${DPKG_DIR}.lastroot" >/dev/null 2>&1 \
+if [ -d "${RW_ROOT}${DPKG_DIR}.lastroot" ]; then
+    diff -qr "${RO_ROOT}${DPKG_DIR}" "${RW_ROOT}${DPKG_DIR}.lastroot" >/dev/null 2>&1 \
     && skip "Packaging database on this system is already up to date: the read-only OS image did not change since last boot"
 
-    mv -f "${RW_ROOT}/${DPKG_DIR}.lastroot" "${RW_ROOT}/${DPKG_DIR}.lastroot-${TIMESTAMP}" \
+    mv -f "${RW_ROOT}${DPKG_DIR}.lastroot" "${RW_ROOT}${DPKG_DIR}.lastroot-${TIMESTAMP}" \
     && sync \
-    || die "Could not stash away a copy of the previous read-only OS image packaging into ${RW_ROOT}/${DPKG_DIR}.lastroot-${TIMESTAMP}"
+    || die "Could not stash away a copy of the previous read-only OS image packaging into ${RW_ROOT}${DPKG_DIR}.lastroot-${TIMESTAMP}"
 fi
 
-cp -prf "${RO_ROOT}/${DPKG_DIR}" "${RW_ROOT}/${DPKG_DIR}.lastroot" \
+cp -prf "${RO_ROOT}${DPKG_DIR}" "${RW_ROOT}${DPKG_DIR}.lastroot" \
 && sync \
-|| die "Could not stash away a copy of the current read-only OS image packaging into ${RW_ROOT}/${DPKG_DIR}.lastroot"
+|| die "Could not stash away a copy of the current read-only OS image packaging into ${RW_ROOT}${DPKG_DIR}.lastroot"
 
-diff -qr "${RO_ROOT}/${DPKG_DIR}" "${RW_ROOT}/${DPKG_DIR}" >/dev/null 2>&1 \
+diff -qr "${RO_ROOT}${DPKG_DIR}" "${RW_ROOT}${DPKG_DIR}" >/dev/null 2>&1 \
 && skip "Packaging database on this system is already up to date: same as on the read-only OS image"
 
 # Phase2: TODO: instead of just replacing data as fast-tracked above, merge
@@ -137,8 +137,8 @@ diff -qr "${RO_ROOT}/${DPKG_DIR}" "${RW_ROOT}/${DPKG_DIR}" >/dev/null 2>&1 \
 # Note that we've already ruled out the case of unchanged OS image and locally
 # modified packaging database, so the remaining case is really merging stuff.
 ACTION="replace"
-if [ -d "${RW_ROOT}/${DPKG_DIR}.lastroot-${TIMESTAMP}" ]; then
-    if diff -qr "${RW_ROOT}/${DPKG_DIR}.lastroot-${TIMESTAMP}" "${RW_ROOT}/${DPKG_DIR}" >/dev/null 2>&1 ; then
+if [ -d "${RW_ROOT}${DPKG_DIR}.lastroot-${TIMESTAMP}" ]; then
+    if diff -qr "${RW_ROOT}${DPKG_DIR}.lastroot-${TIMESTAMP}" "${RW_ROOT}${DPKG_DIR}" >/dev/null 2>&1 ; then
         echo "NOTICE: Packaging database on this system was not changed while booted with"
         echo "previous read-only OS images so we can just replace it."
     else
@@ -157,18 +157,18 @@ fi
 case "$ACTION" in
     replace|merge)
         if [ "$ACTION" = merge ]; then
-            diff -Naur "${RW_ROOT}/${DPKG_DIR}.lastroot-${TIMESTAMP}" "${RW_ROOT}/${DPKG_DIR}" \
+            diff -Naur "${RW_ROOT}${DPKG_DIR}.lastroot-${TIMESTAMP}" "${RW_ROOT}${DPKG_DIR}" \
                 > "/tmp/.dpkg-customizations-${TIMESTAMP}.diff" \
-            && mv -f "/tmp/.dpkg-customizations-${TIMESTAMP}.diff" "${RW_ROOT}/${DPKG_DIR}" \
+            && mv -f "/tmp/.dpkg-customizations-${TIMESTAMP}.diff" "${RW_ROOT}${DPKG_DIR}" \
             && sync \
-            && echo "Differences in metadata have been saved into '${RW_ROOT}/${DPKG_DIR}.old-${TIMESTAMP}/.dpkg-customizations-${TIMESTAMP}.diff'"
+            && echo "Differences in metadata have been saved into '${RW_ROOT}${DPKG_DIR}.old-${TIMESTAMP}/.dpkg-customizations-${TIMESTAMP}.diff'"
         fi
 
-        echo "APPLY: Replacing whole ${RW_ROOT}/${DPKG_DIR} with contents of ${RO_ROOT}/${DPKG_DIR} (old state will stay in ${RW_ROOT}/${DPKG_DIR}.old-${TIMESTAMP})"
-        cp -prf "${RO_ROOT}/${DPKG_DIR}" "${RW_ROOT}/${DPKG_DIR}.new-${TIMESTAMP}" \
+        echo "APPLY: Replacing whole ${RW_ROOT}${DPKG_DIR} with contents of ${RO_ROOT}${DPKG_DIR} (old state will stay in ${RW_ROOT}${DPKG_DIR}.old-${TIMESTAMP})"
+        cp -prf "${RO_ROOT}${DPKG_DIR}" "${RW_ROOT}${DPKG_DIR}.new-${TIMESTAMP}" \
         && sync \
-        && mv -f "${RW_ROOT}/${DPKG_DIR}" "${RW_ROOT}/${DPKG_DIR}.old-${TIMESTAMP}" \
-        && mv -f "${RW_ROOT}/${DPKG_DIR}.new-${TIMESTAMP}" "${RW_ROOT}/${DPKG_DIR}.${TIMESTAMP}" \
+        && mv -f "${RW_ROOT}${DPKG_DIR}" "${RW_ROOT}${DPKG_DIR}.old-${TIMESTAMP}" \
+        && mv -f "${RW_ROOT}${DPKG_DIR}.new-${TIMESTAMP}" "${RW_ROOT}${DPKG_DIR}.${TIMESTAMP}" \
         && sync \
         && echo "SUCCEEDED replacing the live root database from updated read-only root" \
         || die "FAILED to replace the live root database from updated read-only root"
