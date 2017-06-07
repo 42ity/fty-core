@@ -175,3 +175,7 @@ case "$ACTION" in
         ;;
     *) die "ACTION '$ACTION' is not implemented nor supported (yet?)" ;;
 esac
+
+### Final sanity check
+[ -d "${RW_ROOT}${DPKG_DIR}" ] && [ -s "${RW_ROOT}${DPKG_STATE}" ] && [ -d "${RW_ROOT}${DPKG_INFO_DIR}" ] \
+|| die "Debian packaging metadata is not accessible as exected in the RW_ROOT, this is likely a scripting error in $0"
