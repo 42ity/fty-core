@@ -70,6 +70,13 @@ skip() {
 RO_ROOT="`echo "$RO_ROOT" | sed 's,/*$,,g'`"
 RW_ROOT="`echo "$RW_ROOT" | sed 's,/*$,,g'`"
 
+for D in "$DPKG_DIR" "$DPKG_INFO_DIR" "$DPKG_STATE" ; do
+    case "$D" in
+        /*) ;; # OK
+        *)  die "Pathname must be complete, starting from root. Invalid value detected: '$D'" ;;
+    esac
+done
+
 ### RO root must be not system root, and be present
 [ -n "${RO_ROOT}" ] && [ -d "${RO_ROOT}" ] \
 || skip "This script does not apply on this OS or HW: no read-only root filesystem to inspect at '${RO_ROOT}'"
