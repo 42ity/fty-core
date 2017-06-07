@@ -156,4 +156,4 @@ case "$ACTION" in
         || die "FAILED to replace the live root database from updated read-only root"
         ;;
     *) die "ACTION '$ACTION' is not implemented nor supported (yet?)" ;;
-fi
+esac
