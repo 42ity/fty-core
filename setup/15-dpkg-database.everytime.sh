@@ -65,9 +65,17 @@ skip() {
     exit 0
 }
 
+### Some cleanup and sanity checks on input variables
+### No trailing slashes on root dir values
+RO_ROOT="`echo "$RO_ROOT" | sed 's,/*$,,g'`"
+RW_ROOT="`echo "$RW_ROOT" | sed 's,/*$,,g'`"
+
+### RO root must be not system root, and be present
 [ -n "${RO_ROOT}" ] && [ -d "${RO_ROOT}" ] \
 || skip "This script does not apply on this OS or HW: no read-only root filesystem to inspect at '${RO_ROOT}'"
 
+### RW root (live) may be system root, or a valid alternate root
+### (e.g. a chroot or container env as seen the from host env)
 if [ -n "${RW_ROOT}" ] ; then
     # Note: This prefix may be empty in paths below,
     # but otherwise it must be a valid directory...
@@ -76,12 +84,15 @@ if [ -n "${RW_ROOT}" ] ; then
     || die "This script does not apply on this OS or HW: no alternate read-write root filesystem to manipulate at '${RW_ROOT}'"
 fi
 
+### Expected dirs and files exist
 [ -d "${RO_ROOT}/${DPKG_DIR}" ] && [ -d "${RW_ROOT}/${DPKG_DIR}" ] \
 && [ -d "${RO_ROOT}/${DPKG_INFO_DIR}" ] && [ -d "${RW_ROOT}/${DPKG_INFO_DIR}" ] \
 && [ -s "${RO_ROOT}/${DPKG_STATE}" ] && [ -s "${RW_ROOT}/${DPKG_STATE}" ] \
 || skip "This script does not apply on this OS: no debian packaging database in live and/or or read-only root filesystem"
 
+### Expected files can be manipulated
 [ -r "${RO_ROOT}/${DPKG_STATE}" ] && [ -r "${RW_ROOT}/${DPKG_STATE}" ] && [ -w "${RW_ROOT}/${DPKG_STATE}" ] \
+&& [ -w "${RW_ROOT}/${DPKG_DIR}" ] && [ -w "${RW_ROOT}/${DPKG_DIR}/.." ] \
 || skip "This script does not apply on this OS: insufficient access to manipulate the debian packaging database"
 
 # First make sure we save the copy of current OS image's data, if it is missing
