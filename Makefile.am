@@ -826,11 +826,12 @@ endef
 # Convert the remainder of HTMLS_ASCIIDOC from MAPPED_TXT_DOCS_ASCIIDOC
 $(foreach m,$(MAPPED_TXT_DOCS_ASCIIDOC), $(eval $(call depend-txt-html,$(m))))
 
-
+# NOTE: The HTMLS list holds relative pathnames used in other recipes
+# But _DATA installs and CLEANups prefer less ambiguity with absolute names
 if HAVE_ASCIIDOC
 HTMLS +=		$(HTMLS_ASCIIDOC)
-develdoc_DATA +=	$(HTMLS_ASCIIDOC)
-CLEANFILES +=		$(HTMLS_ASCIIDOC)
+develdoc_DATA +=	$(addprefix $(abs_top_builddir)/,$(HTMLS_ASCIIDOC))
+CLEANFILES +=		$(addprefix $(abs_top_builddir)/,$(HTMLS_ASCIIDOC))
 endif
 
 
