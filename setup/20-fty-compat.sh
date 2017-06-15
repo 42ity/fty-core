@@ -182,7 +182,7 @@ mvln /var/lib/bios/nut                /var/lib/fty/nut
 
 # The /var/lib/fty/fty-sensor-env should now be created via tmpfiles
 # But a legacy system may have an agent file of its own...
-mvln /var/lib/bios/composite-metrics/agent_th  /var/lib/fty/fty-sensor-env/agent_th
+mvln /var/lib/bios/composite-metrics/agent_th  /var/lib/fty/fty-sensor-env/state
 
 # alert list file must be converted, do it manually
 if [[ -e /var/lib/bios/agent-alerts-list/state_file ]]; then
