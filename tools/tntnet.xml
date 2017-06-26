@@ -400,6 +400,24 @@
         <url>^/api/v1/admin/config.*$</url>
     </mapping>
 
+    <!-- POST admin/scan -->
+    <mapping>
+      <target>scan_run@bios_web</target>
+      <url>^/api/v1/admin/scan.*$</url>
+      <method>POST</method>
+      <args>
+        <config>$1</config>
+        <range>$1</range>
+      </args>
+    </mapping>
+
+    <!-- GET admin/scan -->
+    <mapping>
+      <target>scan_progress@bios_web</target>
+      <url>^/api/v1/admin/scan.*$</url>
+      <method>GET</method>
+    </mapping>
+
     <!-- POST admin/email/test -->
     <mapping>
         <target>email_test@bios_web</target>
