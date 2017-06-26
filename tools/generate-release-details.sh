@@ -58,7 +58,7 @@ export LANG LC_ALL TZ
 #   FW_UIMAGEPART_CSDEV     FW_UIMAGEPART_BYTES
 #   FW_UIMAGEPART_CSDEVPAD  FW_UIMAGEPART_SIZE
 #                       Details about uImage miniroot for this system
-#   HWD_CATALOG_NB  HWD_REV HWD_SERIAL_NB
+#   HWD_VENDOR HWD_CATALOG_NB HWD_REV HWD_SERIAL_NB
 #                       OEM details about hardware for this system
 # For now (code to be ported) we also expect pre-parsed markup in
 #   BIOSINFO_UBOOT          BIOSINFO_UIMAGE
@@ -101,8 +101,15 @@ v_echo_ts() {
 # ? OSIMAGE_BTS         Build timestamp of OS image (can be found inside)
 # ? OSIMAGE_TYPE        IMGTYPE of OS image (can be found inside)
 
+if [ -z "${GIT_DETAILS_FILE-}" ]; then
+        for F in ${ALTROOT}/usr/share/fty/.git_details \
+            ${ALTROOT}/usr/share/bios/.git_details ; do
+                [ -s "$F" ] && GIT_DETAILS_FILE="$F" && break
+        done
+fi
+
 BIOSINFO="Readonly base OS image: `basename "$OSIMAGE_FILENAME"`
-`. ${ALTROOT}/usr/share/bios/.git_details >/dev/null 2>&1 && echo "42ity 'core' version:   $PACKAGE_GIT_HASH_S_ESCAPED @ $PACKAGE_GIT_TSTAMP_ISO8601_ESCAPED"`"
+`. ${GIT_DETAILS_FILE} >/dev/null 2>&1 && echo "42ity 'core' version:   $PACKAGE_GIT_HASH_S_ESCAPED @ $PACKAGE_GIT_TSTAMP_ISO8601_ESCAPED"`"
 
 OSIMAGE_BTS=""
 OSIMAGE_TYPE=""
@@ -171,21 +178,29 @@ $BIOSINFO_UBOOT"
         BIOSINFO="$BIOSINFO
 $BIOSINFO_UIMAGE"
 
-[ -n "$HWD_CATALOG_NB$HWD_REV$HWD_SERIAL_NB" ] && \
+[ -n "$HWD_VENDOR$HWD_CATALOG_NB$HWD_REV$HWD_SERIAL_NB" ] && \
         BIOSINFO="$BIOSINFO
-Hardware details: CatalogNumber:$HWD_CATALOG_NB HWSpecRevision:$HWD_REV SerialNumber:$HWD_SERIAL_NB"
+Hardware details: Vendor:$HWD_VENDOR CatalogNumber:$HWD_CATALOG_NB HWSpecRevision:$HWD_REV SerialNumber:$HWD_SERIAL_NB"
 
 # The device/container/VM UUID may be provided by caller somehow, e.g.
 # it might come from virtualization infrastructure (plug /proc/cmdline?)
 # Otherwise we generate it from whatever unique data we have.
 if [ -z "${UUID_VALUE-}" ]; then
-    [ -n "${UUID_NAMESPACE-}" ] || UUID_NAMESPACE="933d6c80-dea9-8c6b-d111-8b3b46a181f1"
-    # printf 'genepi''bios''ipm_converge' | sha1sum | sed 's,^\(........\)\(....\)\(....\)\(....\)\(............\).*$,\1-\2-\3-\4\-\5,'
+    [ -n "${UUID_NAMESPACE-}" ] || UUID_NAMESPACE="3aac7e03-aa86-8b7e-dab6-7021ed8de397"
+    # printf '42ity' | sha1sum | sed 's,^\(........\)\(....\)\(....\)\(....\)\(............\).*$,\1-\2-\3-\4\-\5,'
 
     UUID_VALUE="00000000-0000-0000-0000-000000000000"
-    if (which uuid >/dev/null 2>&1 ) ; then
-        UUID_VALUE="$(uuid -v5 "$UUID_NAMESPACE" "EATON""$HWD_CATALOG_NB""$HWD_SERIAL_NB")" || \
-        UUID_VALUE="00000000-0000-0000-0000-000000000000"
+    for UUID_PROG in ${ALTROOT}/usr/bin/uuid /usr/bin/uuid "`which uuid >/dev/null 2>&1`" ; do
+        [ -x "$UUID_PROG" ] && break
+    done
+    if [ -n "$UUID_PROG" ] && [ -x "$UUID_PROG" ] ; then
+        UUID_VALUE="$("$UUID_PROG" -v5 "$UUID_NAMESPACE" "$HWD_VENDOR""$HWD_CATALOG_NB""$HWD_SERIAL_NB")" 2>/dev/null || \
+        case "$UUID_PROG" in
+            "${ALTROOT}/"*) UUID_PROG="`echo "$UUID_PROG" | sed 's,^'"${ALTROOT}"'/,/,'`" && \
+                UUID_VALUE="$(chroot "${ALTROOT}" "$UUID_PROG" -v5 "$UUID_NAMESPACE" "$HWD_VENDOR""$HWD_CATALOG_NB""$HWD_SERIAL_NB")" || \
+                UUID_VALUE="00000000-0000-0000-0000-000000000000" ;;
+            *)  UUID_VALUE="00000000-0000-0000-0000-000000000000" ;;
+        esac
     else
         echo "WARNING: the uuid program is not available" >&2
     fi
@@ -211,7 +226,7 @@ cat <<EOF > ${ALTROOT}/etc/release-details.json
         "modimage-lsinfo":      "$MODIMAGE_LSINFO",
         "modimage-filename":    "$MODIMAGE_FILENAME",
         "modimage-cksum":       "$MODIMAGE_CKSUM",
-`. ${ALTROOT}/usr/share/bios/.git_details >/dev/null 2>&1 && printf '\t"bios-core-commit-id":\t"%s",\n\t"bios-core-commit-ts":\t"%s",\n' "$PACKAGE_GIT_HASH_S_ESCAPED" "$PACKAGE_GIT_TSTAMP_ISO8601_ESCAPED" `
+`. ${GIT_DETAILS_FILE} >/dev/null 2>&1 && printf '\t"bios-core-commit-id":\t"%s",\n\t"bios-core-commit-ts":\t"%s",\n' "$PACKAGE_GIT_HASH_S_ESCAPED" "$PACKAGE_GIT_TSTAMP_ISO8601_ESCAPED" `
         "bios-web-commit-id":   "$WEBUI_ID",
         "bios-web-commit-ts":   "$WEBUI_TS",
         "bios-web-build-ts":    "$WEBUI_BTS",
@@ -229,9 +244,11 @@ cat <<EOF > ${ALTROOT}/etc/release-details.json
         "uimage-part-bytes":    "$FW_UIMAGEPART_BYTES",
         "uimage-padded-cksum":  "$FW_UIMAGEPART_CSDEVPAD",
         "uimage-padded-bytes":  "$FW_UIMAGEPART_SIZE",
+        "hardware-vendor":      "$HWD_VENDOR",
         "hardware-catalog-number":      "$HWD_CATALOG_NB",
+        "hardware-part-number": "$HWD_PART_NB",
         "hardware-spec-revision":       "$HWD_REV",
-        "hardware-serial-number":       "$HWD_SERIAL_NB"
+        "hardware-serial-number":       "$HWD_SERIAL_NB",
         "uuid":        "$UUID_VALUE"
 } }
 EOF

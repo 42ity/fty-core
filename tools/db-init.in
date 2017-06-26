@@ -200,7 +200,11 @@ EOF
 		# Code above should have ensured that BIOS_DB_RW is correct
 		echo "Database for BIOS initialization - creating BIOS_DB_RW_LEGACY symlink pointing to correct password file BIOS_DB_RW..." >&2 && \
 		rm -f "${BIOS_DB_RW_LEGACY}" && \
-		ln -s "${BIOS_DB_RW}" "${BIOS_DB_RW_LEGACY}"
+			ln -s "${BIOS_DB_RW}" "${BIOS_DB_RW_LEGACY}"
+		# Our web-server should be able to read these credentials, at least per current implementation of license_POST
+		chgrp www-data "${BIOS_DB_RW}"
+		chmod g+r "${BIOS_DB_RW}"
+		chgrp www-data "${CREDSQL_DIR}"
 	fi
 
 	if [ -L "${BIOS_DB_RO_LEGACY}" ] && [ -s "${BIOS_DB_RO}" ] && diff -q "${BIOS_DB_RO_LEGACY}" "${BIOS_DB_RO}" ; then
@@ -318,27 +322,35 @@ ensure_root_password() {
 	# Then fall back to a very legacy file if present
 	if [ -z "`echo "select 'working';" | do_mysql | grep working`" ]; then
 		if [ -z "`echo "select 'working';" | do_mysql --password='' | grep working`" ]; then
-			if [ -s "$MYCNF" ] && ! diff -q "$MYCNF" "$MYCNF_LEGACY" ]; then
+			if [ -s "$MYCNF" ] && ! diff -q "$MYCNF" "$MYCNF_LEGACY" ; then
 				# Data in the legacy location was verified to be invalid above
+				# Try to move the old file away (backup just in case of scripting error)
+				[ -s "${MYCNF_LEGACY}" ] && mv -f "${MYCNF_LEGACY}" "${MYCNF_LEGACY}.bad-`date -u '+%Y%m%dT%H%M%SZ'`"
 				rm -f "${MYCNF_LEGACY}" && \
 				ln -s "${MYCNF}" "${MYCNF_LEGACY}"
 				chmod 600 "$MYCNF"
 				if echo "select 'working';" | do_mysql | grep -w working > /dev/null; then
 					echo "Database for 42ity initialization - created a symlink MYCNF_LEGACY pointing to valid password file MYCNF" >&2
 				else # Both data are invalid
+					[ -s "${MYCNF_LEGACY}" ] && mv -f "${MYCNF_LEGACY}" "${MYCNF_LEGACY}.bad-`date -u '+%Y%m%dT%H%M%SZ'`"
+					[ -s "${MYCNF}" ] && mv -f "${MYCNF}" "${MYCNF}.bad-`date -u '+%Y%m%dT%H%M%SZ'`"
 					rm -f "${MYCNF_LEGACY}" "${MYCNF}"
 				fi
 			else # No file(s) or same invalid data
+				[ -s "${MYCNF_LEGACY}" ] && mv -f "${MYCNF_LEGACY}" "${MYCNF_LEGACY}.bad-`date -u '+%Y%m%dT%H%M%SZ'`"
+				[ -s "${MYCNF}" ] && mv -f "${MYCNF}" "${MYCNF}.bad-`date -u '+%Y%m%dT%H%M%SZ'`"
 				rm -f "${MYCNF_LEGACY}" "${MYCNF}"
 			fi
 
 			if [ ! -s "${MYCNF_LEGACY}" ] && [ -n "$MYSQL_ROOT_PASSWD" ] \
 			&& [ -n "`echo "select 'working';" | do_mysql --password="$MYSQL_ROOT_PASSWD" | grep working`" ] \
 			; then
+				[ -s "${MYCNF}" ] && mv -f "${MYCNF}" "${MYCNF}.bad-`date -u '+%Y%m%dT%H%M%SZ'`"
 				rm -f "$MYCNF"  # Reset access rights, if unsecured earlier
 				printf '[client]\nuser=%s\npassword=%s\n' "${USER}" "${MYSQL_ROOT_PASSWD}" > "$MYCNF" && \
 				rm -f /etc/default/mysql-root-passwd # No more legacy
 				chmod 600 "$MYCNF"
+				[ -s "${MYCNF_LEGACY}" ] && mv -f "${MYCNF_LEGACY}" "${MYCNF_LEGACY}.bad-`date -u '+%Y%m%dT%H%M%SZ'`"
 				rm -f "${MYCNF_LEGACY}"
 				ln -s "${MYCNF}" "${MYCNF_LEGACY}"
 			else
@@ -363,9 +375,11 @@ FLUSH PRIVILEGES;
 EOF
 		[ $? != 0 ] && echo "Error setting MySQL root password" >&2 && return 1
 
+		[ -s "${MYCNF}" ] && mv -f "${MYCNF}" "${MYCNF}.bad-`date -u '+%Y%m%dT%H%M%SZ'`"
 		rm -f "$MYCNF"  # Reset access rights, if unsecured earlier
 		printf '[client]\nuser=%s\npassword=%s\n' "${USER}" "${ROOT_PW}" > "$MYCNF"
 		chmod 600 "$MYCNF"
+		[ -s "${MYCNF_LEGACY}" ] && mv -f "${MYCNF_LEGACY}" "${MYCNF_LEGACY}.bad-`date -u '+%Y%m%dT%H%M%SZ'`"
 		rm -f "${MYCNF_LEGACY}"
 		ln -s "${MYCNF}" "${MYCNF_LEGACY}"
 	else

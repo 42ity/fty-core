@@ -187,7 +187,7 @@ usage() {
     echo "  --dry-run | -n            Alias to --check-images (check both OS and FW)"
     echo "  --(no-)download-image-os  Enable or disable downloading of OS images"
     echo "  --(no-)download-image-fw  Likewise for downloading of uBoot, uImage+modules"
-    echo "  --(no-)download-images    Enable or disable downloading of all image types"
+    echo "  --(no-)download-images|-N Enable or disable downloading of all image types"
     echo "  --fw-only                 Alias to --no-download-image-os --download-image-fw"
     echo "  --os-only                 Alias to --download-image-os --no-download-image-fw"
     echo "  --(no-)removeold-image-os, --(no-)removeold-image-fw, --(no-)removeold-images"
@@ -201,7 +201,7 @@ usage() {
     echo "For the check* and download* methods, you can specify a full URL to the image"
     echo "file which you want rather than trying to detect the newest one available, with"
     echo "the following arguments ('raw' firmwares are the non-tarballed singular files):"
-    echo "  --url-image-os {URL} (expected checksum patterns should still exist nearby)"
+    echo "  --url-image-os|-U {URL} (expected checksum patterns should still exist nearby)"
     echo "  --url-image-fw-raw-uboot --url-image-fw-raw-uimage --url-image-fw-raw-modules"
     echo "  --(no-)erase-factory-reset If a new OS image downloaded successfully, touch"
     echo "                   the control file so 'init' does a factory reset after reboot"
@@ -213,8 +213,12 @@ usage() {
     echo "  --(no-)erase-all           If a new OS image downloaded successfully, then"
     echo "                   request a factory reset and(!) NAND format after reboot"
     echo "  --touch-erase-all          Enforce a factory reset + NAND format next boot"
-    echo "  --reboot | -r              If a new image (OS, FW) downloaded successfully"
+    echo "  --reboot | -r | -R         If a new image (OS, FW) downloaded successfully"
     echo "                   request an immediate reboot as part of this script"
+    echo "                   With '-R' this reboots the system in either non-error case"
+    echo "For OEM factory procedures to complete in a standard manner, there is a flag:"
+    echo "  --oem-finish     Request a factory reset and MMCp1 reformat during next"
+    echo "                   boot, and power off the box gracefully"
     echo "For HTTP(S) or FTP(S) based delivery, do not forget to set http_proxy URL as"
     echo "applicable for your environment. Current value is '$http_proxy'."
     echo "RETURN CODES: This script returns 0 if no newer images were found to download"
@@ -758,13 +762,17 @@ download_osimage() (
     case "$IMAGE_URL" in
             *"${IMGTYPE}"*) ;;
             "") ;; # This dies a bit below
-            *)  logmsg_warn "The IMAGE_URL='$IMAGE_URL' does not contain IMGTYPE='$IMGTYPE'!" ; sleep 5 ;;
+            *)  logmsg_warn "The string IMAGE_URL='$IMAGE_URL' does not contain IMGTYPE='$IMGTYPE'!" \
+                    "You may have explicitly requested to download something different from you are running or expecting..."
+                sleep 5 ;;
     esac
 
     case "$IMAGE_URL" in
             *"${ARCH}"*) ;;
             "") ;; # This dies a bit below
-            *)  logmsg_warn "The IMAGE_URL='$IMAGE_URL' does not contain ARCH='$ARCH'!" ; sleep 5 ;;
+            *)  logmsg_warn "The string IMAGE_URL='$IMAGE_URL' does not contain ARCH='$ARCH'!" \
+                    "You may have explicitly requested to download something different from you are running or expecting..."
+                sleep 5 ;;
     esac
 
     [ -n "$IMAGE_URL" ] && \
@@ -1554,9 +1562,9 @@ DOWNLOADED_OS_IMAGE=""
 # Note: /mnt/ext is in the list just in case rogue data is around.
 FACTORY_RESET_TTL_EXPIRED=""
 for F in \
-        /mnt/ext/recovery/factory_reset \
-        /mnt/nand/factory_reset \
-        /mnt/mmc/recovery/factory_reset \
+	/mnt/ext/recovery/factory_reset \
+	/mnt/nand/factory_reset \
+	/mnt/mmc/recovery/factory_reset \
 	"$DEPLOYMENTROOT/factory_reset" \
 	"$DOWNLOADROOT/factory_reset" \
 ; do
@@ -1627,7 +1635,7 @@ while [ $# -gt 0 ]; do
 		--download-images)      ACTION_DOWNLOAD_OSIMAGE="yes"; ACTION_DOWNLOAD_FWIMAGE="yes";;
 		--no-download-image-os) ACTION_DOWNLOAD_OSIMAGE="no";;
 		--no-download-image-fw) ACTION_DOWNLOAD_FWIMAGE="no";;
-		--no-download-images)   ACTION_DOWNLOAD_OSIMAGE="no"; ACTION_DOWNLOAD_FWIMAGE="no";;
+		--no-download-images|-N)ACTION_DOWNLOAD_OSIMAGE="no"; ACTION_DOWNLOAD_FWIMAGE="no";;
 		--fw-only)              ACTION_DOWNLOAD_OSIMAGE="no"; ACTION_DOWNLOAD_FWIMAGE="yes";;
 		--os-only)              ACTION_DOWNLOAD_OSIMAGE="yes"; ACTION_DOWNLOAD_FWIMAGE="no";;
 		--check-image-os)       ACTION_CHECK_OSIMAGE="yes";;
@@ -1637,10 +1645,10 @@ while [ $# -gt 0 ]; do
 		--no-check-image-os)    ACTION_CHECK_OSIMAGE="no";;
 		--no-check-image-fw)    ACTION_CHECK_FWIMAGE="no";;
 		--no-check-images)      ACTION_CHECK_OSIMAGE="no"; ACTION_CHECK_FWIMAGE="no";;
-		--url-image-*)
+		--url-image-*|-U)
 		    [ $# -eq 1 ] && die "The '$1' option requires a further argument"
 		    case "${1-}" in
-		        --url-image-os)             URL_DOWNLOAD_OSIMAGE="$2"; shift;;
+		        --url-image-os|-U)          URL_DOWNLOAD_OSIMAGE="$2"; shift;;
 		        --url-image-fw-raw-uboot)   URL_DOWNLOAD_FWIMAGE_RAW_UBOOT="$2"; shift;;
 		        --url-image-fw-raw-uimage)  URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE="$2"; shift;;
 		        --url-image-fw-raw-modules) URL_DOWNLOAD_FWIMAGE_RAW_MODULES="$2"; shift;;
@@ -1664,7 +1672,29 @@ while [ $# -gt 0 ]; do
 		--touch-erase-all|--force-erase-all)
 		                        FLAG_ERASE_ALL="force" ;;
 		--no-erase-all)         FLAG_ERASE_ALL="no" ;;
-		--reboot|-r)            WANT_REBOOT="yes" ;;
+		--reboot|-r)            WANT_REBOOT="yes" ;; # reboot if code 42 - got new files ok
+		-R)                     WANT_REBOOT="force" ;; # reboot if exitcode 0 or 42
+		--oem-finish)
+		    [ "${WANT_REBOOT-}" = yes -o "${WANT_REBOOT-}" = force ] && DO_REBOOT=yes
+		    logmsg_warn "Preparing for an OEM finish, wiping this controller during next boot"
+		    echo "Press Ctrl+C within 5 seconds to abort!" >&2
+		    sleep 5
+		    logmsg_warn "Proceeding with an OEM finish, requesting to wipe this controller during next boot"
+		    touch "$DEPLOYMENTROOT/factory_reset"
+		    # Favor a quick badblocks search for the first user-facing bootup
+		    # and reformat the MMC after all the transportation and storage
+		    echo "yes-bb-ro" > "$DEPLOYMENTROOT/reformat-MMCp1"
+		    if [ "$DO_REBOOT" = yes ]; then
+		        logmsg_warn "Was asked to reboot... trying to do so..."
+		        sync
+		        init 6
+		    else
+		        logmsg_warn "Was asked to shut down for power-off... trying to do so..."
+		        sync
+		        poweroff
+		    fi
+		    die "Should not get to this line after requesting power-off..."
+		    ;;
 		*)  die "Aborting due to unknown command-line argument(s): $*" ;;
 	esac
 	shift
@@ -1839,7 +1869,16 @@ case "$ACTION_RESULT" in
 		; then
 			ACTION_RESULT=42
 			ACTION_RESULT_STR="new files were downloaded successfully, you can reboot now to apply the updates"
-			[ "${WANT_REBOOT-}" = yes ] && DO_REBOOT=yes
+			[ "${WANT_REBOOT-}" = yes -o "${WANT_REBOOT-}" = force ] && DO_REBOOT=yes
+			[ "${DO_REBOOT}" = yes ] && \
+				logmsg_warn "Got new files without errors - and was asked to reboot in this case" || \
+				logmsg_warn "Got new files without errors"
+		fi
+		if [ "$ACTION_RESULT" = 0 ] ; then
+			[ "${WANT_REBOOT-}" = force ] && DO_REBOOT=yes
+			[ "${DO_REBOOT}" = yes ] && \
+				logmsg_warn "Got no errors - with new files or no updates - and was asked to reboot in this case" || \
+				logmsg_warn "Got no errors - with new files or no updates"
 		fi
 		;;
 esac
@@ -1847,7 +1886,7 @@ esac
 logmsg_info "Completed '$_SCRIPT_NAME $_SCRIPT_ARGS' with result $ACTION_RESULT ($ACTION_RESULT_STR)"
 
 if [ "${DO_REBOOT-}" = yes ]; then
-	logmsg_warn "Got new files and was asked to reboot in this case... trying to do so..."
+	logmsg_warn "Was asked to reboot... trying to do so..."
 	sync
 	init 6
 fi

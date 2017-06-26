@@ -71,8 +71,8 @@ docs/doxygen/html/
 docs/doxygen/doxygen_sqlite3.db
 docs/doxygen/*.tmp
 
-docs/examples/sudoers.d/bios_00_base
-!docs/examples/sudoers.d/bios_00_base.in
+docs/examples/sudoers.d/fty_00_base
+!docs/examples/sudoers.d/fty_00_base.in
 
 .test.log
 .test.trs
@@ -120,6 +120,10 @@ var/
 build/
 build-*/
 
+bios-*.*/
+bios-*.*.tar.?z
+bios-*.deb
+
 core-*.*/
 core-*.*.tar.?z
 core-*.deb
@@ -165,9 +169,17 @@ systemd/biostimer-compress-logs.service
 systemd/biostimer-loghost-rsyslog-netconsole.service
 !systemd/ipc-meta-setup.service.in
 systemd/ipc-meta-setup.service
+!systemd/fty-db-init.service.in
+systemd/fty-db-init.service
+!systemd/fty-db-engine.service.in
+systemd/fty-db-engine.service
+!systemd/fty-tntnet@.service.in
+systemd/fty-tntnet@.service
 
 !tools/tntnet-ExecStartPre.sh.in
 tools/tntnet-ExecStartPre.sh
+!tools/start-db-services.in
+tools/start-db-services
 
 src/web/src/auth-verify.cpp
 src/web/src/auth-require.cpp

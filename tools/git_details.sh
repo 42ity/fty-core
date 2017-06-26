@@ -35,6 +35,7 @@ export LANG LC_ALL TZ
 ### We need to convert a potentially multi-line value like "git status" into
 ### a single-line token for C macros or Makefiles; our JSON.sh can do that.
 [ -z "$JSONSH" -o ! -x "$JSONSH" ] && JSONSH="`dirname $0`/JSON.sh"
+[ -z "$JSONSH" -o ! -x "$JSONSH" ] && JSONSH="/usr/share/fty/scripts/JSON.sh"
 [ -z "$JSONSH" -o ! -x "$JSONSH" ] && JSONSH="/usr/share/bios/scripts/JSON.sh"
 [ ! -x "$JSONSH" ] && \
     echo "GIT_DETAILS-FATAL: FAILED to use JSON.sh from '$JSONSH'" >&2 && exit 3

@@ -1,0 +1,23 @@
+# WARNING: This unit is intended for systems or containers dedicated as
+# 42ity execution environments. It disables any existing MySQL server.
+
+[Unit]
+Description=MySQL server for 42ity usage
+Conflicts=mysql.service mysqld.service mariadb.service
+# Not Requires, not Requisite... Wants and ExecStartPre is-active hack, see https://github.com/systemd/systemd/issues/1312
+Wants=basic.target network.target fty-license-accepted.service
+After=basic.target network.target fty-license-accepted.service
+PartOf=bios.target
+
+[Service]
+Type=forking
+#ExecStartPre=/bin/dash -c "for S in mysql.service mysqld.service mariadb.service ; do for A in stop disable mask ; do /bin/systemctl $A $S || true ; done; done"
+ExecStartPre=/bin/dash -c "while ! /bin/systemctl is-active fty-license-accepted.service ; do sleep 3 ; done"
+ExecStartPre=/bin/dash -c "if [ -d /var/lib/mysql ] ; then /bin/chown -R mysql:mysql /var/lib/mysql ; fi"
+ExecStart=/usr/lib/mysql/rcmysql start
+ExecStop=/usr/lib/mysql/rcmysql stop
+TimeoutStartSec=0
+Restart=on-failure
+
+[Install]
+WantedBy=bios.target

@@ -2,7 +2,7 @@
 # Description:
 # The PAM 'bios' service configuration file for the Eaton 42ity project.
 # Note that this file must be named 'bios' to identify the service name.
-# This allows members of the groups listed in /etc/security/bios_groups.conf
+# This allows members of the groups listed in /etc/security/fty_groups.conf
 # (i.e. the 'bios' group by default) to PAM/SASL-authenticate to the daemons.
 # See also the script to generate these needed 42ity accounts and groups:
 #    tools/init-os-accounts.sh
@@ -25,7 +25,7 @@
 
 # Note that "requisite" mismatch fails instantly,
 # while "required" goes on to other checks first
-    auth	requisite	pam_listfile.so	onerr=fail item=group sense=allow file=/etc/security/bios_groups.conf
+    auth	requisite	pam_listfile.so	onerr=fail item=group sense=allow file=/etc/security/fty_groups.conf
 
 @include	common-auth
 

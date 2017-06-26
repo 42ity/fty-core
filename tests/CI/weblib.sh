@@ -124,7 +124,7 @@ fi
         CITEST_QUICKFAIL="$WEBLIB_QUICKFAIL"
 
 [ -z "${JSONSH-}" ] && \
-    for F in "$CHECKOUTDIR/tools/JSON.sh" "$SCRIPTDIR/JSON.sh" "$SCRIPTDIR/../../tools/JSON.sh" "/usr/share/bios/scripts/JSON.sh"; do
+    for F in "$CHECKOUTDIR/tools/JSON.sh" "$SCRIPTDIR/JSON.sh" "$SCRIPTDIR/../../tools/JSON.sh" "/usr/share/fty/scripts/JSON.sh" "/usr/share/bios/scripts/JSON.sh"; do
         [ -x "$F" -a -s "$F" ] && JSONSH="$F" && break
     done
 

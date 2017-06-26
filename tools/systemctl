@@ -53,7 +53,7 @@ MAINARGS="$0 $*"
 # Use syslog if "logger" is available
 LOGGER="$(which logger)" 2>/dev/null || LOGGER=""
 
-SYSTEMCTL_COMMANDS="show start stop restart reload reload-or-restart try-reload-or-restart enable disable daemon-reload status is-active list-dependencies"
+SYSTEMCTL_COMMANDS="show start stop restart reload reload-or-restart try-reload-or-restart enable disable mask unmask daemon-reload status is-active list-dependencies"
 # NOTE: We do not support "--unit=UNITNAME" because it is too much hassle here
 # NOTE: We do also support the two-token "-n NUMBER" explicitly below
 JOURNALCTL_COMMANDS="-f --follow -l -u -fl -lf -fu -uf -lu -ul -flu -ful -luf -lfu -ulf -ufl -a --all --no-pager -r --reverse -k --dmesg"
@@ -74,17 +74,21 @@ SYSTEMCTL_UNITS_COMMON_EXTERNAL="mariadb mysql mysqld                   \
 # SYSTEMCTL_UNITS_COMMON_INTERNAL lists the services delivered by our project
 # TODO: legacy-metrics will be removed, drop it there
 SYSTEMCTL_UNITS_COMMON_INTERNAL="bios tntnet@bios fty-outage fty-metric-store   \
+                                fty-tntnet@bios                                 \
+                                fty-license-accepted fty-db-init fty-db-engine  \
                                 fty-kpi-power-uptime fty-alert-list fty-asset   \
                                 fty-metric-store-cleaner fty-alert-engine       \
                                 fty-email fty-metric-composite-configurator     \
-                                fty-metric-tpower bios-agent-inventory  	    \
+                                fty-metric-tpower bios-agent-inventory          \
+                                fty-info fty-mdns-sd fty-metric-snmp            \
                                 bios-db-init bios-fake-th bios-networking       \
                                 bios-reset-button bios-ssh-last-resort          \
                                 biostimer-compress-logs biostimer-verify-fs     \
                                 biostimer-loghost-rsyslog-netconsole fty-nut    \
                                 biostimer-warranty-metric ifplug-dhcp-autoconf  \
-                                ipc-meta-setup fty-sensor-env                   \
-                                fty-nut-configuator fty-metric-compute          \
+                                ipc-meta-setup fty-sensor-env fty-discovery     \
+                                fty-sensor-gpio                                 \
+                                fty-nut-configurator fty-metric-compute         \
                                 fty-metric-cache fty-alert-flexible"
 
 SYSTEMCTL_UNITS_COMMON="$SYSTEMCTL_UNITS_COMMON_EXTERNAL $SYSTEMCTL_UNITS_COMMON_INTERNAL"
@@ -318,7 +322,8 @@ print_item_list ${SYSTEMCTL_COMMANDS}
     The "daemon-reload" action is passed without any further arguments.
     Actions that accept the [--all|-a|--full|-l|--quiet] modifiers will
     get them. The "status" action may additionally use [-n POSITIVENUMBER]
-    modifier (Number of journal entries to show).
+    modifier (Number of journal entries to show). The "show" action may
+    additionally use one or more [-p KeyName] modifiers to list specific data.
 EOF
 }
 
@@ -447,7 +452,7 @@ systemctl_list_json() {
         # We need to convert a potentially multi-line or quoted values into an
         # escaped single-line token for valid markup; our JSON.sh can do that.
         [[ -n "$JSONSH" ]] && [[ -s "$JSONSH" ]] && [[ -x "$JSONSH" ]] || \
-        for F in "${SCRIPT_DIRNAME}/JSON.sh" "/usr/share/bios/scripts/JSON.sh" \
+        for F in "${SCRIPT_DIRNAME}/JSON.sh" "/usr/share/fty/scripts/JSON.sh" "/usr/share/bios/scripts/JSON.sh" \
             "$CHECKOUTDIR/tools/JSON.sh"; do
                 [[ -x "$F" ]] && [[ -s "$F" ]] && JSONSH="$F" && break
         done
@@ -1025,7 +1030,7 @@ systemctl_list_needs() (
     if [[ -n "$SYSTEMCTL_UNITS" ]] ; then
         SYSTEMCTL_UNITS="`$SYSTEMCTL show -p Id $SYSTEMCTL_UNITS | sed 's,^.*=,,'`"
     else
-        SYSTEMCTL_UNITS="tntnet@bios.service bios.service bios.target `list_known_ipm_units | egrep -v 'tntnet@bios.service|bios.service|bios.target'`"
+        SYSTEMCTL_UNITS="tntnet@bios.service bios.service bios.target fty-license-accepted.service `list_known_ipm_units | egrep -v 'tntnet@bios.service|bios.service|bios.target|fty-license-accepted.service'`"
     fi
     export RECURSIVE
 
@@ -1192,6 +1197,13 @@ process_CLI_systemctl() {
                     NOBREAK=yes
                     SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
                 -n) if [[ "$cmd" = status ]] && [[ -n "$2" ]] && [[ "$2" -gt 0 ]]; then
+                        SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1 $2"
+                        shift
+                    else
+                        ABORT=yes
+                    fi
+                    ;;
+                -p) if [[ "$cmd" = show ]] && [[ -n "$2" ]] ; then
                         SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1 $2"
                         shift
                     else

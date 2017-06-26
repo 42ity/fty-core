@@ -1,0 +1,137 @@
+#!/bin/bash
+
+# Copyright (C) 2017 Eaton
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+#! \file    fty-route
+#  \brief   Helper script for route manipulation
+#  \author  Michal Vyskocil <MichalVyskocil@Eaton.com>
+
+# run fty-route as a root
+if [[ $(id -u) != 0 ]]; then
+    exec /usr/bin/sudo "${0}" "${@}"
+    die "Execed to sudo, should not have got here"
+fi
+
+die () {
+    echo "FATAL: ${@}" >&2
+    exit 1
+}
+
+# Execute augtool with given arguments and our settings
+# and pre-selection of lenses to be bearably fast
+augtool () {
+
+    case "${1}" in
+    set)
+        cat <<EOF | /usr/bin/augtool -S -I/usr/share/fty/lenses/
+"${1}" "${2}" "${3}"
+save
+EOF
+        ;;
+    rm)
+        cat <<EOF | /usr/bin/augtool -S -I/usr/share/fty/lenses/
+"${1}" "${2}"
+save
+EOF
+        ;;
+    *)
+        /usr/bin/augtool -S -I/usr/share/fty/lenses/ "${@}"
+        ;;
+    esac
+}
+
+# Return augeas index
+ag_index () {
+    local cmd pattern
+    cmd="${1}"
+    pattern="${2}"
+
+    augtool "${cmd}" | egrep "= ${pattern}"'$' | cut -d '=' -f 1 | sed 's/ //g'
+}
+
+### MAIN ###
+COMMAND="${@}"
+ARGS=("${@}")
+LAST_IDX=$((${#} - 1))
+
+# put all routing to the default interface, unless (dev)? iface_name is specified
+# distinguish modes by checking last argument of post-up
+IFACE_PATH="$(ag_index "match /files/etc/network/interfaces/iface[*]" "${ARGS[${LAST_IDX}]}")"
+if [[ -z "${IFACE_PATH}" ]]; then
+    # iface[1] is lo... TODO: assert that?
+    IFACE_PATH="/files/etc/network/interfaces/iface[2]"
+fi
+
+case "${ARGS[0]}" in
+    list)
+        if [[ "${ARGS[1]}" = "-n" ]] ; then
+            /sbin/route -n
+        else
+            /sbin/route
+        fi
+        ;;
+    add)
+        /sbin/route "${@}" || die "Command route ${@} failed"
+        augtool "set" "${IFACE_PATH}/post-up[last()+1]" "route ${COMMAND}"
+        ;;
+    del)
+        POST_UP_PATH=$(ag_index "match ${IFACE_PATH}/post-up" "route ${COMMAND/del/add}")
+        if [ -z "${POST_UP_PATH}" ]; then
+            die "Can't delete non existent route ${COMMAND} from ${IFACE_PATH}"
+        fi
+        # delete routing from persistent config
+        for line in ${POST_UP_PATH}; do
+            augtool "rm" "${line}"
+        done
+        # delete routing info from kernel table
+        /sbin/route ${@} || die "Command route ${@} failed"
+        ;;
+    -h|--help|help)
+        cat <<EOF >&2
+Usage: fty-route [list|add|del] ... routing details
+
+        Manipulates routing table of network interfaces. It writes to
+        /etc/network/interfaces, so all changes are persistent.
+
+        list - print kernel routing table
+
+        add - add new route, by default to the first network device.
+        Last parameter can specify network device to use.
+
+        del - delete matching line from interfaces file
+        Last parameter can specify network device to use.
+
+EXAMPLES:
+        Add new route for first network device
+
+        fty-route add -net 10.41.0.0/16 gw 192.168.0.1
+
+        Add new route for specific device
+        fty-route add -net 10.41.0.0/16 gw 192.168.0.1 (dev)? LAN3
+
+        Remove route
+        fty-route del -net 10.41.0.0/16 gw 192.168.0.1
+
+        Remove route for specific device
+        fty-route del -net 10.41.0.0/16 gw 192.168.0.1 LAN3
+EOF
+        exit 1
+        ;;
+    *)
+        die "Unknown command ${ARGS[0]}, use add/del/list"
+        ;;
+esac
