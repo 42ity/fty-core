@@ -406,7 +406,7 @@
       <url>^/api/v1/admin/scan.*$</url>
       <method>POST</method>
       <args>
-        <config>$1</config>
+        <config>$2</config>
         <range>$1</range>
       </args>
     </mapping>
