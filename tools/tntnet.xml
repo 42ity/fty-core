@@ -418,6 +418,13 @@
       <method>GET</method>
     </mapping>
 
+    <!-- GET admin/gpio -->
+    <mapping>
+        <method>GET</method>
+        <target>list_gpio@bios_web</target>
+        <url>^/api/v1/admin/gpio.*$</url>
+    </mapping>
+
     <!-- POST admin/email/test -->
     <mapping>
         <target>email_test@bios_web</target>
