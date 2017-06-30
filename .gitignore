@@ -236,7 +236,6 @@ src/web/src/input_power_chain.cpp
 
 tntnet.xml.example
 tntnet.xml
-!tools/tntnet.xml
 tests/CI/run_tntnet_make.env
 
 !src/agents

@@ -35,7 +35,7 @@ dist_noinst_DATA =
 # A source file listed in BUILT_SOURCES is made on `make all` or `make check`
 # (or even `make install`) before other targets are processed. However, such
 # a source file is not compiled unless explicitly requested by mentioning it
-# in some other _SOURCES variable. 
+# in some other _SOURCES variable.
 BUILT_SOURCES =
 # http://www.gnu.org/software/automake/manual/html_node/Clean.html
 # * If make built it, and it is commonly something that one would want to
@@ -95,7 +95,7 @@ EXTRA_DIST +=	COPYING
 # tracking (which is automatic), but to ensure these files are
 # distributed by "make dist" although not "installed".
 
-dist_noinst_HEADERS = 
+dist_noinst_HEADERS =
 
 # Clean up products of configure script
 DISTCLEANFILES += \
@@ -301,24 +301,10 @@ EXTRA_DIST +=		tools/fake-th \
 # Recipe needed to fulfill ci-rc-bios.sh logic
 fake-th: tools/fake-th
 
-### This file contains the TNTNET settings distributed as an example for users
-### Note: in daemon mode, "stderr > /dev/null" unless errorLog is defined
-tntnet.xml.example: tools/tntnet.xml
-	${SED} -e 's|\(.*\)\(<!--.*<dir>/</dir>.*-->.*\)|\1<dir>$(datarootdir)/@PACKAGE@/web</dir>\n\1<compPath>\n\1\ \ \ <entry>$(pkglibdir)</entry>\n\1\ \ \ <entry>$(libdir)</entry>\n\1</compPath>|' \
-	       -e 's|<!-- <errorLog>/var/log/tntnet/error.log</errorLog> -->|<errorLog>/var/log/tntnet/error.log</errorLog>|' \
-	       -e 's|<port>8000</port>|<port>80</port>|' \
-	       -e 's|<port>8443</port>|<port>443</port>|' \
-	       -e 's|<!-- ssl start.*|<!-- ssl start -->|' \
-	       -e 's|^\([[:blank:]]*\)ssl end -->|\1<!-- ssl end -->|' \
-	       -e 's|<!--\ <daemon>0</daemon>\ -->|<daemon>1</daemon>|' $< > $@ || \
-	rm -f $@
-
 exampleconfdir =	$(datarootdir)/@PACKAGE@/examples
-exampleconf_DATA =	tntnet.xml.example
 EXTRA_DIST +=		$(exampleconf_DATA)
-dist_noinst_DATA +=	tools/tntnet.xml
 
-CLEANFILES +=		tntnet.xml.example tests/CI/tntnet.xml
+CLEANFILES +=		tests/CI/tntnet.xml
 
 # Another script is "@libexecdir@/@PACKAGE@/db-init" as required by the
 # bios-db-init.service definition (installed into OS root /lib in CI builds).
@@ -613,7 +599,7 @@ clean-systemd-units:
 # and written in asciidoc markup
 # Note these should have paths relative to project root dir.
 BASE_DOCS_ASCIIDOC =	INSTALL INSTALL-referenceOS-debian8 \
-			CONTRIBUTING 
+			CONTRIBUTING
 
 # Documentation files saved in the project source-code root directory
 # as text files without extensions in the name and written in plain
@@ -647,7 +633,7 @@ TXT_DOCS_PLAINTEXT =
 # (as in case of the _ASCIIDOC list).
 # Filenames here should not have spaces and should have the '.txt' suffix.
 
-MAPPED_TXT_DOCS_PLAINTEXT = 
+MAPPED_TXT_DOCS_PLAINTEXT =
 
 MAPPED_TXT_DOCS_ASCIIDOC =
 
@@ -898,7 +884,7 @@ clean-html:
 #----------------------------------------------------------------------
 #                        doxygen html generation
 # Note that unlike many other targets, doxygen seemingly has to use
-# relative paths and be generated in a directory near the source code 
+# relative paths and be generated in a directory near the source code
 #----------------------------------------------------------------------
 
 #if HAVE_DOXYGEN
