@@ -317,7 +317,7 @@ case ${OPERATION} in
             echo "USB device not found!"
             false
         fi
-        mount "${USBDEVICE}" "${MOUNTPOINT}" && \
+        (mountpoint -q "${MOUNTPOINT}" || mount "${USBDEVICE}" "${MOUNTPOINT}") && \
             WD="${MOUNTPOINT}" create_diagnostic_archive && \
             umount "${MOUNTPOINT}"
         ;;
