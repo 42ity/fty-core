@@ -1,6 +1,6 @@
 #!/bin/bash -e
 #
-# Copyright (C) 2016 Eaton
+# Copyright (C) 2016-2017 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,6 +19,8 @@
 #! \file    diagnostic-information
 #  \brief   Helper script for collecting diagnostic information
 #  \author  Tomas Halman <TomasHalman@Eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \author  Arnaud Quette <ArnaudQuette@Eaton.com>
 #
 
 if [ "$(id -u)" != "0" ] ; then
@@ -153,7 +155,7 @@ etc_files() {
 
 usr_share_bios_files() {
     verbose "/usr/share/bios..."
-    cp -r -H -f /usr/share/bios "${WD}/${TMPDIR}/usr-share-bios"
+    cp -r -L -f /usr/share/bios "${WD}/${TMPDIR}/usr-share-bios"
 }
 
 csv_export() {
