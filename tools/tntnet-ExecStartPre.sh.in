@@ -60,6 +60,7 @@ OSIMAGE_BASENAME="OS image name is not available"
 HARDWARE_CATALOG_NUMBER="Hardware catalog number is not available"
 HARDWARE_SPEC_REVISION="Hardware spec revision is not available"
 HARDWARE_SERIAL_NUMBER="Hardware serial number is not available"
+HARDWARE_UUID="Hardware generated UUID is not available"
 { [[ -s "$J" ]] || [[ -s "$JO" ]] ; } && \
 if [[ -x "$JSONSH" ]] ; then
     if [[ -n "${BASH-}" ]]; then
@@ -95,6 +96,8 @@ if [[ -x "$JSONSH" ]] ; then
         HARDWARE_SPEC_REVISION="$TMPSTR" || true
     TMPSTR="$(get_detail "hardware-serial-number")" && \
         HARDWARE_SERIAL_NUMBER="$TMPSTR" || true
+    TMPSTR="$(get_detail "uuid")" && \
+        HARDWARE_UUID="$TMPSTR" || true
     unset TMPSTR
 fi
 echo "OSIMAGE_BASENAME='$OSIMAGE_BASENAME'" > "$F"
@@ -102,5 +105,6 @@ echo "SPOOL_DIR='${SPOOL}'" >> "$F"
 echo "HARDWARE_CATALOG_NUMBER='${HARDWARE_CATALOG_NUMBER}'" >> "$F"
 echo "HARDWARE_SPEC_REVISION='${HARDWARE_SPEC_REVISION}'" >> "$F"
 echo "HARDWARE_SERIAL_NUMBER='${HARDWARE_SERIAL_NUMBER}'" >> "$F"
+echo "HARDWARE_UUID='${HARDWARE_UUID}'" >> "$F"
 
 echo "OK"
