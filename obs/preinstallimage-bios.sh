@@ -431,15 +431,21 @@ if [ "`uname -m`" = x86_64 ]; then
     /bin/systemctl disable lcd-boot-display
     /bin/systemctl disable lcd-net-display
     /bin/systemctl disable lcd-shutdown-display || true
+    /bin/systemctl disable lcd-reboot-display || true
+    /bin/systemctl disable lcd-poweroff-display || true
     /bin/systemctl mask lcd-boot-display
     /bin/systemctl mask lcd-net-display
     /bin/systemctl mask lcd-shutdown-display || true
+    /bin/systemctl mask lcd-reboot-display || true
+    /bin/systemctl mask lcd-poweroff-display || true
     /bin/systemctl disable bios-reset-button
     /bin/systemctl mask bios-reset-button
 else
     /bin/systemctl enable lcd-boot-display
     /bin/systemctl enable lcd-net-display
     /bin/systemctl enable lcd-shutdown-display || true
+    /bin/systemctl enable lcd-reboot-display || true
+    /bin/systemctl enable lcd-poweroff-display || true
     #sed -i 's|PathChanged=/etc|PathChanged=/mnt/nand/overlay/etc|' /usr/lib/systemd/system/composite-metrics\@.path
 fi
 
