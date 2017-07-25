@@ -28,11 +28,13 @@ if [ "`uname -m`" = x86_64 ]; then
     /bin/systemctl disable lcd-boot-display
     /bin/systemctl disable lcd-net-display
     /bin/systemctl disable lcd-shutdown-display || true
+    /bin/systemctl disable lcd-shutdown-inverse-display || true
     /bin/systemctl disable lcd-reboot-display || true
     /bin/systemctl disable lcd-poweroff-display || true
     /bin/systemctl mask lcd-boot-display
     /bin/systemctl mask lcd-net-display
     /bin/systemctl mask lcd-shutdown-display || true
+    /bin/systemctl mask lcd-shutdown-inverse-display || true
     /bin/systemctl mask lcd-reboot-display || true
     /bin/systemctl mask lcd-poweroff-display || true
     /bin/systemctl disable bios-reset-button
@@ -41,6 +43,9 @@ else
     /bin/systemctl enable lcd-boot-display
     /bin/systemctl enable lcd-net-display
     /bin/systemctl enable lcd-shutdown-display || true
+    /bin/systemctl enable lcd-shutdown-inverse-display || true
     /bin/systemctl enable lcd-reboot-display || true
     /bin/systemctl enable lcd-poweroff-display || true
 fi
+
+/bin/systemctl daemon-reload
