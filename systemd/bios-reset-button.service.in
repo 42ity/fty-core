@@ -1,5 +1,6 @@
 [Unit]
 Description=Handles events from reset button we have on our RC
+DefaultDependencies=no
 # Runs: always, no conflicts
 
 [Service]
@@ -18,4 +19,4 @@ Environment="prefix=@prefix@"
 ExecStart=@datadir@/@PACKAGE@/scripts/reset-button.sh
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=multi-user.target basic.target
