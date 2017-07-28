@@ -797,9 +797,9 @@ fi
 
 if [ "$INSTALL_DEV_PKGS" = yes ]; then
 	logmsg_info "Set up initial name resolution from the host OS to facilitate apt-get for dev package installation"
-	cp -pf "${ALTROOT}/etc/"resolv.conf "${ALTROOT}/etc/"resolv.conf.bak-devpkg || true
-	cp -pf "${ALTROOT}/etc/"nsswitch.conf "${ALTROOT}/etc/"nsswitch.conf.bak-devpkg || true
-	cp -pf /etc/hosts /etc/resolv.conf /etc/nsswitch.conf "${ALTROOT}/etc/"
+	chroot "${ALTROOT}/" cp -pf /etc/resolv.conf /etc/resolv.conf.bak-devpkg || true
+	chroot "${ALTROOT}/" cp -pf /etc/nsswitch.conf /etc/nsswitch.conf.bak-devpkg || true
+	tar cf - /etc/hosts /etc/resolv.conf /etc/nsswitch.conf | chroot "${ALTROOT}/" tar xf -
 fi
 
 logmsg_info "Setup virtual hostname"
