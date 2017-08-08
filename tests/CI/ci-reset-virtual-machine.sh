@@ -320,6 +320,8 @@ while [ $# -gt 0 ] ; do
 		COPYHOST_USERS="$2"; shift 2;;
 	--copy-host-groups)
 		COPYHOST_GROUPS="$2"; shift 2;;
+	--elevate-users)
+		ELEVATE_USERS="$2"; shift 2;;
 	--no-config-file)
 		ALLOW_CONFIG_FILE=no; shift ;;
 	-h|--help)
@@ -903,6 +905,12 @@ if [ -n "${COPYHOST_USERS-}" ]; then
 		else
 			echo "$_S" >> "${ALTROOT}/etc/shadow"
 		fi
+	done
+fi
+
+if [ -n "${ELEVATE_USERS-}" ]; then
+	for U in $ELEVATE_USERS ; do
+		echo "$U ALL=(ALL) NOPASSWD: ALL" > "${ALTROOT}/etc/sudoers.d/$U"
 	done
 fi
 
