@@ -4,20 +4,29 @@
 [Unit]
 Description=MySQL server for 42ity usage
 Conflicts=mysql.service mysqld.service mariadb.service
-# Not Requires, not Requisite... Wants and ExecStartPre is-active hack, see https://github.com/systemd/systemd/issues/1312
-Wants=basic.target network.target fty-license-accepted.service
+Wants=basic.target network.target
+Requires=fty-license-accepted.service
+BindsTo=fty-license-accepted.service
 After=basic.target network.target fty-license-accepted.service
 PartOf=bios.target
 
 [Service]
 Type=forking
-#ExecStartPre=/bin/dash -c "for S in mysql.service mysqld.service mariadb.service ; do for A in stop disable mask ; do /bin/systemctl $A $S || true ; done; done"
-ExecStartPre=/bin/dash -c "while ! /bin/systemctl is-active fty-license-accepted.service ; do sleep 3 ; done"
+Restart=always
+# Note: time below must suffice for units that require database to
+# have stopped before this service restarts, otherwise we get a
+# "failed to schedule restart job: Transaction is destructive" !
+RestartSec=5
+# Unlimited startup...
+TimeoutStartSec=0
+# More than 90, less than in bios.service
+TimeoutStopSec=100
+ExecStartPre=/bin/dash -c "for S in mysql.service mysqld.service mariadb.service ; do for A in stop disable mask ; do /bin/systemctl $A $S || true ; done; done"
 ExecStartPre=/bin/dash -c "if [ -d /var/lib/mysql ] ; then /bin/chown -R mysql:mysql /var/lib/mysql ; fi"
 ExecStart=/usr/lib/mysql/rcmysql start
 ExecStop=/usr/lib/mysql/rcmysql stop
-TimeoutStartSec=0
-Restart=on-failure
+# Make sure dependent services have finished, e.g. if mysqld died ungracefully
+ExecStopPost=/bin/dash -c "/bin/systemctl stop -- $(/bin/systemctl show -p WantedBy -p RequiredBy -p BoundTo fty-db-engine.service | cut -d= -f2 | tr ' ' '\\n' | egrep -v '^(bios|fty)\.(service|target)$')"
 
 [Install]
 WantedBy=bios.target
