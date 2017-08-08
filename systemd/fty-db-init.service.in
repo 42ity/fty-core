@@ -1,3 +1,7 @@
+# NOTE: This unit also maintains a /var/run/fty-db-ready touch-file
+# while it is active, so components can check for its presence rather
+# than a systemd status (which is a more expensive operation).
+
 [Unit]
 Description=Initialize or update database schema for 42ity services
 After=fty-db-engine.service
@@ -22,6 +26,8 @@ EnvironmentFile=-/etc/default/fty
 EnvironmentFile=-/etc/default/fty__%n.conf
 Environment="prefix=/usr"
 ExecStart=/usr/libexec/bios/db-init
+ExecStartPost=/usr/bin/touch /var/run/fty-db-ready
+ExecStop=-/bin/rm -f /var/run/fty-db-ready
 ExecStopPost=/bin/dash -c "/bin/systemctl stop -- $(/bin/systemctl show -p WantedBy -p RequiredBy -p BoundTo fty-db-init.service | cut -d= -f2 | tr ' ' '\\n' | egrep -v '^(bios|fty)\.(service|target)$')"
 
 [Install]

@@ -25,6 +25,7 @@ ExecStartPre=/bin/dash -c "for S in mysql.service mysqld.service mariadb.service
 ExecStartPre=/bin/dash -c "if [ -d /var/lib/mysql ] ; then /bin/chown -R mysql:mysql /var/lib/mysql ; fi"
 ExecStart=/usr/lib/mysql/rcmysql start
 ExecStop=/usr/lib/mysql/rcmysql stop
+ExecStopPost=-/bin/rm -f /var/run/fty-db-ready
 # Make sure dependent services have finished, e.g. if mysqld died ungracefully
 ExecStopPost=/bin/dash -c "/bin/systemctl stop -- $(/bin/systemctl show -p WantedBy -p RequiredBy -p BoundTo fty-db-engine.service | cut -d= -f2 | tr ' ' '\\n' | egrep -v '^(bios|fty)\.(service|target)$')"
 
