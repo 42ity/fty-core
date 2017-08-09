@@ -16,16 +16,16 @@ User=root
 # the service shall be considered active even when all its processes exited
 RemainAfterExit=yes
 Restart=always
-EnvironmentFile=-/usr/share/bios/etc/default/bios
-EnvironmentFile=-/usr/share/bios/etc/default/bios__%n.conf
-EnvironmentFile=-/usr/share/fty/etc/default/fty
-EnvironmentFile=-/usr/share/fty/etc/default/fty__%n.conf
-EnvironmentFile=-/etc/default/bios
-EnvironmentFile=-/etc/default/bios__%n.conf
-EnvironmentFile=-/etc/default/fty
-EnvironmentFile=-/etc/default/fty__%n.conf
-Environment="prefix=/usr"
-ExecStart=/usr/libexec/bios/db-init
+EnvironmentFile=-@prefix@/share/bios/etc/default/bios
+EnvironmentFile=-@prefix@/share/bios/etc/default/bios__%n.conf
+EnvironmentFile=-@prefix@/share/fty/etc/default/fty
+EnvironmentFile=-@prefix@/share/fty/etc/default/fty__%n.conf
+EnvironmentFile=-@sysconfdir@/default/bios
+EnvironmentFile=-@sysconfdir@/default/bios__%n.conf
+EnvironmentFile=-@sysconfdir@/default/fty
+EnvironmentFile=-@sysconfdir@/default/fty__%n.conf
+Environment="prefix=@prefix@"
+ExecStart=@libexecdir@/@PACKAGE@/db-init
 ExecStartPost=/usr/bin/touch /var/run/fty-db-ready
 ExecStop=-/bin/rm -f /var/run/fty-db-ready
 ExecStopPost=/bin/dash -c "/bin/systemctl stop -- $(/bin/systemctl show -p WantedBy -p RequiredBy -p BoundTo fty-db-init.service | cut -d= -f2 | tr ' ' '\\n' | egrep -v '^(bios|fty)\.(service|target)$')"
