@@ -1,28 +1,34 @@
+# NOTE: This unit also maintains a /var/run/fty-db-ready touch-file
+# while it is active, so components can check for its presence rather
+# than a systemd status (which is a more expensive operation).
+
 [Unit]
 Description=Initialize or update database schema for 42ity services
 After=fty-db-engine.service
-# Not Requires, not Requisite... Wants and ExecStartPre hack, see https://github.com/systemd/systemd/issues/1312
-Wants=fty-db-engine.service
-Conflicts=shutdown.target
+Requires=fty-db-engine.service
+BindsTo=fty-db-engine.service
+Conflicts=shutdown.target recovery.target
 PartOf=bios.target
 
 [Service]
-# it is expected that the process has to exit before systemd starts follow-up units
-Type=oneshot
+Type=simple
 User=root
 # the service shall be considered active even when all its processes exited
 RemainAfterExit=yes
-EnvironmentFile=-@prefix@/share/bios/etc/default/bios
-EnvironmentFile=-@prefix@/share/bios/etc/default/bios__%n.conf
-EnvironmentFile=-@prefix@/share/fty/etc/default/fty
-EnvironmentFile=-@prefix@/share/fty/etc/default/fty__%n.conf
-EnvironmentFile=-@sysconfdir@/default/bios
-EnvironmentFile=-@sysconfdir@/default/bios__%n.conf
-EnvironmentFile=-@sysconfdir@/default/fty
-EnvironmentFile=-@sysconfdir@/default/fty__%n.conf
-Environment="prefix=@prefix@"
-ExecStartPre=/bin/dash -c "while ! /bin/systemctl is-active fty-db-engine.service ; do sleep 3 ; done"
-ExecStart=@libexecdir@/@PACKAGE@/db-init
+Restart=always
+EnvironmentFile=-/usr/share/bios/etc/default/bios
+EnvironmentFile=-/usr/share/bios/etc/default/bios__%n.conf
+EnvironmentFile=-/usr/share/fty/etc/default/fty
+EnvironmentFile=-/usr/share/fty/etc/default/fty__%n.conf
+EnvironmentFile=-/etc/default/bios
+EnvironmentFile=-/etc/default/bios__%n.conf
+EnvironmentFile=-/etc/default/fty
+EnvironmentFile=-/etc/default/fty__%n.conf
+Environment="prefix=/usr"
+ExecStart=/usr/libexec/bios/db-init
+ExecStartPost=/usr/bin/touch /var/run/fty-db-ready
+ExecStop=-/bin/rm -f /var/run/fty-db-ready
+ExecStopPost=/bin/dash -c "/bin/systemctl stop -- $(/bin/systemctl show -p WantedBy -p RequiredBy -p BoundTo fty-db-init.service | cut -d= -f2 | tr ' ' '\\n' | egrep -v '^(bios|fty)\.(service|target)$')"
 
 [Install]
 WantedBy=bios.target
