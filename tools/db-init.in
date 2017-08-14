@@ -38,6 +38,18 @@ INITSQL_DIR="@datarootdir@/@PACKAGE@/sql/mysql"
 # files from a previous database lifetime, if it is re-initialized.
 # Conversely, as part of /var namespace this is erased during factory-reset.
 INSTSQL_DIR="/var/lib/@PACKAGE@/sql/mysql"
+# While we transition release naming... make sure to use new one if it applies.
+if [ "$INSTSQL_DIR" = "/var/lib/bios/sql/mysql" ] && \
+   [ -d "/var/lib/fty/sql/mysql" ] ; then
+    # Check if any of the default "bios" paths are missing or symlinks (to fty)
+    if [ -L /var/lib/bios -o -L /var/lib/bios/sql -o -L /var/lib/bios/sql/mysql \
+         -o ! -d /var/lib/bios -o ! -d /var/lib/bios/sql/mysql \
+         -o -L /var/lib/bios/sql/mysql/.root-my.cnf ] ; then
+        echo "Overriding INSTSQL_DIR from bios to fty"
+        INSTSQL_DIR=/var/lib/fty/sql/mysql
+    fi
+fi
+
 # This directory also holds the actual database credential files, so they
 # live (and die, in case of factory reset) simultaneously with the database
 # files. The `/root/.my.cnf` and `/etc/default/bios-db-r[ow]` legacy locations
