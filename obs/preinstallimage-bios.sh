@@ -157,6 +157,12 @@ chmod 644 /etc/default/fty
 touch /etc/default/fty.cfg
 chown www-data /etc/default/fty.cfg
 
+if diff /usr/libexec/fty/systemctl /usr/libexec/fty/journalctl >/dev/null 2>&1 ; then
+    if [ ! -L /usr/libexec/fty/systemctl ] && [ ! -L /usr/libexec/fty/journalctl ] ; then
+        rm -rf /usr/libexec/fty/journalctl && ln -s ./systemctl /usr/libexec/fty/journalctl
+    fi
+fi
+
 # workaround - we need to change agents configuration from REST API config call
 # so let tntnet touch the files
 # FIXME: Limit this to specific pathnames or patterns, e.g.
