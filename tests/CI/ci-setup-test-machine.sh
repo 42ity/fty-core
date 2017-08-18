@@ -128,7 +128,7 @@ install_package_set_dev() {
     apt-get -f -y --force-yes \
         -q -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" \
         install \
-        devscripts sudo doxygen curl git python-mysqldb libmariadbclient-dev libmariadbd-dev \
+        devscripts sudo doxygen curl git python-mysqldb libmariadbclient-dev \
         cppcheck msmtp libtool cpp gcc autoconf automake m4 pkg-config equivs dh-make zip \
         cracklib-runtime osc
 }

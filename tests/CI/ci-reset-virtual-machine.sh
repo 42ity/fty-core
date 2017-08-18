@@ -320,6 +320,8 @@ while [ $# -gt 0 ] ; do
 		COPYHOST_USERS="$2"; shift 2;;
 	--copy-host-groups)
 		COPYHOST_GROUPS="$2"; shift 2;;
+	--elevate-users)
+		ELEVATE_USERS="$2"; shift 2;;
 	--no-config-file)
 		ALLOW_CONFIG_FILE=no; shift ;;
 	-h|--help)
@@ -795,6 +797,13 @@ if mkdir -p "${ALTROOT}/root/.ccache" ; then
 	mount -o rbind "/root/.ccache" "${ALTROOT}/root/.ccache"
 fi
 
+# Some bits might be required in an image early...
+# say, an /usr/bin/qemu-arm-static is a nice trick ;)
+if [ -d "${ALTROOT}.saved-preinstall/" ] && [ "$NO_RESTORE_SAVED" != yes ]; then
+	logmsg_info "Restoring custom configuration from '`cd ${ALTROOT}.saved-preinstall/ && pwd`':" && \
+	( cd "${ALTROOT}.saved-preinstall/" && tar cf - . ) | ( cd "${ALTROOT}/" && tar xvf - )
+fi
+
 if [ "$INSTALL_DEV_PKGS" = yes ]; then
 	logmsg_info "Set up initial name resolution from the host OS to facilitate apt-get for dev package installation"
 	chroot "${ALTROOT}/" cp -pf /etc/resolv.conf /etc/resolv.conf.bak-devpkg || true
@@ -903,6 +912,12 @@ if [ -n "${COPYHOST_USERS-}" ]; then
 		else
 			echo "$_S" >> "${ALTROOT}/etc/shadow"
 		fi
+	done
+fi
+
+if [ -n "${ELEVATE_USERS-}" ]; then
+	for U in $ELEVATE_USERS ; do
+		echo "$U ALL=(ALL) NOPASSWD: ALL" > "${ALTROOT}/etc/sudoers.d/$U"
 	done
 fi
 

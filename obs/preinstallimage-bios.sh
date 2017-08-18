@@ -157,6 +157,12 @@ chmod 644 /etc/default/fty
 touch /etc/default/fty.cfg
 chown www-data /etc/default/fty.cfg
 
+if diff /usr/libexec/fty/systemctl /usr/libexec/fty/journalctl >/dev/null 2>&1 ; then
+    if [ ! -L /usr/libexec/fty/systemctl ] && [ ! -L /usr/libexec/fty/journalctl ] ; then
+        rm -rf /usr/libexec/fty/journalctl && ln -s ./systemctl /usr/libexec/fty/journalctl
+    fi
+fi
+
 # workaround - we need to change agents configuration from REST API config call
 # so let tntnet touch the files
 # FIXME: Limit this to specific pathnames or patterns, e.g.
@@ -352,7 +358,10 @@ fi
 mkdir -p /etc/pam.d
 cp /usr/share/fty/examples/config/pam.d/* /etc/pam.d
 RULES="`sed -n 's|.*pam_cracklib.so||p' /etc/pam.d/fty`"
-[[ "$IMGTYPE" =~ devel ]] || sed -i "s|\\(.*pam_cracklib.so\\).*|\1$RULES|" /etc/pam.d/common-password
+case "$IMGTYPE" in
+    *devel*) ;;
+    *) sed -i "s|\\(.*pam_cracklib.so\\).*|\1$RULES|" /etc/pam.d/common-password ;;
+esac
 
 # Force creation of cracklib dictionary
 if [ ! -f /var/cache/cracklib/cracklib_dict.pwd ]; then
@@ -363,7 +372,9 @@ sed -i 's|\(secure_path="\)|\1/usr/libexec/fty:|' /etc/sudoers
 
 mkdir -p /etc/sudoers.d
 cp /usr/share/fty/examples/config/sudoers.d/fty_00_base /etc/sudoers.d
-[[ "$IMGTYPE" =~ devel ]] && cp /usr/share/fty/examples/config/sudoers.d/fty_01_citest /etc/sudoers.d
+case "$IMGTYPE" in
+    *devel*) cp /usr/share/fty/examples/config/sudoers.d/fty_01_citest /etc/sudoers.d ;;
+esac
 cp /usr/share/fty/examples/config/sudoers.d/fty_*_*agent* /etc/sudoers.d || true
 
 mkdir -p /etc/security
@@ -511,12 +522,16 @@ find / -name systemd-logind.service -delete
 
 # Disable expensive debug logging by default on non-devel images
 mkdir -p /usr/share/fty/etc/default
-if [[ "$IMGTYPE" =~ devel ]] ; then
-    echo "BIOS_LOG_LEVEL=LOG_DEBUG" > /usr/share/fty/etc/default/fty
-else
-    echo "BIOS_LOG_LEVEL=LOG_INFO" > /usr/share/fty/etc/default/fty
-    sed -i 's|.*MaxLevelStore.*|MaxLevelStore=info|'                  /etc/systemd/journald.conf
-fi
+case "$IMGTYPE" in
+    *devel*)
+        echo "BIOS_LOG_LEVEL=LOG_DEBUG" > /usr/share/fty/etc/default/fty
+        ;;
+    *)
+        echo "BIOS_LOG_LEVEL=LOG_INFO" > /usr/share/fty/etc/default/fty
+        sed -e 's|.*MaxLevelStore.*|MaxLevelStore=info|' \
+            -i /etc/systemd/journald.conf
+        ;;
+esac
 # set path to our libexec directory
 echo "PATH=/usr/libexec/fty:/bin:/usr/bin:/sbin:/usr/sbin" >>/usr/share/fty/etc/default/fty
 
@@ -757,14 +772,14 @@ if [ -x /lib/nut/snmp-ups ] && [ -x /lib/nut/snmp-ups-dmf ] && \
 ; then
     mv /lib/nut/snmp-ups /lib/nut/snmp-ups-old && \
     case "$IMGTYPE" in
-    devel) ln -s snmp-ups-dmf /lib/nut/snmp-ups ;;
-    *)     ln -s snmp-ups-old /lib/nut/snmp-ups ;;
+        *devel*) ln -s snmp-ups-dmf /lib/nut/snmp-ups ;;
+        *)       ln -s snmp-ups-old /lib/nut/snmp-ups ;;
     esac
 fi
 
 # Prepare the ccache (for development image type)
 case "$IMGTYPE" in
-    devel)
+    *devel*)
         [ -x /usr/sbin/update-ccache-symlinks ] && \
             /usr/sbin/update-ccache-symlinks || true
         # If this image ends up on an RC3, avoid polluting NAND with ccache
