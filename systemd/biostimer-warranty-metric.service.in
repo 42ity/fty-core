@@ -1,7 +1,7 @@
 [Unit]
 Description=42ity-Timer service to send metrics about warranty date
-After=malamute.service bios-db-init.service
-Requires=malamute.service bios-db-init.service
+After=malamute.service fty-db-init.service
+Requires=malamute.service fty-db-init.service
 PartOf=bios.target
 
 [Service]
