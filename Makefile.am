@@ -482,6 +482,7 @@ SYSTEMD_PRESETS +=      42-bios-systemd.preset
 
 SYSTEMD_TMPFILES += \
                         logfiles-rights.conf \
+                        fty-core.conf \
                         fty-db-init.conf
 
 ### TODO? Add the build info (git commit, timestamp) to the header comment?
