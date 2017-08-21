@@ -1,5 +1,7 @@
 [Unit]
 Description=42ity-Timer to regularly send warranty metrics
+Requires=malamute.service fty-db-init.service
+After=malamute.service fty-db-init.service
 PartOf=bios.target
 
 [Timer]
