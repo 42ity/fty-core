@@ -17,6 +17,8 @@ EnvironmentFile=-@sysconfdir@/default/bios
 EnvironmentFile=-@sysconfdir@/default/bios__%n.conf
 EnvironmentFile=-@sysconfdir@/default/fty
 EnvironmentFile=-@sysconfdir@/default/fty__%n.conf
+# Note: for webserver the DB credentials file is optional,
+# since acceptance of license via REST API starts the database
 EnvironmentFile=-@sysconfdir@/default/bios-db-rw
 Environment='SYSTEMD_UNIT_FULLNAME=%n'
 PrivateTmp=true
