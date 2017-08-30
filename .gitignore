@@ -139,6 +139,8 @@ tools/run-test-doc.sh.log
 tools/run-test-doc.sh.trs
 tools/db-init
 !tools/db-init.in
+tools/factory-reset-live.sh
+!tools/factory-reset-live.sh.in
 tools/bios-passwd
 !tools/bios-passwd.in
 
