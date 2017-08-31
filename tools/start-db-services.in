@@ -39,6 +39,7 @@ fi
 # Just in case the service is disabled by preinstall or other means,
 # make it be active (as long as the license acceptance criteria are met).
 # Otherwise it should have come up as soon as the file(s) appeared, etc.
+echo "INFO: `date -u`: enable and start fty-license-accepted.service"
 sudo ${SYSTEMCTL} unmask fty-license-accepted.service || die "Unmasking fty-license-accepted failed"
 sudo ${SYSTEMCTL} enable fty-license-accepted.service || die "Enabling fty-license-accepted failed"
 sudo ${SYSTEMCTL} restart fty-license-accepted.service || die "Restarting fty-license-accepted failed"
@@ -48,27 +49,101 @@ sudo ${SYSTEMCTL} start fty-license-accepted.service || die "Starting fty-licens
 # of the now-active fty-license-accepted should trigger startup of the
 # database engine, then our schema, then the services which need it all.
 # But just in case, make sure they all are up before we return...
+echo "INFO: `date -u`: enable and start fty-db-engine"
 sudo ${SYSTEMCTL} unmask fty-db-engine || die "Unmasking fty-db-engine failed"
 sudo ${SYSTEMCTL} enable fty-db-engine || die "Enabling fty-db-engine failed"
 sudo ${SYSTEMCTL} start fty-db-engine || die "Starting fty-db-engine failed"
 
+echo "INFO: `date -u`: enable and start fty-db-init"
 sudo ${SYSTEMCTL} enable fty-db-init || die "Enabling fty-db-init failed"
 sudo ${SYSTEMCTL} start fty-db-init || die "Starting fty-db-init failed"
 
 sleep 2
-[[ -f /etc/default/bios-db-rw ]] || die "/etc/default/bios-db-rw is missing"
 
-for DIR in /lib/systemd/system /usr/lib/systemd/system /run/systemd/system /etc/systemd/system/; do
-    if [[ ! -d "${DIR}" ]]; then
-        continue
+[[ -s /etc/default/bios-db-rw ]] || die "/etc/default/bios-db-rw is missing or empty"
+
+# Note: This loop enables and starts all services for which we have a unit file
+# and that match our query (consumers of database or their further consumers).
+# This is slightly different from the "bios.service" starting all services that
+# are part of "bios.target" (some DB consumer units may be not defined as part
+# of this target) and which are currently considered by "systemd show" state.
+# So we do both, to be certain. Belt and suspenders, man. Never trust just one.
+
+list_svc_consumers() {
+    # $1 : regex of service name which the inspected service should require
+#    echo "DEBUG: list_svc_consumers($1)..." >&2
+    for DIR in /lib/systemd/system /usr/lib/systemd/system /run/systemd/system /etc/systemd/system/; do
+        if [[ ! -d "${DIR}" ]]; then
+            continue
+        fi
+
+        egrep '(Requires|Wants|BindsTo|Requisite).*'"$1" "${DIR}"/*.service "${DIR}"/*.timer 2>/dev/null \
+        | cut -d ':' -f 1 \
+        | xargs -L1 basename 2>/dev/null
+    done
+}
+
+declare -a ARR_GRAND_CONSUMERS=( )
+find_svc_consumers_recursive() {
+    # List services which require regex '$1' and then those which would
+    # require these discovered services, until there are no unique hits.
+    local SERVICE ix
+#    echo "DEBUG: find_svc_consumers_recursive( '$1' )..." >&2
+    for SERVICE in `list_svc_consumers "$1"` ; do
+        SEEK_SERVICE="${SERVICE}"
+        case "${SERVICE}" in
+            "") continue ;;
+            *.timer|*.service|*.path|*.target) ;;
+            *.*) ;;
+            *) SEEK_SERVICE="(${SERVICE}|${SERVICE}.(service|timer|path|target))" ;;
+        esac
+        for ix in ${!ARR_GRAND_CONSUMERS[*]} ; do
+            if [ x"${ARR_GRAND_CONSUMERS[$ix]}" = x"${SERVICE}" ] ; then
+                # This service is already detected, go process next one
+#                echo "DEBUG: find_svc_consumers_recursive( '$1' ): SKIPPED ${SERVICE}..." >&2
+                continue 2
+            fi
+        done
+#        echo "DEBUG: find_svc_consumers_recursive( '$1' ): ADDED ${SERVICE}..." >&2
+        ARR_GRAND_CONSUMERS+=( "${SERVICE}" )
+        find_svc_consumers_recursive "${SEEK_SERVICE}"
+    done
+}
+
+list_db_consumers() {
+    ARR_GRAND_CONSUMERS=( )
+    find_svc_consumers_recursive '(fty|bios)-db-init.service' || return
+    if [ 0 == "${#ARR_GRAND_CONSUMERS[@]}" ] ; then
+        return 22
     fi
+    echo "${ARR_GRAND_CONSUMERS[@]}"
+}
 
-    egrep 'Requires.*(fty|bios)-db-init.service' "${DIR}"/*.service 2>/dev/null \
-    | cut -d ':' -f 1 \
-    | xargs -L1 basename 2>/dev/null \
-    | while read SERVICE; do
-        echo "INFO: enable and start ${SERVICE}"
+DB_CONSUMERS="`list_db_consumers`" || DB_CONSUMERS=""
+if [ -z "$DB_CONSUMERS" ]; then
+    echo "WARNING: No services were found to be direct or further consumers of (fty|bios)-db-init.service" >&2
+else
+    echo "INFO: The following services were found to be direct or further consumers of (fty|bios)-db-init.service: $DB_CONSUMERS" >&2
+    for SERVICE in $DB_CONSUMERS ; do
+        echo "INFO: `date -u`: enable and start ${SERVICE}"
         sudo ${SYSTEMCTL} enable "${SERVICE}"
         sudo ${SYSTEMCTL} start "${SERVICE}"
     done
+fi
+echo "INFO: `date -u`: Done starting database services and their consumers: OK"
+
+echo "INFO: `date -u`: enable and start bios.service and bios.target for the remaining IPM Infra services"
+sudo ${SYSTEMCTL} enable bios.service
+sudo ${SYSTEMCTL} enable bios.target
+sudo ${SYSTEMCTL} start --no-block bios.service || die "Could not issue startup request for bios.service"
+sudo ${SYSTEMCTL} start --no-block bios.target || die "Could not issue startup request for bios.target"
+
+echo "INFO: `date -u`: Start units WantedBy and/or PartOf bios.target, if any were missed by previous attempts"
+for SERVICE in `/bin/systemctl show -p Wants -p ConsistsOf bios.target | cut -d= -f2 | tr ' ' '\n' | sort | uniq` ; do
+        echo "INFO: `date -u`: enable and start ${SERVICE}"
+        sudo ${SYSTEMCTL} enable "${SERVICE}"
+        sudo ${SYSTEMCTL} start "${SERVICE}"
 done
+
+echo "INFO: `date -u`: Done starting IPM Infra services: OK"
+exit 0
