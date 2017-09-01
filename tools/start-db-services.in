@@ -138,11 +138,13 @@ sudo ${SYSTEMCTL} enable bios.target
 sudo ${SYSTEMCTL} start bios.service --no-block || die "Could not issue startup request for bios.service"
 sudo ${SYSTEMCTL} start bios.target --no-block || die "Could not issue startup request for bios.target"
 
+# NOTE: we have tntnet@bios.service officially aliased by fty-tntnet@bios.service
+# They happen to conflict if both are "enabled", so we "sed" away to collapse 'em
 echo "INFO: `date -u`: Start units WantedBy and/or PartOf bios.target, if any were missed by previous attempts"
-for SERVICE in `/bin/systemctl show -p Wants -p ConsistsOf bios.target | cut -d= -f2 | tr ' ' '\n' | sort | uniq` ; do
+for SERVICE in `/bin/systemctl show -p Wants -p ConsistsOf bios.target | cut -d= -f2 | tr ' ' '\n' | sed -e 's,^fty-tntnet,tntnet,' | sort | uniq` ; do
         echo "INFO: `date -u`: enable and start ${SERVICE}"
-        sudo ${SYSTEMCTL} enable "${SERVICE}" || echo "WARNING: Could not enable '${SERVICE}', is it a component of IPM Infra?"
-        sudo ${SYSTEMCTL} start "${SERVICE}" || echo "WARNING: Could not start '${SERVICE}', is it a component of IPM Infra?"
+        ( sudo ${SYSTEMCTL} enable "${SERVICE}" ) || echo "WARNING: Could not enable '${SERVICE}', is it a component of IPM Infra?"
+        ( sudo ${SYSTEMCTL} start "${SERVICE}"  ) || echo "WARNING: Could not start '${SERVICE}', is it a component of IPM Infra?"
 done
 
 echo "INFO: `date -u`: Done starting IPM Infra services: OK"
