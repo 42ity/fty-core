@@ -126,8 +126,8 @@ else
     echo "INFO: The following services were found to be direct or further consumers of (fty|bios)-db-init.service: $DB_CONSUMERS" >&2
     for SERVICE in $DB_CONSUMERS ; do
         echo "INFO: `date -u`: enable and start ${SERVICE}"
-        sudo ${SYSTEMCTL} enable "${SERVICE}"
-        sudo ${SYSTEMCTL} start "${SERVICE}"
+        sudo ${SYSTEMCTL} enable "${SERVICE}" || echo "WARNING: Could not enable '${SERVICE}', is it a component of IPM Infra?"
+        sudo ${SYSTEMCTL} start "${SERVICE}" || echo "WARNING: Could not start '${SERVICE}', is it a component of IPM Infra?"
     done
 fi
 echo "INFO: `date -u`: Done starting database services and their consumers: OK"
@@ -141,8 +141,8 @@ sudo ${SYSTEMCTL} start bios.target --no-block || die "Could not issue startup r
 echo "INFO: `date -u`: Start units WantedBy and/or PartOf bios.target, if any were missed by previous attempts"
 for SERVICE in `/bin/systemctl show -p Wants -p ConsistsOf bios.target | cut -d= -f2 | tr ' ' '\n' | sort | uniq` ; do
         echo "INFO: `date -u`: enable and start ${SERVICE}"
-        sudo ${SYSTEMCTL} enable "${SERVICE}"
-        sudo ${SYSTEMCTL} start "${SERVICE}"
+        sudo ${SYSTEMCTL} enable "${SERVICE}" || echo "WARNING: Could not enable '${SERVICE}', is it a component of IPM Infra?"
+        sudo ${SYSTEMCTL} start "${SERVICE}" || echo "WARNING: Could not start '${SERVICE}', is it a component of IPM Infra?"
 done
 
 echo "INFO: `date -u`: Done starting IPM Infra services: OK"
