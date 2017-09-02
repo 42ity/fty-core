@@ -89,7 +89,8 @@ do_unlicense() {
     rm -f /var/lib/fty/license
     if [ "$ENABLESVC" = yes ]; then
         logmsg_info "Restarting services that care about license-accepted state (EULA)..."
-        systemctl restart fty-license-accepted.service tntnet@bios.service
+        systemctl restart fty-license-accepted.service
+        systemctl restart tntnet@bios.service
     fi
 }
 
@@ -131,14 +132,18 @@ do_unnut() {
     # TODO: This will be more complicated when we also have a NUT monitor
     # actually in use.
     logmsg_info "Stopping all NUT services, if possible..."
-    systemctl stop nut-monitor nut-server nut-driver.target || true
+    systemctl stop nut-monitor || true
+    systemctl stop nut-server || true
+    systemctl stop nut-driver.target || true
 
     logmsg_info "Resetting NUT monitored device configs..."
     echo "maxretry = 3" > /etc/nut/ups.conf
 
     if [ "$ENABLESVC" = yes ]; then
         logmsg_info "Starting all NUT services, if possible..."
-        systemctl restart nut-monitor nut-server nut-driver.target || true
+        systemctl restart nut-monitor || true
+        systemctl restart nut-server || true
+        systemctl restart nut-driver.target || true
     fi
 }
 
@@ -154,7 +159,11 @@ do_factory_reset() (
     ENABLESVC="$ENABLESVC_ORIG"
     do_unnut
     logmsg_info "Restarting IPM-related services..."
-    systemctl restart fty-license-accepted.service fty-license-accepted.path bios.service fty-db-engine.service tntnet@bios.service
+    systemctl restart fty-license-accepted.service
+    systemctl restart fty-license-accepted.path
+    systemctl restart bios.service
+    systemctl restart fty-db-engine.service
+    systemctl restart tntnet@bios.service
     logmsg_info "Finished full factory reset..."
 )
 
