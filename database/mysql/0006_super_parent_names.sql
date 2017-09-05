@@ -1,5 +1,5 @@
 /* For details on schema version support see the main initdb.sql */
-SET @bios_db_schema_version = '201608260001' ;
+SET @bios_db_schema_version = '201709050001' ;
 SET @bios_db_schema_filename = '0006_super_parent_names.sql' ;
 
 use box_utf8;
@@ -19,24 +19,28 @@ SELECT v1.id as id_asset_element,
        v3.id_parent AS id_parent3,
        v4.id_parent AS id_parent4,
        v5.id_parent AS id_parent5,
+       v6.id_parent AS id_parent6,
        v1.parent_name AS name_parent1,
        v2.parent_name AS name_parent2,
        v3.parent_name AS name_parent3,
        v4.parent_name AS name_parent4,
        v5.parent_name AS name_parent5,
+       v6.parent_name AS name_parent6,
        v2.id_type AS id_type_parent1,
        v3.id_type AS id_type_parent2,
        v4.id_type AS id_type_parent3,
        v5.id_type AS id_type_parent4,
        v6.id_type AS id_type_parent5,
+       v7.id_type AS id_type_parent6,
        v2.id_subtype AS id_subtype_parent1,
        v3.id_subtype AS id_subtype_parent2,
        v4.id_subtype AS id_subtype_parent3,
        v5.id_subtype AS id_subtype_parent4,
        v6.id_subtype AS id_subtype_parent5,
+       v7.id_subtype AS id_subtype_parent6,
        v1.name ,
-       v7.name AS type_name,
-       v7.id_asset_device_type,
+       v8.name AS type_name,
+       v8.id_asset_device_type,
        v1.status,
        v1.asset_tag,
        v1.priority,
@@ -52,8 +56,10 @@ FROM v_bios_asset_element v1
         ON (v4.id_parent=v5.id)
      LEFT JOIN v_bios_asset_element v6
         ON (v5.id_parent=v6.id)
-     INNER JOIN t_bios_asset_device_type v7
-        ON (v7.id_asset_device_type = v1.id_subtype);
+     LEFT JOIN v_bios_asset_element v7
+        ON (v6.id_parent=v7.id)
+     INNER JOIN t_bios_asset_device_type v8
+        ON (v7.id_asset_device_type = v8.id_subtype);
 
 /* This must be the last line of the SQL file */
 START TRANSACTION;
