@@ -32,3 +32,4 @@ ExecStopPost=/bin/dash -c "/bin/systemctl stop -- $(/bin/systemctl show -p Wante
 
 [Install]
 WantedBy=bios.target
+Alias=bios-db-init.service

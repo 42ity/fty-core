@@ -18,7 +18,7 @@ EnvironmentFile=-@sysconfdir@/default/bios__%n.conf
 EnvironmentFile=-@sysconfdir@/default/fty
 EnvironmentFile=-@sysconfdir@/default/fty__%n.conf
 Environment="prefix=@prefix@"
-EnvironmentFile=-@sysconfdir@/default/bios-db-ro
+EnvironmentFile=@sysconfdir@/default/bios-db-ro
 PermissionsStartOnly=true
 ExecStart=@libexecdir@/@PACKAGE@/warranty-metric
 

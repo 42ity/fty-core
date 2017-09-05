@@ -1,0 +1,200 @@
+#!/bin/sh
+
+#
+# Copyright (C) 2017 Eaton
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+#! \file    factory-reset-live.sh(.in)
+#  \brief   Automation of in-vivo factory-reset effect for volatile data
+#           (not system settings like networking or SSH keys)
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
+
+TZ=UTC
+LANG=C
+LC_ALL=C
+PATH="@datadir@/@PACKAGE@/scripts:@libexecdir@/@PACKAGE@:/usr/sbin:/sbin:/usr/bin:/bin"
+export TZ LANG LC_ALL PATH
+
+# By default all actions re-enable or restart services they impact
+[ -n "${ENABLESVC-}" ] || ENABLESVC=yes
+
+die () {
+    echo "FATAL: ${@}" >&2
+    exit 1
+}
+
+logmsg_info() {
+    echo "INFO: `date -u`: $*"
+    return 0
+}
+
+usage() {
+    cat << EOF
+$0: Automation of in-vivo factory-reset effect for
+volatile data (not system settings like networking or SSH keys).
+NOTE: This script is intended to be run from root privileges during testing and
+development, "sudo" integration for other accounts is expressly not provided.
+
+    -FR | --factory-reset   Achieve the full effect of actions listed below
+    status                  Display current states of license-dependent stack
+                            of services (DB and its consumers) and of tntnet
+
+You can also pick one or more smaller actions explicitly:
+    --reset-passwd          Return "admin" password to default value
+    --reset-license         Remove the accepted-license file and kick services
+    --reset-statefiles      Remove and recreate the state-file file tree and
+                            restart IPM services
+    --reset-nut             Remove configuration of monitored devices in NUT
+                            and restart its services
+    --reset-database        Stop database engine, drop database files and
+                            restart this life from scratch
+EOF
+}
+
+
+if [[ $(id -u) != 0 ]]; then
+    # Explicitly no "auto-sudo" here, nor permissions in sudoers presets
+    # We do not want some runaway REST API or SSH "admin" user to toggle this
+    usage
+    die "This script is not intended for ordinary usage by non-root users"
+fi
+
+if [[ ! -s /etc/release-details.json ]] ; then
+    # Sanity check to not destroy a developer workstation etc. ;)
+    die "An /etc/release-details.json file was not found - be sure to run in IPM system!"
+fi
+
+do_reset_passwd() {
+    # TODO: On real RC, copy default password hash from /mnt/root-ro/etc/shadow?
+    logmsg_info "Resetting admin password to our very simple default value..."
+    yes "admin" | passwd admin
+}
+
+do_unlicense() {
+    # TODO: se subst-value to path here
+    logmsg_info "Resetting license-accepted state (EULA)..."
+    rm -f /var/lib/fty/license
+    if [ "$ENABLESVC" = yes ]; then
+        logmsg_info "Restarting services that care about license-accepted state (EULA)..."
+        systemctl restart fty-license-accepted.service
+        systemctl restart tntnet@bios.service
+    fi
+}
+
+do_undatabase() {
+    logmsg_info "Stopping database engine..."
+    systemctl stop fty-db-engine.service || die "Can not ensure database is stopped"
+    logmsg_info "Clearing database-related files..."
+    rm -rf /var/lib/mysql /var/lib/fty/sql/mysql/* /etc/default/bios-db-r[ow] /root/.my.cnf
+    if [ "$ENABLESVC" = yes ]; then
+        logmsg_info "Starting database engine, if possible..."
+        systemctl restart fty-db-engine.service || true # License may forbid startup
+        logmsg_info "Restarting webserver..."
+        systemctl restart tntnet@bios.service || die "Can not ensure database is running"
+    fi
+}
+
+do_unstate() {
+    logmsg_info "Stopping all IPM services..."
+    systemctl stop bios.service || die "Can not ensure IPM daemons are stopped"
+
+    logmsg_info "Wiping IPM service state files and directories..."
+    ls -1d /var/lib/fty/* /var/lib/bios/* | \
+    while read OBJ ; do
+        case "$OBJ" in
+        */license|*/sql|*/ipc-meta-setup) ;; # Skip these - handled by other actions
+        *) rm -rf "$OBJ" ;;
+        esac
+    done
+
+    logmsg_info "Recreating blank IPM service state files and directroies..."
+    systemd-tmpfiles --create
+    if [ "$ENABLESVC" = yes ]; then
+        logmsg_info "Starting IPM services..."
+        systemctl start bios.service || die "Can not ensure IPM daemons are running"
+    fi
+}
+
+do_unnut() {
+    # TODO: This will be more complicated when we also have a NUT monitor
+    # actually in use.
+    logmsg_info "Stopping all NUT services, if possible..."
+    systemctl stop nut-monitor || true
+    systemctl stop nut-server || true
+    systemctl stop nut-driver.target || true
+
+    logmsg_info "Resetting NUT monitored device configs..."
+    echo "maxretry = 3" > /etc/nut/ups.conf
+
+    if [ "$ENABLESVC" = yes ]; then
+        logmsg_info "Starting all NUT services, if possible..."
+        systemctl restart nut-monitor || true
+        systemctl restart nut-server || true
+        systemctl restart nut-driver.target || true
+    fi
+}
+
+do_factory_reset() (
+    # Combine the above actions
+    logmsg_info "Doing full factory reset..."
+    ENABLESVC_ORIG="$ENABLESVC"
+    ENABLESVC=no
+    do_unlicense
+    do_unstate
+    do_undatabase
+    do_reset_passwd
+    ENABLESVC="$ENABLESVC_ORIG"
+    do_unnut
+    logmsg_info "Restarting IPM-related services..."
+    systemctl restart fty-license-accepted.service
+    systemctl restart fty-license-accepted.path
+    systemctl restart bios.service
+    systemctl restart fty-db-engine.service
+    systemctl restart tntnet@bios.service
+    logmsg_info "Finished full factory reset..."
+)
+
+show_status() {
+    /bin/systemctl status -n 3 fty-license-accepted fty-db-engine fty-db-init fty-asset tntnet@bios
+}
+
+if [ $# = 0 ] ; then
+    usage
+    die "Some explicit argument(s) is required"
+fi
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -h|-help|--help)
+            usage ; exit 0 ;;
+        -FR|--factory-reset)
+            do_factory_reset ; exit $? ;;
+        status|--status|state|--state)
+            show_status ;;
+        --reset-passwd)
+            do_reset_passwd || exit ;;
+        --reset-license)
+            do_unlicense || exit ;;
+        --reset-statefiles)
+            do_unstate || exit ;;
+        --reset-nut)
+            do_unnut || exit ;;
+        --reset-database)
+            do_undatabase || exit ;;
+        *) die "Unsupported option: $1" ;;
+    esac
+    shift
+done

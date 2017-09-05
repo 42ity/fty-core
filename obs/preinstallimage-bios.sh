@@ -525,6 +525,7 @@ mkdir -p /usr/share/fty/etc/default
 case "$IMGTYPE" in
     *devel*)
         echo "BIOS_LOG_LEVEL=LOG_DEBUG" > /usr/share/fty/etc/default/fty
+        echo "BIOS_NUT_USE_DMF=true" >> /usr/share/fty/etc/default/fty
         ;;
     *)
         echo "BIOS_LOG_LEVEL=LOG_INFO" > /usr/share/fty/etc/default/fty

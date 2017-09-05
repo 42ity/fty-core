@@ -1182,7 +1182,7 @@ process_CLI_systemctl() {
         isAllowed_Unit "$2"
     then
         cmd="$1"
-        SYSTEMCTL_UNIT="$2"
+        SYSTEMCTL_UNITS="$2"
         SYSTEMCTL_ARGS=""
         ABORT=no
         NOBREAK=no
@@ -1210,7 +1210,12 @@ process_CLI_systemctl() {
                         ABORT=yes
                     fi
                     ;;
-                *)  ABORT=yes ;;
+                *)  if isAllowed_Unit "$1" ; then
+                        SYSTEMCTL_UNITS="$SYSTEMCTL_UNITS $1"
+                    else
+                        ABORT=yes
+                    fi
+                    ;;
             esac
             [[ "$ABORT" = yes ]] && die_ACTION_NOT_ALLOWED
             shift
@@ -1219,7 +1224,7 @@ process_CLI_systemctl() {
             # Inspired by http://veithen.github.io/2014/11/16/sigterm-propagation.html
             # except our goal is opposite ;) Still, two waits are the trick.
             trap 'echo "Interruption avoided due to no-block mode: $?" >&2' 1 2 3 15
-            $SYSTEMCTL "$cmd" "$SYSTEMCTL_UNIT" $SYSTEMCTL_ARGS &
+            $SYSTEMCTL "$cmd" $SYSTEMCTL_UNITS $SYSTEMCTL_ARGS &
             CHILDPID=$!
             wait $CHILDPID
             wait $CHILDPID
@@ -1227,7 +1232,7 @@ process_CLI_systemctl() {
             [[ "$RES" -ge 128 ]] && RES=0 # wait broken by signal instantly returns 128+SIGNUM
             exit $RES
         else
-            $SYSTEMCTL "$cmd" "$SYSTEMCTL_UNIT" $SYSTEMCTL_ARGS
+            $SYSTEMCTL "$cmd" $SYSTEMCTL_UNITS $SYSTEMCTL_ARGS
             exit $?
         fi
         # Should not get to this commented line
