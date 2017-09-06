@@ -51,15 +51,15 @@ FROM v_bios_asset_element v1
      LEFT JOIN v_bios_asset_element v3
         ON (v2.id_parent = v3.id)
      LEFT JOIN v_bios_asset_element v4
-        ON (v3.id_parent=v4.id)
+        ON (v3.id_parent = v4.id)
      LEFT JOIN v_bios_asset_element v5
-        ON (v4.id_parent=v5.id)
+        ON (v4.id_parent = v5.id)
      LEFT JOIN v_bios_asset_element v6
-        ON (v5.id_parent=v6.id)
+        ON (v5.id_parent = v6.id)
      LEFT JOIN v_bios_asset_element v7
-        ON (v6.id_parent=v7.id)
+        ON (v6.id_parent = v7.id)
      INNER JOIN t_bios_asset_device_type v8
-        ON (v7.id_asset_device_type = v8.id_subtype);
+        ON (v8.id_asset_device_type = v1.id_subtype);
 
 /* This must be the last line of the SQL file */
 START TRANSACTION;
