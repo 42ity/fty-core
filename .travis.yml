@@ -6,6 +6,8 @@ cache: ccache
 os:
 - linux
 
+dist: trusty
+
 sudo: false
 
 services:
@@ -40,8 +42,8 @@ env:
 
 addons:
   sources:
-  - sourceline: 'deb http://download.opensuse.org/repositories/home:/zeromq:/git-draft/xUbuntu_12.04/ ./'
-    key_url: 'http://download.opensuse.org/repositories/home:/zeromq:/git-draft/xUbuntu_12.04/Release.key'
+    - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/git-draft/xUbuntu_14.04/ ./'
+      key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/git-draft/xUbuntu_14.04/Release.key'
   apt:
     packages:
     - git
