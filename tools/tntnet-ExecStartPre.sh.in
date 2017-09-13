@@ -61,6 +61,13 @@ HARDWARE_CATALOG_NUMBER="Hardware catalog number is not available"
 HARDWARE_SPEC_REVISION="Hardware spec revision is not available"
 HARDWARE_SERIAL_NUMBER="Hardware serial number is not available"
 HARDWARE_UUID="Hardware generated UUID is not available"
+
+# Empty value means "Virtualization status is not available",
+# e.g. no systemd on this box... A successfully resolved status
+# of no virtualization of this type is "none".
+VIRT_CONTAINER=""
+VIRT_HYPERVIZOR=""
+
 { [[ -s "$J" ]] || [[ -s "$JO" ]] ; } && \
 if [[ -x "$JSONSH" ]] ; then
     if [[ -n "${BASH-}" ]]; then
@@ -100,11 +107,19 @@ if [[ -x "$JSONSH" ]] ; then
         HARDWARE_UUID="$TMPSTR" || true
     unset TMPSTR
 fi
+
+if [ -x /usr/bin/systemd-detect-virt ]; then
+    VIRT_CONTAINER="$(/usr/bin/systemd-detect-virt -c)" || VIRT_CONTAINER=""
+    VIRT_HYPERVIZOR="$(/usr/bin/systemd-detect-virt -v)" || VIRT_HYPERVIZOR=""
+fi
+
 echo "OSIMAGE_BASENAME='$OSIMAGE_BASENAME'" > "$F"
 echo "SPOOL_DIR='${SPOOL}'" >> "$F"
 echo "HARDWARE_CATALOG_NUMBER='${HARDWARE_CATALOG_NUMBER}'" >> "$F"
 echo "HARDWARE_SPEC_REVISION='${HARDWARE_SPEC_REVISION}'" >> "$F"
 echo "HARDWARE_SERIAL_NUMBER='${HARDWARE_SERIAL_NUMBER}'" >> "$F"
 echo "HARDWARE_UUID='${HARDWARE_UUID}'" >> "$F"
+echo "VIRT_HYPERVIZOR='${VIRT_HYPERVIZOR}'" >> "$F"
+echo "VIRT_CONTAINER='${VIRT_CONTAINER}'" >> "$F"
 
 echo "OK"
