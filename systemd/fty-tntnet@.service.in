@@ -1,7 +1,7 @@
 [Unit]
 Description=Tntnet web server instance for 42ity using @sysconfdir@/tntnet/%i.xml
-After=network.target saslauthd.service malamute.service
-Requires=saslauthd.service malamute.service
+After=network.target saslauthd.service malamute.service fty-envvars.service
+Requires=saslauthd.service malamute.service fty-envvars.service
 PartOf=bios.target
 
 [Service]
@@ -24,6 +24,7 @@ Environment='SYSTEMD_UNIT_FULLNAME=%n'
 PrivateTmp=true
 ExecStartPre=@datadir@/@PACKAGE@/scripts/tntnet-ExecStartPre.sh %i
 EnvironmentFile=-/run/tntnet-%i.env
+EnvironmentFile=-/run/fty-envvars.env
 ExecStart=/usr/bin/tntnet -c @sysconfdir@/tntnet/%i.xml
 
 [Install]

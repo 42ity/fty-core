@@ -1,0 +1,103 @@
+#!/bin/bash
+
+#
+# Copyright (C) 2014-2017 Eaton
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+
+
+#! \file   envvars-ExecStartPre.sh(.in)
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \brief  Not yet documented file
+
+echo "Generate common run-time environment variables file for 42ity"
+
+set -e
+
+F="/run/fty-envvars.env"
+J="/etc/release-details.json"
+JO="/etc/bios-release.json" # Backwards compatibility
+echo "Make sure the current OS image name is populated into '$F'..."
+JSONSH="@datadir@/@PACKAGE@/scripts/JSON.sh"
+OSIMAGE_BASENAME="OS image name is not available"
+HARDWARE_CATALOG_NUMBER="Hardware catalog number is not available"
+HARDWARE_SPEC_REVISION="Hardware spec revision is not available"
+HARDWARE_SERIAL_NUMBER="Hardware serial number is not available"
+HARDWARE_UUID="Hardware generated UUID is not available"
+
+# Empty value means "Virtualization status is not available",
+# e.g. no systemd on this box... A successfully resolved status
+# of no virtualization of this type is "none".
+VIRT_CONTAINER=""
+VIRT_HYPERVIZOR=""
+
+{ [[ -s "$J" ]] || [[ -s "$JO" ]] ; } && \
+if [[ -x "$JSONSH" ]] ; then
+    if [[ -n "${BASH-}" ]]; then
+        . "$JSONSH"
+        get_a_string_arg() { jsonsh_cli_subshell -x "$1" | (IFS="`printf '\t'`" read K V; echo "$V") | sed 's,^"\(.*\)",\1,' ; }
+    else
+        logmsg_info "systemctl: Will fork to use JSON.sh from '$JSONSH' to cook strings"
+        get_a_string_arg() { "$JSONSH" -x "$1" | (IFS="`printf '\t'`" read K V; echo "$V") | sed 's,^"\(.*\)",\1,' ; }
+    fi
+    get_detail() {
+        local _TMPSTR=""
+        [[ -s "$J" ]] && \
+            _TMPSTR="$(get_a_string_arg '"release-details","'"$1"'"' < "$J")" && [[ -n "${_TMPSTR}" ]] || \
+            _TMPSTR=""
+        if [[ -z "${_TMPSTR}" ]] && [[ ! -s "$J" ]] && [[ -s "$JO" ]] ; then
+            # Legacy fallback: new OS image, old uImage - no release-details yet
+            _TMPSTR="$(get_a_string_arg '"bios-release","'"$1"'"' < "$JO")" && [[ -n "${_TMPSTR}" ]] || \
+                _TMPSTR=""
+        fi
+        echo "${_TMPSTR}"
+        if [[ -n "${_TMPSTR}" ]] ; then return 0 ; else return 1; fi
+    }
+
+    TMPSTR="$(get_detail "osimage-name")" || \
+    { TMPSTR="$(get_detail "osimage-filename")" && \
+        TMPSTR="`basename "$TMPSTR" | sed 's/\.\(squashfs\|tar\|tar\..*\|tgz\|tbz2\|txz\)$//'`" ; } || \
+    TMPSTR=""
+    [[ -n "$TMPSTR" ]] && OSIMAGE_BASENAME="$TMPSTR" || true
+
+    TMPSTR="$(get_detail "hardware-catalog-number")" && \
+        HARDWARE_CATALOG_NUMBER="$TMPSTR" || true
+    TMPSTR="$(get_detail "hardware-spec-revision")" && \
+        HARDWARE_SPEC_REVISION="$TMPSTR" || true
+    TMPSTR="$(get_detail "hardware-serial-number")" && \
+        HARDWARE_SERIAL_NUMBER="$TMPSTR" || true
+    TMPSTR="$(get_detail "uuid")" && \
+        HARDWARE_UUID="$TMPSTR" || true
+    unset TMPSTR
+fi
+
+if [ -x /usr/bin/systemd-detect-virt ]; then
+    VIRT_CONTAINER="$(/usr/bin/systemd-detect-virt -c)" || VIRT_CONTAINER=""
+    VIRT_HYPERVIZOR="$(/usr/bin/systemd-detect-virt -v)" || VIRT_HYPERVIZOR=""
+fi
+
+cat << EOF > "$F"
+OSIMAGE_BASENAME='$OSIMAGE_BASENAME'
+SPOOL_DIR='${SPOOL}'
+HARDWARE_CATALOG_NUMBER='${HARDWARE_CATALOG_NUMBER}'
+HARDWARE_SPEC_REVISION='${HARDWARE_SPEC_REVISION}'
+HARDWARE_SERIAL_NUMBER='${HARDWARE_SERIAL_NUMBER}'
+HARDWARE_UUID='${HARDWARE_UUID}'
+VIRT_HYPERVIZOR='${VIRT_HYPERVIZOR}'
+VIRT_CONTAINER='${VIRT_CONTAINER}'
+EOF
+
+echo "OK"

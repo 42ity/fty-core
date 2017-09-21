@@ -177,9 +177,13 @@ systemd/fty-db-init.service
 systemd/fty-db-engine.service
 !systemd/fty-tntnet@.service.in
 systemd/fty-tntnet@.service
+!systemd/fty-envvars.service.in
+systemd/fty-envvars.service
 
 !tools/tntnet-ExecStartPre.sh.in
 tools/tntnet-ExecStartPre.sh
+!tools/envvars-ExecStartPre.sh.in
+tools/envvars-ExecStartPre.sh
 !tools/start-db-services.in
 tools/start-db-services
 
