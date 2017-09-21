@@ -1,0 +1,17 @@
+[Unit]
+Description=Prepare common run-time environment variables for 42ity services
+After=local-fs.target
+Requires=local-fs.target
+PartOf=bios.target
+
+[Service]
+Type=oneshot
+# the service shall be considered active even when all its processes exited
+RemainAfterExit=yes
+Restart=always
+User=root
+Group=root
+ExecStart=@datadir@/@PACKAGE@/scripts/envvars-ExecStartPre.sh
+
+[Install]
+WantedBy=bios.target
