@@ -19,7 +19,7 @@ INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_o
 /* not required INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('location_u_pos', '1', 0, 0), ('u_size', '1', 0, 0), ('ip.1', '0.0.0.0', 0, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute); */
 /* not required INSERT INTO t_bios_asset_link (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in) VALUES (0, 0, (SELECT id_asset_link_type FROM t_bios_asset_link_type WHERE name = "power chain" LIMIT 1),   NULL, NULL); */
 INSERT INTO t_bios_discovered_device (name, id_device_type) VALUES ('IPC 3000', (SELECT id_device_type FROM t_bios_device_type WHERE name = "not_classified" LIMIT 1)) ON DUPLICATE KEY UPDATE id_discovered_device = LAST_INSERT_ID(id_discovered_device);
-INSERT INTO t_bios_monitor_asset_relation (id_discovered_device, id_asset_element) VALUES ((SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'Default RC' AND id_device_type = (SELECT id_device_type FROM t_bios_device_type WHERE name = "not_classified" LIMIT 1) LIMIT 1), 0);
+INSERT INTO t_bios_monitor_asset_relation (id_discovered_device, id_asset_element) VALUES ((SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'IPC 3000' AND id_device_type = (SELECT id_device_type FROM t_bios_device_type WHERE name = "not_classified" LIMIT 1) LIMIT 1), 0);
 SET sql_mode = (SELECT @sql_mode_backup);
 
 /* This must be the last line of the SQL file */
