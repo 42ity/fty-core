@@ -14,7 +14,9 @@ COMMIT;
 
 SET @sql_mode_backup = (SELECT @@sql_mode);
 SET sql_mode='NO_AUTO_VALUE_ON_ZERO';
-INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_subtype, id_parent, status, priority, asset_tag) VALUES (0, 'rackcontroller-0', (SELECT id_asset_element_type FROM t_bios_asset_element_type WHERE name = "device" LIMIT 1), (SELECT id_asset_device_type FROM t_bios_asset_device_type WHERE name = "rack controller" LIMIT 1), NULL, 'active', 1, NULL);
+SET FOREIGN_KEY_CHECKS=0;
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_subtype, id_parent, status, priority, asset_tag) VALUES (0, 'rackcontroller-0', (SELECT id_asset_element_type FROM t_bios_asset_element_type WHERE name = "device" LIMIT 1), (SELECT id_asset_device_type FROM t_bios_asset_device_type WHERE name = "rack controller" LIMIT 1), 1, 'active', 1, NULL);
+SET FOREIGN_KEY_CHECKS=1;
 INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('name', 'IPC 3000', 0, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
 /* not required INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('location_u_pos', '1', 0, 0), ('u_size', '1', 0, 0), ('ip.1', '0.0.0.0', 0, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute); */
 /* not required INSERT INTO t_bios_asset_link (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in) VALUES (0, 0, (SELECT id_asset_link_type FROM t_bios_asset_link_type WHERE name = "power chain" LIMIT 1),   NULL, NULL); */
