@@ -8,7 +8,7 @@ PartOf=bios.target
 Type=oneshot
 # the service shall be considered active even when all its processes exited
 RemainAfterExit=yes
-Restart=always
+Restart=no
 User=root
 Group=root
 ExecStart=@datadir@/@PACKAGE@/scripts/envvars-ExecStartPre.sh
