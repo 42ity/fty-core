@@ -502,7 +502,7 @@ sed '/<!-- Here starts the real API -->/,$!d; /<!-- Here starts the real API -->
 rm -f /etc/tntnet/bios.d/20_core.xml
 
 /bin/systemctl enable tntnet@bios
-/bin/systemctl enable tntnet@bios
+/bin/systemctl enable fty-envvars
 
 # Disable logind
 /bin/systemctl disable systemd-logind

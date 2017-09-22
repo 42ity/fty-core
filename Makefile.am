@@ -79,6 +79,7 @@ GENERATEDSCRIPTS = tools/run-test-doc.sh tools/db-init \
 	tools/factory-reset-live.sh \
 	tools/start-db-services \
 	tools/verify-fs \
+	tools/envvars-ExecStartPre.sh \
 	tools/tntnet-ExecStartPre.sh \
 	setup/20-th-names.sh
 
@@ -288,7 +289,7 @@ client_SCRIPTS +=	 \
 			tools/start-db-services \
 			tools/fty-route
 
-helper_SCRIPTS +=	tools/tntnet-ExecStartPre.sh tools/generate-release-details.sh tools/factory-reset-live.sh
+helper_SCRIPTS +=	tools/tntnet-ExecStartPre.sh tools/envvars-ExecStartPre.sh tools/generate-release-details.sh tools/factory-reset-live.sh
 
 EXTRA_DIST +=		tools/fake-th \
 			tools/bios-networking \
@@ -449,6 +450,7 @@ SYSTEMD_UNITS += $(SYSTEMD_UNITS_TARGET_BIOS) $(SYSTEMD_UNITS_LOWLEVEL)
 # we name ours differently here (and override during OS image generation).
 #SYSTEMD_UNITS_NOTPRESET_LOWLEVEL +=
 SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS += \
+                        fty-envvars.service \
                         fty-tntnet@.service \
                         bios-fake-th.service
 
