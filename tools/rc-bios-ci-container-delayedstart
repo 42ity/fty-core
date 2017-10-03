@@ -41,7 +41,7 @@
 	. /etc/default/bios-ci-container-delayedstart.conf
 
 [ -n "$CONTAINERS" ] || \
-	CONTAINERS="`virsh -c lxc:// list --all | tail -n +3 | awk '{print $2}' | egrep '^latest$|^demo$|^test-debian-|^bios-'`" || \
+	CONTAINERS="`virsh -c lxc:// list --all | tail -n +3 | awk '{print $2}' | egrep '^latest$|^demo$|^test-debian-|^bios-|^fty-'`" || \
 	CONTAINERS="latest"
 [ -z "$STARTDELAY_DL" ] && STARTDELAY_DL="2 min"
 [ -z "$STARTDELAY" ] && STARTDELAY="3 min"
