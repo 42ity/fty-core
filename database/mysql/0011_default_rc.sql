@@ -24,12 +24,15 @@ SOURCE /tmp/fty-envvars.sql ;
 \! /bin/rm -f /tmp/fty-envvars.sql
 
 /* Define an overridable manner of selecting a "myself" rack controller
- * to pick one from several available, which we can evolve for future
- * versions (e.g. based on known UUID, IP, etc.) - just make sure this
- * FUNCTION select_RC_myself() gets defined earlier. This only gets
+ * to pick one from several available (based on known UUID, Serial Number,
+ * hostname (fqdn or asset user-friendly name), or IP address). Fall back
+ * to the rack controller with lowest database ID number which does not have
+ * any of those matching fields populated (known mismatch is not-myself).
+ * Returns NULL if no match was found, causing creation of a new asset as
+ * 'rackcontroller-0', with a chance that this would be not the only RC in DB.
+ * If an override is needed - just make sure this FUNCTION select_RC_myself()
+ * with content you want gets defined earlier. Note that this only gets
  * used if we do at all need to upgrade existing database contents. */
-/* Note: due to MySQL security, we can not overwrite existing files,
- * nor use variables in SELECT INTO and SOURCE commands */
 SET @str = IF (NOT EXISTS(SELECT 1 FROM mysql.proc p WHERE db = 'box_utf8' AND name = 'select_RC_myself'),
 'CREATE FUNCTION select_RC_myself()  RETURNS INT UNSIGNED
   BEGIN
@@ -125,6 +128,8 @@ SET @str = IF (NOT EXISTS(SELECT 1 FROM mysql.proc p WHERE db = 'box_utf8' AND n
       RETURN myid;
   END;', 'SET @dummy = 0;');
 
+/* Note: due to MySQL security, we can not overwrite existing files,
+ * nor use variables in SELECT INTO and SOURCE commands */
 \! /bin/rm -f /tmp/zzz.sql
 SELECT @str INTO OUTFILE '/tmp/zzz.sql';
 
