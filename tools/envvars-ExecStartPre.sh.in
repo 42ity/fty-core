@@ -84,9 +84,13 @@ if [[ -x "$JSONSH" ]] ; then
     unset TMPSTR
 fi
 
+# Note: no fallback "empty on error", and ignore error codes, as per manpage:
+#    EXIT STATUS
+# If a virtualization technology is detected, 0 is returned, a non-zero code
+# otherwise. => we lose the "none" string value where c/h virt is not found.
 if [ -x /usr/bin/systemd-detect-virt ]; then
-    VIRT_CONTAINER="$(/usr/bin/systemd-detect-virt -c)" || VIRT_CONTAINER=""
-    VIRT_HYPERVIZOR="$(/usr/bin/systemd-detect-virt -v)" || VIRT_HYPERVIZOR=""
+    VIRT_CONTAINER="$(/usr/bin/systemd-detect-virt -c)" || true # not VIRT_CONTAINER=""
+    VIRT_HYPERVIZOR="$(/usr/bin/systemd-detect-virt -v)" || true # not VIRT_HYPERVIZOR=""
 fi
 
 cat << EOF > "$F"
