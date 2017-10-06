@@ -106,6 +106,16 @@ SET @str = IF (NOT EXISTS(SELECT 1 FROM mysql.proc p WHERE db = 'box_utf8' AND n
         END IF;
       END IF;
 
+      IF @ENV_IPADDRS IS NOT NULL THEN
+        SET myid = (SELECT tel.id_asset_element FROM t_bios_asset_element AS tel, t_bios_asset_ext_attributes AS tea WHERE
+            tel.id_type = id_type_device AND tel.id_subtype = id_subtype_rc AND
+            tea.id_asset_element = tel.id_asset_element AND
+            tea.keytag LIKE "ip.%" AND FIND_IN_SET(tea.value, @ENV_IPADDRS)
+            ORDER BY tel.id_asset_element LIMIT 1);
+        IF myid IS NOT NULL THEN
+          RETURN myid;
+        END IF;
+      END IF;
 
       SET myid = (SELECT id_asset_element FROM t_bios_asset_element WHERE id_type = id_type_device AND id_subtype = id_subtype_rc ORDER BY id_asset_element LIMIT 1);
       RETURN myid;
