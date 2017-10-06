@@ -39,6 +39,8 @@ DELIMITER //
 SOURCE /tmp/zzz.sql //
 DELIMITER ;
 
+\! /bin/rm -f /tmp/zzz.sql
+
 
 
 /* Define the logic to create or update the rack controller */
