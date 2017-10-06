@@ -104,12 +104,12 @@ if [ -x /usr/bin/systemd-detect-virt ]; then
     VIRT_HYPERVIZOR="$(/usr/bin/systemd-detect-virt -v)" || true # not VIRT_HYPERVIZOR=""
 fi
 
-ENV_HOSTNAME="$(hostname)" || ENV_HOSTNAME=""
-ENV_DOMAINNAME="$(domainname | grep -v '(none)')" || ENV_DOMAINNAME=""
-ENV_DNSDOMAINNAME="$(dnsdomainname | grep -v '(none)')" || ENV_DNSDOMAINNAME=""
+ENV_HOSTNAME="$(hostname | tr '[A-Z]' '[a-z]' )" || ENV_HOSTNAME=""
+ENV_DOMAINNAME="$(domainname | tr '[A-Z]' '[a-z]' | grep -v '(none)')" || ENV_DOMAINNAME=""
+ENV_DNSDOMAINNAME="$(dnsdomainname | tr '[A-Z]' '[a-z]' | grep -v '(none)')" || ENV_DNSDOMAINNAME=""
 # A comma-separated list (required for SQL magic, usable in shell) of
 # current non-loopback IP addresses, IPv4 and IPv6 alike, without masks
-ENV_IPADDRS="$(ip addr show | egrep '^[[:blank:]]*inet6?[[:blank:]]' | awk '{print $2}' | egrep -v '^(127\..*|::1/128)$' | sed 's,/[0-9]*$,,' | sort -n | uniq | tr '\n' ',' | sed 's/,$//')" || ENV_IPADDRS=""
+ENV_IPADDRS="$(ip addr show | egrep '^[[:blank:]]*inet6?[[:blank:]]' | awk '{print $2}' | tr '[A-Z]' '[a-z]' | egrep -v '^(127\..*|::1/128)$' | sed 's,/[0-9]*$,,' | sort -n | uniq | tr '\n' ',' | sed 's/,$//')" || ENV_IPADDRS=""
 
 RES=255
 case "$OUTFMT" in
