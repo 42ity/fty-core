@@ -192,6 +192,10 @@ BEGIN
         IF @ENV_HARDWARE_SERIAL_NUMBER IS NOT NULL THEN
           INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('serial_no', @ENV_HARDWARE_SERIAL_NUMBER, @rc0id, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
         END IF;
+        IF @ENV_HARDWARE_CATALOG_NUMBER IS NOT NULL THEN
+          INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('model', CONCAT(@ENV_HARDWARE_CATALOG_NUMBER,IF(@HARDWARE_SPEC_REVISION IS NULL,'',CONCAT(' HW rev ',@HARDWARE_SPEC_REVISION))), @rc0id, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
+        END IF;
+        INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('manufacturer', 'Eaton', @rc0id, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
         IF @ENV_HARDWARE_UUID IS NOT NULL THEN
           INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('uuid', @ENV_HARDWARE_UUID, @rc0id, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
         END IF;
