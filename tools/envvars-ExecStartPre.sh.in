@@ -117,7 +117,7 @@ ENV_DNSDOMAINNAME="$(dnsdomainname | tr '[A-Z]' '[a-z]' | grep -v '(none)')" || 
 ENV_RESOLVDOMAINS="$(egrep '^[[:blank:]]*(search|domain)[[:blank:]]+' /etc/resolv.conf | while read K V ; do echo $V ; done | sed -e 's,[[:blank:]]+,\n,g' -e 's,\.$,,g' | tr '[A-Z]' '[a-z]' | sort | uniq)"
 # A comma-separated list (required for SQL magic, usable in shell) of
 # current non-loopback IP addresses, IPv4 and IPv6 alike, without masks
-ENV_IPADDRS="$(ip addr show | egrep '^[[:blank:]]*inet6?[[:blank:]]' | awk '{print $2}' | tr '[A-Z]' '[a-z]' | egrep -v '^(127\..*|::1/128)$' | sed 's,/[0-9]*$,,' | sort -nr | uniq | tr '\n' ',' | sed 's/,$//')" || ENV_IPADDRS=""
+ENV_IPADDRS="$(ip addr show | egrep '^[[:blank:]]*inet6?[[:blank:]]' | awk '{print $2}' | tr '[A-Z]' '[a-z]' | egrep -v '^(127\..*|0\.|255\.|::1/128)$' | sed 's,/[0-9]*$,,' | sort -nr | uniq | tr '\n' ',' | sed 's/,$//')" || ENV_IPADDRS=""
 # A comma-separated list of domain names (if any) that can be part of
 # this machine's FQDN when coupled with the hostname above. Note that
 # generally definition of "domain" is domain-dependent (pun intended).
