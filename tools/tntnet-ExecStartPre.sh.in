@@ -46,9 +46,13 @@ chown www-data: ${F}
 chmod 0644 ${F}
 
 # files to be passed from REST (like email attachments)
-SPOOL=/run/tntnet-${INST}
-rm -rf "${SPOOL}"
-mkdir -p "${SPOOL}"
-chown www-data: "${SPOOL}"
+SPOOL_DIR=/run/tntnet-${INST}
+rm -rf "${SPOOL_DIR}"
+mkdir -p "${SPOOL_DIR}"
+chown www-data: "${SPOOL_DIR}"
+
+cat << EOF > /run/tntnet-${INST}.env
+SPOOL_DIR='${SPOOL_DIR}'
+EOF
 
 echo "OK"
