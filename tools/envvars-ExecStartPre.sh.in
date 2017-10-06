@@ -118,6 +118,32 @@ ENV_IPADDRS="$(ip addr show | egrep '^[[:blank:]]*inet6?[[:blank:]]' | awk '{pri
 # generally definition of "domain" is domain-dependent (pun intended).
 ENV_KNOWNDOMAINS="$(echo $ENV_DOMAINNAME $ENV_DNSDOMAINNAME $ENV_RESOLVDOMAINS | sort -n | uniq | tr '\n' ',' | sed 's/,$//')"
 
+list_hostnames_raw() {
+    # Map known "this-host" IP addresses to known hostnames
+    echo 127.0.0.1 "::1" "$ENV_IPADDRS" | while IFS="," read IP ; do
+        getent hosts "$IP" | while read K V ; do echo $V ; done
+    done
+}
+
+list_fqdns() {
+    for H in `list_hostnames_raw` $ENV_HOSTNAME `cat /etc/hostname 2>/dev/null || true` ; do
+        H="`echo "$H" | tr '[A-Z]' '[a-z]'`"
+        case "$H" in
+            localhost*|bios|loghost|mailhost) ;; # skip
+            *.*) echo "$H" ;; # Already a dot-separated string
+            *) if [ -z "$ENV_KNOWNDOMAINS" ]; then echo "$H"; else
+                   echo "$ENV_KNOWNDOMAINS" | while IFS="," read D; do
+                       echo "$H.$D"
+                   done
+               fi
+               ;; # Generate dot-separated strings
+        esac
+    done | tr '[A-Z]' '[a-z]' | sort | uniq
+}
+
+# A comma-separated list of this host's fully qualified domain names
+ENV_KNOWNFQDNS="$(list_fqdns | tr '\n' ',' | sed 's/,$//')"
+
 RES=255
 case "$OUTFMT" in
     env) cat << EOF > "$OUTFILE"
@@ -133,6 +159,7 @@ ENV_DOMAINNAME='${ENV_DOMAINNAME}'
 ENV_DNSDOMAINNAME='${ENV_DNSDOMAINNAME}'
 ENV_IPADDRS='${ENV_IPADDRS}'
 ENV_KNOWNDOMAINS='${ENV_KNOWNDOMAINS}'
+ENV_KNOWNFQDNS='${ENV_KNOWNFQDNS}'
 EOF
         RES=$?
         ;;
@@ -149,6 +176,7 @@ set @ENV_DOMAINNAME='${ENV_DOMAINNAME}';
 set @ENV_DNSDOMAINNAME='${ENV_DNSDOMAINNAME}';
 set @ENV_IPADDRS='${ENV_IPADDRS}';
 set @ENV_KNOWNDOMAINS='${ENV_KNOWNDOMAINS}';
+set @ENV_KNOWNFQDNS='${ENV_KNOWNFQDNS}';
 EOF
         RES=$?
         ;;
