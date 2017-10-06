@@ -34,7 +34,23 @@ SET @str = IF (NOT EXISTS(SELECT 1 FROM mysql.proc p WHERE db = 'box_utf8' AND n
 'CREATE FUNCTION select_RC_myself()  RETURNS INT UNSIGNED
   BEGIN
       DECLARE myid INT UNSIGNED;
-      SET myid = (SELECT id_asset_element FROM t_bios_asset_element WHERE id_type = @id_type_device AND id_subtype = @id_subtype_rc ORDER BY id_asset_element LIMIT 1);
+      DECLARE id_type_device TINYINT(3) UNSIGNED;
+      DECLARE id_subtype_rc TINYINT(3) UNSIGNED;
+      SET myid = NULL;
+      SET id_type_device = (SELECT id_asset_element_type FROM t_bios_asset_element_type WHERE name = "device" LIMIT 1);
+      SET id_subtype_rc = (SELECT id_asset_device_type FROM t_bios_asset_device_type WHERE name = "rack controller" LIMIT 1);
+
+      IF @ENV_HARDWARE_UUID IS NOT NULL THEN
+        SET myid = (SELECT tel.id_asset_element FROM t_bios_asset_element AS tel, t_bios_asset_ext_attributes AS tea WHERE
+            tel.id_type = id_type_device AND tel.id_subtype = id_subtype_rc AND
+            tea.id_asset_element = tel.id_asset_element AND
+            tea.keytag = "uuid" AND tea.value = @ENV_HARDWARE_UUID
+            ORDER BY tel.id_asset_element LIMIT 1);
+        IF myid IS NOT NULL THEN
+          RETURN myid;
+        END IF;
+      END IF;
+      SET myid = (SELECT id_asset_element FROM t_bios_asset_element WHERE id_type = id_type_device AND id_subtype = id_subtype_rc ORDER BY id_asset_element LIMIT 1);
       RETURN myid;
   END;', 'SET @dummy = 0;');
 
