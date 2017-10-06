@@ -40,8 +40,9 @@ done
 [ -n "$OUTFILE" ] || OUTFILE="/run/fty-envvars.$OUTFMT"
 J="/etc/release-details.json"
 JO="/etc/bios-release.json" # Backwards compatibility
-echo "Make sure the current OS image name is populated into '$OUTFILE'..."
+echo "Make sure the current OS image name and other details are populated into '$OUTFILE'..."
 JSONSH="@datadir@/@PACKAGE@/scripts/JSON.sh"
+#JSONSH="/usr/share/bios/scripts/JSON.sh"
 OSIMAGE_BASENAME="OS image name is not available"
 HARDWARE_CATALOG_NUMBER="Hardware catalog number is not available"
 HARDWARE_SPEC_REVISION="Hardware spec revision is not available"
