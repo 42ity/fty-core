@@ -117,7 +117,11 @@ SET @str = IF (NOT EXISTS(SELECT 1 FROM mysql.proc p WHERE db = 'box_utf8' AND n
         END IF;
       END IF;
 
-      SET myid = (SELECT id_asset_element FROM t_bios_asset_element WHERE id_type = id_type_device AND id_subtype = id_subtype_rc ORDER BY id_asset_element LIMIT 1);
+      SET myid = (SELECT tel.id_asset_element FROM t_bios_asset_element AS tel, t_bios_asset_ext_attributes AS tea WHERE
+        tel.id_type = id_type_device AND tel.id_subtype = id_subtype_rc AND
+        tea.id_asset_element = tel.id_asset_element AND
+        tea.keytag NOT LIKE "ip.%" AND tea.keytag NOT IN ("fqdn", "serial_no", "uuid")
+        ORDER BY tel.id_asset_element LIMIT 1);
       RETURN myid;
   END;', 'SET @dummy = 0;');
 
@@ -151,7 +155,7 @@ BEGIN
 
     SET @rc0added = NULL;
     IF @rc0present = 0 THEN
-      IF @rccount = 0 THEN
+      IF @rcmyself IS NULL THEN
         SET @rc0added = TRUE;
         INSERT INTO t_bios_asset_element (name, id_type, id_subtype, id_parent, status, priority, asset_tag) VALUES ('rackcontroller-0', @id_type_device, @id_subtype_rc, @rcparent, 'active', 1, NULL);
         SET @rc0id = (SELECT id_asset_element FROM t_bios_asset_element WHERE id_type = @id_type_device AND id_subtype = @id_subtype_rc AND name = 'rackcontroller-0' ) ;
