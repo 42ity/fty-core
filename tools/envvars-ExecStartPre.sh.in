@@ -27,8 +27,17 @@ echo "Generate common run-time environment variables file for 42ity"
 
 set -e
 
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        -O) OUTFILE="$2"; shift;;
+        --sql) OUTFMT="sql" ;;
+        *)  echo "Unknown argument: $1" >&2 ; exit 1 ;;
+    esac
+    shift
+done
+[ -n "$OUTFMT" ] || OUTFMT="env"
     # Note: several services expect to include an EnvironmentFile=/run/fty-envvars.env
-[ -n "$OUTFILE" ] || OUTFILE="/run/fty-envvars.env"
+[ -n "$OUTFILE" ] || OUTFILE="/run/fty-envvars.$OUTFMT"
 J="/etc/release-details.json"
 JO="/etc/bios-release.json" # Backwards compatibility
 echo "Make sure the current OS image name is populated into '$OUTFILE'..."
@@ -101,7 +110,9 @@ ENV_DNSDOMAINNAME="$(dnsdomainname | grep -v '(none)')" || ENV_DNSDOMAINNAME=""
 # current non-loopback IP addresses, IPv4 and IPv6 alike, without masks
 ENV_IPADDRS="$(ip addr show | egrep '^[[:blank:]]*inet6?[[:blank:]]' | awk '{print $2}' | egrep -v '^(127\..*|::1/128)$' | sed 's,/[0-9]*$,,' | tr '\n' ',' | sed 's/,$//')" || ENV_IPADDRS=""
 
-cat << EOF > "$OUTFILE"
+RES=255
+case "$OUTFMT" in
+    env) cat << EOF > "$OUTFILE"
 OSIMAGE_BASENAME='$OSIMAGE_BASENAME'
 HARDWARE_CATALOG_NUMBER='${HARDWARE_CATALOG_NUMBER}'
 HARDWARE_SPEC_REVISION='${HARDWARE_SPEC_REVISION}'
@@ -114,7 +125,25 @@ ENV_DOMAINNAME='${ENV_DOMAINNAME}'
 ENV_DNSDOMAINNAME='${ENV_DNSDOMAINNAME}'
 ENV_IPADDRS='${ENV_IPADDRS}'
 EOF
-RES=$?
+        RES=$?
+        ;;
+    sql) cat << EOF > "$OUTFILE"
+set @ENV_OSIMAGE_BASENAME='$OSIMAGE_BASENAME';
+set @ENV_HARDWARE_CATALOG_NUMBER='${HARDWARE_CATALOG_NUMBER}';
+set @ENV_HARDWARE_SPEC_REVISION='${HARDWARE_SPEC_REVISION}';
+set @ENV_HARDWARE_SERIAL_NUMBER='${HARDWARE_SERIAL_NUMBER}';
+set @ENV_HARDWARE_UUID='${HARDWARE_UUID}';
+set @ENV_VIRT_HYPERVIZOR='${VIRT_HYPERVIZOR}';
+set @ENV_VIRT_CONTAINER='${VIRT_CONTAINER}';
+set @ENV_HOSTNAME='${ENV_HOSTNAME}';
+set @ENV_DOMAINNAME='${ENV_DOMAINNAME}';
+set @ENV_DNSDOMAINNAME='${ENV_DNSDOMAINNAME}';
+set @ENV_IPADDRS='${ENV_IPADDRS}';
+EOF
+        RES=$?
+        ;;
+    *) echo "Unknown output format: $OUTFMT" >&2 ; exit 1 ;;
+esac
 
 [ "$RES" = 0 ] && echo "OK" || echo "FAILED ($RES)" >&2
 exit $RES
