@@ -27,10 +27,11 @@ echo "Generate common run-time environment variables file for 42ity"
 
 set -e
 
-F="/run/fty-envvars.env"
+    # Note: several services expect to include an EnvironmentFile=/run/fty-envvars.env
+[ -n "$OUTFILE" ] || OUTFILE="/run/fty-envvars.env"
 J="/etc/release-details.json"
 JO="/etc/bios-release.json" # Backwards compatibility
-echo "Make sure the current OS image name is populated into '$F'..."
+echo "Make sure the current OS image name is populated into '$OUTFILE'..."
 JSONSH="@datadir@/@PACKAGE@/scripts/JSON.sh"
 OSIMAGE_BASENAME="OS image name is not available"
 HARDWARE_CATALOG_NUMBER="Hardware catalog number is not available"
@@ -93,7 +94,7 @@ if [ -x /usr/bin/systemd-detect-virt ]; then
     VIRT_HYPERVIZOR="$(/usr/bin/systemd-detect-virt -v)" || true # not VIRT_HYPERVIZOR=""
 fi
 
-cat << EOF > "$F"
+cat << EOF > "$OUTFILE"
 OSIMAGE_BASENAME='$OSIMAGE_BASENAME'
 HARDWARE_CATALOG_NUMBER='${HARDWARE_CATALOG_NUMBER}'
 HARDWARE_SPEC_REVISION='${HARDWARE_SPEC_REVISION}'
