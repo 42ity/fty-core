@@ -165,7 +165,8 @@ BEGIN
         INSERT INTO t_bios_asset_element (name, id_type, id_subtype, id_parent, status, priority, asset_tag) VALUES ('rackcontroller-0', @id_type_device, @id_subtype_rc, @rcparent, 'active', 1, NULL);
         SET @rc0id = (SELECT id_asset_element FROM t_bios_asset_element WHERE id_type = @id_type_device AND id_subtype = @id_subtype_rc AND name = 'rackcontroller-0' ) ;
         SET @rc0idLast = (SELECT LAST_INSERT_ID()) ;
-        INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('name', IF(@ENV_HOSTNAME IS NOT NULL,@ENV_HOSTNAME,IF(@HARDWARE_CATALOG_NUMBER IS NOT NULL,@HARDWARE_CATALOG_NUMBER,'IPC 3000')), @rc0id, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
+        SET @rc0name = (SELECT IF(@ENV_HOSTNAME IS NOT NULL,@ENV_HOSTNAME,IF(@HARDWARE_CATALOG_NUMBER IS NOT NULL,@HARDWARE_CATALOG_NUMBER,'IPC 3000')));
+        INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('name', @rc0name, @rc0id, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
         INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('location_u_pos', '1', @rc0id, 0), ('u_size', '1', @rc0id, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
         SET @ipnum = 0;
         IF @ENV_IPADDRS IS NOT NULL THEN
@@ -195,8 +196,8 @@ BEGIN
           INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('uuid', @ENV_HARDWARE_UUID, @rc0id, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
         END IF;
         INSERT INTO t_bios_asset_link (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in) VALUES (IF(@rcparent IS NOT NULL,@rcparent,@rc0id), @rc0id, (SELECT id_asset_link_type FROM t_bios_asset_link_type WHERE name = "power chain" LIMIT 1), NULL, NULL);
-        INSERT INTO t_bios_discovered_device (name, id_device_type) VALUES ('IPC 3000', (SELECT id_device_type FROM t_bios_device_type WHERE name = "not_classified" LIMIT 1)) ON DUPLICATE KEY UPDATE id_discovered_device = LAST_INSERT_ID(id_discovered_device);
-        INSERT INTO t_bios_monitor_asset_relation (id_discovered_device, id_asset_element) VALUES ((SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'IPC 3000' AND id_device_type = (SELECT id_device_type FROM t_bios_device_type WHERE name = "not_classified" LIMIT 1) LIMIT 1), @rc0id);
+        INSERT INTO t_bios_discovered_device (name, id_device_type) VALUES (@rc0name, (SELECT id_device_type FROM t_bios_device_type WHERE name = "not_classified" LIMIT 1)) ON DUPLICATE KEY UPDATE id_discovered_device = LAST_INSERT_ID(id_discovered_device);
+        INSERT INTO t_bios_monitor_asset_relation (id_discovered_device, id_asset_element) VALUES ((SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = @rc0name AND id_device_type = (SELECT id_device_type FROM t_bios_device_type WHERE name = "not_classified" LIMIT 1) LIMIT 1), @rc0id);
       ELSE
         SET @rc0added = FALSE;
         UPDATE t_bios_asset_element SET name = 'rackcontroller-0' WHERE id_asset_element = @rcmyself;
