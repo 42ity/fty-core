@@ -17,6 +17,12 @@ INSERT INTO t_bios_asset_element (name, id_type, id_parent, status, priority, as
 INSERT INTO t_bios_asset_element (name, id_type, id_subtype, id_parent, status, priority, asset_tag) VALUES ('rackcontroller-0', (SELECT id_asset_element_type FROM t_bios_asset_element_type WHERE name = "device" LIMIT 1), (SELECT id_asset_device_type FROM t_bios_asset_device_type WHERE name = "rack controller" LIMIT 1), (SELECT id_asset_element FROM t_bios_asset_element WHERE id_type IN (SELECT id_asset_element_type FROM t_bios_asset_element_type WHERE name = "datacenter") LIMIT 1), 'active', 1, NULL);
 */
 
+/* Slurp current system identification variables */
+\! /bin/rm -f /tmp/fty-envvars.sql
+\! /usr/share/bios/scripts/envvars-ExecStartPre.sh -O /tmp/fty-envvars.sql --sql
+SOURCE /tmp/fty-envvars.sql ;
+\! /bin/rm -f /tmp/fty-envvars.sql
+
 /* Define an overridable manner of selecting a "myself" rack controller
  * to pick one from several available, which we can evolve for future
  * versions (e.g. based on known UUID, IP, etc.) - just make sure this
