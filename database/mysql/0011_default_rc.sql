@@ -18,10 +18,15 @@ INSERT INTO t_bios_asset_element (name, id_type, id_subtype, id_parent, status, 
 */
 
 /* Slurp current system identification variables */
-\! /bin/rm -f /tmp/fty-envvars.sql
-\! /usr/share/bios/scripts/envvars-ExecStartPre.sh -O /tmp/fty-envvars.sql --sql
-SOURCE /tmp/fty-envvars.sql ;
-\! /bin/rm -f /tmp/fty-envvars.sql
+/* NOTE: Revise this bit if mysql/mariadb server and client (rack controller)
+ * would be different systems - make sure then that the envvars are those of
+ * the RC (might have to pre-set this in db-init script and then source the
+ * SQL bits to apply to schema)!
+ */
+\! /bin/rm -f /tmp/0011_default_rc-fty-envvars.sql
+\! /usr/share/bios/scripts/envvars-ExecStartPre.sh -O /tmp/0011_default_rc-fty-envvars.sql --sql
+SOURCE /tmp/0011_default_rc-fty-envvars.sql ;
+\! /bin/rm -f /tmp/0011_default_rc-fty-envvars.sql
 
 /* Define an overridable manner of selecting a "myself" rack controller
  * to pick one from several available (based on known UUID, Serial Number,
@@ -130,14 +135,14 @@ SET @str = IF (NOT EXISTS(SELECT 1 FROM mysql.proc p WHERE db = 'box_utf8' AND n
 
 /* Note: due to MySQL security, we can not overwrite existing files,
  * nor use variables in SELECT INTO and SOURCE commands */
-\! /bin/rm -f /tmp/zzz.sql
-SELECT @str INTO OUTFILE '/tmp/zzz.sql';
+\! /bin/rm -f /tmp/0011_default_rc-func-myself.sql
+SELECT @str INTO OUTFILE '/tmp/0011_default_rc-func-myself.sql';
 
 DELIMITER //
-SOURCE /tmp/zzz.sql //
+SOURCE /tmp/0011_default_rc-func-myself.sql //
 DELIMITER ;
 
-\! /bin/rm -f /tmp/zzz.sql
+\! /bin/rm -f /tmp/0011_default_rc-func-myself.sql
 
 
 
