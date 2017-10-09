@@ -25,13 +25,29 @@
 
 echo "Generate common run-time environment variables file for 42ity"
 
+LANG=C
+LC_ALL=C
+TZ=UTC
+export LANG LC_ALL TZ
+
 set -e
 
-F="/run/fty-envvars.env"
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        -O) OUTFILE="$2"; shift;;
+        --sql) OUTFMT="sql" ;;
+        *)  echo "Unknown argument: $1" >&2 ; exit 1 ;;
+    esac
+    shift
+done
+[ -n "$OUTFMT" ] || OUTFMT="env"
+    # Note: several services expect to include an EnvironmentFile=/run/fty-envvars.env
+[ -n "$OUTFILE" ] || OUTFILE="/run/fty-envvars.$OUTFMT"
 J="/etc/release-details.json"
 JO="/etc/bios-release.json" # Backwards compatibility
-echo "Make sure the current OS image name is populated into '$F'..."
+echo "Make sure the current OS image name and other details are populated into '$OUTFILE'..."
 JSONSH="@datadir@/@PACKAGE@/scripts/JSON.sh"
+#JSONSH="/usr/share/bios/scripts/JSON.sh"
 OSIMAGE_BASENAME="OS image name is not available"
 HARDWARE_CATALOG_NUMBER="Hardware catalog number is not available"
 HARDWARE_SPEC_REVISION="Hardware spec revision is not available"
@@ -84,20 +100,93 @@ if [[ -x "$JSONSH" ]] ; then
     unset TMPSTR
 fi
 
+# Note: no fallback "empty on error", and ignore error codes, as per manpage:
+#    EXIT STATUS
+# If a virtualization technology is detected, 0 is returned, a non-zero code
+# otherwise. => we lose the "none" string value where c/h virt is not found.
 if [ -x /usr/bin/systemd-detect-virt ]; then
-    VIRT_CONTAINER="$(/usr/bin/systemd-detect-virt -c)" || VIRT_CONTAINER=""
-    VIRT_HYPERVIZOR="$(/usr/bin/systemd-detect-virt -v)" || VIRT_HYPERVIZOR=""
+    VIRT_CONTAINER="$(/usr/bin/systemd-detect-virt -c)" || true # not VIRT_CONTAINER=""
+    VIRT_HYPERVIZOR="$(/usr/bin/systemd-detect-virt -v)" || true # not VIRT_HYPERVIZOR=""
 fi
 
-cat << EOF > "$F"
+ENV_HOSTNAME="$(hostname | tr '[A-Z]' '[a-z]' )" || ENV_HOSTNAME=""
+ENV_DOMAINNAME="$(domainname | tr '[A-Z]' '[a-z]' | grep -v '(none)')" || ENV_DOMAINNAME=""
+ENV_DNSDOMAINNAME="$(dnsdomainname | tr '[A-Z]' '[a-z]' | grep -v '(none)')" || ENV_DNSDOMAINNAME=""
+# A one-per-line list of unique values for "domain" or "search" keywords
+# from /etc/resolv.conf; not exported at this time (see ENV_KNOWNDOMAINS)
+ENV_RESOLVDOMAINS="$(egrep '^[[:blank:]]*(search|domain)[[:blank:]]+' /etc/resolv.conf | while read K V ; do echo $V ; done | sed -e 's,[[:blank:]]+,\n,g' -e 's,\.$,,g' | tr '[A-Z]' '[a-z]' | sort | uniq)"
+# A comma-separated list (required for SQL magic, usable in shell) of
+# current non-loopback IP addresses, IPv4 and IPv6 alike, without masks
+ENV_IPADDRS="$(ip addr show | egrep '^[[:blank:]]*inet6?[[:blank:]]' | awk '{print $2}' | tr '[A-Z]' '[a-z]' | egrep -v '^(127\..*|0\.|255\.|::1/128)$' | sed 's,/[0-9]*$,,' | sort -nr | uniq | tr '\n' ',' | sed 's/,$//')" || ENV_IPADDRS=""
+# A comma-separated list of domain names (if any) that can be part of
+# this machine's FQDN when coupled with the hostname above. Note that
+# generally definition of "domain" is domain-dependent (pun intended).
+ENV_KNOWNDOMAINS="$(echo $ENV_DOMAINNAME $ENV_DNSDOMAINNAME $ENV_RESOLVDOMAINS | sort -n | uniq | tr '\n' ',' | sed 's/,$//')"
+
+list_hostnames_raw() {
+    # Map known "this-host" IP addresses to known hostnames
+    echo 127.0.0.1 "::1" "$ENV_IPADDRS" | while IFS="," read IP ; do
+        getent hosts "$IP" | while read K V ; do echo $V ; done
+    done
+}
+
+list_fqdns() {
+    for H in `list_hostnames_raw` $ENV_HOSTNAME `cat /etc/hostname 2>/dev/null || true` ; do
+        H="`echo "$H" | tr '[A-Z]' '[a-z]'`"
+        case "$H" in
+            localhost*|bios|loghost|mailhost) ;; # skip
+            *.*) echo "$H" ;; # Already a dot-separated string
+            *) if [ -z "$ENV_KNOWNDOMAINS" ]; then echo "$H"; else
+                   echo "$ENV_KNOWNDOMAINS" | while IFS="," read D; do
+                       echo "$H.$D"
+                   done
+               fi
+               ;; # Generate dot-separated strings
+        esac
+    done | tr '[A-Z]' '[a-z]' | sort | uniq
+}
+
+# A comma-separated list of this host's fully qualified domain names
+ENV_KNOWNFQDNS="$(list_fqdns | tr '\n' ',' | sed 's/,$//')"
+
+RES=255
+case "$OUTFMT" in
+    env) cat << EOF > "$OUTFILE"
 OSIMAGE_BASENAME='$OSIMAGE_BASENAME'
-SPOOL_DIR='${SPOOL}'
 HARDWARE_CATALOG_NUMBER='${HARDWARE_CATALOG_NUMBER}'
 HARDWARE_SPEC_REVISION='${HARDWARE_SPEC_REVISION}'
 HARDWARE_SERIAL_NUMBER='${HARDWARE_SERIAL_NUMBER}'
 HARDWARE_UUID='${HARDWARE_UUID}'
 VIRT_HYPERVIZOR='${VIRT_HYPERVIZOR}'
 VIRT_CONTAINER='${VIRT_CONTAINER}'
+ENV_HOSTNAME='${ENV_HOSTNAME}'
+ENV_DOMAINNAME='${ENV_DOMAINNAME}'
+ENV_DNSDOMAINNAME='${ENV_DNSDOMAINNAME}'
+ENV_IPADDRS='${ENV_IPADDRS}'
+ENV_KNOWNDOMAINS='${ENV_KNOWNDOMAINS}'
+ENV_KNOWNFQDNS='${ENV_KNOWNFQDNS}'
 EOF
+        RES=$?
+        ;;
+    sql) cat << EOF | sed "s,='';$,=NULL;," > "$OUTFILE"
+set @ENV_OSIMAGE_BASENAME='$OSIMAGE_BASENAME';
+set @ENV_HARDWARE_CATALOG_NUMBER='${HARDWARE_CATALOG_NUMBER}';
+set @ENV_HARDWARE_SPEC_REVISION='${HARDWARE_SPEC_REVISION}';
+set @ENV_HARDWARE_SERIAL_NUMBER='${HARDWARE_SERIAL_NUMBER}';
+set @ENV_HARDWARE_UUID='${HARDWARE_UUID}';
+set @ENV_VIRT_HYPERVIZOR='${VIRT_HYPERVIZOR}';
+set @ENV_VIRT_CONTAINER='${VIRT_CONTAINER}';
+set @ENV_HOSTNAME='${ENV_HOSTNAME}';
+set @ENV_DOMAINNAME='${ENV_DOMAINNAME}';
+set @ENV_DNSDOMAINNAME='${ENV_DNSDOMAINNAME}';
+set @ENV_IPADDRS='${ENV_IPADDRS}';
+set @ENV_KNOWNDOMAINS='${ENV_KNOWNDOMAINS}';
+set @ENV_KNOWNFQDNS='${ENV_KNOWNFQDNS}';
+EOF
+        RES=$?
+        ;;
+    *) echo "Unknown output format: $OUTFMT" >&2 ; exit 1 ;;
+esac
 
-echo "OK"
+[ "$RES" = 0 ] && echo "OK" || echo "FAILED ($RES)" >&2
+exit $RES
