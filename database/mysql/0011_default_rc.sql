@@ -69,8 +69,8 @@ CREATE FUNCTION select_RC_myself_default()  RETURNS INT UNSIGNED
             tel.id_type = id_type_device AND tel.id_subtype = id_subtype_rc AND
             tea.id_asset_element = tel.id_asset_element AND
             tea.keytag = "serial_no" AND tea.value = @ENV_HARDWARE_SERIAL_NUMBER
-            AND NOT EXISTS (SELECT DISTINCT * FROM t_bios_asset_ext_attributes AS tea2 WHERE
-                tea2.id_asset_element = tea.id_asset_element = AND
+            AND NOT EXISTS (SELECT * FROM t_bios_asset_ext_attributes AS tea2 WHERE
+                tea2.id_asset_element = tea.id_asset_element AND
                 tea2.keytag IN ("uuid"))
             ORDER BY tel.id_asset_element LIMIT 1);
         IF myid IS NOT NULL THEN
@@ -83,8 +83,8 @@ CREATE FUNCTION select_RC_myself_default()  RETURNS INT UNSIGNED
             tel.id_type = id_type_device AND tel.id_subtype = id_subtype_rc AND
             tea.id_asset_element = tel.id_asset_element AND
             tea.keytag = "fqdn" AND tea.value = @ENV_HOSTNAME
-            AND NOT EXISTS (SELECT DISTINCT * FROM t_bios_asset_ext_attributes AS tea2 WHERE
-                tea2.id_asset_element = tea.id_asset_element = AND
+            AND NOT EXISTS (SELECT * FROM t_bios_asset_ext_attributes AS tea2 WHERE
+                tea2.id_asset_element = tea.id_asset_element AND
                 tea2.keytag IN ("serial_no", "uuid"))
             ORDER BY tel.id_asset_element LIMIT 1);
         IF myid IS NOT NULL THEN
@@ -97,11 +97,11 @@ CREATE FUNCTION select_RC_myself_default()  RETURNS INT UNSIGNED
             tel.id_type = id_type_device AND tel.id_subtype = id_subtype_rc AND
             tea.id_asset_element = tel.id_asset_element AND
             tea.keytag = "fqdn" AND FIND_IN_SET(tea.value, @ENV_KNOWNFQDNS)
-            AND NOT EXISTS (SELECT DISTINCT * FROM t_bios_asset_ext_attributes AS tea2 WHERE
-                tea2.id_asset_element = tea.id_asset_element = AND
+            AND NOT EXISTS (SELECT * FROM t_bios_asset_ext_attributes AS tea2 WHERE
+                tea2.id_asset_element = tea.id_asset_element AND
                 tea2.keytag IN ("serial_no", "uuid"))
-            AND NOT EXISTS (SELECT DISTINCT * FROM t_bios_asset_ext_attributes AS tea3 WHERE
-                tea3.id_asset_element = tea.id_asset_element = AND
+            AND NOT EXISTS (SELECT * FROM t_bios_asset_ext_attributes AS tea3 WHERE
+                tea3.id_asset_element = tea.id_asset_element AND
                 tea3.keytag = "fqdn" AND tea3.value = @ENV_HOSTNAME)
             ORDER BY tel.id_asset_element LIMIT 1);
         IF myid IS NOT NULL THEN
@@ -114,8 +114,8 @@ CREATE FUNCTION select_RC_myself_default()  RETURNS INT UNSIGNED
             tel.id_type = id_type_device AND tel.id_subtype = id_subtype_rc AND
             tea.id_asset_element = tel.id_asset_element AND
             tea.keytag = "name" AND tea.value = @ENV_HOSTNAME
-            AND NOT EXISTS (SELECT DISTINCT * FROM t_bios_asset_ext_attributes AS tea2 WHERE
-                tea2.id_asset_element = tea.id_asset_element = AND
+            AND NOT EXISTS (SELECT * FROM t_bios_asset_ext_attributes AS tea2 WHERE
+                tea2.id_asset_element = tea.id_asset_element AND
                 tea2.keytag IN ("fqdn", "serial_no", "uuid"))
             ORDER BY tel.id_asset_element LIMIT 1);
         IF myid IS NOT NULL THEN
@@ -128,11 +128,11 @@ CREATE FUNCTION select_RC_myself_default()  RETURNS INT UNSIGNED
             tel.id_type = id_type_device AND tel.id_subtype = id_subtype_rc AND
             tea.id_asset_element = tel.id_asset_element AND
             tea.keytag = "name" AND FIND_IN_SET(tea.value, @ENV_KNOWNFQDNS)
-            AND NOT EXISTS (SELECT DISTINCT * FROM t_bios_asset_ext_attributes AS tea2 WHERE
-                tea2.id_asset_element = tea.id_asset_element = AND
+            AND NOT EXISTS (SELECT * FROM t_bios_asset_ext_attributes AS tea2 WHERE
+                tea2.id_asset_element = tea.id_asset_element AND
                 tea2.keytag IN ("fqdn", "serial_no", "uuid"))
-            AND NOT EXISTS (SELECT DISTINCT * FROM t_bios_asset_ext_attributes AS tea3 WHERE
-                tea3.id_asset_element = tea.id_asset_element = AND
+            AND NOT EXISTS (SELECT * FROM t_bios_asset_ext_attributes AS tea3 WHERE
+                tea3.id_asset_element = tea.id_asset_element AND
                 tea3.keytag = "name" AND tea3.value = @ENV_HOSTNAME)
             ORDER BY tel.id_asset_element LIMIT 1);
         IF myid IS NOT NULL THEN
@@ -145,11 +145,11 @@ CREATE FUNCTION select_RC_myself_default()  RETURNS INT UNSIGNED
             tel.id_type = id_type_device AND tel.id_subtype = id_subtype_rc AND
             tea.id_asset_element = tel.id_asset_element AND
             tea.keytag LIKE "ip.%" AND FIND_IN_SET(tea.value, @ENV_IPADDRS)
-            AND NOT EXISTS (SELECT DISTINCT * FROM t_bios_asset_ext_attributes AS tea2 WHERE
-                tea2.id_asset_element = tea.id_asset_element = AND
+            AND NOT EXISTS (SELECT * FROM t_bios_asset_ext_attributes AS tea2 WHERE
+                tea2.id_asset_element = tea.id_asset_element AND
                 tea2.keytag IN ("fqdn", "serial_no", "uuid"))
-            AND NOT EXISTS (SELECT DISTINCT * FROM t_bios_asset_ext_attributes AS tea3 WHERE
-                tea3.id_asset_element = tea.id_asset_element = AND
+            AND NOT EXISTS (SELECT * FROM t_bios_asset_ext_attributes AS tea3 WHERE
+                tea3.id_asset_element = tea.id_asset_element AND
                 tea3.keytag = "name" AND ( FIND_IN_SET(tea3.value, @ENV_KNOWNFQDNS) OR tea3.value = @ENV_HOSTNAME ) )
             ORDER BY tel.id_asset_element LIMIT 1);
         IF myid IS NOT NULL THEN
@@ -159,11 +159,11 @@ CREATE FUNCTION select_RC_myself_default()  RETURNS INT UNSIGNED
 
       SET myid = (SELECT DISTINCT tel.id_asset_element FROM t_bios_asset_element AS tel WHERE
         tel.id_type = id_type_device AND tel.id_subtype = id_subtype_rc
-        AND NOT EXISTS (SELECT DISTINCT * FROM t_bios_asset_ext_attributes AS tea WHERE
+        AND NOT EXISTS (SELECT * FROM t_bios_asset_ext_attributes AS tea WHERE
             tea.id_asset_element = tel.id_asset_element AND
-            tea.keytag LIKE "ip.%" OR tea.keytag IN ("fqdn", "serial_no", "uuid"))
-        AND NOT EXISTS (SELECT DISTINCT * FROM t_bios_asset_ext_attributes AS tea3 WHERE
-            tea3.id_asset_element = tea.id_asset_element = AND
+            (tea.keytag LIKE "ip.%" OR tea.keytag IN ("fqdn", "serial_no", "uuid") ) )
+        AND NOT EXISTS (SELECT * FROM t_bios_asset_ext_attributes AS tea3 WHERE
+            tea3.id_asset_element = tel.id_asset_element AND
             tea3.keytag = "name" AND ( FIND_IN_SET(tea3.value, @ENV_KNOWNFQDNS) OR tea3.value = @ENV_HOSTNAME ) )
         ORDER BY tel.id_asset_element LIMIT 1);
       RETURN myid;
