@@ -51,7 +51,7 @@ CREATE FUNCTION select_RC_myself_default()  RETURNS INT UNSIGNED
       SET id_subtype_rc = (SELECT id_asset_device_type FROM t_bios_asset_device_type WHERE name = "rack controller" LIMIT 1);
 
       IF @ENV_HARDWARE_UUID IS NOT NULL THEN
-        SET myid = (SELECT tel.id_asset_element FROM t_bios_asset_element AS tel, t_bios_asset_ext_attributes AS tea WHERE
+        SET myid = (SELECT DISTINCT tel.id_asset_element FROM t_bios_asset_element AS tel, t_bios_asset_ext_attributes AS tea WHERE
             tel.id_type = id_type_device AND tel.id_subtype = id_subtype_rc AND
             tea.id_asset_element = tel.id_asset_element AND
             tea.keytag = "uuid" AND tea.value = @ENV_HARDWARE_UUID
@@ -62,7 +62,7 @@ CREATE FUNCTION select_RC_myself_default()  RETURNS INT UNSIGNED
       END IF;
 
       IF @ENV_HARDWARE_SERIAL_NUMBER IS NOT NULL THEN
-        SET myid = (SELECT tel.id_asset_element FROM t_bios_asset_element AS tel, t_bios_asset_ext_attributes AS tea WHERE
+        SET myid = (SELECT DISTINCT tel.id_asset_element FROM t_bios_asset_element AS tel, t_bios_asset_ext_attributes AS tea WHERE
             tel.id_type = id_type_device AND tel.id_subtype = id_subtype_rc AND
             tea.id_asset_element = tel.id_asset_element AND
             tea.keytag = "serial_no" AND tea.value = @ENV_HARDWARE_SERIAL_NUMBER
@@ -73,7 +73,7 @@ CREATE FUNCTION select_RC_myself_default()  RETURNS INT UNSIGNED
       END IF;
 
       IF @ENV_HOSTNAME IS NOT NULL THEN
-        SET myid = (SELECT tel.id_asset_element FROM t_bios_asset_element AS tel, t_bios_asset_ext_attributes AS tea WHERE
+        SET myid = (SELECT DISTINCT tel.id_asset_element FROM t_bios_asset_element AS tel, t_bios_asset_ext_attributes AS tea WHERE
             tel.id_type = id_type_device AND tel.id_subtype = id_subtype_rc AND
             tea.id_asset_element = tel.id_asset_element AND
             tea.keytag = "fqdn" AND tea.value = @ENV_HOSTNAME
@@ -84,7 +84,7 @@ CREATE FUNCTION select_RC_myself_default()  RETURNS INT UNSIGNED
       END IF;
 
       IF @ENV_KNOWNFQDNS IS NOT NULL THEN
-        SET myid = (SELECT tel.id_asset_element FROM t_bios_asset_element AS tel, t_bios_asset_ext_attributes AS tea WHERE
+        SET myid = (SELECT DISTINCT tel.id_asset_element FROM t_bios_asset_element AS tel, t_bios_asset_ext_attributes AS tea WHERE
             tel.id_type = id_type_device AND tel.id_subtype = id_subtype_rc AND
             tea.id_asset_element = tel.id_asset_element AND
             tea.keytag = "fqdn" AND FIND_IN_SET(tea.value, @ENV_KNOWNFQDNS)
@@ -95,7 +95,7 @@ CREATE FUNCTION select_RC_myself_default()  RETURNS INT UNSIGNED
       END IF;
 
       IF @ENV_HOSTNAME IS NOT NULL THEN
-        SET myid = (SELECT tel.id_asset_element FROM t_bios_asset_element AS tel, t_bios_asset_ext_attributes AS tea WHERE
+        SET myid = (SELECT DISTINCT tel.id_asset_element FROM t_bios_asset_element AS tel, t_bios_asset_ext_attributes AS tea WHERE
             tel.id_type = id_type_device AND tel.id_subtype = id_subtype_rc AND
             tea.id_asset_element = tel.id_asset_element AND
             tea.keytag = "name" AND tea.value = @ENV_HOSTNAME
@@ -106,7 +106,7 @@ CREATE FUNCTION select_RC_myself_default()  RETURNS INT UNSIGNED
       END IF;
 
       IF @ENV_KNOWNFQDNS IS NOT NULL THEN
-        SET myid = (SELECT tel.id_asset_element FROM t_bios_asset_element AS tel, t_bios_asset_ext_attributes AS tea WHERE
+        SET myid = (SELECT DISTINCT tel.id_asset_element FROM t_bios_asset_element AS tel, t_bios_asset_ext_attributes AS tea WHERE
             tel.id_type = id_type_device AND tel.id_subtype = id_subtype_rc AND
             tea.id_asset_element = tel.id_asset_element AND
             tea.keytag = "name" AND FIND_IN_SET(tea.value, @ENV_KNOWNFQDNS)
@@ -117,17 +117,20 @@ CREATE FUNCTION select_RC_myself_default()  RETURNS INT UNSIGNED
       END IF;
 
       IF @ENV_IPADDRS IS NOT NULL THEN
-        SET myid = (SELECT tel.id_asset_element FROM t_bios_asset_element AS tel, t_bios_asset_ext_attributes AS tea WHERE
+        SET myid = (SELECT DISTINCT tel.id_asset_element FROM t_bios_asset_element AS tel, t_bios_asset_ext_attributes AS tea WHERE
             tel.id_type = id_type_device AND tel.id_subtype = id_subtype_rc AND
             tea.id_asset_element = tel.id_asset_element AND
             tea.keytag LIKE "ip.%" AND FIND_IN_SET(tea.value, @ENV_IPADDRS)
+            AND tea.keytag NOT IN ("fqdn", "serial_no", "uuid")
+            tea2.id_asset_element = tel.id_asset_element AND
+            AND tea2.keytag = "name" AND NOT FIND_IN_SET(tea2.value, @ENV_KNOWNFQDNS)
             ORDER BY tel.id_asset_element LIMIT 1);
         IF myid IS NOT NULL THEN
           RETURN myid;
         END IF;
       END IF;
 
-      SET myid = (SELECT tel.id_asset_element FROM t_bios_asset_element AS tel, t_bios_asset_ext_attributes AS tea WHERE
+      SET myid = (SELECT DISTINCT tel.id_asset_element FROM t_bios_asset_element AS tel, t_bios_asset_ext_attributes AS tea WHERE
         tel.id_type = id_type_device AND tel.id_subtype = id_subtype_rc AND
         tea.id_asset_element = tel.id_asset_element AND
         tea.keytag NOT LIKE "ip.%" AND tea.keytag NOT IN ("fqdn", "serial_no", "uuid")
@@ -161,14 +164,14 @@ CREATE PROCEDURE addRC0()
 BEGIN
   START TRANSACTION;
 
-    SET @id_type_dc = (SELECT id_asset_element_type FROM t_bios_asset_element_type WHERE name = "datacenter" LIMIT 1);
-    SET @id_type_device = (SELECT id_asset_element_type FROM t_bios_asset_element_type WHERE name = "device" LIMIT 1);
-    SET @id_subtype_rc = (SELECT id_asset_device_type FROM t_bios_asset_device_type WHERE name = "rack controller" LIMIT 1);
+    SET @id_type_dc = (SELECT DISTINCT id_asset_element_type FROM t_bios_asset_element_type WHERE name = "datacenter" LIMIT 1);
+    SET @id_type_device = (SELECT DISTINCT id_asset_element_type FROM t_bios_asset_element_type WHERE name = "device" LIMIT 1);
+    SET @id_subtype_rc = (SELECT DISTINCT id_asset_device_type FROM t_bios_asset_device_type WHERE name = "rack controller" LIMIT 1);
 
-    SET @rcparent = (SELECT id_asset_element FROM t_bios_asset_element WHERE id_type = @id_type_dc ORDER BY id_asset_element LIMIT 1);
+    SET @rcparent = (SELECT DISTINCT id_asset_element FROM t_bios_asset_element WHERE id_type = @id_type_dc ORDER BY id_asset_element LIMIT 1);
     SET @rcmyself = select_RC_myself();
     SET @rc0present = (SELECT count(id_asset_element) FROM t_bios_asset_element WHERE id_type = @id_type_device AND id_subtype = @id_subtype_rc AND name = 'rackcontroller-0' ) ;
-    SET @rc0id = (SELECT id_asset_element FROM t_bios_asset_element WHERE id_type = @id_type_device AND id_subtype = @id_subtype_rc AND name = 'rackcontroller-0' ) ;
+    SET @rc0id = (SELECT DISTINCT id_asset_element FROM t_bios_asset_element WHERE id_type = @id_type_device AND id_subtype = @id_subtype_rc AND name = 'rackcontroller-0' ) ;
     SET @rccount = (SELECT count(id_asset_element) FROM t_bios_asset_element WHERE id_type = @id_type_device AND id_subtype = @id_subtype_rc ) ;
 
     SET @rc0added = NULL;
@@ -176,7 +179,7 @@ BEGIN
       IF @rcmyself IS NULL THEN
         SET @rc0added = TRUE;
         INSERT INTO t_bios_asset_element (name, id_type, id_subtype, id_parent, status, priority, asset_tag) VALUES ('rackcontroller-0', @id_type_device, @id_subtype_rc, @rcparent, 'active', 1, NULL);
-        SET @rc0id = (SELECT id_asset_element FROM t_bios_asset_element WHERE id_type = @id_type_device AND id_subtype = @id_subtype_rc AND name = 'rackcontroller-0' ) ;
+        SET @rc0id = (SELECT DISTINCT id_asset_element FROM t_bios_asset_element WHERE id_type = @id_type_device AND id_subtype = @id_subtype_rc AND name = 'rackcontroller-0' ) ;
         SET @rc0idLast = (SELECT LAST_INSERT_ID()) ;
         SET @rc0name = (SELECT IF(@ENV_HOSTNAME IS NOT NULL,@ENV_HOSTNAME,IF(@HARDWARE_CATALOG_NUMBER IS NOT NULL,@HARDWARE_CATALOG_NUMBER,'IPC 3000')));
         INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('name', @rc0name, @rc0id, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
@@ -212,13 +215,13 @@ BEGIN
         IF @ENV_HARDWARE_UUID IS NOT NULL THEN
           INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('uuid', @ENV_HARDWARE_UUID, @rc0id, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
         END IF;
-        INSERT INTO t_bios_asset_link (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in) VALUES (IF(@rcparent IS NOT NULL,@rcparent,@rc0id), @rc0id, (SELECT id_asset_link_type FROM t_bios_asset_link_type WHERE name = "power chain" LIMIT 1), NULL, NULL);
-        INSERT INTO t_bios_discovered_device (name, id_device_type) VALUES (@rc0name, (SELECT id_device_type FROM t_bios_device_type WHERE name = "not_classified" LIMIT 1)) ON DUPLICATE KEY UPDATE id_discovered_device = LAST_INSERT_ID(id_discovered_device);
-        INSERT INTO t_bios_monitor_asset_relation (id_discovered_device, id_asset_element) VALUES ((SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = @rc0name AND id_device_type = (SELECT id_device_type FROM t_bios_device_type WHERE name = "not_classified" LIMIT 1) LIMIT 1), @rc0id);
+        INSERT INTO t_bios_asset_link (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in) VALUES (IF(@rcparent IS NOT NULL,@rcparent,@rc0id), @rc0id, (SELECT DISTINCT id_asset_link_type FROM t_bios_asset_link_type WHERE name = "power chain" LIMIT 1), NULL, NULL);
+        INSERT INTO t_bios_discovered_device (name, id_device_type) VALUES (@rc0name, (SELECT DISTINCT id_device_type FROM t_bios_device_type WHERE name = "not_classified" LIMIT 1)) ON DUPLICATE KEY UPDATE id_discovered_device = LAST_INSERT_ID(id_discovered_device);
+        INSERT INTO t_bios_monitor_asset_relation (id_discovered_device, id_asset_element) VALUES ((SELECT DISTINCT id_discovered_device FROM t_bios_discovered_device WHERE name = @rc0name AND id_device_type = (SELECT DISTINCT id_device_type FROM t_bios_device_type WHERE name = "not_classified" LIMIT 1) LIMIT 1), @rc0id);
       ELSE
         SET @rc0added = FALSE;
         UPDATE t_bios_asset_element SET name = 'rackcontroller-0' WHERE id_asset_element = @rcmyself;
-        SET @rc0id = (SELECT id_asset_element FROM t_bios_asset_element WHERE id_type = @id_type_device AND id_subtype = @id_subtype_rc AND name = 'rackcontroller-0' ) ;
+        SET @rc0id = (SELECT DISTINCT id_asset_element FROM t_bios_asset_element WHERE id_type = @id_type_device AND id_subtype = @id_subtype_rc AND name = 'rackcontroller-0' ) ;
       END IF;
     END IF;
 
