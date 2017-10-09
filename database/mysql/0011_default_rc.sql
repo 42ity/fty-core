@@ -38,8 +38,10 @@ SOURCE /tmp/0011_default_rc-fty-envvars.sql ;
  * If an override is needed - just make sure this FUNCTION select_RC_myself()
  * with content you want gets defined earlier. Note that this only gets
  * used if we do at all need to upgrade existing database contents. */
-SET @str = IF (NOT EXISTS(SELECT 1 FROM mysql.proc p WHERE db = 'box_utf8' AND name = 'select_RC_myself'),
-'CREATE FUNCTION select_RC_myself()  RETURNS INT UNSIGNED
+
+DROP FUNCTION IF EXISTS select_RC_myself_default ;
+DELIMITER //
+CREATE FUNCTION select_RC_myself_default()  RETURNS INT UNSIGNED
   BEGIN
       DECLARE myid INT UNSIGNED;
       DECLARE id_type_device TINYINT(3) UNSIGNED;
@@ -131,10 +133,16 @@ SET @str = IF (NOT EXISTS(SELECT 1 FROM mysql.proc p WHERE db = 'box_utf8' AND n
         tea.keytag NOT LIKE "ip.%" AND tea.keytag NOT IN ("fqdn", "serial_no", "uuid")
         ORDER BY tel.id_asset_element LIMIT 1);
       RETURN myid;
-  END;', 'SET @dummy = 0;');
+END; //
+DELIMITER ;
 
 /* Note: due to MySQL security, we can not overwrite existing files,
  * nor use variables in SELECT INTO and SOURCE commands */
+SET @str = IF (NOT EXISTS(SELECT 1 FROM mysql.proc p WHERE db = 'box_utf8' AND name = 'select_RC_myself'),
+'CREATE FUNCTION select_RC_myself()  RETURNS INT UNSIGNED
+  BEGIN
+    RETURN select_RC_myself_default();
+  END;', 'SET @dummy = 0;');
 \! /bin/rm -f /tmp/0011_default_rc-func-myself.sql
 SELECT @str INTO OUTFILE '/tmp/0011_default_rc-func-myself.sql';
 
@@ -230,6 +238,7 @@ SELECT * FROM t_bios_asset_element WHERE id_asset_element IN (@rc0id, @rcparent)
 /* Clean up */
 DROP PROCEDURE IF EXISTS addRC0 ;
 DROP FUNCTION IF EXISTS select_RC_myself;
+DROP FUNCTION IF EXISTS select_RC_myself_default ;
 
 
 /* This must be the last line of the SQL file */
