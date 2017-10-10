@@ -13,6 +13,9 @@ PartOf=bios.target
 [Service]
 Type=forking
 Restart=always
+# Note: explicit User=root is required for $HOME to get set and ~/.my.cnf
+# to get used by ExecStartPost self-check below
+User=root
 # Note: time below must suffice for units that require database to
 # have stopped before this service restarts, otherwise we get a
 # "failed to schedule restart job: Transaction is destructive" !
