@@ -1048,7 +1048,7 @@ if [ "$VM_SHOULD_RESTART" = yes ]; then
 	logmsg_info "Restart the virtual machine $VM"
 	virsh -c lxc:// shutdown "$VM" || true
 	virsh -c lxc:// destroy "$VM" && sleep 5 && \
-	{ probe_mounts; virsh -c lxc:// start "$VM"; } || die "Can't reboot the virtual machine $VM"
+	{ probe_mounts "$VM"; virsh -c lxc:// start "$VM"; } || die "Can't reboot the virtual machine $VM"
 	logmsg_info "Sleeping 30 sec to let VM startup settle down..."
 	sleep 30
 fi
