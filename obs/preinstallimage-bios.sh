@@ -827,10 +827,10 @@ echo "Syncing OS image filesystem..."
 sync; sync; sleep 3; sync
 find / -type f -mount -name '\.nfs????????????????????????' -exec rm -f '{}' \; 2>/dev/null
 # Sanitize the OS image from some more build-system cruft
-rm -f /.guessed_dist
-rm -rf /.reorder
+rm -f /.guessed_dist /debian-binary
+rm -rf /.reorder /.oldroot
 #[ "$IMGTYPE" = deploy ] && \
-    rm -rf /.preinstallimage
+    rm -rf /.preinstallimage /.preinstall_image
 sync
 
 # Some shells want these bits
