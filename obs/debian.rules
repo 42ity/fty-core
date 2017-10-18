@@ -8,7 +8,8 @@
 
 # This is the debhelper compatibility version to use.
 # MVY: magic variable, but with previous 4 dh_strip did not worked, so update to 8
-export DH_COMPAT=8
+# JIM: 10+ enables parallel builds by default
+export DH_COMPAT=10
 
 CFLAGS = -g
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
