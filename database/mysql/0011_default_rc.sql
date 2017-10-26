@@ -144,7 +144,7 @@ CREATE FUNCTION select_RC_myself_default()  RETURNS INT UNSIGNED
         SET myid = (SELECT DISTINCT tel.id_asset_element FROM t_bios_asset_element AS tel, t_bios_asset_ext_attributes AS tea WHERE
             tel.id_type = id_type_device AND tel.id_subtype = id_subtype_rc AND
             tea.id_asset_element = tel.id_asset_element AND
-            tea.keytag LIKE "ip.%" AND FIND_IN_SET(tea.value, @ENV_IPADDRS)
+            ( (tea.keytag LIKE "ip.%" OR tea.keytag LIKE "ipv6.%") AND FIND_IN_SET(tea.value, @ENV_IPADDRS) )
             AND NOT EXISTS (SELECT * FROM t_bios_asset_ext_attributes AS tea2 WHERE
                 tea2.id_asset_element = tea.id_asset_element AND
                 tea2.keytag IN ("fqdn", "serial_no", "uuid"))
@@ -215,20 +215,35 @@ BEGIN
         SET @rc0name = (SELECT IF(@ENV_HOSTNAME IS NOT NULL,@ENV_HOSTNAME,IF(@HARDWARE_CATALOG_NUMBER IS NOT NULL,@HARDWARE_CATALOG_NUMBER,'IPC 3000')));
         INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('name', @rc0name, @rc0id, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
         INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('location_u_pos', '1', @rc0id, 0), ('u_size', '1', @rc0id, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
-        SET @ipnum = 0;
-        IF @ENV_IPADDRS IS NOT NULL THEN
-          SET @arr = CONCAT(@ENV_IPADDRS, ',');
+        SET @ip4num = 0;
+        IF @ENV_IP4ADDRS IS NOT NULL THEN
+          SET @arr = CONCAT(@ENV_IP4ADDRS, ',');
           SET @pos = LOCATE(',', @arr);
           WHILE (@pos > 0) DO
-            SET @ipnum = @ipnum + 1;
+            SET @ip4num = @ip4num + 1;
             SET @val = LEFT(@arr, @pos - 1);
             SET @arr = SUBSTRING(@arr, @pos + 1);
             SET @pos = LOCATE(',', @arr);
-            INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES (CONCAT('ip.', @ipnum), @val, @rc0id, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
+            INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES (CONCAT('ip.', @ip4num), @val, @rc0id, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
           END WHILE;
         END IF;
-        IF @ipnum = 0 THEN
+        IF @ip4num = 0 THEN
           INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('ip.1', '127.0.0.1', @rc0id, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
+        END IF;
+        SET @ip6num = 0;
+        IF @ENV_IP6ADDRS IS NOT NULL THEN
+          SET @arr = CONCAT(@ENV_IP6ADDRS, ',');
+          SET @pos = LOCATE(',', @arr);
+          WHILE (@pos > 0) DO
+            SET @ip6num = @ip6num + 1;
+            SET @val = LEFT(@arr, @pos - 1);
+            SET @arr = SUBSTRING(@arr, @pos + 1);
+            SET @pos = LOCATE(',', @arr);
+            INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES (CONCAT('ipv6.', @ip6num), @val, @rc0id, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
+          END WHILE;
+        END IF;
+        IF @ip6num = 0 THEN
+          INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('ipv6.1', '::1', @rc0id, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
         END IF;
         IF @ENV_KNOWNFQDNS IS NOT NULL THEN
           SET @arr = CONCAT(@ENV_KNOWNFQDNS, ',');
@@ -264,7 +279,7 @@ DELIMITER ;
 CALL addRC0;
 
 /* Report the results in log */
-SELECT @rc0present, @rc0added, @rc0id, @rcmyself, @rccount, @rcparent;
+SELECT @rc0present, @rc0added, @rc0id, @rcmyself, @rccount, @rcparent, @ip4num, @ip6num;
 SELECT * FROM t_bios_asset_element WHERE id_asset_element IN (@rc0id, @rcparent);
 
 
