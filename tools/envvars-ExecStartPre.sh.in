@@ -142,13 +142,8 @@ ENV_KNOWNDOMAINS="$(echo $ENV_DOMAINNAME $ENV_DNSDOMAINNAME $ENV_RESOLVDOMAINS |
 
 list_hostnames_raw() {
     # Map known "this-host" IP addresses to known hostnames
-    IFS_OLD="$IFS"
-    IFS="`printf '\t\r\n\ \,'`"
-    echo 127.0.0.1 "::1" "$ENV_IPADDRS" | while read IP ; do
-        getent hosts "$IP" | while read K V ; do echo $V ; done
-    done
-    IFS="$IFS_OLD"
-    unset IFS_OLD
+    getent hosts 127.0.0.1 "::1" `echo "$ENV_IPADDRS" | tr ',' ' '` \
+    | while read K V ; do echo $V ; done
 }
 
 list_fqdns() {
