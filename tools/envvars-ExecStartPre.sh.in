@@ -118,6 +118,23 @@ ENV_RESOLVDOMAINS="$(egrep '^[[:blank:]]*(search|domain)[[:blank:]]+' /etc/resol
 # A comma-separated list (required for SQL magic, usable in shell) of
 # current non-loopback IP addresses, IPv4 and IPv6 alike, without masks
 ENV_IPADDRS="$(ip addr show | egrep '^[[:blank:]]*inet6?[[:blank:]]' | awk '{print $2}' | tr '[A-Z]' '[a-z]' | egrep -v '^(127\..*|0\.|255\.|::1/128)$' | sed 's,/[0-9]*$,,' | sort -nr | uniq | tr '\n' ',' | sed 's/,$//')" || ENV_IPADDRS=""
+
+# Similarly, extract comma-separated lists of just IPv4 and IPv6 addresses
+ENV_IP4ADDRS=""
+ENV_IP6ADDRS=""
+IFS_OLD="$IFS"
+IFS=","
+for IP in $ENV_IPADDRS ; do
+    case "$IP" in
+        "") ;;
+        [0123456789]*.[0123456789]*.[0123456789]*.[0123456789]*) # Not pedantically correct expression, but should be good enough
+            [ -n "$ENV_IP4ADDRS" ] && ENV_IP4ADDRS="$ENV_IP4ADDRS,$IP" || ENV_IP4ADDRS="$IP" ;;
+        *)  [ -n "$ENV_IP6ADDRS" ] && ENV_IP6ADDRS="$ENV_IP6ADDRS,$IP" || ENV_IP6ADDRS="$IP" ;;
+    esac
+done
+IFS="$IFS_OLD"
+unset IFS_OLD
+
 # A comma-separated list of domain names (if any) that can be part of
 # this machine's FQDN when coupled with the hostname above. Note that
 # generally definition of "domain" is domain-dependent (pun intended).
@@ -163,6 +180,8 @@ ENV_HOSTNAME='${ENV_HOSTNAME}'
 ENV_DOMAINNAME='${ENV_DOMAINNAME}'
 ENV_DNSDOMAINNAME='${ENV_DNSDOMAINNAME}'
 ENV_IPADDRS='${ENV_IPADDRS}'
+ENV_IP4ADDRS='${ENV_IP4ADDRS}'
+ENV_IP6ADDRS='${ENV_IP6ADDRS}'
 ENV_KNOWNDOMAINS='${ENV_KNOWNDOMAINS}'
 ENV_KNOWNFQDNS='${ENV_KNOWNFQDNS}'
 EOF
@@ -180,6 +199,8 @@ set @ENV_HOSTNAME='${ENV_HOSTNAME}';
 set @ENV_DOMAINNAME='${ENV_DOMAINNAME}';
 set @ENV_DNSDOMAINNAME='${ENV_DNSDOMAINNAME}';
 set @ENV_IPADDRS='${ENV_IPADDRS}';
+set @ENV_IP4ADDRS='${ENV_IP4ADDRS}';
+set @ENV_IP6ADDRS='${ENV_IP6ADDRS}';
 set @ENV_KNOWNDOMAINS='${ENV_KNOWNDOMAINS}';
 set @ENV_KNOWNFQDNS='${ENV_KNOWNFQDNS}';
 EOF
