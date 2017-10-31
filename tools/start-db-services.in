@@ -31,7 +31,7 @@ SYSTEMCTL=@libexecdir@/@PACKAGE@/systemctl
 #SYSTEMCTL=/bin/systemctl
 
 die () {
-    echo "ERROR: ${@}" >&2
+    echo "ERROR: `date -u`: ${@}" >&2
     exit 1
 }
 
@@ -124,6 +124,8 @@ list_db_consumers() {
     fi
     echo "${ARR_GRAND_CONSUMERS[@]}"
 }
+
+echo "INFO: `date -u`: Finding database services and their consumers to ensure their startup..."
 
 DB_CONSUMERS="`list_db_consumers`" || DB_CONSUMERS=""
 if [ -z "$DB_CONSUMERS" ]; then
