@@ -11,7 +11,11 @@ Conflicts=shutdown.target recovery.target
 PartOf=bios.target
 
 [Service]
-Type=simple
+# Note: a "simple" service causes systemctl to proceed immediately, and
+# a "oneshot" can not have "Restart!=no"; for our purposes the "forking"
+# with "RemainAfterExit=yes" is what we need, to have the service keep
+# trying to start up indefinitely (e.g. initial boot, untouched for days).
+Type=forking
 User=root
 # the service shall be considered active even when all its processes exited
 RemainAfterExit=yes
