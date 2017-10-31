@@ -25,8 +25,10 @@ exec > /tmp/start-db-services.log 2>&1
 set -x
 
 ### Prefer to use our wrapper that limits impact to permitted targets
-#SYSTEMCTL=/bin/systemctl
 SYSTEMCTL=@libexecdir@/@PACKAGE@/systemctl
+#SYSTEMCTL=/usr/libexec/fty/systemctl
+#SYSTEMCTL=/usr/libexec/bios/systemctl
+#SYSTEMCTL=/bin/systemctl
 
 die () {
     echo "ERROR: ${@}" >&2
