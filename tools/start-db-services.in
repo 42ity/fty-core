@@ -16,7 +16,8 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 #! \file   start-db-services(.in)
-#  \brief  Start and enable all services dependent on bios-db-init/fty-db-init service
+#  \brief  Start and enable all services dependent on bios-db-init/fty-db-init
+#          services; this helper is called from REST API for license acceptance
 #  \author Michal Vyskocil <MichalVyskocil@eaton.com>
 #  \author Jim Klimov <EvgenyKlimov@eaton.com>
 
