@@ -261,7 +261,9 @@ BEGIN
         IF @ENV_HARDWARE_UUID IS NOT NULL THEN
           INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('uuid', @ENV_HARDWARE_UUID, @rc0id, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
         END IF;
-        INSERT INTO t_bios_asset_link (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in) VALUES (IF(@rcparent IS NOT NULL,@rcparent,@rc0id), @rc0id, (SELECT DISTINCT id_asset_link_type FROM t_bios_asset_link_type WHERE name = "power chain" LIMIT 1), NULL, NULL);
+        IF @rcparent IS NOT NULL THEN
+          INSERT INTO t_bios_asset_link (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in) VALUES (@rcparent, @rc0id, (SELECT DISTINCT id_asset_link_type FROM t_bios_asset_link_type WHERE name = "power chain" LIMIT 1), NULL, NULL);
+        END IF;
         INSERT INTO t_bios_discovered_device (name, id_device_type) VALUES (@rc0name, (SELECT DISTINCT id_device_type FROM t_bios_device_type WHERE name = "not_classified" LIMIT 1)) ON DUPLICATE KEY UPDATE id_discovered_device = LAST_INSERT_ID(id_discovered_device);
         INSERT INTO t_bios_monitor_asset_relation (id_discovered_device, id_asset_element) VALUES ((SELECT DISTINCT id_discovered_device FROM t_bios_discovered_device WHERE name = @rc0name AND id_device_type = (SELECT DISTINCT id_device_type FROM t_bios_device_type WHERE name = "not_classified" LIMIT 1) LIMIT 1), @rc0id);
       ELSE
