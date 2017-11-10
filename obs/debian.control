@@ -17,7 +17,7 @@ Architecture: any
 Section: debug
 Priority: extra
 Depends:
-    core (= ${binary:Version}),
+    fty-core (= ${binary:Version}),
     ${misc:Depends}
 Description: debugging symbols for 42ity core
  This package contains the debugging symbols for core.
