@@ -341,6 +341,13 @@ for i in $(dpkg -l | awk '/perl/{ print $2; }') apt fakeroot ncurses-bin diffuti
     esac
 done
 
+# Fetch metadata for quicker possible later installations
+case "$IMGTYPE" in
+    *devel*)
+        apt-get update || true
+        ;;
+esac
+
 # Setup all the busybox commands, if they're not provided by different package
 busybox --install -s
 
