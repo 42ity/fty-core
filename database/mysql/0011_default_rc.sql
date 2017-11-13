@@ -224,7 +224,7 @@ BEGIN
             SET @val = LEFT(@arr, @pos - 1);
             SET @arr = SUBSTRING(@arr, @pos + 1);
             SET @pos = LOCATE(',', @arr);
-            INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES (CONCAT('ip.', @ip4num), @val, @rc0id, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
+            INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES (CONCAT('ip.', @ip4num), @val, @rc0id, 1) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
           END WHILE;
         END IF;
         IF @ip4num = 0 THEN
@@ -239,7 +239,7 @@ BEGIN
             SET @val = LEFT(@arr, @pos - 1);
             SET @arr = SUBSTRING(@arr, @pos + 1);
             SET @pos = LOCATE(',', @arr);
-            INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES (CONCAT('ipv6.', @ip6num), @val, @rc0id, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
+            INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES (CONCAT('ipv6.', @ip6num), @val, @rc0id, 1) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
           END WHILE;
         END IF;
         IF @ip6num = 0 THEN
@@ -249,17 +249,17 @@ BEGIN
           SET @arr = CONCAT(@ENV_KNOWNFQDNS, ',');
           SET @pos = LOCATE(',', @arr);
           SET @val = LEFT(@arr, @pos - 1);
-          INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('fqdn', @val, @rc0id, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
+          INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('fqdn', @val, @rc0id, 1) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
         END IF;
         IF @ENV_HARDWARE_SERIAL_NUMBER IS NOT NULL THEN
-          INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('serial_no', @ENV_HARDWARE_SERIAL_NUMBER, @rc0id, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
+          INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('serial_no', @ENV_HARDWARE_SERIAL_NUMBER, @rc0id, 1) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
         END IF;
         IF @ENV_HARDWARE_CATALOG_NUMBER IS NOT NULL THEN
-          INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('model', CONCAT(@ENV_HARDWARE_CATALOG_NUMBER,IF(@HARDWARE_SPEC_REVISION IS NULL,'',CONCAT(' HW rev ',@HARDWARE_SPEC_REVISION))), @rc0id, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
+          INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('model', CONCAT(@ENV_HARDWARE_CATALOG_NUMBER,IF(@HARDWARE_SPEC_REVISION IS NULL,'',CONCAT(' HW rev ',@HARDWARE_SPEC_REVISION))), @rc0id, 1) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
         END IF;
-        INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('manufacturer', 'Eaton', @rc0id, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
+        INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('manufacturer', 'Eaton', @rc0id, 1) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
         IF @ENV_HARDWARE_UUID IS NOT NULL THEN
-          INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('uuid', @ENV_HARDWARE_UUID, @rc0id, 0) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
+          INSERT INTO t_bios_asset_ext_attributes (keytag, value, id_asset_element, read_only) VALUES ('uuid', @ENV_HARDWARE_UUID, @rc0id, 1) ON DUPLICATE KEY UPDATE id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute);
         END IF;
         IF @rcparent IS NOT NULL THEN
           INSERT INTO t_bios_asset_link (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in) VALUES (@rcparent, @rc0id, (SELECT DISTINCT id_asset_link_type FROM t_bios_asset_link_type WHERE name = "power chain" LIMIT 1), NULL, NULL);
