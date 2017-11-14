@@ -11,7 +11,7 @@ INSERT INTO t_bios_schema_version (tag,timestamp,filename,version) VALUES('begin
 SELECT * FROM t_bios_schema_version WHERE tag = 'begin-import' order by id desc limit 1;
 COMMIT;
 
-INSERT INTO t_bios_asset_device_type (id_asset_device_type, name) VALUES (19, "gpo");
+INSERT INTO t_bios_asset_device_type (id_asset_device_type, name) VALUES (20, "gpo");
 
 /* This must be the last line of the SQL file */
 START TRANSACTION;
