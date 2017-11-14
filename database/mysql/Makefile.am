@@ -13,7 +13,8 @@ mysql_DATA	= initdb.sql \
 			0008_ext_names.sql \
 			0009_device_type_extension.sql \
 			0010_super_parent_names.sql \
-			0011_default_rc.sql
+			0011_default_rc.sql \
+			0012_device_type_extension.sql
 
 mysqlexdir	= $(datadir)/@PACKAGE@/examples/sql/mysql
 mysqlex_DATA	= \
@@ -22,4 +23,3 @@ mysqlex_DATA	= \
 		    load_data_test_restapi.sql load_data.csv
 
 EXTRA_DIST += $(mysql_DATA) $(mysqlex_DATA)
-
