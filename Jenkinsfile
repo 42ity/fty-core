@@ -19,7 +19,7 @@
 */
 
 pipeline {
-                    agent { label "devel-image" }
+                    agent { label "devel-image && x86_64" }
     parameters {
         // Use DEFAULT_DEPLOY_BRANCH_PATTERN and DEFAULT_DEPLOY_JOB_NAME if
         // defined in this jenkins setup -- in Jenkins Management Web-GUI
@@ -66,6 +66,10 @@ pipeline {
             defaultValue: true,
             description: 'Attempt "make distcheck" in this run?',
             name: 'DO_TEST_DISTCHECK')
+        booleanParam (
+            defaultValue: false,
+            description: 'Attempt "cppcheck" analysis before this run?',
+            name: 'DO_CPPCHECK')
     }
     triggers {
         pollSCM 'H/5 * * * *'
@@ -73,6 +77,13 @@ pipeline {
 // Note: your Jenkins setup may benefit from similar setup on side of agents:
 //        PATH="/usr/lib64/ccache:/usr/lib/ccache:/usr/bin:/bin:${PATH}"
     stages {
+        stage ('cppcheck') {
+                    when { expression { return ( params.DO_CPPCHECK ) } }
+                    steps {
+                        sh 'cppcheck --std=c++11 --enable=all --inconclusive --xml --xml-version=2 . 2>cppcheck.xml'
+                        archiveArtifacts artifacts: '**/cppcheck.xml'
+                    }
+        }
         stage ('prepare') {
                     steps {
                         sh './autogen.sh'
