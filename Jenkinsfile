@@ -43,7 +43,7 @@ pipeline {
             description: 'If attempting a "make install" check in this run, what DESTDIR to specify? (absolute path, defaults to "BUILD_DIR/tmp/_inst")',
             name: 'USE_TEST_INSTALL_DESTDIR')
         booleanParam (
-            defaultValue: true,
+            defaultValue: false,
             description: 'Attempt "cppcheck" analysis before this run?',
             name: 'DO_CPPCHECK')
         booleanParam (
