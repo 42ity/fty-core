@@ -22,6 +22,20 @@ CONFIG_OPTS+=("--with-docs=no")
 CONFIG_OPTS+=("--quiet")
 
 # Clone and build dependencies
+git clone --quiet --depth 1 -b release/IPM_Infra-1.3 https://github.com/42ity/libsodium.git libsodium.git
+cd libsodium.git
+git --no-pager log --oneline -n1
+if [ -e autogen.sh ]; then
+    ./autogen.sh 2> /dev/null
+fi
+if [ -e buildconf ]; then
+    ./buildconf 2> /dev/null
+fi
+./configure "${CONFIG_OPTS[@]}"
+make -j4
+make install
+cd ..
+# git clone --quiet --depth 1 https://github.com/zeromq/libzmq.git libzmq.git
 git clone --quiet --depth 1 -b release/IPM_Infra-1.3 https://github.com/42ity/libzmq.git libzmq.git
 cd libzmq.git
 git --no-pager log --oneline -n1
