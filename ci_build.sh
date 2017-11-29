@@ -121,6 +121,9 @@ if [ "$BUILD_TYPE" == "default" ] || [ "$BUILD_TYPE" == "default-Werror" ] || [ 
     CONFIG_OPTS+=("--with-systemdsystempresetdir=${BUILD_PREFIX}/usr/lib/systemd/system-preset")
     CONFIG_OPTS+=("--with-systemdsystemunitdir=${BUILD_PREFIX}/usr/lib/systemd/system")
 
+    # fty-core itself has no notion of drafts, and from Z ecosystem we want stable APIs
+    CONFIG_OPTS+=("--enable-drafts=no")
+
     if [ "$HAVE_CCACHE" = yes ] && [ "${COMPILER_FAMILY}" = GCC ]; then
         PATH="/usr/lib/ccache:$PATH"
         export PATH
@@ -183,7 +186,7 @@ if [ "$BUILD_TYPE" == "default" ] || [ "$BUILD_TYPE" == "default-Werror" ] || [ 
         echo ""
         BASE_PWD=${PWD}
         echo "`date`: INFO: Building prerequisite 'sodium' from Git repository..." >&2
-        $CI_TIME git clone --quiet --depth 1 -b release/IPM_Infra-1.3 https://github.com/42ity/libsodium sodium
+        $CI_TIME git clone --quiet --depth 1 -b 1.0.5-FTY-master https://github.com/42ity/libsodium sodium
         cd sodium
         CCACHE_BASEDIR=${PWD}
         export CCACHE_BASEDIR
@@ -215,7 +218,9 @@ if [ "$BUILD_TYPE" == "default" ] || [ "$BUILD_TYPE" == "default-Werror" ] || [ 
         echo ""
         BASE_PWD=${PWD}
         echo "`date`: INFO: Building prerequisite 'libzmq' from Git repository..." >&2
-        $CI_TIME git clone --quiet --depth 1 https://github.com/zeromq/libzmq.git libzmq
+        $CI_TIME git clone --quiet --depth 1 -b 4.2.0-FTY-master https://github.com/42ity/libzmq.git libzmq
+        #$CI_TIME git clone --quiet --depth 1 https://github.com/zeromq/libzmq.git libzmq
+        #$CI_TIME git clone --quiet --depth 1 https://github.com/42ity/libzmq libzmq
         cd libzmq
         CCACHE_BASEDIR=${PWD}
         export CCACHE_BASEDIR
@@ -247,7 +252,9 @@ if [ "$BUILD_TYPE" == "default" ] || [ "$BUILD_TYPE" == "default-Werror" ] || [ 
         echo ""
         BASE_PWD=${PWD}
         echo "`date`: INFO: Building prerequisite 'czmq' from Git repository..." >&2
-        $CI_TIME git clone --quiet --depth 1 -b v3.0.2 https://github.com/zeromq/czmq.git czmq
+        # $CI_TIME git clone --quiet --depth 1 -b v3.0.2 https://github.com/zeromq/czmq.git czmq
+        # $CI_TIME git clone --quiet --depth 1 https://github.com/42ity/czmq czmq
+        $CI_TIME git clone --quiet --depth 1 -b v3.0.2-FTY-master https://github.com/42ity/czmq czmq
         cd czmq
         CCACHE_BASEDIR=${PWD}
         export CCACHE_BASEDIR
@@ -279,7 +286,9 @@ if [ "$BUILD_TYPE" == "default" ] || [ "$BUILD_TYPE" == "default-Werror" ] || [ 
         echo ""
         BASE_PWD=${PWD}
         echo "`date`: INFO: Building prerequisite 'malamute' from Git repository..." >&2
-        $CI_TIME git clone --quiet --depth 1 https://github.com/zeromq/malamute.git malamute
+        # $CI_TIME git clone --quiet --depth 1 https://github.com/zeromq/malamute.git malamute
+        # $CI_TIME git clone --quiet --depth 1 https://github.com/42ity/malamute malamute
+        $CI_TIME git clone --quiet --depth 1 -b 1.0-FTY-master https://github.com/42ity/malamute malamute
         cd malamute
         CCACHE_BASEDIR=${PWD}
         export CCACHE_BASEDIR
@@ -311,7 +320,8 @@ if [ "$BUILD_TYPE" == "default" ] || [ "$BUILD_TYPE" == "default-Werror" ] || [ 
         echo ""
         BASE_PWD=${PWD}
         echo "`date`: INFO: Building prerequisite 'magic' from Git repository..." >&2
-        $CI_TIME git clone --quiet --depth 1 https://github.com/42ity/libmagic magic
+        # $CI_TIME git clone --quiet --depth 1 https://github.com/42ity/libmagic magic
+        $CI_TIME git clone --quiet --depth 1 -b 5.18-FTY-master https://github.com/42ity/libmagic magic
         cd magic
         CCACHE_BASEDIR=${PWD}
         export CCACHE_BASEDIR
@@ -343,7 +353,7 @@ if [ "$BUILD_TYPE" == "default" ] || [ "$BUILD_TYPE" == "default-Werror" ] || [ 
         echo ""
         BASE_PWD=${PWD}
         echo "`date`: INFO: Building prerequisite 'cxxtools' from Git repository..." >&2
-        $CI_TIME git clone --quiet --depth 1 -b 42ity https://github.com/42ity/cxxtools cxxtools
+        $CI_TIME git clone --quiet --depth 1 -b 2.2-FTY-master https://github.com/42ity/cxxtools cxxtools
         cd cxxtools
         CCACHE_BASEDIR=${PWD}
         export CCACHE_BASEDIR
@@ -375,7 +385,8 @@ if [ "$BUILD_TYPE" == "default" ] || [ "$BUILD_TYPE" == "default-Werror" ] || [ 
         echo ""
         BASE_PWD=${PWD}
         echo "`date`: INFO: Building prerequisite 'tntdb' from Git repository..." >&2
-        $CI_TIME git clone --quiet --depth 1 -b 1.3 https://github.com/42ity/tntdb tntdb
+        # $CI_TIME git clone --quiet --depth 1 -b 1.3 https://github.com/42ity/tntdb tntdb
+        $CI_TIME git clone --quiet --depth 1 -b 1.3-FTY-master https://github.com/42ity/tntdb tntdb
         cd tntdb
         cd ./tntdb
         CCACHE_BASEDIR=${PWD}
@@ -451,40 +462,18 @@ if [ "$BUILD_TYPE" == "default" ] || [ "$BUILD_TYPE" == "default-Werror" ] || [ 
     fi
     $CI_TIME make VERBOSE=1 all
 
-    echo "=== Are GitIgnores good after 'make all' with drafts? (should have no output below)"
+    echo "=== Are GitIgnores good after 'make all'? (should have no output below)"
     git status -s || true
     echo "==="
 
     (
-        export DISTCHECK_CONFIGURE_FLAGS="--enable-drafts=yes ${CONFIG_OPTS[@]}"
+        export DISTCHECK_CONFIGURE_FLAGS="${CONFIG_OPTS[@]}"
         $CI_TIME make VERBOSE=1 DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS" distcheck
 
-        echo "=== Are GitIgnores good after 'make distcheck' with drafts? (should have no output below)"
+        echo "=== Are GitIgnores good after 'make distcheck'? (should have no output below)"
         git status -s || true
         echo "==="
     )
-
-    # Build and check this project without DRAFT APIs
-    echo ""
-    echo "`date`: INFO: Starting build of currently tested project without DRAFT APIs..."
-    make distclean
-
-    git clean -f
-    git reset --hard HEAD
-    (
-        $CI_TIME ./autogen.sh 2> /dev/null
-        $CI_TIME ./configure --enable-drafts=no "${CONFIG_OPTS[@]}" --with-docs=yes
-        $CI_TIME make VERBOSE=1 all || exit $?
-        (
-            export DISTCHECK_CONFIGURE_FLAGS="--enable-drafts=no ${CONFIG_OPTS[@]} --with-docs=yes" && \
-            $CI_TIME make VERBOSE=1 DISTCHECK_CONFIGURE_FLAGS="$DISTCHECK_CONFIGURE_FLAGS" distcheck || exit $?
-        )
-    ) || exit 1
-    [ -z "$CI_TIME" ] || echo "`date`: Builds completed without fatal errors!"
-
-    echo "=== Are GitIgnores good after 'make distcheck' without drafts? (should have no output below)"
-    git status -s || true
-    echo "==="
 
     if [ "$HAVE_CCACHE" = yes ]; then
         echo "CCache stats after build:"
