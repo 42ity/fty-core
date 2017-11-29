@@ -43,8 +43,8 @@ pipeline {
             description: 'If attempting a "make install" check in this run, what DESTDIR to specify? (absolute path, defaults to "BUILD_DIR/tmp/_inst")',
             name: 'USE_TEST_INSTALL_DESTDIR')
         booleanParam (
-            defaultValue: false,
-            description: 'Attempt "cppcheck" analysis before this run?',
+            defaultValue: true,
+            description: 'Attempt "cppcheck" analysis before this run? (Note: corresponding tools are required in the build environment)',
             name: 'DO_CPPCHECK')
         booleanParam (
             defaultValue: true,
@@ -56,7 +56,7 @@ pipeline {
             name: 'DO_CLEANUP_AFTER_BUILD')
     }
     triggers {
-        pollSCM 'H/5 * * * *'
+        pollSCM 'H/2 * * * *'
     }
 // Note: your Jenkins setup may benefit from similar setup on side of agents:
 //        PATH="/usr/lib64/ccache:/usr/lib/ccache:/usr/bin:/bin:${PATH}"
@@ -64,6 +64,9 @@ pipeline {
         stage ('cppcheck') {
                     when { expression { return ( params.DO_CPPCHECK ) } }
                     steps {
+                        dir("tmp") {
+                            deleteDir()
+                        }
                         sh 'cppcheck --std=c++11 --enable=all --inconclusive --xml --xml-version=2 . 2>cppcheck.xml'
                         archiveArtifacts artifacts: '**/cppcheck.xml'
                         sh 'rm -f cppcheck.xml'
@@ -71,6 +74,9 @@ pipeline {
         }
         stage ('prepare') {
                     steps {
+                        dir("tmp") {
+                            deleteDir()
+                        }
                         sh './autogen.sh'
                     }
         }
