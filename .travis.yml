@@ -18,9 +18,9 @@ services:
 # Set CI_CONFIG_QUIET=true to enable "configure --quiet" (only report stderr)
 env:
   global:
-    - CI_TIME=false
+    - CI_TIME=true
     - CI_TRACE=false
-    - CI_QUIET=true
+    - CI_CONFIG_QUIET=true
   matrix:
     - BUILD_TYPE=default
     - BUILD_TYPE=default-Werror
@@ -41,11 +41,12 @@ env:
 #        - libmagic-dev
 
 addons:
-  sources:
+  apt:
+    sources:
     - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/git-draft/xUbuntu_14.04/ ./'
       key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/git-draft/xUbuntu_14.04/Release.key'
-  apt:
     packages:
+    - coreutils
     - git
     - asciidoc
     - xmlto
