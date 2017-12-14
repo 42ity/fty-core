@@ -92,7 +92,7 @@ mkdir -p /home/bios && chown bios:bios-infra /home/bios
 
 # Create a GPIO group to access GPIO pins, and add the user bios
 groupadd --system gpio
-adduser bios gpio
+usermod -G gpio bios
 
 # add an access to sasl, bios-logread (for /var/log/messages) and systemd journal
 # note that earlier OS images had custom logs owned by "adm" group, so we also
