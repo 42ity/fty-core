@@ -54,4 +54,4 @@ getent group "${GPIO_GROUP}" \
 | egrep '(^'"${BIOS_USER}"'$|^'"${BIOS_USER}"',|,'"${BIOS_USER}"'$|,'"${BIOS_USER}"',)' \
 && skip "The '${BIOS_USER}' user account is already a member of '${GPIO_GROUP}' group"
 
-usermod -G "${GPIO_GROUP}" "${BIOS_USER}"
+usermod -G "${GPIO_GROUP}" -a "${BIOS_USER}"
