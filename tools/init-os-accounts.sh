@@ -255,7 +255,7 @@ genUser() {
     # but don't die if this fails
     for G in $USER_ADD_GROUPS ; do
 	echo "INFO: Try to add '$G' as a secondary group for '$USER_NAME' (may fail)..."
-	$RUNAS usermod -G "$G" "$USER_NAME"
+	$RUNAS usermod -G "$G" -a "$USER_NAME"
     done
 
     return $RES_U
