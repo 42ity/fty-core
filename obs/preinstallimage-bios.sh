@@ -91,8 +91,8 @@ useradd -m bios -N -g bios-infra -G dialout -s /bin/bash
 mkdir -p /home/bios && chown bios:bios-infra /home/bios
 
 # Create a GPIO group to access GPIO pins, and add the user bios
-groupadd --system gpio
-usermod -G gpio bios
+groupadd --system -f gpio
+usermod -G gpio -a bios
 
 # add an access to sasl, bios-logread (for /var/log/messages) and systemd journal
 # note that earlier OS images had custom logs owned by "adm" group, so we also
@@ -105,10 +105,10 @@ EOF
 mkdir -p /home/admin && chown admin:bios-admin /home/admin
 
 # add an access to bios-logread (for /var/log/messages) to webserver
-usermod -G bios-logread www-data
+usermod -G bios-logread -a www-data
 
 # add an access to sasl for bios
-usermod -G "${SASL_GROUP}" bios
+usermod -G "${SASL_GROUP}" -a bios
 
 # TODO: See if "sudo"able tasks that this account may have to do can be done
 # with another shell like /bin/nologin or /bin/false - and then secure it...
