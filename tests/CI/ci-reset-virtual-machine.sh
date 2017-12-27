@@ -624,7 +624,7 @@ else
 			ensure_md5sum "$IMAGE" "$IMAGE.md5" || IMAGE=""
 		done
 	fi
-	IMAGE_FLAT="`basename "$IMAGE" .$EXT`_${IMGTYPE}_${ARCH}.$EXT"
+	IMAGE_FLAT="`basename "$IMAGE" .$EXT`_${IMGTYPE}_${ARCH}_${IMGQALEVEL}.$EXT"
 fi
 if [ -z "$IMAGE" ]; then
 	die "No downloaded image files located in my cache (`pwd`/$IMGTYPE/$ARCH/*.$EXT)!"
