@@ -364,7 +364,7 @@ fi
 # Note: several hardcoded paths are expected relative to "snapshots", so
 # it is critical that we succeed changing into this directory in the end.
 
-mkdir -p "/srv/libvirt/rootfs" "/srv/libvirt/overlays"
+mkdir -p "/srv/libvirt/rootfs" "/srv/libvirt/overlays" "/srv/libvirt/overlays-ro"
 cd "/srv/libvirt/rootfs" || \
 	die "Can not 'cd /srv/libvirt/rootfs' to keep container root trees"
 
@@ -624,7 +624,7 @@ else
 			ensure_md5sum "$IMAGE" "$IMAGE.md5" || IMAGE=""
 		done
 	fi
-	IMAGE_FLAT="`basename "$IMAGE" .$EXT`_${IMGTYPE}_${ARCH}.$EXT"
+	IMAGE_FLAT="`basename "$IMAGE" .$EXT`_${IMGTYPE}_${ARCH}_${IMGQALEVEL}.$EXT"
 fi
 if [ -z "$IMAGE" ]; then
 	die "No downloaded image files located in my cache (`pwd`/$IMGTYPE/$ARCH/*.$EXT)!"
@@ -650,7 +650,8 @@ sleep 5
 ALTROOT="$(cd "`pwd`/../rootfs/$VM" && pwd)" || die "Could not determine the container ALTROOT"
 logmsg_info "Unmounting paths related to VM '$VM':" \
 	"'${ALTROOT}/lib/modules', '${ALTROOT}/root/.ccache'" \
-	"'${ALTROOT}/proc', '${ALTROOT}', '`pwd`/../rootfs/${IMAGE_FLAT}-ro'"
+	"'${ALTROOT}/proc', '${ALTROOT}', '`pwd`/../rootfs/${IMAGE_FLAT}-ro'," \
+	"'`pwd`/../overlays-ro/${IMAGE_FLAT}-ro'"
 umount -fl "${ALTROOT}/lib/modules" 2> /dev/null > /dev/null || true
 umount -fl "${ALTROOT}/root/.ccache" 2> /dev/null > /dev/null || true
 umount -fl "${ALTROOT}/proc" 2> /dev/null > /dev/null || true
@@ -659,6 +660,7 @@ fusermount -u -z "${ALTROOT}" 2> /dev/null > /dev/null || true
 
 # This unmount can fail if for example several containers use the same RO image
 # or if it is not used at all; not shielding by "$OVERLAYFS" check just in case
+umount -fl "../overlays-ro/${IMAGE_FLAT}-ro" 2> /dev/null > /dev/null || true
 umount -fl "../rootfs/${IMAGE_FLAT}-ro" 2> /dev/null > /dev/null || true
 
 # root bash history may be protected by chattr to be append-only
@@ -689,9 +691,10 @@ for D in ../overlays/*__${VM}/ ../overlays/*__${VM}.tmp/ ; do
 		sleep 1; echo ""
 	fi
 done
-for D in ../rootfs/*-ro/ ; do
+for D in ../overlays-ro/*-ro/ ../rootfs/*-ro/ ; do
 	# Do not remove the current IMAGE mountpoint if we reuse it again now
-	[ x"$D" = x"../rootfs/${IMAGE_FLAT}-ro/" ] && continue
+	### [ x"$D" = x"../rootfs/${IMAGE_FLAT}-ro/" ] && continue
+	[ x"$D" = x"../overlays-ro/${IMAGE_FLAT}-ro/" ] && continue
 	# Now, ignore non-directories and not-empty dirs (used mountpoints)
 	if [ -d "$D" ]; then
 		# This is a directory
@@ -750,9 +753,9 @@ fi
 logmsg_info "Creating a new VM rootfs at '${ALTROOT}'"
 mkdir -p "${ALTROOT}"
 if [ x"$OVERLAYFS" = xyes ]; then
-	logmsg_info "Mount the common RO squashfs at '`pwd`/../rootfs/${IMAGE_FLAT}-ro'"
-	mkdir -p "../rootfs/${IMAGE_FLAT}-ro"
-	mount -o loop "$IMAGE" "../rootfs/${IMAGE_FLAT}-ro" || \
+	logmsg_info "Mount the common RO squashfs at '`pwd`/../overlays-ro/${IMAGE_FLAT}-ro'"
+	mkdir -p "../overlays-ro/${IMAGE_FLAT}-ro"
+	mount -o loop "$IMAGE" "../overlays-ro/${IMAGE_FLAT}-ro" || \
 		die "Can't mount squashfs"
 
 	logmsg_info "Use the individual RW component" \
@@ -761,7 +764,7 @@ if [ x"$OVERLAYFS" = xyes ]; then
 	mkdir -p "../overlays/${IMAGE_FLAT}__${VM}" \
 		"../overlays/${IMAGE_FLAT}__${VM}.tmp"
 	mount -t ${OVERLAYFS_TYPE} \
-		-o lowerdir="../rootfs/${IMAGE_FLAT}-ro",upperdir="../overlays/${IMAGE_FLAT}__${VM}",workdir="../overlays/${IMAGE_FLAT}__${VM}.tmp" \
+		-o lowerdir="../overlays-ro/${IMAGE_FLAT}-ro",upperdir="../overlays/${IMAGE_FLAT}__${VM}",workdir="../overlays/${IMAGE_FLAT}__${VM}.tmp" \
 		${OVERLAYFS_TYPE} "${ALTROOT}" \
 	|| die "Can't overlay-mount rw directory"
 else
