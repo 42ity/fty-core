@@ -300,9 +300,16 @@ while [ $# -gt 0 ] ; do
 		NO_DELETE=no
 		shift
 		;;
-	reboot)
+	reboot) # New uptime for existing rootfs - no initial reconfigs to do now
 		NO_DELETE=yes
+		NO_RESTORE_SAVED=yes
 		ATTEMPT_DOWNLOAD=no
+		INSTALL_DEV_PKGS=no
+		FORCE_RUN_APT=""
+		export FORCE_RUN_APT
+		COPYHOST_USERS=""
+		COPYHOST_GROUPS=""
+		ELEVATE_USERS=""
 		shift
 		;;
 	--attempt-download)
