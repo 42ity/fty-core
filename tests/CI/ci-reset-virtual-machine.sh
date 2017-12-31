@@ -106,7 +106,9 @@ usage() {
 	echo "    --no-config-file     Forbid use in this run of a per-VM config file if one is found"
 	echo "    halt                 Alias to --destroy-only"
 	echo "    wipe                 Alias to --stop-only"
-	echo "    reboot               Alias to --no-download --no-delete"
+	echo "    update               Alias to --no-delete --no-install-dev --no-restore-saved"
+	echo "                         and disables user/group account sync from host to container"
+	echo "    reboot               Alias to update with --no-download"
 	echo "    -h|--help            print this help"
 }
 
@@ -301,9 +303,11 @@ while [ $# -gt 0 ] ; do
 		shift
 		;;
 	reboot) # New uptime for existing rootfs - no initial reconfigs to do now
+		ATTEMPT_DOWNLOAD=no
+		;&
+	update) # New uptime for existing rootfs - no initial reconfigs to do now
 		NO_DELETE=yes
 		NO_RESTORE_SAVED=yes
-		ATTEMPT_DOWNLOAD=no
 		INSTALL_DEV_PKGS=no
 		FORCE_RUN_APT=""
 		export FORCE_RUN_APT
