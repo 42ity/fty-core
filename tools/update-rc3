@@ -216,6 +216,9 @@ usage() {
     echo "  --forceflash | -FF, --forceflash-image-os | -FFo, --forceflash-image-fw | -FFf"
     echo "      --forceflash-image-u-Boot | -FFb, --forceflash-image-uImage | -FFi"
     echo "                   Touch the .forceflash flag-files for corresponding new image"
+    echo "  --no-forceflash | -NFF      Remove all existing .forceflash flag-files before"
+    echo "                   anything else (if other --forceflash* options are enabled,"
+    echo "                   they can later repopulate corresponding touch-files)"
     echo "  --reboot | -r | -R         If a new image (OS, FW) downloaded successfully"
     echo "                   request an immediate reboot as part of this script"
     echo "                   With '-R' this reboots the system in either non-error case"
@@ -1658,6 +1661,9 @@ ACTION_CHECK_FWIMAGE="no"
 ACTION_FORCEFLASH_OSIMAGE="no"
 ACTION_FORCEFLASH_FWIMAGE_UBOOT="no"
 ACTION_FORCEFLASH_FWIMAGE_UIMAGE="no"
+# Remove any existing .forceflash flag-files before any check or download
+# (does not fire for a mere "-ls" activity)
+ACTION_FORCEFLASH_CLEANUP="no"
 
 # The routines can force a specific URL rather than detecting the "newest" one
 [ -z "${URL_DOWNLOAD_OSIMAGE-}" ] &&                URL_DOWNLOAD_OSIMAGE=""
@@ -1803,6 +1809,8 @@ while [ $# -gt 0 ]; do
 		--erase-all)            FLAG_ERASE_ALL="yes" ;;
 		--touch-erase-all|--force-erase-all)
 		                        FLAG_ERASE_ALL="force" ;;
+		--no-forceflash|--no-FF|-NFF)
+		                        ACTION_FORCEFLASH_CLEANUP="yes" ;;
 		--forceflash-image|-FF)
 		                        ACTION_FORCEFLASH_OSIMAGE="yes"
 		                        ACTION_FORCEFLASH_FWIMAGE_UBOOT="yes"
@@ -1849,6 +1857,12 @@ while [ $# -gt 0 ]; do
 	esac
 	shift
 done
+
+if [ x"$ACTION_FORCEFLASH_CLEANUP" = xyes ]; then
+	rm -f "${DEPLOYMENTROOTFW_UBOOT}/u-Boot.forceflash" "${DOWNLOADROOTFW_UBOOT}/u-Boot.forceflash"
+	rm -f "${DEPLOYMENTROOTFW_UIMAGE}/uImage.forceflash" "${DOWNLOADROOTFW_UIMAGE}/uImage.forceflash"
+	rm -f "${DEPLOYMENTROOT_OSIMAGE}"/*.forceflash "${DOWNLOADROOT_OSIMAGE}"/*.forceflash
+fi
 
 # Checks are special - after we do all which were requested (if any), we exit
 if [ x"$ACTION_CHECK_OSIMAGE" = xyes ] || [ x"$ACTION_CHECK_FWIMAGE" = xyes ]; then
