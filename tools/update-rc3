@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2015-2017 Eaton
+# Copyright (C) 2015-2018 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -793,7 +793,7 @@ download_osimage() (
     # land into the recovery location ("a"bsolute varnames)
     IMAGE_CSURL="${IMAGE_URL}.${IMAGE_CSALGO}"
     rIMAGE_CSOLD="${rIMAGE_URL_BASENAME_EXT}.${IMAGE_CSALGO}"
-    aIMAGE_CSNEW="/tmp/${rIMAGE_URL_BASENAME_EXT}.$$.${IMAGE_CSALGO}.tmp"
+    aIMAGE_CSNEW="${TEMP_DATA}/${rIMAGE_URL_BASENAME_EXT}.$$.${IMAGE_CSALGO}.tmp"
 
     # We rename the incoming image to include the type in flat directory space
     rTGT_FILE="${rIMAGE_URL_BASENAME_EXT}"
@@ -809,7 +809,7 @@ download_osimage() (
     esac
 
     rTGT_FILE_CSOLD="${rTGT_FILE}.${IMAGE_CSALGO}"
-    aTGT_FILE_CSNEW="/tmp/${rTGT_FILE}.$$.${IMAGE_CSALGO}.tmp"
+    aTGT_FILE_CSNEW="${TEMP_DATA}/${rTGT_FILE}.$$.${IMAGE_CSALGO}.tmp"
 
     trap 'TRAPCODE=$?; rm -f "$aTGT_FILE_CSNEW" "$aIMAGE_CSNEW"; exit $TRAPCODE' 0
 
@@ -1031,11 +1031,11 @@ download_rawfwimage_uboot() (
     # land into the recovery location ("a"bsolute varnames)
     IMAGE_CSURL="${IMAGE_URL}.${IMAGE_CSALGO}"
     rIMAGE_CSOLD="${rIMAGE_URL_BASENAME}.${IMAGE_CSALGO}"
-    aIMAGE_CSNEW="/tmp/${rIMAGE_URL_BASENAME}.$$.${IMAGE_CSALGO}.tmp"
+    aIMAGE_CSNEW="${TEMP_DATA}/${rIMAGE_URL_BASENAME}.$$.${IMAGE_CSALGO}.tmp"
 
     IMAGE_CSURL_PADDED="${IMAGE_URL}.${IMAGE_CSALGO}-padded"
     rIMAGE_CSOLD_PADDED="${rIMAGE_URL_BASENAME}.${IMAGE_CSALGO}-padded"
-    aIMAGE_CSNEW_PADDED="/tmp/${rIMAGE_URL_BASENAME}.$$.${IMAGE_CSALGO}-padded.tmp"
+    aIMAGE_CSNEW_PADDED="${TEMP_DATA}/${rIMAGE_URL_BASENAME}.$$.${IMAGE_CSALGO}-padded.tmp"
 
     trap 'TRAPCODE=$?; rm -f "${aIMAGE_CSNEW}" "${aIMAGE_CSNEW_PADDED}"; exit $TRAPCODE' 0
 
@@ -1199,11 +1199,11 @@ download_rawfwimage_uimage() (
     # land into the recovery location ("a"bsolute varnames)
     IMAGE_CSURL="${IMAGE_URL}.${IMAGE_CSALGO}"
     rIMAGE_CSOLD="${rIMAGE_URL_BASENAME}.${IMAGE_CSALGO}"
-    aIMAGE_CSNEW="/tmp/${rIMAGE_URL_BASENAME}.$$.${IMAGE_CSALGO}.tmp"
+    aIMAGE_CSNEW="${TEMP_DATA}/${rIMAGE_URL_BASENAME}.$$.${IMAGE_CSALGO}.tmp"
 
     IMAGE_CSURL_PADDED="${IMAGE_URL}.${IMAGE_CSALGO}-padded"
     rIMAGE_CSOLD_PADDED="${rIMAGE_URL_BASENAME}.${IMAGE_CSALGO}-padded"
-    aIMAGE_CSNEW_PADDED="/tmp/${rIMAGE_URL_BASENAME}.$$.${IMAGE_CSALGO}-padded.tmp"
+    aIMAGE_CSNEW_PADDED="${TEMP_DATA}/${rIMAGE_URL_BASENAME}.$$.${IMAGE_CSALGO}-padded.tmp"
 
     trap 'TRAPCODE=$?; rm -f "${aIMAGE_CSNEW}" "${aIMAGE_CSNEW_PADDED}"; exit $TRAPCODE' 0
 
@@ -1392,7 +1392,7 @@ download_rawfwimage_modules() (
     # land into the recovery location ("a"bsolute varnames)
     IMAGE_CSURL="${IMAGE_URL}.${IMAGE_CSALGO}"
     rIMAGE_CSOLD="${rIMAGE_URL_BASENAME}.${IMAGE_CSALGO}"
-    aIMAGE_CSNEW="/tmp/${rIMAGE_URL_BASENAME}.$$.${IMAGE_CSALGO}.tmp"
+    aIMAGE_CSNEW="${TEMP_DATA}/${rIMAGE_URL_BASENAME}.$$.${IMAGE_CSALGO}.tmp"
 
     trap 'TRAPCODE=$?; rm -f "$aIMAGE_CSNEW"; exit $TRAPCODE' 0
 
@@ -1573,6 +1573,14 @@ for F in \
         [ -f "$F.ttl-expired" ] && FACTORY_RESET_TTL_EXPIRED="`echo "$F.ttl-expired
 $FACTORY_RESET_TTL_EXPIRED" | sort | uniq`"
 done
+
+# Hold small recent downloads, reference files, etc.
+TEMP_DATA="`mktemp -d /var/run/.update-rc3.$$.XXXXXX`" && [ -n "$TEMP_DATA" ] && [ -d "$TEMP_DATA" ] \
+|| { TEMP_DATA="`mktemp -d /tmp/.update-rc3.$$.XXXXXX`" && [ -n "$TEMP_DATA" ] && [ -d "$TEMP_DATA" ] ; } \
+|| { TEMP_DATA="/tmp/.update-rc3.$$" && rm -rf "${TEMP_DATA}" && mkdir -p "$TEMP_DATA" ; } \
+|| die "Can not make a TEMP_DATA directory"
+export TEMP_DATA
+settraps "rm -rf '${TEMP_DATA}'" HUP INT QUIT TERM EXIT
 
 while [ $# -gt 0 ]; do
 	case "${1-}" in
