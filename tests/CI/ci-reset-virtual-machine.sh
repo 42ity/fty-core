@@ -95,12 +95,20 @@ usage() {
 	echo "    --attempt-download [auto|yes|no] Should an OS image download be attempted at all?"
 	echo "                         (default: auto; default if only the option is specified: yes)"
 	echo "    --no-download        Alias to '--attempt-download no' to redeploy an existing image"
+	echo "    --no-delete          Do not clean up (just reboot VM if --no-download, or upgrade"
+	echo "                         in place if --with-overlayfs); a --with-delete reverses this"
+	echo "                         setting for a run if default is provided in configuration file"
 	echo "    --stop-only          end the script after stopping the VM and cleaning up"
 	echo "    --destroy-only       end the script after stopping the VM (container 'destroy')"
 	echo "    --deploy-only        end the script just before it would start the VM (skips apt-get too)"
 	echo "    --copy-host-users 'a b c'    Copies specified user or group account definitions"
 	echo "    --copy-host-groups 'a b c'   (e.g. for bind-mounted homes from host into the VM)"
 	echo "    --no-config-file     Forbid use in this run of a per-VM config file if one is found"
+	echo "    halt                 Alias to --destroy-only"
+	echo "    wipe                 Alias to --stop-only"
+	echo "    update               Alias to --no-delete --no-install-dev --no-restore-saved"
+	echo "                         and disables user/group account sync from host to container"
+	echo "    reboot               Alias to update with --no-download"
 	echo "    -h|--help            print this help"
 }
 
@@ -229,6 +237,7 @@ DOTDOMAINNAME=""
 [ -z "$ALLOW_CONFIG_FILE" ] && ALLOW_CONFIG_FILE=yes
 [ -z "${OVERLAYFS-}" ] && OVERLAYFS="auto"
 [ -z "${NO_RESTORE_SAVED-}" ] && NO_RESTORE_SAVED=no
+[ -z "${NO_DELETE-}" ] && NO_DELETE=no
 
 while [ $# -gt 0 ] ; do
 	case "$1" in
@@ -257,11 +266,11 @@ while [ $# -gt 0 ] ; do
 		[ -z "$2" ] && APT_PROXY="-" || APT_PROXY="$2"
 		shift 2
 		;;
-	--stop-only)
+	--stop-only|--wipe-only|wipe)
 		STOPONLY=yes
 		shift
 		;;
-	--destroy-only)
+	--destroy-only|--halt-only|halt)
 		DESTROYONLY=yes
 		shift
 		;;
@@ -283,6 +292,28 @@ while [ $# -gt 0 ] ; do
 		;;
 	--deploy-only)
 		DEPLOYONLY=yes
+		shift
+		;;
+	--no-delete)
+		NO_DELETE=yes
+		shift
+		;;
+	--with-delete)
+		NO_DELETE=no
+		shift
+		;;
+	reboot) # New uptime for existing rootfs - no initial reconfigs to do now
+		ATTEMPT_DOWNLOAD=no
+		;&
+	update) # New uptime for existing rootfs - no initial reconfigs to do now
+		NO_DELETE=yes
+		NO_RESTORE_SAVED=yes
+		INSTALL_DEV_PKGS=no
+		FORCE_RUN_APT=""
+		export FORCE_RUN_APT
+		COPYHOST_USERS=""
+		COPYHOST_GROUPS=""
+		ELEVATE_USERS=""
 		shift
 		;;
 	--attempt-download)
@@ -431,6 +462,12 @@ xno)
 		"into a dedicated full RW directory"
 	;;
 esac
+
+if [ "$NO_DELETE" = yes ] ; then
+	if [ x"$OVERLAYFS" = xno ] && [ x"$ATTEMPT_DOWNLOAD" != xno ] ; then
+		die "Requested to not delete VM contents and to download a new tarball root at the same time"
+	fi
+fi
 
 # Verify that this script runs once at a time for the given VM
 if [ -n "$VM" ] && [ -f "$VM.lock" ] ; then
@@ -672,25 +709,51 @@ if [ x"$DESTROYONLY" = xyes ]; then
 	exit 0
 fi
 
-# Destroy the overlay-rw half of the old running container, if any
-if [ -d "../overlays/${IMAGE_FLAT}__${VM}" ]; then
-	logmsg_info "Removing RW directory of the stopped VM:" \
-		"'../overlays/${IMAGE_FLAT}__${VM}'"
-	rm -rf "../overlays/${IMAGE_FLAT}__${VM}"
-	rm -rf "../overlays/${IMAGE_FLAT}__${VM}.tmp"
-	sleep 1; echo ""
-fi
+if [ x"$NO_DELETE" = xyes ] ; then
+	logmsg_info "NO_DELETE==yes, not deleting old VM overlay data"
+	# Just in case, do not check OVERLAYFS envvar here too
 
-# When the host gets ungracefully rebooted, useless old dirs may remain...
-for D in ../overlays/*__${VM}/ ../overlays/*__${VM}.tmp/ ; do
-	if [ -d "$D" ]; then
-		logmsg_warn "Obsolete RW directory for an old version" \
-			"of this VM was found, removing '`pwd`/$D':"
-		ls -lad "$D"
-		rm -rf "$D"
+	OLD_OVERLAY_RW="`ls -1dt ../overlays/*__${VM}/ | head -1 | sed 's,/*$,,'`" && \
+	[ -n "$OLD_OVERLAY_RW" ] && \
+	if [ x"$OLD_OVERLAY_RW" != x"../overlays/${IMAGE_FLAT}__${VM}" ] \
+	&& [ ! -d "../overlays/${IMAGE_FLAT}__${VM}" ] \
+	; then
+		logmsg_info "Preserving '$OLD_OVERLAY_RW' as '../overlays/${IMAGE_FLAT}__${VM}'"
+		mv "$OLD_OVERLAY_RW" "../overlays/${IMAGE_FLAT}__${VM}"
+	fi
+
+	# When the host gets ungracefully rebooted, useless old dirs may remain...
+	for D in ../overlays/*__${VM}.tmp/ ; do
+		if [ -d "$D" ]; then
+			logmsg_warn "Obsolete RW tmp directory for an old version" \
+				"of this VM was found, removing '`pwd`/$D':"
+			ls -lad "$D"
+			rm -rf "$D"
+			sleep 1; echo ""
+		fi
+	done
+else
+	# Destroy the overlay-rw half of the old running container, if any
+	if [ -d "../overlays/${IMAGE_FLAT}__${VM}" ]; then
+		logmsg_info "Removing RW directory of the stopped VM:" \
+			"'../overlays/${IMAGE_FLAT}__${VM}'"
+		rm -rf "../overlays/${IMAGE_FLAT}__${VM}"
+		rm -rf "../overlays/${IMAGE_FLAT}__${VM}.tmp"
 		sleep 1; echo ""
 	fi
-done
+
+	# When the host gets ungracefully rebooted, useless old dirs may remain...
+	for D in ../overlays/*__${VM}/ ../overlays/*__${VM}.tmp/ ; do
+		if [ -d "$D" ]; then
+			logmsg_warn "Obsolete RW directory for an old version" \
+				"of this VM was found, removing '`pwd`/$D':"
+			ls -lad "$D"
+			rm -rf "$D"
+			sleep 1; echo ""
+		fi
+	done
+fi
+
 for D in ../overlays-ro/*-ro/ ../rootfs/*-ro/ ; do
 	# Do not remove the current IMAGE mountpoint if we reuse it again now
 	### [ x"$D" = x"../rootfs/${IMAGE_FLAT}-ro/" ] && continue
@@ -733,15 +796,24 @@ for D in ../overlays-ro/*-ro/ ../rootfs/*-ro/ ; do
 	fi
 done
 
-# clean up VM space
-logmsg_info "Removing VM rootfs from '${ALTROOT}'"
-if ! /bin/rm -rf "${ALTROOT}" ; then
-	logmsg_error "FAILED to remove '${ALTROOT}'"
-	logmsg_info "Checking if blocked by any processes?.."
-	fuser "${ALTROOT}" "${ALTROOT}"/*
-	fuser -c "${ALTROOT}" "${ALTROOT}"/*
-	fuser -m "${ALTROOT}" "${ALTROOT}"/*
-	die "Can not manipulate '${ALTROOT}' at this time"
+if [ x"$OVERLAYFS" != xyes ] \
+&& [ x"$NO_DELETE" = xyes ] \
+&& [ x"$ATTEMPT_DOWNLOAD" = xno ] \
+; then
+	# For overlayfs mode, we do make sure the new rootfs dir is empty
+	# For tarball mode, we keep old root if the tarball did not change
+	logmsg_info "NO_DELETE==yes, not deleting old VM tarball data"
+else
+	# clean up VM space
+	logmsg_info "Removing VM rootfs from '${ALTROOT}'"
+	if ! /bin/rm -rf "${ALTROOT}" ; then
+		logmsg_error "FAILED to remove '${ALTROOT}'"
+		logmsg_info "Checking if blocked by any processes?.."
+		fuser "${ALTROOT}" "${ALTROOT}"/*
+		fuser -c "${ALTROOT}" "${ALTROOT}"/*
+		fuser -m "${ALTROOT}" "${ALTROOT}"/*
+		die "Can not manipulate '${ALTROOT}' at this time"
+	fi
 fi
 
 if [ x"$STOPONLY" = xyes ]; then
