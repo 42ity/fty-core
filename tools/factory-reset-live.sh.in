@@ -88,8 +88,13 @@ if [[ ! -s /etc/release-details.json ]] ; then
 fi
 
 do_reset_passwd() {
-    # TODO: On real RC, copy default password hash from /mnt/root-ro/etc/shadow?
     logmsg_info "Resetting admin password to our very simple default value..."
+    if [ -s /mnt/root-ro/etc/shadow ]; then
+        OLDPASS="`egrep '^admin:' /mnt/root-ro/etc/shadow | awk -F: '{print $2}'`" || OLDPASS=""
+        if [ -n "$OLDPASS" ] ; then
+            usermod --password "$OLDPASS" admin && return
+        fi
+    fi
     yes "admin" | passwd admin && return
     for INITACCT in /usr/share/{fty,bios}/scripts/init-os-accounts.sh ; do
         if [[ -x "$INITACCT" ]] ; then
