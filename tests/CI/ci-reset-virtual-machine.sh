@@ -87,6 +87,8 @@ usage() {
 	echo "    -hp|--http-proxy URL the http_proxy override to access OBS ('$http_proxy')"
 	echo "    -ap|--apt-proxy URL  the http_proxy to access external APT images ('$APT_PROXY')"
 	echo "    --install-dev        run ci-setup-test-machine.sh (if available) to install packages"
+	echo "    --with-java8-jre     when setting up packages with ci-setup-test-machine.sh, set"
+	echo "                         DEPLOY_JAVA8=yes to install a Java8 JRE for certain uses"
 	echo "    --no-install-dev     do not run ci-setup-test-machine.sh, even on IMGTYPE=devel"
 	echo "    --no-restore-saved   do not copy stashed custom configs from a VMNAME.saved/ dir"
 	echo "    --no-overlayfs       enforce use of tarballs, even if overlayfs is supported by host"
@@ -239,6 +241,7 @@ DOTDOMAINNAME=""
 [ -z "${OVERLAYFS-}" ] && OVERLAYFS="auto"
 [ -z "${NO_RESTORE_SAVED-}" ] && NO_RESTORE_SAVED=no
 [ -z "${NO_DELETE-}" ] && NO_DELETE=no
+[ -z "${DEPLOY_JAVA8-}" ] && DEPLOY_JAVA8=no
 
 while [ $# -gt 0 ] ; do
 	case "$1" in
@@ -349,6 +352,9 @@ while [ $# -gt 0 ] ; do
 		export FORCE_RUN_APT
 		shift
 		;;
+	--with-java8-jre) # Only works if INSTALL_DEV_PKGS=yes
+		shift
+		DEPLOY_JAVA8=yes ; export DEPLOY_JAVA8 ;;
 	--copy-host-users)
 		COPYHOST_USERS="$2"; shift 2;;
 	--copy-host-groups)
@@ -394,6 +400,7 @@ fi
 [ x"$http_proxy" = x- ] && http_proxy="" && export http_proxy
 
 [ -z "$ARCH" ] && ARCH="`uname -m`"
+export ARCH
 # Note: several hardcoded paths are expected relative to "snapshots", so
 # it is critical that we succeed changing into this directory in the end.
 
