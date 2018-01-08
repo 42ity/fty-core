@@ -174,17 +174,16 @@ restore_ssh_service() {
 update_system() {
     if [[ -n "${FORCE_RUN_APT}" ]]; then
         # Die on failures, so callers know that VM setup did not go as planned
-        set -e
-        limit_packages_expiration_check
-        update_pkg_keys
-        update_pkg_metadata
-        limit_packages_recommends
-        limit_packages_paths
-        install_packages_missing || install_packages_missing
-        limit_packages_docs
-        install_package_set_dev || install_package_set_dev
-        install_package_set_biosdeps || install_package_set_biosdeps
-        limit_packages_forceremove
+        limit_packages_expiration_check || die "Failed to limit_packages_expiration_check()"
+        update_pkg_keys || die "Failed to update_pkg_keys()"
+        update_pkg_metadata || die "Failed to update_pkg_metadata()"
+        limit_packages_recommends || die "Failed to limit_packages_recommends()"
+        limit_packages_paths || die "Failed to limit_packages_paths()"
+        install_packages_missing || install_packages_missing || die "Failed to install_packages_missing()"
+        limit_packages_docs || die "Failed to limit_packages_docs()"
+        install_package_set_dev || install_package_set_dev || die "Failed to install_package_set_dev()"
+        install_package_set_biosdeps || install_package_set_biosdeps || die "Failed to install_package_set_biosdeps()"
+        limit_packages_forceremove || die "Failed to limit_packages_forceremove()"
     else
         echo "SKIPPED: $0 update_system() : this action is not default anymore, and FORCE_RUN_APT is not set and exported by caller" >&2
     fi
