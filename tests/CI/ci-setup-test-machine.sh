@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2014-2016 Eaton
+# Copyright (C) 2014-2018 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -40,6 +40,13 @@ limit_packages_recommends() {
     mkdir -p /etc/apt/apt.conf.d
     echo 'APT::Install-Recommends "false";' > \
        "/etc/apt/apt.conf.d/02no-recommends"
+}
+
+limit_packages_expiration_check() {
+    echo "INFO: Tell APT to not ignore repositories that were not updated recently"
+    mkdir -p /etc/apt/apt.conf.d
+    echo 'Acquire::Check-Valid-Until "false";' > \
+       "/etc/apt/apt.conf.d/02no-expiration"
 }
 
 limit_packages_paths() {
@@ -165,6 +172,7 @@ restore_ssh_service() {
 
 update_system() {
     if [[ -n "${FORCE_RUN_APT}" ]]; then
+        limit_packages_expiration_check
         update_pkg_keys
         update_pkg_metadata
         limit_packages_recommends
