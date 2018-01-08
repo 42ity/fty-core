@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2014-2016 Eaton
+# Copyright (C) 2014-2018 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -1079,9 +1079,11 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 	; then
 		logmsg_info "Keeping /etc/resolv.conf in the VM from the 'saved' template"
 	else
-		logmsg_info "Restore /etc/resolv.conf in the VM to the default baseline"
-		grep "8.8.8.8" "${ALTROOT}/etc/resolv.conf.bak-devpkg" >/dev/null || \
-			cp -pf "${ALTROOT}/etc/resolv.conf.bak-devpkg" "${ALTROOT}/etc/resolv.conf"
+		if [ -f "${ALTROOT}/etc/resolv.conf.bak-devpkg" ] ; then
+			logmsg_info "Restore /etc/resolv.conf in the VM to the default baseline"
+			grep "8.8.8.8" "${ALTROOT}/etc/resolv.conf.bak-devpkg" >/dev/null || \
+				cp -pf "${ALTROOT}/etc/resolv.conf.bak-devpkg" "${ALTROOT}/etc/resolv.conf"
+		fi
 	fi
 
 	if [ -f "${ALTROOT}.saved/etc/nsswitch.conf" ] && \
@@ -1089,8 +1091,10 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 	; then
 		logmsg_info "Keeping /etc/nsswitch.conf in the VM from the 'saved' template"
 	else
-		logmsg_info "Restore /etc/nsswitch.conf in the VM to the default baseline"
-		cp -pf "${ALTROOT}/etc/nsswitch.conf.bak-devpkg" "${ALTROOT}/etc/nsswitch.conf"
+		if [ -f "${ALTROOT}/etc/nsswitch.conf.bak-devpkg" ] ; then
+			logmsg_info "Restore /etc/nsswitch.conf in the VM to the default baseline"
+			cp -pf "${ALTROOT}/etc/nsswitch.conf.bak-devpkg" "${ALTROOT}/etc/nsswitch.conf"
+		fi
 	fi
 
 #	logmsg_info "Restart networking in the VM chroot to refresh virtual network settings"
