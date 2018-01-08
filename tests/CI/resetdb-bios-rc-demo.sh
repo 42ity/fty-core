@@ -24,7 +24,7 @@
 #           Used for internal testing.
 
 REFHOST="bios-rc-demo"
-REFFQDN="$REFHOST.roz53.lab.etn.com"
+REFFQDN="$REFHOST.roz.lab.etn.com"
 TMPFILE="/tmp/mysqldump-rc-demo.sql.gz"
 DATABASE="box_utf8"
 

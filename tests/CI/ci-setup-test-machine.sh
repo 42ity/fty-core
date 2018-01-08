@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2014-2016 Eaton
+# Copyright (C) 2014-2018 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -40,6 +40,13 @@ limit_packages_recommends() {
     mkdir -p /etc/apt/apt.conf.d
     echo 'APT::Install-Recommends "false";' > \
        "/etc/apt/apt.conf.d/02no-recommends"
+}
+
+limit_packages_expiration_check() {
+    echo "INFO: Tell APT to not ignore repositories that were not updated recently"
+    mkdir -p /etc/apt/apt.conf.d
+    echo 'Acquire::Check-Valid-Until "false";' > \
+       "/etc/apt/apt.conf.d/02no-expiration"
 }
 
 limit_packages_paths() {
@@ -98,7 +105,8 @@ http_get() {
 update_pkg_keys() {
     echo "INFO: Updating our OBS packaging keys..."
     # TODO: check if OS is debian... though this applies to all the APT magic
-    http_get http://obs.roz53.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add -
+    http_get http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add -
+    # http_get http://obs.roz53.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add -
     # http_get http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add -
 
     echo "INFO: Updating upstream-distro packaging keys..."
@@ -165,6 +173,9 @@ restore_ssh_service() {
 
 update_system() {
     if [[ -n "${FORCE_RUN_APT}" ]]; then
+        # Die on failures, so callers know that VM setup did not go as planned
+        set -e
+        limit_packages_expiration_check
         update_pkg_keys
         update_pkg_metadata
         limit_packages_recommends
@@ -177,6 +188,9 @@ update_system() {
     else
         echo "SKIPPED: $0 update_system() : this action is not default anymore, and FORCE_RUN_APT is not set and exported by caller" >&2
     fi
+
+    # Here an exit-code suffices
+    set +e
     restore_ssh_service
 }
 

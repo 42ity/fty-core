@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2014-2016 Eaton
+# Copyright (C) 2014-2018 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -108,6 +108,7 @@ usage() {
 	echo "    wipe                 Alias to --stop-only"
 	echo "    update               Alias to --no-delete --no-install-dev --no-restore-saved"
 	echo "                         and disables user/group account sync from host to container"
+	echo "                         Allows to re-apply a modified overlay R/W to new RO OS image"
 	echo "    reboot               Alias to update with --no-download"
 	echo "    -h|--help            print this help"
 }
@@ -305,7 +306,8 @@ while [ $# -gt 0 ] ; do
 	reboot) # New uptime for existing rootfs - no initial reconfigs to do now
 		ATTEMPT_DOWNLOAD=no
 		;&
-	update) # New uptime for existing rootfs - no initial reconfigs to do now
+	update) # Download a new (overlay) existing rootfs but keep and reapply
+		# the locally modified data - so no initial reconfigs to do now
 		NO_DELETE=yes
 		NO_RESTORE_SAVED=yes
 		INSTALL_DEV_PKGS=no
@@ -405,6 +407,15 @@ if [ -n "$VM" ] && [ -s "`pwd`/$VM.config-reset-vm" ]; then
 		logmsg_warn "Found configuration file for the '$VM', it will override the command-line settings:"
 		cat "`pwd`/$VM.config-reset-vm"
 		. "`pwd`/$VM.config-reset-vm" || die "Can not import config file '`pwd`/$VM.config-reset-vm'"
+		if [ "$NO_DELETE" = yes ]; then
+			logmsg_warn "For the no-delete mode (reboot), disabling options to reapply 'saved data' files, apply packages and copy user accounts from host"
+			NO_RESTORE_SAVED=yes
+			INSTALL_DEV_PKGS=no
+			FORCE_RUN_APT=""
+			COPYHOST_USERS=""
+			COPYHOST_GROUPS=""
+			ELEVATE_USERS=""
+		fi
 	else
 		logmsg_warn "Found configuration file for the '$VM', but it is ignored because ALLOW_CONFIG_FILE='$ALLOW_CONFIG_FILE'"
 	fi
@@ -1068,9 +1079,11 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 	; then
 		logmsg_info "Keeping /etc/resolv.conf in the VM from the 'saved' template"
 	else
-		logmsg_info "Restore /etc/resolv.conf in the VM to the default baseline"
-		grep "8.8.8.8" "${ALTROOT}/etc/resolv.conf.bak-devpkg" >/dev/null || \
-			cp -pf "${ALTROOT}/etc/resolv.conf.bak-devpkg" "${ALTROOT}/etc/resolv.conf"
+		if [ -f "${ALTROOT}/etc/resolv.conf.bak-devpkg" ] ; then
+			logmsg_info "Restore /etc/resolv.conf in the VM to the default baseline"
+			grep "8.8.8.8" "${ALTROOT}/etc/resolv.conf.bak-devpkg" >/dev/null || \
+				cp -pf "${ALTROOT}/etc/resolv.conf.bak-devpkg" "${ALTROOT}/etc/resolv.conf"
+		fi
 	fi
 
 	if [ -f "${ALTROOT}.saved/etc/nsswitch.conf" ] && \
@@ -1078,8 +1091,10 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 	; then
 		logmsg_info "Keeping /etc/nsswitch.conf in the VM from the 'saved' template"
 	else
-		logmsg_info "Restore /etc/nsswitch.conf in the VM to the default baseline"
-		cp -pf "${ALTROOT}/etc/nsswitch.conf.bak-devpkg" "${ALTROOT}/etc/nsswitch.conf"
+		if [ -f "${ALTROOT}/etc/nsswitch.conf.bak-devpkg" ] ; then
+			logmsg_info "Restore /etc/nsswitch.conf in the VM to the default baseline"
+			cp -pf "${ALTROOT}/etc/nsswitch.conf.bak-devpkg" "${ALTROOT}/etc/nsswitch.conf"
+		fi
 	fi
 
 #	logmsg_info "Restart networking in the VM chroot to refresh virtual network settings"
