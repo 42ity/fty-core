@@ -159,6 +159,12 @@ do_unnut() {
     systemctl stop nut-server || true
     systemctl stop nut-driver.target || true
 
+    # Note: This requires our systemctl wrapper
+    for D in `systemctl list-ipm-units 'nut-driver@.+\.service'` ; do
+        systemctl stop "$D" || true
+        systemctl disable "$D" || true
+    done
+
     logmsg_info "Resetting NUT monitored device configs..."
     echo "maxretry = 3" > /etc/nut/ups.conf
 
