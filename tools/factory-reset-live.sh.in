@@ -72,9 +72,14 @@ if [[ $(id -u) != 0 ]]; then
     die "This script is not intended for ordinary usage by non-root users"
 fi
 
-if [[ ! -s /etc/release-details.json ]] ; then
+if [[ ! -f /etc/release-details.json ]] ; then
     # Sanity check to not destroy a developer workstation etc. ;)
     die "An /etc/release-details.json file was not found - be sure to run in IPM system!"
+fi
+
+if [[ ! -s /etc/release-details.json ]] ; then
+    # If the caller just "touched" the file, make it a valid JSON
+    echo '{}' > /etc/release-details.json
 fi
 
 do_reset_passwd() {
