@@ -105,6 +105,7 @@ usage() {
 	echo "    --deploy-only        end the script just before it would start the VM (skips apt-get too)"
 	echo "    --copy-host-users 'a b c'    Copies specified user or group account definitions"
 	echo "    --copy-host-groups 'a b c'   (e.g. for bind-mounted homes from host into the VM)"
+	echo "    --add-user=abuild    For Jenkins or OBS usage, define the 'abuild' account"
 	echo "    --no-config-file     Forbid use in this run of a per-VM config file if one is found"
 	echo "    halt                 Alias to --destroy-only"
 	echo "    wipe                 Alias to --stop-only"
@@ -242,6 +243,7 @@ DOTDOMAINNAME=""
 [ -z "${NO_RESTORE_SAVED-}" ] && NO_RESTORE_SAVED=no
 [ -z "${NO_DELETE-}" ] && NO_DELETE=no
 [ -z "${DEPLOY_JAVA8-}" ] && DEPLOY_JAVA8=no
+[ -z "${ADDUSER_ABUILD-}" ] && ADDUSER_ABUILD=no
 
 while [ $# -gt 0 ] ; do
 	case "$1" in
@@ -319,6 +321,7 @@ while [ $# -gt 0 ] ; do
 		COPYHOST_USERS=""
 		COPYHOST_GROUPS=""
 		ELEVATE_USERS=""
+		ADDUSER_ABUILD=no
 		shift
 		;;
 	--attempt-download)
@@ -355,6 +358,7 @@ while [ $# -gt 0 ] ; do
 	--with-java8-jre) # Only works if INSTALL_DEV_PKGS=yes
 		shift
 		DEPLOY_JAVA8=yes ; export DEPLOY_JAVA8 ;;
+	--add-user=abuild) ADDUSER_ABUILD=yes ; shift ;;
 	--copy-host-users)
 		COPYHOST_USERS="$2"; shift 2;;
 	--copy-host-groups)
@@ -422,6 +426,7 @@ if [ -n "$VM" ] && [ -s "`pwd`/$VM.config-reset-vm" ]; then
 			COPYHOST_USERS=""
 			COPYHOST_GROUPS=""
 			ELEVATE_USERS=""
+			ADDUSER_ABUILD=no
 		fi
 	else
 		logmsg_warn "Found configuration file for the '$VM', but it is ignored because ALLOW_CONFIG_FILE='$ALLOW_CONFIG_FILE'"
@@ -889,6 +894,8 @@ if mkdir -p "${ALTROOT}/root/.ccache" ; then
 	[ -d "/root/.ccache" ] || mkdir -p "/root/.ccache"
 	mount -o rbind "/root/.ccache" "${ALTROOT}/root/.ccache"
 fi
+# Make it available for symlinks from other accounts
+chmod 771 "${ALTROOT}/root"
 
 # Some bits might be required in an image early...
 # say, an /usr/bin/qemu-arm-static is a nice trick ;)
@@ -938,6 +945,16 @@ if [ -d ~/.config ]; then
 	cp --preserve -r ~/.config "${ALTROOT}/root/"
 fi
 
+if [ -d "${ALTROOT}/home/admin" ] && [ "$NO_DELETE" != yes ] ; then
+	logmsg_info "Copy root's OBS configs to admin user home"
+	mkdir -p "${ALTROOT}/home/admin/.config/osc"
+	[ -f "${ALTROOT}/root/.oscrc" ] && cp --preserve "${ALTROOT}/root/.oscrc" "${ALTROOT}/home/admin/.oscrc"
+	[ -d "${ALTROOT}/root/.config/osc" ] && cp --preserve -r "${ALTROOT}/root/.config/osc" "${ALTROOT}/home/admin/.config/osc"
+	chown -R admin: "${ALTROOT}/home/admin"
+	[ -d "${ALTROOT}/home/admin/.ccache" ] || ln -s "../../root/.ccache" "${ALTROOT}/home/admin/.ccache"
+	chmod 771 "${ALTROOT}/root"
+fi
+
 logmsg_info "Copy environment settings from the host OS"
 cp /etc/profile.d/* ${ALTROOT}/etc/profile.d/
 
@@ -960,6 +977,37 @@ if [ ! -d "${ALTROOT}/var/lib/mysql/mysql" ] && \
 ; then
 	logmsg_info "Copying MySQL root password from the host into VM"
 	cp -pf ~root/.my.cnf "${ALTROOT}/root/.my.cnf"
+fi
+
+if [ "$ADDUSER_ABUILD" = yes ] ; then
+	# This should be safe to re-run also if updating/rebooting
+	grep abuild "${ALTROOT}/etc/group"  >/dev/null || chroot "${ALTROOT}" /usr/sbin/groupadd -g 399 abuild
+	grep abuild "${ALTROOT}/etc/passwd" >/dev/null || chroot "${ALTROOT}" /usr/sbin/useradd -g 399 -u 399 -m -d /home/abuild -c "Automated build account" -s /bin/bash abuild
+
+	if [ -d "${ALTROOT}/home/abuild/.ccache" ] || [ -h "${ALTROOT}/home/abuild/.ccache" ]; then : ; else
+		[ -d "${ALTROOT}/home/abuild/.ccache" ] \
+		&& ln -s "../admin/.ccache/" "${ALTROOT}/home/abuild/.ccache" \
+		|| ln -s "../../root/.ccache/" "${ALTROOT}/home/abuild/.ccache"
+	fi
+
+	for D in \
+		.config \
+		.ssh \
+	; do
+		[ -d "${ALTROOT}/home/abuild/$D" ] || cp -prf "${ALTROOT}/home/admin/$D" "${ALTROOT}/home/abuild"
+	done
+
+	for F in \
+		.bashrc \
+		.bash_logout \
+		.profile \
+		.oscrc \
+	; do
+		[ -s "${ALTROOT}/home/abuild/$F" ] || cp -pf "${ALTROOT}/home/admin/$F" "${ALTROOT}/home/abuild/$F"
+	done
+
+	chroot "${ALTROOT}" /bin/chown -R abuild:abuild "/home/abuild"
+	chroot "${ALTROOT}" /usr/sbin/usermod -a -G abuild admin
 fi
 
 if [ -n "${COPYHOST_GROUPS-}" ]; then
