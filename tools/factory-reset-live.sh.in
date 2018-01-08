@@ -121,7 +121,8 @@ do_undatabase() {
     logmsg_info "Stopping database engine..."
     systemctl stop fty-db-engine.service || die "Can not ensure database is stopped"
     logmsg_info "Clearing database-related files..."
-    rm -rf /var/lib/mysql /var/lib/fty/sql/mysql/* /etc/default/bios-db-r[ow] /root/.my.cnf
+    rm -rf /var/lib/mysql /var/lib/fty/sql/mysql/* /var/lib/fty/sql/mysql/.*.cnf* \
+        /etc/default/bios-db-r[ow] /root/.my.cnf
     if [ "$ENABLESVC" = yes ]; then
         logmsg_info "Starting database engine, if possible..."
         systemctl restart fty-db-engine.service || true # License may forbid startup
