@@ -407,6 +407,15 @@ if [ -n "$VM" ] && [ -s "`pwd`/$VM.config-reset-vm" ]; then
 		logmsg_warn "Found configuration file for the '$VM', it will override the command-line settings:"
 		cat "`pwd`/$VM.config-reset-vm"
 		. "`pwd`/$VM.config-reset-vm" || die "Can not import config file '`pwd`/$VM.config-reset-vm'"
+		if [ "$NO_DELETE" = yes ]; then
+			logmsg_warn "For the no-delete mode (reboot), disabling options to reapply 'saved data' files, apply packages and copy user accounts from host"
+			NO_RESTORE_SAVED=yes
+			INSTALL_DEV_PKGS=no
+			FORCE_RUN_APT=""
+			COPYHOST_USERS=""
+			COPYHOST_GROUPS=""
+			ELEVATE_USERS=""
+		fi
 	else
 		logmsg_warn "Found configuration file for the '$VM', but it is ignored because ALLOW_CONFIG_FILE='$ALLOW_CONFIG_FILE'"
 	fi
