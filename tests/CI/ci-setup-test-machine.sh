@@ -172,6 +172,8 @@ restore_ssh_service() {
 
 update_system() {
     if [[ -n "${FORCE_RUN_APT}" ]]; then
+        # Die on failures, so callers know that VM setup did not go as planned
+        set -e
         limit_packages_expiration_check
         update_pkg_keys
         update_pkg_metadata
@@ -185,6 +187,9 @@ update_system() {
     else
         echo "SKIPPED: $0 update_system() : this action is not default anymore, and FORCE_RUN_APT is not set and exported by caller" >&2
     fi
+
+    # Here an exit-code suffices
+    set +e
     restore_ssh_service
 }
 
