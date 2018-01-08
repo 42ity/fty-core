@@ -41,6 +41,11 @@ logmsg_info() {
     return 0
 }
 
+error() {
+    echo "ERROR: `date -u`: $*"
+    return 1
+}
+
 usage() {
     cat << EOF
 $0: Automation of in-vivo factory-reset effect for
@@ -85,7 +90,15 @@ fi
 do_reset_passwd() {
     # TODO: On real RC, copy default password hash from /mnt/root-ro/etc/shadow?
     logmsg_info "Resetting admin password to our very simple default value..."
-    yes "admin" | passwd admin
+    yes "admin" | passwd admin && return
+    for INITACCT in /usr/share/{fty,bios}/scripts/init-os-accounts.sh ; do
+        if [[ -x "$INITACCT" ]] ; then
+            usermod --password "`USER_PASS='admin' "$INITACCT" hashPasswd`" admin && return
+            break
+        fi
+    done
+    logmsg_error "Failed to reset the admin password to our very simple default value"
+    return 1
 }
 
 do_unlicense() {
