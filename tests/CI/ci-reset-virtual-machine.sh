@@ -108,6 +108,7 @@ usage() {
 	echo "    wipe                 Alias to --stop-only"
 	echo "    update               Alias to --no-delete --no-install-dev --no-restore-saved"
 	echo "                         and disables user/group account sync from host to container"
+	echo "                         Allows to re-apply a modified overlay R/W to new RO OS image"
 	echo "    reboot               Alias to update with --no-download"
 	echo "    -h|--help            print this help"
 }
@@ -305,7 +306,8 @@ while [ $# -gt 0 ] ; do
 	reboot) # New uptime for existing rootfs - no initial reconfigs to do now
 		ATTEMPT_DOWNLOAD=no
 		;&
-	update) # New uptime for existing rootfs - no initial reconfigs to do now
+	update) # Download a new (overlay) existing rootfs but keep and reapply
+		# the locally modified data - so no initial reconfigs to do now
 		NO_DELETE=yes
 		NO_RESTORE_SAVED=yes
 		INSTALL_DEV_PKGS=no
