@@ -41,7 +41,7 @@ export LANG LANGUAGE LC_ALL TZ
 [ -z "$ARCH" ] && ARCH="`uname -m`"
 [ -z "$ARCH_PKG" ] && case "$ARCH" in
     x86_64|amd64) ARCH_PKG="amd64" ;;
-    armv7l) ARCH_PKG="armv7l";;
+    armv7l|armhf) ARCH_PKG="armhf";;
 esac
 
 limit_packages_recommends() {
