@@ -1212,6 +1212,9 @@ if [ -n "${GEN_REL_DETAILS}" -a -s "${GEN_REL_DETAILS}" -a -x "${GEN_REL_DETAILS
 	export FW_UIMAGEPART_CSDEVPAD  FW_UIMAGEPART_SIZE
 	export HWD_CATALOG_NB  HWD_REV HWD_SERIAL_NB
 
+	# Provide a default if caller did not DEFINE one
+	[[ ! -v "$HWD_CATALOG_NB" ]] && HWD_CATALOG_NB="IPC3000E-LXC"
+
 	logmsg_info "Generating the release details file(s) with the ${GEN_REL_DETAILS} script in OS image"
 	"${GEN_REL_DETAILS}"
 ) ; fi
