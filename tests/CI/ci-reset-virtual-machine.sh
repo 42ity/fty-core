@@ -89,6 +89,7 @@ usage() {
 	echo "    --install-dev        run ci-setup-test-machine.sh (if available) to install packages"
 	echo "    --with-java8-jre     when setting up packages with ci-setup-test-machine.sh, set"
 	echo "                         DEPLOY_JAVA8=yes to install a Java8 JRE for certain uses"
+	echo "    --with-libzmq4-dev   explicitly install libzmq4-dev here (if install-dev)"
 	echo "    --no-install-dev     do not run ci-setup-test-machine.sh, even on IMGTYPE=devel"
 	echo "    --no-restore-saved   do not copy stashed custom configs from a VMNAME.saved/ dir"
 	echo "    --no-overlayfs       enforce use of tarballs, even if overlayfs is supported by host"
@@ -243,6 +244,7 @@ DOTDOMAINNAME=""
 [ -z "${NO_RESTORE_SAVED-}" ] && NO_RESTORE_SAVED=no
 [ -z "${NO_DELETE-}" ] && NO_DELETE=no
 [ -z "${DEPLOY_JAVA8-}" ] && DEPLOY_JAVA8=no
+[ -z "${DEPLOY_LIBZMQ4_DEV-}" ] && DEPLOY_LIBZMQ4_DEV=no
 [ -z "${ADDUSER_ABUILD-}" ] && ADDUSER_ABUILD=no
 
 while [ $# -gt 0 ] ; do
@@ -358,6 +360,9 @@ while [ $# -gt 0 ] ; do
 	--with-java8-jre) # Only works if INSTALL_DEV_PKGS=yes
 		shift
 		DEPLOY_JAVA8=yes ; export DEPLOY_JAVA8 ;;
+	--with-libzmq4-dev) # Likewise
+		shift
+		DEPLOY_LIBZMQ4_DEV=yes ; export DEPLOY_LIBZMQ4_DEV ;;
 	--add-user=abuild) ADDUSER_ABUILD=yes ; shift ;;
 	--copy-host-users)
 		COPYHOST_USERS="$2"; shift 2;;
