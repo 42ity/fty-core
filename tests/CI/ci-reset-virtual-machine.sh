@@ -108,6 +108,7 @@ usage() {
 	echo "    --copy-host-groups 'a b c'   (e.g. for bind-mounted homes from host into the VM)"
 	echo "    --add-user=abuild    For Jenkins or OBS usage, define the 'abuild' account"
 	echo "    --no-config-file     Forbid use in this run of a per-VM config file if one is found"
+	echo "    --block-jenkins(=HOST)  Block access from HOST (defaults to our CI) while preparing"
 	echo "    halt                 Alias to --destroy-only"
 	echo "    wipe                 Alias to --stop-only"
 	echo "    update               Alias to --no-delete --no-install-dev --no-restore-saved"
@@ -246,6 +247,8 @@ DOTDOMAINNAME=""
 [ -z "${DEPLOY_JAVA8-}" ] && DEPLOY_JAVA8=no
 [ -z "${DEPLOY_LIBZMQ4_DEV-}" ] && DEPLOY_LIBZMQ4_DEV=no
 [ -z "${ADDUSER_ABUILD-}" ] && ADDUSER_ABUILD=no
+[ -z "${JENKINS_HOST-}" ] && JENKINS_HOST=jenkins2.roz.lab.etn.com
+[ -z "${BLOCK_JENKINS-}" ] && BLOCK_JENKINS=no
 
 while [ $# -gt 0 ] ; do
 	case "$1" in
@@ -310,6 +313,13 @@ while [ $# -gt 0 ] ; do
 		NO_DELETE=no
 		shift
 		;;
+	--block-jenkins=*)
+		JENKINS_HOST="`echo "$1" | sed 's,^--with-block-jenkins=,,'`" || JENKINS_HOST=""
+		shift
+		[ -n "$JENKINS_HOST" ] && BLOCK_JENKINS=yes ;;
+	--block-jenkins)
+		shift
+		BLOCK_JENKINS=yes ;;
 	reboot) # New uptime for existing rootfs - no initial reconfigs to do now
 		ATTEMPT_DOWNLOAD=no
 		;&
@@ -1086,6 +1096,17 @@ if [ x"$DEPLOYONLY" = xyes ]; then
 	exit 0
 fi
 
+[ -f "${ALTROOT}/etc/default/iptables.bak-default" ] \
+|| cp -pf "${ALTROOT}/etc/default/iptables" "${ALTROOT}/etc/default/iptables.bak-default"
+
+if [ "$BLOCK_JENKINS" = yes ] ; then
+	logmsg_info "Temporarily blocking access from Jenkins, so it does not use this virtual machine before it is ready"
+	awk -vjenkins="${JENKINS_HOST}" '
+    {print $0;}
+    /:OUTPUT ACCEPT/{ printf("-A INPUT -p tcp -m tcp -s %s -j REJECT --reject-with icmp-port-unreachable\n", jenkins ); }
+    ' <"${ALTROOT}/etc/default/iptables.bak-default" >"${ALTROOT}/etc/default/iptables"
+fi
+
 logmsg_info "Start the virtual machine $VM"
 probe_mounts "$VM"
 virsh -c lxc:// start "$VM" || die "Can't start the virtual machine $VM"
@@ -1195,7 +1216,13 @@ if [ -n "${GEN_REL_DETAILS}" -a -s "${GEN_REL_DETAILS}" -a -x "${GEN_REL_DETAILS
 	"${GEN_REL_DETAILS}"
 ) ; fi
 
-if [ "$VM_SHOULD_RESTART" = yes ]; then
+if [ "$BLOCK_JENKINS" = yes ] ; then
+	logmsg_info "Un-blocking access from Jenkins, so it can use this virtual machine"
+	grep -v "${JENKINS_HOST}" < "${ALTROOT}/etc/default/iptables" > "${ALTROOT}/etc/default/iptables.bak" && \
+	mv -f "${ALTROOT}/etc/default/iptables.bak" "${ALTROOT}/etc/default/iptables"
+fi
+
+if [ "$VM_SHOULD_RESTART" = yes ] || [ "$BLOCK_JENKINS" = yes ] ; then
 	logmsg_info "Restart the virtual machine $VM"
 	virsh -c lxc:// shutdown "$VM" || true
 	virsh -c lxc:// destroy "$VM" && sleep 5 && \
