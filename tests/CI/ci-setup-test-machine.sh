@@ -35,6 +35,13 @@ export CHECKOUTDIR BUILDSUBDIR
 [ -z "$TZ" ] && TZ=UTC
 export LANG LANGUAGE LC_ALL TZ
 
+# Match CPU arch to packaging arch
+[ -z "$ARCH" ] && ARCH="`uname -m`"
+[ -z "$ARCH_PKG" ] && case "$ARCH" in
+    x86_64|amd64) ARCH_PKG="amd64" ;;
+    armv7l) ARCH_PKG="armv7l";;
+esac
+
 limit_packages_recommends() {
     echo "INFO: Tell APT to not install packages from 'Recommends' category"
     mkdir -p /etc/apt/apt.conf.d
@@ -154,6 +161,30 @@ install_package_set_biosdeps() {
     fi
 }
 
+install_package_set_java8_jre() {
+    # Needed for Jenkins workers, Flexnet CLI tools, ...
+    # Magic variable can be set and exported by caller
+    if [ -n "${DEPLOY_JAVA8-}" ] && [ "${DEPLOY_JAVA8-}" != no ]; then
+        echo "INFO: Installing the predefined package set for Java 8 JRE..."
+        yes | apt-get -y \
+            -q -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" \
+            install -t jessie-backports \
+            openjdk-8-jre-headless && \
+        update-java-alternatives --set java-1.8.0-openjdk \
+        || update-java-alternatives --set java-1.8.0-openjdk-${ARCH_PKG} \
+        || ln -s /usr/lib/jvm/java-8-openjdk-${ARCH_PKG}/bin/java /usr/bin/java
+    fi
+}
+
+install_package_set_libzmq4_dev() {
+    # Needed for builds against specifically upstream libzmq, not our default fork
+    # Magic variable can be set and exported by caller
+    if [ -n "${DEPLOY_LIBZMQ4_DEV-}" ] && [ "${DEPLOY_LIBZMQ4_DEV-}" != no ]; then
+        echo "INFO: Installing the upstream libzmq4-dev, not our default fork..."
+        yes | apt-get install -y --force-yes libzmq4-dev
+    fi
+}
+
 restore_ssh_service() {
     /bin/systemctl stop ssh.socket
     /bin/systemctl mask ssh.socket
@@ -174,17 +205,18 @@ restore_ssh_service() {
 update_system() {
     if [[ -n "${FORCE_RUN_APT}" ]]; then
         # Die on failures, so callers know that VM setup did not go as planned
-        set -e
-        limit_packages_expiration_check
-        update_pkg_keys
-        update_pkg_metadata
-        limit_packages_recommends
-        limit_packages_paths
-        install_packages_missing
-        limit_packages_docs
-        install_package_set_dev
-        install_package_set_biosdeps
-        limit_packages_forceremove
+        limit_packages_expiration_check || die "Failed to limit_packages_expiration_check()"
+        update_pkg_keys || die "Failed to update_pkg_keys()"
+        update_pkg_metadata || die "Failed to update_pkg_metadata()"
+        limit_packages_recommends || die "Failed to limit_packages_recommends()"
+        limit_packages_paths || die "Failed to limit_packages_paths()"
+        install_packages_missing || install_packages_missing || die "Failed to install_packages_missing()"
+        limit_packages_docs || die "Failed to limit_packages_docs()"
+        install_package_set_dev || install_package_set_dev || die "Failed to install_package_set_dev()"
+        install_package_set_biosdeps || install_package_set_biosdeps || die "Failed to install_package_set_biosdeps()"
+        install_package_set_java8_jre || install_package_set_java8_jre || die "Failed to install_package_set_java8_jre()"
+        install_package_set_libzmq4_dev || install_package_set_libzmq4_dev || die "Failed to install_package_set_libzmq4_dev()"
+        limit_packages_forceremove || die "Failed to limit_packages_forceremove()"
     else
         echo "SKIPPED: $0 update_system() : this action is not default anymore, and FORCE_RUN_APT is not set and exported by caller" >&2
     fi

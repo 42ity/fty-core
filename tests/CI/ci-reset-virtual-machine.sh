@@ -87,6 +87,9 @@ usage() {
 	echo "    -hp|--http-proxy URL the http_proxy override to access OBS ('$http_proxy')"
 	echo "    -ap|--apt-proxy URL  the http_proxy to access external APT images ('$APT_PROXY')"
 	echo "    --install-dev        run ci-setup-test-machine.sh (if available) to install packages"
+	echo "    --with-java8-jre     when setting up packages with ci-setup-test-machine.sh, set"
+	echo "                         DEPLOY_JAVA8=yes to install a Java8 JRE for certain uses"
+	echo "    --with-libzmq4-dev   explicitly install libzmq4-dev here (if install-dev)"
 	echo "    --no-install-dev     do not run ci-setup-test-machine.sh, even on IMGTYPE=devel"
 	echo "    --no-restore-saved   do not copy stashed custom configs from a VMNAME.saved/ dir"
 	echo "    --no-overlayfs       enforce use of tarballs, even if overlayfs is supported by host"
@@ -103,7 +106,9 @@ usage() {
 	echo "    --deploy-only        end the script just before it would start the VM (skips apt-get too)"
 	echo "    --copy-host-users 'a b c'    Copies specified user or group account definitions"
 	echo "    --copy-host-groups 'a b c'   (e.g. for bind-mounted homes from host into the VM)"
+	echo "    --add-user=abuild    For Jenkins or OBS usage, define the 'abuild' account"
 	echo "    --no-config-file     Forbid use in this run of a per-VM config file if one is found"
+	echo "    --block-jenkins(=HOST)  Block access from HOST (defaults to our CI) while preparing"
 	echo "    halt                 Alias to --destroy-only"
 	echo "    wipe                 Alias to --stop-only"
 	echo "    update               Alias to --no-delete --no-install-dev --no-restore-saved"
@@ -239,6 +244,11 @@ DOTDOMAINNAME=""
 [ -z "${OVERLAYFS-}" ] && OVERLAYFS="auto"
 [ -z "${NO_RESTORE_SAVED-}" ] && NO_RESTORE_SAVED=no
 [ -z "${NO_DELETE-}" ] && NO_DELETE=no
+[ -z "${DEPLOY_JAVA8-}" ] && DEPLOY_JAVA8=no
+[ -z "${DEPLOY_LIBZMQ4_DEV-}" ] && DEPLOY_LIBZMQ4_DEV=no
+[ -z "${ADDUSER_ABUILD-}" ] && ADDUSER_ABUILD=no
+[ -z "${JENKINS_HOST-}" ] && JENKINS_HOST=jenkins2.roz.lab.etn.com
+[ -z "${BLOCK_JENKINS-}" ] && BLOCK_JENKINS=no
 
 while [ $# -gt 0 ] ; do
 	case "$1" in
@@ -303,6 +313,13 @@ while [ $# -gt 0 ] ; do
 		NO_DELETE=no
 		shift
 		;;
+	--block-jenkins=*)
+		JENKINS_HOST="`echo "$1" | sed 's,^--with-block-jenkins=,,'`" || JENKINS_HOST=""
+		shift
+		[ -n "$JENKINS_HOST" ] && BLOCK_JENKINS=yes ;;
+	--block-jenkins)
+		shift
+		BLOCK_JENKINS=yes ;;
 	reboot) # New uptime for existing rootfs - no initial reconfigs to do now
 		ATTEMPT_DOWNLOAD=no
 		;&
@@ -316,6 +333,7 @@ while [ $# -gt 0 ] ; do
 		COPYHOST_USERS=""
 		COPYHOST_GROUPS=""
 		ELEVATE_USERS=""
+		ADDUSER_ABUILD=no
 		shift
 		;;
 	--attempt-download)
@@ -349,6 +367,13 @@ while [ $# -gt 0 ] ; do
 		export FORCE_RUN_APT
 		shift
 		;;
+	--with-java8-jre) # Only works if INSTALL_DEV_PKGS=yes
+		shift
+		DEPLOY_JAVA8=yes ; export DEPLOY_JAVA8 ;;
+	--with-libzmq4-dev) # Likewise
+		shift
+		DEPLOY_LIBZMQ4_DEV=yes ; export DEPLOY_LIBZMQ4_DEV ;;
+	--add-user=abuild) ADDUSER_ABUILD=yes ; shift ;;
 	--copy-host-users)
 		COPYHOST_USERS="$2"; shift 2;;
 	--copy-host-groups)
@@ -394,6 +419,7 @@ fi
 [ x"$http_proxy" = x- ] && http_proxy="" && export http_proxy
 
 [ -z "$ARCH" ] && ARCH="`uname -m`"
+export ARCH
 # Note: several hardcoded paths are expected relative to "snapshots", so
 # it is critical that we succeed changing into this directory in the end.
 
@@ -415,6 +441,7 @@ if [ -n "$VM" ] && [ -s "`pwd`/$VM.config-reset-vm" ]; then
 			COPYHOST_USERS=""
 			COPYHOST_GROUPS=""
 			ELEVATE_USERS=""
+			ADDUSER_ABUILD=no
 		fi
 	else
 		logmsg_warn "Found configuration file for the '$VM', but it is ignored because ALLOW_CONFIG_FILE='$ALLOW_CONFIG_FILE'"
@@ -882,6 +909,8 @@ if mkdir -p "${ALTROOT}/root/.ccache" ; then
 	[ -d "/root/.ccache" ] || mkdir -p "/root/.ccache"
 	mount -o rbind "/root/.ccache" "${ALTROOT}/root/.ccache"
 fi
+# Make it available for symlinks from other accounts
+chmod 771 "${ALTROOT}/root"
 
 # Some bits might be required in an image early...
 # say, an /usr/bin/qemu-arm-static is a nice trick ;)
@@ -931,6 +960,16 @@ if [ -d ~/.config ]; then
 	cp --preserve -r ~/.config "${ALTROOT}/root/"
 fi
 
+if [ -d "${ALTROOT}/home/admin" ] && [ "$NO_DELETE" != yes ] ; then
+	logmsg_info "Copy root's OBS configs to admin user home"
+	mkdir -p "${ALTROOT}/home/admin/.config/osc"
+	[ -f "${ALTROOT}/root/.oscrc" ] && cp --preserve "${ALTROOT}/root/.oscrc" "${ALTROOT}/home/admin/.oscrc"
+	[ -d "${ALTROOT}/root/.config/osc" ] && cp --preserve -r "${ALTROOT}/root/.config/osc" "${ALTROOT}/home/admin/.config/osc"
+	chown -R admin: "${ALTROOT}/home/admin"
+	[ -d "${ALTROOT}/home/admin/.ccache" ] || ln -s "../../root/.ccache" "${ALTROOT}/home/admin/.ccache"
+	chmod 771 "${ALTROOT}/root"
+fi
+
 logmsg_info "Copy environment settings from the host OS"
 cp /etc/profile.d/* ${ALTROOT}/etc/profile.d/
 
@@ -953,6 +992,37 @@ if [ ! -d "${ALTROOT}/var/lib/mysql/mysql" ] && \
 ; then
 	logmsg_info "Copying MySQL root password from the host into VM"
 	cp -pf ~root/.my.cnf "${ALTROOT}/root/.my.cnf"
+fi
+
+if [ "$ADDUSER_ABUILD" = yes ] ; then
+	# This should be safe to re-run also if updating/rebooting
+	grep abuild "${ALTROOT}/etc/group"  >/dev/null || chroot "${ALTROOT}" /usr/sbin/groupadd -g 399 abuild
+	grep abuild "${ALTROOT}/etc/passwd" >/dev/null || chroot "${ALTROOT}" /usr/sbin/useradd -g 399 -u 399 -m -d /home/abuild -c "Automated build account" -s /bin/bash abuild
+
+	if [ -d "${ALTROOT}/home/abuild/.ccache" ] || [ -h "${ALTROOT}/home/abuild/.ccache" ]; then : ; else
+		[ -d "${ALTROOT}/home/abuild/.ccache" ] \
+		&& ln -s "../admin/.ccache/" "${ALTROOT}/home/abuild/.ccache" \
+		|| ln -s "../../root/.ccache/" "${ALTROOT}/home/abuild/.ccache"
+	fi
+
+	for D in \
+		.config \
+		.ssh \
+	; do
+		[ -d "${ALTROOT}/home/abuild/$D" ] || cp -prf "${ALTROOT}/home/admin/$D" "${ALTROOT}/home/abuild"
+	done
+
+	for F in \
+		.bashrc \
+		.bash_logout \
+		.profile \
+		.oscrc \
+	; do
+		[ -s "${ALTROOT}/home/abuild/$F" ] || cp -pf "${ALTROOT}/home/admin/$F" "${ALTROOT}/home/abuild/$F"
+	done
+
+	chroot "${ALTROOT}" /bin/chown -R abuild:abuild "/home/abuild"
+	chroot "${ALTROOT}" /usr/sbin/usermod -a -G abuild admin
 fi
 
 if [ -n "${COPYHOST_GROUPS-}" ]; then
@@ -1024,6 +1094,17 @@ if [ x"$DEPLOYONLY" = xyes ]; then
 	[ "$INSTALL_DEV_PKGS" = yes ] && \
 		logmsg_warn "Note that INSTALL_DEV_PKGS was requested - it is hereby skipped" >&2
 	exit 0
+fi
+
+[ -f "${ALTROOT}/etc/default/iptables.bak-default" ] \
+|| cp -pf "${ALTROOT}/etc/default/iptables" "${ALTROOT}/etc/default/iptables.bak-default"
+
+if [ "$BLOCK_JENKINS" = yes ] ; then
+	logmsg_info "Temporarily blocking access from Jenkins, so it does not use this virtual machine before it is ready"
+	awk -vjenkins="${JENKINS_HOST}" '
+    {print $0;}
+    /:OUTPUT ACCEPT/{ printf("-A INPUT -p tcp -m tcp -s %s -j REJECT --reject-with icmp-port-unreachable\n", jenkins ); }
+    ' <"${ALTROOT}/etc/default/iptables.bak-default" >"${ALTROOT}/etc/default/iptables"
 fi
 
 logmsg_info "Start the virtual machine $VM"
@@ -1104,11 +1185,12 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 fi
 
 if [ -z "${GEN_REL_DETAILS-}" ] ; then
-    GEN_REL_DETAILS=""
-    for F in "${ALTROOT}/usr/share/fty/scripts/generate-release-details.sh" \
-        "${ALTROOT}/usr/share/bios/scripts/generate-release-details.sh" ; do
-            [ -s "$F" ] && [ -x "$F" ] && GEN_REL_DETAILS="$F" && break
-    done
+	GEN_REL_DETAILS=""
+	for F in "${ALTROOT}/usr/share/fty/scripts/generate-release-details.sh" \
+		"${ALTROOT}/usr/share/bios/scripts/generate-release-details.sh" \
+	; do
+		[ -s "$F" ] && [ -x "$F" ] && GEN_REL_DETAILS="$F" && break
+	done
 fi
 
 if [ -n "${GEN_REL_DETAILS}" -a -s "${GEN_REL_DETAILS}" -a -x "${GEN_REL_DETAILS}" \
@@ -1130,11 +1212,20 @@ if [ -n "${GEN_REL_DETAILS}" -a -s "${GEN_REL_DETAILS}" -a -x "${GEN_REL_DETAILS
 	export FW_UIMAGEPART_CSDEVPAD  FW_UIMAGEPART_SIZE
 	export HWD_CATALOG_NB  HWD_REV HWD_SERIAL_NB
 
+	# Provide a default if caller did not DEFINE one
+	[[ ! -v "$HWD_CATALOG_NB" ]] && HWD_CATALOG_NB="IPC3000E-LXC"
+
 	logmsg_info "Generating the release details file(s) with the ${GEN_REL_DETAILS} script in OS image"
 	"${GEN_REL_DETAILS}"
 ) ; fi
 
-if [ "$VM_SHOULD_RESTART" = yes ]; then
+if [ "$BLOCK_JENKINS" = yes ] ; then
+	logmsg_info "Un-blocking access from Jenkins, so it can use this virtual machine"
+	grep -v "${JENKINS_HOST}" < "${ALTROOT}/etc/default/iptables" > "${ALTROOT}/etc/default/iptables.bak" && \
+	mv -f "${ALTROOT}/etc/default/iptables.bak" "${ALTROOT}/etc/default/iptables"
+fi
+
+if [ "$VM_SHOULD_RESTART" = yes ] || [ "$BLOCK_JENKINS" = yes ] ; then
 	logmsg_info "Restart the virtual machine $VM"
 	virsh -c lxc:// shutdown "$VM" || true
 	virsh -c lxc:// destroy "$VM" && sleep 5 && \
