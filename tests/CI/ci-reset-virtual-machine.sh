@@ -1104,11 +1104,12 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 fi
 
 if [ -z "${GEN_REL_DETAILS-}" ] ; then
-    GEN_REL_DETAILS=""
-    for F in "${ALTROOT}/usr/share/fty/scripts/generate-release-details.sh" \
-        "${ALTROOT}/usr/share/bios/scripts/generate-release-details.sh" ; do
-            [ -s "$F" ] && [ -x "$F" ] && GEN_REL_DETAILS="$F" && break
-    done
+	GEN_REL_DETAILS=""
+	for F in "${ALTROOT}/usr/share/fty/scripts/generate-release-details.sh" \
+		"${ALTROOT}/usr/share/bios/scripts/generate-release-details.sh" \
+	; do
+		[ -s "$F" ] && [ -x "$F" ] && GEN_REL_DETAILS="$F" && break
+	done
 fi
 
 if [ -n "${GEN_REL_DETAILS}" -a -s "${GEN_REL_DETAILS}" -a -x "${GEN_REL_DETAILS}" \
