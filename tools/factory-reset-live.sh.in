@@ -190,6 +190,10 @@ do_factory_reset() (
     do_reset_passwd
     ENABLESVC="$ENABLESVC_ORIG"
     do_unnut
+    # Be sure DB does not fire up in this window of uncertainty for systemd --
+    # just to be killed mid-way through DB files creation, leaving them corrupt
+    systemctl stop fty-db-init.service
+    systemctl stop fty-db-engine.service
     logmsg_info "Restarting IPM-related services..."
     systemctl restart fty-license-accepted.service
     systemctl restart fty-license-accepted.path
