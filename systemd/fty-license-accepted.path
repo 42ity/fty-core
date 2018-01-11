@@ -12,5 +12,9 @@ PathModified=/var/lib/fty/license
 PathExists=/var/lib/fty/license
 Unit=fty-license-accepted.service
 
+# Normally the dependency on fty-license-accepted.service from
+# fty-db-engine.service would suffice. But our systemd is quirky,
+# so sometimes there is a split second that database would start
+# when not intended, and then is killed off - corrupting its files.
 [Install]
-RequiredBy=bios.target fty-license-accepted.service
+RequiredBy=bios.target fty-license-accepted.service fty-db-engine.service fty-db-init.service
