@@ -450,7 +450,7 @@ case "$IMGTYPE" in
 	*) INSTALL_DEV_PKGS=no ;;
 esac
 
-mkdir -p "/srv/libvirt/snapshots/$IMGTYPE/$ARCH"
+mkdir -p "/srv/libvirt/snapshots/${IMGTYPE}/${IMGQALEVEL}/${ARCH}"
 
 # Unless these were set by caller or config or somehow else,
 # define the values now. This pattern is a REGEX.
@@ -549,8 +549,8 @@ fi
 settraps 'cleanup_script'
 
 # Proceed to downloads, etc.
-cd "/srv/libvirt/snapshots/$IMGTYPE/$ARCH" || \
-	die "Can not 'cd /srv/libvirt/snapshots/$IMGTYPE/$ARCH' to download image files"
+cd "/srv/libvirt/snapshots/${IMGTYPE}/${IMGQALEVEL}/${ARCH}" || \
+	die "Can not 'cd /srv/libvirt/snapshots/${IMGTYPE}/${IMGQALEVEL}/${ARCH}' to download image files"
 
 # Initial value, aka "file not found"
 WGET_RES=127
@@ -676,21 +676,21 @@ if [ "$1" ]; then
 	# IMAGE_FLAT is used as a prefix to directory filenames of mountpoints
 	IMAGE_FLAT="`basename "$IMAGE"`"
 else
-	if [ -n "$IMAGE" ] && [ -s "$IMGTYPE/$ARCH/$IMAGE" ]; then
+	if [ -n "$IMAGE" ] && [ -s "${IMGTYPE}/${IMGQALEVEL}/${ARCH}/${IMAGE}" ]; then
 		logmsg_info "Recent download succeeded, checksums passed - using this image"
-		IMAGE="$IMGTYPE/$ARCH/$IMAGE"
+		IMAGE="${IMGTYPE}/${IMGQALEVEL}/${ARCH}/${IMAGE}"
 	else
 		# If download failed or was skipped, we can have a previous
 		# image file for this type
 		logmsg_info "Selecting newest image (as sorted by alphabetic name)"
 		IMAGE=""
-		ls -1 $IMGTYPE/$ARCH/*.$EXT >/dev/null || \
-			die "No downloaded image of type $IMGTYPE/$ARCH was found!"
+		ls -1 "${IMGTYPE}/${IMGQALEVEL}/${ARCH}"/*.$EXT >/dev/null || \
+			die "No downloaded image of type ${IMGTYPE}/${IMGQALEVEL}/${ARCH} was found!"
 		while [ -z "$IMAGE" ]; do
 			if [ -z "$IMAGE_SKIP" ]; then
-				IMAGE="`ls -1 $IMGTYPE/$ARCH/*.$EXT | sort -r | head -n 1`"
+				IMAGE="`ls -1 "${IMGTYPE}/${IMGQALEVEL}/${ARCH}"/*.$EXT | sort -r | head -n 1`"
 			else
-				IMAGE="`ls -1 $IMGTYPE/$ARCH/*.$EXT | sort -r | grep -v "$IMAGE_SKIP" | head -n 1`"
+				IMAGE="`ls -1 "${IMGTYPE}/${IMGQALEVEL}/${ARCH}"/*.$EXT | sort -r | grep -v "$IMAGE_SKIP" | head -n 1`"
 			fi
 			ensure_md5sum "$IMAGE" "$IMAGE.md5" || IMAGE=""
 		done
@@ -698,7 +698,7 @@ else
 	IMAGE_FLAT="`basename "$IMAGE" .$EXT`_${IMGTYPE}_${ARCH}_${IMGQALEVEL}.$EXT"
 fi
 if [ -z "$IMAGE" ]; then
-	die "No downloaded image files located in my cache (`pwd`/$IMGTYPE/$ARCH/*.$EXT)!"
+	die "No downloaded image files located in my cache (`pwd`/${IMGTYPE}/${IMGQALEVEL}/${ARCH}/*.$EXT)!"
 fi
 if [ ! -s "$IMAGE" ]; then
 	die "No downloaded image files located in my cache (`pwd`/$IMAGE)!"
@@ -1087,7 +1087,7 @@ if [ -d "${ALTROOT}.saved/" ] && [ "$NO_RESTORE_SAVED" != yes ]; then
 	( cd "${ALTROOT}.saved/" && tar cf - . ) | ( cd "${ALTROOT}/" && tar xvf - )
 fi
 
-logmsg_info "Pre-configuration of VM '$VM' ($IMGTYPE/$ARCH) is completed"
+logmsg_info "Pre-configuration of VM '$VM' (${IMGTYPE}/${IMGQALEVEL}/${ARCH}) is completed"
 if [ x"$DEPLOYONLY" = xyes ]; then
 	logmsg_info "DEPLOYONLY was requested, so ending" \
 		"'${_SCRIPT_PATH} ${_SCRIPT_ARGS}' now with exit-code '0'" >&2
