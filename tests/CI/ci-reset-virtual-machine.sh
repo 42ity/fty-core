@@ -791,8 +791,8 @@ fi
 
 for D in ../overlays-ro/*-ro/ ../rootfs/*-ro/ ; do
 	# Do not remove the current IMAGE mountpoint if we reuse it again now
-	### [ x"$D" = x"../rootfs/${IMAGE_FLAT}-ro/" ] && continue
-	[ x"$D" = x"../overlays-ro/${IMAGE_FLAT}-ro/" ] && continue
+	### [ x"$D" = x"../rootfs/${IMAGE_FLAT}-ro/" ] && [ x"$STOPONLY" != xyes ] && continue
+	[ x"$D" = x"../overlays-ro/${IMAGE_FLAT}-ro/" ] && [ x"$STOPONLY" != xyes ] && continue
 	# Now, ignore non-directories and not-empty dirs (used mountpoints)
 	if [ -d "$D" ]; then
 		# This is a directory
