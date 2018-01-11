@@ -828,7 +828,7 @@ for D in ../overlays-ro/*-ro/ ../rootfs/*-ro/ ; do
 				logmsg_warn "Old RO mountpoint '$FD' seems still used" && \
 				continue
 
-			logmsg_warn "Obsolete RO mountpoint for this IMAGE was found," \
+			logmsg_warn "Obsolete (unused, empty) RO mountpoint was found," \
 				"removing '`pwd`/$D':"
 			ls -lad "$D"; ls -la "$D"
 			umount -fl "$D" 2> /dev/null > /dev/null || true
