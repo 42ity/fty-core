@@ -224,12 +224,6 @@ VM="latest"
 # SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN="simpleimage.*"
 # FLAG_FLATTEN_FILENAMES=yes
 
-[ -z "$LANG" ] && LANG=C
-[ -z "$LANGUAGE" ] && LANGUAGE=C
-[ -z "$LC_ALL" ] && LC_ALL=C
-[ -z "$TZ" ] && TZ=UTC
-export LANG LANGUAGE LC_ALL TZ
-
 DOTDOMAINNAME="`dnsdomainname | grep -v '('`" || \
 DOTDOMAINNAME="`domainname | grep -v '('`" || \
 DOTDOMAINNAME=""
