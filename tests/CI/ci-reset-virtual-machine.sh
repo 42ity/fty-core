@@ -214,7 +214,8 @@ VM="latest"
 
 [ -z "$OBS_IMAGES" ] && OBS_IMAGES="http://tomcat.roz.lab.etn.com/images/"
 #[ -z "$OBS_IMAGES" ] && OBS_IMAGES="http://obs.roz.lab.etn.com/images/"
-[ -z "$APT_PROXY" ] && APT_PROXY='http://thunderbolt.roz.lab.etn.com:3142'
+[ -z "$APT_PROXY" ] && APT_PROXY='http://thunderbolt.roz.lab.etn.com:4222'
+#[ -z "$APT_PROXY" ] && APT_PROXY='http://thunderbolt.roz.lab.etn.com:3142'
 #[ -z "$APT_PROXY" ] && APT_PROXY='http://gate.roz.lab.etn.com:3142'
 [ -n "$http_proxy" ] && export http_proxy
 
@@ -222,12 +223,6 @@ VM="latest"
 ### Defaults are assigned below after CLI processing
 # SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN="simpleimage.*"
 # FLAG_FLATTEN_FILENAMES=yes
-
-[ -z "$LANG" ] && LANG=C
-[ -z "$LANGUAGE" ] && LANGUAGE=C
-[ -z "$LC_ALL" ] && LC_ALL=C
-[ -z "$TZ" ] && TZ=UTC
-export LANG LANGUAGE LC_ALL TZ
 
 DOTDOMAINNAME="`dnsdomainname | grep -v '('`" || \
 DOTDOMAINNAME="`domainname | grep -v '('`" || \
@@ -249,6 +244,7 @@ DOTDOMAINNAME=""
 [ -z "${ADDUSER_ABUILD-}" ] && ADDUSER_ABUILD=no
 [ -z "${JENKINS_HOST-}" ] && JENKINS_HOST=jenkins2.roz.lab.etn.com
 [ -z "${BLOCK_JENKINS-}" ] && BLOCK_JENKINS=no
+[ -z "${HOST_CCACHE_DIR-}" ] && HOST_CCACHE_DIR="/root/.ccache"
 
 while [ $# -gt 0 ] ; do
 	case "$1" in
@@ -454,7 +450,7 @@ case "$IMGTYPE" in
 	*) INSTALL_DEV_PKGS=no ;;
 esac
 
-mkdir -p "/srv/libvirt/snapshots/$IMGTYPE/$ARCH"
+mkdir -p "/srv/libvirt/snapshots/${IMGTYPE}/${IMGQALEVEL}/${ARCH}"
 
 # Unless these were set by caller or config or somehow else,
 # define the values now. This pattern is a REGEX.
@@ -553,8 +549,8 @@ fi
 settraps 'cleanup_script'
 
 # Proceed to downloads, etc.
-cd "/srv/libvirt/snapshots/$IMGTYPE/$ARCH" || \
-	die "Can not 'cd /srv/libvirt/snapshots/$IMGTYPE/$ARCH' to download image files"
+cd "/srv/libvirt/snapshots/${IMGTYPE}/${IMGQALEVEL}/${ARCH}" || \
+	die "Can not 'cd /srv/libvirt/snapshots/${IMGTYPE}/${IMGQALEVEL}/${ARCH}' to download image files"
 
 # Initial value, aka "file not found"
 WGET_RES=127
@@ -680,21 +676,21 @@ if [ "$1" ]; then
 	# IMAGE_FLAT is used as a prefix to directory filenames of mountpoints
 	IMAGE_FLAT="`basename "$IMAGE"`"
 else
-	if [ -n "$IMAGE" ] && [ -s "$IMGTYPE/$ARCH/$IMAGE" ]; then
+	if [ -n "$IMAGE" ] && [ -s "${IMGTYPE}/${IMGQALEVEL}/${ARCH}/${IMAGE}" ]; then
 		logmsg_info "Recent download succeeded, checksums passed - using this image"
-		IMAGE="$IMGTYPE/$ARCH/$IMAGE"
+		IMAGE="${IMGTYPE}/${IMGQALEVEL}/${ARCH}/${IMAGE}"
 	else
 		# If download failed or was skipped, we can have a previous
 		# image file for this type
 		logmsg_info "Selecting newest image (as sorted by alphabetic name)"
 		IMAGE=""
-		ls -1 $IMGTYPE/$ARCH/*.$EXT >/dev/null || \
-			die "No downloaded image of type $IMGTYPE/$ARCH was found!"
+		ls -1 "${IMGTYPE}/${IMGQALEVEL}/${ARCH}"/*.$EXT >/dev/null || \
+			die "No downloaded image of type ${IMGTYPE}/${IMGQALEVEL}/${ARCH} was found!"
 		while [ -z "$IMAGE" ]; do
 			if [ -z "$IMAGE_SKIP" ]; then
-				IMAGE="`ls -1 $IMGTYPE/$ARCH/*.$EXT | sort -r | head -n 1`"
+				IMAGE="`ls -1 "${IMGTYPE}/${IMGQALEVEL}/${ARCH}"/*.$EXT | sort -r | head -n 1`"
 			else
-				IMAGE="`ls -1 $IMGTYPE/$ARCH/*.$EXT | sort -r | grep -v "$IMAGE_SKIP" | head -n 1`"
+				IMAGE="`ls -1 "${IMGTYPE}/${IMGQALEVEL}/${ARCH}"/*.$EXT | sort -r | grep -v "$IMAGE_SKIP" | head -n 1`"
 			fi
 			ensure_md5sum "$IMAGE" "$IMAGE.md5" || IMAGE=""
 		done
@@ -702,7 +698,7 @@ else
 	IMAGE_FLAT="`basename "$IMAGE" .$EXT`_${IMGTYPE}_${ARCH}_${IMGQALEVEL}.$EXT"
 fi
 if [ -z "$IMAGE" ]; then
-	die "No downloaded image files located in my cache (`pwd`/$IMGTYPE/$ARCH/*.$EXT)!"
+	die "No downloaded image files located in my cache (`pwd`/${IMGTYPE}/${IMGQALEVEL}/${ARCH}/*.$EXT)!"
 fi
 if [ ! -s "$IMAGE" ]; then
 	die "No downloaded image files located in my cache (`pwd`/$IMAGE)!"
@@ -724,11 +720,12 @@ sleep 5
 # Cleanup of the rootfs
 ALTROOT="$(cd "`pwd`/../rootfs/$VM" && pwd)" || die "Could not determine the container ALTROOT"
 logmsg_info "Unmounting paths related to VM '$VM':" \
-	"'${ALTROOT}/lib/modules', '${ALTROOT}/root/.ccache'" \
+	"'${ALTROOT}/lib/modules', '${ALTROOT}/.ccache'" \
 	"'${ALTROOT}/proc', '${ALTROOT}', '`pwd`/../rootfs/${IMAGE_FLAT}-ro'," \
 	"'`pwd`/../overlays-ro/${IMAGE_FLAT}-ro'"
 umount -fl "${ALTROOT}/lib/modules" 2> /dev/null > /dev/null || true
 umount -fl "${ALTROOT}/root/.ccache" 2> /dev/null > /dev/null || true
+umount -fl "${ALTROOT}/.ccache" 2> /dev/null > /dev/null || true
 umount -fl "${ALTROOT}/proc" 2> /dev/null > /dev/null || true
 umount -fl "${ALTROOT}" 2> /dev/null > /dev/null || true
 fusermount -u -z "${ALTROOT}" 2> /dev/null > /dev/null || true
@@ -794,16 +791,18 @@ fi
 
 for D in ../overlays-ro/*-ro/ ../rootfs/*-ro/ ; do
 	# Do not remove the current IMAGE mountpoint if we reuse it again now
-	### [ x"$D" = x"../rootfs/${IMAGE_FLAT}-ro/" ] && continue
-	[ x"$D" = x"../overlays-ro/${IMAGE_FLAT}-ro/" ] && continue
+	### [ x"$D" = x"../rootfs/${IMAGE_FLAT}-ro/" ] && [ x"$STOPONLY" != xyes ] && continue
+	[ x"$D" = x"../overlays-ro/${IMAGE_FLAT}-ro/" ] && [ x"$STOPONLY" != xyes ] && continue
 	# Now, ignore non-directories and not-empty dirs (used mountpoints)
 	if [ -d "$D" ]; then
 		# This is a directory
 		if FD="`cd "$D" && pwd`" && \
-			[ x"`mount | grep ' on '${FD}' type '`" != x ] \
+			{ [ x"`mount | grep ' on '${FD}' type '`" != x ] || \
+			  [ x"`grep ' '${FD}' ' < /proc/mounts`" != x ] ; } \
 		; then
 			# This is an active mountpoint... is anything overlaid?
-			mount | egrep 'lowerdir=('"`echo ${D} | sed 's,/$,,g'`|${FD}),upperdir=" && \
+			{ mount | egrep 'lowerdir=('"`echo ${D} | sed 's,/$,,g'`|${FD}),upperdir=" || \
+			  egrep 'lowerdir=('"`echo ${D} | sed 's,/$,,g'`|${FD}),upperdir=" < /proc/mounts ; } && \
 			logmsg_warn "Old RO mountpoint '$FD' seems still used" && \
 			continue
 
@@ -820,11 +819,12 @@ for D in ../overlays-ro/*-ro/ ../rootfs/*-ro/ ; do
 			# This is a directory, and it is empty
 			# Just in case, re-check the mountpoint activity
 			FD="`cd "$D" && pwd`" && \
-				[ x"`mount | grep ' on '${FD}' type '`" != x ] && \
+				{ [ x"`mount | grep ' on '${FD}' type '`" != x ] || \
+				  [ x"`grep ' '${FD}' ' < /proc/mounts`" != x ] ; } && \
 				logmsg_warn "Old RO mountpoint '$FD' seems still used" && \
 				continue
 
-			logmsg_warn "Obsolete RO mountpoint for this IMAGE was found," \
+			logmsg_warn "Obsolete (unused, empty) RO mountpoint was found," \
 				"removing '`pwd`/$D':"
 			ls -lad "$D"; ls -la "$D"
 			umount -fl "$D" 2> /dev/null > /dev/null || true
@@ -865,7 +865,7 @@ mkdir -p "${ALTROOT}"
 if [ x"$OVERLAYFS" = xyes ]; then
 	logmsg_info "Mount the common RO squashfs at '`pwd`/../overlays-ro/${IMAGE_FLAT}-ro'"
 	mkdir -p "../overlays-ro/${IMAGE_FLAT}-ro"
-	mount -o loop "$IMAGE" "../overlays-ro/${IMAGE_FLAT}-ro" || \
+	mount -o loop "$IMAGE" "`pwd`/../overlays-ro/${IMAGE_FLAT}-ro" || \
 		die "Can't mount squashfs"
 
 	logmsg_info "Use the individual RW component" \
@@ -874,14 +874,14 @@ if [ x"$OVERLAYFS" = xyes ]; then
 	mkdir -p "../overlays/${IMAGE_FLAT}__${VM}" \
 		"../overlays/${IMAGE_FLAT}__${VM}.tmp"
 	mount -t ${OVERLAYFS_TYPE} \
-		-o lowerdir="../overlays-ro/${IMAGE_FLAT}-ro",upperdir="../overlays/${IMAGE_FLAT}__${VM}",workdir="../overlays/${IMAGE_FLAT}__${VM}.tmp" \
+		-o lowerdir="`pwd`/../overlays-ro/${IMAGE_FLAT}-ro",upperdir="`pwd`/../overlays/${IMAGE_FLAT}__${VM}",workdir="`pwd`/../overlays/${IMAGE_FLAT}__${VM}.tmp" \
 		${OVERLAYFS_TYPE} "${ALTROOT}" \
-	|| die "Can't overlay-mount rw directory"
+	|| die "Can't overlay-mount RW directory"
 else
 	logmsg_info "Unpack the full individual RW copy of the image" \
 		"'$IMAGE' at '${ALTROOT}'"
 	tar -C "${ALTROOT}" -xzf "$IMAGE" \
-	|| die "Can't un-tar the rw directory"
+	|| die "Can't un-tar the full RW directory"
 fi
 
 case "$IMAGE" in
@@ -902,16 +902,16 @@ mount -o remount,ro,rbind "${ALTROOT}/lib/modules"
 
 logmsg_info "Bind-mount ccache directory from the host OS"
 umount -fl "${ALTROOT}/root/.ccache" 2> /dev/null > /dev/null || true
+umount -fl "${ALTROOT}/.ccache" 2> /dev/null > /dev/null || true
 # The devel-image can make this a symlink to user homedir, so kill it:
 [ -h "${ALTROOT}/root/.ccache" ] && rm -f "${ALTROOT}/root/.ccache"
+[ -h "${ALTROOT}/.ccache" ] && rm -f "${ALTROOT}/.ccache"
 # On some systems this may fail due to strange implementation of overlayfs:
-if mkdir -p "${ALTROOT}/root/.ccache" ; then
-	[ -d "/root/.ccache" ] || mkdir -p "/root/.ccache"
-	mount -o rbind "/root/.ccache" "${ALTROOT}/root/.ccache"
+if mkdir -p "${ALTROOT}/.ccache" ; then
+	[ -d "${HOST_CCACHE_DIR}" ] || { mkdir -p "${HOST_CCACHE_DIR}" ; if [ "$ADDUSER_ABUILD" = yes ] ; then chown -R 399:399 "${HOST_CCACHE_DIR}" ; fi; }
+	mount -o rbind "${HOST_CCACHE_DIR}" "${ALTROOT}/.ccache"
+	[ -e "${ALTROOT}/root/.ccache" ] || ln -sr "../.ccache/" "${ALTROOT}/root/.ccache"
 fi
-# Make it available for symlinks from other accounts
-chmod 771 "${ALTROOT}/root"
-
 # Some bits might be required in an image early...
 # say, an /usr/bin/qemu-arm-static is a nice trick ;)
 if [ -d "${ALTROOT}.saved-preinstall/" ] && [ "$NO_RESTORE_SAVED" != yes ]; then
@@ -966,7 +966,7 @@ if [ -d "${ALTROOT}/home/admin" ] && [ "$NO_DELETE" != yes ] ; then
 	[ -f "${ALTROOT}/root/.oscrc" ] && cp --preserve "${ALTROOT}/root/.oscrc" "${ALTROOT}/home/admin/.oscrc"
 	[ -d "${ALTROOT}/root/.config/osc" ] && cp --preserve -r "${ALTROOT}/root/.config/osc" "${ALTROOT}/home/admin/.config/osc"
 	chown -R admin: "${ALTROOT}/home/admin"
-	[ -d "${ALTROOT}/home/admin/.ccache" ] || ln -s "../../root/.ccache" "${ALTROOT}/home/admin/.ccache"
+	[ -d "${ALTROOT}/home/admin/.ccache" ] || ln -s "../../.ccache" "${ALTROOT}/home/admin/.ccache"
 	chmod 771 "${ALTROOT}/root"
 fi
 
@@ -1002,7 +1002,7 @@ if [ "$ADDUSER_ABUILD" = yes ] ; then
 	if [ -d "${ALTROOT}/home/abuild/.ccache" ] || [ -h "${ALTROOT}/home/abuild/.ccache" ]; then : ; else
 		[ -d "${ALTROOT}/home/abuild/.ccache" ] \
 		&& ln -s "../admin/.ccache/" "${ALTROOT}/home/abuild/.ccache" \
-		|| ln -s "../../root/.ccache/" "${ALTROOT}/home/abuild/.ccache"
+		|| ln -s "../../.ccache/" "${ALTROOT}/home/abuild/.ccache"
 	fi
 
 	for D in \
@@ -1087,7 +1087,7 @@ if [ -d "${ALTROOT}.saved/" ] && [ "$NO_RESTORE_SAVED" != yes ]; then
 	( cd "${ALTROOT}.saved/" && tar cf - . ) | ( cd "${ALTROOT}/" && tar xvf - )
 fi
 
-logmsg_info "Pre-configuration of VM '$VM' ($IMGTYPE/$ARCH) is completed"
+logmsg_info "Pre-configuration of VM '$VM' (${IMGTYPE}/${IMGQALEVEL}/${ARCH}) is completed"
 if [ x"$DEPLOYONLY" = xyes ]; then
 	logmsg_info "DEPLOYONLY was requested, so ending" \
 		"'${_SCRIPT_PATH} ${_SCRIPT_ARGS}' now with exit-code '0'" >&2

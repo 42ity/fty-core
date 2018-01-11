@@ -22,6 +22,8 @@
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \note   This script may be standalone, so we do not depend it on scriptlib.sh
 
+set -o pipefail
+
 SCRIPTDIR=$(dirname $0)
 [ -z "$CHECKOUTDIR" ] && CHECKOUTDIR=$(realpath $SCRIPTDIR/../..)
 [ -z "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
@@ -39,7 +41,7 @@ export LANG LANGUAGE LC_ALL TZ
 [ -z "$ARCH" ] && ARCH="`uname -m`"
 [ -z "$ARCH_PKG" ] && case "$ARCH" in
     x86_64|amd64) ARCH_PKG="amd64" ;;
-    armv7l) ARCH_PKG="armv7l";;
+    armv7l|armhf) ARCH_PKG="armhf";;
 esac
 
 limit_packages_recommends() {
@@ -79,7 +81,8 @@ limit_packages_docs() {
     # try to deny installation of some hugely useless packages
     # tex-docs for example are huge (850Mb) and useless on a test container
     echo "INFO: Tell DPKG to not install some large documentation packages (may complain, don't worry)"
-    for P in \
+    ( RES=0
+      for P in \
         docutils-doc libssl-doc python-docutils \
         texlive-fonts-recommended-doc \
         texlive-latex-base-doc \
@@ -87,10 +90,10 @@ limit_packages_docs() {
         texlive-latex-recommended-doc \
         texlive-pictures-doc \
         texlive-pstricks-doc \
-    ; do
-        apt-mark hold "$P" >&2
+      ; do
+        apt-mark hold "$P" >&2 || RES=$?
         echo "$P  purge"
-    done | dpkg --set-selections
+      done ; exit $RES ) | dpkg --set-selections
 }
 
 limit_packages_forceremove() {
@@ -110,18 +113,20 @@ http_get() {
 }
 
 update_pkg_keys() {
+    local RES=0
     echo "INFO: Updating our OBS packaging keys..."
     # TODO: check if OS is debian... though this applies to all the APT magic
-    http_get http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add -
-    # http_get http://obs.roz53.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add -
-    # http_get http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add -
+    http_get http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add - || RES=$?
+    # http_get http://obs.roz53.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add - || RES=$?
+    # http_get http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add - || RES=$?
 
     echo "INFO: Updating upstream-distro packaging keys..."
     apt-get -f -y --force-yes \
         -q -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" \
         install \
-        debian-keyring debian-archive-keyring
-    apt-key update
+        debian-keyring debian-archive-keyring || RES=$?
+    apt-key update || RES=$?
+    return $RES
 }
 
 update_pkg_metadata() {

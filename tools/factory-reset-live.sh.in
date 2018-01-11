@@ -119,6 +119,7 @@ do_unlicense() {
 
 do_undatabase() {
     logmsg_info "Stopping database engine..."
+    systemctl stop fty-db-init.service || die "Can not ensure database is stopped"
     systemctl stop fty-db-engine.service || die "Can not ensure database is stopped"
     logmsg_info "Clearing database-related files..."
     rm -rf /var/lib/mysql /var/lib/fty/sql/mysql/* /var/lib/fty/sql/mysql/.*.cnf* \
@@ -126,6 +127,7 @@ do_undatabase() {
     if [ "$ENABLESVC" = yes ]; then
         logmsg_info "Starting database engine, if possible..."
         systemctl restart fty-db-engine.service || true # License may forbid startup
+        systemctl restart fty-db-init.service || true
         logmsg_info "Restarting webserver..."
         systemctl restart tntnet@bios.service || die "Can not ensure database is running"
     fi
@@ -188,11 +190,17 @@ do_factory_reset() (
     do_reset_passwd
     ENABLESVC="$ENABLESVC_ORIG"
     do_unnut
+    # Be sure DB does not fire up in this window of uncertainty for systemd --
+    # just to be killed mid-way through DB files creation, leaving them corrupt
+    systemctl stop fty-db-init.service
+    systemctl stop fty-db-engine.service
     logmsg_info "Restarting IPM-related services..."
-    systemctl restart fty-license-accepted.service
     systemctl restart fty-license-accepted.path
+    systemctl restart fty-license-accepted.service
+    sleep 5 # License check starts with a bit of sleep - supercede that here
     systemctl restart bios.service
     systemctl restart fty-db-engine.service
+    systemctl restart fty-db-init.service
     systemctl restart tntnet@bios.service
     logmsg_info "Finished full factory reset..."
 )
