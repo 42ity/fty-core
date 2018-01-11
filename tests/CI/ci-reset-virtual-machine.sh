@@ -801,10 +801,12 @@ for D in ../overlays-ro/*-ro/ ../rootfs/*-ro/ ; do
 	if [ -d "$D" ]; then
 		# This is a directory
 		if FD="`cd "$D" && pwd`" && \
-			[ x"`mount | grep ' on '${FD}' type '`" != x ] \
+			{ [ x"`mount | grep ' on '${FD}' type '`" != x ] || \
+			  [ x"`grep ' '${FD}' ' < /proc/mounts`" != x ] ; } \
 		; then
 			# This is an active mountpoint... is anything overlaid?
-			mount | egrep 'lowerdir=('"`echo ${D} | sed 's,/$,,g'`|${FD}),upperdir=" && \
+			{ mount | egrep 'lowerdir=('"`echo ${D} | sed 's,/$,,g'`|${FD}),upperdir=" || \
+			  egrep 'lowerdir=('"`echo ${D} | sed 's,/$,,g'`|${FD}),upperdir=" < /proc/mounts ; } && \
 			logmsg_warn "Old RO mountpoint '$FD' seems still used" && \
 			continue
 
@@ -821,7 +823,8 @@ for D in ../overlays-ro/*-ro/ ../rootfs/*-ro/ ; do
 			# This is a directory, and it is empty
 			# Just in case, re-check the mountpoint activity
 			FD="`cd "$D" && pwd`" && \
-				[ x"`mount | grep ' on '${FD}' type '`" != x ] && \
+				{ [ x"`mount | grep ' on '${FD}' type '`" != x ] || \
+				  [ x"`grep ' '${FD}' ' < /proc/mounts`" != x ] ; } && \
 				logmsg_warn "Old RO mountpoint '$FD' seems still used" && \
 				continue
 
