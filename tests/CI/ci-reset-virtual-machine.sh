@@ -876,12 +876,12 @@ if [ x"$OVERLAYFS" = xyes ]; then
 	mount -t ${OVERLAYFS_TYPE} \
 		-o lowerdir="`pwd`/../overlays-ro/${IMAGE_FLAT}-ro",upperdir="`pwd`/../overlays/${IMAGE_FLAT}__${VM}",workdir="`pwd`/../overlays/${IMAGE_FLAT}__${VM}.tmp" \
 		${OVERLAYFS_TYPE} "${ALTROOT}" \
-	|| die "Can't overlay-mount rw directory"
+	|| die "Can't overlay-mount RW directory"
 else
 	logmsg_info "Unpack the full individual RW copy of the image" \
 		"'$IMAGE' at '${ALTROOT}'"
 	tar -C "${ALTROOT}" -xzf "$IMAGE" \
-	|| die "Can't un-tar the rw directory"
+	|| die "Can't un-tar the full RW directory"
 fi
 
 case "$IMAGE" in
