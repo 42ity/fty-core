@@ -244,6 +244,7 @@ DOTDOMAINNAME=""
 [ -z "${ADDUSER_ABUILD-}" ] && ADDUSER_ABUILD=no
 [ -z "${JENKINS_HOST-}" ] && JENKINS_HOST=jenkins2.roz.lab.etn.com
 [ -z "${BLOCK_JENKINS-}" ] && BLOCK_JENKINS=no
+[ -z "${HOST_CCACHE_DIR-}" ] && HOST_CCACHE_DIR="/root/.ccache"
 
 while [ $# -gt 0 ] ; do
 	case "$1" in
@@ -719,11 +720,12 @@ sleep 5
 # Cleanup of the rootfs
 ALTROOT="$(cd "`pwd`/../rootfs/$VM" && pwd)" || die "Could not determine the container ALTROOT"
 logmsg_info "Unmounting paths related to VM '$VM':" \
-	"'${ALTROOT}/lib/modules', '${ALTROOT}/root/.ccache'" \
+	"'${ALTROOT}/lib/modules', '${ALTROOT}/.ccache'" \
 	"'${ALTROOT}/proc', '${ALTROOT}', '`pwd`/../rootfs/${IMAGE_FLAT}-ro'," \
 	"'`pwd`/../overlays-ro/${IMAGE_FLAT}-ro'"
 umount -fl "${ALTROOT}/lib/modules" 2> /dev/null > /dev/null || true
 umount -fl "${ALTROOT}/root/.ccache" 2> /dev/null > /dev/null || true
+umount -fl "${ALTROOT}/.ccache" 2> /dev/null > /dev/null || true
 umount -fl "${ALTROOT}/proc" 2> /dev/null > /dev/null || true
 umount -fl "${ALTROOT}" 2> /dev/null > /dev/null || true
 fusermount -u -z "${ALTROOT}" 2> /dev/null > /dev/null || true
@@ -900,16 +902,16 @@ mount -o remount,ro,rbind "${ALTROOT}/lib/modules"
 
 logmsg_info "Bind-mount ccache directory from the host OS"
 umount -fl "${ALTROOT}/root/.ccache" 2> /dev/null > /dev/null || true
+umount -fl "${ALTROOT}/.ccache" 2> /dev/null > /dev/null || true
 # The devel-image can make this a symlink to user homedir, so kill it:
 [ -h "${ALTROOT}/root/.ccache" ] && rm -f "${ALTROOT}/root/.ccache"
+[ -h "${ALTROOT}/.ccache" ] && rm -f "${ALTROOT}/.ccache"
 # On some systems this may fail due to strange implementation of overlayfs:
-if mkdir -p "${ALTROOT}/root/.ccache" ; then
-	[ -d "/root/.ccache" ] || mkdir -p "/root/.ccache"
-	mount -o rbind "/root/.ccache" "${ALTROOT}/root/.ccache"
+if mkdir -p "${ALTROOT}/.ccache" ; then
+	[ -d "${HOST_CCACHE_DIR}" ] || { mkdir -p "${HOST_CCACHE_DIR}" ; if [ "$ADDUSER_ABUILD" = yes ] ; then chown -R 399:399 "${HOST_CCACHE_DIR}" ; fi; }
+	mount -o rbind "${HOST_CCACHE_DIR}" "${ALTROOT}/.ccache"
+	[ -e "${ALTROOT}/root/.ccache" ] || ln -sr "../.ccache/" "${ALTROOT}/root/.ccache"
 fi
-# Make it available for symlinks from other accounts
-chmod 771 "${ALTROOT}/root"
-
 # Some bits might be required in an image early...
 # say, an /usr/bin/qemu-arm-static is a nice trick ;)
 if [ -d "${ALTROOT}.saved-preinstall/" ] && [ "$NO_RESTORE_SAVED" != yes ]; then
@@ -964,7 +966,7 @@ if [ -d "${ALTROOT}/home/admin" ] && [ "$NO_DELETE" != yes ] ; then
 	[ -f "${ALTROOT}/root/.oscrc" ] && cp --preserve "${ALTROOT}/root/.oscrc" "${ALTROOT}/home/admin/.oscrc"
 	[ -d "${ALTROOT}/root/.config/osc" ] && cp --preserve -r "${ALTROOT}/root/.config/osc" "${ALTROOT}/home/admin/.config/osc"
 	chown -R admin: "${ALTROOT}/home/admin"
-	[ -d "${ALTROOT}/home/admin/.ccache" ] || ln -s "../../root/.ccache" "${ALTROOT}/home/admin/.ccache"
+	[ -d "${ALTROOT}/home/admin/.ccache" ] || ln -s "../../.ccache" "${ALTROOT}/home/admin/.ccache"
 	chmod 771 "${ALTROOT}/root"
 fi
 
@@ -1000,7 +1002,7 @@ if [ "$ADDUSER_ABUILD" = yes ] ; then
 	if [ -d "${ALTROOT}/home/abuild/.ccache" ] || [ -h "${ALTROOT}/home/abuild/.ccache" ]; then : ; else
 		[ -d "${ALTROOT}/home/abuild/.ccache" ] \
 		&& ln -s "../admin/.ccache/" "${ALTROOT}/home/abuild/.ccache" \
-		|| ln -s "../../root/.ccache/" "${ALTROOT}/home/abuild/.ccache"
+		|| ln -s "../../.ccache/" "${ALTROOT}/home/abuild/.ccache"
 	fi
 
 	for D in \
