@@ -865,7 +865,7 @@ mkdir -p "${ALTROOT}"
 if [ x"$OVERLAYFS" = xyes ]; then
 	logmsg_info "Mount the common RO squashfs at '`pwd`/../overlays-ro/${IMAGE_FLAT}-ro'"
 	mkdir -p "../overlays-ro/${IMAGE_FLAT}-ro"
-	mount -o loop "$IMAGE" "../overlays-ro/${IMAGE_FLAT}-ro" || \
+	mount -o loop "$IMAGE" "`pwd`/../overlays-ro/${IMAGE_FLAT}-ro" || \
 		die "Can't mount squashfs"
 
 	logmsg_info "Use the individual RW component" \
@@ -874,7 +874,7 @@ if [ x"$OVERLAYFS" = xyes ]; then
 	mkdir -p "../overlays/${IMAGE_FLAT}__${VM}" \
 		"../overlays/${IMAGE_FLAT}__${VM}.tmp"
 	mount -t ${OVERLAYFS_TYPE} \
-		-o lowerdir="../overlays-ro/${IMAGE_FLAT}-ro",upperdir="../overlays/${IMAGE_FLAT}__${VM}",workdir="../overlays/${IMAGE_FLAT}__${VM}.tmp" \
+		-o lowerdir="`pwd`/../overlays-ro/${IMAGE_FLAT}-ro",upperdir="`pwd`/../overlays/${IMAGE_FLAT}__${VM}",workdir="`pwd`/../overlays/${IMAGE_FLAT}__${VM}.tmp" \
 		${OVERLAYFS_TYPE} "${ALTROOT}" \
 	|| die "Can't overlay-mount rw directory"
 else
