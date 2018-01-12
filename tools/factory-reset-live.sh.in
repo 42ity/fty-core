@@ -197,6 +197,7 @@ do_factory_reset() (
     logmsg_info "Restarting IPM-related services..."
     systemctl restart fty-license-accepted.path
     systemctl restart fty-license-accepted.service
+    systemctl restart malamute.service
     sleep 5 # License check starts with a bit of sleep - supercede that here
     systemctl restart bios.service
     systemctl restart fty-db-engine.service
