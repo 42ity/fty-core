@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2014-2016 Eaton
+# Copyright (C) 2014-2018 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -87,6 +87,9 @@ usage() {
 	echo "    -hp|--http-proxy URL the http_proxy override to access OBS ('$http_proxy')"
 	echo "    -ap|--apt-proxy URL  the http_proxy to access external APT images ('$APT_PROXY')"
 	echo "    --install-dev        run ci-setup-test-machine.sh (if available) to install packages"
+	echo "    --with-java8-jre     when setting up packages with ci-setup-test-machine.sh, set"
+	echo "                         DEPLOY_JAVA8=yes to install a Java8 JRE for certain uses"
+	echo "    --with-libzmq4-dev   explicitly install libzmq4-dev here (if install-dev)"
 	echo "    --no-install-dev     do not run ci-setup-test-machine.sh, even on IMGTYPE=devel"
 	echo "    --no-restore-saved   do not copy stashed custom configs from a VMNAME.saved/ dir"
 	echo "    --no-overlayfs       enforce use of tarballs, even if overlayfs is supported by host"
@@ -103,11 +106,14 @@ usage() {
 	echo "    --deploy-only        end the script just before it would start the VM (skips apt-get too)"
 	echo "    --copy-host-users 'a b c'    Copies specified user or group account definitions"
 	echo "    --copy-host-groups 'a b c'   (e.g. for bind-mounted homes from host into the VM)"
+	echo "    --add-user=abuild    For Jenkins or OBS usage, define the 'abuild' account"
 	echo "    --no-config-file     Forbid use in this run of a per-VM config file if one is found"
+	echo "    --block-jenkins(=HOST)  Block access from HOST (defaults to our CI) while preparing"
 	echo "    halt                 Alias to --destroy-only"
 	echo "    wipe                 Alias to --stop-only"
 	echo "    update               Alias to --no-delete --no-install-dev --no-restore-saved"
 	echo "                         and disables user/group account sync from host to container"
+	echo "                         Allows to re-apply a modified overlay R/W to new RO OS image"
 	echo "    reboot               Alias to update with --no-download"
 	echo "    -h|--help            print this help"
 }
@@ -208,7 +214,8 @@ VM="latest"
 
 [ -z "$OBS_IMAGES" ] && OBS_IMAGES="http://tomcat.roz.lab.etn.com/images/"
 #[ -z "$OBS_IMAGES" ] && OBS_IMAGES="http://obs.roz.lab.etn.com/images/"
-[ -z "$APT_PROXY" ] && APT_PROXY='http://thunderbolt.roz.lab.etn.com:3142'
+[ -z "$APT_PROXY" ] && APT_PROXY='http://thunderbolt.roz.lab.etn.com:4222'
+#[ -z "$APT_PROXY" ] && APT_PROXY='http://thunderbolt.roz.lab.etn.com:3142'
 #[ -z "$APT_PROXY" ] && APT_PROXY='http://gate.roz.lab.etn.com:3142'
 [ -n "$http_proxy" ] && export http_proxy
 
@@ -216,12 +223,6 @@ VM="latest"
 ### Defaults are assigned below after CLI processing
 # SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN="simpleimage.*"
 # FLAG_FLATTEN_FILENAMES=yes
-
-[ -z "$LANG" ] && LANG=C
-[ -z "$LANGUAGE" ] && LANGUAGE=C
-[ -z "$LC_ALL" ] && LC_ALL=C
-[ -z "$TZ" ] && TZ=UTC
-export LANG LANGUAGE LC_ALL TZ
 
 DOTDOMAINNAME="`dnsdomainname | grep -v '('`" || \
 DOTDOMAINNAME="`domainname | grep -v '('`" || \
@@ -238,6 +239,12 @@ DOTDOMAINNAME=""
 [ -z "${OVERLAYFS-}" ] && OVERLAYFS="auto"
 [ -z "${NO_RESTORE_SAVED-}" ] && NO_RESTORE_SAVED=no
 [ -z "${NO_DELETE-}" ] && NO_DELETE=no
+[ -z "${DEPLOY_JAVA8-}" ] && DEPLOY_JAVA8=no
+[ -z "${DEPLOY_LIBZMQ4_DEV-}" ] && DEPLOY_LIBZMQ4_DEV=no
+[ -z "${ADDUSER_ABUILD-}" ] && ADDUSER_ABUILD=no
+[ -z "${JENKINS_HOST-}" ] && JENKINS_HOST=jenkins2.roz.lab.etn.com
+[ -z "${BLOCK_JENKINS-}" ] && BLOCK_JENKINS=no
+[ -z "${HOST_CCACHE_DIR-}" ] && HOST_CCACHE_DIR="/root/.ccache"
 
 while [ $# -gt 0 ] ; do
 	case "$1" in
@@ -302,10 +309,18 @@ while [ $# -gt 0 ] ; do
 		NO_DELETE=no
 		shift
 		;;
+	--block-jenkins=*)
+		JENKINS_HOST="`echo "$1" | sed 's,^--with-block-jenkins=,,'`" || JENKINS_HOST=""
+		shift
+		[ -n "$JENKINS_HOST" ] && BLOCK_JENKINS=yes ;;
+	--block-jenkins)
+		shift
+		BLOCK_JENKINS=yes ;;
 	reboot) # New uptime for existing rootfs - no initial reconfigs to do now
 		ATTEMPT_DOWNLOAD=no
 		;&
-	update) # New uptime for existing rootfs - no initial reconfigs to do now
+	update) # Download a new (overlay) existing rootfs but keep and reapply
+		# the locally modified data - so no initial reconfigs to do now
 		NO_DELETE=yes
 		NO_RESTORE_SAVED=yes
 		INSTALL_DEV_PKGS=no
@@ -314,6 +329,7 @@ while [ $# -gt 0 ] ; do
 		COPYHOST_USERS=""
 		COPYHOST_GROUPS=""
 		ELEVATE_USERS=""
+		ADDUSER_ABUILD=no
 		shift
 		;;
 	--attempt-download)
@@ -347,6 +363,13 @@ while [ $# -gt 0 ] ; do
 		export FORCE_RUN_APT
 		shift
 		;;
+	--with-java8-jre) # Only works if INSTALL_DEV_PKGS=yes
+		shift
+		DEPLOY_JAVA8=yes ; export DEPLOY_JAVA8 ;;
+	--with-libzmq4-dev) # Likewise
+		shift
+		DEPLOY_LIBZMQ4_DEV=yes ; export DEPLOY_LIBZMQ4_DEV ;;
+	--add-user=abuild) ADDUSER_ABUILD=yes ; shift ;;
 	--copy-host-users)
 		COPYHOST_USERS="$2"; shift 2;;
 	--copy-host-groups)
@@ -392,6 +415,7 @@ fi
 [ x"$http_proxy" = x- ] && http_proxy="" && export http_proxy
 
 [ -z "$ARCH" ] && ARCH="`uname -m`"
+export ARCH
 # Note: several hardcoded paths are expected relative to "snapshots", so
 # it is critical that we succeed changing into this directory in the end.
 
@@ -405,6 +429,16 @@ if [ -n "$VM" ] && [ -s "`pwd`/$VM.config-reset-vm" ]; then
 		logmsg_warn "Found configuration file for the '$VM', it will override the command-line settings:"
 		cat "`pwd`/$VM.config-reset-vm"
 		. "`pwd`/$VM.config-reset-vm" || die "Can not import config file '`pwd`/$VM.config-reset-vm'"
+		if [ "$NO_DELETE" = yes ]; then
+			logmsg_warn "For the no-delete mode (reboot), disabling options to reapply 'saved data' files, apply packages and copy user accounts from host"
+			NO_RESTORE_SAVED=yes
+			INSTALL_DEV_PKGS=no
+			FORCE_RUN_APT=""
+			COPYHOST_USERS=""
+			COPYHOST_GROUPS=""
+			ELEVATE_USERS=""
+			ADDUSER_ABUILD=no
+		fi
 	else
 		logmsg_warn "Found configuration file for the '$VM', but it is ignored because ALLOW_CONFIG_FILE='$ALLOW_CONFIG_FILE'"
 	fi
@@ -416,7 +450,7 @@ case "$IMGTYPE" in
 	*) INSTALL_DEV_PKGS=no ;;
 esac
 
-mkdir -p "/srv/libvirt/snapshots/$IMGTYPE/$ARCH"
+mkdir -p "/srv/libvirt/snapshots/${IMGTYPE}/${IMGQALEVEL}/${ARCH}"
 
 # Unless these were set by caller or config or somehow else,
 # define the values now. This pattern is a REGEX.
@@ -515,8 +549,8 @@ fi
 settraps 'cleanup_script'
 
 # Proceed to downloads, etc.
-cd "/srv/libvirt/snapshots/$IMGTYPE/$ARCH" || \
-	die "Can not 'cd /srv/libvirt/snapshots/$IMGTYPE/$ARCH' to download image files"
+cd "/srv/libvirt/snapshots/${IMGTYPE}/${IMGQALEVEL}/${ARCH}" || \
+	die "Can not 'cd /srv/libvirt/snapshots/${IMGTYPE}/${IMGQALEVEL}/${ARCH}' to download image files"
 
 # Initial value, aka "file not found"
 WGET_RES=127
@@ -642,21 +676,21 @@ if [ "$1" ]; then
 	# IMAGE_FLAT is used as a prefix to directory filenames of mountpoints
 	IMAGE_FLAT="`basename "$IMAGE"`"
 else
-	if [ -n "$IMAGE" ] && [ -s "$IMGTYPE/$ARCH/$IMAGE" ]; then
+	if [ -n "$IMAGE" ] && [ -s "${IMGTYPE}/${IMGQALEVEL}/${ARCH}/${IMAGE}" ]; then
 		logmsg_info "Recent download succeeded, checksums passed - using this image"
-		IMAGE="$IMGTYPE/$ARCH/$IMAGE"
+		IMAGE="${IMGTYPE}/${IMGQALEVEL}/${ARCH}/${IMAGE}"
 	else
 		# If download failed or was skipped, we can have a previous
 		# image file for this type
 		logmsg_info "Selecting newest image (as sorted by alphabetic name)"
 		IMAGE=""
-		ls -1 $IMGTYPE/$ARCH/*.$EXT >/dev/null || \
-			die "No downloaded image of type $IMGTYPE/$ARCH was found!"
+		ls -1 "${IMGTYPE}/${IMGQALEVEL}/${ARCH}"/*.$EXT >/dev/null || \
+			die "No downloaded image of type ${IMGTYPE}/${IMGQALEVEL}/${ARCH} was found!"
 		while [ -z "$IMAGE" ]; do
 			if [ -z "$IMAGE_SKIP" ]; then
-				IMAGE="`ls -1 $IMGTYPE/$ARCH/*.$EXT | sort -r | head -n 1`"
+				IMAGE="`ls -1 "${IMGTYPE}/${IMGQALEVEL}/${ARCH}"/*.$EXT | sort -r | head -n 1`"
 			else
-				IMAGE="`ls -1 $IMGTYPE/$ARCH/*.$EXT | sort -r | grep -v "$IMAGE_SKIP" | head -n 1`"
+				IMAGE="`ls -1 "${IMGTYPE}/${IMGQALEVEL}/${ARCH}"/*.$EXT | sort -r | grep -v "$IMAGE_SKIP" | head -n 1`"
 			fi
 			ensure_md5sum "$IMAGE" "$IMAGE.md5" || IMAGE=""
 		done
@@ -664,7 +698,7 @@ else
 	IMAGE_FLAT="`basename "$IMAGE" .$EXT`_${IMGTYPE}_${ARCH}_${IMGQALEVEL}.$EXT"
 fi
 if [ -z "$IMAGE" ]; then
-	die "No downloaded image files located in my cache (`pwd`/$IMGTYPE/$ARCH/*.$EXT)!"
+	die "No downloaded image files located in my cache (`pwd`/${IMGTYPE}/${IMGQALEVEL}/${ARCH}/*.$EXT)!"
 fi
 if [ ! -s "$IMAGE" ]; then
 	die "No downloaded image files located in my cache (`pwd`/$IMAGE)!"
@@ -686,11 +720,12 @@ sleep 5
 # Cleanup of the rootfs
 ALTROOT="$(cd "`pwd`/../rootfs/$VM" && pwd)" || die "Could not determine the container ALTROOT"
 logmsg_info "Unmounting paths related to VM '$VM':" \
-	"'${ALTROOT}/lib/modules', '${ALTROOT}/root/.ccache'" \
+	"'${ALTROOT}/lib/modules', '${ALTROOT}/.ccache'" \
 	"'${ALTROOT}/proc', '${ALTROOT}', '`pwd`/../rootfs/${IMAGE_FLAT}-ro'," \
 	"'`pwd`/../overlays-ro/${IMAGE_FLAT}-ro'"
 umount -fl "${ALTROOT}/lib/modules" 2> /dev/null > /dev/null || true
 umount -fl "${ALTROOT}/root/.ccache" 2> /dev/null > /dev/null || true
+umount -fl "${ALTROOT}/.ccache" 2> /dev/null > /dev/null || true
 umount -fl "${ALTROOT}/proc" 2> /dev/null > /dev/null || true
 umount -fl "${ALTROOT}" 2> /dev/null > /dev/null || true
 fusermount -u -z "${ALTROOT}" 2> /dev/null > /dev/null || true
@@ -756,16 +791,18 @@ fi
 
 for D in ../overlays-ro/*-ro/ ../rootfs/*-ro/ ; do
 	# Do not remove the current IMAGE mountpoint if we reuse it again now
-	### [ x"$D" = x"../rootfs/${IMAGE_FLAT}-ro/" ] && continue
-	[ x"$D" = x"../overlays-ro/${IMAGE_FLAT}-ro/" ] && continue
+	### [ x"$D" = x"../rootfs/${IMAGE_FLAT}-ro/" ] && [ x"$STOPONLY" != xyes ] && continue
+	[ x"$D" = x"../overlays-ro/${IMAGE_FLAT}-ro/" ] && [ x"$STOPONLY" != xyes ] && continue
 	# Now, ignore non-directories and not-empty dirs (used mountpoints)
 	if [ -d "$D" ]; then
 		# This is a directory
 		if FD="`cd "$D" && pwd`" && \
-			[ x"`mount | grep ' on '${FD}' type '`" != x ] \
+			{ [ x"`mount | grep ' on '${FD}' type '`" != x ] || \
+			  [ x"`grep ' '${FD}' ' < /proc/mounts`" != x ] ; } \
 		; then
 			# This is an active mountpoint... is anything overlaid?
-			mount | egrep 'lowerdir=('"`echo ${D} | sed 's,/$,,g'`|${FD}),upperdir=" && \
+			{ mount | egrep 'lowerdir=('"`echo ${D} | sed 's,/$,,g'`|${FD}),upperdir=" || \
+			  egrep 'lowerdir=('"`echo ${D} | sed 's,/$,,g'`|${FD}),upperdir=" < /proc/mounts ; } && \
 			logmsg_warn "Old RO mountpoint '$FD' seems still used" && \
 			continue
 
@@ -782,11 +819,12 @@ for D in ../overlays-ro/*-ro/ ../rootfs/*-ro/ ; do
 			# This is a directory, and it is empty
 			# Just in case, re-check the mountpoint activity
 			FD="`cd "$D" && pwd`" && \
-				[ x"`mount | grep ' on '${FD}' type '`" != x ] && \
+				{ [ x"`mount | grep ' on '${FD}' type '`" != x ] || \
+				  [ x"`grep ' '${FD}' ' < /proc/mounts`" != x ] ; } && \
 				logmsg_warn "Old RO mountpoint '$FD' seems still used" && \
 				continue
 
-			logmsg_warn "Obsolete RO mountpoint for this IMAGE was found," \
+			logmsg_warn "Obsolete (unused, empty) RO mountpoint was found," \
 				"removing '`pwd`/$D':"
 			ls -lad "$D"; ls -la "$D"
 			umount -fl "$D" 2> /dev/null > /dev/null || true
@@ -827,7 +865,7 @@ mkdir -p "${ALTROOT}"
 if [ x"$OVERLAYFS" = xyes ]; then
 	logmsg_info "Mount the common RO squashfs at '`pwd`/../overlays-ro/${IMAGE_FLAT}-ro'"
 	mkdir -p "../overlays-ro/${IMAGE_FLAT}-ro"
-	mount -o loop "$IMAGE" "../overlays-ro/${IMAGE_FLAT}-ro" || \
+	mount -o loop "$IMAGE" "`pwd`/../overlays-ro/${IMAGE_FLAT}-ro" || \
 		die "Can't mount squashfs"
 
 	logmsg_info "Use the individual RW component" \
@@ -836,14 +874,14 @@ if [ x"$OVERLAYFS" = xyes ]; then
 	mkdir -p "../overlays/${IMAGE_FLAT}__${VM}" \
 		"../overlays/${IMAGE_FLAT}__${VM}.tmp"
 	mount -t ${OVERLAYFS_TYPE} \
-		-o lowerdir="../overlays-ro/${IMAGE_FLAT}-ro",upperdir="../overlays/${IMAGE_FLAT}__${VM}",workdir="../overlays/${IMAGE_FLAT}__${VM}.tmp" \
+		-o lowerdir="`pwd`/../overlays-ro/${IMAGE_FLAT}-ro",upperdir="`pwd`/../overlays/${IMAGE_FLAT}__${VM}",workdir="`pwd`/../overlays/${IMAGE_FLAT}__${VM}.tmp" \
 		${OVERLAYFS_TYPE} "${ALTROOT}" \
-	|| die "Can't overlay-mount rw directory"
+	|| die "Can't overlay-mount RW directory"
 else
 	logmsg_info "Unpack the full individual RW copy of the image" \
 		"'$IMAGE' at '${ALTROOT}'"
 	tar -C "${ALTROOT}" -xzf "$IMAGE" \
-	|| die "Can't un-tar the rw directory"
+	|| die "Can't un-tar the full RW directory"
 fi
 
 case "$IMAGE" in
@@ -864,14 +902,16 @@ mount -o remount,ro,rbind "${ALTROOT}/lib/modules"
 
 logmsg_info "Bind-mount ccache directory from the host OS"
 umount -fl "${ALTROOT}/root/.ccache" 2> /dev/null > /dev/null || true
+umount -fl "${ALTROOT}/.ccache" 2> /dev/null > /dev/null || true
 # The devel-image can make this a symlink to user homedir, so kill it:
 [ -h "${ALTROOT}/root/.ccache" ] && rm -f "${ALTROOT}/root/.ccache"
+[ -h "${ALTROOT}/.ccache" ] && rm -f "${ALTROOT}/.ccache"
 # On some systems this may fail due to strange implementation of overlayfs:
-if mkdir -p "${ALTROOT}/root/.ccache" ; then
-	[ -d "/root/.ccache" ] || mkdir -p "/root/.ccache"
-	mount -o rbind "/root/.ccache" "${ALTROOT}/root/.ccache"
+if mkdir -p "${ALTROOT}/.ccache" ; then
+	[ -d "${HOST_CCACHE_DIR}" ] || { mkdir -p "${HOST_CCACHE_DIR}" ; if [ "$ADDUSER_ABUILD" = yes ] ; then chown -R 399:399 "${HOST_CCACHE_DIR}" ; fi; }
+	mount -o rbind "${HOST_CCACHE_DIR}" "${ALTROOT}/.ccache"
+	[ -e "${ALTROOT}/root/.ccache" ] || ln -sr "../.ccache/" "${ALTROOT}/root/.ccache"
 fi
-
 # Some bits might be required in an image early...
 # say, an /usr/bin/qemu-arm-static is a nice trick ;)
 if [ -d "${ALTROOT}.saved-preinstall/" ] && [ "$NO_RESTORE_SAVED" != yes ]; then
@@ -920,6 +960,16 @@ if [ -d ~/.config ]; then
 	cp --preserve -r ~/.config "${ALTROOT}/root/"
 fi
 
+if [ -d "${ALTROOT}/home/admin" ] && [ "$NO_DELETE" != yes ] ; then
+	logmsg_info "Copy root's OBS configs to admin user home"
+	mkdir -p "${ALTROOT}/home/admin/.config/osc"
+	[ -f "${ALTROOT}/root/.oscrc" ] && cp --preserve "${ALTROOT}/root/.oscrc" "${ALTROOT}/home/admin/.oscrc"
+	[ -d "${ALTROOT}/root/.config/osc" ] && cp --preserve -r "${ALTROOT}/root/.config/osc" "${ALTROOT}/home/admin/.config/osc"
+	chown -R admin: "${ALTROOT}/home/admin"
+	[ -d "${ALTROOT}/home/admin/.ccache" ] || ln -s "../../.ccache" "${ALTROOT}/home/admin/.ccache"
+	chmod 771 "${ALTROOT}/root"
+fi
+
 logmsg_info "Copy environment settings from the host OS"
 cp /etc/profile.d/* ${ALTROOT}/etc/profile.d/
 
@@ -942,6 +992,37 @@ if [ ! -d "${ALTROOT}/var/lib/mysql/mysql" ] && \
 ; then
 	logmsg_info "Copying MySQL root password from the host into VM"
 	cp -pf ~root/.my.cnf "${ALTROOT}/root/.my.cnf"
+fi
+
+if [ "$ADDUSER_ABUILD" = yes ] ; then
+	# This should be safe to re-run also if updating/rebooting
+	grep abuild "${ALTROOT}/etc/group"  >/dev/null || chroot "${ALTROOT}" /usr/sbin/groupadd -g 399 abuild
+	grep abuild "${ALTROOT}/etc/passwd" >/dev/null || chroot "${ALTROOT}" /usr/sbin/useradd -g 399 -u 399 -m -d /home/abuild -c "Automated build account" -s /bin/bash abuild
+
+	if [ -d "${ALTROOT}/home/abuild/.ccache" ] || [ -h "${ALTROOT}/home/abuild/.ccache" ]; then : ; else
+		[ -d "${ALTROOT}/home/abuild/.ccache" ] \
+		&& ln -s "../admin/.ccache/" "${ALTROOT}/home/abuild/.ccache" \
+		|| ln -s "../../.ccache/" "${ALTROOT}/home/abuild/.ccache"
+	fi
+
+	for D in \
+		.config \
+		.ssh \
+	; do
+		[ -d "${ALTROOT}/home/abuild/$D" ] || cp -prf "${ALTROOT}/home/admin/$D" "${ALTROOT}/home/abuild"
+	done
+
+	for F in \
+		.bashrc \
+		.bash_logout \
+		.profile \
+		.oscrc \
+	; do
+		[ -s "${ALTROOT}/home/abuild/$F" ] || cp -pf "${ALTROOT}/home/admin/$F" "${ALTROOT}/home/abuild/$F"
+	done
+
+	chroot "${ALTROOT}" /bin/chown -R abuild:abuild "/home/abuild"
+	chroot "${ALTROOT}" /usr/sbin/usermod -a -G abuild admin
 fi
 
 if [ -n "${COPYHOST_GROUPS-}" ]; then
@@ -1006,13 +1087,24 @@ if [ -d "${ALTROOT}.saved/" ] && [ "$NO_RESTORE_SAVED" != yes ]; then
 	( cd "${ALTROOT}.saved/" && tar cf - . ) | ( cd "${ALTROOT}/" && tar xvf - )
 fi
 
-logmsg_info "Pre-configuration of VM '$VM' ($IMGTYPE/$ARCH) is completed"
+logmsg_info "Pre-configuration of VM '$VM' (${IMGTYPE}/${IMGQALEVEL}/${ARCH}) is completed"
 if [ x"$DEPLOYONLY" = xyes ]; then
 	logmsg_info "DEPLOYONLY was requested, so ending" \
 		"'${_SCRIPT_PATH} ${_SCRIPT_ARGS}' now with exit-code '0'" >&2
 	[ "$INSTALL_DEV_PKGS" = yes ] && \
 		logmsg_warn "Note that INSTALL_DEV_PKGS was requested - it is hereby skipped" >&2
 	exit 0
+fi
+
+[ -f "${ALTROOT}/etc/default/iptables.bak-default" ] \
+|| cp -pf "${ALTROOT}/etc/default/iptables" "${ALTROOT}/etc/default/iptables.bak-default"
+
+if [ "$BLOCK_JENKINS" = yes ] ; then
+	logmsg_info "Temporarily blocking access from Jenkins, so it does not use this virtual machine before it is ready"
+	awk -vjenkins="${JENKINS_HOST}" '
+    {print $0;}
+    /:OUTPUT ACCEPT/{ printf("-A INPUT -p tcp -m tcp -s %s -j REJECT --reject-with icmp-port-unreachable\n", jenkins ); }
+    ' <"${ALTROOT}/etc/default/iptables.bak-default" >"${ALTROOT}/etc/default/iptables"
 fi
 
 logmsg_info "Start the virtual machine $VM"
@@ -1068,9 +1160,11 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 	; then
 		logmsg_info "Keeping /etc/resolv.conf in the VM from the 'saved' template"
 	else
-		logmsg_info "Restore /etc/resolv.conf in the VM to the default baseline"
-		grep "8.8.8.8" "${ALTROOT}/etc/resolv.conf.bak-devpkg" >/dev/null || \
-			cp -pf "${ALTROOT}/etc/resolv.conf.bak-devpkg" "${ALTROOT}/etc/resolv.conf"
+		if [ -f "${ALTROOT}/etc/resolv.conf.bak-devpkg" ] ; then
+			logmsg_info "Restore /etc/resolv.conf in the VM to the default baseline"
+			grep "8.8.8.8" "${ALTROOT}/etc/resolv.conf.bak-devpkg" >/dev/null || \
+				cp -pf "${ALTROOT}/etc/resolv.conf.bak-devpkg" "${ALTROOT}/etc/resolv.conf"
+		fi
 	fi
 
 	if [ -f "${ALTROOT}.saved/etc/nsswitch.conf" ] && \
@@ -1078,8 +1172,10 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 	; then
 		logmsg_info "Keeping /etc/nsswitch.conf in the VM from the 'saved' template"
 	else
-		logmsg_info "Restore /etc/nsswitch.conf in the VM to the default baseline"
-		cp -pf "${ALTROOT}/etc/nsswitch.conf.bak-devpkg" "${ALTROOT}/etc/nsswitch.conf"
+		if [ -f "${ALTROOT}/etc/nsswitch.conf.bak-devpkg" ] ; then
+			logmsg_info "Restore /etc/nsswitch.conf in the VM to the default baseline"
+			cp -pf "${ALTROOT}/etc/nsswitch.conf.bak-devpkg" "${ALTROOT}/etc/nsswitch.conf"
+		fi
 	fi
 
 #	logmsg_info "Restart networking in the VM chroot to refresh virtual network settings"
@@ -1089,11 +1185,12 @@ if [ "$INSTALL_DEV_PKGS" = yes ]; then
 fi
 
 if [ -z "${GEN_REL_DETAILS-}" ] ; then
-    GEN_REL_DETAILS=""
-    for F in "${ALTROOT}/usr/share/fty/scripts/generate-release-details.sh" \
-        "${ALTROOT}/usr/share/bios/scripts/generate-release-details.sh" ; do
-            [ -s "$F" ] && [ -x "$F" ] && GEN_REL_DETAILS="$F" && break
-    done
+	GEN_REL_DETAILS=""
+	for F in "${ALTROOT}/usr/share/fty/scripts/generate-release-details.sh" \
+		"${ALTROOT}/usr/share/bios/scripts/generate-release-details.sh" \
+	; do
+		[ -s "$F" ] && [ -x "$F" ] && GEN_REL_DETAILS="$F" && break
+	done
 fi
 
 if [ -n "${GEN_REL_DETAILS}" -a -s "${GEN_REL_DETAILS}" -a -x "${GEN_REL_DETAILS}" \
@@ -1115,11 +1212,20 @@ if [ -n "${GEN_REL_DETAILS}" -a -s "${GEN_REL_DETAILS}" -a -x "${GEN_REL_DETAILS
 	export FW_UIMAGEPART_CSDEVPAD  FW_UIMAGEPART_SIZE
 	export HWD_CATALOG_NB  HWD_REV HWD_SERIAL_NB
 
+	# Provide a default if caller did not DEFINE one
+	[[ ! -v "$HWD_CATALOG_NB" ]] && HWD_CATALOG_NB="IPC3000E-LXC"
+
 	logmsg_info "Generating the release details file(s) with the ${GEN_REL_DETAILS} script in OS image"
 	"${GEN_REL_DETAILS}"
 ) ; fi
 
-if [ "$VM_SHOULD_RESTART" = yes ]; then
+if [ "$BLOCK_JENKINS" = yes ] ; then
+	logmsg_info "Un-blocking access from Jenkins, so it can use this virtual machine"
+	grep -v "${JENKINS_HOST}" < "${ALTROOT}/etc/default/iptables" > "${ALTROOT}/etc/default/iptables.bak" && \
+	mv -f "${ALTROOT}/etc/default/iptables.bak" "${ALTROOT}/etc/default/iptables"
+fi
+
+if [ "$VM_SHOULD_RESTART" = yes ] || [ "$BLOCK_JENKINS" = yes ] ; then
 	logmsg_info "Restart the virtual machine $VM"
 	virsh -c lxc:// shutdown "$VM" || true
 	virsh -c lxc:// destroy "$VM" && sleep 5 && \

@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2014-2016 Eaton
+# Copyright (C) 2014-2018 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,6 +22,8 @@
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \note   This script may be standalone, so we do not depend it on scriptlib.sh
 
+set -o pipefail
+
 SCRIPTDIR=$(dirname $0)
 [ -z "$CHECKOUTDIR" ] && CHECKOUTDIR=$(realpath $SCRIPTDIR/../..)
 [ -z "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
@@ -35,11 +37,25 @@ export CHECKOUTDIR BUILDSUBDIR
 [ -z "$TZ" ] && TZ=UTC
 export LANG LANGUAGE LC_ALL TZ
 
+# Match CPU arch to packaging arch
+[ -z "$ARCH" ] && ARCH="`uname -m`"
+[ -z "$ARCH_PKG" ] && case "$ARCH" in
+    x86_64|amd64) ARCH_PKG="amd64" ;;
+    armv7l|armhf) ARCH_PKG="armhf";;
+esac
+
 limit_packages_recommends() {
     echo "INFO: Tell APT to not install packages from 'Recommends' category"
     mkdir -p /etc/apt/apt.conf.d
     echo 'APT::Install-Recommends "false";' > \
        "/etc/apt/apt.conf.d/02no-recommends"
+}
+
+limit_packages_expiration_check() {
+    echo "INFO: Tell APT to not ignore repositories that were not updated recently"
+    mkdir -p /etc/apt/apt.conf.d
+    echo 'Acquire::Check-Valid-Until "false";' > \
+       "/etc/apt/apt.conf.d/02no-expiration"
 }
 
 limit_packages_paths() {
@@ -65,7 +81,8 @@ limit_packages_docs() {
     # try to deny installation of some hugely useless packages
     # tex-docs for example are huge (850Mb) and useless on a test container
     echo "INFO: Tell DPKG to not install some large documentation packages (may complain, don't worry)"
-    for P in \
+    ( RES=0
+      for P in \
         docutils-doc libssl-doc python-docutils \
         texlive-fonts-recommended-doc \
         texlive-latex-base-doc \
@@ -73,10 +90,10 @@ limit_packages_docs() {
         texlive-latex-recommended-doc \
         texlive-pictures-doc \
         texlive-pstricks-doc \
-    ; do
-        apt-mark hold "$P" >&2
+      ; do
+        apt-mark hold "$P" >&2 || RES=$?
         echo "$P  purge"
-    done | dpkg --set-selections
+      done ; exit $RES ) | dpkg --set-selections
 }
 
 limit_packages_forceremove() {
@@ -96,17 +113,20 @@ http_get() {
 }
 
 update_pkg_keys() {
+    local RES=0
     echo "INFO: Updating our OBS packaging keys..."
     # TODO: check if OS is debian... though this applies to all the APT magic
-    http_get http://obs.roz53.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add -
-    # http_get http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add -
+    http_get http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add - || RES=$?
+    # http_get http://obs.roz53.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add - || RES=$?
+    # http_get http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add - || RES=$?
 
     echo "INFO: Updating upstream-distro packaging keys..."
     apt-get -f -y --force-yes \
         -q -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" \
         install \
-        debian-keyring debian-archive-keyring
-    apt-key update
+        debian-keyring debian-archive-keyring || RES=$?
+    apt-key update || RES=$?
+    return $RES
 }
 
 update_pkg_metadata() {
@@ -146,6 +166,30 @@ install_package_set_biosdeps() {
     fi
 }
 
+install_package_set_java8_jre() {
+    # Needed for Jenkins workers, Flexnet CLI tools, ...
+    # Magic variable can be set and exported by caller
+    if [ -n "${DEPLOY_JAVA8-}" ] && [ "${DEPLOY_JAVA8-}" != no ]; then
+        echo "INFO: Installing the predefined package set for Java 8 JRE..."
+        yes | apt-get -y \
+            -q -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" \
+            install -t jessie-backports \
+            openjdk-8-jre-headless && \
+        update-java-alternatives --set java-1.8.0-openjdk \
+        || update-java-alternatives --set java-1.8.0-openjdk-${ARCH_PKG} \
+        || ln -s /usr/lib/jvm/java-8-openjdk-${ARCH_PKG}/bin/java /usr/bin/java
+    fi
+}
+
+install_package_set_libzmq4_dev() {
+    # Needed for builds against specifically upstream libzmq, not our default fork
+    # Magic variable can be set and exported by caller
+    if [ -n "${DEPLOY_LIBZMQ4_DEV-}" ] && [ "${DEPLOY_LIBZMQ4_DEV-}" != no ]; then
+        echo "INFO: Installing the upstream libzmq4-dev, not our default fork..."
+        yes | apt-get install -y --force-yes libzmq4-dev
+    fi
+}
+
 restore_ssh_service() {
     /bin/systemctl stop ssh.socket
     /bin/systemctl mask ssh.socket
@@ -165,18 +209,25 @@ restore_ssh_service() {
 
 update_system() {
     if [[ -n "${FORCE_RUN_APT}" ]]; then
-        update_pkg_keys
-        update_pkg_metadata
-        limit_packages_recommends
-        limit_packages_paths
-        install_packages_missing
-        limit_packages_docs
-        install_package_set_dev
-        install_package_set_biosdeps
-        limit_packages_forceremove
+        # Die on failures, so callers know that VM setup did not go as planned
+        limit_packages_expiration_check || die "Failed to limit_packages_expiration_check()"
+        update_pkg_keys || die "Failed to update_pkg_keys()"
+        update_pkg_metadata || die "Failed to update_pkg_metadata()"
+        limit_packages_recommends || die "Failed to limit_packages_recommends()"
+        limit_packages_paths || die "Failed to limit_packages_paths()"
+        install_packages_missing || install_packages_missing || die "Failed to install_packages_missing()"
+        limit_packages_docs || die "Failed to limit_packages_docs()"
+        install_package_set_dev || install_package_set_dev || die "Failed to install_package_set_dev()"
+        install_package_set_biosdeps || install_package_set_biosdeps || die "Failed to install_package_set_biosdeps()"
+        install_package_set_java8_jre || install_package_set_java8_jre || die "Failed to install_package_set_java8_jre()"
+        install_package_set_libzmq4_dev || install_package_set_libzmq4_dev || die "Failed to install_package_set_libzmq4_dev()"
+        limit_packages_forceremove || die "Failed to limit_packages_forceremove()"
     else
         echo "SKIPPED: $0 update_system() : this action is not default anymore, and FORCE_RUN_APT is not set and exported by caller" >&2
     fi
+
+    # Here an exit-code suffices
+    set +e
     restore_ssh_service
 }
 
