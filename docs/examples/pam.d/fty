@@ -33,10 +33,8 @@
 
 @include	common-account
 
-# The 42ity requirements for password:
-#   8 characters, including one digit and one 'other' character
-#   flag 'enforce_for_root' is for 'bios-passwd' tool, which runs under root
-    password	requisite	pam_cracklib.so enforce_for_root minlen=8 dcredit=-1 ocredit=-1 ucredit=0 lcredit=0
+# The 42ity requirements for password are defined in /etc/pam.d/fty-password
+    password	include		fty-password
     password	required	pam_unix.so	use_authtok shadow try_first_pass
 
 @include	common-password

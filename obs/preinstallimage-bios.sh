@@ -367,10 +367,9 @@ fi
 # Setup 42ity security
 mkdir -p /etc/pam.d
 cp /usr/share/fty/examples/config/pam.d/* /etc/pam.d
-RULES="`sed -n 's|.*pam_cracklib.so||p' /etc/pam.d/fty`"
 case "$IMGTYPE" in
     *devel*) ;;
-    *) sed -i "s|\\(.*pam_cracklib.so\\).*|\1$RULES|" /etc/pam.d/common-password ;;
+    *) sed -i "s|\\(.*pam_cracklib.so\\).*|    password\tinclude\t\tfty-password|" /etc/pam.d/common-password ;;
 esac
 
 # Force creation of cracklib dictionary
