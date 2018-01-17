@@ -197,10 +197,15 @@ do_factory_reset() (
     logmsg_info "Restarting IPM-related services..."
     systemctl restart fty-license-accepted.path
     systemctl restart fty-license-accepted.service
+    systemctl restart malamute.service
     sleep 5 # License check starts with a bit of sleep - supercede that here
     systemctl restart bios.service
     systemctl restart fty-db-engine.service
     systemctl restart fty-db-init.service
+    # The tntnet server sometimes keeps running while the service gets restarted
+    # so it loops complaining that port :80 is occupied already. Try to avoid:
+    systemctl stop tntnet@bios.service || true
+    killall tntnet || true
     systemctl restart tntnet@bios.service
     logmsg_info "Finished full factory reset..."
 )
