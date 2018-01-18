@@ -128,7 +128,7 @@ limit_packages_docs() {
         texlive-pictures-doc \
         texlive-pstricks-doc \
       ; do
-        apt-mark hold "$P" >&2 || RES=$?
+        apt-mark hold "$P" >&2 # || RES=$?
         echo "$P  purge"
       done ; exit $RES ) | dpkg --set-selections
 }
