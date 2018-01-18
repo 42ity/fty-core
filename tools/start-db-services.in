@@ -66,6 +66,12 @@ fi
 # Otherwise it should have come up as soon as the file(s) appeared, etc.
 
 if [[ "$SYSTEMCTL_COALESCE" = no ]] ; then
+    echo "INFO: `date -u`: enable and start fty-license-accepted.path"
+    sudo ${SYSTEMCTL} unmask fty-license-accepted.path || die "Unmasking fty-license-accepted.path failed"
+    sudo ${SYSTEMCTL} enable fty-license-accepted.path || die "Enabling fty-license-accepted.path failed"
+    sudo ${SYSTEMCTL} restart fty-license-accepted.path || die "Restarting fty-license-accepted.path failed"
+    sudo ${SYSTEMCTL} start fty-license-accepted.path || die "Starting fty-license-accepted.path failed"
+
     echo "INFO: `date -u`: enable and start fty-license-accepted.service"
     sudo ${SYSTEMCTL} unmask fty-license-accepted.service || die "Unmasking fty-license-accepted failed"
     sudo ${SYSTEMCTL} enable fty-license-accepted.service || die "Enabling fty-license-accepted failed"
@@ -86,18 +92,19 @@ if [[ "$SYSTEMCTL_COALESCE" = no ]] ; then
     sudo ${SYSTEMCTL} start fty-db-init || die "Starting fty-db-init failed"
 else
     echo "INFO: `date -u`: unmask core database-related services"
-    sudo ${SYSTEMCTL} unmask fty-license-accepted.service fty-db-engine.service fty-db-init.service \
+    sudo ${SYSTEMCTL} unmask fty-license-accepted.path fty-license-accepted.service fty-db-engine.service fty-db-init.service \
         || die "Unmasking a core database-related service failed"
 
     echo "INFO: `date -u`: enable core database-related services"
-    sudo ${SYSTEMCTL} enable fty-license-accepted.service fty-db-engine.service fty-db-init.service \
+    sudo ${SYSTEMCTL} enable fty-license-accepted.path fty-license-accepted.service fty-db-engine.service fty-db-init.service \
         || die "Enabling a core database-related service failed"
 
     echo "INFO: `date -u`: tickle fty-license-accepted.service"
+    sudo ${SYSTEMCTL} restart fty-license-accepted.path || die "Restarting fty-license-accepted.path failed"
     sudo ${SYSTEMCTL} restart fty-license-accepted.service || die "Restarting fty-license-accepted failed"
 
     echo "INFO: `date -u`: start core database-related services"
-    sudo ${SYSTEMCTL} start fty-license-accepted.service fty-db-engine.service fty-db-init.service \
+    sudo ${SYSTEMCTL} start fty-license-accepted.path fty-license-accepted.service fty-db-engine.service fty-db-init.service \
         || die "Starting a core database-related service failed"
 fi
 
