@@ -110,7 +110,7 @@ usage() {
 	echo "    --add-user=abuild    For Jenkins or OBS usage, define the 'abuild' account"
 	echo "    --no-config-file     Forbid use in this run of a per-VM config file if one is found"
 	echo "    --block-jenkins(=HOST)  Block access from HOST (defaults to our CI) while preparing"
-	echo "    halt                 Alias to --destroy-only"
+	echo "    halt | umount        Alias to --destroy-only"
 	echo "    wipe                 Alias to --stop-only"
 	echo "    mount                Alias to --mount-only"
 	echo "    update               Alias to --no-delete --no-install-dev --no-restore-saved"
@@ -284,7 +284,7 @@ while [ $# -gt 0 ] ; do
 		MOUNTONLY=yes
 		shift
 		;;
-	--destroy-only|--halt-only|halt)
+	--destroy-only|--halt-only|halt|unmount|umount|--umount-only|--unmount-only)
 		DESTROYONLY=yes
 		shift
 		;;
