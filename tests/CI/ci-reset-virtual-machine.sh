@@ -725,8 +725,11 @@ virsh -c lxc:// destroy "$VM" || \
 # may be wait for slow box
 sleep 5
 
-# Cleanup of the rootfs
-ALTROOT="$(cd "`pwd`/../rootfs/$VM" && pwd)" || die "Could not determine the container ALTROOT"
+# Cleanup of the rootfs... just in case, try to clean it up even if FS objects
+# are missing (e.g. someone managed to delete them without freeing resources).
+mkdir -p "`pwd`/../rootfs/$VM"
+ALTROOT="$(cd "`pwd`/../rootfs/$VM" && { realpath . || pwd ; })" \
+	|| die "Could not determine the container ALTROOT; was it already destroyed?"
 logmsg_info "Unmounting paths related to VM '$VM':" \
 	"'${ALTROOT}/lib/modules', '${ALTROOT}/.ccache'" \
 	"'${ALTROOT}/proc', '${ALTROOT}', '`pwd`/../rootfs/${IMAGE_FLAT}-ro'," \
@@ -740,6 +743,10 @@ fusermount -u -z "${ALTROOT}" 2> /dev/null > /dev/null || true
 
 # This unmount can fail if for example several containers use the same RO image
 # or if it is not used at all; not shielding by "$OVERLAYFS" check just in case
+# TODO: Such unmount still allows images to (re-)mount and use the squashfs
+# file, but script claims to free the loopback device below (marks for autofree
+# actually); this seems a bit dirty so better test here that current container
+# is the only/last one using the RO directory...
 umount -fl "../overlays-ro/${IMAGE_FLAT}-ro" 2> /dev/null > /dev/null || true
 umount -fl "../rootfs/${IMAGE_FLAT}-ro" 2> /dev/null > /dev/null || true
 
@@ -804,7 +811,7 @@ for D in ../overlays-ro/*-ro/ ../rootfs/*-ro/ ; do
 	# Now, ignore non-directories and not-empty dirs (used mountpoints)
 	if [ -d "$D" ]; then
 		# This is a directory
-		if FD="`cd "$D" && pwd`" && \
+		if FD="`cd "$D" && { realpath . || pwd ; }`" && \
 			{ [ x"`mount | grep ' on '${FD}' type '`" != x ] || \
 			  [ x"`grep ' '${FD}' ' < /proc/mounts`" != x ] ; } \
 		; then
@@ -826,7 +833,7 @@ for D in ../overlays-ro/*-ro/ ../rootfs/*-ro/ ; do
 		if [ x"`cd $D && find .`" = x. ]; then
 			# This is a directory, and it is empty
 			# Just in case, re-check the mountpoint activity
-			FD="`cd "$D" && pwd`" && \
+			FD="`cd "$D" && { realpath . || pwd ; }`" && \
 				{ [ x"`mount | grep ' on '${FD}' type '`" != x ] || \
 				  [ x"`grep ' '${FD}' ' < /proc/mounts`" != x ] ; } && \
 				logmsg_warn "Old RO mountpoint '$FD' seems still used" && \
@@ -841,6 +848,24 @@ for D in ../overlays-ro/*-ro/ ../rootfs/*-ro/ ; do
 		fi
 	fi
 done
+
+### This cleanup applies when host supports loopback+overlay but did not use
+### it for the particular container in current run, too. Free the resource!
+### Also do it even if pathname seems the same (file could be replaced)...
+#if [ x"$OVERLAYFS" = xyes ] ; then
+#set -x
+	CURRDIR="`cd /srv/libvirt/snapshots/ && realpath . || pwd`" && \
+	[ -n "$CURRDIR" ] && \
+	losetup --raw --noheadings -l | egrep " $CURRDIR/.*\.squashfs " | \
+	while read LODEV SIZELIMIT OFFSET AUTOCLEAR RO BACKFILE DIO ; do
+		if [ x"`egrep "^$LODEV .*squashfs" < /proc/mounts`" = x ]; then
+			logmsg_warn "Unused squashfs loopback device was found," \
+				"removing '$LODEV' for '$BACKFILE'"
+			losetup -d "$LODEV"
+		fi
+	done
+#set +x
+#fi
 
 if [ x"$OVERLAYFS" != xyes ] \
 && [ x"$NO_DELETE" = xyes ] \
@@ -873,16 +898,49 @@ mkdir -p "${ALTROOT}"
 if [ x"$OVERLAYFS" = xyes ]; then
 	logmsg_info "Mount the common RO squashfs at '`pwd`/../overlays-ro/${IMAGE_FLAT}-ro'"
 	mkdir -p "../overlays-ro/${IMAGE_FLAT}-ro"
-	mount -o loop "$IMAGE" "`pwd`/../overlays-ro/${IMAGE_FLAT}-ro" || \
-		die "Can't mount squashfs"
+	IMAGE_RO_DIR="`cd "../overlays-ro/${IMAGE_FLAT}-ro" && { realpath . || pwd ; }`" && \
+		[ -n "$IMAGE_RO_DIR" ] && [ -d "$IMAGE_RO_DIR" ] || \
+		die "Can't use IMAGE_RO_DIR"
+	IMAGE_RO_FILEDIR="`dirname "$IMAGE"`" && [ -n "$IMAGE_RO_FILEDIR" ] && \
+		IMAGE_RO_FILEDIR="`cd "$IMAGE_RO_FILEDIR" && { realpath . || pwd ; }`" && \
+		[ -n "$IMAGE_RO_FILEDIR" ] && [ -d "$IMAGE_RO_FILEDIR" ] || \
+		die "Can't use IMAGE_RO_FILEDIR"
+	IMAGE_RO_FILE="$IMAGE_RO_FILEDIR/`basename "$IMAGE"`"
+	[ -n "$IMAGE_RO_FILE" ] && [ -s "$IMAGE_RO_FILE" ] || \
+		die "Can't use IMAGE_RO_FILE"
+#	LODEV="`losetup --raw --noheadings -l | grep " $IMAGE_RO_FILE " | awk '{print $1}'`"
+	LODEV="`losetup --raw -j "$IMAGE_RO_FILE" | head -1 | awk '{print $1}' | sed 's,:*$,,'`" \
+		&& [ -n "$LODEV" ] \
+		|| LODEV="`losetup --raw --noheadings -l | awk '( $6 == "'"$IMAGE_RO_FILE"'" ) {print $1}'`" \
+		|| LODEV=""
+	if [ -z "$LODEV" ]; then
+		logmsg_info "Loopbacking squashfs '$IMAGE_RO_FILE' ..."
+		losetup -r -f "$IMAGE_RO_FILE" && \
+		LODEV="`losetup --raw -j "$IMAGE_RO_FILE" | head -1 | awk '{print $1}' | sed 's,:*$,,'`" \
+		&& [ -n "$LODEV" ] \
+		|| LODEV="`losetup --raw --noheadings -l | awk '( $6 == "'"$IMAGE_RO_FILE"'" ) {print $1}'`" \
+		|| LODEV=""
+	fi
+	if [ -n "$LODEV" ]; then
+		logmsg_info "Found squashfs '$IMAGE_RO_FILE' loopbacked as '$LODEV'"
+		mount -o ro "$LODEV" "$IMAGE_RO_DIR" || \
+			die "Can't mount squashfs '$IMAGE_RO_FILE' (as '$LODEV') onto '$IMAGE_RO_DIR/'"
+	else
+		# Something buggy in this losetup?
+		mount -o ro,loop "$IMAGE_RO_FILE" "$IMAGE_RO_DIR" || \
+			die "Can't mount squashfs '$IMAGE_RO_FILE' onto '$IMAGE_RO_DIR/'"
+	fi
 
 	logmsg_info "Use the individual RW component" \
 		"located in '`pwd`/../overlays/${IMAGE_FLAT}__${VM}'" \
 		"for an overlay-mount united at '${ALTROOT}'"
 	mkdir -p "../overlays/${IMAGE_FLAT}__${VM}" \
 		"../overlays/${IMAGE_FLAT}__${VM}.tmp"
+	IMAGE_RW_DIR="`cd "../overlays/${IMAGE_FLAT}__${VM}" && { realpath . || pwd ; }`" && \
+		[ -n "$IMAGE_RW_DIR" ] && [ -d "$IMAGE_RW_DIR" ] || \
+		die "Can't use IMAGE_RW_DIR"
 	mount -t ${OVERLAYFS_TYPE} \
-		-o lowerdir="`pwd`/../overlays-ro/${IMAGE_FLAT}-ro",upperdir="`pwd`/../overlays/${IMAGE_FLAT}__${VM}",workdir="`pwd`/../overlays/${IMAGE_FLAT}__${VM}.tmp" \
+		-o lowerdir="${IMAGE_RO_DIR}",upperdir="${IMAGE_RW_DIR}",workdir="${IMAGE_RW_DIR}.tmp" \
 		${OVERLAYFS_TYPE} "${ALTROOT}" \
 	|| die "Can't overlay-mount RW directory"
 else
@@ -894,7 +952,7 @@ fi
 
 case "$IMAGE" in
 	/*) OSIMAGE_FILENAME="$IMAGE" ;;
-	*)  OSIMAGE_FILENAME="$(cd `dirname "$IMAGE"` && pwd)/$(basename "$IMAGE")"
+	*)  OSIMAGE_FILENAME="$(cd `dirname "$IMAGE"` && { realpath . || pwd ; })/$(basename "$IMAGE")"
 esac
 OSIMAGE_LSINFO="`ls -lad "$OSIMAGE_FILENAME"`" || OSIMAGE_LSINFO=""
 if [ -s "$OSIMAGE_FILENAME.md5" ]; then
