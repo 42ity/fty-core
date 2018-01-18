@@ -103,6 +103,7 @@ usage() {
 	echo "                         setting for a run if default is provided in configuration file"
 	echo "    --stop-only          end the script after stopping the VM and cleaning up"
 	echo "    --destroy-only       end the script after stopping the VM (container 'destroy')"
+	echo "    --mount-only         end the script just after it basically mounts VM FS structure"
 	echo "    --deploy-only        end the script just before it would start the VM (skips apt-get too)"
 	echo "    --copy-host-users 'a b c'    Copies specified user or group account definitions"
 	echo "    --copy-host-groups 'a b c'   (e.g. for bind-mounted homes from host into the VM)"
@@ -111,6 +112,7 @@ usage() {
 	echo "    --block-jenkins(=HOST)  Block access from HOST (defaults to our CI) while preparing"
 	echo "    halt                 Alias to --destroy-only"
 	echo "    wipe                 Alias to --stop-only"
+	echo "    mount                Alias to --mount-only"
 	echo "    update               Alias to --no-delete --no-install-dev --no-restore-saved"
 	echo "                         and disables user/group account sync from host to container"
 	echo "                         Allows to re-apply a modified overlay R/W to new RO OS image"
@@ -231,6 +233,7 @@ DOTDOMAINNAME=""
 
 [ -z "$DESTROYONLY" ] && DESTROYONLY=no	# LXC destroy == domain stopped
 [ -z "$STOPONLY" ] && STOPONLY=no		# domain stopped and rootfs wiped (legacy misnomer)
+[ -z "$MOUNTONLY" ] && MOUNTONLY=no
 [ -z "$DOWNLOADONLY" ] && DOWNLOADONLY=no
 [ -z "$DEPLOYONLY" ] && DEPLOYONLY=no
 [ -z "$INSTALL_DEV_PKGS" ] && INSTALL_DEV_PKGS=auto
@@ -275,6 +278,10 @@ while [ $# -gt 0 ] ; do
 		;;
 	--stop-only|--wipe-only|wipe)
 		STOPONLY=yes
+		shift
+		;;
+	--mount-only|mount)
+		MOUNTONLY=yes
 		shift
 		;;
 	--destroy-only|--halt-only|halt)
@@ -899,6 +906,12 @@ logmsg_info "Bind-mount kernel modules from the host OS"
 mkdir -p "${ALTROOT}/lib/modules"
 mount -o rbind "/lib/modules" "${ALTROOT}/lib/modules"
 mount -o remount,ro,rbind "${ALTROOT}/lib/modules"
+
+if [ x"$MOUNTONLY" = xyes ]; then
+	logmsg_info "MOUNTONLY was requested, so ending" \
+		"'${_SCRIPT_PATH} ${_SCRIPT_ARGS}' now, after mounting the basic filesystem structure" >&2
+	exit 0
+fi
 
 logmsg_info "Bind-mount ccache directory from the host OS"
 umount -fl "${ALTROOT}/root/.ccache" 2> /dev/null > /dev/null || true
