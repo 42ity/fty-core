@@ -112,6 +112,7 @@ usage() {
 	echo "    --block-jenkins(=HOST)  Block access from HOST (defaults to our CI) while preparing"
 	echo "    halt | umount        Alias to --destroy-only"
 	echo "    wipe                 Alias to --stop-only"
+	echo "    deploy               Alias to --deploy-only"
 	echo "    mount                Alias to --mount-only"
 	echo "    update               Alias to --no-delete --no-install-dev --no-restore-saved"
 	echo "                         and disables user/group account sync from host to container"
@@ -304,7 +305,7 @@ while [ $# -gt 0 ] ; do
 		DOWNLOADONLY=yes
 		shift
 		;;
-	--deploy-only)
+	--deploy-only|deploy)
 		DEPLOYONLY=yes
 		shift
 		;;
