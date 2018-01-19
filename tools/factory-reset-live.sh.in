@@ -41,7 +41,7 @@ logmsg_info() {
     return 0
 }
 
-error() {
+logmsg_error() {
     echo "ERROR: `date -u`: $*"
     return 1
 }
