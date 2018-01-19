@@ -57,13 +57,15 @@ $SystemLogSocketName /run/systemd/journal/syslog
 # NOTE that it can supposedly be configured with an /etc/snoopy.ini (but we did not look at that yet)
 # https://github.com/a2o/snoopy/blob/master/etc/snoopy.ini.in
 
-if ($.use_remote_logsink == 'all') then @loghost:514
+if ($.tgt_remote_logsink == '') then .tgt_remote_logsink="@loghost:514"
+
+if ($.use_remote_logsink == 'all') then $.tgt_remote_logsink
 
 if ($programname == 'snoopy') then
 {
     if ($msg contains [ 'whoami', 'logger' ] ) then stop else {
         :omfile:$log_rotation_commands
-        if ($.use_remote_logsink == 'ipc-audit+snoopy') then @loghost:514
+        if ($.use_remote_logsink == 'ipc-audit+snoopy') then $.tgt_remote_logsink
         stop
     }
 } else {
@@ -71,7 +73,7 @@ if ($programname == 'snoopy') then
     or ($programname == 'tntnet' and $msg contains [ 'PUT', 'POST', 'DELETE' ])
     then {
         :omfile:$log_rotation_messages
-        if ($.use_remote_logsink == [ 'ipc-audit', 'ipc-audit+snoopy' ] ) then @loghost:514
+        if ($.use_remote_logsink == [ 'ipc-audit', 'ipc-audit+snoopy' ] ) then $.tgt_remote_logsink
         stop
     }
 }
@@ -80,5 +82,5 @@ if ($programname == 'snoopy') then
 # (logging mechanism and facility are predefined via profile.d):
 if ($syslogfacility-text == 'local6' and $syslogseverity-text == 'debug') then {
     :omfile:$log_rotation_messages
-    if ($.use_remote_logsink == [ 'ipc-audit', 'ipc-audit+snoopy' ] ) then @loghost:514
+    if ($.use_remote_logsink == [ 'ipc-audit', 'ipc-audit+snoopy' ] ) then $.tgt_remote_logsink
 }
