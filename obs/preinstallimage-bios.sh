@@ -507,9 +507,14 @@ sed -e 's|<!--.*<user>.*|<user>www-data</user>|' \
     -e 's|<!--.*<sslCipherList>.*|<sslCipherList>HIGH:!aNULL:!3DES</sslCipherList>|' \
     -i /etc/tntnet/bios.xml
 
+# Leave a backup template file
+cp /etc/tntnet/bios.xml /usr/share/fty/examples/bios.xml.default
+
+# Put aside structural head and tail of the config file
 sed -n '1,/<mappings>/ p' /etc/tntnet/bios.xml  > /etc/tntnet/bios.d/00_start.xml
 sed -n '/<\/mappings>/,$ p' /etc/tntnet/bios.xml > /etc/tntnet/bios.d/99_end.xml
 
+# Separate the servlet mappings to dissect even more
 sed '/<mappings>/,/<\/mappings>/!d; /mappings/ d' \
     /etc/tntnet/bios.xml > /etc/tntnet/bios.d/20_core.xml
 sed '1,/<!-- Make sure everybody speaks json from now on -->/!d; /<!-- Make sure everybody speaks json from now on -->/ d' \
