@@ -512,7 +512,7 @@ sed -n '/<\/mappings>/,$ p' /etc/tntnet/bios.xml > /etc/tntnet/bios.d/99_end.xml
 
 sed '/<mappings>/,/<\/mappings>/!d; /mappings/ d' /etc/tntnet/bios.xml > /etc/tntnet/bios.d/20_core.xml
 sed '1,/<!-- Make sure everybody speaks json from now on -->/!d; /<!-- Make sure everybody speaks json from now on -->/ d' /etc/tntnet/bios.d/20_core.xml > /etc/tntnet/bios.d/10_common_statics.xml
-sed '/<!-- Make sure everybody speaks json from now on -->/,$!d; /<!-- Make sure everybody speaks json from now on -->/ d; 1,/<!-- Here starts the real API -->/!d; /<!-- Here starts the real API -->/ d' /etc/tntnet/bios.d/20_core.xml > 20_common_basics.xml
+sed '/<!-- Make sure everybody speaks json from now on -->/,$!d; /<!-- Make sure everybody speaks json from now on -->/ d; 1,/<!-- Here starts the real API -->/!d; /<!-- Here starts the real API -->/ d' /etc/tntnet/bios.d/20_core.xml > /etc/tntnet/bios.d/20_common_basics.xml
 sed '/<!-- Here starts the real API -->/,$!d; /<!-- Here starts the real API -->/ d' /etc/tntnet/bios.d/20_core.xml > /etc/tntnet/bios.d/50_main_api.xml
 rm -f /etc/tntnet/bios.d/20_core.xml
 
