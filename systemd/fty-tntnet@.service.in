@@ -29,4 +29,5 @@ ExecStart=/usr/bin/tntnet -c @sysconfdir@/tntnet/%i.xml
 
 [Install]
 WantedBy=bios.target
-Alias=tntnet@%i.service
+#Alias=tntnet@.service
+#Alias=tntnet@%i.service

@@ -473,11 +473,6 @@ else
     #sed -i 's|PathChanged=/etc|PathChanged=/mnt/nand/overlay/etc|' /usr/lib/systemd/system/composite-metrics\@.path
 fi
 
-# generaly enable everything fty-*
-for unit in $(systemctl list-unit-files | grep '^fty-*' | cut -d ' ' -f 1); do
-    /bin/systemctl enable ${unit}
-done
-
 # Disable and mask the vendor-packaged mysql services - the database will
 # be started after first boot and license acceptance, and wrapped by our
 # own fty-db-engine customized service anyway.
@@ -485,8 +480,18 @@ done
 /bin/systemctl disable mysql
 
 # Our tntnet unit rocks, disable packaged default
-rm -f /etc/init.d/tntnet
-cp -f /lib/systemd/system/fty-tntnet@.service /lib/systemd/system/tntnet@.service
+if [ -s /lib/systemd/system/fty-tntnet@.service ]; then
+    /bin/systemctl disable tntnet.service
+    /bin/systemctl disable tntnet@.service
+    rm -f /etc/init.d/tntnet || true
+    rm -f /lib/systemd/system/tntnet@.service || true
+    mv /lib/systemd/system/fty-tntnet@.service /lib/systemd/system/tntnet@.service
+fi
+
+# generaly enable everything fty-*
+for unit in $(systemctl list-unit-files | grep '^fty-*' | cut -d ' ' -f 1); do
+    /bin/systemctl enable ${unit}
+done
 
 # Enable REST API via tntnet
 # Note: for legacy reasons, we still maintain tntnet@bios.service (not @fty)
