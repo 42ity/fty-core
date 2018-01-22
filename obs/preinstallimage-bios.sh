@@ -528,6 +528,11 @@ sed '/<!-- Here starts the real API -->/,$!d' \
     /etc/tntnet/bios.d/20_core.xml.tmp > /etc/tntnet/bios.d/50_main_api.xml
 rm -f /etc/tntnet/bios.d/20_core.xml.tmp
 
+# Sanity check
+cat /etc/tntnet/bios.d/*.xml > /tmp/bios.xml && \
+diff -bu /etc/tntnet/bios.xml /tmp/bios.xml || { echo "ERROR: bios.xml was sliced incorrectly" >&2; exit 1; }
+rm -f /tmp/bios.xml
+
 /bin/systemctl enable tntnet@bios
 /bin/systemctl enable fty-envvars
 
