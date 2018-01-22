@@ -516,17 +516,17 @@ sed -n '/<\/mappings>/,$ p' /etc/tntnet/bios.xml > /etc/tntnet/bios.d/99_end.xml
 
 # Separate the servlet mappings to dissect even more
 sed '/<mappings>/,/<\/mappings>/!d; /mappings/ d' \
-    /etc/tntnet/bios.xml > /etc/tntnet/bios.d/20_core.xml
+    /etc/tntnet/bios.xml > /etc/tntnet/bios.d/20_core.xml.tmp
 # Static file mappings, caching setup:
 sed '1,/<!-- Make sure everybody speaks json from now on -->/!d; /<!-- Make sure everybody speaks json from now on -->/ d' \
-    /etc/tntnet/bios.d/20_core.xml > /etc/tntnet/bios.d/10_common_statics.xml
+    /etc/tntnet/bios.d/20_core.xml.tmp > /etc/tntnet/bios.d/10_common_statics.xml
 # JSON requirement, auth processing, auth validation
 sed '/<!-- Make sure everybody speaks json from now on -->/,$!d; 1,/<!-- Here starts the real API -->/!d; /<!-- Here starts the real API -->/ d' \
-    /etc/tntnet/bios.d/20_core.xml > /etc/tntnet/bios.d/20_common_basics.xml
+    /etc/tntnet/bios.d/20_core.xml.tmp > /etc/tntnet/bios.d/20_common_basics.xml
 # The actual diverse API calls of the product
 sed '/<!-- Here starts the real API -->/,$!d' \
-    /etc/tntnet/bios.d/20_core.xml > /etc/tntnet/bios.d/50_main_api.xml
-rm -f /etc/tntnet/bios.d/20_core.xml
+    /etc/tntnet/bios.d/20_core.xml.tmp > /etc/tntnet/bios.d/50_main_api.xml
+rm -f /etc/tntnet/bios.d/20_core.xml.tmp
 
 /bin/systemctl enable tntnet@bios
 /bin/systemctl enable fty-envvars
