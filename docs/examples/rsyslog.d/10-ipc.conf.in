@@ -57,7 +57,7 @@ $SystemLogSocketName /run/systemd/journal/syslog
 # NOTE that it can supposedly be configured with an /etc/snoopy.ini (but we did not look at that yet)
 # https://github.com/a2o/snoopy/blob/master/etc/snoopy.ini.in
 
-if ($.tgt_remote_logsink == '') then .tgt_remote_logsink="@loghost:514"
+if ($.tgt_remote_logsink == '') then set $.tgt_remote_logsink = "@loghost:514" ;
 
 if ($.use_remote_logsink == 'all') then $.tgt_remote_logsink
 
