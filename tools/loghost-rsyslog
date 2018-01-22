@@ -1,7 +1,7 @@
 #!/bin/bash
 # NOTE: Bash-specific syntax is used in "case"s below
 #
-#   Copyright (c) 2016 Eaton
+#   Copyright (c) 2016-2018 Eaton
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -31,6 +31,12 @@ HOSTSFENCE_NETCONSOLE='### Entry managed by loghost-rsyslog.sh for dynamic netco
 
 RSYSLOG_TOGGLE_FILE_ACTIVE="/etc/rsyslog.d-early/10-ipc-remote-loghost.conf"
 RSYSLOG_TOGGLE_FILE_BACKUP="$RSYSLOG_TOGGLE_FILE_ACTIVE.laststate"
+
+RSYSLOG_TARGET_FILE_ACTIVE="/etc/rsyslog.d-early/10-ipc-remote-loghost-tgt.conf"
+RSYSLOG_TARGET_FILE_BACKUP="$RSYSLOG_TARGET_FILE_ACTIVE.laststate"
+
+# Common config file snippets
+RSYSLOG_CONFIG_DIR="/etc/rsyslog.d"
 
 # The hostname hardcoded in our rsyslog pre-configuration as the remote sink
 RSYSLOG_LOGHOST="loghost"
@@ -69,6 +75,8 @@ from reviving it).
                         (if the entry is absent or is managed by us)
     --del-loghost       Remove the value (if managed by us)
     --{SET,DEL}-loghost Do the above even if local value was managed not by us
+    --udp | --tcp       Specify protocol (default UDP)
+    --port NUMBER       Specify port number (default 514)
     --toggle-rsyslog VAL       Sets the configuration variable for rsyslog
                         to one of the supported values, or to the last state
                         used (if a backup or old config file is found), and
@@ -135,8 +143,23 @@ query_rsyslog_toggle() {
     return 22
 }
 
+query_rsyslog_target() {
+    # Prints the content of active or backup configuration file and
+    # returnes exitcode values:
+    # 0         Active config file was present and printed
+    # 1         Backup config file was present and printed
+    # 22        Neither file was found or other errors happened
+    [ -s "$RSYSLOG_TARGET_FILE_ACTIVE" ] && cat "$RSYSLOG_TARGET_FILE_ACTIVE" && return 0
+    [ -s "$RSYSLOG_TARGET_FILE_BACKUP" ] && cat "$RSYSLOG_TARGET_FILE_BACKUP" && return 1
+    return 22
+}
+
 get_active_rsyslog_toggle() {
     egrep '^set \$.use_remote_logsink = ' "$RSYSLOG_TOGGLE_FILE_ACTIVE" | sed 's,^set \$.use_remote_logsink *= *\"\(.*\)\" *;$,\1,'
+}
+
+get_active_rsyslog_target() {
+    egrep '^set \$.tgt_remote_logsink = ' "$RSYSLOG_TARGET_FILE_ACTIVE" | sed 's,^set \$.tgt_remote_logsink *= *\"\(.*\)\" *;$,\1,'
 }
 
 remove_loghost_name() {
@@ -298,12 +321,89 @@ process_action_toggle() {
     return 1
 }
 
+process_action_target() {
+    [ -n "$RESTART_RSYSLOGD" ] || RESTART_RSYSLOGD=no
+    [ "$RESTART_RSYSLOGD" != auto ] || RESTART_RSYSLOGD=no
+    case "$ACTION_TARGET" in
+        _SKIP_)
+            if [ "$RESTART_RSYSLOGD" = auto ]; then RESTART_RSYSLOGD=no_changes; fi
+            return 0;;
+        enable-backup)
+            [ -s "$RSYSLOG_TARGET_FILE_ACTIVE" ] && \
+                return 0
+            [ -s "$RSYSLOG_TARGET_FILE_BACKUP" ] && \
+                mv -f "$RSYSLOG_TARGET_FILE_BACKUP" "$RSYSLOG_TARGET_FILE_ACTIVE" && \
+                RESTART_RSYSLOGD=yes || \
+                case "$VALUE_TARGET" in
+                    LAST_STATE) echo "WARN: No last state found to re-enable!" >&2; return 1;;
+                    DEFAULT|on|ON) VALUE_TARGET='@loghost:514' ;;
+                esac
+            ;& # BASH fall through
+        enable)
+            if [ "$RESTART_RSYSLOGD" != yes ]; then
+                for F in "$RSYSLOG_CONFIG_DIR"/*.conf ; do
+                    if grep "@LOGSINK@" "$F" > /dev/null \
+                    && ! grep "$VALUE_TARGET" "$F" > /dev/null \
+                    ; then
+                        tr '\n' '\r' < "$F" \
+                        | sed -e 's,\r#*\([\ \t]*\)\([^\r]*\)\(@LOGSINK@\)\r[^\r]*\r,\r#\1\2\3\r\1\2 '"$VALUE_TARGET"'\r,g' \
+                        | tr '\r' '\n' > "$F.tmp" \
+                        && [ -s "$F.tmp" ] \
+                        && { echo "Updating '$F' with new log target: $VALUE_TARGET ..." && mv -f "$F.tmp" "$F" && RESTART_RSYSLOGD=yes ; } \
+                        || rm -f "$F.tmp"
+                    fi
+                done
+
+                NEWVAL='set $.tgt_remote_logsink = "'"$VALUE_TARGET"'";'
+                if [ -s "$RSYSLOG_TARGET_FILE_ACTIVE" ] ; then
+                    fgrep "$NEWVAL" "$RSYSLOG_TARGET_FILE_ACTIVE" >/dev/null && \
+                        echo "INFO: $RSYSLOG_TARGET_FILE_ACTIVE is already up-to-date and managed by this script, got nothing to do" >&2 && \
+                        { if [ "$RESTART_RSYSLOGD" = auto ]; then RESTART_RSYSLOGD=no_changes; fi; true; } && \
+                        return 0
+
+                    [ "$HOSTSFENCE" = "$HOSTSFENCE_NETCONSOLE" ] && \
+                        fgrep "$HOSTSFENCE_MANUAL" "$RSYSLOG_TARGET_FILE_ACTIVE" && \
+                        echo "WARN: $RSYSLOG_TARGET_FILE_ACTIVE was enabled by user with a different mode, not overriding with netconsole" >&2 && \
+                        return 1
+                fi
+
+                ( echo "$HOSTSFENCE"; echo "$NEWVAL"; echo "$HOSTSFENCE" ) > "$RSYSLOG_TARGET_FILE_ACTIVE" && \
+                    RESTART_RSYSLOGD=yes
+            fi
+            [ "$RESTART_RSYSLOGD" = yes ]
+            return $? # if flag == yes, config was definitively changed
+            ;;
+        disable)
+            if [ -s "$RSYSLOG_TARGET_FILE_ACTIVE" ] ; then
+                if [ "$HOSTSFENCE" = "$HOSTSFENCE_NETCONSOLE" ] && \
+                    fgrep "$HOSTSFENCE_MANUAL" "$RSYSLOG_TARGET_FILE_ACTIVE" >/dev/null \
+                ; then
+                    echo "WARN: $RSYSLOG_TARGET_FILE_ACTIVE was enabled by user, not overriding with netconsole" >&2
+                    return 1
+                fi
+                mv -f "$RSYSLOG_TARGET_FILE_ACTIVE" "$RSYSLOG_TARGET_FILE_BACKUP" && \
+                RESTART_RSYSLOGD=yes
+            fi
+            ;;
+        *)  return 255 ;;
+    esac
+
+    # Should not get here if there were changes to enable
+    return 1
+}
+
 optional_restart_rsyslogd() {
     if [ "$RESTART_RSYSLOGD" = yes_if_active ]; then
         # No changes done because of toggle, but hostname was redefined
         # We only need to restart rsyslogd if off-host logging is active
         if [ -s "$RSYSLOG_TOGGLE_FILE_ACTIVE" ] ; then
             OLDVAL="`get_active_rsyslog_toggle`" || OLDVAL=""
+            if [ -n "$OLDVAL" ] && [ "$OLDVAL" != none ]; then
+                RESTART_RSYSLOGD=yes
+            fi
+        fi
+        if [ -s "$RSYSLOG_TARGET_FILE_ACTIVE" ] ; then
+            OLDVAL="`get_active_rsyslog_target`" || OLDVAL=""
             if [ -n "$OLDVAL" ] && [ "$OLDVAL" != none ]; then
                 RESTART_RSYSLOGD=yes
             fi
@@ -552,6 +652,20 @@ process_action_query() {
     fi
 
     if echo "$VALUE_QUERY" | grep -w all >/dev/null || \
+       echo "$VALUE_QUERY" | grep -w toggle >/dev/null \
+    ; then
+        query_rsyslog_target
+        RES=$?
+        case $RES in
+            0)  echo "INFO: The rsyslog target above was found in ACTIVE config file" >&2 ;;
+            1)  echo "INFO: The rsyslog target above was found in BACKUP config file" >&2 ;;
+            22) echo "INFO: The rsyslog target was NOT FOUND in active or backup config files" >&2 ;;
+            *)  echo "INFO: The rsyslog target inspection returned an UNEXPECTED CODE ($RES)" >&2 ;;
+        esac
+        echo "" >&2
+    fi
+
+    if echo "$VALUE_QUERY" | grep -w all >/dev/null || \
        echo "$VALUE_QUERY" | grep -w loghost >/dev/null \
     ; then
         query_loghost_name
@@ -594,6 +708,10 @@ process_action_query() {
 
 ACTION_HOSTS=_SKIP_
 VALUE_HOSTS=""
+ACTION_TARGET=_SKIP_
+VALUE_TARGET=""
+VALUE_PROTO="udp"
+VALUE_PORT="514"
 ACTION_TOGGLE=_SKIP_
 VALUE_TOGGLE=""
 ACTION_QUERY=_SKIP_
@@ -606,7 +724,7 @@ while [ $# -gt 0 ]; do
     case "$1" in
         -q|--query)     ACTION_QUERY=yes
             case "$2" in
-                loghost|toggle|netconsole)
+                loghost|toggle|netconsole|target)
                     VALUE_QUERY="$VALUE_QUERY $2"
                     shift ;;
                 *)  VALUE_QUERY="all" ;;
@@ -618,6 +736,14 @@ while [ $# -gt 0 ]; do
                         ;;
         --set-loghost)  isIPaddr "$2" || exit $?
                         VALUE_HOSTS="$2"; ACTION_HOSTS=tryset; shift;;
+        --tcp)          VALUE_PROTO="tcp" ; ACTION_TARGET=enable ;;
+        --udp)          VALUE_PROTO="udp" ; ACTION_TARGET=enable ;;
+        --port)         if [ "$2" -gt 0 ] && [ "$2" -lt 65536 ]; then
+                            VALUE_PORT="$2" ; ACTION_TARGET=enable ; shift
+                        else
+                            echo "ERROR: Bad port number: $2" >&2
+                            exit 1
+                        fi ;;
         --DEL-loghost)  VALUE_HOSTS=""
                         isIPaddr "$2" >/dev/null 2>&1 && VALUE_HOSTS="$2" && shift
                         ACTION_HOSTS=forcedel
@@ -685,6 +811,12 @@ while [ $# -gt 0 ]; do
     shift
 done
 
+case "$VALUE_PROTO" in
+    tcp) VALUE_TARGET="@@" ;;
+    udp|*) VALUE_TARGET="@" ;;
+esac
+VALUE_TARGET="${VALUE_TARGET}loghost:${VALUE_PORT}"
+
 if [ "$ACTION_QUERY" = yes ]; then
     process_action_query
     exit $?
@@ -703,4 +835,5 @@ trap '_EXITCODE=$? ; rm -f "$LOCKFILE" ; exit ${_EXITCODE}' 0 1 2 3 15
 
 process_action_hosts
 process_action_toggle
+process_action_target
 optional_restart_rsyslogd
