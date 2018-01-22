@@ -720,10 +720,10 @@ while [ $# -gt 0 ]; do
                         ;;
         --set-loghost)  isIPaddr "$2" || exit $?
                         VALUE_HOSTS="$2"; ACTION_HOSTS=tryset; shift;;
-        --tcp)          VALUE_PROTO="tcp" ; ACTION_TARGET=tryset ;;
-        --udp)          VALUE_PROTO="udp" ; ACTION_TARGET=tryset ;;
+        --tcp)          VALUE_PROTO="tcp" ; ACTION_TARGET=enable ;;
+        --udp)          VALUE_PROTO="udp" ; ACTION_TARGET=enable ;;
         --port)         if [ "$2" -gt 0 ] && [ "$2" -lt 65536 ]; then
-                            VALUE_PORT="$2" ; ACTION_TARGET=tryset ; shift
+                            VALUE_PORT="$2" ; ACTION_TARGET=enable ; shift
                         else
                             echo "ERROR: Bad port number: $2" >&2
                             exit 1
