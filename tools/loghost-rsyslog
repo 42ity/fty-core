@@ -799,7 +799,7 @@ case "$VALUE_PROTO" in
     tcp) VALUE_TARGET="@@" ;;
     udp|*) VALUE_TARGET="@" ;;
 esac
-VALUE_TARGET="$VALUE_TARGET:loghost:$VALUE_PORT"
+VALUE_TARGET="${VALUE_TARGET}loghost:${VALUE_PORT}"
 
 if [ "$ACTION_QUERY" = yes ]; then
     process_action_query
