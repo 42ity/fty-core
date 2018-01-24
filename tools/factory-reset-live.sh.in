@@ -146,7 +146,7 @@ do_unstate() {
         esac
     done
 
-    logmsg_info "Recreating blank IPM service state files and directroies..."
+    logmsg_info "Recreating blank IPM service state files and directories..."
     systemd-tmpfiles --create
     if [ "$ENABLESVC" = yes ]; then
         logmsg_info "Starting IPM services..."
