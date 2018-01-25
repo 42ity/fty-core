@@ -37,6 +37,43 @@ export CHECKOUTDIR BUILDSUBDIR
 [ -z "$TZ" ] && TZ=UTC
 export LANG LANGUAGE LC_ALL TZ
 
+### This is prefixed before ERROR, WARN, INFO tags in the logged messages
+[ -z "$LOGMSG_PREFIX" ] && LOGMSG_PREFIX="CI-SETUPVM-"
+### Store some important CLI values
+[ -z "$_SCRIPT_PATH" ] && _SCRIPT_PATH="$0"
+[ -z "$_SCRIPT_NAME" ] && _SCRIPT_NAME="`basename "${_SCRIPT_PATH}"`"
+_SCRIPT_ARGS="$*"
+_SCRIPT_ARGC="$#"
+
+# NOTE: This script may be standalone, so we do not depend it on scriptlib.sh
+SCRIPTDIR=$(realpath `dirname ${_SCRIPT_PATH}`)
+SCRIPTPWD="`pwd`"
+[ -z "$CHECKOUTDIR" ] && CHECKOUTDIR=$(realpath $SCRIPTDIR/../..)
+[ "$CHECKOUTDIR" = / -o ! -d "$CHECKOUTDIR/tests/CI" ] && CHECKOUTDIR=""
+[ -z "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
+export CHECKOUTDIR BUILDSUBDIR
+
+logmsg_info() {
+        echo "${LOGMSG_PREFIX}INFO: ${_SCRIPT_PATH}:" "$@"
+}
+
+logmsg_warn() {
+        echo "${LOGMSG_PREFIX}WARN: ${_SCRIPT_PATH}:" "$@" >&2
+}
+
+logmsg_error() {
+        echo "${LOGMSG_PREFIX}ERROR: ${_SCRIPT_PATH}:" "$@" >&2
+}
+
+die() {
+        CODE="${CODE-1}"
+        [ "$CODE" -ge 0 ] 2>/dev/null || CODE=1
+        for LINE in "$@" ; do
+                echo "${LOGMSG_PREFIX}FATAL: ${_SCRIPT_PATH}:" "$LINE" >&2
+        done
+        exit $CODE
+}
+
 # Match CPU arch to packaging arch
 [ -z "$ARCH" ] && ARCH="`uname -m`"
 [ -z "$ARCH_PKG" ] && case "$ARCH" in
@@ -91,7 +128,7 @@ limit_packages_docs() {
         texlive-pictures-doc \
         texlive-pstricks-doc \
       ; do
-        apt-mark hold "$P" >&2 || RES=$?
+        apt-mark hold "$P" >&2 # || RES=$?
         echo "$P  purge"
       done ; exit $RES ) | dpkg --set-selections
 }

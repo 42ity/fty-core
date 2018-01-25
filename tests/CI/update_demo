@@ -29,7 +29,7 @@
 
 PATH="/bin:/usr/bin:/sbin:/usr/sbin"
 
-OBS_IMAGES_SERVER="http://obs.roz53.lab.etn.com"
+OBS_IMAGES_SERVER="http://obs.roz.lab.etn.com"
 OBS_IMAGES_BASEURL="$OBS_IMAGES_SERVER/images"
 ARCH="x86_64"
 PEMFILE_DIR="/root/pems"
@@ -95,20 +95,20 @@ setup_bios_demo() (
     # copy resolv.conf (demo has not OBS default, but ROZ LAB one)
     #
     cp -f /etc/resolv.conf ./etc/
-    echo bios-demo.roz53.lab.etn.com > ./etc/hostname
+    echo bios-demo.roz.lab.etn.com > ./etc/hostname
 
-    if [ -n "`ssh -p 4222 root@bios-rc-demo.roz53.lab.etn.com echo ahoj`" ] ; then
+    if [ -n "`ssh -p 4222 root@bios-rc-demo.roz.lab.etn.com echo ahoj`" ] ; then
         #
         # replicate NUT config from bios-rc-demo
         #
         echo "Exporting a copy of NUT configs from bios-rc-demo..."
-        scp -P 4222 root@bios-rc-demo.roz53.lab.etn.com:/etc/nut/* ./etc/nut
+        scp -P 4222 root@bios-rc-demo.roz.lab.etn.com:/etc/nut/* ./etc/nut
 
         #
         # Dump database from bios-rc-demo
         #
         echo "Exporting a copy of database content from bios-rc-demo..."
-        ssh -p 4222 root@bios-rc-demo.roz53.lab.etn.com mysqldump -u root box_utf8 > ./mysqldump || rm -f ./mysqldump
+        ssh -p 4222 root@bios-rc-demo.roz.lab.etn.com mysqldump -u root box_utf8 > ./mysqldump || rm -f ./mysqldump
     fi
 
     #
@@ -117,9 +117,9 @@ setup_bios_demo() (
     cat << EOF | chroot . /bin/bash
 /usr/lib/mysql/rcmysql start
 echo 'Importing default database schema...'
-wget -O - "http://tomcat.roz53.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=database/mysql/initdb.sql;hb=HEAD" |  mysql -u root
-# wget -O - "http://tomcat.roz53.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=database/mysql/load_data.sql;hb=HEAD" | mysql -u root box_utf8
-# wget -O - "http://tomcat.roz53.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=database/mysql/load_ROZLAB.sql;hb=HEAD" | mysql -u root box_utf8
+wget -O - "http://tomcat.roz.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=database/mysql/initdb.sql;hb=HEAD" |  mysql -u root
+# wget -O - "http://tomcat.roz.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=database/mysql/load_data.sql;hb=HEAD" | mysql -u root box_utf8
+# wget -O - "http://tomcat.roz.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=database/mysql/load_ROZLAB.sql;hb=HEAD" | mysql -u root box_utf8
 [ -s /mysqldump ] && echo 'Importing /mysqldump...' && mysql -u root box_utf8 < /mysqldump
 /usr/lib/mysql/rcmysql stop
 EOF
