@@ -566,17 +566,18 @@ IMAGE=""
 IMAGE_SKIP=""
 
 sort_osimage_names() {
-	# ASSUMPTION: we don't have over 999 rebuilds of the same baseline image ;)
+	# ASSUMPTION: we don't have over 9999 rebuilds of the same baseline image ;)
 	# ASSUMPTION2: all image builds have a rebuild-index suffix for the same
 	# baseline, or there is one old image for a baseline without a suffix.
 	### sort
 	### sort -n
-	sed -e 's,-\([[:digit:]][[:digit:]]\.[[:digit:]][[:digit:]]\.[[:digit:]][[:digit:]]\)_,-\1-0_,' \
-	    -e 's,-\([[:digit:]]\)_,-0\1_,' \
-	    -e 's,-\([[:digit:]][[:digit:]]\)_,-0\1_,' \
+	sed -e 's,-\([[:digit:]][[:digit:]]\.[[:digit:]][[:digit:]]\.[[:digit:]][[:digit:]]\)_,-\1+0_,' \
+	    -e 's,\([-\+]\)\([[:digit:]]\)_,\10\2_,' \
+	    -e 's,\([-\+]\)\([[:digit:]][[:digit:]]\)_,\10\2_,' \
+	    -e 's,\([-\+]\)\([[:digit:]][[:digit:]][[:digit:]]\)_,\10\2_,' \
 	| sort -n | \
-	sed -e 's,-0*\([123456789][[:digit:]]*\)_,-\1_,' \
-	    -e 's,-00*_,_,'
+	sed -e 's,\([-\+]\)0*\([123456789][[:digit:]]*\)_,\1\2_,' \
+	    -e 's,\([-\+]\)00*_,_,'
 }
 
 if [ "$ATTEMPT_DOWNLOAD" != no ] ; then
