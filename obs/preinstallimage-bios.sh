@@ -46,6 +46,11 @@
 echo "INFO: Executing $0 $*"
 echo "    IMGTYPE='$IMGTYPE'"
 
+# Users uids definition
+BASE_USER_UID=10000
+ADMIN_UID=${BASE_USER_UID}
+MONITOR_UID=$((ADMIN_UID + 1))
+
 # Protect against errors... such as maybe running on a dev workstation
 set -e
 
@@ -97,7 +102,7 @@ usermod -G gpio -a bios
 # add an access to sasl, bios-logread (for /var/log/messages) and systemd journal
 # note that earlier OS images had custom logs owned by "adm" group, so we also
 # support it for admin account at this time (so that upgraders can read old logs)
-useradd -m admin -G "${SASL_GROUP}",adm,bios-logread,systemd-journal -N -g bios-admin -s /bin/bash
+useradd -m admin -u "${ADMIN_UID}" -G "${SASL_GROUP}",adm,bios-logread,systemd-journal -N -g bios-admin -s /bin/bash
 passwd admin <<EOF
 admin
 admin
@@ -113,7 +118,7 @@ usermod -G "${SASL_GROUP}" -a bios
 # TODO: See if "sudo"able tasks that this account may have to do can be done
 # with another shell like /bin/nologin or /bin/false - and then secure it...
 if ! getent passwd monitor ; then
-    useradd -m monitor -G "$SASL_GROUP" -N -g bios-dash -s /bin/bash
+    useradd -m monitor -u "${MONITOR_UID}" -G "$SASL_GROUP" -N -g bios-dash -s /bin/bash
     passwd monitor <<EOF
 monitor
 monitor
