@@ -330,7 +330,7 @@ EOF
 
 # Uninstall various packages that are not needed
 # Note: We restore "/bin/diff" and "/bin/*grep" via busybox, below
-for i in $(dpkg -l | awk '/perl/{ print $2; }') apt fakeroot ncurses-bin diffutils grep sysvinit ncurses-common libicu52 lsb-release; do
+for i in $(dpkg -l | awk '/perl/{ print $2; }') apt fakeroot ncurses-bin diffutils grep sysvinit ncurses-common lsb-release; do
     case "$IMGTYPE" in
         *devel*)
             echo dpkg -P --force-all $i
