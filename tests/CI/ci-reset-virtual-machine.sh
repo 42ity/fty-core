@@ -145,18 +145,28 @@ usage() {
 
 check_md5sum() {
 	# Compares actual checksum of file "$1" with value recorded in file "$2"
-	if [ -s "$1" -a -s "$2" ]; then
-		logmsg_info "Validating OS image file '$1' against its MD5 checksum '$2'..."
-		MD5EXP="`awk '{print $1}' < "$2"`"
-		MD5ACT="`md5sum < "$1" | awk '{print $1}'`" && \
+	FILE_DATA="$1"
+	FILE_CKSUM="$2"
+	case "$FILE_DATA" in
+		/*) ;;
+		*) FILE_DATA="`pwd`/$FILE_DATA" ;;
+	esac
+	case "$FILE_CKSUM" in
+		/*) ;;
+		*) FILE_CKSUM="`pwd`/$FILE_CKSUM" ;;
+	esac
+	if [ -s "$FILE_DATA" -a -s "$FILE_CKSUM" ]; then
+		logmsg_info "Validating OS image file '$FILE_DATA' against its MD5 checksum '$FILE_CKSUM'..."
+		MD5EXP="`awk '{print $1}' < "$FILE_CKSUM"`"
+		MD5ACT="`md5sum < "$FILE_DATA" | awk '{print $1}'`" && \
 		if [ x"$MD5EXP" != x"$MD5ACT" ]; then
-			logmsg_error "Checksum validation of '$1' against '$2' FAILED!"
+			logmsg_error "Checksum validation of '$FILE_DATA' against '$FILE_CKSUM' FAILED!"
 			return 1
 		fi
-		logmsg_info "Checksum validation of '$1' against '$2' SUCCEEDED!"
+		logmsg_info "Checksum validation of '$FILE_DATA' against '$FILE_CKSUM' SUCCEEDED!"
 		return 0
 	fi
-	logmsg_warn "Checksum validation of '$1' against '$2' SKIPPED (one of the files is missing)"
+	logmsg_warn "Checksum validation of '$FILE_DATA' against '$FILE_CKSUM' SKIPPED (at least one of the files is missing or empty)"
 	return 0
 }
 
