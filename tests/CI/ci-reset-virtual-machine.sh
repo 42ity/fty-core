@@ -93,6 +93,8 @@ usage() {
 	echo "    --with-java8-jre     when setting up packages with ci-setup-test-machine.sh"
 	echo "                         set DEPLOY_JAVA8=yes to install Java8 JRE for certain"
 	echo "                         uses (e.g. run a Jenkins agent.jar or Flexnet tools)"
+	echo "    --disable-bios       Disable BIOS/42ity related services to use this VM"
+	echo "                         as just a build root with lower run-time overheads"
 	echo "    --with-libzmq4-dev   explicitly install libzmq4-dev here (if install-dev)"
 	echo "    --no-install-dev     do not run ci-setup-test-machine.sh, even"
 	echo "                         on IMGTYPE=devel containers"
@@ -266,6 +268,7 @@ DOTDOMAINNAME=""
 [ -z "${ADDUSER_ABUILD-}" ] && ADDUSER_ABUILD=no
 [ -z "${JENKINS_HOST-}" ] && JENKINS_HOST=jenkins2.roz.lab.etn.com
 [ -z "${BLOCK_JENKINS-}" ] && BLOCK_JENKINS=no
+[ -z "${DISABLE_BIOS-}" ] && DISABLE_BIOS=auto
 [ -z "${HOST_CCACHE_DIR-}" ] && HOST_CCACHE_DIR="/root/.ccache"
 
 while [ $# -gt 0 ] ; do
@@ -346,6 +349,15 @@ while [ $# -gt 0 ] ; do
 	--block-jenkins)
 		shift
 		BLOCK_JENKINS=yes ;;
+	--no-block-jenkins)
+		shift
+		BLOCK_JENKINS=no ;;
+	--disable-bios)
+		shift
+		DISABLE_BIOS=yes ;;
+	--no-disable-bios)
+		shift
+		DISABLE_BIOS=no ;;
 	reboot) # New uptime for existing rootfs - no initial reconfigs to do now
 		ATTEMPT_DOWNLOAD=no
 		;&
@@ -1027,6 +1039,13 @@ fi
 if [ -d "${ALTROOT}.saved-preinstall/" ] && [ "$NO_RESTORE_SAVED" != yes ]; then
 	logmsg_info "Restoring custom configuration from '`cd ${ALTROOT}.saved-preinstall/ && pwd`':" && \
 	( cd "${ALTROOT}.saved-preinstall/" && tar cf - . ) | ( cd "${ALTROOT}/" && tar xvf - )
+fi
+
+if [ "$DISABLE_BIOS" = yes ]; then
+	logmsg_info "Disabling BIOS/42ity-related service autostart in the VM"
+	chroot "${ALTROOT}" /bin/systemctl disable \
+		bios.target bios.service malamute.service \
+		nut-server nut-monitor
 fi
 
 if [ "$INSTALL_DEV_PKGS" = yes ]; then
