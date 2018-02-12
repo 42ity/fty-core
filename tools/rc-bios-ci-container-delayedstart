@@ -153,7 +153,9 @@ stop() {
 
 download_default() {
 	for T in devel deploy ; do
-		$CI_RESET_VM --download-only -m '' -b "$T" --with-overlayfs || true
+		# Note: legacy "--no-overlayfs" referred to tarballs
+		# Since Feb 2018 this also means squashfs archives
+#		$CI_RESET_VM --download-only -m '' -b "$T" --with-overlayfs || true
 		$CI_RESET_VM --download-only -m '' -b "$T" --no-overlayfs
 	done
 }
