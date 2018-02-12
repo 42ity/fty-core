@@ -13,7 +13,7 @@
 ### END INIT INFO
 #
 
-# Copyright (C) 2015 Eaton
+# Copyright (C) 2015-2018 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -108,6 +108,7 @@ start_instant() {
 }
 
 restart_virtnet() {
+	[ x"${RESTART_VIRTNET-}" = xno ] && return 0
 	echo "Restarting virtnet-related services..." >&2
 	/bin/systemctl restart networking libvirtd
 }
