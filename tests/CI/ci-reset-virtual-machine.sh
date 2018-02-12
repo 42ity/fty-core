@@ -92,7 +92,8 @@ usage() {
 	echo "    --with-libzmq4-dev   explicitly install libzmq4-dev here (if install-dev)"
 	echo "    --no-install-dev     do not run ci-setup-test-machine.sh, even on IMGTYPE=devel"
 	echo "    --no-restore-saved   do not copy stashed custom configs from a VMNAME.saved/ dir"
-	echo "    --no-overlayfs       enforce use of tarballs, even if overlayfs is supported by host"
+	echo "    --no-squashfs        enforce use of tarballs, even if overlayfs is supported by host"
+	echo "    --no-overlayfs       enforce unpacking of squashfs, even if host supports overlayfs"
 	echo "    --with-overlayfs     enforce use of overlayfs, fail if not supported by host"
 	echo "    --download-only      end the script after downloading the newest image file"
 	echo "    --attempt-download [auto|yes|no] Should an OS image download be attempted at all?"
@@ -289,16 +290,20 @@ while [ $# -gt 0 ] ; do
 		DESTROYONLY=yes
 		shift
 		;;
-	--no-overlayfs)
-		OVERLAYFS=no
+	--no-squashfs) # Legacy default is to unpack tarballs, when available
+		OVERLAYFS=no-squashfs
 		shift
 		;;
-	--no-restore-saved)
-		NO_RESTORE_SAVED=yes
+	--no-overlayfs) # Modern default is to unpack squashfs archives if not mounting them
+		OVERLAYFS=no
 		shift
 		;;
 	--with-overlayfs)
 		OVERLAYFS=yes
+		shift
+		;;
+	--no-restore-saved)
+		NO_RESTORE_SAVED=yes
 		shift
 		;;
 	--download-only)
@@ -481,7 +486,8 @@ xauto|xyes)
 		OVERLAYFS="no"
 	fi
 	;;
-xno)	logmsg_warn "OVERLAYFS='$OVERLAYFS' set by caller" ;;
+xno|xno-squashfs)
+	logmsg_warn "OVERLAYFS='$OVERLAYFS' set by caller" ;;
 *)	logmsg_warn "Unknown OVERLAYFS='$OVERLAYFS' set by caller, assuming 'no'"; OVERLAYFS="no" ;;
 esac
 
@@ -496,8 +502,13 @@ xyes)
 		modprobe ${OVERLAYFS_TYPE} && break
 	done
 	;;
-xno)
-	EXT="tar.gz"
+xno|xno-squashfs)
+	if [ x"$OVERLAYFS" = xno-squashfs ] ; then
+		# Legacy mode: use tarballs
+		EXT="tar.gz"
+	else
+		EXT="squashfs"
+	fi
 	OVERLAYFS_TYPE=""
 	logmsg_info "Detected no support of OVERLAYFS on the host" \
 		"`hostname`${DOTDOMAINNAME}, so will unpack a .$EXT file" \
@@ -506,8 +517,10 @@ xno)
 esac
 
 if [ "$NO_DELETE" = yes ] ; then
-	if [ x"$OVERLAYFS" = xno ] && [ x"$ATTEMPT_DOWNLOAD" != xno ] ; then
-		die "Requested to not delete VM contents and to download a new tarball root at the same time"
+	if [ x"$OVERLAYFS" = xno -o x"$OVERLAYFS" = xno-squashfs ] \
+	&& [ x"$ATTEMPT_DOWNLOAD" != xno ] \
+	; then
+		die "Requested to not delete VM contents and to download a new root archive at the same time"
 	fi
 fi
 
@@ -873,8 +886,8 @@ if [ x"$OVERLAYFS" != xyes ] \
 && [ x"$ATTEMPT_DOWNLOAD" = xno ] \
 ; then
 	# For overlayfs mode, we do make sure the new rootfs dir is empty
-	# For tarball mode, we keep old root if the tarball did not change
-	logmsg_info "NO_DELETE==yes, not deleting old VM tarball data"
+	# For unpacking mode, we keep old root if the tarball/squashfs did not change
+	logmsg_info "NO_DELETE==yes, not deleting old VM roofs unpacked archive data"
 else
 	# clean up VM space
 	logmsg_info "Removing VM rootfs from '${ALTROOT}'"
@@ -947,8 +960,15 @@ if [ x"$OVERLAYFS" = xyes ]; then
 else
 	logmsg_info "Unpack the full individual RW copy of the image" \
 		"'$IMAGE' at '${ALTROOT}'"
-	tar -C "${ALTROOT}" -xzf "$IMAGE" \
-	|| die "Can't un-tar the full RW directory"
+	case x"$EXT" in
+		xtar.gz)
+			tar -C "${ALTROOT}" -xzf "$IMAGE" \
+			|| die "Can't un-tar the full RW directory" ;;
+		xsquashfs)
+			unsquashfs -d "${ALTROOT}/" -f "$IMAGE" \
+			|| die "Can't un-squashfs the full RW directory" ;;
+		*) die "Requested to unpack unsupported archive type: $EXT" ;;
+	esac
 fi
 
 case "$IMAGE" in
