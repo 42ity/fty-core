@@ -219,6 +219,14 @@ probe_mounts() {
 	(RES=0 ; while read D ; do ls "$D/" > /dev/null || RES=$? ; done; exit $RES)
 }
 
+# Sanity checks
+if [ "$(uname -s)" != "Linux" ] ; then
+	die "$0 must run on Linux"
+fi
+if [ "$(id -u)" != 0 ] ; then
+	die "$0 must run as root (use sudo?)"
+fi
+
 #
 # defaults
 #
