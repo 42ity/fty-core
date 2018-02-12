@@ -129,6 +129,8 @@ usage() {
 	echo "                         is found"
 	echo "    --block-jenkins(=HOST)  Block access from HOST (defaults to our CI) while"
 	echo "                         preparing the image, to avoid use while not ready"
+	echo "    --for-jenkins(=HOST) Alias to --block-jenkins(=HOST) --add-user=abuild"
+	echo "                         --install-dev --with-java8-jre"
 	echo "    halt | umount        Alias to --destroy-only"
 	echo "    wipe                 Alias to --stop-only"
 	echo "    deploy               Alias to --deploy-only"
@@ -342,17 +344,17 @@ while [ $# -gt 0 ] ; do
 		NO_DELETE=no
 		shift
 		;;
-	--block-jenkins=*)
-		JENKINS_HOST="`echo "$1" | sed 's,^--with-block-jenkins=,,'`" || JENKINS_HOST=""
+	--block-jenkins=*|--for-jenkins=*)
+		JENKINS_HOST="`echo "$1" | sed 's,^[^\=]*=,,'`" || JENKINS_HOST=""
 		shift
 		[ -n "$JENKINS_HOST" ] && BLOCK_JENKINS=yes ;;
-	--block-jenkins)
+	--block-jenkins|--for-jenkins)
 		shift
 		BLOCK_JENKINS=yes ;;
 	--no-block-jenkins)
 		shift
 		BLOCK_JENKINS=no ;;
-	--disable-bios)
+	--disable-bios|--for-jenkins|--for-jenkins=*)
 		shift
 		DISABLE_BIOS=yes ;;
 	--no-disable-bios)
@@ -390,7 +392,7 @@ while [ $# -gt 0 ] ; do
 		DOWNLOADONLY=yes
 		shift
 		;;
-	--install-dev|--install-dev-pkgs)
+	--install-dev|--install-dev-pkgs|--for-jenkins|--for-jenkins=*)
 		INSTALL_DEV_PKGS=yes
 		# This one is now defined by ci-setup-test-machine.sh
 		# since installing more files into DEV environments is
@@ -405,13 +407,15 @@ while [ $# -gt 0 ] ; do
 		export FORCE_RUN_APT
 		shift
 		;;
-	--with-java8-jre) # Only works if INSTALL_DEV_PKGS=yes
+	--with-java8-jre|--for-jenkins|--for-jenkins=*)
+		# Only works if INSTALL_DEV_PKGS=yes
 		shift
 		DEPLOY_JAVA8=yes ; export DEPLOY_JAVA8 ;;
 	--with-libzmq4-dev) # Likewise
 		shift
 		DEPLOY_LIBZMQ4_DEV=yes ; export DEPLOY_LIBZMQ4_DEV ;;
-	--add-user=abuild) ADDUSER_ABUILD=yes ; shift ;;
+	--add-user=abuild|--for-jenkins|--for-jenkins=*)
+		ADDUSER_ABUILD=yes ; shift ;;
 	--copy-host-users)
 		COPYHOST_USERS="$2"; shift 2;;
 	--copy-host-groups)
