@@ -76,9 +76,9 @@ start_delayed() {
 			    echo "${CI_UPDATE_DEMO_VM}"  | at -M "now + $STARTDELAY" || \
 			    echo "INSTALL_DEV_PKGS=no $CI_RESET_VM -m '$C' -b deploy" | at -M "now + $STARTDELAY"
 			;;
-		    test-debian-[6789]|*deploy*) # VTEs need only the default image
+		    test-debian-[6789]) # VTEs need only the default image
 			echo "INSTALL_DEV_PKGS=no $CI_RESET_VM -m '$C' -b deploy" | at -M "now + $STARTDELAY" ;;
-		    test-debian-[012345]|latest|*devel*) # In devel-images we do updates
+		    test-debian-[012345]|latest) # In devel-images we do updates
 			echo "$CI_RESET_VM -m '$C' -b devel --install-dev" | at -M "now + $STARTDELAY" ;;
 		    *) # By default we do no definite IMGTYPE (use default or VM config)
 			echo "$CI_RESET_VM -m '$C'" | at -M "now + $STARTDELAY" ;;
@@ -96,9 +96,9 @@ start_instant() {
 			    ${CI_UPDATE_DEMO_VM} ; else
 			    INSTALL_DEV_PKGS=no $CI_RESET_VM -m "$C" -b deploy --attempt-download no; fi ) &
 			;;
-		    test-debian-[6789]|*deploy*) # VTEs need only the default image
+		    test-debian-[6789]) # VTEs need only the default image
 			INSTALL_DEV_PKGS=no $CI_RESET_VM -m "$C" -b deploy --attempt-download no & ;;
-		    test-debian-[012345]|latest|*devel*) # In devel-images we do updates
+		    test-debian-[012345]|latest) # In devel-images we do updates
 			$CI_RESET_VM -m "$C" -b devel --install-dev --attempt-download no & ;;
 		    *) # By default we do no definite IMGTYPE (use default or VM config)
 			$CI_RESET_VM -m "$C" --attempt-download no & ;;
