@@ -61,27 +61,45 @@
 [ -x "`dirname "$CI_RESET_VM"`/ci-setup-test-machine.sh" ] && \
     INSTALL_DEV_PKGS=yes
 
+# Set via config/env to a token starting NOT with a slash to avoid logging.
+# Note that by default logging is enabled with a line like the following;
+# be sure to enable some sort of log rotation if you use that in persistent
+# config!
+#[ -n "$LOGFILE_BASENAME" ] || \
+#    LOGFILE_BASENAME="/var/log/rc-bios-ci-container-delayedstart"
+[ -n "$LOGFILE_BASENAME" ] || LOGFILE_BASENAME="no"
+
 LANG=C
 LC_ALL=C
 export LANG LC_ALL
 
 start_delayed() {
 	echo "Queuing '$0 download' to refresh the images in $STARTDELAY_DL..." >&2
-	echo "$0 download" | at -M "now + $STARTDELAY_DL"
+	case "${LOGFILE_BASENAME}" in
+		/*) LOGCMD_DL=">> '${LOGFILE_BASENAME}.downloads' 2>&1";;
+		*)  echo "Not logging the queued download/startup tasks outputs"
+		    LOGCMD_DL="" ; LOGCMD_VM="" ;;
+	esac
+	echo "$0 download $LOGCMD_DL" | at -M "now + $STARTDELAY_DL"
 	for C in $CONTAINERS ; do
 		echo "Queuing '$C' container to autoboot and update in $STARTDELAY..." >&2
+		case "${LOGFILE_BASENAME}" in
+			/*) LOGCMD_VM=">> '${LOGFILE_BASENAME}.$C.log' 2>&1" ;;
+			*)  echo "Not logging the queued download/startup tasks outputs"
+			    LOGCMD_VM="" ;;
+		esac
 		case "$C" in
 		    demo)
 			[ -x ${CI_UPDATE_DEMO_VM} ] && \
-			    echo "${CI_UPDATE_DEMO_VM}"  | at -M "now + $STARTDELAY" || \
-			    echo "INSTALL_DEV_PKGS=no $CI_RESET_VM -m '$C' -b deploy" | at -M "now + $STARTDELAY"
+			    echo "${CI_UPDATE_DEMO_VM} $LOGCMD_VM"  | at -M "now + $STARTDELAY" || \
+			    echo "INSTALL_DEV_PKGS=no $CI_RESET_VM -m '$C' -b deploy $LOGCMD_VM" | at -M "now + $STARTDELAY"
 			;;
 		    test-debian-[6789]) # VTEs need only the default image
-			echo "INSTALL_DEV_PKGS=no $CI_RESET_VM -m '$C' -b deploy" | at -M "now + $STARTDELAY" ;;
+			echo "INSTALL_DEV_PKGS=no $CI_RESET_VM -m '$C' -b deploy $LOGCMD_VM" | at -M "now + $STARTDELAY" ;;
 		    test-debian-[012345]|latest) # In devel-images we do updates
-			echo "$CI_RESET_VM -m '$C' -b devel --install-dev" | at -M "now + $STARTDELAY" ;;
+			echo "$CI_RESET_VM -m '$C' -b devel --install-dev $LOGCMD_VM" | at -M "now + $STARTDELAY" ;;
 		    *) # By default we do no definite IMGTYPE (use default or VM config)
-			echo "$CI_RESET_VM -m '$C'" | at -M "now + $STARTDELAY" ;;
+			echo "$CI_RESET_VM -m '$C' $LOGCMD_VM" | at -M "now + $STARTDELAY" ;;
 		esac
 	done
 }
