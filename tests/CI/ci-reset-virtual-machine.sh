@@ -88,6 +88,8 @@ usage() {
 	echo "                         (default: '$http_proxy')"
 	echo "    -ap|--apt-proxy URL  the http_proxy to access external APT images"
 	echo "                         (default: '$APT_PROXY')"
+	echo "    --start-retries NUM  if 'virsh start' failed, retry it up to NUM times, to"
+	echo "                         work around autofs-backed homedirs mounted into guest"
 	echo "    --install-dev        run ci-setup-test-machine.sh (if available) to install"
 	echo "                         or update additional development packages"
 	echo "    --with-java8-jre     when setting up packages with ci-setup-test-machine.sh"
@@ -290,6 +292,7 @@ DOTDOMAINNAME=""
 [ -z "${BLOCK_JENKINS-}" ] && BLOCK_JENKINS=no
 [ -z "${DISABLE_BIOS-}" ] && DISABLE_BIOS=auto
 [ -z "${HOST_CCACHE_DIR-}" ] && HOST_CCACHE_DIR="/root/.ccache"
+[ -n "${START_RETRIES-}" ] && [ "${START_RETRIES-}" -gt 0 ] || START_RETRIES=1
 
 while [ $# -gt 0 ] ; do
 	case "$1" in
@@ -410,6 +413,11 @@ while [ $# -gt 0 ] ; do
 		DOWNLOADONLY=yes
 		shift
 		;;
+	--start-retries)
+		[ -n "$2" ] && [ "$2" -gt 0 ] || die "Bad argument for $1"
+		START_RETRIES="$2"
+		shift 2
+		;;
 	--install-dev|--install-dev-pkgs|--for-jenkins|--for-jenkins=*)
 		INSTALL_DEV_PKGS=yes
 		# This one is now defined by ci-setup-test-machine.sh
@@ -507,6 +515,9 @@ if [ -n "$VM" ] && [ -s "`pwd`/$VM.config-reset-vm" ]; then
 		logmsg_warn "Found configuration file for the '$VM', but it is ignored because ALLOW_CONFIG_FILE='$ALLOW_CONFIG_FILE'"
 	fi
 fi
+
+# Sanity checks and auto-values processing after config import
+[ "$START_RETRIES" -gt 1 ] || die "Bad value provided for START_RETRIES='$START_RETRIES'"
 
 [ x"$INSTALL_DEV_PKGS" = xauto ] && \
 case "$IMGTYPE" in
@@ -1274,7 +1285,14 @@ fi
 
 logmsg_info "Start the virtual machine $VM"
 probe_mounts "$VM"
-virsh -c lxc:// start "$VM" || die "Can't start the virtual machine $VM"
+START_ATTEMPT="$START_RETRIES"
+START_RESULT=255
+while [ "$START_ATTEMPT" -gt 0 ] ; do
+	START_ATTEMPT="`expr $START_ATTEMPT - 1`"
+	virsh -c lxc:// start "$VM"; START_RESULT=$?
+	[ "$START_RESULT" = 0 ] && break
+done
+[ "$START_RESULT" = 0 ] || die "Can't start the virtual machine $VM"
 
 VM_SHOULD_RESTART=no
 if [ "$INSTALL_DEV_PKGS" = yes ]; then
@@ -1394,7 +1412,16 @@ if [ "$VM_SHOULD_RESTART" = yes ] || [ "$BLOCK_JENKINS" = yes ] ; then
 	logmsg_info "Restart the virtual machine $VM"
 	virsh -c lxc:// shutdown "$VM" || true
 	virsh -c lxc:// destroy "$VM" && sleep 5 && \
-	{ probe_mounts "$VM"; virsh -c lxc:// start "$VM"; } || die "Can't reboot the virtual machine $VM"
+	{ probe_mounts "$VM"
+	  START_ATTEMPT="$START_RETRIES"
+	  START_RESULT=255
+	  while [ "$START_ATTEMPT" -gt 0 ] ; do
+		START_ATTEMPT="`expr $START_ATTEMPT - 1`"
+		virsh -c lxc:// start "$VM"; START_RESULT=$?
+		[ "$START_RESULT" = 0 ] && break
+	  done
+	  [ "$START_RESULT" = 0 ] || die "Can't reboot the virtual machine $VM"
+	}
 	logmsg_info "Sleeping 30 sec to let VM startup settle down..."
 	sleep 30
 fi
