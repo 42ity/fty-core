@@ -911,7 +911,7 @@ for D in ../overlays-ro/*-ro/ ../rootfs/*-ro/ ; do
 			logmsg_warn "Old RO mountpoint '$FD' seems still used" && \
 			continue
 
-			logmsg_info "Old RO mountpoint '$FD' seems unused, unmounting"
+			logmsg_info "Old RO mountpoint '$FD' seems unused by any overlayfs, unmounting"
 			umount -fl "$FD" || true
 
 			### NOTE: experiments showed, that even if we unmount
@@ -942,12 +942,24 @@ done
 ### This cleanup applies when host supports loopback+overlay but did not use
 ### it for the particular container in current run, too. Free the resource!
 ### Also do it even if pathname seems the same (file could be replaced)...
+### Logic/data chain:
+###   1) losetup => devnode and squashfs filename
+###   2) mounts => squashfs of loopback dev mounted into a *.squashfs-ro dir
+###   3) mounts => overlayfs lowerdir referring to mountpoint of loopback
+###      device with (predictable) *.squashfs-ro dirname => loop is used!
 #if [ x"$OVERLAYFS" = xyes ] ; then
 #set -x
 	CURRDIR="`cd /srv/libvirt/snapshots/ && realpath . || pwd`" && \
 	[ -n "$CURRDIR" ] && \
 	losetup --raw --noheadings -l | egrep " $CURRDIR/.*\.squashfs " | \
 	while read LODEV SIZELIMIT OFFSET AUTOCLEAR RO BACKFILE DIO ; do
+
+#		# This is an active mountpoint... is anything overlaid?
+#		{ mount | egrep 'lowerdir=('"`echo ${D} | sed 's,/$,,g'`|${FD}),upperdir=" || \
+#		  egrep 'lowerdir=('"`echo ${D} | sed 's,/$,,g'`|${FD}),upperdir=" < /proc/mounts ; } && \
+#		logmsg_warn "Old RO mountpoint '$FD' seems still used" && \
+#		continue
+
 		if [ x"`egrep "^$LODEV .*squashfs" < /proc/mounts`" = x ]; then
 			logmsg_warn "Unused squashfs loopback device was found," \
 				"removing '$LODEV' for '$BACKFILE'"
