@@ -552,6 +552,12 @@ find / -name systemd-logind.service -delete
 /bin/systemctl enable wd_keepalive@watchdog2.service
 /bin/systemctl enable wd_keepalive@watchdog3.service
 
+# Disable etn-amqp and etn-ipm1
+/bin/systemctl mask etn-amqp
+/bin/systemctl disable etn-amqp
+/bin/systemctl mask etn-ipm1
+/bin/systemctl disable etn-ipm1
+
 # Disable expensive debug logging by default on non-devel images
 mkdir -p /usr/share/fty/etc/default
 case "$IMGTYPE" in
