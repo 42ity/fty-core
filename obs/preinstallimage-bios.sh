@@ -497,7 +497,8 @@ for unit in $(/bin/systemctl list-unit-files | egrep '^(fty|etn|ipc|ipm|ova)-*' 
     ### Also note we do not skip these units, because they may be our product's
     ### ways to manage a unit distributed with some naming pattern not matched
     ### above.
-    unit_realname="$(/bin/systemctl show -p Id "${unit}" | sed 's,^Id=,,')" || unit_realname="${unit}"
+    unit_realname="$(/bin/systemctl show -p Id "${unit}" | sed 's,^Id=,,')" \
+        && [ -n "${unit_realname}" ] || unit_realname="${unit}"
     /bin/systemctl enable ${unit_realname}
 done
 
