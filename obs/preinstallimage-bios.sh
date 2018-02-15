@@ -490,7 +490,7 @@ fi
 # Generally enable everything fty-* (and related)
 # Note: we do not unmask here, because if anyone went through the
 # non-default trouble of masking, it must have had a reason :)
-for unit in $(/bin/systemctl list-unit-files | egrep '^(fty|etn|ipc|ipm)-*' | cut -d ' ' -f 1); do
+for unit in $(/bin/systemctl list-unit-files | egrep '^(fty|etn|ipc|ipm|ova)-*' | cut -d ' ' -f 1); do
     ### Note: some units declare Alias= names to be called by
     ### These names are returned among "systemctl list-unit-files" but since
     ### there are no actual files by that name, they can not be enabled!
