@@ -1,7 +1,7 @@
 #!/bin/bash
 # WARNING: bash syntax and capabilities are used intensively in code below!
 #
-# Copyright (C) 2015-2017 Eaton
+# Copyright (C) 2015-2018 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -97,11 +97,13 @@ SYSTEMCTL_UNITS_COMMON="$SYSTEMCTL_UNITS_COMMON_EXTERNAL $SYSTEMCTL_UNITS_COMMON
 SYSTEMCTL_UNITS_REGEX_EXTERNAL_LIST='nut-driver'
 SYSTEMCTL_UNITS_REGEX_INTERNAL_LIST='composite-metrics|fty-metric-composite'
 SYSTEMCTL_UNITS_REGEX_EXTERNAL="($SYSTEMCTL_UNITS_REGEX_EXTERNAL_LIST)"'@[^[:blank:]]*'
-SYSTEMCTL_UNITS_REGEX_INTERNAL="($SYSTEMCTL_UNITS_REGEX_INTERNAL_LIST)"'@[^[:blank:]]*|etn-[^[:blank:]]*'
+# Add vendor added-value units; note that ipc-* units that are
+# intended for physical appliance are listed above explicitly
+SYSTEMCTL_UNITS_REGEX_INTERNAL="($SYSTEMCTL_UNITS_REGEX_INTERNAL_LIST)"'@[^[:blank:]]*|(etn|ipm|ova)-[^[:blank:]]*'
 SYSTEMCTL_UNITS_REGEX="($SYSTEMCTL_UNITS_REGEX_EXTERNAL_LIST|$SYSTEMCTL_UNITS_REGEX_INTERNAL_LIST)"'@[^[:blank:]]*'
 # SAME data for "case" matching of multi-instance services
 SYSTEMCTL_UNITS_GLOBS_EXTERNAL='nut-driver@*'
-SYSTEMCTL_UNITS_GLOBS_INTERNAL='composite-metrics@* etn-*'
+SYSTEMCTL_UNITS_GLOBS_INTERNAL='composite-metrics@* etn-* ipm-* ova-*'
 SYSTEMCTL_UNITS_GLOBS="$SYSTEMCTL_UNITS_GLOBS_EXTERNAL $SYSTEMCTL_UNITS_GLOBS_INTERNAL"
 
 # Note: The matching code seems a bit overcomplicated, but it evolved

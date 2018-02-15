@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#   Copyright (c) 2014-2017 Eaton
+#   Copyright (c) 2014-2018 Eaton
 #
 #   This file is part of the Eaton 42ity project.
 #
@@ -490,8 +490,16 @@ fi
 # Generally enable everything fty-* (and related)
 # Note: we do not unmask here, because if anyone went through the
 # non-default trouble of masking, it must have had a reason :)
-for unit in $(systemctl list-unit-files | egrep '^(fty|etn|ipc|ipm)-*' | cut -d ' ' -f 1); do
-    /bin/systemctl enable ${unit}
+for unit in $(/bin/systemctl list-unit-files | egrep '^(fty|etn|ipc|ipm|ova)-*' | cut -d ' ' -f 1); do
+    ### Note: some units declare Alias= names to be called by
+    ### These names are returned among "systemctl list-unit-files" but since
+    ### there are no actual files by that name, they can not be enabled!
+    ### Also note we do not skip these units, because they may be our product's
+    ### ways to manage a unit distributed with some naming pattern not matched
+    ### above.
+    unit_realname="$(/bin/systemctl show -p Id "${unit}" | sed 's,^Id=,,')" \
+        && [ -n "${unit_realname}" ] || unit_realname="${unit}"
+    /bin/systemctl enable ${unit_realname}
 done
 
 # Enable REST API via tntnet
