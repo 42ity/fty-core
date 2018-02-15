@@ -487,8 +487,10 @@ if [ -s /lib/systemd/system/fty-tntnet@.service ]; then
     mv /lib/systemd/system/fty-tntnet@.service /lib/systemd/system/tntnet@.service
 fi
 
-# generaly enable everything fty-*
-for unit in $(systemctl list-unit-files | grep '^fty-*' | cut -d ' ' -f 1); do
+# Generally enable everything fty-* (and related)
+# Note: we do not unmask here, because if anyone went through the
+# non-default trouble of masking, it must have had a reason :)
+for unit in $(systemctl list-unit-files | egrep '^(fty|etn|ipc|ipm)-*' | cut -d ' ' -f 1); do
     /bin/systemctl enable ${unit}
 done
 
