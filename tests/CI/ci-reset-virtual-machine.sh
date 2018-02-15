@@ -963,6 +963,7 @@ done
 		if [ x"`egrep "^$LODEV .*squashfs" < /proc/mounts`" = x ]; then
 			logmsg_warn "Unused squashfs loopback device was found," \
 				"removing '$LODEV' for '$BACKFILE'"
+			umount "$LODEV" || true
 			losetup -d "$LODEV"
 		fi
 	done
