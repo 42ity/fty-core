@@ -496,10 +496,17 @@ for unit in $(/bin/systemctl list-unit-files | egrep '^(fty|etn|ipc|ipm|ova)-*' 
     ### there are no actual files by that name, they can not be enabled!
     ### Also note we do not skip these units, because they may be our product's
     ### ways to manage a unit distributed with some naming pattern not matched
-    ### above.
+    ### above. Another fallback logic handles the case where systemctl is just
+    ### "Running in chroot, ignoring request."
     unit_realname="$(/bin/systemctl show -p Id "${unit}" | sed 's,^Id=,,')" \
         && [ -n "${unit_realname}" ] || unit_realname="${unit}"
-    /bin/systemctl enable ${unit_realname}
+    if [ -n "$(ls -1d {/usr,}/lib/systemd/system/${unit} 2>/dev/null)" ]; then
+        ### A masked unit can fail to become "enabled", and
+        ### we don't want it to - so just ignore the errors :\
+        /bin/systemctl enable ${unit_realname} || true
+    else
+        echo "SKIP: NOT ENABLING '${unit_realname}' because corresponding distributed file was not found" >&2
+    fi
 done
 
 # Enable REST API via tntnet
