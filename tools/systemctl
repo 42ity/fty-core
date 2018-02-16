@@ -1192,7 +1192,7 @@ process_CLI_systemctl() {
         while [[ $# -gt 0 ]]; do
             case "$1" in
                 help|-h|-help|--help) usage; exit 1 ;;
-                --all|-a|--full|-l|--quiet)
+                --all|-a|--full|-l|--quiet|--now|--runtime)
                     SYSTEMCTL_ARGS="$SYSTEMCTL_ARGS $1" ;;
                 --no-block)
                     # NOTE: Avoid early kills inside a dependency loop too
