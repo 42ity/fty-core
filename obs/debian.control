@@ -10,7 +10,7 @@ Package: fty-core
 Architecture: any
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: 42ity core
- Support core scripts forfor 42ity.
+ Support core scripts, services and settings for 42ity.
 
 Package: fty-core-dbg
 Architecture: any
@@ -20,7 +20,7 @@ Depends:
     fty-core (= ${binary:Version}),
     ${misc:Depends}
 Description: debugging symbols for 42ity core
- This package contains the debugging symbols for core.
+ This package contains the debugging symbols for 42ity core.
 
 Package: fty-core-dev
 Architecture: any
@@ -34,4 +34,4 @@ Depends:
     libczmq-dev,
     libzmq4-dev
 Description: development files for 42ity core
- This package contains the development files for core.
+ This package contains the development files for 42ity core.
