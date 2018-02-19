@@ -29,6 +29,7 @@ Depends:
     core (= ${binary:Version}),
     ${shlibs:Depends},
     ${misc:Depends},
+    squashfs-tools,
     libmlm-dev,
     libsodium-dev,
     libczmq-dev,
