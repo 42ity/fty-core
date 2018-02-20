@@ -569,11 +569,18 @@ find / -name systemd-logind.service -delete
 /bin/systemctl enable wd_keepalive@watchdog2.service
 /bin/systemctl enable wd_keepalive@watchdog3.service
 
-# Disable etn-amqp and etn-ipm1
+# Disable etn-amqp and etn-ipm1 (in such a manner that
+# they can be reenabled back in particular deployments):
 /bin/systemctl mask etn-amqp
 /bin/systemctl disable etn-amqp
 /bin/systemctl mask etn-ipm1
 /bin/systemctl disable etn-ipm1
+# ...and corresponding REST API servlet configurations:
+for F in /etc/tntnet/bios.d/*etn-ipm1-rest.xml ; do
+    if [ -e "$F" ]; then
+        mv -f "$F" "$F.disabled"
+    fi
+done
 
 # Disable expensive debug logging by default on non-devel images
 mkdir -p /usr/share/fty/etc/default
