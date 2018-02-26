@@ -62,8 +62,8 @@ CREATE TABLE IF NOT EXISTS t_vcard(
     ON DELETE RESTRICT
 );
 
-INSERT INTO t_user (uid) VALUES (1001);
-INSERT INTO t_user (uid) VALUES (1002);
+INSERT INTO t_user (uid) VALUES (1001); /* admin */
+INSERT INTO t_user (uid) VALUES (1002); /* monitor */
 
 /* This must be the last line of the SQL file */
 START TRANSACTION;
