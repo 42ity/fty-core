@@ -104,8 +104,8 @@ admin
 EOF
 mkdir -p /home/admin && chown admin:bios-admin /home/admin
 
-# add an access to bios-logread (for /var/log/messages) to webserver
-usermod -G bios-logread -a www-data
+# add an access to bios-logread (for /var/log/messages) and shadow file to webserver
+usermod -G bios-logread,shadow -a www-data
 
 # add an access to sasl for bios
 usermod -G "${SASL_GROUP}" -a bios
