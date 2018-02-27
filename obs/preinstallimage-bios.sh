@@ -513,7 +513,7 @@ done
 # Note: for legacy reasons, we still maintain tntnet@bios.service (not @fty)
 mkdir -p /etc/tntnet/bios.d
 # Note: Here we only expect one file, e.g. /usr/share/fty/examples/tntnet.xml.example :
-cp /usr/share/fty/examples/tntnet.xml.* /etc/tntnet/bios.xml
+cp /usr/share/fty-rest/examples/tntnet.xml.* /etc/tntnet/bios.xml
 
 sed -i 's|.*<allUserGroups>.*|<allUserGroups>yes</allUserGroups>|' /etc/tntnet/bios.xml || true
 sed -e 's|<!--.*<user>.*|<user>www-data</user>|' \
