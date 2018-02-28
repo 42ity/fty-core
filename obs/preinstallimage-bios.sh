@@ -198,6 +198,17 @@ if [ -d /usr/libexec/bios -a ! -d /usr/libexec/fty ] ; then
     ln -srf /usr/libexec/fty /usr/libexec/bios || true
 fi
 
+# Support zproject-ized fty-rest deliverables
+for D in /usr/libexec /usr/share ; do
+    if [ -d "$D/fty-rest" ] ; then
+        ( cd "$D/fty-rest" && \
+          find . -type d -exec mkdir -p "$D"/bios/'{}' \; && \
+          find . -type f -exec ln -fs '{}' "$D"/bios/'{}' \; && \
+          find . -type l -exec ln -fs '{}' "$D"/bios/'{}' \;
+        )
+    fi
+done
+
 # Setup 42ity lenses
 mkdir -p /usr/share/fty/lenses
 ln -sr /usr/share/augeas/lenses/dist/{build,ethers,interfaces,ntp,ntpd,pam,resolv,rx,sep,util,shellvars}.aug \
