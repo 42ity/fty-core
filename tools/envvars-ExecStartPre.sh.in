@@ -40,6 +40,13 @@ while [ "$#" -gt 0 ]; do
     esac
     shift
 done
+# New-style boot: The initramfs prepares a set of variables to be passed to
+# generate-release-details.sh
+if test -e /run/initramfs/fty-boot-env.sh; then
+	source "$_"
+	/usr/share/bios/scripts/generate-release-details.sh
+fi
+
 [ -n "$OUTFMT" ] || OUTFMT="env"
     # Note: several services expect to include an EnvironmentFile=/run/fty-envvars.env
 [ -n "$OUTFILE" ] || OUTFILE="/run/fty-envvars.$OUTFMT"
