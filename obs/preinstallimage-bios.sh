@@ -199,7 +199,7 @@ if [ -d /usr/libexec/bios -a ! -d /usr/libexec/fty ] ; then
 fi
 
 # Support zproject-ized fty-rest deliverables
-for D in /usr/libexec /usr/share ; do
+for D in /usr/libexec /usr/lib /usr/share ; do
     if [ -d "$D/fty-rest" ] ; then
         ( cd "$D/fty-rest" && \
           find . -type d -exec mkdir -p "$D"/bios/'{}' \; && \
