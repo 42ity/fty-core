@@ -93,6 +93,21 @@ v_echo_ts() {
         [ -z "$DEBUG_X" ] || set $DEBUG_X
 }
 
+# On x86_64, we retrieve the hardware info from SMBIOS
+if test -d /sys/class/dmi/id; then
+        HWD_VENDOR=$(< /sys/class/dmi/id/sys_vendor)
+        HWD_CATALOG_NB=$(< /sys/class/dmi/id/product_name)
+        HWD_REV=$(< /sys/class/dmi/id/product_version)
+        # VMware says "None" here
+        HWD_REV=${HWD_REV#None}
+        HWD_SERIAL_NB=$(< /sys/class/dmi/id/product_serial)
+        # XXX: Find an SMBIOS equivalent
+        HWD_PART_NB=
+	# XXX: SMBIOS defines and requires a system UUID, available under
+	# /sys/class/dmi/id/product_uuid. Use that perhaps?
+        UUID_VALUE="00000000-0000-0000-0000-000000000000"
+        UUID_NAMESPACE="933d6c80-dea9-8c6b-d111-8b3b46a181f1"
+fi
 
 # Basename of $OSIMAGE_FILENAME without archiving extension
 [ -z "${OSIMAGE_NAME-}" ] && [ -n "${OSIMAGE_FILENAME-}" ] && \
