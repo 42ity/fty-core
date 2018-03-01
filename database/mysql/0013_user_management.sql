@@ -32,6 +32,12 @@ INSERT INTO t_bios_schema_version (tag, timestamp, filename, version) VALUES('be
 SELECT * FROM t_bios_schema_version WHERE tag = 'begin-import' order by id desc limit 1;
 COMMIT;
 
+
+\! /bin/rm -f /tmp/0013_um_envvars.sql
+\! /usr/share/bios/scripts/generate_env_user4sql.sh -O /tmp/0013_um_envvars.sql
+SOURCE /tmp/0013_um_envvars.sql;
+\! /bin/rm -f /tmp/0013_um_envvars.sql
+
 /*
 *
 * User management tables creations 
@@ -40,30 +46,31 @@ COMMIT;
 */
 
 /* User table */
-CREATE TABLE IF NOT EXISTS t_user(
-    uid             INTEGER UNSIGNED  NOT NULL,
-    PRIMARY KEY (uid)
+CREATE TABLE IF NOT EXISTS t_um_user(
+    id_user             INTEGER UNSIGNED  NOT NULL,
+    PRIMARY KEY (id_user)
 );
 
-/* Vcard table */
-CREATE TABLE IF NOT EXISTS t_vcard(
-    id_vcard         INTEGER UNSIGNED  NOT NULL AUTO_INCREMENT,
-    uid              INTEGER UNSIGNED  NOT NULL,
-    keytag           VARCHAR(40)       NOT NULL, /* key  (i.e fullName, phone, email, etc.) */
+/* Entity attibute value table */
+
+CREATE TABLE IF NOT EXISTS t_um_entity_attibute_value(
+    id_entity        INTEGER UNSIGNED  NOT NULL AUTO_INCREMENT,
+    id_user          INTEGER UNSIGNED  NOT NULL,
+    keytag           VARCHAR(255)      NOT NULL, /* key tag  */
     value            VARCHAR(255)      NOT NULL, /* value attached to the key */
-    PRIMARY KEY (id_vcard),
+    PRIMARY KEY (id_entity),
 
-    INDEX FK_USER_ELEMENT_idx (uid ASC),
-    UNIQUE INDEX `UI_t_vcard` (`keytag`, `uid` ASC),
+    INDEX FK_UM_USER_ELEMENT_idx (id_user ASC),
+    UNIQUE INDEX `t_um_entity_attibute_value` (`keytag`, `id_user` ASC),
 
-    CONSTRAINT FK_USER_ELEMENT
-        FOREIGN KEY (uid)
-        REFERENCES t_user (uid)
+    CONSTRAINT FK_UM_USER_ELEMENT
+        FOREIGN KEY (id_user)
+        REFERENCES t_um_user (id_user)
     ON DELETE RESTRICT
 );
 
-INSERT INTO t_user (uid) VALUES (1001); /* admin */
-INSERT INTO t_user (uid) VALUES (1002); /* monitor */
+INSERT INTO t_um_user (id_user) VALUES (@ENV_ADMIN);
+INSERT INTO t_um_user (id_user) VALUES (@ENV_MONITOR);
 
 /* This must be the last line of the SQL file */
 START TRANSACTION;
