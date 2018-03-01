@@ -96,17 +96,17 @@ v_echo_ts() {
 # On x86_64, we retrieve the hardware info from SMBIOS, unless it has been
 # provided via the environment
 if test -d /sys/class/dmi/id; then
-        test -z "$HWD_VENDOR" && HWD_VENDOR=$(cat /sys/class/dmi/id/sys_vendor)
-        test -z "$HWD_CATALOG_NB" && HWD_CATALOG_NB=$(cat /sys/class/dmi/id/product_name)
-        test -z "$HWD_REV" && HWD_REV=$(cat /sys/class/dmi/id/product_version)
+        test -n "$HWD_VENDOR" || HWD_VENDOR=$(cat /sys/class/dmi/id/sys_vendor)
+        test -n "$HWD_CATALOG_NB" || HWD_CATALOG_NB=$(cat /sys/class/dmi/id/product_name)
+        test -n "$HWD_REV" || HWD_REV=$(cat /sys/class/dmi/id/product_version)
         # VMware says "None" here
         HWD_REV=${HWD_REV#None}
-        test -z "$HWD_SERIAL_NB" && HWD_SERIAL_NB=$(cat /sys/class/dmi/id/product_serial)
+        test -n "$HWD_SERIAL_NB" || HWD_SERIAL_NB=$(cat /sys/class/dmi/id/product_serial)
         # XXX: Find an SMBIOS equivalent for HWD_PART_NB=
         # XXX: SMBIOS defines and requires a system UUID, available under
         # /sys/class/dmi/id/product_uuid. Use that perhaps?
-        test -z "$UUID_VALUE" && UUID_VALUE="00000000-0000-0000-0000-000000000000"
-        test -z "$UUID_NAMESPACE" && UUID_NAMESPACE="933d6c80-dea9-8c6b-d111-8b3b46a181f1"
+        test -n "$UUID_VALUE" || UUID_VALUE="00000000-0000-0000-0000-000000000000"
+        test -n "$UUID_NAMESPACE" || UUID_NAMESPACE="933d6c80-dea9-8c6b-d111-8b3b46a181f1"
 fi
 
 # Basename of $OSIMAGE_FILENAME without archiving extension
