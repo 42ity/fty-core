@@ -203,8 +203,8 @@ for D in /usr/libexec /usr/lib /usr/share ; do
     if [ -d "$D/fty-rest" ] ; then
         ( cd "$D/fty-rest" && \
           find . -type d -exec mkdir -p "$D"/bios/'{}' \; && \
-          find . -type f -exec ln -fs '{}' "$D"/bios/'{}' \; && \
-          find . -type l -exec ln -fs '{}' "$D"/bios/'{}' \;
+          find . -type f -exec ln -srf '{}' "$D"/bios/'{}' \; && \
+          find . -type l -exec ln -srf '{}' "$D"/bios/'{}' \;
         )
     fi
 done
