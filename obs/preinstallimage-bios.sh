@@ -200,16 +200,15 @@ fi
 
 # Support zproject-ized fty-rest deliverables
 for D in /usr/libexec /usr/lib /usr/share ; do
-    if [ -d "$D/fty-rest" ] ; then
-        for S in x86_64-linux-gnu arm-linux-gnueabihf "" ; do
-        ( cd "$D/fty-rest/$S" && \
-          find . -type d | egrep -v 'x86_64-linux-gnu|arm-linux-gnueabihf' | \
-            while read F ; do mkdir -p "$D/bios/$F" || exit ; done
-          ( find . -type f ; find . -type l ) | \
-            egrep -v '^\./(x86_64-linux-gnu|arm-linux-gnueabihf)/' | \
-            while read F ; do ln -srf "$D/bios/$F" || exit ; done
-        )
-    fi
+    for S in "" x86_64-linux-gnu arm-linux-gnueabihf ; do
+        if [ -d "$D/$S/fty-rest" ] ; then
+        ( cd "$D/$S/fty-rest" && \
+          find . -type d -exec mkdir -p "$D"/bios/'{}' \; && \
+          find . -type f -exec ln -srf '{}' "$D"/bios/'{}' \; && \
+          find . -type l -exec ln -srf '{}' "$D"/bios/'{}' \;
+        ) || exit
+        fi
+    done
 done
 
 # Setup 42ity lenses
