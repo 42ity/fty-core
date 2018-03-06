@@ -19,7 +19,7 @@
 #
 
 
-#! \file   .sh(.in)
+#! \file   generate_env_user4sql.sh
 #  \author Xavier Millieret <XavierMillieret@Eaton.com>
 #  \brief  Set env varaibles for sql script.
 
