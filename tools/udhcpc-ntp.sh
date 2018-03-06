@@ -27,6 +27,32 @@
 NTP_CONF=/etc/ntp.conf
 NTP_DHCP_CONF=/var/lib/ntp/ntp.conf.dhcp
 
+hostname_setup() {
+	case "$reason" in
+	bound|renew|BOUND|RENEW|REBIND|REBOOT)
+		;;
+	*)
+		return
+	esac
+	if test -s /etc/hostname; then
+		return
+	fi
+	if test -z "$hostname"; then
+		hostname=eaton-rc-$(ip link show dev "$interface" | sed -rn 's@:@@g; s@.*ether ([0-9a-f]*) .*@\1@p' | tr "abcdef" "ABCDEF")
+	fi
+
+	echo "$hostname" >/etc/hostname
+	hostname -F /etc/hostname
+
+	# Apparently, the first token for a locally available IP address is
+	# treated as the `hostname --fqdn` if no other ideas are available.
+	if [ -s /etc/hosts ]; then
+		grep -wi "$hostname" etc/hosts >/dev/null 2>&1 || \
+			sed -e 's,^[ \t]*\(127[^ \t]*[ \t]\)\(.*[ \t]*localhost[ \t]*\),\1'"$hostname"'\t\2\t,' -i /etc/hosts
+	else
+		echo "127.0.0.1 $hostname   localhost" > /etc/hosts
+	fi
+}
 
 ntp_server_restart_do() (
 	invoke-rc.d ntp try-restart && \
@@ -133,6 +159,8 @@ fi
 #exec >> /dev/console 2>&1
 #set >&2
 #set -x
+
+hostname_setup
 
 ntp_servers_setup
 
