@@ -17,8 +17,8 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-#! \file    udhcpc-ntp.sh
-#  \brief   NTP synchronization for udhcpc
+#! \file    udhcpc-hook.sh
+#  \brief   NTP synchronization and hostname setup for udhcpc
 #  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \details Based on /etc/dhcp/dhclient-exit-hooks.d/ntp from Debian8 ntp
 #           package, adapted for the 42ity project.

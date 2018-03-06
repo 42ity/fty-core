@@ -745,7 +745,7 @@ install -m 0755 /usr/share/fty/examples/config/profile.d/fty_path.sh /etc/profil
 install -m 0755 /usr/share/fty/scripts/ethtool-static-nolink /etc/network/if-pre-up.d
 install -m 0755 /usr/share/fty/scripts/ifupdown-force /etc/ifplugd/action.d/ifupdown-force
 install -m 0755 /usr/share/fty/scripts/udhcpc-override.sh /usr/local/sbin/udhcpc
-echo '[ -s /usr/share/fty/scripts/udhcpc-ntp.sh ] && . /usr/share/fty/scripts/udhcpc-ntp.sh' >> /etc/udhcpc/default.script
+echo '[ -s /usr/share/fty/scripts/udhcpc-hook.sh ] && . /usr/share/fty/scripts/udhcpc-hook.sh' >> /etc/udhcpc/default.script
 
 #########################################################################
 # install iptables filtering
