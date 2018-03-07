@@ -85,11 +85,12 @@ SYSTEMCTL_UNITS_COMMON_INTERNAL="bios tntnet@bios fty-outage fty-metric-store   
                                 bios-reset-button bios-ssh-last-resort          \
                                 biostimer-compress-logs biostimer-verify-fs     \
                                 biostimer-loghost-rsyslog-netconsole fty-nut    \
-                                biostimer-warranty-metric ifplug-dhcp-autoconf  \
+                                ifplug-dhcp-autoconf                            \
                                 ipc-meta-setup fty-sensor-env fty-discovery     \
                                 fty-sensor-gpio                                 \
                                 fty-nut-configurator fty-metric-compute         \
                                 fty-metric-cache fty-alert-flexible"
+# biostimer-warranty-metric
 
 SYSTEMCTL_UNITS_COMMON="$SYSTEMCTL_UNITS_COMMON_EXTERNAL $SYSTEMCTL_UNITS_COMMON_INTERNAL"
 
