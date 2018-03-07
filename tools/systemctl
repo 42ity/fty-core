@@ -91,7 +91,6 @@ SYSTEMCTL_UNITS_COMMON_INTERNAL="bios tntnet@bios fty-outage fty-metric-store   
                                 fty-nut-configurator fty-metric-compute         \
                                 fty-metric-cache fty-alert-flexible"
 
-
 SYSTEMCTL_UNITS_COMMON="$SYSTEMCTL_UNITS_COMMON_EXTERNAL $SYSTEMCTL_UNITS_COMMON_INTERNAL"
 
 # For regexp matching of multi-instance services (a pipe-separated list)
