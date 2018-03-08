@@ -877,9 +877,10 @@ for i in mysql tntnet@bios malamute \
 done
 
 # Fix services based on preset for some image types
+# Workaround until BIOS-4997 is fixed
 case "$IMGTYPE" in
     *ova*)
-        /bin/systemctl preset ova-welcome-screen
+        /bin/systemctl preset ova-welcome-screen # disable
         ;;
 esac
 
