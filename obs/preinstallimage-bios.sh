@@ -876,6 +876,13 @@ for i in mysql tntnet@bios malamute \
     done
 done
 
+# Fix services based on preset for some image types
+case "$IMGTYPE" in
+    *ova*)
+        /bin/systemctl preset ova-welcome-screen
+        ;;
+esac
+
 /bin/systemctl daemon-reload
 
 # Prepare the source-code details excerpt, if available
