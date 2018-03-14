@@ -467,10 +467,6 @@ SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL += \
                         biostimer-compress-logs.service \
                         biostimer-verify-fs.service
 
-
-#SYSTEMD_UNITS_TIMERIMPL_TARGET_BIOS += \
-#                        biostimer-warranty-metric.service
-
 SYSTEMD_UNITS_TIMERIMPL += $(SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL) $(SYSTEMD_UNITS_TIMERIMPL_TARGET_BIOS)
 
 # These files need no processing, delivered verbatim
@@ -479,9 +475,6 @@ SYSTEMD_TIMERS_LOWLEVEL += \
                         biostimer-loghost-rsyslog-netconsole.timer \
                         biostimer-compress-logs.timer \
                         biostimer-verify-fs.timer
-
-#SYSTEMD_TIMERS_TARGET_BIOS += \
-#                        biostimer-warranty-metric.timer
 
 SYSTEMD_TIMERS += $(SYSTEMD_TIMERS_LOWLEVEL) $(SYSTEMD_TIMERS_TARGET_BIOS)
 
