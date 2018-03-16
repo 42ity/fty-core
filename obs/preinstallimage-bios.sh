@@ -198,6 +198,19 @@ if [ -d /usr/libexec/bios -a ! -d /usr/libexec/fty ] ; then
     ln -srf /usr/libexec/fty /usr/libexec/bios || true
 fi
 
+# Support zproject-ized fty-rest deliverables
+for D in /usr/libexec /usr/lib /usr/share ; do
+    for S in "" x86_64-linux-gnu arm-linux-gnueabihf ; do
+        if [ -d "$D/$S/fty-rest" ] ; then
+        ( cd "$D/$S/fty-rest" && \
+          find . -type d -exec mkdir -p "$D"/bios/'{}' \; && \
+          find . -type f -exec ln -srf '{}' "$D"/bios/'{}' \; && \
+          find . -type l -exec ln -srf '{}' "$D"/bios/'{}' \;
+        ) || exit
+        fi
+    done
+done
+
 # Setup 42ity lenses
 mkdir -p /usr/share/fty/lenses
 ln -sr /usr/share/augeas/lenses/dist/{build,ethers,interfaces,ntp,ntpd,pam,resolv,rx,sep,util,shellvars}.aug \
@@ -513,7 +526,7 @@ done
 # Note: for legacy reasons, we still maintain tntnet@bios.service (not @fty)
 mkdir -p /etc/tntnet/bios.d
 # Note: Here we only expect one file, e.g. /usr/share/fty/examples/tntnet.xml.example :
-cp /usr/share/fty/examples/tntnet.xml.* /etc/tntnet/bios.xml
+cp /usr/share/fty-rest/examples/tntnet.xml.* /etc/tntnet/bios.xml
 
 sed -i 's|.*<allUserGroups>.*|<allUserGroups>yes</allUserGroups>|' /etc/tntnet/bios.xml || true
 sed -e 's|<!--.*<user>.*|<user>www-data</user>|' \
@@ -732,7 +745,7 @@ install -m 0755 /usr/share/fty/examples/config/profile.d/fty_path.sh /etc/profil
 install -m 0755 /usr/share/fty/scripts/ethtool-static-nolink /etc/network/if-pre-up.d
 install -m 0755 /usr/share/fty/scripts/ifupdown-force /etc/ifplugd/action.d/ifupdown-force
 install -m 0755 /usr/share/fty/scripts/udhcpc-override.sh /usr/local/sbin/udhcpc
-echo '[ -s /usr/share/fty/scripts/udhcpc-ntp.sh ] && . /usr/share/fty/scripts/udhcpc-ntp.sh' >> /etc/udhcpc/default.script
+echo '[ -s /usr/share/fty/scripts/udhcpc-hook.sh ] && . /usr/share/fty/scripts/udhcpc-hook.sh' >> /etc/udhcpc/default.script
 
 #########################################################################
 # install iptables filtering
@@ -862,6 +875,14 @@ for i in mysql tntnet@bios malamute \
             sed -e 's,^\(ExecStart=.*\)$,\1\nRestart=always,' -i "$file"
     done
 done
+
+# Fix services based on preset for some image types
+# Workaround until BIOS-4997 is fixed
+case "$IMGTYPE" in
+    *ova*)
+        /bin/systemctl preset ova-welcome-screen # disable
+        ;;
+esac
 
 /bin/systemctl daemon-reload
 

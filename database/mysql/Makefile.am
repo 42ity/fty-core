@@ -14,7 +14,8 @@ mysql_DATA	= initdb.sql \
 			0009_device_type_extension.sql \
 			0010_super_parent_names.sql \
 			0011_default_rc.sql \
-			0012_device_type_extension.sql
+			0012_device_type_extension.sql \
+			0013_user_management.sql
 
 mysqlexdir	= $(datadir)/@PACKAGE@/examples/sql/mysql
 mysqlex_DATA	= \
