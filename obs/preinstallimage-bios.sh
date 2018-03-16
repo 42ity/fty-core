@@ -104,8 +104,8 @@ admin
 EOF
 mkdir -p /home/admin && chown admin:bios-admin /home/admin
 
-# add an access to bios-logread (for /var/log/messages) to webserver
-usermod -G bios-logread -a www-data
+# add an access to bios-logread (for /var/log/messages) and shadow file to webserver
+usermod -G bios-logread,shadow -a www-data
 
 # add an access to sasl for bios
 usermod -G "${SASL_GROUP}" -a bios
@@ -553,10 +553,10 @@ sed -n '/<\/mappings>/,$ p' /etc/tntnet/bios.xml > /etc/tntnet/bios.d/99_end.xml
 sed '/<mappings>/,/<\/mappings>/!d; /mappings/ d' \
     /etc/tntnet/bios.xml > /etc/tntnet/bios.d/20_core.xml.tmp
 # Static file mappings, caching setup:
-sed '1,/<!-- Make sure everybody speaks json from now on -->/!d; /<!-- Make sure everybody speaks json from now on -->/ d' \
+sed '1,/<!-- We are getting authorized -->/!d; /<!-- We are getting authorized -->/ d' \
     /etc/tntnet/bios.d/20_core.xml.tmp > /etc/tntnet/bios.d/10_common_statics.xml
 # JSON requirement, auth processing, auth validation
-sed '/<!-- Make sure everybody speaks json from now on -->/,$!d; 1,/<!-- Here starts the real API -->/!d; /<!-- Here starts the real API -->/ d' \
+sed '/<!-- We are getting authorized -->/,$!d; 1,/<!-- Here starts the real API -->/!d; /<!-- Here starts the real API -->/ d' \
     /etc/tntnet/bios.d/20_core.xml.tmp > /etc/tntnet/bios.d/20_common_basics.xml
 # The actual diverse API calls of the product
 sed '/<!-- Here starts the real API -->/,$!d' \
