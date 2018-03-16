@@ -159,6 +159,11 @@ chmod 644 /etc/default/fty
 # ZConfig default settings, if populated
 touch /etc/default/fty.cfg
 chown www-data /etc/default/fty.cfg
+#42ity log configuration file 
+mkdir -p /etc/fty/
+touch /etc/fty/ftylog.cfg
+chmod 644 /etc/fty/ftylog.cfg
+chown www-data /etc/fty/ftylog.cfg
 
 if diff /usr/libexec/fty/systemctl /usr/libexec/fty/journalctl >/dev/null 2>&1 ; then
     if [ ! -L /usr/libexec/fty/systemctl ] && [ ! -L /usr/libexec/fty/journalctl ] ; then
@@ -601,13 +606,21 @@ case "$IMGTYPE" in
     *devel*)
         echo "BIOS_LOG_LEVEL=LOG_DEBUG" > /usr/share/fty/etc/default/fty
         echo "BIOS_NUT_USE_DMF=true" >> /usr/share/fty/etc/default/fty
+        echo "log4cplus.rootLogger=DEBUG, console" > /etc/fty/ftylog.cfg 
         ;;
     *)
         echo "BIOS_LOG_LEVEL=LOG_INFO" > /usr/share/fty/etc/default/fty
         sed -e 's|.*MaxLevelStore.*|MaxLevelStore=info|' \
             -i /etc/systemd/journald.conf
+        echo "log4cplus.rootLogger=INFO, console" > /etc/fty/ftylog.cfg 
         ;;
 esac
+
+#complete the log configuration file
+echo "#Console Definition " >> /etc/fty/ftylog.cfg 
+echo "log4cplus.appender.console=log4cplus::ConsoleAppender" >> /etc/fty/ftylog.cfg 
+echo "log4cplus.appender.console.layout=log4cplus::PatternLayout" >> /etc/fty/ftylog.cfg 
+echo "log4cplus.appender.console.layout.ConversionPattern=%c [%t] -%-5p- %M (%l) %m%n" >> /etc/fty/ftylog.cfg 
 # set path to our libexec directory
 echo "PATH=/usr/libexec/fty:/bin:/usr/bin:/sbin:/usr/sbin" >>/usr/share/fty/etc/default/fty
 
