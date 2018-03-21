@@ -1,0 +1,4 @@
+# This configuration file is used for enforcing account lockout after too many
+# authentification failures in a row. By default, don't do account lockouts.
+#auth [success=1 default=ignore] pam_succeed_if.so uid eq 1001
+#auth required                   pam_tally2.so onerr=fail deny=5
