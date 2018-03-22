@@ -196,6 +196,17 @@ Hardware details: Vendor:$HWD_VENDOR CatalogNumber:$HWD_CATALOG_NB HWSpecRevisio
 # Generate a v4/v5 UUID using a command passed in the argument list
 gen_uuid_v4()
 {
+    local old f=$ALTROOT/etc/release-details.json
+    # Only generate a v4 UUID if running for the first time
+    if test -e "$f"; then
+        old=$("$ALTROOT/usr/share/bios/scripts/JSON.sh" \
+                -x '^"release-details","uuid"' <"$f" | \
+            sed -r 's/.*"([^"]*)"/\1/' | sed -e '/^[0-]*$/d' -e '/^[Ff-]*$/d')
+        if test -n "$old"; then
+            echo "$old"
+            return
+        fi
+    fi
     "$@" -v4
 }
 gen_uuid_v5()
