@@ -87,7 +87,7 @@ groupadd -g 8000 bios-dash
 groupadd -g 8004 bios-infra
 groupadd -g 7999 bios-logread
 
-useradd -m bios -N -g bios-infra -G dialout -s /bin/bash
+useradd -u 1000 -m bios -N -g bios-infra -G dialout -s /bin/bash
 mkdir -p /home/bios && chown bios:bios-infra /home/bios
 
 # Create a GPIO group to access GPIO pins, and add the user bios
@@ -97,7 +97,7 @@ usermod -G gpio -a bios
 # add an access to sasl, bios-logread (for /var/log/messages) and systemd journal
 # note that earlier OS images had custom logs owned by "adm" group, so we also
 # support it for admin account at this time (so that upgraders can read old logs)
-useradd -m admin -G "${SASL_GROUP}",adm,bios-logread,systemd-journal -N -g bios-admin -s /bin/bash
+useradd -u 1001 -m admin -G "${SASL_GROUP}",adm,bios-logread,systemd-journal -N -g bios-admin -s /bin/bash
 passwd admin <<EOF
 admin
 admin
@@ -113,7 +113,7 @@ usermod -G "${SASL_GROUP}" -a bios
 # TODO: See if "sudo"able tasks that this account may have to do can be done
 # with another shell like /bin/nologin or /bin/false - and then secure it...
 if ! getent passwd monitor ; then
-    useradd -m monitor -G "$SASL_GROUP" -N -g bios-dash -s /bin/bash
+    useradd -u 1002 -m monitor -G "$SASL_GROUP" -N -g bios-dash -s /bin/bash
     passwd monitor <<EOF
 monitor
 monitor
