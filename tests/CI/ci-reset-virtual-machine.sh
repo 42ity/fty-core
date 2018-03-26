@@ -885,7 +885,7 @@ else
 	# When the host gets ungracefully rebooted, useless old dirs may remain...
 	for D in ../overlays/*__${VM}/ ../overlays/*__${VM}.tmp/ ; do
 		if [ -d "$D" ]; then
-			logmsg_warn "Obsolete RW directory for an old version" \
+			logmsg_warn "Obsolete RW (or RW tmp) directory for an old version" \
 				"of this VM was found, removing '`pwd`/$D':"
 			ls -lad "$D"
 			rm -rf "$D"
