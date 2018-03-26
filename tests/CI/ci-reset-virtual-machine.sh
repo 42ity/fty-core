@@ -908,8 +908,25 @@ for D in ../overlays-ro/*-ro/ ../rootfs/*-ro/ ; do
 			  [ x"`grep ' '${FD}' ' < /proc/mounts`" != x ] ; } \
 		; then
 			# This is an active mountpoint... is anything overlaid?
-			{ mount | egrep 'lowerdir=('"`echo ${D} | sed 's,/$,,g'`|${FD}),upperdir=" || \
-			  egrep 'lowerdir=('"`echo ${D} | sed 's,/$,,g'`|${FD}),upperdir=" < /proc/mounts ; } && \
+			# Note: Handling all the different egrep implementations vs. slashes is too evil :)
+			{ mount | grep -e "lowerdir=\(`echo ${D} | sed 's,/$,,g'`\|${FD}\)/*,upperdir=" || \
+			  mount | grep -E "lowerdir=\(`echo ${D} | sed 's,/$,,g'`\|${FD}\)/*,upperdir=" || \
+			  mount | egrep "lowerdir=\(`echo ${D} | sed 's,/$,,g'`\|${FD}\)/*,upperdir=" || \
+			  grep -e "lowerdir=\(`echo ${D} | sed 's,/$,,g'`\|${FD}\)/*,upperdir=" < /proc/mounts || \
+			  grep -E "lowerdir=\(`echo ${D} | sed 's,/$,,g'`\|${FD}\)/*,upperdir=" < /proc/mounts || \
+			  egrep "lowerdir=\(`echo ${D} | sed 's,/$,,g'`\|${FD}\)/*,upperdir=" < /proc/mounts || \
+			  mount | grep -e "lowerdir=(`echo ${D} | sed 's,/$,,g'`|${FD})/*,upperdir=" || \
+			  mount | grep -E "lowerdir=(`echo ${D} | sed 's,/$,,g'`|${FD})/*,upperdir=" || \
+			  mount | egrep "lowerdir=(`echo ${D} | sed 's,/$,,g'`|${FD})/*,upperdir=" || \
+			  grep -e "lowerdir=(`echo ${D} | sed 's,/$,,g'`|${FD})/*,upperdir=" < /proc/mounts || \
+			  grep -E "lowerdir=(`echo ${D} | sed 's,/$,,g'`|${FD})/*,upperdir=" < /proc/mounts || \
+			  egrep "lowerdir=(`echo ${D} | sed 's,/$,,g'`|${FD})/*,upperdir=" < /proc/mounts || \
+			  mount | grep "lowerdir=${FD},upperdir=" || \
+			  mount | grep "lowerdir=`echo ${D} | sed 's,/$,,g'`,upperdir=" || \
+			  mount | egrep "lowerdir=`echo ${D} | sed 's,/$,,g'`/*,upperdir=" || \
+			  grep "lowerdir=${FD},upperdir=" < /proc/mounts || \
+			  grep "lowerdir=`echo ${D} | sed 's,/$,,g'`,upperdir=" < /proc/mounts || \
+			  egrep 'lowerdir=('"`echo ${D} | sed 's,/$,,g'`|${FD})/*,upperdir=" < /proc/mounts ; } && \
 			logmsg_warn "Old RO mountpoint '$FD' seems still used" && \
 			continue
 
