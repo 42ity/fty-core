@@ -895,6 +895,8 @@ else
 fi
 
 for D in ../overlays-ro/*-ro/ ../rootfs/*-ro/ ; do
+	# Skip un-expanded pattern matches (missing matching files/dirs)
+	[ -e "$D" ] || continue
 	# Do not remove the current IMAGE mountpoint if we reuse it again now
 	### [ x"$D" = x"../rootfs/${IMAGE_FLAT}-ro/" ] && [ x"$STOPONLY" != xyes ] && continue
 	[ x"$D" = x"../overlays-ro/${IMAGE_FLAT}-ro/" ] && [ x"$STOPONLY" != xyes ] && continue
