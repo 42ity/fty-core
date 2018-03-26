@@ -864,8 +864,24 @@ fusermount -u -z "${ALTROOT}" 2> /dev/null > /dev/null || true
 # file, but script claims to free the loopback device below (marks for autofree
 # actually); this seems a bit dirty so better test here that current container
 # is the only/last one using the RO directory...
-umount -fl "../overlays-ro/${IMAGE_FLAT}-ro" 2> /dev/null > /dev/null || true
-umount -fl "../rootfs/${IMAGE_FLAT}-ro" 2> /dev/null > /dev/null || true
+
+if IMAGE_RW_DIR="`cd "../overlays" && { realpath . || pwd ; }`/${IMAGE_FLAT}__${VM}" ; then
+	for OVERDIR in "../overlays-ro/" "../rootfs/" ; do
+		if IMAGE_RO_DIR="`cd "$OVERDIR" && { realpath . || pwd ; }`/${IMAGE_FLAT}-ro" ; then
+			[ -d "$IMAGE_RO_DIR" ] && \
+			if [ x"`grep "lowerdir=$IMAGE_RO_DIR," < /proc/mounts | grep -v "upperdir=$IMAGE_RW_DIR,"`" != x ]; then
+				logmsg_info "Overlay R/O directory $IMAGE_RO_DIR is used by other consumers than VM $VM - not unmounting"
+			else
+				logmsg_info "Overlay R/O directory $IMAGE_RO_DIR seems to only be used by VM $VM - releasing"
+				umount -fl "$IMAGE_RO_DIR" 2> /dev/null > /dev/null || true
+			fi
+		fi
+	done
+else
+	logmsg_info "Lazy-releasing overlay R/O directory `pwd`/../overlays-ro/${IMAGE_FLAT}-ro (and/or `pwd`/../rootfs/${IMAGE_FLAT}-ro) ..."
+	umount -fl "../overlays-ro/${IMAGE_FLAT}-ro" 2> /dev/null > /dev/null || true
+	umount -fl "../rootfs/${IMAGE_FLAT}-ro" 2> /dev/null > /dev/null || true
+fi
 
 # root bash history may be protected by chattr to be append-only
 chattr -a "${ALTROOT}/root/.bash_history" || true
@@ -995,17 +1011,13 @@ done
 ###      device with (predictable) *.squashfs-ro dirname => loop is used!
 #if [ x"$OVERLAYFS" = xyes ] ; then
 #set -x
+
+cat /proc/mounts
+
 	CURRDIR="`cd /srv/libvirt/snapshots/ && realpath . || pwd`" && \
 	[ -n "$CURRDIR" ] && \
 	losetup --raw --noheadings -l | egrep " $CURRDIR/.*\.squashfs " | \
 	while read LODEV SIZELIMIT OFFSET AUTOCLEAR RO BACKFILE DIO ; do
-
-#		# This is an active mountpoint... is anything overlaid?
-#		{ mount | egrep 'lowerdir=('"`echo ${D} | sed 's,/$,,g'`|${FD}),upperdir=" || \
-#		  egrep 'lowerdir=('"`echo ${D} | sed 's,/$,,g'`|${FD}),upperdir=" < /proc/mounts ; } && \
-#		logmsg_warn "Old RO mountpoint '$FD' seems still used" && \
-#		continue
-
 		if [ x"`egrep "^$LODEV .*squashfs" < /proc/mounts`" = x ]; then
 			logmsg_warn "Unused squashfs loopback device was found," \
 				"removing '$LODEV' for '$BACKFILE'"
@@ -1075,9 +1087,17 @@ if [ x"$OVERLAYFS" = xyes ]; then
 		|| LODEV=""
 	fi
 	if [ -n "$LODEV" ]; then
-		logmsg_info "Found squashfs '$IMAGE_RO_FILE' loopbacked as '$LODEV'"
-		mount -o ro "$LODEV" "$IMAGE_RO_DIR" || \
-			die "Can't mount squashfs '$IMAGE_RO_FILE' (as '$LODEV') onto '$IMAGE_RO_DIR/'"
+		if [ x"`grep -e "^$LODEV .*squashfs" < /proc/mounts`" = x ]; then
+			logmsg_info "Found squashfs '$IMAGE_RO_FILE' loopbacked as '$LODEV', mounting"
+			mount -o ro "$LODEV" "$IMAGE_RO_DIR" || \
+				die "Can't mount squashfs '$IMAGE_RO_FILE' (as '$LODEV') onto '$IMAGE_RO_DIR/'"
+		else
+			logmsg_info "Found squashfs '$IMAGE_RO_FILE' loopbacked as '$LODEV' already mounted, asking to (re-)mount just in case"
+			mount -o ro "$LODEV" "$IMAGE_RO_DIR" || true
+		fi
+		if [ x"`grep -e "^$LODEV $IMAGE_RO_DIR squashfs" < /proc/mounts`" = x ]; then
+			die "Failed to mount $LODEV as $IMAGE_RO_DIR/"
+		fi
 	else
 		# Something buggy in this losetup?
 		mount -o ro,loop "$IMAGE_RO_FILE" "$IMAGE_RO_DIR" || \
