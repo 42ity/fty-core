@@ -201,6 +201,10 @@ cleanup_wget() {
 	rm -f "$IMAGE.lock"
 }
 
+cleanup_umount() {
+	rm -f "$CIVM_UMOUNT_LOCK"
+}
+
 settraps() {
 	# Not all trap names are recognized by all shells consistently
 	# Note: slight difference from scriptlib.sh, we trap ERR too by default
@@ -293,6 +297,7 @@ DOTDOMAINNAME=""
 [ -z "${DISABLE_BIOS-}" ] && DISABLE_BIOS=auto
 [ -z "${HOST_CCACHE_DIR-}" ] && HOST_CCACHE_DIR="/root/.ccache"
 [ -n "${START_RETRIES-}" ] && [ "${START_RETRIES-}" -gt 0 ] || START_RETRIES=1
+[ -n "${CIVM_UMOUNT_LOCK-}" ] || CIVM_UMOUNT_LOCK="/var/run/ci-reset-virtual-machine.umount.lock"
 
 while [ $# -gt 0 ] ; do
 	case "$1" in
@@ -815,6 +820,28 @@ virsh -c lxc:// destroy "$VM" || \
 # may be wait for slow box
 sleep 5
 
+if [ -f "${CIVM_UMOUNT_LOCK}" ]; then
+	OTHERINST_PID="`head -1 "$CIVM_UMOUNT_LOCK"`"
+	OTHERINST_PROG="`head -n +2 "$CIVM_UMOUNT_LOCK" | tail -1`"
+	OTHERINST_ARGS="`head -n +3 "$CIVM_UMOUNT_LOCK" | tail -1`"
+	if [ -n "$OTHERINST_PID" ] && \
+	   [ "$OTHERINST_PID" -gt 0 ]  2>/dev/null  && \
+	   [ -d "/proc/$OTHERINST_PID" ] && \
+	   ps -ef | awk '( $2 == "'"$OTHERINST_PID"'") {print $0}' | egrep "${_SCRIPT_NAME}|sh " \
+	; then
+		logmsg_info "`date`: An instance of this script with PID $OTHERINST_PID is already running," \
+                                "and processing unmounts; now waiting for it to finish"
+		while [ -f "${CIVM_UMOUNT_LOCK}" ] && [ -d "/proc/$OTHERINST_PID" ]; do sleep 1; done
+		logmsg_info "`date`: Wait is complete, proceeding with my unmounts and further task (${_SCRIPT_ARGS})..."
+	else
+		logmsg_info "Found lock-file ${CIVM_UMOUNT_LOCK}, but it is invalid or not up-to-date (ignoring)"
+	fi
+fi
+
+logmsg_info "Beginning to unmount stuff, setting lock so only one copy of the script does this at a time..."
+( echo "$$"; echo "${_SCRIPT_PATH}"; echo "${_SCRIPT_ARGS}" ) > "${CIVM_UMOUNT_LOCK}"
+settraps 'cleanup_umount; cleanup_script;'
+
 # Cleanup of the rootfs... just in case, try to clean it up even if FS objects
 # are missing (e.g. someone managed to delete them without freeing resources).
 mkdir -p "`pwd`/../rootfs/$VM"
@@ -1008,6 +1035,10 @@ else
 		die "Can not manipulate '${ALTROOT}' at this time"
 	fi
 fi
+
+logmsg_info "Finished unmounting, removing lock..."
+cleanup_umount
+settraps 'cleanup_script;'
 
 if [ x"$STOPONLY" = xyes ]; then
 	logmsg_info "STOPONLY was requested, so ending" \
