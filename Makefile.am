@@ -711,36 +711,36 @@ endef
 # into the build area. Also adds the filename into lists for install,
 # cleanup, ultimately used dependencies, etc.
 define depend-copy-file
-$(eval override _MAP_SRC_REL :=	$(firstword $(subst :, ,$(1))) )
-$(eval override _MAP_DST_REL :=	$(word 2,$(subst :, ,$(1))) )
-$(eval override _MAP_SRC_ABS :=	$(addprefix $(abs_top_srcdir)/,$(_MAP_SRC_REL)) )
-$(eval override _MAP_DST_ABS :=	$(addprefix $(abs_top_builddir)/,$(_MAP_DST_REL)) )
+$(eval override _CP_MAP_SRC_REL :=	$(firstword $(subst :, ,$(1))) )
+$(eval override _CP_MAP_DST_REL :=	$(word 2,$(subst :, ,$(1))) )
+$(eval override _CP_MAP_SRC_ABS :=	$(addprefix $(abs_top_srcdir)/,$(_CP_MAP_SRC_REL)) )
+$(eval override _CP_MAP_DST_ABS :=	$(addprefix $(abs_top_builddir)/,$(_CP_MAP_DST_REL)) )
 
 # Define the dependency and the rule
-$(_MAP_DST_ABS): $(_MAP_SRC_ABS)
+$(_CP_MAP_DST_ABS): $(_CP_MAP_SRC_ABS)
 	@$$(call copy-file,$$<,$$@)
 
 # Fake dependency for subdir/dist builds
-$(_MAP_DST_REL): $(_MAP_DST_ABS)
+$(_CP_MAP_DST_REL): $(_CP_MAP_DST_ABS)
 	@#echo "DEBUG-MAKEFILE-FAKEDEP: Mapped target '$$@' to source '$$<'"
 
 ### Target as a text file
-$(eval TEXTS +=			$(_MAP_DST_REL) )
+$(eval TEXTS +=			$(_CP_MAP_DST_REL) )
 
 ### Copy for installation:
-$(eval develdoc_DATA +=		$(_MAP_DST_REL) )
+$(eval develdoc_DATA +=		$(_CP_MAP_DST_REL) )
 
 ### Copy in make dist
-$(eval EXTRA_DIST +=		$(_MAP_SRC_REL) )
+$(eval EXTRA_DIST +=		$(_CP_MAP_SRC_REL) )
 endef
 
 define canclean-txt-file
-$(eval override _MAP_SRC_REL :=	$(firstword $(subst :, ,$(1))) )
-$(eval override _MAP_DST_REL :=	$(word 2,$(subst :, ,$(1))) )
+$(eval override _CLEAN_MAP_SRC_REL :=	$(firstword $(subst :, ,$(1))) )
+$(eval override _CLEAN_MAP_DST_REL :=	$(word 2,$(subst :, ,$(1))) )
 
 ### Cleanup in build
-$(eval CLEANFILES +=		$(_MAP_DST_REL) )
-$(eval CLEAN_TEXTS +=		$(_MAP_DST_REL) )
+$(eval CLEANFILES +=		$(_CLEAN_MAP_DST_REL) )
+$(eval CLEAN_TEXTS +=		$(_CLEAN_MAP_DST_REL) )
 endef
 
 # Convert the simple lists defined above into the common mapping tables
@@ -795,22 +795,24 @@ endif
 endef
 
 define depend-txt-html
-$(eval override _MAP_DST_REL :=		$(word 2,$(subst :, ,$(1))) )
-$(eval override _HTML_DST_REL :=	$(_MAP_DST_REL:%.txt=%.html) )
-$(eval override _MAP_DST_ABS :=		$(addprefix $(abs_top_builddir)/,$(_MAP_DST_REL)) )
-$(eval override _HTML_DST_ABS :=	$(addprefix $(abs_top_builddir)/,$(_HTML_DST_REL)) )
+$(eval override _TH_MAP_DST_REL :=		$(word 2,$(subst :, ,$(1))) )
+$(eval override _TH_HTML_DST_REL := 	$(_TH_MAP_DST_REL:%.txt=%.html) )
+$(eval override _TH_MAP_DST_ABS :=		$(addprefix $(abs_top_builddir)/,$(_TH_MAP_DST_REL)) )
+$(eval override _TH_HTML_DST_ABS := 	$(addprefix $(abs_top_builddir)/,$(_TH_HTML_DST_REL)) )
 
 # Define the dependency and the rule
-$(_HTML_DST_ABS): $(_MAP_DST_ABS)
+$(_TH_HTML_DST_ABS): $(_TH_MAP_DST_ABS)
 	@$$(call compile-asciidoc-to-html,$$<,$$@)
 
 # Fake dependency for subdir/dist builds
-$(_HTML_DST_REL): $(_HTML_DST_ABS)
+$(_TH_HTML_DST_REL): $(_TH_HTML_DST_ABS)
 	@#echo "DEBUG-MAKEFILE-FAKEDEP: Mapped target '$$@' to source '$$<'"
 
-$(eval CLEAN_HTMLS +=		$(_HTML_DST_REL) )
+$(eval CLEAN_HTMLS +=		$(_TH_HTML_DST_REL) )
 
-$(eval HTMLS_ASCIIDOC +=	$(_HTML_DST_REL) )
+$(eval HTMLS_ASCIIDOC +=	$(_TH_HTML_DST_REL) )
+
+$(eval abs_HTMLS_ASCIIDOC +=	$(_TH_HTML_DST_ABS) )
 endef
 
 # Some HTMLS_ASCIIDOCs may have been defined above, maybe with other recipes
