@@ -651,6 +651,7 @@ MAPPED_TXT_DOCS_ASCIIDOC =
 # Here we predefine the HTMLS_ASCIIDOC list as anything that is
 # not converted from the MAPPED_TXT_DOCS_ASCIIDOC list, so empty.
 HTMLS_ASCIIDOC =
+abs_HTMLS_ASCIIDOC =
 
 # Ultimate list of HTMLs from generally many sources (except doxygen,
 # since that list of targets is not known in advance). Predefined (and
@@ -808,11 +809,12 @@ $(eval override _TH_HTML_DST_ABS := 	$(addprefix $(abs_top_builddir)/,$(_TH_HTML
 
 # Define the dependency and the rule
 $(_TH_HTML_DST_ABS): $(_TH_MAP_DST_ABS)
+	@#echo "DEBUG-MAKEFILE-FAKEDEP-ABS: Mapped target '$$@' to source '$$<' ; _TH_HTML_DST_REL='$(_TH_HTML_DST_REL)' _TH_HTML_DST_ABS='$(_TH_HTML_DST_ABS)'"
 	@$$(call compile-asciidoc-to-html,$$<,$$@)
 
 # Fake dependency for subdir/dist builds
 $(_TH_HTML_DST_REL): $(_TH_HTML_DST_ABS)
-	@#echo "DEBUG-MAKEFILE-FAKEDEP: Mapped target '$$@' to source '$$<'"
+	@#echo "DEBUG-MAKEFILE-FAKEDEP-REL: Mapped target '$$@' to source '$$<'"
 
 $(eval CLEAN_HTMLS +=		$(_TH_HTML_DST_REL) )
 
@@ -831,6 +833,10 @@ if HAVE_ASCIIDOC
 HTMLS +=		$(HTMLS_ASCIIDOC)
 develdoc_DATA +=	$(addprefix $(abs_top_builddir)/,$(HTMLS_ASCIIDOC))
 CLEANFILES +=		$(addprefix $(abs_top_builddir)/,$(HTMLS_ASCIIDOC))
+#develdoc_DATA +=	$(abs_HTMLS_ASCIIDOC)
+#CLEANFILES +=		$(abs_HTMLS_ASCIIDOC)
+#develdoc_DATA +=	$(HTMLS_ASCIIDOC)
+#CLEANFILES +=		$(HTMLS_ASCIIDOC)
 endif
 
 
