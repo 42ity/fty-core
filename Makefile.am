@@ -234,7 +234,7 @@ endef
 # Tester for the doxygen output sanity
 check_SCRIPTS +=	tools/run-test-doc.sh
 
-# Needed at least for the distcheck (post distribution tests)
+# Needed at least for the distcheck (post distribution tests)
 EXTRA_DIST +=		tools/run-test.sh
 LOG_COMPILER =		$(abs_top_srcdir)/tools/run-test.sh
 
