@@ -784,11 +784,17 @@ $(foreach m,$(MAPPED_TXT_DOCS_PLAINTEXT) $(MAPPED_TXT_DOCS_ASCIIDOC), \
 # into the same basename...
 # Per dependencies, all the text files should be available in the
 # builddir/docs/develop/*.txt and the *.html will appear nearby
+# The "touch" and "sleep;sync" are a hack against parallel builds
+# that run head over heels, so htmls are sort of generated (per Make)
+# but not yet reported by filesystem and so install fails...
 
 define compile-asciidoc-to-html
 if HAVE_ASCIIDOC
 	@test -d "`dirname $(2)`" || mkdir -p "`dirname $(2)`"
+	@echo "  ASCIIDOC  '$(1)' -> '$(2)'" >&2
+	@touch $(2)
 	$(ASCIIDOC) -b html -o $(2) $(1)
+	@sleep 1 ; sync
 else
 	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped for '$(1)' -> '$(2)'!" >&2
 endif
