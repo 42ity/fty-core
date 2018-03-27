@@ -81,7 +81,6 @@ GENERATEDSCRIPTS = tools/run-test-doc.sh tools/db-init \
 	tools/verify-fs \
 	tools/envvars-ExecStartPre.sh \
 	tools/tntnet-ExecStartPre.sh \
-	tools/envvars-ExecStartPre.sh \
 	setup/20-th-names.sh
 
 # Subdir-distributed file is also generated
