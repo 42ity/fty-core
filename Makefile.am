@@ -689,14 +689,15 @@ develdoc_DATA =
 define copy-file-cp
 	if test x"$(2)" != x"$(1)" ; then \
 	    { test -d "`dirname "$(2)"`" || mkdir -p "`dirname "$(2)"`"; } && \
-	    echo "Copy '$(1)' to '$(2)'" && \
+	    echo "  CP    '$(1)' -> '$(2)'" >&2 && \
 	    cp -pf "$(1)" "$(2)" || cp -f "$(1)" "$(2)"; \
 	else \
-	    echo "Not copying '$(1)' to '$(2)': same file"; \
+	    echo "Not copying '$(1)' -> '$(2)': same file" >&2 E; \
 	fi
 endef
 
 # Another way to skin the cat...
+# Note that install program by itself reports the 'SRC' -> 'DST" message
 define copy-file-install
 	$(INSTALL) -D -T -p -v -m 644 "$1" "$2"
 endef
