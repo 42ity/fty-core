@@ -82,59 +82,93 @@ usage() {
 	echo "    -b|--baseline type   basic image type to use (Default: '$IMGTYPE')"
 	echo "                         see OBS repository for supported types (deploy, devel)"
 	echo "    -qa|--qa-level type  image QA level to use (Default: '$IMGQALEVEL')"
-	echo "                         see Jenkins and OBS for supported types (master, pre-rc, rc)"
+	echo "                         see Jenkins and OBS for supported types (master, arm)"
 	echo "    -r|--repository URL  OBS image repo ('$OBS_IMAGES')"
-	echo "    -hp|--http-proxy URL the http_proxy override to access OBS ('$http_proxy')"
-	echo "    -ap|--apt-proxy URL  the http_proxy to access external APT images ('$APT_PROXY')"
-	echo "    --install-dev        run ci-setup-test-machine.sh (if available) to install packages"
-	echo "    --with-java8-jre     when setting up packages with ci-setup-test-machine.sh, set"
-	echo "                         DEPLOY_JAVA8=yes to install a Java8 JRE for certain uses"
+	echo "    -hp|--http-proxy URL the http_proxy override to access OBS"
+	echo "                         (default: '$http_proxy')"
+	echo "    -ap|--apt-proxy URL  the http_proxy to access external APT images"
+	echo "                         (default: '$APT_PROXY')"
+	echo "    --start-retries NUM  if 'virsh start' failed, retry it up to NUM times, to"
+	echo "                         work around autofs-backed homedirs mounted into guest"
+	echo "    --install-dev        run ci-setup-test-machine.sh (if available) to install"
+	echo "                         or update additional development packages"
+	echo "    --with-java8-jre     when setting up packages with ci-setup-test-machine.sh"
+	echo "                         set DEPLOY_JAVA8=yes to install Java8 JRE for certain"
+	echo "                         uses (e.g. run a Jenkins agent.jar or Flexnet tools)"
+	echo "    --disable-bios       Disable BIOS/42ity related services to use this VM"
+	echo "                         as just a build root with lower run-time overheads"
 	echo "    --with-libzmq4-dev   explicitly install libzmq4-dev here (if install-dev)"
-	echo "    --no-install-dev     do not run ci-setup-test-machine.sh, even on IMGTYPE=devel"
-	echo "    --no-restore-saved   do not copy stashed custom configs from a VMNAME.saved/ dir"
-	echo "    --no-overlayfs       enforce use of tarballs, even if overlayfs is supported by host"
-	echo "    --with-overlayfs     enforce use of overlayfs, fail if not supported by host"
+	echo "    --no-install-dev     do not run ci-setup-test-machine.sh, even"
+	echo "                         on IMGTYPE=devel containers"
+	echo "    --no-restore-saved   DO NOT copy stashed custom configs from a"
+	echo "                         VMNAME.saved/ directory"
+	echo "    --no-squashfs        enforce use of (legacy) tarballs, even if overlayfs"
+	echo "                         is supported by host"
+	echo "    --no-overlayfs       enforce unpacking of squashfs archives, even if host"
+	echo "                         supports overlayfs"
+	echo "    --with-overlayfs     enforce use of overlayfs, fail if unsupported by host"
 	echo "    --download-only      end the script after downloading the newest image file"
-	echo "    --attempt-download [auto|yes|no] Should an OS image download be attempted at all?"
-	echo "                         (default: auto; default if only the option is specified: yes)"
-	echo "    --no-download        Alias to '--attempt-download no' to redeploy an existing image"
-	echo "    --no-delete          Do not clean up (just reboot VM if --no-download, or upgrade"
-	echo "                         in place if --with-overlayfs); a --with-delete reverses this"
-	echo "                         setting for a run if default is provided in configuration file"
+	echo "    --attempt-download [auto|yes|no] Should an OS image download be attempted"
+	echo "                         at all? (silent default: auto; default if only the"
+	echo "                         option is specified with no value: yes)"
+	echo "    --no-download        Alias to '--attempt-download no' to redeploy an"
+	echo "                         existing image"
+	echo "    --no-delete          Do not clean up (just reboot VM if --no-download,"
+	echo "                         or upgrade in place if --with-overlayfs);"
+	echo "                         a --with-delete reverses this setting for a run if"
+	echo "                         some default is provided in configuration file"
 	echo "    --stop-only          end the script after stopping the VM and cleaning up"
-	echo "    --destroy-only       end the script after stopping the VM (container 'destroy')"
-	echo "    --mount-only         end the script just after it basically mounts VM FS structure"
-	echo "    --deploy-only        end the script just before it would start the VM (skips apt-get too)"
-	echo "    --copy-host-users 'a b c'    Copies specified user or group account definitions"
-	echo "    --copy-host-groups 'a b c'   (e.g. for bind-mounted homes from host into the VM)"
+	echo "    --destroy-only       end the script after stopping the VM (virsh 'destroy')"
+	echo "    --mount-only         end the script just after it basically mounts VM"
+	echo "                         filesystem structures"
+	echo "    --deploy-only        end the script just before it would start the VM"
+	echo "                         (skips apt-get too, if dev-packages were requested)"
+	echo "    --copy-host-users 'a b c'    Copies specified user or group account"
+	echo "    --copy-host-groups 'a b c'   definitions (e.g. for bind-mounted homes"
+	echo "                                 from host into the VM)"
 	echo "    --add-user=abuild    For Jenkins or OBS usage, define the 'abuild' account"
-	echo "    --no-config-file     Forbid use in this run of a per-VM config file if one is found"
-	echo "    --block-jenkins(=HOST)  Block access from HOST (defaults to our CI) while preparing"
+	echo "    --no-config-file     Forbid use in this run of a per-VM config file if one"
+	echo "                         is found"
+	echo "    --block-jenkins(=HOST)  Block access from HOST (defaults to our CI) while"
+	echo "                         preparing the image, to avoid use while not ready"
+	echo "    --for-jenkins(=HOST) Alias to --block-jenkins(=HOST) --add-user=abuild"
+	echo "                         --install-dev --with-java8-jre"
 	echo "    halt | umount        Alias to --destroy-only"
 	echo "    wipe                 Alias to --stop-only"
 	echo "    deploy               Alias to --deploy-only"
 	echo "    mount                Alias to --mount-only"
-	echo "    update               Alias to --no-delete --no-install-dev --no-restore-saved"
-	echo "                         and disables user/group account sync from host to container"
-	echo "                         Allows to re-apply a modified overlay R/W to new RO OS image"
+	echo "    update               Alias --no-delete --no-install-dev --no-restore-saved"
+	echo "                         and disables user/group account sync from host to this"
+	echo "                         container. Allows to re-apply a modified overlay R/W"
+	echo "                         storage over a new RO OS image"
 	echo "    reboot               Alias to update with --no-download"
 	echo "    -h|--help            print this help"
 }
 
 check_md5sum() {
 	# Compares actual checksum of file "$1" with value recorded in file "$2"
-	if [ -s "$1" -a -s "$2" ]; then
-		logmsg_info "Validating OS image file '$1' against its MD5 checksum '$2'..."
-		MD5EXP="`awk '{print $1}' < "$2"`"
-		MD5ACT="`md5sum < "$1" | awk '{print $1}'`" && \
+	FILE_DATA="$1"
+	FILE_CKSUM="$2"
+	case "$FILE_DATA" in
+		/*) ;;
+		*) FILE_DATA="`pwd`/$FILE_DATA" ;;
+	esac
+	case "$FILE_CKSUM" in
+		/*) ;;
+		*) FILE_CKSUM="`pwd`/$FILE_CKSUM" ;;
+	esac
+	if [ -s "$FILE_DATA" -a -s "$FILE_CKSUM" ]; then
+		logmsg_info "Validating OS image file '$FILE_DATA' against its MD5 checksum '$FILE_CKSUM'..."
+		MD5EXP="`awk '{print $1}' < "$FILE_CKSUM"`"
+		MD5ACT="`md5sum < "$FILE_DATA" | awk '{print $1}'`" && \
 		if [ x"$MD5EXP" != x"$MD5ACT" ]; then
-			logmsg_error "Checksum validation of '$1' against '$2' FAILED!"
+			logmsg_error "Checksum validation of '$FILE_DATA' against '$FILE_CKSUM' FAILED!"
 			return 1
 		fi
-		logmsg_info "Checksum validation of '$1' against '$2' SUCCEEDED!"
+		logmsg_info "Checksum validation of '$FILE_DATA' against '$FILE_CKSUM' SUCCEEDED!"
 		return 0
 	fi
-	logmsg_warn "Checksum validation of '$1' against '$2' SKIPPED (one of the files is missing)"
+	logmsg_warn "Checksum validation of '$FILE_DATA' against '$FILE_CKSUM' SKIPPED (at least one of the files is missing or empty)"
 	return 0
 }
 
@@ -167,6 +201,10 @@ cleanup_wget() {
 	rm -f "$IMAGE.lock"
 }
 
+cleanup_umount() {
+	rm -f "$CIVM_UMOUNT_LOCK"
+}
+
 settraps() {
 	# Not all trap names are recognized by all shells consistently
 	# Note: slight difference from scriptlib.sh, we trap ERR too by default
@@ -196,6 +234,14 @@ probe_mounts() {
 	grep '<source dir=' | sed "s|^.*<source dir='\(/[^\']*\)'[ /].*>.*$|\1|" | \
 	(RES=0 ; while read D ; do ls "$D/" > /dev/null || RES=$? ; done; exit $RES)
 }
+
+# Sanity checks
+if [ "$(uname -s)" != "Linux" ] ; then
+	die "$0 must run on Linux"
+fi
+if [ "$(id -u)" != 0 ] ; then
+	die "$0 must run as root (use sudo?)"
+fi
 
 #
 # defaults
@@ -248,7 +294,10 @@ DOTDOMAINNAME=""
 [ -z "${ADDUSER_ABUILD-}" ] && ADDUSER_ABUILD=no
 [ -z "${JENKINS_HOST-}" ] && JENKINS_HOST=jenkins2.roz.lab.etn.com
 [ -z "${BLOCK_JENKINS-}" ] && BLOCK_JENKINS=no
+[ -z "${DISABLE_BIOS-}" ] && DISABLE_BIOS=auto
 [ -z "${HOST_CCACHE_DIR-}" ] && HOST_CCACHE_DIR="/root/.ccache"
+[ -n "${START_RETRIES-}" ] && [ "${START_RETRIES-}" -gt 0 ] || START_RETRIES=1
+[ -n "${CIVM_UMOUNT_LOCK-}" ] || CIVM_UMOUNT_LOCK="/var/run/ci-reset-virtual-machine.umount.lock"
 
 while [ $# -gt 0 ] ; do
 	case "$1" in
@@ -289,16 +338,20 @@ while [ $# -gt 0 ] ; do
 		DESTROYONLY=yes
 		shift
 		;;
-	--no-overlayfs)
-		OVERLAYFS=no
+	--no-squashfs) # Legacy default is to unpack tarballs, when available
+		OVERLAYFS=no-squashfs
 		shift
 		;;
-	--no-restore-saved)
-		NO_RESTORE_SAVED=yes
+	--no-overlayfs) # Modern default is to unpack squashfs archives if not mounting them
+		OVERLAYFS=no
 		shift
 		;;
 	--with-overlayfs)
 		OVERLAYFS=yes
+		shift
+		;;
+	--no-restore-saved)
+		NO_RESTORE_SAVED=yes
 		shift
 		;;
 	--download-only)
@@ -317,13 +370,22 @@ while [ $# -gt 0 ] ; do
 		NO_DELETE=no
 		shift
 		;;
-	--block-jenkins=*)
-		JENKINS_HOST="`echo "$1" | sed 's,^--with-block-jenkins=,,'`" || JENKINS_HOST=""
+	--block-jenkins=*|--for-jenkins=*)
+		JENKINS_HOST="`echo "$1" | sed 's,^[^\=]*=,,'`" || JENKINS_HOST=""
 		shift
 		[ -n "$JENKINS_HOST" ] && BLOCK_JENKINS=yes ;;
-	--block-jenkins)
+	--block-jenkins|--for-jenkins)
 		shift
 		BLOCK_JENKINS=yes ;;
+	--no-block-jenkins)
+		shift
+		BLOCK_JENKINS=no ;;
+	--disable-bios|--for-jenkins|--for-jenkins=*)
+		shift
+		DISABLE_BIOS=yes ;;
+	--no-disable-bios)
+		shift
+		DISABLE_BIOS=no ;;
 	reboot) # New uptime for existing rootfs - no initial reconfigs to do now
 		ATTEMPT_DOWNLOAD=no
 		;&
@@ -356,7 +418,12 @@ while [ $# -gt 0 ] ; do
 		DOWNLOADONLY=yes
 		shift
 		;;
-	--install-dev|--install-dev-pkgs)
+	--start-retries)
+		[ -n "$2" ] && [ "$2" -gt 0 ] || die "Bad argument for $1"
+		START_RETRIES="$2"
+		shift 2
+		;;
+	--install-dev|--install-dev-pkgs|--for-jenkins|--for-jenkins=*)
 		INSTALL_DEV_PKGS=yes
 		# This one is now defined by ci-setup-test-machine.sh
 		# since installing more files into DEV environments is
@@ -371,13 +438,15 @@ while [ $# -gt 0 ] ; do
 		export FORCE_RUN_APT
 		shift
 		;;
-	--with-java8-jre) # Only works if INSTALL_DEV_PKGS=yes
+	--with-java8-jre|--for-jenkins|--for-jenkins=*)
+		# Only works if INSTALL_DEV_PKGS=yes
 		shift
 		DEPLOY_JAVA8=yes ; export DEPLOY_JAVA8 ;;
 	--with-libzmq4-dev) # Likewise
 		shift
 		DEPLOY_LIBZMQ4_DEV=yes ; export DEPLOY_LIBZMQ4_DEV ;;
-	--add-user=abuild) ADDUSER_ABUILD=yes ; shift ;;
+	--add-user=abuild|--for-jenkins|--for-jenkins=*)
+		ADDUSER_ABUILD=yes ; shift ;;
 	--copy-host-users)
 		COPYHOST_USERS="$2"; shift 2;;
 	--copy-host-groups)
@@ -452,6 +521,9 @@ if [ -n "$VM" ] && [ -s "`pwd`/$VM.config-reset-vm" ]; then
 	fi
 fi
 
+# Sanity checks and auto-values processing after config import
+[ "$START_RETRIES" -gt 1 ] || die "Bad value provided for START_RETRIES='$START_RETRIES'"
+
 [ x"$INSTALL_DEV_PKGS" = xauto ] && \
 case "$IMGTYPE" in
 	*devel*) INSTALL_DEV_PKGS=yes ;;
@@ -481,7 +553,8 @@ xauto|xyes)
 		OVERLAYFS="no"
 	fi
 	;;
-xno)	logmsg_warn "OVERLAYFS='$OVERLAYFS' set by caller" ;;
+xno|xno-squashfs)
+	logmsg_warn "OVERLAYFS='$OVERLAYFS' set by caller" ;;
 *)	logmsg_warn "Unknown OVERLAYFS='$OVERLAYFS' set by caller, assuming 'no'"; OVERLAYFS="no" ;;
 esac
 
@@ -496,8 +569,13 @@ xyes)
 		modprobe ${OVERLAYFS_TYPE} && break
 	done
 	;;
-xno)
-	EXT="tar.gz"
+xno|xno-squashfs)
+	if [ x"$OVERLAYFS" = xno-squashfs ] ; then
+		# Legacy mode: use tarballs
+		EXT="tar.gz"
+	else
+		EXT="squashfs"
+	fi
 	OVERLAYFS_TYPE=""
 	logmsg_info "Detected no support of OVERLAYFS on the host" \
 		"`hostname`${DOTDOMAINNAME}, so will unpack a .$EXT file" \
@@ -506,8 +584,10 @@ xno)
 esac
 
 if [ "$NO_DELETE" = yes ] ; then
-	if [ x"$OVERLAYFS" = xno ] && [ x"$ATTEMPT_DOWNLOAD" != xno ] ; then
-		die "Requested to not delete VM contents and to download a new tarball root at the same time"
+	if [ x"$OVERLAYFS" = xno -o x"$OVERLAYFS" = xno-squashfs ] \
+	&& [ x"$ATTEMPT_DOWNLOAD" != xno ] \
+	; then
+		die "Requested to not delete VM contents and to download a new root archive at the same time"
 	fi
 fi
 
@@ -566,17 +646,18 @@ IMAGE=""
 IMAGE_SKIP=""
 
 sort_osimage_names() {
-	# ASSUMPTION: we don't have over 999 rebuilds of the same baseline image ;)
+	# ASSUMPTION: we don't have over 9999 rebuilds of the same baseline image ;)
 	# ASSUMPTION2: all image builds have a rebuild-index suffix for the same
 	# baseline, or there is one old image for a baseline without a suffix.
 	### sort
 	### sort -n
-	sed -e 's,-\([[:digit:]][[:digit:]]\.[[:digit:]][[:digit:]]\.[[:digit:]][[:digit:]]\)_,-\1-0_,' \
-	    -e 's,-\([[:digit:]]\)_,-0\1_,' \
-	    -e 's,-\([[:digit:]][[:digit:]]\)_,-0\1_,' \
+	sed -e 's,-\([[:digit:]][[:digit:]]\.[[:digit:]][[:digit:]]\.[[:digit:]][[:digit:]]\)_,-\1+0_,' \
+	    -e 's,\([-\+]\)\([[:digit:]]\)_,\10\2_,' \
+	    -e 's,\([-\+]\)\([[:digit:]][[:digit:]]\)_,\10\2_,' \
+	    -e 's,\([-\+]\)\([[:digit:]][[:digit:]][[:digit:]]\)_,\10\2_,' \
 	| sort -n | \
-	sed -e 's,-0*\([123456789][[:digit:]]*\)_,-\1_,' \
-	    -e 's,-00*_,_,'
+	sed -e 's,\([-\+]\)0*\([123456789][[:digit:]]*\)_,\1\2_,' \
+	    -e 's,\([-\+]\)00*_,_,'
 }
 
 if [ "$ATTEMPT_DOWNLOAD" != no ] ; then
@@ -647,18 +728,32 @@ if [ "$ATTEMPT_DOWNLOAD" = yes ] || [ "$ATTEMPT_DOWNLOAD" = auto ] ; then
 
 	settraps 'cleanup_wget; cleanup_script;'
 
-	wget -q -c "$IMAGE_URL.md5" || true
-	wget -c "$IMAGE_URL"
-	WGET_RES=$?
-	logmsg_info "Download completed with exit-code: $WGET_RES"
-	if ! ensure_md5sum "$IMAGE" "$IMAGE.md5" ; then
-		IMAGE=""
-		WGET_RES=127
+	logmsg_info "Downloading $IMAGE_URL.md5 ..."
+	wget -q "$IMAGE_URL.md5" -O "$IMAGE.md5.__WRITING__" \
+		&& mv -f "$IMAGE.md5.__WRITING__" "$IMAGE.md5" || true
+	TRY_WGET=yes
+	if [ -s "$IMAGE" ] ; then
+		if ensure_md5sum "$IMAGE" "$IMAGE.md5" ; then
+			# File is present and up-to-date
+			TRY_WGET=no
+			WGET_RES=0
+		fi
+	fi
+	if [ "$TRY_WGET" = yes ] ; then
+		logmsg_info "Downloading $IMAGE_URL ..."
+		wget -q -c "$IMAGE_URL" -O "$IMAGE.__WRITING__" \
+			&& mv -f "$IMAGE.__WRITING__" "$IMAGE"
+		WGET_RES=$?
+		logmsg_info "Download completed with exit-code: $WGET_RES"
+		if ! ensure_md5sum "$IMAGE" "$IMAGE.md5" ; then
+			IMAGE=""
+			WGET_RES=127
+		fi
 	fi
 	[ "$WGET_RES" = 0 ] || \
 		logmsg_error "Failed to get the latest image file name from OBS" \
 			"(subsequent VM startup can use a previously downloaded image, however)"
-
+	unset TRY_WGET
 	sync
 	cleanup_wget
 	settraps 'cleanup_script;'
@@ -725,6 +820,28 @@ virsh -c lxc:// destroy "$VM" || \
 # may be wait for slow box
 sleep 5
 
+if [ -f "${CIVM_UMOUNT_LOCK}" ]; then
+	OTHERINST_PID="`head -1 "$CIVM_UMOUNT_LOCK"`"
+	OTHERINST_PROG="`head -n +2 "$CIVM_UMOUNT_LOCK" | tail -1`"
+	OTHERINST_ARGS="`head -n +3 "$CIVM_UMOUNT_LOCK" | tail -1`"
+	if [ -n "$OTHERINST_PID" ] && \
+	   [ "$OTHERINST_PID" -gt 0 ]  2>/dev/null  && \
+	   [ -d "/proc/$OTHERINST_PID" ] && \
+	   ps -ef | awk '( $2 == "'"$OTHERINST_PID"'") {print $0}' | egrep "${_SCRIPT_NAME}|sh " \
+	; then
+		logmsg_info "`date`: An instance of this script with PID $OTHERINST_PID is already running," \
+                                "and processing unmounts; now waiting for it to finish"
+		while [ -f "${CIVM_UMOUNT_LOCK}" ] && [ -d "/proc/$OTHERINST_PID" ]; do sleep 1; done
+		logmsg_info "`date`: Wait is complete, proceeding with my unmounts and further task (${_SCRIPT_ARGS})..."
+	else
+		logmsg_info "Found lock-file ${CIVM_UMOUNT_LOCK}, but it is invalid or not up-to-date (ignoring)"
+	fi
+fi
+
+logmsg_info "Beginning to unmount stuff, setting lock so only one copy of the script does this at a time..."
+( echo "$$"; echo "${_SCRIPT_PATH}"; echo "${_SCRIPT_ARGS}" ) > "${CIVM_UMOUNT_LOCK}"
+settraps 'cleanup_umount; cleanup_script;'
+
 # Cleanup of the rootfs... just in case, try to clean it up even if FS objects
 # are missing (e.g. someone managed to delete them without freeing resources).
 mkdir -p "`pwd`/../rootfs/$VM"
@@ -747,8 +864,24 @@ fusermount -u -z "${ALTROOT}" 2> /dev/null > /dev/null || true
 # file, but script claims to free the loopback device below (marks for autofree
 # actually); this seems a bit dirty so better test here that current container
 # is the only/last one using the RO directory...
-umount -fl "../overlays-ro/${IMAGE_FLAT}-ro" 2> /dev/null > /dev/null || true
-umount -fl "../rootfs/${IMAGE_FLAT}-ro" 2> /dev/null > /dev/null || true
+
+if IMAGE_RW_DIR="`cd "../overlays" && { realpath . || pwd ; }`/${IMAGE_FLAT}__${VM}" ; then
+	for OVERDIR in "../overlays-ro/" "../rootfs/" ; do
+		if IMAGE_RO_DIR="`cd "$OVERDIR" && { realpath . || pwd ; }`/${IMAGE_FLAT}-ro" ; then
+			[ -d "$IMAGE_RO_DIR" ] && \
+			if [ x"`grep "lowerdir=$IMAGE_RO_DIR," < /proc/mounts | grep -v "upperdir=$IMAGE_RW_DIR,"`" != x ]; then
+				logmsg_info "Overlay R/O directory $IMAGE_RO_DIR is used by other consumers than VM $VM - not unmounting"
+			else
+				logmsg_info "Overlay R/O directory $IMAGE_RO_DIR seems to only be used by VM $VM - releasing"
+				umount -fl "$IMAGE_RO_DIR" 2> /dev/null > /dev/null || true
+			fi
+		fi
+	done
+else
+	logmsg_info "Lazy-releasing overlay R/O directory `pwd`/../overlays-ro/${IMAGE_FLAT}-ro (and/or `pwd`/../rootfs/${IMAGE_FLAT}-ro) ..."
+	umount -fl "../overlays-ro/${IMAGE_FLAT}-ro" 2> /dev/null > /dev/null || true
+	umount -fl "../rootfs/${IMAGE_FLAT}-ro" 2> /dev/null > /dev/null || true
+fi
 
 # root bash history may be protected by chattr to be append-only
 chattr -a "${ALTROOT}/root/.bash_history" || true
@@ -795,7 +928,7 @@ else
 	# When the host gets ungracefully rebooted, useless old dirs may remain...
 	for D in ../overlays/*__${VM}/ ../overlays/*__${VM}.tmp/ ; do
 		if [ -d "$D" ]; then
-			logmsg_warn "Obsolete RW directory for an old version" \
+			logmsg_warn "Obsolete RW (or RW tmp) directory for an old version" \
 				"of this VM was found, removing '`pwd`/$D':"
 			ls -lad "$D"
 			rm -rf "$D"
@@ -805,6 +938,8 @@ else
 fi
 
 for D in ../overlays-ro/*-ro/ ../rootfs/*-ro/ ; do
+	# Skip un-expanded pattern matches (missing matching files/dirs)
+	[ -e "$D" ] || continue
 	# Do not remove the current IMAGE mountpoint if we reuse it again now
 	### [ x"$D" = x"../rootfs/${IMAGE_FLAT}-ro/" ] && [ x"$STOPONLY" != xyes ] && continue
 	[ x"$D" = x"../overlays-ro/${IMAGE_FLAT}-ro/" ] && [ x"$STOPONLY" != xyes ] && continue
@@ -816,12 +951,29 @@ for D in ../overlays-ro/*-ro/ ../rootfs/*-ro/ ; do
 			  [ x"`grep ' '${FD}' ' < /proc/mounts`" != x ] ; } \
 		; then
 			# This is an active mountpoint... is anything overlaid?
-			{ mount | egrep 'lowerdir=('"`echo ${D} | sed 's,/$,,g'`|${FD}),upperdir=" || \
-			  egrep 'lowerdir=('"`echo ${D} | sed 's,/$,,g'`|${FD}),upperdir=" < /proc/mounts ; } && \
+			# Note: Handling all the different egrep implementations vs. slashes is too evil :)
+			{ mount | grep -e "lowerdir=\(`echo ${D} | sed 's,/$,,g'`\|${FD}\)/*,upperdir=" || \
+			  mount | grep -E "lowerdir=\(`echo ${D} | sed 's,/$,,g'`\|${FD}\)/*,upperdir=" || \
+			  mount | egrep "lowerdir=\(`echo ${D} | sed 's,/$,,g'`\|${FD}\)/*,upperdir=" || \
+			  grep -e "lowerdir=\(`echo ${D} | sed 's,/$,,g'`\|${FD}\)/*,upperdir=" < /proc/mounts || \
+			  grep -E "lowerdir=\(`echo ${D} | sed 's,/$,,g'`\|${FD}\)/*,upperdir=" < /proc/mounts || \
+			  egrep "lowerdir=\(`echo ${D} | sed 's,/$,,g'`\|${FD}\)/*,upperdir=" < /proc/mounts || \
+			  mount | grep -e "lowerdir=(`echo ${D} | sed 's,/$,,g'`|${FD})/*,upperdir=" || \
+			  mount | grep -E "lowerdir=(`echo ${D} | sed 's,/$,,g'`|${FD})/*,upperdir=" || \
+			  mount | egrep "lowerdir=(`echo ${D} | sed 's,/$,,g'`|${FD})/*,upperdir=" || \
+			  grep -e "lowerdir=(`echo ${D} | sed 's,/$,,g'`|${FD})/*,upperdir=" < /proc/mounts || \
+			  grep -E "lowerdir=(`echo ${D} | sed 's,/$,,g'`|${FD})/*,upperdir=" < /proc/mounts || \
+			  egrep "lowerdir=(`echo ${D} | sed 's,/$,,g'`|${FD})/*,upperdir=" < /proc/mounts || \
+			  mount | grep "lowerdir=${FD},upperdir=" || \
+			  mount | grep "lowerdir=`echo ${D} | sed 's,/$,,g'`,upperdir=" || \
+			  mount | egrep "lowerdir=`echo ${D} | sed 's,/$,,g'`/*,upperdir=" || \
+			  grep "lowerdir=${FD},upperdir=" < /proc/mounts || \
+			  grep "lowerdir=`echo ${D} | sed 's,/$,,g'`,upperdir=" < /proc/mounts || \
+			  egrep 'lowerdir=('"`echo ${D} | sed 's,/$,,g'`|${FD})/*,upperdir=" < /proc/mounts ; } && \
 			logmsg_warn "Old RO mountpoint '$FD' seems still used" && \
 			continue
 
-			logmsg_info "Old RO mountpoint '$FD' seems unused, unmounting"
+			logmsg_info "Old RO mountpoint '$FD' seems unused by any overlayfs, unmounting"
 			umount -fl "$FD" || true
 
 			### NOTE: experiments showed, that even if we unmount
@@ -852,8 +1004,16 @@ done
 ### This cleanup applies when host supports loopback+overlay but did not use
 ### it for the particular container in current run, too. Free the resource!
 ### Also do it even if pathname seems the same (file could be replaced)...
+### Logic/data chain:
+###   1) losetup => devnode and squashfs filename
+###   2) mounts => squashfs of loopback dev mounted into a *.squashfs-ro dir
+###   3) mounts => overlayfs lowerdir referring to mountpoint of loopback
+###      device with (predictable) *.squashfs-ro dirname => loop is used!
 #if [ x"$OVERLAYFS" = xyes ] ; then
 #set -x
+
+cat /proc/mounts
+
 	CURRDIR="`cd /srv/libvirt/snapshots/ && realpath . || pwd`" && \
 	[ -n "$CURRDIR" ] && \
 	losetup --raw --noheadings -l | egrep " $CURRDIR/.*\.squashfs " | \
@@ -861,6 +1021,7 @@ done
 		if [ x"`egrep "^$LODEV .*squashfs" < /proc/mounts`" = x ]; then
 			logmsg_warn "Unused squashfs loopback device was found," \
 				"removing '$LODEV' for '$BACKFILE'"
+			umount "$LODEV" || true
 			losetup -d "$LODEV"
 		fi
 	done
@@ -872,8 +1033,8 @@ if [ x"$OVERLAYFS" != xyes ] \
 && [ x"$ATTEMPT_DOWNLOAD" = xno ] \
 ; then
 	# For overlayfs mode, we do make sure the new rootfs dir is empty
-	# For tarball mode, we keep old root if the tarball did not change
-	logmsg_info "NO_DELETE==yes, not deleting old VM tarball data"
+	# For unpacking mode, we keep old root if the tarball/squashfs did not change
+	logmsg_info "NO_DELETE==yes, not deleting old VM roofs unpacked archive data"
 else
 	# clean up VM space
 	logmsg_info "Removing VM rootfs from '${ALTROOT}'"
@@ -886,6 +1047,10 @@ else
 		die "Can not manipulate '${ALTROOT}' at this time"
 	fi
 fi
+
+logmsg_info "Finished unmounting, removing lock..."
+cleanup_umount
+settraps 'cleanup_script;'
 
 if [ x"$STOPONLY" = xyes ]; then
 	logmsg_info "STOPONLY was requested, so ending" \
@@ -922,9 +1087,17 @@ if [ x"$OVERLAYFS" = xyes ]; then
 		|| LODEV=""
 	fi
 	if [ -n "$LODEV" ]; then
-		logmsg_info "Found squashfs '$IMAGE_RO_FILE' loopbacked as '$LODEV'"
-		mount -o ro "$LODEV" "$IMAGE_RO_DIR" || \
-			die "Can't mount squashfs '$IMAGE_RO_FILE' (as '$LODEV') onto '$IMAGE_RO_DIR/'"
+		if [ x"`grep -e "^$LODEV .*squashfs" < /proc/mounts`" = x ]; then
+			logmsg_info "Found squashfs '$IMAGE_RO_FILE' loopbacked as '$LODEV', mounting"
+			mount -o ro "$LODEV" "$IMAGE_RO_DIR" || \
+				die "Can't mount squashfs '$IMAGE_RO_FILE' (as '$LODEV') onto '$IMAGE_RO_DIR/'"
+		else
+			logmsg_info "Found squashfs '$IMAGE_RO_FILE' loopbacked as '$LODEV' already mounted, asking to (re-)mount just in case"
+			mount -o ro "$LODEV" "$IMAGE_RO_DIR" || true
+		fi
+		if [ x"`grep -e "^$LODEV $IMAGE_RO_DIR squashfs" < /proc/mounts`" = x ]; then
+			die "Failed to mount $LODEV as $IMAGE_RO_DIR/"
+		fi
 	else
 		# Something buggy in this losetup?
 		mount -o ro,loop "$IMAGE_RO_FILE" "$IMAGE_RO_DIR" || \
@@ -946,8 +1119,15 @@ if [ x"$OVERLAYFS" = xyes ]; then
 else
 	logmsg_info "Unpack the full individual RW copy of the image" \
 		"'$IMAGE' at '${ALTROOT}'"
-	tar -C "${ALTROOT}" -xzf "$IMAGE" \
-	|| die "Can't un-tar the full RW directory"
+	case x"$EXT" in
+		xtar.gz)
+			tar -C "${ALTROOT}" -xzf "$IMAGE" \
+			|| die "Can't un-tar the full RW directory" ;;
+		xsquashfs)
+			unsquashfs -d "${ALTROOT}/" -f "$IMAGE" \
+			|| die "Can't un-squashfs the full RW directory" ;;
+		*) die "Requested to unpack unsupported archive type: $EXT" ;;
+	esac
 fi
 
 case "$IMAGE" in
@@ -989,6 +1169,13 @@ fi
 if [ -d "${ALTROOT}.saved-preinstall/" ] && [ "$NO_RESTORE_SAVED" != yes ]; then
 	logmsg_info "Restoring custom configuration from '`cd ${ALTROOT}.saved-preinstall/ && pwd`':" && \
 	( cd "${ALTROOT}.saved-preinstall/" && tar cf - . ) | ( cd "${ALTROOT}/" && tar xvf - )
+fi
+
+if [ "$DISABLE_BIOS" = yes ]; then
+	logmsg_info "Disabling BIOS/42ity-related service autostart in the VM"
+	chroot "${ALTROOT}" /bin/systemctl disable \
+		bios.target bios.service malamute.service \
+		nut-server nut-monitor
 fi
 
 if [ "$INSTALL_DEV_PKGS" = yes ]; then
@@ -1181,7 +1368,14 @@ fi
 
 logmsg_info "Start the virtual machine $VM"
 probe_mounts "$VM"
-virsh -c lxc:// start "$VM" || die "Can't start the virtual machine $VM"
+START_ATTEMPT="$START_RETRIES"
+START_RESULT=255
+while [ "$START_ATTEMPT" -gt 0 ] ; do
+	START_ATTEMPT="`expr $START_ATTEMPT - 1`"
+	virsh -c lxc:// start "$VM"; START_RESULT=$?
+	[ "$START_RESULT" = 0 ] && break
+done
+[ "$START_RESULT" = 0 ] || die "Can't start the virtual machine $VM"
 
 VM_SHOULD_RESTART=no
 if [ "$INSTALL_DEV_PKGS" = yes ]; then
@@ -1301,7 +1495,16 @@ if [ "$VM_SHOULD_RESTART" = yes ] || [ "$BLOCK_JENKINS" = yes ] ; then
 	logmsg_info "Restart the virtual machine $VM"
 	virsh -c lxc:// shutdown "$VM" || true
 	virsh -c lxc:// destroy "$VM" && sleep 5 && \
-	{ probe_mounts "$VM"; virsh -c lxc:// start "$VM"; } || die "Can't reboot the virtual machine $VM"
+	{ probe_mounts "$VM"
+	  START_ATTEMPT="$START_RETRIES"
+	  START_RESULT=255
+	  while [ "$START_ATTEMPT" -gt 0 ] ; do
+		START_ATTEMPT="`expr $START_ATTEMPT - 1`"
+		virsh -c lxc:// start "$VM"; START_RESULT=$?
+		[ "$START_RESULT" = 0 ] && break
+	  done
+	  [ "$START_RESULT" = 0 ] || die "Can't reboot the virtual machine $VM"
+	}
 	logmsg_info "Sleeping 30 sec to let VM startup settle down..."
 	sleep 30
 fi
