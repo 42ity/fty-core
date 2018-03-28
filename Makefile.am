@@ -81,7 +81,6 @@ GENERATEDSCRIPTS = tools/run-test-doc.sh tools/db-init \
 	tools/verify-fs \
 	tools/envvars-ExecStartPre.sh \
 	tools/tntnet-ExecStartPre.sh \
-	tools/envvars-ExecStartPre.sh \
 	setup/20-th-names.sh
 
 # Subdir-distributed file is also generated
@@ -234,7 +233,7 @@ endef
 # Tester for the doxygen output sanity
 check_SCRIPTS +=	tools/run-test-doc.sh
 
-# Needed at least for the distcheck (post distribution tests)
+# Needed at least for the distcheck (post distribution tests)
 EXTRA_DIST +=		tools/run-test.sh
 LOG_COMPILER =		$(abs_top_srcdir)/tools/run-test.sh
 
@@ -652,6 +651,7 @@ MAPPED_TXT_DOCS_ASCIIDOC =
 # Here we predefine the HTMLS_ASCIIDOC list as anything that is
 # not converted from the MAPPED_TXT_DOCS_ASCIIDOC list, so empty.
 HTMLS_ASCIIDOC =
+abs_HTMLS_ASCIIDOC =
 
 # Ultimate list of HTMLs from generally many sources (except doxygen,
 # since that list of targets is not known in advance). Predefined (and
@@ -690,14 +690,15 @@ develdoc_DATA =
 define copy-file-cp
 	if test x"$(2)" != x"$(1)" ; then \
 	    { test -d "`dirname "$(2)"`" || mkdir -p "`dirname "$(2)"`"; } && \
-	    echo "Copy '$(1)' to '$(2)'" && \
+	    echo "  CP    '$(1)' -> '$(2)'" >&2 && \
 	    cp -pf "$(1)" "$(2)" || cp -f "$(1)" "$(2)"; \
 	else \
-	    echo "Not copying '$(1)' to '$(2)': same file"; \
+	    echo "Not copying '$(1)' -> '$(2)': same file" >&2 E; \
 	fi
 endef
 
 # Another way to skin the cat...
+# Note that install program by itself reports the 'SRC' -> 'DST" message
 define copy-file-install
 	$(INSTALL) -D -T -p -v -m 644 "$1" "$2"
 endef
@@ -711,36 +712,36 @@ endef
 # into the build area. Also adds the filename into lists for install,
 # cleanup, ultimately used dependencies, etc.
 define depend-copy-file
-$(eval override _MAP_SRC_REL :=	$(firstword $(subst :, ,$(1))) )
-$(eval override _MAP_DST_REL :=	$(word 2,$(subst :, ,$(1))) )
-$(eval override _MAP_SRC_ABS :=	$(addprefix $(abs_top_srcdir)/,$(_MAP_SRC_REL)) )
-$(eval override _MAP_DST_ABS :=	$(addprefix $(abs_top_builddir)/,$(_MAP_DST_REL)) )
+$(eval override _CP_MAP_SRC_REL :=	$(firstword $(subst :, ,$(1))) )
+$(eval override _CP_MAP_DST_REL :=	$(word 2,$(subst :, ,$(1))) )
+$(eval override _CP_MAP_SRC_ABS :=	$(addprefix $(abs_top_srcdir)/,$(_CP_MAP_SRC_REL)) )
+$(eval override _CP_MAP_DST_ABS :=	$(addprefix $(abs_top_builddir)/,$(_CP_MAP_DST_REL)) )
 
 # Define the dependency and the rule
-$(_MAP_DST_ABS): $(_MAP_SRC_ABS)
+$(_CP_MAP_DST_ABS): $(_CP_MAP_SRC_ABS)
 	@$$(call copy-file,$$<,$$@)
 
 # Fake dependency for subdir/dist builds
-$(_MAP_DST_REL): $(_MAP_DST_ABS)
+$(_CP_MAP_DST_REL): $(_CP_MAP_DST_ABS)
 	@#echo "DEBUG-MAKEFILE-FAKEDEP: Mapped target '$$@' to source '$$<'"
 
 ### Target as a text file
-$(eval TEXTS +=			$(_MAP_DST_REL) )
+$(eval TEXTS +=			$(_CP_MAP_DST_REL) )
 
 ### Copy for installation:
-$(eval develdoc_DATA +=		$(_MAP_DST_REL) )
+$(eval develdoc_DATA +=		$(_CP_MAP_DST_REL) )
 
 ### Copy in make dist
-$(eval EXTRA_DIST +=		$(_MAP_SRC_REL) )
+$(eval EXTRA_DIST +=		$(_CP_MAP_SRC_REL) )
 endef
 
 define canclean-txt-file
-$(eval override _MAP_SRC_REL :=	$(firstword $(subst :, ,$(1))) )
-$(eval override _MAP_DST_REL :=	$(word 2,$(subst :, ,$(1))) )
+$(eval override _CLEAN_MAP_SRC_REL :=	$(firstword $(subst :, ,$(1))) )
+$(eval override _CLEAN_MAP_DST_REL :=	$(word 2,$(subst :, ,$(1))) )
 
 ### Cleanup in build
-$(eval CLEANFILES +=		$(_MAP_DST_REL) )
-$(eval CLEAN_TEXTS +=		$(_MAP_DST_REL) )
+$(eval CLEANFILES +=		$(_CLEAN_MAP_DST_REL) )
+$(eval CLEAN_TEXTS +=		$(_CLEAN_MAP_DST_REL) )
 endef
 
 # Convert the simple lists defined above into the common mapping tables
@@ -784,33 +785,42 @@ $(foreach m,$(MAPPED_TXT_DOCS_PLAINTEXT) $(MAPPED_TXT_DOCS_ASCIIDOC), \
 # into the same basename...
 # Per dependencies, all the text files should be available in the
 # builddir/docs/develop/*.txt and the *.html will appear nearby
+# The "touch" and "sleep;sync" are a hack against parallel builds
+# that run head over heels, so htmls are sort of generated (per Make)
+# but not yet reported by filesystem and so install fails...
 
 define compile-asciidoc-to-html
 if HAVE_ASCIIDOC
 	@test -d "`dirname $(2)`" || mkdir -p "`dirname $(2)`"
+	@echo "  ASCIIDOC  '$(1)' -> '$(2)'" >&2
+	@touch $(2)
 	$(ASCIIDOC) -b html -o $(2) $(1)
+	@sleep 1 ; sync
 else
 	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped for '$(1)' -> '$(2)'!" >&2
 endif
 endef
 
 define depend-txt-html
-$(eval override _MAP_DST_REL :=		$(word 2,$(subst :, ,$(1))) )
-$(eval override _HTML_DST_REL :=	$(_MAP_DST_REL:%.txt=%.html) )
-$(eval override _MAP_DST_ABS :=		$(addprefix $(abs_top_builddir)/,$(_MAP_DST_REL)) )
-$(eval override _HTML_DST_ABS :=	$(addprefix $(abs_top_builddir)/,$(_HTML_DST_REL)) )
+$(eval override _TH_MAP_DST_REL :=		$(word 2,$(subst :, ,$(1))) )
+$(eval override _TH_HTML_DST_REL := 	$(_TH_MAP_DST_REL:%.txt=%.html) )
+$(eval override _TH_MAP_DST_ABS :=		$(addprefix $(abs_top_builddir)/,$(_TH_MAP_DST_REL)) )
+$(eval override _TH_HTML_DST_ABS := 	$(addprefix $(abs_top_builddir)/,$(_TH_HTML_DST_REL)) )
 
 # Define the dependency and the rule
-$(_HTML_DST_ABS): $(_MAP_DST_ABS)
+$(_TH_HTML_DST_ABS): $(_TH_MAP_DST_ABS)
+	@#echo "DEBUG-MAKEFILE-FAKEDEP-ABS: Mapped target '$$@' to source '$$<' ; _TH_HTML_DST_REL='$(_TH_HTML_DST_REL)' _TH_HTML_DST_ABS='$(_TH_HTML_DST_ABS)'"
 	@$$(call compile-asciidoc-to-html,$$<,$$@)
 
 # Fake dependency for subdir/dist builds
-$(_HTML_DST_REL): $(_HTML_DST_ABS)
-	@#echo "DEBUG-MAKEFILE-FAKEDEP: Mapped target '$$@' to source '$$<'"
+$(_TH_HTML_DST_REL): $(_TH_HTML_DST_ABS)
+	@#echo "DEBUG-MAKEFILE-FAKEDEP-REL: Mapped target '$$@' to source '$$<'"
 
-$(eval CLEAN_HTMLS +=		$(_HTML_DST_REL) )
+$(eval CLEAN_HTMLS +=		$(_TH_HTML_DST_REL) )
 
-$(eval HTMLS_ASCIIDOC +=	$(_HTML_DST_REL) )
+$(eval HTMLS_ASCIIDOC +=	$(_TH_HTML_DST_REL) )
+
+$(eval abs_HTMLS_ASCIIDOC +=	$(_TH_HTML_DST_ABS) )
 endef
 
 # Some HTMLS_ASCIIDOCs may have been defined above, maybe with other recipes
@@ -823,6 +833,10 @@ if HAVE_ASCIIDOC
 HTMLS +=		$(HTMLS_ASCIIDOC)
 develdoc_DATA +=	$(addprefix $(abs_top_builddir)/,$(HTMLS_ASCIIDOC))
 CLEANFILES +=		$(addprefix $(abs_top_builddir)/,$(HTMLS_ASCIIDOC))
+#develdoc_DATA +=	$(abs_HTMLS_ASCIIDOC)
+#CLEANFILES +=		$(abs_HTMLS_ASCIIDOC)
+#develdoc_DATA +=	$(HTMLS_ASCIIDOC)
+#CLEANFILES +=		$(HTMLS_ASCIIDOC)
 endif
 
 
