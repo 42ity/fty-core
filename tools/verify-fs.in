@@ -23,9 +23,16 @@
 #  \brief Verify the filesystem and report suspicious things
 #
 
-OVERLAY=/mnt/nand/overlay
 DEFAULT=/etc/default/verify-fs
-IMAGES=/mnt/nand/rootfs
+case "$(uname -m)" in
+x86_64 | i?86)
+    OVERLAY=/run/initramfs/mnt/root-rw/overlay
+    IMAGES=/run/initramfs/mnt/disk/rootfs
+    ;;
+*)
+    OVERLAY=/mnt/nand/overlay
+    IMAGES=/mnt/nand/rootfs
+esac
 
 die () {
     echo "${@}" >&2
