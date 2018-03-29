@@ -23,51 +23,13 @@ env:
     - CI_CONFIG_QUIET=true
   matrix:
     - BUILD_TYPE=default
-    - BUILD_TYPE=default-Werror
-#   - BUILD_TYPE=cmake
-#   - BUILD_TYPE=android
-#   - BUILD_TYPE=check-py
-
-#matrix:
-#  include:
-#  - env: BUILD_TYPE=valgrind
-#    os: linux
-#    dist: trusty
-#    sudo: required
-#    addons:
-#      apt:
-#        packages:
-#        - valgrind
-#        - libmagic-dev
 
 addons:
   apt:
-    sources:
-    - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/git-draft/xUbuntu_14.04/ ./'
-      key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/git-draft/xUbuntu_14.04/Release.key'
     packages:
     - coreutils
     - git
     - asciidoc
-    - xmlto
-    - libmagic-dev
-    - tntnet
-    - tntnet-runtime
-    - libtntnet-dev
-    - libtnt-dev
-    - libsasl2-2
-    - libsasl2-dev
-# Not packaged yet, or wrong names for Travis repos, or wrong versions
-#    - libzmq3-dev
-#    - libczmq3-dev
-#    - libmlm-dev
-#    - libfty-proto-dev
-#    - libcidr0-dev
-#    - cxxtools-dev
-#    - libnutclient-dev
-
-before_install:
-- if [ $TRAVIS_OS_NAME == "osx" ] ; then brew update; brew install binutils valgrind ; fi
 
 # Hand off to generated script for each BUILD_TYPE
 script: travis_wait 30 ./ci_build.sh
