@@ -447,7 +447,7 @@ AS_CASE([$host_cpu],
 )
 AC_SUBST(OVERLAY_PATH)
 AC_SUBST(IMAGES_PATH)
-AC_CONFIG_FILES([obs/preinstallimage-bios.sh])
+AC_CONFIG_FILES([obs/preinstallimage-bios.sh tools/verify-fs])
 
 
 AC_MSG_NOTICE([

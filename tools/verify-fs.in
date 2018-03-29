@@ -23,9 +23,9 @@
 #  \brief Verify the filesystem and report suspicious things
 #
 
-OVERLAY=/mnt/nand/overlay
+OVERLAY=@OVERLAY_PATH@
 DEFAULT=/etc/default/verify-fs
-IMAGES=/mnt/nand/rootfs
+IMAGES=@IMAGES_PATH@
 
 die () {
     echo "${@}" >&2
