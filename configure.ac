@@ -275,7 +275,51 @@ AS_CASE([$host_cpu],
 )
 AC_SUBST(OVERLAY_PATH)
 AC_SUBST(IMAGES_PATH)
-AC_CONFIG_FILES([obs/preinstallimage-bios.sh tools/verify-fs])
+dnl XXX: Evaluate the path variables here, so that we can bake them into
+dnl scripts. This is against the recommendation in the autoconf manual,
+dnl but in our packaging, we use DESTDIR rather than changing the prefix
+dnl variable
+test "x$prefix" = xNONE && prefix=$ac_default_prefix
+test "x$exec_prefix" = xNONE && exec_prefix=$prefix
+eval sysconfdir=$sysconfdir
+eval libdir=$libdir
+eval bindir=$bindir
+eval sbindir=$sbindir
+eval libexecdir=$libexecdir
+eval datarootdir=$datarootdir
+eval datadir=$datadir
+eval localstatedir=$localstatedir
+AC_DEFUN([AC_DATAROOTDIR_CHECKED])
+AC_CONFIG_FILES([
+        obs/preinstallimage-bios.sh
+        setup/20-th-names.sh
+        tools/db-init
+        tools/envvars-ExecStartPre.sh
+        tools/factory-reset-live.sh
+        tools/run-test-doc.sh
+        tools/start-db-services
+        tools/tntnet-ExecStartPre.sh
+        tools/verify-fs
+], [ chmod +x "$ac_file" ])
+AC_CONFIG_FILES([
+        docs/examples/rsyslog.d/05-bash.conf
+        docs/examples/rsyslog.d/10-ipc.conf
+        docs/examples/sudoers.d/fty_00_base
+        systemd/bios-agent-inventory.service
+        systemd/bios-fake-th.service
+        systemd/bios-networking.service
+        systemd/bios-reset-button.service
+        systemd/bios-ssh-last-resort.service
+        systemd/biostimer-compress-logs.service
+        systemd/biostimer-loghost-rsyslog-netconsole.service
+        systemd/biostimer-verify-fs.service
+        systemd/fty-db-engine.service
+        systemd/fty-db-init.service
+        systemd/fty-envvars.service
+        systemd/fty-tntnet@.service
+        systemd/ifplug-dhcp-autoconf.service
+        systemd/ipc-meta-setup.service
+])
 
 
 AC_MSG_NOTICE([
