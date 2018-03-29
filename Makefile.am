@@ -4,7 +4,6 @@
 
 ACLOCAL_AMFLAGS =	-I m4 ${ACLOCAL_FLAGS}
 AUTOMAKE_OPTIONS =	color-tests parallel-tests
-LDFLAGS_NO_UNDEFS =	-Wl,--no-undefined
 
 # success of the build depends on the value of the variable GREP_OPTIONS; so ignore it
 unexport GREP_OPTIONS

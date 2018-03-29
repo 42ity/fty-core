@@ -266,11 +266,6 @@ AS_IF([test "x$with_systemdtmpfilesdir" != "xno"],
         [AC_SUBST([systemdtmpfilesdir], [$with_systemdtmpfilesdir])])
 AM_CONDITIONAL([HAVE_SYSTEMD], [test "x$with_systemdtmpfilesdir" != "xno"])
 
-AC_SUBST([my_CFLAGS])
-AC_SUBST([my_CPPFLAGS])
-AC_SUBST([my_CXXFLAGS])
-AC_SUBST([my_LDFLAGS])
-
 AS_CASE([$host_cpu],
 [x86_64 | i?86],
         [OVERLAY_PATH=/run/initramfs/mnt/root-rw/overlay
@@ -314,10 +309,6 @@ Summary:
 
         ENABLE_CI_TESTS:         ${ci_tests}
 
-        CFLAGS:                  ${my_CFLAGS} ${CFLAGS}
-        CXXFLAGS:                ${my_CXXFLAGS} ${CXXFLAGS}
-        CPPFLAGS:                ${OUR_CPPFLAGS} ${CPPFLAGS}
-        LDFLAGS:                 ${OUR_LDFLAGS} ${LDFLAGS}
         PKG_CONFIG:              ${PKG_CONFIG}
         SYSTEMDSYSTEMUNITDIR:    ${systemdsystemunitdir}
         SYSTEMDSYSTEMPRESETDIR:  ${systemdsystempresetdir}
