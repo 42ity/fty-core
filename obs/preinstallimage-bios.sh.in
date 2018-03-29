@@ -443,7 +443,7 @@ echo "UseDNS no" >> /etc/ssh/sshd_config
 rm /etc/ssh/*key*
 mkdir -p /etc/systemd/system
 sed 's|\[Service\]|[Service]\nExecStartPre=/usr/bin/ssh-keygen -A|' /lib*/systemd/system/ssh@.service > /etc/systemd/system/ssh@.service
-sed -i 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/fty/license\nConditionPathExists=/mnt/nand/overlay/etc/shadow|' /etc/systemd/system/ssh@.service
+sed -i 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/fty/license\nConditionPathExists=@OVERLAY_PATH@/etc/shadow|' /etc/systemd/system/ssh@.service
 /bin/systemctl disable ssh.service
 /bin/systemctl mask ssh.service
 /bin/systemctl enable ssh.socket

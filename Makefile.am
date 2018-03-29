@@ -78,7 +78,6 @@ SUBDIRS =	docs/examples tools database/mysql
 GENERATEDSCRIPTS = tools/run-test-doc.sh tools/db-init \
 	tools/factory-reset-live.sh \
 	tools/start-db-services \
-	tools/verify-fs \
 	tools/envvars-ExecStartPre.sh \
 	tools/tntnet-ExecStartPre.sh \
 	setup/20-th-names.sh

@@ -14,6 +14,8 @@ AM_INIT_AUTOMAKE([foreign 1.11 -Wall -Wno-portability silent-rules tar-pax no-di
 LT_PREREQ([2.2])
 LT_INIT([disable-static])
 
+AC_CANONICAL_HOST
+
 AS_IF([test "x$enable_static" = "xyes"], [AC_MSG_ERROR([--enable-static is not supported by 42ITy fty-core])])
 
 AC_ARG_WITH([package-vendor],
@@ -435,6 +437,17 @@ AS_IF([test "$have_ld_version_script" = "yes"],
                 CXXFLAG_VISIBILITY="$CFLAG_VISIBILITY -fvisibility-inlines-hidden"])
         AC_SUBST(CXXFLAG_VISIBILITY)
 ])
+
+AS_CASE([$host_cpu],
+[x86_64 | i?86],
+        [OVERLAY_PATH=/run/initramfs/mnt/root-rw/overlay
+        IMAGES_PATH=/run/initramfs/mnt/disk/rootfs],
+        [OVERLAY_PATH=/mnt/nand/overlay
+        IMAGES_PATH=/mnt/nand/rootfs]
+)
+AC_SUBST(OVERLAY_PATH)
+AC_SUBST(IMAGES_PATH)
+AC_CONFIG_FILES([obs/preinstallimage-bios.sh tools/verify-fs])
 
 
 AC_MSG_NOTICE([
