@@ -133,56 +133,6 @@ DISTCHECK_CONFIGURE_FLAGS = \
         --with-systemdsystempresetdir=$$dc_install_base/$(systemdsystempresetdir) \
         --with-systemdtmpfilesdir=$$dc_install_base/$(systemdtmpfilesdir)
 
-AM_CPPFLAGS = \
-		${my_CPPFLAGS} \
-		-include $(abs_top_builddir)/config.h \
-		-I$(abs_top_builddir)/include \
-		-I$(abs_top_srcdir)/include \
-		-I$(abs_top_builddir)/src \
-		-I$(abs_top_builddir)/src/shared \
-		-I$(abs_top_builddir)/src/include \
-		-I$(abs_top_srcdir)/src \
-		-I$(abs_top_srcdir)/src/shared \
-		-I$(abs_top_srcdir)/src/include \
-		-I$(abs_top_builddir)/src/msg \
-		-I$(abs_top_srcdir)/src/msg \
-		-D__STDC_FORMAT_MACROS
-
-AM_CFLAGS = \
-		${my_CFLAGS} \
-		$(CFLAG_VISIBILITY) \
-		-ffunction-sections \
-		-fdata-sections \
-		$(LIBZMQ_CFLAGS) \
-		$(LIBCZMQ_CFLAGS) \
-		$(LIBVARIANT_CFLAGS)
-
-AM_CXXFLAGS = \
-		${my_CXXFLAGS} \
-		$(CXXFLAG_VISIBILITY) \
-		-ffunction-sections \
-		-fdata-sections
-
-AM_LDFLAGS = \
-		${my_LDFLAGS} \
-		-L$(abs_top_builddir) \
-	 	-Wl,--gc-sections \
-		-Wl,--as-needed
-
-########################################################################
-# (Shared) Public 42ity API Library
-# While this location in the Makefile hopefully ensures that this is
-# built before other objects, please do not neglect proper definition
-# of _DEPENDENCIES variables
-########################################################################
-
-# Current interface number
-LIBBIOSAPI_CURRENT=0
-# Revision (implementation number) within current interface
-LIBBIOSAPI_REVISION=0
-# How many previous interfaces are still supported
-LIBBIOSAPI_AGE=0
-
 # copy from autoconf manual, note single suffix rules can't be used there!!
 # NOTE: For non-Makefiles (e.g. for sources), .in conversions should be done in
 # the Makefiles so as to process all the dependencies as sources are updated!
@@ -318,30 +268,6 @@ ci_helperdir =	        $(clientdir)
 ci_helper_SCRIPTS +=    tools/journalctl
 tools/journalctl: tools/systemctl
 	rm -f $@; ln -s ./$(<F) $@
-
-web-test-deps-inst: install-ci_helperSCRIPTS
-
-### Execute the test web-server for 42ity REST API
-# LD_PRELOAD=/path/to/libasan.so is needed for fair play with external libs,
-# otherwise "new mlm_stuff; throw(exception)" breaks in ASA as a function
-# without a proper return code-path (un-instrumented delete/free involved).
-# Note that the execution chain below is backslash-concatenated so that we
-# can both set, export and use the LD_PRELOAD value (independent lines are
-# executed as different shell scripts by make). That is why ultimate exec
-# of the tntnet program is done twice in the same manner.
-
-web-test: $(RUN_TNTNET_ENVFILE) web-test-deps
-	@echo "=== Running target $@ with credentials of this user: "; \
-	id || true; echo "";
-if ENABLE_DEBUG_ASAN
-	@LD_PRELOAD="$$LD_PRELOAD `ldd $(abs_top_builddir)/.libs/bios_web.so | grep libasan | awk '{print $$3}'`" || true; \
-	LD_PRELOAD="$$LD_PRELOAD `ldd $(abs_top_builddir)/.libs/bios_web.so | grep libtsan | awk '{print $$3}'`" || true; \
-	echo "===== Using LD_PRELOAD='$$LD_PRELOAD' for Address Sanitizer"; \
-	export LD_PRELOAD; \
-	$(RUN_TNTNET)
-else
-	$(RUN_TNTNET)
-endif
 
 #----------------------------------------------------------------------
 #                        Extra files and sources
