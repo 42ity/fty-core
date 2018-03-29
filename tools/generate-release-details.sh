@@ -102,6 +102,11 @@ if test -d /sys/class/dmi/id; then
         # VMware says "None" here
         HWD_REV=${HWD_REV#None}
         test -n "$HWD_SERIAL_NB" || HWD_SERIAL_NB=$(cat /sys/class/dmi/id/product_serial)
+        # Ignore VMware serial numbers as per product requirement
+        case "$HWD_SERIAL_NB" in
+        VMware*)
+                HWD_SERIAL_NB=
+        esac
         # XXX: Find an SMBIOS equivalent for HWD_PART_NB=
 fi
 
@@ -219,7 +224,7 @@ gen_uuid_v5()
 if [ -z "${UUID_VALUE-}" ]; then
     # On virtualized x86 we ignore the serial number and generate a v4 UUID
     case "$HWD_SERIAL_NB:$(uname -m)" in
-    :x86_64 | :i?86 | VMware*:*)
+    :x86_64 | :i?86)
         gen_uuid=gen_uuid_v4
         ;;
     *)
