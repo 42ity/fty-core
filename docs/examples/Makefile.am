@@ -12,7 +12,7 @@ examplecfgsudodir	= $(datarootdir)/@PACKAGE@/examples/config/sudoers.d
 examplecfgsudo_DATA	= sudoers.d/fty_00_base sudoers.d/fty_01_citest
 
 examplecfgpamdir	= $(datarootdir)/@PACKAGE@/examples/config/pam.d
-examplecfgpam_DATA	= pam.d/fty pam.d/fty-password
+examplecfgpam_DATA	= pam.d/fty pam.d/fty-password pam.d/fty-auth
 
 examplecfgsecdir	= $(datarootdir)/@PACKAGE@/examples/config/security
 examplecfgsec_DATA	= security/fty_groups.conf

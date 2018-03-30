@@ -87,7 +87,7 @@ groupadd -g 8000 bios-dash
 groupadd -g 8004 bios-infra
 groupadd -g 7999 bios-logread
 
-useradd -m bios -N -g bios-infra -G dialout -s /bin/bash
+useradd -u 1000 -m bios -N -g bios-infra -G dialout -s /bin/bash
 mkdir -p /home/bios && chown bios:bios-infra /home/bios
 
 # Create a GPIO group to access GPIO pins, and add the user bios
@@ -97,7 +97,7 @@ usermod -G gpio -a bios
 # add an access to sasl, bios-logread (for /var/log/messages) and systemd journal
 # note that earlier OS images had custom logs owned by "adm" group, so we also
 # support it for admin account at this time (so that upgraders can read old logs)
-useradd -m admin -G "${SASL_GROUP}",adm,bios-logread,systemd-journal -N -g bios-admin -s /bin/bash
+useradd -u 1001 -m admin -G "${SASL_GROUP}",adm,bios-logread,systemd-journal -N -g bios-admin -s /bin/bash
 passwd admin <<EOF
 admin
 admin
@@ -113,7 +113,7 @@ usermod -G "${SASL_GROUP}" -a bios
 # TODO: See if "sudo"able tasks that this account may have to do can be done
 # with another shell like /bin/nologin or /bin/false - and then secure it...
 if ! getent passwd monitor ; then
-    useradd -m monitor -G "$SASL_GROUP" -N -g bios-dash -s /bin/bash
+    useradd -u 1002 -m monitor -G "$SASL_GROUP" -N -g bios-dash -s /bin/bash
     passwd monitor <<EOF
 monitor
 monitor
@@ -443,7 +443,7 @@ echo "UseDNS no" >> /etc/ssh/sshd_config
 rm /etc/ssh/*key*
 mkdir -p /etc/systemd/system
 sed 's|\[Service\]|[Service]\nExecStartPre=/usr/bin/ssh-keygen -A|' /lib*/systemd/system/ssh@.service > /etc/systemd/system/ssh@.service
-sed -i 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/fty/license\nConditionPathExists=/mnt/nand/overlay/etc/shadow|' /etc/systemd/system/ssh@.service
+sed -i 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/fty/license\nConditionPathExists=@OVERLAY_PATH@/etc/shadow|' /etc/systemd/system/ssh@.service
 /bin/systemctl disable ssh.service
 /bin/systemctl mask ssh.service
 /bin/systemctl enable ssh.socket
@@ -552,11 +552,11 @@ sed -n '/<\/mappings>/,$ p' /etc/tntnet/bios.xml > /etc/tntnet/bios.d/99_end.xml
 # Separate the servlet mappings to dissect even more
 sed '/<mappings>/,/<\/mappings>/!d; /mappings/ d' \
     /etc/tntnet/bios.xml > /etc/tntnet/bios.d/20_core.xml.tmp
-# Static file mappings, caching setup:
-sed '1,/<!-- Make sure everybody speaks json from now on -->/!d; /<!-- Make sure everybody speaks json from now on -->/ d' \
+# Static file mappings, caching setup, JSON requirement, token "extraction":
+sed '1,/<!-- We are getting authorized -->/!d; /<!-- We are getting authorized -->/ d' \
     /etc/tntnet/bios.d/20_core.xml.tmp > /etc/tntnet/bios.d/10_common_statics.xml
-# JSON requirement, auth processing, auth validation
-sed '/<!-- Make sure everybody speaks json from now on -->/,$!d; 1,/<!-- Here starts the real API -->/!d; /<!-- Here starts the real API -->/ d' \
+# auth processing, auth validation
+sed '/<!-- We are getting authorized -->/,$!d; 1,/<!-- Here starts the real API -->/!d; /<!-- Here starts the real API -->/ d' \
     /etc/tntnet/bios.d/20_core.xml.tmp > /etc/tntnet/bios.d/20_common_basics.xml
 # The actual diverse API calls of the product
 sed '/<!-- Here starts the real API -->/,$!d' \

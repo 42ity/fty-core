@@ -102,11 +102,12 @@ if test -d /sys/class/dmi/id; then
         # VMware says "None" here
         HWD_REV=${HWD_REV#None}
         test -n "$HWD_SERIAL_NB" || HWD_SERIAL_NB=$(cat /sys/class/dmi/id/product_serial)
+        # Ignore VMware serial numbers as per product requirement
+        case "$HWD_SERIAL_NB" in
+        VMware*)
+                HWD_SERIAL_NB=
+        esac
         # XXX: Find an SMBIOS equivalent for HWD_PART_NB=
-        # XXX: SMBIOS defines and requires a system UUID, available under
-        # /sys/class/dmi/id/product_uuid. Use that perhaps?
-        test -n "$UUID_VALUE" || UUID_VALUE="00000000-0000-0000-0000-000000000000"
-        test -n "$UUID_NAMESPACE" || UUID_NAMESPACE="933d6c80-dea9-8c6b-d111-8b3b46a181f1"
 fi
 
 # Basename of $OSIMAGE_FILENAME without archiving extension
@@ -197,10 +198,39 @@ $BIOSINFO_UIMAGE"
         BIOSINFO="$BIOSINFO
 Hardware details: Vendor:$HWD_VENDOR CatalogNumber:$HWD_CATALOG_NB HWSpecRevision:$HWD_REV SerialNumber:$HWD_SERIAL_NB"
 
+# Generate a v4/v5 UUID using a command passed in the argument list
+gen_uuid_v4()
+{
+    local old f=$ALTROOT/etc/release-details.json
+    # Only generate a v4 UUID if running for the first time
+    if test -e "$f"; then
+        old=$("$ALTROOT/usr/share/bios/scripts/JSON.sh" \
+                -x '^"release-details","uuid"' <"$f" | \
+            sed -r 's/.*"([^"]*)"/\1/' | sed -e '/^[0-]*$/d' -e '/^[Ff-]*$/d')
+        if test -n "$old"; then
+            echo "$old"
+            return
+        fi
+    fi
+    "$@" -v4
+}
+gen_uuid_v5()
+{
+    "$@" -v5 "$UUID_NAMESPACE" "$HWD_VENDOR""$HWD_CATALOG_NB""$HWD_SERIAL_NB"
+}
 # The device/container/VM UUID may be provided by caller somehow, e.g.
 # it might come from virtualization infrastructure (plug /proc/cmdline?)
 # Otherwise we generate it from whatever unique data we have.
 if [ -z "${UUID_VALUE-}" ]; then
+    # On virtualized x86 we ignore the serial number and generate a v4 UUID
+    case "$HWD_SERIAL_NB:$(uname -m)" in
+    :x86_64 | :i?86)
+        gen_uuid=gen_uuid_v4
+        ;;
+    *)
+        gen_uuid=gen_uuid_v5
+    esac
+
     [ -n "${UUID_NAMESPACE-}" ] || UUID_NAMESPACE="3aac7e03-aa86-8b7e-dab6-7021ed8de397"
     # printf '42ity' | sha1sum | sed 's,^\(........\)\(....\)\(....\)\(....\)\(............\).*$,\1-\2-\3-\4\-\5,'
 
@@ -209,10 +239,10 @@ if [ -z "${UUID_VALUE-}" ]; then
         [ -x "$UUID_PROG" ] && break
     done
     if [ -n "$UUID_PROG" ] && [ -x "$UUID_PROG" ] ; then
-        UUID_VALUE="$("$UUID_PROG" -v5 "$UUID_NAMESPACE" "$HWD_VENDOR""$HWD_CATALOG_NB""$HWD_SERIAL_NB")" 2>/dev/null || \
+        UUID_VALUE="$($gen_uuid "$UUID_PROG")" 2>/dev/null || \
         case "$UUID_PROG" in
             "${ALTROOT}/"*) UUID_PROG="`echo "$UUID_PROG" | sed 's,^'"${ALTROOT}"'/,/,'`" && \
-                UUID_VALUE="$(chroot "${ALTROOT}" "$UUID_PROG" -v5 "$UUID_NAMESPACE" "$HWD_VENDOR""$HWD_CATALOG_NB""$HWD_SERIAL_NB")" || \
+                UUID_VALUE="$($gen_uuid chroot "${ALTROOT}" "$UUID_PROG")" || \
                 UUID_VALUE="00000000-0000-0000-0000-000000000000" ;;
             *)  UUID_VALUE="00000000-0000-0000-0000-000000000000" ;;
         esac
