@@ -4,10 +4,6 @@
 
 EXTRA_DIST =
 
-# Ugly hack - root Makefile defines SED transformations for any .in template
-%:: %.in $(abs_top_builddir)/Makefile Makefile
-	cd ../.. && $(MAKE) `echo "$(CURDIR)/$@" | sed 's,^$(abs_top_builddir)/,,'`
-
 examplecfgsudodir	= $(datarootdir)/@PACKAGE@/examples/config/sudoers.d
 examplecfgsudo_DATA	= sudoers.d/fty_00_base sudoers.d/fty_01_citest
 
