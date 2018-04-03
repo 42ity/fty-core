@@ -269,12 +269,18 @@ AM_CONDITIONAL([HAVE_SYSTEMD], [test "x$with_systemdtmpfilesdir" != "xno"])
 AS_CASE([$host_cpu],
 [x86_64 | i?86],
         [OVERLAY_PATH=/run/initramfs/mnt/root-rw/overlay
-        IMAGES_PATH=/run/initramfs/mnt/disk/rootfs],
+        IMAGES_PATH=/run/initramfs/mnt/disk/rootfs
+        URC3_DOWNLOADROOT=/run/initramfs/mnt/disk/recovery
+        URC3_DEPLOYMENTROOT=/run/initramfs/mnt/disk],
         [OVERLAY_PATH=/mnt/nand/overlay
-        IMAGES_PATH=/mnt/nand/rootfs]
+        IMAGES_PATH=/mnt/nand/rootfs
+        URC3_DOWNLOADROOT=/mnt/mmc/recovery
+        URC3_DEPLOYMENTROOT=/mnt/nand]
 )
 AC_SUBST(OVERLAY_PATH)
 AC_SUBST(IMAGES_PATH)
+AC_SUBST(URC3_DOWNLOADROOT)
+AC_SUBST(URC3_DEPLOYMENTROOT)
 dnl XXX: Evaluate the path variables here, so that we can bake them into
 dnl scripts. This is against the recommendation in the autoconf manual,
 dnl but in our packaging, we use DESTDIR rather than changing the prefix
@@ -299,12 +305,14 @@ AC_CONFIG_FILES([
         tools/run-test-doc.sh
         tools/start-db-services
         tools/tntnet-ExecStartPre.sh
+        tools/update-rc3
         tools/verify-fs
 ], [ chmod +x "$ac_file" ])
 AC_CONFIG_FILES([
         docs/examples/rsyslog.d/05-bash.conf
         docs/examples/rsyslog.d/10-ipc.conf
         docs/examples/sudoers.d/fty_00_base
+        docs/examples/update-rc3.d/90-local-paths.rc3.conf
         systemd/bios-agent-inventory.service
         systemd/bios-fake-th.service
         systemd/bios-networking.service
