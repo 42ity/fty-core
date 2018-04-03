@@ -3,7 +3,7 @@
 
 if false ; then
     # Recovery location (on MMC or mSATA) - for downloads
-    DOWNLOADROOT="/mnt/mmc/recovery"
+    DOWNLOADROOT="@URC3_DOWNLOADROOT@"
     DOWNLOADROOT_OSIMAGE="$DOWNLOADROOT/rootfs"
     DOWNLOADROOTFW_UBOOT="$DOWNLOADROOT"
     DOWNLOADROOTFW_UIMAGE="$DOWNLOADROOT"
@@ -13,7 +13,7 @@ fi
 if false ; then
     # Deployment location (on SPI flash in production, or MMCp2 in devel)
     # for the actual boot-mounted OS image (used read-only by update-rc3)
-    DEPLOYMENTROOT="/mnt/nand"
+    DEPLOYMENTROOT="@URC3_DEPLOYMENTROOT@"
     DEPLOYMENTROOT_OSIMAGE="$DEPLOYMENTROOT/rootfs"
     DEPLOYMENTROOTFW_UBOOT="$DEPLOYMENTROOT"
     DEPLOYMENTROOTFW_UIMAGE="$DEPLOYMENTROOT"
