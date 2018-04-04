@@ -619,6 +619,7 @@ esac
 #complete the log configuration file
 echo "#Console Definition " >> /etc/fty/ftylog.cfg 
 echo "log4cplus.appender.console=log4cplus::ConsoleAppender" >> /etc/fty/ftylog.cfg 
+echo "log4cplus.appender.console.immediateFlush=true" >> /etc/fty/ftylog.cfg 
 echo "log4cplus.appender.console.layout=log4cplus::PatternLayout" >> /etc/fty/ftylog.cfg 
 echo "log4cplus.appender.console.layout.ConversionPattern=%c [%t] -%-5p- %M (%l) %m%n" >> /etc/fty/ftylog.cfg 
 # set path to our libexec directory
