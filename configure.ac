@@ -268,19 +268,45 @@ AM_CONDITIONAL([HAVE_SYSTEMD], [test "x$with_systemdtmpfilesdir" != "xno"])
 
 AS_CASE([$host_cpu],
 [x86_64 | i?86],
-        [OVERLAY_PATH=/run/initramfs/mnt/root-rw/overlay
+        [
+        OVERLAY_PATH=/run/initramfs/mnt/root-rw/overlay
         IMAGES_PATH=/run/initramfs/mnt/disk/rootfs
         URC3_DOWNLOADROOT=/run/initramfs/mnt/disk/recovery
-        URC3_DEPLOYMENTROOT=/run/initramfs/mnt/disk],
-        [OVERLAY_PATH=/mnt/nand/overlay
+        URC3_DOWNLOADROOTFW_UBOOT=
+        URC3_DOWNLOADROOTFW_UIMAGE=
+        URC3_DOWNLOADROOTFW_MODULES=
+        URC3_DEPLOYMENTROOT=/run/initramfs/mnt/disk
+        URC3_DEPLOYMENTROOTFW_UBOOT=
+        URC3_DEPLOYMENTROOTFW_UIMAGE=
+        URC3_DEPLOYMENTROOTFW_MODULES=
+        ],
+        [
+        OVERLAY_PATH=/mnt/nand/overlay
         IMAGES_PATH=/mnt/nand/rootfs
         URC3_DOWNLOADROOT=/mnt/mmc/recovery
-        URC3_DEPLOYMENTROOT=/mnt/nand]
+        URC3_DOWNLOADROOTFW_UBOOT='$DOWNLOADROOT'
+        URC3_DOWNLOADROOTFW_UIMAGE='$DOWNLOADROOT'
+        URC3_DOWNLOADROOTFW_MODULES='$DOWNLOADROOTFW_UIMAGE/modules'
+        URC3_DEPLOYMENTROOT=/mnt/nand
+        URC3_DEPLOYMENTROOTFW_UBOOT='$DEPLOYMENTROOT'
+        URC3_DEPLOYMENTROOTFW_UIMAGE='$DEPLOYMENTROOT'
+        URC3_DEPLOYMENTROOTFW_MODULES='$DEPLOYMENTROOTFW_UIMAGE/modules'
+        ]
 )
+URC3_DOWNLOADROOT_OSIMAGE='$DOWNLOADROOT/rootfs'
+URC3_DEPLOYMENTROOT_OSIMAGE='$DEPLOYMENTROOT/rootfs'
 AC_SUBST(OVERLAY_PATH)
 AC_SUBST(IMAGES_PATH)
 AC_SUBST(URC3_DOWNLOADROOT)
+AC_SUBST(URC3_DOWNLOADROOT_OSIMAGE)
+AC_SUBST(URC3_DOWNLOADROOTFW_UBOOT)
+AC_SUBST(URC3_DOWNLOADROOTFW_UIMAGE)
+AC_SUBST(URC3_DOWNLOADROOTFW_MODULES)
 AC_SUBST(URC3_DEPLOYMENTROOT)
+AC_SUBST(URC3_DEPLOYMENTROOT_OSIMAGE)
+AC_SUBST(URC3_DEPLOYMENTROOTFW_UBOOT)
+AC_SUBST(URC3_DEPLOYMENTROOTFW_UIMAGE)
+AC_SUBST(URC3_DEPLOYMENTROOTFW_MODULES)
 dnl XXX: Evaluate the path variables here, so that we can bake them into
 dnl scripts. This is against the recommendation in the autoconf manual,
 dnl but in our packaging, we use DESTDIR rather than changing the prefix
