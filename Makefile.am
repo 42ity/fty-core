@@ -843,6 +843,8 @@ clean-doxygen:
 #                        hook for make all => generate files too
 #----------------------------------------------------------------------
 
+all-local: all-docs .git_details
+
 # Try to build everything buildable, e.g. for further warning counters
 all-buildproducts: all systemd-units
 
