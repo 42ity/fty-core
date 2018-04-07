@@ -970,11 +970,16 @@ CLEANFILES +=		src/include/git_details_override.c \
 # cause a rebuild of the C/H files and those which depend on them, on every
 # "make" run. Just remove the file (distclean) to regenerate everything truly.
 # For tests, can 'export GIT_DETAILS_BLANK=yes' to succeed even on git errors.
-$(abs_top_builddir)/.git_details: .PHONY_GIT
+# Also note that a ".git" can be a file (for submodules), not a directory.
+$(abs_top_builddir)/.git_details: $(abs_top_srcdir)/tools/git_details.sh .PHONY_GIT
 	@echo "INFO: Checking that '$@' is up-to-date..."
 	@/bin/rm -f "$@.tmp"
-	@if test -d $(abs_top_srcdir)/.git && \
-	    ( cd $(abs_top_srcdir) && ./tools/git_details.sh > "$@.tmp" ) && \
+	@if test -e "$@" && ! test -s "$@" ; then \
+	    echo "INFO: Found existing '$@' which was empty, removing" >&2 ; \
+	    rm -f "$@" ; \
+	 fi
+	@if test -e "$(abs_top_srcdir)/.git" && \
+	    ( cd "$(abs_top_srcdir)" && ./tools/git_details.sh > "$@.tmp" ) && \
 	    [ -s "$@.tmp" ]; then \
 	    if [ ! -s "$@" ] || diff -bu "$@" "$@.tmp" | \
 	        egrep -v '^(\-\-\-|\+\+\+|[ @]|[\+\-]PACKAGE_BUILD_TSTAMP)' >/dev/null; then \
@@ -1009,7 +1014,7 @@ $(abs_top_builddir)/src/include/git_details_override.c: $(abs_top_builddir)/.git
 	@/bin/rm -f "$@.tmp" || true
 	@( echo '// WARNING: This file is generated during make, DO NOT EDIT'; \
 	  echo '#include <src/include/git_details_override.h>'; \
-	  grep '_ESCAPED=' "$<" | sed 's,^\(PACK.*;\)$$,char * \1,'; ) | sed 's,\\,\\\\,g' > "$@.tmp" || \
+	  grep '_ESCAPED=' "$<" | sed 's,^\(PACK.*;\)$$,const char * \1,'; ) | sed 's,\\,\\\\,g' > "$@.tmp" || \
 	 /bin/rm -f "$@.tmp"
 	@if [ -s "$@.tmp" ]; then \
 	    if [ ! -s "$@" ]; then \
@@ -1055,7 +1060,7 @@ $(abs_top_builddir)/src/include/git_details_override.h: $(abs_top_builddir)/.git
 	      echo '#endif'; \
 	      egrep 'PACKAGE_BUILD_TSTAMP_ESCAPED="[0-9]+";' "$<" >/dev/null && \
 	        echo '#define HAVE_PACKAGE_BUILD_TSTAMP 1' || true; } && \
-	    grep '_ESCAPED=' "$<" | sed 's,^\(PACK[^=]*\)\(=.*\);$$,#ifdef \1\n#undef \1\n#endif\nextern char * \1;,'; \
+	    grep '_ESCAPED=' "$<" | sed 's,^\(PACK[^=]*\)\(=.*\);$$,#ifdef \1\n#undef \1\n#endif\nextern const char * \1;,'; \
 	  }; echo '#endif // BIOS_GIT_DETAILS_OVERRIDE'; ) > "$@.tmp" || \
 	 /bin/rm -f "$@.tmp"
 	@{ [ -s "$@.tmp" ] && { diff -bu "$@" "$@.tmp" && \
