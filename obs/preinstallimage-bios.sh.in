@@ -901,6 +901,15 @@ esac
 /bin/systemctl daemon-reload
 
 # Prepare the source-code details excerpt, if available
+# Note that the primary goal here is identification of core REST API sources,
+# so fty-rest has precedence over fty-core (used to be same repo long ago).
+if [ ! -e "/usr/share/fty/.git_details" ] ; then
+    [ -s "/usr/share/fty/.git_details-fty-rest" ] && \
+        ln -s .git_details-fty-rest "/usr/share/fty/.git_details" || \
+    { [ -s "/usr/share/fty/.git_details-fty-core" ] && \
+        ln -s .git_details-fty-core "/usr/share/fty/.git_details" ; }
+fi
+
 [ -s "/usr/share/fty/.git_details" ] && \
     grep ESCAPE "/usr/share/fty/.git_details" > /usr/share/bios-web/git_details.txt || \
     echo "WARNING: Do not have /usr/share/fty/.git_details"
