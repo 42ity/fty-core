@@ -839,10 +839,10 @@ clean-doxygen:
 #                        hook for make all => generate files too
 #----------------------------------------------------------------------
 
-all-local: all-docs .git_details
+all-local: all-docs .git_details systemd-units
 
 # Try to build everything buildable, e.g. for further warning counters
-all-buildproducts: all systemd-units
+all-buildproducts: all
 
 # Note: variable cibin_PROGRAMS may be empty if not enabled via configure
 #   The variable cibin_programs holds the actual list of CI programs instead
