@@ -128,6 +128,7 @@ system_logs() {
     verbose "system logs..."
     mkdir -p "${WD}/${TMPDIR}/logs"
     cp -H -f /var/log/messages* "${WD}/${TMPDIR}/logs/"
+    cp -H -f /var/log/tntnet/www-audit* "${WD}/${TMPDIR}/logs/"
 }
 
 core_dumps() {
