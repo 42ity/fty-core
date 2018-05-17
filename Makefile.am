@@ -229,6 +229,7 @@ ipc_meta_setup_SCRIPTS = \
 	$(top_srcdir)/setup/10-avahi-lxc.sh \
 	$(top_srcdir)/setup/10-bios-gpio.sh \
 	$(top_srcdir)/setup/15-dpkg-database.everytime.sh \
+	$(top_srcdir)/setup/16-machineid-dir.everytime.sh \
 	$(top_srcdir)/setup/20-fty-compat.sh \
 	$(top_srcdir)/setup/20-ipc-lcd-services.sh \
 	$(top_builddir)/setup/20-th-names.sh \
@@ -239,6 +240,7 @@ EXTRA_DIST += \
 	$(top_srcdir)/setup/10-avahi-lxc.sh \
 	$(top_srcdir)/setup/10-bios-gpio.sh \
 	$(top_srcdir)/setup/15-dpkg-database.everytime.sh \
+	$(top_srcdir)/setup/16-machineid-dir.everytime.sh \
 	$(top_srcdir)/setup/20-fty-compat.sh \
 	$(top_srcdir)/setup/20-ipc-lcd-services.sh \
 	$(top_srcdir)/setup/20-th-names.sh.in \
