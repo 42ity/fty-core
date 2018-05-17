@@ -27,9 +27,10 @@
 # On IPC appliance, the /mnt/nand is a partition that stores root squashfs.
 # On OVA appliance it is similar in role, but a symlink to another miniroot
 # location. On LXC containers the directory might not exist initially.
+# Ownership to be by the same user account that runs the licensing agent.
 MACHINEID_DIR="/mnt/nand/license"
 mkdir -p "${MACHINEID_DIR}" && \
-chown 0:0 "${MACHINEID_DIR}" && \
+chown bios:0 "${MACHINEID_DIR}" && \
 chmod 755 "${MACHINEID_DIR}" && \
 test -d "$MACHINEID_DIR" && test -w "$MACHINEID_DIR" && test -x "$MACHINEID_DIR" && \
 echo "`date -u`: Ensured usable persistent directory for unique machine info"
