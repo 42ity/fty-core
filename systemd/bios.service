@@ -19,4 +19,9 @@ ExecStopPost=/bin/dash -c "/bin/systemctl stop -- $(/bin/systemctl show -p Wants
 TimeoutStopSec=120
 
 [Install]
+# Note: this service is both WantedBy (triggered to start with no waiting
+# to complete) and Requires/After the multi-user.target. So when system
+# finishes proper basic startup, it triggers/schedules a startup of the
+# bios.service (and that triggers bios.target) which actually takes place
+# after the multi-user.target has reported completion of its own startup.
 WantedBy=multi-user.target
