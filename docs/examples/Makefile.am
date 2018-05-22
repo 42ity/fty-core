@@ -39,5 +39,9 @@ exampleprofile_DATA     = \
 exampleudevrulesdir = $(datarootdir)/@PACKAGE@/examples/config/rules.d
 exampleudevrules_DATA = \
 			rules.d/90-ipc-persistent-th.rules
+	
+examplelogdir	= $(datarootdir)/@PACKAGE@/examples/config/ftylog.d
+examplelog_DATA = \
+                   ftylog.d/10-ftylog.cfg
 
-EXTRA_DIST += $(examplecfgsudo_DATA) $(examplecfgpam_DATA) $(examplecfgsec_DATA) $(examplecfgupdate_DATA) $(examplecfgrsyslogd_DATA) $(exampleprofile_DATA) $(exampleudevrules_DATA)
+EXTRA_DIST += $(examplecfgsudo_DATA) $(examplecfgpam_DATA) $(examplecfgsec_DATA) $(examplecfgupdate_DATA) $(examplecfgrsyslogd_DATA) $(exampleprofile_DATA) $(exampleudevrules_DATA) $(examplelog_DATA)
