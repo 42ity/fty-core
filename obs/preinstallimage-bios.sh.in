@@ -609,13 +609,12 @@ case "$IMGTYPE" in
     *devel*)
         echo "BIOS_LOG_LEVEL=LOG_DEBUG" > /usr/share/fty/etc/default/fty
         echo "BIOS_NUT_USE_DMF=true" >> /usr/share/fty/etc/default/fty
-        sed -Ei "s|INFO|DEBUG|" /etc/fty/ftylog.cfg 
+        sed -i "s|INFO|DEBUG|g" /etc/fty/ftylog.cfg 
         ;;
     *)
         echo "BIOS_LOG_LEVEL=LOG_INFO" > /usr/share/fty/etc/default/fty
         sed -e 's|.*MaxLevelStore.*|MaxLevelStore=info|' \
             -i /etc/systemd/journald.conf
-        sed -Ei "s|DEBUG|INFO|" /etc/fty/ftylog.cfg 
         ;;
 esac
 
