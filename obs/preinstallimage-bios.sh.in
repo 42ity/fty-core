@@ -600,28 +600,24 @@ for F in /etc/tntnet/bios.d/*etn-ipm1-rest.xml ; do
     fi
 done
 
+# log configuration
+cp /usr/share/fty/examples/config/ftylog.d/10-ftylog.cfg /etc/fty/ftylog.cfg
+
 # Disable expensive debug logging by default on non-devel images
 mkdir -p /usr/share/fty/etc/default
 case "$IMGTYPE" in
     *devel*)
         echo "BIOS_LOG_LEVEL=LOG_DEBUG" > /usr/share/fty/etc/default/fty
         echo "BIOS_NUT_USE_DMF=true" >> /usr/share/fty/etc/default/fty
-        echo "log4cplus.rootLogger=DEBUG, console" > /etc/fty/ftylog.cfg 
+        sed -i "s|INFO|DEBUG|g" /etc/fty/ftylog.cfg 
         ;;
     *)
         echo "BIOS_LOG_LEVEL=LOG_INFO" > /usr/share/fty/etc/default/fty
         sed -e 's|.*MaxLevelStore.*|MaxLevelStore=info|' \
             -i /etc/systemd/journald.conf
-        echo "log4cplus.rootLogger=INFO, console" > /etc/fty/ftylog.cfg 
         ;;
 esac
 
-#complete the log configuration file
-echo "#Console Definition " >> /etc/fty/ftylog.cfg 
-echo "log4cplus.appender.console=log4cplus::ConsoleAppender" >> /etc/fty/ftylog.cfg 
-echo "log4cplus.appender.console.immediateFlush=true" >> /etc/fty/ftylog.cfg 
-echo "log4cplus.appender.console.layout=log4cplus::PatternLayout" >> /etc/fty/ftylog.cfg 
-echo "log4cplus.appender.console.layout.ConversionPattern=%c [%t] -%-5p- %M (%l) %m%n" >> /etc/fty/ftylog.cfg 
 # set path to our libexec directory
 echo "PATH=/usr/libexec/fty:/bin:/usr/bin:/sbin:/usr/sbin" >>/usr/share/fty/etc/default/fty
 
