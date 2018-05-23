@@ -161,7 +161,7 @@ touch /etc/default/fty.cfg
 chown www-data /etc/default/fty.cfg
 #42ity log configuration file 
 mkdir -p /etc/fty/
-touch /etc/fty/ftylog.cfg
+cp /usr/share/fty/examples/config/ftylog.d/10-ftylog.cfg /etc/fty/ftylog.cfg
 chmod 644 /etc/fty/ftylog.cfg
 chown www-data /etc/fty/ftylog.cfg
 
@@ -601,8 +601,6 @@ for F in /etc/tntnet/bios.d/*etn-ipm1-rest.xml ; do
 done
 
 # log configuration
-cp /usr/share/fty/examples/config/ftylog.d/10-ftylog.cfg /etc/fty/ftylog.cfg
-
 # Disable expensive debug logging by default on non-devel images
 mkdir -p /usr/share/fty/etc/default
 case "$IMGTYPE" in
