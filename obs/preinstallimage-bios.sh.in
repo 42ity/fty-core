@@ -159,11 +159,6 @@ chmod 644 /etc/default/fty
 # ZConfig default settings, if populated
 touch /etc/default/fty.cfg
 chown www-data /etc/default/fty.cfg
-#42ity log configuration file 
-mkdir -p /etc/fty/
-cp /usr/share/fty/examples/config/ftylog.d/10-ftylog.cfg /etc/fty/ftylog.cfg
-chmod 644 /etc/fty/ftylog.cfg
-chown www-data /etc/fty/ftylog.cfg
 
 if diff /usr/libexec/fty/systemctl /usr/libexec/fty/journalctl >/dev/null 2>&1 ; then
     if [ ! -L /usr/libexec/fty/systemctl ] && [ ! -L /usr/libexec/fty/journalctl ] ; then
@@ -215,6 +210,12 @@ for D in /usr/libexec /usr/lib /usr/share ; do
         fi
     done
 done
+
+#42ity log configuration file 
+mkdir -p /etc/fty/
+cp /usr/share/fty/examples/config/ftylog.d/10-ftylog.cfg /etc/fty/ftylog.cfg
+chmod 644 /etc/fty/ftylog.cfg
+chown www-data /etc/fty/ftylog.cfg
 
 # Setup 42ity lenses
 mkdir -p /usr/share/fty/lenses
