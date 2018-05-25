@@ -1,0 +1,38 @@
+#!/bin/bash
+
+
+JSONSH="/usr/share/fty/scripts/JSON.sh"
+get_a_string_arg() { "$JSONSH" -x "$1" | (IFS="`printf '\t'`" read K V; echo "$V") | sed 's,^"\(.*\)",\1,' ; }
+J="/etc/release-details.json"
+img_type="$(get_a_string_arg osimage-img-type < $J)"
+
+umask 077
+
+ROOT_PASSWORD_LOCATION=/tmp/.rootpwd
+
+if [[ $img_type = *"devel"* ]]
+then
+   #only for deploy
+   exit 1
+fi
+
+if [ -f $ROOT_PASSWORD_LOCATION ]
+then
+  #previous password still valid
+  exit 1
+fi
+
+if [ $(id -u) -ne 0 ]
+then
+    exit 1
+fi
+
+
+ROOT_PASSWORD=$(dd if=/dev/urandom bs=9 count=1 2>/dev/null | base64)
+echo "$ROOT_PASSWORD" > "$ROOT_PASSWORD_LOCATION"
+
+echo "Root shell enabled and password changed"
+#echo "root:$ROOT_PASSWORD" | chpasswd
+#usermod -s /bin/bash root
+
+/usr/libexec/fty/disable-root-account -t 60 &
