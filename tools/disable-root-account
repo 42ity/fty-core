@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 
-img_type=$(cat /etc/bios-release.json | grep osimage-img-type)
+JSONSH="/usr/share/fty/scripts/JSON.sh"
+get_a_string_arg() { "$JSONSH" -x "$1" | (IFS="`printf '\t'`" read K V; echo "$V") | sed 's,^"\(.*\)",\1,' ; }
+J="/etc/release-details.json"
+img_type="$(get_a_string_arg osimage-img-type < $J)"
+
 if [[ $img_type = *"devel"* ]]
 then
    #only for deploy
-   exit 1
+   exit 0
 fi
 
 if [ $# -ne 0 ] && [ $# -ne 2 ]
@@ -15,7 +19,7 @@ fi
 
 if [ $# -eq 2 ] && [ $1 == "-t" ]
 then
-    sleep $2m
+    sleep ${2}m
 fi
 
 echo "Root shell removed"

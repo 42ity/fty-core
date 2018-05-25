@@ -301,7 +301,9 @@ EXTRA_DIST +=		tools/fake-th \
 			tools/generate-release-details.sh \
 			tools/loghost-rsyslog \
 			tools/compress-logs \
-			tools/fty-route
+			tools/fty-route \
+			tools/enable-root-account \
+			tools/disable-root-account
 
 # Recipe needed to fulfill ci-rc-bios.sh logic
 fake-th: tools/fake-th

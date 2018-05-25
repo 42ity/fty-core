@@ -1,10 +1,15 @@
 #!/bin/bash
 
+
+JSONSH="/usr/share/fty/scripts/JSON.sh"
+get_a_string_arg() { "$JSONSH" -x "$1" | (IFS="`printf '\t'`" read K V; echo "$V") | sed 's,^"\(.*\)",\1,' ; }
+J="/etc/release-details.json"
+img_type="$(get_a_string_arg osimage-img-type < $J)"
+
 umask 077
 
 ROOT_PASSWORD_LOCATION=/tmp/.rootpwd
 
-img_type=$(cat /etc/bios-release.json | grep osimage-img-type)
 if [[ $img_type = *"devel"* ]]
 then
    #only for deploy
