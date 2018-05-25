@@ -288,7 +288,9 @@ client_SCRIPTS +=	 \
 			tools/verify-fs \
 			tools/diagnostic-information \
 			tools/start-db-services \
-			tools/fty-route
+			tools/fty-route \
+			tools/enable-root-account \
+			tools/disable-root-account
 
 helper_SCRIPTS +=	tools/tntnet-ExecStartPre.sh tools/envvars-ExecStartPre.sh tools/generate-release-details.sh tools/factory-reset-live.sh
 
