@@ -4,15 +4,11 @@
 
 EXTRA_DIST =
 
-# Ugly hack - root Makefile defines SED transformations for any .in template
-%:: %.in $(abs_top_builddir)/Makefile Makefile
-	cd ../.. && $(MAKE) `echo "$(CURDIR)/$@" | sed 's,^$(abs_top_builddir)/,,'`
-
 examplecfgsudodir	= $(datarootdir)/@PACKAGE@/examples/config/sudoers.d
 examplecfgsudo_DATA	= sudoers.d/fty_00_base sudoers.d/fty_01_citest
 
 examplecfgpamdir	= $(datarootdir)/@PACKAGE@/examples/config/pam.d
-examplecfgpam_DATA	= pam.d/fty pam.d/fty-password
+examplecfgpam_DATA	= pam.d/fty pam.d/fty-password pam.d/fty-auth
 
 examplecfgsecdir	= $(datarootdir)/@PACKAGE@/examples/config/security
 examplecfgsec_DATA	= security/fty_groups.conf
@@ -43,5 +39,9 @@ exampleprofile_DATA     = \
 exampleudevrulesdir = $(datarootdir)/@PACKAGE@/examples/config/rules.d
 exampleudevrules_DATA = \
 			rules.d/90-ipc-persistent-th.rules
+	
+examplelogdir	= $(datarootdir)/@PACKAGE@/examples/config/ftylog.d
+examplelog_DATA = \
+                   ftylog.d/10-ftylog.cfg
 
-EXTRA_DIST += $(examplecfgsudo_DATA) $(examplecfgpam_DATA) $(examplecfgsec_DATA) $(examplecfgupdate_DATA) $(examplecfgrsyslogd_DATA) $(exampleprofile_DATA) $(exampleudevrules_DATA)
+EXTRA_DIST += $(examplecfgsudo_DATA) $(examplecfgpam_DATA) $(examplecfgsec_DATA) $(examplecfgupdate_DATA) $(examplecfgrsyslogd_DATA) $(exampleprofile_DATA) $(exampleudevrules_DATA) $(examplelog_DATA)

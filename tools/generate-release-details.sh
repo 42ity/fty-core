@@ -102,11 +102,12 @@ if test -d /sys/class/dmi/id; then
         # VMware says "None" here
         HWD_REV=${HWD_REV#None}
         test -n "$HWD_SERIAL_NB" || HWD_SERIAL_NB=$(cat /sys/class/dmi/id/product_serial)
+        # Ignore VMware serial numbers as per product requirement
+        case "$HWD_SERIAL_NB" in
+        VMware*)
+                HWD_SERIAL_NB=
+        esac
         # XXX: Find an SMBIOS equivalent for HWD_PART_NB=
-        # XXX: SMBIOS defines and requires a system UUID, available under
-        # /sys/class/dmi/id/product_uuid. Use that perhaps?
-        test -n "$UUID_VALUE" || UUID_VALUE="00000000-0000-0000-0000-000000000000"
-        test -n "$UUID_NAMESPACE" || UUID_NAMESPACE="933d6c80-dea9-8c6b-d111-8b3b46a181f1"
 fi
 
 # Basename of $OSIMAGE_FILENAME without archiving extension

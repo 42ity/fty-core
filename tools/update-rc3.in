@@ -117,18 +117,18 @@ config_defaults() {
     is_set SOURCESITEROOTFW_MODULES || SOURCESITEROOTFW_MODULES="$SOURCESITEROOTFW/modules"
 
     # Recovery location (on MMC or mSATA) - for downloads
-    is_set DOWNLOADROOT || DOWNLOADROOT="/mnt/mmc/recovery"
-    is_set DOWNLOADROOT_OSIMAGE || DOWNLOADROOT_OSIMAGE="$DOWNLOADROOT/rootfs"
-    is_set DOWNLOADROOTFW_UBOOT || DOWNLOADROOTFW_UBOOT="$DOWNLOADROOT"
-    is_set DOWNLOADROOTFW_UIMAGE || DOWNLOADROOTFW_UIMAGE="$DOWNLOADROOT"
-    is_set DOWNLOADROOTFW_MODULES || DOWNLOADROOTFW_MODULES="$DOWNLOADROOTFW_UIMAGE/modules"
+    is_set DOWNLOADROOT || DOWNLOADROOT="@URC3_DOWNLOADROOT@"
+    is_set DOWNLOADROOT_OSIMAGE || DOWNLOADROOT_OSIMAGE="@URC3_DOWNLOADROOT_OSIMAGE@"
+    is_set DOWNLOADROOTFW_UBOOT || DOWNLOADROOTFW_UBOOT="@URC3_DOWNLOADROOTFW_UBOOT@"
+    is_set DOWNLOADROOTFW_UIMAGE || DOWNLOADROOTFW_UIMAGE="@URC3_DOWNLOADROOTFW_UIMAGE@"
+    is_set DOWNLOADROOTFW_MODULES || DOWNLOADROOTFW_MODULES="@URC3_DOWNLOADROOTFW_MODULES@"
 
     # Deployment location (on SPI flash in production) - for boot-mounted OS image
-    is_set DEPLOYMENTROOT || DEPLOYMENTROOT="/mnt/nand"
-    is_set DEPLOYMENTROOT_OSIMAGE || DEPLOYMENTROOT_OSIMAGE="$DEPLOYMENTROOT/rootfs"
-    is_set DEPLOYMENTROOTFW_UBOOT || DEPLOYMENTROOTFW_UBOOT="$DEPLOYMENTROOT"
-    is_set DEPLOYMENTROOTFW_UIMAGE || DEPLOYMENTROOTFW_UIMAGE="$DEPLOYMENTROOT"
-    is_set DEPLOYMENTROOTFW_MODULES || DEPLOYMENTROOTFW_MODULES="$DEPLOYMENTROOTFW_UIMAGE/modules"
+    is_set DEPLOYMENTROOT || DEPLOYMENTROOT="@URC3_DEPLOYMENTROOT@"
+    is_set DEPLOYMENTROOT_OSIMAGE || DEPLOYMENTROOT_OSIMAGE="@URC3_DEPLOYMENTROOT_OSIMAGE@"
+    is_set DEPLOYMENTROOTFW_UBOOT || DEPLOYMENTROOTFW_UBOOT="@URC3_DEPLOYMENTROOTFW_UBOOT@"
+    is_set DEPLOYMENTROOTFW_UIMAGE || DEPLOYMENTROOTFW_UIMAGE="@URC3_DEPLOYMENTROOTFW_UIMAGE@"
+    is_set DEPLOYMENTROOTFW_MODULES || DEPLOYMENTROOTFW_MODULES="@URC3_DEPLOYMENTROOTFW_MODULES@"
 
     [ -z "${http_proxy-}" -o x"${http_proxy-}" = x- ] && http_proxy=""
     [ -z "${https_proxy-}" ] && https_proxy="$http_proxy"
@@ -186,8 +186,10 @@ usage() {
     echo "                   and exit, whatever the outcome (see below for returned codes)"
     echo "  --dry-run | -n            Alias to --check-images (check both OS and FW)"
     echo "  --(no-)download-image-os  Enable or disable downloading of OS images"
+    test -z "$DOWNLOADROOTFW_UBOOT" || \
     echo "  --(no-)download-image-fw  Likewise for downloading of uBoot, uImage+modules"
     echo "  --(no-)download-images|-N Enable or disable downloading of all image types"
+    test -z "$DOWNLOADROOTFW_UBOOT" || \
     echo "  --fw-only                 Alias to --no-download-image-os --download-image-fw"
     echo "  --os-only                 Alias to --download-image-os --no-download-image-fw"
     echo "  --(no-)removeold-image-os, --(no-)removeold-image-fw, --(no-)removeold-images"
@@ -202,6 +204,7 @@ usage() {
     echo "file which you want rather than trying to detect the newest one available, with"
     echo "the following arguments ('raw' firmwares are the non-tarballed singular files):"
     echo "  --url-image-os|-U {URL} (expected checksum patterns should still exist nearby)"
+    test -z "$DOWNLOADROOTFW_UBOOT" || \
     echo "  --url-image-fw-raw-uboot --url-image-fw-raw-uimage --url-image-fw-raw-modules"
     echo "  --(no-)erase-factory-reset If a new OS image downloaded successfully, touch"
     echo "                   the control file so 'init' does a factory reset after reboot"
@@ -1646,10 +1649,7 @@ config_defaults
 #       (and so if the user should reboot)
 
 ACTION_DOWNLOAD_OSIMAGE="yes"
-case "$ARCH" in
-	*arm*)  ACTION_DOWNLOAD_FWIMAGE="yes" ;;
-	*)      ACTION_DOWNLOAD_FWIMAGE="no" ;;
-esac
+ACTION_DOWNLOAD_FWIMAGE="yes"
 
 ACTION_CHECK_OSIMAGE="no"
 ACTION_CHECK_FWIMAGE="no"
@@ -1857,6 +1857,9 @@ while [ $# -gt 0 ]; do
 	esac
 	shift
 done
+if test -z "$DOWNLOADROOTFW_UBOOT"; then
+	ACTION_DOWNLOAD_FWIMAGE=no
+fi
 
 if [ x"$ACTION_FORCEFLASH_CLEANUP" = xyes ]; then
 	rm -f "${DEPLOYMENTROOTFW_UBOOT}/u-Boot.forceflash" "${DOWNLOADROOTFW_UBOOT}/u-Boot.forceflash"

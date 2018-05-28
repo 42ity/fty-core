@@ -10,11 +10,7 @@ AC_CONFIG_FILES([Makefile tools/Makefile docs/examples/Makefile database/mysql/M
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([foreign 1.11 -Wall -Wno-portability silent-rules tar-pax no-dist-gzip dist-xz subdir-objects])
 
-# libtool
-LT_PREREQ([2.2])
-LT_INIT([disable-static])
-
-AS_IF([test "x$enable_static" = "xyes"], [AC_MSG_ERROR([--enable-static is not supported by 42ITy fty-core])])
+AC_CANONICAL_HOST
 
 AC_ARG_WITH([package-vendor],
 	[AS_HELP_STRING([--with-package-vendor=ARG],
@@ -25,27 +21,6 @@ AC_ARG_WITH([package-vendor],
 	# This may be left empty by explicit request
 )
 
-# the default value may be revised, so we have two layers of conditionals here
-_ENABLE_DEBUG_BUILD=1
-AC_ARG_ENABLE(debug-build,
-	[AS_HELP_STRING([--enable-debug-build],
-		[configure Makefile to enable various debugging flags])],
-	[AS_CASE(["x$enableval"],
-		["xyes"],[_ENABLE_DEBUG_BUILD=1],
-		["xno"],[_ENABLE_DEBUG_BUILD=0])])
-# value for both Makefile conditionals as well as the AM_COND_IF macro below
-AM_CONDITIONAL([ENABLE_DEBUG_BUILD],
-	[test "x$_ENABLE_DEBUG_BUILD" != x0])
-AM_COND_IF([ENABLE_DEBUG_BUILD],
-	[AC_MSG_NOTICE([Enabling various debugging flags])
-         my_CFLAGS="$my_CFLAGS -DDEBUG -DDEVEL"
-         my_CPPFLAGS="$my_CPPFLAGS -DDEBUG -DDEVEL"
-         my_CXXFLAGS="$my_CXXFLAGS -DDEBUG -DDEVEL"],
-	[AC_MSG_NOTICE([Not enabling various debugging flags])])
-# a define-flag into config.h just in case some C code would need it later on?
-AC_DEFINE_UNQUOTED([ENABLE_DEBUG_BUILD],   [$_ENABLE_DEBUG_BUILD],
-        [Flag mostly for Makefile: enable various debugging flags (0=no)?])
-
 ci_tests=false
 AC_ARG_ENABLE(ci-tests,
 	[AS_HELP_STRING([--enable-ci-tests],
@@ -55,116 +30,6 @@ AC_ARG_ENABLE(ci-tests,
 		["xno"],[ci_tests=false],
 		[*],[AC_MSG_ERROR([bad value ${enableval} for --enable-ci-tests])])])
 AM_CONDITIONAL([ENABLE_CI_TESTS], [test "x${ci_tests}" = xtrue])
-
-# Google Thread Sanitizer; see
-#   http://code.google.com/p/thread-sanitizer/wiki
-# Note that TSAN incurs 5x-15x slowdown, so it is off by default
-# As of GCC4.8, TSAN is only available for 64-bit Linux
-# As of GCC4.9, either TSAN or ASAN may be used, not both
-_CFLAGS_TSAN="-fsanitize=thread -fPIE -pie"
-_LDFLAGS_TSAN="-pie -ltsan -shared"
-_ENABLE_DEBUG_TSAN=0
-#_ENABLE_DEBUG_TSAN=$ENABLE_DEBUG_BUILD
-AC_ARG_ENABLE(thread-sanitizer,
-	[AS_HELP_STRING([--enable-thread-sanitizer],
-		[configure Makefile to enable Thread Sanitizer])],
-	[AS_CASE(["x$enableval"],
-		["xyes"],[_ENABLE_DEBUG_TSAN=1],
-		["xno"],[_ENABLE_DEBUG_TSAN=0])])
-AS_IF([test "x$_ENABLE_DEBUG_TSAN" != x0],
-        [my_save_cflags="$CFLAGS"
-         my_save_ldflags="$LDFLAGS"
-         AC_MSG_CHECKING([whether CC supports Thread Sanitizer: CFLAGS='$_CFLAGS_TSAN' LDFLAGS='$_LDFLAGS_TSAN'])
-         CFLAGS="$_CFLAGS_TSAN -Werror"
-         LDFLAGS="$_LDFLAGS_TSAN -Werror"
-         AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
-            [AC_MSG_RESULT([yes])],
-            [AC_MSG_RESULT([no])
-             AC_MSG_NOTICE([NOTE: Thread Sanitizer was requested but support was not detected, DISABLING])
-             _ENABLE_DEBUG_TSAN=0])
-         LDFLAGS="$my_save_ldflags"
-         CFLAGS="$my_save_cflags"]
-)
-# value for both Makefile conditionals as well as the AM_COND_IF macro below
-AM_CONDITIONAL([ENABLE_DEBUG_TSAN],
-	[test "x$_ENABLE_DEBUG_TSAN" != x0])
-AM_COND_IF([ENABLE_DEBUG_TSAN],
-	[AC_MSG_NOTICE([Enabling Thread Sanitizer])
-         my_LDFLAGS="$my_LDFLAGS $_LDFLAGS_TSAN"
-         my_CFLAGS="$my_CFLAGS $_CFLAGS_TSAN"
-         my_CPPFLAGS="$my_CPPFLAGS $_CFLAGS_TSAN"
-         my_CXXFLAGS="$my_CXXFLAGS $_CFLAGS_TSAN"],
-	[AC_MSG_NOTICE([Not enabling Thread Sanitizer])])
-# a define-flag into config.h just in case some C code would need it later on?
-AC_DEFINE_UNQUOTED([ENABLE_DEBUG_TSAN],   [$_ENABLE_DEBUG_TSAN],
-        [Flag mostly for Makefile: enable Thread Sanitizer (0=no)?])
-
-# Google Address Sanitizer and Leak Sanitizer; see
-#   http://code.google.com/p/address-sanitizer/wiki
-# As of GCC4.9, either TSAN or ASAN+LSAN may be used, not both at once.
-# If TSan is off, then by default ASan is (or not) enabled if Debug is (or not)
-# It can be manually enabled for "production" builds as well, just 2x slowdown
-_CFLAGS_ASAN="-fsanitize=address -fno-omit-frame-pointer"
-_LDFLAGS_ASAN="-lasan -llsan -shared"
-AS_IF([test "x$_ENABLE_DEBUG_TSAN" = x0],
-        [_ENABLE_DEBUG_ASAN=$ENABLE_DEBUG_BUILD],
-        [_ENABLE_DEBUG_ASAN=0])
-
-# TODO: Currently CI tests fail with ASan in place because our code is buggy
-# Until this is fixed, default builds are without ASAN, it can be enabled on
-# the `configure` command-line explicitly.
-_ENABLE_DEBUG_ASAN=0
-
-AC_ARG_ENABLE(address-sanitizer,
-	[AS_HELP_STRING([--enable-address-sanitizer],
-		[configure Makefile to enable Address Sanitizer])],
-	[AS_CASE(["x$enableval"],
-		["xyes"],[_ENABLE_DEBUG_ASAN=1],
-		["xno"],[_ENABLE_DEBUG_ASAN=0])])
-AS_IF([test "x$_ENABLE_DEBUG_ASAN" != x0],
-        [my_save_cflags="$CFLAGS"
-         my_save_ldflags="$LDFLAGS"
-         AC_MSG_CHECKING([whether CC supports Address Sanitizer: CFLAGS='$_CFLAGS_ASAN' LDFLAGS='$_LDFLAGS_ASAN'])
-         CFLAGS="$_CFLAGS_ASAN -Werror"
-         LDFLAGS="$_LDFLAGS_ASAN -Werror"
-         AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
-            [AC_MSG_RESULT([yes])],
-            [AC_MSG_RESULT([no])
-             AC_MSG_NOTICE([NOTE: Address Sanitizer was requested but support was not detected, DISABLING])
-             _ENABLE_DEBUG_ASAN=0])
-         LDFLAGS="$my_save_ldflags"
-         CFLAGS="$my_save_cflags"]
-)
-# value for both Makefile conditionals as well as the AM_COND_IF macro below
-# note that in the Makefile we (should?) conditionally link against libasan;
-# at least this holds for our built SO libraries like bios_web.so
-AM_CONDITIONAL([ENABLE_DEBUG_ASAN],
-	[test "x$_ENABLE_DEBUG_ASAN" != x0])
-AM_COND_IF([ENABLE_DEBUG_ASAN],
-	[AC_MSG_NOTICE([Enabling Address Sanitizer])
-         my_LDFLAGS="$my_LDFLAGS $_LDFLAGS_ASAN"
-         my_CFLAGS="$my_CFLAGS $_CFLAGS_ASAN"
-         my_CPPFLAGS="$my_CPPFLAGS $_CFLAGS_ASAN"
-         my_CXXFLAGS="$my_CXXFLAGS $_CFLAGS_ASAN"],
-	[AC_MSG_NOTICE([Not enabling Address Sanitizer])])
-# a define-flag into config.h just in case some C code would need it later on?
-AC_DEFINE_UNQUOTED([ENABLE_DEBUG_ASAN],   [$_ENABLE_DEBUG_ASAN],
-        [Flag mostly for Makefile: enable Address Sanitizer (0=no)?])
-
-### At least for some GCC versions, only one of these sanitizers may be used
-AS_IF([test "x$_ENABLE_DEBUG_TSAN" != x0 -a "x$_ENABLE_DEBUG_ASAN" != x0],
-        [AC_MSG_CHECKING([whether -fsanitize=address is incompatible with -fsanitize=thread for this compiler])
-         my_save_cflags="$CFLAGS"
-         my_save_ldflags="$LDFLAGS"
-         CFLAGS="$_CFLAGS_ASAN $_CFLAGS_TSAN -Werror"
-         LDFLAGS="$_LDFLAGS_ASAN $_LDFLAGS_TSAN -Werror"
-         AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
-            [AC_MSG_RESULT([no])],
-            [AC_MSG_RESULT([yes])
-             AC_MSG_ERROR([You can only enable either Address Sanitizer or Thread Sanitizer, sorry])])
-         LDFLAGS="$my_save_ldflags"
-         CFLAGS="$my_save_cflags"]
-)
 
 # display source/build paths of interest to us
 AC_MSG_NOTICE([Determining source code paths:])
@@ -401,39 +266,95 @@ AS_IF([test "x$with_systemdtmpfilesdir" != "xno"],
         [AC_SUBST([systemdtmpfilesdir], [$with_systemdtmpfilesdir])])
 AM_CONDITIONAL([HAVE_SYSTEMD], [test "x$with_systemdtmpfilesdir" != "xno"])
 
-AC_SUBST([my_CFLAGS])
-AC_SUBST([my_CPPFLAGS])
-AC_SUBST([my_CXXFLAGS])
-AC_SUBST([my_LDFLAGS])
-
-# Snatched and adapted from libpng:
-# http://www.opensource.apple.com/source/X11libs/X11libs-40/libpng/libpng-1.2.35/configure.ac
-AC_MSG_CHECKING([if libraries can be versioned])
-GLD="`$LD --help < /dev/null 2>/dev/null | grep version-script`"
-AS_IF([test -n "$GLD"],
-        [have_ld_version_script=yes
-         AC_MSG_RESULT(yes)],
-        [have_ld_version_script=no
-         AC_MSG_RESULT(no)
-         AC_MSG_WARN(*** You have not enabled versioned symbols.)
-])
-AM_CONDITIONAL(HAVE_LD_VERSION_SCRIPT, test "$have_ld_version_script" = "yes")
-AS_IF([test "$have_ld_version_script" = "yes"],
-        [AC_MSG_CHECKING([for symbol prefix])
-         SYMBOL_PREFIX=`echo "PREFIX=__USER_LABEL_PREFIX__" \
-                   | ${CPP-${CC-gcc} -E} - 2>&1 \
-                   | ${EGREP-grep} "^PREFIX=" \
-                   | ${SED-sed} "s:^PREFIX=::"`
-         AC_SUBST(SYMBOL_PREFIX)
-         AC_MSG_RESULT($SYMBOL_PREFIX)
-         CXXFLAG_VISIBILITY=""
-         gl_VISIBILITY
-         AS_CASE(["$CFLAG_VISIBILITY"],
-            [*-fvisibility-inlines-hidden*],[
-                CXXFLAG_VISIBILITY="$CFLAG_VISIBILITY"],
-            [*-fvisibility=hidden*],[
-                CXXFLAG_VISIBILITY="$CFLAG_VISIBILITY -fvisibility-inlines-hidden"])
-        AC_SUBST(CXXFLAG_VISIBILITY)
+AS_CASE([$host_cpu],
+[x86_64 | i?86],
+        [
+        OVERLAY_PATH=/run/initramfs/mnt/root-rw/overlay
+        IMAGES_PATH=/run/initramfs/mnt/disk/rootfs
+        URC3_DOWNLOADROOT=/run/initramfs/mnt/disk/recovery
+        URC3_DOWNLOADROOTFW_UBOOT=
+        URC3_DOWNLOADROOTFW_UIMAGE=
+        URC3_DOWNLOADROOTFW_MODULES=
+        URC3_DEPLOYMENTROOT=/run/initramfs/mnt/disk
+        URC3_DEPLOYMENTROOTFW_UBOOT=
+        URC3_DEPLOYMENTROOTFW_UIMAGE=
+        URC3_DEPLOYMENTROOTFW_MODULES=
+        ],
+        [
+        OVERLAY_PATH=/mnt/nand/overlay
+        IMAGES_PATH=/mnt/nand/rootfs
+        URC3_DOWNLOADROOT=/mnt/mmc/recovery
+        URC3_DOWNLOADROOTFW_UBOOT='$DOWNLOADROOT'
+        URC3_DOWNLOADROOTFW_UIMAGE='$DOWNLOADROOT'
+        URC3_DOWNLOADROOTFW_MODULES='$DOWNLOADROOTFW_UIMAGE/modules'
+        URC3_DEPLOYMENTROOT=/mnt/nand
+        URC3_DEPLOYMENTROOTFW_UBOOT='$DEPLOYMENTROOT'
+        URC3_DEPLOYMENTROOTFW_UIMAGE='$DEPLOYMENTROOT'
+        URC3_DEPLOYMENTROOTFW_MODULES='$DEPLOYMENTROOTFW_UIMAGE/modules'
+        ]
+)
+URC3_DOWNLOADROOT_OSIMAGE='$DOWNLOADROOT/rootfs'
+URC3_DEPLOYMENTROOT_OSIMAGE='$DEPLOYMENTROOT/rootfs'
+AC_SUBST(OVERLAY_PATH)
+AC_SUBST(IMAGES_PATH)
+AC_SUBST(URC3_DOWNLOADROOT)
+AC_SUBST(URC3_DOWNLOADROOT_OSIMAGE)
+AC_SUBST(URC3_DOWNLOADROOTFW_UBOOT)
+AC_SUBST(URC3_DOWNLOADROOTFW_UIMAGE)
+AC_SUBST(URC3_DOWNLOADROOTFW_MODULES)
+AC_SUBST(URC3_DEPLOYMENTROOT)
+AC_SUBST(URC3_DEPLOYMENTROOT_OSIMAGE)
+AC_SUBST(URC3_DEPLOYMENTROOTFW_UBOOT)
+AC_SUBST(URC3_DEPLOYMENTROOTFW_UIMAGE)
+AC_SUBST(URC3_DEPLOYMENTROOTFW_MODULES)
+dnl XXX: Evaluate the path variables here, so that we can bake them into
+dnl scripts. This is against the recommendation in the autoconf manual,
+dnl but in our packaging, we use DESTDIR rather than changing the prefix
+dnl variable
+test "x$prefix" = xNONE && prefix=$ac_default_prefix
+test "x$exec_prefix" = xNONE && exec_prefix=$prefix
+eval sysconfdir=$sysconfdir
+eval libdir=$libdir
+eval bindir=$bindir
+eval sbindir=$sbindir
+eval libexecdir=$libexecdir
+eval datarootdir=$datarootdir
+eval datadir=$datadir
+eval localstatedir=$localstatedir
+AC_DEFUN([AC_DATAROOTDIR_CHECKED])
+AC_CONFIG_FILES([
+        obs/preinstallimage-bios.sh
+        setup/20-th-names.sh
+        tools/db-init
+        tools/envvars-ExecStartPre.sh
+        tools/factory-reset-live.sh
+        tools/run-test-doc.sh
+        tools/start-db-services
+        tools/tntnet-ExecStartPre.sh
+        tools/update-rc3
+        tools/verify-fs
+], [ chmod +x "$ac_file" ])
+AC_CONFIG_FILES([
+        docs/examples/rsyslog.d/05-bash.conf
+        docs/examples/rsyslog.d/10-ipc.conf
+        docs/examples/sudoers.d/fty_00_base
+        docs/examples/update-rc3.d/90-local-paths.rc3.conf
+        systemd/bios-agent-inventory.service
+        systemd/bios-fake-th.service
+        systemd/bios-networking.service
+        systemd/bios-reset-button.service
+        systemd/bios-ssh-last-resort.service
+        systemd/biostimer-compress-logs.service
+        systemd/biostimer-loghost-rsyslog-netconsole.service
+        systemd/biostimer-verify-fs.service
+        systemd/fty-db-engine.service
+        systemd/fty-db-init.service
+        systemd/fty-envvars.service
+        systemd/fty-proxy.path
+        systemd/fty-proxy.service
+        systemd/fty-tntnet@.service
+        systemd/ifplug-dhcp-autoconf.service
+        systemd/ipc-meta-setup.service
 ])
 
 
@@ -468,10 +389,6 @@ Summary:
 
         ENABLE_CI_TESTS:         ${ci_tests}
 
-        CFLAGS:                  ${my_CFLAGS} ${CFLAGS}
-        CXXFLAGS:                ${my_CXXFLAGS} ${CXXFLAGS}
-        CPPFLAGS:                ${OUR_CPPFLAGS} ${CPPFLAGS}
-        LDFLAGS:                 ${OUR_LDFLAGS} ${LDFLAGS}
         PKG_CONFIG:              ${PKG_CONFIG}
         SYSTEMDSYSTEMUNITDIR:    ${systemdsystemunitdir}
         SYSTEMDSYSTEMPRESETDIR:  ${systemdsystempresetdir}

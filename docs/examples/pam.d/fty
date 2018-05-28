@@ -21,7 +21,7 @@
 #
 
     auth	required        pam_env.so
-    auth	required        pam_unix.so	try_first_pass
+    auth	include         fty-auth
 
 # Note that "requisite" mismatch fails instantly,
 # while "required" goes on to other checks first

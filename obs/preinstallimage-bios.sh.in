@@ -87,7 +87,7 @@ groupadd -g 8000 bios-dash
 groupadd -g 8004 bios-infra
 groupadd -g 7999 bios-logread
 
-useradd -m bios -N -g bios-infra -G dialout -s /bin/bash
+useradd -u 1000 -m bios -N -g bios-infra -G dialout -s /bin/bash
 mkdir -p /home/bios && chown bios:bios-infra /home/bios
 
 # Create a GPIO group to access GPIO pins, and add the user bios
@@ -97,7 +97,7 @@ usermod -G gpio -a bios
 # add an access to sasl, bios-logread (for /var/log/messages) and systemd journal
 # note that earlier OS images had custom logs owned by "adm" group, so we also
 # support it for admin account at this time (so that upgraders can read old logs)
-useradd -m admin -G "${SASL_GROUP}",adm,bios-logread,systemd-journal -N -g bios-admin -s /bin/bash
+useradd -u 1001 -m admin -G "${SASL_GROUP}",adm,bios-logread,systemd-journal -N -g bios-admin -s /bin/bash
 passwd admin <<EOF
 admin
 admin
@@ -113,7 +113,7 @@ usermod -G "${SASL_GROUP}" -a bios
 # TODO: See if "sudo"able tasks that this account may have to do can be done
 # with another shell like /bin/nologin or /bin/false - and then secure it...
 if ! getent passwd monitor ; then
-    useradd -m monitor -G "$SASL_GROUP" -N -g bios-dash -s /bin/bash
+    useradd -u 1002 -m monitor -G "$SASL_GROUP" -N -g bios-dash -s /bin/bash
     passwd monitor <<EOF
 monitor
 monitor
@@ -150,20 +150,21 @@ cat > /etc/issue << EOF
 \S{NAME} \S{VERSION_ID} \n \l@\b ; Current IP(s): \4{eth0} \4{eth1} \4{eth2} \4{eth3} \4{LAN1} \4{LAN2} \4{LAN3}
 EOF
 
-# 42ity configuration file
+# 42ity default configuration files
 mkdir -p /etc/default
 # Common envvars for systemd services, primarily
 touch /etc/default/fty
 chown www-data /etc/default/fty
 chmod 644 /etc/default/fty
+# Specific envvars for systemd services and maybe shell: the HTTP(S) proxy
+# to connect to the licensing server, new image downloads, etc. from agents.
+# Note: authoritative copy and rights are managed in 17-proxy-file.everytime.sh
+touch /etc/default/fty-proxy
+chown www-data:bios-admin /etc/default/fty-proxy
+chmod 664 /etc/default/fty-proxy
 # ZConfig default settings, if populated
 touch /etc/default/fty.cfg
 chown www-data /etc/default/fty.cfg
-#42ity log configuration file 
-mkdir -p /etc/fty/
-touch /etc/fty/ftylog.cfg
-chmod 644 /etc/fty/ftylog.cfg
-chown www-data /etc/fty/ftylog.cfg
 
 if diff /usr/libexec/fty/systemctl /usr/libexec/fty/journalctl >/dev/null 2>&1 ; then
     if [ ! -L /usr/libexec/fty/systemctl ] && [ ! -L /usr/libexec/fty/journalctl ] ; then
@@ -221,6 +222,12 @@ for D in /usr/libexec /usr/lib /usr/share ; do
         fi
     done
 done
+
+#42ity log configuration file 
+mkdir -p /etc/fty/
+cp /usr/share/fty/examples/config/ftylog.d/10-ftylog.cfg /etc/fty/ftylog.cfg
+chmod 644 /etc/fty/ftylog.cfg
+chown www-data /etc/fty/ftylog.cfg
 
 # Setup 42ity lenses
 mkdir -p /usr/share/fty/lenses
@@ -449,7 +456,7 @@ echo "UseDNS no" >> /etc/ssh/sshd_config
 rm /etc/ssh/*key*
 mkdir -p /etc/systemd/system
 sed 's|\[Service\]|[Service]\nExecStartPre=/usr/bin/ssh-keygen -A|' /lib*/systemd/system/ssh@.service > /etc/systemd/system/ssh@.service
-sed -i 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/fty/license\nConditionPathExists=/mnt/nand/overlay/etc/shadow|' /etc/systemd/system/ssh@.service
+sed -i 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/fty/license\nConditionPathExists=@OVERLAY_PATH@/etc/shadow|' /etc/systemd/system/ssh@.service
 /bin/systemctl disable ssh.service
 /bin/systemctl mask ssh.service
 /bin/systemctl enable ssh.socket
@@ -606,27 +613,22 @@ for F in /etc/tntnet/bios.d/*etn-ipm1-rest.xml ; do
     fi
 done
 
+# log configuration
 # Disable expensive debug logging by default on non-devel images
 mkdir -p /usr/share/fty/etc/default
 case "$IMGTYPE" in
     *devel*)
         echo "BIOS_LOG_LEVEL=LOG_DEBUG" > /usr/share/fty/etc/default/fty
         echo "BIOS_NUT_USE_DMF=true" >> /usr/share/fty/etc/default/fty
-        echo "log4cplus.rootLogger=DEBUG, console" > /etc/fty/ftylog.cfg 
+        sed -i "s|INFO|DEBUG|g" /etc/fty/ftylog.cfg 
         ;;
     *)
         echo "BIOS_LOG_LEVEL=LOG_INFO" > /usr/share/fty/etc/default/fty
         sed -e 's|.*MaxLevelStore.*|MaxLevelStore=info|' \
             -i /etc/systemd/journald.conf
-        echo "log4cplus.rootLogger=INFO, console" > /etc/fty/ftylog.cfg 
         ;;
 esac
 
-#complete the log configuration file
-echo "#Console Definition " >> /etc/fty/ftylog.cfg 
-echo "log4cplus.appender.console=log4cplus::ConsoleAppender" >> /etc/fty/ftylog.cfg 
-echo "log4cplus.appender.console.layout=log4cplus::PatternLayout" >> /etc/fty/ftylog.cfg 
-echo "log4cplus.appender.console.layout.ConversionPattern=%c [%t] -%-5p- %M (%l) %m%n" >> /etc/fty/ftylog.cfg 
 # set path to our libexec directory
 echo "PATH=/usr/libexec/fty:/bin:/usr/bin:/sbin:/usr/sbin" >>/usr/share/fty/etc/default/fty
 
@@ -906,6 +908,15 @@ esac
 /bin/systemctl daemon-reload
 
 # Prepare the source-code details excerpt, if available
+# Note that the primary goal here is identification of core REST API sources,
+# so fty-rest has precedence over fty-core (used to be same repo long ago).
+if [ ! -e "/usr/share/fty/.git_details" ] ; then
+    [ -s "/usr/share/fty/.git_details-fty-rest" ] && \
+        ln -s .git_details-fty-rest "/usr/share/fty/.git_details" || \
+    { [ -s "/usr/share/fty/.git_details-fty-core" ] && \
+        ln -s .git_details-fty-core "/usr/share/fty/.git_details" ; }
+fi
+
 [ -s "/usr/share/fty/.git_details" ] && \
     grep ESCAPE "/usr/share/fty/.git_details" > /usr/share/bios-web/git_details.txt || \
     echo "WARNING: Do not have /usr/share/fty/.git_details"

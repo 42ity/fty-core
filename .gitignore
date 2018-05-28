@@ -26,6 +26,7 @@ configure
 !configure.ac
 .deps
 .git_details
+.git_details-fty-core
 .git_details.tmp
 src/include/git_details_override.c
 src/include/git_details_override.h
