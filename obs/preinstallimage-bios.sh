@@ -171,6 +171,12 @@ if diff /usr/libexec/fty/systemctl /usr/libexec/fty/journalctl >/dev/null 2>&1 ;
     fi
 fi
 
+#42ity enable/disable root account script
+chown root /usr/libexec/fty/enable-root-account
+chown root /usr/libexec/fty/disable-root-account
+chmod 700 /usr/libexec/fty/enable-root-account
+chmod 700 /usr/libexec/fty/disable-root-account
+
 # workaround - we need to change agents configuration from REST API config call
 # so let tntnet touch the files
 # FIXME: Limit this to specific pathnames or patterns, e.g.
