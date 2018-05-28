@@ -150,12 +150,18 @@ cat > /etc/issue << EOF
 \S{NAME} \S{VERSION_ID} \n \l@\b ; Current IP(s): \4{eth0} \4{eth1} \4{eth2} \4{eth3} \4{LAN1} \4{LAN2} \4{LAN3}
 EOF
 
-# 42ity configuration file
+# 42ity default configuration files
 mkdir -p /etc/default
 # Common envvars for systemd services, primarily
 touch /etc/default/fty
 chown www-data /etc/default/fty
 chmod 644 /etc/default/fty
+# Specific envvars for systemd services and maybe shell: the HTTP(S) proxy
+# to connect to the licensing server, new image downloads, etc. from agents.
+# Note: authoritative copy and rights are managed in 17-proxy-file.everytime.sh
+touch /etc/default/fty-proxy
+chown www-data:bios-admin /etc/default/fty-proxy
+chmod 664 /etc/default/fty-proxy
 # ZConfig default settings, if populated
 touch /etc/default/fty.cfg
 chown www-data /etc/default/fty.cfg

@@ -1,0 +1,15 @@
+# This unit fires whenever the monitored pathname is written to, with its
+# action being to try enabling the target Unit. The latter can also start
+# by itself during subsequent boots, thanks to the file already existing.
+# The target Unit by itself also has a Condition on this file to be not empty.
+
+[Unit]
+Description=Tracker that the 42ity proxy config file was changed
+PartOf=bios.target
+
+[Path]
+PathModified=@sysconfdir@/default/fty-proxy
+#PathExists=@sysconfdir@/default/fty-proxy
+
+[Install]
+WantedBy=bios.target

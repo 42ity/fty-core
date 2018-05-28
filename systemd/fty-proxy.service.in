@@ -1,0 +1,17 @@
+[Unit]
+Description=Track that the proxy config was changed, for dependent units to react
+After=local-fs.target
+Requires=local-fs.target
+PartOf=bios.target
+
+[Service]
+Type=oneshot
+# the service shall be considered active even when all its processes exited
+RemainAfterExit=yes
+Restart=no
+User=root
+Group=root
+ExecStart=/bin/ls -la @sysconfdir@/default/fty-proxy
+
+[Install]
+WantedBy=bios.target

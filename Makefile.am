@@ -234,6 +234,7 @@ ipc_meta_setup_SCRIPTS = \
 	$(top_srcdir)/setup/10-bios-gpio.sh \
 	$(top_srcdir)/setup/15-dpkg-database.everytime.sh \
 	$(top_srcdir)/setup/16-machineid-dir.everytime.sh \
+	$(top_srcdir)/setup/17-proxy-file.everytime.sh \
 	$(top_srcdir)/setup/20-fty-compat.sh \
 	$(top_srcdir)/setup/20-ipc-lcd-services.sh \
 	$(top_builddir)/setup/20-th-names.sh \
@@ -245,6 +246,7 @@ EXTRA_DIST += \
 	$(top_srcdir)/setup/10-bios-gpio.sh \
 	$(top_srcdir)/setup/15-dpkg-database.everytime.sh \
 	$(top_srcdir)/setup/16-machineid-dir.everytime.sh \
+	$(top_srcdir)/setup/17-proxy-file.everytime.sh \
 	$(top_srcdir)/setup/20-fty-compat.sh \
 	$(top_srcdir)/setup/20-ipc-lcd-services.sh \
 	$(top_srcdir)/setup/20-th-names.sh.in \
@@ -304,6 +306,7 @@ SYSTEMD_UNITS_LOWLEVEL += \
 # service instances for us. TODO: should tntnet@.service move here?
 SYSTEMD_UNITS_EXTRA += \
                         fty-license-accepted.path \
+                        fty-proxy.path \
                         wd_keepalive@.service
 
 # These service-units are PartOf and WantedBy the "bios.target"
@@ -327,6 +330,7 @@ SYSTEMD_UNITS += $(SYSTEMD_UNITS_TARGET_BIOS) $(SYSTEMD_UNITS_LOWLEVEL)
 #SYSTEMD_UNITS_NOTPRESET_LOWLEVEL +=
 SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS += \
                         fty-envvars.service \
+                        fty-proxy.service \
                         fty-tntnet@.service \
                         bios-fake-th.service
 
