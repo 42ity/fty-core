@@ -1,13 +1,14 @@
 # This unit fires whenever the monitored pathname is written to, with its
-# action being to try enabling the target Unit. The latter can also start
-# by itself during subsequent boots, thanks to the file already existing.
-# The target Unit by itself also has a Condition on this file to be not empty.
+# action being to try enabling the target Unit (note: systemd does not
+# try to DISABLE that Unit). The latter can also start by itself during
+# subsequent boots, thanks to the file already existing.
 
 [Unit]
 Description=Tracker that the 42ity proxy config file was changed
 PartOf=bios.target
 
 [Path]
+### Note for tests: `echo > file` triggers the path, `echo >> file` does not
 PathModified=@sysconfdir@/default/fty-proxy
 #PathExists=@sysconfdir@/default/fty-proxy
 
