@@ -1083,3 +1083,9 @@ $(abs_top_builddir)/src/include/git_details_override.h: $(abs_top_builddir)/.git
 	@[ -s "$@" ] || { echo "WARNING: Overriding absent '$@' with empty file to satisfy 'make'"; \
 	  touch -r "$<" "$@"; } || true
 	@sync || true
+
+install-exec-hook:
+	( mkdir -p $(DESTDIR)$(clientdir) && cd $(DESTDIR)$(clientdir) && $(RM) journalctl && $(LN_S) systemctl journalctl )
+
+uninstall-hook:
+	( cd $(DESTDIR)$(clientdir) && $(RM) -f journalctl )
