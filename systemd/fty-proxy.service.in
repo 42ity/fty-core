@@ -6,9 +6,6 @@ PartOf=bios.target
 
 [Service]
 Type=oneshot
-# the service shall be considered active even when all its processes exited
-RemainAfterExit=yes
-Restart=no
 User=root
 Group=root
 ExecStart=/bin/ls -la @sysconfdir@/default/fty-proxy
