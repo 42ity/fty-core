@@ -9,6 +9,7 @@ Type=oneshot
 User=root
 Group=root
 ExecStart=/bin/ls -la @sysconfdir@/default/fty-proxy
+ExecStartPost=/bin/dash -c "/bin/systemctl try-restart --no-block -- $(/bin/systemctl show -p WantedBy -p RequiredBy -p BoundBy fty-proxy.service | cut -d= -f2 | sort | uniq | tr '\n' ' ')"
 
 [Install]
 WantedBy=bios.target
