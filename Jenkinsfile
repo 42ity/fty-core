@@ -1,3 +1,29 @@
+/*
+    fty-core - Low-level scripts for 42ITy based product bundle
+
+    Copyright (C) 2014 - 2018 Eaton
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License along
+    with this program; if not, write to the Free Software Foundation, Inc.,
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+    NOTE : This Jenkins pipeline script only handles the self-testing of your
+    project. If you also want the successful codebase published or deployed,
+    you can define a helper job - see the reference implementation skeleton at
+    https://github.com/zeromq/zproject/blob/master/Jenkinsfile-deploy.example
+
+*/
+
 pipeline {
     agent { label "devel-image && x86_64" }
     parameters {
@@ -56,8 +82,12 @@ pipeline {
             name: 'USE_TEST_TIMEOUT')
         booleanParam (
             defaultValue: true,
-            description: 'When using temporary subdirs in build/test workspaces, wipe them after successful builds?',
+            description: 'When using temporary subdirs in build/test workspaces, wipe them right after each successful build stage?',
             name: 'DO_CLEANUP_AFTER_BUILD')
+        booleanParam (
+            defaultValue: true,
+            description: 'When using temporary subdirs in build/test workspaces, wipe them after the whole job is done successfully?',
+            name: 'DO_CLEANUP_AFTER_JOB')
     }
     triggers {
         pollSCM 'H/2 * * * *'
@@ -272,6 +302,11 @@ pipeline {
 
                     //slackSend (color: "#008800", message: "Build ${env.JOB_NAME} is back to normal.")
                     //emailext (to: "qa@example.com", subject: "Build ${env.JOB_NAME} is back to normal.", body: "Build ${env.JOB_NAME} is back to normal.")
+                }
+                if ( params.DO_CLEANUP_AFTER_JOB ) {
+                    dir("tmp") {
+                        deleteDir()
+                    }
                 }
             }
         }
