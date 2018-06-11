@@ -22,8 +22,20 @@
 #  \author Michal Vyskocil <MichalVyskocil@eaton.com>
 #  \author Jim Klimov <EvgenyKlimov@eaton.com>
 
-exec > /tmp/start-db-services.log 2>&1
+# Save original file descriptors and set up logging
+exec 3>&1 4>&2 >/tmp/start-db-services.log 2>&1
 set -x
+
+onExit() {
+    EXITCODE=$?
+    # Restore original file descriptors and post the stderr log
+    exec 1>&3 2>&4 3>&- 4>&-
+    cat /tmp/start-db-services.log >&2 || true
+    echo "`date -u` : $0 finished with exit-code $EXITCODE" >&2
+    return $EXITCODE
+}
+
+trap 'onExit' 0 1 2 3 15
 
 ### Prefer to use our wrapper that limits impact to permitted targets
 SYSTEMCTL=@libexecdir@/@PACKAGE@/systemctl
