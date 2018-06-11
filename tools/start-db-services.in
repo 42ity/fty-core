@@ -116,6 +116,8 @@ else
     sudo ${SYSTEMCTL} restart fty-license-accepted.path || die "Restarting fty-license-accepted.path failed ($?)"
     sudo ${SYSTEMCTL} restart fty-license-accepted.service || die "Restarting fty-license-accepted failed ($?)"
 
+    sleep 3
+
     echo "INFO: `date -u`: start core database-related services"
     sudo ${SYSTEMCTL} start fty-license-accepted.path fty-license-accepted.service fty-db-engine.service fty-db-init.service \
         || die "Starting a core database-related service failed ($?)"
