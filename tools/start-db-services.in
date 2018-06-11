@@ -68,45 +68,45 @@ fi
 
 if [[ "$SYSTEMCTL_COALESCE" = no ]] ; then
     echo "INFO: `date -u`: enable and start fty-license-accepted.path"
-    sudo ${SYSTEMCTL} unmask fty-license-accepted.path || die "Unmasking fty-license-accepted.path failed"
-    sudo ${SYSTEMCTL} enable fty-license-accepted.path || die "Enabling fty-license-accepted.path failed"
-    sudo ${SYSTEMCTL} restart fty-license-accepted.path || die "Restarting fty-license-accepted.path failed"
-    sudo ${SYSTEMCTL} start fty-license-accepted.path || die "Starting fty-license-accepted.path failed"
+    sudo ${SYSTEMCTL} unmask fty-license-accepted.path || die "Unmasking fty-license-accepted.path failed ($?)"
+    sudo ${SYSTEMCTL} enable fty-license-accepted.path || die "Enabling fty-license-accepted.path failed ($?)"
+    sudo ${SYSTEMCTL} restart fty-license-accepted.path || die "Restarting fty-license-accepted.path failed ($?)"
+    sudo ${SYSTEMCTL} start fty-license-accepted.path || die "Starting fty-license-accepted.path failed ($?)"
 
     echo "INFO: `date -u`: enable and start fty-license-accepted.service"
-    sudo ${SYSTEMCTL} unmask fty-license-accepted.service || die "Unmasking fty-license-accepted failed"
-    sudo ${SYSTEMCTL} enable fty-license-accepted.service || die "Enabling fty-license-accepted failed"
-    sudo ${SYSTEMCTL} restart fty-license-accepted.service || die "Restarting fty-license-accepted failed"
-    sudo ${SYSTEMCTL} start fty-license-accepted.service || die "Starting fty-license-accepted failed"
+    sudo ${SYSTEMCTL} unmask fty-license-accepted.service || die "Unmasking fty-license-accepted failed ($?)"
+    sudo ${SYSTEMCTL} enable fty-license-accepted.service || die "Enabling fty-license-accepted failed ($?)"
+    sudo ${SYSTEMCTL} restart fty-license-accepted.service || die "Restarting fty-license-accepted failed ($?)"
+    sudo ${SYSTEMCTL} start fty-license-accepted.service || die "Starting fty-license-accepted failed ($?)"
 
     # Technically this all should not be needed, as the standard processing
     # of the now-active fty-license-accepted should trigger startup of the
     # database engine, then our schema, then the services which need it all.
     # But just in case, make sure they all are up before we return...
     echo "INFO: `date -u`: enable and start fty-db-engine"
-    sudo ${SYSTEMCTL} unmask fty-db-engine || die "Unmasking fty-db-engine failed"
-    sudo ${SYSTEMCTL} enable fty-db-engine || die "Enabling fty-db-engine failed"
-    sudo ${SYSTEMCTL} start fty-db-engine || die "Starting fty-db-engine failed"
+    sudo ${SYSTEMCTL} unmask fty-db-engine || die "Unmasking fty-db-engine failed ($?)"
+    sudo ${SYSTEMCTL} enable fty-db-engine || die "Enabling fty-db-engine failed ($?)"
+    sudo ${SYSTEMCTL} start fty-db-engine || die "Starting fty-db-engine failed ($?)"
 
     echo "INFO: `date -u`: enable and start fty-db-init"
-    sudo ${SYSTEMCTL} enable fty-db-init || die "Enabling fty-db-init failed"
-    sudo ${SYSTEMCTL} start fty-db-init || die "Starting fty-db-init failed"
+    sudo ${SYSTEMCTL} enable fty-db-init || die "Enabling fty-db-init failed ($?)"
+    sudo ${SYSTEMCTL} start fty-db-init || die "Starting fty-db-init failed ($?)"
 else
     echo "INFO: `date -u`: unmask core database-related services"
     sudo ${SYSTEMCTL} unmask fty-license-accepted.path fty-license-accepted.service fty-db-engine.service fty-db-init.service \
-        || die "Unmasking a core database-related service failed"
+        || die "Unmasking a core database-related service failed ($?)"
 
     echo "INFO: `date -u`: enable core database-related services"
     sudo ${SYSTEMCTL} enable fty-license-accepted.path fty-license-accepted.service fty-db-engine.service fty-db-init.service \
-        || die "Enabling a core database-related service failed"
+        || die "Enabling a core database-related service failed ($?)"
 
     echo "INFO: `date -u`: tickle fty-license-accepted.service"
-    sudo ${SYSTEMCTL} restart fty-license-accepted.path || die "Restarting fty-license-accepted.path failed"
-    sudo ${SYSTEMCTL} restart fty-license-accepted.service || die "Restarting fty-license-accepted failed"
+    sudo ${SYSTEMCTL} restart fty-license-accepted.path || die "Restarting fty-license-accepted.path failed ($?)"
+    sudo ${SYSTEMCTL} restart fty-license-accepted.service || die "Restarting fty-license-accepted failed ($?)"
 
     echo "INFO: `date -u`: start core database-related services"
     sudo ${SYSTEMCTL} start fty-license-accepted.path fty-license-accepted.service fty-db-engine.service fty-db-init.service \
-        || die "Starting a core database-related service failed"
+        || die "Starting a core database-related service failed ($?)"
 fi
 
 sleep 2
@@ -197,11 +197,11 @@ echo "INFO: `date -u`: enable and start bios.service and bios.target for the rem
 if [[ "$SYSTEMCTL_COALESCE" = no ]] ; then
     sudo ${SYSTEMCTL} enable bios.service
     sudo ${SYSTEMCTL} enable bios.target
-    sudo ${SYSTEMCTL} start bios.service --no-block || die "Could not issue startup request for bios.service"
-    sudo ${SYSTEMCTL} start bios.target --no-block || die "Could not issue startup request for bios.target"
+    sudo ${SYSTEMCTL} start bios.service --no-block || die "Could not issue startup request for bios.service ($?)"
+    sudo ${SYSTEMCTL} start bios.target --no-block || die "Could not issue startup request for bios.target ($?)"
 else
     sudo ${SYSTEMCTL} enable bios.service bios.target
-    sudo ${SYSTEMCTL} start bios.service bios.target --no-block || die "Could not issue startup request for bios.target or bios.service"
+    sudo ${SYSTEMCTL} start bios.service bios.target --no-block || die "Could not issue startup request for bios.target or bios.service ($?)"
 fi
 
 # NOTE: we have tntnet@bios.service officially aliased by fty-tntnet@bios.service
