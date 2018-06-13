@@ -306,7 +306,6 @@ SYSTEMD_UNITS_LOWLEVEL += \
 # service instances for us. TODO: should tntnet@.service move here?
 SYSTEMD_UNITS_EXTRA += \
                         fty-license-accepted.path \
-                        fty-proxy.path \
                         wd_keepalive@.service
 
 # These service-units are PartOf and WantedBy the "bios.target"
@@ -330,7 +329,6 @@ SYSTEMD_UNITS += $(SYSTEMD_UNITS_TARGET_BIOS) $(SYSTEMD_UNITS_LOWLEVEL)
 #SYSTEMD_UNITS_NOTPRESET_LOWLEVEL +=
 SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS += \
                         fty-envvars.service \
-                        fty-proxy.service \
                         fty-tntnet@.service \
                         bios-fake-th.service
 
