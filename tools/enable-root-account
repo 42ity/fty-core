@@ -94,8 +94,8 @@ rm -f "$ROOT_PASSWORD_LOCATION"
 echo "$ROOT_PASSWORD" > "$ROOT_PASSWORD_LOCATION"
 
 echo "Root shell enabled and password changed"
-#echo "root:$ROOT_PASSWORD" | chpasswd
-#usermod -s /bin/bash root
+echo "root:$ROOT_PASSWORD" | chpasswd
+usermod -s /bin/bash root
 
 ### Uncomment this line to ease debugging in shell
 #echo "root:$ROOT_PASSWORD"
