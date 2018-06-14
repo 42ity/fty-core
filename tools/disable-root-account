@@ -81,5 +81,5 @@ if [[ "$SLEEP_MINUTES" -gt 0 ]] ; then
 fi
 
 echo "Root shell removed"
-#usermod -s /usr/sbin/nologin root
+usermod -s /usr/sbin/nologin root
 rm -f "$ROOT_PASSWORD_LOCATION"
