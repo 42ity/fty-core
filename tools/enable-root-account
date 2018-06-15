@@ -1,5 +1,41 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# Copyright (C) 2018 Eaton
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+#! \file    enable-root-account
+#  \brief   Helper script for temporarily unlocking the root
+#           account blocked after EULA
+#  \author  Lilian Barraud <lilianbarraud@Eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
+#
 
+usage() {
+    cat << EOF
+$0 [-t MINS]
+    Helper script for temporarily unlocking the root account
+    that is locked after accepting EULA on deployment images
+
+        -h|--help   Show this help and exit
+        -t MINS     Sleep for MINS minutes before disabling root
+EOF
+}
+
+PATH="/usr/libexec/fty:/usr/share/fty/scripts:/usr/bin:/bin:/usr/sbin:/sbin"
+export PATH
 
 JSONSH="/usr/share/fty/scripts/JSON.sh"
 get_a_string_arg() { "$JSONSH" -x "$1" | (IFS="`printf '\t'`" read K V; echo "$V") | sed 's,^"\(.*\)",\1,' ; }
@@ -10,29 +46,58 @@ umask 077
 
 ROOT_PASSWORD_LOCATION=/tmp/.rootpwd
 
-if [[ $img_type = *"devel"* ]]
-then
-   #only for deploy
-   exit 1
-fi
-
-if [ -f $ROOT_PASSWORD_LOCATION ]
-then
-  #previous password still valid
-  exit 1
-fi
-
-if [ $(id -u) -ne 0 ]
-then
+die() {
+    echo "FATAL: $*" >&2
     exit 1
+}
+
+case "$img_type" in
+    *"devel"*)
+        # We only disable root only for deploy images
+        exit 0
+        ;;
+esac
+
+if [[ -s $ROOT_PASSWORD_LOCATION ]] ; then
+    die "Previous password still valid"
 fi
 
+if [[ "$(id -u)" -ne 0 ]] ; then
+    die "You are not root or elevated, can not modify password data"
+fi
 
-ROOT_PASSWORD=$(dd if=/dev/urandom bs=9 count=1 2>/dev/null | base64)
+SLEEP_MINUTES=60
+while [[ $# != 0 ]]; do
+    case "$1" in
+        -h|-help|--help)
+            usage
+            exit 0
+            ;;
+        -t) [[ $# -gt 1 ]] && [[ "$2" -ge 0 ]] \
+                || die "Argument to '$1' should be a non-negative integer, got '${2-}!"
+            SLEEP_MINUTES="$2"
+            shift
+            ;;
+        *)  usage
+            echo ""
+            die "Got unknown argument: '$1'"
+            ;;
+    esac
+    shift
+done
+
+# Generate a random safe (ASCII) password string
+ROOT_PASSWORD="$(dd if=/dev/urandom bs=9 count=1 2>/dev/null | base64)"
+
+# Ensure as much as we can that the file is not hijacked
+rm -f "$ROOT_PASSWORD_LOCATION"
 echo "$ROOT_PASSWORD" > "$ROOT_PASSWORD_LOCATION"
 
 echo "Root shell enabled and password changed"
-#echo "root:$ROOT_PASSWORD" | chpasswd
-#usermod -s /bin/bash root
+echo "root:$ROOT_PASSWORD" | chpasswd
+usermod -s /bin/bash root
 
-/usr/libexec/fty/disable-root-account -t 60 &
+### Uncomment this line to ease debugging in shell
+#echo "root:$ROOT_PASSWORD"
+
+disable-root-account -t "$SLEEP_MINUTES" &

@@ -41,7 +41,11 @@
 #   This script is executed in the chroot'ed filesystem tree prepared
 #   by OBS installation of packages, including the 42ity core package.
 #   It is called as the "%build" recipe implementation from the OBS
-#   specfile, with an IMGTYPE envvar pre-set to "devel" or "deploy".
+#   specfile, with an IMGTYPE envvar pre-set to something containing
+#   "devel" (e.g. IMGTYPE=devel or IMGTYPE=IPM_Infra-ovadevel etc.)
+#   or is considered to be a "deploy" image otherwise.
+#   Note that the IMGTYPE also ends up in update-rc3 settings and
+#   in bios-web/image-version.txt.
 
 echo "INFO: Executing $0 $*"
 echo "    IMGTYPE='$IMGTYPE'"
@@ -939,8 +943,7 @@ find / -type f -mount -name '\.nfs????????????????????????' -exec rm -f '{}' \; 
 # Sanitize the OS image from some more build-system cruft
 rm -f /.guessed_dist /debian-binary
 rm -rf /.reorder /.oldroot
-#[ "$IMGTYPE" = deploy ] && \
-    rm -rf /.preinstallimage /.preinstall_image
+rm -rf /.preinstallimage /.preinstall_image
 sync
 
 # Some shells want these bits
