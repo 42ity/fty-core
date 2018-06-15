@@ -31,10 +31,14 @@ INSERT INTO t_bios_schema_version (tag, timestamp, filename, version) VALUES('be
 SELECT * FROM t_bios_schema_version WHERE tag = 'begin-import' order by id desc limit 1;
 COMMIT;
 
+\! /bin/rm -f /tmp/0013_um_envvars.sql
+\! /usr/share/bios/scripts/generate_env_user4sql.sh -O /tmp/0013_um_envvars.sql
+SOURCE /tmp/0013_um_envvars.sql;
+\! /bin/rm -f /tmp/0013_um_envvars.sql
 
 INSERT IGNORE INTO t_bios_agent_info(agent_name, info) VALUES
-    ("1001", '"preferences":{"email" : " ", "telephone" : " ", "organization" : " ", "date":"DDMMYYYY", "temperature":"C", "language":"en-us", "time":"24h"}'),
-    ("1002", '"preferences":{"email" : " ", "telephone" : " ", "organization" : " ", "date":"DDMMYYYY", "temperature":"C", "language":"en-us", "time":"24h"}');
+    (CAST(@ENV_ADMIN as CHAR(50)), '"preferences":{"email" : " ", "telephone" : " ", "organization" : " ", "date":"DDMMYYYY", "temperature":"C", "language":"en-us", "time":"24h"}'),
+    (CAST(@ENV_MONITOR as CHAR(50)), '"preferences":{"email" : " ", "telephone" : " ", "organization" : " ", "date":"DDMMYYYY", "temperature":"C", "language":"en-us", "time":"24h"}');
 
 
 /* This must be the last line of the SQL file */
