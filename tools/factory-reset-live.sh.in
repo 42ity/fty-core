@@ -146,8 +146,12 @@ do_unstate() {
         esac
     done
 
-    logmsg_info "Recreating blank IPM service state files and directories..."
+    logmsg_info "Recreating blank IPM service state files and directories - systemd..."
     systemd-tmpfiles --create
+
+    logmsg_info "Recreating blank IPM service state files and directories - ipc-meta-setup..."
+    systemctl restart ipc-meta-setup
+
     if [ "$ENABLESVC" = yes ]; then
         logmsg_info "Starting IPM services..."
         systemctl start bios.service || die "Can not ensure IPM daemons are running"
