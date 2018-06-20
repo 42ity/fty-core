@@ -20,7 +20,7 @@
 
 /* For details on schema version support see the main initdb.sql */
 SET @bios_db_schema_version = '201806140001';
-SET @bios_db_schema_filename = '0014_user_management.sql';
+SET @bios_db_schema_filename = '0014_user_preferences.sql';
 
 use box_utf8;
 
