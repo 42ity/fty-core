@@ -1125,6 +1125,7 @@ else
 			|| die "Can't un-tar the full RW directory" ;;
 		xsquashfs)
 			unsquashfs -d "${ALTROOT}/" -f "$IMAGE" \
+			&& chmod 755 "${ALTROOT}/" \
 			|| die "Can't un-squashfs the full RW directory" ;;
 		*) die "Requested to unpack unsupported archive type: $EXT" ;;
 	esac
