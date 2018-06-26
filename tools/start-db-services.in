@@ -47,7 +47,12 @@ SYSTEMCTL=@libexecdir@/@PACKAGE@/systemctl
 ### clump several targets to act upon, rather than do a "clean" one-by-one run.
 ### This value can be set by envvar files pulled by the service, e.g. the clean
 ### mode is useful to debug problems, and has negligible overhead on X86.
-### Default is to not coalease (so to run one by one).
+### Final default for unknown systems is to not coalease (so to run one by one).
+### Note that separately we process the SYSTEMCTL_COALESCE_INITIAL for the root
+### dependency services that sometimes lock up while running systemctl (on ARM
+### at least), maybe due to systemd changing state of those services at the
+### same time?..
+GUESSED_SYSTEMCTL_COALESCE=no
 case "${SYSTEMCTL_COALESCE-}" in
     [Yy][Ee][Ss]|[Tt][Rr][Uu][Ee]|[Oo][Nn]) SYSTEMCTL_COALESCE=yes ;;
     [Nn][Oo]|[Ff][Aa][Ll][Ss][Ee]|[Oo][Ff][Ff]) SYSTEMCTL_COALESCE=no ;;
@@ -59,8 +64,22 @@ case "${SYSTEMCTL_COALESCE-}" in
             *86*|amd64) SYSTEMCTL_COALESCE=no ;;
             *)      SYSTEMCTL_COALESCE=no ;;
         esac
+        GUESSED_SYSTEMCTL_COALESCE=yes
         ;;
 esac
+
+case "${SYSTEMCTL_COALESCE_INITIAL-}" in
+    [Yy][Ee][Ss]|[Tt][Rr][Uu][Ee]|[Oo][Nn]) SYSTEMCTL_COALESCE_INITIAL=yes ;;
+    [Nn][Oo]|[Ff][Aa][Ll][Ss][Ee]|[Oo][Ff][Ff]) SYSTEMCTL_COALESCE_INITIAL=no ;;
+    *) # Default to SYSTEMCTL_COALESCE value if caller provided it
+        if [ "$GUESSED_SYSTEMCTL_COALESCE" = no ] && [ -n "$SYSTEMCTL_COALESCE" ] ; then
+            SYSTEMCTL_COALESCE_INITIAL="${SYSTEMCTL_COALESCE}"
+        else
+            SYSTEMCTL_COALESCE_INITIAL=no
+        fi
+        ;;
+esac
+unset GUESSED_SYSTEMCTL_COALESCE
 
 die () {
     echo "ERROR: `date -u`: ${@}" >&2
@@ -78,7 +97,7 @@ fi
 # make it be active (as long as the license acceptance criteria are met).
 # Otherwise it should have come up as soon as the file(s) appeared, etc.
 
-if [[ "$SYSTEMCTL_COALESCE" = no ]] ; then
+if [[ "$SYSTEMCTL_COALESCE_INITIAL" = no ]] ; then
     echo "INFO: `date -u`: enable and start fty-license-accepted.path"
     sudo ${SYSTEMCTL} unmask fty-license-accepted.path || die "Unmasking fty-license-accepted.path failed ($?)"
     sudo ${SYSTEMCTL} enable fty-license-accepted.path || die "Enabling fty-license-accepted.path failed ($?)"
