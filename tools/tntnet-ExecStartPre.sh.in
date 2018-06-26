@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# Copyright (C) 2014-2017 Eaton
+# Copyright (C) 2014-2018 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -39,20 +39,33 @@ cat /etc/tntnet/"$INST".d/*.xml > /etc/tntnet/"$INST".xml
 echo "Make sure we have _bios-script password..."
 @datadir@/@PACKAGE@/scripts/_bios-script.sh
 
+WWW_USER="`grep '<user>' /etc/tntnet/"$INST".xml  | sed 's,^.*>\(.*\)<.*$,\1,'`" \
+    && [ -n "$WWW_USER" ] \
+    || WWW_USER="www-data"
+echo "Determined that the runtime user account for tntnet@$INST would be '$WWW_USER'"
+
+# FIXME: This one item breaks the idea of multiple service instances
 F=/etc/default/fty
 echo "Make sure '$F' exists and is properly owned..."
 test -f "${F}" || touch ${F}
-chown www-data: ${F}
+chown "${WWW_USER}": ${F}
 chmod 0644 ${F}
 
 # files to be passed from REST (like email attachments)
 SPOOL_DIR=/run/tntnet-${INST}
 rm -rf "${SPOOL_DIR}"
 mkdir -p "${SPOOL_DIR}"
-chown www-data: "${SPOOL_DIR}"
+chown "${WWW_USER}": "${SPOOL_DIR}"
 
+# Note: The webserver systemd unit starts life as a root, and later drops
+# privileges according to its configuration. However it keeps the USER=root
+# and LOGNAME=root and HOME=/root definitions that are exported to child
+# processes and sometimes cause a mess.
 cat << EOF > /run/tntnet-${INST}.env
 SPOOL_DIR='${SPOOL_DIR}'
+HOME='${SPOOL_DIR}'
+LOGNAME='${WWW_USER}'
+USER='${WWW_USER}'
 EOF
 
 echo "OK"
