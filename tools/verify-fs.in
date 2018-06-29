@@ -35,22 +35,23 @@ die () {
 is_tree_empty () {
     local dir excludes
     dir=${1}
+    shift 1
 
     # build chain of -not -path foo -or -not -path bar from args
-    shift 1
-    [[ -n ${1} ]] && excludes="-not -path '${1}'"
-    shift 1
     while [[ -n ${1} ]]; do
-        excludes="${excludes} -or -not -path '${1}'"
+        excludes=("${excludes[@]}" -path "$dir/$1" -prune -or)
         shift 1
     done
 
-    [[ $(find "${dir}" -xdev -type f ${excludes} | wc -l) == 0 ]]
-
+    [[ $(find "${dir}" -xdev "${excludes[@]}" -type f -print | wc -l) == 0 ]]
 }
 
 log () {
-    /usr/bin/logger -i -p security.err -t "verify-fs" "${@}"
+    if $interactive; then
+        echo "$@" >&2
+    else
+        /usr/bin/logger -i -p security.err -t "verify-fs" "${@}"
+    fi
 }
 
 cat_default () {
@@ -58,7 +59,7 @@ cat_default () {
         cat <<EOF
 bin:
 sbin:
-lib:
+lib:modules
 lib64:
 usr:local
 EOF
@@ -78,15 +79,20 @@ EOF
     die "Can't find images ${IMAGES}"
 
 ## 1.) Verify the images
-pushd "${IMAGES}"
+pushd "${IMAGES}" >/dev/null
 for ROOTFS in *.squashfs; do
 
     /usr/bin/md5sum -c "${ROOTFS}.md5" 2>/dev/null || \
         log "Bad integrity of ${ROOTFS}, checksum is not valid"
 
 done
-popd
+popd >/dev/null
 
+if tty -s; then
+    interactive=true
+else
+    interactive=false
+fi
 ## 2.) Verify the overlayfs
 cat_default | while read LINE; do
     TREE=${LINE%%:*}
