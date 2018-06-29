@@ -55,7 +55,7 @@ cat_default () {
         cat <<EOF
 bin:
 sbin:
-lib:
+lib:modules
 lib64:
 usr:local
 EOF
