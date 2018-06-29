@@ -35,18 +35,15 @@ die () {
 is_tree_empty () {
     local dir excludes
     dir=${1}
+    shift 1
 
     # build chain of -not -path foo -or -not -path bar from args
-    shift 1
-    [[ -n ${1} ]] && excludes="-not -path '${1}'"
-    shift 1
     while [[ -n ${1} ]]; do
-        excludes="${excludes} -or -not -path '${1}'"
+        excludes=("${excludes[@]}" -path "$dir/$1" -prune -or)
         shift 1
     done
 
-    [[ $(find "${dir}" -xdev -type f ${excludes} | wc -l) == 0 ]]
-
+    [[ $(find "${dir}" -xdev "${excludes[@]}" -type f -print | wc -l) == 0 ]]
 }
 
 log () {
