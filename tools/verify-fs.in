@@ -47,7 +47,11 @@ is_tree_empty () {
 }
 
 log () {
-    /usr/bin/logger -i -p security.err -t "verify-fs" "${@}"
+    if $interactive; then
+        echo "$@" >&2
+    else
+        /usr/bin/logger -i -p security.err -t "verify-fs" "${@}"
+    fi
 }
 
 cat_default () {
@@ -75,15 +79,20 @@ EOF
     die "Can't find images ${IMAGES}"
 
 ## 1.) Verify the images
-pushd "${IMAGES}"
+pushd "${IMAGES}" >/dev/null
 for ROOTFS in *.squashfs; do
 
     /usr/bin/md5sum -c "${ROOTFS}.md5" 2>/dev/null || \
         log "Bad integrity of ${ROOTFS}, checksum is not valid"
 
 done
-popd
+popd >/dev/null
 
+if tty -s; then
+    interactive=true
+else
+    interactive=false
+fi
 ## 2.) Verify the overlayfs
 cat_default | while read LINE; do
     TREE=${LINE%%:*}
