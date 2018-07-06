@@ -586,7 +586,9 @@ insserv_updatercd() {
             if [[ "$rc" != 0 ]]; then
                 error_code "$rc" "insserv rejected the script header"
             fi
-            systemd_reload
+            if [[ "enable" = "$action" ]]; then
+                systemd_reload
+            fi
 
             exit $rc
             ;;
