@@ -145,8 +145,16 @@ openrc_rlconv() {
 #}
 
 systemd_reload() {
+    scriptname="$1" 
     if [[ -d "/run/systemd/system" ]]; then
-        systemctl daemon-reload
+        //HACK as systemctl daemon-reload may restart NTP service even if the service is stopped. 
+        //We prefere to not do deamon-reload
+        //TODO : investigate this strange behavior and fix it properly  
+        if [[ "ntp" = "$scriptname" ]]; then                     
+           echo "ntp detected, DO NOT RELOAD"
+        else
+            systemctl daemon-reload
+        fi                                                     
     fi
 }
 
@@ -516,7 +524,7 @@ insserv_updatercd() {
                 if [[ "$rc" != 0 ]]; then
                     error_code "$rc" "insserv rejected the script header"
                 fi
-                systemd_reload
+                systemd_reload $scriptname
                 exit $rc
             else
                 # insserv removes all dangling symlinks, no need to tell it
@@ -529,7 +537,7 @@ insserv_updatercd() {
                 if [[ "$rc" != 0 ]]; then
                     error_code "$rc" "insserv rejected the script header"
                 fi
-                systemd_reload
+                systemd_reload $scriptname
                 exit $rc
             fi
             ;;
@@ -552,7 +560,7 @@ insserv_updatercd() {
                 if [[ "$rc" != 0 ]]; then
                     error_code "$rc" "insserv rejected the script header"
                 fi
-                systemd_reload
+                systemd_reload $scriptname
 
                 # OpenRC does not distinguish halt and reboot.  They are handled
                 # by /etc/init.d/transit instead.
@@ -586,9 +594,7 @@ insserv_updatercd() {
             if [[ "$rc" != 0 ]]; then
                 error_code "$rc" "insserv rejected the script header"
             fi
-            if [[ "enable" = "$action" ]]; then
-                systemd_reload
-            fi
+            systemd_reload $scriptname
 
             exit $rc
             ;;
