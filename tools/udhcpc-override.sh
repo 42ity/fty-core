@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2015 Eaton
+# Copyright (C) 2015-2018 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -39,7 +39,16 @@ echo "WARN: $0 $@: will hack the command-line for proper DHCP support..." >&2
 UDHCPC_ARGS=""
 UDHCPC_IFACE=""
 UDHCPC_OPTS=""
-UDHCPC_OPTS_DEFAULT="-b -t 4 -T 6 -O ntpsrv -a"
+UDHCPC_OPTS_DEFAULT="-b -t 4 -T 6 -a"
+if /bin/systemctl is-enabled ntpd ; then
+    # The service can be "disabled" or "masked"
+    # if users want a manually set clock - do not
+    # ask the DHCP client to request and perhaps
+    # override that manual setting in this case.
+    # TODO: Differentiate somehow if the user also
+    # wanted a specific NTP server vs. one from DHCP?
+    UDHCPC_OPTS_DEFAULT="$UDHCPC_OPTS_DEFAULT -O ntpsrv"
+fi
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -91,4 +100,3 @@ if [ "`grep -lw debug /proc/cmdline`" ]; then
         "udhcpc command-line was changed to: /sbin/udhcpc $UDHCPC_ARGS $UDHCPC_OPTS" >/dev/console
 fi
 exec /sbin/udhcpc $UDHCPC_ARGS $UDHCPC_OPTS
-
