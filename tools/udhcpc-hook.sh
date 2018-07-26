@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Copyright (c) 2010 Debian
-# Copyright (c) 2015 Eaton
+# Copyright (c) 2015-2018 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,6 +26,33 @@
 
 NTP_CONF=/etc/ntp.conf
 NTP_DHCP_CONF=/var/lib/ntp/ntp.conf.dhcp
+
+# The systemd service unit can be "disabled" or "masked" if users want a
+# manually set clock - do not ask the DHCP client to request and perhaps
+# override that manual setting in this case. Exit code for both is 1.
+# Note that this flag only controls whether we change the service state;
+# even if the unit is disabled, we can change its configuration file based
+# on data received (or not) from DHCP.
+# TODO: Differentiate somehow if the user also wanted a specific NTP
+# server vs. one received from DHCP?
+NTP_SYSTEMD_ENABLED="`/bin/systemctl is-enabled ntpd`" || \
+if [ $? != 1 -o -z "$NTP_SYSTEMD_ENABLED" ]; then
+    NTP_SYSTEMD_ENABLED="unknown"
+fi
+
+can_manipulate_ntpd() {
+	case "$NTP_SYSTEMD_ENABLED" in
+	    mask*|disabl*)
+	        echo "$0: WARN: The NTP service unit status is currently $NTP_SYSTEMD_ENABLED so the DHCP hook will not manipulate it" >&2
+	        return 1
+	        ;;
+	    enabl*) return 0 ;;
+	    *)
+	        echo "$0: WARN: The NTP service unit status is currently '$NTP_SYSTEMD_ENABLED' which has no special handling, so the DHCP hook will try to manipulate it" >&2
+	        return 0
+	        ;;
+	esac
+}
 
 hostname_setup() {
 	case "$reason" in
@@ -55,6 +82,8 @@ hostname_setup() {
 }
 
 ntp_server_restart_do() (
+	can_manipulate_ntpd || return $?
+
 	invoke-rc.d ntp try-restart && \
 	    echo "$0: INFO: NTP service restarted; waiting for it to pick up time (if not failed) so as to sync it onto hardware RTC" && \
 	    sleep 60 && ntp_server_status && hwclock -w -u && \
@@ -62,6 +91,8 @@ ntp_server_restart_do() (
 )
 
 ntp_server_restart() {
+	can_manipulate_ntpd || return $?
+
 	ntp_server_restart_do &
 	sleep 5
 	[ -d /proc/$! ] && echo "$0: INFO: NTP service restart process $! is still running, leaving it in the background" || wait $?
