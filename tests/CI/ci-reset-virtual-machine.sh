@@ -1486,6 +1486,15 @@ if [ -n "${GEN_REL_DETAILS}" -a -s "${GEN_REL_DETAILS}" -a -x "${GEN_REL_DETAILS
 	"${GEN_REL_DETAILS}"
 ) ; fi
 
+if [ -x "`dirname $0`/jenkins-sut-hacks" ] ; then (
+	# Add support for envvars from boolean build args that can be provided
+	# by the test jobs. More details and consulted envvars should be in the
+	# script called below, if available on your (CI) system:
+
+	export ALTROOT
+	"`dirname $0`/jenkins-sut-hacks"
+) ; fi
+
 if [ "$BLOCK_JENKINS" = yes ] ; then
 	logmsg_info "Un-blocking access from Jenkins, so it can use this virtual machine"
 	grep -v "${JENKINS_HOST}" < "${ALTROOT}/etc/default/iptables" > "${ALTROOT}/etc/default/iptables.bak" && \
