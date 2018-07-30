@@ -42,6 +42,7 @@ exampleudevrules_DATA = \
 	
 examplelogdir	= $(datarootdir)/@PACKAGE@/examples/config/ftylog.d
 examplelog_DATA = \
-                   ftylog.d/10-ftylog.cfg
+                   ftylog.d/10-ftylog.cfg \
+                   ftylog.d/20-wwwlog.cfg
 
 EXTRA_DIST += $(examplecfgsudo_DATA) $(examplecfgpam_DATA) $(examplecfgsec_DATA) $(examplecfgupdate_DATA) $(examplecfgrsyslogd_DATA) $(exampleprofile_DATA) $(exampleudevrules_DATA) $(examplelog_DATA)
