@@ -405,6 +405,7 @@ fi
 # Setup 42ity security
 mkdir -p /etc/pam.d
 cp /usr/share/fty/examples/config/pam.d/* /etc/pam.d
+sed -i '/@include common-auth/i@include fty-auth' /etc/pam.d/sshd
 case "$IMGTYPE" in
     *devel*) ;;
     *) sed -i "s|\\(.*pam_cracklib.so\\).*|    password\tinclude\t\tfty-password|" /etc/pam.d/common-password ;;
