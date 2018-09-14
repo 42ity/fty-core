@@ -24,6 +24,9 @@ Cmnd_Alias DATE	            = /usr/bin/date,/bin/date,/sbin/hwclock
 ### TODO: Remove hardcoded path both here and in the sources
 Cmnd_Alias AUGTOOL          = /usr/bin/augtool -S -I/usr/share/fty/lenses -e
 Cmnd_Alias BIOS_PASSWD      = @libexecdir@/@PACKAGE@/bios-passwd
+### Symlink to same script, as code in fty-rest is now separate
+### and generates paths to call it with its PACKAGE value...
+Cmnd_Alias BIOS_PASSWD_FTY_REST      = @libexecdir@/fty-rest/bios-passwd
 Cmnd_Alias BIOS_SYSTEMCTL   = @libexecdir@/@PACKAGE@/systemctl
 Cmnd_Alias BIOS_JOURNALCTL  = @libexecdir@/@PACKAGE@/journalctl
 Cmnd_Alias BIOS_UPDATE_RC3  = @libexecdir@/@PACKAGE@/update-rc3
@@ -37,7 +40,7 @@ Cmnd_Alias BIN_SYSTEMCTL    = /bin/systemctl
 Cmnd_Alias FTY_ROUTE    = @libexecdir@/@PACKAGE@/fty-route
 
 # Overall, what is currently allowed with different privileges?
-Cmnd_Alias BIOS_PROGS	= DATE,AUGTOOL,BIOS_PASSWD,BIOS_SYSTEMCTL,BIOS_JOURNALCTL,BIOS_NUTCONFIG,BIOS_UPDATE_RC3,BIOS_MOUNT_USB,BIOS_UMOUNT_USB,BIOS_LOGHOST_RSYSLOG,BIOS_MYSQLDUMP,BIOS_DIAGNOSTIC,BIOS_DMF,FTY_ROUTE
+Cmnd_Alias BIOS_PROGS	= DATE,AUGTOOL,BIOS_PASSWD,BIOS_PASSWD_FTY_REST,BIOS_SYSTEMCTL,BIOS_JOURNALCTL,BIOS_NUTCONFIG,BIOS_UPDATE_RC3,BIOS_MOUNT_USB,BIOS_UMOUNT_USB,BIOS_LOGHOST_RSYSLOG,BIOS_MYSQLDUMP,BIOS_DIAGNOSTIC,BIOS_DMF,FTY_ROUTE
 
 # Who is allowed to elevate?
 User_Alias BIOS_USERS	= %bios-admin,www-data,%bios-infra
