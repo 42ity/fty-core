@@ -221,7 +221,7 @@ for D in /usr/libexec /usr/lib /usr/share ; do
     done
 done
 
-#42ity log configuration file 
+#42ity log configuration file
 mkdir -p /etc/fty/
 cp /usr/share/fty/examples/config/ftylog.d/10-ftylog.cfg /etc/fty/ftylog.cfg
 cp /usr/share/fty/examples/config/ftylog.d/20-wwwlog.cfg /etc/fty/wwwlog.cfg
@@ -244,9 +244,11 @@ ln -sr /usr/share/augeas/lenses/dist/{build,ethers,interfaces,ntp,ntpd,pam,resol
 # Setup u-Boot
 echo '/dev/mtd3 0x00000 0x40000 0x40000' > /etc/fw_env.config
 
-# journald setup
-sed -i 's|.*RuntimeMaxFileSize.*|RuntimeMaxFileSize=10M|' /etc/systemd/journald.conf
-sed -i 's|.*Storage.*|Storage=volatile|'                  /etc/systemd/journald.conf
+# journald setup; note we keep it in RAM and want it updated ASAP
+sed -e 's|.*RuntimeMaxFileSize.*|RuntimeMaxFileSize=10M|' \
+    -e 's|.*Storage.*|Storage=volatile|' \
+    -e 's|.*SyncIntervalSec.*|SyncIntervalSec=1s|' \
+    -i /etc/systemd/journald.conf
 
 # rsyslogd setup
 mkdir -p /etc/rsyslog.d /etc/rsyslog.d-early /var/spool/rsyslog
@@ -653,7 +655,7 @@ case "$IMGTYPE" in
     *devel*)
         echo "BIOS_LOG_LEVEL=LOG_DEBUG" > /usr/share/fty/etc/default/fty
         echo "BIOS_NUT_USE_DMF=true" >> /usr/share/fty/etc/default/fty
-        sed -i "s|INFO|DEBUG|g" /etc/fty/ftylog.cfg 
+        sed -i "s|INFO|DEBUG|g" /etc/fty/ftylog.cfg
         ;;
     *)
         echo "BIOS_LOG_LEVEL=LOG_INFO" > /usr/share/fty/etc/default/fty
