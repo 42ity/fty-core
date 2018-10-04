@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2014 Eaton
+# Copyright (C) 2014-2018 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -50,13 +50,15 @@ usage(){
     echo "  --use-https|--use-http  Specify if REST API service requires HTTP(S)"
     echo "  -q|--quick  skip sanity checks that the server serves 42ity REST API"
     echo "  -m|--method which routine to use from weblib.sh (Default: '$WEBLIB_FUNC')"
-    echo "NOTE: RELATIVE_URL is under the BASE_URL (host:port/api/v1)"
+    echo "  -ap|--api-prefix URL    Specify the REST API prefix (default '$SUT_API_PREFIX')"
+    echo "NOTE: RELATIVE_URL is under the BASE_URL (host:port/apiPrefix)"
 }
 
 SUT_is_localhost() {
     [ "$SUT_HOST" = "127.0.0.1" -o "$SUT_HOST" = "localhost" ]
 }
 
+SHOW_HELP=no
 RELATIVE_URL=""
 # SKIP_SANITY=(yes|no|onlyerrors)
 [ x"${SKIP_SANITY-}" = x- ] && SKIP_SANITY=""
@@ -69,6 +71,10 @@ while [ $# -gt 0 ] ; do
             ;;
         --host|--machine|-sh|--sut|--sut-host)
             SUT_HOST="$2"
+            shift
+            ;;
+        --api-prefix|-ap)
+            SUT_API_PREFIX="$2"
             shift
             ;;
         --use-https|--sut-web-https)    SUT_WEB_SCHEMA="https"; export SUT_WEB_SCHEMA;;
@@ -91,8 +97,7 @@ while [ $# -gt 0 ] ; do
             ;;
         -q|-f|--force|--quick) SKIP_SANITY=yes ;;
         --help|-h)
-            usage
-            exit 1
+            SHOW_HELP=yes
             ;;
         /*) # Assume that an URL follows
             RELATIVE_URL="$1"
@@ -142,7 +147,13 @@ fi
 
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh >&2 || \
-    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+    { [ "$SHOW_HELP" = yes ] && usage ; \
+      echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+
+if [ "$SHOW_HELP" = yes ]; then
+    usage
+    exit 1
+fi
 
 NEED_BUILDSUBDIR=no determineDirs_default >&2 || true
 NEED_TESTLIB=no

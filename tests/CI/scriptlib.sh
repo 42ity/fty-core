@@ -1,6 +1,6 @@
 # shell include file: scriptlib.sh
 #
-# Copyright (C) 2014-2016 Eaton
+# Copyright (C) 2014-2018 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -77,7 +77,12 @@ export BIOS_USER BIOS_PASSWD SASL_SERVICE
 if [ "${SUT_WEB_PORT-}" -eq 443 ]; then
     SUT_WEB_SCHEMA="https"
 fi
-[ -z "${BASE_URL-}" ] && BASE_URL="${SUT_WEB_SCHEMA}://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+case "${SUT_API_PREFIX-}" in
+    "") SUT_API_PREFIX="/api/v1" ;;
+    /*) ;;
+    *)  SUT_API_PREFIX="/$SUT_API_PREFIX" ;;
+esac
+[ -z "${BASE_URL-}" ] && BASE_URL="${SUT_WEB_SCHEMA}://${SUT_HOST}:${SUT_WEB_PORT}${SUT_API_PREFIX}"
 
 ### By default, do we stop 42ity services before re-initializing the database?
 ### See reloaddb_stops_BIOS() as the callable method
