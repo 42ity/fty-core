@@ -289,15 +289,31 @@ verifyGU() {
     return $RES
 }
 
+usage() {
+    echo "Create a user account (maybe in an OS image under ALTROOT):
+Usage: USER_NAME=... GROUP_NAME=... ALTROOT=... USER_PASS='...' $0
+   or: USER_PASS_HASH='...' USER_NAME=..... $0
+   or: echo 'S0mePa\$\$' | USER_PASS_STDIN=true USER_NAME=..... $0
+See the script code for envvars (a lot!) that you can define to specify the user details
+
+Generate and echo a password hash using one of algorithms present in this OS:
+Usage: USER_PASS='...' $0 hashPasswd
+   or: echo 'S0mePa\$\$' | USER_PASS_STDIN=true $0 hashPasswd
+   or most securely from shell:
+USER_PASS_STDIN=true $0 hashPasswd << EOF
+S0mePa\$\$
+EOF
+"
+}
+
 if [ $# = 0 ]; then
     genGroup
     genUser
     verifyGU
 else
     case "$1" in
-        help) echo "Usage: USER_NAME=... GROUP_NAME=... ALTROOT=... $0
-See the script code for envvars (a lot!) that you can define to specify the user details
-Usage: USER_PASS='...' $0 hashPasswd"
+        help|-h|--help|-help)
+            usage
             exit 0 ;;
         genGroup|genUser|verifyGU)
             [ -z "$DEBUG" = yes ] && echo "FATAL: Unknown args" >&2 && exit 1
