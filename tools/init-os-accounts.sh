@@ -29,6 +29,8 @@
 #  See also: tests/CI/test_web.sh
 #  See the variables set below. Can also use DEBUG=Y for more output
 #  including sensitive data (like the password or its hash).
+#  Also can `export USER_PASS_STDIN` with anon-empty value so the
+#  password value would be read from stdin (no leak of envvar).
 #
 #  \note This should be run as root or with a user that can elevate;
 #        for now we just treat errors (that are not "already-exist")
@@ -56,10 +58,14 @@ export LANG LC_ALL
 [ x"$USER_GECOS" = x ] && 	USER_GECOS="User for 42ity processes"
 [ x"$USER_SHELL" = x ] && 	USER_SHELL="/bin/sh"
 [ x"$USER_HOME" = x ] &&	USER_HOME="/home/$USER_NAME"
-[ x"$USER_PASS" = x -a x"$USER_PASS_HASH" = x ] && \
+if [ -n "${USER_PASS_STDIN-}" ]; then
+    USER_PASS="`cat /dev/stdin`"
+else
+    [ x"$USER_PASS" = x -a x"$USER_PASS_HASH" = x ] && \
         USER_PASS="$DEF_USER_PASS" && \
         USER_PASS_HASH="$DEF_USER_PASS_HASH" && \
         echo "INFO: Using the default hardcoded password (or rather its hardcoded hash)"
+fi
 # (Optional) additional groups, a space-separated list
 [ x"$USER_ADD_GROUPS" = x ] &&	USER_ADD_GROUPS="sasl"
 [ x"$USER_ADD_GROUPS" = x- ] &&	USER_ADD_GROUPS=""
