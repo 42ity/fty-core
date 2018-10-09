@@ -73,13 +73,15 @@ die() {
 [ x"$USER_SHELL" = x ] && 	USER_SHELL="/bin/sh"
 [ x"$USER_HOME" = x ] &&	USER_HOME="/home/$USER_NAME"
 if [ -n "${USER_PASS_STDIN-}" ]; then
-    USER_PASS="`cat /dev/stdin`"
-else
-    [ x"$USER_PASS" = x -a x"$USER_PASS_HASH" = x ] && \
-        USER_PASS="$DEF_USER_PASS" && \
-        USER_PASS_HASH="$DEF_USER_PASS_HASH" && \
-        log_info "Using the default hardcoded password (or rather its hardcoded hash)"
+    # STDIN overrides the variable even if one is provided
+    read USER_PASS
 fi
+# Do not allow empty password from any source
+[ x"$USER_PASS" = x -a x"$USER_PASS_HASH" = x ] && \
+    USER_PASS="$DEF_USER_PASS" && \
+    USER_PASS_HASH="$DEF_USER_PASS_HASH" && \
+    log_info "Using the default hardcoded password (or rather its hardcoded hash)"
+
 # (Optional) additional groups, a space-separated list
 [ x"$USER_ADD_GROUPS" = x ] &&	USER_ADD_GROUPS="sasl"
 [ x"$USER_ADD_GROUPS" = x- ] &&	USER_ADD_GROUPS=""
