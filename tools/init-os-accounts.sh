@@ -1,4 +1,6 @@
 #!/bin/sh
+# Note: this script intentionally uses the dumbest-common-denominator
+# shell syntax with hopes to work under any arbitrary system shell.
 #
 # Copyright (C) 2014-2018 Eaton
 #
