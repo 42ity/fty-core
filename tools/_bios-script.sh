@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2016-2017 Eaton
+# Copyright (C) 2016-2018 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -33,7 +33,10 @@ if [[ ! -s "${PASSWD}" ]]; then
     cat /dev/null > "${PASSWD}"
     chown root:bios-admin "${PASSWD}"
     chmod 0640 "${PASSWD}"
-    printf 'BIOS_USER="_bios-script"\nBIOS_PASSWD="%s"\n' "${password}" > "${PASSWD}"
+    cat > "${PASSWD}" << EOF
+BIOS_USER="_bios-script"
+BIOS_PASSWD="${password}"
+EOF
 
     passwd _bios-script << EOF
 ${password}
