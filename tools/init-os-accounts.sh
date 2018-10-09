@@ -50,6 +50,20 @@ LANG=C
 LC_ALL=C
 export LANG LC_ALL
 
+log_info() {
+    echo "INFO: $*" >&2
+}
+
+log_warning() {
+    echo "WARNING: $*" >&2
+}
+
+die() {
+    [ x"$CODE" = x ] && CODE=1
+    echo "FATAL: `date -u`: $0: $@" >&2
+    exit $CODE
+}
+
 # Currently we support one user and group, but the script is modularized
 # to possibly easily generate more accounts in a loop, later...
 # Also note that (currently) specific numeric ID's are not enforced.
@@ -64,7 +78,7 @@ else
     [ x"$USER_PASS" = x -a x"$USER_PASS_HASH" = x ] && \
         USER_PASS="$DEF_USER_PASS" && \
         USER_PASS_HASH="$DEF_USER_PASS_HASH" && \
-        echo "INFO: Using the default hardcoded password (or rather its hardcoded hash)"
+        log_info "Using the default hardcoded password (or rather its hardcoded hash)"
 fi
 # (Optional) additional groups, a space-separated list
 [ x"$USER_ADD_GROUPS" = x ] &&	USER_ADD_GROUPS="sasl"
@@ -72,12 +86,6 @@ fi
 
 # TODO: Perhaps check if "pwgen" is installed and use it to generate
 # long and random passwords not to be used by humans?.. `pwgen -sncy 32 1`
-
-die() {
-    [ x"$CODE" = x ] && CODE=1
-    echo "FATAL: `date`: $0: $@" >&2
-    exit $CODE
-}
 
 # Simply prepend "sudo" if current "id -n" is not "0" (moderately portable)?
 # A more elaborate solution if needed later can be ported from vboxsvc:
@@ -93,7 +101,7 @@ CURID="`id -u`" || CURID=""
 # Note this creation of fake root only works if ALTROOT dir is not initialized
 if [ x"$ALTROOT_MAKEFAKE" = xY -a x"$ALTROOT" != x/ ]; then
     if [ ! -d "$ALTROOT/etc" ]; then
-        echo "INFO: Trying to make a fake altroot structure in '$ALTROOT' as requested..."
+        log_info "Trying to make a fake altroot structure in '$ALTROOT' as requested..."
         mkdir -p "$ALTROOT/etc"
         ( cd "$ALTROOT/etc" && {
             mkdir -p default
@@ -115,7 +123,7 @@ EOF
         } )
 
         if [ ! -d "$ALTROOT/lib" ]; then
-            echo "WARNING: ALTROOT lacks /lib/ - trying to put some needed files in it, but maybe passwd-tools will misbehave on a system different from our reference!" >&2
+            log_warning "ALTROOT lacks /lib/ - trying to put some needed files in it, but maybe passwd-tools will misbehave on a system different from our reference!"
             sleep 2
             mkdir -p "$ALTROOT/lib"
             ( cd /lib && { \
@@ -130,7 +138,7 @@ EOF
         fi
 
     else
-        echo "WARNING: Requested to make a fake altroot structure in '$ALTROOT' but it seems to exist, skipped step"
+        log_warning "Requested to make a fake altroot structure in '$ALTROOT' but it seems to exist, skipped step"
     fi
 fi
 
@@ -143,14 +151,14 @@ fi
   -f "$ALTROOT/etc/group" -a -f "$ALTROOT/etc/gshadow" -a \
   -f "$ALTROOT/etc/default/useradd" -a \
   -f "$ALTROOT/etc/login.defs" -a -f "$ALTROOT/etc/nsswitch.conf" ] || \
-        echo "WARNING: Alternate (chroot) OS-image directory '$ALTROOT' does not contain all expected files: local authentication database manipulation can fail during processing below"
+        log_warning "Alternate (chroot) OS-image directory '$ALTROOT' does not contain all expected files: local authentication database manipulation can fail during processing below"
 
 hashPasswd_mkpasswd() {
     ALGO="$1"
     ALGO_DESCR="$2"
     [ -z "$ALGO_DESCR" ] && ALGO_DESCR="$ALGO"
     { USER_PASS_HASH="`echo "$USER_PASS" | ${MKPASSWD} -s -m ${ALGO}`" && \
-      echo "INFO: Generated password hash with mkpasswd: ${ALGO_DESCR}" || \
+      log_info "Generated password hash with mkpasswd: ${ALGO_DESCR}" || \
       USER_PASS_HASH="" ; }
 }
 
@@ -159,7 +167,7 @@ hashPasswd_openssl() {
     ALGO_DESCR="$2"
     [ -z "$ALGO_DESCR" ] && ALGO_DESCR="$ALGO"
     { USER_PASS_HASH="`echo "$USER_PASS" | ${OPENSSL} passwd -stdin ${ALGO}`" && \
-      echo "INFO: Generated password hash with openssl: ${ALGO_DESCR}" || \
+      log_info "Generated password hash with openssl: ${ALGO_DESCR}" || \
       USER_PASS_HASH="" ; }
 }
 
@@ -193,7 +201,7 @@ hashPasswd() {
 
 genGroup() {
     # Creates a group by name
-    echo "INFO: Creating group '$GROUP_NAME'"
+    log_info "Creating group '$GROUP_NAME'"
 
     $RUNAS groupadd -R "$ALTROOT" "$GROUP_NAME"
     RES_G=$?
@@ -216,14 +224,14 @@ genUser() {
     fi
 
     if [ x"$USER_PASS_HASH" = x ]; then
-        echo "WARNING: Could not generate a password hash, falling back to default password" >&2
+        log_warning "Could not generate a password hash, falling back to default password"
         [ x"$DEBUG" != x ] && echo "    default password: '$DEF_USER_PASS'" >&2
         USER_PASS_HASH="$DEF_USER_PASS_HASH"
     fi
 
     [ x"$DEBUG" = x ] && \
-        echo "INFO: Creating user:group '$USER_NAME:$GROUP_NAME'" || \
-        echo "INFO: Using password hash '$USER_PASS_HASH' for user:group '$USER_NAME:$GROUP_NAME'"
+        log_info "Creating user:group '$USER_NAME:$GROUP_NAME'" || \
+        log_info "Using password hash '$USER_PASS_HASH' for user:group '$USER_NAME:$GROUP_NAME'"
 
     MKHOME_FLAG=""
     [ -f "$ALTROOT/etc/login.defs" ] && \
@@ -251,7 +259,7 @@ genUser() {
     case "$RES_U" in
         0)   ;;	# added okay
         4|9) RES_U=0
-             echo "WARNING: Account '$USER_NAME' already exists, information (including password) not replaced now!" >&2
+             log_warning "Account '$USER_NAME' already exists, information (including password) not replaced now!"
              ;;	# not unique name or number
         12)  RES_U=0 ;;	# can't create home directory
         *)   CODE=$RES_U die "Error during 'useradd $USER_NAME' ($RES_U)" ;;
@@ -260,7 +268,7 @@ genUser() {
     # Try to add the account into secondary groups such as "sasl",
     # but don't die if this fails
     for G in $USER_ADD_GROUPS ; do
-        echo "INFO: Try to add '$G' as a secondary group for '$USER_NAME' (may fail)..."
+        log_info "Try to add '$G' as a secondary group for '$USER_NAME' (may fail)..."
         $RUNAS usermod -G "$G" -a "$USER_NAME"
     done
 
@@ -271,20 +279,20 @@ verifyGU() {
     RES=1
 
     if [ "$ALTROOT" = / ]; then
-        echo "INFO: Verifying group account:"
+        log_info "Verifying group account:"
         getent group "$GROUP_NAME" || echo "FAIL"
 
-        echo "INFO: Verifying user account:"
+        log_info "Verifying user account:"
         getent passwd "$USER_NAME" || echo "FAIL" && RES=0
         finger "$USER_NAME" 2>/dev/null
-        id "$USER_NAME" && echo "OK" && RES=0
+        id "$USER_NAME" && echo "OK" >&2 && RES=0
     else
-        echo "INFO: Verifying group account (in ALTROOT):"
+        log_info "Verifying group account (in ALTROOT):"
         egrep "^$GROUP_NAME" "$ALTROOT/etc/group" || echo "FAIL"
 
-        echo "INFO: Verifying user account (in ALTROOT):"
+        log_info "Verifying user account (in ALTROOT):"
         egrep "^$USER_NAME" "$ALTROOT/etc/passwd" || echo "FAIL" && RES=0
-    fi
+    fi >&2
 
     return $RES
 }
@@ -316,7 +324,7 @@ else
             usage
             exit 0 ;;
         genGroup|genUser|verifyGU)
-            [ -z "$DEBUG" = yes ] && echo "FATAL: Unknown args" >&2 && exit 1
+            [ -z "$DEBUG" = yes ] && die "Unknown args"
             eval "$@"
             exit $? ;;
         hashPasswd*)
@@ -324,6 +332,6 @@ else
             RES=$?
             echo "${USER_PASS_HASH}"
             exit $RES ;;
-        *) echo "FATAL: Unknown args" >&2 ; exit 1 ;;
+        *) die "Unknown args" ;;
     esac
 fi
