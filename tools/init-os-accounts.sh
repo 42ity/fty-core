@@ -157,7 +157,11 @@ hashPasswd_mkpasswd() {
     ALGO="$1"
     ALGO_DESCR="$2"
     [ -z "$ALGO_DESCR" ] && ALGO_DESCR="$ALGO"
-    { USER_PASS_HASH="`echo "$USER_PASS" | ${MKPASSWD} -s -m ${ALGO}`" && \
+
+    { # Do not `echo|cmd` to avoid password leaks here:
+      USER_PASS_HASH="`${MKPASSWD} -s -m ${ALGO} << EOF
+${USER_PASS}
+EOF`" && \
       log_info "Generated password hash with mkpasswd: ${ALGO_DESCR}" || \
       USER_PASS_HASH="" ; }
 }
@@ -166,7 +170,10 @@ hashPasswd_openssl() {
     ALGO="$1"   # For openssl, can be empty to use default
     ALGO_DESCR="$2"
     [ -z "$ALGO_DESCR" ] && ALGO_DESCR="$ALGO"
-    { USER_PASS_HASH="`echo "$USER_PASS" | ${OPENSSL} passwd -stdin ${ALGO}`" && \
+    { # Do not `echo|cmd` to avoid password leaks here:
+      USER_PASS_HASH="`${OPENSSL} passwd -stdin ${ALGO} << EOF
+${USER_PASS}
+EOF`" && \
       log_info "Generated password hash with openssl: ${ALGO_DESCR}" || \
       USER_PASS_HASH="" ; }
 }
