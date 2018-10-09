@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (C) 2014 Eaton
+# Copyright (C) 2014-2018 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -57,9 +57,9 @@ export LANG LC_ALL
 [ x"$USER_SHELL" = x ] && 	USER_SHELL="/bin/sh"
 [ x"$USER_HOME" = x ] &&	USER_HOME="/home/$USER_NAME"
 [ x"$USER_PASS" = x -a x"$USER_PASS_HASH" = x ] && \
-	USER_PASS="$DEF_USER_PASS" && \
-	USER_PASS_HASH="$DEF_USER_PASS_HASH" && \
-	echo "INFO: Using the default hardcoded password (or rather its hardcoded hash)"
+        USER_PASS="$DEF_USER_PASS" && \
+        USER_PASS_HASH="$DEF_USER_PASS_HASH" && \
+        echo "INFO: Using the default hardcoded password (or rather its hardcoded hash)"
 # (Optional) additional groups, a space-separated list
 [ x"$USER_ADD_GROUPS" = x ] &&	USER_ADD_GROUPS="sasl"
 [ x"$USER_ADD_GROUPS" = x- ] &&	USER_ADD_GROUPS=""
@@ -82,54 +82,54 @@ CURID="`id -u`" || CURID=""
 [ "$CURID" = 0 ] || RUNAS="sudo"
 
 # An alternate image based at ALTROOT may be modified instead of the running OS
-[ x"$ALTROOT" = x ] &&		ALTROOT="/"
+[ x"$ALTROOT" = x ] &&	        ALTROOT="/"
 
 # Note this creation of fake root only works if ALTROOT dir is not initialized
 if [ x"$ALTROOT_MAKEFAKE" = xY -a x"$ALTROOT" != x/ ]; then
     if [ ! -d "$ALTROOT/etc" ]; then
-	echo "INFO: Trying to make a fake altroot structure in '$ALTROOT' as requested..."
-	mkdir -p "$ALTROOT/etc"
+        echo "INFO: Trying to make a fake altroot structure in '$ALTROOT' as requested..."
+        mkdir -p "$ALTROOT/etc"
         ( cd "$ALTROOT/etc" && {
-	    mkdir -p default
-	    touch passwd shadow group gshadow login.defs default/useradd nsswitch.conf
-	    chmod 600 shadow gshadow
+            mkdir -p default
+            touch passwd shadow group gshadow login.defs default/useradd nsswitch.conf
+            chmod 600 shadow gshadow
 
-	    cat <<EOF>nsswitch.conf
+            cat <<EOF>nsswitch.conf
 passwd:  files
 group:   files
 shadow:  files
 gshadow: files
 EOF
 
-	    # Make a best-effort with these files, though they are not strictly required
-	    cd /etc
-	    cp -prf login.defs default/useradd \
-		ldap* pam* secur* selinux* skel \
-		"$ALTROOT/etc/"
-	} )
+            # Make a best-effort with these files, though they are not strictly required
+            cd /etc
+            cp -prf login.defs default/useradd \
+                ldap* pam* secur* selinux* skel \
+                "$ALTROOT/etc/"
+        } )
 
-	if [ ! -d "$ALTROOT/lib" ]; then
-	    echo "WARNING: ALTROOT lacks /lib/ - trying to put some needed files in it, but maybe passwd-tools will misbehave on a system different from our reference!" >&2
-	    sleep 2
-	    mkdir -p "$ALTROOT/lib"
-	    ( cd /lib && { \
-		    find . -name 'libnss*.so*'; \
-		    find . -name 'libnsl*.so*'; \
-		    find . -name 'libc*.so*'; \
-	      } | while read F; do
-		D="`dirname "$F"`"
-		mkdir -p "$ALTROOT/lib/$D"
-		cp -pf "$F" "$ALTROOT/lib/$D/"
-	      done )
-	fi
+        if [ ! -d "$ALTROOT/lib" ]; then
+            echo "WARNING: ALTROOT lacks /lib/ - trying to put some needed files in it, but maybe passwd-tools will misbehave on a system different from our reference!" >&2
+            sleep 2
+            mkdir -p "$ALTROOT/lib"
+            ( cd /lib && { \
+                    find . -name 'libnss*.so*'; \
+                    find . -name 'libnsl*.so*'; \
+                    find . -name 'libc*.so*'; \
+              } | while read F; do
+                D="`dirname "$F"`"
+                mkdir -p "$ALTROOT/lib/$D"
+                cp -pf "$F" "$ALTROOT/lib/$D/"
+              done )
+        fi
 
     else
-	echo "WARNING: Requested to make a fake altroot structure in '$ALTROOT' but it seems to exist, skipped step"
+        echo "WARNING: Requested to make a fake altroot structure in '$ALTROOT' but it seems to exist, skipped step"
     fi
 fi
 
 [ -d "$ALTROOT" -a -d "$ALTROOT/etc" ] || \
-	die "Alternate (chroot) OS-image directory requested but not available: '$ALTROOT'"
+        die "Alternate (chroot) OS-image directory requested but not available: '$ALTROOT'"
 
 # We do not fail due to these errors right now, because user accounts may be
 # managed in a networked database like LDAP, AD, NIS, etc.:
@@ -137,24 +137,24 @@ fi
   -f "$ALTROOT/etc/group" -a -f "$ALTROOT/etc/gshadow" -a \
   -f "$ALTROOT/etc/default/useradd" -a \
   -f "$ALTROOT/etc/login.defs" -a -f "$ALTROOT/etc/nsswitch.conf" ] || \
-	echo "WARNING: Alternate (chroot) OS-image directory '$ALTROOT' does not contain all expected files: local authentication database manipulation can fail during processing below"
+        echo "WARNING: Alternate (chroot) OS-image directory '$ALTROOT' does not contain all expected files: local authentication database manipulation can fail during processing below"
 
 hashPasswd_mkpasswd() {
-	ALGO="$1"
-	ALGO_DESCR="$2"
-	[ -z "$ALGO_DESCR" ] && ALGO_DESCR="$ALGO"
-	{ USER_PASS_HASH="`echo "$USER_PASS" | ${MKPASSWD} -s -m ${ALGO}`" && \
-	  echo "INFO: Generated password hash with mkpasswd: ${ALGO_DESCR}" || \
-	  USER_PASS_HASH="" ; }
+    ALGO="$1"
+    ALGO_DESCR="$2"
+    [ -z "$ALGO_DESCR" ] && ALGO_DESCR="$ALGO"
+    { USER_PASS_HASH="`echo "$USER_PASS" | ${MKPASSWD} -s -m ${ALGO}`" && \
+      echo "INFO: Generated password hash with mkpasswd: ${ALGO_DESCR}" || \
+      USER_PASS_HASH="" ; }
 }
 
 hashPasswd_openssl() {
-	ALGO="$1"   # For openssl, can be empty to use default
-	ALGO_DESCR="$2"
-	[ -z "$ALGO_DESCR" ] && ALGO_DESCR="$ALGO"
-	{ USER_PASS_HASH="`echo "$USER_PASS" | ${OPENSSL} passwd -stdin $ALGO`" && \
-	  echo "INFO: Generated password hash with openssl: ${ALGO_DESCR}" || \
-	  USER_PASS_HASH="" ; }
+    ALGO="$1"   # For openssl, can be empty to use default
+    ALGO_DESCR="$2"
+    [ -z "$ALGO_DESCR" ] && ALGO_DESCR="$ALGO"
+    { USER_PASS_HASH="`echo "$USER_PASS" | ${OPENSSL} passwd -stdin ${ALGO}`" && \
+      echo "INFO: Generated password hash with openssl: ${ALGO_DESCR}" || \
+      USER_PASS_HASH="" ; }
 }
 
 hashPasswd() {
@@ -164,10 +164,10 @@ hashPasswd() {
     # Returns 0 if generation was successful (hash not empty).
 
     # mkpasswd as in debian8 today can generate these hashes:
-    # 	sha-512		'$6$'
+    #	sha-512		'$6$'
     #	sha-256		'$5$'
     #	md5    		'$1$'
-    #	crypt		'...'
+    #	crypt  		'...'
     if [ -x ${MKPASSWD} ]; then
         hashPasswd_mkpasswd "sha-512"
         [ x"$USER_PASS_HASH" = x ] && hashPasswd_mkpasswd "sha-256"
@@ -192,9 +192,9 @@ genGroup() {
     $RUNAS groupadd -R "$ALTROOT" "$GROUP_NAME"
     RES_G=$?
     case "$RES_G" in
-	0)   ;;	# added okay
-	4|9) RES_G=0 ;;	# not unique name or number
-	*)   CODE=$RES_G die "Error during 'groupadd $GROUP_NAME' ($RES_G)" ;;
+        0)   ;;	# added okay
+        4|9) RES_G=0 ;;	# not unique name or number
+        *)   CODE=$RES_G die "Error during 'groupadd $GROUP_NAME' ($RES_G)" ;;
     esac
     return $RES_G
 }
@@ -206,56 +206,56 @@ genUser() {
     # $USER_PASS otherwise
 
     if [ x"$USER_PASS_HASH" = x ]; then
-	hashPasswd
+        hashPasswd
     fi
 
     if [ x"$USER_PASS_HASH" = x ]; then
-	echo "WARNING: Could not generate a password hash, falling back to default password" >&2
-	[ x"$DEBUG" != x ] && echo "    default password: '$DEF_USER_PASS'" >&2
-	USER_PASS_HASH="$DEF_USER_PASS_HASH"
+        echo "WARNING: Could not generate a password hash, falling back to default password" >&2
+        [ x"$DEBUG" != x ] && echo "    default password: '$DEF_USER_PASS'" >&2
+        USER_PASS_HASH="$DEF_USER_PASS_HASH"
     fi
 
     [ x"$DEBUG" = x ] && \
-	echo "INFO: Creating user:group '$USER_NAME:$GROUP_NAME'" || \
-	echo "INFO: Using password hash '$USER_PASS_HASH' for user:group '$USER_NAME:$GROUP_NAME'"
+        echo "INFO: Creating user:group '$USER_NAME:$GROUP_NAME'" || \
+        echo "INFO: Using password hash '$USER_PASS_HASH' for user:group '$USER_NAME:$GROUP_NAME'"
 
     MKHOME_FLAG=""
     [ -f "$ALTROOT/etc/login.defs" ] && \
-	egrep '^CREATE_HOME ([Yy]|[Yy][Ee][Ss]|true|on)$' \
-	    "$ALTROOT/etc/login.defs" > /dev/null && \
-	MKHOME_FLAG="-m"
+        egrep '^CREATE_HOME ([Yy]|[Yy][Ee][Ss]|true|on)$' \
+            "$ALTROOT/etc/login.defs" > /dev/null && \
+        MKHOME_FLAG="-m"
 
     case "$CREATE_HOME" in
-	[Yy]|[Yy][Ee][Ss]|true|on)	MKHOME_FLAG="-m" ;;
+        [Yy]|[Yy][Ee][Ss]|true|on)	MKHOME_FLAG="-m" ;;
     esac
 
     if [ x"$ALTROOT_MAKEFAKE" = xY -a -d "$ALTROOT" -a \
-	 x"$ALTROOT" != x/ -a x"$MKHOME_FLAG" != x ]; then
-	_HOME_BASE="$ALTROOT/`dirname "$USER_HOME"`"
-	[ -d "$_HOME_BASE" ] || \
-	    $RUNAS mkdir -p "$_HOME_BASE"
+         x"$ALTROOT" != x/ -a x"$MKHOME_FLAG" != x ]; then
+        _HOME_BASE="$ALTROOT/`dirname "$USER_HOME"`"
+        [ -d "$_HOME_BASE" ] || \
+            $RUNAS mkdir -p "$_HOME_BASE"
     fi
 
     $RUNAS useradd -g "$GROUP_NAME" -s "$USER_SHELL" \
-	-R "$ALTROOT" -c "$USER_GECOS" \
-	$MKHOME_FLAG -d "$USER_HOME" \
-	-p "$USER_PASS_HASH" \
-	"$USER_NAME"
+        -R "$ALTROOT" -c "$USER_GECOS" \
+        $MKHOME_FLAG -d "$USER_HOME" \
+        -p "$USER_PASS_HASH" \
+        "$USER_NAME"
     RES_U=$?
     case "$RES_U" in
-	0)   ;;	# added okay
-	4|9) RES_U=0
-	     echo "WARNING: Account '$USER_NAME' already exists, information (including password) not replaced now!" >&2
-	     ;;	# not unique name or number
-	12)  RES_U=0 ;; # can't create home directory
-	*)   CODE=$RES_U die "Error during 'useradd $USER_NAME' ($RES_U)" ;;
+        0)   ;;	# added okay
+        4|9) RES_U=0
+             echo "WARNING: Account '$USER_NAME' already exists, information (including password) not replaced now!" >&2
+             ;;	# not unique name or number
+        12)  RES_U=0 ;;	# can't create home directory
+        *)   CODE=$RES_U die "Error during 'useradd $USER_NAME' ($RES_U)" ;;
     esac
 
     # Try to add the account into secondary groups such as "sasl",
     # but don't die if this fails
     for G in $USER_ADD_GROUPS ; do
-	echo "INFO: Try to add '$G' as a secondary group for '$USER_NAME' (may fail)..."
-	$RUNAS usermod -G "$G" -a "$USER_NAME"
+        echo "INFO: Try to add '$G' as a secondary group for '$USER_NAME' (may fail)..."
+        $RUNAS usermod -G "$G" -a "$USER_NAME"
     done
 
     return $RES_U
@@ -265,19 +265,19 @@ verifyGU() {
     RES=1
 
     if [ "$ALTROOT" = / ]; then
-	echo "INFO: Verifying group account:"
-	getent group "$GROUP_NAME" || echo "FAIL"
+        echo "INFO: Verifying group account:"
+        getent group "$GROUP_NAME" || echo "FAIL"
 
-	echo "INFO: Verifying user account:"
-	getent passwd "$USER_NAME" || echo "FAIL" && RES=0
-	finger "$USER_NAME" 2>/dev/null
-	id "$USER_NAME" && echo "OK" && RES=0
+        echo "INFO: Verifying user account:"
+        getent passwd "$USER_NAME" || echo "FAIL" && RES=0
+        finger "$USER_NAME" 2>/dev/null
+        id "$USER_NAME" && echo "OK" && RES=0
     else
-	echo "INFO: Verifying group account (in ALTROOT):"
-	egrep "^$GROUP_NAME" "$ALTROOT/etc/group" || echo "FAIL"
+        echo "INFO: Verifying group account (in ALTROOT):"
+        egrep "^$GROUP_NAME" "$ALTROOT/etc/group" || echo "FAIL"
 
-	echo "INFO: Verifying user account (in ALTROOT):"
-	egrep "^$USER_NAME" "$ALTROOT/etc/passwd" || echo "FAIL" && RES=0
+        echo "INFO: Verifying user account (in ALTROOT):"
+        egrep "^$USER_NAME" "$ALTROOT/etc/passwd" || echo "FAIL" && RES=0
     fi
 
     return $RES
