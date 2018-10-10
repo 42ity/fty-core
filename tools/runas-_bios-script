@@ -1,0 +1,29 @@
+#!/bin/bash
+_TIMEOUT=60
+
+if [[ "$EUID" -ne 0 ]]; then
+   echo "This utility must be run as root"
+   exit 1
+fi
+
+while getopts t:c:e: name
+do
+  case "$name" in
+  t)
+    _TIMEOUT="$OPTARG";;
+  e)
+    export "$OPTARG";;
+  ?)
+    usage;;
+  esac
+done
+
+shift $(($OPTIND - 1))
+
+# We need to properly quote/escape the command to not mung it.
+COMMAND=
+for i; do
+  COMMAND="$COMMAND \"$(echo "$i" | sed -e 's/\\/\\\\/' -e 's/"/\\"/')\""
+done
+
+(cd /tmp && /usr/bin/timeout "$_TIMEOUT" /bin/su _bios-script -s '/bin/sh' -c "$COMMAND")
