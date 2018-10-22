@@ -179,7 +179,8 @@ client_SCRIPTS +=	 \
 			tools/start-db-services \
 			tools/fty-route \
 			tools/enable-root-account \
-			tools/disable-root-account
+			tools/disable-root-account \
+			tools/runas-_bios-script
 
 helper_SCRIPTS +=	tools/tntnet-ExecStartPre.sh tools/envvars-ExecStartPre.sh tools/generate-release-details.sh tools/factory-reset-live.sh
 
@@ -192,7 +193,8 @@ EXTRA_DIST +=		tools/fake-th \
 			tools/compress-logs \
 			tools/fty-route \
 			tools/enable-root-account \
-			tools/disable-root-account
+			tools/disable-root-account \
+			tools/runas-_bios-script
 
 # Recipe needed to fulfill ci-rc-bios.sh logic
 fake-th: tools/fake-th

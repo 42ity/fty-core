@@ -1,0 +1,63 @@
+#!/bin/bash
+#
+# Copyright (C) 2018 Eaton
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+
+_TIMEOUT=60
+
+if [[ "$EUID" -ne 0 ]]; then
+   echo "This utility must be run as root"
+   exit 1
+fi
+
+function usage {
+  (2>&1 cat <<EOF
+Usage: runas-_bios-script [-e V=v ...] [-t timeout] program [arguments ...]
+  -e V=v     : set environment variable V to value v
+  -t timeout : terminate program after _timeout_ seconds
+
+EOF
+  )
+  exit 1
+}
+
+while getopts t:e:? name
+do
+  case "$name" in
+  t)
+    _TIMEOUT="$OPTARG";;
+  e)
+    export "$OPTARG";;
+  ?)
+    usage;;
+  esac
+done
+
+shift $(($OPTIND - 1))
+
+if [ -z "$1" ]
+then
+  usage
+fi
+
+# We need to properly quote/escape the command to not mung it.
+COMMAND=
+for i; do
+  COMMAND="$COMMAND \"$(echo "$i" | sed -e 's/\\/\\\\/' -e 's/"/\\"/')\""
+done
+
+(cd /tmp && /usr/bin/timeout "$_TIMEOUT" /bin/su _bios-script -s '/bin/sh' -c "$COMMAND")
