@@ -197,9 +197,9 @@ GRANT SELECT                      ON ${DATABASE}.* TO '$BIOS_RO_USER'@'localhost
 FLUSH PRIVILEGES;
 EOF
 		[ "$GOOD_BIOS_RW" = yes ] || \
-			printf 'DB_USER="%s"\nDB_PASSWD="%s"\n' "${BIOS_RW_USER}" "${BIOS_RW_PASS}" > "${BIOS_DB_RW}"
+			printf 'DB_USER="%s"\nDB_PASSWD="%s"\nDB_SCHEMA="box_utf8"\n' "${BIOS_RW_USER}" "${BIOS_RW_PASS}" > "${BIOS_DB_RW}"
 		[ "$GOOD_BIOS_RO" = yes ] || \
-			printf 'DB_USER="%s"\nDB_PASSWD="%s"\n' "${BIOS_RO_USER}" "${BIOS_RO_PASS}" > "${BIOS_DB_RO}"
+			printf 'DB_USER="%s"\nDB_PASSWD="%s"\nDB_SCHEMA="box_utf8"\n' "${BIOS_RO_USER}" "${BIOS_RO_PASS}" > "${BIOS_DB_RO}"
 		chown bios "${BIOS_DB_RW}" "${BIOS_DB_RO}"
 		chmod 600 "${BIOS_DB_RW}" "${BIOS_DB_RO}"
 	else
