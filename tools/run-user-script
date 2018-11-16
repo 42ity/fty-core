@@ -27,22 +27,23 @@ i=1
 while true
 do
   case "${!i}" in
-  -t)
-    i=$(($i+2));;
-  -e)
+  -t|-e)
+    # Parameter with argument, skip two arguments
     i=$(($i+2));;
   [a-zA-Z0-9]*([a-zA-Z0-9_.-]))
-    # Replace argument without disturbing the other arguments
-    set -- "${@:1:$(($i-1))}" "/usr/libexec/fty/${!i}" "${@:$(($i+1))}"
+    # It's the executable, prepend path without disturbing the other arguments
+    set -- "${@:1:$(($i-1))}" "/var/lib/fty/fty-scripts-rest/${!i}" "${@:$(($i+1))}"
     break;;
+  -*)
+    # Bad argument, rely on runas-_bios-script to print usage
+    echo "Unknown argument '${!i}'" >&2
+    exec /usr/libexec/fty/runas-_bios-script;;
   *)
-    # Should not happen, caller screwed up
-    (2>&1 cat <<EOF
-Invalid user script name.
-EOF
-    )
-    exit 1;;
+    # Bad script name, rely on runas-_bios-script to print usage
+    echo "Invalid script name '${!i}'" >&2
+    exec /usr/libexec/fty/runas-_bios-script;;
   esac
 done
 
-exec /usr/libexec/fty/runas-_bios-script $@
+# Let runas-_bios-script do the work
+exec /usr/libexec/fty/runas-_bios-script "$@"
