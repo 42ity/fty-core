@@ -45,4 +45,8 @@ examplelog_DATA = \
                    ftylog.d/10-ftylog.cfg \
                    ftylog.d/20-wwwlog.cfg
 
-EXTRA_DIST += $(examplecfgsudo_DATA) $(examplecfgpam_DATA) $(examplecfgsec_DATA) $(examplecfgupdate_DATA) $(examplecfgrsyslogd_DATA) $(exampleprofile_DATA) $(exampleudevrules_DATA) $(examplelog_DATA)
+examplenutserverdir	= $(systemdsystemunitdir)/nut-server.service.d
+examplenutserver_DATA = \
+			nut-server.service.d/configure-nut-users.conf
+
+EXTRA_DIST += $(examplecfgsudo_DATA) $(examplecfgpam_DATA) $(examplecfgsec_DATA) $(examplecfgupdate_DATA) $(examplecfgrsyslogd_DATA) $(exampleprofile_DATA) $(exampleudevrules_DATA) $(examplelog_DATA) $(examplenutserver_DATA)

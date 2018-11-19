@@ -327,6 +327,7 @@ AC_CONFIG_FILES([
         setup/20-th-names.sh
         tools/db-init
         tools/envvars-ExecStartPre.sh
+        tools/setup-nut-users-ExecStartPre.sh
         tools/factory-reset-live.sh
         tools/run-test-doc.sh
         tools/start-db-services
@@ -338,6 +339,7 @@ AC_CONFIG_FILES([
         docs/examples/rsyslog.d/05-bash.conf
         docs/examples/rsyslog.d/10-ipc.conf
         docs/examples/sudoers.d/fty_00_base
+        docs/examples/nut-server.service.d/configure-nut-users.conf
         docs/examples/update-rc3.d/90-local-paths.rc3.conf
         systemd/bios-agent-inventory.service
         systemd/bios-fake-th.service

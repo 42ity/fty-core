@@ -183,7 +183,7 @@ client_SCRIPTS +=	 \
 			tools/runas-_bios-script \
 			tools/run-user-script
 
-helper_SCRIPTS +=	tools/tntnet-ExecStartPre.sh tools/envvars-ExecStartPre.sh tools/generate-release-details.sh tools/factory-reset-live.sh
+helper_SCRIPTS +=	tools/tntnet-ExecStartPre.sh tools/envvars-ExecStartPre.sh tools/generate-release-details.sh tools/factory-reset-live.sh tools/setup-nut-users-ExecStartPre.sh
 
 EXTRA_DIST +=		tools/fake-th \
 			tools/bios-networking \

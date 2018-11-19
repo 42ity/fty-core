@@ -74,6 +74,8 @@ docs/doxygen/*.tmp
 
 docs/examples/sudoers.d/fty_00_base
 !docs/examples/sudoers.d/fty_00_base.in
+docs/examples/nut-server.service.d/configure-nut-users.conf
+!docs/examples/nut-server.service.d/configure-nut-users.conf.in
 
 .test.log
 .test.trs
@@ -187,6 +189,8 @@ tools/tntnet-ExecStartPre.sh
 tools/envvars-ExecStartPre.sh
 !tools/start-db-services.in
 tools/start-db-services
+!tools/setup-nut-users-ExecStartPre.sh.in
+tools/setup-nut-users-ExecStartPre.sh
 
 src/web/src/auth-verify.cpp
 src/web/src/auth-require.cpp
