@@ -45,7 +45,7 @@ examplelog_DATA = \
                    ftylog.d/10-ftylog.cfg \
                    ftylog.d/20-wwwlog.cfg
 
-examplenutserverdir	= /lib/systemd/system/nut-server.service.d
+examplenutserverdir	= $(systemdsystemunitdir)/nut-server.service.d
 examplenutserver_DATA = \
 			nut-server.service.d/configure-nut-users.conf
 
