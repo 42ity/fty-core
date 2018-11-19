@@ -1,0 +1,49 @@
+#!/bin/bash
+#
+# Copyright (C) 2018 Eaton
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+
+shopt -s extglob
+
+# We want to replace the argument containing the executable to run by a version
+# prefixed by the directory path to the scripts. Iterate over arguments until
+# we've done the replacement.
+
+i=1
+while true
+do
+  case "${!i}" in
+  -t|-e)
+    # Parameter with argument, skip two arguments
+    i=$(($i+2));;
+  [a-zA-Z0-9]*([a-zA-Z0-9_.-]))
+    # It's the executable, prepend path without disturbing the other arguments
+    set -- "${@:1:$(($i-1))}" "/var/lib/fty/fty-scripts-rest/${!i}" "${@:$(($i+1))}"
+    break;;
+  -*)
+    # Bad argument, rely on runas-_bios-script to print usage
+    echo "Unknown argument '${!i}'" >&2
+    exec /usr/libexec/fty/runas-_bios-script;;
+  *)
+    # Bad script name, rely on runas-_bios-script to print usage
+    echo "Invalid script name '${!i}'" >&2
+    exec /usr/libexec/fty/runas-_bios-script;;
+  esac
+done
+
+# Let runas-_bios-script do the work
+exec /usr/libexec/fty/runas-_bios-script "$@"
