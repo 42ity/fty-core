@@ -24,14 +24,14 @@
 #
 
 # Set up a NUT administrator
-if [ ! -f /etc/default/bios-nut-admin ]
+if [ ! -f @sysconfdir@/default/bios-nut-admin ]
 then
     nut_bios_user=bios-administrator
     nut_bios_password=$(dd if=/dev/urandom count=1 bs=16 2>/dev/null | md5sum | cut -f1 -d' ')
     echo "Creating NUT internal user $nut_bios_user..."
 
     # Add user to NUT configuration
-    cat <<EOF >>/etc/nut/upsd.users
+    cat <<EOF >> @sysconfdir@/nut/upsd.users
 
 [$nut_bios_user]
     password = $nut_bios_password
@@ -41,10 +41,10 @@ then
 EOF
 
     # Store credentials in a environment variable file
-    touch /etc/default/bios-nut-admin
-    chmod 660 /etc/default/bios-nut-admin
-    chown bios /etc/default/bios-nut-admin
-    cat <<EOF >/etc/default/bios-nut-admin
+    touch @sysconfdir@/default/bios-nut-admin
+    chmod 660 @sysconfdir@/default/bios-nut-admin
+    chown bios @sysconfdir@/default/bios-nut-admin
+    cat <<EOF > @sysconfdir@/default/bios-nut-admin
 NUT_USER="$nut_bios_user"
 NUT_PASSWD="$nut_bios_password"
 EOF

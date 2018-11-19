@@ -189,6 +189,8 @@ tools/tntnet-ExecStartPre.sh
 tools/envvars-ExecStartPre.sh
 !tools/start-db-services.in
 tools/start-db-services
+!tools/setup-nut-users-ExecStartPre.sh.in
+tools/setup-nut-users-ExecStartPre.sh
 
 src/web/src/auth-verify.cpp
 src/web/src/auth-require.cpp

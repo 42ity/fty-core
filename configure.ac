@@ -327,6 +327,7 @@ AC_CONFIG_FILES([
         setup/20-th-names.sh
         tools/db-init
         tools/envvars-ExecStartPre.sh
+        tools/setup-nut-users-ExecStartPre.sh
         tools/factory-reset-live.sh
         tools/run-test-doc.sh
         tools/start-db-services
