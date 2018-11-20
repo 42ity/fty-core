@@ -1,2 +1,2 @@
 [Service]
-ExecStartPre=@libexecdir@/@PACKAGE@/setup-nut-users-ExecStartPre.sh
+ExecStartPre=@datadir@/@PACKAGE@/scripts/setup-nut-users-ExecStartPre.sh
