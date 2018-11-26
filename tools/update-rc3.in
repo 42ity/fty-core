@@ -976,6 +976,12 @@ removeold_osimage() (
         [ -d "./$IMGTYPE/$ARCH" ] && cd "./$IMGTYPE/$ARCH"
         # Alphabetic sort, per timestamps from the builder host
         # but considering the rebuild-suffixes of same baseline
+        # Note that if there is a mix of images from different
+        # products, then the "newest" one alphabetically may be
+        # from a different line-up and not quite the one we
+        # could have intended to keep. A forceflash file can
+        # fix which image must be applied during next boot
+        # (and others deleted by low-level init-script).
         for F in `ls -1d *.${EXT} 2>/dev/null | grep -v _ | sort_osimage_names | head -n -1` ; do
             [ -n "$F" ] && [ -f "$F" ] && \
             if [ -n "$DOWNLOADED_OS_IMAGE" ] && [ -s "$DOWNLOADED_OS_IMAGE" ] && \
