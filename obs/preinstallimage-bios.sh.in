@@ -594,7 +594,9 @@ rm -f /tmp/bios.xml
 
 # Disable logind
 /bin/systemctl disable systemd-logind
-find / -name systemd-logind.service -delete
+# Avoid errors looking into /run /proc and such; assume that during OS image
+# generation all the stable-FS buildroot is under same filesystem on host.
+find /etc /usr /lib -mount -name systemd-logind.service -delete
 
 # Our watchdogs - disable system ones, enable our custom service
 # Note that actual service instances work or not based on presence of the
