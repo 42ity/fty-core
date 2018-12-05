@@ -534,6 +534,9 @@ if [ -s /lib/systemd/system/nut-driver-enumerator.service ] \
         /bin/systemctl disable ${unit} || true
         /bin/systemctl mask ${unit} || true
     done
+    # Note: nut-driver-enumerator-daemon-activator.service may complain it is
+    # not enabling because of missing requirements in the Install section...
+    # if so - this is intentional in that branch of NUT for our product.
     for unit in nut-driver-enumerator-daemon.service nut-driver-enumerator-daemon-activator.service nut-driver-enumerator-daemon-activator.path ; do
         /bin/systemctl unmask ${unit} || true
         /bin/systemctl enable ${unit} || true
