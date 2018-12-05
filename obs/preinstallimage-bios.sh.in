@@ -526,6 +526,20 @@ if [ -s /lib/systemd/system/fty-tntnet@.service ]; then
     mv /lib/systemd/system/fty-tntnet@.service /lib/systemd/system/tntnet@.service
 fi
 
+if [ -s /lib/systemd/system/nut-driver-enumerator.service ] \
+&& [ -s /lib/systemd/system/nut-driver-enumerator-daemon.service ] \
+; then
+    echo "NOTE: The NUT package provides both a single-shot and a daemonized implementation of nut-driver-enumerator service; we prefer the latter for IPM"
+    for unit in nut-driver-enumerator.service nut-driver-enumerator.path ; do
+        /bin/systemctl disable ${unit} || true
+        /bin/systemctl mask ${unit} || true
+    done
+    for unit in nut-driver-enumerator-daemon.service nut-driver-enumerator-daemon-activator.service nut-driver-enumerator-daemon-activator.path ; do
+        /bin/systemctl unmask ${unit} || true
+        /bin/systemctl enable ${unit} || true
+    done
+fi
+
 # Generally enable everything fty-* (and related)
 # Note: we do not unmask here, because if anyone went through the
 # non-default trouble of masking, it must have had a reason :)
