@@ -234,7 +234,6 @@ EXTRA_DIST	+= $(obs_SCRIPTS)
 ipc_meta_setupdir = $(datadir)/@PACKAGE@/setup/
 # Note: use srcdir for verbatim scripts, builddir for templated .sh.in products
 ipc_meta_setup_SCRIPTS = \
-	$(top_srcdir)/setup/10-avahi-lxc.sh \
 	$(top_srcdir)/setup/10-bios-gpio.sh \
 	$(top_srcdir)/setup/15-dpkg-database.everytime.sh \
 	$(top_srcdir)/setup/16-machineid-dir.everytime.sh \
@@ -246,7 +245,6 @@ ipc_meta_setup_SCRIPTS = \
 	$(top_srcdir)/setup/ipc-meta-setup.sh
 
 EXTRA_DIST += \
-	$(top_srcdir)/setup/10-avahi-lxc.sh \
 	$(top_srcdir)/setup/10-bios-gpio.sh \
 	$(top_srcdir)/setup/15-dpkg-database.everytime.sh \
 	$(top_srcdir)/setup/16-machineid-dir.everytime.sh \
