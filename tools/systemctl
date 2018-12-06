@@ -71,6 +71,7 @@ SYSTEMCTL_UNITS_COMMON_EXTERNAL="mariadb mysql mysqld                   \
                  networking network                                     \
                  nut-driver nut-monitor nut-server                      \
                  nut-driver-enumerator nut-client nut                   \
+                 nut-driver-enumerator-daemon nut-driver-enumerator-daemon-activator \
                  malamute saslauthd rsyslog rsyslogd"
 # SYSTEMCTL_UNITS_COMMON_INTERNAL lists the services delivered by our project
 # TODO: legacy-metrics will be removed, drop it there
