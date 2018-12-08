@@ -656,6 +656,13 @@ case "$IMGTYPE" in
         ;;
 esac
 
+# according to https://github.com/42ity/malamute/blob/1.0-FTY-master/src/mlm_perftest.c#L22
+# "If we allow limits, then the engines will block under stress."
+# to avoid any block under stress, set unlimited High Water Mark on malamute clients side likes we have on the broker itself
+echo "ZSYS_SNDHWM=0" >> /usr/share/fty/etc/default/fty
+echo "ZSYS_RCVHWM=0" >> /usr/share/fty/etc/default/fty
+echo "ZSYS_PIPEHWM=0" >> /usr/share/fty/etc/default/fty
+
 # set path to our libexec directory
 echo "PATH=/usr/libexec/fty:/bin:/usr/bin:/sbin:/usr/sbin" >>/usr/share/fty/etc/default/fty
 
