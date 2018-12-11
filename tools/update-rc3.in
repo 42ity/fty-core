@@ -981,6 +981,7 @@ download_osimage() (
 
     [ -s "${aTGT_FILE}" ] && [ -s "${aTGT_FILE_CSOLD}" ] && [ -s "${aTGT_FILE_MANIFEST}" ] && \
     touch -r "${aTGT_FILE}" "${aTGT_FILE_CSOLD}" "${aTGT_FILE_MANIFEST}" && \
+    mkdir -p /var/lib/fty/sw-update/ && \
     ( etn-sw-update --add-image "${aTGT_FILE}" || echo "$?" > "/var/lib/fty/sw-update/activation_requested" ) && \
     logmsg_info "Got OS image OK:" && \
     ls -ld "${aTGT_FILE}" "${aTGT_FILE_CSOLD}" "${aTGT_FILE_MANIFEST}" && \
