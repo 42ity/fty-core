@@ -400,8 +400,7 @@ remove_image() {
     # WARNING: this MUST be done before package manifest deletion!
     etn-sw-update --delete-image "$1"
     # Also remove the image file manifest, if present
-    MANIFEST_FILE="`echo "$1" | sed 's/.squashfs/-manifest.json/'`"
-    rm -f "$MANIFEST_FILE"
+    rm -f "$1"{,-manifest.json}
     [ -n "$RETAIN_FILE" ] && [ -s "$RETAIN_FILE.$$" ] && mv -f "$RETAIN_FILE.$$" "$RETAIN_FILE" \
         || rm -f "$1.forceflash"
 }
@@ -922,13 +921,12 @@ download_osimage() (
     # than what we already have; the TGT_FILE names the ultimate local filename
     if [ -d "./$IMGTYPE/$ARCH" ]; then
         aTGT_FILE="`pwd`/$IMGTYPE/$ARCH/${rTGT_FILE}"
-        aTGT_FILE_MANIFEST="`pwd`""`echo "/$IMGTYPE/$ARCH/${rTGT_FILE}" | sed 's/.squashfs/-manifest.json/'`"
         aTGT_FILE_CSOLD="`pwd`/$IMGTYPE/$ARCH/${rTGT_FILE_CSOLD}"
     else
         aTGT_FILE="`pwd`/${rTGT_FILE}"
-        aTGT_FILE_MANIFEST="`pwd`""`echo "/${rTGT_FILE}" | sed 's/.squashfs/-manifest.json/'`"
         aTGT_FILE_CSOLD="`pwd`/${rTGT_FILE_CSOLD}"
     fi
+    aTGT_FILE_MANIFEST="${aTGT_FILE}-manifest.json/"
 
     if [ x"$aTGT_FILE_CSNEW" != x"${aIMAGE_CSNEW}" ] && [ -s "$aIMAGE_CSNEW" ] && [ -s "$aTGT_FILE_CSNEW" ] ; then
         # We have both a flat and original checksum files; keep one
@@ -945,10 +943,10 @@ download_osimage() (
     fi
 
     # Take care of image manifest file
-    aTGT_FILE_MANIFEST_NEW="`echo "${TEMP_DATA}/${rTGT_FILE}" | sed 's/.squashfs/-manifest.json/'`.$$.tmp" # aTGT_FILE_CSNEW
-    IMAGE_MANIFEST_URL="`echo "${IMAGE_URL}" | sed 's/.squashfs/-manifest.json/'`" # IMAGE_CSURL
-    rIMAGE_MANIFEST_OLD="`echo "${rIMAGE_URL_BASENAME_EXT}" | sed 's/.squashfs/-manifest.json/'`" # rIMAGE_CSOLD
-    aIMAGE_MANIFEST_NEW="`echo "${TEMP_DATA}/${rIMAGE_URL_BASENAME_EXT}" | sed 's/.squashfs/-manifest.json/'`.$$.tmp" # aIMAGE_CSNEW
+    aTGT_FILE_MANIFEST_NEW="${TEMP_DATA}/${rTGT_FILE}-manifest.json.$$.tmp" # aTGT_FILE_CSNEW
+    IMAGE_MANIFEST_URL="${IMAGE_URL}-manifest.json" # IMAGE_CSURL
+    rIMAGE_MANIFEST_OLD="${rIMAGE_URL_BASENAME_EXT}-manifest.json" # rIMAGE_CSOLD
+    aIMAGE_MANIFEST_NEW="${TEMP_DATA}/${rIMAGE_URL_BASENAME_EXT}-manifest.json.$$.tmp" # aIMAGE_CSNEW
 
     logmsg_info "Downloading '$IMAGE_MANIFEST_URL' into '$aIMAGE_MANIFEST_NEW'..."
     rm -f "${IMAGE_MANIFEST_URL}"
