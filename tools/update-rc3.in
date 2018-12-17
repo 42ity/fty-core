@@ -926,7 +926,7 @@ download_osimage() (
         aTGT_FILE="`pwd`/${rTGT_FILE}"
         aTGT_FILE_CSOLD="`pwd`/${rTGT_FILE_CSOLD}"
     fi
-    aTGT_FILE_MANIFEST="${aTGT_FILE}-manifest.json/"
+    aTGT_FILE_MANIFEST="${aTGT_FILE}-manifest.json"
 
     if [ x"$aTGT_FILE_CSNEW" != x"${aIMAGE_CSNEW}" ] && [ -s "$aIMAGE_CSNEW" ] && [ -s "$aTGT_FILE_CSNEW" ] ; then
         # We have both a flat and original checksum files; keep one
