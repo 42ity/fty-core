@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#   Copyright (c) 2014-2018 Eaton
+#   Copyright (c) 2014-2019 Eaton
 #
 #   This file is part of the Eaton 42ity project.
 #
@@ -602,8 +602,14 @@ sed '/<!-- Here starts the real API -->/,$!d' \
 rm -f /etc/tntnet/bios.d/20_core.xml.tmp
 
 # Sanity check, excluding files that could be delivered by other packages
-cat /etc/tntnet/bios.d/{00_*,10_*,20_*,50_*,99_*}.xml > /tmp/bios.xml && \
-diff -bu /etc/tntnet/bios.xml /tmp/bios.xml || { echo "ERROR: bios.xml was sliced incorrectly" >&2; exit 1; }
+cat /etc/tntnet/bios.d/00_start.xml \
+    /etc/tntnet/bios.d/10_common_statics.xml \
+    /etc/tntnet/bios.d/20_common_basics.xml \
+    /etc/tntnet/bios.d/50_main_api.xml \
+    /etc/tntnet/bios.d/99_end.xml \
+> /tmp/bios.xml \
+&& diff -bu /etc/tntnet/bios.xml /tmp/bios.xml \
+|| { echo "ERROR: bios.xml was sliced incorrectly" >&2; exit 1; }
 rm -f /tmp/bios.xml
 
 /bin/systemctl enable tntnet@bios
