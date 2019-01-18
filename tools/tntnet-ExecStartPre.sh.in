@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# Copyright (C) 2014-2018 Eaton
+# Copyright (C) 2014-2019 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,6 +27,12 @@
 INST="`basename "$1" .service`"
 
 echo "Check requirements of tntnet@$INST instance for 42ity"
+
+# Make sure the sorting order (cat *.xml) is deterministic
+LANG=C
+LC_ALL=C
+TZ=UTC
+export LANG LC_ALL TZ
 
 set -e
 
