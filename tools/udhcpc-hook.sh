@@ -55,12 +55,6 @@ can_manipulate_ntpd() {
 }
 
 hostname_setup() {
-	case "$reason" in
-	bound|renew|BOUND|RENEW|REBIND|REBOOT)
-		;;
-	*)
-		return
-	esac
 	if test -s /etc/hostname; then
 		return
 	fi
