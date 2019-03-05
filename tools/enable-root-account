@@ -100,4 +100,4 @@ usermod -s /bin/bash root
 ### Uncomment this line to ease debugging in shell
 #echo "root:$ROOT_PASSWORD"
 
-disable-root-account -t "$SLEEP_MINUTES" &
+systemd-run /usr/libexec/fty/disable-root-account -t "$SLEEP_MINUTES"
