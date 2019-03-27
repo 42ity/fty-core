@@ -328,8 +328,8 @@ EOF
 # substituted to corresponding actual repository during OBS image creation.
 mkdir -p /etc/apt/sources.list.d
 cat > /etc/apt/sources.list.d/debian.list <<EOF
-deb http://ftp.debian.org/debian jessie main contrib non-free
-deb http://ftp.debian.org/debian jessie-updates main contrib non-free
+deb http://archive.debian.org/debian jessie main contrib non-free
+deb http://archive.debian.org/debian jessie-updates main contrib non-free
 deb http://security.debian.org   jessie/updates main contrib non-free
 deb http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0 /
 deb http://obs.roz.lab.etn.com:82/Pool:/master:/proprietary/Debian_8.0 /
