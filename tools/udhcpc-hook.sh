@@ -56,10 +56,11 @@ can_manipulate_ntpd() {
 
 hostname_setup() {
     case "$reason" in
-	bound|renew|BOUND|RENEW|REBIND|REBOOT)
-		;;
-	*)
-		echo "$0: WARN: hostname_setup got an unexpected reason '$reason'"
+        bound|renew|BOUND|RENEW|REBIND|REBOOT)
+            ;;
+        *)
+            echo "$0: WARN: hostname_setup got an unexpected reason '$reason'"
+            ;;
 	esac
 	if test -s /etc/hostname; then
 		return
