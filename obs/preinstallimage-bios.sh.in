@@ -326,10 +326,12 @@ EOF
 # Setup APT package sources
 # Note: do not change the 'Pool\:/master' reference below because it may be
 # substituted to corresponding actual repository during OBS image creation.
+# Note that this (and other code) currently hardcodes a DEB package based
+# distro, and specifically Jessie (Debian 8), into the image recipe.
 mkdir -p /etc/apt/sources.list.d
 cat > /etc/apt/sources.list.d/debian.list <<EOF
-deb http://ftp.debian.org/debian jessie main contrib non-free
-deb http://ftp.debian.org/debian jessie-updates main contrib non-free
+deb http://archive.debian.org/debian jessie main contrib non-free
+deb http://archive.debian.org/debian jessie-updates main contrib non-free
 deb http://security.debian.org   jessie/updates main contrib non-free
 deb http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0 /
 deb http://obs.roz.lab.etn.com:82/Pool:/master:/proprietary/Debian_8.0 /
