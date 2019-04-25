@@ -19,7 +19,6 @@ mysql_DATA	= initdb.sql \
 			0014_user_preferences.sql \
 			0015_ipm2.sql 
 
-
 mysqlexdir	= $(datadir)/@PACKAGE@/examples/sql/mysql
 mysqlex_DATA	= \
 		    load_data.sql ci-DC-power-UC1.sql location_topology.sql \
