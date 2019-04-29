@@ -9,8 +9,8 @@ use box_utf8;
 START TRANSACTION;
 INSERT INTO t_bios_schema_version (tag, timestamp, filename, version) VALUES('begin-import', UTC_TIMESTAMP() + 0, @bios_db_schema_filename, @bios_db_schema_version);
 
-ALTER TABLE t_bios_asset_element ADD id_secondary varchar(255) NULL;
-ALTER TABLE t_bios_asset_link    ADD id_secondary varchar(255) NULL;
+ALTER TABLE t_bios_asset_element ADD id_secondary VARCHAR(255) NULL;
+ALTER TABLE t_bios_asset_link    ADD id_secondary VARCHAR(255) NULL;
 
 CREATE VIEW v_bios_asset_subelement_type AS SELECT id_asset_device_type AS id_asset_element_subtype, name FROM t_bios_asset_device_type;
 
@@ -18,8 +18,8 @@ CREATE VIEW v_bios_asset_subelement_type AS SELECT id_asset_device_type AS id_as
 DROP TABLE IF EXISTS t_bios_asset_link_attributes;
 CREATE TABLE t_bios_asset_link_attributes (
   id_asset_link_attribute INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  keytag                  varchar(40)  NOT NULL,
-  value                   varchar(255) NOT NULL,
+  keytag                  VARCHAR(40)  NOT NULL,
+  value                   VARCHAR(255) NOT NULL,
   id_link                 INT UNSIGNED NOT NULL,
   read_only               TINYINT      NOT NULL DEFAULT 0,
 
@@ -38,6 +38,6 @@ CREATE TABLE t_bios_asset_link_attributes (
 START TRANSACTION;
 INSERT INTO t_bios_schema_version (tag, timestamp, filename, version) VALUES('finish-import', UTC_TIMESTAMP() + 0, @bios_db_schema_filename, @bios_db_schema_version);
 /* Report the value */
-SELECT * FROM t_bios_schema_version WHERE tag = 'finish-import' order by id desc limit 1;
+SELECT * FROM t_bios_schema_version WHERE tag = 'finish-import' ORDER BY id DESC limit 1;
 COMMIT;
 
