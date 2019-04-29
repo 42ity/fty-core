@@ -21,6 +21,7 @@ CREATE TABLE t_bios_asset_link_attributes (
   value                   varchar(255) NOT NULL,
   id_link                 INT UNSIGNED NOT NULL,
   read_only               TINYINT      NOT NULL DEFAULT 0,
+  id_secondary            varchar(255) NULL,
 
   PRIMARY KEY (id_asset_link_attribute),
 
