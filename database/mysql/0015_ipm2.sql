@@ -9,7 +9,8 @@ use box_utf8;
 START TRANSACTION;
 INSERT INTO t_bios_schema_version (tag, timestamp, filename, version) VALUES('begin-import', UTC_TIMESTAMP() + 0, @bios_db_schema_filename, @bios_db_schema_version);
 
-alter table t_bios_asset_element add id_secondary varchar(255) NULL;
+ALTER TABLE t_bios_asset_element ADD id_secondary varchar(255) NULL;
+ALTER TABLE t_bios_asset_link    ADD id_secondary varchar(255) NULL;
 
 CREATE VIEW v_bios_asset_subelement_type AS SELECT id_asset_device_type AS id_asset_element_subtype, name FROM t_bios_asset_device_type;
 
@@ -21,7 +22,6 @@ CREATE TABLE t_bios_asset_link_attributes (
   value                   varchar(255) NOT NULL,
   id_link                 INT UNSIGNED NOT NULL,
   read_only               TINYINT      NOT NULL DEFAULT 0,
-  id_secondary            varchar(255) NULL,
 
   PRIMARY KEY (id_asset_link_attribute),
 
