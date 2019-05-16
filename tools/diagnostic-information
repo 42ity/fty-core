@@ -44,6 +44,12 @@ else
     DIAGNOSTICFILE="${TMPDIR}.7z"
 fi
 
+# source config
+if [ -s "/run/etn-envvars.env" ]
+then
+    . /run/etn-envvars.env
+fi
+
 verbose(){
     if [ "$VERBOSE" = "yes" ] ; then
         echo "$@" >&2
@@ -155,6 +161,21 @@ system_logs() {
     cp -H -f /var/log/tntnet/www-audit* "${WD}/${TMPDIR}/logs/"
 }
 
+ipm_logs() {
+    verbose "ipm logs..."
+    # FIXME: check for activemq and NGINX logs
+    if [ -n "$KARAF_LOG" ] && [ -d "$KARAF_LOG" ]
+    then
+        for logfile in $(ls "$KARAF_LOG")
+        do
+            verbose "adding $logfile..."
+            cp -H -f "/var/log/$logfile" "${WD}/${TMPDIR}/logs/$logfile"
+        done
+    else
+        verbose "No log files present in $KARAF_LOG"
+    fi
+}
+
 core_dumps() {
     verbose "coredumps..."
     mkdir -p "${WD}/${TMPDIR}/crash"
@@ -245,6 +266,7 @@ create_diagnostic_archive() {
     ) > ${REPORT}
 
     system_logs
+    ipm_logs
     core_dumps
     etc_files
     usr_share_bios_files
