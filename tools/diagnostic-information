@@ -113,7 +113,7 @@ licensing_information(){
     # * also delete everything before the first actual information
     $TIMEOUT bmsg -t 5 request etn-licensing GET REQUEST 1234 INFO 2>/dev/null | sed -n '/overall-state/,$p' 1>/tmp/licensing_info || :
 
-    if [ -f /tmp/licensing_info ] ; then
+    if [ -s /tmp/licensing_info ] ; then
         quote < /tmp/licensing_info
         rm -f /tmp/licensing_info
     else
