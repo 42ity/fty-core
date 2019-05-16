@@ -97,6 +97,30 @@ image_version(){
     fi
 }
 
+licensing_information(){
+    verbose "licensing information..."
+    title 1 "licensing information"
+
+    # Coreutils timeout
+    TIMEOUT=""
+    if which timeout 2>/dev/null >/dev/null ; then
+        TIMEOUT="timeout 5s "
+    fi
+
+    # Notes:
+    # * bmsg request does not return 0 for licensing INFO, since the MB does
+    #   not return "OK", so trap it using " || :" to not have the script aborting
+    # * also delete everything before the first actual information
+    $TIMEOUT bmsg -t 5 request etn-licensing GET REQUEST 1234 INFO 2>/dev/null | sed -n '/overall-state/,$p' 1>/tmp/licensing_info || :
+
+    if [ -s /tmp/licensing_info ] ; then
+        quote < /tmp/licensing_info
+        rm -f /tmp/licensing_info
+    else
+        echo -e "Error: Missing licensing information\n"
+    fi
+}
+
 filesystem(){
     verbose "filesystem..."
     title 1 "Filesystem"
@@ -212,6 +236,7 @@ create_diagnostic_archive() {
 
     (
         image_version
+        licensing_information
         filesystem
         mounts
         running_processes
