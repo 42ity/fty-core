@@ -173,7 +173,9 @@ ipm_logs() {
             cp -H -f "${KARAF_LOG}/${logfile}" "${WD}/${TMPDIR}/logs-karaf/${logfile}"
         done
     else
-        verbose "No log files present in ${KARAF_LOG}"
+        [ -z "${KARAF_LOG}" ] \
+        && verbose "KARAF_LOG not configured" \
+        || verbose "No log files present in ${KARAF_LOG}"
     fi
 }
 
