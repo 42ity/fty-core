@@ -164,12 +164,13 @@ system_logs() {
 ipm_logs() {
     verbose "ipm logs..."
     # FIXME: check for activemq and NGINX logs
+    mkdir -p "${WD}/${TMPDIR}/logs-karaf"
     if [ -n "${KARAF_LOG}" ] && [ -d "${KARAF_LOG}" ]
     then
         for logfile in $(ls "${KARAF_LOG}")
         do
             verbose "adding $logfile..."
-            cp -H -f "${KARAF_LOG}/${logfile}" "${WD}/${TMPDIR}/logs/${logfile}"
+            cp -H -f "${KARAF_LOG}/${logfile}" "${WD}/${TMPDIR}/logs-karaf/${logfile}"
         done
     else
         verbose "No log files present in ${KARAF_LOG}"
