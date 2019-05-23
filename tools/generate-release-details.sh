@@ -226,6 +226,14 @@ fi
         BIOSINFO="$BIOSINFO
 Device UUID: $UUID_VALUE"
 
+if [ -z "${OSIMAGE_DISTRO-}" ]; then
+    OSIMAGE_DISTRO="`egrep '^OSIMAGE_DISTRO=' /etc/update-rc3.d/image-os-type.conf | sed -e 's,^OSIMAGE_DISTRO=,,' -e 's,^"\(.*\)"$,\1,' -e "s,^'\(.*\)'"'$,\1,'`" \
+    && [ -n "$OSIMAGE_DISTRO" ] \
+    || OSIMAGE_DISTRO="Debian_8.0" # Legacy default from before we considered OS revisions
+fi
+BIOSINFO="$BIOSINFO
+Bundled into OS distribution: $OSIMAGE_DISTRO"
+
 rm -f ${ALTROOT}/etc/release-details.json ${ALTROOT}/etc/release-details || true
 # Remove the legacy one only if a file - do not rewrite the symlink to new location needlessly
 [ -s ${ALTROOT}/etc/bios-release.json ] && rm -f ${ALTROOT}/etc/bios-release.json || true
@@ -239,6 +247,7 @@ cat <<EOF > ${ALTROOT}/etc/release-details.json
         "osimage-cksum":        "$OSIMAGE_CKSUM",
         "osimage-build-ts":     "$OSIMAGE_BTS",
         "osimage-img-type":     "$OSIMAGE_TYPE",
+        "osimage-distro":       "$OSIMAGE_DISTRO",
         "modimage-lsinfo":      "$MODIMAGE_LSINFO",
         "modimage-filename":    "$MODIMAGE_FILENAME",
         "modimage-cksum":       "$MODIMAGE_CKSUM",
