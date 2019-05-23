@@ -503,23 +503,23 @@ cp /usr/share/fty/examples/config/malamute/malamute.cfg /etc/malamute
 # Enable 42ity services (distributed as a systemd preset file)
 /bin/systemctl preset-all
 if [ "`uname -m`" = x86_64 ]; then
-    /bin/systemctl disable lcd-boot-display
-    /bin/systemctl disable lcd-net-display
+    /bin/systemctl disable lcd-boot-display || true
+    /bin/systemctl disable lcd-net-display || true
     /bin/systemctl disable lcd-shutdown-display || true
     /bin/systemctl disable lcd-shutdown-inverse-display || true
     /bin/systemctl disable lcd-reboot-display || true
     /bin/systemctl disable lcd-poweroff-display || true
-    /bin/systemctl mask lcd-boot-display
-    /bin/systemctl mask lcd-net-display
+    /bin/systemctl mask lcd-boot-display || true
+    /bin/systemctl mask lcd-net-display || true
     /bin/systemctl mask lcd-shutdown-display || true
     /bin/systemctl mask lcd-shutdown-inverse-display || true
     /bin/systemctl mask lcd-reboot-display || true
     /bin/systemctl mask lcd-poweroff-display || true
-    /bin/systemctl disable bios-reset-button
-    /bin/systemctl mask bios-reset-button
+    /bin/systemctl disable bios-reset-button || true
+    /bin/systemctl mask bios-reset-button || true
 else
-    /bin/systemctl enable lcd-boot-display
-    /bin/systemctl enable lcd-net-display
+    /bin/systemctl enable lcd-boot-display || true
+    /bin/systemctl enable lcd-net-display || true
     /bin/systemctl enable lcd-shutdown-display || true
     /bin/systemctl enable lcd-shutdown-inverse-display || true
     /bin/systemctl enable lcd-reboot-display || true
@@ -530,13 +530,13 @@ fi
 # Disable and mask the vendor-packaged mysql services - the database will
 # be started after first boot and license acceptance, and wrapped by our
 # own fty-db-engine customized service anyway.
-/bin/systemctl mask mysql
-/bin/systemctl disable mysql
+/bin/systemctl mask mysql || true
+/bin/systemctl disable mysql || true
 
 # Our tntnet unit rocks, disable packaged default
 if [ -s /lib/systemd/system/fty-tntnet@.service ]; then
-    /bin/systemctl disable tntnet.service
-    /bin/systemctl disable tntnet@.service
+    /bin/systemctl disable tntnet.service || true
+    /bin/systemctl disable tntnet@.service || true
     rm -f /etc/init.d/tntnet || true
     rm -f /lib/systemd/system/tntnet@.service || true
     mv /lib/systemd/system/fty-tntnet@.service /lib/systemd/system/tntnet@.service
@@ -632,7 +632,7 @@ rm -f /tmp/bios.xml
 /bin/systemctl enable fty-envvars
 
 # Disable logind
-/bin/systemctl disable systemd-logind
+/bin/systemctl disable systemd-logind || true
 # Avoid errors looking into /run /proc and such; assume that during OS image
 # generation all the stable-FS buildroot is under same filesystem on host.
 find /etc /usr /lib -mount -name systemd-logind.service -delete
@@ -641,9 +641,9 @@ find /etc /usr /lib -mount -name systemd-logind.service -delete
 # Note that actual service instances work or not based on presence of the
 # /dev/watchdogN nodes, so we do not care much about missing devices and
 # running in containers - so the services would fail (via unit Condition)
-/bin/systemctl disable watchdog.service
-/bin/systemctl disable wd_keepalive.service
-/bin/systemctl mask wd_keepalive.service
+/bin/systemctl disable watchdog.service || true
+/bin/systemctl disable wd_keepalive.service || true
+/bin/systemctl mask wd_keepalive.service || true
 /bin/systemctl enable wd_keepalive@watchdog0.service
 /bin/systemctl enable wd_keepalive@watchdog1.service
 /bin/systemctl enable wd_keepalive@watchdog2.service
@@ -651,8 +651,8 @@ find /etc /usr /lib -mount -name systemd-logind.service -delete
 
 # Disable etn-ipm1 (in such a manner that
 # they can be reenabled back in particular deployments):
-/bin/systemctl mask etn-ipm1
-/bin/systemctl disable etn-ipm1
+/bin/systemctl mask etn-ipm1 || true
+/bin/systemctl disable etn-ipm1 || true
 # ...and corresponding REST API servlet configurations:
 for F in /etc/tntnet/bios.d/*etn-ipm1-rest.xml ; do
     if [ -e "$F" ]; then

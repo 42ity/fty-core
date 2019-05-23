@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #
-#   Copyright (c) 2017 Eaton
+#   Copyright (c) 2017-2019 Eaton
 #
 #   This file is part of the Eaton 42ity project.
 #
@@ -25,20 +25,20 @@
 #
 
 if [ "`uname -m`" = x86_64 ]; then
-    /bin/systemctl disable lcd-boot-display
-    /bin/systemctl disable lcd-net-display
+    /bin/systemctl disable lcd-boot-display || true
+    /bin/systemctl disable lcd-net-display || true
     /bin/systemctl disable lcd-shutdown-display || true
     /bin/systemctl disable lcd-shutdown-inverse-display || true
     /bin/systemctl disable lcd-reboot-display || true
     /bin/systemctl disable lcd-poweroff-display || true
-    /bin/systemctl mask lcd-boot-display
-    /bin/systemctl mask lcd-net-display
+    /bin/systemctl mask lcd-boot-display || true
+    /bin/systemctl mask lcd-net-display || true
     /bin/systemctl mask lcd-shutdown-display || true
     /bin/systemctl mask lcd-shutdown-inverse-display || true
     /bin/systemctl mask lcd-reboot-display || true
     /bin/systemctl mask lcd-poweroff-display || true
-    /bin/systemctl disable bios-reset-button
-    /bin/systemctl mask bios-reset-button
+    /bin/systemctl disable bios-reset-button || true
+    /bin/systemctl mask bios-reset-button || true
 else
     /bin/systemctl enable lcd-boot-display
     /bin/systemctl enable lcd-net-display

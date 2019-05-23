@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (C) 2015 Eaton
+# Copyright (C) 2015-2019 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -52,8 +52,8 @@ ifplugd_on() {
 
 ifplugd_off() {
     logmsg_info "Stopping ifplugd..."
-    /bin/systemctl disable ifplugd.service
-    /bin/systemctl stop ifplugd.service
+    /bin/systemctl disable ifplugd.service || true
+    /bin/systemctl stop ifplugd.service || true
     logmsg_info "Disabled and perhaps stopped systemd ifplugd.service"
 }
 

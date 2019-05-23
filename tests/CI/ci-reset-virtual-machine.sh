@@ -1176,7 +1176,7 @@ if [ "$DISABLE_BIOS" = yes ]; then
 	logmsg_info "Disabling BIOS/42ity-related service autostart in the VM"
 	chroot "${ALTROOT}" /bin/systemctl disable \
 		bios.target bios.service malamute.service \
-		nut-server nut-monitor
+		nut-server nut-monitor || true
 fi
 
 if [ "$INSTALL_DEV_PKGS" = yes ]; then
