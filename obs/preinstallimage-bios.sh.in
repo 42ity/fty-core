@@ -324,17 +324,27 @@ EOF
 
 
 # Setup APT package sources
-# Note: do not change the 'Pool\:/master' reference below because it may be
-# substituted to corresponding actual repository during OBS image creation.
 # Note that this (and other code) currently hardcodes a DEB package based
 # distro, and specifically Jessie (Debian 8), into the image recipe.
 mkdir -p /etc/apt/sources.list.d
-cat > /etc/apt/sources.list.d/debian.list <<EOF
+# Our build system is now expected to provide an OSIMAGE_DISTRO value and
+# pre-populate /etc/apt/sources.list.d/debian.list with a proper repository
+if test -z "${OSIMAGE_DISTRO-}" ; then
+    # Called from legacy recipe? Assume Debian 8 and populate the config.
+    cat > /etc/apt/sources.list.d/debian.list <<EOF
 deb http://archive.debian.org/debian jessie main contrib non-free
 deb http://archive.debian.org/debian jessie-updates main contrib non-free
 deb http://security.debian.org   jessie/updates main contrib non-free
-deb http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0 /
-deb http://obs.roz.lab.etn.com:82/Pool:/master:/proprietary/Debian_8.0 /
+EOF
+    OSIMAGE_DISTRO="Debian_8.0"
+fi
+
+# Append the (currently internal) OBS source of built packages:
+# Note: do not change the 'Pool\:/master' reference below because it may be
+# substituted to corresponding actual repository during OBS image creation.
+cat >> /etc/apt/sources.list.d/debian.list <<EOF
+deb http://obs.roz.lab.etn.com:82/Pool:/master/${OSIMAGE_DISTRO} /
+deb http://obs.roz.lab.etn.com:82/Pool:/master:/proprietary/${OSIMAGE_DISTRO} /
 EOF
 
 mkdir -p /etc/apt/preferences.d
