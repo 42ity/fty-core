@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2015-2018 Eaton
+# Copyright (C) 2015-2019 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -69,6 +69,9 @@ config_defaults() {
     is_set EXT || EXT="squashfs"
     is_set CHECKSUM_ALGO_DEFAULT || CHECKSUM_ALGO_DEFAULT="md5"
 
+    # This value comes down from OBS target name into many corners of the multiverse
+    is_set OSIMAGE_DISTRO || OSIMAGE_DISTRO="Debian_8.0"
+
     # This script is intended as the downloader tool for both CI/dev-workstation
     # hosts and the ultimate devices. Most of the logic is the same, but there are
     # a few differences. File and directory naming is one of them :
@@ -109,7 +112,7 @@ config_defaults() {
     # TODO: Test with https - can require custom CA trust configuration, etc.
     # TODO: Use our common requester as a wrapper for real/busybox wget/curl
     # TODO: Make a common routine to list remote directories (e.g. http-dir parsing, ftp, tftp, localfs...)
-    is_set SOURCESITEROOT || SOURCESITEROOT='http://obs.roz.lab.etn.com/images'
+    is_set SOURCESITEROOT || SOURCESITEROOT='http://obs.roz.lab.etn.com/images/${OSIMAGE_DISTRO}'
     is_set SOURCESITEROOT_OSIMAGE || SOURCESITEROOT_OSIMAGE="$SOURCESITEROOT/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}$ARCH"
 
     is_set SOURCESITEROOTFW || SOURCESITEROOTFW="http://obs.roz.lab.etn.com/flash-rc3/recovery"
@@ -1675,6 +1678,7 @@ case "$*" in
 		fi
 		;;
 esac
+# After loading what was defined, if anything, set up the yet-unknown values:
 config_defaults
 
 # TODO: Locking against multiple runs
