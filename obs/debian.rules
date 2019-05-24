@@ -30,7 +30,8 @@ build-stamp:
 
 	# Add here commands to compile the package.
 	autoreconf -fi
-	./configure --prefix=/usr --sysconfdir=/etc --with-saslauthd-mux=/var/run/saslauthd/mux
+	./configure --prefix=/usr --sysconfdir=/etc --with-saslauthd-mux=/var/run/saslauthd/mux \
+	    --with-systemdsystemunitdir=yes --with-systemdsystempresetdir=yes
 	make -j4 all
 	# --- end custom part for compiling
 

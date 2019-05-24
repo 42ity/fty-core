@@ -4,7 +4,8 @@ Priority: optional
 Maintainer: Michal Hrusecky <MichalHrusecky@eaton.com>
 Uploaders: Michal Hrusecky <MichalHrusecky@eaton.com>
 Standards-Version: 3.9.5
-Build-Depends: bison, debhelper (>= 8), flex, linuxdoc-tools, lynx | lynx-cur, pkg-config, automake, autoconf, libtool, asciidoc, docbook-xsl-ns, docbook-xsl, docbook-xml, libxml2-utils, xsltproc
+Build-Depends: bison, debhelper (>= 8), flex, linuxdoc-tools, lynx | lynx-cur, pkg-config, automake, autoconf, libtool, asciidoc, docbook-xsl-ns, docbook-xsl, docbook-xml, libxml2-utils, xsltproc, systemd, dh-systemd
+
 
 Package: fty-core
 Architecture: any
