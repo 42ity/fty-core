@@ -231,7 +231,8 @@ fi
 Device UUID: $UUID_VALUE"
 
 if [ -z "${OSIMAGE_DISTRO-}" ]; then
-    OSIMAGE_DISTRO="`egrep '^OSIMAGE_DISTRO=' /etc/update-rc3.d/image-os-type.conf | sed -e 's,^OSIMAGE_DISTRO=,,' -e 's,^"\(.*\)"$,\1,' -e "s,^'\(.*\)'"'$,\1,'`" \
+    [ -s /etc/update-rc3.d/image-os-type.conf ] \
+    && OSIMAGE_DISTRO="`egrep '^OSIMAGE_DISTRO=' /etc/update-rc3.d/image-os-type.conf | sed -e 's,^OSIMAGE_DISTRO=,,' -e 's,^"\(.*\)"$,\1,' -e "s,^'\(.*\)'"'$,\1,'`" \
     && [ -n "$OSIMAGE_DISTRO" ] \
     || OSIMAGE_DISTRO="Debian_8.0" # Legacy default from before we considered OS revisions
 fi
