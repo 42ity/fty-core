@@ -210,8 +210,13 @@ usr_share_bios_files() {
 csv_export() {
     verbose "CSV export..."
     # note: filter logs to avoid DEBUG and TRACE in the resulting .csv
-    BIOS_LOG_LEVEL=LOG_WARNING bios-csv export >"${WD}/${TMPDIR}/export.csv" || (
-        echo "Can't create CSV export, is database running?" >&2
+    # errors of the export should be saved nearby; if "export.err" is
+    # empty, we had no errors to notice
+    BIOS_LOG_LEVEL=LOG_WARNING bios-csv export >"${WD}/${TMPDIR}/export.csv" 2>"${WD}/${TMPDIR}/export.err" || (
+        echo "Can't create CSV export, is database running?" >> "${WD}/${TMPDIR}/export.err"
+        # Push to main script's error log
+        cat "${WD}/${TMPDIR}/export.err" >&2
+        # Abuse CSV a bit, to make a big failure more visible to consumer
         echo "Failed to create CSV" >"${WD}/${TMPDIR}/export.csv"
     )
 }
