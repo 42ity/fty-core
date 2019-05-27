@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2014-2018 Eaton
+# Copyright (C) 2014-2019 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -84,6 +84,8 @@ usage() {
 	echo "    -qa|--qa-level type  image QA level to use (Default: '$IMGQALEVEL')"
 	echo "                         see Jenkins and OBS for supported types (master, arm)"
 	echo "    -r|--repository URL  OBS image repo ('$OBS_IMAGES')"
+	echo "    -rd|--osimage-distro DISTROCODE  Use variant of OS image based on DISTROCODE"
+	echo "                         (defined internally in the project CI, like 'Debian_8.0')"
 	echo "    -hp|--http-proxy URL the http_proxy override to access OBS"
 	echo "                         (default: '$http_proxy')"
 	echo "    -ap|--apt-proxy URL  the http_proxy to access external APT images"
@@ -263,6 +265,13 @@ VM="latest"
 
 [ -z "$OBS_IMAGES" ] && OBS_IMAGES="http://tomcat.roz.lab.etn.com/images/"
 #[ -z "$OBS_IMAGES" ] && OBS_IMAGES="http://obs.roz.lab.etn.com/images/"
+if [ -z "${OSIMAGE_DISTRO-}" ]; then
+    # This value would be set by a non-standard container's $VM.config-reset-vm
+    # file. Default is dictated by settings on NAS we pull from.
+    # Legacy default from before we considered OS revisions:
+    #OSIMAGE_DISTRO="Debian_8.0"
+    OSIMAGE_DISTRO=""
+fi
 [ -z "$APT_PROXY" ] && APT_PROXY='http://thunderbolt.roz.lab.etn.com:4222'
 #[ -z "$APT_PROXY" ] && APT_PROXY='http://thunderbolt.roz.lab.etn.com:3142'
 #[ -z "$APT_PROXY" ] && APT_PROXY='http://gate.roz.lab.etn.com:3142'
@@ -315,6 +324,10 @@ while [ $# -gt 0 ] ; do
 		;;
 	-r|--repository)
 		OBS_IMAGES="$2"
+		shift 2
+		;;
+	-rd|--repository-distro|--osimage-distro)
+		OSIMAGE_DISTRO="$2"
 		shift 2
 		;;
 	-hp|--http-proxy)
@@ -530,7 +543,7 @@ case "$IMGTYPE" in
 	*) INSTALL_DEV_PKGS=no ;;
 esac
 
-mkdir -p "/srv/libvirt/snapshots/${IMGTYPE}/${IMGQALEVEL}/${ARCH}"
+mkdir -p "/srv/libvirt/snapshots/${IMGTYPE}/${IMGQALEVEL}/${ARCH}/${OSIMAGE_DISTRO}"
 
 # Unless these were set by caller or config or somehow else,
 # define the values now. This pattern is a REGEX.
@@ -637,8 +650,8 @@ fi
 settraps 'cleanup_script'
 
 # Proceed to downloads, etc.
-cd "/srv/libvirt/snapshots/${IMGTYPE}/${IMGQALEVEL}/${ARCH}" || \
-	die "Can not 'cd /srv/libvirt/snapshots/${IMGTYPE}/${IMGQALEVEL}/${ARCH}' to download image files"
+cd "/srv/libvirt/snapshots/${IMGTYPE}/${IMGQALEVEL}/${ARCH}/${OSIMAGE_DISTRO}" || \
+	die "Can not 'cd /srv/libvirt/snapshots/${IMGTYPE}/${IMGQALEVEL}/${ARCH}/${OSIMAGE_DISTRO}' to download image files"
 
 # Initial value, aka "file not found"
 WGET_RES=127
@@ -662,10 +675,10 @@ sort_osimage_names() {
 
 if [ "$ATTEMPT_DOWNLOAD" != no ] ; then
 	logmsg_info "Get the latest operating environment image prepared for us by OBS"
-	IMAGE_URL="`wget -O - "$OBS_IMAGES/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}/" 2> /dev/null | sed -n 's|.*href="\(.*'"${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}"'\.'"$EXT"'\)".*|'"$OBS_IMAGES/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}"'/\1|p' | sed 's,\([^:]\)//,\1/,g' | sort_osimage_names | tail -n 1`"
-	[ $? = 0 ] && [ -n "$IMAGE_URL" ] || die "Could not detect remote IMAGE_URL at '$OBS_IMAGES/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}/' (looking for regex '${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}')!"
+	IMAGE_URL="`wget -O - "$OBS_IMAGES/${OSIMAGE_DISTRO}/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}/" 2> /dev/null | sed -n 's|.*href="\(.*'"${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}"'\.'"$EXT"'\)".*|'"$OBS_IMAGES/${OSIMAGE_DISTRO}/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}"'/\1|p' | sed 's,\([^:]\)//,\1/,g' | sort_osimage_names | tail -n 1`"
+	[ $? = 0 ] && [ -n "$IMAGE_URL" ] || die "Could not detect remote IMAGE_URL at '$OBS_IMAGES/${OSIMAGE_DISTRO}/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}/' (looking for regex '${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}')!"
 	IMAGE="`basename "$IMAGE_URL"`"
-	[ $? = 0 ] && [ -n "$IMAGE" ] || die "Could not detect remote IMAGE_URL at '$OBS_IMAGES/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}/' (looking for regex '${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}')!"
+	[ $? = 0 ] && [ -n "$IMAGE" ] || die "Could not detect remote IMAGE_URL at '$OBS_IMAGES/${OSIMAGE_DISTRO}/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}/' (looking for regex '${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}')!"
 
 	if [ "$ATTEMPT_DOWNLOAD" = pretend ] ; then
 		logmsg_info "Detected '$IMAGE_URL' as the newest available remote OS image for IMGTYPE='$IMGTYPE' and IMGQALEVEL='$IMGQALEVEL'"
@@ -779,21 +792,21 @@ if [ "$1" ]; then
 	# IMAGE_FLAT is used as a prefix to directory filenames of mountpoints
 	IMAGE_FLAT="`basename "$IMAGE"`"
 else
-	if [ -n "$IMAGE" ] && [ -s "${IMGTYPE}/${IMGQALEVEL}/${ARCH}/${IMAGE}" ]; then
+	if [ -n "$IMAGE" ] && [ -s "${IMGTYPE}/${IMGQALEVEL}/${ARCH}/${OSIMAGE_DISTRO}/${IMAGE}" ]; then
 		logmsg_info "Recent download succeeded, checksums passed - using this image"
-		IMAGE="${IMGTYPE}/${IMGQALEVEL}/${ARCH}/${IMAGE}"
+		IMAGE="${IMGTYPE}/${IMGQALEVEL}/${ARCH}/${OSIMAGE_DISTRO}/${IMAGE}"
 	else
 		# If download failed or was skipped, we can have a previous
 		# image file for this type
 		logmsg_info "Selecting newest image (as sorted by alphabetic name)"
 		IMAGE=""
-		ls -1 "${IMGTYPE}/${IMGQALEVEL}/${ARCH}"/*.$EXT >/dev/null || \
-			die "No downloaded image of type ${IMGTYPE}/${IMGQALEVEL}/${ARCH} was found!"
+		ls -1 "${IMGTYPE}/${IMGQALEVEL}/${ARCH}/${OSIMAGE_DISTRO}"/*.$EXT >/dev/null || \
+			die "No downloaded image of type ${IMGTYPE}/${IMGQALEVEL}/${ARCH}/${OSIMAGE_DISTRO} was found!"
 		while [ -z "$IMAGE" ]; do
 			if [ -z "$IMAGE_SKIP" ]; then
-				IMAGE="`ls -1 "${IMGTYPE}/${IMGQALEVEL}/${ARCH}"/*.$EXT | sort -r | head -n 1`"
+				IMAGE="`ls -1 "${IMGTYPE}/${IMGQALEVEL}/${ARCH}/${OSIMAGE_DISTRO}"/*.$EXT | sort -r | head -n 1`"
 			else
-				IMAGE="`ls -1 "${IMGTYPE}/${IMGQALEVEL}/${ARCH}"/*.$EXT | sort -r | grep -v "$IMAGE_SKIP" | head -n 1`"
+				IMAGE="`ls -1 "${IMGTYPE}/${IMGQALEVEL}/${ARCH}/${OSIMAGE_DISTRO}"/*.$EXT | sort -r | grep -v "$IMAGE_SKIP" | head -n 1`"
 			fi
 			ensure_md5sum "$IMAGE" "$IMAGE.md5" || IMAGE=""
 		done
@@ -801,7 +814,7 @@ else
 	IMAGE_FLAT="`basename "$IMAGE" .$EXT`_${IMGTYPE}_${ARCH}_${IMGQALEVEL}.$EXT"
 fi
 if [ -z "$IMAGE" ]; then
-	die "No downloaded image files located in my cache (`pwd`/${IMGTYPE}/${IMGQALEVEL}/${ARCH}/*.$EXT)!"
+	die "No downloaded image files located in my cache (`pwd`/${IMGTYPE}/${IMGQALEVEL}/${ARCH}/${OSIMAGE_DISTRO}/*.$EXT)!"
 fi
 if [ ! -s "$IMAGE" ]; then
 	die "No downloaded image files located in my cache (`pwd`/$IMAGE)!"
@@ -1347,7 +1360,7 @@ if [ -d "${ALTROOT}.saved/" ] && [ "$NO_RESTORE_SAVED" != yes ]; then
 	( cd "${ALTROOT}.saved/" && tar cf - . ) | ( cd "${ALTROOT}/" && tar xvf - )
 fi
 
-logmsg_info "Pre-configuration of VM '$VM' (${IMGTYPE}/${IMGQALEVEL}/${ARCH}) is completed"
+logmsg_info "Pre-configuration of VM '$VM' (${IMGTYPE}/${IMGQALEVEL}/${ARCH}/${OSIMAGE_DISTRO}) is completed"
 if [ x"$DEPLOYONLY" = xyes ]; then
 	logmsg_info "DEPLOYONLY was requested, so ending" \
 		"'${_SCRIPT_PATH} ${_SCRIPT_ARGS}' now with exit-code '0'" >&2
