@@ -84,6 +84,8 @@ usage() {
 	echo "    -qa|--qa-level type  image QA level to use (Default: '$IMGQALEVEL')"
 	echo "                         see Jenkins and OBS for supported types (master, arm)"
 	echo "    -r|--repository URL  OBS image repo ('$OBS_IMAGES')"
+	echo "    -rd|--osimage-distro DISTROCODE  Use variant of OS image based on DISTROCODE"
+	echo "                         (defined internally in the project CI, like 'Debian_8.0')"
 	echo "    -hp|--http-proxy URL the http_proxy override to access OBS"
 	echo "                         (default: '$http_proxy')"
 	echo "    -ap|--apt-proxy URL  the http_proxy to access external APT images"
