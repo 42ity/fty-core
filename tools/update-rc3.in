@@ -112,7 +112,7 @@ config_defaults() {
     # TODO: Test with https - can require custom CA trust configuration, etc.
     # TODO: Use our common requester as a wrapper for real/busybox wget/curl
     # TODO: Make a common routine to list remote directories (e.g. http-dir parsing, ftp, tftp, localfs...)
-    is_set SOURCESITEROOT || SOURCESITEROOT='http://obs.roz.lab.etn.com/images/${OSIMAGE_DISTRO}'
+    is_set SOURCESITEROOT || SOURCESITEROOT="http://obs.roz.lab.etn.com/images/${OSIMAGE_DISTRO}"
     is_set SOURCESITEROOT_OSIMAGE || SOURCESITEROOT_OSIMAGE="$SOURCESITEROOT/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}$ARCH"
 
     is_set SOURCESITEROOTFW || SOURCESITEROOTFW="http://obs.roz.lab.etn.com/flash-rc3/recovery"
