@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (C) 2014-2017 Eaton
+# Copyright (C) 2014-2019 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -143,7 +143,7 @@ if [ -s ${ALTROOT}/usr/share/bios-web/image-version.txt ]; then
 fi
 
 if [ -s /etc/update-rc3.d/image-os-type.conf ] && [ -n "$OSIMAGE_TYPE" ] ; then
-        OSIMAGE_TYPE="`egrep '^OSIMAGE_TYPE=' /etc/update-rc3.d/image-os-type.conf | sed -e 's,^OSIMAGE_TYPE=,,' -e 's,^"\(.*\)"$,\1,' -e "s,^'\(.*\)'"'$,\1,'`"
+        OSIMAGE_TYPE="`egrep '^OSIMAGE_TYPE=' ${ALTROOT}/etc/update-rc3.d/image-os-type.conf | sed -e 's,^OSIMAGE_TYPE=,,' -e 's,^"\(.*\)"$,\1,' -e "s,^'\(.*\)'"'$,\1,'`"
 fi
 
 WEBUI_ID=""
@@ -231,8 +231,8 @@ fi
 Device UUID: $UUID_VALUE"
 
 if [ -z "${OSIMAGE_DISTRO-}" ]; then
-    [ -s /etc/update-rc3.d/image-os-type.conf ] \
-    && OSIMAGE_DISTRO="`egrep '^OSIMAGE_DISTRO=' /etc/update-rc3.d/image-os-type.conf | sed -e 's,^OSIMAGE_DISTRO=,,' -e 's,^"\(.*\)"$,\1,' -e "s,^'\(.*\)'"'$,\1,'`" \
+    [ -s ${ALTROOT}/etc/update-rc3.d/image-os-type.conf ] \
+    && OSIMAGE_DISTRO="`egrep '^OSIMAGE_DISTRO=' ${ALTROOT}/etc/update-rc3.d/image-os-type.conf | sed -e 's,^OSIMAGE_DISTRO=,,' -e 's,^"\(.*\)"$,\1,' -e "s,^'\(.*\)'"'$,\1,'`" \
     && [ -n "$OSIMAGE_DISTRO" ] \
     || OSIMAGE_DISTRO="Debian_8.0" # Legacy default from before we considered OS revisions
 fi
