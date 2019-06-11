@@ -998,7 +998,7 @@ removeold_osimage() (
     # This removes all but the newest (alphabetically) files for the pattern
     # TODO: add support for hierarchical namespace (container hosts) with
     #       flattened or original filenames inside
-    if [ -z "$DOWNLOADED_OS_IMAGE" ] ; then
+    if [ -z "$DOWNLOADED_OS_IMAGE" ] && [ "$ACTION_DOWNLOAD_OSIMAGE" != "no" ] ; then
         [ -s "${TEMP_DATA}/.newest-osimage" ] \
         && DOWNLOADED_OS_IMAGE="`head -1 "${TEMP_DATA}/.newest-osimage"`" \
         && [ -n "$DOWNLOADED_OS_IMAGE" ] && [ -s "$DOWNLOADED_OS_IMAGE" ] \
