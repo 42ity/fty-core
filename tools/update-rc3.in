@@ -1811,10 +1811,10 @@ while [ $# -gt 0 ]; do
 		--download-image-os)    ACTION_DOWNLOAD_OSIMAGE="yes";;
 		--download-image-fw)    ACTION_DOWNLOAD_FWIMAGE="yes";;
 		--download-images)      ACTION_DOWNLOAD_OSIMAGE="yes"; ACTION_DOWNLOAD_FWIMAGE="yes";;
-		--no-download-image-os) ACTION_DOWNLOAD_OSIMAGE="no";;
+		--no-download-image-os) ACTION_DOWNLOAD_OSIMAGE="no"; ACTION_REMOVEOLD_OSIMAGE="no";;
 		--no-download-image-fw) ACTION_DOWNLOAD_FWIMAGE="no";;
-		--no-download-images|-N)ACTION_DOWNLOAD_OSIMAGE="no"; ACTION_DOWNLOAD_FWIMAGE="no";;
-		--fw-only)              ACTION_DOWNLOAD_OSIMAGE="no"; ACTION_DOWNLOAD_FWIMAGE="yes";;
+		--no-download-images|-N)ACTION_DOWNLOAD_OSIMAGE="no"; ACTION_REMOVEOLD_OSIMAGE="no"; ACTION_DOWNLOAD_FWIMAGE="no";;
+		--fw-only)              ACTION_DOWNLOAD_OSIMAGE="no"; ACTION_REMOVEOLD_OSIMAGE="no"; ACTION_DOWNLOAD_FWIMAGE="yes";;
 		--os-only)              ACTION_DOWNLOAD_OSIMAGE="yes"; ACTION_DOWNLOAD_FWIMAGE="no";;
 		--check-image-os)       ACTION_CHECK_OSIMAGE="yes";;
 		--check-image-fw)       ACTION_CHECK_FWIMAGE="yes";;
