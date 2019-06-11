@@ -2060,7 +2060,11 @@ case "$FLAG_ERASE_FACTORYRESET" in
 		   [ "$ACTION_DOWNLOAD_OSIMAGE" = yes -a "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -eq 42 ] || \
 		   [ "$ACTION_DOWNLOAD_OSIMAGE" = yes -a "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -eq 0 ] \
 		; then
-			logmsg_info "New OS image was downloaded successfully, so requesting factory-reset during reboot"
+			if [ "$ACTION_DOWNLOAD_OSIMAGE" = no ] ; then
+				logmsg_info "Per request, no OS image was downloaded; also requesting factory-reset during reboot"
+			else
+				logmsg_info "New OS image was downloaded successfully, so requesting factory-reset during reboot"
+			fi
 			touch "$DOWNLOADROOT/factory_reset"
 		else
 			logmsg_warn "New OS image was not downloaded successfully, so not requesting factory-reset"
@@ -2081,7 +2085,11 @@ case "$FLAG_ERASE_ALL" in
 		   [ "$ACTION_DOWNLOAD_OSIMAGE" = yes -a "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -eq 42 ] || \
 		   [ "$ACTION_DOWNLOAD_OSIMAGE" = yes -a "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -eq 0 ] \
 		; then
-			logmsg_info "New OS image was downloaded successfully, so requesting erase-all during reboot"
+			if [ "$ACTION_DOWNLOAD_OSIMAGE" = no ] ; then
+				logmsg_info "Per request, no OS image was downloaded; also requesting erase-all during reboot"
+			else
+				logmsg_info "New OS image was downloaded successfully, so requesting erase-all during reboot"
+			fi
 			touch "$DOWNLOADROOT/erase_all"
 		else
 			logmsg_warn "New OS image was not downloaded successfully, so not requesting erase-all"
