@@ -998,7 +998,7 @@ removeold_osimage() (
     # This removes all but the newest (alphabetically) files for the pattern
     # TODO: add support for hierarchical namespace (container hosts) with
     #       flattened or original filenames inside
-    if [ -z "$DOWNLOADED_OS_IMAGE" ] ; then
+    if [ -z "$DOWNLOADED_OS_IMAGE" ] && [ "$ACTION_DOWNLOAD_OSIMAGE" != "no" ] ; then
         [ -s "${TEMP_DATA}/.newest-osimage" ] \
         && DOWNLOADED_OS_IMAGE="`head -1 "${TEMP_DATA}/.newest-osimage"`" \
         && [ -n "$DOWNLOADED_OS_IMAGE" ] && [ -s "$DOWNLOADED_OS_IMAGE" ] \
@@ -1811,10 +1811,10 @@ while [ $# -gt 0 ]; do
 		--download-image-os)    ACTION_DOWNLOAD_OSIMAGE="yes";;
 		--download-image-fw)    ACTION_DOWNLOAD_FWIMAGE="yes";;
 		--download-images)      ACTION_DOWNLOAD_OSIMAGE="yes"; ACTION_DOWNLOAD_FWIMAGE="yes";;
-		--no-download-image-os) ACTION_DOWNLOAD_OSIMAGE="no";;
+		--no-download-image-os) ACTION_DOWNLOAD_OSIMAGE="no"; ACTION_REMOVEOLD_OSIMAGE="no";;
 		--no-download-image-fw) ACTION_DOWNLOAD_FWIMAGE="no";;
-		--no-download-images|-N)ACTION_DOWNLOAD_OSIMAGE="no"; ACTION_DOWNLOAD_FWIMAGE="no";;
-		--fw-only)              ACTION_DOWNLOAD_OSIMAGE="no"; ACTION_DOWNLOAD_FWIMAGE="yes";;
+		--no-download-images|-N)ACTION_DOWNLOAD_OSIMAGE="no"; ACTION_REMOVEOLD_OSIMAGE="no"; ACTION_DOWNLOAD_FWIMAGE="no";;
+		--fw-only)              ACTION_DOWNLOAD_OSIMAGE="no"; ACTION_REMOVEOLD_OSIMAGE="no"; ACTION_DOWNLOAD_FWIMAGE="yes";;
 		--os-only)              ACTION_DOWNLOAD_OSIMAGE="yes"; ACTION_DOWNLOAD_FWIMAGE="no";;
 		--check-image-os)       ACTION_CHECK_OSIMAGE="yes";;
 		--check-image-fw)       ACTION_CHECK_FWIMAGE="yes";;
@@ -2060,7 +2060,11 @@ case "$FLAG_ERASE_FACTORYRESET" in
 		   [ "$ACTION_DOWNLOAD_OSIMAGE" = yes -a "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -eq 42 ] || \
 		   [ "$ACTION_DOWNLOAD_OSIMAGE" = yes -a "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -eq 0 ] \
 		; then
-			logmsg_info "New OS image was downloaded successfully, so requesting factory-reset during reboot"
+			if [ "$ACTION_DOWNLOAD_OSIMAGE" = no ] ; then
+				logmsg_info "Per request, no OS image was downloaded; also requesting factory-reset during reboot"
+			else
+				logmsg_info "New OS image was downloaded successfully, so requesting factory-reset during reboot"
+			fi
 			touch "$DOWNLOADROOT/factory_reset"
 		else
 			logmsg_warn "New OS image was not downloaded successfully, so not requesting factory-reset"
@@ -2081,7 +2085,11 @@ case "$FLAG_ERASE_ALL" in
 		   [ "$ACTION_DOWNLOAD_OSIMAGE" = yes -a "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -eq 42 ] || \
 		   [ "$ACTION_DOWNLOAD_OSIMAGE" = yes -a "$RESULT_ACTION_DOWNLOAD_OSIMAGE" -eq 0 ] \
 		; then
-			logmsg_info "New OS image was downloaded successfully, so requesting erase-all during reboot"
+			if [ "$ACTION_DOWNLOAD_OSIMAGE" = no ] ; then
+				logmsg_info "Per request, no OS image was downloaded; also requesting erase-all during reboot"
+			else
+				logmsg_info "New OS image was downloaded successfully, so requesting erase-all during reboot"
+			fi
 			touch "$DOWNLOADROOT/erase_all"
 		else
 			logmsg_warn "New OS image was not downloaded successfully, so not requesting erase-all"
