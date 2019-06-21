@@ -59,6 +59,9 @@ case "$img_type" in
 esac
 
 if [[ -s "$ROOT_PASSWORD_LOCATION" ]] ; then
+    ### Uncomment this line to ease debugging in shell or CI
+    #ROOT_PASSWORD="`cat "$ROOT_PASSWORD_LOCATION"`"
+    #echo "root:$ROOT_PASSWORD"
     die "Previous password still valid"
 fi
 
