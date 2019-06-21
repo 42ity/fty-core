@@ -60,8 +60,8 @@ esac
 
 if [[ -s "$ROOT_PASSWORD_LOCATION" ]] ; then
     ### Uncomment this line to ease debugging in shell or CI
-    #ROOT_PASSWORD="`cat "$ROOT_PASSWORD_LOCATION"`"
-    #echo "root:$ROOT_PASSWORD"
+    #@CI_UNCOMMENT@#ROOT_PASSWORD="`cat "$ROOT_PASSWORD_LOCATION"`"
+    #@CI_UNCOMMENT@#echo "root:$ROOT_PASSWORD"
     die "Previous password still valid"
 fi
 
@@ -101,6 +101,6 @@ echo "root:$ROOT_PASSWORD" | chpasswd
 usermod -s /bin/bash root
 
 ### Uncomment this line to ease debugging in shell or CI
-#echo "root:$ROOT_PASSWORD"
+#@CI_UNCOMMENT@#echo "root:$ROOT_PASSWORD"
 
 systemd-run /usr/libexec/fty/disable-root-account -t "$SLEEP_MINUTES"
