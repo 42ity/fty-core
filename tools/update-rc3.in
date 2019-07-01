@@ -660,8 +660,13 @@ fetch_file() {
         FILE=stdout
         $FETCHER $FETCH_FLAGS "${URL}" || RES=$?
     else
-        rm -f "${FILE}"
-        $FETCHER $FETCH_FLAGS "${URL}" > "${FILE}" || RES=$?
+        if [ -d "`dirname "${FILE}"`" ]; then
+            rm -f "${FILE}" || true
+            $FETCHER $FETCH_FLAGS "${URL}" > "${FILE}" || RES=$?
+        else
+            logmsg_error "Could not save '${URL}' into '${FILE}': target directory is missing"
+            RES=2
+        fi
     fi
 
     if [ "$RES" != 0 ] ; then
@@ -675,7 +680,7 @@ fetch_file() {
 
     if [ "$RES" != 0 ] ; then
         if [ x"$FILE" != xstdout ]; then
-            rm -f "${FILE}"
+            rm -f "${FILE}" || true
         fi
         if [ x"${CHECK_ONLY-}" = xyes ]; then
             die "Got an error while checking if there is something new to download, so no reason to proceed"
