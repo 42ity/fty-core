@@ -668,7 +668,7 @@ fetch_file() {
         logmsg_error "Could not save '${URL}' into '${FILE}' (see errors above)"
     fi
 
-    if [ x"${MAYBE_EMPTY=}" != xyes ] && [ ! -s "${FILE}" ] ; then
+    if [ x"${MAYBE_EMPTY=}" != xyes ] && [ "${FILE}" != stdout ] && [ ! -s "${FILE}" ] ; then
         logmsg_error "Got empty output trying to save '${URL}' into '${FILE}'"
         RES=1
     fi
