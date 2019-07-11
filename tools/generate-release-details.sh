@@ -146,6 +146,14 @@ fi
 
 if [ -z "${OSIMAGE_TYPE-}" ] && [ -s /etc/update-rc3.d/image-os-type.conf ] ; then
         OSIMAGE_TYPE="`egrep '^OSIMAGE_TYPE=' "${ALTROOT}/etc/update-rc3.d/image-os-type.conf" | sed -e 's,^OSIMAGE_TYPE=,,' -e 's,^"\(.*\)"$,\1,' -e "s,^'\(.*\)'"'$,\1,'`"
+        if [ -z "$OSIMAGE_TYPE" ] ; then
+                # Note: suffix and prefix may validly be defined and empty, or not defined at all
+                _IP="`egrep '^IMGTYPE_PREFIX=' "${ALTROOT}/etc/update-rc3.d/image-os-type.conf" | sed -e 's,^IMGTYPE_PREFIX=,,' -e 's,^"\(.*\)"$,\1,' -e "s,^'\(.*\)'"'$,\1,'`"
+                _IT="`egrep '^IMGTYPE=' "${ALTROOT}/etc/update-rc3.d/image-os-type.conf" | sed -e 's,^IMGTYPE=,,' -e 's,^"\(.*\)"$,\1,' -e "s,^'\(.*\)'"'$,\1,'`"
+                _IS="`egrep '^IMGTYPE_SUFFIX=' "${ALTROOT}/etc/update-rc3.d/image-os-type.conf" | sed -e 's,^IMGTYPE_SUFFIX=,,' -e 's,^"\(.*\)"$,\1,' -e "s,^'\(.*\)'"'$,\1,'`"
+                [ -z "${_IT}" ] || OSIMAGE_TYPE="${_IP}${_IT}${_IS}"
+                unset _IP _IT _IS
+        fi
 fi
 
 WEBUI_ID=""
