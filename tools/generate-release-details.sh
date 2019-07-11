@@ -142,7 +142,7 @@ if [ -s ${ALTROOT}/usr/share/bios-web/image-version.txt ]; then
         OSIMAGE_TYPE="`head -2 ${ALTROOT}/usr/share/bios-web/image-version.txt | tail -1 | (read TAG TAIL ; echo "$TAIL")`" || OSIMAGE_TYPE=""
 fi
 
-if [ -s /etc/update-rc3.d/image-os-type.conf ] && [ -n "$OSIMAGE_TYPE" ] ; then
+if [ -z "${OSIMAGE_TYPE-}" ] && [ -s /etc/update-rc3.d/image-os-type.conf ] ; then
         OSIMAGE_TYPE="`egrep '^OSIMAGE_TYPE=' ${ALTROOT}/etc/update-rc3.d/image-os-type.conf | sed -e 's,^OSIMAGE_TYPE=,,' -e 's,^"\(.*\)"$,\1,' -e "s,^'\(.*\)'"'$,\1,'`"
 fi
 
