@@ -29,7 +29,10 @@ ExecStartPre=/bin/dash -c "for S in mysql.service mysqld.service mariadb.service
 # Better ugly than sorry (with DB beginning to start, then getting killed by newly realized dependency unit states, and ending up with corrupted DB files rarely)
 ExecStartPre=/bin/test -f /var/lib/fty/license
 ExecStartPre=/bin/dash -c "if [ -d /var/lib/mysql ] ; then /bin/chown -R mysql:mysql /var/lib/mysql ; fi"
-ExecStart=/usr/lib/mysql/rcmysql start
+# If the database begins starting and systemd decides it should not,
+# cache the request to stop if possible and only do so after starting -
+# hoping to keep the database files intact.
+ExecStart=/bin/dash -c "DO_ABORT=false; trap 'echo Got signal to abort, will do so later ; DO_ABORT=true ;' 0 1 2 3 15; RES=0; /usr/lib/mysql/rcmysql start || RES=$? ; if ${DO_ABORT} ; then echo 'Received a signal to stop during start-up processing, doing so now' ; /usr/lib/mysql/rcmysql stop ; fi ; trap '-' 0 1 2 3 15; exit $RES"
 ExecStartPost=/bin/dash -c "/usr/bin/mysql -e 'show databases;' || /usr/bin/mysql --password='' -e 'show databases;' || { sleep 30 ; /usr/bin/mysql -e 'show databases;' || /usr/bin/mysql --password='' -e 'show databases;' ; }"
 ExecStop=/usr/lib/mysql/rcmysql stop
 ExecStopPost=-/bin/rm -f /var/run/fty-db-ready
