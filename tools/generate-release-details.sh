@@ -105,7 +105,8 @@ if test -d /sys/class/dmi/id; then
         # Ignore VMware serial numbers as per product requirement
         case "$HWD_SERIAL_NB" in
         VMware*)
-                HWD_SERIAL_NB=
+                HWD_SERIAL_NB=''
+                ;;
         esac
         # XXX: Find an SMBIOS equivalent for HWD_PART_NB=
 fi
@@ -302,12 +303,12 @@ if [ $? = 0 ] ; then
 fi
 
 # Similar data in a more human-readable file
-if printf "%s\n%s\n%s\n\n" "$OSIMAGE_LSINFO" "$MODIMAGE_LSINFO" "$BIOSINFO" \
+if printf '%s\n%s\n%s\n\n' "$OSIMAGE_LSINFO" "$MODIMAGE_LSINFO" "$BIOSINFO" \
     > "${ALTROOT}/etc/release-details" \
 ; then
     if [ ! -s "${ALTROOT}/etc/bios-release" ]; then
         rm -f "${ALTROOT}/etc/bios-release" || true
-        ln -s release-details ${ALTROOT}/etc/bios-release" || true
+        ln -s release-details "${ALTROOT}/etc/bios-release" || true
     fi
     v_echo_ts "Updated ${ALTROOT}/etc/release-details with OS image and 42ity build data"
 fi
@@ -321,7 +322,7 @@ for F in issue issue.net ; do
         # Use printf() below to not mangle the issue(5) markup
         # as if it were full of shell variables
         ORIGDATA="`head -1 "${ALTROOT}/etc/$F"`" && \
-        printf "%s\n%s\n\n" "$ORIGDATA" "$BIOSINFO" > "${ALTROOT}/etc/$F" && \
+        printf '%s\n%s\n\n' "$ORIGDATA" "$BIOSINFO" > "${ALTROOT}/etc/$F" && \
             v_echo_ts "Updated ${ALTROOT}/etc/$F with OS image and 42ity build data"
     fi
 done
