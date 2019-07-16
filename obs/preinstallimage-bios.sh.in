@@ -822,6 +822,31 @@ install -m 0755 /usr/share/fty/scripts/ifupdown-force /etc/ifplugd/action.d/ifup
 install -m 0755 /usr/share/fty/scripts/udhcpc-override.sh /usr/local/sbin/udhcpc
 echo '[ -s /usr/share/fty/scripts/udhcpc-hook.sh ] && . /usr/share/fty/scripts/udhcpc-hook.sh' >> /etc/udhcpc/default.script
 
+# Newer /sbin/{ifup,ifdown,ifquery} no longer call tools by just the short
+# program name, but do it using the full path e.g. /sbin/ip or /sbin/udhcpc
+# and so ignore the PATH they still have compiled in. Due to this we must
+# fix up the system location on such distributions.
+# Note that `busybox --install -s` should happen above this line.
+[ -x "/sbin/ifdown" ] && [ -x "/sbin/udhcpc" ] && \
+case "${OSIMAGE_DISTRO}" in
+    Debian_8.0) ;;
+    *)  SHOULDFIX=true
+        strings /sbin/ifdown | egrep '^udhcpc -' >/dev/null && SHOULDFIX=false
+        if $SHOULDFIX ; then
+            if [ -L /sbin/udhcpc ] && ls -la /sbin/udhcpc | grep busybox ; then
+                REPLACEMENT="/bin/busybox udhcpc"
+                rm -f /sbin/udhcpc
+            else
+                REPLACEMENT="/sbin/udhcpc.orig"
+                mv -f /sbin/udhcpc "$REPLACEMENT"
+            fi
+            echo "Fixing up /sbin/udhcpc due to /sbin/ifdown in $OSIMAGE_DISTRO; our script will be there directly and will exec $REPLACEMENT"
+            ln -fsr /usr/local/sbin/udhcpc /sbin/ \
+            && sed -e 's,/sbin/udhcpc,'"$REPLACEMENT"',g' -i /usr/local/sbin/udhcpc
+        fi
+        ;;
+esac
+
 #########################################################################
 # install iptables filtering
 
