@@ -829,7 +829,7 @@ echo '[ -s /usr/share/fty/scripts/udhcpc-hook.sh ] && . /usr/share/fty/scripts/u
 # fix up the system location on such distributions.
 # Note that `busybox --install -s` should happen above this line.
 [ -x "/sbin/ifdown" ] && [ -x "/sbin/udhcpc" ] && \
-case "${OSIMAGE_DISTRO}" in
+case "${OSIMAGE_DISTRO-}" in
     Debian_8.0) ;;
     *)  SHOULDFIX=true
         strings /sbin/ifdown | egrep '^udhcpc -' >/dev/null && SHOULDFIX=false
