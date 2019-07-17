@@ -337,6 +337,7 @@ deb http://archive.debian.org/debian jessie-updates main contrib non-free
 deb http://security.debian.org   jessie/updates main contrib non-free
 EOF
     OSIMAGE_DISTRO="Debian_8.0"
+    echo "WARNING : Fallback to OSIMAGE_DISTRO='$OSIMAGE_DISTRO' since none was provided" >&2
 fi
 
 # Append the (currently internal) OBS source of built packages:
