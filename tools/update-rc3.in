@@ -108,10 +108,7 @@ config_defaults() {
     # Should we do an erase_all (erase all userdata AND (re-)format /mnt/nand)?
     is_set FLAG_ERASE_ALL || FLAG_ERASE_ALL="unset"
 
-    # TODO: TFTP support, busybox can do it
-    # TODO: Test with https - can require custom CA trust configuration, etc.
-    # TODO: Use our common requester as a wrapper for real/busybox wget/curl
-    # TODO: Make a common routine to list remote directories (e.g. http-dir parsing, ftp, tftp, localfs...)
+    # See also comments at fetch_file()
     is_set SOURCESITEROOT || SOURCESITEROOT="http://obs.roz.lab.etn.com/images/${OSIMAGE_DISTRO}"
     is_set SOURCESITEROOT_OSIMAGE || SOURCESITEROOT_OSIMAGE="$SOURCESITEROOT/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}$ARCH"
 
@@ -304,7 +301,7 @@ settraps() {
 get_csalgo_from_filename() {
     # Parse (extensions of) the filename in "$1" to retrieve the
     # checksum algo (if any); set of supported algos and extensions
-    # is to be kept in sync with remove_image() above.
+    # is to be kept in sync with remove_image() below.
     _A="`echo "$1" | tr '[A-Z]' '[a-z]' | sed -e 's,\.tmp$,,' -e 's,^.*\.\([^\.]*\)$,\1,' -e 's,-padded$,,'`" || _A=""
 
     case "${_A}" in
@@ -633,6 +630,67 @@ verify_threeway_checksum() {
 
 ##################################################
 
+fetch_file() {
+    # Caller can provide envvars CHECK_ONLY=yes (globally to not download
+    # for updating) and MAYBE_EMPTY=yes to allow empty files (by default not)
+    # and FETCH_VERBOSE=yes/no.
+    # TODO: TFTP support, busybox can do it
+    # TODO: Test with https - can require custom CA trust configuration, etc.
+    # TODO: Use our common requester as a wrapper for real/busybox wget/curl
+    # TODO: Make a common routine to list remote directories (e.g. http-dir parsing, ftp, tftp, localfs...)
+    local URL="$1"
+    local FILE="$2"
+    local RES=0
+    local FETCH_FLAGS=""
+    local FETCHER=wget
+
+    case "$FETCHER" in
+        # TODO : Generalize for curl, local "cp", tftp...
+        wget*)
+            if [ x"${FETCH_VERBOSE-}" = xyes ] ; then
+                FETCH_FLAGS="-O -"
+            else
+                FETCH_FLAGS="-q -O -"
+            fi
+            ;;
+    esac
+
+    logmsg_info "Downloading '${URL}' (if any) into '${FILE}'..."
+    if [ x"$FILE" = x- ] || [ x"$FILE" = x ] || [ x"$FILE" = xstdout ] ; then
+        FILE=stdout
+        $FETCHER $FETCH_FLAGS "${URL}" || RES=$?
+    else
+        if [ -d "`dirname "${FILE}"`" ]; then
+            rm -f "${FILE}" || true
+            $FETCHER $FETCH_FLAGS "${URL}" > "${FILE}" || RES=$?
+        else
+            logmsg_error "Could not save '${URL}' into '${FILE}': target directory is missing"
+            RES=2
+        fi
+    fi
+
+    if [ "$RES" != 0 ] ; then
+        logmsg_error "Could not save '${URL}' into '${FILE}' (see errors above)"
+    fi
+
+    if [ x"${MAYBE_EMPTY=}" != xyes ] && [ "${FILE}" != stdout ] && [ ! -s "${FILE}" ] ; then
+        logmsg_error "Got empty output trying to save '${URL}' into '${FILE}'"
+        RES=1
+    fi
+
+    if [ "$RES" != 0 ] ; then
+        if [ x"$FILE" != xstdout ]; then
+            rm -f "${FILE}" || true
+        fi
+        if [ x"${CHECK_ONLY-}" = xyes ]; then
+            die "Got an error while checking if there is something new to download, so no reason to proceed"
+        fi
+        return $RES
+    fi
+
+    return 0
+}
+
 # Routines below come from bios-boot::init codebase
 readbytes() {
     # Input: "$1" == total size in bytes to copy from stdin to stdout;
@@ -672,7 +730,7 @@ lshost_http() (
     REMOTE_ROOTURL="`echo "$REMOTE_DIR" | sed 's,^\(.*://[^/]*\)/.*$,\1,'`"
     # Hostname from the URL, without schema and port
     REMOTE_VIRTHOST="`echo "$REMOTE_DIR" | sed 's,^.*://\([^/:]*\)[/:].*$,\1,'`"
-    { wget -q -O - "$REMOTE_DIR"/ || \
+    { CHECK_ONLY="notnow" fetch_file "$REMOTE_DIR"/ - || \
         { logmsg_error "lshost_http(): Could not request listing of URL ${REMOTE_DIR}"
           return 22; }
     } | \
@@ -835,18 +893,12 @@ download_osimage() (
     trap 'TRAPCODE=$?; rm -f "$aTGT_FILE_CSNEW" "$aIMAGE_CSNEW"; exit $TRAPCODE' 0
 
     logmsg_info "Downloading '${IMAGE_CSURL}' (if any) into '${aIMAGE_CSNEW}'..."
-    rm -f "${aIMAGE_CSNEW}"
-    wget -q -O - "${IMAGE_CSURL}" > "${aIMAGE_CSNEW}" || \
-        { logmsg_error "Could not save '${IMAGE_CSURL}' into '${aIMAGE_CSNEW}'"
-          rm -f "${aIMAGE_CSNEW}"
-          if [ x"${CHECK_ONLY-}" = xyes ]; then
-            die "Got an error while checking if there is something new to download, so no reason to proceed"
-          fi
-        }
+    fetch_file "${IMAGE_CSURL}" "${aIMAGE_CSNEW}" || true
+        # Errors reported inside, missing data is deemed bearable
 
     if [ ! -s "${aTGT_FILE_CSNEW}" ] ; then
         logmsg_info "Processing '${IMAGE_CSURL}' (if any) to flatten the names into '${aTGT_FILE_CSNEW}'..."
-        { [ -s "${aIMAGE_CSNEW}" ] && cat "${aIMAGE_CSNEW}" || wget -q -O - "${IMAGE_CSURL}"; } | \
+        { [ -s "${aIMAGE_CSNEW}" ] && cat "${aIMAGE_CSNEW}" || fetch_file "${IMAGE_CSURL}" - ; } | \
         sed 's,  .*$,  '"`basename "$rTGT_FILE"`", > "${aTGT_FILE_CSNEW}" || \
             { logmsg_error "Could not save and process '${IMAGE_CSURL}' into '${aTGT_FILE_CSNEW}'"
               rm -f "${aTGT_FILE_CSNEW}"
@@ -952,14 +1004,7 @@ download_osimage() (
     aIMAGE_MANIFEST_NEW="${TEMP_DATA}/${rIMAGE_URL_BASENAME_EXT}-manifest.json.$$.tmp" # aIMAGE_CSNEW
 
     logmsg_info "Downloading '$IMAGE_MANIFEST_URL' into '$aIMAGE_MANIFEST_NEW'..."
-    rm -f "${IMAGE_MANIFEST_URL}"
-    wget -q -O - "${IMAGE_MANIFEST_URL}" > "${aIMAGE_MANIFEST_NEW}" || \
-        { logmsg_error "Could not save '${IMAGE_MANIFEST_URL}' into '${aIMAGE_MANIFEST_NEW}'"
-          rm -f "${aIMAGE_MANIFEST_NEW}"
-          if [ x"${CHECK_ONLY-}" = xyes ]; then
-            die "Got an error while checking if there is something new to download, so no reason to proceed"
-          fi
-        }
+    fetch_file "${IMAGE_MANIFEST_URL}" "${aIMAGE_MANIFEST_NEW}" || true
 
     if [ ! -s "${aTGT_FILE_MANIFEST}" ]; then
         [ -s "${aIMAGE_MANIFEST_NEW}" ] && cp -f "${aIMAGE_MANIFEST_NEW}" "${aTGT_FILE_MANIFEST}"
@@ -967,8 +1012,7 @@ download_osimage() (
     fi
 
     logmsg_info "Downloading '$IMAGE_URL' into '$aTGT_FILE'..."
-    rm -f "${aTGT_FILE}"
-    wget -O "${aTGT_FILE}" "$IMAGE_URL" && [ -s "$aTGT_FILE" ] || \
+    FETCH_VERBOSE=yes fetch_file "$IMAGE_URL" "${aTGT_FILE}" || \
         { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
     remove_checksum_cache '[^\:]*' '[^\:]*' "${aTGT_FILE}"
 
@@ -1115,24 +1159,10 @@ download_rawfwimage_uboot() (
     trap 'TRAPCODE=$?; rm -f "${aIMAGE_CSNEW}" "${aIMAGE_CSNEW_PADDED}"; exit $TRAPCODE' 0
 
     logmsg_info "Downloading '${IMAGE_CSURL}' (if any) into '${aIMAGE_CSNEW}'..."
-    rm -f "${aIMAGE_CSNEW}"
-    wget -q -O - "${IMAGE_CSURL}" > "${aIMAGE_CSNEW}" || \
-        { logmsg_error "Could not save '${IMAGE_CSURL}' into '${aIMAGE_CSNEW}'"
-          rm -f "${aIMAGE_CSNEW}"
-          if [ x"${CHECK_ONLY-}" = xyes ]; then
-            die "Got an error while checking if there is something new to download, so no reason to proceed"
-          fi
-        }
+    fetch_file "${IMAGE_CSURL}" "${aIMAGE_CSNEW}" || true
 
     logmsg_info "Downloading '${IMAGE_CSURL_PADDED}' (if any) into '${aIMAGE_CSNEW_PADDED}'..."
-    rm -f "${aIMAGE_CSNEW_PADDED}"
-    wget -q -O - "${IMAGE_CSURL_PADDED}" > "${aIMAGE_CSNEW_PADDED}" || \
-        { logmsg_error "Could not save '${IMAGE_CSURL_PADDED}' into '${aIMAGE_CSNEW_PADDED}'"
-          rm -f "${aIMAGE_CSNEW_PADDED}"
-          if [ x"${CHECK_ONLY-}" = xyes ]; then
-            die "Got an error while checking if there is something new to download, so no reason to proceed"
-          fi
-        }
+    fetch_file "${IMAGE_CSURL_PADDED}" "${aIMAGE_CSNEW_PADDED}" || true
 
     # Try the filenames in local directories
     logmsg_info "Verifying if we have this checksum and corresponding file under original name in base dir..."
@@ -1177,8 +1207,7 @@ download_rawfwimage_uboot() (
     fi
 
     logmsg_info "Downloading '$IMAGE_URL' into '$aTGT_FILE'..."
-    rm -f "${aTGT_FILE}"
-    wget -O "${aTGT_FILE}" "$IMAGE_URL" && [ -s "$aTGT_FILE" ] || \
+    FETCH_VERBOSE=yes fetch_file "$IMAGE_URL" "${aTGT_FILE}" || \
         { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
     remove_checksum_cache '[^\:]*' '[^\:]*' "${aTGT_FILE}"
 
@@ -1188,9 +1217,8 @@ download_rawfwimage_uboot() (
             # Note these are helper files, e.g. a padded checksum or some
             # touched-flags (may even be empty) and not fatal if missing
             aBU="`pwd`/`basename "$U"`"
-            logmsg_info "Downloading additional file '$U' into '$aBU'..."
-            rm -f "$aBU"
-            wget -O "${aBU}" "$U" || logmsg_error "Could not download the additional '$U'"
+            logmsg_info "Downloading optional additional file '$U' into '$aBU'..."
+            MAYBE_EMPTY=yes fetch_file "${U}" "${aBU}" || true
         done
 
     if [ -s "${aIMAGE_CSOLD}" ] || [ -s "${aIMAGE_CSNEW}" ] || [ -s "${DEPLOYMENTROOTFW_UBOOT}/${rIMAGE_CSOLD}" ]; then
@@ -1301,24 +1329,10 @@ download_rawfwimage_uimage() (
     trap 'TRAPCODE=$?; rm -f "${aIMAGE_CSNEW}" "${aIMAGE_CSNEW_PADDED}"; exit $TRAPCODE' 0
 
     logmsg_info "Downloading '${IMAGE_CSURL}' (if any) into '${aIMAGE_CSNEW}'..."
-    rm -f "${aIMAGE_CSNEW}"
-    wget -q -O - "${IMAGE_CSURL}" > "${aIMAGE_CSNEW}" || \
-        { logmsg_error "Could not save '${IMAGE_CSURL}' into '${aIMAGE_CSNEW}'"
-          rm -f "${aIMAGE_CSNEW}"
-          if [ x"${CHECK_ONLY-}" = xyes ]; then
-            die "Got an error while checking if there is something new to download, so no reason to proceed"
-          fi
-        }
+    fetch_file "${IMAGE_CSURL}" "${aIMAGE_CSNEW}" || true
 
     logmsg_info "Downloading '${IMAGE_CSURL_PADDED}' (if any) into '${aIMAGE_CSNEW_PADDED}'..."
-    rm -f "${aIMAGE_CSNEW_PADDED}"
-    wget -q -O - "${IMAGE_CSURL_PADDED}" > "${aIMAGE_CSNEW_PADDED}" || \
-        { logmsg_error "Could not save '${IMAGE_CSURL_PADDED}' into '${aIMAGE_CSNEW_PADDED}'"
-          rm -f "${aIMAGE_CSNEW_PADDED}"
-          if [ x"${CHECK_ONLY-}" = xyes ]; then
-            die "Got an error while checking if there is something new to download, so no reason to proceed"
-          fi
-        }
+    fetch_file "${IMAGE_CSURL_PADDED}"  "${aIMAGE_CSNEW_PADDED}" || true
 
     # Try the filenames in local directories
     logmsg_info "Verifying if we have this checksum and corresponding file under original name in base dir..."
@@ -1363,8 +1377,7 @@ download_rawfwimage_uimage() (
     fi
 
     logmsg_info "Downloading '$IMAGE_URL' into '$aTGT_FILE'..."
-    rm -f "${aTGT_FILE}"
-    wget -O "${aTGT_FILE}" "$IMAGE_URL" && [ -s "$aTGT_FILE" ] || \
+    FETCH_VERBOSE=yes fetch_file "$IMAGE_URL" "${aTGT_FILE}" || \
         { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
     remove_checksum_cache '[^\:]*' '[^\:]*' "${aTGT_FILE}"
 
@@ -1374,9 +1387,8 @@ download_rawfwimage_uimage() (
             # Note these are helper files, e.g. a padded checksum or some
             # touched-flags (may even be empty) and not fatal if missing
             aBU="`pwd`/`basename "$U"`"
-            logmsg_info "Downloading additional file '$U' into '$aBU'..."
-            rm -f "$aBU"
-            wget -O "${aBU}" "$U" || logmsg_error "Could not download the additional '$U'"
+            logmsg_info "Downloading optional additional file '$U' into '$aBU'..."
+            MAYBE_EMPTY=yes fetch_file "${U}" "${aBU}" || true
         done
 
     if [ -s "${aIMAGE_CSOLD}" ] || [ -s "${aIMAGE_CSNEW}" ] || [ -s "${DEPLOYMENTROOTFW_UIMAGE}/${rIMAGE_CSOLD}" ]; then
@@ -1508,14 +1520,7 @@ download_rawfwimage_modules() (
     trap 'TRAPCODE=$?; rm -f "$aIMAGE_CSNEW"; exit $TRAPCODE' 0
 
     logmsg_info "Downloading '${IMAGE_CSURL}' (if any) into '${aIMAGE_CSNEW}'..."
-    rm -f "${aIMAGE_CSNEW}"
-    wget -q -O - "${IMAGE_CSURL}" > "${aIMAGE_CSNEW}" || \
-        { logmsg_error "Could not save '${IMAGE_CSURL}' into '${aIMAGE_CSNEW}'"
-          rm -f "${aIMAGE_CSNEW}"
-          if [ x"${CHECK_ONLY-}" = xyes ]; then
-            die "Got an error while checking if there is something new to download, so no reason to proceed"
-          fi
-        }
+    fetch_file "${IMAGE_CSURL}" "${aIMAGE_CSNEW}" || true
 
     # Try the filenames in local directories
     logmsg_info "Verifying if we have this checksum and corresponding file under original name in base dir..."
@@ -1549,8 +1554,7 @@ download_rawfwimage_modules() (
     fi
 
     logmsg_info "Downloading '$IMAGE_URL' into '$aTGT_FILE'..."
-    rm -f "${aTGT_FILE}"
-    wget -O "${aTGT_FILE}" "$IMAGE_URL" && [ -s "$aTGT_FILE" ] || \
+    FETCH_VERBOSE=yes fetch_file "$IMAGE_URL" "${aTGT_FILE}" || \
         { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
     remove_checksum_cache '[^\:]*' '[^\:]*' "${aTGT_FILE}"
 
@@ -1560,9 +1564,8 @@ download_rawfwimage_modules() (
             # Note these are helper files, e.g. a padded checksum or some
             # touched-flags (may even be empty) and not fatal if missing
             aBU="`pwd`/`basename "$U"`"
-            logmsg_info "Downloading additional file '$U' into '$aBU'..."
-            rm -f "$aBU"
-            wget -O "${aBU}" "$U" || logmsg_error "Could not download the additional '$U'"
+            logmsg_info "Downloading optional additional file '$U' into '$aBU'..."
+            MAYBE_EMPTY fetch_file "${U}" "${aBU}" || true
         done
 
     if [ -s "${aIMAGE_CSOLD}" ] || [ -s "${aIMAGE_CSNEW}" ] || [ -s "${DEPLOYMENTROOTFW_MODULES}/${rIMAGE_CSOLD}" ]; then

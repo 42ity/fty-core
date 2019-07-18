@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright (C) 2018 Eaton
+# Copyright (C) 2018-2019 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@ img_type="$(get_a_string_arg osimage-img-type < $J)"
 
 umask 077
 
-ROOT_PASSWORD_LOCATION=/tmp/.rootpwd
+ROOT_PASSWORD_LOCATION="/tmp/.rootpwd"
 
 die() {
     echo "FATAL: $*" >&2
@@ -58,7 +58,10 @@ case "$img_type" in
         ;;
 esac
 
-if [[ -s $ROOT_PASSWORD_LOCATION ]] ; then
+if [[ -s "$ROOT_PASSWORD_LOCATION" ]] ; then
+    ### Uncomment this line to ease debugging in shell or CI
+    #@CI_UNCOMMENT@#ROOT_PASSWORD="`cat "$ROOT_PASSWORD_LOCATION"`"
+    #@CI_UNCOMMENT@#echo "root:$ROOT_PASSWORD"
     die "Previous password still valid"
 fi
 
@@ -97,7 +100,7 @@ echo "Root shell enabled and password changed"
 echo "root:$ROOT_PASSWORD" | chpasswd
 usermod -s /bin/bash root
 
-### Uncomment this line to ease debugging in shell
-#echo "root:$ROOT_PASSWORD"
+### Uncomment this line to ease debugging in shell or CI
+#@CI_UNCOMMENT@#echo "root:$ROOT_PASSWORD"
 
 systemd-run /usr/libexec/fty/disable-root-account -t "$SLEEP_MINUTES"
