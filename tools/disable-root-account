@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright (C) 2018 Eaton
+# Copyright (C) 2018-2019 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ get_a_string_arg() { "$JSONSH" -x "$1" | (IFS="`printf '\t'`" read K V; echo "$V
 J="/etc/release-details.json"
 img_type="$(get_a_string_arg osimage-img-type < $J)"
 
-ROOT_PASSWORD_LOCATION=/tmp/.rootpwd
+ROOT_PASSWORD_LOCATION="/tmp/.rootpwd"
 
 die() {
     echo "FATAL: $*" >&2
