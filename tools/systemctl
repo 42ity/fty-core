@@ -91,8 +91,7 @@ SYSTEMCTL_UNITS_COMMON_INTERNAL="bios tntnet@bios fty-outage fty-metric-store   
                                 ipc-meta-setup fty-sensor-env fty-discovery     \
                                 fty-sensor-gpio                                 \
                                 fty-nut-configurator fty-metric-compute         \
-                                fty-metric-cache fty-alert-flexible             \
-                                fty-metric-ambient-location"
+                                fty-metric-cache fty-metric-ambient-location"
 
 SYSTEMCTL_UNITS_COMMON="$SYSTEMCTL_UNITS_COMMON_EXTERNAL $SYSTEMCTL_UNITS_COMMON_INTERNAL"
 
