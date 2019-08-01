@@ -35,12 +35,18 @@ NTP_DHCP_CONF=/var/lib/ntp/ntp.conf.dhcp
 # on data received (or not) from DHCP.
 # TODO: Differentiate somehow if the user also wanted a specific NTP
 # server vs. one received from DHCP?
-NTP_SYSTEMD_ENABLED="`/bin/systemctl is-enabled ntpd`" || \
-if [ $? != 1 -o -z "$NTP_SYSTEMD_ENABLED" ]; then
-    NTP_SYSTEMD_ENABLED="unknown"
-fi
+NTP_SYSTEMD_NAME=""
+{ NTP_SYSTEMD_ENABLED="`/bin/systemctl is-enabled ntpd 2>/dev/null`" && NTP_SYSTEMD_NAME="ntpd" ; } \
+|| { NTP_SYSTEMD_ENABLED="`/bin/systemctl is-enabled ntp 2>/dev/null`" && NTP_SYSTEMD_NAME="ntp" ; } \
+||  if [ $? != 1 -o -z "$NTP_SYSTEMD_ENABLED" ]; then
+        NTP_SYSTEMD_ENABLED="unknown"
+    fi
 
 can_manipulate_ntpd() {
+	if [ -z "$NTP_SYSTEMD_NAME" ] ; then
+	    echo "$0: WARN: The NTP service unit name could not be determined so the DHCP hook will not manipulate it" >&2
+	    return 1
+	fi
 	case "$NTP_SYSTEMD_ENABLED" in
 	    mask*|disabl*)
 	        echo "$0: WARN: The NTP service unit status is currently $NTP_SYSTEMD_ENABLED so the DHCP hook will not manipulate it" >&2
@@ -85,7 +91,7 @@ hostname_setup() {
 ntp_server_restart_do() (
 	can_manipulate_ntpd || return $?
 
-	invoke-rc.d ntp try-restart && \
+	invoke-rc.d "${NTP_SYSTEMD_NAME}" try-restart && \
 	    echo "$0: INFO: NTP service restarted; waiting for it to pick up time (if not failed) so as to sync it onto hardware RTC" && \
 	    sleep 60 && ntp_server_status && hwclock -w -u && \
 	    echo "$0: INFO: Applied current OS clock value (`TZ=UTC date -u`) to HW clock (`TZ=UTC hwclock -r -u`); done with NTP restart"
@@ -102,7 +108,9 @@ ntp_server_restart() {
 }
 
 ntp_server_status() {
-	invoke-rc.d ntp status
+	can_manipulate_ntpd || return $?
+
+	invoke-rc.d "${NTP_SYSTEMD_NAME}" status
 	# NOTE: successful return means the daemon is running, but
 	# it does guarantee we've picked up time from any source
 }
