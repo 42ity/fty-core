@@ -69,11 +69,14 @@ hostname_setup() {
             ;;
 	esac
 	if test -s /etc/hostname; then
+		# Assume the name was already set up to whatever user wanted
 		return
 	fi
-	if test -z "$hostname"; then
-		hostname=eaton-rc-$(ip link show dev "$interface" | sed -rn 's@:@@g; s@.*ether ([0-9a-f]*) .*@\1@p' | tr "abcdef" "ABCDEF")
-	fi
+	case x"$hostname" in
+		x|xeaton-rc3|xlocalhost*)
+			hostname=eaton-rc-$(ip link show dev "$interface" | sed -rn 's@:@@g; s@.*ether ([0-9a-f]*) .*@\1@p' | tr "abcdef" "ABCDEF")
+			;;
+	esac
 
 	echo "$hostname" >/etc/hostname
 	hostname -F /etc/hostname
