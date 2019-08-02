@@ -82,8 +82,12 @@ hostname_setup() {
 			;;
 	esac
 
-	echo "$hostname" >/etc/hostname
-	hostname -F /etc/hostname
+	if [ x"$hostname" != xeaton-rc3 ]; then
+		echo "$hostname" >/etc/hostname
+		hostname -F /etc/hostname
+	else
+		hostname "eaton-rc3"
+	fi
 	( which hostnamectl 2>/dev/null ) && hostnamectl set-hostname "$hostname" || true
 
 	# Apparently, the first token for a locally available IP address is
