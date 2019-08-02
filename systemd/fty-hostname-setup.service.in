@@ -1,0 +1,18 @@
+[Unit]
+Description=Prepare standard hostname for a 42ity deployment, if none is set statically
+After=local-fs.target
+Requires=local-fs.target
+Before=network-online.target
+
+[Service]
+Type=oneshot
+# the service shall be considered active even when all its processes exited
+RemainAfterExit=yes
+Restart=no
+User=root
+Group=root
+# Generate a name unless one is set, do not save to /etc/hostname yet (so DHCP may override)
+ExecStart=@libexecdir@/@PACKAGE@/fty-hostname-setup "-" false
+
+[Install]
+WantedBy=network-online.target
