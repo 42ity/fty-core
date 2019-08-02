@@ -65,39 +65,13 @@ hostname_setup() {
         bound|renew|BOUND|RENEW|REBIND|REBOOT)
             ;;
         *)
-            echo "$0: WARN: hostname_setup got an unexpected reason '$reason'"
+            echo "$0: WARN: hostname_setup got an unexpected reason '$reason', proceeding anyway" >&2
             ;;
-	esac
-	if test -s /etc/hostname; then
-		# Assume the name was already set up to whatever user wanted before
-		# It should then be changed locally
-		return
-	fi
-	case x"$hostname" in
-		x|xeaton-rc3|xlocalhost*)
-			echo "$0: WARN: Current (or DHCP-suggested) hostname is '$hostname', generating a default MAC-based one instead" >&2
-			hostname_addon="$(ip link show dev "$interface" | sed -rn 's@:@@g; s@.*ether ([0-9a-f]*) .*@\1@p' | tr "abcdef" "ABCDEF")" \
-			&& [ -n "${hostname_addon}" ] && hostname="eaton-rc-${hostname_addon}" && echo "$0: INFO: Generated '$hostname' instead" >&2 \
-			|| { hostname="eaton-rc3" ; echo "$0: WARN: FAILED to generate a hostname based on a MAC address, fall back to '$hostname'" >&2 ; }
-			;;
-	esac
+    esac
 
-	if [ x"$hostname" != xeaton-rc3 ]; then
-		echo "$hostname" >/etc/hostname
-		hostname -F /etc/hostname
-	else
-		hostname "eaton-rc3"
-	fi
-	( which hostnamectl 2>/dev/null ) && hostnamectl set-hostname "$hostname" || true
-
-	# Apparently, the first token for a locally available IP address is
-	# treated as the `hostname --fqdn` if no other ideas are available.
-	if [ -s /etc/hosts ]; then
-		grep -wi "$hostname" etc/hosts >/dev/null 2>&1 || \
-			sed -e 's,^[ \t]*\(127[^ \t]*[ \t]\)\(.*[ \t]*localhost[ \t]*\),\1'"$hostname"'\t\2\t,' -i /etc/hosts
-	else
-		echo "127.0.0.1 $hostname   localhost" > /etc/hosts
-	fi
+    # Pass the DHCP-suggested name (if any), it wold be applied if nothing
+    # is set in /etc/hostname yet, and then saved into the file.
+    fty-hostname-setup "$hostname" "true"
 }
 
 ntp_server_restart_do() (
