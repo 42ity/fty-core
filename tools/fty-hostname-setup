@@ -76,6 +76,10 @@ hostname_setup() {
 			;;
 	esac
 
+	# Apply hostnamectl first, as it tends to lower-case the MAC chars
+	# Strictly speaking, modern DNS rules do not require that (though
+	# names are case-insensitive for comparisons)
+	( which hostnamectl 2>/dev/null ) && hostnamectl set-hostname "$hostname" || true
 	if [ x"$hostname" != xeaton-rc3 ] && [ "$filesave" != false ] ; then
 		echo "$hostname" >/etc/hostname
 		hostname -F /etc/hostname
@@ -83,7 +87,6 @@ hostname_setup() {
 		# Just apply the name "live" and allow this routine to re-run later
 		hostname "$hostname"
 	fi
-	( which hostnamectl 2>/dev/null ) && hostnamectl set-hostname "$hostname" || true
 
 	# Apparently, the first token for a locally available IP address is
 	# treated as the `hostname --fqdn` if no other ideas are available.
