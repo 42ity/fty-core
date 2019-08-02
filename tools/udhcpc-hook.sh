@@ -78,7 +78,7 @@ hostname_setup() {
 			echo "$0: WARN: Current (or DHCP-suggested) hostname is '$hostname', generating a default MAC-based one instead" >&2
 			hostname_addon="$(ip link show dev "$interface" | sed -rn 's@:@@g; s@.*ether ([0-9a-f]*) .*@\1@p' | tr "abcdef" "ABCDEF")" \
 			&& [ -n "${hostname_addon}" ] && hostname="eaton-rc-${hostname_addon}" && echo "$0: INFO: Generated '$hostname' instead" >&2 \
-			|| echo "$0: WARN: FAILED to generate a hostname based on a MAC address" >&2
+			|| { hostname="eaton-rc3" ; echo "$0: WARN: FAILED to generate a hostname based on a MAC address, fall back to '$hostname'" >&2 ; }
 			;;
 	esac
 
