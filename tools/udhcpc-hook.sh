@@ -70,6 +70,7 @@ hostname_setup() {
 	esac
 	if test -s /etc/hostname; then
 		# Assume the name was already set up to whatever user wanted before
+		# It should then be changed locally
 		return
 	fi
 	case x"$hostname" in
