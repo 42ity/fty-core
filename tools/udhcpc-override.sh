@@ -90,7 +90,17 @@ case "$UDHCPC_OPTS" in
     *hostname*) ;; # Something provided already
     *)  # Give hint about my non-default name
         case x"`hostname`" in
-            x|xeaton-rc3|xlocalhost*) echo "WARNING: Current local host name is '`hostname`' so not pushing it to DHCP" >&2 ;;
+            x|xeaton-rc3|xlocalhost*)
+                echo "WARNING: Current local host name is '`hostname`', trying to find a better name" >&2
+                # Try to generate and apply a MAC-based name, do not save it
+                # yet - might do so through DHCP assignment processing though
+                fty-hostname-setup "" "false"
+            ;;
+        esac
+
+        case x"`hostname`" in
+            x|xeaton-rc3|xlocalhost*)
+                echo "WARNING: Current local host name is '`hostname`', so not pushing it to DHCP" >&2 ;;
             *) UDHCPC_OPTS="$UDHCPC_OPTS -x hostname:`hostname`" ;;
         esac
         ;;
