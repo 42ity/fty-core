@@ -30,6 +30,7 @@
 hostname_setup() {
 	local hostname="$1"
 	local filesave="$2"
+	# Caller (DHCP hook) can also export a $interface value
 
 	# By default, write the newly generated unique name (if any)
 	# to /etc/hostname. Makes sense to avoid this e.g. in early
@@ -69,8 +70,8 @@ hostname_setup() {
 	[ "$filesave" = extra-force ] || \
 	case x"$hostname" in
 		x|xeaton-rc3|xlocalhost*) # failed defaultness-check
-			echo "$0: WARN: Current (or DHCP-suggested) hostname is '$hostname', generating a default MAC-based one instead" >&2
-			hostname_addon="$(ip link show dev "$interface" | sed -rn 's@:@@g; s@.*ether ([0-9a-f]*) .*@\1@p' | tr "abcdef" "ABCDEF")" \
+			echo "$0: WARN: Current (or DHCP-suggested) hostname is '$hostname', generating a default MAC-based one instead (using interface='$interface')" >&2
+			hostname_addon="$(ip link show ${interface:+dev "$interface"} | sed -rn 's@:@@g; s@.*ether ([0-9a-f]*) .*@\1@p' | head -1 | tr "abcdef" "ABCDEF")" \
 			&& [ -n "${hostname_addon}" ] && hostname="eaton-rc-${hostname_addon}" && echo "$0: INFO: Generated '$hostname' instead" >&2 \
 			|| { hostname="eaton-rc3" ; echo "$0: WARN: FAILED to generate a hostname based on a MAC address, fell back to '$hostname'" >&2 ; }
 			;;

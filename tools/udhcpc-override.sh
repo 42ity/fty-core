@@ -94,7 +94,8 @@ case "$UDHCPC_OPTS" in
                 echo "WARNING: Current local host name is '`hostname`', trying to find a better name" >&2
                 # Try to generate and apply a MAC-based name, do not save it
                 # yet - might do so through DHCP assignment processing though
-                fty-hostname-setup "" "false"
+                interface="$UDHCPC_IFACE" \
+                    fty-hostname-setup "" "false"
             ;;
         esac
 
