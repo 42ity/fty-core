@@ -81,6 +81,7 @@ hostname_setup() {
 
 	echo "$hostname" >/etc/hostname
 	hostname -F /etc/hostname
+	( which hostnamectl 2>/dev/null ) && hostnamectl set-hostname "$hostname" || true
 
 	# Apparently, the first token for a locally available IP address is
 	# treated as the `hostname --fqdn` if no other ideas are available.
