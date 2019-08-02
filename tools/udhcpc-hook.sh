@@ -71,7 +71,8 @@ hostname_setup() {
 
     # Pass the DHCP-suggested name (if any), it wold be applied if nothing
     # is set in /etc/hostname yet, and then saved into the file.
-    fty-hostname-setup "$hostname" "true"
+    interface="$interface" \
+        fty-hostname-setup "$hostname" "true"
 }
 
 ntp_server_restart_do() (
