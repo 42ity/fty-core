@@ -177,6 +177,7 @@ client_SCRIPTS +=	 \
 			tools/verify-fs \
 			tools/diagnostic-information \
 			tools/start-db-services \
+			tools/fty-hostname-setup \
 			tools/fty-route \
 			tools/enable-root-account \
 			tools/disable-root-account \
@@ -192,6 +193,7 @@ EXTRA_DIST +=		tools/fake-th \
 			tools/generate-release-details.sh \
 			tools/loghost-rsyslog \
 			tools/compress-logs \
+			tools/fty-hostname-setup \
 			tools/fty-route \
 			tools/enable-root-account \
 			tools/disable-root-account \
@@ -330,7 +332,9 @@ SYSTEMD_UNITS += $(SYSTEMD_UNITS_TARGET_BIOS) $(SYSTEMD_UNITS_LOWLEVEL)
 # script or during deployment's lifetime).
 # Note: Due to conflict with "tntnet@.service" file from tntnet package,
 # we name ours differently here (and override during OS image generation).
-#SYSTEMD_UNITS_NOTPRESET_LOWLEVEL +=
+SYSTEMD_UNITS_NOTPRESET_LOWLEVEL += \
+                        fty-hostname-setup.service
+
 SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS += \
                         fty-envvars.service \
                         fty-tntnet@.service \

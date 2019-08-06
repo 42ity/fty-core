@@ -352,6 +352,7 @@ AC_CONFIG_FILES([
         systemd/fty-db-engine.service
         systemd/fty-db-init.service
         systemd/fty-envvars.service
+        systemd/fty-hostname-setup.service
         systemd/fty-tntnet@.service
         systemd/ifplug-dhcp-autoconf.service
         systemd/ipc-meta-setup.service
