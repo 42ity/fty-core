@@ -48,7 +48,7 @@ hostname_setup() {
 	if [ "$hostname" = "-" ]; then
 		# Apply existing name, if present and sane, and tweak /etc/hosts below
 		[ -s /etc/hostname ] \
-			&& hostname="`cat /etc/hostname | sed -e 's,^[ \t]*,,' -e 's,[ \t]*$,,`" \
+			&& hostname="`cat /etc/hostname | sed -e 's,^[ \t]*,,' -e 's,[ \t]*$,,'`" \
 			|| hostname="`hostname`" \
 			|| hostname="`cat /proc/sys/kernel/hostname`"
 	else
@@ -58,7 +58,7 @@ hostname_setup() {
 			# including any /etc/hosts changes, if desired.
 			hostname_sys="`hostname`" && [ -n "$hostname_sys" ] \
 				|| hostname_sys="`cat /proc/sys/kernel/hostname`"
-			hostname_etc="`cat /etc/hostname | sed -e 's,^[ \t]*,,' -e 's,[ \t]*$,,`"
+			hostname_etc="`cat /etc/hostname | sed -e 's,^[ \t]*,,' -e 's,[ \t]*$,,'`"
 			if [ "$hostname" != "$hostname_etc" ] || [ "$hostname" != "$hostname_sys" ]; then
 				echo "$0: WARN: Passed hostname candidate is '$hostname', while kernel says '$hostname_sys' and /etc/hostname says '$hostname_etc': leaving them untouched!" >&2
 			fi
