@@ -201,7 +201,7 @@ reportGitInfo() {
             [ $_B_RES != 0 -o -z "$_B" ] && \
             if [ -n "$PACKAGE_GIT_HASH_S" ]; then
                 echo "GIT_DETAILS-INFO: Looking for PACKAGE_GIT_BRANCH in 'git branch' info..." >&2
-                _B="`git branch -a -v | grep -w "$PACKAGE_GIT_HASH_S" | egrep -v "^\* \(detached from $PACKAGE_GIT_HASH_S\)" | awk '{print $1}' | sed 's,^remotes/,,'`"
+                _B="`git branch -a -v | grep -w "$PACKAGE_GIT_HASH_S" | egrep -v "^\* \(detached from $PACKAGE_GIT_HASH_S|HEAD detached at $PACKAGE_GIT_HASH_S\)" | awk '{print $1}' | sed 's,^remotes/,,'`"
                 _B_RES=$?
             fi
 
