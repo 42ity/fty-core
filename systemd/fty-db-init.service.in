@@ -17,6 +17,10 @@ PartOf=bios.target
 # trying to start up indefinitely (e.g. initial boot, untouched for days).
 Type=forking
 User=root
+# Unlimited startup...
+TimeoutStartSec=0
+# More than 90, less than in bios.service
+TimeoutStopSec=100
 # the service shall be considered active even when all its processes exited
 RemainAfterExit=yes
 Restart=always
