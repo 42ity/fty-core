@@ -521,7 +521,7 @@ ensure_root_password || exit $?
 # for development. Production code does not set it.
 case "${BIOS_DB_INIT-}" in
 	generate|initialize|flush|init) generate_database; exit $? ;;
-	upgrade|update) upgrade_database; exit $? ;;
+	upgrade|update) upgrade_database "$@"; exit $? ;;
 esac
 
 # From here on, the mysql client should rely on ~/.my.cnf
