@@ -247,7 +247,7 @@ install_sql_file() {
 	; then
 		echo "Database for 42ity initialization - importing $COMMENT `basename $INITSQL`..."
 		do_mysql < "$INITSQL" || return 1
-		SQLINSTALL_SCHEMA_VERSION="v=`grep_sql_version < "$INITSQL"`." || BIOS_SCHEMA_VERSION_SQL=""
+		SQLINSTALL_SCHEMA_VERSION="v=`grep_sql_version < "$INITSQL"`." || SQLINSTALL_SCHEMA_VERSION=""
 		[ -n "$INSTSQL_DIR" ] && [ -d "$INSTSQL_DIR" ] && \
 			gzip -c < "$INITSQL" > "$INSTSQL_DIR/`basename "$INITSQL"`.$SQLINSTALL_SCHEMA_VERSION$SQLINSTALL_TIMESTAMP.gz"
 		return 0
