@@ -555,6 +555,13 @@ fi
 for F in "$INITSQL_FIRST" \
 	`{ ls -1 "${INITSQL_DIR}"/*.sql | sed 's,^.*/\([^\/]*$\),\1,'; exec_sql_db 'SELECT DISTINCT filename FROM t_bios_schema_version;' ; } | sort | uniq | grep -v "$(basename $INITSQL_FIRST)"` \
 ; do
+	# Note that policy and activity regarding SQL schema files distributed
+	# with the current product vs. files and versions registered in the
+	# database is defined in verify_schema_version(). In particular, it
+	# currently would trigger an import of newly found files that were
+	# not seen before (schema upgrade for newer product version), calling
+	# upgrade_database(), and will complain fatally about changed versions
+	# of files that were already imported before.
 	verify_schema_version "$F" || exit $?
 done
 
