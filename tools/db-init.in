@@ -516,6 +516,9 @@ esac
 	exit 2
 
 ensure_root_password || exit $?
+
+# Note that BIOS_DB_INIT is very optional and mostly intended
+# for development. Production code does not set it.
 case "${BIOS_DB_INIT-}" in
 	generate|initialize|flush|init) generate_database; exit $? ;;
 	upgrade|update) upgrade_database; exit $? ;;
