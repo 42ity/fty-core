@@ -33,8 +33,8 @@ EnvironmentFile=-@sysconfdir@/default/bios__%n.conf
 EnvironmentFile=-@sysconfdir@/default/fty
 EnvironmentFile=-@sysconfdir@/default/fty__%n.conf
 Environment="prefix=@prefix@"
-ExecStart=@libexecdir@/@PACKAGE@/db-init
-ExecStartPost=/usr/bin/touch /var/run/fty-db-ready
+ExecStart=@libexecdir@/@PACKAGE@/db-init --db-ready-file /var/run/fty-db-ready
+#ExecStartPost=/usr/bin/touch /var/run/fty-db-ready
 ExecStop=-/bin/rm -f /var/run/fty-db-ready
 ExecStopPost=/bin/dash -c "/bin/systemctl stop -- $(/bin/systemctl show -p WantedBy -p RequiredBy -p BoundTo fty-db-init.service | cut -d= -f2 | tr ' ' '\\n' | egrep -v '^(bios|fty)\.(service|target)$')"
 
