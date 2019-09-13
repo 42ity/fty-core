@@ -487,6 +487,20 @@ trap_exit() {
 
 trap 'trap_exit' 0 1 2 3 15
 
+DB_READY_FILE=""
+while [ $# -gt 0 ]; do
+	case "$1" in
+		--db-ready-file)
+			shift
+			case "$1" in
+				/*)	DB_READY_FILE="$1" ;;
+				*)	echo "DB_READY_FILE must be a fully qualified path" >&2 ; exit 1 ;;
+			esac
+			;;
+		*) echo "Unsupported argument, ignored: $1" >&2 ;;
+	shift
+done
+
 case "$INSTSQL_DIR" in
 	/*) [ -d "$INSTSQL_DIR" ] || { \
 			echo "Creating INSTSQL_DIR='$INSTSQL_DIR' to save copies of applied SQL files..."; \
@@ -540,6 +554,11 @@ for F in "$INITSQL_FIRST" \
 ; do
 	verify_schema_version "$F" || exit $?
 done
+
+if [ -n "$DB_READY_FILE" ] ; then
+	echo "Trying to touch the '$DB_READY_FILE' to mark completion of init/verification of DB schema, database is ready to use by IPM applications"
+	mkdir -p "`dirname "$DB_READY_FILE"`" && touch "$DB_READY_FILE"
+fi
 
 echo "Database for 42ity - found and deemed sufficient"
 exit 0
