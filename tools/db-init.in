@@ -480,6 +480,12 @@ verify_schema_version() {
 
 trap_exit() {
     RET_CODE=$?
+
+    if [ "$RET_CODE" = 0 ] && [ -n "$DB_READY_FILE" ] ; then
+        echo "Trying to touch the '$DB_READY_FILE' to mark successful completion of init/verification of DB schema, database is ready to use by IPM applications" >&2
+        mkdir -p "`dirname "$DB_READY_FILE"`" && touch "$DB_READY_FILE" || echo "WARNING : Failed to touch the '$DB_READY_FILE'!" >&2
+    fi
+
     echo "Syncing changes (if any) to stable storage..."
     sync
     return $RET_CODE
@@ -565,11 +571,6 @@ for F in "$INITSQL_FIRST" \
 	# of files that were already imported before.
 	verify_schema_version "$F" || exit $?
 done
-
-if [ -n "$DB_READY_FILE" ] ; then
-	echo "Trying to touch the '$DB_READY_FILE' to mark completion of init/verification of DB schema, database is ready to use by IPM applications"
-	mkdir -p "`dirname "$DB_READY_FILE"`" && touch "$DB_READY_FILE"
-fi
 
 echo "Database for 42ity - found and deemed sufficient"
 exit 0
