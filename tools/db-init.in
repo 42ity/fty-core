@@ -498,6 +498,7 @@ while [ $# -gt 0 ]; do
 			esac
 			;;
 		*) echo "Unsupported argument, ignored: $1" >&2 ;;
+	esac
 	shift
 done
 
