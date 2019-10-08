@@ -252,6 +252,15 @@ sed -e 's|.*RuntimeMaxFileSize.*|RuntimeMaxFileSize=10M|' \
     -e 's|.*SyncIntervalSec.*|SyncIntervalSec=1s|' \
     -i /etc/systemd/journald.conf
 
+## journald persistency setup (SyncIntervalSec enlarged)
+## see below 'MaxLevelStore' non-devel setting
+
+sed -e 's|.*Storage.*|Storage=persistent|' \
+    -e 's|.*SystemMaxUse.*|SystemMaxUse=300M|' \
+    -e 's|.*SystemMaxFileSize.*|SystemMaxFileSize=10M|' \
+    -e 's|.*SyncIntervalSec.*|SyncIntervalSec=2s|' \
+    -i /etc/systemd/journald.conf
+
 # rsyslogd setup
 mkdir -p /etc/rsyslog.d /etc/rsyslog.d-early /var/spool/rsyslog
 # the rsyslogd.conf "$WorkDirectory"
@@ -668,7 +677,7 @@ case "$IMGTYPE" in
     *devel*)
         echo "BIOS_LOG_LEVEL=LOG_DEBUG" > /usr/share/fty/etc/default/fty
         echo "BIOS_NUT_USE_DMF=true" >> /usr/share/fty/etc/default/fty
-        sed -i "s|INFO|DEBUG|g" /etc/fty/ftylog.cfg 
+        sed -i "s|rootLogger=INFO|rootLogger=DEBUG|g" /etc/fty/ftylog.cfg
         ;;
     *)
         echo "BIOS_LOG_LEVEL=LOG_INFO" > /usr/share/fty/etc/default/fty
