@@ -221,7 +221,7 @@ for D in /usr/libexec /usr/lib /usr/share ; do
     done
 done
 
-#42ity log configuration file 
+#42ity log configuration file
 mkdir -p /etc/fty/
 cp /usr/share/fty/examples/config/ftylog.d/10-ftylog.cfg /etc/fty/ftylog.cfg
 cp /usr/share/fty/examples/config/ftylog.d/20-wwwlog.cfg /etc/fty/wwwlog.cfg
@@ -252,14 +252,16 @@ sed -e 's|.*RuntimeMaxFileSize.*|RuntimeMaxFileSize=10M|' \
     -e 's|.*SyncIntervalSec.*|SyncIntervalSec=1s|' \
     -i /etc/systemd/journald.conf
 
-## journald persistency setup (SyncIntervalSec enlarged)
-## see below 'MaxLevelStore' non-devel setting
+if [ "`uname -m`" = x86_64 ]; then
+    # journald persistency setup (SyncIntervalSec enlarged)
+    # see below 'MaxLevelStore' non-devel setting
 
-sed -e 's|.*Storage.*|Storage=persistent|' \
-    -e 's|.*SystemMaxUse.*|SystemMaxUse=300M|' \
-    -e 's|.*SystemMaxFileSize.*|SystemMaxFileSize=10M|' \
-    -e 's|.*SyncIntervalSec.*|SyncIntervalSec=2s|' \
-    -i /etc/systemd/journald.conf
+    sed -e 's|.*Storage.*|Storage=persistent|' \
+        -e 's|.*SystemMaxUse.*|SystemMaxUse=300M|' \
+        -e 's|.*SystemMaxFileSize.*|SystemMaxFileSize=10M|' \
+        -e 's|.*SyncIntervalSec.*|SyncIntervalSec=2s|' \
+        -i /etc/systemd/journald.conf
+fi
 
 # rsyslogd setup
 mkdir -p /etc/rsyslog.d /etc/rsyslog.d-early /var/spool/rsyslog
