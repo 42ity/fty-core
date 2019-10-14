@@ -111,6 +111,10 @@ mkdir -p /home/admin && chown admin:bios-admin /home/admin
 # add an access to bios-logread (for /var/log/messages) to webserver
 usermod -G bios-logread -a www-data
 
+# add an access to systemd-journal (for systemctl and
+# /var/log/journal files access) to webserver. See fty-rest getlog api.
+usermod -G systemd-journal -a www-data
+
 # add an access to sasl for bios
 usermod -G "${SASL_GROUP}" -a bios
 
