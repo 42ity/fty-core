@@ -242,7 +242,7 @@ chmod 700 /usr/libexec/fty/disable-root-account
 
 # Setup 42ity lenses
 mkdir -p /usr/share/fty/lenses
-ln -sr /usr/share/augeas/lenses/dist/{build,ethers,interfaces,ntp,ntpd,pam,resolv,rx,sep,util,shellvars}.aug \
+ln -sr /usr/share/augeas/lenses/dist/{build,ethers,interfaces,ntp,ntpd,pam,resolv,rx,sep,util,shellvars,quote}.aug \
     /usr/share/fty/lenses
 
 # Setup u-Boot
