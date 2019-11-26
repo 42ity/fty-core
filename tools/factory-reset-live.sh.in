@@ -109,7 +109,7 @@ do_reset_passwd() {
 do_unlicense() {
     # TODO: se subst-value to path here
     logmsg_info "Resetting license-accepted state (EULA)..."
-    rm -f /var/lib/fty/license
+    rm -f /var/lib/fty/fty-eula/license /var/lib/fty/license
     if [ "$ENABLESVC" = yes ]; then
         logmsg_info "Restarting services that care about license-accepted state (EULA)..."
         systemctl restart fty-license-accepted.service
@@ -141,7 +141,7 @@ do_unstate() {
     ls -1d /var/lib/fty/* /var/lib/bios/* | \
     while read OBJ ; do
         case "$OBJ" in
-        */license|*/sql|*/ipc-meta-setup) ;; # Skip these - handled by other actions
+        */fty-eula|*/license|*/sql|*/ipc-meta-setup) ;; # Skip these - handled by other actions
         *) rm -rf "$OBJ" ;;
         esac
     done
