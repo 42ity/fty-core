@@ -145,10 +145,18 @@ if [ -d /var/lib/bios ]; then
         mv /var/lib/bios /var/lib/fty
     fi
 fi
-mkdir -p /var/lib/fty
-# webserver needs to store license file, currently in root of /var/lib/fty
-chown www-data /var/lib/fty
-# Legacy link just in case
+
+# webserver needs to store license file, earlier this was in root
+# of /var/lib/fty but now systemd prohibits lax filesystem rights
+# for directories managed with tmpfiles. Sync with 01-bios-eula.sh
+mkdir -p /var/lib/fty/fty-eula
+chown www-data:sasl /var/lib/fty/fty-eula
+chown 0:0 /var/lib/fty
+chmod 755 /var/lib/fty /var/lib/fty/fty-eula
+# Leave a link to EULA file for not-yet-updated consumers
+ln -fs ./fty-eula/license /var/lib/fty/license
+
+# Legacy link to /var/lib/bios just in case
 # TODO: Verify on a rack controller that this can be overlaid by existing
 # directories (from older-version installations).
 ln -sfr /var/lib/fty /var/lib/bios
@@ -496,7 +504,7 @@ echo "UseDNS no" >> /etc/ssh/sshd_config
 rm /etc/ssh/*key*
 mkdir -p /etc/systemd/system
 sed 's|\[Service\]|[Service]\nExecStartPre=/usr/bin/ssh-keygen -A|' /lib*/systemd/system/ssh@.service > /etc/systemd/system/ssh@.service
-sed -i 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/fty/license\nConditionPathExists=@OVERLAY_PATH@/etc/shadow|' /etc/systemd/system/ssh@.service
+sed -i 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/fty/fty-eula/license\nConditionPathExists=@OVERLAY_PATH@/etc/shadow|' /etc/systemd/system/ssh@.service
 /bin/systemctl disable ssh.service
 /bin/systemctl mask ssh.service
 /bin/systemctl enable ssh.socket
