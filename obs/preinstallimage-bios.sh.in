@@ -525,6 +525,11 @@ cp /usr/share/fty/examples/config/malamute/malamute.cfg /etc/malamute
 /bin/systemctl enable malamute
 
 # Enable 42ity services (distributed as a systemd preset file)
+if [ "${OSIMAGE_DISTRO}" = "Debian_10.0" ]; then
+    /bin/systemctl mask mysql.service || true
+    /bin/systemctl mask mysqld.service || true
+fi
+
 /bin/systemctl preset-all
 if [ "`uname -m`" = x86_64 ]; then
     /bin/systemctl disable lcd-boot-display || true
