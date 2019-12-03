@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2015-2019 Eaton
+# Copyright (C) 2015-2020 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -67,6 +67,8 @@ config_defaults() {
     esac
     # The RC3 base OS ensures support for squashfs and overlay(fs)
     is_set EXT || EXT="squashfs"
+    # TODO: Eventually default to "sha256" or better,
+    # but do not enforce too many breaking changes right now
     is_set CHECKSUM_ALGO_DEFAULT || CHECKSUM_ALGO_DEFAULT="md5"
 
     # This value comes down from OBS target name into many corners of the multiverse
@@ -305,7 +307,7 @@ get_csalgo_from_filename() {
     _A="`echo "$1" | tr '[A-Z]' '[a-z]' | sed -e 's,\.tmp$,,' -e 's,^.*\.\([^\.]*\)$,\1,' -e 's,-padded$,,'`" || _A=""
 
     case "${_A}" in
-        md5|sha|sha1|sha224|sha256|sha384|sha512)
+        md5|sha|sha1|sha224|sha256|sha384|sha512|cksum)
             echo "${_A}"
             unset _A
             return 0 ;;
@@ -328,11 +330,20 @@ calculate_stream_checksum() {
         ALGO="`get_csalgo_from_filename "$1"`" || return $?
     fi
 
+    if [ "$ALGO" = cksum ] ; then
+        # piped cmd output (with size in $2):   2851979510 532
+        # TODO: Generalize into checking expected file lengths too
+        cksum | awk '{print $1}'
+        return $?
+    fi
+
     if [ -x "`which openssl`" ] 2>/dev/null ; then
+        # piped cmd output:   (stdin)= b39fd8ccd434b6e934cfd4016db3475c
         openssl dgst -"${ALGO}" | awk '{print $NF}'
         return $?
     fi
 
+    # piped cmd output:   b39fd8ccd434b6e934cfd4016db3475c  -
     ${ALGO}sum | awk '{print $1}'
     return $?
 }
@@ -395,7 +406,7 @@ remove_image() {
         mv -f "$RETAIN_FILE" "$RETAIN_FILE.$$"
     remove_checksum_cache '[^\:]*' '[^\:]*' "$1"
     remove_checksum_cache '[^\:]*' '[^\:]*' "$1"'\.[^\:]*'
-    rm -f "$1"{,.md5,.sha,.sha1,.sha224,.sha256,.sha384,.sha512}{,-padded}{,.tmp} ${2:+"$2"}
+    rm -f "$1"{,.md5,.sha,.sha1,.sha224,.sha256,.sha384,.sha512,.cksum}{,-padded}{,.tmp} ${2:+"$2"}
     # and update the SW package manifest
     # WARNING: this MUST be done before package manifest deletion!
     etn-sw-update --delete-image "$1"
@@ -1770,16 +1781,16 @@ while [ $# -gt 0 ]; do
 		-ls)
 			RES=0
 			lsdir_http_pattern "${SOURCESITEROOTFW_UBOOT}" "uBoot*" \
-				| egrep -v '\.(md5'"$CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT"')$' || RES=$?
+				| egrep -v '\.(md5|sha256|cksum'"$CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT"')$' || RES=$?
 			lsdir_http_pattern "${SOURCESITEROOTFW_UBOOT}" "u-Boot*" \
-				| egrep -v '\.(md5'"$CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT"')$' || RES=$?
+				| egrep -v '\.(md5|sha256|cksum'"$CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT"')$' || RES=$?
 			lsdir_http_pattern "${SOURCESITEROOTFW_UIMAGE}" "uImage*" \
-				| egrep -v '\.(md5'"$CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT"')$' || RES=$?
+				| egrep -v '\.(md5|sha256|cksum'"$CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT"')$' || RES=$?
 			lsdir_http_pattern "${SOURCESITEROOTFW_MODULES}" "*[0-9].[0-9]*.${EXT}*" \
-				| egrep -v '\.(md5'"$CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT"')$' || RES=$?
+				| egrep -v '\.(md5|sha256|cksum'"$CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT"')$' || RES=$?
 			lsdir_http_pattern "${SOURCESITEROOT_OSIMAGE}" "${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}.${EXT}*" \
 				| sort_osimage_names \
-				| egrep -v '\.(md5'"$CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT"')$' || RES=$?
+				| egrep -v '\.(md5|sha256|cksum'"$CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT"')$' || RES=$?
 
 			summarize_check() {
 				IMG="$1"
