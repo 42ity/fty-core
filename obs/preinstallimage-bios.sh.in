@@ -529,9 +529,13 @@ if [ "${OSIMAGE_DISTRO}" = "Debian_10.0" ]; then
     /bin/systemctl disable mysql.service || true
     /bin/systemctl disable mysqld.service || true
     /bin/systemctl disable mariadb.service || true
+    /bin/systemctl disable mariadb@bootstrap.service || true
     /bin/systemctl mask mysql.service || true
     /bin/systemctl mask mysqld.service || true
     /bin/systemctl mask mariadb.service || true
+    /bin/systemctl mask mariadb@bootstrap.service || true
+    mv -f /lib/systemd/system/mariadb@.service /lib/systemd/system/mariadb@.service.orig || true
+    mv -f /lib/systemd/system/mariadb.service /lib/systemd/system/mariadb.service.orig || true
 fi
 
 /bin/systemctl preset-all
