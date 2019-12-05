@@ -23,7 +23,7 @@ ExecStart=/bin/dash -c "while ! /usr/bin/test -s /var/lib/fty/fty-eula/license ;
 ExecStartPost=/bin/dash -c "/usr/libexec/fty/disable-root-account"
 ExecStartPost=-/bin/systemctl start --no-block bios.service
 ExecStartPost=/bin/dash -c "/usr/bin/bmsg publish eula ACCEPTED"
-ExecStartPost=/bin/dash -c "/bin/systemctl start --no-block -- $(/bin/systemctl show -p WantedBy -p RequiredBy -p BoundBy fty-license-accepted.service | cut -d= -f2 | sort | uniq | tr '\n' ' ')"
+ExecStartPost=/bin/dash -c "/bin/systemctl start --no-block -- $(/bin/systemctl show -p WantedBy -p RequiredBy -p BoundBy fty-license-accepted.service | cut -d= -f2 | sort | uniq | tr '\\n' ' ')"
 
 [Install]
 WantedBy=bios.target

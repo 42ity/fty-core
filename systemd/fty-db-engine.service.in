@@ -37,7 +37,7 @@ ExecStartPost=/bin/dash -c "/usr/bin/mysql -e 'show databases;' || /usr/bin/mysq
 ExecStop=/usr/lib/mysql/rcmysql stop
 ExecStopPost=-/bin/rm -f /var/run/fty-db-ready
 # Make sure dependent services have finished, e.g. if mysqld died ungracefully
-ExecStopPost=/bin/dash -c "/bin/systemctl stop -- $(/bin/systemctl show -p WantedBy -p RequiredBy -p BoundTo fty-db-engine.service | cut -d= -f2 | tr ' ' '\\n' | egrep -v '^(bios|fty)\.(service|target)$')"
+ExecStopPost=/bin/dash -c "/bin/systemctl stop -- $(/bin/systemctl show -p WantedBy -p RequiredBy -p BoundTo fty-db-engine.service | cut -d= -f2 | tr ' ' '\\n' | egrep -v '^(bios|fty)\\.(service|target)$')"
 
 [Install]
 WantedBy=bios.target
