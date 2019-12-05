@@ -19,20 +19,20 @@
 #   with this program; if not, write to the Free Software Foundation, Inc.,
 #   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-#! \file    90-sw-manifest.sh
-#  \brief   Make sure /mnt/nand/rootfs/manifest exists and is owned
+#! \file    91-mmc-recovery.sh
+#  \brief   Make sure /mnt/mmc/recovery/rootfs exists and is owned
 #           by proper account names even if name-to-number mapping has
 #           changed in the user deployment
 #  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \author  Arnaud Quette <ArnaudQuette@Eaton.com>
 
-SW_USER="bios"
-SW_GROUP="www-data"
+SW_USER="root"
+SW_GROUP="root"
 SW_UID="`getent passwd $SW_USER | cut -d':' -f3`"
 SW_GID="`getent group $SW_GROUP | cut -d':' -f3`"
 
-SW_MANIFEST_NAME="/mnt/nand/rootfs/manifest"
-SW_MANIFEST_MODE="775"
+MMC_RECOVERY_ROOTFS_NAME="/mnt/mmc/recovery/rootfs"
+MMC_RECOVERY_ROOTFS_MODE="775"
 
 die() {
     echo "FATAL: $*" >&2
@@ -77,33 +77,33 @@ check_directory() {
 && die "The '${SW_GROUP}' group account is not defined in this system"
 
 # Check if actions are needed or not
-check_directory "$SW_MANIFEST_NAME" "$SW_UID" "$SW_GID" "$SW_MANIFEST_MODE"
+check_directory "$MMC_RECOVERY_ROOTFS_NAME" "$SW_UID" "$SW_GID" "$MMC_RECOVERY_ROOTFS_MODE"
 RES=$?
 
 # Process result
 case $RES in
     1)
-        mkdir -p "$SW_MANIFEST_NAME" || RES=$?
-        chown -R "$SW_USER" "$SW_MANIFEST_NAME" || RES=$?
-        chgrp -R "$SW_GROUP" "$SW_MANIFEST_NAME" || RES=$?
-        chmod -R "$SW_MANIFEST_MODE" "$SW_MANIFEST_NAME" || RES=$?
+        mkdir -p "$MMC_RECOVERY_ROOTFS_NAME" || RES=$?
+        chown -R "$SW_USER" "$MMC_RECOVERY_ROOTFS_NAME" || RES=$?
+        chgrp -R "$SW_GROUP" "$MMC_RECOVERY_ROOTFS_NAME" || RES=$?
+        chmod -R "$MMC_RECOVERY_ROOTFS_MODE" "$MMC_RECOVERY_ROOTFS_NAME" || RES=$?
         ;;
     2)
-        chown -R "$SW_USER" "$SW_MANIFEST_NAME" || RES=$?
-        chgrp -R "$SW_GROUP" "$SW_MANIFEST_NAME" || RES=$?
-        chmod -R "$SW_MANIFEST_MODE" "$SW_MANIFEST_NAME" || RES=$?
+        chown -R "$SW_USER" "$MMC_RECOVERY_ROOTFS_NAME" || RES=$?
+        chgrp -R "$SW_GROUP" "$MMC_RECOVERY_ROOTFS_NAME" || RES=$?
+        chmod -R "$MMC_RECOVERY_ROOTFS_MODE" "$MMC_RECOVERY_ROOTFS_NAME" || RES=$?
         ;;
     3)
-        chmod -R "$SW_MANIFEST_MODE" "$SW_MANIFEST_NAME" || RES=$?
+        chmod -R "$MMC_RECOVERY_ROOTFS_MODE" "$MMC_RECOVERY_ROOTFS_NAME" || RES=$?
         ;;
     0)
         ;;
 esac
 
 # Final check
-check_directory "$SW_MANIFEST_NAME" "$SW_UID" "$SW_GID" "$SW_MANIFEST_MODE"
+check_directory "$MMC_RECOVERY_ROOTFS_NAME" "$SW_UID" "$SW_GID" "$MMC_RECOVERY_ROOTFS_MODE"
 RES=$?
 
-echo "Ensured usable '$SW_MANIFEST_NAME' directory"
+echo "Ensured usable '$MMC_RECOVERY_ROOTFS_NAME' directory"
 
 exit $RES
