@@ -524,20 +524,32 @@ mkdir -p /etc/malamute
 cp /usr/share/fty/examples/config/malamute/malamute.cfg /etc/malamute
 /bin/systemctl enable malamute
 
-# Enable 42ity services (distributed as a systemd preset file)
-if [ "${OSIMAGE_DISTRO}" = "Debian_10.0" ]; then
-    /bin/systemctl disable mysql.service || true
-    /bin/systemctl disable mysqld.service || true
-    /bin/systemctl disable mariadb.service || true
-    /bin/systemctl disable mariadb@bootstrap.service || true
-    /bin/systemctl mask mysql.service || true
-    /bin/systemctl mask mysqld.service || true
-    /bin/systemctl mask mariadb.service || true
-    /bin/systemctl mask mariadb@bootstrap.service || true
-    mv -f /lib/systemd/system/mariadb@.service /lib/systemd/system/mariadb@.service.orig || true
-    mv -f /lib/systemd/system/mariadb.service /lib/systemd/system/mariadb.service.orig || true
-fi
+# Disable and mask the vendor-packaged mysql services - the database will
+# be started after first boot and license acceptance, and wrapped by our
+# own fty-db-engine customized service anyway.
+/bin/systemctl disable mysql.service || true
+/bin/systemctl disable mysqld.service || true
+/bin/systemctl disable mariadb.service || true
+/bin/systemctl disable mariadb@bootstrap.service || true
+/bin/systemctl mask mysql.service || true
+/bin/systemctl mask mysqld.service || true
+/bin/systemctl mask mariadb.service || true
+/bin/systemctl mask mariadb@bootstrap.service || true
+mv -f /lib/systemd/system/mariadb@.service /lib/systemd/system/mariadb@.service.orig || true
+mv -f /lib/systemd/system/mariadb.service /lib/systemd/system/mariadb.service.orig || true
+mv -f /lib/systemd/system/mysql.service /lib/systemd/system/mysql.service.orig || true
+mv -f /lib/systemd/system/mysqld.service /lib/systemd/system/mysqld.service.orig || true
 
+# Do not consume space in the RO image if a package has already
+# pre-created the database files before we stopped it just above.
+# Our fty-db-engine service startup after EULA acceptance will
+# re-create what it needs.
+rm -rf /var/lib/mysql || true
+rm -rf /var/lib/mysql-upgrade || true
+
+# Enable 42ity services (distributed as a systemd preset file)
+# NOTE that in Debian 10 this seems to also process ALL service files
+# found in the system, not just presets.
 /bin/systemctl preset-all
 if [ "`uname -m`" = x86_64 ]; then
     /bin/systemctl disable lcd-boot-display || true
@@ -563,12 +575,6 @@ else
     /bin/systemctl enable lcd-poweroff-display || true
     #sed -i 's|PathChanged=/etc|PathChanged=/mnt/nand/overlay/etc|' /usr/lib/systemd/system/composite-metrics\@.path
 fi
-
-# Disable and mask the vendor-packaged mysql services - the database will
-# be started after first boot and license acceptance, and wrapped by our
-# own fty-db-engine customized service anyway.
-/bin/systemctl mask mysql || true
-/bin/systemctl disable mysql || true
 
 # Our tntnet unit rocks, disable packaged default
 if [ -s /lib/systemd/system/fty-tntnet@.service ]; then
