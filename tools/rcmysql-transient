@@ -75,6 +75,7 @@ stop)
     /bin/systemctl stop mariadb-transient.service || RES=$?
     /bin/systemctl disable --runtime mariadb-transient.service || RES=$?
     rm -f /run/systemd/system/mariadb-transient.service || RES=$?
+    /bin/systemctl daemon-reload
     exit $RES
     ;;
 status)
