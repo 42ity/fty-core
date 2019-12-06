@@ -547,6 +547,10 @@ mv -f /lib/systemd/system/mysqld.service /lib/systemd/system/mysqld.service.orig
 rm -rf /var/lib/mysql || true
 rm -rf /var/lib/mysql-upgrade || true
 
+# If this OS image is based on a newer distro without rcmysql,
+# then provide ours right in the image
+/usr/share/fty/setup/20-rcmysql-transient.sh
+
 # Enable 42ity services (distributed as a systemd preset file)
 # NOTE that in Debian 10 this seems to also process ALL service files
 # found in the system, not just presets.
