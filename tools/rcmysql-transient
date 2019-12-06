@@ -71,9 +71,10 @@ start)
     ;;
 stop)
     RES=0
+    rm -f /run/fty-db-engine/systemd/mariadb-transient.service || RES=$?
     /bin/systemctl stop mariadb-transient.service || RES=$?
     /bin/systemctl disable --runtime mariadb-transient.service || RES=$?
-    rm -f /run/fty-db-engine/systemd/mariadb-transient.service /run/systemd/system/mariadb-transient.service || RES=$?
+    rm -f /run/systemd/system/mariadb-transient.service || RES=$?
     exit $RES
     ;;
 status)
