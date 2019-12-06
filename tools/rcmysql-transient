@@ -46,6 +46,7 @@ start)
     sed -e 's,\(Alias.*=\),#\1,g' \
         -i /run/fty-db-engine/systemd/mariadb-transient.service
     cp -f /run/fty-db-engine/systemd/mariadb-transient.service /run/systemd/system/ || exit
+    /bin/systemctl daemon-reload
     /bin/systemctl enable --runtime mariadb-transient.service || exit
     /bin/systemctl start mariadb-transient.service
     ;;
