@@ -43,6 +43,8 @@ start)
     cp -f /lib/systemd/system/mariadb.service.orig /run/fty-db-engine/systemd/mariadb-transient.service \
     || cp -f /lib/systemd/system/mariadb.service /run/fty-db-engine/systemd/mariadb-transient.service \
     || exit
+    sed -e 's,\(Alias.*=\),#\1,g' \
+        -i /run/fty-db-engine/systemd/mariadb-transient.service
     /bin/systemctl enable --runtime --root=/run/fty-db-engine/systemd || exit
     /bin/systemctl start mariadb-transient.service
     ;;
