@@ -59,12 +59,15 @@ start)
     /bin/systemctl enable --runtime mariadb-transient.service || exit
     /bin/systemctl start mariadb-transient.service
     # The fty-db-engine expects a forked child
-    ( while systemctl is-active mariadb-transient.service >/dev/null \
+    ( ( while /bin/systemctl is-active mariadb-transient.service >/dev/null \
         && [[ -s /run/fty-db-engine/systemd/mariadb-transient.service ]] \
         ; do
             # Easily breakable sleep loop
             for A in {1..60} ; do snore 1 || exit ; done
-        done ; ) &
+        done ; )
+        echo "$0 $* finished `date -u`: mariadb-transient.service is no more" >&2
+        /bin/systemctl is-active mariadb-transient.service >&2
+     ) &
     ;;
 stop)
     RES=0
