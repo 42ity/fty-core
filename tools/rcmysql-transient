@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #
 # Copyright (C) 2019 Eaton
@@ -49,11 +49,19 @@ start)
     /bin/systemctl daemon-reload
     /bin/systemctl enable --runtime mariadb-transient.service || exit
     /bin/systemctl start mariadb-transient.service
+    # The fty-db-engine expects a forked child
+    ( while systemctl is-active mariadb-transient.service \
+        && [[ -s /run/fty-db-engine/systemd/mariadb-transient.service ]] \
+        ; do
+            # Easily breakable sleep
+            for A in `seq 1 60` ; do sleep 1 || exit ; done
+        done ; ) &
     ;;
 stop)
     RES=0
     /bin/systemctl stop mariadb-transient.service || RES=$?
     /bin/systemctl disable mariadb-transient.service || RES=$?
+    rm -f /run/fty-db-engine/systemd/mariadb-transient.service /run/systemd/system/mariadb-transient.service || RES=$?
     exit $RES
     ;;
 status)
