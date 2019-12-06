@@ -261,3 +261,4 @@ database/mysql/test_averages_relative.sql
 *.git
 tmp
 setup/20-th-names.sh
+setup/20-rcmysql-transient.sh

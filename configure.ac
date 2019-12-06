@@ -325,6 +325,7 @@ AC_DEFUN([AC_DATAROOTDIR_CHECKED])
 AC_CONFIG_FILES([
         obs/preinstallimage-bios.sh
         setup/20-th-names.sh
+        setup/20-rcmysql-transient.sh
         tools/db-init
         tools/envvars-ExecStartPre.sh
         tools/setup-nut-users-ExecStartPre.sh
