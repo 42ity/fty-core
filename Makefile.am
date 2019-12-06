@@ -250,6 +250,7 @@ ipc_meta_setup_SCRIPTS = \
 	$(top_srcdir)/setup/20-fty-compat.sh \
 	$(top_srcdir)/setup/20-ipc-lcd-services.sh \
 	$(top_builddir)/setup/20-th-names.sh \
+	$(top_builddir)/setup/20-rcmysql-transient.sh \
 	$(top_srcdir)/setup/90-nut-ownership.everytime.sh \
 	$(top_srcdir)/setup/90-sw-manifest.sh \
 	$(top_srcdir)/setup/91-logrotate-fty.sh \
@@ -267,6 +268,7 @@ EXTRA_DIST += \
 	$(top_srcdir)/setup/20-fty-compat.sh \
 	$(top_srcdir)/setup/20-ipc-lcd-services.sh \
 	$(top_srcdir)/setup/20-th-names.sh.in \
+	$(top_srcdir)/setup/20-rcmysql-transient.sh.in \
 	$(top_srcdir)/setup/90-nut-ownership.everytime.sh \
 	$(top_srcdir)/setup/90-sw-manifest.sh \
 	$(top_srcdir)/setup/91-logrotate-fty.sh \
