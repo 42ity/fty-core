@@ -33,6 +33,15 @@
 # development of that service directly, by managing a transient service.
 #
 
+# Fetched from https://blog.dhampir.no/content/sleeping-without-a-subprocess-in-bash-and-how-to-sleep-forever
+# A sleep equivalent without subprocesses and lots of snoopy logging
+snore()
+{
+    local IFS
+    [[ -n "${_snore_fd:-}" ]] || exec {_snore_fd}<> <(:)
+    read ${1:+-t "$1"} -u $_snore_fd || :
+}
+
 case "$1" in
 start)
     if [ ! -d /var/lib/mysql ]; then
@@ -50,11 +59,11 @@ start)
     /bin/systemctl enable --runtime mariadb-transient.service || exit
     /bin/systemctl start mariadb-transient.service
     # The fty-db-engine expects a forked child
-    ( while systemctl is-active mariadb-transient.service \
+    ( while systemctl is-active mariadb-transient.service >/dev/null \
         && [[ -s /run/fty-db-engine/systemd/mariadb-transient.service ]] \
         ; do
-            # Easily breakable sleep
-            for A in `seq 1 60` ; do sleep 1 || exit ; done
+            # Easily breakable sleep loop
+            for A in {1..60} ; do snore 1 || exit ; done
         done ; ) &
     ;;
 stop)
