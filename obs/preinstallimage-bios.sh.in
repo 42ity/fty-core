@@ -53,6 +53,12 @@ echo "    IMGTYPE='$IMGTYPE'"
 # Protect against errors... such as maybe running on a dev workstation
 set -e
 
+# Newer systemd noisily asks to use /run where available
+runbasedir=/var/run
+if [ -d /run ]; then
+    runbasedir=/run
+fi
+
 # Setup core dumps
 if true; then
     mkdir -p /var/crash
@@ -481,9 +487,10 @@ Description=SASL Authentication Daemon
 [Service]
 Type=forking
 EnvironmentFile=/etc/default/saslauthd
+ExecStartPre=/bin/sh -c '/usr/bin/test -d ${runbasedir} && /usr/bin/test -w ${runbasedir} && /bin/mkdir -p ${runbasedir}/saslauthd'
 ExecStart=/usr/sbin/saslauthd -a \$MECHANISMS \$MECH_OPTIONS \$OPTIONS -n \$THREADS
 ExecStop=/bin/kill -15 \$MAINPID
-PIDFile=/var/run/saslauthd/saslauthd.pid
+PIDFile=${runbasedir}/saslauthd/saslauthd.pid
 
 [Install]
 WantedBy=multi-user.target
