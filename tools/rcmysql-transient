@@ -55,9 +55,37 @@ start)
     sed -e 's,\(Alias.*=\),#\1,g' \
         -i /run/fty-db-engine/systemd/mariadb-transient.service
     cp -f /run/fty-db-engine/systemd/mariadb-transient.service /run/systemd/system/ || exit
+
+    rm -rf /run/systemd/system/mariadb-transient.service.d || RES=$?
+    mkdir -p /run/systemd/system/mariadb-transient.service.d || exit
+
+    # Per https://mariadb.com/kb/en/systemd/?_ga=2.157713337.2042007370.1575907190-1147147581.1575907190#configuring-access-to-home-directories
+    # so the service can use /root/.my.cnf
+#    cat > /run/systemd/system/mariadb-transient.service.d/dontprotecthome.conf << EOF
+#[Service]
+#ProtectHome=false
+#EOF
+
     /bin/systemctl daemon-reload
     /bin/systemctl enable --runtime mariadb-transient.service || exit
     /bin/systemctl start mariadb-transient.service
+
+    # All hail systemd... for some reason, PartOf works if we restart very soon
+    # after the couple of services is started; but after a minute expires, a
+    # `systemctl stop mariadb-transient` no longer propagates to fty-db-engine.
+    cat > /run/systemd/system/mariadb-transient.service.d/fty-db-engine.conf << EOF
+[Unit]
+PartOf=fty-db-engine.service
+
+[Service]
+ExecStopPost=/bin/systemctl stop --no-block fty-db-engine.service
+
+[Install]
+RequiredBy=fty-db-engine.service
+WantedBy=fty-db-engine.service
+EOF
+    /bin/systemctl daemon-reload
+
     # The fty-db-engine expects a forked child
     ( ( while /bin/systemctl is-active mariadb-transient.service >/dev/null \
         && [[ -s /run/fty-db-engine/systemd/mariadb-transient.service ]] \
@@ -74,6 +102,7 @@ stop)
     rm -f /run/fty-db-engine/systemd/mariadb-transient.service || RES=$?
     /bin/systemctl stop mariadb-transient.service || RES=$?
     /bin/systemctl disable --runtime mariadb-transient.service || RES=$?
+    rm -rf /run/systemd/system/mariadb-transient.service.d || RES=$?
     rm -f /run/systemd/system/mariadb-transient.service || RES=$?
     /bin/systemctl daemon-reload
     exit $RES
