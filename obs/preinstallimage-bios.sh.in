@@ -958,6 +958,19 @@ cat > /etc/default/ip6tables <<[eof]
 COMMIT
 [eof]
 
+# Note: Maybe later we should support more (or the new/current/...)
+# iptables backends. For now we need both old and new images to work
+# so just use the "legacy" iptables tools as provided and supported.
+# For details see https://github.com/netblue30/firejail/issues/2232
+# and https://sources.debian.org/src/iptables/1.8.1-2/debian/NEWS/
+if [ -x /usr/sbin/iptables-legacy ] ; then
+    case "${OSIMAGE_DISTRO}" in
+        Debian_10*)
+            update-alternatives --set iptables /usr/sbin/iptables-legacy
+            ;;
+    esac
+fi
+
 # install iptables filtering end
 #########################################################################
 
