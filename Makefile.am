@@ -322,8 +322,7 @@ SYSTEMD_UNITS_EXTRA += \
 # And also some of the timer units and implementations below
 SYSTEMD_UNITS_TARGET_BIOS += \
                         fty-db-engine.service \
-                        fty-db-init.service \
-                        bios-agent-inventory.service
+                        fty-db-init.service
 
 # Here we list the actual service-definition files that should be compiled
 # Enabled as part of 42ity presets
