@@ -9,7 +9,7 @@
 # REGEX of unit basenames that we deliver but are to be NOT ALLOWED (filtered)
 # by the systemctl wrapper script.
 # TODO: Revise this anti-filter to be dynamic with BIOS-1620?
-MUST_FILTER='^(bios-fake-th|bios-ssh-last-resort|biostimer-compress-logs|biostimer-verify-fs|ifplug-dhcp-autoconf|ipc-meta-setup)$'
+MUST_FILTER='^(bios-ssh-last-resort|biostimer-compress-logs|biostimer-verify-fs|ifplug-dhcp-autoconf|ipc-meta-setup)$'
 
 # Temp vars
 FAILEDU=""

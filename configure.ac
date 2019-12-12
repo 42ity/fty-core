@@ -342,7 +342,6 @@ AC_CONFIG_FILES([
         docs/examples/nut-server.service.d/configure-nut-users.conf
         docs/examples/update-rc3.d/90-local-paths.rc3.conf
         systemd/bios-agent-inventory.service
-        systemd/bios-fake-th.service
         systemd/bios-networking.service
         systemd/bios-reset-button.service
         systemd/bios-ssh-last-resort.service

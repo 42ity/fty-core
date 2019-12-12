@@ -339,8 +339,7 @@ SYSTEMD_UNITS_NOTPRESET_LOWLEVEL += \
 
 SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS += \
                         fty-envvars.service \
-                        fty-tntnet@.service \
-                        bios-fake-th.service
+                        fty-tntnet@.service
 
 SYSTEMD_UNITS_NOTPRESET += $(SYSTEMD_UNITS_NOTPRESET_LOWLEVEL) $(SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS)
 
