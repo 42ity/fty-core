@@ -423,7 +423,7 @@ verify_checksum() {
     # TODO (later): Support file sizes as part of checksum info
     FILENAME_DATA="$1"
     FILENAME_CSUM="${2-}"
-    [ -z "$FILENAME_CSUM" ] && \
+    [ -n "$FILENAME_CSUM" ] || \
         FILENAME_CSUM="$FILENAME_DATA.${CHECKSUM_ALGO_DEFAULT}"
     if [ -z "${3-}" ]; then
         CHECKSUM_ALGO="`get_csalgo_from_filename "$FILENAME_CSUM"`"
