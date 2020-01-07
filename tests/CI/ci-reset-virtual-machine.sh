@@ -535,7 +535,7 @@ if [ -n "$VM" ] && [ -s "`pwd`/$VM.config-reset-vm" ]; then
 fi
 
 # Sanity checks and auto-values processing after config import
-[ "$START_RETRIES" -gt 1 ] || die "Bad value provided for START_RETRIES='$START_RETRIES'"
+[ "$START_RETRIES" -ge 1 ] || die "Bad value provided for START_RETRIES='$START_RETRIES'"
 
 [ x"$INSTALL_DEV_PKGS" = xauto ] && \
 case "$IMGTYPE" in
