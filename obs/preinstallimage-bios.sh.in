@@ -553,6 +553,9 @@ mv -f /lib/systemd/system/mysqld.service /lib/systemd/system/mysqld.service.orig
 # re-create what it needs.
 rm -rf /var/lib/mysql || true
 rm -rf /var/lib/mysql-upgrade || true
+# Newer versions of the package deliver the embedded server+client binary
+# that should not run at the same time as a real server. Save some space :)
+rm -f /usr/bin/mysql_embedded /usr/bin/mariadb-embedded /usr/share/man/man*/mysql_embedded.* /usr/share/man/man*/mariadb-embedded.* || true
 
 # If this OS image is based on a newer distro without rcmysql,
 # then provide ours right in the image
