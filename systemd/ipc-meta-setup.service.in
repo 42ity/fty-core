@@ -11,7 +11,11 @@ Type = oneshot
 User = root
 ExecStart = @prefix@/share/fty/setup/ipc-meta-setup.sh
 RemainAfterExit = yes
-PrivateTmp = yes
+
+# This is now commented away because systemd in debian10 (unlike 8)
+# seems to implement PrivateTmp with systemd-tmpfiles-setup.service
+# and so breaks our explicit dependency ordering
+#PrivateTmp = yes
 
 [Install]
 RequiredBy=network.target systemd-tmpfiles-setup.service
