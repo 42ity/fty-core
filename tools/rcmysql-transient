@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# Copyright (C) 2019 Eaton
+# Copyright (C) 2019 - 2020 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -96,8 +96,8 @@ EOF
             for A in {1..60} ; do
                 snore 1 || exit
                 [[ -L "/run/systemd/units/invocation:mariadb-transient.service" ]] || exit
-            ; done
-        done ; )
+            done
+        done )
         echo "$0 $* finished `date -u`: mariadb-transient.service is no more" >&2
         /bin/systemctl is-active mariadb-transient.service >&2
      ) &
