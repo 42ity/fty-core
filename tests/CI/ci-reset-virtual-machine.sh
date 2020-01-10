@@ -741,7 +741,7 @@ if [ "$ATTEMPT_DOWNLOAD" = yes ] || [ "$ATTEMPT_DOWNLOAD" = auto ] ; then
 
 	settraps 'cleanup_wget; cleanup_script;'
 
-	logmsg_info "Downloading $IMAGE_URL.md5 ..."
+	logmsg_info "Downloading $IMAGE_URL.md5 for VM '${VM}'..."
 	wget -q "$IMAGE_URL.md5" -O "$IMAGE.md5.__WRITING__" \
 		&& mv -f "$IMAGE.md5.__WRITING__" "$IMAGE.md5" || true
 	TRY_WGET=yes
@@ -753,11 +753,11 @@ if [ "$ATTEMPT_DOWNLOAD" = yes ] || [ "$ATTEMPT_DOWNLOAD" = auto ] ; then
 		fi
 	fi
 	if [ "$TRY_WGET" = yes ] ; then
-		logmsg_info "Downloading $IMAGE_URL ..."
+		logmsg_info "Downloading $IMAGE_URL for VM '${VM}'..."
 		wget -q -c "$IMAGE_URL" -O "$IMAGE.__WRITING__" \
 			&& mv -f "$IMAGE.__WRITING__" "$IMAGE"
 		WGET_RES=$?
-		logmsg_info "Download completed with exit-code: $WGET_RES"
+		logmsg_info "Download for VM '${VM}' completed with exit-code: $WGET_RES"
 		if ! ensure_md5sum "$IMAGE" "$IMAGE.md5" ; then
 			IMAGE=""
 			WGET_RES=127
@@ -765,13 +765,13 @@ if [ "$ATTEMPT_DOWNLOAD" = yes ] || [ "$ATTEMPT_DOWNLOAD" = auto ] ; then
 	fi
 	[ "$WGET_RES" = 0 ] || \
 		logmsg_error "Failed to get the latest image file name from OBS" \
-			"(subsequent VM startup can use a previously downloaded image, however)"
+			"(subsequent VM '$VM' startup can use a previously downloaded image, however)"
 	unset TRY_WGET
 	sync
 	cleanup_wget
 	settraps 'cleanup_script;'
 else
-	logmsg_info "Not even trying to download a new OS image at this moment (ATTEMPT_DOWNLOAD=$ATTEMPT_DOWNLOAD)"
+	logmsg_info "Not even trying to download a new OS image for VM '${VM}' at this moment (ATTEMPT_DOWNLOAD=$ATTEMPT_DOWNLOAD)"
 fi
 
 if [ x"$DOWNLOADONLY" = xyes ]; then
