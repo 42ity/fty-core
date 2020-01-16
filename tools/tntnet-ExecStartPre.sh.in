@@ -45,6 +45,13 @@ cat /etc/tntnet/"$INST".d/*.xml > /etc/tntnet/"$INST".xml
 echo "Make sure we have _bios-script password..."
 @datadir@/@PACKAGE@/scripts/_bios-script.sh
 
+OS_VERSION=`cat /etc/debian_version | sed 's/\..*//'`
+if [ $OS_VERSION -ge 10 ]; then
+  echo "Change tntnet user to root in /etc/tntnet/$INST.xml"
+  USER="root"
+  sed -i "s,<user>\(.*\)<,<user>$USER<,g" /etc/tntnet/"$INST".xml
+fi
+
 WWW_USER="`grep '<user>' /etc/tntnet/"$INST".xml  | sed 's,^.*>\(.*\)<.*$,\1,'`" \
     && [ -n "$WWW_USER" ] \
     || WWW_USER="www-data"
