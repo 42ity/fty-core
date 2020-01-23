@@ -333,7 +333,9 @@ calculate_stream_checksum() {
     if [ "$ALGO" = cksum ] ; then
         # piped cmd output (with size in $2):   2851979510 532
         # TODO: Generalize into checking expected file lengths too
-        cksum | awk '{print $1}'
+        #cksum | awk '{print $1}'
+        # TODO: For now, collapse checksum and length fields into one for caching etc
+        cksum | awk '{print $1"_"$2}'
         return $?
     fi
 
@@ -350,10 +352,16 @@ calculate_stream_checksum() {
 
 expected_checksum() (
     # Extracts precalculated checksum of file "$1" recorded in file "$2"
-    CHECKSUM_EXP="$(grep -i "`basename "$1"`" < "$2" | awk '{print $1}')" 2>/dev/null
+    AWK_LIST='$1'
+    expALGO="`get_csalgo_from_filename "$2"`" && \
+    case "$expALGO" in
+        cksum) AWK_LIST='$1"_"$2' ;;
+    esac
+
+    CHECKSUM_EXP="$(grep -i "`basename "$1"`" < "$2" | awk '{print '"$AWK_LIST"'}')" 2>/dev/null
     if [ $? != 0 -o -z "$CHECKSUM_EXP" ] && [ "`wc -l < "$2"`" -eq 1 ] ; then
-        # Maybe the whole file content is one line with the value
-        CHECKSUM_EXP="`awk '{print $1}' < "$2"`"
+        # Maybe the whole file content is one line with the value without name
+        CHECKSUM_EXP="`awk '{print '"$AWK_LIST"'}' < "$2" | sed 's,_*$,,'`"
     fi
     [ -n "$CHECKSUM_EXP" ] && echo "$CHECKSUM_EXP"
     # If the value is empty, this statement returns an error exit-code
