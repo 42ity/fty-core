@@ -1,5 +1,7 @@
 #!/bin/bash
 #
+# WARNING: Bash-specific syntax is in fact used below
+#
 # Copyright (C) 2015-2020 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
@@ -70,6 +72,8 @@ config_defaults() {
     # TODO: Eventually default to "sha256" or better,
     # but do not enforce too many breaking changes right now
     is_set CHECKSUM_ALGO_DEFAULT || CHECKSUM_ALGO_DEFAULT="md5"
+    is_set CHECKSUM_ALGOLIST_DEFAULT || CHECKSUM_ALGOLIST_DEFAULT="md5 sha256 cksum"
+    is_set CHECKSUM_REQUIRED || CHECKSUM_REQUIRED='true'
 
     # This value comes down from OBS target name into many corners of the multiverse
     is_set OSIMAGE_DISTRO || OSIMAGE_DISTRO="Debian_8.0"
@@ -842,106 +846,159 @@ download_rawfwimage_generic() (
     # TODO: Currently hardcoded for md5 accompanying checksums only
     # TODO (later): Support presence of multiple checksum files (e.g. sha* and md5)
     # TODO: Also support checksum-verifying against the flashed partition bits
-    IMAGE_CSALGO="${CHECKSUM_ALGO_DEFAULT}"
+    declare -A  IMAGE_CSURL
+    declare -A rIMAGE_CSOLD
+    declare -A aIMAGE_CSNEW
+    declare -A aIMAGE_CSOLD
+    declare -A aIMAGE_CSOLD_PADDED
+    for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
+        # NOTE: "Old" filename and checksum are basenames that can be located under
+        # different directories ("r"elative varnames), but e.g. a "new" checksum is
+        # ensured to be in a temporary location and a newly downloaded file should
+        # land into the recovery location ("a"bsolute varnames)
+        IMAGE_CSURL["$IMAGE_CSALGO"]="${IMAGE_URL}.${IMAGE_CSALGO}"
+        rIMAGE_CSOLD["$IMAGE_CSALGO"]="${rIMAGE_URL_BASENAME}.${IMAGE_CSALGO}"
+        aIMAGE_CSNEW["$IMAGE_CSALGO"]="${TEMP_DATA}/${rIMAGE_URL_BASENAME}.$$.${IMAGE_CSALGO}.tmp"
 
-    # NOTE: "Old" filename and checksum are basenames that can be located under
-    # different directories ("r"elative varnames), but e.g. a "new" checksum is
-    # ensured to be in a temporary location and a newly downloaded file should
-    # land into the recovery location ("a"bsolute varnames)
-    IMAGE_CSURL="${IMAGE_URL}.${IMAGE_CSALGO}"
-    rIMAGE_CSOLD="${rIMAGE_URL_BASENAME}.${IMAGE_CSALGO}"
-    aIMAGE_CSNEW="${TEMP_DATA}/${rIMAGE_URL_BASENAME}.$$.${IMAGE_CSALGO}.tmp"
+        if [ -n "${RAW_DEVICE_NODE-}" ]; then
+            IMAGE_CSURL_PADDED["$IMAGE_CSALGO"]="${IMAGE_URL}.${IMAGE_CSALGO}-padded"
+            rIMAGE_CSOLD_PADDED["$IMAGE_CSALGO"]="${rIMAGE_URL_BASENAME}.${IMAGE_CSALGO}-padded"
+            aIMAGE_CSNEW_PADDED["$IMAGE_CSALGO"]="${TEMP_DATA}/${rIMAGE_URL_BASENAME}.$$.${IMAGE_CSALGO}-padded.tmp"
+        else
+            IMAGE_CSURL_PADDED["$IMAGE_CSALGO"]=''
+            rIMAGE_CSOLD_PADDED["$IMAGE_CSALGO"]=''
+            aIMAGE_CSNEW_PADDED["$IMAGE_CSALGO"]=''
+        fi
+    done
 
-    if [ -n "${RAW_DEVICE_NODE-}" ]; then
-        IMAGE_CSURL_PADDED="${IMAGE_URL}.${IMAGE_CSALGO}-padded"
-        rIMAGE_CSOLD_PADDED="${rIMAGE_URL_BASENAME}.${IMAGE_CSALGO}-padded"
-        aIMAGE_CSNEW_PADDED="${TEMP_DATA}/${rIMAGE_URL_BASENAME}.$$.${IMAGE_CSALGO}-padded.tmp"
-        trap 'TRAPCODE=$?; rm -f "${aIMAGE_CSNEW}" "${aIMAGE_CSNEW_PADDED}"; exit $TRAPCODE' 0
-    else
-        IMAGE_CSURL_PADDED=''
-        rIMAGE_CSOLD_PADDED=''
-        aIMAGE_CSNEW_PADDED=''
-        trap 'TRAPCODE=$?; rm -f "${aIMAGE_CSNEW}"; exit $TRAPCODE' 0
-    fi
+    trap 'TRAPCODE=$?; rm -f "${aIMAGE_CSNEW[@]}" "${aIMAGE_CSNEW_PADDED[@]}"; exit $TRAPCODE' 0
 
-    logmsg_info "Downloading '${IMAGE_CSURL}' (if any) into '${aIMAGE_CSNEW}'..."
-    fetch_file "${IMAGE_CSURL}" "${aIMAGE_CSNEW}" || true
+    LOCAL_CHECKSUMS_MATCHED=-1
+    for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
+        logmsg_info "Downloading '${IMAGE_CSURL["$IMAGE_CSALGO"]}' (if any) into '${aIMAGE_CSNEW["$IMAGE_CSALGO"]}'..."
+        fetch_file "${IMAGE_CSURL["$IMAGE_CSALGO"]}" "${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" || true
 
-    if [ -n "${RAW_DEVICE_NODE-}" ]; then
-        logmsg_info "Downloading '${IMAGE_CSURL_PADDED}' (if any) into '${aIMAGE_CSNEW_PADDED}'..."
-        fetch_file "${IMAGE_CSURL_PADDED}" "${aIMAGE_CSNEW_PADDED}" || true
-    fi
+        if [ -n "${RAW_DEVICE_NODE-}" ]; then
+            logmsg_info "Downloading '${IMAGE_CSURL_PADDED["$IMAGE_CSALGO"]}' (if any) into '${aIMAGE_CSNEW_PADDED["$IMAGE_CSALGO"]}'..."
+            fetch_file "${IMAGE_CSURL_PADDED["$IMAGE_CSALGO"]}" "${aIMAGE_CSNEW_PADDED["$IMAGE_CSALGO"]}" || true
+        fi
 
-    # Try the filenames in local directories
-    logmsg_info "Verifying if we have this checksum and corresponding file under original name in base dir..."
-    verify_threeway_checksum "${IMAGE_URL}" "${rIMAGE_URL_BASENAME}" "${rIMAGE_CSOLD}" "${aIMAGE_CSNEW}" \
-        && { echo "`pwd`/${rIMAGE_URL_BASENAME}" > "${REFER_NEWEST}" ;
-             return 0 ; }
+        # Try the filenames in local directories
+        logmsg_info "Verifying if we locally have $IMAGE_CSALGO checksum and corresponding file under original name in base dir..."
+        if [ "$LOCAL_CHECKSUMS_MATCHED" = -1 ] ; then LOCAL_CHECKSUMS_MATCHED=0 ; fi
+        verify_threeway_checksum "${IMAGE_URL}" "${rIMAGE_URL_BASENAME}" "${rIMAGE_CSOLD["$IMAGE_CSALGO"]}" "${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" \
+             || LOCAL_CHECKSUMS_MATCHED=$?
+    done
+
+    case "$LOCAL_CHECKSUMS_MATCHED" in
+        -1)  # Should not happen unless CHECKSUM_ALGOLIST_DEFAULT is empty
+             logmsg_debug "Local checksums were not tested for local copy of '${IMAGE_URL}'" ;;
+        0)   # At least one was tested, and all present checksums were ok
+             echo "`pwd`/${rIMAGE_URL_BASENAME}" > "${REFER_NEWEST}"
+             return 0
+             ;;
+        # Non-zeroes are not a problem, this is what the rest of routine is for
+    esac
 
     if [ -d "${DEPLOYMENTROOT_THISIMAGE}" ] ; then
         if [ -n "{RAW_DEVICE_NODE-}" ]; then
-            if [ -s "${aIMAGE_CSNEW_PADDED}" ] && [ -c "${RAW_DEVICE_NODE}" ]; then
-                logmsg_info "Verify padded checksum against a raw $REPORT_IMAGETYPE partition with flashed bits here ..."
-                REPLACE_MISSING_CHECKSUM="no" FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
-                    "${RAW_DEVICE_NODE}" \
-                    "${DEPLOYMENTROOT_THISIMAGE}/${rIMAGE_CSOLD_PADDED}" \
-                    "${aIMAGE_CSNEW_PADDED}" \
-                && { echo "${RAW_DEVICE_NODE}" > "${REFER_NEWEST}" ;
-                     return 0 ; }
-            fi
+            LOCAL_CHECKSUMS_MATCHED=-1
+            for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
+                if [ "$LOCAL_CHECKSUMS_MATCHED" = -1 ] ; then LOCAL_CHECKSUMS_MATCHED=0 ; fi
 
-            logmsg_info "Verify non-padded checksum against a raw $REPORT_IMAGETYPE partition with flashed bits here ..."
-            REPLACE_MISSING_CHECKSUM="no" \
-            FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
-                    "${RAW_DEVICE_NODE}" \
-                    "${DEPLOYMENTROOT_THISIMAGE}/${rIMAGE_CSOLD}" \
-                    "${aIMAGE_CSNEW}" \
-                && { echo "${RAW_DEVICE_NODE}" > "${REFER_NEWEST}" ;
-                     return 0 ; }
-            logmsg_warn "TODO: If we can detect the file size of the remote image, use calculate_stream_checksum_bytes() to verify flashed bits"
+                if [ -s "${aIMAGE_CSNEW_PADDED["$IMAGE_CSALGO"]}" ] && [ -c "${RAW_DEVICE_NODE}" ]; then
+                    logmsg_info "Verify padded ${IMAGE_CSALGO} checksum against a raw $REPORT_IMAGETYPE partition with flashed bits here ..."
+                    REPLACE_MISSING_CHECKSUM="no" \
+                    FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+                        "${RAW_DEVICE_NODE}" \
+                        "${DEPLOYMENTROOT_THISIMAGE}/${rIMAGE_CSOLD_PADDED["$IMAGE_CSALGO"]}" \
+                        "${aIMAGE_CSNEW_PADDED["$IMAGE_CSALGO"]}" \
+                    || LOCAL_CHECKSUMS_MATCHED=$?
+                fi
+
+                logmsg_info "Verify non-padded ${IMAGE_CSALGO} checksum against a raw $REPORT_IMAGETYPE partition with flashed bits here ..."
+                REPLACE_MISSING_CHECKSUM="no" \
+                FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+                        "${RAW_DEVICE_NODE}" \
+                        "${DEPLOYMENTROOT_THISIMAGE}/${rIMAGE_CSOLD["$IMAGE_CSALGO"]}" \
+                        "${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" \
+                    || logmsg_warn "TODO: If we can detect the file size of the remote image, use calculate_stream_checksum_bytes() to verify flashed bits vs ${IMAGE_CSALGO} checksum file"
+	    done
+
+            case "$LOCAL_CHECKSUMS_MATCHED" in
+                -1)  # Should not happen unless CHECKSUM_ALGOLIST_DEFAULT is empty
+                     logmsg_debug "Local checksums were not tested for raw $REPORT_IMAGETYPE partition" ;;
+                0)   # At least one was tested, and all present checksums were ok
+                     echo "${RAW_DEVICE_NODE}" > "${REFER_NEWEST}"
+                     return 0
+                     ;;
+                # Non-zeroes are not a problem, this is what the rest of routine is for
+            esac
         else # Not raw device node
             # Do not remove deployed files!
-            logmsg_info "Verifying if we have this checksum and corresponding file already deployed..."
-            FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
-                "${DEPLOYMENTROOT_THISIMAGE}/${rIMAGE_URL_BASENAME}" \
-                "${DEPLOYMENTROOT_THISIMAGE}/${rIMAGE_CSOLD}" \
-                "${aIMAGE_CSNEW}" \
-            && { echo "${DEPLOYMENTROOT_THISIMAGE}/${rIMAGE_URL_BASENAME}" > "${REFER_NEWEST}" ;
-                 return 0 ; }
+            LOCAL_CHECKSUMS_MATCHED=-1
+            for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
+                if [ "$LOCAL_CHECKSUMS_MATCHED" = -1 ] ; then LOCAL_CHECKSUMS_MATCHED=0 ; fi
+                logmsg_info "Verifying if we have ${IMAGE_CSALGO} checksum and corresponding file already deployed for $REPORT_IMAGETYPE..."
+                FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+                        "${DEPLOYMENTROOT_THISIMAGE}/${rIMAGE_URL_BASENAME}" \
+                        "${DEPLOYMENTROOT_THISIMAGE}/${rIMAGE_CSOLD["$IMAGE_CSALGO"]}" \
+                        "${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" \
+                    || LOCAL_CHECKSUMS_MATCHED=$?
+            done
+
+            case "$LOCAL_CHECKSUMS_MATCHED" in
+                -1)  # Should not happen unless CHECKSUM_ALGOLIST_DEFAULT is empty
+                     logmsg_debug "Local checksums were not tested for $REPORT_IMAGETYPE" ;;
+                0)   # At least one was tested, and all present checksums were ok
+                     echo "${DEPLOYMENTROOT_THISIMAGE}/${rIMAGE_URL_BASENAME}" > "${REFER_NEWEST}"
+                     return 0
+                     ;;
+                # Non-zeroes are not a problem, this is what the rest of routine is for
+            esac
         fi
     fi
 
     if [ x"${CHECK_ONLY-}" = xyes ]; then
-        logmsg_info "According to checksums, the remote resource '$IMAGE_URL' points to a $REPORT_IMAGETYPE we do not have on this system"
+        logmsg_info "According to checksums, the remote resource '$IMAGE_URL' points to a $REPORT_IMAGETYPE content which we do not have on this system"
         return 42
     fi
 
     # If we are here, the IMAGE_URL is valid and points to a different content
     # than what we already have; the aTGT_FILE names the ultimate local filename
     aTGT_FILE="`pwd`/${rIMAGE_URL_BASENAME}"
-    aIMAGE_CSOLD="`pwd`/${rIMAGE_CSOLD}"
+    for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
+        aIMAGE_CSOLD["$IMAGE_CSALGO"]="`pwd`/${rIMAGE_CSOLD["$IMAGE_CSALGO"]}"
 
-    if [ ! -s "${aIMAGE_CSOLD}" ]; then
-        [ -s "${aIMAGE_CSNEW}" ] && cp -f "${aIMAGE_CSNEW}" "${aIMAGE_CSOLD}"
-    fi
-
-    if [ -n "${RAW_DEVICE_NODE-}" ]; then
-        aIMAGE_CSOLD_PADDED="`pwd`/${rIMAGE_CSOLD_PADDED}"
-        if [ ! -s "${aIMAGE_CSOLD_PADDED}" ]; then
-            [ -s "${aIMAGE_CSNEW_PADDED}" ] && cp -f "${aIMAGE_CSNEW_PADDED}" "${aIMAGE_CSOLD_PADDED}"
+        if [ ! -s "${aIMAGE_CSOLD["$IMAGE_CSALGO"]}" ]; then
+            [ -s "${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" ] && cp -f "${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" "${aIMAGE_CSOLD["$IMAGE_CSALGO"]}"
         fi
-    fi
+
+        if [ -n "${RAW_DEVICE_NODE-}" ]; then
+            aIMAGE_CSOLD_PADDED["$IMAGE_CSALGO"]="`pwd`/${rIMAGE_CSOLD_PADDED["$IMAGE_CSALGO"]}"
+            if [ ! -s "${aIMAGE_CSOLD_PADDED["$IMAGE_CSALGO"]}" ]; then
+                [ -s "${aIMAGE_CSNEW_PADDED["$IMAGE_CSALGO"]}" ] && cp -f "${aIMAGE_CSNEW_PADDED["$IMAGE_CSALGO"]}" "${aIMAGE_CSOLD_PADDED["$IMAGE_CSALGO"]}"
+            fi
+        else
+            aIMAGE_CSOLD_PADDED["$IMAGE_CSALGO"]=""
+        fi
+    done
 
     logmsg_info "Downloading '$IMAGE_URL' into '$aTGT_FILE'..."
     FETCH_VERBOSE=yes fetch_file "$IMAGE_URL" "${aTGT_FILE}" || \
         { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
     remove_checksum_cache '[^\:]*' '[^\:]*' "${aTGT_FILE}"
 
-    if [ -n "${RAW_DEVICE_NODE-}" ]; then
-        HELPER_PATTERN="^(${IMAGE_CSURL}|${IMAGE_CSURL_PADDED})"'$'
-    else
-        HELPER_PATTERN="^${IMAGE_CSURL}"'$'
-    fi
+    HELPER_PATTERN=''
+    for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
+        [ -n "${HELPER_PATTERN-}" ] \
+	    && HELPER_PATTERN="${HELPER_PATTERN}|${IMAGE_CSURL["$IMAGE_CSALGO"]}" \
+	    || HELPER_PATTERN="${IMAGE_CSURL["$IMAGE_CSALGO"]}"
+        if [ -n "${RAW_DEVICE_NODE-}" ]; then
+            HELPER_PATTERN="${HELPER_PATTERN}|${IMAGE_CSURL_PADDED["$IMAGE_CSALGO"]}"
+        fi
+    done
+    HELPER_PATTERN="^${HELPER_PATTERN}"'$'
 
     lsdir_http_pattern "${SOURCESITEROOT_THISIMAGE}" "`basename ${IMAGE_URL}`"'*' | egrep "^${IMAGE_URL}\." | \
         egrep -v "${HELPER_PATTERN}" | \
@@ -953,29 +1010,61 @@ download_rawfwimage_generic() (
             MAYBE_EMPTY=yes fetch_file "${U}" "${aBU}" || true
         done
 
-    if [ -s "${aIMAGE_CSOLD}" ] || [ -s "${aIMAGE_CSNEW}" ] || [ -s "${DEPLOYMENTROOT_THISIMAGE}/${rIMAGE_CSOLD}" ]; then
-        FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
-            "${aTGT_FILE}" \
-            "${aIMAGE_CSOLD}" \
-            "${DEPLOYMENTROOT_THISIMAGE}/${rIMAGE_CSOLD}" || \
-        verify_threeway_checksum "${IMAGE_URL}" \
-            "${aTGT_FILE}" \
-            "${aIMAGE_CSOLD}" \
-            "${aIMAGE_CSNEW}" || return $?
-    else
-        logmsg_warn "Generating '${aIMAGE_CSOLD}' because there was none at the source..."
-        echo "`calculate_stream_checksum "${IMAGE_CSALGO}" < "$aTGT_FILE"` `basename "$aTGT_FILE"`" > "${aIMAGE_CSOLD}" || \
-        { rm -f "${aIMAGE_CSOLD}"; die "Could not generate '${aIMAGE_CSOLD}'"; }
-    fi
+    LOCAL_CHECKSUMS_MATCHED=-1
+    for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
+        if [ -s "${aIMAGE_CSOLD["$IMAGE_CSALGO"]}" ] \
+        || [ -s "${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" ] \
+        || [ -s "${DEPLOYMENTROOT_THISIMAGE}/${rIMAGE_CSOLD["$IMAGE_CSALGO"]}" ] \
+        ; then
+            if [ "$LOCAL_CHECKSUMS_MATCHED" = -1 ] ; then LOCAL_CHECKSUMS_MATCHED=0 ; fi
+            FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+                "${aTGT_FILE}" \
+                "${aIMAGE_CSOLD["$IMAGE_CSALGO"]}" \
+                "${DEPLOYMENTROOT_THISIMAGE}/${rIMAGE_CSOLD["$IMAGE_CSALGO"]}" || \
+            verify_threeway_checksum "${IMAGE_URL}" \
+                "${aTGT_FILE}" \
+                "${aIMAGE_CSOLD["$IMAGE_CSALGO"]}" \
+                "${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" || return $?
+        else
+	    # Optional requirement that (at least one) checksum is downloadable
+            if [ "${CHECKSUM_REQUIRED-}" != true ]; then
+                logmsg_warn "Generating '${aIMAGE_CSOLD["$IMAGE_CSALGO"]}' because there was none at the source..."
+                echo "`calculate_stream_checksum "${IMAGE_CSALGO}" < "${aTGT_FILE}"` `basename "$aTGT_FILE"`" > "${aIMAGE_CSOLD["$IMAGE_CSALGO"]}" || \
+                { rm -f "${aIMAGE_CSOLD["$IMAGE_CSALGO"]}"; die "Could not generate '${aIMAGE_CSOLD["$IMAGE_CSALGO"]}'"; }
+            fi
+        fi
+    done
 
+    case "$LOCAL_CHECKSUMS_MATCHED" in
+        -1)  # Should not happen unless CHECKSUM_ALGOLIST_DEFAULT is empty
+             logmsg_debug "Downloaded checksums were not tested for $REPORT_IMAGETYPE"
+             if [ "${CHECKSUM_REQUIRED-}" != true ]; then
+                die "At least one checksum should be downloadable (and matching) for '${aTGT_FILE}'"
+             fi
+             ;;
+	0)   ;; # At least one was tested, and all present checksums were ok
+        *)   # Should not get here due to return above
+             die "At least one checksum did not match for '${aTGT_FILE}'"
+             ;;
+    esac
+
+    # Finally check that expected files are all here
     # TODO: Verify file size against partition size (flashability after reboot)
-    [ -s "${aTGT_FILE}" ] && [ -s "${aIMAGE_CSOLD}" ] && \
-    touch -r "${aTGT_FILE}" "${aIMAGE_CSOLD}" && \
+    [ -s "${aTGT_FILE}" ] \
+        || die "Could not find '${aTGT_FILE}' or it was found empty"
+
+    for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
+        [ -s "${aIMAGE_CSOLD["$IMAGE_CSALGO"]}" ] && \
+        touch -r "${aTGT_FILE}" "${aIMAGE_CSOLD["$IMAGE_CSALGO"]}" \
+        || die "Could not touch '${aIMAGE_CSOLD["$IMAGE_CSALGO"]}' or it was found empty"
+    done
+
     logmsg_info "Got $REPORT_IMAGETYPE OK:" && \
-    ls -ld "${aTGT_FILE}" "${aIMAGE_CSOLD}" && \
-    cat "${aIMAGE_CSOLD}" && \
+    ls -ld "${aTGT_FILE}" "${aIMAGE_CSOLD["$@"]}" && \
+    cat "${aIMAGE_CSOLD["$@"]}" && \
     { echo "${aTGT_FILE}" > "${REFER_NEWEST}" ;
       return 42 ; }
+    # If some of the above fails, return non-zero non-42 result code
 )
 
 ##################################################
