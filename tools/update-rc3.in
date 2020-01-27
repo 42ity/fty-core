@@ -1700,16 +1700,16 @@ while [ $# -gt 0 ]; do
 		-ls)
 			RES=0
 			lsdir_http_pattern "${SOURCESITEROOTFW_UBOOT}" "uBoot*" \
-				| egrep -v '\.(md5|sha256|cksum'"$CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT"')$' || RES=$?
+				| egrep -v '\.(md5|sha256|cksum'"${CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT}"')$' || RES=$?
 			lsdir_http_pattern "${SOURCESITEROOTFW_UBOOT}" "u-Boot*" \
-				| egrep -v '\.(md5|sha256|cksum'"$CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT"')$' || RES=$?
+				| egrep -v '\.(md5|sha256|cksum'"${CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT}"')$' || RES=$?
 			lsdir_http_pattern "${SOURCESITEROOTFW_UIMAGE}" "uImage*" \
-				| egrep -v '\.(md5|sha256|cksum'"$CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT"')$' || RES=$?
+				| egrep -v '\.(md5|sha256|cksum'"${CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT}"')$' || RES=$?
 			lsdir_http_pattern "${SOURCESITEROOTFW_MODULES}" "*[0-9].[0-9]*.${EXT}*" \
-				| egrep -v '\.(md5|sha256|cksum'"$CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT"')$' || RES=$?
+				| egrep -v '\.(md5|sha256|cksum'"${CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT}"')$' || RES=$?
 			lsdir_http_pattern "${SOURCESITEROOT_OSIMAGE}" "${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}.${EXT}*" \
 				| sort_osimage_names \
-				| egrep -v '\.(md5|sha256|cksum'"$CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT"')$' || RES=$?
+				| egrep -v '\.(md5|sha256|cksum'"${CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT}"')$' || RES=$?
 
 			summarize_check() {
 				IMG="$1"
