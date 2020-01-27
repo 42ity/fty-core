@@ -832,6 +832,7 @@ download_osimage() (
     # found on this local system, then the routine just returns code "42"
     # instead of downloading this detected new image otherwise.
     # A successful download of an image (consistent non-empty file) is 42 too
+    local REPORT_IMAGETYPE='OS image'
     REFER_NEWEST="${TEMP_DATA}/.newest-osimage"
     rm -f "${REFER_NEWEST}"
 
@@ -847,13 +848,13 @@ download_osimage() (
 
     case "${1-}" in
             *://*)
-                logmsg_info "download_osimage() was asked to try downloading '$1' as the ${IMGTYPE} OS image for ${ARCH}"
+                logmsg_info "download_osimage() was asked to try downloading '$1' as the ${IMGTYPE} $REPORT_IMAGETYPE for ${ARCH}"
                 IMAGE_URL="$1" ;;
             "")
-                logmsg_info "Fetching newest remote filename for ${ARCH} OS image of type ${IMGTYPE}..."
+                logmsg_info "Fetching newest remote filename for ${ARCH} $REPORT_IMAGETYPE of type ${IMGTYPE}..."
                 IMAGE_URL="`findnewest_osimage`" && [ -n "$IMAGE_URL" ] \
-                && logmsg_info "download_osimage() detected '$IMAGE_URL' as the newest remote ${IMGTYPE} OS image for ${ARCH}" \
-                || { logmsg_error "Could not find any remote OS image"; IMAGE_URL="";} ;;
+                && logmsg_info "download_osimage() detected '$IMAGE_URL' as the newest remote ${IMGTYPE} $REPORT_IMAGETYPE for ${ARCH}" \
+                || { logmsg_error "Could not find any remote $REPORT_IMAGETYPE"; IMAGE_URL="";} ;;
             *)  logmsg_error "download_osimage() got an unsupported argument: $*"
                 IMAGE_URL=""
                 ;; # This dies a bit below
@@ -987,7 +988,7 @@ download_osimage() (
     fi
 
     if [ x"${CHECK_ONLY-}" = xyes ]; then
-        logmsg_info "According to checksums, the remote resource '$IMAGE_URL' points to an OS image we do not have on this system"
+        logmsg_info "According to checksums, the remote resource '$IMAGE_URL' points to an $REPORT_IMAGETYPE we do not have on this system"
         return 42
     fi
 
@@ -1047,7 +1048,7 @@ download_osimage() (
     touch -r "${aTGT_FILE}" "${aTGT_FILE_CSOLD}" "${aTGT_FILE_MANIFEST}" && \
     mkdir -p /var/lib/fty/sw-update/ && \
     ( etn-sw-update --add-image "${aTGT_FILE}" || echo "$?" > "/var/lib/fty/sw-update/activation_requested" ) && \
-    logmsg_info "Got OS image OK:" && \
+    logmsg_info "Got $REPORT_IMAGETYPE OK:" && \
     ls -ld "${aTGT_FILE}" "${aTGT_FILE_CSOLD}" "${aTGT_FILE_MANIFEST}" && \
     cat "${aTGT_FILE_CSOLD}" && \
     { echo "${aTGT_FILE}" > "$DOWNLOADROOT_OSIMAGE/.newest-osimage";
@@ -1056,6 +1057,7 @@ download_osimage() (
 )
 
 removeold_osimage() (
+    local REPORT_IMAGETYPE='OS image'
     cd "${DOWNLOADROOT_OSIMAGE}" || die "Can not use DOWNLOADROOT_OSIMAGE='$DOWNLOADROOT_OSIMAGE'"
     # Sort of implementation for BIOS-1566 snatched from bios-boot::Makefile
     # This removes all but the newest (alphabetically) files for the pattern
@@ -1082,9 +1084,9 @@ removeold_osimage() (
             [ -n "$F" ] && [ -f "$F" ] && \
             if [ -n "$DOWNLOADED_OS_IMAGE" ] && [ -s "$DOWNLOADED_OS_IMAGE" ] && \
                 [ "$F" = "`basename "$DOWNLOADED_OS_IMAGE"`" ]; then
-                    logmsg_info "Keeping the just-downloaded OS image: '$DOWNLOADED_OS_IMAGE'"
+                    logmsg_info "Keeping the just-downloaded $REPORT_IMAGETYPE: '$DOWNLOADED_OS_IMAGE'"
             else
-                logmsg_info "Removing older OS image: '`pwd`/$F' and its checksum(s)"
+                logmsg_info "Removing older $REPORT_IMAGETYPE: '`pwd`/$F' and its checksum(s)"
                 remove_image "$F"
                 VICTIMS=$(($VICTIMS+1))
             fi
@@ -1101,10 +1103,10 @@ removeold_osimage() (
         `ls -1d *_${ARCH}.${EXT} 2>/dev/null | grep -v "${IMGTYPE}-.*_${ARCH}.${EXT}"` \
     ; do
         [ -n "$F" ] && [ -f "$F" ] && \
-        logmsg_info "Removing older OS image: '`pwd`/$F' and its checksum(s)" && \
+        logmsg_info "Removing older $REPORT_IMAGETYPE: '`pwd`/$F' and its checksum(s)" && \
         if [ -n "$DOWNLOADED_OS_IMAGE" ] && [ -s "$DOWNLOADED_OS_IMAGE" ] && \
             [ "$F" = "`basename "$DOWNLOADED_OS_IMAGE"`" ]; then
-                logmsg_info "Keeping the just-downloaded OS image: '$DOWNLOADED_OS_IMAGE'"
+                logmsg_info "Keeping the just-downloaded $REPORT_IMAGETYPE: '$DOWNLOADED_OS_IMAGE'"
         else
             remove_image "$F"
             VICTIMS=$(($VICTIMS+1))
@@ -1133,6 +1135,7 @@ findnewest_rawfwimage_uboot() (
 )
 
 download_rawfwimage_uboot() (
+    local REPORT_IMAGETYPE='u-Boot loader image'
     REFER_NEWEST="${TEMP_DATA}/.newest-uboot"
     rm -f "${REFER_NEWEST}"
 
@@ -1141,13 +1144,13 @@ download_rawfwimage_uboot() (
 
     case "${1-}" in
             *://*)
-                logmsg_info "download_rawfwimage_uboot() was asked to try downloading '$1' as the raw u-Boot loader image"
+                logmsg_info "download_rawfwimage_uboot() was asked to try downloading '$1' as the raw $REPORT_IMAGETYPE"
                 IMAGE_URL="$1" ;;
             "")
-                logmsg_info "Fetching newest remote filename for the raw u-Boot loader image..."
+                logmsg_info "Fetching newest remote filename for the raw $REPORT_IMAGETYPE..."
                 IMAGE_URL="`findnewest_rawfwimage_uboot`" && [ -n "$IMAGE_URL" ] \
-                && logmsg_info "download_rawfwimage_uboot() detected '$IMAGE_URL' as the newest remote raw u-Boot loader image" \
-                || { logmsg_error "Could not find any remote raw u-Boot loader image"; IMAGE_URL="";} ;;
+                && logmsg_info "download_rawfwimage_uboot() detected '$IMAGE_URL' as the newest remote raw $REPORT_IMAGETYPE" \
+                || { logmsg_error "Could not find any remote raw $REPORT_IMAGETYPE"; IMAGE_URL="";} ;;
             *)  logmsg_error "download_rawfwimage_uboot() got an unsupported argument: $*"
                 IMAGE_URL=""
                 ;;
@@ -1189,7 +1192,7 @@ download_rawfwimage_uboot() (
         && { echo "`pwd`/${rIMAGE_URL_BASENAME}" > "${REFER_NEWEST}" ;
              return 0 ; }
     if [ -s "${aIMAGE_CSNEW_PADDED}" ] && [ -c "/dev/mtd$UBOOT_MTD" ]; then
-        logmsg_info "Verify padded checksum against a raw u-Boot loader partition with flashed bits here ..."
+        logmsg_info "Verify padded checksum against a raw $REPORT_IMAGETYPE partition with flashed bits here ..."
         REPLACE_MISSING_CHECKSUM="no" FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
             "/dev/mtd$UBOOT_MTD" \
             "${DEPLOYMENTROOTFW_UBOOT}/${rIMAGE_CSOLD_PADDED}" \
@@ -1197,7 +1200,7 @@ download_rawfwimage_uboot() (
         && { echo "/dev/mtd$UBOOT_MTD" > "${REFER_NEWEST}" ;
              return 0 ; }
     fi
-    logmsg_info "Verify non-padded checksum against a raw u-Boot loader partition with flashed bits here ..."
+    logmsg_info "Verify non-padded checksum against a raw $REPORT_IMAGETYPE partition with flashed bits here ..."
     REPLACE_MISSING_CHECKSUM="no" FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
             "/dev/mtd$UBOOT_MTD" \
             "${DEPLOYMENTROOTFW_UBOOT}/${rIMAGE_CSOLD}" \
@@ -1207,7 +1210,7 @@ download_rawfwimage_uboot() (
     logmsg_warn "TODO: If we can detect the file size of the remote image, use calculate_stream_checksum_bytes() to verify flashed bits"
 
     if [ x"${CHECK_ONLY-}" = xyes ]; then
-        logmsg_info "According to checksums, the remote resource '$IMAGE_URL' points to an u-Boot loader image we do not have on this system"
+        logmsg_info "According to checksums, the remote resource '$IMAGE_URL' points to an $REPORT_IMAGETYPE we do not have on this system"
         return 42
     fi
 
@@ -1258,7 +1261,7 @@ download_rawfwimage_uboot() (
     # TODO: Verify file size against partition size (flashability after reboot)
     [ -s "${aTGT_FILE}" ] && [ -s "${aIMAGE_CSOLD}" ] && \
     touch -r "${aTGT_FILE}" "${aIMAGE_CSOLD}" && \
-    logmsg_info "Got u-Boot loader image OK:" && \
+    logmsg_info "Got $REPORT_IMAGETYPE OK:" && \
     ls -ld "${aTGT_FILE}" "${aIMAGE_CSOLD}" && \
     cat "${aIMAGE_CSOLD}" && \
     { echo "${aTGT_FILE}" > "${REFER_NEWEST}" ;
@@ -1266,6 +1269,7 @@ download_rawfwimage_uboot() (
 )
 
 removeold_rawfwimage_uboot() (
+    local REPORT_IMAGETYPE='u-Boot loader image'
     cd "${DOWNLOADROOTFW_UBOOT}" || \
     cd "${DEPLOYMENTROOTFW_UBOOT}" || die "Can not use DOWNLOADROOTFW_UBOOT='$DOWNLOADROOTFW_UBOOT' nor DEPLOYMENTROOTFW_UBOOT='$DEPLOYMENTROOTFW_UBOOT'"
     if [ -z "$DOWNLOADED_FW_UBOOT" ] ; then
@@ -1277,8 +1281,8 @@ removeold_rawfwimage_uboot() (
     VICTIMS=0
     for F in `ls -1d "${DOWNLOADROOTFW_UBOOT}"/u-Boot "${DEPLOYMENTROOTFW_UBOOT}"/u-Boot 2>/dev/null` ; do
         [ -n "$DOWNLOADED_FW_UBOOT" ] && [ -s "$DOWNLOADED_FW_UBOOT" ] && [ "$DOWNLOADED_FW_UBOOT" = "$F" ] && \
-            { logmsg_info "Keeping the just-downloaded u-Boot loader image: '$DOWNLOADED_FW_UBOOT'" ; continue ; }
-        logmsg_info "Removing older u-Boot loader image: '$F' and its checksum(s)"
+            { logmsg_info "Keeping the just-downloaded $REPORT_IMAGETYPE: '$DOWNLOADED_FW_UBOOT'" ; continue ; }
+        logmsg_info "Removing older $REPORT_IMAGETYPE: '$F' and its checksum(s)"
         remove_image "$F"
         VICTIMS=$(($VICTIMS+1))
     done
@@ -1303,6 +1307,7 @@ findnewest_rawfwimage_uimage() (
 )
 
 download_rawfwimage_uimage() (
+    local REPORT_IMAGETYPE='kernel uImage'
     REFER_NEWEST="${TEMP_DATA}/.newest-uimage"
     rm -f "${REFER_NEWEST}"
 
@@ -1311,13 +1316,13 @@ download_rawfwimage_uimage() (
 
     case "${1-}" in
             *://*)
-                logmsg_info "download_rawfwimage_uimage() was asked to try downloading '$1' as the raw kernel uImage"
+                logmsg_info "download_rawfwimage_uimage() was asked to try downloading '$1' as the raw $REPORT_IMAGETYPE"
                 IMAGE_URL="$1" ;;
             "")
-                logmsg_info "Fetching newest remote filename for the raw kernel uImage..."
+                logmsg_info "Fetching newest remote filename for the raw $REPORT_IMAGETYPE..."
                 IMAGE_URL="`findnewest_rawfwimage_uimage`" && [ -n "$IMAGE_URL" ] \
-                && logmsg_info "download_rawfwimage_uimage() detected '$IMAGE_URL' as the newest remote raw kernel uImage" \
-                || { logmsg_error "Could not find any remote raw kernel uImage"; IMAGE_URL="";} ;;
+                && logmsg_info "download_rawfwimage_uimage() detected '$IMAGE_URL' as the newest remote raw $REPORT_IMAGETYPE" \
+                || { logmsg_error "Could not find any remote raw $REPORT_IMAGETYPE"; IMAGE_URL="";} ;;
             *)  logmsg_error "download_rawfwimage_uimage() got an unsupported argument: $*"
                 IMAGE_URL=""
                 ;;
@@ -1359,7 +1364,7 @@ download_rawfwimage_uimage() (
         && { echo "`pwd`/${rIMAGE_URL_BASENAME}" > "${REFER_NEWEST}" ;
              return 0 ; }
     if [ -s "${aIMAGE_CSNEW_PADDED}" ] && [ -c "/dev/mtd$KERNEL_MTD" ]; then
-        logmsg_info "Verify padded checksum against a raw kernel uImage partition with flashed bits here ..."
+        logmsg_info "Verify padded checksum against a raw $REPORT_IMAGETYPE partition with flashed bits here ..."
         REPLACE_MISSING_CHECKSUM="no" FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
             "/dev/mtd$KERNEL_MTD" \
             "${DEPLOYMENTROOTFW_UIMAGE}/${rIMAGE_CSOLD_PADDED}" \
@@ -1367,7 +1372,7 @@ download_rawfwimage_uimage() (
         && { echo "/dev/mtd$KERNEL_MTD" > "${REFER_NEWEST}" ;
              return 0 ; }
     fi
-    logmsg_info "Verify non-padded checksum against a raw kernel uImage partition with flashed bits here ..."
+    logmsg_info "Verify non-padded checksum against a raw $REPORT_IMAGETYPE partition with flashed bits here ..."
     REPLACE_MISSING_CHECKSUM="no" FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
             "/dev/mtd$KERNEL_MTD" \
             "${DEPLOYMENTROOTFW_UIMAGE}/${rIMAGE_CSOLD}" \
@@ -1377,7 +1382,7 @@ download_rawfwimage_uimage() (
     logmsg_warn "TODO: If we can detect the file size of the remote image, use calculate_stream_checksum_bytes() to verify flashed bits"
 
     if [ x"${CHECK_ONLY-}" = xyes ]; then
-        logmsg_info "According to checksums, the remote resource '$IMAGE_URL' points to a kernel uImage we do not have on this system"
+        logmsg_info "According to checksums, the remote resource '$IMAGE_URL' points to a $REPORT_IMAGETYPE we do not have on this system"
         return 42
     fi
 
@@ -1428,7 +1433,7 @@ download_rawfwimage_uimage() (
     # TODO: Verify file size against partition size (flashability after reboot)
     [ -s "${aTGT_FILE}" ] && [ -s "${aIMAGE_CSOLD}" ] && \
     touch -r "${aTGT_FILE}" "${aIMAGE_CSOLD}" && \
-    logmsg_info "Got kernel uImage OK:" && \
+    logmsg_info "Got $REPORT_IMAGETYPE OK:" && \
     ls -ld "${aTGT_FILE}" "${aIMAGE_CSOLD}" && \
     cat "${aIMAGE_CSOLD}" && \
     { echo "${aTGT_FILE}" > "${REFER_NEWEST}" ;
@@ -1436,6 +1441,7 @@ download_rawfwimage_uimage() (
 )
 
 removeold_rawfwimage_uimage() (
+    local REPORT_IMAGETYPE='kernel uImage'
     cd "${DOWNLOADROOTFW_UIMAGE}" || \
     cd "${DEPLOYMENTROOTFW_UIMAGE}" || die "Can not use DOWNLOADROOTFW_UIMAGE='$DOWNLOADROOTFW_UIMAGE' nor DEPLOYMENTROOTFW_UIMAGE='$DEPLOYMENTROOTFW_UIMAGE'"
     if [ -z "$DOWNLOADED_FW_UIMAGE" ] ; then
@@ -1447,8 +1453,8 @@ removeold_rawfwimage_uimage() (
     VICTIMS=0
     for F in `ls -1d "${DOWNLOADROOTFW_UIMAGE}"/uImage "${DEPLOYMENTROOTFW_UIMAGE}"/uImage 2>/dev/null` ; do
         [ -n "$DOWNLOADED_FW_UIMAGE" ] && [ -s "$DOWNLOADED_FW_UIMAGE" ] && [ "$DOWNLOADED_FW_UIMAGE" = "$F" ] && \
-            { logmsg_info "Keeping the just-downloaded kernel uImage: '$DOWNLOADED_FW_UIMAGE'" ; continue ; }
-        logmsg_info "Removing older kernel uImage: '`pwd`/$F' and its checksum(s)"
+            { logmsg_info "Keeping the just-downloaded $REPORT_IMAGETYPE: '$DOWNLOADED_FW_UIMAGE'" ; continue ; }
+        logmsg_info "Removing older $REPORT_IMAGETYPE: '`pwd`/$F' and its checksum(s)"
         remove_image "$F"
         VICTIMS=$(($VICTIMS+1))
     done
@@ -1498,6 +1504,7 @@ findnewest_rawfwimage_modules() (
 )
 
 download_rawfwimage_modules() (
+    local REPORT_IMAGETYPE='kernel modules archive'
     REFER_NEWEST="${TEMP_DATA}/.newest-modules"
     rm -f "${REFER_NEWEST}"
 
@@ -1506,13 +1513,13 @@ download_rawfwimage_modules() (
 
     case "${1-}" in
         *://*)
-            logmsg_info "download_rawfwimage_modules() was asked to try downloading '$1' as the raw kernel modules archive"
+            logmsg_info "download_rawfwimage_modules() was asked to try downloading '$1' as the raw $REPORT_IMAGETYPE"
             IMAGE_URL="$1" ;;
         "")
-            logmsg_info "Fetching newest remote filename for the raw kernel modules archive..."
+            logmsg_info "Fetching newest remote filename for the raw $REPORT_IMAGETYPE..."
             IMAGE_URL="`findnewest_rawfwimage_modules`" && [ -n "$IMAGE_URL" ] \
-            && logmsg_info "download_rawfwimage_modules() detected '$IMAGE_URL' as the newest remote raw kernel modules archive" \
-            || { logmsg_error "Could not find any remote raw kernel modules archive"; IMAGE_URL="";} ;;
+            && logmsg_info "download_rawfwimage_modules() detected '$IMAGE_URL' as the newest remote raw $REPORT_IMAGETYPE" \
+            || { logmsg_error "Could not find any remote raw $REPORT_IMAGETYPE"; IMAGE_URL="";} ;;
         *)  logmsg_error "download_rawfwimage_modules() got an unsupported argument: $*"
             IMAGE_URL=""
             ;;
@@ -1559,7 +1566,7 @@ download_rawfwimage_modules() (
     fi
 
     if [ x"${CHECK_ONLY-}" = xyes ]; then
-        logmsg_info "According to checksums, the remote resource '$IMAGE_URL' points to a kernel modules archive we do not have on this system"
+        logmsg_info "According to checksums, the remote resource '$IMAGE_URL' points to a $REPORT_IMAGETYPE we do not have on this system"
         return 42
     fi
 
@@ -1605,7 +1612,7 @@ download_rawfwimage_modules() (
     # TODO: Verify file size against partition size (flashability after reboot)
     [ -s "${aTGT_FILE}" ] && [ -s "${aIMAGE_CSOLD}" ] && \
     touch -r "${aTGT_FILE}" "${aIMAGE_CSOLD}" && \
-    logmsg_info "Got kernel modules archive OK:" && \
+    logmsg_info "Got $REPORT_IMAGETYPE OK:" && \
     ls -ld "${aTGT_FILE}" "${aIMAGE_CSOLD}" && \
     cat "${aIMAGE_CSOLD}" && \
     { echo "${aTGT_FILE}" > "${REFER_NEWEST}" ;
@@ -1613,6 +1620,7 @@ download_rawfwimage_modules() (
 )
 
 removeold_rawfwimage_modules() (
+    local REPORT_IMAGETYPE='kernel modules archive'
     cd "${DOWNLOADROOTFW_MODULES}" || \
     cd "${DEPLOYMENTROOTFW_MODULES}" || die "Can not use DOWNLOADROOTFW_MODULES='$DOWNLOADROOTFW_MODULES' nor DEPLOYMENTROOTFW_MODULES='$DEPLOYMENTROOTFW_MODULES'"
     if [ -z "$DOWNLOADED_FW_MODULES" ] ; then
@@ -1624,8 +1632,8 @@ removeold_rawfwimage_modules() (
     VICTIMS=0
     for F in `ls -1d "${DOWNLOADROOTFW_MODULES}"/*[0-9]*.*[0-9]*.${EXT} "${DEPLOYMENTROOTFW_MODULES}"/*[0-9]*.*[0-9]*.${EXT} 2>/dev/null` ; do
         [ -n "$DOWNLOADED_FW_MODULES" ] && [ -s "$DOWNLOADED_FW_MODULES" ] && [ "$DOWNLOADED_FW_MODULES" = "$F" ] && \
-            { logmsg_info "Keeping the just-downloaded modules archive: '$DOWNLOADED_FW_MODULES'" ; continue ; }
-        logmsg_info "Removing older modules archive: '`pwd`/$F' and its checksum(s)"
+            { logmsg_info "Keeping the just-downloaded $REPORT_IMAGETYPE: '$DOWNLOADED_FW_MODULES'" ; continue ; }
+        logmsg_info "Removing older $REPORT_IMAGETYPE: '`pwd`/$F' and its checksum(s)"
         remove_image "$F"
         VICTIMS=$(($VICTIMS+1))
     done
@@ -1996,7 +2004,7 @@ if [ "$ACTION_DOWNLOAD_FWIMAGE" = yes ]; then
 	[ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT" -ne 42 ] && \
 		ACTION_RESULT=$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT && \
 		if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] ; then
-			logmsg_warn "New u-Boot image was not downloaded successfully, so old ones are not purged"
+			logmsg_warn "New u-Boot loader image was not downloaded successfully, so old ones are not purged"
 			ACTION_REMOVEOLD_FWIMAGE=no_BadDownload
 		fi
 
@@ -2012,7 +2020,7 @@ if [ "$ACTION_DOWNLOAD_FWIMAGE" = yes ]; then
 	[ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES" -ne 42 ] && \
 		ACTION_RESULT=$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES && \
 		if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] ; then
-			logmsg_warn "New modules archive was not downloaded successfully, so old ones are not purged"
+			logmsg_warn "New kernel modules archive was not downloaded successfully, so old ones are not purged"
 			ACTION_REMOVEOLD_FWIMAGE=no_BadDownload
 		fi
 
