@@ -1707,7 +1707,7 @@ while [ $# -gt 0 ]; do
 				| egrep -v '\.(md5|sha256|cksum'"${CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT}"')$' || RES=$?
 			lsdir_http_pattern "${SOURCESITEROOTFW_MODULES}" "*[0-9].[0-9]*.${EXT}*" \
 				| egrep -v '\.(md5|sha256|cksum'"${CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT}"')$' || RES=$?
-			lsdir_http_pattern "${SOURCESITEROOT_OSIMAGE}" "${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}.${EXT}*" \
+			lsdir_http_pattern "${SOURCESITEROOT_OSIMAGE}" "${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}.${EXT}" \
 				| sort_osimage_names \
 				| egrep -v '\.(md5|sha256|cksum'"${CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT}"')$' || RES=$?
 
