@@ -931,7 +931,7 @@ download_rawfwimage_generic() (
 
     case "$LOCAL_CHECKSUMS_MATCHED" in
         -1)  # Should not happen unless CHECKSUM_ALGOLIST_DEFAULT is empty
-             logmsg_debug "Local checksums were not tested for local copy of '${IMAGE_URL}'" ;;
+             logmsg_warn "Local checksums were not tested for local copy of '${IMAGE_URL}'" ;;
         0)   # At least one was tested, and all present checksums were ok
              echo "`pwd`/${rIMAGE_URL_BASENAME}" > "${REFER_NEWEST}"
              return 0
@@ -966,7 +966,7 @@ download_rawfwimage_generic() (
 
             case "$LOCAL_CHECKSUMS_MATCHED" in
                 -1)  # Should not happen unless CHECKSUM_ALGOLIST_DEFAULT is empty
-                     logmsg_debug "Local checksums were not tested for raw $REPORT_IMAGETYPE partition" ;;
+                     logmsg_warn "Local checksums were not tested for raw $REPORT_IMAGETYPE partition" ;;
                 0)   # At least one was tested, and all present checksums were ok
                      echo "${RAW_DEVICE_NODE}" > "${REFER_NEWEST}"
                      return 0
@@ -988,7 +988,7 @@ download_rawfwimage_generic() (
 
             case "$LOCAL_CHECKSUMS_MATCHED" in
                 -1)  # Should not happen unless CHECKSUM_ALGOLIST_DEFAULT is empty
-                     logmsg_debug "Local checksums were not tested for $REPORT_IMAGETYPE" ;;
+                     logmsg_warn "Local checksums were not tested for $REPORT_IMAGETYPE" ;;
                 0)   # At least one was tested, and all present checksums were ok
                      echo "${DEPLOYMENTROOT_THISIMAGE}/${rIMAGE_URL_BASENAME}" > "${REFER_NEWEST}"
                      return 0
@@ -1076,7 +1076,7 @@ download_rawfwimage_generic() (
 
     case "$LOCAL_CHECKSUMS_MATCHED" in
         -1)  # Should not happen unless CHECKSUM_ALGOLIST_DEFAULT is empty
-             logmsg_debug "Downloaded checksums were not tested for $REPORT_IMAGETYPE"
+             logmsg_warn "Downloaded checksums were not tested for $REPORT_IMAGETYPE"
              if [ "${CHECKSUM_REQUIRED-}" != true ]; then
                 die "At least one checksum should be downloadable (and matching) for '${aTGT_FILE}'"
              fi
@@ -1283,7 +1283,7 @@ download_osimage() (
         done
         case "$LOCAL_CHECKSUMS_MATCHED" in
             -1) # Should not happen unless CHECKSUM_ALGOLIST_DEFAULT is empty
-                logmsg_debug "Local checksums were not tested for flat-named $REPORT_IMAGETYPE and checksum filenames" ;;
+                logmsg_warn "Local checksums were not tested for flat-named $REPORT_IMAGETYPE and checksum filenames" ;;
             0)  # At least one was tested, and all present checksums were ok
                 echo "`pwd`/${rTGT_FILE}" > "${REFER_NEWEST}"
                 return 0
@@ -1313,7 +1313,7 @@ download_osimage() (
             done
             case "$LOCAL_CHECKSUMS_MATCHED" in
                 -1) # Should not happen unless CHECKSUM_ALGOLIST_DEFAULT is empty
-                    logmsg_debug "Local checksums were not tested for already-deployed $REPORT_IMAGETYPE" ;;
+                    logmsg_warn "Local checksums were not tested for already-deployed $REPORT_IMAGETYPE" ;;
                 0)  # At least one was tested, and all present checksums were ok
                     echo "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE}" > "$DOWNLOADROOT_OSIMAGE/.newest-osimage"
                     echo "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE}" > "${REFER_NEWEST}"
@@ -1335,7 +1335,7 @@ download_osimage() (
         done
         case "$LOCAL_CHECKSUMS_MATCHED" in
             -1) # Should not happen unless CHECKSUM_ALGOLIST_DEFAULT is empty
-                logmsg_debug "Local checksums were not tested for flat-named $REPORT_IMAGETYPE and original checksum filenames" ;;
+                logmsg_warn "Local checksums were not tested for flat-named $REPORT_IMAGETYPE and original checksum filenames" ;;
             0)  # At least one was tested, and all present checksums were ok
                 echo "`pwd`/${rTGT_FILE}" > "${REFER_NEWEST}"
                 return 0
@@ -1359,7 +1359,7 @@ download_osimage() (
             done
             case "$LOCAL_CHECKSUMS_MATCHED" in
                 -1) # Should not happen unless CHECKSUM_ALGOLIST_DEFAULT is empty
-                    logmsg_debug "Local checksums were not tested for already-deployed $REPORT_IMAGETYPE" ;;
+                    logmsg_warn "Local checksums were not tested for already-deployed $REPORT_IMAGETYPE" ;;
                 0)  # At least one was tested, and all present checksums were ok
                     echo "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE}" > "$DOWNLOADROOT_OSIMAGE/.newest-osimage"
                     echo "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE}" > "${REFER_NEWEST}"
@@ -1383,7 +1383,7 @@ download_osimage() (
     done
     case "$LOCAL_CHECKSUMS_MATCHED" in
         -1) # Should not happen unless CHECKSUM_ALGOLIST_DEFAULT is empty
-            logmsg_debug "Local checksums were not tested for $REPORT_IMAGETYPE under original name in base dir" ;;
+            logmsg_warn "Local checksums were not tested for $REPORT_IMAGETYPE under original name in base dir" ;;
         0)  # At least one was tested, and all present checksums were ok
             [ -d "${DEPLOYMENTROOT_OSIMAGE}" ] \
                 && echo "${rIMAGE_URL_BASENAME_EXT}" > "${DOWNLOADROOT_OSIMAGE}/.newest-osimage"
@@ -1408,7 +1408,7 @@ download_osimage() (
         done
         case "$LOCAL_CHECKSUMS_MATCHED" in
             -1) # Should not happen unless CHECKSUM_ALGOLIST_DEFAULT is empty
-                logmsg_debug "Local checksums were not tested for $REPORT_IMAGETYPE under original name in base dir" ;;
+                logmsg_warn "Local checksums were not tested for $REPORT_IMAGETYPE under original name in base dir" ;;
             0)  # At least one was tested, and all present checksums were ok
                 echo "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_URL_BASENAME_EXT}" > "$DOWNLOADROOT_OSIMAGE/.newest-osimage"
                 echo "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_URL_BASENAME_EXT}" > "${REFER_NEWEST}"
@@ -1433,7 +1433,7 @@ download_osimage() (
         done
         case "$LOCAL_CHECKSUMS_MATCHED" in
             -1) # Should not happen unless CHECKSUM_ALGOLIST_DEFAULT is empty
-                logmsg_debug "Local checksums were not tested for $REPORT_IMAGETYPE under original name in base dir" ;;
+                logmsg_warn "Local checksums were not tested for $REPORT_IMAGETYPE under original name in base dir" ;;
             0)  # At least one was tested, and all present checksums were ok
                 echo "`pwd`/${IMGTYPE}/${ARCH}/${rIMAGE_URL_BASENAME_EXT}" > "$DOWNLOADROOT_OSIMAGE/.newest-osimage"
                 echo "`pwd`/${IMGTYPE}/${ARCH}/${rIMAGE_URL_BASENAME_EXT}" > "${REFER_NEWEST}"
@@ -1525,7 +1525,7 @@ download_osimage() (
     done
     case "$LOCAL_CHECKSUMS_MATCHED" in
         -1) # Should not happen unless CHECKSUM_ALGOLIST_DEFAULT is empty
-            logmsg_debug "Downloaded checksums were not tested for $REPORT_IMAGETYPE"
+            logmsg_warn "Downloaded checksums were not tested for $REPORT_IMAGETYPE"
             if [ "${CHECKSUM_REQUIRED-}" != true ]; then
                 die "At least one checksum should be downloadable (and matching) for '${aTGT_FILE}'"
             fi
