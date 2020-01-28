@@ -1074,8 +1074,8 @@ download_rawfwimage_generic() (
     done
 
     logmsg_info "Got $REPORT_IMAGETYPE OK:" && \
-    ls -ld "${aTGT_FILE}" "${aIMAGE_CSOLD["$@"]}" && \
-    cat "${aIMAGE_CSOLD["$@"]}" && \
+    ls -ld "${aTGT_FILE}" "${aIMAGE_CSOLD[@]}" && \
+    cat "${aIMAGE_CSOLD[@]}" && \
     { echo "${aTGT_FILE}" > "${REFER_NEWEST}" ;
       return 42 ; }
     # If some of the above fails, return non-zero non-42 result code
