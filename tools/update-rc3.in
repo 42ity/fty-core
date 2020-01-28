@@ -826,6 +826,7 @@ download_rawfwimage_generic() (
     local SOURCESITEROOT_THISIMAGE="$1" ; shift
     local IMAGEFINDER_ROUTINE="$1" ; shift
     local RAW_DEVICE_NODE="$1" ; shift
+    local LOCAL_CHECKSUMS_MATCHED
 
     [ -n "${REFER_NEWEST}" ] && rm -f "${REFER_NEWEST}"
 
