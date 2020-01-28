@@ -421,8 +421,15 @@ remove_image() {
     remove_checksum_cache '[^\:]*' '[^\:]*' "$1"
     remove_checksum_cache '[^\:]*' '[^\:]*' "$1"'\.[^\:]*'
     rm -f "$1"{,.md5,.sha,.sha1,.sha224,.sha256,.sha384,.sha512,.cksum}{,-padded}{,.tmp} ${2:+"$2"}
-    # and update the SW package manifest
+
+    # ...and update the SW package manifest
     # WARNING: this MUST be done before package manifest deletion!
+    # TODO: By the licensing-aware updates design, the new candidate image's
+    # copy of the generalized upgradeability validation routine should be
+    # called, probably via chroot, applying that new version's concepts of
+    # what is valid - which our old deployed version just can not know.
+    # This chroot should happen after the currently deployed version has
+    # confirmed trust to that new image, however (checksums/signatures).
     etn-sw-update --delete-image "$1"
     # Also remove the image file manifest, if present
     rm -f "$1"{,-manifest.json}
@@ -1526,12 +1533,18 @@ download_osimage() (
         || logmsg_warn "Could not find manifest file '${aTGT_FILE_MANIFEST}' or it was found empty"
 
     for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
-
         [ -s "${aTGT_FILE_CSOLD["$IMAGE_CSALGO"]}" ] \
         && touch -r "${aTGT_FILE}" "${aTGT_FILE_CSOLD["$IMAGE_CSALGO"]}" \
         || die "Could not touch '${aTGT_FILE_CSOLD["$IMAGE_CSALGO"]}' or it was found empty"
     done
 
+    # TODO: This should be created and properly owned via systemd-tmpfiles
+    # TODO: By the licensing-aware updates design, the new candidate image's
+    # copy of the generalized upgradeability validation routine should be
+    # called, probably via chroot, applying that new version's concepts of
+    # what is valid - which our old deployed version just can not know.
+    # This chroot should happen after the currently deployed version has
+    # confirmed trust to that new image, however (checksums/signatures).
     mkdir -p /var/lib/fty/sw-update/ && \
     ( etn-sw-update --add-image "${aTGT_FILE}" || echo "$?" > "/var/lib/fty/sw-update/activation_requested" ) && \
     logmsg_info "Got $REPORT_IMAGETYPE OK:" && \
