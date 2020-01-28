@@ -940,7 +940,7 @@ download_rawfwimage_generic() (
     esac
 
     if [ -d "${DEPLOYMENTROOT_THISIMAGE}" ] ; then
-        if [ -n "{RAW_DEVICE_NODE-}" ]; then
+        if [ -n "${RAW_DEVICE_NODE-}" ]; then
             LOCAL_CHECKSUMS_MATCHED=-1
             for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
                 if [ "$LOCAL_CHECKSUMS_MATCHED" = -1 ] ; then LOCAL_CHECKSUMS_MATCHED=0 ; fi
