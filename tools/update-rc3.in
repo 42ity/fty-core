@@ -411,13 +411,20 @@ $1:$2:$3:$4"
 remove_image() {
     # Remove the image file "$1" and its possible checksum patterns,
     # and the optional explicit checksum filename that can be in "$2"
-    # If the RETAIN_FILE variable is set, keep this file (downloaded new CS)
+    # If the RETAIN_FILES variable is set, keep this file list (e.g.
+    # a downloaded new CS, or secure a recent OS image with metadata)
     [ x"${FLAG_CAN_REMOVE_IMAGES-}" = xno ] && \
         logmsg_info "FLAG_CAN_REMOVE_IMAGES=$FLAG_CAN_REMOVE_IMAGES so do not remove_image($*)" && \
         return 0
-    [ -n "$RETAIN_FILE" ] && [ -s "$RETAIN_FILE" ] && \
-        logmsg_info "Retaining '$RETAIN_FILE' during remove_image($*)" && \
-        mv -f "$RETAIN_FILE" "$RETAIN_FILE.$$"
+
+    if [ -n "$RETAIN_FILES" ] ; then
+        for RETAIN_FILE in ${RETAIN_FILES} ; do
+            [ -s "$RETAIN_FILE" ] \
+                && logmsg_info "Retaining '$RETAIN_FILE' during remove_image($*)" \
+                && mv -f "$RETAIN_FILE" "$RETAIN_FILE.$$"
+	done
+    fi
+
     remove_checksum_cache '[^\:]*' '[^\:]*' "$1"
     remove_checksum_cache '[^\:]*' '[^\:]*' "$1"'\.[^\:]*'
     rm -f "$1"{,.md5,.sha,.sha1,.sha224,.sha256,.sha384,.sha512,.cksum}{,-padded}{,.tmp} ${2:+"$2"}
@@ -433,8 +440,15 @@ remove_image() {
     etn-sw-update --delete-image "$1"
     # Also remove the image file manifest, if present
     rm -f "$1"{,-manifest.json}
-    [ -n "$RETAIN_FILE" ] && [ -s "$RETAIN_FILE.$$" ] && mv -f "$RETAIN_FILE.$$" "$RETAIN_FILE" \
-        || rm -f "$1.forceflash"
+
+    if [ -n "$RETAIN_FILES" ] ; then
+        for RETAIN_FILE in ${RETAIN_FILES} ; do
+            [ -s "$RETAIN_FILE.$$" ] \
+                && logmsg_info "Restoring retained '$RETAIN_FILE' during remove_image($*)" \
+                && mv -f "$RETAIN_FILE.$$" "$RETAIN_FILE" \
+                || rm -f "$1.forceflash"
+	done
+    fi
 }
 
 verify_checksum() {
@@ -636,7 +650,7 @@ verify_threeway_checksum() {
         # In-place changes are not nice but can happen e.g. for FW images
         logmsg_info "Remote checksum in '$FILE_CSNEW' is not good for '$FILE_DATA', local file is corrupted or obsolete and should be re-downloaded from '$IMAGE_URL'"
         if [ ! -c "$FILE_DATA" ] && [ ! -b "$FILE_DATA" ] ; then
-            RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
+            RETAIN_FILES="$FILE_CSNEW" remove_image "$FILE_DATA"
         fi
         return 1
     fi
@@ -651,14 +665,14 @@ verify_threeway_checksum() {
         # files (checksums) should be removed; keep the FILE_CSNEW if available
         logmsg_info "Local checksum mismatched for '$FILE_CSOLD', local file is corrupted and should be re-downloaded from '$IMAGE_URL'"
         if [ ! -c "$FILE_DATA" ] && [ ! -b "$FILE_DATA" ] ; then
-            RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
+            RETAIN_FILES="$FILE_CSNEW" remove_image "$FILE_DATA"
         fi
         return 1
     fi
 
     logmsg_info "Neither path of three-way verification has succeeded for '$FILE_DATA', it should be re-downloaded from '$IMAGE_URL'"
     if [ ! -c "$FILE_DATA" ] && [ ! -b "$FILE_DATA" ] ; then
-        RETAIN_FILE="$FILE_CSNEW" remove_image "$FILE_DATA"
+        RETAIN_FILES="$FILE_CSNEW" remove_image "$FILE_DATA"
     fi
     return 1
 }
