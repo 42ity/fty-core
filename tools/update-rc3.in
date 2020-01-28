@@ -882,10 +882,15 @@ download_rawfwimage_generic() (
 
     trap 'TRAPCODE=$?; rm -f "${aIMAGE_CSNEW[@]}" "${aIMAGE_CSNEW_PADDED[@]}"; exit $TRAPCODE' 0
 
+    # TODO noted below: optionally check that we have at least one checksum
+    # file; do not fail for legacy releases that e.g. only have one if the
+    # option CHECKSUM_REQUIRED==false ...
     LOCAL_CHECKSUMS_MATCHED=-1
     for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
+        if [ "$LOCAL_CHECKSUMS_MATCHED" = -1 ] ; then LOCAL_CHECKSUMS_MATCHED=0 ; fi
         logmsg_info "Downloading '${IMAGE_CSURL["$IMAGE_CSALGO"]}' (if any) into '${aIMAGE_CSNEW["$IMAGE_CSALGO"]}'..."
         fetch_file "${IMAGE_CSURL["$IMAGE_CSALGO"]}" "${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" || true
+        #TODO# ... || if [ "${CHECKSUM_REQUIRED-}" = true ]; then ... ; fi
 
         if [ -n "${RAW_DEVICE_NODE-}" ]; then
             logmsg_info "Downloading '${IMAGE_CSURL_PADDED["$IMAGE_CSALGO"]}' (if any) into '${aIMAGE_CSNEW_PADDED["$IMAGE_CSALGO"]}'..."
@@ -894,7 +899,6 @@ download_rawfwimage_generic() (
 
         # Try the filenames in local directories
         logmsg_info "Verifying if we locally have $IMAGE_CSALGO checksum and corresponding file under original name in base dir..."
-        if [ "$LOCAL_CHECKSUMS_MATCHED" = -1 ] ; then LOCAL_CHECKSUMS_MATCHED=0 ; fi
         verify_threeway_checksum "${IMAGE_URL}" "${rIMAGE_URL_BASENAME}" "${rIMAGE_CSOLD["$IMAGE_CSALGO"]}" "${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" \
              || LOCAL_CHECKSUMS_MATCHED=$?
     done
