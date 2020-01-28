@@ -462,7 +462,7 @@ verify_checksum() {
             [ -n "${CHECKSUM_ACT}" ] && logmsg_info "Got cached checksum (${CHECKSUM_ALGO}) for ${FILENAME_DATA}" \
             || CHECKSUM_ACT=""
         if [ -z "$CHECKSUM_ACT" ]; then
-            CHECKSUM_ACT="`calculate_stream_checksum < "$FILENAME_DATA"`"
+            CHECKSUM_ACT="`calculate_stream_checksum ${CHECKSUM_ALGO} < "$FILENAME_DATA"`"
             if [ $? = 0 ] && [ -n "$CHECKSUM_ACT" ]; then
                 add_checksum_cache "${CHECKSUM_ACT}" "-1" "${CHECKSUM_ALGO}" "${FILENAME_DATA}"
             else
