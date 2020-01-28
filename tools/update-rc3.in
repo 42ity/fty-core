@@ -308,6 +308,7 @@ get_csalgo_from_filename() {
     # Parse (extensions of) the filename in "$1" to retrieve the
     # checksum algo (if any); set of supported algos and extensions
     # is to be kept in sync with remove_image() below.
+    # TODO: Handle *.squashfs-manifest.json files as a SHA256 checksum carrier with a file-size field?..
     _A="`echo "$1" | tr '[A-Z]' '[a-z]' | sed -e 's,\.tmp$,,' -e 's,^.*\.\([^\.]*\)$,\1,' -e 's,-padded$,,'`" || _A=""
 
     case "${_A}" in
@@ -465,6 +466,9 @@ verify_checksum() {
         if [ -z "$CHECKSUM_ACT" ]; then
             CHECKSUM_ACT="`calculate_stream_checksum ${CHECKSUM_ALGO} < "$FILENAME_DATA"`"
             if [ $? = 0 ] && [ -n "$CHECKSUM_ACT" ]; then
+                # TODO: Actually employ data-file length field
+                # TODO: Compare data-file length field to value in .cksum files
+                # TODO: Use data-length field from manifest files?
                 add_checksum_cache "${CHECKSUM_ACT}" "-1" "${CHECKSUM_ALGO}" "${FILENAME_DATA}"
             else
                 CHECKSUM_ACT=""
