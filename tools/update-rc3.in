@@ -396,7 +396,8 @@ remove_checksum_cache() {
 add_checksum_cache() {
     # Adds to the cache if the given pathname and algo and length are missing
     # If a value exists, it is replaced
-    # Arguments $1..$4 are same as in CHECKSUM_CACHE definition above
+    # Arguments $1..$4 are same as in CHECKSUM_CACHE definition above:
+    #logmsg_warn "Consider adding to checksum cache: path='$4' len='$2' algo='$3' sum='$1'"
     [ $# != 4 ] && return 22
     if [ -z "${CHECKSUM_CACHE}" ]; then
         CHECKSUM_CACHE="$1:$2:$3:$4"
