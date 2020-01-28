@@ -1117,6 +1117,8 @@ download_osimage() (
     # instead of downloading this detected new image otherwise.
     # A successful download of an image (consistent non-empty file) is 42 too
     local REPORT_IMAGETYPE='OS image'
+    local LOCAL_CHECKSUMS_MATCHED
+
     REFER_NEWEST="${TEMP_DATA}/.newest-osimage"
     rm -f "${REFER_NEWEST}"
 
@@ -1168,15 +1170,23 @@ download_osimage() (
 
     # TODO: Currently hardcoded for md5 accompanying checksums only
     # TODO (later): Support presence of multiple checksum files (e.g. sha* and md5)
-    IMAGE_CSALGO="${CHECKSUM_ALGO_DEFAULT}"
+    declare -A  IMAGE_CSURL
+    declare -A rIMAGE_CSOLD
+    declare -A aIMAGE_CSOLD
+    declare -A aIMAGE_CSNEW
+    declare -A rTGT_FILE_CSOLD
+    declare -A aTGT_FILE_CSOLD
+    declare -A aTGT_FILE_CSNEW
 
-    # NOTE: "Old" filename and checksum are basenames that can be located under
-    # different directories ("r"elative varnames), but e.g. a "new" checksum is
-    # ensured to be in a temporary location and a newly downloaded file should
-    # land into the recovery location ("a"bsolute varnames)
-    IMAGE_CSURL="${IMAGE_URL}.${IMAGE_CSALGO}"
-    rIMAGE_CSOLD="${rIMAGE_URL_BASENAME_EXT}.${IMAGE_CSALGO}"
-    aIMAGE_CSNEW="${TEMP_DATA}/${rIMAGE_URL_BASENAME_EXT}.$$.${IMAGE_CSALGO}.tmp"
+    for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
+        # NOTE: "Old" filename and checksum are basenames that can be located under
+        # different directories ("r"elative varnames), but e.g. a "new" checksum is
+        # ensured to be in a temporary location and a newly downloaded file should
+        # land into the recovery location ("a"bsolute varnames)
+        IMAGE_CSURL["$IMAGE_CSALGO"]="${IMAGE_URL}.${IMAGE_CSALGO}"
+        rIMAGE_CSOLD["$IMAGE_CSALGO"]="${rIMAGE_URL_BASENAME_EXT}.${IMAGE_CSALGO}"
+        aIMAGE_CSNEW["$IMAGE_CSALGO"]="${TEMP_DATA}/${rIMAGE_URL_BASENAME_EXT}.$$.${IMAGE_CSALGO}.tmp"
+    done
 
     # We rename the incoming image to include the type in flat directory space
     rTGT_FILE="${rIMAGE_URL_BASENAME_EXT}"
@@ -1191,84 +1201,220 @@ download_osimage() (
             ;;  # Had to define TGT_FILE different from rIMAGE_URL_BASENAME
     esac
 
-    rTGT_FILE_CSOLD="${rTGT_FILE}.${IMAGE_CSALGO}"
-    aTGT_FILE_CSNEW="${TEMP_DATA}/${rTGT_FILE}.$$.${IMAGE_CSALGO}.tmp"
+    for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
+        rTGT_FILE_CSOLD["$IMAGE_CSALGO"]="${rTGT_FILE}.${IMAGE_CSALGO}"
+        aTGT_FILE_CSNEW["$IMAGE_CSALGO"]="${TEMP_DATA}/${rTGT_FILE}.$$.${IMAGE_CSALGO}.tmp"
+    done
 
-    trap 'TRAPCODE=$?; rm -f "$aTGT_FILE_CSNEW" "$aIMAGE_CSNEW"; exit $TRAPCODE' 0
+    trap 'TRAPCODE=$?; rm -f "${aTGT_FILE_CSNEW[@]}" "${aIMAGE_CSNEW[@]}"; exit $TRAPCODE' 0
+    # TODO noted below: optionally check that we have at least one checksum
+    # file; do not fail for legacy releases that e.g. only have one if the
+    # option CHECKSUM_REQUIRED==false ...
+    LOCAL_CHECKSUMS_MATCHED=-1
+    for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
+        if [ "$LOCAL_CHECKSUMS_MATCHED" = -1 ] ; then LOCAL_CHECKSUMS_MATCHED=0 ; fi
+        logmsg_info "Downloading $IMAGE_CSALGO checksum '${IMAGE_CSURL["$IMAGE_CSALGO"]}' (if any) into '${aIMAGE_CSNEW["$IMAGE_CSALGO"]}'..."
+        fetch_file "${IMAGE_CSURL["$IMAGE_CSALGO"]}" "${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" || true
+            # Errors reported inside, missing data is deemed bearable
+            # TODO: ... || LOCAL_CHECKSUMS_MATCHED=$?
 
-    logmsg_info "Downloading '${IMAGE_CSURL}' (if any) into '${aIMAGE_CSNEW}'..."
-    fetch_file "${IMAGE_CSURL}" "${aIMAGE_CSNEW}" || true
-        # Errors reported inside, missing data is deemed bearable
+        if [ ! -s "${aTGT_FILE_CSNEW["$IMAGE_CSALGO"]}" ] ; then
+            logmsg_info "Processing '${IMAGE_CSURL["$IMAGE_CSALGO"]}' (if any) to flatten the names into '${aTGT_FILE_CSNEW["$IMAGE_CSALGO"]}'..."
+            { [ -s "${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" ] && cat "${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" || fetch_file "${IMAGE_CSURL["$IMAGE_CSALGO"]}" - ; } | \
+            sed 's,  .*$,  '"`basename "$rTGT_FILE"`", > "${aTGT_FILE_CSNEW["$IMAGE_CSALGO"]}" || \
+                { logmsg_error "Could not save and process '${IMAGE_CSURL["$IMAGE_CSALGO"]}' into '${aTGT_FILE_CSNEW["$IMAGE_CSALGO"]}'"
+                  rm -f "${aTGT_FILE_CSNEW["$IMAGE_CSALGO"]}"
+                }
+            # TODO: ... || LOCAL_CHECKSUMS_MATCHED=$?
+        fi
+    done
+    #TODO# ... || if [ "${CHECKSUM_REQUIRED-}" = true ] && [ "${LOCAL_CHECKSUMS_MATCHED}" != 0 ]; then ... ; fi
 
-    if [ ! -s "${aTGT_FILE_CSNEW}" ] ; then
-        logmsg_info "Processing '${IMAGE_CSURL}' (if any) to flatten the names into '${aTGT_FILE_CSNEW}'..."
-        { [ -s "${aIMAGE_CSNEW}" ] && cat "${aIMAGE_CSNEW}" || fetch_file "${IMAGE_CSURL}" - ; } | \
-        sed 's,  .*$,  '"`basename "$rTGT_FILE"`", > "${aTGT_FILE_CSNEW}" || \
-            { logmsg_error "Could not save and process '${IMAGE_CSURL}' into '${aTGT_FILE_CSNEW}'"
-              rm -f "${aTGT_FILE_CSNEW}"
-            }
-    fi
+    # Due to legacy reasons, we juggle "flattened file" vs structured-directory
+    # pathnames below. With introduction of multiple checksum types to check
+    # the possible combinations matrix got even worse, so we could only extend
+    # the existing approach (thus all checksum/data file name patterns must be
+    # consistent)... TODO: maybe track hitting a IMAGE_CSALGO in an array with
+    # some data filename value to save as REFER_NEWEST?
 
     # First try the modified filenames in local directories: more probable hit
-    if [ x"$rTGT_FILE" != x"$rIMAGE_URL_BASENAME_EXT" ] ; then
-        if [ -s "$aTGT_FILE_CSNEW" ] && [ x"$aTGT_FILE_CSNEW" != x"${aIMAGE_CSNEW}" ]; then
-            logmsg_info "Verifying if we have this checksum and corresponding file under flat name of data and checksum files..."
-            verify_threeway_checksum "${IMAGE_URL}" "${rTGT_FILE}" "${rTGT_FILE_CSOLD}" "${aTGT_FILE_CSNEW}" \
-                && { echo "`pwd`/${rTGT_FILE}" > "${REFER_NEWEST}" ;
-                     return 0 ; }
-            if [ -d "${DEPLOYMENTROOT_OSIMAGE}" ] ; then
-                # Do not remove deployed files!
-                logmsg_info "Verifying if we have this checksum and corresponding file already deployed..."
-                FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
-                    "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE}" \
-                    "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE_CSOLD}" \
-                    "${aTGT_FILE_CSNEW}" \
-                && { echo "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE}" > "$DOWNLOADROOT_OSIMAGE/.newest-osimage" ;
-                     echo "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE}" > "${REFER_NEWEST}" ;
-                     return 0 ; }
+    if [ x"${rTGT_FILE}" != x"${rIMAGE_URL_BASENAME_EXT}" ] ; then
+        # #1: verify if all available checksums match for flattened
+        # filenames of both the OS image data and checksum file
+        # where aTGT_FILE_CSNEW!=aIMAGE_CSNEW
+        LOCAL_CHECKSUMS_MATCHED=-1
+        for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
+            if [ -s "${aTGT_FILE_CSNEW["$IMAGE_CSALGO"]}" ] \
+            && [ x"${aTGT_FILE_CSNEW["$IMAGE_CSALGO"]}" != x"${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" ] \
+            ; then
+                if [ "$LOCAL_CHECKSUMS_MATCHED" = -1 ] ; then LOCAL_CHECKSUMS_MATCHED=0 ; fi
+                logmsg_info "Verifying if we have the $IMAGE_CSALGO checksum and corresponding file under flat name of data and checksum files for ${IMGTYPE} $REPORT_IMAGETYPE for ${ARCH}..."
+                verify_threeway_checksum "${IMAGE_URL}" "${rTGT_FILE}" \
+                        "${rTGT_FILE_CSOLD["$IMAGE_CSALGO"]}" \
+                        "${aTGT_FILE_CSNEW["$IMAGE_CSALGO"]}" \
+                    || LOCAL_CHECKSUMS_MATCHED=$?
             fi
-        fi
-        logmsg_info "Verifying if we have this checksum and corresponding file under flat name of data and original name of checksum file..."
-        verify_threeway_checksum "${IMAGE_URL}" "${rTGT_FILE}" "${rTGT_FILE_CSOLD}" "${aIMAGE_CSNEW}" \
-                && { echo "`pwd`/${rTGT_FILE}" > "${REFER_NEWEST}" ;
-                     return 0 ; }
+        done
+        case "$LOCAL_CHECKSUMS_MATCHED" in
+            -1) # Should not happen unless CHECKSUM_ALGOLIST_DEFAULT is empty
+                logmsg_debug "Local checksums were not tested for flat-named $REPORT_IMAGETYPE and checksum filenames" ;;
+            0)  # At least one was tested, and all present checksums were ok
+                echo "`pwd`/${rTGT_FILE}" > "${REFER_NEWEST}"
+                return 0
+                ;;
+            # Non-zeroes are not a problem, this is what the rest of routine is for
+        esac
+
+        # #2: verify if all available checksums match for not-flattened
+        # deployed filenames of both the OS image data and checksum file
+        # where aTGT_FILE_CSNEW!=aIMAGE_CSNEW
         if [ -d "${DEPLOYMENTROOT_OSIMAGE}" ] ; then
-            # Do not remove deployed files!
-            logmsg_info "Verifying if we have this checksum and corresponding file already deployed..."
-            FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
-                "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE}" \
-                "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE_CSOLD}" \
-                "${aIMAGE_CSNEW}" \
-                && { echo "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE}" > "$DOWNLOADROOT_OSIMAGE/.newest-osimage" ;
-                     echo "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE}" > "${REFER_NEWEST}" ;
-                     return 0 ; }
+            LOCAL_CHECKSUMS_MATCHED=-1
+            for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
+                if [ -s "${aTGT_FILE_CSNEW["$IMAGE_CSALGO"]}" ] \
+                && [ x"${aTGT_FILE_CSNEW["$IMAGE_CSALGO"]}" != x"${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" ] \
+                ; then
+                    if [ "$LOCAL_CHECKSUMS_MATCHED" = -1 ] ; then LOCAL_CHECKSUMS_MATCHED=0 ; fi
+
+                    # Do not remove deployed files!
+                    logmsg_info "Verifying if we have the $IMAGE_CSALGO checksum and corresponding file already deployed for ${IMGTYPE} $REPORT_IMAGETYPE for ${ARCH}..."
+                    FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+                        "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE}" \
+                        "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE_CSOLD["$IMAGE_CSALGO"]}" \
+                        "${aTGT_FILE_CSNEW["$IMAGE_CSALGO"]}" \
+                    || LOCAL_CHECKSUMS_MATCHED=$?
+                fi
+            done
+            case "$LOCAL_CHECKSUMS_MATCHED" in
+                -1) # Should not happen unless CHECKSUM_ALGOLIST_DEFAULT is empty
+                    logmsg_debug "Local checksums were not tested for already-deployed $REPORT_IMAGETYPE" ;;
+                0)  # At least one was tested, and all present checksums were ok
+                    echo "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE}" > "$DOWNLOADROOT_OSIMAGE/.newest-osimage"
+                    echo "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE}" > "${REFER_NEWEST}"
+                    return 0
+                    ;;
+                # Non-zeroes are not a problem, this is what the rest of routine is for
+            esac
+        fi
+
+        # #3: verify if all available checksums match for flattened
+        # filename of the OS image data and original name of checksum
+        LOCAL_CHECKSUMS_MATCHED=-1
+        for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
+            logmsg_info "Verifying if we have the $IMAGE_CSALGO checksum and corresponding file under flat name of data and original name of checksum file..."
+            verify_threeway_checksum "${IMAGE_URL}" "${rTGT_FILE}" \
+                    "${rTGT_FILE_CSOLD["$IMAGE_CSALGO"]}" \
+                    "${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" \
+                || LOCAL_CHECKSUMS_MATCHED=$?
+        done
+        case "$LOCAL_CHECKSUMS_MATCHED" in
+            -1) # Should not happen unless CHECKSUM_ALGOLIST_DEFAULT is empty
+                logmsg_debug "Local checksums were not tested for flat-named $REPORT_IMAGETYPE and original checksum filenames" ;;
+            0)  # At least one was tested, and all present checksums were ok
+                echo "`pwd`/${rTGT_FILE}" > "${REFER_NEWEST}"
+                return 0
+                ;;
+            # Non-zeroes are not a problem, this is what the rest of routine is for
+        esac
+
+        # #4: verify if all available checksums match for not-flattened
+        # deployed filenames of both the OS image data and checksum file
+        if [ -d "${DEPLOYMENTROOT_OSIMAGE}" ] ; then
+            LOCAL_CHECKSUMS_MATCHED=-1
+            for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
+                if [ "$LOCAL_CHECKSUMS_MATCHED" = -1 ] ; then LOCAL_CHECKSUMS_MATCHED=0 ; fi
+                # Do not remove deployed files!
+                logmsg_info "Verifying if we have the $IMAGE_CSALGO checksum and corresponding file already deployed for ${IMGTYPE} $REPORT_IMAGETYPE for ${ARCH}..."
+                FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+                        "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE}" \
+                        "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE_CSOLD["$IMAGE_CSALGO"]}" \
+                        "${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" \
+                    || LOCAL_CHECKSUMS_MATCHED=$?
+            done
+            case "$LOCAL_CHECKSUMS_MATCHED" in
+                -1) # Should not happen unless CHECKSUM_ALGOLIST_DEFAULT is empty
+                    logmsg_debug "Local checksums were not tested for already-deployed $REPORT_IMAGETYPE" ;;
+                0)  # At least one was tested, and all present checksums were ok
+                    echo "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE}" > "$DOWNLOADROOT_OSIMAGE/.newest-osimage"
+                    echo "${DEPLOYMENTROOT_OSIMAGE}/${rTGT_FILE}" > "${REFER_NEWEST}"
+                    return 0
+                    ;;
+                # Non-zeroes are not a problem, this is what the rest of routine is for
+            esac
         fi
     fi
 
-    # Then try unmodified filenames in local directories (e.g. USB download)
-    logmsg_info "Verifying if we have this checksum and corresponding file under original name in base dir..."
-    verify_threeway_checksum "${IMAGE_URL}" "${rIMAGE_URL_BASENAME_EXT}" "${rIMAGE_CSOLD}" "${aIMAGE_CSNEW}" \
-        && { echo "${rIMAGE_URL_BASENAME_EXT}" > "$DOWNLOADROOT_OSIMAGE/.newest-osimage" ;
-             echo "`pwd`/${rIMAGE_URL_BASENAME_EXT}" > "${REFER_NEWEST}" ;
-             return 0; }
+    # If we got here, let's try unmodified filenames in local directories
+    # (e.g. looking at a USB download), first in the base directory...
+    LOCAL_CHECKSUMS_MATCHED=-1
+    for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
+        if [ "$LOCAL_CHECKSUMS_MATCHED" = -1 ] ; then LOCAL_CHECKSUMS_MATCHED=0 ; fi
+        logmsg_info "Verifying if we have the $IMAGE_CSALGO checksum and corresponding file under original name in base dir..."
+        verify_threeway_checksum "${IMAGE_URL}" "${rIMAGE_URL_BASENAME_EXT}" \
+                "${rIMAGE_CSOLD["$IMAGE_CSALGO"]}" \
+                "${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" \
+            || LOCAL_CHECKSUMS_MATCHED=$?
+    done
+    case "$LOCAL_CHECKSUMS_MATCHED" in
+        -1) # Should not happen unless CHECKSUM_ALGOLIST_DEFAULT is empty
+            logmsg_debug "Local checksums were not tested for $REPORT_IMAGETYPE under original name in base dir" ;;
+        0)  # At least one was tested, and all present checksums were ok
+            [ -d "${DEPLOYMENTROOT_OSIMAGE}" ] \
+                && echo "${rIMAGE_URL_BASENAME_EXT}" > "${DOWNLOADROOT_OSIMAGE}/.newest-osimage"
+            echo "`pwd`/${rIMAGE_URL_BASENAME_EXT}" > "${REFER_NEWEST}"
+            return 0
+            ;;
+        # Non-zeroes are not a problem, this is what the rest of routine is for
+    esac
+
+    # ...next in the deployed directory...
     if [ -d "${DEPLOYMENTROOT_OSIMAGE}" ] ; then
-        # Do not remove deployed files!
-        logmsg_info "Verifying if we have this checksum and corresponding file already deployed..."
-        FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
-            "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_URL_BASENAME_EXT}" \
-            "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_CSOLD}" \
-            "${aIMAGE_CSNEW}" \
-        && { echo "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_URL_BASENAME_EXT}" > "$DOWNLOADROOT_OSIMAGE/.newest-osimage" ;
-             echo "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_URL_BASENAME_EXT}" > "${REFER_NEWEST}" ;
-             return 0; }
+        LOCAL_CHECKSUMS_MATCHED=-1
+        for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
+            if [ "$LOCAL_CHECKSUMS_MATCHED" = -1 ] ; then LOCAL_CHECKSUMS_MATCHED=0 ; fi
+            # Do not remove deployed files!
+            logmsg_info "Verifying if we have the $IMAGE_CSALGO checksum and corresponding file already deployed..."
+            FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
+                    "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_URL_BASENAME_EXT}" \
+                    "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_CSOLD["$IMAGE_CSALGO"]}" \
+                    "${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" \
+                || LOCAL_CHECKSUMS_MATCHED=$?
+        done
+        case "$LOCAL_CHECKSUMS_MATCHED" in
+            -1) # Should not happen unless CHECKSUM_ALGOLIST_DEFAULT is empty
+                logmsg_debug "Local checksums were not tested for $REPORT_IMAGETYPE under original name in base dir" ;;
+            0)  # At least one was tested, and all present checksums were ok
+                echo "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_URL_BASENAME_EXT}" > "$DOWNLOADROOT_OSIMAGE/.newest-osimage"
+                echo "${DEPLOYMENTROOT_OSIMAGE}/${rIMAGE_URL_BASENAME_EXT}" > "${REFER_NEWEST}"
+                return 0
+                ;;
+            # Non-zeroes are not a problem, this is what the rest of routine is for
+        esac
     fi
-    if [ -d "./$IMGTYPE/$ARCH" ]; then
+
+    # ...next in a structured directory sub-tree...
+    if [ -d "./${IMGTYPE}/${ARCH}/" ]; then
         # Bit of support for container hosts
-        logmsg_info "Verifying if we have this checksum and corresponding file under original name in hierarchy..."
-        verify_threeway_checksum "${IMAGE_URL}" "./$IMGTYPE/$ARCH/${rIMAGE_URL_BASENAME_EXT}" "./$IMGTYPE/$ARCH/${rIMAGE_CSOLD}" "${aIMAGE_CSNEW}" \
-        && { echo "`pwd`/$IMGTYPE/$ARCH/${rIMAGE_URL_BASENAME_EXT}" > "$DOWNLOADROOT_OSIMAGE/.newest-osimage" ;
-             echo "`pwd`/$IMGTYPE/$ARCH/${rIMAGE_URL_BASENAME_EXT}" > "${REFER_NEWEST}" ;
-             return 0; }
+        LOCAL_CHECKSUMS_MATCHED=-1
+        for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
+            if [ "$LOCAL_CHECKSUMS_MATCHED" = -1 ] ; then LOCAL_CHECKSUMS_MATCHED=0 ; fi
+            logmsg_info "Verifying if we have the $IMAGE_CSALGO checksum and corresponding file under original name in hierarchy..."
+            verify_threeway_checksum "${IMAGE_URL}" \
+                    "./${IMGTYPE}/${ARCH}/${rIMAGE_URL_BASENAME_EXT}" \
+                    "./${IMGTYPE}/${ARCH}/${rIMAGE_CSOLD["$IMAGE_CSALGO"]}" \
+                    "${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" \
+                || LOCAL_CHECKSUMS_MATCHED=$?
+        done
+        case "$LOCAL_CHECKSUMS_MATCHED" in
+            -1) # Should not happen unless CHECKSUM_ALGOLIST_DEFAULT is empty
+                logmsg_debug "Local checksums were not tested for $REPORT_IMAGETYPE under original name in base dir" ;;
+            0)  # At least one was tested, and all present checksums were ok
+                echo "`pwd`/${IMGTYPE}/${ARCH}/${rIMAGE_URL_BASENAME_EXT}" > "$DOWNLOADROOT_OSIMAGE/.newest-osimage"
+                echo "`pwd`/${IMGTYPE}/${ARCH}/${rIMAGE_URL_BASENAME_EXT}" > "${REFER_NEWEST}"
+                return 0
+                ;;
+            # Non-zeroes are not a problem, this is what the rest of routine is for
+        esac
     fi
 
     if [ x"${CHECK_ONLY-}" = xyes ]; then
@@ -1278,64 +1424,115 @@ download_osimage() (
 
     # If we are here, the IMAGE_URL is valid and points to a different content
     # than what we already have; the TGT_FILE names the ultimate local filename
-    if [ -d "./$IMGTYPE/$ARCH" ]; then
-        aTGT_FILE="`pwd`/$IMGTYPE/$ARCH/${rTGT_FILE}"
-        aTGT_FILE_CSOLD="`pwd`/$IMGTYPE/$ARCH/${rTGT_FILE_CSOLD}"
+    if [ -d "./${IMGTYPE}/${ARCH}" ]; then
+        aTGT_FILE="`pwd`/${IMGTYPE}/${ARCH}/${rTGT_FILE}"
     else
         aTGT_FILE="`pwd`/${rTGT_FILE}"
-        aTGT_FILE_CSOLD="`pwd`/${rTGT_FILE_CSOLD}"
     fi
-    aTGT_FILE_MANIFEST="${aTGT_FILE}-manifest.json"
 
-    if [ x"$aTGT_FILE_CSNEW" != x"${aIMAGE_CSNEW}" ] && [ -s "$aIMAGE_CSNEW" ] && [ -s "$aTGT_FILE_CSNEW" ] ; then
-        # We have both a flat and original checksum files; keep one
-        if [ x"$FLAG_FLATTEN_FILENAMES" = xyes ]; then
-            rm -f "$aIMAGE_CSNEW"
+    for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
+        if [ -d "./${IMGTYPE}/${ARCH}" ]; then
+            aTGT_FILE_CSOLD["$IMAGE_CSALGO"]="`pwd`/${IMGTYPE}/${ARCH}/${rTGT_FILE_CSOLD["$IMAGE_CSALGO"]}"
         else
-            rm -f "$aTGT_FILE_CSNEW"
+            aTGT_FILE_CSOLD["$IMAGE_CSALGO"]="`pwd`/${rTGT_FILE_CSOLD["$IMAGE_CSALGO"]}"
         fi
-    fi
 
-    if [ ! -s "${aTGT_FILE_CSOLD}" ]; then
-        [ -s "${aIMAGE_CSNEW}" ] && cp -f "${aIMAGE_CSNEW}" "${aTGT_FILE_CSOLD}"
-        [ -s "${aTGT_FILE_CSNEW}" ] && cp -f "${aTGT_FILE_CSNEW}" "${aTGT_FILE_CSOLD}"
-    fi
+        if [ x"${aTGT_FILE_CSNEW["$IMAGE_CSALGO"]}" != x"${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" ] \
+        && [ -s "${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" ] \
+        && [ -s "${aTGT_FILE_CSNEW["$IMAGE_CSALGO"]}" ] \
+        ; then
+            # We have both a flat and original checksum files; keep one
+            if [ x"$FLAG_FLATTEN_FILENAMES" = xyes ]; then
+                rm -f "${aIMAGE_CSNEW["$IMAGE_CSALGO"]}"
+            else
+                rm -f "${aTGT_FILE_CSNEW["$IMAGE_CSALGO"]}"
+            fi
+        fi
+
+        if [ ! -s "${aTGT_FILE_CSOLD["$IMAGE_CSALGO"]}" ]; then
+            [ -s "${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" ] \
+                && cp -f "${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" "${aTGT_FILE_CSOLD["$IMAGE_CSALGO"]}"
+            [ -s "${aTGT_FILE_CSNEW["$IMAGE_CSALGO"]}" ] \
+                && cp -f "${aTGT_FILE_CSNEW["$IMAGE_CSALGO"]}" "${aTGT_FILE_CSOLD["$IMAGE_CSALGO"]}"
+        fi
+    done
 
     # Take care of image manifest file
-    aTGT_FILE_MANIFEST_NEW="${TEMP_DATA}/${rTGT_FILE}-manifest.json.$$.tmp" # aTGT_FILE_CSNEW
-    IMAGE_MANIFEST_URL="${IMAGE_URL}-manifest.json" # IMAGE_CSURL
-    rIMAGE_MANIFEST_OLD="${rIMAGE_URL_BASENAME_EXT}-manifest.json" # rIMAGE_CSOLD
-    aIMAGE_MANIFEST_NEW="${TEMP_DATA}/${rIMAGE_URL_BASENAME_EXT}-manifest.json.$$.tmp" # aIMAGE_CSNEW
+    aTGT_FILE_MANIFEST="${aTGT_FILE}-manifest.json"
+    aTGT_FILE_MANIFEST_NEW="${TEMP_DATA}/${rTGT_FILE}-manifest.json.$$.tmp" # like aTGT_FILE_CSNEW
+    IMAGE_MANIFEST_URL="${IMAGE_URL}-manifest.json" # like IMAGE_CSURL
+    rIMAGE_MANIFEST_OLD="${rIMAGE_URL_BASENAME_EXT}-manifest.json" # like rIMAGE_CSOLD
+    aIMAGE_MANIFEST_NEW="${TEMP_DATA}/${rIMAGE_URL_BASENAME_EXT}-manifest.json.$$.tmp" # like aIMAGE_CSNEW
 
     logmsg_info "Downloading '$IMAGE_MANIFEST_URL' into '$aIMAGE_MANIFEST_NEW'..."
     fetch_file "${IMAGE_MANIFEST_URL}" "${aIMAGE_MANIFEST_NEW}" || true
 
     if [ ! -s "${aTGT_FILE_MANIFEST}" ]; then
-        [ -s "${aIMAGE_MANIFEST_NEW}" ] && cp -f "${aIMAGE_MANIFEST_NEW}" "${aTGT_FILE_MANIFEST}"
-        [ -s "${aTGT_FILE_MANIFEST_NEW}" ] && cp -f "${aTGT_FILE_MANIFEST_NEW}" "${aTGT_FILE_MANIFEST}"
+        [ -s "${aIMAGE_MANIFEST_NEW}" ] \
+            && cp -f "${aIMAGE_MANIFEST_NEW}" "${aTGT_FILE_MANIFEST}"
+        [ -s "${aTGT_FILE_MANIFEST_NEW}" ] \
+            && cp -f "${aTGT_FILE_MANIFEST_NEW}" "${aTGT_FILE_MANIFEST}"
     fi
 
     logmsg_info "Downloading '$IMAGE_URL' into '$aTGT_FILE'..."
     FETCH_VERBOSE=yes fetch_file "$IMAGE_URL" "${aTGT_FILE}" || \
         { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
+
+    # If we are here, new image file was fetched (along with small
+    # metadata files). Clear our checksum cache to do clean checks.
     remove_checksum_cache '[^\:]*' '[^\:]*' "${aTGT_FILE}"
 
-    if [ -s "${aTGT_FILE_CSOLD}" ]; then
-        ensure_checksum "${aTGT_FILE}" "${aTGT_FILE_CSOLD}" || return $?
-    else
-        logmsg_warn "Generating '${aTGT_FILE_CSOLD}' because there was none at the source..."
-        echo "`calculate_stream_checksum "${IMAGE_CSALGO}" < "$aTGT_FILE"`  `basename "$aTGT_FILE"`" > "${aTGT_FILE_CSOLD}" || \
-        { rm -f "${aTGT_FILE_CSOLD}"; die "Could not generate '${aTGT_FILE_CSOLD}'"; }
-    fi
+    LOCAL_CHECKSUMS_MATCHED=-1
+    for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
+        if [ -s "${aTGT_FILE_CSOLD["$IMAGE_CSALGO"]}" ]; then
+            if [ "$LOCAL_CHECKSUMS_MATCHED" = -1 ] ; then LOCAL_CHECKSUMS_MATCHED=0 ; fi
+            ensure_checksum "${aTGT_FILE}" "${aTGT_FILE_CSOLD["$IMAGE_CSALGO"]}" || return $?
+        else
+            # Optional requirement that (at least one) checksum is downloadable
+            if [ "${CHECKSUM_REQUIRED-}" != true ]; then
+                logmsg_warn "Generating '${aTGT_FILE_CSOLD["$IMAGE_CSALGO"]}' because there was none at the source..."
+                echo "`calculate_stream_checksum "${IMAGE_CSALGO}" < "$aTGT_FILE"`  `basename "$aTGT_FILE"`" > "${aTGT_FILE_CSOLD["$IMAGE_CSALGO"]}" || \
+                { rm -f "${aTGT_FILE_CSOLD["$IMAGE_CSALGO"]}";
+                  die "Could not generate '${aTGT_FILE_CSOLD["$IMAGE_CSALGO"]}'"; }
+            fi
+        fi
+    done
+    case "$LOCAL_CHECKSUMS_MATCHED" in
+        -1) # Should not happen unless CHECKSUM_ALGOLIST_DEFAULT is empty
+            logmsg_debug "Downloaded checksums were not tested for $REPORT_IMAGETYPE"
+            if [ "${CHECKSUM_REQUIRED-}" != true ]; then
+                die "At least one checksum should be downloadable (and matching) for '${aTGT_FILE}'"
+            fi
+            ;;
+        0)  ;; # At least one was tested, and all present checksums were ok
+        *)  # Should not get here due to return above
+            die "At least one checksum did not match for '${aTGT_FILE}'"
+            ;;
+    esac
 
-    [ -s "${aTGT_FILE}" ] && [ -s "${aTGT_FILE_CSOLD}" ] && [ -s "${aTGT_FILE_MANIFEST}" ] && \
-    touch -r "${aTGT_FILE}" "${aTGT_FILE_CSOLD}" "${aTGT_FILE_MANIFEST}" && \
+    # Finally check that expected files are all here - and note at this
+    # point it includes the whole CHECKSUM_ALGOLIST_DEFAULT matrix
+    # TODO: Verify file size against partition size (flashability after reboot)
+    [ -s "${aTGT_FILE}" ] \
+        || die "Could not find '${aTGT_FILE}' or it was found empty"
+
+    [ -s "${aTGT_FILE_MANIFEST}" ] \
+        && touch -r "${aTGT_FILE}" "${aTGT_FILE_MANIFEST}" \
+        || logmsg_warn "Could not find manifest file '${aTGT_FILE_MANIFEST}' or it was found empty"
+
+    for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
+
+        [ -s "${aTGT_FILE_CSOLD["$IMAGE_CSALGO"]}" ] \
+        && touch -r "${aTGT_FILE}" "${aTGT_FILE_CSOLD["$IMAGE_CSALGO"]}" \
+        || die "Could not touch '${aTGT_FILE_CSOLD["$IMAGE_CSALGO"]}' or it was found empty"
+    done
+
     mkdir -p /var/lib/fty/sw-update/ && \
     ( etn-sw-update --add-image "${aTGT_FILE}" || echo "$?" > "/var/lib/fty/sw-update/activation_requested" ) && \
     logmsg_info "Got $REPORT_IMAGETYPE OK:" && \
-    ls -ld "${aTGT_FILE}" "${aTGT_FILE_CSOLD}" "${aTGT_FILE_MANIFEST}" && \
-    cat "${aTGT_FILE_CSOLD}" && \
-    { echo "${aTGT_FILE}" > "$DOWNLOADROOT_OSIMAGE/.newest-osimage";
+    ls -ld "${aTGT_FILE}" "${aTGT_FILE_CSOLD[@]}" "${aTGT_FILE_MANIFEST}" && \
+    cat "${aTGT_FILE_CSOLD[@]}" && \
+    { echo "${aTGT_FILE}" > "${DOWNLOADROOT_OSIMAGE}/.newest-osimage";
       echo "${aTGT_FILE}" > "${REFER_NEWEST}";
       return 42; }
 )
