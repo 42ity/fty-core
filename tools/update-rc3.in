@@ -1039,7 +1039,7 @@ download_rawfwimage_generic() (
                 "${aIMAGE_CSOLD["$IMAGE_CSALGO"]}" \
                 "${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" || return $?
         else
-	    # Optional requirement that (at least one) checksum is downloadable
+            # Optional requirement that (at least one) checksum is downloadable
             if [ "${CHECKSUM_REQUIRED-}" != true ]; then
                 logmsg_warn "Generating '${aIMAGE_CSOLD["$IMAGE_CSALGO"]}' because there was none at the source..."
                 echo "`calculate_stream_checksum "${IMAGE_CSALGO}" < "${aTGT_FILE}"` `basename "$aTGT_FILE"`" > "${aIMAGE_CSOLD["$IMAGE_CSALGO"]}" || \
@@ -1055,7 +1055,7 @@ download_rawfwimage_generic() (
                 die "At least one checksum should be downloadable (and matching) for '${aTGT_FILE}'"
              fi
              ;;
-	0)   ;; # At least one was tested, and all present checksums were ok
+        0)   ;; # At least one was tested, and all present checksums were ok
         *)   # Should not get here due to return above
              die "At least one checksum did not match for '${aTGT_FILE}'"
              ;;
@@ -1068,8 +1068,8 @@ download_rawfwimage_generic() (
         || die "Could not find '${aTGT_FILE}' or it was found empty"
 
     for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
-        [ -s "${aIMAGE_CSOLD["$IMAGE_CSALGO"]}" ] && \
-        touch -r "${aTGT_FILE}" "${aIMAGE_CSOLD["$IMAGE_CSALGO"]}" \
+        [ -s "${aIMAGE_CSOLD["$IMAGE_CSALGO"]}" ] \
+        && touch -r "${aTGT_FILE}" "${aIMAGE_CSOLD["$IMAGE_CSALGO"]}" \
         || die "Could not touch '${aIMAGE_CSOLD["$IMAGE_CSALGO"]}' or it was found empty"
     done
 
