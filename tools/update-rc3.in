@@ -2309,7 +2309,12 @@ case "$FLAG_ERASE_ALL" in
 esac
 
 if [ "$ACTION_REMOVEOLD_OSIMAGE" = yes ]; then
+	# Protect with RETAIN_FILES against overly eager etn-sw-update and other mishaps
+	RETAIN_FILES="`[ -n "${DOWNLOADED_OS_IMAGE-}" ] && ls -1ad ${DOWNLOADED_OS_IMAGE}*`" \
 	removeold_osimage || ACTION_RESULT=$?
+	if [ -n "${DOWNLOADED_OS_IMAGE-}" ] ; then
+		[ -s "${DOWNLOADED_OS_IMAGE}" ] || { ACTION_RESULT=$? ; logmsg_error "DOWNLOADED_OS_IMAGE='${DOWNLOADED_OS_IMAGE}' is missing after the purge of old images!" ; }
+	fi
 else
 	logmsg_info "Not purging old OS images because ACTION_REMOVEOLD_OSIMAGE=$ACTION_REMOVEOLD_OSIMAGE"
 fi
