@@ -808,6 +808,14 @@ download_rawfwimage_generic() (
     # including padding of "empty" tail of allocated partition data if
     # a not-empty RAW_DEVICE_NODE is passed, or of a file like modules
     # archive if the RAW_DEVICE_NODE is empty.
+    # It does not currently cover OS images that may have also complicated
+    # filename conversions ("flattening") for some legacy project releases.
+    #
+    # If the caller sets CHECK_ONLY=yes and no copy of the remote image is
+    # found on this local system, then the routine just returns code "42"
+    # instead of downloading this detected new image otherwise.
+    # A successful download of an image (consistent non-empty file) is 42 too
+
     local CALLER_ROUTINE="$1" ; shift
     local REPORT_IMAGETYPE="$1" ; shift
     local REFER_NEWEST="$1" ; shift
@@ -1048,7 +1056,8 @@ download_rawfwimage_generic() (
              ;;
     esac
 
-    # Finally check that expected files are all here
+    # Finally check that expected files are all here - and note at this
+    # point it includes the whole CHECKSUM_ALGOLIST_DEFAULT matrix
     # TODO: Verify file size against partition size (flashability after reboot)
     [ -s "${aTGT_FILE}" ] \
         || die "Could not find '${aTGT_FILE}' or it was found empty"
