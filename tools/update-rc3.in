@@ -1556,6 +1556,7 @@ removeold_osimage() (
         || DOWNLOADED_OS_IMAGE=""
     fi
     VICTIMS=0
+    VICTIMPATHS=""
     if [ x"$FLAG_FLATTEN_FILENAMES" = xno ] ; then
         [ -d "./$IMGTYPE/$ARCH" ] && cd "./$IMGTYPE/$ARCH"
         # Alphabetic sort, per timestamps from the builder host
@@ -1575,6 +1576,7 @@ removeold_osimage() (
                 logmsg_info "Removing older $REPORT_IMAGETYPE: '`pwd`/$F' and its checksum(s)"
                 remove_image "$F"
                 VICTIMS=$(($VICTIMS+1))
+                VICTIMPATHS="$VICTIMPATHS $F*"
             fi
         done
     fi
@@ -1596,11 +1598,12 @@ removeold_osimage() (
         else
             remove_image "$F"
             VICTIMS=$(($VICTIMS+1))
+            VICTIMPATHS="$VICTIMPATHS $F*"
         fi
     done
 
     [ "$VICTIMS" -eq 0 ] && logmsg_info "removeold_osimage() had nothing to remove" || \
-        logmsg_info "removeold_osimage() requested to remove $VICTIMS file(s)"
+        logmsg_info "removeold_osimage() requested to remove $VICTIMS file(s): $VICTIMPATHS"
     return 0
 )
 
@@ -1643,15 +1646,17 @@ removeold_rawfwimage_uboot() (
         || DOWNLOADED_FW_UBOOT=""
     fi
     VICTIMS=0
+    VICTIMPATHS=""
     for F in `ls -1d "${DOWNLOADROOTFW_UBOOT}"/u-Boot "${DEPLOYMENTROOTFW_UBOOT}"/u-Boot 2>/dev/null` ; do
         [ -n "$DOWNLOADED_FW_UBOOT" ] && [ -s "$DOWNLOADED_FW_UBOOT" ] && [ "$DOWNLOADED_FW_UBOOT" = "$F" ] && \
             { logmsg_info "Keeping the just-downloaded $REPORT_IMAGETYPE: '$DOWNLOADED_FW_UBOOT'" ; continue ; }
         logmsg_info "Removing older $REPORT_IMAGETYPE: '$F' and its checksum(s)"
         remove_image "$F"
         VICTIMS=$(($VICTIMS+1))
+        VICTIMPATHS="$VICTIMPATHS $F*"
     done
     [ "$VICTIMS" -eq 0 ] && logmsg_info "removeold_rawfwimage_uboot() had nothing to remove" || \
-        logmsg_info "removeold_rawfwimage_uboot() requested to remove $VICTIMS file(s)"
+        logmsg_info "removeold_rawfwimage_uboot() requested to remove $VICTIMS file(s): $VICTIMPATHS"
     return 0
 )
 
@@ -1693,15 +1698,17 @@ removeold_rawfwimage_uimage() (
         || DOWNLOADED_FW_UIMAGE=""
     fi
     VICTIMS=0
+    VICTIMPATHS=""
     for F in `ls -1d "${DOWNLOADROOTFW_UIMAGE}"/uImage "${DEPLOYMENTROOTFW_UIMAGE}"/uImage 2>/dev/null` ; do
         [ -n "$DOWNLOADED_FW_UIMAGE" ] && [ -s "$DOWNLOADED_FW_UIMAGE" ] && [ "$DOWNLOADED_FW_UIMAGE" = "$F" ] && \
             { logmsg_info "Keeping the just-downloaded $REPORT_IMAGETYPE: '$DOWNLOADED_FW_UIMAGE'" ; continue ; }
         logmsg_info "Removing older $REPORT_IMAGETYPE: '`pwd`/$F' and its checksum(s)"
         remove_image "$F"
         VICTIMS=$(($VICTIMS+1))
+        VICTIMPATHS="$VICTIMPATHS $F*"
     done
     [ "$VICTIMS" -eq 0 ] && logmsg_info "removeold_rawfwimage_uimage() had nothing to remove" || \
-        logmsg_info "removeold_rawfwimage_uimage() requested to remove $VICTIMS file(s)"
+        logmsg_info "removeold_rawfwimage_uimage() requested to remove $VICTIMS file(s): $VICTIMPATHS"
     return 0
 )
 
@@ -1768,15 +1775,17 @@ removeold_rawfwimage_modules() (
         || DOWNLOADED_FW_MODULES=""
     fi
     VICTIMS=0
+    VICTIMPATHS=""
     for F in `ls -1d "${DOWNLOADROOTFW_MODULES}"/*[0-9]*.*[0-9]*.${EXT} "${DEPLOYMENTROOTFW_MODULES}"/*[0-9]*.*[0-9]*.${EXT} 2>/dev/null` ; do
         [ -n "$DOWNLOADED_FW_MODULES" ] && [ -s "$DOWNLOADED_FW_MODULES" ] && [ "$DOWNLOADED_FW_MODULES" = "$F" ] && \
             { logmsg_info "Keeping the just-downloaded $REPORT_IMAGETYPE: '$DOWNLOADED_FW_MODULES'" ; continue ; }
         logmsg_info "Removing older $REPORT_IMAGETYPE: '`pwd`/$F' and its checksum(s)"
         remove_image "$F"
         VICTIMS=$(($VICTIMS+1))
+        VICTIMPATHS="$VICTIMPATHS $F*"
     done
     [ "$VICTIMS" -eq 0 ] && logmsg_info "removeold_rawfwimage_modules() had nothing to remove" || \
-        logmsg_info "removeold_rawfwimage_modules() requested to remove $VICTIMS file(s)"
+        logmsg_info "removeold_rawfwimage_modules() requested to remove $VICTIMS file(s): $VICTIMPATHS"
     return 0
 )
 
