@@ -505,6 +505,10 @@ cp /usr/share/fty/examples/config/update-rc3.d/* /etc/update-rc3.d
 # Disable systemd-timesyncd - ntp is enough
 /bin/systemctl mask systemd-timesyncd.service
 
+# XXX: On Debian 10, systemd-time-wait-sync.service blocks our ecosystem jobs
+# from starting for unknown reasons. Work around it by masking it.
+/bin/systemctl mask systemd-time-wait-sync.service
+
 # Enable ssh
 rm /etc/init.d/ssh*
 echo "UseDNS no" >> /etc/ssh/sshd_config
