@@ -9,6 +9,7 @@ Type=simple
 Restart=always
 User=root
 Group=root
+UMask=0000
 EnvironmentFile=-@prefix@/share/bios/etc/default/bios
 EnvironmentFile=-@prefix@/share/bios/etc/default/bios__%n.conf
 EnvironmentFile=-@prefix@/share/fty/etc/default/fty
