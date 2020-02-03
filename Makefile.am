@@ -238,6 +238,7 @@ ipc_meta_setupdir = $(datadir)/@PACKAGE@/setup/
 ipc_meta_setup_SCRIPTS = \
 	$(top_srcdir)/setup/01-bios-eula.sh \
 	$(top_srcdir)/setup/10-bios-gpio.sh \
+	$(top_srcdir)/setup/11-forget-bios-devsvcs-1.sh \
 	$(top_srcdir)/setup/15-dpkg-database.everytime.sh \
 	$(top_srcdir)/setup/16-machineid-dir.everytime.sh \
 	$(top_srcdir)/setup/17-proxy-file.everytime.sh \
@@ -251,6 +252,7 @@ ipc_meta_setup_SCRIPTS = \
 EXTRA_DIST += \
 	$(top_srcdir)/setup/01-bios-eula.sh \
 	$(top_srcdir)/setup/10-bios-gpio.sh \
+	$(top_srcdir)/setup/11-forget-bios-devsvcs-1.sh \
 	$(top_srcdir)/setup/15-dpkg-database.everytime.sh \
 	$(top_srcdir)/setup/16-machineid-dir.everytime.sh \
 	$(top_srcdir)/setup/17-proxy-file.everytime.sh \
@@ -322,8 +324,7 @@ SYSTEMD_UNITS_EXTRA += \
 # And also some of the timer units and implementations below
 SYSTEMD_UNITS_TARGET_BIOS += \
                         fty-db-engine.service \
-                        fty-db-init.service \
-                        bios-agent-inventory.service
+                        fty-db-init.service
 
 # Here we list the actual service-definition files that should be compiled
 # Enabled as part of 42ity presets
@@ -339,8 +340,7 @@ SYSTEMD_UNITS_NOTPRESET_LOWLEVEL += \
 
 SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS += \
                         fty-envvars.service \
-                        fty-tntnet@.service \
-                        bios-fake-th.service
+                        fty-tntnet@.service
 
 SYSTEMD_UNITS_NOTPRESET += $(SYSTEMD_UNITS_NOTPRESET_LOWLEVEL) $(SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS)
 
