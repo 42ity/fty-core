@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# Copyright (C) 2015 Eaton
+# Copyright (C) 2015 - 2020 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 
 #! \file verify-fs.sh
 #  \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \brief Verify the filesystem and report suspicious things
 #
 
@@ -82,8 +83,26 @@ EOF
 pushd "${IMAGES}" >/dev/null
 for ROOTFS in *.squashfs; do
 
-    /usr/bin/md5sum -c "${ROOTFS}.md5" 2>/dev/null || \
-        log "Bad integrity of ${ROOTFS}, checksum is not valid"
+    if [ -s "${ROOTFS}.md5" ] ; then
+        /usr/bin/md5sum -c "${ROOTFS}.md5" 2>/dev/null || \
+            log "Bad integrity of ${ROOTFS}, MD5 checksum is not valid"
+    else
+        log "Missing MD5 checksum file: '${ROOTFS}.md5'"
+    fi
+
+    if [ -s "${ROOTFS}.sha256" ] ; then
+        /usr/bin/sha256sum -c "${ROOTFS}.sha256" 2>/dev/null || \
+            log "Bad integrity of ${ROOTFS}, SHA256 checksum is not valid"
+    else
+        log "Missing SHA256 checksum file: '${ROOTFS}.sha256'"
+    fi
+
+    if [ -s "${ROOTFS}.cksum" ] ; then
+        /usr/bin/cksum -c "${ROOTFS}.cksum" 2>/dev/null || \
+            log "Bad integrity of ${ROOTFS}, CRC/cksum checksum is not valid"
+    else
+        log "Missing CRC/cksum checksum file: '${ROOTFS}.cksum'"
+    fi
 
 done
 popd >/dev/null
