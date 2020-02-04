@@ -874,8 +874,8 @@ download_rawfwimage_generic() (
     esac
 
     [ -n "$IMAGE_URL" ] && \
-    rIMAGE_URL_BASENAME="`basename "$IMAGE_URL"`" && \
-        [ -n "$rIMAGE_URL_BASENAME" ] || \
+    rIMAGE_URL_BASENAME="`basename "${IMAGE_URL}"`" && \
+        [ -n "${rIMAGE_URL_BASENAME}" ] || \
         die "Can not find the remote image URL"
 
     # TODO: Currently hardcoded for md5 accompanying checksums only
