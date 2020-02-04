@@ -1,7 +1,7 @@
 #!/bin/bash
 # WARNING: bash syntax and capabilities are used intensively in code below!
 #
-# Copyright (C) 2015-2018 Eaton
+# Copyright (C) 2015-2020 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -76,7 +76,7 @@ SYSTEMCTL_UNITS_COMMON_EXTERNAL="mariadb mysql mysqld                   \
 # SYSTEMCTL_UNITS_COMMON_INTERNAL lists the services delivered by our project
 # TODO: legacy-metrics will be removed, drop it there
 SYSTEMCTL_UNITS_COMMON_INTERNAL="bios tntnet@bios fty-outage fty-metric-store   \
-                                fty-tntnet@bios fty-envvars                     \
+                                fty-tntnet@bios fty-envvars fty-hostname-setup  \
                                 fty-license-accepted fty-db-init fty-db-engine  \
                                 fty-kpi-power-uptime fty-alert-list fty-asset   \
                                 fty-metric-store-cleaner fty-alert-engine       \
