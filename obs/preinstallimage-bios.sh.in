@@ -106,6 +106,8 @@ passwd admin <<EOF
 admin
 admin
 EOF
+# Force the admin user to change password at this first login
+chage -d 0 admin
 mkdir -p /home/admin && chown admin:bios-admin /home/admin
 
 # add an access to bios-logread (for /var/log/messages) to webserver
