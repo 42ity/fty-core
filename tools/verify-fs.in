@@ -21,6 +21,7 @@
 #! \file verify-fs.sh
 #  \author Michal Vyskocil <MichalVyskocil@Eaton.com>
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \author Clement Perrette <ClementPerrette@Eaton.com>
 #  \brief Verify the filesystem and report suspicious things
 #
 
@@ -84,22 +85,31 @@ pushd "${IMAGES}" >/dev/null
 for ROOTFS in *.squashfs; do
 
     if [ -s "${ROOTFS}.md5" ] ; then
-        /usr/bin/md5sum -c "${ROOTFS}.md5" 2>/dev/null || \
+        if [ /usr/bin/md5sum -c "${ROOTFS}.md5" 2>/dev/null ] ; then
+            log "Good integrity of ${ROOTFS}, MD5 checksum is valid"
+        else
             log "Bad integrity of ${ROOTFS}, MD5 checksum is not valid"
+        fi
     else
         log "Missing MD5 checksum file: '${ROOTFS}.md5'"
     fi
 
     if [ -s "${ROOTFS}.sha256" ] ; then
-        /usr/bin/sha256sum -c "${ROOTFS}.sha256" 2>/dev/null || \
+        if [ /usr/bin/sha256sum -c "${ROOTFS}.sha256" 2>/dev/null ] ; then
+            log "Good integrity of ${ROOTFS}, SHA256 checksum is valid"
+        else
             log "Bad integrity of ${ROOTFS}, SHA256 checksum is not valid"
+        fi
     else
         log "Missing SHA256 checksum file: '${ROOTFS}.sha256'"
     fi
 
     if [ -s "${ROOTFS}.cksum" ] ; then
-        /usr/bin/cksum -c "${ROOTFS}.cksum" 2>/dev/null || \
+        if [ /usr/bin/cksum -c "${ROOTFS}.cksum" 2>/dev/null ] ; then
+            log "Good integrity of ${ROOTFS}, CRC/cksum checksum is valid"
+        else
             log "Bad integrity of ${ROOTFS}, CRC/cksum checksum is not valid"
+        fi
     else
         log "Missing CRC/cksum checksum file: '${ROOTFS}.cksum'"
     fi
@@ -112,6 +122,7 @@ if tty -s; then
 else
     interactive=false
 fi
+
 ## 2.) Verify the overlayfs
 cat_default | while read LINE; do
     TREE=${LINE%%:*}
