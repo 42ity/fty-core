@@ -111,6 +111,10 @@ mkdir -p /home/admin && chown admin:bios-admin /home/admin
 # add an access to bios-logread (for /var/log/messages) to webserver
 usermod -G bios-logread -a www-data
 
+# add an access to systemd-journal (for systemctl and
+# /var/log/journal files access) to webserver. See fty-rest getlog api.
+usermod -G systemd-journal -a www-data
+
 # add an access to sasl for bios
 usermod -G "${SASL_GROUP}" -a bios
 
@@ -141,10 +145,18 @@ if [ -d /var/lib/bios ]; then
         mv /var/lib/bios /var/lib/fty
     fi
 fi
-mkdir -p /var/lib/fty
-# webserver needs to store license file, currently in root of /var/lib/fty
-chown www-data /var/lib/fty
-# Legacy link just in case
+
+# webserver needs to store license file, earlier this was in root
+# of /var/lib/fty but now systemd prohibits lax filesystem rights
+# for directories managed with tmpfiles. Sync with 01-bios-eula.sh
+mkdir -p /var/lib/fty/fty-eula
+chown www-data:sasl /var/lib/fty/fty-eula
+chown 0:0 /var/lib/fty
+chmod 755 /var/lib/fty /var/lib/fty/fty-eula
+# Leave a link to EULA file for not-yet-updated consumers
+ln -fs ./fty-eula/license /var/lib/fty/license
+
+# Legacy link to /var/lib/bios just in case
 # TODO: Verify on a rack controller that this can be overlaid by existing
 # directories (from older-version installations).
 ln -sfr /var/lib/fty /var/lib/bios
@@ -221,7 +233,7 @@ for D in /usr/libexec /usr/lib /usr/share ; do
     done
 done
 
-#42ity log configuration file 
+#42ity log configuration file
 mkdir -p /etc/fty/
 cp /usr/share/fty/examples/config/ftylog.d/10-ftylog.cfg /etc/fty/ftylog.cfg
 cp /usr/share/fty/examples/config/ftylog.d/20-wwwlog.cfg /etc/fty/wwwlog.cfg
@@ -238,7 +250,7 @@ chmod 700 /usr/libexec/fty/disable-root-account
 
 # Setup 42ity lenses
 mkdir -p /usr/share/fty/lenses
-ln -sr /usr/share/augeas/lenses/dist/{build,ethers,interfaces,ntp,ntpd,pam,resolv,rx,sep,util,shellvars}.aug \
+ln -sr /usr/share/augeas/lenses/dist/{build,ethers,interfaces,ntp,ntpd,pam,resolv,rx,sep,util,shellvars,quote}.aug \
     /usr/share/fty/lenses
 
 # Setup u-Boot
@@ -251,6 +263,17 @@ sed -e 's|.*RuntimeMaxFileSize.*|RuntimeMaxFileSize=10M|' \
     -e 's|.*Storage.*|Storage=volatile|' \
     -e 's|.*SyncIntervalSec.*|SyncIntervalSec=1s|' \
     -i /etc/systemd/journald.conf
+
+if [ "`uname -m`" = x86_64 ]; then
+    # journald persistency setup (SyncIntervalSec enlarged)
+    # see below 'MaxLevelStore' non-devel setting
+
+    sed -e 's|.*Storage.*|Storage=persistent|' \
+        -e 's|.*SystemMaxUse.*|SystemMaxUse=300M|' \
+        -e 's|.*SystemMaxFileSize.*|SystemMaxFileSize=10M|' \
+        -e 's|.*SyncIntervalSec.*|SyncIntervalSec=2s|' \
+        -i /etc/systemd/journald.conf
+fi
 
 # rsyslogd setup
 mkdir -p /etc/rsyslog.d /etc/rsyslog.d-early /var/spool/rsyslog
@@ -481,7 +504,7 @@ echo "UseDNS no" >> /etc/ssh/sshd_config
 rm /etc/ssh/*key*
 mkdir -p /etc/systemd/system
 sed 's|\[Service\]|[Service]\nExecStartPre=/usr/bin/ssh-keygen -A|' /lib*/systemd/system/ssh@.service > /etc/systemd/system/ssh@.service
-sed -i 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/fty/license\nConditionPathExists=@OVERLAY_PATH@/etc/shadow|' /etc/systemd/system/ssh@.service
+sed -i 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/fty/fty-eula/license\nConditionPathExists=@OVERLAY_PATH@/etc/shadow|' /etc/systemd/system/ssh@.service
 /bin/systemctl disable ssh.service
 /bin/systemctl mask ssh.service
 /bin/systemctl enable ssh.socket
@@ -502,6 +525,19 @@ cp /usr/share/fty/examples/config/malamute/malamute.cfg /etc/malamute
 /bin/systemctl enable malamute
 
 # Enable 42ity services (distributed as a systemd preset file)
+if [ "${OSIMAGE_DISTRO}" = "Debian_10.0" ]; then
+    /bin/systemctl disable mysql.service || true
+    /bin/systemctl disable mysqld.service || true
+    /bin/systemctl disable mariadb.service || true
+    /bin/systemctl disable mariadb@bootstrap.service || true
+    /bin/systemctl mask mysql.service || true
+    /bin/systemctl mask mysqld.service || true
+    /bin/systemctl mask mariadb.service || true
+    /bin/systemctl mask mariadb@bootstrap.service || true
+    mv -f /lib/systemd/system/mariadb@.service /lib/systemd/system/mariadb@.service.orig || true
+    mv -f /lib/systemd/system/mariadb.service /lib/systemd/system/mariadb.service.orig || true
+fi
+
 /bin/systemctl preset-all
 if [ "`uname -m`" = x86_64 ]; then
     /bin/systemctl disable lcd-boot-display || true
@@ -668,7 +704,7 @@ case "$IMGTYPE" in
     *devel*)
         echo "BIOS_LOG_LEVEL=LOG_DEBUG" > /usr/share/fty/etc/default/fty
         echo "BIOS_NUT_USE_DMF=true" >> /usr/share/fty/etc/default/fty
-        sed -i "s|INFO|DEBUG|g" /etc/fty/ftylog.cfg 
+        sed -i "s|rootLogger=INFO|rootLogger=DEBUG|g" /etc/fty/ftylog.cfg
         ;;
     *)
         echo "BIOS_LOG_LEVEL=LOG_INFO" > /usr/share/fty/etc/default/fty
@@ -711,7 +747,7 @@ EOF
 # TODO: revise the list of 42ity services here
 if [ -f /usr/bin/zabbix_agent ]; then
 for i in mysql tntnet@bios malamute \
-    bios-db bios-agent-inventory bios-agent-nut bios-driver-netmon \
+    bios-db bios-agent-nut bios-driver-netmon \
     nut-driver nut-monitor systemd-journald \
 ; do
    find /lib /usr -name "$i".service | while read file; do
@@ -904,6 +940,14 @@ cat > /etc/default/ip6tables <<[eof]
 -A OUTPUT -j ACCEPT
 COMMIT
 [eof]
+
+# Accept tcp port 5005 for devel image (append files)
+case "$IMGTYPE" in
+    *devel*)
+        sed -i '/tcp --dport 4222/a\-A INPUT -p tcp -m tcp --dport 5005 -j ACCEPT' /etc/default/iptables
+        sed -i '/tcp --dport 4222/a\-A INPUT -p tcp -m tcp --dport 5005 -j ACCEPT' /etc/default/ip6tables
+        ;;
+esac
 
 # install iptables filtering end
 #########################################################################

@@ -44,7 +44,7 @@ SERVICES_EXT="malamute"
 
 # Regex of services for which systemctl must say 'Action not allowed'
 [ -z "${MUST_FILTER-}" ] && \
-    MUST_FILTER='^(bios-fake-th|bios-ssh-last-resort|biostimer-compress-logs|biostimer-verify-fs|ifplug-dhcp-autoconf|ipc-meta-setup)(|\.service|\.timer)$'
+    MUST_FILTER='^(bios-ssh-last-resort|biostimer-compress-logs|biostimer-verify-fs|ifplug-dhcp-autoconf|ipc-meta-setup)(|\.service|\.timer)$'
 
 while [ $# -gt 0 ] ; do
     case "${1}" in

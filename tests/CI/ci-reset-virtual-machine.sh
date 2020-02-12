@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2014-2019 Eaton
+# Copyright (C) 2014-2020 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -164,13 +164,73 @@ check_md5sum() {
 		MD5EXP="`awk '{print $1}' < "$FILE_CKSUM"`"
 		MD5ACT="`md5sum < "$FILE_DATA" | awk '{print $1}'`" && \
 		if [ x"$MD5EXP" != x"$MD5ACT" ]; then
-			logmsg_error "Checksum validation of '$FILE_DATA' against '$FILE_CKSUM' FAILED!"
+			logmsg_error "Checksum (MD5) validation of '$FILE_DATA' against '$FILE_CKSUM' FAILED!"
 			return 1
 		fi
-		logmsg_info "Checksum validation of '$FILE_DATA' against '$FILE_CKSUM' SUCCEEDED!"
+		logmsg_info "Checksum (MD5) validation of '$FILE_DATA' against '$FILE_CKSUM' SUCCEEDED!"
 		return 0
 	fi
-	logmsg_warn "Checksum validation of '$FILE_DATA' against '$FILE_CKSUM' SKIPPED (at least one of the files is missing or empty)"
+	logmsg_warn "Checksum (MD5) validation of '$FILE_DATA' against '$FILE_CKSUM' SKIPPED (at least one of the files is missing or empty)"
+	return 0
+}
+
+check_sha256sum() {
+	# Compares actual checksum of file "$1" with value recorded in file "$2"
+	FILE_DATA="$1"
+	FILE_CKSUM="$2"
+	case "$FILE_DATA" in
+		/*) ;;
+		*) FILE_DATA="`pwd`/$FILE_DATA" ;;
+	esac
+	case "$FILE_CKSUM" in
+		/*) ;;
+		*) FILE_CKSUM="`pwd`/$FILE_CKSUM" ;;
+	esac
+	if [ -s "$FILE_DATA" -a -s "$FILE_CKSUM" ]; then
+		logmsg_info "Validating OS image file '$FILE_DATA' against its SHA256 checksum '$FILE_CKSUM'..."
+		SHA256EXP="`awk '{print $1}' < "$FILE_CKSUM"`"
+		SHA256ACT="`sha256sum < "$FILE_DATA" | awk '{print $1}'`" && \
+		if [ x"$SHA256EXP" != x"$SHA256ACT" ]; then
+			logmsg_error "Checksum (SHA256) validation of '$FILE_DATA' against '$FILE_CKSUM' FAILED!"
+			return 1
+		fi
+		logmsg_info "Checksum (SHA256) validation of '$FILE_DATA' against '$FILE_CKSUM' SUCCEEDED!"
+		return 0
+	fi
+	logmsg_warn "Checksum (SHA256) validation of '$FILE_DATA' against '$FILE_CKSUM' SKIPPED (at least one of the files is missing or empty)"
+	return 0
+}
+
+check_sha256sum() {
+	# Compares actual checksum of file "$1" with value recorded in file "$2"
+	FILE_DATA="$1"
+	FILE_CKSUM="$2"
+	case "$FILE_DATA" in
+		/*) ;;
+		*) FILE_DATA="`pwd`/$FILE_DATA" ;;
+	esac
+	case "$FILE_CKSUM" in
+		/*) ;;
+		*) FILE_CKSUM="`pwd`/$FILE_CKSUM" ;;
+	esac
+	if [ -s "$FILE_DATA" -a -s "$FILE_CKSUM" ]; then
+		logmsg_info "Validating OS image file '$FILE_DATA' against its CRC/cksum checksum '$FILE_CKSUM'..."
+		LENEXP="`awk '{print $2}' < "$FILE_CKSUM"`"
+		LENACT="`ls -lad "$FILE_DATA" | awk '{print $5}'`"
+		if [ x"$LENEXP" != x"$LENACT" ]; then
+			logmsg_error "Checksum (CRC/cksum) validation of '$FILE_DATA' against '$FILE_CKSUM' FAILED the length test!"
+			return 1
+		fi
+		CRCEXP="`awk '{print $1}' < "$FILE_CKSUM"`"
+		CRCACT="`cksum < "$FILE_DATA" | awk '{print $1}'`" && \
+		if [ x"$CRCEXP" != x"$CRCACT" ]; then
+			logmsg_error "Checksum (CRC/cksum) validation of '$FILE_DATA' against '$FILE_CKSUM' FAILED!"
+			return 1
+		fi
+		logmsg_info "Checksum (CRC/cksum) validation of '$FILE_DATA' against '$FILE_CKSUM' SUCCEEDED!"
+		return 0
+	fi
+	logmsg_warn "Checksum (CRC/cksum) validation of '$FILE_DATA' against '$FILE_CKSUM' SKIPPED (at least one of the files is missing or empty)"
 	return 0
 }
 
@@ -178,10 +238,57 @@ ensure_md5sum() {
 	# A destructive wrapper of check_md5sum(), destroys bad downloads
 	if ! check_md5sum "$@" ; then
 		logmsg_warn "Removing broken file: '$1'"
-		rm -f "$1" "$1.md5" "$2"
+		rm -f "$1" "$1.md5" "$1.sha256" "$1.cksum" "$2"
 		return 1
 	fi
 	return 0
+}
+
+ensure_sha256sum() {
+	# A destructive wrapper of check_sha256sum(), destroys bad downloads
+	if ! check_sha256sum "$@" ; then
+		logmsg_warn "Removing broken file: '$1'"
+		rm -f "$1" "$1.md5" "$1.sha256" "$1.cksum" "$2"
+		return 1
+	fi
+	return 0
+}
+
+ensure_cksum() {
+	# A destructive wrapper of check_cksum(), destroys bad downloads
+	if ! check_cksum "$@" ; then
+		logmsg_warn "Removing broken file: '$1'"
+		rm -f "$1" "$1.md5" "$1.sha256" "$1.cksum" "$2"
+		return 1
+	fi
+	return 0
+}
+
+ensure_checksums() {
+	# A destructive wrapper of check_*() above for different checksum files
+	# destroys bad downloads
+	RET_ensure_checksums=0
+	for F in "$@" ; do
+		case "$F" in
+			*.md5|*.sha256|*.cksum) ;; # Skip legacy args
+			*) # Start with cksum as it filters out bad-size downloads quickly
+				if ! check_cksum "$F" "$F.cksum" \
+				|| ! check_md5sum "$F" "$F.md5" \
+				|| ! check_sha256sum "$F" "$F.sha256" \
+				; then
+					if [ "$KEEP_CHECKSUMS" = yes ]; then
+						logmsg_warn "Removing broken file: '$F' only"
+						rm -f "$F"
+					else
+						logmsg_warn "Removing broken file: '$F' and its checksums"
+						rm -f "$F" "$F.md5" "$F.sha256" "$F.cksum"
+					fi
+					RET_ensure_checksums=1
+				fi
+				;;
+		esac
+	done
+	return $RET_ensure_checksums
 }
 
 cleanup_script() {
@@ -199,7 +306,7 @@ cleanup_script() {
 
 cleanup_wget() {
 	[ -z "$IMAGE" ] && return 0
-	[ "$WGET_RES" != 0 ] && rm -f "$IMAGE" "$IMAGE.md5"
+	[ "$WGET_RES" != 0 ] && rm -f "$IMAGE" "$IMAGE.md5" "$IMAGE.sha256" "$IMAGE.cksum"
 	rm -f "$IMAGE.lock"
 }
 
@@ -535,7 +642,7 @@ if [ -n "$VM" ] && [ -s "`pwd`/$VM.config-reset-vm" ]; then
 fi
 
 # Sanity checks and auto-values processing after config import
-[ "$START_RETRIES" -gt 1 ] || die "Bad value provided for START_RETRIES='$START_RETRIES'"
+[ "$START_RETRIES" -ge 1 ] || die "Bad value provided for START_RETRIES='$START_RETRIES'"
 
 [ x"$INSTALL_DEV_PKGS" = xauto ] && \
 case "$IMGTYPE" in
@@ -678,7 +785,7 @@ if [ "$ATTEMPT_DOWNLOAD" != no ] ; then
 	IMAGE_URL="`wget -O - "$OBS_IMAGES/${OSIMAGE_DISTRO}/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}/" 2> /dev/null | sed -n 's|.*href="\(.*'"${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}"'\.'"$EXT"'\)".*|'"$OBS_IMAGES/${OSIMAGE_DISTRO}/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}"'/\1|p' | sed 's,\([^:]\)//,\1/,g' | sort_osimage_names | tail -n 1`"
 	[ $? = 0 ] && [ -n "$IMAGE_URL" ] || die "Could not detect remote IMAGE_URL at '$OBS_IMAGES/${OSIMAGE_DISTRO}/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}/' (looking for regex '${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}')!"
 	IMAGE="`basename "$IMAGE_URL"`"
-	[ $? = 0 ] && [ -n "$IMAGE" ] || die "Could not detect remote IMAGE_URL at '$OBS_IMAGES/${OSIMAGE_DISTRO}/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}/' (looking for regex '${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}')!"
+	[ $? = 0 ] && [ -n "$IMAGE" ] || die "Could not detect IMAGE from remote IMAGE_URL at '$OBS_IMAGES/${OSIMAGE_DISTRO}/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}${ARCH}/' (looking for regex '${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}')!"
 
 	if [ "$ATTEMPT_DOWNLOAD" = pretend ] ; then
 		logmsg_info "Detected '$IMAGE_URL' as the newest available remote OS image for IMGTYPE='$IMGTYPE' and IMGQALEVEL='$IMGQALEVEL'"
@@ -721,7 +828,7 @@ if [ "$ATTEMPT_DOWNLOAD" != no ] ; then
 	done
 
 	if [ "$NUM" = 0 ] || [ -f "$IMAGE.lock" ] ; then
-		# TODO: Skip over $IMAGE.md5 verification and use the second-newest file
+		# TODO: Skip over $IMAGE.md5 etc. verification and use the second-newest file
 		logmsg_error "Still locked out of downloading '$IMAGE'"
 		case "$ATTEMPT_DOWNLOAD" in
 			yes) die "Can not download, so bailing out" ;;
@@ -741,37 +848,47 @@ if [ "$ATTEMPT_DOWNLOAD" = yes ] || [ "$ATTEMPT_DOWNLOAD" = auto ] ; then
 
 	settraps 'cleanup_wget; cleanup_script;'
 
-	logmsg_info "Downloading $IMAGE_URL.md5 ..."
+	logmsg_info "Downloading $IMAGE_URL.md5 for VM '${VM}'..."
 	wget -q "$IMAGE_URL.md5" -O "$IMAGE.md5.__WRITING__" \
 		&& mv -f "$IMAGE.md5.__WRITING__" "$IMAGE.md5" || true
+	logmsg_info "Downloading $IMAGE_URL.sha256 ..."
+	wget -q "$IMAGE_URL.sha256" -O "$IMAGE.sha256.__WRITING__" \
+		&& mv -f "$IMAGE.sha256.__WRITING__" "$IMAGE.sha256" || true
+	logmsg_info "Downloading $IMAGE_URL.cksum ..."
+	wget -q "$IMAGE_URL.cksum" -O "$IMAGE.cksum.__WRITING__" \
+		&& mv -f "$IMAGE.cksum.__WRITING__" "$IMAGE.cksum" || true
+
 	TRY_WGET=yes
 	if [ -s "$IMAGE" ] ; then
-		if ensure_md5sum "$IMAGE" "$IMAGE.md5" ; then
+		if KEEP_CHECKSUMS=yes ensure_checksums "$IMAGE" ; then
 			# File is present and up-to-date
 			TRY_WGET=no
 			WGET_RES=0
 		fi
+		# else old image file is deleted on error but freshly fetched checksums are kept
 	fi
+
 	if [ "$TRY_WGET" = yes ] ; then
-		logmsg_info "Downloading $IMAGE_URL ..."
+		logmsg_info "Downloading $IMAGE_URL for VM '${VM}'..."
 		wget -q -c "$IMAGE_URL" -O "$IMAGE.__WRITING__" \
 			&& mv -f "$IMAGE.__WRITING__" "$IMAGE"
 		WGET_RES=$?
-		logmsg_info "Download completed with exit-code: $WGET_RES"
-		if ! ensure_md5sum "$IMAGE" "$IMAGE.md5" ; then
+		logmsg_info "Download for VM '${VM}' completed with exit-code: $WGET_RES"
+		if ! ensure_checksums "$IMAGE" ; then
+			# Newly fetched image and cksum files deleted on error
 			IMAGE=""
 			WGET_RES=127
 		fi
 	fi
 	[ "$WGET_RES" = 0 ] || \
 		logmsg_error "Failed to get the latest image file name from OBS" \
-			"(subsequent VM startup can use a previously downloaded image, however)"
+			"(subsequent VM '$VM' startup can use a previously downloaded image, however)"
 	unset TRY_WGET
 	sync
 	cleanup_wget
 	settraps 'cleanup_script;'
 else
-	logmsg_info "Not even trying to download a new OS image at this moment (ATTEMPT_DOWNLOAD=$ATTEMPT_DOWNLOAD)"
+	logmsg_info "Not even trying to download a new OS image for VM '${VM}' at this moment (ATTEMPT_DOWNLOAD=$ATTEMPT_DOWNLOAD)"
 fi
 
 if [ x"$DOWNLOADONLY" = xyes ]; then
@@ -808,7 +925,7 @@ else
 			else
 				IMAGE="`ls -1 "${IMGTYPE}/${IMGQALEVEL}/${ARCH}/${OSIMAGE_DISTRO}"/*.$EXT | sort -r | grep -v "$IMAGE_SKIP" | head -n 1`"
 			fi
-			ensure_md5sum "$IMAGE" "$IMAGE.md5" || IMAGE=""
+			ensure_checksums "$IMAGE" || IMAGE=""
 		done
 	fi
 	IMAGE_FLAT="`basename "$IMAGE" .$EXT`_${IMGTYPE}_${ARCH}_${IMGQALEVEL}.$EXT"
@@ -1150,9 +1267,21 @@ case "$IMAGE" in
 esac
 OSIMAGE_LSINFO="`ls -lad "$OSIMAGE_FILENAME"`" || OSIMAGE_LSINFO=""
 if [ -s "$OSIMAGE_FILENAME.md5" ]; then
-	OSIMAGE_CKSUM="`cat "$OSIMAGE_FILENAME.md5" | awk '{print $1}'`"
+	OSIMAGE_CHECKSUM_MD5="`cat "$OSIMAGE_FILENAME.md5" | awk '{print $1}'`"
 else
-	OSIMAGE_CKSUM="`md5sum < "$OSIMAGE_FILENAME" | awk '{print $1}'`"
+	OSIMAGE_CHECKSUM_MD5="`md5sum < "$OSIMAGE_FILENAME" | awk '{print $1}'`"
+fi
+# Legacy field now
+OSIMAGE_CKSUM="$OSIMAGE_CHECKSUM_MD5"
+if [ -s "$OSIMAGE_FILENAME.sha256" ]; then
+	OSIMAGE_CHECKSUM_SHA256="`cat "$OSIMAGE_FILENAME.sha256" | awk '{print $1}'`"
+else
+	OSIMAGE_CHECKSUM_SHA256="`sha256sum < "$OSIMAGE_FILENAME" | awk '{print $1}'`"
+fi
+if [ -s "$OSIMAGE_FILENAME.cksum" ]; then
+	OSIMAGE_CHECKSUM_CKSUM="`cat "$OSIMAGE_FILENAME.cksum" | awk '{print $1}'`"
+else
+	OSIMAGE_CHECKSUM_CKSUM="`cksum < "$OSIMAGE_FILENAME" | awk '{print $1}'`"
 fi
 
 logmsg_info "Bind-mount kernel modules from the host OS"
@@ -1477,6 +1606,7 @@ if [ -n "${GEN_REL_DETAILS}" -a -s "${GEN_REL_DETAILS}" -a -x "${GEN_REL_DETAILS
 ]; then (
 	export ALTROOT
 	export OSIMAGE_FILENAME OSIMAGE_LSINFO OSIMAGE_CKSUM
+	export OSIMAGE_CHECKSUM_MD5 OSIMAGE_CHECKSUM_SHA256 OSIMAGE_CHECKSUM_CKSUM
 	# Note: The variables below are not populated on non-target hardware
 	# But for tests they might be set in e.g. the container custom config
 	# file like  /srv/libvirt/rootfs/bios-deploy.config-reset-vm

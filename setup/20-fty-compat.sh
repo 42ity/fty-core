@@ -159,8 +159,10 @@ mvlndir /var/lib/fty/nut /var/lib/fty/fty-nut
 mvln /etc/bios /etc/fty
 mvln /etc/pam.d/bios /etc/pam.d/fty
 mvln /usr/libexec/bios /usr/libexec/fty
-mvln /var/lib/bios/license /var/lib/fty/license
-chown www-data:sasl /var/lib/fty/license /var/lib/fty
+mvln /var/lib/bios/license /var/lib/fty/fty-eula/license
+mvln /var/lib/fty/license /var/lib/fty/fty-eula/license
+chown www-data:sasl /var/lib/fty/fty-eula/license /var/lib/fty/fty-eula
+chown 0:0 /var/lib/fty
 
 # Note: currently we do want to keep tntnet@bios, which relies on old pathnames
 #mvln /etc/tntnet/bios.d /etc/tntnet/fty.d

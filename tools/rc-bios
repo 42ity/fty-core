@@ -42,7 +42,7 @@ BASE_PATH=`realpath ${BASE_PATH}/../`
 ### System-provided daemons (available as systemd units)
 DAEMONS_OS_SYSTEMD="malamute nut-client nut-driver nut-monitor mysql saslauthd"
 ### 42ity-provided daemons (available as systemd units)
-DAEMONS_OUR_SYSTEMD="tntnet@bios bios-agent-inventory bios-agent-alert bios-agent-alert-smtp bios-agent-cm"
+DAEMONS_OUR_SYSTEMD="tntnet@bios bios-agent-alert bios-agent-alert-smtp bios-agent-cm"
 
 # Simple check for whether sudo is needed for high-privilege tasks
 # We assume here that the non-privileged user running this command

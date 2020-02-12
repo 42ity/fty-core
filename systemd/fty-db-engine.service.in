@@ -27,7 +27,7 @@ TimeoutStopSec=100
 ExecStartPre=/bin/dash -c "for S in mysql.service mysqld.service mariadb.service ; do for A in stop disable mask ; do /bin/systemctl $A $S || true ; done; done"
 # Hack to work around systemd deficiencies, where fty-license-accepted.path+service are not enough
 # Better ugly than sorry (with DB beginning to start, then getting killed by newly realized dependency unit states, and ending up with corrupted DB files rarely)
-ExecStartPre=/bin/dash -c "test -f /var/lib/fty/license"
+ExecStartPre=/bin/dash -c "test -f /var/lib/fty/fty-eula/license"
 ExecStartPre=/bin/dash -c "if [ -d /var/lib/mysql ] ; then /bin/chown -R mysql:mysql /var/lib/mysql ; fi"
 # If the database begins starting and systemd decides it should not,
 # cache the request to stop if possible and only do so after starting -

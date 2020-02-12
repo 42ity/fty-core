@@ -18,6 +18,8 @@ if [ "$BUILD_TYPE" == "default" ]; then
     cd dist
     md5sum *.zip *.tar.gz > MD5SUMS
     sha1sum *.zip *.tar.gz > SHA1SUMS
+    sha256sum *.zip *.tar.gz > SHA256SUMS
+    cksum *.zip *.tar.gz > CKSUMS
     cd -
 elif [ "$BUILD_TYPE" == "bindings" ] && [ "$BINDING" == "jni" ]; then
     ( cd bindings/jni && TERM=dumb PKG_CONFIG_PATH=/tmp/lib/pkgconfig ./gradlew clean bintrayUpload )
