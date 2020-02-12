@@ -35,12 +35,18 @@ NTP_DHCP_CONF=/var/lib/ntp/ntp.conf.dhcp
 # on data received (or not) from DHCP.
 # TODO: Differentiate somehow if the user also wanted a specific NTP
 # server vs. one received from DHCP?
-NTP_SYSTEMD_ENABLED="`/bin/systemctl is-enabled ntpd`" || \
-if [ $? != 1 -o -z "$NTP_SYSTEMD_ENABLED" ]; then
-    NTP_SYSTEMD_ENABLED="unknown"
-fi
+NTP_SYSTEMD_NAME=""
+{ NTP_SYSTEMD_ENABLED="`/bin/systemctl is-enabled ntpd 2>/dev/null`" && NTP_SYSTEMD_NAME="ntpd" ; } \
+|| { NTP_SYSTEMD_ENABLED="`/bin/systemctl is-enabled ntp 2>/dev/null`" && NTP_SYSTEMD_NAME="ntp" ; } \
+||  if [ $? != 1 -o -z "$NTP_SYSTEMD_ENABLED" ]; then
+        NTP_SYSTEMD_ENABLED="unknown"
+    fi
 
 can_manipulate_ntpd() {
+	if [ -z "$NTP_SYSTEMD_NAME" ] ; then
+	    echo "$0: WARN: The NTP service unit name could not be determined so the DHCP hook will not manipulate it" >&2
+	    return 1
+	fi
 	case "$NTP_SYSTEMD_ENABLED" in
 	    mask*|disabl*)
 	        echo "$0: WARN: The NTP service unit status is currently $NTP_SYSTEMD_ENABLED so the DHCP hook will not manipulate it" >&2
@@ -59,33 +65,20 @@ hostname_setup() {
         bound|renew|BOUND|RENEW|REBIND|REBOOT)
             ;;
         *)
-            echo "$0: WARN: hostname_setup got an unexpected reason '$reason'"
+            echo "$0: WARN: hostname_setup got an unexpected reason '$reason', proceeding anyway" >&2
             ;;
-	esac
-	if test -s /etc/hostname; then
-		return
-	fi
-	if test -z "$hostname"; then
-		hostname=eaton-rc-$(ip link show dev "$interface" | sed -rn 's@:@@g; s@.*ether ([0-9a-f]*) .*@\1@p' | tr "abcdef" "ABCDEF")
-	fi
+    esac
 
-	echo "$hostname" >/etc/hostname
-	hostname -F /etc/hostname
-
-	# Apparently, the first token for a locally available IP address is
-	# treated as the `hostname --fqdn` if no other ideas are available.
-	if [ -s /etc/hosts ]; then
-		grep -wi "$hostname" etc/hosts >/dev/null 2>&1 || \
-			sed -e 's,^[ \t]*\(127[^ \t]*[ \t]\)\(.*[ \t]*localhost[ \t]*\),\1'"$hostname"'\t\2\t,' -i /etc/hosts
-	else
-		echo "127.0.0.1 $hostname   localhost" > /etc/hosts
-	fi
+    # Pass the DHCP-suggested name (if any), it wold be applied if nothing
+    # is set in /etc/hostname yet, and then saved into the file.
+    interface="$interface" \
+        fty-hostname-setup "$hostname" "true"
 }
 
 ntp_server_restart_do() (
 	can_manipulate_ntpd || return $?
 
-	invoke-rc.d ntp try-restart && \
+	invoke-rc.d "${NTP_SYSTEMD_NAME}" try-restart && \
 	    echo "$0: INFO: NTP service restarted; waiting for it to pick up time (if not failed) so as to sync it onto hardware RTC" && \
 	    sleep 60 && ntp_server_status && hwclock -w -u && \
 	    echo "$0: INFO: Applied current OS clock value (`TZ=UTC date -u`) to HW clock (`TZ=UTC hwclock -r -u`); done with NTP restart"
@@ -102,7 +95,9 @@ ntp_server_restart() {
 }
 
 ntp_server_status() {
-	invoke-rc.d ntp status
+	can_manipulate_ntpd || return $?
+
+	invoke-rc.d "${NTP_SYSTEMD_NAME}" status
 	# NOTE: successful return means the daemon is running, but
 	# it does guarantee we've picked up time from any source
 }
@@ -195,4 +190,3 @@ fi
 hostname_setup
 
 ntp_servers_setup
-

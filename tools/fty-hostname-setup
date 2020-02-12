@@ -1,0 +1,121 @@
+#!/bin/bash
+#
+# Copyright (c) 2015-2019 Eaton
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+#! \file    fty-hostname-setup
+#  \brief   Hostname setup for a freshly deployed rack controller
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \details Keep the statically defined name from /etc/hostname if
+#           available, otherwise generate one if a dummy default is
+#           passed, and save/apply it. Called from DHCP hooks and
+#           early in system boot-up.
+
+# TODO: Port from loader the logic to query DHCP server for a host name
+# if already known, for each interface found, before generating some.
+
+hostname_setup() {
+	local hostname="$1"
+	local filesave="$2"
+	# Caller (DHCP hook) can also export a $interface value
+
+	# By default, write the newly generated unique name (if any)
+	# to /etc/hostname. Makes sense to avoid this e.g. in early
+	# stages of first boot when we might later get (and save)
+	# the name from DHCP server, pre-provisioned by a sysadmin
+	# (or stashed from earlier lifetime before factory reset).
+	# Note that we would still set /etc/hosts with this name.
+	case "$filesave" in
+		true|false|force|extra-force) ;;
+		-f) filesave=force ;; # Do it despite presence of /etc/hostname
+		-ff|-F) filesave=extra-force ;; # ...and skip defaultness check
+		*) filesave=true ;;
+	esac
+
+	if [ "$hostname" = "-" ]; then
+		# Apply existing name, if present and sane, and tweak /etc/hosts below
+		[ -s /etc/hostname ] \
+			&& hostname="`cat /etc/hostname | sed -e 's,^[ \t]*,,' -e 's,[ \t]*$,,'`" \
+			|| hostname="`hostname`" \
+			|| hostname="`cat /proc/sys/kernel/hostname`"
+	else
+		if [ -s /etc/hostname ] && [ "$filesave" != force ]  && [ "$filesave" != extra-force ]; then
+			# Assume the name was already set up to whatever user
+			# wanted, before. It should then be changed locally too,
+			# including any /etc/hosts changes, if desired.
+			hostname_sys="`hostname`" && [ -n "$hostname_sys" ] \
+				|| hostname_sys="`cat /proc/sys/kernel/hostname`"
+			hostname_etc="`cat /etc/hostname | sed -e 's,^[ \t]*,,' -e 's,[ \t]*$,,'`"
+			if [ "$hostname" != "$hostname_etc" ] || [ "$hostname" != "$hostname_sys" ]; then
+				echo "$0: WARN: Passed hostname candidate is '$hostname', while kernel says '$hostname_sys' and /etc/hostname says '$hostname_etc': leaving them untouched!" >&2
+			fi
+			return
+		fi
+	fi
+
+	# If someone really forces something... let them
+	[ "$filesave" = extra-force ] || \
+	case x"$hostname" in
+		x|xeaton-rc3|xlocalhost*) # failed defaultness-check
+			echo "$0: WARN: Current (or DHCP-suggested) hostname is '$hostname', generating a default MAC-based one instead (using interface='$interface')" >&2
+			hostname_addon="$(ip link show ${interface:+dev "$interface"} | sed -rn 's@:@@g; s@.*ether ([0-9a-f]*) .*@\1@p' | head -1 | tr "abcdef" "ABCDEF")" \
+			&& [ -n "${hostname_addon}" ] && hostname="eaton-rc-${hostname_addon}" && echo "$0: INFO: Generated '$hostname' instead" >&2 \
+			|| { hostname="eaton-rc3" ; echo "$0: WARN: FAILED to generate a hostname based on a MAC address, fell back to '$hostname'" >&2 ; }
+			;;
+	esac
+
+	# Apply hostnamectl first, as it tends to lower-case the MAC chars
+	# Strictly speaking, modern DNS rules do not require that (though
+	# names are case-insensitive for comparisons)
+	( which hostnamectl 2>/dev/null ) && hostnamectl set-hostname "$hostname" || true
+	if [ x"$hostname" != xeaton-rc3 ] && [ "$filesave" != false ] ; then
+		echo "$hostname" >/etc/hostname
+		hostname -F /etc/hostname
+	else
+		# Just apply the name "live" and allow this routine to re-run later
+		hostname "$hostname"
+	fi
+
+	# Apparently, the first token for a locally available IP address is
+	# treated as the `hostname --fqdn` if no other ideas are available.
+	if [ -s /etc/hosts ]; then
+		grep -wi "$hostname" etc/hosts >/dev/null 2>&1 || \
+			sed -e 's,^[ \t]*\(127[^ \t]*[ \t]\)\(.*[ \t]*localhost[ \t]*\),\1'"$hostname"'\t\2\t,' -i /etc/hosts
+	else
+		echo "127.0.0.1 $hostname   localhost" > /etc/hosts
+	fi
+}
+
+#exec >> /dev/console 2>&1
+#set >&2
+#set -x
+
+case "$1" in
+	help|-help|--help)
+		echo "Usage: $0 [candidate_hostname] [save_flag]"
+		echo "Note that normally the candidate_hostname would not be applied if already"
+		echo "/etc/hostname has something, and it is subject to a defaultness check:"
+		echo "if candidate_hostname is empty (or localhost or eaton-rc3) then generate"
+		echo "a MAC-based name. If candidate_hostname is '-' try to apply /etc/hostname"
+		echo "or the current kernel hostname, subject to defaultness check".
+		echo "If save_flag is 'false' then the name is not saved to /etc/hostname, or"
+		echo "if save_flag is 'force' or 'force-extra' (bypass defaultness check) then"
+		echo "the name is applied and saved even if the file existed before."
+		exit 1
+		;;
+esac
+
+hostname_setup "$@"

@@ -137,7 +137,7 @@ if isRemoteSUT ; then
     case "$OPERATION" in
     start|restart|startQ)
         [ "$OPERATION" = startQ ] && OPERATION=start
-        sut_run "/bin/systemctl $OPERATION malamute bios.target $SERVICES" && \
+        sut_run "/bin/systemctl $OPERATION malamute bios.service $SERVICES" && \
             statusSVC started
         exit $?
         ;;
@@ -158,7 +158,7 @@ if isRemoteSUT ; then
         RES=255
         for i in $(seq 1 5) ; do
             [ "$i" -gt 1 ] && echo "Retrying to stop 42ity services (did #`expr $i - 1` attepmts so far)..." >&2
-            sut_run "/bin/systemctl $OPERATION bios.target $SERVICES malamute" && \
+            sut_run "/bin/systemctl $OPERATION bios.service $SERVICES malamute" && \
                 statusSVC stoppedOrCrashed
             RES=$?
             [ "$RES" = 0 ] && exit $RES

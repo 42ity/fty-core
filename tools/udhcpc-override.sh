@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2015-2018 Eaton
+# Copyright (C) 2015-2019 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -87,10 +87,23 @@ fi
     UDHCPC_OPTS="$UDHCPC_OPTS_DEFAULT"
 
 case "$UDHCPC_OPTS" in
-    *hostname*) ;;
+    *hostname*) ;; # Something provided already
     *)  # Give hint about my non-default name
-        [ x"`hostname`" != xeaton-rc3 ] && \
-        UDHCPC_OPTS="$UDHCPC_OPTS -x hostname:`hostname`"
+        case x"`hostname`" in
+            x|xeaton-rc3|xlocalhost*)
+                echo "WARNING: Current local host name is '`hostname`', trying to find a better name" >&2
+                # Try to generate and apply a MAC-based name, do not save it
+                # yet - might do so through DHCP assignment processing though
+                interface="$UDHCPC_IFACE" \
+                    fty-hostname-setup "" "false"
+            ;;
+        esac
+
+        case x"`hostname`" in
+            x|xeaton-rc3|xlocalhost*)
+                echo "WARNING: Current local host name is '`hostname`', so not pushing it to DHCP" >&2 ;;
+            *) UDHCPC_OPTS="$UDHCPC_OPTS -x hostname:`hostname`" ;;
+        esac
         ;;
 esac
 

@@ -341,8 +341,6 @@ AC_CONFIG_FILES([
         docs/examples/sudoers.d/fty_00_base
         docs/examples/nut-server.service.d/configure-nut-users.conf
         docs/examples/update-rc3.d/90-local-paths.rc3.conf
-        systemd/bios-agent-inventory.service
-        systemd/bios-fake-th.service
         systemd/bios-networking.service
         systemd/bios-reset-button.service
         systemd/bios-ssh-last-resort.service
@@ -352,6 +350,7 @@ AC_CONFIG_FILES([
         systemd/fty-db-engine.service
         systemd/fty-db-init.service
         systemd/fty-envvars.service
+        systemd/fty-hostname-setup.service
         systemd/fty-tntnet@.service
         systemd/ifplug-dhcp-autoconf.service
         systemd/ipc-meta-setup.service

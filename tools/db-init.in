@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2014-2015 Eaton
+# Copyright (C) 2014 - 2019 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -247,7 +247,7 @@ install_sql_file() {
 	; then
 		echo "Database for 42ity initialization - importing $COMMENT `basename $INITSQL`..."
 		do_mysql < "$INITSQL" || return 1
-		SQLINSTALL_SCHEMA_VERSION="v=`grep_sql_version < "$INITSQL"`." || BIOS_SCHEMA_VERSION_SQL=""
+		SQLINSTALL_SCHEMA_VERSION="v=`grep_sql_version < "$INITSQL"`." || SQLINSTALL_SCHEMA_VERSION=""
 		[ -n "$INSTSQL_DIR" ] && [ -d "$INSTSQL_DIR" ] && \
 			gzip -c < "$INITSQL" > "$INSTSQL_DIR/`basename "$INITSQL"`.$SQLINSTALL_SCHEMA_VERSION$SQLINSTALL_TIMESTAMP.gz"
 		return 0
@@ -480,12 +480,33 @@ verify_schema_version() {
 
 trap_exit() {
     RET_CODE=$?
+
+    if [ "$RET_CODE" = 0 ] && [ -n "$DB_READY_FILE" ] ; then
+        echo "Trying to touch the '$DB_READY_FILE' to mark successful completion of init/verification of DB schema, database is ready to use by IPM applications" >&2
+        mkdir -p "`dirname "$DB_READY_FILE"`" && touch "$DB_READY_FILE" || echo "WARNING : Failed to touch the '$DB_READY_FILE'!" >&2
+    fi
+
     echo "Syncing changes (if any) to stable storage..."
     sync
     return $RET_CODE
 }
 
 trap 'trap_exit' 0 1 2 3 15
+
+DB_READY_FILE=""
+while [ $# -gt 0 ]; do
+	case "$1" in
+		--db-ready-file)
+			shift
+			case "$1" in
+				/*)	DB_READY_FILE="$1" ;;
+				*)	echo "DB_READY_FILE must be a fully qualified path" >&2 ; exit 1 ;;
+			esac
+			;;
+		*) echo "Unsupported argument, ignored: $1" >&2 ;;
+	esac
+	shift
+done
 
 case "$INSTSQL_DIR" in
 	/*) [ -d "$INSTSQL_DIR" ] || { \
@@ -516,9 +537,12 @@ esac
 	exit 2
 
 ensure_root_password || exit $?
+
+# Note that BIOS_DB_INIT is very optional and mostly intended
+# for development. Production code does not set it.
 case "${BIOS_DB_INIT-}" in
 	generate|initialize|flush|init) generate_database; exit $? ;;
-	upgrade|update) upgrade_database; exit $? ;;
+	upgrade|update) upgrade_database "$@"; exit $? ;;
 esac
 
 # From here on, the mysql client should rely on ~/.my.cnf
@@ -538,6 +562,13 @@ fi
 for F in "$INITSQL_FIRST" \
 	`{ ls -1 "${INITSQL_DIR}"/*.sql | sed 's,^.*/\([^\/]*$\),\1,'; exec_sql_db 'SELECT DISTINCT filename FROM t_bios_schema_version;' ; } | sort | uniq | grep -v "$(basename $INITSQL_FIRST)"` \
 ; do
+	# Note that policy and activity regarding SQL schema files distributed
+	# with the current product vs. files and versions registered in the
+	# database is defined in verify_schema_version(). In particular, it
+	# currently would trigger an import of newly found files that were
+	# not seen before (schema upgrade for newer product version), calling
+	# upgrade_database(), and will complain fatally about changed versions
+	# of files that were already imported before.
 	verify_schema_version "$F" || exit $?
 done
 

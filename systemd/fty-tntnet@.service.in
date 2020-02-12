@@ -9,6 +9,7 @@ Type=simple
 Restart=always
 User=root
 Group=root
+UMask=0000
 EnvironmentFile=-@prefix@/share/bios/etc/default/bios
 EnvironmentFile=-@prefix@/share/bios/etc/default/bios__%n.conf
 EnvironmentFile=-@prefix@/share/fty/etc/default/fty
@@ -26,6 +27,7 @@ ExecStartPre=@datadir@/@PACKAGE@/scripts/tntnet-ExecStartPre.sh %i
 EnvironmentFile=-/run/tntnet-%i.env
 EnvironmentFile=-/run/fty-envvars.env
 ExecStart=/usr/bin/tntnet -c @sysconfdir@/tntnet/%i.xml
+RestartSec=20
 
 [Install]
 WantedBy=bios.target

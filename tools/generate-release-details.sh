@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (C) 2014-2019 Eaton
+# Copyright (C) 2014-2020 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -46,20 +46,30 @@ export LANG LC_ALL TZ
 # if e.g. not applicable to a particular platform) :
 #   OSIMAGE_FILENAME    Full path to the OS image on host environment or before chroot
 #   OSIMAGE_LSINFO      Output of `ls -la $OSIMAGE_FILENAME`
-#   OSIMAGE_CKSUM       (MD5) Checksum of $OSIMAGE_FILENAME
+#   OSIMAGE_CKSUM       (MD5) Checksum of $OSIMAGE_FILENAME, legacy
+#   OSIMAGE_CHECKSUM_MD5         (MD5) Checksum of $OSIMAGE_FILENAME
+#   OSIMAGE_CHECKSUM_SHA256      (SHA256) Checksum of $OSIMAGE_FILENAME
+#   OSIMAGE_CHECKSUM_CKSUM       (CRC/cksum) Checksum of $OSIMAGE_FILENAME
 #   MODIMAGE_FILENAME   Full path to the modules archive on host
 #   MODIMAGE_LSINFO     Output of `ls -la $MODIMAGE_FILENAME`
-#   MODIMAGE_CKSUM      (MD5) Checksum of $MODIMAGE_FILENAME
+#   MODIMAGE_CKSUM      (MD5) Checksum of $MODIMAGE_FILENAME, legacy
+#   MODIMAGE_CHECKSUM_MD5      (MD5) Checksum of $MODIMAGE_FILENAME
+#   MODIMAGE_CHECKSUM_SHA256   (SHA256) Checksum of $MODIMAGE_FILENAME
+#   MODIMAGE_CHECKSUM_CKSUM    (CRC/cksum) Checksum of $MODIMAGE_FILENAME
 #   BIOSINFO_UBOOT_ID_ETN   BIOSINFO_UBOOT_ID_OG    BIOSINFO_UBOOT_TSS
 #   FW_UBOOTPART_CSDEV      FW_UBOOTPART_BYTES
 #   FW_UBOOTPART_CSDEVPAD   FW_UBOOTPART_SIZE
-#                       Details about u-Boot loader for this system
+#   FW_UBOOTPART_CSDEV_MD5  FW_UBOOTPART_CSDEV_SHA256 FW_UBOOTPART_CSDEV_CKSUM
+#   FW_UBOOTPART_CSDEVPAD_MD5 FW_UBOOTPART_CSDEVPAD_SHA256 FW_UBOOTPART_CSDEVPAD_CKSUM
+#                       ^^^ Details about u-Boot loader for this system
 #   BIOSINFO_UIMAGE_ID_ETN  BIOSINFO_UIMAGE_ID_OG   BIOSINFO_UIMAGE_TSS
 #   FW_UIMAGEPART_CSDEV     FW_UIMAGEPART_BYTES
 #   FW_UIMAGEPART_CSDEVPAD  FW_UIMAGEPART_SIZE
-#                       Details about uImage miniroot for this system
+#   FW_UIMAGEPART_CSDEV_MD5 FW_UIMAGEPART_CSDEV_SHA256 FW_UIMAGEPART_CSDEV_CKSUM
+#   FW_UIMAGEPART_CSDEVPAD_MD5 FW_UIMAGEPART_CSDEVPAD_SHA256 FW_UIMAGEPART_CSDEVPAD_CKSUM
+#                       ^^^ Details about uImage miniroot for this system
 #   HWD_VENDOR HWD_CATALOG_NB HWD_REV HWD_SERIAL_NB
-#                       OEM details about hardware for this system
+#                       ^^^ OEM details about hardware for this system
 # For now (code to be ported) we also expect pre-parsed markup in
 #   BIOSINFO_UBOOT          BIOSINFO_UIMAGE
 
@@ -78,7 +88,7 @@ v_echo() {
 }
 
 cut1() {
-        # Prints the first column from input (used in chopping md5sum output)
+        # Prints the first column from input (used in chopping md5sum/sha256sum/cksum output)
         while read S F; do echo "$S"; done
 }
 
@@ -96,16 +106,17 @@ v_echo_ts() {
 # On x86_64, we retrieve the hardware info from SMBIOS, unless it has been
 # provided via the environment
 if test -d /sys/class/dmi/id; then
-        test -n "$HWD_VENDOR" || HWD_VENDOR=$(cat /sys/class/dmi/id/sys_vendor)
-        test -n "$HWD_CATALOG_NB" || HWD_CATALOG_NB=$(cat /sys/class/dmi/id/product_name)
-        test -n "$HWD_REV" || HWD_REV=$(cat /sys/class/dmi/id/product_version)
+        test -n "$HWD_VENDOR" || HWD_VENDOR="$(cat /sys/class/dmi/id/sys_vendor)"
+        test -n "$HWD_CATALOG_NB" || HWD_CATALOG_NB="$(cat /sys/class/dmi/id/product_name)"
+        test -n "$HWD_REV" || HWD_REV="$(cat /sys/class/dmi/id/product_version)"
         # VMware says "None" here
-        HWD_REV=${HWD_REV#None}
-        test -n "$HWD_SERIAL_NB" || HWD_SERIAL_NB=$(cat /sys/class/dmi/id/product_serial)
+        HWD_REV="${HWD_REV#None}"
+        test -n "$HWD_SERIAL_NB" || HWD_SERIAL_NB="$(cat /sys/class/dmi/id/product_serial)"
         # Ignore VMware serial numbers as per product requirement
         case "$HWD_SERIAL_NB" in
         VMware*)
-                HWD_SERIAL_NB=
+                HWD_SERIAL_NB=''
+                ;;
         esac
         # XXX: Find an SMBIOS equivalent for HWD_PART_NB=
 fi
@@ -118,46 +129,56 @@ fi
 # ? OSIMAGE_TYPE        IMGTYPE of OS image (can be found inside)
 
 if [ -z "${GIT_DETAILS_FILE-}" ]; then
-        for F in ${ALTROOT}/usr/share/fty/.git_details \
-            ${ALTROOT}/usr/share/bios/.git_details ; do
+        for F in \
+            "${ALTROOT}/usr/share/fty/.git_details" \
+            "${ALTROOT}/usr/share/bios/.git_details" \
+        ; do
                 [ -s "$F" ] && GIT_DETAILS_FILE="$F" && break
         done
 fi
 
 BIOSINFO="Readonly base OS image: `basename "$OSIMAGE_FILENAME"`
-`. ${GIT_DETAILS_FILE} >/dev/null 2>&1 && echo "42ity 'core' version:   $PACKAGE_GIT_HASH_S_ESCAPED @ $PACKAGE_GIT_TSTAMP_ISO8601_ESCAPED"`"
+`. "${GIT_DETAILS_FILE}" >/dev/null 2>&1 && echo "42ity 'core' version:   $PACKAGE_GIT_HASH_S_ESCAPED @ $PACKAGE_GIT_TSTAMP_ISO8601_ESCAPED"`"
 
 OSIMAGE_BTS=""
 OSIMAGE_TYPE=""
-if [ -s ${ALTROOT}/usr/share/bios-web/image-version.txt ]; then
+if [ -s "${ALTROOT}/usr/share/bios-web/image-version.txt" ]; then
         # We expect timestamp built in specific format by "LANG=C date -R -u"
         # and maybe prefixed by the "OSimage:build-ts:" tag to cut out,
         # and similarly a "OSimage:img-type: (string)" if at all present.
-        OSIMAGE_BTS="`head -1 ${ALTROOT}/usr/share/bios-web/image-version.txt | sed 's/^.*\(..., \)/\1/'`" || OSIMAGE_BTS=""
+        OSIMAGE_BTS="`head -1 "${ALTROOT}/usr/share/bios-web/image-version.txt" | sed 's/^.*\(..., \)/\1/'`" || OSIMAGE_BTS=""
         if [ -n "$OSIMAGE_BTS" ]; then
-                OSIMAGE_BTSS="`chroot ${ALTROOT} /bin/date -u -d "$OSIMAGE_BTS" '+%Y%m%dT%H%M%SZ'`" && \
+                OSIMAGE_BTSS="`chroot "${ALTROOT}" /bin/date -u -d "$OSIMAGE_BTS" '+%Y%m%dT%H%M%SZ'`" && \
                         [ -n "$OSIMAGE_BTSS" ] && OSIMAGE_BTS="$OSIMAGE_BTSS"
         fi 2>/dev/null
 
-        OSIMAGE_TYPE="`head -2 ${ALTROOT}/usr/share/bios-web/image-version.txt | tail -1 | (read TAG TAIL ; echo "$TAIL")`" || OSIMAGE_TYPE=""
+        OSIMAGE_TYPE="`head -2 "${ALTROOT}/usr/share/bios-web/image-version.txt" | tail -1 | (read TAG TAIL ; echo "$TAIL")`" || OSIMAGE_TYPE=""
 fi
 
-if [ -s /etc/update-rc3.d/image-os-type.conf ] && [ -n "$OSIMAGE_TYPE" ] ; then
-        OSIMAGE_TYPE="`egrep '^OSIMAGE_TYPE=' ${ALTROOT}/etc/update-rc3.d/image-os-type.conf | sed -e 's,^OSIMAGE_TYPE=,,' -e 's,^"\(.*\)"$,\1,' -e "s,^'\(.*\)'"'$,\1,'`"
+if [ -z "${OSIMAGE_TYPE-}" ] && [ -s /etc/update-rc3.d/image-os-type.conf ] ; then
+        OSIMAGE_TYPE="`egrep '^OSIMAGE_TYPE=' "${ALTROOT}/etc/update-rc3.d/image-os-type.conf" | sed -e 's,^OSIMAGE_TYPE=,,' -e 's,^"\(.*\)"$,\1,' -e "s,^'\(.*\)'"'$,\1,'`"
+        if [ -z "$OSIMAGE_TYPE" ] ; then
+                # Note: suffix and prefix may validly be defined and empty, or not defined at all
+                _IP="`egrep '^IMGTYPE_PREFIX=' "${ALTROOT}/etc/update-rc3.d/image-os-type.conf" | sed -e 's,^IMGTYPE_PREFIX=,,' -e 's,^"\(.*\)"$,\1,' -e "s,^'\(.*\)'"'$,\1,'`"
+                _IT="`egrep '^IMGTYPE=' "${ALTROOT}/etc/update-rc3.d/image-os-type.conf" | sed -e 's,^IMGTYPE=,,' -e 's,^"\(.*\)"$,\1,' -e "s,^'\(.*\)'"'$,\1,'`"
+                _IS="`egrep '^IMGTYPE_SUFFIX=' "${ALTROOT}/etc/update-rc3.d/image-os-type.conf" | sed -e 's,^IMGTYPE_SUFFIX=,,' -e 's,^"\(.*\)"$,\1,' -e "s,^'\(.*\)'"'$,\1,'`"
+                [ -z "${_IT}" ] || OSIMAGE_TYPE="${_IP}${_IT}${_IS}"
+                unset _IP _IT _IS
+        fi
 fi
 
 WEBUI_ID=""
 WEBUI_TS=""
 WEBUI_BTS=""
-if [ -s ${ALTROOT}/usr/share/bios-web/version.txt ]; then
-        WEBUI_TS="`head -1 ${ALTROOT}/usr/share/bios-web/version.txt`" || WEBUI_TS=""
+if [ -s "${ALTROOT}/usr/share/bios-web/version.txt" ]; then
+        WEBUI_TS="`head -1 "${ALTROOT}/usr/share/bios-web/version.txt"`" || WEBUI_TS=""
         case "$WEBUI_TS" in
             *,*)# Here we expect an older-style timestamp built in specific
                 # format by "LANG=C date -R -u" and maybe prefixed by the
                 # "bios-web:commit-ts:" tag to be cut out...
                 WEBUI_TSS="`echo "$WEBUI_TS" | sed 's/^.*\(..., \)/\1/'`" && \
                 [ -n "$WEBUI_TSS" ] && WEBUI_TS="$WEBUI_TSS" && \
-                WEBUI_TSS="`chroot ${ALTROOT} /bin/date -u -d "$WEBUI_TS" '+%Y%m%dT%H%M%SZ'`" && \
+                WEBUI_TSS="`chroot "${ALTROOT}" /bin/date -u -d "$WEBUI_TS" '+%Y%m%dT%H%M%SZ'`" && \
                         [ -n "$WEBUI_TSS" ] && WEBUI_TS="$WEBUI_TSS"
                 ;;
             *[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9])
@@ -169,13 +190,13 @@ if [ -s ${ALTROOT}/usr/share/bios-web/version.txt ]; then
         [ -z "$WEBUI_TS" ] && WEBUI_TS="timestamp:N/A"
         # We expect long commit ID as the last word, maybe prefixed by
         # "bios-web:commit-id:" tag to cut out in newer releases...
-        WEBUI_ID="`head -2 ${ALTROOT}/usr/share/bios-web/version.txt | tail -1 | sed 's,^.*[ \t]\([^ \t]*\)$,\1,' | sed 's,^\(.......\).*$,\1,'`" || WEBUI_ID="commitID:N/A"
+        WEBUI_ID="`head -2 "${ALTROOT}/usr/share/bios-web/version.txt" | tail -1 | sed 's,^.*[ \t]\([^ \t]*\)$,\1,' | sed 's,^\(.......\).*$,\1,'`" || WEBUI_ID="commitID:N/A"
 
-        WEBUI_BTS="`head -3 ${ALTROOT}/usr/share/bios-web/version.txt | tail -1`" || WEBUI_BTS=""
+        WEBUI_BTS="`head -3 "${ALTROOT}/usr/share/bios-web/version.txt" | tail -1`" || WEBUI_BTS=""
         case "$WEBUI_BTS" in
             *,*)WEBUI_TSS="`echo "$WEBUI_BTS" | sed 's/^.*\(..., \)/\1/'`" && \
                 [ -n "$WEBUI_TSS" ] && WEBUI_BTS="$WEBUI_TSS" && \
-                WEBUI_TSS="`chroot ${ALTROOT} /bin/date -u -d "$WEBUI_BTS" '+%Y%m%dT%H%M%SZ'`" && \
+                WEBUI_TSS="`chroot "${ALTROOT}" /bin/date -u -d "$WEBUI_BTS" '+%Y%m%dT%H%M%SZ'`" && \
                         [ -n "$WEBUI_TSS" ] && WEBUI_BTS="$WEBUI_TSS"
                 ;;
             *[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9])
@@ -210,7 +231,7 @@ if [ -z "${UUID_VALUE-}" ]; then
     # printf '42ity' | sha1sum | sed 's,^\(........\)\(....\)\(....\)\(....\)\(............\).*$,\1-\2-\3-\4\-\5,'
 
     UUID_VALUE="00000000-0000-0000-0000-000000000000"
-    for UUID_PROG in ${ALTROOT}/usr/bin/uuid /usr/bin/uuid "`which uuid >/dev/null 2>&1`" ; do
+    for UUID_PROG in "${ALTROOT}/usr/bin/uuid" /usr/bin/uuid "`which uuid >/dev/null 2>&1`" ; do
         [ -x "$UUID_PROG" ] && break
     done
     if [ -n "$UUID_PROG" ] && [ -x "$UUID_PROG" ] ; then
@@ -231,73 +252,91 @@ fi
 Device UUID: $UUID_VALUE"
 
 if [ -z "${OSIMAGE_DISTRO-}" ]; then
-    [ -s ${ALTROOT}/etc/update-rc3.d/image-os-type.conf ] \
-    && OSIMAGE_DISTRO="`egrep '^OSIMAGE_DISTRO=' ${ALTROOT}/etc/update-rc3.d/image-os-type.conf | sed -e 's,^OSIMAGE_DISTRO=,,' -e 's,^"\(.*\)"$,\1,' -e "s,^'\(.*\)'"'$,\1,'`" \
+    [ -s "${ALTROOT}/etc/update-rc3.d/image-os-type.conf" ] \
+    && OSIMAGE_DISTRO="`egrep '^OSIMAGE_DISTRO=' "${ALTROOT}/etc/update-rc3.d/image-os-type.conf" | sed -e 's,^OSIMAGE_DISTRO=,,' -e 's,^"\(.*\)"$,\1,' -e "s,^'\(.*\)'"'$,\1,'`" \
     && [ -n "$OSIMAGE_DISTRO" ] \
     || OSIMAGE_DISTRO="Debian_8.0" # Legacy default from before we considered OS revisions
 fi
 BIOSINFO="$BIOSINFO
 Bundled into OS distribution: $OSIMAGE_DISTRO"
 
-rm -f ${ALTROOT}/etc/release-details.json ${ALTROOT}/etc/release-details || true
+rm -f "${ALTROOT}/etc/release-details.json" "${ALTROOT}/etc/release-details" || true
 # Remove the legacy one only if a file - do not rewrite the symlink to new location needlessly
-[ -s ${ALTROOT}/etc/bios-release.json ] && rm -f ${ALTROOT}/etc/bios-release.json || true
-[ -s ${ALTROOT}/etc/bios-release ] && rm -f ${ALTROOT}/etc/bios-release || true
+[ -s "${ALTROOT}/etc/bios-release.json" ] && rm -f "${ALTROOT}/etc/bios-release.json" || true
+[ -s "${ALTROOT}/etc/bios-release" ] && rm -f "${ALTROOT}/etc/bios-release" || true
 
-cat <<EOF > ${ALTROOT}/etc/release-details.json
+cat <<EOF > "${ALTROOT}/etc/release-details.json"
 { "release-details": {
-        "osimage-lsinfo":       "$OSIMAGE_LSINFO",
-        "osimage-filename":     "$OSIMAGE_FILENAME",
-        "osimage-name":         "$OSIMAGE_NAME",
-        "osimage-cksum":        "$OSIMAGE_CKSUM",
-        "osimage-build-ts":     "$OSIMAGE_BTS",
-        "osimage-img-type":     "$OSIMAGE_TYPE",
-        "osimage-distro":       "$OSIMAGE_DISTRO",
-        "modimage-lsinfo":      "$MODIMAGE_LSINFO",
-        "modimage-filename":    "$MODIMAGE_FILENAME",
-        "modimage-cksum":       "$MODIMAGE_CKSUM",
-`. ${GIT_DETAILS_FILE} >/dev/null 2>&1 && printf '\t"bios-core-commit-id":\t"%s",\n\t"bios-core-commit-ts":\t"%s",\n' "$PACKAGE_GIT_HASH_S_ESCAPED" "$PACKAGE_GIT_TSTAMP_ISO8601_ESCAPED" `
-        "bios-web-commit-id":   "$WEBUI_ID",
-        "bios-web-commit-ts":   "$WEBUI_TS",
-        "bios-web-build-ts":    "$WEBUI_BTS",
-        "uboot-commit-id-eaton":        "$BIOSINFO_UBOOT_ID_ETN",
-        "uboot-commit-id-opengear":     "$BIOSINFO_UBOOT_ID_OG",
-        "uboot-build-ts":       "$BIOSINFO_UBOOT_TSS",
-        "uboot-part-cksum":     "$FW_UBOOTPART_CSDEV",
-        "uboot-part-bytes":     "$FW_UBOOTPART_BYTES",
-        "uboot-padded-cksum":   "$FW_UBOOTPART_CSDEVPAD",
-        "uboot-padded-bytes":   "$FW_UBOOTPART_SIZE",
-        "uimage-commit-id-eaton":       "$BIOSINFO_UIMAGE_ID_ETN",
-        "uimage-commit-id-opengear":    "$BIOSINFO_UIMAGE_ID_OG",
-        "uimage-build-ts":      "$BIOSINFO_UIMAGE_TSS",
-        "uimage-part-cksum":    "$FW_UIMAGEPART_CSDEV",
-        "uimage-part-bytes":    "$FW_UIMAGEPART_BYTES",
-        "uimage-padded-cksum":  "$FW_UIMAGEPART_CSDEVPAD",
-        "uimage-padded-bytes":  "$FW_UIMAGEPART_SIZE",
-        "hardware-vendor":      "$HWD_VENDOR",
-        "hardware-catalog-number":      "$HWD_CATALOG_NB",
-        "hardware-part-number": "$HWD_PART_NB",
-        "hardware-spec-revision":       "$HWD_REV",
-        "hardware-serial-number":       "$HWD_SERIAL_NB",
-        "uuid":        "$UUID_VALUE"
+        "osimage-lsinfo":                "$OSIMAGE_LSINFO",
+        "osimage-filename":              "$OSIMAGE_FILENAME",
+        "osimage-name":                  "$OSIMAGE_NAME",
+        "osimage-cksum":                 "$OSIMAGE_CKSUM",
+        "osimage-checksum-md5":          "$OSIMAGE_CHECKSUM_MD5",
+        "osimage-checksum-sha256":       "$OSIMAGE_CHECKSUM_SHA256",
+        "osimage-checksum-cksum":        "$OSIMAGE_CHECKSUM_CKSUM",
+        "osimage-build-ts":              "$OSIMAGE_BTS",
+        "osimage-img-type":              "$OSIMAGE_TYPE",
+        "osimage-distro":                "$OSIMAGE_DISTRO",
+        "modimage-lsinfo":               "$MODIMAGE_LSINFO",
+        "modimage-filename":             "$MODIMAGE_FILENAME",
+        "modimage-cksum":                "$MODIMAGE_CKSUM",
+        "modimage-checksum-md5":         "$MODIMAGE_CHECKSUM_MD5",
+        "modimage-checksum-sha256":      "$MODIMAGE_CHECKSUM_SHA256",
+        "modimage-checksum-cksum":       "$MODIMAGE_CHECKSUM_CKSUM",
+`. "${GIT_DETAILS_FILE}" >/dev/null 2>&1 && printf '\t"bios-core-commit-id":\t"%s",\n\t"bios-core-commit-ts":\t"%s",\n' "$PACKAGE_GIT_HASH_S_ESCAPED" "$PACKAGE_GIT_TSTAMP_ISO8601_ESCAPED" `
+        "bios-web-commit-id":            "$WEBUI_ID",
+        "bios-web-commit-ts":            "$WEBUI_TS",
+        "bios-web-build-ts":             "$WEBUI_BTS",
+        "uboot-commit-id-eaton":         "$BIOSINFO_UBOOT_ID_ETN",
+        "uboot-commit-id-opengear":      "$BIOSINFO_UBOOT_ID_OG",
+        "uboot-build-ts":                "$BIOSINFO_UBOOT_TSS",
+        "uboot-part-cksum":              "$FW_UBOOTPART_CSDEV",
+        "uboot-part-checksum-md5":       "$FW_UBOOTPART_CSDEV_MD5",
+        "uboot-part-checksum-sha256":    "$FW_UBOOTPART_CSDEV_SHA256",
+        "uboot-part-checksum-cksum":     "$FW_UBOOTPART_CSDEV_CKSUM",
+        "uboot-part-bytes":              "$FW_UBOOTPART_BYTES",
+        "uboot-padded-cksum":            "$FW_UBOOTPART_CSDEVPAD",
+        "uboot-padded-checksum-md5":     "$FW_UBOOTPART_CSDEVPAD_MD5",
+        "uboot-padded-checksum-sha256":  "$FW_UBOOTPART_CSDEVPAD_SHA256",
+        "uboot-padded-checksum-cksum":   "$FW_UBOOTPART_CSDEVPAD_CKSUM",
+        "uboot-padded-bytes":            "$FW_UBOOTPART_SIZE",
+        "uimage-commit-id-eaton":        "$BIOSINFO_UIMAGE_ID_ETN",
+        "uimage-commit-id-opengear":     "$BIOSINFO_UIMAGE_ID_OG",
+        "uimage-build-ts":               "$BIOSINFO_UIMAGE_TSS",
+        "uimage-part-cksum":             "$FW_UIMAGEPART_CSDEV",
+        "uimage-part-checksum-md5":      "$FW_UIMAGEPART_CSDEV_MD5",
+        "uimage-part-checksum-sha256":   "$FW_UIMAGEPART_CSDEV_SHA256",
+        "uimage-part-checksum-cksum":    "$FW_UIMAGEPART_CSDEV_CKSUM",
+        "uimage-part-bytes":             "$FW_UIMAGEPART_BYTES",
+        "uimage-padded-cksum":           "$FW_UIMAGEPART_CSDEVPAD",
+        "uimage-padded-checksum-md5":    "$FW_UIMAGEPART_CSDEVPAD_MD5",
+        "uimage-padded-checksum-sha256": "$FW_UIMAGEPART_CSDEVPAD_SHA256",
+        "uimage-padded-checksum-cksum":  "$FW_UIMAGEPART_CSDEVPAD_CKSUM",
+        "uimage-padded-bytes":           "$FW_UIMAGEPART_SIZE",
+        "hardware-vendor":               "$HWD_VENDOR",
+        "hardware-catalog-number":       "$HWD_CATALOG_NB",
+        "hardware-part-number":          "$HWD_PART_NB",
+        "hardware-spec-revision":        "$HWD_REV",
+        "hardware-serial-number":        "$HWD_SERIAL_NB",
+        "uuid":                          "$UUID_VALUE"
 } }
 EOF
 if [ $? = 0 ] ; then
-    if [ ! -s ${ALTROOT}/etc/bios-release.json ]; then
-        rm -f ${ALTROOT}/etc/bios-release.json || true
-        ln -s release-details.json ${ALTROOT}/etc/bios-release.json || true
+    if [ ! -s "${ALTROOT}/etc/bios-release.json" ]; then
+        rm -f "${ALTROOT}/etc/bios-release.json" || true
+        ln -s release-details.json "${ALTROOT}/etc/bios-release.json" || true
     fi
 
     v_echo_ts "Updated ${ALTROOT}/etc/release-details.json with OS image and 42ity build data"
 fi
 
 # Similar data in a more human-readable file
-if printf "%s\n%s\n%s\n\n" "$OSIMAGE_LSINFO" "$MODIMAGE_LSINFO" "$BIOSINFO" \
-    > ${ALTROOT}/etc/release-details \
+if printf '%s\n%s\n%s\n\n' "$OSIMAGE_LSINFO" "$MODIMAGE_LSINFO" "$BIOSINFO" \
+    > "${ALTROOT}/etc/release-details" \
 ; then
-    if [ ! -s ${ALTROOT}/etc/bios-release ]; then
-        rm -f ${ALTROOT}/etc/bios-release || true
-        ln -s release-details ${ALTROOT}/etc/bios-release || true
+    if [ ! -s "${ALTROOT}/etc/bios-release" ]; then
+        rm -f "${ALTROOT}/etc/bios-release" || true
+        ln -s release-details "${ALTROOT}/etc/bios-release" || true
     fi
     v_echo_ts "Updated ${ALTROOT}/etc/release-details with OS image and 42ity build data"
 fi
@@ -311,7 +350,7 @@ for F in issue issue.net ; do
         # Use printf() below to not mangle the issue(5) markup
         # as if it were full of shell variables
         ORIGDATA="`head -1 "${ALTROOT}/etc/$F"`" && \
-        printf "%s\n%s\n\n" "$ORIGDATA" "$BIOSINFO" > ${ALTROOT}/etc/"$F" && \
+        printf '%s\n%s\n\n' "$ORIGDATA" "$BIOSINFO" > "${ALTROOT}/etc/$F" && \
             v_echo_ts "Updated ${ALTROOT}/etc/$F with OS image and 42ity build data"
     fi
 done

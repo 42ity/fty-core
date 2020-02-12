@@ -8,8 +8,8 @@ Description=Tracker that the 42ity license is accepted
 PartOf=bios.target
 
 [Path]
-PathModified=/var/lib/fty/license
-PathExists=/var/lib/fty/license
+PathModified=/var/lib/fty/fty-eula/license
+PathExists=/var/lib/fty/fty-eula/license
 Unit=fty-license-accepted.service
 
 # Normally the dependency on fty-license-accepted.service from

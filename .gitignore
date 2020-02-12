@@ -152,8 +152,6 @@ systemd/42-bios-systemd.preset
 systemd/bios-db-init.service
 !systemd/bios-agent-cm.service.in
 systemd/bios-agent-cm.service
-!systemd/bios-agent-inventory.service.in
-systemd/bios-agent-inventory.service
 systemd/bios-reset-button.service
 !systemd/bios-reset-button.service.in
 !systemd/biostimer-warranty-metric.service.in
@@ -164,8 +162,6 @@ systemd/ifplug-dhcp-autoconf.service
 systemd/bios-ssh-last-resort.service
 !systemd/bios-networking.service.in
 systemd/bios-networking.service
-!systemd/bios-fake-th.service.in
-systemd/bios-fake-th.service
 !systemd/biostimer-verify-fs.service.in
 systemd/biostimer-verify-fs.service
 !systemd/biostimer-compress-logs.service.in
