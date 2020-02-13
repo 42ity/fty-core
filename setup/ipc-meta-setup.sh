@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #
-#   Copyright (c) 2014-2017 Eaton
+#   Copyright (c) 2014 - 2020 Eaton
 #
 #   This file is part of the Eaton 42ity project.
 #
@@ -33,6 +33,7 @@ TZ=UTC
 export LC_ALL LANG TZ
 
 BASEDIR="$(dirname $(readlink -f ${0}))"
+# TODO: Use configure.ac templated variables?
 SETUPDIR=/var/lib/fty/ipc-meta-setup/
 
 die () {
@@ -47,6 +48,13 @@ mkdir -p "${SETUPDIR}"
 # Make sure scripts do not leave occasional traces in unexpected places
 cd /tmp || die "No /tmp!"
 
+# Log the reason of untimely demise for typical causes (e.g. systemd timeout)...
+trap 'META_RES=$? ; echo "$0: Aborting due to SIGTERM" >&2 ; exit $META_RES;' 15
+trap 'META_RES=$? ; echo "$0: Aborting due to SIGINT" >&2 ; exit $META_RES;'  2
+trap 'META_RES=$? ; echo "$0: Aborting due to SIGQUIT" >&2 ; exit $META_RES;' 3
+trap 'META_RES=$? ; echo "$0: Aborting due to SIGABRT" >&2 ; exit $META_RES;' 6
+
+echo "STARTING: $0 for scriptlets under ${BASEDIR}"
 ls -1 "${BASEDIR}"/[0-9]*.sh | sort | while read SCRIPT; do
 
     # We generally run scripts once, to set up a newly deployed system,
@@ -72,6 +80,9 @@ ls -1 "${BASEDIR}"/[0-9]*.sh | sort | while read SCRIPT; do
 
     echo "APPLY: running ${SCRIPT_NAME}..."
     ${SCRIPT} || die "${SCRIPT} failed with exit-code $?, not proceeding with other scripts"
-    touch "${SETUPDIR}/${SCRIPT_NAME}.done"
+    touch "${SETUPDIR}/${SCRIPT_NAME}.done" && \
+    echo "APPLIED: successfully ran ${SCRIPT_NAME}"
 
-done
+done || die "Something in $0 failed, aborting"
+
+echo "COMPLETED: successfully ran $0"
