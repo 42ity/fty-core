@@ -715,6 +715,21 @@ case "$IMGTYPE" in
         ;;
 esac
 
+# Bind nut-server actual startup to EULA acceptance
+# to avoid flooding console / Welcome screen
+mkdir -p /etc/systemd/system/nut-server.service.d
+cat > /etc/systemd/system/nut-server.service.d/fty.conf  << EOF
+[Unit]
+Requires=network.target fty-license-accepted.service
+BindsTo=fty-license-accepted.service
+After=fty-license-accepted.service
+EOF
+
+# Disable fty-license-accepted, before the actual EULA acceptance
+# to avoid flooding console / Welcome screen
+# It will be activated by fty-license-accepted.path
+/bin/systemctl disable fty-license-accepted.service
+
 # according to https://github.com/42ity/malamute/blob/1.0-FTY-master/src/mlm_perftest.c#L22
 # "If we allow limits, then the engines will block under stress."
 # to avoid any block under stress, set unlimited High Water Mark on malamute clients side likes we have on the broker itself
