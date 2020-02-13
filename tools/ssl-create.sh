@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #
-# Copyright (C) 2015 Eaton
+# Copyright (C) 2015 - 2020 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -85,11 +85,20 @@ if [ ! -r "${PEM_FINAL_CERT}" ] || [ ! -s "${PEM_FINAL_CERT}" ] || \
         exit $?
     fi
 
+    # certificate configuration (disable CA)
+    echo "[ req ]" > /run/tntnet-bios/ssl.conf
+    echo "distinguished_name=dn" >> /run/tntnet-bios/ssl.conf
+    echo "[ dn ]" >> /run/tntnet-bios/ssl.conf
+    echo "[ ext ]" >> /run/tntnet-bios/ssl.conf
+    echo "basicConstraints=CA:FALSE" >> /run/tntnet-bios/ssl.conf
+
     # Generate self-signed cert with a new key and other data
-    openssl req -x509 -sha256 -newkey rsa:2048 \
+    openssl req -config /run/tntnet-bios/ssl.conf -x509 -sha256 -newkey rsa:2048 \
         -keyout "${PEM_KEY}" -out "${PEM_CERT}" \
-        -days 365 -nodes -subj "/CN=${LOCAL_HOSTNAME}" \
+        -days 9125 -nodes -subj "/CN=${LOCAL_HOSTNAME}" \
     || exit $?
+
+    rm /run/tntnet-bios/ssl.conf
 
     rm -f "${PEM_FINAL_CERT}"
     echo "$SIG" | \
