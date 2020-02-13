@@ -37,7 +37,7 @@ BASEDIR="$(dirname $(readlink -f ${0}))"
 SETUPDIR=/var/lib/fty/ipc-meta-setup/
 
 die () {
-    echo "FATAL: " "${@}" >&2
+    echo "FATAL: " "`date -u`: " "${@}" >&2
     exit 1
 }
 
@@ -49,12 +49,12 @@ mkdir -p "${SETUPDIR}"
 cd /tmp || die "No /tmp!"
 
 # Log the reason of untimely demise for typical causes (e.g. systemd timeout)...
-trap 'META_RES=$? ; echo "$0: Aborting due to SIGTERM" >&2 ; exit $META_RES;' 15
-trap 'META_RES=$? ; echo "$0: Aborting due to SIGINT" >&2 ; exit $META_RES;'  2
-trap 'META_RES=$? ; echo "$0: Aborting due to SIGQUIT" >&2 ; exit $META_RES;' 3
-trap 'META_RES=$? ; echo "$0: Aborting due to SIGABRT" >&2 ; exit $META_RES;' 6
+trap 'META_RES=$? ; echo "$0: Aborting due to SIGTERM at `date -u`" >&2 ; exit $META_RES;' 15
+trap 'META_RES=$? ; echo "$0: Aborting due to SIGINT  at `date -u`" >&2 ; exit $META_RES;'  2
+trap 'META_RES=$? ; echo "$0: Aborting due to SIGQUIT at `date -u`" >&2 ; exit $META_RES;' 3
+trap 'META_RES=$? ; echo "$0: Aborting due to SIGABRT at `date -u`" >&2 ; exit $META_RES;' 6
 
-echo "STARTING: $0 for scriptlets under ${BASEDIR}"
+echo "STARTING: $0 for scriptlets under ${BASEDIR}, at `date -u`..."
 ls -1 "${BASEDIR}"/[0-9]*.sh | sort | while read SCRIPT; do
 
     # We generally run scripts once, to set up a newly deployed system,
@@ -78,11 +78,16 @@ ls -1 "${BASEDIR}"/[0-9]*.sh | sort | while read SCRIPT; do
         [ "$EVERY_TIME" = "yes" ] || continue
     fi
 
-    echo "APPLY: running ${SCRIPT_NAME}..."
-    ${SCRIPT} || die "${SCRIPT} failed with exit-code $?, not proceeding with other scripts"
+    echo "APPLY: running ${SCRIPT_NAME} at `date -u`..."
+    if [ -x "${SCRIPT}" ]; then
+        "${SCRIPT}"
+    else
+        echo "WARNING: ${SCRIPT_NAME} is not executable by itself, sub-shelling to run it. Its original shebang is: `head -1 "${SCRIPT}" | egrep '^\#\!\/'`" >&2
+        ( . "${SCRIPT}" )
+    fi || die "${SCRIPT} failed with exit-code $?, not proceeding with other scripts"
     touch "${SETUPDIR}/${SCRIPT_NAME}.done" && \
-    echo "APPLIED: successfully ran ${SCRIPT_NAME}"
+    echo "APPLIED: successfully ran ${SCRIPT_NAME}, finished at `date -u`..."
 
 done || die "Something in $0 failed, aborting"
 
-echo "COMPLETED: successfully ran $0"
+echo "COMPLETED: successfully ran $0, finished at `date -u`..."
