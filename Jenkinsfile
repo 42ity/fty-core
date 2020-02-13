@@ -1,7 +1,7 @@
 /*
     fty-core - Low-level scripts for 42ITy based product bundle
 
-    Copyright (C) 2014 - 2018 Eaton
+    Copyright (C) 2014 - 2020 Eaton
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
 */
 
 pipeline {
-    agent { label "devel-image-ipm_2.1.0 && x86_64" }
+    agent { label "devel-image && x86_64" }
     parameters {
         // Use DEFAULT_DEPLOY_BRANCH_PATTERN and DEFAULT_DEPLOY_JOB_NAME if
         // defined in this jenkins setup -- in Jenkins Management Web-GUI
