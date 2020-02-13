@@ -37,7 +37,7 @@ BASEDIR="$(dirname $(readlink -f ${0}))"
 SETUPDIR=/var/lib/fty/ipc-meta-setup/
 
 die () {
-    echo "FATAL: " "${@}" >&2
+    echo "FATAL: " "`date -u`: " "${@}" >&2
     exit 1
 }
 
@@ -54,7 +54,7 @@ trap 'META_RES=$? ; echo "$0: Aborting due to SIGINT" >&2 ; exit $META_RES;'  2
 trap 'META_RES=$? ; echo "$0: Aborting due to SIGQUIT" >&2 ; exit $META_RES;' 3
 trap 'META_RES=$? ; echo "$0: Aborting due to SIGABRT" >&2 ; exit $META_RES;' 6
 
-echo "STARTING: $0 for scriptlets under ${BASEDIR}"
+echo "STARTING: $0 for scriptlets under ${BASEDIR}, at `date -u`..."
 ls -1 "${BASEDIR}"/[0-9]*.sh | sort | while read SCRIPT; do
 
     # We generally run scripts once, to set up a newly deployed system,
@@ -78,11 +78,11 @@ ls -1 "${BASEDIR}"/[0-9]*.sh | sort | while read SCRIPT; do
         [ "$EVERY_TIME" = "yes" ] || continue
     fi
 
-    echo "APPLY: running ${SCRIPT_NAME}..."
+    echo "APPLY: running ${SCRIPT_NAME} at `date -u`..."
     ${SCRIPT} || die "${SCRIPT} failed with exit-code $?, not proceeding with other scripts"
     touch "${SETUPDIR}/${SCRIPT_NAME}.done" && \
-    echo "APPLIED: successfully ran ${SCRIPT_NAME}"
+    echo "APPLIED: successfully ran ${SCRIPT_NAME}, finished at `date -u`..."
 
 done || die "Something in $0 failed, aborting"
 
-echo "COMPLETED: successfully ran $0"
+echo "COMPLETED: successfully ran $0, finished at `date -u`..."
