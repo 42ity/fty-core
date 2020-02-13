@@ -48,6 +48,12 @@ mkdir -p "${SETUPDIR}"
 # Make sure scripts do not leave occasional traces in unexpected places
 cd /tmp || die "No /tmp!"
 
+# Log the reason of untimely demise for typical causes (e.g. systemd timeout)...
+trap 'META_RES=$? ; echo "$0: Aborting due to SIGTERM" >&2 ; exit $META_RES;' 15
+trap 'META_RES=$? ; echo "$0: Aborting due to SIGINT" >&2 ; exit $META_RES;'  2
+trap 'META_RES=$? ; echo "$0: Aborting due to SIGQUIT" >&2 ; exit $META_RES;' 3
+trap 'META_RES=$? ; echo "$0: Aborting due to SIGABRT" >&2 ; exit $META_RES;' 6
+
 echo "STARTING: $0 for scriptlets under ${BASEDIR}"
 ls -1 "${BASEDIR}"/[0-9]*.sh | sort | while read SCRIPT; do
 
