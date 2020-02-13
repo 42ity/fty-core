@@ -79,7 +79,12 @@ ls -1 "${BASEDIR}"/[0-9]*.sh | sort | while read SCRIPT; do
     fi
 
     echo "APPLY: running ${SCRIPT_NAME} at `date -u`..."
-    ${SCRIPT} || die "${SCRIPT} failed with exit-code $?, not proceeding with other scripts"
+    if [ -x "${SCRIPT}" ]; then
+        ${SCRIPT}
+    else
+        echo "WARNING: ${SCRIPT_NAME} is not executable by itself, sub-shelling to run it. Its original shebang is: `head -1 "${SCRIPT}" | egrep '^\#\!\/'`" >&2
+        ( . ${SCRIPT} )
+    fi || die "${SCRIPT} failed with exit-code $?, not proceeding with other scripts"
     touch "${SETUPDIR}/${SCRIPT_NAME}.done" && \
     echo "APPLIED: successfully ran ${SCRIPT_NAME}, finished at `date -u`..."
 
