@@ -715,21 +715,21 @@ case "$IMGTYPE" in
         ;;
 esac
 
-# Bind nut-server actual startup to EULA acceptance
-# to avoid flooding console / Welcome screen
 mkdir -p /etc/systemd/system/nut-server.service.d
 cat > /etc/systemd/system/nut-server.service.d/fty.conf  << EOF
+# Bind nut-server actual startup to EULA acceptance
+# to avoid flooding console / Welcome screen
 [Unit]
 Requires=network.target fty-license-accepted.service
 BindsTo=fty-license-accepted.service
 After=fty-license-accepted.service
 EOF
 
+mkdir -p /lib/systemd/system/nut.target.d
+cat > /lib/systemd/system/nut.target.d/fty.conf  << EOF
 # Remove nut.target from multi-user.target, to avoid breaking
 # the fty-license-accepted Requirement on multi-user.target.
 # To achieve this, simply set WantedBy to empty
-mkdir -p /lib/systemd/system/nut.target.d
-cat > /lib/systemd/system/nut.target.d/fty.conf  << EOF
 [Install]
 WantedBy=
 EOF
