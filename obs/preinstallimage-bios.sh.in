@@ -725,6 +725,15 @@ BindsTo=fty-license-accepted.service
 After=fty-license-accepted.service
 EOF
 
+# Remove nut.target from multi-user.target, to avoid breaking
+# the fty-license-accepted Requirement on multi-user.target.
+# To achieve this, simply set WantedBy to empty
+mkdir -p /lib/systemd/system/nut.target.d
+cat > /lib/systemd/system/nut.target.d/fty.conf  << EOF
+[Install]
+WantedBy=
+EOF
+
 # Disable fty-license-accepted, before the actual EULA acceptance
 # to avoid flooding console / Welcome screen
 # It will be activated by fty-license-accepted.path
