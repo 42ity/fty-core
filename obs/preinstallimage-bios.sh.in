@@ -725,6 +725,8 @@ BindsTo=fty-license-accepted.service
 After=fty-license-accepted.service
 EOF
 
+# This should only work with recent systemd and Debian 10
+# See the fix below
 mkdir -p /lib/systemd/system/nut.target.d
 cat > /lib/systemd/system/nut.target.d/fty.conf  << EOF
 # Remove nut.target from multi-user.target, to avoid breaking
@@ -732,7 +734,15 @@ cat > /lib/systemd/system/nut.target.d/fty.conf  << EOF
 # To achieve this, simply set WantedBy to empty
 [Install]
 WantedBy=
+WantedBy=bios.target
 EOF
+
+# For systemd 215 at least, dropin for [Install] are not satisfied
+# So hotfix nut.target directly
+# First, disable the target to remove the .wants symlink
+/bin/systemctl disable nut.target
+sed -i "s/WantedBy=multi-user.target/WantedBy=bios.target/" /lib/systemd/system/nut.target
+/bin/systemctl enable nut.target
 
 # Disable fty-license-accepted, before the actual EULA acceptance
 # to avoid flooding console / Welcome screen
