@@ -90,6 +90,16 @@ CREATE TABLE IF NOT EXISTS t_bios_nut_configuration_secw_document(
     ON DELETE CASCADE
 );
 
+/* Delete NUT configurations on security wallet document deletion. */
+DROP TRIGGER IF EXISTS tr_bios_secw_document_nut_configuration;
+CREATE TRIGGER tr_bios_secw_document_nut_configuration
+BEFORE DELETE ON t_bios_secw_document
+FOR EACH ROW
+DELETE FROM t_bios_nut_configuration where id_nut_configuration in (
+    SELECT id_nut_configuration FROM t_bios_nut_configuration_secw_document
+        WHERE t_bios_nut_configuration_secw_document.id_secw_document = OLD.id_secw_document
+);
+
 /* List of secw documents requirements for a NUT configuration type */
 CREATE TABLE IF NOT EXISTS t_bios_nut_configuration_type_secw_document_type_requirements(
     id_nut_configuration_type           INTEGER UNSIGNED NOT NULL,
