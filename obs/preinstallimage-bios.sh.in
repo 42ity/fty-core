@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#   Copyright (c) 2014-2019 Eaton
+#   Copyright (c) 2014 - 2020 Eaton
 #
 #   This file is part of the Eaton 42ity project.
 #
@@ -715,21 +715,25 @@ case "$IMGTYPE" in
         ;;
 esac
 
-# Bind nut-server actual startup to EULA acceptance
-# to avoid flooding console / Welcome screen
 mkdir -p /etc/systemd/system/nut-server.service.d
 cat > /etc/systemd/system/nut-server.service.d/fty.conf  << EOF
+# Bind nut-server actual startup to EULA acceptance
+# to avoid flooding console / Welcome screen
+# Note: here we do require fty-license-accepted.PATH to start,
+# which would trigger its .service when the EULA file appears,
+# but actually start the current unit after the .service and
+# stop along with it.
 [Unit]
-Requires=network.target fty-license-accepted.service
-BindsTo=fty-license-accepted.service
+Requires=network.target fty-license-accepted.path
 After=fty-license-accepted.service
+PartOf=fty-license-accepted.service
 EOF
 
+mkdir -p /lib/systemd/system/nut.target.d
+cat > /lib/systemd/system/nut.target.d/fty.conf  << EOF
 # Remove nut.target from multi-user.target, to avoid breaking
 # the fty-license-accepted Requirement on multi-user.target.
 # To achieve this, simply set WantedBy to empty
-mkdir -p /lib/systemd/system/nut.target.d
-cat > /lib/systemd/system/nut.target.d/fty.conf  << EOF
 [Install]
 WantedBy=
 WantedBy=bios.target
