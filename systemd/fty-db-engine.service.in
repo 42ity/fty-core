@@ -5,10 +5,13 @@
 Description=MySQL server for 42ity usage
 Conflicts=mysql.service mysqld.service mariadb.service
 Wants=basic.target network.target
-Requires=fty-license-accepted.service
-BindsTo=fty-license-accepted.service
+# Note: here we do require fty-license-accepted.PATH to start,
+# which would trigger its .service when the EULA file appears,
+# but actually start the current unit after the .service and
+# stop along with it.
+Requires=fty-license-accepted.path
 After=basic.target network.target fty-license-accepted.service
-PartOf=bios.target
+PartOf=bios.target fty-license-accepted.service
 
 [Service]
 Type=forking
