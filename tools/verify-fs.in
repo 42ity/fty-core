@@ -91,8 +91,36 @@ for ROOTFS in *.squashfs; do
     fi
 
     if [ -s "${ROOTFS}.sha256" ] ; then
-        /usr/bin/sha256sum -c "${ROOTFS}.sha256" 2>/dev/null || \
+        
+        if /usr/bin/sha256sum -c "${ROOTFS}.sha256" 2>/dev/null; then
+            if [ -s "${ROOTFS}-manifest.json" ] ; then
+                
+                    SHA256_COMPUTED=$(cut -d ' ' -f1 < "${ROOTFS}.sha256")
+                    SHA256_MANIFEST=$(grep ShaChecksum "${ROOTFS}-manifest.json"| cut -d '"' -f4)
+
+                if [ "${SHA256_COMPUTED}" = "${SHA256_MANIFEST}" ]; then
+                    if [ -s "${ROOTFS}-manifest.json.p7s" ] ; then
+                        SIGNED_BY=$(grep SignedBy "${ROOTFS}-manifest.json"| cut -d '"' -f4)
+
+                        if openssl cms -verify -binary -inform der -CAfile /usr/share/authorities/${SIGNED_BY}/rootCa1.pem -purpose any -out /dev/null -content "${ROOTFS}-manifest.json" -in "${ROOTFS}-manifest.json.p7s"; then
+                            log "Image signature is valide for ${ROOTFS}"
+                        else
+                            log "Image signature is invalide for ${ROOTFS}"
+                        fi
+
+                    else
+                        log "Manifest signature not found for ${ROOTFS}"
+                    fi
+                else
+                    
+                    log "Manifest sha256 do not match with the sha256 for ${ROOTFS}"
+                fi
+            else
+                log "Manifest not found for ${ROOTFS}"
+            fi
+        else
             log "Bad integrity of ${ROOTFS}, SHA256 checksum is not valid"
+        fi
     else
         log "Missing SHA256 checksum file: '${ROOTFS}.sha256'"
     fi
