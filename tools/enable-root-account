@@ -38,7 +38,7 @@ PATH="/usr/libexec/fty:/usr/share/fty/scripts:/usr/bin:/bin:/usr/sbin:/sbin"
 export PATH
 
 JSONSH="/usr/share/fty/scripts/JSON.sh"
-get_a_string_arg() { "$JSONSH" -x "$1" | (IFS="`printf '\t'`" read K V; echo "$V") | sed 's,^"\(.*\)",\1,' ; }
+get_a_string_arg() { "$JSONSH" -x "$1" --shellable-output=strings -b ; }
 J="/etc/release-details.json"
 img_type="$(get_a_string_arg osimage-img-type < $J)"
 
