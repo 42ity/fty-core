@@ -29,6 +29,9 @@ OVERLAY=@OVERLAY_PATH@
 DEFAULT=/etc/default/verify-fs
 IMAGES=@IMAGES_PATH@
 
+JSONSH="/usr/share/fty/scripts/JSON.sh"
+get_a_string_arg() { "$JSONSH" --get-string "$1" ; }
+
 die () {
     echo "${@}" >&2
     exit 1
@@ -98,11 +101,11 @@ for ROOTFS in *.squashfs; do
         if /usr/bin/sha256sum -c "${ROOTFS}.sha256" 2>/dev/null; then
             if [ -s "${ROOTFS}-manifest.json" ] ; then
                     SHA256_COMPUTED=$(cut -d ' ' -f1 < "${ROOTFS}.sha256")
-                    SHA256_MANIFEST=$(/usr/share/fty/scripts/JSON.sh -l < "${ROOTFS}-manifest.json" | grep '\["application","ShaChecksum"\]' | cut -f2 | cut -d '"' -f2)
+                    SHA256_MANIFEST=$(get_a_string_arg '^"application","ShaChecksum"$' < "${ROOTFS}-manifest.json")
 
                 if [ "${SHA256_COMPUTED}" = "${SHA256_MANIFEST}" ]; then
                     if [ -s "${ROOTFS}-manifest.json.p7s" ] ; then
-                        SIGNED_BY=$(/usr/share/fty/scripts/JSON.sh -l < "${ROOTFS}-manifest.json" | grep '\["application","SignedBy"\]' | cut -f2 | cut -d '"' -f2)
+                        SIGNED_BY=$(get_a_string_arg '^"application","SignedBy"$' < "${ROOTFS}-manifest.json")
 
                         if openssl cms -verify -binary -inform der -CAfile "/usr/share/authorities/${SIGNED_BY}/rootCa1.pem" -purpose any -out /dev/null -content "${ROOTFS}-manifest.json" -in "${ROOTFS}-manifest.json.p7s"; then
                             log "Image signature is valid for ${ROOTFS}"
