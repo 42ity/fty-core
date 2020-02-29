@@ -1,6 +1,6 @@
 [Unit]
 # This is desired just for CLI simplicity: "systemctl restart bios" with no extensions asked
-Description=Service to toggle bios.target and whoever wants it
+Description=Service to toggle 42ity related targets and whoever they "Wants"
 Requires=multi-user.target network.target
 After=multi-user.target network.target
 Conflicts=rescue.target shutdown.target
@@ -8,12 +8,12 @@ Conflicts=rescue.target shutdown.target
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/bin/systemctl start bios.target
-ExecStop=/bin/systemctl stop bios.target
+ExecStart=/bin/systemctl start bios.target fty-db.target fty-license-accepted.target bios-pre-eula.target
+ExecStop=/bin/systemctl stop bios.target fty-db.target fty-license-accepted.target bios-pre-eula.target
 # Make sure this runs, even if there is an unclean startup/shutdown of the unit
-ExecStopPost=/bin/systemctl stop bios.target
+ExecStopPost=/bin/systemctl stop bios.target fty-db.target fty-license-accepted.target bios-pre-eula.target
 # ...and wait for all listed services to finish their lives
-ExecStopPost=/bin/dash -c "/bin/systemctl stop -- $(/bin/systemctl show -p Wants bios.target | cut -d= -f2)"
+ExecStopPost=/bin/dash -c "/bin/systemctl stop -- $(/bin/systemctl show -p Wants bios.target fty-db.target fty-license-accepted.target bios-pre-eula.target | cut -d= -f2)"
 # Ordinary frozen services stop for 90 sec max (default),
 # so this service should outlive them
 TimeoutStopSec=120

@@ -5,13 +5,10 @@
 Description=MySQL server for 42ity usage
 Conflicts=mysql.service mysqld.service mariadb.service
 Wants=basic.target network.target
-# Note: here we do require fty-license-accepted.PATH to start,
-# which would trigger its .service when the EULA file appears,
-# but actually start the current unit after the .service and
-# stop along with it.
-Requires=fty-license-accepted.path
-After=basic.target network.target fty-license-accepted.service
-PartOf=bios.target fty-license-accepted.service
+Requires=fty-license-accepted.target
+BindsTo=fty-license-accepted.target
+After=basic.target network.target fty-license-accepted.target
+PartOf=fty-db.target
 
 [Service]
 Type=forking
@@ -40,7 +37,7 @@ ExecStartPost=/bin/dash -c "/usr/bin/mysql -e 'show databases;' || /usr/bin/mysq
 ExecStop=/usr/lib/mysql/rcmysql stop
 ExecStopPost=-/bin/rm -f /var/run/fty-db-ready
 # Make sure dependent services have finished, e.g. if mysqld died ungracefully
-ExecStopPost=/bin/dash -c "/bin/systemctl stop -- $(/bin/systemctl show -p WantedBy -p RequiredBy -p BoundTo fty-db-engine.service | cut -d= -f2 | tr ' ' '\\n' | egrep -v '^(bios|fty)\.(service|target)$')"
+ExecStopPost=/bin/dash -c "/bin/systemctl stop -- $(/bin/systemctl show -p WantedBy -p RequiredBy -p BoundTo -p RequisiteOf fty-db-engine.service | cut -d= -f2 | tr ' ' '\\n' | egrep -v '^(bios|fty)\.(service|target)$')"
 
 [Install]
-WantedBy=bios.target
+RequiredBy=fty-db.target

@@ -1,7 +1,9 @@
 [Unit]
 Description=Grouping which wants all 42ity-related services so they can be started and stopped uniformly
-Requires=multi-user.target network.target
-After=multi-user.target network.target
+# NOTE: Do not list a "Wants=system services" here, such list is used to stop units via bios.service
+Requires=multi-user.target network.target fty-pre-eula.target fty-license-accepted.target fty-db.target
+BindsTo=fty-pre-eula.target fty-license-accepted.target fty-db.target
+After=multi-user.target network.target fty-pre-eula.target fty-license-accepted.target fty-db.target
 Conflicts=rescue.target shutdown.target
 
 [Install]

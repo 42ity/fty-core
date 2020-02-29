@@ -2,7 +2,7 @@
 Description=Tntnet web server instance for 42ity using @sysconfdir@/tntnet/%i.xml
 After=network.target saslauthd.service malamute.service fty-envvars.service
 Requires=saslauthd.service malamute.service fty-envvars.service
-PartOf=bios.target
+PartOf=bios-pre-eula.target
 
 [Service]
 Type=simple
@@ -30,6 +30,6 @@ ExecStart=/usr/bin/tntnet -c @sysconfdir@/tntnet/%i.xml
 RestartSec=20
 
 [Install]
-WantedBy=bios.target
+WantedBy=bios-pre-eula.target
 #Alias=tntnet@.service
 #Alias=tntnet@%i.service

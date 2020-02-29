@@ -7,10 +7,11 @@ Description=Milestone for all 42ity-related services that should start after lic
 # this status sometimes suffices to start up.
 #AssertFileNotEmpty=/var/lib/fty/fty-eula/license
 #ConditionFileNotEmpty=/var/lib/fty/fty-eula/license
+# This unit per se does not require bios-pre-eula.target to function
 Requires=multi-user.target network.target
 After=multi-user.target network.target
 Conflicts=rescue.target shutdown.target
-PartOf=bios.target
+PartOf=fty-license-accepted.target
 
 [Service]
 Type=simple
@@ -26,4 +27,4 @@ ExecStartPost=/bin/dash -c "/usr/bin/bmsg publish eula ACCEPTED"
 ExecStartPost=/bin/dash -c "UNITS=\"$(/bin/systemctl show -p WantedBy -p RequiredBy -p BoundBy -p RequisiteOf %n | cut -d= -f2 | sort | uniq | tr '\n' ' ' | sed -e 's,^ *,,' -e 's, *$,,')\"; if [ -n \"$UNITS\" ] ; then /bin/systemctl start --no-block -- $UNITS ; else echo 'No units seem to directly depend on %n to tickle them into starting' ; fi"
 
 [Install]
-WantedBy=bios.target
+WantedBy=fty-license-accepted.target
