@@ -325,6 +325,7 @@ eval sbindir=$sbindir
 eval libexecdir=$libexecdir
 eval datarootdir=$datarootdir
 eval datadir=$datadir
+eval ftydatadir=$ftydatadir
 eval localstatedir=$localstatedir
 AC_DEFUN([AC_DATAROOTDIR_CHECKED])
 AC_CONFIG_FILES([
