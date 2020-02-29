@@ -109,7 +109,7 @@ do_reset_passwd() {
 do_unlicense() {
     # TODO: se subst-value to path here
     logmsg_info "Resetting license-accepted state (EULA)..."
-    rm -f /var/lib/fty/fty-eula/license /var/lib/fty/license
+    rm -f @ftydatadir@/fty-eula/license @ftydatadir@/license
     if [ "$ENABLESVC" = yes ]; then
         logmsg_info "Restarting services that care about license-accepted state (EULA)..."
         systemctl restart --no-block fty-license-accepted.service
@@ -124,7 +124,7 @@ do_undatabase() {
     systemctl stop fty-db-init.service || die "Can not ensure database is stopped"
     systemctl stop fty-db-engine.service || die "Can not ensure database is stopped"
     logmsg_info "Clearing database-related files..."
-    rm -rf /var/lib/mysql /var/lib/fty/sql/mysql/* /var/lib/fty/sql/mysql/.*.cnf* \
+    rm -rf /var/lib/mysql @ftydatadir@/sql/mysql/* @ftydatadir@/sql/mysql/.*.cnf* \
         /etc/default/bios-db-r[ow] /root/.my.cnf
     if [ "$ENABLESVC" = yes ]; then
         logmsg_info "Starting database engine, if possible..."
@@ -141,7 +141,7 @@ do_unstate() {
     systemctl stop bios.service || die "Can not ensure IPM daemons are stopped"
 
     logmsg_info "Wiping IPM service state files and directories..."
-    ls -1d /var/lib/fty/* /var/lib/bios/* | \
+    ls -1d @ftydatadir@/* /var/lib/bios/* | \
     while read OBJ ; do
         case "$OBJ" in
         */fty-eula|*/license|*/sql|*/ipc-meta-setup) ;; # Skip these - handled by other actions

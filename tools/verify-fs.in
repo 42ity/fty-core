@@ -29,7 +29,7 @@ OVERLAY=@OVERLAY_PATH@
 DEFAULT=/etc/default/verify-fs
 IMAGES=@IMAGES_PATH@
 
-JSONSH="/usr/share/fty/scripts/JSON.sh"
+JSONSH="@datadir@/@PACKAGE@/scripts/JSON.sh"
 get_a_string_arg() { "$JSONSH" --get-string "$1" ; }
 
 die () {

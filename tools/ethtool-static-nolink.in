@@ -44,7 +44,7 @@ esac
 if [ -z "$METHOD" ]; then
     echo "[`awk '{print $1}' < /proc/uptime`] `date` [$$]: Got no METHOD for $IFACE, have to use augtool..." >&2
     ( which augtool >/dev/null 2>&1 ) || exit 0
-    AUGOUT="`(echo 'match /files/etc/network/interfaces/iface[*]'; echo 'match /files/etc/network/interfaces/iface[*]/method' ) | augtool -S -I/usr/share/fty/lenses`" && \
+    AUGOUT="`(echo 'match /files/etc/network/interfaces/iface[*]'; echo 'match /files/etc/network/interfaces/iface[*]/method' ) | augtool -S -I@datadir@/@PACKAGE@/lenses`" && \
         [ -n "$AUGOUT" ] && \
         AUGOUT_IFACE="`echo "$AUGOUT" | grep " = $IFACE" | sed 's, = .*$,,'`" && \
         [ -n "$AUGOUT_IFACE" ] && \

@@ -67,7 +67,7 @@ if [ -n "$UDHCPC_IFACE" ] && \
    [ -n "`grep udhcpc_opts /etc/network/interfaces /etc/network/interfaces.d/*.conf 2>/dev/null`" ] \
 ; then
     # Run augtools once to speed up the process
-    AUGOUT="`(echo 'match /files/etc/network/interfaces/iface[*]'; echo 'match /files/etc/network/interfaces/iface[*]/udhcpc_opts' ) | augtool -S -I/usr/share/fty/lenses`"
+    AUGOUT="`(echo 'match /files/etc/network/interfaces/iface[*]'; echo 'match /files/etc/network/interfaces/iface[*]/udhcpc_opts' ) | augtool -S -I@datadir@/@PACKAGE@/lenses`"
     if [ $? = 0 ] && [ -n "$AUGOUT" ]; then
         AUGOUT_IFACE="`echo "$AUGOUT" | grep " = $UDHCPC_IFACE" | sed 's, = .*$,,'`" && \
         [ -n "$AUGOUT_IFACE" ] && \

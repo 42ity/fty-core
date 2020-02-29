@@ -37,19 +37,19 @@ augtool () {
 
     case "${1}" in
     set)
-        cat <<EOF | /usr/bin/augtool -S -I/usr/share/fty/lenses/
+        cat <<EOF | /usr/bin/augtool -S -I@datadir@/@PACKAGE@/lenses/
 "${1}" "${2}" "${3}"
 save
 EOF
         ;;
     rm)
-        cat <<EOF | /usr/bin/augtool -S -I/usr/share/fty/lenses/
+        cat <<EOF | /usr/bin/augtool -S -I@datadir@/@PACKAGE@/lenses/
 "${1}" "${2}"
 save
 EOF
         ;;
     *)
-        /usr/bin/augtool -S -I/usr/share/fty/lenses/ "${@}"
+        /usr/bin/augtool -S -I@datadir@/@PACKAGE@/lenses/ "${@}"
         ;;
     esac
 }

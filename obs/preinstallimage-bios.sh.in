@@ -46,6 +46,13 @@
 #   or is considered to be a "deploy" image otherwise.
 #   Note that the IMGTYPE also ends up in update-rc3 settings and
 #   in bios-web/image-version.txt.
+#
+#   TODO: Make use of template paths from :
+#       @libexecdir@/@PACKAGE@ = /usr/libexec/{fty,bios}
+#       @datadir@/@PACKAGE@ = /usr/share/{fty,bios}
+#   Common base location for many components, so no @PACKAGE@ :
+#       @ftydatadir@ = /var/lib/{fty,bios}
+#
 
 echo "INFO: Executing $0 $*"
 echo "    IMGTYPE='$IMGTYPE'"
