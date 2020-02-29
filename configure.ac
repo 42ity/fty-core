@@ -269,7 +269,7 @@ AM_CONDITIONAL([HAVE_SYSTEMD], [test "x$with_systemdtmpfilesdir" != "xno"])
 AC_ARG_WITH([ftydatadir],
     [AS_HELP_STRING([--with-ftydatadir=DIR], [Directory for deployment specific mutable data])],,
     [with_ftydatadir=/var/lib/fty])
-AC_SUBST([ftydatadir], [$ftydatadir])
+AC_SUBST([ftydatadir], [$with_ftydatadir])
 
 AS_CASE([$host_cpu],
 [x86_64 | i?86],
