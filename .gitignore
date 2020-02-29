@@ -178,6 +178,8 @@ systemd/fty-db-engine.service
 systemd/fty-tntnet@.service
 !systemd/fty-envvars.service.in
 systemd/fty-envvars.service
+!systemd/fty-hostname-setup.service.in
+systemd/fty-hostname-setup.service
 
 !tools/tntnet-ExecStartPre.sh.in
 tools/tntnet-ExecStartPre.sh
