@@ -600,6 +600,19 @@ if [ -s /lib/systemd/system/nut-driver-enumerator.service ] \
     # not enabling because of missing requirements in the Install section...
     # if so - this is intentional in that branch of NUT for our product.
     for unit in nut-driver-enumerator-daemon.service nut-driver-enumerator-daemon-activator.service nut-driver-enumerator-daemon-activator.path ; do
+        # Disable unit, amend dependency config, re-enable to make new symlinks
+        /bin/systemctl disable ${unit} || true
+
+        mkdir -p /etc/systemd/system/${unit}.d
+        cat > /etc/systemd/system/${unit}.d/fty.conf  << EOF
+# On 42ity deployments, start NUT parts after EULA is accepted
+[Unit]
+Requisite=fty-license-accepted.target
+After=fty-license-accepted.target
+PartOf=fty-license-accepted.target
+EOF
+        /bin/systemctl daemon-reload || true
+
         /bin/systemctl unmask ${unit} || true
         /bin/systemctl enable ${unit} || true
     done
@@ -722,6 +735,12 @@ case "$IMGTYPE" in
         ;;
 esac
 
+# First, disable the NUT units to remove the .wants symlinks
+/bin/systemctl disable nut.target
+/bin/systemctl disable nut-driver.target
+/bin/systemctl disable nut-server.service
+/bin/systemctl disable nut-monitor.service
+
 # Note: In case we'd use a version of NUT that can validly serve
 # "no data" with an empty config file (no device sections) and
 # later reload as something gets configured, we can change the
@@ -747,7 +766,7 @@ cat > /lib/systemd/system/nut.target.d/fty.conf  << EOF
 # the fty-license-accepted Requirement on multi-user.target.
 # To achieve this, simply set WantedBy to empty
 [Unit]
-Requires=fty-license-accepted.target
+Requisite=fty-license-accepted.target
 After=fty-license-accepted.target
 PartOf=fty-license-accepted.target
 
@@ -756,14 +775,34 @@ WantedBy=
 WantedBy=bios.target
 EOF
 
-/bin/systemctl daemon-reload
-
 # For systemd 215 at least, dropin for [Install] are not satisfied
-# So hotfix nut.target directly
-# First, disable the target to remove the .wants symlink
-/bin/systemctl disable nut.target
+# So hotfix nut.target directly. First we disabled it above...
 # Then update the target membership and update
 sed -e "s/WantedBy=multi-user.target/WantedBy=bios.target/" -i /lib/systemd/system/nut.target
+
+mkdir -p /lib/systemd/system/nut-driver.target.d
+cat > /lib/systemd/system/nut-driver.target.d/fty.conf  << EOF
+# On 42ity deployments, start NUT parts after EULA is accepted
+[Unit]
+Requisite=fty-license-accepted.target
+After=fty-license-accepted.target
+PartOf=fty-license-accepted.target
+EOF
+
+mkdir -p /lib/systemd/system/nut-monitor.service.d
+cat > /lib/systemd/system/nut-monitor.service.d/fty.conf  << EOF
+# On 42ity deployments, start NUT parts after EULA is accepted
+[Unit]
+Requisite=fty-license-accepted.target
+After=fty-license-accepted.target
+PartOf=fty-license-accepted.target
+EOF
+
+# Recreate the service dependency symlinks
+/bin/systemctl daemon-reload
+/bin/systemctl enable nut-driver.target
+/bin/systemctl enable nut-server.service
+/bin/systemctl enable nut-monitor.service
 /bin/systemctl enable nut.target
 
 # according to https://github.com/42ity/malamute/blob/1.0-FTY-master/src/mlm_perftest.c#L22
