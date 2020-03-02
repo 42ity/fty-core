@@ -7,6 +7,7 @@ Description=Milestone for all 42ity-related services that should start after lic
 # this status sometimes suffices to start up.
 #AssertFileNotEmpty=@ftydatadir@/fty-eula/license
 #ConditionFileNotEmpty=@ftydatadir@/fty-eula/license
+#ConditionPathExists=@ftydatadir@/fty-eula/license
 # This unit per se does not require bios-pre-eula.target to function
 Requires=multi-user.target network.target
 After=multi-user.target network.target
