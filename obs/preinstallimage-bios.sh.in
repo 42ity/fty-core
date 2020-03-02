@@ -611,6 +611,16 @@ Requisite=fty-license-accepted.target
 After=fty-license-accepted.target
 PartOf=fty-license-accepted.target
 EOF
+        case "${unit}" in
+            *.path)
+                cat >> /etc/systemd/system/${unit}.d/fty.conf  << EOF
+# Do not depend on this unit from paths.target that would make a loop
+# and try to start it (and NUT services it triggers) earlier than desired
+DefaultDependencies=no
+EOF
+                ;;
+        esac
+
         /bin/systemctl daemon-reload || true
 
         /bin/systemctl unmask ${unit} || true
