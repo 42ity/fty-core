@@ -733,7 +733,8 @@ cat > /etc/systemd/system/nut-server.service.d/fty.conf  << EOF
 # Bind nut-server actual startup to EULA acceptance
 # to avoid flooding console / Welcome screen
 [Unit]
-Requires=network.target fty-license-accepted.target
+Requires=network.target
+Requisite=fty-license-accepted.target
 After=fty-license-accepted.target
 PartOf=fty-license-accepted.target
 EOF
