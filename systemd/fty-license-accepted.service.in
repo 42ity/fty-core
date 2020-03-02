@@ -8,7 +8,9 @@ Description=Milestone for all 42ity-related services that should start after lic
 #AssertFileNotEmpty=@ftydatadir@/fty-eula/license
 #ConditionFileNotEmpty=@ftydatadir@/fty-eula/license
 #ConditionPathExists=@ftydatadir@/fty-eula/license
-# This unit per se does not require bios-pre-eula.target to function
+
+# This unit per se does not require bios-pre-eula.target to function, only
+# the EULA acceptance file that is created by someone (tntnet, ssh, ...)
 Requires=multi-user.target network.target
 After=multi-user.target network.target
 Conflicts=rescue.target shutdown.target
@@ -25,8 +27,5 @@ ExecStart=/bin/dash -c "while ! /usr/bin/test -s @ftydatadir@/fty-eula/license ;
 ExecStartPost=-/bin/systemctl start --no-block fty-license-accepted.target
 ExecStartPost=/bin/dash -c "@libexecdir@/@PACKAGE@/disable-root-account"
 ExecStartPost=-/bin/systemctl start --no-block bios.service
-ExecStartPost=/bin/dash -c "/usr/bin/bmsg publish eula ACCEPTED"
 ExecStartPost=/bin/dash -c "UNITS=\"$(/bin/systemctl show -p WantedBy -p RequiredBy -p BoundBy -p RequisiteOf %n | cut -d= -f2 | sort | uniq | tr '\n' ' ' | sed -e 's,^ *,,' -e 's, *$,,')\"; if [ -n \"$UNITS\" ] ; then /bin/systemctl start --no-block -- $UNITS ; else echo 'No units seem to directly depend on %n to tickle them into starting' ; fi"
-
-[Install]
-WantedBy=fty-license-accepted.target
+ExecStartPost=/bin/dash -c "/usr/bin/bmsg publish eula ACCEPTED"
