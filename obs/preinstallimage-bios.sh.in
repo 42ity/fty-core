@@ -1225,13 +1225,16 @@ find /var/log -group bios-logread -exec chmod g+r '{}' \; || true
 /bin/systemctl enable bios-pre-eula.target || true
 /bin/systemctl enable fty-license-accepted.target || true
 
-/bin/systemctl disable fty-db.target || true
 /bin/systemctl disable bios.target || true
+/bin/systemctl mask bios.target || true
+/bin/systemctl disable fty-db.target || true
+/bin/systemctl mask fty-db.target || true
 /bin/systemctl disable bios.service || true
 
 # A bit for the value-added stuff if present in this image.
 # Would be re-activated by its packaged drop-in service config.
 /bin/systemctl disable ipm2.target || true
+/bin/systemctl mask ipm2.target || true
 /bin/systemctl disable ipm2.service || true
 
 sync
