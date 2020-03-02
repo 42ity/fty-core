@@ -765,11 +765,6 @@ EOF
 sed -e "s/WantedBy=multi-user.target/WantedBy=bios.target/" -i /lib/systemd/system/nut.target
 /bin/systemctl enable nut.target
 
-# Disable fty-license-accepted, before the actual EULA acceptance
-# to avoid flooding console / Welcome screen
-# It will be activated by fty-license-accepted.path
-/bin/systemctl disable fty-license-accepted.service
-
 # according to https://github.com/42ity/malamute/blob/1.0-FTY-master/src/mlm_perftest.c#L22
 # "If we allow limits, then the engines will block under stress."
 # to avoid any block under stress, set unlimited High Water Mark on malamute clients side likes we have on the broker itself
@@ -1168,6 +1163,11 @@ find /var/log -group bios-logread -exec chmod g+r '{}' \; || true
 # The logic to migrate such paths in existing upgraded deployments
 # is now handled in setup/ipc-meta-setup.sh framework script and
 # corresponding systemd service unit before BIOS services start up.
+
+# Disable fty-license-accepted, before the actual EULA acceptance
+# to avoid flooding console / Welcome screen
+# It will be activated by fty-license-accepted.path
+/bin/systemctl disable fty-license-accepted.service
 
 sync
 echo "INFO: successfully reached the end of script: $0 $@"
