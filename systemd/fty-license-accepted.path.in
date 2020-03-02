@@ -20,5 +20,5 @@ Unit=fty-license-accepted.service
 # do not kill off the whole ecosystem (e.g. tntnet@bios).
 [Install]
 WantedBy=fty-license-accepted.target
-RequiredBy=fty-license-accepted.service
+#RequiredBy=fty-license-accepted.service
 # fty-db-engine.service fty-db-init.service
