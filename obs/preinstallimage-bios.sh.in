@@ -1214,11 +1214,6 @@ find /var/log -group bios-logread -exec chmod g+r '{}' \; || true
 # is now handled in setup/ipc-meta-setup.sh framework script and
 # corresponding systemd service unit before BIOS services start up.
 
-# Disable fty-license-accepted, before the actual EULA acceptance
-# to avoid flooding console / Welcome screen
-# It will be activated by fty-license-accepted.path
-/bin/systemctl disable fty-license-accepted.service || true
-
 # Do not autostart the complete product during the first boot,
 # before EULA is accepted in the initial Web-GUI wizard.
 # The fty-license-accepted.service should enable these for later boots.
@@ -1236,6 +1231,11 @@ find /var/log -group bios-logread -exec chmod g+r '{}' \; || true
 /bin/systemctl disable ipm2.target || true
 /bin/systemctl mask ipm2.target || true
 /bin/systemctl disable ipm2.service || true
+
+# Disable fty-license-accepted, before the actual EULA acceptance
+# to avoid flooding console / Welcome screen
+# It will be activated by fty-license-accepted.path
+/bin/systemctl disable fty-license-accepted.service || true
 
 sync
 echo "INFO: successfully reached the end of script: $0 $@"
