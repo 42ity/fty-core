@@ -21,3 +21,11 @@ PartOf=bios.target
 
 [Install]
 RequiredBy=bios.target
+# Note: this target is both WantedBy (triggered to start with no waiting
+# to complete) and Requires/After the multi-user.target. So when system
+# finishes proper basic startup, it triggers/schedules a startup of the
+# fty-license-accepted.target which actually takes place after the
+# multi-user.target has reported completion of its own startup.
+# Successful startup of fty-license-accepted.service (after accepting
+# the EULA) will enable other targets comprising the product.
+WantedBy=multi-user.target

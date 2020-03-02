@@ -8,3 +8,9 @@ Conflicts=rescue.target shutdown.target
 
 [Install]
 Alias=bios-pre-eula.target
+# Note: this target is both WantedBy (triggered to start with no waiting
+# to complete) and Requires/After the multi-user.target. So when system
+# finishes proper basic startup, it triggers/schedules a startup of the
+# bios-pre-eula.target which actually takes place after the multi-user.target
+# has reported completion of its own startup.
+WantedBy=multi-user.target
