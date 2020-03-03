@@ -1,7 +1,11 @@
 [Unit]
 Description=Target that is reached when 42ity database is ready to use
 # NOTE: Do not list a "Wants=system services" here, such list is used to stop units via bios.service
-Requires=multi-user.target network.target bios-pre-eula.target fty-license-accepted.target
+Requires=multi-user.target network.target bios-pre-eula.target
+# These targets we "Want" (try to start once) but do not Require
+# (keep on starting) - just Requisite so we do not start without
+# if they are not activable at the moment.
+Wants=fty-license-accepted.target
 Requisite=fty-license-accepted.target
 BindsTo=fty-license-accepted.target
 After=multi-user.target network.target bios-pre-eula.target fty-license-accepted.target
@@ -10,4 +14,4 @@ Conflicts=rescue.target shutdown.target
 PartOf=bios.target
 
 [Install]
-RequiredBy=bios.target
+WantedBy=multi-user.target
