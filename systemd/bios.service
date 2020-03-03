@@ -8,7 +8,9 @@ Conflicts=rescue.target shutdown.target
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/bin/systemctl start bios.target fty-db.target fty-license-accepted.target bios-pre-eula.target
+ExecStartPre=-/bin/systemctl unmask bios.target fty-db.target fty-license-accepted.target bios-pre-eula.target
+ExecStartPre=-/bin/systemctl enable bios.target fty-db.target fty-license-accepted.target bios-pre-eula.target
+ExecStart=/bin/systemctl start bios-pre-eula.target fty-license-accepted.target fty-db.target bios.target
 ExecStop=/bin/systemctl stop bios.target fty-db.target fty-license-accepted.target bios-pre-eula.target
 # Make sure this runs, even if there is an unclean startup/shutdown of the unit
 ExecStopPost=/bin/systemctl stop bios.target fty-db.target fty-license-accepted.target bios-pre-eula.target
