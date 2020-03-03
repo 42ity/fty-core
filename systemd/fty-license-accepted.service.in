@@ -17,7 +17,7 @@ Conflicts=rescue.target shutdown.target
 PartOf=fty-license-accepted.target
 
 [Service]
-Type=simple
+Type=oneshot
 ### the service shall be considered active even when all its processes exited
 RemainAfterExit=yes
 ### if starting failed, do not loop, wait for path (or start-db-services script)
