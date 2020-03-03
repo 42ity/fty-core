@@ -55,8 +55,12 @@ echo "CREATE NEW /etc/logrotate.d/fty-db-engine"
 cat > /etc/logrotate.d/fty-db-engine << EOF
 /var/log/mysql/*.log {
     daily
+    size 100M
     rotate 7
     missingok
+    # Directory access rights de-levation
+    su mysql mysql
+    # Recreate log file with these rights
     create 640 mysql bios-logread
     compress
     sharedscripts
