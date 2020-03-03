@@ -11,3 +11,6 @@ PartOf=fty-license-accepted.target
 PathModified=@ftydatadir@/fty-eula/license
 PathExists=@ftydatadir@/fty-eula/license
 Unit=fty-license-accepted.service
+
+[Install]
+RequiredBy=fty-license-accepted.target
