@@ -83,7 +83,7 @@ cat > /etc/logrotate.d/tntnet-bios << EOF
 # No need for /var/log/tntnet/www-audit.log - it is managed by log4cplus setting
 /var/log/tntnet/tntnet.log /var/log/tntnet/access.log /var/log/tntnet/error.log {
     daily
-    size 100m
+    size 100M
     missingok
     rotate 30
     compress
