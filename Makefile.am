@@ -247,6 +247,7 @@ ipc_meta_setup_SCRIPTS = \
 	$(top_builddir)/setup/20-th-names.sh \
 	$(top_srcdir)/setup/90-nut-ownership.everytime.sh \
 	$(top_srcdir)/setup/90-sw-manifest.sh \
+	$(top_srcdir)/setup/91-logrotate-fty.sh \
 	$(top_srcdir)/setup/ipc-meta-setup.sh
 
 EXTRA_DIST += \
@@ -261,6 +262,7 @@ EXTRA_DIST += \
 	$(top_srcdir)/setup/20-th-names.sh.in \
 	$(top_srcdir)/setup/90-nut-ownership.everytime.sh \
 	$(top_srcdir)/setup/90-sw-manifest.sh \
+	$(top_srcdir)/setup/91-logrotate-fty.sh \
 	$(top_srcdir)/setup/ipc-meta-setup.sh
 
 # SystemD integrations files; if not enabled - variables remain empty
@@ -316,6 +318,7 @@ SYSTEMD_UNITS_LOWLEVEL += \
 # service instances for us. TODO: should tntnet@.service move here?
 SYSTEMD_UNITS_EXTRA += \
                         fty-license-accepted.path \
+                        fty-logrotate.service \
                         wd_keepalive@.service
 
 # These service-units are PartOf and WantedBy the "bios.target"
@@ -357,6 +360,7 @@ SYSTEMD_UNITS_TIMERIMPL += $(SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL) $(SYSTEMD_UNITS_T
 SYSTEMD_TIMERS_LOWLEVEL += \
                         biostimer-loghost-rsyslog-netconsole.timer \
                         biostimer-compress-logs.timer \
+                        fty-logrotate.timer \
                         biostimer-verify-fs.timer
 
 SYSTEMD_TIMERS += $(SYSTEMD_TIMERS_LOWLEVEL) $(SYSTEMD_TIMERS_TARGET_BIOS)
