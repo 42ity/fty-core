@@ -178,6 +178,8 @@ systemd/fty-db-init.conf
 systemd/fty-db-init.service
 !systemd/fty-db-engine.service.in
 systemd/fty-db-engine.service
+!systemd/fty-db-engine-pre.service.in
+systemd/fty-db-engine-pre.service
 !systemd/fty-tntnet@.service.in
 systemd/fty-tntnet@.service
 !systemd/fty-envvars.service.in

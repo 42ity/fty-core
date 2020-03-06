@@ -333,6 +333,7 @@ SYSTEMD_UNITS_EXTRA += \
 SYSTEMD_UNITS_TARGET_BIOS += \
                         fty-license-accepted.service \
                         fty-license-accepted.path \
+                        fty-db-engine-pre.service \
                         fty-db-engine.service \
                         fty-db-init.service
 

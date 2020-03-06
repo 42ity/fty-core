@@ -362,6 +362,7 @@ AC_CONFIG_FILES([
         systemd/biostimer-loghost-rsyslog-netconsole.service
         systemd/biostimer-verify-fs.service
         systemd/fty-core.conf
+        systemd/fty-db-engine-pre.service
         systemd/fty-db-engine.service
         systemd/fty-db-init.service
         systemd/fty-db-init.conf
