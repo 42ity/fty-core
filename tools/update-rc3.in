@@ -422,7 +422,7 @@ remove_image() {
             [ -s "$RETAIN_FILE" ] \
                 && logmsg_info "Retaining '$RETAIN_FILE' during remove_image($*)" \
                 && mv -f "$RETAIN_FILE" "$RETAIN_FILE.$$"
-	done
+        done
     fi
 
     remove_checksum_cache '[^\:]*' '[^\:]*' "$1"
@@ -447,7 +447,7 @@ remove_image() {
                 && logmsg_info "Restoring retained '$RETAIN_FILE' during remove_image($*)" \
                 && mv -f "$RETAIN_FILE.$$" "$RETAIN_FILE" \
                 || rm -f "$1.forceflash"
-	done
+        done
     fi
 }
 
@@ -962,7 +962,7 @@ download_rawfwimage_generic() (
                         "${DEPLOYMENTROOT_THISIMAGE}/${rIMAGE_CSOLD["$IMAGE_CSALGO"]}" \
                         "${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" \
                     || logmsg_warn "TODO: If we can detect the file size of the remote image, use calculate_stream_checksum_bytes() to verify flashed bits vs ${IMAGE_CSALGO} checksum file"
-	    done
+            done
 
             case "$LOCAL_CHECKSUMS_MATCHED" in
                 -1)  # Should not happen unless CHECKSUM_ALGOLIST_DEFAULT is empty
@@ -1031,8 +1031,8 @@ download_rawfwimage_generic() (
     HELPER_PATTERN=''
     for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
         [ -n "${HELPER_PATTERN-}" ] \
-	    && HELPER_PATTERN="${HELPER_PATTERN}|${IMAGE_CSURL["$IMAGE_CSALGO"]}" \
-	    || HELPER_PATTERN="${IMAGE_CSURL["$IMAGE_CSALGO"]}"
+            && HELPER_PATTERN="${HELPER_PATTERN}|${IMAGE_CSURL["$IMAGE_CSALGO"]}" \
+            || HELPER_PATTERN="${IMAGE_CSURL["$IMAGE_CSALGO"]}"
         if [ -n "${RAW_DEVICE_NODE-}" ]; then
             HELPER_PATTERN="${HELPER_PATTERN}|${IMAGE_CSURL_PADDED["$IMAGE_CSALGO"]}"
         fi
