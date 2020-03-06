@@ -2030,12 +2030,21 @@ while [ $# -gt 0 ]; do
 		--url-image-*|-U)
 		    [ $# -eq 1 ] && die "The '$1' option requires a further argument"
 		    case "${1-}" in
-		        --url-image-os|-U)          URL_DOWNLOAD_OSIMAGE="$2"; shift;;
-		        --url-image-fw-raw-uboot)   URL_DOWNLOAD_FWIMAGE_RAW_UBOOT="$2"; shift;;
-		        --url-image-fw-raw-uimage)  URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE="$2"; shift;;
-		        --url-image-fw-raw-modules) URL_DOWNLOAD_FWIMAGE_RAW_MODULES="$2"; shift;;
+		        --url-image-os|-U)
+		            case "${2-}" in
+		                */) logmsg_info "Only directory passed for --url-image-os='$2', trying to use latest image from it for current ARCH='$ARCH'"
+		                    URL_DOWNLOAD_OSIMAGE="`SOURCESITEROOT_OSIMAGE="$2" SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN='*'"${ARCH}"'*' findnewest_osimage`" \
+		                        && [ -n "${URL_DOWNLOAD_OSIMAGE}" ] \
+		                        || die "Could not detect URL_DOWNLOAD_OSIMAGE from --url-image-os='$2'"
+		                    ;;
+		                *)  URL_DOWNLOAD_OSIMAGE="$2" ;;
+		            esac ;;
+		        --url-image-fw-raw-uboot)   URL_DOWNLOAD_FWIMAGE_RAW_UBOOT="$2" ;;
+		        --url-image-fw-raw-uimage)  URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE="$2" ;;
+		        --url-image-fw-raw-modules) URL_DOWNLOAD_FWIMAGE_RAW_MODULES="$2" ;;
 		        *)  die "Aborting due to unknown command-line argument(s): $*" ;;
-		    esac ;;
+		    esac
+		    shift ;;
 		--removeold-image-os)   ACTION_REMOVEOLD_OSIMAGE="yes";;
 		--removeold-image-fw)   ACTION_REMOVEOLD_FWIMAGE="yes";;
 		--removeold-images)     ACTION_REMOVEOLD_OSIMAGE="yes"; ACTION_REMOVEOLD_FWIMAGE="yes";;
