@@ -122,7 +122,15 @@ if [[ "$SYSTEMCTL_COALESCE_INITIAL" = no ]] ; then
     echo "INFO: `date -u`: enable and start fty-db-engine"
     sudo ${SYSTEMCTL} unmask fty-db-engine || die "Unmasking fty-db-engine failed ($?)"
     sudo ${SYSTEMCTL} enable fty-db-engine || die "Enabling fty-db-engine failed ($?)"
-    sudo ${SYSTEMCTL} start fty-db-engine || die "Starting fty-db-engine failed ($?)"
+    # Try twice, to avoid the possibility that an attempt to start the
+    # fty-db-engine.service did begin before, due to external circumstances,
+    # and this call to systemctl would return failure of that run (e.g. the
+    # license file missing at the point that copy of startup was evaluated).
+    # Note that by current product layout, only fty-db-engine is expected to
+    # fall into this trap.
+    sudo ${SYSTEMCTL} start fty-db-engine \
+        || (sleep 1; sudo ${SYSTEMCTL} start fty-db-engine) \
+        || die "Starting fty-db-engine failed ($?)"
 
     echo "INFO: `date -u`: enable and start fty-db-init"
     sudo ${SYSTEMCTL} enable fty-db-init || die "Enabling fty-db-init failed ($?)"
@@ -147,8 +155,10 @@ else
 
     sleep 3
 
+    # See comment above about trying to start twice
     echo "INFO: `date -u`: start core database-related services"
     sudo ${SYSTEMCTL} start fty-license-accepted.path fty-license-accepted.service fty-db-engine.service fty-db-init.service fty-license-accepted.target fty-db.target \
+        || (sleep 1; sudo ${SYSTEMCTL} start fty-license-accepted.path fty-license-accepted.service fty-db-engine.service fty-db-init.service fty-license-accepted.target fty-db.target) \
         || die "Starting a core database-related service failed ($?)"
 fi
 
