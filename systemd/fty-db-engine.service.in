@@ -10,6 +10,9 @@ Wants=basic.target network.target
 # but actually start the current unit after the .service and
 # stop along with it.
 Requires=fty-license-accepted.path
+# Do not start DB if fty-license-accepted.service is not started already
+# But do not send it into trying to start (and looping to fail), either
+Requisite=fty-license-accepted.service
 After=basic.target network.target fty-license-accepted.service
 PartOf=bios.target fty-license-accepted.service
 
