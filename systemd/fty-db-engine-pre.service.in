@@ -14,7 +14,8 @@ After=basic.target network.target fty-license-accepted.service
 Type=oneshot
 RemainAfterExit=on
 User=root
-RestartSec=5
+#RestartSec=5
+TimeoutStartSec=15
 # Hack to work around systemd deficiencies, where fty-license-accepted.path+service are not enough
 # Better ugly than sorry (with DB beginning to start, then getting killed by newly realized dependency unit states, and ending up with corrupted DB files rarely)
 ExecStartPre=/bin/dash -c "test -f /var/lib/fty/fty-eula/license"
