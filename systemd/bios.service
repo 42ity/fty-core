@@ -13,7 +13,7 @@ ExecStop=/bin/systemctl stop bios.target
 # Make sure this runs, even if there is an unclean startup/shutdown of the unit
 ExecStopPost=/bin/systemctl stop bios.target
 # ...and wait for all listed services to finish their lives
-ExecStopPost=/bin/dash -c "/bin/systemctl stop -- $(/bin/systemctl show -p Wants bios.target | cut -d= -f2)"
+ExecStopPost=/bin/dash -c "for U in $(/bin/systemctl show -p Wants bios.target | cut -d= -f2) ; do case \"$U\" in *.path|*.timer) ;; *) /bin/systemctl stop --no-ask-password -- $U & ;; esac ; done ; wait"
 # Ordinary frozen services stop for 90 sec max (default),
 # so this service should outlive them
 TimeoutStopSec=120
