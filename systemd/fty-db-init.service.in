@@ -36,7 +36,8 @@ Environment="prefix=@prefix@"
 ExecStart=@libexecdir@/@PACKAGE@/db-init --db-ready-file /var/run/fty-db-ready
 #ExecStartPost=/usr/bin/touch /var/run/fty-db-ready
 ExecStop=-/bin/rm -f /var/run/fty-db-ready
-ExecStopPost=/bin/dash -c "/bin/systemctl stop --no-ask-password -- $(/bin/systemctl show -p WantedBy -p RequiredBy -p BoundBy -p RequisiteOf %n | cut -d= -f2 | tr ' ' '\\n' | egrep -v '(^(bios|fty)\.(service|target)|\.timer|\.path)$')"
+# Make sure services that might want the database are not running if it stops
+ExecStopPost=/bin/dash -c "UNITS=\"$(/bin/systemctl show -p WantedBy -p RequiredBy -p BoundBy -p RequisiteOf %n | cut -d= -f2 | tr ' ' '\\n' | sort | uniq | egrep -v '(\.timer|\.path)$' | tr '\\n' ' ' | sed -e 's,^ *,,' -e 's, *$,,')\"; if [ -n \"$UNITS\" ] ; then /bin/systemctl start --no-ask-password --no-block -- $UNITS ; else echo 'No units seem to directly depend on %n to tickle them into stopping' ; fi"
 
 [Install]
 WantedBy=bios.target
