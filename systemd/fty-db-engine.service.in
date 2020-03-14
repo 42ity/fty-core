@@ -5,16 +5,29 @@
 Description=MySQL server for 42ity usage
 Conflicts=mysql.service mysqld.service mariadb.service
 Wants=basic.target network.target
+
 Requires=fty-license-accepted.target
 BindsTo=fty-license-accepted.target
 After=basic.target network.target fty-license-accepted.target
-PartOf=fty-db.target
 
 # Offload killing of competing mysql implementation instances to where
 # its failure would not block this critical unit. Sometimes executions
 # of systemctl from units block...
 Wants=fty-db-engine-pre.service
 After=fty-db-engine-pre.service
+
+# Do not start DB if fty-license-accepted.service is not started already
+# But do not send it into trying to start (and looping to fail), either
+Requisite=fty-license-accepted.service
+After=fty-license-accepted.service
+
+# Offload killing of competing mysql implementation instances to where
+# its failure would not block this critical unit. Sometimes executions
+# of systemctl from units block...
+Wants=fty-db-engine-pre.service
+After=fty-db-engine-pre.service
+
+PartOf=fty-db.target
 
 [Service]
 Type=forking
@@ -42,7 +55,7 @@ ExecStartPost=/bin/dash -c "/usr/bin/mysql -e 'show databases;' || /usr/bin/mysq
 ExecStop=/usr/lib/mysql/rcmysql stop
 ExecStopPost=-/bin/rm -f /var/run/fty-db-ready
 # Make sure dependent services have finished, e.g. if mysqld died ungracefully
-ExecStopPost=/bin/dash -c "/bin/systemctl stop -- $(/bin/systemctl show -p WantedBy -p RequiredBy -p BoundTo -p RequisiteOf fty-db-engine.service | cut -d= -f2 | tr ' ' '\\n' | egrep -v '^(bios|fty)\.(service|target)$')"
+ExecStopPost=/bin/dash -c "UNITS=\"$(/bin/systemctl show -p WantedBy -p RequiredBy -p BoundBy -p RequisiteOf %n | cut -d= -f2 | tr ' ' '\\n' | sort | uniq | egrep -v '(^(bios|fty)\.(service|target)$|(\.timer|\.path)$)' | tr '\\n' ' ' | sed -e 's,^ *,,' -e 's, *$,,')\"; if [ -n \"$UNITS\" ] ; then /bin/systemctl start --no-ask-password --no-block -- $UNITS ; else echo 'No units seem to directly depend on %n to tickle them into stopping' ; fi"
 
 [Install]
 RequiredBy=fty-db.target

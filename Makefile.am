@@ -330,6 +330,7 @@ SYSTEMD_UNITS_EXTRA += \
 # And also "tntnet@.service" customized by obs/preinstall.sh
 # to enable a "tntnet@bios.service" instance specifically.
 # And also some of the timer units and implementations below
+# Note that for packaging practice most are generated from .in templates
 SYSTEMD_UNITS_TARGET_BIOS += \
                         fty-license-accepted.service \
                         fty-license-accepted.path \

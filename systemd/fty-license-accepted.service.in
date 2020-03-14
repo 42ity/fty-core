@@ -29,14 +29,17 @@ User=root
 ExecStartPre=/bin/dash -c "sleep 2 ; /usr/bin/test -s @ftydatadir@/fty-eula/license"
 ExecStart=/bin/dash -c "while ! /usr/bin/test -s @ftydatadir@/fty-eula/license ; do sleep 3 ; done"
 ExecStartPost=-/bin/systemctl start --no-block fty-license-accepted.target
+
 #ExecStartPost=-/bin/systemctl unmask fty-db.target
 #ExecStartPost=-/bin/systemctl enable fty-db.target
 #ExecStartPost=-/bin/systemctl unmask bios.target
 #ExecStartPost=-/bin/systemctl enable bios.target
 #ExecStartPost=-/bin/systemctl start --no-block fty-db.target
-#ExecStartPost=/bin/dash -c "UNITS=\"$(/bin/systemctl show -p WantedBy -p RequiredBy -p BoundBy -p RequisiteOf %n | cut -d= -f2 | sort | uniq | tr '\n' ' ' | sed -e 's,^ *,,' -e 's, *$,,')\"; if [ -n \"$UNITS\" ] ; then /bin/systemctl start --no-block -- $UNITS ; else echo 'No units seem to directly depend on %n to tickle them into starting' ; fi"
-### Starting bios.service should unmask, enable and start all these impacted units
+#ExecStartPost=/bin/dash -c "UNITS=\"$(/bin/systemctl show -p WantedBy -p RequiredBy -p BoundBy -p RequisiteOf %n | cut -d= -f2 | tr ' ' '\\n' | sort | uniq | egrep -v '(\.timer|\.path)$' | tr '\\n' ' ' | sed -e 's,^ *,,' -e 's, *$,,')\"; if [ -n \"$UNITS\" ] ; then /bin/systemctl start --no-ask-password --no-block -- $UNITS ; else echo 'No units seem to directly depend on %n to tickle them into starting' ; fi"
+### Starting bios.service should unmask, enable and start all these impacted units listed earlier above
 ExecStartPost=-/bin/systemctl start --no-block bios.service
+
+### Tell existing bus clients, like tntnet@bios
 ExecStartPost=/bin/dash -c "/usr/bin/bmsg publish eula ACCEPTED"
 ExecStartPost=/bin/dash -c "@libexecdir@/@PACKAGE@/disable-root-account"
 
