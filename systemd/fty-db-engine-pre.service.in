@@ -12,7 +12,7 @@ After=basic.target network.target fty-license-accepted.service
 
 [Service]
 Type=oneshot
-RemainAfterExit=on
+RemainAfterExit=yes
 User=root
 #RestartSec=5
 TimeoutStartSec=15
