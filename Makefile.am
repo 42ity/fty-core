@@ -253,6 +253,7 @@ ipc_meta_setup_SCRIPTS = \
 	$(top_srcdir)/setup/90-nut-ownership.everytime.sh \
 	$(top_srcdir)/setup/90-sw-manifest.sh \
 	$(top_srcdir)/setup/91-logrotate-fty.sh \
+	$(top_srcdir)/setup/999-bios-pre-eula-target.everytime.sh \
 	$(top_srcdir)/setup/ipc-meta-setup.sh
 
 EXTRA_DIST += \
@@ -268,6 +269,7 @@ EXTRA_DIST += \
 	$(top_srcdir)/setup/90-nut-ownership.everytime.sh \
 	$(top_srcdir)/setup/90-sw-manifest.sh \
 	$(top_srcdir)/setup/91-logrotate-fty.sh \
+	$(top_srcdir)/setup/999-bios-pre-eula-target.everytime.sh \
 	$(top_srcdir)/setup/ipc-meta-setup.sh
 
 # SystemD integrations files; if not enabled - variables remain empty
