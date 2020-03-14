@@ -10,12 +10,6 @@ Requires=fty-license-accepted.target
 BindsTo=fty-license-accepted.target
 After=basic.target network.target fty-license-accepted.target
 
-# Offload killing of competing mysql implementation instances to where
-# its failure would not block this critical unit. Sometimes executions
-# of systemctl from units block...
-Wants=fty-db-engine-pre.service
-After=fty-db-engine-pre.service
-
 # Do not start DB if fty-license-accepted.service is not started already
 # But do not send it into trying to start (and looping to fail), either
 Requisite=fty-license-accepted.service
