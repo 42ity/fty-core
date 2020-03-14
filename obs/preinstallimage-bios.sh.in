@@ -740,6 +740,10 @@ case "$IMGTYPE" in
         ;;
     *)
         echo "BIOS_LOG_LEVEL=LOG_INFO" > /usr/share/fty/etc/default/fty
+        # Work around one poorly pre-packaged config until we have a more centralized solution
+        if [ -s /etc/fty/ftyshmcli.cfg ] && grep -q 'rootLogger=DEBUG' /etc/fty/ftyshmcli.cfg ; then
+            sed -e "s|rootLogger=DEBUG|rootLogger=INFO|g" -i /etc/fty/ftyshmcli.cfg
+        fi
         sed -e 's|.*MaxLevelStore.*|MaxLevelStore=info|' \
             -i /etc/systemd/journald.conf
         ;;
