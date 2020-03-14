@@ -48,7 +48,7 @@ ExecStartPost=/bin/dash -c "/usr/bin/mysql -e 'show databases;' || /usr/bin/mysq
 ExecStop=/usr/lib/mysql/rcmysql stop
 ExecStopPost=-/bin/rm -f /var/run/fty-db-ready
 # Make sure dependent services have finished, e.g. if mysqld died ungracefully
-ExecStopPost=/bin/dash -c "UNITS=\"$(/bin/systemctl show -p WantedBy -p RequiredBy -p BoundBy -p RequisiteOf %n | cut -d= -f2 | tr ' ' '\\n' | sort | uniq | egrep -v '(\.timer|\.path)$' | tr '\\n' ' ' | sed -e 's,^ *,,' -e 's, *$,,')\"; if [ -n \"$UNITS\" ] ; then /bin/systemctl start --no-ask-password --no-block -- $UNITS ; else echo 'No units seem to directly depend on %n to tickle them into stopping' ; fi"
+ExecStopPost=/bin/dash -c "UNITS=\"$(/bin/systemctl show -p WantedBy -p RequiredBy -p BoundBy -p RequisiteOf %n | cut -d= -f2 | tr ' ' '\\n' | sort | uniq | egrep -v '(^(bios|fty)\.(service|target)$|(\.timer|\.path)$)' | tr '\\n' ' ' | sed -e 's,^ *,,' -e 's, *$,,')\"; if [ -n \"$UNITS\" ] ; then /bin/systemctl start --no-ask-password --no-block -- $UNITS ; else echo 'No units seem to directly depend on %n to tickle them into stopping' ; fi"
 
 [Install]
 WantedBy=bios.target
