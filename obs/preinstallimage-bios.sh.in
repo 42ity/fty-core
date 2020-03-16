@@ -816,7 +816,9 @@ EOF
 /bin/systemctl daemon-reload
 /bin/systemctl enable nut-driver.target
 /bin/systemctl enable nut-server.service
-/bin/systemctl enable nut-monitor.service
+# Note: Currently we do not generate any configurations for the nut-monitor
+# client (which might take care of clean shutdown of the 42ity monitoring)
+#/bin/systemctl enable nut-monitor.service
 /bin/systemctl enable nut.target
 
 # according to https://github.com/42ity/malamute/blob/1.0-FTY-master/src/mlm_perftest.c#L22
