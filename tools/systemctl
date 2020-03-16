@@ -90,7 +90,7 @@ SYSTEMCTL_UNITS_COMMON_INTERNAL="bios tntnet@bios fty-outage fty-metric-store   
                                 biostimer-warranty-metric ifplug-dhcp-autoconf  \
                                 ipc-meta-setup fty-sensor-env fty-discovery     \
                                 fty-sensor-gpio                                 \
-                                fty-nut-configurator fty-metric-compute         \
+                                fty-nut-configuration fty-metric-compute         \
                                 fty-metric-cache fty-alert-flexible             \
                                 fty-metric-ambient-location"
 
