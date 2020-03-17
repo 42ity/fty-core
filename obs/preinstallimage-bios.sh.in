@@ -986,7 +986,7 @@ cat > /etc/default/ip6tables <<[eof]
 COMMIT
 [eof]
 
-# Accept tcp port 1099 and 5005 for devel image (append files)
+# Accept tcp port 1099 and 5005 for devel image for Java JMX & JVM debug (append files)
 case "$IMGTYPE" in
     *devel*)
         sed '/tcp --dport 4222/a\-A INPUT -p tcp -m tcp --dport 1099 -j ACCEPT' -i /etc/default/iptables
