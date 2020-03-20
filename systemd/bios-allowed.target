@@ -2,8 +2,8 @@
 Description=Milestone which should be enabled and active for any 42ity-related services
 
 # NOTE: Do not list a "Wants=system services" here, such list is used to stop units via bios.service
-Requires=multi-user.target network.target ipc-meta-setup.service
-After=multi-user.target network.target ipc-meta-setup.service
+Requires=ipc-meta-setup.service
+After=ipc-meta-setup.service
 Conflicts=rescue.target shutdown.target
 
 Before=malamute.service activemq.service
