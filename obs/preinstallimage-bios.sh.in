@@ -494,6 +494,7 @@ rm -f /etc/init.d/saslauthd
 cat <<EOF > /lib/systemd/system/saslauthd.service
 [Unit]
 Description=SASL Authentication Daemon
+PartOf=bios-pre-eula.target
 
 [Service]
 Type=forking
