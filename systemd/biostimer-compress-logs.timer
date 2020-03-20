@@ -1,6 +1,6 @@
 [Unit]
 Description=42ity-Timer to regularly compress logs
-PartOf=multi-user.target
+PartOf=multi-user.target timers.target
 
 # In timer units, avoid dependency cycling via Wants+ rules
 #Requisite=bios-allowed.target
