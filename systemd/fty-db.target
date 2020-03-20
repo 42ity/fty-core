@@ -13,5 +13,11 @@ Before=bios.target
 Conflicts=rescue.target shutdown.target
 PartOf=bios.target
 
+Requisite=bios-allowed.target
+After=bios-allowed.target
+PartOf=bios-allowed.target
+BindsTo=bios-allowed.target
+Conflicts=bios-shutdown.target
+
 [Install]
 WantedBy=multi-user.target

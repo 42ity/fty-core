@@ -310,6 +310,7 @@ if HAVE_SYSTEMD
 SYSTEMD_TARGETS += \
                         fty-license-accepted.target \
                         fty-db.target bios-pre-eula.target \
+                        bios-allowed.target bios-shutdown.target \
                         bios.target bios.service bios-enabler-pre.service
 
 # These units are not part of the common bios.target etc. but are to be
