@@ -13,7 +13,6 @@ BindsTo=bios-allowed.target
 Conflicts=bios-shutdown.target
 
 [Install]
-Alias=bios-pre-eula.target
 # Note: this target is both WantedBy (triggered to start with no waiting
 # to complete) and Requires/After the multi-user.target. So when system
 # finishes proper basic startup, it triggers/schedules a startup of the

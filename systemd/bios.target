@@ -18,5 +18,4 @@ BindsTo=bios-allowed.target
 Conflicts=bios-shutdown.target
 
 [Install]
-Alias=bios.target
 WantedBy=multi-user.target
