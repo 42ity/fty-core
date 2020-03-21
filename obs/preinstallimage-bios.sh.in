@@ -525,7 +525,7 @@ if ! egrep -q '^Before=' "${UNITFILE}" ; then
 fi
 
 sed -e 's,^\(WantedBy\|RequiredBy\|PartOf\|Before\)=\(.*\)$,\1=bios-pre-eula.target,g' \
-    -e 's,^\(ExecStart=.*\)$,\1\n# Check that IPC is listening so clients can start\nExecStartPost=/bin/dash -c "while : ; do netstat -anp | egrep -q '"'"'^unix.*LISTEN.*@/malamute-terminate$'"'"' \&\& netstat -anp | egrep -q '"'"'^unix.*LISTEN.*@/malamute$'"'"' \&\& exit 0 ; sleep 1; done"\n,' \
+    -e 's,^\(ExecStart=.*\)$,\1\n# Check that IPC is listening so clients can start\nExecStartPost=/bin/dash -c "while : ; do netstat -anp | egrep -q '"'"'^unix.*LISTEN.*@/malamut(e|e-terminate)$'"'"' \&\& exit 0 ; sleep 1; done"\n,' \
     -i "${UNITFILE}" || exit
 
 /bin/systemctl enable malamute
