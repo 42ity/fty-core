@@ -29,10 +29,6 @@ OnBootSec=5min
 # Run every 10min afterwards, so services do not stay down for too long
 OnCalendar=*:0,10,20,30,40,50
 
-# Tickle the target into starting regularly, which should cause
-# systemd attempts to start initially (or later) failed services.
-Unit=bios.target
-
 # No [Install] section so this can only be started manually or by reference from another unit
 #[Install]
 #WantedBy=fty-db.target

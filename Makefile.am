@@ -351,6 +351,7 @@ SYSTEMD_UNITS += $(SYSTEMD_UNITS_TARGET_BIOS) $(SYSTEMD_UNITS_LOWLEVEL)
 # Note: Due to conflict with "tntnet@.service" file from tntnet package,
 # we name ours differently here (and override during OS image generation).
 SYSTEMD_UNITS_NOTPRESET_LOWLEVEL += \
+                        bios-target-watchdog.service \
                         fty-hostname-setup.service
 
 SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS += \
