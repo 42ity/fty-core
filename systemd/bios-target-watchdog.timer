@@ -19,8 +19,8 @@ DefaultDependencies=no
 
 Requisite=bios-allowed.target fty-license-accepted.target
 After=bios-allowed.target fty-license-accepted.target
-PartOf=bios-allowed.target
-BindsTo=bios-allowed.target
+PartOf=bios-allowed.target bios.target
+BindsTo=bios-allowed.target bios.target
 Conflicts=bios-shutdown.target
 
 [Timer]
