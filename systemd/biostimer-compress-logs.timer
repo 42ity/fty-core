@@ -17,7 +17,7 @@ OnCalendar=*-*-* 04:20:00
 # Run instantly if last run was skipped (e.g. system powered off)
 Persistent=true
 # Do not record last-execution times
-Persistent=false
+#Persistent=false
 
 [Install]
 WantedBy=multi-user.target
