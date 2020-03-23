@@ -373,6 +373,7 @@ SYSTEMD_TIMERS_LOWLEVEL += \
                         biostimer-loghost-rsyslog-netconsole.timer \
                         biostimer-compress-logs.timer \
                         fty-logrotate.timer \
+                        bios-target-watchdog.timer \
                         biostimer-verify-fs.timer
 
 SYSTEMD_TIMERS += $(SYSTEMD_TIMERS_LOWLEVEL) $(SYSTEMD_TIMERS_TARGET_BIOS)

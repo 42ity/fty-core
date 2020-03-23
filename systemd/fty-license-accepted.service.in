@@ -38,6 +38,7 @@ ExecStartPost=-/bin/systemctl start --no-block fty-license-accepted.target
 #ExecStartPost=/bin/dash -c "UNITS=\"$(/bin/systemctl show -p WantedBy -p RequiredBy -p BoundBy -p RequisiteOf %n | cut -d= -f2 | tr ' ' '\\n' | sort | uniq | egrep -v '(\.timer|\.path)$' | tr '\\n' ' ' | sed -e 's,^ *,,' -e 's, *$,,')\"; if [ -n \"$UNITS\" ] ; then /bin/systemctl start --no-ask-password --no-block -- $UNITS ; else echo 'No units seem to directly depend on %n to tickle them into starting' ; fi"
 ### Starting bios.service should unmask, enable and start all these impacted units listed earlier above
 ExecStartPost=-/bin/systemctl start --no-block bios.service
+ExecStartPost=-/bin/systemctl start --no-block bios-target-watchdog.timer
 
 ### Tell existing bus clients, like tntnet@bios
 ExecStartPost=/bin/dash -c "/usr/bin/bmsg publish eula ACCEPTED"
