@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2017 - 2018 Eaton
+# Copyright (C) 2017 - 2020 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -101,13 +101,17 @@ if [[ "$SYSTEMCTL_COALESCE_INITIAL" = no ]] ; then
     echo "INFO: `date -u`: enable and start fty-license-accepted.path"
     sudo ${SYSTEMCTL} unmask fty-license-accepted.path || die "Unmasking fty-license-accepted.path failed ($?)"
     sudo ${SYSTEMCTL} enable fty-license-accepted.path || die "Enabling fty-license-accepted.path failed ($?)"
-    sudo ${SYSTEMCTL} restart fty-license-accepted.path || die "Restarting fty-license-accepted.path failed ($?)"
+    ### UPDATE: Do not REstart these, to avoid racing on slower systems
+    ### where the normal dependency codepath to start up the units has
+    ### progressed far enough, and only too much later this fallback
+    ### script catches up to "help" and kills the DB mid-initialization.
+    #sudo ${SYSTEMCTL} restart fty-license-accepted.path || die "Restarting fty-license-accepted.path failed ($?)"
     sudo ${SYSTEMCTL} start fty-license-accepted.path || die "Starting fty-license-accepted.path failed ($?)"
 
     echo "INFO: `date -u`: enable and start fty-license-accepted.service"
     sudo ${SYSTEMCTL} unmask fty-license-accepted.service || die "Unmasking fty-license-accepted failed ($?)"
     sudo ${SYSTEMCTL} enable fty-license-accepted.service || die "Enabling fty-license-accepted failed ($?)"
-    sudo ${SYSTEMCTL} restart fty-license-accepted.service || die "Restarting fty-license-accepted failed ($?)"
+    #sudo ${SYSTEMCTL} restart fty-license-accepted.service || die "Restarting fty-license-accepted failed ($?)"
     sudo ${SYSTEMCTL} start fty-license-accepted.service || die "Starting fty-license-accepted failed ($?)"
 
     # Technically this all should not be needed, as the standard processing
@@ -139,11 +143,12 @@ else
     sudo ${SYSTEMCTL} enable fty-license-accepted.path fty-license-accepted.service fty-db-engine.service fty-db-init.service \
         || die "Enabling a core database-related service failed ($?)"
 
-    echo "INFO: `date -u`: tickle fty-license-accepted.service"
-    sudo ${SYSTEMCTL} restart fty-license-accepted.path || die "Restarting fty-license-accepted.path failed ($?)"
-    sudo ${SYSTEMCTL} restart fty-license-accepted.service || die "Restarting fty-license-accepted failed ($?)"
+    #echo "INFO: `date -u`: tickle fty-license-accepted related units"
+    #sudo ${SYSTEMCTL} restart fty-license-accepted.path || die "Restarting fty-license-accepted.path failed ($?)"
+    #sudo ${SYSTEMCTL} restart fty-license-accepted.service || die "Restarting fty-license-accepted failed ($?)"
+    #sleep 3
 
-    sleep 3
+    sleep 1
 
     # See comment above about trying to start twice
     echo "INFO: `date -u`: start core database-related services"
