@@ -162,6 +162,8 @@ systemd/ifplug-dhcp-autoconf.service
 systemd/bios-ssh-last-resort.service
 !systemd/bios-networking.service.in
 systemd/bios-networking.service
+!systemd/bios-target-watchdog.service.in
+systemd/bios-target-watchdog.service
 !systemd/biostimer-verify-fs.service.in
 systemd/biostimer-verify-fs.service
 !systemd/biostimer-compress-logs.service.in

@@ -358,6 +358,7 @@ AC_CONFIG_FILES([
         systemd/bios-networking.service
         systemd/bios-reset-button.service
         systemd/bios-ssh-last-resort.service
+        systemd/bios-target-watchdog.service
         systemd/biostimer-compress-logs.service
         systemd/biostimer-loghost-rsyslog-netconsole.service
         systemd/biostimer-verify-fs.service
