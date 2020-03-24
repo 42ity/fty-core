@@ -33,7 +33,7 @@ ExecStopPost=/bin/dash -c "for U in $(/bin/systemctl show -p Wants bios.target f
 
 # Only wait for 42ity services to stop if restarting bios.service:
 # these systemctl calls block if OS shutdown is going on
-ExecStopPost=/bin/dash -c "if /bin/systemctl list-jobs | egrep '(shutdown.target|reboot.target|poweroff.target|emergency.target|rescue.target|halt.target|systemd-(reboot|poweroff|halt).service).*start.*waiting' || /bin/systemctl list-jobs | egrep 'multi-user.target.*stop.*waiting' ; then echo 'OS shutdown in progress, %n not waiting for usual suspects to stop'>&2; exit 0; fi; /bin/systemctl stop bios-allowed.target bios.target fty-db.target fty-license-accepted.target bios-pre-eula.target"
+ExecStopPost=/bin/dash -c "if /bin/systemctl list-jobs | egrep '(shutdown.target|reboot.target|poweroff.target|emergency.target|rescue.target|halt.target|systemd-(reboot|poweroff|halt).service).*start.*waiting' || /bin/systemctl list-jobs | egrep 'multi-user.target.*stop.*waiting' ; then echo 'OS shutdown in progress, %n not waiting for usual suspects to stop'>&2; exit 0; fi; /bin/systemctl stop --wait bios-allowed.target bios.target fty-db.target fty-license-accepted.target bios-pre-eula.target"
 
 # Ordinary frozen services stop for 90 sec max (default),
 # so this service should outlive them
