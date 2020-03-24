@@ -1084,11 +1084,13 @@ cat > /etc/default/ip6tables <<[eof]
 COMMIT
 [eof]
 
-# Accept tcp port 5005 for devel image (append files)
+# Accept tcp port 1099 and 5005 for devel image for Java JMX & JVM debug (append files)
 case "$IMGTYPE" in
     *devel*)
-        sed -i '/tcp --dport 4222/a\-A INPUT -p tcp -m tcp --dport 5005 -j ACCEPT' /etc/default/iptables
-        sed -i '/tcp --dport 4222/a\-A INPUT -p tcp -m tcp --dport 5005 -j ACCEPT' /etc/default/ip6tables
+        sed '/tcp --dport 4222/a\-A INPUT -p tcp -m tcp --dport 1099 -j ACCEPT' -i /etc/default/iptables
+        sed '/tcp --dport 4222/a\-A INPUT -p tcp -m tcp --dport 1099 -j ACCEPT' -i /etc/default/ip6tables
+        sed '/tcp --dport 4222/a\-A INPUT -p tcp -m tcp --dport 5005 -j ACCEPT' -i /etc/default/iptables
+        sed '/tcp --dport 4222/a\-A INPUT -p tcp -m tcp --dport 5005 -j ACCEPT' -i /etc/default/ip6tables
         ;;
 esac
 
@@ -1124,7 +1126,7 @@ while IFS=';' read SOURCE_PKG PKG_VERSION CURRENT_PKG
 do
    CURRENT_PKG="`echo ${CURRENT_PKG} | cut -d':' -f1`"
    PKG_VERSION="`echo ${PKG_VERSION} | cut -d':' -f2`"
-   grep -q "${SOURCE_PKG};" "${CSV_FILE_PATH}" || \
+   grep -q "^${SOURCE_PKG};" "${CSV_FILE_PATH}" || \
    if [ $? -eq 1 ]; then
       echo "${SOURCE_PKG};${PKG_VERSION};/legal/${CURRENT_PKG}/copyright" 2>/dev/null >> "${CSV_FILE_PATH}"
       [ ! -f "/usr/share/doc/${CURRENT_PKG}/copyright" ] && echo "Missing ${CURRENT_PKG}/copyright file!"
