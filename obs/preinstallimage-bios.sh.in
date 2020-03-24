@@ -637,8 +637,8 @@ if [ -s /lib/systemd/system/nut-driver-enumerator.service ] \
         # Disable unit, amend dependency config, re-enable to make new symlinks
         /bin/systemctl disable ${unit} || true
 
-        mkdir -p /etc/systemd/system/${unit}.d
-        cat > /etc/systemd/system/${unit}.d/fty.conf  << EOF
+        mkdir -p /lib/systemd/system/${unit}.d
+        cat > /lib/systemd/system/${unit}.d/fty.conf  << EOF
 # On 42ity deployments, start NUT parts after EULA is accepted
 [Unit]
 Requisite=fty-license-accepted.target
@@ -647,7 +647,7 @@ PartOf=fty-license-accepted.target
 EOF
         case "${unit}" in
             *.path)
-                cat >> /etc/systemd/system/${unit}.d/fty.conf  << EOF
+                cat >> /lib/systemd/system/${unit}.d/fty.conf  << EOF
 # Do not depend on this unit from paths.target that would make a loop
 # and try to start it (and NUT services it triggers) earlier than desired
 DefaultDependencies=no
@@ -795,8 +795,8 @@ esac
 # dependencies below to have nut-server (upsd) start as part of
 # the bios-pre-eula.target to be visible on network even before
 # the EULA checks.
-mkdir -p /etc/systemd/system/nut-server.service.d
-cat > /etc/systemd/system/nut-server.service.d/fty.conf  << EOF
+mkdir -p /lib/systemd/system/nut-server.service.d
+cat > /lib/systemd/system/nut-server.service.d/fty.conf  << EOF
 # Bind nut-server actual startup to EULA acceptance
 # to avoid flooding console / Welcome screen
 [Unit]
@@ -826,7 +826,8 @@ EOF
 # For systemd 215 at least, dropin for [Install] are not satisfied
 # So hotfix nut.target directly. First we disabled it above...
 # Then update the target membership and update
-sed -e "s/WantedBy=multi-user.target/WantedBy=bios.target/" -i /lib/systemd/system/nut.target
+sed -e "s/WantedBy=multi-user.target/WantedBy=bios.target/" \
+    -i /lib/systemd/system/nut.target
 
 mkdir -p /lib/systemd/system/nut-driver.target.d
 cat > /lib/systemd/system/nut-driver.target.d/fty.conf  << EOF
