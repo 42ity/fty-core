@@ -7,7 +7,7 @@ Description=Initialize or update database schema for 42ity services
 After=fty-db-engine.service fty-license-accepted.target
 Requires=fty-db-engine.service fty-license-accepted.target
 BindsTo=fty-db-engine.service fty-license-accepted.target
-Conflicts=shutdown.target recovery.target
+Conflicts=shutdown.target recovery.target poweroff.target halt.target reboot.target emergency.target
 PartOf=fty-db.target
 
 [Service]

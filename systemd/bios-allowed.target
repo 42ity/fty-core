@@ -4,7 +4,7 @@ Description=Milestone which should be enabled and active for any 42ity-related s
 # NOTE: Do not list a "Wants=system services" here, such list is used to stop units via bios.service
 Requires=ipc-meta-setup.service
 After=ipc-meta-setup.service
-Conflicts=rescue.target shutdown.target
+Conflicts=rescue.target shutdown.target poweroff.target halt.target reboot.target emergency.target
 
 Before=malamute.service activemq.service
 Conflicts=bios-shutdown.target

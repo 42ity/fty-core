@@ -3,7 +3,7 @@
 Description=Service to toggle 42ity related targets and whoever they "Wants"
 Requires=multi-user.target network.target
 After=multi-user.target network.target
-Conflicts=rescue.target shutdown.target
+Conflicts=rescue.target shutdown.target poweroff.target halt.target reboot.target emergency.target
 
 # Offload enabling of bios component targets to where its failure
 # would not block the critical wrapper unit called by many consumers.

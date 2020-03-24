@@ -13,7 +13,7 @@ Description=Milestone for all 42ity-related services that should start after lic
 # the EULA acceptance file that is created by someone (tntnet, ssh, ...)
 Requires=multi-user.target network.target
 After=multi-user.target network.target
-Conflicts=rescue.target shutdown.target
+Conflicts=rescue.target shutdown.target poweroff.target halt.target reboot.target emergency.target
 PartOf=fty-license-accepted.target
 
 [Service]

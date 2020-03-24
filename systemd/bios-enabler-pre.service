@@ -6,7 +6,7 @@
 Description=Helper of bios.service to enable 42ity component targets
 Wants=basic.target network.target
 After=basic.target network.target
-Conflicts=rescue.target shutdown.target
+Conflicts=rescue.target shutdown.target poweroff.target halt.target reboot.target emergency.target
 
 [Service]
 Type=oneshot

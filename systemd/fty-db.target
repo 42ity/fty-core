@@ -10,7 +10,7 @@ Requisite=fty-license-accepted.target
 BindsTo=fty-license-accepted.target
 After=multi-user.target network.target bios-pre-eula.target fty-license-accepted.target
 Before=bios.target
-Conflicts=rescue.target shutdown.target
+Conflicts=rescue.target shutdown.target poweroff.target halt.target reboot.target emergency.target
 PartOf=bios.target
 
 Requisite=bios-allowed.target

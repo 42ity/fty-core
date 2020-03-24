@@ -4,7 +4,7 @@ Description=Grouping which wants all 42ity-related low-level services needed to 
 Requires=multi-user.target network.target ipc-meta-setup.service
 Wants=malamute.service
 After=multi-user.target network.target malamute.service
-Conflicts=rescue.target shutdown.target
+Conflicts=rescue.target shutdown.target poweroff.target halt.target reboot.target emergency.target
 
 Requisite=bios-allowed.target
 After=bios-allowed.target

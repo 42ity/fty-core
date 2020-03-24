@@ -3,7 +3,7 @@ Description=Implementation of 42ity-Timer to regularly ensure running services
 
 # Propagate service-stopping
 PartOf=multi-user.target timers.target
-Conflicts=shutdown.target rescue.target
+Conflicts=shutdown.target rescue.target poweroff.target halt.target reboot.target emergency.target
 
 DefaultDependencies=no
 

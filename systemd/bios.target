@@ -9,7 +9,7 @@ Wants=fty-license-accepted.target fty-db.target
 Requisite=bios-pre-eula.target fty-license-accepted.target fty-db.target
 BindsTo=bios-pre-eula.target fty-license-accepted.target fty-db.target
 After=multi-user.target network.target bios-pre-eula.target fty-license-accepted.target fty-db.target
-Conflicts=rescue.target shutdown.target
+Conflicts=rescue.target shutdown.target poweroff.target halt.target reboot.target emergency.target
 
 Requisite=bios-allowed.target
 After=bios-allowed.target

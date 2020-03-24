@@ -4,7 +4,7 @@
 Description=42ity-Timer service that calls distro-provided logrotate
 Requires = local-fs.target ipc-meta-setup.service
 After = local-fs.target ipc-meta-setup.service
-Conflicts=shutdown.target
+Conflicts=rescue.target shutdown.target poweroff.target halt.target reboot.target emergency.target
 PartOf=multi-user.target timers.target
 
 [Timer]
