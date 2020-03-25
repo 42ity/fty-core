@@ -29,10 +29,10 @@ ExecStop=/bin/dash -c "/bin/systemctl stop --no-block --no-ask-password bios-tar
 # Make sure this runs, even if there is an unclean startup/shutdown of the unit
 ExecStopPost=/bin/systemctl stop --no-block --no-ask-password bios-allowed.target bios.target fty-db.target fty-license-accepted.target bios-pre-eula.target
 # ...and wait for all listed services to finish their lives
-ExecStopPost=/bin/dash -c "for U in $(/bin/systemctl show -p Wants bios.target fty-db.target fty-license-accepted.target bios-pre-eula.target | cut -d= -f2) ; do case \"$U\" in *.path|*.timer) ;; *) /bin/systemctl stop --no-ask-password -- $U & ;; esac ; done ; wait"
+# BUT: Only wait for 42ity services to stop if restarting bios.service
+# itself, these systemctl calls tend to block if OS shutdown is going on.
+ExecStopPost=/bin/dash -c "SYSTEMCTL_FLAGS=''; if /bin/systemctl list-jobs | egrep '(shutdown.target|reboot.target|poweroff.target|emergency.target|rescue.target|halt.target|systemd-(reboot|poweroff|halt).service).*start.*waiting' || /bin/systemctl list-jobs | egrep 'multi-user.target.*stop.*waiting' ; then echo 'OS shutdown in progress, %n not waiting for usual suspects to stop'>&2; SYSTEMCTL_FLAGS='--no-block'; fi; for U in $(/bin/systemctl show -p Wants bios.target fty-db.target fty-license-accepted.target bios-pre-eula.target | cut -d= -f2) ; do case \"$U\" in *.path|*.timer) ;; *) /bin/systemctl stop --no-ask-password $SYSTEMCTL_FLAGS -- $U & ;; esac ; done ; wait"
 
-# Only wait for 42ity services to stop if restarting bios.service:
-# these systemctl calls block if OS shutdown is going on
 ExecStopPost=/bin/dash -c "if /bin/systemctl list-jobs | egrep '(shutdown.target|reboot.target|poweroff.target|emergency.target|rescue.target|halt.target|systemd-(reboot|poweroff|halt).service).*start.*waiting' || /bin/systemctl list-jobs | egrep 'multi-user.target.*stop.*waiting' ; then echo 'OS shutdown in progress, %n not waiting for usual suspects to stop'>&2; exit 0; fi; /bin/systemctl stop --wait --no-ask-password bios-allowed.target bios.target fty-db.target fty-license-accepted.target bios-pre-eula.target"
 
 # Ordinary frozen services stop for 90 sec max (default),
