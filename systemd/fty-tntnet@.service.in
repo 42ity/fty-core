@@ -27,7 +27,8 @@ ExecStartPre=@datadir@/@PACKAGE@/scripts/tntnet-ExecStartPre.sh %i
 EnvironmentFile=-/run/tntnet-%i.env
 EnvironmentFile=-/run/fty-envvars.env
 ExecStart=/usr/bin/tntnet -c @sysconfdir@/tntnet/%i.xml
-RestartSec=20
+#RestartSec=20
+RestartSec=1
 
 [Install]
 WantedBy=bios-pre-eula.target
