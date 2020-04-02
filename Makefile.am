@@ -319,6 +319,7 @@ SYSTEMD_UNITS_LOWLEVEL += \
 SYSTEMD_UNITS_EXTRA += \
                         fty-license-accepted.path \
                         fty-logrotate.service \
+                        fty-monitor-unlock.service \
                         wd_keepalive@.service
 
 # These service-units are PartOf and WantedBy the "bios.target"

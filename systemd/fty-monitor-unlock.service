@@ -1,0 +1,17 @@
+[Unit]
+Description=Unlock the monitor account after accepting EULA
+# Enable FLA... once, do not keep retrying if EULA is not accepted yet
+Wants=fty-license-accepted.service
+Requisite=fty-license-accepted.service
+After=fty-license-accepted.service
+PartOf=bios.target
+
+[Service]
+Type=oneshot
+Restart=no
+User=root
+ExecStart=/usr/bin/passwd -u monitor
+ExecStart=/bin/sh -c "/bin/systemctl disable --no-ask-password %n ; /bin/systemctl mask --no-ask-password %n"
+
+[Install]
+WantedBy=bios.target
