@@ -35,8 +35,10 @@ ExecStartPost=-/bin/systemctl start --no-block fty-license-accepted.target
 ExecStartPost=-/bin/systemctl start --no-block bios.service
 ExecStartPost=-/bin/systemctl start --no-block bios-target-watchdog.timer
 
-### Tell existing bus clients, like tntnet@bios
+### Tell existing bus clients, like tntnet@bios, that we are good to go
 ExecStartPost=/bin/dash -c "/usr/bin/bmsg publish eula ACCEPTED"
+
+### Forbid to break in for sensitive data after deployment becomes used
 ExecStartPost=/bin/dash -c "@libexecdir@/@PACKAGE@/disable-root-account"
 
 [Install]
