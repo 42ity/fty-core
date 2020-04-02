@@ -1,9 +1,13 @@
 [Unit]
 Description=Unlock the monitor account after accepting EULA
-# Enable FLA... once, do not keep retrying if EULA is not accepted yet
-Wants=fty-license-accepted.service
-Requisite=fty-license-accepted.service
-After=fty-license-accepted.service
+
+# Run the payload after EULA is not accepted and there may
+# be something to see on the dashboard. And not too early
+# for a chance to interrupt first initialization somehow.
+Wants=fty-asset.service
+Requisite=fty-asset.service
+After=fty-asset.service
+
 PartOf=bios.target
 
 [Service]
