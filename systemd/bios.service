@@ -18,11 +18,6 @@ After=bios-enabler-pre.service
 Type=oneshot
 RemainAfterExit=yes
 
-### These enablements should now be handled by bios-enabler-pre.service
-###ExecStartPre=-/bin/systemctl unmask bios.target fty-db.target fty-license-accepted.target bios-pre-eula.target
-###ExecStartPre=-/bin/systemctl enable bios.target fty-db.target fty-license-accepted.target bios-pre-eula.target
-
-###ExecStart=/bin/systemctl start bios-pre-eula.target fty-license-accepted.target fty-db.target bios.target
 # Per systemd.service docs, TEMPFAIL exit code is 75 as used below
 # But Debian 8 systemd does not know the word, it seems. So we hardcode.
 SuccessExitStatus=75
