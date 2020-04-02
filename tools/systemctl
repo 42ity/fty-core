@@ -77,6 +77,7 @@ SYSTEMCTL_UNITS_COMMON_EXTERNAL="mariadb mysql mysqld                   \
 # TODO: legacy-metrics will be removed, drop it there
 SYSTEMCTL_UNITS_COMMON_INTERNAL="bios tntnet@bios fty-outage fty-metric-store   \
                                 fty-db bios-pre-eula bios-target-watchdog       \
+                                bios-allowed bios-shutdown                      \
                                 fty-tntnet@bios fty-envvars fty-hostname-setup  \
                                 fty-license-accepted fty-db-init fty-db-engine  \
                                 fty-kpi-power-uptime fty-alert-list fty-asset   \
