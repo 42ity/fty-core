@@ -131,6 +131,10 @@ EOF
 fi
 mkdir -p /home/monitor && chown monitor:bios-dash /home/monitor
 
+# Do not let monitor login on first boot, it will be unlocked
+# later - by fty-monitor-unlock.service after EULA wizard
+passwd -l monitor
+
 # _bios-script user - special user allowing us to call REST API from scripts
 useradd -m _bios-script -N -g bios-admin -G sasl -s /usr/sbin/nologin
 
