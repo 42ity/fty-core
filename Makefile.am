@@ -327,6 +327,7 @@ SYSTEMD_UNITS_LOWLEVEL += \
 # service instances for us. TODO: should tntnet@.service move here?
 SYSTEMD_UNITS_EXTRA += \
                         fty-logrotate.service \
+                        fty-monitor-unlock.service \
                         wd_keepalive@.service
 
 # These service-units are PartOf and WantedBy the "bios.target"
