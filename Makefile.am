@@ -326,6 +326,7 @@ SYSTEMD_UNITS_LOWLEVEL += \
 # These are verbatim (not templated) additional units that wrap third-party
 # service instances for us. TODO: should tntnet@.service move here?
 SYSTEMD_UNITS_EXTRA += \
+                        bios-allowed.service bios-shutdown.service \
                         fty-logrotate.service \
                         fty-monitor-unlock.service \
                         wd_keepalive@.service

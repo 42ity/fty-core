@@ -9,6 +9,11 @@ Conflicts=rescue.target shutdown.target poweroff.target halt.target reboot.targe
 Before=malamute.service activemq.service
 Conflicts=bios-shutdown.target
 
+# Run if the file does NOT exist
+#AssertPathExists=!/run/bios-shutdown.target.active
+After=bios-allowed.service
+Requires=bios-allowed.service
+
 [Install]
 # Note: this target is both WantedBy (triggered to start with no waiting
 # to complete) and Requires/After the multi-user.target. So when system
