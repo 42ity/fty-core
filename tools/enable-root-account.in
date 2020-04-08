@@ -16,8 +16,9 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-#! \file    disable-root-account
-#  \brief   Helper script for locking the root account after EULA
+#! \file    enable-root-account
+#  \brief   Helper script for temporarily unlocking the root
+#           account blocked after EULA
 #  \author  Lilian Barraud <lilianbarraud@Eaton.com>
 #  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #
@@ -25,18 +26,23 @@
 usage() {
     cat << EOF
 $0 [-t MINS]
-    Helper script for locking the root account
-    after accepting EULA on deployment images
+    Helper script for temporarily unlocking the root account
+    that is locked after accepting EULA on deployment images
 
         -h|--help   Show this help and exit
         -t MINS     Sleep for MINS minutes before disabling root
 EOF
 }
 
-JSONSH="/usr/share/fty/scripts/JSON.sh"
-get_a_string_arg() { "$JSONSH" -x "$1" | (IFS="`printf '\t'`" read K V; echo "$V") | sed 's,^"\(.*\)",\1,' ; }
+PATH="@libexecdir@/@PACKAGE@:@datadir@/@PACKAGE@/scripts:/usr/bin:/bin:/usr/sbin:/sbin"
+export PATH
+
+JSONSH="@datadir@/@PACKAGE@/scripts/JSON.sh"
+get_a_string_arg() { "$JSONSH" --get-string "$1" ; }
 J="/etc/release-details.json"
 img_type="$(get_a_string_arg osimage-img-type < $J)"
+
+umask 077
 
 ROOT_PASSWORD_LOCATION="/tmp/.rootpwd"
 
@@ -52,11 +58,18 @@ case "$img_type" in
         ;;
 esac
 
+if [[ -s "$ROOT_PASSWORD_LOCATION" ]] ; then
+    ### Uncomment this line to ease debugging in shell or CI
+    #@CI_UNCOMMENT@#ROOT_PASSWORD="`cat "$ROOT_PASSWORD_LOCATION"`"
+    #@CI_UNCOMMENT@#echo "root:$ROOT_PASSWORD"
+    die "Previous password still valid"
+fi
+
 if [[ "$(id -u)" -ne 0 ]] ; then
     die "You are not root or elevated, can not modify password data"
 fi
 
-SLEEP_MINUTES=0
+SLEEP_MINUTES=60
 while [[ $# != 0 ]]; do
     case "$1" in
         -h|-help|--help)
@@ -76,10 +89,18 @@ while [[ $# != 0 ]]; do
     shift
 done
 
-if [[ "$SLEEP_MINUTES" -gt 0 ]] ; then
-    sleep ${SLEEP_MINUTES}m
-fi
+# Generate a random safe (ASCII) password string
+ROOT_PASSWORD="$(dd if=/dev/urandom bs=9 count=1 2>/dev/null | base64)"
 
-echo "Root shell removed"
-usermod -s /usr/sbin/nologin root
+# Ensure as much as we can that the file is not hijacked
 rm -f "$ROOT_PASSWORD_LOCATION"
+echo "$ROOT_PASSWORD" > "$ROOT_PASSWORD_LOCATION"
+
+echo "Root shell enabled and password changed"
+echo "root:$ROOT_PASSWORD" | chpasswd
+usermod -s /bin/bash root
+
+### Uncomment this line to ease debugging in shell or CI
+#@CI_UNCOMMENT@#echo "root:$ROOT_PASSWORD"
+
+systemd-run @libexecdir@/@PACKAGE@/disable-root-account -t "$SLEEP_MINUTES"

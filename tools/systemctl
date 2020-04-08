@@ -76,6 +76,8 @@ SYSTEMCTL_UNITS_COMMON_EXTERNAL="mariadb mysql mysqld                   \
 # SYSTEMCTL_UNITS_COMMON_INTERNAL lists the services delivered by our project
 # TODO: legacy-metrics will be removed, drop it there
 SYSTEMCTL_UNITS_COMMON_INTERNAL="bios tntnet@bios fty-outage fty-metric-store   \
+                                fty-db bios-pre-eula bios-target-watchdog       \
+                                bios-allowed bios-shutdown                      \
                                 fty-tntnet@bios fty-envvars fty-hostname-setup  \
                                 fty-license-accepted fty-db-init fty-db-engine  \
                                 fty-kpi-power-uptime fty-alert-list fty-asset   \
@@ -83,7 +85,7 @@ SYSTEMCTL_UNITS_COMMON_INTERNAL="bios tntnet@bios fty-outage fty-metric-store   
                                 fty-email fty-metric-composite-configurator     \
                                 fty-metric-tpower                               \
                                 fty-info fty-mdns-sd fty-metric-snmp            \
-                                bios-db-init bios-networking                    \
+                                bios-db-init bios-networking fty-logrotate      \
                                 bios-reset-button bios-ssh-last-resort          \
                                 biostimer-compress-logs biostimer-verify-fs     \
                                 biostimer-loghost-rsyslog-netconsole fty-nut    \

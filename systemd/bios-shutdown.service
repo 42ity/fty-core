@@ -1,0 +1,23 @@
+[Unit]
+# This unit and bios-allowed.service exist to use a touch-file in order
+# to forbid starting bios-allowed.target (and so majority of product units)
+# if the product shutdown was requested. Otherwise for systemd Conflicts
+# alone, the unit asked to start last disables the ones it conflicts with
+# and that's it.
+
+Description=Helper for milestone to shutdown 42ity related services and targets
+Before=bios-shutdown.target
+PartOf=bios-shutdown.target
+BindsTo=bios-shutdown.target
+
+[Install]
+WantedBy=bios-shutdown.target
+
+[Service]
+User=root
+Type=oneshot
+Restart=no
+RemainAfterExit=yes
+ExecStart=/bin/touch /run/bios-shutdown.target.active
+ExecStop=/bin/rm -f /run/bios-shutdown.target.active
+

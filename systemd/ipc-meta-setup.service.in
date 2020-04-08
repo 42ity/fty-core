@@ -3,15 +3,22 @@ Description = Initial IPC setup on target system
 DefaultDependencies=no
 After = local-fs.target
 Requires = local-fs.target
-Before = bios.target fty-envvars.service fty-license-accepted.service bios.service malamute.service sshd.service ssh.service ssh.socket systemd-logind.service network.target systemd-tmpfiles-setup.service systemd-tmpfiles-clean.service tntnet@bios.service fty-tntnet@bios.service fty-db-engine.service mysql.service mysqld.service mariadb.service saslauthd.service
+Before = bios.target bios-pre-eula.target fty-db.target fty-license-accepted.target fty-envvars.service fty-license-accepted.service bios.service malamute.service sshd.service ssh.service ssh.socket systemd-logind.service network.target systemd-tmpfiles-setup.service systemd-tmpfiles-clean.service tntnet@bios.service fty-tntnet@bios.service fty-db-engine.service mysql.service mysqld.service mariadb.service saslauthd.service fty-logrotate.service activemq.service
 #Requires = bios.target bios.service
 
 [Service]
 Type = oneshot
 User = root
-ExecStart = @prefix@/share/fty/setup/ipc-meta-setup.sh
+ExecStart = @datadir@/@PACKAGE@/setup/ipc-meta-setup.sh
 RemainAfterExit = yes
 PrivateTmp = yes
+
+# Normally this service should start very quickly; however on congested
+# hypervisors with slower I/O it tends to be killed by systemd after 90s
+# and then by design blocks the rest of product startup as the system is
+# not in a known usable state.
+# Try to avoid this situation by allowing a (still finite) larger timeout.
+TimeoutStartSec=300
 
 [Install]
 RequiredBy=network.target systemd-tmpfiles-setup.service

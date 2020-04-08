@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2017 - 2018 Eaton
+# Copyright (C) 2017 - 2020 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -91,7 +91,7 @@ if [[ -f /etc/default/bios-db-rw ]]; then
     exit 0
 fi
 
-[[ -s /var/lib/fty/fty-eula/license ]] || [[ -s /var/lib/fty/license ]] || echo "WARNING: the /var/lib/fty/license file is missing or empty" >&2
+[[ -s @ftydatadir@/fty-eula/license ]] || [[ -s @ftydatadir@/license ]] || echo "WARNING: the @ftydatadir@/license file is missing or empty" >&2
 
 # Just in case the service is disabled by preinstall or other means,
 # make it be active (as long as the license acceptance criteria are met).
@@ -101,14 +101,23 @@ if [[ "$SYSTEMCTL_COALESCE_INITIAL" = no ]] ; then
     echo "INFO: `date -u`: enable and start fty-license-accepted.path"
     sudo ${SYSTEMCTL} unmask fty-license-accepted.path || die "Unmasking fty-license-accepted.path failed ($?)"
     sudo ${SYSTEMCTL} enable fty-license-accepted.path || die "Enabling fty-license-accepted.path failed ($?)"
-    sudo ${SYSTEMCTL} restart fty-license-accepted.path || die "Restarting fty-license-accepted.path failed ($?)"
+    ### UPDATE: Do not REstart these, to avoid racing on slower systems
+    ### where the normal dependency codepath to start up the units has
+    ### progressed far enough, and only too much later this fallback
+    ### script catches up to "help" and kills the DB mid-initialization.
+    #sudo ${SYSTEMCTL} restart fty-license-accepted.path || die "Restarting fty-license-accepted.path failed ($?)"
     sudo ${SYSTEMCTL} start fty-license-accepted.path || die "Starting fty-license-accepted.path failed ($?)"
 
     echo "INFO: `date -u`: enable and start fty-license-accepted.service"
     sudo ${SYSTEMCTL} unmask fty-license-accepted.service || die "Unmasking fty-license-accepted failed ($?)"
     sudo ${SYSTEMCTL} enable fty-license-accepted.service || die "Enabling fty-license-accepted failed ($?)"
-    sudo ${SYSTEMCTL} restart fty-license-accepted.service || die "Restarting fty-license-accepted failed ($?)"
+    #sudo ${SYSTEMCTL} restart fty-license-accepted.service || die "Restarting fty-license-accepted failed ($?)"
     sudo ${SYSTEMCTL} start fty-license-accepted.service || die "Starting fty-license-accepted failed ($?)"
+
+    sudo ${SYSTEMCTL} unmask fty-license-accepted.target || die "Unmasking fty-license-accepted.target failed ($?)"
+    sudo ${SYSTEMCTL} enable fty-license-accepted.target || die "Enabling fty-license-accepted.target failed ($?)"
+    #sudo ${SYSTEMCTL} restart fty-license-accepted.target || die "Restarting fty-license-accepted.target failed ($?)"
+    sudo ${SYSTEMCTL} start fty-license-accepted.target || die "Starting fty-license-accepted.target failed ($?)"
 
     # Technically this all should not be needed, as the standard processing
     # of the now-active fty-license-accepted should trigger startup of the
@@ -117,28 +126,44 @@ if [[ "$SYSTEMCTL_COALESCE_INITIAL" = no ]] ; then
     echo "INFO: `date -u`: enable and start fty-db-engine"
     sudo ${SYSTEMCTL} unmask fty-db-engine || die "Unmasking fty-db-engine failed ($?)"
     sudo ${SYSTEMCTL} enable fty-db-engine || die "Enabling fty-db-engine failed ($?)"
-    sudo ${SYSTEMCTL} start fty-db-engine || die "Starting fty-db-engine failed ($?)"
+    # Try twice, to avoid the possibility that an attempt to start the
+    # fty-db-engine.service did begin before, due to external circumstances,
+    # and this call to systemctl would return failure of that run (e.g. the
+    # license file missing at the point that copy of startup was evaluated).
+    # Note that by current product layout, only fty-db-engine is expected to
+    # fall into this trap.
+    sudo ${SYSTEMCTL} start fty-db-engine \
+        || (sleep 1; sudo ${SYSTEMCTL} start fty-db-engine) \
+        || die "Starting fty-db-engine failed ($?)"
 
     echo "INFO: `date -u`: enable and start fty-db-init"
     sudo ${SYSTEMCTL} enable fty-db-init || die "Enabling fty-db-init failed ($?)"
     sudo ${SYSTEMCTL} start fty-db-init || die "Starting fty-db-init failed ($?)"
+
+    echo "INFO: `date -u`: enable and start fty-db.target"
+    sudo ${SYSTEMCTL} enable fty-db.target || die "Enabling fty-db.target failed ($?)"
+    sudo ${SYSTEMCTL} start fty-db.target || die "Starting fty-db.target failed ($?)"
 else
     echo "INFO: `date -u`: unmask core database-related services"
-    sudo ${SYSTEMCTL} unmask fty-license-accepted.path fty-license-accepted.service fty-db-engine.service fty-db-init.service \
+    sudo ${SYSTEMCTL} unmask fty-license-accepted.target fty-license-accepted.path fty-license-accepted.service fty-db-engine.service fty-db-init.service fty-db.target \
         || die "Unmasking a core database-related service failed ($?)"
 
     echo "INFO: `date -u`: enable core database-related services"
-    sudo ${SYSTEMCTL} enable fty-license-accepted.path fty-license-accepted.service fty-db-engine.service fty-db-init.service \
+    sudo ${SYSTEMCTL} enable fty-license-accepted.target fty-license-accepted.path fty-license-accepted.service fty-db-engine.service fty-db-init.service fty-db.target \
         || die "Enabling a core database-related service failed ($?)"
 
-    echo "INFO: `date -u`: tickle fty-license-accepted.service"
-    sudo ${SYSTEMCTL} restart fty-license-accepted.path || die "Restarting fty-license-accepted.path failed ($?)"
-    sudo ${SYSTEMCTL} restart fty-license-accepted.service || die "Restarting fty-license-accepted failed ($?)"
+    #echo "INFO: `date -u`: tickle fty-license-accepted related units"
+    #sudo ${SYSTEMCTL} restart fty-license-accepted.path || die "Restarting fty-license-accepted.path failed ($?)"
+    #sudo ${SYSTEMCTL} restart fty-license-accepted.service || die "Restarting fty-license-accepted failed ($?)"
+    #sudo ${SYSTEMCTL} restart fty-license-accepted.target || die "Restarting fty-license-accepted.target failed ($?)"
+    #sleep 3
 
-    sleep 3
+    sleep 1
 
+    # See comment above about trying to start twice
     echo "INFO: `date -u`: start core database-related services"
-    sudo ${SYSTEMCTL} start fty-license-accepted.path fty-license-accepted.service fty-db-engine.service fty-db-init.service \
+    sudo ${SYSTEMCTL} start fty-license-accepted.path fty-license-accepted.service fty-db-engine.service fty-db-init.service fty-license-accepted.target fty-db.target \
+        || (sleep 1; sudo ${SYSTEMCTL} start fty-license-accepted.path fty-license-accepted.service fty-db-engine.service fty-db-init.service fty-license-accepted.target fty-db.target) \
         || die "Starting a core database-related service failed ($?)"
 fi
 
@@ -196,7 +221,7 @@ find_svc_consumers_recursive() {
 
 list_db_consumers() {
     ARR_GRAND_CONSUMERS=( )
-    find_svc_consumers_recursive '(fty|bios)-db-init.service' || return
+    find_svc_consumers_recursive '((fty|bios)-db-init.service|fty-db.target)' || return
     if [[ 0 == "${#ARR_GRAND_CONSUMERS[@]}" ]] ; then
         return 22
     fi
@@ -207,9 +232,9 @@ echo "INFO: `date -u`: Finding database services and their consumers to ensure t
 
 DB_CONSUMERS="`list_db_consumers`" || DB_CONSUMERS=""
 if [[ -z "$DB_CONSUMERS" ]] ; then
-    echo "WARNING: No services were found to be direct or further consumers of (fty|bios)-db-init.service" >&2
+    echo "WARNING: No services were found to be direct or further consumers of ((fty|bios)-db-init.service|fty-db.target)" >&2
 else
-    echo "INFO: The following DB_CONSUMERS services were found to be direct or further consumers of (fty|bios)-db-init.service: $DB_CONSUMERS" >&2
+    echo "INFO: The following DB_CONSUMERS services were found to be direct or further consumers of ((fty|bios)-db-init.service|fty-db.target): $DB_CONSUMERS" >&2
     if [[ "$SYSTEMCTL_COALESCE" = no ]] ; then
         for SERVICE in $DB_CONSUMERS ; do
             echo "INFO: `date -u`: enable and start ${SERVICE}"
@@ -239,6 +264,9 @@ fi
 
 # NOTE: we have tntnet@bios.service officially aliased by fty-tntnet@bios.service
 # They happen to conflict if both are "enabled", so we "sed" away to collapse 'em
+# Note that at this point units that are prerequisites of fty-db.target and
+# fty-license-accepted.target and bios-pre-eula.target are supposed to be running.
+
 BIOS_DEPS="`/bin/systemctl show -p Wants -p ConsistsOf bios.target | cut -d= -f2 | tr ' ' '\n' | sed -e 's,^fty-tntnet,tntnet,' | sort | uniq`" || BIOS_DEPS=""
 if [[ -n "$BIOS_DEPS" ]] ; then
     echo "INFO: `date -u`: Request to start BIOS_DEPS units WantedBy and/or PartOf bios.target, if any were missed by previous attempts: $BIOS_DEPS"

@@ -1,0 +1,26 @@
+# WARNING: This unit is intended for systems or containers dedicated as
+# 42ity execution environments. It disables any existing MySQL server.
+# We offload killing of competing mysql implementation instances to where
+# its failure would not block this critical unit. Sometimes executions
+# of systemctl from units block...
+
+[Unit]
+Description=Prepare for MySQL server for 42ity usage (remove competitors)
+Wants=basic.target network.target
+Requisite=fty-license-accepted.service
+After=basic.target network.target fty-license-accepted.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=root
+#RestartSec=5
+TimeoutStartSec=15
+# Hack to work around systemd deficiencies, where fty-license-accepted.path+service are not enough
+# Better ugly than sorry (with DB beginning to start, then getting killed by newly realized dependency unit states, and ending up with corrupted DB files rarely)
+ExecStartPre=/bin/dash -c "test -f @ftydatadir@/fty-eula/license"
+ExecStart=/bin/dash -c "for S in mysql.service mysqld.service mariadb.service ; do [ xactive != x\"`/bin/systemctl is-active $S`\" ] || /bin/systemctl stop $S ; ( [ xmasked = x\"`/bin/systemctl is-enabled $S`\" ] || [ xenabled = x\"`/bin/systemctl is-enabled $S`\" ] ) || /bin/systemctl disable $S ; [ xLoadState=masked = x\"`/bin/systemctl show -p LoadState $S`\" ] || /bin/systemctl mask $S ; done ; for S in mysql.service mysqld.service mariadb.service ; do [ xactive != x\"`/bin/systemctl is-active $S`\" ] || echo \"WARNING: competitor $S of fty-db-engine.service is still active\" ; done"
+
+# No [Install] section for directly defined dependency calls only
+### [Install]
+### WantedBy=fty-db-engine.target

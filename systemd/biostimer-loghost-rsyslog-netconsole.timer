@@ -3,6 +3,13 @@ Description=42ity-Timer to regularly review remote logging to current netconsole
 PartOf=timers.target
 ConditionPathIsDirectory=/sys/kernel/config/netconsole
 
+# In timer units, avoid dependency cycling via Wants+ rules
+#Requisite=bios-allowed.target
+#After=bios-allowed.target
+PartOf=bios-allowed.target
+BindsTo=bios-allowed.target
+Conflicts=bios-shutdown.target
+
 [Timer]
 # Time to wait after booting before we run first time
 OnBootSec=5
@@ -11,7 +18,7 @@ OnUnitActiveSec=60
 # Run instantly if last run was skipped (e.g. system powered off)
 Persistent=true
 # Do not record last-execution times
-Persistent=false
+#Persistent=false
 
 [Install]
 WantedBy=timers.target

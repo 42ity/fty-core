@@ -184,7 +184,12 @@ client_SCRIPTS +=	 \
 			tools/runas-_bios-script \
 			tools/run-user-script
 
-helper_SCRIPTS +=	tools/tntnet-ExecStartPre.sh tools/envvars-ExecStartPre.sh tools/generate-release-details.sh tools/factory-reset-live.sh tools/setup-nut-users-ExecStartPre.sh
+helper_SCRIPTS +=	\
+			tools/tntnet-ExecStartPre.sh \
+			tools/envvars-ExecStartPre.sh \
+			tools/generate-release-details.sh \
+			tools/factory-reset-live.sh \
+			tools/setup-nut-users-ExecStartPre.sh
 
 EXTRA_DIST +=		tools/fake-th \
 			tools/bios-networking \
@@ -194,11 +199,11 @@ EXTRA_DIST +=		tools/fake-th \
 			tools/loghost-rsyslog \
 			tools/compress-logs \
 			tools/fty-hostname-setup \
-			tools/fty-route \
-			tools/enable-root-account \
-			tools/disable-root-account \
+			tools/fty-route.in \
+			tools/enable-root-account.in \
+			tools/disable-root-account.in \
 			tools/runas-_bios-script \
-			tools/run-user-script
+			tools/run-user-script.in
 
 # Recipe needed to fulfill ci-rc-bios.sh logic
 fake-th: tools/fake-th
@@ -247,6 +252,8 @@ ipc_meta_setup_SCRIPTS = \
 	$(top_builddir)/setup/20-th-names.sh \
 	$(top_srcdir)/setup/90-nut-ownership.everytime.sh \
 	$(top_srcdir)/setup/90-sw-manifest.sh \
+	$(top_srcdir)/setup/91-logrotate-fty.sh \
+	$(top_srcdir)/setup/999-bios-pre-eula-target.everytime.sh \
 	$(top_srcdir)/setup/ipc-meta-setup.sh
 
 EXTRA_DIST += \
@@ -261,6 +268,8 @@ EXTRA_DIST += \
 	$(top_srcdir)/setup/20-th-names.sh.in \
 	$(top_srcdir)/setup/90-nut-ownership.everytime.sh \
 	$(top_srcdir)/setup/90-sw-manifest.sh \
+	$(top_srcdir)/setup/91-logrotate-fty.sh \
+	$(top_srcdir)/setup/999-bios-pre-eula-target.everytime.sh \
 	$(top_srcdir)/setup/ipc-meta-setup.sh
 
 # SystemD integrations files; if not enabled - variables remain empty
@@ -299,8 +308,10 @@ if HAVE_SYSTEMD
 # services on and off (except a few chosen low-level services that remain
 # WantedBy=multi-user.target)
 SYSTEMD_TARGETS += \
-                        fty-license-accepted.service \
-                        bios.target bios.service
+                        fty-license-accepted.target \
+                        fty-db.target bios-pre-eula.target \
+                        bios-allowed.target bios-shutdown.target \
+                        bios.target bios.service bios-enabler-pre.service
 
 # These units are not part of the common bios.target etc. but are to be
 # considered rather a part of the operating environment independent of
@@ -315,14 +326,20 @@ SYSTEMD_UNITS_LOWLEVEL += \
 # These are verbatim (not templated) additional units that wrap third-party
 # service instances for us. TODO: should tntnet@.service move here?
 SYSTEMD_UNITS_EXTRA += \
-                        fty-license-accepted.path \
+                        bios-allowed.service bios-shutdown.service \
+                        fty-logrotate.service \
+                        fty-monitor-unlock.service \
                         wd_keepalive@.service
 
 # These service-units are PartOf and WantedBy the "bios.target"
 # And also "tntnet@.service" customized by obs/preinstall.sh
 # to enable a "tntnet@bios.service" instance specifically.
 # And also some of the timer units and implementations below
+# Note that for packaging practice most are generated from .in templates
 SYSTEMD_UNITS_TARGET_BIOS += \
+                        fty-license-accepted.service \
+                        fty-license-accepted.path \
+                        fty-db-engine-pre.service \
                         fty-db-engine.service \
                         fty-db-init.service
 
@@ -336,6 +353,7 @@ SYSTEMD_UNITS += $(SYSTEMD_UNITS_TARGET_BIOS) $(SYSTEMD_UNITS_LOWLEVEL)
 # Note: Due to conflict with "tntnet@.service" file from tntnet package,
 # we name ours differently here (and override during OS image generation).
 SYSTEMD_UNITS_NOTPRESET_LOWLEVEL += \
+                        bios-target-watchdog.service \
                         fty-hostname-setup.service
 
 SYSTEMD_UNITS_NOTPRESET_TARGET_BIOS += \
@@ -357,6 +375,8 @@ SYSTEMD_UNITS_TIMERIMPL += $(SYSTEMD_UNITS_TIMERIMPL_LOWLEVEL) $(SYSTEMD_UNITS_T
 SYSTEMD_TIMERS_LOWLEVEL += \
                         biostimer-loghost-rsyslog-netconsole.timer \
                         biostimer-compress-logs.timer \
+                        fty-logrotate.timer \
+                        bios-target-watchdog.timer \
                         biostimer-verify-fs.timer
 
 SYSTEMD_TIMERS += $(SYSTEMD_TIMERS_LOWLEVEL) $(SYSTEMD_TIMERS_TARGET_BIOS)

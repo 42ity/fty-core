@@ -2,7 +2,7 @@
 Description=Prepare common run-time environment variables for 42ity services
 After=local-fs.target
 Requires=local-fs.target
-PartOf=bios.target
+PartOf=bios-pre-eula.target
 
 [Service]
 Type=oneshot
@@ -14,4 +14,4 @@ Group=root
 ExecStart=@datadir@/@PACKAGE@/scripts/envvars-ExecStartPre.sh
 
 [Install]
-WantedBy=bios.target
+WantedBy=bios-pre-eula.target

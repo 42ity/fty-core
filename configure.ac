@@ -266,6 +266,11 @@ AS_IF([test "x$with_systemdtmpfilesdir" != "xno"],
         [AC_SUBST([systemdtmpfilesdir], [$with_systemdtmpfilesdir])])
 AM_CONDITIONAL([HAVE_SYSTEMD], [test "x$with_systemdtmpfilesdir" != "xno"])
 
+AC_ARG_WITH([ftydatadir],
+    [AS_HELP_STRING([--with-ftydatadir=DIR], [Directory for deployment specific mutable data])],,
+    [with_ftydatadir=/var/lib/fty])
+AC_SUBST([ftydatadir], [$with_ftydatadir])
+
 AS_CASE([$host_cpu],
 [x86_64 | i?86],
         [
@@ -320,19 +325,28 @@ eval sbindir=$sbindir
 eval libexecdir=$libexecdir
 eval datarootdir=$datarootdir
 eval datadir=$datadir
+eval ftydatadir=$ftydatadir
 eval localstatedir=$localstatedir
 AC_DEFUN([AC_DATAROOTDIR_CHECKED])
 AC_CONFIG_FILES([
         obs/preinstallimage-bios.sh
         setup/20-th-names.sh
         tools/db-init
+        tools/disable-root-account
+        tools/enable-root-account
         tools/envvars-ExecStartPre.sh
+        tools/ethtool-static-nolink
+        tools/fty-route
+        tools/ifplug-dhcp-autoconf.sh
+        tools/generate-release-details.sh
         tools/setup-nut-users-ExecStartPre.sh
         tools/factory-reset-live.sh
         tools/run-test-doc.sh
+        tools/run-user-script
         tools/start-db-services
         tools/tntnet-ExecStartPre.sh
         tools/update-rc3
+        tools/udhcpc-override.sh
         tools/verify-fs
 ], [ chmod +x "$ac_file" ])
 AC_CONFIG_FILES([
@@ -344,11 +358,17 @@ AC_CONFIG_FILES([
         systemd/bios-networking.service
         systemd/bios-reset-button.service
         systemd/bios-ssh-last-resort.service
+        systemd/bios-target-watchdog.service
         systemd/biostimer-compress-logs.service
         systemd/biostimer-loghost-rsyslog-netconsole.service
         systemd/biostimer-verify-fs.service
+        systemd/fty-core.conf
+        systemd/fty-db-engine-pre.service
         systemd/fty-db-engine.service
         systemd/fty-db-init.service
+        systemd/fty-db-init.conf
+        systemd/fty-license-accepted.service
+        systemd/fty-license-accepted.path
         systemd/fty-envvars.service
         systemd/fty-hostname-setup.service
         systemd/fty-tntnet@.service

@@ -34,6 +34,14 @@
 # data and config directories (not packaged) - so if some target
 # filenames exist under FTY paths, we should not overwrite them with
 # files from legacy BIOS paths.
+#
+#   TODO: Make use of template paths from :
+#       @libexecdir@/@PACKAGE@ = /usr/libexec/{fty,bios}
+#       @datadir@/@PACKAGE@ = /usr/share/{fty,bios}
+#   Common base location for many components, so no @PACKAGE@ :
+#       @ftydatadir@ = /var/lib/{fty,bios}
+#
+
 mvln () {
     OLD="${1-}"
     NEW="${2-}"

@@ -1,0 +1,34 @@
+# Sometimes services fail to start or die and exceed retry counts for systemd
+# recovery, e.g. due to configuration missing and generated later, or their
+# networked counter-agents are required and not on-line, or succumb to resource
+# pressure, or other run-time issues that get resolved eventually.
+# Either way, systemd is not eager to propagate startups of lower-level units
+# into attempts to start those which depend on them. However trying to start
+# (even if already active) higher-level consumer, such as their common target,
+# has the effect of it trying to re-evaluate all the dependencies and get the
+# services running.
+
+[Unit]
+Description=42ity-Timer to regularly ensure running services
+
+# Propagate service-stopping
+PartOf=multi-user.target timers.target
+Conflicts=shutdown.target rescue.target poweroff.target halt.target reboot.target emergency.target
+
+DefaultDependencies=no
+
+Requisite=bios-allowed.target fty-license-accepted.target
+After=bios-allowed.target fty-license-accepted.target
+PartOf=bios-allowed.target bios.target
+BindsTo=bios-allowed.target bios.target
+Conflicts=bios-shutdown.target
+
+[Timer]
+# Time to wait after booting before we run first time
+OnBootSec=5min
+# Run every 10min afterwards, so services do not stay down for too long
+OnCalendar=*:0,10,20,30,40,50
+
+# No [Install] section so this can only be started manually or by reference from another unit
+#[Install]
+#WantedBy=fty-db.target

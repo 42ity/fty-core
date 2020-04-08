@@ -422,7 +422,7 @@ remove_image() {
             [ -s "$RETAIN_FILE" ] \
                 && logmsg_info "Retaining '$RETAIN_FILE' during remove_image($*)" \
                 && mv -f "$RETAIN_FILE" "$RETAIN_FILE.$$"
-	done
+        done
     fi
 
     remove_checksum_cache '[^\:]*' '[^\:]*' "$1"
@@ -447,7 +447,7 @@ remove_image() {
                 && logmsg_info "Restoring retained '$RETAIN_FILE' during remove_image($*)" \
                 && mv -f "$RETAIN_FILE.$$" "$RETAIN_FILE" \
                 || rm -f "$1.forceflash"
-	done
+        done
     fi
 }
 
@@ -962,7 +962,7 @@ download_rawfwimage_generic() (
                         "${DEPLOYMENTROOT_THISIMAGE}/${rIMAGE_CSOLD["$IMAGE_CSALGO"]}" \
                         "${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" \
                     || logmsg_warn "TODO: If we can detect the file size of the remote image, use calculate_stream_checksum_bytes() to verify flashed bits vs ${IMAGE_CSALGO} checksum file"
-	    done
+            done
 
             case "$LOCAL_CHECKSUMS_MATCHED" in
                 -1)  # Should not happen unless CHECKSUM_ALGOLIST_DEFAULT is empty
@@ -1031,8 +1031,8 @@ download_rawfwimage_generic() (
     HELPER_PATTERN=''
     for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
         [ -n "${HELPER_PATTERN-}" ] \
-	    && HELPER_PATTERN="${HELPER_PATTERN}|${IMAGE_CSURL["$IMAGE_CSALGO"]}" \
-	    || HELPER_PATTERN="${IMAGE_CSURL["$IMAGE_CSALGO"]}"
+            && HELPER_PATTERN="${HELPER_PATTERN}|${IMAGE_CSURL["$IMAGE_CSALGO"]}" \
+            || HELPER_PATTERN="${IMAGE_CSURL["$IMAGE_CSALGO"]}"
         if [ -n "${RAW_DEVICE_NODE-}" ]; then
             HELPER_PATTERN="${HELPER_PATTERN}|${IMAGE_CSURL_PADDED["$IMAGE_CSALGO"]}"
         fi
@@ -1559,8 +1559,8 @@ download_osimage() (
     # what is valid - which our old deployed version just can not know.
     # This chroot should happen after the currently deployed version has
     # confirmed trust to that new image, however (checksums/signatures).
-    mkdir -p /var/lib/fty/sw-update/ && \
-    ( etn-sw-update --add-image "${aTGT_FILE}" || echo "$?" > "/var/lib/fty/sw-update/activation_requested" ) && \
+    mkdir -p @ftydatadir@/sw-update/ && \
+    ( etn-sw-update --add-image "${aTGT_FILE}" || echo "$?" > "@ftydatadir@/sw-update/activation_requested" ) && \
     logmsg_info "Got $REPORT_IMAGETYPE OK:" && \
     ls -ld "${aTGT_FILE}" "${aTGT_FILE_CSOLD[@]}" "${aTGT_FILE_MANIFEST}" && \
     cat "${aTGT_FILE_CSOLD[@]}" && \
@@ -2030,12 +2030,21 @@ while [ $# -gt 0 ]; do
 		--url-image-*|-U)
 		    [ $# -eq 1 ] && die "The '$1' option requires a further argument"
 		    case "${1-}" in
-		        --url-image-os|-U)          URL_DOWNLOAD_OSIMAGE="$2"; shift;;
-		        --url-image-fw-raw-uboot)   URL_DOWNLOAD_FWIMAGE_RAW_UBOOT="$2"; shift;;
-		        --url-image-fw-raw-uimage)  URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE="$2"; shift;;
-		        --url-image-fw-raw-modules) URL_DOWNLOAD_FWIMAGE_RAW_MODULES="$2"; shift;;
+		        --url-image-os|-U)
+		            case "${2-}" in
+		                */) logmsg_info "Only directory passed for --url-image-os='$2', trying to use latest image from it for current ARCH='$ARCH'"
+		                    URL_DOWNLOAD_OSIMAGE="`SOURCESITEROOT_OSIMAGE="$2" SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN='*'"${ARCH}"'*' findnewest_osimage`" \
+		                        && [ -n "${URL_DOWNLOAD_OSIMAGE}" ] \
+		                        || die "Could not detect URL_DOWNLOAD_OSIMAGE from --url-image-os='$2'"
+		                    ;;
+		                *)  URL_DOWNLOAD_OSIMAGE="$2" ;;
+		            esac ;;
+		        --url-image-fw-raw-uboot)   URL_DOWNLOAD_FWIMAGE_RAW_UBOOT="$2" ;;
+		        --url-image-fw-raw-uimage)  URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE="$2" ;;
+		        --url-image-fw-raw-modules) URL_DOWNLOAD_FWIMAGE_RAW_MODULES="$2" ;;
 		        *)  die "Aborting due to unknown command-line argument(s): $*" ;;
-		    esac ;;
+		    esac
+		    shift ;;
 		--removeold-image-os)   ACTION_REMOVEOLD_OSIMAGE="yes";;
 		--removeold-image-fw)   ACTION_REMOVEOLD_FWIMAGE="yes";;
 		--removeold-images)     ACTION_REMOVEOLD_OSIMAGE="yes"; ACTION_REMOVEOLD_FWIMAGE="yes";;
