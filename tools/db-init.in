@@ -40,13 +40,13 @@ INITSQL_DIR="@datarootdir@/@PACKAGE@/sql/mysql"
 INSTSQL_DIR="/var/lib/@PACKAGE@/sql/mysql"
 # While we transition release naming... make sure to use new one if it applies.
 if [ "$INSTSQL_DIR" = "/var/lib/bios/sql/mysql" ] && \
-   [ -d "/var/lib/fty/sql/mysql" ] ; then
+   [ -d "@ftydatadir@/sql/mysql" ] ; then
     # Check if any of the default "bios" paths are missing or symlinks (to fty)
     if [ -L /var/lib/bios -o -L /var/lib/bios/sql -o -L /var/lib/bios/sql/mysql \
          -o ! -d /var/lib/bios -o ! -d /var/lib/bios/sql/mysql \
          -o -L /var/lib/bios/sql/mysql/.root-my.cnf ] ; then
         echo "Overriding INSTSQL_DIR from bios to fty"
-        INSTSQL_DIR=/var/lib/fty/sql/mysql
+        INSTSQL_DIR="@ftydatadir@/sql/mysql"
     fi
 fi
 

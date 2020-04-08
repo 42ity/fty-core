@@ -1,19 +1,40 @@
 [Unit]
-# This is desired just for CLI simplicity: "systemctl restart bios" with no extensions asked
-Description=Service to toggle bios.target and whoever wants it
+# This is desired just for CLI simplicity: "systemctl restart bios" with
+# no extensions asked, as well as reliability (everything is stopped when
+# it claims to be done, so should not have the system in half-stopping
+# half-starting state if we are restarting the bundle and something blocks)
+Description=Service to toggle 42ity related targets and whoever they "Wants"
 Requires=multi-user.target network.target
 After=multi-user.target network.target
-Conflicts=rescue.target shutdown.target
+Conflicts=rescue.target shutdown.target poweroff.target halt.target reboot.target emergency.target
+
+# Offload enabling of bios component targets to where its failure
+# would not block the critical wrapper unit called by many consumers.
+# Sometimes executions of systemctl from units just block or loop...
+Wants=bios-enabler-pre.service
+After=bios-enabler-pre.service
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/bin/systemctl start bios.target
-ExecStop=/bin/systemctl stop bios.target
+
+# Per systemd.service docs, TEMPFAIL exit code is 75 as used below
+# But Debian 8 systemd does not know the word, it seems. So we hardcode.
+SuccessExitStatus=75
+ExecStart=/bin/dash -c "/bin/systemctl stop bios-shutdown.target || true; /bin/systemctl start bios-allowed.target bios-pre-eula.target fty-license-accepted.target fty-db.target bios.target ; RES=$? ; if /bin/systemctl is-active fty-license-accepted.target ; then /bin/systemctl start --no-block bios-target-watchdog.timer || true ; exit $RES ; fi ; echo 'NOTE: fty-license-accepted.target currently is not active; we tried to start what we could but will return success anyway' >&2; if [ $RES != 0 ]; then exit 75 ; fi; exit 0;"
+
+ExecStop=/bin/dash -c "/bin/systemctl stop --no-block --no-ask-password bios-target-watchdog.timer || true ; /bin/systemctl start --no-block --no-ask-password bios-shutdown.target || true ; /bin/systemctl stop --no-block --no-ask-password bios-allowed.target bios.target fty-db.target fty-license-accepted.target bios-pre-eula.target"
 # Make sure this runs, even if there is an unclean startup/shutdown of the unit
-ExecStopPost=/bin/systemctl stop bios.target
+ExecStopPost=/bin/systemctl stop --no-block --no-ask-password bios-allowed.target bios.target fty-db.target fty-license-accepted.target bios-pre-eula.target
 # ...and wait for all listed services to finish their lives
-ExecStopPost=/bin/dash -c "/bin/systemctl stop -- $(/bin/systemctl show -p Wants bios.target | cut -d= -f2)"
+# BUT: Only wait for 42ity services to stop if restarting bios.service
+# itself, these systemctl calls tend to block if OS shutdown is going on.
+ExecStopPost=/bin/dash -c "SYSTEMCTL_FLAGS=''; if /bin/systemctl list-jobs | egrep '(shutdown.target|reboot.target|poweroff.target|emergency.target|rescue.target|halt.target|systemd-(reboot|poweroff|halt).service).*start.*waiting' || /bin/systemctl list-jobs | egrep 'multi-user.target.*stop.*waiting' ; then echo 'OS shutdown in progress, %n not waiting for usual suspects to stop'>&2; SYSTEMCTL_FLAGS='--no-block'; fi; for U in $(/bin/systemctl show -p Wants bios.target fty-db.target fty-license-accepted.target bios-pre-eula.target | cut -d= -f2) ; do case \"$U\" in *.path|*.timer) ;; *) /bin/systemctl stop --no-ask-password $SYSTEMCTL_FLAGS -- $U & ;; esac ; done ; wait"
+
+# Finally command the other product bundle targets to stop, and wait for that
+# (unless the OS is shutting down)
+ExecStopPost=/bin/dash -c "if /bin/systemctl list-jobs | egrep '(shutdown.target|reboot.target|poweroff.target|emergency.target|rescue.target|halt.target|systemd-(reboot|poweroff|halt).service).*start.*waiting' || /bin/systemctl list-jobs | egrep 'multi-user.target.*stop.*waiting' ; then echo 'OS shutdown in progress, %n not waiting for usual suspects to stop'>&2; exit 0; fi; /bin/systemctl stop --no-ask-password bios-allowed.target bios.target fty-db.target fty-license-accepted.target bios-pre-eula.target"
+
 # Ordinary frozen services stop for 90 sec max (default),
 # so this service should outlive them
 TimeoutStopSec=120

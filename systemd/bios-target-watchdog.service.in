@@ -1,0 +1,24 @@
+[Unit]
+Description=Implementation of 42ity-Timer to regularly ensure running services
+
+# Propagate service-stopping
+PartOf=multi-user.target timers.target
+Conflicts=shutdown.target rescue.target poweroff.target halt.target reboot.target emergency.target
+
+DefaultDependencies=no
+
+Requisite=bios-allowed.target fty-license-accepted.target
+After=bios-allowed.target fty-license-accepted.target
+PartOf=bios-allowed.target bios.target
+BindsTo=bios-allowed.target bios.target
+Conflicts=bios-shutdown.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=no
+
+# Tickle the target into starting regularly, which should cause
+# systemd attempts to start initially (or later) failed services.
+ExecStart=/bin/systemctl start bios.target
+
+# No [Install] section so this can only be started manually or by reference from another unit

@@ -2,7 +2,9 @@
 Description=Prepare standard hostname for a 42ity deployment, if none is set statically
 After=local-fs.target
 Requires=local-fs.target
-Before=network-online.target
+# Hopefully, being WantedBy+Before multi-user.target allows the naming to
+# be set up before the bulk of 42ity product services even begins starting
+Before=network-online.target multi-user.target
 
 [Service]
 Type=oneshot
@@ -15,4 +17,4 @@ Group=root
 ExecStart=@libexecdir@/@PACKAGE@/fty-hostname-setup "-" false
 
 [Install]
-WantedBy=network-online.target
+WantedBy=network-online.target multi-user.target

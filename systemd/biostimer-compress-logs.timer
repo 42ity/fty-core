@@ -1,6 +1,13 @@
 [Unit]
 Description=42ity-Timer to regularly compress logs
-PartOf=multi-user.target
+PartOf=multi-user.target timers.target
+
+# In timer units, avoid dependency cycling via Wants+ rules
+#Requisite=bios-allowed.target
+#After=bios-allowed.target
+PartOf=bios-allowed.target
+BindsTo=bios-allowed.target
+Conflicts=bios-shutdown.target
 
 [Timer]
 # Time to wait after booting before we run first time
@@ -10,7 +17,7 @@ OnCalendar=*-*-* 04:20:00
 # Run instantly if last run was skipped (e.g. system powered off)
 Persistent=true
 # Do not record last-execution times
-Persistent=false
+#Persistent=false
 
 [Install]
 WantedBy=multi-user.target

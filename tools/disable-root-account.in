@@ -33,7 +33,7 @@ $0 [-t MINS]
 EOF
 }
 
-JSONSH="/usr/share/fty/scripts/JSON.sh"
+JSONSH="@datadir@/@PACKAGE@/scripts/JSON.sh"
 get_a_string_arg() { "$JSONSH" --get-string "$1" ; }
 J="/etc/release-details.json"
 img_type="$(get_a_string_arg osimage-img-type < $J)"

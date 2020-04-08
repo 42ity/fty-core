@@ -1,0 +1,45 @@
+[Unit]
+Description=Milestone for all 42ity-related services that should start after license is accepted
+# Note: Assert* may become available in a later version of systemd than what
+# we have in Debian 8; but for now we have to do the ExecStart* tricks below.
+# And note that Condition is too weak for this - it has the service "active"
+# though with a failed condition, and for dependencies like "fty-db-engine"
+# this status sometimes suffices to start up.
+#AssertFileNotEmpty=@ftydatadir@/fty-eula/license
+#ConditionFileNotEmpty=@ftydatadir@/fty-eula/license
+#ConditionPathExists=@ftydatadir@/fty-eula/license
+
+# This unit per se does not require bios-pre-eula.target to function, only
+# the EULA acceptance file that is created by someone (tntnet, ssh, ...)
+Requires=multi-user.target network.target
+After=multi-user.target network.target
+Conflicts=rescue.target shutdown.target poweroff.target halt.target reboot.target emergency.target
+PartOf=fty-license-accepted.target
+
+[Service]
+Type=oneshot
+### the service shall be considered active even when all its processes exited
+RemainAfterExit=yes
+### if starting failed, do not loop, wait for path (or start-db-services script)
+Restart=no
+###FALLBACK: If .path is not working, should we restart OCCASIONALLY until successful?
+###Restart=on-failure
+###RestartSec=30m
+User=root
+ExecStartPre=/bin/dash -c "sleep 2 ; /usr/bin/test -s @ftydatadir@/fty-eula/license"
+ExecStart=/bin/dash -c "while ! /usr/bin/test -s @ftydatadir@/fty-eula/license ; do sleep 3 ; done"
+ExecStartPost=-/bin/systemctl start --no-block fty-license-accepted.target
+
+### Starting bios.service should unmask, enable and start all co-bundled units
+### blocked by not-yet-accpeted EULA
+ExecStartPost=-/bin/systemctl start --no-block bios.service
+ExecStartPost=-/bin/systemctl start --no-block bios-target-watchdog.timer
+
+### Tell existing bus clients, like tntnet@bios, that we are good to go
+ExecStartPost=/bin/dash -c "/usr/bin/bmsg publish eula ACCEPTED"
+
+### Forbid to break in for sensitive data after deployment becomes used
+ExecStartPost=/bin/dash -c "@libexecdir@/@PACKAGE@/disable-root-account"
+
+[Install]
+RequiredBy=fty-license-accepted.target
