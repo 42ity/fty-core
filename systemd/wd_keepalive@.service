@@ -2,9 +2,9 @@
 Description=watchdog keepalive daemon for device /dev/%i
 # Initially based on the "watchdog" package "wd_keepalive" manifest
 # but with its own quirks. Still requires that daemon to run ;)
-Before=watchdog.service wd_keepalive.service shutdown.target
+Before=watchdog.service wd_keepalive.service shutdown.target poweroff.target halt.target reboot.target emergency.target
 # No real conflict with "watchdog" unless it tries to use same devices
-Conflicts=wd_keepalive.service shutdown.target
+Conflicts=wd_keepalive.service shutdown.target poweroff.target halt.target reboot.target emergency.target
 # Trigger startup of tmpfiles and run afterwards if possible, but do not fret if that fails
 After=systemd-tmpfiles-setup.service
 Wants=systemd-tmpfiles-setup.service

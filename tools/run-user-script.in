@@ -32,18 +32,18 @@ do
     i=$(($i+2));;
   [a-zA-Z0-9]*([a-zA-Z0-9_.-]))
     # It's the executable, prepend path without disturbing the other arguments
-    set -- "${@:1:$(($i-1))}" "/var/lib/fty/fty-scripts-rest/${!i}" "${@:$(($i+1))}"
+    set -- "${@:1:$(($i-1))}" "@ftydatadir@/fty-scripts-rest/${!i}" "${@:$(($i+1))}"
     break;;
   -*)
     # Bad argument, rely on runas-_bios-script to print usage
     echo "Unknown argument '${!i}'" >&2
-    exec /usr/libexec/fty/runas-_bios-script;;
+    exec @libexecdir@/@PACKAGE@/runas-_bios-script;;
   *)
     # Bad script name, rely on runas-_bios-script to print usage
     echo "Invalid script name '${!i}'" >&2
-    exec /usr/libexec/fty/runas-_bios-script;;
+    exec @libexecdir@/@PACKAGE@/runas-_bios-script;;
   esac
 done
 
 # Let runas-_bios-script do the work
-exec /usr/libexec/fty/runas-_bios-script "$@"
+exec @libexecdir@/@PACKAGE@/runas-_bios-script "$@"

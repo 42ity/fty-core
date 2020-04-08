@@ -1,15 +1,17 @@
 [Unit]
-Description=Grouping which wants all 42ity-related services so they can be started and stopped uniformly
+Description=Target that is reached when 42ity database is ready to use
 # NOTE: Do not list a "Wants=system services" here, such list is used to stop units via bios.service
 Requires=multi-user.target network.target bios-pre-eula.target
 # These targets we "Want" (try to start once) but do not Require
 # (keep on starting) - just Requisite so we do not start without
 # if they are not activable at the moment.
-Wants=fty-license-accepted.target fty-db.target
-Requisite=bios-pre-eula.target fty-license-accepted.target fty-db.target
-BindsTo=bios-pre-eula.target fty-license-accepted.target fty-db.target
-After=multi-user.target network.target bios-pre-eula.target fty-license-accepted.target fty-db.target
+Wants=fty-license-accepted.target
+Requisite=fty-license-accepted.target
+BindsTo=fty-license-accepted.target
+After=multi-user.target network.target bios-pre-eula.target fty-license-accepted.target
+Before=bios.target
 Conflicts=rescue.target shutdown.target poweroff.target halt.target reboot.target emergency.target
+PartOf=bios.target
 
 Requisite=bios-allowed.target
 After=bios-allowed.target

@@ -1,0 +1,11 @@
+[Unit]
+Description=Shutdown 42ity related services and targets
+DefaultDependencies=no
+RefuseManualStart=no
+
+Conflicts=bios-allowed.target malamute.service activemq.service
+
+[Install]
+# Beside manual triggering or bios.service processing, tap into usual
+# OS shutdown ritual to make sure 42ity services stop and stay down
+WantedBy=shutdown.target rescue.target poweroff.target halt.target reboot.target emergency.target

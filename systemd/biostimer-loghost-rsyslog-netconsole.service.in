@@ -1,5 +1,7 @@
 [Unit]
 Description=42ity-Timer service to review remote logging to current netconsole sink
+# Avoid depending on basic.target that ends up requiring multi-user.target rsyslog.service
+DefaultDependencies=no
 After=networking.service
 Wants=networking.service
 Before=rsyslog.service

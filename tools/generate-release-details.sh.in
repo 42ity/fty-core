@@ -132,6 +132,7 @@ if [ -z "${GIT_DETAILS_FILE-}" ]; then
         for F in \
             "${ALTROOT}/usr/share/fty/.git_details" \
             "${ALTROOT}/usr/share/bios/.git_details" \
+            "${ALTROOT}@datadir@/@PACKAGE@/.git_details" \
         ; do
                 [ -s "$F" ] && GIT_DETAILS_FILE="$F" && break
         done

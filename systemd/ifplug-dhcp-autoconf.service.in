@@ -3,7 +3,7 @@ Description=Preconfigure ifplugd with currently tracked interfaces and yank them
 DefaultDependencies=no
 After=mountkernfs.service local-fs.target urandom.service
 Before=ifplugd.service networking.service
-Conflicts=shutdown.target
+Conflicts=shutdown.target poweroff.target halt.target reboot.target
 PropagatesReloadTo=ifplugd.service
 ReloadPropagatedFrom=networking.service
 
