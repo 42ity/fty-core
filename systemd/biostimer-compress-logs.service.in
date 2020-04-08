@@ -1,6 +1,6 @@
 [Unit]
 Description=42ity-Timer service that compresses older log files
-Conflicts=shutdown.target
+Conflicts=rescue.target shutdown.target poweroff.target halt.target reboot.target emergency.target
 
 [Service]
 Type=simple

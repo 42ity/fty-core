@@ -1,0 +1,37 @@
+[Unit]
+Description=Target that is reached when 42ity EULA is accepted on this system
+# NOTE: Do not list a "Wants=system services" here, such list is used to stop units via bios.service
+Requires=multi-user.target network.target bios-pre-eula.target
+BindsTo=fty-license-accepted.path
+
+# If the .service is not active then it is not, do not tickle
+# any more and do not fulfill this target's needs to activate -
+# wait for the .path unit to activate the .service
+Requisite=fty-license-accepted.service
+# If the .service is not active then the .target is not, ever.
+BindsTo=fty-license-accepted.service
+
+# Activate the .service by checking/waiting for presence of the EULA file
+Requires=fty-license-accepted.path
+
+After=multi-user.target network.target bios-pre-eula.target fty-license-accepted.service fty-license-accepted.path
+Before=bios.target
+Conflicts=rescue.target shutdown.target poweroff.target halt.target reboot.target emergency.target
+PartOf=bios.target
+
+Requisite=bios-allowed.target
+After=bios-allowed.target
+PartOf=bios-allowed.target
+BindsTo=bios-allowed.target
+Conflicts=bios-shutdown.target
+
+[Install]
+RequiredBy=bios.target
+# Note: this target is both WantedBy (triggered to start with no waiting
+# to complete) and Requires/After the multi-user.target. So when system
+# finishes proper basic startup, it triggers/schedules a startup of the
+# fty-license-accepted.target which actually takes place after the
+# multi-user.target has reported completion of its own startup.
+# Successful startup of fty-license-accepted.service (after accepting
+# the EULA) will enable other targets comprising the product.
+WantedBy=multi-user.target

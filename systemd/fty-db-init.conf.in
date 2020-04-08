@@ -1,4 +1,4 @@
 # create runtime directories for bios-db-init to store copies of applied
 # database schemas and current credentials
-d /var/lib/fty/sql/mysql 0750 bios www-data
-x /var/lib/fty/sql/mysql/*
+d @ftydatadir@/sql/mysql 0750 bios www-data
+x @ftydatadir@/sql/mysql/*

@@ -65,10 +65,10 @@ VIRT_HYPERVIZOR=""
 if [[ -x "$JSONSH" ]] ; then
     if [[ -n "${BASH-}" ]]; then
         . "$JSONSH"
-        get_a_string_arg() { jsonsh_cli_subshell -x "$1" | (IFS="`printf '\t'`" read K V; echo "$V") | sed 's,^"\(.*\)",\1,' ; }
+        get_a_string_arg() { jsonsh_cli_subshell --get-string "$1" ; }
     else
         logmsg_info "systemctl: Will fork to use JSON.sh from '$JSONSH' to cook strings"
-        get_a_string_arg() { "$JSONSH" -x "$1" | (IFS="`printf '\t'`" read K V; echo "$V") | sed 's,^"\(.*\)",\1,' ; }
+        get_a_string_arg() { "$JSONSH" --get-string "$1" ; }
     fi
     get_detail() {
         local _TMPSTR=""

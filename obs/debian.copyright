@@ -7,7 +7,7 @@ License: GPL-2+
 
 Files: tools/JSON.sh
 Copyright: Copyright 2014, 2015 Dominic Tarr
-           Copyright 2015 Eaton
+           Copyright 2015-2020 Eaton
 License: Apache-2 and Expat
 
 Files: tests/include/catch.hpp

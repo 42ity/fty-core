@@ -1,0 +1,20 @@
+# We offload enabling of bios component targets to where its failure
+# would not block the critical wrapper unit called by many consumers.
+# Sometimes executions of systemctl from units just block or loop...
+
+[Unit]
+Description=Helper of bios.service to enable 42ity component targets
+Wants=basic.target network.target
+After=basic.target network.target
+Conflicts=rescue.target shutdown.target poweroff.target halt.target reboot.target emergency.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=root
+#RestartSec=5
+TimeoutStartSec=15
+
+ExecStart=/bin/dash -c "for S in bios.target fty-db.target fty-license-accepted.target bios-pre-eula.target bios-allowed.target ; do [ xactive = x\"`/bin/systemctl is-active $S`\" ] && continue ; if ( [ xmasked = x\"`/bin/systemctl is-enabled $S`\" ] || [ xLoadState=masked = x\"`/bin/systemctl show -p LoadState $S`\" ] ) ; then /bin/systemctl unmask $S ; fi ; if [ xenabled != x\"`/bin/systemctl is-enabled $S`\" ] ; then /bin/systemctl enable $S ; fi; done; true"
+
+# No [Install] section for directly defined dependency calls only

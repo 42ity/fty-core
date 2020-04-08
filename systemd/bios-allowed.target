@@ -1,0 +1,26 @@
+[Unit]
+Description=Milestone which should be enabled and active for any 42ity-related services
+
+# NOTE: Do not list a "Wants=system services" here, such list is used to stop units via bios.service
+Requires=ipc-meta-setup.service
+After=ipc-meta-setup.service
+Conflicts=rescue.target shutdown.target poweroff.target halt.target reboot.target emergency.target
+
+Before=malamute.service activemq.service
+Conflicts=bios-shutdown.target
+
+# Run if the file does NOT exist
+#AssertPathExists=!/run/bios-shutdown.target.active
+After=bios-allowed.service
+Requires=bios-allowed.service
+
+[Install]
+# Note: this target is both WantedBy (triggered to start with no waiting
+# to complete) and Requires/After the multi-user.target. So when system
+# finishes proper basic startup, it triggers/schedules a startup of the
+# bios-pre-eula.target which actually takes place after the multi-user.target
+# has reported completion of its own startup.
+WantedBy=multi-user.target
+RequiredBy=malamute.service activemq.service
+
+# ToThink: avahi-daemon.service avahi-daemon.socket saslauthd.service ... ?

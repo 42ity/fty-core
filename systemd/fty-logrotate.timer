@@ -1,0 +1,19 @@
+[Unit]
+# Packaged logrotate integrates with a cron and requires one
+# We have a timer in form of systemd however, so do not need cron
+Description=42ity-Timer service that calls distro-provided logrotate
+Requires = local-fs.target ipc-meta-setup.service
+After = local-fs.target ipc-meta-setup.service
+Conflicts=rescue.target shutdown.target poweroff.target halt.target reboot.target emergency.target
+PartOf=multi-user.target timers.target
+
+[Timer]
+# Time to wait after booting before we run first time
+OnBootSec=10min
+### Run every hour to catch fast-growing logs early if something runs away
+OnCalendar=*-*-* *:00:00
+# Run instantly if last run was skipped (e.g. system powered off)
+Persistent=true
+
+[Install]
+WantedBy=multi-user.target

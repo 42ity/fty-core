@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#   Copyright (c) 2014-2019 Eaton
+#   Copyright (c) 2014 - 2020 Eaton
 #
 #   This file is part of the Eaton 42ity project.
 #
@@ -46,12 +46,27 @@
 #   or is considered to be a "deploy" image otherwise.
 #   Note that the IMGTYPE also ends up in update-rc3 settings and
 #   in bios-web/image-version.txt.
+#
+#   TODO: Make use of template paths from :
+#       @libexecdir@/@PACKAGE@ = /usr/libexec/{fty,bios}
+#       @datadir@/@PACKAGE@ = /usr/share/{fty,bios}
+#   Common base location for many components, so no @PACKAGE@ :
+#       @ftydatadir@ = /var/lib/{fty,bios}
+#
 
 echo "INFO: Executing $0 $*"
 echo "    IMGTYPE='$IMGTYPE'"
 
 # Protect against errors... such as maybe running on a dev workstation
 set -e
+
+# bashism to get errors from pipelines
+set -o pipefail
+
+die() {
+    echo "FATAL: $*" >&2
+    exit 1
+}
 
 # Setup core dumps
 if true; then
@@ -60,8 +75,9 @@ if true; then
     ( echo 'kernel.core_pattern = /var/crash/%t-%e-%s.core'
       echo 'fs.suid_dumpable = 2' \
     ) > /etc/sysctl.d/10-core.conf
-    sed -i 's|.*DefaultLimitCORE=.*|DefaultLimitCORE=infinity|' /etc/systemd/system.conf
-    sed -i 's|.*DumpCore=.*|DumpCore=yes|' /etc/systemd/system.conf
+    sed -e 's|.*DefaultLimitCORE=.*|DefaultLimitCORE=infinity|' \
+        -e 's|.*DumpCore=.*|DumpCore=yes|' \
+        -i /etc/systemd/system.conf
 fi
 
 # We set bash HISTORY in /etc/profile.d (see below) and mark it readonly
@@ -106,6 +122,8 @@ passwd admin <<EOF
 admin
 admin
 EOF
+# Force the admin user to change password at this first login
+chage -d 0 admin
 mkdir -p /home/admin && chown admin:bios-admin /home/admin
 
 # add an access to bios-logread (for /var/log/messages) to webserver
@@ -128,6 +146,10 @@ monitor
 EOF
 fi
 mkdir -p /home/monitor && chown monitor:bios-dash /home/monitor
+
+# Do not let monitor login on first boot, it will be unlocked
+# later - by fty-monitor-unlock.service after EULA wizard
+passwd -l monitor
 
 # _bios-script user - special user allowing us to call REST API from scripts
 useradd -m _bios-script -N -g bios-admin -G sasl -s /usr/sbin/nologin
@@ -477,6 +499,7 @@ rm -f /etc/init.d/saslauthd
 cat <<EOF > /lib/systemd/system/saslauthd.service
 [Unit]
 Description=SASL Authentication Daemon
+PartOf=bios-pre-eula.target
 
 [Service]
 Type=forking
@@ -486,9 +509,33 @@ ExecStop=/bin/kill -15 \$MAINPID
 PIDFile=/var/run/saslauthd/saslauthd.pid
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=bios-pre-eula.target
 EOF
 /bin/systemctl enable saslauthd
+
+# Change the malamute unit file in-place
+if [ -s /usr/lib/systemd/system/malamute.service ]; then
+( /bin/systemctl disable malamute || true
+UNITFILE=/usr/lib/systemd/system/malamute.service
+if ! egrep -q '^PartOf=' "${UNITFILE}" ; then
+    sed -e 's,^\(\[Unit\]\).*$,\1\nPartOf=\n,' \
+        -i "${UNITFILE}" \
+        || exit
+fi
+
+if ! egrep -q '^Before=' "${UNITFILE}" ; then
+    sed -e 's,^\(\[Unit\]\).*$,\1\nBefore=\n,' \
+        -i "${UNITFILE}" \
+        || exit
+fi
+
+sed -e 's,^\(WantedBy\|RequiredBy\|PartOf\|Before\)=\(.*\)$,\1=bios-pre-eula.target,g' \
+    -e 's,^\(ExecStart=.*\)$,\1\n# Check that IPC is listening so clients can start\nExecStartPost=/bin/dash -c "while : ; do netstat -anp | egrep -q '"'"'^unix.*LISTEN.*@/malamut(e|e-terminate)$'"'"' \&\& exit 0 ; sleep 1; done"\n,' \
+    -i "${UNITFILE}" || exit
+
+/bin/systemctl enable malamute
+) || die "Failed to generate malamute for 42ity service"
+fi
 
 mkdir -p /etc/update-rc3.d
 cp /usr/share/fty/examples/config/update-rc3.d/* /etc/update-rc3.d
@@ -591,6 +638,29 @@ if [ -s /lib/systemd/system/nut-driver-enumerator.service ] \
     # not enabling because of missing requirements in the Install section...
     # if so - this is intentional in that branch of NUT for our product.
     for unit in nut-driver-enumerator-daemon.service nut-driver-enumerator-daemon-activator.service nut-driver-enumerator-daemon-activator.path ; do
+        # Disable unit, amend dependency config, re-enable to make new symlinks
+        /bin/systemctl disable ${unit} || true
+
+        mkdir -p /lib/systemd/system/${unit}.d
+        cat > /lib/systemd/system/${unit}.d/fty.conf  << EOF
+# On 42ity deployments, start NUT parts after EULA is accepted
+[Unit]
+Requisite=fty-license-accepted.target
+After=fty-license-accepted.target
+PartOf=fty-license-accepted.target
+EOF
+        case "${unit}" in
+            *.path)
+                cat >> /lib/systemd/system/${unit}.d/fty.conf  << EOF
+# Do not depend on this unit from paths.target that would make a loop
+# and try to start it (and NUT services it triggers) earlier than desired
+DefaultDependencies=no
+EOF
+                ;;
+        esac
+
+        /bin/systemctl daemon-reload || true
+
         /bin/systemctl unmask ${unit} || true
         /bin/systemctl enable ${unit} || true
     done
@@ -708,10 +778,87 @@ case "$IMGTYPE" in
         ;;
     *)
         echo "BIOS_LOG_LEVEL=LOG_INFO" > /usr/share/fty/etc/default/fty
+        # Work around one poorly pre-packaged config until we have a more centralized solution
+        if [ -s /etc/fty/ftyshmcli.cfg ] && grep -q 'rootLogger=DEBUG' /etc/fty/ftyshmcli.cfg ; then
+            sed -e "s|rootLogger=DEBUG|rootLogger=INFO|g" -i /etc/fty/ftyshmcli.cfg
+        fi
         sed -e 's|.*MaxLevelStore.*|MaxLevelStore=info|' \
             -i /etc/systemd/journald.conf
         ;;
 esac
+
+# First, disable the NUT units to remove the .wants symlinks
+/bin/systemctl disable nut.target
+/bin/systemctl disable nut-driver.target
+/bin/systemctl disable nut-server.service
+/bin/systemctl disable nut-monitor.service
+
+# Note: In case we'd use a version of NUT that can validly serve
+# "no data" with an empty config file (no device sections) and
+# later reload as something gets configured, we can change the
+# dependencies below to have nut-server (upsd) start as part of
+# the bios-pre-eula.target to be visible on network even before
+# the EULA checks.
+mkdir -p /lib/systemd/system/nut-server.service.d
+cat > /lib/systemd/system/nut-server.service.d/fty.conf  << EOF
+# Bind nut-server actual startup to EULA acceptance
+# to avoid flooding console / Welcome screen
+[Unit]
+Requires=network.target
+Requisite=fty-license-accepted.target
+After=fty-license-accepted.target
+PartOf=fty-license-accepted.target
+EOF
+
+# This should only work with recent systemd and Debian 10
+# See the fix below
+mkdir -p /lib/systemd/system/nut.target.d
+cat > /lib/systemd/system/nut.target.d/fty.conf  << EOF
+# Remove nut.target from multi-user.target, to avoid breaking
+# the fty-license-accepted Requirement on multi-user.target.
+# To achieve this, simply set WantedBy to empty
+[Unit]
+Requisite=fty-license-accepted.target
+After=fty-license-accepted.target
+PartOf=fty-license-accepted.target
+
+[Install]
+WantedBy=
+WantedBy=bios.target
+EOF
+
+# For systemd 215 at least, dropin for [Install] are not satisfied
+# So hotfix nut.target directly. First we disabled it above...
+# Then update the target membership and update
+sed -e "s/WantedBy=multi-user.target/WantedBy=bios.target/" \
+    -i /lib/systemd/system/nut.target
+
+mkdir -p /lib/systemd/system/nut-driver.target.d
+cat > /lib/systemd/system/nut-driver.target.d/fty.conf  << EOF
+# On 42ity deployments, start NUT parts after EULA is accepted
+[Unit]
+Requisite=fty-license-accepted.target
+After=fty-license-accepted.target
+PartOf=fty-license-accepted.target
+EOF
+
+mkdir -p /lib/systemd/system/nut-monitor.service.d
+cat > /lib/systemd/system/nut-monitor.service.d/fty.conf  << EOF
+# On 42ity deployments, start NUT parts after EULA is accepted
+[Unit]
+Requisite=fty-license-accepted.target
+After=fty-license-accepted.target
+PartOf=fty-license-accepted.target
+EOF
+
+# Recreate the service dependency symlinks
+/bin/systemctl daemon-reload
+/bin/systemctl enable nut-driver.target
+/bin/systemctl enable nut-server.service
+# Note: Currently we do not generate any configurations for the nut-monitor
+# client (which might take care of clean shutdown of the 42ity monitoring)
+#/bin/systemctl enable nut-monitor.service
+/bin/systemctl enable nut.target
 
 # according to https://github.com/42ity/malamute/blob/1.0-FTY-master/src/mlm_perftest.c#L22
 # "If we allow limits, then the engines will block under stress."
@@ -941,11 +1088,13 @@ cat > /etc/default/ip6tables <<[eof]
 COMMIT
 [eof]
 
-# Accept tcp port 5005 for devel image (append files)
+# Accept tcp port 1099 and 5005 for devel image for Java JMX & JVM debug (append files)
 case "$IMGTYPE" in
     *devel*)
-        sed -i '/tcp --dport 4222/a\-A INPUT -p tcp -m tcp --dport 5005 -j ACCEPT' /etc/default/iptables
-        sed -i '/tcp --dport 4222/a\-A INPUT -p tcp -m tcp --dport 5005 -j ACCEPT' /etc/default/ip6tables
+        sed '/tcp --dport 4222/a\-A INPUT -p tcp -m tcp --dport 1099 -j ACCEPT' -i /etc/default/iptables
+        sed '/tcp --dport 4222/a\-A INPUT -p tcp -m tcp --dport 1099 -j ACCEPT' -i /etc/default/ip6tables
+        sed '/tcp --dport 4222/a\-A INPUT -p tcp -m tcp --dport 5005 -j ACCEPT' -i /etc/default/iptables
+        sed '/tcp --dport 4222/a\-A INPUT -p tcp -m tcp --dport 5005 -j ACCEPT' -i /etc/default/ip6tables
         ;;
 esac
 
@@ -981,7 +1130,7 @@ while IFS=';' read SOURCE_PKG PKG_VERSION CURRENT_PKG
 do
    CURRENT_PKG="`echo ${CURRENT_PKG} | cut -d':' -f1`"
    PKG_VERSION="`echo ${PKG_VERSION} | cut -d':' -f2`"
-   grep -q "${SOURCE_PKG};" "${CSV_FILE_PATH}" || \
+   grep -q "^${SOURCE_PKG};" "${CSV_FILE_PATH}" || \
    if [ $? -eq 1 ]; then
       echo "${SOURCE_PKG};${PKG_VERSION};/legal/${CURRENT_PKG}/copyright" 2>/dev/null >> "${CSV_FILE_PATH}"
       [ ! -f "/usr/share/doc/${CURRENT_PKG}/copyright" ] && echo "Missing ${CURRENT_PKG}/copyright file!"
@@ -1111,6 +1260,31 @@ find /var/log -group bios-logread -exec chmod g+r '{}' \; || true
 # The logic to migrate such paths in existing upgraded deployments
 # is now handled in setup/ipc-meta-setup.sh framework script and
 # corresponding systemd service unit before BIOS services start up.
+
+# Do not autostart the complete product during the first boot,
+# before EULA is accepted in the initial Web-GUI wizard.
+# The fty-license-accepted.service should enable these for later boots.
+/bin/systemctl enable bios-allowed.target || true
+/bin/systemctl enable bios-pre-eula.target || true
+/bin/systemctl enable fty-license-accepted.target || true
+
+#/bin/systemctl disable bios.target || true
+###/bin/systemctl mask bios.target || true
+#/bin/systemctl disable fty-db.target || true
+###/bin/systemctl mask fty-db.target || true
+#/bin/systemctl disable bios.service || true
+
+# A bit for the value-added stuff if present in this image.
+# Would be re-activated by its packaged drop-in service config.
+/bin/systemctl enable ipm2-pre-eula.target || true
+#/bin/systemctl disable ipm2.target || true
+###/bin/systemctl mask ipm2.target || true
+#/bin/systemctl disable ipm2.service || true
+
+# Disable fty-license-accepted, before the actual EULA acceptance
+# to avoid flooding console / Welcome screen
+# It will be activated by fty-license-accepted.path
+/bin/systemctl disable fty-license-accepted.service || true
 
 sync
 echo "INFO: successfully reached the end of script: $0 $@"

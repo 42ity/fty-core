@@ -1,0 +1,16 @@
+[Unit]
+Description=42ity-Timer service that calls distro-provided logrotate
+Requires = local-fs.target ipc-meta-setup.service
+After = local-fs.target ipc-meta-setup.service
+Conflicts=rescue.target shutdown.target poweroff.target halt.target reboot.target emergency.target
+ConditionFileIsExecutable=/usr/sbin/logrotate
+
+[Service]
+Type=simple
+Restart=no
+User=root
+ExecStartPre=/bin/dash -c "if test -s /etc/logrotate.conf.dpkg-new && ! test -s /etc/logrotate.conf ; then mv -f /etc/logrotate.conf.dpkg-new /etc/logrotate.conf ; fi"
+ExecStart=/usr/sbin/logrotate /etc/logrotate.conf
+
+[Install]
+WantedBy=multi-user.target

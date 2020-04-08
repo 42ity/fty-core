@@ -21,12 +21,16 @@
 #! \file verify-fs.sh
 #  \author Michal Vyskocil <MichalVyskocil@Eaton.com>
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \author Clement Perrette <ClementPerrette@Eaton.com>
 #  \brief Verify the filesystem and report suspicious things
 #
 
 OVERLAY=@OVERLAY_PATH@
 DEFAULT=/etc/default/verify-fs
 IMAGES=@IMAGES_PATH@
+
+JSONSH="@datadir@/@PACKAGE@/scripts/JSON.sh"
+get_a_string_arg() { "$JSONSH" --get-string "$1" ; }
 
 die () {
     echo "${@}" >&2
@@ -84,24 +88,44 @@ pushd "${IMAGES}" >/dev/null
 for ROOTFS in *.squashfs; do
 
     if [ -s "${ROOTFS}.md5" ] ; then
-        /usr/bin/md5sum -c "${ROOTFS}.md5" 2>/dev/null || \
+        if /usr/bin/md5sum -c "${ROOTFS}.md5" 2>/dev/null; then
+            log "Good integrity of ${ROOTFS}, MD5 checksum is valid"
+        else
             log "Bad integrity of ${ROOTFS}, MD5 checksum is not valid"
+        fi
     else
         log "Missing MD5 checksum file: '${ROOTFS}.md5'"
     fi
 
     if [ -s "${ROOTFS}.sha256" ] ; then
-        /usr/bin/sha256sum -c "${ROOTFS}.sha256" 2>/dev/null || \
+        if /usr/bin/sha256sum -c "${ROOTFS}.sha256" 2>/dev/null; then
+            if [ -s "${ROOTFS}-manifest.json" ] ; then
+                    SHA256_COMPUTED=$(cut -d ' ' -f1 < "${ROOTFS}.sha256")
+                    SHA256_MANIFEST=$(get_a_string_arg '^"application","ShaChecksum"$' < "${ROOTFS}-manifest.json")
+
+                if [ "${SHA256_COMPUTED}" = "${SHA256_MANIFEST}" ]; then
+                    if [ -s "${ROOTFS}-manifest.json.p7s" ] ; then
+                        SIGNED_BY=$(get_a_string_arg '^"application","SignedBy"$' < "${ROOTFS}-manifest.json")
+
+                        if openssl cms -verify -binary -inform der -CAfile "/usr/share/authorities/${SIGNED_BY}/rootCa1.pem" -purpose any -out /dev/null -content "${ROOTFS}-manifest.json" -in "${ROOTFS}-manifest.json.p7s"; then
+                            log "Image signature is valid for ${ROOTFS}"
+                        else
+                            log "Image signature is invalid for ${ROOTFS}"
+                        fi
+                    else
+                        log "Manifest signature not found for ${ROOTFS}"
+                    fi
+                else
+                    log "Manifest sha256 hash does not match with the sha256 hash for ${ROOTFS}"
+                fi
+            else
+                log "Manifest not found for ${ROOTFS}"
+            fi
+        else
             log "Bad integrity of ${ROOTFS}, SHA256 checksum is not valid"
+        fi
     else
         log "Missing SHA256 checksum file: '${ROOTFS}.sha256'"
-    fi
-
-    if [ -s "${ROOTFS}.cksum" ] ; then
-        /usr/bin/cksum -c "${ROOTFS}.cksum" 2>/dev/null || \
-            log "Bad integrity of ${ROOTFS}, CRC/cksum checksum is not valid"
-    else
-        log "Missing CRC/cksum checksum file: '${ROOTFS}.cksum'"
     fi
 
 done
@@ -112,6 +136,7 @@ if tty -s; then
 else
     interactive=false
 fi
+
 ## 2.) Verify the overlayfs
 cat_default | while read LINE; do
     TREE=${LINE%%:*}

@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #
-# Copyright (C) 2017 Eaton
+# Copyright (C) 2017 - 2020 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -109,11 +109,13 @@ do_reset_passwd() {
 do_unlicense() {
     # TODO: se subst-value to path here
     logmsg_info "Resetting license-accepted state (EULA)..."
-    rm -f /var/lib/fty/fty-eula/license /var/lib/fty/license
+    rm -f @ftydatadir@/fty-eula/license @ftydatadir@/license
     if [ "$ENABLESVC" = yes ]; then
         logmsg_info "Restarting services that care about license-accepted state (EULA)..."
-        systemctl restart fty-license-accepted.service
-        systemctl restart tntnet@bios.service
+        systemctl restart --no-block fty-license-accepted.service
+        systemctl restart --no-block fty-license-accepted.path
+        systemctl restart --no-block fty-license-accepted.target
+        systemctl restart --no-block tntnet@bios.service
     fi
 }
 
@@ -122,12 +124,13 @@ do_undatabase() {
     systemctl stop fty-db-init.service || die "Can not ensure database is stopped"
     systemctl stop fty-db-engine.service || die "Can not ensure database is stopped"
     logmsg_info "Clearing database-related files..."
-    rm -rf /var/lib/mysql /var/lib/fty/sql/mysql/* /var/lib/fty/sql/mysql/.*.cnf* \
+    rm -rf /var/lib/mysql @ftydatadir@/sql/mysql/* @ftydatadir@/sql/mysql/.*.cnf* \
         /etc/default/bios-db-r[ow] /root/.my.cnf
     if [ "$ENABLESVC" = yes ]; then
         logmsg_info "Starting database engine, if possible..."
-        systemctl restart fty-db-engine.service || true # License may forbid startup
-        systemctl restart fty-db-init.service || true
+        systemctl restart --no-block fty-db-engine.service || true # License may forbid startup
+        systemctl restart --no-block fty-db-init.service || true
+        systemctl restart --no-block fty-db.target || true
         logmsg_info "Restarting webserver..."
         systemctl restart tntnet@bios.service || die "Can not ensure database is running"
     fi
@@ -138,7 +141,7 @@ do_unstate() {
     systemctl stop bios.service || die "Can not ensure IPM daemons are stopped"
 
     logmsg_info "Wiping IPM service state files and directories..."
-    ls -1d /var/lib/fty/* /var/lib/bios/* | \
+    ls -1d @ftydatadir@/* /var/lib/bios/* | \
     while read OBJ ; do
         case "$OBJ" in
         */fty-eula|*/license|*/sql|*/ipc-meta-setup) ;; # Skip these - handled by other actions
@@ -196,16 +199,19 @@ do_factory_reset() (
     do_unnut
     # Be sure DB does not fire up in this window of uncertainty for systemd --
     # just to be killed mid-way through DB files creation, leaving them corrupt
+    systemctl stop fty-db.target
     systemctl stop fty-db-init.service
     systemctl stop fty-db-engine.service
     logmsg_info "Restarting IPM-related services..."
     systemctl restart fty-license-accepted.path
     systemctl restart fty-license-accepted.service
+    systemctl restart fty-license-accepted.target
     systemctl restart malamute.service
     sleep 5 # License check starts with a bit of sleep - supercede that here
     systemctl restart bios.service
     systemctl restart fty-db-engine.service
     systemctl restart fty-db-init.service
+    systemctl restart fty-db.target
     # The tntnet server sometimes keeps running while the service gets restarted
     # so it loops complaining that port :80 is occupied already. Try to avoid:
     systemctl stop tntnet@bios.service || true
@@ -215,7 +221,7 @@ do_factory_reset() (
 )
 
 show_status() {
-    /bin/systemctl status -n 3 fty-license-accepted fty-db-engine fty-db-init fty-asset tntnet@bios
+    /bin/systemctl status -n 3 fty-license-accepted.{service,path,target} fty-db-engine fty-db-init fty-db.target fty-asset tntnet@bios bios-pre-eula.target malamute
 }
 
 if [ $# = 0 ] ; then

@@ -32,7 +32,7 @@
 
 # copy&paste from tntnet-ExecStartPre.sh.in
 JSONSH="@datadir@/@PACKAGE@/scripts/JSON.sh"
-get_a_string_arg() { "$JSONSH" -x "$1" | (IFS="`printf '\t'`" read K V; echo "$V") | sed 's,^"\(.*\)",\1,' ; }
+get_a_string_arg() { "$JSONSH" --get-string "$1" ; }
 J="/etc/release-details.json"
 R="$(get_a_string_arg hardware-spec-revision < $J)"
 

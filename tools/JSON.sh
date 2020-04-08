@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Copyright (C) 2014-2015 Dominic Tarr
-# Copyright (C) 2015 Eaton
+# Copyright (C) 2015-2020 Eaton
 #
 #! \file    JSON.sh
 #  \brief   A json parser written in bash
@@ -69,6 +69,7 @@ NORMALIZE_NUMBERS=0
 NORMALIZE_NUMBERS_FORMAT='%.6f'
 NORMALIZE_NUMBERS_STRIP=0
 EXTRACT_JPATH=""
+SHELLABLE_OUTPUT=""
 TOXIC_NEWLINE=0
 COOKASTRING=0
 COOKASTRING_INPUT=""
@@ -123,6 +124,20 @@ usage() {
   echo "     extract the items rooted at path(s) matching the regex (see the"
   echo "     comma-separated list of nested hierarchy names in general output,"
   echo "     brackets not included) e.g. regex='^\"level1obj\",\"level2arr\",0'"
+  echo "--shellable-output=strings - Do not print the path column nor quotes"
+  echo "     around values to ease backticked picking of exact data path items"
+  echo '     into scripts (non-exact matches will be same as multiword text):'
+  echo '     VALUE="`JSON.sh --shellable-output=strings -x '"'"'^"field"$'"'"'`"'
+  echo "--shellable-output=string - same but returns one string (first hit if any)"
+  echo "--shellable-output=arrays - Do not print the path column, add quotes:"
+  echo '     ARR=(`JSON.sh --shellable-output=arrays -x '"'"'^"array",[0-9]'"'"'`)'
+  echo "--get-string 'regex' - Alias to -l -x 'regex' --shellable-output=string"
+  echo "--get-strings 'regex' - Alias to -l -x 'regex' --shellable-output=strings"
+  echo "--get-array(s) 'regex' - Alias to -l -x 'regex' --shellable-output=arrays"
+  echo "     intended for cases where caller knows data schema to make assumptions."
+  echo "NOTE: The --shellable-output options only make sense for -l/-b mode,"
+  echo "or -x preferably with -l/-b modes. Each found value is output with EOL"
+  echo 'so you can pipe the output to `| while read LINE; do ... ; done` sanely.'
   echo "--no-newline - rather than concatenating detected line breaks in markup,"
   echo "     return with error when this is seen in input"
   echo "-d - Enable debugging traces to stderr (repeat or use -d=NUM to bump)"
@@ -269,10 +284,31 @@ parse_options() {
       -Sa=*)
           SORTDATA_ARR="$GSORT `echo "$1" | $GSED 's,^-Sa=,,' 2>/dev/null | unquote `"
       ;;
-      -x) EXTRACT_JPATH="$2"
+      -x|--get-strings|--get-string|--get-arrays|--get-array)
+          case "$1" in
+            --get-string) SHELLABLE_OUTPUT="string" ; LEAFONLY=1 ;;
+            --get-strings) SHELLABLE_OUTPUT="strings" ; LEAFONLY=1 ;;
+            --get-array*) SHELLABLE_OUTPUT="arrays" ; LEAFONLY=1 ;;
+          esac
+          EXTRACT_JPATH="$2"
           shift
       ;;
-      -x=*) EXTRACT_JPATH="`echo "$1" | $GSED 's,^-x=,,' 2>/dev/null`"
+      -x=*|--get-strings=*|--get-string=*|--get-arrays=*|--get-array=*)
+          EXTRACT_JPATH="`echo "$1" | $GSED 's,^\(-x\|--get-strings*\|--get-arrays*\)=,,' 2>/dev/null`"
+          case "$1" in
+            --get-string) SHELLABLE_OUTPUT="string" ; LEAFONLY=1 ;;
+            --get-strings) SHELLABLE_OUTPUT="strings" ; LEAFONLY=1 ;;
+            --get-array*) SHELLABLE_OUTPUT="arrays" ; LEAFONLY=1 ;;
+          esac
+      ;;
+      --shellable-output=string)
+          SHELLABLE_OUTPUT="string"
+      ;;
+      --shellable-output=strings)
+          SHELLABLE_OUTPUT="strings"
+      ;;
+      --shellable-output=array|--shellable-output=arrays)
+          SHELLABLE_OUTPUT="arrays"
       ;;
       --no-newline)
           TOXIC_NEWLINE=1
@@ -299,6 +335,10 @@ parse_options() {
     shift 1
     ARGN=$((ARGN-1))
   done
+
+  if [[ -n "$SHELLABLE_OUTPUT" ]] && [[ -z "$EXTRACT_JPATH" ]] && [[ "$LEAFONLY" = 0 ]] ; then
+    throw "ERROR: Option --shellable-output only makes sense with -x 'regex' and/or -l/-b"
+  fi
 
   validate_debuglevel
 
@@ -494,7 +534,7 @@ parse_object () {
         print_debug $DEBUGLEVEL_PRINTTOKEN "parse_object(2):" "token='$token'"
         case "$token" in
           ':') ;;
-          *) throw "EXPECTED : GOT '${token:-EOF}'" ;;
+          *) throw "EXPECTED ':' GOT '${token:-EOF}'" ;;
         esac
         read -r token
         print_debug $DEBUGLEVEL_PRINTTOKEN "parse_object(3):" "token='$token'"
@@ -524,7 +564,9 @@ $key:$value"
 }
 
 REGEX_NUMBER='^[+-]?([.][0-9]+|(0+|[1-9][0-9]*)([.][0-9]*)?)([eE][+-]?[0-9]*)?$'
+QUICK_ABORT=false
 parse_value () {
+  if $QUICK_ABORT ; then return 0 ; fi
   local jpath="${1:+$1,}$2" isleaf=0 isempty=0 print=0
   case "$token" in
     '{') parse_object "$jpath"
@@ -607,7 +649,20 @@ parse_value () {
 	"isleaf='$isleaf'/L='$LEAFONLY' isempty='$isempty'/P='$PRUNE':" \
 	"print='$print'" >&2
 
-  [[ "$print" -gt 0 ]] && printf "[%s]\t%s\n" "$jpath" "$value"
+  if [[ "$print" -gt 0 ]] ; then
+    if [ -n "$SHELLABLE_OUTPUT" ]; then
+        case "$value" in
+            '"'*'"') pvalue="`echo "$value" | $GSED -e 's,^",,' -e 's,"$,,'`" ;;
+            *) pvalue="$value" ;;
+        esac
+    fi
+    case "$SHELLABLE_OUTPUT" in
+        string)   printf '%s\n' "$pvalue" ; QUICK_ABORT=true ; return 0 ;;
+        strings)  printf '%s\n' "$pvalue" ; return 0 ;;
+        arrays)   printf '"%s"\n' "$pvalue" ; return 0 ;;
+        *)        printf '[%s]\t%s\n' "$jpath" "$value" ;;
+    esac
+  fi
   :
 }
 
@@ -616,10 +671,10 @@ parse () {
   print_debug $DEBUGLEVEL_PRINTTOKEN "parse(1):" "token='$token'"
   parse_value
   read -r token
-  print_debug $DEBUGLEVEL_PRINTTOKEN "parse(2):" "token='$token'"
+  print_debug $DEBUGLEVEL_PRINTTOKEN "parse(2):" "token='$token' QUICK_ABORT=$QUICK_ABORT"
   case "$token" in
     '') ;;
-    *) throw "EXPECTED EOF GOT '$token'" ;;
+    *) $QUICK_ABORT || throw "EXPECTED EOF GOT '$token'" ;;
   esac
 }
 

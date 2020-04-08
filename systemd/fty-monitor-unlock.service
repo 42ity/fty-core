@@ -1,0 +1,21 @@
+[Unit]
+Description=Unlock the monitor account after accepting EULA
+
+# Run the payload after EULA is not accepted and there may
+# be something to see on the dashboard. And not too early
+# for a chance to interrupt first initialization somehow.
+Wants=fty-asset.service
+Requisite=fty-asset.service
+After=fty-asset.service
+
+PartOf=bios.target
+
+[Service]
+Type=oneshot
+Restart=no
+User=root
+ExecStart=/usr/bin/passwd -u monitor
+ExecStart=/bin/sh -c "/bin/systemctl disable --no-ask-password %n ; /bin/systemctl mask --no-ask-password %n"
+
+[Install]
+WantedBy=bios.target
