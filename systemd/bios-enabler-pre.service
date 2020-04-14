@@ -15,6 +15,6 @@ User=root
 #RestartSec=5
 TimeoutStartSec=15
 
-ExecStart=/bin/dash -c "for S in bios.target fty-db.target fty-license-accepted.target bios-pre-eula.target bios-allowed.target ; do [ xactive = x\"`/bin/systemctl is-active $S`\" ] && continue ; if ( [ xmasked = x\"`/bin/systemctl is-enabled $S`\" ] || [ xLoadState=masked = x\"`/bin/systemctl show -p LoadState $S`\" ] ) ; then /bin/systemctl unmask $S ; fi ; if [ xenabled != x\"`/bin/systemctl is-enabled $S`\" ] ; then /bin/systemctl enable $S ; fi; done; true"
+ExecStart=/bin/dash -c "for S in bios.target fty-db.target fty-license-accepted.target bios-pre-eula.target bios-allowed.target ; do [ xactive = x\\"`/bin/systemctl is-active $S`\\" ] && continue ; if ( [ xmasked = x\\"`/bin/systemctl is-enabled $S`\\" ] || [ xLoadState=masked = x\\"`/bin/systemctl show -p LoadState $S`\\" ] ) ; then /bin/systemctl unmask $S ; fi ; if [ xenabled != x\\"`/bin/systemctl is-enabled $S`\\" ] ; then /bin/systemctl enable $S ; fi; done; true"
 
 # No [Install] section for directly defined dependency calls only
