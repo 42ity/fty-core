@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#   Copyright (c) 2014-2016 Eaton
+#   Copyright (c) 2014 - 2020 Eaton
 #
 #   This file is part of the Eaton 42ity project.
 #

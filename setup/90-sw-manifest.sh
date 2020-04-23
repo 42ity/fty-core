@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #
-#   Copyright (c) 2018 Eaton
+#   Copyright (c) 2018 - 2020 Eaton
 #
 #   This file is part of the Eaton 42ity project.
 #

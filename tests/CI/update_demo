@@ -4,7 +4,7 @@
 ### Update 42ity demo
 ### 0 1 * * * bash /root/update_demo > /root/update_demo.log 2>&1
 
-# Copyright (C) 2014-2015 Eaton
+# Copyright (C) 2014 - 2020 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
