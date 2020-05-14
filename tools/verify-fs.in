@@ -175,5 +175,5 @@ if [ "$PROBLEMCOUNT" = 0 ] ; then
     logboth "SUCCESS: Completed verify-fs at `date -u` with no problems to report (and $MISSINGCOUNT inspected sources were missing)"
 else
     logboth "FAILED: Completed verify-fs at `date -u` with $PROBLEMCOUNT problems to report (and $MISSINGCOUNT inspected sources were missing)"
-#    exit 1
+    exit 1
 fi
