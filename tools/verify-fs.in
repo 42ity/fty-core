@@ -77,6 +77,13 @@ EOF
 
 ##### MAIN #####
 
+if tty -s; then
+    interactive=true
+else
+    interactive=false
+fi
+#echo "D: interactive=$interactive" >&2
+
 ## 0.) Check the paths
 
 [[ $(< /proc/mounts) =~ upperdir=${OVERLAY} ]] || \
@@ -132,12 +139,6 @@ for ROOTFS in *.squashfs; do
 
 done
 popd >/dev/null
-
-if tty -s; then
-    interactive=true
-else
-    interactive=false
-fi
 
 ## 2.) Verify the overlayfs
 cat_default | while read LINE; do
