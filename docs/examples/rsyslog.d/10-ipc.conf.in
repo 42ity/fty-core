@@ -35,6 +35,8 @@
 $outchannel log_rotation_messages,/var/log/messages, 10485760,@datadir@/@PACKAGE@/scripts/logrotate-rsyslog /var/log/messages
 # Log many exec() commands caught by libsnoopy here:
 $outchannel log_rotation_commands,/var/log/commands.log, 10485760,@datadir@/@PACKAGE@/scripts/logrotate-rsyslog /var/log/commands.log
+# Log messages from biostimer-verify-fs into an additional file, beside common messages:
+$outchannel log_rotation_verifyfs,/var/log/verify-fs.log, 10485760,/usr/share/bios/scripts/logrotate-rsyslog /var/log/verify-fs.log
 
 # Systemd integration
 #	https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/7/html/System_Administrators_Guide/s1-interaction_of_rsyslog_and_journal.html
@@ -71,10 +73,11 @@ if ($programname == 'snoopy') then
         stop
     }
 } else {
-    if ($syslogfacility-text == [ 'kern', 'auth', 'syslog', 'authpriv', 'logaudit', 'logalert' ] )
+    if ($syslogfacility-text == [ 'kern', 'auth', 'syslog', 'authpriv', 'logaudit', 'logalert', 'security' ] )
     or ($programname == 'tntnet' and $msg contains [ 'PUT', 'POST', 'DELETE' ])
     then {
         :omfile:$log_rotation_messages
+        if ($programname == 'verify-fs') then :omfile:$log_rotation_verifyfs
 ### Note: This template line MUST be followed by an implementation (auto-edit)
 #        if ($.use_remote_logsink == [ 'ipc-audit', 'ipc-audit+snoopy' ] ) then @LOGSINK@
         if ($.use_remote_logsink == [ 'ipc-audit', 'ipc-audit+snoopy' ] ) then @loghost:514
