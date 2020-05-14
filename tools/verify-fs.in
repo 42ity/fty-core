@@ -32,8 +32,17 @@ IMAGES=@IMAGES_PATH@
 JSONSH="@datadir@/@PACKAGE@/scripts/JSON.sh"
 get_a_string_arg() { "$JSONSH" --get-string "$1" ; }
 
-die () {
+syslogger () {
+    /usr/bin/logger -i -p security.err -t "verify-fs" "${@}"
+}
+
+logboth () {
     echo "${@}" >&2
+    syslogger "${@}"
+}
+
+die () {
+    logboth "$@"
     exit 1
 }
 
@@ -57,7 +66,7 @@ log () {
     if $interactive; then
         echo "$@" >&2
     else
-        /usr/bin/logger -i -p security.err -t "verify-fs" "${@}"
+        syslogger "${@}"
     fi
 }
 
