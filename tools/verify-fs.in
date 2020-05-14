@@ -120,6 +120,8 @@ for ROOTFS in *.squashfs; do
         MISSINGCOUNT=$(($MISSINGCOUNT+1))
     fi
 
+    # TODO: Check the cksum file for length (and weak CRC)
+    # TODO: Check the length of OS image file from manifest
     if [ -s "${ROOTFS}.sha256" ] ; then
         if /usr/bin/sha256sum -c "${ROOTFS}.sha256" 2>/dev/null; then
             if [ -s "${ROOTFS}-manifest.json" ] ; then
