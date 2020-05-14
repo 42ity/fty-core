@@ -164,6 +164,8 @@ for ROOTFS in *.squashfs; do
 done
 popd >/dev/null
 
+PROBLEMCOUNT_RO_INTEGRITY=$PROBLEMCOUNT
+
 ## 2.) Verify the overlayfs
 while read LINE; do
     TREE=${LINE%%:*}
@@ -178,6 +180,6 @@ done < <(cat_default)
 if [ "$PROBLEMCOUNT" = 0 ] ; then
     logboth "SUCCESS: Completed verify-fs at `date -u` with no problems to report (and $MISSINGCOUNT inspected sources were missing)"
 else
-    logboth "FAILED: Completed verify-fs at `date -u` with $PROBLEMCOUNT problems to report (and $MISSINGCOUNT inspected sources were missing)"
+    logboth "FAILED: Completed verify-fs at `date -u` with $PROBLEMCOUNT problem(s) to report (of which $PROBLEMCOUNT_RO_INTEGRITY were issues with read-only archive integrity, and $MISSINGCOUNT inspected sources were missing)"
     exit 1
 fi
