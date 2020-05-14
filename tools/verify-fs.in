@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# NOTE: Bash-specific syntax IS used in this codebase
+
 #
 # Copyright (C) 2015 - 2020 Eaton
 #
@@ -32,8 +34,17 @@ IMAGES=@IMAGES_PATH@
 JSONSH="@datadir@/@PACKAGE@/scripts/JSON.sh"
 get_a_string_arg() { "$JSONSH" --get-string "$1" ; }
 
-die () {
+syslogger () {
+    /usr/bin/logger -i -p security.err -t "verify-fs" "${@}"
+}
+
+logboth () {
     echo "${@}" >&2
+    syslogger "${@}"
+}
+
+die () {
+    logboth "$@"
     exit 1
 }
 
@@ -51,11 +62,13 @@ is_tree_empty () {
     [[ $(find "${dir}" -xdev "${excludes[@]}" -type f -print | wc -l) == 0 ]]
 }
 
+# By default, go to stderr (e.g. systemd unit journal)
+interactive=true
 log () {
     if $interactive; then
         echo "$@" >&2
     else
-        /usr/bin/logger -i -p security.err -t "verify-fs" "${@}"
+        syslogger "${@}"
     fi
 }
 
@@ -75,6 +88,13 @@ EOF
 
 ##### MAIN #####
 
+if tty -s; then
+    interactive=true
+else
+    interactive=false
+fi
+#echo "D: interactive=$interactive" >&2
+
 ## 0.) Check the paths
 
 [[ $(< /proc/mounts) =~ upperdir=${OVERLAY} ]] || \
@@ -82,6 +102,9 @@ EOF
 
 [[ -d ${IMAGES} ]] || \
     die "Can't find images ${IMAGES}"
+
+PROBLEMCOUNT=0
+MISSINGCOUNT=0
 
 ## 1.) Verify the images
 pushd "${IMAGES}" >/dev/null
@@ -92,11 +115,15 @@ for ROOTFS in *.squashfs; do
             log "Good integrity of ${ROOTFS}, MD5 checksum is valid"
         else
             log "Bad integrity of ${ROOTFS}, MD5 checksum is not valid"
+            PROBLEMCOUNT=$(($PROBLEMCOUNT+1))
         fi
     else
         log "Missing MD5 checksum file: '${ROOTFS}.md5'"
+        MISSINGCOUNT=$(($MISSINGCOUNT+1))
     fi
 
+    # TODO: Check the cksum file for length (and weak CRC)
+    # TODO: Check the length of OS image file from manifest
     if [ -s "${ROOTFS}.sha256" ] ; then
         if /usr/bin/sha256sum -c "${ROOTFS}.sha256" 2>/dev/null; then
             if [ -s "${ROOTFS}-manifest.json" ] ; then
@@ -111,39 +138,48 @@ for ROOTFS in *.squashfs; do
                             log "Image signature is valid for ${ROOTFS}"
                         else
                             log "Image signature is invalid for ${ROOTFS}"
+                            PROBLEMCOUNT=$(($PROBLEMCOUNT+1))
                         fi
                     else
                         log "Manifest signature not found for ${ROOTFS}"
+                        MISSINGCOUNT=$(($MISSINGCOUNT+1))
                     fi
                 else
                     log "Manifest sha256 hash does not match with the sha256 hash for ${ROOTFS}"
+                    PROBLEMCOUNT=$(($PROBLEMCOUNT+1))
                 fi
             else
                 log "Manifest not found for ${ROOTFS}"
+                MISSINGCOUNT=$(($MISSINGCOUNT+1))
             fi
         else
             log "Bad integrity of ${ROOTFS}, SHA256 checksum is not valid"
+            PROBLEMCOUNT=$(($PROBLEMCOUNT+1))
         fi
     else
         log "Missing SHA256 checksum file: '${ROOTFS}.sha256'"
+        MISSINGCOUNT=$(($MISSINGCOUNT+1))
     fi
 
 done
 popd >/dev/null
 
-if tty -s; then
-    interactive=true
-else
-    interactive=false
-fi
+PROBLEMCOUNT_RO_INTEGRITY=$PROBLEMCOUNT
 
 ## 2.) Verify the overlayfs
-cat_default | while read LINE; do
+while read LINE; do
     TREE=${LINE%%:*}
     EXCLUDES=${LINE#*:}
 
     [[ -d "${OVERLAY}/${TREE}" ]] || continue
 
     is_tree_empty "${OVERLAY}/${TREE}" ${EXCLUDES//:/ } || \
-        log "${OVERLAY}/${TREE} contains suspicious files."
-done
+        { log "${OVERLAY}/${TREE} contains suspicious files." ; PROBLEMCOUNT=$(($PROBLEMCOUNT+1)); }
+done < <(cat_default)
+
+if [ "$PROBLEMCOUNT" = 0 ] ; then
+    logboth "SUCCESS: Completed verify-fs at `date -u` with no problems to report (and $MISSINGCOUNT inspected sources were missing)"
+else
+    logboth "FAILED: Completed verify-fs at `date -u` with $PROBLEMCOUNT problem(s) to report (of which $PROBLEMCOUNT_RO_INTEGRITY were issues with read-only archive integrity, and $MISSINGCOUNT inspected sources were missing)"
+    exit 1
+fi
