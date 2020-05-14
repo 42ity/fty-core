@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# NOTE: Bash-specific syntax IS used in this codebase
+
 #
 # Copyright (C) 2015 - 2020 Eaton
 #
@@ -163,7 +165,7 @@ done
 popd >/dev/null
 
 ## 2.) Verify the overlayfs
-cat_default | while read LINE; do
+while read LINE; do
     TREE=${LINE%%:*}
     EXCLUDES=${LINE#*:}
 
@@ -171,7 +173,7 @@ cat_default | while read LINE; do
 
     is_tree_empty "${OVERLAY}/${TREE}" ${EXCLUDES//:/ } || \
         { log "${OVERLAY}/${TREE} contains suspicious files." ; PROBLEMCOUNT=$(($PROBLEMCOUNT+1)); }
-done
+done < <(cat_default)
 
 if [ "$PROBLEMCOUNT" = 0 ] ; then
     logboth "SUCCESS: Completed verify-fs at `date -u` with no problems to report (and $MISSINGCOUNT inspected sources were missing)"
