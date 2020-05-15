@@ -95,22 +95,21 @@ else
 fi
 #echo "D: interactive=$interactive" >&2
 
-## 0.) Check the paths
-
-[[ $(< /proc/mounts) =~ upperdir=${OVERLAY} ]] || \
-    die "Can't find overlay ${OVERLAY}"
-
-[[ -d ${IMAGES} ]] || \
-    die "Can't find images ${IMAGES}"
-
+# Failed or not - how many data points did we have available to actively check?
+CHECKEDCOUNT=0
 PROBLEMCOUNT=0
 MISSINGCOUNT=0
 
 ## 1.) Verify the images
-pushd "${IMAGES}" >/dev/null
-for ROOTFS in *.squashfs; do
+if [[ -d ${IMAGES} ]] ; then
+ if pushd "${IMAGES}" >/dev/null ; then
+  if [ "`ls -1d *.squashfs | wc -l`" -eq 0 ] ; then
+   logboth "No squashfs images were found in ${IMAGES}"
+  else
+   for ROOTFS in *.squashfs; do
 
     if [ -s "${ROOTFS}.md5" ] ; then
+        CHECKEDCOUNT=$(($CHECKEDCOUNT+1))
         if /usr/bin/md5sum -c "${ROOTFS}.md5" 2>/dev/null; then
             log "Good integrity of ${ROOTFS}, MD5 checksum is valid"
         else
@@ -125,13 +124,16 @@ for ROOTFS in *.squashfs; do
     # TODO: Check the cksum file for length (and weak CRC)
     # TODO: Check the length of OS image file from manifest
     if [ -s "${ROOTFS}.sha256" ] ; then
+        CHECKEDCOUNT=$(($CHECKEDCOUNT+1))
         if /usr/bin/sha256sum -c "${ROOTFS}.sha256" 2>/dev/null; then
             if [ -s "${ROOTFS}-manifest.json" ] ; then
-                    SHA256_COMPUTED=$(cut -d ' ' -f1 < "${ROOTFS}.sha256")
-                    SHA256_MANIFEST=$(get_a_string_arg '^"application","ShaChecksum"$' < "${ROOTFS}-manifest.json")
+                CHECKEDCOUNT=$(($CHECKEDCOUNT+1))
+                SHA256_COMPUTED=$(cut -d ' ' -f1 < "${ROOTFS}.sha256")
+                SHA256_MANIFEST=$(get_a_string_arg '^"application","ShaChecksum"$' < "${ROOTFS}-manifest.json")
 
                 if [ "${SHA256_COMPUTED}" = "${SHA256_MANIFEST}" ]; then
                     if [ -s "${ROOTFS}-manifest.json.p7s" ] ; then
+                        CHECKEDCOUNT=$(($CHECKEDCOUNT+1))
                         SIGNED_BY=$(get_a_string_arg '^"application","SignedBy"$' < "${ROOTFS}-manifest.json")
 
                         if openssl cms -verify -binary -inform der -CAfile "/usr/share/authorities/${SIGNED_BY}/rootCa1.pem" -purpose any -out /dev/null -content "${ROOTFS}-manifest.json" -in "${ROOTFS}-manifest.json.p7s"; then
@@ -161,25 +163,39 @@ for ROOTFS in *.squashfs; do
         MISSINGCOUNT=$(($MISSINGCOUNT+1))
     fi
 
-done
-popd >/dev/null
+   done # loop over all *.squashfs files in $IMAGES dir
+
+  fi # if have *.squashfs files
+  popd >/dev/null
+ fi # if pushd
+else
+  logboth "Can't find images ${IMAGES}"
+fi
 
 PROBLEMCOUNT_RO_INTEGRITY=$PROBLEMCOUNT
 
 ## 2.) Verify the overlayfs
-while read LINE; do
+if [[ $(< /proc/mounts) =~ upperdir=${OVERLAY} ]] ; then
+  while read LINE; do
     TREE=${LINE%%:*}
     EXCLUDES=${LINE#*:}
 
     [[ -d "${OVERLAY}/${TREE}" ]] || continue
 
+    CHECKEDCOUNT=$(($CHECKEDCOUNT+1))
     is_tree_empty "${OVERLAY}/${TREE}" ${EXCLUDES//:/ } || \
-        { log "${OVERLAY}/${TREE} contains suspicious files." ; PROBLEMCOUNT=$(($PROBLEMCOUNT+1)); }
-done < <(cat_default)
+        { log "Overlay subpath ${OVERLAY}/${TREE} contains suspicious files." ; PROBLEMCOUNT=$(($PROBLEMCOUNT+1)); }
+  done < <(cat_default)
+else
+  logboth "Can't find overlay path ${OVERLAY}"
+fi
+
+if [ "$CHECKEDCOUNT" = 0 ] ; then
+    die "FAILED: Completed verify-fs at `date -u` with no checks done at all, probably due to missing data sources or filesystem objects to inspect and compare"
+fi
 
 if [ "$PROBLEMCOUNT" = 0 ] ; then
-    logboth "SUCCESS: Completed verify-fs at `date -u` with no problems to report (and $MISSINGCOUNT inspected sources were missing)"
+    logboth "SUCCESS: Completed verify-fs at `date -u` with no problems to report ($CHECKEDCOUNT data points inspected overall while $MISSINGCOUNT inspected sources were missing)"
 else
-    logboth "FAILED: Completed verify-fs at `date -u` with $PROBLEMCOUNT problem(s) to report (of which $PROBLEMCOUNT_RO_INTEGRITY were issues with read-only archive integrity, and $MISSINGCOUNT inspected sources were missing)"
-    exit 1
+    die "FAILED: Completed verify-fs at `date -u` with $PROBLEMCOUNT problem(s) to report (of which $PROBLEMCOUNT_RO_INTEGRITY were issues with read-only archive integrity, and $CHECKEDCOUNT data points inspected overall while $MISSINGCOUNT inspected sources were missing)"
 fi
