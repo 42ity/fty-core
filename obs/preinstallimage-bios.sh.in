@@ -337,11 +337,14 @@ ln -s mount_usb /usr/libexec/fty/umount_usb
 # Basic network setup
 mkdir -p /etc/network
 
+# The IPC loader renames interfaces to LANx pattern, current OVA one does not
+FIRSTIFNAME="`file -b /bin/bash | sed -e 's|.*x86-64.*|eth0|' -e 's|.*ARM.*|LAN1|'`"
 cat > /etc/network/interfaces <<EOF
 auto lo
-allow-hotplug eth0 LAN1 LAN2 LAN3
+# Note: the list of configured "iface"s below must contain all these allowed:
+allow-hotplug $FIRSTIFNAME LAN2 LAN3
 iface lo inet loopback
-iface `file -b /bin/bash | sed -e 's|.*x86-64.*|eth0|' -e 's|.*ARM.*|LAN1|'` inet dhcp
+iface $FIRSTIFNAME inet dhcp
 iface LAN2 inet static
     address 192.168.1.10
     netmask 255.255.255.0
