@@ -391,7 +391,7 @@ EOF
 		[ -s "${MYCNF}" ] && mv -f "${MYCNF}" "${MYCNF}.bad-`date -u '+%Y%m%dT%H%M%SZ'`"
 		rm -f "$MYCNF"  # Reset access rights, if unsecured earlier
 		printf '[mysqld]\nport=3306\nbind-address=127.0.0.1\n\n' > "$MYCNF" && \
-		printf '[client]\nuser=%s\npassword=%s\n' "${USER}" "${ROOT_PW}" > "$MYCNF"
+		printf '[client]\nuser=%s\npassword=%s\n' "${USER}" "${ROOT_PW}" >> "$MYCNF"
 		chmod 600 "$MYCNF"
 		[ -s "${MYCNF_LEGACY}" ] && mv -f "${MYCNF_LEGACY}" "${MYCNF_LEGACY}.bad-`date -u '+%Y%m%dT%H%M%SZ'`"
 		rm -f "${MYCNF_LEGACY}"
