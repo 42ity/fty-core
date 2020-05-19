@@ -548,6 +548,9 @@ cp /usr/share/fty/examples/config/update-rc3.d/* /etc/update-rc3.d
 # Enable ssh
 rm /etc/init.d/ssh*
 echo "UseDNS no" >> /etc/ssh/sshd_config
+# Limit to Administrator user (i.e. no Viewers like "monitor")
+echo "AllowGroups bios-admin" >> /etc/ssh/sshd_config
+echo "PermitRootLogin without-password" >> /etc/ssh/sshd_config
 rm /etc/ssh/*key*
 mkdir -p /etc/systemd/system
 sed 's|\[Service\]|[Service]\nExecStartPre=/usr/bin/ssh-keygen -A|' /lib*/systemd/system/ssh@.service > /etc/systemd/system/ssh@.service
