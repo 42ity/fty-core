@@ -29,7 +29,7 @@ ExecStopPost=/bin/systemctl stop --no-block --no-ask-password bios-allowed.targe
 # ...and wait for all listed services to finish their lives
 # BUT: Only wait for 42ity services to stop if restarting bios.service
 # itself, these systemctl calls tend to block if OS shutdown is going on.
-ExecStopPost=/bin/dash -c "SYSTEMCTL_FLAGS=''; if /bin/systemctl list-jobs | egrep '(shutdown.target|reboot.target|poweroff.target|emergency.target|rescue.target|halt.target|systemd-(reboot|poweroff|halt).service).*start.*waiting' || /bin/systemctl list-jobs | egrep 'multi-user.target.*stop.*waiting' ; then echo 'OS shutdown in progress, %n not waiting for usual suspects to stop'>&2; SYSTEMCTL_FLAGS='--no-block'; fi; for U in $(/bin/systemctl show -p Wants bios.target fty-db.target fty-license-accepted.target bios-pre-eula.target | cut -d= -f2) ; do case \\"$U\\" in *.path|*.timer) ;; *) /bin/systemctl stop --no-ask-password $SYSTEMCTL_FLAGS -- $U & ;; esac ; done ; wait"
+ExecStopPost=/bin/dash -c "SYSTEMCTL_FLAGS=''; if /bin/systemctl list-jobs | egrep '(shutdown.target|reboot.target|poweroff.target|emergency.target|rescue.target|halt.target|systemd-(reboot|poweroff|halt).service).*start.*waiting' || /bin/systemctl list-jobs | egrep 'multi-user.target.*stop.*waiting' ; then echo 'OS shutdown in progress, %n not waiting for usual suspects to stop'>&2; SYSTEMCTL_FLAGS='--no-block'; fi; for U in $(/bin/systemctl show -p Wants bios.target fty-db.target fty-license-accepted.target bios-pre-eula.target | cut -d= -f2) ; do case \"$U\" in *.path|*.timer) ;; *) /bin/systemctl stop --no-ask-password $SYSTEMCTL_FLAGS -- $U & ;; esac ; done ; wait"
 
 # Finally command the other product bundle targets to stop, and wait for that
 # (unless the OS is shutting down)

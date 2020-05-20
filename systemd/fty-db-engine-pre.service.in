@@ -19,7 +19,7 @@ TimeoutStartSec=15
 # Hack to work around systemd deficiencies, where fty-license-accepted.path+service are not enough
 # Better ugly than sorry (with DB beginning to start, then getting killed by newly realized dependency unit states, and ending up with corrupted DB files rarely)
 ExecStartPre=/bin/dash -c "test -f @ftydatadir@/fty-eula/license"
-ExecStart=/bin/dash -c "for S in mysql.service mysqld.service mariadb.service ; do [ xactive != x\\"`/bin/systemctl is-active $S`\\" ] || /bin/systemctl stop $S ; ( [ xmasked = x\\"`/bin/systemctl is-enabled $S`\\" ] || [ xenabled = x\\"`/bin/systemctl is-enabled $S`\\" ] ) || /bin/systemctl disable $S ; [ xLoadState=masked = x\\"`/bin/systemctl show -p LoadState $S`\\" ] || /bin/systemctl mask $S ; done ; for S in mysql.service mysqld.service mariadb.service ; do [ xactive != x\\"`/bin/systemctl is-active $S`\\" ] || echo \\"WARNING: competitor $S of fty-db-engine.service is still active\\" ; done"
+ExecStart=/bin/dash -c "for S in mysql.service mysqld.service mariadb.service ; do [ xactive != x\"`/bin/systemctl is-active $S`\" ] || /bin/systemctl stop $S ; ( [ xmasked = x\"`/bin/systemctl is-enabled $S`\" ] || [ xenabled = x\"`/bin/systemctl is-enabled $S`\" ] ) || /bin/systemctl disable $S ; [ xLoadState=masked = x\"`/bin/systemctl show -p LoadState $S`\" ] || /bin/systemctl mask $S ; done ; for S in mysql.service mysqld.service mariadb.service ; do [ xactive != x\"`/bin/systemctl is-active $S`\" ] || echo \"WARNING: competitor $S of fty-db-engine.service is still active\" ; done"
 
 # No [Install] section for directly defined dependency calls only
 ### [Install]
