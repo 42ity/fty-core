@@ -46,6 +46,35 @@ NTP_SYSTEMD_NAME=""
         NTP_SYSTEMD_ENABLED="unknown"
     fi
 
+refresh_fty_envvars() {
+	if [ "`/bin/systemctl is-enabled fty-envvars.service 2>/dev/null`" = enabled ] ; then
+		/bin/systemctl restart fty-envvars.service
+	fi
+}
+
+# Primarily, get OSIMAGE_DISTRO if available
+refresh_fty_envvars
+if [ -s "/run/fty-envvars.env" ]; then
+    . "/run/fty-envvars.env"
+fi
+
+# In case of newer distros like OSIMAGE_DISTRO="Debian_10.0" the file
+# (or symlink) under the /run filesystem is used to customize a run of
+# ntp daemon. It is a no-op to maintain it when running in other distros.
+# Note that the symlink would disappear on reboot, causing NTP service
+# to use the default config file until a DHCP client calls this script.
+# Likely the system won't have an actual IP address until then though.
+NTP_DHCP_CONF_RUNTIME=""
+case "$OSIMAGE_DISTRO" in
+	""|Debian_8.0) ;;
+	Debian_10.0) # TODO? Coordinate with /usr/lib/ntp/ntp-systemd-wrapper
+		NTP_DHCP_CONF_RUNTIME=/run/ntp.conf.dhcp
+		;;
+	*) # Presumed a new-enough distro...
+		NTP_DHCP_CONF_RUNTIME=/run/ntp.conf.dhcp
+		;;
+esac
+
 can_manipulate_ntpd() {
 	if [ -z "$NTP_SYSTEMD_NAME" ] ; then
 	    echo "$0: WARN: The NTP service unit name could not be determined so the DHCP hook will not manipulate it" >&2
@@ -81,6 +110,15 @@ hostname_setup() {
 
 ntp_server_restart_do() (
 	can_manipulate_ntpd || return $?
+
+	if [ -n "${NTP_DHCP_CONF_RUNTIME}" ]; then
+		if [ -s "${NTP_DHCP_CONF}" ]; then
+			if [ -L "${NTP_DHCP_CONF_RUNTIME}" ] ; then rm -f "${NTP_DHCP_CONF_RUNTIME}" ; fi
+			ln -fsr "${NTP_DHCP_CONF}" "${NTP_DHCP_CONF_RUNTIME}"
+		else
+			rm -f "${NTP_DHCP_CONF_RUNTIME}" "${NTP_DHCP_CONF}" || true
+		fi
+	fi
 
 	invoke-rc.d "${NTP_SYSTEMD_NAME}" try-restart && \
 	    echo "$0: INFO: NTP service restarted; waiting for it to pick up time (if not failed) so as to sync it onto hardware RTC" && \
