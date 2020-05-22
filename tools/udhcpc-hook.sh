@@ -24,7 +24,11 @@
 #           package, adapted for the 42ity project.
 #           Included from (patched) /etc/udhcpc/default.script for 42ity project
 
+# The persistent configuration, as supported by user (e.g. via REST API)
+# for statically configured time sources
 NTP_CONF=/etc/ntp.conf
+# A modification of the persistent configuration, with addition of time
+# sources last announced by a DHCP responce. See also NTP_DHCP_CONF_RUNTIME.
 NTP_DHCP_CONF=/var/lib/ntp/ntp.conf.dhcp
 
 # The systemd service unit can be "disabled" or "masked" if users want a
