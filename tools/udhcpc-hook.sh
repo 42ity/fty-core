@@ -61,6 +61,8 @@ fi
 # In case of newer distros like OSIMAGE_DISTRO="Debian_10.0" the file
 # (or symlink) under the /run filesystem is used to customize a run of
 # ntp daemon. It is a no-op to maintain it when running in other distros.
+# In Debian 8 the NTP_DHCP_CONF was referenced by the service directly.
+# At least in Debian 10, a danglink symlink to nowhere is not a problem.
 # Note that the symlink would disappear on reboot, causing NTP service
 # to use the default config file until a DHCP client calls this script.
 # Likely the system won't have an actual IP address until then though.
