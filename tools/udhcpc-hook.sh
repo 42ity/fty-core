@@ -178,10 +178,21 @@ ntp_servers_setup_add() {
 	  echo
 	  echo "# NTP server entries received from DHCP server"
 	  for server in $new_ntp_servers; do
-		echo "server $server iburst"
+	    KEYWORD="server"
+	    case "$OSIMAGE_DISTRO" in
+	        ""|Debian_8.0)  ;;
+	        Debian_10.0) # TODO? Check ntpd capabilities/version somehow
+	            if echo "$server" | grep -E ':|^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$' >/dev/null ; then
+	                KEYWORD="server" # IPv4 or IPv6
+	            else
+	                KEYWORD="pool" # hostname or fqdn
+	            fi
+	            ;;
+	    esac
+	    echo "$KEYWORD $server iburst"
 	  done
 	  echo
-	  sed -r -e '/^ *(server|peer).*$/d' "$NTP_CONF"
+	  sed -r -e '/^ *(server|peer|pool).*$/d' "$NTP_CONF"
 	) >>"$tmp"
 
 	mv "$tmp" "$NTP_DHCP_CONF"
