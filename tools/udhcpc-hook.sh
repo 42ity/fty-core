@@ -242,4 +242,7 @@ fi
 
 hostname_setup
 
+# Update for new IP addresses and hostnames
+refresh_fty_envvars
+
 ntp_servers_setup
