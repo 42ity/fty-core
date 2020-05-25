@@ -69,13 +69,23 @@ logmsg_debug "AUGOUT = " "$AUGOUT"
 
 # Note: This may be revised or option-switched to find not DHCP interfaces,
 # but something like "non-off, non-loopback" to monitor all active ones.
+# Currently we pick all the "configured" interfaces with specific methods
+# to get base entries like "/files/etc/network/interfaces/iface[4]" (= LAN3):
+INTCONF="`echo "$AUGOUT" | egrep '/method *= *(dhcp|static|manual)$' | sed 's,/method .*$,,'`"
+logmsg_debug "INTCONF = " "$INTCONF"
+
 INTLIST=""
-for INTNUM in `echo "$AUGOUT" | egrep '/method *= *(dhcp|static|manual)$' | sed 's,/method .*$,,'` ; do
-    INTNAME="`echo "$AUGOUT" | fgrep "$INTNUM = " | sed 's,^[^=]* = *,,'`" \
-        || continue
-    logmsg_debug "Found configured interface $INTNAME"
-    [ -z "$INTLIST" ] && INTLIST="$INTNAME" || INTLIST="$INTLIST $INTNAME"
-done
+if [ -z "${INTCONF}" ] ; then
+    logmsg_debug "INTCONF is empty, no interfaces had interesting configuration methods"
+else
+    # Note: INTNUM is not really a number, but a numbered entry (commented above)
+    for INTNUM in $INTCONF ; do
+        INTNAME="`echo "$AUGOUT" | fgrep "$INTNUM = " | sed 's,^[^=]* = *,,'`" \
+            || continue
+        logmsg_debug "Found configured interface $INTNAME"
+        [ -z "$INTLIST" ] && INTLIST="$INTNAME" || INTLIST="$INTLIST $INTNAME"
+    done
+fi
 
 # We should first disable ifplugd with its old list of tracked interfaces,
 # then change it, then maybe start it back up if the list is not empty
