@@ -71,6 +71,19 @@ ifplugd_off() {
 AUGOUT="`(echo 'match /files/etc/network/interfaces/iface[*]'; echo 'match /files/etc/network/interfaces/auto[*]/*'; echo 'match /files/etc/network/interfaces/allow-hotplug[*]/*' ; echo 'match /files/etc/network/interfaces/iface[*]/method' ; echo 'match /files/etc/default/ifplugd/INTERFACES' ; echo 'match /files/etc/default/ifplugd/HOTPLUG_INTERFACES' ) | augtool $AUGTOOL_ARGS`" || die $?
 logmsg_debug "AUGOUT = " "$AUGOUT"
 
+extract_AUGOUT_string() {
+    # Select a known single-string value from cached AUGOUT, remove surrounding quotes
+    echo "$AUGOUT" | egrep "$1" | sed 's,^[^=]* = *,,' | sed 's,^\"\(.*\)\"$,\1,'
+}
+
+extract_AUGOUT_interface_array() {
+    # Construct a string from an array of interface name values from
+    # cached AUGOUT, prefixed by common "$1", without loopback interfaces
+    # Note that depending on amount of lines in the file, the prefix may
+    # be indexed like ".../auto[1]/2" or not for just one line ".../auto/2"
+    echo "$AUGOUT" | egrep "$1"'(/|\[[0-9]*\]/)[0-9]* = ' | sed -e 's,^[^=]* = ,,' | tr ' ' '\n' | egrep -v '^lo|^$|(none)' | sort | uniq | tr '\n' ' ' | sed -e 's,^ *,,' -e 's, *$,,'
+}
+
 # Note: This may be revised or option-switched to find not DHCP interfaces,
 # but something like "non-off, non-loopback" to monitor all active ones.
 # Currently we pick all the "configured" interfaces with specific methods
@@ -78,7 +91,13 @@ logmsg_debug "AUGOUT = " "$AUGOUT"
 INTCONF="`echo "$AUGOUT" | egrep '/method *= *(dhcp|static|manual)$' | sed 's,/method .*$,,'`"
 logmsg_debug "INTCONF = " "$INTCONF"
 
-INTLIST=""
+# names of interfaces with (allow-)auto setting:
+AINTLIST="`extract_AUGOUT_interface_array '^/files/etc/network/interfaces/auto'`"
+# names of interfaces with allow-hotplug:
+HINTLIST="`extract_AUGOUT_interface_array '^/files/etc/network/interfaces/allow-hotplug'`"
+
+# names of interfaces with a config method per above:
+CINTLIST=""
 if [ -z "${INTCONF}" ] ; then
     logmsg_debug "INTCONF is empty, no interfaces had interesting configuration methods"
 else
@@ -87,34 +106,61 @@ else
         INTNAME="`echo "$AUGOUT" | fgrep "$INTNUM = " | sed 's,^[^=]* = *,,'`" \
             || continue
         logmsg_debug "Found configured interface $INTNAME"
-        [ -z "$INTLIST" ] && INTLIST="$INTNAME" || INTLIST="$INTLIST $INTNAME"
+        [ -z "$CINTLIST" ] && CINTLIST="$INTNAME" || CINTLIST="$CINTLIST $INTNAME"
     done
 fi
 
 # We should first disable ifplugd with its old list of tracked interfaces,
 # then change it, then maybe start it back up if the list is not empty
-if [ -z "$INTLIST" ]; then
+if [ -z "$CINTLIST" ]; then
     logmsg_info "No interfaces were currently detected as DHCP clients, static or manual (will clear the ifplugd list)"
 else
-    logmsg_info "The following interfaces were currently detected as DHCP clients, static or manual: $INTLIST"
+    logmsg_info "The following interfaces were currently detected as DHCP clients, static or manual: $CINTLIST"
 fi
+if [ -z "$HINTLIST" ]; then
+    logmsg_info "No interfaces were currently detected as 'allow-hotplug' (will clear the ifplugd list)"
+else
+    logmsg_info "The following interfaces were currently detected as 'allow-hotplug': $HINTLIST"
+fi
+logmsg_debug "AINTLIST     = $AINTLIST"
 
-OLDINTLIST="`echo "$AUGOUT" | grep ifplugd/INTERFACES | sed 's,^[^=]* = *,,' | sed 's,^\"\(.*\)\"$,\1,'`"
+# INTLIST is about non-hotplug interfaces
+if [ -z "$HINTLIST" ]; then
+    INTLIST="$CINTLIST"
+else
+    # Find such configured interfaces that are not in HINTLIST
+    # (may be "auto" or not, we currently do not care)
+    INTLIST=""
+    if [ -n "$CINTLIST" ] ; then
+        for C in $CINTLIST ; do
+            for H in $HINTLIST ; do
+                [ "$C" = "$H" ] && continue 2
+            done
+            [ -z "$INTLIST" ] && INTLIST="$C" || INTLIST="$INTLIST $C"
+        done
+    fi
+fi
+logmsg_debug "INTLIST      = $INTLIST"
 
-if [ "$OLDINTLIST" = "$INTLIST" ]; then
+OLDINTLIST="`extract_AUGOUT_string ifplugd/INTERFACES`"
+OLDHINTLIST="`extract_AUGOUT_string ifplugd/HOTPLUG_INTERFACES`"
+logmsg_debug "OLDINTLIST   = $OLDINTLIST"
+logmsg_debug "OLDHINTLIST  = $OLDHINTLIST"
+
+if [ "$OLDINTLIST" = "$INTLIST" ] && [ "$OLDHINTLIST" = "$HINTLIST" ]; then
     logmsg_info "Existing configuration of ifplugd already matches this list, got nothing to change!"
 else
-    [ -n "$OLDINTLIST" ] && \
-        logmsg_info "Existing configuration of ifplugd tracked $OLDINTLIST;" \
+    ( [ -n "$OLDINTLIST" -a -z "$INTLIST" ] || [ -n "$OLDHINTLIST" -a -z "$HINTLIST" ] ) && \
+        logmsg_info "Existing configuration of ifplugd tracked INTERFACES='$OLDINTLIST' HOTPLUG_INTERFACES='$OLDHINTLIST' ;" \
             "I will disable the service before reconfiguring it" && \
         ifplugd_off
 
     logmsg_info "Applying changes to ifplugd configuration..."
-    if ! /bin/echo -E set /files/etc/default/ifplugd/INTERFACES "\"\\\"$INTLIST\\\"\"" | augtool $AUGTOOL_ARGS -e -s ; then
-        [ -n "$OLDINTLIST" ] && ifplugd_on
+    if ! ( /bin/echo -E set /files/etc/default/ifplugd/INTERFACES "\"\\\"$INTLIST\\\"\"" ; /bin/echo -E set /files/etc/default/ifplugd/HOTPLUG_INTERFACES "\"\\\"$HINTLIST\\\"\"" ) | augtool $AUGTOOL_ARGS -e -s ; then
+        ( [ -n "$OLDINTLIST" -a -z "$INTLIST" ] || [ -n "$OLDHINTLIST" -a -z "$HINTLIST" ] ) && ifplugd_on
         die "Could not apply changes to ifplugd config"
     fi
-    if ! /bin/echo -E set /files/etc/default/networking/EXCLUDE_INTERFACES "\"\\\"$INTLIST\\\"\"" | augtool $AUGTOOL_ARGS -e -s ; then
+    if ! /bin/echo -E set /files/etc/default/networking/EXCLUDE_INTERFACES "\"\\\"$INTLIST $HINTLIST\\\"\"" | augtool $AUGTOOL_ARGS -e -s ; then
         logmsg_info "WARN: Could not apply changes to networking config, oh well"
     fi
 fi
