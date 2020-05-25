@@ -68,7 +68,11 @@ ifplugd_off() {
 # "allow-hotplug" => react to udev and/or link state change events
 # (note that the latter might not happen however, per discussion at
 # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=838871 story)
-AUGOUT="`(echo 'match /files/etc/network/interfaces/iface[*]'; echo 'match /files/etc/network/interfaces/auto[*]/*'; echo 'match /files/etc/network/interfaces/allow-hotplug[*]/*' ; echo 'match /files/etc/network/interfaces/iface[*]/method' ; echo 'match /files/etc/default/ifplugd/INTERFACES' ; echo 'match /files/etc/default/ifplugd/HOTPLUG_INTERFACES' ) | augtool $AUGTOOL_ARGS`" || die $?
+AUGOUT="`(echo 'match /files/etc/network/interfaces/iface[*]'; echo 'match /files/etc/network/interfaces/auto[*]/*'; echo 'match /files/etc/network/interfaces/allow-hotplug[*]/*' ; echo 'match /files/etc/network/interfaces/iface[*]/method' ; echo 'match /files/etc/default/ifplugd/INTERFACES' ; echo 'match /files/etc/default/ifplugd/HOTPLUG_INTERFACES' ) | augtool $AUGTOOL_ARGS`" \
+&& [ -n "$AUGOUT" ] \
+&& AUGOUT="`echo "$AUGOUT" | egrep -v '\((none|no matches)\)'`" \
+&& [ -n "$AUGOUT" ] \
+|| die $? "Could not determine current settings"
 logmsg_debug "AUGOUT = " "$AUGOUT"
 
 extract_AUGOUT_string() {
