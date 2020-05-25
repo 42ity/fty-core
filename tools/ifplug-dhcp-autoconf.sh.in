@@ -41,7 +41,7 @@ export PATH
 NEED_CHECKOUTDIR=no NEED_BUILDSUBDIR=no determineDirs_default || true
 LOGMSG_PREFIX="FTY-IFPLUG-DHCP-"
 
-( which augtool >/dev/null ) || die $?
+( which augtool >/dev/null ) || die $? "augtool must be in PATH"
 
 ifplugd_on() {
     logmsg_info "(Re-)starting ifplugd..."
