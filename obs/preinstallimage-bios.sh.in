@@ -368,7 +368,12 @@ DEFAULT_IFPLUGD_INTERFACES="$FIRSTIFNAME LAN2 LAN3"
 mkdir -p /etc/default
 [ -s "/etc/default/networking" ] && \
     sed -e 's,^[ \t\#]*\(EXCLUDE_INTERFACES=\)$,\1"'"$DEFAULT_IFPLUGD_INTERFACES"'",' -i /etc/default/networking \
-    || echo 'EXCLUDE_INTERFACES="'"$DEFAULT_IFPLUGD_INTERFACES"'"' >> /etc/default/networking
+    || { echo 'EXCLUDE_INTERFACES="'"$DEFAULT_IFPLUGD_INTERFACES"'"' >> /etc/default/networking ; }
+
+[ -s "/etc/default/networking" ] && \
+    sed -e 's,^[ \t\#]*\(WAIT_ONLINE_TIMEOUT\)=$,\1=30,' -i /etc/default/networking \
+    || { echo 'WAIT_ONLINE_TIMEOUT=30' >> /etc/default/networking ; }
+
 cat > /etc/default/ifplugd <<EOF
 INTERFACES=""
 HOTPLUG_INTERFACES="$DEFAULT_IFPLUGD_INTERFACES"
