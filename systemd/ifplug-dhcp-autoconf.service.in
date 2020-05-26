@@ -7,6 +7,8 @@ Before=network.target
 Conflicts=shutdown.target poweroff.target halt.target reboot.target
 PropagatesReloadTo=ifplugd.service
 ReloadPropagatedFrom=networking.service
+# This unit must be alone on its line (can be edited during OS image generation)
+Before=ifupdown-wait-online.service
 
 [Service]
 Type=simple
@@ -27,3 +29,5 @@ ExecStart=@datadir@/@PACKAGE@/scripts/ifplug-dhcp-autoconf.sh
 [Install]
 WantedBy=network.target
 WantedBy=ifplugd.service networking.service
+# This unit must be alone on its line (can be edited during OS image generation)
+WantedBy=ifupdown-wait-online.service

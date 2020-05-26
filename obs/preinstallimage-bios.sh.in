@@ -1083,6 +1083,13 @@ case "${OSIMAGE_DISTRO-}" in
         ;;
 esac
 
+[ -s /lib/systemd/system/ifplug-dhcp-autoconf.service ] && \
+if [ ! -s /lib/systemd/system/ifupdown-wait-online.service ] && [ ! -x /lib/ifupdown/wait-online.sh ] ; then
+    echo "Fixing up our ifplug-dhcp-autoconf.service to not define dependencies vs ifupdown-wait-online.service"
+    sed -e 's,^\(.*=ifupdown-wait-online.service\)$,###ANOTHER_DISTRO### \1,' \
+        -i /lib/systemd/system/ifplug-dhcp-autoconf.service
+fi
+
 #########################################################################
 # install iptables filtering
 
