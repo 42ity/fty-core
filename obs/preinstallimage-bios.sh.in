@@ -370,8 +370,8 @@ mkdir -p /etc/default
     sed -e 's,^[ \t\#]*\(EXCLUDE_INTERFACES=\)$,\1"'"$DEFAULT_IFPLUGD_INTERFACES"'",' -i /etc/default/networking \
     || echo 'EXCLUDE_INTERFACES="'"$DEFAULT_IFPLUGD_INTERFACES"'"' >> /etc/default/networking
 cat > /etc/default/ifplugd <<EOF
-INTERFACES="$DEFAULT_IFPLUGD_INTERFACES"
-HOTPLUG_INTERFACES=""
+INTERFACES=""
+HOTPLUG_INTERFACES="$DEFAULT_IFPLUGD_INTERFACES"
 ARGS="-q -f -u0 -d10 -w -I"
 SUSPEND_ACTION="stop"
 EOF
