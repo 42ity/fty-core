@@ -217,10 +217,16 @@ fi
 [ -n "$INTLIST" ] || { logmsg_info "Setting INTLIST='auto' to let system quickly bring up physically present interfaces found during boot"; INTLIST="auto"; }
 logmsg_debug "INTLIST      = $INTLIST"
 
-OLDINTLIST="`extract_AUGOUT_string ifplugd/INTERFACES`"
-OLDHINTLIST="`extract_AUGOUT_string ifplugd/HOTPLUG_INTERFACES`"
+OLDINTLIST="`extract_AUGOUT_string ifplugd/INTERFACES | sort_single_string`"
+OLDHINTLIST="`extract_AUGOUT_string ifplugd/HOTPLUG_INTERFACES | sort_single_string`"
 logmsg_debug "OLDINTLIST   = $OLDINTLIST"
 logmsg_debug "OLDHINTLIST  = $OLDHINTLIST"
+
+# Avoid spurious filesystem and service state changes due just to sorting order
+CINTLIST="`echo "$CINTLIST" | sort_single_string`"
+HINTLIST="`echo "$HINTLIST" | sort_single_string`"
+AINTLIST="`echo "$AINTLIST" | sort_single_string`"
+INTLIST="`echo "$INTLIST" | sort_single_string`"
 
 if [ "$OLDINTLIST" = "$INTLIST" ] && [ "$OLDHINTLIST" = "$HINTLIST" ]; then
     logmsg_info "Existing configuration of ifplugd already matches this list, got nothing to change!"
