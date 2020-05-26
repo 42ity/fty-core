@@ -257,10 +257,17 @@ else
         $STOPPED_IFPLUGD && ifplugd_on
         die "Could not apply changes to ifplugd config"
     fi
-    [ "$INTLIST" = auto ] && INTLIST=""
-    if ! /bin/echo -E set /files/etc/default/networking/EXCLUDE_INTERFACES "\"\\\"$INTLIST $HINTLIST\\\"\"" | augtool $AUGTOOL_ARGS -e -s ; then
-        logmsg_info "WARN: Could not apply changes to networking config, oh well"
-    fi
+
+    # For reasons not well remembered now, possibly experimental or platform
+    # related, we wanted to block the OS from setting up certain interfaces.
+#    [ "$INTLIST" = auto ] && INTLIST=""
+#    if ! /bin/echo -E set /files/etc/default/networking/EXCLUDE_INTERFACES "\"\\\"$INTLIST $HINTLIST\\\"\"" | augtool $AUGTOOL_ARGS -e -s ; then
+#        logmsg_info "WARN: Could not apply changes to networking config, oh well"
+#    fi
+
+    # Alternately we might wipe the existing list... but until we know better,
+    # rather just not touch whatever is or isnot there.
+#    sed -i 's,^\( *EXCLUDE_INTERFACES=\),###\1' -i etc/default/networking
 fi
 
 if $STOPPED_IFPLUGD ; then

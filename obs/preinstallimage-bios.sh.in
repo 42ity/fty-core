@@ -367,9 +367,13 @@ EOF
 
 DEFAULT_IFPLUGD_INTERFACES="$FIRSTIFNAME LAN2 LAN3"
 mkdir -p /etc/default
-[ -s "/etc/default/networking" ] && \
-    sed -e 's,^[ \t\#]*\(EXCLUDE_INTERFACES=\)$,\1"'"$DEFAULT_IFPLUGD_INTERFACES"'",' -i /etc/default/networking \
-    || { echo 'EXCLUDE_INTERFACES="'"$DEFAULT_IFPLUGD_INTERFACES"'"' >> /etc/default/networking ; }
+case "$OSIMAGE_DISTRO" in
+    Debian_8.0)
+        [ -s "/etc/default/networking" ] && \
+            sed -e 's,^[ \t\#]*\(EXCLUDE_INTERFACES=\)$,\1"'"$DEFAULT_IFPLUGD_INTERFACES"'",' -i /etc/default/networking \
+            || { echo 'EXCLUDE_INTERFACES="'"$DEFAULT_IFPLUGD_INTERFACES"'"' >> /etc/default/networking ; }
+        ;;
+esac
 
 [ -s "/etc/default/networking" ] && \
     sed -e 's,^[ \t\#]*\(WAIT_ONLINE_TIMEOUT\)=[0-9]*$,\1=30,' -i /etc/default/networking \
