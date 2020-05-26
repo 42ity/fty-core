@@ -73,6 +73,33 @@ ifplugd_off() {
     logmsg_info "Disabled and perhaps stopped systemd ifplugd.service"
 }
 
+# Point fix for systems being upgraded (old loader, new OS image)
+# TODO: Bolt this remapped interface name into udev rules for future boots
+
+# PCI-E device numbering scheme
+if [ -e "/sys/class/net/ens33" ] \
+&& [ ! -e "/sys/class/net/eth0" ] \
+&& [ ! -e "/sys/class/net/LAN1" ] \
+; then
+    logmsg_info "(UPGRADE) Renaming ens33 to eth0..."
+    ifplugd_off
+    ip link set ens33 down
+    ip link set ens33 name eth0
+    ip link set eth0 up
+fi
+
+# BIOS device numbering scheme
+if [ -e "/sys/class/net/eno1" ] \
+&& [ ! -e "/sys/class/net/eth0" ] \
+&& [ ! -e "/sys/class/net/LAN1" ] \
+; then
+    logmsg_info "(UPGRADE) Renaming eno1 to eth0..."
+    ifplugd_off
+    ip link set eno1 down
+    ip link set eno1 name eth0
+    ip link set eth0 up
+fi
+
 # Run augtools once and cache interesting data to speed up the process
 # Note: "allow-auto" is an alias to "auto" => start interface at boot
 # "allow-hotplug" => react to udev and/or link state change events
