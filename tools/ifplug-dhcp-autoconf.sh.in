@@ -208,6 +208,7 @@ else
         done
     fi
 fi
+[ -n "$INTLIST" ] || { logmsg_info "Setting INTLIST='auto' to let system quickly bring up physically present interfaces found during boot"; INTLIST="auto"; }
 logmsg_debug "INTLIST      = $INTLIST"
 
 OLDINTLIST="`extract_AUGOUT_string ifplugd/INTERFACES`"
@@ -231,6 +232,7 @@ else
         $STOPPED_IFPLUGD && ifplugd_on
         die "Could not apply changes to ifplugd config"
     fi
+    [ "$INTLIST" = auto ] && INTLIST=""
     if ! /bin/echo -E set /files/etc/default/networking/EXCLUDE_INTERFACES "\"\\\"$INTLIST $HINTLIST\\\"\"" | augtool $AUGTOOL_ARGS -e -s ; then
         logmsg_info "WARN: Could not apply changes to networking config, oh well"
     fi
