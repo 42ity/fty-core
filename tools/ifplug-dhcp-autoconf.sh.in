@@ -52,9 +52,15 @@ fi
 # Start it if we stopped it to reconfigure at some point...
 STOPPED_IFPLUGD=false
 ifplugd_on() {
+    # The DINTLIST may be determined below to ensure known DHCP interfaces go up
+    # Otherwise they sometimes are treated as "already configured" by ifplugd
+    # but the client is not running because we restarted the daemon to reconfig.
     logmsg_info "(Re-)starting ifplugd..."
     /bin/systemctl enable ifplugd.service && \
     /bin/systemctl restart ifplugd.service && \
+    if [ -n "$DINTLIST" ] ; then \
+        for I in $DINTLIST ; do /sbin/ifup --force $I ; done ; \
+    fi && \
     STOPPED_IFPLUGD=false && \
     logmsg_info "Enabled and (re-)started the systemd ifplugd.service"
 }
@@ -103,6 +109,7 @@ extract_AUGOUT_interface_array() {
 # Currently we pick all the "configured" interfaces with specific methods
 # to get base entries like "/files/etc/network/interfaces/iface[4]" (= LAN3):
 INTCONF="`echo "$AUGOUT" | egrep '/method *= *(dhcp|static|manual)$' | sed 's,/method .*$,,'`"
+DINTCONF="`echo "$AUGOUT" | egrep '/method *= *dhcp$' | sed 's,/method .*$,,'`"
 logmsg_debug "INTCONF = " "$INTCONF"
 
 # names of interfaces with (allow-)auto setting:
@@ -112,6 +119,8 @@ HINTLIST="`extract_AUGOUT_interface_array '^/files/etc/network/interfaces/allow-
 
 # names of interfaces with a config method per above:
 CINTLIST=""
+# ...in particular those with DHCP, to ensure for ifplugd restarts:
+DINTLIST=""
 if [ -z "${INTCONF}" ] ; then
     logmsg_debug "INTCONF is empty, no interfaces had interesting configuration methods"
 else
@@ -121,6 +130,10 @@ else
             || continue
         logmsg_debug "Found configured interface $INTNAME"
         [ -z "$CINTLIST" ] && CINTLIST="$INTNAME" || CINTLIST="$CINTLIST $INTNAME"
+        if [ -n "${DINTCONF}" ] && echo "${DINTCONF}" | fgrep "$INTNUM = " >/dev/null ; then
+            logmsg_debug "The interface $INTNAME is configured with method DHCP"
+            [ -z "$DINTLIST" ] && DINTLIST="$INTNAME" || DINTLIST="$DINTLIST $INTNAME"
+        fi
     done
 fi
 
