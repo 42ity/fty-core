@@ -372,7 +372,7 @@ mkdir -p /etc/default
     || { echo 'EXCLUDE_INTERFACES="'"$DEFAULT_IFPLUGD_INTERFACES"'"' >> /etc/default/networking ; }
 
 [ -s "/etc/default/networking" ] && \
-    sed -e 's,^[ \t\#]*\(WAIT_ONLINE_TIMEOUT\)=$,\1=30,' -i /etc/default/networking \
+    sed -e 's,^[ \t\#]*\(WAIT_ONLINE_TIMEOUT\)=[0-9]*$,\1=30,' -i /etc/default/networking \
     || { echo 'WAIT_ONLINE_TIMEOUT=30' >> /etc/default/networking ; }
 
 cat > /etc/default/ifplugd <<EOF
