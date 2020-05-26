@@ -342,7 +342,8 @@ FIRSTIFNAME="`file -b /bin/bash | sed -e 's|.*x86-64.*|eth0|' -e 's|.*ARM.*|LAN1
 cat > /etc/network/interfaces <<EOF
 auto lo
 # Note: the list of configured "iface"s below must contain all these allowed:
-allow-hotplug $FIRSTIFNAME LAN2 LAN3
+auto $FIRSTIFNAME
+allow-hotplug LAN2 LAN3
 iface lo inet loopback
 iface $FIRSTIFNAME inet dhcp
 iface LAN2 inet static
@@ -375,8 +376,8 @@ mkdir -p /etc/default
     || { echo 'WAIT_ONLINE_TIMEOUT=30' >> /etc/default/networking ; }
 
 cat > /etc/default/ifplugd <<EOF
-INTERFACES="auto"
-HOTPLUG_INTERFACES="$DEFAULT_IFPLUGD_INTERFACES"
+INTERFACES="$FIRSTIFNAME"
+HOTPLUG_INTERFACES="LAN1 LAN2"
 ARGS="-q -f -u0 -d10 -w -I"
 SUSPEND_ACTION="stop"
 EOF
