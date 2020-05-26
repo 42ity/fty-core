@@ -364,7 +364,7 @@ cat > /etc/hosts <<EOF
 127.0.0.1 localhost bios
 EOF
 
-DEFAULT_IFPLUGD_INTERFACES="eth0 LAN1 LAN2 LAN3"
+DEFAULT_IFPLUGD_INTERFACES="$FIRSTIFNAME LAN2 LAN3"
 mkdir -p /etc/default
 [ -s "/etc/default/networking" ] && \
     sed -e 's,^[ \t\#]*\(EXCLUDE_INTERFACES=\)$,\1"'"$DEFAULT_IFPLUGD_INTERFACES"'",' -i /etc/default/networking \
