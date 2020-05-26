@@ -117,14 +117,14 @@ fi
 # We should first disable ifplugd with its old list of tracked interfaces,
 # then change it, then maybe start it back up if the list is not empty
 if [ -z "$CINTLIST" ]; then
-    logmsg_info "No interfaces were currently detected as DHCP clients, static or manual (will clear the ifplugd list)"
+    logmsg_info "No interfaces were currently seen configured as DHCP clients, static or manual (will clear the ifplugd list)"
 else
-    logmsg_info "The following interfaces were currently detected as DHCP clients, static or manual: $CINTLIST"
+    logmsg_info "The following interfaces were currently seen configured as DHCP clients, static or manual: $CINTLIST"
 fi
 if [ -z "$HINTLIST" ]; then
-    logmsg_info "No interfaces were currently detected as 'allow-hotplug' (will clear the ifplugd list)"
+    logmsg_info "No interfaces were currently seen configured as 'allow-hotplug' (will clear the ifplugd list)"
 else
-    logmsg_info "The following interfaces were currently detected as 'allow-hotplug': $HINTLIST"
+    logmsg_info "The following interfaces were currently seen configured as 'allow-hotplug': $HINTLIST"
 fi
 logmsg_debug "AINTLIST     = $AINTLIST"
 
