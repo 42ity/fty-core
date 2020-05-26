@@ -89,7 +89,7 @@ extract_AUGOUT_interface_array() {
     # cached AUGOUT, prefixed by common "$1", without loopback interfaces
     # Note that depending on amount of lines in the file, the prefix may
     # be indexed like ".../auto[1]/2" or not for just one line ".../auto/2"
-    echo "$AUGOUT" | egrep "$1"'(/|\[[0-9]*\]/)[0-9]* = ' | sed -e 's,^[^=]* = ,,' | tr ' ' '\n' | egrep -v '^lo|^$|(none)' | sort | uniq | tr '\n' ' ' | sed -e 's,^ *,,' -e 's, *$,,'
+    echo "$AUGOUT" | egrep "$1"'(/|\[[0-9]*\]/)[0-9]* = ' | sed -e 's,^[^=]* = ,,' | tr ' ' '\n' | egrep -v '^lo|^$|\(none\)' | sort | uniq | tr '\n' ' ' | sed -e 's,^ *,,' -e 's, *$,,'
 }
 
 # Note: This may be revised or option-switched to find not DHCP interfaces,
