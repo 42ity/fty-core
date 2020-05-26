@@ -128,10 +128,10 @@ else
     for INTNUM in $INTCONF ; do
         INTNAME="`echo "$AUGOUT" | fgrep "$INTNUM = " | sed 's,^[^=]* = *,,'`" \
             || continue
-        logmsg_debug "Found configured interface $INTNAME"
+        logmsg_debug "Found a configured interface $INTNAME"
         [ -z "$CINTLIST" ] && CINTLIST="$INTNAME" || CINTLIST="$CINTLIST $INTNAME"
-        if [ -n "${DINTCONF}" ] && echo "${DINTCONF}" | fgrep "$INTNUM = " >/dev/null ; then
-            logmsg_debug "The interface $INTNAME is configured with method DHCP"
+        if [ -n "${DINTCONF}" ] && echo "${DINTCONF}" | fgrep -x "$INTNUM" >/dev/null ; then
+            logmsg_debug "Note: The interface $INTNAME is configured with method DHCP"
             [ -z "$DINTLIST" ] && DINTLIST="$INTNAME" || DINTLIST="$DINTLIST $INTNAME"
         fi
     done
