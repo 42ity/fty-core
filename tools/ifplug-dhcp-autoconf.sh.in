@@ -67,8 +67,8 @@ ifplugd_on() {
 
 ifplugd_off() {
     logmsg_info "Stopping ifplugd..."
-    /bin/systemctl disable ifplugd.service || true
     /bin/systemctl stop ifplugd.service || true
+    /bin/systemctl disable ifplugd.service || true
     STOPPED_IFPLUGD=true
     logmsg_info "Disabled and perhaps stopped systemd ifplugd.service"
 }
