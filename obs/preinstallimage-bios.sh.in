@@ -375,7 +375,7 @@ mkdir -p /etc/default
     || { echo 'WAIT_ONLINE_TIMEOUT=30' >> /etc/default/networking ; }
 
 cat > /etc/default/ifplugd <<EOF
-INTERFACES=""
+INTERFACES="auto"
 HOTPLUG_INTERFACES="$DEFAULT_IFPLUGD_INTERFACES"
 ARGS="-q -f -u0 -d10 -w -I"
 SUSPEND_ACTION="stop"
