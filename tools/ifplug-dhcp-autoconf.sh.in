@@ -132,6 +132,66 @@ else
 fi
 logmsg_debug "AINTLIST     = $AINTLIST"
 
+# Virtual NICs do not have an associated "device" node and so they do not have
+# the hotplug events, as it seems from our practical evidence on containers...
+# TODO: Do we need an opposite activity for actually hotpluggable interfaces
+# that can be removed ("demoted" from auto to hotplug)?
+FORCE_AINTLIST=""
+for H in $HINTLIST ; do
+    [ -e "/sys/class/net/$H" ] || continue # not plugged?
+    [ -e "/sys/class/net/$H/device" ] && continue # plugged and has HW
+
+    logmsg_info "Re-forge virtual $H into an 'auto' device that is available and forced to configure during boot"
+    [ -z "$FORCE_AINTLIST" ] && FORCE_AINTLIST="$H" || FORCE_AINTLIST="$FORCE_AINTLIST $H"
+done
+
+# If this ends up not empty, the "allow-hotplug" configuration must change...
+FORCE_HINTLIST=""
+if [ -n "$FORCE_AINTLIST" ] ; then
+    for H in $HINTLIST ; do
+        if echo "$FORCE_AINTLIST" | grep -w "$H" >/dev/null ; then : ; else
+            [ -z "$FORCE_HINTLIST" ] && FORCE_HINTLIST="$H" || FORCE_HINTLIST="$FORCE_HINTLIST $H"
+        fi
+    done
+fi
+
+if [ -n "${FORCE_HINTLIST}${FORCE_AINTLIST}" ]; then
+    logmsg_info "Changing ifplugd configuration for auto vs hotplug interfaces"
+    if ! $STOPPED_IFPLUGD ; then
+        logmsg_info "I will disable the ifplugd service before reconfiguring it"
+        ifplugd_off
+    fi
+
+    # TODO: Save and restore the loopback and other interfaces that can get lost in this operation?
+    logmsg_info "Applying changes to ifplugd configuration..."
+    if ! (  /bin/echo -E rm /files/etc/network/interfaces/auto ; \
+            /bin/echo -E rm /files/etc/network/interfaces/auto[*] ; \
+            /bin/echo -E rm /files/etc/network/interfaces/allow-auto ; \
+            /bin/echo -E rm /files/etc/network/interfaces/allow-auto[*] ; \
+            /bin/echo -E rm /files/etc/network/interfaces/allow-hotplug ; \
+            /bin/echo -E rm /files/etc/network/interfaces/allow-hotplug[*]; \
+            N=1; for I in lo $FORCE_AINTLIST ; do \
+                /bin/echo -E set /files/etc/network/interfaces/auto/$N "$I" ; \
+                N=$(($N+1)); \
+            done; \
+            N=1; for I in $FORCE_HINTLIST ; do \
+                /bin/echo -E set /files/etc/network/interfaces/allow-hotplug/$N "$I" ; \
+                N=$(($N+1)); \
+            done; \
+#echo save; echo errors; \
+         ) | augtool $AUGTOOL_ARGS -e -s \
+    ; then
+        $STOPPED_IFPLUGD && ifplugd_on
+        die "Could not apply changes to ifplugd config"
+    fi
+
+    HINTLIST="${FORCE_HINTLIST}"
+    AINTLIST="${FORCE_AINTLIST}"
+
+    # Merge/dedup into CINTLIST
+    CINTLIST="`echo $CINTLIST $HINTLIST $AINTLIST | tr ' ' '\n' | sort | uniq | tr '\n' ' ' | sed -e 's,^ *,,' -e 's, *$,,'`"
+fi
+
 # INTLIST is about non-hotplug interfaces
 if [ -z "$HINTLIST" ]; then
     INTLIST="$CINTLIST"
