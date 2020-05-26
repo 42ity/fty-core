@@ -49,10 +49,13 @@ if [ -d "@datadir@/@PACKAGE@/lenses" ] ; then
     AUGTOOL_ARGS="-S -I@datadir@/@PACKAGE@/lenses"
 fi
 
+# Start it if we stopped it to reconfigure at some point...
+STOPPED_IFPLUGD=false
 ifplugd_on() {
     logmsg_info "(Re-)starting ifplugd..."
     /bin/systemctl enable ifplugd.service && \
     /bin/systemctl restart ifplugd.service && \
+    STOPPED_IFPLUGD=false && \
     logmsg_info "Enabled and (re-)started the systemd ifplugd.service"
 }
 
@@ -60,6 +63,7 @@ ifplugd_off() {
     logmsg_info "Stopping ifplugd..."
     /bin/systemctl disable ifplugd.service || true
     /bin/systemctl stop ifplugd.service || true
+    STOPPED_IFPLUGD=true
     logmsg_info "Disabled and perhaps stopped systemd ifplugd.service"
 }
 
@@ -154,14 +158,17 @@ logmsg_debug "OLDHINTLIST  = $OLDHINTLIST"
 if [ "$OLDINTLIST" = "$INTLIST" ] && [ "$OLDHINTLIST" = "$HINTLIST" ]; then
     logmsg_info "Existing configuration of ifplugd already matches this list, got nothing to change!"
 else
-    ( [ -n "$OLDINTLIST" -a -z "$INTLIST" ] || [ -n "$OLDHINTLIST" -a -z "$HINTLIST" ] ) && \
-        logmsg_info "Existing configuration of ifplugd tracked INTERFACES='$OLDINTLIST' HOTPLUG_INTERFACES='$OLDHINTLIST' ;" \
-            "I will disable the service before reconfiguring it" && \
-        ifplugd_off
+    if ( [ -n "$OLDINTLIST" -a -z "$INTLIST" ] || [ -n "$OLDHINTLIST" -a -z "$HINTLIST" ] ) ; then
+        logmsg_info "Existing configuration of ifplugd tracked INTERFACES='$OLDINTLIST' HOTPLUG_INTERFACES='$OLDHINTLIST'"
+        if ! $STOPPED_IFPLUGD ; then
+            logmsg_info "I will disable the ifplugd service before reconfiguring it"
+            ifplugd_off
+        fi
+    fi
 
     logmsg_info "Applying changes to ifplugd configuration..."
     if ! ( /bin/echo -E set /files/etc/default/ifplugd/INTERFACES "\"\\\"$INTLIST\\\"\"" ; /bin/echo -E set /files/etc/default/ifplugd/HOTPLUG_INTERFACES "\"\\\"$HINTLIST\\\"\"" ) | augtool $AUGTOOL_ARGS -e -s ; then
-        ( [ -n "$OLDINTLIST" -a -z "$INTLIST" ] || [ -n "$OLDHINTLIST" -a -z "$HINTLIST" ] ) && ifplugd_on
+        $STOPPED_IFPLUGD && ifplugd_on
         die "Could not apply changes to ifplugd config"
     fi
     if ! /bin/echo -E set /files/etc/default/networking/EXCLUDE_INTERFACES "\"\\\"$INTLIST $HINTLIST\\\"\"" | augtool $AUGTOOL_ARGS -e -s ; then
@@ -169,7 +176,7 @@ else
     fi
 fi
 
-if [ -n "$INTLIST" ]; then
+if $STOPPED_IFPLUGD ; then
     ifplugd_on || die $?
 fi
 
