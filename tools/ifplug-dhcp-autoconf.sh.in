@@ -79,6 +79,12 @@ AUGOUT="`(echo 'match /files/etc/network/interfaces/iface[*]'; echo 'match /file
 || die $? "Could not determine current settings"
 logmsg_debug "AUGOUT = " "$AUGOUT"
 
+sort_single_string() {
+    # For a space-separated string (or several) on stdin, produce a single
+    # string with these non-empty tokens unique and sorted - on stdout
+    tr ' ' '\n' | sort | uniq | tr '\n' ' ' | sed -e 's,^ *,,' -e 's, *$,,' -e 's,  , ,g'
+}
+
 extract_AUGOUT_string() {
     # Select a known single-string value from cached AUGOUT, remove surrounding quotes
     echo "$AUGOUT" | egrep "$1" | sed 's,^[^=]* = *,,' | sed 's,^\"\(.*\)\"$,\1,'
@@ -89,7 +95,7 @@ extract_AUGOUT_interface_array() {
     # cached AUGOUT, prefixed by common "$1", without loopback interfaces
     # Note that depending on amount of lines in the file, the prefix may
     # be indexed like ".../auto[1]/2" or not for just one line ".../auto/2"
-    echo "$AUGOUT" | egrep "$1"'(/|\[[0-9]*\]/)[0-9]* = ' | sed -e 's,^[^=]* = ,,' | tr ' ' '\n' | egrep -v '^lo|^$|\(none\)' | sort | uniq | tr '\n' ' ' | sed -e 's,^ *,,' -e 's, *$,,'
+    echo "$AUGOUT" | egrep "$1"'(/|\[[0-9]*\]/)[0-9]* = ' | sed -e 's,^[^=]* = ,,' | tr ' ' '\n' | egrep -v '^lo|^$|\(none\)' | sort_single_string
 }
 
 # Note: This may be revised or option-switched to find not DHCP interfaces,
@@ -189,7 +195,7 @@ if [ -n "${FORCE_HINTLIST}${FORCE_AINTLIST}" ]; then
     AINTLIST="${FORCE_AINTLIST}"
 
     # Merge/dedup into CINTLIST
-    CINTLIST="`echo $CINTLIST $HINTLIST $AINTLIST | tr ' ' '\n' | sort | uniq | tr '\n' ' ' | sed -e 's,^ *,,' -e 's, *$,,'`"
+    CINTLIST="`echo $CINTLIST $HINTLIST $AINTLIST | sort_single_string`"
 fi
 
 # INTLIST is about non-hotplug interfaces
