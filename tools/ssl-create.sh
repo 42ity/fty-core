@@ -35,6 +35,14 @@ PEM_FINAL_CERT="/etc/tntnet/bios.pem"
 PEM_KEY="/etc/tntnet/bios.key"
 PEM_CERT="/etc/tntnet/bios.crt"
 
+for F in "$PEM_FINAL_CERT" "$PEM_KEY" "$PEM_CERT" ; do
+    D="`dirname "$F"`"
+    if [ ! -d "$D/" ]; then
+        echo "FATAL: Directory '$D' to hold the PEM files does not exist!" >&2
+        exit 1
+    fi
+done
+
 # Warn about expiration this much in advance, e.g. 45 days
 WARN_EXPIRE="`expr 45 \* 24 \* 3600`"
 
