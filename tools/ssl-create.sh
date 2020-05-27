@@ -132,13 +132,17 @@ EOF
         cat - "${PEM_KEY}" "${PEM_CERT}" > "${PEM_FINAL_CERT}" \
     || exit $?
 
-    chown "${BIOS_USER}" "${PEM_FINAL_CERT}"
-    chown "${BIOS_USER}:www-data" "${PEM_KEY}"
-    chmod 640 "${PEM_KEY}"
-    chown "${BIOS_USER}:www-data" "${PEM_CERT}"
-    chmod 644 "${PEM_CERT}"
+    RES=0
+    chown "${BIOS_USER}" "${PEM_FINAL_CERT}" || RES=$?
+    chown "${BIOS_USER}:www-data" "${PEM_KEY}" || RES=$?
+    chmod 640 "${PEM_KEY}" || RES=$?
+    chown "${BIOS_USER}:www-data" "${PEM_CERT}" || RES=$?
+    chmod 644 "${PEM_CERT}" || RES=$?
 
-    exit $?
+    [ -s "$PEM_CERT" ] && [ -s "$PEM_KEY" ] && [ -s "$PEM_FINAL_CERT" ] || { RES=$? ; echo "FATAL: one or more PEM file is missing or empty" >&2; }
+    exit $RES
 fi
 
-exit 0
+RES=0
+[ -s "$PEM_CERT" ] && [ -s "$PEM_KEY" ] && [ -s "$PEM_FINAL_CERT" ] || { RES=$? ; echo "FATAL: one or more PEM file is missing or empty" >&2; }
+exit $RES
