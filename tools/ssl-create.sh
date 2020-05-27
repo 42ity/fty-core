@@ -85,20 +85,39 @@ if [ ! -r "${PEM_FINAL_CERT}" ] || [ ! -s "${PEM_FINAL_CERT}" ] || \
         exit $?
     fi
 
+    # "/run/tntnet-bios" should be provided by systemd-tmpfiles-setup, but on
+    # development machines a common system location can be used to generate a
+    # temporary openssl config for certificate generation and self-signing.
+    for TEMP_DIR in "/run/tntnet-bios" "/dev/shm" "/tmp" "" ; do
+        [ -n "$TEMP_DIR" ] || exit $? # errors reported earlier by this loop
+        [ -d "$TEMP_DIR" ] && [ -w "$TEMP_DIR/" ] && break
+        echo "WARNING: TEMP_DIR at '$TEMP_DIR' is not usable, trying another!" >&2
+    done
+
+    TEMP_SSLCONF="`mktemp "$TEMP_DIR/ssl.conf.XXXXXX"`" && [ -n "$TEMP_SSLCONF" ] || exit $?
+
     # certificate configuration (disable CA)
-    echo "[ req ]" > /run/tntnet-bios/ssl.conf
-    echo "distinguished_name=dn" >> /run/tntnet-bios/ssl.conf
-    echo "[ dn ]" >> /run/tntnet-bios/ssl.conf
-    echo "[ ext ]" >> /run/tntnet-bios/ssl.conf
-    echo "basicConstraints=CA:FALSE" >> /run/tntnet-bios/ssl.conf
+    cat > "$TEMP_SSLCONF" << EOF
+[ req ]
+distinguished_name=dn
+[ dn ]
+[ ext ]
+basicConstraints=CA:FALSE
+EOF
+    RES=$?
+    if [ $RES != 0 ] || [ ! -s "$TEMP_SSLCONF" ] ; then
+        echo "FATAL: Failed to generate a temporary openssl config into '$TEMP_SSLCONF'" >&2
+        rm -f "$TEMP_SSLCONF"
+        [ "$RES" = 0 ] && RES=1
+        exit $RES
+    fi
 
     # Generate self-signed cert with a new key and other data
-    openssl req -config /run/tntnet-bios/ssl.conf -x509 -sha256 -newkey rsa:2048 \
+    openssl req -config "${TEMP_SSLCONF}" -x509 -sha256 -newkey rsa:2048 \
         -keyout "${PEM_KEY}" -out "${PEM_CERT}" \
         -days 9125 -nodes -subj "/CN=${LOCAL_HOSTNAME}" \
-    || exit $?
-
-    rm /run/tntnet-bios/ssl.conf
+    || { RES=$? ; rm -f "${TEMP_SSLCONF}" ; exit $RES; }
+    rm -f "${TEMP_SSLCONF}"
 
     rm -f "${PEM_FINAL_CERT}"
     echo "$SIG" | \
