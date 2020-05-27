@@ -61,7 +61,7 @@ for IFACE in `ls -1 /sys/class/net/`; do
 
     (
     ifdown --force $IFACE ;\
-    if [ -f /run/udhcpc.${IFACE}.pid ]; then \
+    if [ -s /run/udhcpc.${IFACE}.pid ]; then \
         kill -9 `cat /run/udhcpc.${IFACE}.pid`; \
         rm /run/udhcpc.${IFACE}.pid; \
     fi ;\
