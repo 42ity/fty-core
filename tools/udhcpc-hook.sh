@@ -100,7 +100,7 @@ hostname_setup() {
         bound|renew|BOUND|RENEW|REBIND|REBOOT)
             ;;
         *)
-            echo "$0: WARN: hostname_setup got an unexpected reason '$reason', proceeding anyway" >&2
+            echo "$0: WARN: hostname_setup got an unexpected reason '$reason' on interface '$interface', proceeding anyway" >&2
             ;;
     esac
 
@@ -155,15 +155,16 @@ ntp_servers_setup_remove() {
 	ntp_server_restart
 }
 
-
+# TODO: This does not support multi-homing with DHCP on different segments
+# The last processed announcement wins
 ntp_servers_setup_add() {
 	if [ -e $NTP_DHCP_CONF ] && [ "$new_ntp_servers" = "$old_ntp_servers" ]; then
-		echo "Got no changes to apply to DHCP-announced NTP config"
+		echo "Got no changes to apply to DHCP-announced NTP config on interface '$interface'"
 		return
 	fi
 
 	if [ -z "$new_ntp_servers" ]; then
-		echo "DHCP announced no NTP servers, falling back to static NTP configs..."
+		echo "DHCP announced no NTP servers on interface '$interface', falling back to static NTP configs..."
 		ntp_servers_setup_remove
 		return
 	fi
@@ -172,7 +173,7 @@ ntp_servers_setup_add() {
 	chmod --reference="$NTP_CONF" "$tmp"
 	chown --reference="$NTP_CONF" "$tmp"
 
-	echo "DHCP announced NTP servers '$new_ntp_servers' different from old NTP config '$old_ntp_servers', applying..."
+	echo "DHCP announced NTP servers '$new_ntp_servers' on interface '$interface' different from old NTP config '$old_ntp_servers', applying..."
 	(
 	  echo "# This file was copied from $NTP_CONF with the server options changed"
 	  echo "# to reflect the information sent by the DHCP server.  Any changes made"
@@ -205,7 +206,7 @@ ntp_servers_setup_add() {
 
 ntp_servers_setup() {
 	RES=1
-	echo "[`awk '{print $1}' < /proc/uptime`] `date` [$$]: Starting $0 (NTP) for DHCP state $reason..."
+	echo "[`awk '{print $1}' < /proc/uptime`] `date` [$$]: Starting $0 (NTP) for DHCP state '$reason' on interface '$interface'..."
 	case "$reason" in
 		bound|renew|BOUND|RENEW|REBIND|REBOOT)
 			ntp_servers_setup_add
@@ -216,7 +217,7 @@ ntp_servers_setup() {
 			RES=$?
 			;;
 	esac
-	echo "[`awk '{print $1}' < /proc/uptime`] `date` [$$]: Completed $0 (NTP) for DHCP state $reason, exit code $RES"
+	echo "[`awk '{print $1}' < /proc/uptime`] `date` [$$]: Completed $0 (NTP) for DHCP state '$reason' on interface '$interface', exit code $RES"
 	return $RES
 }
 
