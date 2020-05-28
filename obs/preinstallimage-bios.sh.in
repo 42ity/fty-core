@@ -548,6 +548,12 @@ cp /usr/share/fty/examples/config/update-rc3.d/* /etc/update-rc3.d
 # Enable ssh
 rm /etc/init.d/ssh*
 echo "UseDNS no" >> /etc/ssh/sshd_config
+# Limit to Administrator user (i.e. no Viewers like "monitor")
+echo "AllowGroups bios-admin root" >> /etc/ssh/sshd_config
+if ! egrep '^[ \t]*PermitRootLogin without-password' /etc/ssh/sshd_config >/dev/null ; then
+    # Allow root login with ssh-keys only, and only if someone presets them (CI)
+    echo "PermitRootLogin without-password" >> /etc/ssh/sshd_config
+fi
 rm /etc/ssh/*key*
 mkdir -p /etc/systemd/system
 sed 's|\[Service\]|[Service]\nExecStartPre=/usr/bin/ssh-keygen -A|' /lib*/systemd/system/ssh@.service > /etc/systemd/system/ssh@.service
@@ -570,6 +576,18 @@ sed -i 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/fty/fty-eula/license\nCo
 mkdir -p /etc/malamute
 cp /usr/share/fty/examples/config/malamute/malamute.cfg /etc/malamute
 /bin/systemctl enable malamute
+
+# Fix up where mariadb listens
+case "$IMGTYPE" in
+    *devel*) ;; # let it be for testing and developers
+    deploy|*)
+cat > /etc/my.cnf.d/localhost.cnf << EOF
+[mysqld]
+bind-address = 127.0.0.1
+port = 3306
+EOF
+        ;;
+esac
 
 # Enable 42ity services (distributed as a systemd preset file)
 if [ "${OSIMAGE_DISTRO}" = "Debian_10.0" ]; then
