@@ -5,8 +5,8 @@ After=auditd.service network.service
 [Service]
 EnvironmentFile=-/etc/default/ssh
 ExecStartPre=/usr/bin/ssh-keygen -A
-ExecStartPre=/bin/mkdir -p /var/run/sshd
-ExecStartPre=/bin/chmod 0755 /var/run/sshd
+ExecStartPre=/bin/mkdir -p /run/sshd
+ExecStartPre=/bin/chmod 0755 /run/sshd
 ExecStart=/usr/sbin/sshd -D $SSHD_OPTS -p 4222
 ExecReload=/bin/kill -HUP $MAINPID
 KillMode=process
