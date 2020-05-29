@@ -580,8 +580,10 @@ if ! egrep '^[ \t]*PermitRootLogin without-password' /etc/ssh/sshd_config >/dev/
 fi
 rm /etc/ssh/*key*
 mkdir -p /etc/systemd/system
-sed 's|\[Service\]|[Service]\nExecStartPre=/usr/bin/ssh-keygen -A|' /lib*/systemd/system/ssh@.service > /etc/systemd/system/ssh@.service
-sed -i 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/fty/fty-eula/license\nConditionPathExists=@OVERLAY_PATH@/etc/shadow|' /etc/systemd/system/ssh@.service
+sed -e 's|\[Service\]|[Service]\nExecStartPre=/usr/bin/ssh-keygen -A\nExecStartPre=/bin/mkdir -p /run/sshd\nExecStartPre=/bin/chmod 0755 /run/sshd\n|' \
+    -e 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/fty/fty-eula/license\nConditionPathExists=@OVERLAY_PATH@/etc/shadow|' \
+    -e 's|^\(RuntimeDirectory.*=.*\)$|#AVOID_REMOVING# \1|' \
+    < /lib/systemd/system/ssh@.service > /etc/systemd/system/ssh@.service
 /bin/systemctl disable ssh.service
 /bin/systemctl mask ssh.service
 /bin/systemctl enable ssh.socket
