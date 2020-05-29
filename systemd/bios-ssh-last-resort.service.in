@@ -7,7 +7,7 @@ EnvironmentFile=-/etc/default/ssh
 ExecStartPre=/usr/bin/ssh-keygen -A
 ExecStartPre=/bin/mkdir -p /run/sshd
 ExecStartPre=/bin/chmod 0755 /run/sshd
-ExecStart=/usr/sbin/sshd -D $SSHD_OPTS -p 4222
+ExecStart=/usr/sbin/sshd -D $SSHD_OPTS -p 4222 -o PidFile=/run/sshd-bios-last-resort.pid
 ExecReload=/bin/kill -HUP $MAINPID
 KillMode=process
 Restart=always
