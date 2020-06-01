@@ -1,0 +1,45 @@
+#!/bin/sh
+
+#
+#   Copyright (c) 2019 Eaton
+#
+#   This file is part of the Eaton 42ity project.
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License along
+#   with this program; if not, write to the Free Software Foundation, Inc.,
+#   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+#! \file    20-rcmysql-transient.sh
+#  \brief   Make sure a /usr/lib/mysql/rcmysql exists even after upgrades
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
+#
+
+# Specific envvars for systemd services and maybe shell: the HTTP(S) proxy
+# to connect to the licensing server, new image downloads, etc. from agents.
+RCMYSQL_WELLKNOWN="/usr/lib/mysql/rcmysql"
+RCMYSQL_TRANSIENT="@datadir@/@PACKAGE@/scripts/rcmysql-transient"
+if test -s "$RCMYSQL_WELLKNOWN" ; then
+    exit 0
+fi
+
+if test ! -s "$RCMYSQL_TRANSIENT" || test ! -x "$RCMYSQL_TRANSIENT" ; then
+    echo "`date -u`: ERROR: There is no RCMYSQL_WELLKNOWN='$RCMYSQL_WELLKNOWN' and no replacement RCMYSQL_TRANSIENT='$RCMYSQL_TRANSIENT' for it" >&2
+    exit 1
+fi
+
+rm -f "$RCMYSQL_WELLKNOWN" || true
+mkdir -p "`dirname "$RCMYSQL_WELLKNOWN"`" || exit
+ln -fsr "$RCMYSQL_TRANSIENT" "$RCMYSQL_WELLKNOWN" || exit
+
+echo "`date -u`: Ensured usable ${RCMYSQL_WELLKNOWN}"
+ls -la "${RCMYSQL_WELLKNOWN}" "${RCMYSQL_TRANSIENT}"
