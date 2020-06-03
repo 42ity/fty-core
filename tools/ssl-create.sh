@@ -76,7 +76,7 @@ if [ "$CERT_LOADABLE" = yes ]; then
         [ -n "$TILL" ] && TILL="`TZ=UTC date -u -d "$TILL" +%s`" && \
         [ "$TILL" -gt "$WARN_EXPIRE" ] && TILL="`expr $TILL - $WARN_EXPIRE`" || \
         TILL=""
-    CN="`echo "$SSL_OUT" | sed -n 's|subject= /CN=||p'`" || \
+    CN="`echo "$SSL_OUT" | sed -n 's|subject= */*CN *= *||p'`" || \
         CN=""
 fi
 
