@@ -603,6 +603,28 @@ mkdir -p /etc/malamute
 cp /usr/share/fty/examples/config/malamute/malamute.cfg /etc/malamute
 /bin/systemctl enable malamute
 
+# Cater old configs to new packages
+if [ ! -d /etc/my.cnf.d/ ] ; then
+    rm -rf /etc/my.cnf.d || true
+    if [ -d /etc/mysql/mariadb.conf.d ]; then
+        ln -fs ./mysql/mariadb.conf.d/ /etc/my.cnf.d
+    else
+        if [ -d /etc/mysql/conf.d ]; then
+            ln -fs ./mysql/conf.d/ /etc/my.cnf.d
+        else
+            mkdir -p /etc/my.cnf.d
+        fi
+    fi
+fi
+
+if update-alternatives --query my.cnf >/dev/null 2>/dev/null && [ -e /etc/mysql/mariadb.cnf ] ; then
+    update-alternatives --set my.cnf /etc/mysql/mariadb.cnf
+fi
+
+if [ ! -e /etc/my.cnf ] && [ -e /etc/mysql/my.cnf ] ; then
+    ln -fs ./mysql/my.cnf /etc/my.cnf
+fi
+
 # Fix up where mariadb listens
 case "$IMGTYPE" in
     *devel*) ;; # let it be for testing and developers
