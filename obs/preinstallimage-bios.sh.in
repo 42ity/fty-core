@@ -617,6 +617,14 @@ if [ ! -d /etc/my.cnf.d/ ] ; then
     fi
 fi
 
+if update-alternatives --query my.cnf >/dev/null 2>/dev/null && [ -e /etc/mysql/mariadb.cnf ] ; then
+    update-alternatives --set my.cnf /etc/mysql/mariadb.cnf
+fi
+
+if [ ! -e /etc/my.cnf ] && [ -e /etc/mysql/my.cnf ] ; then
+    ln -fs ./mysql/my.cnf /etc/my.cnf
+fi
+
 # Fix up where mariadb listens
 case "$IMGTYPE" in
     *devel*) ;; # let it be for testing and developers
