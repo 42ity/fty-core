@@ -76,6 +76,13 @@ ifplugd_off() {
 # Point fix for systems being upgraded (old loader, new OS image)
 # TODO: Bolt this remapped interface name into udev rules for future boots
 
+if [ -d /etc/network/interfaces.d ] \
+&& ! grep 'source-directory /etc/network/interfaces.d' /etc/network/interfaces >/dev/null \
+; then
+    logmsg_info "(UPGRADE) Making sure /etc/network/interfaces considers /etc/network/interfaces.d/* additions..."
+    echo "source-directory /etc/network/interfaces.d" >> /etc/network/interfaces
+fi
+
 # PCI-E device numbering scheme
 if [ -e "/sys/class/net/ens33" ] \
 && [ ! -e "/sys/class/net/eth0" ] \

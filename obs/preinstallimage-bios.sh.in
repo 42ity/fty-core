@@ -339,10 +339,16 @@ mkdir -p /etc/network
 
 # The IPC loader renames interfaces to LANx pattern, current OVA one does not
 FIRSTIFNAME="`file -b /bin/bash | sed -e 's|.*x86-64.*|eth0|' -e 's|.*ARM.*|LAN1|'`"
-cat > /etc/network/interfaces <<EOF
+mkdir -p /etc/network/interfaces.d
+cat > /etc/network/interfaces.d/rename-defaults <<EOF
 # Fallback for kernels not started with arguments to avoid NIC renaming
 rename ens33=$FIRSTIFNAME
 rename eno1=$FIRSTIFNAME
+rename enp0s17=$FIRSTIFNAME
+EOF
+
+cat > /etc/network/interfaces <<EOF
+source-directory /etc/network/interfaces.d
 auto lo
 # Note: the list of configured "iface"s below must contain all these allowed:
 auto $FIRSTIFNAME
