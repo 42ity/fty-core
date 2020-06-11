@@ -22,6 +22,10 @@
 #! \file    90-mylogin.everytime.sh
 #  \brief   Make sure debian init script for mariadb maintenance can log into it
 #  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
+#
+#   Note: this file is also called, if present, by fty-db-init to
+#   add the password reference as soon as it generates one. Do not
+#   rename this scriptlet carelessly!
 
 die() {
     echo "FATAL: $*" >&2
