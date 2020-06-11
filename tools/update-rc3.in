@@ -1560,7 +1560,7 @@ download_osimage() (
     # This chroot should happen after the currently deployed version has
     # confirmed trust to that new image, however (checksums/signatures).
     mkdir -p @ftydatadir@/sw-update/ && \
-    ( etn-sw-update --add-image "${aTGT_FILE}" || echo "$?" > "@ftydatadir@/sw-update/activation_requested" ) && \
+    ( etn-sw-update --add-image "${aTGT_FILE}" ; echo "$?" > "@ftydatadir@/sw-update/activation_requested.status" ) && \
     logmsg_info "Got $REPORT_IMAGETYPE OK:" && \
     ls -ld "${aTGT_FILE}" "${aTGT_FILE_CSOLD[@]}" "${aTGT_FILE_MANIFEST}" && \
     cat "${aTGT_FILE_CSOLD[@]}" && \
