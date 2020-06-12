@@ -339,6 +339,21 @@ mkdir -p /etc/network
 
 # The IPC loader renames interfaces to LANx pattern, current OVA one does not
 FIRSTIFNAME="`file -b /bin/bash | sed -e 's|.*x86-64.*|eth0|' -e 's|.*ARM.*|LAN1|'`"
+mkdir -p /etc/network/interfaces.d
+case "$OSIMAGE_DISTRO" in
+    Debian_8.0) # syntax not supported, parsing the lines below fails
+        # in main file, spews errors but proceeds in included config
+        ;;
+    *)
+        cat > /etc/network/interfaces.d/fty-rename-defaults <<EOF
+# Fallback for kernels not started with arguments to avoid NIC renaming
+rename ens33=$FIRSTIFNAME
+rename eno1=$FIRSTIFNAME
+rename enp0s17=$FIRSTIFNAME
+EOF
+        ;;
+esac
+
 cat > /etc/network/interfaces <<EOF
 auto lo
 # Note: the list of configured "iface"s below must contain all these allowed:
@@ -354,6 +369,9 @@ iface LAN3 inet static
     address 192.168.2.10
     netmask 255.255.255.0
     gateway 192.168.2.1
+# Note: This inclusion must be last in the file, Debian 8 OS images get
+# confused about it and tend to not read config/start the network at all
+source-directory /etc/network/interfaces.d
 EOF
 
 cat > /etc/resolv.conf <<EOF
