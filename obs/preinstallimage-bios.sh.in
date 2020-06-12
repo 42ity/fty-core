@@ -355,7 +355,6 @@ EOF
 esac
 
 cat > /etc/network/interfaces <<EOF
-source-directory /etc/network/interfaces.d
 auto lo
 # Note: the list of configured "iface"s below must contain all these allowed:
 auto $FIRSTIFNAME
@@ -370,6 +369,9 @@ iface LAN3 inet static
     address 192.168.2.10
     netmask 255.255.255.0
     gateway 192.168.2.1
+# Note: This inclusion must be last in the file, Debian 8 OS images get
+# confused about it and tend to not read config/start the network at all
+source-directory /etc/network/interfaces.d
 EOF
 
 cat > /etc/resolv.conf <<EOF
