@@ -112,10 +112,10 @@ do_unlicense() {
     rm -f @ftydatadir@/fty-eula/license @ftydatadir@/license
     if [ "$ENABLESVC" = yes ]; then
         logmsg_info "Restarting services that care about license-accepted state (EULA)..."
-        systemctl restart --no-block fty-license-accepted.service
-        systemctl restart --no-block fty-license-accepted.path
-        systemctl restart --no-block fty-license-accepted.target
-        systemctl restart --no-block tntnet@bios.service
+        systemctl restart fty-license-accepted.service --no-block
+        systemctl restart fty-license-accepted.path --no-block
+        systemctl restart fty-license-accepted.target --no-block
+        systemctl restart tntnet@bios.service --no-block
     fi
 }
 
@@ -128,9 +128,9 @@ do_undatabase() {
         /etc/default/bios-db-r[ow] /root/.my.cnf
     if [ "$ENABLESVC" = yes ]; then
         logmsg_info "Starting database engine, if possible..."
-        systemctl restart --no-block fty-db-engine.service || true # License may forbid startup
-        systemctl restart --no-block fty-db-init.service || true
-        systemctl restart --no-block fty-db.target || true
+        systemctl restart fty-db-engine.service --no-block || true # License may forbid startup
+        systemctl restart fty-db-init.service --no-block || true
+        systemctl restart fty-db.target --no-block || true
         logmsg_info "Restarting webserver..."
         systemctl restart tntnet@bios.service || die "Can not ensure database is running"
     fi
