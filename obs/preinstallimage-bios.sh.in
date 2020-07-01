@@ -604,6 +604,11 @@ rm /etc/init.d/ssh*
 echo "UseDNS no" >> /etc/ssh/sshd_config
 # Limit to Administrator user (i.e. no Viewers like "monitor")
 echo "AllowGroups bios-admin root" >> /etc/ssh/sshd_config
+case "$IMGTYPE" in
+    *devel*) if id abuild 2>/dev/null >/dev/null; then
+            echo "AllowGroups abuild" >> /etc/ssh/sshd_config
+        fi ;;
+esac
 if ! egrep '^[ \t]*PermitRootLogin without-password' /etc/ssh/sshd_config >/dev/null ; then
     # Allow root login with ssh-keys only, and only if someone presets them (CI)
     echo "PermitRootLogin without-password" >> /etc/ssh/sshd_config
