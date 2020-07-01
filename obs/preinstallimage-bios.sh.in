@@ -551,6 +551,18 @@ WantedBy=bios-pre-eula.target
 EOF
 /bin/systemctl enable saslauthd
 
+if [ -s /lib/systemd/system/systemd-user-sessions.service ] ; then
+    mkdir -p /lib/systemd/system/systemd-user-sessions.service.d
+    cat > /lib/systemd/system/systemd-user-sessions.service.d/antinologin.conf << EOF
+# Avoid keeping /run/nologin after we restart systemd-tmpfiles-setup somehow
+# (e.g. by restarting  ipc-meta-setup)
+[Unit]
+After = ipc-meta-setup.service systemd-tmpfiles-setup.service
+Wants = ipc-meta-setup.service
+Requires = systemd-tmpfiles-setup.service
+EOF
+fi
+
 # Change the malamute unit file in-place
 if [ -s /usr/lib/systemd/system/malamute.service ]; then
 ( /bin/systemctl disable malamute || true
