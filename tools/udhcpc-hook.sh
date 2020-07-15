@@ -48,7 +48,7 @@ NTP_SYSTEMD_NAME=""
 
 refresh_fty_envvars() {
 	if [ "`/bin/systemctl is-enabled fty-envvars.service 2>/dev/null`" = enabled ] ; then
-		/bin/systemctl restart-or-reload fty-envvars.service
+		/bin/systemctl reload-or-restart fty-envvars.service
 	fi
 }
 
