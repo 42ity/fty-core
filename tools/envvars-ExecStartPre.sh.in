@@ -170,6 +170,12 @@ list_fqdns() {
 ENV_KNOWNFQDNS="$(list_fqdns | tr '\n' ',' | sed 's/,$//')"
 
 RES=255
+if [ -s "$OUTFILE" ]; then
+    echo "Stashing previously generated file as $OUTFILE.prev"
+    mv -f "$OUTFILE" "$OUTFILE.prev" || true
+else
+    rm -f "$OUTFILE.prev" || true
+fi
 case "$OUTFMT" in
     env) cat << EOF > "$OUTFILE"
 OSIMAGE_BASENAME='$OSIMAGE_BASENAME'
@@ -213,6 +219,14 @@ EOF
         ;;
     *) echo "Unknown output format: $OUTFMT" >&2 ; exit 1 ;;
 esac
+
+if [ -e "$OUTFILE.prev" ] ; then
+    if diff -bu "$OUTFILE.prev" "$OUTFILE" ; then
+        echo "NOTE: Output was re-generated during this run but does not differ from what we had previously"
+    else
+        echo "NOTE: Output was re-generated during this run and differs from what we had previously"
+    fi
+fi
 
 [ "$RES" = 0 ] && echo "OK" || echo "FAILED ($RES)" >&2
 exit $RES
