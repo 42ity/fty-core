@@ -50,6 +50,7 @@ JSONSH="@datadir@/@PACKAGE@/scripts/JSON.sh"
 #JSONSH="/usr/share/bios/scripts/JSON.sh"
 OSIMAGE_BASENAME="OS image name is not available"
 OSIMAGE_DISTRO="" ### OS base distribution name is not available (?)
+OSIMAGE_IMGQALEVEL="" ### QA level or feature image tag for development, version for release images
 HARDWARE_CATALOG_NUMBER="Hardware catalog number is not available"
 HARDWARE_SPEC_REVISION="Hardware spec revision is not available"
 HARDWARE_SERIAL_NUMBER="Hardware serial number is not available"
@@ -103,6 +104,13 @@ if [[ -x "$JSONSH" ]] ; then
         HARDWARE_UUID="$TMPSTR" || true
     unset TMPSTR
 fi
+
+for F in "/mnt/root-ro/etc/update-rc3.d/image-os-type.conf" "/etc/update-rc3.d/image-os-type.conf" ; do
+    [ -z "$OSIMAGE_IMGQALEVEL" ] || break
+    if [ -s "$F" ]; then
+        OSIMAGE_IMGQALEVEL="`egrep '^IMGQALEVEL=' "$F" | sed -e 's,^IMGQALEVEL=,,' -e 's,^"\(.*\)"$,\1,' -e "s,^'\(.*\)'\$,\1,"`"
+    fi
+done
 
 # Note: no fallback "empty on error", and ignore error codes, as per manpage:
 #    EXIT STATUS
@@ -180,6 +188,7 @@ case "$OUTFMT" in
     env) cat << EOF > "$OUTFILE"
 OSIMAGE_BASENAME='${OSIMAGE_BASENAME}'
 OSIMAGE_DISTRO='${OSIMAGE_DISTRO}'
+OSIMAGE_IMGQALEVEL='${OSIMAGE_IMGQALEVEL}'
 HARDWARE_CATALOG_NUMBER='${HARDWARE_CATALOG_NUMBER}'
 HARDWARE_SPEC_REVISION='${HARDWARE_SPEC_REVISION}'
 HARDWARE_SERIAL_NUMBER='${HARDWARE_SERIAL_NUMBER}'
@@ -200,6 +209,7 @@ EOF
     sql) cat << EOF | sed "s,='';$,=NULL;," > "$OUTFILE"
 set @ENV_OSIMAGE_BASENAME='${OSIMAGE_BASENAME}';
 set @ENV_OSIMAGE_DISTRO='${OSIMAGE_DISTRO}';
+set @ENV_OSIMAGE_IMGQALEVEL='${OSIMAGE_IMGQALEVEL}';
 set @ENV_HARDWARE_CATALOG_NUMBER='${HARDWARE_CATALOG_NUMBER}';
 set @ENV_HARDWARE_SPEC_REVISION='${HARDWARE_SPEC_REVISION}';
 set @ENV_HARDWARE_SERIAL_NUMBER='${HARDWARE_SERIAL_NUMBER}';
