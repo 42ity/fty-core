@@ -12,6 +12,7 @@ Restart=no
 User=root
 Group=root
 ExecStart=@datadir@/@PACKAGE@/scripts/envvars-ExecStartPre.sh
+ExecReload=@datadir@/@PACKAGE@/scripts/envvars-ExecStartPre.sh
 
 [Install]
 WantedBy=bios-pre-eula.target
