@@ -35,6 +35,15 @@
 
 # Fetched from https://blog.dhampir.no/content/sleeping-without-a-subprocess-in-bash-and-how-to-sleep-forever
 # A sleep equivalent without subprocesses and lots of snoopy logging
+
+# This file name is used to generate our service definition from contents
+# provided by the distribution. This file is not directly used by systemd,
+# but an atomically made copy of it into /run/systemd/system/ is.
+TEMPORARY_UNIT_NAME="mariadb-transient.service"
+TEMPORARY_UNIT_FILE_DIR="/run/fty-db-engine/systemd"
+TEMPORARY_UNIT_FILE_PATH="${TEMPORARY_UNIT_FILE_DIR}/${TEMPORARY_UNIT_NAME}"
+RUNTIME_UNIT_DIR="/run/systemd/system"
+
 snore()
 {
     local IFS
@@ -47,21 +56,21 @@ start)
     if [ ! -d /var/lib/mysql ]; then
         /usr/bin/mysql_install_db -u mysql || exit
     fi
-    rm -rf /run/fty-db-engine/systemd || true
-    mkdir -p /run/fty-db-engine/systemd || exit
-    cp -f /lib/systemd/system/mariadb.service.orig /run/fty-db-engine/systemd/mariadb-transient.service \
-    || cp -f /lib/systemd/system/mariadb.service /run/fty-db-engine/systemd/mariadb-transient.service \
+    rm -rf "${TEMPORARY_UNIT_FILE_DIR}" || true
+    mkdir -p "${TEMPORARY_UNIT_FILE_DIR}" || exit
+    cp -f /lib/systemd/system/mariadb.service.orig "${TEMPORARY_UNIT_FILE_PATH}" \
+    || cp -f /lib/systemd/system/mariadb.service "${TEMPORARY_UNIT_FILE_PATH}" \
     || exit
     sed -e 's,\(Alias.*=\),#\1,g' \
-        -i /run/fty-db-engine/systemd/mariadb-transient.service
-    cp -f /run/fty-db-engine/systemd/mariadb-transient.service /run/systemd/system/ || exit
+        -i "${TEMPORARY_UNIT_FILE_PATH}"
+    cp -f "${TEMPORARY_UNIT_FILE_PATH}" "${RUNTIME_UNIT_DIR}/" || exit
 
-    rm -rf /run/systemd/system/mariadb-transient.service.d || RES=$?
-    mkdir -p /run/systemd/system/mariadb-transient.service.d || exit
+    rm -rf "${RUNTIME_UNIT_DIR}/${TEMPORARY_UNIT_NAME}.d" || RES=$?
+    mkdir -p "${RUNTIME_UNIT_DIR}/${TEMPORARY_UNIT_NAME}.d" || exit
 
     # Per https://mariadb.com/kb/en/systemd/?_ga=2.157713337.2042007370.1575907190-1147147581.1575907190#configuring-access-to-home-directories
     # so the service can use /root/.my.cnf
-#    cat > /run/systemd/system/mariadb-transient.service.d/dontprotecthome.conf << EOF
+#    cat > "${RUNTIME_UNIT_DIR}/${TEMPORARY_UNIT_NAME}.d/dontprotecthome.conf" << EOF
 #[Service]
 #ProtectHome=false
 #EOF
@@ -73,7 +82,7 @@ start)
     # All hail systemd... for some reason, PartOf works if we restart very soon
     # after the couple of services is started; but after a minute expires, a
     # `systemctl stop mariadb-transient` no longer propagates to fty-db-engine.
-    cat > /run/systemd/system/mariadb-transient.service.d/fty-db-engine.conf << EOF
+    cat > "${RUNTIME_UNIT_DIR}/${TEMPORARY_UNIT_NAME}.d/fty-db-engine.conf" << EOF
 [Unit]
 PartOf=fty-db-engine.service
 
@@ -88,32 +97,32 @@ EOF
 
     # The fty-db-engine expects a forked child
     ( ( while \
-        [[ -L "/run/systemd/units/invocation:mariadb-transient.service" ]] \
-        || /bin/systemctl is-active mariadb-transient.service >/dev/null \
-        || [[ -s /run/fty-db-engine/systemd/mariadb-transient.service ]] \
+        [[ -L "/run/systemd/units/invocation:${TEMPORARY_UNIT_NAME}" ]] \
+        || /bin/systemctl is-active "${TEMPORARY_UNIT_NAME}" >/dev/null \
+        || [[ -s "${TEMPORARY_UNIT_FILE_PATH}" ]] \
         ; do
             # Easily breakable sleep loop
             for A in {1..60} ; do
                 snore 1 || exit
-                [[ -L "/run/systemd/units/invocation:mariadb-transient.service" ]] || exit
+                [[ -L "/run/systemd/units/invocation:${TEMPORARY_UNIT_NAME}" ]] || exit
             done
         done )
-        echo "$0 $* finished `date -u`: mariadb-transient.service is no more" >&2
-        /bin/systemctl is-active mariadb-transient.service >&2
+        echo "$0 $* finished `date -u`: ${TEMPORARY_UNIT_NAME} is no more" >&2
+        /bin/systemctl is-active "${TEMPORARY_UNIT_NAME}" >&2
      ) &
     ;;
 stop)
     RES=0
-    rm -f /run/fty-db-engine/systemd/mariadb-transient.service || RES=$?
-    /bin/systemctl stop mariadb-transient.service || RES=$?
-    /bin/systemctl disable --runtime mariadb-transient.service || RES=$?
-    rm -rf /run/systemd/system/mariadb-transient.service.d || RES=$?
-    rm -f /run/systemd/system/mariadb-transient.service || RES=$?
+    rm -f "${TEMPORARY_UNIT_FILE_PATH}" || RES=$?
+    /bin/systemctl stop "${TEMPORARY_UNIT_NAME}" || RES=$?
+    /bin/systemctl disable --runtime "${TEMPORARY_UNIT_NAME}" || RES=$?
+    rm -rf "${RUNTIME_UNIT_DIR}/${TEMPORARY_UNIT_NAME}.d" || RES=$?
+    rm -f "${RUNTIME_UNIT_DIR}/${TEMPORARY_UNIT_NAME}" || RES=$?
     /bin/systemctl daemon-reload
     exit $RES
     ;;
 status)
-    /bin/systemctl status mariadb-transient.service fty-db-engine.service fty-db-init.service
+    /bin/systemctl status "${TEMPORARY_UNIT_NAME}" fty-db-engine.service fty-db-init.service
     ;;
 *)  echo "Unknown argument: $1" >&2
     exit 1
