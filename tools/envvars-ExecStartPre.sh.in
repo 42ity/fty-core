@@ -178,12 +178,12 @@ list_fqdns() {
 ENV_KNOWNFQDNS="$(list_fqdns | tr '\n' ',' | sed 's/,$//')"
 
 RES=255
+OUTFILE_ORIG="$OUTFILE"
 if [ -s "$OUTFILE" ]; then
-    echo "Stashing previously generated file as $OUTFILE.prev"
-    mv -f "$OUTFILE" "$OUTFILE.prev" || true
-else
-    rm -f "$OUTFILE.prev" || true
+    echo "A $OUTFILE already exists, we will see below if its content is obsolete or not"
+    OUTFILE="$OUTFILE.tmp"
 fi
+
 case "$OUTFMT" in
     env) cat << EOF > "$OUTFILE"
 OSIMAGE_BASENAME='${OSIMAGE_BASENAME}'
@@ -230,11 +230,17 @@ EOF
     *) echo "Unknown output format: $OUTFMT" >&2 ; exit 1 ;;
 esac
 
-if [ -e "$OUTFILE.prev" ] ; then
-    if diff -bu "$OUTFILE.prev" "$OUTFILE" ; then
+if [ "$OUTFILE_ORIG" != "$OUTFILE" ]; then
+    # We generated new content, but is it really new?
+    # Only change the potentially monitored OUTFILE_ORIG if it has new content
+    if diff -bu "$OUTFILE_ORIG" "$OUTFILE" ; then
         echo "NOTE: Output was re-generated during this run but does not differ from what we had previously"
+        rm -f "$OUTFILE" || true
     else
         echo "NOTE: Output was re-generated during this run and differs from what we had previously"
+        echo "Stashing previously generated file as $OUTFILE_ORIG.prev"
+        mv -f "$OUTFILE_ORIG" "$OUTFILE_ORIG.prev" || true
+        mv -f "$OUTFILE" "$OUTFILE_ORIG" || true
     fi
 fi
 
