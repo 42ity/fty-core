@@ -113,6 +113,8 @@ EOF
 stop)
     RES=0
     rm -f "${TEMPORARY_UNIT_FILE_PATH}" || RES=$?
+    # Double-shot because sometimes systemctl misses :(
+    /bin/systemctl stop --no-block "${TEMPORARY_UNIT_NAME}" || true ; sleep 3
     /bin/systemctl stop "${TEMPORARY_UNIT_NAME}" || RES=$?
     /bin/systemctl disable --runtime "${TEMPORARY_UNIT_NAME}" || RES=$?
     rm -rf "${RUNTIME_UNIT_DIR}/${TEMPORARY_UNIT_NAME}.d" || RES=$?
