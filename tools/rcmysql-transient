@@ -75,10 +75,6 @@ start)
 #ProtectHome=false
 #EOF
 
-    /bin/systemctl daemon-reload
-    /bin/systemctl enable --runtime mariadb-transient.service || exit
-    /bin/systemctl start mariadb-transient.service
-
     # All hail systemd... for some reason, PartOf works if we restart very soon
     # after the couple of services is started; but after a minute expires, a
     # `systemctl stop mariadb-transient` no longer propagates to fty-db-engine.
@@ -93,7 +89,10 @@ ExecStopPost=/bin/systemctl stop --no-block fty-db-engine.service
 RequiredBy=fty-db-engine.service
 WantedBy=fty-db-engine.service
 EOF
+
     /bin/systemctl daemon-reload
+    /bin/systemctl enable --runtime "${TEMPORARY_UNIT_NAME}" || exit
+    /bin/systemctl start "${TEMPORARY_UNIT_NAME}"
 
     # The fty-db-engine expects a forked child
     ( ( while \
