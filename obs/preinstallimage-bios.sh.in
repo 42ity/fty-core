@@ -798,6 +798,16 @@ for unit in $(/bin/systemctl list-unit-files | egrep '^(fty|etn|ipc|ipm|ova)-*' 
     unit_realname="$(/bin/systemctl show -p Id "${unit}" | sed 's,^Id=,,')" \
         && [ -n "${unit_realname}" ] || unit_realname="${unit}"
     if [ -n "$(ls -1d {/usr,}/lib/systemd/system/${unit} 2>/dev/null)" ]; then
+        ### etn-powerchain-analysis is disabled in master
+        ### see featureimage/powerchain-analysis
+        ### shall be enbaled after QA validation
+        case "${unit_realname}" in
+            etn-powerchain-analysis*)
+                /bin/systemctl disable ${unit_realname} || true
+                continue
+            ;;
+        esac
+
         ### A masked unit can fail to become "enabled", and
         ### we don't want it to - so just ignore the errors :\
         /bin/systemctl enable ${unit_realname} || true
