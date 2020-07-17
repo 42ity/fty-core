@@ -2076,7 +2076,7 @@ while [ $# -gt 0 ]; do
 		--touch-factory-reset|--force-factory-reset|-FR)
 		                        FLAG_ERASE_FACTORYRESET="force" ;;
 		--no-erase-factory-reset|--clear-factory-reset|-NR)
-					FLAG_ERASE_FACTORYRESET="no" ;;
+		                        FLAG_ERASE_FACTORYRESET="no" ;;
 		--clear-failed-factory-reset|-FFR)
 		                        FLAG_ERASE_FACTORYRESETFAILED="yes" ;;
 		--erase-all)            FLAG_ERASE_ALL="yes" ;;
