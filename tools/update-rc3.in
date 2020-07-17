@@ -160,6 +160,15 @@ config_defaults() {
     UBOOTCFG_MTD=3
     UBOOT_MTD=2
 
+    # Similarly to RC3 constraints above, our OVAs come with a predefined
+    # virtual hard disk set, with /dev/sda intended as a replaceable disk
+    # with the bootloader (regardless of its practical implementation for
+    # some release of IPM2). This was set arbitrarily generously at 300MB.
+    OVALOADER_MAX_SIZE_IPM2=315621376
+    OVALOADER_DEVICE_IPM2="/dev/sda"
+    is_set OVALOADER_MAX_SIZE || OVALOADER_MAX_SIZE="$OVALOADER_MAX_SIZE_IPM2"
+    is_set OVALOADER_DEVICE || OVALOADER_DEVICE="$OVALOADER_DEVICE_IPM2"
+
     is_set WANT_REBOOT || WANT_REBOOT=no
 
     PATH="/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
