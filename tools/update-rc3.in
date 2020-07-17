@@ -436,7 +436,7 @@ remove_image() {
 
     remove_checksum_cache '[^\:]*' '[^\:]*' "$1"
     remove_checksum_cache '[^\:]*' '[^\:]*' "$1"'\.[^\:]*'
-    rm -f "$1"{,.md5,.sha,.sha1,.sha224,.sha256,.sha384,.sha512,.cksum}{,-padded}{,.tmp} ${2:+"$2"}
+    rm -f "$1"{,.md5,.sha,.sha1,.sha224,.sha256,.sha384,.sha512,.cksum}{,-padded}{,.tmp}{,.gz} ${2:+"$2"}
 
     # ...and update the SW package manifest
     # WARNING: this MUST be done before package manifest deletion!
@@ -467,11 +467,11 @@ verify_checksum() {
     # TODO (later): Support file sizes as part of checksum info
     FILENAME_DATA="$1"
     FILENAME_CSUM="${2-}"
-    [ -n "$FILENAME_CSUM" ] || \
-        FILENAME_CSUM="$FILENAME_DATA.${CHECKSUM_ALGO_DEFAULT}"
+    [ -n "${FILENAME_CSUM}" ] || \
+        FILENAME_CSUM="${FILENAME_DATA}.${CHECKSUM_ALGO_DEFAULT}"
     if [ -z "${3-}" ]; then
-        CHECKSUM_ALGO="`get_csalgo_from_filename "$FILENAME_CSUM"`"
-        [ $? = 0 -a -n "$CHECKSUM_ALGO" ] || \
+        CHECKSUM_ALGO="`get_csalgo_from_filename "${FILENAME_CSUM}"`"
+        [ $? = 0 -a -n "${CHECKSUM_ALGO}" ] || \
             CHECKSUM_ALGO="${CHECKSUM_ALGO_DEFAULT}"
     else
         CHECKSUM_ALGO="$3"
@@ -479,7 +479,8 @@ verify_checksum() {
     LOGINTRO="Checksum validation of '$FILENAME_DATA' against value in '$FILENAME_CSUM' ($CHECKSUM_ALGO)"
 
     if [ -n "$FILENAME_DATA" ] && [ -n "$FILENAME_CSUM" ] && \
-       [ -s "$FILENAME_DATA" -o -c "$FILENAME_DATA" -o -b "$FILENAME_DATA" ] && \
+       ( [ -s "$FILENAME_DATA" -o -c "$FILENAME_DATA" -o -b "$FILENAME_DATA" ] || \
+         [ -s "$FILENAME_DATA.gz" -o ! -c "$FILENAME_DATA.gz" -o ! -b "$FILENAME_DATA.gz" ] ) && \
        [ -s "$FILENAME_CSUM" ] \
     ; then
         logmsg_info "Beginning $LOGINTRO..."
@@ -494,7 +495,11 @@ verify_checksum() {
             [ -n "${CHECKSUM_ACT}" ] && logmsg_info "Got cached checksum (${CHECKSUM_ALGO}) for ${FILENAME_DATA}" \
             || CHECKSUM_ACT=""
         if [ -z "$CHECKSUM_ACT" ]; then
-            CHECKSUM_ACT="`calculate_stream_checksum ${CHECKSUM_ALGO} < "$FILENAME_DATA"`"
+            if [ ! -s "$FILENAME_DATA" -a -s "$FILENAME_DATA.gz" ] ; then
+                    CHECKSUM_ACT="`gzip -cd < "$FILENAME_DATA.gz" | calculate_stream_checksum ${CHECKSUM_ALGO}`"
+            else
+                    CHECKSUM_ACT="`calculate_stream_checksum ${CHECKSUM_ALGO} < "$FILENAME_DATA"`"
+            fi
             if [ $? = 0 ] && [ -n "$CHECKSUM_ACT" ]; then
                 # TODO: Actually employ data-file length field
                 # TODO: Compare data-file length field to value in .cksum files
@@ -537,7 +542,8 @@ verify_threeway_checksum() {
     # We can have (or not) a local copy of the data file "$2", a local copy
     # of the checksum file "$3", and a freshly fetched copy of remote checksum
     # file "$4" (usually an *.algo.tmp); all previously downloaded by caller
-    # from URL in "$1".
+    # from URL in "$1". The file may be a compressed "$2.gz" variant instead,
+    # which would be used if detected and the verbatim filename in "$2" is not.
     # Return codes:
     #   0       OK, local data and checksum files are (now) consistent, keep'em
     #   1       ERROR, local files inconsistent (removed), re-pull from remote!
@@ -592,15 +598,20 @@ verify_threeway_checksum() {
     esac
 
     [ -n "$IMAGE_URL" ] && \
-    IMAGE_URL_BASENAME="`basename "$IMAGE_URL" ".${EXT}"`" && \
+    { IMAGE_URL_BASENAME="`basename "$IMAGE_URL" ".${EXT}.gz"`" || \
+      IMAGE_URL_BASENAME="`basename "$IMAGE_URL" ".${EXT}"`" ; } && \
     [ -n "$IMAGE_URL_BASENAME" ] && \
     IMAGE_URL_BASENAME_EXT="${IMAGE_URL_BASENAME}${EXT:+.$EXT}" || \
         { logmsg_warn "Could not resolve IMAGE_URL value '$IMAGE_URL' into a filename"
           IMAGE_URL=""; IMAGE_URL_BASENAME=""; IMAGE_URL_BASENAME_EXT=""; }
 
     if [ ! -s "$FILE_DATA" ] && [ ! -c "$FILE_DATA" ] && [ ! -b "$FILE_DATA" ] ; then
-        logmsg_info "Local data file '$FILE_DATA' is missing"
-        return 2
+        if [ -s "$FILE_DATA.gz" ] && [ ! -c "$FILE_DATA.gz" ] && [ ! -b "$FILE_DATA.gz" ] ; then
+            logmsg_info "Local data file (or device) '$FILE_DATA' is missing, but compressed local data file '$FILE_DATA.gz' is available"
+        else
+            logmsg_info "Local data file (or device) '$FILE_DATA' is missing"
+            return 2
+        fi
     fi
 
     if [ ! -s "$FILE_CSOLD" ] && [ ! -s "$FILE_CSNEW" ] ; then
@@ -653,7 +664,7 @@ verify_threeway_checksum() {
             logmsg_info "Remote checksum is good in '$FILE_CSNEW', local copy was corrupted or missing - replacing checksum file"
             mv -f "$FILE_CSNEW" "$FILE_CSOLD"
         fi && \
-            logmsg_info "The newest available remote image is '$IMAGE_URL' and we already have a good copy (as '$FILE_DATA')"
+            logmsg_info "The newest available remote image is '$IMAGE_URL' and we already have a good copy (as '$FILE_DATA' or .gz)"
         return $?
     else
         # In-place changes are not nice but can happen e.g. for FW images
