@@ -374,6 +374,13 @@ iface LAN3 inet static
 source-directory /etc/network/interfaces.d
 EOF
 
+if [ -e /lib/udev/rules.d/80-net-setup-link.rules ] || [ -e /usr/lib/udev/rules.d/80-net-setup-link.rules ]; then
+    # Neuter systemd-udev automatic naming of NICs like suggested
+    # at https://wiki.debian.org/NetworkInterfaceNames
+    mkdir -p /etc/udev/rules.d
+    ln -s /dev/null /etc/udev/rules.d/80-net-setup-link.rules
+fi
+
 cat > /etc/resolv.conf <<EOF
 nameserver 8.8.8.8
 nameserver 8.8.4.4
