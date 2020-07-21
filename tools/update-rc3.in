@@ -122,6 +122,7 @@ config_defaults() {
     is_set SOURCESITEROOTFW_UBOOT || SOURCESITEROOTFW_UBOOT="$SOURCESITEROOTFW"
     is_set SOURCESITEROOTFW_UIMAGE || SOURCESITEROOTFW_UIMAGE="$SOURCESITEROOTFW"
     is_set SOURCESITEROOTFW_MODULES || SOURCESITEROOTFW_MODULES="$SOURCESITEROOTFW/modules"
+    is_set SOURCESITEROOTFW_OVALOADER || SOURCESITEROOTFW_OVALOADER="$SOURCESITEROOTFW"
 
     # Recovery location (on MMC or mSATA) - for downloads
     is_set DOWNLOADROOT || DOWNLOADROOT="@URC3_DOWNLOADROOT@"
@@ -129,6 +130,7 @@ config_defaults() {
     is_set DOWNLOADROOTFW_UBOOT || DOWNLOADROOTFW_UBOOT="@URC3_DOWNLOADROOTFW_UBOOT@"
     is_set DOWNLOADROOTFW_UIMAGE || DOWNLOADROOTFW_UIMAGE="@URC3_DOWNLOADROOTFW_UIMAGE@"
     is_set DOWNLOADROOTFW_MODULES || DOWNLOADROOTFW_MODULES="@URC3_DOWNLOADROOTFW_MODULES@"
+    is_set DOWNLOADROOTFW_OVALOADER || DOWNLOADROOTFW_OVALOADER="@URC3_DOWNLOADROOTFW_OVALOADER@"
 
     # Deployment location (on SPI flash in production) - for boot-mounted OS image
     is_set DEPLOYMENTROOT || DEPLOYMENTROOT="@URC3_DEPLOYMENTROOT@"
@@ -136,6 +138,7 @@ config_defaults() {
     is_set DEPLOYMENTROOTFW_UBOOT || DEPLOYMENTROOTFW_UBOOT="@URC3_DEPLOYMENTROOTFW_UBOOT@"
     is_set DEPLOYMENTROOTFW_UIMAGE || DEPLOYMENTROOTFW_UIMAGE="@URC3_DEPLOYMENTROOTFW_UIMAGE@"
     is_set DEPLOYMENTROOTFW_MODULES || DEPLOYMENTROOTFW_MODULES="@URC3_DEPLOYMENTROOTFW_MODULES@"
+    is_set DEPLOYMENTROOTFW_OVALOADER || DEPLOYMENTROOTFW_OVALOADER="@URC3_DEPLOYMENTROOTFW_OVALOADER@"
 
     [ -z "${http_proxy-}" -o x"${http_proxy-}" = x- ] && http_proxy=""
     [ -z "${https_proxy-}" ] && https_proxy="$http_proxy"
@@ -202,10 +205,12 @@ usage() {
     echo "                   and exit, whatever the outcome (see below for returned codes)"
     echo "  --dry-run | -n            Alias to --check-images (check both OS and FW)"
     echo "  --(no-)download-image-os  Enable or disable downloading of OS images"
-    test -z "$DOWNLOADROOTFW_UBOOT" || \
+  { test -z "$DOWNLOADROOTFW_UBOOT" && test -z "$DOWNLOADROOTFW_OVALOADER"; } || { \
     echo "  --(no-)download-image-fw  Likewise for downloading of uBoot, uImage+modules"
+    echo "                            or OVA loader"
+  }
     echo "  --(no-)download-images|-N Enable or disable downloading of all image types"
-    test -z "$DOWNLOADROOTFW_UBOOT" || \
+  { test -z "$DOWNLOADROOTFW_UBOOT" && test -z "$DOWNLOADROOTFW_OVALOADER"; } || \
     echo "  --fw-only                 Alias to --no-download-image-os --download-image-fw"
     echo "  --os-only                 Alias to --download-image-os --no-download-image-fw"
     echo "  --(no-)removeold-image-os, --(no-)removeold-image-fw, --(no-)removeold-images"
@@ -220,8 +225,10 @@ usage() {
     echo "file which you want rather than trying to detect the newest one available, with"
     echo "the following arguments ('raw' firmwares are the non-tarballed singular files):"
     echo "  --url-image-os|-U {URL} (expected checksum patterns should still exist nearby)"
-    test -z "$DOWNLOADROOTFW_UBOOT" || \
+  { test -z "$DOWNLOADROOTFW_UBOOT" && test -z "$DOWNLOADROOTFW_OVALOADER"; } || { \
     echo "  --url-image-fw-raw-uboot --url-image-fw-raw-uimage --url-image-fw-raw-modules"
+    echo "  --url-image-fw-raw-ovaloader"
+  }
     echo "  --(no-)erase-factory-reset If a new OS image downloaded successfully, touch"
     echo "                   the control file so 'init' does a factory reset after reboot"
     echo "                   Note: '-NR' alias to --no-erase-factory-reset can cancel a"
@@ -234,6 +241,7 @@ usage() {
     echo "  --touch-erase-all          Enforce a factory reset + NAND format next boot"
     echo "  --forceflash | -FF, --forceflash-image-os | -FFo, --forceflash-image-fw | -FFf"
     echo "      --forceflash-image-u-Boot | -FFb, --forceflash-image-uImage | -FFi"
+    echo "      --forceflash-image-ovaloader | -FFl"
     echo "                   Touch the .forceflash flag-files for corresponding new image"
     echo "  --no-forceflash | -NFF      Remove all existing .forceflash flag-files before"
     echo "                   anything else (if other --forceflash* options are enabled,"
@@ -1779,6 +1787,57 @@ removeold_rawfwimage_uimage() (
 
 ##################################################
 
+findnewest_rawfwimage_ovaloader() (
+    # Echo the URL to the newest "raw" (not tarballed, only one)
+    # ovaloader image file found on remote resource, if any
+    # Note: currently expects certain filename patterns and http-dir listing markup
+    IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOTFW_OVALOADER}" "ovaloader" | sort -n | tail -1`"
+    if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
+        echo "$IMAGE_URL" && return 0
+    fi
+    logmsg_error "Error looking up remote file: Make sure your settings (including proxy if needed) are correct."
+    return 1
+)
+
+download_rawfwimage_ovaloader() (
+    download_rawfwimage_generic \
+        'download_rawfwimage_ovaloader' \
+        'OVA loader and kernel' \
+        "${TEMP_DATA}/.newest-ovaloader" \
+        "DOWNLOADROOTFW_OVALOADER" "${DOWNLOADROOTFW_OVALOADER}" \
+        "DEPLOYMENTROOTFW_OVALOADER" "${DEPLOYMENTROOTFW_OVALOADER}" \
+        "${SOURCESITEROOTFW_OVALOADER}" \
+        'findnewest_rawfwimage_ovaloader' \
+        "${OVALOADER_DEVICE}"
+)
+
+removeold_rawfwimage_ovaloader() (
+    local REPORT_IMAGETYPE='OVA loader and kernel'
+    cd "${DOWNLOADROOTFW_OVALOADER}" || \
+    cd "${DEPLOYMENTROOTFW_OVALOADER}" || die "Can not use DOWNLOADROOTFW_OVALOADER='$DOWNLOADROOTFW_OVALOADER' nor DEPLOYMENTROOTFW_OVALOADER='$DEPLOYMENTROOTFW_OVALOADER'"
+    if [ -z "$DOWNLOADED_FW_OVALOADER" ] ; then
+        [ -s "${TEMP_DATA}/.newest-ovaloader" ] \
+        && DOWNLOADED_FW_OVALOADER="`head -1 "${TEMP_DATA}/.newest-ovaloader"`" \
+        && [ -n "$DOWNLOADED_FW_OVALOADER" ] && [ -s "$DOWNLOADED_FW_OVALOADER" ] \
+        || DOWNLOADED_FW_OVALOADER=""
+    fi
+    VICTIMS=0
+    VICTIMPATHS=""
+    for F in `ls -1d "${DOWNLOADROOTFW_OVALOADER}"/ovaloader "${DEPLOYMENTROOTFW_OVALOADER}"/ovaloader 2>/dev/null` ; do
+        [ -n "$DOWNLOADED_FW_OVALOADER" ] && [ -s "$DOWNLOADED_FW_OVALOADER" ] && [ "$DOWNLOADED_FW_OVALOADER" = "$F" ] && \
+            { logmsg_info "Keeping the just-downloaded $REPORT_IMAGETYPE: '$DOWNLOADED_FW_OVALOADER'" ; continue ; }
+        logmsg_info "Removing older $REPORT_IMAGETYPE: '`pwd`/$F' and its checksum(s)"
+        remove_image "$F"
+        VICTIMS=$(($VICTIMS+1))
+        VICTIMPATHS="$VICTIMPATHS $F*"
+    done
+    [ "$VICTIMS" -eq 0 ] && logmsg_info "removeold_rawfwimage_ovaloader() had nothing to remove" || \
+        logmsg_info "removeold_rawfwimage_ovaloader() requested to remove $VICTIMS file(s): $VICTIMPATHS"
+    return 0
+)
+
+##################################################
+
 sort_module_names() (
     # ASSUMPTION: we don't have over 99999 positions in a kernel version number
     # Alas, greedy-match does not work well when the two hits overlap (3.18.44
@@ -1899,6 +1958,11 @@ learn_downloaded_images() {
 		DOWNLOADED_FW_MODULES="`head -1 "${TEMP_DATA}/.newest-modules"`" && \
 		[ -n "$DOWNLOADED_FW_MODULES" ] && [ -s "$DOWNLOADED_FW_MODULES" ] || \
 		DOWNLOADED_FW_MODULES=""
+
+	[ -s "${TEMP_DATA}/.newest-ovaloader" ] && \
+		DOWNLOADED_FW_OVALOADER="`head -1 "${TEMP_DATA}/.newest-ovaloader"`" && \
+		[ -n "$DOWNLOADED_FW_OVALOADER" ] && [ -s "$DOWNLOADED_FW_OVALOADER" ] || \
+		DOWNLOADED_FW_OVALOADER=""
 }
 
 ###########################################################################
@@ -1943,6 +2007,7 @@ ACTION_CHECK_FWIMAGE="no"
 ACTION_FORCEFLASH_OSIMAGE="no"
 ACTION_FORCEFLASH_FWIMAGE_UBOOT="no"
 ACTION_FORCEFLASH_FWIMAGE_UIMAGE="no"
+ACTION_FORCEFLASH_FWIMAGE_OVALOADER="no"
 # Remove any existing .forceflash flag-files before any check or download
 # (does not fire for a mere "-ls" activity)
 ACTION_FORCEFLASH_CLEANUP="no"
@@ -1952,6 +2017,7 @@ ACTION_FORCEFLASH_CLEANUP="no"
 [ -z "${URL_DOWNLOAD_FWIMAGE_RAW_UBOOT-}" ] &&      URL_DOWNLOAD_FWIMAGE_RAW_UBOOT=""
 [ -z "${URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE-}" ] &&     URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE=""
 [ -z "${URL_DOWNLOAD_FWIMAGE_RAW_MODULES-}" ] &&    URL_DOWNLOAD_FWIMAGE_RAW_MODULES=""
+[ -z "${URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER-}" ] &&     URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER=""
 
 ACTION_REMOVEOLD_OSIMAGE="yes"
 # This is currently no-op because we only track "raw" FW images which have one
@@ -1969,7 +2035,8 @@ DOWNLOADED_OS_IMAGE=""
 DOWNLOADED_FW_UBOOT=""
 DOWNLOADED_FW_UIMAGE=""
 DOWNLOADED_FW_MODULES=""
-export DOWNLOADED_OS_IMAGE DOWNLOADED_FW_UBOOT DOWNLOADED_FW_UIMAGE DOWNLOADED_FW_MODULES
+DOWNLOADED_FW_OVALOADER=""
+export DOWNLOADED_OS_IMAGE DOWNLOADED_FW_UBOOT DOWNLOADED_FW_UIMAGE DOWNLOADED_FW_MODULES DOWNLOADED_FW_OVALOADER
 
 # Note: /mnt/ext is in the list just in case rogue data is around.
 FACTORY_RESET_TTL_EXPIRED=""
@@ -2016,6 +2083,8 @@ while [ $# -gt 0 ]; do
 				| egrep -v '\.(md5|sha256|cksum'"${CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT}"')$' || RES=$?
 			lsdir_http_pattern "${SOURCESITEROOTFW_MODULES}" "*[0-9].[0-9]*.${EXT}*" \
 				| egrep -v '\.(md5|sha256|cksum'"${CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT}"')$' || RES=$?
+			lsdir_http_pattern "${SOURCESITEROOTFW_OVALOADER}" "ovaloader*" \
+				| egrep -v '\.(md5|sha256|cksum'"${CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT}"')$' || RES=$?
 			lsdir_http_pattern "${SOURCESITEROOT_OSIMAGE}" "${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}.${EXT}" \
 				| sort_osimage_names \
 				| egrep -v '\.(md5|sha256|cksum'"${CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT}"')$' || RES=$?
@@ -2041,7 +2110,9 @@ while [ $# -gt 0 ]; do
 			PID3=$!
 			summarize_check "LOADER-UBOOT"   download_rawfwimage_uboot   $URL_DOWNLOAD_FWIMAGE_RAW_UBOOT &
 			PID4=$!
-			for P in $PID1 $PID2 $PID3 $PID4 ; do wait $P || RES=$? ; done
+			summarize_check "KERNEL-OVALOADER"  download_rawfwimage_ovaloader  $URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER &
+			PID5=$!
+			for P in $PID1 $PID2 $PID3 $PID4 $PID5 ; do wait $P || RES=$? ; done
 			wait || RES=$?
 			process_FACTORY_RESET_TTL_EXPIRED
 			exit $RES
@@ -2080,6 +2151,7 @@ while [ $# -gt 0 ]; do
 		        --url-image-fw-raw-uboot)   URL_DOWNLOAD_FWIMAGE_RAW_UBOOT="$2" ;;
 		        --url-image-fw-raw-uimage)  URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE="$2" ;;
 		        --url-image-fw-raw-modules) URL_DOWNLOAD_FWIMAGE_RAW_MODULES="$2" ;;
+		        --url-image-fw-raw-ovaloader)  URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER="$2" ;;
 		        *)  die "Aborting due to unknown command-line argument(s): $*" ;;
 		    esac
 		    shift ;;
@@ -2106,10 +2178,12 @@ while [ $# -gt 0 ]; do
 		                        ACTION_FORCEFLASH_OSIMAGE="yes"
 		                        ACTION_FORCEFLASH_FWIMAGE_UBOOT="yes"
 		                        ACTION_FORCEFLASH_FWIMAGE_UIMAGE="yes"
+		                        ACTION_FORCEFLASH_FWIMAGE_OVALOADER="yes"
 		                        ;;
 		--forceflash-image-fw|--forceflash-image-FW|-FFf)
 		                        ACTION_FORCEFLASH_FWIMAGE_UBOOT="yes"
 		                        ACTION_FORCEFLASH_FWIMAGE_UIMAGE="yes"
+		                        ACTION_FORCEFLASH_FWIMAGE_OVALOADER="yes"
 		                        ;;
 		--forceflash-image-os|--forceflash-image-OS|-FFo)
 		                        ACTION_FORCEFLASH_OSIMAGE="yes"
@@ -2119,6 +2193,9 @@ while [ $# -gt 0 ]; do
 		                        ;;
 		--forceflash-image-uImage|--forceflash-image-uimage|-FFi)
 		                        ACTION_FORCEFLASH_FWIMAGE_UIMAGE="yes"
+		                        ;;
+		--forceflash-image-ovaloader|--forceflash-image-ova-loader|-FFl)
+		                        ACTION_FORCEFLASH_FWIMAGE_OVALOADER="yes"
 		                        ;;
 		--no-erase-all)         FLAG_ERASE_ALL="no" ;;
 		--reboot|-r)            WANT_REBOOT="yes" ;; # reboot if code 42 - got new files ok
@@ -2156,6 +2233,7 @@ if [ x"$ACTION_FORCEFLASH_CLEANUP" = xyes ]; then
 	rm -f "${DEPLOYMENTROOTFW_UBOOT}/u-Boot.forceflash" "${DOWNLOADROOTFW_UBOOT}/u-Boot.forceflash"
 	rm -f "${DEPLOYMENTROOTFW_UIMAGE}/uImage.forceflash" "${DOWNLOADROOTFW_UIMAGE}/uImage.forceflash"
 	rm -f "${DEPLOYMENTROOT_OSIMAGE}"/*.forceflash "${DOWNLOADROOT_OSIMAGE}"/*.forceflash
+	rm -f "${DEPLOYMENTROOTFW_OVALOADER}/ovaloader.forceflash" "${DOWNLOADROOTFW_OVALOADER}/ovaloader.forceflash"
 fi
 
 # Checks are special - after we do all which were requested (if any), we exit
@@ -2164,6 +2242,7 @@ if [ x"$ACTION_CHECK_OSIMAGE" = xyes ] || [ x"$ACTION_CHECK_FWIMAGE" = xyes ]; t
 	RESULT_ACTION_CHECK_UBOOT=-1
 	RESULT_ACTION_CHECK_UIMAGE=-1
 	RESULT_ACTION_CHECK_MODULES=-1
+	RESULT_ACTION_CHECK_OVALOADER=-1
 	RESULT_ACTION_CHECK_ANYIMAGE=-1
 	if [ x"$ACTION_CHECK_OSIMAGE" = xyes ]; then
 		CHECK_ONLY=yes download_osimage $URL_DOWNLOAD_OSIMAGE; RESULT_ACTION_CHECK_OSIMAGE=$?
@@ -2172,9 +2251,10 @@ if [ x"$ACTION_CHECK_OSIMAGE" = xyes ] || [ x"$ACTION_CHECK_FWIMAGE" = xyes ]; t
 		CHECK_ONLY=yes download_rawfwimage_uboot   $URL_DOWNLOAD_FWIMAGE_RAW_UBOOT   ; RESULT_ACTION_CHECK_UBOOT=$?
 		CHECK_ONLY=yes download_rawfwimage_uimage  $URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE  ; RESULT_ACTION_CHECK_UIMAGE=$?
 		CHECK_ONLY=yes download_rawfwimage_modules $URL_DOWNLOAD_FWIMAGE_RAW_MODULES ; RESULT_ACTION_CHECK_MODULES=$?
+		CHECK_ONLY=yes download_rawfwimage_ovaloader  $URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER  ; RESULT_ACTION_CHECK_OVALOADER=$?
 	fi
 	learn_downloaded_images
-	for RES_STR in $RESULT_ACTION_CHECK_OSIMAGE $RESULT_ACTION_CHECK_UBOOT $RESULT_ACTION_CHECK_UIMAGE $RESULT_ACTION_CHECK_MODULES ; do
+	for RES_STR in $RESULT_ACTION_CHECK_OSIMAGE $RESULT_ACTION_CHECK_UBOOT $RESULT_ACTION_CHECK_UIMAGE $RESULT_ACTION_CHECK_MODULES $RESULT_ACTION_CHECK_OVALOADER ; do
 		[ "$RES_STR" -gt "$RESULT_ACTION_CHECK_ANYIMAGE" ] && RESULT_ACTION_CHECK_ANYIMAGE="$RES_STR"
 	done
 	RES_STR="$RESULT_ACTION_CHECK_ANYIMAGE"
@@ -2200,6 +2280,15 @@ if [ x"$ACTION_CHECK_OSIMAGE" = xyes ] || [ x"$ACTION_CHECK_FWIMAGE" = xyes ]; t
 				[ -n "${DOWNLOADED_FW_UIMAGE}" ] && [ -s "${DOWNLOADED_FW_UIMAGE}" ] && touch "${DOWNLOADED_FW_UIMAGE}.forceflash" ;;
 		esac
 	fi
+	if [ "$ACTION_FORCEFLASH_FWIMAGE_OVALOADER" = yes -a "$RESULT_ACTION_CHECK_OVALOADER" = 0 ] ; then
+		logmsg_info "Adding a touch of ovaloader forceflash, as requested"
+		rm -f "${DEPLOYMENTROOTFW_OVALOADER}/ovaloader.forceflash" "${DOWNLOADROOTFW_OVALOADER}/ovaloader.forceflash"
+		case "${DOWNLOADED_FW_OVALOADER}" in
+			/dev*) [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] && removeold_rawfwimage_ovaloader ;;
+			*)
+				[ -n "${DOWNLOADED_FW_OVALOADER}" ] && [ -s "${DOWNLOADED_FW_OVALOADER}" ] && touch "${DOWNLOADED_FW_OVALOADER}.forceflash" ;;
+		esac
+	fi
 	if [ "$ACTION_FORCEFLASH_OSIMAGE" = yes  -a "$RESULT_ACTION_CHECK_OSIMAGE" = 0 ] ; then
 		logmsg_info "Adding a touch of OS image forceflash, as requested"
 		rm -f "${DEPLOYMENTROOT_OSIMAGE}"/*.forceflash "${DOWNLOADROOT_OSIMAGE}"/*.forceflash
@@ -2213,6 +2302,7 @@ RESULT_ACTION_DOWNLOAD_FWIMAGE=0
 RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT=0
 RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE=0
 RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES=0
+RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_OVALOADER=0
 if [ "$ACTION_DOWNLOAD_FWIMAGE" = yes ]; then
 	download_rawfwimage_uboot $URL_DOWNLOAD_FWIMAGE_RAW_UBOOT
 	RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT=$?
@@ -2220,6 +2310,8 @@ if [ "$ACTION_DOWNLOAD_FWIMAGE" = yes ]; then
 	RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE=$?
 	download_rawfwimage_modules $URL_DOWNLOAD_FWIMAGE_RAW_MODULES
 	RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES=$?
+	download_rawfwimage_ovaloader $URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER
+	RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_OVALOADER=$?
 
 	[ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT" -gt 0 ] && \
 	[ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT" -ne 42 ] && \
@@ -2242,6 +2334,14 @@ if [ "$ACTION_DOWNLOAD_FWIMAGE" = yes ]; then
 		ACTION_RESULT=$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES && \
 		if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] ; then
 			logmsg_warn "New kernel modules archive was not downloaded successfully, so old ones are not purged"
+			ACTION_REMOVEOLD_FWIMAGE=no_BadDownload
+		fi
+
+	[ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_OVALOADER" -gt 0 ] && \
+	[ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_OVALOADER" -ne 42 ] && \
+		ACTION_RESULT=$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_OVALOADER && \
+		if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] ; then
+			logmsg_warn "New OVA loader and kernel was not downloaded successfully, so old ones are not purged"
 			ACTION_REMOVEOLD_FWIMAGE=no_BadDownload
 		fi
 
@@ -2268,12 +2368,24 @@ if [ "$ACTION_DOWNLOAD_FWIMAGE" = yes ]; then
 				[ -n "${DOWNLOADED_FW_UIMAGE}" ] && [ -s "${DOWNLOADED_FW_UIMAGE}" ] && touch "${DOWNLOADED_FW_UIMAGE}.forceflash" ;;
 		esac
 	fi
+	if [ "$ACTION_FORCEFLASH_FWIMAGE_OVALOADER" = yes ] && \
+	   [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_OVALOADER" = 0 -o "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_OVALOADER" = 42 ] \
+	; then
+		logmsg_info "Adding a touch of ovaloader forceflash, as requested"
+		rm -f "${DEPLOYMENTROOTFW_OVALOADER}/ovaloader.forceflash" "${DOWNLOADROOTFW_OVALOADER}/ovaloader.forceflash"
+		case "${DOWNLOADED_FW_OVALOADER}" in
+			/dev*) [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] && removeold_rawfwimage_ovaloader ;;
+			*)
+				[ -n "${DOWNLOADED_FW_OVALOADER}" ] && [ -s "${DOWNLOADED_FW_OVALOADER}" ] && touch "${DOWNLOADED_FW_OVALOADER}.forceflash" ;;
+		esac
+	fi
 fi
 
 if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ]; then
 	removeold_rawfwimage_modules || ACTION_RESULT=$?
 	removeold_rawfwimage_uimage || ACTION_RESULT=$?
 	removeold_rawfwimage_uboot || ACTION_RESULT=$?
+	removeold_rawfwimage_ovaloader || ACTION_RESULT=$?
 else
 	logmsg_info "Not purging old FW images because ACTION_REMOVEOLD_FWIMAGE=$ACTION_REMOVEOLD_FWIMAGE"
 fi
@@ -2398,6 +2510,7 @@ case "$ACTION_RESULT" in
 		|| [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT" = 42 ] \
 		|| [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE" = 42 ] \
 		|| [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES" = 42 ] \
+		|| [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_OVALOADER" = 42 ] \
 		; then
 			ACTION_RESULT=42
 			ACTION_RESULT_STR="new files were downloaded successfully, you can reboot now to apply the updates"
