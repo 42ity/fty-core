@@ -444,6 +444,7 @@ remove_image() {
 
     remove_checksum_cache '[^\:]*' '[^\:]*' "$1"
     remove_checksum_cache '[^\:]*' '[^\:]*' "$1"'\.[^\:]*'
+    # Note: we do not really support e.g. broken FILENAME and good FILENAME.gz
     rm -f "$1"{,.md5,.sha,.sha1,.sha224,.sha256,.sha384,.sha512,.cksum}{,-padded}{,.tmp}{,.gz} ${2:+"$2"}
 
     # ...and update the SW package manifest
