@@ -1823,7 +1823,7 @@ removeold_rawfwimage_ovaloader() (
     fi
     VICTIMS=0
     VICTIMPATHS=""
-    for F in `ls -1d "${DOWNLOADROOTFW_OVALOADER}"/ovaloader "${DEPLOYMENTROOTFW_OVALOADER}"/ovaloader 2>/dev/null` ; do
+    for F in `ls -1d "${DOWNLOADROOTFW_OVALOADER}"/ovaloader{,.gz} "${DEPLOYMENTROOTFW_OVALOADER}"/ovaloader{,.gz} 2>/dev/null` ; do
         [ -n "$DOWNLOADED_FW_OVALOADER" ] && [ -s "$DOWNLOADED_FW_OVALOADER" ] && [ "$DOWNLOADED_FW_OVALOADER" = "$F" ] && \
             { logmsg_info "Keeping the just-downloaded $REPORT_IMAGETYPE: '$DOWNLOADED_FW_OVALOADER'" ; continue ; }
         logmsg_info "Removing older $REPORT_IMAGETYPE: '`pwd`/$F' and its checksum(s)"
