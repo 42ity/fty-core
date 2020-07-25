@@ -246,6 +246,8 @@ usage() {
     echo "  --no-forceflash | -NFF      Remove all existing .forceflash flag-files before"
     echo "                   anything else (if other --forceflash* options are enabled,"
     echo "                   they can later repopulate corresponding touch-files)"
+    echo "  --apply-image-ovaloader     Flash the OVA loader now (older release OVAs"
+    echo "                              could not update their loader during boot)"
     echo "  --reboot | -r | -R         If a new image (OS, FW) downloaded successfully"
     echo "                   request an immediate reboot as part of this script"
     echo "                   With '-R' this reboots the system in either non-error case"
@@ -1837,6 +1839,53 @@ removeold_rawfwimage_ovaloader() (
     return 0
 )
 
+apply_rawfwimage_ovaloader() (
+    # This one is a bit special, because early release OVAs did not include
+    # loaders capable of updating themselves. So we have to do it from the
+    # userland, at least to install a newer loader than can update itself.
+
+    local REPORT_IMAGETYPE='OVA loader and kernel'
+    cd "${DOWNLOADROOTFW_OVALOADER}" || \
+    cd "${DEPLOYMENTROOTFW_OVALOADER}" || die "Can not use DOWNLOADROOTFW_OVALOADER='$DOWNLOADROOTFW_OVALOADER' nor DEPLOYMENTROOTFW_OVALOADER='$DEPLOYMENTROOTFW_OVALOADER'"
+    if [ -z "$DOWNLOADED_FW_OVALOADER" ] ; then
+        [ -s "${TEMP_DATA}/.newest-ovaloader" ] \
+        && DOWNLOADED_FW_OVALOADER="`head -1 "${TEMP_DATA}/.newest-ovaloader"`" \
+        && [ -n "$DOWNLOADED_FW_OVALOADER" ] && [ -s "$DOWNLOADED_FW_OVALOADER" ] \
+        || DOWNLOADED_FW_OVALOADER=""
+    fi
+
+    # Find and unmount /dev/sda1 essentially
+    ( echo "/boot" ; mount | egrep "^${OVALOADER_DEVICE}" ) | while read D; do
+        umount "$D" || \
+        umount -l "$D" || \
+        umount -f "$D" || \
+        umount -fl "$D" || \
+        { mount | grep "$D " && die "FATAL: Can not unmount $D, if we proceed with replacing it would be not clean after/during reboot!" ; }
+    done
+
+    # TODO: add a concept of "newer" on file basis and/or contents
+    # (.git_details and /.bootldr in image). For now first one seen
+    # and good is flashed.
+    # NOTE: For now we trust that anything here is trustworthy!
+    for F in `ls -1d "${DOWNLOADROOTFW_OVALOADER}"/ovaloader{,.gz} "${DEPLOYMENTROOTFW_OVALOADER}"/ovaloader{,.gz} 2>/dev/null` ; do
+        if [ -s "$F" ] ; then
+            FB="`dirname "$F"`/`basename "$F" .gz`"
+            for CSALGO in $CHECKSUM_ALGOLIST_DEFAULT ; do
+                if [ -s "$FB.$CSALGO" ] ; then
+                    ensure_checksum "$FB" "$FB.$CSALGO" || break 2  # return # die "Checksum verification failed for '$FB'!"
+                fi
+            done
+            case "$F" in
+                *.gz) # TODO: size check for gzip
+                    gzip -cd < "$F" > "${OVALOADER_DEVICE}" || return ;;
+                *)
+                    cat "$F" > "${OVALOADER_DEVICE}" || return ;;
+            esac
+            sync
+        fi
+    fi
+)
+
 ##################################################
 
 sort_module_names() (
@@ -2009,6 +2058,7 @@ ACTION_FORCEFLASH_OSIMAGE="no"
 ACTION_FORCEFLASH_FWIMAGE_UBOOT="no"
 ACTION_FORCEFLASH_FWIMAGE_UIMAGE="no"
 ACTION_FORCEFLASH_FWIMAGE_OVALOADER="no"
+ACTION_APPLYNOW_FWIMAGE_OVALOADER="no"
 # Remove any existing .forceflash flag-files before any check or download
 # (does not fire for a mere "-ls" activity)
 ACTION_FORCEFLASH_CLEANUP="no"
@@ -2198,6 +2248,9 @@ while [ $# -gt 0 ]; do
 		--forceflash-image-ovaloader|--forceflash-image-ova-loader|-FFl)
 		                        ACTION_FORCEFLASH_FWIMAGE_OVALOADER="yes"
 		                        ;;
+		--apply-image-ovaloader)
+		                        ACTION_APPLYNOW_FWIMAGE_OVALOADER="yes"
+		                        ;;
 		--no-erase-all)         FLAG_ERASE_ALL="no" ;;
 		--reboot|-r)            WANT_REBOOT="yes" ;; # reboot if code 42 - got new files ok
 		-R)                     WANT_REBOOT="force" ;; # reboot if exitcode 0 or 42
@@ -2380,6 +2433,10 @@ if [ "$ACTION_DOWNLOAD_FWIMAGE" = yes ]; then
 				[ -n "${DOWNLOADED_FW_OVALOADER}" ] && [ -s "${DOWNLOADED_FW_OVALOADER}" ] && touch "${DOWNLOADED_FW_OVALOADER}.forceflash" ;;
 		esac
 	fi
+fi
+
+if [ "$ACTION_APPLYNOW_FWIMAGE_OVALOADER" = yes ] ; then
+	apply_rawfwimage_ovaloader || ACTION_RESULT=$?
 fi
 
 if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ]; then
