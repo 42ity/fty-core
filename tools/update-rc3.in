@@ -167,8 +167,13 @@ config_defaults() {
     # virtual hard disk set, with /dev/sda intended as a replaceable disk
     # with the bootloader (regardless of its practical implementation for
     # some release of IPM2). This was set arbitrarily generously at 300MB.
-    OVALOADER_MAX_SIZE_IPM2=315621376
     OVALOADER_DEVICE_IPM2="/dev/sda"
+
+    [ -c "$OVALOADER_DEVICE_IPM2" ] \
+    && OVALOADER_MAX_SIZE_IPM2="`blockdev --getsize64 ${OVALOADER_DEVICE_IPM2}`" \
+    && [ "$OVALOADER_MAX_SIZE_IPM2" -gt 0 ] \
+    || OVALOADER_MAX_SIZE_IPM2=315621376
+
     is_set OVALOADER_MAX_SIZE || OVALOADER_MAX_SIZE="$OVALOADER_MAX_SIZE_IPM2"
     is_set OVALOADER_DEVICE || OVALOADER_DEVICE="$OVALOADER_DEVICE_IPM2"
 
