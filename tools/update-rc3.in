@@ -1878,6 +1878,7 @@ apply_rawfwimage_ovaloader() (
     # (.git_details and /.bootldr in image). For now first one seen
     # and good is flashed.
     # NOTE: For now we trust that anything here is trustworthy!
+    local FB FS
     for F in `ls -1d "${DOWNLOADROOTFW_OVALOADER}"/ovaloader{,.gz} "${DEPLOYMENTROOTFW_OVALOADER}"/ovaloader{,.gz} 2>/dev/null` ; do
         if [ -s "$F" ] ; then
             FB="`dirname "$F"`/`basename "$F" .gz`"
@@ -1886,15 +1887,27 @@ apply_rawfwimage_ovaloader() (
                     ensure_checksum "$FB" "$FB.$CSALGO" || break 2  # return # die "Checksum verification failed for '$FB'!"
                 fi
             done
+            logmsg_info "apply_rawfwimage_ovaloader(): Trying to flash '$F' into '${OVALOADER_DEVICE}' ..."
             case "$F" in
                 *.gz) # TODO: size check for gzip
-                    gzip -cd < "$F" > "${OVALOADER_DEVICE}" || return ;;
+                    FS="`gzip -cd < "$F" | wc -c`"
+                    # As a sanity check, require that these are equal (not less-than)
+                    [ "$FS" = "$OVALOADER_MAX_SIZE_IPM2" ] || die "Trying to flash $REPORT_IMAGETYPE sized '$FS' bytes to device sized '$OVALOADER_MAX_SIZE_IPM2'"
+                    gzip -cd < "$F" > "${OVALOADER_DEVICE}" || die "Failed to flash '$F' into '${OVALOADER_DEVICE}'" ;;
                 *)
-                    cat "$F" > "${OVALOADER_DEVICE}" || return ;;
+                    FS="`filesize "$F"`"
+                    # As a sanity check, require that these are equal (not less-than)
+                    [ "$FS" = "$OVALOADER_MAX_SIZE_IPM2" ] || die "Trying to flash $REPORT_IMAGETYPE sized '$FS' bytes to device sized '$OVALOADER_MAX_SIZE_IPM2'"
+                    cat "$F" > "${OVALOADER_DEVICE}" || die "Failed to flash '$F' into '${OVALOADER_DEVICE}'" ;;
             esac
-            sync
+            sync || die "Failed to sync after flashing '$F' into '${OVALOADER_DEVICE}'"
+            logmsg_info "apply_rawfwimage_ovaloader(): Flashed '$F' into '${OVALOADER_DEVICE}'"
+            return 0
         fi
-    fi
+    done
+
+    logmsg_info "apply_rawfwimage_ovaloader(): did not find any $REPORT_IMAGETYPE files to try flashing into '${OVALOADER_DEVICE}'"
+    return 1
 )
 
 ##################################################
