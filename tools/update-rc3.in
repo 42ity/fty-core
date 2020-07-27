@@ -876,6 +876,7 @@ lsdir_http_pattern() {
 #        echo "DEBUG: lsdir_http_pattern('$REMOTE_DIR', '$REMOTE_GLOB'): got URL='$URL'" >&2
         case "$URL" in
             $REMOTE_DIR/$REMOTE_GLOB) echo "$URL" ;;
+            $REMOTE_DIR/$REMOTE_GLOB.gz) echo "$URL" ;;
         esac
     done
 }
