@@ -876,7 +876,7 @@ lsdir_http_pattern() {
 #        echo "DEBUG: lsdir_http_pattern('$REMOTE_DIR', '$REMOTE_GLOB'): got URL='$URL'" >&2
         case "$URL" in
             $REMOTE_DIR/$REMOTE_GLOB) echo "$URL" ;;
-            $REMOTE_DIR/$REMOTE_GLOB.gz) echo "$URL" ;;
+#            $REMOTE_DIR/$REMOTE_GLOB.gz) echo "$URL" ;;
         esac
     done
 }
@@ -1803,6 +1803,10 @@ findnewest_rawfwimage_ovaloader() (
     IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOTFW_OVALOADER}" "ovaloader" | sort -n | tail -1`"
     if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
         echo "$IMAGE_URL" && return 0
+    fi
+    IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOTFW_OVALOADER}" "ovaloader.gz" | sort -n | tail -1`"
+    if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
+        echo "$IMAGE_URL" | sed 's,\.gz$,,' && return 0
     fi
     logmsg_error "Error looking up remote file: Make sure your settings (including proxy if needed) are correct."
     return 1
