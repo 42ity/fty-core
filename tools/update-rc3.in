@@ -2303,9 +2303,18 @@ while [ $# -gt 0 ]; do
 	esac
 	shift
 done
-if test -z "$DOWNLOADROOTFW_UBOOT"; then
-	ACTION_DOWNLOAD_FWIMAGE=no
-fi
+
+case "$ARCH" in
+	*86*|*amd64*)
+		if test -z "$DOWNLOADROOTFW_OVALOADER"; then
+			ACTION_DOWNLOAD_FWIMAGE=no
+		fi ;;
+	*arm*)
+		if test -z "$DOWNLOADROOTFW_UBOOT"; then
+			ACTION_DOWNLOAD_FWIMAGE=no
+		fi ;;
+	*) ACTION_DOWNLOAD_FWIMAGE=no ;;
+esac
 
 if [ x"$ACTION_FORCEFLASH_CLEANUP" = xyes ]; then
 	rm -f "${DEPLOYMENTROOTFW_UBOOT}/u-Boot.forceflash" "${DOWNLOADROOTFW_UBOOT}/u-Boot.forceflash"
