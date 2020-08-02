@@ -684,9 +684,11 @@ verify_threeway_checksum() {
         return $?
     else
         # In-place changes are not nice but can happen e.g. for FW images
-        logmsg_info "Remote checksum in '$FILE_CSNEW' is not good for '$FILE_DATA', local file is corrupted or obsolete and should be re-downloaded from '$IMAGE_URL'"
         if [ ! -c "$FILE_DATA" ] && [ ! -b "$FILE_DATA" ] ; then
+            logmsg_info "Remote checksum in '$FILE_CSNEW' is not good for '$FILE_DATA', local file is corrupted or obsolete and should be re-downloaded from '$IMAGE_URL'"
             RETAIN_FILES="$FILE_CSNEW" remove_image "$FILE_DATA"
+        else
+            logmsg_info "Remote checksum in '$FILE_CSNEW' is not good for '$FILE_DATA', content in local device is corrupted or obsolete and should be re-downloaded from '$IMAGE_URL' and flashed with appropriate tools (e.g. loader auto-update)"
         fi
         return 1
     fi
@@ -699,9 +701,11 @@ verify_threeway_checksum() {
     else
         # Verifying against old checksum failed, so data file and its related
         # files (checksums) should be removed; keep the FILE_CSNEW if available
-        logmsg_info "Local checksum mismatched for '$FILE_CSOLD', local file is corrupted and should be re-downloaded from '$IMAGE_URL'"
         if [ ! -c "$FILE_DATA" ] && [ ! -b "$FILE_DATA" ] ; then
+            logmsg_info "Local checksum in '$FILE_CSOLD' mismatched: not good for '$FILE_DATA', local file is corrupted or obsolete and should be re-downloaded from '$IMAGE_URL'"
             RETAIN_FILES="$FILE_CSNEW" remove_image "$FILE_DATA"
+        else
+            logmsg_info "Local checksum in '$FILE_CSOLD' mismatched: not good for '$FILE_DATA', content in local device is corrupted or obsolete and should be re-downloaded from '$IMAGE_URL' and flashed with appropriate tools (e.g. loader auto-update)"
         fi
         return 1
     fi
