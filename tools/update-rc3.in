@@ -496,7 +496,7 @@ verify_checksum() {
 
     if [ -n "$FILENAME_DATA" ] && [ -n "$FILENAME_CSUM" ] && \
        ( [ -s "$FILENAME_DATA" -o -c "$FILENAME_DATA" -o -b "$FILENAME_DATA" ] || \
-         [ -s "$FILENAME_DATA.gz" -o ! -c "$FILENAME_DATA.gz" -o ! -b "$FILENAME_DATA.gz" ] ) && \
+         [ -s "$FILENAME_DATA.gz" -a ! -c "$FILENAME_DATA.gz" -a ! -b "$FILENAME_DATA.gz" ] ) && \
        [ -s "$FILENAME_CSUM" ] \
     ; then
         logmsg_info "Beginning $LOGINTRO..."
