@@ -169,7 +169,7 @@ config_defaults() {
     # some release of IPM2). This was set arbitrarily generously at 300MB.
     OVALOADER_DEVICE_IPM2="/dev/sda"
 
-    [ -c "$OVALOADER_DEVICE_IPM2" ] \
+    [ -b "$OVALOADER_DEVICE_IPM2" -o -c "$OVALOADER_DEVICE_IPM2" ] \
     && OVALOADER_MAX_SIZE_IPM2="`blockdev --getsize64 ${OVALOADER_DEVICE_IPM2}`" \
     && [ "$OVALOADER_MAX_SIZE_IPM2" -gt 0 ] \
     || OVALOADER_MAX_SIZE_IPM2=315621376
@@ -1000,7 +1000,7 @@ download_rawfwimage_generic() (
             for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
                 if [ "$LOCAL_CHECKSUMS_MATCHED" = -1 ] ; then LOCAL_CHECKSUMS_MATCHED=0 ; fi
 
-                if [ -s "${aIMAGE_CSNEW_PADDED["$IMAGE_CSALGO"]}" ] && [ -c "${RAW_DEVICE_NODE}" ]; then
+                if [ -s "${aIMAGE_CSNEW_PADDED["$IMAGE_CSALGO"]}" ] && [ -b "${RAW_DEVICE_NODE}" -o -c "${RAW_DEVICE_NODE}" ]; then
                     logmsg_info "Verify padded ${IMAGE_CSALGO} checksum against a raw $REPORT_IMAGETYPE partition with flashed bits here ..."
                     REPLACE_MISSING_CHECKSUM="no" \
                     FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
