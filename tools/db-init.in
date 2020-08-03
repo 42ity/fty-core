@@ -404,6 +404,11 @@ EOF
 		return 1
 	fi
 
+	if [ -x "@datadir@/@PACKAGE@/setup/90-mylogin.everytime.sh" ]; then
+		echo "Try to arrange that our new login is known by OS-provided tools and scripts"
+		"@datadir@/@PACKAGE@/setup/90-mylogin.everytime.sh" || true
+	fi
+
 	return 0
 }
 

@@ -32,12 +32,12 @@ set -e
 case "$2" in
 up)
         /sbin/ifup $1 || \
-	/sbin/ifup --force $1
+        /sbin/ifup --force $1
         ;;
 down)
         /sbin/ifdown $1 || \
-	/sbin/ifdown --force $1 || \
-	/sbin/ifconfig "$1" "$2"
+        /sbin/ifdown --force $1 || \
+        /sbin/ifconfig "$1" "$2"
         ;;
 esac
 

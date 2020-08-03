@@ -1,0 +1,134 @@
+#!/bin/bash
+
+#
+# Copyright (C) 2019 - 2020 Eaton
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+#! \file    rcmysql-transient
+#  \brief   Helper script for fty-db-engine on newer distros
+# \author Jim Klimov <EvgenyKlimov@Eaton.com>
+# \details 
+# For portability of the 42ity project, work with some database engine is
+# abstracted into fty-db-engine.service unit, on which certain services
+# depend and which can be implemented variably for several DB engines.
+# The database engine is only enabled and initialized after EULA acceptance.
+# For legacy reasons, work with mariadb/mysql goes by calling a script
+# named /usr/lib/mysql/rcmysql which was available in the original distro
+# packaging used by the product, but obsoleted with switch to Debian 10.
+# This script enables the original service definition to wrap the abstract
+# database management interactions while benefitting from the upstream
+# development of that service directly, by managing a transient service.
+#
+
+# Fetched from https://blog.dhampir.no/content/sleeping-without-a-subprocess-in-bash-and-how-to-sleep-forever
+# A sleep equivalent without subprocesses and lots of snoopy logging
+
+# This file name is used to generate our service definition from contents
+# provided by the distribution. This file is not directly used by systemd,
+# but an atomically made copy of it into /run/systemd/system/ is.
+TEMPORARY_UNIT_NAME="mariadb-transient.service"
+TEMPORARY_UNIT_FILE_DIR="/run/fty-db-engine/systemd"
+TEMPORARY_UNIT_FILE_PATH="${TEMPORARY_UNIT_FILE_DIR}/${TEMPORARY_UNIT_NAME}"
+
+SYSTEMD_ETC_UNITDIR="/etc/systemd/system"
+PREPACKAGED_UNITDIR="/lib/systemd/system"
+SYSTEMD_RUN_UNITDIR="/run/systemd/system"
+
+snore()
+{
+    local IFS
+    [[ -n "${_snore_fd:-}" ]] || exec {_snore_fd}<> <(:)
+    read ${1:+-t "$1"} -u $_snore_fd || :
+}
+
+case "$1" in
+start)
+    if [ ! -d /var/lib/mysql ]; then
+        /usr/bin/mysql_install_db -u mysql || exit
+    fi
+    rm -rf "${TEMPORARY_UNIT_FILE_DIR}" || true
+    mkdir -p "${TEMPORARY_UNIT_FILE_DIR}" || exit
+    cp -f "${PREPACKAGED_UNITDIR}/mariadb.service.orig" "${TEMPORARY_UNIT_FILE_PATH}" \
+    || cp -f "${PREPACKAGED_UNITDIR}/mariadb.service" "${TEMPORARY_UNIT_FILE_PATH}" \
+    || exit
+    sed -e 's,\(Alias.*=\),#\1,g' \
+        -i "${TEMPORARY_UNIT_FILE_PATH}"
+    cp -f "${TEMPORARY_UNIT_FILE_PATH}" "${SYSTEMD_RUN_UNITDIR}/" || exit
+
+    rm -rf "${SYSTEMD_RUN_UNITDIR}/${TEMPORARY_UNIT_NAME}.d" || RES=$?
+    mkdir -p "${SYSTEMD_RUN_UNITDIR}/${TEMPORARY_UNIT_NAME}.d" || exit
+
+    # Per https://mariadb.com/kb/en/systemd/?_ga=2.157713337.2042007370.1575907190-1147147581.1575907190#configuring-access-to-home-directories
+    # so the service can use /root/.my.cnf
+#    cat > "${SYSTEMD_RUN_UNITDIR}/${TEMPORARY_UNIT_NAME}.d/dontprotecthome.conf" << EOF
+#[Service]
+#ProtectHome=false
+#EOF
+
+    # All hail systemd... for some reason, PartOf works if we restart very soon
+    # after the couple of services is started; but after a minute expires, a
+    # `systemctl stop mariadb-transient` no longer propagates to fty-db-engine.
+    cat > "${SYSTEMD_RUN_UNITDIR}/${TEMPORARY_UNIT_NAME}.d/fty-db-engine.conf" << EOF
+[Unit]
+PartOf=fty-db-engine.service
+
+[Service]
+ExecStopPost=/bin/systemctl stop --no-block fty-db-engine.service
+
+[Install]
+RequiredBy=fty-db-engine.service
+WantedBy=fty-db-engine.service
+EOF
+
+    /bin/systemctl daemon-reload
+    /bin/systemctl enable --runtime "${TEMPORARY_UNIT_NAME}" || exit
+    /bin/systemctl start "${TEMPORARY_UNIT_NAME}"
+
+    # The fty-db-engine expects a forked child
+    ( ( while \
+        [[ -L "/run/systemd/units/invocation:${TEMPORARY_UNIT_NAME}" ]] \
+        || /bin/systemctl is-active "${TEMPORARY_UNIT_NAME}" >/dev/null \
+        || [[ -s "${TEMPORARY_UNIT_FILE_PATH}" ]] \
+        ; do
+            # Easily breakable sleep loop
+            for A in {1..60} ; do
+                snore 1 || exit
+                [[ -L "/run/systemd/units/invocation:${TEMPORARY_UNIT_NAME}" ]] || exit
+            done
+        done )
+        echo "$0 $* finished `date -u`: ${TEMPORARY_UNIT_NAME} is no more" >&2
+        /bin/systemctl is-active "${TEMPORARY_UNIT_NAME}" >&2
+     ) &
+    ;;
+stop)
+    RES=0
+    rm -f "${TEMPORARY_UNIT_FILE_PATH}" || RES=$?
+    # Double-shot because sometimes systemctl misses :(
+    /bin/systemctl stop --no-block "${TEMPORARY_UNIT_NAME}" || true ; sleep 3
+    /bin/systemctl stop "${TEMPORARY_UNIT_NAME}" || RES=$?
+    /bin/systemctl disable --runtime "${TEMPORARY_UNIT_NAME}" || RES=$?
+    rm -rf "${SYSTEMD_RUN_UNITDIR}/${TEMPORARY_UNIT_NAME}.d" || RES=$?
+    rm -f "${SYSTEMD_RUN_UNITDIR}/${TEMPORARY_UNIT_NAME}" || RES=$?
+    /bin/systemctl daemon-reload
+    exit $RES
+    ;;
+status)
+    /bin/systemctl status "${TEMPORARY_UNIT_NAME}" fty-db-engine.service fty-db-init.service
+    ;;
+*)  echo "Unknown argument: $1" >&2
+    exit 1
+    ;;
+esac
