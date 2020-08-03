@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Copyright (c) 2010 Debian
-# Copyright (c) 2015-2018 Eaton
+# Copyright (c) 2015 - 2020 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -24,7 +24,11 @@
 #           package, adapted for the 42ity project.
 #           Included from (patched) /etc/udhcpc/default.script for 42ity project
 
+# The persistent configuration, as supported by user (e.g. via REST API)
+# for statically configured time sources
 NTP_CONF=/etc/ntp.conf
+# A modification of the persistent configuration, with addition of time
+# sources last announced by a DHCP responce. See also NTP_DHCP_CONF_RUNTIME.
 NTP_DHCP_CONF=/var/lib/ntp/ntp.conf.dhcp
 
 # The systemd service unit can be "disabled" or "masked" if users want a
@@ -41,6 +45,37 @@ NTP_SYSTEMD_NAME=""
 ||  if [ $? != 1 -o -z "$NTP_SYSTEMD_ENABLED" ]; then
         NTP_SYSTEMD_ENABLED="unknown"
     fi
+
+refresh_fty_envvars() {
+	if [ "`/bin/systemctl is-enabled fty-envvars.service 2>/dev/null`" = enabled ] ; then
+		/bin/systemctl reload-or-restart fty-envvars.service
+	fi
+}
+
+# Primarily, get OSIMAGE_DISTRO if available
+refresh_fty_envvars
+if [ -s "/run/fty-envvars.env" ]; then
+    . "/run/fty-envvars.env"
+fi
+
+# In case of newer distros like OSIMAGE_DISTRO="Debian_10.0" the file
+# (or symlink) under the /run filesystem is used to customize a run of
+# ntp daemon. It is a no-op to maintain it when running in other distros.
+# In Debian 8 the NTP_DHCP_CONF was referenced by the service directly.
+# At least in Debian 10, a danglink symlink to nowhere is not a problem.
+# Note that the symlink would disappear on reboot, causing NTP service
+# to use the default config file until a DHCP client calls this script.
+# Likely the system won't have an actual IP address until then though.
+NTP_DHCP_CONF_RUNTIME=""
+case "$OSIMAGE_DISTRO" in
+	""|Debian_8.0) ;;
+	Debian_10.0) # TODO? Coordinate with /usr/lib/ntp/ntp-systemd-wrapper
+		NTP_DHCP_CONF_RUNTIME=/run/ntp.conf.dhcp
+		;;
+	*) # Presumed a new-enough distro...
+		NTP_DHCP_CONF_RUNTIME=/run/ntp.conf.dhcp
+		;;
+esac
 
 can_manipulate_ntpd() {
 	if [ -z "$NTP_SYSTEMD_NAME" ] ; then
@@ -65,7 +100,7 @@ hostname_setup() {
         bound|renew|BOUND|RENEW|REBIND|REBOOT)
             ;;
         *)
-            echo "$0: WARN: hostname_setup got an unexpected reason '$reason', proceeding anyway" >&2
+            echo "$0: WARN: hostname_setup got an unexpected reason '$reason' on interface '$interface', proceeding anyway" >&2
             ;;
     esac
 
@@ -77,6 +112,15 @@ hostname_setup() {
 
 ntp_server_restart_do() (
 	can_manipulate_ntpd || return $?
+
+	if [ -n "${NTP_DHCP_CONF_RUNTIME}" ]; then
+		if [ -s "${NTP_DHCP_CONF}" ]; then
+			if [ -L "${NTP_DHCP_CONF_RUNTIME}" ] ; then rm -f "${NTP_DHCP_CONF_RUNTIME}" ; fi
+			ln -fsr "${NTP_DHCP_CONF}" "${NTP_DHCP_CONF_RUNTIME}"
+		else
+			rm -f "${NTP_DHCP_CONF_RUNTIME}" "${NTP_DHCP_CONF}" || true
+		fi
+	fi
 
 	invoke-rc.d "${NTP_SYSTEMD_NAME}" try-restart && \
 	    echo "$0: INFO: NTP service restarted; waiting for it to pick up time (if not failed) so as to sync it onto hardware RTC" && \
@@ -111,15 +155,16 @@ ntp_servers_setup_remove() {
 	ntp_server_restart
 }
 
-
+# TODO: This does not support multi-homing with DHCP on different segments
+# The last processed announcement wins
 ntp_servers_setup_add() {
 	if [ -e $NTP_DHCP_CONF ] && [ "$new_ntp_servers" = "$old_ntp_servers" ]; then
-		echo "Got no changes to apply to DHCP-announced NTP config"
+		echo "Got no changes to apply to DHCP-announced NTP config on interface '$interface'"
 		return
 	fi
 
 	if [ -z "$new_ntp_servers" ]; then
-		echo "DHCP announced no NTP servers, falling back to static NTP configs..."
+		echo "DHCP announced no NTP servers on interface '$interface', falling back to static NTP configs..."
 		ntp_servers_setup_remove
 		return
 	fi
@@ -128,7 +173,7 @@ ntp_servers_setup_add() {
 	chmod --reference="$NTP_CONF" "$tmp"
 	chown --reference="$NTP_CONF" "$tmp"
 
-	echo "DHCP announced NTP servers '$new_ntp_servers' different from old NTP config '$old_ntp_servers', applying..."
+	echo "DHCP announced NTP servers '$new_ntp_servers' on interface '$interface' different from old NTP config '$old_ntp_servers', applying..."
 	(
 	  echo "# This file was copied from $NTP_CONF with the server options changed"
 	  echo "# to reflect the information sent by the DHCP server.  Any changes made"
@@ -136,10 +181,21 @@ ntp_servers_setup_add() {
 	  echo
 	  echo "# NTP server entries received from DHCP server"
 	  for server in $new_ntp_servers; do
-		echo "server $server iburst"
+	    KEYWORD="server"
+	    case "$OSIMAGE_DISTRO" in
+	        ""|Debian_8.0)  ;;
+	        Debian_10.0) # TODO? Check ntpd capabilities/version somehow
+	            if echo "$server" | grep -E ':|^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$' >/dev/null ; then
+	                KEYWORD="server" # IPv4 or IPv6
+	            else
+	                KEYWORD="pool" # hostname or fqdn
+	            fi
+	            ;;
+	    esac
+	    echo "$KEYWORD $server iburst"
 	  done
 	  echo
-	  sed -r -e '/^ *(server|peer).*$/d' "$NTP_CONF"
+	  sed -r -e '/^ *(server|peer|pool).*$/d' "$NTP_CONF"
 	) >>"$tmp"
 
 	mv "$tmp" "$NTP_DHCP_CONF"
@@ -150,7 +206,7 @@ ntp_servers_setup_add() {
 
 ntp_servers_setup() {
 	RES=1
-	echo "[`awk '{print $1}' < /proc/uptime`] `date` [$$]: Starting $0 (NTP) for DHCP state $reason..."
+	echo "[`awk '{print $1}' < /proc/uptime`] `date` [$$]: Starting $0 (NTP) for DHCP state '$reason' on interface '$interface'..."
 	case "$reason" in
 		bound|renew|BOUND|RENEW|REBIND|REBOOT)
 			ntp_servers_setup_add
@@ -161,7 +217,7 @@ ntp_servers_setup() {
 			RES=$?
 			;;
 	esac
-	echo "[`awk '{print $1}' < /proc/uptime`] `date` [$$]: Completed $0 (NTP) for DHCP state $reason, exit code $RES"
+	echo "[`awk '{print $1}' < /proc/uptime`] `date` [$$]: Completed $0 (NTP) for DHCP state '$reason' on interface '$interface', exit code $RES"
 	return $RES
 }
 
@@ -188,5 +244,8 @@ fi
 #set -x
 
 hostname_setup
+
+# Update for new IP addresses and hostnames
+refresh_fty_envvars
 
 ntp_servers_setup

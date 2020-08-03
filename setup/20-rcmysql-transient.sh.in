@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #
-#   Copyright (c) 2018 - 2020 Eaton
+#   Copyright (c) 2019 Eaton
 #
 #   This file is part of the Eaton 42ity project.
 #
@@ -19,26 +19,27 @@
 #   with this program; if not, write to the Free Software Foundation, Inc.,
 #   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-#! \file    17-proxy-file.everytime.sh
-#  \brief   Make sure a properly owned file for HTTP(S) proxy setup exists
+#! \file    20-rcmysql-transient.sh
+#  \brief   Make sure a /usr/lib/mysql/rcmysql exists even after upgrades
 #  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #
 
 # Specific envvars for systemd services and maybe shell: the HTTP(S) proxy
 # to connect to the licensing server, new image downloads, etc. from agents.
-PROXY_FILE="/etc/default/fty-proxy"
-PROXY_FILE_PROFILE="/etc/profile.d/fty-proxy.sh"
-if test ! -s "$PROXY_FILE" ; then
-    touch "$PROXY_FILE"
-fi
-# Not in the "if" above so we can change it in later revisions if needed
-chown www-data:bios-admin "$PROXY_FILE"
-chmod 664 "$PROXY_FILE"
-
-if test ! -s "$PROXY_FILE_PROFILE" ; then
-    rm -f "$PROXY_FILE_PROFILE"
-    ln -fsr "$PROXY_FILE" "$PROXY_FILE_PROFILE"
+RCMYSQL_WELLKNOWN="/usr/lib/mysql/rcmysql"
+RCMYSQL_TRANSIENT="@datadir@/@PACKAGE@/scripts/rcmysql-transient"
+if test -s "$RCMYSQL_WELLKNOWN" ; then
+    exit 0
 fi
 
-echo "`date -u`: Ensured usable file for HTTP(S) proxy setup:"
-ls -la "$PROXY_FILE" "$PROXY_FILE_PROFILE"
+if test ! -s "$RCMYSQL_TRANSIENT" || test ! -x "$RCMYSQL_TRANSIENT" ; then
+    echo "`date -u`: ERROR: There is no RCMYSQL_WELLKNOWN='$RCMYSQL_WELLKNOWN' and no replacement RCMYSQL_TRANSIENT='$RCMYSQL_TRANSIENT' for it" >&2
+    exit 1
+fi
+
+rm -f "$RCMYSQL_WELLKNOWN" || true
+mkdir -p "`dirname "$RCMYSQL_WELLKNOWN"`" || exit
+ln -fsr "$RCMYSQL_TRANSIENT" "$RCMYSQL_WELLKNOWN" || exit
+
+echo "`date -u`: Ensured usable ${RCMYSQL_WELLKNOWN}"
+ls -la "${RCMYSQL_WELLKNOWN}" "${RCMYSQL_TRANSIENT}"

@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (C) 2015-2016 Eaton
+# Copyright (C) 2015 - 2020 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -30,13 +30,38 @@
 # to ensure REST API call at least replies before actually changing the network
 sleep 3
 
+NTP_SYSTEMD_NAME=""
+{ NTP_SYSTEMD_ENABLED="`/bin/systemctl is-enabled ntpd 2>/dev/null`" && NTP_SYSTEMD_NAME="ntpd" ; } \
+|| { NTP_SYSTEMD_ENABLED="`/bin/systemctl is-enabled ntp 2>/dev/null`" && NTP_SYSTEMD_NAME="ntp" ; } \
+||  if [ $? != 1 -o -z "$NTP_SYSTEMD_ENABLED" ]; then
+        NTP_SYSTEMD_ENABLED="unknown"
+    fi
+
+revive_ntp() {
+    if [ "$NTP_SYSTEMD_ENABLED" = "enabled" ] ; then
+        /bin/systemctl enable "$NTP_SYSTEMD_NAME"
+        /bin/systemctl start "$NTP_SYSTEMD_NAME"
+    fi
+}
+
+if [ "$NTP_SYSTEMD_ENABLED" = "enabled" ] ; then
+    # Pre-emptively stop ntpd so it does not pick up different
+    # time sources as DHCP etc. goes up and down
+    # Note we can not use "disable --runtime" because ntp is sysv init script
+    # so we do our best to revive it if the script is interrupted... but still
+    # things can happen during untimely reboot etc. :\
+    trap 'revive_ntp' 0 1 2 3 15
+    /bin/systemctl stop "$NTP_SYSTEMD_NAME"
+    /bin/systemctl disable "$NTP_SYSTEMD_NAME"
+fi
+
 # restart all network interfaces except lo and kill dhcp client too
 for IFACE in `ls -1 /sys/class/net/`; do
     [ "${IFACE}" = "lo" ] && continue
 
     (
     ifdown --force $IFACE ;\
-    if [ -f /run/udhcpc.${IFACE}.pid ]; then \
+    if [ -s /run/udhcpc.${IFACE}.pid ]; then \
         kill -9 `cat /run/udhcpc.${IFACE}.pid`; \
         rm /run/udhcpc.${IFACE}.pid; \
     fi ;\

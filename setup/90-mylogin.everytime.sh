@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #
-#   Copyright (c) 2019 - 2020 Eaton
+#   Copyright (c) 2020 Eaton
 #
 #   This file is part of the Eaton 42ity project.
 #
@@ -19,20 +19,13 @@
 #   with this program; if not, write to the Free Software Foundation, Inc.,
 #   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-#! \file    11-forget-bios-devsvcs-1.sh
-#  \brief   Make sure this deployment does not try to run obsoleted services
+#! \file    90-mylogin.everytime.sh
+#  \brief   Make sure debian init script for mariadb maintenance can log into it
 #  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #
-# Note: as services get obsoleted over time between different end-user releases,
-# more copies of this script can appear since each copy is only executed once.
-#
-
-# These units were development mocks intended only for tests,
-# and/or implemented functionality that other components and
-# their services took over, and were faked for dependencies
-# and CI satisfaction. They are no longer delivered since PR
-#    https://github.com/42ity/fty-core/pull/382
-UNITS="bios-fake-th.service bios-agent-inventory.service"
+#   Note: this file is also called, if present, by fty-db-init to
+#   add the password reference as soon as it generates one. Do not
+#   rename this scriptlet carelessly!
 
 die() {
     echo "FATAL: $*" >&2
@@ -44,7 +37,10 @@ skip() {
     exit 0
 }
 
-for U in $UNITS ; do
-    /bin/systemctl stop "$U" || true
-    /bin/systemctl disable "$U" || true
-done
+if [ -s /root/.my.cnf ] && [ -s /etc/mysql/debian.cnf ]; then
+    grep "include /root/.my.cnf" /etc/mysql/debian.cnf >/dev/null \
+    && skip "Already applied" \
+    || ( echo '!include /root/.my.cnf' >> /etc/mysql/debian.cnf || die "Could not update /etc/mysql/debian.cnf" )
+else
+    skip "Not applicable to current system, maybe on another boot..."
+fi

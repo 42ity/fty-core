@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2014 - 2019 Eaton
+# Copyright (C) 2014 - 2020 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -402,6 +402,11 @@ EOF
 		echo "Database for 42ity - final check for MySQL root password failed!" >&2
 		ls -la "${MYCNF}" "${MYCNF_LEGACY}" >&2
 		return 1
+	fi
+
+	if [ -x "@datadir@/@PACKAGE@/setup/90-mylogin.everytime.sh" ]; then
+		echo "Try to arrange that our new login is known by OS-provided tools and scripts"
+		"@datadir@/@PACKAGE@/setup/90-mylogin.everytime.sh" || true
 	fi
 
 	return 0

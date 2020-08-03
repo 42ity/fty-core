@@ -35,6 +35,14 @@ PEM_FINAL_CERT="/etc/tntnet/bios.pem"
 PEM_KEY="/etc/tntnet/bios.key"
 PEM_CERT="/etc/tntnet/bios.crt"
 
+for F in "$PEM_FINAL_CERT" "$PEM_KEY" "$PEM_CERT" ; do
+    D="`dirname "$F"`"
+    if [ ! -d "$D/" ]; then
+        echo "FATAL: Directory '$D' to hold the PEM files does not exist!" >&2
+        exit 1
+    fi
+done
+
 # Warn about expiration this much in advance, e.g. 45 days
 WARN_EXPIRE="`expr 45 \* 24 \* 3600`"
 
@@ -68,7 +76,7 @@ if [ "$CERT_LOADABLE" = yes ]; then
         [ -n "$TILL" ] && TILL="`TZ=UTC date -u -d "$TILL" +%s`" && \
         [ "$TILL" -gt "$WARN_EXPIRE" ] && TILL="`expr $TILL - $WARN_EXPIRE`" || \
         TILL=""
-    CN="`echo "$SSL_OUT" | sed -n 's|subject= /CN=||p'`" || \
+    CN="`echo "$SSL_OUT" | sed -n 's|subject= */*CN *= *||p'`" || \
         CN=""
 fi
 
@@ -85,33 +93,56 @@ if [ ! -r "${PEM_FINAL_CERT}" ] || [ ! -s "${PEM_FINAL_CERT}" ] || \
         exit $?
     fi
 
+    # "/run/tntnet-bios" should be provided by systemd-tmpfiles-setup, but on
+    # development machines a common system location can be used to generate a
+    # temporary openssl config for certificate generation and self-signing.
+    for TEMP_DIR in "/run/tntnet-bios" "/dev/shm" "/tmp" "" ; do
+        [ -n "$TEMP_DIR" ] || exit $? # errors reported earlier by this loop
+        [ -d "$TEMP_DIR" ] && [ -w "$TEMP_DIR/" ] && break
+        echo "WARNING: TEMP_DIR at '$TEMP_DIR' is not usable, trying another!" >&2
+    done
+
+    TEMP_SSLCONF="`mktemp "$TEMP_DIR/ssl.conf.XXXXXX"`" && [ -n "$TEMP_SSLCONF" ] || exit $?
+
     # certificate configuration (disable CA)
-    echo "[ req ]" > /run/tntnet-bios/ssl.conf
-    echo "distinguished_name=dn" >> /run/tntnet-bios/ssl.conf
-    echo "[ dn ]" >> /run/tntnet-bios/ssl.conf
-    echo "[ ext ]" >> /run/tntnet-bios/ssl.conf
-    echo "basicConstraints=CA:FALSE" >> /run/tntnet-bios/ssl.conf
+    cat > "$TEMP_SSLCONF" << EOF
+[ req ]
+distinguished_name=dn
+[ dn ]
+[ ext ]
+basicConstraints=CA:FALSE
+EOF
+    RES=$?
+    if [ $RES != 0 ] || [ ! -s "$TEMP_SSLCONF" ] ; then
+        echo "FATAL: Failed to generate a temporary openssl config into '$TEMP_SSLCONF'" >&2
+        rm -f "$TEMP_SSLCONF"
+        [ "$RES" = 0 ] && RES=1
+        exit $RES
+    fi
 
     # Generate self-signed cert with a new key and other data
-    openssl req -config /run/tntnet-bios/ssl.conf -x509 -sha256 -newkey rsa:2048 \
+    openssl req -config "${TEMP_SSLCONF}" -x509 -sha256 -newkey rsa:2048 \
         -keyout "${PEM_KEY}" -out "${PEM_CERT}" \
         -days 9125 -nodes -subj "/CN=${LOCAL_HOSTNAME}" \
-    || exit $?
-
-    rm /run/tntnet-bios/ssl.conf
+    || { RES=$? ; rm -f "${TEMP_SSLCONF}" ; exit $RES; }
+    rm -f "${TEMP_SSLCONF}"
 
     rm -f "${PEM_FINAL_CERT}"
     echo "$SIG" | \
         cat - "${PEM_KEY}" "${PEM_CERT}" > "${PEM_FINAL_CERT}" \
     || exit $?
 
-    chown "${BIOS_USER}" "${PEM_FINAL_CERT}"
-    chown "${BIOS_USER}:www-data" "${PEM_KEY}"
-    chmod 640 "${PEM_KEY}"
-    chown "${BIOS_USER}:www-data" "${PEM_CERT}"
-    chmod 644 "${PEM_CERT}"
+    RES=0
+    chown "${BIOS_USER}" "${PEM_FINAL_CERT}" || RES=$?
+    chown "${BIOS_USER}:www-data" "${PEM_KEY}" || RES=$?
+    chmod 640 "${PEM_KEY}" || RES=$?
+    chown "${BIOS_USER}:www-data" "${PEM_CERT}" || RES=$?
+    chmod 644 "${PEM_CERT}" || RES=$?
 
-    exit $?
+    [ -s "$PEM_CERT" ] && [ -s "$PEM_KEY" ] && [ -s "$PEM_FINAL_CERT" ] || { RES=$? ; echo "FATAL: one or more PEM file is missing or empty" >&2; }
+    exit $RES
 fi
 
-exit 0
+RES=0
+[ -s "$PEM_CERT" ] && [ -s "$PEM_KEY" ] && [ -s "$PEM_FINAL_CERT" ] || { RES=$? ; echo "FATAL: one or more PEM file is missing or empty" >&2; }
+exit $RES

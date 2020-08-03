@@ -68,6 +68,12 @@ die() {
     exit 1
 }
 
+# Newer systemd noisily asks to use /run where available
+runbasedir=/var/run
+if [ -d /run ]; then
+    runbasedir=/run
+fi
+
 # Setup core dumps
 if true; then
     mkdir -p /var/crash
@@ -331,11 +337,30 @@ ln -s mount_usb /usr/libexec/fty/umount_usb
 # Basic network setup
 mkdir -p /etc/network
 
+# The IPC loader renames interfaces to LANx pattern, current OVA one does not
+FIRSTIFNAME="`file -b /bin/bash | sed -e 's|.*x86-64.*|eth0|' -e 's|.*ARM.*|LAN1|'`"
+mkdir -p /etc/network/interfaces.d
+case "$OSIMAGE_DISTRO" in
+    Debian_8.0) # syntax not supported, parsing the lines below fails
+        # in main file, spews errors but proceeds in included config
+        ;;
+    *)
+        cat > /etc/network/interfaces.d/fty-rename-defaults <<EOF
+# Fallback for kernels not started with arguments to avoid NIC renaming
+rename ens33=$FIRSTIFNAME
+rename eno1=$FIRSTIFNAME
+rename enp0s17=$FIRSTIFNAME
+EOF
+        ;;
+esac
+
 cat > /etc/network/interfaces <<EOF
 auto lo
-allow-hotplug eth0 LAN1 LAN2 LAN3
+# Note: the list of configured "iface"s below must contain all these allowed:
+auto $FIRSTIFNAME
+allow-hotplug LAN2 LAN3
 iface lo inet loopback
-iface `file -b /bin/bash | sed -e 's|.*x86-64.*|eth0|' -e 's|.*ARM.*|LAN1|'` inet dhcp
+iface $FIRSTIFNAME inet dhcp
 iface LAN2 inet static
     address 192.168.1.10
     netmask 255.255.255.0
@@ -344,7 +369,17 @@ iface LAN3 inet static
     address 192.168.2.10
     netmask 255.255.255.0
     gateway 192.168.2.1
+# Note: This inclusion must be last in the file, Debian 8 OS images get
+# confused about it and tend to not read config/start the network at all
+source-directory /etc/network/interfaces.d
 EOF
+
+if [ -e /lib/udev/rules.d/80-net-setup-link.rules ] || [ -e /usr/lib/udev/rules.d/80-net-setup-link.rules ]; then
+    # Neuter systemd-udev automatic naming of NICs like suggested
+    # at https://wiki.debian.org/NetworkInterfaceNames
+    mkdir -p /etc/udev/rules.d
+    ln -s /dev/null /etc/udev/rules.d/80-net-setup-link.rules
+fi
 
 cat > /etc/resolv.conf <<EOF
 nameserver 8.8.8.8
@@ -355,14 +390,23 @@ cat > /etc/hosts <<EOF
 127.0.0.1 localhost bios
 EOF
 
-DEFAULT_IFPLUGD_INTERFACES="eth0 LAN1 LAN2 LAN3"
+DEFAULT_IFPLUGD_INTERFACES="$FIRSTIFNAME LAN2 LAN3"
 mkdir -p /etc/default
+case "$OSIMAGE_DISTRO" in
+    Debian_8.0)
+        [ -s "/etc/default/networking" ] && \
+            sed -e 's,^[ \t\#]*\(EXCLUDE_INTERFACES=\)$,\1"'"$DEFAULT_IFPLUGD_INTERFACES"'",' -i /etc/default/networking \
+            || { echo 'EXCLUDE_INTERFACES="'"$DEFAULT_IFPLUGD_INTERFACES"'"' >> /etc/default/networking ; }
+        ;;
+esac
+
 [ -s "/etc/default/networking" ] && \
-    sed -e 's,^[ \t\#]*\(EXCLUDE_INTERFACES=\)$,\1"'"$DEFAULT_IFPLUGD_INTERFACES"'",' -i /etc/default/networking \
-    || echo 'EXCLUDE_INTERFACES="'"$DEFAULT_IFPLUGD_INTERFACES"'"' >> /etc/default/networking
+    sed -e 's,^[ \t\#]*\(WAIT_ONLINE_TIMEOUT\)=[0-9]*$,\1=30,' -i /etc/default/networking \
+    || { echo 'WAIT_ONLINE_TIMEOUT=30' >> /etc/default/networking ; }
+
 cat > /etc/default/ifplugd <<EOF
-INTERFACES="$DEFAULT_IFPLUGD_INTERFACES"
-HOTPLUG_INTERFACES=""
+INTERFACES="$FIRSTIFNAME"
+HOTPLUG_INTERFACES="LAN1 LAN2"
 ARGS="-q -f -u0 -d10 -w -I"
 SUSPEND_ACTION="stop"
 EOF
@@ -504,14 +548,27 @@ PartOf=bios-pre-eula.target
 [Service]
 Type=forking
 EnvironmentFile=/etc/default/saslauthd
+ExecStartPre=/bin/sh -c '/usr/bin/test -d ${runbasedir} && /usr/bin/test -w ${runbasedir} && /bin/mkdir -p ${runbasedir}/saslauthd'
 ExecStart=/usr/sbin/saslauthd -a \$MECHANISMS \$MECH_OPTIONS \$OPTIONS -n \$THREADS
 ExecStop=/bin/kill -15 \$MAINPID
-PIDFile=/var/run/saslauthd/saslauthd.pid
+PIDFile=${runbasedir}/saslauthd/saslauthd.pid
 
 [Install]
 WantedBy=bios-pre-eula.target
 EOF
 /bin/systemctl enable saslauthd
+
+if [ -s /lib/systemd/system/systemd-user-sessions.service ] ; then
+    mkdir -p /lib/systemd/system/systemd-user-sessions.service.d
+    cat > /lib/systemd/system/systemd-user-sessions.service.d/antinologin.conf << EOF
+# Avoid keeping /run/nologin after we restart systemd-tmpfiles-setup somehow
+# (e.g. by restarting  ipc-meta-setup)
+[Unit]
+After = ipc-meta-setup.service systemd-tmpfiles-setup.service
+Wants = ipc-meta-setup.service
+Requires = systemd-tmpfiles-setup.service
+EOF
+fi
 
 # Change the malamute unit file in-place
 if [ -s /usr/lib/systemd/system/malamute.service ]; then
@@ -545,13 +602,30 @@ cp /usr/share/fty/examples/config/update-rc3.d/* /etc/update-rc3.d
 # Disable systemd-timesyncd - ntp is enough
 /bin/systemctl mask systemd-timesyncd.service
 
+# XXX: On Debian 10, systemd-time-wait-sync.service blocks our ecosystem jobs
+# from starting for unknown reasons. Work around it by masking it.
+/bin/systemctl mask systemd-time-wait-sync.service
+
 # Enable ssh
 rm /etc/init.d/ssh*
 echo "UseDNS no" >> /etc/ssh/sshd_config
+# Limit to Administrator user (i.e. no Viewers like "monitor")
+echo "AllowGroups bios-admin root" >> /etc/ssh/sshd_config
+case "$IMGTYPE" in
+    *devel*) if id abuild 2>/dev/null >/dev/null; then
+            echo "AllowGroups abuild" >> /etc/ssh/sshd_config
+        fi ;;
+esac
+if ! egrep '^[ \t]*PermitRootLogin without-password' /etc/ssh/sshd_config >/dev/null ; then
+    # Allow root login with ssh-keys only, and only if someone presets them (CI)
+    echo "PermitRootLogin without-password" >> /etc/ssh/sshd_config
+fi
 rm /etc/ssh/*key*
 mkdir -p /etc/systemd/system
-sed 's|\[Service\]|[Service]\nExecStartPre=/usr/bin/ssh-keygen -A|' /lib*/systemd/system/ssh@.service > /etc/systemd/system/ssh@.service
-sed -i 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/fty/fty-eula/license\nConditionPathExists=@OVERLAY_PATH@/etc/shadow|' /etc/systemd/system/ssh@.service
+sed -e 's|\[Service\]|[Service]\nExecStartPre=/usr/bin/ssh-keygen -A\nExecStartPre=/bin/mkdir -p /run/sshd\nExecStartPre=/bin/chmod 0755 /run/sshd\n|' \
+    -e 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/fty/fty-eula/license\nConditionPathExists=@OVERLAY_PATH@/etc/shadow|' \
+    -e 's|^\(RuntimeDirectory.*=.*\)$|#AVOID_REMOVING# \1|' \
+    < /lib/systemd/system/ssh@.service > /etc/systemd/system/ssh@.service
 /bin/systemctl disable ssh.service
 /bin/systemctl mask ssh.service
 /bin/systemctl enable ssh.socket
@@ -571,20 +645,77 @@ mkdir -p /etc/malamute
 cp /usr/share/fty/examples/config/malamute/malamute.cfg /etc/malamute
 /bin/systemctl enable malamute
 
-# Enable 42ity services (distributed as a systemd preset file)
-if [ "${OSIMAGE_DISTRO}" = "Debian_10.0" ]; then
-    /bin/systemctl disable mysql.service || true
-    /bin/systemctl disable mysqld.service || true
-    /bin/systemctl disable mariadb.service || true
-    /bin/systemctl disable mariadb@bootstrap.service || true
-    /bin/systemctl mask mysql.service || true
-    /bin/systemctl mask mysqld.service || true
-    /bin/systemctl mask mariadb.service || true
-    /bin/systemctl mask mariadb@bootstrap.service || true
-    mv -f /lib/systemd/system/mariadb@.service /lib/systemd/system/mariadb@.service.orig || true
-    mv -f /lib/systemd/system/mariadb.service /lib/systemd/system/mariadb.service.orig || true
+# Cater old configs to new packages
+if [ ! -d /etc/my.cnf.d/ ] ; then
+    rm -rf /etc/my.cnf.d || true
+    if [ -d /etc/mysql/mariadb.conf.d ]; then
+        ln -fs ./mysql/mariadb.conf.d/ /etc/my.cnf.d
+    else
+        if [ -d /etc/mysql/conf.d ]; then
+            ln -fs ./mysql/conf.d/ /etc/my.cnf.d
+        else
+            mkdir -p /etc/my.cnf.d
+        fi
+    fi
 fi
 
+if update-alternatives --query my.cnf >/dev/null 2>/dev/null && [ -e /etc/mysql/mariadb.cnf ] ; then
+    update-alternatives --set my.cnf /etc/mysql/mariadb.cnf
+fi
+
+if [ ! -e /etc/my.cnf ] && [ -e /etc/mysql/my.cnf ] ; then
+    ln -fs ./mysql/my.cnf /etc/my.cnf
+fi
+
+# Fix up where mariadb listens
+case "$IMGTYPE" in
+    *devel*) ;; # let it be for testing and developers
+    deploy|*)
+cat > /etc/my.cnf.d/localhost.cnf << EOF
+[mysqld]
+bind-address = 127.0.0.1
+port = 3306
+EOF
+        ;;
+esac
+
+# Disable and mask the vendor-packaged mysql services - the database will
+# be started after first boot and license acceptance, and wrapped by our
+# own fty-db-engine customized service anyway.
+/bin/systemctl disable mysql.service || true
+/bin/systemctl disable mysqld.service || true
+/bin/systemctl disable mariadb.service || true
+/bin/systemctl disable mariadb@bootstrap.service || true
+/bin/systemctl mask mysql.service || true
+/bin/systemctl mask mysqld.service || true
+/bin/systemctl mask mariadb.service || true
+/bin/systemctl mask mariadb@bootstrap.service || true
+mv -f /lib/systemd/system/mariadb@.service /lib/systemd/system/mariadb@.service.orig || true
+mv -f /lib/systemd/system/mariadb.service /lib/systemd/system/mariadb.service.orig || true
+mv -f /lib/systemd/system/mysql.service /lib/systemd/system/mysql.service.orig || true
+mv -f /lib/systemd/system/mysqld.service /lib/systemd/system/mysqld.service.orig || true
+
+# Do not consume space in the RO image if a package has already
+# pre-created the database files before we stopped it just above.
+# Our fty-db-engine service startup after EULA acceptance will
+# re-create what it needs.
+rm -rf /var/lib/mysql || true
+rm -rf /var/lib/mysql-upgrade || true
+
+# Newer versions of the package deliver the embedded server+client binary
+# that should not run at the same time as a real server. Save some space :)
+case "$IMGTYPE" in
+    *devel*) ;; # let it be for testing and developers
+    *) rm -f /usr/bin/mysql_embedded /usr/bin/mariadb-embedded /usr/share/man/man*/mysql_embedded.* /usr/share/man/man*/mariadb-embedded.* || true ;;
+esac
+
+# If this OS image is based on a newer distro without rcmysql,
+# then provide ours right in the image
+/usr/share/fty/setup/20-rcmysql-transient.sh
+
+# Enable 42ity services (distributed as a systemd preset file)
+# NOTE that in Debian 10 this seems to also process ALL service files
+# found in the system, not just presets.
 /bin/systemctl preset-all
 if [ "`uname -m`" = x86_64 ]; then
     /bin/systemctl disable lcd-boot-display || true
@@ -610,12 +741,6 @@ else
     /bin/systemctl enable lcd-poweroff-display || true
     #sed -i 's|PathChanged=/etc|PathChanged=/mnt/nand/overlay/etc|' /usr/lib/systemd/system/composite-metrics\@.path
 fi
-
-# Disable and mask the vendor-packaged mysql services - the database will
-# be started after first boot and license acceptance, and wrapped by our
-# own fty-db-engine customized service anyway.
-/bin/systemctl mask mysql || true
-/bin/systemctl disable mysql || true
 
 # Our tntnet unit rocks, disable packaged default
 if [ -s /lib/systemd/system/fty-tntnet@.service ]; then
@@ -680,6 +805,16 @@ for unit in $(/bin/systemctl list-unit-files | egrep '^(fty|etn|ipc|ipm|ova)-*' 
     unit_realname="$(/bin/systemctl show -p Id "${unit}" | sed 's,^Id=,,')" \
         && [ -n "${unit_realname}" ] || unit_realname="${unit}"
     if [ -n "$(ls -1d {/usr,}/lib/systemd/system/${unit} 2>/dev/null)" ]; then
+        ### etn-powerchain-analysis is disabled in master
+        ### see featureimage/powerchain-analysis
+        ### shall be enbaled after QA validation
+        case "${unit_realname}" in
+            etn-powerchain-analysis*)
+                /bin/systemctl disable ${unit_realname} || true
+                continue
+            ;;
+        esac
+
         ### A masked unit can fail to become "enabled", and
         ### we don't want it to - so just ignore the errors :\
         /bin/systemctl enable ${unit_realname} || true
@@ -1033,6 +1168,13 @@ case "${OSIMAGE_DISTRO-}" in
         ;;
 esac
 
+[ -s /lib/systemd/system/ifplug-dhcp-autoconf.service ] && \
+if [ ! -s /lib/systemd/system/ifupdown-wait-online.service ] && [ ! -x /lib/ifupdown/wait-online.sh ] ; then
+    echo "Fixing up our ifplug-dhcp-autoconf.service to not define dependencies vs ifupdown-wait-online.service"
+    sed -e 's,^\(.*=ifupdown-wait-online.service\)$,###ANOTHER_DISTRO### \1,' \
+        -i /lib/systemd/system/ifplug-dhcp-autoconf.service
+fi
+
 #########################################################################
 # install iptables filtering
 
@@ -1097,6 +1239,19 @@ case "$IMGTYPE" in
         sed '/tcp --dport 4222/a\-A INPUT -p tcp -m tcp --dport 5005 -j ACCEPT' -i /etc/default/ip6tables
         ;;
 esac
+
+# Note: Maybe later we should support more (or the new/current/...)
+# iptables backends. For now we need both old and new images to work
+# so just use the "legacy" iptables tools as provided and supported.
+# For details see https://github.com/netblue30/firejail/issues/2232
+# and https://sources.debian.org/src/iptables/1.8.1-2/debian/NEWS/
+if [ -x /usr/sbin/iptables-legacy ] ; then
+    case "${OSIMAGE_DISTRO}" in
+        Debian_10*)
+            update-alternatives --set iptables /usr/sbin/iptables-legacy
+            ;;
+    esac
+fi
 
 # install iptables filtering end
 #########################################################################

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# Copyright (C) 2014-2019 Eaton
+# Copyright (C) 2014 - 2020 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -50,6 +50,7 @@ JSONSH="@datadir@/@PACKAGE@/scripts/JSON.sh"
 #JSONSH="/usr/share/bios/scripts/JSON.sh"
 OSIMAGE_BASENAME="OS image name is not available"
 OSIMAGE_DISTRO="" ### OS base distribution name is not available (?)
+OSIMAGE_IMGQALEVEL="" ### QA level or feature image tag for development, version for release images
 HARDWARE_CATALOG_NUMBER="Hardware catalog number is not available"
 HARDWARE_SPEC_REVISION="Hardware spec revision is not available"
 HARDWARE_SERIAL_NUMBER="Hardware serial number is not available"
@@ -103,6 +104,13 @@ if [[ -x "$JSONSH" ]] ; then
         HARDWARE_UUID="$TMPSTR" || true
     unset TMPSTR
 fi
+
+for F in "/mnt/root-ro/etc/update-rc3.d/image-os-type.conf" "/etc/update-rc3.d/image-os-type.conf" ; do
+    [ -z "$OSIMAGE_IMGQALEVEL" ] || break
+    if [ -s "$F" ]; then
+        OSIMAGE_IMGQALEVEL="`egrep '^IMGQALEVEL=' "$F" | sed -e 's,^IMGQALEVEL=,,' -e 's,^"\(.*\)"$,\1,' -e "s,^'\(.*\)'\$,\1,"`"
+    fi
+done
 
 # Note: no fallback "empty on error", and ignore error codes, as per manpage:
 #    EXIT STATUS
@@ -170,10 +178,17 @@ list_fqdns() {
 ENV_KNOWNFQDNS="$(list_fqdns | tr '\n' ',' | sed 's/,$//')"
 
 RES=255
+OUTFILE_ORIG="$OUTFILE"
+if [ -s "$OUTFILE" ]; then
+    echo "A $OUTFILE already exists, we will see below if its content is obsolete or not"
+    OUTFILE="$OUTFILE.tmp"
+fi
+
 case "$OUTFMT" in
     env) cat << EOF > "$OUTFILE"
-OSIMAGE_BASENAME='$OSIMAGE_BASENAME'
-OSIMAGE_DISTRO='$OSIMAGE_DISTRO'
+OSIMAGE_BASENAME='${OSIMAGE_BASENAME}'
+OSIMAGE_DISTRO='${OSIMAGE_DISTRO}'
+OSIMAGE_IMGQALEVEL='${OSIMAGE_IMGQALEVEL}'
 HARDWARE_CATALOG_NUMBER='${HARDWARE_CATALOG_NUMBER}'
 HARDWARE_SPEC_REVISION='${HARDWARE_SPEC_REVISION}'
 HARDWARE_SERIAL_NUMBER='${HARDWARE_SERIAL_NUMBER}'
@@ -192,8 +207,9 @@ EOF
         RES=$?
         ;;
     sql) cat << EOF | sed "s,='';$,=NULL;," > "$OUTFILE"
-set @ENV_OSIMAGE_BASENAME='$OSIMAGE_BASENAME';
-set @ENV_OSIMAGE_DISTRO='$OSIMAGE_DISTRO';
+set @ENV_OSIMAGE_BASENAME='${OSIMAGE_BASENAME}';
+set @ENV_OSIMAGE_DISTRO='${OSIMAGE_DISTRO}';
+set @ENV_OSIMAGE_IMGQALEVEL='${OSIMAGE_IMGQALEVEL}';
 set @ENV_HARDWARE_CATALOG_NUMBER='${HARDWARE_CATALOG_NUMBER}';
 set @ENV_HARDWARE_SPEC_REVISION='${HARDWARE_SPEC_REVISION}';
 set @ENV_HARDWARE_SERIAL_NUMBER='${HARDWARE_SERIAL_NUMBER}';
@@ -213,6 +229,20 @@ EOF
         ;;
     *) echo "Unknown output format: $OUTFMT" >&2 ; exit 1 ;;
 esac
+
+if [ "$OUTFILE_ORIG" != "$OUTFILE" ]; then
+    # We generated new content, but is it really new?
+    # Only change the potentially monitored OUTFILE_ORIG if it has new content
+    if diff -bu "$OUTFILE_ORIG" "$OUTFILE" ; then
+        echo "NOTE: Output was re-generated during this run but does not differ from what we had previously"
+        rm -f "$OUTFILE" || true
+    else
+        echo "NOTE: Output was re-generated during this run and differs from what we had previously"
+        echo "Stashing previously generated file as $OUTFILE_ORIG.prev"
+        mv -f "$OUTFILE_ORIG" "$OUTFILE_ORIG.prev" || true
+        mv -f "$OUTFILE" "$OUTFILE_ORIG" || true
+    fi
+fi
 
 [ "$RES" = 0 ] && echo "OK" || echo "FAILED ($RES)" >&2
 exit $RES

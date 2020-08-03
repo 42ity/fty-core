@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 #   Copyright (c) 1991-2012 iMatix Corporation <www.imatix.com>
-#   Copyright (c) 2014-2015 Eaton
+#   Copyright (c) 2014 - 2020 Eaton
 #   Copyright other contributors as noted in the AUTHORS file.
 #
 #   This file is part of the Eaton 42ity project.
