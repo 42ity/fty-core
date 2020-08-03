@@ -1886,7 +1886,12 @@ apply_rawfwimage_ovaloader() (
     # TODO: add a concept of "newer" on file basis and/or contents
     # (.git_details and /.bootldr in image). For now first one seen
     # and good is flashed.
-    # NOTE: For now we trust that anything here is trustworthy!
+    # TODO: for miniroot based loaders like that with dracut, the
+    # partition image may be changing as it is mounted etc., but
+    # its practical contents (GRUB sectors, miniroot file) may be
+    # the same. Learn to compare that deep...
+    # NOTE: For now we trust that anything in recovery or production
+    # locations is trustworthy!
     local FB FS
     for F in `ls -1d "${DOWNLOADROOTFW_OVALOADER}"/ovaloader{,.gz} "${DEPLOYMENTROOTFW_OVALOADER}"/ovaloader{,.gz} 2>/dev/null` ; do
         if [ -s "$F" ] ; then
