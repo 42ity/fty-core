@@ -1020,7 +1020,9 @@ download_rawfwimage_generic() (
                         "${RAW_DEVICE_NODE}" \
                         "${DEPLOYMENTROOT_THISIMAGE}/${rIMAGE_CSOLD["$IMAGE_CSALGO"]}" \
                         "${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" \
-                    || logmsg_warn "TODO: If we can detect the file size of the remote image, use calculate_stream_checksum_bytes() to verify flashed bits vs ${IMAGE_CSALGO} checksum file"
+                    || { LOCAL_CHECKSUMS_MATCHED=$?
+                         logmsg_warn "TODO: If we can detect the file size of the remote image, use calculate_stream_checksum_bytes() to verify flashed bits vs ${IMAGE_CSALGO} checksum file; note this is not relevant for images that fill the partition exactly without padding"
+                        }
             done
 
             case "$LOCAL_CHECKSUMS_MATCHED" in
