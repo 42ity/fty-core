@@ -765,10 +765,11 @@ fetch_file() {
             logmsg_info "Downloading '${URL}' (if any) into '${FILE}'..."
             rm -f "${FILE}" || true
             $FETCHER $FETCH_FLAGS "${URL}" > "${FILE}" || RES=$?
-            if [ ! -e "${FILE}" -a "$RES" != 0 ] ; then
+            if [ ! -s "${FILE}" -a "$RES" != 0 ] ; then
                 # We have a mode for empty files on the URL below,
                 # but that should be a RES==0 fetch above
                 RES=0
+                rm -f "${FILE}" || true
                 FINALFILE="${FILE}.gz"
                 logmsg_info "Base URL returned nothing, downloading '${URL}.gz' (if any) into '${FINALFILE}'..."
                 $FETCHER $FETCH_FLAGS "${URL}.gz" > "${FINALFILE}" || RES=$?
