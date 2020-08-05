@@ -1089,7 +1089,10 @@ download_rawfwimage_generic() (
         { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
     remove_checksum_cache '[^\:]*' '[^\:]*' "${aTGT_FILE}"
 
-    HELPER_PATTERN=''
+    # Do not additionally download the following list of exact filenames even
+    # if present (below we would fetch "optional files" that are not matched
+    #HELPER_PATTERN=''
+    HELPER_PATTERN="${rIMAGE_URL_BASENAME}.gz"
     for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
         [ -n "${HELPER_PATTERN-}" ] \
             && HELPER_PATTERN="${HELPER_PATTERN}|${IMAGE_CSURL["$IMAGE_CSALGO"]}" \
@@ -1100,6 +1103,7 @@ download_rawfwimage_generic() (
     done
     HELPER_PATTERN="^${HELPER_PATTERN}"'$'
 
+    # TODO: replace and test "`basename ${IMAGE_URL}`" => "${rIMAGE_URL_BASENAME}"
     lsdir_http_pattern "${SOURCESITEROOT_THISIMAGE}" "`basename ${IMAGE_URL}`"'*' | egrep "^${IMAGE_URL}\." | \
         egrep -v "${HELPER_PATTERN}" | \
         while read U ; do
