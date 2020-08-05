@@ -729,6 +729,7 @@ fetch_file() {
     # TODO: Make a common routine to list remote directories (e.g. http-dir parsing, ftp, tftp, localfs...)
     local URL="$1"
     local FILE="$2"
+    local FINALFILE="$2"
     local RES=0
     local FETCH_FLAGS=""
     local FETCHER=wget
@@ -746,6 +747,7 @@ fetch_file() {
 
     if [ x"$FILE" = x- ] || [ x"$FILE" = x ] || [ x"$FILE" = xstdout ] ; then
         FILE=stdout
+        FINALFILE="$FILE"
         logmsg_info "Downloading '${URL}' (if any) into '${FILE}'..."
         # Warning: bashism below, to count how many bytes of stdout we saw
         # Note the script also uses "pipefail" and it can matter here too.
@@ -767,8 +769,9 @@ fetch_file() {
                 # We have a mode for empty files on the URL below,
                 # but that should be a RES==0 fetch above
                 RES=0
-                logmsg_info "Base URL returned nothing, downloading '${URL}.gz' (if any) into '${FILE}.gz'..."
-                $FETCHER $FETCH_FLAGS "${URL}.gz" > "${FILE}.gz" || RES=$?
+                FINALFILE="${FILE}.gz"
+                logmsg_info "Base URL returned nothing, downloading '${URL}.gz' (if any) into '${FINALFILE}'..."
+                $FETCHER $FETCH_FLAGS "${URL}.gz" > "${FINALFILE}" || RES=$?
             fi
         else
             logmsg_error "Could not save '${URL}' into '${FILE}': target directory is missing"
@@ -777,11 +780,11 @@ fetch_file() {
     fi
 
     if [ "$RES" != 0 ] ; then
-        logmsg_error "Could not save '${URL}' into '${FILE}' (see errors above)"
+        logmsg_error "Could not save '${URL}' into '${FINALFILE}' (see errors above)"
     fi
 
-    if [ x"${MAYBE_EMPTY=}" != xyes ] && [ "${FILE}" != stdout ] && [ ! -s "${FILE}" ] ; then
-        logmsg_error "Got empty output trying to save '${URL}' into '${FILE}'"
+    if [ x"${MAYBE_EMPTY=}" != xyes ] && [ "${FINALFILE}" != stdout ] && [ ! -s "${FINALFILE}" ] ; then
+        logmsg_error "Got empty output trying to save '${URL}' into '${FINALFILE}'"
         RES=1
     fi
 
