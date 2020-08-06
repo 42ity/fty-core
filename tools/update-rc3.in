@@ -482,6 +482,7 @@ verify_checksum() {
     # TODO: add generalized support for .${CHECKSUM_ALGO_DEFAULT}-padded checksum files (firmware imgs)
     # TODO (later): Support file sizes as part of checksum info
     FILENAME_DATA="$1"
+    FINALFILE="$FILENAME_DATA"
     FILENAME_CSUM="${2-}"
     [ -n "${FILENAME_CSUM}" ] || \
         FILENAME_CSUM="${FILENAME_DATA}.${CHECKSUM_ALGO_DEFAULT}"
@@ -492,7 +493,18 @@ verify_checksum() {
     else
         CHECKSUM_ALGO="$3"
     fi
-    LOGINTRO="Checksum validation of '$FILENAME_DATA' against value in '$FILENAME_CSUM' ($CHECKSUM_ALGO)"
+
+    # If we only have the compressed artifact, report it as such
+    # Comparison routines still work on original name
+    # (looking at checksums of uncompressed data)
+    if [ ! -s "$FILENAME_DATA"  ] && [ -s "$FILENAME_DATA.gz" ] ; then
+        FINALFILE="$FILENAME_DATA.gz"
+    fi
+
+    LOGINTRO="Checksum validation of '$FINALFILE' against value in '$FILENAME_CSUM' ($CHECKSUM_ALGO)"
+    if [ "$FINALFILE" != "$FILENAME_DATA" ]; then
+        LOGINTRO="$LOGINTRO for uncompressed data of '`basename "$FILENAME_DATA"`'"
+    fi
 
     if [ -n "$FILENAME_DATA" ] && [ -n "$FILENAME_CSUM" ] && \
        ( [ -s "$FILENAME_DATA" -o -c "$FILENAME_DATA" -o -b "$FILENAME_DATA" ] || \
