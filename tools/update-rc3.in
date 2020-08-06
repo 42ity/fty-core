@@ -1108,7 +1108,7 @@ download_rawfwimage_generic() (
     # Do not additionally download the following list of exact filenames even
     # if present (below we would fetch "optional files" that are not matched
     #HELPER_PATTERN=''
-    HELPER_PATTERN="${rIMAGE_URL_BASENAME}.gz"
+    HELPER_PATTERN="${IMAGE_URL}.gz"
     for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
         [ -n "${HELPER_PATTERN-}" ] \
             && HELPER_PATTERN="${HELPER_PATTERN}|${IMAGE_CSURL["$IMAGE_CSALGO"]}" \
