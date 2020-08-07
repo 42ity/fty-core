@@ -1748,7 +1748,7 @@ download_rawfwimage_uboot() (
         "${TEMP_DATA}/.newest-uboot" \
         "DOWNLOADROOTFW_UBOOT" "${DOWNLOADROOTFW_UBOOT}" \
         "DEPLOYMENTROOTFW_UBOOT" "${DEPLOYMENTROOTFW_UBOOT}" \
-        "${SOURCESITEROOTFW_UBOOT}" \
+        "${1:-$SOURCESITEROOTFW_UBOOT}" \
         'findnewest_rawfwimage_uboot' \
         "/dev/mtd$UBOOT_MTD"
 )
@@ -1800,7 +1800,7 @@ download_rawfwimage_uimage() (
         "${TEMP_DATA}/.newest-uimage" \
         "DOWNLOADROOTFW_UIMAGE" "${DOWNLOADROOTFW_UIMAGE}" \
         "DEPLOYMENTROOTFW_UIMAGE" "${DEPLOYMENTROOTFW_UIMAGE}" \
-        "${SOURCESITEROOTFW_UIMAGE}" \
+        "${1:-$SOURCESITEROOTFW_UIMAGE}" \
         'findnewest_rawfwimage_uimage' \
         "/dev/mtd$KERNEL_MTD"
 )
@@ -1855,7 +1855,7 @@ download_rawfwimage_ovaloader() (
         "${TEMP_DATA}/.newest-ovaloader" \
         "DOWNLOADROOTFW_OVALOADER" "${DOWNLOADROOTFW_OVALOADER}" \
         "DEPLOYMENTROOTFW_OVALOADER" "${DEPLOYMENTROOTFW_OVALOADER}" \
-        "${SOURCESITEROOTFW_OVALOADER}" \
+        "${1:-$SOURCESITEROOTFW_OVALOADER}" \
         'findnewest_rawfwimage_ovaloader' \
         "${OVALOADER_DEVICE}"
 )
@@ -2003,7 +2003,7 @@ download_rawfwimage_modules() (
         "${TEMP_DATA}/.newest-modules" \
         "DOWNLOADROOTFW_MODULES" "${DOWNLOADROOTFW_MODULES}" \
         "DEPLOYMENTROOTFW_MODULES" "${DEPLOYMENTROOTFW_MODULES}" \
-        "${SOURCESITEROOTFW_MODULES}" \
+        "${1:-$SOURCESITEROOTFW_MODULES}" \
         'findnewest_rawfwimage_modules' \
         ""
 )
