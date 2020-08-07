@@ -927,6 +927,8 @@ download_rawfwimage_generic() (
     local SOURCESITEROOT_THISIMAGE="$1" ; shift
     local IMAGEFINDER_ROUTINE="$1" ; shift
     local RAW_DEVICE_NODE="$1" ; shift
+    # Optional next arg may be the custom IMAGE_URL, see below
+
     local LOCAL_CHECKSUMS_MATCHED
 
     [ -n "${REFER_NEWEST}" ] && rm -f "${REFER_NEWEST}"
@@ -935,14 +937,14 @@ download_rawfwimage_generic() (
     cd "${DEPLOYMENTROOT_THISIMAGE}" || die "Can not use DOWNLOADROOT_THISIMAGE_VARNAME='$DOWNLOADROOT_THISIMAGE' nor DEPLOYMENTROOT_THISIMAGE_VARNAME='$DEPLOYMENTROOT_THISIMAGE'"
 
     case "${1-}" in
+        ""|*://*/)
+            logmsg_info "Fetching newest remote filename for the ${RAW_DEVICE_NODE:+raw }$REPORT_IMAGETYPE..."
+            IMAGE_URL="`${IMAGEFINDER_ROUTINE} ${1:-$SOURCESITEROOT_THISIMAGE}`" && [ -n "$IMAGE_URL" ] \
+            && logmsg_info "${CALLER_ROUTINE}() detected '$IMAGE_URL' as the newest remote ${RAW_DEVICE_NODE:+raw }$REPORT_IMAGETYPE" \
+            || { logmsg_error "Could not find any remote ${RAW_DEVICE_NODE:+raw }$REPORT_IMAGETYPE"; IMAGE_URL="";} ;;
         *://*)
             logmsg_info "${CALLER_ROUTINE}() was asked to try downloading '$1' as the ${RAW_DEVICE_NODE:+raw }$REPORT_IMAGETYPE"
             IMAGE_URL="$1" ;;
-        "")
-            logmsg_info "Fetching newest remote filename for the ${RAW_DEVICE_NODE:+raw }$REPORT_IMAGETYPE..."
-            IMAGE_URL="`${IMAGEFINDER_ROUTINE}`" && [ -n "$IMAGE_URL" ] \
-            && logmsg_info "${CALLER_ROUTINE}() detected '$IMAGE_URL' as the newest remote ${RAW_DEVICE_NODE:+raw }$REPORT_IMAGETYPE" \
-            || { logmsg_error "Could not find any remote ${RAW_DEVICE_NODE:+raw }$REPORT_IMAGETYPE"; IMAGE_URL="";} ;;
         *)  logmsg_error "${CALLER_ROUTINE}() got an unsupported argument: $*"
             IMAGE_URL=""
             ;;
@@ -1732,7 +1734,7 @@ findnewest_rawfwimage_uboot() (
     # uBoot image file found on remote resource, if any
     # Note: currently expects certain filename patterns and http-dir listing markup
     for P in 'u-Boot' 'uBoot' ; do
-        IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOTFW_UBOOT}" "$P" | sort -n | tail -1`"
+        IMAGE_URL="`lsdir_http_pattern "${1:-$SOURCESITEROOTFW_UBOOT}" "$P" | sort -n | tail -1`"
         if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
             echo "$IMAGE_URL" && return 0
         fi
@@ -1748,9 +1750,10 @@ download_rawfwimage_uboot() (
         "${TEMP_DATA}/.newest-uboot" \
         "DOWNLOADROOTFW_UBOOT" "${DOWNLOADROOTFW_UBOOT}" \
         "DEPLOYMENTROOTFW_UBOOT" "${DEPLOYMENTROOTFW_UBOOT}" \
-        "${1:-$SOURCESITEROOTFW_UBOOT}" \
+        "${SOURCESITEROOTFW_UBOOT}" \
         'findnewest_rawfwimage_uboot' \
-        "/dev/mtd$UBOOT_MTD"
+        "/dev/mtd$UBOOT_MTD" \
+        "${1-}"
 )
 
 removeold_rawfwimage_uboot() (
@@ -1785,7 +1788,7 @@ findnewest_rawfwimage_uimage() (
     # Echo the URL to the newest "raw" (not tarballed, only one)
     # uImage image file found on remote resource, if any
     # Note: currently expects certain filename patterns and http-dir listing markup
-    IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOTFW_UIMAGE}" "uImage" | sort -n | tail -1`"
+    IMAGE_URL="`lsdir_http_pattern "${1:-$SOURCESITEROOTFW_UIMAGE}" "uImage" | sort -n | tail -1`"
     if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
         echo "$IMAGE_URL" && return 0
     fi
@@ -1800,9 +1803,10 @@ download_rawfwimage_uimage() (
         "${TEMP_DATA}/.newest-uimage" \
         "DOWNLOADROOTFW_UIMAGE" "${DOWNLOADROOTFW_UIMAGE}" \
         "DEPLOYMENTROOTFW_UIMAGE" "${DEPLOYMENTROOTFW_UIMAGE}" \
-        "${1:-$SOURCESITEROOTFW_UIMAGE}" \
+        "${SOURCESITEROOTFW_UIMAGE}" \
         'findnewest_rawfwimage_uimage' \
-        "/dev/mtd$KERNEL_MTD"
+        "/dev/mtd$KERNEL_MTD" \
+        "${1-}"
 )
 
 removeold_rawfwimage_uimage() (
@@ -1836,7 +1840,7 @@ findnewest_rawfwimage_ovaloader() (
     # Echo the URL to the newest "raw" (not tarballed, only one)
     # ovaloader image file found on remote resource, if any
     # Note: currently expects certain filename patterns and http-dir listing markup
-    IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOTFW_OVALOADER}" "ovaloader" | sort -n | tail -1`"
+    IMAGE_URL="`lsdir_http_pattern "${1:-$SOURCESITEROOTFW_OVALOADER}" "ovaloader" | sort -n | tail -1`"
     if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
         echo "$IMAGE_URL" && return 0
     fi
@@ -1855,9 +1859,10 @@ download_rawfwimage_ovaloader() (
         "${TEMP_DATA}/.newest-ovaloader" \
         "DOWNLOADROOTFW_OVALOADER" "${DOWNLOADROOTFW_OVALOADER}" \
         "DEPLOYMENTROOTFW_OVALOADER" "${DEPLOYMENTROOTFW_OVALOADER}" \
-        "${1:-$SOURCESITEROOTFW_OVALOADER}" \
+        "${SOURCESITEROOTFW_OVALOADER}" \
         'findnewest_rawfwimage_ovaloader' \
-        "${OVALOADER_DEVICE}"
+        "${OVALOADER_DEVICE}" \
+        "${1-}"
 )
 
 removeold_rawfwimage_ovaloader() (
@@ -1988,7 +1993,7 @@ findnewest_rawfwimage_modules() (
     # Echo the URL to the newest "raw" (not tarballed, only one)
     # uImage image file found on remote resource, if any
     # Note: currently expects certain filename patterns and http-dir listing markup
-    IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOTFW_MODULES}" "*[0-9].[0-9]*.${EXT}" | sort_module_names | tail -1`"
+    IMAGE_URL="`lsdir_http_pattern "${1:-$SOURCESITEROOTFW_MODULES}" "*[0-9].[0-9]*.${EXT}" | sort_module_names | tail -1`"
     if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
         echo "$IMAGE_URL" && return 0
     fi
@@ -2003,9 +2008,10 @@ download_rawfwimage_modules() (
         "${TEMP_DATA}/.newest-modules" \
         "DOWNLOADROOTFW_MODULES" "${DOWNLOADROOTFW_MODULES}" \
         "DEPLOYMENTROOTFW_MODULES" "${DEPLOYMENTROOTFW_MODULES}" \
-        "${1:-$SOURCESITEROOTFW_MODULES}" \
+        "${SOURCESITEROOTFW_MODULES}" \
         'findnewest_rawfwimage_modules' \
-        ""
+        "" \
+        "${1-}"
 )
 
 removeold_rawfwimage_modules() (
