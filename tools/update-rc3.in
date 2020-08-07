@@ -1171,12 +1171,17 @@ download_rawfwimage_generic() (
     # Finally check that expected files are all here - and note at this
     # point it includes the whole CHECKSUM_ALGOLIST_DEFAULT matrix
     # TODO: Verify file size against partition size (flashability after reboot)
-    [ -s "${aTGT_FILE}" ] \
-        || die "Could not find '${aTGT_FILE}' or it was found empty"
+    local FINALFILE="${aTGT_FILE}"
+    if [ ! -s "${aTGT_FILE}" ] && [ -s "${aTGT_FILE}.gz" ]; then
+        FINALFILE="${aTGT_FILE}.gz"
+    fi
+
+    [ -s "${aTGT_FILE}" ] || [ -s "${aTGT_FILE}.gz" ] \
+        || die "Could not find '${FINALFILE}' or it was found empty"
 
     for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
         [ -s "${aIMAGE_CSOLD["$IMAGE_CSALGO"]}" ] \
-        && touch -r "${aTGT_FILE}" "${aIMAGE_CSOLD["$IMAGE_CSALGO"]}" \
+        && touch -r "${FINALFILE}" "${aIMAGE_CSOLD["$IMAGE_CSALGO"]}" \
         || die "Could not touch '${aIMAGE_CSOLD["$IMAGE_CSALGO"]}' or it was found empty"
     done
 
@@ -1620,8 +1625,13 @@ download_osimage() (
     # Finally check that expected files are all here - and note at this
     # point it includes the whole CHECKSUM_ALGOLIST_DEFAULT matrix
     # TODO: Verify file size against partition size (flashability after reboot)
-    [ -s "${aTGT_FILE}" ] \
-        || die "Could not find '${aTGT_FILE}' or it was found empty"
+    local FINALFILE="${aTGT_FILE}"
+    if [ ! -s "${aTGT_FILE}" ] && [ -s "${aTGT_FILE}.gz" ]; then
+        FINALFILE="${aTGT_FILE}.gz"
+    fi
+
+    [ -s "${aTGT_FILE}" ] || [ -s "${aTGT_FILE}.gz" ] \
+        || die "Could not find '${FINALFILE}' or it was found empty"
 
     [ -s "${aTGT_FILE_MANIFEST}" ] \
         && touch -r "${aTGT_FILE}" "${aTGT_FILE_MANIFEST}" \
