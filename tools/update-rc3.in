@@ -2539,6 +2539,7 @@ if [ "$ACTION_DOWNLOAD_FWIMAGE" = yes ]; then
 	fi
 fi
 
+RESULT_ACTION_APPLYNOW_FWIMAGE_OVALOADER=-1
 if [ "$ACTION_APPLYNOW_FWIMAGE_OVALOADER" = yes ] ; then
 	# If we have a file, just use it; if we also tried to
 	# fetch it, only use the file if that fetch was successful
@@ -2546,12 +2547,21 @@ if [ "$ACTION_APPLYNOW_FWIMAGE_OVALOADER" = yes ] ; then
 	|| [ "$ACTION_DOWNLOAD_FWIMAGE" = no ] \
 	; then
 		# Note: this routine does its own ARCH checks
-		apply_rawfwimage_ovaloader || ACTION_RESULT=$?
+		apply_rawfwimage_ovaloader || RESULT_ACTION_APPLYNOW_FWIMAGE_OVALOADER=$?
 	else
 		logmsg_error "Was asked to apply the OVA loader image, but could not begin to (also tried to download and failed?)"
 		ACTION_RESULT=43
+		RESULT_ACTION_APPLYNOW_FWIMAGE_OVALOADER=43
 	fi
 fi
+
+[ "$RESULT_ACTION_APPLYNOW_FWIMAGE_OVALOADER" -gt 0 ] && \
+[ "$RESULT_ACTION_APPLYNOW_FWIMAGE_OVALOADER" -ne 42 ] && \
+	ACTION_RESULT="$RESULT_ACTION_APPLYNOW_FWIMAGE_OVALOADER" && \
+	if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] ; then
+		logmsg_warn "The OVA loader and kernel image was not applied successfully, so firmware files are not purged"
+		ACTION_REMOVEOLD_FWIMAGE=no_BadDownload
+	fi
 
 if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ]; then
 	removeold_rawfwimage_modules || ACTION_RESULT=$?
@@ -2683,9 +2693,16 @@ case "$ACTION_RESULT" in
 		|| [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE" = 42 ] \
 		|| [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES" = 42 ] \
 		|| [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_OVALOADER" = 42 ] \
+		|| [ "$RESULT_ACTION_APPLYNOW_FWIMAGE_OVALOADER" = 0 ] \
+		|| [ "$RESULT_ACTION_APPLYNOW_FWIMAGE_OVALOADER" = 42 ] \
 		; then
 			ACTION_RESULT=42
 			ACTION_RESULT_STR="new files were downloaded successfully, you can reboot now to apply the updates"
+			if [ "$RESULT_ACTION_APPLYNOW_FWIMAGE_OVALOADER" = 0 ] \
+			|| [ "$RESULT_ACTION_APPLYNOW_FWIMAGE_OVALOADER" = 42 ] \
+			; then
+				ACTION_RESULT_STR="$ACTION_RESULT_STR, and new loader firmware was also applied"
+			fi
 			[ "${WANT_REBOOT-}" = yes -o "${WANT_REBOOT-}" = force ] && DO_REBOOT=yes
 			[ "${DO_REBOOT}" = yes ] && \
 				logmsg_warn "Got new files without errors - and was asked to reboot in this case" || \
