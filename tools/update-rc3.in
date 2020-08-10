@@ -763,15 +763,22 @@ fetch_file() {
         logmsg_info "Downloading '${URL}' (if any) into '${FILE}'..."
         # Warning: bashism below, to count how many bytes of stdout we saw
         # Note the script also uses "pipefail" and it can matter here too.
-        local COUNT
-        exec 11>&1 # write from this FS to STDOUT - stream from tee goes here
-        COUNT="`$FETCHER $FETCH_FLAGS "${URL}" | tee >(wc -c) >&11`" || RES=$?
-        exec 11>&- # close FD
-        if [ "$COUNT" = 0 -a "$RES" != 0 ] ; then
-            RES=0
-            logmsg_info "Base URL returned nothing, downloading and uncompressing '${URL}.gz' (if any) into '${FILE}'..."
-            $FETCHER $FETCH_FLAGS "${URL}.gz" | gzip -cd || RES=$?
-        fi
+        case "${URL}" in
+            */) # For directories, there is no .gz to fetch
+                $FETCHER $FETCH_FLAGS "${URL}" || RES=$?
+                ;;
+            *)
+                local COUNT
+                exec 11>&1 # write from this FS to STDOUT - stream from tee goes here
+                COUNT="`$FETCHER $FETCH_FLAGS "${URL}" | tee >(wc -c) >&11`" || RES=$?
+                exec 11>&- # close FD
+                if [ "$COUNT" = 0 -a "$RES" != 0 ] ; then
+                    RES=0
+                    logmsg_info "Base URL returned nothing, downloading and uncompressing '${URL}.gz' (if any) into '${FILE}'..."
+                    $FETCHER $FETCH_FLAGS "${URL}.gz" | gzip -cd || RES=$?
+                fi
+                ;;
+        esac
     else
         if [ -d "`dirname "${FILE}"`" ]; then
             logmsg_info "Downloading '${URL}' (if any) into '${FILE}'..."
