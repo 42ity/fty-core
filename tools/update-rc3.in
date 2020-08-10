@@ -1844,7 +1844,7 @@ findnewest_rawfwimage_ovaloader() (
     if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
         echo "$IMAGE_URL" && return 0
     fi
-    IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOTFW_OVALOADER}" "ovaloader.gz" | sort -n | tail -1`"
+    IMAGE_URL="`lsdir_http_pattern "${1:-$SOURCESITEROOTFW_OVALOADER}" "ovaloader.gz" | sort -n | tail -1`"
     if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
         echo "$IMAGE_URL" | sed 's,\.gz$,,' && return 0
     fi
