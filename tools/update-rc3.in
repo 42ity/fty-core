@@ -2540,8 +2540,14 @@ if [ "$ACTION_DOWNLOAD_FWIMAGE" = yes ]; then
 fi
 
 if [ "$ACTION_APPLYNOW_FWIMAGE_OVALOADER" = yes ] ; then
-	# Note: this routine does its own ARCH checks
-	apply_rawfwimage_ovaloader || ACTION_RESULT=$?
+	# If we have a file, just use it; if we also tried to
+	# fetch it, only use the file if that fetch was successful
+	if ( [ "$ACTION_DOWNLOAD_FWIMAGE" = yes ] && [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_OVALOADER" = 0 -o "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_OVALOADER" = 42 ] ) \
+	|| [ "$ACTION_DOWNLOAD_FWIMAGE" = no ] \
+	; then
+		# Note: this routine does its own ARCH checks
+		apply_rawfwimage_ovaloader || ACTION_RESULT=$?
+	fi
 fi
 
 if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ]; then
