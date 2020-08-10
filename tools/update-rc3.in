@@ -2547,6 +2547,9 @@ if [ "$ACTION_APPLYNOW_FWIMAGE_OVALOADER" = yes ] ; then
 	; then
 		# Note: this routine does its own ARCH checks
 		apply_rawfwimage_ovaloader || ACTION_RESULT=$?
+	else
+		logmsg_error "Was asked to apply the OVA loader image, but could not begin to (also tried to download and failed?)"
+		ACTION_RESULT=43
 	fi
 fi
 
