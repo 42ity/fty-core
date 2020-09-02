@@ -118,10 +118,11 @@ config_defaults() {
     is_set SOURCESITEROOT || SOURCESITEROOT="http://obs.roz.lab.etn.com/images/${OSIMAGE_DISTRO}"
     is_set SOURCESITEROOT_OSIMAGE || SOURCESITEROOT_OSIMAGE="$SOURCESITEROOT/${IMGTYPE_PREFIX}${IMGTYPE}${IMGTYPE_SUFFIX}/${IMGQALEVEL:+$IMGQALEVEL/}$ARCH"
 
-    is_set SOURCESITEROOTFW || SOURCESITEROOTFW="http://obs.roz.lab.etn.com/flash-rc3/recovery"
+    is_set SOURCESITEROOTFW || SOURCESITEROOTFW="http://obs.roz.lab.etn.com/flash-rc3/${OSIMAGE_DISTRO}/recovery"
     is_set SOURCESITEROOTFW_UBOOT || SOURCESITEROOTFW_UBOOT="$SOURCESITEROOTFW"
     is_set SOURCESITEROOTFW_UIMAGE || SOURCESITEROOTFW_UIMAGE="$SOURCESITEROOTFW"
     is_set SOURCESITEROOTFW_MODULES || SOURCESITEROOTFW_MODULES="$SOURCESITEROOTFW/modules"
+    is_set SOURCESITEROOTFW_OVALOADER || SOURCESITEROOTFW_OVALOADER="$SOURCESITEROOTFW"
 
     # Recovery location (on MMC or mSATA) - for downloads
     is_set DOWNLOADROOT || DOWNLOADROOT="@URC3_DOWNLOADROOT@"
@@ -129,6 +130,7 @@ config_defaults() {
     is_set DOWNLOADROOTFW_UBOOT || DOWNLOADROOTFW_UBOOT="@URC3_DOWNLOADROOTFW_UBOOT@"
     is_set DOWNLOADROOTFW_UIMAGE || DOWNLOADROOTFW_UIMAGE="@URC3_DOWNLOADROOTFW_UIMAGE@"
     is_set DOWNLOADROOTFW_MODULES || DOWNLOADROOTFW_MODULES="@URC3_DOWNLOADROOTFW_MODULES@"
+    is_set DOWNLOADROOTFW_OVALOADER || DOWNLOADROOTFW_OVALOADER="@URC3_DOWNLOADROOTFW_OVALOADER@"
 
     # Deployment location (on SPI flash in production) - for boot-mounted OS image
     is_set DEPLOYMENTROOT || DEPLOYMENTROOT="@URC3_DEPLOYMENTROOT@"
@@ -136,6 +138,7 @@ config_defaults() {
     is_set DEPLOYMENTROOTFW_UBOOT || DEPLOYMENTROOTFW_UBOOT="@URC3_DEPLOYMENTROOTFW_UBOOT@"
     is_set DEPLOYMENTROOTFW_UIMAGE || DEPLOYMENTROOTFW_UIMAGE="@URC3_DEPLOYMENTROOTFW_UIMAGE@"
     is_set DEPLOYMENTROOTFW_MODULES || DEPLOYMENTROOTFW_MODULES="@URC3_DEPLOYMENTROOTFW_MODULES@"
+    is_set DEPLOYMENTROOTFW_OVALOADER || DEPLOYMENTROOTFW_OVALOADER="@URC3_DEPLOYMENTROOTFW_OVALOADER@"
 
     [ -z "${http_proxy-}" -o x"${http_proxy-}" = x- ] && http_proxy=""
     [ -z "${https_proxy-}" ] && https_proxy="$http_proxy"
@@ -159,6 +162,20 @@ config_defaults() {
     KERNEL_MTD=4
     UBOOTCFG_MTD=3
     UBOOT_MTD=2
+
+    # Similarly to RC3 constraints above, our OVAs come with a predefined
+    # virtual hard disk set, with /dev/sda intended as a replaceable disk
+    # with the bootloader (regardless of its practical implementation for
+    # some release of IPM2). This was set arbitrarily generously at 300MB.
+    OVALOADER_DEVICE_IPM2="/dev/sda"
+
+    [ -b "$OVALOADER_DEVICE_IPM2" -o -c "$OVALOADER_DEVICE_IPM2" ] \
+    && OVALOADER_MAX_SIZE_IPM2="`blockdev --getsize64 ${OVALOADER_DEVICE_IPM2}`" \
+    && [ "$OVALOADER_MAX_SIZE_IPM2" -gt 0 ] \
+    || OVALOADER_MAX_SIZE_IPM2=315621376
+
+    is_set OVALOADER_MAX_SIZE || OVALOADER_MAX_SIZE="$OVALOADER_MAX_SIZE_IPM2"
+    is_set OVALOADER_DEVICE || OVALOADER_DEVICE="$OVALOADER_DEVICE_IPM2"
 
     is_set WANT_REBOOT || WANT_REBOOT=no
 
@@ -193,10 +210,12 @@ usage() {
     echo "                   and exit, whatever the outcome (see below for returned codes)"
     echo "  --dry-run | -n            Alias to --check-images (check both OS and FW)"
     echo "  --(no-)download-image-os  Enable or disable downloading of OS images"
-    test -z "$DOWNLOADROOTFW_UBOOT" || \
+  { test -z "$DOWNLOADROOTFW_UBOOT" && test -z "$DOWNLOADROOTFW_OVALOADER"; } || { \
     echo "  --(no-)download-image-fw  Likewise for downloading of uBoot, uImage+modules"
+    echo "                            or OVA loader"
+  }
     echo "  --(no-)download-images|-N Enable or disable downloading of all image types"
-    test -z "$DOWNLOADROOTFW_UBOOT" || \
+  { test -z "$DOWNLOADROOTFW_UBOOT" && test -z "$DOWNLOADROOTFW_OVALOADER"; } || \
     echo "  --fw-only                 Alias to --no-download-image-os --download-image-fw"
     echo "  --os-only                 Alias to --download-image-os --no-download-image-fw"
     echo "  --(no-)removeold-image-os, --(no-)removeold-image-fw, --(no-)removeold-images"
@@ -211,8 +230,10 @@ usage() {
     echo "file which you want rather than trying to detect the newest one available, with"
     echo "the following arguments ('raw' firmwares are the non-tarballed singular files):"
     echo "  --url-image-os|-U {URL} (expected checksum patterns should still exist nearby)"
-    test -z "$DOWNLOADROOTFW_UBOOT" || \
+  { test -z "$DOWNLOADROOTFW_UBOOT" && test -z "$DOWNLOADROOTFW_OVALOADER"; } || { \
     echo "  --url-image-fw-raw-uboot --url-image-fw-raw-uimage --url-image-fw-raw-modules"
+    echo "  --url-image-fw-raw-ovaloader"
+  }
     echo "  --(no-)erase-factory-reset If a new OS image downloaded successfully, touch"
     echo "                   the control file so 'init' does a factory reset after reboot"
     echo "                   Note: '-NR' alias to --no-erase-factory-reset can cancel a"
@@ -225,10 +246,13 @@ usage() {
     echo "  --touch-erase-all          Enforce a factory reset + NAND format next boot"
     echo "  --forceflash | -FF, --forceflash-image-os | -FFo, --forceflash-image-fw | -FFf"
     echo "      --forceflash-image-u-Boot | -FFb, --forceflash-image-uImage | -FFi"
+    echo "      --forceflash-image-ovaloader | -FFl"
     echo "                   Touch the .forceflash flag-files for corresponding new image"
     echo "  --no-forceflash | -NFF      Remove all existing .forceflash flag-files before"
     echo "                   anything else (if other --forceflash* options are enabled,"
     echo "                   they can later repopulate corresponding touch-files)"
+    echo "  --apply-image-ovaloader     Flash the OVA loader now (older release OVAs"
+    echo "                              could not update their loader during boot)"
     echo "  --reboot | -r | -R         If a new image (OS, FW) downloaded successfully"
     echo "                   request an immediate reboot as part of this script"
     echo "                   With '-R' this reboots the system in either non-error case"
@@ -427,7 +451,8 @@ remove_image() {
 
     remove_checksum_cache '[^\:]*' '[^\:]*' "$1"
     remove_checksum_cache '[^\:]*' '[^\:]*' "$1"'\.[^\:]*'
-    rm -f "$1"{,.md5,.sha,.sha1,.sha224,.sha256,.sha384,.sha512,.cksum}{,-padded}{,.tmp} ${2:+"$2"}
+    # Note: we do not really support e.g. broken FILENAME and good FILENAME.gz
+    rm -f "$1"{,.md5,.sha,.sha1,.sha224,.sha256,.sha384,.sha512,.cksum}{,-padded}{,.tmp}{,.gz} ${2:+"$2"}
 
     # ...and update the SW package manifest
     # WARNING: this MUST be done before package manifest deletion!
@@ -457,20 +482,33 @@ verify_checksum() {
     # TODO: add generalized support for .${CHECKSUM_ALGO_DEFAULT}-padded checksum files (firmware imgs)
     # TODO (later): Support file sizes as part of checksum info
     FILENAME_DATA="$1"
+    FINALFILE="$FILENAME_DATA"
     FILENAME_CSUM="${2-}"
-    [ -n "$FILENAME_CSUM" ] || \
-        FILENAME_CSUM="$FILENAME_DATA.${CHECKSUM_ALGO_DEFAULT}"
+    [ -n "${FILENAME_CSUM}" ] || \
+        FILENAME_CSUM="${FILENAME_DATA}.${CHECKSUM_ALGO_DEFAULT}"
     if [ -z "${3-}" ]; then
-        CHECKSUM_ALGO="`get_csalgo_from_filename "$FILENAME_CSUM"`"
-        [ $? = 0 -a -n "$CHECKSUM_ALGO" ] || \
+        CHECKSUM_ALGO="`get_csalgo_from_filename "${FILENAME_CSUM}"`"
+        [ $? = 0 -a -n "${CHECKSUM_ALGO}" ] || \
             CHECKSUM_ALGO="${CHECKSUM_ALGO_DEFAULT}"
     else
         CHECKSUM_ALGO="$3"
     fi
-    LOGINTRO="Checksum validation of '$FILENAME_DATA' against value in '$FILENAME_CSUM' ($CHECKSUM_ALGO)"
+
+    # If we only have the compressed artifact, report it as such
+    # Comparison routines still work on original name
+    # (looking at checksums of uncompressed data)
+    if [ ! -s "$FILENAME_DATA"  ] && [ -s "$FILENAME_DATA.gz" ] ; then
+        FINALFILE="$FILENAME_DATA.gz"
+    fi
+
+    LOGINTRO="Checksum validation of '$FINALFILE' against value in '$FILENAME_CSUM' ($CHECKSUM_ALGO)"
+    if [ "$FINALFILE" != "$FILENAME_DATA" ]; then
+        LOGINTRO="$LOGINTRO for uncompressed data of '`basename "$FILENAME_DATA"`'"
+    fi
 
     if [ -n "$FILENAME_DATA" ] && [ -n "$FILENAME_CSUM" ] && \
-       [ -s "$FILENAME_DATA" -o -c "$FILENAME_DATA" -o -b "$FILENAME_DATA" ] && \
+       ( [ -s "$FILENAME_DATA" -o -c "$FILENAME_DATA" -o -b "$FILENAME_DATA" ] || \
+         [ -s "$FILENAME_DATA.gz" -a ! -c "$FILENAME_DATA.gz" -a ! -b "$FILENAME_DATA.gz" ] ) && \
        [ -s "$FILENAME_CSUM" ] \
     ; then
         logmsg_info "Beginning $LOGINTRO..."
@@ -485,7 +523,11 @@ verify_checksum() {
             [ -n "${CHECKSUM_ACT}" ] && logmsg_info "Got cached checksum (${CHECKSUM_ALGO}) for ${FILENAME_DATA}" \
             || CHECKSUM_ACT=""
         if [ -z "$CHECKSUM_ACT" ]; then
-            CHECKSUM_ACT="`calculate_stream_checksum ${CHECKSUM_ALGO} < "$FILENAME_DATA"`"
+            if [ ! -s "$FILENAME_DATA" -a -s "$FILENAME_DATA.gz" ] ; then
+                    CHECKSUM_ACT="`gzip -cd < "$FILENAME_DATA.gz" | calculate_stream_checksum ${CHECKSUM_ALGO}`"
+            else
+                    CHECKSUM_ACT="`calculate_stream_checksum ${CHECKSUM_ALGO} < "$FILENAME_DATA"`"
+            fi
             if [ $? = 0 ] && [ -n "$CHECKSUM_ACT" ]; then
                 # TODO: Actually employ data-file length field
                 # TODO: Compare data-file length field to value in .cksum files
@@ -528,7 +570,8 @@ verify_threeway_checksum() {
     # We can have (or not) a local copy of the data file "$2", a local copy
     # of the checksum file "$3", and a freshly fetched copy of remote checksum
     # file "$4" (usually an *.algo.tmp); all previously downloaded by caller
-    # from URL in "$1".
+    # from URL in "$1". The file may be a compressed "$2.gz" variant instead,
+    # which would be used if detected and the verbatim filename in "$2" is not.
     # Return codes:
     #   0       OK, local data and checksum files are (now) consistent, keep'em
     #   1       ERROR, local files inconsistent (removed), re-pull from remote!
@@ -583,15 +626,20 @@ verify_threeway_checksum() {
     esac
 
     [ -n "$IMAGE_URL" ] && \
-    IMAGE_URL_BASENAME="`basename "$IMAGE_URL" ".${EXT}"`" && \
+    { IMAGE_URL_BASENAME="`basename "$IMAGE_URL" ".${EXT}.gz"`" || \
+      IMAGE_URL_BASENAME="`basename "$IMAGE_URL" ".${EXT}"`" ; } && \
     [ -n "$IMAGE_URL_BASENAME" ] && \
     IMAGE_URL_BASENAME_EXT="${IMAGE_URL_BASENAME}${EXT:+.$EXT}" || \
         { logmsg_warn "Could not resolve IMAGE_URL value '$IMAGE_URL' into a filename"
           IMAGE_URL=""; IMAGE_URL_BASENAME=""; IMAGE_URL_BASENAME_EXT=""; }
 
     if [ ! -s "$FILE_DATA" ] && [ ! -c "$FILE_DATA" ] && [ ! -b "$FILE_DATA" ] ; then
-        logmsg_info "Local data file '$FILE_DATA' is missing"
-        return 2
+        if [ -s "$FILE_DATA.gz" ] && [ ! -c "$FILE_DATA.gz" ] && [ ! -b "$FILE_DATA.gz" ] ; then
+            logmsg_info "Local data file (or device) '$FILE_DATA' is missing, but compressed local data file '$FILE_DATA.gz' is available"
+        else
+            logmsg_info "Local data file (or device) '$FILE_DATA' is missing"
+            return 2
+        fi
     fi
 
     if [ ! -s "$FILE_CSOLD" ] && [ ! -s "$FILE_CSNEW" ] ; then
@@ -644,13 +692,15 @@ verify_threeway_checksum() {
             logmsg_info "Remote checksum is good in '$FILE_CSNEW', local copy was corrupted or missing - replacing checksum file"
             mv -f "$FILE_CSNEW" "$FILE_CSOLD"
         fi && \
-            logmsg_info "The newest available remote image is '$IMAGE_URL' and we already have a good copy (as '$FILE_DATA')"
+            logmsg_info "The newest available remote image is '$IMAGE_URL' and we already have a good copy (as '$FILE_DATA' or .gz)"
         return $?
     else
         # In-place changes are not nice but can happen e.g. for FW images
-        logmsg_info "Remote checksum in '$FILE_CSNEW' is not good for '$FILE_DATA', local file is corrupted or obsolete and should be re-downloaded from '$IMAGE_URL'"
         if [ ! -c "$FILE_DATA" ] && [ ! -b "$FILE_DATA" ] ; then
+            logmsg_info "Remote checksum in '$FILE_CSNEW' is not good for '$FILE_DATA', local file is corrupted or obsolete and should be re-downloaded from '$IMAGE_URL'"
             RETAIN_FILES="$FILE_CSNEW" remove_image "$FILE_DATA"
+        else
+            logmsg_info "Remote checksum in '$FILE_CSNEW' is not good for '$FILE_DATA', content in local device is corrupted or obsolete and should be re-downloaded from '$IMAGE_URL' and flashed with appropriate tools (e.g. loader auto-update)"
         fi
         return 1
     fi
@@ -663,9 +713,11 @@ verify_threeway_checksum() {
     else
         # Verifying against old checksum failed, so data file and its related
         # files (checksums) should be removed; keep the FILE_CSNEW if available
-        logmsg_info "Local checksum mismatched for '$FILE_CSOLD', local file is corrupted and should be re-downloaded from '$IMAGE_URL'"
         if [ ! -c "$FILE_DATA" ] && [ ! -b "$FILE_DATA" ] ; then
+            logmsg_info "Local checksum in '$FILE_CSOLD' mismatched: not good for '$FILE_DATA', local file is corrupted or obsolete and should be re-downloaded from '$IMAGE_URL'"
             RETAIN_FILES="$FILE_CSNEW" remove_image "$FILE_DATA"
+        else
+            logmsg_info "Local checksum in '$FILE_CSOLD' mismatched: not good for '$FILE_DATA', content in local device is corrupted or obsolete and should be re-downloaded from '$IMAGE_URL' and flashed with appropriate tools (e.g. loader auto-update)"
         fi
         return 1
     fi
@@ -689,6 +741,7 @@ fetch_file() {
     # TODO: Make a common routine to list remote directories (e.g. http-dir parsing, ftp, tftp, localfs...)
     local URL="$1"
     local FILE="$2"
+    local FINALFILE="$2"
     local RES=0
     local FETCH_FLAGS=""
     local FETCHER=wget
@@ -704,14 +757,42 @@ fetch_file() {
             ;;
     esac
 
-    logmsg_info "Downloading '${URL}' (if any) into '${FILE}'..."
     if [ x"$FILE" = x- ] || [ x"$FILE" = x ] || [ x"$FILE" = xstdout ] ; then
         FILE=stdout
-        $FETCHER $FETCH_FLAGS "${URL}" || RES=$?
+        FINALFILE="$FILE"
+        logmsg_info "Downloading '${URL}' (if any) into '${FILE}'..."
+        # Warning: bashism below, to count how many bytes of stdout we saw
+        # Note the script also uses "pipefail" and it can matter here too.
+        case "${URL}" in
+            */) # For directories, there is no .gz to fetch
+                $FETCHER $FETCH_FLAGS "${URL}" || RES=$?
+                ;;
+            *)
+                local COUNT
+                exec 11>&1 # write from this FS to STDOUT - stream from tee goes here
+                COUNT="`$FETCHER $FETCH_FLAGS "${URL}" | tee >(wc -c) >&11`" || RES=$?
+                exec 11>&- # close FD
+                if [ "$COUNT" = 0 -a "$RES" != 0 ] ; then
+                    RES=0
+                    logmsg_info "Base URL returned nothing, downloading and uncompressing '${URL}.gz' (if any) into '${FILE}'..."
+                    $FETCHER $FETCH_FLAGS "${URL}.gz" | gzip -cd || RES=$?
+                fi
+                ;;
+        esac
     else
         if [ -d "`dirname "${FILE}"`" ]; then
+            logmsg_info "Downloading '${URL}' (if any) into '${FILE}'..."
             rm -f "${FILE}" || true
             $FETCHER $FETCH_FLAGS "${URL}" > "${FILE}" || RES=$?
+            if [ ! -s "${FILE}" -a "$RES" != 0 ] ; then
+                # We have a mode for empty files on the URL below,
+                # but that should be a RES==0 fetch above
+                RES=0
+                rm -f "${FILE}" || true
+                FINALFILE="${FILE}.gz"
+                logmsg_info "Base URL returned nothing, downloading '${URL}.gz' (if any) into '${FINALFILE}'..."
+                $FETCHER $FETCH_FLAGS "${URL}.gz" > "${FINALFILE}" || RES=$?
+            fi
         else
             logmsg_error "Could not save '${URL}' into '${FILE}': target directory is missing"
             RES=2
@@ -719,17 +800,17 @@ fetch_file() {
     fi
 
     if [ "$RES" != 0 ] ; then
-        logmsg_error "Could not save '${URL}' into '${FILE}' (see errors above)"
+        logmsg_error "Could not save '${URL}' into '${FINALFILE}' (see errors above)"
     fi
 
-    if [ x"${MAYBE_EMPTY=}" != xyes ] && [ "${FILE}" != stdout ] && [ ! -s "${FILE}" ] ; then
-        logmsg_error "Got empty output trying to save '${URL}' into '${FILE}'"
+    if [ x"${MAYBE_EMPTY=}" != xyes ] && [ "${FINALFILE}" != stdout ] && [ ! -s "${FINALFILE}" ] ; then
+        logmsg_error "Got empty output trying to save '${URL}' into '${FINALFILE}'"
         RES=1
     fi
 
     if [ "$RES" != 0 ] ; then
         if [ x"$FILE" != xstdout ]; then
-            rm -f "${FILE}" || true
+            rm -f "${FILE}"{,.gz} || true
         fi
         if [ x"${CHECK_ONLY-}" = xyes ]; then
             die "Got an error while checking if there is something new to download, so no reason to proceed"
@@ -822,6 +903,7 @@ lsdir_http_pattern() {
 #        echo "DEBUG: lsdir_http_pattern('$REMOTE_DIR', '$REMOTE_GLOB'): got URL='$URL'" >&2
         case "$URL" in
             $REMOTE_DIR/$REMOTE_GLOB) echo "$URL" ;;
+#            $REMOTE_DIR/$REMOTE_GLOB.gz) echo "$URL" ;;
         esac
     done
 }
@@ -852,6 +934,8 @@ download_rawfwimage_generic() (
     local SOURCESITEROOT_THISIMAGE="$1" ; shift
     local IMAGEFINDER_ROUTINE="$1" ; shift
     local RAW_DEVICE_NODE="$1" ; shift
+    # Optional next arg may be the custom IMAGE_URL, see below
+
     local LOCAL_CHECKSUMS_MATCHED
 
     [ -n "${REFER_NEWEST}" ] && rm -f "${REFER_NEWEST}"
@@ -860,14 +944,14 @@ download_rawfwimage_generic() (
     cd "${DEPLOYMENTROOT_THISIMAGE}" || die "Can not use DOWNLOADROOT_THISIMAGE_VARNAME='$DOWNLOADROOT_THISIMAGE' nor DEPLOYMENTROOT_THISIMAGE_VARNAME='$DEPLOYMENTROOT_THISIMAGE'"
 
     case "${1-}" in
+        ""|*://*/)
+            logmsg_info "Fetching newest remote filename for the ${RAW_DEVICE_NODE:+raw }$REPORT_IMAGETYPE..."
+            IMAGE_URL="`${IMAGEFINDER_ROUTINE} ${1:-$SOURCESITEROOT_THISIMAGE}`" && [ -n "$IMAGE_URL" ] \
+            && logmsg_info "${CALLER_ROUTINE}() detected '$IMAGE_URL' as the newest remote ${RAW_DEVICE_NODE:+raw }$REPORT_IMAGETYPE" \
+            || { logmsg_error "Could not find any remote ${RAW_DEVICE_NODE:+raw }$REPORT_IMAGETYPE"; IMAGE_URL="";} ;;
         *://*)
             logmsg_info "${CALLER_ROUTINE}() was asked to try downloading '$1' as the ${RAW_DEVICE_NODE:+raw }$REPORT_IMAGETYPE"
             IMAGE_URL="$1" ;;
-        "")
-            logmsg_info "Fetching newest remote filename for the ${RAW_DEVICE_NODE:+raw }$REPORT_IMAGETYPE..."
-            IMAGE_URL="`${IMAGEFINDER_ROUTINE}`" && [ -n "$IMAGE_URL" ] \
-            && logmsg_info "${CALLER_ROUTINE}() detected '$IMAGE_URL' as the newest remote ${RAW_DEVICE_NODE:+raw }$REPORT_IMAGETYPE" \
-            || { logmsg_error "Could not find any remote ${RAW_DEVICE_NODE:+raw }$REPORT_IMAGETYPE"; IMAGE_URL="";} ;;
         *)  logmsg_error "${CALLER_ROUTINE}() got an unsupported argument: $*"
             IMAGE_URL=""
             ;;
@@ -945,7 +1029,7 @@ download_rawfwimage_generic() (
             for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
                 if [ "$LOCAL_CHECKSUMS_MATCHED" = -1 ] ; then LOCAL_CHECKSUMS_MATCHED=0 ; fi
 
-                if [ -s "${aIMAGE_CSNEW_PADDED["$IMAGE_CSALGO"]}" ] && [ -c "${RAW_DEVICE_NODE}" ]; then
+                if [ -s "${aIMAGE_CSNEW_PADDED["$IMAGE_CSALGO"]}" ] && [ -b "${RAW_DEVICE_NODE}" -o -c "${RAW_DEVICE_NODE}" ]; then
                     logmsg_info "Verify padded ${IMAGE_CSALGO} checksum against a raw $REPORT_IMAGETYPE partition with flashed bits here ..."
                     REPLACE_MISSING_CHECKSUM="no" \
                     FLAG_CAN_REMOVE_IMAGES="no" verify_threeway_checksum "${IMAGE_URL}" \
@@ -961,7 +1045,9 @@ download_rawfwimage_generic() (
                         "${RAW_DEVICE_NODE}" \
                         "${DEPLOYMENTROOT_THISIMAGE}/${rIMAGE_CSOLD["$IMAGE_CSALGO"]}" \
                         "${aIMAGE_CSNEW["$IMAGE_CSALGO"]}" \
-                    || logmsg_warn "TODO: If we can detect the file size of the remote image, use calculate_stream_checksum_bytes() to verify flashed bits vs ${IMAGE_CSALGO} checksum file"
+                    || { LOCAL_CHECKSUMS_MATCHED=$?
+                         logmsg_warn "TODO: If we can detect the file size of the remote image, use calculate_stream_checksum_bytes() to verify flashed bits vs ${IMAGE_CSALGO} checksum file; note this is not relevant for images that fill the partition exactly without padding"
+                        }
             done
 
             case "$LOCAL_CHECKSUMS_MATCHED" in
@@ -1028,7 +1114,10 @@ download_rawfwimage_generic() (
         { remove_image "$aTGT_FILE"; die "Could not download '$IMAGE_URL' into '$aTGT_FILE'"; }
     remove_checksum_cache '[^\:]*' '[^\:]*' "${aTGT_FILE}"
 
-    HELPER_PATTERN=''
+    # Do not additionally download the following list of exact filenames even
+    # if present (below we would fetch "optional files" that are not matched
+    #HELPER_PATTERN=''
+    HELPER_PATTERN="${IMAGE_URL}.gz"
     for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
         [ -n "${HELPER_PATTERN-}" ] \
             && HELPER_PATTERN="${HELPER_PATTERN}|${IMAGE_CSURL["$IMAGE_CSALGO"]}" \
@@ -1039,6 +1128,7 @@ download_rawfwimage_generic() (
     done
     HELPER_PATTERN="^${HELPER_PATTERN}"'$'
 
+    # TODO: replace and test "`basename ${IMAGE_URL}`" => "${rIMAGE_URL_BASENAME}"
     lsdir_http_pattern "${SOURCESITEROOT_THISIMAGE}" "`basename ${IMAGE_URL}`"'*' | egrep "^${IMAGE_URL}\." | \
         egrep -v "${HELPER_PATTERN}" | \
         while read U ; do
@@ -1090,17 +1180,22 @@ download_rawfwimage_generic() (
     # Finally check that expected files are all here - and note at this
     # point it includes the whole CHECKSUM_ALGOLIST_DEFAULT matrix
     # TODO: Verify file size against partition size (flashability after reboot)
-    [ -s "${aTGT_FILE}" ] \
-        || die "Could not find '${aTGT_FILE}' or it was found empty"
+    local FINALFILE="${aTGT_FILE}"
+    if [ ! -s "${aTGT_FILE}" ] && [ -s "${aTGT_FILE}.gz" ]; then
+        FINALFILE="${aTGT_FILE}.gz"
+    fi
+
+    [ -s "${aTGT_FILE}" ] || [ -s "${aTGT_FILE}.gz" ] \
+        || die "Could not find '${FINALFILE}' or it was found empty"
 
     for IMAGE_CSALGO in ${CHECKSUM_ALGOLIST_DEFAULT} ; do
         [ -s "${aIMAGE_CSOLD["$IMAGE_CSALGO"]}" ] \
-        && touch -r "${aTGT_FILE}" "${aIMAGE_CSOLD["$IMAGE_CSALGO"]}" \
+        && touch -r "${FINALFILE}" "${aIMAGE_CSOLD["$IMAGE_CSALGO"]}" \
         || die "Could not touch '${aIMAGE_CSOLD["$IMAGE_CSALGO"]}' or it was found empty"
     done
 
     logmsg_info "Got $REPORT_IMAGETYPE OK:" && \
-    ls -ld "${aTGT_FILE}" "${aIMAGE_CSOLD[@]}" && \
+    ls -ld "${FINALFILE}" "${aIMAGE_CSOLD[@]}" && \
     cat "${aIMAGE_CSOLD[@]}" && \
     { echo "${aTGT_FILE}" > "${REFER_NEWEST}" ;
       return 42 ; }
@@ -1539,8 +1634,13 @@ download_osimage() (
     # Finally check that expected files are all here - and note at this
     # point it includes the whole CHECKSUM_ALGOLIST_DEFAULT matrix
     # TODO: Verify file size against partition size (flashability after reboot)
-    [ -s "${aTGT_FILE}" ] \
-        || die "Could not find '${aTGT_FILE}' or it was found empty"
+    local FINALFILE="${aTGT_FILE}"
+    if [ ! -s "${aTGT_FILE}" ] && [ -s "${aTGT_FILE}.gz" ]; then
+        FINALFILE="${aTGT_FILE}.gz"
+    fi
+
+    [ -s "${aTGT_FILE}" ] || [ -s "${aTGT_FILE}.gz" ] \
+        || die "Could not find '${FINALFILE}' or it was found empty"
 
     [ -s "${aTGT_FILE_MANIFEST}" ] \
         && touch -r "${aTGT_FILE}" "${aTGT_FILE_MANIFEST}" \
@@ -1562,7 +1662,7 @@ download_osimage() (
     mkdir -p @ftydatadir@/sw-update/ && \
     ( etn-sw-update --add-image "${aTGT_FILE}" ; echo "$?" > "@ftydatadir@/sw-update/activation_requested.status" ) && \
     logmsg_info "Got $REPORT_IMAGETYPE OK:" && \
-    ls -ld "${aTGT_FILE}" "${aTGT_FILE_CSOLD[@]}" "${aTGT_FILE_MANIFEST}" && \
+    ls -ld "${FINALFILE}" "${aTGT_FILE_CSOLD[@]}" "${aTGT_FILE_MANIFEST}" && \
     cat "${aTGT_FILE_CSOLD[@]}" && \
     { echo "${aTGT_FILE}" > "${DOWNLOADROOT_OSIMAGE}/.newest-osimage";
       echo "${aTGT_FILE}" > "${REFER_NEWEST}";
@@ -1641,7 +1741,7 @@ findnewest_rawfwimage_uboot() (
     # uBoot image file found on remote resource, if any
     # Note: currently expects certain filename patterns and http-dir listing markup
     for P in 'u-Boot' 'uBoot' ; do
-        IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOTFW_UBOOT}" "$P" | sort -n | tail -1`"
+        IMAGE_URL="`lsdir_http_pattern "${1:-$SOURCESITEROOTFW_UBOOT}" "$P" | sort -n | tail -1`"
         if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
             echo "$IMAGE_URL" && return 0
         fi
@@ -1659,7 +1759,8 @@ download_rawfwimage_uboot() (
         "DEPLOYMENTROOTFW_UBOOT" "${DEPLOYMENTROOTFW_UBOOT}" \
         "${SOURCESITEROOTFW_UBOOT}" \
         'findnewest_rawfwimage_uboot' \
-        "/dev/mtd$UBOOT_MTD"
+        "/dev/mtd$UBOOT_MTD" \
+        "${1-}"
 )
 
 removeold_rawfwimage_uboot() (
@@ -1694,7 +1795,7 @@ findnewest_rawfwimage_uimage() (
     # Echo the URL to the newest "raw" (not tarballed, only one)
     # uImage image file found on remote resource, if any
     # Note: currently expects certain filename patterns and http-dir listing markup
-    IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOTFW_UIMAGE}" "uImage" | sort -n | tail -1`"
+    IMAGE_URL="`lsdir_http_pattern "${1:-$SOURCESITEROOTFW_UIMAGE}" "uImage" | sort -n | tail -1`"
     if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
         echo "$IMAGE_URL" && return 0
     fi
@@ -1711,7 +1812,8 @@ download_rawfwimage_uimage() (
         "DEPLOYMENTROOTFW_UIMAGE" "${DEPLOYMENTROOTFW_UIMAGE}" \
         "${SOURCESITEROOTFW_UIMAGE}" \
         'findnewest_rawfwimage_uimage' \
-        "/dev/mtd$KERNEL_MTD"
+        "/dev/mtd$KERNEL_MTD" \
+        "${1-}"
 )
 
 removeold_rawfwimage_uimage() (
@@ -1737,6 +1839,133 @@ removeold_rawfwimage_uimage() (
     [ "$VICTIMS" -eq 0 ] && logmsg_info "removeold_rawfwimage_uimage() had nothing to remove" || \
         logmsg_info "removeold_rawfwimage_uimage() requested to remove $VICTIMS file(s): $VICTIMPATHS"
     return 0
+)
+
+##################################################
+
+findnewest_rawfwimage_ovaloader() (
+    # Echo the URL to the newest "raw" (not tarballed, only one)
+    # ovaloader image file found on remote resource, if any
+    # Note: currently expects certain filename patterns and http-dir listing markup
+    IMAGE_URL="`lsdir_http_pattern "${1:-$SOURCESITEROOTFW_OVALOADER}" "ovaloader" | sort -n | tail -1`"
+    if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
+        echo "$IMAGE_URL" && return 0
+    fi
+    IMAGE_URL="`lsdir_http_pattern "${1:-$SOURCESITEROOTFW_OVALOADER}" "ovaloader.gz" | sort -n | tail -1`"
+    if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
+        echo "$IMAGE_URL" | sed 's,\.gz$,,' && return 0
+    fi
+    logmsg_error "Error looking up remote file: Make sure your settings (including proxy if needed) are correct."
+    return 1
+)
+
+download_rawfwimage_ovaloader() (
+    download_rawfwimage_generic \
+        'download_rawfwimage_ovaloader' \
+        'OVA loader and kernel' \
+        "${TEMP_DATA}/.newest-ovaloader" \
+        "DOWNLOADROOTFW_OVALOADER" "${DOWNLOADROOTFW_OVALOADER}" \
+        "DEPLOYMENTROOTFW_OVALOADER" "${DEPLOYMENTROOTFW_OVALOADER}" \
+        "${SOURCESITEROOTFW_OVALOADER}" \
+        'findnewest_rawfwimage_ovaloader' \
+        "${OVALOADER_DEVICE}" \
+        "${1-}"
+)
+
+removeold_rawfwimage_ovaloader() (
+    local REPORT_IMAGETYPE='OVA loader and kernel'
+    cd "${DOWNLOADROOTFW_OVALOADER}" || \
+    cd "${DEPLOYMENTROOTFW_OVALOADER}" || die "Can not use DOWNLOADROOTFW_OVALOADER='$DOWNLOADROOTFW_OVALOADER' nor DEPLOYMENTROOTFW_OVALOADER='$DEPLOYMENTROOTFW_OVALOADER'"
+    if [ -z "$DOWNLOADED_FW_OVALOADER" ] ; then
+        [ -s "${TEMP_DATA}/.newest-ovaloader" ] \
+        && DOWNLOADED_FW_OVALOADER="`head -1 "${TEMP_DATA}/.newest-ovaloader"`" \
+        && [ -n "$DOWNLOADED_FW_OVALOADER" ] && [ -s "$DOWNLOADED_FW_OVALOADER" ] \
+        || DOWNLOADED_FW_OVALOADER=""
+    fi
+    VICTIMS=0
+    VICTIMPATHS=""
+    for F in `ls -1d "${DOWNLOADROOTFW_OVALOADER}"/ovaloader{,.gz} "${DEPLOYMENTROOTFW_OVALOADER}"/ovaloader{,.gz} 2>/dev/null` ; do
+        [ -n "$DOWNLOADED_FW_OVALOADER" ] && [ -s "$DOWNLOADED_FW_OVALOADER" ] && [ "$DOWNLOADED_FW_OVALOADER" = "$F" ] && \
+            { logmsg_info "Keeping the just-downloaded $REPORT_IMAGETYPE: '$DOWNLOADED_FW_OVALOADER'" ; continue ; }
+        logmsg_info "Removing older $REPORT_IMAGETYPE: '`pwd`/$F' and its checksum(s)"
+        remove_image "$F"
+        VICTIMS=$(($VICTIMS+1))
+        VICTIMPATHS="$VICTIMPATHS $F*"
+    done
+    [ "$VICTIMS" -eq 0 ] && logmsg_info "removeold_rawfwimage_ovaloader() had nothing to remove" || \
+        logmsg_info "removeold_rawfwimage_ovaloader() requested to remove $VICTIMS file(s): $VICTIMPATHS"
+    return 0
+)
+
+apply_rawfwimage_ovaloader() (
+    # This one is a bit special, because early release OVAs did not include
+    # loaders capable of updating themselves. So we have to do it from the
+    # userland, at least to install a newer loader than can update itself.
+
+    local REPORT_IMAGETYPE='OVA loader and kernel'
+
+    case "$ARCH" in
+        *86*|*amd64*) ;;
+        *) die "Can not apply $REPORT_IMAGETYPE to $ARCH architecture" ;;
+    esac
+
+    cd "${DOWNLOADROOTFW_OVALOADER}" || \
+    cd "${DEPLOYMENTROOTFW_OVALOADER}" || die "Can not use DOWNLOADROOTFW_OVALOADER='$DOWNLOADROOTFW_OVALOADER' nor DEPLOYMENTROOTFW_OVALOADER='$DEPLOYMENTROOTFW_OVALOADER'"
+    if [ -z "$DOWNLOADED_FW_OVALOADER" ] ; then
+        [ -s "${TEMP_DATA}/.newest-ovaloader" ] \
+        && DOWNLOADED_FW_OVALOADER="`head -1 "${TEMP_DATA}/.newest-ovaloader"`" \
+        && [ -n "$DOWNLOADED_FW_OVALOADER" ] && [ -s "$DOWNLOADED_FW_OVALOADER" ] \
+        || DOWNLOADED_FW_OVALOADER=""
+    fi
+
+    # Find and unmount /dev/sda1 essentially
+    ( echo "/boot" ; mount | egrep "^${OVALOADER_DEVICE}" ) | while read D; do
+        umount "$D" || \
+        umount -l "$D" || \
+        umount -f "$D" || \
+        umount -fl "$D" || \
+        { mount | grep "$D " && die "FATAL: Can not unmount $D, if we proceed with replacing it would be not clean after/during reboot!" ; }
+    done
+
+    # TODO: add a concept of "newer" on file basis and/or contents
+    # (.git_details and /.bootldr in image). For now first one seen
+    # and good is flashed.
+    # TODO: for miniroot based loaders like that with dracut, the
+    # partition image may be changing as it is mounted etc., but
+    # its practical contents (GRUB sectors, miniroot file) may be
+    # the same. Learn to compare that deep...
+    # NOTE: For now we trust that anything in recovery or production
+    # locations is trustworthy!
+    local FB FS
+    for F in `ls -1d "${DOWNLOADROOTFW_OVALOADER}"/ovaloader{,.gz} "${DEPLOYMENTROOTFW_OVALOADER}"/ovaloader{,.gz} 2>/dev/null` ; do
+        if [ -s "$F" ] ; then
+            FB="`dirname "$F"`/`basename "$F" .gz`"
+            for CSALGO in $CHECKSUM_ALGOLIST_DEFAULT ; do
+                if [ -s "$FB.$CSALGO" ] ; then
+                    ensure_checksum "$FB" "$FB.$CSALGO" || break 2  # return # die "Checksum verification failed for '$FB'!"
+                fi
+            done
+            logmsg_info "apply_rawfwimage_ovaloader(): Trying to flash '$F' into '${OVALOADER_DEVICE}' ..."
+            case "$F" in
+                *.gz) # TODO: size check for gzip
+                    FS="`gzip -cd < "$F" | wc -c`"
+                    # As a sanity check, require that these are equal (not less-than)
+                    [ "$FS" = "$OVALOADER_MAX_SIZE_IPM2" ] || die "Trying to flash $REPORT_IMAGETYPE sized '$FS' bytes to device sized '$OVALOADER_MAX_SIZE_IPM2'"
+                    gzip -cd < "$F" > "${OVALOADER_DEVICE}" || die "Failed to flash '$F' into '${OVALOADER_DEVICE}'" ;;
+                *)
+                    FS="`filesize "$F"`"
+                    # As a sanity check, require that these are equal (not less-than)
+                    [ "$FS" = "$OVALOADER_MAX_SIZE_IPM2" ] || die "Trying to flash $REPORT_IMAGETYPE sized '$FS' bytes to device sized '$OVALOADER_MAX_SIZE_IPM2'"
+                    cat "$F" > "${OVALOADER_DEVICE}" || die "Failed to flash '$F' into '${OVALOADER_DEVICE}'" ;;
+            esac
+            sync || die "Failed to sync after flashing '$F' into '${OVALOADER_DEVICE}'"
+            logmsg_info "apply_rawfwimage_ovaloader(): Flashed '$F' into '${OVALOADER_DEVICE}'"
+            return 0
+        fi
+    done
+
+    logmsg_info "apply_rawfwimage_ovaloader(): did not find any $REPORT_IMAGETYPE files to try flashing into '${OVALOADER_DEVICE}'"
+    return 1
 )
 
 ##################################################
@@ -1771,7 +2000,7 @@ findnewest_rawfwimage_modules() (
     # Echo the URL to the newest "raw" (not tarballed, only one)
     # uImage image file found on remote resource, if any
     # Note: currently expects certain filename patterns and http-dir listing markup
-    IMAGE_URL="`lsdir_http_pattern "${SOURCESITEROOTFW_MODULES}" "*[0-9].[0-9]*.${EXT}" | sort_module_names | tail -1`"
+    IMAGE_URL="`lsdir_http_pattern "${1:-$SOURCESITEROOTFW_MODULES}" "*[0-9].[0-9]*.${EXT}" | sort_module_names | tail -1`"
     if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
         echo "$IMAGE_URL" && return 0
     fi
@@ -1788,7 +2017,8 @@ download_rawfwimage_modules() (
         "DEPLOYMENTROOTFW_MODULES" "${DEPLOYMENTROOTFW_MODULES}" \
         "${SOURCESITEROOTFW_MODULES}" \
         'findnewest_rawfwimage_modules' \
-        ""
+        "" \
+        "${1-}"
 )
 
 removeold_rawfwimage_modules() (
@@ -1861,6 +2091,11 @@ learn_downloaded_images() {
 		DOWNLOADED_FW_MODULES="`head -1 "${TEMP_DATA}/.newest-modules"`" && \
 		[ -n "$DOWNLOADED_FW_MODULES" ] && [ -s "$DOWNLOADED_FW_MODULES" ] || \
 		DOWNLOADED_FW_MODULES=""
+
+	[ -s "${TEMP_DATA}/.newest-ovaloader" ] && \
+		DOWNLOADED_FW_OVALOADER="`head -1 "${TEMP_DATA}/.newest-ovaloader"`" && \
+		[ -n "$DOWNLOADED_FW_OVALOADER" ] && [ -s "$DOWNLOADED_FW_OVALOADER" ] || \
+		DOWNLOADED_FW_OVALOADER=""
 }
 
 ###########################################################################
@@ -1905,6 +2140,8 @@ ACTION_CHECK_FWIMAGE="no"
 ACTION_FORCEFLASH_OSIMAGE="no"
 ACTION_FORCEFLASH_FWIMAGE_UBOOT="no"
 ACTION_FORCEFLASH_FWIMAGE_UIMAGE="no"
+ACTION_FORCEFLASH_FWIMAGE_OVALOADER="no"
+ACTION_APPLYNOW_FWIMAGE_OVALOADER="no"
 # Remove any existing .forceflash flag-files before any check or download
 # (does not fire for a mere "-ls" activity)
 ACTION_FORCEFLASH_CLEANUP="no"
@@ -1914,6 +2151,7 @@ ACTION_FORCEFLASH_CLEANUP="no"
 [ -z "${URL_DOWNLOAD_FWIMAGE_RAW_UBOOT-}" ] &&      URL_DOWNLOAD_FWIMAGE_RAW_UBOOT=""
 [ -z "${URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE-}" ] &&     URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE=""
 [ -z "${URL_DOWNLOAD_FWIMAGE_RAW_MODULES-}" ] &&    URL_DOWNLOAD_FWIMAGE_RAW_MODULES=""
+[ -z "${URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER-}" ] &&     URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER=""
 
 ACTION_REMOVEOLD_OSIMAGE="yes"
 # This is currently no-op because we only track "raw" FW images which have one
@@ -1931,7 +2169,8 @@ DOWNLOADED_OS_IMAGE=""
 DOWNLOADED_FW_UBOOT=""
 DOWNLOADED_FW_UIMAGE=""
 DOWNLOADED_FW_MODULES=""
-export DOWNLOADED_OS_IMAGE DOWNLOADED_FW_UBOOT DOWNLOADED_FW_UIMAGE DOWNLOADED_FW_MODULES
+DOWNLOADED_FW_OVALOADER=""
+export DOWNLOADED_OS_IMAGE DOWNLOADED_FW_UBOOT DOWNLOADED_FW_UIMAGE DOWNLOADED_FW_MODULES DOWNLOADED_FW_OVALOADER
 
 # Note: /mnt/ext is in the list just in case rogue data is around.
 FACTORY_RESET_TTL_EXPIRED=""
@@ -1978,6 +2217,8 @@ while [ $# -gt 0 ]; do
 				| egrep -v '\.(md5|sha256|cksum'"${CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT}"')$' || RES=$?
 			lsdir_http_pattern "${SOURCESITEROOTFW_MODULES}" "*[0-9].[0-9]*.${EXT}*" \
 				| egrep -v '\.(md5|sha256|cksum'"${CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT}"')$' || RES=$?
+			lsdir_http_pattern "${SOURCESITEROOTFW_OVALOADER}" "ovaloader*" \
+				| egrep -v '\.(md5|sha256|cksum'"${CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT}"')$' || RES=$?
 			lsdir_http_pattern "${SOURCESITEROOT_OSIMAGE}" "${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}.${EXT}" \
 				| sort_osimage_names \
 				| egrep -v '\.(md5|sha256|cksum'"${CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT}"')$' || RES=$?
@@ -2003,7 +2244,9 @@ while [ $# -gt 0 ]; do
 			PID3=$!
 			summarize_check "LOADER-UBOOT"   download_rawfwimage_uboot   $URL_DOWNLOAD_FWIMAGE_RAW_UBOOT &
 			PID4=$!
-			for P in $PID1 $PID2 $PID3 $PID4 ; do wait $P || RES=$? ; done
+			summarize_check "KERNEL-OVALOADER"  download_rawfwimage_ovaloader  $URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER &
+			PID5=$!
+			for P in $PID1 $PID2 $PID3 $PID4 $PID5 ; do wait $P || RES=$? ; done
 			wait || RES=$?
 			process_FACTORY_RESET_TTL_EXPIRED
 			exit $RES
@@ -2042,6 +2285,7 @@ while [ $# -gt 0 ]; do
 		        --url-image-fw-raw-uboot)   URL_DOWNLOAD_FWIMAGE_RAW_UBOOT="$2" ;;
 		        --url-image-fw-raw-uimage)  URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE="$2" ;;
 		        --url-image-fw-raw-modules) URL_DOWNLOAD_FWIMAGE_RAW_MODULES="$2" ;;
+		        --url-image-fw-raw-ovaloader)  URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER="$2" ;;
 		        *)  die "Aborting due to unknown command-line argument(s): $*" ;;
 		    esac
 		    shift ;;
@@ -2056,7 +2300,7 @@ while [ $# -gt 0 ]; do
 		--touch-factory-reset|--force-factory-reset|-FR)
 		                        FLAG_ERASE_FACTORYRESET="force" ;;
 		--no-erase-factory-reset|--clear-factory-reset|-NR)
-					FLAG_ERASE_FACTORYRESET="no" ;;
+		                        FLAG_ERASE_FACTORYRESET="no" ;;
 		--clear-failed-factory-reset|-FFR)
 		                        FLAG_ERASE_FACTORYRESETFAILED="yes" ;;
 		--erase-all)            FLAG_ERASE_ALL="yes" ;;
@@ -2068,10 +2312,12 @@ while [ $# -gt 0 ]; do
 		                        ACTION_FORCEFLASH_OSIMAGE="yes"
 		                        ACTION_FORCEFLASH_FWIMAGE_UBOOT="yes"
 		                        ACTION_FORCEFLASH_FWIMAGE_UIMAGE="yes"
+		                        ACTION_FORCEFLASH_FWIMAGE_OVALOADER="yes"
 		                        ;;
 		--forceflash-image-fw|--forceflash-image-FW|-FFf)
 		                        ACTION_FORCEFLASH_FWIMAGE_UBOOT="yes"
 		                        ACTION_FORCEFLASH_FWIMAGE_UIMAGE="yes"
+		                        ACTION_FORCEFLASH_FWIMAGE_OVALOADER="yes"
 		                        ;;
 		--forceflash-image-os|--forceflash-image-OS|-FFo)
 		                        ACTION_FORCEFLASH_OSIMAGE="yes"
@@ -2081,6 +2327,12 @@ while [ $# -gt 0 ]; do
 		                        ;;
 		--forceflash-image-uImage|--forceflash-image-uimage|-FFi)
 		                        ACTION_FORCEFLASH_FWIMAGE_UIMAGE="yes"
+		                        ;;
+		--forceflash-image-ovaloader|--forceflash-image-ova-loader|-FFl)
+		                        ACTION_FORCEFLASH_FWIMAGE_OVALOADER="yes"
+		                        ;;
+		--apply-image-ovaloader)
+		                        ACTION_APPLYNOW_FWIMAGE_OVALOADER="yes"
 		                        ;;
 		--no-erase-all)         FLAG_ERASE_ALL="no" ;;
 		--reboot|-r)            WANT_REBOOT="yes" ;; # reboot if code 42 - got new files ok
@@ -2110,14 +2362,24 @@ while [ $# -gt 0 ]; do
 	esac
 	shift
 done
-if test -z "$DOWNLOADROOTFW_UBOOT"; then
-	ACTION_DOWNLOAD_FWIMAGE=no
-fi
+
+case "$ARCH" in
+	*86*|*amd64*)
+		if test -z "$DOWNLOADROOTFW_OVALOADER"; then
+			ACTION_DOWNLOAD_FWIMAGE=no
+		fi ;;
+	*arm*)
+		if test -z "$DOWNLOADROOTFW_UBOOT"; then
+			ACTION_DOWNLOAD_FWIMAGE=no
+		fi ;;
+	*) ACTION_DOWNLOAD_FWIMAGE=no ;;
+esac
 
 if [ x"$ACTION_FORCEFLASH_CLEANUP" = xyes ]; then
 	rm -f "${DEPLOYMENTROOTFW_UBOOT}/u-Boot.forceflash" "${DOWNLOADROOTFW_UBOOT}/u-Boot.forceflash"
 	rm -f "${DEPLOYMENTROOTFW_UIMAGE}/uImage.forceflash" "${DOWNLOADROOTFW_UIMAGE}/uImage.forceflash"
 	rm -f "${DEPLOYMENTROOT_OSIMAGE}"/*.forceflash "${DOWNLOADROOT_OSIMAGE}"/*.forceflash
+	rm -f "${DEPLOYMENTROOTFW_OVALOADER}/ovaloader.forceflash" "${DOWNLOADROOTFW_OVALOADER}/ovaloader.forceflash"
 fi
 
 # Checks are special - after we do all which were requested (if any), we exit
@@ -2126,17 +2388,25 @@ if [ x"$ACTION_CHECK_OSIMAGE" = xyes ] || [ x"$ACTION_CHECK_FWIMAGE" = xyes ]; t
 	RESULT_ACTION_CHECK_UBOOT=-1
 	RESULT_ACTION_CHECK_UIMAGE=-1
 	RESULT_ACTION_CHECK_MODULES=-1
+	RESULT_ACTION_CHECK_OVALOADER=-1
 	RESULT_ACTION_CHECK_ANYIMAGE=-1
 	if [ x"$ACTION_CHECK_OSIMAGE" = xyes ]; then
 		CHECK_ONLY=yes download_osimage $URL_DOWNLOAD_OSIMAGE; RESULT_ACTION_CHECK_OSIMAGE=$?
 	fi
 	if [ x"$ACTION_CHECK_FWIMAGE" = xyes ]; then
-		CHECK_ONLY=yes download_rawfwimage_uboot   $URL_DOWNLOAD_FWIMAGE_RAW_UBOOT   ; RESULT_ACTION_CHECK_UBOOT=$?
-		CHECK_ONLY=yes download_rawfwimage_uimage  $URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE  ; RESULT_ACTION_CHECK_UIMAGE=$?
-		CHECK_ONLY=yes download_rawfwimage_modules $URL_DOWNLOAD_FWIMAGE_RAW_MODULES ; RESULT_ACTION_CHECK_MODULES=$?
+		case "$ARCH" in
+		*arm*)
+			CHECK_ONLY=yes download_rawfwimage_uboot   $URL_DOWNLOAD_FWIMAGE_RAW_UBOOT   ; RESULT_ACTION_CHECK_UBOOT=$?
+			CHECK_ONLY=yes download_rawfwimage_uimage  $URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE  ; RESULT_ACTION_CHECK_UIMAGE=$?
+			CHECK_ONLY=yes download_rawfwimage_modules $URL_DOWNLOAD_FWIMAGE_RAW_MODULES ; RESULT_ACTION_CHECK_MODULES=$?
+			;;
+		*86*|*amd64*)
+			CHECK_ONLY=yes download_rawfwimage_ovaloader  $URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER  ; RESULT_ACTION_CHECK_OVALOADER=$?
+			;;
+		esac
 	fi
 	learn_downloaded_images
-	for RES_STR in $RESULT_ACTION_CHECK_OSIMAGE $RESULT_ACTION_CHECK_UBOOT $RESULT_ACTION_CHECK_UIMAGE $RESULT_ACTION_CHECK_MODULES ; do
+	for RES_STR in $RESULT_ACTION_CHECK_OSIMAGE $RESULT_ACTION_CHECK_UBOOT $RESULT_ACTION_CHECK_UIMAGE $RESULT_ACTION_CHECK_MODULES $RESULT_ACTION_CHECK_OVALOADER ; do
 		[ "$RES_STR" -gt "$RESULT_ACTION_CHECK_ANYIMAGE" ] && RESULT_ACTION_CHECK_ANYIMAGE="$RES_STR"
 	done
 	RES_STR="$RESULT_ACTION_CHECK_ANYIMAGE"
@@ -2162,6 +2432,15 @@ if [ x"$ACTION_CHECK_OSIMAGE" = xyes ] || [ x"$ACTION_CHECK_FWIMAGE" = xyes ]; t
 				[ -n "${DOWNLOADED_FW_UIMAGE}" ] && [ -s "${DOWNLOADED_FW_UIMAGE}" ] && touch "${DOWNLOADED_FW_UIMAGE}.forceflash" ;;
 		esac
 	fi
+	if [ "$ACTION_FORCEFLASH_FWIMAGE_OVALOADER" = yes -a "$RESULT_ACTION_CHECK_OVALOADER" = 0 ] ; then
+		logmsg_info "Adding a touch of ovaloader forceflash, as requested"
+		rm -f "${DEPLOYMENTROOTFW_OVALOADER}/ovaloader.forceflash" "${DOWNLOADROOTFW_OVALOADER}/ovaloader.forceflash"
+		case "${DOWNLOADED_FW_OVALOADER}" in
+			/dev*) [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] && removeold_rawfwimage_ovaloader ;;
+			*)
+				[ -n "${DOWNLOADED_FW_OVALOADER}" ] && [ -s "${DOWNLOADED_FW_OVALOADER}" ] && touch "${DOWNLOADED_FW_OVALOADER}.forceflash" ;;
+		esac
+	fi
 	if [ "$ACTION_FORCEFLASH_OSIMAGE" = yes  -a "$RESULT_ACTION_CHECK_OSIMAGE" = 0 ] ; then
 		logmsg_info "Adding a touch of OS image forceflash, as requested"
 		rm -f "${DEPLOYMENTROOT_OSIMAGE}"/*.forceflash "${DOWNLOADROOT_OSIMAGE}"/*.forceflash
@@ -2175,13 +2454,22 @@ RESULT_ACTION_DOWNLOAD_FWIMAGE=0
 RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT=0
 RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE=0
 RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES=0
+RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_OVALOADER=0
 if [ "$ACTION_DOWNLOAD_FWIMAGE" = yes ]; then
-	download_rawfwimage_uboot $URL_DOWNLOAD_FWIMAGE_RAW_UBOOT
-	RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT=$?
-	download_rawfwimage_uimage $URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE
-	RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE=$?
-	download_rawfwimage_modules $URL_DOWNLOAD_FWIMAGE_RAW_MODULES
-	RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES=$?
+	case "$ARCH" in
+	*arm*)
+		download_rawfwimage_uboot $URL_DOWNLOAD_FWIMAGE_RAW_UBOOT
+		RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT=$?
+		download_rawfwimage_uimage $URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE
+		RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE=$?
+		download_rawfwimage_modules $URL_DOWNLOAD_FWIMAGE_RAW_MODULES
+		RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES=$?
+		;;
+	*86*|*amd64*)
+		download_rawfwimage_ovaloader $URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER
+		RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_OVALOADER=$?
+		;;
+	esac
 
 	[ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT" -gt 0 ] && \
 	[ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT" -ne 42 ] && \
@@ -2204,6 +2492,14 @@ if [ "$ACTION_DOWNLOAD_FWIMAGE" = yes ]; then
 		ACTION_RESULT=$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES && \
 		if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] ; then
 			logmsg_warn "New kernel modules archive was not downloaded successfully, so old ones are not purged"
+			ACTION_REMOVEOLD_FWIMAGE=no_BadDownload
+		fi
+
+	[ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_OVALOADER" -gt 0 ] && \
+	[ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_OVALOADER" -ne 42 ] && \
+		ACTION_RESULT=$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_OVALOADER && \
+		if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] ; then
+			logmsg_warn "New OVA loader and kernel was not downloaded successfully, so old ones are not purged"
 			ACTION_REMOVEOLD_FWIMAGE=no_BadDownload
 		fi
 
@@ -2230,12 +2526,48 @@ if [ "$ACTION_DOWNLOAD_FWIMAGE" = yes ]; then
 				[ -n "${DOWNLOADED_FW_UIMAGE}" ] && [ -s "${DOWNLOADED_FW_UIMAGE}" ] && touch "${DOWNLOADED_FW_UIMAGE}.forceflash" ;;
 		esac
 	fi
+	if [ "$ACTION_FORCEFLASH_FWIMAGE_OVALOADER" = yes ] && \
+	   [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_OVALOADER" = 0 -o "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_OVALOADER" = 42 ] \
+	; then
+		logmsg_info "Adding a touch of ovaloader forceflash, as requested"
+		rm -f "${DEPLOYMENTROOTFW_OVALOADER}/ovaloader.forceflash" "${DOWNLOADROOTFW_OVALOADER}/ovaloader.forceflash"
+		case "${DOWNLOADED_FW_OVALOADER}" in
+			/dev*) [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] && removeold_rawfwimage_ovaloader ;;
+			*)
+				[ -n "${DOWNLOADED_FW_OVALOADER}" ] && [ -s "${DOWNLOADED_FW_OVALOADER}" ] && touch "${DOWNLOADED_FW_OVALOADER}.forceflash" ;;
+		esac
+	fi
 fi
+
+RESULT_ACTION_APPLYNOW_FWIMAGE_OVALOADER=-1
+if [ "$ACTION_APPLYNOW_FWIMAGE_OVALOADER" = yes ] ; then
+	# If we have a file, just use it; if we also tried to
+	# fetch it, only use the file if that fetch was successful
+	if ( [ "$ACTION_DOWNLOAD_FWIMAGE" = yes ] && [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_OVALOADER" = 0 -o "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_OVALOADER" = 42 ] ) \
+	|| [ "$ACTION_DOWNLOAD_FWIMAGE" = no ] \
+	; then
+		# Note: this routine does its own ARCH checks
+		apply_rawfwimage_ovaloader ; RESULT_ACTION_APPLYNOW_FWIMAGE_OVALOADER=$?
+	else
+		logmsg_error "Was asked to apply the OVA loader image, but could not begin to (also tried to download and failed?)"
+		ACTION_RESULT=43
+		RESULT_ACTION_APPLYNOW_FWIMAGE_OVALOADER=43
+	fi
+fi
+
+[ "$RESULT_ACTION_APPLYNOW_FWIMAGE_OVALOADER" -gt 0 ] && \
+[ "$RESULT_ACTION_APPLYNOW_FWIMAGE_OVALOADER" -ne 42 ] && \
+	ACTION_RESULT="$RESULT_ACTION_APPLYNOW_FWIMAGE_OVALOADER" && \
+	if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] ; then
+		logmsg_warn "The OVA loader and kernel image was not applied successfully, so firmware files are not purged"
+		ACTION_REMOVEOLD_FWIMAGE=no_BadDownload
+	fi
 
 if [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ]; then
 	removeold_rawfwimage_modules || ACTION_RESULT=$?
 	removeold_rawfwimage_uimage || ACTION_RESULT=$?
 	removeold_rawfwimage_uboot || ACTION_RESULT=$?
+	removeold_rawfwimage_ovaloader || ACTION_RESULT=$?
 else
 	logmsg_info "Not purging old FW images because ACTION_REMOVEOLD_FWIMAGE=$ACTION_REMOVEOLD_FWIMAGE"
 fi
@@ -2360,9 +2692,17 @@ case "$ACTION_RESULT" in
 		|| [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UBOOT" = 42 ] \
 		|| [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_UIMAGE" = 42 ] \
 		|| [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_MODULES" = 42 ] \
+		|| [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_OVALOADER" = 42 ] \
+		|| [ "$RESULT_ACTION_APPLYNOW_FWIMAGE_OVALOADER" = 0 ] \
+		|| [ "$RESULT_ACTION_APPLYNOW_FWIMAGE_OVALOADER" = 42 ] \
 		; then
 			ACTION_RESULT=42
 			ACTION_RESULT_STR="new files were downloaded successfully, you can reboot now to apply the updates"
+			if [ "$RESULT_ACTION_APPLYNOW_FWIMAGE_OVALOADER" = 0 ] \
+			|| [ "$RESULT_ACTION_APPLYNOW_FWIMAGE_OVALOADER" = 42 ] \
+			; then
+				ACTION_RESULT_STR="$ACTION_RESULT_STR, and new loader firmware was also applied"
+			fi
 			[ "${WANT_REBOOT-}" = yes -o "${WANT_REBOOT-}" = force ] && DO_REBOOT=yes
 			[ "${DO_REBOOT}" = yes ] && \
 				logmsg_warn "Got new files without errors - and was asked to reboot in this case" || \
