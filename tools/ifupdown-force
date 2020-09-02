@@ -31,12 +31,12 @@ set -e
 
 case "$2" in
 up)
-        /sbin/ifup $1 || \
-        /sbin/ifup --force $1
+        { /sbin/ifup "$1" && { /sbin/ip address show dev "$1" | egrep '^\s*inet\s+[0-9]+\.+[0-9]+\.+[0-9]+\.+[0-9]+/[0-9]+|^\s*inet6\s.*:.*/' ; } ; } || \
+        /sbin/ifup --force "$1"
         ;;
 down)
-        /sbin/ifdown $1 || \
-        /sbin/ifdown --force $1 || \
+        /sbin/ifdown "$1" || \
+        /sbin/ifdown --force "$1" || \
         /sbin/ifconfig "$1" "$2"
         ;;
 esac

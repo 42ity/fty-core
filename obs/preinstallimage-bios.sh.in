@@ -1139,7 +1139,11 @@ install -m 0755 /usr/share/fty/examples/config/profile.d/fty_path.sh /etc/profil
 install -m 0755 /usr/share/fty/scripts/ethtool-static-nolink /etc/network/if-pre-up.d
 install -m 0755 /usr/share/fty/scripts/ifupdown-force /etc/ifplugd/action.d/ifupdown-force
 install -m 0755 /usr/share/fty/scripts/udhcpc-override.sh /usr/local/sbin/udhcpc
-echo '[ -s /usr/share/fty/scripts/udhcpc-hook.sh ] && . /usr/share/fty/scripts/udhcpc-hook.sh' >> /etc/udhcpc/default.script
+# Note: there is also a case of perceived lingering of this script due
+# to backgrounded 'systemctl ... ntpd' commands that catch up later.
+sed -e 's,^case \$1 in,### FTY\nLOCK="/run/udhcpc.$interface.lock"\ntrap "rm -f $LOCK" 0 1 2 3 15\nwhile [ -s "$LOCK" ]; do OLDPID="`head -1 $LOCK`"; if [ -n "$OLDPID" -a -e "/proc/$OLDPID/exe" ] ; then log info "$LOCK is busy; current $1 operation is blocked : `cat $LOCK`" ; sleep 5 ; fi ; done\n( echo "$$" ; echo "$1 $interface" ) > "$LOCK"\n### END FTY\n\ncase "$1" in,' \
+    -i /etc/udhcpc/default.script
+( echo '### FTY' ; echo '[ -s /usr/share/fty/scripts/udhcpc-hook.sh ] && . /usr/share/fty/scripts/udhcpc-hook.sh'; echo '### END FTY' ) >> /etc/udhcpc/default.script
 # Get it into our default PATH:
 ln -fsr /usr/libexec/fty/fty-hostname-setup /usr/local/sbin/fty-hostname-setup
 
