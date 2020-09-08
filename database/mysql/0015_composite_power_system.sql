@@ -33,7 +33,7 @@ COMMIT;
 
 /* cops (composite power system) asset */
 INSERT INTO t_bios_asset_element_type (name) VALUES ("cops");
-/* pcu (power control unit) device (as marker of ups parallel system) */
+/* pcu device (parallel control unit, as a marker of ups parallel system) */
 INSERT INTO t_bios_asset_device_type (name) VALUES ("pcu");
 
 
