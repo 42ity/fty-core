@@ -31,10 +31,10 @@ SELECT * FROM t_bios_schema_version WHERE tag = 'begin-import' order by id desc 
 COMMIT;
 
 
-/* cops asset */
+/* cops (composite power system) asset */
 INSERT INTO t_bios_asset_element_type (name) VALUES ("cops");
-/* ups parallel system multiplexer device */
-INSERT INTO t_bios_asset_device_type (name) VALUES ("ups.multiplexer");
+/* pcu (power control unit) device (as marker of ups parallel system) */
+INSERT INTO t_bios_asset_device_type (name) VALUES ("pcu");
 
 
 /* This must be the last line of the SQL file */
