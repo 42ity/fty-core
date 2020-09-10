@@ -28,8 +28,11 @@
 #
 
 OVERLAY=@OVERLAY_PATH@
-DEFAULT=/etc/default/verify-fs
 IMAGES=@IMAGES_PATH@
+
+# Colon-separated paths, line by line, to check for no-changes in overlay
+# See cat_default() for format example (and hardcoded default set) below
+DEFAULT=/etc/default/verify-fs
 
 JSONSH="@datadir@/@PACKAGE@/scripts/JSON.sh"
 get_a_string_arg() { "$JSONSH" --get-string "$1" ; }
