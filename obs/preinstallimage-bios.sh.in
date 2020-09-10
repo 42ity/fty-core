@@ -174,6 +174,9 @@ if [ -d /var/lib/bios ]; then
     fi
 fi
 
+# add user to allow restart after SRR procedure
+useradd fty-srr -s /bin/bash
+
 # webserver needs to store license file, earlier this was in root
 # of /var/lib/fty but now systemd prohibits lax filesystem rights
 # for directories managed with tmpfiles. Sync with 01-bios-eula.sh
