@@ -1,5 +1,8 @@
 [Unit]
 Description=42ity-Timer service that verify integrity of filesystem and reports issues to syslog
+# Make sure our report is logged, rotated and disseminated
+Wants=rsyslogd.service syslog.socket
+After=rsyslogd.service syslog.socket
 
 [Service]
 Type=simple
