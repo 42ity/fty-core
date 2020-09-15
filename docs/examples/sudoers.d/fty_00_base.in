@@ -52,4 +52,4 @@ Runas_Alias BIOS_RUNAS	= root
 BIOS_USERS ALL=(BIOS_RUNAS) NOPASSWD:BIOS_PROGS
 www-data   ALL=(BIOS_RUNAS) NOPASSWD:BIN_SYSTEMCTL,RUN_USER_SCRIPT
 
-fty-srr    ALL = NOPASSWD: /bin/systemctl
+fty-srr    ALL = NOPASSWD: /sbin/reboot
