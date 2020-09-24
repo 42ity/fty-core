@@ -182,7 +182,8 @@ client_SCRIPTS +=	 \
 			tools/enable-root-account \
 			tools/disable-root-account \
 			tools/runas-_bios-script \
-			tools/run-user-script
+			tools/run-user-script \
+            tools/run-ssh-action
 
 helper_SCRIPTS +=	\
 			tools/tntnet-ExecStartPre.sh \
@@ -203,7 +204,8 @@ EXTRA_DIST +=		tools/fake-th \
 			tools/enable-root-account.in \
 			tools/disable-root-account.in \
 			tools/runas-_bios-script \
-			tools/run-user-script.in
+			tools/run-user-script.in \
+            tools/run-ssh-action.in
 
 # Recipe needed to fulfill ci-rc-bios.sh logic
 fake-th: tools/fake-th
