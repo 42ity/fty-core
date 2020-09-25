@@ -350,6 +350,7 @@ AC_CONFIG_FILES([
         tools/factory-reset-live.sh
         tools/run-test-doc.sh
         tools/run-user-script
+        tools/run-ssh-action
         tools/start-db-services
         tools/tntnet-ExecStartPre.sh
         tools/update-rc3

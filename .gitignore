@@ -207,6 +207,8 @@ tools/ifplug-dhcp-autoconf.sh
 tools/generate-release-details.sh
 !tools/run-user-script.in
 tools/run-user-script
+!tools/run-ssh-action.in
+tools/run-ssh-action
 !tools/udhcpc-override.sh.in
 tools/udhcpc-override.sh
 
