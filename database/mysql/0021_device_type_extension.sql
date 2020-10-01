@@ -1,6 +1,6 @@
 /* For details on schema version support see the main initdb.sql */
 SET @bios_db_schema_version = '202006030001' ;
-SET @bios_db_schema_filename = '0019_device_type_extension.sql' ;
+SET @bios_db_schema_filename = '0021_device_type_extension.sql' ;
 
 use box_utf8;
 
