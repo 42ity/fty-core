@@ -39,6 +39,9 @@ CREDENTIAL_ID="${4}"
 # do we want to just pass all the arguments after this one like "$@" ?
 COMMANDS="${5}"
 
+# This script really belongs in another component source, but whatever...
+(which etn-secwcmd 2>/dev/null >/dev/null) || { echo "FATAL: etn-secwcmd is not installed in this system" >&2; exit 1; }
+
 USERNAME="$(etn-secwcmd "${CREDENTIAL_ID}" -U -u)"
 if [ "$?" -ne 0 ]; then
     exit 104
