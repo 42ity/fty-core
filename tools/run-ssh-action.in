@@ -31,18 +31,20 @@ if [ "$#" -ne 5 ]; then
   exit 1
 fi
 
-HOSTNAME=${1}
-PORT=${2}
-CONNECTION_TIMEOUT=${3}
-CREDENTIAL_ID=${4}
-COMMANDS=${5}
+HOSTNAME="${1}"
+PORT="${2}"
+CONNECTION_TIMEOUT="${3}"
+CREDENTIAL_ID="${4}"
+# TOTHINK: Passing properly quoted command lines can be troublesome;
+# do we want to just pass all the arguments after this one like "$@" ?
+COMMANDS="${5}"
 
-USERNAME=$(etn-secwcmd ${CREDENTIAL_ID} -U -u)
+USERNAME="$(etn-secwcmd "${CREDENTIAL_ID}" -U -u)"
 if [ "$?" -ne 0 ]; then
     exit 104
 fi
 
-PASSWORD=$(etn-secwcmd ${CREDENTIAL_ID} -U -p)
+PASSWORD="$(etn-secwcmd "${CREDENTIAL_ID}" -U -p)"
 if [ "$?" -ne 0 ]; then
     exit 104
 fi
@@ -50,6 +52,6 @@ fi
 printf "User and password retrieved from credential.\n" >&2
 printf "Connecting to ${USERNAME}@${HOSTNAME} port ${PORT}...\n" >&2
 
-sshpass -p ${PASSWORD} ssh ${USERNAME}@${HOSTNAME} -p ${PORT} -o ConnectTimeout=${CONNECTION_TIMEOUT} -o StrictHostKeyChecking=no ${COMMANDS}
+sshpass -p "${PASSWORD}" ssh "${USERNAME}@${HOSTNAME}" -p "${PORT}" -o ConnectTimeout="${CONNECTION_TIMEOUT}" -o StrictHostKeyChecking=no "${COMMANDS}"
 
 exit $?
