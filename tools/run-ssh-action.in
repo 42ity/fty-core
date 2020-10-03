@@ -49,8 +49,8 @@ if [ "$?" -ne 0 ]; then
     exit 104
 fi
 
-printf "User and password retrieved from credential.\n" >&2
-printf "Connecting to ${USERNAME}@${HOSTNAME} port ${PORT}...\n" >&2
+echo "User and password retrieved from credential." >&2
+echo "Connecting to ${USERNAME}@${HOSTNAME} port ${PORT}..." >&2
 
 sshpass -p "${PASSWORD}" ssh "${USERNAME}@${HOSTNAME}" -p "${PORT}" -o ConnectTimeout="${CONNECTION_TIMEOUT}" -o StrictHostKeyChecking=no "${COMMANDS}"
 
