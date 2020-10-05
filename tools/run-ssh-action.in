@@ -56,6 +56,9 @@ echo "User and password retrieved from credential." >&2
 echo "Connecting to ${USERNAME}@${HOSTNAME} port ${PORT}..." >&2
 
 # Note: requires "sshpass" to be installed
-sshpass -p "${PASSWORD}" ssh "${USERNAME}@${HOSTNAME}" -p "${PORT}" -o ConnectTimeout="${CONNECTION_TIMEOUT}" -o StrictHostKeyChecking=no "${COMMANDS}"
+SSHPASS="${PASSWORD}"
+export SSHPASS
+sshpass -e ssh "${USERNAME}@${HOSTNAME}" -p "${PORT}" -o ConnectTimeout="${CONNECTION_TIMEOUT}" -o StrictHostKeyChecking=no "${COMMANDS}" || exit $?
+unset SSHPASS
 
-exit $?
+exit 0
