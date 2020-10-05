@@ -26,9 +26,16 @@
 # CREDENTIAL_ID
 # COMMANDS
 
+usage() {
+    cat << EOF
+Usage: ${0} HOSTNAME PORT CONNECTION_TIMEOUT CREDENTIAL_ID COMMANDS
+
+EOF
+}
+
 if [ "$#" -ne 5 ]; then
-  printf "Usage: ${0} HOSTNAME PORT CONNECTION_TIMEOUT CREDENTIAL_ID COMMANDS\n\n" >&2
-  exit 1
+    usage >&2
+    exit 1
 fi
 
 HOSTNAME="${1}"
@@ -40,17 +47,10 @@ CREDENTIAL_ID="${4}"
 COMMANDS="${5}"
 
 # This script really belongs in another component source, but whatever...
-(which etn-secwcmd 2>/dev/null >/dev/null) || { echo "FATAL: etn-secwcmd is not installed in this system" >&2; exit 1; }
+(command -v etn-secwcmd 2>/dev/null >/dev/null) || { echo "FATAL: etn-secwcmd is not installed in this system" >&2; exit 1; }
 
-USERNAME="$(etn-secwcmd "${CREDENTIAL_ID}" -U -u)"
-if [ "$?" -ne 0 ]; then
-    exit 104
-fi
-
-PASSWORD="$(etn-secwcmd "${CREDENTIAL_ID}" -U -p)"
-if [ "$?" -ne 0 ]; then
-    exit 104
-fi
+USERNAME="$(etn-secwcmd "${CREDENTIAL_ID}" -U -u)" || exit 104
+PASSWORD="$(etn-secwcmd "${CREDENTIAL_ID}" -U -p)" || exit 104
 
 echo "User and password retrieved from credential." >&2
 echo "Connecting to ${USERNAME}@${HOSTNAME} port ${PORT}..." >&2
