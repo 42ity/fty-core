@@ -47,7 +47,10 @@ CREDENTIAL_ID="${4}"
 COMMANDS="${5}"
 
 # This script really belongs in another component source, but whatever...
-(command -v etn-secwcmd 2>/dev/null >/dev/null) || { echo "FATAL: etn-secwcmd is not installed in this system" >&2; exit 1; }
+# It also requires "sshpass" to be installed
+for REQCMD in etn-secwcmd sshpass ; do
+    (command -v "$REQCMD" 2>/dev/null >/dev/null) || { echo "FATAL: $REQCMD is not installed in this system" >&2; exit 1; }
+done
 
 USERNAME="$(etn-secwcmd "${CREDENTIAL_ID}" -U -u)" || exit 104
 PASSWORD="$(etn-secwcmd "${CREDENTIAL_ID}" -U -p)" || exit 104
@@ -55,7 +58,6 @@ PASSWORD="$(etn-secwcmd "${CREDENTIAL_ID}" -U -p)" || exit 104
 echo "User and password retrieved from credential." >&2
 echo "Connecting to ${USERNAME}@${HOSTNAME} port ${PORT}..." >&2
 
-# Note: requires "sshpass" to be installed
 SSHPASS="${PASSWORD}"
 export SSHPASS
 sshpass -e ssh "${USERNAME}@${HOSTNAME}" -p "${PORT}" -o ConnectTimeout="${CONNECTION_TIMEOUT}" -o StrictHostKeyChecking=no "${COMMANDS}" || exit $?
