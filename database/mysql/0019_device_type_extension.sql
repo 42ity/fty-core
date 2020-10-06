@@ -13,14 +13,14 @@
  */
 
 /*
- * @file    0021_device_type_extension.sql
+ * @file    0019_device_type_extension.sql
  * @brief   Composite Power System related assets and devices
- * @note    Pass after IT scripts (0016..0020)
+ * @note    Pass just before IT fall scripts (ipm_it_fall_virtu.sql)
  */
 
 /* For details on schema version support see the main initdb.sql */
 SET @bios_db_schema_version = '202009240001';
-SET @bios_db_schema_filename = '0021_device_type_extension.sql';
+SET @bios_db_schema_filename = '0019_device_type_extension.sql';
 
 use box_utf8;
 
