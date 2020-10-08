@@ -122,7 +122,8 @@ config_defaults() {
     is_set SOURCESITEROOTFW_UBOOT || SOURCESITEROOTFW_UBOOT="$SOURCESITEROOTFW"
     is_set SOURCESITEROOTFW_UIMAGE || SOURCESITEROOTFW_UIMAGE="$SOURCESITEROOTFW"
     is_set SOURCESITEROOTFW_MODULES || SOURCESITEROOTFW_MODULES="$SOURCESITEROOTFW/modules"
-    is_set SOURCESITEROOTFW_OVALOADER || SOURCESITEROOTFW_OVALOADER="$SOURCESITEROOTFW"
+    ###is_set SOURCESITEROOTFW_OVALOADER || SOURCESITEROOTFW_OVALOADER="$SOURCESITEROOTFW"
+    is_set SOURCESITEROOTFW_OVALOADER || SOURCESITEROOTFW_OVALOADER="http://obs.roz.lab.etn.com/loader-${OSIMAGE_DISTRO}/@PICK_IMGQALEVEL@/$ARCH/recovery"
 
     # Recovery location (on MMC or mSATA) - for downloads
     is_set DOWNLOADROOT || DOWNLOADROOT="@URC3_DOWNLOADROOT@"
@@ -1847,6 +1848,21 @@ findnewest_rawfwimage_ovaloader() (
     # Echo the URL to the newest "raw" (not tarballed, only one)
     # ovaloader image file found on remote resource, if any
     # Note: currently expects certain filename patterns and http-dir listing markup
+    # Default SOURCESITEROOTFW_OVALOADER="http://obs.roz.lab.etn.com/loader-${OSIMAGE_DISTRO}/@PICK_IMGQALEVEL@/$ARCH/recovery"
+    # expects to resolve @PICK_IMGQALEVEL@ right here (use IMGQALEVEL
+    # if defined here and present on server, or fall back to "master")
+    # Overall, currently we have several options where an image may be
+    # in such order of preference:
+    # * User specified exact URL (use as is)
+    # * User specified a directory URL to look in (match *loader*)
+    # * An "${osimagebasename}.loader.gz" is published near OS image
+    #   in SOURCESITEROOT_OSIMAGE and named with same prefix as the
+    #   OS image we chose to use - gotta know that bit at this point
+    # * (?) Some newest *.loader.gz in SOURCESITEROOT_OSIMAGE if present?
+    # * Newest ovaloader-gitdate~githash@distro.gz in SOURCESITEROOTFW_OVALOADER
+    #   possibly adjusted for the current image branch (master, stable,
+    #   featureimage X, release X) or fallback to master if absent.
+    # * Symlinked ovaloader.gz in SOURCESITEROOTFW_OVALOADER (like above)
     IMAGE_URL="`lsdir_http_pattern "${1:-$SOURCESITEROOTFW_OVALOADER}" "ovaloader" | sort -n | tail -1`"
     if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
         echo "$IMAGE_URL" && return 0
