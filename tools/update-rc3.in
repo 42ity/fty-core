@@ -1961,7 +1961,7 @@ apply_rawfwimage_ovaloader() (
             done
             logmsg_info "apply_rawfwimage_ovaloader(): Trying to flash '$F' into '${OVALOADER_DEVICE}' ..."
             case "$F" in
-                *.gz) # TODO: size check for gzip
+                *.gz) # TODO: quicker size check for gzip itself (e.g. from manifest)?
                     FS="`gzip -cd < "$F" | wc -c`"
                     # As a sanity check, require that these are equal (not less-than)
                     [ "$FS" = "$OVALOADER_MAX_SIZE_IPM2" ] || die "Trying to flash $REPORT_IMAGETYPE sized '$FS' bytes to device sized '$OVALOADER_MAX_SIZE_IPM2'"
@@ -2165,7 +2165,7 @@ ACTION_FORCEFLASH_CLEANUP="no"
 [ -z "${URL_DOWNLOAD_FWIMAGE_RAW_UBOOT-}" ] &&      URL_DOWNLOAD_FWIMAGE_RAW_UBOOT=""
 [ -z "${URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE-}" ] &&     URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE=""
 [ -z "${URL_DOWNLOAD_FWIMAGE_RAW_MODULES-}" ] &&    URL_DOWNLOAD_FWIMAGE_RAW_MODULES=""
-[ -z "${URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER-}" ] &&     URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER=""
+[ -z "${URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER-}" ] &&  URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER=""
 
 ACTION_REMOVEOLD_OSIMAGE="yes"
 # This is currently no-op because we only track "raw" FW images which have one
@@ -2205,6 +2205,8 @@ TEMP_DATA="`mktemp -d /var/run/.update-rc3.$$.XXXXXX`" && [ -n "$TEMP_DATA" ] &&
 || { TEMP_DATA="/tmp/.update-rc3.$$" && rm -rf "${TEMP_DATA}" && mkdir -p "$TEMP_DATA" ; } \
 || die "Can not make a TEMP_DATA directory"
 export TEMP_DATA
+echo "Using a TEMP_DATA directory: '${TEMP_DATA}/'" >&2
+
 TRAP_SIGNALS="HUP INT QUIT TERM EXIT" settraps "rm -rf '${TEMP_DATA}'"
 
 while [ $# -gt 0 ]; do
@@ -2258,6 +2260,11 @@ while [ $# -gt 0 ]; do
 			PID3=$!
 			summarize_check "LOADER-UBOOT"   download_rawfwimage_uboot   $URL_DOWNLOAD_FWIMAGE_RAW_UBOOT &
 			PID4=$!
+			# TODO-OVA: Infer URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER from the
+			# URL_DOWNLOAD_OSIMAGE value by default, or use common build
+			# products if nothing specific to a chosen one OS image is
+			# published near it. Above that all, trust what user told to
+			# use with a CLI option below, though.
 			summarize_check "KERNEL-OVALOADER"  download_rawfwimage_ovaloader  $URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER &
 			PID5=$!
 			for P in $PID1 $PID2 $PID3 $PID4 $PID5 ; do wait $P || RES=$? ; done
