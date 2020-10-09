@@ -1941,10 +1941,18 @@ apply_rawfwimage_ovaloader() (
     # or "ovaloader-gitdate~githash@distro.gz" or fallback "ovaloader.gz"
     # (or not .gz generally)
     local FB FS F
+    # Note: we prioritize a *.forceflash hit
     for F in \
+        `ls -1d "${DOWNLOADROOTFW_OVALOADER}"/{ovaloader*,*.loader}{,.gz}.forceflash "${DEPLOYMENTROOTFW_OVALOADER}"/{ovaloader*,*.loader}{,.gz}.forceflash 2>/dev/null` \
         `ls -1d "${DOWNLOADROOTFW_OVALOADER}"/{ovaloader*,*.loader}{,.gz} "${DEPLOYMENTROOTFW_OVALOADER}"/{ovaloader*,*.loader}{,.gz} 2>/dev/null` \
     ; do
         if [ -s "$F" ] ; then
+            case "$F" in
+                *.forceflash)
+                    F="`dirname "$F"`/`basename "$F" .forceflash`"
+                    [ -s "$F" ] || continue
+                    ;;
+            esac
             FB="`dirname "$F"`/`basename "$F" .gz`"
             for CSALGO in $CHECKSUM_ALGOLIST_DEFAULT ; do
                 if [ -s "$FB.$CSALGO" ] ; then
