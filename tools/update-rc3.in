@@ -1935,8 +1935,9 @@ apply_rawfwimage_ovaloader() (
     # its practical contents (GRUB sectors, miniroot file) may be
     # the same. Learn to compare that deep...
     # NOTE: For now we trust that anything in recovery or production
-    # locations is trustworthy!
-    # Note that there may be several suitable patterns coming from
+    # locations is trustworthy - in particular that checksums were
+    # verified earlier by download or Upgrade Package tarball unpack!
+    # NOTE that there may be several suitable patterns coming from
     # different levels of development, e.g. "${osimagebasename}.loader.gz"
     # or "ovaloader-gitdate~githash@distro.gz" or fallback "ovaloader.gz"
     # (or not .gz generally)
