@@ -1860,6 +1860,15 @@ findnewest_rawfwimage_ovaloader() (
 )
 
 download_rawfwimage_ovaloader() (
+    # TODO-OVA: There is a nuance that for loaders that we build once per
+    # git commit and publish in DOWNLOADROOTFW_OVALOADER location, there
+    # may be lots of identical binaries published at various URLs and file
+    # names, linked as recommended loader to go with this or that OS image:
+    # ${SOURCESITEROOT_OSIMAGE}/${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}.loader*
+    # If the downloader has a local OVA loader file already, and another one
+    # seems a better match to fetch by naming considerations, make sure that
+    # the checksum is not already identical and then only filenames differ.
+
     download_rawfwimage_generic \
         'download_rawfwimage_ovaloader' \
         'OVA loader and kernel' \
