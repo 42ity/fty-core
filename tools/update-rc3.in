@@ -1884,7 +1884,7 @@ removeold_rawfwimage_ovaloader() (
     fi
     VICTIMS=0
     VICTIMPATHS=""
-    for F in `ls -1d "${DOWNLOADROOTFW_OVALOADER}"/ovaloader{,.gz} "${DEPLOYMENTROOTFW_OVALOADER}"/ovaloader{,.gz} 2>/dev/null` ; do
+    for F in `ls -1d "${DOWNLOADROOTFW_OVALOADER}"/ovaloader*{,.gz} "${DEPLOYMENTROOTFW_OVALOADER}"/ovaloader*{,.gz} "${DOWNLOADROOTFW_OVALOADER}"/*.loader{,.gz} "${DEPLOYMENTROOTFW_OVALOADER}"/*.loader{,.gz} 2>/dev/null` ; do
         [ -n "$DOWNLOADED_FW_OVALOADER" ] && [ -s "$DOWNLOADED_FW_OVALOADER" ] && [ "$DOWNLOADED_FW_OVALOADER" = "$F" ] && \
             { logmsg_info "Keeping the just-downloaded $REPORT_IMAGETYPE: '$DOWNLOADED_FW_OVALOADER'" ; continue ; }
         logmsg_info "Removing older $REPORT_IMAGETYPE: '`pwd`/$F' and its checksum(s)"
@@ -1936,8 +1936,14 @@ apply_rawfwimage_ovaloader() (
     # the same. Learn to compare that deep...
     # NOTE: For now we trust that anything in recovery or production
     # locations is trustworthy!
-    local FB FS
-    for F in `ls -1d "${DOWNLOADROOTFW_OVALOADER}"/ovaloader{,.gz} "${DEPLOYMENTROOTFW_OVALOADER}"/ovaloader{,.gz} 2>/dev/null` ; do
+    # Note that there may be several suitable patterns coming from
+    # different levels of development, e.g. "${osimagebasename}.loader.gz"
+    # or "ovaloader-gitdate~githash@distro.gz" or fallback "ovaloader.gz"
+    # (or not .gz generally)
+    local FB FS F
+    for F in \
+        `ls -1d "${DOWNLOADROOTFW_OVALOADER}"/{ovaloader*,*.loader}{,.gz} "${DEPLOYMENTROOTFW_OVALOADER}"/{ovaloader*,*.loader}{,.gz} 2>/dev/null` \
+    ; do
         if [ -s "$F" ] ; then
             FB="`dirname "$F"`/`basename "$F" .gz`"
             for CSALGO in $CHECKSUM_ALGOLIST_DEFAULT ; do
@@ -2379,7 +2385,7 @@ if [ x"$ACTION_FORCEFLASH_CLEANUP" = xyes ]; then
 	rm -f "${DEPLOYMENTROOTFW_UBOOT}/u-Boot.forceflash" "${DOWNLOADROOTFW_UBOOT}/u-Boot.forceflash"
 	rm -f "${DEPLOYMENTROOTFW_UIMAGE}/uImage.forceflash" "${DOWNLOADROOTFW_UIMAGE}/uImage.forceflash"
 	rm -f "${DEPLOYMENTROOT_OSIMAGE}"/*.forceflash "${DOWNLOADROOT_OSIMAGE}"/*.forceflash
-	rm -f "${DEPLOYMENTROOTFW_OVALOADER}/ovaloader.forceflash" "${DOWNLOADROOTFW_OVALOADER}/ovaloader.forceflash"
+	rm -f "${DEPLOYMENTROOTFW_OVALOADER}/{ovaloader*,*.loader}{,.gz}.forceflash" "${DOWNLOADROOTFW_OVALOADER}/{ovaloader*,*.loader}{,.gz}.forceflash"
 fi
 
 # Checks are special - after we do all which were requested (if any), we exit
@@ -2434,7 +2440,7 @@ if [ x"$ACTION_CHECK_OSIMAGE" = xyes ] || [ x"$ACTION_CHECK_FWIMAGE" = xyes ]; t
 	fi
 	if [ "$ACTION_FORCEFLASH_FWIMAGE_OVALOADER" = yes -a "$RESULT_ACTION_CHECK_OVALOADER" = 0 ] ; then
 		logmsg_info "Adding a touch of ovaloader forceflash, as requested"
-		rm -f "${DEPLOYMENTROOTFW_OVALOADER}/ovaloader.forceflash" "${DOWNLOADROOTFW_OVALOADER}/ovaloader.forceflash"
+		rm -f "${DEPLOYMENTROOTFW_OVALOADER}/{ovaloader*,*.loader}{,.gz}.forceflash" "${DOWNLOADROOTFW_OVALOADER}/{ovaloader*,*.loader}{,.gz}.forceflash"
 		case "${DOWNLOADED_FW_OVALOADER}" in
 			/dev*) [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] && removeold_rawfwimage_ovaloader ;;
 			*)
@@ -2530,7 +2536,7 @@ if [ "$ACTION_DOWNLOAD_FWIMAGE" = yes ]; then
 	   [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_OVALOADER" = 0 -o "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_OVALOADER" = 42 ] \
 	; then
 		logmsg_info "Adding a touch of ovaloader forceflash, as requested"
-		rm -f "${DEPLOYMENTROOTFW_OVALOADER}/ovaloader.forceflash" "${DOWNLOADROOTFW_OVALOADER}/ovaloader.forceflash"
+		rm -f "${DEPLOYMENTROOTFW_OVALOADER}/{ovaloader*,*.loader}{,.gz}.forceflash" "${DOWNLOADROOTFW_OVALOADER}/{ovaloader*,*.loader}{,.gz}.forceflash"
 		case "${DOWNLOADED_FW_OVALOADER}" in
 			/dev*) [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] && removeold_rawfwimage_ovaloader ;;
 			*)
