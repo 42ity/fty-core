@@ -1859,6 +1859,11 @@ findnewest_rawfwimage_ovaloader() (
     # * An "${osimagebasename}.loader.gz" is published near OS image
     #   in SOURCESITEROOT_OSIMAGE and named with same prefix as the
     #   OS image we chose to use - gotta know that bit at this point
+    # ** Same OS image basename as one currently being downloaded
+    # ** Newest OS image basename of those already downloaded to the
+    #    recovery location if none is now downloaded to update into
+    # ** Same OS image basename as currently applied if none is
+    #    downloaded to update into
     # * (?) Some newest *.loader.gz in SOURCESITEROOT_OSIMAGE if present?
     # * Newest ovaloader-gitdate~githash@distro.gz in SOURCESITEROOTFW_OVALOADER
     #   possibly adjusted for the current image branch (master, stable,
