@@ -1967,10 +1967,30 @@ apply_rawfwimage_ovaloader() (
             FB="`dirname "$F"`/`basename "$F" .gz`"
             for CSALGO in $CHECKSUM_ALGOLIST_DEFAULT ; do
                 if [ -s "$FB.$CSALGO" ] ; then
+                    # Do we have e.g. the ovaloader.sha256 file (for uncompressed payload)?
+                    # Note that verifier should transparently handle compressed downloaded file vs raw content's checksum
                     ensure_checksum "$FB" "$FB.$CSALGO" || break 2  # return # die "Checksum verification failed for '$FB'!"
+
+                    # If the checksum matches, we are done.
+                    # First checked good image wins anyway.
+                    # (Tweak prios by forceflash if needed.)
+                    FLAG_CAN_REMOVE_IMAGES="no" \
+                    verify_checksum \
+                        "${OVALOADER_DEVICE}" "${FB}.${CSALGO}" \
+                    && { logmsg_info "Matched checksum from '${FB}.${CSALGO}' with current content of '${OVALOADER_DEVICE}', nothing to do" ; return 0 ; }
+                elif [ -s "$F.$CSALGO" ] ; then
+                    # Do we only have e.g. the ovaloader.gz.sha256 ?
+                    ensure_checksum "$F" "$F.$CSALGO" || break 2  # return # die "Checksum verification failed for '$F'!"
+
+                    # TODO-OVA: Check if we need (or can abstract) making a compressed payload's checksum?
+                    # Or more reliably, uncompress the known-good downloaded file to know its uncompressed value's checksum to compare with on-disk image?
+                    #FLAG_CAN_REMOVE_IMAGES="no" \
+                    #verify_checksum \
+                    #    "${OVALOADER_DEVICE}" "${F}.${CSALGO}" \
+                    #&& { logmsg_info "Matched checksum from '${F}.${CSALGO}' with current content of '${OVALOADER_DEVICE}', nothing to do" ; return 0 ; }
                 fi
             done
-            logmsg_info "apply_rawfwimage_ovaloader(): Trying to flash '$F' into '${OVALOADER_DEVICE}' ..."
+            logmsg_info "apply_rawfwimage_ovaloader(): Could not compare checksums, or new candidate differs from on-disk image. Trying to flash '$F' into '${OVALOADER_DEVICE}' ..."
             case "$F" in
                 *.gz) # TODO: quicker size check for gzip itself (e.g. from manifest)?
                     FS="`gzip -cd < "$F" | wc -c`"
