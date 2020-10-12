@@ -231,8 +231,9 @@ usage() {
     echo "the following arguments ('raw' firmwares are the non-tarballed singular files):"
     echo "  --url-image-os|-U {URL} (expected checksum patterns should still exist nearby)"
   { test -z "$DOWNLOADROOTFW_UBOOT" && test -z "$DOWNLOADROOTFW_OVALOADER"; } || { \
-    echo "  --url-image-fw-raw-uboot --url-image-fw-raw-uimage --url-image-fw-raw-modules"
-    echo "  --url-image-fw-raw-ovaloader"
+    echo "  --url-image-fw-raw-uboot|-Ub"
+    echo "  --url-image-fw-raw-uimage|-Ui   --url-image-fw-raw-modules|-Um"
+    echo "  --url-image-fw-raw-ovaloader|-Uo"
   }
     echo "  --(no-)erase-factory-reset If a new OS image downloaded successfully, touch"
     echo "                   the control file so 'init' does a factory reset after reboot"
@@ -2315,10 +2316,10 @@ while [ $# -gt 0 ]; do
 		                    ;;
 		                *)  URL_DOWNLOAD_OSIMAGE="$2" ;;
 		            esac ;;
-		        --url-image-fw-raw-uboot)   URL_DOWNLOAD_FWIMAGE_RAW_UBOOT="$2" ;;
-		        --url-image-fw-raw-uimage)  URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE="$2" ;;
-		        --url-image-fw-raw-modules) URL_DOWNLOAD_FWIMAGE_RAW_MODULES="$2" ;;
-		        --url-image-fw-raw-ovaloader)  URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER="$2" ;;
+		        --url-image-fw-raw-uboot|-Ub)   URL_DOWNLOAD_FWIMAGE_RAW_UBOOT="$2" ;;
+		        --url-image-fw-raw-uimage|-Ui)  URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE="$2" ;;
+		        --url-image-fw-raw-modules|-Um) URL_DOWNLOAD_FWIMAGE_RAW_MODULES="$2" ;;
+		        --url-image-fw-raw-ovaloader|-Uo)  URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER="$2" ;;
 		        *)  die "Aborting due to unknown command-line argument(s): $*" ;;
 		    esac
 		    shift ;;
