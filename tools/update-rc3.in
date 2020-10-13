@@ -453,9 +453,11 @@ remove_image() {
     remove_checksum_cache '[^\:]*' '[^\:]*' "$1"
     remove_checksum_cache '[^\:]*' '[^\:]*' "$1"'\.[^\:]*'
     # Note: we do not really support e.g. broken FILENAME and good FILENAME.gz
-    rm -f "$1"{,.md5,.sha,.sha1,.sha224,.sha256,.sha384,.sha512,.cksum}{,-padded}{,.tmp}{,.gz} ${2:+"$2"}
+    # and might have the .gz suffix in various places historically
+    rm -f "`basename "$1" .gz`"{,.gz}{,.md5,.sha,.sha1,.sha224,.sha256,.sha384,.sha512,.cksum}{,-padded}{,.tmp}{,.gz} ${2:+"$2"}
 
-    # ...and update the SW package manifest
+    # ...and update the SW package manifest, if this was an OS image
+    # or some other artefact tracked by etn-licensing.
     # WARNING: this MUST be done before package manifest deletion!
     # TODO: By the licensing-aware updates design, the new candidate image's
     # copy of the generalized upgradeability validation routine should be
