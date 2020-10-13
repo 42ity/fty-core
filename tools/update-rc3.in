@@ -944,6 +944,10 @@ download_rawfwimage_generic() (
     cd "${DOWNLOADROOT_THISIMAGE}" || \
     cd "${DEPLOYMENTROOT_THISIMAGE}" || die "Can not use DOWNLOADROOT_THISIMAGE_VARNAME='$DOWNLOADROOT_THISIMAGE' nor DEPLOYMENTROOT_THISIMAGE_VARNAME='$DEPLOYMENTROOT_THISIMAGE'"
 
+    # TODO-OVA: truncate custom (or discovered) URL at least for ovaloader
+    # to be without the .gz suffix which would be added anyway, and fetch
+    # all available checksums for both uncompressed and compressed (if such
+    # file exists) contents.
     case "${1-}" in
         ""|*://*/)
             logmsg_info "Fetching newest remote filename for the ${RAW_DEVICE_NODE:+raw }$REPORT_IMAGETYPE..."
@@ -1979,7 +1983,7 @@ apply_rawfwimage_ovaloader() (
                         "${OVALOADER_DEVICE}" "${FB}.${CSALGO}" \
                     && { logmsg_info "Matched checksum from '${FB}.${CSALGO}' with current content of '${OVALOADER_DEVICE}', nothing to do" ; return 0 ; }
                 elif [ -s "$F.$CSALGO" ] ; then
-                    # Do we only have e.g. the ovaloader.gz.sha256 ?
+                    # Do we only have e.g. the ovaloader.gz.sha256? Validate the image file (we might have downloaded it in another run, or user might have planted stuff)
                     ensure_checksum "$F" "$F.$CSALGO" || break 2  # return # die "Checksum verification failed for '$F'!"
 
                     # TODO-OVA: Check if we need (or can abstract) making a compressed payload's checksum?
