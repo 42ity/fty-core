@@ -201,7 +201,7 @@ check_sha256sum() {
 	return 0
 }
 
-check_sha256sum() {
+check_cksum() {
 	# Compares actual checksum of file "$1" with value recorded in file "$2"
 	FILE_DATA="$1"
 	FILE_CKSUM="$2"
