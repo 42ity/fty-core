@@ -263,6 +263,7 @@ usage() {
     echo "For HTTP(S) or FTP(S) based delivery, do not forget to set http_proxy URL as"
     echo "applicable for your environment. Current value is '$http_proxy'."
     echo "RETURN CODES: This script returns 0 if no newer images were found to download"
+    echo "or apply (if downloaded earlier)"
     echo "42 if there is something new to download (in case of check-only, or if that"
     echo "'something new' was successfully downloaded in case of download actions so you"
     echo "may reboot the system to apply new updates), or other codes for errors."
@@ -2015,8 +2016,8 @@ apply_rawfwimage_ovaloader() (
         fi
     done
 
-    logmsg_info "apply_rawfwimage_ovaloader(): did not find any $REPORT_IMAGETYPE files to try flashing into '${OVALOADER_DEVICE}'"
-    return 1
+    logmsg_info "apply_rawfwimage_ovaloader(): did not find any (or newer than applied) $REPORT_IMAGETYPE files to try flashing into '${OVALOADER_DEVICE}'"
+    return 0
 )
 
 ##################################################
