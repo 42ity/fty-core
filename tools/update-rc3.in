@@ -1923,7 +1923,7 @@ apply_rawfwimage_ovaloader() (
 
     case "$ARCH" in
         *86*|*amd64*) ;;
-        *) die "Can not apply $REPORT_IMAGETYPE to $ARCH architecture" ;;
+        *) CODE=0 die "Can not apply $REPORT_IMAGETYPE to $ARCH architecture" ;;
     esac
 
     cd "${DOWNLOADROOTFW_OVALOADER}" || \
@@ -2016,8 +2016,7 @@ apply_rawfwimage_ovaloader() (
         fi
     done
 
-    logmsg_info "apply_rawfwimage_ovaloader(): did not find any (or newer than applied) $REPORT_IMAGETYPE files to try flashing into '${OVALOADER_DEVICE}'"
-    return 0
+    CODE=0 die "apply_rawfwimage_ovaloader(): did not find any (or newer than applied) $REPORT_IMAGETYPE files to try flashing into '${OVALOADER_DEVICE}'"
 )
 
 ##################################################
