@@ -152,12 +152,19 @@ http_get() {
 update_pkg_keys() {
     local RES=0
     echo "INFO: Updating our OBS packaging keys..."
-    # TODO: check if OS is debian... though this applies to all the APT magic
-    http_get http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add - || RES=$?
-    # http_get http://obs.roz53.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add - || RES=$?
-    # http_get http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add - || RES=$?
+
+    if [ -n "${OSIMAGE_DISTRO-}" ]; then
+        http_get http://obs.roz.lab.etn.com:82/Pool:/master/"${OSIMAGE_DISTRO}"/Release.key | apt-key add - || RES=$?
+    else
+        # TODO: check if OS is debian... though this applies to all the APT magic
+        http_get http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add - || RES=$?
+        # http_get http://obs.roz53.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add - || RES=$?
+        # http_get http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add - || RES=$?
+        http_get http://obs.roz.lab.etn.com:82/Pool:/master/Debian_10.0/Release.key | apt-key add - || RES=$?
+    fi
 
     echo "INFO: Updating upstream-distro packaging keys..."
+    apt-get update || true # might fail with untrusted OBS repos, but should get upstream distro data
     apt-get -f -y --force-yes \
         -q -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" \
         install \
