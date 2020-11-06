@@ -1964,13 +1964,16 @@ apply_rawfwimage_ovaloader() (
         `ls -1d "${DOWNLOADROOTFW_OVALOADER}"/{ovaloader*,*.loader}{,.gz}.forceflash "${DEPLOYMENTROOTFW_OVALOADER}"/{ovaloader*,*.loader}{,.gz}.forceflash 2>/dev/null` \
         `ls -1d "${DOWNLOADROOTFW_OVALOADER}"/{ovaloader*,*.loader}{,.gz} "${DEPLOYMENTROOTFW_OVALOADER}"/{ovaloader*,*.loader}{,.gz} 2>/dev/null` \
     ; do
+        logmsg_info "apply_rawfwimage_ovaloader(): Looking at loader file '$F' ..."
+        [ -e "$F" ] || continue
+        case "$F" in
+            *.forceflash)
+                F="`dirname "$F"`/`basename "$F" .forceflash`"
+                logmsg_info "Forceflash converted into '$F'"
+                [ -s "$F" ] || { logmsg_warn "SKIPPED '$F' as not present or empty"; continue; }
+                ;;
+        esac
         if [ -s "$F" ] ; then
-            case "$F" in
-                *.forceflash)
-                    F="`dirname "$F"`/`basename "$F" .forceflash`"
-                    [ -s "$F" ] || continue
-                    ;;
-            esac
             FB="`dirname "$F"`/`basename "$F" .gz`"
             for CSALGO in $CHECKSUM_ALGOLIST_DEFAULT ; do
                 if [ -s "$FB.$CSALGO" ] ; then
