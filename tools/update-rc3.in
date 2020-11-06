@@ -1942,6 +1942,9 @@ apply_rawfwimage_ovaloader() (
     # userland, at least to install a newer loader than can update itself.
 
     local REPORT_IMAGETYPE='OVA loader and kernel'
+    # Result stays 0 if there was nothing to try flashing, but changes to
+    # error if all we did try had failed
+    local FLASHRES=0
 
     case "$ARCH" in
         *86*|*amd64*) ;;
@@ -2001,7 +2004,7 @@ apply_rawfwimage_ovaloader() (
                 if [ -s "$FB.$CSALGO" ] ; then
                     # Do we have e.g. the ovaloader.sha256 file (for uncompressed payload)?
                     # Note that verifier should transparently handle compressed downloaded file vs raw content's checksum
-                    ensure_checksum "$FB" "$FB.$CSALGO" || break 2  # return # die "Checksum verification failed for '$FB'!"
+                    ensure_checksum "$FB" "$FB.$CSALGO" || { FLASHRES=$?; logmsg_error "Checksum verification failed for '$FB'!" ; continue 2 ; }
 
                     # If the checksum matches, we are done.
                     # First checked good image wins anyway.
@@ -2012,7 +2015,7 @@ apply_rawfwimage_ovaloader() (
                     && { logmsg_info "Matched checksum from '${FB}.${CSALGO}' with current content of '${OVALOADER_DEVICE}', nothing to do" ; return 0 ; }
                 elif [ -s "$F.$CSALGO" ] ; then
                     # Do we only have e.g. the ovaloader.gz.sha256? Validate the image file (we might have downloaded it in another run, or user might have planted stuff)
-                    ensure_checksum "$F" "$F.$CSALGO" || break 2  # return # die "Checksum verification failed for '$F'!"
+                    ensure_checksum "$F" "$F.$CSALGO" || { FLASHRES=$?; logmsg_error "Checksum verification failed for '$F'!" ; continue 2 ; }
 
                     # TODO-OVA: Check if we need (or can abstract) making a compressed payload's checksum?
                     # Or more reliably, uncompress the known-good downloaded file to know its uncompressed value's checksum to compare with on-disk image?
@@ -2027,12 +2030,12 @@ apply_rawfwimage_ovaloader() (
                 *.gz) # TODO: quicker size check for gzip itself (e.g. from manifest)?
                     FS="`gzip -cd < "$F" | wc -c`"
                     # As a sanity check, require that these are equal (not less-than)
-                    [ "$FS" = "$OVALOADER_MAX_SIZE_IPM2" ] || die "Trying to flash $REPORT_IMAGETYPE sized '$FS' bytes to device sized '$OVALOADER_MAX_SIZE_IPM2'"
+                    [ "$FS" = "$OVALOADER_MAX_SIZE_IPM2" ] || { FLASHRES=$?; logmsg_error "Trying to flash $REPORT_IMAGETYPE sized '$FS' bytes to device sized '$OVALOADER_MAX_SIZE_IPM2' from file '$F'" ; continue; }
                     gzip -cd < "$F" > "${OVALOADER_DEVICE}" || die "Failed to flash '$F' into '${OVALOADER_DEVICE}'" ;;
                 *)
                     FS="`filesize "$F"`"
                     # As a sanity check, require that these are equal (not less-than)
-                    [ "$FS" = "$OVALOADER_MAX_SIZE_IPM2" ] || die "Trying to flash $REPORT_IMAGETYPE sized '$FS' bytes to device sized '$OVALOADER_MAX_SIZE_IPM2'"
+                    [ "$FS" = "$OVALOADER_MAX_SIZE_IPM2" ] || { FLASHRES=$?; logmsg_error "Trying to flash $REPORT_IMAGETYPE sized '$FS' bytes to device sized '$OVALOADER_MAX_SIZE_IPM2' from file '$F'" ; continue; }
                     cat "$F" > "${OVALOADER_DEVICE}" || die "Failed to flash '$F' into '${OVALOADER_DEVICE}'" ;;
             esac
             sync || die "Failed to sync after flashing '$F' into '${OVALOADER_DEVICE}'"
@@ -2041,7 +2044,11 @@ apply_rawfwimage_ovaloader() (
         fi
     done
 
-    CODE=0 die "apply_rawfwimage_ovaloader(): did not find any (or newer than applied) $REPORT_IMAGETYPE files to try flashing into '${OVALOADER_DEVICE}'"
+    if [ "$FLASHRES" -gt 0 ]; then
+        CODE=$FLASHRES die "apply_rawfwimage_ovaloader(): did not succeed to apply any $REPORT_IMAGETYPE files by flashing into '${OVALOADER_DEVICE}'"
+    else
+        CODE=$FLASHRES die "apply_rawfwimage_ovaloader(): did not find any (or newer than applied) $REPORT_IMAGETYPE files to try flashing into '${OVALOADER_DEVICE}'"
+    fi
 )
 
 ##################################################
