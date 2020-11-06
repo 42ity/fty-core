@@ -246,6 +246,7 @@ ipc_meta_setup_SCRIPTS = \
 	$(top_srcdir)/setup/01-bios-eula.sh \
 	$(top_srcdir)/setup/10-bios-gpio.sh \
 	$(top_srcdir)/setup/11-forget-bios-devsvcs-1.sh \
+	$(top_srcdir)/setup/11-mount-boot-noauto.sh \
 	$(top_srcdir)/setup/15-dpkg-database.everytime.sh \
 	$(top_srcdir)/setup/16-machineid-dir.everytime.sh \
 	$(top_srcdir)/setup/17-proxy-file.everytime.sh \
@@ -266,6 +267,7 @@ EXTRA_DIST += \
 	$(top_srcdir)/setup/01-bios-eula.sh \
 	$(top_srcdir)/setup/10-bios-gpio.sh \
 	$(top_srcdir)/setup/11-forget-bios-devsvcs-1.sh \
+	$(top_srcdir)/setup/11-mount-boot-noauto.sh \
 	$(top_srcdir)/setup/15-dpkg-database.everytime.sh \
 	$(top_srcdir)/setup/16-machineid-dir.everytime.sh \
 	$(top_srcdir)/setup/17-proxy-file.everytime.sh \
