@@ -1222,8 +1222,18 @@ sort_osimage_names() {
     # baseline, or there is one old image for a baseline without a suffix.
     # NOTE: Over project lifetime, the rebuild numbers were separated by "dash"
     # or by "plus" so we support both below.
-    ### sort
-    ### sort -n
+    # TEST: (echo "IPM-3.1.1-5+40"; echo "IPM-3.1.1-50"; echo "IPM-3.1.1-5+4"; echo "IPM-2.2.2"; echo "IPM-2.2.2+13" ; echo "IPM-3.1.1-1"; echo "IPM-3.1.1-1+4" ; echo "fty-20.16.10-12.34.56" ) | ./tools/update-rc3.in  devtest sort_osimage_names -r
+    #   fty-20.16.10-12.34.56
+    #   IPM-3.1.1-50
+    #   IPM-3.1.1-5+40
+    #   IPM-3.1.1-5+4
+    #   IPM-3.1.1-1+4
+    #   IPM-3.1.1-1
+    #   IPM-2.2.2+13
+    #   IPM-2.2.2
+
+    # Puff all numeric suffixes with extra zeroes, run numeric sort,
+    # strip the leading zeroes
     sed -e 's,-\([[:digit:]][[:digit:]]\.[[:digit:]][[:digit:]]\.[[:digit:]][[:digit:]]\)_,-\1-0_,' \
         -e 's,\([\-\+]\)\([[:digit:]]\)_,\10\2_,' \
         -e 's,\([\-\+]\)\([[:digit:]][[:digit:]]\)_,\10\2_,' \
