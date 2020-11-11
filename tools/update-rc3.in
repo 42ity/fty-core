@@ -1998,10 +1998,12 @@ apply_rawfwimage_ovaloader() (
     # or "ovaloader-gitdate~githash@distro.gz" or fallback "ovaloader.gz"
     # (or not .gz generally)
     local FB FS F
-    # Note: we prioritize a *.forceflash hit
+    # Note: we prioritize a *.forceflash hit with the most recent touch
+    # and "sort_osimage_names -r" to see newest-named builds in same
+    # family (IPM*, fty*, etc.) first
     for F in \
-        `ls -1d "${DOWNLOADROOTFW_OVALOADER}"/{ovaloader*,*.loader}{,.gz}.forceflash "${DEPLOYMENTROOTFW_OVALOADER}"/{ovaloader*,*.loader}{,.gz}.forceflash 2>/dev/null` \
-        `ls -1d "${DOWNLOADROOTFW_OVALOADER}"/{ovaloader*,*.loader}{,.gz} "${DEPLOYMENTROOTFW_OVALOADER}"/{ovaloader*,*.loader}{,.gz} 2>/dev/null` \
+        `ls -1dt "${DOWNLOADROOTFW_OVALOADER}"/{ovaloader*,*.loader}{,.gz}.forceflash "${DEPLOYMENTROOTFW_OVALOADER}"/{ovaloader*,*.loader}{,.gz}.forceflash 2>/dev/null` \
+        `ls -1d "${DOWNLOADROOTFW_OVALOADER}"/{ovaloader*,*.loader}{,.gz} "${DEPLOYMENTROOTFW_OVALOADER}"/{ovaloader*,*.loader}{,.gz} 2>/dev/null | sort_osimage_names -r` \
     ; do
         logmsg_info "apply_rawfwimage_ovaloader(): Looking at loader file '$F' ..."
         [ -e "$F" ] || continue
