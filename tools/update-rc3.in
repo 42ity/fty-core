@@ -122,7 +122,8 @@ config_defaults() {
     is_set SOURCESITEROOTFW_UBOOT || SOURCESITEROOTFW_UBOOT="$SOURCESITEROOTFW"
     is_set SOURCESITEROOTFW_UIMAGE || SOURCESITEROOTFW_UIMAGE="$SOURCESITEROOTFW"
     is_set SOURCESITEROOTFW_MODULES || SOURCESITEROOTFW_MODULES="$SOURCESITEROOTFW/modules"
-    is_set SOURCESITEROOTFW_OVALOADER || SOURCESITEROOTFW_OVALOADER="$SOURCESITEROOTFW"
+    ###is_set SOURCESITEROOTFW_OVALOADER || SOURCESITEROOTFW_OVALOADER="$SOURCESITEROOTFW"
+    is_set SOURCESITEROOTFW_OVALOADER || SOURCESITEROOTFW_OVALOADER="http://obs.roz.lab.etn.com/loader-${OSIMAGE_DISTRO}/@PICK_IMGQALEVEL@/$ARCH/recovery"
 
     # Recovery location (on MMC or mSATA) - for downloads
     is_set DOWNLOADROOT || DOWNLOADROOT="@URC3_DOWNLOADROOT@"
@@ -231,8 +232,9 @@ usage() {
     echo "the following arguments ('raw' firmwares are the non-tarballed singular files):"
     echo "  --url-image-os|-U {URL} (expected checksum patterns should still exist nearby)"
   { test -z "$DOWNLOADROOTFW_UBOOT" && test -z "$DOWNLOADROOTFW_OVALOADER"; } || { \
-    echo "  --url-image-fw-raw-uboot --url-image-fw-raw-uimage --url-image-fw-raw-modules"
-    echo "  --url-image-fw-raw-ovaloader"
+    echo "  --url-image-fw-raw-uboot|-Ub"
+    echo "  --url-image-fw-raw-uimage|-Ui   --url-image-fw-raw-modules|-Um"
+    echo "  --url-image-fw-raw-ovaloader|-Uo"
   }
     echo "  --(no-)erase-factory-reset If a new OS image downloaded successfully, touch"
     echo "                   the control file so 'init' does a factory reset after reboot"
@@ -262,6 +264,7 @@ usage() {
     echo "For HTTP(S) or FTP(S) based delivery, do not forget to set http_proxy URL as"
     echo "applicable for your environment. Current value is '$http_proxy'."
     echo "RETURN CODES: This script returns 0 if no newer images were found to download"
+    echo "or apply (if downloaded earlier)"
     echo "42 if there is something new to download (in case of check-only, or if that"
     echo "'something new' was successfully downloaded in case of download actions so you"
     echo "may reboot the system to apply new updates), or other codes for errors."
@@ -452,9 +455,12 @@ remove_image() {
     remove_checksum_cache '[^\:]*' '[^\:]*' "$1"
     remove_checksum_cache '[^\:]*' '[^\:]*' "$1"'\.[^\:]*'
     # Note: we do not really support e.g. broken FILENAME and good FILENAME.gz
-    rm -f "$1"{,.md5,.sha,.sha1,.sha224,.sha256,.sha384,.sha512,.cksum}{,-padded}{,.tmp}{,.gz} ${2:+"$2"}
+    # and might have the .gz suffix in various places historically
+    local BASEPATH="`dirname "$1"`/`basename "$1" .gz`"
+    rm -f "$BASEPATH"{,.gz}{,.md5,.sha,.sha1,.sha224,.sha256,.sha384,.sha512,.cksum}{,-padded}{,.tmp}{,.gz}{,.forceflash} ${2:+"$2"}
 
-    # ...and update the SW package manifest
+    # ...and update the SW package manifest, if this was an OS image
+    # or some other artefact tracked by etn-licensing.
     # WARNING: this MUST be done before package manifest deletion!
     # TODO: By the licensing-aware updates design, the new candidate image's
     # copy of the generalized upgradeability validation routine should be
@@ -943,6 +949,10 @@ download_rawfwimage_generic() (
     cd "${DOWNLOADROOT_THISIMAGE}" || \
     cd "${DEPLOYMENTROOT_THISIMAGE}" || die "Can not use DOWNLOADROOT_THISIMAGE_VARNAME='$DOWNLOADROOT_THISIMAGE' nor DEPLOYMENTROOT_THISIMAGE_VARNAME='$DEPLOYMENTROOT_THISIMAGE'"
 
+    # TODO-OVA: truncate custom (or discovered) URL at least for ovaloader
+    # to be without the .gz suffix which would be added anyway, and fetch
+    # all available checksums for both uncompressed and compressed (if such
+    # file exists) contents.
     case "${1-}" in
         ""|*://*/)
             logmsg_info "Fetching newest remote filename for the ${RAW_DEVICE_NODE:+raw }$REPORT_IMAGETYPE..."
@@ -1205,17 +1215,30 @@ download_rawfwimage_generic() (
 ##################################################
 
 sort_osimage_names() {
+    # Input: pipe from "ls" and the likes
+    # Optional args go to "sort" (e.g. "-r" for reverse)
+    # Output: pipe or redirection or envvar assignment for list of filenames
     # ASSUMPTION: we don't have over 999 rebuilds of the same baseline image ;)
     # ASSUMPTION2: all image builds have a rebuild-index suffix for the same
     # baseline, or there is one old image for a baseline without a suffix.
     # NOTE: Over project lifetime, the rebuild numbers were separated by "dash"
     # or by "plus" so we support both below.
-    ### sort
-    ### sort -n
+    # TEST: (echo "IPM-3.1.1-5+40"; echo "IPM-3.1.1-50"; echo "IPM-3.1.1-5+4"; echo "IPM-2.2.2"; echo "IPM-2.2.2+13" ; echo "IPM-3.1.1-1"; echo "IPM-3.1.1-1+4" ; echo "fty-20.16.10-12.34.56" ) | ./tools/update-rc3.in  devtest sort_osimage_names -r
+    #   fty-20.16.10-12.34.56
+    #   IPM-3.1.1-50
+    #   IPM-3.1.1-5+40
+    #   IPM-3.1.1-5+4
+    #   IPM-3.1.1-1+4
+    #   IPM-3.1.1-1
+    #   IPM-2.2.2+13
+    #   IPM-2.2.2
+
+    # Puff all numeric suffixes with extra zeroes, run numeric sort,
+    # strip the leading zeroes
     sed -e 's,-\([[:digit:]][[:digit:]]\.[[:digit:]][[:digit:]]\.[[:digit:]][[:digit:]]\)_,-\1-0_,' \
         -e 's,\([\-\+]\)\([[:digit:]]\)_,\10\2_,' \
         -e 's,\([\-\+]\)\([[:digit:]][[:digit:]]\)_,\10\2_,' \
-    | sort -n | \
+    | sort -n "$@" | \
     sed -e 's,\([\-\+]\)0*\([123456789][[:digit:]]*\)_,\1\2_,' \
         -e 's,\([\-\+]\)00*_,_,'
 }
@@ -1847,6 +1870,27 @@ findnewest_rawfwimage_ovaloader() (
     # Echo the URL to the newest "raw" (not tarballed, only one)
     # ovaloader image file found on remote resource, if any
     # Note: currently expects certain filename patterns and http-dir listing markup
+    # Default SOURCESITEROOTFW_OVALOADER="http://obs.roz.lab.etn.com/loader-${OSIMAGE_DISTRO}/@PICK_IMGQALEVEL@/$ARCH/recovery"
+    # expects to resolve @PICK_IMGQALEVEL@ right here (use IMGQALEVEL
+    # if defined here and present on server, or fall back to "master")
+    # Overall, currently we have several options where an image may be
+    # in such order of preference:
+    # * User specified exact URL (use as is)
+    # * User specified a directory URL to look in (match *loader*)
+    # * An "${osimagebasename}.loader.gz" is published near OS image
+    #   in SOURCESITEROOT_OSIMAGE and named with same prefix as the
+    #   OS image we chose to use - gotta know that bit at this point
+    # ** Same OS image basename as one currently being downloaded
+    # ** Newest OS image basename of those already downloaded to the
+    #    recovery location if none is now downloaded to update into
+    # ** Same OS image basename as currently applied if none is
+    #    downloaded to update into
+    # * (?) Some newest *.loader.gz in SOURCESITEROOT_OSIMAGE if present?
+    # * Newest ovaloader-gitdate~githash@distro.gz in SOURCESITEROOTFW_OVALOADER
+    #   possibly adjusted for the current image branch (master, stable,
+    #   featureimage X, release X) or fallback to master if absent.
+    # * Symlinked ovaloader.gz in SOURCESITEROOTFW_OVALOADER (like above)
+    # TODO-OVA
     IMAGE_URL="`lsdir_http_pattern "${1:-$SOURCESITEROOTFW_OVALOADER}" "ovaloader" | sort -n | tail -1`"
     if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
         echo "$IMAGE_URL" && return 0
@@ -1860,6 +1904,15 @@ findnewest_rawfwimage_ovaloader() (
 )
 
 download_rawfwimage_ovaloader() (
+    # TODO-OVA: There is a nuance that for loaders that we build once per
+    # git commit and publish in DOWNLOADROOTFW_OVALOADER location, there
+    # may be lots of identical binaries published at various URLs and file
+    # names, linked as recommended loader to go with this or that OS image:
+    # ${SOURCESITEROOT_OSIMAGE}/${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}.loader*
+    # If the downloader has a local OVA loader file already, and another one
+    # seems a better match to fetch by naming considerations, make sure that
+    # the checksum is not already identical and then only filenames differ.
+
     download_rawfwimage_generic \
         'download_rawfwimage_ovaloader' \
         'OVA loader and kernel' \
@@ -1884,7 +1937,7 @@ removeold_rawfwimage_ovaloader() (
     fi
     VICTIMS=0
     VICTIMPATHS=""
-    for F in `ls -1d "${DOWNLOADROOTFW_OVALOADER}"/ovaloader{,.gz} "${DEPLOYMENTROOTFW_OVALOADER}"/ovaloader{,.gz} 2>/dev/null` ; do
+    for F in `ls -1d "${DOWNLOADROOTFW_OVALOADER}"/ovaloader*{,.gz} "${DEPLOYMENTROOTFW_OVALOADER}"/ovaloader*{,.gz} "${DOWNLOADROOTFW_OVALOADER}"/*.loader{,.gz} "${DEPLOYMENTROOTFW_OVALOADER}"/*.loader{,.gz} 2>/dev/null` ; do
         [ -n "$DOWNLOADED_FW_OVALOADER" ] && [ -s "$DOWNLOADED_FW_OVALOADER" ] && [ "$DOWNLOADED_FW_OVALOADER" = "$F" ] && \
             { logmsg_info "Keeping the just-downloaded $REPORT_IMAGETYPE: '$DOWNLOADED_FW_OVALOADER'" ; continue ; }
         logmsg_info "Removing older $REPORT_IMAGETYPE: '`pwd`/$F' and its checksum(s)"
@@ -1903,10 +1956,13 @@ apply_rawfwimage_ovaloader() (
     # userland, at least to install a newer loader than can update itself.
 
     local REPORT_IMAGETYPE='OVA loader and kernel'
+    # Result stays 0 if there was nothing to try flashing, but changes to
+    # error if all we did try had failed
+    local FLASHRES=0
 
     case "$ARCH" in
         *86*|*amd64*) ;;
-        *) die "Can not apply $REPORT_IMAGETYPE to $ARCH architecture" ;;
+        *) CODE=0 die "Can not apply $REPORT_IMAGETYPE to $ARCH architecture" ;;
     esac
 
     cd "${DOWNLOADROOTFW_OVALOADER}" || \
@@ -1935,27 +1991,67 @@ apply_rawfwimage_ovaloader() (
     # its practical contents (GRUB sectors, miniroot file) may be
     # the same. Learn to compare that deep...
     # NOTE: For now we trust that anything in recovery or production
-    # locations is trustworthy!
-    local FB FS
-    for F in `ls -1d "${DOWNLOADROOTFW_OVALOADER}"/ovaloader{,.gz} "${DEPLOYMENTROOTFW_OVALOADER}"/ovaloader{,.gz} 2>/dev/null` ; do
+    # locations is trustworthy - in particular that checksums were
+    # verified earlier by download or Upgrade Package tarball unpack!
+    # NOTE that there may be several suitable patterns coming from
+    # different levels of development, e.g. "${osimagebasename}.loader.gz"
+    # or "ovaloader-gitdate~githash@distro.gz" or fallback "ovaloader.gz"
+    # (or not .gz generally)
+    local FB FS F
+    # Note: we prioritize a *.forceflash hit with the most recent touch
+    # and "sort_osimage_names -r" to see newest-named builds in same
+    # family (IPM*, fty*, etc.) first
+    for F in \
+        `ls -1dt "${DOWNLOADROOTFW_OVALOADER}"/{ovaloader*,*.loader}{,.gz}.forceflash "${DEPLOYMENTROOTFW_OVALOADER}"/{ovaloader*,*.loader}{,.gz}.forceflash 2>/dev/null` \
+        `ls -1d "${DOWNLOADROOTFW_OVALOADER}"/{ovaloader*,*.loader}{,.gz} "${DEPLOYMENTROOTFW_OVALOADER}"/{ovaloader*,*.loader}{,.gz} 2>/dev/null | sort_osimage_names -r` \
+    ; do
+        logmsg_info "apply_rawfwimage_ovaloader(): Looking at loader file '$F' ..."
+        [ -e "$F" ] || continue
+        case "$F" in
+            *.forceflash)
+                F="`dirname "$F"`/`basename "$F" .forceflash`"
+                logmsg_info "Forceflash converted into '$F'"
+                [ -s "$F" ] || { logmsg_warn "SKIPPED '$F' as not present or empty"; continue; }
+                ;;
+        esac
         if [ -s "$F" ] ; then
             FB="`dirname "$F"`/`basename "$F" .gz`"
             for CSALGO in $CHECKSUM_ALGOLIST_DEFAULT ; do
                 if [ -s "$FB.$CSALGO" ] ; then
-                    ensure_checksum "$FB" "$FB.$CSALGO" || break 2  # return # die "Checksum verification failed for '$FB'!"
+                    # Do we have e.g. the ovaloader.sha256 file (for uncompressed payload)?
+                    # Note that verifier should transparently handle compressed downloaded file vs raw content's checksum
+                    ensure_checksum "$FB" "$FB.$CSALGO" || { FLASHRES=$?; logmsg_error "Checksum verification failed for '$FB'!" ; continue 2 ; }
+
+                    # If the checksum matches, we are done.
+                    # First checked good image wins anyway.
+                    # (Tweak prios by forceflash if needed.)
+                    FLAG_CAN_REMOVE_IMAGES="no" \
+                    verify_checksum \
+                        "${OVALOADER_DEVICE}" "${FB}.${CSALGO}" \
+                    && { logmsg_info "Matched checksum from '${FB}.${CSALGO}' with current content of '${OVALOADER_DEVICE}', nothing to do" ; return 0 ; }
+                elif [ -s "$F.$CSALGO" ] ; then
+                    # Do we only have e.g. the ovaloader.gz.sha256? Validate the image file (we might have downloaded it in another run, or user might have planted stuff)
+                    ensure_checksum "$F" "$F.$CSALGO" || { FLASHRES=$?; logmsg_error "Checksum verification failed for '$F'!" ; continue 2 ; }
+
+                    # TODO-OVA: Check if we need (or can abstract) making a compressed payload's checksum?
+                    # Or more reliably, uncompress the known-good downloaded file to know its uncompressed value's checksum to compare with on-disk image?
+                    #FLAG_CAN_REMOVE_IMAGES="no" \
+                    #verify_checksum \
+                    #    "${OVALOADER_DEVICE}" "${F}.${CSALGO}" \
+                    #&& { logmsg_info "Matched checksum from '${F}.${CSALGO}' with current content of '${OVALOADER_DEVICE}', nothing to do" ; return 0 ; }
                 fi
             done
-            logmsg_info "apply_rawfwimage_ovaloader(): Trying to flash '$F' into '${OVALOADER_DEVICE}' ..."
+            logmsg_info "apply_rawfwimage_ovaloader(): Could not compare checksums, or new candidate differs from on-disk image. Trying to flash '$F' into '${OVALOADER_DEVICE}' ..."
             case "$F" in
-                *.gz) # TODO: size check for gzip
+                *.gz) # TODO: quicker size check for gzip itself (e.g. from manifest)?
                     FS="`gzip -cd < "$F" | wc -c`"
                     # As a sanity check, require that these are equal (not less-than)
-                    [ "$FS" = "$OVALOADER_MAX_SIZE_IPM2" ] || die "Trying to flash $REPORT_IMAGETYPE sized '$FS' bytes to device sized '$OVALOADER_MAX_SIZE_IPM2'"
+                    [ "$FS" = "$OVALOADER_MAX_SIZE_IPM2" ] || { FLASHRES=$?; logmsg_error "Trying to flash $REPORT_IMAGETYPE sized '$FS' bytes to device sized '$OVALOADER_MAX_SIZE_IPM2' from file '$F'" ; continue; }
                     gzip -cd < "$F" > "${OVALOADER_DEVICE}" || die "Failed to flash '$F' into '${OVALOADER_DEVICE}'" ;;
                 *)
                     FS="`filesize "$F"`"
                     # As a sanity check, require that these are equal (not less-than)
-                    [ "$FS" = "$OVALOADER_MAX_SIZE_IPM2" ] || die "Trying to flash $REPORT_IMAGETYPE sized '$FS' bytes to device sized '$OVALOADER_MAX_SIZE_IPM2'"
+                    [ "$FS" = "$OVALOADER_MAX_SIZE_IPM2" ] || { FLASHRES=$?; logmsg_error "Trying to flash $REPORT_IMAGETYPE sized '$FS' bytes to device sized '$OVALOADER_MAX_SIZE_IPM2' from file '$F'" ; continue; }
                     cat "$F" > "${OVALOADER_DEVICE}" || die "Failed to flash '$F' into '${OVALOADER_DEVICE}'" ;;
             esac
             sync || die "Failed to sync after flashing '$F' into '${OVALOADER_DEVICE}'"
@@ -1964,8 +2060,11 @@ apply_rawfwimage_ovaloader() (
         fi
     done
 
-    logmsg_info "apply_rawfwimage_ovaloader(): did not find any $REPORT_IMAGETYPE files to try flashing into '${OVALOADER_DEVICE}'"
-    return 1
+    if [ "$FLASHRES" -gt 0 ]; then
+        CODE=$FLASHRES die "apply_rawfwimage_ovaloader(): did not succeed to apply any $REPORT_IMAGETYPE files by flashing into '${OVALOADER_DEVICE}'"
+    else
+        CODE=$FLASHRES die "apply_rawfwimage_ovaloader(): did not find any (or newer than applied) $REPORT_IMAGETYPE files to try flashing into '${OVALOADER_DEVICE}'"
+    fi
 )
 
 ##################################################
@@ -2151,7 +2250,7 @@ ACTION_FORCEFLASH_CLEANUP="no"
 [ -z "${URL_DOWNLOAD_FWIMAGE_RAW_UBOOT-}" ] &&      URL_DOWNLOAD_FWIMAGE_RAW_UBOOT=""
 [ -z "${URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE-}" ] &&     URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE=""
 [ -z "${URL_DOWNLOAD_FWIMAGE_RAW_MODULES-}" ] &&    URL_DOWNLOAD_FWIMAGE_RAW_MODULES=""
-[ -z "${URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER-}" ] &&     URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER=""
+[ -z "${URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER-}" ] &&  URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER=""
 
 ACTION_REMOVEOLD_OSIMAGE="yes"
 # This is currently no-op because we only track "raw" FW images which have one
@@ -2191,6 +2290,8 @@ TEMP_DATA="`mktemp -d /var/run/.update-rc3.$$.XXXXXX`" && [ -n "$TEMP_DATA" ] &&
 || { TEMP_DATA="/tmp/.update-rc3.$$" && rm -rf "${TEMP_DATA}" && mkdir -p "$TEMP_DATA" ; } \
 || die "Can not make a TEMP_DATA directory"
 export TEMP_DATA
+echo "Using a TEMP_DATA directory: '${TEMP_DATA}/'" >&2
+
 TRAP_SIGNALS="HUP INT QUIT TERM EXIT" settraps "rm -rf '${TEMP_DATA}'"
 
 while [ $# -gt 0 ]; do
@@ -2216,6 +2317,8 @@ while [ $# -gt 0 ]; do
 			lsdir_http_pattern "${SOURCESITEROOTFW_UIMAGE}" "uImage*" \
 				| egrep -v '\.(md5|sha256|cksum'"${CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT}"')$' || RES=$?
 			lsdir_http_pattern "${SOURCESITEROOTFW_MODULES}" "*[0-9].[0-9]*.${EXT}*" \
+				| egrep -v '\.(md5|sha256|cksum'"${CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT}"')$' || RES=$?
+			lsdir_http_pattern "${SOURCESITEROOT_OSIMAGE}" "${SOURCESITEROOT_OSIMAGE_FILENAMEPATTERN}.loader*" \
 				| egrep -v '\.(md5|sha256|cksum'"${CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT}"')$' || RES=$?
 			lsdir_http_pattern "${SOURCESITEROOTFW_OVALOADER}" "ovaloader*" \
 				| egrep -v '\.(md5|sha256|cksum'"${CHECKSUM_ALGO_DEFAULT:+|$CHECKSUM_ALGO_DEFAULT}"')$' || RES=$?
@@ -2244,6 +2347,11 @@ while [ $# -gt 0 ]; do
 			PID3=$!
 			summarize_check "LOADER-UBOOT"   download_rawfwimage_uboot   $URL_DOWNLOAD_FWIMAGE_RAW_UBOOT &
 			PID4=$!
+			# TODO-OVA: Infer URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER from the
+			# URL_DOWNLOAD_OSIMAGE value by default, or use common build
+			# products if nothing specific to a chosen one OS image is
+			# published near it. Above that all, trust what user told to
+			# use with a CLI option below, though.
 			summarize_check "KERNEL-OVALOADER"  download_rawfwimage_ovaloader  $URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER &
 			PID5=$!
 			for P in $PID1 $PID2 $PID3 $PID4 $PID5 ; do wait $P || RES=$? ; done
@@ -2282,10 +2390,10 @@ while [ $# -gt 0 ]; do
 		                    ;;
 		                *)  URL_DOWNLOAD_OSIMAGE="$2" ;;
 		            esac ;;
-		        --url-image-fw-raw-uboot)   URL_DOWNLOAD_FWIMAGE_RAW_UBOOT="$2" ;;
-		        --url-image-fw-raw-uimage)  URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE="$2" ;;
-		        --url-image-fw-raw-modules) URL_DOWNLOAD_FWIMAGE_RAW_MODULES="$2" ;;
-		        --url-image-fw-raw-ovaloader)  URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER="$2" ;;
+		        --url-image-fw-raw-uboot|-Ub)   URL_DOWNLOAD_FWIMAGE_RAW_UBOOT="$2" ;;
+		        --url-image-fw-raw-uimage|-Ui)  URL_DOWNLOAD_FWIMAGE_RAW_UIMAGE="$2" ;;
+		        --url-image-fw-raw-modules|-Um) URL_DOWNLOAD_FWIMAGE_RAW_MODULES="$2" ;;
+		        --url-image-fw-raw-ovaloader|-Uo)  URL_DOWNLOAD_FWIMAGE_RAW_OVALOADER="$2" ;;
 		        *)  die "Aborting due to unknown command-line argument(s): $*" ;;
 		    esac
 		    shift ;;
@@ -2379,7 +2487,7 @@ if [ x"$ACTION_FORCEFLASH_CLEANUP" = xyes ]; then
 	rm -f "${DEPLOYMENTROOTFW_UBOOT}/u-Boot.forceflash" "${DOWNLOADROOTFW_UBOOT}/u-Boot.forceflash"
 	rm -f "${DEPLOYMENTROOTFW_UIMAGE}/uImage.forceflash" "${DOWNLOADROOTFW_UIMAGE}/uImage.forceflash"
 	rm -f "${DEPLOYMENTROOT_OSIMAGE}"/*.forceflash "${DOWNLOADROOT_OSIMAGE}"/*.forceflash
-	rm -f "${DEPLOYMENTROOTFW_OVALOADER}/ovaloader.forceflash" "${DOWNLOADROOTFW_OVALOADER}/ovaloader.forceflash"
+	rm -f "${DEPLOYMENTROOTFW_OVALOADER}/{ovaloader*,*.loader}{,.gz}.forceflash" "${DOWNLOADROOTFW_OVALOADER}/{ovaloader*,*.loader}{,.gz}.forceflash"
 fi
 
 # Checks are special - after we do all which were requested (if any), we exit
@@ -2434,7 +2542,7 @@ if [ x"$ACTION_CHECK_OSIMAGE" = xyes ] || [ x"$ACTION_CHECK_FWIMAGE" = xyes ]; t
 	fi
 	if [ "$ACTION_FORCEFLASH_FWIMAGE_OVALOADER" = yes -a "$RESULT_ACTION_CHECK_OVALOADER" = 0 ] ; then
 		logmsg_info "Adding a touch of ovaloader forceflash, as requested"
-		rm -f "${DEPLOYMENTROOTFW_OVALOADER}/ovaloader.forceflash" "${DOWNLOADROOTFW_OVALOADER}/ovaloader.forceflash"
+		rm -f "${DEPLOYMENTROOTFW_OVALOADER}/{ovaloader*,*.loader}{,.gz}.forceflash" "${DOWNLOADROOTFW_OVALOADER}/{ovaloader*,*.loader}{,.gz}.forceflash"
 		case "${DOWNLOADED_FW_OVALOADER}" in
 			/dev*) [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] && removeold_rawfwimage_ovaloader ;;
 			*)
@@ -2530,7 +2638,7 @@ if [ "$ACTION_DOWNLOAD_FWIMAGE" = yes ]; then
 	   [ "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_OVALOADER" = 0 -o "$RESULT_ACTION_DOWNLOAD_FWIMAGE_RAW_OVALOADER" = 42 ] \
 	; then
 		logmsg_info "Adding a touch of ovaloader forceflash, as requested"
-		rm -f "${DEPLOYMENTROOTFW_OVALOADER}/ovaloader.forceflash" "${DOWNLOADROOTFW_OVALOADER}/ovaloader.forceflash"
+		rm -f "${DEPLOYMENTROOTFW_OVALOADER}/{ovaloader*,*.loader}{,.gz}.forceflash" "${DOWNLOADROOTFW_OVALOADER}/{ovaloader*,*.loader}{,.gz}.forceflash"
 		case "${DOWNLOADED_FW_OVALOADER}" in
 			/dev*) [ "$ACTION_REMOVEOLD_FWIMAGE" = yes ] && removeold_rawfwimage_ovaloader ;;
 			*)

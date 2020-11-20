@@ -182,7 +182,8 @@ client_SCRIPTS +=	 \
 			tools/enable-root-account \
 			tools/disable-root-account \
 			tools/runas-_bios-script \
-			tools/run-user-script
+			tools/run-user-script \
+			tools/run-ssh-action
 
 helper_SCRIPTS +=	\
 			tools/tntnet-ExecStartPre.sh \
@@ -203,7 +204,8 @@ EXTRA_DIST +=		tools/fake-th \
 			tools/enable-root-account.in \
 			tools/disable-root-account.in \
 			tools/runas-_bios-script \
-			tools/run-user-script.in
+			tools/run-user-script.in \
+			tools/run-ssh-action.in
 
 # Recipe needed to fulfill ci-rc-bios.sh logic
 fake-th: tools/fake-th
@@ -244,6 +246,7 @@ ipc_meta_setup_SCRIPTS = \
 	$(top_srcdir)/setup/01-bios-eula.sh \
 	$(top_srcdir)/setup/10-bios-gpio.sh \
 	$(top_srcdir)/setup/11-forget-bios-devsvcs-1.sh \
+	$(top_srcdir)/setup/11-mount-boot-noauto.sh \
 	$(top_srcdir)/setup/15-dpkg-database.everytime.sh \
 	$(top_srcdir)/setup/16-machineid-dir.everytime.sh \
 	$(top_srcdir)/setup/17-proxy-file.everytime.sh \
@@ -264,6 +267,7 @@ EXTRA_DIST += \
 	$(top_srcdir)/setup/01-bios-eula.sh \
 	$(top_srcdir)/setup/10-bios-gpio.sh \
 	$(top_srcdir)/setup/11-forget-bios-devsvcs-1.sh \
+	$(top_srcdir)/setup/11-mount-boot-noauto.sh \
 	$(top_srcdir)/setup/15-dpkg-database.everytime.sh \
 	$(top_srcdir)/setup/16-machineid-dir.everytime.sh \
 	$(top_srcdir)/setup/17-proxy-file.everytime.sh \

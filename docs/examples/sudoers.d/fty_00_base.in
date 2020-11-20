@@ -40,6 +40,7 @@ Cmnd_Alias BIN_SYSTEMCTL    = /bin/systemctl
 Cmnd_Alias FTY_ROUTE    = @libexecdir@/@PACKAGE@/fty-route
 Cmnd_Alias RUNAS_BIOS_SCRIPT         = @libexecdir@/@PACKAGE@/runas-_bios-script
 Cmnd_Alias RUN_USER_SCRIPT           = @libexecdir@/@PACKAGE@/run-user-script
+Cmnd_Alias RUN_SSH_SCRIPT           = @libexecdir@/@PACKAGE@/run-ssh-action
 
 # Overall, what is currently allowed with different privileges?
 Cmnd_Alias BIOS_PROGS	= DATE,AUGTOOL,BIOS_PASSWD,BIOS_PASSWD_FTY_REST,BIOS_SYSTEMCTL,BIOS_JOURNALCTL,BIOS_NUTCONFIG,BIOS_UPDATE_RC3,BIOS_MOUNT_USB,BIOS_UMOUNT_USB,BIOS_LOGHOST_RSYSLOG,BIOS_MYSQLDUMP,BIOS_DIAGNOSTIC,BIOS_DMF,FTY_ROUTE
@@ -53,3 +54,4 @@ BIOS_USERS ALL=(BIOS_RUNAS) NOPASSWD:BIOS_PROGS
 www-data   ALL=(BIOS_RUNAS) NOPASSWD:BIN_SYSTEMCTL,RUN_USER_SCRIPT
 
 fty-srr    ALL = NOPASSWD: /sbin/reboot
+www-data   ALL=(_bios-script) NOPASSWD:RUN_SSH_SCRIPT
