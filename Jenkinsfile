@@ -28,8 +28,7 @@
 
 import params.ZprojectPipelineParams
 ZprojectPipelineParams parameters = new ZprojectPipelineParams()
-parameters.enableBaseCheck = false
-parameters.enableMemCheck = false
-parameters.enableInstall = false
+parameters.enableCoverity = false
+
 // run only with distcheck
 etn_ipm2_build_and_tests_pipeline_zproject(parameters)
