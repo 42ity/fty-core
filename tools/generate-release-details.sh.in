@@ -73,6 +73,8 @@ export LANG LC_ALL TZ
 #   FW_OVALOADERPART_CSDEVPAD   FW_OVALOADERPART_SIZE
 #   FW_OVALOADERPART_CSDEV_MD5  FW_OVALOADERPART_CSDEV_SHA256 FW_OVALOADERPART_CSDEV_CKSUM
 #   FW_OVALOADERPART_CSDEVPAD_MD5 FW_OVALOADERPART_CSDEVPAD_SHA256 FW_OVALOADERPART_CSDEVPAD_CKSUM
+#   FW_OVALOADER_WHOLEDISK      FW_OVALOADER_PARTITION
+#   FW_OVALOADER_FILENAME       FW_OVALOADER_LSINFO
 #                       ^^^ Details about OVA loader for this (x86 VM likely)
 #                           system. The CSDEVPAD values here refer to the whole
 #                           boot-disk image currently including GRUB and a boot
@@ -336,6 +338,10 @@ cat <<EOF > "${ALTROOT}/etc/release-details.json"
         "ovaloader-commit-id-eaton":         "$BIOSINFO_OVALOADER_ID_ETN",
         "ovaloader-build-ts":                "$BIOSINFO_OVALOADER_TSS",
         "ovaloader-distro":                  "$BIOSINFO_OVALOADER_DISTRO",
+        "ovaloader-wholedisk":               "$FW_OVALOADER_WHOLEDISK",
+        "ovaloader-partition":               "$FW_OVALOADER_PARTITION",
+        "ovaloader-filename":                "$FW_OVALOADER_FILENAME",
+        "ovaloader-lsinfo":                  "$FW_OVALOADER_LSINFO",
         "ovaloader-part-cksum":              "$FW_OVALOADERPART_CSDEV",
         "ovaloader-part-checksum-md5":       "$FW_OVALOADERPART_CSDEV_MD5",
         "ovaloader-part-checksum-sha256":    "$FW_OVALOADERPART_CSDEV_SHA256",
