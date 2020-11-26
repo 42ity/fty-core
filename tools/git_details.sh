@@ -170,10 +170,19 @@ reportGitInfo() {
                 "trying to detect the real source branch name..." >&2
 
             if [ -n "$BRANCH" -a -n "$BUILDMACHINE" ]; then
-                echo "GIT_DETAILS-INFO: envvars set by Jenkins are detected;" \
+                echo "GIT_DETAILS-INFO: envvars set by Jenkins worker are detected;" \
                     "will rely on them (using '$BRANCH')" >&2
                 _B="$BRANCH"
                 [ -n "$BRANCH" -a x"$BRANCH" != xHEAD ]
+                _B_RES=?
+            fi
+
+            [ $_B_RES != 0 -o -z "$_B" ] && \
+            if [ -n "$BRANCH_NAME" ]; then
+                echo "GIT_DETAILS-INFO: envvars set by Jenkins are detected;" \
+                    "will rely on them (using '$BRANCH_NAME')" >&2
+                _B="$BRANCH_NAME"
+                [ -n "$BRANCH_NAME" -a x"$BRANCH_NAME" != xHEAD ]
                 _B_RES=?
             fi
 
