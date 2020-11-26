@@ -214,7 +214,7 @@ reportGitInfo() {
                 _B_RES=$?
             fi
 
-            [ $_B_RES != 0 -o -z "$_B" ] && \
+            [ $_B_RES != 0 -o -z "$_B" -o "$_B" = '*' ] && \
             if [ -s ".git_details" -a -r ".git_details" ]; then
                 echo "GIT_DETAILS-INFO: Looking for PACKAGE_GIT_BRANCH" \
                     "in older .git_details..." >&2
