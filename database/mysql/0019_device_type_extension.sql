@@ -37,6 +37,9 @@ INSERT INTO t_bios_asset_element_type (name) VALUES ("cops");
 /* pcu device (parallel control unit, as a marker of ups parallel system) */
 INSERT INTO t_bios_asset_device_type (name) VALUES ("pcu");
 
+/* Update extended attribut key size from 40 char to 255 char */
+ALTER TABLE t_bios_asset_ext_attributes MODIFY COLUMN keytag VARCHAR(255);
+
 
 /* This must be the last line of the SQL file */
 START TRANSACTION;
