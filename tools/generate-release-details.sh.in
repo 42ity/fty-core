@@ -68,10 +68,27 @@ export LANG LC_ALL TZ
 #   FW_UIMAGEPART_CSDEV_MD5 FW_UIMAGEPART_CSDEV_SHA256 FW_UIMAGEPART_CSDEV_CKSUM
 #   FW_UIMAGEPART_CSDEVPAD_MD5 FW_UIMAGEPART_CSDEVPAD_SHA256 FW_UIMAGEPART_CSDEVPAD_CKSUM
 #                       ^^^ Details about uImage miniroot for this system
+#   BIOSINFO_OVALOADER_ID_ETN   BIOSINFO_OVALOADER_TSS  BIOSINFO_OVALOADER_DISTRO
+#   FW_OVALOADERPART_CSDEV      FW_OVALOADERPART_BYTES
+#   FW_OVALOADERPART_CSDEVPAD   FW_OVALOADERPART_SIZE
+#   FW_OVALOADERPART_CSDEV_MD5  FW_OVALOADERPART_CSDEV_SHA256 FW_OVALOADERPART_CSDEV_CKSUM
+#   FW_OVALOADERPART_CSDEVPAD_MD5 FW_OVALOADERPART_CSDEVPAD_SHA256 FW_OVALOADERPART_CSDEVPAD_CKSUM
+#   FW_OVALOADER_WHOLEDISK      FW_OVALOADER_PARTITION
+#   FW_OVALOADER_FILENAME       FW_OVALOADER_LSINFO
+#                       ^^^ Details about OVA loader for this (x86 VM likely)
+#                           system. The CSDEVPAD values here refer to the whole
+#                           boot-disk image currently including GRUB and a boot
+#                           partition with ext4 and a dracut-based miniroot;
+#                           this is what update packages deliver and replace
+#                           wholly on existing deployments. The non-PAD values
+#                           might refer to the currently booted miniroot file.
+#                           BIOSINFO_OVALOADER_DISTRO conveys which OS release
+#                           was used to create the miniroot (kernel, grub, ...)
 #   HWD_VENDOR HWD_CATALOG_NB HWD_REV HWD_SERIAL_NB
 #                       ^^^ OEM details about hardware for this system
 # For now (code to be ported) we also expect pre-parsed markup in
 #   BIOSINFO_UBOOT          BIOSINFO_UIMAGE
+#   BIOSINFO_OVALOADER (handled for consistency but not really expected)
 
 
 # Echo helper
@@ -220,6 +237,10 @@ $BIOSINFO_UBOOT"
         BIOSINFO="$BIOSINFO
 $BIOSINFO_UIMAGE"
 
+[ -n "$BIOSINFO_OVALOADER" ] && \
+        BIOSINFO="$BIOSINFO
+$BIOSINFO_OVALOADER"
+
 [ -n "$HWD_VENDOR$HWD_CATALOG_NB$HWD_REV$HWD_SERIAL_NB" ] && \
         BIOSINFO="$BIOSINFO
 Hardware details: Vendor:$HWD_VENDOR CatalogNumber:$HWD_CATALOG_NB HWSpecRevision:$HWD_REV SerialNumber:$HWD_SERIAL_NB"
@@ -314,6 +335,23 @@ cat <<EOF > "${ALTROOT}/etc/release-details.json"
         "uimage-padded-checksum-sha256": "$FW_UIMAGEPART_CSDEVPAD_SHA256",
         "uimage-padded-checksum-cksum":  "$FW_UIMAGEPART_CSDEVPAD_CKSUM",
         "uimage-padded-bytes":           "$FW_UIMAGEPART_SIZE",
+        "ovaloader-commit-id-eaton":         "$BIOSINFO_OVALOADER_ID_ETN",
+        "ovaloader-build-ts":                "$BIOSINFO_OVALOADER_TSS",
+        "ovaloader-distro":                  "$BIOSINFO_OVALOADER_DISTRO",
+        "ovaloader-wholedisk":               "$FW_OVALOADER_WHOLEDISK",
+        "ovaloader-partition":               "$FW_OVALOADER_PARTITION",
+        "ovaloader-filename":                "$FW_OVALOADER_FILENAME",
+        "ovaloader-lsinfo":                  "$FW_OVALOADER_LSINFO",
+        "ovaloader-part-cksum":              "$FW_OVALOADERPART_CSDEV",
+        "ovaloader-part-checksum-md5":       "$FW_OVALOADERPART_CSDEV_MD5",
+        "ovaloader-part-checksum-sha256":    "$FW_OVALOADERPART_CSDEV_SHA256",
+        "ovaloader-part-checksum-cksum":     "$FW_OVALOADERPART_CSDEV_CKSUM",
+        "ovaloader-part-bytes":              "$FW_OVALOADERPART_BYTES",
+        "ovaloader-padded-cksum":            "$FW_OVALOADERPART_CSDEVPAD",
+        "ovaloader-padded-checksum-md5":     "$FW_OVALOADERPART_CSDEVPAD_MD5",
+        "ovaloader-padded-checksum-sha256":  "$FW_OVALOADERPART_CSDEVPAD_SHA256",
+        "ovaloader-padded-checksum-cksum":   "$FW_OVALOADERPART_CSDEVPAD_CKSUM",
+        "ovaloader-padded-bytes":            "$FW_OVALOADERPART_SIZE",
         "hardware-vendor":               "$HWD_VENDOR",
         "hardware-catalog-number":       "$HWD_CATALOG_NB",
         "hardware-part-number":          "$HWD_PART_NB",
