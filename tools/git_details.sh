@@ -170,10 +170,19 @@ reportGitInfo() {
                 "trying to detect the real source branch name..." >&2
 
             if [ -n "$BRANCH" -a -n "$BUILDMACHINE" ]; then
-                echo "GIT_DETAILS-INFO: envvars set by Jenkins are detected;" \
+                echo "GIT_DETAILS-INFO: envvars set by Jenkins worker are detected;" \
                     "will rely on them (using '$BRANCH')" >&2
                 _B="$BRANCH"
                 [ -n "$BRANCH" -a x"$BRANCH" != xHEAD ]
+                _B_RES=?
+            fi
+
+            [ $_B_RES != 0 -o -z "$_B" ] && \
+            if [ -n "$BRANCH_NAME" ]; then
+                echo "GIT_DETAILS-INFO: envvars set by Jenkins are detected;" \
+                    "will rely on them (using '$BRANCH_NAME')" >&2
+                _B="$BRANCH_NAME"
+                [ -n "$BRANCH_NAME" -a x"$BRANCH_NAME" != xHEAD ]
                 _B_RES=?
             fi
 
@@ -201,11 +210,11 @@ reportGitInfo() {
             [ $_B_RES != 0 -o -z "$_B" ] && \
             if [ -n "$PACKAGE_GIT_HASH_S" ]; then
                 echo "GIT_DETAILS-INFO: Looking for PACKAGE_GIT_BRANCH in 'git branch' info..." >&2
-                _B="`git branch -a -v | grep -w "$PACKAGE_GIT_HASH_S" | egrep -v "^\* \(detached from $PACKAGE_GIT_HASH_S|HEAD detached at $PACKAGE_GIT_HASH_S\)" | awk '{print $1}' | sed 's,^remotes/,,'`"
+                _B="`git branch -a -v | grep -w "$PACKAGE_GIT_HASH_S" | egrep -v "^\* (\(no branch\) $PACKAGE_GIT_HASH_S|detached from $PACKAGE_GIT_HASH_S|HEAD detached at $PACKAGE_GIT_HASH_S)" | awk '{print $1}' | sed 's,^remotes/,,'`"
                 _B_RES=$?
             fi
 
-            [ $_B_RES != 0 -o -z "$_B" ] && \
+            [ $_B_RES != 0 -o -z "$_B" -o "$_B" = '*' ] && \
             if [ -s ".git_details" -a -r ".git_details" ]; then
                 echo "GIT_DETAILS-INFO: Looking for PACKAGE_GIT_BRANCH" \
                     "in older .git_details..." >&2
