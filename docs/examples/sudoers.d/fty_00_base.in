@@ -53,5 +53,5 @@ Runas_Alias BIOS_RUNAS	= root
 BIOS_USERS ALL=(BIOS_RUNAS) NOPASSWD:BIOS_PROGS
 www-data   ALL=(BIOS_RUNAS) NOPASSWD:BIN_SYSTEMCTL,RUN_USER_SCRIPT
 
-fty-srr    ALL = NOPASSWD: /sbin/reboot
+fty-srr    ALL = NOPASSWD: /usr/sbin/fty-srr-reboot.sh
 www-data   ALL=(_bios-script) NOPASSWD:RUN_SSH_SCRIPT
