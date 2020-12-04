@@ -816,50 +816,25 @@ done
 # Enable REST API via tntnet
 # Note: for legacy reasons, we still maintain tntnet@bios.service (not @fty)
 mkdir -p /etc/tntnet/bios.d
-# Note: Here we only expect one file, e.g. /usr/share/fty/examples/tntnet.xml.example :
-cp /usr/share/fty-rest/examples/tntnet.xml.* /etc/tntnet/bios.xml
+for F in /usr/share/fty-rest/examples/??_*.xml.example ; do
+    cp "`basename "$F" .example`" /etc/tntnet/bios.d/"$F"
+done
 
-sed -i 's|.*<allUserGroups>.*|<allUserGroups>yes</allUserGroups>|' /etc/tntnet/bios.xml || true
+# Tailor the packaged fty-rest configuration to names and paths in OS image product
+sed -i 's|.*<allUserGroups>.*|<allUserGroups>yes</allUserGroups>|' /etc/tntnet/bios.d/99_end.xml || true
 sed -e 's|<!--.*<user>.*|<user>www-data</user>|' \
     -e 's|<!--.*<group>.*|<group>'"${SASL_GROUP}"'</group>|' \
     -e 's|.*<daemon>.*|<daemon>0</daemon>|' \
     -e 's|\(.*\)<dir>.*|\1<dir>/usr/share/bios-web/</dir>|' \
     -e 's|<!--.*<sslProtocols>.*|<sslProtocols>-TLSv1_0</sslProtocols>|' \
     -e 's|<!--.*<sslCipherList>.*|<sslCipherList>HIGH:!aNULL:!3DES</sslCipherList>|' \
-    -i /etc/tntnet/bios.xml
+    -i /etc/tntnet/bios.d/99_end.xml
 
-# Leave a backup template file
-cp /etc/tntnet/bios.xml /usr/share/fty/examples/bios.xml.default
-
-# Put aside structural head and tail of the config file
-sed -n '1,/<mappings>/ p' /etc/tntnet/bios.xml  > /etc/tntnet/bios.d/00_start.xml
-sed -n '/<\/mappings>/,$ p' /etc/tntnet/bios.xml > /etc/tntnet/bios.d/99_end.xml
-
-# Separate the servlet mappings to dissect even more
-sed '/<mappings>/,/<\/mappings>/!d; /mappings/ d' \
-    /etc/tntnet/bios.xml > /etc/tntnet/bios.d/20_core.xml.tmp
-# Static file mappings, caching setup, JSON requirement, token "extraction":
-sed '1,/<!-- We are getting authorized -->/!d; /<!-- We are getting authorized -->/ d' \
-    /etc/tntnet/bios.d/20_core.xml.tmp > /etc/tntnet/bios.d/10_common_statics.xml
-# auth processing, auth validation
-sed '/<!-- We are getting authorized -->/,$!d; 1,/<!-- Here starts the real API -->/!d; /<!-- Here starts the real API -->/ d' \
-    /etc/tntnet/bios.d/20_core.xml.tmp > /etc/tntnet/bios.d/20_common_basics.xml
-# The actual diverse API calls of the product
-sed '/<!-- Here starts the real API -->/,$!d' \
-    /etc/tntnet/bios.d/20_core.xml.tmp > /etc/tntnet/bios.d/50_main_api.xml
-rm -f /etc/tntnet/bios.d/20_core.xml.tmp
-
-# Sanity check, excluding files that could be delivered by other packages
-cat /etc/tntnet/bios.d/00_start.xml \
-    /etc/tntnet/bios.d/10_common_statics.xml \
-    /etc/tntnet/bios.d/20_common_basics.xml \
-    /etc/tntnet/bios.d/50_main_api.xml \
-    /etc/tntnet/bios.d/99_end.xml \
-> /tmp/bios.xml \
-&& diff -bu /etc/tntnet/bios.xml /tmp/bios.xml \
-|| { echo "ERROR: bios.xml was sliced incorrectly" >&2; exit 1; }
-rm -f /tmp/bios.xml
-
+# The start method of the service always constructs a run-time copy of
+# /etc/tntnet/bios.xml based on snippets available and properly named
+# as /etc/tntnet/bios.d/*.xml (components that re-implement parts of our
+# standard/legacy REST API can rename files in their package-delivered
+# ipc-meta-setup scriptlets).
 /bin/systemctl enable tntnet@bios
 /bin/systemctl enable fty-envvars
 
