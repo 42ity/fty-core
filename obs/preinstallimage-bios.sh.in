@@ -817,7 +817,7 @@ done
 # Note: for legacy reasons, we still maintain tntnet@bios.service (not @fty)
 mkdir -p /etc/tntnet/bios.d
 for F in /usr/share/fty-rest/examples/??_*.xml.example ; do
-    cp "`basename "$F" .example`" /etc/tntnet/bios.d/"$F"
+    cp "$F" /etc/tntnet/bios.d/"`basename "$F" .example`"
 done
 
 # Tailor the packaged fty-rest configuration to names and paths in OS image product
