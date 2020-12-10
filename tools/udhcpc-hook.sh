@@ -122,7 +122,10 @@ ntp_server_restart_do() (
 		fi
 	fi
 
-	invoke-rc.d "${NTP_SYSTEMD_NAME}" try-restart && \
+	# PATH: be sure invoke-rc.d can run real tools from the distro and not our
+	# wrappers like "systemctl" intended to constrain admin operations to just
+	# our delivered product components.
+	PATH="/bin:/sbin:$PATH" invoke-rc.d "${NTP_SYSTEMD_NAME}" try-restart && \
 	    echo "$0: INFO: NTP service restarted; waiting for it to pick up time (if not failed) so as to sync it onto hardware RTC" && \
 	    sleep 60 && ntp_server_status && hwclock -w -u && \
 	    echo "$0: INFO: Applied current OS clock value (`TZ=UTC date -u`) to HW clock (`TZ=UTC hwclock -r -u`); done with NTP restart"
@@ -141,7 +144,7 @@ ntp_server_restart() {
 ntp_server_status() {
 	can_manipulate_ntpd || return $?
 
-	invoke-rc.d "${NTP_SYSTEMD_NAME}" status
+	PATH="/bin:/sbin:$PATH" invoke-rc.d "${NTP_SYSTEMD_NAME}" status
 	# NOTE: successful return means the daemon is running, but
 	# it does guarantee we've picked up time from any source
 }
