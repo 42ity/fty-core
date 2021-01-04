@@ -44,7 +44,7 @@ determineDirs || true
     die "JSON.sh is not executable (tried '${JSONSH-}')"
 
 [ x"${JSONSH_CLI_DEFINED-}" = xyes ] || \
-if [ -n "${BASH-}" ] && . "$JSONSH" ; then
+if [ -n "${BASH-}" ] && { JSONSH_SOURCED=yes ; export JSONSH_SOURCED ; . "$JSONSH" ; } ; then
     logmsg_debug "cmpjson: Will use sourced JSON.sh from '$JSONSH'"
 else
     logmsg_debug "cmpjson: Will fork to use JSON.sh from '$JSONSH'"

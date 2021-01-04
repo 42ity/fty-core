@@ -65,7 +65,7 @@ fi
 if [ -n "$JSONSH" ] && [ -x "$JSONSH" ] ; then
     if [ x"$(jsonsh_cli -QQ '"' 2>/dev/null)" = 'x\"' ]
     then : ; else
-        if [ -n "${BASH-}" ] && . "$JSONSH" ; then
+        if [ -n "${BASH-}" ] && { JSONSH_SOURCED=yes ; export JSONSH_SOURCED ; . "$JSONSH" ; } ; then
             logmsg_debug "Will use sourced JSON.sh from '$JSONSH'" >&2
         else
             logmsg_debug "Will fork to use JSON.sh from '$JSONSH'" >&2

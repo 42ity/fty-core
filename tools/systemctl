@@ -465,6 +465,8 @@ systemctl_list_json() {
         done
         if [[ -x "$JSONSH" ]] ; then
             if [[ -n "${BASH-}" ]]; then
+                JSONSH_SOURCED=yes
+                export JSONSH_SOURCED
                 . "$JSONSH"
             else
                 logmsg_info "systemctl: Will fork to use JSON.sh from '$JSONSH' to cook strings"
