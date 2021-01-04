@@ -194,7 +194,7 @@ throw() {
   exit 1
 }
 
-TABCHAR="`printf '\t'`"
+TABCHAR="$(printf '\t')"
 
 BRIEF=0
 LEAFONLY=0
