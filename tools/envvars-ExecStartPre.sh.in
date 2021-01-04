@@ -65,6 +65,8 @@ VIRT_HYPERVIZOR=""
 { [[ -s "$J" ]] || [[ -s "$JO" ]] ; } && \
 if [[ -x "$JSONSH" ]] ; then
     if [[ -n "${BASH-}" ]]; then
+        JSONSH_SOURCED=yes
+        export JSONSH_SOURCED
         . "$JSONSH"
         get_a_string_arg() { jsonsh_cli_subshell --get-string "$1" ; }
     else
