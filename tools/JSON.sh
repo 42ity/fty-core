@@ -1,7 +1,7 @@
 #!/bin/sh
 #
-# Copyright (C) 2014-2015 Dominic Tarr
-# Copyright (C) 2015-2020 Eaton
+# Copyright (C) 2014-2018 Dominic Tarr and other contributors to upstream code
+# Copyright (C) 2015-2021 Eaton
 #
 #! \file    JSON.sh
 #  \brief   A json parser written in shell-script
@@ -134,14 +134,35 @@ esac
 
 # TODO: detect having been sourced into non-bash shells?
 if [ -z "${JSONSH_SOURCED-}" ]; then
+    if [ -n "${DEBUG-}" ] && [ "$DEBUG" != 0 ] && [ "$DEBUG" != no ]; then set | grep -E '^[A-Za-z0-9_].*=' | sort >&2 ; fi
     case "$SHELL_BASENAME" in
         bash)
-            if  [ "$0" = "$BASH_SOURCE[0]" ] || [ "$0" = "$BASH_SOURCE" ] ; then
+            # All this weird parsing because busybox sh can't handle a
+            # ${BASH_SOURCE[0]} in a codepath it does not even execute
+            if  [ "$0" = "$BASH_SOURCE" ] || set | grep -E '^BASH_SOURCE=\(\[0\]="'"$0"'"' >/dev/null ; then
+                # (Top-most) executed script filename is same as this
+                # source filename for JSON.sh => standalone script mode
                 JSONSH_SOURCED=no
+            else
+                if  [ -n "${BASH-}" ] ; then
+                    case "$0" in
+                        bash|-bash|*bin/bash|sh|-sh|*bin/sh|"$BASH")
+                            # Likely sourced into interactive shell (maybe via profile)
+                            JSONSH_SOURCED=yes ;;
+                        *JSON.sh*)  echo "WARNING: Assuming JSONSH_SOURCED=no and running as a standalone bash script ($0)" >&2
+                            JSONSH_SOURCED=no
+                            ;;
+                        *)  echo "WARNING: Assuming JSONSH_SOURCED=yes and running as an inclusion into another bash script ($0)" >&2
+                            JSONSH_SOURCED=yes
+                            ;;
+                    esac
+                fi
             fi
-            if  [ -n "${BASH-}" ] && [ "$0" = "-bash" ] ; then
-                JSONSH_SOURCED=yes
-            fi
+            # In other cases so far, we just don't know for sure.
+            # The BASH_SOURCE array may have 2+ entries for higher-layer
+            # script names (meaning there are some levels above).
+            # The $0 may be some such script name, or "bash" without "-"
+            # for sourcing into current shell without a script file...
             ;;
         *)  JSONSH_SOURCED=no ;;
     esac
@@ -247,7 +268,8 @@ usage() {
   echo "     around values to ease backticked picking of exact data path items"
   echo '     into scripts (non-exact matches will be same as multiword text):'
   echo '     VALUE="$(JSON.sh --shellable-output=strings -x '"'"'^"field"$'"'"')"'
-  echo "--shellable-output=string - same but returns one string (first hit if any)"
+  echo "--shellable-output=string - same but returns one string (first hit if any,"
+  echo "     so if you need one exact match, specify it like '^"'"repository","url"$'"')"
   echo "--shellable-output=arrays - Do not print the path column, add quotes:"
   echo '     ARR=( $(JSON.sh --shellable-output=arrays -x '"'"'^"array",[0-9]'"'"') )'
   echo "--get-string 'regex' - Alias to -l -x 'regex' --shellable-output=string"
@@ -479,7 +501,13 @@ parse_options() {
   validate_debuglevel
 
   # For normalized data, we do the whole job and just return the top object
-  [ "$NORMALIZE" = 1 ] && BRIEF=0 && LEAFONLY=0 && PRUNE=0
+  if [ "$NORMALIZE" = 1 ]; then
+    BRIEF=0
+    LEAFONLY=0
+    PRUNE=0
+  fi
+
+  return 0
 }
 
 awk_egrep() {
@@ -631,7 +659,7 @@ tokenize() {
   local SPACE='[[:space:]]+'
 
   # Force zsh to expand $GREP_O into multiple words
-  is_wordsplit_disabled="$(unsetopt 2>/dev/null | grep -c '^shwordsplit$')"
+  is_wordsplit_disabled="$(unsetopt 2>/dev/null | grep -Ec '^shwordsplit$')"
   if [ "$is_wordsplit_disabled" != 0 ]; then setopt shwordsplit; fi
   # Note: we do not fail for empty documents (including whitespace-only) here
   # The pedantic mode handles that if desired by caller
@@ -664,6 +692,7 @@ parse_array() {
       while :
       do
         INDENT="${INDENT_NEXT}" parse_value "$1" "$index"
+        if $QUICK_ABORT ; then return 0 ; fi
         index="$(expr $index + 1)"
         if [ "$PRETTYPRINT" = 1 ]; then
             [ -z "$ary" ] && ary="${INDENT_NEXT}$value" || ary="$ary
@@ -695,7 +724,7 @@ $value"
     # the result is filtered for final output with another pass,
     # where we might indent it below.
     # Force zsh to expand $SORTDATA* into multiple words
-    is_wordsplit_disabled="$(unsetopt 2>/dev/null | grep -c '^shwordsplit$')"
+    is_wordsplit_disabled="$(unsetopt 2>/dev/null | grep -Ec '^shwordsplit$')"
     if [ "$is_wordsplit_disabled" != 0 ]; then setopt shwordsplit; fi
     ary="$(printf '%s\n' "$aryml" | $SORTDATA_ARR | tr '\n' ',' | $GSED 's|,*$||' 2>/dev/null | $GSED 's|^,*||' 2>/dev/null)"
     if [ "$is_wordsplit_disabled" != 0 ]; then unsetopt shwordsplit; fi
@@ -741,6 +770,7 @@ parse_object() {
         read -r token
         print_debug $DEBUGLEVEL_PRINTTOKEN "parse_object(3):" "token='$token'"
         INDENT="${INDENT_NEXT}" parse_value "$1" "$key"
+        if $QUICK_ABORT ; then return 0 ; fi
         if [ "$PRETTYPRINT" = 1 ]; then
             [ -z "$obj" ] && obj="${INDENT_NEXT}$key${PRETTYPRINT_OBJSEP}$value" || obj="$obj
 ${INDENT_NEXT}$key${PRETTYPRINT_OBJSEP}$value"
@@ -772,7 +802,7 @@ $key:$value"
     # the result is filtered for final output with another pass,
     # where we might indent it below.
     # Force zsh to expand $SORTDATA* into multiple words
-    is_wordsplit_disabled="$(unsetopt 2>/dev/null | grep -c '^shwordsplit$')"
+    is_wordsplit_disabled="$(unsetopt 2>/dev/null | grep -Ec '^shwordsplit$')"
     if [ "$is_wordsplit_disabled" != 0 ]; then setopt shwordsplit; fi
     obj="$(printf '%s\n' "$objml" | $SORTDATA_OBJ | tr '\n' ',' | $GSED 's|,*$||' 2>/dev/null | $GSED 's|^,*||' 2>/dev/null)"
     if [ "$is_wordsplit_disabled" != 0 ]; then unsetopt shwordsplit; fi
@@ -925,9 +955,9 @@ parse_value() {
   fi
 
   print_debug $DEBUGLEVEL_PRINTPATHVAL \
-	"JPATH='$jpath' VALUE='$value' B='$BRIEF'" \
-	"isleaf='$isleaf'/L='$LEAFONLY' isempty='$isempty'/P='$PRUNE':" \
-	"print='$print'" >&2
+    "JPATH='$jpath' VALUE='$value' B='$BRIEF'" \
+    "isleaf='$isleaf'/L='$LEAFONLY' isempty='$isempty'/P='$PRUNE':" \
+    "print='$print'" >&2
 
   if [ "$print" -gt 0 ] ; then
     if [ -n "$SHELLABLE_OUTPUT" ]; then
@@ -1044,6 +1074,7 @@ jsonsh_cli() {
   # NOTE: If the caller sets up some specific different debugging envvars
   # then consider changing JSONSH_DEBUGGING_SETUP and JSONSH_DEBUGGING_REPORT
   # to e.g. "notdone" as well
+  # Beware that this hangs waiting for input if there is no stdin piped here
   parse_options "$@"
   jsonsh_debugging_setup
   jsonsh_debugging_report
@@ -1074,18 +1105,12 @@ jsonsh_cli_subshell() (
 jsonsh_debugging_defaults
 
 # If NOT sourced into a bash script, parse stdin and quit
-#[ "${JSONSH_SOURCED-}" != yes ] || \
-#if  [ "$0" = "$BASH_SOURCE[0]" ] || [ "$0" = "$BASH_SOURCE" ] || [ -z "${BASH-}" ] || [ -z "$BASH_SOURCE" ]; \
+# Beware that this hangs waiting for input if there is no stdin
 if [ "${JSONSH_SOURCED-}" != yes ]
 then
   jsonsh_cli "$@"
   exit $?
 fi
-
-#if ([ "$0" = "$BASH_SOURCE" ] || ! [ -n "$BASH_SOURCE" ]);
-#then
-#  parse_options "$@"
-#  tokenize | parse
-#fi
+# ...else if sourced, stay dormant until called to work via a routine
 
 # vi: expandtab sw=2 ts=2
