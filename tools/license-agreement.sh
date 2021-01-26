@@ -22,24 +22,26 @@
 
 set +x
 
-abort()
+canceled()
 {
   stty echo
   echo "Canceled"
   exit 1
 }
 
-trap abort SIGINT
+trap canceled SIGINT
 
 HOST="localhost"
 USER="admin"
+NTRY=3
 
 while [ $# -gt 0 ] ; do
     case "$1" in
         --help)
             echo "Usage: $(basename $0) [options...]"
-            echo "   --host|-h <hostname> (default: localhost)"
-            echo "   --user|-u <username> (default: admin)"
+            echo "   --host|-h <hostname> (default: 'localhost')"
+            echo "   --user|-u <username> (default: 'admin')"
+            echo "   --ntry|-n <number-of-tries> (default: 3, min: 1)"
             echo "   --help"
             exit 1
             ;;
@@ -49,6 +51,10 @@ while [ $# -gt 0 ] ; do
             ;;
         --host|-h)
             HOST="$2"
+            shift
+            ;;
+        --ntry|-n)
+            NTRY=$2
             shift
             ;;
         *)  echo "Unrecognized params follow: $*" >&2
@@ -61,6 +67,28 @@ done
 echo "Confirm that you agree with the EULA by entering password for user '$USER' (<CTRL+C> to cancel):"
 read -s PASSWORD
 
-./restapi-request.sh -u "$USER" -p "$PASSWORD" --host "$HOST" --use-https -m accept_license
+while true; do
+    RESULT=$(./restapi-request.sh -u "$USER" -p "$PASSWORD" --host "$HOST" --use-https -m accept_license)
 
+    ## check GET /admin/license/status
+    ##curl -X GET -k -H 'Authorization: Bearer  <bearer>' -i 'https://<ip>:443/api/v1/admin/license/status'
+    ##{"accepted":"yes","version":"1.0","accepted_version":"1.0","accepted_at":"1611663919","accepted_by":"admin"}
+    grep "accepted_at" <<< "$RESULT" && break
+
+    ## check POST /admin/license result
+    ##curl -X POST -k -H 'Authorization: Bearer <bearer>' -i 'https://<ip>:443/api/v1/admin/license'
+    ##{"success":"License version 1.0 accepted."}
+    grep -q "\"success\"" <<< "$RESULT" && break
+
+    ((NTRY--))
+    if [ "$NTRY" -gt 0 ]; then
+        echo "Retry..."
+        continue
+    fi
+
+    echo "License is not accepted"
+    exit 255
+done
+
+echo "License is accepted"
 exit 0
