@@ -32,6 +32,7 @@ canceled()
 trap canceled SIGINT
 
 HOST="localhost"
+PORT="443"
 USER="admin"
 NTRY=3
 
@@ -40,6 +41,7 @@ while [ $# -gt 0 ] ; do
         --help)
             echo "Usage: $(basename $0) [options...]"
             echo "   --host|-h <hostname> (default: 'localhost')"
+            echo "   --port|-p <port> (default: '443')"
             echo "   --user|-u <username> (default: 'admin')"
             echo "   --ntry|-n <number-of-tries> (default: 3, min: 1)"
             echo "   --help"
@@ -51,6 +53,10 @@ while [ $# -gt 0 ] ; do
             ;;
         --host|-h)
             HOST="$2"
+            shift
+            ;;
+        --port|-p)
+            PORT="$2"
             shift
             ;;
         --ntry|-n)
@@ -68,7 +74,7 @@ echo "Confirm that you agree with the EULA by entering password for user '$USER'
 read -s PASSWORD
 
 while true; do
-    RESULT=$(./restapi-request.sh -u "$USER" -p "$PASSWORD" --host "$HOST" --use-https -m accept_license)
+    RESULT=$(/usr/share/fty/scripts/restapi-request.sh -u "$USER" -p "$PASSWORD" --host "$HOST" --port-web $PORT --use-https -m accept_license 2> /dev/null)
 
     ## check GET /admin/license/status
     ##curl -X GET -k -H 'Authorization: Bearer  <bearer>' -i 'https://<ip>:443/api/v1/admin/license/status'
