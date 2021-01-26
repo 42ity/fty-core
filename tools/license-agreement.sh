@@ -33,25 +33,25 @@ trap canceled SIGINT
 
 HOST="localhost"
 PORT="443"
-USER="admin"
+USER=$(whoami)
 NTRY=3
 
 while [ $# -gt 0 ] ; do
     case "$1" in
-        --help)
+        --help|-h)
             echo "Usage: $(basename $0) [options...]"
-            echo "   --host|-h <hostname> (default: 'localhost')"
+            echo "   --host|-H <hostname> (default: 'localhost')"
             echo "   --port|-p <port> (default: '443')"
-            echo "   --user|-u <username> (default: 'admin')"
+            echo "   --user|-u <username> (default: connected user, currently '$USER')"
             echo "   --ntry|-n <number-of-tries> (default: 3, min: 1)"
-            echo "   --help"
+            echo "   --help|-h"
             exit 1
             ;;
         --user|-u)
             USER="$2"
             shift
             ;;
-        --host|-h)
+        --host|-H)
             HOST="$2"
             shift
             ;;
