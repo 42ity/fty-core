@@ -7,7 +7,8 @@ helper_SCRIPTS	= init-os-accounts.sh resolveip.sh JSON.sh rc-bios \
 		    ethtool-static-nolink ifupdown-force ssl-create.sh \
 		    reset-button.sh check_bios_license logrotate-rsyslog \
 		    update-rc.d.sh _bios-script.sh generate_env_user4sql.sh license-activation.sh \
-		    rcmysql-transient
+		    rcmysql-transient license-agreement.sh
+
 helper_SCRIPTS	+= ../tests/CI/scriptlib.sh ../tests/CI/weblib.sh \
 		    ../tests/CI/restapi-request.sh ../tests/CI/curlbbwget.sh
 
