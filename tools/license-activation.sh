@@ -29,10 +29,23 @@ canceled()
   exit 1
 }
 
+#return a random string of length $1 (default: 8)
+srand()
+{
+    LEN=$1
+    [ -z $LEN ] && LEN=8
+    echo $(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w $LEN | head -n 1)
+}
+
+#request etn-licensing TEST_ONLINE
+#return:
+#   0 if online access is available,
+# 255 if online access is not available
 test_online()
 {
-    RESULT=$(bmsg request etn-licensing GET REQUEST 1234 TEST_ONLINE)
-    SUCCESS=$(grep "OK { \"key\"" <<< "$RESULT")
+    CID=$(srand)
+    RESULT=$(bmsg request etn-licensing GET REQUEST $CID TEST_ONLINE)
+    SUCCESS=$(grep -z "OK\s{ \"key\"" <<< "$RESULT")
 
     if [ -z $SUCCESS ]; then
         echo "Internet access not available"
@@ -42,6 +55,11 @@ test_online()
     return 0
 }
 
+#request etn-licensing ACTIVATE_ONLINE
+#return:
+#   0 if activation success,
+# 255 if activation failed,
+#   1 if activationID argument ($1) is missing
 activate_online()
 {
     ACTIVATION_ID=$1
@@ -50,8 +68,9 @@ activate_online()
         return 1
     fi
 
-    RESULT=$(bmsg request etn-licensing GET REQUEST 1234 ACTIVATE_ONLINE $ACTIVATION_ID)
-    SUCCESS=$(grep "OK { \"key\"" <<< "$RESULT")
+    CID=$(srand)
+    RESULT=$(bmsg request etn-licensing GET REQUEST $CID ACTIVATE_ONLINE $ACTIVATION_ID)
+    SUCCESS=$(grep -z "OK\s{ \"key\"" <<< "$RESULT")
 
     if [ -z $SUCCESS ]; then
         echo "Online activation failed"
