@@ -34,6 +34,7 @@ srand()
 {
     LEN=$1
     [ -z $LEN ] && LEN=8
+    [ $LEN -le 0 ] && LEN=8
     echo $(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w $LEN | head -n 1)
 }
 
