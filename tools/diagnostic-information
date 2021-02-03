@@ -308,7 +308,7 @@ usage() {
     echo "You must specify either --usb or --mail option. If 7z is"
     echo "installed, it is used for creating password protected archive."
     echo "The password is \"$PASSWORD\". Purpose of encrypting is to pass"
-    echo "trough antispam services."
+    echo "through antispam services."
     ) >&2
 }
 
