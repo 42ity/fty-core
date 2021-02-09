@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2014-2020 Eaton
+# Copyright (C) 2014-2021 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -1445,6 +1445,18 @@ if [ -n "${COPYHOST_GROUPS-}" ]; then
 fi
 
 if [ -n "${COPYHOST_USERS-}" ]; then
+	# If the OS image is protected to limit accounts permitted for
+	# SSH login, assign those we copy into some existing such group
+	G="$(egrep '^ *AllowGroups ' "${ALTROOT}/etc/ssh/sshd_config" "${ALTROOT}/etc/ssh/sshd_config.d/"* \
+		| tr '\t' ' ' \
+		| sed -e 's,^ *,,g' -e 's, *$,,g' -e 's,  , ,g' -e 's,^AllowGroups *,,' \
+		| tr ' ' '\n' \
+		| while read G ; do
+			if [ -n "$G" ] && egrep "^$G:" "${ALTROOT}/etc/group" >/dev/null ; then
+				echo "$G" && break
+			fi
+		  done)" || G=""
+
 	for U in $COPYHOST_USERS ; do
 		_P="$(egrep "^$U:" "/etc/passwd")" || \
 			die "Can not replicate unknown user '$U' from the host!"
@@ -1470,6 +1482,18 @@ if [ -n "${COPYHOST_USERS-}" ]; then
 		else
 			echo "$_S" >> "${ALTROOT}/etc/shadow"
 		fi
+
+		# Update a group listed in AllowGroups in sshd_config with this user
+		if [ -n "$G" ]; then
+			case "`egrep "^$G:" "${ALTROOT}/etc/group"`" in
+				*:) # No users in that group yet, append
+					sed -e 's|^\('"$G"':.*\)$|\1'"$U"'|' -i "${ALTROOT}/etc/group" ;;
+				*:"$U"|*:"$U",*|*,"$U"|*,"$U",*) ;; # User already there, skip
+				*) # Checked above that the user is not there yet, append
+					sed -e 's|^\('"$G"':.*\)$|\1,'"$U"'|' -i "${ALTROOT}/etc/group" ;;
+			esac
+		fi
+
 	done
 fi
 
