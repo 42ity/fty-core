@@ -1366,8 +1366,8 @@ mkdir -p /var/log/app-audit || true
 touch /var/log/app-audit/metrics-audit.log || true
 touch /var/log/app-audit/alarms-audit.log || true
 chown -R bios:www-data /var/log/app-audit || true
-chmod 775 /var/log/app-audit || true
-chmod 664 /var/log/app-audit/* || true
+chmod 771 /var/log/app-audit || true
+find /var/log/app-audit -type f -exec chmod 662 '{}' \; || true
 
 # By default, when MySQL first starts it creates the log dir...
 # but one only accessible to itself:
