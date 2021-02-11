@@ -9,7 +9,8 @@ Build-Depends: bison, debhelper (>= 8), flex, linuxdoc-tools, lynx | lynx-cur, p
 
 Package: fty-core
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends},
+    busybox
 Description: 42ity core
  Support core scripts, services and settings for 42ity.
 
