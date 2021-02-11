@@ -444,6 +444,8 @@ Pin: origin "obs.roz.lab.etn.com"
 Pin-Priority: 9999
 EOF
 
+# This may be not available on space-constrained deploy images
+if command -v apt-key >/dev/null ; then
 cat << EOF | apt-key add -
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 Version: GnuPG v2
@@ -471,6 +473,7 @@ wscGBRaOr9hO4FqPjem8H6s=
 =sSgW
 -----END PGP PUBLIC KEY BLOCK-----
 EOF
+fi
 
 # Uninstall various packages that are not needed
 # Note: We restore "/bin/diff" and "/bin/*grep" via busybox, below
