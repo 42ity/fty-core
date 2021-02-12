@@ -119,6 +119,11 @@ shadow:  files
 gshadow: files
 EOF
 
+# If template-nsswitch.conf template exist, do a symlink on it
+if [ -f /etc/template-nsswitch.conf ]; then
+  ln -s /etc/template-nsswitch.conf /etc/nsswitch.conf
+fi
+
             # Make a best-effort with these files, though they are not strictly required
             cd /etc
             cp -prf login.defs default/useradd \
