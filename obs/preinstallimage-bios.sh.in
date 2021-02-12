@@ -519,6 +519,10 @@ case "$IMGTYPE" in
     *devel*) ;;
     *) sed -i "s|\\(.*pam_cracklib.so\\).*|    password\tinclude\t\tfty-password|" /etc/pam.d/common-password ;;
 esac
+# If sshd template exist, do a symlink on it
+if [ -f /etc/pam.d/template-sshd ]; then
+  ln -s /etc/template-sshd /etc/sshd
+fi
 
 # Force creation of cracklib dictionary
 if [ ! -f /var/cache/cracklib/cracklib_dict.pwd ]; then
