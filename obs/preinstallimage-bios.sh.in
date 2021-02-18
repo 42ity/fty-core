@@ -521,7 +521,10 @@ case "$IMGTYPE" in
 esac
 # If sshd template exist, do a symlink on it
 if [ -f /etc/pam.d/template-sshd ]; then
-  ln -srf /etc/template-sshd /etc/sshd
+  if [ -f /etc/pam.d/sshd ]; then
+    mv /etc/pam.d/sshd /etc/pam.d/sshd.bak
+  fi
+  ln -srf /etc/pam.d/template-sshd /etc/pam.d/sshd
 fi
 
 # Force creation of cracklib dictionary
