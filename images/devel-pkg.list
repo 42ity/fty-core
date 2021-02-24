@@ -1,4 +1,4 @@
-
+%if 1
 asciidoc
 autoconf
 automake
@@ -73,7 +73,7 @@ gdb
 gdbserver
 generator-scripting-language
 git
-iptables-dev
+nftables-dev
 libatm1-dev
 libaugeas-dev
 libcidr0-dev

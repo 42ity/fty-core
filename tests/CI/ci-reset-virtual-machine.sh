@@ -1522,15 +1522,35 @@ if [ x"$DEPLOYONLY" = xyes ]; then
 	exit 0
 fi
 
-[ -f "${ALTROOT}/etc/default/iptables.bak-default" ] \
-|| cp -pf "${ALTROOT}/etc/default/iptables" "${ALTROOT}/etc/default/iptables.bak-default"
+# While our modern images moved from iptables to nftables, this script can
+# find itself deploying legacy releases as well, so should support both ways
+if [ -s "${ALTROOT}/etc/default/iptables" ]; then
+	[ -f "${ALTROOT}/etc/default/iptables.bak-default" ] \
+	|| cp -pf "${ALTROOT}/etc/default/iptables" "${ALTROOT}/etc/default/iptables.bak-default"
+fi
 
 if [ "$BLOCK_JENKINS" = yes ] ; then
 	logmsg_info "Temporarily blocking access from Jenkins, so it does not use this virtual machine before it is ready"
-	awk -vjenkins="${JENKINS_HOST}" '
+	if [ -s "${ALTROOT}/etc/default/iptables" ]; then
+		awk -vjenkins="${JENKINS_HOST}" '
     {print $0;}
     /:OUTPUT ACCEPT/{ printf("-A INPUT -p tcp -m tcp -s %s -j REJECT --reject-with icmp-port-unreachable\n", jenkins ); }
     ' <"${ALTROOT}/etc/default/iptables.bak-default" >"${ALTROOT}/etc/default/iptables"
+	elif [ -d "${ALTROOT}/etc/nftables.d" ]; then
+		case "${OSIMAGE_DISTRO}" in
+			Debian_8.0)
+				mkdir -p "${ALTROOT}/etc/nftables.d/bak" && \
+				mv -f "${ALTROOT}/etc/nftables.d/allowed-ports-ip4."*.nft "${ALTROOT}/etc/nftables.d/bak/" || true
+
+				echo "ip saddr ${JENKINS_HOST} reject with icmp type port-unreachable" \
+				> "${ALTROOT}/etc/nftables.d/allowed-ports-ip4.42ity.nft"
+				;;
+			*)
+				echo "ip saddr ${JENKINS_HOST} reject with icmp type port-unreachable" \
+				> "${ALTROOT}/etc/nftables.d/allowed-ports-ip4.temp-block-jenkins.nft"
+				;;
+		esac
+	fi
 fi
 
 logmsg_info "Start the virtual machine $VM"
@@ -1664,8 +1684,20 @@ if [ -x "`dirname $0`/jenkins-sut-hacks" ] ; then (
 
 if [ "$BLOCK_JENKINS" = yes ] ; then
 	logmsg_info "Un-blocking access from Jenkins, so it can use this virtual machine"
-	grep -v "${JENKINS_HOST}" < "${ALTROOT}/etc/default/iptables" > "${ALTROOT}/etc/default/iptables.bak" && \
-	mv -f "${ALTROOT}/etc/default/iptables.bak" "${ALTROOT}/etc/default/iptables"
+	if [ -s "${ALTROOT}/etc/default/iptables" ]; then
+		grep -v "${JENKINS_HOST}" < "${ALTROOT}/etc/default/iptables" > "${ALTROOT}/etc/default/iptables.bak" && \
+		mv -f "${ALTROOT}/etc/default/iptables.bak" "${ALTROOT}/etc/default/iptables"
+	elif [ -d "${ALTROOT}/etc/nftables.d" ]; then
+		case "${OSIMAGE_DISTRO}" in
+			Debian_8.0)
+				rm -f "${ALTROOT}/etc/nftables.d/allowed-ports-ip4.42ity.nft"
+				mv -f "${ALTROOT}/etc/nftables.d/bak/allowed-ports-ip4."*.nft "${ALTROOT}/etc/nftables.d/" || true
+				;;
+			*)
+				rm -f "${ALTROOT}/etc/nftables.d/allowed-ports-ip4.temp-block-jenkins.nft"
+				;;
+		esac
+	fi
 fi
 
 if [ "$VM_SHOULD_RESTART" = yes ] || [ "$BLOCK_JENKINS" = yes ] ; then
