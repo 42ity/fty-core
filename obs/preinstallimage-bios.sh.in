@@ -522,13 +522,13 @@ esac
 # If pam templates exist, replace the files in pam.d by a symlink to the template
 PAM_TEMPLATES_DIR="/etc/pam.templates/"
 PAM_D_DIR="/etc/pam.d/"
-for PAM_FILE in $( ls -1 ${PAM_TEMPLATES_DIR} 2> /dev/null )
-do
+#for PAM_FILE in $( ls -1 ${PAM_TEMPLATES_DIR} 2> /dev/null )
+#do
 #    if [ -f ${PAM_D_DIR}/${PAM_FILE} ]; then
 #        mv -f ${PAM_D_DIR}/${PAM_FILE} ${PAM_D_DIR}/${PAM_FILE}.bak
 #    fi
 #    ln -srf ${PAM_TEMPLATES_DIR}/${PAM_FILE} ${PAM_D_DIR}/${PAM_FILE}
-done
+#done
 
 # Setup 42ity security if there is not templates for sshd
 #if [ ! -f  ${PAM_TEMPLATES_DIR}/sshd ]; then
@@ -536,12 +536,12 @@ done
 #fi  
 
 # If nsswitch.conf.template exist, do a symlink on it
-if [ -f /etc/nsswitch.conf.template ]; then
+#if [ -f /etc/nsswitch.conf.template ]; then
 #  if [ -f /etc/nsswitch.conf ]; then
 #    mv /etc/nsswitch.conf /etc/nsswitch.conf.bak
 #  fi
 #  ln -srf /etc/nsswitch.conf.template /etc/nsswitch.conf
-fi
+#fi
 
 
 # Force creation of cracklib dictionary
