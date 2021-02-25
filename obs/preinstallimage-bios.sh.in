@@ -528,7 +528,6 @@ do
         mv -f ${PAM_D_DIR}/${PAM_FILE} ${PAM_D_DIR}/${PAM_FILE}.bak
     fi
     ln -srf ${PAM_TEMPLATES_DIR}/${PAM_FILE} ${PAM_D_DIR}/${PAM_FILE}
-    fi
 done
 
 # Setup 42ity security if there is not templates for sshd
