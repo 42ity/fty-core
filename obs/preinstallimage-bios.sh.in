@@ -106,12 +106,12 @@ EOF
 
 # NOTE: This is the name in debian; for other distros it may be different
 SASL_GROUP=sasl
-groupadd -g 8003 bios-admin
-groupadd -g 8002 bios-poweruser
-groupadd -g 8001 bios-user
-groupadd -g 8000 bios-dash
-groupadd -g 8004 bios-infra
-groupadd -g 7999 bios-logread
+groupadd -f -g 8003 bios-admin
+groupadd -f -g 8002 bios-poweruser
+groupadd -f -g 8001 bios-user
+groupadd -f -g 8000 bios-dash
+groupadd -f -g 8004 bios-infra
+groupadd -f -g 7999 bios-logread
 
 useradd -u 1000 -m bios -N -g bios-infra -G dialout -s /bin/bash
 mkdir -p /home/bios && chown bios:bios-infra /home/bios
