@@ -106,12 +106,12 @@ EOF
 
 # NOTE: This is the name in debian; for other distros it may be different
 SASL_GROUP=sasl
-groupadd -g 8003 bios-admin
-groupadd -g 8002 bios-poweruser
-groupadd -g 8001 bios-user
-groupadd -g 8000 bios-dash
-groupadd -g 8004 bios-infra
-groupadd -g 7999 bios-logread
+groupadd -f -g 8003 bios-admin
+groupadd -f -g 8002 bios-poweruser
+groupadd -f -g 8001 bios-user
+groupadd -f -g 8000 bios-dash
+groupadd -f -g 8004 bios-infra
+groupadd -f -g 7999 bios-logread
 
 useradd -u 1000 -m bios -N -g bios-infra -G dialout -s /bin/bash
 mkdir -p /home/bios && chown bios:bios-infra /home/bios
@@ -156,9 +156,6 @@ mkdir -p /home/monitor && chown monitor:bios-dash /home/monitor
 # Do not let monitor login on first boot, it will be unlocked
 # later - by fty-monitor-unlock.service after EULA wizard
 passwd -l monitor
-
-# _bios-script user - special user allowing us to call REST API from scripts
-useradd -m _bios-script -N -g bios-admin -G sasl -s /usr/sbin/nologin
 
 # Workplace for the webserver and graph daemons
 if [ -d /var/lib/bios ]; then
@@ -514,11 +511,35 @@ fi
 # Setup 42ity security
 mkdir -p /etc/pam.d
 cp /usr/share/fty/examples/config/pam.d/* /etc/pam.d
-sed -i '/@include common-auth/i@include fty-auth' /etc/pam.d/sshd
 case "$IMGTYPE" in
     *devel*) ;;
     *) sed -i "s|\\(.*pam_cracklib.so\\).*|    password\tinclude\t\tfty-password|" /etc/pam.d/common-password ;;
 esac
+
+# If pam templates exist, replace the files in pam.d by a symlink to the template
+PAM_TEMPLATES_DIR="/etc/pam.templates/"
+PAM_D_DIR="/etc/pam.d/"
+#for PAM_FILE in $( ls -1 ${PAM_TEMPLATES_DIR} 2> /dev/null )
+#do
+#    if [ -f ${PAM_D_DIR}/${PAM_FILE} ]; then
+#        mv -f ${PAM_D_DIR}/${PAM_FILE} ${PAM_D_DIR}/${PAM_FILE}.bak
+#    fi
+#    ln -srf ${PAM_TEMPLATES_DIR}/${PAM_FILE} ${PAM_D_DIR}/${PAM_FILE}
+#done
+
+# Setup 42ity security if there is not templates for sshd
+#if [ ! -f  ${PAM_TEMPLATES_DIR}/sshd ]; then
+    sed -i '/@include common-auth/i@include fty-auth' ${PAM_D_DIR}/sshd
+#fi
+
+# If nsswitch.conf.template exist, do a symlink on it
+#if [ -f /etc/nsswitch.conf.template ]; then
+#  if [ -f /etc/nsswitch.conf ]; then
+#    mv /etc/nsswitch.conf /etc/nsswitch.conf.bak
+#  fi
+#  ln -srf /etc/nsswitch.conf.template /etc/nsswitch.conf
+#fi
+
 
 # Force creation of cracklib dictionary
 if [ ! -f /var/cache/cracklib/cracklib_dict.pwd ]; then
