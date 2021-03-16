@@ -42,7 +42,7 @@ gnupg
 ifplugd
 ifupdown
 iproute
-iptables
+nftables
 iputils-ping
 libavahi-client-dev
 libcap2-bin
