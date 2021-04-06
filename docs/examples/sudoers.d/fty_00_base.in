@@ -42,6 +42,7 @@ Cmnd_Alias RUNAS_BIOS_SCRIPT         = @libexecdir@/@PACKAGE@/runas-_bios-script
 Cmnd_Alias RUN_USER_SCRIPT           = @libexecdir@/@PACKAGE@/run-user-script
 Cmnd_Alias RUN_SSH_SCRIPT           = @libexecdir@/@PACKAGE@/run-ssh-action
 Cmnd_Alias RUN_ETHERWAKE_WOL         = /usr/sbin/etherwake
+Cmnd_Alias BIN_TEST         = /usr/bin/test
 
 # Overall, what is currently allowed with different privileges?
 Cmnd_Alias BIOS_PROGS	= DATE,AUGTOOL,BIOS_PASSWD,BIOS_PASSWD_FTY_REST,BIOS_SYSTEMCTL,BIOS_JOURNALCTL,BIOS_NUTCONFIG,BIOS_UPDATE_RC3,BIOS_MOUNT_USB,BIOS_UMOUNT_USB,BIOS_LOGHOST_RSYSLOG,BIOS_MYSQLDUMP,BIOS_DIAGNOSTIC,BIOS_DMF,FTY_ROUTE
@@ -52,6 +53,7 @@ User_Alias BIOS_USERS	= %bios-admin,www-data,%bios-infra
 Runas_Alias BIOS_RUNAS	= root
 
 BIOS_USERS ALL=(BIOS_RUNAS) NOPASSWD:BIOS_PROGS
+BIOS_USERS ALL=(BIOS_RUNAS) BIN_TEST
 www-data   ALL=(BIOS_RUNAS) NOPASSWD:BIN_SYSTEMCTL,RUN_USER_SCRIPT,RUN_ETHERWAKE_WOL
 
 www-data   ALL=(_bios-script) NOPASSWD:RUN_SSH_SCRIPT
