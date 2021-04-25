@@ -84,6 +84,10 @@ start)
     cat > "${SYSTEMD_RUN_UNITDIR}/${TEMPORARY_UNIT_NAME}.d/fty-db-engine.conf" << EOF
 [Unit]
 PartOf=fty-db-engine.service
+# While technically fty-db-engine.service startup causes the ${TEMPORARY_UNIT_NAME}
+# to exist, we want systemd to chain and link their stop events "properly" -
+# so that this transient service gets removed to be redefined if needed later.
+Before=fty-db-engine.service
 Conflicts=shutdown.target halt.target poweroff.target reboot.target
 
 [Service]
