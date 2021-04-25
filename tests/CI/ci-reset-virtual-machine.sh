@@ -1464,7 +1464,7 @@ if [ -n "${COPYHOST_USERS-}" ]; then
 		_S="$(egrep "^$U:" "/etc/shadow")" || \
 			_S="$U:*:16231:0:99999:7:::"
 
-		logmsg_info "Defining user account '$_P' from host to VM"
+		logmsg_info "Defining user account data '$_P' from host to VM"
 		if egrep "^$U:" "${ALTROOT}/etc/passwd" >/dev/null ; then
 			egrep -v "^$U:" < "${ALTROOT}/etc/passwd" > "${ALTROOT}/etc/passwd.tmp" && \
 			echo "$_P" >> "${ALTROOT}/etc/passwd.tmp" && \
@@ -1485,10 +1485,11 @@ if [ -n "${COPYHOST_USERS-}" ]; then
 
 		# Update a group listed in AllowGroups in sshd_config with this user
 		if [ -n "$G" ]; then
+			logmsg_info "Adding user account '$U' to group '$G' allowed for SSH access"
 			case "`egrep "^$G:" "${ALTROOT}/etc/group"`" in
 				*:) # No users in that group yet, append
 					sed -e 's|^\('"$G"':.*\)$|\1'"$U"'|' -i "${ALTROOT}/etc/group" ;;
-				*:"$U"|*:"$U",*|*,"$U"|*,"$U",*) ;; # User already there, skip
+				*:"$U"|*:"$U",*|*,"$U"|*,"$U",*) logmsg_info "...User already there, skip" ;;
 				*) # Checked above that the user is not there yet, append
 					sed -e 's|^\('"$G"':.*\)$|\1,'"$U"'|' -i "${ALTROOT}/etc/group" ;;
 			esac
