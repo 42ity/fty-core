@@ -84,6 +84,7 @@ start)
     cat > "${SYSTEMD_RUN_UNITDIR}/${TEMPORARY_UNIT_NAME}.d/fty-db-engine.conf" << EOF
 [Unit]
 PartOf=fty-db-engine.service
+Conflicts=shutdown.target halt.target poweroff.target reboot.target
 
 [Service]
 ExecStopPost=/bin/systemctl stop --no-block fty-db-engine.service
