@@ -122,6 +122,7 @@ EOF
 stop)
     RES=0
     rm -f "${TEMPORARY_UNIT_FILE_PATH}" || RES=$?
+    rm -f "/run/systemd/units/invocation:${TEMPORARY_UNIT_NAME}" ]] || RES=$?
     # Double-shot because sometimes systemctl misses :(
     /bin/systemctl stop --no-block "${TEMPORARY_UNIT_NAME}" || true ; sleep 3
     # Systemd tends to lock up when someone like us intrudes into a system
