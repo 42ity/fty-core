@@ -1494,6 +1494,14 @@ if [ -n "${COPYHOST_USERS-}" ]; then
 			esac
 		fi
 
+		if [ -e "${ALTROOT}/usr/share/fty/setup/02-etn-usmv2-setup.sh" ]; then
+			if grep passwd_login= "${ALTROOT}/usr/share/fty/setup/02-etn-usmv2-setup.sh" >/dev/null; then
+				logmsg_info "Exempting user account '$U' from USMv2 autocleaning"
+				sed -e 's|^\(.*passwd_login=.*\)$|\1\n[ "$passwd_login" = "'"$U"'" ] \&\& continue \#\#\# exception added by '"`basename $0`"' deployer\n|' \
+				    -i "${ALTROOT}/usr/share/fty/setup/02-etn-usmv2-setup.sh"
+			fi
+		fi
+
 	done
 fi
 
