@@ -110,8 +110,13 @@ EOF
                 [[ -L "/run/systemd/units/invocation:${TEMPORARY_UNIT_NAME}" ]] || exit
             done
         done )
-        echo "$0 $* finished `date -u`: ${TEMPORARY_UNIT_NAME} is no more" >&2
-        /bin/systemctl is-active "${TEMPORARY_UNIT_NAME}" >&2
+        if /bin/systemctl is-active "${TEMPORARY_UNIT_NAME}" >&2 ; then
+            echo "$0 $* finished `date -u`: ${TEMPORARY_UNIT_NAME} should be no more, but was reported active (code $?)" >&2
+            exit 1
+        else
+            echo "$0 $* finished `date -u`: ${TEMPORARY_UNIT_NAME} is no more" >&2
+            exit 0
+        fi
      ) &
     ;;
 stop)
