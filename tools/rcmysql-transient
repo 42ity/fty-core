@@ -119,7 +119,18 @@ stop)
     rm -f "${TEMPORARY_UNIT_FILE_PATH}" || RES=$?
     # Double-shot because sometimes systemctl misses :(
     /bin/systemctl stop --no-block "${TEMPORARY_UNIT_NAME}" || true ; sleep 3
-    /bin/systemctl stop "${TEMPORARY_UNIT_NAME}" || RES=$?
+    # Systemd tends to lock up when someone like us intrudes into a system
+    # shutdown in progress, unlike a usual service stop/restart event.
+    # In fact, the client locks up and does not actually trigger a stop of
+    # our transient service unit, until it is killed as stuck after 90s.
+    SHUTTINGDOWN=false
+    /bin/systemctl list-jobs | egrep '^[0-9]* (((reboot|shutdown|poweroff|halt|final)\.target|systemd-reboot\.service) .*start|sysinit\.target .*stop)' && SHUTTINGDOWN=true
+    if $SHUTTINGDOWN ; then
+        # just let us go down as quickly as we can
+        echo "WARNING: Not waiting for '${TEMPORARY_UNIT_NAME}' to stop"
+    else
+        /bin/systemctl stop "${TEMPORARY_UNIT_NAME}" || RES=$?
+    fi
     /bin/systemctl disable --runtime "${TEMPORARY_UNIT_NAME}" || RES=$?
     rm -rf "${SYSTEMD_RUN_UNITDIR}/${TEMPORARY_UNIT_NAME}.d" || RES=$?
     rm -f "${SYSTEMD_RUN_UNITDIR}/${TEMPORARY_UNIT_NAME}" || RES=$?
