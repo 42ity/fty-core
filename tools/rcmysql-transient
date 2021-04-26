@@ -138,14 +138,14 @@ stop)
     /bin/systemctl list-jobs | egrep '^[0-9]* (((reboot|shutdown|poweroff|halt|final)\.target|systemd-reboot\.service) .*start|sysinit\.target .*stop)' && SHUTTINGDOWN=true
     if $SHUTTINGDOWN ; then
         # just let us go down as quickly as we can
-        echo "WARNING: Not waiting for '${TEMPORARY_UNIT_NAME}' to stop"
+        echo "WARNING: Shutting down now, not waiting for '${TEMPORARY_UNIT_NAME}' to stop"
     else
         /bin/systemctl stop "${TEMPORARY_UNIT_NAME}" || RES=$?
+        /bin/systemctl disable --runtime "${TEMPORARY_UNIT_NAME}" || RES=$?
+        rm -rf "${SYSTEMD_RUN_UNITDIR}/${TEMPORARY_UNIT_NAME}.d" || RES=$?
+        rm -f "${SYSTEMD_RUN_UNITDIR}/${TEMPORARY_UNIT_NAME}" || RES=$?
+        /bin/systemctl daemon-reload
     fi
-    /bin/systemctl disable --runtime "${TEMPORARY_UNIT_NAME}" || RES=$?
-    rm -rf "${SYSTEMD_RUN_UNITDIR}/${TEMPORARY_UNIT_NAME}.d" || RES=$?
-    rm -f "${SYSTEMD_RUN_UNITDIR}/${TEMPORARY_UNIT_NAME}" || RES=$?
-    /bin/systemctl daemon-reload
     exit $RES
     ;;
 status)
