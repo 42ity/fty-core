@@ -84,9 +84,15 @@ start)
     cat > "${SYSTEMD_RUN_UNITDIR}/${TEMPORARY_UNIT_NAME}.d/fty-db-engine.conf" << EOF
 [Unit]
 PartOf=fty-db-engine.service
+# While technically fty-db-engine.service startup causes the ${TEMPORARY_UNIT_NAME}
+# to exist, we want systemd to chain and link their stop events "properly" -
+# so that this transient service gets removed to be redefined if needed later.
+Before=fty-db-engine.service
+Conflicts=shutdown.target halt.target poweroff.target reboot.target
 
 [Service]
 ExecStopPost=/bin/systemctl stop --no-block fty-db-engine.service
+SyslogIdentifier=${TEMPORARY_UNIT_NAME}
 
 [Install]
 RequiredBy=fty-db-engine.service
@@ -109,20 +115,37 @@ EOF
                 [[ -L "/run/systemd/units/invocation:${TEMPORARY_UNIT_NAME}" ]] || exit
             done
         done )
-        echo "$0 $* finished `date -u`: ${TEMPORARY_UNIT_NAME} is no more" >&2
-        /bin/systemctl is-active "${TEMPORARY_UNIT_NAME}" >&2
+        if /bin/systemctl is-active "${TEMPORARY_UNIT_NAME}" >&2 ; then
+            echo "$0 $* finished `date -u`: ${TEMPORARY_UNIT_NAME} should be no more, but was reported active (code $?)" >&2
+            exit 1
+        else
+            echo "$0 $* finished `date -u`: ${TEMPORARY_UNIT_NAME} is no more" >&2
+            exit 0
+        fi
      ) &
     ;;
 stop)
     RES=0
     rm -f "${TEMPORARY_UNIT_FILE_PATH}" || RES=$?
+    #rm -f "/run/systemd/units/invocation:${TEMPORARY_UNIT_NAME}" ]] || RES=$?
     # Double-shot because sometimes systemctl misses :(
     /bin/systemctl stop --no-block "${TEMPORARY_UNIT_NAME}" || true ; sleep 3
-    /bin/systemctl stop "${TEMPORARY_UNIT_NAME}" || RES=$?
-    /bin/systemctl disable --runtime "${TEMPORARY_UNIT_NAME}" || RES=$?
-    rm -rf "${SYSTEMD_RUN_UNITDIR}/${TEMPORARY_UNIT_NAME}.d" || RES=$?
-    rm -f "${SYSTEMD_RUN_UNITDIR}/${TEMPORARY_UNIT_NAME}" || RES=$?
-    /bin/systemctl daemon-reload
+    # Systemd tends to lock up when someone like us intrudes into a system
+    # shutdown in progress, unlike a usual service stop/restart event.
+    # In fact, the client locks up and does not actually trigger a stop of
+    # our transient service unit, until it is killed as stuck after 90s.
+    SHUTTINGDOWN=false
+    /bin/systemctl list-jobs | egrep '^[0-9]* (((reboot|shutdown|poweroff|halt|final)\.target|systemd-reboot\.service) .*start|sysinit\.target .*stop)' && SHUTTINGDOWN=true
+    if $SHUTTINGDOWN ; then
+        # just let us go down as quickly as we can
+        echo "WARNING: Shutting down now, not waiting for '${TEMPORARY_UNIT_NAME}' to stop"
+    else
+        /bin/systemctl stop "${TEMPORARY_UNIT_NAME}" || RES=$?
+        /bin/systemctl disable --runtime "${TEMPORARY_UNIT_NAME}" || RES=$?
+        rm -rf "${SYSTEMD_RUN_UNITDIR}/${TEMPORARY_UNIT_NAME}.d" || RES=$?
+        rm -f "${SYSTEMD_RUN_UNITDIR}/${TEMPORARY_UNIT_NAME}" || RES=$?
+        /bin/systemctl daemon-reload
+    fi
     exit $RES
     ;;
 status)

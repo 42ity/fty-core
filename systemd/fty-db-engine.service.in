@@ -4,6 +4,7 @@
 [Unit]
 Description=MySQL server for 42ity usage
 Conflicts=mysql.service mysqld.service mariadb.service
+Conflicts=shutdown.target halt.target poweroff.target reboot.target
 Wants=basic.target network.target
 
 Requires=fty-license-accepted.target
@@ -29,6 +30,7 @@ Restart=always
 # Note: explicit User=root is required for $HOME to get set and ~/.my.cnf
 # to get used by ExecStartPost self-check below
 User=root
+SyslogIdentifier=%n
 # Note: time below must suffice for units that require database to
 # have stopped before this service restarts, otherwise we get a
 # "failed to schedule restart job: Transaction is destructive" !
