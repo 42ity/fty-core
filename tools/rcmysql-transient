@@ -92,6 +92,7 @@ Conflicts=shutdown.target halt.target poweroff.target reboot.target
 
 [Service]
 ExecStopPost=/bin/systemctl stop --no-block fty-db-engine.service
+ExecStopPost=/bin/sh -c 'ps -ef | grep "maria|mysql" ; echo "DB service almost stopped"'
 SyslogIdentifier=${TEMPORARY_UNIT_NAME}
 
 [Install]
