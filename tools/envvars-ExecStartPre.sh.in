@@ -50,6 +50,31 @@ done
 [ -n "$OUTFILE" ] || OUTFILE="/run/fty-envvars.$OUTFMT"
 J="/etc/release-details.json"
 JO="/etc/bios-release.json" # Backwards compatibility
+
+### Several filtering routines follow which are used all over the place below
+### to help both readability and maintainability
+lowercase() {
+    tr '[A-Z]' '[a-z]'
+}
+
+space_to_linebreak() {
+    tr ' ' '\n'
+}
+
+commatoze() {
+    # Parse multi-line stdin and convert into a comma-separated single line
+    tr '\n' ',' | sed -e 's|,,|,|g' -e 's|^,*||' -e 's|,*$||'
+}
+
+sort_uniq() {
+    # Can pass "-r" for reverse sorting
+    sort -n "$@" | uniq
+}
+
+commatoze_sorted() {
+    sort_uniq "$@" | commatoze
+}
+
 echo "Make sure the current OS image name and other details are populated into '$OUTFILE'..."
 JSONSH="@datadir@/@PACKAGE@/scripts/JSON.sh"
 #JSONSH="/usr/share/bios/scripts/JSON.sh"
@@ -128,15 +153,15 @@ if [ -x /usr/bin/systemd-detect-virt ]; then
     VIRT_HYPERVIZOR="$(/usr/bin/systemd-detect-virt -v)" || true # not VIRT_HYPERVIZOR=""
 fi
 
-ENV_HOSTNAME="$(hostname | tr '[A-Z]' '[a-z]' )" || ENV_HOSTNAME=""
-ENV_DOMAINNAME="$(domainname | tr '[A-Z]' '[a-z]' | grep -v '(none)')" || ENV_DOMAINNAME=""
-ENV_DNSDOMAINNAME="$(dnsdomainname | tr '[A-Z]' '[a-z]' | grep -v '(none)')" || ENV_DNSDOMAINNAME=""
+ENV_HOSTNAME="$(hostname | lowercase )" || ENV_HOSTNAME=""
+ENV_DOMAINNAME="$(domainname | lowercase | grep -v '(none)')" || ENV_DOMAINNAME=""
+ENV_DNSDOMAINNAME="$(dnsdomainname | lowercase | grep -v '(none)')" || ENV_DNSDOMAINNAME=""
 # A one-per-line list of unique values for "domain" or "search" keywords
 # from /etc/resolv.conf; not exported at this time (see ENV_KNOWNDOMAINS)
-ENV_RESOLVDOMAINS="$(egrep '^[[:blank:]]*(search|domain)[[:blank:]]+' /etc/resolv.conf | while read K V ; do echo $V ; done | sed -e 's,[[:blank:]]+,\n,g' -e 's,\.$,,g' | tr '[A-Z]' '[a-z]' | sort | uniq)"
+ENV_RESOLVDOMAINS="$(egrep '^[[:blank:]]*(search|domain)[[:blank:]]+' /etc/resolv.conf | while read K V ; do echo $V ; done | sed -e 's,[[:blank:]]+,\n,g' -e 's,\.$,,g' | lowercase | sort_uniq)"
 # A comma-separated list (required for SQL magic, usable in shell) of
 # current non-loopback IP addresses, IPv4 and IPv6 alike, without masks
-ENV_IPADDRS="$(ip addr show | egrep '^[[:blank:]]*inet6?[[:blank:]]' | awk '{print $2}' | tr '[A-Z]' '[a-z]' | egrep -v '^(127\..*|0\.|255\.|::1/128)$' | sed 's,/[0-9]*$,,' | sort -nr | uniq | tr '\n' ',' | sed 's/,$//')" || ENV_IPADDRS=""
+ENV_IPADDRS="$(ip addr show | egrep '^[[:blank:]]*inet6?[[:blank:]]' | awk '{print $2}' | lowercase | egrep -v '^(127\..*|0\.|255\.|::1/128)$' | sed 's,/[0-9]*$,,' | commatoze_sorted -r)" || ENV_IPADDRS=""
 
 # Similarly, extract comma-separated lists of just IPv4 and IPv6 addresses
 ENV_IP4ADDRS=""
@@ -157,7 +182,7 @@ unset IFS_OLD
 # A comma-separated list of domain names (if any) that can be part of
 # this machine's FQDN when coupled with the hostname above. Note that
 # generally definition of "domain" is domain-dependent (pun intended).
-ENV_KNOWNDOMAINS="$(echo $ENV_DOMAINNAME $ENV_DNSDOMAINNAME $ENV_RESOLVDOMAINS | tr ' ' '\n' | sort -n | uniq | tr '\n' ',' | sed 's/,$//')"
+ENV_KNOWNDOMAINS="$(echo $ENV_DOMAINNAME $ENV_DNSDOMAINNAME $ENV_RESOLVDOMAINS | space_to_linebreak | commatoze_sorted)"
 
 list_hostnames_raw() {
     # Map known "this-host" IP addresses to known hostnames
@@ -167,7 +192,7 @@ list_hostnames_raw() {
 
 list_fqdns() {
     for H in `list_hostnames_raw` $ENV_HOSTNAME `cat /etc/hostname 2>/dev/null || true` ; do
-        H="`echo "$H" | tr '[A-Z]' '[a-z]'`"
+        H="`echo "$H" | lowercase`"
         case "$H" in
             localhost*|bios|loghost|mailhost) ;; # skip
             *.*) echo "$H" ;; # Already a dot-separated string
@@ -178,11 +203,11 @@ list_fqdns() {
                fi
                ;; # Generate dot-separated strings
         esac
-    done | tr '[A-Z]' '[a-z]' | sort | uniq
+    done | lowercase | sort_uniq
 }
 
 # A comma-separated list of this host's fully qualified domain names
-ENV_KNOWNFQDNS="$(list_fqdns | tr '\n' ',' | sed 's/,$//')"
+ENV_KNOWNFQDNS="$(list_fqdns | commatoze)"
 
 RES=255
 OUTFILE_ORIG="$OUTFILE"
