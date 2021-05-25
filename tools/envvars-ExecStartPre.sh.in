@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# Copyright (C) 2014 - 2020 Eaton
+# Copyright (C) 2014 - 2021 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,10 +25,15 @@
 
 echo "Generate common run-time environment variables file for 42ity"
 
+# Standard time and tool outputs
 LANG=C
 LC_ALL=C
 TZ=UTC
 export LANG LC_ALL TZ
+
+# As an OS service (helper) this must use /bin/systemctl in its children in particular
+PATH="/sbin:/usr/sbin:/bin:/usr/bin:$PATH"
+export PATH
 
 set -e
 
