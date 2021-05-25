@@ -56,16 +56,23 @@ if [ "$NTP_SYSTEMD_ENABLED" = "enabled" ] ; then
 fi
 
 # restart all network interfaces except lo and kill dhcp client too
+# Note that (our) "ifdown --force" causes "ifconfig ... down" or equivalent
+# and then the "ethtool-static-nolink" called from "ifup" would refuse the
+# static interfaces. With WAS_ADMIN_UP below we track if the interface was
+# administratively-UP before we downed it, to restore this state before
+# requesting to configure it.
 for IFACE in `ls -1 /sys/class/net/`; do
     [ "${IFACE}" = "lo" ] && continue
 
     (
+    WAS_ADMIN_UP="$(ip link show ${IFACE} | grep '<' | sed -e 's,^.*<,,' -e 's,>.*$,,' | tr ',' '\n' | fgrep -x UP)" ; \
     ifdown --force $IFACE ;\
     if [ -s /run/udhcpc.${IFACE}.pid ]; then \
         kill -9 `cat /run/udhcpc.${IFACE}.pid`; \
         rm /run/udhcpc.${IFACE}.pid; \
     fi ;\
     sleep 5; \
+    [ "$WAS_ADMIN_UP" = "UP" ] && { ip link set $IFACE up ; sleep 5 ; } \
     ifup --force $IFACE; \
     ) &
 done
