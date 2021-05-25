@@ -51,6 +51,14 @@ done
 J="/etc/release-details.json"
 JO="/etc/bios-release.json" # Backwards compatibility
 
+( which augtool >/dev/null ) || die $? "augtool must be in PATH"
+
+# By default, use our directory with a smaller selection of lenses to be faster
+AUGTOOL_ARGS=""
+if [ -d "@datadir@/@PACKAGE@/lenses" ] ; then
+    AUGTOOL_ARGS="-S -I@datadir@/@PACKAGE@/lenses"
+fi
+
 ### Several filtering routines follow which are used all over the place below
 ### to help both readability and maintainability
 lowercase() {
@@ -153,6 +161,10 @@ if [ -x /usr/bin/systemd-detect-virt ]; then
     VIRT_HYPERVIZOR="$(/usr/bin/systemd-detect-virt -v)" || true # not VIRT_HYPERVIZOR=""
 fi
 
+# Cache system interfaces config to parse below (augtool is expensive)
+AUGOUT="`(echo 'match /files/etc/network/interfaces/iface[*]'; echo 'match /files/etc/network/interfaces/auto[*]/*'; echo 'match /files/etc/network/interfaces/allow-hotplug[*]/*' ; echo 'match /files/etc/network/interfaces/iface[*]/method' ; echo 'match /files/etc/default/ifplugd/INTERFACES' ; echo 'match /files/etc/default/ifplugd/HOTPLUG_INTERFACES' ) | augtool $AUGTOOL_ARGS`" \
+&& [ -n "$AUGOUT" ] || AUGOUT=""
+
 ENV_HOSTNAME="$(hostname | lowercase )" || ENV_HOSTNAME=""
 ENV_DOMAINNAME="$(domainname | lowercase | grep -v '(none)')" || ENV_DOMAINNAME=""
 ENV_DNSDOMAINNAME="$(dnsdomainname | lowercase | grep -v '(none)')" || ENV_DNSDOMAINNAME=""
@@ -209,6 +221,16 @@ list_fqdns() {
 # A comma-separated list of this host's fully qualified domain names
 ENV_KNOWNFQDNS="$(list_fqdns | commatoze)"
 
+# Which interfaces are configured for DHCP, and which have an active
+# udhcpc client currently running?
+### Note: assumes interface names end with a digit
+ENV_DHCP_ACTIVE="$(ps -ef | grep [u]dhcpc | sed 's,^.* -i \([^ ]*\)[^0-9]*.*$,\1,' | commatoze)"
+ENV_DHCP_CONFIG=""
+if [ -n "$AUGOUT" ]; then
+    ### Note: assumes augtool key-value results are separated by "<space><equals><space>"
+    ENV_DHCP_CONFIG="$(echo "$AUGOUT" | egrep '/method = dhcp$' | sed 's,/method = dhcp$,,' | while read I ; do echo "$AUGOUT" | fgrep "$I = " | sed 's,^.* *= *\([^ ]*\)$,\1,g'; done | commatoze)"
+fi
+
 RES=255
 OUTFILE_ORIG="$OUTFILE"
 if [ -s "$OUTFILE" ]; then
@@ -233,6 +255,8 @@ ENV_DNSDOMAINNAME='${ENV_DNSDOMAINNAME}'
 ENV_IPADDRS='${ENV_IPADDRS}'
 ENV_IP4ADDRS='${ENV_IP4ADDRS}'
 ENV_IP6ADDRS='${ENV_IP6ADDRS}'
+ENV_DHCP_CONFIG='${ENV_DHCP_CONFIG}'
+ENV_DHCP_ACTIVE='${ENV_DHCP_ACTIVE}'
 ENV_KNOWNDOMAINS='${ENV_KNOWNDOMAINS}'
 ENV_KNOWNFQDNS='${ENV_KNOWNFQDNS}'
 EOF
@@ -254,6 +278,8 @@ set @ENV_DNSDOMAINNAME='${ENV_DNSDOMAINNAME}';
 set @ENV_IPADDRS='${ENV_IPADDRS}';
 set @ENV_IP4ADDRS='${ENV_IP4ADDRS}';
 set @ENV_IP6ADDRS='${ENV_IP6ADDRS}';
+set @ENV_DHCP_CONFIG='${ENV_DHCP_CONFIG}';
+set @ENV_DHCP_ACTIVE='${ENV_DHCP_ACTIVE}';
 set @ENV_KNOWNDOMAINS='${ENV_KNOWNDOMAINS}';
 set @ENV_KNOWNFQDNS='${ENV_KNOWNFQDNS}';
 EOF
