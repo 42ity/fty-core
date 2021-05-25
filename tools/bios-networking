@@ -66,13 +66,14 @@ for IFACE in `ls -1 /sys/class/net/`; do
 
     (
     WAS_ADMIN_UP="$(ip link show ${IFACE} | grep '<' | sed -e 's,^.*<,,' -e 's,>.*$,,' | tr ',' '\n' | fgrep -x UP)" ; \
+    WAS_ADMIN_DOWN="$(ip link show ${IFACE} | grep '<' | sed -e 's,^.*<,,' -e 's,>.*$,,' | tr ',' '\n' | fgrep -x DOWN)" ; \
     ifdown --force $IFACE ;\
     if [ -s /run/udhcpc.${IFACE}.pid ]; then \
         kill -9 `cat /run/udhcpc.${IFACE}.pid`; \
         rm /run/udhcpc.${IFACE}.pid; \
     fi ;\
     sleep 5; \
-    [ "$WAS_ADMIN_UP" = "UP" ] && { ip link set $IFACE up ; sleep 5 ; } \
+    [ "$WAS_ADMIN_UP" = "UP" ] || [ -z "$WAS_ADMIN_DOWN" ] && { ip link set $IFACE up ; sleep 5 ; } \
     ifup --force $IFACE; \
     ) &
 done
