@@ -224,11 +224,11 @@ ENV_KNOWNFQDNS="$(list_fqdns | commatoze)"
 # Which interfaces are configured for DHCP, and which have an active
 # udhcpc client currently running?
 ### Note: assumes interface names end with a digit
-ENV_DHCP_ACTIVE="$(ps -ef | grep [u]dhcpc | sed 's,^.* -i \([^ ]*\)[^0-9]*.*$,\1,' | commatoze)"
+ENV_DHCP_ACTIVE="$(ps -ef | grep [u]dhcpc | grep ' -i ' | sed 's,^.* -i \([^ ]*\)[^0-9]*.*$,\1,' | commatoze_sorted)"
 ENV_DHCP_CONFIG=""
 if [ -n "$AUGOUT" ]; then
     ### Note: assumes augtool key-value results are separated by "<space><equals><space>"
-    ENV_DHCP_CONFIG="$(echo "$AUGOUT" | egrep '/method = dhcp$' | sed 's,/method = dhcp$,,' | while read I ; do echo "$AUGOUT" | fgrep "$I = " | sed 's,^.* *= *\([^ ]*\)$,\1,g'; done | commatoze)"
+    ENV_DHCP_CONFIG="$(echo "$AUGOUT" | egrep '/method = dhcp$' | sed 's,/method = dhcp$,,' | while read I ; do echo "$AUGOUT" | fgrep "$I = " | sed 's,^.* *= *\([^ ]*\)$,\1,g'; done | commatoze_sorted)"
 fi
 
 RES=255
