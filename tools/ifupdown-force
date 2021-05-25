@@ -33,14 +33,16 @@ case "$2" in
 up)
         # In some of the distros we use "ifup" tends to skip interfaces
         # that are not "UP" in the system. So make sure it is confgurable:
-        /sbin/ifconfig "$1" "$2"
+        /sbin/ifconfig "$1" "$2" || \
+        /sbin/ip link set "$1" "$2"
         { /sbin/ifup "$1" && { /sbin/ip address show dev "$1" | egrep '^\s*inet\s+[0-9]+\.+[0-9]+\.+[0-9]+\.+[0-9]+/[0-9]+|^\s*inet6\s.*:.*/' ; } ; } || \
         /sbin/ifup --force "$1"
         ;;
 down)
         /sbin/ifdown "$1" || \
         /sbin/ifdown --force "$1" || \
-        /sbin/ifconfig "$1" "$2"
+        /sbin/ifconfig "$1" "$2" || \
+        /sbin/ip link set "$1" "$2"
         # By this point, at best the interface is not-configured,
         # at worst it is just "DOWN" and the system does not use it
         ;;
