@@ -59,17 +59,34 @@ case "$METHOD" in
 esac
 
 _LINK_STATE=""
+CARRIER_TEMP_UP=false
 if [ -d "/sys/class/net/$IFACE" ] && \
    [ -f "/sys/class/net/$IFACE/operstate" -o \
      -f "/sys/class/net/$IFACE/carrier" ] \
 ; then
-    case "`cat "/sys/class/net/$IFACE/carrier" 2>/dev/null`" in
+    # At least in containers, "ifconfig NIC down" can make the
+    # carrier file unreadable (EINVAL Invalid argument) even
+    # though on the low level the interface is connected and
+    # usable if re-enabled. Bring it back down if it was off
+    # and remains not usable.
+    CARRIER_STATE=""
+    [ -e "/sys/class/net/$IFACE/carrier" ] && CARRIER_STATE="`cat "/sys/class/net/$IFACE/carrier" 2>/dev/null`" \
+    || { echo "Temporarily activating interface $IFACE whose carrier state we can not read..." >&2
+        CARRIER_TEMP_UP=true
+        /sbin/ip link set $IFACE up
+        sleep 10
+        CARRIER_STATE="`cat "/sys/class/net/$IFACE/carrier" 2>/dev/null`" || sbin/ip link set $IFACE down
+    }
+    case "${CARRIER_STATE}" in
         0) _LINK_STATE="down" ;;
         1) _LINK_STATE="up" ;;
     esac
     case "`cat "/sys/class/net/$IFACE/operstate" 2>/dev/null`" in
         unknown|down) _LINK_STATE="down" ;;
         up) # do not consider a known-downed interface as enabled
+            # Note that CARRIER_TEMP_UP enablement above would make
+            # the administrative state here seem active which is
+            # sort of the point...
             [ -z "$_LINK_STATE" ] && _LINK_STATE="up" ;;
     esac
 fi
@@ -81,6 +98,10 @@ if [ -z "$_LINK_STATE" ]; then
     esac
 fi
 
+if [ "$_LINK_STATE" = "down" ] && [ "$CARRIER_TEMP_UP" = true ] ; then
+    echo "Downing the temporarily activated interface $IFACE which is still not usable" >&2
+    /sbin/ip link set $IFACE down
+fi
 [ -z "$_LINK_STATE" ] && exit 0
 
 # So we have an interface configured with a known METHOD among those that
