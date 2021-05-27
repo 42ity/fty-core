@@ -35,8 +35,8 @@ KEY=$(certcmd https server getkey | sed -E ':a;N;$!ba;s/[\n]+$//g')
 CRT=$(certcmd https server getcert | sed -E ':a;N;$!ba;s/[\n]+$//g')
 
 UPDATE_CERT=no
-if [ -f $PEM_KEY ]; then
-    DIFF=$(diff -q <(echo "$KEY") <(cat $PEM_KEY | sed -E ':a;N;$!ba;s/[\n]+$//g') | grep differ)
+if [ -f "$PEM_KEY" ]; then
+    DIFF=$(diff -q <(echo "$KEY") <(cat "$PEM_KEY" | sed -E ':a;N;$!ba;s/[\n]+$//g') | grep differ)
     if [ -n "$DIFF" ]; then
         UPDATE_CERT=yes
     fi
@@ -45,7 +45,7 @@ else
 fi
 
 if [ -f $PEM_CRT ]; then
-    DIFF=$(diff -q <(echo "$CRT") <(cat $PEM_CRT | sed -E ':a;N;$!ba;s/[\n]+$//g') | grep differ)
+    DIFF=$(diff -q <(echo "$CRT") <(cat "$PEM_CRT" | sed -E ':a;N;$!ba;s/[\n]+$//g') | grep differ)
     if [ -n "$DIFF" ]; then
         UPDATE_CERT=yes
     fi
@@ -54,9 +54,9 @@ else
 fi
 
 if [ "$UPDATE_CERT" = yes ]; then
-    echo "$KEY" > $PEM_KEY
-    echo "$CRT" > $PEM_CRT
-    cat $PEM_KEY $PEM_CRT > $PEM_FINAL_CERT
+    echo "$KEY" > "$PEM_KEY"
+    echo "$CRT" > "$PEM_CRT"
+    cat "$PEM_KEY" "$PEM_CRT" > "$PEM_FINAL_CERT"
 fi
 
 exit 0
