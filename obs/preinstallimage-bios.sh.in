@@ -1023,6 +1023,15 @@ EOF
 #/bin/systemctl enable nut-monitor.service
 /bin/systemctl enable nut.target
 
+# Since Debian Testing from sprint 2021, systemd acts up about acpid.service
+# which is excluded from running in containers. This worked okay for earlier
+# Debian iterations, but loops trying to start in the newer release (which
+# is a Debian 11 candidate). Per testing, adding the constraint to the .path
+# unit fixes the issue, and having it in .socket is further reassurance.
+mkdir -p /lib/systemd/system/acpid.path.d /lib/systemd/system/acpid.socket.d
+(echo '[Unit]'; echo 'ConditionVirtualization=!container') > /etc/systemd/system/acpid.path.d/constrain-not-container.conf
+ln /etc/systemd/system/acpid.path.d/constrain-not-container.conf /etc/systemd/system/acpid.socket.d/constrain-not-container.conf
+
 # according to https://github.com/42ity/malamute/blob/1.0-FTY-master/src/mlm_perftest.c#L22
 # "If we allow limits, then the engines will block under stress."
 # to avoid any block under stress, set unlimited High Water Mark on malamute clients side likes we have on the broker itself
