@@ -352,6 +352,7 @@ AC_CONFIG_FILES([
         tools/run-user-script
         tools/run-ssh-action
         tools/start-db-services
+        tools/ssl-ExecStartPre.sh
         tools/tntnet-ExecStartPre.sh
         tools/update-rc3
         tools/udhcpc-override.sh
