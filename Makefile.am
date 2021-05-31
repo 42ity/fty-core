@@ -188,6 +188,7 @@ client_SCRIPTS +=	 \
 helper_SCRIPTS +=	\
 			tools/tntnet-ExecStartPre.sh \
 			tools/envvars-ExecStartPre.sh \
+			tools/ssl-ExecStartPre.sh \
 			tools/generate-release-details.sh \
 			tools/factory-reset-live.sh \
 			tools/setup-nut-users-ExecStartPre.sh

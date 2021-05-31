@@ -35,15 +35,8 @@ export LANG LC_ALL TZ
 
 set -e
 
-echo "Make sure we have an SSL certificate..."
-
-# Check if certificate manager cmd is available (provided by etn-ipm2-px-red-certmgr)
-# If not, generate self signed cert through bash
-if command -v certcmd > /dev/null; then
-    @datadir@/@PACKAGE@/scripts/get-ssl-cert.sh
-else
-    @datadir@/@PACKAGE@/scripts/ssl-create.sh
-fi
+# Quiet offload, that helper script does its own talking
+@datadir@/@PACKAGE@/scripts/ssl-ExecStartPre.sh
 
 echo "Make sure we have a config file..."
 cat /etc/tntnet/"$INST".d/*.xml > /etc/tntnet/"$INST".xml
