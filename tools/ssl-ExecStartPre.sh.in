@@ -33,6 +33,8 @@
 #          startup from different consumers). Those tool scripts should
 #          detect an existing certificate file and whether it is still
 #          valid, so the extra instances of the tool would quit quickly.
+#          Optional args may determine which certs or where those tools
+#          would maintain; up to the scripts called.
 
 # Make sure the sorting order is deterministic, etc.
 LANG=C
@@ -57,9 +59,9 @@ echo "`date -u`: Make sure we have an SSL certificate..." >&2
 # Check if certificate manager cmd is available (provided by etn-ipm2-px-red-certmgr)
 # If not, generate self signed cert through bash
 if command -v certcmd > /dev/null; then
-    @datadir@/@PACKAGE@/scripts/get-ssl-cert.sh || exit
+    @datadir@/@PACKAGE@/scripts/get-ssl-cert.sh "$@" || exit
 else
-    @datadir@/@PACKAGE@/scripts/ssl-create.sh || exit
+    @datadir@/@PACKAGE@/scripts/ssl-create.sh "$@" || exit
 fi
 
 exit 0

@@ -36,7 +36,9 @@ export LANG LC_ALL TZ
 set -e
 
 # Quiet offload, that helper script does its own talking
-@datadir@/@PACKAGE@/scripts/ssl-ExecStartPre.sh
+# NOTE: Commented away here because it is normally a
+# separate ExecStartPre in tntnet@ template
+#@datadir@/@PACKAGE@/scripts/ssl-ExecStartPre.sh "$@"
 
 echo "Make sure we have a config file..."
 cat /etc/tntnet/"$INST".d/*.xml > /etc/tntnet/"$INST".xml
