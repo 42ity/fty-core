@@ -54,6 +54,8 @@ if [ -f "$PEM_KEY" ]; then
     DIFF="$(diff -q <(echo "$KEY") <(discardEOLs < "$PEM_KEY") | grep differ)"
     if [ -n "$DIFF" ]; then
         UPDATE_CERT=yes
+    else
+        echo "INFO: KEY file is same as before, still valid" >&2
     fi
 else
     UPDATE_CERT=yes
@@ -63,12 +65,16 @@ if [ -f "$PEM_CRT" ]; then
     DIFF="$(diff -q <(echo "$CRT") <(discardEOLs < "$PEM_CRT") | grep differ)"
     if [ -n "$DIFF" ]; then
         UPDATE_CERT=yes
+    else
+        echo "INFO: CRT file is same as before, still valid" >&2
     fi
 else
     UPDATE_CERT=yes
 fi
 
 if [ "$UPDATE_CERT" = yes ]; then
+    echo "INFO: got new KEY and/or CRT contents, updating files for SSL-enabled servers" >&2
+
     echo "$KEY" > "$PEM_KEY" \
     && [ -s "$PEM_KEY" ] || exit
 
@@ -77,6 +83,8 @@ if [ "$UPDATE_CERT" = yes ]; then
 
     cat "$PEM_KEY" "$PEM_CRT" > "$PEM_FINAL_CERT" \
     && [ -s "$PEM_FINAL_CERT" ] || exit
+else
+    echo "INFO: no new KEY nor CRT contents, nothing to do here now" >&2
 fi
 
 exit 0
