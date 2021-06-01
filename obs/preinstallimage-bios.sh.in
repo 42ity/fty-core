@@ -1029,8 +1029,8 @@ EOF
 # is a Debian 11 candidate). Per testing, adding the constraint to the .path
 # unit fixes the issue, and having it in .socket is further reassurance.
 mkdir -p /lib/systemd/system/acpid.path.d /lib/systemd/system/acpid.socket.d
-(echo '[Unit]'; echo 'ConditionVirtualization=!container') > /etc/systemd/system/acpid.path.d/constrain-not-container.conf
-ln /etc/systemd/system/acpid.path.d/constrain-not-container.conf /etc/systemd/system/acpid.socket.d/constrain-not-container.conf
+(echo '[Unit]'; echo 'ConditionVirtualization=!container') > /lib/systemd/system/acpid.path.d/constrain-not-container.conf
+ln /lib/systemd/system/acpid.path.d/constrain-not-container.conf /lib/systemd/system/acpid.socket.d/constrain-not-container.conf
 
 # according to https://github.com/42ity/malamute/blob/1.0-FTY-master/src/mlm_perftest.c#L22
 # "If we allow limits, then the engines will block under stress."
