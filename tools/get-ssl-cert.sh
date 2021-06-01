@@ -17,6 +17,10 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+#! \file   get-ssl-cert.sh
+#  \author Mauro Guerrera <MauroGuerrera@Eaton.com>
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \brief  Use a third-party "certcmd" to provide or update HTTPS certs
 
 # Note: bashism, so we know piped commands failed
 set -o pipefail
