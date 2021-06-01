@@ -18,6 +18,9 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+# Note: bashism, so we know piped commands failed
+set -o pipefail
+
 PEM_KEY="/etc/tntnet/bios.key"
 PEM_CRT="/etc/tntnet/bios.crt"
 PEM_FINAL_CERT="/etc/tntnet/bios.pem"
@@ -30,9 +33,10 @@ for F in "$PEM_FINAL_CERT" "$PEM_KEY" "$PEM_CRT" ; do
     fi
 done
 
-### discard multiple new lines at the end of the stream
-KEY=$(certcmd https server getkey | sed -E ':a;N;$!ba;s/[\n]+$//g')
-CRT=$(certcmd https server getcert | sed -E ':a;N;$!ba;s/[\n]+$//g')
+KEY="$(certcmd https server getkey | sed -E ':a;N;$!ba;s/[\n]+$//g')" && [ -n "$KEY" ] \
+|| { echo "FATAL: Could not generate or fetch KEY data!" >&2 ; exit 1; }
+CRT="$(certcmd https server getcert | sed -E ':a;N;$!ba;s/[\n]+$//g')" && [ -n "$CRT" ] \
+|| { echo "FATAL: Could not generate or fetch CRT data!" >&2 ; exit 1; }
 
 UPDATE_CERT=no
 if [ -f "$PEM_KEY" ]; then
