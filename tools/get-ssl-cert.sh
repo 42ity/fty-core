@@ -29,6 +29,8 @@ PEM_KEY="/etc/tntnet/bios.key"
 PEM_CRT="/etc/tntnet/bios.crt"
 PEM_FINAL_CERT="/etc/tntnet/bios.pem"
 
+command -v certcmd || { echo "FATAL: certcmd not in PATH!" >&2; exit 1; }
+
 for F in "$PEM_FINAL_CERT" "$PEM_KEY" "$PEM_CRT" ; do
     D="`dirname "$F"`"
     if [ ! -d "$D/" ]; then
