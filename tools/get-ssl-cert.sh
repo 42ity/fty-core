@@ -51,7 +51,7 @@ CRT="$(certcmd https server getcert | discardEOLs)" && [ -n "$CRT" ] \
 
 UPDATE_CERT=no
 if [ -f "$PEM_KEY" ]; then
-    DIFF=$(diff -q <(echo "$KEY") <(cat "$PEM_KEY" | discardEOLs) | grep differ)
+    DIFF="$(diff -q <(echo "$KEY") <(discardEOLs < "$PEM_KEY") | grep differ)"
     if [ -n "$DIFF" ]; then
         UPDATE_CERT=yes
     fi
@@ -60,7 +60,7 @@ else
 fi
 
 if [ -f "$PEM_CRT" ]; then
-    DIFF=$(diff -q <(echo "$CRT") <(cat "$PEM_CRT" | discardEOLs) | grep differ)
+    DIFF="$(diff -q <(echo "$CRT") <(discardEOLs < "$PEM_CRT") | grep differ)"
     if [ -n "$DIFF" ]; then
         UPDATE_CERT=yes
     fi
