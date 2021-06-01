@@ -69,9 +69,14 @@ else
 fi
 
 if [ "$UPDATE_CERT" = yes ]; then
-    echo "$KEY" > "$PEM_KEY"
-    echo "$CRT" > "$PEM_CRT"
-    cat "$PEM_KEY" "$PEM_CRT" > "$PEM_FINAL_CERT"
+    echo "$KEY" > "$PEM_KEY" \
+    && [ -s "$PEM_KEY" ] || exit
+
+    echo "$CRT" > "$PEM_CRT" \
+    && [ -s "$PEM_CRT" ] || exit
+
+    cat "$PEM_KEY" "$PEM_CRT" > "$PEM_FINAL_CERT" \
+    && [ -s "$PEM_FINAL_CERT" ] || exit
 fi
 
 exit 0
