@@ -39,14 +39,19 @@ for F in "$PEM_FINAL_CERT" "$PEM_KEY" "$PEM_CRT" ; do
     fi
 done
 
-KEY="$(certcmd https server getkey | sed -E ':a;N;$!ba;s/[\n]+$//g')" && [ -n "$KEY" ] \
+discardEOLs() {
+    ### discard multiple new lines at the end of the stream
+    sed -E ':a;N;$!ba;s/[\n]+$//g'
+}
+
+KEY="$(certcmd https server getkey | discardEOLs)" && [ -n "$KEY" ] \
 || { echo "FATAL: Could not generate or fetch KEY data!" >&2 ; exit 1; }
-CRT="$(certcmd https server getcert | sed -E ':a;N;$!ba;s/[\n]+$//g')" && [ -n "$CRT" ] \
+CRT="$(certcmd https server getcert | discardEOLs)" && [ -n "$CRT" ] \
 || { echo "FATAL: Could not generate or fetch CRT data!" >&2 ; exit 1; }
 
 UPDATE_CERT=no
 if [ -f "$PEM_KEY" ]; then
-    DIFF=$(diff -q <(echo "$KEY") <(cat "$PEM_KEY" | sed -E ':a;N;$!ba;s/[\n]+$//g') | grep differ)
+    DIFF=$(diff -q <(echo "$KEY") <(cat "$PEM_KEY" | discardEOLs) | grep differ)
     if [ -n "$DIFF" ]; then
         UPDATE_CERT=yes
     fi
@@ -55,7 +60,7 @@ else
 fi
 
 if [ -f "$PEM_CRT" ]; then
-    DIFF=$(diff -q <(echo "$CRT") <(cat "$PEM_CRT" | sed -E ':a;N;$!ba;s/[\n]+$//g') | grep differ)
+    DIFF=$(diff -q <(echo "$CRT") <(cat "$PEM_CRT" | discardEOLs) | grep differ)
     if [ -n "$DIFF" ]; then
         UPDATE_CERT=yes
     fi
