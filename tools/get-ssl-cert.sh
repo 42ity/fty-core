@@ -48,7 +48,7 @@ else
     UPDATE_CERT=yes
 fi
 
-if [ -f $PEM_CRT ]; then
+if [ -f "$PEM_CRT" ]; then
     DIFF=$(diff -q <(echo "$CRT") <(cat "$PEM_CRT" | sed -E ':a;N;$!ba;s/[\n]+$//g') | grep differ)
     if [ -n "$DIFF" ]; then
         UPDATE_CERT=yes
