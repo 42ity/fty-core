@@ -123,7 +123,7 @@ config_defaults() {
     is_set SOURCESITEROOTFW_UIMAGE || SOURCESITEROOTFW_UIMAGE="$SOURCESITEROOTFW"
     is_set SOURCESITEROOTFW_MODULES || SOURCESITEROOTFW_MODULES="$SOURCESITEROOTFW/modules"
     ###is_set SOURCESITEROOTFW_OVALOADER || SOURCESITEROOTFW_OVALOADER="$SOURCESITEROOTFW"
-    is_set SOURCESITEROOTFW_OVALOADER || SOURCESITEROOTFW_OVALOADER="http://obs.roz.lab.etn.com/loader-${OSIMAGE_DISTRO}/@PICK_IMGQALEVEL@/$ARCH/recovery"
+    is_set SOURCESITEROOTFW_OVALOADER || SOURCESITEROOTFW_OVALOADER="http://obs.roz.lab.etn.com/images/loader-${OSIMAGE_DISTRO}/@PICK_IMGQALEVEL@/$ARCH/recovery"
 
     # Recovery location (on MMC or mSATA) - for downloads
     is_set DOWNLOADROOT || DOWNLOADROOT="@URC3_DOWNLOADROOT@"
@@ -1866,7 +1866,7 @@ removeold_rawfwimage_uimage() (
 
 ##################################################
 
-findnewest_rawfwimage_ovaloader() (
+findnewest_rawfwimage_ovaloader() {
     # Echo the URL to the newest "raw" (not tarballed, only one)
     # ovaloader image file found on remote resource, if any
     # Note: currently expects certain filename patterns and http-dir listing markup
@@ -1891,6 +1891,33 @@ findnewest_rawfwimage_ovaloader() (
     #   featureimage X, release X) or fallback to master if absent.
     # * Symlinked ovaloader.gz in SOURCESITEROOTFW_OVALOADER (like above)
     # TODO-OVA
+    case "${SOURCESITEROOTFW_OVALOADER}" in
+        *"@PICK_IMGQALEVEL@"*) # Pick the loader build for this QA Level or fallback to master
+            # Default should be known from /etc/update-rc3.d/image-os-type.conf usually
+            PICK_IMGQALEVEL="$IMGQALEVEL" && [ -n "$PICK_IMGQALEVEL" ] \
+            || PICK_IMGQALEVEL="`. /run/fty-envvars.env && echo "$OSIMAGE_IMGQALEVEL"`" && [ -n "$PICK_IMGQALEVEL" ] \
+            || PICK_IMGQALEVEL="master"
+
+            logmsg_info "Trying to find OVA loader build for QALEVEL='$PICK_IMGQALEVEL':" >&2
+            SOURCESITEROOTFW_OVALOADER_TMP="`echo "$SOURCESITEROOTFW_OVALOADER" | sed 's,[@]PICK_IMGQALEVEL@,'"$PICK_IMGQALEVEL"','`"
+            SOURCESITEROOTFW_OVALOADER="$SOURCESITEROOTFW_OVALOADER_TMP" do_findnewest_rawfwimage_ovaloader \
+            && { SOURCESITEROOTFW_OVALOADER="$SOURCESITEROOTFW_OVALOADER_TMP"; return 0; }
+            [ "$PICK_IMGQALEVEL" = "master" ] && return 1 # Our default failed, reported above; nothing to retry with
+
+            PICK_IMGQALEVEL="master"
+            logmsg_info "Retrying to find OVA loader build for QALEVEL='$PICK_IMGQALEVEL':"
+            SOURCESITEROOTFW_OVALOADER_TMP="`echo "$SOURCESITEROOTFW_OVALOADER" | sed 's,[@]PICK_IMGQALEVEL@,'"$PICK_IMGQALEVEL"','`"
+            SOURCESITEROOTFW_OVALOADER="$SOURCESITEROOTFW_OVALOADER_TMP" do_findnewest_rawfwimage_ovaloader \
+            && { SOURCESITEROOTFW_OVALOADER="$SOURCESITEROOTFW_OVALOADER_TMP"; return 0; }
+            return 1 # Our fallback failed too, reported above
+            ;;
+        *) # Already configured to a definite string
+            do_findnewest_rawfwimage_ovaloader; return
+            ;;
+    esac
+}
+
+do_findnewest_rawfwimage_ovaloader() (
     IMAGE_URL="`lsdir_http_pattern "${1:-$SOURCESITEROOTFW_OVALOADER}" "ovaloader" | sort -n | tail -1`"
     if [ $? = 0 -a x"$IMAGE_URL" != x ]; then
         echo "$IMAGE_URL" && return 0

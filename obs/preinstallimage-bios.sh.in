@@ -1175,6 +1175,16 @@ sed -e 's,^case \$1 in,### FTY\nLOCK="/run/udhcpc.$interface.lock"\ntrap "rm -f 
 # Get it into our default PATH:
 ln -fsr /usr/libexec/fty/fty-hostname-setup /usr/local/sbin/fty-hostname-setup
 
+# After system-driven network interface management, including calls to
+# "ifup" and "ifdown", update /run/fty-envvars.env file with new IPs
+mkdir -p /etc/network/if-post-up.d /etc/network/if-post-down.d
+cat <<EOF >/etc/network/if-post-up.d/fty-envvars
+#!/bin/sh
+/bin/systemctl reload-or-restart --no-block fty-envvars.service || true
+EOF
+chmod +x /etc/network/if-post-up.d/fty-envvars
+ln -s ../if-post-up.d/fty-envvars /etc/network/if-post-down.d/
+
 # Newer /sbin/{ifup,ifdown,ifquery} no longer call tools by just the short
 # program name, but do it using the full path e.g. /sbin/ip or /sbin/udhcpc
 # and so ignore the PATH they still have compiled in. Due to this we must

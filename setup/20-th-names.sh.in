@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #
-#   Copyright (c) 2017 - 2020 Eaton
+#   Copyright (c) 2017 - 2021 Eaton
 #
 #   This file is part of the Eaton 42ity project.
 #
@@ -20,7 +20,7 @@
 #   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 #! \file    20-th-names.sh
-#  \brief   Change udev rules for HW revision 00
+#  \brief   Change udev rules for HW revision 00 of IPC3000
 #  \author  Michal Vyskocil <MichalVyskocil@Eaton.com>
 #
 
@@ -34,10 +34,21 @@
 JSONSH="@datadir@/@PACKAGE@/scripts/JSON.sh"
 get_a_string_arg() { "$JSONSH" --get-string "$1" ; }
 J="/etc/release-details.json"
+H="$(get_a_string_arg hardware-catalog-number < $J)"
 R="$(get_a_string_arg hardware-spec-revision < $J)"
 
-# we don't need to change rules for revisions != 0
-[ "$R" = "00" ] || exit 0
+SC="`systemd-detect-virt -c`" && [ -n "$SC" ] || SC="none"
+SV="`systemd-detect-virt -v`" && [ -n "$SV" ] || SV="none"
+# we don't need to change rules for known-virtual systems
+if [ "$SC" != none ] || [ "$SC" != none ] ; then exit 0 ; fi
+
+# we don't need to change rules for HW revisions != 0 or not-IPC3000 models
+case "$H" in
+    *LXC*) exit 0 ;;
+    IPC3000*)
+        [ "$R" = "00" ] || exit 0 ;;
+    *) exit 0 ;;
+esac
 
 # 1. change udev rules
 sed -i -e 's/ttyS9/ttyS13/g;s/ttyS10/ttyS14/g;s/ttyS11/ttyS15/g;s/ttyS12/ttyS16/g' \
