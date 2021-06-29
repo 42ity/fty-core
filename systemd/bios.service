@@ -17,6 +17,7 @@ After=bios-enabler-pre.service
 [Service]
 Type=oneshot
 RemainAfterExit=yes
+SyslogIdentifier=%N
 
 # Per systemd.service docs, TEMPFAIL exit code is 75 as used below
 # But Debian 8 systemd does not know the word, it seems. So we hardcode.

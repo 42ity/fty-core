@@ -10,6 +10,7 @@ Before=network-online.target multi-user.target
 Type=oneshot
 # the service shall be considered active even when all its processes exited
 RemainAfterExit=yes
+SyslogIdentifier=%N
 Restart=no
 User=root
 Group=root
