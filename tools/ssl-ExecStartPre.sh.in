@@ -1,0 +1,67 @@
+#!/bin/bash
+#
+# Copyright (C) 2014-2021 Eaton
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+
+
+#! \file   ssl-ExecStartPre.sh(.in)
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \author Mauro Guerrera <MauroGuerrera@Eaton.com>
+#  \brief  An ExecStartPre to ensure SSL certs for the networked server(s)
+#  \full   Similar to tntnet-ExecStartPre.sh(.in), this script ensures
+#          just that we have SSL certs (e.g. for HTTPS) according to
+#          policy and tool that a particular final product bundling
+#          delivers, which can be applied to different consumers.
+#          It actually dispatches running one of the tool-based
+#          implementations which deliver certificate-related files
+#          to the location expected by consumers, and makes sure that
+#          just one copy runs at a time (many can be asked during OS
+#          startup from different consumers). Those tool scripts should
+#          detect an existing certificate file and whether it is still
+#          valid, so the extra instances of the tool would quit quickly.
+#          Optional args may determine which certs or where those tools
+#          would maintain; up to the scripts called.
+
+# Make sure the sorting order is deterministic, etc.
+LANG=C
+LC_ALL=C
+TZ=UTC
+export LANG LC_ALL TZ
+
+LOCK=/dev/shm/.ssl-ExecStartPre.lock
+while : ; do
+    LOCK_PID="`head -1 "$LOCK" 2>/dev/null`" && [ -n "$LOCK_PID" ] && [ "$LOCK_PID" -gt 1 ] && [ -d "/proc/${LOCK_PID}/" ] || break
+    # TODO: Check "ps" if the filename fits?
+    echo "`date -u`: $0 is locked by a running instance ${LOCK_PID}, waiting..." >&2
+    sleep 5
+done
+echo "$$" > "$LOCK"
+trap 'rm -f "$LOCK"' 0 1 2 3 15
+
+set -e
+
+echo "`date -u`: Make sure we have an SSL certificate..." >&2
+
+# Check if certificate manager cmd is available (provided by etn-ipm2-px-red-certmgr)
+# If not, generate self signed cert through bash
+if command -v certcmd > /dev/null; then
+    @datadir@/@PACKAGE@/scripts/get-ssl-cert.sh "$@" || exit
+else
+    @datadir@/@PACKAGE@/scripts/ssl-create.sh "$@" || exit
+fi
+
+exit 0
