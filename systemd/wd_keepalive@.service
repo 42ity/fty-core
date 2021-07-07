@@ -15,6 +15,7 @@ Type=forking
 User=root
 Restart=always
 RestartSec=2
+SyslogIdentifier=%N
 # We only need these configs for optional modules to probe
 # Otherwise we do not care much for that config in this simple
 # explicit-instance setup

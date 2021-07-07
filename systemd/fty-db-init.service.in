@@ -17,6 +17,7 @@ PartOf=fty-db.target
 # trying to start up indefinitely (e.g. initial boot, untouched for days).
 Type=forking
 User=root
+SyslogIdentifier=%N
 # Unlimited startup...
 TimeoutStartSec=0
 # More than 90, less than in bios.service

@@ -16,6 +16,7 @@ Conflicts=bios-shutdown.target
 [Service]
 Type=oneshot
 RemainAfterExit=no
+SyslogIdentifier=%N
 
 # Tickle the target into starting regularly, which should cause
 # systemd attempts to start initially (or later) failed services.

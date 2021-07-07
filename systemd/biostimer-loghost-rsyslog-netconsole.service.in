@@ -8,6 +8,7 @@ Before=rsyslog.service
 
 [Service]
 Type=simple
+SyslogIdentifier=%N
 ExecStart=@libexecdir@/@PACKAGE@/loghost-rsyslog --netconsole
 
 [Install]

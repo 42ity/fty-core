@@ -15,6 +15,7 @@ Type=simple
 ### the service shall be considered active even when all its processes exited
 RemainAfterExit=yes
 User=root
+SyslogIdentifier=%N
 EnvironmentFile=-@prefix@/share/bios/etc/default/bios
 EnvironmentFile=-@prefix@/share/bios/etc/default/bios__%n.conf
 EnvironmentFile=-@prefix@/share/fty/etc/default/fty

@@ -26,6 +26,7 @@ Restart=no
 ###Restart=on-failure
 ###RestartSec=30m
 User=root
+SyslogIdentifier=%N
 ExecStartPre=/bin/dash -c "sleep 2 ; /usr/bin/test -s @ftydatadir@/fty-eula/license"
 ExecStart=/bin/dash -c "while ! /usr/bin/test -s @ftydatadir@/fty-eula/license ; do sleep 3 ; done"
 ExecStartPost=-/bin/systemctl start --no-block fty-license-accepted.target

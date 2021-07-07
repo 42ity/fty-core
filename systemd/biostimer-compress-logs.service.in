@@ -4,6 +4,7 @@ Conflicts=rescue.target shutdown.target poweroff.target halt.target reboot.targe
 
 [Service]
 Type=simple
+SyslogIdentifier=%N
 ExecStart=@libexecdir@/@PACKAGE@/compress-logs
 
 [Install]

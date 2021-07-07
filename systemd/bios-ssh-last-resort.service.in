@@ -4,6 +4,7 @@ After=auditd.service network.service
 
 [Service]
 EnvironmentFile=-/etc/default/ssh
+SyslogIdentifier=%N
 ExecStartPre=/usr/bin/ssh-keygen -A
 ExecStartPre=/bin/mkdir -p /run/sshd
 ExecStartPre=/bin/chmod 0755 /run/sshd

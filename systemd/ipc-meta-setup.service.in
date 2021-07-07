@@ -9,6 +9,7 @@ Before = bios.target bios-pre-eula.target fty-db.target fty-license-accepted.tar
 [Service]
 Type = oneshot
 User = root
+SyslogIdentifier=%N
 ExecStart = @datadir@/@PACKAGE@/setup/ipc-meta-setup.sh
 RemainAfterExit = yes
 

@@ -7,6 +7,7 @@ DefaultDependencies=no
 Type=simple
 User=root
 Restart=always
+SyslogIdentifier=%N
 EnvironmentFile=-@prefix@/share/bios/etc/default/bios
 EnvironmentFile=-@prefix@/share/bios/etc/default/bios__%n.conf
 EnvironmentFile=-@prefix@/share/fty/etc/default/fty

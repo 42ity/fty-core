@@ -14,6 +14,7 @@ PartOf=bios.target
 Type=oneshot
 Restart=no
 User=root
+SyslogIdentifier=%N
 ExecStart=/usr/bin/passwd -u monitor
 ExecStart=/bin/sh -c "/bin/systemctl disable --no-ask-password %n ; /bin/systemctl mask --no-ask-password %n"
 
