@@ -4,7 +4,7 @@ EXTRA_DIST =
 helperdir	= $(datadir)/@PACKAGE@/scripts
 helper_SCRIPTS	= init-os-accounts.sh resolveip.sh JSON.sh rc-bios \
 		    ifplug-dhcp-autoconf.sh udhcpc-override.sh udhcpc-hook.sh \
-		    ethtool-static-nolink ifupdown-force ssl-create.sh \
+		    ethtool-static-nolink ifupdown-force get-ssl-cert.sh ssl-create.sh \
 		    reset-button.sh check_bios_license logrotate-rsyslog \
 		    update-rc.d.sh _bios-script.sh generate_env_user4sql.sh \
 		    rcmysql-transient license-agreement.sh
