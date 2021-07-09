@@ -39,11 +39,10 @@ exampleprofile_DATA     = \
 exampleudevrulesdir = $(datarootdir)/@PACKAGE@/examples/config/rules.d
 exampleudevrules_DATA = \
 			rules.d/90-ipc-persistent-th.rules
-	
+
 examplelogdir	= $(datarootdir)/@PACKAGE@/examples/config/ftylog.d
 examplelog_DATA = \
-                   ftylog.d/10-ftylog.cfg \
-                   ftylog.d/20-wwwlog.cfg
+                   ftylog.d/10-ftylog.cfg
 
 examplenutserverdir	= $(systemdsystemunitdir)/nut-server.service.d
 examplenutserver_DATA = \

@@ -261,11 +261,8 @@ done
 #42ity log configuration file
 mkdir -p /etc/fty/
 cp /usr/share/fty/examples/config/ftylog.d/10-ftylog.cfg /etc/fty/ftylog.cfg
-cp /usr/share/fty/examples/config/ftylog.d/20-wwwlog.cfg /etc/fty/wwwlog.cfg
 chmod 644 /etc/fty/ftylog.cfg
-chmod 644 /etc/fty/wwwlog.cfg
 chown www-data /etc/fty/ftylog.cfg
-chown www-data /etc/fty/wwwlog.cfg
 
 #42ity enable/disable root account script
 chown root /usr/libexec/fty/enable-root-account
