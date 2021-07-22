@@ -285,6 +285,7 @@ echo '/dev/mtd3 0x00000 0x40000 0x40000' > /etc/fw_env.config
 sed -e 's|.*RuntimeMaxFileSize.*|RuntimeMaxFileSize=10M|' \
     -e 's|.*Storage.*|Storage=volatile|' \
     -e 's|.*SyncIntervalSec.*|SyncIntervalSec=1s|' \
+    -e 's|.*ForwardToSyslog.*|ForwardToSyslog=no|' \
     -i /etc/systemd/journald.conf
 
 if [ "`uname -m`" = x86_64 ]; then
