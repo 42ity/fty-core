@@ -1,8 +1,9 @@
 # remote audit logs
 
 #*.* /var/log/debugfmt;RSYSLOG_DebugFormat
-#*.* @docker-dev-1.mbt.lab.etn.com;ForwardFormat
+#*.* @docker-dev-1.mbt.lab.etn.com:514;ForwardFormat
 
 # disable rsyslog message prepend (date, hostname, ...)
-#COMMENT_template(name="ForwardFormat" type="string" string="%msg%")
-#COMMENT_*.* @${RSYSLOG_REMOTE_SERVER}:514;ForwardFormat
+template(name="ForwardFormat" type="string" string="%msg%")
+
+*.* @${RSYSLOG_SERVER_ADDRESS}:${RSYSLOG_SERVER_PORT};ForwardFormat
