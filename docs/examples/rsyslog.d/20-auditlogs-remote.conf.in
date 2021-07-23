@@ -4,6 +4,6 @@
 #*.* @docker-dev-1.mbt.lab.etn.com:514;ForwardFormat
 
 # disable rsyslog message prepend (date, hostname, ...)
-template(name="ForwardFormat" type="string" string="%msg%")
+template(name="ForwardFormat" type="string" string="%hostname% %msg%")
 
 *.* @${RSYSLOG_SERVER_ADDRESS}:${RSYSLOG_SERVER_PORT};ForwardFormat
