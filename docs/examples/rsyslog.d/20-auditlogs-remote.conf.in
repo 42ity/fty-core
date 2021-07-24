@@ -1,9 +1,16 @@
-# remote audit logs
+#
+# remote auditlogs
+#
+
+# provides UDP syslog reception
+module(load="imudp")
+input(type="imudp" port="514")
+
+# customize rsyslog message prepend (date, hostname, ...)
+template(name="ForwardFormat" type="string" string="%hostname% %msg%")
+
+# fwd to remote server
+*.* @${RSYSLOG_SERVER_ADDRESS}:${RSYSLOG_SERVER_PORT};ForwardFormat
 
 #*.* /var/log/debugfmt;RSYSLOG_DebugFormat
 #*.* @docker-dev-1.mbt.lab.etn.com:514;ForwardFormat
-
-# disable rsyslog message prepend (date, hostname, ...)
-template(name="ForwardFormat" type="string" string="%hostname% %msg%")
-
-*.* @${RSYSLOG_SERVER_ADDRESS}:${RSYSLOG_SERVER_PORT};ForwardFormat
