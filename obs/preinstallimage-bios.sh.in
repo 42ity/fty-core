@@ -1481,7 +1481,6 @@ usermod -G bios-audit -a www-data
 
 # /var/log/app-audit directory
 mkdir -p /var/log/app-audit || true
-touch /var/log/app-audit/metrics-audit.log || true
 touch /var/log/app-audit/alarms-audit.log || true
 touch /var/log/app-audit/email-audit.log || true
 touch /var/log/app-audit/www-audit.log || true
