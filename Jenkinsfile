@@ -138,6 +138,11 @@ pipeline {
                             checkout scm
                         }
                         milestone ordinal: 30, label: "${env.JOB_NAME}@${env.BRANCH_NAME}"
+                        script {
+                            buildenv.setExtraEnvVariables()
+                            buildenv.listInstalledPackage()
+                            buildenv.checkDebianBuildDependencies()
+                        }
                     }
         }
         stage ('prepare') {
@@ -317,22 +322,6 @@ pipeline {
                     steps {
                         script {
                             deploy.pushToOBS()
-                        }
-                    }
-                }
-                stage ("Push to Aptly") {
-                    when {
-                        anyOf {
-                            branch 'master'
-                            branch "release/*"
-                            branch 'FTY'
-                            branch '*-FTY-master'
-                            branch '*-FTY'
-                        }
-                    }
-                    steps {
-                        script {
-                            deploy.pushToDebianRepository()
                         }
                     }
                 }
