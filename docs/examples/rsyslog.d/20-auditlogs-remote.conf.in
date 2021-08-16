@@ -3,14 +3,15 @@
 #
 
 # provides UDP syslog reception
+# see docs/examples/ftylog.d/10-ftylog.cfg
 module(load="imudp")
 input(type="imudp" port="514")
 
 # customize rsyslog message prepend (date, hostname, ...)
-template(name="ForwardFormat" type="string" string="%hostname% %msg%")
+template(name="ForwardFormatMsg" type="string" string="%hostname% %msg%")
 
-# fwd to remote server
-*.* @${RSYSLOG_SERVER_ADDRESS}:${RSYSLOG_SERVER_PORT};ForwardFormat
+# forward msg to remote server
+*.* @${RSYSLOG_SERVER_ADDRESS}:${RSYSLOG_SERVER_PORT};ForwardFormatMsg
 
+# debug (log messages to file)
 #*.* /var/log/debugfmt;RSYSLOG_DebugFormat
-#*.* @docker-dev-1.mbt.lab.etn.com:514;ForwardFormat
