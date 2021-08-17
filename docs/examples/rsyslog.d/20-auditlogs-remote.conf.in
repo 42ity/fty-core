@@ -1,17 +1,34 @@
-#
-# remote auditlogs
-#
+### remote auditlogs
 
 # provides UDP syslog reception
-# see docs/examples/ftylog.d/10-ftylog.cfg
 module(load="imudp")
 input(type="imudp" port="514")
 
+# debug
+#*.* /var/log/debugfmt;RSYSLOG_DebugFormat
+
+# avoid export of non audit logs
+if (not ($msgid startswith "audit/"))
+then {
+    stop
+}
+
 # customize rsyslog message prepend (date, hostname, ...)
-template(name="ForwardFormatMsg" type="string" string="%hostname% %msg%")
+template(name="ForwardFormat" type="string" string="%hostname% %msg%")
+#template(name="ForwardFormatRaw" type="string" string="%hostname% %rawmsg%")
 
 # forward msg to remote server
-*.* @${RSYSLOG_SERVER_ADDRESS}:${RSYSLOG_SERVER_PORT};ForwardFormatMsg
+action(
+    type="omfwd"
+    template="ForwardFormat"
+    target="${RSYSLOG_SERVER_ADDRESS}"
+    protocol="udp"
+    port="${RSYSLOG_SERVER_PORT}"
 
-# debug (log messages to file)
-#*.* /var/log/debugfmt;RSYSLOG_DebugFormat
+    #protocol="tcp"
+    #port="6514"
+    #StreamDriver="ossl"
+    #StreamDriverMode="1" # run driver in TLS-only mode
+    #StreamDriverAuthMode="anon"
+    #StreamDriverPermittedPeers="*"
+)
