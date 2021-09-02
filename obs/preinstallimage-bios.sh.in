@@ -112,6 +112,7 @@ groupadd -f -g 8001 bios-user
 groupadd -f -g 8000 bios-dash
 groupadd -f -g 8004 bios-infra
 groupadd -f -g 7999 bios-logread
+groupadd -f -g 7998 bios-audit
 
 useradd -u 1000 -m bios -N -g bios-infra -G dialout -s /bin/bash
 mkdir -p /home/bios && chown bios:bios-infra /home/bios
@@ -261,11 +262,8 @@ done
 #42ity log configuration file
 mkdir -p /etc/fty/
 cp /usr/share/fty/examples/config/ftylog.d/10-ftylog.cfg /etc/fty/ftylog.cfg
-cp /usr/share/fty/examples/config/ftylog.d/20-wwwlog.cfg /etc/fty/wwwlog.cfg
 chmod 644 /etc/fty/ftylog.cfg
-chmod 644 /etc/fty/wwwlog.cfg
 chown www-data /etc/fty/ftylog.cfg
-chown www-data /etc/fty/wwwlog.cfg
 
 #42ity enable/disable root account script
 chown root /usr/libexec/fty/enable-root-account
@@ -287,6 +285,7 @@ echo '/dev/mtd3 0x00000 0x40000 0x40000' > /etc/fw_env.config
 sed -e 's|.*RuntimeMaxFileSize.*|RuntimeMaxFileSize=10M|' \
     -e 's|.*Storage.*|Storage=volatile|' \
     -e 's|.*SyncIntervalSec.*|SyncIntervalSec=1s|' \
+    -e 's|.*ForwardToSyslog.*|ForwardToSyslog=no|' \
     -i /etc/systemd/journald.conf
 
 if [ "`uname -m`" = x86_64 ]; then
@@ -1476,13 +1475,18 @@ chgrp bios-logread /var/log/messages || true
 chmod 640 /var/log/commands.log || true
 chgrp bios-logread /var/log/commands.log || true
 
+# give access to bios-audit group
+usermod -G bios-audit -a bios
+usermod -G bios-audit -a www-data
+
 # /var/log/app-audit directory
 mkdir -p /var/log/app-audit || true
-touch /var/log/app-audit/metrics-audit.log || true
 touch /var/log/app-audit/alarms-audit.log || true
-chown -R bios:www-data /var/log/app-audit || true
-chmod 771 /var/log/app-audit || true
-find /var/log/app-audit -type f -exec chmod 662 '{}' \; || true
+touch /var/log/app-audit/email-audit.log || true
+touch /var/log/app-audit/www-audit.log || true
+chown -R bios:bios-audit /var/log/app-audit || true
+chmod 775 /var/log/app-audit || true
+find /var/log/app-audit -type f -exec chmod 664 '{}' \; || true
 
 # By default, when MySQL first starts it creates the log dir...
 # but one only accessible to itself:
