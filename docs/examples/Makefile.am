@@ -26,8 +26,7 @@ examplecfgrsyslogddir	= $(datarootdir)/@PACKAGE@/examples/config/rsyslog.d
 examplecfgrsyslogd_DATA	= \
 			  rsyslog.d/05-bash.conf \
 			  rsyslog.d/08-ipc-remote.conf \
-			  rsyslog.d/10-ipc.conf \
-			  rsyslog.d/20-auditlogs-remote.conf.in
+			  rsyslog.d/10-ipc.conf
 
 exampleprofiledir	= $(datarootdir)/@PACKAGE@/examples/config/profile.d
 exampleprofile_DATA     = \
