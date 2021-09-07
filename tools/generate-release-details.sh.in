@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (C) 2014-2020 Eaton
+# Copyright (C) 2014-2021 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -86,6 +86,8 @@ export LANG LC_ALL TZ
 #                           was used to create the miniroot (kernel, grub, ...)
 #   HWD_VENDOR HWD_CATALOG_NB HWD_REV HWD_SERIAL_NB
 #                       ^^^ OEM details about hardware for this system
+#   SW_VENDOR
+#                       ^^^ Software OEM details (re-branded customized builds)
 # For now (code to be ported) we also expect pre-parsed markup in
 #   BIOSINFO_UBOOT          BIOSINFO_UIMAGE
 #   BIOSINFO_OVALOADER (handled for consistency but not really expected)
@@ -225,6 +227,14 @@ if [ -s "${ALTROOT}/usr/share/bios-web/version.txt" ]; then
         esac 2>/dev/null
         [ -z "$WEBUI_BTS" ] && WEBUI_BTS="timestamp:N/A"
 
+if [ -n "$SW_VENDOR" ] && [ "$SW_VENDOR" != "eaton" ] ; then
+        BIOSINFO="$BIOSINFO
+Software release branded for vendor: $SW_VENDOR"
+else
+        # Let the JSON expose the default, not-customized/branded build
+        [ -n "$SW_VENDOR" ] || SW_VENDOR="eaton"
+fi
+
         BIOSINFO="$BIOSINFO
 42ity Web-UI version:   $WEBUI_ID @ $WEBUI_TS"
 fi
@@ -352,6 +362,7 @@ cat <<EOF > "${ALTROOT}/etc/release-details.json"
         "ovaloader-padded-checksum-sha256":  "$FW_OVALOADERPART_CSDEVPAD_SHA256",
         "ovaloader-padded-checksum-cksum":   "$FW_OVALOADERPART_CSDEVPAD_CKSUM",
         "ovaloader-padded-bytes":            "$FW_OVALOADERPART_SIZE",
+        "software-vendor":               "$SW_VENDOR",
         "hardware-vendor":               "$HWD_VENDOR",
         "hardware-catalog-number":       "$HWD_CATALOG_NB",
         "hardware-part-number":          "$HWD_PART_NB",
