@@ -7,9 +7,12 @@ PartOf=bios-pre-eula.target
 [Service]
 Type=simple
 Restart=always
+# Note: web server starts as root to grab ports, and changes to www-data
+# account (or whoever is configured in the instance's copy of tntnet.xml)
 User=root
 Group=root
 UMask=0000
+SyslogIdentifier=%N
 EnvironmentFile=-@prefix@/share/bios/etc/default/bios
 EnvironmentFile=-@prefix@/share/bios/etc/default/bios__%n.conf
 EnvironmentFile=-@prefix@/share/fty/etc/default/fty

@@ -6,6 +6,7 @@ After=rsyslogd.service syslog.socket
 
 [Service]
 Type=simple
+SyslogIdentifier=%N
 ExecStart=@libexecdir@/@PACKAGE@/verify-fs
 
 [Install]
