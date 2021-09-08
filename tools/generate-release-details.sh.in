@@ -85,7 +85,11 @@ export LANG LC_ALL TZ
 #                           BIOSINFO_OVALOADER_DISTRO conveys which OS release
 #                           was used to create the miniroot (kernel, grub, ...)
 #   HWD_VENDOR HWD_CATALOG_NB HWD_REV HWD_SERIAL_NB
-#                       ^^^ OEM details about hardware for this system
+#                       ^^^ OEM details about hardware for this system, this
+#                           can be useful for HW-dependent run-time tweaks.
+#                           NOTE: For OVA image releases this can instead
+#                           refer to the branded software vendor, as used by
+#                           e.g. licensing checks.
 # For now (code to be ported) we also expect pre-parsed markup in
 #   BIOSINFO_UBOOT          BIOSINFO_UIMAGE
 #   BIOSINFO_OVALOADER (handled for consistency but not really expected)
