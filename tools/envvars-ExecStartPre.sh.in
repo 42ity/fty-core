@@ -89,6 +89,8 @@ JSONSH="@datadir@/@PACKAGE@/scripts/JSON.sh"
 OSIMAGE_BASENAME="OS image name is not available"
 OSIMAGE_DISTRO="" ### OS base distribution name is not available (?)
 OSIMAGE_IMGQALEVEL="" ### QA level or feature image tag for development, version for release images
+OSIMAGE_VENDOR="" ### Who released the software
+HARDWARE_VENDOR="" ### Who produced the (virtual or physical) hardware
 HARDWARE_CATALOG_NUMBER="Hardware catalog number is not available"
 HARDWARE_SPEC_REVISION="Hardware spec revision is not available"
 HARDWARE_SERIAL_NUMBER="Hardware serial number is not available"
@@ -134,6 +136,8 @@ if [[ -x "$JSONSH" ]] ; then
     TMPSTR="$(get_detail "osimage-distro")" && \
         OSIMAGE_DISTRO="$TMPSTR" || true
 
+    TMPSTR="$(get_detail "hardware-vendor")" && \
+        HARDWARE_VENDOR="$TMPSTR" || true
     TMPSTR="$(get_detail "hardware-catalog-number")" && \
         HARDWARE_CATALOG_NUMBER="$TMPSTR" || true
     TMPSTR="$(get_detail "hardware-spec-revision")" && \
@@ -146,9 +150,14 @@ if [[ -x "$JSONSH" ]] ; then
 fi
 
 for F in "/mnt/root-ro/etc/update-rc3.d/image-os-type.conf" "/etc/update-rc3.d/image-os-type.conf" ; do
-    [ -z "$OSIMAGE_IMGQALEVEL" ] || break
+    [ -n "$OSIMAGE_IMGQALEVEL" ] || \
     if [ -s "$F" ]; then
         OSIMAGE_IMGQALEVEL="`egrep '^IMGQALEVEL=' "$F" | sed -e 's,^IMGQALEVEL=,,' -e 's,^"\(.*\)"$,\1,' -e "s,^'\(.*\)'\$,\1,"`"
+    fi
+
+    [ -n "$OSIMAGE_VENDOR" ] || \
+    if [ -s "$F" ]; then
+        OSIMAGE_VENDOR="`egrep '^IMAGE_VENDOR=' "$F" | sed -e 's,^IMAGE_VENDOR=,,' -e 's,^"\(.*\)"$,\1,' -e "s,^'\(.*\)'\$,\1,"`"
     fi
 done
 
@@ -243,6 +252,8 @@ case "$OUTFMT" in
 OSIMAGE_BASENAME='${OSIMAGE_BASENAME}'
 OSIMAGE_DISTRO='${OSIMAGE_DISTRO}'
 OSIMAGE_IMGQALEVEL='${OSIMAGE_IMGQALEVEL}'
+OSIMAGE_VENDOR='${OSIMAGE_VENDOR}'
+HARDWARE_VENDOR='${HARDWARE_VENDOR}'
 HARDWARE_CATALOG_NUMBER='${HARDWARE_CATALOG_NUMBER}'
 HARDWARE_SPEC_REVISION='${HARDWARE_SPEC_REVISION}'
 HARDWARE_SERIAL_NUMBER='${HARDWARE_SERIAL_NUMBER}'
@@ -266,6 +277,8 @@ EOF
 set @ENV_OSIMAGE_BASENAME='${OSIMAGE_BASENAME}';
 set @ENV_OSIMAGE_DISTRO='${OSIMAGE_DISTRO}';
 set @ENV_OSIMAGE_IMGQALEVEL='${OSIMAGE_IMGQALEVEL}';
+set @ENV_OSIMAGE_VENDOR='${OSIMAGE_VENDOR}';
+set @ENV_HARDWARE_VENDOR='${HARDWARE_VENDOR}';
 set @ENV_HARDWARE_CATALOG_NUMBER='${HARDWARE_CATALOG_NUMBER}';
 set @ENV_HARDWARE_SPEC_REVISION='${HARDWARE_SPEC_REVISION}';
 set @ENV_HARDWARE_SERIAL_NUMBER='${HARDWARE_SERIAL_NUMBER}';
