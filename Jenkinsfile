@@ -314,6 +314,7 @@ pipeline {
                         anyOf {
                             branch 'master'
                             branch "release/*"
+                            branch "featureimage/*"
                             branch 'FTY'
                             branch '*-FTY-master'
                             branch '*-FTY'
