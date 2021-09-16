@@ -1360,7 +1360,7 @@ dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n
 
 # Create the CSV Legal packages manifest, to display from the Web UI
 # copyright files path are adapted to Web UI display!
-CSV_FILE_PATH="/usr/share/doc/ipc-packages.csv"
+CSV_FILE_PATH="/usr/share/doc/packages-list.csv"
 rm -f ${CSV_FILE_PATH}
 touch ${CSV_FILE_PATH}
 dpkg-query -W -f='${db:Status-Abbrev};${source:Package};${Version};${binary:Package}\n' | grep '^i' | cut -d';' -f2,3,4 | sort -u > ./pkg-list.log
