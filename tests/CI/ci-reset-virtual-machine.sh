@@ -256,10 +256,6 @@ check_cksum() {
 check_manifest_checksum() {
 	# If we have a manifest file that includes checksum fields (SHA256 by
 	# default), test if that matches (if not disabled by container user)
-	if [ "$REQUIRED_TRUST_MANIFEST" != true ]; then
-		logmsg_warn "REQUIRED_TRUST_MANIFEST='$REQUIRED_TRUST_MANIFEST' so skipping check_manifest_checksum()"
-		return 0
-	fi
 
 	if [ -z "$JSONSH" ]; then
 		logmsg_warn "No copy of JSON.sh was found, so skipping check_manifest_checksum()"
@@ -286,6 +282,10 @@ check_manifest_checksum() {
 			LENACT="`ls -lad "$FILE_DATA" | awk '{print $5}'`"
 			if [ x"$LENEXP" != x"$LENACT" ]; then
 				logmsg_error "Checksum (CRC/cksum) validation of '$FILE_DATA' against '$FILE_CKSUM' FAILED the length test!"
+				if [ "$REQUIRED_TRUST_MANIFEST" != true ]; then
+					logmsg_warn "REQUIRED_TRUST_MANIFEST='$REQUIRED_TRUST_MANIFEST' so not failing due to check_manifest_checksum()"
+					return 0
+				fi
 				return 1
 			fi
 		fi
@@ -311,6 +311,10 @@ check_manifest_checksum() {
 		MANCSCT="`$MANALGO < "$FILE_DATA" | awk '{print $1}'`" && \
 		if [ x"$MANCSEXP" != x"$MANCSACT" ]; then
 			logmsg_error "Checksum ($MANALGO) validation of '$FILE_DATA' against '$FILE_CKSUM' FAILED!"
+			if [ "$REQUIRED_TRUST_MANIFEST" != true ]; then
+				logmsg_warn "REQUIRED_TRUST_MANIFEST='$REQUIRED_TRUST_MANIFEST' so not failing due to check_manifest_checksum()"
+				return 0
+			fi
 			return 1
 		fi
 		logmsg_info "Checksum ($MANALGO) validation of '$FILE_DATA' against '$FILE_CKSUM' SUCCEEDED!"
