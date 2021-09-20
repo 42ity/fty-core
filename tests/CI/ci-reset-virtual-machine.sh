@@ -166,6 +166,14 @@ if [ -x "$JSONSH" ] ; then
 	fi
 fi
 
+remove_image() {
+	# Remove files related to OS image(s):
+	while [ $# -gt 0 ] ; do
+		rm -f "$1" "$1.md5" "$1.sha256" "$1.cksum" "$1-manifest.json" "$1-manifest.json.p7s"
+		shift
+	done
+}
+
 check_md5sum() {
 	# Compares actual checksum of file "$1" with value recorded in file "$2"
 	FILE_DATA="$1"
@@ -342,7 +350,8 @@ ensure_md5sum() {
 	# A destructive wrapper of check_md5sum(), destroys bad downloads
 	if ! check_md5sum "$@" ; then
 		logmsg_warn "Removing broken file: '$1'"
-		rm -f "$1" "$1.md5" "$1.sha256" "$1.cksum" "$1-manifest.json" "$1-manifest.json.p7s" "$2"
+		remove_image "$1"
+		rm -f "$2"
 		return 1
 	fi
 	return 0
@@ -352,7 +361,8 @@ ensure_sha256sum() {
 	# A destructive wrapper of check_sha256sum(), destroys bad downloads
 	if ! check_sha256sum "$@" ; then
 		logmsg_warn "Removing broken file: '$1'"
-		rm -f "$1" "$1.md5" "$1.sha256" "$1.cksum" "$1-manifest.json" "$1-manifest.json.p7s" "$2"
+		remove_image "$1"
+		rm -f "$2"
 		return 1
 	fi
 	return 0
@@ -362,7 +372,8 @@ ensure_cksum() {
 	# A destructive wrapper of check_cksum(), destroys bad downloads
 	if ! check_cksum "$@" ; then
 		logmsg_warn "Removing broken file: '$1'"
-		rm -f "$1" "$1.md5" "$1.sha256" "$1.cksum" "$1-manifest.json" "$1-manifest.json.p7s" "$2"
+		remove_image "$1"
+		rm -f "$2"
 		return 1
 	fi
 	return 0
@@ -372,7 +383,8 @@ ensure_manifest_checksum() {
 	# A destructive wrapper of check_manifest_checksum(), destroys bad downloads
 	if ! check_manifest_checksum "$@" ; then
 		logmsg_warn "Removing broken file: '$1'"
-		rm -f "$1" "$1.md5" "$1.sha256" "$1.cksum" "$1-manifest.json" "$1-manifest.json.p7s" "$2"
+		remove_image "$1"
+		rm -f "$2"
 		return 1
 	fi
 	return 0
@@ -382,7 +394,8 @@ ensure_manifestSig_checksum() {
 	# A destructive wrapper of check_manifest_checksum(), destroys bad downloads
 	if ! check_manifestSig_checksum "$@" ; then
 		logmsg_warn "Removing broken file: '$1'"
-		rm -f "$1" "$1.md5" "$1.sha256" "$1.cksum" "$1-manifest.json" "$1-manifest.json.p7s" "$2"
+		remove_image "$1"
+		rm -f "$2"
 		return 1
 	fi
 	return 0
@@ -407,7 +420,7 @@ ensure_checksums() {
 						rm -f "$F"
 					else
 						logmsg_warn "Removing broken file: '$F' and its checksums"
-						rm -f "$F" "$F.md5" "$F.sha256" "$F.cksum" "$F-manifest.json" "$F-manifest.json.p7s"
+						remove_image "$F"
 					fi
 					RET_ensure_checksums=1
 				fi
@@ -432,7 +445,7 @@ cleanup_script() {
 
 cleanup_wget() {
 	[ -z "$IMAGE" ] && return 0
-	[ "$WGET_RES" != 0 ] && rm -f "$IMAGE" "$IMAGE.md5" "$IMAGE.sha256" "$IMAGE.cksum" "$IMAGE-manifest.json" "$IMAGE-manifest.json.p7s"
+	[ "$WGET_RES" != 0 ] && remove_image "$IMAGE"
 	rm -f "$IMAGE.lock"
 }
 
