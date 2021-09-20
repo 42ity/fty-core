@@ -150,8 +150,8 @@ usage() {
 }
 
 # First preference after explicit envvar: git source; last: PATH
-[ -z "$JSONSH" -o ! -x "$JSONSH" ] && JSONSH="`dirname $0`/JSON.sh"
-[ -z "$JSONSH" -o ! -x "$JSONSH" ] && JSONSH="`dirname $0`/../../tools/JSON.sh"
+[ -z "$JSONSH" -o ! -x "$JSONSH" ] && { JSONSH="$(cd "`dirname $0`" && pwd)/JSON.sh" || JSONSH="" ; }
+[ -z "$JSONSH" -o ! -x "$JSONSH" ] && { JSONSH="$(cd "`dirname $0`" && pwd)/../../tools/JSON.sh" || JSONSH="" ; }
 [ -z "$JSONSH" -o ! -x "$JSONSH" ] && JSONSH="/usr/share/fty/scripts/JSON.sh"
 [ -z "$JSONSH" -o ! -x "$JSONSH" ] && JSONSH="/usr/share/bios/scripts/JSON.sh"
 [ -z "$JSONSH" -o ! -x "$JSONSH" ] && { JSONSH="`command -v JSON.sh`" || JSONSH=""; }
@@ -164,6 +164,8 @@ if [ -x "$JSONSH" ] ; then
 	else
 		get_a_string_arg() { "$JSONSH" --get-string "$1" ; }
 	fi
+else
+	JSONSH=""
 fi
 
 remove_image() {
@@ -1442,7 +1444,7 @@ fi
 # Populate a HWD_VENDOR for release-details.json below, which impacts the
 # licensing and some similar checks.
 if [ -s "${OSIMAGE_FILENAME}-manifest.json" ] ; then
-	if [ -x "$JSONSH" ]; then
+	if [ -n "$JSONSH" ]; then
 		_TMPSTR="$(get_a_string_arg '"application","Vendor"' < "${OSIMAGE_FILENAME}-manifest.json")" \
 		&& [ -n "${_TMPSTR}" ] || _TMPSTR=""
 
