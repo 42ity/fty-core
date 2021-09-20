@@ -1422,6 +1422,19 @@ else
 	OSIMAGE_CHECKSUM_CKSUM="`cksum < "$OSIMAGE_FILENAME" | awk '{print $1}'`"
 fi
 
+# Populate a HWD_VENDOR for release-details.json below, which impacts the
+# licensing and some similar checks.
+if [ -s "${OSIMAGE_FILENAME}-manifest.json" ] ; then
+	if [ -x "$JSONSH" ]; then
+		_TMPSTR="$(get_a_string_arg '"application","Vendor"' < "${OSIMAGE_FILENAME}-manifest.json")" \
+		&& [ -n "${_TMPSTR}" ] || _TMPSTR=""
+
+		if [ -n "${_TMPSTR}" ] ; then
+			export HWD_VENDOR="`echo "$_TMPSTR" | tr 'a-z' 'A-Z'`"
+		fi
+	fi # else read file directly and make assumptions about its structure?
+fi
+
 logmsg_info "Bind-mount kernel modules from the host OS"
 mkdir -p "${ALTROOT}/lib/modules"
 mount -o rbind "/lib/modules" "${ALTROOT}/lib/modules"
@@ -1811,6 +1824,7 @@ if [ -n "${GEN_REL_DETAILS}" -a -s "${GEN_REL_DETAILS}" -a -x "${GEN_REL_DETAILS
 	export FW_UBOOTPART_CSDEVPAD   FW_UBOOTPART_SIZE
 	export FW_UIMAGEPART_CSDEV     FW_UIMAGEPART_BYTES
 	export FW_UIMAGEPART_CSDEVPAD  FW_UIMAGEPART_SIZE
+	export HWD_VENDOR      HWD_MFGR
 	export HWD_CATALOG_NB  HWD_REV HWD_SERIAL_NB
 
 	# Provide a default if caller did not DEFINE one
