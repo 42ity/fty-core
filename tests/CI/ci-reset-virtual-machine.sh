@@ -1452,7 +1452,11 @@ if [ -s "${OSIMAGE_FILENAME}-manifest.json" ] ; then
 			HWD_VENDOR="`echo "$_TMPSTR" | tr 'a-z' 'A-Z'`"
 			export HWD_VENDOR
 		fi
-	fi # else read file directly and make assumptions about its structure?
+	else # Read file directly and make assumptions about its structure?
+		HWD_VENDOR="`egrep '"Vendor" *:' < "${OSIMAGE_FILENAME}-manifest.json" | sed -e 's,^.*"Vendor" *: *,,' -e 's/, *$//' -e 's,^"\(.*\)"$,\1,' | tr 'a-z' 'A-Z'`" \
+		&& export HWD_VENDOR \
+		|| HWD_VENDOR=""
+	fi
 fi
 
 logmsg_info "Bind-mount kernel modules from the host OS"
