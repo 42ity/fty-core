@@ -308,7 +308,7 @@ check_manifest_checksum() {
 		esac
 
 		logmsg_info "Validating OS image file '$FILE_DATA' against its '$MANALGO' type checksum from manifest '$FILE_CKSUM'..."
-		MANCSCT="`$MANALGO < "$FILE_DATA" | awk '{print $1}'`" && \
+		MANCSACT="`$MANALGO < "$FILE_DATA" | awk '{print $1}'`" && \
 		if [ x"$MANCSEXP" != x"$MANCSACT" ]; then
 			logmsg_error "Checksum ($MANALGO) validation of '$FILE_DATA' against '$FILE_CKSUM' FAILED!"
 			if [ "$REQUIRED_TRUST_MANIFEST" != true ]; then
@@ -994,11 +994,11 @@ if [ "$ATTEMPT_DOWNLOAD" = yes ] || [ "$ATTEMPT_DOWNLOAD" = auto ] ; then
 		&& mv -f "$IMAGE.cksum.__WRITING__" "$IMAGE.cksum" || true
 
 	logmsg_info "Downloading $IMAGE_URL-manifest.json ..."
-	wget -q "$IMAGE_URL.-manifest.json" -O "$IMAGE.-manifest.json.__WRITING__" \
-		&& mv -f "$IMAGE.-manifest.json.__WRITING__" "$IMAGE.-manifest.json" || true
+	wget -q "$IMAGE_URL-manifest.json" -O "$IMAGE-manifest.json.__WRITING__" \
+		&& mv -f "$IMAGE-manifest.json.__WRITING__" "$IMAGE-manifest.json" || true
 	logmsg_info "Downloading $IMAGE_URL-manifest.json.p7s ..."
-	wget -q "$IMAGE_URL.-manifest.json.p7s" -O "$IMAGE.-manifest.json.p7s.__WRITING__" \
-		&& mv -f "$IMAGE.-manifest.json.p7s.__WRITING__" "$IMAGE.-manifest.json.p7s" || true
+	wget -q "$IMAGE_URL-manifest.json.p7s" -O "$IMAGE-manifest.json.p7s.__WRITING__" \
+		&& mv -f "$IMAGE-manifest.json.p7s.__WRITING__" "$IMAGE-manifest.json.p7s" || true
 
 	TRY_WGET=yes
 	if [ -s "$IMAGE" ] ; then
