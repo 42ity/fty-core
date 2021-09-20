@@ -1449,7 +1449,8 @@ if [ -s "${OSIMAGE_FILENAME}-manifest.json" ] ; then
 		&& [ -n "${_TMPSTR}" ] || _TMPSTR=""
 
 		if [ -n "${_TMPSTR}" ] ; then
-			export HWD_VENDOR="`echo "$_TMPSTR" | tr 'a-z' 'A-Z'`"
+			HWD_VENDOR="`echo "$_TMPSTR" | tr 'a-z' 'A-Z'`"
+			export HWD_VENDOR
 		fi
 	fi # else read file directly and make assumptions about its structure?
 fi
