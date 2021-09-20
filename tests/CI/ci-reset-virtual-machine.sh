@@ -135,6 +135,8 @@ usage() {
 	echo "                         preparing the image, to avoid use while not ready"
 	echo "    --for-jenkins(=HOST) Alias to --block-jenkins(=HOST) --add-user=abuild"
 	echo "                         --install-dev --with-java8-jre"
+	echo "    --required-trust-manifest     If a manifest checksum or signatire does not"
+	echo "    --no-required-trust-manifest  match the OS image content, is this fatal?"
 	echo "    halt | umount        Alias to --destroy-only"
 	echo "    wipe                 Alias to --stop-only"
 	echo "    deploy               Alias to --deploy-only"
@@ -146,6 +148,23 @@ usage() {
 	echo "    reboot               Alias to update with --no-download"
 	echo "    -h|--help            print this help"
 }
+
+# First preference after explicit envvar: git source; last: PATH
+[ -z "$JSONSH" -o ! -x "$JSONSH" ] && JSONSH="`dirname $0`/JSON.sh"
+[ -z "$JSONSH" -o ! -x "$JSONSH" ] && JSONSH="`dirname $0`/../../tools/JSON.sh"
+[ -z "$JSONSH" -o ! -x "$JSONSH" ] && JSONSH="/usr/share/fty/scripts/JSON.sh"
+[ -z "$JSONSH" -o ! -x "$JSONSH" ] && JSONSH="/usr/share/bios/scripts/JSON.sh"
+[ -z "$JSONSH" -o ! -x "$JSONSH" ] && { JSONSH="`command -v JSON.sh`" || JSONSH=""; }
+if [ -x "$JSONSH" ] ; then
+	if [ -n "${BASH-}" ]; then
+		JSONSH_SOURCED=yes
+		export JSONSH_SOURCED
+		. "$JSONSH"
+		get_a_string_arg() { jsonsh_cli_subshell --get-string "$1" ; }
+	else
+		get_a_string_arg() { "$JSONSH" --get-string "$1" ; }
+	fi
+fi
 
 check_md5sum() {
 	# Compares actual checksum of file "$1" with value recorded in file "$2"
@@ -234,11 +253,92 @@ check_cksum() {
 	return 0
 }
 
+check_manifest_checksum() {
+	# If we have a manifest file that includes checksum fields (SHA256 by
+	# default), test if that matches (if not disabled by container user)
+	if [ "$REQUIRED_TRUST_MANIFEST" != true ]; then
+		logmsg_warn "REQUIRED_TRUST_MANIFEST='$REQUIRED_TRUST_MANIFEST' so skipping check_manifest_checksum()"
+		return 0
+	fi
+
+	if [ -z "$JSONSH" ]; then
+		logmsg_warn "No copy of JSON.sh was found, so skipping check_manifest_checksum()"
+		return 0
+	fi
+
+	# Compares actual checksum of file "$1" with value recorded in file "$2"
+	FILE_DATA="$1"
+	FILE_CKSUM="$2"
+	case "$FILE_DATA" in
+		/*) ;;
+		*) FILE_DATA="`pwd`/$FILE_DATA" ;;
+	esac
+	case "$FILE_CKSUM" in
+		/*) ;;
+		*) FILE_CKSUM="`pwd`/$FILE_CKSUM" ;;
+	esac
+	if [ -s "$FILE_DATA" -a -s "$FILE_CKSUM" ]; then
+
+		LENEXP="$(get_a_string_arg '"application","Size"' < "$FILE_CKSUM")" \
+		&& [ -n "${LENEXP}" ] && [ "$LENEXP" -ge 0 ] || LENEXP=""
+		if [ -n "${LENEXP}" ] ; then
+			logmsg_info "Validating OS image file '$FILE_DATA' against its manifest length from '$FILE_CKSUM'..."
+			LENACT="`ls -lad "$FILE_DATA" | awk '{print $5}'`"
+			if [ x"$LENEXP" != x"$LENACT" ]; then
+				logmsg_error "Checksum (CRC/cksum) validation of '$FILE_DATA' against '$FILE_CKSUM' FAILED the length test!"
+				return 1
+			fi
+		fi
+
+		# NOTE: There is a reserved field ShaVersion that may later
+		# mean the checksum algorithm, if not sha256
+		MANALGO="$(get_a_string_arg '"application","ShaVersion"' < "$FILE_CKSUM")" \
+		&& [ -n "${MANALGO}" ] || MANALGO="sha256sum"
+
+		MANCSEXP="$(get_a_string_arg '"application","ShaChecksum"' < "$FILE_CKSUM")" \
+		&& [ -n "${MANCSEXP}" ] || MANCSEXP=""
+
+		case "$MANALGO" in
+			[Ss][Hh][Aa]1|[Ss][Hh][Aa]1sum|[Ss][Hh][Aa]-1) MANALGO="sha1sum" ;;
+			[Ss][Hh][Aa]256|[Ss][Hh][Aa]256sum|[Ss][Hh][Aa]-256) MANALGO="sha256sum" ;;
+			[Ss][Hh][Aa]512|[Ss][Hh][Aa]512sum|[Ss][Hh][Aa]-512) MANALGO="sha512sum" ;;
+			[Mm][Dd]5|[Mm][Dd]5sum) MANALGO="md5sum" ;;
+			*)  logmsg_warn "Unsupported ShaVersion='${MANALGO}' in manifest file, skipping the checksum test"
+			    return 0 ;;
+		esac
+
+		logmsg_info "Validating OS image file '$FILE_DATA' against its '$MANALGO' type checksum from manifest '$FILE_CKSUM'..."
+		MANCSCT="`$MANALGO < "$FILE_DATA" | awk '{print $1}'`" && \
+		if [ x"$MANCSEXP" != x"$MANCSACT" ]; then
+			logmsg_error "Checksum ($MANALGO) validation of '$FILE_DATA' against '$FILE_CKSUM' FAILED!"
+			return 1
+		fi
+		logmsg_info "Checksum ($MANALGO) validation of '$FILE_DATA' against '$FILE_CKSUM' SUCCEEDED!"
+		return 0
+
+	fi
+
+	logmsg_warn "Checksum+Length validation of '$FILE_DATA' against manifest '$FILE_CKSUM' SKIPPED (at least one of the files is missing or empty)"
+	return 0
+}
+
+check_manifestSig_checksum() {
+	# If we have trusted CA(s) for the signer of the OSIMAGE manifest,
+	# check if it matches (if not disabled by container user)
+	if [ "$REQUIRED_TRUST_MANIFEST" != true ]; then
+		logmsg_warn "REQUIRED_TRUST_MANIFEST='$REQUIRED_TRUST_MANIFEST' so skipping check_manifestSig_checksum()"
+		return 0
+	fi
+
+	logmsg_warn "SKIP check_manifestSig_checksum(): not implemented yet"
+	return 0
+}
+
 ensure_md5sum() {
 	# A destructive wrapper of check_md5sum(), destroys bad downloads
 	if ! check_md5sum "$@" ; then
 		logmsg_warn "Removing broken file: '$1'"
-		rm -f "$1" "$1.md5" "$1.sha256" "$1.cksum" "$2"
+		rm -f "$1" "$1.md5" "$1.sha256" "$1.cksum" "$1-manifest.json" "$1-manifest.json.p7s" "$2"
 		return 1
 	fi
 	return 0
@@ -248,7 +348,7 @@ ensure_sha256sum() {
 	# A destructive wrapper of check_sha256sum(), destroys bad downloads
 	if ! check_sha256sum "$@" ; then
 		logmsg_warn "Removing broken file: '$1'"
-		rm -f "$1" "$1.md5" "$1.sha256" "$1.cksum" "$2"
+		rm -f "$1" "$1.md5" "$1.sha256" "$1.cksum" "$1-manifest.json" "$1-manifest.json.p7s" "$2"
 		return 1
 	fi
 	return 0
@@ -258,7 +358,27 @@ ensure_cksum() {
 	# A destructive wrapper of check_cksum(), destroys bad downloads
 	if ! check_cksum "$@" ; then
 		logmsg_warn "Removing broken file: '$1'"
-		rm -f "$1" "$1.md5" "$1.sha256" "$1.cksum" "$2"
+		rm -f "$1" "$1.md5" "$1.sha256" "$1.cksum" "$1-manifest.json" "$1-manifest.json.p7s" "$2"
+		return 1
+	fi
+	return 0
+}
+
+ensure_manifest_checksum() {
+	# A destructive wrapper of check_manifest_checksum(), destroys bad downloads
+	if ! check_manifest_checksum "$@" ; then
+		logmsg_warn "Removing broken file: '$1'"
+		rm -f "$1" "$1.md5" "$1.sha256" "$1.cksum" "$1-manifest.json" "$1-manifest.json.p7s" "$2"
+		return 1
+	fi
+	return 0
+}
+
+ensure_manifestSig_checksum() {
+	# A destructive wrapper of check_manifest_checksum(), destroys bad downloads
+	if ! check_manifestSig_checksum "$@" ; then
+		logmsg_warn "Removing broken file: '$1'"
+		rm -f "$1" "$1.md5" "$1.sha256" "$1.cksum" "$1-manifest.json" "$1-manifest.json.p7s" "$2"
 		return 1
 	fi
 	return 0
@@ -275,13 +395,15 @@ ensure_checksums() {
 				if ! check_cksum "$F" "$F.cksum" \
 				|| ! check_md5sum "$F" "$F.md5" \
 				|| ! check_sha256sum "$F" "$F.sha256" \
+				|| ! check_manifest_checksum "$F" "$F-manifest.json" \
+				|| ! check_manifestSig_checksum "$F" "$F-manifest.json.p7s" \
 				; then
 					if [ "$KEEP_CHECKSUMS" = yes ]; then
 						logmsg_warn "Removing broken file: '$F' only"
 						rm -f "$F"
 					else
 						logmsg_warn "Removing broken file: '$F' and its checksums"
-						rm -f "$F" "$F.md5" "$F.sha256" "$F.cksum"
+						rm -f "$F" "$F.md5" "$F.sha256" "$F.cksum" "$F-manifest.json" "$F-manifest.json.p7s"
 					fi
 					RET_ensure_checksums=1
 				fi
@@ -306,7 +428,7 @@ cleanup_script() {
 
 cleanup_wget() {
 	[ -z "$IMAGE" ] && return 0
-	[ "$WGET_RES" != 0 ] && rm -f "$IMAGE" "$IMAGE.md5" "$IMAGE.sha256" "$IMAGE.cksum"
+	[ "$WGET_RES" != 0 ] && rm -f "$IMAGE" "$IMAGE.md5" "$IMAGE.sha256" "$IMAGE.cksum" "$IMAGE-manifest.json" "$IMAGE-manifest.json.p7s"
 	rm -f "$IMAGE.lock"
 }
 
@@ -415,6 +537,9 @@ DOTDOMAINNAME=""
 [ -n "${START_RETRIES-}" ] && [ "${START_RETRIES-}" -gt 0 ] || START_RETRIES=1
 [ -n "${CIVM_UMOUNT_LOCK-}" ] || CIVM_UMOUNT_LOCK="/var/run/ci-reset-virtual-machine.umount.lock"
 
+# For developer/CI systems, be relaxed by default
+[ -z "$REQUIRED_TRUST_MANIFEST" ] && REQUIRED_TRUST_MANIFEST=false
+
 while [ $# -gt 0 ] ; do
 	case "$1" in
 	-m|--machine)
@@ -506,6 +631,12 @@ while [ $# -gt 0 ] ; do
 	--no-disable-bios)
 		shift
 		DISABLE_BIOS=no ;;
+	--no-required-trust-manifest)
+		shift
+		REQUIRED_TRUST_MANIFEST=false ;;
+	--required-trust-manifest) # Test that it matches?
+		shift
+		REQUIRED_TRUST_MANIFEST=true ;;
 	reboot) # New uptime for existing rootfs - no initial reconfigs to do now
 		ATTEMPT_DOWNLOAD=no
 		;&
@@ -857,6 +988,13 @@ if [ "$ATTEMPT_DOWNLOAD" = yes ] || [ "$ATTEMPT_DOWNLOAD" = auto ] ; then
 	logmsg_info "Downloading $IMAGE_URL.cksum ..."
 	wget -q "$IMAGE_URL.cksum" -O "$IMAGE.cksum.__WRITING__" \
 		&& mv -f "$IMAGE.cksum.__WRITING__" "$IMAGE.cksum" || true
+
+	logmsg_info "Downloading $IMAGE_URL-manifest.json ..."
+	wget -q "$IMAGE_URL.-manifest.json" -O "$IMAGE.-manifest.json.__WRITING__" \
+		&& mv -f "$IMAGE.-manifest.json.__WRITING__" "$IMAGE.-manifest.json" || true
+	logmsg_info "Downloading $IMAGE_URL-manifest.json.p7s ..."
+	wget -q "$IMAGE_URL.-manifest.json.p7s" -O "$IMAGE.-manifest.json.p7s.__WRITING__" \
+		&& mv -f "$IMAGE.-manifest.json.p7s.__WRITING__" "$IMAGE.-manifest.json.p7s" || true
 
 	TRY_WGET=yes
 	if [ -s "$IMAGE" ] ; then
@@ -1284,6 +1422,19 @@ else
 	OSIMAGE_CHECKSUM_CKSUM="`cksum < "$OSIMAGE_FILENAME" | awk '{print $1}'`"
 fi
 
+# Populate a HWD_VENDOR for release-details.json below, which impacts the
+# licensing and some similar checks.
+if [ -s "${OSIMAGE_FILENAME}-manifest.json" ] ; then
+	if [ -x "$JSONSH" ]; then
+		_TMPSTR="$(get_a_string_arg '"application","Vendor"' < "${OSIMAGE_FILENAME}-manifest.json")" \
+		&& [ -n "${_TMPSTR}" ] || _TMPSTR=""
+
+		if [ -n "${_TMPSTR}" ] ; then
+			export HWD_VENDOR="`echo "$_TMPSTR" | tr 'a-z' 'A-Z'`"
+		fi
+	fi # else read file directly and make assumptions about its structure?
+fi
+
 logmsg_info "Bind-mount kernel modules from the host OS"
 mkdir -p "${ALTROOT}/lib/modules"
 mount -o rbind "/lib/modules" "${ALTROOT}/lib/modules"
@@ -1673,6 +1824,7 @@ if [ -n "${GEN_REL_DETAILS}" -a -s "${GEN_REL_DETAILS}" -a -x "${GEN_REL_DETAILS
 	export FW_UBOOTPART_CSDEVPAD   FW_UBOOTPART_SIZE
 	export FW_UIMAGEPART_CSDEV     FW_UIMAGEPART_BYTES
 	export FW_UIMAGEPART_CSDEVPAD  FW_UIMAGEPART_SIZE
+	export HWD_VENDOR      HWD_MFGR
 	export HWD_CATALOG_NB  HWD_REV HWD_SERIAL_NB
 
 	# Provide a default if caller did not DEFINE one
