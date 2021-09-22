@@ -684,10 +684,19 @@ if ! egrep '^[ \t]*macs' /etc/ssh/sshd_config >/dev/null ; then
 fi
 rm /etc/ssh/*key*
 mkdir -p /etc/systemd/system
-sed -e 's|\[Service\]|[Service]\nExecStartPre=/usr/bin/ssh-keygen -A\nExecStartPre=/bin/mkdir -p /run/sshd\nExecStartPre=/bin/chmod 0755 /run/sshd\n|' \
-    -e 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/fty/fty-eula/license\nConditionPathExists=@OVERLAY_PATH@/etc/shadow|' \
-    -e 's|^\(RuntimeDirectory.*=.*\)$|#AVOID_REMOVING# \1|' \
-    < /lib/systemd/system/ssh@.service > /etc/systemd/system/ssh@.service
+for SSHD_INSTANCE_UNITFILE in \
+    /lib/systemd/system/ssh@.service \
+    /usr/lib/systemd/system/ssh@.service \
+; do
+    if [ -s "$SSHD_INSTANCE_UNITFILE" ] ; then
+        sed -e 's|\[Service\]|[Service]\nExecStartPre=/usr/bin/ssh-keygen -A\nExecStartPre=/bin/mkdir -p /run/sshd\nExecStartPre=/bin/chmod 0755 /run/sshd\n|' \
+	    -e 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/fty/fty-eula/license\nConditionPathExists=@OVERLAY_PATH@/etc/shadow|' \
+	    -e 's|^\(RuntimeDirectory.*=.*\)$|#AVOID_REMOVING# \1|' \
+	< "$SSHD_INSTANCE_UNITFILE" \
+	> /etc/systemd/system/ssh@.service \
+	&& break
+    fi
+done
 /bin/systemctl disable ssh.service
 /bin/systemctl mask ssh.service
 /bin/systemctl enable ssh.socket
