@@ -18,6 +18,6 @@ User=root
 Type=oneshot
 Restart=no
 RemainAfterExit=yes
+SyslogIdentifier=%N
 ExecStart=/bin/touch /run/bios-shutdown.target.active
 ExecStop=/bin/rm -f /run/bios-shutdown.target.active
-

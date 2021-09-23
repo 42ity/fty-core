@@ -7,3 +7,6 @@ any particular application component codebase.
 
 * It used to have more code in the beginning, but it was dispersed into other
 repositories over time, to help manageability and reduce build/test scopes.
+
+NOTES:
+* SQL scripts filename, under database/sql, must be limited to 32 characters!

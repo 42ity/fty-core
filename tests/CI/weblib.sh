@@ -429,6 +429,10 @@ CURL() {
 _api_get_token() {
     _RES_=0
     if [ -z "$_TOKEN_" ]; then
+
+        local saved_BASE_URL="$BASE_URL"
+        BASE_URL="${SUT_WEB_SCHEMA}://${SUT_HOST}:${SUT_WEB_PORT}/etn/v1"
+
         AUTH_URL="/oauth2/token"
 #        AUTH_DATA="username=${BIOS_USER}&password=${BIOS_PASSWD}&grant_type=password"
         AUTH_DATA="{\"username\":\"`jsonsh_cli -QQ "${BIOS_USER}"`\",\"password\":\"`jsonsh_cli -QQ "${BIOS_PASSWD}"`\",\"grant_type\":\"password\"}"
@@ -438,7 +442,10 @@ _api_get_token() {
         [ x"$WEBLIB_CURLFAIL_GETTOKEN" = xprotected ] && \
             curlfail_pop
         _TOKEN_="`echo "$_TOKEN_RAW_" | sed -n 's|.*\"access_token\"[[:blank:]]*:[[:blank:]]*\"\([^\"]*\)\".*|\1|p'`" || _RES_=$?
-#	echo "CI-WEBLIB-DEBUG: _api_get_token(): got ($_RES_) new token '$_TOKEN_'" >&2
+#        echo "CI-WEBLIB-DEBUG: _api_get_token(): got ($_RES_) new token '$_TOKEN_'" >&2
+
+        BASE_URL="$saved_BASE_URL"
+
     fi
     echo "$_TOKEN_"
     return $_RES_

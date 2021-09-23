@@ -84,8 +84,12 @@ export LANG LC_ALL TZ
 #                           might refer to the currently booted miniroot file.
 #                           BIOSINFO_OVALOADER_DISTRO conveys which OS release
 #                           was used to create the miniroot (kernel, grub, ...)
-#   HWD_VENDOR HWD_CATALOG_NB HWD_REV HWD_SERIAL_NB
-#                       ^^^ OEM details about hardware for this system
+#   HWD_VENDOR HWD_MFGR HWD_CATALOG_NB HWD_REV HWD_SERIAL_NB
+#                       ^^^ OEM details about hardware for this system, this
+#                           can be useful for HW-dependent run-time tweaks.
+#                           NOTE: For OVA image releases this can instead
+#                           refer to the branded software + VM bundle vendor,
+#                           as used by e.g. licensing checks.
 # For now (code to be ported) we also expect pre-parsed markup in
 #   BIOSINFO_UBOOT          BIOSINFO_UIMAGE
 #   BIOSINFO_OVALOADER (handled for consistency but not really expected)
@@ -123,7 +127,8 @@ v_echo_ts() {
 # On x86_64, we retrieve the hardware info from SMBIOS, unless it has been
 # provided via the environment
 if test -d /sys/class/dmi/id; then
-        test -n "$HWD_VENDOR" || HWD_VENDOR="$(cat /sys/class/dmi/id/sys_vendor)"
+        # Note: an empty HWD_VENDOR should stay empty, used for licensing et al
+        test -n "$HWD_MFGR" || HWD_MFGR="$(cat /sys/class/dmi/id/sys_vendor)"
         test -n "$HWD_CATALOG_NB" || HWD_CATALOG_NB="$(cat /sys/class/dmi/id/product_name)"
         test -n "$HWD_REV" || HWD_REV="$(cat /sys/class/dmi/id/product_version)"
         # VMware says "None" here
@@ -241,9 +246,9 @@ $BIOSINFO_UIMAGE"
         BIOSINFO="$BIOSINFO
 $BIOSINFO_OVALOADER"
 
-[ -n "$HWD_VENDOR$HWD_CATALOG_NB$HWD_REV$HWD_SERIAL_NB" ] && \
+[ -n "$HWD_VENDOR$HWD_MFGR$HWD_CATALOG_NB$HWD_REV$HWD_SERIAL_NB" ] && \
         BIOSINFO="$BIOSINFO
-Hardware details: Vendor:$HWD_VENDOR CatalogNumber:$HWD_CATALOG_NB HWSpecRevision:$HWD_REV SerialNumber:$HWD_SERIAL_NB"
+Hardware details: Vendor:$HWD_VENDOR Mfgr:$HWD_MFGR CatalogNumber:$HWD_CATALOG_NB HWSpecRevision:$HWD_REV SerialNumber:$HWD_SERIAL_NB"
 
 # The device/container/VM UUID may be provided by caller somehow, e.g.
 # it might come from virtualization infrastructure (plug /proc/cmdline?)
@@ -257,6 +262,8 @@ if [ -z "${UUID_VALUE-}" ]; then
         [ -x "$UUID_PROG" ] && break
     done
     if [ -n "$UUID_PROG" ] && [ -x "$UUID_PROG" ] ; then
+        # Note: an intact (usually upper-cased HWD_VENDOR like "EATON")
+        # string is important for this generation
         UUID_VALUE="$("$UUID_PROG" -v5 "$UUID_NAMESPACE" "$HWD_VENDOR""$HWD_CATALOG_NB""$HWD_SERIAL_NB")" 2>/dev/null || \
         case "$UUID_PROG" in
             "${ALTROOT}/"*) UUID_PROG="`echo "$UUID_PROG" | sed 's,^'"${ALTROOT}"'/,/,'`" && \
@@ -353,6 +360,7 @@ cat <<EOF > "${ALTROOT}/etc/release-details.json"
         "ovaloader-padded-checksum-cksum":   "$FW_OVALOADERPART_CSDEVPAD_CKSUM",
         "ovaloader-padded-bytes":            "$FW_OVALOADERPART_SIZE",
         "hardware-vendor":               "$HWD_VENDOR",
+        "hardware-manufacturer":         "$HWD_MFGR",
         "hardware-catalog-number":       "$HWD_CATALOG_NB",
         "hardware-part-number":          "$HWD_PART_NB",
         "hardware-spec-revision":        "$HWD_REV",

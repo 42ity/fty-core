@@ -23,5 +23,6 @@ RequiredBy=bios-allowed.target
 #User=root
 Type=oneshot
 #Restart=no
+SyslogIdentifier=%N
 RemainAfterExit=yes
 ExecStart=/usr/bin/test ! -e /run/bios-shutdown.target.active

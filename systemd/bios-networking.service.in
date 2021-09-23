@@ -3,4 +3,5 @@ Description=Async restart of networking
 
 [Service]
 Type=simple
+SyslogIdentifier=%N
 ExecStart=@libexecdir@/@PACKAGE@/bios-networking

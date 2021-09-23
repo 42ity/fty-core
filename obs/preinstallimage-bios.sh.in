@@ -112,6 +112,7 @@ groupadd -f -g 8001 bios-user
 groupadd -f -g 8000 bios-dash
 groupadd -f -g 8004 bios-infra
 groupadd -f -g 7999 bios-logread
+groupadd -f -g 7998 bios-audit
 
 useradd -u 1000 -m bios -N -g bios-infra -G dialout -s /bin/bash
 mkdir -p /home/bios && chown bios:bios-infra /home/bios
@@ -261,11 +262,8 @@ done
 #42ity log configuration file
 mkdir -p /etc/fty/
 cp /usr/share/fty/examples/config/ftylog.d/10-ftylog.cfg /etc/fty/ftylog.cfg
-cp /usr/share/fty/examples/config/ftylog.d/20-wwwlog.cfg /etc/fty/wwwlog.cfg
 chmod 644 /etc/fty/ftylog.cfg
-chmod 644 /etc/fty/wwwlog.cfg
 chown www-data /etc/fty/ftylog.cfg
-chown www-data /etc/fty/wwwlog.cfg
 
 #42ity enable/disable root account script
 chown root /usr/libexec/fty/enable-root-account
@@ -287,6 +285,7 @@ echo '/dev/mtd3 0x00000 0x40000 0x40000' > /etc/fw_env.config
 sed -e 's|.*RuntimeMaxFileSize.*|RuntimeMaxFileSize=10M|' \
     -e 's|.*Storage.*|Storage=volatile|' \
     -e 's|.*SyncIntervalSec.*|SyncIntervalSec=1s|' \
+    -e 's|.*ForwardToSyslog.*|ForwardToSyslog=no|' \
     -i /etc/systemd/journald.conf
 
 if [ "`uname -m`" = x86_64 ]; then
@@ -685,10 +684,19 @@ if ! egrep '^[ \t]*macs' /etc/ssh/sshd_config >/dev/null ; then
 fi
 rm /etc/ssh/*key*
 mkdir -p /etc/systemd/system
-sed -e 's|\[Service\]|[Service]\nExecStartPre=/usr/bin/ssh-keygen -A\nExecStartPre=/bin/mkdir -p /run/sshd\nExecStartPre=/bin/chmod 0755 /run/sshd\n|' \
-    -e 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/fty/fty-eula/license\nConditionPathExists=@OVERLAY_PATH@/etc/shadow|' \
-    -e 's|^\(RuntimeDirectory.*=.*\)$|#AVOID_REMOVING# \1|' \
-    < /lib/systemd/system/ssh@.service > /etc/systemd/system/ssh@.service
+for SSHD_INSTANCE_UNITFILE in \
+    /lib/systemd/system/ssh@.service \
+    /usr/lib/systemd/system/ssh@.service \
+; do
+    if [ -s "$SSHD_INSTANCE_UNITFILE" ] ; then
+        sed -e 's|\[Service\]|[Service]\nExecStartPre=/usr/bin/ssh-keygen -A\nExecStartPre=/bin/mkdir -p /run/sshd\nExecStartPre=/bin/chmod 0755 /run/sshd\n|' \
+	    -e 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/fty/fty-eula/license\nConditionPathExists=@OVERLAY_PATH@/etc/shadow|' \
+	    -e 's|^\(RuntimeDirectory.*=.*\)$|#AVOID_REMOVING# \1|' \
+	< "$SSHD_INSTANCE_UNITFILE" \
+	> /etc/systemd/system/ssh@.service \
+	&& break
+    fi
+done
 /bin/systemctl disable ssh.service
 /bin/systemctl mask ssh.service
 /bin/systemctl enable ssh.socket
@@ -1023,6 +1031,15 @@ EOF
 #/bin/systemctl enable nut-monitor.service
 /bin/systemctl enable nut.target
 
+# Since Debian Testing from sprint 2021, systemd acts up about acpid.service
+# which is excluded from running in containers. This worked okay for earlier
+# Debian iterations, but loops trying to start in the newer release (which
+# is a Debian 11 candidate). Per testing, adding the constraint to the .path
+# unit fixes the issue, and having it in .socket is further reassurance.
+mkdir -p /lib/systemd/system/acpid.path.d /lib/systemd/system/acpid.socket.d
+(echo '[Unit]'; echo 'ConditionVirtualization=!container') > /lib/systemd/system/acpid.path.d/constrain-not-container.conf
+ln /lib/systemd/system/acpid.path.d/constrain-not-container.conf /lib/systemd/system/acpid.socket.d/constrain-not-container.conf
+
 # according to https://github.com/42ity/malamute/blob/1.0-FTY-master/src/mlm_perftest.c#L22
 # "If we allow limits, then the engines will block under stress."
 # to avoid any block under stress, set unlimited High Water Mark on malamute clients side likes we have on the broker itself
@@ -1353,7 +1370,7 @@ dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n
 
 # Create the CSV Legal packages manifest, to display from the Web UI
 # copyright files path are adapted to Web UI display!
-CSV_FILE_PATH="/usr/share/doc/ipc-packages.csv"
+CSV_FILE_PATH="/usr/share/doc/packages-list.csv"
 rm -f ${CSV_FILE_PATH}
 touch ${CSV_FILE_PATH}
 dpkg-query -W -f='${db:Status-Abbrev};${source:Package};${Version};${binary:Package}\n' | grep '^i' | cut -d';' -f2,3,4 | sort -u > ./pkg-list.log
@@ -1468,13 +1485,18 @@ chgrp bios-logread /var/log/messages || true
 chmod 640 /var/log/commands.log || true
 chgrp bios-logread /var/log/commands.log || true
 
+# give access to bios-audit group
+usermod -G bios-audit -a bios
+usermod -G bios-audit -a www-data
+
 # /var/log/app-audit directory
 mkdir -p /var/log/app-audit || true
-touch /var/log/app-audit/metrics-audit.log || true
 touch /var/log/app-audit/alarms-audit.log || true
-chown -R bios:www-data /var/log/app-audit || true
-chmod 771 /var/log/app-audit || true
-find /var/log/app-audit -type f -exec chmod 662 '{}' \; || true
+touch /var/log/app-audit/email-audit.log || true
+touch /var/log/app-audit/www-audit.log || true
+chown -R bios:bios-audit /var/log/app-audit || true
+chmod 775 /var/log/app-audit || true
+find /var/log/app-audit -type f -exec chmod 664 '{}' \; || true
 
 # By default, when MySQL first starts it creates the log dir...
 # but one only accessible to itself:
