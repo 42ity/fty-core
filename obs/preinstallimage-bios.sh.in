@@ -1336,6 +1336,7 @@ case "$IMGTYPE" in
 # only in devel OS images
         tcp dport 5005 counter packets 0 bytes 0 accept # jvm-debug
         tcp dport 1099 counter packets 0 bytes 0 accept # rmiregistry
+        tcp dport 1883 counter packets 0 bytes 0 accept # mqtt
 "
         case "${OSIMAGE_DISTRO}" in
             Debian_8.0)
