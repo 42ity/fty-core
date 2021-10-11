@@ -674,6 +674,7 @@ case "$IMGTYPE" in
 esac
 if ! egrep '^[ \t]*PermitRootLogin without-password' /etc/ssh/sshd_config >/dev/null ; then
     # Allow root login with ssh-keys only, and only if someone presets them (CI)
+    echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
     echo "PermitRootLogin without-password" >> /etc/ssh/sshd_config
 fi
 if ! egrep '^[ \t]*ciphers' /etc/ssh/sshd_config >/dev/null ; then
