@@ -106,6 +106,8 @@ EOF
 
 # NOTE: This is the name in debian; for other distros it may be different
 SASL_GROUP=sasl
+# These accounts may be pre-baked into the OS image template, or not,
+# so we use "groupadd -f" to skip their creation if group already exists
 groupadd -f -g 8003 bios-admin
 groupadd -f -g 8002 bios-poweruser
 groupadd -f -g 8001 bios-user
@@ -114,7 +116,18 @@ groupadd -f -g 8004 bios-infra
 groupadd -f -g 7999 bios-logread
 groupadd -f -g 7998 bios-audit
 
-useradd -u 1000 -m bios -N -g bios-infra -G dialout -s /bin/bash
+# This account may be pre-baked into the OS image template, or not,
+# so we have to sanity-check the useradd operations. Note that the
+# "usermod -G SECONDARYGRP -a USERNAME" should be okay to re-apply
+# same setting many times.
+if ! [ -n "`id bios`" ]; then
+    useradd -u 1000 -m bios -N -g bios-infra -s /bin/bash
+fi
+BIOS_GROUPS="`id -Gn bios | tr ' ' '\n'`"
+if ! echo "$BIOS_GROUPS" | egrep '^bios-infra$' ; then
+    usermod -G bios-infra -a bios
+fi
+usermod -G dialout -a bios
 mkdir -p /home/bios && chown bios:bios-infra /home/bios
 
 # Create a GPIO group to access GPIO pins, and add the user bios
