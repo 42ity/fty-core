@@ -682,9 +682,9 @@ echo "UseDNS no" >> /etc/ssh/sshd_config
 echo "AllowGroups bios-admin root" >> /etc/ssh/sshd_config
 
 # Remove host saving when using ssh from IPM2 to another machine
-echo "StrictHostKeyChecking no" >> /etc/ssh/sshd_config
-echo "UserKnownHostsFile /dev/null" >> /etc/ssh/sshd_config
-echo "LogLevel QUIET" >> /etc/ssh/sshd_config
+echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config
+echo "UserKnownHostsFile /dev/null" >> /etc/ssh/ssh_config
+echo "LogLevel QUIET" >> /etc/ssh/ssh_config
 
 case "$IMGTYPE" in
     *devel*) if id abuild 2>/dev/null >/dev/null; then
