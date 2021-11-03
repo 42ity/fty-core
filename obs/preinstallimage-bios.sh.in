@@ -678,6 +678,9 @@ cp /usr/share/fty/examples/config/update-rc3.d/* /etc/update-rc3.d
 # Enable ssh
 rm /etc/init.d/ssh*
 echo "UseDNS no" >> /etc/ssh/sshd_config
+# Set the default value to true, to allow the change password through ssh with Usmv2
+sed -i "s|^ChallengeResponseAuthentication .*|ChallengeResponseAuthentication yes|" /etc/ssh/sshd_config
+
 # Limit to Administrator user (i.e. no Viewers like "monitor")
 echo "AllowGroups bios-admin root" >> /etc/ssh/sshd_config
 
@@ -694,7 +697,6 @@ esac
 if ! egrep '^[ \t]*PermitRootLogin without-password' /etc/ssh/sshd_config >/dev/null ; then
     # Allow root login with ssh-keys only, and only if someone presets them (CI)
     echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
-    echo "PermitRootLogin without-password" >> /etc/ssh/sshd_config
 fi
 if ! egrep '^[ \t]*ciphers' /etc/ssh/sshd_config >/dev/null ; then
     echo "ciphers chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com" >> /etc/ssh/sshd_config
