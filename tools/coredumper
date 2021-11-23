@@ -1,0 +1,381 @@
+#!/bin/sh
+# NOTE: Intentionally written for portable shell, no bashisms!
+
+#
+# Copyright (C) 2016 - 2021 Eaton
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+
+#! \file coredumper
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \brief  Process core files emitted by linux kernel
+#
+
+# We do syslogging below, so this is only useful for development:
+#exec 2>>/var/log/coredumper.log
+
+LANG=C
+LC_ALL=C
+TZ=UTC
+export LANG LC_ALL TZ
+
+CORE_NAME_COMM=""
+CORE_NAME_PATH=""
+CORE_UID=""
+CORE_GID=""
+CORE_PID=""
+CORE_PID_INITIAL=""
+CORE_TID=""
+CORE_TID_INITIAL=""
+CORE_SIGNAL=""
+CORE_TIME=""
+CORE_HOSTNAME=""
+
+# These settings should allow "admin" (who is member of "adm")
+# to read the core files.
+COREFILE_DIR="/var/crash" # Empty for CWD of the process
+COREFILE_PERM_BITS="640"
+COREFILE_PERM_UID="" # Empty for original process user
+COREFILE_PERM_GID="adm" # Empty for original process group
+# COREFILE_NAME would currently be defined by this script
+# TODO: Make filename pattern  configurable?
+# COREFILE_NAME_PATTERN=...
+
+# Compress the core files to avoid running out of disk quickly?
+# TOTHINK: Consider encrypted 7z?
+EXTWIP="__WRITING__"
+ARCHIVE_EXT="bz2"
+ARCHIVE_CMD="bzip2 -c -9"
+ARCHIVE_ENABLED=true
+
+# Save a *.core.info file near the *.core file?
+# Contents depend on tools available.
+ANALYZE_ENABLED=true
+
+usage() {
+    cat <<EOF
+$0 is used as a filter for Linux core file naming patterns
+to save 42ITy core dumps in a way accessible to the admin user.
+
+Set some arguments that match kernel core pattern values listed below,
+otherwise a unique random-named file may be created:
+
+    $0 --generate-core-pattern
+                    Produce the string to call this script as kernel handler
+                    with current built-in defaults for options below, e.g.
+                    to populate config files
+
+    $0 --register-core-pattern
+                    Same as above, to inject into runtime system as root
+
+    $0 --current-core-pattern
+                    Show current kernel setting
+
+    $0 CORE_NAME_COMM="%e" CORE_NAME_PATH="%E" CORE_UID=%u CORE_GID=%g \
+        CORE_PID=%p CORE_PID_INITIAL=%P CORE_TID=%i CORE_TID_INITIAL=%I \
+        CORE_SIGNAL=%s CORE_TIME=%t CORE_HOSTNAME="%h" \
+        [--compress|--compress=CMD|--no-compress] [--analyze|--no-analyze] \
+        [COREFILE_DIR="$COREFILE_DIR"] \
+        [COREFILE_PERM_BITS="$COREFILE_PERM_BITS"] \
+        [COREFILE_PERM_UID="$COREFILE_PERM_UID"] \
+        [COREFILE_PERM_GID="$COREFILE_PERM_GID"]
+
+Options:
+    --analyze       Save info about the core file nearby
+                    If "gdb" is available, try to save stack trace
+                    (Default: ANALYZE_ENABLED=$ANALYZE_ENABLED)
+    --compress      After saving the file to analyze, or instantly
+    --compress=CMD  otherwise, pass the data stream to compression
+                    program (Default: ARCHIVE_ENABLED=$ARCHIVE_ENABLED, ARCHIVE_CMD=$ARCHIVE_CMD)
+
+If COREFILE_PERM_UID or COREFILE_PERM_GID are empty, but CORE_UID/CORE_GID
+are available, they would name the owner of resulting core file (and its info)
+
+If COREFILE_DIR is empty, current process dir would be used if possible
+
+If COREFILE_PERM_BITS is empty, "600" will be used to limit file access
+
+Intended values for CORE_* fields are below:
+# Excerpts from https://man7.org/linux/man-pages/man5/core.5.html
+#           %%  A single % character.
+#           %c  Core file size soft resource limit of crashing process
+#               (since Linux 2.6.24).
+#           %d  Dump mode—same as value returned by prctl(2)
+#               PR_GET_DUMPABLE (since Linux 3.7).
+#           %e  The process or thread's comm value, which typically is
+#               the same as the executable filename (without path prefix,
+#               and truncated to a maximum of 15 characters), but may
+#               have been modified to be something different; see the
+#               discussion of /proc/[pid]/comm and
+#               /proc/[pid]/task/[tid]/comm in proc(5).
+#           %E  Pathname of executable, with slashes ('/') replaced by
+#               exclamation marks ('!') (since Linux 3.0).
+#           %g  Numeric real GID of dumped process.
+#           %h  Hostname (same as nodename returned by uname(2)).
+#           %i  TID of thread that triggered core dump, as seen in the
+#               PID namespace in which the thread resides (since Linux
+#               3.18).
+#           %I  TID of thread that triggered core dump, as seen in the
+#               initial PID namespace (since Linux 3.18).
+#           %p  PID of dumped process, as seen in the PID namespace in
+#               which the process resides.
+#           %P  PID of dumped process, as seen in the initial PID
+#               namespace (since Linux 3.12).
+#           %s  Number of signal causing dump.
+#           %t  Time of dump, expressed as seconds since the Epoch,
+#               1970-01-01 00:00:00 +0000 (UTC).
+#           %u  Numeric real UID of dumped process.
+#   Since kernel 5.3.0, the pipe template is split on spaces into an
+#   argument list before the template parameters are expanded.
+#   This means that in earlier kernels executable names added by the
+#   %e and %E template parameters could get split into multiple
+#   arguments.  So the core dump handler needs to put the executable
+#   names as the last argument and ensure it joins all parts of the
+#   executable name using spaces.
+
+EOF
+}
+
+die() {
+    echo "FATAL: $@" >&2
+    exit 1
+}
+
+# TOTHINK: We can default to "randomname.core" in default dir?..
+if [ $# = 0 ]; then
+    usage
+    exit 1
+fi
+
+CORE_FIELDS_SET=false
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -h|-help|--help) usage; exit 0;;
+        --generate-core-pattern|--register-core-pattern)
+            SCRIPT_PATH="`dirname "$0"`"
+            SCRIPT_PATH="`cd "$SCRIPT_PATH" && pwd`"
+            SCRIPT_PATH="$SCRIPT_PATH/`basename "$0"`"
+            # Pick only values we care for below, pattern is limited to 128 bytes
+            # TODO: To get more, consider short aliases like: _e='%e' _t=%t
+            #PATTERN="|$SCRIPT_PATH CORE_NAME_COMM='%e' CORE_NAME_PATH='%E' CORE_UID=%u CORE_GID=%g CORE_PID=%p CORE_PID_INITIAL=%P CORE_TID=%i CORE_TID_INITIAL=%I CORE_SIGNAL=%s CORE_TIME=%t CORE_HOSTNAME='%h'"
+            PATTERN="|$SCRIPT_PATH CORE_NAME_COMM='%e' CORE_UID=%u CORE_GID=%g CORE_PID=%p CORE_SIGNAL=%s CORE_TIME=%t CORE_NAME_PATH='%E'"
+            case "$1" in
+                --generate-core-pattern) echo "$PATTERN" ;;
+                --register-core-pattern) echo "$PATTERN" > /proc/sys/kernel/core_pattern ;;
+            esac
+            exit 0
+            ;;
+        --current-core-pattern) cat /proc/sys/kernel/core_pattern ; exit ;;
+        CORE_NAME_COMM=*|CORE_NAME_PATH=*|CORE_UID=*|CORE_GID=*|CORE_PID=*|CORE_PID_INITIAL=*|CORE_TID=*|CORE_TID_INITIAL=*|CORE_SIGNAL=*|CORE_TIME=*|CORE_HOSTNAME=*)
+            #VARNAME="`echo "$1" | { IFS='=' read N V ; echo "$N"; }`"
+            #VARVAL="`echo "$1" | { IFS='=' read N V ; echo "$N"; }`"
+            eval $1
+            CORE_FIELDS_SET=true
+            ;;
+        COREFILE_DIR=*|COREFILE_PERM_BITS=*|COREFILE_PERM_UID=*|COREFILE_PERM_GID=*)
+            eval $1
+            ;;
+        --analyze)
+            ANALYZE_ENABLED=true ;;
+        --no-analyze)
+            ANALYZE_ENABLED=false ;;
+        --compress)
+            ARCHIVE_ENABLED=true ;;
+        --compress=*)
+            ARCHIVE_CMD="`echo "$1" | { IFS='=' read N V ; echo "$N"; }`"
+            case "$ARCHIVE_CMD" in
+                *bzip2*) ARCHIVE_EXT=bz2 ;;
+                *gzip*|*pigz*) ARCHIVE_EXT=gz ;;
+                *xz*) ARCHIVE_EXT=xz ;;
+                *lz*) ARCHIVE_EXT=lz4 ;;
+                *7z*) ARCHIVE_EXT=7z ;;
+                *) ARCHIVE_EXT=compressed ;;
+            esac
+            ARCHIVE_ENABLED=true
+            ;;
+        --no-compress)
+            ARCHIVE_ENABLED=false ;;
+        *) die "Unknown argument: $1" ;;
+    esac
+    shift
+done
+
+if [ -z "$COREFILE_DIR" ]; then
+    if [ -n "$CORE_PID" ]; then
+        COREFILE_DIR="`cd /proc/$CORE_PID/cwd && pwd`" || COREFILE_DIR=""
+    fi
+    if [ -z "$COREFILE_DIR" ] && [ -n "$CORE_PID_INITIAL" ]; then
+        COREFILE_DIR="`cd /proc/$CORE_PID_INITIAL/cwd && pwd`" || COREFILE_DIR=""
+    fi
+    if [ -z "$COREFILE_DIR" ]; then
+        for D in /var/cores /var/crash ; do
+            if [ -d "$D" ] ; then COREFILE_DIR="$D" ; fi
+        done
+    fi
+else
+    COREFILE_DIR="`cd "$COREFILE_DIR" && pwd`" || COREFILE_DIR=""
+fi
+
+if [ -z "$COREFILE_DIR" ] || [ ! -d "$COREFILE_DIR" ] ; then
+    die "COREFILE_DIR='$COREFILE_DIR' is not set or usable"
+fi
+
+cd "$COREFILE_DIR" || die "Could not change into COREFILE_DIR='$COREFILE_DIR'"
+
+if ! $CORE_FIELDS_SET ; then
+    COREFILE_NAME="`date -u +%s`.XXXXXXXX.core" || COREFILE_NAME="coredumper-$$.XXXXXXXX.core"
+    COREFILE_NAME="`mktemp -u "$COREFILE_NAME"`" && [ -n "$COREFILE_NAME" ] \
+    || die "Could not initialize $COREFILE_DIR/$COREFILE_NAME"
+    if [ -e "$COREFILE_NAME" ] && $ARCHIVE_ENABLED ; then
+        # We may want to write compressed file right away,
+        # got no use for pre-made temp one then
+        rm -f "$COREFILE_NAME"
+    fi
+else
+    [ -n "$CORE_TIME" ] || CORE_TIME="`date -u +%s`"
+
+    # Kernel mangles the CORE_NAME_PATH so we have a non-100% chance to unmangle it:
+    [ -z "$CORE_NAME_PATH" ] || CORE_NAME_PATH="`echo "$CORE_NAME_PATH" | tr '!' '/'`"
+    [ -n "$CORE_NAME_COMM" ] || CORE_NAME_COMM="`basename "$CORE_NAME_PATH"`"
+
+    # our legacy default pattern was: /var/crash/%t-%e-%s.core
+    COREFILE_NAME="./${CORE_TIME}-${CORE_NAME_COMM}-${CORE_SIGNAL}.core"
+    if [ -e "$COREFILE_NAME" ] || [ -e "$COREFILE_NAME.info" ] || [ -e "$COREFILE_NAME.$ARCHIVE_EXT" ]; then
+        COREFILE_NAME="./${CORE_TIME}-${CORE_NAME_COMM}-${CORE_SIGNAL}.XXXXXXXX.core"
+        COREFILE_NAME="`mktemp -u "$COREFILE_NAME"`" && [ -n "$COREFILE_NAME" ] \
+        || die "Could not initialize $COREFILE_DIR/$COREFILE_NAME"
+        if [ -e "$COREFILE_NAME" ] && $ARCHIVE_ENABLED ; then
+            rm -f "$COREFILE_NAME"
+        fi
+    fi
+
+    [ -n "$COREFILE_PERM_UID" ] || COREFILE_PERM_UID="${CORE_UID}"
+    [ -n "$COREFILE_PERM_GID" ] || COREFILE_PERM_GID="${CORE_GID}"
+fi
+
+# Files being written, and final names
+COREFILE_MKNAMES_WIP="${COREFILE_NAME}.${EXTWIP}"
+COREFILE_MKNAMES="${COREFILE_NAME}"
+if $ANALYZE_ENABLED ; then
+    rm -f "${COREFILE_NAME}.info" || true
+    if $ARCHIVE_ENABLED ; then
+        COREFILE_MKNAMES_WIP="$COREFILE_MKNAMES_WIP ${COREFILE_NAME}.${ARCHIVE_EXT}.${EXTWIP} ${COREFILE_NAME}.info"
+        COREFILE_MKNAMES="$COREFILE_MKNAMES ${COREFILE_NAME}.${ARCHIVE_EXT} ${COREFILE_NAME}.info"
+    else
+        COREFILE_MKNAMES_WIP="$COREFILE_MKNAMES_WIP ${COREFILE_NAME}.info"
+        COREFILE_MKNAMES="$COREFILE_MKNAMES ${COREFILE_NAME}.info"
+    fi
+else
+    if $ARCHIVE_ENABLED ; then
+        # Write compressed right away
+        COREFILE_MKNAMES_WIP="${COREFILE_NAME}.${ARCHIVE_EXT}.${EXTWIP}"
+        COREFILE_MKNAMES="${COREFILE_NAME}.${ARCHIVE_EXT}"
+    fi # else keep default
+fi
+
+RES=0
+
+rm -f $COREFILE_MKNAMES_WIP $COREFILE_MKNAMES || RES=$?
+touch $COREFILE_MKNAMES_WIP || RES=$?
+[ -n "$COREFILE_PERM_BITS" ] || COREFILE_PERM_BITS="0600"
+chmod "$COREFILE_PERM_BITS" $COREFILE_MKNAMES_WIP || RES=$?
+
+if $ANALYZE_ENABLED ; then
+    {   date -u
+        hostname
+        set | egrep '^CORE_.*='
+        if [ -s /run/fty-envvars.env ]; then
+            cat "/run/fty-envvars.env"
+        fi
+    } > "${COREFILE_NAME}.info" || RES=$?
+
+    # Need not-compressed data for stack printing at least
+    cat > "${COREFILE_NAME}.${EXTWIP}" \
+    && mv -f "${COREFILE_NAME}.${EXTWIP}" "${COREFILE_NAME}" \
+    || RES=$?
+
+    file "${COREFILE_NAME}" >> "${COREFILE_NAME}.info" || RES=$?
+
+    if [ -n "$CORE_NAME_PATH" ] \
+    && [ -s "$CORE_NAME_PATH" ] \
+    && (command -v gdb) 2>/dev/null >/dev/null \
+    ; then
+        gdb --batch -ex 'bt' "$CORE_NAME_PATH" "${COREFILE_NAME}" >> "${COREFILE_NAME}.info" 2>&1 \
+        || RES=$?
+    fi
+
+    if $ARCHIVE_ENABLED ; then
+        $ARCHIVE_CMD < "${COREFILE_NAME}" > "${COREFILE_NAME}.${ARCHIVE_EXT}.${EXTWIP}" \
+        && mv -f "${COREFILE_NAME}.${ARCHIVE_EXT}.${EXTWIP}" "${COREFILE_NAME}.${ARCHIVE_EXT}" \
+        && rm -f "${COREFILE_NAME}" \
+        || RES=$?
+    fi
+else
+    if $ARCHIVE_ENABLED ; then
+        # Write compressed right away
+        cat | $ARCHIVE_CMD > "${COREFILE_NAME}.${ARCHIVE_EXT}.${EXTWIP}" \
+        && mv -f "${COREFILE_NAME}.${ARCHIVE_EXT}.${EXTWIP}" "${COREFILE_NAME}.${ARCHIVE_EXT}" \
+        || RES=$?
+    else # keep default:
+        cat > "${COREFILE_NAME}.${EXTWIP}" \
+        && mv -f "${COREFILE_NAME}.${EXTWIP}" "${COREFILE_NAME}" \
+        || RES=$?
+    fi
+fi
+
+# Note: set ownership as latest step, e.g. a root could not write into
+# a file owned by someone else in a /var/crash chmodded as 1777
+for F in $COREFILE_MKNAMES ; do
+    [ -s "$F" ] || continue
+    if [ -n "$COREFILE_PERM_UID" ]; then
+        chown "$COREFILE_PERM_UID" "$F" || RES=$?
+    fi
+
+    if [ -n "$COREFILE_PERM_GID" ]; then
+        chgrp "$COREFILE_PERM_GID" "$F" || RES=$?
+    fi
+done
+
+# This listing is expected to fail (all WIP written well and renamed to final state)
+if ls -1 $COREFILE_MKNAMES_WIP 2>/dev/null | egrep -v '\.info$' ; then
+    RES=1
+    echo "WARNING: Some WIP files remained, see above!" >&2
+
+    # List includes the info file
+    #rm -f $COREFILE_MKNAMES_WIP || true
+
+    for F in $COREFILE_MKNAMES_WIP ; do
+        [ -s "$F" ] || continue
+        case "$F" in
+            *.info) ;;
+            *)  #rm -f "$F"
+                if [ -n "$COREFILE_PERM_UID" ]; then
+                    chown "$COREFILE_PERM_UID" "$F" || RES=$?
+                fi
+
+                if [ -n "$COREFILE_PERM_GID" ]; then
+                    chgrp "$COREFILE_PERM_GID" "$F" || RES=$?
+                fi
+                ;;
+        esac
+    done
+fi
+
+TXT="Completed processing core file '${COREFILE_NAME}' in '$COREFILE_DIR' with result $RES"
+echo "$TXT" >&2
+echo "$TXT" /dev/kmsg 2>/dev/null || true
+echo "$TXT" | logger -t 'coredumper' -p 'daemon.crit' 2>/dev/null || true
+exit $RES

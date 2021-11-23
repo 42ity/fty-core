@@ -18,7 +18,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-#! \file verify-fs.sh
+#! \file compress-logs
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \brief  Compress the previously rotated logs under LOGDIR
 #
