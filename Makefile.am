@@ -174,6 +174,7 @@ client_SCRIPTS +=	 \
 			tools/mount_usb \
 			tools/loghost-rsyslog \
 			tools/compress-logs \
+			tools/coredumper \
 			tools/verify-fs \
 			tools/diagnostic-information \
 			tools/start-db-services \
@@ -200,6 +201,7 @@ EXTRA_DIST +=		tools/fake-th \
 			tools/generate-release-details.sh \
 			tools/loghost-rsyslog \
 			tools/compress-logs \
+			tools/coredumper \
 			tools/fty-hostname-setup \
 			tools/fty-route.in \
 			tools/enable-root-account.in \

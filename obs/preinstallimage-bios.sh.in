@@ -77,8 +77,18 @@ fi
 # Setup core dumps
 if true; then
     mkdir -p /var/crash
+    # By default, let all daemon users write here
     chmod 1777 /var/crash
-    ( echo 'kernel.core_pattern = /var/crash/%t-%e-%s.core'
+    ( if [ -x "/usr/libexec/bios/coredumper" ]; then
+        echo 'kernel.core_pattern='"`/usr/libexec/bios/coredumper --generate-core-pattern`"
+        # Perhaps 0751 or 0750 for better security?
+        chmod 0755 /var/crash
+        # Our "admin" user should be a member of this group
+        # in order to get the core files:
+        chgrp adm /var/crash
+      else
+        echo 'kernel.core_pattern = /var/crash/%t-%e-%s.core'
+      fi
       echo 'fs.suid_dumpable = 2' \
     ) > /etc/sysctl.d/10-core.conf
     sed -e 's|.*DefaultLimitCORE=.*|DefaultLimitCORE=infinity|' \
