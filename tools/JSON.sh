@@ -264,6 +264,7 @@ usage() {
   echo "-b - Brief. Combines 'Leaf only' and 'Prune empty' options."
   echo "-n - No-head. Do not show nodes that have no path (lines that start with [])."
   echo "-s - Remove escaping of the solidus symbol (straight slash)."
+  echo "-J - List all JPATHs, alias to -l --shellable-output=jpaths (see below)"
   echo "-x 'regex' - rather than showing all document from the root element,"
   echo "     extract the items rooted at path(s) matching the regex (see the"
   echo "     comma-separated list of nested hierarchy names in general output,"
@@ -276,10 +277,12 @@ usage() {
   echo "     so if you need one exact match, specify it like '^"'"repository","url"$'"')"
   echo "--shellable-output=arrays - Do not print the path column, add quotes:"
   echo '     ARR=( $(JSON.sh --shellable-output=arrays -x '"'"'^"array",[0-9]'"'"') )'
+  echo '--shellable-output=jpath - Print only the path column but not values'
   echo "--get-string 'regex' - Alias to -l -x 'regex' --shellable-output=string"
   echo "--get-strings 'regex' - Alias to -l -x 'regex' --shellable-output=strings"
   echo "--get-array(s) 'regex' - Alias to -l -x 'regex' --shellable-output=arrays"
   echo "     intended for cases where caller knows data schema to make assumptions."
+  echo "--get-jpath(s) 'regex' - Alias to -l -x 'regex' --shellable-output=jpaths"
   echo "NOTE: The --shellable-output options only make sense for -l/-b mode,"
   echo "or -x preferably with -l/-b modes. Each found value is output with EOL"
   echo 'so you can pipe the output to `| while read LINE; do ... ; done` sanely.'
@@ -447,21 +450,27 @@ parse_options() {
       -Sa=*)
           SORTDATA_ARR="$GSORT $(echo "$1" | $GSED 's,^-Sa=,,' 2>/dev/null | unquote )"
       ;;
-      -x|--get-strings|--get-string|--get-arrays|--get-array)
+      -J)
+          SHELLABLE_OUTPUT="jpaths"
+          LEAFONLY=1
+          ;;
+      -x|--get-strings|--get-string|--get-arrays|--get-array|--get-jpath|--get-jpaths)
           case "$1" in
             --get-string) SHELLABLE_OUTPUT="string" ; LEAFONLY=1 ;;
             --get-strings) SHELLABLE_OUTPUT="strings" ; LEAFONLY=1 ;;
             --get-array*) SHELLABLE_OUTPUT="arrays" ; LEAFONLY=1 ;;
+            --get-jpath*) SHELLABLE_OUTPUT="jpaths" ; LEAFONLY=1 ;;
           esac
           EXTRACT_JPATH="$2"
           shift
       ;;
-      -x=*|--get-strings=*|--get-string=*|--get-arrays=*|--get-array=*)
-          EXTRACT_JPATH="$(echo "$1" | $GSED 's,^\(-x\|--get-strings*\|--get-arrays*\)=,,' 2>/dev/null)"
+      -x=*|--get-strings=*|--get-string=*|--get-arrays=*|--get-array=*|--get-jpath=*|--get-jpaths=*)
+          EXTRACT_JPATH="$(echo "$1" | $GSED 's,^\(-x\|--get-strings*\|--get-arrays*\|--get-jpaths*\)=,,' 2>/dev/null)"
           case "$1" in
             --get-string) SHELLABLE_OUTPUT="string" ; LEAFONLY=1 ;;
             --get-strings) SHELLABLE_OUTPUT="strings" ; LEAFONLY=1 ;;
             --get-array*) SHELLABLE_OUTPUT="arrays" ; LEAFONLY=1 ;;
+            --get-jpath*) SHELLABLE_OUTPUT="jpaths" ;; # LEAFONLY=1 ;;
           esac
       ;;
       --shellable-output=string)
@@ -472,6 +481,9 @@ parse_options() {
       ;;
       --shellable-output=array|--shellable-output=arrays)
           SHELLABLE_OUTPUT="arrays"
+      ;;
+      --shellable-output=jpath|--shellable-output=jpaths)
+          SHELLABLE_OUTPUT="jpaths"
       ;;
       --no-newline)
           TOXIC_NEWLINE=1
@@ -964,7 +976,8 @@ parse_value() {
     "print='$print'" >&2
 
   if [ "$print" -gt 0 ] ; then
-    if [ -n "$SHELLABLE_OUTPUT" ]; then
+    if [ -n "$SHELLABLE_OUTPUT" ] && [ "$SHELLABLE_OUTPUT" != "jpaths" ]; then
+        # For "jpaths" we don't waste time preparing and ignoring pretty values
         case "$value" in
             '"'*'"') pvalue="$(echo "$value" | $GSED -e 's,^",,' -e 's,"$,,')" ;;
             *) pvalue="$value" ;;
@@ -977,6 +990,7 @@ parse_value() {
         string)   printf '%s\n' "$pvalue" ; QUICK_ABORT=true ; return 0 ;;
         strings)  printf '%s\n' "$pvalue" ; return 0 ;;
         arrays)   printf '"%s"\n' "$pvalue" ; return 0 ;;
+        jpaths)   printf '[%s]\n' "$jpath" ;;
         *)        printf '[%s]\t%s\n' "$jpath" "$value" ;;
     esac
   fi

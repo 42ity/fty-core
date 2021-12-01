@@ -1,7 +1,7 @@
 #!/bin/bash
 # WARNING: bash syntax and capabilities are used intensively in code below!
 #
-# Copyright (C) 2015-2020 Eaton
+# Copyright (C) 2015-2021 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -546,7 +546,7 @@ $lOTHER"
 
 list_known_unit_files() {
     # This lists ALL unit file pathnames (in locations we care about, at least)
-    find {/usr/lib,/lib,/etc,/var/run}/systemd/system /var/run/systemd/generator.late -type f -or -type l
+    find {/usr/lib,/lib,/etc,/var/run}/systemd/system /var/run/systemd/generator* -type f -or -type l || true
 }
 
 list_known_ipm_unit_files() (
