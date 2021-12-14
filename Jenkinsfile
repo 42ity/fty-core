@@ -25,7 +25,6 @@
 */
 
 @Library('etn-ipm2-jenkins@push-to-mbt') _
-import params.CmakePipelineParams
 
 pipeline {
     agent {
@@ -323,6 +322,7 @@ pipeline {
                     }
                     steps {
                         script {
+                            import params.CmakePipelineParams
                             CmakePipelineParams parameters = new CmakePipelineParams()
                             deploy.create_packages(parameters)
                             deploy.push_to_obs_mbt(parameters)
