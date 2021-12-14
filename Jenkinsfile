@@ -322,8 +322,7 @@ pipeline {
                     }
                     steps {
                         script {
-                            import params.CmakePipelineParams
-                            CmakePipelineParams parameters = new CmakePipelineParams()
+                            params.CmakePipelineParams parameters = new params.CmakePipelineParams()
                             deploy.create_packages(parameters)
                             deploy.push_to_obs_mbt(parameters)
                         }
