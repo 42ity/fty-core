@@ -24,7 +24,8 @@
 
 */
 
-@Library('etn-ipm2-jenkins') _
+@Library('etn-ipm2-jenkins@push-to-mbt') _
+import params.CmakePipelineParams
 
 pipeline {
     agent {
