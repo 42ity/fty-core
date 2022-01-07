@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2017 - 2020 Eaton
+# Copyright (C) 2017 - 2022 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -251,15 +251,44 @@ else
 fi
 echo "INFO: `date -u`: Done starting database services and their consumers: OK"
 
+# Note that the umbrella service may be already started (as dependency
+# of multi-user.target), so we explicitly poke the watchdog to surely
+# have it running
 echo "INFO: `date -u`: enable and start bios.service and bios.target for the remaining IPM Infra services"
 if [[ "$SYSTEMCTL_COALESCE" = no ]] ; then
     sudo ${SYSTEMCTL} enable bios.service
     sudo ${SYSTEMCTL} enable bios.target
     sudo ${SYSTEMCTL} start bios.service --no-block || die "Could not issue startup request for bios.service ($?)"
     sudo ${SYSTEMCTL} start bios.target --no-block || die "Could not issue startup request for bios.target ($?)"
+
+    # Note: no "enable" for the watchdogs, by design - only direct start
+    sudo ${SYSTEMCTL} start bios-target-watchdog.service --no-block || die "Could not issue startup request for bios-target-watchdog.service ($?)"
+    sudo ${SYSTEMCTL} start bios-target-watchdog.timer --no-block || die "Could not issue startup request for bios-target-watchdog.timer ($?)"
 else
     sudo ${SYSTEMCTL} enable bios.service bios.target
-    sudo ${SYSTEMCTL} start bios.service bios.target --no-block || die "Could not issue startup request for bios.target or bios.service ($?)"
+    sudo ${SYSTEMCTL} start bios.service bios.target bios-target-watchdog.service bios-target-watchdog.timer --no-block \
+    || die "Could not issue startup request for bios.target or bios.service or bios-target-watchdog.service or bios-target-watchdog.timer ($?)"
+fi
+
+if ${SYSTEMCTL} -a | grep ipm2 ; then
+  # NOTE: Compared to pure-FOSS 42ITy codebase, IPM2 and IPM Infra are
+  # value-added products and their components may be not present in a
+  # particular deployment. So attempts to enable/start are optional.
+  echo "INFO: `date -u`: try to enable and start ipm2.service and ipm2.target for the remaining IPM2 services"
+  if [[ "$SYSTEMCTL_COALESCE" = no ]] ; then
+    sudo ${SYSTEMCTL} enable ipm2.service
+    sudo ${SYSTEMCTL} enable ipm2.target
+    sudo ${SYSTEMCTL} start ipm2.service --no-block || die "Could not issue startup request for ipm2.service ($?)"
+    sudo ${SYSTEMCTL} start ipm2.target --no-block || die "Could not issue startup request for ipm2.target ($?)"
+
+    # Note: no "enable" for the watchdogs, by design - only direct start
+    sudo ${SYSTEMCTL} start ipm2-target-watchdog.service --no-block || die "Could not issue startup request for ipm2-target-watchdog.service ($?)"
+    sudo ${SYSTEMCTL} start ipm2-target-watchdog.timer --no-block || die "Could not issue startup request for ipm2-target-watchdog.timer ($?)"
+  else
+    sudo ${SYSTEMCTL} enable ipm2.service ipm2.target
+    sudo ${SYSTEMCTL} start ipm2.service ipm2.target ipm2-target-watchdog.service ipm2-target-watchdog.timer --no-block \
+    || die "Could not issue startup request for ipm2.target or ipm2.service or ipm2-target-watchdog.service or ipm2-target-watchdog.timer ($?)"
+  fi
 fi
 
 # NOTE: we have tntnet@bios.service officially aliased by fty-tntnet@bios.service

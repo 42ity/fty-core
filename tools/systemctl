@@ -1,7 +1,7 @@
 #!/bin/bash
 # WARNING: bash syntax and capabilities are used intensively in code below!
 #
-# Copyright (C) 2015-2021 Eaton
+# Copyright (C) 2015-2022 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -78,6 +78,7 @@ SYSTEMCTL_UNITS_COMMON_EXTERNAL="mariadb mysql mysqld                   \
 SYSTEMCTL_UNITS_COMMON_INTERNAL="bios tntnet@bios fty-outage fty-metric-store   \
                                 fty-db bios-pre-eula bios-target-watchdog       \
                                 bios-allowed bios-shutdown                      \
+                                ipm2 ipm2-pre-eula ipm2-target-watchdog         \
                                 fty-tntnet@bios fty-envvars fty-hostname-setup  \
                                 fty-license-accepted fty-db-init fty-db-engine  \
                                 fty-kpi-power-uptime fty-alert-list fty-asset   \
