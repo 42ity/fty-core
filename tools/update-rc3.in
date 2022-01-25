@@ -2,7 +2,7 @@
 #
 # WARNING: Bash-specific syntax is in fact used below
 #
-# Copyright (C) 2015-2020 Eaton
+# Copyright (C) 2015-2021 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -1895,8 +1895,9 @@ findnewest_rawfwimage_ovaloader() {
         *"@PICK_IMGQALEVEL@"*) # Pick the loader build for this QA Level or fallback to master
             # Default should be known from /etc/update-rc3.d/image-os-type.conf usually
             PICK_IMGQALEVEL="$IMGQALEVEL" && [ -n "$PICK_IMGQALEVEL" ] \
-            || PICK_IMGQALEVEL="`. /run/fty-envvars.env && echo "$OSIMAGE_IMGQALEVEL"`" && [ -n "$PICK_IMGQALEVEL" ] \
-            || PICK_IMGQALEVEL="master"
+            || { PICK_IMGQALEVEL="`. /run/fty-envvars.env && echo "$OSIMAGE_IMGQALEVEL"`" && [ -n "$PICK_IMGQALEVEL" ] \
+                 || PICK_IMGQALEVEL="master"
+               }
 
             logmsg_info "Trying to find OVA loader build for QALEVEL='$PICK_IMGQALEVEL':" >&2
             SOURCESITEROOTFW_OVALOADER_TMP="`echo "$SOURCESITEROOTFW_OVALOADER" | sed 's,[@]PICK_IMGQALEVEL@,'"$PICK_IMGQALEVEL"','`"
@@ -1904,12 +1905,25 @@ findnewest_rawfwimage_ovaloader() {
             && { SOURCESITEROOTFW_OVALOADER="$SOURCESITEROOTFW_OVALOADER_TMP"; return 0; }
             [ "$PICK_IMGQALEVEL" = "master" ] && return 1 # Our default failed, reported above; nothing to retry with
 
-            PICK_IMGQALEVEL="master"
-            logmsg_info "Retrying to find OVA loader build for QALEVEL='$PICK_IMGQALEVEL':"
-            SOURCESITEROOTFW_OVALOADER_TMP="`echo "$SOURCESITEROOTFW_OVALOADER" | sed 's,[@]PICK_IMGQALEVEL@,'"$PICK_IMGQALEVEL"','`"
-            SOURCESITEROOTFW_OVALOADER="$SOURCESITEROOTFW_OVALOADER_TMP" do_findnewest_rawfwimage_ovaloader \
-            && { SOURCESITEROOTFW_OVALOADER="$SOURCESITEROOTFW_OVALOADER_TMP"; return 0; }
-            return 1 # Our fallback failed too, reported above
+            # For release and feature images we may have additional naming
+            # patterns - try them:
+            for TRY_PICK_IMGQALEVEL in \
+                "release:IPM-$PICK_IMGQALEVEL" \
+                "release:$PICK_IMGQALEVEL" \
+                "featureimage:$PICK_IMGQALEVEL" \
+                "master" \
+            ; do
+                logmsg_info "Retrying to find OVA loader build for QALEVEL='$TRY_PICK_IMGQALEVEL':"
+                SOURCESITEROOTFW_OVALOADER_TMP="`echo "$SOURCESITEROOTFW_OVALOADER" | sed 's,[@]PICK_IMGQALEVEL@,'"$TRY_PICK_IMGQALEVEL"','`"
+                SOURCESITEROOTFW_OVALOADER="$SOURCESITEROOTFW_OVALOADER_TMP" do_findnewest_rawfwimage_ovaloader \
+                && { SOURCESITEROOTFW_OVALOADER="$SOURCESITEROOTFW_OVALOADER_TMP"
+                     PICK_IMGQALEVEL="$TRY_PICK_IMGQALEVEL"
+                     logmsg_info "FOUND OVA loader in fallback location: $SOURCESITEROOTFW_OVALOADER !"
+                     return 0
+                   }
+            done
+
+            return 1 # Our fallback(s) failed too, reported above
             ;;
         *) # Already configured to a definite string
             do_findnewest_rawfwimage_ovaloader; return
