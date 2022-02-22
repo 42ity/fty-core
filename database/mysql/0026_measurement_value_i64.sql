@@ -20,7 +20,7 @@
 
 /* For details on schema version support see the main initdb.sql */
 SET @bios_db_schema_version = '202202170001';
-SET @bios_db_schema_filename = '0026_bios_measurement_value_int64.sql';
+SET @bios_db_schema_filename = '0026_measurement_value_i64.sql';
 
 use box_utf8;
 
