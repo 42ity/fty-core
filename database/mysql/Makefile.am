@@ -22,7 +22,7 @@ mysql_DATA	= initdb.sql \
 			0024_batt_warranty_date.sql \
 			0025_device_type_extension.sql \
 			0026_measurement_value_i64.sql \
-      0026_rack_asset_order.sql
+			0027_rack_asset_order.sql
 
 mysqlexdir	= $(datadir)/@PACKAGE@/examples/sql/mysql
 mysqlex_DATA	= \

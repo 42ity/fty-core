@@ -13,13 +13,13 @@
  */
 
 /*
- * @file    0026_rack_asset_order.sql
+ * @file    0027_rack_asset_order.sql
  * @brief   Fix rack asset order format
  */
 
 /* For details on schema version support see the main initdb.sql */
-SET @bios_db_schema_version = '202202170001';
-SET @bios_db_schema_filename = '00026_rack_asset_order.sql';
+SET @bios_db_schema_version = '202202240001';
+SET @bios_db_schema_filename = '00027_rack_asset_order.sql';
 
 use box_utf8;
 
