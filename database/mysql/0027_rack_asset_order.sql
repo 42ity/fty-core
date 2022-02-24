@@ -19,7 +19,7 @@
 
 /* For details on schema version support see the main initdb.sql */
 SET @bios_db_schema_version = '202202240001';
-SET @bios_db_schema_filename = '00027_rack_asset_order.sql';
+SET @bios_db_schema_filename = '0027_rack_asset_order.sql';
 
 use box_utf8;
 

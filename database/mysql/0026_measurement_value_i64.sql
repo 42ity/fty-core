@@ -13,7 +13,7 @@
  */
 
 /*
- * @file    0026_bios_measurement_value_int64.sql
+ * @file    0026_measurement_value_i64.sql
  * @brief   Increase t_bios_measurement value (aggregated metrics) from int32 (INT) to int64 (BIGINT)
  * @note    Pass just before IT fall scripts (ipm_it_fall_virtu.sql)
  */
