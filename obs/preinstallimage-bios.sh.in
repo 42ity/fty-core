@@ -452,14 +452,14 @@ fi
 # Note: do not change the 'Pool\:/master' reference below because it may be
 # substituted to corresponding actual repository during OBS image creation.
 cat >> /etc/apt/sources.list.d/debian.list <<EOF
-deb http://obs.roz.lab.etn.com:82/Pool:/master/${OSIMAGE_DISTRO} /
-deb http://obs.roz.lab.etn.com:82/Pool:/master:/proprietary/${OSIMAGE_DISTRO} /
+deb http://obs.mbt.lab.etn.com:82/Pool:/master/${OSIMAGE_DISTRO} /
+deb http://obs.mbt.lab.etn.com:82/Pool:/master:/proprietary/${OSIMAGE_DISTRO} /
 EOF
 
 mkdir -p /etc/apt/preferences.d
 cat > /etc/apt/preferences.d/bios <<EOF
 Package: *
-Pin: origin "obs.roz.lab.etn.com"
+Pin: origin "obs.mbt.lab.etn.com"
 Pin-Priority: 9999
 EOF
 
