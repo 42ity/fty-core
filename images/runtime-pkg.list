@@ -17,7 +17,7 @@ fty-certificate-generator
 fty-certificate-generator-rest
 fty-config
 fty-core
-fty-discovery
+fty-discovery-ng
 fty-email
 fty-info
 fty-kpi-power-uptime
