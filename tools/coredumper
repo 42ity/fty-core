@@ -2,7 +2,7 @@
 # NOTE: Intentionally written for portable shell, no bashisms!
 
 #
-# Copyright (C) 2016 - 2021 Eaton
+# Copyright (C) 2016 - 2022 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 
 #! \file coredumper
 #  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \author Arnaud Quette <ArnaudQuette@Eaton.com>
 #  \brief  Process core files emitted by linux kernel
 #
 

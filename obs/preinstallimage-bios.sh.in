@@ -79,8 +79,8 @@ if true; then
     mkdir -p /var/crash
     # By default, let all daemon users write here
     chmod 1777 /var/crash
-    ( if [ -x "/usr/libexec/bios/coredumper" ]; then
-        echo 'kernel.core_pattern='"`/usr/libexec/bios/coredumper --generate-core-pattern`"
+    ( if [ -x "/usr/sbin/coredumper" ]; then
+        echo 'kernel.core_pattern='"`/usr/sbin/coredumper --generate-core-pattern`"
         # Perhaps 0751 or 0750 for better security?
         chmod 0755 /var/crash
         # Our "admin" user should be a member of this group
