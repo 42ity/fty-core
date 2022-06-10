@@ -24,7 +24,7 @@
 
 */
 
-@Library('etn-ipm2-jenkins') _
+@Library('etn-ipm2-jenkins@sw-compliance') _
 
 pipeline {
     agent {
