@@ -993,6 +993,7 @@ case "$IMGTYPE" in
         echo "BIOS_LOG_LEVEL=LOG_DEBUG" > /usr/share/fty/etc/default/fty
         echo "BIOS_NUT_USE_DMF=true" >> /usr/share/fty/etc/default/fty
         sed -i "s|rootLogger=INFO|rootLogger=DEBUG|g" /etc/fty/ftylog.cfg
+        sed -i "s|console.Threshold=INFO|console.Threshold=DEBUG|g" /etc/fty/ftylog.cfg
         ;;
     *)
         echo "BIOS_LOG_LEVEL=LOG_INFO" > /usr/share/fty/etc/default/fty
