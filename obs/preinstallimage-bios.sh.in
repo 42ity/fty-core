@@ -467,6 +467,16 @@ Pin: origin "obs.mbt.lab.etn.com"
 Pin-Priority: 9999
 EOF
 
+# Ensure the right setting to update our devel images and access debug packages
+case "$IMGTYPE" in
+    *devel*)
+        echo -e "Acquire::http::Proxy \"http://proxy.emea.etn.com:8080/\";\nAcquire::https::Proxy \"http://proxy.emea.etn.com:8080/\";\nAcquire::http::Proxy::obs.mbt.lab.etn.com DIRECT;" > /etc/apt/apt.conf.d/02eaton-proxy
+        echo -e "deb http://deb.debian.org/debian-debug/ bullseye-debug main" >> /etc/apt/sources.list.d/debian.list
+        ;;
+    deploy|*)
+        ;;
+esac
+
 # This may be not available on space-constrained deploy images
 if command -v apt-key >/dev/null ; then
 cat << EOF | apt-key add -
