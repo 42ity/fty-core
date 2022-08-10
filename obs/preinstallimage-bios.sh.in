@@ -296,7 +296,7 @@ chmod 700 /usr/libexec/fty/disable-root-account
 
 # Setup 42ity lenses
 mkdir -p /usr/share/fty/lenses
-ln -sr /usr/share/augeas/lenses/dist/{build,ethers,interfaces,ntp,ntpd,pam,resolv,rx,sep,util,shellvars,quote}.aug \
+ln -sr /usr/share/augeas/lenses/dist/{build,ethers,interfaces,ntp,ntpd,pam,resolv,rx,sep,util,shellvars,quote,json}.aug \
     /usr/share/fty/lenses
 
 # Setup u-Boot
@@ -1003,6 +1003,7 @@ case "$IMGTYPE" in
         echo "BIOS_LOG_LEVEL=LOG_DEBUG" > /usr/share/fty/etc/default/fty
         echo "BIOS_NUT_USE_DMF=true" >> /usr/share/fty/etc/default/fty
         sed -i "s|rootLogger=INFO|rootLogger=DEBUG|g" /etc/fty/ftylog.cfg
+        sed -i "s|console.Threshold=INFO|console.Threshold=DEBUG|g" /etc/fty/ftylog.cfg
         ;;
     *)
         echo "BIOS_LOG_LEVEL=LOG_INFO" > /usr/share/fty/etc/default/fty
