@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #
-#   Copyright (c) 2019 - 2020 Eaton
+#   Copyright (c) 2022 Eaton
 #
 #   This file is part of the Eaton 42ity project.
 #
@@ -24,7 +24,12 @@
 #  \author  F.-R. Degott <FrancoisRegisDegott@Eaton.com>
 #
 
+#
 # Create swap-memory (assume 8G RAM)
+#
+# Notice: It's a swap file (not partition). Its size will be consumed
+#         from the data partition, hence reducing the available space for data
+#
 
 #set +x
 
@@ -36,22 +41,22 @@ echo "swapfile: $swapfile_path $swapfile_size"
 
 # deactivate/delete existing
 if [ -f "$swapfile_path" ]; then
-    ls -al "$swapfile_path"
+    /bin/ls -al "$swapfile_path"
     /sbin/swapoff -v -a || exit 1
-    rm -f "$swapfile_path"
+    /bin/rm -f "$swapfile_path"
 fi
 
 # create/update
-fallocate -l "$swapfile_size" "$swapfile_path"
+/usr/bin/fallocate -l "$swapfile_size" "$swapfile_path"
 
 # activate
 if [ -f "$swapfile_path" ]; then
-    chmod 600 "$swapfile_path"
+    /bin/chmod 600 "$swapfile_path"
     /sbin/mkswap "$swapfile_path"
     /sbin/swapon -v "$swapfile_path"
 fi
 
 # display current active swap memory
-free -m
+/usr/bin/free -m
 
 exit 0
