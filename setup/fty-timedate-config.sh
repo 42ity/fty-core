@@ -20,7 +20,7 @@
 #   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 FPATH='/etc/fty/fty-timedate.cfg'
-touch $FPATH
+mkdir -p /etc/fty && touch $FPATH
 chown www-data $FPATH
 echo '#   fty-timezone config' > $FPATH
 echo '' >> $FPATH
