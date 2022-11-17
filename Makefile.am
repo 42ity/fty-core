@@ -267,7 +267,7 @@ ipc_meta_setup_SCRIPTS = \
 	$(top_srcdir)/setup/999-bios-pre-eula-target.everytime.sh \
 	$(top_srcdir)/setup/91-mmc-recovery.sh \
 	$(top_srcdir)/setup/ipc-meta-setup.sh \
-	$(top_srcdir)/setup/fty-timedate-config.sh
+	$(top_srcdir)/setup/92-datetime-fty.sh
 
 EXTRA_DIST += \
 	$(top_srcdir)/setup/01-bios-eula.sh \
@@ -291,7 +291,7 @@ EXTRA_DIST += \
 	$(top_srcdir)/setup/999-bios-pre-eula-target.everytime.sh \
 	$(top_srcdir)/setup/91-mmc-recovery.sh \
 	$(top_srcdir)/setup/ipc-meta-setup.sh \
-	$(top_srcdir)/setup/fty-timedate-config.sh
+	$(top_srcdir)/setup/92-datetime-fty.sh
 
 # SystemD integrations files; if not enabled - variables remain empty
 SYSTEMD_UNITS_LOWLEVEL =
