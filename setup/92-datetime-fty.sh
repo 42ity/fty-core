@@ -35,4 +35,6 @@ server
 EOF
 fi
 
+chown www-data $file_path
+
 exit 0
