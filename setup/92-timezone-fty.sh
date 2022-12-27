@@ -19,7 +19,7 @@
 #   with this program; if not, write to the Free Software Foundation, Inc.,
 #   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-file_name='fty-datetime.cfg'
+file_name='fty-timezone.cfg'
 file_dir='/etc/fty'
 file_path="$file_dir/$file_name"
 
