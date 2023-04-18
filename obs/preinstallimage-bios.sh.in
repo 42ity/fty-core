@@ -322,6 +322,12 @@ if [ "`uname -m`" = x86_64 ]; then
         -i /etc/systemd/journald.conf
 fi
 
+# sysctl setup
+mkdir -p /etc/sysctl.d
+cp /usr/share/fty/examples/config/sysctl.d/20-fty-icmp.conf /etc/sysctl.d/
+chown root:bios-admin /etc/sysctl.d/20-fty-icmp.conf
+chmod 0660 /etc/sysctl.d/20-fty-icmp.conf
+
 # rsyslogd setup
 mkdir -p /etc/rsyslog.d /etc/rsyslog.d-early /var/spool/rsyslog
 # the rsyslogd.conf "$WorkDirectory"
