@@ -739,13 +739,19 @@ if ! egrep '^[ \t]*PermitRootLogin without-password' /etc/ssh/sshd_config >/dev/
     # Allow root login with ssh-keys only, and only if someone presets them (CI)
     echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
 fi
-if ! egrep '^[ \t]*ciphers' /etc/ssh/sshd_config >/dev/null ; then
-    echo "ciphers chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com" >> /etc/ssh/sshd_config
-fi
-if ! egrep '^[ \t]*macs' /etc/ssh/sshd_config >/dev/null ; then
-    echo "macs umac-64-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,umac-64@openssh.com,umac-128@openssh.com,hmac-sha2-256,hmac-sha2-512" >> /etc/ssh/sshd_config
-fi
 rm /etc/ssh/*key*
+
+# ssh/sshd ciphers/macs suite
+SSH_CIPHERS="chacha20-poly1305@openssh.com,aes128-ctr,aes192-ctr,aes256-ctr,aes128-gcm@openssh.com,aes256-gcm@openssh.com"
+SSH_MACS="hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac-sha2-256,hmac-sha2-512"
+
+cfile=/etc/ssh/ssh_config
+if ! egrep '^[ \t]*ciphers' $cfile >/dev/null ; then echo "ciphers $SSH_CIPHERS" >> $cfile; fi
+if ! egrep '^[ \t]*macs' $cfile >/dev/null ; then echo "macs $SSH_MACS" >> $cfile; fi
+cfile=/etc/ssh/sshd_config
+if ! egrep '^[ \t]*ciphers' $cfile >/dev/null ; then echo "ciphers $SSH_CIPHERS" >> $cfile; fi
+if ! egrep '^[ \t]*macs' $cfile >/dev/null ; then echo "macs $SSH_MACS" >> $cfile; fi
+
 mkdir -p /etc/systemd/system
 for SSHD_INSTANCE_UNITFILE in \
     /lib/systemd/system/ssh@.service \
