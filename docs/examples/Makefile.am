@@ -13,6 +13,9 @@ examplecfgpam_DATA	= pam.d/fty pam.d/fty-password pam.d/fty-auth
 examplecfgsecdir	= $(datarootdir)/@PACKAGE@/examples/config/security
 examplecfgsec_DATA	= security/fty_groups.conf
 
+examplesysctldir	= $(datarootdir)/@PACKAGE@/examples/config/sysctl.d
+examplesysctl_DATA	= sysctl.d/20-fty-icmp.conf
+
 examplecfgupdatedir	= $(datarootdir)/@PACKAGE@/examples/config/update-rc3.d
 examplecfgupdate_DATA	= \
                         update-rc3.d/02-http-proxy.conf \
@@ -48,4 +51,4 @@ examplenutserverdir	= $(systemdsystemunitdir)/nut-server.service.d
 examplenutserver_DATA = \
 			nut-server.service.d/configure-nut-users.conf
 
-EXTRA_DIST += $(examplecfgsudo_DATA) $(examplecfgpam_DATA) $(examplecfgsec_DATA) $(examplecfgupdate_DATA) $(examplecfgrsyslogd_DATA) $(exampleprofile_DATA) $(exampleudevrules_DATA) $(examplelog_DATA) $(examplenutserver_DATA)
+EXTRA_DIST += $(examplecfgsudo_DATA) $(examplecfgpam_DATA) $(examplecfgsec_DATA) $(examplesysctl_DATA) $(examplecfgupdate_DATA) $(examplecfgrsyslogd_DATA) $(exampleprofile_DATA) $(exampleudevrules_DATA) $(examplelog_DATA) $(examplenutserver_DATA)
