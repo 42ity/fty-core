@@ -567,7 +567,7 @@ mkdir -p /etc/pam.d
 cp /usr/share/fty/examples/config/pam.d/* /etc/pam.d
 case "$IMGTYPE" in
     *devel*) ;;
-    *) sed -i "s|\\(.*pam_cracklib.so\\).*|    password\tinclude\t\tfty-password|" /etc/pam.d/common-password ;;
+    *) sed -i "s|\\(.*pam_pwquality.so\\).*|    password\tinclude\t\tfty-password|" /etc/pam.d/common-password ;;
 esac
 
 # If pam templates exist, replace the files in pam.d by a symlink to the template

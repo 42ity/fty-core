@@ -59,7 +59,7 @@ libneon27
 libneon27-gnutls
 libnss3-tools
 libpam0g
-libpam-cracklib
+libpam-pwquality
 libprotobuf
 libsasl2-modules
 libtntdb4

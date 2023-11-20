@@ -502,6 +502,13 @@ of the REST API) to work with the 42ity unprivileged user account(s).
     libpam-modules libpam-cracklib
 ----
 
+Note that, as of Debian 12, libpam-cracklib is being replaced by
+libpam-pwquality. So you need to use:
+----
+:; apt-get install -y sasl2-bin libpam-runtime libpam-modules-bin \
+    libpam-modules libpam-pwquality
+----
+
  * Enable it to auto-start by editing '/etc/default/saslauthd' and setting:
 ----
 START=yes
