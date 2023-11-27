@@ -5,7 +5,7 @@
 
 [Unit]
 Description=Tracker that the 42ity license is accepted
-PartOf=fty-license-accepted.target
+#PartOf=fty-license-accepted.target
 
 [Path]
 PathModified=@ftydatadir@/fty-eula/license
