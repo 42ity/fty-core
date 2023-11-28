@@ -294,8 +294,10 @@ EXTRA_DIST += \
 	$(top_srcdir)/setup/92-timezone-fty.sh
 
 lensesdir=$(datadir)/fty/lenses
-lenses_SCRIPTS = $(top_srcdir)/lenses/ntp.aug
-EXTRA_DIST	+= $(lenses_SCRIPTS)
+lenses_SCRIPTS = \
+	$(top_srcdir)/lenses/ntp.aug
+EXTRA_DIST += \
+	$(top_srcdir)/lenses/ntp.aug
 
 # SystemD integrations files; if not enabled - variables remain empty
 SYSTEMD_UNITS_LOWLEVEL =
