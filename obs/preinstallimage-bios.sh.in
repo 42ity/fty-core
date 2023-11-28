@@ -1129,12 +1129,21 @@ if [ ! -x "/usr/bin/man" -a ! -x "/bin/man" ] ; then
     find "/usr/share/man" -type f -exec rm -f '{}' \;
 fi
 
-# Simplify ntp.conf
+# Set ntp.conf server
+if [ -f "/etc/ntp.conf" ]; then # Debian11- ntp
 augtool -S -I/usr/share/fty/lenses << EOF
 rm /files/etc/ntp.conf/server
 set /files/etc/ntp.conf/server[1] pool.ntp.org
 save
 EOF
+fi
+if [ -f "/etc/ntpsec/ntp.conf" ]; then # Debian12 ntpsec
+augtool -S -I/usr/share/fty/lenses << EOF
+rm /files/etc/ntpsec/ntp.conf/server
+set /files/etc/ntpsec/ntp.conf/server[1] pool.ntp.org
+save
+EOF
+fi
 
 # 42ity emulator script which can fake some of the curl behaviour with wget
 [ ! -x /usr/bin/curl ] && [ -x /usr/share/fty/scripts/curlbbwget.sh ] && \
