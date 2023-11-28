@@ -293,7 +293,7 @@ EXTRA_DIST += \
 	$(top_srcdir)/setup/ipc-meta-setup.sh \
 	$(top_srcdir)/setup/92-timezone-fty.sh
 
-lensesdir=$(datadir)/fty/lenses
+lensesdir=$(datadir)/@PACKAGE@/lenses
 lenses_SCRIPTS = \
 	$(top_srcdir)/lenses/ntp.aug
 EXTRA_DIST += \
