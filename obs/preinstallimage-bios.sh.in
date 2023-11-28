@@ -296,8 +296,9 @@ chmod 700 /usr/libexec/fty/enable-root-account
 chmod 700 /usr/libexec/fty/disable-root-account
 
 # Setup 42ity lenses
+# ntp.aug lens installed from /lenses directory (Debian 12)
 mkdir -p /usr/share/fty/lenses
-ln -sr /usr/share/augeas/lenses/dist/{build,ethers,interfaces,ntp,ntpd,pam,resolv,rx,sep,util,shellvars,quote,json}.aug \
+ln -sr /usr/share/augeas/lenses/dist/{build,ethers,interfaces,ntpd,pam,resolv,rx,sep,util,shellvars,quote,json}.aug \
     /usr/share/fty/lenses
 
 # Setup u-Boot
@@ -1130,14 +1131,16 @@ if [ ! -x "/usr/bin/man" -a ! -x "/bin/man" ] ; then
 fi
 
 # Set ntp.conf server
-if [ -f "/etc/ntp.conf" ]; then # Debian11- ntp
+# Debian 11- ntp
+if [ -f "/etc/ntp.conf" ]; then
 augtool -S -I/usr/share/fty/lenses << EOF
 rm /files/etc/ntp.conf/server
 set /files/etc/ntp.conf/server[1] pool.ntp.org
 save
 EOF
 fi
-if [ -f "/etc/ntpsec/ntp.conf" ]; then # Debian12 ntpsec
+# Debian 12 ntpsec
+if [ -f "/etc/ntpsec/ntp.conf" ]; then
 augtool -S -I/usr/share/fty/lenses << EOF
 rm /files/etc/ntpsec/ntp.conf/server
 set /files/etc/ntpsec/ntp.conf/server[1] pool.ntp.org
