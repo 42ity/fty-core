@@ -1130,6 +1130,8 @@ if [ ! -x "/usr/bin/man" -a ! -x "/bin/man" ] ; then
     find "/usr/share/man" -type f -exec rm -f '{}' \;
 fi
 
+ls -al "/usr/share/fty/lenses"
+
 # Set ntp.conf server
 # Debian 11- ntp
 if [ -f "/etc/ntp.conf" ]; then
@@ -1139,6 +1141,7 @@ set /files/etc/ntp.conf/server[1] pool.ntp.org
 save
 EOF
 fi
+
 # Debian 12 ntpsec
 if [ -f "/etc/ntpsec/ntp.conf" ]; then
 augtool -S -I/usr/share/fty/lenses << EOF
