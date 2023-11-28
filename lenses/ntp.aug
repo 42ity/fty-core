@@ -1,5 +1,5 @@
-[* ================== hotfix ================ *)
-[* - augeas/lenses/dist/ntp.aug tos arguments *)
+(* ================== hotfix ================ *)
+(* - augeas/lenses/dist/ntp.aug tos arguments *)
 (* - ntpsec support                           *)
 (* ========================================== *)
 (* NTP module for Augeas                      *)
@@ -82,8 +82,8 @@ module Ntp =
 
     let statistics_opts = statistics_flag "loopstats"
                         | statistics_flag "peerstats"
-			| statistics_flag "clockstats"
-			| statistics_flag "rawstats"
+                        | statistics_flag "clockstats"
+                        | statistics_flag "rawstats"
 
     let statistics_record = [ key "statistics" . statistics_opts* . eol ]
 
@@ -96,8 +96,8 @@ module Ntp =
 
     let filegen_opts = filegen_opt "file"
                      | filegen_opt "type"
-		     | filegen_select "enable" /(en|dis)able/
-		     | filegen_select "link" /(no)?link/
+                     | filegen_select "enable" /(en|dis)able/
+                     | filegen_select "link" /(no)?link/
 
     let filegen_record = [ label "filegen" . filegen . filegen_opts* . eol ]
 
