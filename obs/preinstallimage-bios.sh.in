@@ -1151,6 +1151,14 @@ save
 EOF
 fi
 
+# Debian 12 nut.conf
+if [ -f "/etc/nut/nut.conf" ]; then
+augtool << EOF
+set /files/etc/nut/nut.conf/MODE standalone
+save
+EOF
+fi
+
 # 42ity emulator script which can fake some of the curl behaviour with wget
 [ ! -x /usr/bin/curl ] && [ -x /usr/share/fty/scripts/curlbbwget.sh ] && \
     install -m 0755 /usr/share/fty/scripts/curlbbwget.sh /usr/bin/curl
