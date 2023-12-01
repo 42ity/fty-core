@@ -239,7 +239,7 @@ else
         for SERVICE in $DB_CONSUMERS ; do
             echo "INFO: `date -u`: enable and start ${SERVICE}"
             sudo ${SYSTEMCTL} enable "${SERVICE}" || echo "WARNING: Could not enable '${SERVICE}', is it a component of IPM Infra?"
-            sudo ${SYSTEMCTL} start "${SERVICE}" || echo "WARNING: Could not start '${SERVICE}', is it a component of IPM Infra?"
+            sudo ${SYSTEMCTL} start "${SERVICE}" --no-block || echo "WARNING: Could not start '${SERVICE}', is it a component of IPM Infra?"
         done
     else
         echo "INFO: `date -u`: enable DB_CONSUMERS"
@@ -303,7 +303,7 @@ if [[ -n "$BIOS_DEPS" ]] ; then
         for SERVICE in $BIOS_DEPS ; do
             echo "INFO: `date -u`: enable and start ${SERVICE}"
             ( sudo ${SYSTEMCTL} enable "${SERVICE}" ) || echo "WARNING: Could not enable '${SERVICE}', is it a component of IPM Infra?"
-            ( sudo ${SYSTEMCTL} start "${SERVICE}"  ) || echo "WARNING: Could not start '${SERVICE}', is it a component of IPM Infra?"
+            ( sudo ${SYSTEMCTL} start "${SERVICE}" --no-block ) || echo "WARNING: Could not start '${SERVICE}', is it a component of IPM Infra?"
         done
     else
         echo "INFO: `date -u`: enable BIOS_DEPS"
