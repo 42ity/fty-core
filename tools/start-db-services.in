@@ -230,15 +230,14 @@ list_db_consumers() {
 
 run_service()
 {
+    local service=$1
     local SC=/bin/systemctl
-    local tmp=$(echo "$($SC show -p SubState $1)" | grep "=running");
-    if [ -z "$tmp" ]; then
-        tmp=$(echo "$($SC show -p ActiveState $1)" | grep "=active");
-        if [ -z "$tmp" ]; then
-            #echo "$1 enable"
+    local tmp=$(echo "$($SC show -p SubState "$service")" | grep "=running");
+    if [ -z "$tmp" ]; then # service is not started
+        tmp=$(echo "$($SC show -p ActiveState "$service")" | grep "=active");
+        if [ -z "$tmp" ]; then # service is not enabled
             $SYSTEMCTL enable "$service" 2&>/dev/null || true
         fi
-        #echo "$1 start"
         $SYSTEMCTL start "$service" --no-block 2&>/dev/null || true
     fi
     return 0
