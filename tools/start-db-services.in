@@ -228,6 +228,22 @@ list_db_consumers() {
     echo "${ARR_GRAND_CONSUMERS[@]}"
 }
 
+run_service()
+{
+    local SC=/bin/systemctl
+    local tmp=$(echo "$($SC show -p SubState $1)" | grep "=running");
+    if [ -z "$tmp" ]; then
+        tmp=$(echo "$($SC show -p ActiveState $1)" | grep "=active");
+        if [ -z "$tmp" ]; then
+            #echo "$1 enable"
+            $SYSTEMCTL enable "$service" 2&>/dev/null || true
+        fi
+        #echo "$1 start"
+        $SYSTEMCTL start "$service" --no-block 2&>/dev/null || true
+    fi
+    return 0
+}
+
 echo "INFO: `date -u`: Finding database services and their consumers to ensure their startup..."
 
 DB_CONSUMERS="`list_db_consumers`" || DB_CONSUMERS=""
@@ -238,9 +254,10 @@ else
     if [[ "$SYSTEMCTL_COALESCE" = no ]] ; then
         for SERVICE in $DB_CONSUMERS ; do
             echo "INFO: `date -u`: enable and start ${SERVICE}"
-            sudo ${SYSTEMCTL} enable "${SERVICE}" || echo "WARNING: Could not enable '${SERVICE}', is it a component of IPM Infra?"
-            sudo ${SYSTEMCTL} start "${SERVICE}" --no-block || echo "WARNING: Could not start '${SERVICE}', is it a component of IPM Infra?"
-        done
+            #sudo ${SYSTEMCTL} enable "${SERVICE}" || echo "WARNING: Could not enable '${SERVICE}', is it a component of IPM Infra?"
+            #sudo ${SYSTEMCTL} start "${SERVICE}" --no-block || echo "WARNING: Could not start '${SERVICE}', is it a component of IPM Infra?"
+            run_service $SERVICE
+         done
     else
         echo "INFO: `date -u`: enable DB_CONSUMERS"
         sudo ${SYSTEMCTL} enable $DB_CONSUMERS || echo "WARNING: Could not enable one of DB_CONSUMERS, is it a component of IPM Infra?"
@@ -302,8 +319,9 @@ if [[ -n "$BIOS_DEPS" ]] ; then
     if [[ "$SYSTEMCTL_COALESCE" = no ]] ; then
         for SERVICE in $BIOS_DEPS ; do
             echo "INFO: `date -u`: enable and start ${SERVICE}"
-            ( sudo ${SYSTEMCTL} enable "${SERVICE}" ) || echo "WARNING: Could not enable '${SERVICE}', is it a component of IPM Infra?"
-            ( sudo ${SYSTEMCTL} start "${SERVICE}" --no-block ) || echo "WARNING: Could not start '${SERVICE}', is it a component of IPM Infra?"
+            #( sudo ${SYSTEMCTL} enable "${SERVICE}" ) || echo "WARNING: Could not enable '${SERVICE}', is it a component of IPM Infra?"
+            #( sudo ${SYSTEMCTL} start "${SERVICE}" --no-block ) || echo "WARNING: Could not start '${SERVICE}', is it a component of IPM Infra?"
+            run_service $SERVICE
         done
     else
         echo "INFO: `date -u`: enable BIOS_DEPS"
