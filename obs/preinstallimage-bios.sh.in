@@ -720,7 +720,7 @@ cp /usr/share/fty/examples/config/update-rc3.d/* /etc/update-rc3.d
 # Disable scp for all users except root (2.7.2 CCoE CVE-2020-15778)
 chmod 700 /usr/bin/scp
 # Disable sftp server for all users (2.7.2 CCoE CVE-2020-15778)
-sed '/^Subsystem.*sftp/ s/./#&/' /etc/ssh/sshd_config
+sed -i '/^Subsystem.*sftp/ s/./#&/' /etc/ssh/sshd_config
 
 # Enable ssh
 rm /etc/init.d/ssh*
