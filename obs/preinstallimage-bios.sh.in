@@ -717,6 +717,9 @@ cp /usr/share/fty/examples/config/update-rc3.d/* /etc/update-rc3.d
 # from starting for unknown reasons. Work around it by masking it.
 /bin/systemctl mask systemd-time-wait-sync.service
 
+# Disable scp for all users except root (2.7.2 CCoE CVE-2020-15778)
+chmod 700 /usr/bin/scp
+
 # Enable ssh
 rm /etc/init.d/ssh*
 echo "UseDNS no" >> /etc/ssh/sshd_config
