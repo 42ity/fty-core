@@ -718,6 +718,10 @@ cp /usr/share/fty/examples/config/update-rc3.d/* /etc/update-rc3.d
 # from starting for unknown reasons. Work around it by masking it.
 /bin/systemctl mask systemd-time-wait-sync.service
 
+# Debian 12: systemd-networkd-wait-online.target blocks 2 minutes at startup (timeout)
+# Work around it by masking it (or choose a low TIMEOUT arg. for the ExecStart command)
+/bin/systemctl mask systemd-networkd-wait-online.service
+
 # Enable ssh
 rm /etc/init.d/ssh*
 echo "UseDNS no" >> /etc/ssh/sshd_config
