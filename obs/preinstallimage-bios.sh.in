@@ -719,9 +719,9 @@ cp /usr/share/fty/examples/config/update-rc3.d/* /etc/update-rc3.d
 /bin/systemctl mask systemd-time-wait-sync.service
 
 # Debian 12: systemd-networkd-wait-online.target blocks 2 minutes at startup (timeout)
-# Work around adding a low timeout (sec.) to the ExecStart command)
-
-sfile=/etc/systemd/system/systemd-networkd-wait-online.service
+# Work around adding a low timeout (sec.) to the ExecStart command
+# Note: service mask or disable have some side effects to pass the EULA
+sfile=/lib/systemd/system/systemd-networkd-wait-online.service
 if [ -f "$sfile" ]; then
 sed -i '/^ExecStart=.*systemd-networkd-wait-online\.*/ s/$/ --timeout=2/' $sfile
 fi
