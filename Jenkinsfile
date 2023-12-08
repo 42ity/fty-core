@@ -123,7 +123,7 @@ pipeline {
     stages {
         stage ('pre-clean') {
                     steps {
-                        milestone ordinal: 20, label: "${env.JOB_NAME}@${env.BRANCH_NAME}"
+                        //milestone ordinal: 20, label: "${env.JOB_NAME}@${env.BRANCH_NAME}"
                         dir("tmp") {
                             sh 'if [ -s Makefile ]; then make -k distclean || true ; fi'
                             sh 'chmod -R u+w .'
