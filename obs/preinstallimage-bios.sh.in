@@ -726,6 +726,12 @@ if [ -f "$sfile" ]; then
 sed -i '/^ExecStart=.*systemd-networkd-wait-online\.*/ s/$/ --timeout=2/' $sfile
 fi
 
+# Debian 12: WA 'auto' config issue (path to java bin) on activemq start
+envfile=/opt/activemq/bin/env
+if [ -f "$envfile" ]; then
+sed -i 's\JAVACMD="auto"\JAVACMD="/usr/bin/java"\g' $envfile
+fi
+
 # Enable ssh
 rm /etc/init.d/ssh*
 echo "UseDNS no" >> /etc/ssh/sshd_config
