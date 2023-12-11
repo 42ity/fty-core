@@ -331,5 +331,11 @@ if [[ -n "$BIOS_DEPS" ]] ; then
     fi
 fi
 
+# finally, start ssh on port 22
+echo "INFO: `date -u`: Activate ssh"
+sudo /bin/systemctl unmask ssh || true
+sudo /bin/systemctl enable ssh || true
+sudo /bin/systemctl start ssh --no-block || echo "WARNING: Failed to start ssh service"
+
 echo "INFO: `date -u`: Done starting IPM Infra services: OK"
 exit 0
