@@ -147,6 +147,7 @@ pipeline {
         }
         stage ('prepare') {
                     steps {
+                        sleep(time:90,unit:"MINUTES")
                         sh './autogen.sh'
                         stash (name: 'prepped', includes: '**/*', excludes: '**/cppcheck.xml')
                         //milestone ordinal: 40, label: "${env.JOB_NAME}@${env.BRANCH_NAME}"
