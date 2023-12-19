@@ -31,9 +31,6 @@
 [ -z "$TZ" ] && TZ=UTC
 export LANG LANGUAGE LC_ALL TZ
 
-#Required to run ./autogen.sh
-export CONFIG_SHELL=/bin/bash
-
 command -v libtool >/dev/null 2>&1 || command -v libtoolize >/dev/null 2>&1
 if  [ $? -ne 0 ]; then
     echo "autogen.sh: error: could not find libtool nor libtoolize." 1>&2
