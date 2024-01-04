@@ -479,7 +479,7 @@ EOF
 case "$IMGTYPE" in
     *devel*)
         echo -e "Acquire::http::Proxy \"http://proxy.emea.etn.com:8080/\";\nAcquire::https::Proxy \"http://proxy.emea.etn.com:8080/\";\nAcquire::http::Proxy::obs.mbt.lab.etn.com DIRECT;" > /etc/apt/apt.conf.d/02eaton-proxy
-        echo -e "deb http://deb.debian.org/debian-debug/ bullseye-debug main" >> /etc/apt/sources.list.d/debian.list
+        echo -e "deb http://deb.debian.org/debian-debug/ bookworm-debug main" >> /etc/apt/sources.list.d/debian.list
         ;;
     deploy|*)
         ;;
