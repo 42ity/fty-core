@@ -1560,6 +1560,7 @@ rm -f /usr/bin/qemu*
 # Make sure we have no cruft in the image (NFS-based builds on ARM farm may lag)
 echo "Syncing OS image filesystem..."
 # WORKAROUND: Deactive temporaly sync command
+sleep 30
 #sync; sync; sleep 3; sync
 find / -type f -mount -name '\.nfs????????????????????????' -exec rm -f '{}' \; 2>/dev/null
 # Sanitize the OS image from some more build-system cruft
@@ -1568,6 +1569,7 @@ rm -rf /.reorder /.oldroot
 rm -rf /.preinstallimage /.preinstall_image
 # WORKAROUND: Deactive temporaly sync command
 #sync
+sleep 30
 
 # Some shells want these bits
 chmod a+rx /etc/profile.d/*
