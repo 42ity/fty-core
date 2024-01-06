@@ -735,8 +735,9 @@ fi
 # Enable ssh
 rm /etc/init.d/ssh*
 echo "UseDNS no" >> /etc/ssh/sshd_config
-# Set the default value to true, to allow the change password through ssh with Usmv2
-sed -i "s|^ChallengeResponseAuthentication .*|ChallengeResponseAuthentication yes|" /etc/ssh/sshd_config
+
+# Allow sshd to prompt for password change using PAM modules (deb12, disabled by default)
+sed -i 's/^KbdInteractiveAuthentication .*/KbdInteractiveAuthentication yes/g' /etc/ssh/sshd_config
 
 # Limit to Administrator user (i.e. no Viewers like "monitor")
 echo "AllowGroups bios-admin root" >> /etc/ssh/sshd_config
@@ -775,11 +776,11 @@ for SSHD_INSTANCE_UNITFILE in \
 ; do
     if [ -s "$SSHD_INSTANCE_UNITFILE" ] ; then
         sed -e 's|\[Service\]|[Service]\nExecStartPre=/usr/bin/ssh-keygen -A\nExecStartPre=/bin/mkdir -p /run/sshd\nExecStartPre=/bin/chmod 0755 /run/sshd\n|' \
-	    -e 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/fty/fty-eula/license\nConditionPathExists=@OVERLAY_PATH@/etc/shadow|' \
-	    -e 's|^\(RuntimeDirectory.*=.*\)$|#AVOID_REMOVING# \1|' \
-	< "$SSHD_INSTANCE_UNITFILE" \
-	> /etc/systemd/system/ssh@.service \
-	&& break
+        -e 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/fty/fty-eula/license\nConditionPathExists=@OVERLAY_PATH@/etc/shadow|' \
+        -e 's|^\(RuntimeDirectory.*=.*\)$|#AVOID_REMOVING# \1|' \
+    < "$SSHD_INSTANCE_UNITFILE" \
+    > /etc/systemd/system/ssh@.service \
+    && break
     fi
 done
 /bin/systemctl disable ssh.service
