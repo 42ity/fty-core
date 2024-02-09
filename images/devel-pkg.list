@@ -108,7 +108,7 @@ libjsoncpp-dev
 libldap2-dev
 liblog4cplus-dev
 libltdl-dev
-liblua5.1-0-dev
+liblua5.4-0-dev
 liblzma-dev
 libmagic-dev
 libmariadbclient-dev
@@ -137,7 +137,7 @@ libzmq3-dev
 linuxdoc-tools
 linux-libc-dev
 locales
-lua5.1
+lua5.4
 lynx
 m4
 malamute-dbg
