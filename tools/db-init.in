@@ -213,10 +213,6 @@ EOF
 		echo "Database for BIOS initialization - creating BIOS_DB_RW_LEGACY symlink pointing to correct password file BIOS_DB_RW..." >&2 && \
 		rm -f "${BIOS_DB_RW_LEGACY}" && \
 			ln -s "${BIOS_DB_RW}" "${BIOS_DB_RW_LEGACY}"
-		# Our web-server should be able to read these credentials, at least per current implementation of license_POST
-		chgrp www-data "${BIOS_DB_RW}"
-		chmod g+r "${BIOS_DB_RW}"
-		chgrp www-data "${CREDSQL_DIR}"
 	fi
 
 	if [ -L "${BIOS_DB_RO_LEGACY}" ] && [ -s "${BIOS_DB_RO}" ] && diff -q "${BIOS_DB_RO_LEGACY}" "${BIOS_DB_RO}" ; then
@@ -225,9 +221,13 @@ EOF
 		# Code above should have ensured that BIOS_DB_RO is correct
 		echo "Database for BIOS initialization - creating BIOS_DB_RO_LEGACY symlink pointing to correct password file BIOS_DB_RO..." >&2 && \
 		rm -f "${BIOS_DB_RO_LEGACY}" && \
-		ln -s "${BIOS_DB_RO}" "${BIOS_DB_RO_LEGACY}"
+			ln -s "${BIOS_DB_RO}" "${BIOS_DB_RO_LEGACY}"
 	fi
 
+	# Our web-server should be able to read these credentials, at least per current implementation of license_POST
+	chgrp www-data "${BIOS_DB_RW}" || true
+	chmod g+r "${BIOS_DB_RW}" || true
+	chgrp www-data "${CREDSQL_DIR}" || true
 }
 
 # Common variable fir this run, even if several schema updates are uploaded
