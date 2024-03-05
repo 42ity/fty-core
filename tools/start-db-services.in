@@ -167,9 +167,17 @@ else
         || die "Starting a core database-related service failed ($?)"
 fi
 
-sleep 2
+# check db is initialized properly
+
+for i in {1..10}; do
+    echo "INFO: `date -u`: wait for /etc/default/bios-db-rw updates (step: $i)"
+    sleep 2
+    [[ -s /etc/default/bios-db-rw ]] && break
+done
 
 [[ -s /etc/default/bios-db-rw ]] || die "/etc/default/bios-db-rw is missing or empty"
+
+echo "INFO: `date -u`: /etc/default/bios-db-rw updated properly"
 
 # Note: This loop enables and starts all services for which we have a unit file
 # and that match our query (consumers of database or their further consumers).
