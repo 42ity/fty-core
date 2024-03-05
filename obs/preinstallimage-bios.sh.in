@@ -529,7 +529,7 @@ fi
 
 # Uninstall various packages that are not needed
 # Note: We restore "/bin/diff" and "/bin/*grep" via busybox, below
-for i in apt fakeroot ncurses-bin diffutils grep sysvinit ncurses-common lsb-release $(dpkg -l | awk '/perl/{ print $2; }'); do
+for i in apt fakeroot ncurses-bin diffutils grep sysvinit ncurses-common lsb-release; do
     case "$IMGTYPE" in
         *devel*)
             echo dpkg -P --force-all $i
@@ -550,18 +550,11 @@ esac
 # Setup all the busybox commands, if they're not provided by different package
 busybox --install -s
 
-# Original Debian /usr/sbin/update-rc.d tool is a script implemented in Perl.
-# Replace it with our shell equivalent if Perl is not available, so that the
-# Debian systemd can cover services still implemented via /etc/init.d scripts.
-if [ ! -x /usr/bin/perl ] && [ -x /usr/share/fty/scripts/update-rc.d.sh ] && \
-    head -1 /usr/sbin/update-rc.d | grep perl >/dev/null \
-; then
-    echo "Replacing perl version of /usr/sbin/update-rc.d with a shell implementation" >&2
-    rm -f /usr/sbin/update-rc.d || true
-    install -m 0755 /usr/share/fty/scripts/update-rc.d.sh /usr/sbin/update-rc.d
-else
-    echo "NOTE: Keeping the perl version of /usr/sbin/update-rc.d in place" >&2
-fi
+# To do
+# clean up : /usr/share/fty/scripts/update-rc.d.sh
+# this script used to replace /usr/sbin/update-rc.d perl tool by 
+# our shell equivalent if Perl is not available
+# so we don't need it as we install perl in both devel/deploy image
 
 # Setup 42ity security
 mkdir -p /etc/pam.d
