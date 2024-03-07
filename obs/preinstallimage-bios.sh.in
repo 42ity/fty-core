@@ -980,7 +980,7 @@ done
 # Tailor the packaged fty-rest configuration to names and paths in OS image product
 sed -i 's|.*<allUserGroups>.*|<allUserGroups>yes</allUserGroups>|' /etc/tntnet/bios.d/99_end.xml || true
 sed -e 's|<!--.*<user>.*|<user>www-data</user>|' \
-    -e 's|<!--.*<group>.*|<group>'"${SASL_GROUP}"'</group>|' \
+    -e 's|<!--.*<group>.*|<group>www-data</group>|' \
     -e 's|.*<daemon>.*|<daemon>0</daemon>|' \
     -e 's|\(.*\)<dir>.*|\1<dir>/usr/share/bios-web/</dir>|' \
     -e 's|<!--.*<sslProtocols>.*|<sslProtocols>-TLSv1_0</sslProtocols>|' \
