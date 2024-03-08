@@ -169,8 +169,8 @@ fi
 
 # check db is initialized properly
 
+echo "INFO: `date -u`: wait for /etc/default/bios-db-rw updates..."
 for i in {1..10}; do
-    echo "INFO: `date -u`: wait for /etc/default/bios-db-rw updates (step: $i)"
     sleep 2
     [[ -s /etc/default/bios-db-rw ]] && break
 done
