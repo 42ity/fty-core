@@ -529,7 +529,7 @@ fi
 
 # Uninstall various packages that are not needed
 # Note: We restore "/bin/diff" and "/bin/*grep" via busybox, below
-for i in apt fakeroot ncurses-bin diffutils grep sysvinit ncurses-common lsb-release; do
+for i in apt fakeroot ncurses-bin diffutils grep sysvinit ncurses-common lsb-release libc6-dev; do
     case "$IMGTYPE" in
         *devel*)
             echo dpkg -P --force-all $i
