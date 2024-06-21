@@ -545,7 +545,7 @@ ensure_root_password || exit $?
 
 # Handle mariadb upgrade (tables compatibility)
 # Do nothing if no upgrade needed
-mariadb-upgrade -u root
+mariadb-upgrade -u root || true
 
 # Note that BIOS_DB_INIT is very optional and mostly intended
 # for development. Production code does not set it.
