@@ -55,6 +55,8 @@ done
 
 chgrp -R nut /var/lib/nut || RES=$?
 chown root /var/lib/nut || RES=$?
+# Change card server and client certificates to be owned by the NUT user
+chown nut /var/lib/nut/*.* || RES=$?
 chmod 770 /var/lib/nut || RES=$?
 
 chgrp -R nut /etc/nut || RES=$?
