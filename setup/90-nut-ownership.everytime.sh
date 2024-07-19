@@ -62,4 +62,12 @@ chown -R root /etc/nut || RES=$?
 chmod -R 640 /etc/nut || RES=$?
 chmod 755 /etc/nut || RES=$?
 
+# IPMPROG-9018 repair: set 'nut' GID for /var/lib/nut/*.* files
+# (produced by discovery-monitoring-daemon)
+files=$(ls /var/lib/nut/*.* 2>/dev/null)
+for file in $files; do
+    echo "nutify '$file'"
+    chgrp nut $file || true
+done
+
 exit $RES
