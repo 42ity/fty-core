@@ -123,7 +123,7 @@ pipeline {
     stages {
         stage ('pre-clean') {
                     steps {
-                        milestone ordinal: 20, label: "${env.JOB_NAME}@${env.BRANCH_NAME}"
+                        //milestone ordinal: 20, label: "${env.JOB_NAME}@${env.BRANCH_NAME}"
                         dir("tmp") {
                             sh 'if [ -s Makefile ]; then make -k distclean || true ; fi'
                             sh 'chmod -R u+w .'
@@ -137,7 +137,7 @@ pipeline {
                         retry(3) {
                             checkout scm
                         }
-                        milestone ordinal: 30, label: "${env.JOB_NAME}@${env.BRANCH_NAME}"
+                        //milestone ordinal: 30, label: "${env.JOB_NAME}@${env.BRANCH_NAME}"
                         script {
                             buildenv.setExtraEnvVariables()
                             buildenv.listInstalledPackage()
@@ -149,7 +149,7 @@ pipeline {
                     steps {
                         sh './autogen.sh'
                         stash (name: 'prepped', includes: '**/*', excludes: '**/cppcheck.xml')
-                        milestone ordinal: 40, label: "${env.JOB_NAME}@${env.BRANCH_NAME}"
+                        //milestone ordinal: 40, label: "${env.JOB_NAME}@${env.BRANCH_NAME}"
                     }
         }
         stage ('configure') {
