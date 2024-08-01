@@ -43,6 +43,9 @@ is_set() (
 )
 
 config_defaults() {
+    PATH="/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
+    export PATH
+
     # This routine sets variables required for the script to work
     # They can be set earlier by configuration files or caller's env
 
@@ -170,6 +173,17 @@ config_defaults() {
     # some release of IPM2). This was set arbitrarily generously at 300MB.
     OVALOADER_DEVICE_IPM2="/dev/sda"
 
+    # IPMPROG-9119 : Hyper-V fix (rare on VMWare)
+    # choose the right loader device from its size
+    for sd in /dev/sda /dev/sdb /dev/sdc; do
+        aux=$(blockdev --getsize64 $sd)
+        if [ $? -eq 0 ] && [ "$aux" = "315621376" ]; then
+            OVALOADER_DEVICE_IPM2="$sd"
+            break
+        fi
+    done
+    echo "${LOGMSG_PREFIX}INFO: OVALOADER_DEVICE_IPM2=$OVALOADER_DEVICE_IPM2"
+
     [ -b "$OVALOADER_DEVICE_IPM2" -o -c "$OVALOADER_DEVICE_IPM2" ] \
     && OVALOADER_MAX_SIZE_IPM2="`blockdev --getsize64 ${OVALOADER_DEVICE_IPM2}`" \
     && [ "$OVALOADER_MAX_SIZE_IPM2" -gt 0 ] \
@@ -179,9 +193,6 @@ config_defaults() {
     is_set OVALOADER_DEVICE || OVALOADER_DEVICE="$OVALOADER_DEVICE_IPM2"
 
     is_set WANT_REBOOT || WANT_REBOOT=no
-
-    PATH="/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
-    export PATH
 }
 
 ### NOTE: This script can be copied to VM hosts and used standalone, so we do
