@@ -503,7 +503,7 @@ pRUzVDJxOJIDA2ynCEOmK0QJeotwWDmrGPxYdu0XRarrnAsGXBpXWJSk6pwtf48n
 +AwyKbuC+s/gevcIIAFCCeSrETAA1TgTj9zQjmsymi4MEKDYRJiJG4H+qhkjfkug
 /sn40RGAw1tgpOVxclZL3vz63KEflhXEMtkN9WRCxnk2l+bHFfUXrVKUekDvf/6k
 ut/Vp2gSS0IMZdIx2RfHI6hi9crD7a/qD4cWImnPdN8bjmcE0rAPDOcSn9ekNf2k
-XlgX1+74YAMq6XycaCWkABArVmjjlw9Bj8knamY8dlCbFpIi5GDg/9wc/YefuQIN
+XlgX1+74YAMq6XycaCWkABArVmjjlw9Bj8knamY8dlCbFpIi5GDg/9wc/YefuQIN0
 BGGvLlkQCAD88y/aNAcKiNo6DcBeDJL2lTtixBP6Pj2ldFGhSxqlpVfJJWZcxQgZ
 uLG8FdRyD+ymS/lPrA8K1JTci2nHJsxlDTKSzO7BLvL3TzTLoYVxwbnlGiP6QPFc
 pRf19ho34IX1XV07xoJDTBJ+0hxYOVEFtjYVB+IGztbnw/21M1fLGVGO5oMKzQQW
@@ -1554,7 +1554,7 @@ rm -f /usr/bin/qemu*
 # Make sure we have no cruft in the image (NFS-based builds on ARM farm may lag)
 echo "Syncing OS image filesystem..."
 # WORKAROUND: Deactive temporaly sync command
-sleep 30
+sleep 300
 #sync; sync; sleep 3; sync
 find / -type f -mount -name '\.nfs????????????????????????' -exec rm -f '{}' \; 2>/dev/null
 # Sanitize the OS image from some more build-system cruft
@@ -1563,7 +1563,7 @@ rm -rf /.reorder /.oldroot
 rm -rf /.preinstallimage /.preinstall_image
 # WORKAROUND: Deactive temporaly sync command
 #sync
-sleep 30
+sleep 300
 
 # Some shells want these bits
 chmod a+rx /etc/profile.d/*
