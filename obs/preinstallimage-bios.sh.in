@@ -367,6 +367,9 @@ mkdir -p /etc/network
 # The IPC loader renames interfaces to LANx pattern, current OVA one does not
 FIRSTIFNAME="`file -b /bin/bash | sed -e 's|.*x86-64.*|eth0|' -e 's|.*ARM.*|LAN1|'`"
 mkdir -p /etc/network/interfaces.d
+
+## Review1: obsolete debian version
+## Proposal1: remove it and keep the default case
 case "$OSIMAGE_DISTRO" in
     Debian_8.0) # syntax not supported, parsing the lines below fails
         # in main file, spews errors but proceeds in included config
@@ -381,6 +384,8 @@ EOF
         ;;
 esac
 
+## Review2: check interfaces network?
+## Proposal2: check
 cat > /etc/network/interfaces <<EOF
 auto lo
 # Note: the list of configured "iface"s below must contain all these allowed:
@@ -408,6 +413,8 @@ if [ -e /lib/udev/rules.d/80-net-setup-link.rules ] || [ -e /usr/lib/udev/rules.
     ln -s /dev/null /etc/udev/rules.d/80-net-setup-link.rules
 fi
 
+## Review3: check resolv file
+## Proposal3: check
 cat > /etc/resolv.conf <<EOF
 domain mbt.lab.etn.com
 search mbt.lab.etn.com
@@ -447,6 +454,9 @@ EOF
 # Note that this (and other code) currently hardcodes a DEB package based
 # distro, and specifically Jessie (Debian 8), into the image recipe.
 mkdir -p /etc/apt/sources.list.d
+
+## Review4: obsolete debian version
+## Proposal4: update teh fallback
 # Our build system is now expected to provide an OSIMAGE_DISTRO value and
 # pre-populate /etc/apt/sources.list.d/debian.list with a proper repository
 if test -z "${OSIMAGE_DISTRO-}" ; then
@@ -460,6 +470,8 @@ EOF
     echo "WARNING : Fallback to OSIMAGE_DISTRO='$OSIMAGE_DISTRO' since none was provided" >&2
 fi
 
+## Review5: 'Pool\:/master' does not exist !!!!
+## Proposal5: should be craeted on OBS ? how? 
 # Append the (currently internal) OBS source of built packages:
 # Note: do not change the 'Pool\:/master' reference below because it may be
 # substituted to corresponding actual repository during OBS image creation.
@@ -486,6 +498,9 @@ case "$IMGTYPE" in
 esac
 
 # This may be not available on space-constrained deploy images
+## Review6: apt-key is deprecated
+## Proposal6: should use gpg to add repository keys
+##question6: which repo key ?
 if command -v apt-key >/dev/null ; then
 cat << EOF | apt-key add -
 -----BEGIN PGP PUBLIC KEY BLOCK-----
@@ -865,7 +880,15 @@ esac
 
 # Enable 42ity services (distributed as a systemd preset file)
 # NOTE that in Debian 10 this seems to also process ALL service files
-# found in the system, not just presets.
+## found in the system, not just presets.
+## Review7: some services don't exist
+## Proposal7: for which reason? somethting to do remove them or create them?
+## [  139s] Failed to disable unit, unit lcd-boot-display.service does not exist.
+## [  139s] Failed to disable unit, unit lcd-net-display.service does not exist.
+## [  139s] Failed to disable unit, unit lcd-shutdown-display.service does not exist.
+## [  139s] Failed to disable unit, unit lcd-shutdown-inverse-display.service does not exist.
+## [  139s] Failed to disable unit, unit lcd-reboot-display.service does not exist.
+## [  139s] Failed to disable unit, unit lcd-poweroff-display.service does not exist
 /bin/systemctl preset-all
 if [ "`uname -m`" = x86_64 ]; then
     /bin/systemctl disable lcd-boot-display || true
@@ -891,6 +914,9 @@ else
     /bin/systemctl enable lcd-poweroff-display || true
     #sed -i 's|PathChanged=/etc|PathChanged=/mnt/nand/overlay/etc|' /usr/lib/systemd/system/composite-metrics\@.path
 fi
+## Review8: some services don't exist
+## Proposal8:for which reason? somethting to do remove them or create them?
+##[  139s] Failed to disable unit, unit tntnet@.service does not exist.
 
 # Our tntnet unit rocks, disable packaged default
 if [ -s /lib/systemd/system/fty-tntnet@.service ]; then
@@ -1172,6 +1198,9 @@ fi
     install -m 0755 /usr/share/fty/scripts/curlbbwget.sh /usr/bin/curl
 
 #########################################################################
+## Review9: check this agent ?
+## Proposal9: --
+
 # Setup zabbix
 # TODO: revise the list of 42ity services here
 if [ -f /usr/bin/zabbix_agent ]; then
