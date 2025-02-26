@@ -27,7 +27,7 @@ INST="`basename "$1" .service`"
 
 echo "Check requirements of tntnet@$INST instance for 42ity"
 
-# /var/log/message must be readable (fty-rest/getlog_GET.ecpp)
+# /var/log/messages must be readable (fty-rest/getlog_GET.ecpp)
 if [ -f /var/log/messages ]; then
     chmod a+r /var/log/messages
 fi
