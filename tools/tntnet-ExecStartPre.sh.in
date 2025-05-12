@@ -76,6 +76,13 @@ rm -rf "${SPOOL_DIR}"
 mkdir -p "${SPOOL_DIR}"
 chown "${WWW_USER}": "${SPOOL_DIR}"
 
+# SW update (files must be owned/readable by WWW_USER)
+SWD="/var/lib/fty/sw-update"
+if [ -d "${SWD}" ]; then
+    chown ${WWW_USER}:${WWW_USER} ${SWD}
+    chown ${WWW_USER}:${WWW_USER} ${SWD}/*
+fi
+
 # Note: The webserver systemd unit starts life as a root, and later drops
 # privileges according to its configuration. However it keeps the USER=root
 # and LOGNAME=root and HOME=/root definitions that are exported to child
