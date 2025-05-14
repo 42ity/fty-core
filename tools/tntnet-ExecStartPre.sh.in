@@ -79,8 +79,8 @@ chown "${WWW_USER}": "${SPOOL_DIR}"
 # SW update (files must be owned/readable by WWW_USER)
 SWD="/var/lib/fty/sw-update"
 if [ -d "${SWD}" ]; then
-    chown ${WWW_USER}:${WWW_USER} ${SWD}
-    chown ${WWW_USER}:${WWW_USER} ${SWD}/*
+    chown ${WWW_USER}:${WWW_USER} ${SWD} || true
+    chown ${WWW_USER}:${WWW_USER} ${SWD}/* || true
 fi
 
 # Note: The webserver systemd unit starts life as a root, and later drops
