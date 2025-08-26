@@ -12,6 +12,10 @@ fi
 # Create or overwrite the blacklist file
 echo "# Blacklist modules" > "$BLACKLIST_FILE"
 
+# Add ksmbd module to the blacklist
+echo "\n# KSMBD" >> "$BLACKLIST_FILE"
+echo "blacklist ksmbd" >> "$BLACKLIST_FILE"
+
 # Add ath12k module to the blacklist
 echo "\n# ATH12K" >> "$BLACKLIST_FILE"
 echo "blacklist ath12k" >> "$BLACKLIST_FILE"
