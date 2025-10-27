@@ -46,6 +46,11 @@ getent group "${NUT_GROUP}" >/dev/null \
 
 RES=0
 for D in /run/nut /var/run/nut /var/state/nut /var/state/ups ; do
+    #hotfix Debian13 & nut incomplete installation issue: create dirs if non existing
+    if [ ! -d "$D" ] ; then
+        mkdir -p "$D" || true
+    fi
+    #hotfix-end
     if [ -d "$D" ] ; then
         chown -R nut:nut "$D" || true
         chown root "$D" || true
