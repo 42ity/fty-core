@@ -60,6 +60,9 @@ echo "blacklist spi_bitbang" >> "$BLACKLIST_FILE"
 echo "blacklist spi_bcm2835" >> "$BLACKLIST_FILE"
 echo "blacklist spidev" >> "$BLACKLIST_FILE"
 
+# Add nfs module to the blacklist (nfs-kernel-server)
+echo "\n# NFS" >> "$BLACKLIST_FILE"
+echo "blacklist nfsd" >> "$BLACKLIST_FILE"
 
 echo "Blacklisted modules written to $BLACKLIST_FILE"
 
