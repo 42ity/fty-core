@@ -70,6 +70,16 @@ echo "\n# Realtek wireless" >> "$BLACKLIST_FILE"
 echo "blacklist rtl8723bs" >> "$BLACKLIST_FILE"
 echo "blacklist rtl8187" >> "$BLACKLIST_FILE"
 
+# Add CAN modules to the blacklist
+echo "\n# CAN" >> "$BLACKLIST_FILE"
+echo "blacklist can" >> "$BLACKLIST_FILE"
+echo "blacklist can_raw" >> "$BLACKLIST_FILE"
+echo "blacklist can_bcm" >> "$BLACKLIST_FILE"
+echo "blacklist can_gw" >> "$BLACKLIST_FILE"
+echo "blacklist vcan" >> "$BLACKLIST_FILE"
+echo "blacklist gs_usb" >> "$BLACKLIST_FILE"
+echo "blacklist slcan" >> "$BLACKLIST_FILE"
+
 echo "Blacklisted modules written to $BLACKLIST_FILE"
 
 exit 0
