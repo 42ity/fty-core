@@ -63,6 +63,7 @@ echo "blacklist spidev" >> "$BLACKLIST_FILE"
 # Add nfs module to the blacklist (nfs-kernel-server)
 echo "\n# NFS" >> "$BLACKLIST_FILE"
 echo "blacklist nfsd" >> "$BLACKLIST_FILE"
+echo "blacklist nfs" >> "$BLACKLIST_FILE"
 
 # Add rtl8723bs module to the blacklist (Realtek wireless LAN driver)
 echo "\n# Realtek wireless" >> "$BLACKLIST_FILE"
