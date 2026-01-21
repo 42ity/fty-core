@@ -35,10 +35,18 @@ if [ ! -f "$NTP_CONF" ]; then
         exit 1
     fi
 fi
+echo "NTP_CONF=$NTP_CONF"
 
 # A modification of the persistent configuration, with addition of time
-# sources last announced by a DHCP responce. See also NTP_DHCP_CONF_RUNTIME.
-NTP_DHCP_CONF=/var/lib/ntp/ntp.conf.dhcp
+# sources last announced by a DHCP response. See also NTP_DHCP_CONF_RUNTIME.
+NTP_DHCP_CONF=
+for dir in "/var/lib/ntpsec" "/var/lib/ntp"; do
+    if [ -d "$dir" ]; then
+        NTP_DHCP_CONF="$dir/ntp.conf.dhcp"
+        break
+    fi
+done
+echo "NTP_DHCP_CONF=$NTP_DHCP_CONF"
 
 # The systemd service unit can be "disabled" or "masked" if users want a
 # manually set clock - do not ask the DHCP client to request and perhaps
