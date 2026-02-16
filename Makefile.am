@@ -247,7 +247,9 @@ ipc_meta_setupdir = $(datadir)/@PACKAGE@/setup/
 # Note: use srcdir for verbatim scripts, builddir for templated .sh.in products
 ipc_meta_setup_SCRIPTS = \
 	$(top_srcdir)/setup/01-bios-eula.sh \
+	$(top_srcdir)/setup/01-console-logs-off.everytime.sh \
 	$(top_srcdir)/setup/02-migrate-users-bios-script.sh \
+	$(top_srcdir)/setup/08-blacklist-modules.everytime.sh \
 	$(top_srcdir)/setup/09-install-hosts-redirect.everytime.sh \
 	$(top_srcdir)/setup/09-install-swap-memory.everytime.sh \
 	$(top_srcdir)/setup/10-bios-gpio.sh \
@@ -273,7 +275,9 @@ ipc_meta_setup_SCRIPTS = \
 
 EXTRA_DIST += \
 	$(top_srcdir)/setup/01-bios-eula.sh \
+	$(top_srcdir)/setup/01-console-logs-off.everytime.sh \
 	$(top_srcdir)/setup/02-migrate-users-bios-script.sh \
+	$(top_srcdir)/setup/08-blacklist-modules.everytime.sh \
 	$(top_srcdir)/setup/09-install-hosts-redirect.everytime.sh \
 	$(top_srcdir)/setup/09-install-swap-memory.everytime.sh \
 	$(top_srcdir)/setup/10-bios-gpio.sh \
