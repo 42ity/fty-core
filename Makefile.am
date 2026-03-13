@@ -250,6 +250,7 @@ ipc_meta_setup_SCRIPTS = \
 	$(top_srcdir)/setup/01-console-logs-off.everytime.sh \
 	$(top_srcdir)/setup/02-migrate-users-bios-script.sh \
 	$(top_srcdir)/setup/08-blacklist-modules.everytime.sh \
+	$(top_srcdir)/setup/09-install-hosts-redirect.everytime.sh \
 	$(top_srcdir)/setup/09-install-swap-memory.everytime.sh \
 	$(top_srcdir)/setup/10-bios-gpio.sh \
 	$(top_srcdir)/setup/11-forget-bios-devsvcs-1.sh \
@@ -277,6 +278,7 @@ EXTRA_DIST += \
 	$(top_srcdir)/setup/01-console-logs-off.everytime.sh \
 	$(top_srcdir)/setup/02-migrate-users-bios-script.sh \
 	$(top_srcdir)/setup/08-blacklist-modules.everytime.sh \
+	$(top_srcdir)/setup/09-install-hosts-redirect.everytime.sh \
 	$(top_srcdir)/setup/09-install-swap-memory.everytime.sh \
 	$(top_srcdir)/setup/10-bios-gpio.sh \
 	$(top_srcdir)/setup/11-forget-bios-devsvcs-1.sh \
