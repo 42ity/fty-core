@@ -421,7 +421,7 @@ ZeroMQ and friends
 ~~~~~~~~~~~~~~~~~~
  * Install ZeroMQ and related project parts:
 ----
-:; apt-get install -y libzmq3-dev libczmq-dev gsl-bin
+:; apt-get install -y libczmq-dev gsl-bin
 ----
 
  * On a rare system used to develop the ZMQ-based protocols involved

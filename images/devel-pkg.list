@@ -132,7 +132,6 @@ libtntnet-dev
 libtool
 libtool-bin
 libxml2-utils
-libzmq3-dev
 linuxdoc-tools
 linux-libc-dev
 locales
