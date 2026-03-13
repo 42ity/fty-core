@@ -124,7 +124,6 @@ libprotobuf-dev
 libsasl2-dev
 libselinux1-dev
 libsnmp-dev
-libsodium-dev
 libsystemd-dev
 libtntdb4
 libtntdb-dbg
@@ -133,7 +132,6 @@ libtntnet-dev
 libtool
 libtool-bin
 libxml2-utils
-libzmq3-dev
 linuxdoc-tools
 linux-libc-dev
 locales
