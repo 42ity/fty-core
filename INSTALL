@@ -421,10 +421,10 @@ ZeroMQ and friends
 ~~~~~~~~~~~~~~~~~~
  * Install ZeroMQ and related project parts:
 ----
-:; apt-get install -y libsodium-dev libzmq3-dev libczmq-dev gsl-bin
+:; apt-get install -y libzmq3-dev libczmq-dev gsl-bin
 ----
 
- * On a rare system used to develop the ZMQ-based protocols involved 
+ * On a rare system used to develop the ZMQ-based protocols involved
 in the 42ity code project (i.e. almost never) one might need 'zproto'
 and 'gsl' programs used to generate the C sources and headers further
 used by an application project like 42ity. Both of these are available
@@ -453,7 +453,7 @@ To create the local group and user accounts needed for 42ity, run the script
 :; CREATE_HOME=yes tools/init-os-accounts.sh
 ----
 
-The script allows much customization intended for image construction and 
+The script allows much customization intended for image construction and
 other advanced non-default applications; for now see the comments in its
 code for details on further configuration.
 
@@ -550,7 +550,7 @@ which this snippet references:
 
 NOTE: the default PAM configurations in the OS are somewhat relaxed by
 allowing authentication into service names which are not actually defined
-in the current OS security setup. This can apparently be forbidden with 
+in the current OS security setup. This can apparently be forbidden with
 changes to the file '/etc/pam.d/other', but the matter is out of scope
 of our project. For more details, see:
 
@@ -737,7 +737,7 @@ errors are detected.
 
 GCC4.8+ also supports a Thread Sanitizer, which allows to detect race
 conditions. These builds are much bigger and slower (approx 15x), so
-this mode is off by default and can be enabled only explicitly with 
+this mode is off by default and can be enabled only explicitly with
 `./configure --enable-thread-sanitizer`. Depending on the compiler,
 this may be incompatible with Address Sanitizer, so ASan defaults
 to disabled if TSan is requested. If both features are requested

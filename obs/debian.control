@@ -33,7 +33,6 @@ Depends:
     ${misc:Depends},
     squashfs-tools,
     libmlm-dev,
-    libsodium-dev,
     libczmq-dev,
     libzmq4-dev
 Description: development files for 42ity core
