@@ -264,6 +264,7 @@ ipc_meta_setup_SCRIPTS = \
 	$(top_srcdir)/setup/90-mylogin.everytime.sh \
 	$(top_srcdir)/setup/90-ntp-dhcp-conf.everytime.sh \
 	$(top_srcdir)/setup/90-ntp-disable-debian-pool.everytime.sh \
+	$(top_srcdir)/setup/90-ntp-set-tos-minsane.everytime.sh \
 	$(top_srcdir)/setup/90-nut-ownership.everytime.sh \
 	$(top_srcdir)/setup/90-sw-manifest.sh \
 	$(top_srcdir)/setup/91-logrotate-fty.sh \
@@ -291,6 +292,7 @@ EXTRA_DIST += \
 	$(top_srcdir)/setup/90-mylogin.everytime.sh \
 	$(top_srcdir)/setup/90-ntp-dhcp-conf.everytime.sh \
 	$(top_srcdir)/setup/90-ntp-disable-debian-pool.everytime.sh \
+	$(top_srcdir)/setup/90-ntp-set-tos-minsane.everytime.sh \
 	$(top_srcdir)/setup/90-nut-ownership.everytime.sh \
 	$(top_srcdir)/setup/90-sw-manifest.sh \
 	$(top_srcdir)/setup/91-logrotate-fty.sh \
