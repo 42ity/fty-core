@@ -1155,6 +1155,7 @@ if [ -f "/etc/ntpsec/ntp.conf" ]; then
 augtool -S -I/usr/share/fty/lenses << EOF
 rm /files/etc/ntpsec/ntp.conf/server
 set /files/etc/ntpsec/ntp.conf/server[1] pool.ntp.org
+set /files/etc/ntpsec/ntp.conf/server[1]/iburst iburst
 save
 EOF
 fi
