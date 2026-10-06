@@ -1606,6 +1606,12 @@ chown -R bios:bios-audit /var/log/app-audit || true
 chmod 775 /var/log/app-audit || true
 find /var/log/app-audit -type f -exec chmod 664 '{}' \; || true
 
+# Tntnet drops supplementary groups when switching root -> www-data.
+# Therefore www-audit.log must be writable through the primary group
+# of the process (www-data) and not through bios-audit.
+# https://eaton-corp.atlassian.net/browse/IPMPROG-10680
+chgrp www-data /var/log/app-audit/www-audit.log || true
+
 # By default, when MySQL first starts it creates the log dir...
 # but one only accessible to itself:
 ### $ ls -lad /var/log/mysql/ /var/log/mysql/error.log
