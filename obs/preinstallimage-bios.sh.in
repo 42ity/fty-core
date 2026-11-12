@@ -809,6 +809,12 @@ if [ ! -d /etc/my.cnf.d/ ] ; then
     fi
 fi
 
+# Disable partition plugin (fix CVE-2026-102523)
+cat > /etc/mysql/conf.d/99-disable-partition.cnf << EOF
+[mysqld]
+skip-plugin-partition
+EOF
+
 if update-alternatives --query my.cnf >/dev/null 2>/dev/null && [ -e /etc/mysql/mariadb.cnf ] ; then
     update-alternatives --set my.cnf /etc/mysql/mariadb.cnf
 fi
